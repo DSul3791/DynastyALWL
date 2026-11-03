@@ -158,6 +158,50 @@ void fragment() {
 }
 """
 
+# Green plant bodies (tree_builder `greens`: grass blades and tufts, reeds, cactus, succulents, kelp). They used the bark shader, which multiplied their colour by
+# the bark texture (about 0.4), darkened the foot and laid foot moss on them, so a tuft of tall grass came out about a quarter as bright as its own colours
+# and much darker than the meadow grass round it (Kathreen, 3 Nov 2026). This keeps the vertex colour: a fine streak up the blade, a little shade at the foot,
+# light through thin blades (BACKLIGHT) and the bark shader's wind. No texture.
+const GREENS_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled;
+uniform float sway = 0.006;
+uniform float gain = 0.85;
+varying vec3 lp;
+
+float h3(vec3 p) {
+	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+	p += dot(p, p.yxz + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 0.0)), h3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0.0, 0.0, 1.0)), h3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 1.0)), h3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+
+void vertex() {
+	lp = VERTEX;
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	float streak = vnoise(lp * vec3(260.0, 30.0, 260.0));     // fine lines running up a blade or a cactus rib
+	vec3 c = COLOR.rgb * gain * (0.9 + 0.18 * streak);
+	c *= mix(0.78, 1.0, smoothstep(0.0, 0.25, lp.y));         // a little shade at the foot, among the other stems
+	ALBEDO = c;
+	BACKLIGHT = c * 0.3;
+	ROUGHNESS = 0.9;
+}
+"""
+
 # Everember: dark ridged bark with glowing veins in its furrows. The glow
 # (EMISSION) is strongest where the bark texture is darkest (the furrows),
 # broken up by a second, coarser sample so not every furrow burns, and scaled
@@ -830,6 +874,11 @@ func _make_tree_materials() -> void:
 	ember_material.shader = ember
 	ember_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark.png"))
 	_tree_materials["ember"] = ember_material
+	var greens: Shader = Shader.new()
+	greens.code = GREENS_SHADER
+	var greens_material: ShaderMaterial = ShaderMaterial.new()
+	greens_material.shader = greens
+	_tree_materials["greens"] = greens_material
 
 	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
