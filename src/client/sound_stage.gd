@@ -1189,6 +1189,7 @@ func _apply_buses() -> void:
 # Sound files are loaded the first time a layer needs them, which cost 5 to 20 ms frames (first rain, first
 # creak). After the first WARM_START_SEC the common ones are loaded one per frame instead.
 const WARM_START_SEC := 3.0
+const EARLY_STEP_SURFACES := ["grass", "dirt", "leaves", "grass_tall", "bushes", "stone", "gravel", "sand", "mud", "water"]   # grounds met in the first half hour (spawn is a forest pond shore)
 var _warm: Array = []                   # [module, name] still to load
 var _warm_wait: float = 0.0
 
@@ -1218,6 +1219,25 @@ func _build_warm_list() -> void:
 
 	for sound_name in ["heartbeat"]:
 		_warm.append([breath, sound_name])
+
+	# The sounds of the first minutes (audio lag review, Dave 3 Nov 2026) go to the FRONT of the list: the first steps on each ground, picking plants, the craft
+	# work sounds and cues, eating and drinking, the stance cues. Each loads on first use otherwise, a 5 to 20 ms hitch at the moment the player first walks, picks or crafts.
+	var early: Array = []
+
+	for surface in EARLY_STEP_SURFACES:
+		for foot in ["left", "right"]:
+			early.append([self, "step_%s_%s" % [surface, foot]])
+
+	for sound_name in ["pick_pluck", "pick_pull", "pick_snap", "pick_snip", "pick_twist", "plant_rustle_leaves", "plant_rustle_reeds"]:
+		early.append([harvestfx, sound_name])
+
+	for sound_name in ["craft_start", "craft_twine", "craft_knap", "craft_bind", "craft_carve", "craft_stack", "craft_pound", "craft_wrap", "item_reject", "hotbar_tick", "eat_soft", "eat_crunch", "drink_gulp"]:
+		early.append([itemfx, sound_name])
+
+	for slot in ["bed_forest_day", "bed_night", "bed_crickets", "bed_surf", "bed_forest_winter"]:
+		early.append([ambience, slot])
+
+	_warm = early + _warm
 
 
 # Loads the sounds in the warm list one entry at a time, never more than one entry per WARM_GAP_SEC, so ~80 files (each about 30 ms, and several variants per entry)
