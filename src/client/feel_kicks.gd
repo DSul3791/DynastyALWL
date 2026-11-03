@@ -40,6 +40,11 @@ func hurt(lost: float, side: float = 1.0) -> void:
 	_vroll += side * 2.5 * 14.0 * k
 
 
+# The push off the ground: a small dip as the legs load, then the spring lifts the eye as the jump leaves the ground.
+func jump() -> void:
+	_vy -= 0.04 * 14.0
+
+
 func step(delta: float) -> Dictionary:
 	var dt: float = minf(delta, 0.05)
 	_vy += (-STIFFNESS * _y - DAMPING * _vy) * dt
