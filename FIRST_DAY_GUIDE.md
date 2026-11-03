@@ -21,7 +21,7 @@ Whole kit (re-added from data by Dino, 3 Nov; was "about 30 sticks, 6 stones, 6 
 
 ## Hob's stall at the spawn pad (shops.json, coins.json trade; checked by Dino, 3 Nov)
 
-Hob works from 07:00 to 19:00 game time, with meals at 12:00 and 18:00, so he is open from minute 0 to about minute 27 of a new world (08:00 start). Prices start at about value x 1.3 and move by up to -15 / +20 percent with how full his shelf is. He pays about value x 0.55, and less each time you sell him the same thing.
+Hob sleeps from 21:00 to 06:00 game time (npcs.json schedule). Asleep he only mumbles and no trade opens (server_dialogue.gd). So in a new world (08:00 start) he trades from minute 0 to about minute 32, then again from minute 55. Prices start at about value x 1.3 and move by up to -15 / +20 percent with how full his shelf is. He pays about value x 0.55, and less each time you sell him the same thing.
 
 | Item | Price |
 |---|---|
