@@ -2714,6 +2714,9 @@ func _autumn_color(id: int, palette: Array[Color] = AUTUMN) -> Color:
 
 # The foliage tint for a species: grasses stay near the painted blade color,
 # flowers show their bloom color, the rest take the species green.
+const FLOWER_LEAF := Color(0.3, 0.46, 0.2)     # a meadow herb's leaf green before the 1.9 lift (alpine flowers' own colour)
+
+
 static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 	var base: Color = Color(float(c[0]), float(c[1]), float(c[2]))
 	var shape: String = str(entry["shape"])
@@ -2722,7 +2725,11 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 		return Color(1.0, 1.0, 1.0).lerp(_natural(base) * 2.2, 0.3)
 
 	if shape == "flower":
-		return base * 1.9
+		# The flower table's colour is the BLOOM colour (owlpetal pale blue, frostglass white, sea holly blue), but this tint lands on the leaves only (the heads carry
+		# their own petal colour, tree_builder.gd WILDFLOWER_LOOKS), so pale-flowered plants grew grey-white leaf clumps (Kathreen 3 Nov 2026). Leaves are a natural
+		# green with a quarter of the species colour, so a dark fantasy flower still has darker foliage. A row can name "leaf_color" to choose its own.
+		var leaf: Color = Color(float(entry["leaf_color"][0]), float(entry["leaf_color"][1]), float(entry["leaf_color"][2])) if entry.has("leaf_color") else FLOWER_LEAF.lerp(base, 0.25)
+		return leaf * 1.9
 
 	if shape == "mushroom":
 		return Color(1.0, 1.0, 1.0)   # modelled with its own colours (tree_builder MUSHROOM_LOOKS)
