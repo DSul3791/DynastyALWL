@@ -193,9 +193,9 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (or a shore net) and fish at the pond.",
+			"hint": "Make a fishing rod (2 sticks, 2 twine) or a shore net and fish at the pond. Keep the fish until the goal ticks.",
 			"after": [
-				"workbench"
+				"twine"
 			],
 			"check": {
 				"have_item_any": [
