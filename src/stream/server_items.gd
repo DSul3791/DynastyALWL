@@ -2419,6 +2419,17 @@ func _marker_done(peer: int, at: Vector3) -> void:
 		send_marker_done.call(peer, at)
 
 
+func _road_abandon(peer: int, job: Dictionary) -> void:
+	_roads.erase(peer)
+	_marker_done(peer, job["head"])
+
+	if job["seg"] != null:
+		_marker_done(peer, job["seg"]["b"])
+
+	for marker in job["markers"]:
+		_marker_done(peer, marker)
+
+
 func _road_marker(peer: int, here: Vector3) -> void:
 	if not _roads.has(peer):
 		_roads[peer] = {"head": here, "markers": [], "seg": null}
@@ -2476,7 +2487,7 @@ func _road_tick(delta: float) -> void:
 		var inv = inventory_of(peer)
 
 		if inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
-			_roads.erase(peer)
+			_road_abandon(peer, job)   # the hoe is gone: the road stops and the waiting flags come down
 			continue
 
 		if job["seg"] == null and not _road_next_segment(peer, job):
