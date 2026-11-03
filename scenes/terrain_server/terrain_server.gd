@@ -141,6 +141,8 @@ var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
 var _water_answered_msec: Dictionary = {}   # peer -> last time its water request was answered
+var _water_window: Rect2 = Rect2()          # the live water window (world m) from the last flow packet: water only moves inside it
+var _water_window_told: Rect2 = Rect2()     # the window the last "water moved" named
 var _water_sent: Dictionary = {}            # peer -> {chunk: hash of the water bytes it holds}: unchanged water is not sent again
 var _gather_msec: Dictionary = {}           # peer -> last gather request handled
 const BURY_QUEUE_MAX := 4000        # digs waiting for the plant check; beyond it a dig skips the check
@@ -1088,6 +1090,8 @@ func _poll_water() -> void:
 		if not flow.is_empty():
 			# shortcut: sent to everyone each publish (about 30 KB packed); a player who joins gets the next one, none is kept for late joiners
 			net.deliver_water_flow.rpc(flow["origin"], flow["w"], flow["h"], flow["cell"], flow["raw"], flow["bytes"])
+			var cell: float = float(flow["cell"])
+			_water_window = Rect2(Vector2(flow["origin"]) - Vector2(0.5, 0.5) * cell, Vector2(float(flow["w"]), float(flow["h"])) * cell)
 
 	if not updates.is_empty():
 		for update in updates:
@@ -1108,7 +1112,14 @@ func _poll_water() -> void:
 			print("server: water update %d (%d tiles), %d wet squares on the starter tile" % [_water_updates, updates.size(), _wet_centre])
 
 		flora.clear_water()
-		net.water_changed.rpc()
+
+		# Lag review (Steve 3 Nov 2026): the levels change only inside the live window (outside it the baked ones stay, water_hub2.publish_levels),
+		# so clients re-ask only for the chunks there and where the window was, not for every chunk they hold. No window known: everything.
+		if _water_window.has_area():
+			net.water_changed_in.rpc(_water_window.merge(_water_window_told) if _water_window_told.has_area() else _water_window)
+			_water_window_told = _water_window
+		else:
+			net.water_changed.rpc()
 
 		if not water_live.busy:
 			net.water_rate.rpc(water_live.rate, false, water_live.rate * WATER_BASE_RATE)
