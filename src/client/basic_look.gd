@@ -18,6 +18,7 @@ static var _metal_mats: Dictionary = {}
 # even while their looks.json row is still the grey placeholder chunk. Remove a row here once looks.json carries the same shape.
 const ART_OVERRIDES := {
 	"flint": {"shape": "flint", "color": "#4a4238", "size": 1.0},
+	"tree_roots": {"shape": "roots", "color": "#6a4a2e", "size": 1.0},     # dug roots, not the firewood rod bundle (Kathleen 3 Nov)
 	"pyrite": {"shape": "pyrite", "color": "#d4ae33", "size": 1.0},
 	"obsidian": {"shape": "obsidian", "color": "#101014", "size": 1.0},
 	"processed_hide": {"shape": "leather", "color": "#d9c9a8", "size": 1.0},
@@ -1456,6 +1457,32 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			_torus_v(parts, 0.04, 0.008, Vector3(-0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
 			_torus_v(parts, 0.04, 0.008, Vector3(0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
+		"roots":
+			# A handful of dug roots tied at the crown: five wandering roots that taper from thumb-thick to a thread, each bending as it goes,
+			# fine hair rootlets off the sides, pale knife-cut ends at the crown, clods of dark soil still clinging, a twist of cord round the knot
+			# (Art_Direction: believable organic forms, lived-in imperfection, rich earthy colour rather than grey-brown).
+			var cut_end: Color = Color(0.78, 0.64, 0.44)
+			var soil: Color = Color(0.2, 0.14, 0.09)
+			for k in 5:
+				var fan: float = (float(k) - 2.0) * 0.32
+				var wave: float = 0.6 + 0.35 * float(k % 3)
+				var at: Vector3 = Vector3(-0.08, 0.004 * float(k % 2), (float(k) - 2.0) * 0.008)
+				var thick: float = 0.016 - 0.002 * float(k % 2)
+				var heading: float = fan
+				_sph(parts, thick * 1.05, Vector3(0.4, 1.0, 1.0), at - Vector3(0.004, 0.0, 0.0), cut_end, true)
+				for seg in 4:
+					heading += sin(float(seg) * wave + float(k)) * 0.35
+					var step: float = 0.075 - 0.01 * float(seg)
+					var to: Vector3 = at + Vector3(cos(heading) * step, -0.004 * float(seg), sin(heading) * step)
+					var front: float = thick * (1.0 - 0.24 * float(seg + 1))
+					_root_seg(parts, thick * (1.0 - 0.24 * float(seg)), maxf(front, 0.0025), at, to, _tone(color, k * 4 + seg, 0.12))
+					if seg > 0 and (k + seg) % 2 == 0:
+						var side: float = 1.0 if (k + seg) % 4 == 0 else -1.0
+						_root_seg(parts, 0.0025, 0.001, at, at + Vector3(cos(heading + side * 1.1) * 0.035, -0.003, sin(heading + side * 1.1) * 0.035), color.lightened(0.15))
+					at = to
+			_torus_v(parts, 0.026, 0.006, Vector3(-0.06, 0.002, 0.0), Color(0.72, 0.62, 0.38))
+			for k in 4:
+				_sph(parts, 0.016 + 0.004 * float(k % 2), Vector3(1.2, 0.6, 1.0), Vector3(-0.03 + 0.03 * float(k), -0.008, 0.03 * float(k % 3 - 1)), _tone(soil, k, 0.15), true)
 		"planks":
 			# Sawn boards stacked in a neat pile, ends slightly staggered, a pale cut end and darker grain streaks on the top board.
 			for k in 5:
@@ -1629,6 +1656,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"stew":
 			_bowl(parts, Color(0.5, 0.34, 0.19))      # one shared wooden bowl under every soup and stew (Dave 2026-10-22)
 			_fill(parts, color, bits, false)
+			# A carved wooden spoon left in the bowl, its handle resting on the rim, and a lighter wet line where the broth meets the wood.
+			_torus(parts, 0.1, 0.003, Vector3(0.0, 0.003, 0.0), color.lightened(0.18))
+			_sph(parts, 0.028, Vector3(1.3, 0.3, 1.0), Vector3(0.025, 0.006, 0.01), Color(0.56, 0.4, 0.23))
+			_root_seg(parts, 0.007, 0.009, Vector3(0.055, 0.008, 0.015), Vector3(0.19, 0.06, 0.05), Color(0.56, 0.4, 0.23))
 		"mound":
 			_bowl(parts, Color(0.5, 0.34, 0.19))
 			_fill(parts, color, bits, true)
@@ -2489,6 +2520,24 @@ static func _cyl_taper(parts: Array, back: float, front: float, length: float, a
 	cyl.radial_segments = sides
 	cyl.rings = 1
 	parts.append([cyl, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5)), at), color])
+
+
+# A tapering round segment from `from` to `to` (radius `back` at `from`, `front` at `to`): roots, twigs, anything that wanders.
+static func _root_seg(parts: Array, back: float, front: float, from: Vector3, to: Vector3, color: Color) -> void:
+	var span: Vector3 = to - from
+	var length: float = span.length()
+	if length < 0.0001:
+		return
+	var y_axis: Vector3 = span / length
+	var x_axis: Vector3 = y_axis.cross(Vector3.FORWARD if absf(y_axis.z) < 0.9 else Vector3.RIGHT).normalized()
+	var z_axis: Vector3 = x_axis.cross(y_axis)
+	var cyl: CylinderMesh = CylinderMesh.new()
+	cyl.top_radius = front
+	cyl.bottom_radius = back
+	cyl.height = length
+	cyl.radial_segments = 6
+	cyl.rings = 1
+	parts.append([cyl, Transform3D(Basis(x_axis, y_axis, z_axis), (from + to) * 0.5), color])
 
 
 # A box turned by `tilt` (Euler) in place.
