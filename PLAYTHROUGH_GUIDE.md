@@ -102,6 +102,19 @@ Walk to the biggest tree you can find (oaks, beeches, tall pines), stand under t
 
 **Keeping warm (the Temperature bar, #113; checked against warmth.json and cooking.json fire_tiers, 3 Nov):** a lit fire adds heat by its tier: **stick fire +10 C within 2.5 m, firewood fire +20 C within 4 m, log fire +40 C within 5 m**. So a stick fire only helps if you stand right at it. A roof does **not** warm you; it cuts the wind to 30 percent and keeps rain off, which makes the cold bite less. A bed takes 10 percent off the cold. Below 40 percent you shiver and stop healing; below 20 percent the cold costs health. The first cold-night answer is a firewood fire beside the lean-to.
 
+**If you die (death.json, server_items.gd `kill`, checked 3 Nov):**
+- Everything you carry, coins included, stays where you fell in a pile of **remains**. Press E on it to take things back.
+- For the first day (real time) only you can loot it, and it is gone after 7 days.
+- You keep at most 5 piles, so a sixth death clears your emptiest or oldest pile.
+- You come back with full vitals, after about 4 s:
+  - **beside your spawn bed** (1.2 m), if you set one with E and it still stands;
+  - else **in front of your last lean-to** (1.5 m out);
+  - else at the world spawn.
+- Two bed deaths inside 10 minutes and the third sends you to the lean-to or the spawn instead, so a bed beside a danger does not trap you.
+- Skills, luck and fitness are kept.
+- Until your best skill reaches 10 every death is a soft one. Real death is switched off for now.
+- The message says "You come back at your shelter" for the bed as well.
+
 Pictures: `10_campfire_placed.jpg` (the placement ghost; the lit fire itself is [in progress, Kathleen]).
 
 ## Step 09. Water, food
