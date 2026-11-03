@@ -1505,8 +1505,8 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 			continue
 
 		spring_caves += 1
-		var mouth: Array = cave["nodes"][0]
-		var mouth_index: int = int(round((float(mouth[2]) - origin.y) / spacing)) * samples + int(round((float(mouth[0]) - origin.x) / spacing))
+		var cave_mouth: Array = cave["nodes"][0]
+		var mouth_index: int = int(round((float(cave_mouth[2]) - origin.y) / spacing)) * samples + int(round((float(cave_mouth[0]) - origin.x) / spacing))
 		var chamber_nodes: Array = []
 
 		for chamber in cave["chambers"]:
@@ -1516,7 +1516,7 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 			spring_bad += 1
 
 		for spring in cave["springs"]:
-			if not chamber_nodes.has(int(spring["node"])) or float(cave["nodes"][int(spring["node"])][1]) <= float(mouth[1]) or float(spring["m3_s"]) <= 0.0:
+			if not chamber_nodes.has(int(spring["node"])) or float(cave["nodes"][int(spring["node"])][1]) <= float(cave_mouth[1]) or float(spring["m3_s"]) <= 0.0:
 				spring_bad += 1
 
 	print("  spring caves %d" % spring_caves)
