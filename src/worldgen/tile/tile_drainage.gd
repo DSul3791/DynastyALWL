@@ -24,7 +24,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var lake_min_depth: float = float(rules.get("lake_min_depth_m", 0.5))
 	var lake_min_catchment: float = float(rules.get("lake_min_catchment_km2", 0.05))
 	var origin := Vector2i(water._origin_sx, water._origin_sz)
-	# Water is routed over the ground as it was before erosion: erosion only runs inside each tile, so beyond 640 m from a seam
+	# route_over_raw (rules, default true): water routed over the ground as it was before erosion and ledges. Written when erosion only ran inside each tile, so beyond 640 m from a seam
 	# the two tiles' eroded ground differs and so would their lakes and divides. The raw ground is the same in every frame.
 	var route_over: PackedFloat32Array = land
 

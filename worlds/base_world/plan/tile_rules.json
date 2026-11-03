@@ -145,6 +145,8 @@
 		"drainage_mode": true,
 		"drainage": {
 			"river_start_km2": 0.35,
+			"route_over_raw": false,
+			"route_over_raw_note": "Sonny 3 Nov 2026 (patchy riverbeds): routing over the raw frame (before the strata ledges and scree) put 57-61 percent of the river cells on slopes over 10 percent more than 0.5 m above the low line of their own cross-section on tile 3,4: the channel ran along a side slope and its water, held by no bank, settled as a 13 cm film in patches. The reason for raw routing (per-tile erosion differing across seams) went with the whole-island pre-carve of 29 Oct; the final ground is the same in every frame.",
 			"lake_min_depth_m": 0.5,
 			"lake_min_catchment_km2": 0.05,
 			"routing_noise_m": 0.25,
