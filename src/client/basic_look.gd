@@ -1507,12 +1507,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_box(parts, Vector3(len_k, 0.022, 0.13), Vector3(0.012 * float((k * 2) % 3 - 1), -0.05 + 0.025 * float(k), 0.0), _tone(color, k, 0.07))
 				_box(parts, Vector3(0.012, 0.02, 0.125), Vector3(len_k * 0.5 + 0.012 * float((k * 2) % 3 - 1), -0.05 + 0.025 * float(k), 0.0), light)
 
-			_box(parts, Vector3(0.3, 0.003, 0.012), Vector3(-0.04, 0.0775, 0.03), dark)
-			_box(parts, Vector3(0.22, 0.003, 0.01), Vector3(0.05, 0.0775, -0.02), dark)
+			_box(parts, Vector3(0.3, 0.003, 0.012), Vector3(-0.04, 0.0615, 0.03), dark)
+			_box(parts, Vector3(0.22, 0.003, 0.01), Vector3(0.05, 0.0615, -0.02), dark)
 			# Real sawn wood: two dark knots with a pale ring on the top board, growth-ring arcs on the cut ends, and a thin bark edge (wane) left on one board.
 			for kn in [[-0.12, 0.035], [0.1, -0.04]]:
-				_sph(parts, 0.012, Vector3(1.4, 0.15, 1.0), Vector3(float(kn[0]), 0.0765, float(kn[1])), light.lerp(color, 0.5), true)
-				_sph(parts, 0.007, Vector3(1.3, 0.2, 1.0), Vector3(float(kn[0]), 0.078, float(kn[1])), dark.darkened(0.25), true)
+				_sph(parts, 0.012, Vector3(1.4, 0.15, 1.0), Vector3(float(kn[0]), 0.0612, float(kn[1])), light.lerp(color, 0.5), true)
+				_sph(parts, 0.007, Vector3(1.3, 0.2, 1.0), Vector3(float(kn[0]), 0.062, float(kn[1])), dark.darkened(0.25), true)
 			for k in 5:
 				var end_x: float = (0.5 - 0.03 * float((k * 3) % 4)) * 0.5 + 0.012 * float((k * 2) % 3 - 1) + 0.0065
 				for ring_k in 2:
