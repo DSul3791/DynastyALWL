@@ -3023,6 +3023,8 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	if heads == null:
 		heads = bark
 
+	# The stems go on the heads' surface too (Kathreen, 3 Nov): on the bark shader a 30 cm stem wore bark grain, the dark foot and foot moss.
+
 	var stems: int = 3 if far else int(look["stems"])
 	var head: String = str(look["head"])
 	var size: float = float(look["size"]) * h * 1.2 if head == "umbel" else float(look["size"]) * maxf(h, crown * 1.6) * 2.6
@@ -3044,8 +3046,8 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		var base: Vector3 = out * crown * 0.05
 		var mid: Vector3 = base.lerp(tip, 0.5) + out * crown * 0.08
 		var stem_r: float = maxf(h * 0.012, 0.0045 if look.has("tall") else 0.003)
-		_branch(bark, base, mid, stem_r, maxf(h * 0.009, stem_r * 0.75), stem_col, 3)
-		_branch(bark, mid, tip, maxf(h * 0.009, stem_r * 0.75), maxf(h * 0.006, stem_r * 0.55), stem_col, 3)
+		_branch(heads, base, mid, stem_r, maxf(h * 0.009, stem_r * 0.75), stem_col, 3)
+		_branch(heads, mid, tip, maxf(h * 0.009, stem_r * 0.75), maxf(h * 0.006, stem_r * 0.55), stem_col, 3)
 
 		if not far and k % 2 == 0:
 			_clump(leaves, rng, base.lerp(mid, 0.6) + out * crown * 0.1, Vector3(0.0, -h, 0.0), maxf(crown * 0.35, h * 0.18), 0.95, 2)
@@ -3062,7 +3064,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					var a: float = TAU * float(r) / float(look["rays"]) + rng.randf() * 0.4
 					var ring: float = size * (0.9 if r > 0 else 0.0)
 					var ray: Vector3 = tip + Vector3(cos(a) * ring, size * 0.25 * (1.0 - ring / (size * 1.0 + 0.001)), sin(a) * ring)
-					_branch(bark, tip, ray, maxf(h * 0.003, 0.001), maxf(h * 0.002, 0.001), stem_col, 3)
+					_branch(heads, tip, ray, maxf(h * 0.003, 0.001), maxf(h * 0.002, 0.001), stem_col, 3)
 					_cluster(heads, rng, ray, size * 0.4, petal, true, 3)
 			_:
 				var beads: int = 3 if far else int(look["beads"])
