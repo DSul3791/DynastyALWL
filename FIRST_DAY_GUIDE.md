@@ -20,11 +20,11 @@ What a new player does, in order, with what it costs after the pacing pass. Ever
 Whole kit (re-added from data by Dino, 3 Nov; was "about 30 sticks, 6 stones, 6 leaves, 12 twine"): about **63 sticks** (campfire 6, axe 1, lean-to 32, bed 4, bench 16, spear 1, knife 1, rod 2), **10 stones** (axe 1, campfire 3, bench 4, knife 2; the spear's stone is kept), **8 leaves**, 10 thatch or 8 bedding, and **18 twine = 54 fibre** (axe 2, lean-to 4, bed 2, bench 6, stone spear 2, rod 2); crafting time about 3 minutes (171 s plus the bed, 10 s with bedding or 25 s with thatch); the rest of the day is gathering and walking, which nobody has timed yet.
 
 ## What works today and what does not
-- **Works:** everything above, plus clothes from hide, torches, a stone forge, a chopping block (once logs fill ingredients), the thatch house.
-- **Needs code before a player sees it:** wood from the log chain (ingredient groups), flint, ore and coal pickup, water gathering, farming, the learn system, goals and hints on screen, shops beyond Hob.
+- **Works:** everything above, plus clothes from hide, torches, a stone forge, the chopping block and the log chain (F-16 fixed: a held log fills log recipes), the thatch house, and goals and hints on screen (one line at the top; a hint whose goal is still open is said once more after 5 minutes).
+- **Needs code before a player sees it (not re-checked on 3 Nov unless named):** flint, ore and coal pickup, water gathering, farming, the learn system, shops beyond Hob. 13 hints never show because the server has no trigger for them (docs/handoff/DINO_ROUND6_GOALS.md), 3 of them early game.
 - **Not measured:** how long a real first hour takes. CRAFT_PACING.md says what to time.
 
 ## Questions for you (my defaults in brackets)
 1. Is two minutes of crafting right for the first day, or should the lean-to and bed be quicker? [keep]
-2. Should rewards (70 copper in total) be in coin or only items? [coin]
-3. Should hints repeat if a player ignores them for five minutes? [yes, once]
+2. Should rewards (69 copper in total, plus 4 sticks and 3 kindling) be in coin or only items? [coin]
+3. Should hints repeat if a player ignores them for five minutes? [yes, once: this is what the game does now]
