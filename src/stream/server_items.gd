@@ -2385,8 +2385,8 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
 	_grade_points[peer] = pair
 
 
-# The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B is levelled to the straight ramp between the two
-# heights and a path is laid along it, by itself. Worked a station at a time (one every ROAD_STEP_S, at most ROAD_EDITS ground edits each), so a road
+# The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B follows the ground, averaged in 3 m sections (no straight ramp)
+# between the two heights and a path is laid along it, by itself. Worked a station at a time (one every ROAD_STEP_S, at most ROAD_EDITS ground edits each), so a road
 # never freezes the game the way one big edit would; the hoe wears once every ROAD_WEAR_EVERY stations and the job stops if the hoe is gone.
 const ROAD_MAX_M := 40.0
 const ROAD_STATION_M := 0.7
@@ -2395,6 +2395,7 @@ const ROAD_EDITS := 3
 const ROAD_WEAR_EVERY := 4
 const ROAD_HALF_WIDTH_M := 1.0
 const ROAD_DEPTH_M := 0.5
+const ROAD_SECTION_M := 3.0   # the ground is averaged over sections this long along the line
 var _roads: Dictionary = {}   # peer -> {"a": Vector3, "b": Vector3, "n": stations, "i": next station, "wait": seconds to the next one}
 
 
@@ -2441,12 +2442,30 @@ func _road_tick(delta: float) -> void:
 		job["i"] = i + 1
 
 
+# The ground height a road station is brought to: the average of the ground along the line within ROAD_SECTION_M (3 m) around the station, so the road
+# follows the lie of the land and eases over bumps and dips instead of cutting a straight ramp between the two markers (Dave 3 Nov 2026).
+func _road_section_height(a: Vector3, b: Vector3, t: float) -> float:
+	var length: float = Vector2(b.x - a.x, b.z - a.z).length()
+	var total: float = 0.0
+	var count: int = 0
+
+	for k in range(-3, 4):
+		var tt: float = clampf(t + float(k) * (ROAD_SECTION_M / 6.0) / maxf(length, 0.01), 0.0, 1.0)
+		var h: float = float(ground_height.call(lerpf(a.x, b.x, tt), lerpf(a.z, b.z, tt)))
+
+		if not is_nan(h):
+			total += h
+			count += 1
+
+	return total / float(count) if count > 0 else lerpf(a.y, b.y, t)
+
+
 func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> void:
 	var t: float = float(i) / float(maxi(n - 1, 1))
 	var along: Vector2 = Vector2(b.x - a.x, b.z - a.z).normalized()
 	var side: Vector2 = Vector2(-along.y, along.x)
 	var centre: Vector2 = Vector2(a.x, a.z).lerp(Vector2(b.x, b.z), t)
-	var target: float = lerpf(a.y, b.y, t)
+	var target: float = _road_section_height(a, b, t)
 	var edits: int = 0
 
 	if dig_ground.is_valid() and fill_ground.is_valid():
