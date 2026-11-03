@@ -170,7 +170,8 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_inv = inventory_view
 	blueprints.setup(_inv.table, _inv.inventory, hud_layer)
 	_net = terrain_net
-	_net.road_marker_reached.connect(_on_road_marker_reached)
+	if _net != null:
+		_net.road_marker_reached.connect(_on_road_marker_reached)
 	_camera = camera
 	_root = world_root
 	_ground_below = ground_below

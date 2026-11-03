@@ -881,12 +881,12 @@ func _init() -> void:
 	# Surveyor mode: the first marker of an idle job is the start; later markers wait and are built toward nearest first, then deleted.
 	var flags_down: Array = []
 	m.send_marker_done = func(_p, at): flags_down.append(at)
-	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(8.0, 10.0, 0.0))
-	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 12.0))
-	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 6.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(5.0, 10.0, -4.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 4.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 0.0))
 	check(m._roads.has(1) and m._roads[1]["markers"].size() == 2, "markers set after the first wait for the builder")
 	m._road_tick(0.6)
-	check(m._roads[1]["seg"] != null and absf(m._roads[1]["seg"]["b"].z - 6.0) < 0.01, "the builder heads for the nearest marker first, not the first one set")
+	check(m._roads[1]["seg"] != null and absf(m._roads[1]["seg"]["b"].z - 0.0) < 0.01, "the builder heads for the nearest marker first, not the first one set")
 	check(m._roads[1]["markers"].size() == 1, "and that marker is off the list once it is being built toward")
 
 	for step in 120:
