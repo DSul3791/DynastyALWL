@@ -1401,6 +1401,7 @@ func drop_chunk(chunk: Vector2i) -> void:
 
 	canopy_version += 1
 	_clear_node(entry)
+	_clear_colliders(entry)
 	cover.remove_chunk(chunk)
 	var water: MeshInstance3D = entry.get("water")
 
@@ -2187,7 +2188,15 @@ func apply_built(budget_usec: int = 3000) -> void:
 			var node: Node3D = Node3D.new()
 			node.name = "Chunk_%d_%d" % [next[0].x, next[0].y]
 			add_child(node)
-			_jobs.append({"chunk": next[0], "serial": next[1], "level": next[2], "masks": next[4], "plan": next[3], "node": node, "draw": 0, "shape": 0})
+			var job: Dictionary = {"chunk": next[0], "serial": next[1], "level": next[2], "masks": next[4], "plan": next[3], "node": node, "draw": 0, "shape": 0, "cnode": null, "keep": false}
+
+			# The same trunk colliders as now (a redraw for the player's walking: shrubs and plants changed model, the trees did not): the
+			# bodies standing are kept, not rebuilt (Dave 3 Nov 2026: pauses every few steps; every 32 m walked rebuilt each near chunk's colliders).
+			if entry.has("cnode") and is_instance_valid(entry["cnode"]) and int(entry.get("shapes_key", 0)) == int(next[3].get("shapes_key", -1)):
+				job["keep"] = true
+				job["shape"] = (next[3]["shapes"] as Array).size()
+
+			_jobs.append(job)
 
 	var started: int = Time.get_ticks_usec()
 	t0 = Probe.start()
@@ -2199,12 +2208,22 @@ func apply_built(budget_usec: int = 3000) -> void:
 
 		if entry.is_empty() or int(entry.get("serial", -1)) != int(job["serial"]):
 			_discard(job["node"])
+
+			if job["cnode"] != null:
+				_discard(job["cnode"])
+
 			_jobs.pop_front()
 			continue
 
 		if _apply_step(job):
 			_clear_node(entry)
 			entry["node"] = job["node"]
+
+			if not bool(job["keep"]):
+				_clear_colliders(entry)
+				entry["cnode"] = job["cnode"]
+				entry["shapes_key"] = int(job["plan"].get("shapes_key", 0))
+
 			job["node"].visible = bool(entry.get("ground", true))
 			entry["level"] = job["level"]
 			entry["masks"] = job["masks"]
@@ -2533,7 +2552,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 		draws.append([key, indices.size(), buffer])
 
-	return {"draws": draws, "shapes": shapes, "lights": lights}
+	return {"draws": draws, "shapes": shapes, "lights": lights, "shapes_key": hash(shapes)}
 
 
 # Adds the next piece of a job's drawing: a batch of trunk colliders (each batch its own
@@ -2564,7 +2583,14 @@ func _apply_step(job: Dictionary) -> bool:
 			shape_species.append(int(item[0]))
 
 		body.set_meta("species_ids", shape_species)
-		node.add_child(body)
+
+		if job["cnode"] == null:
+			var holder: Node3D = Node3D.new()
+			holder.name = "Colliders_%d_%d" % [job["chunk"].x, job["chunk"].y]
+			add_child(holder)
+			job["cnode"] = holder
+
+		(job["cnode"] as Node3D).add_child(body)
 		colliders += last - first
 		job["shape"] = last
 		return false
@@ -2745,6 +2771,18 @@ func _clear_node(entry: Dictionary) -> void:
 
 	_throw_out(node)
 	entry["node"] = null
+
+
+# The chunk's trunk collider bodies (kept apart from its drawing so a redraw that leaves the trees alone keeps them).
+func _clear_colliders(entry: Dictionary) -> void:
+	var holder: Variant = entry.get("cnode")
+	entry.erase("cnode")
+	entry.erase("shapes_key")
+
+	if holder == null or not is_instance_valid(holder):
+		return
+
+	_discard(holder)
 
 
 # Draw statistics for the audit and the checks: MultiMesh nodes and instances held, by kind (tree, shrub, plant, in that order),
