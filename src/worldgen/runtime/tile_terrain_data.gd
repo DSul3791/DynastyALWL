@@ -69,6 +69,8 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 
 # Caves: capsules (passages) and ellipsoids (chambers) with AABBs.
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
+const CAVE_POOL_M := 0.4            # a spring cave pool: this deep in the bottom of its chamber
+var cave_streams: PackedFloat32Array = PackedFloat32Array()   # spring cave streams (Dave 3 Nov 2026): per piece x, y, z of the upper end, x, y, z of the lower end (floor heights, world m), width m; then per spring pool x, y, z, -radius (a negative width marks a pool)
 
 
 # Loads a tile file. `rock_ids` and `resource_ids` map names to table ids.
@@ -593,8 +595,13 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 
 
 func _load_caves(list: Array) -> void:
+	cave_streams = PackedFloat32Array()
+
 	for cave in list:
 		var nodes: Array = cave["nodes"]
+
+		if str(cave.get("cave_kind", "")) == "spring_cave":
+			_load_cave_stream(cave)
 		var capsules: Array = []
 		var chambers: Array = []
 		var low: Vector3 = Vector3(INF, INF, INF)
@@ -629,3 +636,36 @@ func _load_caves(list: Array) -> void:
 			continue
 
 		caves.append({"id": str(cave["id"]), "aabb": AABB(low, high - low), "capsules": capsules, "chambers": chambers})
+
+
+# The stream along a spring cave's floor: its "water" segments run from the mouth (lower) up to a spring (higher); each piece is stored upper end
+# first, so the water runs from the first point to the second. Every spring gets a pool in its chamber.
+func _load_cave_stream(cave: Dictionary) -> void:
+	var nodes: Array = cave["nodes"]
+
+	for segment in cave["segments"]:
+		if str(segment[2]) != "water":
+			continue
+
+		var na: Array = nodes[int(segment[0])]
+		var nb: Array = nodes[int(segment[1])]
+		var a: Vector3 = Vector3(float(na[0]), float(na[1]) - 0.5 * float(na[4]), float(na[2]))
+		var b: Vector3 = Vector3(float(nb[0]), float(nb[1]) - 0.5 * float(nb[4]), float(nb[2]))
+		var top: Vector3 = b if b.y >= a.y else a
+		var low: Vector3 = a if b.y >= a.y else b
+		cave_streams.append_array(PackedFloat32Array([top.x, top.y, top.z, low.x, low.y, low.z, minf(float(na[3]), float(nb[3]))]))
+
+	for spring in cave.get("springs", []):
+		var node: Array = nodes[int(spring["node"])]
+		var floor_y: float = float(node[1]) - 0.5 * float(node[4])
+		var radius: float = 1.5
+
+		# The chamber is carved as an ellipsoid round the node: the pool lies POOL_M deep in its bottom, as wide as the bowl is at that height.
+		for chamber in cave["chambers"]:
+			if int(chamber["node"]) == int(spring["node"]):
+				var rh: float = 0.5 * float(chamber["height_m"])
+				var up: float = clampf(1.0 - CAVE_POOL_M / maxf(rh, 0.5), 0.0, 1.0)
+				floor_y = float(node[1]) - rh + CAVE_POOL_M
+				radius = maxf(float(chamber["radius_m"]) * sqrt(1.0 - up * up), 1.0)
+
+		cave_streams.append_array(PackedFloat32Array([float(node[0]), floor_y, float(node[2]), 0.0, 0.0, 0.0, -radius]))
