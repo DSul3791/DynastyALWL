@@ -36,6 +36,7 @@ The long version with every row and note is `MORNING_PLAYTEST_CHECKLIST_FULL.md`
 14. [ ] **Bench** (Camp bench: 16 sticks, 6 twine, 4 stones, 60 s), then **wooden spear** (1 stick, 6 s; the stone is kept, not used up), **stone spear** (wooden spear + 2 twine, 10 s) and **stone knife** (2 stones, 1 stick, 8 s).
 
 ## Known broken or not yet checked by a person (3 Nov; bug numbers from `docs/BUGS_FOUND_IN_PLAY.md`, checks in `docs/handoff/DINO_BUG_CHECKS.md`)
+- **Fire left alone:** a burnt-out fire is removed 5 real minutes later, kit and store and all; an unlit laid fire after 30 minutes (by design in the code, not yet in any hint). Feed it before you walk off.
 - **Still open:** 7 lag (Steve), 8 firewood tier (the fire store works the tier out from its wood, #32 and #144: check that 3 firewood shows Medium), 10 jump animation.
 - **5 tree hits:** the fix (#76) is merged but switched off until you answer QA card tree-hits-follow-size. Until then a tree takes its species count: about birch 5, pine 8, beech 9, oak 12.
 - **1 fire timer:** fixed (#85, and #135 sums all fuel). Check that it jumps up when you add wood with F.
