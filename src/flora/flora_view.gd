@@ -280,6 +280,12 @@ const PART_M := [256.0, 128.0, 128.0]
 const PART_M_LOW := [256.0, 256.0, 256.0]   # Low, Medium and High: shrubs and plants also in one part per chunk (up to a quarter of the draws; Ultra keeps 128 m parts)
 # The share of shrubs drawn by quality (Low, Medium, High, Ultra): the thickets are dense, so lower tiers draw a hashed part of them (the same ones every time; colliders and the server are unchanged).
 const SHRUB_SHARE := [0.4, 0.6, 1.0, 1.0]
+# Distance thinning (Dave 3 Nov 2026: "thick and lush near me, less dense near the edge of my view"), the same rule and file as the grass
+# (data/look/grass_far.json): trees are drawn in full out to fade_start_share of the tree view distance, then the share drawn falls smoothly
+# to far_share at the edge. A stable hash per plant picks which stay; colliders are unaffected (only drawing).
+const FAR_FILE := "res://data/look/grass_far.json"
+const FAR_BAND_M := 48.0   # tree chunks in the thinning ring are re-planned each time the player moves this much nearer or farther
+const FAR_BAND_SLACK_M := 8.0   # and only once the player is this far past a band edge (no flip-flop while pacing at one)
 const SHAPES_PER_BODY := 64  # trunk colliders per body
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
@@ -314,6 +320,8 @@ var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # ful
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
 var _close_ms: Dictionary = {}            # the distinct "near_m" distances species ask for (shrubs and plants only) -> true
 var shrub_share: float = 1.0        # share of shrubs drawn at this quality (set_quality)
+var fade_start_share: float = 0.5   # grass_far.json: full density out to this share of the view distance
+var far_share: float = 0.3          # grass_far.json: share drawn at the edge of the view distance
 var part_m: Array = PART_M            # the size of the square one shrub or plant MultiMesh covers (set by set_quality)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
@@ -564,6 +572,7 @@ func _tell_liquid_mud() -> void:
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
+	_load_far()
 	for argument in OS.get_cmdline_args() + OS.get_cmdline_user_args():
 		if argument.begins_with("--flora-season="):
 			season_override = argument.trim_prefix("--flora-season=")
@@ -2098,6 +2107,15 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	var entry: Dictionary = _chunks[chunk]
 	var level: int = _level(chunk, from_position)
 	var masks: Dictionary = _close_masks(chunk, from_position)
+	var near_d: float = _distance(chunk, from_position)
+
+	# A chunk inside the tree thinning ring is re-planned every FAR_BAND_M the player comes closer or goes away, so its share follows the distance.
+	# Hysteresis (Steve's review): the band only changes once near_d is FAR_BAND_SLACK_M past its edge, so a player pacing at an edge
+	# does not re-plan the chunk at every update.
+	if near_d <= view_m[KIND_TREE] and near_d + chunk_m * 1.42 >= fade_start_share * view_m[KIND_TREE] and far_share < 1.0:
+		var band: int = far_band_of(near_d, int(entry.get("far_band", -1)))
+		entry["far_band"] = band
+		masks["far_band"] = band
 
 	if (level == entry["level"] and masks == entry.get("masks", {})) or (level == entry.get("building", -2) and masks == entry.get("building_masks", {})):
 		return
@@ -2150,6 +2168,7 @@ func _launch_plans(from_position: Vector3) -> void:
 
 		items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
 		items["fruit_levels"] = _fruit_levels_of(chunk, items)
+		items["from"] = from_position
 		_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, int(entry["serial"]), int(entry["building"]), items, entry.get("building_masks", {})), false, "flora chunk"))
 
 
@@ -2399,7 +2418,35 @@ func finish_tasks() -> void:
 
 # The drawing of a chunk at a level, as plain data (safe on a worker thread): per group of
 # one species, part and model a MultiMesh buffer; trunk colliders; glow lights.
+# Whether a plant is drawn at this share: a stable choice per plant id, so the same plants stay as the player moves.
+# The thinning band for a distance, kept at `band` while near_d stays within FAR_BAND_SLACK_M of it (-1: no band yet).
+static func far_band_of(near_d: float, band: int) -> int:
+	if band < 0 or absf(near_d - (float(band) + 0.5) * FAR_BAND_M) > 0.5 * FAR_BAND_M + FAR_BAND_SLACK_M:
+		return int(near_d / FAR_BAND_M)
+
+	return band
+
+
+static func far_keep(id: int, share: float) -> bool:
+	return share >= 1.0 or float(((id * 2246822519) & 0x7fffffff) % 1000) / 1000.0 < share
+
+
+# The share of plants drawn at distance d for a view distance r (Dave's rule, grass_far.json): 1 out to fade_start x r, then down to far at r.
+static func far_share_at(d: float, r: float, fade_start: float, far: float) -> float:
+	return lerpf(1.0, far, smoothstep(fade_start * r, r, d)) if r > 0.0 else 1.0
+
+
+func _load_far() -> void:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(FAR_FILE)) if FileAccess.file_exists(FAR_FILE) else null
+
+	if typeof(parsed) == TYPE_DICTIONARY:
+		fade_start_share = clampf(float(parsed.get("fade_start_share", fade_start_share)), 0.0, 1.0)
+		far_share = clampf(float(parsed.get("far_share", far_share)), 0.0, 1.0)
+
+
 func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
+	var has_from: bool = items.has("from")   # the player position when the plan was asked for (distance thinning); tests may leave it out
+	var from: Vector3 = items.get("from", Vector3.ZERO)
 	var ids: PackedInt32Array = items["ids"]
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
 	var shapes: Array = []            # [species, radius, position]
@@ -2471,10 +2518,15 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(_slugs.get(species_id, "")))
 		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near, bare]
 
-		if not groups.has(key):
-			groups[key] = PackedInt32Array()
+		# Trees only for now: a tree chunk is re-planned whenever one of its 64 m cells changes model tier, so the distance stays close enough;
+		# shrub and plant chunks are not re-planned as the player walks closer, so thinning them here would leave near plants thinned.
+		var thinned: bool = has_from and not keep_all and int(info["kind"]) == KIND_TREE and not far_keep(int(ids[n]), far_share_at(Vector2(p.x - from.x, p.z - from.z).length(), view_m[int(info["kind"])], fade_start_share, far_share))
 
-		groups[key].append(n)
+		if not thinned:
+			if not groups.has(key):
+				groups[key] = PackedInt32Array()
+
+			groups[key].append(n)
 
 		if proxy:
 			var proxy_key: Array = [species_id, key[1], key[2], variant, TIER_PROXY]

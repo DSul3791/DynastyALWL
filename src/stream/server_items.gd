@@ -9832,8 +9832,14 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "event:placed:lean_to") >= 1
 		"bed_placed":
 			return _hint_count(st, "event:placed:rough_bed") >= 1
-		"workbench_placed":
-			return _hint_count(st, "event:placed:workbench") >= 1
+		"workbench_placed":   # the camp bench or the log workbench (Dino round 6)
+			return _hint_count(st, "event:placed:workbench") + _hint_count(st, "event:placed:log_workbench") >= 1
+		"has_campfire_kit":
+			return inv.count_of(table.number_of("campfire_kit")) >= 1
+		"near_fire_with_food":   # raw meat or fish in the pack, a lit fire within 4 m
+			return _lit_fire_within(_peer_pos[peer], 4.0) and _has_raw_meat(inv)
+		"near_nettle":   # no flora query for small plants on the server: the first nettles in the pack stand in for "near a nettle"
+			return inv.count_of(table.number_of("nettles")) >= 1
 		"spear_made":
 			return _hint_count(st, "made:spear") >= 1
 		"warmth_under_70":
@@ -9865,6 +9871,17 @@ func _plant_food_at_fire(peer: int, inv) -> bool:
 		for need in r["needs"]:
 			if int(need[0]) > 0 and inv.count_of(int(need[0])) >= int(need[1]) and not _cooking.get("cooks_into", {}).has(table.id_of(int(need[0]))):   # meat and fish are what the plain campfire cooks
 				return true
+
+	return false
+
+
+# True when the pack holds something the plain campfire cooks (cooking.json cooks_into: raw meat and fish).
+func _has_raw_meat(inv) -> bool:
+	for id in _cooking.get("cooks_into", {}):
+		var number: int = table.number_of(str(id))
+
+		if number > 0 and inv.count_of(number) >= 1:
+			return true
 
 	return false
 
@@ -10002,11 +10019,24 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 	if str(check.get("event", "")) == "moved_lit_night":
 		return float(st["goal_counts"].get("moved_lit_night", 0.0)) >= float(check.get("metres", 100.0))
 
+	if check.has("event") and check.has("what_any"):   # any of these kinds counts: the camp bench or the log workbench (Dino round 6)
+		var total: int = 0
+
+		for what in check["what_any"]:
+			total += int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(what)), 0))
+
+		return total >= need
+
 	if check.has("event"):
 		return int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)) >= need
 
 	if check.has("made_item"):
-		return int(st["goal_counts"].get("made:" + str(check["made_item"]), 0)) >= need
+		var made: int = int(st["goal_counts"].get("made:" + str(check["made_item"]), 0))
+
+		if bool(check.get("or_have", false)) and inv != null:   # a bought one counts too (Hob sells the stone axe; Dino round 6)
+			made = maxi(made, inv.count_of(table.number_of(str(check["made_item"]))))
+
+		return made >= need
 
 	if inv == null:
 		return false
