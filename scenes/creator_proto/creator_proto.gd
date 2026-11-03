@@ -493,19 +493,7 @@ func _build_code(body: VBoxContainer) -> void:
 
 
 func _build_preview_world() -> void:
-	var env: Environment = Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.2, 0.24, 0.28)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.62, 0.64, 0.68)
-	env.ambient_light_energy = 0.55   # lower ambient so the sun shades the form (it looked flat at 0.9; guide 31 Oct)
-	var we: WorldEnvironment = WorldEnvironment.new()
-	we.environment = env
-	_preview.add_child(we)
-	var sun: DirectionalLight3D = DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-35.0, -30.0, 0.0)
-	sun.light_energy = 1.3
-	_preview.add_child(sun)
+	Style.add_preview_world(_preview)       # warm sky, sun and fill, a patch of ground (page_style.gd)
 	var cam: Camera3D = Camera3D.new()
 	cam.fov = 30.0
 	_preview.add_child(cam)
