@@ -18,6 +18,7 @@ The long version with every row and note is `MORNING_PLAYTEST_CHECKLIST_FULL.md`
 - **Lag work:** many frame-time fixes, a lower-priority server and a "HITCH" log line for frames over 100 ms. Shift+F3 lists every playing sound with a mute switch.
 - **Hoe road builder**, ocean swimming over any bed below 0 m, a palm belt at the beach, rivers drawn as one ribbon.
 - **First-person arms** smoother and set wider (bug 4, still being tuned).
+- **Merged 3 Nov:** the owl hoots every 45-120 s instead of every 4-20 s (#165); river sources sit on flats or at the bottom in their own pond (#92), and spring caves have a stream down the floor (#183); hillside water is one stream (#167); early-game text: fire hints say F, Camp bench goal, every fish counts, bought axe counts (#53); 4 in 10 animals now appear 60-120 m from you; flora stalls after digs and chops cut (#187); sound always async (#164).
 
 ## The first 10 minutes (what you should see)
 1. [ ] **Join.** Wait: the window may freeze for about 15 seconds (known). Then you stand in a summer forest meadow by a pond, spawn 53316, 68476, ground dry.
