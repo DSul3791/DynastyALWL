@@ -395,7 +395,9 @@ func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void
 		sheet.set_hole(Vector2(_liquid_hole.x, _liquid_hole.y), Vector2(_liquid_hole.z, _liquid_hole.w), _liquid_hole_inset)
 		sheet.set_mud(maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
 
-	sheet.show_points(im, Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), float(water.get("spacing", 8.0)))
+	# The image may be finer than the grid (running water laid on the ground at 2 m, LiquidSurface._lay_fine): the same span, more texels.
+	var span_m: float = float(water.get("spacing", 8.0)) * float(int(water.get("count", 2)) - 1)
+	sheet.show_points(im, Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), span_m / float(maxi(im.get_width() - 1, 1)))
 	sheet.visible = not water_hidden
 
 
