@@ -35,3 +35,10 @@ Land cells next to the sea within about 3.8 km of spawn (53480, 68825), sampled 
 Gulls and seals listed only beach, and the nearest beach is 1.2 km away, so a new player never saw either. Now
 gulls also use salt marsh (0.6) and bare rock (0.6), and seals use bare rock (0.6). A new habitat key, `near_ocean_m`,
 keeps them on the coast: 60 m for gulls, 30 m for seals. An inland marsh or crag never gets them.
+
+## Frogs after the fresh water rule (measured on the baked water sim)
+
+Share of frog-biome ground (marsh, temperate and mixed forest) within 30 m of fresh water:
+1% within 250 m of spawn, 5% within 1 km, 5% within 4 km. With 6 habitat tries per spawn attempt, about 1 attempt
+in 4 succeeds within the spawn ring, so frogs still fill up, but now they gather at the streams and ponds instead of
+spreading through dry woods. Live water may add more wet ground than the baked sim shows.
