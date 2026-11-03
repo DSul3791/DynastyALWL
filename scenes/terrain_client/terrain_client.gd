@@ -1899,6 +1899,14 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+	_respawn_gasp()
+
+
+# Back at the respawn point after a death: the player comes to with a sharp breath (batch3 slot respawn_gasp), so a death is not a
+# silent jump. Played at the new spot, after the body moved.
+func _respawn_gasp() -> void:
+	if sound != null:
+		sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
 
 
 # The end of the cave-in death sequence: back at the respawn point, as any other death does at once.
@@ -1910,6 +1918,7 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+	_respawn_gasp()
 
 
 var _water_key: Dictionary = {}   # chunk -> hash of the water bytes last received for it (unchanged water is not redrawn)
