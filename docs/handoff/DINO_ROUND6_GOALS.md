@@ -1,5 +1,12 @@
 # Dino round 6: starter goals checked against data (3 Nov 2026, main 2e603e9, paper check)
 
+**Status, 02:40 UTC:** Sal's open PR #53 already fixes the three main findings below:
+- The workbench goal and its hint take `what_any: [workbench, log_workbench]`.
+- The axe goal takes `or_have`, so a bought axe counts.
+- The has_campfire_kit, near_nettle and near_fire_with_food hints now fire. near_nettle fires when nettles are in the pack.
+
+#53 merges cleanly with PR 198 (`git merge-tree`). Its `test_goals` has not been run in Godot yet.
+
 I checked each of the 13 starter goals in `data/items/starter_goals.json` for three things: that its item ids exist (items.json plus gathered.json), that its recipe numbers match its hint, and that its check event is sent by the server.
 
 **All clear:**
