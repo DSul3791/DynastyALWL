@@ -178,7 +178,7 @@ func _init() -> void:
 
 # River banks (Sonny 3 Nov 2026): a 5 x 5 patch of hillside falling east. Column 2 holds water at 10.0 m on a bed of 9.5 m (a channel), columns 0 and 1
 # are higher ground, column 3 is dry ground at 9.0 m, below the water, and column 4 (not beside the water) is lower still. Column 3 gets a bank (water
-# + 0.2, at most max_raise_m); the higher ground, column 4 and a shallow channel cell (surface set, too shallow to count as water) stay as they are.
+# + 0.2, at most max_raise_m) and column 4 a shoulder outside it; the higher ground and a shallow channel cell (surface set, too shallow to count as water) stay as they are.
 func _check_banks() -> void:
 	var channels: FakeChannels = FakeChannels.new()
 	var sea: PackedByteArray = PackedByteArray()
@@ -198,9 +198,11 @@ func _check_banks() -> void:
 	channels.bed[4 * 5 + 3] = 5.0               # a deep drop beside the last row: the bank is capped
 	channels.bed[0 * 5 + 3] = 9.98
 	channels.surface[0 * 5 + 3] = 10.0           # a shallow channel cell: never raised
-	var rules: Dictionary = {"water_min_depth_m": 0.05, "banks": {"enabled": true, "height_m": 0.2, "max_raise_m": 1.5}}
+	var rules: Dictionary = {"water_min_depth_m": 0.05, "banks": {"enabled": true, "height_m": 0.2, "max_raise_m": 1.5, "shoulder_drop_m": 1.0}}
 	TileDrainageScript._build_banks(channels, sea, 5, rules)
 	_check(is_equal_approx(channels.bed[2 * 5 + 3], 10.2), "dry ground below the water beside a channel gets a bank at water + 0.2 m (%.2f)" % channels.bed[2 * 5 + 3])
 	_check(is_equal_approx(channels.bed[4 * 5 + 3], 6.5), "a bank rises at most max_raise_m (%.2f)" % channels.bed[4 * 5 + 3])
-	_check(channels.bed[2 * 5 + 1] == 11.0 and channels.bed[2 * 5 + 2] == 9.5 and channels.bed[2 * 5 + 4] == 8.0, "higher ground, the channel and ground not beside the water are left alone")
+	_check(channels.bed[2 * 5 + 1] == 11.0 and channels.bed[2 * 5 + 2] == 9.5, "higher ground and the channel are left alone")
+	# The 1.2 m bank at row 2 gets a shoulder: the ground outside rises to the bank top less 1 m, by at most half the bank's lift (8.0 + 0.6).
+	_check(is_equal_approx(channels.bed[2 * 5 + 4], 8.6), "a bank over shoulder_drop_m slopes away: the ground outside it rises by half its lift (%.2f)" % channels.bed[2 * 5 + 4])
 	_check(is_equal_approx(channels.bed[0 * 5 + 3], 9.98), "a shallow channel cell is never dammed")

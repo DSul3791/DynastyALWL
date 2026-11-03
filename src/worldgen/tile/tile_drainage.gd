@@ -548,7 +548,7 @@ static func _cut_outlet_path(at: int, level: float, fill, channels, land: Packed
 # the stamp lowers the bed to the centre line but never raises the ground beyond it, so dry ground lower than the water sits right beside it and the
 # settled water runs out over it (tile 3,4: 10% of wet river cells, a third of the river cells on slopes over 10% that sit above the ground next to
 # them). Every dry cell next to a wet one whose water is higher than its ground is raised to that water plus banks.height_m, by at most
-# banks.max_raise_m, so the channel has a low bank. Only ground outside every channel stamp is raised (a shallow riffle in the channel is never dammed); water cells and the sea are left alone.
+# banks.max_raise_m, so the channel has a low bank (v2: the cap went from 1.5 to 3 m, since 759 of the 919 rim cells still leaking sat at 1.5 m, and a tall bank gets a sloping shoulder outside). Only ground outside every channel stamp is raised (a shallow riffle in the channel is never dammed); water cells and the sea are left alone.
 static func _build_banks(channels, sea: PackedByteArray, samples: int, rules: Dictionary) -> void:
 	var cfg: Dictionary = rules.get("banks", {})
 
@@ -600,4 +600,40 @@ static func _build_banks(channels, sea: PackedByteArray, samples: int, rules: Di
 		raised += 1
 		highest = maxf(highest, lift)
 
-	print("  banks: %d dry cells beside water raised, highest %.1f m" % [raised, highest])
+	# Shoulder: a bank raised more than shoulder_drop_m gets the dry ground outside it raised to its top less shoulder_drop_m (by at most half its own lift),
+	# so a tall bank on a steep hillside slopes away instead of standing as a one-cell wall.
+	var shoulder_m: float = float(cfg.get("shoulder_drop_m", 1.0))
+	var shoulder: Dictionary = {}
+
+	for index in water_by:
+		var lift: float = channels.bed[index] - before[index]
+
+		if lift <= shoulder_m:
+			continue
+
+		@warning_ignore("integer_division")
+		var row: int = index / samples
+		var column: int = index % samples
+
+		for dz in range(-1, 2):
+			for dc in range(-1, 2):
+				var nr: int = row + dz
+				var nc: int = column + dc
+
+				if nr < 0 or nc < 0 or nr >= samples or nc >= samples:
+					continue
+
+				var neighbor: int = nr * samples + nc
+
+				if wet[neighbor] == 1 or water_by.has(neighbor) or not is_nan(channels.surface[neighbor]):
+					continue
+
+				var top: float = minf(channels.bed[index] - shoulder_m, before[neighbor] + 0.5 * lift)
+
+				if top > before[neighbor] and top > float(shoulder.get(neighbor, -INF)):
+					shoulder[neighbor] = top
+
+	for index in shoulder:
+		channels.bed[index] = float(shoulder[index])
+
+	print("  banks: %d dry cells beside water raised, highest %.1f m, %d shoulder cells" % [raised, highest, shoulder.size()])
