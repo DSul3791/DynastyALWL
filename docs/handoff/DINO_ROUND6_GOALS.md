@@ -64,3 +64,24 @@ I checked 26 first-hour items: stone, stick, fibre, twine, leaves, bark, bedding
   - So a player can catch a fish before the goal opens. That still counts, because the goal checks `have_item_any` while the fish is in the pack, but it won't if the fish has already been eaten.
   - Suggest `after: twine` or `after: spear` (Sal). Low.
 - **Bed:** `shelter_needed` true in structures.json matches the guide's "under the lean-to roof". The lean-to is 2.6 x 3.4 m and the bed is 1 x 2 m, so it fits.
+
+## First night: fire heat by tier (warmth.json + cooking.json fire_tiers)
+
+Since the fire tiers came in, the heat depends on the tier:
+
+| Fire | Heat | Reach |
+|---|---|---|
+| Stick fire | +10 C | 2.5 m |
+| Firewood fire | +20 C | 4 m |
+| Log fire | +40 C | 5 m |
+
+`warmth.json` fire_radius_m 4 / fire_c 20 is only the fallback.
+- A roof does not add heat. It cuts the wind to 30 percent and keeps rain off.
+- A bed takes 10 percent off the cold.
+
+I fixed PLAYTHROUGH_GUIDE.md (warmth paragraph) and MORNING_PLAYTEST_CHECKLIST_FULL.md row 12.
+
+These still say "a fire adds 20 C within 4 m" for every fire. They are other owners' docs, not changed:
+- CLOTHING_WARMTH.md line 4.
+- SEASONALITY_WINTER.md line 25.
+- PROTOCOL.md entry 36.
