@@ -117,6 +117,7 @@ var _avatar_rig                          # the full body (ragdoll_body.gd) drawn
 var _mounted: bool = false                # the model is in the hand: the arm animations move it, not the offsets below
 var _label: Label
 var _jab_t: float = -1.0
+var _bow_cfg: Dictionary = {}               # data/items/bow.json, read on the first shot (the arrow sound follows its flight)
 var _draw_t: float = -1.0                 # a bow being drawn: seconds since the left button went down, -1 when not
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
 var _shown_number: int = 0
@@ -610,6 +611,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 				if _sound != null and has_arrow():
 					_sound.slots.play("bow_loose", _camera.global_position - _camera.global_transform.basis.z * 0.6)   # the twang and swish; with no arrow the server says so and nothing is loosed
+					_arrow_sound(int(_draw_t * 1000.0))
 
 				_draw_t = -1.0
 
@@ -738,6 +740,47 @@ func _throw() -> void:
 		var landing: Vector3 = _predict_landing(node.global_position, direction * THROW_SPEED)
 		var material: String = "wood" if _tree_near.is_valid() and _tree_near.call(landing) else "soil"
 		_sound.spear.throw(node.global_position, landing, THROW_SPEED, material)
+
+
+# The arrow's thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time, speed_max x power,
+# gravity, range_m) followed here only to place and time the sound. A hit on an animal thuds through hit_number instead.
+func _arrow_sound(draw_ms: int) -> void:
+	if _bow_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/bow.json"))
+		_bow_cfg = parsed if parsed is Dictionary else {"speed_max": 45.0}
+
+	var direction: Vector3 = -_camera.global_transform.basis.z
+	var v: Vector3 = direction * float(_bow_cfg.get("speed_max", 45.0)) * bow_power(draw_ms, _bow_cfg)
+	var at: Vector3 = _camera.global_position
+	var flown: float = 0.0
+	var t: float = 0.0
+	var range_m: float = float(_bow_cfg.get("range_m", 80.0))
+
+	while t < 6.0 and flown < range_m:
+		v.y -= THROW_GRAVITY * 0.05
+		flown += (v * 0.05).length()
+		at += v * 0.05
+		t += 0.05
+		var ground: float = _ground_below.call(at)
+
+		if not is_nan(ground) and at.y <= ground:
+			at.y = ground
+			break
+
+	_sound.spear.arrow(at, t, "wood" if _tree_near.is_valid() and _tree_near.call(at) else "soil")
+
+
+# The shot's power from the draw time, as the server works it out (bow.json): a draw under draw_min_ms is weak_power, then
+# min_power rising to 1 at draw_max_ms.
+static func bow_power(draw_ms: int, cfg: Dictionary) -> float:
+	var lo: float = float(cfg.get("draw_min_ms", 300))
+	var hi: float = float(cfg.get("draw_max_ms", 1200))
+
+	if draw_ms < lo:
+		return float(cfg.get("weak_power", 0.25))
+
+	var k: float = clampf((float(draw_ms) - lo) / maxf(hi - lo, 1.0), 0.0, 1.0)
+	return lerpf(float(cfg.get("min_power", 0.5)), 1.0, k)
 
 
 # Where a thrown spear comes down: the same flight as _process steps it (gravity, ground below), for the sound.
