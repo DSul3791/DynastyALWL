@@ -148,7 +148,7 @@ Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 
 | Wooden hammer (#161) | wooden block + stick + twine | blueprints |
 | Stone hammer (#156) | workbench: stone + stick + twine | better hammer |
 | Wooden / stone hoe (#139/#140) | sticks + twine (+stone at bench) | paths, grading |
-| **Pick axe** | stone pickaxe #186: 2 sticks + 3 stones + 2 twine at the bench, **known false: no player can learn it** | (F-01 fixed: all 274 recipes can be learned, PLAYTHROUGH_STATUS.md; the "known false" means learned, not given at start) The stone axe breaks boulders 3x slower |
+| **Pick axe** | stone pickaxe #186: 2 sticks + 3 stones + 2 twine at the bench, **known false: learned in play, not known at start** | (F-01 fixed: all 274 recipes can be learned, PLAYTHROUGH_STATUS.md; the "known false" means learned, not given at start) The stone axe breaks boulders 3x slower |
 | Fishing rod (#46) | 2 sticks + 2 twine | catch fish at water |
 | Torch (#7) | stick + 2 fibre | |
 | Chopping block (#15), chest (#14: 10 sticks + 4 twine), rock pile (#151: 45 stones) | | |
@@ -164,7 +164,7 @@ Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 
 | Stone arrow (#172) | 2 sticks + 2 feathers + 2 stones -> 4 | |
 | Quiver (#173) | 2 hide + 2 twine | |
 | Snare (#177) | 3 twine + 2 sticks | |
-| Wooden club (#189), stone mace (#202), javelin (#181), wicker shield (#201) | **known false: not craftable** | (F-01 fixed: all 274 recipes can be learned, PLAYTHROUGH_STATUS.md; the "known false" means learned, not given at start) |
+| Wooden club (#189), stone mace (#202), javelin (#181), wicker shield (#201) | **known false: learned in play, not known at start** | (F-01 fixed: all 274 recipes can be learned, PLAYTHROUGH_STATUS.md; the "known false" means learned, not given at start) |
 
 Left click jabs the spear; hold right click to aim a throw, left click throws. Hold the bow, hold click to draw.
 
