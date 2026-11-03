@@ -80,7 +80,7 @@ func _init() -> void:
 
 	grass.set_bare(patches)
 	check(grass._bare_at(100.0, 300.0) and grass._bare_at(139.3, 300.2) and grass._bare_at(120.5, 300.0), "every patch of a 40 patch path is bare, near and far")
-	check(not grass._bare_at(120.0, 301.0) and not grass._bare_at(99.0, 300.0), "grass beside the path and past its end stays")
+	check(not grass._bare_at(120.0, 301.5) and not grass._bare_at(97.5, 300.0), "grass well beside the path and past its end stays")
 	grass.set_bare([])
 	check(not grass._bare_at(100.0, 300.0), "a path taken away leaves no bare spot")
 	print("test_placed_clearing: ", "PASS" if failures == 0 else "%d failures" % failures)

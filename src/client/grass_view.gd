@@ -234,7 +234,8 @@ var trunk_margin_m: float = 0.3
 var _trunk_msec: int = -1
 var bare: Dictionary = {}                # trodden path patches: bucket (2 m) -> [Vector3 spots]; no blade grows inside BARE_M of one (set_bare)
 var bare_spots: Array = []
-const BARE_M := 0.6
+const BARE_M := 0.6                     # no blade inside this of a path patch
+const BARE_EDGE_M := 1.1                # thinning out to here, where the drawn brown fades away (it is fully gone by 1.25 m)
 const BARE_BUCKET_M := 2.0
 var third_person: bool = false          # set by the client: only then is the grass lowered round the player
 const TRUNK_EDGE_M := 0.45             # how far past the margin the pressed grass rises back
@@ -1086,8 +1087,8 @@ func set_bare(spots: Array) -> void:
 	bare = {}
 
 	for spot in spots:
-		for bz in range(int(floor((spot.z - BARE_M) / BARE_BUCKET_M)), int(floor((spot.z + BARE_M) / BARE_BUCKET_M)) + 1):
-			for bx in range(int(floor((spot.x - BARE_M) / BARE_BUCKET_M)), int(floor((spot.x + BARE_M) / BARE_BUCKET_M)) + 1):
+		for bz in range(int(floor((spot.z - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.z + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
+			for bx in range(int(floor((spot.x - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.x + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
 				var key: Vector2i = Vector2i(bx, bz)
 
 				if not bare.has(key):
@@ -1098,8 +1099,8 @@ func set_bare(spots: Array) -> void:
 	var cells: Dictionary = {}
 
 	for spot in changed:
-		for cz in range(int(floor((spot.z - BARE_M - 1.0) / CELL_M)), int(floor((spot.z + BARE_M + 1.0) / CELL_M)) + 1):
-			for cx in range(int(floor((spot.x - BARE_M - 1.0) / CELL_M)), int(floor((spot.x + BARE_M + 1.0) / CELL_M)) + 1):
+		for cz in range(int(floor((spot.z - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.z + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
+			for cx in range(int(floor((spot.x - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.x + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
 				cells[Vector2i(cx, cz)] = true
 
 	if not cells.is_empty():
@@ -1113,8 +1114,17 @@ func _bare_at(x: float, z: float) -> bool:
 		return false
 
 	for spot in list:
-		if Vector2(x - spot.x, z - spot.z).length_squared() < BARE_M * BARE_M:
+		var d: float = Vector2(x - spot.x, z - spot.z).length()
+
+		if d < BARE_M:
 			return true
+
+		if d < BARE_EDGE_M:
+			# The same fixed scatter as _cleared_at: the same spot always gives the same answer, thinning out over the fading brown.
+			var scatter: float = fposmod(sin(floorf(x * 3.0) * 12.9898 + floorf(z * 3.0) * 78.233) * 43758.5453, 1.0)
+
+			if smoothstep(BARE_M, BARE_EDGE_M, d) <= scatter:
+				return true
 
 	return false
 
