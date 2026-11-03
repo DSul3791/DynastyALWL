@@ -1599,6 +1599,7 @@ var _cleared_key: int = 0
 var _switches_applied: bool = false
 var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)
 var _cleared_cfg: Dictionary = {}
+var _loose_segs: Dictionary = {}        # loose log id -> the segment it presses, kept while it rolls (_sync_cleared)
 
 
 func _sync_cleared() -> void:
@@ -1627,6 +1628,8 @@ func _sync_cleared() -> void:
 		for spot in showroom.clear_spots():
 			spots.append(spot)
 			key = key ^ hash(Vector2(spot.x, spot.z))
+
+	var segs_now: Dictionary = {}
 
 	for id in items._world:
 		var row: Dictionary = items._world[id]
@@ -1658,7 +1661,17 @@ func _sync_cleared() -> void:
 				# A loose log lies along its node's x axis, centred on it (inventory_view._log_mesh): pressed like a felled trunk.
 				var plain: bool = loose_id == "log"
 				var node: Node3D = row["node"]
-				var seg: Array = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 1.0 if plain else 2.5, 0.11 if plain else 0.22, 0.13 if plain else 0.28)
+				var seg: Array
+
+				# A kicked log rolls (inventory_view._roll_tick): its node moves and turns every frame, and each new segment made the grass and the
+				# plants of its chunks filter again, ten times a second for the whole roll (Dave 3 Nov 2026: "every time I drop a log off my shoulder
+				# or I kick one everything lags each time it moves"). While it rolls it keeps the segment it had; the new one is taken once it rests.
+				if items._rolling.has(id) and _loose_segs.has(id):
+					seg = _loose_segs[id]
+				else:
+					seg = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 1.0 if plain else 2.5, 0.11 if plain else 0.22, 0.13 if plain else 0.28)
+
+				segs_now[id] = seg
 				lying.append(seg)
 				key = key ^ hash(Vector2(seg[0], seg[1])) ^ int(id)
 				continue
@@ -1676,6 +1689,8 @@ func _sync_cleared() -> void:
 		var pos: Vector3 = row["pos"]
 		spots.append(Vector3(snappedf(pos.x, 0.01), pos.y, snappedf(pos.z, 0.01)))
 		key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id)
+
+	_loose_segs = segs_now
 
 	for boulder_id in items._boulders:
 		var boulder: Dictionary = items._boulders[boulder_id]
