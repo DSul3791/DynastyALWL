@@ -70,8 +70,12 @@ const LAYERS := [
 # ground-cover cards beyond band 0).
 const LOD_SCALE := [1.0, 2.0, 3.0, 4.0]       # card width by band: near, middle, far, very far (reach beyond 50 m)
 const LOD_SCALE_SHORT := [1.0, 1.5, 2.1, 2.1] # the Low tier (reach 40 m)
-const BAND_SHARE := [1.0, 0.4, 0.3, 0.3]      # share of the cards drawn per band beyond 50 m (the cost cap, section 33). Dave 3 Nov: long range keeps about 30 percent of the grass, only for the look
-const TALL_MAX_LOD := 1                       # the tall grass (meadow patches) is not drawn in the far bands: at long range tall, short and flowering grass cannot be told apart (Dave 3 Nov)
+const BAND_SHARE := [1.0, 1.0, 1.0, 1.0]      # cards built per band beyond 50 m: all of them now; the thinning is a smooth gradient in the shader (data/look/grass_far.json, Dave 3 Nov), not a step per band
+const TALL_MAX_LOD := 2                       # tall grass (meadow patches) is not built in the very far band; the shader fades it out by 80 percent of the radius
+const FAR_CONFIG := "res://data/look/grass_far.json"
+var fade_start_share: float = 0.5            # THE setting (grass_far.json): the thinning starts at this share of the grass radius
+var far_share: float = 0.3                   # share of the grass cards kept at the edge
+var tall_far_share: float = 0.0              # share of the tall grass kept at 80 percent of the radius
 const NEAR_END_MIN := 14.0
 const NEAR_END_MAX := 20.0
 const CLOSURE_OFFSETS := [Vector2(0.0, 0.0), Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(3.0, 3.0), Vector2(-3.0, -3.0)]
@@ -150,6 +154,9 @@ uniform float trail_draw = 0.25;
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
 uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
+uniform float thin_start = 1.0e9;       // metres: grass thins from here (grass_far.json, set_radius)
+uniform float thin_end = 2.0e9;
+uniform float thin_min = 1.0;           // share of the cards kept at thin_end
 uniform float season_blades = 1.0;      // share of blades kept (hashed per cell): winter thins the grass
 uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
 uniform vec4 trunk_a[8];                // felled trunks near: start x, z, end x, z
@@ -200,6 +207,8 @@ void vertex() {
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);
+	// Far grass thins out smoothly: each card has a fixed random number and is kept while it is below the share left at this distance.
+	VERTEX *= step(fract(sin(dot(root_xz, vec2(39.3468, 11.135))) * 24634.6345), mix(1.0, thin_min, smoothstep(thin_start, thin_end, reach)));
 	blade_color = mix(INSTANCE_CUSTOM.rgb, INSTANCE_CUSTOM.rgb * 0.85 + vec3(0.1, 0.085, 0.04), 0.7 * worn) * (1.0 - 0.12 * flat_down);
 }
 
@@ -341,6 +350,13 @@ func setup(terrain: Node3D, flora, tables) -> void:
 		material.set_shader_parameter("wind_strength", 0.12 * float(layer["wind"]))
 		material.set_shader_parameter("backlight", float(layer["backlight"]))
 		_materials.append(material)
+
+	var far_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string(FAR_CONFIG)) if FileAccess.file_exists(FAR_CONFIG) else null
+
+	if far_cfg is Dictionary:
+		fade_start_share = clampf(float(far_cfg.get("fade_start_share", 0.5)), 0.05, 0.95)
+		far_share = clampf(float(far_cfg.get("far_share", 0.3)), 0.0, 1.0)
+		tall_far_share = clampf(float(far_cfg.get("tall_far_share", 0.0)), 0.0, 1.0)
 
 	_trample = TrampleScript.new()
 
@@ -529,6 +545,12 @@ func set_radius(meters: float) -> void:
 		# The cards shrink to nothing over the last 12 m (no pop at the edge).
 		_materials[n].set_shader_parameter("fade_start", maxf(reach - 12.0, 1.0))
 		_materials[n].set_shader_parameter("fade_end", maxf(reach, 2.0))
+		# The gradient (Dave 3 Nov): full from the player to fade_start_share of the radius, thinning to far_share at the edge; the tall grass to
+		# tall_far_share by 80 percent of the radius (it is not built beyond that).
+		var tall_layer: bool = n == 2
+		_materials[n].set_shader_parameter("thin_start", meters * fade_start_share)
+		_materials[n].set_shader_parameter("thin_end", meters * (0.8 if tall_layer else 1.0))
+		_materials[n].set_shader_parameter("thin_min", tall_far_share if tall_layer else far_share)
 
 	if not enabled:
 		_clear_all()

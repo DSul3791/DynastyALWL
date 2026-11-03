@@ -72,9 +72,10 @@ func _init() -> void:
 	var stump: Array = Lying.round_segment(Vector3(20, 0, 20), 0.3)
 	grass.trunks = [stump]
 	check(grass._flat_at(20.0, 20.0) and grass._flat_at(20.4, 20.0) and not grass._flat_at(21.0, 20.0), "grass on and beside a stump is flat, a metre out is not")
-	# Dave 3 Nov: at long range no tall grass, and about 30 percent of the normal grass, only for the look.
-	check(grass.TALL_MAX_LOD <= 1, "tall grass is not drawn in the far bands")
-	check(float(grass.BAND_SHARE[2]) <= 0.31 and float(grass.BAND_SHARE[3]) <= 0.31, "the far bands keep about 30 percent of the grass")
-	check(float(grass.BAND_SHARE[0]) >= 1.0, "near grass stays at full density")
+	# Dave 3 Nov: a gradient from full density at fade_start_share of the radius to far_share at the edge, no tall grass at the end.
+	check(grass.fade_start_share >= 0.05 and grass.fade_start_share <= 0.95, "the fade starts between 5 and 95 percent of the radius (%f)" % grass.fade_start_share)
+	check(grass.far_share <= 0.31 and grass.far_share > 0.0, "the edge keeps about 30 percent of the grass (%f)" % grass.far_share)
+	check(grass.tall_far_share == 0.0, "no tall grass at the end of the fade")
+	check(float(grass.BAND_SHARE[0]) >= 1.0 and float(grass.BAND_SHARE[1]) >= 1.0, "cards are built in full up to the far bands; the shader does the thinning")
 	print("test_placed_clearing: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
