@@ -70,6 +70,7 @@ const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink(
 var _drink_msec: int = 0
 var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
+var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
@@ -3347,7 +3348,23 @@ func _fire_label(entry: Dictionary, number: int) -> String:
 
 
 func _on_worn(numbers: PackedInt32Array) -> void:
+	var first: bool = worn.is_empty()
+	var changed: Array = []
+	var ids: Array = []
+
+	for i in numbers.size():
+		var before: int = worn[i] if i < worn.size() else 0
+
+		if numbers[i] != 0:
+			ids.append(table.id_of(numbers[i]))
+
+		if not first and numbers[i] != before:
+			changed.append(table.id_of(numbers[i] if numbers[i] != 0 else before))
+
 	worn = numbers
+
+	if worn_event.is_valid():
+		worn_event.call(changed, ids)
 
 	if _weight_label != null:
 		_refresh_weight()
