@@ -1406,7 +1406,7 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 	var sites = TileSitesScript.new()
 	sites.setup(settings, tile_rules, tables)
 	var started: int = Time.get_ticks_msec()
-	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth)
+	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow)
 	print("tile sites built in %d ms: %d caves, %d lairs" % [Time.get_ticks_msec() - started, sites.caves.size(), sites.lairs.size()])
 	var rules: Dictionary = tile_rules["sites"]
 	var samples: int = water.samples
@@ -1495,6 +1495,32 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 	_check(exposed > 0 and unknown_ore == 0, "some caves expose ore bodies (%d)" % exposed)
 	_check(near_town == 0, "no cave opens near the starter spawn or town block")
 	_check(duplicate_ids == 0, "site ids do not clash with geology ids")
+
+	# Spring caves (Dave 3 Nov 2026): the mouth on the brook head, every spring in a chamber at the back and higher than the mouth, so the stream runs out.
+	var spring_caves: int = 0
+	var spring_bad: int = 0
+
+	for cave in sites.caves:
+		if str(cave["cave_kind"]) != "spring_cave":
+			continue
+
+		spring_caves += 1
+		var mouth: Array = cave["nodes"][0]
+		var mouth_index: int = int(round((float(mouth[2]) - origin.y) / spacing)) * samples + int(round((float(mouth[0]) - origin.x) / spacing))
+		var chamber_nodes: Array = []
+
+		for chamber in cave["chambers"]:
+			chamber_nodes.append(int(chamber["node"]))
+
+		if water.water_class[mouth_index] != 3 or cave["springs"].is_empty():
+			spring_bad += 1
+
+		for spring in cave["springs"]:
+			if not chamber_nodes.has(int(spring["node"])) or float(cave["nodes"][int(spring["node"])][1]) <= float(mouth[1]) or float(spring["m3_s"]) <= 0.0:
+				spring_bad += 1
+
+	print("  spring caves %d" % spring_caves)
+	_check(spring_bad == 0, "spring caves open on a brook head with springs at the back, above the mouth (%d of %d wrong)" % [spring_bad, spring_caves])
 	_check(sites.starter.has("spawn_point") and sites.starter.has("town_block") and not sites.harbor.is_empty(),
 		"the starter tile has a spawn point, town block and harbor")
 
@@ -1511,7 +1537,7 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 
 	var again = TileSitesScript.new()
 	again.setup(settings, tile_rules, tables)
-	again.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth)
+	again.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow)
 	_check(str(again.caves) == str(sites.caves) and str(again.lairs) == str(sites.lairs) and str(again.starter) == str(sites.starter),
 		"sites are reproducible")
 	return sites
