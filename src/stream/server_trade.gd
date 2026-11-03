@@ -135,6 +135,7 @@ func wanted_order(peer: int, npc_id: String) -> String:
 	done[key] = day
 	st["wanted_done"] = done
 	save()
+	items._goal_event(peer, "wanted_order")   # the starter goal "Fill Hob's order"
 	return "Just what I wanted. Here is %s." % items._coin_words(pay)
 
 
@@ -394,6 +395,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._gain_quiet = false
 	items._dirty = true
 	items.add_coins(peer, total, "trade")
+	items._goal_event(peer, "sold")   # the starter goal "Sell to Hob"
 	var lot_note: String = " %d left, he buys %ss %d at a time." % [left_over, items.table.name_of(number2).to_lower(), lot] if left_over > 0 else ""
 	return "Sold %d %s for %s.%s" % [count, items.table.name_of(number2).to_lower(), items._coin_words(total), lot_note]
 

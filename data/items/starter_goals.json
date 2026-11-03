@@ -205,6 +205,36 @@
 			"reward": {
 				"coin_copper": 10
 			}
+		},
+		{
+			"id": "sell",
+			"title": "Sell to Hob",
+			"hint": "Hob the trader buys what you pick. Talk to him with E, ask what he sells, and sell him a lot of stones.",
+			"after": [
+				"fibre"
+			],
+			"check": {
+				"event": "sold",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 2
+			}
+		},
+		{
+			"id": "order",
+			"title": "Fill Hob's order",
+			"hint": "Ask Hob: Any order for today? Pick what he wants and bring it back. He pays once a day.",
+			"after": [
+				"sell"
+			],
+			"check": {
+				"event": "wanted_order",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 3
+			}
 		}
 	]
 }
