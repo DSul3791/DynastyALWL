@@ -141,6 +141,9 @@ var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
 var _water_answered_msec: Dictionary = {}   # peer -> last time its water request was answered
+var _water_window: Rect2 = Rect2()          # the live water window (world m) from the last flow packet: water only moves inside it
+var _water_window_told: Rect2 = Rect2()     # the window the last "water moved" named
+var _cave_streams_sent: Dictionary = {}     # peer -> {tile: true}: spring cave streams already sent (protocol 87)
 var _water_sent: Dictionary = {}            # peer -> {chunk: hash of the water bytes it holds}: unchanged water is not sent again
 var _gather_msec: Dictionary = {}           # peer -> last gather request handled
 const BURY_QUEUE_MAX := 4000        # digs waiting for the plant check; beyond it a dig skips the check
@@ -339,6 +342,10 @@ func _ready() -> void:
 
 		if tile_data.placeholder:
 			return false
+
+		# Spring cave streams run under the ground the water map knows (Dave 3 Nov 2026): drink and fill there too.
+		if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
+			return true
 
 		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
 			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
@@ -833,6 +840,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_warm_home.erase(peer_id)
 	_water_answered_msec.erase(peer_id)
 	_water_sent.erase(peer_id)
+	_cave_streams_sent.erase(peer_id)
 	_gather_msec.erase(peer_id)
 	_npc_sent.erase(peer_id)
 	_animal_sent.erase(peer_id)
@@ -957,6 +965,36 @@ func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 	@warning_ignore("integer_division")
 	for n in range(mini(chunks.size() / 2, WATER_CHUNKS_MAX)):
 		_queue_water(peer_id, Vector2i(chunks[2 * n], chunks[2 * n + 1]))
+		_send_cave_streams(peer_id, Vector2i(chunks[2 * n], chunks[2 * n + 1]))
+
+
+# Spring caves (Dave 3 Nov 2026): the streams down a tile's caves, and its cave dens (den sounds), go to a peer once, with the first water it asks for in that tile. Only from a tile
+# already loaded (loading one here would stall the main thread); the next water request tries again.
+func _send_cave_streams(peer_id: int, chunk: Vector2i) -> void:
+	var x: float = (float(chunk.x) + 0.5) * flora.placer.chunk_m
+	var z: float = (float(chunk.y) + 0.5) * flora.placer.chunk_m
+
+	if not generator.tile_cached(x, z):
+		return
+
+	var tile: Vector2i = generator.tile_of(x, z)
+	var sent: Dictionary = _cave_streams_sent.get(peer_id, {})
+	_cave_streams_sent[peer_id] = sent
+
+	if sent.has(tile):
+		return
+
+	sent[tile] = true
+	var data = generator.get_tile(tile)
+
+	if data == null or data.placeholder:
+		return
+
+	if not data.cave_streams.is_empty():
+		net.cave_streams.rpc_id(peer_id, tile, data.cave_streams)
+
+	if not data.cave_dens.is_empty():
+		net.cave_dens.rpc_id(peer_id, tile, data.cave_dens)
 
 
 # Lag review (Dave 2 Nov 2026): every "water moved" the client asks again for all ~22 chunks it holds, and every answer was
@@ -1089,6 +1127,8 @@ func _poll_water() -> void:
 		if not flow.is_empty():
 			# shortcut: sent to everyone each publish (about 30 KB packed); a player who joins gets the next one, none is kept for late joiners
 			net.deliver_water_flow.rpc(flow["origin"], flow["w"], flow["h"], flow["cell"], flow["raw"], flow["bytes"])
+			var cell: float = float(flow["cell"])
+			_water_window = Rect2(Vector2(flow["origin"]) - Vector2(0.5, 0.5) * cell, Vector2(float(flow["w"]), float(flow["h"])) * cell)
 
 	if not updates.is_empty():
 		for update in updates:
@@ -1109,7 +1149,14 @@ func _poll_water() -> void:
 			print("server: water update %d (%d tiles), %d wet squares on the starter tile" % [_water_updates, updates.size(), _wet_centre])
 
 		flora.clear_water()
-		net.water_changed.rpc()
+
+		# Lag review (Steve 3 Nov 2026): the levels change only inside the live window (outside it the baked ones stay, water_hub2.publish_levels),
+		# so clients re-ask only for the chunks there and where the window was, not for every chunk they hold. No window known: everything.
+		if _water_window.has_area():
+			net.water_changed_in.rpc(_water_window.merge(_water_window_told) if _water_window_told.has_area() else _water_window)
+			_water_window_told = _water_window
+		else:
+			net.water_changed.rpc()
 
 		if not water_live.busy:
 			net.water_rate.rpc(water_live.rate, false, water_live.rate * WATER_BASE_RATE)
@@ -1577,6 +1624,7 @@ func _reset_terrain_edits() -> void:
 	if tunnels != null:
 		tunnels.set_enabled(tunnels.enabled)
 
+	_cave_streams_sent.clear()
 	net.ground_reset.rpc(store.tiles_stamp, _starter_stamp())
 
 
@@ -2024,6 +2072,7 @@ func _process(delta: float) -> void:
 
 			_start_water()
 
+			_cave_streams_sent.clear()
 			net.ground_reset.rpc(store.tiles_stamp, _starter_stamp())
 			print("server: the tile files changed (a bake finished); generated ground thrown away, players reload")
 

@@ -30,15 +30,15 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 7. Trigger: 2 twine, 1 stone, 1 stick. Line: "Make a Stone axe: 1 stone, 1 stick, 2 twine." (recipe 2, 10 s). Check: stone axe in the pack.
 8. Trigger: axe made. Line: "Tools only work from the hotbar. Drag the axe onto a box at the bottom, or press E on it in the inventory, then press its number key to hold it." Check: axe held.
 9. Trigger: axe held, a standing tree within 20 m. Line: "Walk up to a tree and click again and again. Thin trees fall in about 10 blows, a thick oak in about 20." (blows = 4 + 30 x trunk thickness in metres, at least 4.) Check: a tree fell.
-10. Trigger: tree down. Line (changes with the 2 Nov auto-split, bug 11 and #49: the trunk breaks into logs and drops its sticks, leaves, bark, seeds and root ball by itself about 2 s after landing, so the old line applies only to a trunk worked by hand; suggested new line, for Dave to decide: "Your tree has broken up. Press E to take the sticks and leaves, and a log on your shoulder."): "Keep striking the fallen trunk: first its branches come off (sticks and leaves), then logs." (3 branch blows: 1-3 sticks and 1-3 leaves each; then a log every 3 blows, carried on your shoulder; Q puts it down.) Check: 6 leaves and 10 sticks in the pack. **Do not tell the player to make a chopping block yet (F-16).**
+10. Trigger: tree down. Line (Dave, QA 2 Nov, now hint "trunk"): "Your tree is down. Gather what fell: sticks, leaves, bark and logs." About 2 s after landing the trunk breaks up by itself (bug 11 and #49); a trunk already hit with the axe, or one with no room, stays a trunk to cut by hand (3 branch blows of sticks and leaves, then a log every 1-2 blows). Check: 6 leaves and 10 sticks in the pack. **Do not tell the player to make a chopping block yet (F-16).**
 
 ## Minute 12 to 18: fire
 
 11. Trigger: 6 sticks and 3 stones. Line: "Make a Campfire kit: 6 sticks, 3 stones." (recipe 4, 8 s). Check: campfire kit in the pack.
 12. Trigger: kit made. Line: "Hold the kit and click where the ring shows. Yellow: open ground, rain puts the fire out. Green: under a tree's crown, the fire survives rain. Stand under a big tree and the ring turns green." Check: a fire placed.
 13. Trigger: fire placed, unlit. Line: "A laid fire is not lit yet. Stand close and press E: you spend one plant fibre as tinder." (tinder: plant fibre, birch bark, tinder, tinder fungus; open fires will not light in rain.) Check: fire burning.
-14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with E: a stick burns 2 real minutes, firewood 20 minutes, a log 3 hours (3+ firewood makes a bigger fire, 3+ logs the biggest)." Check: one fuel added.
-15. Trigger: hunger under 80 %. Line: "Hold E at the fire to roast raw meat, fish or shellfish. The campfire cooks only meat: berries, nuts, roots and mushrooms are cooked in the campfire pot, hearth or oven." Check: one piece of meat roasted (a berry is refused at the campfire).
+14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with F (the fire store; closing it lays the wood on the fire): a stick burns 2 real minutes, firewood 20 minutes, a log 3 hours (3+ firewood makes a bigger fire, 3+ logs the biggest)." Check: one fuel added.
+15. Trigger: hunger under 80 %. Line: "Press F at the burning fire and put raw meat, fish or shellfish in its store; it cooks there. The campfire cooks only meat: berries, nuts, roots and mushrooms are cooked in the campfire pot, hearth or oven." Check: one piece of meat roasted (a berry is refused at the campfire).
 
 ## Minute 18 to 26: shelter and bed
 
@@ -58,7 +58,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed, or the player tried to roast one at the fire and was refused. Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine into a Campfire pot and set it by the fire." (recipes 21 and 165.) Check: campfire pot kit made.
 24. Trigger: campfire pot placed. Line: "Add 3 berries and water to the pot for Stewed berries. Nettle leaves make tea, eggs make a boiled egg. Baked food (roots, nuts, flatbread) needs a clay hearth: 10 bricks, 6 clay and 4 stones, built with a hammer. A brick is 2 clay fired at the campfire." Check: first pot dish cooked.
 
-Hints: data/items/hints.json already has "cook_rule" ("Roast raw meat on the campfire. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.
+Hints: data/items/hints.json already has "cook_rule" ("Put raw meat in the campfire with F. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.
 
 
 ## What the tutorial must NOT promise yet
@@ -119,7 +119,7 @@ The goal list is the 13 starter goals of `data/items/starter_goals.json` in this
 | 7 | berries | Eat something wild | fire |
 | 8 | shelter | Build a lean-to | fire |
 | 9 | bed | Make a bed | shelter |
-| 10 | workbench | Build a workbench | axe |
+| 10 | workbench | Build a Camp bench | axe |
 | 11 | spear | Make a spear | twine |
 | 12 | knife | Make a stone knife and work a kill | spear |
 | 13 | fish | Catch a fish | workbench |

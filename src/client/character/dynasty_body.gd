@@ -9,6 +9,7 @@ extends Node3D
 # shoulder does not raise the arm, the lie clip is the nearest of Dave's, the first-person arms stay the ragdoll arms.
 
 const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
+const ARMS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"   # dynasty_arms.gd PARTS_GLB, warmed with the body
 const P := "mixamorig_"
 const WornLook := preload("res://src/client/worn_look.gd")
 
@@ -73,6 +74,27 @@ var _model: Node3D
 
 # True when Dave's glb is imported and holds a skeleton, a mesh and an AnimationPlayer. Checked once per run; when it is not (a fresh checkout before `godot --import`) one line says so and the
 # game keeps the body it wore before (my_character.gd make_avatar), so the player is never bodiless.
+# Dave 3 Nov 2026 (log: a 3 s freeze at the welcome): the body file (two 4096 textures) and the arm parts file (365 thousand triangles) were read on
+# the main thread when the player was made. warm() starts both on loader threads as the client starts, long before the welcome; load_warm()
+# takes the finished one (waiting only if it is still loading), or reads it the old way when nothing was started.
+static func warm() -> void:
+	for path in [GLB, ARMS_GLB]:
+		if ResourceLoader.exists(path) and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			ResourceLoader.load_threaded_request(path, "", true)
+
+
+static func load_warm(path: String) -> Resource:
+	var status: int = ResourceLoader.load_threaded_get_status(path)
+
+	if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS or status == ResourceLoader.THREAD_LOAD_LOADED:
+		var got: Resource = ResourceLoader.load_threaded_get(path)
+
+		if got != null:
+			return got
+
+	return load(path)
+
+
 static func available() -> bool:
 	if force_unavailable:
 		return false
@@ -81,7 +103,7 @@ static func available() -> bool:
 		_checked = 0
 
 		if ResourceLoader.exists(GLB):
-			var packed: PackedScene = load(GLB) as PackedScene
+			var packed: PackedScene = load_warm(GLB) as PackedScene
 
 			if packed != null:
 				var probe: Node = packed.instantiate()
@@ -106,7 +128,7 @@ func _init() -> void:
 		return
 
 	if _scene == null:
-		_scene = load(GLB) as PackedScene
+		_scene = load_warm(GLB) as PackedScene
 
 	# Dave's rig faces +Z; the game faces -Z.
 	_model = Node3D.new()
