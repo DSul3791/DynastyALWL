@@ -294,7 +294,7 @@ func _strength(at: Vector3) -> float:
 
 # peers: peer id -> position. Returns {"quake": [[peer, stage, strength_pm, point]], "collapse": [{"fills": [[centre, radius]], "victims": [peer], "cells": n}]}.
 func tick(now_msec: int, peers: Dictionary) -> Dictionary:
-	var out: Dictionary = {"quake": [], "collapse": [], "leak": [], "warn": []}
+	var out: Dictionary = {"quake": [], "collapse": [], "leak": [], "warn": [], "warn_at": []}   # warn_at: [peer, cell pos, span, need] per warning, for the server log
 
 	if not enabled:
 		return out
@@ -332,6 +332,7 @@ func tick(now_msec: int, peers: Dictionary) -> Dictionary:
 						seen[peer] = true
 						cell["warned"] = seen
 						out["warn"].append(peer)
+						out["warn_at"].append([peer, cell["pos"], float(cell["span"]), float(cell["need"])])
 
 					if stage > int(best[0]) or (stage == int(best[0]) and strength_of(f) > float(best[1])):
 						loudest[peer] = [stage, strength_of(f), cell["pos"]]

@@ -443,6 +443,9 @@
 				"tropical_forest": 15,
 				"mangrove": 3
 			},
+			"belt": {
+				"per_hectare": 10
+			},
 			"moisture": [
 				60,
 				255
@@ -1033,6 +1036,9 @@
 				"mixed_forest": 150,
 				"tropical_forest": 300,
 				"boreal_forest": 40
+			},
+			"belt": {
+				"per_hectare": 120
 			},
 			"moisture": [
 				120,

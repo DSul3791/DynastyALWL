@@ -79,6 +79,10 @@ func quake(stage: int, strength: float, at: Vector3) -> void:
 		_once("bracing_rumble", at, lerpf(0.0, 14.0, strength))
 		_quake_next["rumble"] = now + 2.3
 
+		if now >= float(_quake_next.get("log", 0.0)):   # where each rumble comes from (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave), at most every 10 s
+			print("sound rumble: tunnel quake stage %d strength %.2f from %s" % [stage, strength, str(at)])
+			_quake_next["log"] = now + 10.0
+
 	if stage >= 3 and now >= _quake_next.get("dust", 0.0):
 		_once("dust_patter", at)
 		_quake_next["dust"] = now + _rng.randf_range(1.0, 2.0)

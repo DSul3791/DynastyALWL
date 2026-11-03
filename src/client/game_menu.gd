@@ -4,6 +4,7 @@ extends RefCounted
 # (green On / red Off), the sound test as its own scrolling page, and one Admin button at the bottom for the developer buttons
 # (SHOW_ADMIN false hides it). Moved out of terrain_client.gd; it drives the client through `_c`.
 
+const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const WaterChoice := preload("res://src/water2/water_choice.gd")
@@ -25,6 +26,7 @@ var _vsync_switch
 var _clear_day_switch
 var _fullscreen_switch
 var _voice_switch
+var _damage_switch
 var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
@@ -150,6 +152,7 @@ func refresh() -> void:
 		_admin_mode_switch.set_on(_c.items == null or _c.items.admin_craft)
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
+		_damage_switch.set_on(_c.display.damage_numbers)
 		_hints_switch.set_on(_c.items == null or _c.items.inner_settings.hints)
 		_dialogue_switch.set_on(_c.items == null or _c.items.inner_settings.dialogue)
 		_clear_day_switch.set_on(_c.weather_look.clear_day)
@@ -195,6 +198,13 @@ This game: build %d, commit %s" % [_c.BUILD, _c._commit]
 
 const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
 var _idle_button: Button
+var _temp_button: Button
+
+
+func _refresh_temp_button() -> void:
+	if _temp_button != null:
+		_temp_button.text = "Temperature: %s (change)" % ("°F" if DisplaySettingsScript.fahrenheit else "°C")
+
 
 
 func _refresh_idle_button() -> void:
@@ -276,7 +286,7 @@ func _build_sound() -> void:
 			_c.sound.set_level(level[0], value)
 			note.text = "%s %d %%" % [level[1].get_slice(" (", 0), roundi(value * 100.0)])
 
-	for group in [["wind", "Wind volume"], ["nature", "Nature and water volume"], ["steps", "Footsteps and body volume"]]:
+	for group in [["wind", "Wind volume"], ["surf", "Surf (sea waves) volume"], ["nature", "Nature and water volume"], ["steps", "Footsteps and body volume"]]:
 		_slider(sound, group[1], float(_c.sound.mix_level[group[0]]), func(value: float):
 			_c.sound.set_mix(group[0], value)
 			note.text = "%s %d %%" % [group[1], roundi(value * 100.0)])
@@ -294,6 +304,17 @@ func _build_gameplay() -> void:
 		_refresh_idle_button()
 		note.text = "Idle timeout: the game closes after %d minutes without the mouse or a key (saved)." % _c.display.idle_minutes)
 	_refresh_idle_button()
+	_damage_switch = _switch_row(gameplay, "Damage numbers", func(on: bool):
+		_c.display.damage_numbers = on
+		_c._save_display())
+	_temp_button = _button(gameplay, "", func():
+		DisplaySettingsScript.fahrenheit = not DisplaySettingsScript.fahrenheit
+		_c._save_display()
+		_refresh_temp_button()
+		if _c.items != null and _c.items.has_method("_update_panel_bars"):
+			_c.items._update_panel_bars()
+		note.text = "Temperature shows in degrees %s (saved)." % ("Fahrenheit" if DisplaySettingsScript.fahrenheit else "Celsius"))
+	_refresh_temp_button()
 	_voice_switch = _switch_row(gameplay, "NPC voice", func(on: bool):
 		if _c._npc_voice != null:
 			_c._npc_voice.set_enabled(on))

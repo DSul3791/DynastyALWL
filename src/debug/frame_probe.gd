@@ -1,5 +1,7 @@
 extends RefCounted
 
+const FreezeWatch := preload("res://src/debug/freeze_watch.gd")
+
 # Owner (2026-10-19): find what makes the game pause, as a regular routine while coding.
 # Times named pieces of main-thread work. Wrap a piece with
 #   var t: int = FrameProbe.start()  ...  FrameProbe.stop("flora", t)
@@ -19,6 +21,11 @@ static var _win: Dictionary = {}          # name -> us since window_reset (the G
 static var _win_frames: int = 0
 static var _win_process_ms: float = 0.0   # engine monitors summed per frame since window_reset (the GPU probe's engine rows)
 static var _win_physics_ms: float = 0.0
+const FREEZE_MS := 500.0
+const HITCH_MS := 100.0                  # a frame this long prints a HITCH line at once (rate-limited)
+static var _hitch_next_msec: int = 0
+static var context: Callable = Callable()   # returns a short text about the game's state (set by the client), printed with every freeze line
+static var _freeze_prints: int = 0
 
 
 static func start() -> int:
@@ -27,6 +34,7 @@ static func start() -> int:
 
 static func stop(name: String, started: int) -> void:
 	var used: int = Time.get_ticks_usec() - started
+	FreezeWatch.note(name)   # the last piece finished, for the freeze watch thread
 
 	if used > 2500 and OS.has_environment("SPIKES"):
 		print("SPIKE %s %.1f ms at %d" % [name, float(used) / 1000.0, Time.get_ticks_msec()])
@@ -48,6 +56,25 @@ static func frame(delta: float) -> void:
 	_win_physics_ms += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 	var ms: float = delta * 1000.0
 
+	# Dave 2 Nov 2026: 4-10 s freezes when trees and grass spawn in. A freeze prints at once (not only in the exit report) with what this frame
+	# timed, the engine's script and physics times, draw calls and video memory, and the game's own state: "nothing measured" with a small
+	# script time means the wait was in the engine or the graphics driver, not in our scripts.
+	if ms > FREEZE_MS and _frames > 30 and _freeze_prints < 40:
+		_freeze_prints += 1
+		var named: PackedStringArray = PackedStringArray()
+
+		for name in _this_frame:
+			if int(_this_frame[name]) > 1000:
+				named.append("%s %.0f" % [name, float(_this_frame[name]) / 1000.0])
+
+		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s" % [
+			ms, _frames,
+			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
+			int(Performance.get_monitor(Performance.OBJECT_COUNT)), ", ".join(named) if not named.is_empty() else "nothing",
+			str(context.call()) if context.is_valid() else ""
+		])
+
 	if ms > SLOW_MS and _frames > 30:
 		_slow_count += 1
 		var parts: Dictionary = {}
@@ -59,6 +86,27 @@ static func frame(delta: float) -> void:
 		parts["~script process"] = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 		parts["~physics step"] = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 		parts["~at frame"] = float(_frames)
+
+		# Dave 3 Nov 2026: "every two steps or three it pauses for half a second". The slow-frame breakdown was only in the exit report; a hitch
+		# of 100 ms or more now prints at once with its biggest timed pieces (at most one line every 2 s), so a normal play log names it.
+		var now_msec: int = Time.get_ticks_msec()
+
+		if ms >= HITCH_MS and now_msec >= _hitch_next_msec:
+			_hitch_next_msec = now_msec + 2000
+			var named: Array = []
+
+			for name in _this_frame:
+				named.append([name, float(_this_frame[name]) / 1000.0])
+
+			named.sort_custom(func(a, b): return a[1] > b[1])
+			var text: PackedStringArray = PackedStringArray()
+
+			for k in range(mini(named.size(), 5)):
+				text.append("%s %.0f" % [named[k][0], named[k][1]])
+
+			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
+				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])
 

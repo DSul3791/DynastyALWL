@@ -276,6 +276,7 @@ const SEA_MURK_RISE_S := 120.0
 const SEA_MURK_CLEAR_S := 360.0
 var land_murk: float = 0.0
 var sea_murk: float = 0.0
+var _liquid_rain: float = 0.0   # what the liquid water sheets were last told (liquid_surface.gd, rain rings)
 
 
 func _update_water_murk(delta: float, storm: float, rain: float) -> void:
@@ -285,6 +286,10 @@ func _update_water_murk(delta: float, storm: float, rain: float) -> void:
 
 	if absf(land - land_murk) > 0.0005 and _client.flora != null:
 		_client.flora.set_storm_murk(land)
+
+	if absf(rain - _liquid_rain) > 0.02 and _client.flora != null and _client.flora.is_inside_tree():
+		_liquid_rain = rain
+		_client.flora.get_tree().call_group("liquid_sheet", "set_rain", clampf(rain, 0.0, 1.0))
 
 	if absf(sea - sea_murk) > 0.0005 and _client.sea != null:
 		var material: ShaderMaterial = _client.sea.material_override as ShaderMaterial

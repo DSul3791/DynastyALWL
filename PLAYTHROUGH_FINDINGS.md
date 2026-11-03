@@ -366,11 +366,11 @@ New small findings: an odd concentric-square textured cube lies at the lower lef
 Smoke test result in one line: the select page, creator, 3-minute windowed walk and 16 headless client self-tests all ran; one SCRIPT ERROR (`run_chest_test`, the chest never opened in the shared-server run, re-run alone pending); `database is locked` x2 in the server log; `Error loading voxel block` on every client start; no shader errors.
 
 <!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->
-## Scoreboard: FIXED / STILL BROKEN (2026-11-01)
+## Scoreboard: FIXED / STILL BROKEN (2026-11-02)
 
 | id | what | status | evidence (short) |
 |---|---|---|---|
-| F-01/F-24 | recipes can be learned | **FIXED** | 281 of 281 recipes learnable or locked with a future product (blockers: none) |
+| F-01/F-24 | recipes can be learned | **FIXED** | 274 of 274 recipes learnable or locked with a future product (blockers: none) |
 | F-02 | flint can be picked up | **FIXED** | flint: now |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now |
 | F-04 | CONTROLS.md campfire cost matches recipe | **FIXED** | text no longer present |
