@@ -2375,12 +2375,17 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
 		return
 
 	var pair: Array = _grade_points.get(peer, [null, null])
+	var here: Vector3 = Vector3(at.x, h, at.z)
 
-	if which == 0:
-		pair = [Vector3(at.x, h, at.z), null]
-	elif pair[0] != null:
-		pair[1] = Vector3(at.x, h, at.z)
-		_road_start(peer, pair[0], pair[1])
+	# Surveyor mode (Dave 3 Nov 2026): every marker after the first joins to the one before it, and that road is queued to build behind the player.
+	# A first marker (which 0), or one more than ROAD_MAX_M from the last, starts a new chain instead.
+	var last: Variant = pair[1] if pair[1] != null else pair[0]
+
+	if which == 0 or last == null or Vector2(here.x - last.x, here.z - last.z).length() > ROAD_MAX_M:
+		pair = [here, null]
+	else:
+		_road_start(peer, last, here)
+		pair = [last, here]
 
 	_grade_points[peer] = pair
 
@@ -2396,7 +2401,7 @@ const ROAD_WEAR_EVERY := 4
 const ROAD_HALF_WIDTH_M := 1.0
 const ROAD_DEPTH_M := 0.5
 const ROAD_SECTION_M := 3.0   # the ground is averaged over sections this long along the line
-var _roads: Dictionary = {}   # peer -> {"a": Vector3, "b": Vector3, "n": stations, "i": next station, "wait": seconds to the next one}
+var _roads: Dictionary = {}   # peer -> queue (Array) of jobs, built one at a time, each {"a": Vector3, "b": Vector3, "n": stations, "i": next station, "wait": seconds to the next one}
 
 
 func _road_start(peer: int, a: Vector3, b: Vector3) -> void:
@@ -2410,8 +2415,11 @@ func _road_start(peer: int, a: Vector3, b: Vector3) -> void:
 		_say(peer, "The road is longer than %d m: set B nearer to A." % int(ROAD_MAX_M))
 		return
 
-	_roads[peer] = {"a": a, "b": b, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
-	_say(peer, "Road marked: the ground is being levelled and trodden from A to B.")
+	if not _roads.has(peer):
+		_roads[peer] = []
+
+	_roads[peer].append({"a": a, "b": b, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0})
+	_say(peer, "Road marked: it builds behind you from marker to marker. Keep setting markers to carry on.")
 
 
 func _road_tick(delta: float) -> void:
@@ -2419,23 +2427,28 @@ func _road_tick(delta: float) -> void:
 		return
 
 	for peer in _roads.keys():
-		var job: Dictionary = _roads[peer]
+		var queue: Array = _roads[peer]
+		var inv = inventory_of(peer)
+
+		if queue.is_empty() or inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
+			_roads.erase(peer)
+			continue
+
+		var job: Dictionary = queue[0]
 		job["wait"] = float(job["wait"]) - delta
 
 		if float(job["wait"]) > 0.0:
 			continue
 
 		job["wait"] = ROAD_STEP_S
-		var inv = inventory_of(peer)
-
-		if inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
-			_roads.erase(peer)
-			continue
-
 		var i: int = int(job["i"])
 
 		if i >= int(job["n"]):
-			_roads.erase(peer)
+			queue.pop_front()
+
+			if queue.is_empty():
+				_roads.erase(peer)
+
 			continue
 
 		_road_station(peer, inv, job["a"], job["b"], i, int(job["n"]))

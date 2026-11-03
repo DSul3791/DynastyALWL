@@ -878,6 +878,22 @@ func _init() -> void:
 	check(patches_of.call() >= road_patches + 3, "setting point B lays a path along the A to B line by itself (%d patches more)" % (patches_of.call() - road_patches))
 	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= 3 * 13, "and levels the ground along it, a few edits a station (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	check(m._roads.is_empty(), "the road job ends when the line is done")
+	# Surveyor mode: a third marker joins to B and queues the next road behind the first.
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 6.0))
+	check(m._roads.has(1) and m._roads[1].size() == 1, "a further marker queues a road from the last marker")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 12.0))
+	check(m._roads[1].size() == 2, "markers keep queueing roads one after another")
+
+	for step in 80:
+		m._road_tick(0.6)
+
+	check(m._roads.is_empty(), "the queued roads all finish")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 0.0))
+
+	for step in 30:
+		m._road_tick(0.6)
+
 	digs.clear()
 	fills.clear()
 	hoe_wear = m.inventory_of(1).wear[hoe_slot]

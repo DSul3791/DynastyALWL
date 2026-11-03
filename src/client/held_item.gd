@@ -1211,27 +1211,25 @@ func _grade_point_here() -> void:
 		_inv._on_notice("Aim the hoe at the ground within reach to set a point")
 		return
 
-	var setting_b: bool = _grade_has_a and not _grade_has_b
+	# Surveyor mode: after the first marker every new marker joins to the one before it, and the server builds the road behind the player.
+	# A marker more than 40 m from the last one starts a new road.
+	var chained: bool = _grade_has_a and _grade_a.distance_to(hit["position"]) <= 40.0
 
-	if setting_b:
-		_grade_has_b = true
-	else:
-		_grade_has_a = true
-		_grade_has_b = false
+	_grade_has_a = true
+	_grade_has_b = chained
+	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if chained else 0, 0, hit["position"])
+	_inv._on_notice("Marker set: the road builds behind you. Shift + right click to carry on" if chained else "Marker 1 set: walk on and Shift + right click again, the road builds behind you")
 
-	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if setting_b else 0, 0, hit["position"])
-	_inv._on_notice("Point B set: the ground between the pins is levelled and trodden for you" if setting_b else "Point A set: Shift + right click again for point B")
+	var previous: Vector3 = _grade_a
 
 	for stake in _stakes:
 		if is_instance_valid(stake):
 			stake.queue_free()
 
 	_stakes.clear()
+	_grade_a = hit["position"]
 
-	if not setting_b:
-		_grade_a = hit["position"]
-
-	for point in ([_grade_a, hit["position"]] if setting_b else [hit["position"]]):
+	for point in ([previous, hit["position"]] if chained else [hit["position"]]):
 		var stake: Node3D = _make_stake()
 		_root.add_child(stake)
 		stake.global_position = point + Vector3(0.0, 0.5, 0.0)
