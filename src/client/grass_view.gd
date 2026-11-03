@@ -70,7 +70,8 @@ const LAYERS := [
 # ground-cover cards beyond band 0).
 const LOD_SCALE := [1.0, 2.0, 3.0, 4.0]       # card width by band: near, middle, far, very far (reach beyond 50 m)
 const LOD_SCALE_SHORT := [1.0, 1.5, 2.1, 2.1] # the Low tier (reach 40 m)
-const BAND_SHARE := [1.0, 0.4, 0.35, 0.35]    # share of the cards drawn per band beyond 50 m (the cost cap, section 33)
+const BAND_SHARE := [1.0, 0.4, 0.3, 0.3]      # share of the cards drawn per band beyond 50 m (the cost cap, section 33). Dave 3 Nov: long range keeps about 30 percent of the grass, only for the look
+const TALL_MAX_LOD := 1                       # the tall grass (meadow patches) is not drawn in the far bands: at long range tall, short and flowering grass cannot be told apart (Dave 3 Nov)
 const NEAR_END_MIN := 14.0
 const NEAR_END_MAX := 20.0
 const CLOSURE_OFFSETS := [Vector2(0.0, 0.0), Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(3.0, 3.0), Vector2(-3.0, -3.0)]
@@ -1525,6 +1526,9 @@ func _build(cell: Vector2i) -> int:
 
 			for layer in range(GRASS_LAYERS):
 				if layer == 0 and lod > 0:
+					continue
+
+				if layer == 2 and lod > TALL_MAX_LOD:
 					continue
 
 				# Owner (2026-10-21): all the grass has the same draw distance, so the short grass is drawn in
