@@ -2780,7 +2780,7 @@
 			"kind": "tool",
 			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"how_to_get": [
-				"Craft: 8 Twine, 4 Stone"
+				"Craft: 3 Rope, 4 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true

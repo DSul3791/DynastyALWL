@@ -1132,8 +1132,8 @@
 			"category": "Tools",
 			"needs": [
 				[
-					"twine",
-					8
+					"rope",
+					3
 				],
 				[
 					"stone",
