@@ -110,3 +110,22 @@ So gathering never slows a new player. The only early load that does is logs: 15
 | Camp bench | 12 kg | 7.3 kg |
 
 None of these matters in play at these sizes.
+
+## First-hour sounds (assets/audio/sound_manifest.json, validate_sound_slots.py)
+
+Every first-hour action has a sound slot with files on disk:
+- pick: pluck, snip, pull, twist, snap
+- item pickup (27 files)
+- the craft sounds: twine, knap, bind, carve, start, done
+- hit swing
+- trees: creak, crash, leaves
+- chop split and thock
+- fire: light, fuel, small, large, rain, out
+- eat crunch and soft
+- drink gulp
+- place lean-to and thump
+- breath and heartbeat
+
+`validate_sound_slots.py` reports no empty slots.
+
+All of these are **generated** (synthesised) placeholders. Recorded ones exist only for fish splash and tree frog. That is a note for Sound, not a bug: the first hour is heard entirely through placeholders, so a recorded drink, fire light and tree crash would be the biggest wins.
