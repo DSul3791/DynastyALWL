@@ -118,7 +118,7 @@ const ART_OVERRIDES := {
 	"stairs_wood_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["ladder"]},
 	"log_cabin_set_kit": {"shape": "parcel", "color": "#5a3c22", "size": 1.3, "bits": ["chest"]},
 	"lean_to_kit": {"shape": "parcel", "color": "#5a8a38", "size": 1.0, "bits": ["leanto"]},
-	"chest_kit": {"shape": "parcel", "color": "#a8884a", "size": 1.0, "bits": ["chest"]},
+	"chest_kit": {"shape": "parcel", "color": "#a8884a", "size": 1.0, "bits": ["chest", "woven"]},
 	"plank_chest_kit": {"shape": "parcel", "color": "#a07a45", "size": 1.0, "bits": ["plankchest"]},
 	"workbench_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["workbench"]},
 	"tool_rack_kit": {"shape": "parcel", "color": "#7a5a35", "size": 1.0, "bits": ["bench", "rack"]},
@@ -828,6 +828,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_cyl(parts, 0.009, 0.26, Vector3(0.0, -0.02 + 0.012 * float(k % 3), (float(k) - 2.5) * 0.018), Vector3(0.0, 0.0, PI * 0.5), _tone(color, k, 0.12))
 
 					_cyl(parts, 0.03, 0.012, Vector3(0.0, -0.01, 0.0), Vector3(0.0, 0.0, PI * 0.5), cord)
+					# A tuft of dry tinder grass tucked in the bundle, so it reads as a fire kit and not a bundle of sticks.
+					for k in 7:
+						var ta: float = (float(k) - 3.0) * 0.22
+						_box_rot(parts, Vector3(0.004, 0.07, 0.004), Vector3(0.02 * float(k % 3 - 1), 0.025, (float(k) - 3.0) * 0.006), Vector3(ta, 0.0, 0.3 * float(k % 2 * 2 - 1)), _tone(Color(0.82, 0.7, 0.4), k, 0.12))
 				"roll":
 					_cyl(parts, 0.075, 0.32, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
 					_cyl(parts, 0.05, 0.325, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color.darkened(0.2))
@@ -875,6 +879,18 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_box(parts, Vector3(0.02, 0.15, 0.19), Vector3(-0.08, 0.0, 0.0), dark)
 					_box(parts, Vector3(0.02, 0.15, 0.19), Vector3(0.08, 0.0, 0.0), dark)
 					_box(parts, Vector3(0.03, 0.04, 0.02), Vector3(0.0, 0.01, 0.1), Color(0.6, 0.55, 0.3))
+					if bits.has("woven"):
+						# The woven chest (item 22 is wicker, not boards): over-under withy bands round the body, upright stakes showing between them,
+						# a plaited rim at the lid line and a twine loop catch in place of the brass hasp.
+						for k in 4:
+							var wy: float = -0.06 + 0.026 * float(k)
+							var wt: Color = _tone(color, k, 0.12).darkened(0.08 if k % 2 == 0 else 0.0)
+							_box(parts, Vector3(0.286, 0.014, 0.186), Vector3(0.006 * float(k % 2 * 2 - 1), wy, 0.0), wt)
+						for k in 7:
+							var sx: float = -0.12 + 0.04 * float(k)
+							_box(parts, Vector3(0.008, 0.1, 0.19), Vector3(sx, -0.02, 0.0), color.darkened(0.25))
+						_torus_v(parts, 0.012, 0.0035, Vector3(0.0, 0.0, 0.104), cord)
+						_box(parts, Vector3(0.29, 0.012, 0.19), Vector3(0.0, 0.032, 0.0), color.lightened(0.12))
 				"leanto":
 					# The lean-to kit: a ridge pole on two forks with a row of sticks leaning on it, a few leaf cards laid on them, bound with cord (Kathleen 2026-10-31: the ten most-seen kits each look different).
 					for x in [-0.15, 0.15]:
