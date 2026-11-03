@@ -43,9 +43,13 @@ void vertex() {
 void fragment() {
 	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
 	float soft = smoothstep(0.0, 0.85, facing);
-	vec3 low = vec3(1.0, 0.3, 0.04);
-	vec3 high = vec3(1.0, 0.8, 0.3);
-	ALBEDO = mix(low, high, 1.0 - up) * (0.75 + 0.35 * flick);
+	// Three stops (Art_Direction.md: warm firelight, rich colour): a hot yellow root over the coals, a deep orange body, red-orange tips that fade.
+	// Darker than before because the tongues add up: the old cream root clipped to white where three or four overlapped (QA pic-campfire-lit-real).
+	vec3 root = vec3(1.0, 0.68, 0.2);
+	vec3 body = vec3(1.0, 0.42, 0.07);
+	vec3 tip = vec3(0.85, 0.2, 0.03);
+	vec3 col = up < 0.45 ? mix(root, body, up / 0.45) : mix(body, tip, (up - 0.45) / 0.55);
+	ALBEDO = col * (0.62 + 0.3 * flick);
 	ALPHA = soft * (1.0 - up * up) * (0.6 + 0.25 * flick);
 }
 """
