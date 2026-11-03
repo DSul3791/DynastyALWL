@@ -1254,8 +1254,13 @@ func update(from_position: Vector3) -> void:
 	var rays: int = RAYS_PER_FRAME * (2 if speed > 2.5 and _pending.size() > 20 else 1)
 	var started: int = Time.get_ticks_usec()
 
-	while rays > 0 and not _pending.is_empty():
-		var cell: Vector2i = _pending.pop_front()
+	# Steve 3 Nov 2026 (lag run #242: "grass" 650-850 ms once after the hoe strokes): the queue held 10 thousand stale cells (freed or already
+	# built), each taken with pop_front, which moves the whole array: one frame popped them all. Walk it with an index and cut it once.
+	var taken: int = 0
+
+	while rays > 0 and taken < _pending.size():
+		var cell: Vector2i = _pending[taken]
+		taken += 1
 
 		if not _cells.has(cell) or not _cells[cell]["busy"]:
 			continue
@@ -1264,6 +1269,9 @@ func update(from_position: Vector3) -> void:
 
 		if Time.get_ticks_usec() - started > BUILD_USEC:
 			break
+
+	if taken > 0:
+		_pending = _pending.slice(taken)
 
 	_flush_groups()
 
@@ -1360,6 +1368,10 @@ func _rescan_step() -> void:
 			buckets[n] = []
 
 		for cell in _pending:
+			# Cells about to be freed (out of reach) or no longer waiting leave the queue here, so it never builds up stale entries.
+			if not _scan_keep.has(cell) or not _cells.has(cell) or not _cells[cell]["busy"]:
+				continue
+
 			var ring: int = clampi(int((Vector2(cell) + Vector2(0.5, 0.5)).distance_to(near)), 0, span + 1)    # clamped: a NaN centre gave int min
 			buckets[ring].append(cell)
 
