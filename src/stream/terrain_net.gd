@@ -32,7 +32,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 86
+const PROTOCOL_VERSION := 87
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -72,6 +72,7 @@ signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
+signal road_marker_reached(at: Vector3)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
@@ -630,6 +631,12 @@ func purse(copper: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func reputation(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array) -> void:
 	reputation_received.emit(ids, names, points)
+
+
+# The road builder has reached (or dropped) the marker at this point: the client takes the red flag down (protocol 87, Dave 3 Nov 2026).
+@rpc("authority", "call_remote", "reliable")
+func road_marker_done(at: Vector3) -> void:
+	road_marker_reached.emit(at)
 
 
 # A short message for the player ("too many trunks lie here", and so on).

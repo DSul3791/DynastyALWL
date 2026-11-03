@@ -128,6 +128,7 @@ var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set 
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var send_notice: Callable      # (peer, text)
+var send_marker_done: Callable # (peer, Vector3): a road marker is reached or dropped, the client takes its flag down
 var standing_near: Callable    # (species name, position, radius) -> [position] of the nearest standing tree of that species, or []
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var shrub_info: Callable       # (chunk Vector2i, id) -> {name, position, height} of a standing bush or shrub (placer or planted), or {}; set by the server scene
@@ -2400,6 +2401,11 @@ var _roads: Dictionary = {}   # peer -> {"head": where the road has got to, "mar
 const ROAD_MAX_MARKERS := 24
 
 
+func _marker_done(peer: int, at: Vector3) -> void:
+	if send_marker_done.is_valid():
+		send_marker_done.call(peer, at)
+
+
 func _road_marker(peer: int, here: Vector3) -> void:
 	if not _roads.has(peer):
 		_roads[peer] = {"head": here, "markers": [], "seg": null}
@@ -2433,11 +2439,13 @@ func _road_next_segment(peer: int, job: Dictionary) -> bool:
 
 		if length > ROAD_MAX_M:
 			_say(peer, "A marker is more than %d m from the road: skipped." % int(ROAD_MAX_M))
+			_marker_done(peer, target)
 			continue
 
 		if length < 1.0:
 			job["head"] = target
 			head = target
+			_marker_done(peer, target)
 			continue
 
 		job["seg"] = {"a": head, "b": target, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
@@ -2460,6 +2468,7 @@ func _road_tick(delta: float) -> void:
 
 		if job["seg"] == null and not _road_next_segment(peer, job):
 			_roads.erase(peer)   # no markers left: the road is done
+			_marker_done(peer, job["head"])
 			_say(peer, "The road is finished.")
 			continue
 
@@ -2473,6 +2482,8 @@ func _road_tick(delta: float) -> void:
 		var i: int = int(seg["i"])
 
 		if i >= int(seg["n"]):
+			_marker_done(peer, seg["a"])
+			_marker_done(peer, seg["b"])
 			job["head"] = seg["b"]   # reached the marker: it is deleted (taken off the list when it was chosen) and the next nearest is next
 			job["seg"] = null
 			continue

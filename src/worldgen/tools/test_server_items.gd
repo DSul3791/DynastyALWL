@@ -879,6 +879,8 @@ func _init() -> void:
 	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= 3 * 13, "and levels the ground along it, a few edits a station (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	check(m._roads.is_empty(), "the road job ends when the line is done")
 	# Surveyor mode: the first marker of an idle job is the start; later markers wait and are built toward nearest first, then deleted.
+	var flags_down: Array = []
+	m.send_marker_done = func(_p, at): flags_down.append(at)
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(8.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 12.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 6.0))
@@ -891,6 +893,7 @@ func _init() -> void:
 		m._road_tick(0.6)
 
 	check(m._roads.is_empty(), "the road is done when no markers are left")
+	check(flags_down.size() >= 3, "each marker's flag is taken down once the builder reaches it (%d)" % flags_down.size())
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 0.0))
 

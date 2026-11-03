@@ -170,6 +170,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_inv = inventory_view
 	blueprints.setup(_inv.table, _inv.inventory, hud_layer)
 	_net = terrain_net
+	_net.road_marker_reached.connect(_on_road_marker_reached)
 	_camera = camera
 	_root = world_root
 	_ground_below = ground_below
@@ -1092,7 +1093,7 @@ func _hoe_repeat(delta: float) -> void:
 const HOE_MODES := [
 	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
 	{"id": "smooth", "name": "Smooth", "note": "moves dirt from high spots to low ones, no path"},
-	{"id": "grade", "name": "Grade line", "note": "levels along the A to B line (Shift + right click sets A, then B)"},
+	{"id": "grade", "name": "Grade line", "note": "levels along the A to B line (Shift + right click drops markers)"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
 ]
 var hoe_mode: String = "path"
@@ -1125,7 +1126,7 @@ func _hoe_menu_open_now() -> void:
 		_hoe_menu_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 		_hoe_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_hoe_menu_label = Label.new()
-		_hoe_menu_label.add_theme_font_size_override("font_size", 24)
+		_hoe_menu_label.add_theme_font_size_override("font_size", 40)
 		_hoe_menu_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_hoe_menu_panel.add_child(_hoe_menu_label)
 		_hud_layer.add_child(_hoe_menu_panel)
@@ -1220,20 +1221,21 @@ func _grade_point_here() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if chained else 0, 0, hit["position"])
 	_inv._on_notice("Marker set: the road builds behind you. Shift + right click to carry on" if chained else "Marker 1 set: walk on and Shift + right click again, the road builds behind you")
 
-	var previous: Vector3 = _grade_a
-
-	for stake in _stakes:
-		if is_instance_valid(stake):
-			stake.queue_free()
-
-	_stakes.clear()
 	_grade_a = hit["position"]
+	var stake: Node3D = _make_stake()
+	_root.add_child(stake)
+	stake.global_position = hit["position"] + Vector3(0.0, 0.5, 0.0)
+	_stakes.append(stake)
 
-	for point in ([previous, hit["position"]] if chained else [hit["position"]]):
-		var stake: Node3D = _make_stake()
-		_root.add_child(stake)
-		stake.global_position = point + Vector3(0.0, 0.5, 0.0)
-		_stakes.append(stake)
+
+# The server says the road builder has reached (or dropped) a marker: its red flag comes down.
+func _on_road_marker_reached(at: Vector3) -> void:
+	for stake in _stakes.duplicate():
+		if not is_instance_valid(stake):
+			_stakes.erase(stake)
+		elif Vector2(stake.global_position.x - at.x, stake.global_position.z - at.z).length() < 0.6:
+			stake.queue_free()
+			_stakes.erase(stake)
 
 
 # A hoe stroke (path or smooth) at the ground under the crosshair; the server checks the hoe, the reach and the pace.
