@@ -175,7 +175,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"herb_nettle":
 			_herb(bark, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
 		"hazel":
-			_hazel(smooth, leaves, twigs, rng, h, variant, far, season)
+			_hazel(smooth, leaves, twigs, rng, h, variant, far, season, berries)
 		"oak":
 			_oak(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"maple":
@@ -1481,7 +1481,8 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 # catkins already hanging. Mature clumps 4 to 8 m tall and about as wide as
 # they are tall; young ones 1 to 2 m with fewer, thinner stems.
 # Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
-static func _hazel(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, season: String) -> void:
+static func _hazel(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, season: String, berries: Acc = null) -> void:
+	var crop: Acc = berries if berries != null else smooth      # catkins and nuts on the berry shader (#234): on the smooth bark they wore its grain and north moss
 	var bare: bool = season == "winter"
 	var young: bool = variant >= 2
 	var tint: Color = BARK_TINT_HAZEL.lerp(Color(0.6, 0.58, 0.55), 0.3 if young else 0.0)
@@ -1565,14 +1566,14 @@ static func _hazel(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 			for t in range(rng.randi_range(2, 4)):
 				var long: float = (rng.randf_range(0.1, 0.15) if season == "spring" else rng.randf_range(0.05, 0.08)) * big
 				var off: Vector3 = Vector3(rng.randf_range(-0.08, 0.08), 0.0, rng.randf_range(-0.08, 0.08)) * big
-				_bead(smooth, at + off - Vector3(0.0, long, 0.0), Vector3(0.025, long, 0.025) * Vector3(big, 1.0, big), (HAZEL_CATKIN_TINT if season == "spring" else HAZEL_CATKIN_WINTER) * rng.randf_range(0.9, 1.1))
+				_bead(crop, at + off - Vector3(0.0, long, 0.0), Vector3(0.025, long, 0.025) * Vector3(big, 1.0, big), (HAZEL_CATKIN_TINT if season == "spring" else HAZEL_CATKIN_WINTER) * rng.randf_range(0.9, 1.1))
 		else:
 			# Two to four nuts, each in its frilly husk.
 			for t in range(rng.randi_range(2, 4)):
 				var p: Vector3 = at + Vector3(rng.randf_range(-0.08, 0.08), rng.randf_range(-0.05, 0.03), rng.randf_range(-0.08, 0.08)) * big
 				var husk: Color = HAZEL_HUSK_TINT.lerp(Color(0.6, 0.48, 0.2), rng.randf() * 0.5)
-				_bead(smooth, p, Vector3(0.07, 0.05, 0.07) * big, husk)
-				_bead(smooth, p + Vector3(0.0, -0.04, 0.0) * big, Vector3(0.05, 0.055, 0.05) * big, HAZELNUT_TINT * rng.randf_range(0.9, 1.1))
+				_bead(crop, p, Vector3(0.07, 0.05, 0.07) * big, husk)
+				_bead(crop, p + Vector3(0.0, -0.04, 0.0) * big, Vector3(0.05, 0.055, 0.05) * big, HAZELNUT_TINT * rng.randf_range(0.9, 1.1))
 
 
 # Witness tree (fantasy). From the owner's design and pictures (2026-10-18):
