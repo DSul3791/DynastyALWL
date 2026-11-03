@@ -14,7 +14,7 @@ const DrainageFlowScript := preload("res://src/worldgen/tile/drainage_flow.gd")
 const STEP := 1                # 8 m cells (channels are 24 m wide and up)
 const RIVER_CELLS_KM2 := 0.5   # river_start_km2 of today's world network
 const NEAR_CELLS := 8          # 64 m
-const KNOWN_DRY_RISES := 23    # known: dry-channel rises (class 0 to 0, a small real bed gap), owner Sonny river pass; 16 measured on build 810 tiles (25 Oct), 21 on the 3 Nov spring caves bake (2b3b54bc: none within 400 m of a cave; the 3 -> 3 ones at x 55240-55272 z 74864-74976 and x 57832-57864 z 71464 are this test re-carving the 4x coarse ground across a winding brook and two parallel brooks, the baked bed itself falls there), 23 leaves 2 spare. The test fails on growth.
+const KNOWN_DRY_RISES := 23    # known: dry-channel rises (class 0 to 0, a small real bed gap), owner Sonny river pass; 16 measured on build 810 tiles (25 Oct), 21 on the 3 Nov spring caves bake (2b3b54bc: none within 400 m of a cave; the 3 -> 3 ones at x 55240-55272 z 74864-74976 and x 57832-57864 z 71464 are this test re-carving the baked ground with its own simple rules (24 m wide channels) across a winding brook in a narrow gully and two parallel brooks, the baked bed itself falls there), 23 leaves 2 spare. The test fails on growth.
 const NOTCH_CELLS := 6         # the outlet notch behind a kept pit's rim
 const LAKE_NEAR_CELLS := 3     # a rise within 3 cells of a baked lake cell (water_class 2) is the lake outlet, not a river
 
