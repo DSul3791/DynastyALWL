@@ -112,8 +112,9 @@ func _init() -> void:
 			corner_txt += " (%.2f,%.2f):%d" % [sx, sz, int(c)]
 
 	say("4 cover at 4 inner points (+-0.9 m along, +-0.75 m across)", corners_ok == 4, corner_txt)
-	var out: float = CoverScript.at(lp + cx * 1.5 + Vector3(0.0, 0.3, 0.0), cover)
-	say("5 cover.at 1.5 m past the roof edge is open", out == 0.0, "%s" % out)
+	var past: float = float(def["half_x"]) + 0.5   # half a metre past the roof edge, whatever the lean-to's size (#253 made it 1.6x)
+	var out: float = CoverScript.at(lp + cx * past + Vector3(0.0, 0.3, 0.0), cover)
+	say("5 cover.at 0.5 m past the roof edge is open", out == 0.0, "%.2f m from the centre: %s" % [past, out])
 
 	# 6. can a bed be placed inside the footprint? try the centre, then offsets
 	var results: Array = []
