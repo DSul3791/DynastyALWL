@@ -16,6 +16,7 @@ const LOOKS := {
 	"set": {"builder": "timber_set", "args": []},
 	"ladder": {"builder": "ladder", "args": []},
 	"path": {"builder": "path", "args": []},
+	"trodden_path": {"builder": "trodden_path", "args": []},
 	"rock_pile": {"builder": "rock_pile", "args": []},
 	"window_wall": {"builder": "window_wall", "args": []},
 	"door_shut": {"builder": "doorway", "args": [false]},

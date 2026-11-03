@@ -33,7 +33,7 @@ const GOLDEN := {
 	"timber_prop": "prop",
 	"timber_set": "set",
 	"ladder": "ladder",
-	"path_patch": "path",
+	"path_patch": "trodden_path",
 	"tilled_bed": "path",
 	"rough_bed": "rough_bed",
 	"thatch_wall": "thatch_wall",

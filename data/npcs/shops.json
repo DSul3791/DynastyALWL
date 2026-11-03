@@ -15,6 +15,7 @@
 			"wooden_bowl",
 			"backpack",
 			"roast_forage",
+			"rough_bed_kit",
 			"firewood",
 			"stone",
 			"stick"
@@ -83,6 +84,10 @@
 			],
 			"backpack": [
 				1,
+				1
+			],
+			"rough_bed_kit": [
+				2,
 				1
 			],
 			"roast_forage": [

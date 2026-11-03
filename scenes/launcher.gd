@@ -65,6 +65,8 @@ func _host_and_play() -> void:
 		"res://scenes/terrain_server/terrain_server.tscn",
 		"--",
 		"--quit-when-empty",
+		# The server shares this PC with the game: half the cores (it used all but one, 11 threads on 12 cores, and the game froze for seconds).
+		"--threads=%d" % maxi(OS.get_processor_count() >> 1, 2),
 	])
 
 	if WaterChoice.old_water():

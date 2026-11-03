@@ -1,5 +1,7 @@
 extends RefCounted
 
+const TreeBuilder := preload("res://src/flora/tree_builder.gd")
+
 # Where a felled trunk comes to rest (Kathleen, Dave's tree-fall job). The trunk hinges at the stump and its axis is one straight line from the hinge,
 # so on any ground it rests on the highest point it meets: the pose is the lowest pitch (radians above the horizontal, negative = running downhill)
 # at which the trunk, thinning from its butt radius to 55 percent at the top, stays on or above the ground sampled along it. It never sinks into a rising
@@ -70,3 +72,29 @@ static func standing_radius(trunk_m: float, ref_height: float, height: float, br
 		return base
 
 	return base * height / ref_height
+
+
+# The model variant flora_view.gd draws for the tree `id` (its own hash; with young_below_m in the species row, trees shorter than it take the young
+# half). Mirrors flora_view exactly, including its negative remainders, which index the variant list from the end.
+static func drawn_variant(entry: Dictionary, id: int, height: float) -> int:
+	var count: int = TreeBuilder.VARIANTS
+	var variant: int = (id * 2654435761 >> 5) % count
+
+	if entry.has("young_below_m"):
+		@warning_ignore("integer_division")
+		var half: int = count / 2
+		variant = variant % half + (half if height < float(entry["young_below_m"]) else 0)
+
+	return posmod(variant, count)
+
+
+# The butt radius the client draws this standing tree with: its model's trunk (tree_builder.gd trunk_radius) at the reference height the model is
+# built at, scaled by height / reference like flora_view. A young beech is a slim pole, so it falls as one (Dave 2 Nov, skinny tree, big stump).
+static func drawn_radius(entry: Dictionary, id: int, height: float) -> float:
+	var span: Array = entry.get("height_m", [])
+	var ref_height: float = 0.5 * (float(span[0]) + float(span[1])) if span.size() >= 2 else 0.0
+
+	if ref_height <= 0.0 or height <= 0.0:
+		return maxf(float(entry.get("trunk_m", 0.4)), 0.03)
+
+	return TreeBuilder.trunk_radius(entry, ref_height, drawn_variant(entry, id, height)) * height / ref_height

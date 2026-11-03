@@ -1,7 +1,8 @@
 extends RefCounted
 
 # Render contract, stage c2 (Sonny, 31 Oct 2026; written while the computer was off limits, NOT RUN YET: see the queued commands in docs/DYNASTY_WATER_STATUS.md).
-# One RGBAF texel per sim cell: R depth (m), G flow x (m/s, east), B flow z (m/s, south), A foam hint 0..1 (fast shallow water: speed over FOAM_SPEED, thinned out by depth).
+# One RGBAF texel per sim cell: R water surface height (m; the bed where dry), G flow x (m/s, east), B flow z (m/s, south), A depth (m). Protocol 85 (Dave 2 Nov 2026,
+# "think liquid not squares"): the client's liquid surface (liquid_surface.gd) is shaped by R and faded at the shore by A per pixel; foam_hint is the same rule the shader uses.
 # `build_image` makes it from a field, `apply` hands it to a water ShaderMaterial together with where it lies in the world, `SHADER_INCLUDE` is the code the shader adds to read it.
 # The game's water shader (src/client/water_material.gd) takes flow today from vertex COLOR, which the client derives from received levels; with this texture the flow, depth and foam come from the sim.
 # Nothing here changes the game: the six-line patch that switches the shader over is written out in docs/DYNASTY_WATER_STATUS.md and is applied only after the tests have run.
@@ -32,8 +33,14 @@ static func build_image(f) -> Image:
 	for j in range(f.h):
 		for i in range(f.w):
 			var d: float = f.depth[j * f.w + i]
+			var b: float = f.bed[j * f.w + i]
 			var v: Vector2 = f.velocity(i, j)
-			im.set_pixel(i, j, Color(d, v.x, v.y, foam_hint(d, v.length())))
+
+			# Protocol 85 (liquid surface): R the water surface (bed + depth, the bed where dry), A the depth. A sea cell (bed under 0 m) is left to the sea plane: depth 0.
+			if b < 0.0:
+				im.set_pixel(i, j, Color(0.0, 0.0, 0.0, 0.0))
+			else:
+				im.set_pixel(i, j, Color(b + d, v.x, v.y, d))
 
 	return im
 
@@ -55,17 +62,16 @@ static func apply(material: ShaderMaterial, f, origin: Vector2) -> void:
 	material.set_shader_parameter("water2_on", 1.0)
 
 
-# The wire form of the texture (protocol 84): half-float RGBA, zstd compressed. `origin` is the world x, z of cell (0, 0). Built on the water thread.
+# The wire form of the texture (protocol 85): float RGBA, zstd compressed. `origin` is the world x, z of cell (0, 0). Built on the water thread.
 static func packet(f, origin: Vector2) -> Dictionary:
-	var im: Image = build_image(f)
-	im.convert(Image.FORMAT_RGBAH)
+	var im: Image = build_image(f)   # full float: a half float steps 0.25 m at 500 m, and R is a height now
 	var raw: PackedByteArray = im.get_data()
 	return {"origin": origin, "w": f.w, "h": f.h, "cell": f.cell_m, "raw": raw.size(), "bytes": raw.compress(FileAccess.COMPRESSION_ZSTD)}
 
 
 # A packet back to an Image (null when it does not add up), and onto a material.
 static func unpack(w: int, h: int, raw_size: int, bytes: PackedByteArray) -> Image:
-	if w <= 0 or h <= 0 or w > 512 or h > 512 or raw_size != w * h * 8:
+	if w <= 0 or h <= 0 or w > 512 or h > 512 or raw_size != w * h * 16:
 		return null
 
 	var raw: PackedByteArray = bytes.decompress(raw_size, FileAccess.COMPRESSION_ZSTD)
@@ -73,11 +79,12 @@ static func unpack(w: int, h: int, raw_size: int, bytes: PackedByteArray) -> Ima
 	if raw.size() != raw_size:
 		return null
 
-	return Image.create_from_data(w, h, false, Image.FORMAT_RGBAH, raw)
+	return Image.create_from_data(w, h, false, Image.FORMAT_RGBAF, raw)
 
 
-static func apply_image(material: ShaderMaterial, im: Image, origin: Vector2, cell_m: float) -> void:
-	material.set_shader_parameter("water2_tex", ImageTexture.create_from_image(im))
+static func apply_image(material: ShaderMaterial, im: Image, origin: Vector2, cell_m: float, texture: Texture2D = null) -> void:
+	material.set_shader_parameter("water2_tex", texture if texture != null else ImageTexture.create_from_image(im))
 	material.set_shader_parameter("water2_origin", origin - Vector2(0.5, 0.5) * cell_m)
 	material.set_shader_parameter("water2_size", Vector2(float(im.get_width()), float(im.get_height())) * cell_m)
+	material.set_shader_parameter("water2_inset", cell_m)   # the grid look steps aside one cell in, where the liquid sheet has faded fully in
 	material.set_shader_parameter("water2_on", 1.0)

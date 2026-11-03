@@ -132,6 +132,15 @@ if looks.returncode != 0:
     for line in looks.stdout.splitlines()[1:]:
         bad("look name: " + line)
 
+text = subprocess.run([sys.executable, "tools/text_vs_recipe.py"], capture_output=True, text=True)
+if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) must match the recipes and blueprints
+    for line in text.stdout.splitlines()[:-1]:
+        bad("text vs recipe: " + line)
+
+carry = subprocess.run([sys.executable, "tools/carry_audit.py"], capture_output=True, text=True)
+if carry.returncode != 0:   # a warning only until Dave picks the heavy-kits fix (docs/HEAVY_KITS_OPTIONS.md)
+    print("WARNING: carry_audit: %d recipe(s) over the carry cap (python3 tools/carry_audit.py)" % sum(1 for l in carry.stdout.split("OVER CAP")[1].split("SLOWING")[0].splitlines() if " kg  recipe " in l))
+
 master = subprocess.run([sys.executable, "tools/item_master.py", "--check"], capture_output=True, text=True)
 if master.returncode != 0:   # a warning only: the master list lives outside the repo (tech/ITEM_MASTER.md)
     print("WARNING:", master.stdout.strip())

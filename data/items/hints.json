@@ -54,7 +54,7 @@
 		{
 			"id": "trunk",
 			"trigger": "tree_down",
-			"text": "Keep striking the fallen trunk for sticks, leaves and logs."
+			"text": "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
 		},
 		{
 			"id": "kit",

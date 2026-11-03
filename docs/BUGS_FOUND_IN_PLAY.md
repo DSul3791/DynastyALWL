@@ -16,14 +16,14 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** can't pick up the chopping block.
 - **Context, not a diagnosis:** today's E-key change (`claude/e-priority-2`, commit `18e7dcd4`) made a block's aim point its middle and made E do only the cursor's action, with no pickup of other things. It is not known whether that is related, or whether the block was never pickable. Nothing has been run in a windowed client.
-- **Status:** open, unassigned, not worked on.
+- **Status:** fix merged in #30 (2 Nov); needs Dave's play check (Jamie, from merged commits; not tested).
 
 ## 3. The firewood pile beside the chopping block does not grow
 
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** the firewood beside the chopping block does not grow when you add more wood to it by chopping wood. It should get bigger, so you can see there is a larger pile of wood there.
 - **Context, not a diagnosis:** none known. Nothing has been run in a windowed client. Whether the pile is a placed look that never reads the stack count, or a count that is not sent to the client, is not known.
-- **Status:** open, unassigned, not worked on.
+- **Status:** fix merged in #30 (2 Nov); needs Dave's play check (Jamie, from merged commits; not tested).
 
 ## 4. First-person arms need better alignment and placement
 
@@ -31,7 +31,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** these arms need to be aligned better and placed better.
 - **What the screenshot shows (observation, not a diagnosis):** standing in a meadow with the stone axe selected. Both arms enter from the bottom of the screen with fingers visible. The right hand grips the axe handle partway up, with the head pointing up and slightly away. The left hand is open and reaches across in front of the right, not holding anything. The arms look thin and long against the view and lean toward the middle, and the hands look rotated relative to the forearms.
 - **Context:** Kathleen's note says the arms are a rigid mesh cut by height into upper arm, forearm and hand on the old arm rig; the wrist and fingers do not move; the hand mounts and tool placement are the old ones; and arm size against the camera, hand scale and tool alignment in the hand were "not checked". No in-game first-person picture existed before this screenshot.
-- **Status:** open, unassigned, not worked on.
+- **Status:** picture tool merged in #46 (2 Nov); arms themselves not yet changed (Jamie, from merged commits; not tested).
 
 ## 5. Cutting a tree down takes over 20 hits (it used to take about 10)
 
@@ -47,7 +47,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** whenever I cut up a fallen tree, each cut causes the game to lag and lock up for 2 seconds at a time.
 - **Context, not a diagnosis:** none measured. The fallen-tree cutting path is `_process_trunk` and `_cut_log_off` in `src/stream/server_items.gd`; today's change there made every felled tree give logs (`aae3a272`, `df56ffaf`). The game has an instrument that logs `SLOW RPC` over 100 ms and a `_slow_mark` helper, which may show where the time goes. The stall could be on the server (saving, creating the log item, or a world-state rewrite) or in the client (building the log mesh or re-importing). Nothing has been measured, and nothing has been run in a windowed client.
-- **Status:** open, unassigned, not worked on.
+- **Status:** timing instruments and shared bark shader merged (#28, #35, #42); cause not yet found (Jamie, from merged commits; not tested).
 
 ## 7. The game has bad lag constantly
 
@@ -73,7 +73,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** it won't let me put more than one log in the fire.
 - **Context, not a diagnosis:** same as the earlier report today ("the first log went in but the second one won't"). Steve could not reproduce it on the server (4 logs onto one laid fire all go in, and 5 onto a lit fire with a pot also go in; the only cap is the total, 18 real hours or 6 logs), and suggested the client may treat a tap on a laid fire as "light" and only a hold as "add fuel", or add sticks before logs. He then made fuel order logs first and prompts inspect-mode only (`18e7dcd4`). Since Dave still sees it on a build that includes those, the cause is not known. The pot rule (no logs while a pot hangs on the fire) may be involved if a pot was on that fire; Dave said earlier there was no pot.
-- **Status:** open, unassigned, not worked on.
+- **Status:** #32 (2 Nov) makes the fire store take unlimited wood; needs Dave's play check (Jamie, from merged commits; not tested).
 
 ## 10. The main character does not animate when jumping
 
@@ -88,7 +88,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** when trees fall they all suddenly become much taller and bigger than they were; they should be the same as they were.
 - **Cause (read from the code, not yet seen in a windowed client):** a standing tree is one model built at the species' reference height and scaled by height / reference (`src/flora/flora_view.gd`), so its trunk radius is trunk_m x that scale. The felled trunk and stump took the species' unscaled `trunk_m` as radius (`_fell_record` in `src/stream/server_items.gd`), so a small tree fell as a fat trunk (a 6 m beech: 0.40 m radius instead of 0.14 m) and a big one as a thin one. The length is the tree's whole height, as standing.
 - **Fix:** the felled trunk, its stump and the fall pose use the standing radius (`FellPose.standing_radius`); length unchanged so log counts do not change. Test: `test_fell_autosplit`. Needs a look in a windowed client (PC thread).
-- **Status:** fixed on branch `claude/project-thread-imr3n2`, waiting for the Godot test run.
+- **Status:** fix merged in #39 (2 Nov); headless tests green on Dave's PC (`test_fell_autosplit`, `test_fell_pose`, `test_trunk_cutting`). Needs Dave's play check: QA test card `felled-tree-size-and-split`.
 
 ## Triage by role (Jamie, 2 Nov 2026)
 | # | Bug | Lead | Support |

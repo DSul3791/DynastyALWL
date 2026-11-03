@@ -93,7 +93,7 @@ func _process(delta: float) -> void:
 			_client.quake_view.on_quake(4, 1.0)
 
 		if _client != null and _client.sound != null and _client.sound.placed != null and _client.body != null:
-			_client.sound.placed.quake(4, 1.0, _client.body.global_position)
+			_client.sound.placed.quake(4, 1.0, _client.body.global_position)   # logs "sound rumble: tunnel quake" (the cave-in death waves)
 
 	if _t > WAVES[WAVES.size() - 1] + 4.0 and _client != null and _client.quake_view != null:
 		_client.quake_view.on_quake(0, 0.0)   # the shaking dies away; the rumble tail goes with the picture

@@ -30,7 +30,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 7. Trigger: 2 twine, 1 stone, 1 stick. Line: "Make a Stone axe: 1 stone, 1 stick, 2 twine." (recipe 2, 10 s). Check: stone axe in the pack.
 8. Trigger: axe made. Line: "Tools only work from the hotbar. Drag the axe onto a box at the bottom, or press E on it in the inventory, then press its number key to hold it." Check: axe held.
 9. Trigger: axe held, a standing tree within 20 m. Line: "Walk up to a tree and click again and again. Thin trees fall in about 10 blows, a thick oak in about 20." (blows = 4 + 30 x trunk thickness in metres, at least 4.) Check: a tree fell.
-10. Trigger: tree down. Line: "Keep striking the fallen trunk: first its branches come off (sticks and leaves), then logs." (3 branch blows: 1-3 sticks and 1-3 leaves each; then a log every 3 blows, carried on your shoulder; Q puts it down.) Check: 6 leaves and 10 sticks in the pack. **Do not tell the player to make a chopping block yet (F-16).**
+10. Trigger: tree down. Line (Dave, QA 2 Nov, now hint "trunk"): "Your tree is down. Gather what fell: sticks, leaves, bark and logs." About 2 s after landing the trunk breaks up by itself (bug 11 and #49); a trunk already hit with the axe, or one with no room, stays a trunk to cut by hand (3 branch blows of sticks and leaves, then a log every 1-2 blows). Check: 6 leaves and 10 sticks in the pack. **Do not tell the player to make a chopping block yet (F-16).**
 
 ## Minute 12 to 18: fire
 

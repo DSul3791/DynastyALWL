@@ -366,6 +366,10 @@
 				[
 					"twine",
 					2
+				],
+				[
+					"hinges",
+					2
 				]
 			],
 			"gives": [
@@ -1233,7 +1237,8 @@
 			],
 			"craft_s": 30.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"stone_forge_kit": {
 			"number": 50,
@@ -3409,7 +3414,7 @@
 			"number": 153,
 			"name": "Water wheel",
 			"category": "Workshops and stations",
-			"needs": [["lumber", 20], ["nails", 80]],
+			"needs": [["lumber", 20], ["nails", 80], ["tar", 4]],
 			"gives": ["water_wheel", 1],
 			"craft_s": 40.0,
 			"known": true,
@@ -4113,6 +4118,10 @@
 				],
 				[
 					"hide",
+					1
+				],
+				[
+					"hide_glue",
 					1
 				]
 			],
@@ -6183,7 +6192,8 @@
 			],
 			"craft_s": 40.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"log_floor_kit": {
 			"number": 296,
@@ -6205,7 +6215,8 @@
 			],
 			"craft_s": 40.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"log_roof_kit": {
 			"number": 297,
@@ -6231,7 +6242,8 @@
 			],
 			"craft_s": 40.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"stone_wall_kit": {
 			"number": 298,
@@ -6254,7 +6266,8 @@
 			"craft_s": 60.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2
+			"station_level": 2,
+			"retired": true
 		},
 		"stone_floor_kit": {
 			"number": 299,
@@ -6323,7 +6336,8 @@
 			"craft_s": 60.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2
+			"station_level": 2,
+			"retired": true
 		},
 		"brick_floor_kit": {
 			"number": 302,
@@ -6346,7 +6360,8 @@
 			"craft_s": 40.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2
+			"station_level": 2,
+			"retired": true
 		},
 		"brick_roof_kit": {
 			"number": 303,
@@ -6369,7 +6384,8 @@
 			"craft_s": 60.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2
+			"station_level": 2,
+			"retired": true
 		},
 		"log_cabin_set_kit": {
 			"number": 304,
@@ -6703,7 +6719,11 @@
 			"category": "Containers and furniture",
 			"needs": [
 				["stick", 6],
-				["twine", 1]
+				["twine", 1],
+				[
+					"wooden_pin",
+					2
+				]
 			],
 			"gives": ["stool_kit", 1],
 			"craft_s": 10.0,
@@ -6747,6 +6767,10 @@
 				[
 					"hide",
 					1
+				],
+				[
+					"wooden_pin",
+					4
 				]
 			],
 			"gives": [
@@ -6971,7 +6995,8 @@
 			"craft_s": 90.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 2
+			"station_level": 2,
+			"retired": true
 		},
 		"flower_pot_kit": {
 			"number": 331,

@@ -366,6 +366,20 @@ func _init() -> void:
 		want_item.call(String(row[0]), "drops.json trunk.branch")
 		obtainable[String(row[0])] = true
 
+	# Bushes and shrubs (Dave 2 Nov 2026): the axe chops them into axe_gives; the pickaxe digs each shrub species up whole as <species><dig_suffix>.
+	var shrub_work: Dictionary = drops.get("shrub_work", {})
+
+	for row in shrub_work.get("axe_gives", []):
+		want_item.call(String(row[0]), "drops.json shrub_work.axe_gives")
+		obtainable[String(row[0])] = true
+
+	if shrub_work.has("dig_suffix"):
+		for entry in _read("../tables/flora.json").get("entries", []):
+			if String(entry.get("kind", "")) == "shrub":
+				var dug: String = String(entry["name"]) + String(shrub_work["dig_suffix"])
+				want_item.call(dug, "drops.json shrub_work.dig_suffix (%s)" % entry["name"])
+				obtainable[dug] = true
+
 	# Dig yields (job 84): every item named in digging.json exists and counts as obtainable; every material is a soil or "rock".
 	var digging: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
 

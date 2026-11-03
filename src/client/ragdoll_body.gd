@@ -43,6 +43,7 @@ const CARRY_FOREARM_R := Vector3(2.0, 0.0, 0.0)
 const CARRY_HAND_R := Vector3(0.0, 0.0, 0.0)
 const CARRY_LOG_X := 0.18
 const CARRY_LOG_Y := 0.2
+const ARMS_SPREAD := 1.3               # the first-person shoulders' distance from the middle, times the body's 0.21 m
 const SWING_FP_S := 0.95                # the first-person chop: its keys below are in seconds of this (motion_extra.gd CHOP_LENGTH; 0.55 s until 31 Oct 2026)
 const LEFT_REST_ARM := Vector3(0.0, 0.0, -0.07)
 const LEFT_REST_FOREARM := Vector3(0.12, 0.0, 0.0)
@@ -147,6 +148,9 @@ func _build_skeleton() -> void:
 
 		if arms_only and row[0] == "chest":
 			offset = Vector3.ZERO     # the arms model is rooted at the chest
+
+		if arms_only and row[0] in ["arm_r", "arm_l"]:
+			offset.x *= ARMS_SPREAD   # first-person arms stand wider apart (Dave 2 Nov 2026)
 
 		skeleton.set_bone_rest(index, Transform3D(Basis.IDENTITY, offset))
 
@@ -371,6 +375,7 @@ func _build_animations() -> void:
 	library.add_animation("lie", _loop(4.0, 8, _lie))
 	library.add_animation("swing", _once(0.7, 14, _swing))
 	library.add_animation("swing_fp", _once(SWING_FP_S, 22, _swing_fp))
+	library.add_animation("swing_fp_down", _once(SWING_FP_S, 22, _swing_fp_down))
 	library.add_animation("carry_idle", _loop(3.0, 12, func(p): return _carry(_idle(p), p, 0.5)))
 	library.add_animation("carry_walk", _loop(1.2, 16, func(p): return _carry(_gait(p, 0.38, 0.95, 0.3, 0.12, 0.2, 0.05, 0.05, 0.02, 0.03), p, 1.0)))
 	library.add_animation("jab", _once(0.5, 10, _jab))
@@ -550,6 +555,22 @@ func _swing_fp(p: float) -> Dictionary:
 		"arm_r": Vector3(arm, 0.0, out), "forearm_r": Vector3(elbow, 0.0, 0.0), "hand_r": Vector3(wrist, 0.0, 0.0),
 		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
 		"spine": Vector3(lean, twist, 0.0), "chest": Vector3(lean * 0.5, twist * 0.7, 0.0),
+	}
+
+
+# The first-person overhead chop for something on the ground (Dave 2 Nov 2026: a log, a stump, the ground or a rock is hit from above, a tree or anything standing from the side).
+# Same timing as _swing_fp (impact at 0.5 s of 0.95): the axe goes up over the head with both the arm and the elbow raised (no sideways travel), a beat at the top, then straight down in front.
+func _swing_fp_down(p: float) -> Dictionary:
+	var t: float = p * SWING_FP_S
+	var arm: float = _keys_t(t, [[0.0, 0.2], [0.28, 1.35], [0.36, 1.4], [0.5, 0.45], [0.56, 0.4], [0.7, 0.3], [0.9, 0.2], [0.95, 0.2]])
+	var out: float = _keys_t(t, [[0.0, 0.07], [0.28, 0.12], [0.36, 0.12], [0.5, 0.0], [0.56, 0.0], [0.7, 0.04], [0.9, 0.07], [0.95, 0.07]])
+	var elbow: float = _keys_t(t, [[0.0, 0.12], [0.28, 1.5], [0.36, 1.55], [0.5, 0.35], [0.56, 0.4], [0.7, 0.4], [0.9, 0.15], [0.95, 0.12]])
+	var wrist: float = _keys_t(t, [[0.0, 0.0], [0.28, 0.9], [0.36, 1.0], [0.44, 0.1], [0.5, -0.7], [0.56, -0.65], [0.7, -0.3], [0.9, 0.0], [0.95, 0.0]])
+	var lean: float = _keys_t(t, [[0.0, 0.0], [0.28, -0.15], [0.36, -0.15], [0.5, 0.25], [0.56, 0.25], [0.7, 0.12], [0.9, 0.0], [0.95, 0.0]])
+	return {
+		"arm_r": Vector3(arm, 0.0, out), "forearm_r": Vector3(elbow, 0.0, 0.0), "hand_r": Vector3(wrist, 0.0, 0.0),
+		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
+		"spine": Vector3(lean, 0.0, 0.0), "chest": Vector3(lean * 0.5, 0.0, 0.0),
 	}
 
 
