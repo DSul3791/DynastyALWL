@@ -114,6 +114,7 @@ var remains_marks: Array = []                # [[position, seconds left, msec re
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
 var _temp_label: Label
+var air_c: float = NAN                      # outside air temperature, C, from the client weather (terrain_client._update_weather); NAN until known
 var warmth: int = 100                       # body warmth, percent (protocol 36)
 var energy: int = 100                       # the Energy pool, percent (job 95)
 var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
@@ -3468,7 +3469,7 @@ func _update_panel_bars() -> void:
 	_panel_bars["Energy"].value = float(energy)
 	_panel_bars["Temperature"].value = float(warmth)
 	if _temp_label != null and is_instance_valid(_temp_label):
-		_temp_label.text = "Body temp " + DisplaySettingsScript.temp_text(float(warmth))
+		_temp_label.text = "Body temp " + DisplaySettingsScript.temp_text(float(warmth)) + ("" if is_nan(air_c) else "   Air " + DisplaySettingsScript.air_text(air_c))
 
 	if _sick_label != null and is_instance_valid(_sick_label):
 		_sick_label.text = ("Health: ill, about %d h left" % sick_hours) if sick_hours > 0 else ""
