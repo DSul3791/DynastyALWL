@@ -256,6 +256,29 @@ func choose(hammer_tier: int) -> void:
 	set_open(false, hammer_tier)
 
 
+# Deletes the highlighted saved plan (Delete key while the menu is open). Returns its name, or "" when the highlight is not a plan.
+func delete_highlighted(hammer_tier: int) -> String:
+	var list: Array = entries(hammer_tier)
+
+	if _cursor < 0 or _cursor >= list.size() or list[_cursor]["kind"] != "plan":
+		return ""
+
+	var index: int = int(list[_cursor]["index"])
+	var plan_name: String = str(plans.plans[index]["name"])
+	plans.plans.remove_at(index)
+	plans.save_file(_plans_path)
+
+	if plan_picked == index:
+		plan_picked = -1
+		picked = 0
+	elif plan_picked > index:
+		plan_picked -= 1
+
+	_cursor = clampi(_cursor - 1, 0, maxi(entries(hammer_tier).size() - 1, 0))
+	refresh(hammer_tier)
+	return plan_name
+
+
 func clear() -> void:
 	picked = 0
 	plan_picked = -1
@@ -264,7 +287,7 @@ func clear() -> void:
 
 
 func list_text(hammer_tier: int) -> String:
-	var lines: PackedStringArray = ["Hammer  (wheel: move, left click: choose, right click: close)", ""]
+	var lines: PackedStringArray = ["Hammer  (wheel: move, left click: choose, right click: close, Delete: remove a plan)", ""]
 	var list: Array = entries(hammer_tier)
 
 	for n in range(list.size()):

@@ -375,6 +375,19 @@ func _plan_step() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, int(piece["bp"]), int(piece.get("lift", 0)), int(piece["yaw"]), piece["pos"])
 
 
+# Delete with the hammer menu open removes the highlighted saved plan. Returns true when it was used.
+func delete_plan() -> bool:
+	if not blueprints.is_open:
+		return false
+
+	var gone: String = blueprints.delete_highlighted(_hammer_tier())
+
+	if gone != "":
+		_inv._on_notice("Removed %s" % gone)
+
+	return true
+
+
 # Right click (or R) with a hammer in hand opens or shuts its blueprint list.
 func toggle_blueprints() -> bool:
 	if _hammer_tier() <= 0:

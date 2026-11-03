@@ -3345,6 +3345,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
 			_save_display()
+		elif event.keycode == KEY_DELETE and held != null and held.delete_plan():
+			pass
 		elif event.keycode == KEY_R and not event.ctrl_pressed and items != null and not items.open:
 			if held != null:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
