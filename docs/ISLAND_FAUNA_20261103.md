@@ -33,7 +33,7 @@ Land cells next to the sea within about 3.8 km of spawn (53480, 68825), sampled 
 | bare rock | 118 | 533 m |
 
 Gulls and seals listed only beach, and the nearest beach is 1.2 km away, so a new player never saw either. Now
-gulls also use salt marsh (0.6) and bare rock (0.6), and seals use bare rock (0.6). A new habitat key, `near_ocean_m`,
+gulls also use salt marsh (0.6) and bare rock (0.6), and seals use bare rock (0.6) and salt marsh (0.4): harbour seals haul out on mudflats at the marsh edge. A new habitat key, `near_ocean_m`,
 keeps them on the coast: 60 m for gulls, 30 m for seals. An inland marsh or crag never gets them.
 
 ## Frogs after the fresh water rule (measured on the baked water sim)

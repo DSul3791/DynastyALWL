@@ -659,7 +659,8 @@
 			},
 			"biomes": {
 				"beach": 1.0,
-				"bare_rock": 0.6
+				"bare_rock": 0.6,
+				"marsh": 0.4
 			},
 			"active": {
 				"day": 1.0,
