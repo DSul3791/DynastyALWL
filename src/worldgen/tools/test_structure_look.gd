@@ -27,6 +27,8 @@ func _init() -> void:
 	check(StructureLook.look_of(25) == "foundation" and StructureLook.sound_of(25) == "foundation" and StructureLook.clears_grass(25), "the foundation looks, sounds and clears")
 	check(not StructureLook.clears_grass(22) and not StructureLook.clears_grass(24) and not StructureLook.clears_grass(26), "walls, doorways and roofs do not clear grass")
 	check(StructureLook.clears_grass(42) and StructureLook.clears_grass(51) and StructureLook.clears_grass(54) and StructureLook.clears_grass(57), "every floor (thatch, log, stone, brick) clears grass, so no blades stand through it")
+	check(StructureLook.tile_of(51) == Vector2(2.0, 2.0) and StructureLook.tile_of(54) == Vector2(2.0, 2.0) and StructureLook.tile_of(57) == Vector2(2.0, 2.0), "log, stone and brick floors clear just their own 2 m tile")
+	check(StructureLook.tile_of(42) == Vector2.ZERO and StructureLook.tile_of(5) == Vector2.ZERO, "the thatch floor and the lean-to keep the round clearing")
 	check(StructureLook.clears_grass(1) and StructureLook.clears_grass(8) and StructureLook.clears_grass(9) and StructureLook.sound_of(8) == "thump", "the campfire states clear and thump")
 	check(StructureLook.look_of(12) == "remains" and not StructureLook.clears_grass(12), "old remains look like remains and do not clear grass")
 	check(StructureLook.sound_of(13) == "timber" and StructureLook.sound_of(5) == "leanto", "a workbench sets down with the timber sound (was silent until 31 Oct), the lean-to has its own")

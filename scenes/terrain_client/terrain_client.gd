@@ -1714,6 +1714,23 @@ func _sync_cleared() -> void:
 			continue
 
 		var pos: Vector3 = row["pos"]
+		var tile: Vector2 = StructureLook.tile_of(int(row.get("state", 0)))
+
+		if tile != Vector2.ZERO:
+			# A floor tile clears only its own footprint: bare patches 0.8 m apart across it, turned with the piece (paths use the same bare list).
+			var turn: Basis = Basis(Vector3.UP, deg_to_rad(float(row.get("yaw", 0.0))))
+			var nx: int = maxi(int(ceil(tile.x / 0.8)) - 1, 0)
+			var nz: int = maxi(int(ceil(tile.y / 0.8)) - 1, 0)
+
+			for iz in range(nz + 1):
+				for ix in range(nx + 1):
+					var local: Vector3 = Vector3((float(ix) / maxf(float(nx), 1.0) - 0.5) * (tile.x - 0.4) if nx > 0 else 0.0, 0.0, (float(iz) / maxf(float(nz), 1.0) - 0.5) * (tile.y - 0.4) if nz > 0 else 0.0)
+					var at_tile: Vector3 = pos + turn * local
+					paths.append(Vector3(snappedf(at_tile.x, 0.01), pos.y, snappedf(at_tile.z, 0.01)))
+
+			key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id) ^ int(float(row.get("yaw", 0.0)))
+			continue
+
 		spots.append(Vector3(snappedf(pos.x, 0.01), pos.y, snappedf(pos.z, 0.01)))
 		key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id)
 
