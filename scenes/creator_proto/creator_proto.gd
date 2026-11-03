@@ -249,7 +249,7 @@ func _build_about(body: VBoxContainer) -> void:
 	note.text = "Gender and frame only set a starting body and clothes. Every slider and colour can still be changed, and your pronouns are yours to pick."
 
 	if _use_dynasty():      # Dave's body (3 Nov 2026): say plainly what it does not show yet, so a slider that does nothing does not read as a bug
-		note.text += "\nThis body is still being finished: height, limbs, head, hands, feet and skin colour show now; hair, face, width and the feminine body are coming."
+		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest and skin colour show now; hair, face and the feminine body are coming."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
 	body.add_child(note)
@@ -571,7 +571,7 @@ func _refresh_controls() -> void:
 
 # Dave's body (dynasty_body.gd) is the preview when the game wears it (Dave's QA answer, 2 Nov 2026: "use our new character mesh and allow us to adjust his proportions"): it is made
 # once and the sliders reshape it in place (dynasty_proportions.gd), so a slider move shows at once. The skin colour tints it (dynasty_body.gd dress); its clothes are baked into Dave's
-# texture, so the clothes colours and the face and width sliders do not show on it yet. Without Dave's glb (or with the old body chosen) the generated body is rebuilt as before.
+# texture, so the clothes colours and the face sliders do not show on it yet. The width sliders are blend shapes (dynasty_shapes.gd). Without Dave's glb (or with the old body chosen) the generated body is rebuilt as before.
 func _use_dynasty() -> bool:
 	return MyCharacter.dynasty_body_on() and DynastyBody.available()
 

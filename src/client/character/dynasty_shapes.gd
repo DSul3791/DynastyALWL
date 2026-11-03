@@ -1,0 +1,167 @@
+extends RefCounted
+
+# Width sliders for Dave's body (Kathreen 3 Nov 2026): Build, Muscle, Belly, Hips and Chest as blend shapes made in code from the bind pose, because Dave's glb has none and a
+# non-uniform bone scale shears under animation (dynasty_proportions.gd does the lengths). Made once per run, shared by every Dynasty body, and set per body with
+# MeshInstance3D.set_blend_shape_value (the creator slider value -1..1 is the weight; a negative weight makes the body thinner, flatter or narrower).
+#
+# Every vertex is moved in the mesh's own (bind) space, read from the skin: its dominant bone gives a segment from that bone to its child, and
+#   build  pushes it away from that segment (the whole body fuller; head, hands and feet only a little),
+#   muscle does the same on the arms, legs, shoulders and chest, most in the middle of each segment (bellies of muscle, not swollen joints),
+#   belly  pushes the front of the lower trunk forward and a little out, round the navel,
+#   hips   widens the pelvis and the tops of the thighs sideways,
+#   chest  widens the rib cage and brings the chest forward.
+# Sizes are fractions of the body's height in mesh units, so they hold whatever unit Dave exported in.
+
+const P := "mixamorig_"
+const NAMES := ["build", "muscle", "belly", "hips", "chest"]
+const SHAPED_KEY := "dynasty_shapes"
+
+static var _cache: Dictionary = {}       # source mesh rid -> shaped ArrayMesh (or null when it could not be made)
+
+
+# The shaped copy of `body.mesh` for `skin`, made on first use; null when the mesh is not one skinned surface with bones and weights.
+static func shaped(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
+	if mesh == null or skin == null or skeleton == null:
+		return null
+
+	if mesh.has_meta(SHAPED_KEY):
+		return mesh as ArrayMesh      # already ours
+
+	var key: RID = mesh.get_rid()
+
+	if _cache.has(key):
+		return _cache[key]
+
+	var t0: int = Time.get_ticks_msec()
+	var made: ArrayMesh = _make(mesh, skin, skeleton)
+	_cache[key] = made
+	print("dynasty shapes: %s in %d ms" % ["made" if made != null else "not made", Time.get_ticks_msec() - t0])
+	return made
+
+
+static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
+	if not (mesh is ArrayMesh) or mesh.get_surface_count() < 1:
+		return null
+
+	var src: ArrayMesh = mesh as ArrayMesh
+	var out: ArrayMesh = ArrayMesh.new()
+	out.set_meta(SHAPED_KEY, true)
+	out.blend_shape_mode = Mesh.BLEND_SHAPE_MODE_RELATIVE
+
+	for shape_name in NAMES:
+		out.add_blend_shape(shape_name)
+
+	# Bone heads in mesh space (the skin's bind poses undone), by skin bind index and by bone name.
+	var head_of: Dictionary = {}          # bone name -> Vector3 in mesh space
+	var bind_name: Array = []             # skin bind index -> bone name
+
+	for i in range(skin.get_bind_count()):
+		var bone_name: String = String(skin.get_bind_name(i))
+
+		if bone_name == "" and skin.get_bind_bone(i) >= 0:
+			bone_name = skeleton.get_bone_name(skin.get_bind_bone(i))
+
+		bind_name.append(bone_name)
+		head_of[bone_name] = skin.get_bind_pose(i).affine_inverse().origin
+
+	for need in ["Hips", "Head", "LeftUpLeg", "RightUpLeg", "LeftFoot", "Spine", "Spine2"]:
+		if not head_of.has(P + need):
+			return null
+
+	var up: Vector3 = (head_of[P + "Head"] - head_of[P + "Hips"]).normalized()
+	var lateral: Vector3 = (head_of[P + "LeftUpLeg"] - head_of[P + "RightUpLeg"])
+	lateral = (lateral - up * lateral.dot(up)).normalized()                    # toward the body's left
+	var front: Vector3 = lateral.cross(up).normalized()                        # Mixamo: left +X, up +Y, front +Z
+	var height: float = (head_of[P + "Head"] - head_of[P + "LeftFoot"]).dot(up) * 1.12
+	var hips: Vector3 = head_of[P + "Hips"]
+	var navel: Vector3 = head_of[P + "Spine"]
+	var chest_c: Vector3 = head_of[P + "Spine2"]
+	# The segment of each bone: its head to the head of its first child (the end bones point up the parent's direction).
+	var tail_of: Dictionary = {}
+
+	for bone_name in head_of:
+		var i: int = skeleton.find_bone(bone_name)
+		var tail: Vector3 = head_of[bone_name]
+
+		if i >= 0:
+			for child in skeleton.get_bone_children(i):
+				var child_name: String = skeleton.get_bone_name(child)
+
+				if head_of.has(child_name):
+					tail = head_of[child_name]
+					break
+
+		if tail.is_equal_approx(head_of[bone_name]):
+			tail = head_of[bone_name] + up * height * 0.05
+
+		tail_of[bone_name] = tail
+
+	for s in range(src.get_surface_count()):
+		var arrays: Array = src.surface_get_arrays(s)
+		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES] if arrays[Mesh.ARRAY_BONES] != null else PackedInt32Array()
+		var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS] if arrays[Mesh.ARRAY_WEIGHTS] != null else PackedFloat32Array()
+		var per: int = bones.size() / maxi(verts.size(), 1)
+		var shapes: Array = []
+
+		for shape_name in NAMES:
+			shapes.append(verts.duplicate())
+
+		if per > 0 and weights.size() == bones.size():
+			for v in range(verts.size()):
+				var p: Vector3 = verts[v]
+				var best: int = -1
+				var best_w: float = 0.0
+
+				for k in range(per):
+					if weights[v * per + k] > best_w:
+						best_w = weights[v * per + k]
+						best = bones[v * per + k]
+
+				if best < 0 or best >= bind_name.size():
+					continue
+
+				var bone: String = String(bind_name[best]).trim_prefix(P)
+				var a: Vector3 = head_of[P + bone]
+				var b: Vector3 = tail_of[P + bone]
+				var ab: Vector3 = b - a
+				var t: float = clampf((p - a).dot(ab) / maxf(ab.length_squared(), 1e-9), 0.0, 1.0)
+				var radial: Vector3 = p - (a + ab * t)
+				# build: fuller everywhere, a little on the head, hands and feet
+				var thin: bool = bone.begins_with("Head") or bone.ends_with("Hand") or bone.ends_with("Foot") or bone.ends_with("ToeBase") or bone == "Neck" or bone == "headfront"
+				(shapes[0] as PackedVector3Array)[v] = p + radial * (0.04 if thin else 0.16)
+				# muscle: limbs, shoulders and chest, most mid-segment
+				var limb: bool = bone.ends_with("Arm") or bone.ends_with("ForeArm") or bone.ends_with("UpLeg") or bone.ends_with("Leg") or bone.ends_with("Shoulder") or bone == "Spine2"
+				(shapes[1] as PackedVector3Array)[v] = p + radial * ((0.05 + 0.16 * sin(PI * t)) if limb else 0.0)
+				# belly: the front of the lower trunk, round the navel
+				var rel: Vector3 = p - navel
+				var fwd: float = rel.dot(front)
+				var trunk: bool = bone == "Hips" or bone == "Spine" or bone == "Spine1"
+				var around: float = exp(-pow(rel.dot(up) / (height * 0.09), 2.0))
+				var belly: Vector3 = (front * maxf(fwd, 0.0) * 0.9 + lateral * rel.dot(lateral) * 0.15) * around if trunk else Vector3.ZERO
+				(shapes[2] as PackedVector3Array)[v] = p + belly
+				# hips: the pelvis and thigh tops sideways
+				var hip_rel: Vector3 = p - hips
+				var near_hip: float = exp(-pow(hip_rel.dot(up) / (height * 0.08), 2.0))
+				var hip_part: bool = bone == "Hips" or bone.ends_with("UpLeg") or bone == "Spine"
+				(shapes[3] as PackedVector3Array)[v] = p + (lateral * hip_rel.dot(lateral) * 0.22 * near_hip if hip_part else Vector3.ZERO)
+				# chest: the rib cage wider and the chest forward
+				var c_rel: Vector3 = p - chest_c
+				var near_chest: float = exp(-pow(c_rel.dot(up) / (height * 0.1), 2.0))
+				var chest_part: bool = bone == "Spine1" or bone == "Spine2" or bone.ends_with("Shoulder")
+				(shapes[4] as PackedVector3Array)[v] = p + ((lateral * c_rel.dot(lateral) * 0.14 + front * maxf(c_rel.dot(front), 0.0) * 0.25) * near_chest if chest_part else Vector3.ZERO)
+
+		var blend_arrays: Array = []
+
+		for shape in shapes:
+			var one: Array = []
+			one.resize(Mesh.ARRAY_MAX)
+			one[Mesh.ARRAY_VERTEX] = shape
+			one[Mesh.ARRAY_NORMAL] = arrays[Mesh.ARRAY_NORMAL]
+			one[Mesh.ARRAY_TANGENT] = arrays[Mesh.ARRAY_TANGENT]
+			blend_arrays.append(one)
+
+		out.add_surface_from_arrays(src.surface_get_primitive_type(s), arrays, blend_arrays, {}, Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS if per == 8 else 0)
+		out.surface_set_material(s, src.surface_get_material(s))
+
+	return out

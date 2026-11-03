@@ -12,6 +12,7 @@ const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
 const P := "mixamorig_"
 const WornLook := preload("res://src/client/worn_look.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
+const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -295,6 +296,7 @@ func set_proportions(g: Dictionary) -> void:
 		skeleton.add_child(proportions)
 
 	proportions.set_genome(g)
+	_set_widths(g)
 	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)       # the skin colour of the genome; the other colours are unused on this body
 	var height: float = Proportions.factor(g, "height")
 	_model.scale = Vector3.ONE * height
@@ -309,6 +311,33 @@ func set_proportions(g: Dictionary) -> void:
 
 		var rest: Transform3D = _mount_rest[marker]
 		marker.transform = Transform3D(rest.basis * (1.0 / float(spec[1])), rest.origin)
+
+
+# The width sliders (dynasty_shapes.gd): the shared shaped mesh is put on this body the first time a width is not 0, then each slider is a blend shape weight.
+func _set_widths(g: Dictionary) -> void:
+	var any: bool = false
+
+	for key in Shapes.NAMES:
+		if absf(float(g.get(key, 0.0))) > 0.001:
+			any = true
+
+	if not any and not body_mesh.mesh.has_meta(Shapes.SHAPED_KEY):
+		return       # the plain body keeps Dave's own mesh
+
+	var shaped: ArrayMesh = Shapes.shaped(body_mesh.mesh, body_mesh.skin, skeleton)
+
+	if shaped == null:
+		return
+
+	if body_mesh.mesh != shaped:
+		body_mesh.mesh = shaped
+		_skin_material = null          # a new mesh drops the override: dress makes it again
+
+	for key in Shapes.NAMES:
+		var i: int = shaped.find_blend_shape_by_name(key)
+
+		if i >= 0:
+			body_mesh.set_blend_shape_value(i, clampf(float(g.get(key, 0.0)), -1.0, 1.0))
 
 
 # Skin colour (Kathreen 3 Nov 2026): Dave's texture has the skin and the loincloth painted in one map, in the same warm hue (the loincloth only darker), so the creator's skin colour
