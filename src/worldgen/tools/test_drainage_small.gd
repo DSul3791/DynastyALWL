@@ -176,29 +176,31 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-# River banks (Sonny 3 Nov 2026): a 5 x 3 strip across a hillside falling east. The middle column holds water at 10.0 m on a bed of 9.5 m (a channel
-# cell), the column to its west is higher ground, the column to its east is dry ground at 9.0 m, below the water. The east column gets a bank (water + 0.2,
-# at most max_raise_m); the west column and a shallow channel cell (surface set, too shallow to count as water) stay as they are.
+# River banks (Sonny 3 Nov 2026): a 5 x 5 patch of hillside falling east. Column 2 holds water at 10.0 m on a bed of 9.5 m (a channel), columns 0 and 1
+# are higher ground, column 3 is dry ground at 9.0 m, below the water, and column 4 (not beside the water) is lower still. Column 3 gets a bank (water
+# + 0.2, at most max_raise_m); the higher ground, column 4 and a shallow channel cell (surface set, too shallow to count as water) stay as they are.
 func _check_banks() -> void:
 	var channels: FakeChannels = FakeChannels.new()
 	var sea: PackedByteArray = PackedByteArray()
-	channels.bed.resize(15)
-	channels.surface.resize(15)
-	sea.resize(15)
+	channels.bed.resize(25)
+	channels.surface.resize(25)
+	sea.resize(25)
 	channels.surface.fill(NAN)
 
 	for row in range(5):
-		channels.bed[row * 3 + 0] = 11.0
-		channels.bed[row * 3 + 1] = 9.5
-		channels.bed[row * 3 + 2] = 9.0
-		channels.surface[row * 3 + 1] = 10.0
+		channels.bed[row * 5 + 0] = 11.5
+		channels.bed[row * 5 + 1] = 11.0
+		channels.bed[row * 5 + 2] = 9.5
+		channels.bed[row * 5 + 3] = 9.0
+		channels.bed[row * 5 + 4] = 8.0
+		channels.surface[row * 5 + 2] = 10.0
 
-	channels.bed[4 * 3 + 2] = 5.0               # a deep drop beside the last row: the bank is capped
-	channels.bed[0 * 3 + 2] = 9.98
-	channels.surface[0 * 3 + 2] = 10.0           # a shallow channel cell: never raised
+	channels.bed[4 * 5 + 3] = 5.0               # a deep drop beside the last row: the bank is capped
+	channels.bed[0 * 5 + 3] = 9.98
+	channels.surface[0 * 5 + 3] = 10.0           # a shallow channel cell: never raised
 	var rules: Dictionary = {"water_min_depth_m": 0.05, "banks": {"enabled": true, "height_m": 0.2, "max_raise_m": 1.5}}
 	TileDrainageScript._build_banks(channels, sea, 5, rules)
-	_check(is_equal_approx(channels.bed[2 * 3 + 2], 10.2), "dry ground below the water beside a channel gets a bank at water + 0.2 m (%.2f)" % channels.bed[2 * 3 + 2])
-	_check(is_equal_approx(channels.bed[4 * 3 + 2], 6.5), "a bank rises at most max_raise_m (%.2f)" % channels.bed[4 * 3 + 2])
-	_check(channels.bed[2 * 3 + 0] == 11.0 and channels.bed[2 * 3 + 1] == 9.5, "higher ground and the channel itself are left alone")
-	_check(is_equal_approx(channels.bed[0 * 3 + 2], 9.98), "a shallow channel cell is never dammed")
+	_check(is_equal_approx(channels.bed[2 * 5 + 3], 10.2), "dry ground below the water beside a channel gets a bank at water + 0.2 m (%.2f)" % channels.bed[2 * 5 + 3])
+	_check(is_equal_approx(channels.bed[4 * 5 + 3], 6.5), "a bank rises at most max_raise_m (%.2f)" % channels.bed[4 * 5 + 3])
+	_check(channels.bed[2 * 5 + 1] == 11.0 and channels.bed[2 * 5 + 2] == 9.5 and channels.bed[2 * 5 + 4] == 8.0, "higher ground, the channel and ground not beside the water are left alone")
+	_check(is_equal_approx(channels.bed[0 * 5 + 3], 9.98), "a shallow channel cell is never dammed")
