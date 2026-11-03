@@ -115,3 +115,10 @@ Note: Recommendation: A. A very soft, short wooden tock, at most once every 20 s
 [A] Soft wooden tock, at most once per 20 s
 [B] Only when a skill reaches a training cap (25, 50, 75)
 [C] No sound for skills
+
+## npc-dynasty-body | Should town NPCs use your new body (Dave's mesh) too?
+Note: The player has used your body since 1 Nov. NPCs still use the older generated body.
+Note: With #254 (clothes on your body) and #195 (proportion sliders), NPCs could use your body, each with its own shape and skin, in their merchant and guard clothes.
+Note: Yes: I build it. No: NPCs stay on the old body.
+Note: Recommendation: Yes, once #195 and #254 are merged and pictured
+[text]
