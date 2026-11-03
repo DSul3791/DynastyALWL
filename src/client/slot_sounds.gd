@@ -105,7 +105,8 @@ func _clips(slot: String) -> Array:
 			if stream != null:
 				list.append(stream)
 				loaded_clips += 1
-				loaded_bytes += FileAccess.get_file_as_bytes(str(path)).size()
+				var file: FileAccess = FileAccess.open(str(path), FileAccess.READ)   # the size only: reading the bytes again on the main thread was a hitch (Steve, 3 Nov)
+				loaded_bytes += file.get_length() if file != null else 0
 
 	_streams[slot] = list
 	return list
