@@ -1014,7 +1014,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_HOE_SMOOTH:
 		_hoe_smooth(peer, inv, at)
 	elif kind == Net.ACT_HOE_GRADE_POINT:
-		_hoe_grade_point(peer, inv, a, at)
+		_hoe_grade_point(peer, inv, b, at)
 	elif kind == Net.ACT_HOE_GRADE:
 		_hoe_grade(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
