@@ -35,7 +35,7 @@ Hob sleeps from 21:00 to 06:00 game time (npcs.json schedule). Asleep he only mu
 
 The 69 copper of goal rewards buys the backpack plus a waterskin, or a bed kit plus a stone axe.
 
-**Catch (low, for Sal):** the axe goal counts only an axe you **make** (`made_item`). A bought axe fells trees but never completes the goal, and the fell, fire and later goals wait behind it. The hint asks for a stone axe, so a player who bought one has to craft a second.
+**Catch (fixed in Sal's open PR #53, `or_have`):** on main the axe goal counts only an axe you **make** (`made_item`). A bought axe fells trees but never completes the goal, and the fell, fire and later goals wait behind it. The hint asks for a stone axe, so a player who bought one has to craft a second.
 
 ## What works today and what does not
 - **Works:** everything above, plus clothes from hide, torches, a stone forge, the chopping block and the log chain (F-16 fixed: a held log fills log recipes), the thatch house, and goals and hints on screen (one line at the top; a hint whose goal is still open is said once more after 5 minutes).
