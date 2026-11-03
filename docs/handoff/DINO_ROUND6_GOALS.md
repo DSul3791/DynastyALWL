@@ -128,4 +128,4 @@ Every first-hour action has a sound slot with files on disk:
 
 `validate_sound_slots.py` reports no empty slots.
 
-All of these are **generated** (synthesised) placeholders. Recorded ones exist only for fish splash and tree frog. That is a note for Sound, not a bug: the first hour is heard entirely through placeholders, so a recorded drink, fire light and tree crash would be the biggest wins.
+The manifest marks all of these `generated`, not `recorded` (only fish splash and tree frog are `recorded`); I did not listen to them. That is a note for Sound, not a bug: the first hour is heard entirely through placeholders, so a recorded drink, fire light and tree crash would be the biggest wins.
