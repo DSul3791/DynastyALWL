@@ -322,7 +322,7 @@ func _hammer_tier() -> int:
 	return int(entry.get("tier", 1)) if str(entry.get("tool_class", "")) == "hammer" else 0
 
 
-# R with a hammer in hand opens or shuts its blueprint list.
+# Right click (or R) with a hammer in hand opens or shuts its blueprint list.
 func toggle_blueprints() -> bool:
 	if _hammer_tier() <= 0:
 		return false
@@ -552,6 +552,11 @@ func _placing_id() -> String:
 func mouse_button(button: int, pressed: bool) -> bool:
 	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
 		_inv.eat_slot(held_slot)
+		return true
+
+	# Right click with a hammer opens its menu (or shuts it); left click in the menu picks (Dave 3 Nov 2026). Shift is left to other tools.
+	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _hammer_tier() > 0:
+		blueprints.toggle(_hammer_tier())
 		return true
 
 	if blueprints.is_open:
@@ -1278,6 +1283,8 @@ func _other_tool_hint() -> String:
 			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
 			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, grade line or till. It uses no items, only its own wear" % hoe_mode
+		"hammer":
+			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
 		"spade":
 			return "The spade digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
 
@@ -1299,9 +1306,9 @@ func _caption() -> String:
 		if PlacementRules.reason_text(blueprint_state) != "":
 			text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 		elif short:
-			text += "   (red: not enough materials; R: the list)"
+			text += "   (red: not enough materials; right click: the list)"
 		else:
-			text += "   (left click: build it with the materials in your pack; R: the list)"
+			text += "   (left click: build it with the materials in your pack; right click: the list)"
 	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
 		text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 	elif _is_placeable():

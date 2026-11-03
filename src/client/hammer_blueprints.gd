@@ -1,8 +1,9 @@
 extends RefCounted
 
 # The hammer's blueprint list (Dave 25 Oct: big placeables are blueprints, not kits). R with a hammer in hand opens it: every blueprint
-# of data/items/blueprints.json the hammer is strong enough for, with what the pack has of each material. The mouse wheel moves the
-# highlight, a left click picks one (the ghost follows the aim, a left click places it), R shuts the list. Pure rows live in rows() so a
+# of data/items/blueprints.json the hammer is strong enough for, with what the pack has of each material. Right click with the hammer
+# opens the list (Dave 3 Nov: same window style as the hoe's, 40 pt), the mouse wheel moves the highlight, a left click picks one (the
+# ghost follows the aim, a left click places it), right click (or R) shuts the list. Pure rows live in rows() so a
 # test can read them without a screen.
 
 const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
@@ -16,6 +17,10 @@ var _table
 var _pack
 var _panel: PanelContainer
 var _label: Label
+var _detail: Label
+
+const MENU_FONT := 40       # the hoe's mode window is 40 pt too (PR 161): one menu look for every tool
+const DETAIL_FONT := 28
 
 
 func setup(item_table, pack, hud_layer: CanvasLayer = null) -> void:
@@ -40,14 +45,24 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null) -> void:
 
 	if hud_layer != null:
 		_panel = PanelContainer.new()
-		_panel.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+		_panel.set_anchors_preset(Control.PRESET_CENTER)
+		_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 		_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_panel.visible = false
+		var column := VBoxContainer.new()
+		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_label = Label.new()
+		_label.add_theme_font_size_override("font_size", MENU_FONT)
 		_label.add_theme_constant_override("outline_size", 4)
 		_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 		_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_panel.add_child(_label)
+		_detail = Label.new()
+		_detail.add_theme_font_size_override("font_size", DETAIL_FONT)
+		_detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(_label)
+		column.add_child(_detail)
+		_panel.add_child(column)
 		hud_layer.add_child(_panel)
 
 
@@ -143,16 +158,29 @@ func clear() -> void:
 
 
 func list_text(hammer_tier: int) -> String:
-	var lines: PackedStringArray = ["Blueprints  (wheel: move, click: pick, R: close)"]
+	var lines: PackedStringArray = ["Hammer  (wheel: move, left click: pick, right click: close)", ""]
 	var list: Array = rows(hammer_tier)
 
 	for n in range(list.size()):
 		var row: Dictionary = list[n]
-		lines.append("%s %s%s: %s" % [">" if n == _cursor else " ", row["name"], "" if bool(row["can"]) else " (short)", row["text"]])
+		lines.append("%s %s%s" % [">" if n == _cursor else " ", row["name"], "" if bool(row["can"]) else " (short)"])
 
 	return "\n".join(lines)
+
+
+# The materials of the highlighted blueprint, as have/need (the small line under the menu).
+func detail_text(hammer_tier: int) -> String:
+	var list: Array = rows(hammer_tier)
+
+	if _cursor >= 0 and _cursor < list.size():
+		return str(list[_cursor]["text"])
+
+	return ""
 
 
 func refresh(hammer_tier: int) -> void:
 	if _label != null and is_open:
 		_label.text = list_text(hammer_tier)
+
+	if _detail != null and is_open:
+		_detail.text = detail_text(hammer_tier)
