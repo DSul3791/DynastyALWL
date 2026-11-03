@@ -32,7 +32,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 87
+const PROTOCOL_VERSION := 89
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -633,7 +633,7 @@ func reputation(ids: PackedStringArray, names: PackedStringArray, points: Packed
 	reputation_received.emit(ids, names, points)
 
 
-# The road builder has reached (or dropped) the marker at this point: the client takes the red flag down (protocol 87, Dave 3 Nov 2026).
+# The road builder has reached (or dropped) the marker at this point: the client takes the red flag down (protocol 89, Dave 3 Nov 2026).
 @rpc("authority", "call_remote", "reliable")
 func road_marker_done(at: Vector3) -> void:
 	road_marker_reached.emit(at)
