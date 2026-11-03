@@ -83,7 +83,7 @@ func step(a: Dictionary, dt: float) -> void:
 	var def: Dictionary = host.species_def(a["sp"]).get("thief", {})
 
 	if int(a["state"]) == SNEAK:
-		var goal: Variant = _food_pos(int(a.get("food", -1)), a["pos"])
+		var goal: Variant = _food_pos(int(a.get("food", -1)), a["pos"], float(def.get("smell_m", 30.0)) * 1.6 + 10.0)
 
 		# Gone, or a person came near the food or the fox, or a fire was lit: it gives up and slips away.
 		if goal == null or _frightened(a["pos"], float(def.get("scare_m", 18.0))) or _frightened(goal, float(def.get("scare_m", 18.0))) or _fire_near(goal, float(def.get("fire_m", 10.0))):
@@ -125,8 +125,10 @@ func step(a: Dictionary, dt: float) -> void:
 		host.animals.erase(a["id"])   # it eats the meal somewhere out of sight; a fox elsewhere will turn up later
 
 
-func _food_pos(id: int, from: Vector3) -> Variant:
-	for row in (loose_food.call(from, 80.0) if loose_food.is_valid() else []):
+# Where the food the fox is after lies, or null when it is gone. `reach` covers the farthest a downwind fox smells (the search was a
+# fixed 80 m, so a fox that smelled food from farther gave up at once).
+func _food_pos(id: int, from: Vector3, reach: float = 80.0) -> Variant:
+	for row in (loose_food.call(from, maxf(reach, 80.0)) if loose_food.is_valid() else []):
 		if int(row[0]) == id:
 			return row[1]
 

@@ -127,5 +127,17 @@ func _init() -> void:
 	a.damage(id, 3.0, 1)
 	check(dropped.size() == 1 and dropped[0][0] == 8, "a wounded thief drops the food (%s)" % str(dropped))
 
+	# Far smell (MikeW, 3 Nov): foxes live 100 m and more from a player, so a fox 100 m from the food must smell it and reach it
+	# (the food search was fixed at 80 m, so a far fox gave up at once).
+	var far_a = make()
+	players = [Vector3(0.0, 10.0, -60.0)]
+	food = {9: Vector3(100.0, 10.0, 0.0)}
+	var far_id: int = far_a.spawn("fox", 0.0, 0.0)
+
+	for n in 2400:
+		far_a.tick(0.05)
+
+	check(food.is_empty(), "a fox 100 m off smells loose food and takes it")
+
 	print("thieves: %d failures" % failures)
 	quit(failures)
