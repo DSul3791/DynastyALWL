@@ -1304,6 +1304,9 @@ func _welcome_body(info: Dictionary) -> void:
 		display.text_index = clampi(display.text_index + direction, 0, display.TEXT_SCALES.size() - 1)
 		_save_display()
 		items.set_text_scale(display.TEXT_SCALES[display.text_index])
+	items.gather_event = func():
+		held.play_gather()
+		feel.strike(0.0, 0.3)
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
