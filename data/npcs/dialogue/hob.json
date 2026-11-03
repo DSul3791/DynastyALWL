@@ -74,6 +74,20 @@
 		}
 	],
 	"nodes": {
+		"wanted": {
+			"text": "Let me look at my list.",
+			"effects": [
+				{
+					"wanted_order": true
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you.",
+					"goto": "bye"
+				}
+			]
+		},
 		"first": {
 			"text": [
 				"Welcome to my stall, stranger. I am Hob."
@@ -108,6 +122,10 @@
 				{
 					"text": "Any news?",
 					"goto": "news"
+				},
+				{
+					"text": "Any order for today?",
+					"goto": "wanted"
 				},
 				{
 					"text": "Can I help with anything?",

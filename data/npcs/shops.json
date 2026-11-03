@@ -97,6 +97,19 @@
 		},
 		"purse_cap": 300,
 		"purse_regen_per_day": 100,
-		"repairs": true
+		"repairs": true,
+		"wanted_orders": {
+			"note": "Hob's daily wanted order (Dave 2 Nov 2026, QA sal-wanted-orders A): one small order a game day, the same for everyone; each player can fill it once a day for a poor wage and 1 reputation. Ask him with \"Any order for today?\". The order of the day is orders[(day x 3 + 1) mod count].",
+			"rep": 1,
+			"orders": [
+				{"needs": [["nettles", 10], ["raspberries", 20]], "pay": 8},
+				{"needs": [["plant_fibre", 30], ["thatch", 20]], "pay": 8},
+				{"needs": [["blackberries", 25], ["leaves", 20]], "pay": 8},
+				{"needs": [["fiddleheads", 15], ["bark", 10]], "pay": 9},
+				{"needs": [["blueberries", 25], ["stick", 20]], "pay": 8},
+				{"needs": [["chanterelles", 6], ["wild_garlic_bulbs", 6]], "pay": 10},
+				{"needs": [["clay", 20], ["stone", 20]], "pay": 8}
+			]
+		}
 	}
 }
