@@ -8,6 +8,11 @@ extends RefCounted
 
 const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
 const STRUCTURES_PATH := "res://data/items/structures.json"
+const BuildingPlans := preload("res://src/client/building_plans.gd")
+
+var mode: String = "place"               # "place" (blueprints and saved plans) or "save" (left click saves the building you aim at)
+var plan_picked: int = -1                # index of the saved plan chosen, -1 for none (picked then holds the plan's anchor blueprint)
+var plans = BuildingPlans.new()
 
 var picked: int = 0                      # the blueprint number now chosen, 0 for none
 var is_open: bool = false
@@ -18,14 +23,17 @@ var _pack
 var _panel: PanelContainer
 var _label: Label
 var _detail: Label
+var _plans_path: String = BuildingPlans.PATH
 
 const MENU_FONT := 40       # the hoe's mode window is 40 pt too (PR 161): one menu look for every tool
 const DETAIL_FONT := 28
 
 
-func setup(item_table, pack, hud_layer: CanvasLayer = null) -> void:
+func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String = BuildingPlans.PATH) -> void:
 	_table = item_table
 	_pack = pack
+	plans.load_file(plans_path)
+	_plans_path = plans_path
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(BLUEPRINTS_PATH))
 	var structures: Variant = JSON.parse_string(FileAccess.get_file_as_string(STRUCTURES_PATH))
 	var kinds: Dictionary = structures.get("structures", {}) if typeof(structures) == TYPE_DICTIONARY else {}
@@ -39,6 +47,7 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null) -> void:
 
 			row["id"] = id
 			row["kit"] = str(kinds[str(row["structure"])].get("kit", ""))
+			row["state"] = int(kinds[str(row["structure"])].get("state", 0))
 			_book.append(row)
 
 	_book.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["name"]) < str(b["name"]))
@@ -103,13 +112,94 @@ func name_of(number: int) -> String:
 	return ""
 
 
-# Whether the pack covers the picked blueprint's materials now (the ghost is red when it does not).
+# Whether the pack covers the picked blueprint's materials now (the ghost is red when it does not). A saved plan needs all its pieces' materials.
 func can_afford(hammer_tier: int) -> bool:
+	if plan_picked >= 0 and plan_picked < plans.plans.size():
+		return plan_can(plans.plans[plan_picked])
+
 	for row in rows(hammer_tier):
 		if int(row["number"]) == picked:
 			return bool(row["can"])
 
 	return false
+
+
+# state number -> blueprint number, for the structures a hammer can place (what "Save building plan" can keep).
+func bp_of_state() -> Dictionary:
+	var out: Dictionary = {}
+
+	for row in _book:
+		out[int(row["state"])] = int(row["number"])
+
+	return out
+
+
+# Total materials of a plan as {item id: count}.
+func plan_cost(plan: Dictionary) -> Dictionary:
+	var total: Dictionary = {}
+
+	for piece in plan["pieces"]:
+		for row in _book:
+			if int(row["number"]) == int(piece["bp"]):
+				for need in row["cost"]:
+					total[str(need[0])] = int(total.get(str(need[0]), 0)) + int(need[1])
+
+	return total
+
+
+# Where each piece of saved plan `index` goes with its anchor at `at`, turned `yaw_deg` (see BuildingPlans.placements).
+func placements_of(index: int, at: Vector3, yaw_deg: float) -> Array:
+	return BuildingPlans.placements(plans.plans[index], at, yaw_deg)
+
+
+func plan_can(plan: Dictionary) -> bool:
+	var cost: Dictionary = plan_cost(plan)
+
+	for id in cost:
+		if _pack.count_of(_table.number_of(str(id))) < int(cost[id]):
+			return false
+
+	return true
+
+
+func plan_text(plan: Dictionary) -> String:
+	var cost: Dictionary = plan_cost(plan)
+	var parts: PackedStringArray = []
+
+	for id in cost:
+		parts.append("%s %d/%d" % [str(_table.entry(str(id)).get("name", id)).to_lower(), _pack.count_of(_table.number_of(str(id))), int(cost[id])])
+
+	return "%d pieces: %s" % [plan["pieces"].size(), ", ".join(parts)]
+
+
+# Keeps the building at `near` as a new plan. Returns {"ok", "name", "pieces", "skipped"} (ok false when no placeable piece is near).
+func save_plan_near(structure_rows: Array, near: Vector3) -> Dictionary:
+	var found: Dictionary = BuildingPlans.capture(structure_rows, bp_of_state(), near)
+
+	if found.is_empty():
+		return {"ok": false, "why": "none"}
+
+	var index: int = plans.add(found["plan"])
+
+	if index < 0:
+		return {"ok": false, "why": "full"}
+
+	plans.save_file(_plans_path)
+	return {"ok": true, "name": str(plans.plans[index]["name"]), "pieces": plans.plans[index]["pieces"].size(), "skipped": int(found["skipped"])}
+
+
+# The menu: "Save building plan" first, then the blueprints, then the saved plans. Each entry: {kind, name, text, can, ...}.
+func entries(hammer_tier: int) -> Array:
+	var out: Array = [{"kind": "save", "name": "Save building plan", "text": "then left click a building to keep all of it as a plan", "can": true}]
+
+	for row in rows(hammer_tier):
+		out.append({"kind": "bp", "number": int(row["number"]), "name": str(row["name"]), "text": str(row["text"]), "can": bool(row["can"])})
+
+	for n in range(plans.plans.size()):
+		var plan: Dictionary = plans.plans[n]
+		out.append({"kind": "plan", "index": n, "name": str(plan["name"]), "text": plan_text(plan), "can": plan_can(plan)})
+
+	return out
 
 
 func toggle(hammer_tier: int) -> void:
@@ -121,10 +211,12 @@ func set_open(on: bool, hammer_tier: int = 1) -> void:
 
 	if is_open:
 		_cursor = 0
-		var list: Array = rows(hammer_tier)
+		var list: Array = entries(hammer_tier)
 
 		for n in range(list.size()):
-			if int(list[n]["number"]) == picked:
+			var entry: Dictionary = list[n]
+
+			if (entry["kind"] == "save" and mode == "save") or (entry["kind"] == "plan" and int(entry["index"]) == plan_picked) or (entry["kind"] == "bp" and mode == "place" and plan_picked < 0 and int(entry["number"]) == picked):
 				_cursor = n
 
 	if _panel != null:
@@ -134,7 +226,7 @@ func set_open(on: bool, hammer_tier: int = 1) -> void:
 
 
 func move(down: bool, hammer_tier: int) -> void:
-	var count: int = rows(hammer_tier).size()
+	var count: int = entries(hammer_tier).size()
 
 	if count > 0:
 		_cursor = posmod(_cursor + (1 if down else -1), count)
@@ -142,35 +234,49 @@ func move(down: bool, hammer_tier: int) -> void:
 	refresh(hammer_tier)
 
 
-# Picks the highlighted blueprint and shuts the list.
+# Picks the highlighted entry and shuts the menu.
 func choose(hammer_tier: int) -> void:
-	var list: Array = rows(hammer_tier)
+	var list: Array = entries(hammer_tier)
 
 	if _cursor >= 0 and _cursor < list.size():
-		picked = int(list[_cursor]["number"])
+		var entry: Dictionary = list[_cursor]
+		plan_picked = -1
+
+		if entry["kind"] == "save":
+			mode = "save"
+			picked = 0
+		elif entry["kind"] == "plan":
+			mode = "place"
+			plan_picked = int(entry["index"])
+			picked = int(plans.plans[plan_picked]["pieces"][0]["bp"])   # the ghost shows the anchor piece
+		else:
+			mode = "place"
+			picked = int(entry["number"])
 
 	set_open(false, hammer_tier)
 
 
 func clear() -> void:
 	picked = 0
+	plan_picked = -1
+	mode = "place"
 	set_open(false)
 
 
 func list_text(hammer_tier: int) -> String:
-	var lines: PackedStringArray = ["Hammer  (wheel: move, left click: pick, right click: close)", ""]
-	var list: Array = rows(hammer_tier)
+	var lines: PackedStringArray = ["Hammer  (wheel: move, left click: choose, right click: close)", ""]
+	var list: Array = entries(hammer_tier)
 
 	for n in range(list.size()):
-		var row: Dictionary = list[n]
-		lines.append("%s %s%s" % [">" if n == _cursor else " ", row["name"], "" if bool(row["can"]) else " (short)"])
+		var entry: Dictionary = list[n]
+		lines.append("%s %s%s" % [">" if n == _cursor else " ", entry["name"], "" if bool(entry["can"]) else " (short)"])
 
 	return "\n".join(lines)
 
 
-# The materials of the highlighted blueprint, as have/need (the small line under the menu).
+# The line under the menu: materials (have/need) of the highlighted blueprint or plan, or what the highlighted action does.
 func detail_text(hammer_tier: int) -> String:
-	var list: Array = rows(hammer_tier)
+	var list: Array = entries(hammer_tier)
 
 	if _cursor >= 0 and _cursor < list.size():
 		return str(list[_cursor]["text"])
