@@ -19,11 +19,13 @@ const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
+const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _mats: Dictionary = {}
 var _t: float = 0.0
+var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
 var _hits: Array = []            # [at Vector3, msec] of the hits reported in the last FELL_WINDOW_MS (note_hit)
 var _blood: Array = []           # MeshInstance3D pool, one per drop shown
 var _blood_mat: StandardMaterial3D
@@ -62,6 +64,17 @@ func _make_for_species(number: int, id: int) -> Node3D:
 			return _make_gull_flock(id)      # one record per flock since MikeW's seabird flock block (PR 73): 5 to 12 gulls standing on the beach, all taking off in state 15
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
+
+
+# Whether a body that left the rows at `at` was standing on its blood trail: a wounded animal that bleeds out dies where it is,
+# at the end of its trail, with no hit near. Bodies leave the rows only past send_radius_m (120 m), far beyond the 30 m a
+# one-shot is played at, so a wounded animal running out of range is never heard falling.
+static func near_blood(at: Vector3, points: PackedVector3Array) -> bool:
+	for p in points:
+		if p.distance_to(at) <= FELL_M:
+			return true
+
+	return false
 
 
 # A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
@@ -112,7 +125,7 @@ func on_rows(rows: Array) -> void:
 
 	for id in _bodies.keys():
 		if not seen.has(id):
-			if killed_by_hit(_bodies[id]["target"], _hits, now):
+			if killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points)):
 				fell.emit(str(_bodies[id]["kind"]), _bodies[id]["target"], str(_bodies[id]["kind"]) in SMALL_FALL_KINDS)
 
 			_bodies[id]["node"].queue_free()
@@ -122,6 +135,8 @@ func on_rows(rows: Array) -> void:
 # The blood trail (protocol 55): dark red flat spots on the ground where a wounded animal ran, a pooled MeshInstance3D each,
 # size varied by position so the trail does not look stamped.
 func on_blood(points: PackedVector3Array) -> void:
+	_blood_points = points
+
 	if _blood_mat == null:
 		_blood_mat = StandardMaterial3D.new()
 		_blood_mat.albedo_color = Color(0.32, 0.03, 0.03)
