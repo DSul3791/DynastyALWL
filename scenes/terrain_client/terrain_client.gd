@@ -483,6 +483,8 @@ var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
+var _water_dirty_area: Rect2 = Rect2()   # protocol 88: where the water moved since the last ask (no area: everywhere)
+var _water_dirty_all: bool = false
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
 var _flora_cuts: int = 0
@@ -766,6 +768,7 @@ func _ready() -> void:
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.water_changed_in_received.connect(_on_water_changed_in)
 	net.water_flow_received.connect(_on_water_flow)
 	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:
 		tunnel_on = on
@@ -2197,6 +2200,12 @@ func _thousands(value: int) -> String:
 # The server's water moved: ask again for the water of every flora chunk held.
 func _on_water_changed() -> void:
 	_water_dirty = true
+	_water_dirty_all = true
+
+
+func _on_water_changed_in(area: Rect2) -> void:
+	_water_dirty = true
+	_water_dirty_area = area if not _water_dirty_area.has_area() else _water_dirty_area.merge(area)
 
 
 # Asks again for the water of the chunks held. While ground is still loading this waits up
@@ -2217,8 +2226,15 @@ func _send_water_request(now: int) -> void:
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
+	var area: Rect2 = Rect2() if _water_dirty_all else _water_dirty_area.grow(flora.chunk_m)
+	_water_dirty_all = false
+	_water_dirty_area = Rect2()
 
 	for chunk in flora.held_chunks():
+		# Only the chunks the moving water touches (protocol 88); the rest still hold the right water.
+		if area.has_area() and not area.intersects(Rect2(Vector2(chunk) * flora.chunk_m, Vector2(flora.chunk_m, flora.chunk_m))):
+			continue
+
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
 	@warning_ignore("integer_division")

@@ -126,7 +126,7 @@ Pictures: `10_campfire_placed.jpg` (the placement ghost; the lit fire itself is 
 
 ## Step 10. The first shelter: a lean-to
 
-Recipe **Lean-to kit** (#13, known): **32 sticks + 8 leaves + 4 twine** (25 s; roof 2.6 x 3.4 m, 1.5 m high). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. Hold the kit, click to place (ghost 2.4 x 2.1 m, open front towards you). It is a roof for the cover rule (1.1 x 0.95 m half-sizes, 2.1 m high): anyone under it is "under cover", fires under it survive rain. Hold E 0.6 s at it to take it down (kit comes back). A chunk holds at most 6.
+Recipe **Lean-to kit** (#13, known): **16 sticks + 4 leaves + 2 twine** (25 s; roof 2.6 x 3.4 m, 1.5 m high). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. Hold the kit, click to place (ghost 2.4 x 2.1 m, open front towards you). It is a roof for the cover rule (1.1 x 0.95 m half-sizes, 2.1 m high): anyone under it is "under cover", fires under it survive rain. Hold E 0.6 s at it to take it down (kit comes back). A chunk holds at most 6.
 
 ## Step 11. Bedding / bed
 
