@@ -4,7 +4,7 @@
 #   - side slope: river cells more than 0.5 m above the lowest ground of their own cross-section (48 m each way, across the river's direction):
 #     the channel runs along a hillside instead of the valley's low line, and its water has no bank on the downhill side
 #   - dry reaches: groups of dry river cells, and how many start at a river head (a spring moved away from its brook)
-#   - unheld edges: wet river cells beside dry ground lower than their water (no bank holds it)
+#   - unheld edges: wet river cells beside dry ground lower than their water (no bank holds it); sea cells do not count as dry ground
 # Run before and after a bake to compare (A/B for #221):
 #   python3 tools/river_survey.py [--tile 3,4] [--world worlds/base_world]
 # Needs numpy and zstandard (pip install numpy zstandard). No Godot.
@@ -165,7 +165,7 @@ def main():
             continue
 
         cells += 1
-        dry_round = d[j - 1:j + 2, i - 1:i + 2] == 0
+        dry_round = (d[j - 1:j + 2, i - 1:i + 2] == 0) & (w[j - 1:j + 2, i - 1:i + 2] != 1)   # the sea is not in the .water file: a river mouth is not a leak
 
         if (dry_round & (h[j - 1:j + 2, i - 1:i + 2] < level[j, i] - 0.05)).any():
             unheld += 1
