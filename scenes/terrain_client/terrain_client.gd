@@ -1297,6 +1297,7 @@ func _welcome_body(info: Dictionary) -> void:
 		_save_display()
 		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
+	items.hurt_event = func(lost: int) -> void: sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)

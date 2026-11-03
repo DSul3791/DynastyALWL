@@ -101,6 +101,7 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	check(names.has("player_hurt"), "a blow on the player has its slot")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.
