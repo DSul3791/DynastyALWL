@@ -44,9 +44,11 @@ var _streams: Dictionary = {}
 
 func setup(stage) -> void:
 	_stage = stage
-	_players["stream"] = _loop_player("water_brook", STREAM_UNIT_M, REACH_M)
-	_players["river"] = _loop_player("water_river", STREAM_UNIT_M * 1.5, REACH_M)
-	_players["pool"] = _loop_player("water_pond", POOL_UNIT_M, POOL_REACH_M)
+	# The players start with no stream: setup runs in the welcome and must not load files. The warm list fills _streams in the background and
+	# _attach (from _scan) gives a player its stream the first time it is wanted.
+	_players["stream"] = _loop_player(STREAM_UNIT_M, REACH_M)
+	_players["river"] = _loop_player(STREAM_UNIT_M * 1.5, REACH_M)
+	_players["pool"] = _loop_player(POOL_UNIT_M, POOL_REACH_M)
 
 
 func set_tile(tile: Vector2i, floats: PackedFloat32Array) -> void:
@@ -144,8 +146,8 @@ func _scan(at: Vector3) -> void:
 		var boost: float = flow_db(springs)
 		_players["stream"].global_position = hit["point"]
 		_players["river"].global_position = hit["point"]
-		_target_db["stream"] = STREAM_DB + boost + inside
-		_target_db["river"] = RIVER_DB + inside + boost if springs >= 2 else -80.0
+		_target_db["stream"] = STREAM_DB + boost + inside if _attach("stream") else -80.0
+		_target_db["river"] = RIVER_DB + inside + boost if springs >= 2 and _attach("river") else -80.0
 		last = "stream %.0f m, %d spring(s)" % [float(hit["distance"]), springs]
 
 	var near_pool: Vector3 = Vector3.INF
@@ -160,24 +162,35 @@ func _scan(at: Vector3) -> void:
 
 	if near_d <= POOL_REACH_M and not muted:
 		_players["pool"].global_position = near_pool
-		_target_db["pool"] = POOL_DB + inside
+		_target_db["pool"] = POOL_DB + inside if _attach("pool") else -80.0
 
 
-func _loop_player(sound_name: String, unit: float, reach: float) -> AudioStreamPlayer3D:
-	var list: Array = _variants(sound_name)
+func _loop_player(unit: float, reach: float) -> AudioStreamPlayer3D:
 	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", unit, reach)
 	player.volume_db = -80.0
-
-	if not list.is_empty():
-		var stream: AudioStream = list[0]
-
-		if stream is AudioStreamOggVorbis:
-			stream = stream.duplicate()
-			stream.loop = true
-
-		player.stream = stream
-
 	return player
+
+
+# Gives the player its looping stream once the warm loader has it; false until then (the sound simply starts a little later).
+func _attach(key: String) -> bool:
+	var player: AudioStreamPlayer3D = _players[key]
+
+	if player.stream != null:
+		return true
+
+	var name_of: String = {"stream": "water_brook", "river": "water_river", "pool": "water_pond"}[key]
+
+	if not _streams.has(name_of) or _streams[name_of].is_empty():
+		return false
+
+	var stream: AudioStream = _streams[name_of][0]
+
+	if stream is AudioStreamOggVorbis:
+		stream = stream.duplicate()
+		stream.loop = true
+
+	player.stream = stream
+	return true
 
 
 func _variants(sound_name: String) -> Array:
