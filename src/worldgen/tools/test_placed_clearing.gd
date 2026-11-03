@@ -72,5 +72,16 @@ func _init() -> void:
 	var stump: Array = Lying.round_segment(Vector3(20, 0, 20), 0.3)
 	grass.trunks = [stump]
 	check(grass._flat_at(20.0, 20.0) and grass._flat_at(20.4, 20.0) and not grass._flat_at(21.0, 20.0), "grass on and beside a stump is flat, a metre out is not")
+	# Dave 3 Nov: far path patches lost their pressing (only the eight nearest logs reach the shader). Patches now leave the cells themselves.
+	var patches: Array = []
+
+	for k in range(40):
+		patches.append(Vector3(100.0 + float(k) * 1.0, 0.0, 300.0))
+
+	grass.set_bare(patches)
+	check(grass._bare_at(100.0, 300.0) and grass._bare_at(139.3, 300.2) and grass._bare_at(120.5, 300.0), "every patch of a 40 patch path is bare, near and far")
+	check(not grass._bare_at(120.0, 301.0) and not grass._bare_at(99.0, 300.0), "grass beside the path and past its end stays")
+	grass.set_bare([])
+	check(not grass._bare_at(100.0, 300.0), "a path taken away leaves no bare spot")
 	print("test_placed_clearing: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
