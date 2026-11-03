@@ -102,10 +102,12 @@ static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES] if arrays[Mesh.ARRAY_BONES] != null else PackedInt32Array()
 		var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS] if arrays[Mesh.ARRAY_WEIGHTS] != null else PackedFloat32Array()
 		var per: int = bones.size() / maxi(verts.size(), 1)
-		var shapes: Array = []
-
-		for shape_name in NAMES:
-			shapes.append(verts.duplicate())
+		# Five separate arrays written element by element (a Packed array taken out of an Array and cast is not safe to write through).
+		var s_build: PackedVector3Array = verts.duplicate()
+		var s_muscle: PackedVector3Array = verts.duplicate()
+		var s_belly: PackedVector3Array = verts.duplicate()
+		var s_hips: PackedVector3Array = verts.duplicate()
+		var s_chest: PackedVector3Array = verts.duplicate()
 
 		if per > 0 and weights.size() == bones.size():
 			for v in range(verts.size()):
@@ -129,31 +131,31 @@ static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 				var radial: Vector3 = p - (a + ab * t)
 				# build: fuller everywhere, a little on the head, hands and feet
 				var thin: bool = bone.begins_with("Head") or bone.ends_with("Hand") or bone.ends_with("Foot") or bone.ends_with("ToeBase") or bone == "Neck" or bone == "headfront"
-				(shapes[0] as PackedVector3Array)[v] = p + radial * (0.04 if thin else 0.16)
+				s_build[v] = p + radial * (0.04 if thin else 0.16)
 				# muscle: limbs, shoulders and chest, most mid-segment
 				var limb: bool = bone.ends_with("Arm") or bone.ends_with("ForeArm") or bone.ends_with("UpLeg") or bone.ends_with("Leg") or bone.ends_with("Shoulder") or bone == "Spine2"
-				(shapes[1] as PackedVector3Array)[v] = p + radial * ((0.05 + 0.16 * sin(PI * t)) if limb else 0.0)
+				s_muscle[v] = p + radial * ((0.05 + 0.16 * sin(PI * t)) if limb else 0.0)
 				# belly: the front of the lower trunk, round the navel
 				var rel: Vector3 = p - navel
 				var fwd: float = rel.dot(front)
 				var trunk: bool = bone == "Hips" or bone == "Spine" or bone == "Spine1"
 				var around: float = exp(-pow(rel.dot(up) / (height * 0.09), 2.0))
 				var belly: Vector3 = (front * maxf(fwd, 0.0) * 0.9 + lateral * rel.dot(lateral) * 0.15) * around if trunk else Vector3.ZERO
-				(shapes[2] as PackedVector3Array)[v] = p + belly
+				s_belly[v] = p + belly
 				# hips: the pelvis and thigh tops sideways
 				var hip_rel: Vector3 = p - hips
 				var near_hip: float = exp(-pow(hip_rel.dot(up) / (height * 0.08), 2.0))
 				var hip_part: bool = bone == "Hips" or bone.ends_with("UpLeg") or bone == "Spine"
-				(shapes[3] as PackedVector3Array)[v] = p + (lateral * hip_rel.dot(lateral) * 0.22 * near_hip if hip_part else Vector3.ZERO)
+				s_hips[v] = p + (lateral * hip_rel.dot(lateral) * 0.22 * near_hip if hip_part else Vector3.ZERO)
 				# chest: the rib cage wider and the chest forward
 				var c_rel: Vector3 = p - chest_c
 				var near_chest: float = exp(-pow(c_rel.dot(up) / (height * 0.1), 2.0))
 				var chest_part: bool = bone == "Spine1" or bone == "Spine2" or bone.ends_with("Shoulder")
-				(shapes[4] as PackedVector3Array)[v] = p + ((lateral * c_rel.dot(lateral) * 0.14 + front * maxf(c_rel.dot(front), 0.0) * 0.25) * near_chest if chest_part else Vector3.ZERO)
+				s_chest[v] = p + ((lateral * c_rel.dot(lateral) * 0.14 + front * maxf(c_rel.dot(front), 0.0) * 0.25) * near_chest if chest_part else Vector3.ZERO)
 
 		var blend_arrays: Array = []
 
-		for shape in shapes:
+		for shape in [s_build, s_muscle, s_belly, s_hips, s_chest]:
 			var one: Array = []
 			one.resize(Mesh.ARRAY_MAX)
 			one[Mesh.ARRAY_VERTEX] = shape
