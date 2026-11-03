@@ -988,9 +988,13 @@ func loose_log_near(point: Vector3) -> int:
 		if int(entry["state"]) != 0 or not entry.has("number") or int(entry["number"]) == 0:
 			continue
 
+		# The distance first: only the few items within 1.5 m pay for the item table lookups (this runs over every loose item on each blow that lands).
+		if entry["pos"].distance_squared_to(point) >= 2.25:
+			continue
+
 		var item_id: String = table.id_of(int(entry["number"]))
 
-		if (item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder") and entry["pos"].distance_to(point) < 1.5:
+		if item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder":
 			return id
 
 	return 0
