@@ -1701,6 +1701,18 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"mound":
 			_bowl(parts, Color(0.5, 0.34, 0.19))
 			_fill(parts, color, bits, true)
+			if color.g > color.r * 1.2 and color.g > color.b * 1.2:
+				# A green herb mash (the poultice): three whole bruised leaves pressed into the top and a sprig stalk, so it reads as herbs, not porridge.
+				for k in 3:
+					var la: float = TAU * float(k) / 3.0 + 0.5
+					var turn: Basis = Basis(Vector3.UP, -la) * Basis(Vector3.FORWARD, 0.25)
+					var leaf_mesh: SphereMesh = SphereMesh.new()
+					leaf_mesh.radius = 0.03
+					leaf_mesh.height = 0.06
+					leaf_mesh.radial_segments = 6
+					leaf_mesh.rings = 3
+					parts.append([leaf_mesh, Transform3D(turn * Basis.from_scale(Vector3(1.0, 0.1, 0.45)), Vector3(cos(la) * 0.035, 0.05, sin(la) * 0.035)), _tone(Color(0.24, 0.45, 0.16), k, 0.12)])
+				_root_seg(parts, 0.0025, 0.0018, Vector3(-0.01, 0.055, 0.0), Vector3(0.06, 0.07, 0.025), Color(0.36, 0.42, 0.2))
 		"fish":
 			# A fish lying on its side: a tapering body with a pale belly, a head with an eye, a forked tail, a dorsal fin and a pectoral fin. Nose toward -x.
 			_sph(parts, 0.085, Vector3(2.0, 0.62, 0.5), Vector3(0.0, -0.025, 0.0), color)
