@@ -101,6 +101,9 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	var animals_script = preload("res://src/client/animal_view.gd")
+	var hit_list: Array = [[Vector3(10, 0, 10), 1000]]
+	check(names.has("animal_fall") and animals_script.killed_by_hit(Vector3(11, 0, 10), hit_list, 2000) and not animals_script.killed_by_hit(Vector3(20, 0, 10), hit_list, 2000) and not animals_script.killed_by_hit(Vector3(11, 0, 10), hit_list, 4000), "an animal gone right after a hit near it falls with a thud; one walking off far from a hit, or long after, does not")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.

@@ -11,15 +11,20 @@ const FLEE := 2
 
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
+signal fell(kind: String, at: Vector3, small: bool)            # an animal went down from a hit: it vanished right after a hit landed on it (sounds listen)
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
 const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird"}
+const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
+const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
+const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _mats: Dictionary = {}
 var _t: float = 0.0
+var _hits: Array = []            # [at Vector3, msec] of the hits reported in the last FELL_WINDOW_MS (note_hit)
 var _blood: Array = []           # MeshInstance3D pool, one per drop shown
 var _blood_mat: StandardMaterial3D
 
@@ -59,6 +64,23 @@ func _make_for_species(number: int, id: int) -> Node3D:
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
 
+# A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
+func note_hit(at: Vector3) -> void:
+	var now: int = Time.get_ticks_msec()
+	_hits = _hits.filter(func(h): return now - int(h[1]) <= FELL_WINDOW_MS)
+	_hits.append([at, now])
+
+
+# Whether a body last seen at `at` that left the rows at `now_ms` was killed: a hit landed within FELL_M of it in the last
+# FELL_WINDOW_MS. Bodies that walk out of range, or a snared one, leave with no hit near them.
+static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
+	for h in hits:
+		if now_ms - int(h[1]) <= FELL_WINDOW_MS and (h[0] as Vector3).distance_to(at) <= FELL_M:
+			return true
+
+	return false
+
+
 func on_rows(rows: Array) -> void:
 	var seen: Dictionary = {}
 
@@ -86,8 +108,13 @@ func on_rows(rows: Array) -> void:
 		_bodies[id]["heading"] = float(row[3])
 		_bodies[id]["state"] = int(row[4])
 
+	var now: int = Time.get_ticks_msec()
+
 	for id in _bodies.keys():
 		if not seen.has(id):
+			if killed_by_hit(_bodies[id]["target"], _hits, now):
+				fell.emit(str(_bodies[id]["kind"]), _bodies[id]["target"], str(_bodies[id]["kind"]) in SMALL_FALL_KINDS)
+
 			_bodies[id]["node"].queue_free()
 			_bodies.erase(id)
 
