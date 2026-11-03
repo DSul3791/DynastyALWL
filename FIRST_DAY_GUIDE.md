@@ -17,7 +17,7 @@ What a new player does, in order, with what it costs after the pacing pass. Ever
 | 11 | Make a spear, a knife, hunt a rabbit (the wooden spear already kills a rabbit in one jab; the goal wants the stone spear) | wooden spear 1 stick (6 s, a stone kept) then 2 twine (10 s); knife 2 stones + 1 stick (8 s) | 6 s, 10 s, 8 s | goals: spear, knife |
 | 12 | Fish at the pond | rod (2 sticks, 2 twine) or shore net (8 twine, 4 stones) | rod 8 s | goal: catch a fish |
 
-Whole kit (re-added from data by Dino, 3 Nov; was "about 30 sticks, 6 stones, 6 leaves, 12 twine"): about **63 sticks** (campfire 6, axe 1, lean-to 32, bed 4, bench 16, spear 1, knife 1, rod 2), **10 stones** (axe 1, campfire 3, bench 4, knife 2; the spear's stone is kept), **8 leaves**, 10 thatch or 8 bedding, and **18 twine = 54 fibre** (axe 2, lean-to 4, bed 2, bench 6, stone spear 2, rod 2); crafting time about 3 minutes (171 s plus the bed, 10 s with bedding or 25 s with thatch); the rest of the day is gathering and walking, which nobody has timed yet.
+Whole kit (re-added from data by Dino, 3 Nov, after the lighter lean-to #186): about **47 sticks** (campfire 6, axe 1, lean-to 16, bed 4, bench 16, spear 1, knife 1, rod 2), **10 stones** (axe 1, campfire 3, bench 4, knife 2; the spear's stone is kept), **4 leaves**, 10 thatch or 8 bedding, and **16 twine = 48 fibre** (axe 2, lean-to 2, bed 2, bench 6, stone spear 2, rod 2); crafting time about 3 minutes (167 s plus the bed, 10 s with bedding or 25 s with thatch); the rest of the day is gathering and walking, which nobody has timed yet.
 
 ## Hob's stall at the spawn pad (shops.json, coins.json trade; checked by Dino, 3 Nov)
 
