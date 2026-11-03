@@ -8,6 +8,8 @@ const Store := preload("res://src/client/character/character_store.gd")
 const Record := preload("res://src/client/character/character_record.gd")
 const Style := preload("res://src/client/character/page_style.gd")
 const GeneratedBody := preload("res://src/client/character/generated_body.gd")
+const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 
 const CREATOR_SCENE := "res://scenes/creator_proto/creator_proto.tscn"
 const ROW_HEIGHT := 190
@@ -210,7 +212,16 @@ func _make_picture(genome: Dictionary) -> Control:
 	cam.fov = 30.0
 	view.add_child(cam)
 	cam.look_at_from_position(Vector3(0.0, 1.0, 5.4), Vector3(0.0, 0.95, 0.0))
-	var body: Node3D = GeneratedBody.new(genome, 0.06, false, false)
+	# The body the game will wear (Kathreen 3 Nov 2026): Dave's, shaped and tinted by the character's genome (dynasty_proportions.gd), or the generated body without his glb.
+	var body: Node3D
+
+	if MyCharacter.dynasty_body_on() and DynastyBody.available():
+		body = DynastyBody.new()
+		body.set_proportions(genome)
+		body.play("idle", 1.0, 0.0)
+	else:
+		body = GeneratedBody.new(genome, 0.06, false, false)
+
 	body.rotation_degrees.y = 180.0
 	view.add_child(body)
 	return holder
