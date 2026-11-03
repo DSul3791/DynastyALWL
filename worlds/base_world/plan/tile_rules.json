@@ -1144,8 +1144,8 @@
 		"spring_cave": {
 			"_note": "Dave 3 Nov 2026: a brook head on a hillside comes out of a cave about 100 m deep rising gently, the spring at the back, side branches with dens; some get 2 or 3 spring passages (extra_passage_chance: 2 or more, 3); each spring gives spring_m3_s_per_km2 x the head catchment km2 and their flows add up; no cave where the main passage finds under min_length_m of room.",
 			"min_slope_deg": 10,
-			"min_spacing_m": 150,
-			"max_count": 32,
+			"min_spacing_m": 120,
+			"max_count": 96,
 			"length_m": [90, 115],
 			"rise": [0.03, 0.07],
 			"width_m": [3, 5],
