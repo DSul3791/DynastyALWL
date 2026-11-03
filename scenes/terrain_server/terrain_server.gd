@@ -340,6 +340,10 @@ func _ready() -> void:
 		if tile_data.placeholder:
 			return false
 
+		# Spring cave streams run under the ground the water map knows (Dave 3 Nov 2026): drink and fill there too.
+		if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
+			return true
+
 		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
 			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
 

@@ -43,6 +43,9 @@ func _init() -> void:
 	_check(data.in_cave_opening(4.0, 1.0) and not data.in_cave_opening(4.0, 9.0) and not data.in_cave_opening(30.0, 0.0),
 		"no flora in the ground the mouth opened (to the first node, 4 m either side), plants elsewhere")
 
+	_check(data.near_cave_water(Vector3(4.0, 11.0, 0.0), 3.0) and data.near_cave_water(Vector3(16.0, 10.5, 2.0), 3.0) and not data.near_cave_water(Vector3(4.0, 30.0, 0.0), 3.0),
+		"a player in the passage or by the spring pool can drink; one on the hill above cannot")
+
 	var mesh: ArrayMesh = CaveStreams.build_mesh(s)
 	_check(mesh != null and mesh.surface_get_array_len(0) == 2 * 6 + CaveStreams.POOL_SIDES * 3, "the mesh has a ribbon per piece and a fan per pool")
 	_check(CaveStreams.build_mesh(PackedFloat32Array()) == null, "no streams, no mesh")

@@ -695,3 +695,25 @@ func in_cave_opening(x: float, z: float) -> bool:
 			return true
 
 	return false
+
+
+# Whether a point is within `reach` m of a spring cave's stream or pool (drinking and filling a container there, Dave 3 Nov 2026).
+func near_cave_water(p: Vector3, reach: float) -> bool:
+	@warning_ignore("integer_division")
+	for n in range(cave_streams.size() / 7):
+		var o: int = n * 7
+		var a: Vector3 = Vector3(cave_streams[o], cave_streams[o + 1], cave_streams[o + 2])
+		var width: float = cave_streams[o + 6]
+
+		if width < 0.0:
+			if p.distance_to(a) < reach - width:
+				return true
+
+			continue
+
+		var b: Vector3 = Vector3(cave_streams[o + 3], cave_streams[o + 4], cave_streams[o + 5])
+
+		if p.distance_to(Geometry3D.get_closest_point_to_segment(p, a, b)) < reach + 0.5 * width:
+			return true
+
+	return false
