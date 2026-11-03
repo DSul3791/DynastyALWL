@@ -731,8 +731,8 @@ func _make_shelters(rng: RandomNumberGenerator) -> void:
 # tile 3,4), so the flow cannot pick which brooks get more: chance does. cave["springs"] = [{node, m3_s}]. A main passage shorter than min_length_m
 # (no room under the hill) gives no cave.
 const SPRING_CAVE_DEFAULTS := {
-	"min_slope_deg": 10.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.03, 0.07],
-	"width_m": [3.0, 5.0], "height_m": [2.5, 4.0], "min_cover_m": 3.0, "open_cut_m": 40.0, "chamber_radius_m": [4.0, 7.0],
+	"min_slope_deg": 10.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
+	"width_m": [3.0, 5.0], "height_m": [2.5, 4.0], "min_cover_m": 2.5, "open_cut_m": 64.0, "chamber_radius_m": [4.0, 7.0],
 	"branches": [1, 3], "branch_length_m": [15.0, 40.0], "extra_passage_chance": [0.4, 0.15], "spring_m3_s_per_km2": 0.1, "min_length_m": 60.0,
 }
 
