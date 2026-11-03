@@ -226,5 +226,9 @@ func _init() -> void:
 	camp._items[pot_id] = {"number": 0, "count": 1, "pos": Vector3(2.0, 10.0, 0.5), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
 	camp._next_id += 1
 	check(not camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "once a pot stands at the fire the plant food hint stops")
+	var bench_check := {"event": "placed", "what_any": ["workbench", "log_workbench"], "count": 1}
+	check(not camp._goal_met(1, pot_state, bench_check, "workbench"), "no bench placed: the workbench goal is open")
+	camp._goal_event(1, "placed", "log_workbench")
+	check(camp._goal_met(1, camp._goal_state_of(1), bench_check, "workbench"), "a log workbench also completes the workbench goal (Dino round 6)")
 	print("goals: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

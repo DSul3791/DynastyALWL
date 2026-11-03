@@ -149,7 +149,10 @@
 			],
 			"check": {
 				"event": "placed",
-				"what": "workbench",
+				"what_any": [
+					"workbench",
+					"log_workbench"
+				],
 				"count": 1
 			},
 			"reward": {

@@ -9985,6 +9985,14 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 	if str(check.get("event", "")) == "moved_lit_night":
 		return float(st["goal_counts"].get("moved_lit_night", 0.0)) >= float(check.get("metres", 100.0))
 
+	if check.has("event") and check.has("what_any"):   # any of these kinds counts: the camp bench or the log workbench (Dino round 6)
+		var total: int = 0
+
+		for what in check["what_any"]:
+			total += int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(what)), 0))
+
+		return total >= need
+
 	if check.has("event"):
 		return int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)) >= need
 
