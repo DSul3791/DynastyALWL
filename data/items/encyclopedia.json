@@ -1928,7 +1928,9 @@
 			"name": "Log",
 			"kind": "material",
 			"description": "A heavy length of trunk. Split it for firewood, or wedge it into planks.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Any species' log from a felled tree counts (oak log, pine log and the rest)"
+			],
 			"used_for": [
 				"Used in Chopping block",
 				"Used in Log workbench",
@@ -1939,7 +1941,7 @@
 				"Used in Timber prop",
 				"Used to build Medium Forge"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"twine": {
 			"name": "Twine",
@@ -2303,7 +2305,9 @@
 			"name": "Clay",
 			"kind": "material",
 			"description": "A heavy, sticky shovelful of clay. Fire it for bricks and pots.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Dug with a spade where the ground is clay, or below wet lowland soil"
+			],
 			"used_for": [
 				"Used in Brick",
 				"Used in Clay jug",
@@ -2314,7 +2318,7 @@
 				"Used to build Basic Oven",
 				"Used to build Clay hearth"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"sand": {
 			"name": "Sand",
@@ -4159,14 +4163,16 @@
 			"name": "Flint",
 			"kind": "material",
 			"description": "A hard grey stone that sparks when struck. Common near rivers.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Lying at the water's edge now and then",
+				"Sometimes comes off a boulder you break with the axe or pick (more often near water)"
+			],
 			"used_for": [
 				"Used in Hide scraper",
 				"Used in Javelin",
 				"Used in Sickle"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"pyrite": {
 			"name": "Pyrite",
@@ -5051,14 +5057,15 @@
 			"kind": "food",
 			"description": "A wild bird's egg from a nest. Boil or fry it.",
 			"how_to_get": [
+				"Found in grouse nests on open ground (spring) and songbird nests in bushes and low trees (spring and summer)",
+				"Found in nests on the tide line (spring and summer)",
 				"Dropped by seabird when worked with a knife"
 			],
 			"used_for": [
 				"Used in Egg and nettle fry",
 				"Used in Herb omelette"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"seal_meat": {
 			"name": "Seal meat",
