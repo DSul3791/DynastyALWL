@@ -46,7 +46,7 @@ uniform float sway = 0.012;
 uniform float flutter = 0.06;
 // Leaves are not opaque: about 40% of the sunlight comes through, so a crown
 // glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
-uniform float backlight = 0.3;
+uniform float backlight = 0.4;      // 0.3 to 0.4 (Kathleen 3 Nov, Art_Direction.md: crowns read near-black at noon; more sun through the leaves)
 // Leaves that glow (the witness tree): EMISSION = glow times the instance
 // custom alpha (how strongly this tree glows; young ones weakly). Black for
 // every other species. Faint by day, plain at night.
@@ -78,7 +78,7 @@ void fragment() {
 	NORMAL = view_normal;
 	// Crown shading: undersides sit in the crown's own shadow, and each patch of leaves
 	// gets its own tone so a crown reads as clusters, not one smooth lump.
-	float under = mix(0.6, 1.0, smoothstep(-0.7, 0.5, crown_up));
+	float under = mix(0.72, 1.0, smoothstep(-0.7, 0.5, crown_up));      // undersides 0.72, was 0.6: the crowns read as dark walls (starter-area critique 3 Nov)
 	vec2 cell = floor(UV * 7.0);
 	float speck = 0.88 + 0.24 * fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
 	ALBEDO = t.rgb * COLOR.rgb * tint * under * speck;
