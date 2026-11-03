@@ -4,7 +4,7 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 
 | id | what | status | evidence | owner |
 |---|---|---|---|---|
-| F-01/F-24 | recipes can be learned | **FIXED** | 281 of 281 recipes learnable or locked with a future product (blockers: none) | Sal (data), Tyler (code half) |
+| F-01/F-24 | recipes can be learned | **FIXED** | 274 of 274 recipes learnable or locked with a future product (blockers: none) | Sal (data), Tyler (code half) |
 | F-02 | flint can be picked up | **FIXED** | flint: now | Tyler |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now | Sal |
 | F-04 | CONTROLS.md campfire cost matches recipe | **FIXED** | text no longer present | Tyler |

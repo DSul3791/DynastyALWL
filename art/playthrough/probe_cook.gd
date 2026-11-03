@@ -66,7 +66,7 @@ func _init() -> void:
 	items.action(peer, Net.ACT_LIGHT, fire_id, 0, 0, Vector3.ZERO)
 	print("probe8: fire state ", items._items[fire_id]["fire"]["state"], " (lit when not 9)")
 
-	for raw in ["raspberries", "hazelnuts", "morel", "wild_garlic_bulbs", "fiddleheads", "raw_meat", "carp", "shellfish", "crab_meat", "seal_meat"]:
+	for raw in ["raspberries", "hazelnuts", "morels", "wild_garlic_bulbs", "fiddleheads", "raw_meat", "carp", "shellfish", "crab_meat", "seal_meat"]:
 		if n(raw) == 0:
 			print("probe8: ", raw, " is not an item")
 			continue

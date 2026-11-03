@@ -17,6 +17,8 @@ extends RefCounted
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
+const RIVER_CLASS := 3
+const RIVER_FILM_M := 0.05   # a painted river cell thinner than WetMeters is still drawn, this deep (riffles between pools)
 
 var tile: Vector2i = Vector2i.ZERO
 var samples: int = 0
@@ -244,6 +246,10 @@ func _load_sim_water(path: String) -> void:
 	for k in range(samples * samples):
 		if depth[k] >= WetMeters:
 			sim_levels[k] = heights[k] + depth[k]
+		elif water_class.size() == samples * samples and water_class[k] == RIVER_CLASS and heights[k] > 0.0:
+			# Dave 2 Nov 2026 (a river broken into pools with dry steps between): on a riffle the settled river runs fast and a few cm thin, under the 12 cm
+			# draw line, so only the pools were drawn. A painted river cell is always drawn, at least RIVER_FILM_M deep; the liquid sheet shows it as one ribbon.
+			sim_levels[k] = heights[k] + maxf(depth[k], RIVER_FILM_M)
 
 
 func set_sim(levels: PackedFloat32Array, falls: PackedFloat32Array) -> void:

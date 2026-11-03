@@ -58,5 +58,19 @@ func _init() -> void:
 	check(grass._flat_at(10.0 - 0.45, 17.9), "grass at the margin of the thin end is flat")
 	check(not grass._flat_at(11.2, 14.0), "grass 1.2 m out is not")
 	check(not grass._flat_at(10.0, 19.5), "grass past the end is not")
+	# Dave 2 Nov: grass came up through logs. A cut trunk is thicker at its cut end than the 0.55 taper, and loose logs must press too.
+	const Lying := preload("res://src/shared/lying_logs.gd")
+	var whole: Array = Lying.trunk_segment(Vector3(0, 0, 0), {"radius": 0.3, "length": 12.0, "orig_length": 12.0, "yaw": 0.0})
+	check(is_equal_approx(whole[5], 0.3 * 0.55), "a whole trunk tapers to 55 percent (%f)" % whole[5])
+	var cut: Array = Lying.trunk_segment(Vector3(0, 0, 0), {"radius": 0.3, "length": 3.0, "orig_length": 12.0, "yaw": 0.0})
+	check(cut[5] > 0.3 * 0.8, "a short cut log is nearly as thick at the far end (%f)" % cut[5])
+	check(is_equal_approx(cut[3], 3.0), "the log runs its length along yaw 0 (z)")
+	var loose: Array = Lying.loose_segment(Vector3(5, 0, 5), Vector3(0, 0, -1), 2.5, 0.22, 0.28)
+	check(is_equal_approx(loose[1], 3.75) and is_equal_approx(loose[3], 6.25), "a loose log spans its length centred on its spot")
+	grass.trunks = [loose]
+	check(grass._flat_at(5.0, 5.0) and grass._flat_at(5.2, 6.0) and not grass._flat_at(5.0, 7.0), "grass under a loose log is flat, past its end is not")
+	var stump: Array = Lying.round_segment(Vector3(20, 0, 20), 0.3)
+	grass.trunks = [stump]
+	check(grass._flat_at(20.0, 20.0) and grass._flat_at(20.4, 20.0) and not grass._flat_at(21.0, 20.0), "grass on and beside a stump is flat, a metre out is not")
 	print("test_placed_clearing: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)

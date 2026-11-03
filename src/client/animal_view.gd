@@ -54,7 +54,7 @@ func _make_for_species(number: int, id: int) -> Node3D:
 		12:
 			return _make_seal()
 		13:
-			return _make_seabird()
+			return _make_gull_flock(id)      # one record per flock since MikeW's seabird flock block (PR 73): 5 to 12 gulls standing on the beach, all taking off in state 15
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
@@ -77,7 +77,7 @@ func on_rows(rows: Array) -> void:
 
 			node.position = row[2]
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
@@ -174,6 +174,9 @@ func _process(delta: float) -> void:
 			_animate_quad(node, b, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
 		else:
 			rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(delta * 20.0, 0.0, 1.0))
+
+		if bool(b.get("gulls", false)):
+			_animate_gulls(rig, state == 15)
 
 		_emit_steps(b, node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
 
@@ -414,10 +417,14 @@ func _make_seal() -> Node3D:
 	for side in [-1.0, 1.0]:
 		_ball(rig, 0.03, Vector3.ONE, Vector3(side * 0.1, 0.36, -0.6), Color(0.04, 0.04, 0.04))      # a big dark eye
 		_ball(rig, 0.1, Vector3(0.25, 0.5, 1.2), Vector3(side * 0.24, 0.1, -0.2), coat.darkened(0.15), Vector3(0.0, 0.0, side * -0.4))   # a front flipper set low
-		_ball(rig, 0.1, Vector3(1.4, 0.2, 1.2), Vector3(side * 0.08, 0.06, 0.82), coat.darkened(0.2))   # a hind flipper
+		_ball(rig, 0.1, Vector3(1.4, 0.35, 1.3), Vector3(side * 0.08, 0.09, 0.74), coat.darkened(0.2), Vector3(0.25, 0.0, 0.0))   # a hind flipper, joined to the rear and tipped up a little
 
-	for k in 7:   # dark blotches over the back and flanks
-		_ball(rig, 0.045, Vector3(1.4, 0.3, 1.1), Vector3(0.14 * float(k % 3 - 1), 0.34 - 0.02 * float(k % 2), -0.3 + 0.17 * float(k)), Color(0.28, 0.28, 0.27))
+	for k in 7:   # dark blotches pressed into the skin of the back and flanks: each sits on the body (or the rear) surface, so none hovers above it (pr64 sheet, 2 Nov 2026)
+		var bx: float = 0.1 * float(k % 3 - 1)
+		var bz: float = -0.3 + 0.13 * float(k)
+		var body_top: float = 0.2 + 0.196 * sqrt(maxf(0.0, 1.0 - pow(bz / 0.728, 2.0) - pow(bx / 0.224, 2.0)))                    # the thick body: radius 0.28 scaled (0.8, 0.7, 2.6) at y 0.2
+		var rear_top: float = 0.15 + 0.11 * sqrt(maxf(0.0, 1.0 - pow((bz - 0.45) / 0.3, 2.0) - pow(bx / 0.14, 2.0)))               # the rear: radius 0.2 scaled (0.7, 0.55, 1.5) at y 0.15, z 0.45
+		_ball(rig, 0.045, Vector3(1.4, 0.3, 1.1), Vector3(bx, maxf(body_top, rear_top) - 0.01, bz), Color(0.28, 0.28, 0.27))
 
 	return root
 
@@ -440,13 +447,76 @@ func _make_seabird() -> Node3D:
 	_ball(rig, 0.006, Vector3.ONE, Vector3(-0.022, 0.298, -0.135), Color(0.9, 0.85, 0.5))
 	_box(rig, Vector3(0.05, 0.012, 0.09), Vector3(0.0, 0.2, 0.16), white, Vector3(-0.25, 0.0, 0.0))   # the tail
 
+	var folded: Node3D = Node3D.new()
+	folded.name = "Folded"
+	rig.add_child(folded)
+	var legs: Node3D = Node3D.new()
+	legs.name = "Legs"
+	rig.add_child(legs)
+
 	for side in [-1.0, 1.0]:
-		_ball(rig, 0.045, Vector3(0.3, 0.8, 2.3), Vector3(side * 0.06, 0.215, 0.06), grey, Vector3(0.0, 0.0, side * -0.12))   # a folded grey wing
-		_box(rig, Vector3(0.025, 0.01, 0.05), Vector3(side * 0.06, 0.22, 0.17), Color(0.08, 0.08, 0.1))                    # the black wing tip
-		_box(rig, Vector3(0.008, 0.11, 0.008), Vector3(side * 0.025, 0.055, 0.0), Color(0.9, 0.55, 0.55))                  # a pink leg
-		_box(rig, Vector3(0.03, 0.004, 0.04), Vector3(side * 0.025, 0.003, -0.015), Color(0.9, 0.55, 0.55))                # a webbed foot
+		_ball(folded, 0.045, Vector3(0.3, 0.8, 2.3), Vector3(side * 0.06, 0.215, 0.06), grey, Vector3(0.0, 0.0, side * -0.12))   # a folded grey wing
+		_box(folded, Vector3(0.025, 0.01, 0.05), Vector3(side * 0.06, 0.22, 0.17), Color(0.08, 0.08, 0.1))                    # the black wing tip
+		_box(legs, Vector3(0.008, 0.11, 0.008), Vector3(side * 0.025, 0.055, 0.0), Color(0.9, 0.55, 0.55))                  # a pink leg
+		_box(legs, Vector3(0.03, 0.004, 0.04), Vector3(side * 0.025, 0.003, -0.015), Color(0.9, 0.55, 0.55))                # a webbed foot
+		# The open wing for flight, hidden on the ground: a long grey arm wing hinged at the shoulder, a narrower hand wing with a black tip, about 0.9 m across both.
+		var wing: Node3D = Node3D.new()
+		wing.name = "Wing_L" if side < 0.0 else "Wing_R"
+		wing.position = Vector3(side * 0.05, 0.225, -0.01)
+		wing.visible = false
+		rig.add_child(wing)
+		_box(wing, Vector3(0.24, 0.012, 0.13), Vector3(side * 0.12, 0.0, 0.0), grey)                                     # the arm wing, broad
+		_box(wing, Vector3(0.16, 0.01, 0.09), Vector3(side * 0.31, 0.0, 0.02), grey, Vector3(0.0, side * 0.15, 0.0))    # the hand wing, swept back
+		_box(wing, Vector3(0.07, 0.008, 0.07), Vector3(side * 0.41, 0.0, 0.04), Color(0.08, 0.08, 0.1), Vector3(0.0, side * 0.25, 0.0))   # the black tip
+		_box(wing, Vector3(0.22, 0.004, 0.02), Vector3(side * 0.13, -0.004, 0.065), white)                               # the white trailing edge
 
 	return root
+
+
+# A gull flock (MikeW's seabird flock block, 2 Nov 2026): 5 to 12 gulls standing loosely on the beach over a few metres, each turned its own way; the
+# whole flock is one wire record. In state 15 every gull opens its wings and flaps (_animate_gulls); the record itself rises and flies.
+func _make_gull_flock(id: int) -> Node3D:
+	var root: Node3D = Node3D.new()
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = id * 6151
+
+	for k in 5 + id % 8:
+		var single: Node3D = _make_seabird()
+		var gull: Node3D = single.get_node("Rig")
+		single.remove_child(gull)
+		single.free()
+		gull.name = "Gull%d" % k
+		gull.position = Vector3(rng.randf_range(-3.0, 3.0), 0.0, rng.randf_range(-3.0, 3.0))
+		gull.rotation.y = rng.randf_range(-0.6, 0.6)      # mostly facing the same way (into the wind), not stamped
+		gull.set_meta("phase", rng.randf() * TAU)
+		gull.set_meta("ground", gull.position)
+		rig.add_child(gull)
+
+	return root
+
+
+# Flying gulls: wings open and flap (each its own beat, about 3 beats a second, a short glide now and then), legs tucked, folded wings hidden;
+# in flight the birds draw in a little and spread in height so the flock reads as a loose group, not a flat plate. On the ground they stand.
+func _animate_gulls(rig: Node3D, flying: bool) -> void:
+	for gull in rig.get_children():
+		var phase: float = float(gull.get_meta("phase", 0.0))
+		var ground: Vector3 = gull.get_meta("ground", gull.position)
+		gull.get_node("Folded").visible = not flying
+		gull.get_node("Legs").visible = not flying
+		var target: Vector3 = Vector3(ground.x * 0.7, 0.6 + 0.8 * (0.5 + 0.5 * sin(phase * 3.0)), ground.z * 0.7) if flying else ground
+		gull.position = gull.position.lerp(target, 0.05)
+
+		for side in [-1.0, 1.0]:
+			var wing: Node3D = gull.get_node("Wing_L" if side < 0.0 else "Wing_R")
+			wing.visible = flying
+
+			if flying:
+				var beat: float = sin(_t * 19.0 + phase)
+				var glide: bool = sin(_t * 0.7 + phase) > 0.7
+				wing.rotation.z = side * (0.12 if glide else 0.55 * beat)      # up and down, mirrored; held almost level while gliding
 
 
 func _box(parent: Node3D, size: Vector3, at: Vector3, color: Color, rot: Vector3 = Vector3.ZERO) -> void:

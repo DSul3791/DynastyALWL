@@ -98,6 +98,7 @@ func _init() -> void:
 
 	if id2 == 0:
 		print("test_fire_two_players: FAIL")
+		f._finish_writer()
 		quit(1)
 		return
 
@@ -108,5 +109,6 @@ func _init() -> void:
 	f.tick(30.0)
 	check(f._items.has(id2) and float(f._items[id2]["fire"]["burn_left"]) < burn_before, "the fire keeps burning after its lighter leaves")
 
+	f._finish_writer()   # the background save thread must be done before quit, or the script is freed under it (Opcode 20 _write_file error)
 	print("test_fire_two_players: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)

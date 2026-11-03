@@ -63,7 +63,7 @@
 		{
 			"id": "fell",
 			"title": "Fell a tree",
-			"hint": "Hold the axe and strike a tree again and again. Then work the trunk for logs.",
+			"hint": "Hold the axe and strike a tree again and again. It breaks into logs, sticks and leaves when it lands.",
 			"after": [
 				"axe"
 			],

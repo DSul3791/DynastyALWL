@@ -12,11 +12,12 @@ extends Node3D
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const CELL_M := 6.0
-const PLAYER_CLEAR_M := 1.8              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
-const PLAYER_KEEP := 0.12
+const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
+const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
 const PLUME_THIN := 0.2                  # share of the ground grass kept round the tall-grass patches
 const SEASONS_FILE := "res://data/look/seasons.json"
 const RAYS_PER_FRAME := 40
+const FLUSH_USEC := 2500                 # group buffers are re-joined and uploaded for at most this long a frame (at least one group); the rest wait a frame
 const BUILD_USEC := 5000                 # cells are built for at most this long a frame (at least one)
 const LOOKAHEAD_S := 1.5                 # the scan is centred this many seconds of movement ahead
 const RESCAN_MSEC := 800                 # the scan also repeats this often while some cell is unbuilt, to retry cells
@@ -150,8 +151,8 @@ uniform float trample_squash = 0.75;
 uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
 uniform float season_blades = 1.0;      // share of blades kept (hashed per cell): winter thins the grass
 uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
-uniform vec4 trunk_a[6];                // felled trunks near: start x, z, end x, z
-uniform vec4 trunk_b[6];                // start radius, end radius, margin, edge softness (zero radius = unused)
+uniform vec4 trunk_a[8];                // felled trunks near: start x, z, end x, z
+uniform vec4 trunk_b[8];                // start radius, end radius, margin, edge softness (zero radius = unused)
 uniform vec4 player_clear = vec4(0.0);  // the local player: x, z, clear radius, share of height kept inside it (radius 0 = off): the feet stay in view in third person
 varying vec3 blade_color;
 varying float tip;
@@ -181,7 +182,7 @@ void vertex() {
 	vec2 root_xz = MODEL_MATRIX[3].xz;
 	float pressed = 0.0;
 	float inside = 0.0;
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 8; i++) {
 		if (trunk_b[i].x > 0.0) {
 			vec2 a = trunk_a[i].xy;
 			vec2 ab = trunk_a[i].zw - a;
@@ -194,7 +195,7 @@ void vertex() {
 		}
 	}
 	VERTEX.y *= mix(1.0, trunk_squash, pressed);
-	VERTEX.y *= mix(player_clear.w, 1.0, clamp(smoothstep(player_clear.z * 0.25, max(player_clear.z, 0.001), length(root_xz - player_clear.xy)) + step(player_clear.z, 0.0), 0.0, 1.0));
+	VERTEX.y *= mix(player_clear.w, 1.0, clamp(smoothstep(player_clear.z * 0.4, max(player_clear.z, 0.001), length(root_xz - player_clear.xy)) + step(player_clear.z, 0.0), 0.0, 1.0));
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);
@@ -231,6 +232,7 @@ var clear_edge_m: float = 1.5
 var trunks: Array = []                   # felled trunks lying on the grass: [ax, az, bx, bz, radius at a, radius at b] (set_trunks)
 var trunk_margin_m: float = 0.3
 var _trunk_msec: int = -1
+var third_person: bool = false          # set by the client: only then is the grass lowered round the player
 const TRUNK_EDGE_M := 0.45             # how far past the margin the pressed grass rises back
 var trunk_squash: float = 0.2           # a blade under or beside a trunk keeps this share of its height
 var litter_m: float = 0.0                # forest litter drawn this far (0 off), set by the client per quality
@@ -927,8 +929,16 @@ func _flush_groups() -> void:
 		return
 
 	var span: float = float(merge_cells) * CELL_M
+	var flush_start: int = Time.get_ticks_usec()
+	var flushed: int = 0
 
 	for g in _dirty.keys():
+		# Dave 2 Nov (lag when grass and trees spawn in): every dirty group re-joins and re-uploads up to merge_cells squared cells of
+		# buffers, so a burst of finished cells could cost many ms in one frame. Stop after FLUSH_USEC (at least one group) and leave the
+		# rest dirty for the next frame; the cards of those cells appear a frame or two later.
+		if flushed > 0 and Time.get_ticks_usec() - flush_start > FLUSH_USEC:
+			break
+
 		var group: Dictionary = _groups.get(g, {})
 
 		for layer in range(LAYERS.size()):
@@ -970,7 +980,8 @@ func _flush_groups() -> void:
 		else:
 			_groups[g] = group
 
-	_dirty.clear()
+		_dirty.erase(g)
+		flushed += 1
 
 
 func _make_group_node(layer: int, span: float) -> MultiMeshInstance3D:
@@ -1072,14 +1083,33 @@ func set_trunks(list: Array, margin: float, squash: float) -> void:
 	_trunk_msec = 0       # pushed to the shader at the next update
 
 
-# The nearest six trunks go to the grass shader (the pressing is drawn per blade there, soft at the edge, so no cell is rebuilt).
+# The nearest eight trunks go to the grass shader (the pressing is drawn per blade there, soft at the edge, so no cell is rebuilt).
 func _push_trunks(center: Vector3) -> void:
-	var near: Array = trunks.duplicate()
-	near.sort_custom(func(p, q): return Vector2(p[0] - center.x, p[1] - center.z).length_squared() < Vector2(q[0] - center.x, q[1] - center.z).length_squared())
+	# The eight nearest in one pass (every boulder and stump in view is a segment now: sorting them all every 1.5 s was a hitch).
+	var near: Array = []
+	var dist: Array = []
+
+	for t in trunks:
+		var d: float = Vector2(float(t[0]) - center.x, float(t[1]) - center.z).length_squared()
+
+		if near.size() < 8:
+			near.append(t)
+			dist.append(d)
+			continue
+
+		var worst: int = 0
+
+		for k in range(1, 8):
+			if float(dist[k]) > float(dist[worst]):
+				worst = k
+
+		if d < float(dist[worst]):
+			near[worst] = t
+			dist[worst] = d
 	var a: PackedVector4Array = PackedVector4Array()
 	var b: PackedVector4Array = PackedVector4Array()
 
-	for i in range(6):
+	for i in range(8):
 		if i < near.size():
 			var t: Array = near[i]
 			a.append(Vector4(t[0], t[1], t[2], t[3]))
@@ -1097,7 +1127,7 @@ func _push_trunks(center: Vector3) -> void:
 
 # The local player's spot goes to the grass shader (blades are lowered per blade there, no cell is rebuilt, no extra draw).
 func _push_player(at: Vector3) -> void:
-	var v: Vector4 = Vector4(at.x, at.z, PLAYER_CLEAR_M, PLAYER_KEEP)
+	var v: Vector4 = Vector4(at.x, at.z, PLAYER_CLEAR_M if third_person else 0.0, PLAYER_KEEP)   # first person has no feet to show: the grass stays whole
 
 	for n in range(_materials.size()):
 		if not _is_solid(n):

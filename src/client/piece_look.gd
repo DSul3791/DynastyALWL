@@ -436,6 +436,82 @@ static func path() -> Node3D:
 	return root
 
 
+# A trodden hoe path (Dave 2 Nov 2026): a round soft patch of brown earth PROJECTED onto the ground with a Decal, so it follows every bump of the
+# terrain (a flat disc laid on the voxel ground was cut into stair steps where the ground rose through it). Strong brown for the middle half metre,
+# fading to see-through by 1.25 m so it merges with whatever is round it and with the next patch along a drag. Small stones are scattered at random,
+# not on a grid; the brown is smooth noise, not tiles. The texture is made once and shared by every patch. No collision.
+const TROD_PX := 128
+const TROD_SPAN_M := 2.5
+const TROD_CORE_M := 0.5
+const TROD_EDGE_M := 1.25
+static var _trod_texture: ImageTexture
+
+
+static func _trod_image() -> ImageTexture:
+	if _trod_texture != null:
+		return _trod_texture
+
+	var image: Image = Image.create(TROD_PX, TROD_PX, false, Image.FORMAT_RGBA8)
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = 77
+	noise.frequency = 0.09
+	var earth: Color = Color(0.30, 0.215, 0.13)
+	var half: float = float(TROD_PX) * 0.5
+
+	for y in TROD_PX:
+		for x in TROD_PX:
+			var dx: float = (float(x) + 0.5 - half) / half * (TROD_SPAN_M * 0.5)
+			var dz: float = (float(y) + 0.5 - half) / half * (TROD_SPAN_M * 0.5)
+			var r: float = sqrt(dx * dx + dz * dz)
+			var a: float = 1.0 - smoothstep(TROD_CORE_M, TROD_EDGE_M, r)
+			var shade: float = 0.9 + 0.2 * (noise.get_noise_2d(float(x), float(y)) * 0.5 + 0.5)
+			image.set_pixel(x, y, Color(earth.r * shade, earth.g * shade, earth.b * shade, a * 0.97))
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 9
+
+	for k in 70:   # small stones at random spots inside the brown, each a few pixels across, a little lighter
+		var ang: float = rng.randf() * TAU
+		var dist: float = sqrt(rng.randf()) * 0.95
+		var cx: float = half + cos(ang) * dist / (TROD_SPAN_M * 0.5) * half
+		var cy: float = half + sin(ang) * dist / (TROD_SPAN_M * 0.5) * half
+		var rad: float = rng.randf_range(0.8, 1.9)
+		var tone: float = rng.randf_range(0.45, 0.62)
+
+		for y in range(int(cy - 3.0), int(cy + 4.0)):
+			for x in range(int(cx - 3.0), int(cx + 4.0)):
+				if x < 0 or y < 0 or x >= TROD_PX or y >= TROD_PX:
+					continue
+
+				if Vector2(float(x) + 0.5 - cx, float(y) + 0.5 - cy).length() > rad:
+					continue
+
+				var under: Color = image.get_pixel(x, y)
+
+				if under.a > 0.35:
+					image.set_pixel(x, y, Color(tone, tone * 0.96, tone * 0.88, under.a))
+
+	image.generate_mipmaps()
+	_trod_texture = ImageTexture.create_from_image(image)
+	return _trod_texture
+
+
+static func trodden_path() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var decal: Decal = Decal.new()
+	decal.size = Vector3(TROD_SPAN_M, 1.2, TROD_SPAN_M)
+	decal.texture_albedo = _trod_image()
+	decal.position = Vector3(0.0, 0.0, 0.0)
+	decal.upper_fade = 0.3
+	decal.lower_fade = 0.3
+	decal.distance_fade_enabled = true   # far patches drop out (a long road is many decals)
+	decal.distance_fade_begin = 35.0
+	decal.distance_fade_length = 10.0
+	root.add_child(decal)
+	return root
+
+
 # A rock pile: a mound of about a dozen faceted stones (the loose-stone mesh of rock_look.gd, turned and scaled one by one), big ones at the
 # foot and smaller ones heaped on top, about 1.2 m across. The solid box under it is the collision.
 static func rock_pile() -> Node3D:

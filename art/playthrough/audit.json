@@ -1,10 +1,10 @@
 {
  "counts": {
-  "items": 621,
-  "recipes": 281,
-  "recipes_known_or_open": 263,
+  "items": 646,
+  "recipes": 274,
+  "recipes_known_or_open": 256,
   "structures": 63,
-  "blueprints": 6
+  "blueprints": 15
  },
  "recipes": [
   {
@@ -223,8 +223,8 @@
    "station": "workbench",
    "station_level": 2,
    "known": true,
-   "wave_now": 3,
-   "wave_potential": 3,
+   "wave_now": 5,
+   "wave_potential": 5,
    "blocked_by": [],
    "future": true
   },
@@ -608,19 +608,6 @@
    "future": false
   },
   {
-   "id": "log_workbench_kit",
-   "number": 49,
-   "category": "Workshops and stations",
-   "gives": "log_workbench_kit",
-   "station": "workbench",
-   "station_level": 1,
-   "known": true,
-   "wave_now": 2,
-   "wave_potential": 2,
-   "blocked_by": [],
-   "future": false
-  },
-  {
    "id": "lumber_oak",
    "number": 52,
    "category": "Materials",
@@ -638,6 +625,32 @@
    "number": 53,
    "category": "Materials",
    "gives": "beam_oak",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 5,
+   "wave_potential": 5,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "lumber_beech",
+   "number": 54,
+   "category": "Materials",
+   "gives": "lumber_beech",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 5,
+   "wave_potential": 5,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "beams_beech",
+   "number": 55,
+   "category": "Materials",
+   "gives": "beam_beech",
    "station": "saw_mill",
    "station_level": 1,
    "known": true,
@@ -3234,58 +3247,6 @@
    "future": false
   },
   {
-   "id": "log_wall_kit",
-   "number": 295,
-   "category": "Shelter and building",
-   "gives": "log_wall_kit",
-   "station": "workbench",
-   "station_level": 1,
-   "known": true,
-   "wave_now": 2,
-   "wave_potential": 2,
-   "blocked_by": [],
-   "future": false
-  },
-  {
-   "id": "log_floor_kit",
-   "number": 296,
-   "category": "Shelter and building",
-   "gives": "log_floor_kit",
-   "station": "workbench",
-   "station_level": 1,
-   "known": true,
-   "wave_now": 2,
-   "wave_potential": 2,
-   "blocked_by": [],
-   "future": false
-  },
-  {
-   "id": "log_roof_kit",
-   "number": 297,
-   "category": "Shelter and building",
-   "gives": "log_roof_kit",
-   "station": "workbench",
-   "station_level": 1,
-   "known": true,
-   "wave_now": 2,
-   "wave_potential": 2,
-   "blocked_by": [],
-   "future": false
-  },
-  {
-   "id": "stone_wall_kit",
-   "number": 298,
-   "category": "Shelter and building",
-   "gives": "stone_wall_kit",
-   "station": "workbench",
-   "station_level": 2,
-   "known": true,
-   "wave_now": 3,
-   "wave_potential": 3,
-   "blocked_by": [],
-   "future": false
-  },
-  {
    "id": "stone_floor_kit",
    "number": 299,
    "category": "Shelter and building",
@@ -3293,8 +3254,8 @@
    "station": "workbench",
    "station_level": 2,
    "known": true,
-   "wave_now": 3,
-   "wave_potential": 3,
+   "wave_now": 2,
+   "wave_potential": 2,
    "blocked_by": [],
    "future": false
   },
@@ -3306,47 +3267,8 @@
    "station": "workbench",
    "station_level": 2,
    "known": true,
-   "wave_now": 3,
-   "wave_potential": 3,
-   "blocked_by": [],
-   "future": false
-  },
-  {
-   "id": "brick_wall_kit",
-   "number": 301,
-   "category": "Shelter and building",
-   "gives": "brick_wall_kit",
-   "station": "workbench",
-   "station_level": 2,
-   "known": true,
-   "wave_now": 3,
-   "wave_potential": 3,
-   "blocked_by": [],
-   "future": false
-  },
-  {
-   "id": "brick_floor_kit",
-   "number": 302,
-   "category": "Shelter and building",
-   "gives": "brick_floor_kit",
-   "station": "workbench",
-   "station_level": 2,
-   "known": true,
-   "wave_now": 3,
-   "wave_potential": 3,
-   "blocked_by": [],
-   "future": false
-  },
-  {
-   "id": "brick_roof_kit",
-   "number": 303,
-   "category": "Shelter and building",
-   "gives": "brick_roof_kit",
-   "station": "workbench",
-   "station_level": 2,
-   "known": true,
-   "wave_now": 3,
-   "wave_potential": 3,
+   "wave_now": 2,
+   "wave_potential": 2,
    "blocked_by": [],
    "future": false
   },
@@ -3359,9 +3281,10 @@
    "station_level": 1,
    "known": false,
    "wave_now": null,
-   "wave_potential": 2,
+   "wave_potential": null,
    "blocked_by": [
-    "locked (its chain does not exist yet)"
+    "locked (its chain does not exist yet)",
+    "no source anywhere for log_wall_kit,log_floor_kit,log_roof_kit"
    ],
    "future": true
   },
@@ -3581,8 +3504,8 @@
    "station": "workbench",
    "station_level": 1,
    "known": true,
-   "wave_now": 2,
-   "wave_potential": 2,
+   "wave_now": 3,
+   "wave_potential": 3,
    "blocked_by": [],
    "future": false
   },
@@ -3661,8 +3584,8 @@
    "station": "workbench",
    "station_level": 2,
    "known": true,
-   "wave_now": 3,
-   "wave_potential": 3,
+   "wave_now": 2,
+   "wave_potential": 2,
    "blocked_by": [],
    "future": false
   },
@@ -3689,19 +3612,6 @@
    "known": true,
    "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [],
-   "future": false
-  },
-  {
-   "id": "fireplace_kit",
-   "number": 330,
-   "category": "Containers and furniture",
-   "gives": "fireplace_kit",
-   "station": "workbench",
-   "station_level": 2,
-   "known": true,
-   "wave_now": 3,
-   "wave_potential": 3,
    "blocked_by": [],
    "future": false
   },
@@ -3739,8 +3649,8 @@
    "station": "",
    "station_level": 1,
    "known": true,
-   "wave_now": 1,
-   "wave_potential": 1,
+   "wave_now": 3,
+   "wave_potential": 3,
    "blocked_by": [],
    "future": false
   },
@@ -4772,10 +4682,8 @@
    "id": "log_workbench_kit",
    "number": 85,
    "kind": "placeable",
-   "sources": [
-    "recipe:log_workbench_kit"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": false
   },
@@ -4933,6 +4841,39 @@
    "kind": "material",
    "sources": [
     "recipe:beams_oak"
+   ],
+   "obtainable": "now",
+   "look": "ok (beams)",
+   "future": true
+  },
+  {
+   "id": "log_beech",
+   "number": 103,
+   "kind": "material",
+   "sources": [
+    "tree:log chain (shoulder, one at a time)"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "lumber_beech",
+   "number": 104,
+   "kind": "material",
+   "sources": [
+    "recipe:lumber_beech"
+   ],
+   "obtainable": "now",
+   "look": "ok (planks)",
+   "future": true
+  },
+  {
+   "id": "beam_beech",
+   "number": 105,
+   "kind": "material",
+   "sources": [
+    "recipe:beams_beech"
    ],
    "obtainable": "now",
    "look": "ok (beams)",
@@ -5898,7 +5839,7 @@
     "recipe:shore_net"
    ],
    "obtainable": "now",
-   "look": "ok (cloth)",
+   "look": "ok (hand_net)",
    "future": false
   },
   {
@@ -8055,10 +7996,8 @@
    "id": "log_wall_kit",
    "number": 464,
    "kind": "placeable",
-   "sources": [
-    "recipe:log_wall_kit"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": false
   },
@@ -8075,10 +8014,8 @@
    "id": "log_floor_kit",
    "number": 466,
    "kind": "placeable",
-   "sources": [
-    "recipe:log_floor_kit"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": false
   },
@@ -8095,10 +8032,8 @@
    "id": "log_roof_kit",
    "number": 468,
    "kind": "placeable",
-   "sources": [
-    "recipe:log_roof_kit"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": false
   },
@@ -8115,10 +8050,8 @@
    "id": "stone_wall_kit",
    "number": 470,
    "kind": "placeable",
-   "sources": [
-    "recipe:stone_wall_kit"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": false
   },
@@ -8175,10 +8108,8 @@
    "id": "brick_wall_kit",
    "number": 476,
    "kind": "placeable",
-   "sources": [
-    "recipe:brick_wall_kit"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": false
   },
@@ -8195,10 +8126,8 @@
    "id": "brick_floor_kit",
    "number": 478,
    "kind": "placeable",
-   "sources": [
-    "recipe:brick_floor_kit"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": false
   },
@@ -8215,10 +8144,8 @@
    "id": "brick_roof_kit",
    "number": 480,
    "kind": "placeable",
-   "sources": [
-    "recipe:brick_roof_kit"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": false
   },
@@ -8238,7 +8165,7 @@
    "sources": [
     "recipe:log_cabin_set_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": true
   },
@@ -8411,10 +8338,8 @@
    "id": "fireplace_kit",
    "number": 498,
    "kind": "placeable",
-   "sources": [
-    "recipe:fireplace_kit"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": false
   },
@@ -8599,6 +8524,248 @@
    ],
    "obtainable": "now",
    "look": "override look",
+   "future": false
+  },
+  {
+   "id": "hazel_bush",
+   "number": 518,
+   "kind": "material",
+   "sources": [
+    "dig up a hazel shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "bramble_bush",
+   "number": 519,
+   "kind": "material",
+   "sources": [
+    "dig up a bramble shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "juniper_bush",
+   "number": 520,
+   "kind": "material",
+   "sources": [
+    "dig up a juniper shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "gorse_bush",
+   "number": 521,
+   "kind": "material",
+   "sources": [
+    "dig up a gorse shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "dwarf_birch_bush",
+   "number": 522,
+   "kind": "material",
+   "sources": [
+    "dig up a dwarf_birch shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "saltbush_bush",
+   "number": 523,
+   "kind": "material",
+   "sources": [
+    "dig up a saltbush shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "cactus_bush",
+   "number": 524,
+   "kind": "material",
+   "sources": [
+    "dig up a cactus shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "raspberry_bush",
+   "number": 525,
+   "kind": "material",
+   "sources": [
+    "dig up a raspberry shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "elder_bush",
+   "number": 526,
+   "kind": "material",
+   "sources": [
+    "dig up a elder shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "wild_rose_bush",
+   "number": 527,
+   "kind": "material",
+   "sources": [
+    "dig up a wild_rose shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "blackthorn_bush",
+   "number": 528,
+   "kind": "material",
+   "sources": [
+    "dig up a blackthorn shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "hawthorn_bush",
+   "number": 529,
+   "kind": "material",
+   "sources": [
+    "dig up a hawthorn shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "sea_buckthorn_bush",
+   "number": 530,
+   "kind": "material",
+   "sources": [
+    "dig up a sea_buckthorn shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "rosemary_bush",
+   "number": 531,
+   "kind": "material",
+   "sources": [
+    "dig up a rosemary shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "wild_banana_bush",
+   "number": 532,
+   "kind": "material",
+   "sources": [
+    "dig up a wild_banana shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "prickly_pear_bush",
+   "number": 533,
+   "kind": "material",
+   "sources": [
+    "dig up a prickly_pear shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "drakethorn_bush",
+   "number": 534,
+   "kind": "material",
+   "sources": [
+    "dig up a drakethorn shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "sunberry_bush",
+   "number": 535,
+   "kind": "material",
+   "sources": [
+    "dig up a sunberry shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "hagwillow_bush",
+   "number": 536,
+   "kind": "material",
+   "sources": [
+    "dig up a hagwillow shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "honeyspindle_bush",
+   "number": 537,
+   "kind": "material",
+   "sources": [
+    "dig up a honeyspindle shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "sleetberry_bush",
+   "number": 538,
+   "kind": "material",
+   "sources": [
+    "dig up a sleetberry shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "sunsilver_vine_bush",
+   "number": 539,
+   "kind": "material",
+   "sources": [
+    "dig up a sunsilver_vine shrub (pick)"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
    "future": false
   },
   {
@@ -10541,8 +10708,8 @@
     0.6
    ],
    "cap": 8,
-   "built_wave_now": 3,
-   "built_wave_potential": 3,
+   "built_wave_now": 5,
+   "built_wave_potential": 5,
    "problems": []
   },
   {
@@ -10624,8 +10791,8 @@
     1.0
    ],
    "cap": 3,
-   "built_wave_now": 2,
-   "built_wave_potential": 2,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
    "problems": []
   },
   {
@@ -10674,8 +10841,8 @@
     0.72
    ],
    "cap": 2,
-   "built_wave_now": 2,
-   "built_wave_potential": 2,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
    "problems": []
   },
   {
@@ -10692,8 +10859,8 @@
     1.17
    ],
    "cap": 1,
-   "built_wave_now": 2,
-   "built_wave_potential": 2,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
    "problems": []
   },
   {
@@ -11125,8 +11292,8 @@
     0.25
    ],
    "cap": 100,
-   "built_wave_now": 2,
-   "built_wave_potential": 2,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
    "problems": []
   },
   {
@@ -11141,8 +11308,8 @@
     2.0
    ],
    "cap": 100,
-   "built_wave_now": 2,
-   "built_wave_potential": 2,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
    "problems": []
   },
   {
@@ -11157,8 +11324,8 @@
     2.4
    ],
    "cap": 100,
-   "built_wave_now": 2,
-   "built_wave_potential": 2,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
    "problems": []
   },
   {
@@ -11173,8 +11340,8 @@
     0.25
    ],
    "cap": 100,
-   "built_wave_now": 3,
-   "built_wave_potential": 3,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
    "problems": []
   },
   {
@@ -11189,8 +11356,8 @@
     2.0
    ],
    "cap": 100,
-   "built_wave_now": 3,
-   "built_wave_potential": 3,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
    "problems": []
   },
   {
@@ -11205,8 +11372,8 @@
     2.4
    ],
    "cap": 100,
-   "built_wave_now": 3,
-   "built_wave_potential": 3,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
    "problems": []
   },
   {
@@ -11221,8 +11388,8 @@
     0.25
    ],
    "cap": 100,
-   "built_wave_now": 3,
-   "built_wave_potential": 3,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
    "problems": []
   },
   {
@@ -11237,8 +11404,8 @@
     2.0
    ],
    "cap": 100,
-   "built_wave_now": 3,
-   "built_wave_potential": 3,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
    "problems": []
   },
   {
@@ -11253,8 +11420,8 @@
     2.4
    ],
    "cap": 100,
-   "built_wave_now": 3,
-   "built_wave_potential": 3,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
    "problems": []
   },
   {
@@ -11301,8 +11468,8 @@
     0.45
    ],
    "cap": 12,
-   "built_wave_now": 1,
-   "built_wave_potential": 1,
+   "built_wave_now": 3,
+   "built_wave_potential": 3,
    "problems": []
   },
   {
@@ -11333,8 +11500,8 @@
     0.6
    ],
    "cap": 12,
-   "built_wave_now": 2,
-   "built_wave_potential": 2,
+   "built_wave_now": 3,
+   "built_wave_potential": 3,
    "problems": []
   },
   {
@@ -11432,8 +11599,8 @@
     1.4
    ],
    "cap": 12,
-   "built_wave_now": 3,
-   "built_wave_potential": 3,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
    "problems": []
   },
   {
@@ -11480,8 +11647,8 @@
     1.0
    ],
    "cap": 12,
-   "built_wave_now": 3,
-   "built_wave_potential": 3,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
    "problems": []
   },
   {

@@ -23,6 +23,11 @@ func _init() -> void:
 			print("FAIL %s not prewarmed" % id)
 			failures += 1
 
+	for id in ["leaves", "kindling", "tree_roots", "beechnuts"]:   # what a trunk splits into besides logs (Dave 2 Nov: a pause as the trunk came apart)
+		if view.table.number_of(id) > 0 and not view._meshes.has(view.table.number_of(id)):
+			print("FAIL trunk drop %s not prewarmed" % id)
+			failures += 1
+
 	var t0: int = Time.get_ticks_usec()
 
 	for k in range(300):
@@ -36,6 +41,17 @@ func _init() -> void:
 		print("FAIL cached lookups too slow")
 		failures += 1
 
+	# Bug 6 (Dave 2 Nov: a pause and a missing tree on the first fell): a trunk and a stump are built at load, so the bark shader exists before the first fell.
+	var world: Node3D = Node3D.new()
+	view._root = world
+	view._prewarm_felled()
+
+	if world.get_child_count() != 2 or ViewScript._felled_bark_shader == null:
+		print("FAIL felled trunk and stump not prewarmed (%d nodes)" % world.get_child_count())
+		failures += 1
+
+	view._drop_felled_warm()
+	world.free()
 	view.free()
 	print("test_loose_prewarm: %d failures" % failures)
 	quit(failures)

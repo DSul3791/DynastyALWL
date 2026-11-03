@@ -60,6 +60,11 @@ func _skipped_drop(number: int, pos: Vector3, now_msec: int) -> bool:
 	return false
 
 
+# True when next_pick would do a scan this frame (the owner skips building its arguments, such as the pack hash, on the frames in between).
+func due(now_msec: int) -> bool:
+	return enabled and now_msec >= _next_msec
+
+
 # The id of the loose item to ask for now, or 0. `world` is the client's world rows (id -> {state, pos, number}); only state 0 (loose items) count.
 func next_pick(world: Dictionary, here: Vector3, reach_m: float, now_msec: int, pack_hash: int, in_view: Callable = Callable()) -> int:
 	if not enabled or now_msec < _next_msec:

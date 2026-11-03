@@ -106,7 +106,7 @@
   "firewood": {
    "shape": "split_wood",
    "color": "#8a5e36",
-   "size": 1.0
+   "size": 1.6
   },
   "lumber": {
    "shape": "planks",
@@ -981,7 +981,7 @@
   "firewood_soft": {
    "shape": "split_wood",
    "color": "#9a7a4a",
-   "size": 1.0
+   "size": 1.6
   },
   "wooden_block_soft": {
    "shape": "block",
@@ -3114,6 +3114,116 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "hazel_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "bramble_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "juniper_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "gorse_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "dwarf_birch_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "saltbush_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "cactus_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "raspberry_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "elder_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "wild_rose_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "blackthorn_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "hawthorn_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "sea_buckthorn_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "rosemary_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "wild_banana_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "prickly_pear_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "drakethorn_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "sunberry_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "hagwillow_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "honeyspindle_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "sleetberry_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
+  },
+  "sunsilver_vine_bush": {
+   "shape": "leaves",
+   "color": "#4f7a34",
+   "size": 1.6
   }
 
  }

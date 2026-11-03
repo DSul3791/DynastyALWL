@@ -431,6 +431,7 @@ func strike(distance_m: float, angle: float = -1.0) -> bool:
 	_pending.append([thunder_delay(distance_m), voice])
 	thunders_played += 1
 	last_thunder = "%s %.0f m, %s, heard in %.1f s" % [sound_name, distance_m, voice.bus, thunder_delay(distance_m)]
+	print("sound rumble: thunder ", last_thunder)   # far thunder grumbles like a rumble (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave)
 	return true
 
 

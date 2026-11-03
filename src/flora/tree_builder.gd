@@ -252,6 +252,66 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	return mesh
 
 
+# The butt radius of the trunk `build` draws for this species, variant and height (before root flare and flutes). The server lays a felled trunk, its
+# stump and its logs at this size (fell_pose.gd drawn_radius), so a slim young tree falls as a slim trunk (Dave 2 Nov: "a skinny tree and it left a big
+# stump and big logs"). Keep each line in step with its model's trunk_r below; test_fell_autosplit pins a few.
+static func trunk_radius(entry: Dictionary, h: float, variant: int) -> float:
+	var t: float = maxf(float(entry.get("trunk_m", 0.4)), 0.03)
+	var young: bool = variant >= 2
+
+	match str(entry.get("model", entry.get("shape", ""))):
+		"balsam_fir":
+			return maxf(t, h * 0.009)
+		"birch":
+			return maxf(t, h * 0.015)
+		"spruce":
+			return maxf(t, h * 0.012)
+		"scots_pine":
+			return maxf(t, h * 0.018)
+		"wardpine":
+			return maxf(t, h * 0.03)
+		"wild_apple", "wild_pear":
+			return maxf(t * 0.6, h * 0.016) if young else maxf(t, h * 0.035)
+		"wild_cherry":
+			return maxf(t * 0.6, h * 0.016) if young else maxf(t, h * 0.028)
+		"rowan":
+			return maxf(t * 0.7, h * 0.014) if young else maxf(t, h * 0.025)
+		"willow":
+			return maxf(t * 0.55, h * 0.016) if young else maxf(t, h * 0.045)
+		"alder":
+			if variant == 3:
+				return maxf(t * 0.6, h * 0.013)
+			return maxf(t * 0.45, h * 0.011) if variant == 2 else maxf(t * 0.62, h * 0.016)
+		"beech":
+			return maxf(t * 0.6, h * 0.014) if young else maxf(t, h * 0.028)
+		"witness_tree":
+			return h * (0.0065 if young else 0.02)
+		"everember":
+			return h * (0.018 if young else 0.04)
+		"hearthwood":
+			return clampf(h * 0.012, 0.05, 0.12) if young else 0.15
+		"mirrorbark":
+			return maxf(t * 0.5, h * 0.018) if young else maxf(t, h * 0.034)
+		"walnut", "sweet_chestnut":
+			return maxf(t * 0.5, h * 0.016) if young else maxf(t, h * 0.038)
+		"hazel":
+			return h * (0.006 if young else 0.009)
+		"oak", "broadleaf":
+			return maxf(t, h * 0.035)
+		"maple":
+			return maxf(t * 0.5, h * 0.014) if young else maxf(t, h * 0.022)
+		"palm":
+			return maxf(t, h * 0.05) * 1.1 if str(entry.get("name", "")) == "wild_banana" else t * 0.85
+		"acacia":
+			return maxf(t, h * 0.03)
+		"mangrove":
+			return maxf(t * 1.5, h * 0.045)
+		"tropical_hardwood":
+			return maxf(t * 0.7, h * 0.014)
+
+	return t
+
+
 # Variety between individuals (moderator 2026-10-31: every crown was the same round green blob). Per tree, from the species and variant: a colour spread (yellower, bluer, darker), an elliptical and
 # leaning crown rather than a ball, and about one tree in eight is dying (a wedge of the upper crown bare, the rest yellowing, a few dead boughs sticking out) and one in twenty is mostly dead (a few
 # leaf clumps left, grey). Only tall broadleaf trees and a few shrub models take part; special named trees keep their look. It only removes leaf triangles and adds a few thin boughs, so the budget holds.

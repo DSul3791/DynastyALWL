@@ -19,6 +19,7 @@ func check(ok: bool, what: String) -> void:
 func _init() -> void:
 	check(TreeWind.gust_factor(0.0) == 0.0 and TreeWind.gust_factor(0.25) == 0.0, "no wind and a light breeze (0.25): silent")
 	check(TreeWind.gust_factor(0.5) > 0.0 and TreeWind.gust_factor(0.5) < TreeWind.gust_factor(0.8) and TreeWind.gust_factor(0.8) < TreeWind.gust_factor(1.0), "the factor rises with the wind")
+	check(TreeWind.world_wind_gate(0.15) == 0.0 and TreeWind.world_wind_gate(0.35) == 0.0 and TreeWind.world_wind_gate(0.6) == 1.0 and TreeWind.world_wind_gate(0.45) > 0.0, "a calm world (wind 0.35 or less) keeps the trees silent, a breezy one (0.6) lets them speak")
 	check(absf(TreeWind.gust_factor(1.0) - 1.0) < 0.001 and TreeWind.gust_factor(1.5) > 1.0, "full at wind 1.0, a little more in a gale")
 	var low: float = 1000.0
 	var high: float = -1000.0

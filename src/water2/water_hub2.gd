@@ -203,7 +203,7 @@ static func apply_sources(f, origin: Vector2i, x0: float, z0: float, cfg: Dictio
 	return placed
 
 
-# The drawn levels of a tile: the baked ones outside the window, inside it bed + depth where the water is thick enough to draw, the baked film where the live water is thinner than the film.
+# The drawn levels of a tile: the baked ones outside the window, inside it bed + depth where the water is thick enough to draw, and a film on the bed of every baked wet cell where the live water is thinner.
 static func publish_levels(base: PackedFloat32Array, samples: int, f, origin: Vector2i) -> PackedFloat32Array:
 	var out: PackedFloat32Array = base.duplicate()
 
@@ -219,6 +219,10 @@ static func publish_levels(base: PackedFloat32Array, samples: int, f, origin: Ve
 				out[k] = f.bed[m] + d
 			elif not is_nan(base[k]) and base[k] - f.bed[m] <= FILM_M:
 				out[k] = base[k]
+			elif not is_nan(base[k]):
+				# Dave 2 Nov 2026 ("streams break into puddle blobs"): a baked wet cell where the live water ran thin was dropped, so a stream broke into
+				# separate pools along its bed. It keeps a film on its bed instead (the 13 cm of the settled files), so the channel stays one body of water.
+				out[k] = f.bed[m] + FILM_M - 0.01
 			else:
 				out[k] = NAN
 
