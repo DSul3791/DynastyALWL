@@ -244,6 +244,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	_gust_noise.frequency = 0.02
 	_gust_noise.fractal_octaves = 2
 	_make_bus("Surf")                      # the sea surf bed has its own bus and slider (Dave 2 Nov 2026)
+	prewarm()                              # Dave 3 Nov 2026: sound is always async; every clip starts loading on worker threads now
 	var wind_bus: int = _make_bus("Wind")
 	_wind_filter = AudioEffectLowPassFilter.new()
 	_wind_filter.cutoff_hz = 4000.0
@@ -1513,6 +1514,41 @@ static var slow_load: Callable = Callable()
 const SLOW_LOAD_MS := 25
 
 
+# Dave 3 Nov 2026: "sounds should always be async". Every sound file under assets/audio is requested on the loader's worker threads at
+# start (prewarm), so a sound playing for the first time takes the ready stream from the cache instead of reading and decoding the
+# file on the main thread mid-game. Walks the folders once at load time; exported builds list name.ogg.import / .remap, which are
+# mapped back to the resource path.
+const AUDIO_ROOT := "res://assets/audio/"
+static var _warm: Dictionary = {}       # path -> true once its threaded load was requested
+static var warm_requested: int = 0
+
+
+static func prewarm(folder: String = AUDIO_ROOT) -> void:
+	var dir: DirAccess = DirAccess.open(folder)
+
+	if dir == null:
+		return
+
+	for sub in dir.get_directories():
+		if not sub.begins_with(".") and sub != "__pycache__":
+			prewarm(folder + sub + "/")
+
+	for file_name in dir.get_files():
+		var clip_name: String = file_name.trim_suffix(".import").trim_suffix(".remap")
+
+		if not (clip_name.ends_with(".ogg") or clip_name.ends_with(".wav")):
+			continue
+
+		var path: String = folder + clip_name
+
+		if _warm.has(path) or not ResourceLoader.exists(path):
+			continue                                                 # headless runs without imports read the file on first use instead
+
+		if ResourceLoader.load_threaded_request(path, "AudioStream", false, ResourceLoader.CACHE_MODE_REUSE) == OK:
+			_warm[path] = true
+			warm_requested += 1
+
+
 static func _load(folder: String, sound_name: String) -> AudioStream:
 	var started: int = Time.get_ticks_msec()
 	var stream: AudioStream = _load_file(folder, sound_name)
@@ -1538,6 +1574,15 @@ static func _load_file(folder: String, sound_name: String) -> AudioStream:
 
 			if file != null:
 				loaded_bytes += file.get_length()
+
+		if _warm.has(path):
+			_warm.erase(path)                                    # load_threaded_get may be called once per request
+
+			if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_FAILED:
+				var warmed: AudioStream = ResourceLoader.load_threaded_get(path) as AudioStream   # ready by now; waits only in the first seconds after start
+
+				if warmed != null:
+					return warmed
 
 		if ResourceLoader.exists(path):
 			var imported: AudioStream = load(path) as AudioStream
