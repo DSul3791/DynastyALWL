@@ -28,7 +28,7 @@ Berry bushes (raspberry 32 m, bramble 16 m, blueberry 35 m) are close, but they 
 ## Findings
 1. Fibre, sticks and bedding are plentiful within 30 m. No change needed.
 2. Spring food near spawn is herbs and greens (mint, dandelion, watercress, comfrey, wild garlic). That is enough for the first hour if those items give real calories; whether they do is Sal's item data.
-3. wild_thyme grows nowhere on tile 3,4 (no match in the 5x5 chunk search). Its biomes may not exist here. A data check for Sal or me if it is meant to be a starter herb.
+3. Meadow herbs (wild thyme, sorrel, plantain, wild strawberry, flax) do grow on tile 3,4, but in the big meadow about 7 km north-east of spawn (around 58496, 73856: thyme 31 m, sorrel 3 m, plantain 5 m, flax 4 m away there). The spawn sits in forest, so they are a trip, not a first-hour find. No change, per the no-placement-near-spawn rule.
 
 # Bushes and flowers at distance: not worth thinning (MikeW, 3 Nov 2026)
 Tool: `src/worldgen/tools/flora_ring_count.gd` (5x5 chunks around spawn). Each kind is split into the near half and the far half of its view distance.
