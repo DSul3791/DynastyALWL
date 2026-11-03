@@ -31,7 +31,17 @@ var _blood_mat: StandardMaterial3D
 const SMALL_SPECIES := [9, 10, 11, 13]
 
 
+const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
+
+
 func _make_for_species(number: int, id: int) -> Node3D:
+	_coat = "feather" if FEATHERED.has(number) else "fur"
+	var node: Node3D = _make_species_body(number, id)
+	_coat = "fur"
+	return node
+
+
+func _make_species_body(number: int, id: int) -> Node3D:
 	match number:
 		2:
 			return _make_deer(id)
@@ -264,7 +274,7 @@ void fragment() {
 """
 
 static var _coat_shader: Shader
-var _coat: String = "fur"        # the coat the next pieces take: _make_frog, _make_fish and _make_seal switch it to "wet" while they build
+var _coat: String = "fur"        # the coat the next pieces take: _make_frog, _make_fish and _make_seal switch it to "wet", the birds (FEATHERED) to "feather", while they build
 
 
 func _material(color: Color) -> Material:
@@ -285,6 +295,12 @@ func _material(color: Color) -> Material:
 			m.set_shader_parameter("fuzz", 0.0)
 			m.set_shader_parameter("rough", 0.12)
 			m.set_shader_parameter("spec", 0.8)
+		elif look == "feather":
+			# Feathers lie in broad smooth vanes, not fine hairs: a softer grain, a little sheen on the vanes, a light rim (Kathreen, 3 Nov 2026).
+			m.set_shader_parameter("strands", 0.45)
+			m.set_shader_parameter("fuzz", 0.22)
+			m.set_shader_parameter("rough", 0.72)
+			m.set_shader_parameter("spec", 0.3)
 		elif look == "wet":
 			m.set_shader_parameter("strands", 0.3)
 			m.set_shader_parameter("fuzz", 0.12)
