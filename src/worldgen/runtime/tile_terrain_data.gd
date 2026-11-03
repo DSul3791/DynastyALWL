@@ -69,6 +69,7 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 
 # Caves: capsules (passages) and ellipsoids (chambers) with AABBs.
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
+var spring_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of each spring cave's mouth (Dave 3 Nov 2026): the settle keeps a spring there even on steep ground
 
 
 # Loads a tile file. `rock_ids` and `resource_ids` map names to table ids.
@@ -595,6 +596,9 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 func _load_caves(list: Array) -> void:
 	for cave in list:
 		var nodes: Array = cave["nodes"]
+
+		if str(cave.get("cave_kind", "")) == "spring_cave" and not nodes.is_empty():
+			spring_mouths.append(Vector2(float(nodes[0][0]), float(nodes[0][2])))
 		var capsules: Array = []
 		var chambers: Array = []
 		var low: Vector3 = Vector3(INF, INF, INF)
