@@ -2365,7 +2365,7 @@ func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
 
 
 # The grade line (roads): point A, point B, then strokes along the line bring the ground toward the straight ramp between their heights.
-func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
+func _hoe_grade_point(peer: int, inv, _which: int, at: Vector3) -> void:
 	if not ground_height.is_valid() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > DIG_REACH_M or not _has_tool(inv, "hoe"):
 		return
 
@@ -2374,20 +2374,10 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
 	if is_nan(h):
 		return
 
-	var pair: Array = _grade_points.get(peer, [null, null])
 	var here: Vector3 = Vector3(at.x, h, at.z)
-
-	# Surveyor mode (Dave 3 Nov 2026): every marker after the first joins to the one before it, and that road is queued to build behind the player.
-	# A first marker (which 0), or one more than ROAD_MAX_M from the last, starts a new chain instead.
-	var last: Variant = pair[1] if pair[1] != null else pair[0]
-
-	if which == 0 or last == null or Vector2(here.x - last.x, here.z - last.z).length() > ROAD_MAX_M:
-		pair = [here, null]
-	else:
-		_road_start(peer, last, here)
-		pair = [last, here]
-
-	_grade_points[peer] = pair
+	var before: Array = _grade_points.get(peer, [null, null])
+	_grade_points[peer] = [before[1] if before[1] != null else here, here]   # the last two markers, for the manual grade stroke
+	_road_marker(peer, here)
 
 
 # The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B follows the ground, averaged in 3 m sections (no straight ramp)
@@ -2401,25 +2391,59 @@ const ROAD_WEAR_EVERY := 4
 const ROAD_HALF_WIDTH_M := 1.0
 const ROAD_DEPTH_M := 0.5
 const ROAD_SECTION_M := 3.0   # the ground is averaged over sections this long along the line
-var _roads: Dictionary = {}   # peer -> queue (Array) of jobs, built one at a time, each {"a": Vector3, "b": Vector3, "n": stations, "i": next station, "wait": seconds to the next one}
+var _roads: Dictionary = {}   # peer -> {"head": where the road has got to, "markers": [Vector3] waiting, "seg": null or {"a", "b", "n": stations, "i": next station, "wait": seconds to the next one}}
 
 
-func _road_start(peer: int, a: Vector3, b: Vector3) -> void:
-	var length: float = Vector2(b.x - a.x, b.z - a.z).length()
+# Surveyor mode (Dave 3 Nov 2026): the player drops markers while walking. Markers belong to the player who set them (the peer id keys the job, so a
+# builder never chases another player's markers). The first marker of an idle job is where the road starts; after that the builder takes the nearest
+# remaining marker to where it has got to, builds toward it, deletes it on arrival and goes for the next nearest. The job is done when none are left.
+const ROAD_MAX_MARKERS := 24
 
-	if length < 1.0:
-		_say(peer, "Points A and B are too close together.")
-		return
 
-	if length > ROAD_MAX_M:
-		_say(peer, "The road is longer than %d m: set B nearer to A." % int(ROAD_MAX_M))
-		return
-
+func _road_marker(peer: int, here: Vector3) -> void:
 	if not _roads.has(peer):
-		_roads[peer] = []
+		_roads[peer] = {"head": here, "markers": [], "seg": null}
+		_say(peer, "Road started at this marker: set more markers as you walk and the road builds toward the nearest one.")
+		return
 
-	_roads[peer].append({"a": a, "b": b, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0})
-	_say(peer, "Road marked: it builds behind you from marker to marker. Keep setting markers to carry on.")
+	var job: Dictionary = _roads[peer]
+
+	if job["markers"].size() >= ROAD_MAX_MARKERS:
+		_say(peer, "Too many markers waiting: let the road catch up.")
+		return
+
+	job["markers"].append(here)
+	_say(peer, "Marker set: the road builds toward the nearest one, then the next.")
+
+
+# Takes the nearest marker to the head as the next stretch; returns false when no markers are left.
+func _road_next_segment(peer: int, job: Dictionary) -> bool:
+	var head: Vector3 = job["head"]
+
+	while not job["markers"].is_empty():
+		var best: int = 0
+
+		for k in job["markers"].size():
+			if Vector2(job["markers"][k].x - head.x, job["markers"][k].z - head.z).length() < Vector2(job["markers"][best].x - head.x, job["markers"][best].z - head.z).length():
+				best = k
+
+		var target: Vector3 = job["markers"][best]
+		job["markers"].remove_at(best)
+		var length: float = Vector2(target.x - head.x, target.z - head.z).length()
+
+		if length > ROAD_MAX_M:
+			_say(peer, "A marker is more than %d m from the road: skipped." % int(ROAD_MAX_M))
+			continue
+
+		if length < 1.0:
+			job["head"] = target
+			head = target
+			continue
+
+		job["seg"] = {"a": head, "b": target, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
+		return true
+
+	return false
 
 
 func _road_tick(delta: float) -> void:
@@ -2427,32 +2451,34 @@ func _road_tick(delta: float) -> void:
 		return
 
 	for peer in _roads.keys():
-		var queue: Array = _roads[peer]
+		var job: Dictionary = _roads[peer]
 		var inv = inventory_of(peer)
 
-		if queue.is_empty() or inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
+		if inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
 			_roads.erase(peer)
 			continue
 
-		var job: Dictionary = queue[0]
-		job["wait"] = float(job["wait"]) - delta
-
-		if float(job["wait"]) > 0.0:
+		if job["seg"] == null and not _road_next_segment(peer, job):
+			_roads.erase(peer)   # no markers left: the road is done
+			_say(peer, "The road is finished.")
 			continue
 
-		job["wait"] = ROAD_STEP_S
-		var i: int = int(job["i"])
+		var seg: Dictionary = job["seg"]
+		seg["wait"] = float(seg["wait"]) - delta
 
-		if i >= int(job["n"]):
-			queue.pop_front()
-
-			if queue.is_empty():
-				_roads.erase(peer)
-
+		if float(seg["wait"]) > 0.0:
 			continue
 
-		_road_station(peer, inv, job["a"], job["b"], i, int(job["n"]))
-		job["i"] = i + 1
+		seg["wait"] = ROAD_STEP_S
+		var i: int = int(seg["i"])
+
+		if i >= int(seg["n"]):
+			job["head"] = seg["b"]   # reached the marker: it is deleted (taken off the list when it was chosen) and the next nearest is next
+			job["seg"] = null
+			continue
+
+		_road_station(peer, inv, seg["a"], seg["b"], i, int(seg["n"]))
+		seg["i"] = i + 1
 
 
 # The ground height a road station is brought to: the average of the ground along the line within ROAD_SECTION_M (3 m) around the station, so the road
@@ -2537,8 +2563,6 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 	if i % ROAD_WEAR_EVERY == 0:
 		_wear_tool(peer, inv, "hoe", "dig")
 
-	if i == n - 1:
-		_say(peer, "The road is finished.")
 
 
 func _hoe_grade(peer: int, inv, at: Vector3) -> void:

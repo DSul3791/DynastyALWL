@@ -878,16 +878,19 @@ func _init() -> void:
 	check(patches_of.call() >= road_patches + 3, "setting point B lays a path along the A to B line by itself (%d patches more)" % (patches_of.call() - road_patches))
 	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= 3 * 13, "and levels the ground along it, a few edits a station (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	check(m._roads.is_empty(), "the road job ends when the line is done")
-	# Surveyor mode: a third marker joins to B and queues the next road behind the first.
-	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 6.0))
-	check(m._roads.has(1) and m._roads[1].size() == 1, "a further marker queues a road from the last marker")
+	# Surveyor mode: the first marker of an idle job is the start; later markers wait and are built toward nearest first, then deleted.
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(8.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 12.0))
-	check(m._roads[1].size() == 2, "markers keep queueing roads one after another")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 6.0))
+	check(m._roads.has(1) and m._roads[1]["markers"].size() == 2, "markers set after the first wait for the builder")
+	m._road_tick(0.6)
+	check(m._roads[1]["seg"] != null and absf(m._roads[1]["seg"]["b"].z - 6.0) < 0.01, "the builder heads for the nearest marker first, not the first one set")
+	check(m._roads[1]["markers"].size() == 1, "and that marker is off the list once it is being built toward")
 
-	for step in 80:
+	for step in 120:
 		m._road_tick(0.6)
 
-	check(m._roads.is_empty(), "the queued roads all finish")
+	check(m._roads.is_empty(), "the road is done when no markers are left")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 0.0))
 
