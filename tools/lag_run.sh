@@ -9,6 +9,8 @@
 # Headless frames carry no drawing cost, so the numbers are the scripts' and physics' share of a frame: a step that hitches here
 # hitches on the PC too; one that is clean here can still hitch on the PC through the GPU.
 GODOT=${GODOT:-godot}
+# A fresh checkout has no import cache: class names are unknown and the client fails to parse. Import once.
+if [ ! -f .godot/global_script_class_cache.cfg ]; then echo "lag_run: importing once (about 1.5 min)"; $GODOT --headless --path . --import >/dev/null 2>&1; fi
 PORT=$((21000 + RANDOM % 18000)); D=$(mktemp -d /tmp/lagrun_XXXX); mkdir -p $D/store $D/cache
 $GODOT --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store=$D/store --quit-after=900 --open-admin > $D/server.log 2>&1 &
 SP=$!
@@ -25,5 +27,5 @@ echo "== script errors =="
 grep -E "SCRIPT ERROR|ERROR:" $D/client.log | sort | uniq -c | sort -rn | head -10
 echo "== probe report =="
 awk '/^frame probe|^Frame probe|^probe:/{p=1} p' $D/client.log | head -60
-echo "logs in $D"
+echo "logs in $D (a crash as the client quits, after LAGRUN done, is the engine tearing down; the run still counts)"
 grep -q "^LAGRUN done" $D/client.log

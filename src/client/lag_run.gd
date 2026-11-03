@@ -98,7 +98,7 @@ func run() -> void:
 	print("LAGRUN summary:")
 
 	for line in _lines:
-		print("  " + line)
+		print("LAGRUN = " + line.trim_prefix("LAGRUN "))
 
 	print("LAGRUN done")
 	client.frames_left = 1   # the client prints its usual report (the probe table with the slowest frames) and quits
