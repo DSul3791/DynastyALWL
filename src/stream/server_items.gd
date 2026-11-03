@@ -2517,8 +2517,9 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 	var centre: Vector2 = Vector2(a.x, a.z).lerp(Vector2(b.x, b.z), t)
 	var target: float = _road_section_height(a, b, t)
 	var edits: int = 0
+	var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(Vector3(centre.x, target, centre.y))) > 0.05   # no digging or filling in water: the road goes on over a ford
 
-	if dig_ground.is_valid() and fill_ground.is_valid():
+	if not wet and dig_ground.is_valid() and fill_ground.is_valid():
 		for offset in [0.0, ROAD_HALF_WIDTH_M, -ROAD_HALF_WIDTH_M]:
 			if edits >= ROAD_EDITS:
 				break
