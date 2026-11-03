@@ -317,6 +317,22 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_sph(parts, 0.05, Vector3(1.2, 0.35, 1.2), Vector3(0.0, 0.135, 0.0), light)
 			_torus(parts, 0.032, 0.007, Vector3(0.0, 0.1, 0.0), Color(0.55, 0.42, 0.25))
 			_box_rot(parts, Vector3(0.012, 0.09, 0.012), Vector3(0.05, -0.01, 0.075), Vector3(0.0, 0.0, 0.2), dark)
+			# Burlap weave: faint darker bands round the belly, a stitched seam up one side, a sewn-on patch (Art_Direction: lived-in, mended).
+			for k in 4:
+				var band_y: float = -0.07 + 0.035 * float(k)
+				var band_r: float = 0.1 * sqrt(maxf(1.0 - pow((band_y + 0.01) / 0.105, 2.0), 0.0))
+				_torus(parts, band_r + 0.001, 0.0025, Vector3(0.0, band_y, 0.0), color.darkened(0.12))
+			for k in 5:
+				_box_rot(parts, Vector3(0.012, 0.004, 0.003), Vector3(-0.099 + 0.004 * absf(float(k) - 2.0), -0.06 + 0.025 * float(k), 0.0), Vector3(0.0, 0.0, 0.5 * float(k % 2 * 2 - 1)), dark)
+			_box_rot(parts, Vector3(0.006, 0.045, 0.04), Vector3(0.0, -0.02, -0.099), Vector3(PI * 0.5, 0.0, 0.08), _tone(color, 5, 0.2).darkened(0.1))
+			# A little spill at the foot of the sack: seeds (a few warm grains) or, for pale flour, a flat dusting.
+			if color.v > 0.85:
+				_sph(parts, 0.05, Vector3(1.3, 0.06, 0.9), Vector3(0.09, -0.115, 0.04), color.lightened(0.1), true)
+			else:
+				for k in 8:
+					var sa: float = TAU * float(k) * 0.381966
+					var sr: float = 0.012 + 0.03 * sqrt(float(k) / 8.0)
+					_sph(parts, 0.008, Vector3(1.5, 0.7, 1.0), Vector3(0.11 + cos(sa) * sr, -0.11, 0.05 + sin(sa) * sr), _tone(Color(0.62, 0.47, 0.24), k, 0.15), true)
 		"backpack":
 			# A hide rucksack: tall rounded body, a flap over the top with a buckle, two side pockets, two shoulder straps, a bedroll on top.
 			_sph(parts, 0.12, Vector3(1.0, 1.25, 0.7), Vector3(0.0, 0.0, 0.0), color)
