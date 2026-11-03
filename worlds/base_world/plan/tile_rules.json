@@ -144,6 +144,12 @@
 	"water": {
 		"drainage_mode": true,
 		"drainage": {
+			"banks": {
+				"_note": "Sonny 3 Nov 2026 (no patchy riverbeds): a dry cell next to water higher than its ground is raised to that water plus height_m, by at most max_raise_m, so a channel across a hillside has a bank on its downhill side (tile_drainage.gd _build_banks).",
+				"enabled": true,
+				"height_m": 0.2,
+				"max_raise_m": 1.5
+			},
 			"river_start_km2": 0.35,
 			"lake_min_depth_m": 0.5,
 			"lake_min_catchment_km2": 0.05,
