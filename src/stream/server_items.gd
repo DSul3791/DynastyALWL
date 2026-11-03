@@ -10014,7 +10014,12 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 		return int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)) >= need
 
 	if check.has("made_item"):
-		return int(st["goal_counts"].get("made:" + str(check["made_item"]), 0)) >= need
+		var made: int = int(st["goal_counts"].get("made:" + str(check["made_item"]), 0))
+
+		if bool(check.get("or_have", false)) and inv != null:   # a bought one counts too (Hob sells the stone axe; Dino round 6)
+			made = maxi(made, inv.count_of(table.number_of(str(check["made_item"]))))
+
+		return made >= need
 
 	if inv == null:
 		return false

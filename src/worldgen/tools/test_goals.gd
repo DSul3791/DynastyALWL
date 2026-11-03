@@ -232,6 +232,10 @@ func _init() -> void:
 	check(camp._goal_met(1, camp._goal_state_of(1), bench_check, "workbench"), "a log workbench also completes the workbench goal (Dino round 6)")
 	check(camp._hint_trigger_true(1, camp._goal_state_of(1), "workbench_placed"), "a log workbench fires the workbench_placed hints")
 	check(not camp._hint_trigger_true(1, pot_state, "has_campfire_kit"), "no fire kit in the pack: no place-fire reminder")
+	var axe_check := {"made_item": "stone_axe", "or_have": true, "count": 1}
+	var bought_before: bool = camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe")
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	check(camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe"), "a bought stone axe in the pack completes the axe goal (was %s before)" % str(bought_before))
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
 	check(camp._hint_trigger_true(1, pot_state, "has_campfire_kit"), "a fire kit in the pack triggers the place-fire reminder")
 	check(not camp._hint_trigger_true(1, pot_state, "near_nettle") or camp.count_for(1, "nettles") > 0, "near_nettle needs nettles in the pack")

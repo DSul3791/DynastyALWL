@@ -54,7 +54,8 @@
 			],
 			"check": {
 				"made_item": "stone_axe",
-				"count": 1
+				"count": 1,
+				"or_have": true
 			},
 			"reward": {
 				"coin_copper": 5
