@@ -842,6 +842,12 @@ func _init() -> void:
 	m._last_average.clear()
 	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(7.2, 10.0, 0.4))
 	check(patches_of.call() == 2, "a second patch 0.9 m along is laid")
+	# Dave 3 Nov: the path goes round a rock instead of painting on it.
+	m._items[999001] = {"number": 0, "count": 4, "pos": Vector3(9.0, 10.0, 0.4), "left": 1.0e9, "scatter": 1, "boulder": {"radius": 0.5, "yaw": 0.0, "total": 4}}
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(8.2, 10.0, 0.4))
+	check(patches_of.call() == 2, "no path patch is laid within a boulder's radius plus 1 m")
+	m._items.erase(999001)
 	check(digs.size() + fills.size() >= 2 and digs.size() + fills.size() <= 4, "a path stroke averages the ground round it with at most 4 edits (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	digs.clear()
 	fills.clear()
