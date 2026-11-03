@@ -340,6 +340,7 @@ var cleared: Array = []               # Vector3 spots of placed items: shrubs an
 var clear_m: float = 5.0
 var trunks: Array = []               # felled trunks: [ax, az, bx, bz, radius a, radius b]; no small plants under or beside them (set_trunks)
 var trunk_margin_m: float = 0.3
+var _trash: Array = []               # old chunk drawings, hidden, freed a piece at a time (_free_trash)
 var _filter_queue: Dictionary = {}   # chunk -> {"all": bool, "trunks": [], "spots": []}: the NEW cleared spots or trunks its plants must be tested against (apply_built)
 var _last_position: Vector3 = Vector3.ZERO
 var _ground_msec: int = 0
@@ -2151,6 +2152,9 @@ func apply_built(budget_usec: int = 3000) -> void:
 	_run_filter_queue(2000)
 	Probe.stop("flora: plant filter", t0)
 	t0 = Probe.start()
+	_free_trash(1000)
+	Probe.stop("flora: free old drawings", t0)
+	t0 = Probe.start()
 
 	var still: Array = []
 
@@ -2272,7 +2276,35 @@ func _discard(node: Node3D) -> void:
 		elif child is StaticBody3D:
 			colliders -= child.get_child_count()
 
-	node.queue_free()
+	_throw_out(node)
+
+
+# An old drawing is hidden now and freed a child at a time over the next frames (Dave 3 Nov 2026: freeing a chunk's hundreds of draws and
+# collider bodies in one go, at the end of the frame, cost up to 30 ms each time a dig or cut redrew a chunk). Its colliders are taken out
+# of the physics world at once, so nothing stands where a plant was felled.
+func _throw_out(node: Node3D) -> void:
+	node.visible = false
+
+	for child in node.get_children():
+		if child is CollisionObject3D:
+			(child as CollisionObject3D).process_mode = Node.PROCESS_MODE_DISABLED
+
+	_trash.append(node)
+
+
+func _free_trash(budget_usec: int) -> void:
+	var started: int = Time.get_ticks_usec()
+
+	while not _trash.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		var node: Node3D = _trash[0]
+
+		if not is_instance_valid(node):
+			_trash.pop_front()
+		elif node.get_child_count() > 0:
+			node.get_child(node.get_child_count() - 1).free()
+		else:
+			node.free()
+			_trash.pop_front()
 
 
 func _exit_tree() -> void:
@@ -2711,7 +2743,7 @@ func _clear_node(entry: Dictionary) -> void:
 		elif child is StaticBody3D:
 			colliders -= child.get_child_count()
 
-	node.queue_free()
+	_throw_out(node)
 	entry["node"] = null
 
 

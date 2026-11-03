@@ -104,6 +104,7 @@ func _initialize() -> void:
 	view._filter_cleared(Vector2i(0, 0), false, [[128.0, 128.0, 128.0, 128.0, 0.6, 0.6]], [])
 	var one_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 	print("full filter %.1f ms, one new patch %.1f ms" % [full_ms, one_ms])
+	check(full_ms < 150.0, "a full refilter of 40000 plants against 300 boulders takes under 150 ms (%.1f)" % full_ms)
 	check(one_ms < 30.0, "one new patch in a 40000 plant chunk takes under 30 ms (%.1f)" % one_ms)
 	view.free()
 	print("Test done: %d failures" % failures)
