@@ -7,6 +7,8 @@ extends Node
 #                                              along the path) and, on arrival, the hit; returns the
 #                                              flight time in seconds
 #   sound.spear.hit(material, at, strength)    the spear lands: "wood", "stone", "soil" or "flesh"
+#                                              ("flesh" also plays for every hit on an animal the server reports,
+#                                              jab, throw or arrow: terrain_client hit_number_received)
 #
 # Sounds: generated in assets/audio/spear/ (make_spear.py); recordings in assets/audio/recorded/spear/ win.
 
@@ -57,6 +59,11 @@ func throw(from: Vector3, to: Vector3, speed_mps: float = 28.0, material: String
 	_flights.append({"player": player, "from": from, "to": to, "t": 0.0, "dur": dur, "material": material})
 
 	return dur
+
+
+# How loud the flesh thud of a hit is from the damage the server reports (hit_number): a graze is half as loud as a hard hit.
+static func hit_strength(amount: int) -> float:
+	return clampf(0.5 + float(amount) / 30.0, 0.5, 1.0)
 
 
 # The spear lands in `material` at `at`; strength 0 to 1 sets loudness.

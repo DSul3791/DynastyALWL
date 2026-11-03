@@ -101,6 +101,8 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	var spear_script = preload("res://src/client/spear_sounds.gd")
+	check(spear_script.hit_strength(1) == 0.5 and spear_script.hit_strength(30) == 1.0 and spear_script.hit_strength(9) > 0.5 and FileAccess.file_exists("res://assets/audio/spear/spear_hit_flesh_0.ogg"), "a hit on an animal thuds louder with more damage, and the flesh clip exists")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.

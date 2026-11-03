@@ -37,7 +37,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Bow and arrow (draw, release, hit) | none? | Steve | to verify |
 | Fishing (cast, bite, catch) | none? (fish splash is ambient only) | Steve/MikeW | to verify |
 | Drink from water source (not an item) | none? | Sonny/Steve | to verify |
-| Animal hit, death, eating (carcass) | none? | MikeW | to verify |
+| Animal hit, death, eating (carcass) | hit: `terrain_client.gd` `hit_number_received` -> `spear.hit("flesh")` for every hit the server reports (jab, spear, arrow; 3 Nov). Death, carcass: none? | MikeW | hit wired, to hear; death to verify |
 | Crafting action itself (hand craft, kit use) | none? (craft_done cue only) | Steve | to verify |
 | Clothing put on / taken off | none? | Sal | to verify |
 | Level up, goal done, hint | none? | Steve | to verify |
