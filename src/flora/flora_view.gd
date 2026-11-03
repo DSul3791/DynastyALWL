@@ -158,6 +158,30 @@ void fragment() {
 }
 """
 
+# Berries and blossoms on the berry bushes and ground berries (tree_builder `berries`; colours from SHRUB_LOOKS, CANE_SHRUBS and GROUND_LOOKS in the vertex colour).
+# On the bark shader they wore bark grain and foot moss and came out about a quarter as bright as their colours (Kathreen, 3 Nov 2026). Here: the vertex
+# colour, a soft sheen so a ripe berry catches the light, a little light through it (BACKLIGHT), and the bark's wind so they stay on their canes.
+const BERRY_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = COLOR.rgb * 0.88;
+	ROUGHNESS = 0.45;
+	SPECULAR = 0.4;
+	BACKLIGHT = COLOR.rgb * 0.2;
+}
+"""
+
 # Everember: dark ridged bark with glowing veins in its furrows. The glow
 # (EMISSION) is strongest where the bark texture is darkest (the furrows),
 # broken up by a second, coarser sample so not every furrow burns, and scaled
@@ -830,6 +854,11 @@ func _make_tree_materials() -> void:
 	ember_material.shader = ember
 	ember_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark.png"))
 	_tree_materials["ember"] = ember_material
+	var berry: Shader = Shader.new()
+	berry.code = BERRY_SHADER
+	var berry_material: ShaderMaterial = ShaderMaterial.new()
+	berry_material.shader = berry
+	_tree_materials["berry"] = berry_material
 
 	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
