@@ -120,6 +120,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var fruit: Acc = Acc.new()   # the apples, pears and cherries of the fruit trees on their own surface: vertex alpha = a per-fruit rank 0..1, so a shader can hide the highest ranks as the tree is picked (5 levels 100/66/33/10/0 percent)
 	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
 	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
+	var fungi: Acc = Acc.new()   # mushrooms on their own surface: they were in `bark`, so the bark shader put bark furrows, foot shade and green foot moss on every cap (Kathreen, 3 Nov)
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
@@ -235,6 +236,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	fruit.commit(mesh, materials.get("fruit", materials.get("smooth_bark", materials["bark"])))
 	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
 	ember.commit(mesh, materials.get("ember", materials["bark"]))
+	fungi.commit(mesh, materials.get("fungus", materials["bark"]))
 	twigs.commit(mesh, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"

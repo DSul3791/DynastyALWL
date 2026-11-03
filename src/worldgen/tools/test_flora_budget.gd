@@ -12,7 +12,7 @@ const BASELINE_PATH := "res://data/flora_budget_baseline.json"
 func _init() -> void:
 	var materials: Dictionary = {}
 
-	for key in ["bark", "birch_bark", "smooth_bark", "chrome", "ember", "broad", "conifer", "palm", "grass", "twig", "oak", "willow", "rowan", "maple", "witness"]:
+	for key in ["bark", "birch_bark", "smooth_bark", "chrome", "ember", "fungus", "broad", "conifer", "palm", "grass", "twig", "oak", "willow", "rowan", "maple", "witness"]:
 		materials[key] = StandardMaterial3D.new()
 
 	var table: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
