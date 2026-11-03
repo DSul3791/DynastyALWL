@@ -3054,6 +3054,9 @@ func _scroll_view(out: bool) -> void:
 # The log on the shoulder: about two and a half metres of trunk (the species' real length is not sent; Radar's item data has the weight).
 const CARRY_LOG_LENGTH_M := 2.4
 const CARRY_LOG_RADIUS_M := 0.14
+const FOV_BASE := 75.0                 # Godot's default, which the game has always used
+const FOV_RUN_EXTRA := 5.0             # degrees wider at a full run
+var _fov_extra: float = 0.0
 
 
 func _update_view(delta: float) -> void:
@@ -3091,6 +3094,12 @@ func _update_view(delta: float) -> void:
 		view_cam.top_level = false
 		view_cam.rotation = Vector3.ZERO   # the drawn camera only ever sits on the eye, looking the way the eye looks
 		view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
+
+		# Speed feel: the view widens a little at a jog and more at a run, and eases back when you stop (the usual first-person trick; the field of view was never touched before).
+		var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
+		var want_extra: float = clampf((pace - WALK_SPEED) / (RUN_SPEED - WALK_SPEED), 0.0, 1.0) * FOV_RUN_EXTRA if body.is_on_floor() and not swimming else 0.0
+		_fov_extra = lerpf(_fov_extra, want_extra, clampf(delta * 4.0, 0.0, 1.0))
+		view_cam.fov = FOV_BASE + _fov_extra
 
 	_avatar.visible = _view_now > 0.5
 
