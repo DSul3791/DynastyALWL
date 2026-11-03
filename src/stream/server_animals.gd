@@ -779,10 +779,35 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 			if bool(blocked.call(x + d.x, z + d.y)):
 				return -1.0
 
+	var near: float = float(hab.get("near_fresh_water_m", 0.0))
+
+	if near > 0.0 and water_level.is_valid() and not _fresh_water_near(x, z, near):
+		return -1.0   # a frog lives by a stream, pond or lake, never deep in a dry wood or on a sea shore
+
 	if bool(hab.get("forest", false)) and canopy.is_valid() and bool(canopy.call(Vector3(x, h, z))):
 		return 2.0
 
 	return 1.0
+
+
+# Whether fresh water (any water surface that is not ocean ground) lies within radius of a spot: the spot itself, then eight
+# directions at half and full radius.
+func _fresh_water_near(x: float, z: float, radius: float) -> bool:
+	for ring in [0.0, radius * 0.5, radius]:
+		for i in (1 if ring == 0.0 else 8):
+			var a: float = TAU * float(i) / 8.0
+			var px: float = x + cos(a) * ring
+			var pz: float = z + sin(a) * ring
+
+			if is_nan(float(water_level.call(px, pz))):
+				continue
+
+			if biome_at.is_valid() and str(biome_at.call(px, pz)) == "ocean":
+				continue
+
+			return true
+
+	return false
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.

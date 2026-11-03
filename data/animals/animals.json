@@ -549,7 +549,8 @@
 				"slope_max": 0.5,
 				"slope_run_m": 6.0,
 				"above_player_m": 250.0,
-				"water_edge_m": 0.0
+				"water_edge_m": 0.0,
+				"near_fresh_water_m": 30.0
 			},
 			"biomes": {
 				"marsh": 1.0,

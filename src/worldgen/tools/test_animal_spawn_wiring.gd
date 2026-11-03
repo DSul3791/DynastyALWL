@@ -204,5 +204,19 @@ func _init() -> void:
 			took_off = took_off or (gulls.animals.has(flock_id) and int(gulls.animals[flock_id]["state"]) == 15)
 
 		check(took_off, "a gull flock takes off together when a player walks up")
+
+	# Frogs live by fresh water (MikeW, 3 Nov): a pond 20 m off is fine, a dry wood or a sea shore is not.
+	a = make(players, "frog")
+	var frog: Dictionary = a.cfg["species"]["frog"]
+	a.biome_at = func(x, z): return "temperate_forest"
+	a.water_level = func(x, z): return 9.0 if x > 18.0 and x < 26.0 else NAN
+	check(a._habitat_score(frog, 0.0, 0.0, 10.0) > 0.0, "a frog may spawn 20 m from a pond")
+	check(a._habitat_score(frog, -100.0, 0.0, 10.0) < 0.0, "a frog never spawns 100 m from any water")
+	a.biome_at = func(x, z): return "ocean" if x > 18.0 else "marsh"
+	check(a._habitat_score(frog, 0.0, 0.0, 10.0) < 0.0, "sea water does not count as a frog pond")
+	var rabbit: Dictionary = a.cfg["species"]["rabbit"]
+	a.water_level = func(x, z): return NAN
+	check(a._habitat_score(rabbit, 0.0, 0.0, 10.0) > 0.0, "a rabbit does not need water nearby")
+
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
