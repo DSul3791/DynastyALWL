@@ -232,6 +232,10 @@ func _init() -> void:
 	check(camp._goal_met(1, camp._goal_state_of(1), bench_check, "workbench"), "a log workbench also completes the workbench goal (Dino round 6)")
 	check(camp._hint_trigger_true(1, camp._goal_state_of(1), "workbench_placed"), "a log workbench fires the workbench_placed hints")
 	check(not camp._hint_trigger_true(1, pot_state, "has_campfire_kit"), "no fire kit in the pack: no place-fire reminder")
+	var fish_check := {"have_item_any": ["trout", "perch"], "or_event": "fish_caught", "count": 1}
+	check(not camp._goal_met(1, camp._goal_state_of(1), fish_check, "fish"), "no fish caught or held: the fish goal is open")
+	camp._goal_event(1, "fish_caught")
+	check(camp._goal_met(1, camp._goal_state_of(1), fish_check, "fish"), "a caught fish completes the fish goal even when it is gone from the pack")
 	var axe_check := {"made_item": "stone_axe", "or_have": true, "count": 1}
 	var bought_before: bool = camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)

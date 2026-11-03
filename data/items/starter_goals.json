@@ -193,7 +193,7 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (2 sticks, 2 twine) or a shore net and fish at the pond. Keep the fish until the goal ticks.",
+			"hint": "Make a fishing rod (2 sticks, 2 twine) or a shore net and fish at the pond.",
 			"after": [
 				"twine"
 			],
@@ -210,7 +210,8 @@
 					"smelt",
 					"cod"
 				],
-				"count": 1
+				"count": 1,
+				"or_event": "fish_caught"
 			},
 			"reward": {
 				"coin_copper": 10
