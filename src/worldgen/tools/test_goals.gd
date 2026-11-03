@@ -163,7 +163,7 @@ func _init() -> void:
 	for n in range(3):
 		hinter._goals_tick()
 
-	check(said.has("Press Tab to see Health, Food, Water, Warmth and Energy."), "moving 5 m brings the next hint (%s)" % str(said.slice(-2)))
+	check(said.has("Press Tab to see Health, Food, Water, Temperature and Energy."), "moving 5 m brings the next hint (%s)" % str(said.slice(-2)))
 	hinter.action(1, Net.ACT_ADMIN_GIVE, hinter.table.number_of("stick"), 0, 9, Vector3.ZERO)
 
 	for n in range(4):
