@@ -492,6 +492,8 @@ var _wait_until_msec: int = 0
 
 
 func _ready() -> void:
+	DynastyBodyScript.warm()   # the body and arm files load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
+
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
 	# blocks were in flight. 6 or more workers settle the same stop in about 15 s (hole_stress east, 4 cores, 4 to 8 threads);
@@ -1053,7 +1055,9 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
+	var tp0: int = Probe.start()
 	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
+	Probe.stop("welcome: player", tp0)
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
 	var t3: int = Probe.start()
@@ -1226,7 +1230,9 @@ func _welcome_body(info: Dictionary) -> void:
 	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
 	sound_tests.setup(self)
 	ground_debug.setup(self)
+	var tq_menu: int = Probe.start()
 	_build_menu()
+	Probe.stop("welcome: menu", tq_menu)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
 	hud.visible = display.hud_text
@@ -1259,7 +1265,9 @@ func _welcome_body(info: Dictionary) -> void:
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)
+	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	Probe.stop("welcome: items view", tq_items_view)
 	var dialogue_view: Node = DialogueViewScript.new()
 	dialogue_view.name = "Dialogue"
 	add_child(dialogue_view)
@@ -1332,7 +1340,9 @@ func _welcome_body(info: Dictionary) -> void:
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
+	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	Probe.stop("welcome: held item", tq_held_item)
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
 	held.shrub_near = _shrub_near
 	held.water_depth_at = func(x: float, z: float) -> float:
@@ -1518,15 +1528,21 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	if sound != null and sound.dig != null and body != null:
 		sound.dig.dug(center, radius, body.global_position)        # before the ground changes: it hears what was there
 
+	var t_edit: int = Probe.start()   # Dave 3 Nov 2026: every hoe click pauses the game; these name the part (HITCH line, frame_probe.gd)
 	var tool: VoxelTool = terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_REMOVE
 	tool.do_sphere(center, radius)
+	Probe.stop("dig: ground edit", t_edit)
 	dig_applied += 1
+	var t_note: int = Probe.start()
 	_note_dig(center)
+	Probe.stop("dig: note", t_note)
 
 	if grass != null:
+		var t_grass: int = Probe.start()
 		grass.ground_changed(center, radius)
+		Probe.stop("dig: grass", t_grass)
 
 	print("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
 		radius, str(center), tool.get_voxel_f(Vector3i(center.round()))
@@ -1538,13 +1554,17 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 	if terrain == null:
 		return
 
+	var t_edit: int = Probe.start()
 	var tool: VoxelTool = terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_ADD
 	tool.do_sphere(center, radius)
+	Probe.stop("fill: ground edit", t_edit)
 
 	if grass != null:
+		var t_grass: int = Probe.start()
 		grass.ground_changed(center, radius, true)
+		Probe.stop("fill: grass", t_grass)
 
 
 # Applies the experiment switches (Esc > Advanced); also at start.
@@ -1599,6 +1619,7 @@ var _cleared_key: int = 0
 var _switches_applied: bool = false
 var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)
 var _cleared_cfg: Dictionary = {}
+var _loose_segs: Dictionary = {}        # loose log id -> the segment it presses, kept while it rolls (_sync_cleared)
 
 
 func _sync_cleared() -> void:
@@ -1628,6 +1649,8 @@ func _sync_cleared() -> void:
 		for spot in showroom.clear_spots():
 			spots.append(spot)
 			key = key ^ hash(Vector2(spot.x, spot.z))
+
+	var segs_now: Dictionary = {}
 
 	for id in items._world:
 		var row: Dictionary = items._world[id]
@@ -1659,7 +1682,17 @@ func _sync_cleared() -> void:
 				# A loose log lies along its node's x axis, centred on it (inventory_view._log_mesh): pressed like a felled trunk.
 				var plain: bool = loose_id == "log"
 				var node: Node3D = row["node"]
-				var seg: Array = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 1.0 if plain else 2.5, 0.11 if plain else 0.22, 0.13 if plain else 0.28)
+				var seg: Array
+
+				# A kicked log rolls (inventory_view._roll_tick): its node moves and turns every frame, and each new segment made the grass and the
+				# plants of its chunks filter again, ten times a second for the whole roll (Dave 3 Nov 2026: "every time I drop a log off my shoulder
+				# or I kick one everything lags each time it moves"). While it rolls it keeps the segment it had; the new one is taken once it rests.
+				if items._rolling.has(id) and _loose_segs.has(id):
+					seg = _loose_segs[id]
+				else:
+					seg = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 1.0 if plain else 2.5, 0.11 if plain else 0.22, 0.13 if plain else 0.28)
+
+				segs_now[id] = seg
 				lying.append(seg)
 				key = key ^ hash(Vector2(seg[0], seg[1])) ^ int(id)
 				continue
@@ -1677,6 +1710,8 @@ func _sync_cleared() -> void:
 		var pos: Vector3 = row["pos"]
 		spots.append(Vector3(snappedf(pos.x, 0.01), pos.y, snappedf(pos.z, 0.01)))
 		key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id)
+
+	_loose_segs = segs_now
 
 	for boulder_id in items._boulders:
 		var boulder: Dictionary = items._boulders[boulder_id]
