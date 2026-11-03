@@ -1,5 +1,7 @@
 extends Node3D
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 # Animals on the client (protocol 48): a simple low-poly rabbit until Art makes a real one (brown body, head, two ears, white
 # tail). The server sends rows about four times a second; the view glides to each, faces the way it goes and hops while moving
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
@@ -150,6 +152,12 @@ func drawn_count() -> int:
 
 
 func _process(delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(delta)
+	FrameProbe.stop("animals", t)
+
+
+func _process_body(delta: float) -> void:
 	_t += delta
 
 	for id in _bodies:

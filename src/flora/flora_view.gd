@@ -27,6 +27,8 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const GatherRules := preload("res://src/shared/gather_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const IceScript := preload("res://src/shared/ice.gd")
+const Probe := preload("res://src/debug/frame_probe.gd")
+const FILTER_CELL_M := 8.0   # cell of the obstacle grid _filter_cleared looks plants up in
 const KIND_TREE := 0
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
@@ -338,7 +340,8 @@ var cleared: Array = []               # Vector3 spots of placed items: shrubs an
 var clear_m: float = 5.0
 var trunks: Array = []               # felled trunks: [ax, az, bx, bz, radius a, radius b]; no small plants under or beside them (set_trunks)
 var trunk_margin_m: float = 0.3
-var _filter_queue: Dictionary = {}   # chunks whose plants must be refiltered against new cleared spots or trunks (worked off in apply_built)
+var _trash: Array = []               # old chunk drawings, hidden, freed a piece at a time (_free_trash)
+var _filter_queue: Dictionary = {}   # chunk -> {"all": bool, "trunks": [], "spots": []}: the NEW cleared spots or trunks its plants must be tested against (apply_built)
 var _last_position: Vector3 = Vector3.ZERO
 var _ground_msec: int = 0
 var falls_drawn: int = 0
@@ -1400,6 +1403,7 @@ func drop_chunk(chunk: Vector2i) -> void:
 
 	canopy_version += 1
 	_clear_node(entry)
+	_clear_colliders(entry)
 	cover.remove_chunk(chunk)
 	var water: MeshInstance3D = entry.get("water")
 
@@ -1547,10 +1551,12 @@ func _fruit_levels_of(chunk: Vector2i, items: Dictionary) -> Dictionary:
 
 	var ids: PackedInt32Array = items["ids"]
 
-	for n in range(ids.size()):
-		var id: int = int(ids[n])
+	# Only the picked plants are looked up (find is native): this ran over every plant of the chunk on each redraw.
+	for key in taken:
+		var id: int = int(key)
+		var n: int = ids.find(id)
 
-		if not taken.has(id):
+		if n < 0:
 			continue
 
 		var species: Dictionary = _species.get(id >> 16, {})
@@ -1700,7 +1706,7 @@ func set_cleared(spots: Array, radius: float) -> void:
 
 	for spot in spots:
 		if not old.has(spot):
-			_queue_filter_box(spot.x - radius, spot.z - radius, spot.x + radius, spot.z + radius)
+			_queue_filter_box(spot.x - radius, spot.z - radius, spot.x + radius, spot.z + radius, "spots", spot)
 
 
 # Felled trunks (Dave 2026-10-21): small plants growing out of a lying log are not drawn (the grass is pressed flat in grass_view).
@@ -1721,21 +1727,28 @@ func set_trunks(list: Array, margin: float) -> void:
 	for t in list:
 		if not old.has(t):
 			var reach: float = maxf(float(t[4]), float(t[5])) + margin + 0.2
-			_queue_filter_box(minf(t[0], t[2]) - reach, minf(t[1], t[3]) - reach, maxf(t[0], t[2]) + reach, maxf(t[1], t[3]) + reach)
+			_queue_filter_box(minf(t[0], t[2]) - reach, minf(t[1], t[3]) - reach, maxf(t[0], t[2]) + reach, maxf(t[1], t[3]) + reach, "trunks", t)
 
 
-func _queue_filter_box(x0: float, z0: float, x1: float, z1: float) -> void:
+# Queues the one new spot or trunk for the held chunks it reaches. Only it is tested there: the plants the older ones covered are gone already
+# (Dave 3 Nov 2026 log: every dig, cut or hoe click refiltered a whole chunk against every boulder, stump and path patch in it, 0.8-1 s a time).
+func _queue_filter_box(x0: float, z0: float, x1: float, z1: float, list: String, thing: Variant) -> void:
 	for cz in range(int(floor(z0 / chunk_m)), int(floor(z1 / chunk_m)) + 1):
 		for cx in range(int(floor(x0 / chunk_m)), int(floor(x1 / chunk_m)) + 1):
 			var chunk: Vector2i = Vector2i(cx, cz)
 
-			if _chunks.has(chunk):
-				_filter_queue[chunk] = true
+			if not _chunks.has(chunk):
+				continue
+
+			if not _filter_queue.has(chunk):
+				_filter_queue[chunk] = {"all": false, "trunks": [], "spots": []}
+
+			(_filter_queue[chunk][list] as Array).append(thing)
 
 
 func _queue_all_filters() -> void:
 	for chunk in _chunks.keys():
-		_filter_queue[chunk] = true
+		_filter_queue[chunk] = {"all": true, "trunks": [], "spots": []}
 
 
 # Works the queued chunk filters for about budget_usec (at least one).
@@ -1746,8 +1759,13 @@ func _run_filter_queue(budget_usec: int) -> void:
 	var started: int = Time.get_ticks_usec()
 
 	for chunk in _filter_queue.keys():
+		var job: Dictionary = _filter_queue[chunk]
 		_filter_queue.erase(chunk)
-		_filter_cleared(chunk, true)
+
+		if bool(job["all"]):
+			_filter_cleared(chunk, true)
+		else:
+			_filter_cleared(chunk, true, job["trunks"], job["spots"])
 
 		if Time.get_ticks_usec() - started >= budget_usec:
 			break
@@ -1765,70 +1783,126 @@ func _under_trunk(p: Vector3, near: Array) -> bool:
 	return false
 
 
-func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
+# Drops the shrubs and small plants of a chunk that grow under a trunk, stump, boulder or path patch, or in a cleared spot. With only_trunks or
+# only_spots given just those are tested (new ones, _run_filter_queue), otherwise all held ones are.
+# Dave 3 Nov 2026 (log: "flora apply" 0.8-1 s after every dig, cut and hoe click): every plant of the chunk was tested against every obstacle
+# near it, and each dropped plant shifted four arrays. Now the obstacles are put in a grid of FILTER_CELL_M cells first, a plant only looks at
+# its own cell (most cells are empty: one lookup), and the arrays are rebuilt once.
+func _filter_cleared(chunk: Vector2i, redraw: bool, only_trunks: Variant = null, only_spots: Variant = null) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
+	var trunk_list: Array = trunks if only_trunks == null else only_trunks
+	var spot_list: Array = cleared if only_spots == null else only_spots
 
-	if keep_all or entry.is_empty() or (cleared.is_empty() and trunks.is_empty()):
+	if keep_all or entry.is_empty() or (spot_list.is_empty() and trunk_list.is_empty()):
 		return
 
 	var items: Dictionary = entry["items"]
 	var positions = items["positions"]
 	var ids = items["ids"]
-	var n: int = ids.size() - 1
-	var removed: bool = false
+	var count: int = ids.size()
 
-	if n < 0:
+	if count == 0:
 		return
 
-	# Only the trunks, stumps, boulders and cleared spots that reach this chunk's plants are tested (Dave 2 Nov 2026: constant lag. Every boulder,
-	# stump and loose log in view is a segment now, and each new one refiltered every plant of every chunk against all of them).
-	var lo: Vector2 = Vector2(INF, INF)
-	var hi: Vector2 = Vector2(-INF, -INF)
+	# The chunk's ground, a little padded (plants are placed inside their chunk).
+	var lo: Vector2 = Vector2(float(chunk.x) * chunk_m - 1.0, float(chunk.y) * chunk_m - 1.0)
+	var hi: Vector2 = lo + Vector2(chunk_m + 2.0, chunk_m + 2.0)
+	var grid: Dictionary = {}   # Vector2i cell -> [trunks reaching it, spots reaching it]
 
-	for k in range(n + 1):
-		lo = Vector2(minf(lo.x, positions[k].x), minf(lo.y, positions[k].z))
-		hi = Vector2(maxf(hi.x, positions[k].x), maxf(hi.y, positions[k].z))
-
-	var near: Array = []
-
-	for t in trunks:
+	for t in trunk_list:
 		var reach: float = maxf(float(t[4]), float(t[5])) + trunk_margin_m + 0.2
+		_grid_add(grid, 0, t, Vector2(minf(t[0], t[2]) - reach, minf(t[1], t[3]) - reach), Vector2(maxf(t[0], t[2]) + reach, maxf(t[1], t[3]) + reach), lo, hi)
 
-		if minf(t[0], t[2]) - reach <= hi.x and maxf(t[0], t[2]) + reach >= lo.x and minf(t[1], t[3]) - reach <= hi.y and maxf(t[1], t[3]) + reach >= lo.y:
-			near.append(t)
+	for spot in spot_list:
+		_grid_add(grid, 1, spot, Vector2(spot.x - clear_m, spot.z - clear_m), Vector2(spot.x + clear_m, spot.z + clear_m), lo, hi)
 
-	var near_spots: Array = []
-
-	for spot in cleared:
-		if spot.x + clear_m >= lo.x and spot.x - clear_m <= hi.x and spot.z + clear_m >= lo.y and spot.z - clear_m <= hi.y:
-			near_spots.append(spot)
-
-	if near.is_empty() and near_spots.is_empty():
+	if grid.is_empty():
 		return
 
-	while n >= 0:
+	# The box of the cells used: plants outside it are passed over with four compares (a dig or hoe click touches a few cells only).
+	var c_lo: Vector2i = Vector2i(1 << 30, 1 << 30)
+	var c_hi: Vector2i = Vector2i(-(1 << 30), -(1 << 30))
+
+	for cell in grid:
+		c_lo = Vector2i(mini(c_lo.x, cell.x), mini(c_lo.y, cell.y))
+		c_hi = Vector2i(maxi(c_hi.x, cell.x), maxi(c_hi.y, cell.y))
+
+	var bx0: float = float(c_lo.x) * FILTER_CELL_M
+	var bz0: float = float(c_lo.y) * FILTER_CELL_M
+	var bx1: float = float(c_hi.x + 1) * FILTER_CELL_M
+	var bz1: float = float(c_hi.y + 1) * FILTER_CELL_M
+	var drop: PackedInt32Array = PackedInt32Array()
+	var clear_sq: float = clear_m * clear_m
+
+	for n in range(count):
+		var p: Vector3 = positions[n]
+
+		if p.x < bx0 or p.x >= bx1 or p.z < bz0 or p.z >= bz1:
+			continue
+
+		var hit: Variant = grid.get(Vector2i(floori(p.x / FILTER_CELL_M), floori(p.z / FILTER_CELL_M)))
+
+		if hit == null:
+			continue
+
 		var species: Dictionary = _species.get(int(ids[n]) >> 16, {})
 
-		if not species.is_empty() and int(species["kind"]) != KIND_TREE and not near.is_empty() and _under_trunk(positions[n], near):
-			for key in ["ids", "positions", "heights", "yaws"]:
-				items[key].remove_at(n)
+		if species.is_empty() or int(species["kind"]) == KIND_TREE:
+			continue
 
-			removed = true
-		elif not species.is_empty() and int(species["kind"]) != KIND_TREE:
-			for spot in near_spots:
-				if Vector2(positions[n].x - spot.x, positions[n].z - spot.z).length() < clear_m:
-					for key in ["ids", "positions", "heights", "yaws"]:
-						items[key].remove_at(n)
+		if not (hit[0] as Array).is_empty() and _under_trunk(p, hit[0]):
+			drop.append(n)
+			continue
 
-					removed = true
-					break
+		for spot in hit[1]:
+			var dx: float = p.x - spot.x
+			var dz: float = p.z - spot.z
 
-		n -= 1
+			if dx * dx + dz * dz < clear_sq:
+				drop.append(n)
+				break
 
-	if removed and redraw:
+	if drop.is_empty():
+		return
+
+	_drop_indices(items, drop)
+
+	if redraw:
 		entry["level"] = -1
 		entry.erase("building")
 		_refresh(chunk, _last_position)
+
+
+# Puts thing in list slot (0 trunks, 1 spots) of every grid cell its box [a, b] covers inside the chunk box [lo, hi].
+func _grid_add(grid: Dictionary, slot: int, thing: Variant, a: Vector2, b: Vector2, lo: Vector2, hi: Vector2) -> void:
+	if b.x < lo.x or a.x > hi.x or b.y < lo.y or a.y > hi.y:
+		return
+
+	a = Vector2(maxf(a.x, lo.x), maxf(a.y, lo.y))
+	b = Vector2(minf(b.x, hi.x), minf(b.y, hi.y))
+
+	for cz in range(floori(a.y / FILTER_CELL_M), floori(b.y / FILTER_CELL_M) + 1):
+		for cx in range(floori(a.x / FILTER_CELL_M), floori(b.x / FILTER_CELL_M) + 1):
+			var cell: Vector2i = Vector2i(cx, cz)
+
+			if not grid.has(cell):
+				grid[cell] = [[], []]
+
+			(grid[cell][slot] as Array).append(thing)
+
+
+# Removes the items at the given indices (ascending) from the chunk's four item arrays. remove_at is native, so a few drops cost little.
+func _drop_indices(items: Dictionary, drop: PackedInt32Array) -> void:
+	for key in ["ids", "positions", "heights", "yaws"]:
+		if not items.has(key):
+			continue
+
+		var arr = items[key]
+
+		for k in range(drop.size() - 1, -1, -1):
+			arr.remove_at(drop[k])
+
+		items[key] = arr
 
 
 # Once a second: chunks still waiting for ground are asked again; the moment it is there their plants and ribbons are shown (and stay).
@@ -2073,8 +2147,17 @@ func apply_built(budget_usec: int = 3000) -> void:
 	if not _setup_done:
 		_setup_step()
 
+	# The pieces are timed apart so a HITCH line names which one stalls (Dave 3 Nov 2026: "flora apply" 0.8-1 s).
+	var t0: int = Probe.start()
 	_take_seasonal()
+	Probe.stop("flora: season redraw", t0)
+	t0 = Probe.start()
 	_run_filter_queue(2000)
+	Probe.stop("flora: plant filter", t0)
+	t0 = Probe.start()
+	_free_trash(1000)
+	Probe.stop("flora: free old drawings", t0)
+	t0 = Probe.start()
 
 	var still: Array = []
 
@@ -2086,9 +2169,13 @@ func apply_built(budget_usec: int = 3000) -> void:
 
 	_tasks = still
 	_launch_plans(_last_position)
+	Probe.stop("flora: plans", t0)
+	t0 = Probe.start()
 
 	if _mid_task != -1 and not _mid_ready.is_empty():
 		_apply_mid(1)
+
+	Probe.stop("flora: mid models", t0)
 
 	_built_mutex.lock()
 	var arrived: Array = _built
@@ -2103,9 +2190,18 @@ func apply_built(budget_usec: int = 3000) -> void:
 			var node: Node3D = Node3D.new()
 			node.name = "Chunk_%d_%d" % [next[0].x, next[0].y]
 			add_child(node)
-			_jobs.append({"chunk": next[0], "serial": next[1], "level": next[2], "masks": next[4], "plan": next[3], "node": node, "draw": 0, "shape": 0})
+			var job: Dictionary = {"chunk": next[0], "serial": next[1], "level": next[2], "masks": next[4], "plan": next[3], "node": node, "draw": 0, "shape": 0, "cnode": null, "keep": false}
+
+			# The same trunk colliders as now (a redraw for the player's walking: shrubs and plants changed model, the trees did not): the
+			# bodies standing are kept, not rebuilt (Dave 3 Nov 2026: pauses every few steps; every 32 m walked rebuilt each near chunk's colliders).
+			if entry.has("cnode") and is_instance_valid(entry["cnode"]) and int(entry.get("shapes_key", 0)) == int(next[3].get("shapes_key", -1)):
+				job["keep"] = true
+				job["shape"] = (next[3]["shapes"] as Array).size()
+
+			_jobs.append(job)
 
 	var started: int = Time.get_ticks_usec()
+	t0 = Probe.start()
 
 	while not _jobs.is_empty() and Time.get_ticks_usec() - started < budget_usec:
 		_nearest_job_first()
@@ -2114,12 +2210,22 @@ func apply_built(budget_usec: int = 3000) -> void:
 
 		if entry.is_empty() or int(entry.get("serial", -1)) != int(job["serial"]):
 			_discard(job["node"])
+
+			if job["cnode"] != null:
+				_discard(job["cnode"])
+
 			_jobs.pop_front()
 			continue
 
 		if _apply_step(job):
 			_clear_node(entry)
 			entry["node"] = job["node"]
+
+			if not bool(job["keep"]):
+				_clear_colliders(entry)
+				entry["cnode"] = job["cnode"]
+				entry["shapes_key"] = int(job["plan"].get("shapes_key", 0))
+
 			job["node"].visible = bool(entry.get("ground", true))
 			entry["level"] = job["level"]
 			entry["masks"] = job["masks"]
@@ -2128,6 +2234,8 @@ func apply_built(budget_usec: int = 3000) -> void:
 			entry["drawn"] = _drawn_count(job["node"])
 			_jobs.pop_front()
 			_note_loaded(entry)
+
+	Probe.stop("flora: place drawings", t0)
 
 
 # One line about the load state, for the freeze log (FrameProbe.context).
@@ -2189,7 +2297,35 @@ func _discard(node: Node3D) -> void:
 		elif child is StaticBody3D:
 			colliders -= child.get_child_count()
 
-	node.queue_free()
+	_throw_out(node)
+
+
+# An old drawing is hidden now and freed a child at a time over the next frames (Dave 3 Nov 2026: freeing a chunk's hundreds of draws and
+# collider bodies in one go, at the end of the frame, cost up to 30 ms each time a dig or cut redrew a chunk). Its colliders are taken out
+# of the physics world at once, so nothing stands where a plant was felled.
+func _throw_out(node: Node3D) -> void:
+	node.visible = false
+
+	for child in node.get_children():
+		if child is CollisionObject3D:
+			(child as CollisionObject3D).process_mode = Node.PROCESS_MODE_DISABLED
+
+	_trash.append(node)
+
+
+func _free_trash(budget_usec: int) -> void:
+	var started: int = Time.get_ticks_usec()
+
+	while not _trash.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		var node: Node3D = _trash[0]
+
+		if not is_instance_valid(node):
+			_trash.pop_front()
+		elif node.get_child_count() > 0:
+			node.get_child(node.get_child_count() - 1).free()
+		else:
+			node.free()
+			_trash.pop_front()
 
 
 func _exit_tree() -> void:
@@ -2418,7 +2554,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 		draws.append([key, indices.size(), buffer])
 
-	return {"draws": draws, "shapes": shapes, "lights": lights}
+	return {"draws": draws, "shapes": shapes, "lights": lights, "shapes_key": hash(shapes)}
 
 
 # Adds the next piece of a job's drawing: a batch of trunk colliders (each batch its own
@@ -2449,7 +2585,14 @@ func _apply_step(job: Dictionary) -> bool:
 			shape_species.append(int(item[0]))
 
 		body.set_meta("species_ids", shape_species)
-		node.add_child(body)
+
+		if job["cnode"] == null:
+			var holder: Node3D = Node3D.new()
+			holder.name = "Colliders_%d_%d" % [job["chunk"].x, job["chunk"].y]
+			add_child(holder)
+			job["cnode"] = holder
+
+		(job["cnode"] as Node3D).add_child(body)
 		colliders += last - first
 		job["shape"] = last
 		return false
@@ -2628,8 +2771,20 @@ func _clear_node(entry: Dictionary) -> void:
 		elif child is StaticBody3D:
 			colliders -= child.get_child_count()
 
-	node.queue_free()
+	_throw_out(node)
 	entry["node"] = null
+
+
+# The chunk's trunk collider bodies (kept apart from its drawing so a redraw that leaves the trees alone keeps them).
+func _clear_colliders(entry: Dictionary) -> void:
+	var holder: Variant = entry.get("cnode")
+	entry.erase("cnode")
+	entry.erase("shapes_key")
+
+	if holder == null or not is_instance_valid(holder):
+		return
+
+	_discard(holder)
 
 
 # Draw statistics for the audit and the checks: MultiMesh nodes and instances held, by kind (tree, shrub, plant, in that order),
