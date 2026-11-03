@@ -84,14 +84,14 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 				var key: String = "frame_" + bone
 
 				if not anchors.has(key):
-					var row: Array = frames[bone]
+					var frame_row: Array = frames[bone]
 					var holder: BoneAttachment3D = BoneAttachment3D.new()
 					holder.name = "Worn_" + bone
 					skeleton.add_child(holder)
-					holder.bone_name = str(row[0])
+					holder.bone_name = str(frame_row[0])
 					var frame: Node3D = Node3D.new()
 					frame.name = "Frame"
-					frame.transform = row[1]
+					frame.transform = frame_row[1]
 					holder.add_child(frame)
 					anchors[key] = frame
 
