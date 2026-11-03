@@ -18,6 +18,7 @@ static var _metal_mats: Dictionary = {}
 # even while their looks.json row is still the grey placeholder chunk. Remove a row here once looks.json carries the same shape.
 const ART_OVERRIDES := {
 	"flint": {"shape": "flint", "color": "#4a4238", "size": 1.0},
+	"spear": {"shape": "shaft", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},     # the early "Stone spear" ("a stone point on a long shaft"): looks.json drew it with the iron head
 	"tree_roots": {"shape": "roots", "color": "#6a4a2e", "size": 1.0},     # dug roots, not the firewood rod bundle (Kathleen 3 Nov)
 	"pyrite": {"shape": "pyrite", "color": "#d4ae33", "size": 1.0},
 	"obsidian": {"shape": "obsidian", "color": "#101014", "size": 1.0},
@@ -1732,7 +1733,16 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for k in range(3):                                                                                       # a leather grip wrap
 				_cyl(parts, 0.0195, 0.014, Vector3(-0.08 + 0.02 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025) if k != 1 else Color(0.16, 0.09, 0.045))
 
-			if metal_head:
+			if bits.has("stone"):
+				# The stone spear: a knapped grey-brown flint point (a leaf plate with a ridge, matt, a little chipped) set in a split end of the shaft
+				# and lashed with dark sinew turns and a pale twine whipping above them (Art_Direction: believable materials, no metal sheen).
+				var flint_head: Color = Color(0.3, 0.27, 0.22)
+				_cyl_taper(parts, 0.0155, 0.019, 0.06, Vector3(0.48, 0.0, 0.0), ash_spear.darkened(0.12))                 # the swollen split end that holds the point
+				_plate(parts, 0.5, 0.22, 0.05, 0, 12, flint_head, true, false, 0.9, 0.0, Transform3D.IDENTITY, 3, 2.2)
+				_box_rot(parts, Vector3(0.01, 0.012, 0.01), Vector3(0.6, 0.0, 0.02), Vector3(0.0, 0.6, 0.0), flint_head.darkened(0.25))   # a chipped flake scar on the edge
+				for k in range(6):
+					_cyl(parts, 0.0205, 0.009, Vector3(0.455 + 0.009 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3 * float(k % 2 * 2 - 1)), Color(0.16, 0.1, 0.05) if k < 4 else Color(0.6, 0.48, 0.28))
+			elif metal_head:
 				var iron_head: Color = Color(0.2, 0.19, 0.17)
 				_cyl_taper(parts, 0.0165, 0.024, 0.1, Vector3(0.5, 0.0, 0.0), iron_head * 0.8)                       # the socket cone
 				_metal(parts, 0.5, 0.5)
