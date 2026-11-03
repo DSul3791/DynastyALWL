@@ -2770,6 +2770,11 @@ func _init() -> void:
 
 	check(sx6.inventory_of(1).count_of(cord6) > cord6b, "the six-ingredient craft completes")
 
+	# The spawn boost never lowers a cell's own roll (Dino round 7: a sloped cell rolling 4 stones was cut to the cap of 2 near the spawn).
+	check(ItemsScript.boosted(4, 2, 2) == 4, "a cell rolling more than the cap keeps its roll")
+	check(ItemsScript.boosted(0, 2, 2) == 2 and ItemsScript.boosted(1, 2, 2) == 2, "a flat cell is lifted up to the cap")
+	check(ItemsScript.boosted(0, 1, 4) == 1, "the boost adds only what it rolled")
+
 	# Campfire friction (spawn_boost): a new player's surroundings hold a campfire kit's worth; far from spawn it stays sparse.
 	var qd8: String = "user://test_server_items_boost"
 	DirAccess.make_dir_recursive_absolute(qd8)
