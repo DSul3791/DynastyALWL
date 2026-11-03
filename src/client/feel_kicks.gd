@@ -33,6 +33,15 @@ func strike(side: float = 1.0, weight: float = 1.0) -> void:
 	_vroll += side * STRIKE_ROLL_DEG * 14.0 * weight
 
 
+# A tree hits the ground `distance` metres away with `size` (about 0.2 to 1.6): the ground thumps the eye, felt within 30 m and strongest close by.
+func thud(distance: float, size: float) -> void:
+	var strength: float = clampf(size, 0.2, 1.5) * clampf(1.0 - distance / 30.0, 0.0, 1.0)
+
+	if strength > 0.02:
+		_vy -= 0.1 * 14.0 * strength
+		_vroll += 1.2 * 14.0 * strength
+
+
 func step(delta: float) -> Dictionary:
 	var dt: float = minf(delta, 0.05)
 	_vy += (-STIFFNESS * _y - DAMPING * _vy) * dt
