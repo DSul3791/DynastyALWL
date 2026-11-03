@@ -264,6 +264,7 @@ void fragment() {
 """
 
 static var _coat_shader: Shader
+const SHADOW_MIN_M := 0.09      # a piece this big (its radius times its largest scale) casts a shadow
 var _coat: String = "fur"        # the coat the next pieces take: _make_frog, _make_fish and _make_seal switch it to "wet" while they build
 
 
@@ -308,7 +309,9 @@ func _ball(parent: Node3D, radius: float, scale_v: Vector3, at: Vector3, color: 
 	inst.scale = scale_v
 	inst.position = at
 	inst.rotation = rot
-	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Only the big pieces (body, haunch, chest, head of the large animals) cast a shadow, so an animal stands on the ground instead of floating over it; ears, legs, eyes
+	# and other small parts stay off (Kathreen, 3 Nov 2026). About 2 to 5 shadow pieces per animal, at most MAX_DRAWN animals.
+	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if radius * maxf(scale_v.x, maxf(scale_v.y, scale_v.z)) >= SHADOW_MIN_M else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(inst)
 
 
