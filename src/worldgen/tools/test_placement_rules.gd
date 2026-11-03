@@ -44,7 +44,7 @@ func _init() -> void:
 	check(Rules.steep(cfg, "chest_kit", Vector3(0, 10, 0), 0.0, func(x, _z): return 10.0 + 0.2 * x) == "", "a gentle slope is fine")
 	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), PI * 0.5, func(_x, z): return 10.0 + 0.5 * z) == "steep", "turning the lean-to turns its footprint (the slope runs along z)")
 	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, hole) == "", "unknown ground never blocks by itself")
-	check(Rules.reason_text("steep") != "" and Rules.reason_text("open") == "", "red states have a reason in words")
+	check(Rules.reason_text("steep") != "" and Rules.reason_text("open") == "" and Rules.reason_text("far") != "", "red states have a reason in words")
 
 	var crowded: Array = []
 

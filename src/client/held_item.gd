@@ -349,6 +349,7 @@ func _save_plan_here() -> void:
 # A saved plan placed: the anchor goes where the ghost is and the other pieces follow, one every PLAN_STEP_MSEC so nothing stalls a frame and
 # the server has each piece in place before the next arrives. The server checks every piece (reach, ground, materials) as if placed by hand.
 const PLAN_STEP_MSEC := 150
+const PLACE_REACH_M := 6.0   # the server's PLACE_REACH_M (server_items.gd): a spot farther from the player's feet is refused
 var _plan_queue: Array = []
 var _plan_next_msec: int = 0
 
@@ -1073,7 +1074,12 @@ func _update_blueprint() -> void:
 		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 		blueprint_state = "covered" if covered else "open"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken"
+	# The server refuses a spot more than PLACE_REACH_M (6 m) from the player's feet; the ghost's ray starts at the camera, which in third person
+	# is behind the body, so a green ghost could still be refused with "Too far to place that".
+	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
+		blueprint_state = "far"
+
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.can_afford(_hammer_tier()))
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
