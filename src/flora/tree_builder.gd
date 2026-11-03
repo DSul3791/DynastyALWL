@@ -163,7 +163,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"sweet_chestnut":
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season)
 		"blackthorn":
-			_blackthorn(bark, leaves, rng, h, crown, far, season, _fruit_state(entry, season, stripped, ["spring"], mid))
+			_blackthorn(bark, leaves, rng, h, crown, far, season, _fruit_state(entry, season, stripped, ["spring"], mid), berries)
 		"raspberry", "bramble", "wild_rose", "blueberry":
 			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, SHRUB_LOOKS[str(entry["name"])].get("bloom_in", ["spring"]), mid), berries)
 		"ground_berry":
@@ -3095,7 +3095,8 @@ const SLOE_COLOR := Color(0.36, 0.40, 0.62)
 const BLOSSOM_WHITE := Color(1.0, 1.0, 0.98)
 
 
-static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, season: String, state: Dictionary = {"fruit": true, "bare": false}) -> void:
+static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, season: String, state: Dictionary = {"fruit": true, "bare": false}, berries: Acc = null) -> void:
+	var crop: Acc = berries if berries != null else bark      # sloes and blossom on the berry shader (#234)
 	# Budget (Steve 2026-10-23): near model at most about 4,000 vertices, far model about 800. Spines are single triangles.
 	var bloom: bool = season == "spring"
 	var bare: bool = bool(state["bare"])
@@ -3139,12 +3140,12 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 
 			if bloom:
 				if not far and rng.randf() < 0.3:
-					_blossom(bark, rng, n, crown * 0.04, BLOSSOM_WHITE)
+					_blossom(crop, rng, n, crown * 0.04, BLOSSOM_WHITE)
 			elif not bare:
 				_leaf_spray(leaves, rng, n, Vector3(rng.randfn(), rng.randf_range(-0.3, 0.5), rng.randfn()), crown * 0.11, shade * 1.05)
 
 				if not far and rng.randf() < 0.22 and bool(state["fruit"]):
-					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.04, 0.0), crown * 0.0085, SLOE_COLOR, false, rng.randi_range(3, 4))
+					_cluster(crop, rng, n + Vector3(0.0, -crown * 0.04, 0.0), crown * 0.0085, SLOE_COLOR, false, rng.randi_range(3, 4))
 
 	# Leaf sprays low in the bush as well, so it is full from the top down to the ground (Dave 2026-10-23).
 	if not far and not small and not bloom and not bare:
