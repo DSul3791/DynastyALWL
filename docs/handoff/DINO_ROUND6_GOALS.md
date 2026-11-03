@@ -45,3 +45,11 @@ I checked each of the 13 starter goals in `data/items/starter_goals.json` for th
 Also: `workbench_placed` counts only `placed:workbench`, so the hint misses the log workbench, the same gap as the goal above.
 
 Suggested owner: Tyler (hint code, 31 Oct) for has_campfire_kit and the log workbench; Sal for the texts.
+
+## First-hour item tooltips (items.json / gathered.json `description`) vs data: all correct
+
+I checked 26 first-hour items: stone, stick, fibre, twine, leaves, bark, bedding, thatch, kindling, tinder, log, firewood, the axe, the knife, both spears, the five kits, the fishing rod, lumber, the rough plank and the stone hammer.
+- "Light it with fibre" is right: cooking.json tinder is plant_fibre, and tinder, birch bark and tinder fungus also work.
+- "The stone axe breaks rock" is right: boulders.json gives axe/stone 3 blows per stone.
+- "Wedge lumber at a workbench" is right: recipe lumber_wedge, station workbench, keeps a stone wedge.
+- Nothing to fix. The only gaps are that the `hammer` and `root_ball` ids have no tooltip text, and neither is a first-hour pack item.
