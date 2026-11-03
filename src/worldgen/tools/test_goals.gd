@@ -226,6 +226,13 @@ func _init() -> void:
 	camp._items[pot_id] = {"number": 0, "count": 1, "pos": Vector3(2.0, 10.0, 0.5), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
 	camp._next_id += 1
 	check(not camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "once a pot stands at the fire the plant food hint stops")
+	# Hint triggers that used to match nothing (3 Nov 2026): the axe stand-in for the fell hint and the sea water ones.
+	check(not camp._hint_trigger_true(1, pot_state, "axe_held_near_tree"), "no axe in the pack: no fell hint")
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	check(camp._hint_trigger_true(1, pot_state, "axe_held_near_tree"), "an axe in the pack brings the fell hint")
+	check(not camp._hint_trigger_true(1, pot_state, "has_sea_water"), "no sea water in the pack: no hint")
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("sea_water"), 0, 1, Vector3.ZERO)
+	check(camp._hint_trigger_true(1, pot_state, "has_sea_water"), "sea water in the pack triggers its hint")
 	var bench_check := {"event": "placed", "what_any": ["workbench", "log_workbench"], "count": 1}
 	check(not camp._goal_met(1, pot_state, bench_check, "workbench"), "no bench placed: the workbench goal is open")
 	camp._goal_event(1, "placed", "log_workbench")
