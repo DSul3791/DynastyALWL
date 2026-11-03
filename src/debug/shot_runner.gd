@@ -68,6 +68,7 @@ var _fell_t: int = 0
 var _fell_tree: Array = []
 var _fell_trunk: int = 0
 var _fell_stump: int = 0
+var _fell_extra: Dictionary = {}   # the trunk's extra, kept: since the auto-split (#98) the trunk row is gone a moment after it lands
 var _fell_up: Vector2 = Vector2.ZERO
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
@@ -728,6 +729,7 @@ func _fell_tick(now: int) -> void:
 		for id in items._world:
 			if int(items._world[id]["state"]) == 3:
 				_fell_trunk = id
+				_fell_extra = items._world[id].get("extra", {})
 
 			if int(items._world[id]["state"]) == 4:
 				_fell_stump = id
@@ -752,7 +754,7 @@ func _fell_tick(now: int) -> void:
 
 	if _fell_step == 4:
 		if now - _fell_t > 3500:
-			var extra: Dictionary = items._world[_fell_trunk].get("extra", {})
+			var extra: Dictionary = items._world[_fell_trunk].get("extra", {}) if items._world.has(_fell_trunk) else _fell_extra
 			print("shot runner: fell trunk yaw %.3f pitch %.3f length %.1f radius %.2f" % [float(extra.get("yaw", 0.0)), float(extra.get("pitch", 0.0)), float(extra.get("length", 0.0)), float(extra.get("radius", 0.0))])
 			var tp: Vector3 = _fell_tree[2]
 			var dir: Vector2 = Vector2(sin(float(extra.get("yaw", 0.0))), cos(float(extra.get("yaw", 0.0))))

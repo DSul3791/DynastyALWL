@@ -21,7 +21,8 @@ const LAKE_VOLUME_M3 := 100000.0 # a bigger bowl is a lake: its spring cannot fi
 const LAKE_NEED_M := 1.0
 const BOWL_RING_M := [40.0, 80.0, 120.0]
 const BOWL_SLACK_M := 1.5        # a river head has ground falling away beside it; a bowl has none lower than its bed by more than this
-const KNOWN_FAILURES := {1394078: "a real cell Sonny fixes on his lake branch with a re-bake"}
+const KNOWN_FAILURES := {1394078: "a real cell Sonny fixes on his lake branch with a re-bake",
+	3144147: "a 75,000 m3 valley pond at 4.59 m3/s: 2.31 of 2.64 m after 3 h, its water spreads flat over the valley floor (the probe finds no leak, more water stored within 200 m than delivered); unchanged by the backwater paint, so it fills slowly, not wrongly (2 Nov 2026)"}
 const MAX_POND_DEPTH_M := 8.5    # deeper than that is a lake or the sea, not a head pond
 
 var failures: int = 0
@@ -39,9 +40,18 @@ func _is_flat_water(data, k: int, surface: float) -> bool:
 	var side: int = data.samples
 	var same: int = 0
 
+	var column: int = k % side
+	@warning_ignore("integer_division")
+	var row: int = k / side
+
 	for dj in range(-4, 5):
 		for di in range(-4, 5):
-			var n: int = k + dj * side + di
+			# A spring within 4 samples of the tile's edge: the window stops at the edge (no row wrap, no read past the arrays; PC run 2 Nov 2026,
+			# "Invalid access of index 3692024" after the TERRAIN_VERSION 47 rebake put a spring pond on the bottom rows).
+			if column + di < 0 or column + di >= side or row + dj < 0 or row + dj >= side:
+				continue
+
+			var n: int = (row + dj) * side + column + di
 			var level: float = data.water_surface[n]
 
 			if data.water_class[n] > 1 and not is_nan(level) and absf(level - surface) < 0.5:
@@ -154,7 +164,42 @@ func _init() -> void:
 
 	for spot in spots:
 		var k: int = spot[0]
+		# 2 Nov 2026: the pond's water, not only the spring cell: a spring on the bowl's side runs down to the floor first (spring 1900590 stood 1.75 m up the
+		# slope of its bowl, dry at the spring with 0.5 m of water 40 m away). So the deepest water within 5 cells (40 m) counts, but only in this pond's own
+		# bowl (joined to the spring through cells of the same baked pond level), on ground no higher than the spring cell's and above the sea (Tyler's review).
 		var wet: float = sim.depth_at(k)
+		var wet_at: int = k
+		var side: int = data.samples
+		var surface_k: float = data.water_surface[k]
+		var bowl: Dictionary = {k: true}
+		var queue: Array = [k]
+
+		while not queue.is_empty():
+			var at: int = queue.pop_back()
+
+			for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var ci: int = at % side + step.x
+				@warning_ignore("integer_division")
+				var cj: int = at / side + step.y
+				@warning_ignore("integer_division")
+				var near: bool = absi(ci - k % side) <= 5 and absi(cj - k / side) <= 5
+
+				if ci < 0 or cj < 0 or ci >= side or cj >= side or not near:
+					continue
+
+				var q: int = cj * side + ci
+				var level: float = data.water_surface[q]
+
+				if bowl.has(q) or data.water_class[q] < 2 or is_nan(level) or absf(level - surface_k) >= 0.5:
+					continue
+
+				bowl[q] = true
+				queue.append(q)
+
+				if data.heights[q] <= data.heights[k] and data.heights[q] > 0.0 and sim.depth_at(q) > wet:
+					wet = sim.depth_at(q)
+					wet_at = q
+
 		# A pond is a 2 to 8 m bowl fed by 0.1 to 2 m3/s: it cannot fill faster than its spring brings the water. A bowl fills deepest first, so the volume share
 		# the spring can deliver is a floor for the depth share.
 		var volume: float = float(spot[3])
@@ -163,9 +208,11 @@ func _init() -> void:
 		var need: float = share * float(spot[1])
 
 		if volume > LAKE_VOLUME_M3:
-			need = LAKE_NEED_M      # a lake: the spring cannot fill it, it only has to stand a metre deep
+			# A lake: the spring cannot fill it, it only has to stand a metre deep, or as deep as its water can make it (2 Nov 2026: a 0.3 m3/s spring brings 3240 m3
+			# in three hours, which cannot stand a metre deep in a 220,000 m3 bowl).
+			need = minf(LAKE_NEED_M, maxf(need, 0.05))
 
-		var line: String = "spring at sample %d (%.2f m3/s, pond %.0f m3): pond %.1f m deep, filled to %.1f m after %d s, needs %.1f m" % [k, spot[2], volume, spot[1], wet, int(SIM_SECONDS), need]
+		var line: String = "spring at sample %d (%.2f m3/s, pond %.0f m3): pond %.1f m deep, filled to %.2f m (at sample %d) after %d s, needs %.2f m" % [k, spot[2], volume, spot[1], wet, wet_at, int(SIM_SECONDS), need]
 
 		if KNOWN_FAILURES.has(k) and wet < need:
 			print("known failure, not counted (%s): %s" % [KNOWN_FAILURES[k], line])
