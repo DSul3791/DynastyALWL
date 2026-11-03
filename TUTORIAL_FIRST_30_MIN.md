@@ -4,6 +4,14 @@ Written to become the in-game tutorial text. Every line states only what the gam
 
 What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, real flora placer, re-run after the flora density merge): a forest pond shore, temperate forest, ground 31 m. Within 50 m: about 190 ferns, 88 balsam firs, 67 tall grass, 49 nettles, 30 hazels, 29 raspberry bushes, 18 elder, 17 beeches, 15 reeds, 14 wild garlic, 12 comfrey; 6 grown trees (cover) within 50 m, 17 within 100 m, 80 within 200 m (nearest: a 23 m beech 19 m away). Within 100 m: 142 nettles, 214 tall grass, 33 reeds, 577 ferns. Loose sticks and stones are laid thicker around the spawn on purpose (1-2 extra stones, 2-3 extra sticks per 32 m square within 300 m). Plant fibre comes from **nettles** and **tall grass** (and reeds), thatch from tall grass and reeds, bedding from ferns.
 
+**The clock in the first hour** (game_clock.gd, ambient_life.gd SUN; checked by Dino, 3 Nov):
+- A new world starts on day 100, early summer, at 08:00. One real minute is 24 game minutes.
+- **Minute 25 is 18:00:** the dusk hint fires.
+- **Minute 32 is sunset (21:00)**, and it is dark from about minute 34 to minute 51.
+- **Sunrise is at minute 52 (05:00)**, and minute 60 is 08:00 again.
+- So the fire (about minute 15-20) and the lean-to and bed (minutes 18-26) land just before the first dark. That is the right order, and it leaves about 6 minutes of slack.
+- A world that has already run resumes its saved clock, so a play-test on Dave's world may start at any hour.
+
 ## Fix status that changes this script (2026-10-31; `PLAYTHROUGH_STATUS.md` has the live table)
 
 | Fix | State | What the script gains when it lands |
