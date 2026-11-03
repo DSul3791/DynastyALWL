@@ -28,7 +28,7 @@ Picture: `art/playthrough/03_raw_materials.jpg` shows the spawn meadow (the NPC 
 ## Step 02. First pickups: sticks and stones
 
 * **Sticks** (item `stick`) lie on the ground as thin dead branches, more of them under trees. Walk up and tap/hold E. Shrubs (bushes) also drop 1-3 sticks when picked (drops.json `by_kind.shrub`).
-* **Stones** (item `stone`; no stack cap, weight is the limit: a slot holds up to 65,535, only tools, kits, containers, clothing and shoulder logs are single) lie loose, mostly on slopes, next to rocks and along the water's edge. There is only one kind of loose rock item: `stone` (the "hand stone"). There is **no flint** anywhere yet **[BLOCKED, see findings F-02]**, and no ore you can reach with bare hands.
+* **Stones** (item `stone`; no stack cap, weight is the limit: a slot holds up to 65,535, only tools, kits, containers, clothing and shoulder logs are single) lie loose, mostly on slopes, next to rocks and along the water's edge. There is only one kind of loose rock item: `stone` (the "hand stone"). **Flint** lies along the water's edge now (F-02 fixed: drops.json bank, about 6 percent of bank stones), and no ore you can reach with bare hands.
 * **Boulders** (big grey rocks) are not pickable. An axe (or pick) breaks them: **3 axe blows give 1 stone** (boulders.json). A blow on bare rock with the axe also gives a stone.
 
 How many do you need for the whole first hour? About 12 sticks, 4 stones to start (axe 1 stone + 1 stick; fire 6 sticks + 3 stones; knife 2 stones + 1 stick), then more.
@@ -70,7 +70,7 @@ Also craftable at once with no station: **stone knife** (#6: 2 stone + 1 stick),
 
 ## Step 06. Chop a tree
 
-Walk up to a standing tree (trunk within about 2 m), hold the axe, **click repeatedly** (one swing takes 1.05 s). The number of blows (drops.json felling, checked 3 Nov) is `round(2 + species trunk_m x 16.5)`, kept between 3 and 22, divided by your Fell tree skill factor. At the start (factor about 1.0; the blows are rounded up, so one more is possible) that gives about **birch 5, alder 6, pine and spruce 8, beech and willow 9, oak 12**; Woodcutting can reach factor 2.0, halving them. The species number is used whatever the tree's size, until Dave switches on `felling.size_scaled` (#76; QA card tree-hits-follow-size), which would make small trees quicker and big ones slower. Practice makes it faster. When the last blow lands the tree falls and rests on the ground as a **trunk**, leaving a **stump**. **[in progress: the fall pose and the stump chopping were just finished, see commit a641581d.]**
+Walk up to a standing tree (trunk within about 2 m), hold the axe, **click repeatedly** (one swing takes 1.05 s). The number of blows (drops.json felling, checked 3 Nov) is `round(2 + species trunk_m x 16.5)`, kept between 3 and 22, divided by your Fell tree skill factor. At the start (factor about 1.0; the blows are rounded up, so one more is possible) that gives about **birch 5, alder 6, pine and spruce 8, beech and willow 9, oak 12**; Woodcutting can reach factor 2.0, halving them. The species number is used whatever the tree's size, until Dave switches on `felling.size_scaled` (#76; QA card tree-hits-follow-size), which would make small trees quicker and big ones slower. Practice makes it faster. When the last blow lands the tree falls and rests on the ground as a **trunk**, leaving a **stump**. About 2 s after it lands the trunk splits by itself into logs, sticks, leaves, bark, seeds and a root ball (#39, #49); the stump is chopped with a few more blows.
 
 **2 Nov (bug 11 fix, main 58c94cd, and #49, not yet seen in a client): a felled tree now breaks into its whole 2.44 m logs by itself about 2 s after it lands (the count cutting would give) and also drops what hand-cutting gives: sticks, leaves, bark or thatch, seeds and the root ball.** Only a trunk you have already hit with the axe, one with no whole log in it, or one with no room for all its logs stays a trunk. The list below is what hand-cutting gives.
 
@@ -96,7 +96,7 @@ Walk to the biggest tree you can find (oaks, beeches, tall pines), stand under t
 
 1. Recipe **Campfire** (#4): **6 sticks + 3 stones -> campfire kit** (8 s).
 2. Hold the kit and left click. The ring on the ground is **yellow on open ground** (rain puts the fire out) and **green under a tree crown** (the fire survives rain). Fires need 2 m of space from other fires and ground no steeper than 0.6 m rise.
-3. The kit is placed already laid with a stick in its store (add more wood with F). **Press E at the fire to light it**: it uses **one tinder item** from the pack: `plant_fibre` first, or `birch_bark`, `tinder`, `tinder_fungus`. **[BLOCKED partly: only plant fibre can really be had, see F-03.]** In rain on open ground it will not light; in a drizzle there is a chance it fails and the fibre is lost.
+3. The kit is placed already laid with a stick in its store (add more wood with F). **Press E at the fire to light it**: it uses **one tinder item** from the pack: `plant_fibre` first, or `birch_bark`, `tinder`, `tinder_fungus`. (F-03 fixed: birch bark, tinder and tinder fungus can all be had; checked 3 Nov.) In rain on open ground it will not light; in a drizzle there is a chance it fails and the fibre is lost.
 4. Feed it (changed 2 Nov, fire store, main eb3b69b): press **F** at the fire to open its store (30 slots, stacks without limit) and put sticks, firewood and logs in; the wood in the store is what burns, closing it works out the burn time and tier, burned wood leaves it, an empty store means the fire goes out. **E** on a burning fire puts it out (wood kept); **hold E** on a fire that is not burning picks it up as a kit. The 1 Nov rule "tap E adds fuel" is gone. **Burn times are real time: stick 2 min, firewood 20 min, log 3 h.** The fire is a **tier** by its wood: sticks = small, 3+ firewood = medium, 3+ logs = large; light radius 3.5 / 7 / 14 m, each step twice the light and warmth, and it steps down as the big wood runs out. Several logs go on one fire. A pot is refused on a fire with logs, and logs are refused under a pot. The refusal message says why (full, no wood to put on). The fire label shows the tier and burn time.
 5. Raw food put in the fire's store (F) cooks while the fire burns; there is no hold-E roasting any more (2 Nov). The campfire still cooks only meat, fish and shellfish.
 
@@ -135,7 +135,7 @@ Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 
 
 * **Workbench kit** (#45, known): **12 sticks + 3 twine**. Place it; a recipe needing "workbench" works only near it (reach + 1 m).
 * Thatch pieces (open to everyone though not "known"): **thatch floor kit** 6 twine + 20 thatch; **wall** 20 twine + 50 thatch + 15 sticks; **roof** 10 twine + 40 thatch + 12 sticks; **doorway** 12 twine + 25 thatch + 12 sticks. All at the workbench. They are big spends: 50 thatch is five tall-grass patches.
-* Wood walls, floors and roofs (`wall_section_kit` etc.) need **lumber**, which needs a saw. **[BLOCKED, F-05.]**
+* Wood walls, floors and roofs (`wall_section_kit` etc.) need **lumber**: a saw mill, a hand saw, or a stone wedge at the workbench (`lumber_wedge`); F-05 fixed. Most of them are hammer blueprints now.
 
 ## Step 13. First tools
 
@@ -148,7 +148,7 @@ Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 
 | Wooden hammer (#161) | wooden block + stick + twine | blueprints |
 | Stone hammer (#156) | workbench: stone + stick + twine | better hammer |
 | Wooden / stone hoe (#139/#140) | sticks + twine (+stone at bench) | paths, grading |
-| **Pick axe** | stone pickaxe #186: 2 sticks + 3 stones + 2 twine at the bench, **known false: no player can learn it** | **[BLOCKED, F-01]** The stone axe breaks boulders 3x slower |
+| **Pick axe** | stone pickaxe #186: 2 sticks + 3 stones + 2 twine at the bench, **known false: no player can learn it** | (F-01 fixed: all 274 recipes can be learned, PLAYTHROUGH_STATUS.md; the "known false" means learned, not given at start) The stone axe breaks boulders 3x slower |
 | Fishing rod (#46) | 2 sticks + 2 twine | catch fish at water |
 | Torch (#7) | stick + 2 fibre | |
 | Chopping block (#15), chest (#14: 10 sticks + 4 twine), rock pile (#151: 45 stones) | | |
@@ -164,7 +164,7 @@ Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 
 | Stone arrow (#172) | 2 sticks + 2 feathers + 2 stones -> 4 | |
 | Quiver (#173) | 2 hide + 2 twine | |
 | Snare (#177) | 3 twine + 2 sticks | |
-| Wooden club (#189), stone mace (#202), javelin (#181), wicker shield (#201) | **known false: not craftable** | **[BLOCKED, F-01]** |
+| Wooden club (#189), stone mace (#202), javelin (#181), wicker shield (#201) | **known false: not craftable** | (F-01 fixed: all 274 recipes can be learned, PLAYTHROUGH_STATUS.md; the "known false" means learned, not given at start) |
 
 Left click jabs the spear; hold right click to aim a throw, left click throws. Hold the bow, hold click to draw.
 
