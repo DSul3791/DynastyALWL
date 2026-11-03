@@ -10,7 +10,7 @@ const TITLE_PX := 40
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
-const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
 
 var open: bool = false
@@ -94,9 +94,14 @@ func _make_preview() -> SubViewportContainer:
 	var light: DirectionalLight3D = DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-35.0, 25.0, 0.0)
 	_preview.add_child(light)
-	_preview_rig = RagdollScript.new()
+	# The body the player wears (Kathreen 3 Nov 2026): Dave's, in the character's own shape and skin, or the body worn before it (my_character.gd make_avatar). It was always
+	# the old ragdoll. Only the old ragdoll, which has no genome, gets the fixed clothes colours.
+	_preview_rig = MyCharacter.make_avatar()
 	_preview.add_child(_preview_rig)
-	_preview_rig.dress(Color(0.78, 0.62, 0.5), Color(0.4, 0.34, 0.28), Color(0.25, 0.22, 0.2))
+
+	if _preview_rig.get("genome") == null:
+		_preview_rig.dress(Color(0.78, 0.62, 0.5), Color(0.4, 0.34, 0.28), Color(0.25, 0.22, 0.2))
+
 	_preview_rig.play("idle")
 	return holder
 
