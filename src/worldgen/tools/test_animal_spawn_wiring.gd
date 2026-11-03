@@ -218,5 +218,14 @@ func _init() -> void:
 	a.water_level = func(x, z): return NAN
 	check(a._habitat_score(rabbit, 0.0, 0.0, 10.0) > 0.0, "a rabbit does not need water nearby")
 
+	# Ducks keep to fresh water: deep water on ocean ground is refused, a lake is fine.
+	var ducks: Dictionary = a.cfg["species"]["duck"]
+	a.blocked = func(x, z): return true
+	a.water_level = func(x, z): return 0.0
+	a.biome_at = func(x, z): return "ocean"
+	check(a._habitat_score(ducks, 0.0, 0.0, 10.0) < 0.0, "ducks do not spawn on the open sea")
+	a.biome_at = func(x, z): return "temperate_forest"
+	check(a._habitat_score(ducks, 0.0, 0.0, 10.0) > 0.0, "ducks spawn on a lake")
+
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

@@ -752,6 +752,9 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 
 	if def.has("flock") and not bool(def["flock"].get("on_land", false)):
 		var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+		if bool(def["flock"].get("fresh_only", false)) and biome_at.is_valid() and str(biome_at.call(x, z)) == "ocean":
+			return -1.0   # ducks keep to rivers and lakes, not the open sea
+
 		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
 
 	if hab.is_empty() or not ground_height.is_valid():

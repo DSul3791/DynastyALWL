@@ -317,6 +317,7 @@
 			"eye_m": 0.3,
 			"tries": 40,
 			"flock": {
+				"fresh_only": true,
 				"birds": [
 					6,
 					14
