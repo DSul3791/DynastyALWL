@@ -68,6 +68,8 @@ var _beds: Dictionary = {}                # layer -> Array of {"slot", "level" 0
 var _positional: Dictionary = {}          # slot -> {"level", "target", "player"}
 var _check_left: float = 0.0
 var _gap_left: float = 6.0
+var _clock: float = 0.0                  # seconds since start, for the per-slot rest
+var _rest_until: Dictionary = {}          # slot -> _clock when it may play again (scheduler.repeat_s)
 var _shot_count: int = 0                  # one-shots started; with the day number it seeds the next gap, clip, place and pitch
 var _last_clip: String = ""               # "slot:index" of the last one-shot, kept across bed changes
 var _voices: Array = []
@@ -298,6 +300,17 @@ static func shot_rng(day: int, counter: int, salt: String = "") -> RandomNumberG
 	return rng
 
 
+# Slots whose own rest is over at `clock` (seconds). A slot may carry scheduler.repeat_s [lo, hi]: after it plays it rests that long, so a slot that is
+# the only one-shot left (the owl at night) is not heard every 4 to 20 s (Dave 3 Nov 2026: "the owl yaps every 5 or 10 seconds").
+static func rested(options: Array, rest_until: Dictionary, clock: float) -> Array:
+	return options.filter(func(slot): return float(rest_until.get(slot, -1.0)) <= clock)
+
+
+static func rest_s(slots: Dictionary, slot: String, rng: RandomNumberGenerator) -> float:
+	var span: Array = (slots[slot].get("scheduler", {}) as Dictionary).get("repeat_s", [])
+	return rng.randf_range(float(span[0]), float(span[1])) if span.size() == 2 else 0.0
+
+
 # The next one-shot: a slot from `options` and a clip of it, never the clip played last (`last_clip` is "slot:index"; it survives a bed change). Only a
 # single clip with nothing else to play can repeat. Returns {"slot", "index", "clip"}.
 static func pick_shot(slots: Dictionary, options: Array, last_clip: String, rng: RandomNumberGenerator) -> Dictionary:
@@ -376,6 +389,7 @@ static func simulate(slots: Dictionary, ctx: Dictionary, seconds: float, day: in
 	var last_clip: String = ""
 	var repeats: int = 0
 	var order: Array = []
+	var rest_until: Dictionary = {}
 
 	while not options.is_empty():
 		var rng: RandomNumberGenerator = shot_rng(day, counter)
@@ -386,8 +400,11 @@ static func simulate(slots: Dictionary, ctx: Dictionary, seconds: float, day: in
 
 		live = live.filter(func(end): return float(end) > clock)
 
-		if live.size() < MAX_SHOTS:
-			var shot: Dictionary = pick_shot(slots, options, last_clip, rng)
+		var ready: Array = rested(options, rest_until, clock)
+
+		if live.size() < MAX_SHOTS and not ready.is_empty():
+			var shot: Dictionary = pick_shot(slots, ready, last_clip, rng)
+			rest_until[shot["slot"]] = clock + rest_s(slots, str(shot["slot"]), shot_rng(day, counter, "rest"))
 			repeats += 1 if str(shot["clip"]) == last_clip else 0
 			last_clip = str(shot["clip"])
 			order.append(last_clip)
@@ -443,6 +460,7 @@ func update(delta: float, body: Node3D) -> void:
 
 	_voices = _voices.filter(func(v): return is_instance_valid(v) and v.playing)
 	_gap_left -= delta
+	_clock += delta
 
 	if _gap_left <= 0.0 and not _ctx.is_empty():
 		_gap_left = shot_rng(_day(), _shot_count).randf_range(float(GAP_S[0]), float(GAP_S[1]))
@@ -460,6 +478,15 @@ func _stream(slot: String, index: int = 0) -> AudioStream:
 		return null
 
 	return load(str(files[index % files.size()]))
+
+
+# The sound stage's warm list calls this with a slot name to load the slot's first clip ahead of its first use (a 20 s bed is a big file: loading it as the bed
+# starts is a frame hitch). Returns nothing; the resource cache keeps the clip.
+func _variants(slot: String) -> Array:
+	if _slots.has(slot):
+		_stream(slot)
+
+	return []
 
 
 func _looped(stream: AudioStream) -> AudioStream:
@@ -602,7 +629,7 @@ func _one_shot(body: Node3D) -> void:
 	if _voices.size() >= MAX_SHOTS or not _stage.has_room():
 		return
 
-	var options: Array = matching(_slots, "oneshot", _ctx)
+	var options: Array = rested(matching(_slots, "oneshot", _ctx), _rest_until, _clock)
 
 	if options.is_empty():
 		return
@@ -617,6 +644,7 @@ func _one_shot(body: Node3D) -> void:
 		return
 
 	_last_clip = str(shot["clip"])
+	_rest_until[slot] = _clock + rest_s(_slots, slot, shot_rng(_day(), counter, "rest"))
 	var angle: float = rng.randf() * TAU
 	var distance: float = rng.randf_range(float(ONESHOT_DIST_M[0]), float(ONESHOT_DIST_M[1]))
 	var band: Array = ONESHOT_HEIGHT_M.get(str(_slots[slot].get("group", "")), [0.0, 0.0])
