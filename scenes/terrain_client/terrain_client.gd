@@ -100,6 +100,7 @@ const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const FlowTexture := preload("res://src/water2/water_flow_texture.gd")
 const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
+const CaveStreams := preload("res://src/water2/cave_streams.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
@@ -482,6 +483,8 @@ var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
+var _water_dirty_area: Rect2 = Rect2()   # protocol 88: where the water moved since the last ask (no area: everywhere)
+var _water_dirty_all: bool = false
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
 var _flora_cuts: int = 0
@@ -492,6 +495,8 @@ var _wait_until_msec: int = 0
 
 
 func _ready() -> void:
+	DynastyBodyScript.warm()   # the body and arm files load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
+
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
 	# blocks were in flight. 6 or more workers settle the same stop in about 15 s (hole_stress east, 4 cores, 4 to 8 threads);
@@ -763,6 +768,7 @@ func _ready() -> void:
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.water_changed_in_received.connect(_on_water_changed_in)
 	net.water_flow_received.connect(_on_water_flow)
 	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:
 		tunnel_on = on
@@ -786,6 +792,8 @@ func _ready() -> void:
 			HitNumbersScript.spawn(self, at, amount))
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
+	net.cave_streams_received.connect(_on_cave_streams)
+	net.cave_dens_received.connect(_on_cave_dens)
 	net.surface_received.connect(_on_surface_received)
 	net.dump_received.connect(ground_debug.on_dump_received)
 	_host = host
@@ -1053,7 +1061,9 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
+	var tp0: int = Probe.start()
 	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
+	Probe.stop("welcome: player", tp0)
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
 	var t3: int = Probe.start()
@@ -1226,7 +1236,9 @@ func _welcome_body(info: Dictionary) -> void:
 	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
 	sound_tests.setup(self)
 	ground_debug.setup(self)
+	var tq_menu: int = Probe.start()
 	_build_menu()
+	Probe.stop("welcome: menu", tq_menu)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
 	hud.visible = display.hud_text
@@ -1259,7 +1271,9 @@ func _welcome_body(info: Dictionary) -> void:
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)
+	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	Probe.stop("welcome: items view", tq_items_view)
 	var dialogue_view: Node = DialogueViewScript.new()
 	dialogue_view.name = "Dialogue"
 	add_child(dialogue_view)
@@ -1332,7 +1346,9 @@ func _welcome_body(info: Dictionary) -> void:
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
+	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	Probe.stop("welcome: held item", tq_held_item)
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
 	held.shrub_near = _shrub_near
 	held.water_depth_at = func(x: float, z: float) -> float:
@@ -1626,6 +1642,7 @@ func _sync_cleared() -> void:
 
 	var spots: Array = []
 	var lying: Array = []
+	var paths: Array = []      # trodden path patches: left out of the grass cells (set_bare), pressed out of the plants like a log
 	var key: int = 0
 
 	if showroom == null and world.has("spawn"):
@@ -1689,7 +1706,7 @@ func _sync_cleared() -> void:
 		if int(row.get("state", 0)) == 32:
 			# A trodden hoe path (Dave 2 Nov 2026): a round patch, so the grass is pressed out of its brown middle only, not cleared 5 m round like a bench.
 			var path_at: Vector3 = row["pos"]
-			lying.append(LyingLogs.round_segment(path_at, 0.6))
+			paths.append(Vector3(snappedf(path_at.x, 0.01), path_at.y, snappedf(path_at.z, 0.01)))
 			key = key ^ hash(Vector2(path_at.x, path_at.z)) ^ int(id)
 			continue
 
@@ -1715,8 +1732,14 @@ func _sync_cleared() -> void:
 	var radius: float = float(_cleared_cfg.get("radius_m", 5.0))
 	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
 	grass.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)), float(_cleared_cfg.get("trunk_squash", 0.15)))
+	grass.set_bare(paths)
+	var plant_lying: Array = lying.duplicate()
+
+	for patch in paths:
+		plant_lying.append(LyingLogs.round_segment(patch, 0.6))
+
 	flora.set_cleared(spots, radius)
-	flora.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)))
+	flora.set_trunks(plant_lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)))
 
 
 # Water within a stride of the feet or a step or two ahead (where you look, flat): what the E-to-drink prompt needs.
@@ -2071,9 +2094,27 @@ func _update_weather() -> void:
 
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
+signal cave_dens_changed(tile: Vector2i, dens: PackedVector3Array)   # den sounds (Sound thread #211) listen here
+var cave_dens: Dictionary = {}   # tile -> PackedVector3Array of den floor points (protocol 87)
+var _cave_streams = null   # spring cave streams and pools (protocol 87), made on the first list
 var _liquid = null   # the liquid water sheet over the live window (created on the first flow packet)
 var _flow_tex: ImageTexture = null      # the live water window's texture, updated in place each publish
 var _liquid_hole_told: Rect2 = Rect2()
+
+
+func _on_cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
+	cave_dens[tile] = dens
+	cave_dens_changed.emit(tile, dens)
+
+
+func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
+	if _cave_streams == null:
+		_cave_streams = CaveStreams.new()
+		_cave_streams.name = "CaveStreams"
+		_cave_streams.add_to_group("water_draw")
+		add_child(_cave_streams)
+
+	_cave_streams.show_tile(tile, streams)
 
 
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
@@ -2159,6 +2200,12 @@ func _thousands(value: int) -> String:
 # The server's water moved: ask again for the water of every flora chunk held.
 func _on_water_changed() -> void:
 	_water_dirty = true
+	_water_dirty_all = true
+
+
+func _on_water_changed_in(area: Rect2) -> void:
+	_water_dirty = true
+	_water_dirty_area = area if not _water_dirty_area.has_area() else _water_dirty_area.merge(area)
 
 
 # Asks again for the water of the chunks held. While ground is still loading this waits up
@@ -2179,8 +2226,15 @@ func _send_water_request(now: int) -> void:
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
+	var area: Rect2 = Rect2() if _water_dirty_all else _water_dirty_area.grow(flora.chunk_m)
+	_water_dirty_all = false
+	_water_dirty_area = Rect2()
 
 	for chunk in flora.held_chunks():
+		# Only the chunks the moving water touches (protocol 88); the rest still hold the right water.
+		if area.has_area() and not area.intersects(Rect2(Vector2(chunk) * flora.chunk_m, Vector2(flora.chunk_m, flora.chunk_m))):
+			continue
+
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
 	@warning_ignore("integer_division")
@@ -2752,6 +2806,14 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	world["tiles_stamp"] = tiles_stamp
 	world["starter_stamp"] = starter_stamp
 	_reload_ground()
+
+	if _cave_streams != null:
+		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
+
+	for tile in cave_dens.keys():
+		cave_dens_changed.emit(tile, PackedVector3Array())
+
+	cave_dens.clear()
 
 	_in_generation += 1
 
