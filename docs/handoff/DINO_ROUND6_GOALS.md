@@ -1,6 +1,6 @@
 # Dino round 6: starter goals checked against data (3 Nov 2026, main 2e603e9, paper check)
 
-**Status, 02:40 UTC:** Sal's open PR #53 already fixes the three main findings below:
+**Status, 04:15 UTC:** Sal's PR #53 (merged to main as fe224e2) fixes the three main findings below:
 - The workbench goal and its hint take `what_any: [workbench, log_workbench]`.
 - The axe goal takes `or_have`, so a bought axe counts.
 - The has_campfire_kit, near_nettle and near_fire_with_food hints now fire. near_nettle fires when nettles are in the pack.
