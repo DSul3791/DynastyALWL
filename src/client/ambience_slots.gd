@@ -462,6 +462,15 @@ func _stream(slot: String, index: int = 0) -> AudioStream:
 	return load(str(files[index % files.size()]))
 
 
+# The sound stage's warm list calls this with a slot name to load the slot's first clip ahead of its first use (a 20 s bed is a big file: loading it as the bed
+# starts is a frame hitch). Returns nothing; the resource cache keeps the clip.
+func _variants(slot: String) -> Array:
+	if _slots.has(slot):
+		_stream(slot)
+
+	return []
+
+
 func _looped(stream: AudioStream) -> AudioStream:
 	if stream is AudioStreamOggVorbis:
 		var copy: AudioStream = stream.duplicate()
