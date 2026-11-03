@@ -84,8 +84,8 @@ void fragment() {
 	float n2 = noise(vec2(UV.x * 7.0 - seed, y * 5.5 - TIME * 3.6));
 	float n = n1 * 0.65 + n2 * 0.35;
 	float dx = x + (n - 0.5) * 0.7 * y;                // the tongue bends and wavers more toward the top
-	float width = 0.6 * pow(max(1.0 - y, 0.0), 0.6) * (0.7 + 0.6 * n);
-	float body = smoothstep(width, width * 0.3, abs(dx));
+	float width = 0.8 * pow(max(1.0 - y, 0.0), 0.6) * (0.7 + 0.6 * n);
+	float body = smoothstep(width, width * 0.45, abs(dx));
 	body *= smoothstep(0.0, 0.1, y);                   // soft where it rises from the coals
 	body *= 1.0 - smoothstep(0.45 + 0.4 * n, 1.0, y);  // the tip breaks into licks
 	float core = smoothstep(width * 0.55, 0.0, abs(dx)) * (1.0 - smoothstep(0.1, 0.6, y));
