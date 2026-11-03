@@ -207,8 +207,12 @@ void vertex() {
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);
-	// Far grass thins out smoothly: each card has a fixed random number and is kept while it is below the share left at this distance.
-	VERTEX *= step(fract(sin(dot(root_xz, vec2(39.3468, 11.135))) * 24634.6345), mix(1.0, thin_min, smoothstep(thin_start, thin_end, reach)));
+	// Far grass thins out smoothly (Dave 3 Nov).
+	// The cards were already cut when the cell was built, with the share INSTANCE_CUSTOM.a (1 for a near card). The cut is only ever finer here:
+	// a card is kept while its number is below the share left at this distance relative to the share it was built with.
+	float share_now = mix(1.0, thin_min, smoothstep(thin_start, thin_end, reach));
+	float ratio = mix(1.0, share_now / max(INSTANCE_CUSTOM.a, 0.001), step(thin_min, 0.9999));
+	VERTEX *= step(fract(sin(dot(root_xz, vec2(39.3468, 11.135))) * 24634.6345), ratio);
 	blade_color = mix(INSTANCE_CUSTOM.rgb, INSTANCE_CUSTOM.rgb * 0.85 + vec3(0.1, 0.085, 0.04), 0.7 * worn) * (1.0 - 0.12 * flat_down);
 }
 
@@ -1309,6 +1313,18 @@ func _lod_of(cell: Vector2i, held: int) -> int:
 	return 3 if radius_m > 50.0 else 2
 
 
+# The share of the cards of a grass layer kept at `d` metres from the player (Dave 3 Nov 2026): 1 out to fade_start_share of the radius, then a
+# smooth fall to far_share (tall grass: tall_far_share by 80 percent of the radius) at the edge. Cells are cut with this when built, so far grass
+# costs less to build and to draw; the shader only thins them further as the player moves (the share is kept in each card's custom alpha).
+func _far_share(d: float, layer: int) -> float:
+	var tall: bool = layer == 2
+	var start: float = radius_m * fade_start_share
+	var end: float = radius_m * (0.8 if tall else 1.0)
+	var t: float = clampf((d - start) / maxf(end - start, 0.001), 0.0, 1.0)
+	t = t * t * (3.0 - 2.0 * t)
+	return lerpf(1.0, tall_far_share if tall else far_share, t)
+
+
 func _lod_points(lod: int) -> int:
 	if radius_m > 50.0:
 		return [points_per_side, 3, 2, 1][lod]
@@ -1573,6 +1589,11 @@ func _build(cell: Vector2i) -> int:
 
 					var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 					var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+					var kept: float = _far_share(Vector2(ox - _center.x, oz - _center.z).length(), layer) if layer >= 1 else 1.0
+
+					if kept < 1.0 and rng.randf() > kept:
+						continue
+
 					var size: float = rng.randf_range(0.75, 1.15)
 					var yaw: float = rng.randf() * TAU
 					var sy: float = size * rng.randf_range(0.8, 1.15)
@@ -1598,7 +1619,7 @@ func _build(cell: Vector2i) -> int:
 					buffer[o + 12] = green.r * shade * rng.randf_range(0.93, 1.07)
 					buffer[o + 13] = green.g * shade
 					buffer[o + 14] = green.b * shade * rng.randf_range(0.9, 1.1)
-					buffer[o + 15] = 1.0
+					buffer[o + 15] = kept
 					buffers[layer] = buffer
 
 	entry["busy"] = false

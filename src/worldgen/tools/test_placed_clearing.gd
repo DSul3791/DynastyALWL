@@ -77,5 +77,13 @@ func _init() -> void:
 	check(grass.far_share <= 0.31 and grass.far_share > 0.0, "the edge keeps about 30 percent of the grass (%f)" % grass.far_share)
 	check(grass.tall_far_share == 0.0, "no tall grass at the end of the fade")
 	check(float(grass.BAND_SHARE[0]) >= 1.0 and float(grass.BAND_SHARE[1]) >= 1.0, "cards are built in full up to the far bands; the shader does the thinning")
+	grass.radius_m = 100.0
+	var s0: float = grass._far_share(0.0, 1)
+	var s_start: float = grass._far_share(100.0 * grass.fade_start_share, 1)
+	var s_mid: float = grass._far_share(100.0 * (grass.fade_start_share + 1.0) * 0.5, 1)
+	var s_end: float = grass._far_share(100.0, 1)
+	check(is_equal_approx(s0, 1.0) and is_equal_approx(s_start, 1.0), "full density from the player out to the start of the fade")
+	check(s_mid < 1.0 and s_mid > s_end and is_equal_approx(s_end, grass.far_share), "the share falls smoothly to far_share at the edge (%f, %f)" % [s_mid, s_end])
+	check(is_equal_approx(grass._far_share(100.0 * 0.8, 2), grass.tall_far_share), "tall grass is gone by 80 percent of the radius")
 	print("test_placed_clearing: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
