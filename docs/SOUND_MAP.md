@@ -36,7 +36,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Player hurt / damage taken, death, respawn | none? (landing mentions the `hurt` signal) | Steve | to verify |
 | Bow and arrow (draw, release, hit) | none? | Steve | to verify |
 | Fishing (cast, bite, catch) | none? (fish splash is ambient only) | Steve/MikeW | to verify |
-| Drink from water source (not an item) | none? | Sonny/Steve | to verify |
+| Drink from water source (not an item) | `inventory_view.gd:1615` thirst rise within 3 s of `drink()` -> `eat_event("drink")` -> `drink_gulp` | Sonny/Steve | wired (audit 3 Nov); plays when the server accepts the mouthful, silent if refused |
 | Animal hit, death, eating (carcass) | none? | MikeW | to verify |
 | Crafting action itself (hand craft, kit use) | none? (craft_done cue only) | Steve | to verify |
 | Clothing put on / taken off | none? | Sal | to verify |
