@@ -21,6 +21,9 @@ One place to find every number that shapes how movement, tools and hits feel. Ch
 | Arms spacing | `ragdoll_body.gd` | `ARMS_SPREAD` | 1.3 |
 | Arm skin | `src/client/character/dynasty_arms.gd` | `SKIN_TEXTURE` (the file's texture with dark patches painted out) | |
 
+## Turning the camera effects down or off
+`user://input_settings.cfg` (the same file as auto pickup) takes `[feel]` `intensity = 0.0` to `1.5`. It scales the walking bob and sway and the landing, blow, hurt, jump, thud and gather kicks. 1.0 is as tuned, 0 is none. There is no menu entry yet. (The run FOV widening and the swimming bob are in the open PRs #173 and #231 and should follow this scale once they merge.)
+
 ## Known open items
 - Axe hand grip: the hands are rigid (no finger bend), so how they sit on the handle needs a rig shot before the mount (`_build_mounts` in `ragdoll_body.gd`) is moved.
 - All of the above need a windowed look; none has been run in Godot by the author.

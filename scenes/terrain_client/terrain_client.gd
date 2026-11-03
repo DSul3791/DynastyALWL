@@ -3898,9 +3898,9 @@ func _update_bob(delta: float) -> void:
 
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
-	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount
-	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount
-	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
+	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount * feel.intensity
+	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount * feel.intensity
+	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount * feel.intensity
 	drip_view.step(delta)
 	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
 	sound.cave.note_gap(wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
