@@ -1518,15 +1518,21 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	if sound != null and sound.dig != null and body != null:
 		sound.dig.dug(center, radius, body.global_position)        # before the ground changes: it hears what was there
 
+	var t_edit: int = Probe.start()   # Dave 3 Nov 2026: every hoe click pauses the game; these name the part (HITCH line, frame_probe.gd)
 	var tool: VoxelTool = terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_REMOVE
 	tool.do_sphere(center, radius)
+	Probe.stop("dig: ground edit", t_edit)
 	dig_applied += 1
+	var t_note: int = Probe.start()
 	_note_dig(center)
+	Probe.stop("dig: note", t_note)
 
 	if grass != null:
+		var t_grass: int = Probe.start()
 		grass.ground_changed(center, radius)
+		Probe.stop("dig: grass", t_grass)
 
 	print("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
 		radius, str(center), tool.get_voxel_f(Vector3i(center.round()))
@@ -1538,13 +1544,17 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 	if terrain == null:
 		return
 
+	var t_edit: int = Probe.start()
 	var tool: VoxelTool = terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_ADD
 	tool.do_sphere(center, radius)
+	Probe.stop("fill: ground edit", t_edit)
 
 	if grass != null:
+		var t_grass: int = Probe.start()
 		grass.ground_changed(center, radius, true)
+		Probe.stop("fill: grass", t_grass)
 
 
 # Applies the experiment switches (Esc > Advanced); also at start.
