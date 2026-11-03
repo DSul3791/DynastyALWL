@@ -8,6 +8,7 @@ extends "res://src/client/ragdoll_body.gd"
 # fingers do not move. Default with the Dynasty body; `--oldbody` (or the Old body setting) keeps the old tube arms (held_item.gd).
 
 const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 const PARTS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"
 const UPPER_LEN := 0.29            # the rig's bone lengths (ragdoll_body.gd BONES): shoulder to elbow, elbow to wrist
 const FORE_LEN := 0.26
@@ -50,7 +51,25 @@ func _init() -> void:
 		instance.skin = skin
 		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # 40 thousand triangles an arm: not drawn again into every shadow cascade
 		instance.skeleton = NodePath("..")
+		_tint_skin(instance)
 		skeleton.add_child(instance)
+
+
+# The creator's skin colour on the first-person arms too (Kathreen 3 Nov 2026), the same tint as the body (dynasty_body.gd skin_tint): a dark-skinned character had pale arms.
+func _tint_skin(instance: MeshInstance3D) -> void:
+	var g: Dictionary = MyCharacter.genome()
+
+	if not g.has("skin") or instance.mesh == null:
+		return
+
+	var painted: BaseMaterial3D = instance.mesh.surface_get_material(0) as BaseMaterial3D
+
+	if painted == null:
+		return
+
+	var own: BaseMaterial3D = painted.duplicate() as BaseMaterial3D
+	own.albedo_color = DynastyBody.skin_tint(g["skin"])
+	instance.material_override = own
 
 
 # Finds the two arms among the five meshes (the two tall, thin parts on either side of the middle).
