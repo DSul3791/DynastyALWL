@@ -60,7 +60,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 20. Trigger: bed placed. Line: "A Camp bench, the workbench (16 sticks, 6 twine, 4 stones; or 4 logs, 6 twine, 6 sticks) lets you make better tools: a stone hammer, a bow, a stone spade, a pickaxe." (recipes 45, 156, 170, 26, 186.) Check: workbench placed.
 21. Trigger: workbench placed. Line: "For defence make a Wooden spear: 1 stick (keep a stone in your pack), then bind it with 2 twine for a stone spear. Left click jabs; hold right click to aim a throw." (recipes 5 and 3; 6 s and 10 s.) Check: spear made.
-22. Trigger: spear made. Line: "Food runs out in about an hour of work. Rabbits give meat, hide and bone: strike them with the spear, then work the body with a stone knife (2 stones, 1 stick; 8 s)." (recipe 6.) Check: knife made.
+22. Trigger: spear made. Line: "Food runs out in about an hour of work. Rabbits give meat, hide and bone: strike them with the spear, then work the body with a stone knife (2 stones, 1 stick; 8 s)." (Data, 3 Nov: a rabbit has 5 health, the wooden spear jabs for 6 and throws for 5, so even the wooden spear kills it in one hit; the stone spear, 8 and 6, matters for fox (12) and deer (20).) (recipe 6.) Check: knife made.
 
 ## After the first meal: the pot and the hearth (added 31 Oct, paper only)
 
