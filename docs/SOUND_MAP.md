@@ -32,22 +32,22 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Town fire, bell, hammering, saws, chop block | `town.set_sources/ring_bell`, `workshop.chop/set_saws/plank_drop` | Steve | wired; workshops may not exist yet |
 | Spear jab/throw/hit | `spear.jab/throw/hit` | Steve | wired |
 | Menu clicks | `ui.play` (9 call lines) | Tyler/Steve | wired |
-| Sleep and wake | none? | Steve | to verify |
+| Sleep and wake | `terrain_client.gd` stance change -> `slots.play("bed_lie")` / `bed_rise`; falling asleep shares the faint blackout | Steve | wired (checked 3 Nov) |
 | Player hurt / damage taken, death, respawn | none? (landing mentions the `hurt` signal) | Steve | to verify |
 | Bow and arrow (draw, release, hit) | none? | Steve | to verify |
 | Fishing (cast, bite, catch) | none? (fish splash is ambient only) | Steve/MikeW | to verify |
-| Drink from water source (not an item) | none? | Sonny/Steve | to verify |
+| Drink from water source (not an item) | `inventory_view.drink()` then `eat_event("drink")` when thirst rises -> `itemfx.eat("drink")` (gulp) | Sonny/Steve | wired (checked 3 Nov) |
 | Animal hit, death, eating (carcass) | none? | MikeW | to verify |
-| Crafting action itself (hand craft, kit use) | none? (craft_done cue only) | Steve | to verify |
+| Crafting action itself (hand craft, kit use) | `item_sounds.gd`: `craft_start`, a `craft_<type>` loop while it runs (twine, knap, bind, carve, stack, pound, wrap), then `craft_done` | Steve | wired (checked 3 Nov) |
 | Clothing put on / taken off | none? | Sal | to verify |
-| Level up, goal done, hint | none? | Steve | to verify |
+| Level up, goal done, hint | none: skills rise silently; QA card `jason-skill-chime` asks Dave whether they should sound | Steve | waits on Dave |
 
 Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Sonny, Sal) to expose any missing event, place the calls, add a test line per call.
 
 ## Phase 1 update (1 Nov 2026, read-only, nothing run)
 - Ported from `claude/kathleen-materials` and `claude/kathleen-spades`: `place_stone`, `place_brick`, `place_thatch`, `soil_load`, `stone_load` (clips, generators in `make_placed.py`, levels in `placed_sounds.gd` NAMES, `place()` accepts the kinds stone, brick, thatch, `shovel_load()`). Commits `583e1312`, `9f9db474` on `claude/jason-audio-8366e4`; the `piece_look.gd` part of the first commit was dropped (already in the daily).
 - New wiring: `_fill_here()` in `src/client/held_item.gd` calls `placed.shovel_load(false, hit position)` (see the `shortcut:` comment there).
-- Still silent until Sal sets the `sound` key on the rows: stone, brick and thatch pieces in `data/items/structures.json` still use `timber`/`thump`, so the new place sounds exist but nothing asks for them.
+- Stone, brick and thatch pieces in `data/items/structures.json` now carry their own `sound` key (checked 3 Nov), so `place_stone`, `place_brick` and `place_thatch` play.
 - Code locations for the `none?` rows (where the call goes, for the backlog): sleep/wake `inventory_view.gd:1393, 4571, 4575` (`ACT_SLEEP` sent; the server owns the state); fishing cast and bite `held_item.gd:590, 621` (`ACT_FISH` sent); hurt from a fall `landing_sounds.gd:27` signal `hurt` is connected in `terrain_client.gd:1277` (only falls hurt the client; damage from animals has no client event I could find). The rest are listed in `docs/handoff/JASON_NEXT_TASKS.md`.
 
 ## Phase 2 update (2 Nov 2026, read from code, not heard)
