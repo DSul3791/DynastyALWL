@@ -11,6 +11,7 @@ extends Node3D
 const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
 const P := "mixamorig_"
 const WornLook := preload("res://src/client/worn_look.gd")
+const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -69,6 +70,8 @@ var hand_mount_l: Marker3D
 var head_mount: Marker3D
 var _log: MeshInstance3D
 var _model: Node3D
+var proportions: SkeletonModifier3D           # dynasty_proportions.gd, made by set_proportions
+var _mount_rest: Dictionary = {}              # Marker3D -> its transform before set_proportions scaled the body
 
 
 # True when Dave's glb is imported and holds a skeleton, a mesh and an AnimationPlayer. Checked once per run; when it is not (a fresh checkout before `godot --import`) one line says so and the
@@ -276,6 +279,35 @@ func current() -> String:
 
 func is_one_shot_playing() -> bool:
 	return animation_player != null and animation_player.is_playing() and animation_player.get_animation(animation_player.current_animation).loop_mode == Animation.LOOP_NONE
+
+
+# The creator's body sliders on this body (dynasty_proportions.gd): height scales the whole model, legs, torso, arms, shoulders, neck, head, hands and feet scale their bones. The
+# mounts are scaled back so a held tool keeps its size. Safe to call again whenever the genome changes (the creator preview does on every slider move).
+func set_proportions(g: Dictionary) -> void:
+	genome = g
+
+	if _model == null or skeleton == null:
+		return
+
+	if proportions == null:
+		proportions = Proportions.new()
+		proportions.name = "Proportions"
+		skeleton.add_child(proportions)
+
+	proportions.set_genome(g)
+	var height: float = Proportions.factor(g, "height")
+	_model.scale = Vector3.ONE * height
+	var hand: float = height * Proportions.factor(g, "hands")
+	var head: float = height * Proportions.factor(g, "head")
+
+	for spec in [[hand_mount_r, hand], [hand_mount_l, hand], [head_mount, head]]:
+		var marker: Marker3D = spec[0]
+
+		if not _mount_rest.has(marker):
+			_mount_rest[marker] = marker.transform
+
+		var rest: Transform3D = _mount_rest[marker]
+		marker.transform = Transform3D(rest.basis * (1.0 / float(spec[1])), rest.origin)
 
 
 # The colours are baked into Dave's texture; nothing to paint yet.

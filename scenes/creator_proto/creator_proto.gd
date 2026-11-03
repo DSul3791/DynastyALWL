@@ -8,6 +8,8 @@ extends Control
 const Logic := preload("res://src/client/character/creator_logic.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const GeneratedBody := preload("res://src/client/character/generated_body.gd")
+const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 const Store := preload("res://src/client/character/character_store.gd")
 const Record := preload("res://src/client/character/character_record.gd")
 const Style := preload("res://src/client/character/page_style.gd")
@@ -15,6 +17,7 @@ const Style := preload("res://src/client/character/page_style.gd")
 const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
 const PREVIEW_VOXEL := 0.05
 const REBUILD_DELAY_S := 0.35
+const REBUILD_DELAY_DYNASTY_S := 0.03     # reshaping Dave's body is a few bone scales, not a rebuild
 
 var logic: RefCounted = Logic.new()
 var _sliders: Dictionary = {}       # slider name -> HSlider
@@ -535,7 +538,7 @@ func _changed(message: String) -> void:
 
 
 func _schedule_rebuild() -> void:
-	_rebuild_in = REBUILD_DELAY_S
+	_rebuild_in = REBUILD_DELAY_DYNASTY_S if _use_dynasty() else REBUILD_DELAY_S
 	_code.text = logic.code()
 	_undo_button.disabled = not logic.can_undo()
 	_redo_button.disabled = not logic.can_redo()
@@ -563,8 +566,30 @@ func _refresh_controls() -> void:
 	_redo_button.disabled = not logic.can_redo()
 
 
+# Dave's body (dynasty_body.gd) is the preview when the game wears it (Dave's QA answer, 2 Nov 2026: "use our new character mesh and allow us to adjust his proportions"): it is made
+# once and the sliders reshape it in place (dynasty_proportions.gd), so a slider move shows at once. Its skin and clothes are baked into Dave's texture, so the colour pickers and the
+# face sliders do not show on it yet. Without Dave's glb (or with the old body chosen) the generated body is rebuilt as before.
+func _use_dynasty() -> bool:
+	return MyCharacter.dynasty_body_on() and DynastyBody.available()
+
+
 func _rebuild_body() -> void:
 	var t0: int = Time.get_ticks_usec()
+
+	if _use_dynasty():
+		if _body == null or not _body.has_method("set_proportions"):
+			if _body != null:
+				_body.queue_free()
+
+			_body = DynastyBody.new()
+			_preview.add_child(_body)
+			_body.rotation_degrees.y = _turn
+			_body.play("idle", 1.0, 0.0)
+
+		_body.set_proportions(logic.genome)
+		_rebuild_in = -1.0
+		return
+
 	var fresh: Node3D = GeneratedBody.new(logic.genome, PREVIEW_VOXEL, true, false)
 	var yaw: float = _body.rotation_degrees.y if _body != null else _turn
 
