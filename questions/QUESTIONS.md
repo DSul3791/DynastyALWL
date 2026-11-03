@@ -1,3 +1,9 @@
+## mikew-spring-start-food | Design: the world starts in spring, when no berries or nuts are ripe. Is that the start you want?
+Note: MikeW, 3 Nov. Near spawn the first-hour food is spring greens (mint, dandelion, watercress, wild garlic), rabbits (snares and thrown spears, PRs 219 and 224), shellfish on the shore and fish. Raspberry, bramble and blueberry bushes grow 16 to 35 m from spawn, but they only fruit in summer and autumn. Starting in late summer would put ripe berries beside spawn; starting in spring keeps the early game a hunt for greens and meat.
+- Keep the spring start
+- Start in late summer (berries ripe)
+- Spring start, but let a few bushes near water fruit early
+
 
 
 
