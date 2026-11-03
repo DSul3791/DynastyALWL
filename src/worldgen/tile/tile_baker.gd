@@ -20,6 +20,7 @@ const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileLandTypesScript := preload("res://src/worldgen/tile/tile_land_types.gd")
+const TilePondLevelScript := preload("res://src/worldgen/tile/tile_pond_level.gd")
 const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
 const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
 const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
@@ -280,6 +281,12 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 		TileRollingScript.apply(water.heights, water.water_class, n, frame_height.spacing_m, origin_sx, origin_sz, settings, tile_rules["rolling"], elevation)
 
 	timings["rolling"] = Time.get_ticks_msec() - clock
+
+	# Pond levels no higher than their spill, after every pass that cuts or raises ground (tile_pond_level.gd).
+	clock = Time.get_ticks_msec()
+	var pond_levels: Dictionary = TilePondLevelScript.clamp_to_spill(water.heights, water.water_class, water.water_surface, n)
+	timings["pond_levels"] = Time.get_ticks_msec() - clock
+	print("  pond levels (tile %s): %d water bodies, %d lowered to their spill, %d cells turned dry (%d ms)" % [str(tile), pond_levels["bodies"], pond_levels["lowered"], pond_levels["dried"], timings["pond_levels"]])
 
 	clock = Time.get_ticks_msec()
 	var climate = TileClimateScript.new()
