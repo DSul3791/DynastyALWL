@@ -44,7 +44,7 @@ for name in sys.argv[1:] or GUIDES:
         low = line.lower()
         for label, rid in NAMES.items():
             for m in re.finditer(re.escape(label), low):
-                for said, want in mismatches(recipes[rid], line[m.end():m.end() + 70]):
+                for said, want in mismatches(recipes[rid], line[m.end():m.end() + 70].split("|")[0]):
                     print(f"{name}:{ln}: {label}: says '{said}', data {want}")
                     bad += 1
 
