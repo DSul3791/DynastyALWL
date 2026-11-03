@@ -108,3 +108,10 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [A] Leave it as it is, I will tell you after I listen
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
+
+## jason-skill-chime | A soft sound when a skill goes up?
+Note: Skills rise silently now: no text and no sound. The client sees each skill's level arrive (skills message), so a sound is easy to hook.
+Note: Recommendation: A. A very soft, short wooden tock, at most once every 20 s, so it tells you that practice is working without feeling like an arcade game.
+[A] Soft wooden tock, at most once per 20 s
+[B] Only when a skill reaches a training cap (25, 50, 75)
+[C] No sound for skills
