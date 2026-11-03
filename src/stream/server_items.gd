@@ -5580,16 +5580,80 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 	_pull_nearby_logs(peer, inv, _log_need(cost_rows, 1))   # shoulder and ground logs count (F-16)
 
 	for need in row["cost"]:
-		if inv.count_fill(table.number_of(str(need[0]))) < int(need[1]):
+		if inv.count_fill(table.number_of(str(need[0]))) + _ground_stock_count(peer, table.number_of(str(need[0]))) < int(need[1]):
 			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
 			return false
 
 	return true
 
 
-func _pay_blueprint(inv, row: Dictionary) -> void:
+func _pay_blueprint(inv, row: Dictionary, peer: int = -1) -> void:
 	for need in row["cost"]:
-		inv.remove_fill(table.number_of(str(need[0])), int(need[1]))
+		var number: int = table.number_of(str(need[0]))
+		var left: int = int(need[1]) - _take_ground_stock(peer, number, int(need[1]))   # heavy stock laid on the ground beside the build goes first (Dave 2 Nov)
+
+		if left > 0:
+			inv.remove_fill(number, left)
+
+
+# Heavy building stock on the ground (Dave 2 Nov 2026: "we use the hammer to make blueprints on the spot"): a blueprint takes its materials from loose
+# stacks lying within BUILD_STOCK_M of the builder before the pack, so stone blocks and bricks can be carried over in several trips and stacked beside
+# the site. Logs keep their own rule (_pull_nearby_logs).
+const BUILD_STOCK_M := 4.0
+
+
+func _ground_stock(peer: int, number: int) -> Array:
+	var out: Array = []
+
+	if peer < 0 or number <= 0 or not _peer_pos.has(peer) or number == table.number_of("log"):
+		return out
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("scatter") or it.has("tree") or it.has("fire") or it.has("struct") or it.has("boulder") or int(it.get("number", 0)) != number:
+			continue
+
+		var d: float = _peer_pos[peer].distance_to(it["pos"])
+
+		if d <= BUILD_STOCK_M:
+			out.append([id, int(it["count"]), d])
+
+	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
+	return out
+
+
+func _ground_stock_count(peer: int, number: int) -> int:
+	var total: int = 0
+
+	for row in _ground_stock(peer, number):
+		total += int(row[1])
+
+	return total
+
+
+# Takes up to `want` of `number` from the ground stock near the builder; returns how many it took.
+func _take_ground_stock(peer: int, number: int, want: int) -> int:
+	var took: int = 0
+
+	for row in _ground_stock(peer, number):
+		if took >= want:
+			break
+
+		var it: Dictionary = _items[int(row[0])]
+		var take: int = mini(int(row[1]), want - took)
+
+		if int(it["count"]) > take:
+			it["count"] = int(it["count"]) - take
+		else:
+			_items.erase(int(row[0]))
+
+		took += take
+
+	if took > 0:
+		_dirty = true
+
+	return took
 
 
 # All the materials back into the pack, or none (with a word) when they do not fit.
@@ -5677,7 +5741,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		return
 
 	if slot < 0:
-		_pay_blueprint(inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])])
+		_pay_blueprint(inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], peer)
 	else:
 		inv.take_from_slot(slot, 1)
 
