@@ -24,6 +24,7 @@ extends Node
 #   server -> client  flora_fruit      fruit trees of a chunk: pieces taken from each this season (the prompt shows what is left)
 #   server -> client  flora_stripped   plants of a chunk that are bare this season (berries picked): sent with a flora chunk and when one is picked
 #   server -> client  cave_streams     a tile's spring cave streams and pools (TileTerrainData.cave_streams), once per tile with the first water asked there
+#   server -> client  cave_dens        a tile's cave dens (floor points), with its cave streams
 #   client -> server  hello             the player's key, once after the welcome (inventory belongs to the key)
 #   client -> server  inventory_action  move, drop, pick up or (admin) give: the server checks everything
 #   server -> client  inventory_full    the whole inventory, at hello only
@@ -66,6 +67,7 @@ signal dump_requested(peer_id: int, x: float, y: float, z: float)
 signal dump_received(text: String)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal cave_streams_received(tile: Vector2i, streams: PackedFloat32Array)
+signal cave_dens_received(tile: Vector2i, dens: PackedVector3Array)
 signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array, stock: PackedInt32Array, supply_milli: PackedInt32Array, trader_purse: int)
 signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: int)
 signal purse_received(copper: int)
@@ -352,6 +354,12 @@ func deliver_water(chunk: Vector2i, water: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable")
 func cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 	cave_streams_received.emit(tile, streams)
+
+
+# Protocol 87: every cave den of a tile (floor points), sent with its cave streams: the den sounds play near them (Sound thread #211).
+@rpc("authority", "call_remote", "reliable")
+func cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
+	cave_dens_received.emit(tile, dens)
 
 
 

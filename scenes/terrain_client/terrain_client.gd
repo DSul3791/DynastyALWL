@@ -788,6 +788,7 @@ func _ready() -> void:
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.cave_streams_received.connect(_on_cave_streams)
+	net.cave_dens_received.connect(_on_cave_dens)
 	net.surface_received.connect(_on_surface_received)
 	net.dump_received.connect(ground_debug.on_dump_received)
 	_host = host
@@ -2073,10 +2074,17 @@ func _update_weather() -> void:
 
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
+signal cave_dens_changed(tile: Vector2i, dens: PackedVector3Array)   # den sounds (Sound thread #211) listen here
+var cave_dens: Dictionary = {}   # tile -> PackedVector3Array of den floor points (protocol 87)
 var _cave_streams = null   # spring cave streams and pools (protocol 87), made on the first list
 var _liquid = null   # the liquid water sheet over the live window (created on the first flow packet)
 var _flow_tex: ImageTexture = null      # the live water window's texture, updated in place each publish
 var _liquid_hole_told: Rect2 = Rect2()
+
+
+func _on_cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
+	cave_dens[tile] = dens
+	cave_dens_changed.emit(tile, dens)
 
 
 func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
@@ -2768,6 +2776,11 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 
 	if _cave_streams != null:
 		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
+
+	for tile in cave_dens.keys():
+		cave_dens_changed.emit(tile, PackedVector3Array())
+
+	cave_dens.clear()
 
 	_in_generation += 1
 

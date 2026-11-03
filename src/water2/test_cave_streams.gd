@@ -24,7 +24,7 @@ func _init() -> void:
 		"nodes": [[0.0, 11.0, 0.0, 4.0, 2.0], [8.0, 11.4, 0.0, 4.0, 2.0], [16.0, 11.8, 0.0, 4.0, 2.0]],
 		"segments": [[0, 1, "water"], [1, 2, "water"]],
 		"chambers": [{"node": 2, "radius_m": 5.0, "height_m": 5.0, "features": ["spring"]}],
-		"springs": [{"node": 2, "m3_s": 0.01}], "entrances": [0],
+		"springs": [{"node": 2, "m3_s": 0.01}], "entrances": [0], "dens": [{"node": 1, "where": "branch", "tier": 1}],
 	}
 	var karst: Dictionary = {
 		"cave_kind": "karst", "nodes": [[100.0, 0.0, 0.0, 3.0, 3.0], [110.0, -1.0, 0.0, 3.0, 3.0]], "segments": [[0, 1, "water"]], "chambers": [],
@@ -45,6 +45,8 @@ func _init() -> void:
 
 	_check(data.near_cave_water(Vector3(4.0, 11.0, 0.0), 3.0) and data.near_cave_water(Vector3(16.0, 10.5, 2.0), 3.0) and not data.near_cave_water(Vector3(4.0, 30.0, 0.0), 3.0),
 		"a player in the passage or by the spring pool can drink; one on the hill above cannot")
+
+	_check(data.cave_dens.size() == 1 and data.cave_dens[0].is_equal_approx(Vector3(8.0, 10.4, 0.0)), "a den is sent as its node's floor point (%s)" % str(data.cave_dens))
 
 	var mesh: ArrayMesh = CaveStreams.build_mesh(s)
 	_check(mesh != null and mesh.surface_get_array_len(0) == 2 * 6 + CaveStreams.POOL_SIDES * 3, "the mesh has a ribbon per piece and a fan per pool")

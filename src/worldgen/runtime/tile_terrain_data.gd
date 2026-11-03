@@ -69,6 +69,7 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 
 # Caves: capsules (passages) and ellipsoids (chambers) with AABBs.
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
+var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
 var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 box]: ground opened by a cave mouth (entrance node to its first node): no flora there
 const CAVE_POOL_M := 0.4            # a spring cave pool: this deep in the bottom of its chamber
 var cave_streams: PackedFloat32Array = PackedFloat32Array()   # spring cave streams (Dave 3 Nov 2026): per piece x, y, z of the upper end, x, y, z of the lower end (floor heights, world m), width m; then per spring pool x, y, z, -radius (a negative width marks a pool)
@@ -598,6 +599,7 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 func _load_caves(list: Array) -> void:
 	cave_streams = PackedFloat32Array()
 	cave_openings = []
+	cave_dens = PackedVector3Array()
 
 	for cave in list:
 		var nodes: Array = cave["nodes"]
@@ -614,6 +616,10 @@ func _load_caves(list: Array) -> void:
 
 		if str(cave.get("cave_kind", "")) == "spring_cave":
 			_load_cave_stream(cave)
+
+		for den in cave.get("dens", []):
+			var dn: Array = nodes[int(den["node"])]
+			cave_dens.append(Vector3(float(dn[0]), float(dn[1]) - 0.5 * float(dn[4]), float(dn[2])))
 		var capsules: Array = []
 		var chambers: Array = []
 		var low: Vector3 = Vector3(INF, INF, INF)

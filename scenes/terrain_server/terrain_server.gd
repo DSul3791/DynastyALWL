@@ -965,7 +965,7 @@ func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 		_send_cave_streams(peer_id, Vector2i(chunks[2 * n], chunks[2 * n + 1]))
 
 
-# Spring caves (Dave 3 Nov 2026): the streams down a tile's caves go to a peer once, with the first water it asks for in that tile. Only from a tile
+# Spring caves (Dave 3 Nov 2026): the streams down a tile's caves, and its cave dens (den sounds), go to a peer once, with the first water it asks for in that tile. Only from a tile
 # already loaded (loading one here would stall the main thread); the next water request tries again.
 func _send_cave_streams(peer_id: int, chunk: Vector2i) -> void:
 	var x: float = (float(chunk.x) + 0.5) * flora.placer.chunk_m
@@ -984,8 +984,14 @@ func _send_cave_streams(peer_id: int, chunk: Vector2i) -> void:
 	sent[tile] = true
 	var data = generator.get_tile(tile)
 
-	if data != null and not data.placeholder and not data.cave_streams.is_empty():
+	if data == null or data.placeholder:
+		return
+
+	if not data.cave_streams.is_empty():
 		net.cave_streams.rpc_id(peer_id, tile, data.cave_streams)
+
+	if not data.cave_dens.is_empty():
+		net.cave_dens.rpc_id(peer_id, tile, data.cave_dens)
 
 
 # Lag review (Dave 2 Nov 2026): every "water moved" the client asks again for all ~22 chunks it holds, and every answer was
