@@ -54,6 +54,7 @@ const SOURCE_FLAT_DEG := 8.0          # the spot itself: no steeper than this to
 const SOURCE_SETBACK_M := 64.0        # and set back from any edge: the lowest ground this far out ...
 const SOURCE_SETBACK_DEG := 9.0       # ... falls no more than this average slope
 const SOURCE_UP_CELLS := 80           # cells (640 m) searched up the drainage line above a head
+const CAVE_HEAD_MIN_SLOPE_DEG := 10.0  # a head this steep that found no flat above keeps its brook and gets a spring cave (tile_sites.gd spring_cave.min_slope_deg)
 const SOURCE_DOWN_CELLS := 200        # cells (1.6 km) searched down the river below it
 const BROOK_CUT_M := 0.6              # the brook from a raised pond is cut this deep into the ground ...
 const BROOK_FALL_M := 0.03            # ... falling at least this much per cell ...
@@ -885,7 +886,16 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		if has_up[index] == 0:
 			var source: Dictionary = _source_spot(h, fill, flow, index, size, cell_m, threshold, edge, up_count)
 			var how: String = String(source["how"])
+
+			# Spring caves (Dave 3 Nov 2026): a head on a hillside keeps its brook and comes out of a cave (tile_sites.gd), instead of the spring moving
+			# down to the bottom and the reach above it drying (41 of the 46 dry painted reaches on tile 3,4 were those).
+			if how == "down" and slope >= tan(deg_to_rad(CAVE_HEAD_MIN_SLOPE_DEG)):
+				how = "cave"
+
 			source_counts[how] = int(source_counts.get(how, 0)) + 1
+
+			if how == "cave":
+				continue
 
 			if how != "kept":
 				var at: int = int(source["at"])
@@ -1059,7 +1069,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 			print("  basin %s: world %d,%d radius %.0f depth %.1f lip %.1f wet %.2f ha" % ["lake" if is_lake else "pond", (_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), radius, depth, lip, wet * cell_m * cell_m / 10000.0])
 
 	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip, %d over ground at sea level" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip, skipped_sea])
-	print("  sources (Dave 2 Nov: up on a flat or down at the bottom, in a pool): %s heads checked; %d ponds raised to a flat above (brook cut down), %d moved down to the bottom (%d river cells above dried), the rest on the head" % [str(source_counts), moved_up, moved_down, dried])
+	print("  sources (Dave 2 Nov: up on a flat or down at the bottom, in a pool; 3 Nov: hillside heads keep their brook and get a spring cave, \"cave\"): %s heads checked; %d ponds raised to a flat above (brook cut down), %d moved down to the bottom (%d river cells above dried), the rest on the head" % [str(source_counts), moved_up, moved_down, dried])
 	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha, %d of them the tile's guaranteed lake), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, guaranteed, steep, POND_MAX_SLOPE_DEG])
 
 
