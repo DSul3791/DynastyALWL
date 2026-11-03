@@ -1,6 +1,6 @@
 """Brings clipping clips back under full scale (loudness_report.py --check FAIL "clips").
 
-Run: python3 assets/audio/declip.py weather/rain_roof treewind/treewind_dry ...   (needs numpy and ffmpeg)
+Run: python3 assets/audio/declip.py [--target -7] weather/rain_roof treewind/treewind_dry ...   (needs numpy and ffmpeg)
 Each name is a path under assets/audio/ without .ogg, or a slot: name_0.ogg, name_1.ogg ... are all fixed. The clip is decoded, scaled so its peak sits at
 TARGET_DB, and written back as Ogg Vorbis q4 (bitexact). A clip already at or under the target is left alone.
 Vorbis overshoots its input a little when it decodes, so the target leaves a 1 dB margin.
@@ -72,7 +72,13 @@ def files_of(name):
 
 
 if __name__ == "__main__":
-    for arg in sys.argv[1:]:
+    args = sys.argv[1:]
+
+    if args[:1] == ["--target"]:
+        TARGET_DB = float(args[1])   # creature calls: loudness_report CREATURE_PEAK_DB is -6, so --target -7
+        args = args[2:]
+
+    for arg in args:
         names = files_of(arg)
 
         if not names:
