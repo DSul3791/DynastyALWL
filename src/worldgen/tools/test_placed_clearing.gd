@@ -72,6 +72,18 @@ func _init() -> void:
 	var stump: Array = Lying.round_segment(Vector3(20, 0, 20), 0.3)
 	grass.trunks = [stump]
 	check(grass._flat_at(20.0, 20.0) and grass._flat_at(20.4, 20.0) and not grass._flat_at(21.0, 20.0), "grass on and beside a stump is flat, a metre out is not")
+	# Dave 3 Nov: far path patches lost their pressing (only the eight nearest logs reach the shader). Patches now leave the cells themselves.
+	var patches: Array = []
+
+	for k in range(40):
+		patches.append(Vector3(100.0 + float(k) * 1.0, 0.0, 300.0))
+
+	grass.set_bare(patches)
+	check(grass._bare_at(100.0, 300.0) and grass._bare_at(139.3, 300.2) and grass._bare_at(120.5, 300.0), "every patch of a 40 patch path is bare, near and far")
+	check(not grass._bare_at(120.0, 301.5) and not grass._bare_at(97.5, 300.0), "grass well beside the path and past its end stays")
+	grass.set_bare([])
+	check(not grass._bare_at(100.0, 300.0), "a path taken away leaves no bare spot")
+
 	# Dave 3 Nov: a gradient from full density at fade_start_share of the radius to far_share at the edge, no tall grass at the end.
 	check(grass.fade_start_share >= 0.05 and grass.fade_start_share <= 0.95, "the fade starts between 5 and 95 percent of the radius (%f)" % grass.fade_start_share)
 	check(grass.far_share <= 0.31 and grass.far_share > 0.0, "the edge keeps about 30 percent of the grass (%f)" % grass.far_share)
