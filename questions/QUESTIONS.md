@@ -87,3 +87,10 @@ Note: 2. Open the character creator and drag Height, Legs, Arms, Head and Should
 Note: 3. The body should reshape at once while the feet stay on the floor. Then press Play and check that the body in game has the same shape.
 Note: Recommendation: Yes if it reshapes cleanly. Width and face sliders are not done yet.
 [check]
+
+## dynasty-hair-female | Dave's body: hair, beard and a female body need real meshes. Can you export them like the base male (rigged GLB on the same Mixamo skeleton)?
+Note: 1. The creator now shapes your body (PR #195), but the head is bald and every frame, feminine included, uses the male body.
+Note: 2. Code-made hair on your 55k-triangle body would look plastic and low-poly, which the art direction rules out.
+Note: 3. Wanted: a few hair styles and beards as separate rigged meshes on the Head bone, plus Dynasty_Base_Female.glb on the same 24 bones. Drop them in assets/character/Humanoid/ and I will wire them into the creator.
+Note: Recommendation: Yes, export them. Until then the body stays bald and male, and the creator says so.
+[text]
