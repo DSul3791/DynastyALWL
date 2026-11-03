@@ -143,6 +143,7 @@ var floor_under: Callable               # optional: (feet Vector3) -> floor surf
 var last_step: String = ""              # for the HUD: ground, soil id, water depth, file played
 # Dave 2 Nov 2026: at a campfire in the forest on a clear night the surf or the wind was louder than anything near. The wind is damped under a canopy
 # (a share of the trunk shelter) and both the wind and the surf drop while a lit fire is close, so the crackle stays on top.
+const ROOF_WIND_CUT_DB := 4.0          # the wind loops are this much quieter under a roof (a lean-to: dulled, not a room; weather.roofed eases it in)
 const CANOPY_WIND_CUT_DB := 14.0        # wind loops lose this much at full shelter (14 or more trunks within 18 m)
 const FIRE_DUCK_DB := -9.0              # wind and surf lose this much right at a lit fire
 const FIRE_DUCK_NEAR_M := 6.0           # full duck inside this distance, none from FIRE_DUCK_FAR_M
@@ -604,7 +605,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	# Owner 2026-10-19, twice: still a windstorm. Now a faint breeze that only rises a little in gusts.
 	# Build 51: the low layer still sounded like surf nearby; it is lower again.
 	wind_strength = strength
-	canopy_wind_db = -CANOPY_WIND_CUT_DB * clampf(_shelter, 0.0, 1.0)
+	canopy_wind_db = -CANOPY_WIND_CUT_DB * clampf(_shelter, 0.0, 1.0) - ROOF_WIND_CUT_DB * clampf(float(weather.roofed), 0.0, 1.0)
 	fire_duck_db = move_toward(fire_duck_db, fire_duck_target(float(fire.nearest_lit_m)), 12.0 * delta)
 	# Build 79: still like a river; lower again and the loops now have deep lulls between the swells.
 	_wind_low.volume_db = WIND_LIFT_DB + canopy_wind_db + fire_duck_db + linear_to_db(0.8 * (0.0035 + 0.006 * strength))   # x0.8: the softer loops are 2 dB louder in RMS (Dave, build 789)
