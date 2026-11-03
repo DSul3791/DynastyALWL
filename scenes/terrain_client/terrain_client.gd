@@ -2088,6 +2088,9 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 
 	_cave_streams.show_tile(tile, streams)
 
+	if sound != null:
+		sound.cavewater.set_tile(tile, streams)       # the water inside the cave makes its sound (cave_water_sounds.gd)
+
 
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
 	var material: Material = flora.water_material() if flora != null else null
