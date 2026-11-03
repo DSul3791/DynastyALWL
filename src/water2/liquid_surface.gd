@@ -33,6 +33,7 @@ uniform float mud = 0.0;            // 0..1: brown runoff after storms or at hig
 uniform vec3 mud_color : source_color = vec3(0.30, 0.24, 0.15);
 uniform float rain = 0.0;           // 0..1 (weather_look.gd): raindrop rings on the surface
 uniform float contact_m = 0.35;     // the sheet fades in over this much water along the view ray where it meets the ground (no hard line on a bank)
+uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 
@@ -58,6 +59,12 @@ void vertex() {
 	// Dry ground: the sheet tucks under the bed, so it never floats over a dry channel; the per-pixel fade hides the seam. Fast water counts as wet when
 	// much thinner (down a fall the sim's water runs fast and only millimetres deep: Dave 2 Nov 2026, "no water coming down the waterfalls at all").
 	VERTEX.y = t.a > wet_min(t) ? t.r : t.r - 0.4;
+	// The live window has only its 8 m cells: thin running water (a brook down a hillside, 10 to 30 cm) is lifted a little so the ground's bumps between
+	// cells do not break it into puddles (Dave 3 Nov 2026: "need to be close enough together to overlap so they don't show ground"); the soft contact fade
+	// hides where it meets the bank. Chunk sheets are laid on the ground at 2 m instead (_lay_fine).
+	if (point_grid < 0.5 && t.a > wet_min(t)) {
+		VERTEX.y += thin_lift * (1.0 - smoothstep(0.15, 0.5, t.a));
+	}
 }
 
 float hash(vec2 p) {
@@ -192,6 +199,7 @@ void fragment() {
 }
 """
 
+const FINE_SUB := 4             # water_grid.gd FINE_SUB: a fine cell carries (FINE_SUB + 1)^2 surface heights over its 8 m square
 const CHUNK_STEP_M := 8.0       # vertex spacing of a chunk sheet (many of them stand at once): one vertex per grid point, the shore and colour are per pixel anyway
 const SHORE_DEPTH_M := 0.3      # a chunk sheet's depth at wet points next to the shore (no ground on the client): it thins to 0 at the shore point
 const OPEN_DEPTH_M := 1.0       # and further in
@@ -265,6 +273,59 @@ static func image_from_grid(grid: Dictionary) -> Image:
 			im.set_pixel(i, j, Color(here, 0.0, 0.0, 0.0))
 
 	_paint_falls(im, grid, count)
+	return _lay_fine(im, grid, count)
+
+
+# Running water on the real ground (Dave 3 Nov 2026: a brook on a steep hillside showed as separate puddles with clay and grass between them). The
+# server lays running water on the ground at 2 m (water_grid.gd _fine_cells: (FINE_SUB + 1)^2 surface heights per 8 m cell, ground + water + 4 cm),
+# but the liquid sheet only took the 8 m levels, so a thin stream between two points ran under the ground where it bulged and floated where it dipped.
+# With any fine cell the image is FINE_SUB times finer: everything is first spread bilinearly from the 8 m points, then each fine cell's own heights
+# replace the surface over its square (the shore fade and the current stay the spread ones).
+static func _lay_fine(coarse: Image, grid: Dictionary, count: int) -> Image:
+	var fine: Dictionary = grid.get("fine", {})
+
+	if fine.is_empty():
+		return coarse
+
+	var sub: int = FINE_SUB
+	var side: int = (count - 1) * sub + 1
+	var im: Image = Image.create(side, side, false, Image.FORMAT_RGBAF)
+
+	for b in range(side):
+		@warning_ignore("integer_division")
+		var j: int = mini(b / sub, count - 2)
+		var v: float = float(b - j * sub) / float(sub)
+
+		for a in range(side):
+			@warning_ignore("integer_division")
+			var i: int = mini(a / sub, count - 2)
+			var u: float = float(a - i * sub) / float(sub)
+			var c00: Color = coarse.get_pixel(i, j)
+			var c10: Color = coarse.get_pixel(i + 1, j)
+			var c01: Color = coarse.get_pixel(i, j + 1)
+			var c11: Color = coarse.get_pixel(i + 1, j + 1)
+			im.set_pixel(a, b, c00.lerp(c10, u).lerp(c01.lerp(c11, u), v))
+
+	var fside: int = sub + 1
+
+	for cell in fine:
+		var heights: PackedFloat32Array = fine[cell]
+
+		if heights.size() != fside * fside:
+			continue
+
+		var ci: int = int(cell) % count
+		@warning_ignore("integer_division")
+		var cj: int = int(cell) / count
+
+		for b in range(fside):
+			for a in range(fside):
+				var x: int = ci * sub + a
+				var y: int = cj * sub + b
+				var px: Color = im.get_pixel(x, y)
+				px.r = heights[b * fside + a]
+				im.set_pixel(x, y, px)
+
 	return im
 
 
@@ -298,7 +359,7 @@ static func _paint_falls(im: Image, grid: Dictionary, count: int) -> void:
 func show_points(im: Image, corner: Vector2, spacing: float) -> void:
 	var cells: Vector2i = Vector2i(im.get_width(), im.get_height())
 	var size: Vector2 = Vector2(cells - Vector2i.ONE) * spacing
-	_step_m = CHUNK_STEP_M
+	_step_m = minf(CHUNK_STEP_M, spacing)   # one vertex per texel: 2 m where running water is laid on the ground (_lay_fine), else 8 m
 
 	if cells != _cells:
 		_cells = cells
