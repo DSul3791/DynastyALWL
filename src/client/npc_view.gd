@@ -1,5 +1,7 @@
 extends Node3D
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 # Classic NPCs on the client (protocol 45). Each is the player's rounded ragdoll (ragdoll_body.gd), dressed in a coat, trousers
 # and shoes by outfit with a small colour variation per NPC, a name above, and the clips idle / walk / jog / run / sit / lie chosen
 # from the server state and the measured speed. The server sends rows about four times a second; the view glides to each.
@@ -113,6 +115,12 @@ func drawn_count() -> int:
 
 
 func _process(delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(delta)
+	FrameProbe.stop("npcs", t)
+
+
+func _process_body(delta: float) -> void:
 	var camera: Camera3D = get_viewport().get_camera_3d()
 	var eye: Vector3 = camera.global_position if camera != null else Vector3.ZERO
 	var frame: int = Engine.get_process_frames()
