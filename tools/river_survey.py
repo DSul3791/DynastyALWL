@@ -4,6 +4,7 @@
 #   - side slope: river cells more than 0.5 m above the lowest ground of their own cross-section (48 m each way, across the river's direction):
 #     the channel runs along a hillside instead of the valley's low line, and its water has no bank on the downhill side
 #   - dry reaches: groups of dry river cells, and how many start at a river head (a spring moved away from its brook)
+#   - unheld edges: wet river cells beside dry ground lower than their water (no bank holds it)
 # Run before and after a bake to compare (A/B for #221):
 #   python3 tools/river_survey.py [--tile 3,4] [--world worlds/base_world]
 # Needs numpy and zstandard (pip install numpy zstandard). No Godot.
@@ -152,6 +153,24 @@ def main():
             from_head += 1
 
     print('dry reaches: %d (%d cells), %d of them start at a river head' % (count, dry.sum(), from_head))
+
+    # Unheld edge: a wet river cell next to dry ground lower than its water level (nothing holds the water there; it shows as a ragged patch).
+    wet = river & (d > 0)
+    level = h + d
+    unheld = 0
+    cells = 0
+
+    for j, i in zip(*np.nonzero(wet)):
+        if j < 1 or i < 1 or j >= n - 1 or i >= n - 1:
+            continue
+
+        cells += 1
+        dry_round = d[j - 1:j + 2, i - 1:i + 2] == 0
+
+        if (dry_round & (h[j - 1:j + 2, i - 1:i + 2] < level[j, i] - 0.05)).any():
+            unheld += 1
+
+    print('unheld edges: %d of %d wet river cells (%.0f%%) touch dry ground lower than their water' % (unheld, cells, 100.0 * unheld / max(cells, 1)))
 
 
 if __name__ == '__main__':
