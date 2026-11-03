@@ -53,6 +53,7 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
 const HELD_LOOK_SCALE := 1.4
 const HELD_SPEAR_SCALE := 1.6
+const BOW_AMMO := ["stone_arrow", "wooden_arrow", "bone_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
 const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0, "bow": 1.8, "arrow": 2.2, "quern": 1.3}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
@@ -359,6 +360,18 @@ func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "spear"
 
 
+# Whether the pack holds an arrow the bow can shoot (the server's ammo list, data/items/bow.json), so a draw with
+# no arrow lets go silently instead of twanging.
+func has_arrow() -> bool:
+	for id in BOW_AMMO:
+		var number: int = _inv.table.number_of(id)
+
+		if number > 0 and _inv.inventory.count_of(number) > 0:   # 0 = not in the table (0 is also an empty slot)
+			return true
+
+	return false
+
+
 func _is_bow() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "bow" and not _inv.is_broken(held_slot)
 
@@ -589,8 +602,15 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			if pressed:
 				_draw_t = 0.0
 				_arm_play("use", 0.6)
+
+				if _sound != null:
+					_sound.slots.play("bow_draw", _camera.global_position - _camera.global_transform.basis.z * 0.6)   # the limbs flex and the string creaks as it is pulled (make_bow.py)
 			elif _draw_t >= 0.0:
 				_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, int(_draw_t * 1000.0), 0, -_camera.global_transform.basis.z)
+
+				if _sound != null and has_arrow():
+					_sound.slots.play("bow_loose", _camera.global_position - _camera.global_transform.basis.z * 0.6)   # the twang and swish; with no arrow the server says so and nothing is loosed
+
 				_draw_t = -1.0
 
 			return true

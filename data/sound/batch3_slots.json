@@ -66,6 +66,28 @@
    "loop": false,
    "peak_db": -6,
    "status": "filled"
+  },
+  "bow_draw": {
+   "group": "bow",
+   "files": [
+    "res://assets/audio/bow/bow_draw_0.ogg",
+    "res://assets/audio/bow/bow_draw_1.ogg",
+    "res://assets/audio/bow/bow_draw_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -12,
+   "status": "filled"
+  },
+  "bow_loose": {
+   "group": "bow",
+   "files": [
+    "res://assets/audio/bow/bow_loose_0.ogg",
+    "res://assets/audio/bow/bow_loose_1.ogg",
+    "res://assets/audio/bow/bow_loose_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -8,
+   "status": "filled"
   }
  }
 }

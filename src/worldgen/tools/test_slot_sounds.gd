@@ -101,6 +101,8 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	var bow_cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/bow.json"))
+	check(bow_cfg is Dictionary and Array(bow_cfg.get("ammo", [])) == Array(preload("res://src/client/held_item.gd").BOW_AMMO) and names.has("bow_draw") and names.has("bow_loose"), "the bow's draw and loose slots exist and its arrow list matches bow.json")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.
