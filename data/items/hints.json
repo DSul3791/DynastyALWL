@@ -109,7 +109,7 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Workbench: 16 sticks, 6 twine, 4 stones. Better tools.",
+			"text": "A Camp bench: 16 sticks, 6 twine, 4 stones. It is your workbench, for better tools.",
 			"goal": "workbench"
 		},
 		{
@@ -133,7 +133,7 @@
 		{
 			"id": "berries",
 			"trigger": "hungry",
-			"text": "Pick berries or fruit with E and eat them. Roast meat.",
+			"text": "Pick berries or fruit with E and eat them. Put raw meat in the fire with F.",
 			"goal": "berries"
 		},
 		{
@@ -199,7 +199,7 @@
 		{
 			"id": "cook_rule",
 			"trigger": "near_fire_with_food",
-			"text": "Roast raw meat on the campfire. Cook plants in a pot."
+			"text": "Put raw meat in the campfire with F. Cook plants in a pot."
 		},
 		{
 			"id": "plant_food_pot",
