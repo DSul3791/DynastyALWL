@@ -442,6 +442,16 @@ static func path() -> Node3D:
 # not on a grid; the brown is smooth noise, not tiles. The texture is made once and shared by every patch. No collision.
 # Decals (the trodden path) skip anything on this render layer, so they paint the ground only, not a body lying on it (Dave 3 Nov 2026). Character body meshes add it to their layers.
 const NO_DECAL_LAYER := 1 << 19
+# Better still, when the voxel terrain can be put on its own render layer, the path decal paints ONLY that layer, so it never touches rocks, trees, items or bodies
+# (Dave 3 Nov 2026: it painted on a boulder and on a lying body). terrain_client.gd calls use_terrain_only_decals() when it has done so.
+const TERRAIN_DECAL_LAYER := 1 << 18
+static var _decal_mask: int = 0xFFFFF & ~NO_DECAL_LAYER
+
+
+static func use_terrain_only_decals() -> void:
+	_decal_mask = TERRAIN_DECAL_LAYER
+
+
 const TROD_PX := 128
 const TROD_SPAN_M := 2.5
 const TROD_CORE_M := 0.5
@@ -505,7 +515,7 @@ static func trodden_path() -> Node3D:
 	decal.size = Vector3(TROD_SPAN_M, 1.2, TROD_SPAN_M)
 	decal.texture_albedo = _trod_image()
 	decal.position = Vector3(0.0, 0.0, 0.0)
-	decal.cull_mask = 0xFFFFF & ~NO_DECAL_LAYER
+	decal.cull_mask = _decal_mask
 	decal.upper_fade = 0.3
 	decal.lower_fade = 0.3
 	decal.distance_fade_enabled = true   # far patches drop out (a long road is many decals)
