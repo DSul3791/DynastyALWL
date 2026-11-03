@@ -3468,7 +3468,7 @@ func _update_panel_bars() -> void:
 	_panel_bars["Energy"].value = float(energy)
 	_panel_bars["Temperature"].value = float(warmth)
 	if _temp_label != null and is_instance_valid(_temp_label):
-		_temp_label.text = "Temperature " + DisplaySettingsScript.temp_text(float(warmth))
+		_temp_label.text = "Body temp " + DisplaySettingsScript.temp_text(float(warmth))
 
 	if _sick_label != null and is_instance_valid(_sick_label):
 		_sick_label.text = ("Health: ill, about %d h left" % sick_hours) if sick_hours > 0 else ""
