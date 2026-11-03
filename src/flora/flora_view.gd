@@ -22,6 +22,7 @@ const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const GatherRules := preload("res://src/shared/gather_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
@@ -240,6 +241,9 @@ const SHAPES_PER_BODY := 64  # trunk colliders per body
 const IMPOSTOR_M := [100.0, 150.0, 180.0, 210.0]
 const IMPOSTOR_TILE_PX := [Vector2i(64, 128), Vector2i(128, 256), Vector2i(128, 256), Vector2i(128, 256)]   # one view; the atlas holds two
 const MAX_DROPS_PER_UPDATE := 2
+# Load speed (Dave, 2 Nov 2026: flying back to spawn took far too long to load). At most this many chunk plans run on the worker pool at once,
+# nearest chunk first, so the pool also serves the ground meshing and the chunk under the player is not queued behind the far forest.
+const MAX_PLAN_TASKS := 6
 const SHADOW_M := [0.0, 45.0, 60.0, 50.0]   # full-detail trees cast shadows only this near (64 m cells; the sun's shadow range is a render setting)
 const TIER_FAR := 0
 const TIER_FULL := 1
@@ -283,6 +287,10 @@ var _labels: Dictionary = {}           # species id -> name with a note on its m
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _serial: int = 0                   # numbers each chunk plan, so an outdated plan is skipped
 var _tasks: Array = []                 # WorkerThreadPool tasks making chunk plans
+var _plan_wait: Dictionary = {}        # chunk -> true: asked to be planned, not started yet (launched nearest first, MAX_PLAN_TASKS at a time)
+var _load_count: int = 0               # chunk drawings finished since the last "flora load" log line
+var _load_worst_ms: int = 0            # the longest a chunk waited from being asked to being in the scene
+var _load_start_msec: int = 0          # when the first of this batch was asked
 var _setup_queue: Array = []           # species entries still to build (see _setup_step)
 var _setup_next: int = 0
 var _models_ready: Dictionary = {}      # species id -> [near meshes, far meshes] from the worker
@@ -330,6 +338,7 @@ var cleared: Array = []               # Vector3 spots of placed items: shrubs an
 var clear_m: float = 5.0
 var trunks: Array = []               # felled trunks: [ax, az, bx, bz, radius a, radius b]; no small plants under or beside them (set_trunks)
 var trunk_margin_m: float = 0.3
+var _filter_queue: Dictionary = {}   # chunks whose plants must be refiltered against new cleared spots or trunks (worked off in apply_built)
 var _last_position: Vector3 = Vector3.ZERO
 var _ground_msec: int = 0
 var falls_drawn: int = 0
@@ -343,6 +352,53 @@ var _impostor_node: Node
 # above it, like runoff after rain (fully brown from about 8 times it). The sea stays clear.
 # The start flow was x1 until 2026-10-20 and is x10 now.
 const START_FLOW_RATE := 10.0      # water_live.gd DEFAULT_RATE (the server's start rate)
+
+
+# Dave 2 Nov 2026 ("think liquid not squares"): every chunk's settled water is drawn as a liquid sheet (src/water2/liquid_surface.gd) instead of the
+# 8 m grid mesh. False brings the grid look back.
+const LIQUID_CHUNKS := true
+var _liquid_hole: Vector4 = Vector4.ZERO   # the live window (world corner and size): chunk sheets step aside there
+var _liquid_hole_inset: float = 8.0
+
+
+func set_liquid_hole(corner: Vector2, size: Vector2, inset: float) -> void:
+	_liquid_hole = Vector4(corner.x, corner.y, size.x, size.y)
+	_liquid_hole_inset = inset
+
+	for chunk in _chunks:
+		var sheet = _chunks[chunk].get("liquid")
+
+		if sheet != null:
+			sheet.set_hole(corner, size, inset)
+
+
+func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
+	if not LIQUID_CHUNKS:
+		return
+
+	var sheet = entry.get("liquid")
+	var im: Image = water["liquid_image"] if water.has("liquid_image") else LiquidSurface.image_from_grid(water)
+
+	if im == null:
+		if sheet != null:
+			sheet.queue_free()
+			entry["liquid"] = null
+
+		return
+
+	if sheet == null:
+		sheet = LiquidSurface.new()
+		sheet.add_to_group("water_draw")
+		sheet.add_to_group("liquid_sheet")
+		add_child(sheet)
+		entry["liquid"] = sheet
+		sheet.set_hole(Vector2(_liquid_hole.x, _liquid_hole.y), Vector2(_liquid_hole.z, _liquid_hole.w), _liquid_hole_inset)
+		sheet.set_mud(maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
+
+	# The image may be finer than the grid (running water laid on the ground at 2 m, LiquidSurface._lay_fine): the same span, more texels.
+	var span_m: float = float(water.get("spacing", 8.0)) * float(int(water.get("count", 2)) - 1)
+	sheet.show_points(im, Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), span_m / float(maxi(im.get_width() - 1, 1)))
+	sheet.visible = not water_hidden
 
 
 # Ctrl+Shift+W hides every river and lake drawing (debug: does an odd patch on the water stay, then it is ground).
@@ -427,10 +483,15 @@ func set_storm_murk(amount: float) -> void:
 	if _water_material != null:
 		_water_material.set_shader_parameter("storm", amount)
 
+	_liquid_storm = amount
+	_tell_liquid_mud()
+
 
 # The sky colours of the day cycle for the land water (weather_look.gd).
 func set_day_sky(top: Color, horizon: Color, cloud_shadow: Color, daylight: float) -> void:
 	WaterMaterial.apply_day(_water_material, top, horizon, cloud_shadow, daylight)
+	if is_inside_tree():
+		get_tree().call_group("liquid_sheet", "set_daylight", daylight)   # the liquid sheets (chunks and the live window): no glowing foam at night
 
 
 func set_flow_rate(rate: float) -> void:
@@ -440,6 +501,19 @@ func set_flow_rate(rate: float) -> void:
 		_water_material.set_shader_parameter("mud", clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0))
 		# Owner (2026-10-19): more flow looks more violent (raging from about 10 times the start flow).
 		_water_material.set_shader_parameter("rough", clampf(log(maxf(rate, 1.0)) / log(10.0), 0.0, 1.0))
+
+	_liquid_flow_mud = clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0)
+	_tell_liquid_mud()
+
+
+var _liquid_storm: float = 0.0
+var _liquid_flow_mud: float = 0.0
+
+
+# The liquid sheets take one mud amount: the high flow's brown, or the storm's, whichever is more.
+func _tell_liquid_mud() -> void:
+	if is_inside_tree():
+		get_tree().call_group("liquid_sheet", "set_mud", maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
@@ -971,7 +1045,8 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 	var old: Dictionary = entry.get("grid", {})
 	WaterGridScript.steady_edges(old, water)
 
-	if water_ease and WaterGridScript.moved(old, water, EASE_MIN_M):
+	# The liquid sheets are drawn once per update (no easing steps): each step rebuilt the chunk image on the main thread every frame (lag near rivers).
+	if water_ease and not LIQUID_CHUNKS and WaterGridScript.moved(old, water, EASE_MIN_M):
 		_ease[chunk] = {"old": old, "new": water, "step": 1, "next_msec": Time.get_ticks_msec() + EASE_STEP_MSEC}
 		_draw_water(chunk, entry, WaterGridScript.blend(old, water, 1.0 / float(EASE_STEPS)))
 		return
@@ -1071,7 +1146,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	entry["grid"] = water
 	var mesh: ArrayMesh = null
 
-	if int(water.get("wet", 0)) > 0:
+	if int(water.get("wet", 0)) > 0 and not LIQUID_CHUNKS:
 		mesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 	if mesh != null and mesh.get_surface_count() > 0:
@@ -1094,6 +1169,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 		old.queue_free()
 		entry["water"] = null
 
+	_draw_liquid(chunk, entry, water)
 	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
 
@@ -1103,7 +1179,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 # own water runs down the drops, so water over a drop is shown only by the water surface. The
 # fall finder still feeds the list below (sound, mist, spray, wet rock); only the ribbon
 # meshes, their splash and foam strips are not drawn. Set true to bring them back.
-const DRAW_FALL_RIBBONS := true
+const DRAW_FALL_RIBBONS := false   # Dave 2 Nov 2026: the fall ribbon panels are the old look; the liquid sheet draws the falling water itself
 
 
 # The chunk's fall columns (water_falls.gd): kept while the same mesh is still the right one.
@@ -1172,7 +1248,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 	_filter_cleared(chunk, false)
 	CoverScript.add_chunk(cover, chunk, items, _cover_info)
 
-	if int(water.get("wet", 0)) > 0:
+	if int(water.get("wet", 0)) > 0 and not LIQUID_CHUNKS:
 		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 		if mesh.get_surface_count() > 0:
@@ -1188,6 +1264,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 			@warning_ignore("integer_division")
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
+	_draw_liquid(chunk, entry, water)
 	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
 	_refresh(chunk, from_position)
@@ -1315,6 +1392,7 @@ func water_speed_at(x: float, z: float) -> float:
 
 func drop_chunk(chunk: Vector2i) -> void:
 	_ease.erase(chunk)
+	_plan_wait.erase(chunk)
 	var entry: Dictionary = _chunks.get(chunk, {})
 
 	if entry.is_empty():
@@ -1335,6 +1413,11 @@ func drop_chunk(chunk: Vector2i) -> void:
 	if falls != null:
 		falls_drawn -= falls.mesh.get_surface_count()
 		falls.queue_free()
+
+	var sheet = entry.get("liquid")
+
+	if sheet != null:
+		sheet.queue_free()
 
 	var ice: StaticBody3D = entry.get("ice")
 
@@ -1599,24 +1682,79 @@ func _redraw(chunk: Vector2i) -> void:
 
 
 func set_cleared(spots: Array, radius: float) -> void:
+	# Dave 2 Nov 2026 (log: "client slow: grass and plant clearing" 1.0-1.4 s, 12 times): every change refiltered every chunk, twice. Now
+	# only the chunks a NEW spot or segment reaches are queued, and the queue is worked off a few ms a frame (apply_built). A spot taken away
+	# needs nothing: plants already dropped stay dropped until their chunk is rebuilt, as before.
+	var all: bool = absf(radius - clear_m) > 0.001 and not cleared.is_empty()
+	var old: Dictionary = {}
+
+	for spot in cleared:
+		old[spot] = true
+
 	cleared = spots
 	clear_m = radius
 
-	for chunk in _chunks.keys():
-		_filter_cleared(chunk, true)
+	if all:
+		_queue_all_filters()
+		return
+
+	for spot in spots:
+		if not old.has(spot):
+			_queue_filter_box(spot.x - radius, spot.z - radius, spot.x + radius, spot.z + radius)
 
 
 # Felled trunks (Dave 2026-10-21): small plants growing out of a lying log are not drawn (the grass is pressed flat in grass_view).
 func set_trunks(list: Array, margin: float) -> void:
+	var all: bool = absf(margin - trunk_margin_m) > 0.001 and not trunks.is_empty()
+	var old: Dictionary = {}
+
+	for t in trunks:
+		old[t] = true
+
 	trunks = list
 	trunk_margin_m = margin
 
+	if all:
+		_queue_all_filters()
+		return
+
+	for t in list:
+		if not old.has(t):
+			var reach: float = maxf(float(t[4]), float(t[5])) + margin + 0.2
+			_queue_filter_box(minf(t[0], t[2]) - reach, minf(t[1], t[3]) - reach, maxf(t[0], t[2]) + reach, maxf(t[1], t[3]) + reach)
+
+
+func _queue_filter_box(x0: float, z0: float, x1: float, z1: float) -> void:
+	for cz in range(int(floor(z0 / chunk_m)), int(floor(z1 / chunk_m)) + 1):
+		for cx in range(int(floor(x0 / chunk_m)), int(floor(x1 / chunk_m)) + 1):
+			var chunk: Vector2i = Vector2i(cx, cz)
+
+			if _chunks.has(chunk):
+				_filter_queue[chunk] = true
+
+
+func _queue_all_filters() -> void:
 	for chunk in _chunks.keys():
+		_filter_queue[chunk] = true
+
+
+# Works the queued chunk filters for about budget_usec (at least one).
+func _run_filter_queue(budget_usec: int) -> void:
+	if _filter_queue.is_empty():
+		return
+
+	var started: int = Time.get_ticks_usec()
+
+	for chunk in _filter_queue.keys():
+		_filter_queue.erase(chunk)
 		_filter_cleared(chunk, true)
 
+		if Time.get_ticks_usec() - started >= budget_usec:
+			break
 
-func _under_trunk(p: Vector3) -> bool:
-	for t in trunks:
+
+func _under_trunk(p: Vector3, near: Array) -> bool:
+	for t in near:
 		var a: Vector2 = Vector2(t[0], t[1])
 		var ab: Vector2 = Vector2(t[2], t[3]) - a
 		var along: float = clampf((Vector2(p.x, p.z) - a).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
@@ -1639,16 +1777,45 @@ func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
 	var n: int = ids.size() - 1
 	var removed: bool = false
 
+	if n < 0:
+		return
+
+	# Only the trunks, stumps, boulders and cleared spots that reach this chunk's plants are tested (Dave 2 Nov 2026: constant lag. Every boulder,
+	# stump and loose log in view is a segment now, and each new one refiltered every plant of every chunk against all of them).
+	var lo: Vector2 = Vector2(INF, INF)
+	var hi: Vector2 = Vector2(-INF, -INF)
+
+	for k in range(n + 1):
+		lo = Vector2(minf(lo.x, positions[k].x), minf(lo.y, positions[k].z))
+		hi = Vector2(maxf(hi.x, positions[k].x), maxf(hi.y, positions[k].z))
+
+	var near: Array = []
+
+	for t in trunks:
+		var reach: float = maxf(float(t[4]), float(t[5])) + trunk_margin_m + 0.2
+
+		if minf(t[0], t[2]) - reach <= hi.x and maxf(t[0], t[2]) + reach >= lo.x and minf(t[1], t[3]) - reach <= hi.y and maxf(t[1], t[3]) + reach >= lo.y:
+			near.append(t)
+
+	var near_spots: Array = []
+
+	for spot in cleared:
+		if spot.x + clear_m >= lo.x and spot.x - clear_m <= hi.x and spot.z + clear_m >= lo.y and spot.z - clear_m <= hi.y:
+			near_spots.append(spot)
+
+	if near.is_empty() and near_spots.is_empty():
+		return
+
 	while n >= 0:
 		var species: Dictionary = _species.get(int(ids[n]) >> 16, {})
 
-		if not species.is_empty() and int(species["kind"]) != KIND_TREE and not trunks.is_empty() and _under_trunk(positions[n]):
+		if not species.is_empty() and int(species["kind"]) != KIND_TREE and not near.is_empty() and _under_trunk(positions[n], near):
 			for key in ["ids", "positions", "heights", "yaws"]:
 				items[key].remove_at(n)
 
 			removed = true
 		elif not species.is_empty() and int(species["kind"]) != KIND_TREE:
-			for spot in cleared:
+			for spot in near_spots:
 				if Vector2(positions[n].x - spot.x, positions[n].z - spot.z).length() < clear_m:
 					for key in ["ids", "positions", "heights", "yaws"]:
 						items[key].remove_at(n)
@@ -1709,8 +1876,17 @@ func update(from_position: Vector3) -> Array:
 	if not _ease.is_empty():
 		_ease_water()
 
+	var order: Array = []
+
 	for chunk in _chunks.keys():
-		if _distance(chunk, from_position) > view_m[KIND_TREE] + 2.0 * chunk_m:
+		order.append([_distance(chunk, from_position), chunk])
+
+	order.sort_custom(func(a, b): return a[0] < b[0])   # nearest first: the ground under the player is drawn before the far forest
+
+	for pair in order:
+		var chunk: Vector2i = pair[1]
+
+		if pair[0] > view_m[KIND_TREE] + 2.0 * chunk_m:
 			# Freeing a chunk's draws and colliders costs up to 30 ms (build 176 probe), so a few
 			# at a time; the rest go on the next update. They are out of view range meanwhile.
 			if dropped.size() < MAX_DROPS_PER_UPDATE:
@@ -1807,17 +1983,51 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	entry["building"] = level
 	entry["building_masks"] = masks
 	entry["serial"] = _serial
-	# The worker gets real copies of the arrays: remove_item (felling) changes the chunk's own arrays on the
-	# main thread while the worker reads, and sharing them crashed the worker (out of bounds in _plan, 2026-10-21).
-	var items: Dictionary = {}
 
-	for key in entry["items"]:
-		var value = entry["items"][key]
-		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
+	if not entry.has("plan_asked_msec"):
+		entry["plan_asked_msec"] = Time.get_ticks_msec()
 
-	items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
-	items["fruit_levels"] = _fruit_levels_of(chunk, items)
-	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items, masks), false, "flora chunk"))
+	if _load_count == 0 and _plan_wait.is_empty() and _tasks.is_empty() and _jobs.is_empty():
+		_load_start_msec = Time.get_ticks_msec()
+
+	_plan_wait[chunk] = true
+	_launch_plans(from_position)
+
+
+# Starts waiting chunk plans, nearest first, while fewer than MAX_PLAN_TASKS run.
+func _launch_plans(from_position: Vector3) -> void:
+	if _plan_wait.is_empty() or _tasks.size() >= MAX_PLAN_TASKS:
+		return
+
+	var order: Array = []
+
+	for chunk in _plan_wait.keys():
+		order.append([_distance(chunk, from_position), chunk])
+
+	order.sort_custom(func(a, b): return a[0] < b[0])
+
+	for pair in order:
+		if _tasks.size() >= MAX_PLAN_TASKS:
+			return
+
+		var chunk: Vector2i = pair[1]
+		_plan_wait.erase(chunk)
+		var entry: Dictionary = _chunks.get(chunk, {})
+
+		if entry.is_empty() or not entry.has("building"):
+			continue
+
+		# The worker gets real copies of the arrays: remove_item (felling) changes the chunk's own arrays on the
+		# main thread while the worker reads, and sharing them crashed the worker (out of bounds in _plan, 2026-10-21).
+		var items: Dictionary = {}
+
+		for key in entry["items"]:
+			var value = entry["items"][key]
+			items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
+
+		items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
+		items["fruit_levels"] = _fruit_levels_of(chunk, items)
+		_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, int(entry["serial"]), int(entry["building"]), items, entry.get("building_masks", {})), false, "flora chunk"))
 
 
 # For each close distance a species asked for: a 64-bit mask over the chunk's 8 x 8 cells of CLOSE_CELL_M, set where the cell is within that
@@ -1864,6 +2074,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 		_setup_step()
 
 	_take_seasonal()
+	_run_filter_queue(2000)
 
 	var still: Array = []
 
@@ -1874,6 +2085,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 			still.append(task)
 
 	_tasks = still
+	_launch_plans(_last_position)
 
 	if _mid_task != -1 and not _mid_ready.is_empty():
 		_apply_mid(1)
@@ -1896,6 +2108,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 	var started: int = Time.get_ticks_usec()
 
 	while not _jobs.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		_nearest_job_first()
 		var job: Dictionary = _jobs[0]
 		var entry: Dictionary = _chunks.get(job["chunk"], {})
 
@@ -1914,6 +2127,58 @@ func apply_built(budget_usec: int = 3000) -> void:
 			entry.erase("building_masks")
 			entry["drawn"] = _drawn_count(job["node"])
 			_jobs.pop_front()
+			_note_loaded(entry)
+
+
+# One line about the load state, for the freeze log (FrameProbe.context).
+func load_state() -> String:
+	return "flora: %d chunks held, %d plans running, %d waiting, %d drawings to place, %d instances, %d colliders" % [_chunks.size(), _tasks.size(), _plan_wait.size(), _jobs.size(), instances, colliders]
+
+
+# Puts the nearest not-yet-started drawing at the front (a drawing already begun is finished first, so no half-built node waits).
+func _nearest_job_first() -> void:
+	if _jobs.size() < 2:
+		return
+
+	var head: Dictionary = _jobs[0]
+
+	if int(head["draw"]) > 0 or int(head["shape"]) > 0:
+		return
+
+	var best: int = 0
+	var best_d: float = _distance(head["chunk"], _last_position)
+
+	for k in range(1, _jobs.size()):
+		var job: Dictionary = _jobs[k]
+
+		if int(job["draw"]) > 0 or int(job["shape"]) > 0:
+			continue
+
+		var d: float = _distance(job["chunk"], _last_position)
+
+		if d < best_d:
+			best_d = d
+			best = k
+
+	if best > 0:
+		var job: Dictionary = _jobs[best]
+		_jobs.remove_at(best)
+		_jobs.push_front(job)
+
+
+# Load timing for the log: when every asked chunk is in the scene, one line says how many, how long it took and the longest wait.
+func _note_loaded(entry: Dictionary) -> void:
+	var now: int = Time.get_ticks_msec()
+	_load_count += 1
+	_load_worst_ms = maxi(_load_worst_ms, now - int(entry.get("plan_asked_msec", now)))
+	entry.erase("plan_asked_msec")
+
+	if _jobs.is_empty() and _plan_wait.is_empty() and _tasks.is_empty():
+		if _load_count >= 4:
+			print("flora load: %d chunk drawings in %d ms, longest wait %d ms" % [_load_count, now - _load_start_msec, _load_worst_ms])
+
+		_load_count = 0
+		_load_worst_ms = 0
 
 
 # A half-built drawing that is no longer wanted.

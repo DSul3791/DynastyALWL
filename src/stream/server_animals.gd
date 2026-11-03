@@ -80,8 +80,8 @@ func spawn(sp: String, x: float, z: float) -> int:
 
 	var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else 0.0
 
-	if def.has("flock") and water_level.is_valid():
-		y = float(water_level.call(x, z))   # a flock sits on the surface
+	if def.has("flock") and not bool(def["flock"].get("on_land", false)) and water_level.is_valid():
+		y = float(water_level.call(x, z))   # a flock sits on the surface (a land flock, such as gulls on a beach, stands on the ground)
 
 	if is_nan(y):
 		return 0
@@ -414,7 +414,7 @@ func tick(delta: float) -> void:
 # How close a player may come before this animal runs: the species' spook_m, scaled by a horse's own tame value (a flighty one
 # runs from far off, a friendly one lets you close).
 func _spook_m(a: Dictionary, def: Dictionary) -> float:
-	var base: float = float(def.get("spook_m", 14.0))
+	var base: float = float(def.get("spook_m", 14.0)) * (float(cfg.get("rest", {}).get("spook_share", 0.6)) if resting(def) else 1.0)
 
 	if def.has("tame") and a.has("tame"):
 		var scale: Array = def["tame"].get("spook_scale", [1.0, 1.0])
@@ -538,6 +538,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			if centre != Vector3.INF and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)):
 				a["home"] = a["home"].lerp(centre, 0.5)
 
+		if a["timer"] <= 0.0 and resting(def):
+			a["timer"] = _graze_time(def) * float(cfg.get("rest", {}).get("graze_x", 3.0))   # out of its hours it beds down: stays put, longer
+			return
+
 		if a["timer"] <= 0.0:
 			var wander: float = float(def.get("wander_m", 6.0))
 			var angle: float = rng.randf() * TAU   # luck-exempt: where a grazing animal hops next
@@ -660,7 +664,7 @@ func _top_up(players: Array, only: int) -> void:
 				for q in players:
 					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < (never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
 
-				if too_near or (not def.has("flock") and blocked.is_valid() and bool(blocked.call(cx, cz))):
+				if too_near or ((not def.has("flock") or bool(def["flock"].get("on_land", false))) and blocked.is_valid() and bool(blocked.call(cx, cz))):
 					continue
 
 				var keep_out: Array = def.get("exclude", [])
@@ -727,6 +731,12 @@ func activity_chance(def: Dictionary) -> float:
 	return clampf(float((def["active"] as Dictionary).get(period_of(float(hour_now.call())), 1.0)), 0.0, 1.0)
 
 
+# Resting (MikeW 2026-11-02, Dave's behaviour list): outside its active hours (its "active" chance for the period at or under rest.below)
+# an animal beds down where it is: it does not wander, and a player gets closer (rest.spook_share of spook_m) before it wakes and runs.
+func resting(def: Dictionary) -> bool:
+	return def.has("active") and hour_now.is_valid() and activity_chance(def) <= float(cfg.get("rest", {}).get("below", 0.1))
+
+
 # The weight (0..1+) of the biome at a spot for this species: 1 without a "biomes" row or a lookup, 0 for a biome the row does not list.
 func biome_weight(def: Dictionary, x: float, z: float) -> float:
 	if not def.has("biomes") or not biome_at.is_valid():
@@ -740,7 +750,7 @@ func biome_weight(def: Dictionary, x: float, z: float) -> float:
 func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> float:
 	var hab: Dictionary = def.get("habitat", {})
 
-	if def.has("flock"):
+	if def.has("flock") and not bool(def["flock"].get("on_land", false)):
 		var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
 		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
 

@@ -142,5 +142,38 @@ func _init() -> void:
 
 	# 6. Wolves count a moose as prey; big game keeps out of the starter tile.
 	check(a.species_def("moose").has("exclude") and a.species_def("moose")["exclude"].size() == 3, "moose carry a keep-out circle")
+
+	# 7. Boar (MikeW 2026-11-02, ANIMAL_SPEC armed defence): never protective, so a passing player only sees it flee; hit up close it warns first, and its charge hurts less than a moose's.
+	a = make()
+	hurt_log.clear()
+	var boars_protective: int = 0
+
+	for n in 50:
+		var b: int = a.spawn("boar", float(n) * 50.0, 500.0)
+		boars_protective += 1 if bool(a.animals[b].get("protective", false)) else 0
+
+	check(boars_protective == 0, "no boar is born protective (%d of 50)" % boars_protective)
+	a = make()
+	hurt_log.clear()
+	players = [player(30.0, 0.0)]
+	id = a.spawn("boar", 0.0, 0.0)
+	a.animals[id]["timer"] = 100.0
+	states = {}
+
+	for n in 400:
+		players[0]["pos"] = Vector3(maxf(players[0]["pos"].x - 0.1, 9.0), 10.0, 0.0)
+		a.tick(0.05)
+		states[a.animals[id]["state"]] = true
+
+	check(not states.has(10) and not states.has(11) and hurt_log.is_empty(), "a boar a player walks up to does not warn or charge (%s)" % str(states.keys()))
+	a = make()
+	hurt_log.clear()
+	players = [player(6.0, 0.0)]
+	id = a.spawn("boar", 0.0, 0.0)
+	a.animals[id]["timer"] = 100.0
+	a.damage(id, 8.0, 1)
+	check(int(a.animals[id]["state"]) == 10, "a wounded boar with the hunter close warns first")
+	run(a, 6.0)
+	check(hurt_log.size() <= 1 and (hurt_log.is_empty() or hurt_log[0][1] < 25.0), "a boar's charge hurts less than a moose's (%s)" % str(hurt_log))
 	print("big game: %d failures" % failures)
 	quit(failures)

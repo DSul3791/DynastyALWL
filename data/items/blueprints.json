@@ -1,6 +1,6 @@
 {
 	"note": "Hammer blueprints (Dave 25 Oct): HEAVY placeables (processing stations now; log, cobblestone and mason tiers and their large foundations when they land) are placed from the hammer with the materials in the pack, no kit item, because they are too heavy to carry as materials. Building items of the fine wood tier or lower (thatch, plank, fine wood pieces, foundation, ladder, timber set) are made BY HAND and placed like the chopping block: no kit, no blueprint (Dave 25 Oct 09:06). 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near (with 'station_level'), 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1), 'recipe' the retired kit recipe (kept so its number is never reused), 'retired' rows are kept for their numbers and are not offered or placed. Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
-	"next_number": 15,
+	"next_number": 24,
 	"blueprints": {
 		"wall_section": {
 			"number": 1,
@@ -283,6 +283,15 @@
 			"near_level": 2,
 			"hammer": 1,
 			"known": true
-		}
+		},
+		"log_workbench": {"number": 15, "name": "Log workbench", "structure": "log_workbench", "cost": [["log", 4], ["twine", 6], ["stick", 6]], "station": "", "hammer": 1, "known": true, "recipe": "log_workbench_kit"},
+		"log_wall": {"number": 16, "name": "Log wall", "structure": "log_wall", "cost": [["log", 6], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "log_wall_kit"},
+		"log_floor": {"number": 17, "name": "Log floor", "structure": "log_floor", "cost": [["log", 8], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "log_floor_kit"},
+		"log_roof": {"number": 18, "name": "Log roof", "structure": "log_roof", "cost": [["log", 4], ["thatch", 20], ["twine", 3]], "station": "", "hammer": 1, "known": true, "recipe": "log_roof_kit"},
+		"stone_wall": {"number": 19, "name": "Stone wall", "structure": "stone_wall", "cost": [["cut_stone_block", 12], ["mortar", 4]], "station": "", "hammer": 1, "known": true, "recipe": "stone_wall_kit"},
+		"brick_wall": {"number": 20, "name": "Brick wall", "structure": "brick_wall", "cost": [["brick", 16], ["mortar", 4]], "station": "", "hammer": 1, "known": true, "recipe": "brick_wall_kit"},
+		"brick_floor": {"number": 21, "name": "Brick floor", "structure": "brick_floor", "cost": [["brick", 20], ["sand", 4]], "station": "", "hammer": 1, "known": true, "recipe": "brick_floor_kit"},
+		"brick_roof": {"number": 22, "name": "Brick roof", "structure": "brick_roof", "cost": [["brick", 16], ["lumber", 6]], "station": "", "hammer": 1, "known": true, "recipe": "brick_roof_kit"},
+		"fireplace": {"number": 23, "name": "Fireplace", "structure": "fireplace", "cost": [["brick", 24], ["mortar", 4], ["clay", 6]], "station": "", "hammer": 1, "known": true, "recipe": "fireplace_kit"}
 	}
 }

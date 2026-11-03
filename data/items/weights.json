@@ -7,6 +7,28 @@
 	"load_effort": 0.6,
 	"load_effort_power": 1.5,
 	"by_id": {
+		"hazel_bush": 7.0,
+		"bramble_bush": 2.0,
+		"juniper_bush": 4.0,
+		"gorse_bush": 2.0,
+		"dwarf_birch_bush": 2.0,
+		"saltbush_bush": 2.0,
+		"cactus_bush": 4.0,
+		"raspberry_bush": 2.0,
+		"elder_bush": 7.0,
+		"wild_rose_bush": 4.0,
+		"blackthorn_bush": 4.0,
+		"hawthorn_bush": 7.0,
+		"sea_buckthorn_bush": 4.0,
+		"rosemary_bush": 2.0,
+		"wild_banana_bush": 7.0,
+		"prickly_pear_bush": 2.0,
+		"drakethorn_bush": 2.0,
+		"sunberry_bush": 2.0,
+		"hagwillow_bush": 4.0,
+		"honeyspindle_bush": 2.0,
+		"sleetberry_bush": 2.0,
+		"sunsilver_vine_bush": 4.0,
 		"aloe_gel": 0.1,
 		"coin_copper": 0.01,
 		"coin_bronze": 0.01,
@@ -596,6 +618,7 @@
 		"pick": 1.8,
 		"hammer": 1.5,
 		"spade": 0.8,
-		"knife": 0.2
+		"knife": 0.2,
+		"_bush": 4.0
 	}
 }

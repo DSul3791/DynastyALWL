@@ -566,6 +566,13 @@ func _init() -> void:
 		f.tick(10.0)
 
 	check(f._items[covered_id]["fire"]["state"] == 8, "a fire burns out in time")
+	# The open fire was fed two more sticks into its store (fire store, 2 Nov 2026), so it can still be burning here: let it burn out, then wait out FIRE_OUT_S.
+	for n in range(200):
+		if not f._items.has(open_id) or not ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])):
+			break
+
+		f.tick(10.0)
+
 	for n in range(int(ItemsScript.FIRE_OUT_S / 10.0) + 2):
 		f.tick(10.0)
 
@@ -806,7 +813,7 @@ func _init() -> void:
 	# The garden hoe: path patches and smoothing (no items, only wear).
 	var hoe_n: int = m.table.number_of("wooden_hoe")
 	m.action(1, Net.ACT_ADMIN_GIVE, hoe_n, 0, 1, Vector3.ZERO)
-	m.ground_height = func(x, _z): return 10.0 + (0.2 if x > 6.5 else 0.0)
+	m.ground_height = func(x, _z): return 10.0 + (0.4 if x > 6.5 else 0.0)
 	var patches_of = func() -> int:
 		var count: int = 0
 
@@ -820,10 +827,30 @@ func _init() -> void:
 	check(patches_of.call() == 1, "a hoe stroke treads a path patch")
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(6.6, 10.0, 0.6))
-	check(patches_of.call() == 1, "the same metre is not trodden twice")
+	check(patches_of.call() == 1, "a patch is not trodden twice within 0.7 m")
+	var patch_pos: Vector3 = Vector3.ZERO
+
+	for it in m._items.values():
+		if it.has("struct") and str(it["struct"]["kind"]) == "path_patch":
+			patch_pos = it["pos"]
+
+	check(absf(patch_pos.x - 6.3) < 0.01 and absf(patch_pos.z - 0.4) < 0.01, "the patch lies exactly where the hoe pointed, not snapped to a metre grid")
+	digs.clear()
+	fills.clear()
+	accept[0] = true
+	m._last_dig.clear()
+	m._last_average.clear()
+	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(7.2, 10.0, 0.4))
+	check(patches_of.call() == 2, "a second patch 0.9 m along is laid")
+	check(digs.size() + fills.size() >= 2 and digs.size() + fills.size() <= 4, "a path stroke averages the ground round it with at most 4 edits (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	digs.clear()
+	fills.clear()
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(8.0, 10.0, 3.0))
+	check(digs.is_empty() and fills.is_empty() and patches_of.call() == 3, "a second path stroke within 1.5 s lays its patch but leaves the ground alone")
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
-	check(patches_of.call() == 1, "a path out of reach does nothing")
+	check(patches_of.call() == 3, "a path out of reach does nothing")
 	var hoe_slot: int = m.inventory_of(1).numbers.find(hoe_n)
 	var hoe_wear: int = m.inventory_of(1).wear[hoe_slot]
 	digs.clear()
@@ -832,7 +859,7 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_SMOOTH, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(digs.size() == 1 and fills.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "smoothing cuts the high spot and fills the low ones (%d cuts, %d fills)" % [digs.size(), fills.size()])
-	check(patches_of.call() == 0, "smoothed ground loses its path patch")
+	check(patches_of.call() == 1, "smoothed ground loses its path patches within 2.5 m (the far one stays)")
 	# The grade line: nothing happens before both points are set; then a stroke brings the high side toward the ramp (A 10.0 at x 4 to B 10.2 at x 8).
 	digs.clear()
 	fills.clear()
@@ -841,6 +868,18 @@ func _init() -> void:
 	check(digs.is_empty() and fills.is_empty(), "a grade stroke without points A and B does nothing")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, 0, 0, 0, Vector3(4.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, 1, 0, 0, Vector3(8.0, 10.0, 0.0))
+	var road_patches: int = patches_of.call()
+	digs.clear()
+	fills.clear()
+
+	for step in 30:
+		m._road_tick(0.6)
+
+	check(patches_of.call() >= road_patches + 3, "setting point B lays a path along the A to B line by itself (%d patches more)" % (patches_of.call() - road_patches))
+	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= 3 * 13, "and levels the ground along it, a few edits a station (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	check(m._roads.is_empty(), "the road job ends when the line is done")
+	digs.clear()
+	fills.clear()
 	hoe_wear = m.inventory_of(1).wear[hoe_slot]
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_GRADE, 0, 0, 0, Vector3(7.0, 10.0, 0.0))
@@ -1369,6 +1408,22 @@ func _init() -> void:
 			heaps += 1
 
 	check(loose_of.call(firewood_n) == 4 and heaps == 1, "the next piece joins the same heap beside the block (%d pieces in %d heaps)" % [loose_of.call(firewood_n), heaps])
+	# Bug 3: the heap keeps growing past the 40 stack as one pile, and a pile lives the pile lifetime.
+	cb.action(1, Net.ACT_ADMIN_GIVE, block_n, 0, 25, Vector3.ZERO)
+
+	for n in range(25):
+		cb._last_use.clear()
+		cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+
+	var big_heaps: int = 0
+	var heap_left: float = 0.0
+
+	for k in cb._items:
+		if int(cb._items[k]["number"]) == firewood_n and not cb._items[k].has("struct"):
+			big_heaps += 1
+			heap_left = float(cb._items[k]["left"])
+
+	check(loose_of.call(firewood_n) > 40 and big_heaps == 1 and heap_left >= ItemsScript.PILE_LIFETIME_S - 1.0, "the heap beside the block grows past 40 as one pile and lives as a pile (%d pieces, %d heaps, %.0f s)" % [loose_of.call(firewood_n), big_heaps, heap_left])
 
 	# A log lying on the ground, struck with the axe, falls apart into wooden blocks.
 	cb.drop_in_world(cb.table.number_of("log"), 1, Vector3(1.0, 10.0, 0.0))
@@ -1737,22 +1792,55 @@ func _init() -> void:
 
 	var floor_level: float = float(sa.strain_of(1)["s"])
 	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
-	# Fitness trains slowly (fitness.json train): winded time adds points, rest takes them back, never below the base.
+	# Fitness trains slowly like a skill (fitness.json train): any effort above min_effort adds, rest takes it back, never below the base.
 	var tr = make(xd)
 	tr.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	tr.peer_connected_hello(1, "trainkey0001")
 	tr.set_fitness(1, 2)
 	check(tr.fitness_of(1) == 2, "fitness starts at its creation value")
-	tr._train_fitness(1, true, 1700.0)
-	check(tr.fitness_of(1) == 2, "just under a point of winded time changes nothing")
-	tr._train_fitness(1, true, 200.0)
-	check(tr.fitness_of(1) == 3, "30 minutes winded earns a point")
-	tr._train_fitness(1, true, 1.0e6)
-	check(tr.fitness_of(1) == 7, "training stops at max_gain (5) above the base")
-	tr._train_fitness(1, false, 14400.0 * 3.0)
-	check(tr.fitness_of(1) == 4, "rest takes points back slowly")
-	tr._train_fitness(1, false, 1.0e7)
+	tr._train_fitness(1, 1.0, 1700.0)
+	check(tr.fitness_of(1) == 2, "just under a point of running changes nothing")
+	tr._train_fitness(1, 1.0, 200.0)
+	check(tr.fitness_of(1) == 3, "30 minutes running earns a point")
+	var before_stroll: float = float(tr._characters[tr._peer_key[1]]["train"])
+	tr._train_fitness(1, 0.2, 600.0)
+	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) < before_stroll, "strolling earns nothing (and eases training back)")
+	var tw = make(xd)
+	tw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tw.peer_connected_hello(1, "trainkey0002")
+	var tj = make(xd)
+	tj.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tj.peer_connected_hello(1, "trainkey0003")
+	var tc = make(xd)
+	tc.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tc.peer_connected_hello(1, "trainkey0004")
+	tw._train_fitness(1, 0.5, 3600.0)
+	tj._train_fitness(1, 0.75, 3600.0)
+	tc._train_fitness(1, 1.05, 3600.0)
+	var gw: float = float(tw._characters[tw._peer_key[1]]["train"])
+	var gj: float = float(tj._characters[tj._peer_key[1]]["train"])
+	var gc: float = float(tc._characters[tc._peer_key[1]]["train"])
+	check(gw > 0.0 and gw < gj and gj < gc, "an hour of walking trains less than jogging, less than hard tool work (%.2f %.2f %.2f)" % [gw, gj, gc])
+	tr._train_fitness(1, 1.0, 1.0e7)
+	check(tr.fitness_of(1) == 10, "training stops at the top of the range")
+	tr.set_fitness(1, 2)
+	tr._train_fitness(1, 1.0, 1.0e7)
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == 10.0 and tr.fitness_of(1) == 10, "training stops at max_gain above the base, clamped to the range")
+	tr.set_fitness(1, 2)
+	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
+	tr._train_fitness(1, 0.0, 14400.0 * 3.0)
+	check(tr.fitness_of(1) == 2, "rest takes points back slowly")
+	tr._train_fitness(1, 0.0, 1.0e7)
 	check(tr.fitness_of(1) == 2, "and never below the creation value")
+	# Saved: the training survives a restart (characters.json).
+	tr._train_fitness(1, 1.0, 1800.0 * 2.0)
+	check(tr.fitness_of(1) == 4, "two points earned")
+	tr.save()
+	tr._finish_writer()
+	var tr2 = make(xd)
+	tr2.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tr2.peer_connected_hello(1, "trainkey0001")
+	check(tr2.fitness_of(1) == 4, "trained fitness is saved and read back (%d)" % tr2.fitness_of(1))
 
 	# Energy (job 95, energy.json): 3 game days of ordinary play empty it, rest refills it, supplements cost fitness, 0 forces sleep.
 	var en = make(xd)

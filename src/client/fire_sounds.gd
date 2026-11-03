@@ -38,6 +38,7 @@ const MERGE_M := 18.0                   # fires farther than this and near each 
 const CLUSTER_M := 15.0
 
 var loops_playing: int = 0              # HUD
+var nearest_lit_m: float = INF          # distance to the nearest lit fire at the last scan (the sound stage ducks wind and surf near one)
 var lit_played: int = 0
 var out_played: int = 0
 var cook_played: int = 0
@@ -201,9 +202,13 @@ func update(delta: float, body: CharacterBody3D) -> void:
 func _scan(body: CharacterBody3D) -> void:
 	var here: Vector3 = body.global_position
 	var near: Array = []
+	nearest_lit_m = INF
 
 	for fire in _fires:
 		var distance: float = fire["at"].distance_to(here)
+
+		if bool(fire.get("lit", true)):
+			nearest_lit_m = minf(nearest_lit_m, distance)
 
 		if distance <= REACH_M:
 			near.append({"fire": fire, "distance": distance})
