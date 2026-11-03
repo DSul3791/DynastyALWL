@@ -115,11 +115,11 @@ Walk to the biggest tree you can find (oaks, beeches, tall pines), stand under t
 - Until your best skill reaches 10 every death is a soft one. Real death is switched off for now.
 - The message says "You come back at your shelter" for the bed as well.
 
-Pictures: `10_campfire_placed.jpg` (the placement ghost; the lit fire itself is [in progress, Kathleen]).
+Pictures: `10_campfire_placed.jpg` (the placement ghost; the lit fire itself is [in progress, Kathleen: the old world3/fh_campfire_lit.jpg shows only the green ghost in grass; her night campfire shot, PR #180, is queued on the PC]).
 
 ## Step 09. Water, food
 
-* **Water:** walk to a river or lake and press E at the edge to drink (300 ml a press). With a bowl, pot, bucket or waterskin in hand E fills it (500 ml). **[in progress: water in some rivers is not filling yet.]**
+* **Water:** walk to a river or lake and press E at the edge to drink (300 ml a press). With a bowl, pot, bucket or waterskin in hand E fills it (500 ml). **[in progress, Sonny: hillside water is one stream since #167 (3 Nov); spring caves and riverbeds are still being worked on.]**
 * **Food:** pick berries (raspberry 150, bramble 250, blueberry 150 per big bush, in season summer/autumn), hazelnuts, apples, roots (roots need a spade). Eat by right click. **Raw food is allowed but some makes you sick** (raw meat 24 h, acorns and mushrooms mild). Roast at the fire to be safe. First time you eat an unknown food it costs food and water only; the game remembers.
 * Herbs: plantain and comfrey give leaves (poultice, bandage recipes #8-#11).
 
