@@ -8,6 +8,13 @@ Numbers read from data/items/vitals.json, drops.json, spoilage.json, weights.jso
 - Empty stomach: weight drops (7700 kcal per kg), health stops regenerating; nothing kills (vitals.json note). So a player who lights the first fire at minute 15 to 20 does not starve; he is hungry from about minute 55.
 - One bite takes 0.8 s (eat_pace_ms 800).
 
+## The water clock (added by Dino, 3 Nov, from vitals.json thirst)
+- The body holds 2400 ml, and a new character starts full.
+- It falls by 1000 ml per game day at rest, plus 1200 ml times exertion. A game day is one real hour.
+- So a full body lasts **about 1 h 50 min at ordinary play** (exertion 0.3 to 0.6) and at least 1 h 05 min at full work. One drink a game day is enough.
+- At the water's edge (within 3 m of your feet), one mouthful gives 300 ml, every 0.9 s. **8 mouthfuls fill you from empty, about 7 s.**
+- Empty thirst stops health recovering; nothing else happens yet. The "thirsty" warning comes at 15 percent.
+
 ## What a new player can eat in the first hour, near the spawn (early summer)
 | Food | Where | kcal each | How many to fill the stomach (2400) | Notes |
 |---|---|---|---|---|
