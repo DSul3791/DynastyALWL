@@ -1519,7 +1519,7 @@ const SLOW_LOAD_MS := 25
 # file on the main thread mid-game. Walks the folders once at load time; exported builds list name.ogg.import / .remap, which are
 # mapped back to the resource path.
 const AUDIO_ROOT := "res://assets/audio/"
-static var _warm: Dictionary = {}       # path -> true once its threaded load was requested
+static var _prewarmed: Dictionary = {}       # path -> true once its threaded load was requested
 static var warm_requested: int = 0
 
 
@@ -1541,11 +1541,11 @@ static func prewarm(folder: String = AUDIO_ROOT) -> void:
 
 		var path: String = folder + clip_name
 
-		if _warm.has(path) or not ResourceLoader.exists(path):
+		if _prewarmed.has(path) or not ResourceLoader.exists(path):
 			continue                                                 # headless runs without imports read the file on first use instead
 
 		if ResourceLoader.load_threaded_request(path, "AudioStream", false, ResourceLoader.CACHE_MODE_REUSE) == OK:
-			_warm[path] = true
+			_prewarmed[path] = true
 			warm_requested += 1
 
 
@@ -1575,8 +1575,8 @@ static func _load_file(folder: String, sound_name: String) -> AudioStream:
 			if file != null:
 				loaded_bytes += file.get_length()
 
-		if _warm.has(path):
-			_warm.erase(path)                                    # load_threaded_get may be called once per request
+		if _prewarmed.has(path):
+			_prewarmed.erase(path)                                    # load_threaded_get may be called once per request
 
 			if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_FAILED:
 				var warmed: AudioStream = ResourceLoader.load_threaded_get(path) as AudioStream   # ready by now; waits only in the first seconds after start
