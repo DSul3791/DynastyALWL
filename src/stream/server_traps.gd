@@ -79,6 +79,31 @@ func lured(at: Vector3) -> Dictionary:
 	return best
 
 
+# Nothing inside lure_m: an animal of draw_species living within draw_m may wander over to the snare (its run or the bait), with
+# the chance a catch would have times draw_share. It then grazes at the snare until a later look catches it or something scares it off.
+func _draw(it: Dictionary, st: Dictionary) -> bool:
+	var reach: float = float(cfg.get("draw_m", 0.0))
+
+	if reach <= 0.0 or not host.animals_near.is_valid() or not host.animal_lure.is_valid():
+		return false
+
+	var kinds: Array = cfg.get("draw_species", [])
+	var best: Dictionary = {}
+	var best_d: float = 1.0e9
+
+	for row in host.animals_near.call(it["pos"], reach):
+		var d: float = Vector2(row["pos"].x - it["pos"].x, row["pos"].z - it["pos"].z).length()
+
+		if kinds.has(str(row["sp"])) and animal_weight(row) > 0.0 and d < best_d:
+			best = row
+			best_d = d
+
+	if best.is_empty() or not host.fate(_owner_peer(st), "snare", chance_at(it["pos"], best, _bait_id(it["pos"]) >= 0) * float(cfg.get("draw_share", 1.0))):
+		return false
+
+	return bool(host.animal_lure.call(int(best["id"]), it["pos"]))
+
+
 func _bait_id(at: Vector3) -> int:
 	for row in host.loose_food_near(at, float(cfg.get("bait_m", 1.0))):
 		return int(row[0])
@@ -165,6 +190,7 @@ func check_one(id: int) -> bool:
 	var row: Dictionary = lured(it["pos"])
 
 	if row.is_empty():
+		_draw(it, st)
 		return false
 
 	var bait: int = _bait_id(it["pos"])
