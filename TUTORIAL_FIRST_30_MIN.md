@@ -9,7 +9,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 | Fix | State | What the script gains when it lands |
 |---|---|---|
 | F-01 recipes known | **landed** (173 of 192 learnable) | pickaxe, club, kindling, hide clothes, waterskin are in the script's later steps |
-| F-16 plain `log` recipes | **still broken** | steps A below (chopping block, planks, lumber, wooden house) |
+| F-16 plain `log` recipes | **FIXED** (PLAYTHROUGH_STATUS.md) | steps A below are live |
 | F-02 flint pickup | **still broken** | steps B below (hide scraper, tanning, sickle, javelin) |
 | F-03 tinder sources | landed | the fire step may name birch bark, tinder (2 thatch make 2) as well as plant fibre |
 
@@ -30,7 +30,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 7. Trigger: 2 twine, 1 stone, 1 stick. Line: "Make a Stone axe: 1 stone, 1 stick, 2 twine." (recipe 2, 10 s). Check: stone axe in the pack.
 8. Trigger: axe made. Line: "Tools only work from the hotbar. Drag the axe onto a box at the bottom, or press E on it in the inventory, then press its number key to hold it." Check: axe held.
 9. Trigger: axe held, a standing tree within 20 m. Line: "Walk up to a tree and click again and again. Thin trees fall in about 10 blows, a thick oak in about 20." (blows = 4 + 30 x trunk thickness in metres, at least 4.) Check: a tree fell.
-10. Trigger: tree down. Line (Dave, QA 2 Nov, now hint "trunk"): "Your tree is down. Gather what fell: sticks, leaves, bark and logs." About 2 s after landing the trunk breaks up by itself (bug 11 and #49); a trunk already hit with the axe, or one with no room, stays a trunk to cut by hand (3 branch blows of sticks and leaves, then a log every 1-2 blows). Check: 6 leaves and 10 sticks in the pack. **Do not tell the player to make a chopping block yet (F-16).**
+10. Trigger: tree down. Line (Dave, QA 2 Nov, now hint "trunk"): "Your tree is down. Gather what fell: sticks, leaves, bark and logs." About 2 s after landing the trunk breaks up by itself (bug 11 and #49); a trunk already hit with the axe, or one with no room, stays a trunk to cut by hand (3 branch blows of sticks and leaves, then a log every 1-2 blows). Check: 6 leaves and 10 sticks in the pack. The chopping block step (section A) is live since F-16 was fixed.
 
 ## Minute 12 to 18: fire
 
@@ -65,8 +65,7 @@ Hints: data/items/hints.json already has "cook_rule" ("Roast raw meat on the cam
 
 | Do not say | Why (finding) |
 |---|---|
-| "make a chopping block / log workbench / planks" | recipes need plain `log`; trees give `log_<species>` (F-16) |
-| "build a wooden house" | lumber needs the log chain (F-16); the thatch house works (workbench: thatch floor, walls, roof, doorway) |
+| "build a wooden house" | works now through section A (wedge lumber and hammer blueprints); the thatch house also works |
 | "smelt iron, make a forge sword" | no ore, coal or flint pickup (F-23) |
 | "farm wheat" | crops.json is read by no code (S-farm) |
 | "cook a stew or bread" | 14 dishes lack gatherable ingredients (F-19) |
@@ -78,18 +77,19 @@ Steps 4 to 22 each end on an inventory or world event the server already knows (
 
 ## Steps that unlock when the open fixes land (write them in now, switch them on with the fix)
 
-**A. When F-16 lands (a felled `log_oak` counts as a `log`):**
+**A. The log chain: switched on (F-16 FIXED in PLAYTHROUGH_STATUS.md: a felled tree's log works as `log`; numbers re-read from data on main, 3 Nov, by Dino)**
 
 | Trigger | Line | Recipe (data) |
 |---|---|---|
-| 2 logs in the pack or on the shoulder | "Lay the logs down (Q) and make a Chopping block: 2 logs." | #15, 3 s |
-| a chopping block placed and an axe held | "Press E at the block to split a wooden block into firewood. Hold E to keep splitting." | server: one block to one firewood |
+| 2 logs in the pack or on the shoulder | "Lay the logs down (Q) and make a Chopping block: 2 logs." | #15, 8 s |
+| a chopping block placed and an axe held | "Tap E at the block to split a wooden block into firewood. Hold E picks the block up again." (#30: hold E no longer keeps splitting) | server: one block to one firewood |
 | workbench placed | "Rough planks: 1 log makes 4 planks at the workbench." | #143, 6 s |
-| workbench placed, stone wedge (2 stones + 1 stick, #227) in the pack | "Split a log into 2 lumber with the wedge." | #230 lumber_wedge, 14 s |
-| 4 lumber + 1 twine | "Wall section kit: 4 lumber, 1 twine; floor 4 lumber, 1 twine; roof 5 lumber, 2 twine, 2 sticks; doorway 3 lumber, 1 twine." | #119, #120, #121, #123 |
-| 4 logs, 6 twine, 6 sticks | "Log workbench: the second bench tier." | #49, 30 s |
+| workbench placed, stone wedge (2 stones + 1 stick, #227) in the pack | "Split a log into 2 lumber with the wedge at the workbench." | #230, 14 s (the wedge is kept) |
+| first lumber | "Heavy pieces are built with a hammer. A wooden hammer is a wooden block, a stick and a twine; a stone hammer is a stone, a stick and a twine at the workbench." | wooden hammer (no station), stone hammer (workbench) |
+| hammer held, 4 lumber + 1 twine | "Hold the hammer to pick a blueprint: wall 4 lumber, 1 twine; floor 4 lumber, 1 twine; roof 5 lumber, 2 twine, 2 sticks; doorway 3 lumber, 1 twine." | blueprints.json wall_section, floor_section, roof_section, doorway_section (hammer 1) |
+| hammer held, 4 logs, 6 twine, 6 sticks | "Log workbench: the second bench tier, built with the hammer." | blueprint log_workbench |
 
-A small wooden room (four walls, floor, roof, doorway) is 28 lumber = 14 logs = 14 trees' worth of logs. Say so in the text.
+A small wooden room (four walls, floor, roof, doorway) is 28 lumber = 14 logs. A felled tree now gives one log per whole 2.44 m of trunk (a 6 m tree gives 2), so that is about 5 to 7 trees. Say so in the text.
 
 **B. When F-02 lands (flint can be picked up):**
 
