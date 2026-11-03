@@ -91,9 +91,10 @@ void fragment() {
 	body *= smoothstep(0.0, 0.1, y);                   // soft where it rises from the coals
 	body *= 1.0 - smoothstep(0.45 + 0.4 * n, 1.0, y);  // the tip breaks into licks
 	float core = smoothstep(width * 0.55, 0.0, abs(dx)) * (1.0 - smoothstep(0.1, 0.6, y));
-	vec3 col = mix(vec3(0.7, 0.12, 0.02), vec3(1.0, 0.5, 0.07), smoothstep(0.0, 0.8, body));
-	col = mix(col, vec3(1.0, 0.86, 0.5), core * 0.85);
-	ALBEDO = col * (0.55 + 0.6 * body) * strength;
+	// Kathleen's three stops (#180, QA pic-campfire-lit-real): a hot yellow root, a deep orange body, red-orange edges and tips; dark enough that overlapping tongues do not clip.
+	vec3 col = mix(vec3(0.85, 0.2, 0.03), vec3(1.0, 0.42, 0.07), smoothstep(0.0, 0.8, body));
+	col = mix(col, vec3(1.0, 0.68, 0.2), core * 0.85);
+	ALBEDO = col * (0.5 + 0.45 * body) * strength;
 	ALPHA = body * 0.9;
 }
 """
