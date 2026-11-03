@@ -109,7 +109,7 @@ Walk to the biggest tree you can find (oaks, beeches, tall pines), stand under t
 - You keep at most 5 piles, so a sixth death clears your emptiest or oldest pile.
 - You come back with full vitals, after about 4 s:
   - **beside your spawn bed** (1.2 m), if you set one with E and it still stands;
-  - else **in front of your last lean-to** (1.5 m out);
+  - else **in front of your last lean-to** (1.5 m past its edge, about 4.2 m from its centre since #253);
   - else at the world spawn.
 - Two bed deaths inside 10 minutes and the third sends you to the lean-to or the spawn instead, so a bed beside a danger does not trap you.
 - Skills, luck and fitness are kept.
