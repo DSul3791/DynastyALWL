@@ -70,7 +70,12 @@ const LAYERS := [
 # ground-cover cards beyond band 0).
 const LOD_SCALE := [1.0, 2.0, 3.0, 4.0]       # card width by band: near, middle, far, very far (reach beyond 50 m)
 const LOD_SCALE_SHORT := [1.0, 1.5, 2.1, 2.1] # the Low tier (reach 40 m)
-const BAND_SHARE := [1.0, 0.4, 0.35, 0.35]    # share of the cards drawn per band beyond 50 m (the cost cap, section 33)
+const BAND_SHARE := [1.0, 1.0, 1.0, 1.0]      # cards built per band beyond 50 m: all of them now; the thinning is a smooth gradient in the shader (data/look/grass_far.json, Dave 3 Nov), not a step per band
+const TALL_MAX_LOD := 2                       # tall grass (meadow patches) is not built in the very far band; the shader fades it out by 80 percent of the radius
+const FAR_CONFIG := "res://data/look/grass_far.json"
+var fade_start_share: float = 0.5            # THE setting (grass_far.json): the thinning starts at this share of the grass radius
+var far_share: float = 0.3                   # share of the grass cards kept at the edge
+var tall_far_share: float = 0.0              # share of the tall grass kept at 80 percent of the radius
 const NEAR_END_MIN := 14.0
 const NEAR_END_MAX := 20.0
 const CLOSURE_OFFSETS := [Vector2(0.0, 0.0), Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(3.0, 3.0), Vector2(-3.0, -3.0)]
@@ -149,6 +154,9 @@ uniform float trail_draw = 0.25;
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
 uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
+uniform float thin_start = 1.0e9;       // metres: grass thins from here (grass_far.json, set_radius)
+uniform float thin_end = 2.0e9;
+uniform float thin_min = 1.0;           // share of the cards kept at thin_end
 uniform float season_blades = 1.0;      // share of blades kept (hashed per cell): winter thins the grass
 uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
 uniform vec4 trunk_a[8];                // felled trunks near: start x, z, end x, z
@@ -199,6 +207,12 @@ void vertex() {
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);
+	// Far grass thins out smoothly (Dave 3 Nov).
+	// The cards were already cut when the cell was built, with the share INSTANCE_CUSTOM.a (1 for a near card). The cut is only ever finer here:
+	// a card is kept while its number is below the share left at this distance relative to the share it was built with.
+	float share_now = mix(1.0, thin_min, smoothstep(thin_start, thin_end, reach));
+	float ratio = mix(1.0, share_now / max(INSTANCE_CUSTOM.a, 0.001), step(thin_min, 0.9999));
+	VERTEX *= step(fract(sin(dot(root_xz, vec2(39.3468, 11.135))) * 24634.6345), ratio);
 	blade_color = mix(INSTANCE_CUSTOM.rgb, INSTANCE_CUSTOM.rgb * 0.85 + vec3(0.1, 0.085, 0.04), 0.7 * worn) * (1.0 - 0.12 * flat_down);
 }
 
@@ -340,6 +354,13 @@ func setup(terrain: Node3D, flora, tables) -> void:
 		material.set_shader_parameter("wind_strength", 0.12 * float(layer["wind"]))
 		material.set_shader_parameter("backlight", float(layer["backlight"]))
 		_materials.append(material)
+
+	var far_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string(FAR_CONFIG)) if FileAccess.file_exists(FAR_CONFIG) else null
+
+	if far_cfg is Dictionary:
+		fade_start_share = clampf(float(far_cfg.get("fade_start_share", 0.5)), 0.05, 0.95)
+		far_share = clampf(float(far_cfg.get("far_share", 0.3)), 0.0, 1.0)
+		tall_far_share = clampf(float(far_cfg.get("tall_far_share", 0.0)), 0.0, 1.0)
 
 	_trample = TrampleScript.new()
 
@@ -528,6 +549,12 @@ func set_radius(meters: float) -> void:
 		# The cards shrink to nothing over the last 12 m (no pop at the edge).
 		_materials[n].set_shader_parameter("fade_start", maxf(reach - 12.0, 1.0))
 		_materials[n].set_shader_parameter("fade_end", maxf(reach, 2.0))
+		# The gradient (Dave 3 Nov): full from the player to fade_start_share of the radius, thinning to far_share at the edge; the tall grass to
+		# tall_far_share by 80 percent of the radius (it is not built beyond that).
+		var tall_layer: bool = n == 2
+		_materials[n].set_shader_parameter("thin_start", meters * fade_start_share)
+		_materials[n].set_shader_parameter("thin_end", meters * (0.8 if tall_layer else 1.0))
+		_materials[n].set_shader_parameter("thin_min", tall_far_share if tall_layer else far_share)
 
 	if not enabled:
 		_clear_all()
@@ -1286,6 +1313,18 @@ func _lod_of(cell: Vector2i, held: int) -> int:
 	return 3 if radius_m > 50.0 else 2
 
 
+# The share of the cards of a grass layer kept at `d` metres from the player (Dave 3 Nov 2026): 1 out to fade_start_share of the radius, then a
+# smooth fall to far_share (tall grass: tall_far_share by 80 percent of the radius) at the edge. Cells are cut with this when built, so far grass
+# costs less to build and to draw; the shader only thins them further as the player moves (the share is kept in each card's custom alpha).
+func _far_share(d: float, layer: int) -> float:
+	var tall: bool = layer == 2
+	var start: float = radius_m * fade_start_share
+	var end: float = radius_m * (0.8 if tall else 1.0)
+	var t: float = clampf((d - start) / maxf(end - start, 0.001), 0.0, 1.0)
+	t = t * t * (3.0 - 2.0 * t)
+	return lerpf(1.0, tall_far_share if tall else far_share, t)
+
+
 func _lod_points(lod: int) -> int:
 	if radius_m > 50.0:
 		return [points_per_side, 3, 2, 1][lod]
@@ -1527,6 +1566,9 @@ func _build(cell: Vector2i) -> int:
 				if layer == 0 and lod > 0:
 					continue
 
+				if layer == 2 and lod > TALL_MAX_LOD:
+					continue
+
 				# Owner (2026-10-21): all the grass has the same draw distance, so the short grass is drawn in
 				# the far bands too (it used to stop at 85 percent of the reach and drop out of the far bands).
 				var want: float = float(LAYERS[layer]["per_point"]) * density * band_share * (1.0 + wet if layer == 2 else 1.0)
@@ -1547,6 +1589,11 @@ func _build(cell: Vector2i) -> int:
 
 					var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 					var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+					var kept: float = _far_share(Vector2(ox - _center.x, oz - _center.z).length(), layer) if layer >= 1 else 1.0
+
+					if kept < 1.0 and rng.randf() > kept:
+						continue
+
 					var size: float = rng.randf_range(0.75, 1.15)
 					var yaw: float = rng.randf() * TAU
 					var sy: float = size * rng.randf_range(0.8, 1.15)
@@ -1572,7 +1619,7 @@ func _build(cell: Vector2i) -> int:
 					buffer[o + 12] = green.r * shade * rng.randf_range(0.93, 1.07)
 					buffer[o + 13] = green.g * shade
 					buffer[o + 14] = green.b * shade * rng.randf_range(0.9, 1.1)
-					buffer[o + 15] = 1.0
+					buffer[o + 15] = kept
 					buffers[layer] = buffer
 
 	entry["busy"] = false
