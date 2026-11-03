@@ -1936,7 +1936,7 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var spent: int = inv.wear[slot] + 1
 	inv.take_from_slot(slot, 1)
-	_flights.append({"number": number, "wear": spent, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+	_flights.append({"number": number, "wear": spent, "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
 
 
 # ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.
@@ -2039,9 +2039,26 @@ func _arrow_fly(delta: float) -> void:
 func _fly(delta: float) -> void:
 	_arrow_fly(delta)
 	for flight in _flights.duplicate():
+		var from: Vector3 = flight["pos"]
 		flight["vel"].y -= THROW_GRAVITY * delta
 		flight["pos"] += flight["vel"] * delta
 		flight["age"] += delta
+
+		# A thrown spear or javelin hits the first animal on its path for the weapon's throw_damage (MikeW, 3 Nov: it flew
+		# through them, so a new player could not hunt with the first weapon they make) and drops where it struck.
+		var throw_damage: float = float(table.entry(table.id_of(int(flight["number"]))).get("throw_damage", 0.0))
+
+		if throw_damage > 0.0 and hit_animal_path.is_valid() and flight.has("peer"):
+			var hit: Dictionary = hit_animal_path.call(int(flight["peer"]), from, flight["pos"], throw_damage)
+
+			if not hit.is_empty():
+				var at: Vector3 = hit["at"]
+				hit_number(int(flight["peer"]), at, throw_damage)
+				var below: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+				drop_in_world(int(flight["number"]), 1, Vector3(at.x, below if not is_nan(below) else at.y, at.z), int(flight.get("wear", 0)))
+				_flights.erase(flight)
+				continue
+
 		var ground: float = float(ground_height.call(flight["pos"].x, flight["pos"].z)) if ground_height.is_valid() else -1000000.0
 
 		if (not is_nan(ground) and flight["pos"].y <= ground) or flight["age"] >= THROW_MAX_S:
