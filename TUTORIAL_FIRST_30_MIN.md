@@ -58,7 +58,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed, or the player tried to roast one at the fire and was refused. Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine into a Campfire pot and set it by the fire." (recipes 21 and 165.) Check: campfire pot kit made.
 24. Trigger: campfire pot placed. Line: "Add 3 berries and water to the pot for Stewed berries. Nettle leaves make tea, eggs make a boiled egg. Baked food (roots, nuts, flatbread) needs a clay hearth: 10 bricks, 6 clay and 4 stones, built with a hammer. A brick is 2 clay fired at the campfire." Check: first pot dish cooked.
 
-Hints: data/items/hints.json already has "cook_rule" ("Roast raw meat on the campfire. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.
+Hints: data/items/hints.json already has "cook_rule" ("Put raw meat in the campfire with F. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.
 
 
 ## What the tutorial must NOT promise yet
@@ -119,7 +119,7 @@ The goal list is the 13 starter goals of `data/items/starter_goals.json` in this
 | 7 | berries | Eat something wild | fire |
 | 8 | shelter | Build a lean-to | fire |
 | 9 | bed | Make a bed | shelter |
-| 10 | workbench | Build a workbench | axe |
+| 10 | workbench | Build a Camp bench | axe |
 | 11 | spear | Make a spear | twine |
 | 12 | knife | Make a stone knife and work a kill | spear |
 | 13 | fish | Catch a fish | workbench |
