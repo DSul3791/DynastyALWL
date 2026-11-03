@@ -2585,5 +2585,31 @@ static func _shared_material() -> StandardMaterial3D:
 		_material = StandardMaterial3D.new()
 		_material.vertex_color_use_as_albedo = true
 		_material.roughness = 1.0
+		# Surface grain (Art_Direction.md: "wood should show grain, stone natural variation", no plastic look): a faint seamless noise
+		# multiplied over the vertex colours in the item's own space, so a flat-coloured part reads as a material, not plastic.
+		# Values 0.86 to 1.0, lifted back by the albedo colour so the average brightness stays where it was. One texture, built once.
+		_material.albedo_texture = _grain_texture()
+		_material.albedo_color = Color(1.07, 1.07, 1.07)
+		_material.uv1_triplanar = true
+		_material.uv1_scale = Vector3(5.0, 5.0, 5.0)
 
 	return _material
+
+
+# A 128 px seamless grey noise (built synchronously, so nothing shows unshaded on the first frame), mapped to 0.86..1.0.
+static func _grain_texture() -> ImageTexture:
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = 1307
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.045
+	noise.fractal_octaves = 3
+	var image: Image = noise.get_seamless_image(128, 128)
+	image.convert(Image.FORMAT_RGB8)
+
+	for y in 128:
+		for x in 128:
+			var v: float = 0.86 + 0.14 * image.get_pixel(x, y).r
+			image.set_pixel(x, y, Color(v, v, v))
+
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
