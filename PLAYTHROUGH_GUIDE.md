@@ -175,7 +175,7 @@ Left click jabs the spear; hold right click to aim a throw, left click throws. H
 3. Fell a small or medium tree (10-22 blows); work the trunk: sticks, leaves, logs; split blocks.
 4. Craft the campfire kit, place it under a big tree, light it with a plant fibre.
 5. Roast berries, drink at the water.
-6. Craft the lean-to kit (8 sticks, 6 leaves, 2 twine) and place it by the fire.
+6. Craft the lean-to kit (32 sticks, 8 leaves, 4 twine) and place it by the fire.
 7. Gather 10 thatch + 4 sticks, craft the rough bed kit, place it under the lean-to.
 8. Workbench (12 sticks, 3 twine) -> stone hammer, bow, thatch pieces.
 9. Spear (stick, then 2 twine) for hunting; knife (2 stones, stick) for carcasses.
