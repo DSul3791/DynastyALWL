@@ -395,11 +395,14 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 		skeleton.add_child(attachment)
 		attachment.bone_name = P + "Spine2"
 		_log = MeshInstance3D.new()
-		_log.material_override = StandardMaterial3D.new()
+		_log.material_override = _log_bark()
 		_log.scale = Vector3.ONE * 100.0
 		attachment.add_child(_log)
 
-	(_log.material_override as StandardMaterial3D).albedo_color = color
+	# The trees' own bark (flora_view.gd BARK_SHADER, as a felled trunk in inventory_view.gd draws it), tinted by the species: a carried log was a plain plastic-brown cylinder.
+	var bark: ShaderMaterial = _log.material_override as ShaderMaterial
+	bark.set_shader_parameter("tint", Vector3(color.r, color.g, color.b))
+	bark.set_shader_parameter("uv_scale", Vector2(maxf(radius * 4.0, 1.0), maxf(length / 1.6, 1.0)))
 	var cyl: CylinderMesh = _log.mesh as CylinderMesh if _log.mesh != null else CylinderMesh.new()
 	cyl.top_radius = radius * 0.8
 	cyl.bottom_radius = radius
@@ -409,3 +412,20 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 	_log.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 	_log.position = Vector3(-18.0, 9.0, -12.0)      # the right shoulder, a little behind (model space: right is -X, front +Z), in centimetres
 	_log.visible = true
+
+
+static var _log_shader: Shader
+
+
+func _log_bark() -> ShaderMaterial:
+	if _log_shader == null:
+		_log_shader = Shader.new()
+		_log_shader.code = (load("res://src/flora/flora_view.gd") as GDScript).get_script_constant_map()["BARK_SHADER"]
+
+	var bark: ShaderMaterial = ShaderMaterial.new()
+	bark.shader = _log_shader
+	bark.set_shader_parameter("bark", load("res://assets/trees/bark.png"))
+	bark.set_shader_parameter("sway", 0.0)                   # it rides the shoulder; the trees' wind bend would bend it
+	bark.set_shader_parameter("foot_offset", 10.0)          # far from the ground: no foot moss or ground shade
+	bark.set_shader_parameter("lift", Vector3(3.0, 2.0, 1.3))   # the felled trunk's lift (inventory_view.gd _felled_bark), so log, trunk and pile match
+	return bark
