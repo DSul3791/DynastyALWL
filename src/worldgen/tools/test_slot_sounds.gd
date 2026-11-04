@@ -101,6 +101,10 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	var animals_script = preload("res://src/client/animal_view.gd")
+	var hit_list: Array = [[Vector3(10, 0, 10), 1000]]
+	check(names.has("animal_fall") and animals_script.killed_by_hit(Vector3(11, 0, 10), hit_list, 2000) and not animals_script.killed_by_hit(Vector3(20, 0, 10), hit_list, 2000) and not animals_script.killed_by_hit(Vector3(11, 0, 10), hit_list, 4000), "an animal gone right after a hit near it falls with a thud; one walking off far from a hit, or long after, does not")
+	check(animals_script.near_blood(Vector3(5, 0, 5), PackedVector3Array([Vector3(6, 0, 5)])) and not animals_script.near_blood(Vector3(5, 0, 5), PackedVector3Array([Vector3(15, 0, 5)])), "an animal that bleeds out on its trail falls too")
 	var bow_cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/bow.json"))
 	var held_script = preload("res://src/client/held_item.gd")
 	check(bow_cfg is Dictionary and is_equal_approx(held_script.bow_power(100, bow_cfg), float(bow_cfg["weak_power"])) and is_equal_approx(held_script.bow_power(5000, bow_cfg), 1.0) and is_equal_approx(held_script.bow_power(int(bow_cfg["draw_min_ms"]), bow_cfg), float(bow_cfg["min_power"])), "the arrow sound follows the server's shot power from the draw time")

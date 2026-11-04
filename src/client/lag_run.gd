@@ -2,7 +2,7 @@ extends Node
 
 # Scripted lag run (--lag-run; Dave 3 Nov 2026: find what makes the early game hitch, in the cloud too).
 # A real client, headless or windowed, logs in and plays the first minutes the way a new player does:
-#   walk 300 m, dig, chop a tree (it falls and splits into logs), hoe a path, drink at the nearest water.
+#   walk 300 m, dig, chop a tree (it falls and splits into logs), hoe a path, drink at the nearest water, respawn 200 m away.
 # Every step prints "LAGRUN step <name>: ..." with its own frame numbers (worst frame, frames over 100 ms and 500 ms),
 # and the game's own probes print HITCH and FREEZE lines (src/debug/frame_probe.gd) while it runs, so a slow step names its piece.
 # At the end the client prints the usual probe report and quits. tools/lag_run.sh starts a server and this client and keeps the lines.
@@ -14,7 +14,6 @@ const WALK_LIMIT_S := 150.0
 const DIGS := 8
 const HOE_STROKES := 12
 const DRINKS := 3
-const WATER_SEARCH_M := 160.0
 
 var client   # terrain_client.gd
 
@@ -94,6 +93,7 @@ func run() -> void:
 	await _chop_and_split()
 	await _hoe()
 	await _drink()
+	await _respawn()
 
 	print("LAGRUN summary:")
 
@@ -102,6 +102,17 @@ func run() -> void:
 
 	print("LAGRUN done")
 	client.frames_left = 1   # the client prints its usual report (the probe table with the slowest frames) and quits
+
+
+# A respawn or teleport: the player is 200 m away from one frame to the next, and everything around has to be found again.
+func _respawn() -> void:
+	_begin("respawn")
+	var here: Vector3 = client.body.global_position
+	var ground: Vector3 = _ground_at(here.x - 200.0, here.z)
+	client.body.global_position = Vector3(here.x - 200.0, (ground.y if not is_nan(ground.y) else here.y) + 2.0, here.z)
+	client.body.velocity = Vector3.ZERO
+	await _wait(8.0)
+	_end("jumped 200 m west")
 
 
 func _walk() -> void:
@@ -194,27 +205,38 @@ func _hoe() -> void:
 	_end("%d hoe strokes sent" % done)
 
 
-# The nearest loaded ground beside water, searched a few rows a frame so the search itself never shows as a hitch.
+# The nearest wet corner of any loaded flora chunk's water grid (lakes, rivers, springs), one chunk a frame so the search itself never shows
+# as a hitch. (A first try sampled a 160 m square around the player and found none on the starter tile.)
 func _find_water() -> Vector3:
 	var here: Vector3 = client.body.global_position
 	var best: Vector3 = Vector3(NAN, NAN, NAN)
 	var best_d: float = INF
-	var step: float = 4.0
-	var rows: int = int(WATER_SEARCH_M * 2.0 / step)
+	var chunk_m: float = float(client.flora.chunk_m)
 
-	for i in range(rows + 1):
-		var x: float = here.x - WATER_SEARCH_M + float(i) * step
+	for chunk in client.flora._chunks.keys():
+		var grid: Dictionary = client.flora._chunks.get(chunk, {}).get("grid", {})
 
-		for j in range(rows + 1):
-			var z: float = here.z - WATER_SEARCH_M + float(j) * step
-			var d: float = Vector2(x - here.x, z - here.z).length()
+		if int(grid.get("wet", 0)) == 0:
+			continue
 
-			if d < best_d and not is_nan(client.flora.water_level_at(x, z)):
-				best_d = d
-				best = Vector3(x, 0.0, z)
+		var spacing: float = float(grid["spacing"])
+		var count: int = int(grid["count"])
+		var levels = grid["levels"]
 
-		if i % 8 == 7:
-			await get_tree().process_frame
+		for j in range(count):
+			for i in range(count):
+				if is_nan(float(levels[j * count + i])):
+					continue
+
+				var x: float = float(chunk.x) * chunk_m + float(i) * spacing
+				var z: float = float(chunk.y) * chunk_m + float(j) * spacing
+				var d: float = Vector2(x - here.x, z - here.z).length()
+
+				if d < best_d:
+					best_d = d
+					best = Vector3(x, float(levels[j * count + i]), z)
+
+		await get_tree().process_frame
 
 	return best
 
@@ -225,10 +247,10 @@ func _drink() -> void:
 	var note: String = ""
 
 	if is_nan(water.x):
-		note = "no water within %.0f m, drank where he stood (the server says no)" % WATER_SEARCH_M
+		note = "no water in any loaded chunk, drank where he stood (the server says no)"
 	else:
 		var ground: Vector3 = _ground_at(water.x, water.z)
-		var y: float = maxf(client.flora.water_level_at(water.x, water.z), ground.y if not is_nan(ground.y) else -INF)
+		var y: float = maxf(water.y, ground.y if not is_nan(ground.y) else -INF)
 		note = "water %.0f m away" % Vector2(water.x - client.body.global_position.x, water.z - client.body.global_position.z).length()
 		client.body.global_position = Vector3(water.x, y + 1.0, water.z)
 		client.body.velocity = Vector3.ZERO

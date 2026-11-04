@@ -224,6 +224,30 @@ void fragment() {
 }
 """
 
+# Berries and blossoms on the berry bushes and ground berries (tree_builder `berries`; colours from SHRUB_LOOKS, CANE_SHRUBS and GROUND_LOOKS in the vertex colour).
+# On the bark shader they wore bark grain and foot moss and came out about a quarter as bright as their colours (Kathreen, 3 Nov 2026). Here: the vertex
+# colour, a soft sheen so a ripe berry catches the light, a little light through it (BACKLIGHT), and the bark's wind so they stay on their canes.
+const BERRY_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = COLOR.rgb * 0.88;
+	ROUGHNESS = 0.45;
+	SPECULAR = 0.4;
+	BACKLIGHT = COLOR.rgb * 0.2;
+}
+"""
+
 # Mushrooms (tree_builder `fungi`, MUSHROOM_LOOKS colours in the vertex colour). They used the bark shader, which put bark furrows, a dark foot and green
 # foot moss on every cap, so a fly agaric read as a mossy brown lump (Kathreen, 3 Nov 2026). This keeps the species colour: a soft mottle and a fine
 # grain so caps are not plastic, a little sheen (a fresh cap is slightly moist), the shade under the cap, and earth at the foot. No texture.
@@ -956,13 +980,18 @@ func _make_tree_materials() -> void:
 	var greens_material: ShaderMaterial = ShaderMaterial.new()
 	greens_material.shader = greens
 	_tree_materials["greens"] = greens_material
+	var berry: Shader = Shader.new()
+	berry.code = BERRY_SHADER
+	var berry_material: ShaderMaterial = ShaderMaterial.new()
+	berry_material.shader = berry
+	_tree_materials["berry"] = berry_material
 	var fungus: Shader = Shader.new()
 	fungus.code = FUNGUS_SHADER
 	var fungus_material: ShaderMaterial = ShaderMaterial.new()
 	fungus_material.shader = fungus
 	_tree_materials["fungus"] = fungus_material
 
-	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
+	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["fern", "res://assets/trees/leaf_fern.png"], ["herb", "res://assets/trees/leaf_herb.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = foliage
 		material.set_shader_parameter("leaves", _load_texture(pair[1]))
@@ -972,6 +1001,7 @@ func _make_tree_materials() -> void:
 	_tree_materials["conifer"].set_shader_parameter("sway", 0.006)
 	_tree_materials["conifer"].set_shader_parameter("backlight", 0.25)   # needles are denser
 	_tree_materials["palm"].set_shader_parameter("sway", 0.02)
+	_tree_materials["fern"].set_shader_parameter("sway", 0.02)       # ground fern fronds (tools/make_leaf_fern.py), swaying like the palm card they replaced
 	_tree_materials["grass"].set_shader_parameter("sway", 0.09)
 	_tree_materials["grass"].set_shader_parameter("flutter", 0.01)
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
