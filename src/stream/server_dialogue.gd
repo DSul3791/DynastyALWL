@@ -147,6 +147,9 @@ func _apply(peer: int, key: String, npc_id: String, effects: Array) -> void:
 		elif e.has("open_shop"):
 			if trade != null:
 				trade.open(peer, npc_id)
+		elif e.has("wanted_order"):   # the trader's order of the day (shops.json wanted_orders): fill it if the pack holds it, else hear what he wants
+			if trade != null:
+				items._say(peer, trade.wanted_order(peer, npc_id))
 		elif e.has("add_rep"):
 			items.add_rep(peer, npc_id, clampi(int(e["add_rep"]), -5, 5))
 		elif e.has("give_item"):

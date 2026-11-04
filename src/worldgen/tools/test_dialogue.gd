@@ -13,7 +13,7 @@ const StaticProvider := preload("res://src/stream/static_provider.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const COND_KEYS := ["flag", "flag_not", "hour_between", "has_item", "can_train", "min_rep", "rank"]
-const EFFECT_KEYS := ["set_flag", "clear_flag", "give_item", "take_item", "train_skill", "add_rep", "open_shop"]
+const EFFECT_KEYS := ["set_flag", "clear_flag", "give_item", "take_item", "train_skill", "add_rep", "open_shop", "wanted_order"]
 const BARKS := ["greeting", "farewell", "idle", "complaint", "cooldown"]
 
 var failures: int = 0
@@ -163,7 +163,7 @@ func _init() -> void:
 	talk._last_msec.clear()
 	talk.talk(1, "hob", -1)
 	var again: Dictionary = said.back()
-	check(again["choices"].size() == 4 and str(again["choices"][2]).contains("help"), "a known visitor is offered the quest")
+	check(again["choices"].size() == 5 and str(again["choices"][2]).contains("help") and str(again["choices"][3]).contains("order"), "a known visitor is offered the quest and the order of the day")
 	talk._last_msec.clear()
 	talk.talk(1, "hob", 2)
 	check(talk.flags_of("talk-key-000001", "hob").has("quest_firewood"), "taking the quest sets its flag")

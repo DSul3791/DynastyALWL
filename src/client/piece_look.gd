@@ -440,6 +440,18 @@ static func path() -> Node3D:
 # terrain (a flat disc laid on the voxel ground was cut into stair steps where the ground rose through it). Strong brown for the middle half metre,
 # fading to see-through by 1.25 m so it merges with whatever is round it and with the next patch along a drag. Small stones are scattered at random,
 # not on a grid; the brown is smooth noise, not tiles. The texture is made once and shared by every patch. No collision.
+# Decals (the trodden path) skip anything on this render layer, so they paint the ground only, not a body lying on it (Dave 3 Nov 2026). Character body meshes add it to their layers.
+const NO_DECAL_LAYER := 1 << 19
+# Better still, when the voxel terrain can be put on its own render layer, the path decal paints ONLY that layer, so it never touches rocks, trees, items or bodies
+# (Dave 3 Nov 2026: it painted on a boulder and on a lying body). terrain_client.gd calls use_terrain_only_decals() when it has done so.
+const TERRAIN_DECAL_LAYER := 1 << 18
+static var _decal_mask: int = 0xFFFFF & ~NO_DECAL_LAYER
+
+
+static func use_terrain_only_decals() -> void:
+	_decal_mask = TERRAIN_DECAL_LAYER
+
+
 const TROD_PX := 128
 const TROD_SPAN_M := 2.5
 const TROD_CORE_M := 0.5
@@ -503,6 +515,7 @@ static func trodden_path() -> Node3D:
 	decal.size = Vector3(TROD_SPAN_M, 1.2, TROD_SPAN_M)
 	decal.texture_albedo = _trod_image()
 	decal.position = Vector3(0.0, 0.0, 0.0)
+	decal.cull_mask = _decal_mask
 	decal.upper_fade = 0.3
 	decal.lower_fade = 0.3
 	decal.distance_fade_enabled = true   # far patches drop out (a long road is many decals)
@@ -512,7 +525,7 @@ static func trodden_path() -> Node3D:
 	return root
 
 
-# A rock pile: a mound of about a dozen faceted stones (the loose-stone mesh of rock_look.gd, turned and scaled one by one), big ones at the
+# A rock pile: a mound of about a dozen faceted stones (the coarse loose-stone mesh of rock_look.gd, RockLook.pile_mesh, turned and scaled one by one), big ones at the
 # foot and smaller ones heaped on top, about 1.2 m across. The solid box under it is the collision.
 static func rock_pile() -> Node3D:
 	_materials()
@@ -524,7 +537,7 @@ static func rock_pile() -> Node3D:
 
 	for rock in rocks:
 		var node: MeshInstance3D = MeshInstance3D.new()
-		node.mesh = RockLook.mesh()
+		node.mesh = RockLook.pile_mesh()
 		node.position = rock[0]
 		node.rotation = Vector3(rng.randf_range(-0.3, 0.3), rng.randf_range(0.0, TAU), rng.randf_range(-0.3, 0.3))
 		var k: float = float(rock[1])

@@ -92,6 +92,40 @@
 		},
 		"purse_cap": 300,
 		"purse_regen_per_day": 100,
-		"repairs": true
+		"repairs": true,
+		"wanted_orders": {
+			"note": "Hob's daily wanted order (Dave 2 Nov 2026, QA sal-wanted-orders A): one small order a game day, the same for everyone; each player can fill it once a day for a poor wage and 1 reputation. Ask him with \"Any order for today?\". The order of the day is orders[(day x 3 + 1) mod count].",
+			"rep": 1,
+			"orders": [
+				{"needs": [["nettles", 10], ["raspberries", 20]], "pay": 8},
+				{"needs": [["plant_fibre", 30], ["thatch", 20]], "pay": 8},
+				{"needs": [["blackberries", 25], ["leaves", 20]], "pay": 8},
+				{"needs": [["fiddleheads", 15], ["bark", 10]], "pay": 9},
+				{"needs": [["blueberries", 25], ["stick", 20]], "pay": 8},
+				{"needs": [["chanterelles", 6], ["wild_garlic_bulbs", 6]], "pay": 10},
+				{"needs": [["clay", 20], ["stone", 20]], "pay": 8}
+			]
+		},
+		"buy_rules_note": "Dave 2 Nov 2026 (QA sal-lumber-vs-picking, C): Hob buys only a few boards a day, about two or three boards per copper (hardwood 2, softwood and plain 3; a beam 1 copper). per_day refills over a game day.",
+		"buy_rules": {
+			"lumber": {"lot": 3, "lot_value": 1, "per_day": 30},
+			"lumber_oak": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_oak": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_beech": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_beech": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_birch": {"lot": 3, "lot_value": 1, "per_day": 30},
+			"beam_birch": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_scots_pine": {"lot": 3, "lot_value": 1, "per_day": 30},
+			"beam_scots_pine": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_spruce": {"lot": 3, "lot_value": 1, "per_day": 30},
+			"beam_spruce": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_tropical_hardwood": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_tropical_hardwood": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_walnut": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_walnut": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_maple": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_maple": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"rough_plank": {"lot": 3, "lot_value": 1, "per_day": 30}
+		}
 	}
 }

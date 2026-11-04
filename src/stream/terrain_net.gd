@@ -34,7 +34,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 88   # 88 (3 Nov 2026): water_changed_in (87: cave_streams, #183)
+const PROTOCOL_VERSION := 90   # 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -77,6 +77,7 @@ signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
+signal road_marker_reached(at: Vector3)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
@@ -89,6 +90,7 @@ signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
 signal animals_received(rows: Array)
 signal blood_received(points: PackedVector3Array)
+signal burrows_received(points: PackedVector3Array)
 signal npc_talk_requested(peer_id: int, npc_id: String, choice: int)
 signal npc_say_received(npc_id: String, npc_name: String, text: String, voice_id: String, choices: PackedStringArray, ends: bool)
 signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: String)
@@ -155,9 +157,10 @@ const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
 const ACT_WATER_BED := 53  # a = the bed's world id: pours one `water` from the pack on it (step 4)
 const ACT_HOE_PATH := 36     # at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)
 const ACT_HOE_SMOOTH := 37   # at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
-const ACT_HOE_GRADE_POINT := 42   # a = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player
+const ACT_HOE_GRADE_POINT := 42   # a = held slot, b = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player
 const ACT_HOE_GRADE := 43    # at = the ground point under the crosshair: one hoe stroke brings the ground within 1.5 m toward the straight ramp from A to B (0.25 m at most, no items)
 const ACT_SHOOT := 49          # a = pack slot of the bow, b = draw time in ms (clamped by the server), at = aim direction: one arrow from the first arrow item in the pack (data/items/bow.json; protocol 79, taken at merge)
+const ACT_REPAIR_STRUCT := 59   # a = the placed piece's world item id: with a hammer, repair it from materials on the ground nearby, in containers within reach or in the pack (building_wear.json)
 const ACT_PLACE_BLUEPRINT := 48   # a = blueprint number (data/items/blueprints.json), b = lift steps, count = yaw degrees, at = the spot: placed from the hammer, the materials taken from the pack (no kit item)
 const ACT_NET := 47          # a = pack slot of the shore net, b = 0 start (left button down), 1 cancel (let go), at = the water point in front: hold about 20 s at the water's edge, then 1 to 3 small fish (fishing.json "net"; no protocol change)
 const ACT_ADMIN_ENERGY := 56   # admin only, tests: count = the energy (0 to 100) this character is set to (no protocol change)
@@ -522,6 +525,13 @@ func blood(points: PackedVector3Array) -> void:
 	blood_received.emit(points)
 
 
+# Animal burrows (protocol 87, MikeW 3 Nov): ground positions of the burrows of living animals within 120 m, nearest 40, sent
+# when the set changes. The client draws a mound at each (looks: Kathleen); with nothing connected the signal is ignored.
+@rpc("authority", "call_remote", "reliable")
+func burrows(points: PackedVector3Array) -> void:
+	burrows_received.emit(points)
+
+
 # Talking (protocol 45): the player asks to talk to an NPC (choice -1) or picks a choice by index; the server answers with the NPC's
 # line, the choices on offer and whether the talk ends. voice_id names the voice for text to voice (Mandy). Range, pace and every
 # effect are checked on the server.
@@ -654,6 +664,12 @@ func purse(copper: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func reputation(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array) -> void:
 	reputation_received.emit(ids, names, points)
+
+
+# The road builder has reached (or dropped) the marker at this point: the client takes the red flag down (protocol 89, Dave 3 Nov 2026).
+@rpc("authority", "call_remote", "reliable")
+func road_marker_done(at: Vector3) -> void:
+	road_marker_reached.emit(at)
 
 
 # A short message for the player ("too many trunks lie here", and so on).

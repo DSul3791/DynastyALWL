@@ -81,9 +81,82 @@ func _refresh(npc_id: String) -> Dictionary:
 			st["stock"][id] = minf(float(st["stock"][id]) + rule[1] * days, rule[0])
 
 		st["purse"] = minf(float(st["purse"]) + float(_shops[npc_id].get("purse_regen_per_day", _stock_cfg().get("purse_regen_default", 100))) * days, _purse_cap(npc_id))
+		var bought: Dictionary = st.get("bought", {})
+
+		for id in bought.keys():   # a buy_rules item: his daily want comes back per_day units a game day
+			bought[id] = maxf(float(bought[id]) - float(_buy_rule(npc_id, str(id)).get("per_day", 0)) * days, 0.0)
+
 		st["t"] = now_s
 
 	return st
+
+
+# The daily wanted order (Dave 2 Nov 2026, QA sal-wanted-orders): shops.json <npc>.wanted_orders. One order a game day, the same for everyone;
+# each character can fill it once a day. Returns the line the trader says: what he wants today, or the payment.
+func order_of_day(npc_id: String) -> Dictionary:
+	var orders: Array = _shops.get(npc_id, {}).get("wanted_orders", {}).get("orders", [])
+
+	if orders.is_empty():
+		return {}
+
+	var day: int = int(floor(_game_s() / 86400.0))
+	return orders[posmod(day * 3 + 1, orders.size())]
+
+
+func wanted_order(peer: int, npc_id: String) -> String:
+	var order: Dictionary = order_of_day(npc_id)
+
+	if order.is_empty():
+		return "I need nothing today."
+
+	var key: String = str(items._peer_key.get(peer, ""))
+	var day: int = int(floor(_game_s() / 86400.0))
+	var st: Dictionary = _refresh(npc_id)
+	var done: Dictionary = st.get("wanted_done", {})
+
+	if key == "" or int(done.get(key, -1)) == day:
+		return "You filled my order today. Come back tomorrow."
+
+	var words: Array = []
+	var short: bool = false
+
+	for need in order["needs"]:
+		var number: int = items.table.number_of(str(need[0]))
+		words.append("%d %s" % [int(need[1]), items.table.name_of(number).to_lower()])
+
+		if items.count_for(peer, str(need[0])) < int(need[1]):
+			short = true
+
+	var pay: int = int(order.get("pay", 0))
+
+	if short:
+		return "Today I want %s. I pay %s." % [" and ".join(words), items._coin_words(pay)]
+
+	for need in order["needs"]:
+		items.take_from(peer, str(need[0]), int(need[1]))
+
+	items.add_coins(peer, pay, "trade")
+	items.add_rep(peer, npc_id, int(_shops[npc_id]["wanted_orders"].get("rep", 1)))
+	done[key] = day
+	st["wanted_done"] = done
+	save()
+	items._goal_event(peer, "wanted_order")   # the starter goal "Fill Hob's order"
+	return "Just what I wanted. Here is %s." % items._coin_words(pay)
+
+
+# shops.json buy_rules (Dave 2 Nov 2026, lumber): item id -> {lot, lot_value, per_day}. The trader pays lot_value copper (before his discount) for
+# each lot of `lot` units, and takes at most per_day units a game day; his want comes back over the day. Items without a rule sell as before.
+func _buy_rule(npc_id: String, item_id: String) -> Dictionary:
+	return (_shops.get(npc_id, {}).get("buy_rules", {}) as Dictionary).get(item_id, {})
+
+
+func buy_room(npc_id: String, item_id: String) -> int:
+	var rule: Dictionary = _buy_rule(npc_id, item_id)
+
+	if rule.is_empty():
+		return 1 << 30
+
+	return maxi(int(floor(float(rule.get("per_day", 0)) - float(_refresh(npc_id).get("bought", {}).get(item_id, 0.0)) + 0.0001)), 0)
 
 
 func stock_of(npc_id: String, item_id: String) -> int:
@@ -287,6 +360,15 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	var item_id: String = items.table.id_of(number2)
 	var value: int = int(entry.get("value", 0))
 	var lot: int = maxi(int(entry.get("sell_lot", 1)), 1)   # Dave 1 Nov: a stone is a fifth of a copper; sold in lots of sell_lot (5), one price per lot, a single stone pays nothing
+	var brule: Dictionary = _buy_rule(npc_id, item_id)
+
+	if not brule.is_empty():   # this trader's own price and daily limit for the item (shops.json buy_rules)
+		lot = maxi(int(brule.get("lot", lot)), 1)
+		value = int(brule.get("lot_value", value))
+		count = mini(count, buy_room(npc_id, item_id))
+
+		if count <= 0:
+			return "He has all the %s he wants today." % (items.table.name_of(number2).to_lower())
 
 	var left_over: int = count % lot if lot > 1 else 0
 
@@ -327,6 +409,11 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	if st2["stock"].has(item_id):   # what he stocks goes back on the shelf
 		st2["stock"][item_id] = minf(float(st2["stock"][item_id]) + float(count), _rule(npc_id, item_id)[0])
 
+	if not brule.is_empty():
+		var bought: Dictionary = st2.get("bought", {})
+		bought[item_id] = float(bought.get(item_id, 0.0)) + float(count)
+		st2["bought"] = bought
+
 	save()
 	_note_sale(npc_id, item_id, count)
 	var before: Array = items._snapshot(inv)
@@ -342,6 +429,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._gain_quiet = false
 	items._dirty = true
 	items.add_coins(peer, total, "trade")
+	items._goal_event(peer, "sold")   # the starter goal "Sell to Hob"
 	var lot_note: String = " %d left, he buys %ss %d at a time." % [left_over, items.table.name_of(number2).to_lower(), lot] if left_over > 0 else ""
 	return "Sold %d %s for %s.%s" % [count, items.table.name_of(number2).to_lower(), items._coin_words(total), lot_note]
 
