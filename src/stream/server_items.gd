@@ -170,6 +170,7 @@ var _head_under: Dictionary = {}    # peer -> true while the server reads their 
 var _breath: Dictionary = {}        # peer -> seconds of air left (only while the head is under water)
 var _breath_sent: Dictionary = {}   # peer -> tenths of a second last sent (-1 = hidden)
 var _speed3: Dictionary = {}        # peer -> smoothed speed in m/s, vertical included (the breath drain)
+var _cave_pool: Dictionary = {}     # peer -> true while swimming in a spring cave pool (icy; BUG-008)
 var _swimming: Dictionary = {}      # peer -> true while the server reads them as swimming
 var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
@@ -553,6 +554,7 @@ func peer_left(peer: int) -> void:
 	_last_fish.erase(peer)
 	_wear_carry.erase(peer)
 	_swimming.erase(peer)
+	_cave_pool.erase(peer)
 	_last_dose.erase(peer)
 	_remains_sent.erase(peer)
 	_worn_sent.erase(peer)
@@ -7692,6 +7694,10 @@ func set_swimming(peer: int, swimming: bool) -> void:
 	_swimming[peer] = swimming
 
 
+func set_cave_pool(peer: int, in_pool: bool) -> void:
+	_cave_pool[peer] = in_pool
+
+
 # The server's own reading of whether a player's head is under water (terrain_server._head_under): the air runs down.
 func set_head_under(peer: int, under: bool) -> void:
 	_head_under[peer] = under
@@ -8236,6 +8242,9 @@ func warmth_target(peer: int) -> float:
 		# In the water the cold follows the WATER's temperature, not the air's (Tyler): a lagged, damped copy of the air at sea level.
 		var sea_air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0))))
 		var water_c: float = maxf(float(cfg.get("water_base_c", 6.0)) + float(cfg.get("water_follow", 0.5)) * (sea_air - float(cfg.get("water_base_c", 6.0))), 1.0)
+
+		if bool(_cave_pool.get(peer, false)):
+			water_c = float(cfg.get("cave_pool_c", 2.0))   # a spring cave pool is icy whatever the weather (BUG-008)
 		stress = maxf(float(cfg.get("water_comfort_c", 26.0)) - water_c, 0.0) * float(cfg.get("water_gain", 5.0)) / maxf(float(cfg.get("gain", 3.0)), 0.01)
 
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
