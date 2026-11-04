@@ -72,7 +72,8 @@ var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "
 var spring_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of each spring cave's mouth (Dave 3 Nov 2026): the settle keeps a spring there even on steep ground
 var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
 var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 box]: ground opened by a cave mouth (entrance node to its first node): no flora there
-const CAVE_POOL_M := 0.4            # a spring cave pool: this deep in the bottom of its chamber
+const CAVE_POOL_M := 0.4            # a spring cave pool's surface: this far above the bottom of its chamber as the chamber is carved
+const CAVE_POOL_DEPTH_M := 20.0     # Dave's QA list BUG-008 (answer 4 Nov 2026): the pool goes 20 m down below that, in a natural shape; the chamber stays
 var cave_streams: PackedFloat32Array = PackedFloat32Array()   # spring cave streams (Dave 3 Nov 2026): per piece x, y, z of the upper end, x, y, z of the lower end (floor heights, world m), width m; then per spring pool x, y, z, -radius (a negative width marks a pool)
 
 
@@ -653,6 +654,14 @@ func _load_caves(list: Array) -> void:
 			low = low.min(box.position)
 			high = high.max(box.end)
 
+			if "spring" in chamber.get("features", []):
+				for shape in spring_basin(str(cave.get("id", "")), node, chamber)["shapes"]:
+					var basin_reach: Vector3 = Vector3(shape["r"], shape["rh"], shape["r"]) + Vector3.ONE
+					var basin_box: AABB = AABB(shape["center"] - basin_reach, 2.0 * basin_reach)
+					chambers.append({"center": shape["center"], "r": shape["r"], "rh": shape["rh"], "aabb": basin_box})
+					low = low.min(basin_box.position)
+					high = high.max(basin_box.end)
+
 		if capsules.is_empty() and chambers.is_empty():
 			continue
 
@@ -680,16 +689,48 @@ func _load_cave_stream(cave: Dictionary) -> void:
 		var node: Array = nodes[int(spring["node"])]
 		var floor_y: float = float(node[1]) - 0.5 * float(node[4])
 		var radius: float = 1.5
+		var deep: float = 0.0
 
-		# The chamber is carved as an ellipsoid round the node: the pool lies POOL_M deep in its bottom, as wide as the bowl is at that height.
+		# The chamber is carved as an ellipsoid round the node; the pool's basin goes CAVE_POOL_DEPTH_M down below its surface (spring_basin).
 		for chamber in cave["chambers"]:
 			if int(chamber["node"]) == int(spring["node"]):
-				var rh: float = 0.5 * float(chamber["height_m"])
-				var up: float = clampf(1.0 - CAVE_POOL_M / maxf(rh, 0.5), 0.0, 1.0)
-				floor_y = float(node[1]) - rh + CAVE_POOL_M
-				radius = maxf(float(chamber["radius_m"]) * sqrt(1.0 - up * up), 1.0)
+				var basin: Dictionary = spring_basin(str(cave.get("id", "")), node, chamber)
+				floor_y = float(basin["surface_y"])
+				radius = float(basin["open_r"])
+				deep = CAVE_POOL_DEPTH_M
 
-		cave_streams.append_array(PackedFloat32Array([float(node[0]), floor_y, float(node[2]), 0.0, 0.0, 0.0, -radius]))
+		# The fourth float (unused before) carries the pool's depth below its surface, so the client can let the player swim in it.
+		cave_streams.append_array(PackedFloat32Array([float(node[0]), floor_y, float(node[2]), deep, 0.0, 0.0, -radius]))
+
+
+# A spring chamber's pool (Dave's QA list BUG-008; his answer 4 Nov 2026: keep the chamber as it is, make the pool 20 m deep, a varied natural shape).
+# The surface lies CAVE_POOL_M above the chamber's carved bottom. Under it the basin is carved as a few ellipsoids from a seed of the cave and node: a main
+# bowl that opens at the surface (at least half the chamber's radius across) and reaches CAVE_POOL_DEPTH_M down, swelling wider below the rim, and two
+# lobes off to the sides lower down, so no two pools are the same shape. Returns {"surface_y", "open_r", "shapes": [{"center", "r", "rh"}]}.
+static func spring_basin(cave_id: String, node: Array, chamber: Dictionary) -> Dictionary:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash("%s/%d/pool" % [cave_id, int(chamber.get("node", 0))])
+	var chamber_r: float = float(chamber.get("radius_m", 4.0))
+	var rh: float = 0.5 * float(chamber.get("height_m", 4.0))
+	var surface_y: float = float(node[1]) - rh + CAVE_POOL_M
+	var up: float = clampf(1.0 - CAVE_POOL_M / maxf(rh, 0.5), 0.0, 1.0)
+	var open_r: float = maxf(maxf(chamber_r * sqrt(1.0 - up * up), 0.5 * chamber_r) * rng.randf_range(0.9, 1.15), 1.5)
+	# Main bowl: its top 0.1 x depth above the surface (inside the chamber's air), its bottom CAVE_POOL_DEPTH_M below; wide enough that it is open_r across at the surface.
+	var bowl_rh: float = 0.55 * CAVE_POOL_DEPTH_M
+	var bowl_y: float = surface_y - 0.45 * CAVE_POOL_DEPTH_M
+	var bowl_r: float = open_r / sqrt(1.0 - pow(0.45 / 0.55, 2.0))
+	var shapes: Array = [{"center": Vector3(float(node[0]), bowl_y, float(node[2])), "r": bowl_r, "rh": bowl_rh}]
+
+	for lobe in range(2):
+		var angle: float = rng.randf_range(0.0, TAU)
+		var out: float = bowl_r * rng.randf_range(0.3, 0.6)
+		var lobe_rh: float = CAVE_POOL_DEPTH_M * rng.randf_range(0.25, 0.4)
+		var lobe_y: float = surface_y - CAVE_POOL_DEPTH_M * rng.randf_range(0.45, 0.75)
+		lobe_y = minf(lobe_y, surface_y - 1.0 - lobe_rh)         # a lobe stays under the surface: the rim is the main bowl's
+		lobe_y = maxf(lobe_y, surface_y - CAVE_POOL_DEPTH_M + lobe_rh)   # and above the bottom
+		shapes.append({"center": Vector3(float(node[0]) + cos(angle) * out, lobe_y, float(node[2]) + sin(angle) * out), "r": bowl_r * rng.randf_range(0.5, 0.8), "rh": lobe_rh})
+
+	return {"surface_y": surface_y, "open_r": open_r, "shapes": shapes}
 
 
 # Whether a point is in ground a cave mouth opened (flora keeps out: the plants stand on the tile heights, which do not know the cave).
