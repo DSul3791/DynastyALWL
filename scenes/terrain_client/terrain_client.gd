@@ -121,6 +121,7 @@ const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const RECENT_CUT_MSEC := 60000   # how long a cut tree is kept out of flora chunks arriving late (BUG-024)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
@@ -479,6 +480,7 @@ var _viewer: VoxelViewer
 var _sun: DirectionalLight3D
 var _frame_ms: Array = []             # recent frame times for the HUD readout
 var test_cut: bool = false
+var _recent_cuts: Dictionary = {}     # held chunk -> {item id: msec the cut came in} (BUG-024; see _apply_incoming)
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
@@ -2140,6 +2142,21 @@ func _apply_incoming() -> void:
 				Probe.stop("flora chunk in", t)
 				continue
 
+			# BUG-024: the server makes chunks on worker threads, so one made just before a cut can arrive after the cut message
+			# and would put the felled tree back, near or far. Trees cut in the last minute are left out of what arrives.
+			if _recent_cuts.has(chunk):
+				var cuts: Dictionary = _recent_cuts[chunk]
+				var now_msec: int = Time.get_ticks_msec()
+
+				for cut_id in cuts.keys():
+					if now_msec - int(cuts[cut_id]) > RECENT_CUT_MSEC:
+						cuts.erase(cut_id)
+
+				if cuts.is_empty():
+					_recent_cuts.erase(chunk)
+				else:
+					result["items"] = PlacerScript.without(result["items"], cuts)
+
 			if flora.has_chunk(chunk):
 				flora.replace_items(chunk, result["items"], _anchor, full)
 			else:
@@ -2387,6 +2404,11 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	for held in _flora_asked:
 		if posmod(held.x - chunk.x, period) == 0 and posmod(held.y - chunk.y, period) == 0:
 			flora.remove_item(held, id, _anchor)
+
+			if not _recent_cuts.has(held):
+				_recent_cuts[held] = {}
+
+			_recent_cuts[held][id] = Time.get_ticks_msec()
 
 	_flora_cuts += 1
 	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
