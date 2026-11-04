@@ -69,7 +69,9 @@ var _pack_buttons: Array = []
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
 var _drink_msec: int = 0
 var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
+var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
+var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
@@ -521,6 +523,10 @@ func _probe_pickup() -> Dictionary:
 	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
 		pick_stamp = Time.get_ticks_msec()
+
+		if gather_event.is_valid():
+			gather_event.call()
+
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
 
 
@@ -785,6 +791,10 @@ func pick_up_nearest() -> bool:
 		return true
 
 	pick_stamp = Time.get_ticks_msec()
+
+	if gather_event.is_valid():
+		gather_event.call()
+
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	return true
 
@@ -2213,6 +2223,22 @@ func _refresh_pile(id: int) -> void:
 
 
 
+# The world id of the placed structure nearest `point` within `reach` metres, or 0 (the hammer's Repair mode aims with it).
+func structure_id_near(point: Vector3, reach: float = 3.5) -> int:
+	var best: int = 0
+	var best_d: float = reach
+
+	for id in _world:
+		if _world[id].has("yaw") and int(_world[id]["state"]) >= 5:
+			var d: float = (_world[id]["pos"] as Vector3).distance_to(point)
+
+			if d <= best_d:
+				best_d = d
+				best = int(id)
+
+	return best
+
+
 # Every structure standing as {"pos", "state", "yaw" (degrees), "piece"}, for the hammer's "Save building plan".
 func structure_rows() -> Array:
 	var rows: Array = []
@@ -3404,7 +3430,23 @@ func _fire_label(entry: Dictionary, number: int) -> String:
 
 
 func _on_worn(numbers: PackedInt32Array) -> void:
+	var first: bool = worn.is_empty()
+	var changed: Array = []
+	var ids: Array = []
+
+	for i in numbers.size():
+		var before: int = worn[i] if i < worn.size() else 0
+
+		if numbers[i] != 0:
+			ids.append(table.id_of(numbers[i]))
+
+		if not first and numbers[i] != before:
+			changed.append(table.id_of(numbers[i] if numbers[i] != 0 else before))
+
 	worn = numbers
+
+	if worn_event.is_valid():
+		worn_event.call(changed, ids)
 
 	if _weight_label != null:
 		_refresh_weight()

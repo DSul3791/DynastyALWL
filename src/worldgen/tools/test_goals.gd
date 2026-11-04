@@ -226,6 +226,10 @@ func _init() -> void:
 	camp._items[pot_id] = {"number": 0, "count": 1, "pos": Vector3(2.0, 10.0, 0.5), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
 	camp._next_id += 1
 	check(not camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "once a pot stands at the fire the plant food hint stops")
+	# Hint triggers that used to match nothing (3 Nov 2026): the sea water ones (the fell hint is Sal's #245).
+	check(not camp._hint_trigger_true(1, pot_state, "has_sea_water"), "no sea water in the pack: no hint")
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("sea_water"), 0, 1, Vector3.ZERO)
+	check(camp._hint_trigger_true(1, pot_state, "has_sea_water"), "sea water in the pack triggers its hint")
 	var bench_check := {"event": "placed", "what_any": ["workbench", "log_workbench"], "count": 1}
 	check(not camp._goal_met(1, pot_state, bench_check, "workbench"), "no bench placed: the workbench goal is open")
 	camp._goal_event(1, "placed", "log_workbench")
@@ -237,9 +241,13 @@ func _init() -> void:
 	camp._goal_event(1, "fish_caught")
 	check(camp._goal_met(1, camp._goal_state_of(1), fish_check, "fish"), "a caught fish completes the fish goal even when it is gone from the pack")
 	var axe_check := {"made_item": "stone_axe", "or_have": true, "count": 1}
+	camp.trees_near = func(_p, _r): return []
+	check(not camp._hint_trigger_true(1, camp._goal_state_of(1), "axe_held_near_tree"), "no tree near: no fell hint")
 	var bought_before: bool = camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 	check(camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe"), "a bought stone axe in the pack completes the axe goal (was %s before)" % str(bought_before))
+	camp.trees_near = func(_p, _r): return [[Vector2i.ZERO, 1]]
+	check(camp._tool_slot(camp.inventory_of(1), "axe") < 0 or camp._hint_trigger_true(1, camp._goal_state_of(1), "axe_held_near_tree"), "an axe on the hotbar beside a tree fires the fell hint")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
 	check(camp._hint_trigger_true(1, pot_state, "has_campfire_kit"), "a fire kit in the pack triggers the place-fire reminder")
 	check(not camp._hint_trigger_true(1, pot_state, "near_nettle") or camp.count_for(1, "nettles") > 0, "near_nettle needs nettles in the pack")

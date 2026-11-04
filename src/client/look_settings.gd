@@ -13,6 +13,7 @@ extends RefCounted
 const SUN_COLOR := Color(1.0, 0.92, 0.80)
 const SUN_ENERGY := 1.55
 const DAY_CYCLE := true      # the sun, moon and sky follow the game clock (day_cycle.gd); false keeps the old fixed afternoon
+const FOG_AERIAL := 0.7
 const FOG_DENSITY := 0.0009          # clear air; the underwater fog replaces it while diving
 const SSAO_FROM := 1                 # first quality level with contact shadows
 const GLOW_FROM := 2
@@ -29,7 +30,7 @@ static func apply(environment: Environment, sun: DirectionalLight3D, viewport: V
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 
 	environment.fog_density = FOG_DENSITY
-	environment.fog_aerial_perspective = 0.7     # haze takes the colour of the sky behind it
+	environment.fog_aerial_perspective = FOG_AERIAL     # haze takes the colour of the sky behind it
 
 	environment.adjustment_enabled = true
 	environment.adjustment_saturation = 1.12

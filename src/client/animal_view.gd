@@ -2,7 +2,7 @@ extends Node3D
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
-# Animals on the client (protocol 48): a simple low-poly rabbit until Art makes a real one (brown body, head, two ears, white
+# Animals on the client (protocol 48): a simple rabbit until Art makes a real one (brown body, head, two ears, white
 # tail). The server sends rows about four times a second; the view glides to each, faces the way it goes and hops while moving
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
 
@@ -13,15 +13,22 @@ const FLEE := 2
 
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
+signal fell(kind: String, at: Vector3, small: bool)            # an animal went down from a hit: it vanished right after a hit landed on it (sounds listen)
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
 const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird"}
+const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
+const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
+const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
+const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _mats: Dictionary = {}
 var _t: float = 0.0
+var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
+var _hits: Array = []            # [at Vector3, msec] of the hits reported in the last FELL_WINDOW_MS (note_hit)
 var _blood: Array = []           # MeshInstance3D pool, one per drop shown
 var _blood_mat: ShaderMaterial
 const BLOOD_SHADER := """
@@ -96,6 +103,34 @@ func _make_for_species(number: int, id: int) -> Node3D:
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
 
+# Whether a body that left the rows at `at` was standing on its blood trail: a wounded animal that bleeds out dies where it is,
+# at the end of its trail, with no hit near. Bodies leave the rows only past send_radius_m (120 m), far beyond the 30 m a
+# one-shot is played at, so a wounded animal running out of range is never heard falling.
+static func near_blood(at: Vector3, points: PackedVector3Array) -> bool:
+	for p in points:
+		if p.distance_to(at) <= FELL_M:
+			return true
+
+	return false
+
+
+# A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
+func note_hit(at: Vector3) -> void:
+	var now: int = Time.get_ticks_msec()
+	_hits = _hits.filter(func(h): return now - int(h[1]) <= FELL_WINDOW_MS)
+	_hits.append([at, now])
+
+
+# Whether a body last seen at `at` that left the rows at `now_ms` was killed: a hit landed within FELL_M of it in the last
+# FELL_WINDOW_MS. Bodies that walk out of range, or a snared one, leave with no hit near them.
+static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
+	for h in hits:
+		if now_ms - int(h[1]) <= FELL_WINDOW_MS and (h[0] as Vector3).distance_to(at) <= FELL_M:
+			return true
+
+	return false
+
+
 func on_rows(rows: Array) -> void:
 	var seen: Dictionary = {}
 
@@ -123,8 +158,13 @@ func on_rows(rows: Array) -> void:
 		_bodies[id]["heading"] = float(row[3])
 		_bodies[id]["state"] = int(row[4])
 
+	var now: int = Time.get_ticks_msec()
+
 	for id in _bodies.keys():
 		if not seen.has(id):
+			if killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points)):
+				fell.emit(str(_bodies[id]["kind"]), _bodies[id]["target"], str(_bodies[id]["kind"]) in SMALL_FALL_KINDS)
+
 			_bodies[id]["node"].queue_free()
 			_bodies.erase(id)
 
@@ -132,6 +172,8 @@ func on_rows(rows: Array) -> void:
 # The blood trail (protocol 55): dark red flat spots on the ground where a wounded animal ran, a pooled MeshInstance3D each,
 # size varied by position so the trail does not look stamped.
 func on_blood(points: PackedVector3Array) -> void:
+	_blood_points = points
+
 	if _blood_mat == null:
 		# A blood trail spot as a ragged splash, not a perfect red disc (Kathreen, 3 Nov 2026): the edge is cut by noise into drips and a few flung drops,
 		# wet and dark red in the middle, drying brown at the rim. Each spot is turned at random, so no two look the same.
@@ -249,13 +291,87 @@ func _emit_steps(b: Dictionary, node: Node3D, state: int, speed: float) -> void:
 	b["step_count"] = count
 
 
-func _material(color: Color) -> StandardMaterial3D:
-	var key: String = color.to_html()
+# The coat (Kathreen, 3 Nov 2026; art/Art_Direction.md: nothing plastic): every animal piece was a flat StandardMaterial3D, so rabbits and deer read as smooth
+# painted toys. One small shader gives a coat instead: fine strands lying back along the body (-Z is forward, so the streaks run along Z), soft clumps, a darker
+# underside on each piece, and a pale fuzzy rim where the coat meets the sky, which is what makes fur read as fur at a distance. Frogs, fish and seals take the
+# "wet" coat (smoother, a little sheen, faint streaks). Small dark balls (eyes, noses) take the "eye" look: glossy, so they catch the sun.
+# Cost: one shader for every animal, a few hashes per pixel, no textures; at most MAX_DRAWN animals and each is small on screen.
+const COAT_SHADER := """
+shader_type spatial;
+render_mode cull_back, diffuse_burley;
+
+uniform vec3 coat : source_color = vec3(0.5, 0.4, 0.28);
+uniform float strands = 1.0;      // 1 fur, 0.3 wet skin, 0 eyes
+uniform float fuzz = 0.35;        // the pale rim
+uniform float rough = 0.95;
+uniform float spec = 0.15;
+
+varying vec3 lp;
+varying vec3 ln;
+
+float h3(vec3 p) {
+	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+	p += dot(p, p.yxz + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 0.0)), h3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0.0, 0.0, 1.0)), h3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 1.0)), h3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+
+void vertex() {
+	vec3 s = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), length(MODEL_MATRIX[2].xyz));
+	lp = VERTEX * s;          // metres along the piece, so a big deer and a small rabbit get the same strand size
+	ln = NORMAL;
+}
+
+void fragment() {
+	float strand = vnoise(lp * vec3(420.0, 420.0, 70.0));                  // fine hairs lying back along the body
+	float clump = vnoise(lp * 45.0 + 7.0);                                 // soft tufts
+	float grain = mix(1.0, 0.78 + 0.3 * strand + 0.12 * clump, strands);
+	float under = mix(0.78, 1.04, clamp(ln.y * 0.5 + 0.5, 0.0, 1.0));     // each piece darker underneath, as a coat is in its own shadow
+	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.5);
+	vec3 col = coat * grain * mix(1.0, under, step(0.01, strands));
+	col = mix(col, min(coat * 1.6 + 0.08, vec3(1.0)), rim * fuzz);        // the light caught in the tips of the coat
+	ALBEDO = col;
+	ROUGHNESS = rough;
+	SPECULAR = spec;
+}
+"""
+
+static var _coat_shader: Shader
+const SHADOW_MIN_M := 0.09      # a piece this big (its radius times its largest scale) casts a shadow
+var _coat: String = "fur"        # the coat the next pieces take: _make_frog, _make_fish and _make_seal switch it to "wet" while they build
+
+
+func _material(color: Color) -> Material:
+	var look: String = "eye" if color.v < 0.12 else _coat
+	var key: String = color.to_html() + look
 
 	if not _mats.has(key):
-		var m: StandardMaterial3D = StandardMaterial3D.new()
-		m.albedo_color = color
-		m.roughness = 1.0
+		if _coat_shader == null:
+			_coat_shader = Shader.new()
+			_coat_shader.code = COAT_SHADER
+
+		var m: ShaderMaterial = ShaderMaterial.new()
+		m.shader = _coat_shader
+		m.set_shader_parameter("coat", color)
+
+		if look == "eye":
+			m.set_shader_parameter("strands", 0.0)
+			m.set_shader_parameter("fuzz", 0.0)
+			m.set_shader_parameter("rough", 0.12)
+			m.set_shader_parameter("spec", 0.8)
+		elif look == "wet":
+			m.set_shader_parameter("strands", 0.3)
+			m.set_shader_parameter("fuzz", 0.12)
+			m.set_shader_parameter("rough", 0.4)
+			m.set_shader_parameter("spec", 0.45)
+
 		_mats[key] = m
 
 	return _mats[key]
@@ -273,7 +389,9 @@ func _ball(parent: Node3D, radius: float, scale_v: Vector3, at: Vector3, color: 
 	inst.scale = scale_v
 	inst.position = at
 	inst.rotation = rot
-	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Only the big pieces (body, haunch, chest, head of the large animals) cast a shadow, so an animal stands on the ground instead of floating over it; ears, legs, eyes
+	# and other small parts stay off (Kathreen, 3 Nov 2026). About 2 to 5 shadow pieces per animal, at most MAX_DRAWN animals.
+	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if radius * maxf(scale_v.x, maxf(scale_v.y, scale_v.z)) >= SHADOW_MIN_M else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(inst)
 
 
@@ -359,7 +477,14 @@ func _make_songbird() -> Node3D:
 
 # A frog (refs: common frog photographs): a squat olive-brown body with a pale throat, a broad blunt head with two big bulging eyes on top, folded hind legs bent in a Z, small front legs, a dark patch behind each eye.
 # About 0.08 m long, sitting. Facing -Z.
-func _make_frog() -> Node3D:
+func _make_frog() -> Node3D:      # the wet coat while this one builds
+	_coat = "wet"
+	var node: Node3D = _frog_body()
+	_coat = "fur"
+	return node
+
+
+func _frog_body() -> Node3D:
 	var root: Node3D = Node3D.new()
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
@@ -382,7 +507,14 @@ func _make_frog() -> Node3D:
 
 # A trout (refs: brown trout photographs): a long torpedo body, deepest ahead of the middle, a small head with a pale mouth, olive-brown back with dark and red spots, a golden-cream flank and belly, a fan tail,
 # a dorsal fin and small side fins. About 0.35 m long. Facing -Z, swimming level.
-func _make_fish() -> Node3D:
+func _make_fish() -> Node3D:      # the wet coat while this one builds
+	_coat = "wet"
+	var node: Node3D = _fish_body()
+	_coat = "fur"
+	return node
+
+
+func _fish_body() -> Node3D:
 	var root: Node3D = Node3D.new()
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
@@ -457,7 +589,14 @@ func _make_grouse() -> Node3D:
 
 # A grey seal (refs: grey and harbour seal photographs): a thick spindle body tapering to the hind flippers, a round head with a long blunt snout (grey seal) and big dark eyes, small whiskers, short front flippers
 # set low, the hind flippers joined behind; silver-grey coat with dark blotches. About 1.8 m long, lying on the shore. Facing -Z.
-func _make_seal() -> Node3D:
+func _make_seal() -> Node3D:      # the wet coat while this one builds
+	_coat = "wet"
+	var node: Node3D = _seal_body()
+	_coat = "fur"
+	return node
+
+
+func _seal_body() -> Node3D:
 	var root: Node3D = Node3D.new()
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
