@@ -104,7 +104,7 @@
    "size": 1.0
   },
   "firewood": {
-   "shape": "bundle",
+   "shape": "split_wood",
    "color": "#8a5e36",
    "size": 1.6
   },
@@ -979,7 +979,7 @@
    "size": 0.9
   },
   "firewood_soft": {
-   "shape": "bundle",
+   "shape": "split_wood",
    "color": "#9a7a4a",
    "size": 1.6
   },
@@ -1471,7 +1471,7 @@
    "size": 1.0
   },
   "kindling": {
-   "shape": "bundle",
+   "shape": "sticks",
    "color": "#a8845a",
    "size": 0.6
   },
