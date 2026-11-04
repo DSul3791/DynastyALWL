@@ -359,8 +359,8 @@ const SIT_THIGH_OUT_DEG := 85.0      # tools/sit_pose_sim.py (offline, from the 
 const SIT_SHIN_FOLD_DEG := 85.0      # 135 lifted the feet 41 cm off the ground (picture 4 Nov), 50 pushed them below it
 const SIT_HIPS_M := 0.14
 const SIT_PELVIS_BACK_DEG := 3.0      # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
-const SIT_ARM_FWD_DEG := 40.0         # hands rest on the knees: the upper arm swings forward this much from hanging (about the model's X axis), the forearm this much more
-const SIT_FOREARM_FWD_DEG := 25.0
+const SIT_ARM_FWD_DEG := -15.0         # hands rest on the knees: the upper arm swings forward this much from hanging (about the model's X axis), the forearm this much more
+const SIT_FOREARM_FWD_DEG := 20.0
 const SIT_SPINE_BACK_DEG := 3.0       # each of Spine, Spine1 and Spine2 leans back this much more
 
 

@@ -68,5 +68,5 @@ def show(P,label):
 
 if __name__ == "__main__":
     a = [float(x) for x in sys.argv[1:4]]
-    thigh, fold, pelvis_back = a if len(a) == 3 else (85.0, 85.0, 3.0)
+    thigh, fold, pelvis_back = a if len(a) == 3 else (85.0, 85.0, 3.0)   # arms are not modelled here: render with tools/body_pose_shot.gd
     show(sit(thigh=thigh, fold=fold, pelvisd=pelvis_back), "thigh %g, fold %g, pelvis back %g" % (thigh, fold, pelvis_back))
