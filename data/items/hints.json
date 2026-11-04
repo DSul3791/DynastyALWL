@@ -204,7 +204,7 @@
 		{
 			"id": "plant_food_pot",
 			"trigger": "has_plant_food_at_fire",
-			"text": "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine."
+			"text": "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then hold the hammer, press R, pick Campfire pot and click on the fire (3 sticks, 3 twine, 1 clay pot)."
 		},
 		{
 			"id": "pot_first_dish",
