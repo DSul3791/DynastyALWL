@@ -132,6 +132,8 @@ The goal list is the 13 starter goals of `data/items/starter_goals.json` in this
 | 11 | spear | Make a spear | twine |
 | 12 | knife | Make a stone knife and work a kill | spear |
 | 13 | fish | Catch a fish | twine |
+| 13b | sell | Sell to Hob | fibre |
+| 13c | order | Fill Hob's order (Any order for today?, once a game day) | sell |
 | 14 to 23 | torch_night, candle, smoke_fish, dry_berries, jerky, salted_fish, winter_store, fur_for_winter, story, night_walk | camp and winter goals | see file |
 
 Comfort and Rested (protocol 81): a line at the top right of the screen, "Comfort 7   Rested 38 min" (the Rested part only while the buff runs, hidden at comfort 0 with no buff). Hovering it with the cursor free (inventory open) shows the tooltip: what counts with its points, up to five things that could be added (lit fixtures marked "(lit)"), and the Rested bonuses with the minutes left. Rested is earned by lying in a bed, or sitting 30 s on a seat, at comfort 2 or more, and lasts 45 real minutes. Lit wall torches, chandeliers and fireplaces count only while lit, burn their fuel (stick 30 min, candle 60 min, firewood 120 min) and keep their state across a restart. The lean-to covers 4.16 x 5.44 m, ridge 2.4 m (#253; 16 sticks, 4 leaves, 2 twine) and a bed can stand inside it.
