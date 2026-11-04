@@ -2222,3 +2222,7 @@ Answered: 2026-11-04 15:05 UTC
 Answer: Yes
 Answered: 2026-11-04 15:06 UTC
 
+## claude-leanto-cost | You said no to 32 sticks, 8 leaves, 4 twine for the lean-to. Too much or too little?
+Answer: B: Heavier than now | Comment: The lead to should take around 30 sticks , 10 twine and 200 leaves
+Answered: 2026-11-04 15:07 UTC
+
