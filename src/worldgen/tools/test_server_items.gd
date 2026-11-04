@@ -1304,13 +1304,12 @@ func _init() -> void:
 	check(lt.world_item_count() == 1 and roofs.size() == 1 and lt.inventory_of(1).count_of(lean_kit) == 7, "a lean-to is placed and registers its roof")
 	var roof: Array = roofs[1]
 	check(absf(roof[5] - PI * 0.5) < 0.01 and roof[6] < 10.0 and roof[7] > 11.0, "the roof is a yawed box from just under the ground to 2 m up")
-	lt.action(1, Net.ACT_PLACE, lt.inventory_of(1).numbers.find(lean_kit), 0, 0, Vector3(4.0, 10.0, 0.0))
+	lt.place_item(1, lean_kit, Vector3(4.0, 10.0, 0.0), 0)
 	check(lt.world_item_count() == 1, "not within 2.5 m of another structure")
 
 	for n in range(8):
 		lt.report_position(1, Vector3(10.0 + float(n) * 4.0, 10.0, 0.0))
-		lt.action(1, Net.ACT_PLACE, lt.inventory_of(1).numbers.find(lean_kit), 0, 0, Vector3(10.0 + float(n) * 4.0 + 1.0, 10.0, 0.0))
-
+		lt.place_item(1, lean_kit, Vector3(10.0 + float(n) * 4.0 + 1.0, 10.0, 0.0), 0)
 	check(lt.world_item_count() == 6, "six lean-tos fit in a chunk (%d)" % lt.world_item_count())
 	lt.save()
 	var lt2 = make(ld)
@@ -1350,7 +1349,7 @@ func _init() -> void:
 	ch.action(1, Net.ACT_ADMIN_GIVE, chest_kit, 0, 1, Vector3.ZERO)
 	check(ch.recipes.recipe(14)["needs"] == [[ch.table.number_of("stick"), 10], [ch.table.number_of("twine"), 4]], "the first chest is woven from 10 sticks and 4 twine")
 	ch.action(1, Net.ACT_ADMIN_GIVE, stones_n, 0, 10, Vector3.ZERO)
-	ch.action(1, Net.ACT_PLACE, ch.inventory_of(1).numbers.find(chest_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	ch.place_item(1, chest_kit, Vector3(2.0, 10.0, 0.0), 0)
 	var chest_id: int = 0
 
 	for k in ch._items:
@@ -1424,7 +1423,7 @@ func _init() -> void:
 	cb.peer_connected_hello(1, "abcdef123456")
 	cb.report_position(1, Vector3(0.0, 10.0, 0.0))
 	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block"), 0, 1, Vector3.ZERO)
-	cb.action(1, Net.ACT_PLACE, cb.inventory_of(1).numbers.find(cb.table.number_of("chopping_block")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	cb.place_item(1, cb.table.number_of("chopping_block"), Vector3(2.0, 10.0, 0.0), 0)
 	var block_id: int = 0
 
 	for k in cb._items:
@@ -2618,7 +2617,7 @@ func _init() -> void:
 	var box_kit: int = bx.table.number_of("chest_kit")
 	bx.action(1, Net.ACT_ADMIN_GIVE, box_kit, 0, 1, Vector3.ZERO)
 	bx.action(1, Net.ACT_ADMIN_GIVE, box_stone, 0, 50, Vector3.ZERO)
-	bx.action(1, Net.ACT_PLACE, bx.inventory_of(1).numbers.find(box_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	bx.place_item(1, box_kit, Vector3(2.0, 10.0, 0.0), 0)
 	var box_id: int = 0
 
 	for k in bx._items:

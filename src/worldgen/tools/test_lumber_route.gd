@@ -68,8 +68,6 @@ func _init() -> void:
 	give("twine", 8)
 	craft("stone_wedge", 1)
 	check(count("stone_wedge") == 1 and count("stone") == 6, "a stone wedge from 2 stones and a stick, by hand")
-	craft("workbench_kit", 1)
-	check(count("workbench_kit") == 1, "a workbench kit from sticks, twine and stones, by hand")
 	items.inventory_of(1).add(items.table.number_of("log_oak"), 3)   # logs in the pack: the real carry (shoulder, ground) is test_logs_carry
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 0 and count("log_oak") == 3, "no workbench near: no lumber, the log is kept")

@@ -5690,7 +5690,7 @@ func _load_blueprints() -> void:
 var free_build: bool = false
 
 
-func place_piece(peer: int, kit_id: String, at: Vector3, yaw_deg: int = 0) -> void:
+func place_piece(peer: int, kit_id: String, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0) -> void:
 	if inventory_of(peer) == null:
 		return
 
@@ -5700,8 +5700,23 @@ func place_piece(peer: int, kit_id: String, at: Vector3, yaw_deg: int = 0) -> vo
 		return
 
 	free_build = true
-	_place(peer, inventory_of(peer), -1, at, yaw_deg, 0, _blueprints[number])
+	_place(peer, inventory_of(peer), -1, at, yaw_deg, lift_steps, _blueprints[number])
 	free_build = false
+
+
+# Tests: place whatever item number the test holds. A dropped kit lays its piece (and uses up the one in the pack); anything else places from its slot as a player would.
+func place_item(peer: int, number: int, at: Vector3, lift_steps: int = 0, yaw_deg: int = 0) -> void:
+	var inv = inventory_of(peer)
+
+	if inv == null:
+		return
+
+	if is_dead_kit(number):
+		inv.remove_fill(number, 1)
+		place_piece(peer, table.id_of(number), at, yaw_deg, lift_steps)
+		return
+
+	action(peer, Net.ACT_PLACE, inv.numbers.find(number), lift_steps, yaw_deg, at)
 
 
 func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:

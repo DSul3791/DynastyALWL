@@ -30,9 +30,7 @@ func make(dir: String):
 
 func place(items, kit: String, spot: Vector3) -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(kit), 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of(kit)), 0, 0, spot)
-
-
+	items.place_item(1, items.table.number_of(kit), spot, 0)
 # The structure rows of a world, as [kind, x, y, z, yaw] sorted so two worlds compare equal.
 func pieces_of(items) -> Array:
 	var out: Array = []

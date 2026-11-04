@@ -315,7 +315,7 @@ func _init() -> void:
 	need(why == "", why)
 	if halted:
 		return
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("campfire_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	items.place_item(1, items.table.number_of("campfire_kit"), Vector3(2.0, 10.0, 0.0), 0)
 	var lit: int = 0
 	var laid: int = 0
 

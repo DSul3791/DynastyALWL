@@ -117,8 +117,7 @@ func build_world(dir: String) -> Dictionary:
 	var kit: int = a.table.number_of("chest_kit")
 	a.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 20, Vector3.ZERO)
 	a.action(1, Net.ACT_ADMIN_GIVE, kit, 0, 1, Vector3.ZERO)
-	a.action(1, Net.ACT_PLACE, a.inventory_of(1).numbers.find(kit), 0, 0, Vector3(2.0, 10.0, 0.0))
-
+	a.place_item(1, kit, Vector3(2.0, 10.0, 0.0), 0)
 	for uid in a._chests:
 		a._chests[uid].add(stone, 7)
 

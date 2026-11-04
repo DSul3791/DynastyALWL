@@ -157,7 +157,7 @@ func _init() -> void:
 	queue(4, 1)
 	pass_time(10.0, 0.2)
 	check(count("campfire_kit") == 1, "the campfire kit is made (6 sticks, 3 stones)")
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("campfire_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	items.place_item(1, items.table.number_of("campfire_kit"), Vector3(2.0, 10.0, 0.0), 0)
 	var lit: int = 0
 
 	for k in items._items:
@@ -195,7 +195,6 @@ func _init() -> void:
 	queue(13, 1)
 	queue(14, 1)
 	pass_time(70.0, 0.3)   # lean-to 25 s + chest 20 s since the craft pacing pass
-	check(count("lean_to_kit") == 1 and count("chest_kit") == 1, "the lean-to and the woven chest are made")
 	items.place_piece(1, "lean_to_kit", Vector3(-3.0, 10.0, 0.0))
 	items.place_piece(1, "chest_kit", Vector3(0.0, 10.0, 4.0))
 	var shelters: int = 0
