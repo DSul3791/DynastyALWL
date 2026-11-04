@@ -406,6 +406,7 @@ var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m fr
 var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
+var lag_run: Node = null               # --lag-run: the scripted early-game lag run (src/client/lag_run.gd, tools/lag_run.sh)
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
 var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
 var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
@@ -743,6 +744,8 @@ func _ready() -> void:
 			test_spear = true
 		elif argument == "--chop":
 			test_chop = true
+		elif argument == "--lag-run":
+			lag_run = preload("res://src/client/lag_run.gd").new()
 		elif argument == "--shoot":
 			test_shoot = true
 		elif argument == "--place-foundation":
@@ -1412,6 +1415,11 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_chop:
 		items.run_chop_test(self)
+
+	if lag_run != null and lag_run.get_parent() == null:
+		lag_run.client = self
+		add_child(lag_run)
+		lag_run.run()
 
 	if test_shoot:
 		items.run_shoot_test(self)
@@ -3601,6 +3609,8 @@ func _move_player(delta: float) -> void:
 	if test_walk:
 		_walk_step()
 		direction = _walk_dir
+	elif lag_run != null and _walk_dir != Vector3.ZERO:
+		direction = _walk_dir
 	var fast: float = FAST if Input.is_key_pressed(KEY_SHIFT) else 1.0
 	var forward: bool = Input.is_key_pressed(KEY_W)
 	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
@@ -3656,7 +3666,7 @@ func _move_player(delta: float) -> void:
 	elif _climb_ladder(delta, strain_cap):
 		pass
 	else:
-		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and test_walk else pace)
+		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and (test_walk or lag_run != null) else pace)
 
 		# Gravity only applies once there is ground below to land on. Fresh
 		# or far-off ground has no collision yet, so wait for it; a player who
