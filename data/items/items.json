@@ -267,7 +267,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"value": 30
+			"value": 110
 		},
 		"lean_to": {
 			"number": 21,
@@ -3800,7 +3800,7 @@
 			"description": "Comfrey worked into fat. Soothes burns and sore skin.",
 			"kind": "medicine",
 			"stack": 10,
-			"note": "Placeholder: heals once health exists.",
+			"note": "Eat (use) it to restore 25 health (vitals.json heal).",
 			"look_alikes": [],
 			"value": 12
 		},
@@ -3810,7 +3810,7 @@
 			"description": "Two straight sticks bound to a limb to hold a broken bone still.",
 			"kind": "medicine",
 			"stack": 5,
-			"note": "Placeholder: sets a break once injuries exist.",
+			"note": "Use it to end a limp at once (vitals.json limp cure_items).",
 			"look_alikes": [],
 			"value": 6
 		},

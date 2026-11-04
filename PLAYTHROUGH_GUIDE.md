@@ -126,7 +126,7 @@ Pictures: `10_campfire_placed.jpg` (the placement ghost; the lit fire itself is 
 
 ## Step 10. The first shelter: a lean-to
 
-Recipe **Lean-to kit** (#13, known): **16 sticks + 4 leaves + 2 twine** (25 s; since #253 the roof covers 4.16 x 5.44 m and the ridge is 2.4 m high, so you can walk in and lie down). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. Hold the kit, click to place (ghost 2.4 x 2.1 m, open front towards you). It is a roof for the cover rule (1.1 x 0.95 m half-sizes, 2.1 m high): anyone under it is "under cover", fires under it survive rain. Hold E 0.6 s at it to take it down (kit comes back). A chunk holds at most 6.
+Recipe **Lean-to kit** (#13, known): **30 sticks + 200 leaves + 10 twine** (25 s; since #253 the roof covers 4.16 x 5.44 m and the ridge is 2.4 m high, so you can walk in and lie down). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. Hold the kit, click to place (ghost 2.4 x 2.1 m, open front towards you). It is a roof for the cover rule (1.1 x 0.95 m half-sizes, 2.1 m high): anyone under it is "under cover", fires under it survive rain. Hold E 0.6 s at it to take it down (kit comes back). A chunk holds at most 6.
 
 ## Step 11. Bedding / bed
 
@@ -176,7 +176,7 @@ Left click jabs the spear; hold right click to aim a throw, left click throws. H
 3. Fell a small or medium tree (10-22 blows); work the trunk: sticks, leaves, logs; split blocks.
 4. Craft the campfire kit, place it under a big tree, light it with a plant fibre.
 5. Roast berries, drink at the water.
-6. Craft the lean-to kit (16 sticks, 4 leaves, 2 twine) and place it by the fire.
+6. Craft the lean-to kit (30 sticks, 200 leaves, 10 twine) and place it by the fire.
 7. Gather 10 thatch + 4 sticks, craft the rough bed kit, place it under the lean-to.
 8. Workbench (12 sticks, 3 twine) -> stone hammer, bow, thatch pieces.
 9. Spear (stick, then 2 twine) for hunting; knife (2 stones, stick) for carcasses.

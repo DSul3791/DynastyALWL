@@ -50,7 +50,7 @@ func _init() -> void:
 			_check(head.z - hips.z > 0.4, "lie: head toward +Z")
 			_check(hips.y < 0.3, "lie: hips low")
 		else:
-			_check(hips.y > 0.4 and hips.y < 0.65, "sit: hips about half a metre up")
+			_check(hips.y > 0.05 and hips.y < 0.35, "sit: cross-legged on the ground, hips low (%.2f m)" % hips.y)
 
 	body.play("crouch", 1.0, 0.0)
 	body.animation_player.seek(1.0, true)

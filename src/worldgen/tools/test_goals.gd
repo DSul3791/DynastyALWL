@@ -79,6 +79,7 @@ func _init() -> void:
 	items.admin_mode_on = func(_p): return false
 	var rows: Array = items.goals_state(1)
 	check(rows.size() >= 10 and rows[0][3] == 1 and rows.any(func(r): return r[0] == "axe" and r[3] == 0), "goals_state lists the goals: the first open, the axe locked (%d goals)" % rows.size())
+	check(rows.any(func(r): return r[0] == "hoe" and r[3] == 0) and rows.any(func(r): return r[0] == "path" and r[3] == 0), "the hoe and path goals are listed, locked until the fire (Dave 4 Nov 2026)")
 
 	# Drink: needs the water and a drop in thirst room.
 	items.vitals_of(1)["wet"] = 1000.0

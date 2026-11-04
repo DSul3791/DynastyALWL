@@ -202,6 +202,7 @@
 	},
 	"heal": {
 		"poultice": 30,
+		"herb_salve": 25,
 		"bandage": 15
 	},
 	"stomach_cap_kcal": 2400,
@@ -216,6 +217,8 @@
 	"limp": {
 		"seconds": 600.0,
 		"speed_share": 0.5,
-		"heal_at": 0.6
+		"heal_at": 0.6,
+		"cure_items": ["splint"],
+		"say_cured": "You bind the splint to your leg. You can walk properly again."
 	}
 }

@@ -170,6 +170,7 @@ var _head_under: Dictionary = {}    # peer -> true while the server reads their 
 var _breath: Dictionary = {}        # peer -> seconds of air left (only while the head is under water)
 var _breath_sent: Dictionary = {}   # peer -> tenths of a second last sent (-1 = hidden)
 var _speed3: Dictionary = {}        # peer -> smoothed speed in m/s, vertical included (the breath drain)
+var _cave_pool: Dictionary = {}     # peer -> true while swimming in a spring cave pool (icy; BUG-008)
 var _swimming: Dictionary = {}      # peer -> true while the server reads them as swimming
 var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
@@ -283,6 +284,8 @@ var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
 var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
+var _path_cfg: Dictionary = {}      # data/path_speed.json: range_m and exertion_factor for moving on or near a path
+var _on_path_cache: Dictionary = {} # peer -> [msec checked, bool]: whether a path patch lies within range_m (looked up at most once a second)
 var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data/items/exertion.json tool_effort)
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
@@ -383,6 +386,8 @@ func setup(item_table, store_dir: String) -> void:
 	var boulders_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
 	_boulder_cfg = boulders_parsed if typeof(boulders_parsed) == TYPE_DICTIONARY else {}
 	_carry_cfg = CarryRules.load_config()
+	var path_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/path_speed.json"))
+	_path_cfg = path_parsed if typeof(path_parsed) == TYPE_DICTIONARY else {}
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	var coins_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
@@ -553,6 +558,7 @@ func peer_left(peer: int) -> void:
 	_last_fish.erase(peer)
 	_wear_carry.erase(peer)
 	_swimming.erase(peer)
+	_cave_pool.erase(peer)
 	_last_dose.erase(peer)
 	_remains_sent.erase(peer)
 	_worn_sent.erase(peer)
@@ -572,6 +578,7 @@ func peer_left(peer: int) -> void:
 	_last_average.erase(peer)
 	_roads.erase(peer)
 	_grade_points.erase(peer)
+	_on_path_cache.erase(peer)
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
 	_last_gather.erase(peer)
@@ -2318,6 +2325,7 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 	_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
 	_next_id += 1
 	_dirty = true
+	_goal_event(peer, "path_laid")
 
 
 # Moves ground between the sample spots (offsets from `at`) toward their mean height: cut above, fill below, volume balanced, at most SMOOTH_MAX_M each.
@@ -2620,6 +2628,7 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
 			_next_id += 1
 			_dirty = true
+			_goal_event(peer, "path_laid")
 
 	if i % ROAD_WEAR_EVERY == 0:
 		_wear_tool(peer, inv, "hoe", "dig")
@@ -3007,7 +3016,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "The ground is too wet here.")
 		return
 
-	if absf(ground - at.y) > (1.0 if not on_base else 1.5):
+	if absf(ground - at.y) > (1.0 if not on_base else 1.5 + (PlacementRules.stack_rise(_structures_cfg, kit_id) * float(PlacementRules.STACK_MAX_LAYERS) if on_grid.size() > 3 else 0.0)):
 		_say(peer, "You cannot place that there.")
 		return
 
@@ -4490,6 +4499,10 @@ func _load_trees() -> void:
 		var tree: Dictionary = row["tree"]
 		tree["state"] = int(tree["state"])
 		tree["chunk"] = [int(tree["chunk"][0]), int(tree["chunk"][1])]
+
+		if int(tree["state"]) == 3:
+			tree["landed"] = true   # BUG-024: a saved trunk fell long ago; it is never drawn falling again
+
 		_items[_next_id] = {"number": 0, "count": 1, "pos": Vector3(row["pos"][0], row["pos"][1], row["pos"][2]), "left": 1.0e9, "tree": tree}
 
 		if int(tree["state"]) == 3 and (bool(tree.get("auto_split", false)) or (not tree.has("auto_split") and not tree.has("split_tries") and int(tree.get("blows", 0)) == 0)):   # felled but not yet broken up (also a trunk from before the auto-split that nobody has cut): do it now
@@ -4706,6 +4719,11 @@ func _auto_split() -> void:
 
 	for id in ready:
 		_split_due.erase(id)
+
+		# BUG-024: it has hit the ground. A client that sees the trunk from now on (coming back into range) draws it lying, not falling again.
+		if _items.has(id) and _items[id].has("tree") and int(_items[id]["tree"].get("state", 0)) == 3 and not bool(_items[id]["tree"].get("landed", false)):
+			_items[id]["tree"]["landed"] = true
+			_dirty = true
 
 		if not split_trunk(int(id)) and _items.has(id) and _items[id].has("tree") and bool(_items[id]["tree"].get("auto_split", false)):
 			var tries: int = int(_items[id]["tree"].get("split_tries", 0)) + 1   # no room yet (a crowded spot): look again in half a minute, three times, then it stays a trunk to cut by hand
@@ -7749,6 +7767,10 @@ func set_swimming(peer: int, swimming: bool) -> void:
 	_swimming[peer] = swimming
 
 
+func set_cave_pool(peer: int, in_pool: bool) -> void:
+	_cave_pool[peer] = in_pool
+
+
 # The server's own reading of whether a player's head is under water (terrain_server._head_under): the air runs down.
 func set_head_under(peer: int, under: bool) -> void:
 	_head_under[peer] = under
@@ -7807,6 +7829,28 @@ func _sync_breath(peer: int, tenths: int) -> void:
 		send_breath.call(peer, tenths)
 
 
+# Whether a path patch has its centre within data/path_speed.json range_m of the player, checked at most once a second per player (one pass over the items).
+func _on_path(peer: int, position: Vector3) -> bool:
+	var now: int = Time.get_ticks_msec()
+	var cached: Array = _on_path_cache.get(peer, [])
+
+	if not cached.is_empty() and now - int(cached[0]) < 1000:
+		return bool(cached[1])
+
+	var reach: float = float(_path_cfg.get("range_m", 3.0))
+	var found: bool = false
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if other.has("struct") and str(other["struct"]["kind"]) == "path_patch" and Vector2(other["pos"].x - position.x, other["pos"].z - position.z).length() <= reach:
+			found = true
+			break
+
+	_on_path_cache[peer] = [now, found]
+	return found
+
+
 # Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
 func _effort_at_speed(speed: float) -> float:
 	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [1.4, 0.5], [3.2, 0.75], [6.0, 1.0]])
@@ -7832,6 +7876,9 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
 		_speed3[peer] = lerpf(float(_speed3.get(peer, 0.0)), Vector3(position.x - last[0].x, position.y - last[0].y, position.z - last[0].z).length() / dt, clampf(dt * 2.0, 0.0, 1.0))
 		var target: float = _effort_at_speed(speed)                      # standing 0, walking 0.5, jogging 0.75, running 1 (data)
+
+		if _on_path(peer, position):
+			target *= float(_path_cfg.get("exertion_factor", 1.0))   # a trodden path eases the going (data/path_speed.json)
 
 		if bool(_swimming.get(peer, false)):
 			target = SwimRules.effort(speed)                              # strokes and treading water are work
@@ -8293,6 +8340,9 @@ func warmth_target(peer: int) -> float:
 		# In the water the cold follows the WATER's temperature, not the air's (Tyler): a lagged, damped copy of the air at sea level.
 		var sea_air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0))))
 		var water_c: float = maxf(float(cfg.get("water_base_c", 6.0)) + float(cfg.get("water_follow", 0.5)) * (sea_air - float(cfg.get("water_base_c", 6.0))), 1.0)
+
+		if bool(_cave_pool.get(peer, false)):
+			water_c = float(cfg.get("cave_pool_c", 2.0))   # a spring cave pool is icy whatever the weather (BUG-008)
 		stress = maxf(float(cfg.get("water_comfort_c", 26.0)) - water_c, 0.0) * float(cfg.get("water_gain", 5.0)) / maxf(float(cfg.get("gain", 3.0)), 0.01)
 
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
@@ -11453,6 +11503,22 @@ func _eat(peer: int, inv, slot: int) -> void:
 		_use_energy_aid(peer, inv, slot, v, aid)
 		return
 
+	# A splint (vitals.json limp "cure_items") sets the leg and ends a limp at once.
+	var limp_cfg: Dictionary = _vitals_cfg.get("limp", {})
+
+	if (limp_cfg.get("cure_items", []) as Array).has(item_id):
+		if float(v.get("limp", 0.0)) <= 0.0:
+			_say(peer, "Your legs are fine.")
+			return
+
+		_last_eat[peer] = now
+		inv.take_from_slot(slot, 1)
+		v["limp"] = 0.0
+		_say(peer, str(limp_cfg.get("say_cured", "Your leg is set.")))
+		_sync_limp(peer, true)
+		_dirty = true
+		return
+
 	var kcal: int = VitalsRules.food_value(item_id, _vitals_cfg)
 	var heal: int = VitalsRules.heal_value(item_id, _vitals_cfg)
 	var ml: int = VitalsRules.drink_value(item_id, _vitals_cfg)
@@ -11569,6 +11635,14 @@ func fitness_of(peer: int) -> int:
 # earns nothing; from there the share rises in a straight line to 1 at full effort (running; hard tool work a little above), and one
 # point takes seconds_per_point of full-effort time. Time under min_effort takes training back, a point per decay_s_per_point,
 # never below the creation value. The whole-number change is sent to the client.
+var _train_rest: Dictionary = {}     # peer -> seconds continuously at rest (below rest_effort)
+
+
+# Fitness XP (Dave 4 Nov, BUG-023). Every 10-second tick above min_effort (0.1) gives xp_base + xp_per_effort x effort XP (1 at the line,
+# 2 at a steady walk, 3 at a run), counted continuously here per second into the character's day bucket (xp_today); at game midnight the
+# bucket is turned into points (xp_per_point = 1000 XP, the same at every level) and the player is told. A midnight that passes while
+# the player is offline is paid at the next tick after login (one bucket only, saved with the character).
+# Only effort below rest_effort held for rest_grace_s loses fitness, one point per decay_s_per_point. Effort between the two lines is neutral.
 func _train_fitness(peer: int, effort: float, spent: float) -> void:
 	var cfg: Dictionary = _fitness_cfg.get("train", {})
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
@@ -11578,14 +11652,37 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 
 	var before: int = fitness_of(peer)
 	var train: float = float(row.get("train", 0.0))
-	var min_effort: float = float(cfg.get("min_effort", 0.3))
 
-	if effort > min_effort:
-		var share: float = minf((effort - min_effort) / maxf(1.0 - min_effort, 0.05), float(cfg.get("max_share", 1.1)))
-		train = minf(train + share * spent / maxf(float(cfg.get("seconds_per_point", 1800.0)), 1.0), float(cfg.get("max_gain", 10)))
+	var today: int = _game_day()
+
+	if int(row.get("xp_day", today)) != today:
+		var banked: float = float(row.get("xp_today", 0.0)) / maxf(float(cfg.get("xp_per_point", 1000.0)), 1.0)
+		row["xp_today"] = 0.0
+		row["xp_day"] = today
+		_dirty = true
+
+		if banked > 0.0:
+			train = minf(train + banked, float(cfg.get("max_gain", 10)))
+			row["train"] = train
+			_say(peer, "Your day's work has made you fitter." if int(floor(train)) > int(floor(train - banked)) else "You feel your day's work in your legs.")
+	elif not row.has("xp_day"):
+		row["xp_day"] = today
+
+	if effort > float(cfg.get("min_effort", 0.1)):
+		var xp_per_tick: float = float(cfg.get("xp_base", 1.0)) + float(cfg.get("xp_per_effort", 2.0)) * minf(effort, float(cfg.get("max_effort", 1.1)))
+		var pending: float = float(row.get("xp_today", 0.0)) + xp_per_tick * spent / maxf(float(cfg.get("tick_s", 10.0)), 1.0)
+		row["xp_today"] = minf(pending, float(cfg.get("max_gain", 10)) * float(cfg.get("xp_per_point", 1000.0)))
+		_dirty = true
+		_train_rest[peer] = 0.0
+	elif effort <= float(cfg.get("rest_effort", 0.02)):
+		var rested: float = float(_train_rest.get(peer, 0.0)) + spent
+		_train_rest[peer] = rested
+
+		if rested > float(cfg.get("rest_grace_s", 600.0)):
+			var step: float = spent / maxf(float(cfg.get("decay_s_per_point", 43200.0)), 1.0)
+			train = maxf(train - step, 0.0) if train > 0.0 else minf(train + step, 0.0)   # back toward the creation value from either side
 	else:
-		var step: float = spent / maxf(float(cfg.get("decay_s_per_point", 14400.0)), 1.0)
-		train = maxf(train - step, 0.0) if train > 0.0 else minf(train + step, 0.0)   # back toward the creation value from either side
+		_train_rest[peer] = 0.0   # a dawdle between the lines neither earns nor costs
 
 	if train != float(row.get("train", 0.0)):   # an idle character at the base changes nothing: do not mark the save dirty every tick (it rewrote all files every 30 s for every online player)
 		row["train"] = train

@@ -114,6 +114,40 @@
 			}
 		},
 		{
+			"id": "hoe",
+			"title": "Make a hoe",
+			"hint": "A hoe treads paths and breaks ground for beds. Craft one in the inventory (I): a wooden hoe is 2 sticks and a twine (keep a stone in your pack).",
+			"after": [
+				"fire"
+			],
+			"check": {
+				"have_item_any": [
+					"wooden_hoe",
+					"stone_hoe",
+					"steel_hoe"
+				],
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 3
+			}
+		},
+		{
+			"id": "path",
+			"title": "Tread a path from camp to the water",
+			"hint": "Hold the hoe and left click along the ground from your fire towards the water. Or Shift + right click to drop survey markers as you walk and the road builds itself. Paths are faster to walk.",
+			"after": [
+				"hoe"
+			],
+			"check": {
+				"event": "path_laid",
+				"count": 15
+			},
+			"reward": {
+				"coin_copper": 5
+			}
+		},
+		{
 			"id": "berries",
 			"title": "Eat something wild",
 			"hint": "Pick berries or fruit with E and eat them. Put raw meat in the fire with F; cook plants in a pot.",

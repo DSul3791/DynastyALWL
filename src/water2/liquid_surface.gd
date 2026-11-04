@@ -9,7 +9,7 @@ extends MeshInstance3D
 # The grid look (water_material.gd) steps aside inside the window; outside it nothing changes.
 
 const SHEET_STEP_M := 4.0       # vertex spacing of the sheet (the sim cell is 8 m; the texture is filtered between). Was 2 m: 250,000 quads over the 1 km window, lag near rivers (Dave 2 Nov 2026)
-const FADE_CELLS := 1.0         # the sheet fades in over this many cells from the window's edge, where the grid look takes over
+const FADE_CELLS := 1.0         # > 0: this sheet is the live window and fades in at its edge (over the shader's blend_m band, not one cell any more)
 
 const SHADER := """
 shader_type spatial;
@@ -20,8 +20,12 @@ uniform vec2 cells = vec2(128.0);                           // texels across
 uniform float fade_cells = 1.0;                            // 0: no fade at the sheet's edge (a chunk sheet meets its neighbours)
 uniform float point_grid = 0.0;                            // 1: texels sit on the sheet's corners and edges (a chunk's grid points), 0: on cell centres (the live window)
 uniform vec4 hole = vec4(0.0);                             // world x, z, size x, size z of the live window: a chunk sheet steps aside there
-uniform float hole_inset = 8.0;
+uniform float hole_inset = 8.0;                           // no longer used: chunk sheets crossfade over blend_m (BUG-006)
 uniform float cell_m = 8.0;                                // metres between texels
+// Dave's QA list 3 Nov 2026 (BUG-006, "a sharp, straight-line boundary separates calm and active water"): the live window and the chunk sheets
+// around it crossfade over a wide, wandering band instead of switching one cell in. Both sides use live_blend(), so they always add up.
+uniform float blend_m = 24.0;                              // the crossfade band, metres in from the window's edge
+uniform float blend_wander_m = 12.0;                       // the band's inner side wanders this far in and out (no straight line)
 uniform vec3 shallow_color : source_color = vec3(0.16, 0.38, 0.34);   // Kathreen 3 Nov 2026 (art direction: vibrant, not grey): greener shallows, was 0.17, 0.33, 0.33
 uniform vec3 deep_color : source_color = vec3(0.03, 0.18, 0.28);   // bluer depths, was 0.04, 0.17, 0.24
 uniform vec3 foam_color : source_color = vec3(0.80, 0.84, 0.82);
@@ -78,6 +82,23 @@ float noise(vec2 p) {
 	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
 }
 
+// The live window's share of the water at a point `d_m` metres inside the window's edge: 0 at the edge, 1 from blend_m + blend_wander_m in.
+// Sin-free hash so the band is the same on every GPU at large world coordinates (the same text is in water_material.gd).
+float blend_hash(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
+}
+
+float live_blend(float d_m, vec2 world) {
+	vec2 p = world / 37.0;
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	float n = mix(mix(blend_hash(i), blend_hash(i + vec2(1.0, 0.0)), u.x), mix(blend_hash(i + vec2(0.0, 1.0)), blend_hash(i + vec2(1.0, 1.0)), u.x), u.y);
+	return smoothstep(0.0, blend_m, d_m - n * blend_wander_m);
+}
+
 // Small waves: two octaves, as a height for the normal.
 float waves(vec2 p) {
 	return noise(p) * 0.65 + noise(p * 2.3 + 7.1) * 0.35;
@@ -93,11 +114,18 @@ void fragment() {
 
 	vec2 world = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xz;
 
+	float chunk_share = 1.0;   // a chunk sheet gives way to the live window across the blend band (BUG-006)
+
 	if (hole.z > 0.0) {
 		vec2 inside = world - hole.xy;
+		float d_in = min(min(inside.x, inside.y), min(hole.z - inside.x, hole.w - inside.y));
 
-		if (inside.x > hole_inset && inside.y > hole_inset && inside.x < hole.z - hole_inset && inside.y < hole.w - hole_inset) {
-			discard;
+		if (d_in > 0.0) {
+			chunk_share = 1.0 - live_blend(d_in, world);
+
+			if (chunk_share < 0.002) {
+				discard;
+			}
 		}
 	}
 
@@ -159,7 +187,7 @@ void fragment() {
 
 	// Foam where it runs fast and shallow (rapids, the lip and foot of a fall), streaked along the flow.
 	float streak = mix(noise(p0 * 2.5), noise(p1 * 2.5), mixk);
-	float rough = clamp((speed - 1.2) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);
+	float rough = clamp((speed - 0.9) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);   // BUG-010: white from 0.9 m/s (was 1.2)
 	float foam = smoothstep(0.45, 0.8, streak + rough * 0.6) * rough;
 	// Lapping at the bank: a broken foam line that comes and goes where the water thins against the ground.
 	float lap = (1.0 - smoothstep(0.05, lap_m, through)) * smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(TIME * 1.1 + noise(world * 0.35) * 9.0)) * noise(world * 1.3 + TIME * 0.2);
@@ -187,7 +215,7 @@ void fragment() {
 
 	// The shore: the sheet thins out with the water; the window's edge fades to the grid look.
 	vec2 in_cells = tex_uv * cells;
-	float edge = fade_cells > 0.0 ? clamp(min(min(in_cells.x, in_cells.y), min(cells.x - in_cells.x, cells.y - in_cells.y)) / fade_cells, 0.0, 1.0) : 1.0;
+	float edge = fade_cells > 0.0 ? live_blend(min(min(in_cells.x, in_cells.y), min(cells.x - in_cells.x, cells.y - in_cells.y)) * cell_m, world) : chunk_share;
 	// A thin fast sheet (a fall face) is not a shore: it shows at full strength from a few millimetres.
 	float shore = max(smoothstep(0.0, edge_m, depth), smoothstep(0.6, 2.0, raw_speed) * smoothstep(0.0005, 0.004, depth));
 
@@ -195,7 +223,10 @@ void fragment() {
 	EMISSION = foam_color * foam * 0.15 * daylight;
 	ROUGHNESS = 0.06 + 0.35 * foam;
 	SPECULAR = 0.5;
-	ALPHA = clamp(max(0.35 + 0.6 * thick, foam), 0.0, 1.0) * shore * edge * contact;
+	// Dave's QA list BUG-010 (3 Nov 2026): river and fall water read almost invisible. Running water is stirred up and catches the light, so it
+	// gets body with its speed; a fall face is near opaque. Still water keeps the clear look of the art direction (you see the bed).
+	float running = 0.75 * smoothstep(0.5, 2.0, speed) * smoothstep(0.05, 0.4, depth);
+	ALPHA = clamp(max(max(0.35 + 0.6 * thick, running), max(foam, fall * 0.85)), 0.0, 1.0) * shore * edge * contact;
 
 	// From under the water (Dave 2 Nov 2026: "being under the water looking up looks fake"): the surface is a mirror of the dark water
 	// below, except a round window overhead (Snell's window, about 49 degrees from the vertical) where the sky shows, bent and shaken by

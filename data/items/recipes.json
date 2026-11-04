@@ -585,7 +585,8 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": true
+			"known": true,
+			"station": "forge"
 		},
 		"steel_spade": {
 			"number": 28,
@@ -606,7 +607,8 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": true
+			"known": true,
+			"station": "forge"
 		},
 		"sewing_needle": {
 			"number": 29,
@@ -3247,7 +3249,8 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": true
+			"known": true,
+			"station": "forge"
 		},
 		"steel_hoe": {
 			"number": 142,
@@ -3268,7 +3271,8 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": true
+			"known": true,
+			"station": "forge"
 		},
 		"rough_plank": {
 			"number": 143,
@@ -4375,7 +4379,11 @@
 			"needs": [
 				[
 					"leather",
-					2
+					1
+				],
+				[
+					"fine_leather",
+					1
 				]
 			],
 			"gives": [
@@ -4392,7 +4400,11 @@
 			"needs": [
 				[
 					"leather",
-					3
+					2
+				],
+				[
+					"leather_strap",
+					2
 				]
 			],
 			"gives": [
@@ -4434,6 +4446,10 @@
 				],
 				[
 					"leather",
+					1
+				],
+				[
+					"leather_strap",
 					1
 				]
 			],

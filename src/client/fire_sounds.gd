@@ -28,6 +28,7 @@ const REACH_M := 35.0
 const UNIT_SIZE := 4.0
 const SMALL_DB := -13.0
 const LARGE_DB := -10.0
+const LAYER_OFF := 0.1             # under this share of the crossfade a crackle layer is off and paused
 const RAIN_DB := -16.0
 const ONE_SHOT_DB := -8.0
 const SCAN_SEC := 0.5
@@ -182,8 +183,8 @@ func update(delta: float, body: CharacterBody3D) -> void:
 		var size: float = float(loop["size"])
 		var lit: bool = bool(loop["lit"]) and not gone
 		var targets: Dictionary = {
-			"small": SMALL_DB + 20.0 * log(maxf(1.0 - size, 0.02)) / log(10.0) if lit else -80.0,
-			"large": LARGE_DB + 20.0 * log(maxf(size, 0.02)) / log(10.0) if lit else -80.0,
+			"small": layer_db("small", size) if lit else -80.0,
+			"large": layer_db("large", size) if lit else -80.0,
 			"rain": RAIN_DB + 20.0 * log(maxf(rain, 0.02)) / log(10.0) + 6.0 * size if lit and bool(loop["rain_on"]) and rain > 0.05 else -80.0,
 		}
 		var alive: bool = false
@@ -199,6 +200,8 @@ func update(delta: float, body: CharacterBody3D) -> void:
 			if player.volume_db > -70.0 or float(targets[sound_name]) > -70.0:
 				alive = true
 
+			player.stream_paused = player.volume_db <= -70.0 and float(targets[sound_name]) <= -70.0   # a layer faded out stops decoding (Dave's BUG-002)
+
 		if gone and not alive:
 			for sound_name in ["small", "large", "rain"]:
 				if loop[sound_name] != null:
@@ -207,6 +210,17 @@ func update(delta: float, body: CharacterBody3D) -> void:
 			_loops.erase(id)
 
 	loops_playing = _loops.size()
+
+
+# The small or large crackle loop's level for a fire of `size` (0 embers to 1 bonfire). They crossfade; near either end the
+# other layer is off (-80 dB), so a small cooking fire plays one loop, not two (Dave's bug list 3 Nov, BUG-002).
+static func layer_db(layer: String, size: float) -> float:
+	var share: float = clampf(size if layer == "large" else 1.0 - size, 0.0, 1.0)
+
+	if share < LAYER_OFF:
+		return -80.0
+
+	return (LARGE_DB if layer == "large" else SMALL_DB) + 20.0 * log(share) / log(10.0)
 
 
 func _scan(body: CharacterBody3D) -> void:

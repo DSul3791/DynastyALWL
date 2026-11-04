@@ -13,7 +13,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 # What a first hour can fairly ask of the hands (the guide's pace: about 10 minutes of gathering). The bot fails when the recipes ask for more.
-const GATHER_BUDGET := {"stick": 70, "stone": 40, "plant_fibre": 90, "leaves": 20}
+const GATHER_BUDGET := {"stick": 70, "stone": 40, "plant_fibre": 90, "leaves": 220}
 const STARTING_MATERIALS := ["stick", "stone", "plant_fibre", "leaves", "log"]
 
 var items
@@ -191,7 +191,7 @@ func _init() -> void:
 		var left: int = int(wanted[key])
 
 		while left > 0:
-			var piece: int = mini(left, 8)
+			var piece: int = mini(left, 40 if key == "leaves" else 8)   # leaves stack to 40 (the lean-to needs 200, Dave 4 Nov)
 			# Heaps lying less than a metre apart merge into one: three rings, 6 / 10 / 14 places, each place more than 1.4 m from the next.
 			var ring: int = 0 if spot < 6 else (1 if spot < 16 else 2)
 			var places: int = [6, 10, 14][ring]
@@ -284,7 +284,13 @@ func _init() -> void:
 		return
 
 	pass_time(30.0, 0.8)
-	need(count("leaves") >= int(raw.get("leaves", 0)), "working the trunk gave %d leaves, the lean-to needs %d" % [count("leaves"), int(raw.get("leaves", 0))])
+	var leaves_need: int = int(raw.get("leaves", 0))
+	need(count("leaves") * 3 >= leaves_need, "working the trunk gave %d leaves; one crown should give at least a third of the %d the lean-to needs" % [count("leaves"), leaves_need])
+	var leaf_short: int = leaves_need - count("leaves")   # the lean-to takes 200 (Dave 4 Nov): a real player sweeps the rest from more crowns, the bot is given it
+
+	while leaf_short > 0:
+		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, mini(leaf_short, 100), Vector3.ZERO)
+		leaf_short -= 100
 	if halted:
 		return
 

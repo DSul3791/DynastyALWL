@@ -120,6 +120,12 @@ func _check_sites(names: Array) -> void:
 	check(spear_script.hit_strength(0) == 0.5 and spear_script.hit_strength(30) == 1.0 and spear_script.hit_strength(9) > 0.5 and FileAccess.file_exists("res://assets/audio/spear/spear_hit_flesh_0.ogg"), "a hit on an animal thuds louder with more damage, and the flesh clip exists")
 	var inv_script = preload("res://src/client/inventory_view.gd")
 	check(names.has("skill_tock") and float(SlotSounds.COOLDOWN_S.get("skill", 0.0)) >= 20.0 and inv_script.skill_rose([[3, 10, 0]], [[3, 11, 0]]) and not inv_script.skill_rose([[3, 10, 0]], [[3, 9, 1]]) and not inv_script.skill_rose([[3, 10, 0]], [[3, 10, 0], [4, 5, 0]]), "a skill rising plays the wooden tock at most once every 20 s; rust and new rows stay silent")
+	var weather_script = preload("res://src/client/weather_sounds.gd")
+	var fire_script = preload("res://src/client/fire_sounds.gd")
+	check(weather_script.calls_for("drizzle", 0.3) == 0.0 and weather_script.calls_for("rain", 0.5) == 0.0 and weather_script.calls_for("storm", 1.0) == 0.0 and weather_script.calls_for("clear", 1.0) == 1.0 and weather_script.calls_for("fog", 1.0) > 0.5, "birds and insects stop for any rain, even light drizzle, and call in clear weather (BUG-004)")
+	check(Ambience.rained_out("bed_crickets", {"calls": 0.0}) and Ambience.rained_out("bird_tweet", {"calls": 0.0}) and not Ambience.rained_out("bed_crickets", {"calls": 1.0}) and not Ambience.rained_out("bed_crickets", {}) and not Ambience.rained_out("bed_surf", {"calls": 0.0}), "the cricket bed and bird one-shots drop out in rain; surf and other beds stay")
+	check(AmbientLife.near_wet([Vector3(10, 0, 0), Vector3(50, 0, 0)], Vector3.ZERO, 22.0).size() == 1 and AmbientLife.near_wet([Vector3(50, 0, 0)], Vector3.ZERO, 22.0).is_empty(), "a fish plop comes only from water within its 22 m, not from a stream 50 m off through the trees (BUG-003)")
+	check(fire_script.layer_db("large", 0.05) == -80.0 and fire_script.layer_db("small", 0.95) == -80.0 and fire_script.layer_db("small", 0.05) > -20.0 and fire_script.layer_db("large", 0.5) > -20.0 and fire_script.layer_db("small", 0.5) > -20.0, "a small fire plays only its small crackle, a big one only the large; a middle fire crossfades both (BUG-002)")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.
