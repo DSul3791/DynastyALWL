@@ -34,7 +34,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 87   # 87 (3 Nov 2026): cave_streams
+const PROTOCOL_VERSION := 88   # 88 (3 Nov 2026): water_changed_in (87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -55,6 +55,7 @@ signal vent_received(at: Vector3)
 signal water_rate_requested(peer_id: int, direction: int)
 signal water_rate_received(rate: float, busy: bool, spring_m3_s: float)
 signal water_changed_received()
+signal water_changed_in_received(area: Rect2)
 signal pulse_received()
 signal quake_received(stage: int, strength: float, point: Vector3)
 signal leak_received(points: PackedVector3Array, closeness: PackedByteArray)
@@ -299,6 +300,13 @@ func quake(stage: int, strength_pm: int, point: Vector3) -> void:
 @rpc("authority", "call_remote", "reliable")
 func water_changed() -> void:
 	water_changed_received.emit()
+
+
+# Protocol 88 (lag review, Steve 3 Nov 2026): the water moved only inside `area` (world x, z metres: the live water window now and where it
+# was last time): clients ask again only for the chunks they hold that touch it.
+@rpc("authority", "call_remote", "reliable")
+func water_changed_in(area: Rect2) -> void:
+	water_changed_in_received.emit(area)
 
 
 # The tile files changed (a bake finished): the server threw its generated ground
