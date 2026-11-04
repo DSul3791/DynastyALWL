@@ -122,6 +122,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
 	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp, fern stalks and fiddleheads, nettles, leafy herbs and the plain flower) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
 	var fungi: Acc = Acc.new()   # mushrooms on their own surface: they were in `bark`, so the bark shader put bark furrows, foot shade and green foot moss on every cap (Kathreen, 3 Nov)
+	var berries: Acc = Acc.new() # the berries and blossoms of the berry bushes and ground berries: in `bark` they wore the bark texture and foot moss, so ripe blueberries and raspberries came out dark, grainy and greenish (Kathreen, 3 Nov)
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
@@ -166,9 +167,9 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"blackthorn":
 			_blackthorn(bark, leaves, rng, h, crown, far, season, _fruit_state(entry, season, stripped, ["spring"], mid))
 		"raspberry", "bramble", "wild_rose", "blueberry":
-			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, SHRUB_LOOKS[str(entry["name"])].get("bloom_in", ["spring"]), mid))
+			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, SHRUB_LOOKS[str(entry["name"])].get("bloom_in", ["spring"]), mid), berries)
 		"ground_berry":
-			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, ["spring"], mid))
+			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, ["spring"], mid), berries)
 		"wildflower":
 			_wildflower(WILDFLOWER_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"leafy_herb":
@@ -200,7 +201,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"succulent":
 			_succulent(str(entry["name"]), greens, rng, h, crown, trunk, far)
 		"cane_shrub":
-			_cane_shrub(CANE_SHRUBS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, CANE_SHRUBS[str(entry["name"])].get("bloom_in", ["spring"]), mid))
+			_cane_shrub(CANE_SHRUBS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, CANE_SHRUBS[str(entry["name"])].get("bloom_in", ["spring"]), mid), berries)
 		"fern_rosette":
 			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), greens, leaves, rng, h, crown, far)
 		"reed_stand":
@@ -239,6 +240,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	ember.commit(mesh, materials.get("ember", materials["bark"]))
 	greens.commit(mesh, materials.get("greens", materials["bark"]))
 	fungi.commit(mesh, materials.get("fungus", materials["bark"]))
+	berries.commit(mesh, materials.get("berry", materials["bark"]))
 	twigs.commit(mesh, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"
@@ -2824,7 +2826,8 @@ static func _bezier(p: Array, t: float) -> Vector3:
 	return (p[0] as Vector3) * u * u * u + (p[1] as Vector3) * 3.0 * u * u * t + (p[2] as Vector3) * 3.0 * u * t * t + (p[3] as Vector3) * t * t * t
 
 
-static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, state: Dictionary = {"fruit": true, "bloom": true, "bare": false, "legacy": true}) -> void:
+static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, state: Dictionary = {"fruit": true, "bloom": true, "bare": false, "legacy": true}, berries: Acc = null) -> void:
+	var crop: Acc = berries if berries != null else bark      # berries and blossoms on their own surface (the berry shader)
 	var legacy: bool = bool(state["legacy"])
 	var bare: bool = bool(state["bare"])
 	var bloom_color: Variant = look.get("blossom", null) if legacy else look.get("blossom", look.get("flower", null))
@@ -2885,7 +2888,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			var show_bloom: bool = rng.randf() < 0.4
 
 			if not far and show_bloom and bloom_color != null and bool(state["bloom"]):
-				_flat_blossom(bark, rng, at + Vector3(0.0, leaf_size * 0.3, 0.0) + out * leaf_size * 0.3, crown * 0.045, bloom_color)
+				_flat_blossom(crop, rng, at + Vector3(0.0, leaf_size * 0.3, 0.0) + out * leaf_size * 0.3, crown * 0.045, bloom_color)
 
 			if far or rng.randf() > float(look.get("rate", 0.45)):
 				continue
@@ -2896,9 +2899,9 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 
 			# Old look (no season): flowers and fruit mixed. Otherwise fruit only when ripe in this season (and not picked bare).
 			if legacy and look["flower"] != null and flower_roll:
-				_cluster(bark, rng, low + Vector3(0.0, leaf_size * 1.1, 0.0), crown * float(look.get("cluster", 0.14)), look["flower"], true, rng.randi_range(5, 7))
+				_cluster(crop, rng, low + Vector3(0.0, leaf_size * 1.1, 0.0), crown * float(look.get("cluster", 0.14)), look["flower"], true, rng.randi_range(5, 7))
 			elif bool(state["fruit"]) and look["fruit"] != null:
-				_cluster(bark, rng, low, crown * float(look.get("cluster", 0.14)), look["fruit"] if ripe else look["unripe"], false, rng.randi_range(3, 8) if look.has("cluster") else rng.randi_range(6, 9))
+				_cluster(crop, rng, low, crown * float(look.get("cluster", 0.14)), look["fruit"] if ripe else look["unripe"], false, rng.randi_range(3, 8) if look.has("cluster") else rng.randi_range(6, 9))
 
 	# Leaf sprays standing up in the middle so the bush has no hollow centre.
 	if not far and not bare and look.has("fill"):
@@ -2920,7 +2923,8 @@ const GROUND_LOOKS := {
 }
 
 
-static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, state: Dictionary = {"fruit": true, "bloom": true, "bare": false, "legacy": true}) -> void:
+static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, state: Dictionary = {"fruit": true, "bloom": true, "bare": false, "legacy": true}, berries: Acc = null) -> void:
+	var crop: Acc = berries if berries != null else bark      # berries and blossoms on their own surface (the berry shader)
 	var n_leaves: int = 3 if far else int(look["leaves"])
 	var az: float = rng.randf() * TAU
 	var leaf_size: float = maxf(crown * float(look["leaf"]), h * 0.6)
@@ -2953,7 +2957,7 @@ static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 		var legacy: bool = bool(state["legacy"])
 
 		if look["flower"] != null and ((legacy and flower_roll < 0.4) or (not legacy and bool(state["bloom"]))):
-			_blossom(bark, rng, tip + Vector3(0.0, bead * 0.4, 0.0), bead * 1.4, look["flower"])
+			_blossom(crop, rng, tip + Vector3(0.0, bead * 0.4, 0.0), bead * 1.4, look["flower"])
 			continue
 
 		# Berries only in their ripe season and while the plant is not picked bare (Dave 2026-10-23).
@@ -2962,7 +2966,7 @@ static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 
 		var ripe: bool = rng.randf() < 0.7
 		var hang: Vector3 = tip + Vector3(0.0, -bead * 0.6, 0.0)
-		_cluster(bark, rng, hang, bead * 1.1, look["berry"] if ripe else look["unripe"], false, int(look["count"]) + 1)
+		_cluster(crop, rng, hang, bead * 1.1, look["berry"] if ripe else look["unripe"], false, int(look["count"]) + 1)
 
 
 # Wild flowers and herbs (daisy, umbel, spike and bell heads): a few thin stems with basal leaves, each stem ending in a flower head
