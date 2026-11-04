@@ -55,6 +55,11 @@ const SOURCE_SETBACK_M := 64.0        # and set back from any edge: the lowest g
 const SOURCE_SETBACK_DEG := 9.0       # ... falls no more than this average slope
 const SOURCE_UP_CELLS := 80           # cells (640 m) searched up the drainage line above a head
 const CAVE_HEAD_MIN_SLOPE_DEG := 10.0  # a head this steep that found no flat above keeps its brook and gets a spring cave (tile_sites.gd spring_cave.min_slope_deg)
+const CAVE_RISE := 0.035              # the cave room check: a spring passage rising this much per metre (tile_sites spring_cave.rise, middle) ...
+const CAVE_HEIGHT_M := 3.2            # ... this tall (spring_cave.height_m, middle), floor 0.5 m under the head ...
+const CAVE_COVER_M := 2.5             # ... needs this much ground over its roof (spring_cave.min_cover_m) ...
+const CAVE_OPEN_CUT_M := 64.0         # ... within this far of the mouth (spring_cave.open_cut_m) ...
+const CAVE_MIN_LENGTH_M := 60.0       # ... and stays under cover to at least this far (spring_cave.min_length_m)
 const SOURCE_DOWN_CELLS := 200        # cells (1.6 km) searched down the river below it
 const BROOK_CUT_M := 0.6              # the brook from a raised pond is cut this deep into the ground ...
 const BROOK_FALL_M := 0.03            # ... falling at least this much per cell ...
@@ -889,8 +894,12 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 
 			# Spring caves (Dave 3 Nov 2026): a head on a hillside keeps its brook and comes out of a cave (tile_sites.gd), instead of the spring moving
 			# down to the bottom and the reach above it drying (41 of the 46 dry painted reaches on tile 3,4 were those).
+			# Only where a cave has room (the same walk as tile_sites.gd _cave_arm, on this ground): elsewhere the spring still goes down to the bottom.
 			if how == "down" and slope >= tan(deg_to_rad(CAVE_HEAD_MIN_SLOPE_DEG)):
-				how = "cave"
+				if _cave_fits(index, size, cell_m):
+					how = "cave"
+				else:
+					source_counts["cave_no_room"] = int(source_counts.get("cave_no_room", 0)) + 1
 
 			source_counts[how] = int(source_counts.get(how, 0)) + 1
 
@@ -1071,6 +1080,41 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip, %d over ground at sea level" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip, skipped_sea])
 	print("  sources (Dave 2 Nov: up on a flat or down at the bottom, in a pool; 3 Nov: hillside heads keep their brook and get a spring cave, \"cave\"): %s heads checked; %d ponds raised to a flat above (brook cut down), %d moved down to the bottom (%d river cells above dried), the rest on the head" % [str(source_counts), moved_up, moved_down, dried])
 	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha, %d of them the tile's guaranteed lake), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, guaranteed, steep, POND_MAX_SLOPE_DEG])
+
+
+# Whether a spring cave has room at this head (Dave 3 Nov 2026): walking straight uphill from it, a passage rising CAVE_RISE gets CAVE_COVER_M of
+# ground over its roof within CAVE_OPEN_CUT_M and keeps it to CAVE_MIN_LENGTH_M. Reads `bed` (the ground after the valleys, gullies and stamps).
+func _cave_fits(head: int, size: int, cell_m: float) -> bool:
+	@warning_ignore("integer_division")
+	var row: int = head / size
+	var column: int = head % size
+	var g: Vector2 = Vector2(bed[row * size + mini(column + 2, size - 1)] - bed[row * size + maxi(column - 2, 0)],
+		bed[mini(row + 2, size - 1) * size + column] - bed[maxi(row - 2, 0) * size + column])
+
+	if g.length() < 0.0001:
+		return false
+
+	var direction: Vector2 = g.normalized()
+	var roof0: float = bed[head] - 0.5 + CAVE_HEIGHT_M
+	var covered: bool = false
+	var distance: float = 0.0
+
+	while distance < CAVE_MIN_LENGTH_M:
+		distance += cell_m
+		var c: int = column + int(round(direction.x * distance / cell_m))
+		var r: int = row + int(round(direction.y * distance / cell_m))
+
+		if c < 0 or r < 0 or c >= size or r >= size:
+			return false
+
+		var cover: float = bed[r * size + c] - (roof0 + CAVE_RISE * distance)
+
+		if cover >= CAVE_COVER_M:
+			covered = true
+		elif covered or distance > CAVE_OPEN_CUT_M:
+			return false
+
+	return covered
 
 
 # Whether a spring may rise here (Dave 2 Nov 2026): flat ground, set back from any edge (the lowest land SOURCE_SETBACK_M out is not far below).
