@@ -1857,8 +1857,10 @@ func _init() -> void:
 	tr._train_fitness(1, 1.0, 200.0)
 	check(tr.fitness_of(1) == 3, "30 minutes running earns a point")
 	var before_stroll: float = float(tr._characters[tr._peer_key[1]]["train"])
-	tr._train_fitness(1, 0.2, 600.0)
-	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) < before_stroll, "strolling earns nothing (and eases training back)")
+	tr._train_fitness(1, 0.3, 36000.0)
+	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "effort under the line neither earns nor costs, even for hours")
+	tr._train_fitness(1, 0.0, 300.0)
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "a short rest under the grace time costs nothing")
 	var tw = make(xd)
 	tw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	tw.peer_connected_hello(1, "trainkey0002")
@@ -1875,6 +1877,32 @@ func _init() -> void:
 	var gj: float = float(tj._characters[tj._peer_key[1]]["train"])
 	var gc: float = float(tc._characters[tc._peer_key[1]]["train"])
 	check(gw > 0.0 and gw < gj and gj < gc, "an hour of walking trains less than jogging, less than hard tool work (%.2f %.2f %.2f)" % [gw, gj, gc])
+	# Dave 4 Nov (BUG-023): time above the line pays more the longer it is sustained, and each point costs more than the last.
+	var ts = make(xd)
+	ts.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	ts.peer_connected_hello(1, "trainkey0005")
+	var tb = make(xd)
+	tb.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tb.peer_connected_hello(1, "trainkey0006")
+	ts._train_fitness(1, 0.5, 1800.0)
+	ts._train_fitness(1, 0.5, 1800.0)
+	for _i in range(6):
+		tb._train_fitness(1, 0.5, 600.0)
+		tb._train_fitness(1, 0.3, 1.0)   # breaks the streak each time
+	var g_streak: float = float(ts._characters[ts._peer_key[1]]["train"])
+	var g_broken: float = float(tb._characters[tb._peer_key[1]]["train"])
+	check(g_streak > g_broken, "an unbroken hour of walking earns more than the same time in broken pieces (%.3f vs %.3f)" % [g_streak, g_broken])
+	var t1 = make(xd)
+	t1.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	t1.peer_connected_hello(1, "trainkey0007")
+	t1.set_fitness(1, 0)
+	t1._train_fitness(1, 1.0, 1800.0)
+	var first_pt: float = float(t1._characters[t1._peer_key[1]]["train"])
+	t1._characters[t1._peer_key[1]]["train"] = 5.0
+	t1._train_streak.erase(1)
+	t1._train_fitness(1, 1.0, 1800.0)
+	var gain_at_5: float = float(t1._characters[t1._peer_key[1]]["train"]) - 5.0
+	check(first_pt > gain_at_5 and gain_at_5 > 0.0, "a higher level needs more XP for the next point (%.3f vs %.3f)" % [first_pt, gain_at_5])
 	tr._train_fitness(1, 1.0, 1.0e7)
 	check(tr.fitness_of(1) == 10, "training stops at the top of the range")
 	tr.set_fitness(1, 2)
@@ -1882,8 +1910,9 @@ func _init() -> void:
 	check(float(tr._characters[tr._peer_key[1]]["train"]) == 10.0 and tr.fitness_of(1) == 10, "training stops at max_gain above the base, clamped to the range")
 	tr.set_fitness(1, 2)
 	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
-	tr._train_fitness(1, 0.0, 14400.0 * 3.0)
-	check(tr.fitness_of(1) == 2, "rest takes points back slowly")
+	check(tr.fitness_of(1) > 2, "three half hours of running earn points")
+	tr._train_fitness(1, 0.0, 43200.0 * 12.0)
+	check(tr.fitness_of(1) == 2, "full rest takes points back, slowly")
 	tr._train_fitness(1, 0.0, 1.0e7)
 	check(tr.fitness_of(1) == 2, "and never below the creation value")
 	# Saved: the training survives a restart (characters.json).
