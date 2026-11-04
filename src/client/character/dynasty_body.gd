@@ -355,10 +355,10 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 # Turns the chair clip into sitting cross-legged on the ground (Dave QA BUG-020: X sat him as if on a chair). Dave's set has no floor-sit clip, so the chair pose is changed in place:
 # the hips drop to about 14 cm off the ground, each thigh swings out sideways (the model faces +Z, its right is -X) and each shin folds back under the other leg. The turns are
 # made in the parent bone's frame, which for this Mixamo rig is close to the model's own axes. Angles are a first guess, not yet seen in the game: rate by picture (--shot-stance=sit).
-const SIT_THIGH_OUT_DEG := 55.0
-const SIT_SHIN_FOLD_DEG := 135.0
+const SIT_THIGH_OUT_DEG := 85.0      # tools/sit_pose_sim.py (offline, from the glb): 85 and a fold of 85 put the knees out at the sides 10 cm up and the feet crossed under them, toes on the ground
+const SIT_SHIN_FOLD_DEG := 85.0      # 135 lifted the feet 41 cm off the ground (picture 4 Nov), 50 pushed them below it
 const SIT_HIPS_M := 0.14
-const SIT_PELVIS_BACK_DEG := 28.0     # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
+const SIT_PELVIS_BACK_DEG := 3.0      # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
 const SIT_ARM_FWD_DEG := 40.0         # hands rest on the knees: the upper arm swings forward this much from hanging (about the model's X axis), the forearm this much more
 const SIT_FOREARM_FWD_DEG := 25.0
 const SIT_SPINE_BACK_DEG := 3.0       # each of Spine, Spine1 and Spine2 leans back this much more
