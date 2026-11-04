@@ -269,7 +269,7 @@ func _build_animations() -> void:
 			var made: Animation = _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
 
 			if game_name == "sit":
-				_ground_sit(made)
+				_ground_sit(made, own.get_animation("Idle"))
 
 			_library.add_animation(game_name, made)
 
@@ -356,10 +356,11 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 const SIT_THIGH_OUT_DEG := 55.0
 const SIT_SHIN_FOLD_DEG := 135.0
 const SIT_HIPS_M := 0.14
-const SIT_SPINE_BACK_DEG := 9.0       # each of Spine, Spine1 and Spine2 leans back this much: the chair clip leans forward over a desk
+const SIT_PELVIS_BACK_DEG := 28.0     # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
+const SIT_SPINE_BACK_DEG := 3.0       # each of Spine, Spine1 and Spine2 leans back this much more
 
 
-static func _ground_sit(anim: Animation) -> void:
+static func _ground_sit(anim: Animation, idle: Animation) -> void:
 	for t in range(anim.get_track_count()):
 		var path: String = String(anim.track_get_path(t))
 		var type: int = anim.track_get_type(t)
@@ -373,6 +374,26 @@ static func _ground_sit(anim: Animation) -> void:
 			continue
 
 		if type != Animation.TYPE_ROTATION_3D:
+			continue
+
+		# Arms hang as in the standing idle, not reaching down to the chair's desk or knees (the #315 picture: the left hand on the ground).
+		if "Arm" in path.get_file() or "Shoulder" in path.get_file() or "Hand" in path.get_file():
+			var idle_track: int = idle.find_track(anim.track_get_path(t), Animation.TYPE_ROTATION_3D)
+
+			if idle_track >= 0:
+				var hang: Quaternion = idle.track_get_key_value(idle_track, 0)
+
+				for k in range(anim.track_get_key_count(t)):
+					anim.track_set_key_value(t, k, hang)
+
+			continue
+
+		var pelvis: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_PELVIS_BACK_DEG))
+
+		if path.ends_with(P + "Hips"):
+			for k in range(anim.track_get_key_count(t)):
+				anim.track_set_key_value(t, k, (anim.track_get_key_value(t, k) as Quaternion) * pelvis)
+
 			continue
 
 		if path.ends_with(P + "Spine") or path.ends_with(P + "Spine1") or path.ends_with(P + "Spine2"):
@@ -395,7 +416,7 @@ static func _ground_sit(anim: Animation) -> void:
 
 		for k in range(anim.track_get_key_count(t)):
 			var q: Quaternion = anim.track_get_key_value(t, k)
-			anim.track_set_key_value(t, k, (extra * q) if path.ends_with("UpLeg") else (q * extra))
+			anim.track_set_key_value(t, k, (pelvis.inverse() * extra * q) if path.ends_with("UpLeg") else (q * extra))
 
 
 # A harmless stand-in when the glb cannot be used, so nothing that holds this body meets a null (my_character.gd make_avatar never picks it; this is the last guard).
