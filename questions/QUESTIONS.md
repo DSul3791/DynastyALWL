@@ -52,13 +52,6 @@ Note: 3. Wanted: a few hair styles and beards as separate rigged meshes on the H
 Note: Recommendation: Yes, export them. Until then the body stays bald and male, and the creator says so.
 [text]
 
-## jason-cave-den-sounds | What lives in the cave side-branch dens, and how should they sound as you get close?
-Note: Sonny's spring caves have 1 to 3 side branches, each ending in a den "where creatures live" (#170). There is no spec yet for which animals, so I have not built den sounds. The existing pack has wolf, fox, boar, bat-free cave drips and breathing (no snarl or growl clips).
-Note: Recommendation: A. Quiet until about 12 m from the den mouth, then a slow low breathing and the occasional shuffle, never a growl, so it reads as "something sleeps here" and not as a jump scare.
-[A] Sleeping-animal breathing and shuffles only, from about 12 m, no growls
-[B] Same, plus a low warning growl when you come within 4 m
-[C] Nothing yet, wait for the animal spawns to be decided
-
 ## jason-first-night-soundscape | First-night sound: is what exists calm enough?
 Note: Read from code, not heard. On a first night in the forest by the fire you should have: the fire crackle (wind, surf and the night bed now drop about 9 dB near a lit fire, #115), a very quiet night hush (cut 18 dB), crickets on warm nights, and an owl hoot every 30 to 70 s from 40 to 110 m away that sometimes answers itself (in winter and spring more often).
 Note: Recommendation: A. It is already calm; only tune after you have listened once.
