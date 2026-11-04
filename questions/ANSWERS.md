@@ -2230,3 +2230,7 @@ Answered: 2026-11-04 15:07 UTC
 Answer: A: Yes, both goals right after the fire goal
 Answered: 2026-11-04 15:08 UTC
 
+## jason-cave-den-sounds | What lives in the cave side-branch dens, and how should they sound as you get close?
+Answer: C: Nothing yet, wait for the animal spawns to be decided | Comment: Animals that normally live in dens like wolves, bears, goblins, bandits. Also, if it was, for example, a bear, you would tend to see the bear fishing along the river so he wouldn’t go far from his cave. And he would forage for berries the immediate area and he would fish along the river. He would do this in the daytime and he would sleep at night and walls would probably be more nocturnal so they would sleep in the daytime and they would come out and hunt at night, so all creatures would have a System like this based on whatever they history is so you would have to look up the creatures whatever decided to move into each cave, and you would have to determine what their behaviour would be like and what their cave would be like for example, if it was just a bear there would probably be a little Doug out at the end where he calls at home if it was goblins, it would probably be multiple rooms with the cave system and wood in furniture and campfires and tools and weapons and various garbage on the floor
+Answered: 2026-11-04 15:13 UTC
+
