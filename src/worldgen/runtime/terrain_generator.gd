@@ -1148,7 +1148,18 @@ static func cave_room(data, ends: Array, rw: float, rh: float, lod: int) -> Vect
 	var beside: float = INF
 	var top: float = -INF
 
-	for end in ends:
+	# Along a passage the ground is read every 8 m or less (Sonny's review: a gully between the two ends would otherwise go unseen).
+	var points: Array = ends.duplicate()
+
+	if ends.size() == 2:
+		var a: Vector3 = ends[0]
+		var b: Vector3 = ends[1]
+		var steps: int = maxi(2, ceili(a.distance_to(b) / 8.0))
+
+		for n in range(1, steps):
+			points.append(a.lerp(b, float(n) / float(steps)))
+
+	for end in points:
 		var p: Vector3 = end
 		top = maxf(top, p.y)
 
