@@ -120,7 +120,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var fruit: Acc = Acc.new()   # the apples, pears and cherries of the fruit trees on their own surface: vertex alpha = a per-fruit rank 0..1, so a shader can hide the highest ranks as the tree is picked (5 levels 100/66/33/10/0 percent)
 	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
 	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
-	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
+	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp, fern stalks and fiddleheads, nettles, leafy herbs and the plain flower) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
+	var fungi: Acc = Acc.new()   # mushrooms on their own surface: they were in `bark`, so the bark shader put bark furrows, foot shade and green foot moss on every cap (Kathreen, 3 Nov)
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
@@ -171,9 +172,9 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"wildflower":
 			_wildflower(WILDFLOWER_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"leafy_herb":
-			_leafy_herb(HERB_LOOKS.get(str(entry["name"]), HERB_LOOKS["comfrey"]), bark, leaves, rng, h, crown, far)
+			_leafy_herb(HERB_LOOKS.get(str(entry["name"]), HERB_LOOKS["comfrey"]), greens, leaves, rng, h, crown, far)
 		"herb_nettle":
-			_herb(bark, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
+			_herb(greens, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
 		"hazel":
 			_hazel(smooth, leaves, twigs, rng, h, variant, far, season)
 		"oak":
@@ -201,7 +202,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"cane_shrub":
 			_cane_shrub(CANE_SHRUBS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, CANE_SHRUBS[str(entry["name"])].get("bloom_in", ["spring"]), mid))
 		"fern_rosette":
-			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), bark, leaves, rng, h, crown, far)
+			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), greens, leaves, rng, h, crown, far)
 		"reed_stand":
 			_reed_stand(REED_LOOKS.get(str(entry["name"]), REED_LOOKS["reeds"]), greens, leaves, rng, h, crown, far)
 		"fallen_log":
@@ -216,9 +217,9 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"fern":
 			_fern(leaves, rng, h, crown, far)
 		"mushroom":
-			_mushroom(MUSHROOM_LOOKS.get(str(entry["name"]), MUSHROOM_LOOKS["porcini"]), bark, rng, h, crown, far)
+			_mushroom(MUSHROOM_LOOKS.get(str(entry["name"]), MUSHROOM_LOOKS["porcini"]), fungi, rng, h, crown, far)
 		"flower":
-			_flower(bark, leaves, rng, h, crown, far)
+			_flower(greens, leaves, rng, h, crown, far)
 		_:
 			_shrub(bark, leaves, rng, h, crown, far)
 
@@ -237,14 +238,21 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
 	ember.commit(mesh, materials.get("ember", materials["bark"]))
 	greens.commit(mesh, materials.get("greens", materials["bark"]))
+	fungi.commit(mesh, materials.get("fungus", materials["bark"]))
 	twigs.commit(mesh, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"
 
 	if shape == "conifer":
 		leaf_kind = "conifer"
-	elif shape == "palm" or shape == "fern":
+	elif shape == "palm":
 		leaf_kind = "palm"
+	elif shape == "fern":
+		# A real frond card (tools/make_leaf_fern.py, Kathreen 3 Nov 2026); the palm card's even strips read as a comb. Callers without it keep the palm card.
+		# The leafy herbs (comfrey, burdock ...) are shape "fern" too: they get one broad ovate leaf (tools/make_leaf_herb.py) instead of a frond.
+		var model: String = str(entry.get("model", ""))
+		leaf_kind = "fern" if model == "fern_rosette" else ("herb" if model == "leafy_herb" else "palm")
+		leaf_kind = leaf_kind if materials.has(leaf_kind) else "palm"
 	elif shape == "grass" or shape == "reed":
 		leaf_kind = "grass"
 

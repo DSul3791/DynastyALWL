@@ -101,6 +101,11 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	var bow_cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/bow.json"))
+	var held_script = preload("res://src/client/held_item.gd")
+	check(bow_cfg is Dictionary and is_equal_approx(held_script.bow_power(100, bow_cfg), float(bow_cfg["weak_power"])) and is_equal_approx(held_script.bow_power(5000, bow_cfg), 1.0) and is_equal_approx(held_script.bow_power(int(bow_cfg["draw_min_ms"]), bow_cfg), float(bow_cfg["min_power"])), "the arrow sound follows the server's shot power from the draw time")
+	check(bow_cfg is Dictionary and Array(bow_cfg.get("ammo", [])) == Array(preload("res://src/client/held_item.gd").BOW_AMMO) and names.has("bow_draw") and names.has("bow_loose"), "the bow's draw and loose slots exist and its arrow list matches bow.json")
+	check(SlotSounds.net_cue("Something bites! Click now.") == "fish_bite" and SlotSounds.net_cue("You land a trout.") == "fish_land" and names.has("fish_bite") and names.has("fish_land"), "the rod's bite and catch lines play fish_bite and fish_land")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.

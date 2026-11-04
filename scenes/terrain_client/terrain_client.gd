@@ -42,6 +42,7 @@ const MyCharacter := preload("res://src/client/character/my_character.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
@@ -129,6 +130,7 @@ const EventLogScript := preload("res://src/shared/event_log.gd")
 const CrashReportScript := preload("res://src/client/crash_report.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
+const PieceLook := preload("res://src/client/piece_look.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
@@ -405,6 +407,7 @@ var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m fr
 var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
+var lag_run: Node = null               # --lag-run: the scripted early-game lag run (src/client/lag_run.gd, tools/lag_run.sh)
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
 var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
 var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
@@ -742,6 +745,8 @@ func _ready() -> void:
 			test_spear = true
 		elif argument == "--chop":
 			test_chop = true
+		elif argument == "--lag-run":
+			lag_run = preload("res://src/client/lag_run.gd").new()
 		elif argument == "--shoot":
 			test_shoot = true
 		elif argument == "--place-foundation":
@@ -1051,6 +1056,11 @@ func _welcome_body(info: Dictionary) -> void:
 	terrain.lod_count = LOD_COUNT
 	terrain.view_distance = VIEW_DISTANCE
 	terrain.mesh_block_size = 32
+	# Path decals paint only the ground: the terrain goes on its own render layer as well as the default one, when this voxel build can (piece_look.gd).
+	if "render_layers_mask" in terrain:
+		terrain.set("render_layers_mask", 1 | PieceLook.TERRAIN_DECAL_LAYER)
+		PieceLook.use_terrain_only_decals()
+
 	terrain.generate_collisions = true
 	terrain.collision_lod_count = 4
 	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
@@ -1411,6 +1421,11 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_chop:
 		items.run_chop_test(self)
+
+	if lag_run != null and lag_run.get_parent() == null:
+		lag_run.client = self
+		add_child(lag_run)
+		lag_run.run()
 
 	if test_shoot:
 		items.run_shoot_test(self)
@@ -2091,6 +2106,9 @@ func _update_weather() -> void:
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0)
+
+	if items != null:
+		items.air_c = float(weather["temp_c"])
 
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
 	# every client and the server agree with no traffic. Recomputed once a game minute.
@@ -2773,7 +2791,7 @@ const HELP_TEXT := """Move: W A S D   Jog: double-tap W   Run: Shift+W   Jump / 
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
 K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise and lower it, W A S D walk relative to it, K again to leave)
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
-I: crafting and inventory   R with a hammer in hand: blueprints   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
+I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
 /: inspection mode   + and -: spring flow (tuning)
 F2: quality   F3: debug details   F4: all screen text on or off   Ctrl+Shift+G: GPU probe table (press again to close)   J: jitter test
 Admin: Ctrl+N nearest NPC   Ctrl+R rabbit   Ctrl+X dig hole   ]: starter items   Esc > Advanced > Dump ground: crosshair ground report
@@ -3434,6 +3452,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
 			_save_display()
+		elif event.keycode == KEY_DELETE and held != null and held.delete_plan():
+			pass
 		elif event.keycode == KEY_R and not event.ctrl_pressed and items != null and not items.open:
 			if held != null:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
@@ -3617,6 +3637,8 @@ func _move_player(delta: float) -> void:
 	if test_walk:
 		_walk_step()
 		direction = _walk_dir
+	elif lag_run != null and _walk_dir != Vector3.ZERO:
+		direction = _walk_dir
 	var fast: float = FAST if Input.is_key_pressed(KEY_SHIFT) else 1.0
 	var forward: bool = Input.is_key_pressed(KEY_W)
 	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
@@ -3639,6 +3661,9 @@ func _move_player(delta: float) -> void:
 
 	if items != null and not flying:
 		pace *= items.speed_factor() * items.over_pace_factor()
+
+		if stance.stance == StanceScript.STAND:
+			pace *= items.path_pace_factor(body.global_position, "run" if running else ("jog" if jogging else "walk"))
 
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)
@@ -3672,7 +3697,7 @@ func _move_player(delta: float) -> void:
 	elif _climb_ladder(delta, strain_cap):
 		pass
 	else:
-		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and test_walk else pace)
+		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and (test_walk or lag_run != null) else pace)
 
 		# Gravity only applies once there is ground below to land on. Fresh
 		# or far-off ground has no collision yet, so wait for it; a player who
@@ -4051,9 +4076,12 @@ func _process(delta: float) -> void:
 
 	if harvest != null:
 		harvest.update(delta, Input.is_key_pressed(KEY_E) and not items.open)
+
+	Probe.stop("harvest", tp)
+	tp = Probe.start()
 	game_clock.tick()
 	_update_weather()
-	Probe.stop("harvest, clock, weather", tp)
+	Probe.stop("clock, weather", tp)
 
 	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
@@ -4066,6 +4094,9 @@ func _process(delta: float) -> void:
 
 	_frame_ms.append(delta * 1000.0)
 	Probe.frame(delta)
+
+	if held == null and MyCharacter.dynasty_body_on():
+		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome)
 
 	if compass != null and camera != null:
 		compass.heading = CompassScript.heading_of(camera)
@@ -5704,6 +5735,7 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
 
 	if crash_report != null:
 		crash_report.mark_clean()
