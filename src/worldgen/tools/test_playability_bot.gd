@@ -285,14 +285,9 @@ func _init() -> void:
 		return
 
 	pass_time(30.0, 0.8)
-	# One crown gives about a third of the lean-to's leaves (Dave 4 Nov: 200 leaves, about three trees); the bot fells one tree,
-	# so it checks that crown and stands in for the other two.
-	need(count("leaves") * 3 >= int(raw.get("leaves", 0)), "working the trunk gave %d leaves, a third of the lean-to's %d is needed per tree" % [count("leaves"), int(raw.get("leaves", 0))])
+	need(count("leaves") >= int(raw.get("leaves", 0)), "working the trunk gave %d leaves, the lean-to needs %d" % [count("leaves"), int(raw.get("leaves", 0))])
 	if halted:
 		return
-
-	while count("leaves") < int(raw.get("leaves", 0)):   # admin give is capped at 100 a call
-		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, mini(int(raw.get("leaves", 0)) - count("leaves"), 100), Vector3.ZERO)
 
 	items.action(1, Net.ACT_PICKUP, log_on_ground, 0, 0, Vector3.ZERO)
 	var carried: bool = items.shoulder_of(1) != "" or items.inventory_of(1).count_fill(items.table.number_of("log")) > 0
