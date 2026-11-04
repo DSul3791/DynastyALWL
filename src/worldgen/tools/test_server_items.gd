@@ -1877,7 +1877,7 @@ func _init() -> void:
 	var gj: float = float(tj._characters[tj._peer_key[1]]["train"])
 	var gc: float = float(tc._characters[tc._peer_key[1]]["train"])
 	check(gw > 0.0 and gw < gj and gj < gc, "an hour of walking trains less than jogging, less than hard tool work (%.2f %.2f %.2f)" % [gw, gj, gc])
-	# Dave 4 Nov (BUG-023): time above the line pays more the longer it is sustained, and each point costs more than the last.
+	# Dave 4 Nov (BUG-023): time above the line pays more the longer it is sustained, and every point costs the same (level_growth 0).
 	var ts = make(xd)
 	ts.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	ts.peer_connected_hello(1, "trainkey0005")
@@ -1902,7 +1902,7 @@ func _init() -> void:
 	t1._train_streak.erase(1)
 	t1._train_fitness(1, 1.0, 1800.0)
 	var gain_at_5: float = float(t1._characters[t1._peer_key[1]]["train"]) - 5.0
-	check(first_pt > gain_at_5 and gain_at_5 > 0.0, "a higher level needs more XP for the next point (%.3f vs %.3f)" % [first_pt, gain_at_5])
+	check(absf(first_pt - gain_at_5) < 1.0e-6 and gain_at_5 > 0.0, "every point costs the same XP at any level (%.3f vs %.3f)" % [first_pt, gain_at_5])
 	tr._train_fitness(1, 1.0, 1.0e7)
 	check(tr.fitness_of(1) == 10, "training stops at the top of the range")
 	tr.set_fitness(1, 2)
