@@ -164,7 +164,7 @@ func _process_body(delta: float) -> void:
 			if ragdoll.has_method("set_far"):
 				ragdoll.set_far(far)
 
-			WornSync.apply(ragdoll, _worn_of(str(roster.get(id, {}).get("outfit", ""))), far)
+			WornSync.apply(ragdoll, _worn_of(str(roster.get(id, {}).get("outfit", "")), _is_dynasty(ragdoll)), far)
 
 		var every: int = 1 if distance <= FULL_M else (2 if distance <= HALF_M else (4 if distance <= QUARTER_M else 0))
 		body["owed"] = float(body.get("owed", 0.0)) + delta
@@ -176,13 +176,25 @@ func _process_body(delta: float) -> void:
 			body["owed"] = 0.0
 
 
-# The worn items of an outfit name (data/npcs/outfits.json), read once.
-func _worn_of(outfit: String) -> Array:
+# The worn items of an outfit name (data/npcs/outfits.json), read once. Dave's body (dressed) has only its painted loincloth, so it also wears the outfit's
+# real shirt and trousers from the "dressed" table; the old bodies paint their coat and trousers and wear only the outfit's extras.
+func _worn_of(outfit: String, dressed: bool = false) -> Array:
 	if _outfits.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(OUTFITS_PATH))
 		_outfits = parsed if typeof(parsed) == TYPE_DICTIONARY else {"": []}
 
-	return WornSync.known_ids(_outfits.get(outfit, []))
+	var ids: Array = []
+
+	if dressed:
+		var table: Dictionary = _outfits.get("dressed", {})
+		ids.append_array(table.get(outfit, table.get("", [])))
+
+	ids.append_array(_outfits.get(outfit, []))
+	return WornSync.known_ids(ids)
+
+
+static func _is_dynasty(rig: Node) -> bool:
+	return rig.get_script() == DynastyBodyScript
 
 
 # The body an NPC wears (Dave 4 Nov 2026: "NPCs can use your body by randomizing all the sliders"): Dave's own Dynasty body, the same one the player wears, with every creator
@@ -216,7 +228,7 @@ func _make_body(id: String) -> Node3D:
 	var shade: float = 1.0 + (float(h & 255) / 255.0 - 0.5) * 0.35
 	var skin: Color = Color(0.78, 0.62, 0.5).lerp(Color(0.5, 0.36, 0.28), float((h >> 8) & 255) / 255.0 * 0.6)
 	ragdoll.dress(skin, Color(coat.r * shade, coat.g * shade, coat.b * shade), Color(trousers.r * shade, trousers.g * shade, trousers.b * shade))
-	WornSync.apply(ragdoll, _worn_of(outfit), false)
+	WornSync.apply(ragdoll, _worn_of(outfit, _is_dynasty(ragdoll)), false)
 	ragdoll.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	ragdoll.play("idle")
 	# The furniture they use goes with them (shown by state): a chair under a sitter, a bed under a sleeper. The markers are on the

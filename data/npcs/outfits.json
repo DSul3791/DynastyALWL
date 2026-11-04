@@ -1,5 +1,15 @@
 {
 	"_note": "What an NPC outfit wears on top of the ragdoll's coat and trousers (src/client/worn_sync.gd). Outfit name (the roster's 'outfit') -> item ids that have a row in data/items/worn.json. An unknown id logs once and is skipped. Client only, no protocol.",
 	"merchant": ["hide_boots", "backpack"],
-	"guard": ["hide_boots", "hide_leggings", "hide_hood"]
+	"guard": ["hide_boots", "hide_leggings", "hide_hood"],
+	"_dressed_note": "Dave's Dynasty body has only a painted loincloth, so on it each outfit also wears these real shirt and trousers pieces (the old bodies paint the coat and trousers instead). An outfit not listed wears the '' row.",
+	"dressed": {
+		"": ["wool_tunic", "wool_trousers"],
+		"farmer": ["wool_tunic", "wool_trousers"],
+		"fisher": ["linen_shirt", "wool_trousers"],
+		"healer": ["linen_shirt", "wool_trousers"],
+		"hunter": ["leather_jerkin", "hide_trousers"],
+		"merchant": ["linen_shirt", "wool_trousers"],
+		"guard": ["gambeson"]
+	}
 }

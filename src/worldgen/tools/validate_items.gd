@@ -906,9 +906,19 @@ func _init() -> void:
 				if str(outfit).begins_with("_"):
 					continue
 
-				for id in outfits[outfit]:
-					if not wearable.has(id):
-						fail("outfits.json: outfit '%s' wears '%s', which has no worn.json row" % [outfit, id])
+				# "dressed": outfit -> the shirt and trousers Dave's body wears under the outfit (npc_view.gd _worn_of).
+				var lists: Dictionary = {}
+
+				if str(outfit) == "dressed":
+					for name in outfits[outfit]:
+						lists["dressed " + str(name)] = outfits[outfit][name]
+				else:
+					lists[str(outfit)] = outfits[outfit]
+
+				for label in lists:
+					for id in lists[label]:
+						if not wearable.has(id):
+							fail("outfits.json: outfit '%s' wears '%s', which has no worn.json row" % [label, id])
 
 	print("items: %d core, %d gathered, %d recipes" % [items_file.get("items", {}).size(), gathered_file.get("items", {}).size(), recipes.size()])
 	print("item validator: %d errors, %d warnings" % [errors, warnings])

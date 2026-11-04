@@ -8,6 +8,7 @@ extends SceneTree
 const NpcViewScript := preload("res://src/client/npc_view.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
+const WornLook := preload("res://src/client/worn_look.gd")
 
 var failures: int = 0
 
@@ -24,6 +25,22 @@ func _check_bodies(view: Node3D) -> void:
 	if not DynastyBodyScript.available():
 		print("test_npc_view: the Dynasty glb is not imported here, the NPC body checks are skipped")
 		return
+
+	# Dave's body has only a painted loincloth: on it every outfit also wears a real shirt and trousers (outfits.json "dressed"); the old bodies paint theirs.
+	for outfit in ["", "merchant", "guard", "farmer", "nobody"]:
+		var on_dave: Array = view._worn_of(outfit, true)
+		var plain: Array = view._worn_of(outfit, false)
+		var tops: int = 0
+
+		for id in on_dave:
+			if str(WornLook.table().get(id, {}).get("builder", "")) in ["tunic", "jerkin", "padded", "cloak", "mailshirt"]:
+				tops += 1
+
+		check(tops >= 1, "outfit '%s' on Dave's body wears a shirt (%s)" % [outfit, on_dave])
+		check(on_dave.size() > plain.size(), "outfit '%s' on the old body adds no shirt or trousers" % outfit)
+
+		for id in plain:
+			check(id in on_dave, "outfit '%s' keeps its extra '%s' on Dave's body" % [outfit, id])
 
 	var seen: Dictionary = {}
 	var shaped: int = 0
