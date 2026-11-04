@@ -1787,6 +1787,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.004, 0.003, 0.016), Vector3(0.0, -0.043, 0.0), dark)
 		"hand_net":
 			_net(parts, color)
+		"hand_net_hanging":
+			_net(parts, color, true)
 		"cloth":
 			# Folded cloth: a stack of three folds with a different tone each, a visible pale selvedge edge and a dark border stripe.
 			_box(parts, Vector3(0.26, 0.04, 0.2), Vector3(0.0, -0.04, 0.0), color)
@@ -2412,9 +2414,11 @@ static func _warm_stone(color: Color) -> Color:
 # it is set down: the horn (where the line ties on) at the top, many twine strands bowing out and down to a wide round mouth, rings of mesh between
 # them, and a lead line round the mouth hung with small stone sinkers all the way round. The hand line runs from the horn down to a coil at the
 # origin (where the hand holds it). Reads as a round net from above and as a bell from the side. No pole, no bars.
-static func _net(parts: Array, color: Color) -> void:
+# `hanging` (the net in the hand, Kathleen's check 4 Nov: it was held sideways and looked small): the coil stays at the origin, where the hand closes on it, and the
+# line drops straight down to the horn, so the bell hangs under the hand mouth down. held_item.gd keeps it upright with the world (it hangs, it does not turn with the wrist).
+static func _net(parts: Array, color: Color, hanging: bool = false) -> void:
 	var line_tint: Color = Color(0.5, 0.39, 0.25)
-	var mid: Vector3 = Vector3(0.42, 0.0, 0.0)
+	var mid: Vector3 = Vector3(0.0, -0.42, 0.0) if hanging else Vector3(0.42, 0.0, 0.0)
 	var horn: Vector3 = mid + Vector3(0.0, 0.25, 0.0)
 	var mouth_y: float = -0.035
 	var rim: float = 0.175
@@ -2423,7 +2427,7 @@ static func _net(parts: Array, color: Color) -> void:
 	for k in 3:
 		_torus(parts, 0.05 - 0.008 * float(k), 0.006, Vector3(0.0, -0.035 + 0.011 * float(k), 0.0), line_tint if k % 2 == 0 else line_tint.lightened(0.1))
 
-	var sag: Array = [Vector3(0.05, -0.03, 0.0), Vector3(0.2, -0.03, 0.03), Vector3(0.33, 0.09, 0.015), horn]
+	var sag: Array = [Vector3(0.0, -0.04, 0.0), Vector3(0.012, -0.1, 0.006), horn] if hanging else [Vector3(0.05, -0.03, 0.0), Vector3(0.2, -0.03, 0.03), Vector3(0.33, 0.09, 0.015), horn]
 
 	for k in sag.size() - 1:
 		_net_line(parts, sag[k], sag[k + 1], 0.009, line_tint)
