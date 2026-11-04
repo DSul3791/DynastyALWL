@@ -128,6 +128,7 @@ var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set 
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var send_notice: Callable      # (peer, text)
+var send_marker_done: Callable # (peer, Vector3): a road marker is reached or dropped, the client takes its flag down
 var standing_near: Callable    # (species name, position, radius) -> [position] of the nearest standing tree of that species, or []
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var shrub_info: Callable       # (chunk Vector2i, id) -> {name, position, height} of a standing bush or shrub (placer or planted), or {}; set by the server scene
@@ -1015,7 +1016,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_HOE_SMOOTH:
 		_hoe_smooth(peer, inv, at)
 	elif kind == Net.ACT_HOE_GRADE_POINT:
-		_hoe_grade_point(peer, inv, a, at)
+		_hoe_grade_point(peer, inv, b, at)
 	elif kind == Net.ACT_HOE_GRADE:
 		_hoe_grade(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
@@ -2206,6 +2207,15 @@ const PATH_AVERAGE_GAP_MS := 1500   # and the ground is averaged at most this of
 var _last_average: Dictionary = {}  # peer -> msec of the last averaging
 const PATH_SPACING_M := 0.7   # the strong middle is 1 m across, so patches this far apart still join; fewer patches means fewer decals along a road
 
+const PATH_BOULDER_MARGIN_M := 1.0   # a path patch is laid no nearer a boulder's edge than this: its brown fades out to 1.25 m, so the path goes round a rock instead of painting on it (Dave 3 Nov)
+
+
+func _path_blocked_by_boulder(other: Dictionary, spot: Vector3) -> bool:
+	if not other.has("boulder"):
+		return false
+
+	return Vector2(other["pos"].x - spot.x, other["pos"].z - spot.z).length() < float((other["boulder"] as Dictionary).get("radius", 0.5)) + PATH_BOULDER_MARGIN_M
+
 
 func _hoe_path(peer: int, inv, at: Vector3) -> void:
 	if not ground_height.is_valid() or not _structures.has("path_patch") or not _hoe_ready(peer, inv, at):
@@ -2228,6 +2238,10 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 
 	for id in _items:
 		var other: Dictionary = _items[id]
+
+		if _path_blocked_by_boulder(other, spot):
+			_say(peer, "A rock is in the way: tread the path round it.")
+			return
 
 		if not other.has("struct"):
 			continue
@@ -2366,7 +2380,7 @@ func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
 
 
 # The grade line (roads): point A, point B, then strokes along the line bring the ground toward the straight ramp between their heights.
-func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
+func _hoe_grade_point(peer: int, inv, _which: int, at: Vector3) -> void:
 	if not ground_height.is_valid() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > DIG_REACH_M or not _has_tool(inv, "hoe"):
 		return
 
@@ -2375,19 +2389,14 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
 	if is_nan(h):
 		return
 
-	var pair: Array = _grade_points.get(peer, [null, null])
-
-	if which == 0:
-		pair = [Vector3(at.x, h, at.z), null]
-	elif pair[0] != null:
-		pair[1] = Vector3(at.x, h, at.z)
-		_road_start(peer, pair[0], pair[1])
-
-	_grade_points[peer] = pair
+	var here: Vector3 = Vector3(at.x, h, at.z)
+	var before: Array = _grade_points.get(peer, [null, null])
+	_grade_points[peer] = [before[1] if before[1] != null else here, here]   # the last two markers, for the manual grade stroke
+	_road_marker(peer, here)
 
 
-# The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B is levelled to the straight ramp between the two
-# heights and a path is laid along it, by itself. Worked a station at a time (one every ROAD_STEP_S, at most ROAD_EDITS ground edits each), so a road
+# The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B follows the ground, averaged in 3 m sections (no straight ramp)
+# between the two heights and a path is laid along it, by itself. Worked a station at a time (one every ROAD_STEP_S, at most ROAD_EDITS ground edits each), so a road
 # never freezes the game the way one big edit would; the hoe wears once every ROAD_WEAR_EVERY stations and the job stops if the hoe is gone.
 const ROAD_MAX_M := 40.0
 const ROAD_STATION_M := 0.7
@@ -2396,22 +2405,78 @@ const ROAD_EDITS := 3
 const ROAD_WEAR_EVERY := 4
 const ROAD_HALF_WIDTH_M := 1.0
 const ROAD_DEPTH_M := 0.5
-var _roads: Dictionary = {}   # peer -> {"a": Vector3, "b": Vector3, "n": stations, "i": next station, "wait": seconds to the next one}
+const ROAD_SECTION_M := 3.0   # the ground is averaged over sections this long along the line
+var _roads: Dictionary = {}   # peer -> {"head": where the road has got to, "markers": [Vector3] waiting, "seg": null or {"a", "b", "n": stations, "i": next station, "wait": seconds to the next one}}
 
 
-func _road_start(peer: int, a: Vector3, b: Vector3) -> void:
-	var length: float = Vector2(b.x - a.x, b.z - a.z).length()
+# Surveyor mode (Dave 3 Nov 2026): the player drops markers while walking. Markers belong to the player who set them (the peer id keys the job, so a
+# builder never chases another player's markers). The first marker of an idle job is where the road starts; after that the builder takes the nearest
+# remaining marker to where it has got to, builds toward it, deletes it on arrival and goes for the next nearest. The job is done when none are left.
+const ROAD_MAX_MARKERS := 24
 
-	if length < 1.0:
-		_say(peer, "Points A and B are too close together.")
+
+func _marker_done(peer: int, at: Vector3) -> void:
+	if send_marker_done.is_valid():
+		send_marker_done.call(peer, at)
+
+
+func _road_abandon(peer: int, job: Dictionary) -> void:
+	_roads.erase(peer)
+	_marker_done(peer, job["head"])
+
+	if job["seg"] != null:
+		_marker_done(peer, job["seg"]["b"])
+
+	for marker in job["markers"]:
+		_marker_done(peer, marker)
+
+
+func _road_marker(peer: int, here: Vector3) -> void:
+	if not _roads.has(peer):
+		_roads[peer] = {"head": here, "markers": [], "seg": null}
+		_say(peer, "Road started at this marker: set more markers as you walk and the road builds toward the nearest one.")
 		return
 
-	if length > ROAD_MAX_M:
-		_say(peer, "The road is longer than %d m: set B nearer to A." % int(ROAD_MAX_M))
+	var job: Dictionary = _roads[peer]
+
+	if job["markers"].size() >= ROAD_MAX_MARKERS:
+		_say(peer, "Too many markers waiting: let the road catch up.")
 		return
 
-	_roads[peer] = {"a": a, "b": b, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
-	_say(peer, "Road marked: the ground is being levelled and trodden from A to B.")
+	job["markers"].append(here)
+	_say(peer, "Marker set: the road builds toward the nearest one, then the next.")
+
+
+# Takes the nearest marker to the head as the next stretch; returns false when no markers are left.
+func _road_next_segment(peer: int, job: Dictionary) -> bool:
+	var head: Vector3 = job["head"]
+
+	while not job["markers"].is_empty():
+		var best: int = 0
+
+		for k in job["markers"].size():
+			if Vector2(job["markers"][k].x - head.x, job["markers"][k].z - head.z).length() < Vector2(job["markers"][best].x - head.x, job["markers"][best].z - head.z).length():
+				best = k
+
+		var target: Vector3 = job["markers"][best]
+		job["markers"].remove_at(best)
+		var length: float = Vector2(target.x - head.x, target.z - head.z).length()
+
+		if length > ROAD_MAX_M:
+			_say(peer, "A marker is more than %d m from the road: skipped." % int(ROAD_MAX_M))
+			_marker_done(peer, target)
+			continue
+
+		if length < 1.0:
+			job["head"] = target
+			head = target
+			_marker_done(peer, target)
+			continue
+
+		job["seg"] = {"a": head, "b": target, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
+		return true
+
+	return false
 
 
 func _road_tick(delta: float) -> void:
@@ -2420,26 +2485,54 @@ func _road_tick(delta: float) -> void:
 
 	for peer in _roads.keys():
 		var job: Dictionary = _roads[peer]
-		job["wait"] = float(job["wait"]) - delta
-
-		if float(job["wait"]) > 0.0:
-			continue
-
-		job["wait"] = ROAD_STEP_S
 		var inv = inventory_of(peer)
 
 		if inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
-			_roads.erase(peer)
+			_road_abandon(peer, job)   # the hoe is gone: the road stops and the waiting flags come down
 			continue
 
-		var i: int = int(job["i"])
-
-		if i >= int(job["n"]):
-			_roads.erase(peer)
+		if job["seg"] == null and not _road_next_segment(peer, job):
+			_roads.erase(peer)   # no markers left: the road is done
+			_marker_done(peer, job["head"])
+			_say(peer, "The road is finished.")
 			continue
 
-		_road_station(peer, inv, job["a"], job["b"], i, int(job["n"]))
-		job["i"] = i + 1
+		var seg: Dictionary = job["seg"]
+		seg["wait"] = float(seg["wait"]) - delta
+
+		if float(seg["wait"]) > 0.0:
+			continue
+
+		seg["wait"] = ROAD_STEP_S
+		var i: int = int(seg["i"])
+
+		if i >= int(seg["n"]):
+			_marker_done(peer, seg["a"])
+			_marker_done(peer, seg["b"])
+			job["head"] = seg["b"]   # reached the marker: it is deleted (taken off the list when it was chosen) and the next nearest is next
+			job["seg"] = null
+			continue
+
+		_road_station(peer, inv, seg["a"], seg["b"], i, int(seg["n"]))
+		seg["i"] = i + 1
+
+
+# The ground height a road station is brought to: the average of the ground along the line within ROAD_SECTION_M (3 m) around the station, so the road
+# follows the lie of the land and eases over bumps and dips instead of cutting a straight ramp between the two markers (Dave 3 Nov 2026).
+func _road_section_height(a: Vector3, b: Vector3, t: float) -> float:
+	var length: float = Vector2(b.x - a.x, b.z - a.z).length()
+	var total: float = 0.0
+	var count: int = 0
+
+	for k in range(-3, 4):
+		var tt: float = clampf(t + float(k) * (ROAD_SECTION_M / 6.0) / maxf(length, 0.01), 0.0, 1.0)
+		var h: float = float(ground_height.call(lerpf(a.x, b.x, tt), lerpf(a.z, b.z, tt)))
+
+		if not is_nan(h):
+			total += h
+			count += 1
+
+	return total / float(count) if count > 0 else lerpf(a.y, b.y, t)
 
 
 func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> void:
@@ -2447,10 +2540,11 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 	var along: Vector2 = Vector2(b.x - a.x, b.z - a.z).normalized()
 	var side: Vector2 = Vector2(-along.y, along.x)
 	var centre: Vector2 = Vector2(a.x, a.z).lerp(Vector2(b.x, b.z), t)
-	var target: float = lerpf(a.y, b.y, t)
+	var target: float = _road_section_height(a, b, t)
 	var edits: int = 0
+	var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(Vector3(centre.x, target, centre.y))) > 0.05   # no digging or filling in water: the road goes on over a ford
 
-	if dig_ground.is_valid() and fill_ground.is_valid():
+	if not wet and dig_ground.is_valid() and fill_ground.is_valid():
 		for offset in [0.0, ROAD_HALF_WIDTH_M, -ROAD_HALF_WIDTH_M]:
 			if edits >= ROAD_EDITS:
 				break
@@ -2484,6 +2578,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 		for id in _items:
 			var other: Dictionary = _items[id]
 
+			if _path_blocked_by_boulder(other, pos):
+				blocked = true
+				break
+
 			if not other.has("struct"):
 				continue
 
@@ -2506,8 +2604,6 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 	if i % ROAD_WEAR_EVERY == 0:
 		_wear_tool(peer, inv, "hoe", "dig")
 
-	if i == n - 1:
-		_say(peer, "The road is finished.")
 
 
 func _hoe_grade(peer: int, inv, at: Vector3) -> void:
@@ -3450,6 +3546,7 @@ func _load_world_items() -> void:
 				entry["wear"] = int(row[8])
 
 			_items[_next_id] = entry
+			_grid_add(_next_id, entry)
 			_next_id += 1
 			continue
 
@@ -5690,6 +5787,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_next_uid += 1
 
 	_items[_next_id] = entry
+	_grid_add(_next_id, entry)
 	_next_id += 1
 	_add_roof(entry)
 
@@ -5744,6 +5842,30 @@ func _snap_to_fire(peer: int, spot: Vector3) -> Vector3:
 
 
 # The structure's roof joins the cover index (both ends do the same on seeing the structure).
+# --- Solid footprints (Dave 3 Nov 2026): the server knows where walls and heavy stations stand, so animals can be stopped by them ---
+const StructureGridScript := preload("res://src/stream/structure_grid.gd")
+var _grid = StructureGridScript.new()
+
+
+# Registers a freshly placed or loaded structure when its structures.json row says "blocks_walk".
+func _grid_add(id: int, entry: Dictionary) -> void:
+	var kind: String = str(entry["struct"]["kind"])
+	var def: Dictionary = _structures.get(kind, {})
+
+	if bool(def.get("blocks_walk", false)):
+		_grid.add(id, kind, entry["pos"].x, entry["pos"].z, float(entry["struct"]["yaw"]), float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0)))
+
+
+# True when a wall or a heavy station stands over (x, z); margin grows each piece by an animal's body radius.
+func structure_blocks(x: float, z: float, margin: float = 0.0) -> bool:
+	return _grid.blocks(x, z, margin, _items)
+
+
+# True when the straight step from (x0, z0) to (x1, z1) goes through such a piece: a long stride cannot jump a thin wall.
+func structure_blocks_step(x0: float, z0: float, x1: float, z1: float, margin: float = 0.0) -> bool:
+	return _grid.segment_blocked(x0, z0, x1, z1, margin, _items)
+
+
 func _add_roof(entry: Dictionary) -> void:
 	var def: Dictionary = _structures.get(str(entry["struct"]["kind"]), {})
 
@@ -9741,6 +9863,7 @@ func dev_place(spec: String) -> int:
 		_next_uid += 1
 
 	_items[_next_id] = entry
+	_grid_add(_next_id, entry)
 	_next_id += 1
 	_add_roof(entry)
 	_dirty = true
@@ -9816,8 +9939,14 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "event:placed:lean_to") >= 1
 		"bed_placed":
 			return _hint_count(st, "event:placed:rough_bed") >= 1
-		"workbench_placed":
-			return _hint_count(st, "event:placed:workbench") >= 1
+		"workbench_placed":   # the camp bench or the log workbench (Dino round 6)
+			return _hint_count(st, "event:placed:workbench") + _hint_count(st, "event:placed:log_workbench") >= 1
+		"has_campfire_kit":
+			return inv.count_of(table.number_of("campfire_kit")) >= 1
+		"near_fire_with_food":   # raw meat or fish in the pack, a lit fire within 4 m
+			return _lit_fire_within(_peer_pos[peer], 4.0) and _has_raw_meat(inv)
+		"near_nettle":   # no flora query for small plants on the server: the first nettles in the pack stand in for "near a nettle"
+			return inv.count_of(table.number_of("nettles")) >= 1
 		"spear_made":
 			return _hint_count(st, "made:spear") >= 1
 		"warmth_under_70":
@@ -9849,6 +9978,17 @@ func _plant_food_at_fire(peer: int, inv) -> bool:
 		for need in r["needs"]:
 			if int(need[0]) > 0 and inv.count_of(int(need[0])) >= int(need[1]) and not _cooking.get("cooks_into", {}).has(table.id_of(int(need[0]))):   # meat and fish are what the plain campfire cooks
 				return true
+
+	return false
+
+
+# True when the pack holds something the plain campfire cooks (cooking.json cooks_into: raw meat and fish).
+func _has_raw_meat(inv) -> bool:
+	for id in _cooking.get("cooks_into", {}):
+		var number: int = table.number_of(str(id))
+
+		if number > 0 and inv.count_of(number) >= 1:
+			return true
 
 	return false
 
@@ -9986,11 +10126,24 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 	if str(check.get("event", "")) == "moved_lit_night":
 		return float(st["goal_counts"].get("moved_lit_night", 0.0)) >= float(check.get("metres", 100.0))
 
+	if check.has("event") and check.has("what_any"):   # any of these kinds counts: the camp bench or the log workbench (Dino round 6)
+		var total: int = 0
+
+		for what in check["what_any"]:
+			total += int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(what)), 0))
+
+		return total >= need
+
 	if check.has("event"):
 		return int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)) >= need
 
 	if check.has("made_item"):
-		return int(st["goal_counts"].get("made:" + str(check["made_item"]), 0)) >= need
+		var made: int = int(st["goal_counts"].get("made:" + str(check["made_item"]), 0))
+
+		if bool(check.get("or_have", false)) and inv != null:   # a bought one counts too (Hob sells the stone axe; Dino round 6)
+			made = maxi(made, inv.count_of(table.number_of(str(check["made_item"]))))
+
+		return made >= need
 
 	if inv == null:
 		return false
