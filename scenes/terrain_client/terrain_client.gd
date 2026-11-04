@@ -116,6 +116,7 @@ const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const HorizonScript := preload("res://src/client/horizon_indicator.gd")
+const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
@@ -217,6 +218,7 @@ var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
+var underwater_surface: float = 0.0      # the water surface over the eye while under (fog depth, caustics), 0 in the sea
 var _ground_quality: int = -1       # quality the ground texture array was built for
 var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
 var _z_slept: bool = false             # the hold already asked for sleep
@@ -1179,12 +1181,13 @@ func _welcome_body(info: Dictionary) -> void:
 	_horizon.setup(camera, func() -> bool: return swimming or (items != null and items.breath_ds >= 0))
 	layer.add_child(_horizon)
 	debug_hud.add_line("server link", func() -> String: return link_bars.text())
-	_tint = ColorRect.new()
-	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_tint.color = Color(0.05, 0.25, 0.4, 0.55)
-	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tint.visible = false
-	layer.add_child(_tint)
+	# Under water: a gentle wobble and a darker rim over the 3D picture (no flat blue sheet; the water's colour is the fog,
+	# weather_look.gd _underwater_fog). Its own layer under the HUD, so the HUD is not read back into it.
+	var under_layer: CanvasLayer = CanvasLayer.new()
+	under_layer.layer = -1
+	add_child(under_layer)
+	_tint = UnderwaterLook.make()
+	under_layer.add_child(_tint)
 	faint = FaintEffectScript.new()
 	add_child(faint)
 	faint.setup(layer)      # over-exertion and fainting picture (faint.set_state), hidden while normal
@@ -2658,7 +2661,7 @@ func _apply_quality() -> void:
 	if _environment != null:
 		LookSettings.apply(_environment, _sun, get_viewport(), quality)
 		_apply_render_scale()
-		_environment.fog_density = 0.05 if underwater else LookSettings.FOG_DENSITY
+		_environment.fog_density = WeatherLookScript.UNDER_FOG_DENSITY if underwater else LookSettings.FOG_DENSITY
 
 
 # Tells what the display setting really did, a moment later when the window had time to change:
@@ -5227,9 +5230,6 @@ func _process(delta: float) -> void:
 	if inspecting:
 		_update_inspect()
 
-	if underwater:
-		mode = (mode + " (underwater)").strip_edges()
-
 	if waiting_for_ground and not flying:
 		mode = (mode + " (building the ground around you, the first visit takes longer)").strip_edges()
 	if Time.get_ticks_msec() < _bake_alert_until:
@@ -5624,14 +5624,24 @@ func _update_underwater() -> void:
 	if not under and not is_nan(surface) and eye.y < surface:
 		under = WaterVolume.submerged(eye.y, surface, _ground_below(eye))
 
+	if under:
+		underwater_surface = surface if not is_nan(surface) and surface > 0.0 else 0.0
+
+	var daylight: float = 1.0 - float(weather_look.day.night) if weather_look != null else 1.0
+	UnderwaterLook.set_caustics(terrain.material as ShaderMaterial if terrain != null else null, under, underwater_surface, daylight)
+
 	if under == underwater:
 		return
 
 	underwater = under
 	_tint.visible = under
-	_environment.fog_density = 0.05 if under else LookSettings.FOG_DENSITY
-	_environment.fog_light_color = Color(0.08, 0.28, 0.4) if under else SkyClouds.HORIZON
+	# The fog itself follows the day and the depth every frame (weather_look.gd _underwater_fog); this is the switch.
+	_environment.fog_density = WeatherLookScript.UNDER_FOG_DENSITY if under else LookSettings.FOG_DENSITY
+	_environment.fog_light_color = WeatherLookScript.UNDER_DAY_COLOR if under else SkyClouds.HORIZON
 	_environment.fog_sky_affect = 1.0 if under else 0.0
+	_environment.fog_height_density = WeatherLookScript.UNDER_DEEP_DENSITY if under else 0.0
+	_environment.fog_height = underwater_surface
+	_environment.fog_aerial_perspective = 0.0 if under else LookSettings.FOG_AERIAL
 
 
 # Ground height under a point, from the terrain colliders (NAN if none).
