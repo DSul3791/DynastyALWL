@@ -73,6 +73,7 @@ func _init(genome_in: Dictionary = {}, voxel: float = 0.04, fingers: bool = true
 	rig.free()
 	add_child(skeleton)
 	body_mesh = skeleton.get_node("Body") as MeshInstance3D
+	body_mesh.layers |= 1 << 19   # no ground decals on the body (piece_look.gd NO_DECAL_LAYER)
 	face = skeleton.get_node("Face")
 	set_meta("worn_fit", Generator.worn_fit(genome))
 	set_meta("worn_measures", Generator.measures(genome))

@@ -355,7 +355,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	clock = Time.get_ticks_msec()
 	var sites = TileSitesScript.new()
 	sites.setup(settings, tile_rules, tables)
-	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth)
+	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow)
 	timings["sites"] = Time.get_ticks_msec() - clock
 
 	return {
