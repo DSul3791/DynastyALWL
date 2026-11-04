@@ -78,8 +78,9 @@ func _init() -> void:
 	var order2: Dictionary = trade.order_of_day("hob")
 	check(str(order2) != str(order), "the next day has a different order")
 	give_order(items, order2)
+	var before2: int = items.coins_of(1)   # measured here: a starter goal finished by the picked items may have paid its own small reward meanwhile
 	said = trade.wanted_order(1, "hob")
-	check(items.coins_of(1) == start + pay + int(order2.get("pay", 0)), "the next day's order pays again (%s)" % said)
+	check(items.coins_of(1) - before2 == int(order2.get("pay", 0)), "the next day's order pays again, once (%d copper, %s)" % [items.coins_of(1) - before2, said])
 
 	items._finish_writer()
 	print("test_wanted_order: ", "FAIL (%d)" % failures if failures > 0 else "ok")

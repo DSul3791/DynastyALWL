@@ -124,10 +124,6 @@
 					"goto": "news"
 				},
 				{
-					"text": "Any order for today?",
-					"goto": "wanted"
-				},
-				{
 					"text": "Can I help with anything?",
 					"goto": "quest_offer",
 					"if": {
@@ -205,6 +201,10 @@
 						"rank": "Friend",
 						"flag_not": "gift_friend"
 					}
+				},
+				{
+					"text": "Any order for today?",
+					"goto": "wanted"
 				},
 				{
 					"text": "Goodbye.",
