@@ -2320,6 +2320,7 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 	_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
 	_next_id += 1
 	_dirty = true
+	_goal_event(peer, "path_laid")
 
 
 # Moves ground between the sample spots (offsets from `at`) toward their mean height: cut above, fill below, volume balanced, at most SMOOTH_MAX_M each.
@@ -2622,6 +2623,7 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
 			_next_id += 1
 			_dirty = true
+			_goal_event(peer, "path_laid")
 
 	if i % ROAD_WEAR_EVERY == 0:
 		_wear_tool(peer, inv, "hoe", "dig")
