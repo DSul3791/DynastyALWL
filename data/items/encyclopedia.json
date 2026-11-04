@@ -2125,7 +2125,7 @@
 			"kind": "placeable",
 			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"how_to_get": [
-				"Craft: 30 Stick, 200 Leaves, 10 Twine"
+				"Craft: 16 Stick, 4 Leaves, 2 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
