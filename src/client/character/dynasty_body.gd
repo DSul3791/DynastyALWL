@@ -12,6 +12,8 @@ const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
 const ARMS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"   # dynasty_arms.gd PARTS_GLB, warmed with the body
 const P := "mixamorig_"
 const WornLook := preload("res://src/client/worn_look.gd")
+const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
+const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -76,6 +78,8 @@ var hand_mount_l: Marker3D
 var head_mount: Marker3D
 var _log: MeshInstance3D
 var _model: Node3D
+var proportions: SkeletonModifier3D           # dynasty_proportions.gd, made by set_proportions
+var _mount_rest: Dictionary = {}              # Marker3D -> its transform before set_proportions scaled the body
 
 
 # True when Dave's glb is imported and holds a skeleton, a mesh and an AnimationPlayer. Checked once per run; when it is not (a fresh checkout before `godot --import`) one line says so and the
@@ -371,9 +375,91 @@ func is_one_shot_playing() -> bool:
 	return animation_player != null and animation_player.is_playing() and animation_player.get_animation(animation_player.current_animation).loop_mode == Animation.LOOP_NONE
 
 
-# The colours are baked into Dave's texture; nothing to paint yet.
+# The creator's body sliders on this body (dynasty_proportions.gd): height scales the whole model, legs, torso, arms, shoulders, neck, head, hands and feet scale their bones. The
+# mounts are scaled back so a held tool keeps its size. Safe to call again whenever the genome changes (the creator preview does on every slider move).
+func set_proportions(g: Dictionary) -> void:
+	genome = g
+
+	if _model == null or skeleton == null:
+		return
+
+	if proportions == null:
+		proportions = Proportions.new()
+		proportions.name = "Proportions"
+		skeleton.add_child(proportions)
+
+	proportions.set_genome(g)
+	_set_widths(g)
+	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)       # the skin colour of the genome; the other colours are unused on this body
+	var height: float = Proportions.factor(g, "height")
+	_model.scale = Vector3.ONE * height
+	var hand: float = height * Proportions.factor(g, "hands")
+	var head: float = height * Proportions.factor(g, "head")
+
+	for spec in [[hand_mount_r, hand], [hand_mount_l, hand], [head_mount, head]]:
+		var marker: Marker3D = spec[0]
+
+		if not _mount_rest.has(marker):
+			_mount_rest[marker] = marker.transform
+
+		var rest: Transform3D = _mount_rest[marker]
+		marker.transform = Transform3D(rest.basis * (1.0 / float(spec[1])), rest.origin)
+
+
+# The width sliders (dynasty_shapes.gd): the shared shaped mesh is put on this body the first time a width is not 0, then each slider is a blend shape weight.
+func _set_widths(g: Dictionary) -> void:
+	var any: bool = false
+
+	for key in Shapes.NAMES:
+		if absf(float(g.get(key, 0.0))) > 0.001:
+			any = true
+
+	if not any and not body_mesh.mesh.has_meta(Shapes.SHAPED_KEY):
+		return       # the plain body keeps Dave's own mesh
+
+	var shaped: ArrayMesh = Shapes.shaped(body_mesh.mesh, body_mesh.skin, skeleton)
+
+	if shaped == null:
+		return
+
+	if body_mesh.mesh != shaped:
+		body_mesh.mesh = shaped
+		_skin_material = null          # a new mesh drops the override: dress makes it again
+
+	for key in Shapes.NAMES:
+		var i: int = body_mesh.find_blend_shape_by_name(key)      # MeshInstance3D has the lookup; ArrayMesh does not
+
+		if i >= 0:
+			body_mesh.set_blend_shape_value(i, clampf(float(g.get(key, 0.0)), -1.0, 1.0))
+
+
+# Skin colour (Kathreen 3 Nov 2026): Dave's texture has the skin and the loincloth painted in one map, in the same warm hue (the loincloth only darker), so the creator's skin colour
+# tints the whole albedo by skin / DEFAULT_SKIN. The default creator skin leaves Dave's look exactly as painted; a darker or paler skin keeps every painted crease and the loincloth
+# stays a darker shade of it. The skin comes from the genome (set_proportions), not from the argument, so a body without a genome is never tinted by the old bodies' fixed SKIN.
+# Clothes colours are baked in and not painted yet (worn clothing is gap 1 of docs/DYNASTY_BODY.md).
+const DEFAULT_SKIN := Color(0.82, 0.62, 0.48)      # body_generator.gd make_genome's default skin = Dave's painted skin
+const TINT_MAX := 1.3                              # a much paler skin than Dave's brightens the texture at most this much per channel
+var _skin_material: BaseMaterial3D
+
+
+static func skin_tint(skin: Color) -> Color:
+	return Color(clampf(skin.r / DEFAULT_SKIN.r, 0.05, TINT_MAX), clampf(skin.g / DEFAULT_SKIN.g, 0.05, TINT_MAX), clampf(skin.b / DEFAULT_SKIN.b, 0.05, TINT_MAX))
+
+
 func dress(_skin_color: Color, _coat: Color, _trousers: Color, _shoes: Color = Color(0.14, 0.11, 0.09)) -> void:
-	pass
+	if body_mesh == null or body_mesh.mesh == null or not genome.has("skin"):
+		return
+
+	if _skin_material == null:
+		var painted: Material = body_mesh.get_active_material(0)
+
+		if not (painted is BaseMaterial3D):
+			return
+
+		_skin_material = painted.duplicate() as BaseMaterial3D       # each body its own copy: the glb's material is shared by every body
+		body_mesh.set_surface_override_material(0, _skin_material)
+
+	_skin_material.albedo_color = skin_tint(genome["skin"])
 
 
 func set_far(_on: bool) -> void:
@@ -402,11 +488,14 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 		skeleton.add_child(attachment)
 		attachment.bone_name = P + "Spine2"
 		_log = MeshInstance3D.new()
-		_log.material_override = StandardMaterial3D.new()
+		_log.material_override = _log_bark()
 		_log.scale = Vector3.ONE * 100.0
 		attachment.add_child(_log)
 
-	(_log.material_override as StandardMaterial3D).albedo_color = color
+	# The trees' own bark (flora_view.gd BARK_SHADER, as a felled trunk in inventory_view.gd draws it), tinted by the species: a carried log was a plain plastic-brown cylinder.
+	var bark: ShaderMaterial = _log.material_override as ShaderMaterial
+	bark.set_shader_parameter("tint", Vector3(color.r, color.g, color.b))
+	bark.set_shader_parameter("uv_scale", Vector2(maxf(radius * 4.0, 1.0), maxf(length / 1.6, 1.0)))
 	var cyl: CylinderMesh = _log.mesh as CylinderMesh if _log.mesh != null else CylinderMesh.new()
 	cyl.top_radius = radius * 0.8
 	cyl.bottom_radius = radius
@@ -416,3 +505,20 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 	_log.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 	_log.position = Vector3(-18.0, 9.0, -12.0)      # the right shoulder, a little behind (model space: right is -X, front +Z), in centimetres
 	_log.visible = true
+
+
+static var _log_shader: Shader
+
+
+func _log_bark() -> ShaderMaterial:
+	if _log_shader == null:
+		_log_shader = Shader.new()
+		_log_shader.code = (load("res://src/flora/flora_view.gd") as GDScript).get_script_constant_map()["BARK_SHADER"]
+
+	var bark: ShaderMaterial = ShaderMaterial.new()
+	bark.shader = _log_shader
+	bark.set_shader_parameter("bark", load("res://assets/trees/bark.png"))
+	bark.set_shader_parameter("sway", 0.0)                   # it rides the shoulder; the trees' wind bend would bend it
+	bark.set_shader_parameter("foot_offset", 10.0)          # far from the ground: no foot moss or ground shade
+	bark.set_shader_parameter("lift", Vector3(3.0, 2.0, 1.3))   # the felled trunk's lift (inventory_view.gd _felled_bark), so log, trunk and pile match
+	return bark
