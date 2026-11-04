@@ -2731,6 +2731,7 @@ func _forge_glb(file: String) -> Node3D:
 		hook_smoke = _local_to(smoke, root)
 
 	var body: StaticBody3D = StaticBody3D.new()   # solid: you walk round a forge, not through it
+	body.set_meta("placed_structure", true)       # not rock: the cave module's enclosure rays skip it (BUG-027)
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var solid: BoxShape3D = BoxShape3D.new()
 	solid.size = Vector3(box.size.x, minf(box.size.y, 2.2), box.size.z)

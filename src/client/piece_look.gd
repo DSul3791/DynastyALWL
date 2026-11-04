@@ -281,6 +281,7 @@ static func _box(parent: Node3D, size: Vector3, at: Vector3, material: StandardM
 
 static func _solid(parent: Node3D, size: Vector3, at: Vector3) -> void:
 	var body: StaticBody3D = StaticBody3D.new()
+	body.set_meta("placed_structure", true)       # not rock: the cave module's enclosure rays skip it (BUG-027)
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var box: BoxShape3D = BoxShape3D.new()
 	box.size = size
