@@ -2795,13 +2795,7 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 	var look: String = StructureLook.look_of(state)
 
 	if LookTable.has_look(look):
-		var piece: Node3D = LookTable.build(look)   # building pieces: one table in look_table.gd
-		var surface: String = StructureLook.step_surface(state)
-
-		if piece != null and surface != "":
-			piece.set_meta("floor_sound", surface)   # footsteps on it (terrain_client sets sound.floor_under from the body under the feet)
-
-		return piece
+		return LookTable.build(look)   # building pieces: one table in look_table.gd
 
 	match look:
 		"campfire":

@@ -9,7 +9,7 @@ Paper pass from recipes.json, drops.json and FIRST_WEEK_WALK.md. The gathering r
 | Straw bed | 12 straw, 6 sticks, 2 twine | workbench | 30 | tall grass gives 1 to 3 straw per plant (about 6 plants) | first 2 hours (needs the bench) |
 | Hide rug | 3 hide, 1 sinew | hand | 20 | three kills dressed with a knife | day 1 to 2 |
 | Bench | 3 lumber (2 logs), 1 twine | workbench | 25 | a felled tree and a wedge | day 1 (bench) |
-| Chair | 4 lumber, 1 hide, 4 wooden pins (pegged; 3 kinds, Dave's rule) | workbench L1 | 35 | log, hide | day 1 to 2 |
+| Chair | 4 lumber, 2 twine, 1 hide | workbench L1 | 35 | log, hide | day 1 to 2 |
 | Table | 6 lumber (3 logs), 2 twine | workbench L1 | 40 | three logs | day 2 |
 | Wall torch | 2 sticks, 1 tallow | hand | 10 | tallow needs rendered fat in a pot | day 2 to 3 (needs the pot) |
 | Flower pot | 2 clay, 1 soil | hand | 15 | clay and a spade | day 1 to 2 |

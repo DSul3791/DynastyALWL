@@ -296,8 +296,7 @@
 				1
 			],
 			"craft_s": 25.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"chest_kit": {
 			"number": 14,
@@ -318,8 +317,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"chopping_block": {
 			"number": 15,
@@ -381,8 +379,7 @@
 			"craft_s": 10.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2,
-			"retired": true
+			"station_level": 2
 		},
 		"iron_pickaxe": {
 			"number": 18,
@@ -1002,8 +999,7 @@
 				1
 			],
 			"craft_s": 15.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"thatch_floor_kit": {
 			"number": 166,
@@ -1025,8 +1021,7 @@
 			],
 			"craft_s": 10.0,
 			"station": "workbench",
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"thatch_wall_kit": {
 			"number": 167,
@@ -1052,8 +1047,7 @@
 			],
 			"craft_s": 20.0,
 			"station": "workbench",
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"thatch_roof_kit": {
 			"number": 168,
@@ -1079,8 +1073,7 @@
 			],
 			"craft_s": 20.0,
 			"station": "workbench",
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"thatch_doorway_kit": {
 			"number": 169,
@@ -1106,8 +1099,7 @@
 			],
 			"craft_s": 20.0,
 			"station": "workbench",
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"workbench_kit": {
 			"number": 45,
@@ -1132,8 +1124,7 @@
 				1
 			],
 			"craft_s": 60.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"shore_net": {
 			"number": 163,
@@ -1197,8 +1188,7 @@
 			],
 			"craft_s": 20.0,
 			"known": true,
-			"station": "workbench",
-			"retired": true
+			"station": "workbench"
 		},
 		"vice_kit": {
 			"number": 48,
@@ -2731,8 +2721,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"floor_section_kit": {
 			"number": 120,
@@ -2753,8 +2742,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"roof_section_kit": {
 			"number": 121,
@@ -2779,8 +2767,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"foundation_section_kit": {
 			"number": 122,
@@ -2801,8 +2788,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"doorway_section_kit": {
 			"number": 123,
@@ -2823,8 +2809,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"window_section_kit": {
 			"number": 124,
@@ -2845,8 +2830,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"timber_prop_kit": {
 			"number": 125,
@@ -2867,8 +2851,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"timber_set_kit": {
 			"number": 126,
@@ -2893,8 +2876,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"cut_stone_block": {
 			"number": 127,
@@ -2973,8 +2955,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": true,
-			"retired": true
+			"known": true
 		},
 		"wooden_spade_medium": {
 			"number": 131,
@@ -3394,7 +3375,7 @@
 			],
 			"gives": [
 				"hinges",
-				20
+				4
 			],
 			"craft_s": 8.0,
 			"known": true,
@@ -3412,7 +3393,7 @@
 			],
 			"gives": [
 				"wooden_pin",
-				20
+				4
 			],
 			"craft_s": 5.0,
 			"known": true,
@@ -6189,8 +6170,7 @@
 			],
 			"craft_s": 20.0,
 			"known": true,
-			"station": "workbench",
-			"retired": true
+			"station": "workbench"
 		},
 		"log_wall_kit": {
 			"number": 295,
@@ -6310,8 +6290,7 @@
 			"craft_s": 40.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2,
-			"retired": true
+			"station_level": 2
 		},
 		"stone_roof_kit": {
 			"number": 300,
@@ -6334,8 +6313,7 @@
 			"craft_s": 60.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2,
-			"retired": true
+			"station_level": 2
 		},
 		"brick_wall_kit": {
 			"number": 301,
@@ -6434,8 +6412,7 @@
 			"craft_s": 20.0,
 			"known": false,
 			"locked": true,
-			"station": "workbench",
-			"retired": true
+			"station": "workbench"
 		},
 		"nettle_tea": {
 			"number": 305,
@@ -6734,8 +6711,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
-			"retired": true
+			"known": false
 		},
 		"stool_kit": {
 			"number": 333,
@@ -6751,8 +6727,7 @@
 			],
 			"gives": ["stool_kit", 1],
 			"craft_s": 10.0,
-			"known": false,
-			"retired": true
+			"known": false
 		},
 		"bench_kit": {
 			"number": 320,
@@ -6774,8 +6749,7 @@
 			],
 			"craft_s": 25.0,
 			"known": false,
-			"station": "workbench",
-			"retired": true
+			"station": "workbench"
 		},
 		"chair_kit": {
 			"number": 321,
@@ -6785,6 +6759,10 @@
 				[
 					"lumber",
 					4
+				],
+				[
+					"twine",
+					2
 				],
 				[
 					"hide",
@@ -6802,8 +6780,7 @@
 			"craft_s": 35.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"station_level": 1
 		},
 		"table_kit": {
 			"number": 322,
@@ -6826,8 +6803,7 @@
 			"craft_s": 40.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"station_level": 1
 		},
 		"hide_rug_kit": {
 			"number": 323,
@@ -6848,8 +6824,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"retired": true
+			"known": false
 		},
 		"wool_rug_kit": {
 			"number": 324,
@@ -6871,8 +6846,7 @@
 			],
 			"craft_s": 25.0,
 			"known": false,
-			"locked": true,
-			"retired": true
+			"locked": true
 		},
 		"straw_bed_kit": {
 			"number": 325,
@@ -6898,8 +6872,7 @@
 			],
 			"craft_s": 30.0,
 			"known": false,
-			"station": "workbench",
-			"retired": true
+			"station": "workbench"
 		},
 		"feather_bed_kit": {
 			"number": 326,
@@ -6923,8 +6896,7 @@
 			"craft_s": 50.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"station_level": 1
 		},
 		"canopy_bed_kit": {
 			"number": 327,
@@ -6948,8 +6920,7 @@
 			"craft_s": 60.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 2,
-			"retired": true
+			"station_level": 2
 		},
 		"wall_torch_kit": {
 			"number": 328,
@@ -6970,8 +6941,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"retired": true
+			"known": false
 		},
 		"chandelier_kit": {
 			"number": 329,
@@ -6998,8 +6968,7 @@
 			"craft_s": 40.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"station_level": 1
 		},
 		"fireplace_kit": {
 			"number": 330,
@@ -7048,8 +7017,7 @@
 				1
 			],
 			"craft_s": 15.0,
-			"known": false,
-			"retired": true
+			"known": false
 		},
 		"antler_mount_kit": {
 			"number": 332,
@@ -7075,8 +7043,7 @@
 			],
 			"craft_s": 20.0,
 			"known": false,
-			"station": "workbench",
-			"retired": true
+			"station": "workbench"
 		}
 	}
 }

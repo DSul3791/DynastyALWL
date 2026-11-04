@@ -354,18 +354,3 @@ Moved all plant dishes off the campfire (12 to the clay hearth, 3 to the pot); c
 Stairs unlocked (Tyler: climbs at walking pace; a limping walker under about 1.2 m/s cannot use them). Lean-to recipe raised for the 2.6 x 2.4 m model: 12 sticks, 9 leaves, 3 twine (was 8, 6, 2; about +50 percent); tests updated (test_first_hour gives the 9 leaves, one felled tree gives only 3-9; twine 7 for lean-to + chest; test_goals). Comfort buff fixed at 45 real minutes already pushed (eebc13a3). Kit-to-look mapping sent to Kathleen. Tyler: ore ladder check, crab-apple holdable fix, placement notices done.
 
 Softwood is better for boards than for firewood (Dave 1 Nov): spruce and scots pine now saw faster and yield more. Lumber 7 per log (was 6) in 5 s (was 6); beams 2 per log in 6 s (was 8). Hardwood unchanged (6 per log, 6 s and 8 s). Softwood logs already weigh less (32 against 45 kg) and its lumber is cheaper (value 8 against 12). Firewood: softwood burns twice as fast (Steve builds that). Balsam fir has no own recipes; it makes the plain Log (4 lumber, 6 s). Not changed: fine-board versus plank-board uses in wood_species.json (hardwood fine, softwood plank). See docs card softwood-boards.
-
-## Design-doc check (Sal, 4 Nov 2026, Dave: "make sure the items line up with our intentions")
-Checked items.json, recipes.json and blueprints.json against this log, ITEM_TRIM_DECISIONS, DECISIONS.md, FURNITURE_BALANCE, CRAFT_PACING, DEAD_END_MATERIALS and items/BLUEPRINT_BUILD_DESIGN.md.
-- Fixed: hinges 20 per iron ingot and wooden pins 20 per lumber (Dave, item-recipes-2, 23 Oct; data still said 4). Hinge value 8 to 2 and stack 40 so 20 hinges are not worth more than the ingot.
-- Fixed: chair had 4 ingredient kinds (Dave's 3 rule); now 4 lumber, 1 hide, 4 wooden pins (pegged, no twine).
-- Fixed: log cabin set (recipe 304) retired: its log wall, floor and roof kits are hammer blueprints with no recipe.
-- Left, Dave already decided: tar stays from pine tar until a bitumen item exists; one Lumber/Beam with a species tag waits for code.
-- Hammer thread: rough bed (blueprint 24) still has three kit recipes and the feather bed uses the kit (card to Dave). The 16 low-tier building kits (thatch, section, ladder, stairs, stone floor and roof) stay craftable: Dave's 25 Oct rule says fine wood and lower are made by hand and placed; only higher tiers are hammer blueprints.
-
-## No kits (Dave, 4 Nov 2026 15:18)
-Dave: "The rough bed is the only one that you could make in your inventory. Every other bed has to be made with a hammer. I want to drop kits altogether ... get rid of kits altogether."
-- Data (Sal): every live kit recipe retired except the Rough bed's three and the campfire's (fire entity, code pending with Hammer). Each became a hammer blueprint with the same cost and station: rows 1-8 un-retired, rows 25-52 new. Rough bed blueprint 24 retired (Dave on card sal-bed-hammer: not from the hammer).
-- Feather bed now costs 10 thatch, 30 feathers, 2 fibre cloth; Canopy bed 30 feathers, 8 lumber, 4 fibre cloth (no bed kit inside).
-- New starter goal "Make a wooden hammer" after felling; shelter and Camp bench come after it. Kit item numbers stay in items.json for old saves.
-- Code (Hammer): campfire, campfire pot snapping to the fire, learning unlocking blueprint rows, clearing kits from saves and the world, and the tests that craft and place kits.

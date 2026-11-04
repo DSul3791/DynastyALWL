@@ -798,9 +798,6 @@ func _ready() -> void:
 	net.died_received.connect(_on_died)
 	net.final_death_received.connect(_on_final_death)
 	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void:
-		if sound != null:
-			sound.spear.hit("flesh", at, SoundStageScript.SpearScript.hit_strength(amount))   # the hit lands: a jab, a thrown spear or an arrow in an animal (the numbers setting does not mute it)
-
 		if display.damage_numbers:
 			HitNumbersScript.spawn(self, at, amount))
 	net.start_at_received.connect(_on_start_at)
@@ -1134,7 +1131,6 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.ground_below = _ground_below
-	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
@@ -1990,29 +1986,6 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 func _respawn_gasp() -> void:
 	if sound != null:
 		sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
-
-
-# The built floor under the feet for the footsteps (sound_stage.floor_under): a short ray down hits a placed piece whose model carries
-# "floor_sound" (inventory_view._model_for_state, structure_look.step_surface), or "" on natural ground.
-func _floor_under(feet: Vector3) -> String:
-	if body == null:
-		return ""
-
-	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(feet + Vector3(0.0, 0.3, 0.0), feet - Vector3(0.0, 0.3, 0.0))
-	query.exclude = [body.get_rid()]
-	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
-	var node: Node = hit.get("collider") if not hit.is_empty() else null
-
-	for _i in 3:
-		if node == null:
-			break
-
-		if node.has_meta("floor_sound"):
-			return str(node.get_meta("floor_sound"))
-
-		node = node.get_parent()
-
-	return ""
 
 
 # The end of the cave-in death sequence: back at the respawn point, as any other death does at once.
