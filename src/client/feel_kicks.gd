@@ -64,6 +64,15 @@ func _init() -> void:
 		intensity = clampf(float(file.get_value("feel", "intensity", 1.0)), 0.0, 1.5)
 
 
+# The Camera motion slider (Esc > Settings > Gameplay): takes effect at once and is kept in the settings file for the next run.
+func set_intensity(value: float, path: String = SETTINGS_PATH) -> void:
+	intensity = clampf(value, 0.0, 1.5)
+	var file: ConfigFile = ConfigFile.new()
+	file.load(path)
+	file.set_value("feel", "intensity", intensity)
+	file.save(path)
+
+
 func step(delta: float) -> Dictionary:
 	var dt: float = minf(delta, 0.05)
 	_vy += (-STIFFNESS * _y - DAMPING * _vy) * dt
