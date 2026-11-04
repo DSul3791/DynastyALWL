@@ -707,7 +707,7 @@ func in_cave_opening(x: float, z: float) -> bool:
 
 
 # Whether a point is in a spring cave pool (Dave 4 Nov, BUG-008: those pools are icy). The pool entries of cave_streams have a negative
-# width = minus the pool's radius; the point must be within that radius (plus `margin`) sideways of the spring, from the pool floor up.
+# width = minus the pool's radius; the point must be within that radius (plus `margin`) sideways of the spring, down to the depth stored in the entry's 4th float (#318, 20 m).
 func in_cave_pool(p: Vector3, margin: float = 1.0) -> bool:
 	@warning_ignore("integer_division")
 	for n in range(cave_streams.size() / 7):
@@ -718,7 +718,7 @@ func in_cave_pool(p: Vector3, margin: float = 1.0) -> bool:
 
 		var spring: Vector3 = Vector3(cave_streams[o], cave_streams[o + 1], cave_streams[o + 2])
 
-		if Vector2(p.x - spring.x, p.z - spring.z).length() <= -cave_streams[o + 6] + margin and p.y >= spring.y - 25.0:
+		if Vector2(p.x - spring.x, p.z - spring.z).length() <= -cave_streams[o + 6] + margin and p.y >= spring.y - maxf(cave_streams[o + 3], 0.4) - 1.0:
 			return true
 
 	return false
