@@ -128,7 +128,8 @@ func _init() -> void:
 	check(taken[0] != Vector3(54.0, 11.0, 50.0), "a neighbour spot already taken is not offered again (%s)" % str(taken))
 	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(70.0, 10.0, 70.0), 0, beside_rows)[2]), "a foundation far from any other is placed on the ground, the wheel may lift it")
 
-	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.0, 50.0), 0, base_rows)[2]), "a foundation does not snap onto a foundation")
+	var onto: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.3, 50.0), 0, base_rows)
+	check(bool(onto[2]) and onto[0].x == 50.0 and onto[0].z == 50.0 and onto[0].y > base_rows[0]["pos"].y + 1.9, "aiming at a foundation's middle stacks one on it (BUG-026)")
 	var thatch_base: Array = [{"pos": Vector3(50.0, 10.0, 50.0), "state": int(cfg["structures"]["thatch_floor"]["state"])}]
 	var on_thatch: Array = Rules.snap(cfg, "thatch_wall_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)
 	check(bool(on_thatch[2]) and is_equal_approx(on_thatch[0].y, 10.1), "a thatch wall snaps onto the thatch floor, the tier 1 foundation (%s)" % str(on_thatch))
