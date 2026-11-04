@@ -5,6 +5,8 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_season_fruit.gd
 
 const TreeBuilder := preload("res://src/flora/tree_builder.gd")
+const GameClock := preload("res://src/shared/game_clock.gd")
+const GatherRules := preload("res://src/shared/gather_rules.gd")
 
 var _failures: int = 0
 
@@ -43,5 +45,12 @@ func _init() -> void:
 	_check(bloom > 0 and gone == 0, "a seasonal lavender is drawn in summer and not at all in winter")
 	var plain: int = _verts(TreeBuilder.build(rows["lavender"], 0.6, 0, false, mats, "winter"))
 	_check(plain > 0, "without the seasonal flag a flower row keeps its winter model")
+	# Dave, 4 Nov 2026: the game starts when there is food on the vines and trees. A new world's clock must land in a season
+	# where the berry bushes and fruit trees near spawn can be picked.
+	var start: String = GameClock.new().season()
+	print("new world starts in %s" % start)
+	_check(start == "summer", "a new world starts in summer")
+	for name in ["raspberry", "bramble", "blueberry", "wild_strawberry", "wild_cherry", "apple_early", "plum"]:
+		_check(GatherRules.in_season(rows[name], start), "%s can be picked on the first day" % name)
 	print("season fruit test: %d failures" % _failures)
 	quit(_failures)
