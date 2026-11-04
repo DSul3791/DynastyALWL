@@ -28,7 +28,7 @@ func _initialize() -> void:
 	check(pieces.size() == 2 and pools.size() == 1, "two stream pieces and one pool (%d, %d)" % [pieces.size(), pools.size()])
 	check(is_equal_approx(float(pools[0][1]), 2.5) and pools[0][0] == Vector3(0, 10, 0), "the pool keeps its centre and a positive radius")
 	var hit: Dictionary = CaveWater.nearest_stream(pieces, Vector3(25.0, 8.0, 4.0))
-	check(absf(float(hit["distance"]) - 4.0) < 0.01 and absf(hit["point"].x - 25.0) < 0.01, "the nearest stream point is straight across the passage (%.2f m)" % float(hit["distance"]))
+	check(absf(float(hit["distance"]) - 4.03) < 0.01 and absf(hit["point"].x - 25.05) < 0.05, "the nearest stream point is across the passage, 4 m sideways and 0.5 m off the sloping floor (%.2f m)" % float(hit["distance"]))
 	hit = CaveWater.nearest_stream(pieces, Vector3(-10.0, 10.0, 0.0))
 	check(absf(float(hit["distance"]) - 10.0) < 0.01, "before the upper end it clamps to the end (10 m)")
 	check(is_inf(float(CaveWater.nearest_stream([], Vector3.ZERO)["distance"])), "no streams: infinite distance")
