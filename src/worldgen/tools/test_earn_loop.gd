@@ -1,8 +1,8 @@
 extends SceneTree
 
 # The first-day money loop (Sal, 2 Nov 2026), on the real server code: a new player picks and sells stones in lots at Hob, earns about a
-# poor day's wage (Dave: barely a meal and a bed), buys a meal from the same stall (no bed: Dave 2 Nov, you make your own). Fails when any link
-# is impossible: nothing to buy a meal with, or the day pays too much.
+# poor day's wage (Dave: barely a meal and a bed), buys a meal and a rough bed from the same stall, then PLACES the bed. Fails when any link
+# is impossible: nothing to buy a bed with, no bed on the shelf, the day pays too much, or the bought bed will not stand.
 #   godot --headless --path . --script res://src/worldgen/tools/test_earn_loop.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -61,12 +61,21 @@ func _init() -> void:
 	check(wage >= 40 and wage <= 60, "a long day of picking pays a poor wage, about 48 copper (%d)" % wage)
 	check(items.count_for(1, "stone") == 0, "every whole lot sold, nothing left over")
 
-	# The wage buys a meal, and Hob sells no bed: you make your own rough bed in your own lean-to (Dave 2 Nov 2026).
+	# The wage buys a meal. Hob sells no bed (Dave 2 Nov 2026: you build your own bed in your own lean-to).
 	var meal_i: int = shop.find("roast_forage")
 	check(meal_i >= 0, "Hob sells a meal (%s)" % str(shop))
 	check(shop.find("rough_bed_kit") < 0, "Hob sells no bed (%s)" % str(shop))
 	var meal_said: String = trade.deal(1, "hob", 0, meal_i, 1)
 	check(items.count_for(1, "roast_forage") == 1, "a day's wage buys a meal (%s)" % meal_said)
+
+	# A bed kit in the pack (built or found) stands when placed.
+	items.give_to(1, "rough_bed_kit", 1)
+	var kit: int = items.table.number_of("rough_bed_kit")
+	var placed_before: int = items.world_item_count()
+	items.report_position(1, Vector3(200.0, 10.0, 198.0))
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(kit), 0, 0, Vector3(200.0, 10.0, 200.0))
+	check(items.count_for(1, "rough_bed_kit") == 0, "the bed is placed out of the pack")
+	check(items.world_item_count() > placed_before, "a bed stands in the world")
 	items._finish_writer()
 	print("test_earn_loop: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)

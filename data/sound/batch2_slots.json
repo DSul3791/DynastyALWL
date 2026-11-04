@@ -506,7 +506,11 @@
      20
     ],
     "pitch_jitter": 0.05,
-    "no_repeat_variant": true
+    "no_repeat_variant": true,
+    "repeat_s": [
+     45,
+     120
+    ]
    },
    "status": "filled",
    "note": "a hoot, soft"
@@ -540,7 +544,11 @@
      20
     ],
     "pitch_jitter": 0.05,
-    "no_repeat_variant": true
+    "no_repeat_variant": true,
+    "repeat_s": [
+     12,
+     40
+    ]
    },
    "status": "filled",
    "note": "",
@@ -591,7 +599,11 @@
      20
     ],
     "pitch_jitter": 0.05,
-    "no_repeat_variant": true
+    "no_repeat_variant": true,
+    "repeat_s": [
+     40,
+     90
+    ]
    },
    "status": "filled",
    "note": "",
@@ -645,7 +657,11 @@
      20
     ],
     "pitch_jitter": 0.05,
-    "no_repeat_variant": true
+    "no_repeat_variant": true,
+    "repeat_s": [
+     30,
+     90
+    ]
    },
    "status": "filled",
    "note": "moderate; never on hot islands"
