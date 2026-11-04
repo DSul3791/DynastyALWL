@@ -74,6 +74,20 @@
 		}
 	],
 	"nodes": {
+		"wanted": {
+			"text": "Let me look at my list.",
+			"effects": [
+				{
+					"wanted_order": true
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you.",
+					"goto": "bye"
+				}
+			]
+		},
 		"first": {
 			"text": [
 				"Welcome to my stall, stranger. I am Hob."
@@ -187,6 +201,10 @@
 						"rank": "Friend",
 						"flag_not": "gift_friend"
 					}
+				},
+				{
+					"text": "Any order for today?",
+					"goto": "wanted"
 				},
 				{
 					"text": "Goodbye.",
