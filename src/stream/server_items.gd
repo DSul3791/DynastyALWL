@@ -284,6 +284,8 @@ var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
 var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
+var _path_cfg: Dictionary = {}      # data/path_speed.json: range_m and exertion_factor for moving on or near a path
+var _on_path_cache: Dictionary = {} # peer -> [msec checked, bool]: whether a path patch lies within range_m (looked up at most once a second)
 var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data/items/exertion.json tool_effort)
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
@@ -384,6 +386,8 @@ func setup(item_table, store_dir: String) -> void:
 	var boulders_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
 	_boulder_cfg = boulders_parsed if typeof(boulders_parsed) == TYPE_DICTIONARY else {}
 	_carry_cfg = CarryRules.load_config()
+	var path_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/path_speed.json"))
+	_path_cfg = path_parsed if typeof(path_parsed) == TYPE_DICTIONARY else {}
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	var coins_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
@@ -574,6 +578,7 @@ func peer_left(peer: int) -> void:
 	_last_average.erase(peer)
 	_roads.erase(peer)
 	_grade_points.erase(peer)
+	_on_path_cache.erase(peer)
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
 	_last_gather.erase(peer)
@@ -7758,6 +7763,28 @@ func _sync_breath(peer: int, tenths: int) -> void:
 		send_breath.call(peer, tenths)
 
 
+# Whether a path patch has its centre within data/path_speed.json range_m of the player, checked at most once a second per player (one pass over the items).
+func _on_path(peer: int, position: Vector3) -> bool:
+	var now: int = Time.get_ticks_msec()
+	var cached: Array = _on_path_cache.get(peer, [])
+
+	if not cached.is_empty() and now - int(cached[0]) < 1000:
+		return bool(cached[1])
+
+	var reach: float = float(_path_cfg.get("range_m", 3.0))
+	var found: bool = false
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if other.has("struct") and str(other["struct"]["kind"]) == "path_patch" and Vector2(other["pos"].x - position.x, other["pos"].z - position.z).length() <= reach:
+			found = true
+			break
+
+	_on_path_cache[peer] = [now, found]
+	return found
+
+
 # Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
 func _effort_at_speed(speed: float) -> float:
 	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [1.4, 0.5], [3.2, 0.75], [6.0, 1.0]])
@@ -7783,6 +7810,9 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
 		_speed3[peer] = lerpf(float(_speed3.get(peer, 0.0)), Vector3(position.x - last[0].x, position.y - last[0].y, position.z - last[0].z).length() / dt, clampf(dt * 2.0, 0.0, 1.0))
 		var target: float = _effort_at_speed(speed)                      # standing 0, walking 0.5, jogging 0.75, running 1 (data)
+
+		if _on_path(peer, position):
+			target *= float(_path_cfg.get("exertion_factor", 1.0))   # a trodden path eases the going (data/path_speed.json)
 
 		if bool(_swimming.get(peer, false)):
 			target = SwimRules.effort(speed)                              # strokes and treading water are work
@@ -11405,6 +11435,22 @@ func _eat(peer: int, inv, slot: int) -> void:
 
 	if not aid.is_empty():
 		_use_energy_aid(peer, inv, slot, v, aid)
+		return
+
+	# A splint (vitals.json limp "cure_items") sets the leg and ends a limp at once.
+	var limp_cfg: Dictionary = _vitals_cfg.get("limp", {})
+
+	if (limp_cfg.get("cure_items", []) as Array).has(item_id):
+		if float(v.get("limp", 0.0)) <= 0.0:
+			_say(peer, "Your legs are fine.")
+			return
+
+		_last_eat[peer] = now
+		inv.take_from_slot(slot, 1)
+		v["limp"] = 0.0
+		_say(peer, str(limp_cfg.get("say_cured", "Your leg is set.")))
+		_sync_limp(peer, true)
+		_dirty = true
 		return
 
 	var kcal: int = VitalsRules.food_value(item_id, _vitals_cfg)

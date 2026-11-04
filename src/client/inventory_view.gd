@@ -1603,15 +1603,16 @@ func move_cap() -> float:
 	return 0.0
 
 
-# Walking on a trodden path (Dave 3 Nov 2026): the pace factor for a gait ("walk", "jog", "run") at a ground position, from data/path_speed.json; 1.0 off a path.
+# On or within range_m (3 m) of a trodden path (Dave 3 Nov 2026): the pace factor for a gait ("walk", "jog", "run") at a ground position, from data/path_speed.json; 1.0 off a path.
 func path_pace_factor(pos: Vector3, gait: String) -> float:
 	if _path_cells.is_empty():
 		return 1.0
 
+	var reach: int = ceili(float(_path_cfg.get("range_m", 3.0)))
 	var cell: Vector2i = Vector2i(floori(pos.x), floori(pos.z))
 
-	for dx in range(-1, 2):
-		for dz in range(-1, 2):
+	for dx in range(-reach, reach + 1):
+		for dz in range(-reach, reach + 1):
 			if int(_path_cells.get(Vector2i(cell.x + dx, cell.y + dz), 0)) > 0:
 				return float(_path_cfg.get("%s_factor" % gait, 1.0))
 
@@ -2741,6 +2742,7 @@ func _forge_glb(file: String) -> Node3D:
 		hook_smoke = _local_to(smoke, root)
 
 	var body: StaticBody3D = StaticBody3D.new()   # solid: you walk round a forge, not through it
+	body.set_meta("placed_structure", true)       # not rock: the cave module's enclosure rays skip it (BUG-027)
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var solid: BoxShape3D = BoxShape3D.new()
 	solid.size = Vector3(box.size.x, minf(box.size.y, 2.2), box.size.z)
