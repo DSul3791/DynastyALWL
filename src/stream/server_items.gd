@@ -3006,7 +3006,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "The ground is too wet here.")
 		return
 
-	if absf(ground - at.y) > (1.0 if not on_base else 1.5):
+	if absf(ground - at.y) > (1.0 if not on_base else 1.5 + (PlacementRules.stack_rise(_structures_cfg, kit_id) * float(PlacementRules.STACK_MAX_LAYERS) if on_grid.size() > 3 else 0.0)):
 		_say(peer, "You cannot place that there.")
 		return
 
