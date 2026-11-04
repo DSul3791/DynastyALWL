@@ -401,35 +401,48 @@ static func _finish_cached(name: String, st: SurfaceTool, material: Material) ->
 
 static func leanto() -> Node3D:
 	var root: Node3D = Node3D.new()
-	root.add_child(_instance(_leanto_wood()))
-	root.add_child(_instance(_leanto_leaves()))
+	var model: Node3D = Node3D.new()                     # the meshes are built at the old 2.6 m size and drawn LEANTO_SCALE larger
+	model.name = "Model"
+	model.scale = Vector3.ONE * LEANTO_SCALE
+	model.add_child(_instance(_leanto_wood()))
+	model.add_child(_instance(_leanto_leaves()))
+	root.add_child(model)
 	root.add_child(_leanto_roof_body())
 	return root
 
 
-# The lean-to's solid part for the player: only the sloped roof, a thin slab from the ground at the back (z -1.7) up to the ridge (z 0.4, 1.5 m: about 35 degrees), 2.6 m wide, so the space under it can be crawled into and the
-# height over a point is 1.5 * (z + 1.7) / 2.1. Footprint 2.6 x 3.4 m (half 1.3 x 1.7), the open front strip z 0.4 to 1.7. (The server's Cover.at counts the whole footprint at full height; this is only the model's collider.)
+# The lean-to's solid part for the player: only the sloped roof, a thin slab from the ground at the back up to the ridge (about 35 degrees), so the space under it can be walked and crawled into.
+# Dave 3 Nov (via Fitness): much bigger, so you can walk in and lie down. Everything is drawn LEANTO_SCALE (1.6) times the old model: ridge 2.4 m (stand up under the front 0.7 m),
+# roof sticks reach the ground 3.36 m behind the ridge (lie down full length under it with at least 0.5 m over you), 4.16 m wide. Footprint 4.16 x 5.44 m (half 2.08 x 2.72),
+# the open front strip z 0.64 to 2.72; structures.json carries the same numbers for the server's cover box. The LEANTO_* constants below are the model's own (unscaled) units.
+const LEANTO_SCALE := 1.6
 const LEANTO_BACK_Z := -1.7
 const LEANTO_RIDGE_Z := 0.4
 const LEANTO_RIDGE_Y := 1.5
+const LEANTO_WIDTH := 2.6
 
 
+# The roof height over a point z metres in front of the lean-to's centre (world size, scaled); 0 behind the back and in the open front strip.
 static func leanto_roof_height(z: float) -> float:
-	if z < LEANTO_BACK_Z or z > LEANTO_RIDGE_Z:
+	var back: float = LEANTO_BACK_Z * LEANTO_SCALE
+	var ridge: float = LEANTO_RIDGE_Z * LEANTO_SCALE
+
+	if z < back or z > ridge:
 		return 0.0
 
-	return LEANTO_RIDGE_Y * (z - LEANTO_BACK_Z) / (LEANTO_RIDGE_Z - LEANTO_BACK_Z)
+	return LEANTO_RIDGE_Y * LEANTO_SCALE * (z - back) / (ridge - back)
 
 
 static func _leanto_roof_body() -> StaticBody3D:
 	var body: StaticBody3D = StaticBody3D.new()
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var slab: BoxShape3D = BoxShape3D.new()
-	var run: float = LEANTO_RIDGE_Z - LEANTO_BACK_Z
-	slab.size = Vector3(2.6, 0.08, Vector2(run, LEANTO_RIDGE_Y).length())
+	var run: float = (LEANTO_RIDGE_Z - LEANTO_BACK_Z) * LEANTO_SCALE
+	var rise: float = LEANTO_RIDGE_Y * LEANTO_SCALE
+	slab.size = Vector3(LEANTO_WIDTH * LEANTO_SCALE, 0.08, Vector2(run, rise).length())
 	shape.shape = slab
-	shape.position = Vector3(0.0, LEANTO_RIDGE_Y * 0.5, (LEANTO_BACK_Z + LEANTO_RIDGE_Z) * 0.5)
-	shape.rotation = Vector3(-atan2(LEANTO_RIDGE_Y, run), 0.0, 0.0)
+	shape.position = Vector3(0.0, rise * 0.5, (LEANTO_BACK_Z + LEANTO_RIDGE_Z) * 0.5 * LEANTO_SCALE)
+	shape.rotation = Vector3(-atan2(rise, run), 0.0, 0.0)
 	body.add_child(shape)
 	return body
 
