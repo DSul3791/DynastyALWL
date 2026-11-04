@@ -62,7 +62,7 @@ func target(underwater: bool = false) -> float:
 		var share: float = float(ZONE[sound_name]) * (lerpf(1.0, WATER_DAY, day) if sound_name == "water" else 1.0)
 		zone = maxf(zone, float(ambient.weights.get(sound_name, 0.0)) * share)
 
-	var weather: float = clampf(1.0 - float(_stage.weather.rain) * 1.6, 0.0, 1.0)
+	var weather: float = minf(clampf(1.0 - float(_stage.weather.rain) * 1.6, 0.0, 1.0), float(_stage.weather.calls))   # silent in any rain, like the birds (BUG-005)
 	var calm: float = clampf(1.0 - (float(_stage.wind_strength) - 0.6) * 1.2, 0.2, 1.0)
 	var places: float = (1.0 - float(_stage.cave.enclosure)) * (0.1 if underwater else 1.0)
 	var night: float = float(NIGHT_SHARE.get(str(ambient.conditions["season"]), 0.0))
