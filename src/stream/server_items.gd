@@ -3545,6 +3545,7 @@ func _load_world_items() -> void:
 				entry["wear"] = int(row[8])
 
 			_items[_next_id] = entry
+			_grid_add(_next_id, entry)
 			_next_id += 1
 			continue
 
@@ -5785,6 +5786,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_next_uid += 1
 
 	_items[_next_id] = entry
+	_grid_add(_next_id, entry)
 	_next_id += 1
 	_add_roof(entry)
 
@@ -5839,6 +5841,30 @@ func _snap_to_fire(peer: int, spot: Vector3) -> Vector3:
 
 
 # The structure's roof joins the cover index (both ends do the same on seeing the structure).
+# --- Solid footprints (Dave 3 Nov 2026): the server knows where walls and heavy stations stand, so animals can be stopped by them ---
+const StructureGridScript := preload("res://src/stream/structure_grid.gd")
+var _grid = StructureGridScript.new()
+
+
+# Registers a freshly placed or loaded structure when its structures.json row says "blocks_walk".
+func _grid_add(id: int, entry: Dictionary) -> void:
+	var kind: String = str(entry["struct"]["kind"])
+	var def: Dictionary = _structures.get(kind, {})
+
+	if bool(def.get("blocks_walk", false)):
+		_grid.add(id, kind, entry["pos"].x, entry["pos"].z, float(entry["struct"]["yaw"]), float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0)))
+
+
+# True when a wall or a heavy station stands over (x, z); margin grows each piece by an animal's body radius.
+func structure_blocks(x: float, z: float, margin: float = 0.0) -> bool:
+	return _grid.blocks(x, z, margin, _items)
+
+
+# True when the straight step from (x0, z0) to (x1, z1) goes through such a piece: a long stride cannot jump a thin wall.
+func structure_blocks_step(x0: float, z0: float, x1: float, z1: float, margin: float = 0.0) -> bool:
+	return _grid.segment_blocked(x0, z0, x1, z1, margin, _items)
+
+
 func _add_roof(entry: Dictionary) -> void:
 	var def: Dictionary = _structures.get(str(entry["struct"]["kind"]), {})
 
@@ -9836,6 +9862,7 @@ func dev_place(spec: String) -> int:
 		_next_uid += 1
 
 	_items[_next_id] = entry
+	_grid_add(_next_id, entry)
 	_next_id += 1
 	_add_roof(entry)
 	_dirty = true

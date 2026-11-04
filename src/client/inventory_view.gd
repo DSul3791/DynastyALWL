@@ -2212,6 +2212,18 @@ func _refresh_pile(id: int) -> void:
 
 
 
+# Every structure standing as {"pos", "state", "yaw" (degrees), "piece"}, for the hammer's "Save building plan".
+func structure_rows() -> Array:
+	var rows: Array = []
+
+	for id in _world:
+		if _world[id].has("yaw") and int(_world[id]["state"]) >= 5:
+			var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+			rows.append({"pos": _world[id]["pos"], "state": int(_world[id]["state"]), "yaw": float(_world[id]["yaw"]), "piece": bool(def.get("piece", false))})
+
+	return rows
+
+
 # Fires and structures standing in the world as {"pos", "state"} rows, for the placement ghost's blocked check.
 func foundation_rows() -> Array:
 	var rows: Array = []

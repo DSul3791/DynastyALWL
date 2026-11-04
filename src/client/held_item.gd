@@ -324,7 +324,74 @@ func _hammer_tier() -> int:
 	return int(entry.get("tier", 1)) if str(entry.get("tool_class", "")) == "hammer" else 0
 
 
-# R with a hammer in hand opens or shuts its blueprint list.
+# Save building plan (hammer menu, then left click): keeps the building you aim at, every blueprint piece joined to it, as a plan in the menu.
+func _save_plan_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * 8.0)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty():
+		_inv._on_notice("Aim at the building you want to save")
+		return
+
+	var saved: Dictionary = blueprints.save_plan_near(_inv.structure_rows(), hit["position"])
+
+	if not bool(saved["ok"]):
+		_inv._on_notice("Too many saved plans: right click and pick one to place" if saved.get("why", "") == "full" else "No building there that a hammer can place. Aim at a wall, floor, roof or station")
+		return
+
+	var text: String = "Saved %s: %d pieces. Right click to place it" % [saved["name"], int(saved["pieces"])]
+
+	if int(saved["skipped"]) > 0:
+		text += " (%d pieces made from kits are left out)" % int(saved["skipped"])
+
+	_inv._on_notice(text)
+
+
+# A saved plan placed: the anchor goes where the ghost is and the other pieces follow, one every PLAN_STEP_MSEC so nothing stalls a frame and
+# the server has each piece in place before the next arrives. The server checks every piece (reach, ground, materials) as if placed by hand.
+const PLAN_STEP_MSEC := 150
+const PLACE_REACH_M := 6.0   # the server's PLACE_REACH_M (server_items.gd): a spot farther from the player's feet is refused
+var _plan_queue: Array = []
+var _plan_next_msec: int = 0
+
+
+func _start_plan_place() -> void:
+	var plan: Dictionary = blueprints.plans.plans[blueprints.plan_picked]
+	_plan_queue = blueprints.placements_of(blueprints.plan_picked, _blueprint_at, float(_blueprint_yaw))
+	_plan_next_msec = 0
+	_plan_queue[0]["lift"] = lift_steps
+	_inv._on_notice("Placing %s: %d pieces" % [plan["name"], _plan_queue.size()])
+
+
+func _plan_step() -> void:
+	if _plan_queue.is_empty():
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < _plan_next_msec:
+		return
+
+	_plan_next_msec = now + PLAN_STEP_MSEC
+	var piece: Dictionary = _plan_queue.pop_front()
+	_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, int(piece["bp"]), int(piece.get("lift", 0)), int(piece["yaw"]), piece["pos"])
+
+
+# Delete with the hammer menu open removes the highlighted saved plan. Returns true when it was used.
+func delete_plan() -> bool:
+	if not blueprints.is_open:
+		return false
+
+	var gone: String = blueprints.delete_highlighted(_hammer_tier())
+
+	if gone != "":
+		_inv._on_notice("Removed %s" % gone)
+
+	return true
+
+
+# Right click (or R) with a hammer in hand opens or shuts its blueprint list.
 func toggle_blueprints() -> bool:
 	if _hammer_tier() <= 0:
 		return false
@@ -556,15 +623,29 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		_inv.eat_slot(held_slot)
 		return true
 
+	# Right click with a hammer opens its menu (or shuts it); left click in the menu picks (Dave 3 Nov 2026). Shift is left to other tools.
+	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _hammer_tier() > 0:
+		blueprints.toggle(_hammer_tier())
+		return true
+
 	if blueprints.is_open:
 		if button == MOUSE_BUTTON_LEFT and pressed:
 			blueprints.choose(_hammer_tier())
 
 		return button == MOUSE_BUTTON_LEFT
 
+	if holding and _hammer_tier() > 0 and blueprints.mode == "save":
+		if button == MOUSE_BUTTON_LEFT and pressed:
+			_save_plan_here()
+
+		return button == MOUSE_BUTTON_LEFT
+
 	if _blueprinting():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
-			_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, blueprints.picked, lift_steps, _blueprint_yaw, _blueprint_at)
+			if blueprints.plan_picked >= 0:
+				_start_plan_place()
+			else:
+				_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, blueprints.picked, lift_steps, _blueprint_yaw, _blueprint_at)
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -751,6 +832,7 @@ func _process_body(delta: float) -> void:
 		_draw_t = _draw_t + delta if _is_bow() else -1.0   # putting the bow away lets the draw go
 
 	_update_blueprint()
+	_plan_step()
 	_hoe_repeat(delta)
 
 	if _sound != null:
@@ -917,8 +999,9 @@ func _ghost_clean(node: Node) -> void:
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
 func _update_blueprint() -> void:
-	if (blueprints.picked > 0 or blueprints.is_open) and _hammer_tier() <= 0:
+	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != "place") and _hammer_tier() <= 0:
 		blueprints.clear()   # the hammer is put away: the pick and the list go with it
+		_plan_queue.clear()
 
 	if not _is_placeable() and not _blueprinting():
 		if _blueprint != null:
@@ -993,7 +1076,12 @@ func _update_blueprint() -> void:
 		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 		blueprint_state = "covered" if covered else "open"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken"
+	# The server refuses a spot more than PLACE_REACH_M (6 m) from the player's feet; the ghost's ray starts at the camera, which in third person
+	# is behind the body, so a green ghost could still be refused with "Too far to place that".
+	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
+		blueprint_state = "far"
+
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.can_afford(_hammer_tier()))
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
@@ -1276,6 +1364,8 @@ func _other_tool_hint() -> String:
 			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
 			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, grade line or till. It uses no items, only its own wear" % hoe_mode
+		"hammer":
+			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
 		"spade":
 			return "The spade digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
 
@@ -1292,14 +1382,16 @@ func _caption() -> String:
 
 	if _blueprinting():
 		var short: bool = not blueprints.can_afford(_hammer_tier())
-		text = "%s blueprint" % blueprints.name_of(blueprints.picked)
+		text = "%s blueprint" % blueprints.name_of(blueprints.picked) if blueprints.plan_picked < 0 else "%s (%d pieces)" % [blueprints.plans.plans[blueprints.plan_picked]["name"], blueprints.plans.plans[blueprints.plan_picked]["pieces"].size()]
 
 		if PlacementRules.reason_text(blueprint_state) != "":
 			text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 		elif short:
-			text += "   (red: not enough materials; R: the list)"
+			text += "   (red: not enough materials; right click: the list)"
 		else:
-			text += "   (left click: build it with the materials in your pack; R: the list)"
+			text += "   (left click: build it with the materials in your pack; right click: the list)"
+	elif _hammer_tier() > 0 and blueprints.mode == "save":
+		text += "   (Save building plan: left click a building to keep it; right click: the menu)"
 	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
 		text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 	elif _is_placeable():
