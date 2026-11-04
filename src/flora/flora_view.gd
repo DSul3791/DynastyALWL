@@ -202,6 +202,30 @@ void fragment() {
 }
 """
 
+# Berries and blossoms on the berry bushes and ground berries (tree_builder `berries`; colours from SHRUB_LOOKS, CANE_SHRUBS and GROUND_LOOKS in the vertex colour).
+# On the bark shader they wore bark grain and foot moss and came out about a quarter as bright as their colours (Kathreen, 3 Nov 2026). Here: the vertex
+# colour, a soft sheen so a ripe berry catches the light, a little light through it (BACKLIGHT), and the bark's wind so they stay on their canes.
+const BERRY_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = COLOR.rgb * 0.88;
+	ROUGHNESS = 0.45;
+	SPECULAR = 0.4;
+	BACKLIGHT = COLOR.rgb * 0.2;
+}
+"""
+
 # Mushrooms (tree_builder `fungi`, MUSHROOM_LOOKS colours in the vertex colour). They used the bark shader, which put bark furrows, a dark foot and green
 # foot moss on every cap, so a fly agaric read as a mossy brown lump (Kathreen, 3 Nov 2026). This keeps the species colour: a soft mottle and a fine
 # grain so caps are not plastic, a little sheen (a fresh cap is slightly moist), the shade under the cap, and earth at the foot. No texture.
@@ -929,6 +953,11 @@ func _make_tree_materials() -> void:
 	var greens_material: ShaderMaterial = ShaderMaterial.new()
 	greens_material.shader = greens
 	_tree_materials["greens"] = greens_material
+	var berry: Shader = Shader.new()
+	berry.code = BERRY_SHADER
+	var berry_material: ShaderMaterial = ShaderMaterial.new()
+	berry_material.shader = berry
+	_tree_materials["berry"] = berry_material
 	var fungus: Shader = Shader.new()
 	fungus.code = FUNGUS_SHADER
 	var fungus_material: ShaderMaterial = ShaderMaterial.new()

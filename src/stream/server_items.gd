@@ -8805,6 +8805,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 		return
 
 	practice(peer, "fish")
+	_goal_event(peer, "fish_caught")
 	var line: String = "You haul in %s." % ", ".join(caught)
 
 	if fish_stock(cell) < int(_fishing_data().get("hint_below", 3)):
@@ -8868,6 +8869,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) ->
 			drop_in_world(table.number_of(species), left, pos)
 
 		practice(peer, "fish")
+		_goal_event(peer, "fish_caught")
 		_say(peer, str(cfg.get("say_hit", "")) % table.name_of(table.number_of(species)).to_lower())
 		_dirty = true
 	else:
@@ -8964,6 +8966,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 		drop_in_world(table.number_of(species), left, _peer_pos[peer])
 
 	practice(peer, "fish")
+	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
 	var landed: String = "You land a %s." % table.name_of(table.number_of(species)).to_lower()
 
 	if int(_fish_stock[key][0]) < int(_fishing_data().get("hint_below", 3)):
@@ -10152,7 +10155,7 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 		return inv.count_of(table.number_of(str(check["have_item"]))) >= need
 
 	if check.has("have_item_any"):
-		var total: int = 0
+		var total: int = int(st["goal_counts"].get(_goal_count_key(str(check["or_event"]), ""), 0)) if check.has("or_event") else 0   # a catch counts though the fish was eaten
 
 		for id in check["have_item_any"]:
 			total += inv.count_of(table.number_of(str(id)))

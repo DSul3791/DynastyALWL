@@ -193,9 +193,9 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (or a shore net) and fish at the pond.",
+			"hint": "Make a fishing rod (2 sticks, 2 twine) or a shore net and fish at the pond.",
 			"after": [
-				"workbench"
+				"twine"
 			],
 			"check": {
 				"have_item_any": [
@@ -210,7 +210,8 @@
 					"smelt",
 					"cod"
 				],
-				"count": 1
+				"count": 1,
+				"or_event": "fish_caught"
 			},
 			"reward": {
 				"coin_copper": 10

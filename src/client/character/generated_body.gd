@@ -22,6 +22,22 @@ uniform vec3 trouser_color : source_color = vec3(0.25, 0.22, 0.2);
 uniform vec3 boot_color : source_color = vec3(0.14, 0.11, 0.09);
 uniform float hem_dark = 0.7;         // colour factor at the very edge of a piece of cloth (1.0 turns the band off)
 uniform float show_cloth = 1.0;      // 0: the tunic, trousers and boots regions show skin (a bare body, for fittings and the creator)
+varying vec3 lp;
+float h3(vec3 p) {
+	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+	p += dot(p, p.yxz + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 0.0)), h3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0.0, 0.0, 1.0)), h3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 1.0)), h3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+void vertex() {
+	lp = VERTEX;      // model-space metres after skinning: the grain is finer than a joint bends, so it barely drifts as the limbs move
+}
 void fragment() {
 	// Materials are blended by weight: COLOR.rgb = hair, lips, tunic; UV = trousers, boots; skin is the rest. A vertex is one material, so a triangle on the edge between
 	// two materials shows only those two (the id in alpha used to flash hair, lips or tunic colours on skin/boot and skin/trouser edges).
@@ -30,11 +46,23 @@ void fragment() {
 	float w_boots = UV.y;
 	if (show_cloth < 0.5) { w_tunic = 0.0; w_trousers = 0.0; w_boots = 0.0; }
 	float w_skin = clamp(1.0 - COLOR.r - COLOR.g - w_tunic - w_trousers - w_boots, 0.0, 1.0);
+	float w_cloth = w_tunic + w_trousers;
 	// UV2.x says how far inside its cloth the surface is: darker at hems, cuffs and collars
 	float edge = mix(hem_dark, 1.0, smoothstep(0.0, 1.0, clamp(UV2.x, 0.0, 1.0)));
-	vec3 c = skin_color * w_skin + hair_color * COLOR.r + lips_color * COLOR.g + (tunic_color * w_tunic + trouser_color * w_trousers + boot_color * w_boots) * edge;
+	// Surface detail by material (Kathreen, 3 Nov 2026; Art_Direction.md: real skin and cloth, nothing plastic): skin a faint warm mottle, hair strands running down
+	// the head, cloth a woven nap, boots a hide grain. All in metres, so a child and a grown man share one grain size.
+	float mottle = 0.93 + 0.14 * vnoise(lp * 38.0);
+	float strands = 0.8 + 0.35 * vnoise(lp * vec3(600.0, 60.0, 600.0));
+	float weave = 0.88 + 0.2 * (0.5 + 0.5 * sin(lp.x * 900.0 + 3.0 * vnoise(lp * 80.0)) * sin(lp.y * 900.0));
+	float grain = 0.9 + 0.18 * vnoise(lp * 140.0);
+	vec3 c = skin_color * mottle * w_skin + hair_color * strands * COLOR.r + lips_color * COLOR.g
+		+ (tunic_color * w_tunic * weave + trouser_color * w_trousers * weave + boot_color * w_boots * grain) * edge;
 	ALBEDO = c;
-	ROUGHNESS = 0.85;
+	// Skin and lips carry a soft sheen, hair a little more, cloth none, boots a worn leather shine.
+	ROUGHNESS = w_skin * 0.62 + COLOR.r * 0.55 + COLOR.g * 0.42 + w_cloth * 0.96 + w_boots * 0.72;
+	SPECULAR = w_skin * 0.35 + COLOR.r * 0.4 + COLOR.g * 0.45 + w_cloth * 0.08 + w_boots * 0.3;
+	// Light through thin skin (ears, fingers, the edge of the face against the sun) glows warm.
+	BACKLIGHT = (w_skin + COLOR.g) * skin_color * vec3(0.32, 0.14, 0.1);
 }
 """
 
