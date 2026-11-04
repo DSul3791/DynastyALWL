@@ -73,6 +73,9 @@ func _init() -> void:
 	said = trade.wanted_order(1, "hob")
 	check(items.coins_of(1) == start + pay, "a second fill the same day is refused (%s)" % said)
 
+	for need in order["needs"]:   # clear the refused fill's items, so no starter goal (12 plant fibre ...) pays its own reward inside the next check
+		items.take_from(1, str(need[0]), items.count_for(1, str(need[0])))
+
 	# Next day: a new order, and it pays again.
 	game_s += 86400.0
 	var order2: Dictionary = trade.order_of_day("hob")
