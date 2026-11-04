@@ -1309,16 +1309,23 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
 	Probe.stop("welcome: items view", tq_items_view)
+	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
+	var tq_dialogue: int = Probe.start()
 	var dialogue_view: Node = DialogueViewScript.new()
 	dialogue_view.name = "Dialogue"
 	add_child(dialogue_view)
 	dialogue_view.setup(net, items, npc_view, layer, func(): return body.global_position)
+	Probe.stop("welcome: dialogue view", tq_dialogue)
+	var tq_voice: int = Probe.start()
 	var npc_voice: Node = NpcVoiceScript.new()
 	npc_voice.name = "NpcVoice"
 	add_child(npc_voice)
 	_npc_voice = npc_voice
+	Probe.stop("welcome: npc voice", tq_voice)
 
+	var tq_menu: int = Probe.start()
 	game_menu.refresh()
+	Probe.stop("welcome: game menu", tq_menu)
 
 	dialogue_view.voice_line = func(voice_id: String, text: String):
 		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
