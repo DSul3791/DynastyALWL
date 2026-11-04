@@ -3908,6 +3908,13 @@ func _water_here() -> Dictionary:
 	var here: Vector3 = body.global_position
 	var surface: float = flora.water_surface_at(here.x, here.z) if flora != null else NAN
 
+	# A spring cave's pool (BUG-008: 20 m deep) lies under the ground the water grid knows: swim in it there.
+	if (is_nan(surface) or surface < here.y - 3.0) and _cave_streams != null:
+		var pool: float = _cave_streams.pool_surface_at(here)
+
+		if not is_nan(pool):
+			surface = pool
+
 	if is_nan(surface) and here.y > 2.0:
 		return {}
 
@@ -5690,6 +5697,13 @@ func _update_underwater() -> void:
 	# is the top of the film, tens of m above the eye. Now the blended surface at the eye's own
 	# spot, and the water there must be deeper than a film.
 	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 else NAN
+
+	if eye.y >= 0.0 and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
+		var pool: float = _cave_streams.pool_surface_at(eye)   # a spring cave's deep pool (BUG-008)
+
+		if not is_nan(pool):
+			surface = pool
+
 	var under: bool = eye.y < 0.0
 
 	if not under and not is_nan(surface) and eye.y < surface:
