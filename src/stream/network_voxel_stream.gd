@@ -26,6 +26,7 @@ const TIMEOUT_MSEC := 30000
 const MAX_SPARE := 8192
 
 var cache                             # ClientBlockCache
+var timeout_msec: int = TIMEOUT_MSEC  # a block not answered in this long fails (tests shorten it)
 var blocks_received: int = 0
 var bytes_received: int = 0
 var timeouts: int = 0
@@ -45,6 +46,7 @@ var _asked: Dictionary = {}           # Vector4i -> true: asked for this session
 var _spare: Dictionary = {}           # Vector4i -> PackedByteArray, prefetched
 var _answers: Dictionary = {}         # Vector4i -> PackedByteArray
 var _waiting: Dictionary = {}         # Vector4i -> true
+var _unsent: Dictionary = {}          # Vector4i -> true: an urgent key still in _outbox (not handed to the link yet)
 var _closing: bool = false
 var zeroed_blocks: int = 0
 var _refused_key: Vector4i = Vector4i(0, 0, 0, -1)   # the last block refused (damaged, zeroed, not ready): _load asks again
@@ -198,6 +200,7 @@ func _load_inner(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 
 	if not _waiting.has(key):
 		_waiting[key] = true
+		_unsent[key] = true
 		_outbox.append_array(PackedInt32Array([block.x, block.y, block.z, lod]))
 		_asked[key] = true
 
@@ -221,18 +224,20 @@ func _load_inner(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 	var started: int = Time.get_ticks_msec()
 	var bytes: PackedByteArray = PackedByteArray()
 
-	while Time.get_ticks_msec() - started < TIMEOUT_MSEC:
+	while Time.get_ticks_msec() - started < timeout_msec:
 		_mutex.lock()
 
 		if _answers.has(key):
 			bytes = _answers[key]
 			_answers.erase(key)
 			_waiting.erase(key)
+			_unsent.erase(key)
 
 		var closing: bool = _closing
 
-		# Held while the player flies: the wait only counts once requests go out again.
-		if paused:
+		# Held while the player flies: the wait only counts once the request has gone out. A request already sent keeps its
+		# clock (2 Nov 2026, join hang: a pause flipping on and off restarted it for ever, "1 block still arriving" with nothing timing out).
+		if paused and _unsent.has(key):
 			started = Time.get_ticks_msec()
 
 		_mutex.unlock()
@@ -255,6 +260,7 @@ func _load_inner(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 	if bytes.is_empty():
 		_mutex.lock()
 		_waiting.erase(key)
+		_unsent.erase(key)
 		var quitting: bool = _closing
 
 		if not quitting:
@@ -376,6 +382,7 @@ func _take_locked() -> Array:
 	var keys: PackedInt32Array = _outbox
 	@warning_ignore("integer_division")
 	var urgent: int = _outbox.size() / 4
+	_unsent.clear()   # every urgent key is handed over now
 
 	if only_urgent:
 		for k in range(0, _prefetch.size(), 4):
@@ -393,6 +400,10 @@ func _put_back(taken: Array) -> void:
 	var keys: PackedInt32Array = taken[0]
 	_mutex.lock()
 	var outbox: PackedInt32Array = keys.slice(0, taken[1] * 4)
+
+	for k in range(0, outbox.size(), 4):
+		_unsent[Vector4i(outbox[k], outbox[k + 1], outbox[k + 2], outbox[k + 3])] = true
+
 	outbox.append_array(_outbox)
 	_outbox = outbox
 	_prefetch.append_array(keys.slice(taken[1] * 4))
@@ -415,11 +426,14 @@ func deliver(keys: PackedInt32Array, payloads: Array) -> void:
 		bytes_received += (payloads[n] as PackedByteArray).size()
 
 	# Oldest prefetched blocks go first when too many pile up; they will be
-	# asked for again if needed.
-	while _spare.size() > MAX_SPARE:
-		var oldest: Vector4i = _spare.keys()[0]
-		_spare.erase(oldest)
-		_asked.erase(oldest)
+	# asked for again if needed. One copy of the key list per delivery: copying all 8192 keys for each block
+	# over the cap (the old loop) cost the main thread a few million copies a frame while exploring (lag review, Dave 2 Nov 2026).
+	var excess: int = _spare.size() - MAX_SPARE
+
+	if excess > 0:
+		for oldest in _spare.keys().slice(0, excess):
+			_spare.erase(oldest)
+			_asked.erase(oldest)
 
 	_mutex.unlock()
 

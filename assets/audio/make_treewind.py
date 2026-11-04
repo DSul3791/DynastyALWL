@@ -60,22 +60,21 @@ def dry(rng, n):
 
 
 def bare(rng, n):
+    """Winter branches: a low hush with soft wood groans. Dave 2 Nov 2026: the old creaks were pure 140-320 Hz sines with a 5-11 Hz vibrato and read as
+    "someone waving a metal panel, wobbling". The groans are now band-limited noise with a slow smooth swell, no tone and no vibrato."""
     low = shaped_noise(rng, n, lambda f: band(f, 220, 1.0) * highpass(f, 60, 2) * lowpass(f, 600, 2))
     low /= np.std(low) + 1e-9
     out = low * smooth_gain(rng, n, 0.25, 0.35)
-    creak = np.zeros(n)
+    groan = shaped_noise(rng, n, lambda f: band(f, 420, 0.8) * highpass(f, 150, 2) * lowpass(f, 1100, 2))
+    groan /= np.std(groan) + 1e-9
+    swell = np.zeros(n)
 
     for _ in range(int(rng.integers(5, 9))):
-        d = rng.uniform(0.5, 1.4)
-        m = int(d * SR)
-        t = np.arange(m) / SR
-        f0 = rng.uniform(140, 320)
-        f = f0 * (1.0 + 0.25 * np.sin(2 * np.pi * rng.uniform(5, 11) * t)) * (1.0 + 0.15 * t / d)
-        tone = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * t / d) ** 2
+        m = int(rng.uniform(1.2, 2.8) * SR)
         idx = (rng.integers(0, n) + np.arange(m)) % n
-        creak[idx] += tone * rng.uniform(0.2, 0.5)
+        swell[idx] += np.sin(np.pi * np.arange(m) / m) ** 2 * rng.uniform(0.2, 0.5)
 
-    return normalize(out + 0.8 * creak / (np.std(creak) + 1e-9) * 0.4)
+    return normalize(out + 0.5 * groan * np.minimum(swell, 1.0))
 
 
 LOOPS = {"treewind_pine": pine, "treewind_leaves": leaves, "treewind_dry": dry, "treewind_bare": bare}

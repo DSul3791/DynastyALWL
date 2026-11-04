@@ -72,6 +72,8 @@ Also craftable at once with no station: **stone knife** (#6: 2 stone + 1 stick),
 
 Walk up to a standing tree (trunk within about 2 m), hold the axe, **click repeatedly** (about one blow every 0.5 s). The number of blows is `clamp(4 + trunk_thickness_m x 30, 4, 40)`: a 0.2 m trunk takes about 10, an oak (0.6 m) about 22. Practice makes it faster (Fell tree skill). When the last blow lands the tree falls and rests on the ground as a **trunk**, leaving a **stump**. **[in progress: the fall pose and the stump chopping were just finished, see commit a641581d.]**
 
+**2 Nov (bug 11 fix, main 58c94cd, and #49, not yet seen in a client): a felled tree now breaks into its whole 2.44 m logs by itself about 2 s after it lands (the count cutting would give) and also drops what hand-cutting gives: sticks, leaves, bark or thatch, seeds and the root ball.** Only a trunk you have already hit with the axe, one with no whole log in it, or one with no room for all its logs stays a trunk. The list below is what hand-cutting gives.
+
 Work the trunk with the axe (one blow each, press the use key at it):
 1. Blows 1-3: **branches come off**: 1-3 sticks and 1-3 leaves per blow.
 2. Then **logs**: 3 blows per log, each log 2.44 m, up to 20 logs; 30% of blows also peel bark (birch, spruce, pine give thatch bark instead), 15% give seeds or the tree's nut.
@@ -92,11 +94,11 @@ Walk to the biggest tree you can find (oaks, beeches, tall pines), stand under t
 
 ## Step 08. Campfire: kit, place, light
 
-1. Recipe **Campfire** (#4): **6 sticks + 3 stones -> campfire kit** (8 s). (CONTROLS.md still says 20 sticks and 10 stones: out of date.)
+1. Recipe **Campfire** (#4): **6 sticks + 3 stones -> campfire kit** (8 s).
 2. Hold the kit and left click. The ring on the ground is **yellow on open ground** (rain puts the fire out) and **green under a tree crown** (the fire survives rain). Fires need 2 m of space from other fires and ground no steeper than 0.6 m rise.
-3. The kit is placed already laid with 4 sticks. **Press E at the fire to light it**: it uses **one tinder item** from the pack: `plant_fibre` first, or `birch_bark`, `tinder`, `tinder_fungus`. **[BLOCKED partly: only plant fibre can really be had, see F-03.]** In rain on open ground it will not light; in a drizzle there is a chance it fails and the fibre is lost.
-4. Feed it: tap E at the fire adds fuel firewood first, then sticks, then logs (1 Nov). **Burn times are real time: stick 2 min, firewood 20 min, log 3 h.** The fire is a **tier** by its wood: sticks = small, 3+ firewood = medium, 3+ logs = large; light radius 3.5 / 7 / 14 m, each step twice the light and warmth, and it steps down as the big wood runs out. Several logs go on one fire. A pot is refused on a fire with logs, and logs are refused under a pot. The refusal message says why (full, no wood to put on). The fire label shows the tier and burn time.
-5. **Hold E** at a lit fire roasts raw forage (berries, nuts, roots, mushrooms) one at a time.
+3. The kit is placed already laid with a stick in its store (add more wood with F). **Press E at the fire to light it**: it uses **one tinder item** from the pack: `plant_fibre` first, or `birch_bark`, `tinder`, `tinder_fungus`. **[BLOCKED partly: only plant fibre can really be had, see F-03.]** In rain on open ground it will not light; in a drizzle there is a chance it fails and the fibre is lost.
+4. Feed it (changed 2 Nov, fire store, main eb3b69b): press **F** at the fire to open its store (30 slots, stacks without limit) and put sticks, firewood and logs in; the wood in the store is what burns, closing it works out the burn time and tier, burned wood leaves it, an empty store means the fire goes out. **E** on a burning fire puts it out (wood kept); **hold E** on a fire that is not burning picks it up as a kit. The 1 Nov rule "tap E adds fuel" is gone. **Burn times are real time: stick 2 min, firewood 20 min, log 3 h.** The fire is a **tier** by its wood: sticks = small, 3+ firewood = medium, 3+ logs = large; light radius 3.5 / 7 / 14 m, each step twice the light and warmth, and it steps down as the big wood runs out. Several logs go on one fire. A pot is refused on a fire with logs, and logs are refused under a pot. The refusal message says why (full, no wood to put on). The fire label shows the tier and burn time.
+5. Raw food put in the fire's store (F) cooks while the fire burns; there is no hold-E roasting any more (2 Nov). The campfire still cooks only meat, fish and shellfish.
 
 **Warmth:** stand within 4 m of a lit fire, or under cover. Warmth below 40: you shiver and stop healing; below 20 the cold costs health. A fire plus a roof is the first cold-night answer.
 
@@ -110,7 +112,7 @@ Pictures: `10_campfire_placed.jpg` (the placement ghost; the lit fire itself is 
 
 ## Step 10. The first shelter: a lean-to
 
-Recipe **Lean-to kit** (#13, known): **32 sticks + 8 leaves + 4 twine** (25 s; roof 2.6 x 3.4 m, 1.5 m high). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. Hold the kit, click to place (ghost 2.4 x 2.1 m, open front towards you). It is a roof for the cover rule (1.1 x 0.95 m half-sizes, 2.1 m high): anyone under it is "under cover", fires under it survive rain. Hold E 0.6 s at it to take it down (kit comes back). A chunk holds at most 6.
+Recipe **Lean-to kit** (#13, known): **16 sticks + 4 leaves + 2 twine** (25 s; roof 2.6 x 3.4 m, 1.5 m high). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. Hold the kit, click to place (ghost 2.4 x 2.1 m, open front towards you). It is a roof for the cover rule (1.1 x 0.95 m half-sizes, 2.1 m high): anyone under it is "under cover", fires under it survive rain. Hold E 0.6 s at it to take it down (kit comes back). A chunk holds at most 6.
 
 ## Step 11. Bedding / bed
 

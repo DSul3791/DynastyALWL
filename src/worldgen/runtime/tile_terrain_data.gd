@@ -17,6 +17,8 @@ extends RefCounted
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
+const RIVER_CLASS := 3
+const RIVER_FILM_M := 0.05   # a painted river cell thinner than WetMeters is still drawn, this deep (riffles between pools)
 
 var tile: Vector2i = Vector2i.ZERO
 var samples: int = 0
@@ -67,6 +69,10 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 
 # Caves: capsules (passages) and ellipsoids (chambers) with AABBs.
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
+var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
+var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 box]: ground opened by a cave mouth (entrance node to its first node): no flora there
+const CAVE_POOL_M := 0.4            # a spring cave pool: this deep in the bottom of its chamber
+var cave_streams: PackedFloat32Array = PackedFloat32Array()   # spring cave streams (Dave 3 Nov 2026): per piece x, y, z of the upper end, x, y, z of the lower end (floor heights, world m), width m; then per spring pool x, y, z, -radius (a negative width marks a pool)
 
 
 # Loads a tile file. `rock_ids` and `resource_ids` map names to table ids.
@@ -244,6 +250,10 @@ func _load_sim_water(path: String) -> void:
 	for k in range(samples * samples):
 		if depth[k] >= WetMeters:
 			sim_levels[k] = heights[k] + depth[k]
+		elif water_class.size() == samples * samples and water_class[k] == RIVER_CLASS and heights[k] > 0.0:
+			# Dave 2 Nov 2026 (a river broken into pools with dry steps between): on a riffle the settled river runs fast and a few cm thin, under the 12 cm
+			# draw line, so only the pools were drawn. A painted river cell is always drawn, at least RIVER_FILM_M deep; the liquid sheet shows it as one ribbon.
+			sim_levels[k] = heights[k] + maxf(depth[k], RIVER_FILM_M)
 
 
 func set_sim(levels: PackedFloat32Array, falls: PackedFloat32Array) -> void:
@@ -587,8 +597,29 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 
 
 func _load_caves(list: Array) -> void:
+	cave_streams = PackedFloat32Array()
+	cave_openings = []
+	cave_dens = PackedVector3Array()
+
 	for cave in list:
 		var nodes: Array = cave["nodes"]
+
+		for entrance in cave.get("entrances", []):
+			for segment in cave["segments"]:
+				if int(segment[0]) == int(entrance) or int(segment[1]) == int(entrance):
+					var na: Array = nodes[int(segment[0])]
+					var nb: Array = nodes[int(segment[1])]
+					var a: Vector2 = Vector2(float(na[0]), float(na[2]))
+					var b: Vector2 = Vector2(float(nb[0]), float(nb[2]))
+					var r: float = 0.5 * maxf(float(na[3]), float(nb[3])) + 2.0
+					cave_openings.append([a, b, r, Rect2(a.min(b), (a.max(b) - a.min(b))).grow(r)])
+
+		if str(cave.get("cave_kind", "")) == "spring_cave":
+			_load_cave_stream(cave)
+
+		for den in cave.get("dens", []):
+			var dn: Array = nodes[int(den["node"])]
+			cave_dens.append(Vector3(float(dn[0]), float(dn[1]) - 0.5 * float(dn[4]), float(dn[2])))
 		var capsules: Array = []
 		var chambers: Array = []
 		var low: Vector3 = Vector3(INF, INF, INF)
@@ -623,3 +654,72 @@ func _load_caves(list: Array) -> void:
 			continue
 
 		caves.append({"id": str(cave["id"]), "aabb": AABB(low, high - low), "capsules": capsules, "chambers": chambers})
+
+
+# The stream along a spring cave's floor: its "water" segments run from the mouth (lower) up to a spring (higher); each piece is stored upper end
+# first, so the water runs from the first point to the second. Every spring gets a pool in its chamber.
+func _load_cave_stream(cave: Dictionary) -> void:
+	var nodes: Array = cave["nodes"]
+
+	for segment in cave["segments"]:
+		if str(segment[2]) != "water":
+			continue
+
+		var na: Array = nodes[int(segment[0])]
+		var nb: Array = nodes[int(segment[1])]
+		var a: Vector3 = Vector3(float(na[0]), float(na[1]) - 0.5 * float(na[4]), float(na[2]))
+		var b: Vector3 = Vector3(float(nb[0]), float(nb[1]) - 0.5 * float(nb[4]), float(nb[2]))
+		var top: Vector3 = b if b.y >= a.y else a
+		var low: Vector3 = a if b.y >= a.y else b
+		cave_streams.append_array(PackedFloat32Array([top.x, top.y, top.z, low.x, low.y, low.z, minf(float(na[3]), float(nb[3]))]))
+
+	for spring in cave.get("springs", []):
+		var node: Array = nodes[int(spring["node"])]
+		var floor_y: float = float(node[1]) - 0.5 * float(node[4])
+		var radius: float = 1.5
+
+		# The chamber is carved as an ellipsoid round the node: the pool lies POOL_M deep in its bottom, as wide as the bowl is at that height.
+		for chamber in cave["chambers"]:
+			if int(chamber["node"]) == int(spring["node"]):
+				var rh: float = 0.5 * float(chamber["height_m"])
+				var up: float = clampf(1.0 - CAVE_POOL_M / maxf(rh, 0.5), 0.0, 1.0)
+				floor_y = float(node[1]) - rh + CAVE_POOL_M
+				radius = maxf(float(chamber["radius_m"]) * sqrt(1.0 - up * up), 1.0)
+
+		cave_streams.append_array(PackedFloat32Array([float(node[0]), floor_y, float(node[2]), 0.0, 0.0, 0.0, -radius]))
+
+
+# Whether a point is in ground a cave mouth opened (flora keeps out: the plants stand on the tile heights, which do not know the cave).
+func in_cave_opening(x: float, z: float) -> bool:
+	var p: Vector2 = Vector2(x, z)
+
+	for opening in cave_openings:
+		if not opening[3].has_point(p):
+			continue
+
+		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, opening[0], opening[1])) < float(opening[2]):
+			return true
+
+	return false
+
+
+# Whether a point is within `reach` m of a spring cave's stream or pool (drinking and filling a container there, Dave 3 Nov 2026).
+func near_cave_water(p: Vector3, reach: float) -> bool:
+	@warning_ignore("integer_division")
+	for n in range(cave_streams.size() / 7):
+		var o: int = n * 7
+		var a: Vector3 = Vector3(cave_streams[o], cave_streams[o + 1], cave_streams[o + 2])
+		var width: float = cave_streams[o + 6]
+
+		if width < 0.0:
+			if p.distance_to(a) < reach - width:
+				return true
+
+			continue
+
+		var b: Vector3 = Vector3(cave_streams[o + 3], cave_streams[o + 4], cave_streams[o + 5])
+
+		if p.distance_to(Geometry3D.get_closest_point_to_segment(p, a, b)) < reach + 0.5 * width:
+			return true
+
+	return false

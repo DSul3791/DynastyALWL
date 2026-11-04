@@ -29,9 +29,14 @@ func _init() -> void:
 	var material: ShaderMaterial = ShaderMaterial.new()
 	material.shader = shader
 	grass._materials.append(material)
+	grass.third_person = true      # the cut round the feet only exists in third person (Dave 2 Nov QA: a carpet in first person)
 	grass._push_player(Vector3(12.0, 3.0, 34.0))
 	var v: Vector4 = material.get_shader_parameter("player_clear")
 	check(is_equal_approx(v.x, 12.0) and is_equal_approx(v.y, 34.0), "the shader gets the player's x and z")
 	check(is_equal_approx(v.z, GrassScript.PLAYER_CLEAR_M) and is_equal_approx(v.w, GrassScript.PLAYER_KEEP), "the shader gets the radius and the share kept")
+	grass.third_person = false
+	grass._push_player(Vector3(12.0, 3.0, 34.0))
+	var first: Vector4 = material.get_shader_parameter("player_clear")
+	check(is_equal_approx(first.z, 0.0), "in first person the radius is 0 (the grass stays whole)")
 	print("test_player_clear: ", "FAIL" if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)

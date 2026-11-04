@@ -120,6 +120,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var fruit: Acc = Acc.new()   # the apples, pears and cherries of the fruit trees on their own surface: vertex alpha = a per-fruit rank 0..1, so a shader can hide the highest ranks as the tree is picked (5 levels 100/66/33/10/0 percent)
 	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
 	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
+	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
@@ -194,24 +195,24 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"shrub":
 			_shrub(bark, leaves, rng, h, crown, far)
 		"cactus":
-			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
+			_column(greens, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
 		"succulent":
-			_succulent(str(entry["name"]), bark, rng, h, crown, trunk, far)
+			_succulent(str(entry["name"]), greens, rng, h, crown, trunk, far)
 		"cane_shrub":
 			_cane_shrub(CANE_SHRUBS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, CANE_SHRUBS[str(entry["name"])].get("bloom_in", ["spring"]), mid))
 		"fern_rosette":
 			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), bark, leaves, rng, h, crown, far)
 		"reed_stand":
-			_reed_stand(REED_LOOKS.get(str(entry["name"]), REED_LOOKS["reeds"]), bark, leaves, rng, h, crown, far)
+			_reed_stand(REED_LOOKS.get(str(entry["name"]), REED_LOOKS["reeds"]), greens, leaves, rng, h, crown, far)
 		"fallen_log":
 			_fallen_log(FALLEN_LOGS.get(str(entry["name"]), FALLEN_LOGS["fallen_log"]), bark, leaves, rng, h, crown, far)
 		"kelp":
-			_kelp(bark, rng, h, crown, far)
+			_kelp(greens, rng, h, crown, far)
 		"grass_tuft":
-			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), bark, leaves, rng, h, crown, far, season)
+			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), greens, leaves, rng, h, crown, far, season)
 		"grass", "reed":
 			_grass(leaves, rng, h, crown, 2 if far else 3)
-			_blades(bark, rng, h, crown, 6 if far else 20, Color(0.2, 0.32, 0.1), Color(0.52, 0.62, 0.26))
+			_blades(greens, rng, h, crown, 6 if far else 20, Color(0.2, 0.32, 0.1), Color(0.52, 0.62, 0.26))
 		"fern":
 			_fern(leaves, rng, h, crown, far)
 		"mushroom":
@@ -235,6 +236,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	fruit.commit(mesh, materials.get("fruit", materials.get("smooth_bark", materials["bark"])))
 	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
 	ember.commit(mesh, materials.get("ember", materials["bark"]))
+	greens.commit(mesh, materials.get("greens", materials["bark"]))
 	twigs.commit(mesh, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"
@@ -250,6 +252,66 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	leaf_kind = str(entry.get("leaf", leaf_kind))
 	leaves.commit(mesh, materials.get(leaf_kind, materials["broad"]))
 	return mesh
+
+
+# The butt radius of the trunk `build` draws for this species, variant and height (before root flare and flutes). The server lays a felled trunk, its
+# stump and its logs at this size (fell_pose.gd drawn_radius), so a slim young tree falls as a slim trunk (Dave 2 Nov: "a skinny tree and it left a big
+# stump and big logs"). Keep each line in step with its model's trunk_r below; test_fell_autosplit pins a few.
+static func trunk_radius(entry: Dictionary, h: float, variant: int) -> float:
+	var t: float = maxf(float(entry.get("trunk_m", 0.4)), 0.03)
+	var young: bool = variant >= 2
+
+	match str(entry.get("model", entry.get("shape", ""))):
+		"balsam_fir":
+			return maxf(t, h * 0.009)
+		"birch":
+			return maxf(t, h * 0.015)
+		"spruce":
+			return maxf(t, h * 0.012)
+		"scots_pine":
+			return maxf(t, h * 0.018)
+		"wardpine":
+			return maxf(t, h * 0.03)
+		"wild_apple", "wild_pear":
+			return maxf(t * 0.6, h * 0.016) if young else maxf(t, h * 0.035)
+		"wild_cherry":
+			return maxf(t * 0.6, h * 0.016) if young else maxf(t, h * 0.028)
+		"rowan":
+			return maxf(t * 0.7, h * 0.014) if young else maxf(t, h * 0.025)
+		"willow":
+			return maxf(t * 0.55, h * 0.016) if young else maxf(t, h * 0.045)
+		"alder":
+			if variant == 3:
+				return maxf(t * 0.6, h * 0.013)
+			return maxf(t * 0.45, h * 0.011) if variant == 2 else maxf(t * 0.62, h * 0.016)
+		"beech":
+			return maxf(t * 0.6, h * 0.014) if young else maxf(t, h * 0.028)
+		"witness_tree":
+			return h * (0.0065 if young else 0.02)
+		"everember":
+			return h * (0.018 if young else 0.04)
+		"hearthwood":
+			return clampf(h * 0.012, 0.05, 0.12) if young else 0.15
+		"mirrorbark":
+			return maxf(t * 0.5, h * 0.018) if young else maxf(t, h * 0.034)
+		"walnut", "sweet_chestnut":
+			return maxf(t * 0.5, h * 0.016) if young else maxf(t, h * 0.038)
+		"hazel":
+			return h * (0.006 if young else 0.009)
+		"oak", "broadleaf":
+			return maxf(t, h * 0.035)
+		"maple":
+			return maxf(t * 0.5, h * 0.014) if young else maxf(t, h * 0.022)
+		"palm":
+			return maxf(t, h * 0.05) * 1.1 if str(entry.get("name", "")) == "wild_banana" else t * 0.85
+		"acacia":
+			return maxf(t, h * 0.03)
+		"mangrove":
+			return maxf(t * 1.5, h * 0.045)
+		"tropical_hardwood":
+			return maxf(t * 0.7, h * 0.014)
+
+	return t
 
 
 # Variety between individuals (moderator 2026-10-31: every crown was the same round green blob). Per tree, from the species and variant: a colour spread (yellower, bluer, darker), an elliptical and
@@ -2910,6 +2972,15 @@ const WILDFLOWER_LOOKS := {
 	"meadowsweet": {"head": "umbel", "stems": 4, "tall": 1.15, "head_min": 0.2, "petal": Color(1.0, 0.92, 0.62), "size": 0.15, "rays": 9},
 	"valerian": {"head": "umbel", "stems": 4, "tall": 1.1, "head_min": 0.2, "petal": Color(0.92, 0.3, 0.58), "size": 0.14, "rays": 9},
 	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.9, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
+	# Wild crop plants (flora ids 153 to 160, future rows until placed; recolours of the flowers above, 3 Nov 2026).
+	"wild_potato": {"head": "daisy", "stems": 4, "tall": 0.9, "head_min": 0.14, "petal": Color(0.95, 0.92, 1.0), "centre": Color(1.0, 0.8, 0.1), "size": 0.04, "petals": 5},
+	"wild_turnip": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.15, "petal": Color(1.0, 0.85, 0.1), "centre": Color(0.9, 0.7, 0.05), "size": 0.04, "petals": 4},
+	"sea_cabbage": {"head": "spike", "stems": 5, "petal": Color(1.0, 0.9, 0.3), "size": 0.04, "beads": 10, "span": 0.3},
+	"ramsons": {"head": "umbel", "stems": 3, "tall": 0.9, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 5},
+	"wild_vetch": {"head": "spike", "stems": 6, "petal": Color(0.6, 0.35, 0.8), "size": 0.04, "beads": 9, "span": 0.3},
+	"sea_beet": {"head": "spike", "stems": 5, "petal": Color(0.62, 0.72, 0.3), "size": 0.035, "beads": 11, "span": 0.35},
+	"wild_radish": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.15, "petal": Color(0.98, 0.9, 0.95), "centre": Color(0.9, 0.8, 0.3), "size": 0.04, "petals": 4},
+	"prickly_lettuce": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.15, "petal": Color(1.0, 0.95, 0.5), "centre": Color(0.9, 0.7, 0.1), "size": 0.04, "petals": 7},
 	"lavender": {"head": "spike", "stems": 9, "petal": Color(0.55, 0.38, 0.85), "size": 0.045, "beads": 12, "span": 0.35},
 	"heather": {"head": "spike", "stems": 10, "petal": Color(0.75, 0.3, 0.6), "size": 0.04, "beads": 12, "span": 0.5},
 	"wild_marjoram": {"head": "spike", "stems": 6, "petal": Color(0.8, 0.45, 0.7), "size": 0.045, "beads": 8, "span": 0.25},

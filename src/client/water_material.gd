@@ -10,8 +10,8 @@ const SHADER := """
 shader_type spatial;
 render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
 
-uniform vec3 shallow_color : source_color = vec3(0.17, 0.33, 0.33);
-uniform vec3 deep_color : source_color = vec3(0.04, 0.17, 0.24);
+uniform vec3 shallow_color : source_color = vec3(0.16, 0.38, 0.34);   // Kathreen 3 Nov 2026 (art direction: vibrant, not grey): greener shallows, was 0.17, 0.33, 0.33
+uniform vec3 deep_color : source_color = vec3(0.03, 0.18, 0.28);   // bluer depths, was 0.04, 0.17, 0.24
 uniform vec3 foam_color : source_color = vec3(0.78, 0.82, 0.80);
 uniform vec3 mud_color : source_color = vec3(0.36, 0.27, 0.16);
 uniform float rough = 0.0;           // 0 calm, 1 raging (flow rate above x1, set by the client)
@@ -47,6 +47,13 @@ uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 
 const float MOUTH_FROM_M = 0.4;        // surface this high above the sea or lower is the river mouth (all sea colour)
 const float MOUTH_TO_M = 4.5;          // and this high or more is fresh river water (brown flood colour allowed)
+
+// Liquid surface (protocol 85, src/water2/liquid_surface.gd): inside the live water window the liquid sheet draws the water, so this grid look steps
+// aside there (one cell in from the window's edge, where the liquid sheet has faded fully in). 0 (no packet yet, or the old water) changes nothing.
+uniform vec2 water2_origin = vec2(0.0);
+uniform vec2 water2_size = vec2(1.0);
+uniform float water2_on = 0.0;
+uniform float water2_inset = 0.0;    // metres
 
 varying float sheet_alpha;
 varying vec2 flow;                   // downhill direction times 0..1 steepness (0 for lakes and the sea)
@@ -149,6 +156,14 @@ vec2 sea_slope(vec2 p, float time, float dist) {
 }
 
 void fragment() {
+	if (water2_on > 0.5 && sea < 0.5) {
+		vec2 inside = world_pos.xz - water2_origin;
+
+		if (inside.x > water2_inset && inside.y > water2_inset && inside.x < water2_size.x - water2_inset && inside.y < water2_size.y - water2_inset) {
+			discard;
+		}
+	}
+
 	// River mouth (owner, 2026-10-21: rivers run into the sea as one body, brown is only a test colour): within
 	// a few metres of sea level (0 m) the flood brown fades out, so the river water takes the sea's colour
 	// with no edge or step, and where fresh meets salt a soft band of foam rides the water. The sea itself

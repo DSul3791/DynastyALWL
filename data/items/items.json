@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 518,
+	"next_number": 540,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -12,7 +12,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 30,
 			"pile": {"shape": "pyramid", "handful": 5, "color": [0.47, 0.46, 0.44], "rock": 1.0, "squash": 0.75}
 		},
 		"stick": {
@@ -23,7 +23,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 60
 		},
 		"plant_fibre": {
 			"number": 3,
@@ -33,7 +33,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 12
+			"sell_lot": 50
 		},
 		"log": {
 			"number": 4,
@@ -181,7 +181,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 8
+			"sell_lot": 30
 		},
 		"leaves": {
 			"number": 14,
@@ -191,7 +191,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 60
 		},
 		"roast_forage": {
 			"number": 15,
@@ -334,7 +334,7 @@
 			"name": "Firewood",
 			"description": "Split wood. Burns long and steady.",
 			"kind": "material",
-			"pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.4, "radius": 0.065},
+			"pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2},
 			"stack": 40,
 			"look_alikes": [],
 			"value": 2
@@ -451,7 +451,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 20,
 			"pile": {"shape": "mound", "handful": 5, "color": [0.29, 0.2, 0.13], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
 		},
 		"clay": {
@@ -462,7 +462,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 20,
 			"pile": {"shape": "mound", "handful": 5, "color": [0.63, 0.38, 0.24], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
 		},
 		"sand": {
@@ -473,7 +473,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 20,
 			"pile": {"shape": "mound", "handful": 5, "color": [0.84, 0.76, 0.55], "rock": 0.45, "squash": 0.7}
 		},
 		"gravel": {
@@ -484,7 +484,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 20,
 			"pile": {"shape": "mound", "handful": 5, "color": [0.55, 0.54, 0.52], "rock": 0.4, "squash": 0.8}
 		},
 		"wooden_bowl": {
@@ -900,13 +900,13 @@
 			"stack": 40,
 			"future": true,
 			"value": 1,
-			"sell_lot": 2,
+			"sell_lot": 6,
 			"look_alikes": []
 		},
 		"workbench_kit": {
 			"number": 73,
 			"name": "Camp bench",
-			"description": "Lashed sticks and a flat top. A work table for better tools.",
+			"description": "Lashed sticks and a flat top. Set it down and it counts as a workbench, for better tools.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,
@@ -916,7 +916,7 @@
 		"workbench": {
 			"number": 74,
 			"name": "Camp bench",
-			"description": "A camp bench. Stand near it to make the things that need a work table.",
+			"description": "A camp bench. It counts as a workbench: stand near it to make the things that need one.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -943,7 +943,7 @@
 		"shore_net": {
 			"number": 260,
 			"name": "Shore net",
-			"description": "A weighted twine net. Hold the button at the water's edge for about 20 seconds.",
+			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"kind": "tool",
 			"tool_class": "net",
 			"durability": 20,
@@ -2852,7 +2852,7 @@
 			"stack": 200,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 10
+			"sell_lot": 15
 		},
 		"cobblestone": {
 			"number": 229,
@@ -2898,7 +2898,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5
+			"sell_lot": 12
 		},
 		"wooden_block": {
 			"number": 234,
@@ -2915,11 +2915,11 @@
 			"name": "Softwood firewood",
 			"description": "Split pine, spruce or fir. It catches fast and burns out quick.",
 			"kind": "material",
-			"pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.4, "radius": 0.065},
+			"pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2},
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5
+			"sell_lot": 12
 		},
 		"wooden_block_soft": {
 			"number": 237,
@@ -4233,7 +4233,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"barley_seeds": {
 			"number": 339,
@@ -4244,7 +4244,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"carrot_seeds": {
 			"number": 340,
@@ -4255,7 +4255,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"potato_seeds": {
 			"number": 341,
@@ -4266,7 +4266,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"turnip_seeds": {
 			"number": 342,
@@ -4277,7 +4277,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"flax_seeds": {
 			"number": 343,
@@ -4288,7 +4288,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"quern": {
 			"number": 344,
@@ -4703,7 +4703,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"rye_seeds": {
 			"number": 381,
@@ -4714,7 +4714,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"cabbage_seeds": {
 			"number": 382,
@@ -4725,7 +4725,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"onion_seeds": {
 			"number": 383,
@@ -4736,7 +4736,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"peas_seeds": {
 			"number": 384,
@@ -4747,7 +4747,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"beet_seeds": {
 			"number": 385,
@@ -4758,7 +4758,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"oat_porridge": {
 			"number": 386,
@@ -5161,7 +5161,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"lettuce_seeds": {
 			"number": 429,
@@ -5172,7 +5172,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"apple_early": {
 			"number": 431,
@@ -5770,7 +5770,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 10
+			"sell_lot": 40
 		},
 		"nettle_tea": {
 			"number": 486,
@@ -6067,6 +6067,204 @@
 			"unstackable": true,
 			"look_alikes": [],
 			"value": 42
+		},
+		"hazel_bush": {
+			"number": 518,
+			"name": "Hazel bush",
+			"description": "A hazel bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 8
+		},
+		"bramble_bush": {
+			"number": 519,
+			"name": "Bramble bush",
+			"description": "A bramble bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"juniper_bush": {
+			"number": 520,
+			"name": "Juniper bush",
+			"description": "A juniper bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"gorse_bush": {
+			"number": 521,
+			"name": "Gorse bush",
+			"description": "A gorse bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 4
+		},
+		"dwarf_birch_bush": {
+			"number": 522,
+			"name": "Dwarf birch bush",
+			"description": "A dwarf birch bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 4
+		},
+		"saltbush_bush": {
+			"number": 523,
+			"name": "Saltbush bush",
+			"description": "A saltbush bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 4
+		},
+		"cactus_bush": {
+			"number": 524,
+			"name": "Cactus bush",
+			"description": "A cactus bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"raspberry_bush": {
+			"number": 525,
+			"name": "Raspberry bush",
+			"description": "A raspberry bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"elder_bush": {
+			"number": 526,
+			"name": "Elder bush",
+			"description": "A elder bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 10
+		},
+		"wild_rose_bush": {
+			"number": 527,
+			"name": "Wild rose bush",
+			"description": "A wild rose bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"blackthorn_bush": {
+			"number": 528,
+			"name": "Blackthorn bush",
+			"description": "A blackthorn bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"hawthorn_bush": {
+			"number": 529,
+			"name": "Hawthorn bush",
+			"description": "A hawthorn bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 10
+		},
+		"sea_buckthorn_bush": {
+			"number": 530,
+			"name": "Sea buckthorn bush",
+			"description": "A sea buckthorn bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 8
+		},
+		"rosemary_bush": {
+			"number": 531,
+			"name": "Rosemary bush",
+			"description": "A rosemary bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 4
+		},
+		"wild_banana_bush": {
+			"number": 532,
+			"name": "Wild banana bush",
+			"description": "A wild banana bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 10
+		},
+		"prickly_pear_bush": {
+			"number": 533,
+			"name": "Prickly pear bush",
+			"description": "A prickly pear bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 4
+		},
+		"drakethorn_bush": {
+			"number": 534,
+			"name": "Drakethorn bush",
+			"description": "A drakethorn bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 4
+		},
+		"sunberry_bush": {
+			"number": 535,
+			"name": "Sunberry bush",
+			"description": "A sunberry bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"hagwillow_bush": {
+			"number": 536,
+			"name": "Hag willow bush",
+			"description": "A hag willow bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"honeyspindle_bush": {
+			"number": 537,
+			"name": "Honeyspindle bush",
+			"description": "A honeyspindle bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 4
+		},
+		"sleetberry_bush": {
+			"number": 538,
+			"name": "Sleetberry bush",
+			"description": "A sleetberry bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"sunsilver_vine_bush": {
+			"number": 539,
+			"name": "Sunsilver vine bush",
+			"description": "A sunsilver vine bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
 		}
 	}
 }

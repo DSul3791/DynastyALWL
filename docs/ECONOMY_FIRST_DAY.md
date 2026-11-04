@@ -1,9 +1,9 @@
 # First-day economy: cheap goods and sell lots (Sal, 1 Nov 2026)
 
-**Dave's rule (1 Nov):** cheap easy things must be really inexpensive. One full day of gathering and selling earns enough copper to buy basic food, drink, clothing and perhaps a basic metal tool, and no more.
+**Dave's rule (2 Nov, replaces the 1 Nov one):** an average person picking and scraping all day earns a poor wage, barely enough for a meal and maybe a place to sleep that night. About 195 copper for 4 hours was too much.
 
 ## Target
-Prices at the trader (value x 1.3, rounded up; `data/items/coins.json` trade): three meals (roast_forage, value 6) about 24, a waterskin (15) about 20, clothing (hide_cloak, 25) about 33, a basic iron tool (iron_spade, 90) about 117. **Total about 195 copper.**
+4 hours of full-time picking pays about 40 to 60 copper. At the trader a meal (roast_forage, value 6) costs about 8 and a night's bed or lean-to rent is the other 30 to 40, so one day of gathering buys one meal and a bed and nothing else. (3 Nov 2026: Hob no longer sells a bed, Dave's QA answer; you build your own in your lean-to, so a day's wage now buys a meal and leaves about 40 copper toward a waterskin or a cloak.) Clothing, a waterskin or a metal tool (waterskin about 20, hide cloak about 33, iron spade about 117) take several days of picking, or a craft. Crafted goods and lumber pay more per hour than picking (skilled work); see the lumber note at the bottom.
 
 ## How income works in the code
 - Hob pays value x 0.55, at least 1 copper per unit for anything worth a copper. At value 1 that is exactly 1 copper per unit, so before lots 40 sticks paid 40.
@@ -19,23 +19,26 @@ Prices at the trader (value x 1.3, rounded up; `data/items/coins.json` trade): t
 ## Table (4 hours, `python tools/economy_first_day.py 4`)
 | item | picks/min (assumed) | sell_lot | copper/min | copper in 4 h |
 |---|---|---|---|---|
-| stone | 6 | 5 | 1.20 | 288 |
-| stick | 12 | 15 | 0.80 | 192 |
-| leaves | 12 | 15 | 0.80 | 192 |
-| plant_fibre | 10 | 12 | 0.83 | 200 |
-| bark | 6 | 8 | 0.75 | 180 |
-| nettles | 8 | 10 | 0.80 | 192 |
-| feather | 1 | 2 | 0.50 | 120 |
-| soil, clay, sand, gravel | 4 | 5 | 0.80 | 192 |
-| any `*_seeds` | 3 | 4 | 0.75 | 180 |
-| firewood_soft | 3 | 5 | 0.60 | 144 |
-| wooden_pin | 3 | 5 | 0.60 | 144 |
-| nails | 3 | 10 | 0.30 | 72 |
+| stone | 6 | 30 | 0.20 | 48 |
+| stick | 12 | 60 | 0.20 | 48 |
+| leaves | 12 | 60 | 0.20 | 48 |
+| plant_fibre | 10 | 50 | 0.20 | 48 |
+| bark | 6 | 30 | 0.20 | 48 |
+| nettles | 8 | 40 | 0.20 | 48 |
+| feather | 1 | 6 | 0.17 | 40 |
+| soil | 4 | 20 | 0.20 | 48 |
+| clay | 4 | 20 | 0.20 | 48 |
+| sand | 4 | 20 | 0.20 | 48 |
+| gravel | 4 | 20 | 0.20 | 48 |
+| wheat_seeds | 3 | 15 | 0.20 | 48 |
+| firewood_soft | 3 | 12 | 0.25 | 60 |
+| wooden_pin | 3 | 12 | 0.25 | 60 |
+| nails | 3 | 15 | 0.20 | 48 |
 
-Almost every item lands at 180 to 200 copper in 4 hours, the shopping list. Stone is the exception at 288: Dave asked for about 5 per copper, and 6 would give 240. Mixed gathering earns the same as the best single item because a player spends the minutes once.
+Lots are sized so every gathered item pays about 0.2 copper a minute (about 48 in 4 hours); the bigger lots weigh at most 30 kg (stone) so they can be carried. Mixed gathering earns the same as the best single item because a player spends the minutes once.
 
-## Applied
-`sell_lot` lines added to the rows above in `data/items/items.json` (stone 5 from before). Nothing else changed. Items with value above 1 are not touched.
+## Applied (2 Nov)
+`sell_lot` raised on the rows above in `data/items/items.json` (stone 5 -> 30, stick 15 -> 60, seeds 4 -> 15 and so on). Items with value above 1 are not touched. The 1 Nov lots (stone 5 and so on) gave about 195 copper in 4 hours.
 
 ## What is not covered
 Crafted goods (twine, kits, tools) sell at their value x 0.55 with demand fall-off; a full crafting-for-sale check is in `ECONOMY_PLAN.md`. Other traders and player-to-player trade are out of scope.

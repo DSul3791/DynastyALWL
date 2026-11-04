@@ -189,6 +189,13 @@ func _check_ambience() -> void:
 	check(Ambience.surf_scale(0.6, 1.0) < 0.05 and Ambience.surf_scale(1.0, 1.0) < 0.15, "deep forest keeps the surf under 15 percent even at the shore")
 	check(Ambience.surf_scale(0.7, 0.0) > Ambience.surf_scale(0.5, 0.0), "and it rises toward the water")
 	check(Ambience.surf_scale(1.0, 0.0) > Ambience.surf_scale(1.0, 0.5) and Ambience.surf_scale(1.0, 0.5) > Ambience.surf_scale(1.0, 1.0), "and falls as the trees thicken")
+	# Dave 2 Nov: a forest pond near sea level is not the sea. Surf follows the sea weight only.
+	var forest_pond: Dictionary = {"season": "summer", "time": "day", "biomes": ["temperate_forest", "woodland"], "water": 0.9, "sea": 0.0, "height": 2.0, "wind": 0.8}
+	check(Ambience.choose_bed(slots, "shore_bed", forest_pond) != "bed_surf", "a pond with no sea near gives no surf")
+	var sea_shore: Dictionary = {"season": "summer", "time": "day", "biomes": ["beach"], "water": 0.9, "sea": 0.9, "height": 2.0, "wind": 0.8}
+	check(Ambience.choose_bed(slots, "shore_bed", sea_shore) == "bed_surf", "the sea at the shore still gives surf")
+	var SoundStageScript = load("res://src/client/sound_stage.gd")
+	check(SoundStageScript.fire_duck_target(INF) == 0.0 and SoundStageScript.fire_duck_target(2.0) <= -8.9 and SoundStageScript.fire_duck_target(40.0) == 0.0, "wind and surf duck near a lit fire and not far from one")
 	var canyon: Dictionary = {"season": "summer", "time": "day", "biomes": ["canyon"], "water": 0.0, "height": 120.0}
 	check(Ambience.choose_bed(slots, "weather_bed", canyon) == "bed_canyon_wind" and Ambience.matching(slots, "oneshot", canyon).has("canyon_echo"), "a forced canyon gets its wind and its echo")
 	var day_birds: Array = Ambience.matching(slots, "oneshot", summer_forest)
@@ -233,6 +240,8 @@ func _check_ambience() -> void:
 	check(first == second, "the same day reproduces the same one-shots")
 	check(first != other_day, "another day gives another run")
 	check(int(Ambience.simulate(slots, summer_forest, 3600.0, 3)["repeats"]) == 0, "an hour of one-shots never repeats a clip back to back")
+	var owls: int = int((Ambience.simulate(slots, night, 3600.0, 3)["counts"] as Dictionary).get("owl_hoot", 0))
+	check(owls > 0 and owls <= 80, "a night hour in the forest has %d owl hoots (rests 45 to 120 s between hoots, at most 80)" % owls)
 	var rng: RandomNumberGenerator = Ambience.shot_rng(1, 1)
 	var last_clip: String = ""
 	var repeats: int = 0

@@ -12,7 +12,9 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Double-tap W (within 0.30 s) | Jog (3.2 m/s) |
 | Shift + W | Run (6 m/s) |
 | B (held with a shield in the off hand) | Block with the shield while held |
-| Shift + right click with a hoe | Sets grade point A, then B (stakes show); a third click starts a new line |
+| Left click (hold) with a hoe | Does what the hoe is set to: Path (averages the ground about 2 m round, then treads a round brown patch, strong in the middle half metre and fading out by 1.25 m), Smooth, Grade line or Till. Repeats every 0.55 s while held |
+| Right click with a hoe | Opens a window to pick the hoe's mode (mouse wheel moves, left click chooses, right click closes) |
+| Shift + right click with a hoe | Sets grade point A, then B (stakes show). The moment B is set the ground along the line is levelled to the ramp between the two heights and a path is laid along it, by itself (about 2 stations a second, up to 40 m); a third click starts a new line |
 | Hold Shift + left click with a hoe | Grades the ground within 1.5 m of the A-B line toward a straight ramp (0.25 m per stroke, within 12 m of A, free; only the hoe wears) |
 | (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when jogging (4.2 m) and running (6 m) than walking (3 m) |
 | Space | Jump (walking) or go up (flying); on a ladder, let go and drop back |
@@ -31,6 +33,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | E at remains | Press E at the remains of a fallen character to search them: the owner from the moment they fall, anyone from the second day. Things can only be taken out. They are cleaned up after seven days |
 | Z | Lie down (toggle): eye almost at the ground, no movement; any movement key stands you up. While lying, **hold Z for 3 seconds to sleep** (the screen dims to about 60% dark, "Hold Z to sleep" shows while lying): exertion falls up to twice as fast as lying and health heals up to twice as fast, best under a roof or tree crown, 60% of that on open dry ground. Rain that reaches you stops you sleeping and wakes you; a movement key, a hit or fall, or Z again wakes you; resting at zero exertion for 10 s wakes you rested. Tapping Z while lying still stands you up |
 | K | Photo camera (toggle): a free third-person view that always looks at your character, with the whole body drawn and the first-person arms hidden. The mouse swings the camera round you (you do not turn) and tilts it; the mouse wheel zooms from almost at your face out to 60 m, smoothly; **PageUp / PageDown** raise and lower the camera; W A S D walk relative to the camera and the character faces the way it walks; the camera stays above the ground and out of walls and trunks. Only the drawn camera moves: aim, interaction and what the server is told (position and speed) are unchanged. K again returns to first person |
+| PageUp / PageDown | While the photo camera (K) is on: raise and lower the camera |
 | Ctrl+R | Admin: put a rabbit on the ground where the crosshair points (up to 40 m away), for testing animals |
 | Ctrl+N | Admin: stand next to the nearest NPC that is drawn (they are sent within 120 m), then press E to talk |
 | 1 to 5 (in a talk panel) | Pick the numbered answer |
