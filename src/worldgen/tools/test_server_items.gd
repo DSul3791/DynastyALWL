@@ -1195,6 +1195,15 @@ func _init() -> void:
 	var none: int = q._saplings.size()
 	q._maybe_sapling({"pos": Vector3(500.0, 10.0, 500.0), "tree": {"species": "birch", "chunk": [1, 1], "state": 4}})
 	check(q._saplings.size() == none, "no standing tree of that species near, no sapling")
+	# Nothing regrows within 50 m of a placed structure (BUG-013).
+	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(700.0, 10.0, 700.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+	q._next_id += 1
+	var before_ban: int = q._saplings.size()
+
+	for n in range(40):
+		q._maybe_sapling({"pos": Vector3(700.0 + float(n) % 5.0, 10.0, 710.0), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
+
+	check(q._saplings.size() == before_ban, "no sapling is seeded within 50 m of a placed foundation")
 	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(1.0, 10.0, 1.0), "left": 1.0e9, "tree": {"state": 3, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
 	var with_trunk: int = q._saplings.size()
 
