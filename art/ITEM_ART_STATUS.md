@@ -264,7 +264,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 255 | campfire_pot | Campfire pot | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 256 | clay_hearth_kit | Clay hearth | override | ART_OVERRIDES | rough |  |  |  |  |
 | 257 | clay_hearth | Clay hearth | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 260 | shore_net | Shore net | cloth | looks.json | rough |  |  |  |  |
+| 260 | shore_net | Shore net | hand_net | looks.json | rough | BUG-022: throw net on a long rope (coil, sagging line, weighted twine cone), no pole; needs a picture |  |  |  |
 | 261 | thatch_floor_kit | Thatch floor | override | ART_OVERRIDES | rough |  |  |  |  |
 | 262 | thatch_floor | Thatch floor | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 263 | thatch_roof_kit | Thatch roof | override | ART_OVERRIDES | rough |  |  |  |  |

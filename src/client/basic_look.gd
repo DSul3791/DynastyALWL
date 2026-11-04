@@ -2393,29 +2393,45 @@ static func _tone(color: Color, k: int, spread: float) -> Color:
 # A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).
 static func _warm_stone(color: Color) -> Color:
 	return color.darkened(0.33).lerp(Color(0.46, 0.38, 0.29), 0.42)
-# A shore net (Dave 25 Oct: it must not look like a hammer): a pole along +X with an oval hoop at the head, a bag of twine strings and rings hanging
-# beyond the hoop, and cork floats round the rim. The hoop is square on to the pole, like a butterfly net.
+# A throw net (BUG-022, Dave: a cast net on a long rope, not a dip net on a pole). Held at the origin: a coil of hand line round the wrist, the line
+# sagging out along +X to a bone horn, then the net gathered for the throw: a cone of twine strands from the horn to a wide mouth, two
+# mesh rings part way down, and a heavy lead line round the mouth hung with small stone sinkers. No pole.
 static func _net(parts: Array, color: Color) -> void:
+	var line_tint: Color = Color(0.5, 0.39, 0.25)
+	var horn_x: float = 0.4
+	var mouth_x: float = 0.98
 	var rim: float = 0.15
-	var hoop_x: float = 0.42
-	var apex: Vector3 = Vector3(hoop_x + 0.3, 0.0, 0.0)
-	_cyl(parts, 0.016, 0.9, Vector3(-0.03, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
-	_net_ring(parts, rim, 0.011, hoop_x, Color(0.36, 0.25, 0.14))
-
-	for k in 8:
-		var turn: float = float(k) * TAU / 8.0
-		var from: Vector3 = Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim)
-		var line: Vector3 = apex - from
-		var long: float = line.length()
-		var basis: Basis = Basis(Quaternion(Vector3.RIGHT, line / long))
-		parts.append([_net_box(Vector3(long, 0.006, 0.006)), Transform3D(basis, from + line * 0.5), color])
-
-	_net_ring(parts, rim * 0.62, 0.005, hoop_x + 0.12, color)
-	_net_ring(parts, rim * 0.3, 0.005, hoop_x + 0.22, color)
 
 	for k in 4:
-		var turn: float = float(k) * TAU / 4.0 + PI * 0.25
-		_sph(parts, 0.024, Vector3.ONE, Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim), Color(0.8, 0.66, 0.4), true)
+		_net_ring(parts, 0.042 + 0.004 * float(k % 2), 0.006, -0.03 + 0.02 * float(k), line_tint if k % 2 == 0 else line_tint.lightened(0.1))
+
+	var sag: Array = [Vector3(0.04, -0.04, 0.01), Vector3(0.16, -0.08, 0.02), Vector3(0.3, -0.06, 0.01), Vector3(horn_x, 0.0, 0.0)]
+
+	for k in sag.size() - 1:
+		_net_line(parts, sag[k], sag[k + 1], 0.009, line_tint)
+
+	_net_ring(parts, 0.016, 0.006, horn_x, Color(0.8, 0.74, 0.6))
+
+	for k in 12:
+		var turn: float = float(k) * TAU / 12.0
+		var flare: float = rim * (0.92 + 0.08 * float(k % 3) / 2.0)
+		_net_line(parts, Vector3(horn_x + 0.01, 0.0, 0.0), Vector3(mouth_x, cos(turn) * flare, sin(turn) * flare), 0.005, color)
+
+	_net_ring(parts, rim * 0.4, 0.004, horn_x + (mouth_x - horn_x) * 0.4, color)
+	_net_ring(parts, rim * 0.72, 0.004, horn_x + (mouth_x - horn_x) * 0.72, color.darkened(0.08))
+	_net_ring(parts, rim, 0.009, mouth_x, line_tint.darkened(0.25))
+
+	for k in 10:
+		var turn: float = float(k) * TAU / 10.0 + 0.3
+		_sph(parts, 0.016, Vector3(1.4, 1.0, 1.0), Vector3(mouth_x + 0.012, cos(turn) * rim, sin(turn) * rim), Color(0.44, 0.42, 0.39).lightened(0.06 * float(k % 3)), true)
+
+
+# A straight strand of twine or rope from `from` to `to`, `thick` metres square.
+static func _net_line(parts: Array, from: Vector3, to: Vector3, thick: float, color: Color) -> void:
+	var line: Vector3 = to - from
+	var long: float = line.length()
+	var basis: Basis = Basis(Quaternion(Vector3.RIGHT, line / long))
+	parts.append([_net_box(Vector3(long, thick, thick)), Transform3D(basis, from + line * 0.5), color])
 
 
 static func _net_box(dims: Vector3) -> BoxMesh:
