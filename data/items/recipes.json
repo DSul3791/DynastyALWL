@@ -3375,7 +3375,7 @@
 			],
 			"gives": [
 				"hinges",
-				4
+				20
 			],
 			"craft_s": 8.0,
 			"known": true,
@@ -3393,7 +3393,7 @@
 			],
 			"gives": [
 				"wooden_pin",
-				4
+				20
 			],
 			"craft_s": 5.0,
 			"known": true,
@@ -6412,7 +6412,8 @@
 			"craft_s": 20.0,
 			"known": false,
 			"locked": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"nettle_tea": {
 			"number": 305,
@@ -6759,10 +6760,6 @@
 				[
 					"lumber",
 					4
-				],
-				[
-					"twine",
-					2
 				],
 				[
 					"hide",

@@ -3777,7 +3777,7 @@
 			"kind": "material",
 			"description": "A pair of iron hinges for a door.",
 			"how_to_get": [
-				"Craft at a forge: 1 Iron ingot"
+				"Craft at a forge: 1 Iron ingot makes 20"
 			],
 			"used_for": [
 				"Planned: doors and chests. Made at a forge from an iron ingot."
@@ -3790,7 +3790,7 @@
 			"kind": "material",
 			"description": "A hardwood pin or dowel that joins logs and beams without iron.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Lumber"
+				"Craft at a workbench: 1 Lumber makes 20"
 			],
 			"used_for": [
 				"Planned: joins logs and beams without iron (timber frame)."
@@ -6404,7 +6404,7 @@
 			"kind": "placeable",
 			"description": "Four log walls, a log floor and a log roof as one bundle. Sets out a small cabin.",
 			"how_to_get": [
-				"Craft: 4 Log wall, 1 Log floor, 1 Log roof at a workbench"
+				"Not made any more: log walls, floors and roofs are built with the hammer"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -6641,7 +6641,7 @@
 			"kind": "placeable",
 			"description": "A plank chair with a hide seat. More comfortable than a bench.",
 			"how_to_get": [
-				"Craft: 4 Lumber, 2 Twine, 1 Hide at a workbench"
+				"Craft: 4 Lumber, 1 Hide, 4 Wooden pin at a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
