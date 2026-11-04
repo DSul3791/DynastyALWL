@@ -2124,6 +2124,11 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 		return
 
 	_give_dig_yield(peer, at, _spade_tier(inv), _spade_pieces(inv))
+
+	# A dig more than 2.5 m under the surface is a tunnel or a cave: the "cave_in" hint (hints.json digging_under_ceiling) warns about roof supports.
+	if ground_height.is_valid() and float(ground_height.call(at.x, at.z)) - at.y > 2.5:
+		_goal_event(peer, "dug_under")
+
 	_fell_undermined(peer, at)
 	settle_loose_near(at, DIG_RADIUS_M * reach + DIG_DEPTH_M)
 	_dirty = true
@@ -10361,7 +10366,7 @@ func dev_place(spec: String) -> int:
 
 # --- Hints (data/items/hints.json by Sal, HINTS_AND_CAMP_EVENTS_SPEC.md; Tyler 31 Oct 2026) ---
 # A hint is a one-line notice (the same line as the goal notices) said once per character and hint id when its trigger becomes true; the ids said are saved in
-# characters.json "hints_seen". Triggers by name (below); a trigger the server cannot judge yet (the fruit and orchard ones, beach_with_container) never fires.
+# characters.json "hints_seen". Triggers by name (below); a trigger the server cannot judge (beach_with_container) never fires.
 # A hint whose goal is still open HINT_REPEAT_S (5 minutes) after it was said is said once more.
 const HINT_REPEAT_S := 300.0
 var _hints: Array = []
@@ -10376,6 +10381,10 @@ func _hints_data() -> Array:
 		_hints = parsed.get("hints", []) if typeof(parsed) == TYPE_DICTIONARY else []
 
 	return _hints
+
+
+# Fresh fruit that spoils fast (the "fruit_in_pack" hint): picked from trees, not cooked or dried.
+const HINT_FRUIT := ["wild_apples", "apple_early", "apple_summer", "apple_autumn", "apple_keeping", "apple_cooking", "pear_summer", "pear_autumn", "pear_winter", "sour_cherries", "plums", "damsons", "quince", "medlar", "figs", "pomegranates", "mangoes", "oranges", "lemons"]
 
 
 func _hint_count(st: Dictionary, key: String) -> int:
@@ -10457,8 +10466,55 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _plant_food_at_fire(peer, inv)
 		"campfire_pot_placed":
 			return _hint_count(st, "event:placed:campfire_pot") >= 1
+		"digging_under_ceiling":   # the first dig more than 2.5 m under the surface (_dig)
+			return _hint_count(st, "event:dug_under") >= 1
+		"fruit_in_pack":
+			for fruit in HINT_FRUIT:
+				if table.number_of(str(fruit)) > 0 and inv.count_of(table.number_of(str(fruit))) >= 1:
+					return true
+
+			return false
+		"near_fruit_tree_in_season":   # a fruit tree in fruit within 8 m
+			return _fruit_trees_near(_peer_pos[peer], 8.0, true) >= 1
+		"near_orchard":   # four or more fruit trees within 25 m
+			return _fruit_trees_near(_peer_pos[peer], 25.0, false) >= 4
+		"season_changes":   # the season stamp is not the one this player last saw (the first look only records it)
+			var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+			var seen: int = int(st.get("season_seen", -1))
+			st["season_seen"] = stamp
+			return seen >= 0 and seen != stamp
+		"autumn_end":   # the last quarter of autumn
+			if not season_now.is_valid() or str(season_now.call()) != "autumn" or not game_seconds.is_valid():
+				return false
+
+			var day: int = int(floorf(float(game_seconds.call()) / 86400.0)) % 365
+			return fmod(float(day) * 4.0 / 365.0, 1.0) >= 0.75
 
 	return false
+
+
+# Fruit trees (drops.json "fruit_tree") standing within r metres of the point; in_fruit_only counts only those whose flora row is in season.
+func _fruit_trees_near(pos: Vector3, r: float, in_fruit_only: bool) -> int:
+	if not trees_near.is_valid() or not tree_info.is_valid():
+		return 0
+
+	var fruit: Dictionary = _drops.get("fruit_tree", {})
+	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+	var count: int = 0
+
+	for found in trees_near.call(pos, r):
+		var info: Dictionary = tree_info.call(found[0], int(found[1]))
+		var species: String = str(info.get("name", ""))
+
+		if not fruit.has(species):
+			continue
+
+		if in_fruit_only and not GatherRules.in_season(_flora_by_name.get(species, {}), season):
+			continue
+
+		count += 1
+
+	return count
 
 
 # Hint trigger has_plant_food_at_fire (Sal's tutorial steps 23 and 24): the player stands within 4 m of a lit fire with an ingredient of a campfire_pot or clay hearth recipe in the pack
