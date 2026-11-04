@@ -41,7 +41,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Animal hit, death, eating (carcass) | hit: `terrain_client.gd` `hit_number_received` -> `spear.hit("flesh")` for every hit the server reports (jab, spear, arrow; 3 Nov). Death: `animal_view.fell` (a body gone within 1.5 s of a hit near it) -> `slots.play("animal_fall")` (land thud, soft for small kinds; 3 Nov). Carcass: none? | MikeW | hit and fall wired, to hear |
 | Crafting action itself (hand craft, kit use) | `item_sounds.gd`: `craft_start`, a `craft_<type>` loop while it runs (twine, knap, bind, carve, stack, pound, wrap), then `craft_done` | Steve | wired (checked 3 Nov) |
 | Clothing put on / taken off | `inventory_view.worn_event` -> `gear.dress` (one rustle, creak or clink) and `gear.set_worn(layers_for(worn ids))`, so worn clothing now sounds on steps (3 Nov) | Sal | wired, to hear |
-| Level up, goal done, hint | none: skills rise silently; QA card `jason-skill-chime` asks Dave whether they should sound | Steve | waits on Dave |
+| Level up, goal done, hint | skill up: `inventory_view.skill_up_event` (a skills message shows a skill's whole level higher than before) -> `slots.play("skill_tock")` (soft wooden tock, make_skill.py; group `skill` cools down 20 s; Dave, QA jason-skill-chime A, 4 Nov). Goal done, hint: none? | Steve | skill up wired, to hear |
 
 Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Sonny, Sal) to expose any missing event, place the calls, add a test line per call.
 
