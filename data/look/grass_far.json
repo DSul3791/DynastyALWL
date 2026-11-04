@@ -1,0 +1,6 @@
+{
+	"note": "Dave 3 Nov 2026: grass is full density (and tall grass drawn) out to fade_start_share of the grass radius, then thins gradually to far_share of the cards at the edge; tall grass fades to tall_far_share (none) by 80 percent of the radius. fade_start_share is THE setting to change: 0.5 = start at half the draw distance, 0.25 = start at a quarter. Flowers and other small plants are flora_view's.",
+	"fade_start_share": 0.5,
+	"far_share": 0.3,
+	"tall_far_share": 0.0
+}
