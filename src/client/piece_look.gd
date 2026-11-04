@@ -864,8 +864,14 @@ static func rough_bed() -> Node3D:
 		var ang: float = TAU * float(k) / 8.0 + 0.3
 		_box_rot(root, Vector3(rng.randf_range(0.25, 0.5), 0.01, 0.014), Vector3(cos(ang) * (1.0 + rng.randf_range(0.0, 0.2)), 0.008, sin(ang) * (0.62 + rng.randf_range(0.0, 0.2))), Vector3(0.0, rng.randf() * TAU, 0.0), hay[k % 4])
 
-	_solid(root, Vector3(2.0, 0.45, 0.9), Vector3(0.0, 0.225, 0.0))
-	return root
+	# Dave 4 Nov 2026: the bed was too short to lie on. Drawn 1.15 times longer (2.3 m), and turned so its long side runs along z like its
+	# footprint, the head pile toward +z where the lie pose puts the head (E on the bed lays the player along it).
+	var outer: Node3D = Node3D.new()
+	root.scale = Vector3(1.15, 1.0, 1.0)
+	root.rotation.y = -PI * 0.5
+	outer.add_child(root)
+	_solid(outer, Vector3(0.9, 0.45, 2.3), Vector3(0.0, 0.225, 0.0))
+	return outer
 
 
 # A thatch wall piece (Dave 24 Oct: 20 twine, 50 thatch, 15 sticks), 2 m by 2.4 m, 0.25 m thick: a frame of sticks and rails filled with thick courses of straw bundles,

@@ -1324,6 +1324,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.is_inspecting = func(): return inspecting
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
+	items.lie_on_bed = _lie_on_bed
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)
 
@@ -3635,6 +3636,17 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 
 		if items != null:
 			items.request_stance(stance.stance)   # the server: sitting and lying bring exertion down
+
+
+# E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down.
+func _lie_on_bed(bed_pos: Vector3, yaw_deg: float) -> void:
+	if swimming:
+		return
+
+	body.velocity = Vector3.ZERO
+	body.global_position = Vector3(bed_pos.x, bed_pos.y + 0.5 + float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5, bed_pos.z)
+	body.rotation.y = deg_to_rad(yaw_deg)
+	_set_stance(StanceScript.LIE)
 
 
 # The server's answer (or its own change: fainting forces lying, walking off stands you up).
