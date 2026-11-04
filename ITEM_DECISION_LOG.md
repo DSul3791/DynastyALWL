@@ -361,4 +361,4 @@ Checked items.json, recipes.json and blueprints.json against this log, ITEM_TRIM
 - Fixed: chair had 4 ingredient kinds (Dave's 3 rule); now 4 lumber, 1 hide, 4 wooden pins (pegged, no twine).
 - Fixed: log cabin set (recipe 304) retired: its log wall, floor and roof kits are hammer blueprints with no recipe.
 - Left, Dave already decided: tar stays from pine tar until a bitumen item exists; one Lumber/Beam with a species tag waits for code.
-- Hammer thread: rough bed (blueprint 24) still has three kit recipes and the feather bed uses the kit (card to Dave); 16 building-piece kits (thatch, section, ladder, stairs, stone floor and roof) still craft although the design says the mallet replaces building kits.
+- Hammer thread: rough bed (blueprint 24) still has three kit recipes and the feather bed uses the kit (card to Dave). The 16 low-tier building kits (thatch, section, ladder, stairs, stone floor and roof) stay craftable: Dave's 25 Oct rule says fine wood and lower are made by hand and placed; only higher tiers are hammer blueprints.
