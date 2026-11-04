@@ -1,7 +1,8 @@
 {
-	"_note": "Walking on or near a trodden hoe path (Dave 3 Nov 2026; running bonus from his idea list IDEA-011, 4 Nov 2026): the pace is multiplied by these while a path patch has its centre within range_m of the player. Tune here. Run +20 percent per Dave; walk and jog keep the 10 percent bonus. Dave also wants 20 percent less exertion gain on a path: that is server side and not done yet.",
+	"_note": "On or near a trodden hoe path (Dave 3 and 4 Nov 2026, QA answer 7): while a path patch has its centre within range_m of the player, the pace is multiplied by these (walk +20 percent, jog +15, run +10) and the effort the server counts from the player's speed is multiplied by exertion_factor, so it costs less strain than the same movement off the path. Tune here. The client reads the speed factors, the server reads exertion_factor and range_m.",
 	"range_m": 3.0,
-	"walk_factor": 1.1,
-	"jog_factor": 1.1,
-	"run_factor": 1.2
+	"walk_factor": 1.2,
+	"jog_factor": 1.15,
+	"run_factor": 1.1,
+	"exertion_factor": 0.8
 }
