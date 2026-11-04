@@ -46,6 +46,11 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 		return [spot, yaw_deg, false]
 
 	if bool(def.get("foundation", false)):   # a foundation beside another of its kind takes its height and its edge (Dave 4 Nov 2026)
+		var stacked: Array = foundation_stack(def, spot, rows)
+
+		if not stacked.is_empty():
+			return stacked
+
 		var beside: Array = foundation_neighbor(def, spot, rows)
 
 		if not beside.is_empty():
@@ -87,6 +92,44 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 	var grid: float = maxf(float(def.get("snap_m", cfg.get("piece_snap_m", 1.0))), 0.1)
 	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned, false]
+
+
+# Aiming at the middle of a foundation's top puts a new one on it: the same spot, one body (def "stack_m", 2 m) higher, up to STACK_MAX_LAYERS
+# in a column (Dave bug list 3 Nov, BUG-026: foundations stack vertically). Returns [spot, yaw, true, layers] or [] when the cursor is not over a foundation's middle.
+const STACK_MAX_LAYERS := 4
+const STACK_MIDDLE_M := 1.5
+
+static func stack_rise(cfg: Dictionary, kit_id: String) -> float:
+	return float(structure_of_kit(cfg, kit_id).get("stack_m", 0.0))
+
+
+static func foundation_stack(def: Dictionary, spot: Vector3, rows: Array) -> Array:
+	var rise: float = float(def.get("stack_m", 0.0))
+
+	if rise <= 0.0:
+		return []
+
+	var half_x: float = minf(float(def.get("footprint_x", 4.0)) * 0.5, STACK_MIDDLE_M)
+	var half_z: float = minf(float(def.get("footprint_z", 4.0)) * 0.5, STACK_MIDDLE_M)
+	var top: Dictionary = {}
+	var layers: int = 0
+
+	for row in rows:
+		if int(row["state"]) != int(def.get("state", -1)):
+			continue
+
+		if absf(spot.x - row["pos"].x) > half_x or absf(spot.z - row["pos"].z) > half_z:
+			continue
+
+		layers += 1
+
+		if top.is_empty() or row["pos"].y > top["pos"].y:
+			top = row
+
+	if top.is_empty() or layers >= STACK_MAX_LAYERS or spot.y < top["pos"].y + float(def.get("top_m", 0.3)) - 0.6:
+		return []
+
+	return [Vector3(top["pos"].x, top["pos"].y + rise, top["pos"].z), posmod(int(round(float(top.get("yaw", 0.0)))), 360), true, layers]
 
 
 # A foundation near another of its own kind (rows: {"pos", "state", "yaw"}) goes edge to edge with it at the SAME height (or corner to corner), so a run

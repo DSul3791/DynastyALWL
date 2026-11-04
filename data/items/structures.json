@@ -341,6 +341,7 @@
 			"cap_per_chunk": 60,
 			"max_rise_m": 0.6,
 			"snap_m": 2.0,
+			"stack_m": 2.0,
 			"top_m": 0.3,
 			"anchors": {
 				"wall": [

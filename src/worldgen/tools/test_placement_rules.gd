@@ -209,6 +209,18 @@ func _init() -> void:
 			next_x = items._items[id]["pos"].x
 
 	check(is_equal_approx(next_y, 10.3) and is_equal_approx(next_x, 304.0), "a second foundation sits edge to edge at the first one's height, whatever the wheel said (x %.2f y %.2f)" % [next_x, next_y])
+	# Stacking (BUG-026): aiming at the middle of a foundation's top puts the next one a body (2 m) higher; the edge ring still goes beside it.
+	var fdef: Dictionary = Rules.structure_of_kit(cfg, "foundation_section_kit")
+	var column: Array = [{"pos": Vector3(10.0, 10.0, 10.0), "state": int(fdef["state"]), "yaw": 0.0}]
+	var up: Array = Rules.foundation_stack(fdef, Vector3(10.4, 10.3, 9.8), column)
+	check(not up.is_empty() and is_equal_approx(up[0].y, 12.0) and is_equal_approx(up[0].x, 10.0) and is_equal_approx(up[0].z, 10.0), "aiming at a foundation's middle stacks one 2 m higher on the same spot")
+	column.append({"pos": Vector3(10.0, 12.0, 10.0), "state": int(fdef["state"]), "yaw": 0.0})
+	var up2: Array = Rules.foundation_stack(fdef, Vector3(10.0, 12.3, 10.0), column)
+	check(not up2.is_empty() and is_equal_approx(up2[0].y, 14.0), "a third layer goes on the second")
+	check(Rules.foundation_stack(fdef, Vector3(13.5, 10.3, 10.0), column).is_empty(), "the edge ring does not stack (it goes beside)")
+	column.append({"pos": Vector3(10.0, 14.0, 10.0), "state": int(fdef["state"]), "yaw": 0.0})
+	column.append({"pos": Vector3(10.0, 16.0, 10.0), "state": int(fdef["state"]), "yaw": 0.0})
+	check(Rules.foundation_stack(fdef, Vector3(10.0, 16.3, 10.0), column).is_empty(), "a column stops at %d layers" % Rules.STACK_MAX_LAYERS)
 	# The wood chain stations: the woodworking table and the sawmill place like other stations.
 	var before_stations: Vector3 = items._peer_pos[2]
 	items.report_position(2, Vector3(800.0, 10.0, 800.0))
