@@ -119,8 +119,8 @@ func _init() -> void:
 	check(bool(Rules.snap(cfg, "floor_section_kit", Vector3(50.9, 10.0, 49.2), 0, base_rows)[2]), "a floor snaps onto the foundation")
 	check(not bool(Rules.snap(cfg, "wall_section_kit", Vector3(60.0, 10.0, 60.0), 0, base_rows)[2]), "far from the foundation a wall uses the plain grid")
 	var beside_rows: Array = [{"pos": Vector3(50.0, 11.0, 50.0), "state": 25, "yaw": 0.0}]
-	var beside: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(53.1, 10.0, 50.3), 0, beside_rows)
-	check(bool(beside[2]) and beside[0] == Vector3(54.0, 11.0, 50.0), "a foundation near another goes edge to edge at its height (%s)" % str(beside))
+	var next_to: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(53.1, 10.0, 50.3), 0, beside_rows)
+	check(bool(next_to[2]) and next_to[0] == Vector3(54.0, 11.0, 50.0), "a foundation near another goes edge to edge at its height (%s)" % str(next_to))
 	var diagonal: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(53.0, 10.0, 53.0), 0, beside_rows)
 	check(bool(diagonal[2]) and diagonal[0] == Vector3(54.0, 11.0, 54.0), "or corner to corner (%s)" % str(diagonal))
 	beside_rows.append({"pos": Vector3(54.0, 11.0, 50.0), "state": 25, "yaw": 0.0})
