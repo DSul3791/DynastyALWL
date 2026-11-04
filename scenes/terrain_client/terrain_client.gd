@@ -1134,6 +1134,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.ground_below = _ground_below
+	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
@@ -1295,6 +1296,7 @@ func _welcome_body(info: Dictionary) -> void:
 	burrow_view.ground_at = _ground_below
 	add_child(burrow_view)
 	net.burrows_received.connect(burrow_view.on_burrows)
+	net.burrows_received.connect(_on_burrows_for_grass)
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)
@@ -1347,6 +1349,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 		if not changed.is_empty():
 			sound.gear.dress(str(changed[0]))   # one sound for a change (a swap sends both pieces in one list)
+	items.hurt_event = func(lost: int) -> void: sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
@@ -1664,6 +1667,17 @@ var wet_gap_override: float = -1.0     # look rig (--shot-wet=GAP): pretend this
 var cavein_death                      # the cave-in death sequence (src/client/cavein_death.gd), made at the first one
 var showroom                          # the admin showroom at spawn (src/client/showroom.gd), shown while Admin mode is on
 var _cleared_key: int = 0
+var _burrow_spots: Array = []      # burrow mound spots from the server (burrow_view draws them), kept bare of grass
+
+
+func _on_burrows_for_grass(points: PackedVector3Array) -> void:
+	_burrow_spots = []
+
+	for point in points:
+		_burrow_spots.append(Vector3(snappedf(point.x, 0.01), point.y, snappedf(point.z, 0.01)))
+
+	if grass != null and items != null:
+		_sync_cleared()
 var _switches_applied: bool = false
 var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)
 var _cleared_cfg: Dictionary = {}
@@ -1760,6 +1774,10 @@ func _sync_cleared() -> void:
 		key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id)
 
 	_loose_segs = segs_now
+
+	for mound in _burrow_spots:      # rabbit burrow mounds are 0.13 m high: no grass stands through them (same bare patch as a path)
+		paths.append(mound)
+		key = key ^ hash(Vector2(mound.x, mound.z))
 
 	for boulder_id in items._boulders:
 		var boulder: Dictionary = items._boulders[boulder_id]
@@ -1964,6 +1982,37 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+	_respawn_gasp()
+
+
+# Back at the respawn point after a death: the player comes to with a sharp breath (batch3 slot respawn_gasp), so a death is not a
+# silent jump. Played at the new spot, after the body moved.
+func _respawn_gasp() -> void:
+	if sound != null:
+		sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
+
+
+# The built floor under the feet for the footsteps (sound_stage.floor_under): a short ray down hits a placed piece whose model carries
+# "floor_sound" (inventory_view._model_for_state, structure_look.step_surface), or "" on natural ground.
+func _floor_under(feet: Vector3) -> String:
+	if body == null:
+		return ""
+
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(feet + Vector3(0.0, 0.3, 0.0), feet - Vector3(0.0, 0.3, 0.0))
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	var node: Node = hit.get("collider") if not hit.is_empty() else null
+
+	for _i in 3:
+		if node == null:
+			break
+
+		if node.has_meta("floor_sound"):
+			return str(node.get_meta("floor_sound"))
+
+		node = node.get_parent()
+
+	return ""
 
 
 # The end of the cave-in death sequence: back at the respawn point, as any other death does at once.
@@ -1975,6 +2024,7 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+	_respawn_gasp()
 
 
 var _water_key: Dictionary = {}   # chunk -> hash of the water bytes last received for it (unchanged water is not redrawn)
