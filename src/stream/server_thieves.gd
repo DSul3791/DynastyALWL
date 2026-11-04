@@ -90,7 +90,7 @@ func step(a: Dictionary, dt: float) -> void:
 			_give_up(a)
 			return
 
-		var r: Dictionary = Steering.step(a["pos"], goal, float(def.get("sneak_mps", 2.5)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.walls)
+		var r: Dictionary = Steering.step(a["pos"], goal, float(def.get("sneak_mps", 2.5)), dt, host.ground_height, host.blocked, 0.8, a["heading"])
 
 		if r["moved"]:
 			a["pos"] = r["pos"]
@@ -114,7 +114,7 @@ func step(a: Dictionary, dt: float) -> void:
 		return
 
 	# CARRY: sprint away with the food and eat it far off.
-	var r2: Dictionary = Steering.step(a["pos"], a["target"], float(def.get("run_mps", 9.0)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.walls)
+	var r2: Dictionary = Steering.step(a["pos"], a["target"], float(def.get("run_mps", 9.0)), dt, host.ground_height, host.blocked, 1.0, a["heading"])
 
 	if r2["moved"]:
 		a["ran"] = float(a["ran"]) + a["pos"].distance_to(r2["pos"])
