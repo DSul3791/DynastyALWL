@@ -24,7 +24,7 @@ func _init() -> void:
 	var table: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
 	var materials: Dictionary = {}
 
-	for key in ["bark", "birch_bark", "smooth_bark", "chrome", "ember", "berry", "broad", "conifer", "palm", "grass", "twig", "oak", "willow", "rowan", "maple", "witness"]:
+	for key in ["bark", "birch_bark", "smooth_bark", "chrome", "ember", "greens", "broad", "conifer", "palm", "grass", "twig", "oak", "willow", "rowan", "maple", "berry", "witness"]:
 		var m: StandardMaterial3D = StandardMaterial3D.new()
 		m.vertex_color_use_as_albedo = true
 		materials[key] = m
