@@ -19,7 +19,7 @@ static var _metal_mats: Dictionary = {}
 const ART_OVERRIDES := {
 	"flint": {"shape": "flint", "color": "#4a4238", "size": 1.0},
 	"spear": {"shape": "shaft", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},     # the early "Stone spear" ("a stone point on a long shaft"): looks.json drew it with the iron head
-	"bandage": {"shape": "bandage", "color": "#ece4d0", "size": 0.8},     # a rolled cloth strip, not the twisted twine coil
+	"bandage": {"shape": "bandage", "color": "#ece4d0", "size": 1.2},     # a rolled cloth strip, not the twisted twine coil
 	"tree_roots": {"shape": "roots", "color": "#6a4a2e", "size": 1.0},     # dug roots, not the firewood rod bundle (Kathleen 3 Nov)
 	"pyrite": {"shape": "pyrite", "color": "#d4ae33", "size": 1.0},
 	"obsidian": {"shape": "obsidian", "color": "#101014", "size": 1.0},
@@ -1494,6 +1494,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.084, 0.006, Vector3(sx * 0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), grain)
 				_cyl(parts, 0.05, 0.008, Vector3(sx * 0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), grain.darkened(0.12))
 				_cyl(parts, 0.015, 0.01, Vector3(sx * 0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)
+			# Bark ridges: dark furrows running along the round, uneven in length, so from above it reads as barked wood, not a smooth box (picture check 4 Nov).
+			for k in 7:
+				var turn: float = float(k) * TAU / 7.0 + 0.2
+				var ridge: float = 0.16 + 0.03 * float((k * 3) % 3)
+				_box_rot(parts, Vector3(ridge, 0.012, 0.014), Vector3(0.006 * float(k % 3 - 1), cos(turn) * 0.088, sin(turn) * 0.088), Vector3(turn, 0.0, 0.0), dark.darkened(0.1 * float(k % 2)))
+			_sph(parts, 0.016, Vector3(1.2, 0.5, 1.0), Vector3(0.03, 0.087, 0.012), dark.darkened(0.25), true)   # a knot where a branch was
 		"split_wood":
 			# Split firewood: a small stack of wedge billets, bark on the rounded back, a pale cut face on the split side and on each end.
 			for k in 6:
