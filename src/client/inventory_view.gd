@@ -634,7 +634,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
 
 	if _is_chest(state):
-		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
+		return {"prompt": "Press E to open (hold E to take it down)", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
 		return {"prompt": "Press E to split firewood (hold E to pick up the block)", "tap": func(): _use_block(id), "hold": take_down}   # tap splits, hold picks up, like the other structures (Dave 2 Nov 2026, bug 2)
