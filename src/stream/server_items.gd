@@ -10128,6 +10128,15 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return inv.count_of(table.number_of("campfire_kit")) >= 1
 		"near_fire_with_food":   # raw meat or fish in the pack, a lit fire within 4 m
 			return _lit_fire_within(_peer_pos[peer], 4.0) and _has_raw_meat(inv)
+		"has_sea_water":
+			return inv.count_of(table.number_of("sea_water")) >= 1
+		"beach_with_container", "beach_with_bucket":   # a water container in the pack at the sea edge (ACT_GATHER_EDGE reach)
+			var carries: bool = false
+
+			for container in (["bucket"] if trigger == "beach_with_bucket" else ["bucket", "clay_jug", "waterskin"]):
+				carries = carries or inv.count_of(table.number_of(container)) >= 1
+
+			return carries and _sea_near(_peer_pos[peer], float(_shore_data().get("reach_m", 4.0)))
 		"near_nettle":   # no flora query for small plants on the server: the first nettles in the pack stand in for "near a nettle"
 			return inv.count_of(table.number_of("nettles")) >= 1
 		"spear_made":
