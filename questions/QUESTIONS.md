@@ -58,10 +58,3 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [A] Leave it as it is, I will tell you after I listen
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
-
-## npc-dynasty-body | Should town NPCs use your new body (Dave's mesh) too?
-Note: The player has used your body since 1 Nov. NPCs still use the older generated body.
-Note: With #254 (clothes on your body) and #195 (proportion sliders), NPCs could use your body, each with its own shape and skin, in their merchant and guard clothes.
-Note: Yes: I build it. No: NPCs stay on the old body.
-Note: Recommendation: Yes, once #195 and #254 are merged and pictured
-[text]
