@@ -525,7 +525,7 @@ static func trodden_path() -> Node3D:
 	return root
 
 
-# A rock pile: a mound of about a dozen faceted stones (the loose-stone mesh of rock_look.gd, turned and scaled one by one), big ones at the
+# A rock pile: a mound of about a dozen faceted stones (the coarse loose-stone mesh of rock_look.gd, RockLook.pile_mesh, turned and scaled one by one), big ones at the
 # foot and smaller ones heaped on top, about 1.2 m across. The solid box under it is the collision.
 static func rock_pile() -> Node3D:
 	_materials()
@@ -537,7 +537,7 @@ static func rock_pile() -> Node3D:
 
 	for rock in rocks:
 		var node: MeshInstance3D = MeshInstance3D.new()
-		node.mesh = RockLook.mesh()
+		node.mesh = RockLook.pile_mesh()
 		node.position = rock[0]
 		node.rotation = Vector3(rng.randf_range(-0.3, 0.3), rng.randf_range(0.0, TAU), rng.randf_range(-0.3, 0.3))
 		var k: float = float(rock[1])

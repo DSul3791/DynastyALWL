@@ -25,7 +25,8 @@ static func table() -> Dictionary:
 			var state: int = int(def.get("state", -1))
 
 			if state >= 0 and not _table.has(state) and def.has("look"):
-				_table[state] = {"look": str(def["look"]), "sound": str(def.get("sound", "thump")), "clears_grass": bool(def.get("clears_grass", true)), "material": str(def.get("material", ""))}
+				_table[state] = {"look": str(def["look"]), "sound": str(def.get("sound", "thump")), "clears_grass": bool(def.get("clears_grass", true)), "material": str(def.get("material", "")),
+					"piece_kind": str(def.get("piece_kind", "")), "kind": str(kind)}
 
 	_table[12] = _table.get(11, {"look": "remains", "sound": "thump", "clears_grass": true})
 	return _table
@@ -48,3 +49,20 @@ static func material_of(state: int) -> String:
 # True when a placed thing of this state clears grass around it.
 static func clears_grass(state: int) -> bool:
 	return bool(table().get(state, {}).get("clears_grass", false))
+
+
+# The footstep surface of standing on a placed piece of this state (sound_stage FLOOR_SURFACES): "plank", "slab", "thatch" or "path",
+# "" when it is not a walking surface (walls, roofs, tilled beds, the packed-earth foundation sounds as the ground does).
+const FLOOR_BY_MATERIAL := {"wood": "plank", "log": "plank", "timber": "plank", "stone": "slab", "brick": "slab", "thatch": "thatch"}
+
+
+static func step_surface(state: int) -> String:
+	var row: Dictionary = table().get(state, {})
+
+	if str(row.get("kind", "")) == "path_patch":
+		return "path"
+
+	if str(row.get("piece_kind", "")) == "floor" or str(row.get("look", "")).ends_with("_floor"):
+		return str(FLOOR_BY_MATERIAL.get(str(row.get("material", "")), ""))
+
+	return ""

@@ -72,6 +72,9 @@ var pick_stamp: int = 0                       # msec of the latest pick-up or ga
 var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
+var hurt_event: Callable               # (health lost int) when a vitals update drops health by HURT_MIN or more (a bite, a fall): sounds
+var _vitals_seen: bool = false          # the first vitals after joining sets health; it is not a hurt
+const HURT_MIN := 4                     # a smaller drop is a slow drain (hunger, cold, bleeding), not a blow
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
@@ -1660,6 +1663,10 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: i
 	if new_thirst > thirst and _drink_msec > 0 and Time.get_ticks_msec() - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid():
 		eat_event.call("drink")
 
+	if _vitals_seen and health - new_health >= HURT_MIN and hurt_event.is_valid():
+		hurt_event.call(health - new_health)
+
+	_vitals_seen = true
 	hunger = new_hunger
 	thirst = new_thirst
 	luck = new_luck
@@ -2788,7 +2795,13 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 	var look: String = StructureLook.look_of(state)
 
 	if LookTable.has_look(look):
-		return LookTable.build(look)   # building pieces: one table in look_table.gd
+		var piece: Node3D = LookTable.build(look)   # building pieces: one table in look_table.gd
+		var surface: String = StructureLook.step_surface(state)
+
+		if piece != null and surface != "":
+			piece.set_meta("floor_sound", surface)   # footsteps on it (terrain_client sets sound.floor_under from the body under the feet)
+
+		return piece
 
 	match look:
 		"campfire":
@@ -2871,9 +2884,8 @@ func _mesh_for(number: int) -> Mesh:
 			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}.get(id, LogLookScript.color_of(id))
 			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
 		elif id == "stone":
-			mesh = RockLook.mesh()      # an irregular faceted lump with its own vertex colours (src/client/rock_look.gd)
-			material.vertex_color_use_as_albedo = true
-			material.albedo_color = Color.WHITE
+			mesh = RockLook.mesh()      # a weathered field stone with its own vertex colours and grain (src/client/rock_look.gd)
+			material = RockLook.material()      # the stone's own grain material: the mesh is shared with the rock piles, so it keeps the one material
 		elif str(table.entry(id).get("kind", "")) in ["placeable", "structure", "tool", "weapon"]:
 			var crate: BoxMesh = BoxMesh.new()
 			crate.size = Vector3(0.3, 0.12, 0.2)
