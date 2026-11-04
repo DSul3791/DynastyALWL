@@ -213,7 +213,7 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (2 sticks, 2 twine) or a shore net and fish at the pond.",
+			"hint": "Make a fishing rod (2 sticks, 2 twine) or a fishing net and fish at the pond.",
 			"after": [
 				"twine"
 			],

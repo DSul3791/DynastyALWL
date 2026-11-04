@@ -1324,6 +1324,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.is_inspecting = func(): return inspecting
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
+	items.lie_on_bed = _lie_on_bed
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)
 
@@ -1349,6 +1350,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 		if not changed.is_empty():
 			sound.gear.dress(str(changed[0]))   # one sound for a change (a swap sends both pieces in one list)
+	items.skill_up_event = func() -> void: sound.slots.play("skill_tock", body.global_position + Vector3(0.0, 1.5, 0.0))   # a skill rises: a soft wooden tock (the skill group cools down 20 s)
 	items.hurt_event = func(lost: int) -> void: sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
@@ -3635,6 +3637,17 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 
 		if items != null:
 			items.request_stance(stance.stance)   # the server: sitting and lying bring exertion down
+
+
+# E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down.
+func _lie_on_bed(bed_pos: Vector3, yaw_deg: float) -> void:
+	if swimming:
+		return
+
+	body.velocity = Vector3.ZERO
+	body.global_position = Vector3(bed_pos.x, bed_pos.y + 0.5 + float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5, bed_pos.z)
+	body.rotation.y = deg_to_rad(yaw_deg)
+	_set_stance(StanceScript.LIE)
 
 
 # The server's answer (or its own change: fainting forces lying, walking off stands you up).

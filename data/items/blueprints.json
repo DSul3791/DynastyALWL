@@ -9,7 +9,7 @@
 		"doorway_section": {"number": 5, "name": "Doorway", "structure": "doorway_section", "cost": [["lumber", 3], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "doorway_section_kit"},
 		"window_section": {"number": 6, "name": "Window wall", "structure": "window_section", "cost": [["lumber", 3], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "window_section_kit"},
 		"timber_set": {"number": 7, "name": "Timber set", "structure": "timber_set", "cost": [["lumber", 4], ["twine", 1], ["stick", 1]], "station": "", "hammer": 1, "known": true, "recipe": "timber_set_kit"},
-		"ladder": {"number": 8, "name": "Ladder", "structure": "ladder", "cost": [["lumber", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "ladder_kit"},
+		"ladder": {"number": 8, "name": "Ladder", "structure": "ladder", "cost": [["rough_plank", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "ladder_kit"},
 		"stone_forge": {
 			"number": 9,
 			"name": "Basic Forge",
@@ -134,7 +134,7 @@
 		"brick_roof": {"number": 22, "name": "Brick roof", "structure": "brick_roof", "cost": [["brick", 16], ["lumber", 6]], "station": "", "hammer": 1, "known": true, "recipe": "brick_roof_kit"},
 		"fireplace": {"number": 23, "name": "Fireplace", "structure": "fireplace", "cost": [["brick", 24], ["mortar", 4], ["clay", 6]], "station": "", "hammer": 1, "known": true, "recipe": "fireplace_kit"},
 		"rough_bed": {"number": 24, "name": "Rough bed", "structure": "rough_bed", "cost": [["thatch", 10], ["stick", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true, "retired": true},
-		"lean_to": {"number": 25, "name": "Small shelter", "structure": "lean_to", "cost": [["stick", 16], ["leaves", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "lean_to_kit"},
+		"lean_to": {"number": 25, "name": "Lean-to", "structure": "lean_to", "cost": [["stick", 30], ["leaves", 200], ["twine", 10]], "station": "", "hammer": 1, "known": true, "recipe": "lean_to_kit"},
 		"chest": {"number": 26, "name": "Woven chest", "structure": "chest", "cost": [["stick", 10], ["twine", 4]], "station": "", "hammer": 1, "known": true, "recipe": "chest_kit"},
 		"plank_chest": {"number": 27, "name": "Plank chest", "structure": "plank_chest", "cost": [["lumber", 8], ["twine", 2], ["hinges", 2]], "station": "workbench", "station_level": 2, "hammer": 1, "known": true, "recipe": "plank_chest_kit"},
 		"campfire_pot": {"number": 28, "name": "Campfire pot", "structure": "campfire_pot", "cost": [["stick", 3], ["twine", 3], ["clay_pot", 1]], "station": "", "hammer": 1, "known": true, "recipe": "campfire_pot_kit"},
