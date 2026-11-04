@@ -113,6 +113,17 @@
    "status": "filled",
    "note": "a fish pulled out of the water: the small swim splash (Jason, 3 Nov 2026; stand-in)"
   },
+  "animal_fall": {
+   "group": "creature_fall",
+   "files": [
+    "res://assets/audio/landing/land_thud_0.ogg",
+    "res://assets/audio/landing/land_thud_1.ogg",
+    "res://assets/audio/landing/land_thud_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -8,
+   "status": "filled"
+  },
   "player_hurt": {
    "group": "body",
    "files": [
