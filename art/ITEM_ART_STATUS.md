@@ -30,7 +30,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 19 | wooden_spade | Wooden spade | spade | looks.json | rough |  | 2026-11-03 |  | earth caked on blade, worn haft (3 Nov); needs a PC sheet before "decent" |
 | 20 | lean_to_kit | Small shelter | override | ART_OVERRIDES | rough |  |  |  |  |
 | 21 | lean_to | Small shelter | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  | 2026-11-03 |  | 1.6x: walk in, lie down (#253, merged); needs a PC sheet before "decent" |
-| 22 | chest_kit | Woven chest | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | woven wicker (#206); needs a PC sheet before "decent" |
+| 22 | chest_kit | Woven chest | override | ART_OVERRIDES | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/chest_kit_after.png | woven wicker (#206); needs a PC sheet before "decent" fixed 4 Nov (Sonny): warmer withy colour, light and dark withies over-under from base to rim, woven ribs round the lid |
 | 23 | chest | Woven chest | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 24 | chopping_block_kit | Chopping block | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 25 | chopping_block | Chopping block | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
@@ -264,7 +264,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 255 | campfire_pot | Campfire pot | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 256 | clay_hearth_kit | Clay hearth | override | ART_OVERRIDES | rough |  |  |  |  |
 | 257 | clay_hearth | Clay hearth | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 260 | shore_net | Shore net | hand_net | looks.json | rough | BUG-022: throw net, a round bell of twine with sinkers all round the mouth, a line to a coil; no pole; needs a picture |  |  |  |
+| 260 | shore_net | Shore net | hand_net | looks.json | rough | BUG-022: throw net, a round bell of twine with sinkers all round the mouth, a line to a coil; no pole; needs a picture | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/shore_net_after.png |  fixed 4 Nov (Sonny): lying loose it slumps to a hand high, off-centre crown, rows follow the folds (no hoops); the hanging net keeps its bell |
 | 261 | thatch_floor_kit | Thatch floor | override | ART_OVERRIDES | rough |  |  |  |  |
 | 262 | thatch_floor | Thatch floor | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 263 | thatch_roof_kit | Thatch roof | override | ART_OVERRIDES | rough |  |  |  |  |
