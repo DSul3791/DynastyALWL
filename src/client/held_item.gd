@@ -51,10 +51,10 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
-const HELD_LOOK_SCALE := 1.4
-const HELD_SPEAR_SCALE := 1.6
+const HELD_LOOK_SCALE := 1.0      # real size against the body (Dave QA BUG-012: tools held at 1.4x, spear 1.6x, bow 1.8x looked too big)
+const HELD_SPEAR_SCALE := 1.0
 const BOW_AMMO := ["stone_arrow", "wooden_arrow", "bone_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
-const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0, "bow": 1.8, "arrow": 2.2, "quern": 1.3}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
+const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
