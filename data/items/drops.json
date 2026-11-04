@@ -319,10 +319,11 @@
 			],
 			[
 				"leaves",
-				3,
-				5
+				25,
+				40
 			]
 		],
+		"leaves_note": "Dave 4 Nov 2026 (QA claude-leanto-cost): a lean-to takes about 200 leaves, so a felled crown gives 25 to 40 a branch blow (two blows: about 65 a tree, three trees for a lean-to) and an axed bush 10 to 20.",
 		"bark_chance": 0.55,
 		"thatch_bark_note": "Birch and the softwoods give thatch-worthy bark instead of plain bark (Dave 24 Oct): per blow chance and a count range, keyed by tree species.",
 		"thatch_bark": {"birch": {"chance": 0.5, "count": [3, 5]}, "spruce": {"chance": 0.3, "count": [2, 4]}, "balsam_fir": {"chance": 0.3, "count": [2, 4]}, "scots_pine": {"chance": 0.3, "count": [2, 4]}},
@@ -514,7 +515,7 @@
 		"axe_blows": 2,
 		"pick_blows": 2,
 		"axe_gives": [
-			["leaves", 2, 4],
+			["leaves", 10, 20],
 			["stick", 2, 4]
 		],
 		"dig_suffix": "_bush"
