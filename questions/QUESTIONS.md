@@ -44,16 +44,6 @@ Note: Search: boar "wild boar grunt", "boar squeal"; grouse "grouse call", "blac
 Note: Drop them in the project folder at sound/incoming/<animal>/ (boar, grouse, seal, seabird), with a short urls.txt listing each clip's Pixabay page link. Jason then cuts and levels them.
 [test]
 
-## tyler-windowed-checks-1103 | Please test this, after you pull: do the new water, hoe, road and grass changes look right and run without hitches?
-Note: These were merged on cloud tests only; they need your eyes in the real game. One pull covers all of them.
-Note: 1. Pull, close the game fully, press Play.
-Note: 2. Brooks (#167): stand at x 53480 z 68825 and look east, then at x 53521 z 68882 and look east. The hillside stream should be one flowing body with no gaps or patches.
-Note: 3. Hoe (#136): dig a few path squares. The path decal should show, with no pause on the click and no SHADER ERROR in the console.
-Note: 4. Roads (#137): with the hoe, Shift + right click to drop marker A, walk about 15 m over bumpy ground, then drop B. A road should build by itself with no hitches.
-Note: 5. Grass (#140): stand in tall grass in first person, then press the third-person key. No flat green carpet around your feet in either view.
-Note: 6. Lag (#157, #155, #158): walk past a felled log and kick it. If anything pauses, copy the HITCH and FREEZE lines from the console into the Notes box.
-[test]
-
 ## claude-leanto-cost | You said no to 32 sticks, 8 leaves, 4 twine for the lean-to. Too much or too little?
 Note: Your earlier OK was 24 sticks, 6 leaves, 4 twine. It was raised to 32 / 8 / 4. The "No" does not say which way.
 Note: Recommendation: too much for the first hour. Go to 16 sticks, 4 leaves, 2 twine, about 10 minutes of gathering.
