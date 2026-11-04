@@ -240,6 +240,8 @@ func _check_ambience() -> void:
 	check(first == second, "the same day reproduces the same one-shots")
 	check(first != other_day, "another day gives another run")
 	check(int(Ambience.simulate(slots, summer_forest, 3600.0, 3)["repeats"]) == 0, "an hour of one-shots never repeats a clip back to back")
+	var owls: int = int((Ambience.simulate(slots, night, 3600.0, 3)["counts"] as Dictionary).get("owl_hoot", 0))
+	check(owls > 0 and owls <= 80, "a night hour in the forest has %d owl hoots (rests 45 to 120 s between hoots, at most 80)" % owls)
 	var rng: RandomNumberGenerator = Ambience.shot_rng(1, 1)
 	var last_clip: String = ""
 	var repeats: int = 0

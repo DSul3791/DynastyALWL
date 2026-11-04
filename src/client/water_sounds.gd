@@ -344,6 +344,20 @@ func _read_rows(rows: int) -> void:
 		_row += 1
 
 
+# Wider or merged water is fuller (3 Nov 2026: streams that join sound bigger). The wet squares around a river square (of 25, from RIVER_AROUND up to a pond at
+# POND_AROUND) stand for its width: +WIDTH_DB_PER_OCTAVE dB per doubling over RIVER_AROUND, at most WIDTH_MAX_DB, and the pitch drops a little (a deeper voice).
+const WIDTH_DB_PER_OCTAVE := 4.0
+const WIDTH_MAX_DB := 4.0
+const WIDTH_PITCH := 0.05
+
+
+static func width_db(around: int) -> float:
+	if around <= RIVER_AROUND:
+		return 0.0
+
+	return clampf(WIDTH_DB_PER_OCTAVE * log(float(around) / float(RIVER_AROUND)) / log(2.0), 0.0, WIDTH_MAX_DB)
+
+
 # The kind of water a square is, from the wet squares around it (of 25) and the current there (m/s, -1 unknown).
 static func kind_for(around: int, flow_mps: float) -> String:
 	if around >= POND_AROUND:
@@ -437,7 +451,7 @@ func _classify_row(j: int) -> void:
 		var distance: float = Vector2(at.x - origin.x, at.z - origin.z).length()
 
 		if distance <= float(KINDS[kind]["reach"]):
-			_candidates.append({"kind": kind, "at": at, "distance": distance, "drop": drop, "speed": _speed[j * count + i], "score": distance / float(KINDS[kind]["reach"])})
+			_candidates.append({"kind": kind, "at": at, "distance": distance, "drop": drop, "speed": _speed[j * count + i], "around": around, "score": distance / float(KINDS[kind]["reach"])})
 
 
 
@@ -690,6 +704,9 @@ func _aim(slot: Dictionary, candidate: Dictionary, _from: Vector3) -> void:
 		db += clampf(float(candidate["drop"]) / 0.5, 0.0, 1.0) * 2.0     # steeper babbles a little louder
 	elif candidate["kind"] == "river":
 		db += clampf((float(candidate["drop"]) - 0.1) / 0.5, 0.0, 1.0) * 5.0    # a steep reach (rapids) is louder; a calm one stays quiet
+		var wide: float = width_db(int(candidate.get("around", RIVER_AROUND)))
+		db += wide                                                              # a wider river, or two streams merged, is fuller
+		pitch -= WIDTH_PITCH * wide / WIDTH_MAX_DB
 
 	if candidate["kind"] == "fall":
 		db += clampf(3.0 * log(maxf(float(candidate.get("width", 4.0)), 0.5) / 4.0) / log(2.0), -5.0, 4.0)    # wider falls roar louder
