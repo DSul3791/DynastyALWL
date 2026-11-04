@@ -187,7 +187,7 @@ void fragment() {
 
 	// Foam where it runs fast and shallow (rapids, the lip and foot of a fall), streaked along the flow.
 	float streak = mix(noise(p0 * 2.5), noise(p1 * 2.5), mixk);
-	float rough = clamp((speed - 1.2) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);
+	float rough = clamp((speed - 0.9) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);   // BUG-010: white from 0.9 m/s (was 1.2)
 	float foam = smoothstep(0.45, 0.8, streak + rough * 0.6) * rough;
 	// Lapping at the bank: a broken foam line that comes and goes where the water thins against the ground.
 	float lap = (1.0 - smoothstep(0.05, lap_m, through)) * smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(TIME * 1.1 + noise(world * 0.35) * 9.0)) * noise(world * 1.3 + TIME * 0.2);
@@ -223,7 +223,10 @@ void fragment() {
 	EMISSION = foam_color * foam * 0.15 * daylight;
 	ROUGHNESS = 0.06 + 0.35 * foam;
 	SPECULAR = 0.5;
-	ALPHA = clamp(max(0.35 + 0.6 * thick, foam), 0.0, 1.0) * shore * edge * contact;
+	// Dave's QA list BUG-010 (3 Nov 2026): river and fall water read almost invisible. Running water is stirred up and catches the light, so it
+	// gets body with its speed; a fall face is near opaque. Still water keeps the clear look of the art direction (you see the bed).
+	float running = 0.75 * smoothstep(0.5, 2.0, speed) * smoothstep(0.05, 0.4, depth);
+	ALPHA = clamp(max(max(0.35 + 0.6 * thick, running), max(foam, fall * 0.85)), 0.0, 1.0) * shore * edge * contact;
 
 	// From under the water (Dave 2 Nov 2026: "being under the water looking up looks fake"): the surface is a mirror of the dark water
 	// below, except a round window overhead (Snell's window, about 49 degrees from the vertical) where the sky shows, bent and shaken by
