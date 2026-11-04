@@ -1849,11 +1849,11 @@ func _init() -> void:
 	# Fitness XP (fitness.json train, Dave 4 Nov): effort above 0.1 gives 1 + 2 x effort XP per 10 s into the day's bucket, which turns into points
 	# at game midnight (1,000 XP a point, the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, never below the base.
 	var clk: Array = [100.0]   # game seconds, day 0
-	var gs := func(): return clk[0]
-	var midnight := func(x): clk[0] += 86400.0; x._train_fitness(1, 0.0, 0.0)
+	var fit_gs: Callable = func(): return clk[0]
+	var midnight: Callable = func(x): clk[0] += 86400.0; x._train_fitness(1, 0.0, 0.0)
 	var tr = make(xd)
 	tr.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	tr.game_seconds = gs
+	tr.game_seconds = fit_gs
 	tr.peer_connected_hello(1, "trainkey0001")
 	tr.set_fitness(1, 2)
 	check(tr.fitness_of(1) == 2, "fitness starts at its creation value")
@@ -1873,22 +1873,22 @@ func _init() -> void:
 	check(float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "a short rest under the grace time costs nothing")
 	var ts = make(xd)
 	ts.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	ts.game_seconds = gs
+	ts.game_seconds = fit_gs
 	ts.peer_connected_hello(1, "trainkey0005")
 	ts._train_fitness(1, 0.15, 3600.0)
 	midnight.call(ts)
 	check(float(ts._characters[ts._peer_key[1]]["train"]) > 0.0, "even a slow stroll over the 10 percent line earns a little")
 	var tw = make(xd)
 	tw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	tw.game_seconds = gs
+	tw.game_seconds = fit_gs
 	tw.peer_connected_hello(1, "trainkey0002")
 	var tj = make(xd)
 	tj.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	tj.game_seconds = gs
+	tj.game_seconds = fit_gs
 	tj.peer_connected_hello(1, "trainkey0003")
 	var tc = make(xd)
 	tc.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	tc.game_seconds = gs
+	tc.game_seconds = fit_gs
 	tc.peer_connected_hello(1, "trainkey0004")
 	tw._train_fitness(1, 0.5, 3600.0)
 	tj._train_fitness(1, 0.75, 3600.0)
@@ -1904,7 +1904,7 @@ func _init() -> void:
 	check(absf(gw - 0.72) < 0.01, "an hour of walking is 720 XP, 0.72 of a point (%.3f)" % gw)
 	var t1 = make(xd)
 	t1.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	t1.game_seconds = gs
+	t1.game_seconds = fit_gs
 	t1.peer_connected_hello(1, "trainkey0007")
 	t1.set_fitness(1, 0)
 	t1._train_fitness(1, 1.0, 1800.0)
@@ -1918,7 +1918,7 @@ func _init() -> void:
 	# Offline at midnight: the day's XP waits in the saved character and is paid at the next tick after login (one bucket only).
 	var to = make(xd)
 	to.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	to.game_seconds = gs
+	to.game_seconds = fit_gs
 	to.peer_connected_hello(1, "trainkey0008")
 	to._train_fitness(1, 1.0, 3400.0)
 	clk[0] += 86400.0 * 3.0
