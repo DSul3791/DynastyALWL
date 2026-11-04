@@ -2030,6 +2030,18 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
+		"torch_doused": {
+			"name": "Doused torch",
+			"kind": "tool",
+			"description": "A torch that water or rain put out. Press E at a burning fire to light it again.",
+			"how_to_get": [
+				"A torch goes out under water, or after a few seconds in the open rain"
+			],
+			"used_for": [
+				"Light it again at a burning fire"
+			],
+			"obtainable_now": true
+		},
 		"bark": {
 			"name": "Bark",
 			"kind": "material",
