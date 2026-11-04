@@ -9,6 +9,7 @@ extends Node3D
 # shoulder does not raise the arm, the lie clip is the nearest of Dave's, the first-person arms stay the ragdoll arms.
 
 const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
+const ARMS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"   # dynasty_arms.gd PARTS_GLB, warmed with the body
 const P := "mixamorig_"
 const WornLook := preload("res://src/client/worn_look.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
@@ -31,6 +32,12 @@ const CLIP_MAP := {
 	"crouch_walk_torch": ["Crouch_Walk_with_Torch", 0.0, -1.0, true, 1.19],
 	"crouch_walk_left_torch": ["Crouch_Walk_Left_with_Torch", 0.0, -1.0, true, 1.14],
 	"crouch_walk_right_torch": ["Crouch_Walk_Right_with_Torch", 0.0, -1.0, true, 1.23],
+	# Jumping (bug 10, 2 Nov 2026): Dave's only jump is Jump_Run (2.03 s; hips 0.0-0.3 s the take-off squat, 0.3-0.5 s the spring, 0.5-0.8 s in the air, then a run). Cut into the game's three air clips:
+	# jump = the spring and the top (played once when the body is rising), fall = the air pose held as a short loop, land = the squat and recovery (played after a fall of 0.4 s or more).
+	# Cut points read from the hips height in the glb; not yet seen in the game, rate by picture.
+	"jump": ["Jump_Run", 0.3, 0.7, false, 1.0],
+	"fall": ["Jump_Run", 0.55, 0.8, true, 1.0],
+	"land": ["Jump_Run", 0.1, 0.5, false, 1.0],
 	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
 	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
@@ -77,6 +84,27 @@ var _mount_rest: Dictionary = {}              # Marker3D -> its transform before
 
 # True when Dave's glb is imported and holds a skeleton, a mesh and an AnimationPlayer. Checked once per run; when it is not (a fresh checkout before `godot --import`) one line says so and the
 # game keeps the body it wore before (my_character.gd make_avatar), so the player is never bodiless.
+# Dave 3 Nov 2026 (log: a 3 s freeze at the welcome): the body file (two 4096 textures) and the arm parts file (365 thousand triangles) were read on
+# the main thread when the player was made. warm() starts both on loader threads as the client starts, long before the welcome; load_warm()
+# takes the finished one (waiting only if it is still loading), or reads it the old way when nothing was started.
+static func warm() -> void:
+	for path in [GLB, ARMS_GLB]:
+		if ResourceLoader.exists(path) and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			ResourceLoader.load_threaded_request(path, "", true)
+
+
+static func load_warm(path: String) -> Resource:
+	var status: int = ResourceLoader.load_threaded_get_status(path)
+
+	if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS or status == ResourceLoader.THREAD_LOAD_LOADED:
+		var got: Resource = ResourceLoader.load_threaded_get(path)
+
+		if got != null:
+			return got
+
+	return load(path)
+
+
 static func available() -> bool:
 	if force_unavailable:
 		return false
@@ -85,7 +113,7 @@ static func available() -> bool:
 		_checked = 0
 
 		if ResourceLoader.exists(GLB):
-			var packed: PackedScene = load(GLB) as PackedScene
+			var packed: PackedScene = load_warm(GLB) as PackedScene
 
 			if packed != null:
 				var probe: Node = packed.instantiate()
@@ -110,7 +138,7 @@ func _init() -> void:
 		return
 
 	if _scene == null:
-		_scene = load(GLB) as PackedScene
+		_scene = load_warm(GLB) as PackedScene
 
 	# Dave's rig faces +Z; the game faces -Z.
 	_model = Node3D.new()
@@ -121,9 +149,10 @@ func _init() -> void:
 	_model.add_child(inst)
 	skeleton = inst.find_children("*", "Skeleton3D", true, false)[0]
 	body_mesh = inst.find_children("*", "MeshInstance3D", true, false)[0]
+	body_mesh.layers |= 1 << 19   # no ground decals on the body (piece_look.gd NO_DECAL_LAYER)
 	animation_player = inst.find_children("*", "AnimationPlayer", true, false)[0]
-	set_meta("worn_skip_builders", WornLook.BUILDERS)      # the worn pieces are written for other bone frames: none is hung on this body yet
 	_build_mounts()
+	set_meta("worn_frames", _worn_frames())      # worn clothing (worn_look.gd) hangs on these frames, so nothing is skipped any more (docs/DYNASTY_BODY.md gap 1)
 	_build_animations()
 
 
@@ -160,6 +189,70 @@ func _build_mounts() -> void:
 	hand_mount_r = _mount("RightHand", "HandMount_R", right_dir * 0.07, right_dir, front)
 	hand_mount_l = _mount("LeftHand", "HandMount_L", left_dir * 0.07, left_dir, front)
 	head_mount = _mount("Head", "HeadMount", Vector3(0.0, 0.1, 0.0), Vector3(0.0, -1.0, 0.0), front)
+
+
+# Worn clothing on Dave's body (Kathreen, 3 Nov 2026; docs/DYNASTY_BODY.md gap 1). worn_look.gd writes its pieces in the old ragdoll's bone frames: every frame upright and
+# square to the body (X right, Y up, Z back, the body facing -Z) at that body's joints, limbs hanging along -Y. Here each old bone gets one of Dave's bones and a frame under it:
+# the same axes in the game's facing (Dave's rig faces +Z, so game X and Z are his -X and -Z), down the bone for a limb, standing at the old joint's place on his body, and
+# stretched along the limb by his length over the old one, so a sleeve or a legging ends at his elbow or knee. In centimetres like the skeleton: the pieces stay in metres.
+# Widths are left at 1: his chest, hips, thighs, shins, arms and head measure within a centimetre or two of the pieces' sizes (measured from the glb's rest mesh).
+# old bone: [Dave's bone, "limb" (down the bone to the named child), "after" (on along the line from the named parent: his hands have no finger bones) or "upright",
+# that bone, the old body's length of the limb in metres (0: no stretch)].
+const WORN_BONES := {
+	"hips": ["Hips", "upright", "", 0.0], "chest": ["Spine1", "upright", "", 0.0], "head": ["Head", "upright", "", 0.0],
+	"arm_r": ["RightArm", "limb", "RightForeArm", 0.29], "forearm_r": ["RightForeArm", "limb", "RightHand", 0.26], "hand_r": ["RightHand", "after", "RightForeArm", 0.0],
+	"arm_l": ["LeftArm", "limb", "LeftForeArm", 0.29], "forearm_l": ["LeftForeArm", "limb", "LeftHand", 0.26], "hand_l": ["LeftHand", "after", "LeftForeArm", 0.0],
+	"thigh_r": ["RightUpLeg", "limb", "RightLeg", 0.45], "shin_r": ["RightLeg", "limb", "RightFoot", 0.4], "foot_r": ["RightFoot", "upright", "", 0.0],
+	"thigh_l": ["LeftUpLeg", "limb", "LeftLeg", 0.45], "shin_l": ["LeftLeg", "limb", "LeftFoot", 0.4], "foot_l": ["LeftFoot", "upright", "", 0.0],
+}
+
+
+func _worn_frames() -> Dictionary:
+	var frames: Dictionary = {}
+	var back: Vector3 = Vector3(0.0, 0.0, -1.0)        # the game's +Z (the back of the body) in Dave's rig
+	var upright: Basis = Basis(Vector3(-1.0, 0.0, 0.0), Vector3.UP, back)
+	var neck: Vector3 = _rest_origin("Neck")
+	var top: Vector3 = _rest_origin("HeadTop_End")
+
+	for old in WORN_BONES:
+		var row: Array = WORN_BONES[old]
+		var index: int = skeleton.find_bone(P + str(row[0]))
+
+		if index < 0:
+			continue
+
+		var rest: Transform3D = skeleton.get_bone_global_rest(index)
+		rest.basis = rest.basis.orthonormalized()
+		var axes: Basis = upright
+		var at: Vector3 = rest.origin
+		var stretch: float = 1.0
+
+		if str(row[1]) != "upright" and skeleton.find_bone(P + str(row[2])) >= 0:
+			var along: Vector3 = (_rest_origin(str(row[2])) - rest.origin) if str(row[1]) == "limb" else (rest.origin - _rest_origin(str(row[2])))
+			var y: Vector3 = -along.normalized()
+			var z: Vector3 = (back - y * back.dot(y)).normalized()
+			axes = Basis(y.cross(z), y, z)
+
+			if float(row[3]) > 0.0:
+				stretch = along.length() / 100.0 / float(row[3])
+
+		match old:
+			"chest":
+				at = Vector3(neck.x, neck.y - 22.0, neck.z)        # the old chest joint stood 22 cm under the neck: the collar of a tunic lands at his neck
+			"head":
+				at = Vector3(rest.origin.x, top.y - 24.0, rest.origin.z)      # the old head's top was 27 cm over its joint; 24 here so a hood shell covers his crown in the idle pose, where his head dips
+			"foot_r", "foot_l":
+				at = Vector3(rest.origin.x, 5.0, rest.origin.z)    # the old ankle was 5 cm up; his is higher, so the sole of a boot would float
+
+		var frame: Transform3D = Transform3D(Basis(axes.x * 100.0, axes.y * 100.0 * stretch, axes.z * 100.0), at)
+		frames[old] = [P + str(row[0]), rest.affine_inverse() * frame]
+
+	return frames
+
+
+func _rest_origin(bone: String) -> Vector3:
+	var index: int = skeleton.find_bone(P + bone)
+	return skeleton.get_bone_global_rest(index).origin if index >= 0 else Vector3.ZERO
 
 
 # The game's names and Dave's own names, shared by every body. Hips travel is taken out of every clip (the game moves the body), see _clip.

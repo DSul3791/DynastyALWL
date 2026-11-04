@@ -1,5 +1,7 @@
 extends Node3D
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 # Animals on the client (protocol 48): a simple low-poly rabbit until Art makes a real one (brown body, head, two ears, white
 # tail). The server sends rows about four times a second; the view glides to each, faces the way it goes and hops while moving
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
@@ -21,7 +23,42 @@ var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, 
 var _mats: Dictionary = {}
 var _t: float = 0.0
 var _blood: Array = []           # MeshInstance3D pool, one per drop shown
-var _blood_mat: StandardMaterial3D
+var _blood_mat: ShaderMaterial
+const BLOOD_SHADER := """
+shader_type spatial;
+render_mode cull_disabled;
+
+varying vec2 lp;
+
+float h2(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float vn(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(h2(i), h2(i + vec2(1.0, 0.0)), f.x), mix(h2(i + vec2(0.0, 1.0)), h2(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+void vertex() {
+	lp = VERTEX.xz / 0.1;      // -1..1 across the 10 cm disc
+}
+
+void fragment() {
+	float r = length(lp);
+	float a = atan(lp.y, lp.x);
+	float edge = 0.55 + 0.25 * vn(vec2(a * 2.2, 3.0)) + 0.18 * vn(vec2(a * 7.0, 9.0));      // a lobed rim with drips
+	float drops = step(0.9, vn(lp * 6.0 + 11.0)) * step(r, 0.98);                          // a few flung drops beyond the rim
+	if (r > edge && drops < 0.5) {
+		discard;
+	}
+	float dry = smoothstep(edge - 0.25, edge, r);
+	ALBEDO = mix(vec3(0.30, 0.02, 0.02), vec3(0.2, 0.06, 0.03), dry) * (0.85 + 0.2 * vn(lp * 9.0));
+	ROUGHNESS = mix(0.15, 0.7, dry);      // wet and shiny in the middle
+	SPECULAR = 0.6;
+}
+"""
 
 
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
@@ -96,10 +133,12 @@ func on_rows(rows: Array) -> void:
 # size varied by position so the trail does not look stamped.
 func on_blood(points: PackedVector3Array) -> void:
 	if _blood_mat == null:
-		_blood_mat = StandardMaterial3D.new()
-		_blood_mat.albedo_color = Color(0.32, 0.03, 0.03)
-		_blood_mat.roughness = 0.35   # wet
-		_blood_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		# A blood trail spot as a ragged splash, not a perfect red disc (Kathreen, 3 Nov 2026): the edge is cut by noise into drips and a few flung drops,
+		# wet and dark red in the middle, drying brown at the rim. Each spot is turned at random, so no two look the same.
+		var shader: Shader = Shader.new()
+		shader.code = BLOOD_SHADER
+		_blood_mat = ShaderMaterial.new()
+		_blood_mat.shader = shader
 
 	while _blood.size() < points.size():
 		var spot: MeshInstance3D = MeshInstance3D.new()
@@ -121,6 +160,7 @@ func on_blood(points: PackedVector3Array) -> void:
 
 		if i < points.size():
 			spot.position = points[i] + Vector3(0.0, 0.03, 0.0)
+			spot.rotation.y = fmod(points[i].x * 7.31 + points[i].z * 3.17, TAU)     # each spot turned its own way, steady from frame to frame
 			var scale_xz: float = 0.6 + 0.8 * fposmod(points[i].x * 7.31 + points[i].z * 3.17, 1.0)
 			spot.scale = Vector3(scale_xz, 1.0, scale_xz * 0.8)
 
@@ -150,6 +190,12 @@ func drawn_count() -> int:
 
 
 func _process(delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(delta)
+	FrameProbe.stop("animals", t)
+
+
+func _process_body(delta: float) -> void:
 	_t += delta
 
 	for id in _bodies:
@@ -353,18 +399,28 @@ func _make_fish() -> Node3D:
 	tail.name = "Tail"
 	tail.position = Vector3(0.0, 0.0, 0.14)
 	rig.add_child(tail)
-	_box(tail, Vector3(0.006, 0.07, 0.05), Vector3(0.0, 0.0, 0.03), back.darkened(0.1), Vector3(0.0, 0.0, 0.0))   # the fan tail
+	_box(tail, Vector3(0.005, 0.02, 0.03), Vector3(0.0, 0.0, 0.012), back.darkened(0.1))                                  # the narrow tail root
+	_box(tail, Vector3(0.004, 0.022, 0.05), Vector3(0.0, 0.016, 0.042), back.darkened(0.12), Vector3(0.55, 0.0, 0.0))   # the upper lobe of the forked tail, swept back
+	_box(tail, Vector3(0.004, 0.022, 0.05), Vector3(0.0, -0.016, 0.042), back.darkened(0.12), Vector3(-0.55, 0.0, 0.0)) # the lower lobe
 	_box(rig, Vector3(0.006, 0.03, 0.06), Vector3(0.0, 0.05, 0.01), back.darkened(0.1), Vector3(0.3, 0.0, 0.0))   # the dorsal fin
 
 	for side in [-1.0, 1.0]:
 		_box(rig, Vector3(0.025, 0.004, 0.035), Vector3(side * 0.045, -0.025, -0.07), flank.darkened(0.1), Vector3(0.0, side * 0.4, side * 0.3))   # a side fin
 
-	for k in 9:   # dark spots along the back and a few red ones on the flank
-		var sp: float = -0.1 + 0.025 * float(k)
-		_ball(rig, 0.005, Vector3.ONE, Vector3(0.012 * float(k % 3 - 1), 0.043, sp), Color(0.12, 0.1, 0.06))
+	# Spots painted on the skin (trout sheet 2 Nov: they stood up like studs and floated at the ends): small flat discs pressed onto the body
+	# surface, dark over the back and upper flanks, a few red ones with a pale ring along the middle of each flank.
+	for k in 14:
+		var sp: float = -0.11 + 0.017 * float(k)
+		var reach: float = sqrt(maxf(0.0, 1.0 - pow(sp / 0.16, 2.0)))       # the body's half-size here, as a share of the middle (radius 0.05 scaled 0.9, 0.9, 3.2)
+		var a: float = 0.35 + 0.5 * float(k % 3)                              # round from the top of the back down the flank
+		var side: float = 1.0 if k % 2 == 0 else -1.0
+		var at: Vector3 = Vector3(side * sin(a) * 0.045 * reach, cos(a) * 0.045 * reach, sp)
+		_ball(rig, 0.005, Vector3(1.2, 0.35, 1.2), at * 0.97, Color(0.12, 0.1, 0.06), Vector3(0.0, 0.0, -side * a))
 
-		if k % 3 == 0:
-			_ball(rig, 0.005, Vector3.ONE, Vector3(0.042, 0.0, sp), Color(0.75, 0.15, 0.1))
+		if k % 4 == 1:
+			var red: Vector3 = Vector3(side * 0.045 * reach, -0.004, sp + 0.008)
+			_ball(rig, 0.006, Vector3(0.35, 1.2, 1.2), red * 0.97, Color(0.85, 0.82, 0.7))      # the pale ring
+			_ball(rig, 0.004, Vector3(0.4, 1.2, 1.2), red * 0.985, Color(0.75, 0.15, 0.1))      # the red spot
 
 	return root
 

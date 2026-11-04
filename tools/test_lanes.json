@@ -1,7 +1,7 @@
 {
 	"version": 1,
 	"note": "Hand-kept rules for tools/tests_for_diff.py and tools/run_tests.sh (gate fix, Tyler 25 Oct 2026; owners Sal, Kathleen, Sonny review their parts). Test names are src/worldgen/tools/<name>.gd without .gd. A name that does not exist is reported by `tests_for_diff.py --check-lanes`. The selector adds to these by following the files each test loads (preload, load, res:// strings, class_name use, directories); anything it cannot place means MORE tests, never fewer.",
-	"timing": ["test_animals", "test_npcs", "test_bed", "test_fish_schools"],
+	"timing": ["test_animals", "test_npcs", "test_bed", "test_fish_schools", "test_flora_walk_cost", "test_dynasty_arms_prebuild"],
 	"retry": ["test_animals", "test_npcs", "test_bed", "test_fish_schools"],
 	"serial_extra": [],
 	"serial_note": "The serial lane = the timing tests plus every test the scan finds writing a fixed file outside user:// (listed under `serial` by --print-lanes). Each parallel job also gets its own data dir, so user:// folders never collide.",
@@ -27,8 +27,13 @@
 		{
 			"why": "Kathleen: looks and pieces",
 			"paths": ["src/client/piece_look.gd", "src/client/basic_look.gd", "src/client/building_look.gd", "src/client/inventory_view.gd", "src/client/*_look.gd", "src/client/avatar*", "src/client/**/avatar*", "src/client/held_item.gd", "src/client/look_table.gd", "data/items/looks.json", "data/items/structures.json", "data/items/clothing.json", "data/look/**"],
-			"tests": ["test_tool_looks", "test_pick_axes", "test_look_table", "test_structure_look", "test_thatch_pieces", "test_placement_rules", "test_blueprints", "test_hammer_list"],
+			"tests": ["test_tool_looks", "test_pick_axes", "test_look_table", "test_structure_look", "test_thatch_pieces", "test_placement_rules", "test_blueprints", "test_hammer_list", "test_building_plans"],
 			"checks": ["check_look_names.py", "warnings"]
+		},
+		{
+			"why": "server solid footprints (walls and stations stop animals)",
+			"paths": ["src/stream/structure_grid.gd", "data/items/structures.json"],
+			"tests": ["test_structure_grid"]
 		},
 		{
 			"why": "sound slots read client sources as text",

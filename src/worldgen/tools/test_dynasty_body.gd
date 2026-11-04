@@ -18,11 +18,17 @@ func _init() -> void:
 	var body: Node3D = Body.new()
 	root.add_child(body)
 
-	for clip in ["idle", "walk", "jog", "run", "crouch", "crouch_walk", "crouch_walk_back", "crouch_walk_left", "crouch_walk_right", "crouch_walk_torch", "crouch_walk_left_torch", "crouch_walk_right_torch", "sit", "lie", "swing", "swing_fp", "jab", "throw", "use", "chop", "pick_overhead", "carry_idle", "carry_walk"]:
+	for clip in ["idle", "walk", "jog", "run", "crouch", "crouch_walk", "crouch_walk_back", "crouch_walk_left", "crouch_walk_right", "crouch_walk_torch", "crouch_walk_left_torch", "crouch_walk_right_torch", "sit", "lie", "swing", "swing_fp", "jab", "throw", "use", "chop", "pick_overhead", "carry_idle", "carry_walk", "jump", "fall", "land"]:
 		_check(body.animation_player.has_animation(clip), "clip " + clip)
 
 	_check(body.animation_player.get_animation("walk").loop_mode == Animation.LOOP_LINEAR, "walk loops")
 	_check(body.animation_player.get_animation("swing").loop_mode == Animation.LOOP_NONE, "swing is a one-shot")
+	# Bug 10 (2 Nov 2026): the air clips come from Jump_Run; the driver asks for jump rising, fall dropping, land after a long fall, and plain clips on the floor.
+	_check(body.animation_player.get_animation("jump").loop_mode == Animation.LOOP_NONE and body.animation_player.get_animation("land").loop_mode == Animation.LOOP_NONE and body.animation_player.get_animation("fall").loop_mode == Animation.LOOP_LINEAR, "jump and land play once, fall loops")
+	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 4.0, 0), Basis.IDENTITY, false, 0.0, "idle", false, 0.3) == "jump", "rising in the air: jump")
+	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, -4.0, 0), Basis.IDENTITY, false, 0.0, "jump", false, 0.3) == "fall", "dropping in the air: fall")
+	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -1.0), Basis.IDENTITY, true, 1.0, "fall", false, 0.016) == "land", "back on the floor after a long fall: land")
+	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -1.0), Basis.IDENTITY, true, 1.0, "land", false, 0.5) == "walk", "once the landing is over: the plain walk (no strafe clips on this body)")
 	_check(body.animation_player.get_animation("crouch").loop_mode == Animation.LOOP_LINEAR, "crouch loops")
 	# Chop sound sync (1 Nov 2026): one swing is one blow, and the clip is the length of the game's swing so the blow lands at held_item's HIT_AT (the sound and the hit).
 	_check(absf(body.animation_player.get_animation("chop").length - 0.95) < 0.02, "chop clip is the 0.95 s swing (%.3f)" % body.animation_player.get_animation("chop").length)

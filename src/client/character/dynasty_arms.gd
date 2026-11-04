@@ -21,13 +21,82 @@ const SKIN_TEXTURE := "res://assets/character/Humanoid/Dynasty_Arm_Skin.png"   #
 static var _sources: Dictionary = {}         # "r" and "l": the arm's ArrayMesh from the file, read once
 static var _skinned: Dictionary = {}         # "r" and "l": the one skinned mesh per arm, built once
 static var _material: Material
+static var _prebuild_task: int = -1         # prebuild(): the worker task building _pre_sources and _pre_skinned, or -1
+static var _pre_sources: Dictionary = {}     # the worker's own copies (the main thread never waits for it, and never shares a dictionary with it while it runs)
+static var _pre_skinned: Dictionary = {}
+static var _bare: bool = false              # true only while the prebuild worker makes its own rig to skin on (its _init builds nothing)
+
+
+# Dave 3 Nov 2026 (lag run, #242: "welcome: held item" 4.2 s at the login): reading the arm parts out of the 38 MB file and skinning the two
+# 40 thousand triangle arms took 2 s on the main thread at the welcome, after waiting for the file. prebuild() does all of it on a worker as the
+# client starts (the file is already loading on a loader thread, DynastyBody.warm), so the arms made at the welcome only take the finished meshes.
+# The main thread never WAITS for the worker (a test that waited deadlocked: the worker's load needs the main thread free): when the welcome comes
+# before the worker is done, the arms are built at the welcome as before and the worker's result is left unused.
+# Called every frame until it starts (cheap: one status check). It starts only once the loader thread has the file, so the worker never sits
+# blocked on the load while holding a pool thread the loaders need (the first try did: the start-up stall grew by seconds).
+static func prebuild() -> void:
+	if _prebuild_task >= 0 or not _skinned.is_empty() or DynastyBody.force_unavailable:
+		return
+
+	if ResourceLoader.load_threaded_get_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_LOADED:
+		return
+
+	_prebuild_task = WorkerThreadPool.add_task(_prebuild_job.bind(load("res://src/client/character/dynasty_arms.gd")), false, "dynasty arms prebuild")   # this script, taken here: a load() on the worker gives null
+
+
+static func _prebuild_job(script: GDScript) -> void:
+	_bare = true
+	var rig = script.new()
+	_bare = false
+	var sources: Dictionary = {}
+	rig._load_sources(sources)
+
+	if sources.size() == 2:
+		var skinned: Dictionary = {}
+
+		for side in ["r", "l"]:
+			skinned[side] = rig._skin_arm(sources[side] as ArrayMesh, side)
+
+		_pre_skinned = skinned
+		_pre_sources = sources   # set last: the main thread takes both only once the task is complete
+
+	rig.free()
+
+
+# Before the game quits: a prebuild still running needs the main thread to answer its rendering calls, so the quit would hang waiting for it.
+# Lets it finish (at most 10 s) while answering them.
+static func settle() -> void:
+	if _prebuild_task < 0:
+		return
+
+	var until: int = Time.get_ticks_msec() + 10000
+
+	while not WorkerThreadPool.is_task_completed(_prebuild_task) and Time.get_ticks_msec() < until:
+		RenderingServer.force_sync()
+		OS.delay_msec(5)
+
+	if WorkerThreadPool.is_task_completed(_prebuild_task):
+		WorkerThreadPool.wait_for_task_completion(_prebuild_task)
+		_prebuild_task = -1
 
 
 func _init() -> void:
 	super._init(true)
 	name = "DynastyArms"
+
+	if _bare and OS.get_thread_caller_id() != OS.get_main_thread_id():
+		return
+
+	if _prebuild_task >= 0 and WorkerThreadPool.is_task_completed(_prebuild_task):
+		WorkerThreadPool.wait_for_task_completion(_prebuild_task)   # already done: returns at once and frees the task
+		_prebuild_task = -1
+
+		if _sources.is_empty() and _pre_sources.size() == 2:
+			_sources = _pre_sources
+			_skinned = _pre_skinned
+
 	if _sources.is_empty():
-		_load_sources()
+		_load_sources(_sources)
 
 	# The file is not imported yet (a fresh checkout before `godot --import`): keep the old tube arms rather than draw nothing.
 	if _sources.is_empty():
@@ -73,8 +142,8 @@ func _tint_skin(instance: MeshInstance3D) -> void:
 
 
 # Finds the two arms among the five meshes (the two tall, thin parts on either side of the middle).
-func _load_sources() -> void:
-	var packed: PackedScene = load(PARTS_GLB) as PackedScene if (ResourceLoader.exists(PARTS_GLB) and not DynastyBody.force_unavailable) else null
+func _load_sources(into: Dictionary) -> void:
+	var packed: PackedScene = DynastyBody.load_warm(PARTS_GLB) as PackedScene if (ResourceLoader.exists(PARTS_GLB) and not DynastyBody.force_unavailable) else null
 
 	if packed == null:
 		print("dynasty arms: %s is not imported: keeping the old arms this run (run godot --import once)" % PARTS_GLB)
@@ -98,8 +167,8 @@ func _load_sources() -> void:
 
 	# The figure faces +Z (glTF), the game -Z: turned half a circle about Y, the arm at -X is the character's right (+X in the game).
 	if arms.size() == 2:
-		_sources["r"] = arms[0].mesh
-		_sources["l"] = arms[1].mesh
+		into["r"] = arms[0].mesh
+		into["l"] = arms[1].mesh
 	else:
 		push_error("dynasty_arms: expected two arm parts in %s, found %d" % [PARTS_GLB, arms.size()])
 

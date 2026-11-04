@@ -25,6 +25,11 @@ func _load(path: String) -> Dictionary:
 
 
 func _init() -> void:
+	if DisplayServer.get_name() == "headless":   # no renderer: the viewport gives no image and the run would hang (PC, 3 Nov)
+		printerr("item_sheet needs a window (real renderer): run it without --headless")
+		quit(2)
+		return
+
 	var per: int = 30
 	var only: String = ""
 
@@ -108,6 +113,12 @@ func _shoot(file: String, centre: Vector3, dist: float, pitch: float) -> void:
 	await process_frame
 	await process_frame
 	var img: Image = vp.get_texture().get_image()
+
+	if img == null:
+		printerr("item_sheet: the viewport gave no image for ", file)
+		quit(1)
+		return
+
 	img.save_png(ProjectSettings.globalize_path("res://") + out_dir + "/" + file)
 
 
