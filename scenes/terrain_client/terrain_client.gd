@@ -3304,6 +3304,11 @@ func _update_view(delta: float) -> void:
 		return
 
 	if _avatar == null:
+		# Dave's PC log 4 Nov 2026: the first call waited for the body file still loading on a loader thread ("update view" 404 ms at the join).
+		# The body is made once the file is in; until then (a second or two, while the ground loads) there is no third-person body to draw.
+		if MyCharacter.dynasty_body_on() and ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			return
+
 		_avatar = _make_avatar()
 		body.add_child(_avatar)
 		net.worn_received.connect(func(_numbers: PackedInt32Array) -> void: _dress_avatar())

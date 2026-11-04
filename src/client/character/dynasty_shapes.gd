@@ -46,6 +46,12 @@ static func prewarm(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> void:
 	_job = WorkerThreadPool.add_task(_compute.bind(data), false, "dynasty shapes")
 
 
+# True when shaped() would not have to wait: no prewarm is running, or it has finished on its worker. Bodies made while it runs (the player's own body at the join, the first
+# NPCs) wear Dave's plain mesh until then and take their shapes in a later frame (dynasty_body.gd _set_widths): waiting here held the main thread 1 to 6 s at the join.
+static func ready() -> bool:
+	return _job < 0 or WorkerThreadPool.is_task_completed(_job)
+
+
 static func wait() -> void:
 	if _job < 0:
 		return
