@@ -3,7 +3,7 @@
 **Dave's rule (2 Nov, replaces the 1 Nov one):** an average person picking and scraping all day earns a poor wage, barely enough for a meal and maybe a place to sleep that night. About 195 copper for 4 hours was too much.
 
 ## Target
-4 hours of full-time picking pays about 40 to 60 copper. At the trader a meal (roast_forage, value 6) costs about 8 and a night's bed or lean-to rent is the other 30 to 40, so one day of gathering buys one meal and a bed and nothing else. Clothing, a waterskin or a metal tool (waterskin about 20, hide cloak about 33, iron spade about 117) take several days of picking, or a craft. Crafted goods and lumber pay more per hour than picking (skilled work); see the lumber note at the bottom.
+4 hours of full-time picking pays about 40 to 60 copper. At the trader a meal (roast_forage, value 6) costs about 8 and a night's bed or lean-to rent is the other 30 to 40, so one day of gathering buys one meal and a bed and nothing else. (3 Nov 2026: Hob no longer sells a bed, Dave's QA answer; you build your own in your lean-to, so a day's wage now buys a meal and leaves about 40 copper toward a waterskin or a cloak.) Clothing, a waterskin or a metal tool (waterskin about 20, hide cloak about 33, iron spade about 117) take several days of picking, or a craft. Crafted goods and lumber pay more per hour than picking (skilled work); see the lumber note at the bottom.
 
 ## How income works in the code
 - Hob pays value x 0.55, at least 1 copper per unit for anything worth a copper. At value 1 that is exactly 1 copper per unit, so before lots 40 sticks paid 40.
