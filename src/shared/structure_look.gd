@@ -25,7 +25,7 @@ static func table() -> Dictionary:
 			var state: int = int(def.get("state", -1))
 
 			if state >= 0 and not _table.has(state) and def.has("look"):
-				_table[state] = {"look": str(def["look"]), "sound": str(def.get("sound", "thump")), "clears_grass": bool(def.get("clears_grass", true)), "material": str(def.get("material", ""))}
+				_table[state] = {"look": str(def["look"]), "sound": str(def.get("sound", "thump")), "clears_grass": bool(def.get("clears_grass", true)), "material": str(def.get("material", "")), "tile": Vector2(float(def.get("footprint_x", 0.0)), float(def.get("footprint_z", 0.0))) if bool(def.get("clear_tile", false)) else Vector2.ZERO}
 
 	_table[12] = _table.get(11, {"look": "remains", "sound": "thump", "clears_grass": true})
 	return _table
@@ -48,3 +48,9 @@ static func material_of(state: int) -> String:
 # True when a placed thing of this state clears grass around it.
 static func clears_grass(state: int) -> bool:
 	return bool(table().get(state, {}).get("clears_grass", false))
+
+
+# The footprint (x, z) in metres of a piece whose grass clearing is just its own tile (structures.json "clear_tile"), Vector2.ZERO for the round
+# clearing every other piece gets. A 2 m floor tile cleared a 5 m circle; a house floor is dozens of tiles.
+static func tile_of(state: int) -> Vector2:
+	return table().get(state, {}).get("tile", Vector2.ZERO)

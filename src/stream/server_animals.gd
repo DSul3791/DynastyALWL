@@ -122,6 +122,32 @@ func _drop_blood(a: Dictionary) -> void:
 		blood.pop_front()
 
 
+# Burrow spots (protocol 87, MikeW 3 Nov): the burrows of living animals within send_radius_m of a point, nearest first, at most
+# burrows_sent (default 40). The client draws a small mound at each so a new player can see where rabbits live.
+func burrows_near(point: Vector3) -> PackedVector3Array:
+	var radius: float = float(cfg.get("send_radius_m", 120.0))
+	var found: Array = []
+
+	for id in animals:
+		var b: Vector3 = animals[id].get("burrow", Vector3.INF)
+
+		if b == Vector3.INF:
+			continue
+
+		var d: float = Vector2(b.x - point.x, b.z - point.z).length()
+
+		if d <= radius:
+			found.append([d, b])
+
+	found.sort_custom(func(l, r): return l[0] < r[0])
+	var out: PackedVector3Array = PackedVector3Array()
+
+	for f in found.slice(0, int(cfg.get("burrows_sent", 40))):
+		out.append(f[1])
+
+	return out
+
+
 # The blood trail within send_radius_m of a point (nearest first, at most max_sent), dropping what has dried.
 func blood_near(point: Vector3) -> PackedVector3Array:
 	var life_ms: int = int(float(cfg.get("blood", {}).get("life_s", 240.0)) * 1000.0)

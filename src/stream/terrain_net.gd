@@ -90,6 +90,7 @@ signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
 signal animals_received(rows: Array)
 signal blood_received(points: PackedVector3Array)
+signal burrows_received(points: PackedVector3Array)
 signal npc_talk_requested(peer_id: int, npc_id: String, choice: int)
 signal npc_say_received(npc_id: String, npc_name: String, text: String, voice_id: String, choices: PackedStringArray, ends: bool)
 signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: String)
@@ -521,6 +522,13 @@ func animals(rows: Array) -> void:
 @rpc("authority", "call_remote", "reliable")
 func blood(points: PackedVector3Array) -> void:
 	blood_received.emit(points)
+
+
+# Animal burrows (protocol 87, MikeW 3 Nov): ground positions of the burrows of living animals within 120 m, nearest 40, sent
+# when the set changes. The client draws a mound at each (looks: Kathleen); with nothing connected the signal is ignored.
+@rpc("authority", "call_remote", "reliable")
+func burrows(points: PackedVector3Array) -> void:
+	burrows_received.emit(points)
 
 
 # Talking (protocol 45): the player asks to talk to an NPC (choice -1) or picks a choice by index; the server answers with the NPC's
