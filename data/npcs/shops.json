@@ -92,6 +92,27 @@
 		},
 		"purse_cap": 300,
 		"purse_regen_per_day": 100,
-		"repairs": true
+		"repairs": true,
+		"buy_rules_note": "Dave 2 Nov 2026 (QA sal-lumber-vs-picking, C): Hob buys only a few boards a day, about two or three boards per copper (hardwood 2, softwood and plain 3; a beam 1 copper). per_day refills over a game day.",
+		"buy_rules": {
+			"lumber": {"lot": 3, "lot_value": 1, "per_day": 30},
+			"lumber_oak": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_oak": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_beech": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_beech": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_birch": {"lot": 3, "lot_value": 1, "per_day": 30},
+			"beam_birch": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_scots_pine": {"lot": 3, "lot_value": 1, "per_day": 30},
+			"beam_scots_pine": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_spruce": {"lot": 3, "lot_value": 1, "per_day": 30},
+			"beam_spruce": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_tropical_hardwood": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_tropical_hardwood": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_walnut": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_walnut": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"lumber_maple": {"lot": 2, "lot_value": 1, "per_day": 30},
+			"beam_maple": {"lot": 1, "lot_value": 1, "per_day": 10},
+			"rough_plank": {"lot": 3, "lot_value": 1, "per_day": 30}
+		}
 	}
 }

@@ -326,6 +326,21 @@ func _hammer_tier() -> int:
 	return int(entry.get("tier", 1)) if str(entry.get("tool_class", "")) == "hammer" else 0
 
 
+# Repair (hammer menu, then left click): the server mends the piece you aim at from materials nearby (building_wear.json) and says what it did.
+func _repair_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * 8.0)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+	var id: int = _inv.structure_id_near(hit["position"]) if not hit.is_empty() else 0
+
+	if id == 0:
+		_inv._on_notice("Aim at the wall, floor, roof or station you want to repair")
+		return
+
+	_arm_play("use", 0.6)
+	_net.inventory_action.rpc_id(1, Net.ACT_REPAIR_STRUCT, id, 0, 0, Vector3.ZERO)
+
+
 # Save building plan (hammer menu, then left click): keeps the building you aim at, every blueprint piece joined to it, as a plan in the menu.
 func _save_plan_here() -> void:
 	var from: Vector3 = _camera.global_position
@@ -497,6 +512,12 @@ func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) in ["axe", "pick"] and not _inv.is_broken(held_slot)
 
 
+# E gathers something by hand: the arm reaches (the generic "use" clip), unless a swing or another action is already playing.
+func play_gather() -> void:
+	if _swing_t < 0.0 and _jab_t < 0.0 and not aiming and _arms != null and _arms.visible and not _arms.is_one_shot_playing():
+		_arm_play("use", 0.5)
+
+
 # True while a tool action is going on (a swing, the pause between chained swings, the hit stop): nothing nearby is picked up meanwhile.
 func tool_busy() -> bool:
 	return _swing_t >= 0.0 or _pause_t > 0.0 or _stop_t > 0.0
@@ -509,6 +530,9 @@ func _start_swing() -> void:
 	_pause_t = 0.0
 	swing_serial += 1
 	_arm_play("swing_fp_down" if _aim_at_ground() else "swing_fp", _swing_length())
+
+	if _sound != null:
+		_sound.hits.swing(_hit_tool(), _camera.global_position - _camera.global_transform.basis.z * 0.8)   # the whoosh, hit or miss
 
 
 # True when the crosshair is on something lying on the ground (the ground, a log, a stump, a rock): the swing then comes overhead and down. A standing tree, or anything else upright, gets
@@ -533,6 +557,11 @@ func _swing_length() -> float:
 
 func _hit_share() -> float:
 	return PICK_HIT_AT if _tool_class() == "pick" else HIT_AT
+
+
+# The tool's hit sounds (hit_sounds.gd TOOLS): a pick sounds as a pick, everything else that swings here as an axe.
+func _hit_tool() -> String:
+	return "pick" if _tool_class() == "pick" else "axe"
 
 
 func _tool_class() -> String:
@@ -648,9 +677,12 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return button == MOUSE_BUTTON_LEFT
 
-	if holding and _hammer_tier() > 0 and blueprints.mode == "save":
+	if holding and _hammer_tier() > 0 and (blueprints.mode == "save" or blueprints.mode == "repair"):
 		if button == MOUSE_BUTTON_LEFT and pressed:
-			_save_plan_here()
+			if blueprints.mode == "repair":
+				_repair_here()
+			else:
+				_save_plan_here()
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -1169,25 +1201,25 @@ func _strike() -> void:
 	var shrub: Array = shrub_near.call(from, hit["position"]) if shrub_near.is_valid() and tree.is_empty() else []   # an axe chops a bush up, a pickaxe digs it up whole (Dave 2 Nov 2026)
 
 	if log_id != 0:
-		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3.ZERO)
 	elif boulder_id != 0:
-		_sound.hits.hit_ground("pick", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "stone", hit["position"], 1.0)   # a boulder is stone whatever the ground under it
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, 0, Vector3.ZERO)
 	elif trunk_id != 0:
-		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 	elif stump_id != 0:
-		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3.ZERO)
 	elif not tree.is_empty():
-		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
 	elif not shrub.is_empty():
-		_sound.hits.hit("axe", "wood", hit["position"], 0.7)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 0.7)
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT_SHRUB, shrub[1], shrub[0].x, shrub[0].y, Vector3(1.0 if _tool_class() == "pick" else 0.0, 0.0, 0.0))
 	else:
-		_sound.hits.hit_ground("pick", hit["position"], 1.0)
+		_sound.hits.hit_ground(_hit_tool(), hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_MINE, 0, 0, 0, hit["position"])
 
 
@@ -1399,6 +1431,11 @@ func _hoe_here(action: int) -> void:
 
 	_net.inventory_action.rpc_id(1, action, held_slot, 0, 0, hit["position"])
 
+	# The hoe was silent (first-day tool audit, 3 Nov 2026): a soft scrape of the blade on the soil, firmer for tilling. Played when the click is sent, like the
+	# shovel fill (the server may still refuse). It borrows the spade-on-soil clips (no hoe recording yet).
+	if _sound != null:
+		_sound.hits.hit("spade", "soil", hit["position"], 0.7 if action == Net.ACT_TILL else 0.4)
+
 
 # A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
 func _fill_here() -> void:
@@ -1453,6 +1490,8 @@ func _caption() -> String:
 			text += "   (red: not enough materials; right click: the list)"
 		else:
 			text += "   (left click: build it with the materials in your pack; right click: the list)"
+	elif _hammer_tier() > 0 and blueprints.mode == "repair":
+		text += "   (Repair: left click a worn piece to mend it; right click: the menu)"
 	elif _hammer_tier() > 0 and blueprints.mode == "save":
 		text += "   (Save building plan: left click a building to keep it; right click: the menu)"
 	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":

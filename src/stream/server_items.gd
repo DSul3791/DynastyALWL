@@ -156,6 +156,7 @@ var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water t
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
+var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
@@ -313,6 +314,7 @@ var plant_stays: bool = false         # set by gather(): the last pick left the 
 var _arrows: Array = []             # arrows in the air: {peer, number, tip, damage, pos, vel, age, flown}
 var _traps = null                   # server_traps.gd (snares), made in setup
 var animals_near: Callable           # (point, radius) -> Array of {id, sp, pos}: the animals a snare can reach (set by the server)
+var animal_lure: Callable            # (animal id, point) -> bool: the animal moves its home to a snare and grazes there (set by the server)
 var animal_snare: Callable           # (animal id) -> bool: a snare closes on it, it leaves the world (set by the server)
 var trail_strength: Callable         # (x, z) -> how worn the game trail is there, 0 to 1 (set by the server)
 var _bow = null                     # server_bow.gd, made at the first shot
@@ -1020,6 +1022,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_hoe_grade(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count, b)
+	elif kind == Net.ACT_REPAIR_STRUCT:
+		_repair_struct(peer, inv, a)
 	elif kind == Net.ACT_PLACE_BLUEPRINT:
 		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
 	elif kind == Net.ACT_THROW:
@@ -1937,7 +1941,7 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var spent: int = inv.wear[slot] + 1
 	inv.take_from_slot(slot, 1)
-	_flights.append({"number": number, "wear": spent, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+	_flights.append({"number": number, "wear": spent, "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
 
 
 # ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.
@@ -2040,9 +2044,26 @@ func _arrow_fly(delta: float) -> void:
 func _fly(delta: float) -> void:
 	_arrow_fly(delta)
 	for flight in _flights.duplicate():
+		var from: Vector3 = flight["pos"]
 		flight["vel"].y -= THROW_GRAVITY * delta
 		flight["pos"] += flight["vel"] * delta
 		flight["age"] += delta
+
+		# A thrown spear or javelin hits the first animal on its path for the weapon's throw_damage (MikeW, 3 Nov: it flew
+		# through them, so a new player could not hunt with the first weapon they make) and drops where it struck.
+		var throw_damage: float = float(table.entry(table.id_of(int(flight["number"]))).get("throw_damage", 0.0))
+
+		if throw_damage > 0.0 and hit_animal_path.is_valid() and flight.has("peer"):
+			var hit: Dictionary = hit_animal_path.call(int(flight["peer"]), from, flight["pos"], throw_damage)
+
+			if not hit.is_empty():
+				var at: Vector3 = hit["at"]
+				hit_number(int(flight["peer"]), at, throw_damage)
+				var below: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+				drop_in_world(int(flight["number"]), 1, Vector3(at.x, below if not is_nan(below) else at.y, at.z), int(flight.get("wear", 0)))
+				_flights.erase(flight)
+				continue
+
 		var ground: float = float(ground_height.call(flight["pos"].x, flight["pos"].z)) if ground_height.is_valid() else -1000000.0
 
 		if (not is_nan(ground) and flight["pos"].y <= ground) or flight["age"] >= THROW_MAX_S:
@@ -3529,7 +3550,7 @@ func _load_world_items() -> void:
 				if not _chests.has(int(row[10])):
 					_chests[int(row[10])] = InventoryScript.new(table)
 
-			if row.size() > 12 and _structures.get(str(row[9]), {}).has("support"):
+			if row.size() > 12 and (_structures.get(str(row[9]), {}).has("support") or (not BuildingWear.rule_for(_wear_cfg, str(entry["struct"]["kind"])).is_empty() and float(row[12]) > 0.0)):
 				entry["struct"]["born"] = float(row[12])
 
 			if row.size() > 12 and str(row[9]) == "remains":
@@ -3801,6 +3822,11 @@ func _cell_ground_ready(cell: Vector2i, cell_m: float) -> bool:
 	return all_ready
 
 
+# The spawn boost adds up to the cap but never takes away: a sloped cell already rolling more than the cap keeps its own roll (Dino round 7).
+static func boosted(base: int, add: int, cap: int) -> int:
+	return maxi(base, mini(base + add, cap))
+
+
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
@@ -3821,8 +3847,8 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	if not boost.is_empty() and Vector2(centre.x - respawn_point.x, centre.y - respawn_point.z).length() <= float(boost.get("radius_m", 0.0)):
 		var more_stones: Array = boost.get("stones_add", [0, 0])
 		var more_sticks: Array = boost.get("sticks_add", [0, 0])
-		stones = mini(stones + rng.randi_range(int(more_stones[0]), int(more_stones[1])), int(boost.get("stones_max_boost", 4)))   # luck-exempt: seeded world layout
-		sticks = mini(sticks + rng.randi_range(int(more_sticks[0]), int(more_sticks[1])), int(boost.get("sticks_max_boost", 4)))   # luck-exempt: seeded world layout
+		stones = boosted(stones, rng.randi_range(int(more_stones[0]), int(more_stones[1])), int(boost.get("stones_max_boost", 4)))   # luck-exempt: seeded world layout
+		sticks = boosted(sticks, rng.randi_range(int(more_sticks[0]), int(more_sticks[1])), int(boost.get("sticks_max_boost", 4)))   # luck-exempt: seeded world layout
 
 	var kinds: Array = []
 
@@ -5439,7 +5465,7 @@ func _light(peer: int, inv, id: int) -> void:
 				break
 
 	if not inv.has(table.number_of(tinder), 1):
-		_say(peer, "Needs plant fibre, birch bark or tinder to light")
+		_say(peer, "Needs plant fibre, kindling, birch bark or tinder to light")
 		return
 
 	inv.remove(table.number_of(tinder), 1)
@@ -5796,6 +5822,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	if attaching:
 		_refresh_pots()   # the fire under it takes the firewood cap now
 
+	if not BuildingWear.rule_for(_wear_cfg, str(def["kind"])).is_empty():
+		entry["struct"]["born"] = _now_game_s()   # last cared for: placed now
+
 	if def.has("support"):
 		entry["struct"]["born"] = _now_game_s()
 		_rebuild_supports()
@@ -5841,6 +5870,164 @@ func _snap_to_fire(peer: int, spot: Vector3) -> Vector3:
 
 
 # The structure's roof joins the cover index (both ends do the same on seeing the structure).
+# --- Building wear and repair (DESIGN_IDEAS.md Section 8.13; Dave 4 Nov 2026) ---
+const BuildingWear := preload("res://src/shared/building_wear.gd")
+var _wear_cfg: Dictionary = BuildingWear.load_config()
+
+
+# The condition (0 to 1) of a placed piece now; 1.0 for a kind that does not wear. A piece placed before wear existed starts its clock now.
+func piece_condition(id: int) -> float:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct"):
+		return 1.0
+
+	var rule: Dictionary = BuildingWear.rule_for(_wear_cfg, str(it["struct"]["kind"]))
+
+	if rule.is_empty():
+		return 1.0
+
+	if not it["struct"].has("born"):
+		it["struct"]["born"] = _now_game_s()
+
+	return BuildingWear.condition(rule, float(it["struct"]["born"]), _now_game_s())
+
+
+# Hammer, Repair mode, left click on a worn piece: spends repair_share of the piece's blueprint materials times what it lost, from loose items near the
+# piece, then containers within reach, then the pack (all or nothing), and sets the piece back to full condition.
+func _repair_struct(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or not _peer_pos.has(peer):
+		return
+
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
+		_say(peer, "Too far to repair that.")
+		return
+
+	if _tool_slot(inv, "hammer") < 0:
+		_say(peer, "You need a hammer in your hand bar to repair.")
+		return
+
+	var kind: String = str(it["struct"]["kind"])
+	var def: Dictionary = _structures.get(kind, {})
+	var piece_name: String = kind.replace("_", " ")
+	var blueprint: Dictionary = _blueprints.get(int(_blueprint_of_kit.get(str(def.get("kit", "")), 0)), {})
+
+	if BuildingWear.rule_for(_wear_cfg, kind).is_empty() or blueprint.is_empty():
+		_say(peer, "The %s does not wear, so it needs no repair." % piece_name)
+		return
+
+	var cond: float = piece_condition(id)
+
+	if cond >= float(_wear_cfg.get("good_condition", 0.98)):
+		_say(peer, "The %s is in good repair (%d percent)." % [piece_name, int(round(cond * 100.0))])
+		return
+
+	var needs: Array = BuildingWear.repair_needs(blueprint["cost"], cond, float(_wear_cfg.get("repair_share", 0.5)))
+	var log_need: int = 0
+
+	for need in needs:
+		if str(need[0]) == "log":
+			log_need = int(need[1])
+
+	if log_need > 0:
+		_pull_nearby_logs(peer, inv, maxi(0, log_need - inv.count_of(table.number_of("log"))))   # shoulder and ground logs count, as for building
+
+	var ground_m: float = float(_wear_cfg.get("ground_m", 6.0))
+	var boxes: Array = _boxes_near(peer)
+	var short: PackedStringArray = []
+
+	for need in needs:
+		var number: int = table.number_of(str(need[0]))
+		var have: int = inv.count_of(number) + _ground_count(number, it["pos"], ground_m)
+
+		for box in boxes:
+			have += box[1].count_of(number)
+
+		if have < int(need[1]):
+			short.append("%d %s" % [int(need[1]), str(table.entry(str(need[0])).get("name", need[0])).to_lower()])
+
+	if not short.is_empty():
+		_say(peer, "Repairing the %s (%d percent) needs %s." % [piece_name, int(round(cond * 100.0)), ", ".join(short)])
+		return
+
+	for need in needs:
+		var number: int = table.number_of(str(need[0]))
+		var left: int = int(need[1])
+		left -= _ground_take(number, left, it["pos"], ground_m)
+
+		for box in boxes:
+			if left <= 0:
+				break
+
+			var from_box: int = mini(left, box[1].count_of(number))
+
+			if from_box > 0 and box[1].remove(number, from_box):
+				left -= from_box
+				_push_box(int(box[0]), box[1])
+
+		if left > 0:
+			inv.remove(number, left)
+
+	it["struct"]["born"] = _now_game_s()
+	_dirty = true
+	_say(peer, "Repaired the %s (was %d percent)." % [piece_name, int(round(cond * 100.0))])
+
+
+# Loose items (not structures, fires or trees) of one kind within `radius` of a spot.
+func _ground_count(number: int, at: Vector3, radius: float) -> int:
+	var total: int = 0
+
+	for gid in _items:
+		var g: Dictionary = _items[gid]
+
+		if int(g.get("number", 0)) == number and not g.has("struct") and not g.has("fire") and not g.has("tree") and (g["pos"] as Vector3).distance_to(at) <= radius:
+			total += int(g["count"])
+
+	return total
+
+
+func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
+	var taken: int = 0
+
+	for gid in _items.keys():
+		if taken >= want:
+			break
+
+		var g: Dictionary = _items[gid]
+
+		if int(g.get("number", 0)) != number or g.has("struct") or g.has("fire") or g.has("tree") or (g["pos"] as Vector3).distance_to(at) > radius:
+			continue
+
+		var take: int = mini(int(g["count"]), want - taken)
+
+		if take >= int(g["count"]):
+			_items.erase(gid)
+		else:
+			g["count"] = int(g["count"]) - take
+
+		taken += take
+
+	return taken
+
+
+# [[item id, inventory], ...] of containers (chests) within reach of the player.
+func _boxes_near(peer: int) -> Array:
+	var out: Array = []
+
+	for sid in _items:
+		var s: Dictionary = _items[sid]
+
+		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0:
+			continue
+
+		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= Interact.server_reach_m() + 2.0:
+			out.append([sid, _chests[int(s["struct"]["uid"])]])
+
+	return out
+
+
 # --- Solid footprints (Dave 3 Nov 2026): the server knows where walls and heavy stations stand, so animals can be stopped by them ---
 const StructureGridScript := preload("res://src/stream/structure_grid.gd")
 var _grid = StructureGridScript.new()
@@ -9076,6 +9263,9 @@ func gather_edge(peer: int, inv) -> bool:
 	if not _peer_pos.has(peer) or inv == null:
 		return false
 
+	if not _nearest_nest(_peer_pos[peer]).is_empty():   # an inland bird nest within reach comes first (data/items/nests.json)
+		return take_nest(peer, inv)
+
 	var cfg: Dictionary = _shore_data()
 	var here: Vector3 = _peer_pos[peer]
 	var reach: float = float(cfg.get("reach_m", 4.0))
@@ -9117,6 +9307,77 @@ func gather_edge(peer: int, inv) -> bool:
 	rng.seed = hash(key) ^ day ^ 0x3c6ef372
 	give(peer, table.number_of(str(node["item"])), roll_amount(peer, rng, int(count[0]), int(count[1])))
 	_shore_taken[key] = day
+	_dirty = true
+	return true
+
+
+# --- Inland bird nests (Sal 3 Nov 2026; data/items/nests.json) ---
+# The fauna side places nests near grouse and songbird homes (nests_near). E at one takes its eggs in its seasons; a robbed nest is empty for refill_days.
+# The robbed days are kept in memory only: a restart lets every nest lay again, which is harmless.
+var _nest_taken: Dictionary = {}   # nest id -> game day it was robbed
+var _nest_cfg: Dictionary = {}
+var _nest_loaded: bool = false
+
+
+func _nest_data() -> Dictionary:
+	if not _nest_loaded:
+		_nest_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/nests.json"))
+		_nest_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	return _nest_cfg
+
+
+# The nearest nest of a known kind within reach_m of the point, or {}.
+func _nearest_nest(pos: Vector3) -> Dictionary:
+	if not nests_near.is_valid():
+		return {}
+
+	var cfg: Dictionary = _nest_data()
+	var best: Dictionary = {}
+	var best_d: float = INF
+
+	for nest in nests_near.call(pos, float(cfg.get("reach_m", 2.5))):
+		var d: float = (nest["pos"] as Vector3).distance_to(pos)
+
+		if cfg.get("kinds", {}).has(str(nest["kind"])) and d < best_d:
+			best = nest
+			best_d = d
+
+	return best
+
+
+func take_nest(peer: int, inv) -> bool:
+	if not _peer_pos.has(peer) or inv == null:
+		return false
+
+	var nest: Dictionary = _nearest_nest(_peer_pos[peer])
+
+	if nest.is_empty():
+		return false
+
+	var cfg: Dictionary = _nest_data()
+	var row: Dictionary = cfg["kinds"][str(nest["kind"])]
+	var id: String = str(nest["id"])
+	var day: int = _game_day()
+
+	if not (_season() in row.get("seasons", [])):
+		_say(peer, str(cfg.get("say_season", "")))
+		return false
+
+	if _nest_taken.has(id) and day - int(_nest_taken[id]) < int(row.get("refill_days", 3)):
+		_say(peer, str(cfg.get("say_empty", "")))
+		return false
+
+	var count: Array = row.get("count", [1, 1])
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ day ^ 0x1b873593
+	give(peer, table.number_of(str(row.get("item", "egg"))), roll_amount(peer, rng, int(count[0]), int(count[1])))
+
+	if row.has("extra") and rng.randf() < float(row.get("extra_chance", 1.0)):
+		give(peer, table.number_of(str(row["extra"][0])), int(row["extra"][1]))
+
+	_nest_taken[id] = day
 	_dirty = true
 	return true
 
@@ -9874,7 +10135,7 @@ func dev_place(spec: String) -> int:
 
 # --- Hints (data/items/hints.json by Sal, HINTS_AND_CAMP_EVENTS_SPEC.md; Tyler 31 Oct 2026) ---
 # A hint is a one-line notice (the same line as the goal notices) said once per character and hint id when its trigger becomes true; the ids said are saved in
-# characters.json "hints_seen". Triggers by name (below); a trigger the server cannot judge yet (axe_held_near_tree, the fruit and orchard ones, beach_with_container) never fires.
+# characters.json "hints_seen". Triggers by name (below); a trigger the server cannot judge yet (the fruit and orchard ones, beach_with_container) never fires.
 # A hint whose goal is still open HINT_REPEAT_S (5 minutes) after it was said is said once more.
 const HINT_REPEAT_S := 300.0
 var _hints: Array = []
@@ -9943,10 +10204,21 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "event:placed:rough_bed") >= 1
 		"workbench_placed":   # the camp bench or the log workbench (Dino round 6)
 			return _hint_count(st, "event:placed:workbench") + _hint_count(st, "event:placed:log_workbench") >= 1
+		"axe_held_near_tree":   # an axe on the hotbar and a standing tree within 6 m (any axe on the hotbar where the tree index is not wired)
+			return _tool_slot(inv, "axe") >= 0 and (not trees_near.is_valid() or not (trees_near.call(_peer_pos[peer], 6.0) as Array).is_empty())
 		"has_campfire_kit":
 			return inv.count_of(table.number_of("campfire_kit")) >= 1
 		"near_fire_with_food":   # raw meat or fish in the pack, a lit fire within 4 m
 			return _lit_fire_within(_peer_pos[peer], 4.0) and _has_raw_meat(inv)
+		"has_sea_water":
+			return inv.count_of(table.number_of("sea_water")) >= 1
+		"beach_with_container", "beach_with_bucket":   # a water container in the pack at the sea edge (ACT_GATHER_EDGE reach)
+			var carries: bool = false
+
+			for container in (["bucket"] if trigger == "beach_with_bucket" else ["bucket", "clay_jug", "waterskin"]):
+				carries = carries or inv.count_of(table.number_of(container)) >= 1
+
+			return carries and _sea_near(_peer_pos[peer], float(_shore_data().get("reach_m", 4.0)))
 		"near_nettle":   # no flora query for small plants on the server: the first nettles in the pack stand in for "near a nettle"
 			return inv.count_of(table.number_of("nettles")) >= 1
 		"spear_made":

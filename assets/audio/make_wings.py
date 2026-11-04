@@ -30,7 +30,7 @@ VARIANTS = 4
 SIZES = {
     "small": ((9.0, 12.0), (1.7, 2.1), (9, 14)),
     "medium": ((5.5, 7.5), (1.2, 1.5), (7, 11)),
-    "large": ((3.0, 4.0), (0.97, 1.03), (5, 8)),
+    "large": ((4.2, 5.2), (1.08, 1.18), (5, 7)),   # was 3 to 4 flaps at the raw pitch: slow low beats Dave heard as a "metal wobble" (3 Nov 2026)
 }
 
 
@@ -87,7 +87,7 @@ def resample(g, ratio):
 
 
 # the recording is thumpy (its strongest part is 50 to 90 Hz, a boom no small bird makes), so the low end is cut by bird size
-CUT_HZ = {"small": 320.0, "medium": 220.0, "large": 140.0}
+CUT_HZ = {"small": 320.0, "medium": 220.0, "large": 200.0}
 
 
 def highpass(x, hz):
