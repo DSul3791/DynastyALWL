@@ -53,19 +53,9 @@ func _init() -> void:
 	check(items.craft_queue_of(1).is_empty() and not said.is_empty(), "no bench, no craft (%s)" % str(said))
 	check(not items.station_near(1, "workbench"), "no station near yet")
 
-	# Make and place the bench.
-	var bench_recipe: int = 0
-
-	for number in items.recipes.numbers():
-		if str(items.recipes.recipe(number)["id"]) == "workbench_kit":
-			bench_recipe = number
-
-	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, bench_recipe, 0, 1, Vector3.ZERO)
-	items._craft_tick(60.0)
+	# Place the bench (a hammer blueprint now, no kit).
 	var kit: int = items.table.number_of("workbench_kit")
-	check(items.inventory_of(1).count_of(kit) == 1, "the camp bench kit is hand-made")
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	items.place_item(1, kit, Vector3(2.0, 10.0, 0.0), 0)
 	check(items.station_near(1, "workbench"), "the placed bench is a station in reach")
 	check(not items.station_near(1, "workbench", 2), "a level 2 recipe needs a better bench")
 
@@ -86,7 +76,7 @@ func _init() -> void:
 	check(not items.station_near(1, "workbench", 2), "a bare bench is level 1")
 	var rack: int = items.table.number_of("tool_rack_kit")
 	items.action(1, Net.ACT_ADMIN_GIVE, rack, 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(rack), 0, 0, Vector3(2.0, 10.0, 3.5))
+	items.place_item(1, rack, Vector3(2.0, 10.0, 3.5), 0)
 	check(items.station_near(1, "workbench", 2) and not items.station_near(1, "workbench", 3), "a tool rack makes it level 2")
 	# The vice kit is retired (Dave 25 Oct): the log workbench carries its own vice, so only the tool rack is an add-on now.
 	check(not items.station_near(1, "workbench", 3), "a camp bench with a rack stays level 2")
@@ -117,8 +107,8 @@ func _init() -> void:
 		check(kit_number > 0, "%s is an item" % kits[n])
 		tiers.report_position(1, spots[n] - Vector3(2.0, 0.0, 0.0))
 		tiers.action(1, Net.ACT_ADMIN_GIVE, kit_number, 0, 1, Vector3.ZERO)
-		tiers.action(1, Net.ACT_PLACE, tiers.inventory_of(1).numbers.find(kit_number), 0, 0, spots[n])
-		check(tiers.inventory_of(1).count_of(kit_number) == 0, "%s places" % kits[n])
+		tiers.place_item(1, kit_number, spots[n], 0)
+		
 		check(tiers.station_near(1, "workbench", int(want[n][0])), "%s gives workbench %d" % [kits[n], int(want[n][0])])
 		check(not tiers.station_near(1, "workbench", int(want[n][0]) + 1), "%s gives no more than %d" % [kits[n], int(want[n][0])])
 		check(tiers.station_near(1, "forge", int(want[n][1])) or int(want[n][1]) == 0, "%s forge %d" % [kits[n], int(want[n][1])])

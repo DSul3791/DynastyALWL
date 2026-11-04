@@ -117,8 +117,7 @@ func build_world(dir: String) -> Dictionary:
 	var kit: int = a.table.number_of("chest_kit")
 	a.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 20, Vector3.ZERO)
 	a.action(1, Net.ACT_ADMIN_GIVE, kit, 0, 1, Vector3.ZERO)
-	a.action(1, Net.ACT_PLACE, a.inventory_of(1).numbers.find(kit), 0, 0, Vector3(2.0, 10.0, 0.0))
-
+	a.place_item(1, kit, Vector3(2.0, 10.0, 0.0), 0)
 	for uid in a._chests:
 		a._chests[uid].add(stone, 7)
 
@@ -145,8 +144,8 @@ func build_world(dir: String) -> Dictionary:
 	a.action(1, Net.ACT_ADMIN_GIVE, a.table.number_of("workbench_kit"), 0, 1, Vector3.ZERO)
 	a.action(1, Net.ACT_ADMIN_GIVE, a.table.number_of("tool_rack_kit"), 0, 1, Vector3.ZERO)
 	a.action(1, Net.ACT_WEAR, a.inventory_of(1).numbers.find(a.table.number_of("grass_cloak")), 0, 0, Vector3.ZERO)
-	a.action(1, Net.ACT_PLACE, a.inventory_of(1).numbers.find(a.table.number_of("workbench_kit")), 0, 0, Vector3(-4.0, 10.0, 0.0))
-	a.action(1, Net.ACT_PLACE, a.inventory_of(1).numbers.find(a.table.number_of("tool_rack_kit")), 0, 0, Vector3(-4.0, 10.0, 2.5))
+	a.place_piece(1, "workbench_kit", Vector3(-4.0, 10.0, 0.0))
+	a.place_piece(1, "tool_rack_kit", Vector3(-4.0, 10.0, 2.5))
 	# Seven deaths of one character leave only per_owner_cap sets of remains (the oldest go first).
 	a.peer_connected_hello(3, "drillkey00003")
 	a.report_position(3, Vector3(60.0, 10.0, 60.0))

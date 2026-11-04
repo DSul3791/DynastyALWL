@@ -30,9 +30,7 @@ func make(dir: String):
 
 func place(items, kit: String, spot: Vector3) -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(kit), 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of(kit)), 0, 0, spot)
-
-
+	items.place_item(1, items.table.number_of(kit), spot, 0)
 # The structure rows of a world, as [kind, x, y, z, yaw] sorted so two worlds compare equal.
 func pieces_of(items) -> Array:
 	var out: Array = []
@@ -82,7 +80,7 @@ func _init() -> void:
 	again.report_position(1, Vector3(400.0, 10.0, 400.0))
 	var walls_before: int = after.filter(func(row): return row[0] == "thatch_wall").size()
 	again.action(1, Net.ACT_ADMIN_GIVE, again.table.number_of("thatch_wall_kit"), 0, 1, Vector3.ZERO)
-	again.action(1, Net.ACT_PLACE, again.inventory_of(1).numbers.find(again.table.number_of("thatch_wall_kit")), 0, 0, Vector3(400.8, 10.0, 404.3))
+	again.place_piece(1, "thatch_wall_kit", Vector3(400.8, 10.0, 404.3))
 	var walls_after: int = pieces_of(again).filter(func(row): return row[0] == "thatch_wall").size()
 	check(walls_after == walls_before + 1, "a wall placed after the reload snaps on the saved floor and is added (%d to %d)" % [walls_before, walls_after])
 	var top_id: int = 0

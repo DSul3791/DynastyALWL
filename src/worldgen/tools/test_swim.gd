@@ -60,14 +60,35 @@ func _init() -> void:
 		y += vy / 60.0
 
 	_check(absf(y - 97.0) < 0.01, "a diver who stops swimming stays put (no drift up, centre %.2f)" % y)
+	# BUG-029: no auto-rise any more; the diver stays down whatever the air (there is no air argument).
+	# BUG-028: strokes follow the camera pitch. Looking up while swimming forward rises, looking down dives, level stays level.
+	_check(Swim.pitch_wish(0.0, 1.0, 2.0) == 0.0 and Swim.pitch_wish(deg_to_rad(3.0), 1.0, 2.0) == 0.0, "a level look (or under 5 degrees) swims level")
+	_check(Swim.pitch_wish(deg_to_rad(45.0), 1.0, 2.0) > 1.3 and Swim.pitch_wish(deg_to_rad(-45.0), 1.0, 2.0) < -1.3, "45 degrees up rises and 45 down dives at the stroke speed times the sine")
+	_check(Swim.pitch_wish(deg_to_rad(45.0), -1.0, 2.0) < 0.0 and Swim.pitch_wish(deg_to_rad(45.0), 0.0, 2.0) == 0.0, "backing up (S) reverses it, no stroke gives none")
 	y = 97.0
 	vy = 0.0
 
-	for step in range(600):
-		vy = Swim.vertical_speed(y, 100.0, vy, false, false, 1.0 / 60.0, true)
+	for step in range(120):
+		vy = Swim.vertical_speed(y, 100.0, vy, false, false, 1.0 / 60.0, Swim.pitch_wish(deg_to_rad(60.0), 1.0, 2.0))
 		y += vy / 60.0
 
-	_check(absf(y - Swim.float_centre(100.0)) < 0.05, "in the last seconds of air an idle diver drifts up to the surface (centre %.2f)" % y)
+	_check(y > 98.0 and y <= Swim.float_centre(100.0) + 0.01, "looking up and swimming rises (%.2f) but never above the float line" % y)
+	y = Swim.float_centre(100.0)
+	vy = 0.0
+
+	for step in range(120):
+		vy = Swim.vertical_speed(y, 100.0, vy, false, false, 1.0 / 60.0, Swim.pitch_wish(deg_to_rad(-60.0), 1.0, 2.0))
+		y += vy / 60.0
+
+	_check(y < Swim.float_centre(100.0) - 1.5, "looking down and swimming dives (%.2f)" % y)
+	y = 97.0
+	vy = 0.0
+
+	for step in range(120):
+		vy = Swim.vertical_speed(y, 100.0, vy, true, false, 1.0 / 60.0, Swim.pitch_wish(deg_to_rad(-60.0), 1.0, 2.0))
+		y += vy / 60.0
+
+	_check(y > 97.0, "Space still swims up whatever the look")
 	vy = 0.0
 	y = Swim.float_centre(100.0)
 

@@ -278,7 +278,9 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	clock = Time.get_ticks_msec()
 
 	if tile_rules.has("rolling"):
-		TileRollingScript.apply(water.heights, water.water_class, n, frame_height.spacing_m, origin_sx, origin_sz, settings, tile_rules["rolling"], elevation)
+		var rolling_rules: Dictionary = tile_rules["rolling"].duplicate()
+		rolling_rules["_spawn_pad"] = tile_rules.get("spawn_pad", {})   # the hills leave the spawn pad level
+		TileRollingScript.apply(water.heights, water.water_class, n, frame_height.spacing_m, origin_sx, origin_sz, settings, rolling_rules, elevation)
 
 	timings["rolling"] = Time.get_ticks_msec() - clock
 

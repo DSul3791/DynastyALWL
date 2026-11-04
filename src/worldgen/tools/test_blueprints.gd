@@ -72,8 +72,7 @@ func _init() -> void:
 		check(not numbers.has(int(row["number"])) and int(row["number"]) < int(parsed["next_number"]), "%s: blueprint number is its own and below next_number" % id)
 		numbers[int(row["number"])] = true
 
-		if bool(row.get("retired", false)):
-			check(not bool(recipes[str(row["recipe"])].get("retired", false)), "%s: the hand-made recipe is live again (fine wood or lower is by hand)" % id)
+		if bool(row.get("retired", false)):   # the rough bed: made in the pack, placed from the pack (Dave 4 Nov 2026)
 			continue
 
 		live[id] = row
@@ -84,16 +83,12 @@ func _init() -> void:
 
 		var recipe: Dictionary = recipes[str(row["recipe"])]
 		check(bool(recipe.get("retired", false)), "%s: kit recipe %d is retired, not removed" % [id, int(recipe["number"])])
-		check(JSON.stringify(row["cost"]) == JSON.stringify(recipe["needs"]), "%s: cost equals the retired kit recipe" % id)
+		if id != "feather_bed" and id != "canopy_bed":   # these two used to take the bed below them as a kit; now they list its raw materials
+			check(JSON.stringify(row["cost"]) == JSON.stringify(recipe["needs"]), "%s: cost equals the retired kit recipe" % id)
 		# A retired kit recipe can never be learned (the recipe table skips it), so a blueprint marked unknown could never be built (fireplace, Dino S-place 2 Nov).
-		check(bool(row.get("known", true)), "%s: known, since its kit recipe is retired and cannot be learned" % id)
+		check(bool(row.get("known", true)) or bool(row.get("locked", false)), "%s: known (or locked), since its kit recipe is retired and cannot be learned" % id)
 
-	check(live.size() == 16 and live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven"), "the heavy stations, the cooking tiers and the rough bed are the blueprints (%d)" % live.size())
-
-	# Fine wood and lower are made by hand, no station: the section pieces, the foundation, the timber set, the ladder (and the thatch four).
-	for kit in ["wall_section_kit", "floor_section_kit", "roof_section_kit", "foundation_section_kit", "doorway_section_kit", "window_section_kit", "timber_set_kit", "ladder_kit"]:
-		var made: Dictionary = recipes[kit]
-		check(not bool(made.get("retired", false)) and str(made.get("station", "")) == "" and bool(made.get("known", false)), "%s: a hand craft known from the start" % kit)
+	check(live.size() == 51 and not live.has("rough_bed") and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven"), "every placed piece is a blueprint except the pack-made rough bed (%d)" % live.size())
 
 	# Place: a hammer, the station near at its level, every material; a short pack takes nothing.
 	var table_bp: Dictionary = live["woodworking_table"]
@@ -108,8 +103,7 @@ func _init() -> void:
 	_give(1, "wooden_hammer", 1)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
 	check(items.world_item_count() == before and _have(1, "lumber") == 12, "no workbench near: nothing placed, nothing taken")
-	_give(1, "log_workbench_kit", 1)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("log_workbench_kit")), 0, 0, Vector3(200.0, 10.0, 202.0))
+	items.place_piece(1, "log_workbench_kit", Vector3(200.0, 10.0, 202.0))
 	check(_ids_standing("log_workbench").size() == 1, "a log workbench stands (the station)")
 	_clear(1)
 	_give(1, "wooden_hammer", 1)
@@ -144,14 +138,6 @@ func _init() -> void:
 	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)
 	check(_ids_standing("woodworking_table").is_empty() and _have(1, "lumber") == 24 and _have(1, "nails") == 120 and _have(1, "woodworking_table_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d)" % [_have(1, "lumber"), _have(1, "nails")])
 
-	# An old kit still places and takes down into a kit (the old way), and a by-hand piece takes down into its piece.
-	_clear(1)
-	_give(1, "wall_section_kit", 1)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("wall_section_kit")), 0, 0, Vector3(200.0, 10.0, 207.0))
-	check(_ids_standing("wall_section").size() == 1 and _have(1, "wall_section_kit") == 0, "a hand-made wall piece places")
-	items.action(1, Net.ACT_PICKUP, _ids_standing("wall_section")[0], 0, 0, Vector3.ZERO)
-	check(_have(1, "wall_section_kit") == 1, "and takes down into the piece, no blueprint refund")
-
 	# Takedown into a full pack keeps the blueprint piece.
 	_clear(1)
 	_give(1, "wooden_hammer", 1)
@@ -172,7 +158,7 @@ func _init() -> void:
 	_clear(1)
 	items.report_position(1, Vector3(240.0, 10.0, 240.0))
 	_give(1, "snare", 1)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("snare")), 0, 0, Vector3(240.0, 10.0, 242.0))
+	items.place_item(1, items.table.number_of("snare"), Vector3(240.0, 10.0, 242.0), 0)
 	check(_ids_standing("snare_trap").size() == 1 and _have(1, "snare") == 0, "a snare is set on the ground")
 	items.action(1, Net.ACT_PICKUP, _ids_standing("snare_trap")[0], 0, 0, Vector3.ZERO)
 	check(_ids_standing("snare_trap").is_empty() and _have(1, "snare") == 1, "and taken back into the snare item")

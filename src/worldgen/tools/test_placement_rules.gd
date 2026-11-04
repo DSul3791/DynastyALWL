@@ -98,7 +98,7 @@ func _init() -> void:
 
 		var says: String = Rules.blocked(cfg, kit, spots[n], rows_now)
 		var before: int = items.world_item_count()
-		items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(kit_number), 0, 0, spots[n])
+		items.place_item(1, kit_number, spots[n], 0)
 		var placed: bool = items.world_item_count() > before
 		total += 1
 		agree += 1 if placed == (says == "") else 0
@@ -152,11 +152,10 @@ func _init() -> void:
 
 	for spot in [Vector3(198.0, 10.0, 202.0), Vector3(200.0, 10.0, 202.0), Vector3(202.0, 10.0, 202.0), Vector3(200.0, 10.0, 203.0)]:
 		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wall_section_kit"), 0, 1, Vector3.ZERO)
-		items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("wall_section_kit")), 0, 0, spot)
-
+		items.place_item(1, items.table.number_of("wall_section_kit"), spot, 0)
 	check(items.world_item_count() == walls_before + 4, "four wall sections stand edge to edge, 2 m and 1 m apart (%d placed)" % (items.world_item_count() - walls_before))
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("chest_kit")), 0, 0, Vector3(200.0, 10.0, 202.5))
+	items.place_item(1, items.table.number_of("chest_kit"), Vector3(200.0, 10.0, 202.5), 0)
 	check(items.world_item_count() == walls_before + 4, "a chest is still kept 2.5 m from a wall")
 	# Nothing is built in water (Dave 2026-10-22: floor sections lay on the pond): any corner wet blocks it, on the server too.
 	var pond: Callable = func(x: float, _z: float) -> float: return 1.0 if x > 300.0 else 0.0
@@ -168,7 +167,7 @@ func _init() -> void:
 	items.report_position(1, Vector3(302.0, 10.0, 200.0))
 	var wet_before: int = items.world_item_count()
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("floor_section_kit"), 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("floor_section_kit")), 0, 0, Vector3(302.0, 10.0, 202.0))
+	items.place_item(1, items.table.number_of("floor_section_kit"), Vector3(302.0, 10.0, 202.0), 0)
 	check(items.world_item_count() == wet_before, "the server refuses a floor section over water")
 	# Server: a foundation stands, then a wall near its edge sits on top of it at the anchor.
 	items.peer_connected_hello(2, "foundkey0002")
@@ -176,10 +175,10 @@ func _init() -> void:
 	items.report_position(2, Vector3(400.0, 10.0, 400.0))
 	var base_before: int = items.world_item_count()
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 1, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 0, 0, Vector3(400.0, 10.0, 402.0))
+	items.place_item(2, items.table.number_of("foundation_section_kit"), Vector3(400.0, 10.0, 402.0), 0)
 	check(items.world_item_count() == base_before + 1, "a foundation is placed")
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("wall_section_kit"), 0, 1, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("wall_section_kit")), 0, 0, Vector3(399.2, 10.0, 399.7))
+	items.place_item(2, items.table.number_of("wall_section_kit"), Vector3(399.2, 10.0, 399.7), 0)
 	var wall_y: float = -1.0
 
 	for id in items._items:
@@ -190,7 +189,7 @@ func _init() -> void:
 	# The mouse wheel lifts a foundation off the ground in 0.1 m steps (b = steps, at = the lifted spot); more than 10 steps counts as 10.
 	items.report_position(2, Vector3(300.0, 10.0, 300.0))
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 1, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 3, 0, Vector3(300.0, 10.3, 302.0))
+	items.place_item(2, items.table.number_of("foundation_section_kit"), Vector3(300.0, 10.3, 302.0), 3)
 	var lifted_y: float = -1.0
 
 	for id in items._items:
@@ -200,7 +199,7 @@ func _init() -> void:
 	check(is_equal_approx(lifted_y, 10.3), "a foundation lifted 3 steps stands 0.3 m above the ground (y %.2f)" % lifted_y)
 	# A foundation beside another takes its height and its edge, and the wheel's lift is ignored (Dave 4 Nov 2026).
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 1, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 7, 0, Vector3(304.4, 10.3, 302.6))
+	items.place_item(2, items.table.number_of("foundation_section_kit"), Vector3(304.4, 10.3, 302.6), 7)
 	var next_y: float = -1.0
 	var next_x: float = -1.0
 
@@ -228,7 +227,7 @@ func _init() -> void:
 
 	for station_kit in [["woodworking_table_kit", "woodworking_table", 802.0]]:
 		items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of(str(station_kit[0])), 0, 1, Vector3.ZERO)
-		items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of(str(station_kit[0]))), 0, 0, Vector3(800.0, 10.0, float(station_kit[2])))
+		items.place_item(2, items.table.number_of(str(station_kit[0])), Vector3(800.0, 10.0, float(station_kit[2])), 0)
 		var station_found: bool = false
 
 		for id in items._items:
@@ -253,19 +252,19 @@ func _init() -> void:
 
 		return n
 	items.action(2, Net.ACT_ADMIN_GIVE, saw_kit, 0, 4, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 902.0))
+	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 902.0), 0)
 	check(int(saw_count.call()) == 0, "a sawmill is refused on bare ground (needs a tall foundation)")
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 2, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 2, 0, Vector3(900.0, 12.0, 902.0))
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 902.0))
+	items.place_item(2, items.table.number_of("foundation_section_kit"), Vector3(900.0, 12.0, 902.0), 2)
+	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 902.0), 0)
 	check(int(saw_count.call()) == 0, "a foundation lifted only 0.2 m is too low")
 	items.report_position(2, Vector3(900.0, 10.0, 910.0))
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 6, 0, Vector3(900.0, 10.6, 910.0))
+	items.place_item(2, items.table.number_of("foundation_section_kit"), Vector3(900.0, 10.6, 910.0), 6)
 	flows[0] = false
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 910.0))
+	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 910.0), 0)
 	check(int(saw_count.call()) == 0, "a sawmill without running water at its wheel is refused")
 	flows[0] = true
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 910.0))
+	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 910.0), 0)
 	check(int(saw_count.call()) == 1, "a sawmill on a foundation lifted 0.6 m with running water is placed")
 	items.ground_height = Callable()
 	items.water_flow_runs = Callable()
@@ -286,7 +285,7 @@ func _init() -> void:
 	# A campfire's store: wood goes in and feeds the fire, an axe is refused.
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("campfire_kit")), 0, 0, Vector3(450.0, 10.0, 452.0))
+	items.place_item(2, items.table.number_of("campfire_kit"), Vector3(450.0, 10.0, 452.0), 0)
 	var fire_id: int = 0
 
 	for id in items._items:
@@ -314,7 +313,7 @@ func _init() -> void:
 	# Rest points: a lean-to you built and a fire you slept by are places to come back to, the nearest one wins; none left means the old rule.
 	items.report_position(2, Vector3(500.0, 10.0, 500.0))
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(500.0, 10.0, 503.0))
+	items.place_item(2, items.table.number_of("lean_to_kit"), Vector3(500.0, 10.0, 503.0), 0)
 	var rest_key: String = str(items._peer_key[2])
 	check(items._characters[rest_key].get("rests", []).size() == 1, "building a lean-to records a rest point")
 	var near_lean: Vector3 = items.rest_point_for(2, Vector3(500.0, 10.0, 520.0))
@@ -326,7 +325,7 @@ func _init() -> void:
 	# A door: E opens and shuts it (the structure swaps its kind), and taking it down gives the doorway kit back.
 	items.report_position(2, Vector3(600.0, 10.0, 600.0))
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("doorway_section_kit"), 0, 1, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("doorway_section_kit")), 0, 0, Vector3(600.0, 10.0, 602.0))
+	items.place_item(2, items.table.number_of("doorway_section_kit"), Vector3(600.0, 10.0, 602.0), 0)
 	var door_id: int = 0
 
 	for id in items._items:
@@ -343,7 +342,7 @@ func _init() -> void:
 	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "the door will not flap faster than its pace")
 	# A rock pile: placed from the item, E gives back all 45 stones.
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("rock_pile"), 0, 1, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("rock_pile")), 0, 0, Vector3(600.0, 10.0, 606.0))
+	items.place_item(2, items.table.number_of("rock_pile"), Vector3(600.0, 10.0, 606.0), 0)
 	var pile_id: int = 0
 
 	for id in items._items:
@@ -372,11 +371,11 @@ func _init() -> void:
 	items.support_changed = func(at: Vector3) -> void: told.append(at)
 	items.game_seconds = func() -> float: return 1000.0
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("timber_prop_kit"), 0, 2, Vector3.ZERO)
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("timber_prop_kit")), 0, 0, Vector3(700.0, 10.0, 702.0))
+	items.place_item(2, items.table.number_of("timber_prop_kit"), Vector3(700.0, 10.0, 702.0), 0)
 	check(told.size() == 1 and items.support_strength_at(Vector3(700.0, 10.0, 702.0)) == 1.0, "a new prop holds its own spot and tells the tunnel watch")
 	check(items.support_strength_at(Vector3(704.9, 10.0, 702.0)) == 1.0 and items.support_strength_at(Vector3(705.1, 10.0, 702.0)) == 0.0, "it holds everything inside its 5 m sphere and nothing outside")
 	check(items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 0.0, "a spot 5.5 m away is not held by one prop")
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("timber_prop_kit")), 0, 0, Vector3(700.0, 10.0, 705.0))
+	items.place_item(2, items.table.number_of("timber_prop_kit"), Vector3(700.0, 10.0, 705.0), 0)
 	check(items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 1.0, "a second prop beside it extends the held area (overlapping spheres)")
 	var half_s: float = 1000.0 + 30.0 * 86400.0
 	check(items.support_strength_at(Vector3(702.0, 10.0, 702.0), half_s) == 1.0 and items.support_strength_at(Vector3(704.0, 10.0, 702.0), half_s) == 0.0, "at about half health the sphere is about half as wide")

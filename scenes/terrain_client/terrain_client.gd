@@ -184,13 +184,13 @@ const SPACE_WAKE_S := 1.0               # hold Space this long to wake from slee
 const WALK_SPEED := 1.4
 const FAST := 3.0                     # flying: Shift multiplier
 const JOG_SPEED := 3.2
-const RUN_SPEED := 6.0
+const RUN_SPEED := 9.0                # BUG-011 (Dave 2026-11-04): +50 percent over 6.0. The run animation and stride rate stay at the old 6 m/s cadence: STEP_M[2] and avatar_driver RUN_CLIP_PACE
 # Walking camera (all tuning is here; each list is [walk, jog, run]). A footfall
 # is the lowest point of the bob and the far end of the sway: left foot, camera
 # down and leaning left; midway it rises back to the middle; right foot, down
 # and leaning right. The bob therefore repeats every step and the sway every
 # two steps.
-const STEP_M := [0.75, 1.2, 2.0]         # metres per step: longer strides when faster (about 1.9, 2.7 and 3.0 steps a second at the natural speeds)
+const STEP_M := [0.75, 1.2, 3.0]         # metres per step: longer strides when faster (about 1.9, 2.7 and 3.0 steps a second at the natural speeds; the run stride was 2.0 m at 6 m/s, now 3.0 m at 9 m/s, same cadence)
 const BOB_M := [0.040, 0.052, 0.064]     # how far the camera dips at a footfall
 const SWAY_M := [0.012, 0.016, 0.020]    # sideways shift at a footfall
 const SWAY_DEG := [0.10, 0.13, 0.16]     # roll toward the stepping side at a footfall
@@ -4022,7 +4022,9 @@ func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool
 	var down: bool = KeyBindings.held("down") and strain_cap >= 0.0
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, items.breath_ds >= 0 and items.breath_ds < 100)
+	# BUG-028: W / S swim along the view, so looking up rises and looking down dives; Space and Ctrl still do.
+	var stroke_vy: float = 0.0 if strain_cap < 0.0 else SwimScript.pitch_wish(camera.rotation.x, float(Input.is_key_pressed(KEY_W)) - float(Input.is_key_pressed(KEY_S)), horizontal.length())
+	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, stroke_vy)
 
 	# Under a floe or an ice sheet: with no stroke given, drift gently out to the nearest open water.
 	if now >= _under_ice_next_msec:

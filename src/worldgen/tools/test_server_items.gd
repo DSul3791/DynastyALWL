@@ -1300,17 +1300,16 @@ func _init() -> void:
 	lt.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var lean_kit: int = lt.table.number_of("lean_to_kit")
 	lt.action(1, Net.ACT_ADMIN_GIVE, lean_kit, 0, 8, Vector3.ZERO)
-	lt.action(1, Net.ACT_PLACE, 0, 0, 90, Vector3(3.0, 10.0, 0.0))
+	lt.place_item(1, lean_kit, Vector3(3.0, 10.0, 0.0), 0, 90)
 	check(lt.world_item_count() == 1 and roofs.size() == 1 and lt.inventory_of(1).count_of(lean_kit) == 7, "a lean-to is placed and registers its roof")
 	var roof: Array = roofs[1]
 	check(absf(roof[5] - PI * 0.5) < 0.01 and roof[6] < 10.0 and roof[7] > 11.0, "the roof is a yawed box from just under the ground to 2 m up")
-	lt.action(1, Net.ACT_PLACE, lt.inventory_of(1).numbers.find(lean_kit), 0, 0, Vector3(4.0, 10.0, 0.0))
+	lt.place_item(1, lean_kit, Vector3(4.0, 10.0, 0.0), 0)
 	check(lt.world_item_count() == 1, "not within 2.5 m of another structure")
 
 	for n in range(8):
 		lt.report_position(1, Vector3(10.0 + float(n) * 4.0, 10.0, 0.0))
-		lt.action(1, Net.ACT_PLACE, lt.inventory_of(1).numbers.find(lean_kit), 0, 0, Vector3(10.0 + float(n) * 4.0 + 1.0, 10.0, 0.0))
-
+		lt.place_item(1, lean_kit, Vector3(10.0 + float(n) * 4.0 + 1.0, 10.0, 0.0), 0)
 	check(lt.world_item_count() == 6, "six lean-tos fit in a chunk (%d)" % lt.world_item_count())
 	lt.save()
 	var lt2 = make(ld)
@@ -1328,7 +1327,7 @@ func _init() -> void:
 
 	lt2.roof_remove = func(key): roofs2.clear()
 	lt2.action(1, Net.ACT_PICKUP, shelter, 0, 0, Vector3.ZERO)
-	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("lean_to_kit")) == 3, "taking it down gives the kit back")
+	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("stick")) >= 30, "taking it down gives its materials back (no kit)")
 
 	# Storage chest.
 	var cd: String = "user://test_server_items_chest"
@@ -1348,9 +1347,8 @@ func _init() -> void:
 	var chest_kit: int = ch.table.number_of("chest_kit")
 	var stones_n: int = ch.table.number_of("stone")
 	ch.action(1, Net.ACT_ADMIN_GIVE, chest_kit, 0, 1, Vector3.ZERO)
-	check(ch.recipes.recipe(14)["needs"] == [[ch.table.number_of("stick"), 10], [ch.table.number_of("twine"), 4]], "the first chest is woven from 10 sticks and 4 twine")
 	ch.action(1, Net.ACT_ADMIN_GIVE, stones_n, 0, 10, Vector3.ZERO)
-	ch.action(1, Net.ACT_PLACE, ch.inventory_of(1).numbers.find(chest_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	ch.place_item(1, chest_kit, Vector3(2.0, 10.0, 0.0), 0)
 	var chest_id: int = 0
 
 	for k in ch._items:
@@ -1408,7 +1406,7 @@ func _init() -> void:
 	ch2.action(1, Net.ACT_CHEST_TAKE, ch2._chests[1].numbers.find(stones_n), chest2, 6, Vector3.ZERO)
 	check(ch2.inventory_of(1).count_of(stones_n) == 10 and ch2._chests[1].count_of(stones_n) == 0, "taking the stones out moves them back")
 	ch2.action(1, Net.ACT_PICKUP, chest2, 0, 0, Vector3.ZERO)
-	check(not ch2._items.has(chest2) and ch2.inventory_of(1).count_of(ch2.table.number_of("chest_kit")) == 1 and ch2._chests.is_empty(), "an empty chest comes down and gives the kit back")
+	check(not ch2._items.has(chest2) and ch2.inventory_of(1).count_of(ch2.table.number_of("chest_kit")) == 0 and ch2._chests.is_empty(), "an empty chest comes down and gives its materials, not a kit")
 
 	# Chopping block.
 	var bd: String = "user://test_server_items_block"
@@ -1424,7 +1422,7 @@ func _init() -> void:
 	cb.peer_connected_hello(1, "abcdef123456")
 	cb.report_position(1, Vector3(0.0, 10.0, 0.0))
 	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block"), 0, 1, Vector3.ZERO)
-	cb.action(1, Net.ACT_PLACE, cb.inventory_of(1).numbers.find(cb.table.number_of("chopping_block")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	cb.place_item(1, cb.table.number_of("chopping_block"), Vector3(2.0, 10.0, 0.0), 0)
 	var block_id: int = 0
 
 	for k in cb._items:
@@ -1597,19 +1595,41 @@ func _init() -> void:
 	vt._speed3[1] = 2.0
 	vt.tick(1.0)
 	check(vt.breath_of(1) > 58.0, "the next dive starts from a full 60 s")
+	# BUG-029 (Dave 2026-11-04): out of air the swimmer stays under (no health drain): the heart races, then a faint, and a faint under water is drowning.
+	var hearts: Array = []
+	vt.send_body = func(_p, bpm, _eta, phase): hearts.append([bpm, phase])
 	vt._breath[1] = 1.0
 	vnotes.clear()
 
-	for n in range(4):
+	for n in range(6):
 		vt.tick(1.0)
 
-	check(float(vt.vitals_of(1)["health"]) < health_before - 10.0 and vnotes.has("You are out of air"), "out of air costs health (6 a second) and says so")
+	check(vnotes.has("You are out of air") and float(vt.vitals_of(1)["health"]) >= health_before - 0.5, "out of air says so and no longer drains health (%.1f)" % float(vt.vitals_of(1)["health"]))
+	check(not hearts.is_empty() and hearts[-1][0] >= 110 and hearts[-1][0] <= 190 and hearts[-1][1] == 1, "suffocating races the heart (%s)" % str(hearts[-1] if not hearts.is_empty() else []))
+	var bpm_early: int = int(hearts[-1][0])
 
+	for n in range(5):
+		vt.tick(1.0)
+
+	check(int(hearts[-1][0]) > bpm_early and vt.remains_ids().size() == 0, "the heart keeps climbing and the swimmer is still alive and conscious (%d bpm)" % int(hearts[-1][0]))
+
+	# Surfacing in time undoes it.
+	vt.set_head_under(1, false)
+	vt.tick(1.0)
+	check(vt.breath_of(1) < 0.0 and vt.remains_ids().size() == 0 and int(vt._strain.get(1, {}).get("state", 0)) == 0, "surfacing before the faint ends it: air full, no faint, no death")
+	vt.set_head_under(1, true)
+	vt._breath[1] = 1.0
 	vt.report_position(1, Vector3(50.0, 5.0, 50.0))
-	for n in range(60):
-		vt.tick(1.0)
+	var faint_seen: bool = false
 
-	check(vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] drowning to zero health kills: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	for n in range(40):
+		vt.tick(1.0)
+		faint_seen = faint_seen or int(vt._strain.get(1, {}).get("state", 0)) == 2
+
+		if vt.remains_ids().size() > 0:
+			break
+
+	check(faint_seen and vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] fainting under water drowns: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
 	vt.set_head_under(1, false)
 	vt.tick(1.0)
 	vt.vitals_of(1)["fed"] = 0.0   # the death above started the vitals over
@@ -2680,7 +2700,7 @@ func _init() -> void:
 	var box_kit: int = bx.table.number_of("chest_kit")
 	bx.action(1, Net.ACT_ADMIN_GIVE, box_kit, 0, 1, Vector3.ZERO)
 	bx.action(1, Net.ACT_ADMIN_GIVE, box_stone, 0, 50, Vector3.ZERO)
-	bx.action(1, Net.ACT_PLACE, bx.inventory_of(1).numbers.find(box_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	bx.place_item(1, box_kit, Vector3(2.0, 10.0, 0.0), 0)
 	var box_id: int = 0
 
 	for k in bx._items:
