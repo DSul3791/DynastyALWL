@@ -5,7 +5,7 @@
 	"wind_chill_c": 6.0,
 	"covered_wind_share": 0.3,
 	"covered_rain_share": 0.0,
-	"rain_mult": 1.5,
+	"rain_mult": 1.2,
 	"gain": 3.0,
 	"fire_c": 20.0,
 	"fire_radius_m": 4.0,

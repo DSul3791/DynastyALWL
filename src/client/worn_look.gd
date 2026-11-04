@@ -2,7 +2,7 @@ extends RefCounted
 
 # Worn clothing (Kathleen, goal 1f). `attach(rig, item_ids, far)` hangs one mesh set per item on the named bones of a RagdollBody (hips, chest, head, hand_*, thigh_*, shin_*, foot_*),
 # replacing whatever was attached before, so Steve's sync code calls it once with the ids the server sends. Items come from data/items/worn.json (builder, colour, layer).
-# Parts are low-poly spheres, boxes and cylinders in the bone's own space (limbs run down -Y, the front of the body is -Z, right is +X). Meshes and materials are shared and cached.
+# Parts are simple spheres, boxes and cylinders in the bone's own space (limbs run down -Y, the front of the body is -Z, right is +X). Meshes and materials are shared and cached.
 # A layer stands LAYER_M further out (1.5 cm) so a cloak over leggings does not z-fight. Far bodies (beyond about 30 m) skip the detail parts (mittens' thumbs, straps, fringe).
 
 const WORN_PATH := "res://data/items/worn.json"
@@ -57,6 +57,7 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 
 	var anchors: Dictionary = {}
 	var count: int = 0
+	var frames: Dictionary = rig.get_meta("worn_frames", {}) if rig.has_meta("worn_frames") else {}
 
 	for item_id in item_ids:
 		var row: Dictionary = table().get(str(item_id), {})
@@ -78,7 +79,24 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 
 			# The generated body (src/client/character/body_generator.gd) has humanoid bone names; the parts below are written for the old names, so they are mapped
 			# when the skeleton has no bone of the old name. The old body is untouched by this.
-			if skeleton.find_bone(bone) < 0 and HUMANOID_NAMES.has(bone):
+			if frames.has(bone):
+				# A body in other bone frames (Dave's body, dynasty_body.gd _worn_frames) gives each old bone its own bone and a frame under it in the old axes.
+				var key: String = "frame_" + bone
+
+				if not anchors.has(key):
+					var frame_row: Array = frames[bone]
+					var holder: BoneAttachment3D = BoneAttachment3D.new()
+					holder.name = "Worn_" + bone
+					skeleton.add_child(holder)
+					holder.bone_name = str(frame_row[0])
+					var frame: Node3D = Node3D.new()
+					frame.name = "Frame"
+					frame.transform = frame_row[1]
+					holder.add_child(frame)
+					anchors[key] = frame
+
+				bone = key
+			elif skeleton.find_bone(bone) < 0 and HUMANOID_NAMES.has(bone):
 				bone = str(HUMANOID_NAMES[bone])
 
 			if not anchors.has(bone):
@@ -90,7 +108,7 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 
 			var node: MeshInstance3D = MeshInstance3D.new()
 			node.mesh = _mesh(str(part["shape"]))
-			node.material_override = _material(Color.html(str(row["color"])).darkened(float(part.get("dark", 0.0))))
+			node.material_override = _material(Color.html(str(row["color"])).darkened(float(part.get("dark", 0.0))), stuff_of(str(item_id)))
 			# A generated body carries a per-bone fit (widths and lengths of its own proportions); the old body has none, so nothing changes for it.
 			# A part with "fitted": true was already built from the body's own measures (rig meta "worn_measures"), so it is not scaled again.
 			var fit: Vector3 = Vector3.ONE if bool(part.get("fitted", false)) else (rig.get_meta("worn_fit", {}) as Dictionary).get(bone, Vector3.ONE)
@@ -139,14 +157,89 @@ static func _mesh(shape: String) -> Mesh:
 	return _meshes[shape]
 
 
-static func _material(color: Color) -> StandardMaterial3D:
-	var key: String = color.to_html()
+# What each worn item is made of, from its id: hide and leather show a soft grain and a little sheen, wool and padded cloth a woven nap, linen a fine weave, fur strands,
+# grass and fibre plaited stems, and bronze, iron and steel are metal. The look follows Art_Direction.md: real stuff, no plastic (Kathreen, 3 Nov 2026).
+const STUFF_PREFIXES := [["hide", "hide"], ["leather", "hide"], ["quiver", "hide"], ["backpack", "hide"], ["wool", "wool"], ["gambeson", "wool"], ["linen", "linen"],
+	["fur", "fur"], ["grass", "fibre"], ["fibre", "fibre"], ["bronze", "metal"], ["iron", "metal"], ["steel", "metal"], ["mail", "metal"], ["plate", "metal"]]
+# stuff -> [weave scale (per metre), weave strength, roughness, specular, metallic, woven share]
+const STUFF_LOOKS := {
+	"hide": [60.0, 0.16, 0.78, 0.3, 0.0, 0.1], "wool": [260.0, 0.22, 0.98, 0.1, 0.0, 0.7], "linen": [420.0, 0.12, 0.9, 0.18, 0.0, 0.9],
+	"fur": [380.0, 0.3, 0.95, 0.12, 0.0, 0.3], "fibre": [140.0, 0.34, 0.9, 0.2, 0.0, 0.9], "metal": [30.0, 0.1, 0.38, 0.5, 0.85, 0.0],
+}
+const CLOTH_SHADER := """
+shader_type spatial;
+render_mode cull_disabled, diffuse_burley;
+
+uniform vec3 tint : source_color = vec3(0.45, 0.32, 0.2);
+uniform float weave = 260.0;
+uniform float depth = 0.2;
+uniform float rough = 0.95;
+uniform float spec = 0.15;
+uniform float metal = 0.0;
+uniform float woven = 0.7;      // 1 all threads, 0 all grain (hide, metal)
+
+varying vec3 lp;
+
+float h3(vec3 p) {
+	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+	p += dot(p, p.yxz + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 0.0)), h3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0.0, 0.0, 1.0)), h3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 1.0)), h3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+
+void vertex() {
+	vec3 s = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), length(MODEL_MATRIX[2].xyz));
+	lp = VERTEX * s;          // metres, so a glove and a cloak share one weave size
+}
+
+void fragment() {
+	vec3 q = lp * weave;
+	float threads = 0.5 + 0.5 * sin(q.x + 2.0 * vnoise(q * 0.2)) * sin(q.y + 2.0 * vnoise(q.yzx * 0.2));   // warp and weft (stems, for fibre)
+	float blotch = vnoise(lp * 9.0 + 3.0);                                                                  // wear, grease and sun fade
+	float grain = vnoise(q * 0.35);
+	float v = mix(1.0, 0.82 + 0.36 * mix(grain, threads, woven), depth) * (0.9 + 0.2 * blotch);
+	ALBEDO = tint * v;
+	ROUGHNESS = clamp(rough - 0.12 * blotch, 0.05, 1.0);
+	SPECULAR = spec;
+	METALLIC = metal;
+}
+"""
+static var _cloth_shader: Shader
+
+
+static func stuff_of(item_id: String) -> String:
+	for pair in STUFF_PREFIXES:
+		if item_id.begins_with(str(pair[0])):
+			return str(pair[1])
+
+	return "wool"
+
+
+static func _material(color: Color, stuff: String = "wool") -> Material:
+	var key: String = color.to_html() + stuff
 
 	if not _materials.has(key):
-		var m: StandardMaterial3D = StandardMaterial3D.new()
-		m.albedo_color = color
-		m.roughness = 1.0
-		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		if _cloth_shader == null:
+			_cloth_shader = Shader.new()
+			_cloth_shader.code = CLOTH_SHADER
+
+		var look: Array = STUFF_LOOKS.get(stuff, STUFF_LOOKS["wool"])
+		var m: ShaderMaterial = ShaderMaterial.new()
+		m.shader = _cloth_shader
+		m.set_shader_parameter("tint", color)
+		m.set_shader_parameter("weave", float(look[0]))
+		m.set_shader_parameter("depth", float(look[1]))
+		m.set_shader_parameter("rough", float(look[2]))
+		m.set_shader_parameter("spec", float(look[3]))
+		m.set_shader_parameter("metal", float(look[4]))
+		m.set_shader_parameter("woven", float(look[5]))
 		_materials[key] = m
 
 	return _materials[key]

@@ -15,6 +15,12 @@ extends RefCounted
 #                vent, with collapsed skylights as extra entrances
 #   sea_cave     a short cave cut into a sea cliff, ending in a chamber
 #   rock_shelter a shallow overhang in a steep rock face
+#   spring_cave  where a brook starts on a hillside (Dave 3 Nov 2026): a
+#                tunnel about 100 m into the hill rising gently, the spring
+#                in a chamber at the very back and the stream running out
+#                along the floor, side branches where animals den; a brook
+#                that needs more water gets two or three spring passages
+#                joining the main one
 #
 # A cave is stored as a skeleton: nodes [x, y, z, width, height] (y is the
 # passage center), segments [from, to, type] and chambers. The runtime
@@ -35,6 +41,7 @@ const RIVER := 3
 # Site local ids sit apart from geology ids (cell x 100 + n, below 1600)
 # and placers (from 9001), so every id in a tile is unique.
 const LOCAL_ID_BASE := 8000
+const HEAD_CLEAR_CELLS := 5   # a brook head for a spring cave has no river cell over 1 m higher within this many samples (40 m)
 
 var caves: Array = []
 var lairs: Array = []
@@ -54,6 +61,7 @@ var _tile_m: float = 0.0
 var _heights: PackedFloat32Array
 var _water: PackedByteArray
 var _soil: PackedByteArray
+var _flow: PackedFloat32Array
 var _geology
 var _limestone: int = -1
 var _local: int = 0
@@ -73,8 +81,10 @@ func setup(settings, rules: Dictionary, tables) -> void:
 
 # starter_info: bay details for starter tiles ({} otherwise), as build_tile passes to TileWater.
 # river_mouth: world position where the starter river meets the bay (starter tiles).
-func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteArray, soil: PackedByteArray, geology, starter_info: Dictionary = {}, river_mouth: Vector2 = Vector2(NAN, NAN)) -> void:
+# flow: upstream cells per sample (TileWater.flow); sizes the spring caves (empty: one spring passage each).
+func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteArray, soil: PackedByteArray, geology, starter_info: Dictionary = {}, river_mouth: Vector2 = Vector2(NAN, NAN), flow: PackedFloat32Array = PackedFloat32Array()) -> void:
 	_tile = tile
+	_flow = flow
 	_heights = heights
 	_water = water_class
 	_soil = soil
@@ -98,7 +108,10 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 	if not starter_info.is_empty():
 		_make_starter(starter_info, river_mouth)
 
-	var rng: RandomNumberGenerator = SeedUtil.rng_for(_master, "sites_karst", tile.x, tile.y)
+	# Spring caves first: water comes first (Dave 3 Nov 2026), and the other caves keep away from their mouths.
+	var rng: RandomNumberGenerator = SeedUtil.rng_for(_master, "sites_spring", tile.x, tile.y)
+	_make_spring_caves(rng)
+	rng = SeedUtil.rng_for(_master, "sites_karst", tile.x, tile.y)
 	_make_karst(rng)
 	rng = SeedUtil.rng_for(_master, "sites_lava", tile.x, tile.y)
 	_make_lava_tubes(rng)
@@ -706,6 +719,244 @@ func _make_shelters(rng: RandomNumberGenerator) -> void:
 
 
 # ==================================================
+# SPRING CAVES
+# ==================================================
+
+# Dave 3 Nov 2026: "I really dont like the spring starting in the middle of the mountain thing. that might work if we make some sort of a natural cave
+# that drills in about 100 meters at an uphill slope gently ... maybe put some branches off the main tunnel that creatures and animals like to live in",
+# "then put the spring way at the back of the cave", "you could even put two or three caves in there with springs in each if that would increase the
+# flow of water". So every brook head on a hillside (a river cell with no water above it and no pond round it) gets a cave: the mouth at the head, a
+# passage rising gently into the hill, a spring chamber at the far end, the stream along the floor ("water" segments) and side branches ending in dens.
+# Some caves (spring_cave.extra_passage_chance) get a second and a third spring passage fanning off the main one, each with its own spring at the back;
+# their flows add up (every spring gives the head's spring flow). A brook head's catchment is small (the bake measured about 0.01 m3/s at every head on
+# tile 3,4), so the flow cannot pick which brooks get more: chance does. cave["springs"] = [{node, m3_s}]. A main passage shorter than min_length_m
+# (no room under the hill) gives no cave.
+const SPRING_CAVE_DEFAULTS := {
+	"min_slope_deg": 10.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
+	"width_m": [3.0, 5.0], "height_m": [2.5, 4.0], "min_cover_m": 2.5, "open_cut_m": 64.0, "chamber_radius_m": [4.0, 7.0],
+	"branches": [1, 3], "branch_length_m": [15.0, 40.0], "extra_passage_chance": [0.4, 0.15], "spring_m3_s_per_km2": 0.1, "min_length_m": 60.0,
+}
+
+
+func _spring_rule(key: String) -> Variant:
+	return _rules.get("spring_cave", {}).get(key, SPRING_CAVE_DEFAULTS[key])
+
+
+func _spring_range(key: String, rng: RandomNumberGenerator) -> float:
+	var pair: Array = _spring_rule(key)
+	return rng.randf_range(float(pair[0]), float(pair[1]))
+
+
+# Brook heads on slopes: a RIVER sample with no RIVER or LAKE sample above it among its 8 neighbours, no LAKE within 3 samples (that head has its pond)
+# and no river over 1 m higher within HEAD_CLEAR_CELLS.
+func _brook_heads() -> Array:
+	var heads: Array = []
+	var margin: int = int(float(_rules["edge_margin_m"]) / _spacing) + 2
+	var min_slope: float = tan(deg_to_rad(float(_spring_rule("min_slope_deg"))))
+
+	for j in range(margin, _samples - margin):
+		for i in range(margin, _samples - margin):
+			var index: int = j * _samples + i
+
+			if _water[index] != RIVER or _heights[index] < 2.0 or _slope(index) < min_slope:
+				continue
+
+			var head: bool = true
+
+			for dj in range(-3, 4):
+				for di in range(-3, 4):
+					var n: int = (j + dj) * _samples + i + di
+
+					if n == index:
+						continue
+
+					if _water[n] == LAKE or (absi(di) <= 1 and absi(dj) <= 1 and _water[n] == RIVER and _heights[n] > _heights[index]):
+						head = false
+
+			# And no river higher up within HEAD_CLEAR_CELLS: a sample at the edge of a wide channel has no higher river neighbour either, and the first
+			# bake put 23 of its 41 cave mouths beside a brook that carried on above them.
+			if head:
+				for dj in range(-HEAD_CLEAR_CELLS, HEAD_CLEAR_CELLS + 1):
+					for di in range(-HEAD_CLEAR_CELLS, HEAD_CLEAR_CELLS + 1):
+						var n: int = (j + dj) * _samples + i + di
+
+						if _water[n] == RIVER and _heights[n] > _heights[index] + 1.0:
+							head = false
+
+			if head:
+				heads.append(index)
+
+	return heads
+
+
+func _spring_m3_s(index: int) -> float:
+	if _flow.is_empty():
+		return 0.01
+
+	return clampf(float(_spring_rule("spring_m3_s_per_km2")) * _flow[index] * _spacing * _spacing / 1000000.0, 0.01, 2.0)
+
+
+func _make_spring_caves(rng: RandomNumberGenerator) -> void:
+	var heads: Array = _brook_heads()
+	var placed: Array = []
+	var made: int = 0
+	var passages: int = 0
+	var refused: int = 0
+	# Biggest brooks first (they matter most when two heads are closer than min_spacing_m), then by place, so it is reproducible.
+	heads.sort_custom(func(a: int, b: int) -> bool: return _spring_m3_s(a) > _spring_m3_s(b) or (_spring_m3_s(a) == _spring_m3_s(b) and a < b))
+
+	for index in heads:
+		if made >= int(_spring_rule("max_count")):
+			break
+
+		var point: Vector2 = _point_of(index)
+
+		if _too_close(point, placed, float(_spring_rule("min_spacing_m"))) or _kept_clear(point):
+			continue
+
+		var cave: Dictionary = _spring_cave(index, rng)
+
+		if cave.is_empty():
+			refused += 1
+			continue
+
+		placed.append(point)
+		caves.append(cave)
+		made += 1
+		passages += cave["springs"].size()
+
+	print("  spring caves (Dave 3 Nov): %d brook heads on slopes, %d caves with %d spring passages, %d heads with no room for a cave" % [heads.size(), made, passages, refused])
+
+
+func _spring_cave(index: int, rng: RandomNumberGenerator) -> Dictionary:
+	var m3_s: float = _spring_m3_s(index)
+	var extra: Array = _spring_rule("extra_passage_chance")
+	var wanted: int = 1
+	var roll: float = rng.randf()
+
+	if roll < float(extra[0]):
+		wanted = 3 if roll < float(extra[1]) else 2
+	var cave: Dictionary = _new_cave("spring_cave", rng)
+	var width: float = _spring_range("width_m", rng)
+	var height: float = _spring_range("height_m", rng)
+	var point: Vector2 = _point_of(index)
+	# The mouth: the floor half a metre under the head, so the stream runs straight out onto it.
+	cave["nodes"].append([snappedf(point.x, 0.1), snappedf(_heights[index] + 0.5 * height - 0.5, 0.1), snappedf(point.y, 0.1), snappedf(width, 0.1), snappedf(height, 0.1)])
+	cave["entrances"].append(0)
+	var heading: float = _uphill_angle(index)
+	var main: Array = _spring_passage(cave, 0, heading, _spring_range("length_m", rng), width, height, rng)
+
+	if main.size() < 3 or _node_distance(cave, 0, main[main.size() - 1]) < float(_spring_rule("min_length_m")):
+		return {}
+
+	var springs: Array = [main[main.size() - 1]]
+
+	# More water: extra spring passages leave the main one 15 to 40 percent of the way in, turned 30 to 50 degrees to either side.
+	for k in range(wanted - 1):
+		var from: int = main[clampi(int(round(float(main.size() - 1) * rng.randf_range(0.15, 0.4))), 1, main.size() - 2)]
+		var side: float = (1.0 if k == 0 else -1.0) * (1.0 if rng.randf() < 0.5 else -1.0) * deg_to_rad(rng.randf_range(30.0, 50.0))
+		var arm: Array = _spring_passage(cave, from, heading + side, _spring_range("length_m", rng) * 0.8, width * 0.85, height * 0.9, rng)
+
+		if arm.size() >= 3:
+			springs.append(arm[arm.size() - 1])
+
+	cave["springs"] = []
+
+	for node in springs:
+		cave["chambers"].append({
+			"node": int(node), "features": ["spring"],
+			"radius_m": snappedf(_spring_range("chamber_radius_m", rng), 0.1), "height_m": snappedf(height * 1.4, 0.1),
+		})
+		cave["springs"].append({"node": int(node), "m3_s": snappedf(m3_s, 0.001)})
+
+	# Side branches off the spring passages: roughly level, ending blind, each end a den.
+	var stream: Array = []
+
+	for segment in cave["segments"]:
+		if str(segment[2]) == "water" and int(segment[0]) > 0:
+			stream.append(int(segment[0]))
+
+	cave["den_nodes"] = []
+	var branches: int = rng.randi_range(int(_spring_rule("branches")[0]), int(_spring_rule("branches")[1]))
+
+	for k in range(branches):
+		if stream.is_empty():
+			break
+
+		var from: int = stream[rng.randi_range(0, stream.size() - 1)]
+		var turn: float = (1.0 if rng.randf() < 0.5 else -1.0) * deg_to_rad(rng.randf_range(60.0, 110.0))
+		var nodes_before: int = cave["nodes"].size()
+		var arm: Array = _cave_arm(cave, from, heading + turn, _spring_range("branch_length_m", rng), width * 0.7, height * 0.8, 0.01, "passage", rng)
+
+		if arm.size() >= 2:
+			cave["den_nodes"].append(arm[arm.size() - 1])
+		else:
+			cave["nodes"].resize(nodes_before)
+
+	return cave
+
+
+func _node_distance(cave: Dictionary, a: int, b: int) -> float:
+	var na: Array = cave["nodes"][a]
+	var nb: Array = cave["nodes"][b]
+	return Vector2(float(na[0]), float(na[2])).distance_to(Vector2(float(nb[0]), float(nb[2])))
+
+
+# A spring passage from node `from`: first an open cut (no cover needed, up to open_cut_m), then under cover, rising gently. Segments are "water" (the
+# stream runs down them to the mouth). Returns the node indices of the passage, `from` first; under 3 means it found no room (and adds nothing).
+func _spring_passage(cave: Dictionary, from: int, heading: float, length: float, width: float, height: float, rng: RandomNumberGenerator) -> Array:
+	var nodes_before: int = cave["nodes"].size()
+	var segments_before: int = cave["segments"].size()
+	var path: Array = _cave_arm(cave, from, heading, length, width, height, _spring_range("rise", rng), "water", rng)
+
+	if path.size() < 3:
+		cave["nodes"].resize(nodes_before)
+		cave["segments"].resize(segments_before)
+		return []
+
+	return path
+
+
+# Walks a passage from node `from` along `heading` (with a gentle wander) for `length` m, the floor rising `rise` per metre. Nodes are only kept where the
+# roof has min_cover_m of ground over it; until the first such node (within open_cut_m) the passage is an open cut into the slope, after that a shallow
+# roof ends the passage. Only a passage from the mouth (node 0) starts with a cut. Returns [from, new nodes...].
+func _cave_arm(cave: Dictionary, from: int, heading: float, length: float, width: float, height: float, rise: float, kind: String, rng: RandomNumberGenerator) -> Array:
+	var nodes: Array = cave["nodes"]
+	var start: Array = nodes[from]
+	var p: Vector2 = Vector2(float(start[0]), float(start[2]))
+	var y: float = float(start[1])
+	var step: float = float(_rules["step_m"]) * 0.5
+	var cover: float = float(_spring_rule("min_cover_m"))
+	var open_cut: float = float(_spring_rule("open_cut_m"))
+	var travelled: float = 0.0
+	var last: int = from
+	var path: Array = [from]
+
+	while travelled < length:
+		heading += rng.randf_range(-0.12, 0.12)
+		p += Vector2(cos(heading), sin(heading)) * step
+		y += rise * step
+		travelled += step
+		var at: int = _index_at(p, float(_rules["edge_margin_m"]))
+
+		if at < 0 or _water[at] == OCEAN:
+			break
+
+		if y + 0.5 * height > _heights[at] - cover:
+			if path.size() == 1 and from == 0 and travelled <= open_cut:
+				continue   # still in the cut: no node here yet
+
+			break
+
+		nodes.append([snappedf(p.x, 0.1), snappedf(y, 0.1), snappedf(p.y, 0.1), snappedf(width, 0.1), snappedf(height, 0.1)])
+		cave["segments"].append([last, nodes.size() - 1, kind])
+		last = nodes.size() - 1
+		path.append(last)
+
+	return path
+
+
+# ==================================================
 # DENS, SUMMARY AND LAIRS
 # ==================================================
 
@@ -755,8 +1006,16 @@ func _finish_cave(cave: Dictionary, rng: RandomNumberGenerator) -> void:
 		if rng.randf() < float(rules["chamber_chance"]):
 			spots.append([int(chamber["node"]), "chamber"])
 
+	# Spring cave side branches: animals live at their ends (Dave 3 Nov 2026).
+	var branch_ends: Array = cave.get("den_nodes", [])
+
+	for n in branch_ends:
+		spots.append([int(n), "branch"])
+
+	cave.erase("den_nodes")
+
 	for n in range(1, nodes.size()):
-		if links[n] == 1 and not cave["entrances"].has(n) and rng.randf() < float(rules["dead_end_chance"]):
+		if links[n] == 1 and not cave["entrances"].has(n) and not branch_ends.has(n) and rng.randf() < float(rules["dead_end_chance"]):
 			spots.append([n, "dead_end"])
 
 	if str(cave["cave_kind"]) != "rock_shelter":
