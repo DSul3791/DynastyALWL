@@ -20,6 +20,12 @@ var _camera: Camera3D
 var _in_water: Callable                   # () -> bool
 var _shown_since_check: float = 0.0
 var _active: bool = false
+var enabled: bool = false                 # underground the ruler is off until the player turns it on with H (Dave 4 Nov 2026); in water it shows by itself
+var _was_underground: bool = false
+var _hint_until_msec: int = 0
+const HINT_MSEC := 8000
+const KeyBindings := preload("res://src/client/key_bindings.gd")
+const HINT_TEXT := "Press H to show inclination"
 
 
 func setup(camera: Camera3D, in_water: Callable) -> void:
@@ -40,11 +46,27 @@ func _process(delta: float) -> void:
 
 	if _shown_since_check >= CHECK_SEC:
 		_shown_since_check = 0.0
-		_active = _underground() or (_in_water.is_valid() and bool(_in_water.call()))
-		visible = _active
+		var below: bool = _underground()
+		_active = (below and enabled) or (_in_water.is_valid() and bool(_in_water.call()))
 
-	if _active:
+		if below and not _was_underground and not enabled:
+			_hint_until_msec = Time.get_ticks_msec() + HINT_MSEC   # entering a cave: remind the player the ruler is there
+
+		_was_underground = below
+		visible = _active or _hint_showing()
+
+	if _active or _hint_showing():
 		queue_redraw()
+
+
+func _hint_showing() -> bool:
+	return Time.get_ticks_msec() < _hint_until_msec and not enabled
+
+
+# H: show or hide the ruler underground.
+func toggle() -> void:
+	enabled = not enabled
+	_hint_until_msec = 0
 
 
 # True when solid ground (not a tree or plant) lies over the head, or the player is down in a pit or shaft that is open to the sky:
@@ -93,6 +115,10 @@ func _underground() -> bool:
 func _draw() -> void:
 	var middle: Vector2 = Vector2(SIDE, size.y * 0.5)
 	var font: Font = ThemeDB.fallback_font
+
+	if not _active:   # only the reminder is up
+		draw_string(font, Vector2(0.0, middle.y), KeyBindings.localize(HINT_TEXT), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, MARK)
+		return
 	# Dave (build 619): a mark every 10 degrees and one more at the 45 end; no line down the middle.
 	for degrees in [-45, -40, -30, -20, -10, 0, 10, 20, 30, 40, 45]:
 		var y: float = middle.y - float(degrees) * PX_PER_DEGREE

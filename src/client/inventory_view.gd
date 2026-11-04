@@ -460,7 +460,7 @@ func prompt_text(interaction: Dictionary) -> String:
 	if not (is_inspecting.is_valid() and bool(is_inspecting.call())) or bool(interaction.get("quiet", false)):
 		return ""
 
-	return str(interaction.get("prompt", ""))
+	return KeyBindings.localize(str(interaction.get("prompt", "")))
 
 
 # What the cursor is on: the kind of the E action it is aimed at ("pickup", "plant", "block", "fire", "structure", "npc"...), "" when it is on nothing.
@@ -852,7 +852,7 @@ func _process_body(_delta: float) -> void:
 	_prompt.text = prompt_text(interaction)
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
-		_prompt.text = "Hold Z to sleep"
+		_prompt.text = KeyBindings.localize("Hold Z to sleep")
 
 
 
@@ -1080,7 +1080,7 @@ func _on_notice(text: String) -> void:
 	if notice_event.is_valid():
 		notice_event.call(text)
 
-	_prompt.text = text
+	_prompt.text = KeyBindings.localize(text)
 	_notice_until_msec = Time.get_ticks_msec() + 4000
 
 

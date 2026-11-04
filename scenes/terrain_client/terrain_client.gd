@@ -3533,6 +3533,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif KeyBindings.matches(event, "blueprints") and items != null and not items.open:
 			if held != null:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
+		elif KeyBindings.matches(event, "ruler") and _horizon != null:
+			_horizon.toggle()   # the inclination ruler underground (Dave 4 Nov 2026); off until asked for
 		elif KeyBindings.matches(event, "open"):
 			if items != null and not flying:
 				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is G); with a log on the shoulder and nothing to open, F twice puts the log down

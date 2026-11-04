@@ -44,7 +44,7 @@ func _init() -> void:
 	check(Bindings.matches(_key(KEY_R, true), "admin_rabbit") and not Bindings.matches(_key(KEY_R), "admin_rabbit"), "Ctrl+R is the rabbit, plain R is not")
 	check(Bindings.matches(_key(KEY_R), "blueprints") and not Bindings.matches(_key(KEY_R, true), "blueprints"), "plain R is blueprints, Ctrl+R is not")
 	check(Bindings.matches(_key(KEY_D, false, true), "drop_item"), "Shift+D still drops one (inventory keys ignore Shift)")
-	check(Bindings.matches(_key(KEY_L), "ruler"), "the inclination ruler has a key")
+	check(Bindings.matches(_key(KEY_H), "ruler"), "the inclination ruler has a key")
 	check(Bindings.label("admin_rabbit") == "Ctrl+R", "label shows the Ctrl")
 
 	check(Bindings.set_binding("interact", KEY_ESCAPE, false, false) != "", "Esc cannot be bound")
@@ -75,7 +75,7 @@ func _init() -> void:
 	check(Bindings.label("open") == "F" and Bindings.is_default("open") and Bindings.is_default("run"), "reset all puts everything back and saves it")
 
 	Bindings.clear("ruler")
-	check(not Bindings.matches(_key(KEY_L), "ruler") and Bindings.label("ruler") == "(none)", "an action can be left without a key")
+	check(not Bindings.matches(_key(KEY_H), "ruler") and Bindings.label("ruler") == "(none)", "an action can be left without a key")
 	Bindings.reset_all()
 
 	var file: FileAccess = FileAccess.open(TEMP, FileAccess.WRITE)
@@ -89,6 +89,14 @@ func _init() -> void:
 	Bindings.reload()
 	check(Bindings.label("crouch") == "Ctrl+V" and Bindings.label("interact") == "E", "unknown actions in the file are ignored")
 
+	check(Bindings.localize("Press E to gather") == "Press E to gather", "prompts are untouched while the keys are the defaults")
+	Bindings.set_binding("interact", KEY_Q, false, false)
+	Bindings.set_binding("ruler", KEY_U, false, false)
+	check(Bindings.localize("Press E to gather") == "Press Q to gather", "a prompt shows the bound key")
+	check(Bindings.localize("Press E to light (hold E to pick it up, F for wood)") == "Press Q to light (hold Q to pick it up, F for wood)", "every E in a prompt follows the key, F stays while unchanged")
+	check(Bindings.localize("Press H to show inclination") == "Press U to show inclination", "the ruler hint follows its key")
+	check(Bindings.localize("Enter the Fire pit") == "Enter the Fire pit", "words that only contain a key letter are left alone")
+	Bindings.reset_all()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP))
 	Bindings.path = Bindings.PATH
 	Bindings.reload()

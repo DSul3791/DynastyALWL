@@ -32,7 +32,7 @@ const ACTIONS := [
 	["delete_plan", "Hammer in hand: delete the blueprint you aim at", "Actions", CONTEXT_WORLD, KEY_DELETE, false, false, false],
 	["auto_pickup", "Auto pickup on / off", "Actions", CONTEXT_WORLD, KEY_P, false, false, false],
 	["inspect", "Inspection mode on / off", "Actions", CONTEXT_WORLD, KEY_SLASH, false, false, false],
-	["ruler", "Inclination ruler on / off", "Actions", CONTEXT_WORLD, KEY_L, false, false, false],
+	["ruler", "Inclination ruler on / off", "Actions", CONTEXT_WORLD, KEY_H, false, false, false],
 	["inventory", "Crafting and inventory screen", "Screens", CONTEXT_WORLD, KEY_I, false, false, false],
 	["character", "Character screen", "Screens", CONTEXT_WORLD, KEY_TAB, false, false, false],
 	["photo", "Photo camera (toggle)", "Screens", CONTEXT_WORLD, KEY_K, false, false, false],
@@ -297,3 +297,29 @@ static func conflicts() -> Array:
 			found.append([row[0], other])
 
 	return found
+
+
+# Which action each key letter in the game's built-in prompt texts stands for ("Press E to gather", "hold E", "F for wood").
+const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler"}
+static var _prompt_regex: RegEx = null
+
+
+# Rewrites the default key letters in a prompt or notice to the keys the player has bound: "Press E to gather" becomes
+# "Press Q to gather" when interact is Q. Text without these patterns, and unchanged keys, come back as they were.
+static func localize(text: String) -> String:
+	ensure_loaded()
+
+	if _changed.is_empty() or text == "":
+		return text
+
+	if _prompt_regex == null:
+		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap) |(?<=, )|(?<=\\())([EFZH])\\b(?= to |,|\\)| twice| for |$)")
+
+	var found: Array[RegExMatch] = _prompt_regex.search_all(text)
+	found.reverse()
+
+	for hit in found:
+		var letter: String = hit.get_string(1)
+		text = text.substr(0, hit.get_start(1)) + label(PROMPT_LETTERS[letter]) + text.substr(hit.get_end(1))
+
+	return text
