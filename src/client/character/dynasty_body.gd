@@ -427,7 +427,7 @@ func _set_widths(g: Dictionary) -> void:
 		_skin_material = null          # a new mesh drops the override: dress makes it again
 
 	for key in Shapes.NAMES:
-		var i: int = shaped.find_blend_shape_by_name(key)
+		var i: int = body_mesh.find_blend_shape_by_name(key)      # MeshInstance3D has the lookup; ArrayMesh does not
 
 		if i >= 0:
 			body_mesh.set_blend_shape_value(i, clampf(float(g.get(key, 0.0)), -1.0, 1.0))
