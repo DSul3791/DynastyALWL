@@ -2,7 +2,7 @@ extends Node3D
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
-# Animals on the client (protocol 48): a simple low-poly rabbit until Art makes a real one (brown body, head, two ears, white
+# Animals on the client (protocol 48): a simple rabbit until Art makes a real one (brown body, head, two ears, white
 # tail). The server sends rows about four times a second; the view glides to each, faces the way it goes and hops while moving
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
 
@@ -249,13 +249,86 @@ func _emit_steps(b: Dictionary, node: Node3D, state: int, speed: float) -> void:
 	b["step_count"] = count
 
 
-func _material(color: Color) -> StandardMaterial3D:
-	var key: String = color.to_html()
+# The coat (Kathreen, 3 Nov 2026; art/Art_Direction.md: nothing plastic): every animal piece was a flat StandardMaterial3D, so rabbits and deer read as smooth
+# painted toys. One small shader gives a coat instead: fine strands lying back along the body (-Z is forward, so the streaks run along Z), soft clumps, a darker
+# underside on each piece, and a pale fuzzy rim where the coat meets the sky, which is what makes fur read as fur at a distance. Frogs, fish and seals take the
+# "wet" coat (smoother, a little sheen, faint streaks). Small dark balls (eyes, noses) take the "eye" look: glossy, so they catch the sun.
+# Cost: one shader for every animal, a few hashes per pixel, no textures; at most MAX_DRAWN animals and each is small on screen.
+const COAT_SHADER := """
+shader_type spatial;
+render_mode cull_back, diffuse_burley;
+
+uniform vec3 coat : source_color = vec3(0.5, 0.4, 0.28);
+uniform float strands = 1.0;      // 1 fur, 0.3 wet skin, 0 eyes
+uniform float fuzz = 0.35;        // the pale rim
+uniform float rough = 0.95;
+uniform float spec = 0.15;
+
+varying vec3 lp;
+varying vec3 ln;
+
+float h3(vec3 p) {
+	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+	p += dot(p, p.yxz + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 0.0)), h3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0.0, 0.0, 1.0)), h3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 1.0)), h3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+
+void vertex() {
+	vec3 s = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), length(MODEL_MATRIX[2].xyz));
+	lp = VERTEX * s;          // metres along the piece, so a big deer and a small rabbit get the same strand size
+	ln = NORMAL;
+}
+
+void fragment() {
+	float strand = vnoise(lp * vec3(420.0, 420.0, 70.0));                  // fine hairs lying back along the body
+	float clump = vnoise(lp * 45.0 + 7.0);                                 // soft tufts
+	float grain = mix(1.0, 0.78 + 0.3 * strand + 0.12 * clump, strands);
+	float under = mix(0.78, 1.04, clamp(ln.y * 0.5 + 0.5, 0.0, 1.0));     // each piece darker underneath, as a coat is in its own shadow
+	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.5);
+	vec3 col = coat * grain * mix(1.0, under, step(0.01, strands));
+	col = mix(col, min(coat * 1.6 + 0.08, vec3(1.0)), rim * fuzz);        // the light caught in the tips of the coat
+	ALBEDO = col;
+	ROUGHNESS = rough;
+	SPECULAR = spec;
+}
+"""
+
+static var _coat_shader: Shader
+var _coat: String = "fur"        # the coat the next pieces take: _make_frog, _make_fish and _make_seal switch it to "wet" while they build
+
+
+func _material(color: Color) -> Material:
+	var look: String = "eye" if color.v < 0.12 else _coat
+	var key: String = color.to_html() + look
 
 	if not _mats.has(key):
-		var m: StandardMaterial3D = StandardMaterial3D.new()
-		m.albedo_color = color
-		m.roughness = 1.0
+		if _coat_shader == null:
+			_coat_shader = Shader.new()
+			_coat_shader.code = COAT_SHADER
+
+		var m: ShaderMaterial = ShaderMaterial.new()
+		m.shader = _coat_shader
+		m.set_shader_parameter("coat", color)
+
+		if look == "eye":
+			m.set_shader_parameter("strands", 0.0)
+			m.set_shader_parameter("fuzz", 0.0)
+			m.set_shader_parameter("rough", 0.12)
+			m.set_shader_parameter("spec", 0.8)
+		elif look == "wet":
+			m.set_shader_parameter("strands", 0.3)
+			m.set_shader_parameter("fuzz", 0.12)
+			m.set_shader_parameter("rough", 0.4)
+			m.set_shader_parameter("spec", 0.45)
+
 		_mats[key] = m
 
 	return _mats[key]
@@ -359,7 +432,14 @@ func _make_songbird() -> Node3D:
 
 # A frog (refs: common frog photographs): a squat olive-brown body with a pale throat, a broad blunt head with two big bulging eyes on top, folded hind legs bent in a Z, small front legs, a dark patch behind each eye.
 # About 0.08 m long, sitting. Facing -Z.
-func _make_frog() -> Node3D:
+func _make_frog() -> Node3D:      # the wet coat while this one builds
+	_coat = "wet"
+	var node: Node3D = _frog_body()
+	_coat = "fur"
+	return node
+
+
+func _frog_body() -> Node3D:
 	var root: Node3D = Node3D.new()
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
@@ -382,7 +462,14 @@ func _make_frog() -> Node3D:
 
 # A trout (refs: brown trout photographs): a long torpedo body, deepest ahead of the middle, a small head with a pale mouth, olive-brown back with dark and red spots, a golden-cream flank and belly, a fan tail,
 # a dorsal fin and small side fins. About 0.35 m long. Facing -Z, swimming level.
-func _make_fish() -> Node3D:
+func _make_fish() -> Node3D:      # the wet coat while this one builds
+	_coat = "wet"
+	var node: Node3D = _fish_body()
+	_coat = "fur"
+	return node
+
+
+func _fish_body() -> Node3D:
 	var root: Node3D = Node3D.new()
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
@@ -457,7 +544,14 @@ func _make_grouse() -> Node3D:
 
 # A grey seal (refs: grey and harbour seal photographs): a thick spindle body tapering to the hind flippers, a round head with a long blunt snout (grey seal) and big dark eyes, small whiskers, short front flippers
 # set low, the hind flippers joined behind; silver-grey coat with dark blotches. About 1.8 m long, lying on the shore. Facing -Z.
-func _make_seal() -> Node3D:
+func _make_seal() -> Node3D:      # the wet coat while this one builds
+	_coat = "wet"
+	var node: Node3D = _seal_body()
+	_coat = "fur"
+	return node
+
+
+func _seal_body() -> Node3D:
 	var root: Node3D = Node3D.new()
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
