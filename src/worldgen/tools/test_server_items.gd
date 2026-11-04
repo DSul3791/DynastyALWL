@@ -1595,19 +1595,41 @@ func _init() -> void:
 	vt._speed3[1] = 2.0
 	vt.tick(1.0)
 	check(vt.breath_of(1) > 58.0, "the next dive starts from a full 60 s")
+	# BUG-029 (Dave 2026-11-04): out of air the swimmer stays under (no health drain): the heart races, then a faint, and a faint under water is drowning.
+	var hearts: Array = []
+	vt.send_body = func(_p, bpm, _eta, phase): hearts.append([bpm, phase])
 	vt._breath[1] = 1.0
 	vnotes.clear()
 
-	for n in range(4):
+	for n in range(6):
 		vt.tick(1.0)
 
-	check(float(vt.vitals_of(1)["health"]) < health_before - 10.0 and vnotes.has("You are out of air"), "out of air costs health (6 a second) and says so")
+	check(vnotes.has("You are out of air") and float(vt.vitals_of(1)["health"]) >= health_before - 0.5, "out of air says so and no longer drains health (%.1f)" % float(vt.vitals_of(1)["health"]))
+	check(not hearts.is_empty() and hearts[-1][0] >= 110 and hearts[-1][0] <= 190 and hearts[-1][1] == 1, "suffocating races the heart (%s)" % str(hearts[-1] if not hearts.is_empty() else []))
+	var bpm_early: int = int(hearts[-1][0])
 
+	for n in range(5):
+		vt.tick(1.0)
+
+	check(int(hearts[-1][0]) > bpm_early and vt.remains_ids().size() == 0, "the heart keeps climbing and the swimmer is still alive and conscious (%d bpm)" % int(hearts[-1][0]))
+
+	# Surfacing in time undoes it.
+	vt.set_head_under(1, false)
+	vt.tick(1.0)
+	check(vt.breath_of(1) < 0.0 and vt.remains_ids().size() == 0 and int(vt._strain.get(1, {}).get("state", 0)) == 0, "surfacing before the faint ends it: air full, no faint, no death")
+	vt.set_head_under(1, true)
+	vt._breath[1] = 1.0
 	vt.report_position(1, Vector3(50.0, 5.0, 50.0))
-	for n in range(60):
-		vt.tick(1.0)
+	var faint_seen: bool = false
 
-	check(vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] drowning to zero health kills: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	for n in range(40):
+		vt.tick(1.0)
+		faint_seen = faint_seen or int(vt._strain.get(1, {}).get("state", 0)) == 2
+
+		if vt.remains_ids().size() > 0:
+			break
+
+	check(faint_seen and vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] fainting under water drowns: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
 	vt.set_head_under(1, false)
 	vt.tick(1.0)
 	vt.vitals_of(1)["fed"] = 0.0   # the death above started the vitals over

@@ -168,6 +168,7 @@ var _inventories: Dictionary = {}   # key String -> Inventory
 var _peer_key: Dictionary = {}      # peer -> key
 var _head_under: Dictionary = {}    # peer -> true while the server reads their head as under water
 var _breath: Dictionary = {}        # peer -> seconds of air left (only while the head is under water)
+var _suffocate: Dictionary = {}     # peer -> seconds since the air ran out with the head still under (BUG-029); gone the moment the head is above water
 var _breath_sent: Dictionary = {}   # peer -> tenths of a second last sent (-1 = hidden)
 var _speed3: Dictionary = {}        # peer -> smoothed speed in m/s, vertical included (the breath drain)
 var _cave_pool: Dictionary = {}     # peer -> true while swimming in a spring cave pool (icy; BUG-008)
@@ -567,6 +568,7 @@ func peer_left(peer: int) -> void:
 	_last_practice.erase(peer)
 	_head_under.erase(peer)
 	_breath.erase(peer)
+	_suffocate.erase(peer)
 	_breath_sent.erase(peer)
 	_speed3.erase(peer)
 	_peer_key.erase(peer)
@@ -7782,7 +7784,7 @@ func breath_of(peer: int) -> float:
 
 
 # One slow tick of breath (data/items/vitals.json "breath"): under water the air runs down, at the
-# surface it is full at once; with none left the health drains.
+# surface it is full at once; with none left the character suffocates, faints and drowns (BUG-029).
 func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 	var cfg: Dictionary = _vitals_cfg.get("breath", {})
 
@@ -7792,6 +7794,8 @@ func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 	var full: float = float(cfg.get("seconds", 60))
 
 	if not bool(_head_under.get(peer, false)):
+		_suffocate.erase(peer)
+
 		if _breath.has(peer):
 			_breath.erase(peer)
 
@@ -7803,17 +7807,29 @@ func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 	air -= spent * drain
 
 	if air <= 0.0:
-		var was_out: bool = float(_breath.get(peer, full)) <= 0.0
+		# BUG-029 (Dave 2026-11-04): no auto-rise and no health drain. Suffocation: the heart races (_sync_body) and the vision fades (_strain_tick)
+		# until the character faints; fainting with the head still under water is drowning. Surfacing before then undoes it.
 		air = 0.0
-		var floor_hp: float = 0.0 if bool(cfg.get("can_die", false)) else 1.0
-		v["health"] = maxf(float(v["health"]) - float(cfg.get("drown_per_s", 6.0)) * spent, floor_hp)
+		var was_out: bool = _suffocate.has(peer)
+		var t: float = float(_suffocate.get(peer, 0.0)) + spent
+		_suffocate[peer] = t
 		_asleep.erase(peer)
 
 		if not was_out:
 			_say(peer, "You are out of air")
 
+		if t >= float(cfg.get("faint_after_s", 15.0)) and int(_strain.get(peer, {}).get("state", 0)) == 2 and bool(cfg.get("can_die", false)):
+			_death_cause[peer] = "drowning"
+			v["health"] = 0.0
+	else:
+		_suffocate.erase(peer)
+
 	_breath[peer] = air
 	_sync_breath(peer, int(ceil(air * 10.0)))
+
+
+func vitals_breath_faint_s() -> float:
+	return float(_vitals_cfg.get("breath", {}).get("faint_after_s", 15.0))
 
 
 func _sync_breath(peer: int, tenths: int) -> void:
@@ -7853,7 +7869,7 @@ func _on_path(peer: int, position: Vector3) -> bool:
 
 # Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
 func _effort_at_speed(speed: float) -> float:
-	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [1.4, 0.5], [3.2, 0.75], [6.0, 1.0]])
+	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [1.4, 0.5], [3.2, 0.75], [9.0, 1.0]])
 
 	if speed <= float(anchors[0][0]):
 		return float(anchors[0][1])
@@ -8614,6 +8630,7 @@ func kill(peer: int, cause: String) -> bool:
 	_waking.erase(peer)
 	_body_sent.erase(peer)
 	_breath.erase(peer)
+	_suffocate.erase(peer)
 	_head_under.erase(peer)
 	_exertion[peer] = 0.0
 	_stance[peer] = 0
@@ -11288,6 +11305,9 @@ func _strain_tick(peer: int, spent: float) -> void:
 		else:
 			black = maxf(black - spent / maxf(float(blackout.get("recover_s", 6.0)), 0.1), 0.0)
 
+		if _suffocate.has(peer):   # BUG-029: the vision closes in as the air stays out, and at 1 the character lies down unconscious
+			black = maxf(black, clampf(float(_suffocate[peer]) / maxf(float(vitals_breath_faint_s()), 0.1), 0.0, 1.0))
+
 		st["black"] = black
 
 		if black >= 1.0 and state <= 1:
@@ -11338,7 +11358,12 @@ func _sync_body(peer: int, state: int, st: Dictionary) -> void:
 	var eta: float = 0.0
 	var phase: int = 0
 
-	if state == 2:
+	if _suffocate.has(peer) and state <= 1:
+		# BUG-029: suffocating, the heart climbs fast from bpm.start to bpm.peak over the seconds to the faint.
+		var hb: Dictionary = _vitals_cfg.get("breath", {}).get("bpm", {})
+		phase = 1
+		bpm = lerpf(float(hb.get("start", 110.0)), float(hb.get("peak", 190.0)), clampf(float(_suffocate[peer]) / maxf(vitals_breath_faint_s(), 0.1), 0.0, 1.0))
+	elif state == 2:
 		phase = 2
 		bpm = float(fb.get("out", 172))
 		eta = maxf(float(_exertion_cfg.get("faint_s", 8.0)) - float(st["t"]), 0.0) + float(_exertion_cfg.get("wake_s", 12.0))
