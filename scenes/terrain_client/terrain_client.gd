@@ -2929,6 +2929,9 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	world["starter_stamp"] = starter_stamp
 	_reload_ground()
 
+	if sound != null:
+		sound.trees.forget()
+
 	if _cave_streams != null:
 		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
 
