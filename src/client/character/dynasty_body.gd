@@ -140,6 +140,7 @@ func _init() -> void:
 	if _scene == null:
 		_scene = load_warm(GLB) as PackedScene
 
+
 	# Dave's rig faces +Z; the game faces -Z.
 	_model = Node3D.new()
 	_model.name = "Model"
@@ -151,6 +152,7 @@ func _init() -> void:
 	body_mesh = inst.find_children("*", "MeshInstance3D", true, false)[0]
 	body_mesh.layers |= 1 << 19   # no ground decals on the body (piece_look.gd NO_DECAL_LAYER)
 	animation_player = inst.find_children("*", "AnimationPlayer", true, false)[0]
+	Shapes.prewarm(body_mesh.mesh, body_mesh.skin, skeleton)      # the width and face shapes, on a worker thread, ready before an NPC or a slider needs them (dynasty_shapes.gd)
 	_build_mounts()
 	set_meta("worn_frames", _worn_frames())      # worn clothing (worn_look.gd) hangs on these frames, so nothing is skipped any more (docs/DYNASTY_BODY.md gap 1)
 	_build_animations()
@@ -462,6 +464,11 @@ static func _rot_track(anim: Animation, bone: String) -> int:
 
 
 # A harmless stand-in when the glb cannot be used, so nothing that holds this body meets a null (my_character.gd make_avatar never picks it; this is the last guard).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		Shapes.wait()          # the prewarm task (started by the first body) never outlives the bodies
+
+
 func _make_empty() -> void:
 	skeleton = Skeleton3D.new()
 	add_child(skeleton)
