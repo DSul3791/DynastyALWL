@@ -447,6 +447,7 @@ func _ready() -> void:
 		var material: int = generator._surface_material(tile_data, x, z, float(generator.surface_height(x, z)))
 		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(material, "loam"))
 	items.trees_near = _trees_near
+	items.trees_near_cached = _trees_near_cached
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
 	admin = AdminScript.new()
@@ -1281,6 +1282,52 @@ func _trees_near(point: Vector3, radius: float) -> Array:
 
 				if Vector2(trees["positions"][n].x - point.x, trees["positions"][n].z - point.z).length() <= radius:
 					found.append([chunk, trees["ids"][n]])
+
+	return found
+
+
+# Standing placer trees within `radius` of a point, as [position, species name], from chunks whose items are already made only (server_flora items_cached): the hint
+# triggers ask 4 times a second, and _trees_near made the nine chunks round a new player on the main thread (3 to 11 s) and then scanned every plant in them
+# (about 120 ms a look). Each chunk's trees are listed once and kept; felled trees are left out at each look. A chunk not made yet counts no trees until the
+# flora stream (a worker) has made it.
+const TREE_LISTS_KEPT := 200
+var _tree_lists: Dictionary = {}     # chunk Vector2i -> Array of [id, position, species name]
+
+
+func _trees_near_cached(point: Vector3, radius: float) -> Array:
+	var size: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+	var reach: int = maxi(int(ceil(radius / size)), 1)
+	var found: Array = []
+
+	for dz in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+
+			if not _tree_lists.has(chunk):
+				var trees: Dictionary = flora.items_cached(chunk)
+
+				if trees.is_empty():
+					continue
+
+				var listed: Array = []
+
+				for n in range(trees["ids"].size()):
+					var species: Dictionary = flora.placer._by_id.get(trees["ids"][n] >> 16, {})
+
+					if not species.is_empty() and int(species["kind"]) == PlacerScript.KIND_TREE:
+						listed.append([trees["ids"][n], trees["positions"][n], str(species["name"])])
+
+				while _tree_lists.size() >= TREE_LISTS_KEPT:
+					_tree_lists.erase(_tree_lists.keys()[0])
+
+				_tree_lists[chunk] = listed
+
+			var gone: Array = flora.removed_in(chunk)
+
+			for tree in _tree_lists[chunk]:
+				if Vector2(tree[1].x - point.x, tree[1].z - point.z).length() <= radius and not gone.has(tree[0]):
+					found.append([tree[1], tree[2]])
 
 	return found
 
