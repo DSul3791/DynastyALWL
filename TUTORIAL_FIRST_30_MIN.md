@@ -64,7 +64,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 ## After the first meal: the pot and the hearth (added 31 Oct, paper only)
 
-23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed (the hint has_plant_food_at_fire: within 4 m of a lit fire with no pot). Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine into a Campfire pot and set it by the fire." (recipes 21 and 165.) Check: campfire pot kit made.
+23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed (the hint has_plant_food_at_fire: within 4 m of a lit fire with no pot). Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then hold the hammer, press R, pick Campfire pot and click on the fire (3 sticks, 3 twine, 1 clay pot)." (recipe 21, then hammer blueprint 28.) Check: campfire pot placed.
 24. Trigger: campfire pot placed. Line: "Add 3 berries and water to the pot for Stewed berries. Nettle leaves make tea, eggs make a boiled egg. Baked food (roots, nuts, flatbread) needs a clay hearth: 10 bricks, 6 clay and 4 stones, built with a hammer. A brick is 2 clay fired at the campfire." Check: first pot dish cooked.
 
 Hints: data/items/hints.json already has "cook_rule" ("Put raw meat in the campfire with F. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.

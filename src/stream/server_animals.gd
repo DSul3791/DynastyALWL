@@ -24,6 +24,8 @@ var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
 var ground_height: Callable        # (x, z) -> height
 var blocked: Callable              # (x, z) -> bool (deep water)
+var walls: Callable                # (x0, z0, x1, z1, margin) -> bool, a wall or heavy station on that step (server_items.structure_blocks_step)
+var crossing: Callable             # Steering's `cross`: every walker of this module stops at walls
 var player_positions: Callable     # () -> Array of Vector3
 var player_stances: Callable       # () -> Array of stances in player_positions order (0 stand, 1 crouch, 2 sit, 3 lie)
 var canopy: Callable               # (Vector3) -> bool, whether a spot is under a tree crown (forest for sight and habitat)
@@ -51,6 +53,15 @@ var _next_herd: int = 1
 var _wind_s: float = 0.0
 var _wind_dir: Vector2 = Vector2.ZERO
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
+
+
+# True when the step from (x0, z0) to (x1, z1) goes through a wall or heavy station, grown by the body margin.
+func _init() -> void:
+	crossing = Callable(self, "crosses_wall")
+
+
+func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
+	return walls.is_valid() and bool(walls.call(x0, z0, x1, z1, float(cfg.get("wall_margin_m", 0.3))))
 
 
 func setup() -> void:
@@ -146,6 +157,77 @@ func burrows_near(point: Vector3) -> PackedVector3Array:
 		out.append(f[1])
 
 	return out
+
+
+# Inland bird nests (MikeW, 3 Nov; items side: Sal, data/items/nests.json): fixed spots, one chance per nests.cell_m square, so a
+# nest is in the same place every visit and its id (kind and cell) stays the same for the robbed-nest record. A grouse nest lies on
+# open ground of a grouse biome (heath, boreal forest, tundra); a songbird nest sits under trees or bushes of a songbird biome. The
+# chance per cell is nests.<kind>_chance x the species' biome weight; slopes over slope_max never hold one.
+func nests_near(point: Vector3, reach: float) -> Array:
+	var ncfg: Dictionary = cfg.get("nests", {})
+	var cell: float = float(ncfg.get("cell_m", 48.0))
+	var out: Array = []
+
+	if cell <= 0.0 or not ground_height.is_valid():
+		return out
+
+	var x0: int = int(floor((point.x - reach) / cell))
+	var x1: int = int(floor((point.x + reach) / cell))
+	var z0: int = int(floor((point.z - reach) / cell))
+	var z1: int = int(floor((point.z + reach) / cell))
+
+	for cz in range(z0, z1 + 1):
+		for cx in range(x0, x1 + 1):
+			for kind in ["grouse", "songbird"]:
+				var spot: Variant = _nest_in_cell(kind, cx, cz, cell, ncfg)
+
+				if spot != null and Vector2(spot.x - point.x, spot.z - point.z).length() <= reach:
+					out.append({"id": "%s:%d:%d" % [kind, cx, cz], "kind": kind, "pos": spot})
+
+	return out
+
+
+# The nest of `kind` in one cell, or null. Deterministic: a hash of the kind and the cell picks the roll and the spot.
+func _nest_in_cell(kind: String, cx: int, cz: int, cell: float, ncfg: Dictionary) -> Variant:
+	var sp: String = "grouse" if kind == "grouse" else "songbirds"
+	var def: Dictionary = species_def(sp)
+
+	if def.is_empty():
+		return null
+
+	var h: int = hash([kind, cx, cz, int(ncfg.get("seed", 7))])
+	var roll: float = float(h & 0xFFFF) / 65535.0
+	var fx: float = float((h >> 16) & 0xFF) / 255.0
+	var fz: float = float((h >> 24) & 0xFF) / 255.0
+	var x: float = (float(cx) + 0.1 + 0.8 * fx) * cell
+	var z: float = (float(cz) + 0.1 + 0.8 * fz) * cell
+
+	if roll >= float(ncfg.get(kind + "_chance", 0.0)) * biome_weight(def, x, z):
+		return null
+
+	var y: float = float(ground_height.call(x, z))
+
+	if is_nan(y) or (blocked.is_valid() and bool(blocked.call(x, z))):
+		return null
+
+	var steep: float = 0.0
+
+	for d in [Vector2(3.0, 0.0), Vector2(0.0, 3.0)]:
+		var other: float = float(ground_height.call(x + d.x, z + d.y))
+		steep = maxf(steep, absf(other - y) / 3.0 if not is_nan(other) else 9.0)
+
+	if steep > float(ncfg.get("slope_max", 0.5)):
+		return null
+
+	var under_trees: bool = canopy.is_valid() and bool(canopy.call(Vector3(x, y, z)))
+
+	if kind == "songbird" and canopy.is_valid() and not under_trees:
+		return null   # a songbird nests in a bush or low tree
+
+	if kind == "grouse" and under_trees:
+		return null   # a grouse nests on open ground, in heather or long grass
+
+	return Vector3(x, y, z)
 
 
 # The blood trail within send_radius_m of a point (nearest first, at most max_sent), dropping what has dried.
@@ -605,7 +687,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.
 		a["burst"] += dt
 		speed = float(def.get("flee_mps", 7.5)) * (1.0 if a["burst"] <= float(def.get("burst_s", 3.0)) else float(def.get("trot_share", 0.5)))
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"])
+	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -706,7 +788,7 @@ func _top_up(players: Array, only: int) -> void:
 				for q in players:
 					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < (never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
 
-				if too_near or ((not def.has("flock") or bool(def["flock"].get("on_land", false))) and blocked.is_valid() and bool(blocked.call(cx, cz))):
+				if too_near or ((not def.has("flock") or bool(def["flock"].get("on_land", false))) and blocked.is_valid() and bool(blocked.call(cx, cz))) or crosses_wall(cx, cz, cx, cz):
 					continue
 
 				var keep_out: Array = def.get("exclude", [])

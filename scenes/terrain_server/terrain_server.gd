@@ -471,6 +471,7 @@ func _ready() -> void:
 	animals = AnimalsScript.new()
 	animals.ground_height = npcs.ground_height
 	animals.blocked = npcs.blocked
+	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
 	animals.water_level = func(x, z):
 		var water_here: Array = _water_at(Vector3(x, 0.0, z))
 		return float(water_here[0]) if not is_nan(water_here[0]) else NAN
@@ -519,6 +520,7 @@ func _ready() -> void:
 		animals.damage(int(found["id"]), amount, shooter, "arrow")
 		return found
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
+	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
 	items.animal_lure = func(id, point): return animals.lure_to(id, point)
