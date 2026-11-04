@@ -2205,6 +2205,15 @@ const PATH_AVERAGE_GAP_MS := 1500   # and the ground is averaged at most this of
 var _last_average: Dictionary = {}  # peer -> msec of the last averaging
 const PATH_SPACING_M := 0.7   # the strong middle is 1 m across, so patches this far apart still join; fewer patches means fewer decals along a road
 
+const PATH_BOULDER_MARGIN_M := 1.0   # a path patch is laid no nearer a boulder's edge than this: its brown fades out to 1.25 m, so the path goes round a rock instead of painting on it (Dave 3 Nov)
+
+
+func _path_blocked_by_boulder(other: Dictionary, spot: Vector3) -> bool:
+	if not other.has("boulder"):
+		return false
+
+	return Vector2(other["pos"].x - spot.x, other["pos"].z - spot.z).length() < float((other["boulder"] as Dictionary).get("radius", 0.5)) + PATH_BOULDER_MARGIN_M
+
 
 func _hoe_path(peer: int, inv, at: Vector3) -> void:
 	if not ground_height.is_valid() or not _structures.has("path_patch") or not _hoe_ready(peer, inv, at):
@@ -2227,6 +2236,10 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 
 	for id in _items:
 		var other: Dictionary = _items[id]
+
+		if _path_blocked_by_boulder(other, spot):
+			_say(peer, "A rock is in the way: tread the path round it.")
+			return
 
 		if not other.has("struct"):
 			continue
@@ -2482,6 +2495,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 		for id in _items:
 			var other: Dictionary = _items[id]
+
+			if _path_blocked_by_boulder(other, pos):
+				blocked = true
+				break
 
 			if not other.has("struct"):
 				continue
