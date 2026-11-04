@@ -529,6 +529,22 @@ func set_proportions(g: Dictionary) -> void:
 		marker.transform = Transform3D(rest.basis * (1.0 / float(spec[1])), rest.origin)
 
 
+var _widths_later: bool = false     # the widths wait for the shapes worker (dynasty_shapes.gd ready)
+
+
+func _ready() -> void:
+	set_process(_widths_later)      # the engine turns _process on at the ready; only a body still waiting for its shapes needs it
+
+
+func _process(_delta: float) -> void:
+	if not _widths_later or not Shapes.ready():
+		return
+
+	set_process(false)
+	_set_widths(genome)
+	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)      # a new mesh drops the skin colour override (_set_widths); put it back
+
+
 # The width sliders (dynasty_shapes.gd): the shared shaped mesh is put on this body the first time a width is not 0, then each slider is a blend shape weight.
 func _set_widths(g: Dictionary) -> void:
 	var any: bool = false
@@ -540,6 +556,12 @@ func _set_widths(g: Dictionary) -> void:
 	if not any and not body_mesh.mesh.has_meta(Shapes.SHAPED_KEY):
 		return       # the plain body keeps Dave's own mesh
 
+	if not Shapes.ready():
+		_widths_later = true      # the shared shapes are still being made on a worker: wear the plain mesh until _process sees them done
+		set_process(true)
+		return
+
+	_widths_later = false
 	var shaped: ArrayMesh = Shapes.shaped(body_mesh.mesh, body_mesh.skin, skeleton)
 
 	if shaped == null:
