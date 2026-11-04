@@ -1,4 +1,5 @@
 extends Node
+const PieceLook := preload("res://src/client/piece_look.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
@@ -3144,6 +3145,7 @@ func _prewarm_loose_meshes() -> void:
 			_mesh_for(table.number_of(name))
 
 	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	PieceLook.prewarm()   # the building material and trodden-path pictures, on a worker (about 170 ms on the main thread at the first piece or hoe stroke)
 	_prewarm_felled()
 
 
@@ -5550,3 +5552,8 @@ func run_chop_test(client) -> void:
 			kinds.append(_world[id]["state"])
 
 	print("Chop test: %d blows, felled states in view %s" % [blows, str(kinds)])
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		PieceLook.finish_prewarm()     # the pictures worker started by the prewarm never outlives the view
