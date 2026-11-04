@@ -12,6 +12,7 @@ extends Node
 # recordings in recorded/windhole/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
+const TreeWind := preload("res://src/client/tree_wind.gd")
 const GENERATED_DIR := "res://assets/audio/windhole/"
 const RECORDED_DIR := "res://assets/audio/recorded/windhole/"
 
@@ -60,6 +61,11 @@ func update(delta: float, underwater: bool) -> void:
 		enclosure = test_inputs.z
 
 	var target: Vector2 = levels(wind, roofed, enclosure)
+
+	# The local wind strength never drops under about 0.3 (it has a floor), so on a calm sunny day the whistle under a lean-to roof and the cave-mouth moan could
+	# still play. They also need the weather's own wind to be up (same gate as the tree wind, 3 Nov 2026), except in the --wind-hole test inputs.
+	if test_inputs.x < 0.0:
+		target *= TreeWind.world_wind_gate(float(_stage.weather.world_wind))
 
 	if underwater or _stage.breath.world_mute > 0.5:
 		target = Vector2.ZERO

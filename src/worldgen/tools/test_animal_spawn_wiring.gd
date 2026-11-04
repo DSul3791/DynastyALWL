@@ -204,6 +204,39 @@ func _init() -> void:
 			took_off = took_off or (gulls.animals.has(flock_id) and int(gulls.animals[flock_id]["state"]) == 15)
 
 		check(took_off, "a gull flock takes off together when a player walks up")
+	# A snare draws a calm rabbit (MikeW, 3 Nov): its home moves to the snare, its burrow stays; a fleeing one is not drawn.
+	var lure_a = make(players, "rabbit")
+	run(lure_a, 20.0)
+	var lure_id: int = -1
+
+	for id in lure_a.animals:
+		lure_id = id
+
+	if lure_id >= 0:
+		var la: Dictionary = lure_a.animals[lure_id]
+		la["state"] = AnimalsScript.GRAZE
+		var burrow_was: Vector3 = la.get("burrow", Vector3.INF)
+		var spot: Vector3 = la["pos"] + Vector3(20.0, 0.0, 0.0)
+		check(lure_a.lure_to(lure_id, spot) and la["home"] == spot and la["state"] == AnimalsScript.HOP and la.get("burrow", Vector3.INF) == burrow_was, "a snare draws a grazing rabbit: home moves, burrow stays")
+		la["state"] = AnimalsScript.FLEE
+		check(not lure_a.lure_to(lure_id, spot + Vector3(5.0, 0.0, 0.0)), "a fleeing rabbit is not drawn")
+	else:
+		check(false, "a rabbit spawned for the snare draw check")
+
+	# Burrow spots for the client (MikeW, 3 Nov): rabbits near the player send their burrows, nearest first.
+	var holes_a = make(players, "rabbit")
+	holes_a.cfg["species"]["rabbit"]["burrow_m"] = 40.0
+	holes_a.cfg["send_radius_m"] = 400.0
+	run(holes_a, 20.0)
+	var holes: PackedVector3Array = holes_a.burrows_near(Vector3.ZERO)
+	var sorted_ok: bool = true
+
+	for i in range(1, holes.size()):
+		sorted_ok = sorted_ok and Vector2(holes[i].x, holes[i].z).length() >= Vector2(holes[i - 1].x, holes[i - 1].z).length() - 0.001
+
+	check(holes.size() == count(holes_a, "rabbit") and holes.size() > 0 and sorted_ok, "each rabbit's burrow is sent, nearest first (%d)" % holes.size())
+	check(holes_a.burrows_near(Vector3(5000.0, 0.0, 0.0)).is_empty(), "no burrows are sent from far away")
+
 
 	# Frogs live by fresh water (MikeW, 3 Nov): a pond 20 m off is fine, a dry wood or a sea shore is not.
 	a = make(players, "frog")

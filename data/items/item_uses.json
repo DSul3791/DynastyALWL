@@ -1,7 +1,7 @@
 {
 	"note": "One line of use for items whose use the other data files do not show (no recipe uses them yet, or they are used by the world, not a recipe). tools/item_master.py reads it; every live item must have a use line or a recipe that uses it. Add a line when you add such an item.",
 	"uses": {
-		"campfire_kit": "Placed on the ground as a laid fire. Press E with plant fibre, tinder, birch bark or tinder fungus in your pack to light it, then put wood in with F. Cooks, warms, lights.",
+		"campfire_kit": "Placed on the ground as a laid fire. Press E with plant fibre, kindling, tinder, birch bark or tinder fungus in your pack to light it, then put wood in with F. Cooks, warms, lights.",
 		"seed_bundle": "Eaten raw, or cooked into flatbread, hearty pottage and honey loaf. Planting waits on the farming code.",
 		"tree_roots": "Roots from a felled tree. No use yet; planned as fibre for baskets.",
 		"driftwood": "Dry fuel for a fire; burns fast.",
