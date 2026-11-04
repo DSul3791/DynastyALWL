@@ -531,7 +531,6 @@
 			"stack": 1,
 			"unstackable": true,
 			"capacity_ml": 1500,
-			"future": true,
 			"look_alikes": [],
 			"value": 15
 		},
@@ -541,7 +540,6 @@
 			"description": "A raw animal skin. Scrape and tan it for leather, or sew it into clothes.",
 			"kind": "material",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -640,7 +638,6 @@
 			"kind": "material",
 			"stack": 20,
 			"value": 2,
-			"future": true,
 			"look_alikes": []
 		},
 		"sewing_needle": {
@@ -861,7 +858,6 @@
 			"description": "Fresh meat. Cook it before you eat it, and do not keep it long.",
 			"kind": "food",
 			"stack": 10,
-			"future": true,
 			"value": 8,
 			"look_alikes": []
 		},
@@ -871,7 +867,6 @@
 			"description": "Meat roasted over a fire. Filling, and it keeps a couple of days.",
 			"kind": "food",
 			"stack": 10,
-			"future": true,
 			"value": 14,
 			"look_alikes": []
 		},
@@ -881,7 +876,6 @@
 			"description": "Tough strands from an animal's legs. Makes strong thread and bowstrings.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"value": 3,
 			"look_alikes": []
 		},
@@ -891,7 +885,6 @@
 			"description": "Fat from a kill. Render it for tallow, or cook with it.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"value": 4,
 			"look_alikes": []
 		},
@@ -901,7 +894,6 @@
 			"description": "A bird's feather. Fletch arrows with it, or stuff a bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"value": 1,
 			"sell_lot": 6,
 			"look_alikes": []
@@ -969,8 +961,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"perch": {
 			"number": 77,
@@ -979,8 +970,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"carp": {
 			"number": 78,
@@ -989,8 +979,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pike": {
 			"number": 79,
@@ -999,8 +988,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 10,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"roast_fish": {
 			"number": 80,
@@ -1009,8 +997,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"coin_copper": {
 			"number": 96,
@@ -4257,7 +4244,6 @@
 			"description": "Seeds for sowing wheat. Plant them in a tilled bed in spring.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4268,7 +4254,6 @@
 			"description": "Seeds for sowing barley. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4350,7 +4335,6 @@
 			"description": "A shed or taken antler. Hard, and can be worked like bone.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -4360,9 +4344,8 @@
 			"description": "A boar's curved tusk. Ivory-hard.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
-			"value": 8
+			"value": 20
 		},
 		"claw": {
 			"number": 348,
@@ -4370,9 +4353,8 @@
 			"description": "A large predator's claw. A trophy or a charm.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
-			"value": 6
+			"value": 12
 		},
 		"down": {
 			"number": 349,
@@ -4380,7 +4362,6 @@
 			"description": "Soft insulating feathers from a water bird. Warm for its weight.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4487,7 +4468,6 @@
 			"description": "Dark, rich meat from a seal. Cook it well.",
 			"kind": "food",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 5
 		},
@@ -4524,7 +4504,6 @@
 			"description": "Seal meat roasted over a fire. Rich and fatty.",
 			"kind": "food",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 14
 		},
@@ -4727,7 +4706,6 @@
 			"description": "Seeds for sowing oats. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4738,7 +4716,6 @@
 			"description": "Seeds for sowing rye. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
