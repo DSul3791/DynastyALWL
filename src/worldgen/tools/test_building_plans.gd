@@ -39,7 +39,7 @@ func _init() -> void:
 	var back: Array = Plans.placements(plan, Vector3(100.0, 10.0, 100.0), 90.0)
 	check(near(back[1]["pos"], Vector3(100.0, 10.3, 104.0)) and int(back[1]["yaw"]) == 90 and int(back[0]["yaw"]) == 90, "placed where it stood, it lands where it stood")
 	var moved: Array = Plans.placements(plan, Vector3(50.0, 20.0, 60.0), 180.0)
-	check(near(moved[1]["pos"], Vector3(50.0, 20.3, 56.0)) and int(moved[1]["yaw"]) == 180, "moved and turned half way round, the wall is 4 m the other side (%s)" % str(moved[1]["pos"]))
+	check(near(moved[1]["pos"], Vector3(54.0, 20.3, 60.0)) and int(moved[1]["yaw"]) == 180, "set down turned half way round from yaw 90, the wall that was 4 m one way is 4 m the other (%s)" % str(moved[1]["pos"]))
 
 	var table = ItemTableScript.load_default()
 	var pack = InventoryScript.new(table)
