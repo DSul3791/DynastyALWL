@@ -18,6 +18,7 @@ const PUBLISH_TICKS := 15
 const CPU_DUTY := 0.5            # share of one core the water thread may use, as the old hub
 const DRAW_M := 0.12             # water thinner than this is not drawn (TileTerrainData WetMeters)
 const FILM_M := 0.14             # baked cells this thin are the 13 cm film of the settled files: drawn as film while the live water is thinner
+const NOTIFY_M := 0.01           # lag (rank 2, 4 Nov 2026): levels are published to clients only when a window cell moved this much since the last publish
 
 var data
 var rate: float = 10.0
@@ -37,6 +38,7 @@ var _flow_pending: Dictionary = {}   # the newest render texture packet (water_f
 var _field = null
 var _base: PackedFloat32Array = PackedFloat32Array()
 var _sim_tile: Vector2i = Vector2i(-9999, -9999)
+var _told: PackedFloat32Array = PackedFloat32Array()   # the levels last put in _pending (water thread only); empty = publish the next one
 var _stats: Dictionary = {"moved_m3": 0.0, "memory": 0, "loaded": 0}
 
 
@@ -229,6 +231,29 @@ static func publish_levels(base: PackedFloat32Array, samples: int, f, origin: Ve
 	return out
 
 
+# Lag (rank 2, Jason with Sonny, 4 Nov 2026): settled water was published every PUBLISH_TICKS anyway, so the server swapped the levels in, cleared the
+# packed water and told every client "the water moved" about twice a second for nothing. Whether any window cell moved NOTIFY_M or more since the levels
+# last sent (not since the last tick, so a slow drift still goes out once it adds up), or turned wet or dry (any amount, so shore edges never go stale).
+static func levels_moved(old: PackedFloat32Array, new: PackedFloat32Array, samples: int, origin: Vector2i, w: int, h: int, min_m: float = NOTIFY_M) -> bool:
+	if old.size() != new.size():
+		return true
+
+	for j in range(h):
+		var row: int = (origin.y + j) * samples + origin.x
+
+		for i in range(w):
+			var a: float = old[row + i]
+			var b: float = new[row + i]
+
+			if is_nan(a) != is_nan(b):
+				return true
+
+			if not is_nan(a) and absf(b - a) >= min_m:
+				return true
+
+	return false
+
+
 func _run() -> void:
 	var ticks: int = 0
 
@@ -254,6 +279,7 @@ func _run() -> void:
 			window_origin = built.get("origin", Vector2i.ZERO)
 			_base = built.get("base", PackedFloat32Array())
 			_mutex.unlock()
+			_told = PackedFloat32Array()
 
 			if _field != null:
 				print("water2: tile %s window %d x %d cells at sample %d, %d" % [str(tile), WINDOW, WINDOW, window_origin.x, window_origin.y])
@@ -272,8 +298,16 @@ func _run() -> void:
 		if ticks % PUBLISH_TICKS == 1:
 			var levels: PackedFloat32Array = publish_levels(_base, tile_data.samples, _field, window_origin)
 			var packet: Dictionary = FlowTexture.packet(_field, Vector2(tile_data.x0 + float(window_origin.x) * 8.0, tile_data.z0 + float(window_origin.y) * 8.0))
+			var moved: bool = levels_moved(_told, levels, tile_data.samples, window_origin, _field.w, _field.h)
+
+			if moved:
+				_told = levels
+
 			_mutex.lock()
-			_pending = levels
+
+			if moved:
+				_pending = levels
+
 			_flow_pending = packet
 			_mutex.unlock()
 
