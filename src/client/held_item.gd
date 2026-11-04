@@ -138,6 +138,7 @@ var _blueprint_kit: String = ""
 var _ghost_material: StandardMaterial3D
 var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
+var _ghost_on_base: bool = false           # the ghost is snapped to a base: a piece on a foundation, or a foundation beside another (the wheel does not lift it)
 var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
 var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close", "crowded" or "steep" (tests read it)
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
@@ -597,6 +598,10 @@ func wheel(down: bool) -> bool:
 		var picked_def: Dictionary = PlacementRules.structure_of_kit(_placement, blueprints.kit_of(blueprints.picked))
 
 		if bool(picked_def.get("foundation", false)):
+			if _ghost_on_base:
+				_inv._on_notice("This foundation matches the one beside it: the wheel only lifts a foundation with no neighbour")
+				return true
+
 			lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
 			_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
 			return true
@@ -609,6 +614,10 @@ func wheel(down: bool) -> bool:
 	var def: Dictionary = PlacementRules.structure_of_kit(_placement, held_id())
 
 	if bool(def.get("foundation", false)):
+		if _ghost_on_base:
+			_inv._on_notice("This foundation matches the one beside it: the wheel only lifts a foundation with no neighbour")
+			return true
+
 		lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
 		_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
 		return true
@@ -1154,6 +1163,7 @@ func _update_blueprint() -> void:
 	_blueprint.global_position = _blueprint_at
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, kit).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
+	_ghost_on_base = on_base
 	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows())
 
 	if blueprint_state == "" and not on_base:

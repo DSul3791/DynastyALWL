@@ -45,6 +45,12 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 	if def.is_empty() or not bool(def.get("piece", false)):
 		return [spot, yaw_deg, false]
 
+	if bool(def.get("foundation", false)):   # a foundation beside another of its kind takes its height and its edge (Dave 4 Nov 2026)
+		var beside: Array = foundation_neighbor(def, spot, rows)
+
+		if not beside.is_empty():
+			return beside
+
 	var turned: int = posmod(int(round(float(yaw_deg) / 90.0)) * 90, 360)
 	var piece_kind: String = str(def.get("piece_kind", ""))
 
@@ -81,6 +87,45 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 	var grid: float = maxf(float(def.get("snap_m", cfg.get("piece_snap_m", 1.0))), 0.1)
 	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned, false]
+
+
+# A foundation near another of its own kind (rows: {"pos", "state", "yaw"}) goes edge to edge with it at the SAME height (or corner to corner), so a run
+# of foundations is one level slab; the mouse wheel then does nothing (it only lifts a foundation that has no neighbour). Returns [spot, yaw, true]
+# (the "on a base" flag: the height comes from the neighbour, not the ground), or [] when no such foundation is within NEIGHBOR_REACH_M of the cursor.
+const NEIGHBOR_REACH_M := 2.5
+
+static func foundation_neighbor(def: Dictionary, spot: Vector3, rows: Array) -> Array:
+	var width: float = float(def.get("footprint_x", 4.0))
+	var depth: float = float(def.get("footprint_z", 4.0))
+	var best: Array = []
+	var best_d: float = NEIGHBOR_REACH_M
+
+	for row in rows:
+		if int(row["state"]) != int(def.get("state", -1)):
+			continue
+
+		for ox in [-1, 0, 1]:
+			for oz in [-1, 0, 1]:
+				if ox == 0 and oz == 0:
+					continue
+
+				var cand: Vector3 = Vector3(row["pos"].x + float(ox) * width, row["pos"].y, row["pos"].z + float(oz) * depth)
+				var d: float = Vector2(spot.x - cand.x, spot.z - cand.z).length()
+
+				if d >= best_d:
+					continue
+
+				var taken: bool = false
+
+				for other in rows:
+					if int(other["state"]) == int(def.get("state", -1)) and Vector2(other["pos"].x - cand.x, other["pos"].z - cand.z).length() < 0.5:
+						taken = true
+
+				if not taken:
+					best_d = d
+					best = [cand, posmod(int(round(float(row.get("yaw", 0.0)))), 360), true]
+
+	return best
 
 
 # Joins a piece to the pieces already standing (rows with "yaw", in degrees): a wall continues a wall end to end or turns the corner
