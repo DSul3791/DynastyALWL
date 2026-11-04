@@ -80,6 +80,25 @@
 			}
 		},
 		{
+			"id": "hammer",
+			"title": "Make a wooden hammer",
+			"hint": "Cut a wooden block from a felled log, then make a wooden hammer: a wooden block, a stick and a twine. You build everything with it.",
+			"after": [
+				"fell"
+			],
+			"check": {
+				"have_item_any": [
+					"wooden_hammer",
+					"wooden_hammer_soft",
+					"stone_hammer"
+				],
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 3
+			}
+		},
+		{
 			"id": "fire",
 			"title": "Light a fire",
 			"hint": "Make a Campfire kit (6 sticks, 3 stones), place it, then press E near it with plant fibre to light it.",
@@ -112,9 +131,10 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Lash a ridge pole, lean 16 sticks against it and weave in 4 leaves with 2 twine. Place it with the open side towards you.",
+			"hint": "Hold your wooden hammer, press R and pick Small shelter: 16 sticks, 4 leaves and 2 twine. Build it with the open side towards you.",
 			"after": [
-				"fire"
+				"fire",
+				"hammer"
 			],
 			"check": {
 				"event": "placed",
@@ -128,7 +148,7 @@
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Make a wooden hammer (a wooden block, a stick and a twine), press R with it in hand and build a Rough bed in your lean-to: 10 thatch from thatch grass or heather, 4 sticks and 2 twine.",
+			"hint": "Make a Rough bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine) and place it in your lean-to.",
 			"after": [
 				"shelter"
 			],
@@ -144,9 +164,9 @@
 		{
 			"id": "workbench",
 			"title": "Build a Camp bench",
-			"hint": "16 sticks, 6 twine and 4 stones make a Camp bench. It unlocks better tools.",
+			"hint": "Hold your hammer, press R and pick Camp bench: 16 sticks, 6 twine and 4 stones. It unlocks better tools.",
 			"after": [
-				"axe"
+				"hammer"
 			],
 			"check": {
 				"event": "placed",

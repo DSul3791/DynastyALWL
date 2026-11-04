@@ -86,19 +86,19 @@
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Lash a ridge pole, lean sticks against it and weave in boughs: 16 sticks, 4 leaves, 2 twine.",
+			"text": "Hold your wooden hammer, press R and pick Small shelter: 16 sticks, 4 leaves, 2 twine.",
 			"goal": "shelter"
 		},
 		{
 			"id": "place_leanto",
 			"trigger": "leanto_made",
-			"text": "Click to place it, open side towards you.",
+			"text": "Click to build it, open side towards you.",
 			"goal": "shelter"
 		},
 		{
 			"id": "bed",
 			"trigger": "leanto_placed",
-			"text": "Hold the wooden hammer, press R and pick Rough bed: 10 thatch, 4 sticks and 2 twine, built inside your lean-to.",
+			"text": "Make a Rough bed from your pack: 10 thatch, 4 sticks and 2 twine. Place it inside your lean-to.",
 			"goal": "bed"
 		},
 		{
@@ -109,7 +109,7 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Camp bench: 16 sticks, 6 twine, 4 stones. It is your workbench, for better tools.",
+			"text": "A Camp bench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 4 stones. It is your workbench, for better tools.",
 			"goal": "workbench"
 		},
 		{
