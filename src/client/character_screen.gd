@@ -228,7 +228,7 @@ func refresh() -> void:
 
 	for key in _bars:
 		_bars[key][0].value = values[key]
-		_bars[key][1].text = DisplaySettingsScript.temp_text(values[key]) if key == "Temperature" else "%d%%" % int(round(values[key]))
+		_bars[key][1].text = (DisplaySettingsScript.temp_text(values[key]) + ("" if is_nan(_items.air_c) else "  (air " + DisplaySettingsScript.air_text(_items.air_c) + ")")) if key == "Temperature" else "%d%%" % int(round(values[key]))
 
 	for child in _attributes.get_children():
 		child.queue_free()

@@ -3940,9 +3940,11 @@
 			"name": "Rough bed",
 			"kind": "structure",
 			"description": "A low frame of sticks and branches with a heap of rough bedding, like a manger.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Build with the wooden hammer: 10 Thatch, 4 Stick, 2 Twine (inside a shelter)"
+			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"thatch_wall_kit": {
 			"name": "Thatch wall",

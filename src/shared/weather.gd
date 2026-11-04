@@ -24,6 +24,9 @@ const ZONES := {
 	"arctic": {"wet": 0.22, "temp": -9.0, "swing": 14.0},
 }
 
+# Rain takes the edge off the air: up to this many degrees colder at full rain (Dave 3 Nov 2026: rain should cool things).
+const RAIN_COOL_C := 4.0
+
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
 	var days: float = float(GameClockScript.DAYS_PER_YEAR)
@@ -119,7 +122,7 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 		"sun": clampf(1.0 - cloud * 1.1, 0.0, 1.0),
 		"wind": clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0),
 		"wind_dir": TAU * _noise(seed_value, 4, game_s / (20.0 * 3600.0)) + 0.8 * storm * (_noise(seed_value, 5, game_s / (2.0 * 3600.0)) - 0.5),
-		"temp_c": temp,
+		"temp_c": temp - RAIN_COOL_C * (0.0 if snowing else precip),
 		"season": season_of(game_s),
 	}
 
