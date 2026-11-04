@@ -10,6 +10,8 @@ const DynastyArms := preload("res://src/client/character/dynasty_arms.gd")
 var failures: int = 0
 var _start: int = 0
 var _started_task: bool = false
+var _early = null
+var _early_ms: float = 0.0
 
 
 func check(ok: bool, what: String) -> void:
@@ -24,6 +26,11 @@ func _init() -> void:
 	DynastyBody.warm()
 	DynastyArms.prebuild()
 	check(DynastyArms._prebuild_task < 0, "no prebuild starts before the file has loaded")
+	# The welcome before the file has loaded (Dave's PC log 4 Nov 2026: 44 ms after connecting, "welcome: held item" 843 ms): the arms made
+	# then do not build on the main thread; they wait and prebuild() gives them their meshes.
+	var t0: int = Time.get_ticks_usec()
+	_early = DynastyArms.new()
+	_early_ms = float(Time.get_ticks_usec() - t0) / 1000.0
 
 
 func _process(_delta: float) -> bool:
@@ -34,13 +41,17 @@ func _process(_delta: float) -> bool:
 
 	DynastyArms.prebuild()
 	_started_task = _started_task or DynastyArms._prebuild_task >= 0
-	var done: bool = DynastyArms._prebuild_task >= 0 and WorkerThreadPool.is_task_completed(DynastyArms._prebuild_task)
+	var done: bool = _early.find_children("Dynasty_*", "MeshInstance3D", true, false).size() == 2
 
 	if not done and Time.get_ticks_msec() - _start < 90000:
 		return false
 
+	print("arms made before the file had loaded in %.1f ms" % _early_ms)
+	check(_early_ms < 300.0, "arms made while the file still loads take under 300 ms (they wait for the worker)")
 	check(_started_task, "the prebuild started once the file had loaded")
-	check(done, "the prebuild finished within 90 s")
+	check(done, "the waiting arms got both meshes from the prebuild within 90 s")
+	check(_early.has_meta("own_hands") and not _early.body_mesh.visible, "the waiting arms are Dave's arms (no tube arms)")
+	check(DynastyArms._waiting.is_empty() and DynastyArms._prebuild_task < 0, "nothing is left waiting")
 	var t0: int = Time.get_ticks_usec()
 	var arms = DynastyArms.new()
 	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
@@ -51,5 +62,6 @@ func _process(_delta: float) -> bool:
 	DynastyArms.settle()
 	check(DynastyArms._prebuild_task < 0, "settle leaves no task behind")
 	arms.free()
+	_early.free()
 	print("dynasty arms prebuild: %d failures" % failures)
 	return true

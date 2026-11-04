@@ -4285,8 +4285,10 @@ func _process(delta: float) -> void:
 	_frame_ms.append(delta * 1000.0)
 	Probe.frame(delta)
 
-	if held == null and MyCharacter.dynasty_body_on():
-		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome)
+	if MyCharacter.dynasty_body_on():
+		var tq_arms: int = Probe.start()
+		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here
+		Probe.stop("arms prebuild", tq_arms)
 
 	if compass != null and camera != null:
 		compass.heading = CompassScript.heading_of(camera)
