@@ -42,6 +42,7 @@ const MyCharacter := preload("res://src/client/character/my_character.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
@@ -116,6 +117,7 @@ const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const HorizonScript := preload("res://src/client/horizon_indicator.gd")
+const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
@@ -130,6 +132,7 @@ const EventLogScript := preload("res://src/shared/event_log.gd")
 const CrashReportScript := preload("res://src/client/crash_report.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
+const PieceLook := preload("res://src/client/piece_look.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
@@ -216,6 +219,7 @@ var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
+var underwater_surface: float = 0.0      # the water surface over the eye while under (fog depth, caustics), 0 in the sea
 var _ground_quality: int = -1       # quality the ground texture array was built for
 var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
 var _z_slept: bool = false             # the hold already asked for sleep
@@ -258,6 +262,8 @@ var test_dump: bool = false           # --dump-test: 14 s after the welcome dump
 var _test_dump_done: bool = false
 var tunnel_on: bool = false               # the server's tunnel collapse switch (admins change it in Esc > Settings)
 var tunnel_cave_in_s: int = 1200
+var _health_seen: float = -1.0           # last frame's health, to jolt the view when it drops
+var _swim_t: float = 0.0                 # swimming bob clock
 var feel = FeelKicksScript.new()                 # landing dip and tool-blow jolt on the eye (feel_kicks.gd)
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var _ladder_climbed_m: float = 0.0           # metres climbed since the last rung sound
@@ -406,6 +412,7 @@ var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m fr
 var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
+var lag_run: Node = null               # --lag-run: the scripted early-game lag run (src/client/lag_run.gd, tools/lag_run.sh)
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
 var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
 var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
@@ -484,6 +491,8 @@ var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
+var _water_dirty_area: Rect2 = Rect2()   # protocol 88: where the water moved since the last ask (no area: everywhere)
+var _water_dirty_all: bool = false
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
 var _flora_cuts: int = 0
@@ -741,6 +750,8 @@ func _ready() -> void:
 			test_spear = true
 		elif argument == "--chop":
 			test_chop = true
+		elif argument == "--lag-run":
+			lag_run = preload("res://src/client/lag_run.gd").new()
 		elif argument == "--shoot":
 			test_shoot = true
 		elif argument == "--place-foundation":
@@ -767,6 +778,7 @@ func _ready() -> void:
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.water_changed_in_received.connect(_on_water_changed_in)
 	net.water_flow_received.connect(_on_water_flow)
 	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:
 		tunnel_on = on
@@ -1049,6 +1061,11 @@ func _welcome_body(info: Dictionary) -> void:
 	terrain.lod_count = LOD_COUNT
 	terrain.view_distance = VIEW_DISTANCE
 	terrain.mesh_block_size = 32
+	# Path decals paint only the ground: the terrain goes on its own render layer as well as the default one, when this voxel build can (piece_look.gd).
+	if "render_layers_mask" in terrain:
+		terrain.set("render_layers_mask", 1 | PieceLook.TERRAIN_DECAL_LAYER)
+		PieceLook.use_terrain_only_decals()
+
 	terrain.generate_collisions = true
 	terrain.collision_lod_count = 4
 	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
@@ -1165,12 +1182,13 @@ func _welcome_body(info: Dictionary) -> void:
 	_horizon.setup(camera, func() -> bool: return swimming or (items != null and items.breath_ds >= 0))
 	layer.add_child(_horizon)
 	debug_hud.add_line("server link", func() -> String: return link_bars.text())
-	_tint = ColorRect.new()
-	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_tint.color = Color(0.05, 0.25, 0.4, 0.55)
-	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tint.visible = false
-	layer.add_child(_tint)
+	# Under water: a gentle wobble and a darker rim over the 3D picture (no flat blue sheet; the water's colour is the fog,
+	# weather_look.gd _underwater_fog). Its own layer under the HUD, so the HUD is not read back into it.
+	var under_layer: CanvasLayer = CanvasLayer.new()
+	under_layer.layer = -1
+	add_child(under_layer)
+	_tint = UnderwaterLook.make()
+	under_layer.add_child(_tint)
 	faint = FaintEffectScript.new()
 	add_child(faint)
 	faint.setup(layer)      # over-exertion and fainting picture (faint.set_state), hidden while normal
@@ -1264,10 +1282,14 @@ func _welcome_body(info: Dictionary) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
 	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
 		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
+	net.hit_number_received.connect(func(at: Vector3, _amount: int) -> void: animal_view.note_hit(at))
+	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
+		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
 	burrow_view.name = "Burrows"
+	burrow_view.ground_at = _ground_below
 	add_child(burrow_view)
 	net.burrows_received.connect(burrow_view.on_burrows)
 	net.burrows_received.connect(_on_burrows_for_grass)
@@ -1313,6 +1335,9 @@ func _welcome_body(info: Dictionary) -> void:
 		display.text_index = clampi(display.text_index + direction, 0, display.TEXT_SCALES.size() - 1)
 		_save_display()
 		items.set_text_scale(display.TEXT_SCALES[display.text_index])
+	items.gather_event = func():
+		held.play_gather()
+		feel.strike(0.0, 0.3)
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
@@ -1320,6 +1345,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.thought_event = func(line_id, kind): sound.inner.speak(line_id, kind)
 	items.heart_bpm = func(): return sound.breath.bpm_now
 	items.view_direction = func(): return -camera.global_transform.basis.z
+	sound.trees.landed.connect(func(at: Vector3, size: float): feel.thud(at.distance_to(body.global_position), size))
 	sound.landing.hurt.connect(func(drop_m, severity):
 		if Time.get_ticks_msec() >= arrival_protect_until_msec:
 			items.report_fall(drop_m, severity))
@@ -1414,6 +1440,11 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_chop:
 		items.run_chop_test(self)
+
+	if lag_run != null and lag_run.get_parent() == null:
+		lag_run.client = self
+		add_child(lag_run)
+		lag_run.run()
 
 	if test_shoot:
 		items.run_shoot_test(self)
@@ -2093,6 +2124,9 @@ func _update_weather() -> void:
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0)
 
+	if items != null:
+		items.air_c = float(weather["temp_c"])
+
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
 	# every client and the server agree with no traffic. Recomputed once a game minute.
 	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M)
@@ -2218,6 +2252,12 @@ func _thousands(value: int) -> String:
 # The server's water moved: ask again for the water of every flora chunk held.
 func _on_water_changed() -> void:
 	_water_dirty = true
+	_water_dirty_all = true
+
+
+func _on_water_changed_in(area: Rect2) -> void:
+	_water_dirty = true
+	_water_dirty_area = area if not _water_dirty_area.has_area() else _water_dirty_area.merge(area)
 
 
 # Asks again for the water of the chunks held. While ground is still loading this waits up
@@ -2238,8 +2278,15 @@ func _send_water_request(now: int) -> void:
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
+	var area: Rect2 = Rect2() if _water_dirty_all else _water_dirty_area.grow(flora.chunk_m)
+	_water_dirty_all = false
+	_water_dirty_area = Rect2()
 
 	for chunk in flora.held_chunks():
+		# Only the chunks the moving water touches (protocol 88); the rest still hold the right water.
+		if area.has_area() and not area.intersects(Rect2(Vector2(chunk) * flora.chunk_m, Vector2(flora.chunk_m, flora.chunk_m))):
+			continue
+
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
 	@warning_ignore("integer_division")
@@ -2636,7 +2683,7 @@ func _apply_quality() -> void:
 	if _environment != null:
 		LookSettings.apply(_environment, _sun, get_viewport(), quality)
 		_apply_render_scale()
-		_environment.fog_density = 0.05 if underwater else LookSettings.FOG_DENSITY
+		_environment.fog_density = WeatherLookScript.UNDER_FOG_DENSITY if underwater else LookSettings.FOG_DENSITY
 
 
 # Tells what the display setting really did, a moment later when the window had time to change:
@@ -2761,7 +2808,7 @@ const HELP_TEXT := """Move: W A S D   Jog: double-tap W   Run: Shift+W   Jump / 
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
 K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise and lower it, W A S D walk relative to it, K again to leave)
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
-I: crafting and inventory   R with a hammer in hand: blueprints   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
+I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
 /: inspection mode   + and -: spring flow (tuning)
 F2: quality   F3: debug details   F4: all screen text on or off   Ctrl+Shift+G: GPU probe table (press again to close)   J: jitter test
 Admin: Ctrl+N nearest NPC   Ctrl+R rabbit   Ctrl+X dig hole   ]: starter items   Esc > Advanced > Dump ground: crosshair ground report
@@ -3121,6 +3168,9 @@ func _scroll_view(out: bool) -> void:
 # The log on the shoulder: about two and a half metres of trunk (the species' real length is not sent; Radar's item data has the weight).
 const CARRY_LOG_LENGTH_M := 2.4
 const CARRY_LOG_RADIUS_M := 0.14
+const FOV_BASE := 75.0                 # Godot's default, which the game has always used
+const FOV_RUN_EXTRA := 5.0             # degrees wider at a full run
+var _fov_extra: float = 0.0
 
 
 func _update_view(delta: float) -> void:
@@ -3158,6 +3208,12 @@ func _update_view(delta: float) -> void:
 		view_cam.top_level = false
 		view_cam.rotation = Vector3.ZERO   # the drawn camera only ever sits on the eye, looking the way the eye looks
 		view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
+
+		# Speed feel: the view widens a little at a jog and more at a run, and eases back when you stop (the usual first-person trick; the field of view was never touched before).
+		var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
+		var want_extra: float = clampf((pace - WALK_SPEED) / (RUN_SPEED - WALK_SPEED), 0.0, 1.0) * FOV_RUN_EXTRA if body.is_on_floor() and not swimming else 0.0
+		_fov_extra = lerpf(_fov_extra, want_extra, clampf(delta * 4.0, 0.0, 1.0))
+		view_cam.fov = FOV_BASE + _fov_extra * feel.intensity
 
 	_avatar.visible = _view_now > 0.5
 
@@ -3422,6 +3478,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
 			_save_display()
+		elif event.keycode == KEY_DELETE and held != null and held.delete_plan():
+			pass
 		elif event.keycode == KEY_R and not event.ctrl_pressed and items != null and not items.open:
 			if held != null:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
@@ -3605,6 +3663,8 @@ func _move_player(delta: float) -> void:
 	if test_walk:
 		_walk_step()
 		direction = _walk_dir
+	elif lag_run != null and _walk_dir != Vector3.ZERO:
+		direction = _walk_dir
 	var fast: float = FAST if Input.is_key_pressed(KEY_SHIFT) else 1.0
 	var forward: bool = Input.is_key_pressed(KEY_W)
 	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
@@ -3627,6 +3687,9 @@ func _move_player(delta: float) -> void:
 
 	if items != null and not flying:
 		pace *= items.speed_factor() * items.over_pace_factor()
+
+		if stance.stance == StanceScript.STAND:
+			pace *= items.path_pace_factor(body.global_position, "run" if running else ("jog" if jogging else "walk"))
 
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)
@@ -3660,7 +3723,7 @@ func _move_player(delta: float) -> void:
 	elif _climb_ladder(delta, strain_cap):
 		pass
 	else:
-		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and test_walk else pace)
+		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and (test_walk or lag_run != null) else pace)
 
 		# Gravity only applies once there is ground below to land on. Fresh
 		# or far-off ground has no collision yet, so wait for it; a player who
@@ -3701,6 +3764,7 @@ func _move_player(delta: float) -> void:
 
 		if not swimming and body.is_on_floor() and Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0:
 			velocity.y = 7.0
+			feel.jump()
 			sound.footstep(body, 1, -3.0, "right")        # the push off the ground (job 61: a jump had no sound, only the landing)
 
 		body.velocity = velocity
@@ -3919,12 +3983,27 @@ func _update_bob(delta: float) -> void:
 
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
-	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount
-	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount
-	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
+	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount * feel.intensity
+	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount * feel.intensity
+	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount * feel.intensity
 	drip_view.step(delta)
 	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
 	sound.cave.note_gap(wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
+	if items != null:
+		var health_now: float = float(items.health)
+
+		if _health_seen >= 0.0 and health_now <= _health_seen - 2.0:   # a bite or a fall; slow starvation drain of 1 a tick stays unjolted
+			feel.hurt(_health_seen - health_now, 1.0 if int(Time.get_ticks_msec() / 1000) % 2 == 0 else -1.0)
+
+		_health_seen = health_now
+
+	# Swimming: the head rides the water, a slow rise and fall with a little sideways roll (stronger when stroking), so the water feels like it is carrying you.
+	if swimming:
+		_swim_t += delta
+		var stroke: float = clampf(pace / 2.0, 0.0, 1.0)
+		camera.position.y += (0.018 + 0.012 * stroke) * sin(_swim_t * 1.9) * feel.intensity
+		camera.rotation.z += deg_to_rad((0.5 + 0.5 * stroke) * sin(_swim_t * 1.3)) * feel.intensity
+
 	var kick: Dictionary = feel.step(delta)
 	camera.position.y += float(kick["y"])
 	camera.rotation.z += deg_to_rad(float(kick["roll"]))
@@ -4039,9 +4118,12 @@ func _process(delta: float) -> void:
 
 	if harvest != null:
 		harvest.update(delta, Input.is_key_pressed(KEY_E) and not items.open)
+
+	Probe.stop("harvest", tp)
+	tp = Probe.start()
 	game_clock.tick()
 	_update_weather()
-	Probe.stop("harvest, clock, weather", tp)
+	Probe.stop("clock, weather", tp)
 
 	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
@@ -4054,6 +4136,9 @@ func _process(delta: float) -> void:
 
 	_frame_ms.append(delta * 1000.0)
 	Probe.frame(delta)
+
+	if held == null and MyCharacter.dynasty_body_on():
+		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome)
 
 	if compass != null and camera != null:
 		compass.heading = CompassScript.heading_of(camera)
@@ -5167,9 +5252,6 @@ func _process(delta: float) -> void:
 	if inspecting:
 		_update_inspect()
 
-	if underwater:
-		mode = (mode + " (underwater)").strip_edges()
-
 	if waiting_for_ground and not flying:
 		mode = (mode + " (building the ground around you, the first visit takes longer)").strip_edges()
 	if Time.get_ticks_msec() < _bake_alert_until:
@@ -5564,14 +5646,24 @@ func _update_underwater() -> void:
 	if not under and not is_nan(surface) and eye.y < surface:
 		under = WaterVolume.submerged(eye.y, surface, _ground_below(eye))
 
+	if under:
+		underwater_surface = surface if not is_nan(surface) and surface > 0.0 else 0.0
+
+	var daylight: float = 1.0 - float(weather_look.day.night) if weather_look != null else 1.0
+	UnderwaterLook.set_caustics(terrain.material as ShaderMaterial if terrain != null else null, under, underwater_surface, daylight)
+
 	if under == underwater:
 		return
 
 	underwater = under
 	_tint.visible = under
-	_environment.fog_density = 0.05 if under else LookSettings.FOG_DENSITY
-	_environment.fog_light_color = Color(0.08, 0.28, 0.4) if under else SkyClouds.HORIZON
+	# The fog itself follows the day and the depth every frame (weather_look.gd _underwater_fog); this is the switch.
+	_environment.fog_density = WeatherLookScript.UNDER_FOG_DENSITY if under else LookSettings.FOG_DENSITY
+	_environment.fog_light_color = WeatherLookScript.UNDER_DAY_COLOR if under else SkyClouds.HORIZON
 	_environment.fog_sky_affect = 1.0 if under else 0.0
+	_environment.fog_height_density = WeatherLookScript.UNDER_DEEP_DENSITY if under else 0.0
+	_environment.fog_height = underwater_surface
+	_environment.fog_aerial_perspective = 0.0 if under else LookSettings.FOG_AERIAL
 
 
 # Ground height under a point, from the terrain colliders (NAN if none).
@@ -5692,6 +5784,7 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
 
 	if crash_report != null:
 		crash_report.mark_clean()

@@ -15,6 +15,7 @@ const HOLE_SIZE := 0.085
 const SINK := 0.02            # sunk a little into the ground so the edge never floats on a slope
 
 var _multi: MultiMeshInstance3D = null
+var ground_at: Callable = Callable()   # the ground height under a point (terrain_client._ground_below); with it the entrance faces downhill (MikeW's idea, 3 Nov)
 
 
 func on_burrows(points: PackedVector3Array) -> void:
@@ -35,8 +36,23 @@ func on_burrows(points: PackedVector3Array) -> void:
 		var at: Vector3 = points[i]
 		var seed_v: float = fposmod(sin(at.x * 12.9898 + at.z * 78.233) * 43758.5453, 1.0)
 		var size: float = 0.85 + 0.3 * seed_v
-		var basis: Basis = Basis(Vector3.UP, seed_v * TAU).scaled(Vector3(size, size * (0.9 + 0.2 * fposmod(seed_v * 7.0, 1.0)), size))
+		var basis: Basis = Basis(Vector3.UP, _yaw(at, seed_v)).scaled(Vector3(size, size * (0.9 + 0.2 * fposmod(seed_v * 7.0, 1.0)), size))
 		mm.set_instance_transform(i, Transform3D(basis, at - Vector3(0.0, SINK, 0.0)))
+
+
+# The heading: the entrance (mesh +x) faces down the steepest drop, from the ground 1 m to each side; on flat ground or without ground
+# heights it falls back to a heading from the position. Rotating +x by yaw about Y gives (cos yaw, 0, -sin yaw).
+func _yaw(at: Vector3, seed_v: float) -> float:
+	if ground_at.is_valid():
+		var east: float = float(ground_at.call(at + Vector3(1.0, 1.0, 0.0)))
+		var west: float = float(ground_at.call(at + Vector3(-1.0, 1.0, 0.0)))
+		var south: float = float(ground_at.call(at + Vector3(0.0, 1.0, 1.0)))
+		var north: float = float(ground_at.call(at + Vector3(0.0, 1.0, -1.0)))
+		if not (is_nan(east) or is_nan(west) or is_nan(south) or is_nan(north)):
+			var down: Vector2 = Vector2(west - east, north - south)        # the downhill direction in x and z
+			if down.length() > 0.05:                                     # more than about 1.5 degrees of slope
+				return atan2(-down.y, down.x)
+	return seed_v * TAU
 
 
 # The heap: a polar grid lifted into a lumpy dome, pulled down and darkened into a hole on the +x side, with a spoil fan

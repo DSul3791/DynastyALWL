@@ -17,7 +17,7 @@ const RULES_PATH := "res://data/water_settle.json"
 const HollowFinder := preload("res://src/water/hollow_finder.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const DrainageFill := preload("res://src/worldgen/tile/drainage_fill.gd")
-const VERSION := 10               # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 11               # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.
@@ -117,8 +117,10 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 			spot = head
 
 		# Steep ground (v6, Sonny 24 Oct): a spring on a rock face is a sheet running down it. Move it up the painted river to ground that is not
-		# steep, or drop it.
-		spot = _off_steep(data, side, spot)
+		# steep, or drop it. A spring cave mouth (v11, Sonny 3 Nov 2026) keeps its spring: the water runs out of the cave floor, and at a true brook
+		# head there is no higher river to move to, so 24 of tile 3,4's 41 cave brooks lost their spring and started as a bare film.
+		if not _at_spring_mouth(data, side, spot):
+			spot = _off_steep(data, side, spot)
 
 		if spot.x < 0:
 			continue
@@ -544,6 +546,23 @@ static func _is_steep(data, side: int, i: int, j: int) -> bool:
 		drop = maxf(drop, absf(data.heights[k] - data.heights[n]))
 
 	return drop / data.spacing_m > STEEP_TAN
+
+
+# Whether `spot` is within SPRING_MOUTH_CELLS of a spring cave's mouth (data.spring_mouths, world x, z).
+const SPRING_MOUTH_CELLS := 3.0
+
+static func _at_spring_mouth(data, side: int, spot: Vector2i) -> bool:
+	if not ("spring_mouths" in data):
+		return false
+
+	var p: Vector2 = Vector2(data.x0 + float(spot.x) * data.spacing_m, data.z0 + float(spot.y) * data.spacing_m)
+	var reach: float = SPRING_MOUTH_CELLS * data.spacing_m
+
+	for mouth in data.spring_mouths:
+		if p.distance_to(mouth) <= reach:
+			return true
+
+	return false
 
 
 # `spot` itself when the ground is not steep; else the nearest higher painted river cell within 15 cells that is not steep; else (-1, -1).

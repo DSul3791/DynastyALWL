@@ -10,8 +10,8 @@ const SHADER := """
 shader_type spatial;
 render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
 
-uniform vec3 shallow_color : source_color = vec3(0.17, 0.33, 0.33);
-uniform vec3 deep_color : source_color = vec3(0.04, 0.17, 0.24);
+uniform vec3 shallow_color : source_color = vec3(0.16, 0.38, 0.34);   // Kathreen 3 Nov 2026 (art direction: vibrant, not grey): greener shallows, was 0.17, 0.33, 0.33
+uniform vec3 deep_color : source_color = vec3(0.03, 0.18, 0.28);   // bluer depths, was 0.04, 0.17, 0.24
 uniform vec3 foam_color : source_color = vec3(0.78, 0.82, 0.80);
 uniform vec3 mud_color : source_color = vec3(0.36, 0.27, 0.16);
 uniform float rough = 0.0;           // 0 calm, 1 raging (flow rate above x1, set by the client)
@@ -371,6 +371,24 @@ void fragment() {
 		ROUGHNESS = mix(ROUGHNESS, 0.18 + 0.2 * cracks, sheet);
 		SPECULAR = mix(SPECULAR, 0.9, sheet);
 		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz, sheet * 0.95));
+	}
+
+	// From under the water (Dave 2 Nov 2026: "being under the water looking up looks fake"): a mirror of the dark water below, with a
+	// round window overhead (Snell's window, about 49 degrees from the vertical) on the sky, rippling, bright at its rim
+	// (underwater_look.gd). The sky colours already follow the day.
+	if (!FRONT_FACING) {
+		vec3 ray = normalize(mat3(INV_VIEW_MATRIX) * VERTEX);
+		float c = clamp(dot(ray, normal_world), 0.0, 1.0);
+		float window = smoothstep(0.62, 0.70, c);
+		float rim = exp(-pow((c - 0.67) / 0.035, 2.0));
+		vec3 overhead = mix(sky_horizon, sky_top, smoothstep(0.66, 1.0, c)) * (0.9 + 2.5 * length(normal_world.xz));
+		vec3 below_col = mix(deep_color * 0.5 * mix(0.15, 1.0, daylight), overhead, window) + vec3(0.85, 0.95, 1.0) * rim * 0.3 * daylight;
+		below_col = mix(below_col, foam_tint * 0.85 * daylight, foam * 0.6);
+		ALBEDO = vec3(0.0);
+		EMISSION = below_col;
+		ROUGHNESS = 1.0;
+		SPECULAR = 0.0;
+		ALPHA = mix(0.96, 0.82, window) * sheet_alpha;
 	}
 
 	if (debug_flow > 0.5) {

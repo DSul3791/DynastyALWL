@@ -778,6 +778,9 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 
 	if def.has("flock") and not bool(def["flock"].get("on_land", false)):
 		var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+		if bool(def["flock"].get("fresh_only", false)) and biome_at.is_valid() and str(biome_at.call(x, z)) == "ocean":
+			return -1.0   # ducks keep to rivers and lakes, not the open sea
+
 		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
 
 	if hab.is_empty() or not ground_height.is_valid():
@@ -805,10 +808,45 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 			if bool(blocked.call(x + d.x, z + d.y)):
 				return -1.0
 
+	var near: float = float(hab.get("near_fresh_water_m", 0.0))
+
+	if near > 0.0 and water_level.is_valid() and not _water_near(x, z, near, false):
+		return -1.0   # a frog lives by a stream, pond or lake, never deep in a dry wood or on a sea shore
+
+	var sea: float = float(hab.get("near_ocean_m", 0.0))
+
+	if sea > 0.0 and biome_at.is_valid() and not _water_near(x, z, sea, true):
+		return -1.0   # gulls and seals keep to the coast: a salt marsh or rocks by the sea, not one inland
+
 	if bool(hab.get("forest", false)) and canopy.is_valid() and bool(canopy.call(Vector3(x, h, z))):
 		return 2.0
 
 	return 1.0
+
+
+# Whether water lies within radius of a spot: the spot itself, then eight directions at half and full radius. ocean false: fresh
+# water (a water surface that is not on ocean ground). ocean true: ocean ground.
+func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
+	for ring in [0.0, radius * 0.5, radius]:
+		for i in (1 if ring == 0.0 else 8):
+			var a: float = TAU * float(i) / 8.0
+			var px: float = x + cos(a) * ring
+			var pz: float = z + sin(a) * ring
+
+			var is_ocean: bool = biome_at.is_valid() and str(biome_at.call(px, pz)) == "ocean"
+
+			if ocean:
+				if is_ocean:
+					return true
+
+				continue
+
+			if is_nan(float(water_level.call(px, pz))) or is_ocean:
+				continue
+
+			return true
+
+	return false
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
