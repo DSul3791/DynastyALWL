@@ -1881,7 +1881,7 @@ func _water_ahead() -> bool:
 		var spot: Vector3 = body.global_position + forward * step
 		var surface: float = flora.water_surface_at(spot.x, spot.z)
 
-		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.MIN_DEPTH_M:
+		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
 			return true
 
 	return false
@@ -3045,6 +3045,12 @@ func _inspect_target() -> String:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin + direction * 30.0)
 	query.exclude = [body.get_rid()]
 	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	# Water has no collision: name it when the look crosses its surface before anything solid (Dave's QA list BUG-015, 3 Nov 2026: shallow
+	# water among reeds named nothing). A reed standing above the water is hit first and keeps its own name.
+	var water_m: float = _water_on_look(origin, direction, 30.0 if hit.is_empty() else origin.distance_to(hit["position"]))
+
+	if water_m >= 0.0:
+		return "Water — Press E to Drink" if items != null and items.thirst < 100 and _water_ahead() else "Water"
 
 	if hit.is_empty():
 		return ""
@@ -3079,6 +3085,26 @@ func _inspect_target() -> String:
 		return lying
 
 	return _ground_name(point - hit["normal"] * 0.4)
+
+
+# How far along a look the water surface is first crossed going down into it, -1 when it is not (steps of half a metre).
+func _water_on_look(origin: Vector3, direction: Vector3, length: float) -> float:
+	if flora == null:
+		return -1.0
+
+	var step: float = 0.5
+	var d: float = step
+
+	while d <= length + 0.001:
+		var p: Vector3 = origin + direction * minf(d, length)
+		var surface: float = flora.water_surface_at(p.x, p.z)
+
+		if not is_nan(surface) and p.y <= surface and origin.y > surface and WaterVolume.depth(surface, _ground_below(p)) >= WaterVolume.DRINK_DEPTH_M:
+			return d
+
+		d += step
+
+	return -1.0
 
 
 # The ore, rock or soil at a point in the ground, as this character knows it. Owner
