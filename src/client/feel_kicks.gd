@@ -11,6 +11,9 @@ const LAND_MAX_M := 0.16              # the deepest the eye may be pushed
 const STRIKE_DIP_M := 0.08            # eye drop of a tool blow
 const STRIKE_ROLL_DEG := 0.5
 
+const SETTINGS_PATH := "user://input_settings.cfg"   # the same file as the input settings: [feel] intensity = 0.0 to 1.5
+
+var intensity: float = 1.0            # scales every camera effect: 1 as tuned, 0 none (for anyone bothered by head bob or shake)
 var _y: float = 0.0                   # eye offset from the walking camera (metres, negative is down)
 var _vy: float = 0.0
 var _roll: float = 0.0                # degrees
@@ -33,6 +36,34 @@ func strike(side: float = 1.0, weight: float = 1.0) -> void:
 	_vroll += side * STRIKE_ROLL_DEG * 14.0 * weight
 
 
+# Health lost (a bite, a blow, a fall): a jolt that grows with the loss, capped; `side` leans the roll (-1..1).
+func hurt(lost: float, side: float = 1.0) -> void:
+	var k: float = clampf(lost / 20.0, 0.25, 1.0)
+	_vy -= 0.12 * 14.0 * k
+	_vroll += side * 2.5 * 14.0 * k
+
+
+# The push off the ground: a small dip as the legs load, then the spring lifts the eye as the jump leaves the ground.
+func jump() -> void:
+	_vy -= 0.04 * 14.0
+
+
+# A tree hits the ground `distance` metres away with `size` (about 0.2 to 1.6): the ground thumps the eye, felt within 30 m and strongest close by.
+func thud(distance: float, size: float) -> void:
+	var strength: float = clampf(size, 0.2, 1.5) * clampf(1.0 - distance / 30.0, 0.0, 1.0)
+
+	if strength > 0.02:
+		_vy -= 0.1 * 14.0 * strength
+		_vroll += 1.2 * 14.0 * strength
+
+
+func _init() -> void:
+	var file: ConfigFile = ConfigFile.new()
+
+	if file.load(SETTINGS_PATH) == OK:
+		intensity = clampf(float(file.get_value("feel", "intensity", 1.0)), 0.0, 1.5)
+
+
 func step(delta: float) -> Dictionary:
 	var dt: float = minf(delta, 0.05)
 	_vy += (-STIFFNESS * _y - DAMPING * _vy) * dt
@@ -40,7 +71,7 @@ func step(delta: float) -> Dictionary:
 	_vroll += (-STIFFNESS * _roll - DAMPING * _vroll) * dt
 	_roll += _vroll * dt
 	_y = clampf(_y, -LAND_MAX_M, 0.05)
-	return {"y": _y, "roll": _roll}
+	return {"y": _y * intensity, "roll": _roll * intensity}
 
 
 # A few chips thrown from `point` away from the surface (normal), for the hit: wood chips for wood, grit for ground and stone. Frees itself when done.
