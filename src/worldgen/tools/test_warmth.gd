@@ -119,6 +119,7 @@ func _init() -> void:
 	weather = {"temp_c": 26.0, "wind": 0.0, "rain": 0.0, "snow": 0.0}
 	var pool_swim: float = items.warmth_target(1)
 	items._cave_pool.erase(1)
+	weather = {"temp_c": 10.0, "wind": 0.0, "rain": 0.0, "snow": 0.0}   # the cloak checks below expect this cold day
 	check(pool_swim < 10.0 and pool_swim < warm_swim, "a spring cave pool is icy even on a warm day (%.0f)" % pool_swim)
 	items._swimming.erase(1)
 	check(warm_swim > 65.0 and cold_swim < 40.0, "swimming cold follows water temperature (%.0f warm, %.0f cold)" % [warm_swim, cold_swim])
