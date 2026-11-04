@@ -3467,7 +3467,7 @@ func _on_thought(line_id: String, text: String, kind: String) -> void:
 	if not inner_settings.allows(kind):
 		return      # the player switched this kind of line off (the symptom message itself is not a line of the voice)
 
-	_thought_label.text = "(%s)" % text
+	_thought_label.text = "(%s)" % KeyBindings.localize(text)   # hints from the server name the default keys ("press E to drink"): show the bound ones (#319)
 	_thought_until_msec = Time.get_ticks_msec() + 5500
 
 	if thought_event.is_valid():
