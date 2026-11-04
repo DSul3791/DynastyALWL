@@ -522,6 +522,9 @@ func alarm(at: Vector3) -> bool:
 
 # Plays one of the calls in EVENTS at a place now (a hook: the creature system says a bird there called).
 func call_named(sound_name: String, at: Vector3) -> bool:
+	if _rng.randf() >= weather_calls:
+		return false                            # the same weather gate as every other bird call: none in rain (BUG-005)
+
 	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
