@@ -336,13 +336,15 @@ static func roof(mat: String = "wood") -> Node3D:
 	return root
 
 
-# A foundation (Radar: 4 by 4 m, 0.3 m high, solid; the other pieces click onto it): a fitted-stone course round a packed-earth top.
+# A foundation (Radar: 4 by 4 m, top 0.3 m above its spot, 2 m deep, solid; the other pieces click onto it): a fitted-stone course round a packed-earth top.
 static func foundation() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(4.0, 0.3, 4.0), Vector3(0.0, 0.15, 0.0), _stone)
+	# Dave 4 Nov 2026: a foundation is at least 1 m thick top to bottom, not a thin slab. The body runs from 0.3 m above the spot down 1.7 m below it
+	# (2 m in all), so it stays solid down into the ground even when the wheel lifts it 1 m off the ground.
+	_box(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0), _stone)
 	_box(root, Vector3(3.6, 0.02, 3.6), Vector3(0.0, 0.305, 0.0), _earth)      # the packed earth top inside the stone rim
-	_solid(root, Vector3(4.0, 0.3, 4.0), Vector3(0.0, 0.15, 0.0))
+	_solid(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0))
 	return root
 
 

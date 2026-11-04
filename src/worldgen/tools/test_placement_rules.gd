@@ -118,6 +118,16 @@ func _init() -> void:
 	check(bool(on_side[2]) and int(on_side[1]) == 90, "a wall at the side anchor turns to run along that side (%s)" % str(on_side))
 	check(bool(Rules.snap(cfg, "floor_section_kit", Vector3(50.9, 10.0, 49.2), 0, base_rows)[2]), "a floor snaps onto the foundation")
 	check(not bool(Rules.snap(cfg, "wall_section_kit", Vector3(60.0, 10.0, 60.0), 0, base_rows)[2]), "far from the foundation a wall uses the plain grid")
+	var beside_rows: Array = [{"pos": Vector3(50.0, 11.0, 50.0), "state": 25, "yaw": 0.0}]
+	var beside: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(53.1, 10.0, 50.3), 0, beside_rows)
+	check(bool(beside[2]) and beside[0] == Vector3(54.0, 11.0, 50.0), "a foundation near another goes edge to edge at its height (%s)" % str(beside))
+	var diagonal: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(53.0, 10.0, 53.0), 0, beside_rows)
+	check(bool(diagonal[2]) and diagonal[0] == Vector3(54.0, 11.0, 54.0), "or corner to corner (%s)" % str(diagonal))
+	beside_rows.append({"pos": Vector3(54.0, 11.0, 50.0), "state": 25, "yaw": 0.0})
+	var taken: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(53.1, 10.0, 50.3), 0, beside_rows)
+	check(taken[0] != Vector3(54.0, 11.0, 50.0), "a neighbour spot already taken is not offered again (%s)" % str(taken))
+	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(70.0, 10.0, 70.0), 0, beside_rows)[2]), "a foundation far from any other is placed on the ground, the wheel may lift it")
+
 	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.0, 50.0), 0, base_rows)[2]), "a foundation does not snap onto a foundation")
 	var thatch_base: Array = [{"pos": Vector3(50.0, 10.0, 50.0), "state": int(cfg["structures"]["thatch_floor"]["state"])}]
 	var on_thatch: Array = Rules.snap(cfg, "thatch_wall_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)
@@ -187,6 +197,18 @@ func _init() -> void:
 			lifted_y = items._items[id]["pos"].y
 
 	check(is_equal_approx(lifted_y, 10.3), "a foundation lifted 3 steps stands 0.3 m above the ground (y %.2f)" % lifted_y)
+	# A foundation beside another takes its height and its edge, and the wheel's lift is ignored (Dave 4 Nov 2026).
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 7, 0, Vector3(304.4, 10.3, 302.6))
+	var next_y: float = -1.0
+	var next_x: float = -1.0
+
+	for id in items._items:
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "foundation_section" and items._items[id]["pos"].distance_to(Vector3(304.0, 10.3, 302.0)) < 1.0:
+			next_y = items._items[id]["pos"].y
+			next_x = items._items[id]["pos"].x
+
+	check(is_equal_approx(next_y, 10.3) and is_equal_approx(next_x, 304.0), "a second foundation sits edge to edge at the first one's height, whatever the wheel said (x %.2f y %.2f)" % [next_x, next_y])
 	# The wood chain stations: the woodworking table and the sawmill place like other stations.
 	var before_stations: Vector3 = items._peer_pos[2]
 	items.report_position(2, Vector3(800.0, 10.0, 800.0))
