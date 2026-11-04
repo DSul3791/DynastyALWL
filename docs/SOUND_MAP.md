@@ -37,7 +37,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Bow and arrow (draw, release, hit) | `held_item.gd` bow press -> `slots.play("bow_draw")`, release with an arrow in the pack -> `bow_loose` (make_bow.py; 3 Nov). Landing: `spear.arrow` soft thunk where the flight (followed from bow.json) comes down; animal hits thud via hit_number | Steve | wired, to hear |
 | Fishing (cast, bite, catch) | none? (fish splash is ambient only) | Steve/MikeW | to verify |
 | Drink from water source (not an item) | none? | Sonny/Steve | to verify |
-| Animal hit, death, eating (carcass) | none? | MikeW | to verify |
+| Animal hit, death, eating (carcass) | death: `animal_view.fell` (a body gone within 1.5 s of a hit near it) -> `slots.play("animal_fall")` (land thud, soft for small kinds; 3 Nov). Hit: PR 204. Carcass: none? | MikeW | fall wired, to hear |
 | Crafting action itself (hand craft, kit use) | none? (craft_done cue only) | Steve | to verify |
 | Clothing put on / taken off | none? | Sal | to verify |
 | Level up, goal done, hint | none? | Steve | to verify |
