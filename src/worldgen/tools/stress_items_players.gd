@@ -99,7 +99,7 @@ func run(players: int, label: String) -> void:
 				elif kind == 1:
 					items.action(p, Net.ACT_PLACE, items.inventory_of(p).numbers.find(items.table.number_of("campfire_kit")), 0, 0, pos[p - 1] + Vector3(2.0, 0.0, 0.0))
 				elif kind == 2:
-					items.place_piece(p, "chest_kit", pos[p - 1] + Vector3(-2.0, 0.0, 0.0))
+					items.action(p, Net.ACT_PLACE, items.inventory_of(p).numbers.find(items.table.number_of("chest_kit")), 0, 0, pos[p - 1] + Vector3(-2.0, 0.0, 0.0))
 				elif kind == 3:
 					items.action(p, Net.ACT_EAT, items.inventory_of(p).numbers.find(items.table.number_of("roast_forage")), 0, 0, Vector3.ZERO)
 				elif kind == 4:
@@ -112,7 +112,7 @@ func run(players: int, label: String) -> void:
 				elif kind == 7:
 					items.action(p, Net.ACT_FISH, items.inventory_of(p).numbers.find(items.table.number_of("spear")), 0, 0, pos[p - 1] + Vector3(2.0, 0.0, 0.0))
 				elif kind == 8:
-					items.place_piece(p, "workbench_kit", pos[p - 1] + Vector3(0.0, 0.0, 2.0))
+					items.action(p, Net.ACT_PLACE, items.inventory_of(p).numbers.find(items.table.number_of("workbench_kit")), 0, 0, pos[p - 1] + Vector3(0.0, 0.0, 2.0))
 				elif kind == 9:
 					items._last_queue_act.clear()
 					items.action(p, Net.ACT_CRAFT_QUEUE, 26, 0, 1, Vector3.ZERO)   # stone spade: needs a camp bench

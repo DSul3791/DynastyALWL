@@ -166,7 +166,7 @@ func _init() -> void:
 	home.peer_connected_hello(1, "shelter-key-0001")
 	home.report_position(1, Vector3(300.0, 7.0, 300.0))
 	home.action(1, Net.ACT_ADMIN_GIVE, home.table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
-	home.place_piece(1, "lean_to_kit", Vector3(304.0, 7.0, 300.0))
+	home.action(1, Net.ACT_PLACE, home.inventory_of(1).numbers.find(home.table.number_of("lean_to_kit")), 0, 0, Vector3(304.0, 7.0, 300.0))
 	check(home._shelter_near(Vector3(302.0, 7.0, 300.0)) >= 0, "the lean-to stands")
 	home.report_position(1, Vector3(302.0, 7.0, 300.0))
 	home._stance[1] = 3

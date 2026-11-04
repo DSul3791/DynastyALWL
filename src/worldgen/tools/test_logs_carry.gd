@@ -127,7 +127,7 @@ func _init() -> void:
 	# 5. Rough planks (1 log) at a workbench, log on the shoulder.
 	reset()
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("workbench_kit"), 0, 1, Vector3.ZERO)
-	items.place_piece(1, "workbench_kit", Vector3(2.0, 10.0, 0.0))
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("workbench_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
 	items.give(1, oak, 1)
 	craft("rough_plank", 1)
 	check(count("rough_plank") == 4 and items.shoulder_of(1) == "", "rough planks from the shoulder log at the workbench (%d planks)" % count("rough_plank"))
