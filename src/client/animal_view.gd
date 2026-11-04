@@ -13,17 +13,59 @@ const FLEE := 2
 
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
+signal fell(kind: String, at: Vector3, small: bool)            # an animal went down from a hit: it vanished right after a hit landed on it (sounds listen)
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
 const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird"}
+const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
+const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
+const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
+const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _mats: Dictionary = {}
 var _t: float = 0.0
+var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
+var _hits: Array = []            # [at Vector3, msec] of the hits reported in the last FELL_WINDOW_MS (note_hit)
 var _blood: Array = []           # MeshInstance3D pool, one per drop shown
-var _blood_mat: StandardMaterial3D
+var _blood_mat: ShaderMaterial
+const BLOOD_SHADER := """
+shader_type spatial;
+render_mode cull_disabled;
+
+varying vec2 lp;
+
+float h2(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float vn(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(h2(i), h2(i + vec2(1.0, 0.0)), f.x), mix(h2(i + vec2(0.0, 1.0)), h2(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+void vertex() {
+	lp = VERTEX.xz / 0.1;      // -1..1 across the 10 cm disc
+}
+
+void fragment() {
+	float r = length(lp);
+	float a = atan(lp.y, lp.x);
+	float edge = 0.55 + 0.25 * vn(vec2(a * 2.2, 3.0)) + 0.18 * vn(vec2(a * 7.0, 9.0));      // a lobed rim with drips
+	float drops = step(0.9, vn(lp * 6.0 + 11.0)) * step(r, 0.98);                          // a few flung drops beyond the rim
+	if (r > edge && drops < 0.5) {
+		discard;
+	}
+	float dry = smoothstep(edge - 0.25, edge, r);
+	ALBEDO = mix(vec3(0.30, 0.02, 0.02), vec3(0.2, 0.06, 0.03), dry) * (0.85 + 0.2 * vn(lp * 9.0));
+	ROUGHNESS = mix(0.15, 0.7, dry);      // wet and shiny in the middle
+	SPECULAR = 0.6;
+}
+"""
 
 
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
@@ -71,6 +113,34 @@ func _make_species_body(number: int, id: int) -> Node3D:
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
 
+# Whether a body that left the rows at `at` was standing on its blood trail: a wounded animal that bleeds out dies where it is,
+# at the end of its trail, with no hit near. Bodies leave the rows only past send_radius_m (120 m), far beyond the 30 m a
+# one-shot is played at, so a wounded animal running out of range is never heard falling.
+static func near_blood(at: Vector3, points: PackedVector3Array) -> bool:
+	for p in points:
+		if p.distance_to(at) <= FELL_M:
+			return true
+
+	return false
+
+
+# A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
+func note_hit(at: Vector3) -> void:
+	var now: int = Time.get_ticks_msec()
+	_hits = _hits.filter(func(h): return now - int(h[1]) <= FELL_WINDOW_MS)
+	_hits.append([at, now])
+
+
+# Whether a body last seen at `at` that left the rows at `now_ms` was killed: a hit landed within FELL_M of it in the last
+# FELL_WINDOW_MS. Bodies that walk out of range, or a snared one, leave with no hit near them.
+static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
+	for h in hits:
+		if now_ms - int(h[1]) <= FELL_WINDOW_MS and (h[0] as Vector3).distance_to(at) <= FELL_M:
+			return true
+
+	return false
+
+
 func on_rows(rows: Array) -> void:
 	var seen: Dictionary = {}
 
@@ -98,8 +168,13 @@ func on_rows(rows: Array) -> void:
 		_bodies[id]["heading"] = float(row[3])
 		_bodies[id]["state"] = int(row[4])
 
+	var now: int = Time.get_ticks_msec()
+
 	for id in _bodies.keys():
 		if not seen.has(id):
+			if killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points)):
+				fell.emit(str(_bodies[id]["kind"]), _bodies[id]["target"], str(_bodies[id]["kind"]) in SMALL_FALL_KINDS)
+
 			_bodies[id]["node"].queue_free()
 			_bodies.erase(id)
 
@@ -107,11 +182,15 @@ func on_rows(rows: Array) -> void:
 # The blood trail (protocol 55): dark red flat spots on the ground where a wounded animal ran, a pooled MeshInstance3D each,
 # size varied by position so the trail does not look stamped.
 func on_blood(points: PackedVector3Array) -> void:
+	_blood_points = points
+
 	if _blood_mat == null:
-		_blood_mat = StandardMaterial3D.new()
-		_blood_mat.albedo_color = Color(0.32, 0.03, 0.03)
-		_blood_mat.roughness = 0.35   # wet
-		_blood_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		# A blood trail spot as a ragged splash, not a perfect red disc (Kathreen, 3 Nov 2026): the edge is cut by noise into drips and a few flung drops,
+		# wet and dark red in the middle, drying brown at the rim. Each spot is turned at random, so no two look the same.
+		var shader: Shader = Shader.new()
+		shader.code = BLOOD_SHADER
+		_blood_mat = ShaderMaterial.new()
+		_blood_mat.shader = shader
 
 	while _blood.size() < points.size():
 		var spot: MeshInstance3D = MeshInstance3D.new()
@@ -133,6 +212,7 @@ func on_blood(points: PackedVector3Array) -> void:
 
 		if i < points.size():
 			spot.position = points[i] + Vector3(0.0, 0.03, 0.0)
+			spot.rotation.y = fmod(points[i].x * 7.31 + points[i].z * 3.17, TAU)     # each spot turned its own way, steady from frame to frame
 			var scale_xz: float = 0.6 + 0.8 * fposmod(points[i].x * 7.31 + points[i].z * 3.17, 1.0)
 			spot.scale = Vector3(scale_xz, 1.0, scale_xz * 0.8)
 

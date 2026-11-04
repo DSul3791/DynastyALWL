@@ -22,8 +22,8 @@ uniform float point_grid = 0.0;                            // 1: texels sit on t
 uniform vec4 hole = vec4(0.0);                             // world x, z, size x, size z of the live window: a chunk sheet steps aside there
 uniform float hole_inset = 8.0;
 uniform float cell_m = 8.0;                                // metres between texels
-uniform vec3 shallow_color : source_color = vec3(0.17, 0.33, 0.33);
-uniform vec3 deep_color : source_color = vec3(0.04, 0.17, 0.24);
+uniform vec3 shallow_color : source_color = vec3(0.16, 0.38, 0.34);   // Kathreen 3 Nov 2026 (art direction: vibrant, not grey): greener shallows, was 0.17, 0.33, 0.33
+uniform vec3 deep_color : source_color = vec3(0.03, 0.18, 0.28);   // bluer depths, was 0.04, 0.17, 0.24
 uniform vec3 foam_color : source_color = vec3(0.80, 0.84, 0.82);
 uniform vec3 sky_color : source_color = vec3(0.55, 0.64, 0.74);
 uniform float clear_m = 1.1;        // water this deep hides about two thirds of the bed
@@ -196,6 +196,24 @@ void fragment() {
 	ROUGHNESS = 0.06 + 0.35 * foam;
 	SPECULAR = 0.5;
 	ALPHA = clamp(max(0.35 + 0.6 * thick, foam), 0.0, 1.0) * shore * edge * contact;
+
+	// From under the water (Dave 2 Nov 2026: "being under the water looking up looks fake"): the surface is a mirror of the dark water
+	// below, except a round window overhead (Snell's window, about 49 degrees from the vertical) where the sky shows, bent and shaken by
+	// the ripples, with a bright ring at its rim. The fog (the water itself) dims it with distance.
+	if (!FRONT_FACING) {
+		vec3 ray = normalize(mat3(INV_VIEW_MATRIX) * VERTEX);
+		float c = clamp(dot(ray, n_world), 0.0, 1.0);
+		float window = smoothstep(0.62, 0.70, c);
+		float rim = exp(-pow((c - 0.67) / 0.035, 2.0));
+		vec3 overhead = sky_color * mix(0.8, 1.3, smoothstep(0.7, 1.0, c)) * (0.85 + 2.5 * length(n_world.xz));
+		vec3 below_col = mix(deep_color * 0.5, overhead, window) + vec3(0.85, 0.95, 1.0) * rim * 0.3;
+		below_col = mix(below_col, foam_color * 0.85, foam * 0.6);
+		ALBEDO = vec3(0.0);
+		EMISSION = below_col * mix(0.12, 1.0, daylight);
+		ROUGHNESS = 1.0;
+		SPECULAR = 0.0;
+		ALPHA = mix(0.96, 0.82, window) * shore * edge;
+	}
 }
 """
 

@@ -883,6 +883,10 @@ func _ground_ok(item: Dictionary, data, k: int, x: float, z: float, in_belt: boo
 	if water != 0 and (item["water_mask"] & (1 << water)) == 0:
 		return NAN
 
+	# A cave mouth opened the ground here (spring caves, Dave 3 Nov 2026): nothing grows in the cut or floats over the entrance.
+	if not data.cave_openings.is_empty() and data.in_cave_opening(x, z):
+		return NAN
+
 	# Trees and shrubs never stand in water, only at its edge: no inland water
 	# at the spot or within a few meters around it.
 	if item["kind"] != KIND_PLANT and _near_water(data, x, z):

@@ -37,14 +37,14 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 11. Trigger: 6 sticks and 3 stones. Line: "Make a Campfire kit: 6 sticks, 3 stones." (recipe 4, 8 s). Check: campfire kit in the pack.
 12. Trigger: kit made. Line: "Hold the kit and click where the ring shows. Yellow: open ground, rain puts the fire out. Green: under a tree's crown, the fire survives rain. Stand under a big tree and the ring turns green." Check: a fire placed.
 13. Trigger: fire placed, unlit. Line: "A laid fire is not lit yet. Stand close and press E: you spend one plant fibre as tinder." (tinder: plant fibre, birch bark, tinder, tinder fungus; open fires will not light in rain.) Check: fire burning.
-14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with E: a stick burns 2 real minutes, firewood 20 minutes, a log 3 hours (3+ firewood makes a bigger fire, 3+ logs the biggest)." Check: one fuel added.
-15. Trigger: hunger under 80 %. Line: "Hold E at the fire to roast raw meat, fish or shellfish. The campfire cooks only meat: berries, nuts, roots and mushrooms are cooked in the campfire pot, hearth or oven." Check: one piece of meat roasted (a berry is refused at the campfire).
+14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with F (the fire store; closing it lays the wood on the fire): a stick burns 2 real minutes, firewood 20 minutes, a log 3 hours (3+ firewood makes a bigger fire, 3+ logs the biggest)." Check: one fuel added.
+15. Trigger: hunger under 80 %. Line: "Press F at the burning fire and put raw meat, fish or shellfish in its store; it cooks there. The campfire cooks only meat: berries, nuts, roots and mushrooms are cooked in the campfire pot, hearth or oven." Check: one piece of meat roasted (a berry is refused at the campfire).
 
 ## Minute 18 to 26: shelter and bed
 
 16. Trigger: fire burning, Warmth under 70 %. Line: "Shelter keeps rain and wind off you. Lash a ridge pole on two forks, lean sticks side by side against it and weave in boughs: 32 sticks, 8 leaves, 4 twine (sticks lie thick under the trees, so hold E to sweep them; one felled tree gives the leaves)." (recipe 13, 25 s; 31 Oct: bigger model, Dave: round poles, not timber). Check: kit in the pack.
 17. Trigger: kit made. Line: "Click to place it with the open side towards you. Standing under its roof counts as being under cover (the roof is 2.6 m by 3.4 m: big enough to lie down in). Hold E at it to take it down." Check: lean-to placed.
-18. Trigger: lean-to placed. Line: "Ferns give bedding. Press E on two ferns, then lash a Rough bed, a low frame of sticks and branches with a heap of bedding like a manger: 10 thatch or 8 bedding, 4 sticks, 2 twine." (recipe 231; thatch also works: 10 thatch.) Check: bed kit.
+18. Trigger: lean-to placed. Line: "Make a wooden hammer (a wooden block, a stick and a twine). Hold it, press R and pick Rough bed: 10 thatch, 4 sticks and 2 twine, built inside your lean-to." (hammer blueprint 24, Dave 2 Nov; the bed kit recipes stay for the feather and canopy beds.) Check: rough_bed placed.
 19. Trigger: bed kit. Line: "Place the bed under the lean-to roof, then lie down on it with Z. Press E on the bed to make it your spawn point (a death brings you back on it). Hold Z for three seconds to sleep. Under cover on a bed you heal faster and food and water drain at half speed." Check: slept 3 s or lay on the bed.
 
 ## Minute 26 to 30: tools and what comes next
@@ -58,7 +58,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed, or the player tried to roast one at the fire and was refused. Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine into a Campfire pot and set it by the fire." (recipes 21 and 165.) Check: campfire pot kit made.
 24. Trigger: campfire pot placed. Line: "Add 3 berries and water to the pot for Stewed berries. Nettle leaves make tea, eggs make a boiled egg. Baked food (roots, nuts, flatbread) needs a clay hearth: 10 bricks, 6 clay and 4 stones, built with a hammer. A brick is 2 clay fired at the campfire." Check: first pot dish cooked.
 
-Hints: data/items/hints.json already has "cook_rule" ("Roast raw meat on the campfire. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.
+Hints: data/items/hints.json already has "cook_rule" ("Put raw meat in the campfire with F. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.
 
 
 ## What the tutorial must NOT promise yet
@@ -119,10 +119,10 @@ The goal list is the 13 starter goals of `data/items/starter_goals.json` in this
 | 7 | berries | Eat something wild | fire |
 | 8 | shelter | Build a lean-to | fire |
 | 9 | bed | Make a bed | shelter |
-| 10 | workbench | Build a workbench | axe |
+| 10 | workbench | Build a Camp bench | axe |
 | 11 | spear | Make a spear | twine |
 | 12 | knife | Make a stone knife and work a kill | spear |
-| 13 | fish | Catch a fish | workbench |
+| 13 | fish | Catch a fish | twine |
 | 14 to 23 | torch_night, candle, smoke_fish, dry_berries, jerky, salted_fish, winter_store, fur_for_winter, story, night_walk | camp and winter goals | see file |
 
 Comfort and Rested (protocol 81): a line at the top right of the screen, "Comfort 7   Rested 38 min" (the Rested part only while the buff runs, hidden at comfort 0 with no buff). Hovering it with the cursor free (inventory open) shows the tooltip: what counts with its points, up to five things that could be added (lit fixtures marked "(lit)"), and the Rested bonuses with the minutes left. Rested is earned by lying in a bed, or sitting 30 s on a seat, at comfort 2 or more, and lasts 45 real minutes. Lit wall torches, chandeliers and fireplaces count only while lit, burn their fuel (stick 30 min, candle 60 min, firewood 120 min) and keep their state across a restart. The lean-to is 2.6 x 3.4 m (32 sticks, 8 leaves, 4 twine) and a bed can stand inside it.

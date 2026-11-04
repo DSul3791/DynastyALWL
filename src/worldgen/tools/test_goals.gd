@@ -128,7 +128,7 @@ func _init() -> void:
 
 	# Shelter: a lean-to placed. Workbench: kit placed.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 12, Vector3.ZERO)
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 32, Vector3.ZERO)   # the lean-to costs 32 sticks, 8 leaves, 4 twine (ridge pole and leaned sticks, 31 Oct)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 32, Vector3.ZERO)   # the lean-to costs 16 sticks, 4 leaves, 2 twine (lighter 3 Nov; was 32/8/4)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 4, Vector3.ZERO)
 	craft("lean_to_kit", 1)
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(-3.0, 10.0, 0.0))
@@ -163,7 +163,7 @@ func _init() -> void:
 	for n in range(3):
 		hinter._goals_tick()
 
-	check(said.has("Press Tab to see Health, Food, Water, Warmth and Energy."), "moving 5 m brings the next hint (%s)" % str(said.slice(-2)))
+	check(said.has("Press Tab to see Health, Food, Water, Temperature and Energy."), "moving 5 m brings the next hint (%s)" % str(said.slice(-2)))
 	hinter.action(1, Net.ACT_ADMIN_GIVE, hinter.table.number_of("stick"), 0, 9, Vector3.ZERO)
 
 	for n in range(4):
@@ -226,5 +226,22 @@ func _init() -> void:
 	camp._items[pot_id] = {"number": 0, "count": 1, "pos": Vector3(2.0, 10.0, 0.5), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
 	camp._next_id += 1
 	check(not camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "once a pot stands at the fire the plant food hint stops")
+	var bench_check := {"event": "placed", "what_any": ["workbench", "log_workbench"], "count": 1}
+	check(not camp._goal_met(1, pot_state, bench_check, "workbench"), "no bench placed: the workbench goal is open")
+	camp._goal_event(1, "placed", "log_workbench")
+	check(camp._goal_met(1, camp._goal_state_of(1), bench_check, "workbench"), "a log workbench also completes the workbench goal (Dino round 6)")
+	check(camp._hint_trigger_true(1, camp._goal_state_of(1), "workbench_placed"), "a log workbench fires the workbench_placed hints")
+	check(not camp._hint_trigger_true(1, pot_state, "has_campfire_kit"), "no fire kit in the pack: no place-fire reminder")
+	var fish_check := {"have_item_any": ["trout", "perch"], "or_event": "fish_caught", "count": 1}
+	check(not camp._goal_met(1, camp._goal_state_of(1), fish_check, "fish"), "no fish caught or held: the fish goal is open")
+	camp._goal_event(1, "fish_caught")
+	check(camp._goal_met(1, camp._goal_state_of(1), fish_check, "fish"), "a caught fish completes the fish goal even when it is gone from the pack")
+	var axe_check := {"made_item": "stone_axe", "or_have": true, "count": 1}
+	var bought_before: bool = camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe")
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	check(camp._goal_met(1, camp._goal_state_of(1), axe_check, "axe"), "a bought stone axe in the pack completes the axe goal (was %s before)" % str(bought_before))
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
+	check(camp._hint_trigger_true(1, pot_state, "has_campfire_kit"), "a fire kit in the pack triggers the place-fire reminder")
+	check(not camp._hint_trigger_true(1, pot_state, "near_nettle") or camp.count_for(1, "nettles") > 0, "near_nettle needs nettles in the pack")
 	print("goals: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
