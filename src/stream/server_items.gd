@@ -3821,6 +3821,11 @@ func _cell_ground_ready(cell: Vector2i, cell_m: float) -> bool:
 	return all_ready
 
 
+# The spawn boost adds up to the cap but never takes away: a sloped cell already rolling more than the cap keeps its own roll (Dino round 7).
+static func boosted(base: int, add: int, cap: int) -> int:
+	return maxi(base, mini(base + add, cap))
+
+
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
@@ -3841,8 +3846,8 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	if not boost.is_empty() and Vector2(centre.x - respawn_point.x, centre.y - respawn_point.z).length() <= float(boost.get("radius_m", 0.0)):
 		var more_stones: Array = boost.get("stones_add", [0, 0])
 		var more_sticks: Array = boost.get("sticks_add", [0, 0])
-		stones = mini(stones + rng.randi_range(int(more_stones[0]), int(more_stones[1])), int(boost.get("stones_max_boost", 4)))   # luck-exempt: seeded world layout
-		sticks = mini(sticks + rng.randi_range(int(more_sticks[0]), int(more_sticks[1])), int(boost.get("sticks_max_boost", 4)))   # luck-exempt: seeded world layout
+		stones = boosted(stones, rng.randi_range(int(more_stones[0]), int(more_stones[1])), int(boost.get("stones_max_boost", 4)))   # luck-exempt: seeded world layout
+		sticks = boosted(sticks, rng.randi_range(int(more_sticks[0]), int(more_sticks[1])), int(boost.get("sticks_max_boost", 4)))   # luck-exempt: seeded world layout
 
 	var kinds: Array = []
 
