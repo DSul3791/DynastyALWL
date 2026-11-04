@@ -76,6 +76,14 @@ static var _loaded: bool = false
 static var path: String = PATH              # tests point this at their own file
 
 
+static func _known(id: String) -> bool:
+	for row in ACTIONS:
+		if row[0] == id:
+			return true
+
+	return false
+
+
 static func _row(id: String) -> Array:
 	for row in ACTIONS:
 		if row[0] == id:
@@ -101,11 +109,12 @@ static func ensure_loaded() -> void:
 		return
 
 	for id in parsed:
-		var row: Array = _row(str(id))
 		var entry: Variant = parsed[id]
 
-		if row.is_empty() or typeof(entry) != TYPE_DICTIONARY:
-			continue
+		if not _known(str(id)) or typeof(entry) != TYPE_DICTIONARY:
+			continue   # an action that no longer exists, or a damaged entry: ignored without an error
+
+		var row: Array = _row(str(id))
 
 		var key: int = int(entry.get("key", KEY_NONE))
 		var ctrl: bool = bool(entry.get("ctrl", false)) and not bool(row[7])
