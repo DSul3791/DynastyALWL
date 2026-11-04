@@ -2387,8 +2387,7 @@
 				"Craft: 2 Hide, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"hide": {
 			"name": "Hide",
@@ -2412,8 +2411,7 @@
 				"Used in Hide gloves",
 				"Used in Hide glue"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"rope": {
 			"name": "Rope",
@@ -2474,8 +2472,7 @@
 			"used_for": [
 				"Used in Bone arrow"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"backpack": {
 			"name": "Backpack",
@@ -2530,7 +2527,7 @@
 			"description": "Food that has gone bad. Do not eat it.",
 			"how_to_get": [],
 			"used_for": [
-				"Spoiled food: worthless. Drop it; planned as compost."
+				"Compost (from rotten food)"
 			],
 			"obtainable_now": false
 		},
@@ -2675,8 +2672,7 @@
 				"Used in Rosemary joint",
 				"Used in Venison pie"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"roast_meat": {
 			"name": "Roast Meat",
@@ -2684,8 +2680,7 @@
 			"description": "Meat roasted over a fire. Filling, and it keeps a couple of days.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"sinew": {
 			"name": "Sinew",
@@ -2705,8 +2700,7 @@
 				"Used in Fur hat",
 				"Used in Sinew cord"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"animal_fat": {
 			"name": "Animal fat",
@@ -2730,8 +2724,7 @@
 				"Used in Oat cakes",
 				"Used in Onion roast"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"feather": {
 			"name": "Feather",
@@ -2751,8 +2744,7 @@
 				"Used in Wooden arrow",
 				"Fletching for arrows; quills and bedding come later."
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"workbench_kit": {
 			"name": "Camp bench",
@@ -2803,8 +2795,7 @@
 				"Used in Juniper trout",
 				"Used in Salted fish"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"perch": {
 			"name": "Perch",
@@ -2814,8 +2805,7 @@
 			"used_for": [
 				"Used in Fish stew"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"carp": {
 			"name": "Carp",
@@ -2823,8 +2813,7 @@
 			"description": "A heavy fish of still ponds. Cook it before you eat it.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"pike": {
 			"name": "Pike",
@@ -2834,8 +2823,7 @@
 			"used_for": [
 				"Used in Smoked fish"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"roast_fish": {
 			"name": "Roast Fish",
@@ -2843,8 +2831,7 @@
 			"description": "Fish cooked over a fire. Filling, and keeps a day or two.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"coin_copper": {
 			"name": "Copper coin",
@@ -4864,8 +4851,7 @@
 			"description": "Seeds for sowing wheat. Plant them in a tilled bed in spring.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"barley_seeds": {
 			"name": "Barley seeds",
@@ -4873,8 +4859,7 @@
 			"description": "Seeds for sowing barley. Plant in a tilled bed.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"carrot_seeds": {
 			"name": "Carrot seeds",
@@ -4932,7 +4917,8 @@
 			"kind": "material",
 			"description": "Rotted plant matter. Feeds a tilled bed.",
 			"how_to_get": [
-				"Craft: 3 Plant fibre"
+				"Craft: 3 Plant fibre",
+				"Craft: 2 Rotten food"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4947,8 +4933,7 @@
 				"Dropped by reindeer when worked with a knife"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"tusk": {
 			"name": "Tusk",
@@ -4957,9 +4942,10 @@
 			"how_to_get": [
 				"Dropped by boar when worked with a knife"
 			],
-			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"used_for": [
+				"Sold to traders (worth 20 copper)"
+			],
+			"obtainable_now": true
 		},
 		"claw": {
 			"name": "Claw",
@@ -4972,9 +4958,10 @@
 				"Dropped by lynx when worked with a knife",
 				"Dropped by wolf when worked with a knife"
 			],
-			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"used_for": [
+				"Sold to traders (worth 12 copper)"
+			],
+			"obtainable_now": true
 		},
 		"down": {
 			"name": "Down",
@@ -4984,9 +4971,10 @@
 				"Dropped by duck when worked with a knife",
 				"Dropped by goose when worked with a knife"
 			],
-			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"used_for": [
+				"Feather bed"
+			],
+			"obtainable_now": true
 		},
 		"quill": {
 			"name": "Quill",
@@ -4995,7 +4983,9 @@
 			"how_to_get": [
 				"Dropped by porcupine when worked with a knife"
 			],
-			"used_for": [],
+			"used_for": [
+				"Quill arrows"
+			],
 			"obtainable_now": false,
 			"status": "planned"
 		},
@@ -5100,8 +5090,7 @@
 			"used_for": [
 				"Used in Seal stew"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"sea_salt": {
 			"name": "Sea salt",
@@ -5142,8 +5131,7 @@
 			"description": "Seal meat roasted over a fire. Rich and fatty.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wool": {
 			"name": "Wool",
@@ -5341,8 +5329,7 @@
 			"description": "Seeds for sowing oats. Plant in a tilled bed.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"rye_seeds": {
 			"name": "Rye seeds",
@@ -5350,8 +5337,7 @@
 			"description": "Seeds for sowing rye. Plant in a tilled bed.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"cabbage_seeds": {
 			"name": "Cabbage seeds",
@@ -6712,7 +6698,7 @@
 			"kind": "placeable",
 			"description": "A rough bed topped with feathers and a wool blanket.",
 			"how_to_get": [
-				"Build with a hammer (press R): 10 Thatch, 30 Feather, 2 Fibre cloth near a workbench"
+				"Build with a hammer (press R): 10 Thatch, 20 Feather, 10 Down, 2 Fibre cloth near a workbench"
 			],
 			"used_for": [
 				"Used in Canopy bed"
