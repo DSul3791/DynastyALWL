@@ -280,15 +280,15 @@
 			"needs": [
 				[
 					"stick",
-					32
+					16
 				],
 				[
 					"leaves",
-					8
+					4
 				],
 				[
 					"twine",
-					4
+					2
 				]
 			],
 			"gives": [
