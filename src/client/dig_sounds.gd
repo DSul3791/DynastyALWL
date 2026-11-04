@@ -30,6 +30,13 @@ var _stage                              # SoundStage (voxel tool, water lookups,
 var _streams: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 var _later: Array = []                  # [seconds left, name, position, db] sounds waiting a moment
+const MERGE_MS := 150                   # digs arriving together (a hoe stroke's several edits, or a backlog after a hitch) sound once, not stacked into one loud crash (Dave 3 Nov 2026)
+const MERGE_M := 6.0
+const MAX_LIVE := 3                     # dig sounds playing at once
+var merged: int = 0                     # digs not voiced because one had just played next to them (checks)
+var _last_msec: int = -100000
+var _last_at: Vector3 = Vector3.ZERO
+var _live: int = 0
 
 
 func setup(stage) -> void:
@@ -69,6 +76,14 @@ func dug(center: Vector3, radius: float, listener: Vector3) -> void:
 	if center.distance_to(listener) > MAX_DISTANCE_M:
 		return
 
+	var now: int = Time.get_ticks_msec()
+
+	if (now - _last_msec < MERGE_MS and center.distance_to(_last_at) < MERGE_M) or _live >= MAX_LIVE:
+		merged += 1
+		return
+
+	_last_msec = now
+	_last_at = center
 	var sound_name: String = sound_for(center)
 	var db: float = BASE_DB + 6.0 * log(maxf(radius, 0.5) / 2.0) / log(2.0)
 	_play(sound_name, center, db)
@@ -106,6 +121,8 @@ func _play(sound_name: String, at: Vector3, db: float) -> void:
 	add_child(player)
 	player.add_to_group("world_sounds")
 	player.global_position = at
+	_live += 1
+	player.tree_exited.connect(func() -> void: _live = maxi(_live - 1, 0))   # also when the voice budget sheds it
 	player.finished.connect(player.queue_free)
 	player.play()
 	digs_played[sound_name] = int(digs_played.get(sound_name, 0)) + 1

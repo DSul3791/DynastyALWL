@@ -55,7 +55,7 @@ func _init() -> void:
 
 # Finds the two arms among the five meshes (the two tall, thin parts on either side of the middle).
 func _load_sources() -> void:
-	var packed: PackedScene = load(PARTS_GLB) as PackedScene if (ResourceLoader.exists(PARTS_GLB) and not DynastyBody.force_unavailable) else null
+	var packed: PackedScene = DynastyBody.load_warm(PARTS_GLB) as PackedScene if (ResourceLoader.exists(PARTS_GLB) and not DynastyBody.force_unavailable) else null
 
 	if packed == null:
 		print("dynasty arms: %s is not imported: keeping the old arms this run (run godot --import once)" % PARTS_GLB)

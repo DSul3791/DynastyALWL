@@ -292,13 +292,23 @@ static func has_look(item_id: String) -> bool:
 	return not entry(item_id).is_empty()
 
 
+# Each item's look is built once per run and shared (lag, 3 Nov 2026: a held tool or food was built again, part by part, every time it was taken in
+# hand; the detailed looks take several ms each). Callers only draw the mesh, never change it.
+static var _built: Dictionary = {}
+
+
 static func mesh_for(item_id: String) -> Mesh:
+	if _built.has(item_id):
+		return _built[item_id]
+
 	var def: Dictionary = entry(item_id)
 
 	if def.is_empty():
 		return null
 
-	return mesh(str(def.get("shape", "chunk")), Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)), def.get("bits", []))
+	var made: ArrayMesh = mesh(str(def.get("shape", "chunk")), Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)), def.get("bits", []))
+	_built[item_id] = made
+	return made
 
 
 static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = []) -> ArrayMesh:
