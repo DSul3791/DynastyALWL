@@ -127,7 +127,8 @@ func _init() -> void:
 	check(done("fire"), "lighting the fire completes the fire goal")
 
 	# Shelter: a lean-to placed. Workbench: kit placed.
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 200, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # admin give is capped at 100 a call
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 32, Vector3.ZERO)   # the lean-to costs 30 sticks, 200 leaves, 10 twine (Dave 4 Nov, claude-leanto-cost B)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 10, Vector3.ZERO)
 	craft("lean_to_kit", 1)
