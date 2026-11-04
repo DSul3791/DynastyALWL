@@ -1327,7 +1327,7 @@ func _init() -> void:
 
 	lt2.roof_remove = func(key): roofs2.clear()
 	lt2.action(1, Net.ACT_PICKUP, shelter, 0, 0, Vector3.ZERO)
-	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("lean_to_kit")) == 3, "taking it down gives the kit back")
+	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("stick")) >= 30, "taking it down gives its materials back (no kit)")
 
 	# Storage chest.
 	var cd: String = "user://test_server_items_chest"
@@ -1407,7 +1407,7 @@ func _init() -> void:
 	ch2.action(1, Net.ACT_CHEST_TAKE, ch2._chests[1].numbers.find(stones_n), chest2, 6, Vector3.ZERO)
 	check(ch2.inventory_of(1).count_of(stones_n) == 10 and ch2._chests[1].count_of(stones_n) == 0, "taking the stones out moves them back")
 	ch2.action(1, Net.ACT_PICKUP, chest2, 0, 0, Vector3.ZERO)
-	check(not ch2._items.has(chest2) and ch2.inventory_of(1).count_of(ch2.table.number_of("chest_kit")) == 1 and ch2._chests.is_empty(), "an empty chest comes down and gives the kit back")
+	check(not ch2._items.has(chest2) and ch2.inventory_of(1).count_of(ch2.table.number_of("chest_kit")) == 0 and ch2._chests.is_empty(), "an empty chest comes down and gives its materials, not a kit")
 
 	# Chopping block.
 	var bd: String = "user://test_server_items_block"
