@@ -33,6 +33,7 @@ func _init() -> void:
 	check(SlotSoundsScript.net_cue(str(net["say_nothing"])) == "net_haul", "an empty haul is the haul cue")
 	check(SlotSoundsScript.net_cue("You haul in trout, perch.") == "net_haul", "a haul line is the haul cue")
 	check(SlotSoundsScript.net_cue(str(net["say_cancel"])) == "", "a cancel line makes no cue")
-	check(SlotSoundsScript.net_cue("You land a trout.") == "", "a rod catch makes no net cue")
+	check(SlotSoundsScript.net_cue("You land a trout.") == "fish_land", "a rod catch plays the rod's own catch cue, not a net cue")
+	check(SlotSoundsScript.net_cue(str(fishing["say_bite"])) == "fish_bite", "a bite on the rod plays the bite cue")
 	print("batch 3 slot tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
