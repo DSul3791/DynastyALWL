@@ -4478,6 +4478,10 @@ func _load_trees() -> void:
 		var tree: Dictionary = row["tree"]
 		tree["state"] = int(tree["state"])
 		tree["chunk"] = [int(tree["chunk"][0]), int(tree["chunk"][1])]
+
+		if int(tree["state"]) == 3:
+			tree["landed"] = true   # BUG-024: a saved trunk fell long ago; it is never drawn falling again
+
 		_items[_next_id] = {"number": 0, "count": 1, "pos": Vector3(row["pos"][0], row["pos"][1], row["pos"][2]), "left": 1.0e9, "tree": tree}
 
 		if int(tree["state"]) == 3 and (bool(tree.get("auto_split", false)) or (not tree.has("auto_split") and not tree.has("split_tries") and int(tree.get("blows", 0)) == 0)):   # felled but not yet broken up (also a trunk from before the auto-split that nobody has cut): do it now
@@ -4694,6 +4698,11 @@ func _auto_split() -> void:
 
 	for id in ready:
 		_split_due.erase(id)
+
+		# BUG-024: it has hit the ground. A client that sees the trunk from now on (coming back into range) draws it lying, not falling again.
+		if _items.has(id) and _items[id].has("tree") and int(_items[id]["tree"].get("state", 0)) == 3 and not bool(_items[id]["tree"].get("landed", false)):
+			_items[id]["tree"]["landed"] = true
+			_dirty = true
 
 		if not split_trunk(int(id)) and _items.has(id) and _items[id].has("tree") and bool(_items[id]["tree"].get("auto_split", false)):
 			var tries: int = int(_items[id]["tree"].get("split_tries", 0)) + 1   # no room yet (a crowded spot): look again in half a minute, three times, then it stays a trunk to cut by hand
