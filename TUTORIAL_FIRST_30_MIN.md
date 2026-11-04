@@ -44,7 +44,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 16. Trigger: fire burning, Warmth under 70 %. Line: "Shelter keeps rain and wind off you. Lash a ridge pole on two forks, lean sticks side by side against it and weave in boughs: 32 sticks, 8 leaves, 4 twine (sticks lie thick under the trees, so hold E to sweep them; one felled tree gives the leaves)." (recipe 13, 25 s; 31 Oct: bigger model, Dave: round poles, not timber). Check: kit in the pack.
 17. Trigger: kit made. Line: "Click to place it with the open side towards you. Standing under its roof counts as being under cover (the roof is 2.6 m by 3.4 m: big enough to lie down in). Hold E at it to take it down." Check: lean-to placed.
-18. Trigger: lean-to placed. Line: "Ferns give bedding. Press E on two ferns, then lash a Rough bed, a low frame of sticks and branches with a heap of bedding like a manger: 10 thatch or 8 bedding, 4 sticks, 2 twine." (recipe 231; thatch also works: 10 thatch.) Check: bed kit.
+18. Trigger: lean-to placed. Line: "Make a wooden hammer (a wooden block, a stick and a twine). Hold it, press R and pick Rough bed: 10 thatch, 4 sticks and 2 twine, built inside your lean-to." (hammer blueprint 24, Dave 2 Nov; the bed kit recipes stay for the feather and canopy beds.) Check: rough_bed placed.
 19. Trigger: bed kit. Line: "Place the bed under the lean-to roof, then lie down on it with Z. Press E on the bed to make it your spawn point (a death brings you back on it). Hold Z for three seconds to sleep. Under cover on a bed you heal faster and food and water drain at half speed." Check: slept 3 s or lay on the bed.
 
 ## Minute 26 to 30: tools and what comes next
@@ -122,7 +122,7 @@ The goal list is the 13 starter goals of `data/items/starter_goals.json` in this
 | 10 | workbench | Build a Camp bench | axe |
 | 11 | spear | Make a spear | twine |
 | 12 | knife | Make a stone knife and work a kill | spear |
-| 13 | fish | Catch a fish | workbench |
+| 13 | fish | Catch a fish | twine |
 | 13b | sell | Sell to Hob | fibre |
 | 13c | order | Fill Hob's order (Any order for today?, once a game day) | sell |
 | 14 to 23 | torch_night, candle, smoke_fish, dry_berries, jerky, salted_fish, winter_store, fur_for_winter, story, night_walk | camp and winter goals | see file |
