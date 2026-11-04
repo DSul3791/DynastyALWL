@@ -17,9 +17,21 @@ func _check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
+# Bone positions as drawn: a SkeletonModifier3D's changes are on the poses only while the skeleton updates (Godot 4.3+ puts the animated pose back after), so they are
+# read in `skeleton_updated`, kept fresh every frame, and looked up here.
 func _bone(body: Node3D, bone: String) -> Vector3:
+	return (body.get_meta("drawn", {}) as Dictionary).get(bone, Vector3.INF)
+
+
+func _watch(body: Node3D) -> void:
 	var s: Skeleton3D = body.skeleton
-	return (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_" + bone))).origin
+	s.skeleton_updated.connect(func() -> void:
+		var drawn: Dictionary = {}
+
+		for bone in ["Hips", "Head", "LeftFoot", "RightFoot", "LeftToeBase", "LeftArm", "LeftHand"]:
+			drawn[bone] = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_" + bone))).origin
+
+		body.set_meta("drawn", drawn))
 
 
 func _pose(sliders: Dictionary) -> Dictionary:
@@ -30,6 +42,7 @@ func _pose(sliders: Dictionary) -> Dictionary:
 
 	var body: Node3D = Body.new()
 	root.add_child(body)
+	_watch(body)
 	body.set_proportions(g)
 	body.play("idle", 1.0, 0.0)
 	body.animation_player.seek(0.5, true)
@@ -128,9 +141,9 @@ func _init() -> void:
 
 			_check(moved > aabb.size.length() * (0.005 if n < 5 else 0.002) and moved < aabb.size.length() * 0.2, "widths: shape %d moves vertices a sensible amount (%.4f of %.4f)" % [n, moved, aabb.size.length()])
 
-		var bi: int = (shaped as ArrayMesh).find_blend_shape_by_name("build")
+		var bi: int = wide_body.body_mesh.find_blend_shape_by_name("build")
 		_check(absf(wide_body.body_mesh.get_blend_shape_value(bi) - 1.0) < 0.001, "widths: build weight 1")
-		_check(absf(wide_body.body_mesh.get_blend_shape_value((shaped as ArrayMesh).find_blend_shape_by_name("belly")) + 0.5) < 0.001, "widths: belly weight -0.5")
+		_check(absf(wide_body.body_mesh.get_blend_shape_value(wide_body.body_mesh.find_blend_shape_by_name("belly")) + 0.5) < 0.001, "widths: belly weight -0.5")
 
 	_check(not plain_body.body_mesh.mesh.has_meta("dynasty_shapes"), "widths: the plain body keeps Dave's own mesh")
 	var own_wide: Material = wide_body.body_mesh.get_active_material(0)

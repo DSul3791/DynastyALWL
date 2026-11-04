@@ -54,7 +54,8 @@
 			],
 			"check": {
 				"made_item": "stone_axe",
-				"count": 1
+				"count": 1,
+				"or_have": true
 			},
 			"reward": {
 				"coin_copper": 5
@@ -96,7 +97,7 @@
 		{
 			"id": "berries",
 			"title": "Eat something wild",
-			"hint": "Pick berries or fruit with E and eat them. Roast meat at the fire; cook plants in a pot.",
+			"hint": "Pick berries or fruit with E and eat them. Put raw meat in the fire with F; cook plants in a pot.",
 			"after": [
 				"fire"
 			],
@@ -111,7 +112,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Lash a ridge pole, lean 32 sticks against it and weave in 8 leaves with 4 twine. Place it with the open side towards you.",
+			"hint": "Lash a ridge pole, lean 16 sticks against it and weave in 4 leaves with 2 twine. Place it with the open side towards you.",
 			"after": [
 				"fire"
 			],
@@ -127,7 +128,7 @@
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Gather bedding from ferns or thatch from grass, then lash a Rough bed from sticks and bedding and place it under cover.",
+			"hint": "Make a wooden hammer (a wooden block, a stick and a twine), press R with it in hand and build a Rough bed in your lean-to: 10 thatch from thatch grass or heather, 4 sticks and 2 twine.",
 			"after": [
 				"shelter"
 			],
@@ -142,14 +143,17 @@
 		},
 		{
 			"id": "workbench",
-			"title": "Build a workbench",
-			"hint": "16 sticks, 6 twine and 4 stones make a Workbench. It unlocks better tools.",
+			"title": "Build a Camp bench",
+			"hint": "16 sticks, 6 twine and 4 stones make a Camp bench. It unlocks better tools.",
 			"after": [
 				"axe"
 			],
 			"check": {
 				"event": "placed",
-				"what": "workbench",
+				"what_any": [
+					"workbench",
+					"log_workbench"
+				],
 				"count": 1
 			},
 			"reward": {
@@ -189,21 +193,58 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (or a shore net) and fish at the pond.",
+			"hint": "Make a fishing rod (2 sticks, 2 twine) or a shore net and fish at the pond.",
 			"after": [
-				"workbench"
+				"twine"
 			],
 			"check": {
 				"have_item_any": [
 					"trout",
 					"perch",
 					"carp",
-					"pike"
+					"pike",
+					"salmon",
+					"eel",
+					"herring",
+					"mackerel",
+					"smelt",
+					"cod"
 				],
-				"count": 1
+				"count": 1,
+				"or_event": "fish_caught"
 			},
 			"reward": {
 				"coin_copper": 10
+			}
+		},
+		{
+			"id": "sell",
+			"title": "Sell to Hob",
+			"hint": "Hob the trader buys what you pick. Talk to him with E, ask what he sells, and sell him a lot of stones.",
+			"after": [
+				"fibre"
+			],
+			"check": {
+				"event": "sold",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 2
+			}
+		},
+		{
+			"id": "order",
+			"title": "Fill Hob's order",
+			"hint": "Ask Hob: Any order for today? Pick what he wants and bring it back. He pays once a day.",
+			"after": [
+				"sell"
+			],
+			"check": {
+				"event": "wanted_order",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 3
 			}
 		}
 	]

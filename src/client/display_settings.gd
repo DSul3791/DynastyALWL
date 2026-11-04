@@ -91,6 +91,12 @@ static func temp_text(warmth_percent: float) -> String:
 	return "%.1f °C" % c
 
 
+static func air_text(air_c: float) -> String:
+	if fahrenheit:
+		return "%.0f °F" % (air_c * 9.0 / 5.0 + 32.0)
+	return "%.0f °C" % air_c
+
+
 # Back to the first-run choices (the game puts the quality back to High).
 func reset() -> void:
 	size_index = DEFAULT_SIZE

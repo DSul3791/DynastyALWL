@@ -130,6 +130,10 @@ static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 					continue
 
 				var bone: String = String(bind_name[best]).trim_prefix(P)
+
+				if not head_of.has(P + bone) or not tail_of.has(P + bone):
+					continue      # a helper bone outside the rig's named chain (the glb's headfront): the vertex keeps its place in every shape
+
 				var a: Vector3 = head_of[P + bone]
 				var b: Vector3 = tail_of[P + bone]
 				var ab: Vector3 = b - a

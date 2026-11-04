@@ -20,6 +20,8 @@ const RAYS_PER_FRAME := 40
 const FLUSH_USEC := 2500                 # group buffers are re-joined and uploaded for at most this long a frame (at least one group); the rest wait a frame
 const BUILD_USEC := 5000                 # cells are built for at most this long a frame (at least one)
 const LOOKAHEAD_S := 1.5                 # the scan is centred this many seconds of movement ahead
+const JUMP_M := 20.0                     # moved farther than this in one frame: a teleport or respawn, not movement
+const MAX_SCAN_SPEED := 30.0             # m/s: the lookahead never runs ahead of this speed
 const RESCAN_MSEC := 800                 # the scan also repeats this often while some cell is unbuilt, to retry cells
 const IDLE_RESCAN_MSEC := 8000           # and this often when every cell in reach is built
 const RETRY_MSEC := 500
@@ -70,7 +72,12 @@ const LAYERS := [
 # ground-cover cards beyond band 0).
 const LOD_SCALE := [1.0, 2.0, 3.0, 4.0]       # card width by band: near, middle, far, very far (reach beyond 50 m)
 const LOD_SCALE_SHORT := [1.0, 1.5, 2.1, 2.1] # the Low tier (reach 40 m)
-const BAND_SHARE := [1.0, 0.4, 0.35, 0.35]    # share of the cards drawn per band beyond 50 m (the cost cap, section 33)
+const BAND_SHARE := [1.0, 1.0, 1.0, 1.0]      # cards built per band beyond 50 m: all of them now; the thinning is a smooth gradient in the shader (data/look/grass_far.json, Dave 3 Nov), not a step per band
+const TALL_MAX_LOD := 2                       # tall grass (meadow patches) is not built in the very far band; the shader fades it out by 80 percent of the radius
+const FAR_CONFIG := "res://data/look/grass_far.json"
+var fade_start_share: float = 0.5            # THE setting (grass_far.json): the thinning starts at this share of the grass radius
+var far_share: float = 0.3                   # share of the grass cards kept at the edge
+var tall_far_share: float = 0.0              # share of the tall grass kept at 80 percent of the radius
 const NEAR_END_MIN := 14.0
 const NEAR_END_MAX := 20.0
 const CLOSURE_OFFSETS := [Vector2(0.0, 0.0), Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(3.0, 3.0), Vector2(-3.0, -3.0)]
@@ -149,6 +156,9 @@ uniform float trail_draw = 0.25;
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
 uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
+uniform float thin_start = 1.0e9;       // metres: grass thins from here (grass_far.json, set_radius)
+uniform float thin_end = 2.0e9;
+uniform float thin_min = 1.0;           // share of the cards kept at thin_end
 uniform float season_blades = 1.0;      // share of blades kept (hashed per cell): winter thins the grass
 uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
 uniform vec4 trunk_a[8];                // felled trunks near: start x, z, end x, z
@@ -199,6 +209,12 @@ void vertex() {
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);
+	// Far grass thins out smoothly (Dave 3 Nov).
+	// The cards were already cut when the cell was built, with the share INSTANCE_CUSTOM.a (1 for a near card). The cut is only ever finer here:
+	// a card is kept while its number is below the share left at this distance relative to the share it was built with.
+	float share_now = mix(1.0, thin_min, smoothstep(thin_start, thin_end, reach));
+	float ratio = mix(1.0, share_now / max(INSTANCE_CUSTOM.a, 0.001), step(thin_min, 0.9999));
+	VERTEX *= step(fract(sin(dot(root_xz, vec2(39.3468, 11.135))) * 24634.6345), ratio);
 	blade_color = mix(INSTANCE_CUSTOM.rgb, INSTANCE_CUSTOM.rgb * 0.85 + vec3(0.1, 0.085, 0.04), 0.7 * worn) * (1.0 - 0.12 * flat_down);
 }
 
@@ -232,6 +248,11 @@ var clear_edge_m: float = 1.5
 var trunks: Array = []                   # felled trunks lying on the grass: [ax, az, bx, bz, radius at a, radius at b] (set_trunks)
 var trunk_margin_m: float = 0.3
 var _trunk_msec: int = -1
+var bare: Dictionary = {}                # trodden path patches: bucket (2 m) -> [Vector3 spots]; no blade grows inside BARE_M of one (set_bare)
+var bare_spots: Array = []
+const BARE_M := 0.6                     # no blade inside this of a path patch
+const BARE_EDGE_M := 1.1                # thinning out to here, where the drawn brown fades away (it is fully gone by 1.25 m)
+const BARE_BUCKET_M := 2.0
 var third_person: bool = false          # set by the client: only then is the grass lowered round the player
 const TRUNK_EDGE_M := 0.45             # how far past the margin the pressed grass rises back
 var trunk_squash: float = 0.2           # a blade under or beside a trunk keeps this share of its height
@@ -340,6 +361,13 @@ func setup(terrain: Node3D, flora, tables) -> void:
 		material.set_shader_parameter("wind_strength", 0.12 * float(layer["wind"]))
 		material.set_shader_parameter("backlight", float(layer["backlight"]))
 		_materials.append(material)
+
+	var far_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string(FAR_CONFIG)) if FileAccess.file_exists(FAR_CONFIG) else null
+
+	if far_cfg is Dictionary:
+		fade_start_share = clampf(float(far_cfg.get("fade_start_share", 0.5)), 0.05, 0.95)
+		far_share = clampf(float(far_cfg.get("far_share", 0.3)), 0.0, 1.0)
+		tall_far_share = clampf(float(far_cfg.get("tall_far_share", 0.0)), 0.0, 1.0)
 
 	_trample = TrampleScript.new()
 
@@ -528,6 +556,12 @@ func set_radius(meters: float) -> void:
 		# The cards shrink to nothing over the last 12 m (no pop at the edge).
 		_materials[n].set_shader_parameter("fade_start", maxf(reach - 12.0, 1.0))
 		_materials[n].set_shader_parameter("fade_end", maxf(reach, 2.0))
+		# The gradient (Dave 3 Nov): full from the player to fade_start_share of the radius, thinning to far_share at the edge; the tall grass to
+		# tall_far_share by 80 percent of the radius (it is not built beyond that).
+		var tall_layer: bool = n == 2
+		_materials[n].set_shader_parameter("thin_start", meters * fade_start_share)
+		_materials[n].set_shader_parameter("thin_end", meters * (0.8 if tall_layer else 1.0))
+		_materials[n].set_shader_parameter("thin_min", tall_far_share if tall_layer else far_share)
 
 	if not enabled:
 		_clear_all()
@@ -1056,6 +1090,74 @@ func set_cleared(spots: Array, radius: float, edge: float) -> void:
 		_edits.push_front([Time.get_ticks_msec() + 50, cells])
 
 
+# Trodden hoe path patches (Dave 2 Nov 2026: "grass pops up on the path in the distance, and goes again when I walk back"). The shader presses
+# only the eight nearest logs, so a long path lost its far patches. Every patch is now left out of the cells themselves (exact, any number, near
+# or far), and the cells round a patch that was added or taken away are built again.
+func set_bare(spots: Array) -> void:
+	var old: Dictionary = {}
+
+	for spot in bare_spots:
+		old[spot] = true
+
+	var changed: Array = []
+	var fresh: Dictionary = {}
+
+	for spot in spots:
+		fresh[spot] = true
+
+		if not old.has(spot):
+			changed.append(spot)
+
+	for spot in bare_spots:
+		if not fresh.has(spot):
+			changed.append(spot)
+
+	bare_spots = spots
+	bare = {}
+
+	for spot in spots:
+		for bz in range(int(floor((spot.z - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.z + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
+			for bx in range(int(floor((spot.x - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.x + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
+				var key: Vector2i = Vector2i(bx, bz)
+
+				if not bare.has(key):
+					bare[key] = []
+
+				bare[key].append(spot)
+
+	var cells: Dictionary = {}
+
+	for spot in changed:
+		for cz in range(int(floor((spot.z - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.z + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
+			for cx in range(int(floor((spot.x - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.x + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
+				cells[Vector2i(cx, cz)] = true
+
+	if not cells.is_empty():
+		_edits.push_front([Time.get_ticks_msec() + 50, cells.keys()])
+
+
+func _bare_at(x: float, z: float) -> bool:
+	var list: Variant = bare.get(Vector2i(int(floor(x / BARE_BUCKET_M)), int(floor(z / BARE_BUCKET_M))))
+
+	if list == null:
+		return false
+
+	for spot in list:
+		var d: float = Vector2(x - spot.x, z - spot.z).length()
+
+		if d < BARE_M:
+			return true
+
+		if d < BARE_EDGE_M:
+			# The same fixed scatter as _cleared_at: the same spot always gives the same answer, thinning out over the fading brown.
+			var scatter: float = fposmod(sin(floorf(x * 3.0) * 12.9898 + floorf(z * 3.0) * 78.233) * 43758.5453, 1.0)
+
+			if smoothstep(BARE_M, BARE_EDGE_M, d) <= scatter:
+				return true
+
+	return false
+
+
 # Is (x, z) inside a placed item's circle (with the soft edge decided by a fixed scatter, so the same spot always gives the same answer).
 func _cleared_at(x: float, z: float) -> bool:
 	for spot in cleared:
@@ -1236,7 +1338,12 @@ func update(from_position: Vector3) -> void:
 	_last_position = from_position
 	_last_msec = now
 	var speed: float = clampf(Vector2(moved.x, moved.z).length() / dt, 0.0, 30.0)
-	_velocity = _velocity.lerp(Vector2(moved.x, moved.z) / dt if dt < 0.5 else Vector2.ZERO, 0.2)
+	# Steve 3 Nov 2026 (lag run #242: "grass: rescan" 100-200 ms a frame after a jump of 144 m, a respawn or a teleport): the jump read as a speed of
+	# thousands of m/s, so the scan was centred kilometres ahead and its reach grew to match (thousands of cells a row). A jump is not a speed:
+	# it starts the smoothing again; a real speed is capped at MAX_SCAN_SPEED.
+	var jump: bool = Vector2(moved.x, moved.z).length() > JUMP_M
+	var step_velocity: Vector2 = Vector2.ZERO if jump or dt >= 0.5 else (Vector2(moved.x, moved.z) / dt).limit_length(MAX_SCAN_SPEED)
+	_velocity = Vector2.ZERO if jump else _velocity.lerp(step_velocity, 0.2)
 	var ahead: Vector3 = from_position + Vector3(_velocity.x, 0.0, _velocity.y) * LOOKAHEAD_S
 	var here_cell: Vector2i = Vector2i(int(floor(ahead.x / CELL_M)), int(floor(ahead.z / CELL_M)))
 
@@ -1254,8 +1361,13 @@ func update(from_position: Vector3) -> void:
 	var rays: int = RAYS_PER_FRAME * (2 if speed > 2.5 and _pending.size() > 20 else 1)
 	var started: int = Time.get_ticks_usec()
 
-	while rays > 0 and not _pending.is_empty():
-		var cell: Vector2i = _pending.pop_front()
+	# Steve 3 Nov 2026 (lag run #242: "grass" 650-850 ms once after the hoe strokes): the queue held 10 thousand stale cells (freed or already
+	# built), each taken with pop_front, which moves the whole array: one frame popped them all. Walk it with an index and cut it once.
+	var taken: int = 0
+
+	while rays > 0 and taken < _pending.size():
+		var cell: Vector2i = _pending[taken]
+		taken += 1
 
 		if not _cells.has(cell) or not _cells[cell]["busy"]:
 			continue
@@ -1264,6 +1376,9 @@ func update(from_position: Vector3) -> void:
 
 		if Time.get_ticks_usec() - started > BUILD_USEC:
 			break
+
+	if taken > 0:
+		_pending = _pending.slice(taken)
 
 	_flush_groups()
 
@@ -1284,6 +1399,18 @@ func _lod_of(cell: Vector2i, held: int) -> int:
 			return band
 
 	return 3 if radius_m > 50.0 else 2
+
+
+# The share of the cards of a grass layer kept at `d` metres from the player (Dave 3 Nov 2026): 1 out to fade_start_share of the radius, then a
+# smooth fall to far_share (tall grass: tall_far_share by 80 percent of the radius) at the edge. Cells are cut with this when built, so far grass
+# costs less to build and to draw; the shader only thins them further as the player moves (the share is kept in each card's custom alpha).
+func _far_share(d: float, layer: int) -> float:
+	var tall: bool = layer == 2
+	var start: float = radius_m * fade_start_share
+	var end: float = radius_m * (0.8 if tall else 1.0)
+	var t: float = clampf((d - start) / maxf(end - start, 0.001), 0.0, 1.0)
+	t = t * t * (3.0 - 2.0 * t)
+	return lerpf(1.0, tall_far_share if tall else far_share, t)
 
 
 func _lod_points(lod: int) -> int:
@@ -1360,6 +1487,10 @@ func _rescan_step() -> void:
 			buckets[n] = []
 
 		for cell in _pending:
+			# Cells about to be freed (out of reach) or no longer waiting leave the queue here, so it never builds up stale entries.
+			if not _scan_keep.has(cell) or not _cells.has(cell) or not _cells[cell]["busy"]:
+				continue
+
 			var ring: int = clampi(int((Vector2(cell) + Vector2(0.5, 0.5)).distance_to(near)), 0, span + 1)    # clamped: a NaN centre gave int min
 			buckets[ring].append(cell)
 
@@ -1486,6 +1617,9 @@ func _build(cell: Vector2i) -> int:
 			if not cleared.is_empty() and _cleared_at(x, z):
 				continue
 
+			if not bare.is_empty() and _bare_at(x, z):
+				continue
+
 			# Owner (2026-10-21): under a big crown almost no grass except at the edge of its canopy footprint,
 			# and a floor so covered in leaves and twigs that no ground shows. `under` is 0 at the drip line, 1 at the trunk.
 			var under: float = _flora.cover.crown_depth(Vector3(x, point.y + 1.0, z))
@@ -1527,6 +1661,9 @@ func _build(cell: Vector2i) -> int:
 				if layer == 0 and lod > 0:
 					continue
 
+				if layer == 2 and lod > TALL_MAX_LOD:
+					continue
+
 				# Owner (2026-10-21): all the grass has the same draw distance, so the short grass is drawn in
 				# the far bands too (it used to stop at 85 percent of the reach and drop out of the far bands).
 				var want: float = float(LAYERS[layer]["per_point"]) * density * band_share * (1.0 + wet if layer == 2 else 1.0)
@@ -1547,6 +1684,11 @@ func _build(cell: Vector2i) -> int:
 
 					var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 					var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+					var kept: float = _far_share(Vector2(ox - _center.x, oz - _center.z).length(), layer) if layer >= 1 else 1.0
+
+					if kept < 1.0 and rng.randf() > kept:
+						continue
+
 					var size: float = rng.randf_range(0.75, 1.15)
 					var yaw: float = rng.randf() * TAU
 					var sy: float = size * rng.randf_range(0.8, 1.15)
@@ -1572,7 +1714,7 @@ func _build(cell: Vector2i) -> int:
 					buffer[o + 12] = green.r * shade * rng.randf_range(0.93, 1.07)
 					buffer[o + 13] = green.g * shade
 					buffer[o + 14] = green.b * shade * rng.randf_range(0.9, 1.1)
-					buffer[o + 15] = 1.0
+					buffer[o + 15] = kept
 					buffers[layer] = buffer
 
 	entry["busy"] = false
