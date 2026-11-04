@@ -73,7 +73,13 @@ const MODIFIER_KEYS := [KEY_CTRL, KEY_SHIFT, KEY_ALT, KEY_META]
 
 static var _changed: Dictionary = {}        # id -> {"key": int, "ctrl": bool, "shift": bool}
 static var _loaded: bool = false
-static var path: String = PATH              # tests point this at their own file
+static var path: String = PATH              # tests point this at their own file with use_path() (use_path keeps the file, loaded choices and statics together)
+
+
+static func use_path(new_path: String) -> void:
+	path = new_path
+	_loaded = false
+	_changed = {}
 
 
 static func _known(id: String) -> bool:
@@ -103,7 +109,12 @@ static func ensure_loaded() -> void:
 	if not FileAccess.file_exists(path):
 		return
 
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var json: JSON = JSON.new()
+
+	if json.parse(FileAccess.get_file_as_string(path)) != OK:   # a damaged file: the defaults, with no engine error printed
+		return
+
+	var parsed: Variant = json.data
 
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
@@ -129,8 +140,8 @@ static func save() -> void:
 		file.store_string(JSON.stringify(_changed, "\t"))
 
 
-# For tests: forget everything loaded and read the file again next time.
-static func reload() -> void:
+# For tests: forget everything loaded and read the file again next time. (Not called reload: Script.reload() is an engine method that would run instead and reset the statics.)
+static func forget_loaded() -> void:
 	_loaded = false
 	_changed = {}
 

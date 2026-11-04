@@ -29,8 +29,7 @@ func _key(code: int, ctrl: bool = false, shift: bool = false) -> InputEventKey:
 
 func _init() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP))
-	Bindings.path = TEMP
-	Bindings.reload()
+	Bindings.use_path(TEMP)
 
 	var ids: Dictionary = {}
 
@@ -64,14 +63,14 @@ func _init() -> void:
 	check(Bindings.label("interact") == "F" and Bindings.label("open") == "E", "swap gives the other action the old key")
 	check(Bindings.conflicts().is_empty(), "no clash after the swap")
 
-	Bindings.reload()
+	Bindings.forget_loaded()
 	check(Bindings.label("interact") == "F" and Bindings.label("open") == "E", "the choices are saved and loaded back")
 	check(not Bindings.is_default("interact") and Bindings.is_default("crouch"), "only changed keys count as changed")
 
 	Bindings.reset("interact")
 	check(Bindings.label("interact") == "E", "reset puts one action back")
 	Bindings.reset_all()
-	Bindings.reload()
+	Bindings.forget_loaded()
 	check(Bindings.label("open") == "F" and Bindings.is_default("open") and Bindings.is_default("run"), "reset all puts everything back and saves it")
 
 	Bindings.clear("ruler")
@@ -81,12 +80,12 @@ func _init() -> void:
 	var file: FileAccess = FileAccess.open(TEMP, FileAccess.WRITE)
 	file.store_string("not json {{")
 	file.close()
-	Bindings.reload()
+	Bindings.forget_loaded()
 	check(Bindings.label("interact") == "E", "a damaged file falls back to the defaults")
 	file = FileAccess.open(TEMP, FileAccess.WRITE)
 	file.store_string('{"nonsense": {"key": 65}, "crouch": {"key": 86, "ctrl": true}}')
 	file.close()
-	Bindings.reload()
+	Bindings.forget_loaded()
 	check(Bindings.label("crouch") == "Ctrl+V" and Bindings.label("interact") == "E", "unknown actions in the file are ignored")
 
 	check(Bindings.localize("Press E to gather") == "Press E to gather", "prompts are untouched while the keys are the defaults")
@@ -98,7 +97,6 @@ func _init() -> void:
 	check(Bindings.localize("Enter the Fire pit") == "Enter the Fire pit", "words that only contain a key letter are left alone")
 	Bindings.reset_all()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP))
-	Bindings.path = Bindings.PATH
-	Bindings.reload()
+	Bindings.use_path(Bindings.PATH)
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
