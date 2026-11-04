@@ -86,7 +86,7 @@
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Hold your wooden hammer, press R and pick Small shelter: 16 sticks, 4 leaves, 2 twine.",
+			"text": "Hold your wooden hammer, press R and pick Lean-to: 30 sticks, 200 leaves, 10 twine.",
 			"goal": "shelter"
 		},
 		{

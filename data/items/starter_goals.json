@@ -131,7 +131,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Hold your wooden hammer, press R and pick Small shelter: 16 sticks, 4 leaves and 2 twine. Build it with the open side towards you.",
+			"hint": "Hold your wooden hammer, press R and pick Lean-to: 30 sticks, 200 leaves and 10 twine. Build it with the open side towards you.",
 			"after": [
 				"fire",
 				"hammer"
