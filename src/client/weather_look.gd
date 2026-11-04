@@ -37,6 +37,10 @@ const RAIN_OVERCAST := 0.6               # cloud cover as soon as it rains (ligh
 const SUN_STORM := 0.05                  # share of the sun left under full cover
 const AMBIENT_STORM_FLOOR := 1.1         # the same floor in a full storm: no moon shows through the cloud, the fill has to carry the night
 const AMBIENT_NIGHT_COLOR := Color(0.24, 0.3, 0.44)   # the cold fill used on dark nights and storms
+# Warm shade by day (Kathleen's proposal, art/CRITIQUES/starter_area_2026-11-03/SHADOW_TINT_PROPOSAL.md; Art_Direction.md: rich, warm colour): shade lit by
+# the clear sky alone read blue-grey, so a quarter of the day's ambient is warm bounce from sunlit ground and leaves. It fades into the cold night fill.
+const AMBIENT_DAY_WARM := Color(0.62, 0.56, 0.44)
+const DAY_SKY_SHARE := 0.75              # share of the day's ambient from the sky (1 before: all sky)
 const AMBIENT_FLOOR := 0.32             # ambient light never drops below this, so a storm night is not pure black
 const AMBIENT_STORM := 0.4               # ambient light left in a full storm (1 clear)
 const CAVE_LIGHT_DARK := 0.04            # share of the sun and sky light left deep in a cave or tunnel, setting "Dark"
@@ -402,8 +406,8 @@ func _process_body(delta: float) -> void:
 	# The sky's own light is near black on a dark night or a storm night, so a cold moonlit blue is mixed in
 	# (ambient colour counts where the sky contribution is below 1): trees and ground stay readable, never pure black.
 	var dim: float = clampf(maxf(day.night, _dark * 0.6), 0.0, 1.0)
-	environment.ambient_light_sky_contribution = 1.0 - 0.7 * dim
-	environment.ambient_light_color = AMBIENT_NIGHT_COLOR
+	environment.ambient_light_sky_contribution = lerpf(DAY_SKY_SHARE, 0.3, dim)   # night 0.3 as before
+	environment.ambient_light_color = AMBIENT_DAY_WARM.lerp(AMBIENT_NIGHT_COLOR, dim)
 	# The whole picture goes dimmer and greyer with the weather.
 	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
 	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark)
@@ -413,11 +417,36 @@ func _process_body(delta: float) -> void:
 		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0)
 		environment.fog_light_color = _graded(day.sky_horizon, gloom)
 		environment.fog_sky_affect = 0.0
+		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL
+		environment.fog_height_density = 0.0
+	else:
+		_underwater_fog(environment, 1.0 - day.night, cloud_cover)
 
 	canopy.update(_client.flora, Vector2(_client.camera.global_position.x, _client.camera.global_position.z))
 	_rain_material.set_shader_parameter("canopy_box", Vector3(canopy.origin.x, canopy.origin.y, canopy.METRES))
 	_update_ground(rain, snow)
 	_update_particles(rain, snow, float(_s["wind"]))
+
+
+# Under water (Dave 2 Nov 2026: "being under the water looking up looks fake"): no flat blue screen. The water itself is the fog:
+# blue-green, lit by the day (dark at night, greyer under cloud), thicker with depth below the surface so the deep falls away to
+# dark and the surface above stays bright. The haze takes the water's colour, not the sky's.
+const UNDER_FOG_DENSITY := 0.035       # about 25 m to near blindness in clear water, looking level
+const UNDER_DEEP_DENSITY := 0.06       # extra per metre below the surface (Godot height fog)
+const UNDER_DAY_COLOR := Color(0.10, 0.36, 0.42)
+const UNDER_NIGHT_COLOR := Color(0.01, 0.03, 0.05)
+
+
+func _underwater_fog(environment: Environment, daylight: float, cover: float) -> void:
+	var lit: float = clampf(daylight, 0.0, 1.0) * lerpf(1.0, 0.55, cover)
+	environment.fog_density = UNDER_FOG_DENSITY
+	var color: Color = UNDER_NIGHT_COLOR.lerp(UNDER_DAY_COLOR, lit)
+	environment.fog_light_color = color
+	environment.fog_light_energy = 1.0
+	environment.fog_sky_affect = 1.0
+	environment.fog_aerial_perspective = 0.0
+	environment.fog_height = float(_client.underwater_surface)
+	environment.fog_height_density = UNDER_DEEP_DENSITY
 
 
 # Share of the sun and sky light that reaches the player at this rock enclosure (0 open air .. 1 a tunnel).
@@ -468,6 +497,9 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	wind_cue.update(get_process_delta_time(), eye, _client.weather, rain, snow, under, 1.0 - day.night)
 	_rain.emitting = rain > 0.04 and not under
 	_snow.emitting = snow > 0.04 and not under
+	# Falling streaks still in the air when you dive read as light rays fanned overhead (Dave's underwater shot, 2 Nov 2026).
+	_rain.visible = not under
+	_snow.visible = not under
 	_rain.amount_ratio = clampf(rain, 0.05, 1.0)
 	# Streak size and strength follow how hard it rains (and the storm): drizzle fine, short and faint; a storm long, thick and denser.
 	var hard: float = clampf(maxf(rain, float(_s.get("storm", 0.0))), 0.0, 1.0)
