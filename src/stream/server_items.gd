@@ -156,6 +156,7 @@ var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water t
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
+var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
@@ -5464,7 +5465,7 @@ func _light(peer: int, inv, id: int) -> void:
 				break
 
 	if not inv.has(table.number_of(tinder), 1):
-		_say(peer, "Needs plant fibre, birch bark or tinder to light")
+		_say(peer, "Needs plant fibre, kindling, birch bark or tinder to light")
 		return
 
 	inv.remove(table.number_of(tinder), 1)
@@ -9262,6 +9263,9 @@ func gather_edge(peer: int, inv) -> bool:
 	if not _peer_pos.has(peer) or inv == null:
 		return false
 
+	if not _nearest_nest(_peer_pos[peer]).is_empty():   # an inland bird nest within reach comes first (data/items/nests.json)
+		return take_nest(peer, inv)
+
 	var cfg: Dictionary = _shore_data()
 	var here: Vector3 = _peer_pos[peer]
 	var reach: float = float(cfg.get("reach_m", 4.0))
@@ -9303,6 +9307,77 @@ func gather_edge(peer: int, inv) -> bool:
 	rng.seed = hash(key) ^ day ^ 0x3c6ef372
 	give(peer, table.number_of(str(node["item"])), roll_amount(peer, rng, int(count[0]), int(count[1])))
 	_shore_taken[key] = day
+	_dirty = true
+	return true
+
+
+# --- Inland bird nests (Sal 3 Nov 2026; data/items/nests.json) ---
+# The fauna side places nests near grouse and songbird homes (nests_near). E at one takes its eggs in its seasons; a robbed nest is empty for refill_days.
+# The robbed days are kept in memory only: a restart lets every nest lay again, which is harmless.
+var _nest_taken: Dictionary = {}   # nest id -> game day it was robbed
+var _nest_cfg: Dictionary = {}
+var _nest_loaded: bool = false
+
+
+func _nest_data() -> Dictionary:
+	if not _nest_loaded:
+		_nest_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/nests.json"))
+		_nest_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	return _nest_cfg
+
+
+# The nearest nest of a known kind within reach_m of the point, or {}.
+func _nearest_nest(pos: Vector3) -> Dictionary:
+	if not nests_near.is_valid():
+		return {}
+
+	var cfg: Dictionary = _nest_data()
+	var best: Dictionary = {}
+	var best_d: float = INF
+
+	for nest in nests_near.call(pos, float(cfg.get("reach_m", 2.5))):
+		var d: float = (nest["pos"] as Vector3).distance_to(pos)
+
+		if cfg.get("kinds", {}).has(str(nest["kind"])) and d < best_d:
+			best = nest
+			best_d = d
+
+	return best
+
+
+func take_nest(peer: int, inv) -> bool:
+	if not _peer_pos.has(peer) or inv == null:
+		return false
+
+	var nest: Dictionary = _nearest_nest(_peer_pos[peer])
+
+	if nest.is_empty():
+		return false
+
+	var cfg: Dictionary = _nest_data()
+	var row: Dictionary = cfg["kinds"][str(nest["kind"])]
+	var id: String = str(nest["id"])
+	var day: int = _game_day()
+
+	if not (_season() in row.get("seasons", [])):
+		_say(peer, str(cfg.get("say_season", "")))
+		return false
+
+	if _nest_taken.has(id) and day - int(_nest_taken[id]) < int(row.get("refill_days", 3)):
+		_say(peer, str(cfg.get("say_empty", "")))
+		return false
+
+	var count: Array = row.get("count", [1, 1])
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ day ^ 0x1b873593
+	give(peer, table.number_of(str(row.get("item", "egg"))), roll_amount(peer, rng, int(count[0]), int(count[1])))
+
+	if row.has("extra") and rng.randf() < float(row.get("extra_chance", 1.0)):
+		give(peer, table.number_of(str(row["extra"][0])), int(row["extra"][1]))
+
+	_nest_taken[id] = day
 	_dirty = true
 	return true
 
@@ -10060,7 +10135,7 @@ func dev_place(spec: String) -> int:
 
 # --- Hints (data/items/hints.json by Sal, HINTS_AND_CAMP_EVENTS_SPEC.md; Tyler 31 Oct 2026) ---
 # A hint is a one-line notice (the same line as the goal notices) said once per character and hint id when its trigger becomes true; the ids said are saved in
-# characters.json "hints_seen". Triggers by name (below); a trigger the server cannot judge yet (axe_held_near_tree, the fruit and orchard ones, beach_with_container) never fires.
+# characters.json "hints_seen". Triggers by name (below); a trigger the server cannot judge yet (the fruit and orchard ones, beach_with_container) never fires.
 # A hint whose goal is still open HINT_REPEAT_S (5 minutes) after it was said is said once more.
 const HINT_REPEAT_S := 300.0
 var _hints: Array = []
@@ -10129,6 +10204,8 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "event:placed:rough_bed") >= 1
 		"workbench_placed":   # the camp bench or the log workbench (Dino round 6)
 			return _hint_count(st, "event:placed:workbench") + _hint_count(st, "event:placed:log_workbench") >= 1
+		"axe_held_near_tree":   # an axe on the hotbar and a standing tree within 6 m (any axe on the hotbar where the tree index is not wired)
+			return _tool_slot(inv, "axe") >= 0 and (not trees_near.is_valid() or not (trees_near.call(_peer_pos[peer], 6.0) as Array).is_empty())
 		"has_campfire_kit":
 			return inv.count_of(table.number_of("campfire_kit")) >= 1
 		"near_fire_with_food":   # raw meat or fish in the pack, a lit fire within 4 m

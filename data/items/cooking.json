@@ -6,7 +6,8 @@
 	"tinder_also": [
 		"tinder",
 		"birch_bark",
-		"tinder_fungus"
+		"tinder_fungus",
+		"kindling"
 	],
 	"pace_ms": 1200,
 	"cooked_life_mult": 2.0,
