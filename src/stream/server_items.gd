@@ -64,6 +64,7 @@ const SAPLING_GROWN_S := 12.0 * 86400.0  # ...and until it is a full grown tree 
 const SAPLINGS_PER_CHUNK := 64
 const RESPAWN_RADIUS_M := 25.0           # a sapling comes only near a standing tree of the same species
 const RESPAWN_PLACE_M := 6.0
+const REGROW_EXCLUDE_M := 50.0           # no sapling is seeded within this of anything placed on the ground (BUG-013; Dave: tunable)
 const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once from the seed and the spot
 const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
@@ -4922,6 +4923,23 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary) -> bool
 # A stump has rotted away: maybe a sapling grows near a standing tree of the same species. Nothing
 # comes while any felled trunk still lies in the chunk. The dice come from the seed and the spot,
 # so a restart gives the same answer.
+# Is a placed structure, fire or other ground-placed thing within `radius` of the spot (flat distance)? Saplings keep away from these.
+func _built_within(spot: Vector3, radius: float) -> bool:
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not (it.has("struct") or it.has("fire")):
+			continue
+
+		if str(it.get("struct", {}).get("kind", "")) == "remains":
+			continue
+
+		if Vector2(it["pos"].x - spot.x, it["pos"].z - spot.z).length() <= radius:
+			return true
+
+	return false
+
+
 func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	if not standing_near.is_valid() or not ground_height.is_valid():
 		return
@@ -4949,6 +4967,9 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	var species_entry: Dictionary = _flora_by_name.get(str(tree["species"]), {})
 
 	if is_nan(ground) or ground < 1.0 or species_entry.is_empty():
+		return
+
+	if _built_within(spot, REGROW_EXCLUDE_M):
 		return
 
 	var home: Vector2i = Vector2i(int(floor(spot.x / FLORA_CHUNK_M)), int(floor(spot.z / FLORA_CHUNK_M)))
