@@ -247,8 +247,14 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 
 	if shape == "conifer":
 		leaf_kind = "conifer"
-	elif shape == "palm" or shape == "fern":
+	elif shape == "palm":
 		leaf_kind = "palm"
+	elif shape == "fern":
+		# A real frond card (tools/make_leaf_fern.py, Kathreen 3 Nov 2026); the palm card's even strips read as a comb. Callers without it keep the palm card.
+		# The leafy herbs (comfrey, burdock ...) are shape "fern" too: they get one broad ovate leaf (tools/make_leaf_herb.py) instead of a frond.
+		var model: String = str(entry.get("model", ""))
+		leaf_kind = "fern" if model == "fern_rosette" else ("herb" if model == "leafy_herb" else "palm")
+		leaf_kind = leaf_kind if materials.has(leaf_kind) else "palm"
 	elif shape == "grass" or shape == "reed":
 		leaf_kind = "grass"
 
@@ -2277,6 +2283,7 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 	# A wild cherry in spring is all blossom: its leaf cards become light purple flowers.
 	var in_bloom: bool = cherry and season == "spring"
 	var foliage: Acc = Acc.new() if in_bloom else leaves
+	var leaf_first: int = foliage.v.size()      # where this tree's leaf cards start (for the apple leaf pass below)
 	var young: bool = variant >= 2
 	var crown_w: float = maxf(crown, h * (0.24 if young else (0.38 if cherry else (0.34 if pear else 0.46)))) * rng.randf_range(0.9, 1.1)
 	if orchard and not young:
@@ -2330,6 +2337,17 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 
 		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 			_maple_limb(bark, foliage, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, bark_tint))
+
+	# Apple leaves (rig shots 2 Nov: "a dark wall of hand-sized leaves", Art_Direction.md: rich warm greens, believable): each leaf card of an apple
+	# tree is shrunk about its own centre, so the leaves on it read about two thirds the size and light and sky show between the clumps; and the
+	# cards are lifted a little toward a fresh, sunnier green. No extra triangles. Pears and cherries keep their own look.
+	if not pear and not cherry and not far and not bare and not in_bloom:
+		for k in range(leaf_first, foliage.v.size() - 3, 4):
+			var mid: Vector3 = (foliage.v[k] + foliage.v[k + 1] + foliage.v[k + 2] + foliage.v[k + 3]) * 0.25
+			for j in range(4):
+				foliage.v[k + j] = mid + (foliage.v[k + j] - mid) * 0.7
+				var c: Color = foliage.c[k + j]
+				foliage.c[k + j] = Color(minf(c.r * 1.12, 1.0), minf(c.g * 1.12, 1.0), minf(c.b * 1.12, 1.0), c.a)
 
 	if in_bloom:
 		for k in range(0, foliage.v.size(), 4):

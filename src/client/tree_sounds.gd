@@ -1,5 +1,7 @@
 extends Node
 
+signal landed(at: Vector3, size: float)   # a felled trunk reaches the ground: the client shakes the view when the player is near (feel_kicks.gd thud)
+
 # Tree felling sounds (client only). The Items thread makes a felled tree appear as a trunk row (state 3)
 # that tips over in 1.5 s plus a stump row (state 4); this module hears those rows appear:
 #
@@ -101,6 +103,9 @@ func update(delta: float) -> void:
 
 
 func _play(sound_name: String, at: Vector3, size: float) -> void:
+	if sound_name == "tree_crash":
+		landed.emit(at, size)
+
 	var list: Array = _variants(sound_name)
 
 	if list.is_empty() or (not _stage.has_room() and sound_name != "tree_crash"):
