@@ -285,7 +285,13 @@ func _init() -> void:
 		return
 
 	pass_time(30.0, 0.8)
-	need(count("leaves") >= int(raw.get("leaves", 0)), "working the trunk gave %d leaves, the lean-to needs %d" % [count("leaves"), int(raw.get("leaves", 0))])
+	var leaves_need: int = int(raw.get("leaves", 0))
+	need(count("leaves") * 3 >= leaves_need, "working the trunk gave %d leaves; one crown should give at least a third of the %d the lean-to needs" % [count("leaves"), leaves_need])
+	var leaf_short: int = leaves_need - count("leaves")   # the lean-to takes 200 (Dave 4 Nov): a real player sweeps the rest from more crowns, the bot is given it
+
+	while leaf_short > 0:
+		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, mini(leaf_short, 100), Vector3.ZERO)
+		leaf_short -= 100
 	if halted:
 		return
 
