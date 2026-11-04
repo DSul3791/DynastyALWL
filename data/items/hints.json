@@ -9,7 +9,7 @@
 		{
 			"id": "bars",
 			"trigger": "moved",
-			"text": "Press Tab to see Health, Food, Water, Warmth and Energy."
+			"text": "Press Tab to see Health, Food, Water, Temperature and Energy."
 		},
 		{
 			"id": "drink",
@@ -75,18 +75,18 @@
 		{
 			"id": "fuel",
 			"trigger": "fire_lit",
-			"text": "Press E at the fire to add sticks or wood."
+			"text": "Press F at the fire to put in sticks or wood."
 		},
 		{
 			"id": "roast",
 			"trigger": "hungry",
-			"text": "Hold E at the fire to roast raw meat or fish.",
+			"text": "Press F at a burning fire to put meat or fish in; it cooks there.",
 			"goal": "berries"
 		},
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Lash a ridge pole, lean sticks against it and weave in boughs: 32 sticks, 8 leaves, 4 twine.",
+			"text": "Lash a ridge pole, lean sticks against it and weave in boughs: 16 sticks, 4 leaves, 2 twine.",
 			"goal": "shelter"
 		},
 		{
@@ -109,7 +109,7 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Workbench: 16 sticks, 6 twine, 4 stones. Better tools.",
+			"text": "A Camp bench: 16 sticks, 6 twine, 4 stones. It is your workbench, for better tools.",
 			"goal": "workbench"
 		},
 		{
@@ -133,13 +133,13 @@
 		{
 			"id": "berries",
 			"trigger": "hungry",
-			"text": "Pick berries or fruit with E and eat them. Roast meat.",
+			"text": "Pick berries or fruit with E and eat them. Put raw meat in the fire with F.",
 			"goal": "berries"
 		},
 		{
 			"id": "cold",
 			"trigger": "warmth_under_70",
-			"text": "Warmth low: stand near a fire or put on hide clothes."
+			"text": "You are cold: stand near a fire or put on hide clothes."
 		},
 		{
 			"id": "night",
@@ -199,7 +199,7 @@
 		{
 			"id": "cook_rule",
 			"trigger": "near_fire_with_food",
-			"text": "Roast raw meat on the campfire. Cook plants in a pot."
+			"text": "Put raw meat in the campfire with F. Cook plants in a pot."
 		},
 		{
 			"id": "plant_food_pot",

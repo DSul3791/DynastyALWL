@@ -11,9 +11,13 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 func _init() -> void:
 	var names: PackedStringArray = PackedStringArray()
 
+	var flying: bool = false
+
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--animal="):
 			names = a.trim_prefix("--animal=").split(",", false)
+		elif a == "--fly":
+			flying = true      # gulls (seabird flock): open wings, mid-beat, lifted (state 15)
 
 	var view: Node3D = AnimalView.new()
 	var spacing: float = 2.2
@@ -36,6 +40,7 @@ func _init() -> void:
 			"grouse": model = view._make_grouse()
 			"seal": model = view._make_seal()
 			"gull": model = view._make_seabird()
+			"gull_flock": model = view._make_gull_flock(7)
 
 		if model == null:
 			push_warning("animal_sheet: unknown species " + names[n])
@@ -43,3 +48,8 @@ func _init() -> void:
 
 		model.position = Vector3((float(n) - float(names.size() - 1) * 0.5) * spacing, 0.0, 0.0)
 		add_child(model)
+
+		if flying and names[n] == "gull_flock":
+			view._t = 0.3      # a wing beat part way up
+			for step in 120:   # let each gull reach its flying height
+				view._animate_gulls(model.get_node("Rig"), true)
