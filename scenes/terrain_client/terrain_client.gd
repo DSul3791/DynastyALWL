@@ -35,6 +35,7 @@ extends Node
 # Controls (see CONTROLS.md): mouse look, W A S D, Space and Ctrl, walk WASD,
 # jog double-tap W, run Shift+W, G or F fly or walk, Esc opens the options menu.
 
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
@@ -121,6 +122,7 @@ const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const RECENT_CUT_MSEC := 60000   # how long a cut tree is kept out of flora chunks arriving late (BUG-024)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
@@ -182,13 +184,13 @@ const SPACE_WAKE_S := 1.0               # hold Space this long to wake from slee
 const WALK_SPEED := 1.4
 const FAST := 3.0                     # flying: Shift multiplier
 const JOG_SPEED := 3.2
-const RUN_SPEED := 6.0
+const RUN_SPEED := 9.0                # BUG-011 (Dave 2026-11-04): +50 percent over 6.0. The run animation and stride rate stay at the old 6 m/s cadence: STEP_M[2] and avatar_driver RUN_CLIP_PACE
 # Walking camera (all tuning is here; each list is [walk, jog, run]). A footfall
 # is the lowest point of the bob and the far end of the sway: left foot, camera
 # down and leaning left; midway it rises back to the middle; right foot, down
 # and leaning right. The bob therefore repeats every step and the sway every
 # two steps.
-const STEP_M := [0.75, 1.2, 2.0]         # metres per step: longer strides when faster (about 1.9, 2.7 and 3.0 steps a second at the natural speeds)
+const STEP_M := [0.75, 1.2, 3.0]         # metres per step: longer strides when faster (about 1.9, 2.7 and 3.0 steps a second at the natural speeds; the run stride was 2.0 m at 6 m/s, now 3.0 m at 9 m/s, same cadence)
 const BOB_M := [0.040, 0.052, 0.064]     # how far the camera dips at a footfall
 const SWAY_M := [0.012, 0.016, 0.020]    # sideways shift at a footfall
 const SWAY_DEG := [0.10, 0.13, 0.16]     # roll toward the stepping side at a footfall
@@ -416,6 +418,7 @@ var lag_run: Node = null               # --lag-run: the scripted early-game lag 
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
 var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
 var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
+var test_net: bool = false               # --net: hold the fishing net and click with it, pack before and after (NET TEST lines, BUG-022)
 var test_snare: bool = false             # --snare: set a snare and wait for a carcass (SNARE TEST lines; server knob traps.json test_chance)
 var test_place_foundation: bool = false   # --place-foundation: give a thatch floor kit and place it ahead (FOUNDATION TEST lines)
 var test_creatures: bool = false
@@ -479,6 +482,7 @@ var _viewer: VoxelViewer
 var _sun: DirectionalLight3D
 var _frame_ms: Array = []             # recent frame times for the HUD readout
 var test_cut: bool = false
+var _recent_cuts: Dictionary = {}     # held chunk -> {item id: msec the cut came in} (BUG-024; see _apply_incoming)
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
@@ -762,6 +766,8 @@ func _ready() -> void:
 			test_sleep = true
 		elif argument == "--snare":
 			test_snare = true
+		elif argument == "--net":
+			test_net = true
 		elif argument == "--creatures":
 			test_creatures = true
 
@@ -1324,6 +1330,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.is_inspecting = func(): return inspecting
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
+	items.lie_on_bed = _lie_on_bed
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)
 
@@ -1349,6 +1356,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 		if not changed.is_empty():
 			sound.gear.dress(str(changed[0]))   # one sound for a change (a swap sends both pieces in one list)
+	items.skill_up_event = func() -> void: sound.slots.play("skill_tock", body.global_position + Vector3(0.0, 1.5, 0.0))   # a skill rises: a soft wooden tock (the skill group cools down 20 s)
 	items.hurt_event = func(lost: int) -> void: sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
@@ -1471,6 +1479,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_snare:
 		items.run_snare_test(self)
+
+	if test_net:
+		held.run_net_test()
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
@@ -1770,6 +1781,23 @@ func _sync_cleared() -> void:
 			continue
 
 		var pos: Vector3 = row["pos"]
+		var tile: Vector2 = StructureLook.tile_of(int(row.get("state", 0)))
+
+		if tile != Vector2.ZERO:
+			# A floor tile clears only its own footprint: bare patches 0.8 m apart across it, turned with the piece (paths use the same bare list).
+			var turn: Basis = Basis(Vector3.UP, deg_to_rad(float(row.get("yaw", 0.0))))
+			var nx: int = maxi(int(ceil(tile.x / 0.8)) - 1, 0)
+			var nz: int = maxi(int(ceil(tile.y / 0.8)) - 1, 0)
+
+			for iz in range(nz + 1):
+				for ix in range(nx + 1):
+					var local: Vector3 = Vector3((float(ix) / maxf(float(nx), 1.0) - 0.5) * (tile.x - 0.4) if nx > 0 else 0.0, 0.0, (float(iz) / maxf(float(nz), 1.0) - 0.5) * (tile.y - 0.4) if nz > 0 else 0.0)
+					var at_tile: Vector3 = pos + turn * local
+					paths.append(Vector3(snappedf(at_tile.x, 0.01), pos.y, snappedf(at_tile.z, 0.01)))
+
+			key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id) ^ int(float(row.get("yaw", 0.0)))
+			continue
+
 		spots.append(Vector3(snappedf(pos.x, 0.01), pos.y, snappedf(pos.z, 0.01)))
 		key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id)
 
@@ -1881,7 +1909,7 @@ func _water_ahead() -> bool:
 		var spot: Vector3 = body.global_position + forward * step
 		var surface: float = flora.water_surface_at(spot.x, spot.z)
 
-		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.MIN_DEPTH_M:
+		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
 			return true
 
 	return false
@@ -2138,6 +2166,21 @@ func _apply_incoming() -> void:
 				Probe.stop("flora chunk in", t)
 				continue
 
+			# BUG-024: the server makes chunks on worker threads, so one made just before a cut can arrive after the cut message
+			# and would put the felled tree back, near or far. Trees cut in the last minute are left out of what arrives.
+			if _recent_cuts.has(chunk):
+				var cuts: Dictionary = _recent_cuts[chunk]
+				var now_msec: int = Time.get_ticks_msec()
+
+				for cut_id in cuts.keys():
+					if now_msec - int(cuts[cut_id]) > RECENT_CUT_MSEC:
+						cuts.erase(cut_id)
+
+				if cuts.is_empty():
+					_recent_cuts.erase(chunk)
+				else:
+					result["items"] = PlacerScript.without(result["items"], cuts)
+
 			if flora.has_chunk(chunk):
 				flora.replace_items(chunk, result["items"], _anchor, full)
 			else:
@@ -2385,6 +2428,11 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	for held in _flora_asked:
 		if posmod(held.x - chunk.x, period) == 0 and posmod(held.y - chunk.y, period) == 0:
 			flora.remove_item(held, id, _anchor)
+
+			if not _recent_cuts.has(held):
+				_recent_cuts[held] = {}
+
+			_recent_cuts[held][id] = Time.get_ticks_msec()
 
 	_flora_cuts += 1
 	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
@@ -2905,6 +2953,9 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	world["starter_stamp"] = starter_stamp
 	_reload_ground()
 
+	if sound != null:
+		sound.trees.forget()
+
 	if _cave_streams != null:
 		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
 
@@ -3045,6 +3096,12 @@ func _inspect_target() -> String:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin + direction * 30.0)
 	query.exclude = [body.get_rid()]
 	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	# Water has no collision: name it when the look crosses its surface before anything solid (Dave's QA list BUG-015, 3 Nov 2026: shallow
+	# water among reeds named nothing). A reed standing above the water is hit first and keeps its own name.
+	var water_m: float = _water_on_look(origin, direction, 30.0 if hit.is_empty() else origin.distance_to(hit["position"]))
+
+	if water_m >= 0.0:
+		return "Water — Press E to Drink" if items != null and items.thirst < 100 and _water_ahead() else "Water"
 
 	if hit.is_empty():
 		return ""
@@ -3079,6 +3136,26 @@ func _inspect_target() -> String:
 		return lying
 
 	return _ground_name(point - hit["normal"] * 0.4)
+
+
+# How far along a look the water surface is first crossed going down into it, -1 when it is not (steps of half a metre).
+func _water_on_look(origin: Vector3, direction: Vector3, length: float) -> float:
+	if flora == null:
+		return -1.0
+
+	var step: float = 0.5
+	var d: float = step
+
+	while d <= length + 0.001:
+		var p: Vector3 = origin + direction * minf(d, length)
+		var surface: float = flora.water_surface_at(p.x, p.z)
+
+		if not is_nan(surface) and p.y <= surface and origin.y > surface and WaterVolume.depth(surface, _ground_below(p)) >= WaterVolume.DRINK_DEPTH_M:
+			return d
+
+		d += step
+
+	return -1.0
 
 
 # The ore, rock or soil at a point in the ground, as this character knows it. Owner
@@ -3341,7 +3418,7 @@ func _toggle_photo() -> void:
 
 # The photo camera (K): drawn from where photo_camera.gd puts it, kept out of the ground and walls. Only the drawn camera moves.
 func _place_photo_camera(delta: float) -> void:
-	photo.raise(float(Input.is_key_pressed(KEY_PAGEUP)) - float(Input.is_key_pressed(KEY_PAGEDOWN)), delta)
+	photo.raise(float(KeyBindings.held("photo_up")) - float(KeyBindings.held("photo_down")), delta)
 	photo.step(delta)
 	var focus: Vector3 = photo.focus_point(body.global_position)
 	var want: Vector3 = photo.camera_position(focus)
@@ -3421,11 +3498,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if menu_open:
 		return
 
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_I and items != null:
+	if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "inventory") and items != null:
 		items.toggle()
 		return
 
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB and items != null:
+	if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "character") and items != null:
 		items.toggle_character()
 		return
 
@@ -3454,44 +3531,52 @@ func _unhandled_input(event: InputEvent) -> void:
 		pass
 	elif event is InputEventMouseButton and event.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED
-	elif event is InputEventKey and not event.pressed and event.keycode == KEY_E and items != null:
+	elif event is InputEventKey and KeyBindings.released(event, "interact") and items != null:
 		items.release_e()
 	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_W:
+		if KeyBindings.matches(event, "gpu_probe"):
+			_gpu_probe.toggle()
+		elif KeyBindings.matches(event, "water_hide"):
+			flora.toggle_water_visible()
+		elif KeyBindings.matches(event, "water_debug"):
+			flora.toggle_water_debug()
+		elif KeyBindings.matches(event, "sound_panel"):
+			sound_panel.toggle()
+		elif KeyBindings.matches(event, "admin_dig"):
+			_admin_dig()
+		elif KeyBindings.matches(event, "admin_npc"):
+			_go_to_npc()
+		elif KeyBindings.matches(event, "admin_rabbit"):
+			_admin_rabbit()
+		elif KeyBindings.matches(event, "move_forward"):
 			var now: int = Time.get_ticks_msec()
 
 			if now - _last_w_msec <= DOUBLE_TAP_MSEC:
 				jogging = true
 
 			_last_w_msec = now
-		elif event.keycode == KEY_K:
+		elif KeyBindings.matches(event, "photo"):
 			_toggle_photo()
-		elif event.keycode == KEY_P and items != null:
+		elif KeyBindings.matches(event, "auto_pickup") and items != null:
 			items.toggle_auto_pickup()
-		elif event.keycode == KEY_SLASH:
+		elif KeyBindings.matches(event, "inspect"):
 			inspecting = not inspecting
 			status_icons.tick(0.0, true)
 			sound.ui.play("ui_on" if inspecting else "ui_off")
 
 			if not inspecting:
 				_inspect_label.text = ""
-		elif event.keycode == KEY_EQUAL or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
+		elif KeyBindings.matches(event, "spring_up") or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
 			net.step_water_rate.rpc_id(1, 1)
-		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
+		elif KeyBindings.matches(event, "spring_down") or event.keycode == KEY_KP_SUBTRACT:
 			net.step_water_rate.rpc_id(1, -1)
-		elif event.keycode == KEY_X and event.ctrl_pressed:
-			_admin_dig()
-		elif event.keycode == KEY_N and event.ctrl_pressed:
-			_go_to_npc()
-		elif event.keycode == KEY_R and event.ctrl_pressed:
-			_admin_rabbit()
-		elif event.keycode == KEY_Q and not flying and items != null and not items.open:
+		elif KeyBindings.matches(event, "put_down_log") and not flying and items != null and not items.open:
 			items.lay_down_shoulder()
-		elif event.keycode == KEY_C and not flying:
+		elif KeyBindings.matches(event, "crouch") and not flying:
 			_set_stance(StanceScript.CROUCH, true)
-		elif event.keycode == KEY_X and not flying:
+		elif KeyBindings.matches(event, "sit") and not flying:
 			_set_stance(StanceScript.SIT, true)
-		elif event.keycode == KEY_Z and not flying:
+		elif KeyBindings.matches(event, "lie") and not flying:
 			if stance.stance == StanceScript.LIE and items != null and not items.asleep:
 				_z_down_msec = Time.get_ticks_msec()   # lying: hold Z to sleep, tap to get up (decided on release, see _check_sleep_hold)
 				_z_slept = false
@@ -3503,39 +3588,33 @@ func _unhandled_input(event: InputEvent) -> void:
 			held.press_slot(event.keycode - KEY_1)
 		elif event.keycode == KEY_0 and held != null:
 			held.press_slot(9)
-		elif event.keycode == KEY_E and items != null:
+		elif KeyBindings.matches(event, "interact") and items != null:
 			items.press_e()
-		elif event.keycode == KEY_BRACKETRIGHT and items != null:
+		elif KeyBindings.matches(event, "starter_items") and items != null:
 			items.admin_give_test_set()
-		elif event.keycode == KEY_J and _jitter_test != null:
+		elif KeyBindings.matches(event, "jitter_test") and _jitter_test != null:
 			_jitter_test.next_spot()
-		elif event.keycode == KEY_G and event.ctrl_pressed and event.shift_pressed:
-			_gpu_probe.toggle()
-		elif event.keycode == KEY_W and event.ctrl_pressed and event.shift_pressed:
-			flora.toggle_water_visible()
-		elif event.keycode == KEY_V and event.ctrl_pressed and event.shift_pressed:
-			flora.toggle_water_debug()
-		elif event.keycode == KEY_F3 and event.shift_pressed:
-			sound_panel.toggle()
-		elif event.keycode == KEY_F3:
+		elif KeyBindings.matches(event, "debug_details"):
 			debug_hud.enabled = not debug_hud.enabled
-		elif event.keycode == KEY_F4:
+		elif KeyBindings.matches(event, "hud_text"):
 			hud.visible = not hud.visible
 			display.hud_text = hud.visible
 			display.save()
-		elif event.keycode == KEY_F2:
+		elif KeyBindings.matches(event, "quality"):
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
 			_save_display()
-		elif event.keycode == KEY_DELETE and held != null and held.delete_plan():
+		elif KeyBindings.matches(event, "delete_plan") and held != null and held.delete_plan():
 			pass
-		elif event.keycode == KEY_R and not event.ctrl_pressed and items != null and not items.open:
+		elif KeyBindings.matches(event, "blueprints") and items != null and not items.open:
 			if held != null:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
-		elif event.keycode == KEY_F:
+		elif KeyBindings.matches(event, "ruler") and _horizon != null:
+			_horizon.toggle()   # the inclination ruler underground (Dave 4 Nov 2026); off until asked for
+		elif KeyBindings.matches(event, "open"):
 			if items != null and not flying:
 				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is G); with a log on the shoulder and nothing to open, F twice puts the log down
-		elif event.keycode == KEY_G:
+		elif KeyBindings.matches(event, "fly"):
 			flying = not flying
 			body.velocity = Vector3.ZERO
 
@@ -3637,13 +3716,24 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 			items.request_stance(stance.stance)   # the server: sitting and lying bring exertion down
 
 
+# E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down.
+func _lie_on_bed(bed_pos: Vector3, yaw_deg: float) -> void:
+	if swimming:
+		return
+
+	body.velocity = Vector3.ZERO
+	body.global_position = Vector3(bed_pos.x, bed_pos.y + 0.5 + float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5, bed_pos.z)
+	body.rotation.y = deg_to_rad(yaw_deg)
+	_set_stance(StanceScript.LIE)
+
+
 # The server's answer (or its own change: fainting forces lying, walking off stands you up).
 # Lying and holding Z for sleep.json hold_s asks to sleep; letting go sooner gets you up like before.
 func _check_sleep_hold() -> void:
 	if _z_down_msec < 0:
 		return
 
-	if not Input.is_key_pressed(KEY_Z):
+	if not KeyBindings.held("lie"):
 		if not _z_slept:
 			_set_stance(StanceScript.LIE, true)
 
@@ -3678,9 +3768,9 @@ func _move_player(delta: float) -> void:
 		return
 
 	var input: Vector3 = Vector3(
-		float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A)),
+		float(KeyBindings.held("move_right")) - float(KeyBindings.held("move_left")),
 		0.0,
-		float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
+		float(KeyBindings.held("move_back")) - float(KeyBindings.held("move_forward"))
 	)
 	if items != null and items.screen_open():
 		input = Vector3.ZERO   # the inventory's quick keys (S split) are not walking
@@ -3693,7 +3783,7 @@ func _move_player(delta: float) -> void:
 	# Any movement key stands the player up from sitting or lying; those stances do not move.
 	var sleeping_now: bool = items != null and items.asleep
 
-	if sleeping_now and Input.is_key_pressed(KEY_SPACE) and input == Vector3.ZERO:
+	if sleeping_now and KeyBindings.held("jump") and input == Vector3.ZERO:
 		# Dave 2026-10-21: holding Space wakes a sleeper early (not fully rested: the energy stays where it was).
 		_space_wake_s += delta
 
@@ -3703,7 +3793,7 @@ func _move_player(delta: float) -> void:
 	else:
 		_space_wake_s = 0.0
 
-	if input != Vector3.ZERO or (Input.is_key_pressed(KEY_SPACE) and not sleeping_now):
+	if input != Vector3.ZERO or (KeyBindings.held("jump") and not sleeping_now):
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 
@@ -3714,8 +3804,8 @@ func _move_player(delta: float) -> void:
 		direction = _walk_dir
 	elif lag_run != null and _walk_dir != Vector3.ZERO:
 		direction = _walk_dir
-	var fast: float = FAST if Input.is_key_pressed(KEY_SHIFT) else 1.0
-	var forward: bool = Input.is_key_pressed(KEY_W)
+	var fast: float = FAST if KeyBindings.held("run") else 1.0
+	var forward: bool = KeyBindings.held("move_forward")
 	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
 
 	# Gaits (CONTROLS.md): walk is plain WASD, jog is a double-tap of W, run is
@@ -3723,7 +3813,7 @@ func _move_player(delta: float) -> void:
 	if not forward:
 		jogging = false
 
-	running = forward and Input.is_key_pressed(KEY_SHIFT) and strain_cap == 0.0
+	running = forward and KeyBindings.held("run") and strain_cap == 0.0
 
 	if strain_cap != 0.0:
 		jogging = false
@@ -3767,7 +3857,7 @@ func _move_player(delta: float) -> void:
 		if not body.get_world_3d().direct_space_state.intersect_ray(below).is_empty():
 			_fly_ground_msec = Time.get_ticks_msec()
 	elif flying:
-		direction.y += float(Input.is_key_pressed(KEY_SPACE)) - float(Input.is_key_pressed(KEY_CTRL))
+		direction.y += float(KeyBindings.held("jump")) - float(KeyBindings.held("down"))
 		body.global_position += direction * FLY_SPEED * fast * delta
 	elif _climb_ladder(delta, strain_cap):
 		pass
@@ -3811,7 +3901,7 @@ func _move_player(delta: float) -> void:
 				velocity.x *= slow
 				velocity.z *= slow
 
-		if not swimming and body.is_on_floor() and Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0:
+		if not swimming and body.is_on_floor() and KeyBindings.held("jump") and strain_cap >= 0.0:
 			velocity.y = 7.0
 			feel.jump()
 			sound.footstep(body, 1, -3.0, "right")        # the push off the ground (job 61: a jump had no sound, only the landing)
@@ -3861,7 +3951,7 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 		return false
 
 	var look: Vector3 = -body.global_transform.basis.z
-	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, Input.is_key_pressed(KEY_W), Input.is_key_pressed(KEY_S), Input.is_key_pressed(KEY_SPACE), delta)
+	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, KeyBindings.held("move_forward"), KeyBindings.held("move_back"), KeyBindings.held("jump"), delta)
 	var at: Vector3 = result["position"]
 
 	if at != Vector3.INF:
@@ -3908,6 +3998,13 @@ func _water_here() -> Dictionary:
 	var here: Vector3 = body.global_position
 	var surface: float = flora.water_surface_at(here.x, here.z) if flora != null else NAN
 
+	# A spring cave's pool (BUG-008: 20 m deep) lies under the ground the water grid knows: swim in it there.
+	if (is_nan(surface) or surface < here.y - 3.0) and _cave_streams != null:
+		var pool: float = _cave_streams.pool_surface_at(here)
+
+		if not is_nan(pool):
+			surface = pool
+
 	if is_nan(surface) and here.y > 2.0:
 		return {}
 
@@ -3938,11 +4035,13 @@ func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool
 	if strain_cap < 0.0:
 		horizontal = Vector3.ZERO
 
-	var up: bool = Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0
-	var down: bool = Input.is_key_pressed(KEY_CTRL) and strain_cap >= 0.0
+	var up: bool = KeyBindings.held("jump") and strain_cap >= 0.0
+	var down: bool = KeyBindings.held("down") and strain_cap >= 0.0
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, items.breath_ds >= 0 and items.breath_ds < 100)
+	# BUG-028: W / S swim along the view, so looking up rises and looking down dives; Space and Ctrl still do.
+	var stroke_vy: float = 0.0 if strain_cap < 0.0 else SwimScript.pitch_wish(camera.rotation.x, float(Input.is_key_pressed(KEY_W)) - float(Input.is_key_pressed(KEY_S)), horizontal.length())
+	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, stroke_vy)
 
 	# Under a floe or an ice sheet: with no stroke given, drift gently out to the nearest open water.
 	if now >= _under_ice_next_msec:
@@ -4166,7 +4265,7 @@ func _process(delta: float) -> void:
 	tp = Probe.start()
 
 	if harvest != null:
-		harvest.update(delta, Input.is_key_pressed(KEY_E) and not items.open)
+		harvest.update(delta, KeyBindings.held("interact") and not items.open)
 
 	Probe.stop("harvest", tp)
 	tp = Probe.start()
@@ -4186,8 +4285,10 @@ func _process(delta: float) -> void:
 	_frame_ms.append(delta * 1000.0)
 	Probe.frame(delta)
 
-	if held == null and MyCharacter.dynasty_body_on():
-		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome)
+	if MyCharacter.dynasty_body_on():
+		var tq_arms: int = Probe.start()
+		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here
+		Probe.stop("arms prebuild", tq_arms)
 
 	if compass != null and camera != null:
 		compass.heading = CompassScript.heading_of(camera)
@@ -5690,6 +5791,13 @@ func _update_underwater() -> void:
 	# is the top of the film, tens of m above the eye. Now the blended surface at the eye's own
 	# spot, and the water there must be deeper than a film.
 	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 else NAN
+
+	if eye.y >= 0.0 and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
+		var pool: float = _cave_streams.pool_surface_at(eye)   # a spring cave's deep pool (BUG-008)
+
+		if not is_nan(pool):
+			surface = pool
+
 	var under: bool = eye.y < 0.0
 
 	if not under and not is_nan(surface) and eye.y < surface:

@@ -58,9 +58,10 @@
 			"look": "chopping_block",
 			"sound": "thump",
 			"clears_grass": true,
-			"blocks_per_log": 4,
-			"blocks_per_shoulder_log": 12,
-			"firewood_per_block": 2
+			"blocks_per_log": 3,
+			"blocks_per_shoulder_log": 3,
+			"firewood_per_block": 2,
+			"firewood_per_large_block": 4
 		},
 		"plank_chest": {
 			"kit": "plank_chest_kit",
@@ -308,7 +309,8 @@
 			"piece_kind": "floor",
 			"look": "ceiling",
 			"sound": "timber",
-			"clears_grass": true
+			"clears_grass": true,
+			"clear_tile": true
 		},
 		"roof_section": {
 			"kit": "roof_section_kit",
@@ -341,6 +343,7 @@
 			"cap_per_chunk": 60,
 			"max_rise_m": 0.6,
 			"snap_m": 2.0,
+			"stack_m": 2.0,
 			"top_m": 0.3,
 			"anchors": {
 				"wall": [
@@ -545,24 +548,24 @@
 			"walkover": true
 		},
 		"tilled_bed": {"kit": "", "item": "tilled_bed", "state": 47, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 200, "look": "path", "sound": "thump", "clears_grass": true, "walkover": true},
-		"rough_bed": {"kit": "rough_bed_kit", "item": "rough_bed", "state": 36, "footprint_x": 1.0, "footprint_z": 2.0, "cap_per_chunk": 6, "look": "rough_bed", "sound": "thump", "clears_grass": true, "shelter_needed": true, "use": "set_spawn", "use_reach_m": 3.0},
+		"rough_bed": {"kit": "rough_bed_kit", "item": "rough_bed", "state": 36, "footprint_x": 1.0, "footprint_z": 2.3, "cap_per_chunk": 6, "look": "rough_bed", "sound": "thump", "clears_grass": true, "shelter_needed": true, "use": "set_spawn", "use_reach_m": 3.0},
 		"thatch_wall": {"blocks_walk": true, "kit": "thatch_wall_kit", "item": "thatch_wall", "state": 37, "footprint_x": 2.0, "footprint_z": 0.25, "cap_per_chunk": 200, "look": "thatch_wall", "sound": "thatch", "clears_grass": false, "piece": true, "piece_kind": "wall", "variant_group": "wall", "material": "thatch", "max_rise_m": 0.6},
 		"campfire_pot": {"kit": "campfire_pot_kit", "item": "campfire_pot", "state": 38, "attach_to": "fire", "legacy_kinds": ["tripod_pot"], "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 6, "look": "tripod_pot", "sound": "thump", "clears_grass": true, "station": "campfire_pot", "station_level": 1, "reach_m": 3.0},
 		"clay_hearth": {"blocks_walk": true, "kit": "clay_hearth_kit", "item": "clay_hearth", "state": 39, "footprint_x": 1.6, "footprint_z": 1.2, "cap_per_chunk": 4, "look": "clay_hearth", "sound": "foundation", "clears_grass": true, "station": "clay_hearth", "station_level": 2, "reach_m": 3.0, "also": {"campfire": 1}},
 		"snare_trap": {"kit": "snare", "item": "snare_trap", "state": 46, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "snare_trap", "sound": "thump", "clears_grass": false},
 		"oven": {"blocks_walk": true, "kit": "oven_kit", "item": "oven", "state": 45, "footprint_x": 1.8, "footprint_z": 1.4, "cap_per_chunk": 2, "look": "oven", "sound": "foundation", "clears_grass": true, "station": "oven", "station_level": 3, "reach_m": 3.0, "also": {"clay_hearth": 2, "campfire": 1}},
-		"thatch_floor": {"kit": "thatch_floor_kit", "item": "thatch_floor", "state": 42, "piece": true, "material": "thatch", "foundation": true, "footprint_x": 4.0, "footprint_z": 4.0, "cap_per_chunk": 60, "max_rise_m": 0.6, "snap_m": 2.0, "top_m": 0.1, "anchors": {"wall": [[-1, -2, 0], [1, -2, 0], [-1, 2, 0], [1, 2, 0], [-2, -1, 90], [-2, 1, 90], [2, -1, 90], [2, 1, 90]], "floor": [[-1, -1], [1, -1], [-1, 1], [1, 1]], "roof": [[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]}, "note": "Tier 1 foundation (Dave and Tyler 24 Oct): a thatch floor on stakes, 4 m square, 0.1 m high; walls, roofs and floors snap to it like the stone foundation. Look is the foundation's until Kathleen's thatch floor lands.", "look": "thatch_floor", "sound": "thatch", "clears_grass": true},
+		"thatch_floor": {"kit": "thatch_floor_kit", "item": "thatch_floor", "state": 42, "piece": true, "material": "thatch", "foundation": true, "footprint_x": 4.0, "footprint_z": 4.0, "cap_per_chunk": 60, "max_rise_m": 0.6, "snap_m": 2.0, "top_m": 0.1, "anchors": {"wall": [[-1, -2, 0], [1, -2, 0], [-1, 2, 0], [1, 2, 0], [-2, -1, 90], [-2, 1, 90], [2, -1, 90], [2, 1, 90]], "floor": [[-1, -1], [1, -1], [-1, 1], [1, 1]], "roof": [[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]}, "note": "Tier 1 foundation (Dave and Tyler 24 Oct): a thatch floor on stakes, 4 m square, 0.1 m high; walls, roofs and floors snap to it like the stone foundation. Look is the foundation's until Kathleen's thatch floor lands.", "look": "thatch_floor", "sound": "thatch", "clears_grass": true, "clear_tile": true},
 		"thatch_roof": {"kit": "thatch_roof_kit", "item": "thatch_roof", "state": 43, "piece": true, "material": "thatch", "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "cap_per_chunk": 100, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "thatch_roof", "sound": "thatch", "clears_grass": false},
 		"thatch_doorway": {"kit": "thatch_doorway_kit", "item": "thatch_doorway", "state": 44, "piece": true, "material": "thatch", "footprint_x": 2.0, "footprint_z": 0.25, "cap_per_chunk": 200, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "thatch_doorway", "sound": "thatch", "clears_grass": false, "use": "door", "toggle": "door_open", "use_pace_ms": 400, "use_reach_m": 3.0},
 		"stairs_wood": {"kit": "stairs_wood_kit", "item": "stairs_wood", "state": 49, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "footprint_x": 1.0, "footprint_z": 2.4, "look": "stairs", "note": "Future piece: drawn as a ladder until Kathleen's stairs model lands; climb behaviour needs code."},
 		"log_wall": {"blocks_walk": true, "kit": "log_wall_kit", "item": "log_wall", "state": 50, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "log", "piece": true, "footprint_x": 2.0, "footprint_z": 0.25, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "log_wall"},
-		"log_floor": {"kit": "log_floor_kit", "item": "log_floor", "state": 51, "cap_per_chunk": 100, "sound": "timber", "clears_grass": true, "material": "log", "piece": true, "footprint_x": 2.0, "footprint_z": 2.0, "max_rise_m": 0.6, "piece_kind": "floor", "look": "log_floor"},
+		"log_floor": {"kit": "log_floor_kit", "item": "log_floor", "state": 51, "cap_per_chunk": 100, "sound": "timber", "clears_grass": true, "clear_tile": true, "material": "log", "piece": true, "footprint_x": 2.0, "footprint_z": 2.0, "max_rise_m": 0.6, "piece_kind": "floor", "look": "log_floor"},
 		"log_roof": {"kit": "log_roof_kit", "item": "log_roof", "state": 52, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "log", "piece": true, "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "log_roof"},
 		"stone_wall": {"blocks_walk": true, "kit": "stone_wall_kit", "item": "stone_wall", "state": 53, "cap_per_chunk": 100, "sound": "stone", "clears_grass": false, "material": "stone", "piece": true, "footprint_x": 2.0, "footprint_z": 0.25, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "stone_wall"},
-		"stone_floor": {"kit": "stone_floor_kit", "item": "stone_floor", "state": 54, "cap_per_chunk": 100, "sound": "stone", "clears_grass": true, "material": "stone", "piece": true, "footprint_x": 2.0, "footprint_z": 2.0, "max_rise_m": 0.6, "piece_kind": "floor", "look": "stone_floor"},
+		"stone_floor": {"kit": "stone_floor_kit", "item": "stone_floor", "state": 54, "cap_per_chunk": 100, "sound": "stone", "clears_grass": true, "clear_tile": true, "material": "stone", "piece": true, "footprint_x": 2.0, "footprint_z": 2.0, "max_rise_m": 0.6, "piece_kind": "floor", "look": "stone_floor"},
 		"stone_roof": {"kit": "stone_roof_kit", "item": "stone_roof", "state": 55, "cap_per_chunk": 100, "sound": "stone", "clears_grass": false, "material": "stone", "piece": true, "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "stone_roof"},
 		"brick_wall": {"blocks_walk": true, "kit": "brick_wall_kit", "item": "brick_wall", "state": 56, "cap_per_chunk": 100, "sound": "brick", "clears_grass": false, "material": "brick", "piece": true, "footprint_x": 2.0, "footprint_z": 0.25, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "brick_wall"},
-		"brick_floor": {"kit": "brick_floor_kit", "item": "brick_floor", "state": 57, "cap_per_chunk": 100, "sound": "brick", "clears_grass": true, "material": "brick", "piece": true, "footprint_x": 2.0, "footprint_z": 2.0, "max_rise_m": 0.6, "piece_kind": "floor", "look": "brick_floor"},
+		"brick_floor": {"kit": "brick_floor_kit", "item": "brick_floor", "state": 57, "cap_per_chunk": 100, "sound": "brick", "clears_grass": true, "clear_tile": true, "material": "brick", "piece": true, "footprint_x": 2.0, "footprint_z": 2.0, "max_rise_m": 0.6, "piece_kind": "floor", "look": "brick_floor"},
 		"brick_roof": {"kit": "brick_roof_kit", "item": "brick_roof", "state": 58, "cap_per_chunk": 100, "sound": "brick", "clears_grass": false, "material": "brick", "piece": true, "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "brick_roof"},
 		"rock_pile": {
 			"kit": "rock_pile",

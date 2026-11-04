@@ -51,10 +51,10 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
-const HELD_LOOK_SCALE := 1.4
-const HELD_SPEAR_SCALE := 1.6
+const HELD_LOOK_SCALE := 1.0      # real size against the body (Dave QA BUG-012: tools held at 1.4x, spear 1.6x, bow 1.8x looked too big)
+const HELD_SPEAR_SCALE := 1.0
 const BOW_AMMO := ["stone_arrow", "wooden_arrow", "bone_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
-const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0, "bow": 1.8, "arrow": 2.2, "quern": 1.3}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
+const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
@@ -68,7 +68,7 @@ const HELD_LOOK_TURN := {
 	"scythe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"striker": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"hammer": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
-	"hand_net": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"hand_net": Basis.IDENTITY,   # the net hangs from the hand instead (_make_hanging_net_model); listed so it goes through the look path
 	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
 	"rod": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # the fishing rod: butt to tip along +y, the reel underneath (-z), so the rod points forward and up in the hand
@@ -98,6 +98,7 @@ var _off_model: Node3D
 var _off_shown: int = 0
 
 var _inv                                  # InventoryView
+var _hanging_net: Mesh                    # the shore net as it hangs from the hand (BasicLook "hand_net_hanging"), built once
 var _net
 var _camera: Camera3D
 var _root: Node3D
@@ -932,6 +933,8 @@ func _process(delta: float) -> void:
 
 
 func _process_body(delta: float) -> void:
+	_hang_net()
+
 	if _draw_t >= 0.0:
 		_draw_t = _draw_t + delta if _is_bow() else -1.0   # putting the bow away lets the draw go
 
@@ -1856,6 +1859,9 @@ func _make_look_tool_model() -> Node3D:
 	if not HELD_LOOK_TURN.has(shape):
 		return null
 
+	if shape == "hand_net":
+		return _make_hanging_net_model(def)
+
 	var held: Mesh = BasicLook.mesh_for(held_id())
 	var length: float = held.get_aabb().size.x
 	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else (HELD_FIXED_SCALE[shape] if HELD_FIXED_SCALE.has(shape) else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01)))
@@ -1874,6 +1880,28 @@ func _make_look_tool_model() -> Node3D:
 		node.set_meta("grip_y", 0.1)   # an arrow is held about its middle, so the head and the shaft show in the view
 
 	return node
+
+
+# The shore net in the hand (Kathleen's check 4 Nov, net_held_right.png: held sideways and small): the hand closes on the coil and the bell hangs below it on its line,
+# mouth down, at its real size. The model's "hang" meta makes _hang_net keep it upright with the world every frame, turned only with the view.
+func _make_hanging_net_model(def: Dictionary) -> Node3D:
+	if _hanging_net == null:
+		_hanging_net = BasicLook.mesh("hand_net_hanging", Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)), def.get("bits", []))
+
+	var node: Node3D = Node3D.new()
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.mesh = _hanging_net
+	node.add_child(mesh)
+	node.set_meta("grip_y", 0.0)     # the coil is at the model's origin, in the hand
+	node.set_meta("hang", true)
+	return node
+
+
+func _hang_net() -> void:
+	if _model == null or not _model.has_meta("hang") or not _model.is_inside_tree() or _camera == null:
+		return
+
+	_model.global_basis = Basis(Vector3.UP, _camera.global_rotation.y)
 
 
 func _make_other_model() -> Node3D:
@@ -2182,6 +2210,52 @@ func _make_spear_model() -> Node3D:
 
 
 # Headless check (--spear): make a spear, jab, aim, throw, and see it land.
+# Headless check (--net, BUG-022: "swinging the shore net makes more nets"): give a fishing net, hold it, left-click with it the way the
+# mouse does (mouse_button), first as it stands (usually at dry ground) and then a few more times, and print the pack before and after.
+func run_net_test() -> void:
+	await get_tree().create_timer(6.0).timeout
+	var table = _inv.table
+	var net_n: int = table.number_of("shore_net")
+	_net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, net_n, 0, 1, Vector3.ZERO)
+	await get_tree().create_timer(2.0).timeout
+	print("NET TEST: pack before: %s" % _net_test_pack())
+
+	for slot in range(8):
+		if _inv.inventory.numbers[slot] == net_n:
+			select(slot)
+
+	print("NET TEST: holding %s in slot %d" % [held_id(), held_slot])
+
+	for n in 4:
+		var used: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
+		await get_tree().create_timer(0.3).timeout
+		mouse_button(MOUSE_BUTTON_LEFT, false)
+		await get_tree().create_timer(9.0).timeout   # the net sinks for hold_s (6 s) and is hauled back
+		print("NET TEST: click %d (used %s): nets in pack %d, nets on the ground %d; pack %s" % [n + 1, used, _inv.inventory.count_of(net_n), _net_test_ground(net_n), _net_test_pack()])
+
+	print("NET TEST: %s" % ("PASS: still one net" if _inv.inventory.count_of(net_n) == 1 and _net_test_ground(net_n) == 0 else "FAIL: the net count changed"))
+
+
+func _net_test_pack() -> String:
+	var parts: Array = []
+
+	for slot in range(_inv.inventory.numbers.size()):
+		if _inv.inventory.numbers[slot] != 0:
+			parts.append("%d:%s x%d" % [slot, _inv.table.id_of(_inv.inventory.numbers[slot]), _inv.inventory.counts[slot]])
+
+	return ", ".join(parts)
+
+
+func _net_test_ground(net_n: int) -> int:
+	var found: int = 0
+
+	for id in _inv._world:
+		if int(_inv._world[id].get("number", 0)) == net_n:
+			found += 1
+
+	return found
+
+
 func run_test() -> void:
 	await get_tree().create_timer(3.0).timeout
 	var table = _inv.table

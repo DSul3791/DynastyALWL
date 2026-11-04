@@ -204,6 +204,38 @@ func _init() -> void:
 			took_off = took_off or (gulls.animals.has(flock_id) and int(gulls.animals[flock_id]["state"]) == 15)
 
 		check(took_off, "a gull flock takes off together when a player walks up")
+	# Inland nests (MikeW, 3 Nov; items: Sal): fixed spots with stable ids; grouse on open heath, songbirds under trees; none on water.
+	var nest_a = make(players, "rabbit")
+	nest_a.biome_at = func(x, z): return "heath"
+	nest_a.canopy = func(p): return false
+	var open_nests: Array = nest_a.nests_near(Vector3.ZERO, 300.0)
+	var again: Array = nest_a.nests_near(Vector3.ZERO, 300.0)
+	var kinds: Dictionary = {}
+
+	for n in open_nests:
+		kinds[n["kind"]] = true
+
+	check(open_nests.size() > 0 and kinds.keys() == ["grouse"], "open heath holds grouse nests and no songbird nests (%d, %s)" % [open_nests.size(), str(kinds.keys())])
+	check(open_nests.map(func(n): return n["id"]) == again.map(func(n): return n["id"]) and open_nests.map(func(n): return n["pos"]) == again.map(func(n): return n["pos"]), "nests stay in the same place with the same ids")
+	var near_one: Array = nest_a.nests_near(open_nests[0]["pos"], 2.5) if not open_nests.is_empty() else []
+	check(near_one.size() >= 1 and near_one[0]["id"] == open_nests[0]["id"], "a nest is found within reach of its own spot")
+	nest_a.biome_at = func(x, z): return "temperate_forest"
+	nest_a.canopy = func(p): return true
+	var wood: Array = nest_a.nests_near(Vector3.ZERO, 300.0)
+	kinds = {}
+
+	for n in wood:
+		kinds[n["kind"]] = true
+
+	check(wood.size() > 0 and kinds.keys() == ["songbird"], "woodland holds songbird nests under the trees (%d, %s)" % [wood.size(), str(kinds.keys())])
+	# Nest spots for the client (protocol 91): every songbird nest within 120 m of the player's 24 m square, kind 1, and the same answer again.
+	var sent: Array = nest_a.nest_spots_near(Vector3(3.0, 0.0, 4.0))
+	var in_range: Array = nest_a.nests_near(Vector3(12.0, 0.0, 12.0), 120.0)
+	check((sent[0] as PackedVector3Array).size() == in_range.size() and in_range.size() > 0 and (sent[1] as PackedByteArray).count(1) == in_range.size(), "the client gets the nests within 120 m as songbird spots (%d)" % in_range.size())
+	check(nest_a.nest_spots_near(Vector3(20.0, 0.0, 1.0))[0] == sent[0], "a step inside the same square sends the same spots")
+	nest_a.blocked = func(x, z): return true
+	check(nest_a.nests_near(Vector3.ZERO, 300.0).is_empty(), "no nests on water")
+
 	# A snare draws a calm rabbit (MikeW, 3 Nov): its home moves to the snare, its burrow stays; a fleeing one is not drawn.
 	var lure_a = make(players, "rabbit")
 	run(lure_a, 20.0)

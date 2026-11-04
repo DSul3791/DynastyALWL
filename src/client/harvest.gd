@@ -183,8 +183,11 @@ func _hint() -> String:
 	return ""
 
 
-# What the look-at line says for a berry bush (Dave 2026-10-23): the product while it can be picked ("Blackberries"); "" otherwise, and the
-# caller shows the plant's own name (bare after picking, or out of season, where the E line says why).
+const OUT_OF_SEASON_FORMAT := "%s - Out of Season"
+
+
+# What the look-at line says for a berry bush or fruit tree (Dave 2026-10-23): the product while it can be picked ("Blackberries"), "Raspberries - Out of
+# Season" when its season is not now; "" when it has been picked bare, and the caller shows the plant's own name.
 func product_name_at(point: Vector3) -> String:
 	var found: Array = _client.flora.instance_near(point, 1.3)
 
@@ -198,12 +201,13 @@ func product_name_at(point: Vector3) -> String:
 	if berry.is_empty() or _client.flora.is_stripped(found[0], id):
 		return ""
 
-	var seasons: Array = row.get("season", [])
+	var product: String = _items.table.name_of(_items.table.number_of(str(berry["item"])))
 
-	if not (seasons.is_empty() or seasons.has("all") or seasons.has(_client.game_clock.season())):
-		return ""
+	# Out of its season the bush says so (Dave's QA list, BUG-018: no raspberries in spring is right, but the look-at line must say why).
+	if not GatherRules.in_season(row, _client.game_clock.season()):
+		return OUT_OF_SEASON_FORMAT % product
 
-	return _items.table.name_of(_items.table.number_of(str(berry["item"])))
+	return product
 
 
 # Berry bushes say what they are: ripe "Press E to pick", bare "Nothing left to pick this season", out of season "Not in season".

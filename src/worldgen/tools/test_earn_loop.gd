@@ -73,7 +73,7 @@ func _init() -> void:
 	var kit: int = items.table.number_of("rough_bed_kit")
 	var placed_before: int = items.world_item_count()
 	items.report_position(1, Vector3(200.0, 10.0, 198.0))
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(kit), 0, 0, Vector3(200.0, 10.0, 200.0))
+	items.place_item(1, kit, Vector3(200.0, 10.0, 200.0), 0)
 	check(items.count_for(1, "rough_bed_kit") == 0, "the bed is placed out of the pack")
 	check(items.world_item_count() > placed_before, "a bed stands in the world")
 	items._finish_writer()

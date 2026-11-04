@@ -306,7 +306,7 @@ func _walk(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) 
 	var host_blocked: Callable = host.blocked
 	var me = self
 	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.lit(x, z, infos)
-	var r: Dictionary = Steering.step(m["pos"], goal, speed, dt, host.ground_height, shy, 0.5, m["heading"])
+	var r: Dictionary = Steering.step(m["pos"], goal, speed, dt, host.ground_height, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
 
 	if r["moved"]:

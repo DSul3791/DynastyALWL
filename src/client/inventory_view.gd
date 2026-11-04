@@ -29,6 +29,7 @@ const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CharacterScreenScript := preload("res://src/client/character_screen.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
@@ -74,6 +75,7 @@ var pick_stamp: int = 0                       # msec of the latest pick-up or ga
 var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
+var skill_up_event: Callable           # () when a skills message shows a skill's level higher than the last one (sounds; not on the first list after joining)
 var hurt_event: Callable               # (health lost int) when a vitals update drops health by HURT_MIN or more (a bite, a fall): sounds
 var _vitals_seen: bool = false          # the first vitals after joining sets health; it is not a hurt
 const HURT_MIN := 4                     # a smaller drop is a slow drain (hunger, cold, bleeding), not a blow
@@ -101,6 +103,7 @@ var strain_fade: float = 0.0
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
+var lie_on_bed: Callable = Callable()        # (bed position, yaw degrees) after E on a bed: the client lays the player along it
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
 var _death_msec: int = 0                    # when the last death arrived, 0 when none is being shown
@@ -459,7 +462,7 @@ func prompt_text(interaction: Dictionary) -> String:
 	if not (is_inspecting.is_valid() and bool(is_inspecting.call())) or bool(interaction.get("quiet", false)):
 		return ""
 
-	return str(interaction.get("prompt", ""))
+	return KeyBindings.localize(str(interaction.get("prompt", "")))
 
 
 # What the cursor is on: the kind of the E action it is aimed at ("pickup", "plant", "block", "fire", "structure", "npc"...), "" when it is on nothing.
@@ -633,8 +636,8 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if state == 11 or state == 12:
 		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
 
-	if state == 6:
-		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
+	if _is_chest(state):
+		return {"prompt": "Press E to open (hold E to take it down)", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
 		return {"prompt": "Press E to split firewood (hold E to pick up the block)", "tap": func(): _use_block(id), "hold": take_down}   # tap splits, hold picks up, like the other structures (Dave 2 Nov 2026, bug 2)
@@ -647,8 +650,15 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 	var station_def: Dictionary = _structure_by_state(state)
 
-	if str(station_def.get("use", "")) == "set_spawn":   # a bed: E sets it as the spawn point, hold E takes it down
-		return {"prompt": "Press E to set this bed as your spawn point (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+	if str(station_def.get("use", "")) == "set_spawn":   # a bed: E lies down on it and makes it the spawn point (Dave 4 Nov 2026), hold E takes it down
+		var bed: Dictionary = {"prompt": "Press E to lie down (hold E to take it down)", "hold": take_down}
+		bed["tap"] = func():
+			net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+
+			if lie_on_bed.is_valid() and _world.has(id):
+				lie_on_bed.call(_world[id]["pos"], float(_world[id].get("yaw", 0.0)))
+
+		return bed
 
 	if str(station_def.get("station", "")) != "":
 		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
@@ -657,10 +667,10 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 
 func press_e() -> bool:
-	# In the crafting window, E over a recipe crafts one of it (Dave 2026-10-23).
+	# In the crafting window, E over a recipe crafts it, as many as the quantity box says (Dave 2026-10-23; BUG-025, 4 Nov: a quantity of 20 made only 1).
 	if open and not chest_mode and _hover_recipe != 0:
 		if _can_craft(_hover_recipe):
-			_start_craft(_hover_recipe, 1)
+			_start_craft(_hover_recipe, _chosen_quantity())
 		else:
 			_on_notice("You do not have what that needs")
 
@@ -690,7 +700,7 @@ func release_e() -> void:
 
 
 func _hold_e_check() -> void:
-	if _e_active.is_empty() or not Input.is_key_pressed(KEY_E):
+	if _e_active.is_empty() or not KeyBindings.held("interact"):
 		return
 
 	if Time.get_ticks_msec() - _e_start_msec < int(HOLD_E_S * 1000.0):
@@ -724,7 +734,7 @@ func _container_near() -> int:
 		var state: int = int(_world[id]["state"])
 		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (is_station or state == 6 or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
+		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -786,7 +796,7 @@ func pick_up_nearest() -> bool:
 	if id == 0:
 		return false
 
-	if _world[id]["state"] == 6 and not Input.is_key_pressed(KEY_SHIFT):
+	if _is_chest(int(_world[id]["state"])) and not Input.is_key_pressed(KEY_SHIFT):
 		_ask_open(id)
 		return true
 
@@ -851,7 +861,7 @@ func _process_body(_delta: float) -> void:
 	_prompt.text = prompt_text(interaction)
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
-		_prompt.text = "Hold Z to sleep"
+		_prompt.text = KeyBindings.localize("Hold Z to sleep")
 
 
 
@@ -1079,7 +1089,7 @@ func _on_notice(text: String) -> void:
 	if notice_event.is_valid():
 		notice_event.call(text)
 
-	_prompt.text = text
+	_prompt.text = KeyBindings.localize(text)
 	_notice_until_msec = Time.get_ticks_msec() + 4000
 
 
@@ -1593,15 +1603,16 @@ func move_cap() -> float:
 	return 0.0
 
 
-# Walking on a trodden path (Dave 3 Nov 2026): the pace factor for a gait ("walk", "jog", "run") at a ground position, from data/path_speed.json; 1.0 off a path.
+# On or within range_m (3 m) of a trodden path (Dave 3 Nov 2026): the pace factor for a gait ("walk", "jog", "run") at a ground position, from data/path_speed.json; 1.0 off a path.
 func path_pace_factor(pos: Vector3, gait: String) -> float:
 	if _path_cells.is_empty():
 		return 1.0
 
+	var reach: int = ceili(float(_path_cfg.get("range_m", 3.0)))
 	var cell: Vector2i = Vector2i(floori(pos.x), floori(pos.z))
 
-	for dx in range(-1, 2):
-		for dz in range(-1, 2):
+	for dx in range(-reach, reach + 1):
+		for dz in range(-reach, reach + 1):
 			if int(_path_cells.get(Vector2i(cell.x + dx, cell.y + dz), 0)) > 0:
 				return float(_path_cfg.get("%s_factor" % gait, 1.0))
 
@@ -2731,6 +2742,7 @@ func _forge_glb(file: String) -> Node3D:
 		hook_smoke = _local_to(smoke, root)
 
 	var body: StaticBody3D = StaticBody3D.new()   # solid: you walk round a forge, not through it
+	body.set_meta("placed_structure", true)       # not rock: the cave module's enclosure rays skip it (BUG-027)
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var solid: BoxShape3D = BoxShape3D.new()
 	solid.size = Vector3(box.size.x, minf(box.size.y, 2.2), box.size.z)
@@ -2830,6 +2842,11 @@ func _addons_near(bench_id: int, station: String, reach: float) -> int:
 			kinds[int(_world[id]["state"])] = true
 
 	return kinds.size()
+
+
+# A chest of any kind: the woven chest (state 6) or any structure with storage slots, such as the plank chest (BUG-021: only state 6 opened).
+func _is_chest(state: int) -> bool:
+	return state == 6 or int(_structure_by_state(state).get("slots", 0)) > 0
 
 
 func _structure_by_state(state: int) -> Dictionary:
@@ -3420,11 +3437,29 @@ func _on_died(cause: String, _spawn: Vector3) -> void:
 func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
 	strength = attributes[0] if attributes.size() > 0 else 0
 	memory = attributes[1] if attributes.size() > 1 else 0
+	var rose: bool = not skill_rows.is_empty() and skill_rose(skill_rows, rows)
 	skill_rows = rows
 	_update_trail_mult()
 
+	if rose and skill_up_event.is_valid():
+		skill_up_event.call()
+
 	if _character != null:
 		_character.refresh()
+
+
+# True when some skill's whole working level (row[1]) is higher in `new_rows` than in `old_rows`. Rust (a drop) and new rows do not count.
+static func skill_rose(old_rows: Array, new_rows: Array) -> bool:
+	var before: Dictionary = {}
+
+	for row in old_rows:
+		before[int(row[0])] = int(row[1])
+
+	for row in new_rows:
+		if before.has(int(row[0])) and int(row[1]) > int(before[int(row[0])]):
+			return true
+
+	return false
 
 
 # The inner voice (protocol 38): the text as a subtitle for a few seconds; Sounds plays the line's recording when there is one.
@@ -3859,43 +3894,46 @@ func quick_key(event: InputEventKey) -> bool:
 
 	var slot: int = _hover if _hover >= 0 else _selected
 
-	match event.keycode:
-		KEY_E:
-			if hotbar_hover >= 0 and _hover < 0:
-				hotbar_to_pack(hotbar_hover)
-				return true
-
-			if slot >= 0 and not chest_mode:
-				eat_slot(slot)
-
+	if KeyBindings.matches(event, "use_item"):
+		if hotbar_hover >= 0 and _hover < 0:
+			hotbar_to_pack(hotbar_hover)
 			return true
-		KEY_D:
-			if slot < 0 and shoulder_id != "" and not chest_mode:
-				lay_down_shoulder()
-				return true
 
-			if slot >= 0 and not chest_mode:
-				_selected = slot
-				_drop_selected(not event.shift_pressed)
+		if slot >= 0 and not chest_mode:
+			eat_slot(slot)
 
+		return true
+
+	if KeyBindings.matches(event, "drop_item"):
+		if slot < 0 and shoulder_id != "" and not chest_mode:
+			lay_down_shoulder()
 			return true
-		KEY_R:
-			if slot >= 0 and not chest_mode:
-				_selected = slot
-				_repair_selected()
 
-			return true
-		KEY_S:
-			if slot >= 0 and not chest_mode:
-				_selected = slot
-				_split_selected()
+		if slot >= 0 and not chest_mode:
+			_selected = slot
+			_drop_selected(not event.shift_pressed)
 
-			return true
-		KEY_T:
-			if chest_mode and _chest_hover.size() == 2:
-				_on_chest_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
+		return true
 
-			return true
+	if KeyBindings.matches(event, "repair_item"):
+		if slot >= 0 and not chest_mode:
+			_selected = slot
+			_repair_selected()
+
+		return true
+
+	if KeyBindings.matches(event, "split_item"):
+		if slot >= 0 and not chest_mode:
+			_selected = slot
+			_split_selected()
+
+		return true
+
+	if KeyBindings.matches(event, "transfer_item"):
+		if chest_mode and _chest_hover.size() == 2:
+			_on_chest_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
+
+		return true
 
 	return false
 
@@ -3943,7 +3981,16 @@ func _craft_selected() -> void:
 	if _selected_recipe == 0:
 		return
 
-	_start_craft(_selected_recipe, int(_quantity.value) if _quantity != null else 1)
+	_start_craft(_selected_recipe, _chosen_quantity())
+
+
+# The quantity box's number, counting digits typed but not yet confirmed with Enter (BUG-025).
+func _chosen_quantity() -> int:
+	if _quantity == null:
+		return 1
+
+	_quantity.apply()
+	return clampi(int(_quantity.value), 1, 20)
 
 
 func _start_craft(number: int, count: int = 1) -> void:

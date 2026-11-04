@@ -522,6 +522,9 @@ func alarm(at: Vector3) -> bool:
 
 # Plays one of the calls in EVENTS at a place now (a hook: the creature system says a bird there called).
 func call_named(sound_name: String, at: Vector3) -> bool:
+	if _rng.randf() >= weather_calls:
+		return false                            # the same weather gate as every other bird call: none in rain (BUG-005)
+
 	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
@@ -684,6 +687,17 @@ func _pick_variant(sound_name: String, count: int) -> int:
 	return pick
 
 
+# The water points within `reach` metres (flat distance) of `from`: a fish or frog plays only from water this close.
+static func near_wet(points: Array, from: Vector3, reach: float) -> Array:
+	var list: Array = []
+
+	for p in points:
+		if Vector2(p.x - from.x, p.z - from.z).length() <= reach:
+			list.append(p)
+
+	return list
+
+
 # Where the call comes from: a water square for frogs and fish, else a random
 # direction at the call's distance, on the ground plus the call's height.
 func _place(event: Dictionary, body: CharacterBody3D) -> Vector3:
@@ -691,7 +705,12 @@ func _place(event: Dictionary, body: CharacterBody3D) -> Vector3:
 		if _wet_points.is_empty():
 			return Vector3(NAN, 0.0, 0.0)
 
-		var p: Vector3 = _wet_points[_rng.randi_range(0, _wet_points.size() - 1)]
+		var near: Array = near_wet(_wet_points, body.global_position, float(event["dist"][1]))
+
+		if near.is_empty():
+			return Vector3(NAN, 0.0, 0.0)          # the water is too far to be heard (Dave's bug list: plops in a dry forest, BUG-003)
+
+		var p: Vector3 = near[_rng.randi_range(0, near.size() - 1)]
 		return p + Vector3(_rng.randf_range(-2.0, 2.0), 0.0, _rng.randf_range(-2.0, 2.0))
 
 	var distance: float = _rng.randf_range(float(event["dist"][0]), float(event["dist"][1]))

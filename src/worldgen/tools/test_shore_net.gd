@@ -12,6 +12,16 @@ var failures: int = 0
 var said: Array = []
 
 
+func nets_on_ground(items, net_no: int) -> int:
+	var n: int = 0
+
+	for k in items._items:
+		if int(items._items[k].get("number", 0)) == net_no:
+			n += int(items._items[k].get("count", 1))
+
+	return n
+
+
 func check(ok: bool, what: String) -> void:
 	if not ok:
 		failures += 1
@@ -118,6 +128,7 @@ func _init() -> void:
 		clock[0] += 3.0 * float(items._fishing_data()["regrow_s"])
 
 	check(most >= 1, "over 12 hauls something was caught")
+	check(items.inventory_of(1).count_of(net_no) == 1 and nets_on_ground(items, net_no) == 0, "BUG-022: 12 casts and hauls leave exactly one net, none on the ground")
 
 	# Empty cell: nothing, but the net still wears.
 	items._fish_stock["%d,%d" % [cell.x, cell.y]] = [0, clock[0]]
@@ -141,6 +152,15 @@ func _init() -> void:
 	check(items._fishing.has(1), "net out again")
 	items.action(1, Net.ACT_NET, slot, 0, 0, water)
 	check(str(items._fishing[1]["phase"]) == "net", "a second press while netting changes nothing")
+
+	# BUG-022 ("swinging it makes more nets"): many clicks at dry ground and at water, then the haul, still leave one net.
+	for n in 20:
+		items._last_fish.clear()
+		items.action(1, Net.ACT_NET, slot, 0, 0, Vector3(50.0, 10.0, 50.0) if n % 2 == 0 else water)
+
+	items._fishing[1]["at"] = Time.get_ticks_msec() - 1
+	items._fish_tick()
+	check(items.inventory_of(1).count_of(net_no) == 1 and nets_on_ground(items, net_no) == 0, "BUG-022: 20 more clicks and a haul still leave exactly one net")
 
 	print("shore net tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

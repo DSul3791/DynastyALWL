@@ -1870,7 +1870,7 @@
 				"Used in Foundation",
 				"Used in Quern",
 				"Used in Rock pile",
-				"Used in Shore net",
+				"Used in Fishing net",
 				"Used in Stone arrow",
 				"Used in Stone axe"
 			],
@@ -2051,7 +2051,7 @@
 				"From a felled tree"
 			],
 			"used_for": [
-				"Used in Small shelter"
+				"Used in Lean-to"
 			],
 			"obtainable_now": true
 		},
@@ -2121,17 +2121,17 @@
 			"obtainable_now": true
 		},
 		"lean_to_kit": {
-			"name": "Small shelter",
+			"name": "Lean-to",
 			"kind": "placeable",
 			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"how_to_get": [
-				"Craft: 16 Stick, 4 Leaves, 2 Twine"
+				"Build with a hammer (press R): 30 Stick, 200 Leaves, 10 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
 		},
 		"lean_to": {
-			"name": "Small shelter",
+			"name": "Lean-to",
 			"kind": "structure",
 			"description": "A ridge pole on two forks, with a roof of leaned sticks and boughs down to the ground. Crawl in under it.",
 			"how_to_get": [],
@@ -2143,7 +2143,7 @@
 			"kind": "placeable",
 			"description": "Woven sticks and twine. A chest to store things in.",
 			"how_to_get": [
-				"Craft: 10 Stick, 4 Twine"
+				"Build with a hammer (press R): 10 Stick, 4 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2218,7 +2218,7 @@
 			"kind": "placeable",
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
 			"how_to_get": [
-				"Craft at a workbench: 8 Lumber, 2 Twine"
+				"Build with a hammer (press R): 8 Lumber, 2 Twine, 2 Hinges near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -2387,8 +2387,7 @@
 				"Craft: 2 Hide, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"hide": {
 			"name": "Hide",
@@ -2412,8 +2411,7 @@
 				"Used in Hide gloves",
 				"Used in Hide glue"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"rope": {
 			"name": "Rope",
@@ -2442,7 +2440,7 @@
 			"kind": "tool",
 			"description": "A spade with an iron blade.",
 			"how_to_get": [
-				"Craft: 2 Iron ingot, 2 Stick"
+				"Craft at a forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -2453,7 +2451,7 @@
 			"kind": "tool",
 			"description": "A spade with a steel blade.",
 			"how_to_get": [
-				"Craft: 2 Steel ingot, 2 Stick"
+				"Craft at a forge: 2 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -2474,8 +2472,7 @@
 			"used_for": [
 				"Used in Bone arrow"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"backpack": {
 			"name": "Backpack",
@@ -2530,7 +2527,7 @@
 			"description": "Food that has gone bad. Do not eat it.",
 			"how_to_get": [],
 			"used_for": [
-				"Spoiled food: worthless. Drop it; planned as compost."
+				"Compost (from rotten food)"
 			],
 			"obtainable_now": false
 		},
@@ -2675,8 +2672,7 @@
 				"Used in Rosemary joint",
 				"Used in Venison pie"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"roast_meat": {
 			"name": "Roast Meat",
@@ -2684,8 +2680,7 @@
 			"description": "Meat roasted over a fire. Filling, and it keeps a couple of days.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"sinew": {
 			"name": "Sinew",
@@ -2705,8 +2700,7 @@
 				"Used in Fur hat",
 				"Used in Sinew cord"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"animal_fat": {
 			"name": "Animal fat",
@@ -2730,8 +2724,7 @@
 				"Used in Oat cakes",
 				"Used in Onion roast"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"feather": {
 			"name": "Feather",
@@ -2751,15 +2744,14 @@
 				"Used in Wooden arrow",
 				"Fletching for arrows; quills and bedding come later."
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"workbench_kit": {
 			"name": "Camp bench",
 			"kind": "placeable",
 			"description": "Lashed sticks and a flat top. Set it down and it counts as a workbench, for better tools.",
 			"how_to_get": [
-				"Craft: 16 Stick, 6 Twine, 4 Stone"
+				"Build with a hammer (press R): 16 Stick, 6 Twine, 4 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2783,7 +2775,7 @@
 			"obtainable_now": true
 		},
 		"shore_net": {
-			"name": "Shore net",
+			"name": "Fishing net",
 			"kind": "tool",
 			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"how_to_get": [
@@ -2803,8 +2795,7 @@
 				"Used in Juniper trout",
 				"Used in Salted fish"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"perch": {
 			"name": "Perch",
@@ -2814,8 +2805,7 @@
 			"used_for": [
 				"Used in Fish stew"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"carp": {
 			"name": "Carp",
@@ -2823,8 +2813,7 @@
 			"description": "A heavy fish of still ponds. Cook it before you eat it.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"pike": {
 			"name": "Pike",
@@ -2834,8 +2823,7 @@
 			"used_for": [
 				"Used in Smoked fish"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"roast_fish": {
 			"name": "Roast Fish",
@@ -2843,8 +2831,7 @@
 			"description": "Fish cooked over a fire. Filling, and keeps a day or two.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"coin_copper": {
 			"name": "Copper coin",
@@ -2887,7 +2874,7 @@
 			"kind": "placeable",
 			"description": "Pegs and a crossbar. Set it beside a bench to raise its level.",
 			"how_to_get": [
-				"Craft at a workbench: 10 Stick, 4 Twine"
+				"Build with a hammer (press R): 10 Stick, 4 Twine near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2921,7 +2908,7 @@
 			"kind": "placeable",
 			"description": "A heavy log bench with its own rack and vice, ready to set down.",
 			"how_to_get": [
-				"Craft at a workbench: 4 Log, 6 Twine, 6 Stick"
+				"Build with a hammer (press R): 4 Log, 6 Twine, 6 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2938,7 +2925,9 @@
 			"name": "Basic Forge",
 			"kind": "placeable",
 			"description": "A clay and rough stone dome forge under a log roof, ready to raise.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Stone, 10 Clay, 2 Hide near a workbench"
+			],
 			"used_for": [],
 			"obtainable_now": false
 		},
@@ -2954,7 +2943,9 @@
 			"name": "Medium Forge",
 			"kind": "placeable",
 			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Build with a hammer (press R): 30 Stone, 10 Log, 10 Clay near a workbench"
+			],
 			"used_for": [],
 			"obtainable_now": false
 		},
@@ -3448,7 +3439,7 @@
 			"kind": "placeable",
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"how_to_get": [
-				"Craft: 4 Lumber, 1 Twine"
+				"Build with a hammer (press R): 4 Lumber, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3466,7 +3457,7 @@
 			"kind": "placeable",
 			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
 			"how_to_get": [
-				"Craft: 4 Lumber, 1 Twine"
+				"Build with a hammer (press R): 4 Lumber, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3484,7 +3475,7 @@
 			"kind": "placeable",
 			"description": "A plank roof on four posts, to set over walls and floors.",
 			"how_to_get": [
-				"Craft: 5 Lumber, 2 Twine, 2 Stick"
+				"Build with a hammer (press R): 5 Lumber, 2 Twine, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3502,7 +3493,7 @@
 			"kind": "placeable",
 			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
 			"how_to_get": [
-				"Craft: 8 Stone, 2 Clay"
+				"Build with a hammer (press R): 8 Stone, 2 Clay"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3520,7 +3511,7 @@
 			"kind": "placeable",
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"how_to_get": [
-				"Craft: 3 Lumber, 1 Twine"
+				"Build with a hammer (press R): 3 Lumber, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3538,7 +3529,7 @@
 			"kind": "placeable",
 			"description": "A plank wall with an opening at chest height to see through.",
 			"how_to_get": [
-				"Craft: 3 Lumber, 1 Twine"
+				"Build with a hammer (press R): 3 Lumber, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3556,7 +3547,7 @@
 			"kind": "placeable",
 			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
 			"how_to_get": [
-				"Craft: 1 Log, 1 Twine"
+				"Build with a hammer (press R): 1 Log, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3574,7 +3565,7 @@
 			"kind": "placeable",
 			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
 			"how_to_get": [
-				"Craft: 4 Lumber, 1 Twine, 1 Stick"
+				"Build with a hammer (press R): 4 Lumber, 1 Twine, 1 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3630,7 +3621,7 @@
 			"kind": "placeable",
 			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
 			"how_to_get": [
-				"Craft: 4 Lumber, 2 Twine"
+				"Build with a hammer (press R): 4 Lumber, 2 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3670,7 +3661,7 @@
 			"kind": "tool",
 			"description": "A hoe with an iron blade.",
 			"how_to_get": [
-				"Craft: 2 Iron ingot, 2 Stick"
+				"Craft at a forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -3681,7 +3672,7 @@
 			"kind": "tool",
 			"description": "A hoe with a steel blade.",
 			"how_to_get": [
-				"Craft: 2 Steel ingot, 2 Stick"
+				"Craft at a forge: 2 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -3703,7 +3694,7 @@
 				"Craft at a workbench: 1 Log"
 			],
 			"used_for": [
-				"Rough boards from a log; planned for building, fine board and shingles at a sawmill."
+				"Used in Ladder"
 			],
 			"obtainable_now": true
 		},
@@ -3801,7 +3792,9 @@
 			"name": "Wooden block",
 			"kind": "material",
 			"description": "A short round of log. Split it on a chopping block.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Strike a small log lying on the ground with an axe: 3 blocks"
+			],
 			"used_for": [
 				"Used in Wooden hammer"
 			],
@@ -3821,7 +3814,9 @@
 			"name": "Softwood block",
 			"kind": "material",
 			"description": "A short round of pine, spruce or fir log, about 30 cm long. Split it on a chopping block.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Strike a small log lying on the ground with an axe: 3 blocks"
+			],
 			"used_for": [
 				"Used in Wooden hammer",
 				"Split on a chopping block into soft firewood, or shaped into a wooden hammer."
@@ -3859,7 +3854,9 @@
 			"name": "Sawmill",
 			"kind": "placeable",
 			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Build with a hammer (press R): 40 Lumber, 100 Nails, 1 Saw blades, 1 Water wheel near a workbench"
+			],
 			"used_for": [],
 			"obtainable_now": false
 		},
@@ -3875,7 +3872,9 @@
 			"name": "Woodworking table",
 			"kind": "placeable",
 			"description": "A heavy table with vices and clamps for fine woodwork. Set it down in a workshop.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Lumber, 60 Nails near a workbench"
+			],
 			"used_for": [],
 			"obtainable_now": false
 		},
@@ -3958,7 +3957,7 @@
 			"kind": "placeable",
 			"description": "Bundled thatch on a frame of sticks. Set it up to close in a shelter.",
 			"how_to_get": [
-				"Craft at a workbench: 8 Twine, 50 Thatch, 15 Stick"
+				"Build with a hammer (press R): 8 Twine, 50 Thatch, 15 Stick near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3976,7 +3975,7 @@
 			"kind": "placeable",
 			"description": "A pot on sticks and a chain. Hang it on a small fire to cook stews. The fire stays at firewood.",
 			"how_to_get": [
-				"Craft: 3 Stick, 3 Twine, 1 Clay pot"
+				"Build with a hammer (press R): 3 Stick, 3 Twine, 1 Clay pot"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3993,7 +3992,9 @@
 			"name": "Clay hearth",
 			"kind": "placeable",
 			"description": "Stones and clay built into a low hearth with a spit. Cooks better than an open fire.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Brick, 6 Clay, 4 Stone"
+			],
 			"used_for": [],
 			"obtainable_now": false
 		},
@@ -4010,7 +4011,7 @@
 			"kind": "placeable",
 			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
 			"how_to_get": [
-				"Craft at a workbench: 4 Twine, 20 Thatch"
+				"Build with a hammer (press R): 4 Twine, 20 Thatch near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4028,7 +4029,7 @@
 			"kind": "placeable",
 			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
 			"how_to_get": [
-				"Craft at a workbench: 6 Twine, 40 Thatch, 12 Stick"
+				"Build with a hammer (press R): 6 Twine, 40 Thatch, 12 Stick near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4046,7 +4047,7 @@
 			"kind": "placeable",
 			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
 			"how_to_get": [
-				"Craft at a workbench: 6 Twine, 25 Thatch, 12 Stick"
+				"Build with a hammer (press R): 6 Twine, 25 Thatch, 12 Stick near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4111,7 +4112,9 @@
 			"name": "Basic Oven",
 			"kind": "placeable",
 			"description": "A brick oven, built with a hammer next to a clay hearth.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Build with a hammer (press R): 24 Brick, 10 Clay, 8 Stone"
+			],
 			"used_for": [],
 			"obtainable_now": false
 		},
@@ -4238,7 +4241,9 @@
 			"how_to_get": [
 				"Craft at a campfire pot: 1 Leather, 1 Animal fat"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Leather cap"
+			],
 			"obtainable_now": false,
 			"status": "planned"
 		},
@@ -4691,7 +4696,7 @@
 			"kind": "clothing",
 			"description": "A close leather cap. Better than bare hide.",
 			"how_to_get": [
-				"Craft: 2 Leather"
+				"Craft: 1 Leather, 1 Fine leather"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4702,7 +4707,7 @@
 			"kind": "clothing",
 			"description": "A stiff leather vest. Turns a glancing blow.",
 			"how_to_get": [
-				"Craft at a workbench: 3 Leather"
+				"Craft at a workbench: 2 Leather, 2 Leather strap"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4724,7 +4729,7 @@
 			"kind": "clothing",
 			"description": "Quilted padding. Cheap armour that soaks a blow.",
 			"how_to_get": [
-				"Craft at a workbench: 3 Twine, 1 Leather"
+				"Craft at a workbench: 3 Twine, 1 Leather, 1 Leather strap"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4846,8 +4851,7 @@
 			"description": "Seeds for sowing wheat. Plant them in a tilled bed in spring.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"barley_seeds": {
 			"name": "Barley seeds",
@@ -4855,8 +4859,7 @@
 			"description": "Seeds for sowing barley. Plant in a tilled bed.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"carrot_seeds": {
 			"name": "Carrot seeds",
@@ -4914,7 +4917,8 @@
 			"kind": "material",
 			"description": "Rotted plant matter. Feeds a tilled bed.",
 			"how_to_get": [
-				"Craft: 3 Plant fibre"
+				"Craft: 3 Plant fibre",
+				"Craft: 2 Rotten food"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4929,8 +4933,7 @@
 				"Dropped by reindeer when worked with a knife"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"tusk": {
 			"name": "Tusk",
@@ -4939,9 +4942,10 @@
 			"how_to_get": [
 				"Dropped by boar when worked with a knife"
 			],
-			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"used_for": [
+				"Sold to traders (worth 20 copper)"
+			],
+			"obtainable_now": true
 		},
 		"claw": {
 			"name": "Claw",
@@ -4954,9 +4958,10 @@
 				"Dropped by lynx when worked with a knife",
 				"Dropped by wolf when worked with a knife"
 			],
-			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"used_for": [
+				"Sold to traders (worth 12 copper)"
+			],
+			"obtainable_now": true
 		},
 		"down": {
 			"name": "Down",
@@ -4966,9 +4971,10 @@
 				"Dropped by duck when worked with a knife",
 				"Dropped by goose when worked with a knife"
 			],
-			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"used_for": [
+				"Feather bed"
+			],
+			"obtainable_now": true
 		},
 		"quill": {
 			"name": "Quill",
@@ -4977,7 +4983,9 @@
 			"how_to_get": [
 				"Dropped by porcupine when worked with a knife"
 			],
-			"used_for": [],
+			"used_for": [
+				"Quill arrows"
+			],
 			"obtainable_now": false,
 			"status": "planned"
 		},
@@ -5082,8 +5090,7 @@
 			"used_for": [
 				"Used in Seal stew"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"sea_salt": {
 			"name": "Sea salt",
@@ -5124,8 +5131,7 @@
 			"description": "Seal meat roasted over a fire. Rich and fatty.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"wool": {
 			"name": "Wool",
@@ -5323,8 +5329,7 @@
 			"description": "Seeds for sowing oats. Plant in a tilled bed.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"rye_seeds": {
 			"name": "Rye seeds",
@@ -5332,8 +5337,7 @@
 			"description": "Seeds for sowing rye. Plant in a tilled bed.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"cabbage_seeds": {
 			"name": "Cabbage seeds",
@@ -5695,7 +5699,10 @@
 			"how_to_get": [
 				"Craft: 1 Leather (keep Stone knife)"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Leather jerkin",
+				"Used in Gambeson"
+			],
 			"obtainable_now": false,
 			"status": "planned"
 		},
@@ -6198,7 +6205,7 @@
 			"kind": "placeable",
 			"description": "Planks and twine for a flight of stairs. Set it against a floor edge to climb up.",
 			"how_to_get": [
-				"Craft: 8 Lumber, 2 Twine at a workbench"
+				"Build with a hammer (press R): 8 Lumber, 2 Twine near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6218,7 +6225,7 @@
 			"kind": "placeable",
 			"description": "Round logs lashed in a wall, two metres wide. Warm and sturdy.",
 			"how_to_get": [
-				"Craft: 6 Log, 2 Twine at a workbench"
+				"Build with a hammer (press R): 6 Log, 2 Twine"
 			],
 			"used_for": [
 				"Used in Log cabin set"
@@ -6240,7 +6247,7 @@
 			"kind": "placeable",
 			"description": "Logs laid side by side on a frame. A rough, strong floor.",
 			"how_to_get": [
-				"Craft: 8 Log, 2 Twine at a workbench"
+				"Build with a hammer (press R): 8 Log, 2 Twine"
 			],
 			"used_for": [
 				"Used in Log cabin set"
@@ -6262,7 +6269,7 @@
 			"kind": "placeable",
 			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
 			"how_to_get": [
-				"Craft: 4 Log, 20 Thatch, 3 Twine at a workbench"
+				"Build with a hammer (press R): 4 Log, 20 Thatch, 3 Twine"
 			],
 			"used_for": [
 				"Used in Log cabin set"
@@ -6284,7 +6291,7 @@
 			"kind": "placeable",
 			"description": "Cut stone laid in mortar, two metres wide. Fire proof and strong.",
 			"how_to_get": [
-				"Craft: 12 Stone block, 4 Mortar at a workbench"
+				"Build with a hammer (press R): 12 Stone block, 4 Mortar"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6304,7 +6311,7 @@
 			"kind": "placeable",
 			"description": "Cobbles bedded in sand. A hard dry floor.",
 			"how_to_get": [
-				"Craft: 16 Cobblestone, 4 Sand at a workbench"
+				"Build with a hammer (press R): 16 Cobblestone, 4 Sand near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6324,7 +6331,7 @@
 			"kind": "placeable",
 			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
 			"how_to_get": [
-				"Craft: 20 Stone shingle, 6 Lumber at a workbench"
+				"Build with a hammer (press R): 20 Stone shingle, 6 Lumber near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6344,7 +6351,7 @@
 			"kind": "placeable",
 			"description": "Fired bricks laid in mortar, two metres wide.",
 			"how_to_get": [
-				"Craft: 16 Brick, 4 Mortar at a workbench"
+				"Build with a hammer (press R): 16 Brick, 4 Mortar"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6364,7 +6371,7 @@
 			"kind": "placeable",
 			"description": "Bricks laid on sand. A smooth hard floor.",
 			"how_to_get": [
-				"Craft: 20 Brick, 4 Sand at a workbench"
+				"Build with a hammer (press R): 20 Brick, 4 Sand"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6384,7 +6391,7 @@
 			"kind": "placeable",
 			"description": "Fired tiles on a timber frame. Dry and durable.",
 			"how_to_get": [
-				"Craft: 16 Brick, 6 Lumber at a workbench"
+				"Build with a hammer (press R): 16 Brick, 6 Lumber"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6461,7 +6468,7 @@
 			"kind": "placeable",
 			"description": "A log set on end with the top flattened. Sit on it by the fire.",
 			"how_to_get": [
-				"Craft: 1 Log (keeps Stone axe)"
+				"Build with a hammer (press R): 1 Log"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6471,7 +6478,7 @@
 			"kind": "placeable",
 			"description": "A three-legged stool of lashed sticks. Sit on it by the fire.",
 			"how_to_get": [
-				"Craft: 6 Stick, 1 Twine"
+				"Build with a hammer (press R): 6 Stick, 1 Twine, 2 Wooden pin"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6631,7 +6638,7 @@
 			"kind": "placeable",
 			"description": "A plank seat on four legs. Seats you by the fire and adds comfort.",
 			"how_to_get": [
-				"Craft: 3 Lumber, 1 Twine at a workbench"
+				"Build with a hammer (press R): 3 Lumber, 1 Twine near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6641,7 +6648,7 @@
 			"kind": "placeable",
 			"description": "A plank chair with a hide seat. More comfortable than a bench.",
 			"how_to_get": [
-				"Craft: 4 Lumber, 1 Hide, 4 Wooden pin at a workbench"
+				"Build with a hammer (press R): 4 Lumber, 1 Hide, 4 Wooden pin near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6651,7 +6658,7 @@
 			"kind": "placeable",
 			"description": "A plank table to eat and work at. Adds comfort to a camp.",
 			"how_to_get": [
-				"Craft: 6 Lumber, 2 Twine at a workbench"
+				"Build with a hammer (press R): 6 Lumber, 2 Twine near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6661,7 +6668,7 @@
 			"kind": "placeable",
 			"description": "A tanned hide spread on the floor. Warm underfoot.",
 			"how_to_get": [
-				"Craft: 3 Hide, 1 Sinew"
+				"Build with a hammer (press R): 3 Hide, 1 Sinew"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6671,7 +6678,7 @@
 			"kind": "placeable",
 			"description": "A thick wool rug. Warmer and softer than hide.",
 			"how_to_get": [
-				"Craft: 4 Wool, 1 Twine"
+				"Build with a hammer (press R): 4 Wool, 1 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -6681,7 +6688,7 @@
 			"kind": "placeable",
 			"description": "A frame stuffed with clean straw. Softer than a rough bed.",
 			"how_to_get": [
-				"Craft: 12 Straw, 6 Stick, 2 Twine at a workbench"
+				"Build with a hammer (press R): 12 Straw, 6 Stick, 2 Twine near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6691,7 +6698,7 @@
 			"kind": "placeable",
 			"description": "A rough bed topped with feathers and a wool blanket.",
 			"how_to_get": [
-				"Craft: 1 Rough bed, 30 Feather, 2 Fibre cloth at a workbench"
+				"Build with a hammer (press R): 10 Thatch, 20 Feather, 10 Down, 2 Fibre cloth near a workbench"
 			],
 			"used_for": [
 				"Used in Canopy bed"
@@ -6703,7 +6710,7 @@
 			"kind": "placeable",
 			"description": "A feather bed under a timber canopy with linen curtains.",
 			"how_to_get": [
-				"Craft: 1 Feather bed, 8 Lumber, 4 Fibre cloth at a workbench"
+				"Build with a hammer (press R): 30 Feather, 8 Lumber, 4 Fibre cloth near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6713,7 +6720,7 @@
 			"kind": "placeable",
 			"description": "A torch in a bracket on a post. Lights a camp; light it first.",
 			"how_to_get": [
-				"Craft: 2 Stick, 1 Tallow"
+				"Build with a hammer (press R): 2 Stick, 1 Tallow"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6723,7 +6730,7 @@
 			"kind": "placeable",
 			"description": "A wooden hoop hung from a beam, with six candles. Light them first.",
 			"how_to_get": [
-				"Craft: 2 Lumber, 2 Twine, 6 Candle at a workbench"
+				"Build with a hammer (press R): 2 Lumber, 2 Twine, 6 Candle near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6733,7 +6740,7 @@
 			"kind": "placeable",
 			"description": "A brick hearth with a chimney. Warm and bright; light it first.",
 			"how_to_get": [
-				"Craft: 24 Brick, 4 Mortar, 6 Clay at a workbench"
+				"Build with a hammer (press R): 24 Brick, 4 Mortar, 6 Clay"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6743,7 +6750,7 @@
 			"kind": "placeable",
 			"description": "A clay pot of soil with a living plant.",
 			"how_to_get": [
-				"Craft: 2 Clay, 1 Soil"
+				"Build with a hammer (press R): 2 Clay, 1 Soil"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6753,9 +6760,37 @@
 			"kind": "placeable",
 			"description": "A pair of antlers on a plaque. A hunter's trophy.",
 			"how_to_get": [
-				"Craft: 2 Antler, 1 Lumber, 1 Twine at a workbench"
+				"Build with a hammer (press R): 2 Antler, 1 Lumber, 1 Twine near a workbench"
 			],
 			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_block_large": {
+			"name": "Large wooden block",
+			"kind": "material",
+			"description": "A thick round of a big trunk, bark still on. Split it into 4 firewood on a chopping block, or make a chopping block of it.",
+			"how_to_get": [
+				"Strike a large log (oak, beech and the other big hardwood trunks) lying on the ground with an axe: 3 blocks"
+			],
+			"used_for": [
+				"Split on a chopping block: 4 firewood",
+				"Make a chopping block",
+				"Burn it in a fire"
+			],
+			"obtainable_now": true
+		},
+		"wooden_block_soft_large": {
+			"name": "Large softwood block",
+			"kind": "material",
+			"description": "A thick round of a big pine, spruce or fir trunk, bark still on. Split it into 4 soft firewood on a chopping block, or make a chopping block of it.",
+			"how_to_get": [
+				"Strike a large pine, spruce or fir log lying on the ground with an axe: 3 blocks"
+			],
+			"used_for": [
+				"Split on a chopping block: 4 firewood",
+				"Make a chopping block",
+				"Burn it in a fire"
+			],
 			"obtainable_now": true
 		}
 	}

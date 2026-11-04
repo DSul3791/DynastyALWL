@@ -86,19 +86,19 @@
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Lash a ridge pole, lean sticks against it and weave in boughs: 16 sticks, 4 leaves, 2 twine.",
+			"text": "Hold your wooden hammer, press R and pick Lean-to: 30 sticks, 200 leaves, 10 twine.",
 			"goal": "shelter"
 		},
 		{
 			"id": "place_leanto",
 			"trigger": "leanto_made",
-			"text": "Click to place it, open side towards you.",
+			"text": "Click to build it, open side towards you.",
 			"goal": "shelter"
 		},
 		{
 			"id": "bed",
 			"trigger": "leanto_placed",
-			"text": "Hold the wooden hammer, press R and pick Rough bed: 10 thatch, 4 sticks and 2 twine, built inside your lean-to.",
+			"text": "Make a Rough bed from your pack: 10 thatch, 4 sticks and 2 twine. Place it inside your lean-to.",
 			"goal": "bed"
 		},
 		{
@@ -109,7 +109,7 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Camp bench: 16 sticks, 6 twine, 4 stones. It is your workbench, for better tools.",
+			"text": "A Camp bench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 4 stones. It is your workbench, for better tools.",
 			"goal": "workbench"
 		},
 		{
@@ -204,7 +204,7 @@
 		{
 			"id": "plant_food_pot",
 			"trigger": "has_plant_food_at_fire",
-			"text": "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine."
+			"text": "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then hold the hammer, press R, pick Campfire pot and click on the fire (3 sticks, 3 twine, 1 clay pot)."
 		},
 		{
 			"id": "pot_first_dish",

@@ -1,6 +1,8 @@
 {
-	"_note": "Walking on a trodden hoe path (Dave 3 Nov 2026): the pace is multiplied by these while the player stands on a path patch. Tune here. A path patch counts when its centre is in the same 1 m ground cell as the player or the next one over, so the strong middle (1 m across) and its soft edge both count. Run gets no bonus on purpose: paths pay off for the everyday walk and jog (hauling, travelling between camp and water).",
-	"walk_factor": 1.1,
-	"jog_factor": 1.1,
-	"run_factor": 1.0
+	"_note": "On or near a trodden hoe path (Dave 3 and 4 Nov 2026, QA answer 7): while a path patch has its centre within range_m of the player, the pace is multiplied by these (walk +20 percent, jog +15, run +10) and the effort the server counts from the player's speed is multiplied by exertion_factor, so it costs less strain than the same movement off the path. Tune here. The client reads the speed factors, the server reads exertion_factor and range_m.",
+	"range_m": 3.0,
+	"walk_factor": 1.2,
+	"jog_factor": 1.15,
+	"run_factor": 1.1,
+	"exertion_factor": 0.8
 }

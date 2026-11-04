@@ -38,7 +38,7 @@ const CLIP_MAP := {
 	"jump": ["Jump_Run", 0.3, 0.7, false, 1.0],
 	"fall": ["Jump_Run", 0.55, 0.8, true, 1.0],
 	"land": ["Jump_Run", 0.1, 0.5, false, 1.0],
-	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
+	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],   # post-processed into cross-legged ground sitting by _ground_sit (BUG-020: there is no floor-sit clip)
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
 	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
 	# the strike comes down from 1.4 s, fastest at 1.53 s, hands lowest at 1.73 s; the clip ends at 1.83 s. (The speed peak at 0.73 s is the rise, not a blow.) The game wants the blow at 0.5 s
@@ -140,6 +140,7 @@ func _init() -> void:
 	if _scene == null:
 		_scene = load_warm(GLB) as PackedScene
 
+
 	# Dave's rig faces +Z; the game faces -Z.
 	_model = Node3D.new()
 	_model.name = "Model"
@@ -151,6 +152,7 @@ func _init() -> void:
 	body_mesh = inst.find_children("*", "MeshInstance3D", true, false)[0]
 	body_mesh.layers |= 1 << 19   # no ground decals on the body (piece_look.gd NO_DECAL_LAYER)
 	animation_player = inst.find_children("*", "AnimationPlayer", true, false)[0]
+	Shapes.prewarm(body_mesh.mesh, body_mesh.skin, skeleton)      # the width and face shapes, on a worker thread, ready before an NPC or a slider needs them (dynasty_shapes.gd)
 	_build_mounts()
 	set_meta("worn_frames", _worn_frames())      # worn clothing (worn_look.gd) hangs on these frames, so nothing is skipped any more (docs/DYNASTY_BODY.md gap 1)
 	_build_animations()
@@ -266,7 +268,12 @@ func _build_animations() -> void:
 
 		for game_name in CLIP_MAP:
 			var row: Array = CLIP_MAP[game_name]
-			_library.add_animation(game_name, _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else []))
+			var made: Animation = _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
+
+			if game_name == "sit":
+				_ground_sit(made, own.get_animation("Idle"))
+
+			_library.add_animation(game_name, made)
 
 	for library_name in animation_player.get_animation_library_list():
 		animation_player.remove_animation_library(library_name)
@@ -345,7 +352,123 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 	return out
 
 
+# Turns the chair clip into sitting cross-legged on the ground (Dave QA BUG-020: X sat him as if on a chair). Dave's set has no floor-sit clip, so the chair pose is changed in place:
+# the hips drop to about 14 cm off the ground, each thigh swings out sideways (the model faces +Z, its right is -X) and each shin folds back under the other leg. The turns are
+# made in the parent bone's frame, which for this Mixamo rig is close to the model's own axes. Angles are a first guess, not yet seen in the game: rate by picture (--shot-stance=sit).
+const SIT_THIGH_OUT_DEG := 55.0
+const SIT_SHIN_FOLD_DEG := 135.0
+const SIT_HIPS_M := 0.14
+const SIT_PELVIS_BACK_DEG := 28.0     # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
+const SIT_ARM_FWD_DEG := 40.0         # hands rest on the knees: the upper arm swings forward this much from hanging (about the model's X axis), the forearm this much more
+const SIT_FOREARM_FWD_DEG := 25.0
+const SIT_SPINE_BACK_DEG := 3.0       # each of Spine, Spine1 and Spine2 leans back this much more
+
+
+static func _ground_sit(anim: Animation, idle: Animation) -> void:
+	for t in range(anim.get_track_count()):
+		var path: String = String(anim.track_get_path(t))
+		var type: int = anim.track_get_type(t)
+
+		if type == Animation.TYPE_POSITION_3D and path.ends_with(P + "Hips"):
+			for k in range(anim.track_get_key_count(t)):
+				var v: Vector3 = anim.track_get_key_value(t, k)
+				v.y = SIT_HIPS_M * 100.0       # the skeleton is in centimetres
+				anim.track_set_key_value(t, k, v)
+
+			continue
+
+		if type != Animation.TYPE_ROTATION_3D:
+			continue
+
+		# Arms hang as in the standing idle, not reaching down to the chair's desk or knees (the #315 picture: the left hand on the ground).
+		if "Arm" in path.get_file() or "Shoulder" in path.get_file() or "Hand" in path.get_file():
+			var idle_track: int = idle.find_track(anim.track_get_path(t), Animation.TYPE_ROTATION_3D)
+
+			if idle_track >= 0:
+				var hang: Quaternion = idle.track_get_key_value(idle_track, 0)
+
+				for k in range(anim.track_get_key_count(t)):
+					anim.track_set_key_value(t, k, hang)
+
+			continue
+
+		var pelvis: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_PELVIS_BACK_DEG))
+
+		if path.ends_with(P + "Hips"):
+			for k in range(anim.track_get_key_count(t)):
+				anim.track_set_key_value(t, k, (anim.track_get_key_value(t, k) as Quaternion) * pelvis)
+
+			continue
+
+		if path.ends_with(P + "Spine") or path.ends_with(P + "Spine1") or path.ends_with(P + "Spine2"):
+			var back: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_SPINE_BACK_DEG))
+
+			for k in range(anim.track_get_key_count(t)):
+				anim.track_set_key_value(t, k, (anim.track_get_key_value(t, k) as Quaternion) * back)
+
+			continue
+
+		var extra: Quaternion = Quaternion.IDENTITY
+		var right: bool = path.ends_with(P + "RightUpLeg") or path.ends_with(P + "RightLeg")
+
+		if path.ends_with("UpLeg"):
+			extra = Quaternion(Vector3.UP, deg_to_rad(-SIT_THIGH_OUT_DEG if right else SIT_THIGH_OUT_DEG))
+		elif path.ends_with("Leg"):
+			extra = Quaternion(Vector3.RIGHT, deg_to_rad(SIT_SHIN_FOLD_DEG))
+		else:
+			continue
+
+		for k in range(anim.track_get_key_count(t)):
+			var q: Quaternion = anim.track_get_key_value(t, k)
+			anim.track_set_key_value(t, k, (pelvis.inverse() * extra * q) if path.ends_with("UpLeg") else (q * extra))
+
+	# The arms hang beside the hips, which are now on the ground and put a held tool in the grass: swing them forward so the hands rest on the knees. The swing is made in model space
+	# (the bones' own axes are not known), through the parent chain's rotation at the first key.
+	for side in ["Left", "Right"]:
+		var chain: Quaternion = Quaternion.IDENTITY
+
+		for bone in ["Hips", "Spine", "Spine1", "Spine2", side + "Shoulder"]:
+			var tr: int = _rot_track(anim, bone)
+
+			if tr < 0:
+				chain = Quaternion.IDENTITY
+				break
+
+			chain = chain * (anim.track_get_key_value(tr, 0) as Quaternion)
+
+		var arm_tr: int = _rot_track(anim, side + "Arm")
+		var fore_tr: int = _rot_track(anim, side + "ForeArm")
+
+		if arm_tr < 0 or fore_tr < 0:
+			continue
+
+		var swing: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_ARM_FWD_DEG))
+		var arm_new: Quaternion = chain.inverse() * swing * chain * (anim.track_get_key_value(arm_tr, 0) as Quaternion)
+		var swing2: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_FOREARM_FWD_DEG))
+		var chain2: Quaternion = chain * arm_new
+		var fore_new: Quaternion = chain2.inverse() * swing2 * chain2 * (anim.track_get_key_value(fore_tr, 0) as Quaternion)
+
+		for k in range(anim.track_get_key_count(arm_tr)):
+			anim.track_set_key_value(arm_tr, k, arm_new)
+
+		for k in range(anim.track_get_key_count(fore_tr)):
+			anim.track_set_key_value(fore_tr, k, fore_new)
+
+
+static func _rot_track(anim: Animation, bone: String) -> int:
+	for t in range(anim.get_track_count()):
+		if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and String(anim.track_get_path(t)).ends_with(P + bone):
+			return t
+
+	return -1
+
+
 # A harmless stand-in when the glb cannot be used, so nothing that holds this body meets a null (my_character.gd make_avatar never picks it; this is the last guard).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		Shapes.wait()          # the prewarm task (started by the first body) never outlives the bodies
+
+
 func _make_empty() -> void:
 	skeleton = Skeleton3D.new()
 	add_child(skeleton)

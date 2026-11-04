@@ -17,6 +17,7 @@ const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
 const BodyGenerator := preload("res://src/client/character/body_generator.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
+const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
 const VARIANTS := 8                  # with --generated-body: this many body types, built once each and shared (see _make_body)
 const BuildingLook := preload("res://src/client/building_look.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
@@ -35,8 +36,11 @@ func _exit_tree() -> void:
 
 
 func _ready() -> void:
-	# --generated-body: start building the body types on worker threads now, so no NPC waits for its mesh when it first appears.
-	if MyCharacter.generated_body_on():
+	# Dave's body (the default): start reading its file on a loader thread, so the first NPC does not wait for it.
+	if MyCharacter.dynasty_body_on():
+		DynastyBodyScript.warm()
+	# The generated body: start building the body types on worker threads now, so no NPC waits for its mesh when it first appears.
+	elif MyCharacter.generated_body_on():
 		for variant in range(VARIANTS):
 			BodyGenerator.prewarm(BodyGenerator.genome_from_seed(variant), 0.045, false)
 			BodyGenerator.prewarm(BodyGenerator.genome_from_seed(variant), BodyGenerator.lod_voxel(2), false)     # the far level (Plan 18)
@@ -181,11 +185,27 @@ func _worn_of(outfit: String) -> Array:
 	return WornSync.known_ids(_outfits.get(outfit, []))
 
 
+# The body an NPC wears (Dave 4 Nov 2026: "NPCs can use your body by randomizing all the sliders"): Dave's own Dynasty body, the same one the player wears, with every creator
+# slider (body, width and face) and the skin drawn at random from the NPC's id, so each townsperson looks different and keeps the same look every visit. The shaped mesh with
+# the width and face blend shapes is shared by every Dynasty body; each NPC only sets its own weights and bone lengths. When the player has chosen the old body (or the glb is
+# not imported) the NPCs wear what they wore before: the generated body (a few shared body types) or, with `--old-body`, the ragdoll.
+static func genome_of(id: String) -> Dictionary:
+	return BodyGenerator.genome_from_seed(id.hash())
+
+
+func _make_rig(id: String) -> Node3D:
+	if MyCharacter.dynasty_body_on() and DynastyBodyScript.available():
+		var body: Node3D = DynastyBodyScript.new()
+		body.set_proportions(genome_of(id))
+		return body
+
+	return GeneratedBodyScript.new(BodyGenerator.genome_from_seed(id.hash() % VARIANTS), 0.045, false, true) if MyCharacter.generated_body_on() else RagdollScript.new()
+
+
 func _make_body(id: String) -> Node3D:
 	var info: Dictionary = roster.get(id, {})
 	var root: Node3D = Node3D.new()
-	# --generated-body (off by default, untested in the running game): generated bodies, a few shared body types without fingers at 4.5 cm detail.
-	var ragdoll: Node3D = GeneratedBodyScript.new(BodyGenerator.genome_from_seed(id.hash() % VARIANTS), 0.045, false, true) if MyCharacter.generated_body_on() else RagdollScript.new()
+	var ragdoll: Node3D = _make_rig(id)
 	ragdoll.name = "Rig"
 	ragdoll.rotation.y = 0.0
 	root.add_child(ragdoll)

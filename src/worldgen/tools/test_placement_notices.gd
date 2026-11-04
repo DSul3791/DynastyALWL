@@ -32,7 +32,13 @@ func place(kit: String, at: Vector3, yaw: int = 0) -> void:
 	if at.distance_to(Vector3(0.0, 10.0, 0.0)) < 30.0:
 		items.report_position(1, Vector3(at.x - 1.0, ground[0] + 0.0, at.z - 1.0) if at.y < 5.0 else Vector3(at.x - 1.0, at.y, at.z - 1.0))   # stand beside the spot (near reach)
 
-	var slot: int = items.inventory_of(1).numbers.find(items.table.number_of(kit))
+	var number: int = items.table.number_of(kit)
+
+	if items.is_dead_kit(number):
+		items.place_item(1, number, at, 0, yaw)
+		return
+
+	var slot: int = items.inventory_of(1).numbers.find(number)
 	items.action(1, Net.ACT_PLACE, slot, yaw, 0, at)
 
 

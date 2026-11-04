@@ -8,6 +8,7 @@ extends Node3D
 const RIBBON_LIFT_M := 0.25     # the ribbon sits this far above the passage floor (the carved floor is a curve, a little higher off the centre line)
 const RIBBON_SHARE := 0.3       # half the ribbon's width as a share of the passage width
 const POOL_SIDES := 20
+const CAVE_POOL_SHALLOW_M := 0.4   # an old server's pool (no depth sent)
 
 const SHADER := """
 shader_type spatial;
@@ -36,10 +37,12 @@ void fragment() {
 
 var _material: ShaderMaterial = null
 var _tiles: Dictionary = {}   # tile -> MeshInstance3D
+var _pools: Dictionary = {}   # tile -> Array of [centre (surface) Vector3, open radius, depth below the surface] (BUG-008: 20 m deep pools you swim in)
 
 
 func show_tile(tile: Vector2i, streams: PackedFloat32Array) -> void:
 	drop_tile(tile)
+	_pools[tile] = pools_of(streams)
 
 	if streams.size() < 7:
 		return
@@ -65,6 +68,8 @@ func show_tile(tile: Vector2i, streams: PackedFloat32Array) -> void:
 
 
 func drop_tile(tile: Vector2i) -> void:
+	_pools.erase(tile)
+
 	if _tiles.has(tile):
 		_tiles[tile].queue_free()
 		_tiles.erase(tile)
@@ -75,7 +80,38 @@ func clear() -> void:
 		drop_tile(tile)
 
 
-# Pieces of 7 floats: upper end x, y, z, lower end x, y, z, passage width; a negative width is a pool: centre x, y, z, (unused), -radius.
+# The pools in a list: [centre on the surface, radius at the surface, depth below it] (depth 0 from a server without BUG-008: a 0.4 m pool).
+static func pools_of(streams: PackedFloat32Array) -> Array:
+	var out: Array = []
+
+	@warning_ignore("integer_division")
+	for n in range(streams.size() / 7):
+		var o: int = n * 7
+
+		if streams[o + 6] < 0.0:
+			out.append([Vector3(streams[o], streams[o + 1], streams[o + 2]), -streams[o + 6], maxf(streams[o + 3], CAVE_POOL_SHALLOW_M)])
+
+	return out
+
+
+# The surface height of the cave pool a point is in (or just above), else NAN. Under the surface the basin swells wider than its rim (spring_basin:
+# up to about 1.75 times), so a swimmer below keeps the water there.
+func pool_surface_at(p: Vector3) -> float:
+	for tile in _pools:
+		for pool in _pools[tile]:
+			var centre: Vector3 = pool[0]
+			var flat: float = Vector2(p.x - centre.x, p.z - centre.z).length()
+
+			if p.y > centre.y + 2.0 or p.y < centre.y - float(pool[2]) - 1.0:
+				continue
+
+			if flat <= float(pool[1]) * (1.0 if p.y >= centre.y else 1.75):
+				return centre.y
+
+	return NAN
+
+
+# Pieces of 7 floats: upper end x, y, z, lower end x, y, z, passage width; a negative width is a pool: centre x, y, z, depth below the surface, -radius.
 # The stream's UV.y counts metres from the upper end of its piece plus the piece's height (pieces of one passage then roughly line up).
 static func build_mesh(streams: PackedFloat32Array) -> ArrayMesh:
 	var verts: PackedVector3Array = PackedVector3Array()

@@ -259,7 +259,7 @@ func _init() -> void:
 			structs_before += 1
 
 	said.clear()
-	f.action(1, Net.ACT_PLACE, inv_p.numbers.find(f.table.number_of("campfire_pot_kit")), 0, 0, f._items[log_fire]["pos"])
+	f.place_item(1, f.table.number_of("campfire_pot_kit"), f._items[log_fire]["pos"])
 	var structs_after: int = 0
 
 	for k in f._items:

@@ -100,6 +100,7 @@ var weather: Dictionary = {}           # the weather at the water tile now (Weat
 var _weather_next_msec: int = 0
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
+var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _swell: float = 0.0
 var _dry: float = 0.0
 var _weather_bucket: int = -1
@@ -471,6 +472,7 @@ func _ready() -> void:
 	animals = AnimalsScript.new()
 	animals.ground_height = npcs.ground_height
 	animals.blocked = npcs.blocked
+	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
 	animals.water_level = func(x, z):
 		var water_here: Array = _water_at(Vector3(x, 0.0, z))
 		return float(water_here[0]) if not is_nan(water_here[0]) else NAN
@@ -519,6 +521,7 @@ func _ready() -> void:
 		animals.damage(int(found["id"]), amount, shooter, "arrow")
 		return found
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
+	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
 	items.animal_lure = func(id, point): return animals.lure_to(id, point)
@@ -812,6 +815,7 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	var water: Array = _water_at(position)
 	items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
 	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
+	items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
 	items.report_position(peer_id, position)
 	generator.prefetch_around(position.x, position.z)
 	_warm_flora(peer_id, position)
@@ -822,6 +826,13 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	_queue_mutex.lock()
 	_aim[peer_id] = point
 	_queue_mutex.unlock()
+
+
+# Whether a point is in a spring cave pool (icy water, BUG-008).
+func _in_cave_pool(position: Vector3) -> bool:
+	var tile_data = generator.get_tile(generator.tile_of(position.x, position.z))
+
+	return not tile_data.placeholder and not tile_data.cave_streams.is_empty() and tile_data.in_cave_pool(position)
 
 
 func _is_connected_peer(peer_id: int) -> bool:
@@ -849,6 +860,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	trails.forget_peer(peer_id)
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
+	_nests_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
@@ -1924,6 +1936,13 @@ func _send_npcs(delta: float) -> void:
 		if int(_burrows_sent.get(peer, 0)) != holes_sig:
 			_burrows_sent[peer] = holes_sig
 			net.burrows.rpc_id(peer, holes)
+
+		var nest_rows: Array = animals.nest_spots_near(at)
+		var nests_sig: int = hash(nest_rows[0])
+
+		if int(_nests_sent.get(peer, 0)) != nests_sig:
+			_nests_sent[peer] = nests_sig
+			net.nests.rpc_id(peer, nest_rows[0], nest_rows[1])
 
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.

@@ -157,7 +157,7 @@ func _init() -> void:
 	queue(4, 1)
 	pass_time(10.0, 0.2)
 	check(count("campfire_kit") == 1, "the campfire kit is made (6 sticks, 3 stones)")
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("campfire_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	items.place_item(1, items.table.number_of("campfire_kit"), Vector3(2.0, 10.0, 0.0), 0)
 	var lit: int = 0
 
 	for k in items._items:
@@ -190,14 +190,15 @@ func _init() -> void:
 	pass_time(34.0, 0.3)
 	check(count("twine") == 8, "fibre is twisted into twine (lean-to 4 + chest 4)")
 	items._vitals_cfg["eat_pace_ms"] = 0
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 8, Vector3.ZERO)   # one felled tree gives only 3 to 9 leaves; the lean-to needs 8 (31 Oct)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # admin give is capped at 100 a call
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # one felled tree gives only 3 to 9 leaves; the lean-to now needs 200 (Dave 4 Nov), which the real player sweeps from many trees
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 10, Vector3.ZERO)   # the lean-to needs 10 twine (30 fibre; the 8 twisted above cover the chest and part of it)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 20, Vector3.ZERO)   # the 36 gathered sticks do not cover the lean-to (32) and the chest (10); the real player sweeps more (31 Oct)
 	queue(13, 1)
 	queue(14, 1)
 	pass_time(70.0, 0.3)   # lean-to 25 s + chest 20 s since the craft pacing pass
-	check(count("lean_to_kit") == 1 and count("chest_kit") == 1, "the lean-to and the woven chest are made")
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(-3.0, 10.0, 0.0))
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("chest_kit")), 0, 0, Vector3(0.0, 10.0, 4.0))
+	items.place_piece(1, "lean_to_kit", Vector3(-3.0, 10.0, 0.0))
+	items.place_piece(1, "chest_kit", Vector3(0.0, 10.0, 4.0))
 	var shelters: int = 0
 	var chests: int = 0
 

@@ -38,9 +38,7 @@ func struct_ids(kind: String) -> Array:
 
 func place(kit: String, at: Vector3) -> void:
 	items.report_position(1, Vector3(at.x - 1.0, at.y, at.z - 1.0))
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of(kit)), 0, 0, at)
-
-
+	items.place_item(1, items.table.number_of(kit), at, 0)
 func _init() -> void:
 	var dir: String = "user://test_lean_to_bed"
 	DirAccess.make_dir_recursive_absolute(dir)

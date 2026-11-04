@@ -34,7 +34,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 90   # 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 91   # 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -91,6 +91,7 @@ signal npcs_received(rows: Array)
 signal animals_received(rows: Array)
 signal blood_received(points: PackedVector3Array)
 signal burrows_received(points: PackedVector3Array)
+signal nests_received(points: PackedVector3Array, kinds: PackedByteArray)
 signal npc_talk_requested(peer_id: int, npc_id: String, choice: int)
 signal npc_say_received(npc_id: String, npc_name: String, text: String, voice_id: String, choices: PackedStringArray, ends: bool)
 signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: String)
@@ -530,6 +531,13 @@ func blood(points: PackedVector3Array) -> void:
 @rpc("authority", "call_remote", "reliable")
 func burrows(points: PackedVector3Array) -> void:
 	burrows_received.emit(points)
+
+
+# Inland bird nests (protocol 91, MikeW 4 Nov): spots of the grouse (kind 0) and songbird (kind 1) nests within 120 m, sent when
+# the set changes. For a nest look (Kathleen) and calls near a nest (Jason); with nothing connected the signal is ignored.
+@rpc("authority", "call_remote", "reliable")
+func nests(points: PackedVector3Array, kinds: PackedByteArray) -> void:
+	nests_received.emit(points, kinds)
 
 
 # Talking (protocol 45): the player asks to talk to an NPC (choice -1) or picks a choice by index; the server answers with the NPC's

@@ -169,6 +169,12 @@ func _measure(body: CharacterBody3D) -> float:
 	return clampf(ceiling * (0.35 + 0.65 * near / float(rays) * 1.6), 0.0, 1.0)
 
 
+# Colliders that are not rock: plants and trees (species_ids) and things the player placed (a lean-to roof, building pieces, a forge; BUG-027: a lean-to
+# roof counted as a cave ceiling and gave a cave echo). Static, checked on its own.
+static func is_not_rock(collider: Object) -> bool:
+	return collider.has_meta("species_ids") or collider.has_meta("placed_structure")
+
+
 # Distance to the first rock along a ray, -1 when none (tree trunks and the player are skipped).
 func _rock_hit(space: PhysicsDirectSpaceState3D, body: CharacterBody3D, from: Vector3, direction: Vector3, length: float) -> float:
 	var skip: Array = [body.get_rid()]
@@ -181,7 +187,7 @@ func _rock_hit(space: PhysicsDirectSpaceState3D, body: CharacterBody3D, from: Ve
 		if hit.is_empty():
 			return -1.0
 
-		if hit["collider"] != null and hit["collider"].has_meta("species_ids"):
+		if hit["collider"] != null and is_not_rock(hit["collider"]):
 			skip.append(hit["rid"])
 			continue
 

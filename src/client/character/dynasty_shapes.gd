@@ -22,6 +22,42 @@ const NAMES := ["build", "muscle", "belly", "hips", "chest", "jaw", "nose", "bro
 const SHAPED_KEY := "dynasty_shapes"
 
 static var _cache: Dictionary = {}       # source mesh rid -> shaped ArrayMesh (or null when it could not be made)
+static var _keep: Array = []             # the source meshes of _cache, held so their rids stay theirs
+static var _job: int = -1                # the prewarm task on the worker pool, or -1
+
+
+# Dave 3 Nov 2026 (lag): making the shapes takes about 0.2 s, and it fell on the first NPC or player with a width or face slider, on the main thread.
+# prewarm() reads the first body's mesh on the main thread (_gather, a few ms) and does the arithmetic on a worker thread (_compute); shaped() waits for it and
+# builds the mesh (_finish). The worker touches no node, resource or server: instancing the scene or loading the glb there hung the game headless (4 Nov).
+# dynasty_body.gd starts it with the first body and waits for it when a body is freed, so no task outlives the program.
+static var _pending: Dictionary = {}     # the prewarm's data while the worker computes it, and its source mesh
+
+
+static func prewarm(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> void:
+	if _job >= 0 or not _pending.is_empty() or mesh == null or mesh.has_meta(SHAPED_KEY) or _cache.has(mesh.get_rid()):
+		return
+
+	var data: Dictionary = _gather(mesh, skin, skeleton)
+
+	if data.is_empty():
+		return
+
+	_pending = {"data": data, "mesh": mesh}
+	_job = WorkerThreadPool.add_task(_compute.bind(data), false, "dynasty shapes")
+
+
+static func wait() -> void:
+	if _job < 0:
+		return
+
+	var t0: int = Time.get_ticks_msec()
+	WorkerThreadPool.wait_for_task_completion(_job)
+	_job = -1
+	var mesh: Mesh = _pending["mesh"]
+	_cache[mesh.get_rid()] = _finish(_pending["data"])
+	_keep.append(mesh)
+	_pending = {}
+	print("dynasty shapes: made on a worker, finished in %d ms" % (Time.get_ticks_msec() - t0))
 
 
 # The shaped copy of `body.mesh` for `skin`, made on first use; null when the mesh is not one skinned surface with bones and weights.
@@ -32,6 +68,7 @@ static func shaped(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 	if mesh.has_meta(SHAPED_KEY):
 		return mesh as ArrayMesh      # already ours
 
+	wait()
 	var key: RID = mesh.get_rid()
 
 	if _cache.has(key):
@@ -40,21 +77,28 @@ static func shaped(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 	var t0: int = Time.get_ticks_msec()
 	var made: ArrayMesh = _make(mesh, skin, skeleton)
 	_cache[key] = made
+	_keep.append(mesh)
 	print("dynasty shapes: %s in %d ms" % ["made" if made != null else "not made", Time.get_ticks_msec() - t0])
 	return made
 
 
 static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
-	if not (mesh is ArrayMesh) or mesh.get_surface_count() < 1:
+	var data: Dictionary = _gather(mesh, skin, skeleton)
+
+	if data.is_empty():
 		return null
 
-	var src: ArrayMesh = mesh as ArrayMesh
-	var out: ArrayMesh = ArrayMesh.new()
-	out.set_meta(SHAPED_KEY, true)
-	out.blend_shape_mode = Mesh.BLEND_SHAPE_MODE_RELATIVE
+	_compute(data)
+	return _finish(data)
 
-	for shape_name in NAMES:
-		out.add_blend_shape(shape_name)
+
+# Three steps, so the heavy middle one can run on a worker thread: _gather reads the mesh, skin and skeleton (main thread: it calls the RenderingServer and the
+# nodes), _compute is pure arithmetic on the copied arrays (any thread), _finish builds the ArrayMesh (main thread). Empty when the mesh is not one skinned body.
+static func _gather(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> Dictionary:
+	if not (mesh is ArrayMesh) or mesh.get_surface_count() < 1:
+		return {}
+
+	var src: ArrayMesh = mesh as ArrayMesh
 
 	# Bone heads in mesh space (the skin's bind poses undone), by skin bind index and by bone name.
 	var head_of: Dictionary = {}          # bone name -> Vector3 in mesh space
@@ -71,7 +115,7 @@ static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 
 	for need in ["Hips", "Head", "LeftUpLeg", "RightUpLeg", "LeftFoot", "Spine", "Spine2"]:
 		if not head_of.has(P + need):
-			return null
+			return {}
 
 	var up: Vector3 = (head_of[P + "Head"] - head_of[P + "Hips"]).normalized()
 	var lateral: Vector3 = (head_of[P + "LeftUpLeg"] - head_of[P + "RightUpLeg"])
@@ -101,8 +145,29 @@ static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 
 		tail_of[bone_name] = tail
 
+	var surfaces: Array = []
+
 	for s in range(src.get_surface_count()):
-		var arrays: Array = src.surface_get_arrays(s)
+		surfaces.append({"arrays": src.surface_get_arrays(s), "primitive": src.surface_get_primitive_type(s), "material": src.surface_get_material(s)})
+
+	return {"head_of": head_of, "tail_of": tail_of, "bind_name": bind_name, "up": up, "lateral": lateral, "front": front, "height": height, "hips": hips,
+		"navel": navel, "chest_c": chest_c, "surfaces": surfaces}
+
+
+static func _compute(data: Dictionary) -> void:
+	var head_of: Dictionary = data["head_of"]
+	var tail_of: Dictionary = data["tail_of"]
+	var bind_name: Array = data["bind_name"]
+	var up: Vector3 = data["up"]
+	var lateral: Vector3 = data["lateral"]
+	var front: Vector3 = data["front"]
+	var height: float = data["height"]
+	var hips: Vector3 = data["hips"]
+	var navel: Vector3 = data["navel"]
+	var chest_c: Vector3 = data["chest_c"]
+
+	for surface in data["surfaces"]:
+		var arrays: Array = surface["arrays"]
 		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES] if arrays[Mesh.ARRAY_BONES] != null else PackedInt32Array()
 		var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS] if arrays[Mesh.ARRAY_WEIGHTS] != null else PackedFloat32Array()
@@ -177,8 +242,24 @@ static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 			one[Mesh.ARRAY_TANGENT] = arrays[Mesh.ARRAY_TANGENT]
 			blend_arrays.append(one)
 
-		out.add_surface_from_arrays(src.surface_get_primitive_type(s), arrays, blend_arrays, {}, Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS if per == 8 else 0)
-		out.surface_set_material(s, src.surface_get_material(s))
+		surface["blend"] = blend_arrays
+		surface["flags"] = Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS if per == 8 else 0
+
+
+static func _finish(data: Dictionary) -> ArrayMesh:
+	var out: ArrayMesh = ArrayMesh.new()
+	out.set_meta(SHAPED_KEY, true)
+	out.blend_shape_mode = Mesh.BLEND_SHAPE_MODE_RELATIVE
+
+	for shape_name in NAMES:
+		out.add_blend_shape(shape_name)
+
+	var s: int = 0
+
+	for surface in data["surfaces"]:
+		out.add_surface_from_arrays(surface["primitive"], surface["arrays"], surface["blend"], {}, surface["flags"])
+		out.surface_set_material(s, surface["material"])
+		s += 1
 
 	return out
 
