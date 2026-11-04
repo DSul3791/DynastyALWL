@@ -249,7 +249,7 @@ func _build_about(body: VBoxContainer) -> void:
 	note.text = "Gender and frame only set a starting body and clothes. Every slider and colour can still be changed, and your pronouns are yours to pick."
 
 	if _use_dynasty():      # Dave's body (3 Nov 2026): say plainly what it does not show yet, so a slider that does nothing does not read as a bug
-		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest and skin colour show now; hair, face and the feminine body are coming."
+		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, jaw, nose, brow, ears and skin colour show now; hair and the feminine body are coming."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
 	body.add_child(note)
