@@ -1,5 +1,7 @@
 extends Node3D
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 # Animals on the client (protocol 48): a simple low-poly rabbit until Art makes a real one (brown body, head, two ears, white
 # tail). The server sends rows about four times a second; the view glides to each, faces the way it goes and hops while moving
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
@@ -150,6 +152,12 @@ func drawn_count() -> int:
 
 
 func _process(delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(delta)
+	FrameProbe.stop("animals", t)
+
+
+func _process_body(delta: float) -> void:
 	_t += delta
 
 	for id in _bodies:
@@ -353,18 +361,28 @@ func _make_fish() -> Node3D:
 	tail.name = "Tail"
 	tail.position = Vector3(0.0, 0.0, 0.14)
 	rig.add_child(tail)
-	_box(tail, Vector3(0.006, 0.07, 0.05), Vector3(0.0, 0.0, 0.03), back.darkened(0.1), Vector3(0.0, 0.0, 0.0))   # the fan tail
+	_box(tail, Vector3(0.005, 0.02, 0.03), Vector3(0.0, 0.0, 0.012), back.darkened(0.1))                                  # the narrow tail root
+	_box(tail, Vector3(0.004, 0.022, 0.05), Vector3(0.0, 0.016, 0.042), back.darkened(0.12), Vector3(0.55, 0.0, 0.0))   # the upper lobe of the forked tail, swept back
+	_box(tail, Vector3(0.004, 0.022, 0.05), Vector3(0.0, -0.016, 0.042), back.darkened(0.12), Vector3(-0.55, 0.0, 0.0)) # the lower lobe
 	_box(rig, Vector3(0.006, 0.03, 0.06), Vector3(0.0, 0.05, 0.01), back.darkened(0.1), Vector3(0.3, 0.0, 0.0))   # the dorsal fin
 
 	for side in [-1.0, 1.0]:
 		_box(rig, Vector3(0.025, 0.004, 0.035), Vector3(side * 0.045, -0.025, -0.07), flank.darkened(0.1), Vector3(0.0, side * 0.4, side * 0.3))   # a side fin
 
-	for k in 9:   # dark spots along the back and a few red ones on the flank
-		var sp: float = -0.1 + 0.025 * float(k)
-		_ball(rig, 0.005, Vector3.ONE, Vector3(0.012 * float(k % 3 - 1), 0.043, sp), Color(0.12, 0.1, 0.06))
+	# Spots painted on the skin (trout sheet 2 Nov: they stood up like studs and floated at the ends): small flat discs pressed onto the body
+	# surface, dark over the back and upper flanks, a few red ones with a pale ring along the middle of each flank.
+	for k in 14:
+		var sp: float = -0.11 + 0.017 * float(k)
+		var reach: float = sqrt(maxf(0.0, 1.0 - pow(sp / 0.16, 2.0)))       # the body's half-size here, as a share of the middle (radius 0.05 scaled 0.9, 0.9, 3.2)
+		var a: float = 0.35 + 0.5 * float(k % 3)                              # round from the top of the back down the flank
+		var side: float = 1.0 if k % 2 == 0 else -1.0
+		var at: Vector3 = Vector3(side * sin(a) * 0.045 * reach, cos(a) * 0.045 * reach, sp)
+		_ball(rig, 0.005, Vector3(1.2, 0.35, 1.2), at * 0.97, Color(0.12, 0.1, 0.06), Vector3(0.0, 0.0, -side * a))
 
-		if k % 3 == 0:
-			_ball(rig, 0.005, Vector3.ONE, Vector3(0.042, 0.0, sp), Color(0.75, 0.15, 0.1))
+		if k % 4 == 1:
+			var red: Vector3 = Vector3(side * 0.045 * reach, -0.004, sp + 0.008)
+			_ball(rig, 0.006, Vector3(0.35, 1.2, 1.2), red * 0.97, Color(0.85, 0.82, 0.7))      # the pale ring
+			_ball(rig, 0.004, Vector3(0.4, 1.2, 1.2), red * 0.985, Color(0.75, 0.15, 0.1))      # the red spot
 
 	return root
 
