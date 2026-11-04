@@ -1263,7 +1263,7 @@ func save() -> void:
 	_save_craft_queues()
 	_write_atomic("crops.json", {"version": 1, "crops": _crops})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION})
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION, "no_kits": true})
 
 
 # Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
@@ -2991,6 +2991,9 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	if kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty():
 		return
 
+	if blueprint.is_empty() and is_dead_kit(number):   # a kit that survived somewhere (a hand-edited save) is not placeable
+		return
+
 	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
 		_say(peer, "Too far to place that.")   # every refusal below says why, so the ghost doing nothing is never a mystery (Dave 31 Oct 2026)
 		return
@@ -3502,6 +3505,7 @@ func _load_inventories() -> void:
 		var inv = InventoryScript.new(table)
 		inv.from_json_array(parsed["inventories"][key])
 		inv.bag_from = 10
+		_strip_dead_kits(inv)
 		_inventories[key] = inv
 
 
@@ -3548,8 +3552,16 @@ func _load_world_items() -> void:
 	for key in parsed.get("boulders", {}):
 		_boulder_left[int(key)] = int(parsed["boulders"][key])
 
+	var had_kits: bool = not bool(parsed.get("no_kits", false))   # a world saved before kits were dropped (Dave 4 Nov 2026) loses its kit items and every placed building once
+
 	for row in parsed["items"]:
 		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
+
+		if is_dead_kit(int(row[0])):
+			continue
+
+		if had_kits and row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING and str(row[9]) != "remains" and (_traps == null or str(row[9]) != str(_traps.cfg.get("kind", "snare_trap"))):
+			continue
 
 		if row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING:
 			entry["struct"] = {"kind": _kind_now(str(row[9])), "yaw": float(row[7])}
@@ -5693,7 +5705,44 @@ func _load_blueprints() -> void:
 
 # Whether this blueprint can go down now: a hammer of enough tier on the hotbar, the station near when it needs one, every material in the pack.
 # Says why when it cannot, and takes nothing.
+# Tests and admin tools: lay a piece by its old kit name with no hammer, station or materials needed (kits are gone from the game, Dave 4 Nov 2026).
+# The piece still takes down into its blueprint materials like any hammer build.
+var free_build: bool = false
+
+
+func place_piece(peer: int, kit_id: String, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0) -> void:
+	if inventory_of(peer) == null:
+		return
+
+	var number: int = int(_blueprint_of_kit.get(kit_id, 0))
+
+	if number <= 0:
+		return
+
+	free_build = true
+	_place(peer, inventory_of(peer), -1, at, yaw_deg, lift_steps, _blueprints[number])
+	free_build = false
+
+
+# Tests: place whatever item number the test holds. A dropped kit lays its piece (and uses up the one in the pack); anything else places from its slot as a player would.
+func place_item(peer: int, number: int, at: Vector3, lift_steps: int = 0, yaw_deg: int = 0) -> void:
+	var inv = inventory_of(peer)
+
+	if inv == null:
+		return
+
+	if is_dead_kit(number):
+		inv.remove_fill(number, 1)
+		place_piece(peer, table.id_of(number), at, yaw_deg, lift_steps)
+		return
+
+	action(peer, Net.ACT_PLACE, inv.numbers.find(number), lift_steps, yaw_deg, at)
+
+
 func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
+	if free_build:
+		return not _structures.get(str(row["structure"]), {}).is_empty()
+
 	if not bool(row.get("known", true)) or _structures.get(str(row["structure"]), {}).is_empty():
 		return false
 
@@ -5883,7 +5932,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_say(peer, "Too many of these stand here already.")
 		return
 
-	if slot < 0:
+	if slot < 0 and free_build:
+		pass   # a test or admin piece: nothing is taken
+	elif slot < 0:
 		_pay_blueprint(inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], peer)
 	else:
 		inv.take_from_slot(slot, 1)
@@ -6732,6 +6783,20 @@ func _save_chests() -> void:
 	_write_atomic("chests.json", {"version": 1, "next_uid": _next_uid, "chests": rows})
 
 
+# A kit item that was dropped from the game: kits are gone, only the rough bed and the campfire are still made in the pack (Dave 4 Nov 2026).
+func is_dead_kit(number: int) -> bool:
+	return number > 0 and bool(table.entry(table.id_of(number)).get("retired", false)) and table.id_of(number).ends_with("_kit")
+
+
+# Empty every slot that holds a dropped kit.
+func _strip_dead_kits(inv) -> void:
+	for slot in inv.SLOTS:
+		if is_dead_kit(inv.numbers[slot]):
+			inv.numbers[slot] = 0
+			inv.counts[slot] = 0
+			inv.wear[slot] = 0
+
+
 func _load_chests() -> void:
 	var parsed: Variant = _read_json_version("chests.json", 1)
 
@@ -6743,6 +6808,7 @@ func _load_chests() -> void:
 	for key in parsed.get("chests", {}):
 		var chest = InventoryScript.new(table)
 		chest.from_json_array(parsed["chests"][key])
+		_strip_dead_kits(chest)
 		_chests[int(key)] = chest
 
 
@@ -10336,7 +10402,7 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 		"fire_burning_cold":
 			return _hint_count(st, "event:fire_lit") >= 1 and not v.is_empty() and float(v.get("warmth", 100.0)) < 70.0
 		"leanto_made":
-			return _hint_count(st, "made:lean_to_kit") >= 1
+			return inv.count_of(table.number_of("wooden_hammer")) >= 1   # the shelter is a hammer blueprint now: with the hammer in the pack, the next step is to click it down
 		"leanto_placed":
 			return _hint_count(st, "event:placed:lean_to") >= 1
 		"bed_placed":

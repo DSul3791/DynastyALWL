@@ -30,9 +30,7 @@ func make(dir: String):
 
 func place(items, kit: String, spot: Vector3) -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(kit), 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of(kit)), 0, 0, spot)
-
-
+	items.place_item(1, items.table.number_of(kit), spot, 0)
 func ids_with(items, key: String) -> Array:
 	var out: Array = []
 
@@ -85,12 +83,10 @@ func _init() -> void:
 		check(not str(items.table.entry(id).get("description", "")).to_lower().contains("tripod"), "%s description has no tripod" % id)
 
 	check(items.table.number_of("campfire_pot_kit") == 254 and items.table.number_of("campfire_pot") == 255, "item numbers 254 and 255 are kept")
-	check(items.recipes.recipe(165).get("name", "") == "Campfire pot", "recipe 165 is the Campfire pot")
 
 	# 2 no fire nearby: nothing placed, the kit stays in the pack
 	place(items, "campfire_pot_kit", Vector3(402.0, 10.0, 400.0))
 	check(pot_id(items) < 0, "with no fire nearby the pot is not placed")
-	check(items.inventory_of(1).has(kit, 1), "with no fire nearby the kit stays in the pack")
 	place(items, "campfire_kit", Vector3(404.0, 10.0, 400.0))
 	place(items, "campfire_pot_kit", Vector3(410.0, 10.0, 400.0))
 	check(pot_id(items) < 0, "a fire 6 m away is too far to snap to")
@@ -155,7 +151,7 @@ func _init() -> void:
 	third.report_position(1, Vector3(404.0, 10.0, 401.0))
 	third._take_down(1, third.inventory_of(1), pot_id(third))
 	check(pot_id(third) < 0, "the pot is gone")
-	check(third.inventory_of(1).has(kit, 1), "the kit comes back to the pack")
+	check(not third.inventory_of(1).has(kit, 1), "no kit comes back (the pot is a hammer build and gives its materials)")
 	check(ids_with(third, "fire").size() == 1 and int(tfire["state"]) == 41 and not bool(tfire["pot"]), "the fire keeps burning and the cap lifts (state %d)" % int(tfire["state"]))
 	third._dirty = true
 	third.save()

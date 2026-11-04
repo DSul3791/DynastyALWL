@@ -118,7 +118,7 @@ func _init() -> void:
 	# Fire: kit, place, light.
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	craft("campfire", 1)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("campfire_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	items.place_item(1, items.table.number_of("campfire_kit"), Vector3(2.0, 10.0, 0.0), 0)
 	check(not done("fire"), "a fire that is only placed does not complete the fire goal")
 
 	for k in items._items:
@@ -127,19 +127,17 @@ func _init() -> void:
 
 	check(done("fire"), "lighting the fire completes the fire goal")
 
-	# Shelter: a lean-to placed. Workbench: kit placed.
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # admin give is capped at 100 a call
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 32, Vector3.ZERO)   # the lean-to costs 30 sticks, 200 leaves, 10 twine (Dave 4 Nov, claude-leanto-cost B)
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 10, Vector3.ZERO)
-	craft("lean_to_kit", 1)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(-3.0, 10.0, 0.0))
+	# Shelter and workbench come after the hammer goal: a wooden hammer in the pack, then a lean-to and a bench placed.
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_hammer"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 12, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 32, Vector3.ZERO)   # the lean-to costs 16 sticks, 4 leaves, 2 twine (lighter 3 Nov; was 32/8/4)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 4, Vector3.ZERO)
+	items.place_piece(1, "lean_to_kit", Vector3(-3.0, 10.0, 0.0))
 	check(done("shelter"), "placing a lean-to completes the shelter goal")
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 24, Vector3.ZERO)   # the workbench now costs 20 sticks, 6 twine and 4 stones (pacing pass)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 6, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 4, Vector3.ZERO)
-	craft("workbench_kit", 1)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("workbench_kit")), 0, 0, Vector3(0.0, 10.0, 5.0))
+	items.place_piece(1, "workbench_kit", Vector3(0.0, 10.0, 5.0))
 	check(done("workbench"), "placing a workbench completes the workbench goal")
 
 	items._save_characters()

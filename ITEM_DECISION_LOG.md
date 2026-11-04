@@ -362,3 +362,10 @@ Checked items.json, recipes.json and blueprints.json against this log, ITEM_TRIM
 - Fixed: log cabin set (recipe 304) retired: its log wall, floor and roof kits are hammer blueprints with no recipe.
 - Left, Dave already decided: tar stays from pine tar until a bitumen item exists; one Lumber/Beam with a species tag waits for code.
 - Hammer thread: rough bed (blueprint 24) still has three kit recipes and the feather bed uses the kit (card to Dave). The 16 low-tier building kits (thatch, section, ladder, stairs, stone floor and roof) stay craftable: Dave's 25 Oct rule says fine wood and lower are made by hand and placed; only higher tiers are hammer blueprints.
+
+## No kits (Dave, 4 Nov 2026 15:18)
+Dave: "The rough bed is the only one that you could make in your inventory. Every other bed has to be made with a hammer. I want to drop kits altogether ... get rid of kits altogether."
+- Data (Sal): every live kit recipe retired except the Rough bed's three and the campfire's (fire entity, code pending with Hammer). Each became a hammer blueprint with the same cost and station: rows 1-8 un-retired, rows 25-52 new. Rough bed blueprint 24 retired (Dave on card sal-bed-hammer: not from the hammer).
+- Feather bed now costs 10 thatch, 30 feathers, 2 fibre cloth; Canopy bed 30 feathers, 8 lumber, 4 fibre cloth (no bed kit inside).
+- New starter goal "Make a wooden hammer" after felling; shelter and Camp bench come after it. Kit item numbers stay in items.json for old saves.
+- Code (Hammer): campfire, campfire pot snapping to the fire, learning unlocking blueprint rows, clearing kits from saves and the world, and the tests that craft and place kits.

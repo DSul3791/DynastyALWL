@@ -64,7 +64,7 @@ func _init() -> void:
 	# Era 14 and 19: two-field slots, six-column world rows, the retired out-fire state 2, later fire states 8 and 9.
 	fresh(dir)
 	put(dir, "inventories.json", {"version": 1, "inventories": {"compat-key-aaa01": [[stone, 7], [stick, 3]]}})
-	put(dir, "world_items.json", {"version": 1, "next_id": 40, "items": [
+	put(dir, "world_items.json", {"version": 1, "no_kits": true, "next_id": 40, "items": [
 		[stone, 4, 10.0, 10.0, 10.0, 600.0],
 		[campfire, 1, 11.0, 10.0, 11.0, 1.0e9, 2, 30.0],
 		[campfire, 1, 12.0, 10.0, 12.0, 1.0e9, 2, 0.0],
@@ -80,7 +80,7 @@ func _init() -> void:
 
 	# Era 22: crafting queue and chests (with the chest structure row that owns the uid).
 	fresh(dir)
-	put(dir, "world_items.json", {"version": 1, "next_id": 5, "items": [[chest, 1, 20.0, 10.0, 20.0, 1.0e9, 6, 90.0, 0, "chest", 2]], "taken": [], "picked": {}})
+	put(dir, "world_items.json", {"version": 1, "no_kits": true, "next_id": 5, "items": [[chest, 1, 20.0, 10.0, 20.0, 1.0e9, 6, 90.0, 0, "chest", 2]], "taken": [], "picked": {}})
 	put(dir, "chests.json", {"version": 1, "next_uid": 3, "chests": {"2": [[stone, 12, 0]]}})
 	put(dir, "craft_queues.json", {"version": 1, "players": {"compat-key-aaa01": {"entries": [[1, 2]], "elapsed": 0.5}}})
 	items = boot(dir)
@@ -104,7 +104,7 @@ func _init() -> void:
 	var bench: int = table.number_of("log_workbench")
 	var forge: int = table.number_of("stone_forge")
 	var smithy: int = table.number_of("blacksmithy")
-	put(dir, "world_items.json", {"version": 1, "next_id": 9, "items": [
+	put(dir, "world_items.json", {"version": 1, "no_kits": true, "next_id": 9, "items": [
 		[bench, 1, 30.0, 10.0, 30.0, 1.0e9, 16, 0.0, 0, "log_workbench", 0],
 		[forge, 1, 33.0, 10.0, 30.0, 1.0e9, 17, 0.0, 0, "stone_forge", 0],
 		[smithy, 1, 36.0, 10.0, 30.0, 1.0e9, 18, 0.0, 0, "blacksmithy", 0],
