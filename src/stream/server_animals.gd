@@ -187,6 +187,34 @@ func nests_near(point: Vector3, reach: float) -> Array:
 	return out
 
 
+# Nest spots for the client (protocol 91, MikeW 4 Nov): every grouse and songbird nest within send_radius_m of a point, as
+# [PackedVector3Array positions, PackedByteArray kinds (0 grouse, 1 songbird)]. The answer only depends on the point's
+# nest_send_cell_m square, so it is worked out once per square and kept (the spots never move).
+var _nest_send_cache: Dictionary = {}
+
+
+func nest_spots_near(point: Vector3) -> Array:
+	var step: float = float(cfg.get("nests", {}).get("send_cell_m", 24.0))
+	var key: Vector2i = Vector2i(int(floor(point.x / step)), int(floor(point.z / step)))
+
+	if _nest_send_cache.has(key):
+		return _nest_send_cache[key]
+
+	var centre: Vector3 = Vector3((float(key.x) + 0.5) * step, point.y, (float(key.y) + 0.5) * step)
+	var spots: PackedVector3Array = PackedVector3Array()
+	var kinds: PackedByteArray = PackedByteArray()
+
+	for nest in nests_near(centre, float(cfg.get("send_radius_m", 120.0))):
+		spots.append(nest["pos"])
+		kinds.append(0 if str(nest["kind"]) == "grouse" else 1)
+
+	if _nest_send_cache.size() >= 256:
+		_nest_send_cache.clear()
+
+	_nest_send_cache[key] = [spots, kinds]
+	return _nest_send_cache[key]
+
+
 # The nest of `kind` in one cell, or null. Deterministic: a hash of the kind and the cell picks the roll and the spot.
 func _nest_in_cell(kind: String, cx: int, cz: int, cell: float, ncfg: Dictionary) -> Variant:
 	var sp: String = "grouse" if kind == "grouse" else "songbirds"
