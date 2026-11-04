@@ -24,7 +24,9 @@ const SETTLE_MSEC := 6000
 const BASE_DB := {"tree_creak": -9.0, "tree_leaves": -14.0, "tree_crash": -2.0, "stump_chips": -10.0}
 const MAX_DISTANCE_M := 260.0
 const REF_HEIGHT_M := 20.0
+const SEEN_CAP := 20000                 # trees remembered as already felled (ids are small ints; far more than a world holds)
 
+static var assume_settled: bool = false   # tests: a fresh process has run under SETTLE_MSEC, so nothing would count as new
 var falls_played: int = 0
 var chips_played: int = 0
 var last: String = ""
@@ -47,7 +49,7 @@ func watch(world: Dictionary) -> void:
 	if _first_msec < 0:
 		_first_msec = Time.get_ticks_msec()
 
-	var settled: bool = Time.get_ticks_msec() - _first_msec > SETTLE_MSEC
+	var settled: bool = assume_settled or Time.get_ticks_msec() - _first_msec > SETTLE_MSEC
 	var present: Dictionary = {}
 
 	for id in world:
@@ -70,14 +72,26 @@ func watch(world: Dictionary) -> void:
 		var extra: Dictionary = row.get("extra", {})
 		var radius: float = float(extra.get("radius", 0.3))
 
+		if state == 3 and bool(extra.get("landed", false)):
+			continue                                      # the server says this trunk already hit the ground (Steve's landed flag): a trunk coming back into range is silent
+
 		if state == 3:
 			fall(row["pos"], float(extra.get("length", 8.0)), radius)
 		else:
 			chips(row["pos"], radius)
 
-	for id in _seen.keys():
-		if not present.has(id):
-			_seen.erase(id)
+	# A row that leaves the draw range stays in _seen (BUG-024: it was erased here, so the same felled tree "fell" again when the player came back).
+	# Ids are never reused within a world; forget() clears them when the ground is made again.
+	if _seen.size() > SEEN_CAP:
+		for id in _seen.keys():
+			if not present.has(id):
+				_seen.erase(id)               # a very long session: drop the ones not in range, the cap keeps the table small
+
+
+# The world was made again (new ground): ids may repeat, so every tree is new.
+func forget() -> void:
+	_seen.clear()
+	_first_msec = -1
 
 
 func fall(at: Vector3, length_m: float, radius_m: float) -> void:

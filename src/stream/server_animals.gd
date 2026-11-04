@@ -305,6 +305,22 @@ func list_near(point: Vector3, radius: float) -> Array:
 	return out
 
 
+# A snare draws the animal (its run, or bait): a calm one moves its home to the point and hops there. Its burrow stays where it was.
+func lure_to(id: int, point: Vector3) -> bool:
+	if not animals.has(id):
+		return false
+
+	var a: Dictionary = animals[id]
+
+	if int(a["state"]) != GRAZE and int(a["state"]) != HOP:
+		return false
+
+	a["home"] = point
+	a["target"] = point
+	a["state"] = HOP
+	return true
+
+
 # A snare closes on the animal: it leaves the world without a death (the snare module lays the carcass). One bird of a flock goes.
 func snare(id: int) -> bool:
 	if not animals.has(id):

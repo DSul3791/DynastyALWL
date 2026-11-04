@@ -521,6 +521,7 @@ func _ready() -> void:
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
+	items.animal_lure = func(id, point): return animals.lure_to(id, point)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
@@ -811,6 +812,7 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	var water: Array = _water_at(position)
 	items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
 	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
+	items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
 	items.report_position(peer_id, position)
 	generator.prefetch_around(position.x, position.z)
 	_warm_flora(peer_id, position)
@@ -821,6 +823,13 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	_queue_mutex.lock()
 	_aim[peer_id] = point
 	_queue_mutex.unlock()
+
+
+# Whether a point is in a spring cave pool (icy water, BUG-008).
+func _in_cave_pool(position: Vector3) -> bool:
+	var tile_data = generator.get_tile(generator.tile_of(position.x, position.z))
+
+	return not tile_data.placeholder and not tile_data.cave_streams.is_empty() and tile_data.in_cave_pool(position)
 
 
 func _is_connected_peer(peer_id: int) -> bool:

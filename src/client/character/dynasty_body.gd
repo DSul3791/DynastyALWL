@@ -12,6 +12,8 @@ const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
 const ARMS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"   # dynasty_arms.gd PARTS_GLB, warmed with the body
 const P := "mixamorig_"
 const WornLook := preload("res://src/client/worn_look.gd")
+const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
+const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -36,7 +38,7 @@ const CLIP_MAP := {
 	"jump": ["Jump_Run", 0.3, 0.7, false, 1.0],
 	"fall": ["Jump_Run", 0.55, 0.8, true, 1.0],
 	"land": ["Jump_Run", 0.1, 0.5, false, 1.0],
-	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
+	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],   # post-processed into cross-legged ground sitting by _ground_sit (BUG-020: there is no floor-sit clip)
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
 	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
 	# the strike comes down from 1.4 s, fastest at 1.53 s, hands lowest at 1.73 s; the clip ends at 1.83 s. (The speed peak at 0.73 s is the rise, not a blow.) The game wants the blow at 0.5 s
@@ -76,6 +78,8 @@ var hand_mount_l: Marker3D
 var head_mount: Marker3D
 var _log: MeshInstance3D
 var _model: Node3D
+var proportions: SkeletonModifier3D           # dynasty_proportions.gd, made by set_proportions
+var _mount_rest: Dictionary = {}              # Marker3D -> its transform before set_proportions scaled the body
 
 
 # True when Dave's glb is imported and holds a skeleton, a mesh and an AnimationPlayer. Checked once per run; when it is not (a fresh checkout before `godot --import`) one line says so and the
@@ -262,7 +266,12 @@ func _build_animations() -> void:
 
 		for game_name in CLIP_MAP:
 			var row: Array = CLIP_MAP[game_name]
-			_library.add_animation(game_name, _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else []))
+			var made: Animation = _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
+
+			if game_name == "sit":
+				_ground_sit(made, own.get_animation("Idle"))
+
+			_library.add_animation(game_name, made)
 
 	for library_name in animation_player.get_animation_library_list():
 		animation_player.remove_animation_library(library_name)
@@ -341,6 +350,117 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 	return out
 
 
+# Turns the chair clip into sitting cross-legged on the ground (Dave QA BUG-020: X sat him as if on a chair). Dave's set has no floor-sit clip, so the chair pose is changed in place:
+# the hips drop to about 14 cm off the ground, each thigh swings out sideways (the model faces +Z, its right is -X) and each shin folds back under the other leg. The turns are
+# made in the parent bone's frame, which for this Mixamo rig is close to the model's own axes. Angles are a first guess, not yet seen in the game: rate by picture (--shot-stance=sit).
+const SIT_THIGH_OUT_DEG := 55.0
+const SIT_SHIN_FOLD_DEG := 135.0
+const SIT_HIPS_M := 0.14
+const SIT_PELVIS_BACK_DEG := 28.0     # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
+const SIT_ARM_FWD_DEG := 40.0         # hands rest on the knees: the upper arm swings forward this much from hanging (about the model's X axis), the forearm this much more
+const SIT_FOREARM_FWD_DEG := 25.0
+const SIT_SPINE_BACK_DEG := 3.0       # each of Spine, Spine1 and Spine2 leans back this much more
+
+
+static func _ground_sit(anim: Animation, idle: Animation) -> void:
+	for t in range(anim.get_track_count()):
+		var path: String = String(anim.track_get_path(t))
+		var type: int = anim.track_get_type(t)
+
+		if type == Animation.TYPE_POSITION_3D and path.ends_with(P + "Hips"):
+			for k in range(anim.track_get_key_count(t)):
+				var v: Vector3 = anim.track_get_key_value(t, k)
+				v.y = SIT_HIPS_M * 100.0       # the skeleton is in centimetres
+				anim.track_set_key_value(t, k, v)
+
+			continue
+
+		if type != Animation.TYPE_ROTATION_3D:
+			continue
+
+		# Arms hang as in the standing idle, not reaching down to the chair's desk or knees (the #315 picture: the left hand on the ground).
+		if "Arm" in path.get_file() or "Shoulder" in path.get_file() or "Hand" in path.get_file():
+			var idle_track: int = idle.find_track(anim.track_get_path(t), Animation.TYPE_ROTATION_3D)
+
+			if idle_track >= 0:
+				var hang: Quaternion = idle.track_get_key_value(idle_track, 0)
+
+				for k in range(anim.track_get_key_count(t)):
+					anim.track_set_key_value(t, k, hang)
+
+			continue
+
+		var pelvis: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_PELVIS_BACK_DEG))
+
+		if path.ends_with(P + "Hips"):
+			for k in range(anim.track_get_key_count(t)):
+				anim.track_set_key_value(t, k, (anim.track_get_key_value(t, k) as Quaternion) * pelvis)
+
+			continue
+
+		if path.ends_with(P + "Spine") or path.ends_with(P + "Spine1") or path.ends_with(P + "Spine2"):
+			var back: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_SPINE_BACK_DEG))
+
+			for k in range(anim.track_get_key_count(t)):
+				anim.track_set_key_value(t, k, (anim.track_get_key_value(t, k) as Quaternion) * back)
+
+			continue
+
+		var extra: Quaternion = Quaternion.IDENTITY
+		var right: bool = path.ends_with(P + "RightUpLeg") or path.ends_with(P + "RightLeg")
+
+		if path.ends_with("UpLeg"):
+			extra = Quaternion(Vector3.UP, deg_to_rad(-SIT_THIGH_OUT_DEG if right else SIT_THIGH_OUT_DEG))
+		elif path.ends_with("Leg"):
+			extra = Quaternion(Vector3.RIGHT, deg_to_rad(SIT_SHIN_FOLD_DEG))
+		else:
+			continue
+
+		for k in range(anim.track_get_key_count(t)):
+			var q: Quaternion = anim.track_get_key_value(t, k)
+			anim.track_set_key_value(t, k, (pelvis.inverse() * extra * q) if path.ends_with("UpLeg") else (q * extra))
+
+	# The arms hang beside the hips, which are now on the ground and put a held tool in the grass: swing them forward so the hands rest on the knees. The swing is made in model space
+	# (the bones' own axes are not known), through the parent chain's rotation at the first key.
+	for side in ["Left", "Right"]:
+		var chain: Quaternion = Quaternion.IDENTITY
+
+		for bone in ["Hips", "Spine", "Spine1", "Spine2", side + "Shoulder"]:
+			var tr: int = _rot_track(anim, bone)
+
+			if tr < 0:
+				chain = Quaternion.IDENTITY
+				break
+
+			chain = chain * (anim.track_get_key_value(tr, 0) as Quaternion)
+
+		var arm_tr: int = _rot_track(anim, side + "Arm")
+		var fore_tr: int = _rot_track(anim, side + "ForeArm")
+
+		if arm_tr < 0 or fore_tr < 0:
+			continue
+
+		var swing: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_ARM_FWD_DEG))
+		var arm_new: Quaternion = chain.inverse() * swing * chain * (anim.track_get_key_value(arm_tr, 0) as Quaternion)
+		var swing2: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_FOREARM_FWD_DEG))
+		var chain2: Quaternion = chain * arm_new
+		var fore_new: Quaternion = chain2.inverse() * swing2 * chain2 * (anim.track_get_key_value(fore_tr, 0) as Quaternion)
+
+		for k in range(anim.track_get_key_count(arm_tr)):
+			anim.track_set_key_value(arm_tr, k, arm_new)
+
+		for k in range(anim.track_get_key_count(fore_tr)):
+			anim.track_set_key_value(fore_tr, k, fore_new)
+
+
+static func _rot_track(anim: Animation, bone: String) -> int:
+	for t in range(anim.get_track_count()):
+		if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and String(anim.track_get_path(t)).ends_with(P + bone):
+			return t
+
+	return -1
+
+
 # A harmless stand-in when the glb cannot be used, so nothing that holds this body meets a null (my_character.gd make_avatar never picks it; this is the last guard).
 func _make_empty() -> void:
 	skeleton = Skeleton3D.new()
@@ -371,9 +491,91 @@ func is_one_shot_playing() -> bool:
 	return animation_player != null and animation_player.is_playing() and animation_player.get_animation(animation_player.current_animation).loop_mode == Animation.LOOP_NONE
 
 
-# The colours are baked into Dave's texture; nothing to paint yet.
+# The creator's body sliders on this body (dynasty_proportions.gd): height scales the whole model, legs, torso, arms, shoulders, neck, head, hands and feet scale their bones. The
+# mounts are scaled back so a held tool keeps its size. Safe to call again whenever the genome changes (the creator preview does on every slider move).
+func set_proportions(g: Dictionary) -> void:
+	genome = g
+
+	if _model == null or skeleton == null:
+		return
+
+	if proportions == null:
+		proportions = Proportions.new()
+		proportions.name = "Proportions"
+		skeleton.add_child(proportions)
+
+	proportions.set_genome(g)
+	_set_widths(g)
+	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)       # the skin colour of the genome; the other colours are unused on this body
+	var height: float = Proportions.factor(g, "height")
+	_model.scale = Vector3.ONE * height
+	var hand: float = height * Proportions.factor(g, "hands")
+	var head: float = height * Proportions.factor(g, "head")
+
+	for spec in [[hand_mount_r, hand], [hand_mount_l, hand], [head_mount, head]]:
+		var marker: Marker3D = spec[0]
+
+		if not _mount_rest.has(marker):
+			_mount_rest[marker] = marker.transform
+
+		var rest: Transform3D = _mount_rest[marker]
+		marker.transform = Transform3D(rest.basis * (1.0 / float(spec[1])), rest.origin)
+
+
+# The width sliders (dynasty_shapes.gd): the shared shaped mesh is put on this body the first time a width is not 0, then each slider is a blend shape weight.
+func _set_widths(g: Dictionary) -> void:
+	var any: bool = false
+
+	for key in Shapes.NAMES:
+		if absf(float(g.get(key, 0.0))) > 0.001:
+			any = true
+
+	if not any and not body_mesh.mesh.has_meta(Shapes.SHAPED_KEY):
+		return       # the plain body keeps Dave's own mesh
+
+	var shaped: ArrayMesh = Shapes.shaped(body_mesh.mesh, body_mesh.skin, skeleton)
+
+	if shaped == null:
+		return
+
+	if body_mesh.mesh != shaped:
+		body_mesh.mesh = shaped
+		_skin_material = null          # a new mesh drops the override: dress makes it again
+
+	for key in Shapes.NAMES:
+		var i: int = body_mesh.find_blend_shape_by_name(key)      # MeshInstance3D has the lookup; ArrayMesh does not
+
+		if i >= 0:
+			body_mesh.set_blend_shape_value(i, clampf(float(g.get(key, 0.0)), -1.0, 1.0))
+
+
+# Skin colour (Kathreen 3 Nov 2026): Dave's texture has the skin and the loincloth painted in one map, in the same warm hue (the loincloth only darker), so the creator's skin colour
+# tints the whole albedo by skin / DEFAULT_SKIN. The default creator skin leaves Dave's look exactly as painted; a darker or paler skin keeps every painted crease and the loincloth
+# stays a darker shade of it. The skin comes from the genome (set_proportions), not from the argument, so a body without a genome is never tinted by the old bodies' fixed SKIN.
+# Clothes colours are baked in and not painted yet (worn clothing is gap 1 of docs/DYNASTY_BODY.md).
+const DEFAULT_SKIN := Color(0.82, 0.62, 0.48)      # body_generator.gd make_genome's default skin = Dave's painted skin
+const TINT_MAX := 1.3                              # a much paler skin than Dave's brightens the texture at most this much per channel
+var _skin_material: BaseMaterial3D
+
+
+static func skin_tint(skin: Color) -> Color:
+	return Color(clampf(skin.r / DEFAULT_SKIN.r, 0.05, TINT_MAX), clampf(skin.g / DEFAULT_SKIN.g, 0.05, TINT_MAX), clampf(skin.b / DEFAULT_SKIN.b, 0.05, TINT_MAX))
+
+
 func dress(_skin_color: Color, _coat: Color, _trousers: Color, _shoes: Color = Color(0.14, 0.11, 0.09)) -> void:
-	pass
+	if body_mesh == null or body_mesh.mesh == null or not genome.has("skin"):
+		return
+
+	if _skin_material == null:
+		var painted: Material = body_mesh.get_active_material(0)
+
+		if not (painted is BaseMaterial3D):
+			return
+
+		_skin_material = painted.duplicate() as BaseMaterial3D       # each body its own copy: the glb's material is shared by every body
+		body_mesh.set_surface_override_material(0, _skin_material)
+
+	_skin_material.albedo_color = skin_tint(genome["skin"])
 
 
 func set_far(_on: bool) -> void:
@@ -402,11 +604,14 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 		skeleton.add_child(attachment)
 		attachment.bone_name = P + "Spine2"
 		_log = MeshInstance3D.new()
-		_log.material_override = StandardMaterial3D.new()
+		_log.material_override = _log_bark()
 		_log.scale = Vector3.ONE * 100.0
 		attachment.add_child(_log)
 
-	(_log.material_override as StandardMaterial3D).albedo_color = color
+	# The trees' own bark (flora_view.gd BARK_SHADER, as a felled trunk in inventory_view.gd draws it), tinted by the species: a carried log was a plain plastic-brown cylinder.
+	var bark: ShaderMaterial = _log.material_override as ShaderMaterial
+	bark.set_shader_parameter("tint", Vector3(color.r, color.g, color.b))
+	bark.set_shader_parameter("uv_scale", Vector2(maxf(radius * 4.0, 1.0), maxf(length / 1.6, 1.0)))
 	var cyl: CylinderMesh = _log.mesh as CylinderMesh if _log.mesh != null else CylinderMesh.new()
 	cyl.top_radius = radius * 0.8
 	cyl.bottom_radius = radius
@@ -416,3 +621,20 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 	_log.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 	_log.position = Vector3(-18.0, 9.0, -12.0)      # the right shoulder, a little behind (model space: right is -X, front +Z), in centimetres
 	_log.visible = true
+
+
+static var _log_shader: Shader
+
+
+func _log_bark() -> ShaderMaterial:
+	if _log_shader == null:
+		_log_shader = Shader.new()
+		_log_shader.code = (load("res://src/flora/flora_view.gd") as GDScript).get_script_constant_map()["BARK_SHADER"]
+
+	var bark: ShaderMaterial = ShaderMaterial.new()
+	bark.shader = _log_shader
+	bark.set_shader_parameter("bark", load("res://assets/trees/bark.png"))
+	bark.set_shader_parameter("sway", 0.0)                   # it rides the shoulder; the trees' wind bend would bend it
+	bark.set_shader_parameter("foot_offset", 10.0)          # far from the ground: no foot moss or ground shade
+	bark.set_shader_parameter("lift", Vector3(3.0, 2.0, 1.3))   # the felled trunk's lift (inventory_view.gd _felled_bark), so log, trunk and pile match
+	return bark

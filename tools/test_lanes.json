@@ -27,13 +27,18 @@
 		{
 			"why": "Kathleen: looks and pieces",
 			"paths": ["src/client/piece_look.gd", "src/client/basic_look.gd", "src/client/building_look.gd", "src/client/inventory_view.gd", "src/client/*_look.gd", "src/client/avatar*", "src/client/**/avatar*", "src/client/held_item.gd", "src/client/look_table.gd", "data/items/looks.json", "data/items/structures.json", "data/items/clothing.json", "data/look/**"],
-			"tests": ["test_tool_looks", "test_pick_axes", "test_look_table", "test_structure_look", "test_thatch_pieces", "test_placement_rules", "test_blueprints", "test_hammer_list", "test_building_plans"],
+			"tests": ["test_tool_looks", "test_pick_axes", "test_look_table", "test_structure_look", "test_thatch_pieces", "test_placement_rules", "test_blueprints", "test_build_stock", "test_hammer_list", "test_building_plans"],
 			"checks": ["check_look_names.py", "warnings"]
 		},
 		{
 			"why": "server solid footprints (walls and stations stop animals)",
 			"paths": ["src/stream/structure_grid.gd", "data/items/structures.json"],
 			"tests": ["test_structure_grid"]
+		},
+		{
+			"why": "building wear and hammer repair",
+			"paths": ["src/shared/building_wear.gd", "data/items/building_wear.json"],
+			"tests": ["test_building_wear", "test_building_plans"]
 		},
 		{
 			"why": "sound slots read client sources as text",

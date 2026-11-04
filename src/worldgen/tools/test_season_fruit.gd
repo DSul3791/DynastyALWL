@@ -5,6 +5,8 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_season_fruit.gd
 
 const TreeBuilder := preload("res://src/flora/tree_builder.gd")
+const GameClock := preload("res://src/shared/game_clock.gd")
+const GatherRules := preload("res://src/shared/gather_rules.gd")
 
 var _failures: int = 0
 
@@ -43,5 +45,15 @@ func _init() -> void:
 	_check(bloom > 0 and gone == 0, "a seasonal lavender is drawn in summer and not at all in winter")
 	var plain: int = _verts(TreeBuilder.build(rows["lavender"], 0.6, 0, false, mats, "winter"))
 	_check(plain > 0, "without the seasonal flag a flower row keeps its winter model")
+	# Dave, 4 Nov 2026: the game starts when there is food on the vines and trees. A new world's clock must land in a season
+	# where the berry bushes and fruit trees near spawn can be picked.
+	var start: String = GameClock.new().season()
+	print("new world starts in %s" % start)
+	_check(start == "summer", "a new world starts in summer")
+	for name in ["raspberry", "bramble", "blueberry", "wild_strawberry", "wild_cherry", "apple_early", "plum"]:
+		_check(GatherRules.in_season(rows[name], start), "%s can be picked on the first day" % name)
+	# BUG-018: no raspberries in spring is right; the look-at line says "Raspberries - Out of Season" (harvest.gd product_name_at).
+	_check(not GatherRules.in_season(rows["raspberry"], "spring") and GatherRules.in_season(rows["raspberry"], "summer"), "raspberries are out of season in spring and in season in summer")
+	_check(str(preload("res://src/client/harvest.gd").OUT_OF_SEASON_FORMAT) % "Raspberries" == "Raspberries - Out of Season", "the out of season look-at line reads Raspberries - Out of Season")
 	print("season fruit test: %d failures" % _failures)
 	quit(_failures)

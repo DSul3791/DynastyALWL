@@ -92,7 +92,7 @@ func _init() -> void:
 
 	# A player who leaves with the fire still burning does not stop it burning.
 	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
-	f.action(1, Net.ACT_PLACE, f.inventory_of(1).numbers.find(f.table.number_of("campfire_kit")), 0, 0, Vector3(-2.0, 10.0, 0.0))
+	f.place_item(1, f.table.number_of("campfire_kit"), Vector3(-2.0, 10.0, 0.0), 0)
 	var id2: int = _fire_id(f)
 	check(id2 != 0, "a second fire can be laid (said %s)" % str(said.get(1, "")))
 

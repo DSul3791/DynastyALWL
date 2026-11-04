@@ -104,7 +104,7 @@
    "size": 1.0
   },
   "firewood": {
-   "shape": "bundle",
+   "shape": "split_wood",
    "color": "#8a5e36",
    "size": 1.6
   },
@@ -974,18 +974,28 @@
    "bits": ["pin"]
   },
   "wooden_block": {
-   "shape": "block",
-   "color": "#a67c4a",
+   "shape": "wood_round",
+   "color": "#5a3e26",
    "size": 0.9
   },
+  "wooden_block_large": {
+   "shape": "wood_round",
+   "color": "#5a3e26",
+   "size": 1.8
+  },
+  "wooden_block_soft_large": {
+   "shape": "wood_round",
+   "color": "#6b4a2e",
+   "size": 1.8
+  },
   "firewood_soft": {
-   "shape": "bundle",
+   "shape": "split_wood",
    "color": "#9a7a4a",
    "size": 1.6
   },
   "wooden_block_soft": {
-   "shape": "block",
-   "color": "#b8905a",
+   "shape": "wood_round",
+   "color": "#6b4a2e",
    "size": 0.9
   },
   "saw_blade": {
@@ -1471,7 +1481,7 @@
    "size": 1.0
   },
   "kindling": {
-   "shape": "bundle",
+   "shape": "sticks",
    "color": "#a8845a",
    "size": 0.6
   },

@@ -8,13 +8,17 @@
 		"faint_m": 12.0
 	},
 	"breath": {
-		"note": "Dave 2026-10-21: an oxygen symbol with a countdown (seconds) shows only with the head under water; the air lasts seconds at ordinary swimming pace, runs down rest_mult as fast resting or floating still (up to rest_speed m/s), hard_mult as fast swimming hard (from hard_speed m/s), and is full again the instant the head is above the surface. At zero the player loses drown_per_s health a second. can_die true (protocol 34): at zero health the character dies (death.json).",
+		"note": "Dave 2026-10-21: an oxygen symbol with a countdown (seconds) shows only with the head under water; the air lasts seconds at ordinary swimming pace, runs down rest_mult as fast resting or floating still (up to rest_speed m/s), hard_mult as fast swimming hard (from hard_speed m/s), and is full again the instant the head is above the surface. BUG-029 (Dave 2026-11-04): at zero air the player stays under water (no auto-rise): for faint_after_s seconds suffocation races the heart from bpm.start to bpm.peak and closes the vision, then the character faints (unconscious). Fainting with the head still under water is drowning: the character dies (can_die, death.json). Surfacing before then clears it. The exertion collapse (exertion.json) never kills; this is a separate path.",
 		"seconds": 60,
 		"rest_mult": 0.5,
 		"rest_speed": 0.5,
 		"hard_mult": 1.6,
 		"hard_speed": 2.6,
-		"drown_per_s": 6.0,
+		"faint_after_s": 15.0,
+		"bpm": {
+			"start": 110,
+			"peak": 190
+		},
 		"can_die": true
 	},
 	"warn_hunger": 15,
@@ -202,6 +206,7 @@
 	},
 	"heal": {
 		"poultice": 30,
+		"herb_salve": 25,
 		"bandage": 15
 	},
 	"stomach_cap_kcal": 2400,
@@ -216,6 +221,8 @@
 	"limp": {
 		"seconds": 600.0,
 		"speed_share": 0.5,
-		"heal_at": 0.6
+		"heal_at": 0.6,
+		"cure_items": ["splint"],
+		"say_cured": "You bind the splint to your leg. You can walk properly again."
 	}
 }

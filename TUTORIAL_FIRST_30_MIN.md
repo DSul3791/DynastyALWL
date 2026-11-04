@@ -2,21 +2,30 @@
 
 Written to become the in-game tutorial text. Every line states only what the game really does today (data of 2026-10-31 and the server code; see `PLAYTHROUGH_GUIDE.md` and `PLAYTHROUGH_FINDINGS.md` for the evidence). Each step has a **trigger** (when to show it), the **line** (the text, second person, short), and a **check** (what the game must see for the step to be done). Numbers are the real recipe numbers; if a recipe changes, `art/playthrough/status_check.py` and `PLAYTHROUGH_CHAPTERS.md` show it.
 
-What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, real flora placer, re-run after the flora density merge): a forest pond shore, temperate forest, ground 31 m. Within 50 m: about 190 ferns, 88 balsam firs, 67 tall grass, 49 nettles, 30 hazels, 29 raspberry bushes, 18 elder, 17 beeches, 15 reeds, 14 wild garlic, 12 comfrey; 6 grown trees (cover) within 50 m, 17 within 100 m, 80 within 200 m (nearest: a 23 m beech 19 m away). Within 100 m: 142 nettles, 214 tall grass, 33 reeds, 577 ferns. Loose sticks and stones are laid thicker around the spawn on purpose (1-2 extra stones, 2-3 extra sticks per 32 m square within 300 m). Plant fibre comes from **nettles** and **tall grass** (and reeds), thatch from tall grass and reeds, bedding from ferns.
+What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, real flora placer, re-run after the flora density merge): a forest pond shore, temperate forest, ground 31 m. Within 50 m: about 190 ferns, 88 balsam firs, 67 tall grass, 49 nettles, 30 hazels, 29 raspberry bushes, 18 elder, 17 beeches, 15 reeds, 14 wild garlic, 12 comfrey; 6 grown trees (cover) within 50 m, 17 within 100 m, 80 within 200 m (nearest: a 23 m beech 19 m away). Within 100 m: 142 nettles, 214 tall grass, 33 reeds, 577 ferns. Loose sticks and stones are laid thicker around the spawn on purpose (drops.json ground_scatter spawn_boost, within 300 m). But the code caps the TOTAL per 32 m square at stones_max_boost 2 and sticks_max_boost 2 (checked 3 Nov), so each square near the spawn holds exactly 2 sticks and 1-2 stones. A sloped square, which elsewhere holds up to 4 stones, holds at most 2 near the spawn (reported to Tyler and Sal). The 47 sticks of the first day are about 24 squares of ground, so most of them come from felled trees. Plant fibre comes from **nettles** and **tall grass** (and reeds), thatch from tall grass and reeds, bedding from ferns.
+
+**The clock in the first hour** (game_clock.gd, ambient_life.gd SUN; checked by Dino, 3 Nov):
+- A new world starts on day 100, early summer, at 08:00. One real minute is 24 game minutes.
+- **Minute 25 is 18:00:** the dusk hint fires.
+- **Minute 32 is sunset (21:00)**, and it is dark from about minute 34 to minute 51.
+- **Sunrise is at minute 52 (05:00)**, and minute 60 is 08:00 again.
+- So the fire (about minute 15-20) and the lean-to and bed (minutes 18-26) land just before the first dark. That is the right order, and it leaves about 6 minutes of slack.
+- A world that has already run resumes its saved clock, so a play-test on Dave's world may start at any hour.
+- **For the first dark:** a **Basic torch** costs 1 stick and 2 fibre, needs no station, and is known from the start. Held in the off hand it lights 9 m (items.json light_m), more than a stick fire's 3.5 m. It has no burn time or durability in data, so it never goes out. It gives light only, no warmth: only fires warm. The dusk hint (18:00, minute 25) already says this: "Night is dark. Craft a Basic torch: a stick and 2 fibre."
 
 ## Fix status that changes this script (2026-10-31; `PLAYTHROUGH_STATUS.md` has the live table)
 
 | Fix | State | What the script gains when it lands |
 |---|---|---|
 | F-01 recipes known | **landed** (173 of 192 learnable) | pickaxe, club, kindling, hide clothes, waterskin are in the script's later steps |
-| F-16 plain `log` recipes | **still broken** | steps A below (chopping block, planks, lumber, wooden house) |
+| F-16 plain `log` recipes | **FIXED** (PLAYTHROUGH_STATUS.md) | steps A below are live |
 | F-02 flint pickup | **still broken** | steps B below (hide scraper, tanning, sickle, javelin) |
 | F-03 tinder sources | landed | the fire step may name birch bark, tinder (2 thatch make 2) as well as plant fibre |
 
 ## Minute 0 to 3: look, drink, move
 
 1. Trigger: first frame. Line: "This is the pond shore. W A S D to walk, mouse to look. Hold Shift with W to run." Check: moved 5 m.
-2. Trigger: after step 1. Line: "Press Tab to see your bars: Health, Food, Water, Warmth, Energy. They all drain slowly. Press Tab again to close." Check: character screen opened once.
+2. Trigger: after step 1. Line: "Press Tab to see your bars: Health, Food, Water, Temperature, Energy. They all drain slowly. Press Tab again to close." Check: character screen opened once.
 3. Trigger: water in view, Water under 100 %. Line: "Walk to the water's edge and press E to drink." Check: one drink.
 
 ## Minute 3 to 8: sticks, stones, fibre
@@ -29,33 +38,33 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 7. Trigger: 2 twine, 1 stone, 1 stick. Line: "Make a Stone axe: 1 stone, 1 stick, 2 twine." (recipe 2, 10 s). Check: stone axe in the pack.
 8. Trigger: axe made. Line: "Tools only work from the hotbar. Drag the axe onto a box at the bottom, or press E on it in the inventory, then press its number key to hold it." Check: axe held.
-9. Trigger: axe held, a standing tree within 20 m. Line: "Walk up to a tree and click again and again. Thin trees fall in about 10 blows, a thick oak in about 20." (blows = 4 + 30 x trunk thickness in metres, at least 4.) Check: a tree fell.
-10. Trigger: tree down. Line (Dave, QA 2 Nov, now hint "trunk"): "Your tree is down. Gather what fell: sticks, leaves, bark and logs." About 2 s after landing the trunk breaks up by itself (bug 11 and #49); a trunk already hit with the axe, or one with no room, stays a trunk to cut by hand (3 branch blows of sticks and leaves, then a log every 1-2 blows). Check: 6 leaves and 10 sticks in the pack. **Do not tell the player to make a chopping block yet (F-16).**
+9. Trigger: axe held, a standing tree within 20 m. Line: "Walk up to a tree and click again and again. A birch falls in about 5 blows, an oak in about 12." (blows = round(2 + species trunk_m x 16.5), 3 to 22, divided by the Woodcutting factor; by species until `felling.size_scaled` is switched on, #76.) Check: a tree fell.
+10. Trigger: tree down. Line (Dave, QA 2 Nov, now hint "trunk"): "Your tree is down. Gather what fell: sticks, leaves, bark and logs." About 2 s after landing the trunk breaks up by itself (bug 11 and #49); a trunk already hit with the axe, or one with no room, stays a trunk to cut by hand (3 branch blows of sticks and leaves, then a log every 1-2 blows). Check: 6 leaves and 10 sticks in the pack. The chopping block step (section A) is live since F-16 was fixed.
 
 ## Minute 12 to 18: fire
 
 11. Trigger: 6 sticks and 3 stones. Line: "Make a Campfire kit: 6 sticks, 3 stones." (recipe 4, 8 s). Check: campfire kit in the pack.
 12. Trigger: kit made. Line: "Hold the kit and click where the ring shows. Yellow: open ground, rain puts the fire out. Green: under a tree's crown, the fire survives rain. Stand under a big tree and the ring turns green." Check: a fire placed.
 13. Trigger: fire placed, unlit. Line: "A laid fire is not lit yet. Stand close and press E: you spend one plant fibre as tinder." (tinder: plant fibre, birch bark, tinder, tinder fungus; open fires will not light in rain.) Check: fire burning.
-14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with F (the fire store; closing it lays the wood on the fire): a stick burns 2 real minutes, firewood 20 minutes, a log 3 hours (3+ firewood makes a bigger fire, 3+ logs the biggest)." Check: one fuel added.
+14. Trigger: fire lit. Line: "Stay close to keep warm: a stick fire warms you within 2.5 m, a firewood fire within 4 m. Feed it with F (the fire store; closing it lays the wood on the fire): a stick burns 2 real minutes, firewood 20 minutes, a log 3 hours (3+ firewood makes a bigger fire, 3+ logs the biggest)." Check: one fuel added. Note for the tutorial writer: a burnt-out fire is removed 5 real minutes later (kit lost), and step 16 sends the player off for 16 sticks, so step 14 should say "Put in firewood or a log before you leave: a fire that burns out is gone 5 minutes later."
 15. Trigger: hunger under 80 %. Line: "Press F at the burning fire and put raw meat, fish or shellfish in its store; it cooks there. The campfire cooks only meat: berries, nuts, roots and mushrooms are cooked in the campfire pot, hearth or oven." Check: one piece of meat roasted (a berry is refused at the campfire).
 
 ## Minute 18 to 26: shelter and bed
 
-16. Trigger: fire burning, Warmth under 70 %. Line: "Shelter keeps rain and wind off you. Lash a ridge pole on two forks, lean sticks side by side against it and weave in boughs: 32 sticks, 8 leaves, 4 twine (sticks lie thick under the trees, so hold E to sweep them; one felled tree gives the leaves)." (recipe 13, 25 s; 31 Oct: bigger model, Dave: round poles, not timber). Check: kit in the pack.
-17. Trigger: kit made. Line: "Click to place it with the open side towards you. Standing under its roof counts as being under cover (the roof is 2.6 m by 3.4 m: big enough to lie down in). Hold E at it to take it down." Check: lean-to placed.
+16. Trigger: fire burning, Temperature under 70 %. Line: "Shelter keeps rain and wind off you. Lash a ridge pole on two forks, lean sticks side by side against it and weave in boughs: 30 sticks, 200 leaves, 10 twine (sticks lie thick under the trees, so hold E to sweep them; one felled tree gives the leaves)." (recipe 13, 25 s; 31 Oct: bigger model, Dave: round poles, not timber). Check: kit in the pack.
+17. Trigger: kit made. Line: "Click to place it with the open side towards you. Standing under its roof counts as being under cover (the roof covers 4.16 m by 5.44 m, ridge 2.4 m: walk in and lie down). Hold E at it to take it down." Check: lean-to placed.
 18. Trigger: lean-to placed. Line: "Make a wooden hammer (a wooden block, a stick and a twine). Hold it, press R and pick Rough bed: 10 thatch, 4 sticks and 2 twine, built inside your lean-to." (hammer blueprint 24, Dave 2 Nov; the bed kit recipes stay for the feather and canopy beds.) Check: rough_bed placed.
-19. Trigger: bed kit. Line: "Place the bed under the lean-to roof, then lie down on it with Z. Press E on the bed to make it your spawn point (a death brings you back on it). Hold Z for three seconds to sleep. Under cover on a bed you heal faster and food and water drain at half speed." Check: slept 3 s or lay on the bed.
+19. Trigger: bed kit. Line: "Place the bed under the lean-to roof, then lie down on it with Z. Press E on the bed to make it your spawn point (a death brings you back beside it). Hold Z for three seconds to sleep. Under cover on a bed you heal faster and food and water drain at half speed." Check: slept 3 s or lay on the bed.
 
 ## Minute 26 to 30: tools and what comes next
 
 20. Trigger: bed placed. Line: "A Camp bench, the workbench (16 sticks, 6 twine, 4 stones; or 4 logs, 6 twine, 6 sticks) lets you make better tools: a stone hammer, a bow, a stone spade, a pickaxe." (recipes 45, 156, 170, 26, 186.) Check: workbench placed.
 21. Trigger: workbench placed. Line: "For defence make a Wooden spear: 1 stick (keep a stone in your pack), then bind it with 2 twine for a stone spear. Left click jabs; hold right click to aim a throw." (recipes 5 and 3; 6 s and 10 s.) Check: spear made.
-22. Trigger: spear made. Line: "Food runs out in about an hour of work. Rabbits give meat, hide and bone: strike them with the spear, then work the body with a stone knife (2 stones, 1 stick; 8 s)." (recipe 6.) Check: knife made.
+22. Trigger: spear made. Line: "Food runs out in about an hour of work. Rabbits give meat, hide and bone: strike them with the spear, then work the body with a stone knife (2 stones, 1 stick; 8 s)." (Data, 3 Nov: a rabbit has 5 health, the wooden spear jabs for 6 and throws for 5, so even the wooden spear kills it in one hit; the stone spear, 8 and 6, matters for fox (12) and deer (20).) (recipe 6.) Check: knife made.
 
 ## After the first meal: the pot and the hearth (added 31 Oct, paper only)
 
-23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed, or the player tried to roast one at the fire and was refused. Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine into a Campfire pot and set it by the fire." (recipes 21 and 165.) Check: campfire pot kit made.
+23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed (the hint has_plant_food_at_fire: within 4 m of a lit fire with no pot). Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine into a Campfire pot and set it by the fire." (recipes 21 and 165.) Check: campfire pot kit made.
 24. Trigger: campfire pot placed. Line: "Add 3 berries and water to the pot for Stewed berries. Nettle leaves make tea, eggs make a boiled egg. Baked food (roots, nuts, flatbread) needs a clay hearth: 10 bricks, 6 clay and 4 stones, built with a hammer. A brick is 2 clay fired at the campfire." Check: first pot dish cooked.
 
 Hints: data/items/hints.json already has "cook_rule" ("Put raw meat in the campfire with F. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.
@@ -65,8 +74,7 @@ Hints: data/items/hints.json already has "cook_rule" ("Put raw meat in the campf
 
 | Do not say | Why (finding) |
 |---|---|
-| "make a chopping block / log workbench / planks" | recipes need plain `log`; trees give `log_<species>` (F-16) |
-| "build a wooden house" | lumber needs the log chain (F-16); the thatch house works (workbench: thatch floor, walls, roof, doorway) |
+| "build a wooden house" | works now through section A (wedge lumber and hammer blueprints); the thatch house also works |
 | "smelt iron, make a forge sword" | no ore, coal or flint pickup (F-23) |
 | "farm wheat" | crops.json is read by no code (S-farm) |
 | "cook a stew or bread" | 14 dishes lack gatherable ingredients (F-19) |
@@ -78,18 +86,19 @@ Steps 4 to 22 each end on an inventory or world event the server already knows (
 
 ## Steps that unlock when the open fixes land (write them in now, switch them on with the fix)
 
-**A. When F-16 lands (a felled `log_oak` counts as a `log`):**
+**A. The log chain: switched on (F-16 FIXED in PLAYTHROUGH_STATUS.md: a felled tree's log works as `log`; numbers re-read from data on main, 3 Nov, by Dino)**
 
 | Trigger | Line | Recipe (data) |
 |---|---|---|
-| 2 logs in the pack or on the shoulder | "Lay the logs down (Q) and make a Chopping block: 2 logs." | #15, 3 s |
-| a chopping block placed and an axe held | "Press E at the block to split a wooden block into firewood. Hold E to keep splitting." | server: one block to one firewood |
+| 2 logs in the pack or on the shoulder | "Lay the logs down (Q) and make a Chopping block: 2 logs." | #15, 8 s |
+| a chopping block placed and an axe held | "Tap E at the block to split a wooden block into firewood. Hold E picks the block up again." (#30: hold E no longer keeps splitting) | server: one block to one firewood |
 | workbench placed | "Rough planks: 1 log makes 4 planks at the workbench." | #143, 6 s |
-| workbench placed, stone wedge (2 stones + 1 stick, #227) in the pack | "Split a log into 2 lumber with the wedge." | #230 lumber_wedge, 14 s |
-| 4 lumber + 1 twine | "Wall section kit: 4 lumber, 1 twine; floor 4 lumber, 1 twine; roof 5 lumber, 2 twine, 2 sticks; doorway 3 lumber, 1 twine." | #119, #120, #121, #123 |
-| 4 logs, 6 twine, 6 sticks | "Log workbench: the second bench tier." | #49, 30 s |
+| workbench placed, stone wedge (2 stones + 1 stick, #227) in the pack | "Split a log into 2 lumber with the wedge at the workbench." | #230, 14 s (the wedge is kept) |
+| first lumber | "Heavy pieces are built with a hammer. A wooden hammer is a wooden block, a stick and a twine; a stone hammer is a stone, a stick and a twine at the workbench." | wooden hammer (no station), stone hammer (workbench) |
+| hammer held, 4 lumber + 1 twine | "Hold the hammer to pick a blueprint: wall 4 lumber, 1 twine; floor 4 lumber, 1 twine; roof 5 lumber, 2 twine, 2 sticks; doorway 3 lumber, 1 twine." | blueprints.json wall_section, floor_section, roof_section, doorway_section (hammer 1) |
+| hammer held, 4 logs, 6 twine, 6 sticks | "Log workbench: the second bench tier, built with the hammer." | blueprint log_workbench |
 
-A small wooden room (four walls, floor, roof, doorway) is 28 lumber = 14 logs = 14 trees' worth of logs. Say so in the text.
+A small wooden room (four walls, floor, roof, doorway) is 28 lumber = 14 logs. A felled tree now gives one log per whole 2.44 m of trunk (a 6 m tree gives 2), so that is about 5 to 7 trees. Say so in the text.
 
 **B. When F-02 lands (flint can be picked up):**
 
@@ -123,6 +132,8 @@ The goal list is the 13 starter goals of `data/items/starter_goals.json` in this
 | 11 | spear | Make a spear | twine |
 | 12 | knife | Make a stone knife and work a kill | spear |
 | 13 | fish | Catch a fish | twine |
+| 13b | sell | Sell to Hob | fibre |
+| 13c | order | Fill Hob's order (Any order for today?, once a game day) | sell |
 | 14 to 23 | torch_night, candle, smoke_fish, dry_berries, jerky, salted_fish, winter_store, fur_for_winter, story, night_walk | camp and winter goals | see file |
 
-Comfort and Rested (protocol 81): a line at the top right of the screen, "Comfort 7   Rested 38 min" (the Rested part only while the buff runs, hidden at comfort 0 with no buff). Hovering it with the cursor free (inventory open) shows the tooltip: what counts with its points, up to five things that could be added (lit fixtures marked "(lit)"), and the Rested bonuses with the minutes left. Rested is earned by lying in a bed, or sitting 30 s on a seat, at comfort 2 or more, and lasts 45 real minutes. Lit wall torches, chandeliers and fireplaces count only while lit, burn their fuel (stick 30 min, candle 60 min, firewood 120 min) and keep their state across a restart. The lean-to is 2.6 x 3.4 m (32 sticks, 8 leaves, 4 twine) and a bed can stand inside it.
+Comfort and Rested (protocol 81): a line at the top right of the screen, "Comfort 7   Rested 38 min" (the Rested part only while the buff runs, hidden at comfort 0 with no buff). Hovering it with the cursor free (inventory open) shows the tooltip: what counts with its points, up to five things that could be added (lit fixtures marked "(lit)"), and the Rested bonuses with the minutes left. Rested is earned by lying in a bed, or sitting 30 s on a seat, at comfort 2 or more, and lasts 45 real minutes. Lit wall torches, chandeliers and fireplaces count only while lit, burn their fuel (stick 30 min, candle 60 min, firewood 120 min) and keep their state across a restart. The lean-to covers 4.16 x 5.44 m, ridge 2.4 m (#253; 30 sticks, 200 leaves, 10 twine) and a bed can stand inside it.

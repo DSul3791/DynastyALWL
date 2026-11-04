@@ -115,6 +115,29 @@ func _init() -> void:
 	near = []
 	check(catches(items, id, 200) == 0, "no animal near, no catch")
 
+	# The draw (MikeW, 3 Nov): with nothing inside lure_m, a rabbit living within draw_m may be drawn over to the snare, never
+	# caught from where it stands; a deer is never drawn; nothing beyond draw_m is.
+	var lured_to: Array = []
+	var far_rows: Array = [{"id": 21, "sp": "rabbit", "pos": Vector3(20.0, 10.0, 0.0)}, {"id": 22, "sp": "deer", "pos": Vector3(15.0, 10.0, 0.0)}, {"id": 23, "sp": "rabbit", "pos": Vector3(90.0, 10.0, 0.0)}]
+	items.animals_near = func(point, radius):
+		return far_rows.filter(func(r): return Vector2(r["pos"].x - point.x, r["pos"].z - point.z).length() <= radius)
+	items.animal_lure = func(aid, point) -> bool:
+		lured_to.append(aid)
+		return true
+	taken.clear()
+	var drawn_catches: int = catches(items, id, 3000)
+	var ids: Dictionary = {}
+
+	for aid in lured_to:
+		ids[aid] = true
+
+	check(drawn_catches == 0 and taken.is_empty(), "a rabbit 20 m off is not caught from there")
+	check(ids.keys() == [21], "only the rabbit within draw_m is drawn, never the deer or a far rabbit (%s)" % str(ids.keys()))
+	var want: float = base * float(traps.cfg["draw_share"]) * 3000.0
+	check(absf(float(lured_to.size()) - want) < want * 0.35 + 3.0, "it is drawn at the catch chance x draw_share (%d, expected about %.0f)" % [lured_to.size(), want])
+	items.animals_near = func(_point, _radius): return near
+	items.animal_lure = Callable()
+
 	# A catch: the animal leaves the world, a carcass of its species lies by the snare, the snare wears and is sprung.
 	near = [rabbit]
 	base_up(items)

@@ -1,175 +1,15 @@
 {
-	"note": "Hammer blueprints (Dave 25 Oct): HEAVY placeables (processing stations now; log, cobblestone and mason tiers and their large foundations when they land) are placed from the hammer with the materials in the pack, no kit item, because they are too heavy to carry as materials. Building items of the fine wood tier or lower (thatch, plank, fine wood pieces, foundation, ladder, timber set) are made BY HAND and placed like the chopping block: no kit, no blueprint (Dave 25 Oct 09:06). 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near (with 'station_level'), 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1), 'recipe' the retired kit recipe (kept so its number is never reused), 'retired' rows are kept for their numbers and are not offered or placed. Taking the piece down gives the cost back. Ids are the blueprint's own, append only. The rough bed (Dave 2 Nov, QA sal-bed-for-sale: 'make our own rough bed in our own lean-to, using the wooden hammer') is a hammer blueprint too, with no recipe field: its hand-made kit recipe stays live because the feather and canopy beds take the kit as an ingredient; a bed taken down gives its thatch, sticks and twine back.",
-	"next_number": 25,
+	"note": "Hammer blueprints. Dave 4 Nov 2026: no kits at all; everything placed is built with the hammer from the materials in the pack, except the Rough bed (a hand craft from the pack; blueprint 24 retired) and the campfire (a fire entity; code pending). 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near (with 'station_level'), 'near' another placed structure that must be near, 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1), 'recipe' the retired kit recipe (kept so its number is never reused, and so learning that recipe can unlock the row), 'known' false rows are learned, 'retired' rows are kept for their numbers and are not offered or placed. Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
+	"next_number": 53,
 	"blueprints": {
-		"wall_section": {
-			"number": 1,
-			"name": "Wall section",
-			"structure": "wall_section",
-			"cost": [
-				[
-					"lumber",
-					4
-				],
-				[
-					"twine",
-					1
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "wall_section_kit",
-			"retired": true
-		},
-		"floor_section": {
-			"number": 2,
-			"name": "Floor section",
-			"structure": "floor_section",
-			"cost": [
-				[
-					"lumber",
-					4
-				],
-				[
-					"twine",
-					1
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "floor_section_kit",
-			"retired": true
-		},
-		"roof_section": {
-			"number": 3,
-			"name": "Roof section",
-			"structure": "roof_section",
-			"cost": [
-				[
-					"lumber",
-					5
-				],
-				[
-					"twine",
-					2
-				],
-				[
-					"stick",
-					2
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "roof_section_kit",
-			"retired": true
-		},
-		"foundation_section": {
-			"number": 4,
-			"name": "Foundation",
-			"structure": "foundation_section",
-			"cost": [
-				[
-					"stone",
-					8
-				],
-				[
-					"clay",
-					2
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "foundation_section_kit",
-			"retired": true
-		},
-		"doorway_section": {
-			"number": 5,
-			"name": "Doorway",
-			"structure": "doorway_section",
-			"cost": [
-				[
-					"lumber",
-					3
-				],
-				[
-					"twine",
-					1
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "doorway_section_kit",
-			"retired": true
-		},
-		"window_section": {
-			"number": 6,
-			"name": "Window wall",
-			"structure": "window_section",
-			"cost": [
-				[
-					"lumber",
-					3
-				],
-				[
-					"twine",
-					1
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "window_section_kit",
-			"retired": true
-		},
-		"timber_set": {
-			"number": 7,
-			"name": "Timber set",
-			"structure": "timber_set",
-			"cost": [
-				[
-					"lumber",
-					4
-				],
-				[
-					"twine",
-					1
-				],
-				[
-					"stick",
-					1
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "timber_set_kit",
-			"retired": true
-		},
-		"ladder": {
-			"number": 8,
-			"name": "Ladder",
-			"structure": "ladder",
-			"cost": [
-				[
-					"lumber",
-					4
-				],
-				[
-					"twine",
-					2
-				]
-			],
-			"station": "",
-			"hammer": 1,
-			"known": true,
-			"recipe": "ladder_kit",
-			"retired": true
-		},
+		"wall_section": {"number": 1, "name": "Wall section", "structure": "wall_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "wall_section_kit"},
+		"floor_section": {"number": 2, "name": "Floor section", "structure": "floor_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "floor_section_kit"},
+		"roof_section": {"number": 3, "name": "Roof section", "structure": "roof_section", "cost": [["lumber", 5], ["twine", 2], ["stick", 2]], "station": "", "hammer": 1, "known": true, "recipe": "roof_section_kit"},
+		"foundation_section": {"number": 4, "name": "Foundation", "structure": "foundation_section", "cost": [["stone", 8], ["clay", 2]], "station": "", "hammer": 1, "known": true, "recipe": "foundation_section_kit"},
+		"doorway_section": {"number": 5, "name": "Doorway", "structure": "doorway_section", "cost": [["lumber", 3], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "doorway_section_kit"},
+		"window_section": {"number": 6, "name": "Window wall", "structure": "window_section", "cost": [["lumber", 3], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "window_section_kit"},
+		"timber_set": {"number": 7, "name": "Timber set", "structure": "timber_set", "cost": [["lumber", 4], ["twine", 1], ["stick", 1]], "station": "", "hammer": 1, "known": true, "recipe": "timber_set_kit"},
+		"ladder": {"number": 8, "name": "Ladder", "structure": "ladder", "cost": [["rough_plank", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true, "recipe": "ladder_kit"},
 		"stone_forge": {
 			"number": 9,
 			"name": "Basic Forge",
@@ -293,6 +133,34 @@
 		"brick_floor": {"number": 21, "name": "Brick floor", "structure": "brick_floor", "cost": [["brick", 20], ["sand", 4]], "station": "", "hammer": 1, "known": true, "recipe": "brick_floor_kit"},
 		"brick_roof": {"number": 22, "name": "Brick roof", "structure": "brick_roof", "cost": [["brick", 16], ["lumber", 6]], "station": "", "hammer": 1, "known": true, "recipe": "brick_roof_kit"},
 		"fireplace": {"number": 23, "name": "Fireplace", "structure": "fireplace", "cost": [["brick", 24], ["mortar", 4], ["clay", 6]], "station": "", "hammer": 1, "known": true, "recipe": "fireplace_kit"},
-		"rough_bed": {"number": 24, "name": "Rough bed", "structure": "rough_bed", "cost": [["thatch", 10], ["stick", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true}
+		"rough_bed": {"number": 24, "name": "Rough bed", "structure": "rough_bed", "cost": [["thatch", 10], ["stick", 4], ["twine", 2]], "station": "", "hammer": 1, "known": true, "retired": true},
+		"lean_to": {"number": 25, "name": "Lean-to", "structure": "lean_to", "cost": [["stick", 30], ["leaves", 200], ["twine", 10]], "station": "", "hammer": 1, "known": true, "recipe": "lean_to_kit"},
+		"chest": {"number": 26, "name": "Woven chest", "structure": "chest", "cost": [["stick", 10], ["twine", 4]], "station": "", "hammer": 1, "known": true, "recipe": "chest_kit"},
+		"plank_chest": {"number": 27, "name": "Plank chest", "structure": "plank_chest", "cost": [["lumber", 8], ["twine", 2], ["hinges", 2]], "station": "workbench", "station_level": 2, "hammer": 1, "known": true, "recipe": "plank_chest_kit"},
+		"campfire_pot": {"number": 28, "name": "Campfire pot", "structure": "campfire_pot", "cost": [["stick", 3], ["twine", 3], ["clay_pot", 1]], "station": "", "hammer": 1, "known": true, "recipe": "campfire_pot_kit"},
+		"thatch_floor": {"number": 29, "name": "Thatch floor", "structure": "thatch_floor", "cost": [["twine", 4], ["thatch", 20]], "station": "workbench", "hammer": 1, "known": true, "recipe": "thatch_floor_kit"},
+		"thatch_wall": {"number": 30, "name": "Thatch wall", "structure": "thatch_wall", "cost": [["twine", 8], ["thatch", 50], ["stick", 15]], "station": "workbench", "hammer": 1, "known": true, "recipe": "thatch_wall_kit"},
+		"thatch_roof": {"number": 31, "name": "Thatch roof", "structure": "thatch_roof", "cost": [["twine", 6], ["thatch", 40], ["stick", 12]], "station": "workbench", "hammer": 1, "known": true, "recipe": "thatch_roof_kit"},
+		"thatch_doorway": {"number": 32, "name": "Thatch doorway", "structure": "thatch_doorway", "cost": [["twine", 6], ["thatch", 25], ["stick", 12]], "station": "workbench", "hammer": 1, "known": true, "recipe": "thatch_doorway_kit"},
+		"workbench": {"number": 33, "name": "Camp bench", "structure": "workbench", "cost": [["stick", 16], ["twine", 6], ["stone", 4]], "station": "", "hammer": 1, "known": true, "recipe": "workbench_kit"},
+		"tool_rack": {"number": 34, "name": "Tool rack", "structure": "tool_rack", "cost": [["stick", 10], ["twine", 4]], "station": "workbench", "hammer": 1, "known": true, "recipe": "tool_rack_kit"},
+		"timber_prop": {"number": 35, "name": "Timber prop", "structure": "timber_prop", "cost": [["log", 1], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "timber_prop_kit"},
+		"stairs_wood": {"number": 36, "name": "Wooden stairs", "structure": "stairs_wood", "cost": [["lumber", 8], ["twine", 2]], "station": "workbench", "hammer": 1, "known": true, "recipe": "stairs_wood_kit"},
+		"stone_floor": {"number": 37, "name": "Stone floor", "structure": "stone_floor", "cost": [["cobblestone", 16], ["sand", 4]], "station": "workbench", "station_level": 2, "hammer": 1, "known": true, "recipe": "stone_floor_kit"},
+		"stone_roof": {"number": 38, "name": "Stone roof", "structure": "stone_roof", "cost": [["stone_shingle", 20], ["lumber", 6]], "station": "workbench", "station_level": 2, "hammer": 1, "known": true, "recipe": "stone_roof_kit"},
+		"log_seat": {"number": 39, "name": "Log seat", "structure": "log_seat", "cost": [["log", 1]], "station": "", "hammer": 1, "known": true, "recipe": "log_seat_kit"},
+		"stool": {"number": 40, "name": "Stool", "structure": "stool", "cost": [["stick", 6], ["twine", 1], ["wooden_pin", 2]], "station": "", "hammer": 1, "known": true, "recipe": "stool_kit"},
+		"bench": {"number": 41, "name": "Bench", "structure": "bench", "cost": [["lumber", 3], ["twine", 1]], "station": "workbench", "hammer": 1, "known": true, "recipe": "bench_kit"},
+		"chair": {"number": 42, "name": "Chair", "structure": "chair", "cost": [["lumber", 4], ["hide", 1], ["wooden_pin", 4]], "station": "workbench", "station_level": 1, "hammer": 1, "known": true, "recipe": "chair_kit"},
+		"table": {"number": 43, "name": "Table", "structure": "table", "cost": [["lumber", 6], ["twine", 2]], "station": "workbench", "station_level": 1, "hammer": 1, "known": true, "recipe": "table_kit"},
+		"hide_rug": {"number": 44, "name": "Hide rug", "structure": "hide_rug", "cost": [["hide", 3], ["sinew", 1]], "station": "", "hammer": 1, "known": true, "recipe": "hide_rug_kit"},
+		"wool_rug": {"number": 45, "name": "Wool rug", "structure": "wool_rug", "cost": [["wool", 4], ["twine", 1]], "station": "", "hammer": 1, "known": false, "recipe": "wool_rug_kit", "locked": true},
+		"straw_bed": {"number": 46, "name": "Straw bed", "structure": "straw_bed", "cost": [["straw", 12], ["stick", 6], ["twine", 2]], "station": "workbench", "hammer": 1, "known": true, "recipe": "straw_bed_kit"},
+		"feather_bed": {"number": 47, "name": "Feather bed", "structure": "feather_bed", "cost": [["thatch", 10], ["feather", 20], ["down", 10], ["fibre_cloth", 2]], "station": "workbench", "station_level": 1, "hammer": 1, "known": true, "recipe": "feather_bed_kit"},
+		"canopy_bed": {"number": 48, "name": "Canopy bed", "structure": "canopy_bed", "cost": [["feather", 30], ["lumber", 8], ["fibre_cloth", 4]], "station": "workbench", "station_level": 2, "hammer": 1, "known": true, "recipe": "canopy_bed_kit"},
+		"wall_torch": {"number": 49, "name": "Wall torch", "structure": "wall_torch", "cost": [["stick", 2], ["tallow", 1]], "station": "", "hammer": 1, "known": true, "recipe": "wall_torch_kit"},
+		"chandelier": {"number": 50, "name": "Candle chandelier", "structure": "chandelier", "cost": [["lumber", 2], ["twine", 2], ["candle", 6]], "station": "workbench", "station_level": 1, "hammer": 1, "known": true, "recipe": "chandelier_kit"},
+		"flower_pot": {"number": 51, "name": "Flower pot", "structure": "flower_pot", "cost": [["clay", 2], ["soil", 1]], "station": "", "hammer": 1, "known": true, "recipe": "flower_pot_kit"},
+		"antler_mount": {"number": 52, "name": "Antler mount", "structure": "antler_mount", "cost": [["antler", 2], ["lumber", 1], ["twine", 1]], "station": "workbench", "hammer": 1, "known": true, "recipe": "antler_mount_kit"}
 	}
 }

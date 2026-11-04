@@ -32,8 +32,15 @@ func _initialize() -> void:
 
 		last = light
 
+	# BUG-009 (Dave's QA list, 3 Nov 2026): no rain or snow falls in a cave, all of it in the open.
+	if not is_equal_approx(WeatherLook.sky_share(0.0), 1.0):
+		failures.append("rain is thinned in the open")
+
+	if WeatherLook.sky_share(0.5) > 0.0 or WeatherLook.sky_share(1.0) > 0.0:
+		failures.append("rain falls in a cave")
+
 	if failures.is_empty():
-		print("Cave light check: 5 pass, 0 fail")
+		print("Cave light check: 7 pass, 0 fail")
 		quit(0)
 	else:
 		for f in failures:

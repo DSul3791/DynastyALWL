@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 540,
+	"next_number": 542,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -260,17 +260,18 @@
 		},
 		"lean_to_kit": {
 			"number": 20,
-			"name": "Small shelter",
+			"retired": true,
+			"name": "Lean-to",
 			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"value": 30
+			"value": 110
 		},
 		"lean_to": {
 			"number": 21,
-			"name": "Small shelter",
+			"name": "Lean-to",
 			"description": "A ridge pole on two forks, with a roof of leaned sticks and boughs down to the ground. Crawl in under it.",
 			"kind": "structure",
 			"stack": 1,
@@ -279,6 +280,7 @@
 		},
 		"chest_kit": {
 			"number": 22,
+			"retired": true,
 			"name": "Woven chest",
 			"description": "Woven sticks and twine. A chest to store things in.",
 			"kind": "placeable",
@@ -351,6 +353,7 @@
 		},
 		"plank_chest_kit": {
 			"number": 28,
+			"retired": true,
 			"future": true,
 			"name": "Plank chest",
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
@@ -528,7 +531,6 @@
 			"stack": 1,
 			"unstackable": true,
 			"capacity_ml": 1500,
-			"future": true,
 			"look_alikes": [],
 			"value": 15
 		},
@@ -538,7 +540,6 @@
 			"description": "A raw animal skin. Scrape and tan it for leather, or sew it into clothes.",
 			"kind": "material",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -637,7 +638,6 @@
 			"kind": "material",
 			"stack": 20,
 			"value": 2,
-			"future": true,
 			"look_alikes": []
 		},
 		"sewing_needle": {
@@ -858,7 +858,6 @@
 			"description": "Fresh meat. Cook it before you eat it, and do not keep it long.",
 			"kind": "food",
 			"stack": 10,
-			"future": true,
 			"value": 8,
 			"look_alikes": []
 		},
@@ -868,7 +867,6 @@
 			"description": "Meat roasted over a fire. Filling, and it keeps a couple of days.",
 			"kind": "food",
 			"stack": 10,
-			"future": true,
 			"value": 14,
 			"look_alikes": []
 		},
@@ -878,7 +876,6 @@
 			"description": "Tough strands from an animal's legs. Makes strong thread and bowstrings.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"value": 3,
 			"look_alikes": []
 		},
@@ -888,7 +885,6 @@
 			"description": "Fat from a kill. Render it for tallow, or cook with it.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"value": 4,
 			"look_alikes": []
 		},
@@ -898,13 +894,13 @@
 			"description": "A bird's feather. Fletch arrows with it, or stuff a bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"value": 1,
 			"sell_lot": 6,
 			"look_alikes": []
 		},
 		"workbench_kit": {
 			"number": 73,
+			"retired": true,
 			"name": "Camp bench",
 			"description": "Lashed sticks and a flat top. Set it down and it counts as a workbench, for better tools.",
 			"kind": "placeable",
@@ -942,7 +938,7 @@
 		},
 		"shore_net": {
 			"number": 260,
-			"name": "Shore net",
+			"name": "Fishing net",
 			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"kind": "tool",
 			"tool_class": "net",
@@ -965,8 +961,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"perch": {
 			"number": 77,
@@ -975,8 +970,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"carp": {
 			"number": 78,
@@ -985,8 +979,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pike": {
 			"number": 79,
@@ -995,8 +988,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 10,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"roast_fish": {
 			"number": 80,
@@ -1005,8 +997,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"coin_copper": {
 			"number": 96,
@@ -1050,6 +1041,7 @@
 		},
 		"tool_rack_kit": {
 			"number": 81,
+			"retired": true,
 			"name": "Tool rack",
 			"description": "Pegs and a crossbar. Set it beside a bench to raise its level.",
 			"kind": "placeable",
@@ -1069,6 +1061,7 @@
 		},
 		"vice_kit": {
 			"number": 83,
+			"retired": true,
 			"name": "Wooden vice",
 			"description": "Two jaws of hardwood that hold work still. Set it beside a camp bench.",
 			"kind": "placeable",
@@ -1089,6 +1082,7 @@
 		},
 		"log_workbench_kit": {
 			"number": 85,
+			"retired": true,
 			"name": "Log workbench",
 			"description": "A heavy log bench with its own rack and vice, ready to set down.",
 			"kind": "placeable",
@@ -1108,6 +1102,7 @@
 		},
 		"stone_forge_kit": {
 			"number": 87,
+			"retired": true,
 			"name": "Basic Forge",
 			"description": "A clay and rough stone dome forge under a log roof, ready to raise.",
 			"kind": "placeable",
@@ -1127,6 +1122,7 @@
 		},
 		"blacksmithy_kit": {
 			"number": 89,
+			"retired": true,
 			"name": "Medium Forge",
 			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
 			"kind": "placeable",
@@ -2272,6 +2268,7 @@
 		},
 		"wall_section_kit": {
 			"number": 192,
+			"retired": true,
 			"name": "Wall section",
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"kind": "placeable",
@@ -2293,6 +2290,7 @@
 		},
 		"floor_section_kit": {
 			"number": 194,
+			"retired": true,
 			"name": "Floor section",
 			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
 			"kind": "placeable",
@@ -2314,6 +2312,7 @@
 		},
 		"roof_section_kit": {
 			"number": 196,
+			"retired": true,
 			"name": "Roof section",
 			"description": "A plank roof on four posts, to set over walls and floors.",
 			"kind": "placeable",
@@ -2335,6 +2334,7 @@
 		},
 		"foundation_section_kit": {
 			"number": 198,
+			"retired": true,
 			"name": "Foundation",
 			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
 			"kind": "placeable",
@@ -2356,6 +2356,7 @@
 		},
 		"doorway_section_kit": {
 			"number": 200,
+			"retired": true,
 			"name": "Doorway",
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"kind": "placeable",
@@ -2377,6 +2378,7 @@
 		},
 		"window_section_kit": {
 			"number": 202,
+			"retired": true,
 			"name": "Window wall",
 			"description": "A plank wall with an opening at chest height to see through.",
 			"kind": "placeable",
@@ -2398,6 +2400,7 @@
 		},
 		"timber_prop_kit": {
 			"number": 204,
+			"retired": true,
 			"name": "Timber prop",
 			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
 			"kind": "placeable",
@@ -2419,6 +2422,7 @@
 		},
 		"timber_set_kit": {
 			"number": 206,
+			"retired": true,
 			"name": "Timber set",
 			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
 			"kind": "placeable",
@@ -2467,6 +2471,7 @@
 		},
 		"ladder_kit": {
 			"number": 211,
+			"retired": true,
 			"name": "Ladder",
 			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
 			"kind": "placeable",
@@ -2886,9 +2891,9 @@
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
-			"stack": 20,
+			"stack": 40,
 			"look_alikes": [],
-			"value": 8
+			"value": 2
 		},
 		"wooden_pin": {
 			"number": 233,
@@ -2903,7 +2908,7 @@
 		"wooden_block": {
 			"number": 234,
 			"name": "Wooden block",
-			"description": "A short round of log. Split it on a chopping block.",
+			"description": "A short round of a small log, bark still on. Burns longer than firewood, or split it on a chopping block.",
 			"kind": "material",
 			"pile": {"shape": "logs", "handful": 5, "color": [0.40, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true},
 			"stack": 10,
@@ -2924,7 +2929,7 @@
 		"wooden_block_soft": {
 			"number": 237,
 			"name": "Softwood block",
-			"description": "A short round of pine, spruce or fir log, about 30 cm long. Split it on a chopping block.",
+			"description": "A short round of a small pine, spruce or fir log, bark still on, about 30 cm long. Burns longer than soft firewood, or split it on a chopping block.",
 			"kind": "material",
 			"pile": {"shape": "logs", "handful": 5, "color": [0.46, 0.31, 0.2], "len": 0.3, "radius": 0.09, "round": true},
 			"stack": 10,
@@ -2953,6 +2958,7 @@
 		},
 		"saw_mill_kit": {
 			"number": 240,
+			"retired": true,
 			"name": "Sawmill",
 			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
 			"kind": "placeable",
@@ -2972,6 +2978,7 @@
 		},
 		"woodworking_table_kit": {
 			"number": 242,
+			"retired": true,
 			"name": "Woodworking table",
 			"description": "A heavy table with vices and clamps for fine woodwork. Set it down in a workshop.",
 			"kind": "placeable",
@@ -3118,6 +3125,7 @@
 		},
 		"thatch_wall_kit": {
 			"number": 252,
+			"retired": true,
 			"name": "Thatch wall",
 			"description": "Bundled thatch on a frame of sticks. Set it up to close in a shelter.",
 			"kind": "placeable",
@@ -3137,6 +3145,7 @@
 		},
 		"campfire_pot_kit": {
 			"number": 254,
+			"retired": true,
 			"name": "Campfire pot",
 			"description": "A pot on sticks and a chain. Hang it on a small fire to cook stews. The fire stays at firewood.",
 			"kind": "placeable",
@@ -3156,6 +3165,7 @@
 		},
 		"clay_hearth_kit": {
 			"number": 256,
+			"retired": true,
 			"name": "Clay hearth",
 			"description": "Stones and clay built into a low hearth with a spit. Cooks better than an open fire.",
 			"kind": "placeable",
@@ -3175,6 +3185,7 @@
 		},
 		"thatch_floor_kit": {
 			"number": 261,
+			"retired": true,
 			"name": "Thatch floor",
 			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
 			"kind": "placeable",
@@ -3194,6 +3205,7 @@
 		},
 		"thatch_roof_kit": {
 			"number": 263,
+			"retired": true,
 			"name": "Thatch roof",
 			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
 			"kind": "placeable",
@@ -3213,6 +3225,7 @@
 		},
 		"thatch_doorway_kit": {
 			"number": 265,
+			"retired": true,
 			"name": "Thatch doorway",
 			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
 			"kind": "placeable",
@@ -3292,6 +3305,7 @@
 		},
 		"oven_kit": {
 			"number": 268,
+			"retired": true,
 			"name": "Basic Oven",
 			"description": "A brick oven, built with a hammer next to a clay hearth.",
 			"kind": "placeable",
@@ -3773,7 +3787,7 @@
 			"description": "Comfrey worked into fat. Soothes burns and sore skin.",
 			"kind": "medicine",
 			"stack": 10,
-			"note": "Placeholder: heals once health exists.",
+			"note": "Eat (use) it to restore 25 health (vitals.json heal).",
 			"look_alikes": [],
 			"value": 12
 		},
@@ -3783,7 +3797,7 @@
 			"description": "Two straight sticks bound to a limb to hold a broken bone still.",
 			"kind": "medicine",
 			"stack": 5,
-			"note": "Placeholder: sets a break once injuries exist.",
+			"note": "Use it to end a limp at once (vitals.json limp cure_items).",
 			"look_alikes": [],
 			"value": 6
 		},
@@ -4230,7 +4244,6 @@
 			"description": "Seeds for sowing wheat. Plant them in a tilled bed in spring.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4241,7 +4254,6 @@
 			"description": "Seeds for sowing barley. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4323,7 +4335,6 @@
 			"description": "A shed or taken antler. Hard, and can be worked like bone.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -4333,9 +4344,8 @@
 			"description": "A boar's curved tusk. Ivory-hard.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
-			"value": 8
+			"value": 20
 		},
 		"claw": {
 			"number": 348,
@@ -4343,9 +4353,8 @@
 			"description": "A large predator's claw. A trophy or a charm.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
-			"value": 6
+			"value": 12
 		},
 		"down": {
 			"number": 349,
@@ -4353,7 +4362,6 @@
 			"description": "Soft insulating feathers from a water bird. Warm for its weight.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4460,7 +4468,6 @@
 			"description": "Dark, rich meat from a seal. Cook it well.",
 			"kind": "food",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 5
 		},
@@ -4497,7 +4504,6 @@
 			"description": "Seal meat roasted over a fire. Rich and fatty.",
 			"kind": "food",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 14
 		},
@@ -4700,7 +4706,6 @@
 			"description": "Seeds for sowing oats. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -4711,7 +4716,6 @@
 			"description": "Seeds for sowing rye. Plant in a tilled bed.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
@@ -5531,6 +5535,7 @@
 		},
 		"stairs_wood_kit": {
 			"number": 462,
+			"retired": true,
 			"name": "Wooden stairs",
 			"description": "Planks and twine for a flight of stairs. Set it against a floor edge to climb up.",
 			"kind": "placeable",
@@ -5550,6 +5555,7 @@
 		},
 		"log_wall_kit": {
 			"number": 464,
+			"retired": true,
 			"name": "Log wall",
 			"description": "Round logs lashed in a wall, two metres wide. Warm and sturdy.",
 			"kind": "placeable",
@@ -5569,6 +5575,7 @@
 		},
 		"log_floor_kit": {
 			"number": 466,
+			"retired": true,
 			"name": "Log floor",
 			"description": "Logs laid side by side on a frame. A rough, strong floor.",
 			"kind": "placeable",
@@ -5588,6 +5595,7 @@
 		},
 		"log_roof_kit": {
 			"number": 468,
+			"retired": true,
 			"name": "Log roof",
 			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
 			"kind": "placeable",
@@ -5607,6 +5615,7 @@
 		},
 		"stone_wall_kit": {
 			"number": 470,
+			"retired": true,
 			"name": "Stone wall",
 			"description": "Cut stone laid in mortar, two metres wide. Fire proof and strong.",
 			"kind": "placeable",
@@ -5626,6 +5635,7 @@
 		},
 		"stone_floor_kit": {
 			"number": 472,
+			"retired": true,
 			"name": "Stone floor",
 			"description": "Cobbles bedded in sand. A hard dry floor.",
 			"kind": "placeable",
@@ -5645,6 +5655,7 @@
 		},
 		"stone_roof_kit": {
 			"number": 474,
+			"retired": true,
 			"name": "Stone roof",
 			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
 			"kind": "placeable",
@@ -5664,6 +5675,7 @@
 		},
 		"brick_wall_kit": {
 			"number": 476,
+			"retired": true,
 			"name": "Brick wall",
 			"description": "Fired bricks laid in mortar, two metres wide.",
 			"kind": "placeable",
@@ -5683,6 +5695,7 @@
 		},
 		"brick_floor_kit": {
 			"number": 478,
+			"retired": true,
 			"name": "Brick floor",
 			"description": "Bricks laid on sand. A smooth hard floor.",
 			"kind": "placeable",
@@ -5702,6 +5715,7 @@
 		},
 		"brick_roof_kit": {
 			"number": 480,
+			"retired": true,
 			"name": "Brick roof",
 			"description": "Fired tiles on a timber frame. Dry and durable.",
 			"kind": "placeable",
@@ -5721,6 +5735,7 @@
 		},
 		"log_cabin_set_kit": {
 			"number": 482,
+			"retired": true,
 			"name": "Log cabin set",
 			"description": "Four log walls, a log floor and a log roof as one bundle. Sets out a small cabin.",
 			"kind": "placeable",
@@ -5783,6 +5798,7 @@
 		},
 		"log_seat_kit": {
 			"number": 487,
+			"retired": true,
 			"name": "Log seat",
 			"description": "A log set on end with the top flattened. Sit on it by the fire.",
 			"kind": "placeable",
@@ -5793,6 +5809,7 @@
 		},
 		"stool_kit": {
 			"number": 501,
+			"retired": true,
 			"name": "Stool",
 			"description": "A three-legged stool of lashed sticks. Sit on it by the fire.",
 			"kind": "placeable",
@@ -5939,6 +5956,7 @@
 		},
 		"bench_kit": {
 			"number": 488,
+			"retired": true,
 			"name": "Bench",
 			"description": "A plank seat on four legs. Seats you by the fire and adds comfort.",
 			"kind": "placeable",
@@ -5949,6 +5967,7 @@
 		},
 		"chair_kit": {
 			"number": 489,
+			"retired": true,
 			"name": "Chair",
 			"description": "A plank chair with a hide seat. More comfortable than a bench.",
 			"kind": "placeable",
@@ -5959,6 +5978,7 @@
 		},
 		"table_kit": {
 			"number": 490,
+			"retired": true,
 			"name": "Table",
 			"description": "A plank table to eat and work at. Adds comfort to a camp.",
 			"kind": "placeable",
@@ -5969,6 +5989,7 @@
 		},
 		"hide_rug_kit": {
 			"number": 491,
+			"retired": true,
 			"name": "Hide rug",
 			"description": "A tanned hide spread on the floor. Warm underfoot.",
 			"kind": "placeable",
@@ -5979,6 +6000,7 @@
 		},
 		"wool_rug_kit": {
 			"number": 492,
+			"retired": true,
 			"name": "Wool rug",
 			"description": "A thick wool rug. Warmer and softer than hide.",
 			"kind": "placeable",
@@ -5990,6 +6012,7 @@
 		},
 		"straw_bed_kit": {
 			"number": 493,
+			"retired": true,
 			"name": "Straw bed",
 			"description": "A frame stuffed with clean straw. Softer than a rough bed.",
 			"kind": "placeable",
@@ -6000,6 +6023,7 @@
 		},
 		"feather_bed_kit": {
 			"number": 494,
+			"retired": true,
 			"name": "Feather bed",
 			"description": "A rough bed topped with feathers and a wool blanket.",
 			"kind": "placeable",
@@ -6010,6 +6034,7 @@
 		},
 		"canopy_bed_kit": {
 			"number": 495,
+			"retired": true,
 			"name": "Canopy bed",
 			"description": "A feather bed under a timber canopy with linen curtains.",
 			"kind": "placeable",
@@ -6020,6 +6045,7 @@
 		},
 		"wall_torch_kit": {
 			"number": 496,
+			"retired": true,
 			"name": "Wall torch",
 			"description": "A torch in a bracket on a post. Lights a camp; light it first.",
 			"kind": "placeable",
@@ -6030,6 +6056,7 @@
 		},
 		"chandelier_kit": {
 			"number": 497,
+			"retired": true,
 			"name": "Candle chandelier",
 			"description": "A wooden hoop hung from a beam, with six candles. Light them first.",
 			"kind": "placeable",
@@ -6040,6 +6067,7 @@
 		},
 		"fireplace_kit": {
 			"number": 498,
+			"retired": true,
 			"name": "Fireplace",
 			"description": "A brick hearth with a chimney. Warm and bright; light it first.",
 			"kind": "placeable",
@@ -6050,6 +6078,7 @@
 		},
 		"flower_pot_kit": {
 			"number": 499,
+			"retired": true,
 			"name": "Flower pot",
 			"description": "A clay pot of soil with a living plant.",
 			"kind": "placeable",
@@ -6060,6 +6089,7 @@
 		},
 		"antler_mount_kit": {
 			"number": 500,
+			"retired": true,
 			"name": "Antler mount",
 			"description": "A pair of antlers on a plaque. A hunter's trophy.",
 			"kind": "placeable",
@@ -6262,6 +6292,26 @@
 			"name": "Sunsilver vine bush",
 			"description": "A sunsilver vine bush dug up whole, roots and all. Plant it again somewhere else.",
 			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"wooden_block_large": {
+			"number": 540,
+			"name": "Large wooden block",
+			"description": "A thick round of a big trunk, bark still on. Split it into 4 firewood on a chopping block, or make a chopping block of it.",
+			"kind": "material",
+			"pile": {"shape": "logs", "handful": 3, "color": [0.40, 0.27, 0.17], "len": 0.4, "radius": 0.2, "round": true},
+			"stack": 5,
+			"look_alikes": [],
+			"value": 8
+		},
+		"wooden_block_soft_large": {
+			"number": 541,
+			"name": "Large softwood block",
+			"description": "A thick round of a big pine, spruce or fir trunk, bark still on. Split it into 4 soft firewood on a chopping block, or make a chopping block of it.",
+			"kind": "material",
+			"pile": {"shape": "logs", "handful": 3, "color": [0.46, 0.31, 0.2], "len": 0.4, "radius": 0.2, "round": true},
 			"stack": 5,
 			"look_alikes": [],
 			"value": 6

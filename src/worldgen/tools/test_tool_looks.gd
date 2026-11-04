@@ -141,7 +141,7 @@ func _init() -> void:
 		_check(tool_tris >= 100 and tool_tris <= 1200, id + ": %d triangles" % tool_tris)
 
 	_check(BasicLook.mesh_for("spear").get_aabb().size.x > 1.1 and BasicLook.mesh_for("spear").get_aabb().size.x < 1.4, "spear: about 1.3 m")
-	_check(BasicLook.mesh_for("spear").get_surface_count() == 2, "spear: iron head on the metal surface")
+	_check(BasicLook.mesh_for("spear").get_surface_count() == 1, "stone spear: a matt knapped stone point, no metal surface (Kathleen 3 Nov: the item is the Stone spear)")
 	_check(BasicLook.mesh_for("wooden_spear").get_surface_count() == 1, "wooden spear: one plain surface")
 	_check(BasicLook.mesh_for("fishing_rod").get_aabb().size.x > 1.5 and BasicLook.mesh_for("fishing_rod").get_aabb().size.x < 1.7, "fishing rod: about 1.6 m")
 	_check(BasicLook.mesh_for("wooden_pin").get_aabb().size.x < 0.15, "wooden pin: a short peg")

@@ -130,6 +130,28 @@ void fragment() {
 }
 """
 
+# Wildflower heads (petals, umbels, spikes; Kathreen 3 Nov 2026): plain vertex colour, soft light through the petals, swaying exactly like the stems (the bark shader's
+# gust), so a head stays on its stem. They used the bark material, whose bark texture, ground shade and foot moss turned white chamomile and yarrow grey-blue and speckled.
+const PETAL_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled, cull_disabled;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = COLOR.rgb;
+	BACKLIGHT = COLOR.rgb * 0.35;
+	ROUGHNESS = 0.75;
+}
+"""
+
 # Fruit on a fruit tree (apples, pears, cherries; Dave 2026-10-31: the drawn fruit thins out as the tree is picked). tree_builder.gd gives every fruit a rank 0..1 in the vertex
 # alpha (spread evenly) and its colour in the vertex rgb. INSTANCE_CUSTOM.a is the share of the fruit already PICKED (0 = none, the default, so every unwired tree keeps all
 # its fruit; 0.34, 0.67, 0.9, 1.0 for the 66, 33, 10 and 0 percent levels): a fruit whose rank is at or above 1 - picked is not drawn. INSTANCE_CUSTOM.rgb is the tree's leaf tint
@@ -937,6 +959,11 @@ func _make_tree_materials() -> void:
 	var fruit_material: ShaderMaterial = ShaderMaterial.new()
 	fruit_material.shader = fruit_shader
 	_tree_materials["fruit"] = fruit_material
+	var petal_shader: Shader = Shader.new()
+	petal_shader.code = PETAL_SHADER
+	var petal_material: ShaderMaterial = ShaderMaterial.new()
+	petal_material.shader = petal_shader
+	_tree_materials["petal"] = petal_material
 	var chrome: Shader = Shader.new()
 	chrome.code = CHROME_SHADER
 	var chrome_material: ShaderMaterial = ShaderMaterial.new()
@@ -3019,6 +3046,9 @@ func _autumn_color(id: int, palette: Array[Color] = AUTUMN) -> Color:
 
 # The foliage tint for a species: grasses stay near the painted blade color,
 # flowers show their bloom color, the rest take the species green.
+const FLOWER_LEAF := Color(0.3, 0.46, 0.2)     # a meadow herb's leaf green before the 1.9 lift (alpine flowers' own colour)
+
+
 static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 	var base: Color = Color(float(c[0]), float(c[1]), float(c[2]))
 	var shape: String = str(entry["shape"])
@@ -3027,7 +3057,11 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 		return Color(1.0, 1.0, 1.0).lerp(_natural(base) * 2.2, 0.3)
 
 	if shape == "flower":
-		return base * 1.9
+		# The flower table's colour is the BLOOM colour (owlpetal pale blue, frostglass white, sea holly blue), but this tint lands on the leaves only (the heads carry
+		# their own petal colour, tree_builder.gd WILDFLOWER_LOOKS), so pale-flowered plants grew grey-white leaf clumps (Kathreen 3 Nov 2026). Leaves are a natural
+		# green with a quarter of the species colour, so a dark fantasy flower still has darker foliage. A row can name "leaf_color" to choose its own.
+		var leaf: Color = Color(float(entry["leaf_color"][0]), float(entry["leaf_color"][1]), float(entry["leaf_color"][2])) if entry.has("leaf_color") else FLOWER_LEAF.lerp(base, 0.25)
+		return leaf * 1.9
 
 	if shape == "mushroom":
 		return Color(1.0, 1.0, 1.0)   # modelled with its own colours (tree_builder MUSHROOM_LOOKS)

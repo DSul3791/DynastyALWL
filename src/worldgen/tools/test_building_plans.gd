@@ -27,13 +27,13 @@ func _init() -> void:
 		{"pos": Vector3(100.0, 10.3, 104.0), "state": 50, "yaw": 90.0, "piece": true},   # a log wall, a step above the floor
 		{"pos": Vector3(100.0, 10.0, 100.0), "state": 51, "yaw": 90.0, "piece": true},   # a log floor: the lowest, so the anchor
 		{"pos": Vector3(300.0, 10.0, 300.0), "state": 50, "yaw": 0.0, "piece": true},    # another house far away: not part of it
-		{"pos": Vector3(102.0, 10.0, 102.0), "state": 22, "yaw": 0.0, "piece": true},    # a kit wall beside it: no blueprint, counted as skipped
+		{"pos": Vector3(102.0, 10.0, 102.0), "state": 20, "yaw": 0.0, "piece": true},    # a large forge beside it: no blueprint, counted as skipped
 	]
 	var states: Dictionary = {50: 16, 51: 17}
 	check(Plans.capture(rows, states, Vector3(0.0, 0.0, 0.0)).is_empty(), "nothing placeable near the aim saves nothing")
 	var found: Dictionary = Plans.capture(rows, states, Vector3(100.0, 10.0, 101.0))
 	check(not found.is_empty() and found["plan"]["pieces"].size() == 2, "the floor and the wall joined to it are captured, the far house is not")
-	check(int(found["skipped"]) == 1, "the kit wall beside it is reported as left out (%s)" % str(found.get("skipped")))
+	check(int(found["skipped"]) == 1, "the forge beside it is reported as left out (%s)" % str(found.get("skipped")))
 	var plan: Dictionary = found["plan"]
 	check(int(plan["pieces"][0]["bp"]) == 17 and float(plan["pieces"][0]["dy"]) == 0.0, "the lowest piece is the anchor and comes first")
 	var back: Array = Plans.placements(plan, Vector3(100.0, 10.0, 100.0), 90.0)
@@ -51,7 +51,7 @@ func _init() -> void:
 	check(bool(saved["ok"]) and saved["name"] == "Plan 1" and int(saved["pieces"]) == 2, "the menu saves a plan as Plan 1")
 	check(not bool(list.save_plan_near(rows, Vector3(0.0, 0.0, 0.0))["ok"]), "saving with nothing near says no")
 	var entries: Array = list.entries(1)
-	check(entries[0]["kind"] == "save" and entries[entries.size() - 1]["kind"] == "plan", "the menu has Save building plan first and the plan last")
+	check(entries[0]["kind"] == "repair" and entries[1]["kind"] == "save" and entries[entries.size() - 1]["kind"] == "plan", "the menu has Repair, Save building plan, the blueprints, then the plan last")
 	check(not list.can_afford(1) and not bool(entries[entries.size() - 1]["can"]), "an empty pack cannot afford the plan")
 
 	var again = ListScript.new()
@@ -73,12 +73,14 @@ func _init() -> void:
 	again.choose(1)   # the highlight starts on the picked plan, so this keeps it
 	check(again.plan_picked == 0, "the highlight starts on the picked plan")
 	again.set_open(true, 1)
-	again.move(true, 1)   # wraps to the first row: Save building plan
+	again.move(true, 1)   # wraps to the first row: Repair
+	again.move(true, 1)   # then Save building plan
 	again.choose(1)
 	check(again.mode == "save" and again.picked == 0 and again.plan_picked == -1, "Save building plan switches the hammer to saving")
 	check(again.delete_highlighted(1) == "", "Delete on Save building plan removes nothing")
-	again.set_open(true, 1)
-	again.move(false, 1)
+	again.set_open(true, 1)   # the highlight starts on Save building plan (second row)
+	again.move(false, 1)      # up to Repair
+	again.move(false, 1)      # wraps to the last row: the plan
 	check(again.delete_highlighted(1) == "Plan 1" and again.plans.plans.is_empty(), "Delete on a plan removes it")
 	again.clear()
 	check(again.mode == "place", "putting the hammer away clears saving")

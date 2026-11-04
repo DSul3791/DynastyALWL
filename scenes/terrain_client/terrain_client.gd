@@ -64,6 +64,7 @@ const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
+const BurrowViewScript := preload("res://src/client/burrow_view.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
@@ -120,6 +121,7 @@ const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const RECENT_CUT_MSEC := 60000   # how long a cut tree is kept out of flora chunks arriving late (BUG-024)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
@@ -181,13 +183,13 @@ const SPACE_WAKE_S := 1.0               # hold Space this long to wake from slee
 const WALK_SPEED := 1.4
 const FAST := 3.0                     # flying: Shift multiplier
 const JOG_SPEED := 3.2
-const RUN_SPEED := 6.0
+const RUN_SPEED := 9.0                # BUG-011 (Dave 2026-11-04): +50 percent over 6.0. The run animation and stride rate stay at the old 6 m/s cadence: STEP_M[2] and avatar_driver RUN_CLIP_PACE
 # Walking camera (all tuning is here; each list is [walk, jog, run]). A footfall
 # is the lowest point of the bob and the far end of the sway: left foot, camera
 # down and leaning left; midway it rises back to the middle; right foot, down
 # and leaning right. The bob therefore repeats every step and the sway every
 # two steps.
-const STEP_M := [0.75, 1.2, 2.0]         # metres per step: longer strides when faster (about 1.9, 2.7 and 3.0 steps a second at the natural speeds)
+const STEP_M := [0.75, 1.2, 3.0]         # metres per step: longer strides when faster (about 1.9, 2.7 and 3.0 steps a second at the natural speeds; the run stride was 2.0 m at 6 m/s, now 3.0 m at 9 m/s, same cadence)
 const BOB_M := [0.040, 0.052, 0.064]     # how far the camera dips at a footfall
 const SWAY_M := [0.012, 0.016, 0.020]    # sideways shift at a footfall
 const SWAY_DEG := [0.10, 0.13, 0.16]     # roll toward the stepping side at a footfall
@@ -415,6 +417,7 @@ var lag_run: Node = null               # --lag-run: the scripted early-game lag 
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
 var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
 var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
+var test_net: bool = false               # --net: hold the fishing net and click with it, pack before and after (NET TEST lines, BUG-022)
 var test_snare: bool = false             # --snare: set a snare and wait for a carcass (SNARE TEST lines; server knob traps.json test_chance)
 var test_place_foundation: bool = false   # --place-foundation: give a thatch floor kit and place it ahead (FOUNDATION TEST lines)
 var test_creatures: bool = false
@@ -478,6 +481,7 @@ var _viewer: VoxelViewer
 var _sun: DirectionalLight3D
 var _frame_ms: Array = []             # recent frame times for the HUD readout
 var test_cut: bool = false
+var _recent_cuts: Dictionary = {}     # held chunk -> {item id: msec the cut came in} (BUG-024; see _apply_incoming)
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
@@ -761,6 +765,8 @@ func _ready() -> void:
 			test_sleep = true
 		elif argument == "--snare":
 			test_snare = true
+		elif argument == "--net":
+			test_net = true
 		elif argument == "--creatures":
 			test_creatures = true
 
@@ -797,6 +803,9 @@ func _ready() -> void:
 	net.died_received.connect(_on_died)
 	net.final_death_received.connect(_on_final_death)
 	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void:
+		if sound != null:
+			sound.spear.hit("flesh", at, SoundStageScript.SpearScript.hit_strength(amount))   # the hit lands: a jab, a thrown spear or an arrow in an animal (the numbers setting does not mute it)
+
 		if display.damage_numbers:
 			HitNumbersScript.spawn(self, at, amount))
 	net.start_at_received.connect(_on_start_at)
@@ -1130,6 +1139,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.ground_below = _ground_below
+	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
@@ -1286,6 +1296,12 @@ func _welcome_body(info: Dictionary) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
 	net.blood_received.connect(animal_view.on_blood)
+	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
+	burrow_view.name = "Burrows"
+	burrow_view.ground_at = _ground_below
+	add_child(burrow_view)
+	net.burrows_received.connect(burrow_view.on_burrows)
+	net.burrows_received.connect(_on_burrows_for_grass)
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)
@@ -1313,6 +1329,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.is_inspecting = func(): return inspecting
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
+	items.lie_on_bed = _lie_on_bed
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)
 
@@ -1332,6 +1349,14 @@ func _welcome_body(info: Dictionary) -> void:
 		held.play_gather()
 		feel.strike(0.0, 0.3)
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
+	items.worn_event = func(changed: Array, ids: Array) -> void:
+		if not test_gear:
+			sound.gear.set_worn(SoundStageScript.GearScript.layers_for(ids))   # what is worn rustles, creaks or clinks on every step (--test-gear keeps its own set)
+
+		if not changed.is_empty():
+			sound.gear.dress(str(changed[0]))   # one sound for a change (a swap sends both pieces in one list)
+	items.skill_up_event = func() -> void: sound.slots.play("skill_tock", body.global_position + Vector3(0.0, 1.5, 0.0))   # a skill rises: a soft wooden tock (the skill group cools down 20 s)
+	items.hurt_event = func(lost: int) -> void: sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
@@ -1453,6 +1478,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_snare:
 		items.run_snare_test(self)
+
+	if test_net:
+		held.run_net_test()
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
@@ -1649,6 +1677,17 @@ var wet_gap_override: float = -1.0     # look rig (--shot-wet=GAP): pretend this
 var cavein_death                      # the cave-in death sequence (src/client/cavein_death.gd), made at the first one
 var showroom                          # the admin showroom at spawn (src/client/showroom.gd), shown while Admin mode is on
 var _cleared_key: int = 0
+var _burrow_spots: Array = []      # burrow mound spots from the server (burrow_view draws them), kept bare of grass
+
+
+func _on_burrows_for_grass(points: PackedVector3Array) -> void:
+	_burrow_spots = []
+
+	for point in points:
+		_burrow_spots.append(Vector3(snappedf(point.x, 0.01), point.y, snappedf(point.z, 0.01)))
+
+	if grass != null and items != null:
+		_sync_cleared()
 var _switches_applied: bool = false
 var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)
 var _cleared_cfg: Dictionary = {}
@@ -1763,6 +1802,10 @@ func _sync_cleared() -> void:
 
 	_loose_segs = segs_now
 
+	for mound in _burrow_spots:      # rabbit burrow mounds are 0.13 m high: no grass stands through them (same bare patch as a path)
+		paths.append(mound)
+		key = key ^ hash(Vector2(mound.x, mound.z))
+
 	for boulder_id in items._boulders:
 		var boulder: Dictionary = items._boulders[boulder_id]
 		var rock_r: float = float(boulder.get("now", boulder.get("radius", 0.5)))
@@ -1865,7 +1908,7 @@ func _water_ahead() -> bool:
 		var spot: Vector3 = body.global_position + forward * step
 		var surface: float = flora.water_surface_at(spot.x, spot.z)
 
-		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.MIN_DEPTH_M:
+		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
 			return true
 
 	return false
@@ -1966,6 +2009,37 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+	_respawn_gasp()
+
+
+# Back at the respawn point after a death: the player comes to with a sharp breath (batch3 slot respawn_gasp), so a death is not a
+# silent jump. Played at the new spot, after the body moved.
+func _respawn_gasp() -> void:
+	if sound != null:
+		sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
+
+
+# The built floor under the feet for the footsteps (sound_stage.floor_under): a short ray down hits a placed piece whose model carries
+# "floor_sound" (inventory_view._model_for_state, structure_look.step_surface), or "" on natural ground.
+func _floor_under(feet: Vector3) -> String:
+	if body == null:
+		return ""
+
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(feet + Vector3(0.0, 0.3, 0.0), feet - Vector3(0.0, 0.3, 0.0))
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	var node: Node = hit.get("collider") if not hit.is_empty() else null
+
+	for _i in 3:
+		if node == null:
+			break
+
+		if node.has_meta("floor_sound"):
+			return str(node.get_meta("floor_sound"))
+
+		node = node.get_parent()
+
+	return ""
 
 
 # The end of the cave-in death sequence: back at the respawn point, as any other death does at once.
@@ -1977,6 +2051,7 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+	_respawn_gasp()
 
 
 var _water_key: Dictionary = {}   # chunk -> hash of the water bytes last received for it (unchanged water is not redrawn)
@@ -2090,6 +2165,21 @@ func _apply_incoming() -> void:
 				Probe.stop("flora chunk in", t)
 				continue
 
+			# BUG-024: the server makes chunks on worker threads, so one made just before a cut can arrive after the cut message
+			# and would put the felled tree back, near or far. Trees cut in the last minute are left out of what arrives.
+			if _recent_cuts.has(chunk):
+				var cuts: Dictionary = _recent_cuts[chunk]
+				var now_msec: int = Time.get_ticks_msec()
+
+				for cut_id in cuts.keys():
+					if now_msec - int(cuts[cut_id]) > RECENT_CUT_MSEC:
+						cuts.erase(cut_id)
+
+				if cuts.is_empty():
+					_recent_cuts.erase(chunk)
+				else:
+					result["items"] = PlacerScript.without(result["items"], cuts)
+
 			if flora.has_chunk(chunk):
 				flora.replace_items(chunk, result["items"], _anchor, full)
 			else:
@@ -2162,6 +2252,9 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 		add_child(_cave_streams)
 
 	_cave_streams.show_tile(tile, streams)
+
+	if sound != null:
+		sound.cavewater.set_tile(tile, streams)       # the water inside the cave makes its sound (cave_water_sounds.gd)
 
 
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
@@ -2334,6 +2427,11 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	for held in _flora_asked:
 		if posmod(held.x - chunk.x, period) == 0 and posmod(held.y - chunk.y, period) == 0:
 			flora.remove_item(held, id, _anchor)
+
+			if not _recent_cuts.has(held):
+				_recent_cuts[held] = {}
+
+			_recent_cuts[held][id] = Time.get_ticks_msec()
 
 	_flora_cuts += 1
 	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
@@ -2854,8 +2952,14 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	world["starter_stamp"] = starter_stamp
 	_reload_ground()
 
+	if sound != null:
+		sound.trees.forget()
+
 	if _cave_streams != null:
 		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
+
+	if sound != null:
+		sound.cavewater.clear()
 
 	for tile in cave_dens.keys():
 		cave_dens_changed.emit(tile, PackedVector3Array())
@@ -2991,6 +3095,12 @@ func _inspect_target() -> String:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin + direction * 30.0)
 	query.exclude = [body.get_rid()]
 	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	# Water has no collision: name it when the look crosses its surface before anything solid (Dave's QA list BUG-015, 3 Nov 2026: shallow
+	# water among reeds named nothing). A reed standing above the water is hit first and keeps its own name.
+	var water_m: float = _water_on_look(origin, direction, 30.0 if hit.is_empty() else origin.distance_to(hit["position"]))
+
+	if water_m >= 0.0:
+		return "Water — Press E to Drink" if items != null and items.thirst < 100 and _water_ahead() else "Water"
 
 	if hit.is_empty():
 		return ""
@@ -3025,6 +3135,26 @@ func _inspect_target() -> String:
 		return lying
 
 	return _ground_name(point - hit["normal"] * 0.4)
+
+
+# How far along a look the water surface is first crossed going down into it, -1 when it is not (steps of half a metre).
+func _water_on_look(origin: Vector3, direction: Vector3, length: float) -> float:
+	if flora == null:
+		return -1.0
+
+	var step: float = 0.5
+	var d: float = step
+
+	while d <= length + 0.001:
+		var p: Vector3 = origin + direction * minf(d, length)
+		var surface: float = flora.water_surface_at(p.x, p.z)
+
+		if not is_nan(surface) and p.y <= surface and origin.y > surface and WaterVolume.depth(surface, _ground_below(p)) >= WaterVolume.DRINK_DEPTH_M:
+			return d
+
+		d += step
+
+	return -1.0
 
 
 # The ore, rock or soil at a point in the ground, as this character knows it. Owner
@@ -3478,6 +3608,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_R and not event.ctrl_pressed and items != null and not items.open:
 			if held != null:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
+		elif event.keycode == KEY_H and not event.ctrl_pressed and _horizon != null:
+			_horizon.toggle()   # the inclination ruler underground (Dave 4 Nov 2026); off until asked for
 		elif event.keycode == KEY_F:
 			if items != null and not flying:
 				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is G); with a log on the shoulder and nothing to open, F twice puts the log down
@@ -3581,6 +3713,17 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 
 		if items != null:
 			items.request_stance(stance.stance)   # the server: sitting and lying bring exertion down
+
+
+# E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down.
+func _lie_on_bed(bed_pos: Vector3, yaw_deg: float) -> void:
+	if swimming:
+		return
+
+	body.velocity = Vector3.ZERO
+	body.global_position = Vector3(bed_pos.x, bed_pos.y + 0.5 + float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5, bed_pos.z)
+	body.rotation.y = deg_to_rad(yaw_deg)
+	_set_stance(StanceScript.LIE)
 
 
 # The server's answer (or its own change: fainting forces lying, walking off stands you up).
@@ -3854,6 +3997,13 @@ func _water_here() -> Dictionary:
 	var here: Vector3 = body.global_position
 	var surface: float = flora.water_surface_at(here.x, here.z) if flora != null else NAN
 
+	# A spring cave's pool (BUG-008: 20 m deep) lies under the ground the water grid knows: swim in it there.
+	if (is_nan(surface) or surface < here.y - 3.0) and _cave_streams != null:
+		var pool: float = _cave_streams.pool_surface_at(here)
+
+		if not is_nan(pool):
+			surface = pool
+
 	if is_nan(surface) and here.y > 2.0:
 		return {}
 
@@ -3888,7 +4038,9 @@ func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool
 	var down: bool = Input.is_key_pressed(KEY_CTRL) and strain_cap >= 0.0
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, items.breath_ds >= 0 and items.breath_ds < 100)
+	# BUG-028: W / S swim along the view, so looking up rises and looking down dives; Space and Ctrl still do.
+	var stroke_vy: float = 0.0 if strain_cap < 0.0 else SwimScript.pitch_wish(camera.rotation.x, float(Input.is_key_pressed(KEY_W)) - float(Input.is_key_pressed(KEY_S)), horizontal.length())
+	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, stroke_vy)
 
 	# Under a floe or an ice sheet: with no stroke given, drift gently out to the nearest open water.
 	if now >= _under_ice_next_msec:
@@ -5636,6 +5788,13 @@ func _update_underwater() -> void:
 	# is the top of the film, tens of m above the eye. Now the blended surface at the eye's own
 	# spot, and the water there must be deeper than a film.
 	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 else NAN
+
+	if eye.y >= 0.0 and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
+		var pool: float = _cave_streams.pool_surface_at(eye)   # a spring cave's deep pool (BUG-008)
+
+		if not is_nan(pool):
+			surface = pool
+
 	var under: bool = eye.y < 0.0
 
 	if not under and not is_nan(surface) and eye.y < surface:

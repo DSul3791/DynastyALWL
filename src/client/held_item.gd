@@ -51,10 +51,10 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
-const HELD_LOOK_SCALE := 1.4
-const HELD_SPEAR_SCALE := 1.6
+const HELD_LOOK_SCALE := 1.0      # real size against the body (Dave QA BUG-012: tools held at 1.4x, spear 1.6x, bow 1.8x looked too big)
+const HELD_SPEAR_SCALE := 1.0
 const BOW_AMMO := ["stone_arrow", "wooden_arrow", "bone_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
-const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0, "bow": 1.8, "arrow": 2.2, "quern": 1.3}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
+const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
@@ -68,7 +68,7 @@ const HELD_LOOK_TURN := {
 	"scythe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"striker": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"hammer": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
-	"hand_net": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"hand_net": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # like the rod: the coil in the hand, the net bell standing up ahead of it (its top stays up)
 	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
 	"rod": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # the fishing rod: butt to tip along +y, the reel underneath (-z), so the rod points forward and up in the hand
@@ -138,6 +138,7 @@ var _blueprint_kit: String = ""
 var _ghost_material: StandardMaterial3D
 var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
+var _ghost_on_base: bool = false           # the ghost is snapped to a base: a piece on a foundation, or a foundation beside another (the wheel does not lift it)
 var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
 var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close", "crowded" or "steep" (tests read it)
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
@@ -324,6 +325,21 @@ func _blueprinting() -> bool:
 func _hammer_tier() -> int:
 	var entry: Dictionary = _inv.table.entry(held_id())
 	return int(entry.get("tier", 1)) if str(entry.get("tool_class", "")) == "hammer" else 0
+
+
+# Repair (hammer menu, then left click): the server mends the piece you aim at from materials nearby (building_wear.json) and says what it did.
+func _repair_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * 8.0)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+	var id: int = _inv.structure_id_near(hit["position"]) if not hit.is_empty() else 0
+
+	if id == 0:
+		_inv._on_notice("Aim at the wall, floor, roof or station you want to repair")
+		return
+
+	_arm_play("use", 0.6)
+	_net.inventory_action.rpc_id(1, Net.ACT_REPAIR_STRUCT, id, 0, 0, Vector3.ZERO)
 
 
 # Save building plan (hammer menu, then left click): keeps the building you aim at, every blueprint piece joined to it, as a plan in the menu.
@@ -582,6 +598,10 @@ func wheel(down: bool) -> bool:
 		var picked_def: Dictionary = PlacementRules.structure_of_kit(_placement, blueprints.kit_of(blueprints.picked))
 
 		if bool(picked_def.get("foundation", false)):
+			if _ghost_on_base:
+				_inv._on_notice("This foundation matches the one beside it: the wheel only lifts a foundation with no neighbour")
+				return true
+
 			lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
 			_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
 			return true
@@ -594,6 +614,10 @@ func wheel(down: bool) -> bool:
 	var def: Dictionary = PlacementRules.structure_of_kit(_placement, held_id())
 
 	if bool(def.get("foundation", false)):
+		if _ghost_on_base:
+			_inv._on_notice("This foundation matches the one beside it: the wheel only lifts a foundation with no neighbour")
+			return true
+
 		lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
 		_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
 		return true
@@ -662,9 +686,12 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return button == MOUSE_BUTTON_LEFT
 
-	if holding and _hammer_tier() > 0 and blueprints.mode == "save":
+	if holding and _hammer_tier() > 0 and (blueprints.mode == "save" or blueprints.mode == "repair"):
 		if button == MOUSE_BUTTON_LEFT and pressed:
-			_save_plan_here()
+			if blueprints.mode == "repair":
+				_repair_here()
+			else:
+				_save_plan_here()
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -1136,6 +1163,7 @@ func _update_blueprint() -> void:
 	_blueprint.global_position = _blueprint_at
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, kit).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
+	_ghost_on_base = on_base
 	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows())
 
 	if blueprint_state == "" and not on_base:
@@ -1413,6 +1441,11 @@ func _hoe_here(action: int) -> void:
 
 	_net.inventory_action.rpc_id(1, action, held_slot, 0, 0, hit["position"])
 
+	# The hoe was silent (first-day tool audit, 3 Nov 2026): a soft scrape of the blade on the soil, firmer for tilling. Played when the click is sent, like the
+	# shovel fill (the server may still refuse). It borrows the spade-on-soil clips (no hoe recording yet).
+	if _sound != null:
+		_sound.hits.hit("spade", "soil", hit["position"], 0.7 if action == Net.ACT_TILL else 0.4)
+
 
 # A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
 func _fill_here() -> void:
@@ -1467,6 +1500,8 @@ func _caption() -> String:
 			text += "   (red: not enough materials; right click: the list)"
 		else:
 			text += "   (left click: build it with the materials in your pack; right click: the list)"
+	elif _hammer_tier() > 0 and blueprints.mode == "repair":
+		text += "   (Repair: left click a worn piece to mend it; right click: the menu)"
 	elif _hammer_tier() > 0 and blueprints.mode == "save":
 		text += "   (Save building plan: left click a building to keep it; right click: the menu)"
 	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
@@ -2147,6 +2182,52 @@ func _make_spear_model() -> Node3D:
 
 
 # Headless check (--spear): make a spear, jab, aim, throw, and see it land.
+# Headless check (--net, BUG-022: "swinging the shore net makes more nets"): give a fishing net, hold it, left-click with it the way the
+# mouse does (mouse_button), first as it stands (usually at dry ground) and then a few more times, and print the pack before and after.
+func run_net_test() -> void:
+	await get_tree().create_timer(6.0).timeout
+	var table = _inv.table
+	var net_n: int = table.number_of("shore_net")
+	_net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, net_n, 0, 1, Vector3.ZERO)
+	await get_tree().create_timer(2.0).timeout
+	print("NET TEST: pack before: %s" % _net_test_pack())
+
+	for slot in range(8):
+		if _inv.inventory.numbers[slot] == net_n:
+			select(slot)
+
+	print("NET TEST: holding %s in slot %d" % [held_id(), held_slot])
+
+	for n in 4:
+		var used: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
+		await get_tree().create_timer(0.3).timeout
+		mouse_button(MOUSE_BUTTON_LEFT, false)
+		await get_tree().create_timer(9.0).timeout   # the net sinks for hold_s (6 s) and is hauled back
+		print("NET TEST: click %d (used %s): nets in pack %d, nets on the ground %d; pack %s" % [n + 1, used, _inv.inventory.count_of(net_n), _net_test_ground(net_n), _net_test_pack()])
+
+	print("NET TEST: %s" % ("PASS: still one net" if _inv.inventory.count_of(net_n) == 1 and _net_test_ground(net_n) == 0 else "FAIL: the net count changed"))
+
+
+func _net_test_pack() -> String:
+	var parts: Array = []
+
+	for slot in range(_inv.inventory.numbers.size()):
+		if _inv.inventory.numbers[slot] != 0:
+			parts.append("%d:%s x%d" % [slot, _inv.table.id_of(_inv.inventory.numbers[slot]), _inv.inventory.counts[slot]])
+
+	return ", ".join(parts)
+
+
+func _net_test_ground(net_n: int) -> int:
+	var found: int = 0
+
+	for id in _inv._world:
+		if int(_inv._world[id].get("number", 0)) == net_n:
+			found += 1
+
+	return found
+
+
 func run_test() -> void:
 	await get_tree().create_timer(3.0).timeout
 	var table = _inv.table

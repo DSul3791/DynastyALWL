@@ -21,7 +21,7 @@ Take what works from all three, keep it dead simple (Dave: no micromanagement, g
 4. **Wall slot takes a variant.** Plain wall, doorway, window wall and later arch/gate all use the same 2 m slot, so a wall can be swapped without rebuilding. Door opens with E (exists).
 5. **Floors double as ceilings** for the storey above (one piece, textured both sides). Roof pieces are sloped halves that meet at a ridge.
 6. **Stairs and ramps** use the same 2 x 2 cell and climb 2.4 m in one cell (a straight stair). A ladder is a cheap tier-1 alternative.
-7. **Ground rule:** foundation top is 0.3 m, with a stone course below that follows the slope (a skirt that goes down into the ground so there is no gap on hills). This one is art plus Steve/Sal.
+7. **Ground rule:** foundation top is 0.3 m above its spot, and the body is 2 m thick top to bottom (Dave 4 Nov 2026), so it is solid down into the ground and leaves no gap on hills or when lifted. Foundations beside each other match height; the wheel lifts only a lone one (DESIGN_IDEAS.md 10.1).
 8. **Stability** (Ark style) is left for later. Not tier 1.
 
 ## 4. What a board, a stone block and a brick look like

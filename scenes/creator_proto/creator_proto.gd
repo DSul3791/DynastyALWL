@@ -8,6 +8,8 @@ extends Control
 const Logic := preload("res://src/client/character/creator_logic.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const GeneratedBody := preload("res://src/client/character/generated_body.gd")
+const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 const Store := preload("res://src/client/character/character_store.gd")
 const Record := preload("res://src/client/character/character_record.gd")
 const Style := preload("res://src/client/character/page_style.gd")
@@ -15,6 +17,7 @@ const Style := preload("res://src/client/character/page_style.gd")
 const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
 const PREVIEW_VOXEL := 0.05
 const REBUILD_DELAY_S := 0.35
+const REBUILD_DELAY_DYNASTY_S := 0.03     # reshaping Dave's body is a few bone scales, not a rebuild
 
 var logic: RefCounted = Logic.new()
 var _sliders: Dictionary = {}       # slider name -> HSlider
@@ -244,6 +247,9 @@ func _build_about(body: VBoxContainer) -> void:
 	_show_frame()
 	var note: Label = Label.new()
 	note.text = "Gender and frame only set a starting body and clothes. Every slider and colour can still be changed, and your pronouns are yours to pick."
+
+	if _use_dynasty():      # Dave's body (3 Nov 2026): say plainly what it does not show yet, so a slider that does nothing does not read as a bug
+		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, jaw, nose, brow, ears and skin colour show now; hair and the feminine body are coming."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
 	body.add_child(note)
@@ -487,19 +493,7 @@ func _build_code(body: VBoxContainer) -> void:
 
 
 func _build_preview_world() -> void:
-	var env: Environment = Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.2, 0.24, 0.28)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.62, 0.64, 0.68)
-	env.ambient_light_energy = 0.55   # lower ambient so the sun shades the form (it looked flat at 0.9; guide 31 Oct)
-	var we: WorldEnvironment = WorldEnvironment.new()
-	we.environment = env
-	_preview.add_child(we)
-	var sun: DirectionalLight3D = DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-35.0, -30.0, 0.0)
-	sun.light_energy = 1.3
-	_preview.add_child(sun)
+	Style.add_preview_world(_preview)       # warm sky, sun and fill, a patch of ground (page_style.gd)
 	var cam: Camera3D = Camera3D.new()
 	cam.fov = 30.0
 	_preview.add_child(cam)
@@ -535,7 +529,7 @@ func _changed(message: String) -> void:
 
 
 func _schedule_rebuild() -> void:
-	_rebuild_in = REBUILD_DELAY_S
+	_rebuild_in = REBUILD_DELAY_DYNASTY_S if _use_dynasty() else REBUILD_DELAY_S
 	_code.text = logic.code()
 	_undo_button.disabled = not logic.can_undo()
 	_redo_button.disabled = not logic.can_redo()
@@ -563,8 +557,30 @@ func _refresh_controls() -> void:
 	_redo_button.disabled = not logic.can_redo()
 
 
+# Dave's body (dynasty_body.gd) is the preview when the game wears it (Dave's QA answer, 2 Nov 2026: "use our new character mesh and allow us to adjust his proportions"): it is made
+# once and the sliders reshape it in place (dynasty_proportions.gd), so a slider move shows at once. The skin colour tints it (dynasty_body.gd dress); its clothes are baked into Dave's
+# texture, so the clothes colours and the face sliders do not show on it yet. The width sliders are blend shapes (dynasty_shapes.gd). Without Dave's glb (or with the old body chosen) the generated body is rebuilt as before.
+func _use_dynasty() -> bool:
+	return MyCharacter.dynasty_body_on() and DynastyBody.available()
+
+
 func _rebuild_body() -> void:
 	var t0: int = Time.get_ticks_usec()
+
+	if _use_dynasty():
+		if _body == null or not _body.has_method("set_proportions"):
+			if _body != null:
+				_body.queue_free()
+
+			_body = DynastyBody.new()
+			_preview.add_child(_body)
+			_body.rotation_degrees.y = _turn
+			_body.play("idle", 1.0, 0.0)
+
+		_body.set_proportions(logic.genome)
+		_rebuild_in = -1.0
+		return
+
 	var fresh: Node3D = GeneratedBody.new(logic.genome, PREVIEW_VOXEL, true, false)
 	var yaw: float = _body.rotation_degrees.y if _body != null else _turn
 
