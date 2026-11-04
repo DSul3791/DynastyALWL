@@ -38,13 +38,6 @@ Note: Search: boar "wild boar grunt", "boar squeal"; grouse "grouse call", "blac
 Note: Drop them in the project folder at sound/incoming/<animal>/ (boar, grouse, seal, seabird), with a short urls.txt listing each clip's Pixabay page link. Jason then cuts and levels them.
 [test]
 
-## roads-early-goals | Early goals: add "make a hoe" and "tread a path from camp to water", right after the fire goal?
-Note: The first-hour goal list has no hoe or path step today, so new players may never find the road and path tools (#136, #137, #161).
-Note: Recommendation: A, because a short path from camp to water is a quick, visible win that teaches the hoe early.
-- A: Yes, both goals right after the fire goal
-- B: Yes, but later (after the lean-to and bed)
-- C: No, leave the hoe for players to discover
-
 ## jason-audio-listen-1103 | Please listen once after you pull: are the forest sounds right now (no wobble, no rain-on-leaves when sunny, night quiet by the fire)?
 Note: Changed in the last day, none of it heard by me (no Godot or ears here): the night hush is 18 dB quieter (#115), the winter tree creaks lost their wobble (#115), tree wind is silent in calm weather (#131), the leaves loop patters less (#184), and Shift+F3 now opens a list of every playing sound with a mute switch (#134).
 Note: If something still sounds bad, press Shift+F3, switch sounds off one at a time, and tell me the name that made it stop.
