@@ -98,7 +98,7 @@
 		{
 			"id": "bed",
 			"trigger": "leanto_placed",
-			"text": "Gather bedding from ferns, then lash sticks and bedding into a Rough bed.",
+			"text": "Hold the wooden hammer, press R and pick Rough bed: 10 thatch, 4 sticks and 2 twine, built inside your lean-to.",
 			"goal": "bed"
 		},
 		{
