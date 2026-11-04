@@ -42,6 +42,7 @@ const MyCharacter := preload("res://src/client/character/my_character.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
@@ -4060,6 +4061,9 @@ func _process(delta: float) -> void:
 	_frame_ms.append(delta * 1000.0)
 	Probe.frame(delta)
 
+	if held == null and MyCharacter.dynasty_body_on():
+		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome)
+
 	if compass != null and camera != null:
 		compass.heading = CompassScript.heading_of(camera)
 
@@ -5697,6 +5701,7 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
 
 	if crash_report != null:
 		crash_report.mark_clean()
