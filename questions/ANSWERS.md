@@ -2210,3 +2210,7 @@ Answered: 2026-11-02 22:11 UTC
 Answer: No: You should not combined so many things into one question you should have one question for each one
 Answered: 2026-11-04 15:03 UTC
 
+## creator-proportions-pr195 | Creator: does Dave's body change shape when you move Height, Legs, Arms, Head and Shoulders (PR #195)?
+Answer: Yes
+Answered: 2026-11-04 15:04 UTC
+
