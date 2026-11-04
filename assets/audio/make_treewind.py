@@ -40,7 +40,9 @@ def pine(rng, n):
 def leaves(rng, n):
     x = shaped_noise(rng, n, lambda f: band(f, 2200, 1.3) * highpass(f, 500, 2) * lowpass(f, 6000, 2))
     x /= np.std(x) + 1e-9
-    flutter = smooth_gain(rng, n, 0.35, 3.0)
+    # Dave 3 Nov 2026 ("rain landing on leaves"): a 3 Hz flutter that goes down to 35 percent gave a regular patter at 2.6 Hz (12x the spectrum around it, audit of
+    # every loop). Slower and shallower: 1.2 Hz, never under 60 percent, so it breathes instead of patters.
+    flutter = smooth_gain(rng, n, 0.6, 1.2)
     return normalize(x * flutter * smooth_gain(rng, n, 0.6, 0.4))
 
 

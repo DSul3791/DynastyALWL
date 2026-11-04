@@ -69,6 +69,7 @@ var _pack_buttons: Array = []
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
 var _drink_msec: int = 0
 var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
+var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
@@ -116,6 +117,7 @@ var remains_marks: Array = []                # [[position, seconds left, msec re
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
 var _temp_label: Label
+var air_c: float = NAN                      # outside air temperature, C, from the client weather (terrain_client._update_weather); NAN until known
 var warmth: int = 100                       # body warmth, percent (protocol 36)
 var energy: int = 100                       # the Energy pool, percent (job 95)
 var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
@@ -520,6 +522,10 @@ func _probe_pickup() -> Dictionary:
 	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
 		pick_stamp = Time.get_ticks_msec()
+
+		if gather_event.is_valid():
+			gather_event.call()
+
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
 
 
@@ -784,6 +790,10 @@ func pick_up_nearest() -> bool:
 		return true
 
 	pick_stamp = Time.get_ticks_msec()
+
+	if gather_event.is_valid():
+		gather_event.call()
+
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	return true
 
@@ -2212,6 +2222,22 @@ func _refresh_pile(id: int) -> void:
 
 
 
+# The world id of the placed structure nearest `point` within `reach` metres, or 0 (the hammer's Repair mode aims with it).
+func structure_id_near(point: Vector3, reach: float = 3.5) -> int:
+	var best: int = 0
+	var best_d: float = reach
+
+	for id in _world:
+		if _world[id].has("yaw") and int(_world[id]["state"]) >= 5:
+			var d: float = (_world[id]["pos"] as Vector3).distance_to(point)
+
+			if d <= best_d:
+				best_d = d
+				best = int(id)
+
+	return best
+
+
 # Every structure standing as {"pos", "state", "yaw" (degrees), "piece"}, for the hammer's "Save building plan".
 func structure_rows() -> Array:
 	var rows: Array = []
@@ -3518,7 +3544,7 @@ func _update_panel_bars() -> void:
 	_panel_bars["Energy"].value = float(energy)
 	_panel_bars["Temperature"].value = float(warmth)
 	if _temp_label != null and is_instance_valid(_temp_label):
-		_temp_label.text = "Temperature " + DisplaySettingsScript.temp_text(float(warmth))
+		_temp_label.text = "Body temp " + DisplaySettingsScript.temp_text(float(warmth)) + ("" if is_nan(air_c) else "   Air " + DisplaySettingsScript.air_text(air_c))
 
 	if _sick_label != null and is_instance_valid(_sick_label):
 		_sick_label.text = ("Health: ill, about %d h left" % sick_hours) if sick_hours > 0 else ""

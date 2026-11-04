@@ -68,8 +68,11 @@ static func choose_clip_moving(stance: int, velocity_local: Vector2, vertical: f
 static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_floor: bool, pace: float, current: String, carrying: bool, delta: float) -> String:
 	var player: AnimationPlayer = avatar.get("animation_player") as AnimationPlayer
 
-	# The Dynasty body (dynasty_body.gd) has crouched walking clips but not the jump set: crouched and moving it walks bent, in the direction of the velocity.
-	if player != null and not player.has_animation("jump") and player.has_animation("crouch_walk_back") and stance == StanceScript.CROUCH and pace > WALK_MIN_PACE:
+	# The Dynasty body (dynasty_body.gd) has crouched walking clips and the air clips (jump, fall, land) but not the sideways and backward ones (the generated body's set): crouched and moving it
+	# walks bent, in the direction of the velocity.
+	var dynasty: bool = player != null and player.has_animation("crouch_walk_back")
+
+	if dynasty and stance == StanceScript.CROUCH and pace > WALK_MIN_PACE:
 		var crouch_local: Vector3 = basis.inverse() * velocity
 		var crouch_clip: String = crouch_walk_clip(Vector2(crouch_local.x, crouch_local.z))
 
@@ -104,6 +107,10 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 
 	if land_t > 0.0 and stance == StanceScript.STAND and not carrying:
 		return "land"
+
+	# The Dynasty body has the air clips but no walk_back or strafe clips: standing on the floor it gets the plain clip.
+	if dynasty and (on_floor or stance != StanceScript.STAND):
+		return choose_clip(stance, pace, current, carrying)
 
 	var local: Vector3 = basis.inverse() * velocity
 	return choose_clip_moving(stance, Vector2(local.x, local.z), velocity.y, air_t > AIR_DELAY, current, carrying)

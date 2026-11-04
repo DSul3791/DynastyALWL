@@ -13,29 +13,29 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 2 | stick | Stick | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
 | 3 | plant_fibre | Plant fibre | fibre | looks.json | rough |  |  |  |  |
 | 4 | log | Log | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
-| 5 | twine | Twine | coil | looks.json | rough |  |  |  |  |
+| 5 | twine | Twine | coil | looks.json | rough |  | 2026-11-03 |  | twist ticks, ties, frayed end (#206); needs a PC sheet before "decent" |
 | 6 | stone_axe | Stone axe | axe | looks.json | rough |  |  |  |  |
-| 7 | spear | Stone spear | shaft | looks.json | rough |  |  |  |  |
-| 8 | campfire_kit | Campfire | override | ART_OVERRIDES | rough |  |  |  |  |
-| 9 | seed_bundle | Seeds | sack | looks.json | rough |  |  |  |  |
+| 7 | spear | Stone spear | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | stone point, not iron (#206); needs a PC sheet before "decent" |
+| 8 | campfire_kit | Campfire | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | tinder tuft (#206); needs a PC sheet before "decent" |
+| 9 | seed_bundle | Seeds | sack | looks.json | rough |  | 2026-11-03 |  | burlap, patch, seed spill (#206); needs a PC sheet before "decent" |
 | 10 | wooden_spear | Wooden spear | shaft | looks.json | rough |  |  |  |  |
 | 11 | stone_knife | Stone knife | knife | looks.json | rough |  |  |  |  |
 | 12 | torch | Basic torch | torch | looks.json | rough |  |  |  |  |
-| 13 | bark | Bark | bark | looks.json | rough |  |  |  |  |
-| 14 | leaves | Leaves | leaves | looks.json | rough |  |  |  |  |
-| 15 | roast_forage | Campfire Stew | stew | looks.json | rough |  |  |  |  |
-| 16 | poultice | Herb poultice | mound | looks.json | rough |  |  |  |  |
-| 17 | bandage | Herb bandage | coil | looks.json | rough |  |  |  |  |
-| 18 | tree_roots | Roots | bundle | looks.json | rough |  |  |  |  |
-| 19 | wooden_spade | Wooden spade | spade | looks.json | rough |  |  |  |  |
+| 13 | bark | Bark | bark | looks.json | rough |  | 2026-11-03 |  | curved half-pipe strip (#206); needs a PC sheet before "decent" |
+| 14 | leaves | Leaves | leaves | looks.json | rough |  | 2026-11-03 |  | scattered heap, autumn blades (#206); needs a PC sheet before "decent" |
+| 15 | roast_forage | Campfire Stew | stew | looks.json | rough |  | 2026-11-03 |  | spoon and broth line (#206); needs a PC sheet before "decent" |
+| 16 | poultice | Herb poultice | mound | looks.json | rough |  | 2026-11-03 |  | bruised leaves pressed in (#206); needs a PC sheet before "decent" |
+| 17 | bandage | Herb bandage | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | own look: linen roll, tail, herb stain (#206); needs a PC sheet before "decent" |
+| 18 | tree_roots | Roots | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | own roots look (#206); needs a PC sheet before "decent" |
+| 19 | wooden_spade | Wooden spade | spade | looks.json | rough |  | 2026-11-03 |  | earth caked on blade, worn haft (3 Nov); needs a PC sheet before "decent" |
 | 20 | lean_to_kit | Small shelter | override | ART_OVERRIDES | rough |  |  |  |  |
-| 21 | lean_to | Small shelter | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 22 | chest_kit | Woven chest | override | ART_OVERRIDES | rough |  |  |  |  |
+| 21 | lean_to | Small shelter | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  | 2026-11-03 |  | 1.6x: walk in, lie down (#253, merged); needs a PC sheet before "decent" |
+| 22 | chest_kit | Woven chest | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | woven wicker (#206); needs a PC sheet before "decent" |
 | 23 | chest | Woven chest | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 24 | chopping_block_kit | Chopping block | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 25 | chopping_block | Chopping block | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 26 | firewood | Firewood | bundle | looks.json | rough |  |  |  |  |
-| 27 | lumber | Lumber | planks | looks.json | rough |  |  |  |  |
+| 27 | lumber | Lumber | planks | looks.json | rough |  | 2026-11-03 |  | knots, end grain, wane (#206); needs a PC sheet before "decent" |
 | 28 | plank_chest_kit | Plank chest | override | ART_OVERRIDES | rough |  |  |  |  |
 | 29 | plank_chest | Plank chest | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 30 | driftwood | Driftwood | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |

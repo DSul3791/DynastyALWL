@@ -122,6 +122,32 @@ func _drop_blood(a: Dictionary) -> void:
 		blood.pop_front()
 
 
+# Burrow spots (protocol 87, MikeW 3 Nov): the burrows of living animals within send_radius_m of a point, nearest first, at most
+# burrows_sent (default 40). The client draws a small mound at each so a new player can see where rabbits live.
+func burrows_near(point: Vector3) -> PackedVector3Array:
+	var radius: float = float(cfg.get("send_radius_m", 120.0))
+	var found: Array = []
+
+	for id in animals:
+		var b: Vector3 = animals[id].get("burrow", Vector3.INF)
+
+		if b == Vector3.INF:
+			continue
+
+		var d: float = Vector2(b.x - point.x, b.z - point.z).length()
+
+		if d <= radius:
+			found.append([d, b])
+
+	found.sort_custom(func(l, r): return l[0] < r[0])
+	var out: PackedVector3Array = PackedVector3Array()
+
+	for f in found.slice(0, int(cfg.get("burrows_sent", 40))):
+		out.append(f[1])
+
+	return out
+
+
 # Inland bird nests (MikeW, 3 Nov; items side: Sal, data/items/nests.json): fixed spots, one chance per nests.cell_m square, so a
 # nest is in the same place every visit and its id (kind and cell) stays the same for the robbed-nest record. A grouse nest lies on
 # open ground of a grouse biome (heath, boreal forest, tundra); a songbird nest sits under trees or bushes of a songbird biome. The
@@ -348,6 +374,22 @@ func list_near(point: Vector3, radius: float) -> Array:
 			out.append({"id": id, "sp": str(a["sp"]), "pos": a["pos"]})
 
 	return out
+
+
+# A snare draws the animal (its run, or bait): a calm one moves its home to the point and hops there. Its burrow stays where it was.
+func lure_to(id: int, point: Vector3) -> bool:
+	if not animals.has(id):
+		return false
+
+	var a: Dictionary = animals[id]
+
+	if int(a["state"]) != GRAZE and int(a["state"]) != HOP:
+		return false
+
+	a["home"] = point
+	a["target"] = point
+	a["state"] = HOP
+	return true
 
 
 # A snare closes on the animal: it leaves the world without a death (the snare module lays the carcass). One bird of a flock goes.
