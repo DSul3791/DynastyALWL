@@ -2120,7 +2120,7 @@
 			"kind": "placeable",
 			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"how_to_get": [
-				"Craft: 32 Stick, 8 Leaves, 4 Twine"
+				"Craft: 16 Stick, 4 Leaves, 2 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3940,9 +3940,11 @@
 			"name": "Rough bed",
 			"kind": "structure",
 			"description": "A low frame of sticks and branches with a heap of rough bedding, like a manger.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Build with the wooden hammer: 10 Thatch, 4 Stick, 2 Twine (inside a shelter)"
+			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"thatch_wall_kit": {
 			"name": "Thatch wall",
