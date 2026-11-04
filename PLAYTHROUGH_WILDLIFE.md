@@ -64,7 +64,7 @@ Every row was checked in data and in the existing headless tests (re-run by `art
 | Step | Needs | Where the animals are | Result | Status |
 |---|---|---|---|---|
 | Spear | wooden spear: 1 stick, keeps a stone (damage 6); stone spear: + 2 twine (damage 8) | n/a | craftable from nothing | PASS |
-| Find prey | walk 150 m from the spawn | rabbits, deer, fox appear 150-250 m out in a ring | a standing player sees none (section 2) | PASS with caveat (F-30) |
+| Find prey | look round from the spawn, then walk out | 4 in 10 animals now appear 60-120 m from you (animals.json near_share 0.4), the rest 150-250 m out; never within 60 m | the 'nothing near the spawn' caveat (F-30, item 4 below) is answered by near_share; not yet seen in a window (re-checked from data 3 Nov) | PASS from data |
 | Approach | crouch (x0.6), upwind (x0.5 scent), terrain cover | rabbit alerts at 24 m, bolts at 14 m, burrow 40 m; deer alerts at 50 m, bolts at 30 m | hard but fair; blood trail follows a wounded animal, bleeds out in about 80 s | PASS |
 | Kill by spear | jab, cooldown 0.6 s | rabbit 5 HP = 1 jab; fox 12 HP = 2 stone jabs; deer 20 HP = 3 stone jabs (4 wooden) | works (animals tests) | PASS |
 | Kill by bow | wooden bow at a workbench: 2 sticks, 3 twine; arrows: fibre arrow 2 sticks + 1 fibre makes 4 (damage 3.5), wooden arrow needs 2 feathers (damage 5), stone arrow (8) | same | range 80 m, shot noise alarms animals within 40 m; a deer needs about 6 fibre arrows | PASS |
