@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/Dynasty_Base_Male_Parts_Split_1.png-c8e08bc2f
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
