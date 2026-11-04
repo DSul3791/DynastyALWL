@@ -122,6 +122,32 @@ func _drop_blood(a: Dictionary) -> void:
 		blood.pop_front()
 
 
+# Burrow spots (protocol 87, MikeW 3 Nov): the burrows of living animals within send_radius_m of a point, nearest first, at most
+# burrows_sent (default 40). The client draws a small mound at each so a new player can see where rabbits live.
+func burrows_near(point: Vector3) -> PackedVector3Array:
+	var radius: float = float(cfg.get("send_radius_m", 120.0))
+	var found: Array = []
+
+	for id in animals:
+		var b: Vector3 = animals[id].get("burrow", Vector3.INF)
+
+		if b == Vector3.INF:
+			continue
+
+		var d: float = Vector2(b.x - point.x, b.z - point.z).length()
+
+		if d <= radius:
+			found.append([d, b])
+
+	found.sort_custom(func(l, r): return l[0] < r[0])
+	var out: PackedVector3Array = PackedVector3Array()
+
+	for f in found.slice(0, int(cfg.get("burrows_sent", 40))):
+		out.append(f[1])
+
+	return out
+
+
 # The blood trail within send_radius_m of a point (nearest first, at most max_sent), dropping what has dried.
 func blood_near(point: Vector3) -> PackedVector3Array:
 	var life_ms: int = int(float(cfg.get("blood", {}).get("life_s", 240.0)) * 1000.0)
@@ -277,6 +303,22 @@ func list_near(point: Vector3, radius: float) -> Array:
 			out.append({"id": id, "sp": str(a["sp"]), "pos": a["pos"]})
 
 	return out
+
+
+# A snare draws the animal (its run, or bait): a calm one moves its home to the point and hops there. Its burrow stays where it was.
+func lure_to(id: int, point: Vector3) -> bool:
+	if not animals.has(id):
+		return false
+
+	var a: Dictionary = animals[id]
+
+	if int(a["state"]) != GRAZE and int(a["state"]) != HOP:
+		return false
+
+	a["home"] = point
+	a["target"] = point
+	a["state"] = HOP
+	return true
 
 
 # A snare closes on the animal: it leaves the world without a death (the snare module lays the carcass). One bird of a flock goes.
@@ -752,6 +794,9 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 
 	if def.has("flock") and not bool(def["flock"].get("on_land", false)):
 		var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+		if bool(def["flock"].get("fresh_only", false)) and biome_at.is_valid() and str(biome_at.call(x, z)) == "ocean":
+			return -1.0   # ducks keep to rivers and lakes, not the open sea
+
 		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
 
 	if hab.is_empty() or not ground_height.is_valid():
@@ -779,10 +824,45 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 			if bool(blocked.call(x + d.x, z + d.y)):
 				return -1.0
 
+	var near: float = float(hab.get("near_fresh_water_m", 0.0))
+
+	if near > 0.0 and water_level.is_valid() and not _water_near(x, z, near, false):
+		return -1.0   # a frog lives by a stream, pond or lake, never deep in a dry wood or on a sea shore
+
+	var sea: float = float(hab.get("near_ocean_m", 0.0))
+
+	if sea > 0.0 and biome_at.is_valid() and not _water_near(x, z, sea, true):
+		return -1.0   # gulls and seals keep to the coast: a salt marsh or rocks by the sea, not one inland
+
 	if bool(hab.get("forest", false)) and canopy.is_valid() and bool(canopy.call(Vector3(x, h, z))):
 		return 2.0
 
 	return 1.0
+
+
+# Whether water lies within radius of a spot: the spot itself, then eight directions at half and full radius. ocean false: fresh
+# water (a water surface that is not on ocean ground). ocean true: ocean ground.
+func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
+	for ring in [0.0, radius * 0.5, radius]:
+		for i in (1 if ring == 0.0 else 8):
+			var a: float = TAU * float(i) / 8.0
+			var px: float = x + cos(a) * ring
+			var pz: float = z + sin(a) * ring
+
+			var is_ocean: bool = biome_at.is_valid() and str(biome_at.call(px, pz)) == "ocean"
+
+			if ocean:
+				if is_ocean:
+					return true
+
+				continue
+
+			if is_nan(float(water_level.call(px, pz))) or is_ocean:
+				continue
+
+			return true
+
+	return false
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.

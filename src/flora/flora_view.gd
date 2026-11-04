@@ -48,7 +48,7 @@ uniform float sway = 0.012;
 uniform float flutter = 0.06;
 // Leaves are not opaque: about 40% of the sunlight comes through, so a crown
 // glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
-uniform float backlight = 0.3;
+uniform float backlight = 0.4;      // 0.3 to 0.4 (Kathleen 3 Nov, Art_Direction.md: crowns read near-black at noon; more sun through the leaves)
 // Leaves that glow (the witness tree): EMISSION = glow times the instance
 // custom alpha (how strongly this tree glows; young ones weakly). Black for
 // every other species. Faint by day, plain at night.
@@ -80,7 +80,7 @@ void fragment() {
 	NORMAL = view_normal;
 	// Crown shading: undersides sit in the crown's own shadow, and each patch of leaves
 	// gets its own tone so a crown reads as clusters, not one smooth lump.
-	float under = mix(0.6, 1.0, smoothstep(-0.7, 0.5, crown_up));
+	float under = mix(0.72, 1.0, smoothstep(-0.7, 0.5, crown_up));      // undersides 0.72, was 0.6: the crowns read as dark walls (starter-area critique 3 Nov)
 	vec2 cell = floor(UV * 7.0);
 	float speck = 0.88 + 0.24 * fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
 	ALBEDO = t.rgb * COLOR.rgb * tint * under * speck;
@@ -130,6 +130,28 @@ void fragment() {
 }
 """
 
+# Wildflower heads (petals, umbels, spikes; Kathreen 3 Nov 2026): plain vertex colour, soft light through the petals, swaying exactly like the stems (the bark shader's
+# gust), so a head stays on its stem. They used the bark material, whose bark texture, ground shade and foot moss turned white chamomile and yarrow grey-blue and speckled.
+const PETAL_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled, cull_disabled;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = COLOR.rgb;
+	BACKLIGHT = COLOR.rgb * 0.35;
+	ROUGHNESS = 0.75;
+}
+"""
+
 # Fruit on a fruit tree (apples, pears, cherries; Dave 2026-10-31: the drawn fruit thins out as the tree is picked). tree_builder.gd gives every fruit a rank 0..1 in the vertex
 # alpha (spread evenly) and its colour in the vertex rgb. INSTANCE_CUSTOM.a is the share of the fruit already PICKED (0 = none, the default, so every unwired tree keeps all
 # its fruit; 0.34, 0.67, 0.9, 1.0 for the 66, 33, 10 and 0 percent levels): a fruit whose rank is at or above 1 - picked is not drawn. INSTANCE_CUSTOM.rgb is the tree's leaf tint
@@ -155,6 +177,115 @@ void fragment() {
 	}
 	ALBEDO = COLOR.rgb;
 	ROUGHNESS = 0.55;
+}
+"""
+
+# Green plant bodies (tree_builder `greens`: grass blades and tufts, reeds, cactus, succulents, kelp, nettles, leafy herbs and the plain flower). They used the bark shader, which multiplied their colour by
+# the bark texture (about 0.4), darkened the foot and laid foot moss on them, so a tuft of tall grass came out about a quarter as bright as its own colours
+# and much darker than the meadow grass round it (Kathreen, 3 Nov 2026). This keeps the vertex colour: a fine streak up the blade, a little shade at the foot,
+# light through thin blades (BACKLIGHT) and the bark shader's wind. No texture.
+const GREENS_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled;
+uniform float sway = 0.006;
+uniform float gain = 0.85;
+varying vec3 lp;
+
+float h3(vec3 p) {
+	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+	p += dot(p, p.yxz + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 0.0)), h3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0.0, 0.0, 1.0)), h3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 1.0)), h3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+
+void vertex() {
+	lp = VERTEX;
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	float streak = vnoise(lp * vec3(260.0, 30.0, 260.0));     // fine lines running up a blade or a cactus rib
+	vec3 c = COLOR.rgb * gain * (0.9 + 0.18 * streak);
+	c *= mix(0.78, 1.0, smoothstep(0.0, 0.25, lp.y));         // a little shade at the foot, among the other stems
+	ALBEDO = c;
+	BACKLIGHT = c * 0.3;
+	ROUGHNESS = 0.9;
+}
+"""
+
+# Berries and blossoms on the berry bushes and ground berries (tree_builder `berries`; colours from SHRUB_LOOKS, CANE_SHRUBS and GROUND_LOOKS in the vertex colour).
+# On the bark shader they wore bark grain and foot moss and came out about a quarter as bright as their colours (Kathreen, 3 Nov 2026). Here: the vertex
+# colour, a soft sheen so a ripe berry catches the light, a little light through it (BACKLIGHT), and the bark's wind so they stay on their canes.
+const BERRY_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = COLOR.rgb * 0.88;
+	ROUGHNESS = 0.45;
+	SPECULAR = 0.4;
+	BACKLIGHT = COLOR.rgb * 0.2;
+}
+"""
+
+# Mushrooms (tree_builder `fungi`, MUSHROOM_LOOKS colours in the vertex colour). They used the bark shader, which put bark furrows, a dark foot and green
+# foot moss on every cap, so a fly agaric read as a mossy brown lump (Kathreen, 3 Nov 2026). This keeps the species colour: a soft mottle and a fine
+# grain so caps are not plastic, a little sheen (a fresh cap is slightly moist), the shade under the cap, and earth at the foot. No texture.
+const FUNGUS_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley;
+varying vec3 lp;
+varying float up;
+
+float h3(vec3 p) {
+	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+	p += dot(p, p.yxz + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 0.0)), h3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0.0, 0.0, 1.0)), h3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 1.0)), h3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+
+void vertex() {
+	lp = VERTEX;
+	up = NORMAL.y;
+}
+
+void fragment() {
+	float mottle = vnoise(lp * 90.0);
+	float grain = vnoise(lp * 420.0);
+	vec3 c = COLOR.rgb * (0.86 + 0.18 * mottle + 0.08 * grain);
+	c *= mix(0.72, 1.0, smoothstep(0.0, 0.03, lp.y));      // earth at the foot of the stem
+	c *= mix(0.78, 1.0, smoothstep(-0.6, 0.2, up));        // the gills and stem under the cap sit in its shade
+	ALBEDO = c * 0.92;
+	ROUGHNESS = 0.62;
+	SPECULAR = 0.3;
+	BACKLIGHT = c * 0.12;
 }
 """
 
@@ -828,6 +959,11 @@ func _make_tree_materials() -> void:
 	var fruit_material: ShaderMaterial = ShaderMaterial.new()
 	fruit_material.shader = fruit_shader
 	_tree_materials["fruit"] = fruit_material
+	var petal_shader: Shader = Shader.new()
+	petal_shader.code = PETAL_SHADER
+	var petal_material: ShaderMaterial = ShaderMaterial.new()
+	petal_material.shader = petal_shader
+	_tree_materials["petal"] = petal_material
 	var chrome: Shader = Shader.new()
 	chrome.code = CHROME_SHADER
 	var chrome_material: ShaderMaterial = ShaderMaterial.new()
@@ -839,8 +975,23 @@ func _make_tree_materials() -> void:
 	ember_material.shader = ember
 	ember_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark.png"))
 	_tree_materials["ember"] = ember_material
+	var greens: Shader = Shader.new()
+	greens.code = GREENS_SHADER
+	var greens_material: ShaderMaterial = ShaderMaterial.new()
+	greens_material.shader = greens
+	_tree_materials["greens"] = greens_material
+	var berry: Shader = Shader.new()
+	berry.code = BERRY_SHADER
+	var berry_material: ShaderMaterial = ShaderMaterial.new()
+	berry_material.shader = berry
+	_tree_materials["berry"] = berry_material
+	var fungus: Shader = Shader.new()
+	fungus.code = FUNGUS_SHADER
+	var fungus_material: ShaderMaterial = ShaderMaterial.new()
+	fungus_material.shader = fungus
+	_tree_materials["fungus"] = fungus_material
 
-	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
+	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["fern", "res://assets/trees/leaf_fern.png"], ["herb", "res://assets/trees/leaf_herb.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = foliage
 		material.set_shader_parameter("leaves", _load_texture(pair[1]))
@@ -850,6 +1001,7 @@ func _make_tree_materials() -> void:
 	_tree_materials["conifer"].set_shader_parameter("sway", 0.006)
 	_tree_materials["conifer"].set_shader_parameter("backlight", 0.25)   # needles are denser
 	_tree_materials["palm"].set_shader_parameter("sway", 0.02)
+	_tree_materials["fern"].set_shader_parameter("sway", 0.02)       # ground fern fronds (tools/make_leaf_fern.py), swaying like the palm card they replaced
 	_tree_materials["grass"].set_shader_parameter("sway", 0.09)
 	_tree_materials["grass"].set_shader_parameter("flutter", 0.01)
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
@@ -2894,6 +3046,9 @@ func _autumn_color(id: int, palette: Array[Color] = AUTUMN) -> Color:
 
 # The foliage tint for a species: grasses stay near the painted blade color,
 # flowers show their bloom color, the rest take the species green.
+const FLOWER_LEAF := Color(0.3, 0.46, 0.2)     # a meadow herb's leaf green before the 1.9 lift (alpine flowers' own colour)
+
+
 static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 	var base: Color = Color(float(c[0]), float(c[1]), float(c[2]))
 	var shape: String = str(entry["shape"])
@@ -2902,7 +3057,11 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 		return Color(1.0, 1.0, 1.0).lerp(_natural(base) * 2.2, 0.3)
 
 	if shape == "flower":
-		return base * 1.9
+		# The flower table's colour is the BLOOM colour (owlpetal pale blue, frostglass white, sea holly blue), but this tint lands on the leaves only (the heads carry
+		# their own petal colour, tree_builder.gd WILDFLOWER_LOOKS), so pale-flowered plants grew grey-white leaf clumps (Kathreen 3 Nov 2026). Leaves are a natural
+		# green with a quarter of the species colour, so a dark fantasy flower still has darker foliage. A row can name "leaf_color" to choose its own.
+		var leaf: Color = Color(float(entry["leaf_color"][0]), float(entry["leaf_color"][1]), float(entry["leaf_color"][2])) if entry.has("leaf_color") else FLOWER_LEAF.lerp(base, 0.25)
+		return leaf * 1.9
 
 	if shape == "mushroom":
 		return Color(1.0, 1.0, 1.0)   # modelled with its own colours (tree_builder MUSHROOM_LOOKS)
