@@ -121,6 +121,7 @@ const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const RECENT_CUT_MSEC := 60000   # how long a cut tree is kept out of flora chunks arriving late (BUG-024)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
@@ -479,6 +480,7 @@ var _viewer: VoxelViewer
 var _sun: DirectionalLight3D
 var _frame_ms: Array = []             # recent frame times for the HUD readout
 var test_cut: bool = false
+var _recent_cuts: Dictionary = {}     # held chunk -> {item id: msec the cut came in} (BUG-024; see _apply_incoming)
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
@@ -1883,7 +1885,7 @@ func _water_ahead() -> bool:
 		var spot: Vector3 = body.global_position + forward * step
 		var surface: float = flora.water_surface_at(spot.x, spot.z)
 
-		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.MIN_DEPTH_M:
+		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
 			return true
 
 	return false
@@ -2140,6 +2142,21 @@ func _apply_incoming() -> void:
 				Probe.stop("flora chunk in", t)
 				continue
 
+			# BUG-024: the server makes chunks on worker threads, so one made just before a cut can arrive after the cut message
+			# and would put the felled tree back, near or far. Trees cut in the last minute are left out of what arrives.
+			if _recent_cuts.has(chunk):
+				var cuts: Dictionary = _recent_cuts[chunk]
+				var now_msec: int = Time.get_ticks_msec()
+
+				for cut_id in cuts.keys():
+					if now_msec - int(cuts[cut_id]) > RECENT_CUT_MSEC:
+						cuts.erase(cut_id)
+
+				if cuts.is_empty():
+					_recent_cuts.erase(chunk)
+				else:
+					result["items"] = PlacerScript.without(result["items"], cuts)
+
 			if flora.has_chunk(chunk):
 				flora.replace_items(chunk, result["items"], _anchor, full)
 			else:
@@ -2387,6 +2404,11 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	for held in _flora_asked:
 		if posmod(held.x - chunk.x, period) == 0 and posmod(held.y - chunk.y, period) == 0:
 			flora.remove_item(held, id, _anchor)
+
+			if not _recent_cuts.has(held):
+				_recent_cuts[held] = {}
+
+			_recent_cuts[held][id] = Time.get_ticks_msec()
 
 	_flora_cuts += 1
 	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
@@ -2907,6 +2929,9 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	world["starter_stamp"] = starter_stamp
 	_reload_ground()
 
+	if sound != null:
+		sound.trees.forget()
+
 	if _cave_streams != null:
 		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
 
@@ -3047,6 +3072,12 @@ func _inspect_target() -> String:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin + direction * 30.0)
 	query.exclude = [body.get_rid()]
 	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	# Water has no collision: name it when the look crosses its surface before anything solid (Dave's QA list BUG-015, 3 Nov 2026: shallow
+	# water among reeds named nothing). A reed standing above the water is hit first and keeps its own name.
+	var water_m: float = _water_on_look(origin, direction, 30.0 if hit.is_empty() else origin.distance_to(hit["position"]))
+
+	if water_m >= 0.0:
+		return "Water — Press E to Drink" if items != null and items.thirst < 100 and _water_ahead() else "Water"
 
 	if hit.is_empty():
 		return ""
@@ -3081,6 +3112,26 @@ func _inspect_target() -> String:
 		return lying
 
 	return _ground_name(point - hit["normal"] * 0.4)
+
+
+# How far along a look the water surface is first crossed going down into it, -1 when it is not (steps of half a metre).
+func _water_on_look(origin: Vector3, direction: Vector3, length: float) -> float:
+	if flora == null:
+		return -1.0
+
+	var step: float = 0.5
+	var d: float = step
+
+	while d <= length + 0.001:
+		var p: Vector3 = origin + direction * minf(d, length)
+		var surface: float = flora.water_surface_at(p.x, p.z)
+
+		if not is_nan(surface) and p.y <= surface and origin.y > surface and WaterVolume.depth(surface, _ground_below(p)) >= WaterVolume.DRINK_DEPTH_M:
+			return d
+
+		d += step
+
+	return -1.0
 
 
 # The ore, rock or soil at a point in the ground, as this character knows it. Owner
@@ -3920,6 +3971,13 @@ var _water_ground_msec: int = -1000
 func _water_here() -> Dictionary:
 	var here: Vector3 = body.global_position
 	var surface: float = flora.water_surface_at(here.x, here.z) if flora != null else NAN
+
+	# A spring cave's pool (BUG-008: 20 m deep) lies under the ground the water grid knows: swim in it there.
+	if (is_nan(surface) or surface < here.y - 3.0) and _cave_streams != null:
+		var pool: float = _cave_streams.pool_surface_at(here)
+
+		if not is_nan(pool):
+			surface = pool
 
 	if is_nan(surface) and here.y > 2.0:
 		return {}
@@ -5703,6 +5761,13 @@ func _update_underwater() -> void:
 	# is the top of the film, tens of m above the eye. Now the blended surface at the eye's own
 	# spot, and the water there must be deeper than a film.
 	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 else NAN
+
+	if eye.y >= 0.0 and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
+		var pool: float = _cave_streams.pool_surface_at(eye)   # a spring cave's deep pool (BUG-008)
+
+		if not is_nan(pool):
+			surface = pool
+
 	var under: bool = eye.y < 0.0
 
 	if not under and not is_nan(surface) and eye.y < surface:
