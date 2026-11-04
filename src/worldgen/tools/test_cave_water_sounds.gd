@@ -20,7 +20,7 @@ func _initialize() -> void:
 	var floats: PackedFloat32Array = PackedFloat32Array([
 		0, 10, 0, 20, 8, 0, 3.0,
 		20, 8, 0, 40, 6, 0, 3.0,
-		0, 10, 0, 0, 0, -2.5,
+		0, 10, 0, 0, 0, 0, -2.5,
 	])
 	var pieces: Array = []
 	var pools: Array = []
