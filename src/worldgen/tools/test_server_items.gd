@@ -1489,10 +1489,10 @@ func _init() -> void:
 
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
-	check(not cb._items.has(lying) and loose_of.call(block_n) == 4, "a log chopped on the ground makes 4 wooden blocks (%d)" % loose_of.call(block_n))
+	check(not cb._items.has(lying) and loose_of.call(block_n) == 3, "a log chopped on the ground makes 3 wooden blocks (%d)" % loose_of.call(block_n))
 
 	# A softwood log chops to softwood blocks, and those split to softwood firewood (wood_species.json class_items).
-	var soft_n: int = cb.table.number_of("wooden_block_soft")
+	var soft_n: int = cb.table.number_of("wooden_block_soft_large")   # a spruce log is a large shoulder log: large blocks (BUG-014)
 	var soft_fire_n: int = cb.table.number_of("firewood_soft")
 	cb.drop_in_world(cb.table.number_of("log_spruce"), 1, Vector3(1.0, 10.0, 0.0))
 	var spruce_lying: int = 0
@@ -1503,12 +1503,12 @@ func _init() -> void:
 
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, spruce_lying, 0, 0, Vector3.ZERO)
-	check(not cb._items.has(spruce_lying) and loose_of.call(soft_n) == 12, "a spruce log chopped on the ground makes 12 softwood blocks (%d)" % loose_of.call(soft_n))
+	check(not cb._items.has(spruce_lying) and loose_of.call(soft_n) == 3, "a spruce log chopped on the ground makes 3 large softwood blocks (%d)" % loose_of.call(soft_n))
 	cb.action(1, Net.ACT_ADMIN_GIVE, soft_n, 0, 1, Vector3.ZERO)
 	cb.inventory_of(1).remove(block_n, cb.inventory_of(1).count_of(block_n))
 	cb._last_use.clear()
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(soft_n) == 0 and loose_of.call(soft_fire_n) == 2, "a softwood block splits into softwood firewood")
+	check(cb.inventory_of(1).count_of(soft_n) == 0 and loose_of.call(soft_fire_n) == 4, "a large softwood block splits into 4 softwood firewood (%d)" % loose_of.call(soft_fire_n))
 
 	# The large log on the shoulder (Dave 2026-10-21): one at a time, named for its tree, heavy, split at the block, falls with the body.
 	var oak_log: int = cb.table.number_of("log_oak")
