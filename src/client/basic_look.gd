@@ -1761,6 +1761,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_sph(parts, 0.007, Vector3(1.0, 0.5, 1.0), Vector3(0.46, 0.019, side * 0.05), blade * 1.5 if metal_blade else Color(0.08, 0.05, 0.03), true)   # two round domed rivets
 				if metal_blade:
 					_metal(parts, rough, sheen)
+			# Use (Art_Direction: lived-in, worn tools): dried earth caked on the lower blade on both faces, darker where it is still damp at the very tip.
+			# Thin flat boxes (12 triangles each, 72 in all) to stay inside the 1200-triangle tool budget (the spade was about 1100).
+			# Plain surface, so a metal blade keeps its sheen where it is clean.
+			var soil: Color = Color(0.3, 0.21, 0.13)
+			for face in [-1.0, 1.0]:
+				_box_rot(parts, Vector3(0.05, 0.003, 0.15), Vector3(0.665, face * 0.0065, -0.005), Vector3(0.0, 0.12, 0.0), _tone(soil, 1, 0.15))
+				_box_rot(parts, Vector3(0.035, 0.003, 0.1), Vector3(0.695, face * 0.007, 0.012), Vector3(0.0, -0.2, 0.0), _tone(soil, 2, 0.15))
+				_box(parts, Vector3(0.03, 0.003, 0.08), Vector3(0.718, face * 0.0075, 0.0), soil.darkened(0.3))
 		"saw":
 			# A hand saw (modelled on a real panel saw): an ash pistol grip with a closed finger hole at -x, attached to the blade through a brass plate with three rivets (no gap), a thin
 			# neutral-grey blade plate 50 cm long, 14 cm at the heel tapering to 5 cm at a rounded toe, a thin dark spine along the top (-z) and a row of fine teeth along the cutting edge (+z).
