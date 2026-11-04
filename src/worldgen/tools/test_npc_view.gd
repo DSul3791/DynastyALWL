@@ -6,6 +6,8 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_npc_view.gd
 
 const NpcViewScript := preload("res://src/client/npc_view.gd")
+const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
+const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 
 var failures: int = 0
 
@@ -14,6 +16,40 @@ func check(ok: bool, what: String) -> void:
 	if not ok:
 		failures += 1
 		print("FAIL ", what)
+
+
+# Dave 4 Nov 2026: the NPCs wear his body with every creator slider randomized. Each one is a Dynasty body whose genome comes from its id (the same look every visit),
+# no two of the listed NPCs share a genome, and the width and face sliders reach the mesh as blend shape weights.
+func _check_bodies(view: Node3D) -> void:
+	if not DynastyBodyScript.available():
+		print("test_npc_view: the Dynasty glb is not imported here, the NPC body checks are skipped")
+		return
+
+	var seen: Dictionary = {}
+	var shaped: int = 0
+
+	for id in view._bodies:
+		var rig: Node3D = (view._bodies[id]["node"] as Node3D).get_node("Rig")
+		check(rig.get_script() == DynastyBodyScript, "NPC %s wears Dave's body" % id)
+
+		if rig.get_script() != DynastyBodyScript:
+			continue
+
+		var g: Dictionary = rig.genome
+		check(g == NpcViewScript.genome_of(id), "NPC %s has the genome drawn from its id" % id)
+		check(rig.proportions != null, "NPC %s has its bone lengths set" % id)
+		var key: String = JSON.stringify([g.get("height"), g.get("build"), g.get("jaw"), g.get("nose"), g.get("skin")])
+		check(not seen.has(key), "NPC %s does not share its sliders with NPC %s" % [id, seen.get(key, "")])
+		seen[key] = id
+		var mesh: MeshInstance3D = rig.body_mesh
+
+		for name in Shapes.NAMES:
+			var i: int = mesh.find_blend_shape_by_name(name)
+
+			if i >= 0 and absf(mesh.get_blend_shape_value(i) - clampf(float(g.get(name, 0.0)), -1.0, 1.0)) < 0.001 and absf(float(g.get(name, 0.0))) > 0.001:
+				shaped += 1
+
+	check(shaped > 0, "the width and face sliders reach the NPC meshes as blend shape weights (%d)" % shaped)
 
 
 func _init() -> void:
@@ -37,6 +73,7 @@ func _init() -> void:
 	view.on_rows(rows)
 	check(view.roster.size() == roster.size(), "roster kept (%d of %d)" % [view.roster.size(), roster.size()])
 	check(view.drawn_count() == mini(rows.size(), view.MAX_DRAWN), "every listed NPC drawn: %d of %d" % [view.drawn_count(), rows.size()])
+	_check_bodies(view)
 	var near: Dictionary = view.nearest(spawn, 20.0)
 	check(not near.is_empty(), "an NPC is within 20 m of spawn")
 

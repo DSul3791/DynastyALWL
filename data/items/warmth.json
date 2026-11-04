@@ -26,6 +26,7 @@
 	"water_comfort_c": 26.0,
 	"water_gain": 5.0,
 	"tau_water_h": 0.7,
+	"cave_pool_c": 2.0,
 	"daily_swing_c": {
 		"spring": 9.0,
 		"summer": 11.0,
