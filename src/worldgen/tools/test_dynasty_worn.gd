@@ -60,9 +60,15 @@ func _init() -> void:
 	for node in pieces.get("foot_r", []):
 		_check((node as Node3D).global_position.x > 0.05, "right boot on the right (+X)")
 
+	# The hood's crown (its big shell) sits on his head; its drape band hangs at the neck, a little lower (his neck joint is at about 1.40 m).
+	var crown_y: float = -1.0
+
 	for node in pieces.get("head", []):
 		var at: Vector3 = (node as Node3D).global_position
-		_check(at.y > 1.45 and at.y < 1.8, "hood on the head (y %.2f)" % at.y)
+		crown_y = maxf(crown_y, at.y)
+		_check(at.y > 1.35 and at.y < 1.8, "hood piece at the head or neck (y %.2f)" % at.y)
+
+	_check(crown_y > 1.45, "hood crown on the head (y %.2f)" % crown_y)
 
 	for node in pieces.get("chest", []):
 		var at: Vector3 = (node as Node3D).global_position

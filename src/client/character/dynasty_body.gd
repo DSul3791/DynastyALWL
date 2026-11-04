@@ -229,7 +229,7 @@ func _worn_frames() -> Dictionary:
 			"chest":
 				at = Vector3(neck.x, neck.y - 22.0, neck.z)        # the old chest joint stood 22 cm under the neck: the collar of a tunic lands at his neck
 			"head":
-				at = Vector3(rest.origin.x, top.y - 27.0, rest.origin.z)      # the old head's top was 27 cm over its joint: a hood or helm sits on his crown
+				at = Vector3(rest.origin.x, top.y - 24.0, rest.origin.z)      # the old head's top was 27 cm over its joint; 24 here so a hood shell covers his crown in the idle pose, where his head dips
 			"foot_r", "foot_l":
 				at = Vector3(rest.origin.x, 5.0, rest.origin.z)    # the old ankle was 5 cm up; his is higher, so the sole of a boot would float
 
