@@ -666,10 +666,10 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 
 func press_e() -> bool:
-	# In the crafting window, E over a recipe crafts one of it (Dave 2026-10-23).
+	# In the crafting window, E over a recipe crafts it, as many as the quantity box says (Dave 2026-10-23; BUG-025, 4 Nov: a quantity of 20 made only 1).
 	if open and not chest_mode and _hover_recipe != 0:
 		if _can_craft(_hover_recipe):
-			_start_craft(_hover_recipe, 1)
+			_start_craft(_hover_recipe, _chosen_quantity())
 		else:
 			_on_notice("You do not have what that needs")
 
@@ -3975,7 +3975,16 @@ func _craft_selected() -> void:
 	if _selected_recipe == 0:
 		return
 
-	_start_craft(_selected_recipe, int(_quantity.value) if _quantity != null else 1)
+	_start_craft(_selected_recipe, _chosen_quantity())
+
+
+# The quantity box's number, counting digits typed but not yet confirmed with Enter (BUG-025).
+func _chosen_quantity() -> int:
+	if _quantity == null:
+		return 1
+
+	_quantity.apply()
+	return clampi(int(_quantity.value), 1, 20)
 
 
 func _start_craft(number: int, count: int = 1) -> void:

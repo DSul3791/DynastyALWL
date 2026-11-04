@@ -974,9 +974,19 @@
    "bits": ["pin"]
   },
   "wooden_block": {
-   "shape": "block",
-   "color": "#a67c4a",
+   "shape": "wood_round",
+   "color": "#5a3e26",
    "size": 0.9
+  },
+  "wooden_block_large": {
+   "shape": "wood_round",
+   "color": "#5a3e26",
+   "size": 1.8
+  },
+  "wooden_block_soft_large": {
+   "shape": "wood_round",
+   "color": "#6b4a2e",
+   "size": 1.8
   },
   "firewood_soft": {
    "shape": "split_wood",
@@ -984,8 +994,8 @@
    "size": 1.6
   },
   "wooden_block_soft": {
-   "shape": "block",
-   "color": "#b8905a",
+   "shape": "wood_round",
+   "color": "#6b4a2e",
    "size": 0.9
   },
   "saw_blade": {

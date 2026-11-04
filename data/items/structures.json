@@ -58,9 +58,10 @@
 			"look": "chopping_block",
 			"sound": "thump",
 			"clears_grass": true,
-			"blocks_per_log": 4,
-			"blocks_per_shoulder_log": 12,
-			"firewood_per_block": 2
+			"blocks_per_log": 3,
+			"blocks_per_shoulder_log": 3,
+			"firewood_per_block": 2,
+			"firewood_per_large_block": 4
 		},
 		"plank_chest": {
 			"kit": "plank_chest_kit",

@@ -6244,11 +6244,16 @@ func _use_struct(peer: int, inv, id: int) -> void:
 	if float(now - int(_last_use.get(peer, -100000))) < float(def.get("use_pace_ms", 600)) / _pace_factor(peer, "split_log"):
 		return
 
-	# Dave 2026-10-23: the chopping block splits WOODEN BLOCKS (a log chopped on the ground gives them), one block to one piece of firewood.
-	var block_n: int = table.number_of("wooden_block")
+	# Dave 2026-10-23: the chopping block splits WOODEN BLOCKS (a log chopped on the ground gives them). Dave 4 Nov 2026 (BUG-014): a large block
+	# (from a big trunk) splits into firewood_per_large_block (4), a small one into firewood_per_block. Large first, hardwood before softwood.
+	var block_n: int = 0
 
-	if not inv.has(block_n, 1) and inv.has(table.number_of("wooden_block_soft"), 1):
-		block_n = table.number_of("wooden_block_soft")   # hardwood blocks go first; a softwood block splits to softwood firewood
+	for kind in ["wooden_block_large", "wooden_block_soft_large", "wooden_block", "wooden_block_soft"]:
+		if block_n == 0 and inv.has(table.number_of(kind), 1):
+			block_n = table.number_of(kind)
+
+	if block_n == 0:
+		block_n = table.number_of("wooden_block")
 
 	if not _has_tool(inv, "axe"):
 		_say(peer, "You need an axe to split wood.")
@@ -6260,7 +6265,9 @@ func _use_struct(peer: int, inv, id: int) -> void:
 
 	_last_use[peer] = now
 	inv.remove(block_n, 1)
-	_drop_firewood_beside(it, int(def.get("firewood_per_block", 1)), "firewood_soft" if block_n == table.number_of("wooden_block_soft") else "firewood")
+	var large: bool = block_n == table.number_of("wooden_block_large") or block_n == table.number_of("wooden_block_soft_large")
+	var soft: bool = block_n == table.number_of("wooden_block_soft") or block_n == table.number_of("wooden_block_soft_large")
+	_drop_firewood_beside(it, int(def.get("firewood_per_large_block", 4)) if large else int(def.get("firewood_per_block", 1)), "firewood_soft" if soft else "firewood")
 	_wear_tool(peer, inv, "axe", "split")
 	practice(peer, "split_log")
 	_dirty = true
@@ -6279,7 +6286,8 @@ func _drop_firewood_beside(block: Dictionary, count: int, wood_id: String = "fir
 	drop_in_world(table.number_of(wood_id), count, block["pos"] + Vector3(0.9, 0.0, 0.0))
 
 
-# A log lying on the ground, struck with an axe, falls apart into wooden blocks (a short log 4, a large shoulder log 12).
+# A log lying on the ground, struck with an axe, falls apart into wooden blocks: 3 per log (Dave 4 Nov 2026, BUG-014), small blocks from a short log,
+# large blocks from a large shoulder log.
 func _chop_loose_log(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
@@ -6302,7 +6310,7 @@ func _chop_loose_log(peer: int, inv, id: int) -> void:
 
 	_last_process[peer] = now
 	var cfg: Dictionary = _structures.get("chopping_block", {})
-	var blocks: int = int(cfg.get("blocks_per_shoulder_log", 12)) if big else int(cfg.get("blocks_per_log", 4))
+	var blocks: int = int(cfg.get("blocks_per_shoulder_log", 3)) if big else int(cfg.get("blocks_per_log", 3))
 
 	if int(it["count"]) > 1:
 		it["count"] = int(it["count"]) - 1
@@ -6310,7 +6318,7 @@ func _chop_loose_log(peer: int, inv, id: int) -> void:
 		_items.erase(id)
 
 	_wear_tool(peer, inv, "axe", "split")
-	drop_in_world(table.number_of(_wood_item("block", str(table.entry(item_id).get("species", "")))), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
+	drop_in_world(table.number_of(_wood_item("block_large" if big else "block", str(table.entry(item_id).get("species", "")))), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
 	practice(peer, "split_log")
 	_dirty = true
 
@@ -10779,6 +10787,9 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	if taken == 0:
 		_say(peer, "You do not have what that needs")
 		return
+
+	if taken < clampi(count, 1, CRAFT_QUEUE_MAX_COUNT):
+		_say(peer, "You only have enough for %d" % taken)
 
 	if merge:
 		entries[entries.size() - 1][1] = mini(int(entries[entries.size() - 1][1]) + taken, CRAFT_QUEUE_MAX_COUNT)

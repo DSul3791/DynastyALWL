@@ -173,7 +173,7 @@ func _init() -> void:
 		if int(items._items[id]["number"]) == table.number_of("wooden_block"):
 			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	check(count("wooden_block") == 4, "a log chopped on the ground gives four wooden blocks (%d)" % count("wooden_block"))
+	check(count("wooden_block") == 3, "a log chopped on the ground gives three wooden blocks (%d)" % count("wooden_block"))
 
 	for n in range(2):
 		items._last_use.clear()
@@ -183,7 +183,7 @@ func _init() -> void:
 		if int(items._items[id]["number"]) == table.number_of("firewood") and not items._items[id].has("struct"):
 			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	check(count("firewood") == 4 and count("wooden_block") == 2, "two blocks split into four firewood at the block (%d firewood, %d blocks)" % [count("firewood"), count("wooden_block")])
+	check(count("firewood") == 4 and count("wooden_block") == 1, "two blocks split into four firewood at the block (%d firewood, %d blocks)" % [count("firewood"), count("wooden_block")])
 	mark("split wood")
 
 	# 5. Hob's quest: ask, hand over the firewood, get the reward and the reputation.

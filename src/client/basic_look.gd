@@ -1485,6 +1485,15 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			_torus_v(parts, 0.04, 0.008, Vector3(-0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
 			_torus_v(parts, 0.04, 0.008, Vector3(0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
+		"wood_round":
+			# A wooden block (Dave 4 Nov 2026, BUG-014: a short intact log section with bark, not firewood): a round of trunk lying on its side,
+			# dark bark all round, pale end grain on both cut faces with a darker heart and one growth ring.
+			_cyl(parts, 0.09, 0.2, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
+			var grain: Color = Color(0.76, 0.6, 0.4)
+			for sx in [-1.0, 1.0]:
+				_cyl(parts, 0.084, 0.006, Vector3(sx * 0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), grain)
+				_cyl(parts, 0.05, 0.008, Vector3(sx * 0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), grain.darkened(0.12))
+				_cyl(parts, 0.015, 0.01, Vector3(sx * 0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)
 		"split_wood":
 			# Split firewood: a small stack of wedge billets, bark on the rounded back, a pale cut face on the split side and on each end.
 			for k in 6:
