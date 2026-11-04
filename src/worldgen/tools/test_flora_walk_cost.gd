@@ -13,9 +13,11 @@ const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 
-const APPLY_BAR_MS := 30.0     # one apply_built call
-const UPDATE_BAR_MS := 30.0    # one flora update
-const FRAME_BAR_MS := 60.0     # one whole frame of flora work plus the frees after it
+# Loose bars (Tyler 3 Nov: a loaded 4-core cloud runner gave 32-58 ms with no flora change): the stalls this guards against were 800-1000 ms
+# (every dig, cut or hoe click refiltered a whole chunk, #187), so 100 ms still catches them eight times over without failing on load alone.
+const APPLY_BAR_MS := 100.0    # one apply_built call
+const UPDATE_BAR_MS := 100.0   # one flora update
+const FRAME_BAR_MS := 150.0    # one whole frame of flora work plus the frees after it
 const JOG_M_S := 4.5
 const FRAME_S := 1.0 / 60.0
 
