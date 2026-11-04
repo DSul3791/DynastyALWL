@@ -2034,11 +2034,14 @@
 			"name": "Bark",
 			"kind": "material",
 			"description": "Bark stripped from a felled trunk.",
-			"how_to_get": [],
+			"how_to_get": [
+				"From a felled hardwood tree, now and then (birch and softwood bark comes off as thatch)",
+				"Picked from oak with a stone knife in the pack"
+			],
 			"used_for": [
 				"Used in Bark twine"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"leaves": {
 			"name": "Leaves",
