@@ -23,7 +23,42 @@ var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, 
 var _mats: Dictionary = {}
 var _t: float = 0.0
 var _blood: Array = []           # MeshInstance3D pool, one per drop shown
-var _blood_mat: StandardMaterial3D
+var _blood_mat: ShaderMaterial
+const BLOOD_SHADER := """
+shader_type spatial;
+render_mode cull_disabled;
+
+varying vec2 lp;
+
+float h2(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float vn(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(h2(i), h2(i + vec2(1.0, 0.0)), f.x), mix(h2(i + vec2(0.0, 1.0)), h2(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+void vertex() {
+	lp = VERTEX.xz / 0.1;      // -1..1 across the 10 cm disc
+}
+
+void fragment() {
+	float r = length(lp);
+	float a = atan(lp.y, lp.x);
+	float edge = 0.55 + 0.25 * vn(vec2(a * 2.2, 3.0)) + 0.18 * vn(vec2(a * 7.0, 9.0));      // a lobed rim with drips
+	float drops = step(0.9, vn(lp * 6.0 + 11.0)) * step(r, 0.98);                          // a few flung drops beyond the rim
+	if (r > edge && drops < 0.5) {
+		discard;
+	}
+	float dry = smoothstep(edge - 0.25, edge, r);
+	ALBEDO = mix(vec3(0.30, 0.02, 0.02), vec3(0.2, 0.06, 0.03), dry) * (0.85 + 0.2 * vn(lp * 9.0));
+	ROUGHNESS = mix(0.15, 0.7, dry);      // wet and shiny in the middle
+	SPECULAR = 0.6;
+}
+"""
 
 
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
@@ -98,10 +133,12 @@ func on_rows(rows: Array) -> void:
 # size varied by position so the trail does not look stamped.
 func on_blood(points: PackedVector3Array) -> void:
 	if _blood_mat == null:
-		_blood_mat = StandardMaterial3D.new()
-		_blood_mat.albedo_color = Color(0.32, 0.03, 0.03)
-		_blood_mat.roughness = 0.35   # wet
-		_blood_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		# A blood trail spot as a ragged splash, not a perfect red disc (Kathreen, 3 Nov 2026): the edge is cut by noise into drips and a few flung drops,
+		# wet and dark red in the middle, drying brown at the rim. Each spot is turned at random, so no two look the same.
+		var shader: Shader = Shader.new()
+		shader.code = BLOOD_SHADER
+		_blood_mat = ShaderMaterial.new()
+		_blood_mat.shader = shader
 
 	while _blood.size() < points.size():
 		var spot: MeshInstance3D = MeshInstance3D.new()
@@ -123,6 +160,7 @@ func on_blood(points: PackedVector3Array) -> void:
 
 		if i < points.size():
 			spot.position = points[i] + Vector3(0.0, 0.03, 0.0)
+			spot.rotation.y = fmod(points[i].x * 7.31 + points[i].z * 3.17, TAU)     # each spot turned its own way, steady from frame to frame
 			var scale_xz: float = 0.6 + 0.8 * fposmod(points[i].x * 7.31 + points[i].z * 3.17, 1.0)
 			spot.scale = Vector3(scale_xz, 1.0, scale_xz * 0.8)
 
