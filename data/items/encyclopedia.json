@@ -2125,7 +2125,7 @@
 			"kind": "placeable",
 			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"how_to_get": [
-				"Craft: 16 Stick, 4 Leaves, 2 Twine"
+				"Craft: 30 Stick, 200 Leaves, 10 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2442,7 +2442,7 @@
 			"kind": "tool",
 			"description": "A spade with an iron blade.",
 			"how_to_get": [
-				"Craft: 2 Iron ingot, 2 Stick"
+				"Craft at a forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -2453,7 +2453,7 @@
 			"kind": "tool",
 			"description": "A spade with a steel blade.",
 			"how_to_get": [
-				"Craft: 2 Steel ingot, 2 Stick"
+				"Craft at a forge: 2 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -3630,7 +3630,7 @@
 			"kind": "placeable",
 			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
 			"how_to_get": [
-				"Craft: 4 Lumber, 2 Twine"
+				"Craft: 4 Rough plank, 2 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3670,7 +3670,7 @@
 			"kind": "tool",
 			"description": "A hoe with an iron blade.",
 			"how_to_get": [
-				"Craft: 2 Iron ingot, 2 Stick"
+				"Craft at a forge: 2 Iron ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -3681,7 +3681,7 @@
 			"kind": "tool",
 			"description": "A hoe with a steel blade.",
 			"how_to_get": [
-				"Craft: 2 Steel ingot, 2 Stick"
+				"Craft at a forge: 2 Steel ingot, 2 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -3703,7 +3703,7 @@
 				"Craft at a workbench: 1 Log"
 			],
 			"used_for": [
-				"Rough boards from a log; planned for building, fine board and shingles at a sawmill."
+				"Used in Ladder"
 			],
 			"obtainable_now": true
 		},
@@ -4242,7 +4242,9 @@
 			"how_to_get": [
 				"Craft at a campfire pot: 1 Leather, 1 Animal fat"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Leather cap"
+			],
 			"obtainable_now": false,
 			"status": "planned"
 		},
@@ -4695,7 +4697,7 @@
 			"kind": "clothing",
 			"description": "A close leather cap. Better than bare hide.",
 			"how_to_get": [
-				"Craft: 2 Leather"
+				"Craft: 1 Leather, 1 Fine leather"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4706,7 +4708,7 @@
 			"kind": "clothing",
 			"description": "A stiff leather vest. Turns a glancing blow.",
 			"how_to_get": [
-				"Craft at a workbench: 3 Leather"
+				"Craft at a workbench: 2 Leather, 2 Leather strap"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4728,7 +4730,7 @@
 			"kind": "clothing",
 			"description": "Quilted padding. Cheap armour that soaks a blow.",
 			"how_to_get": [
-				"Craft at a workbench: 3 Twine, 1 Leather"
+				"Craft at a workbench: 3 Twine, 1 Leather, 1 Leather strap"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5699,7 +5701,10 @@
 			"how_to_get": [
 				"Craft: 1 Leather (keep Stone knife)"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Leather jerkin",
+				"Used in Gambeson"
+			],
 			"obtainable_now": false,
 			"status": "planned"
 		},

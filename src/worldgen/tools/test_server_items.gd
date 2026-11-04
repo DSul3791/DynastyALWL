@@ -1632,6 +1632,13 @@ func _init() -> void:
 	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("poultice"), 0, 1, Vector3.ZERO)
 	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("poultice")), 0, 0, Vector3.ZERO)
 	check(vt.vitals_of(1)["health"] == 80.0, "a poultice restores 30 health")
+	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("herb_salve"), 0, 1, Vector3.ZERO)
+	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("herb_salve")), 0, 0, Vector3.ZERO)
+	check(vt.vitals_of(1)["health"] == 100.0, "a herb salve restores up to 25 health")
+	vt.vitals_of(1)["limp"] = 300.0
+	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("splint"), 0, 1, Vector3.ZERO)
+	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("splint")), 0, 0, Vector3.ZERO)
+	check(float(vt.vitals_of(1)["limp"]) == 0.0 and vt.inventory_of(1).count_of(vt.table.number_of("splint")) == 0, "a splint ends a limp and is used up")
 	vt.save()
 	var vt2 = make(vd)
 	vt2.peer_connected_hello(1, "abcdef123456")

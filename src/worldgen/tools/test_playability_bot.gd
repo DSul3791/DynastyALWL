@@ -13,7 +13,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 # What a first hour can fairly ask of the hands (the guide's pace: about 10 minutes of gathering). The bot fails when the recipes ask for more.
-const GATHER_BUDGET := {"stick": 70, "stone": 40, "plant_fibre": 90, "leaves": 20}
+const GATHER_BUDGET := {"stick": 70, "stone": 40, "plant_fibre": 90, "leaves": 200}   # Dave 4 Nov: the lean-to takes 200 leaves (three felled crowns)
 const STARTING_MATERIALS := ["stick", "stone", "plant_fibre", "leaves", "log"]
 
 var items
@@ -285,9 +285,14 @@ func _init() -> void:
 		return
 
 	pass_time(30.0, 0.8)
-	need(count("leaves") >= int(raw.get("leaves", 0)), "working the trunk gave %d leaves, the lean-to needs %d" % [count("leaves"), int(raw.get("leaves", 0))])
+	# One crown gives about a third of the lean-to's leaves (Dave 4 Nov: 200 leaves, about three trees); the bot fells one tree,
+	# so it checks that crown and stands in for the other two.
+	need(count("leaves") * 3 >= int(raw.get("leaves", 0)), "working the trunk gave %d leaves, a third of the lean-to's %d is needed per tree" % [count("leaves"), int(raw.get("leaves", 0))])
 	if halted:
 		return
+
+	if count("leaves") < int(raw.get("leaves", 0)):
+		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, int(raw.get("leaves", 0)) - count("leaves"), Vector3.ZERO)
 
 	items.action(1, Net.ACT_PICKUP, log_on_ground, 0, 0, Vector3.ZERO)
 	var carried: bool = items.shoulder_of(1) != "" or items.inventory_of(1).count_fill(items.table.number_of("log")) > 0

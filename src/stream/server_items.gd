@@ -11387,6 +11387,22 @@ func _eat(peer: int, inv, slot: int) -> void:
 		_use_energy_aid(peer, inv, slot, v, aid)
 		return
 
+	# A splint (vitals.json limp "cure_items") sets the leg and ends a limp at once.
+	var limp_cfg: Dictionary = _vitals_cfg.get("limp", {})
+
+	if (limp_cfg.get("cure_items", []) as Array).has(item_id):
+		if float(v.get("limp", 0.0)) <= 0.0:
+			_say(peer, "Your legs are fine.")
+			return
+
+		_last_eat[peer] = now
+		inv.take_from_slot(slot, 1)
+		v["limp"] = 0.0
+		_say(peer, str(limp_cfg.get("say_cured", "Your leg is set.")))
+		_sync_limp(peer, true)
+		_dirty = true
+		return
+
 	var kcal: int = VitalsRules.food_value(item_id, _vitals_cfg)
 	var heal: int = VitalsRules.heal_value(item_id, _vitals_cfg)
 	var ml: int = VitalsRules.drink_value(item_id, _vitals_cfg)
