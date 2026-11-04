@@ -109,7 +109,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
 	check(items.world_item_count() == before and _have(1, "lumber") == 12, "no workbench near: nothing placed, nothing taken")
 	_give(1, "log_workbench_kit", 1)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("log_workbench_kit")), 0, 0, Vector3(200.0, 10.0, 202.0))
+	items.place_piece(1, "log_workbench_kit", Vector3(200.0, 10.0, 202.0))
 	check(_ids_standing("log_workbench").size() == 1, "a log workbench stands (the station)")
 	_clear(1)
 	_give(1, "wooden_hammer", 1)
@@ -147,7 +147,7 @@ func _init() -> void:
 	# An old kit still places and takes down into a kit (the old way), and a by-hand piece takes down into its piece.
 	_clear(1)
 	_give(1, "wall_section_kit", 1)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("wall_section_kit")), 0, 0, Vector3(200.0, 10.0, 207.0))
+	items.place_piece(1, "wall_section_kit", Vector3(200.0, 10.0, 207.0))
 	check(_ids_standing("wall_section").size() == 1 and _have(1, "wall_section_kit") == 0, "a hand-made wall piece places")
 	items.action(1, Net.ACT_PICKUP, _ids_standing("wall_section")[0], 0, 0, Vector3.ZERO)
 	check(_have(1, "wall_section_kit") == 1, "and takes down into the piece, no blueprint refund")

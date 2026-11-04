@@ -129,7 +129,7 @@ func _init() -> void:
 				elif kind == 1:
 					items.action(p, Net.ACT_PLACE, items.inventory_of(p).numbers.find(items.table.number_of("campfire_kit")), 0, 0, pos[p - 1] + Vector3(2.0, 0.0, 0.0))
 				elif kind == 2:
-					items.action(p, Net.ACT_PLACE, items.inventory_of(p).numbers.find(items.table.number_of("chest_kit")), 0, 0, pos[p - 1] + Vector3(-2.0, 0.0, 0.0))
+					items.place_piece(p, "chest_kit", pos[p - 1] + Vector3(-2.0, 0.0, 0.0))
 				elif kind == 3:
 					items.action(p, Net.ACT_EAT, items.inventory_of(p).numbers.find(items.table.number_of("roast_forage")), 0, 0, Vector3.ZERO)
 				elif kind == 4:

@@ -340,7 +340,7 @@ func _init() -> void:
 	need(why == "", why)
 	if halted:
 		return
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(-3.0, 10.0, 0.0))
+	items.place_piece(1, "lean_to_kit", Vector3(-3.0, 10.0, 0.0))
 	var shelters: int = 0
 
 	for k in items._items:

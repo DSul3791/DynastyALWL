@@ -73,7 +73,7 @@ func _init() -> void:
 	items.inventory_of(1).add(items.table.number_of("log_oak"), 3)   # logs in the pack: the real carry (shoulder, ground) is test_logs_carry
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 0 and count("log_oak") == 3, "no workbench near: no lumber, the log is kept")
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("workbench_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	items.place_piece(1, "workbench_kit", Vector3(2.0, 10.0, 0.0))
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 2 and count("log_oak") == 2 and count("stone_wedge") == 1, "at the workbench, a log and the wedge give 2 lumber; the wedge is kept (%d lumber, %d logs left)" % [count("lumber"), count("log_oak")])
 	craft("rough_plank", 1)
