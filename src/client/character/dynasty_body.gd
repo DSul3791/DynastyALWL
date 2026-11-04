@@ -356,6 +356,7 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 const SIT_THIGH_OUT_DEG := 55.0
 const SIT_SHIN_FOLD_DEG := 135.0
 const SIT_HIPS_M := 0.14
+const SIT_SPINE_BACK_DEG := 9.0       # each of Spine, Spine1 and Spine2 leans back this much: the chair clip leans forward over a desk
 
 
 static func _ground_sit(anim: Animation) -> void:
@@ -372,6 +373,14 @@ static func _ground_sit(anim: Animation) -> void:
 			continue
 
 		if type != Animation.TYPE_ROTATION_3D:
+			continue
+
+		if path.ends_with(P + "Spine") or path.ends_with(P + "Spine1") or path.ends_with(P + "Spine2"):
+			var back: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_SPINE_BACK_DEG))
+
+			for k in range(anim.track_get_key_count(t)):
+				anim.track_set_key_value(t, k, (anim.track_get_key_value(t, k) as Quaternion) * back)
+
 			continue
 
 		var extra: Quaternion = Quaternion.IDENTITY
