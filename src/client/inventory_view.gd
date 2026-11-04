@@ -72,6 +72,9 @@ var pick_stamp: int = 0                       # msec of the latest pick-up or ga
 var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
+var hurt_event: Callable               # (health lost int) when a vitals update drops health by HURT_MIN or more (a bite, a fall): sounds
+var _vitals_seen: bool = false          # the first vitals after joining sets health; it is not a hurt
+const HURT_MIN := 4                     # a smaller drop is a slow drain (hunger, cold, bleeding), not a blow
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
@@ -1660,6 +1663,10 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: i
 	if new_thirst > thirst and _drink_msec > 0 and Time.get_ticks_msec() - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid():
 		eat_event.call("drink")
 
+	if _vitals_seen and health - new_health >= HURT_MIN and hurt_event.is_valid():
+		hurt_event.call(health - new_health)
+
+	_vitals_seen = true
 	hunger = new_hunger
 	thirst = new_thirst
 	luck = new_luck

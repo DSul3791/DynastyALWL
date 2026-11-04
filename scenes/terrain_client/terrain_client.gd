@@ -1345,6 +1345,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 		if not changed.is_empty():
 			sound.gear.dress(str(changed[0]))   # one sound for a change (a swap sends both pieces in one list)
+	items.hurt_event = func(lost: int) -> void: sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)

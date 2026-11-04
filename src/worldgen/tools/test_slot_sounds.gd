@@ -113,6 +113,7 @@ func _check_sites(names: Array) -> void:
 	var gear_script = preload("res://src/client/gear_sounds.gd")
 	check(gear_script.layers_for(["hide_tunic", "grass_skirt", "mail_shirt", "iron_helm"]) == ["leather", "cloth", "chain", "plate"] and gear_script.layer_of("") == "", "worn clothing gives the step layers (hide creaks, grass rustles, mail clinks, a helm clanks)")
 	check(names.has("respawn_gasp"), "coming back after a death has its gasp slot")
+	check(names.has("player_hurt"), "a blow on the player has its slot")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.
