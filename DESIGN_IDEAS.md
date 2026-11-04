@@ -1704,6 +1704,7 @@ To be fleshed out when the first NPC is designed.
 - **[Idea]** Blueprints are shared through Steam downloads, like Space Engineers does for ships.
 - **[Decided]** Placing a blueprint automatically levels the immediate land under it.
 - **[Decided]** **Foundation body and neighbours (Dave, 4 Nov 2026).** A foundation is a solid body 2 m thick from top to bottom (at least 1 m was asked for; 2 m also stays solid when the mouse wheel lifts it 1 m off the ground). Its top stands 0.3 m above its spot and everything builds on that top. A foundation placed beside another foundation of its kind snaps edge to edge (or corner to corner) at the neighbour's exact height, so a run of foundations is one level slab. The mouse wheel raises or lowers a foundation only when no other foundation is nearby; beside one it does nothing. This replaces the earlier "a foundation is a cube" note.
+- **[Decided]** **Inclination ruler (Dave 4 Nov 2026).** The look-angle ruler is off underground until the player presses H; on entering a cave a hint reads "Press H to show inclination". In water it still shows by itself.
 - **[Decided]** A preview outline is red until the terrain is within a reasonable shape to be auto-leveled. Leveling is assumed free and instant once the outline is green.
 - **[Proposed]** The client draws the preview for responsiveness. The server re-validates on placement.
 - **[Proposed]** The outline explains why it is red.
