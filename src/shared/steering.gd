@@ -12,7 +12,7 @@ const MAX_SLOPE := 0.9                  # rise over run a walker will climb
 # One step of at most speed x dt metres from pos toward target. `ground` is Callable(x, z) -> height, `blocked` is
 # Callable(x, z) -> bool (water, a wall, anything the walker may not enter; may be invalid). Returns
 # {"pos": Vector3 (y on the ground), "heading": radians of travel in x/z, "moved": bool, "arrived": bool}.
-static func step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: Callable, blocked: Callable, arrive_m: float = 0.4, heading: float = 0.0) -> Dictionary:
+static func step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: Callable, blocked: Callable, arrive_m: float = 0.4, heading: float = 0.0, walls: Callable = Callable()) -> Dictionary:
 	var to_x: float = target.x - pos.x
 	var to_z: float = target.z - pos.z
 	var dist: float = sqrt(to_x * to_x + to_z * to_z)
@@ -29,6 +29,9 @@ static func step(pos: Vector3, target: Vector3, speed: float, dt: float, ground:
 		var nz: float = pos.z + sin(angle) * reach
 
 		if blocked.is_valid() and bool(blocked.call(nx, nz)):
+			continue
+
+		if walls.is_valid() and bool(walls.call(pos.x, pos.z, nx, nz)):   # a built wall or heavy station in the way of this stride (server_items.structure_blocks_step)
 			continue
 
 		var ny: float = float(ground.call(nx, nz)) if ground.is_valid() else pos.y

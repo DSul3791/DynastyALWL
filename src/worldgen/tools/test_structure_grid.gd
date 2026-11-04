@@ -5,6 +5,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_structure_grid.gd
 
 const GridScript := preload("res://src/stream/structure_grid.gd")
+const Steering := preload("res://src/shared/steering.gd")
 
 var failures: int = 0
 
@@ -27,6 +28,15 @@ func _init() -> void:
 	check(grid.segment_blocked(100.0, 99.0, 100.0, 101.0, 0.0, items), "a stride across the wall is blocked, though both ends are clear")
 	check(not grid.segment_blocked(100.0, 99.0, 101.5, 99.0, 0.0, items), "a stride beside the wall is not")
 	check(not grid.blocks(5000.0, 5000.0, 0.0, items), "far from any wall is open")
+
+	# Steering: a walker heading through the wall is turned aside by `walls`, one beside it is not (the animals, wolves, thieves and big game pass the
+	# server's structure_blocks_step here; before, only deep water stopped them and they walked through buildings).
+	var flat: Callable = func(_x, _z): return 10.0
+	var walls: Callable = func(x0, z0, x1, z1): return grid.segment_blocked(x0, z0, x1, z1, 0.4, items)
+	var through: Dictionary = Steering.step(Vector3(100.0, 10.0, 99.0), Vector3(100.0, 10.0, 103.0), 1.5, 0.5, flat, Callable(), 0.4, 0.0, walls)
+	check(absf(through["pos"].x - 100.0) > 0.05 or absf(through["pos"].z - 99.0) < 0.01, "a walker at a wall is turned aside or held, not walked through")
+	var free_step: Dictionary = Steering.step(Vector3(100.0, 10.0, 99.0), Vector3(104.0, 10.0, 99.0), 1.5, 0.5, flat, Callable(), 0.4, 0.0, walls)
+	check(free_step["moved"] and absf(free_step["pos"].x - 100.0) > 0.5, "a walker beside the wall walks on")
 
 	items.erase(1)
 	check(not grid.blocks(100.0, 100.0, 0.0, items), "a wall taken down is forgotten")
