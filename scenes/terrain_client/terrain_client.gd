@@ -117,6 +117,7 @@ const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
+const FlameRules := preload("res://src/shared/flame_rules.gd")
 const HorizonScript := preload("res://src/client/horizon_indicator.gd")
 const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
@@ -223,6 +224,8 @@ var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
+var _flame_rain_s: float = 0.0          # seconds the held torch has been out in the open rain (flame_rules.gd)
+var _flame_asked_msec: int = -100000     # when the server was last asked to douse it (one ask a second at most)
 var underwater_surface: float = 0.0      # the water surface over the eye while under (fog depth, caustics), 0 in the sea
 var _ground_quality: int = -1       # quality the ground texture array was built for
 var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
@@ -4301,6 +4304,8 @@ func _process(delta: float) -> void:
 	if critters != null and body != null and sound != null and sound.ambient != null:
 		critters.update(delta, body.global_position, sound.ambient.weights, game_clock.season(), game_clock.hour(), float(weather.get("rain", 0.0)))
 
+	_flame_wet(delta)
+
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
 
@@ -5972,3 +5977,31 @@ func _exit_tree() -> void:
 	_drain_incoming()
 	if stream != null:
 		stream.close()
+
+
+# A torch in either hand goes out under water or after a few seconds in the open rain (Dave, 4 Nov 2026; flame_rules.gd). The client knows the held slot,
+# so it asks the server to swap the torch for a doused one; a lantern (later) only goes out under water.
+func _flame_wet(delta: float) -> void:
+	if held == null or items == null or items.inventory == null or net == null:
+		return
+
+	var slot: int = held.flame_slot()
+
+	if slot < 0:
+		_flame_rain_s = 0.0
+		return
+
+	var entry: Dictionary = items.table.entry(items.table.id_of(items.inventory.numbers[slot]))
+	var rain: float = float(weather.get("rain", 0.0))
+	# Cover from the rain: a tree's crown over the eye, or rock (a cave or an overhang: the same enclosure that stops the rain particles, weather_look.gd).
+	# A built roof is the server's to see: it refuses the douse there.
+	var enclosed: float = sound.cave.rock_enclosure if sound != null and sound.cave != null else 0.0
+	var covered: bool = WeatherLookScript.sky_share(enclosed) < 0.5 or held.flame_covered() if FlameRules.in_rain(rain, false) else true    # the cover lookup only while it rains
+	_flame_rain_s = _flame_rain_s + delta if FlameRules.in_rain(rain, covered) else 0.0
+	var reason: String = FlameRules.douse_reason(entry, underwater, rain, covered, _flame_rain_s)
+
+	if reason == "" or Time.get_ticks_msec() - _flame_asked_msec < 1000:
+		return
+
+	_flame_asked_msec = Time.get_ticks_msec()
+	net.inventory_action.rpc_id(1, NetScript.ACT_DOUSE, slot, 1 if reason == "rain" else 0, 0, Vector3.ZERO)

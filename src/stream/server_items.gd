@@ -8,6 +8,7 @@ extends RefCounted
 #
 # Until accounts exist an inventory is filed under the key the client made for itself.
 
+const FlameRules := preload("res://src/shared/flame_rules.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -1043,6 +1044,10 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_hit_shrub(peer, inv, a, Vector2i(b, count), at.x > 0.5)
 	elif kind == Net.ACT_PLANT_BUSH:
 		_plant_bush(peer, inv, a, at)
+	elif kind == Net.ACT_DOUSE:
+		_douse(peer, inv, a, b == 1)
+	elif kind == Net.ACT_RELIGHT:
+		_relight(peer, inv, a)
 	elif kind == Net.ACT_STRIKE:
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
@@ -5700,6 +5705,47 @@ func _cookable(item_id: String) -> bool:
 
 
 # The fire record of a world item id when the player stands within reach of it, else {}.
+# A torch in hand goes out under water or in the open rain (Dave, 4 Nov 2026; flame_rules.gd): the client, which knows the held slot, asks; the
+# item becomes its "doused_item" with the same wear. Rain is checked here too (the world's rain now and the cover over the player).
+func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0:
+		return
+
+	var into: String = str(table.entry(table.id_of(inv.numbers[slot])).get("doused_item", ""))
+
+	if into == "" or table.number_of(into) <= 0:
+		return
+
+	if by_rain:
+		var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+		var covered: bool = cover_at.is_valid() and _peer_pos.has(peer) and float(cover_at.call(_peer_pos[peer])) > 0.5
+
+		if not FlameRules.in_rain(rain, covered):
+			return
+
+	inv.numbers[slot] = table.number_of(into)
+	_say(peer, "The rain puts your torch out." if by_rain else "The water puts your torch out.")
+
+
+# E at a burning fire with a doused torch in the pack lights the first one again (Dave, 4 Nov 2026).
+func _relight(peer: int, inv, id: int) -> void:
+	var fire: Dictionary = _fire_in_reach(peer, id)
+
+	if fire.is_empty() or not fire_is_lit(int(fire["state"])):
+		return
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] == 0:
+			continue
+
+		var back: String = str(table.entry(table.id_of(inv.numbers[slot])).get("relit_item", ""))
+
+		if back != "" and table.number_of(back) > 0:
+			inv.numbers[slot] = table.number_of(back)
+			_say(peer, "Your torch catches and burns again.")
+			return
+
+
 func _fire_in_reach(peer: int, id: int) -> Dictionary:
 	var it: Dictionary = _items.get(id, {})
 

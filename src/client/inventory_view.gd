@@ -593,6 +593,15 @@ func refuse_cue(reason: String) -> void:
 		reject_event.call(reason)
 
 
+# The first pack slot holding a torch that water or rain put out (items.json "relit_item"), or -1.
+func _doused_torch_slot() -> int:
+	for slot in range(inventory.numbers.size()):
+		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("relit_item", "")) != "":
+			return slot
+
+	return -1
+
+
 func _probe_fire() -> Dictionary:
 	var id: int = _nearest_fire()
 
@@ -600,6 +609,12 @@ func _probe_fire() -> Dictionary:
 		return {}
 
 	var state: int = _world[id]["state"]
+
+	if _lit_state(state) and _doused_torch_slot() >= 0:
+		# A doused torch in the pack: E at a burning fire lights it again (Dave, 4 Nov 2026), instead of putting the fire out.
+		return {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": "Press E to light your torch", "tap": func():
+			net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, id, 0, 0, Vector3.ZERO)}
+
 	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": _fire_prompt(state), "tap": func():
 		if state == 9:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
