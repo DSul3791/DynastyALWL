@@ -52,5 +52,8 @@ func _init() -> void:
 	_check(start == "summer", "a new world starts in summer")
 	for name in ["raspberry", "bramble", "blueberry", "wild_strawberry", "wild_cherry", "apple_early", "plum"]:
 		_check(GatherRules.in_season(rows[name], start), "%s can be picked on the first day" % name)
+	# BUG-018: no raspberries in spring is right; the look-at line says "Raspberries - Out of Season" (harvest.gd product_name_at).
+	_check(not GatherRules.in_season(rows["raspberry"], "spring") and GatherRules.in_season(rows["raspberry"], "summer"), "raspberries are out of season in spring and in season in summer")
+	_check(str(preload("res://src/client/harvest.gd").OUT_OF_SEASON_FORMAT) % "Raspberries" == "Raspberries - Out of Season", "the out of season look-at line reads Raspberries - Out of Season")
 	print("season fruit test: %d failures" % _failures)
 	quit(_failures)
