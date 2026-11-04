@@ -8,7 +8,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Footstep on each ground, wet shoes, cloth | `sound_stage.gd`, `step_fx.gd` (`stepfx.step`) | Sonny (body) | wired |
 | Landing after a fall | `landing_sounds.gd`, called from `sound_stage.update` | Sonny | wired |
 | Stance change (crouch, sit, lie) | `terrain_client.gd:1087` `stance.set_stance` | Steve (stance rules) | wired |
-| Tool swing and hit (axe, pick, hammer, spade) | `held_item.gd:934-943` `hits.hit`, `hits.hit_ground`; `hits.swing` | Steve | wired for axe on wood and pick on ground; other tools to verify |
+| Tool swing and hit (axe, pick, hammer, spade) | `held_item.gd` `_strike` `hits.hit(_hit_tool())`, `hits.hit_ground`; `_start_swing` `hits.swing` (3 Nov: the swing whoosh was never called; a pick now sounds as a pick, a boulder as stone) | Steve | wired for axe and pick; hammer and spade swings use their own paths |
 | Pick a plant | `harvest.gd:145` `harvestfx.pick` | MikeW (plants) | wired |
 | Tree falls, trunk creak/crash/chips | `terrain_client.gd:3161` `trees.watch` | Steve (stump and trunk) | wired by world rows |
 | Dig terrain | `dig_sounds.gd` (5 call lines) | Sonny | wired |

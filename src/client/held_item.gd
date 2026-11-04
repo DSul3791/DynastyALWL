@@ -516,6 +516,9 @@ func _start_swing() -> void:
 	swing_serial += 1
 	_arm_play("swing_fp_down" if _aim_at_ground() else "swing_fp", _swing_length())
 
+	if _sound != null:
+		_sound.hits.swing(_hit_tool(), _camera.global_position - _camera.global_transform.basis.z * 0.8)   # the whoosh, hit or miss
+
 
 # True when the crosshair is on something lying on the ground (the ground, a log, a stump, a rock): the swing then comes overhead and down. A standing tree, or anything else upright, gets
 # the sideways swing (Dave 2 Nov 2026). With nothing in reach it follows the look: well below the horizon is down.
@@ -539,6 +542,11 @@ func _swing_length() -> float:
 
 func _hit_share() -> float:
 	return PICK_HIT_AT if _tool_class() == "pick" else HIT_AT
+
+
+# The tool's hit sounds (hit_sounds.gd TOOLS): a pick sounds as a pick, everything else that swings here as an axe.
+func _hit_tool() -> String:
+	return "pick" if _tool_class() == "pick" else "axe"
 
 
 func _tool_class() -> String:
@@ -1175,25 +1183,25 @@ func _strike() -> void:
 	var shrub: Array = shrub_near.call(from, hit["position"]) if shrub_near.is_valid() and tree.is_empty() else []   # an axe chops a bush up, a pickaxe digs it up whole (Dave 2 Nov 2026)
 
 	if log_id != 0:
-		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3.ZERO)
 	elif boulder_id != 0:
-		_sound.hits.hit_ground("pick", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "stone", hit["position"], 1.0)   # a boulder is stone whatever the ground under it
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, 0, Vector3.ZERO)
 	elif trunk_id != 0:
-		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 	elif stump_id != 0:
-		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3.ZERO)
 	elif not tree.is_empty():
-		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
 	elif not shrub.is_empty():
-		_sound.hits.hit("axe", "wood", hit["position"], 0.7)
+		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 0.7)
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT_SHRUB, shrub[1], shrub[0].x, shrub[0].y, Vector3(1.0 if _tool_class() == "pick" else 0.0, 0.0, 0.0))
 	else:
-		_sound.hits.hit_ground("pick", hit["position"], 1.0)
+		_sound.hits.hit_ground(_hit_tool(), hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_MINE, 0, 0, 0, hit["position"])
 
 
