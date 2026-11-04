@@ -283,6 +283,8 @@ static func reason_text(state: String) -> String:
 			return "the pot goes on a small fire: lay one first"
 		"taken":
 			return "that fire already has a pot"
+		"far":
+			return "too far away: step closer"
 
 	return ""
 

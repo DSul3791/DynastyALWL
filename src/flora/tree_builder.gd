@@ -120,7 +120,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var fruit: Acc = Acc.new()   # the apples, pears and cherries of the fruit trees on their own surface: vertex alpha = a per-fruit rank 0..1, so a shader can hide the highest ranks as the tree is picked (5 levels 100/66/33/10/0 percent)
 	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
 	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
-	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp, fern stalks and fiddleheads) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
+	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp, fern stalks and fiddleheads, nettles, leafy herbs and the plain flower) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
 	var berries: Acc = Acc.new() # the berries and blossoms of the berry bushes and ground berries: in `bark` they wore the bark texture and foot moss, so ripe blueberries and raspberries came out dark, grainy and greenish (Kathreen, 3 Nov)
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
@@ -172,9 +172,9 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"wildflower":
 			_wildflower(WILDFLOWER_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"leafy_herb":
-			_leafy_herb(HERB_LOOKS.get(str(entry["name"]), HERB_LOOKS["comfrey"]), bark, leaves, rng, h, crown, far)
+			_leafy_herb(HERB_LOOKS.get(str(entry["name"]), HERB_LOOKS["comfrey"]), greens, leaves, rng, h, crown, far)
 		"herb_nettle":
-			_herb(bark, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
+			_herb(greens, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
 		"hazel":
 			_hazel(smooth, leaves, twigs, rng, h, variant, far, season)
 		"oak":
@@ -219,7 +219,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"mushroom":
 			_mushroom(MUSHROOM_LOOKS.get(str(entry["name"]), MUSHROOM_LOOKS["porcini"]), bark, rng, h, crown, far)
 		"flower":
-			_flower(bark, leaves, rng, h, crown, far)
+			_flower(greens, leaves, rng, h, crown, far)
 		_:
 			_shrub(bark, leaves, rng, h, crown, far)
 
