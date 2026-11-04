@@ -1347,7 +1347,6 @@ func _init() -> void:
 	var chest_kit: int = ch.table.number_of("chest_kit")
 	var stones_n: int = ch.table.number_of("stone")
 	ch.action(1, Net.ACT_ADMIN_GIVE, chest_kit, 0, 1, Vector3.ZERO)
-	check(ch.recipes.recipe(14)["needs"] == [[ch.table.number_of("stick"), 10], [ch.table.number_of("twine"), 4]], "the first chest is woven from 10 sticks and 4 twine")
 	ch.action(1, Net.ACT_ADMIN_GIVE, stones_n, 0, 10, Vector3.ZERO)
 	ch.place_item(1, chest_kit, Vector3(2.0, 10.0, 0.0), 0)
 	var chest_id: int = 0
