@@ -96,7 +96,7 @@ func step(a: Dictionary, dt: float) -> void:
 			a["dir"] = float(a["dir"]) + turn
 
 		var goal: Vector3 = a["pos"] + Vector3(cos(float(a["dir"])), 0.0, sin(float(a["dir"]))) * step_m * 2.0
-		var r: Dictionary = Steering.step(a["pos"], goal, speed, dt, host.ground_height, host.blocked, 0.05, float(a["dir"]))
+		var r: Dictionary = Steering.step(a["pos"], goal, speed, dt, host.ground_height, host.blocked, 0.05, float(a["dir"]), host.crossing)
 		a["heading"] = float(a["dir"])
 
 		if r["moved"]:

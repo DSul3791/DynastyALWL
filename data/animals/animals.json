@@ -744,6 +744,7 @@
 		"max_sent": 80,
 		"bleed_hp_per_s": 0.15
 	},
+	"wall_margin_m": 0.3,
 	"nests": {"note": "Inland bird nests (MikeW 3 Nov; eggs and seasons in data/items/nests.json, Sal): one roll per cell_m square per kind, chance x the species biome weight; grouse on open ground, songbirds under trees or bushes; never steeper than slope_max.", "cell_m": 48.0, "grouse_chance": 0.25, "songbird_chance": 0.2, "slope_max": 0.5, "seed": 7},
 	"habitat_tries": 6,
 	"wolves": {
