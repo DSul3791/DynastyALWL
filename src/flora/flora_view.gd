@@ -48,7 +48,7 @@ uniform float sway = 0.012;
 uniform float flutter = 0.06;
 // Leaves are not opaque: about 40% of the sunlight comes through, so a crown
 // glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
-uniform float backlight = 0.3;
+uniform float backlight = 0.4;      // 0.3 to 0.4 (Kathleen 3 Nov, Art_Direction.md: crowns read near-black at noon; more sun through the leaves)
 // Leaves that glow (the witness tree): EMISSION = glow times the instance
 // custom alpha (how strongly this tree glows; young ones weakly). Black for
 // every other species. Faint by day, plain at night.
@@ -80,7 +80,7 @@ void fragment() {
 	NORMAL = view_normal;
 	// Crown shading: undersides sit in the crown's own shadow, and each patch of leaves
 	// gets its own tone so a crown reads as clusters, not one smooth lump.
-	float under = mix(0.6, 1.0, smoothstep(-0.7, 0.5, crown_up));
+	float under = mix(0.72, 1.0, smoothstep(-0.7, 0.5, crown_up));      // undersides 0.72, was 0.6: the crowns read as dark walls (starter-area critique 3 Nov)
 	vec2 cell = floor(UV * 7.0);
 	float speck = 0.88 + 0.24 * fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
 	ALBEDO = t.rgb * COLOR.rgb * tint * under * speck;
@@ -199,6 +199,30 @@ void fragment() {
 	ALBEDO = c;
 	BACKLIGHT = c * 0.3;
 	ROUGHNESS = 0.9;
+}
+"""
+
+# Berries and blossoms on the berry bushes and ground berries (tree_builder `berries`; colours from SHRUB_LOOKS, CANE_SHRUBS and GROUND_LOOKS in the vertex colour).
+# On the bark shader they wore bark grain and foot moss and came out about a quarter as bright as their colours (Kathreen, 3 Nov 2026). Here: the vertex
+# colour, a soft sheen so a ripe berry catches the light, a little light through it (BACKLIGHT), and the bark's wind so they stay on their canes.
+const BERRY_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = COLOR.rgb * 0.88;
+	ROUGHNESS = 0.45;
+	SPECULAR = 0.4;
+	BACKLIGHT = COLOR.rgb * 0.2;
 }
 """
 
@@ -929,6 +953,11 @@ func _make_tree_materials() -> void:
 	var greens_material: ShaderMaterial = ShaderMaterial.new()
 	greens_material.shader = greens
 	_tree_materials["greens"] = greens_material
+	var berry: Shader = Shader.new()
+	berry.code = BERRY_SHADER
+	var berry_material: ShaderMaterial = ShaderMaterial.new()
+	berry_material.shader = berry
+	_tree_materials["berry"] = berry_material
 	var fungus: Shader = Shader.new()
 	fungus.code = FUNGUS_SHADER
 	var fungus_material: ShaderMaterial = ShaderMaterial.new()
