@@ -2214,3 +2214,7 @@ Answered: 2026-11-04 15:03 UTC
 Answer: Yes
 Answered: 2026-11-04 15:04 UTC
 
+## sal-bed-hammer | Should the rough bed be built from the wooden hammer (a blueprint) instead of crafted by hand?
+Answer: No: But the bed is way too short. It’s not long enough for the character to lay on and it doesn’t have the press E to lay down function which it needs.
+Answered: 2026-11-04 15:05 UTC
+
