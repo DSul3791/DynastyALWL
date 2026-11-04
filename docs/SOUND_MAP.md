@@ -33,7 +33,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Spear jab/throw/hit | `spear.jab/throw/hit` | Steve | wired |
 | Menu clicks | `ui.play` (9 call lines) | Tyler/Steve | wired |
 | Sleep and wake | none? | Steve | to verify |
-| Player hurt / damage taken, death, respawn | none? (landing mentions the `hurt` signal) | Steve | to verify |
+| Player hurt / damage taken, death, respawn | respawn: `terrain_client.gd` `_respawn_gasp` (after `_on_died` and the cave-in end) -> `slots.play("respawn_gasp")` (breath_gasp; 3 Nov). Hurt: landing `hurt` signal only | Steve | respawn wired, to hear; hurt to verify |
 | Bow and arrow (draw, release, hit) | `held_item.gd` bow press -> `slots.play("bow_draw")`, release with an arrow in the pack -> `bow_loose` (make_bow.py; 3 Nov). Landing: `spear.arrow` soft thunk where the flight (followed from bow.json) comes down; animal hits thud via hit_number | Steve | wired, to hear |
 | Fishing (cast, bite, catch) | none? (fish splash is ambient only) | Steve/MikeW | to verify |
 | Drink from water source (not an item) | none? | Sonny/Steve | to verify |

@@ -123,6 +123,17 @@
    "loop": false,
    "peak_db": -8,
    "status": "filled"
+  },
+  "respawn_gasp": {
+   "group": "body",
+   "files": [
+    "res://assets/audio/body/breath_gasp_0.ogg",
+    "res://assets/audio/body/breath_gasp_1.ogg",
+    "res://assets/audio/body/breath_gasp_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -10,
+   "status": "filled"
   }
  }
 }
