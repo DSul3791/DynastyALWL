@@ -14,12 +14,6 @@
 
 
 
-## berries-stew-cook | Food: do berries (4 kcal) stew in a pot, and does the campfire refuse plants?
-Note: 1. Pick 3 berries and hold water. Put a berry in the campfire: it should not cook (campfire cooks only meat and fish).
-Note: 2. Place a clay pot on the campfire (6 clay, then 3 sticks and 3 twine), put in 3 berries and water.
-Note: 3. Note whether you get Stewed berries and whether the hint about the pot appeared once.
-[test]
-
 ## pic-flora-orchard-rows | In the real game: do the orchard trees read as rows of fruit trees?
 Image: questions/img/flora_orchard_rows.jpg
 Note: Real game rig shot at noon from the south edge of the orchard, (53376,68535). The rows read, but it is dark under the crowns and no fruit is visible from this height. Flora rates it 3 of 5; fruit visibility is a look question for Kathleen.
