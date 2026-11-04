@@ -49,8 +49,8 @@ const SPEED_OF_SOUND := 343.0
 const TICK_SEC := 0.05                 # the whole weather mix runs at 20 Hz on the accumulated time
 const KINDS := {
 	"clear": {"rain": 0.0, "wind": 0.0, "hush": 0.0, "thunder": 0.0, "calls": 1.0, "frogs": 1.0},
-	"drizzle": {"rain": 0.3, "wind": 0.1, "hush": 0.1, "thunder": 0.0, "calls": 0.5, "frogs": 1.6},
-	"rain": {"rain": 0.65, "wind": 0.25, "hush": 0.25, "thunder": 0.0, "calls": 0.15, "frogs": 1.2},
+	"drizzle": {"rain": 0.3, "wind": 0.1, "hush": 0.1, "thunder": 0.0, "calls": 0.0, "frogs": 1.6},
+	"rain": {"rain": 0.65, "wind": 0.25, "hush": 0.25, "thunder": 0.0, "calls": 0.0, "frogs": 1.2},
 	"storm": {"rain": 1.0, "wind": 0.75, "hush": 0.4, "thunder": 1.0, "calls": 0.0, "frogs": 0.0},
 	"snow": {"rain": 0.0, "wind": 0.05, "hush": 0.5, "thunder": 0.0, "calls": 0.4, "frogs": 0.0},
 	"blizzard": {"rain": 0.0, "wind": 1.0, "hush": 0.3, "thunder": 0.0, "calls": 0.0, "frogs": 0.0},
@@ -166,6 +166,17 @@ func setup(stage, ambient) -> void:
 		_loops[sound_name] = player
 
 
+# Share of birds and insects still calling: none at all while any rain falls (Dave's bug list 3 Nov, BUG-004), else the
+# kind's share eased in by the intensity.
+static func calls_for(weather_kind: String, weather_intensity: float) -> float:
+	var share: float = float(KINDS.get(weather_kind, KINDS["clear"])["calls"])
+
+	if share <= 0.0:
+		return 0.0
+
+	return lerpf(1.0, share, clampf(weather_intensity, 0.0, 1.0))
+
+
 # The one hook a weather system calls. Unknown kinds are ignored.
 func set_weather(new_kind: String, new_intensity: float = 1.0) -> void:
 	if not KINDS.has(new_kind):
@@ -235,7 +246,7 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 	rain = move_toward(rain, float(target["rain"]) * intensity, step)
 	wind = move_toward(wind, float(target["wind"]) * intensity, step)
 	hush = move_toward(hush, float(target["hush"]) * intensity, step)
-	calls = move_toward(calls, lerpf(1.0, float(target["calls"]), intensity), step)
+	calls = move_toward(calls, calls_for(kind, intensity), step)
 	frogs = move_toward(frogs, lerpf(1.0, float(target["frogs"]), intensity), step)
 	_under = move_toward(_under, 0.12 if underwater else 1.0, delta * 3.0)
 	_ambient.weather_calls = calls
