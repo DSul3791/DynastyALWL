@@ -1323,9 +1323,9 @@ func _welcome_body(info: Dictionary) -> void:
 	_npc_voice = npc_voice
 	Probe.stop("welcome: npc voice", tq_voice)
 
-	var tq_menu: int = Probe.start()
+	var tq_gmenu: int = Probe.start()
 	game_menu.refresh()
-	Probe.stop("welcome: game menu", tq_menu)
+	Probe.stop("welcome: game menu", tq_gmenu)
 
 	dialogue_view.voice_line = func(voice_id: String, text: String):
 		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
