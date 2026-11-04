@@ -145,6 +145,18 @@
    "loop": false,
    "peak_db": -8,
    "status": "filled"
+  },
+  "skill_tock": {
+   "group": "skill",
+   "files": [
+    "res://assets/audio/skill/skill_tock_0.ogg",
+    "res://assets/audio/skill/skill_tock_1.ogg",
+    "res://assets/audio/skill/skill_tock_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "a skill rises: a soft wooden tock, at most once every 20 s (Dave, QA jason-skill-chime A, 4 Nov 2026)"
   }
  }
 }

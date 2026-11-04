@@ -74,6 +74,7 @@ var pick_stamp: int = 0                       # msec of the latest pick-up or ga
 var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
+var skill_up_event: Callable           # () when a skills message shows a skill's level higher than the last one (sounds; not on the first list after joining)
 var hurt_event: Callable               # (health lost int) when a vitals update drops health by HURT_MIN or more (a bite, a fall): sounds
 var _vitals_seen: bool = false          # the first vitals after joining sets health; it is not a hurt
 const HURT_MIN := 4                     # a smaller drop is a slow drain (hunger, cold, bleeding), not a blow
@@ -3433,11 +3434,29 @@ func _on_died(cause: String, _spawn: Vector3) -> void:
 func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
 	strength = attributes[0] if attributes.size() > 0 else 0
 	memory = attributes[1] if attributes.size() > 1 else 0
+	var rose: bool = not skill_rows.is_empty() and skill_rose(skill_rows, rows)
 	skill_rows = rows
 	_update_trail_mult()
 
+	if rose and skill_up_event.is_valid():
+		skill_up_event.call()
+
 	if _character != null:
 		_character.refresh()
+
+
+# True when some skill's whole working level (row[1]) is higher in `new_rows` than in `old_rows`. Rust (a drop) and new rows do not count.
+static func skill_rose(old_rows: Array, new_rows: Array) -> bool:
+	var before: Dictionary = {}
+
+	for row in old_rows:
+		before[int(row[0])] = int(row[1])
+
+	for row in new_rows:
+		if before.has(int(row[0])) and int(row[1]) > int(before[int(row[0])]):
+			return true
+
+	return false
 
 
 # The inner voice (protocol 38): the text as a subtitle for a few seconds; Sounds plays the line's recording when there is one.
