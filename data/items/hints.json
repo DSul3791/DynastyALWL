@@ -86,7 +86,7 @@
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Lash a ridge pole, lean sticks against it and weave in boughs: 32 sticks, 8 leaves, 4 twine.",
+			"text": "Lash a ridge pole, lean sticks against it and weave in boughs: 16 sticks, 4 leaves, 2 twine.",
 			"goal": "shelter"
 		},
 		{

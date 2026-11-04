@@ -10,8 +10,8 @@ const SHADER := """
 shader_type spatial;
 render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
 
-uniform vec3 shallow_color : source_color = vec3(0.17, 0.33, 0.33);
-uniform vec3 deep_color : source_color = vec3(0.04, 0.17, 0.24);
+uniform vec3 shallow_color : source_color = vec3(0.16, 0.38, 0.34);   // Kathreen 3 Nov 2026 (art direction: vibrant, not grey): greener shallows, was 0.17, 0.33, 0.33
+uniform vec3 deep_color : source_color = vec3(0.03, 0.18, 0.28);   // bluer depths, was 0.04, 0.17, 0.24
 uniform vec3 foam_color : source_color = vec3(0.78, 0.82, 0.80);
 uniform vec3 mud_color : source_color = vec3(0.36, 0.27, 0.16);
 uniform float rough = 0.0;           // 0 calm, 1 raging (flow rate above x1, set by the client)
