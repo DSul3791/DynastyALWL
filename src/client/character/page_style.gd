@@ -80,3 +80,49 @@ static func page(root: Control) -> VBoxContainer:
 	box.add_theme_constant_override("separation", 10)
 	margin.add_child(box)
 	return box
+
+
+# The body preview's little world, shared by the creator and the character select pictures (Kathreen 3 Nov 2026; Dave's art direction: warm inviting sunlight, rich natural
+# colour, not a grey studio). A soft sky from a warm horizon up to blue, a warm low sun with a cool fill from the other side so the form reads, and a patch of grassy ground
+# under the feet so the body stands somewhere instead of floating on a flat colour.
+static func add_preview_world(view: Node) -> void:
+	var sky_material: ProceduralSkyMaterial = ProceduralSkyMaterial.new()
+	sky_material.sky_top_color = Color(0.36, 0.52, 0.72)
+	sky_material.sky_horizon_color = Color(0.86, 0.74, 0.58)
+	sky_material.ground_horizon_color = Color(0.5, 0.45, 0.36)
+	sky_material.ground_bottom_color = Color(0.22, 0.2, 0.16)
+	var sky: Sky = Sky.new()
+	sky.sky_material = sky_material
+	var env: Environment = Environment.new()
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 0.55
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	var we: WorldEnvironment = WorldEnvironment.new()
+	we.environment = env
+	view.add_child(we)
+	var sun: DirectionalLight3D = DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-32.0, -35.0, 0.0)
+	sun.light_color = Color(1.0, 0.9, 0.76)
+	sun.light_energy = 1.35
+	sun.shadow_enabled = true
+	view.add_child(sun)
+	var fill: DirectionalLight3D = DirectionalLight3D.new()
+	fill.rotation_degrees = Vector3(-20.0, 150.0, 0.0)
+	fill.light_color = Color(0.62, 0.72, 0.9)
+	fill.light_energy = 0.35
+	view.add_child(fill)
+	var ground: MeshInstance3D = MeshInstance3D.new()
+	var disc: CylinderMesh = CylinderMesh.new()
+	disc.top_radius = 1.6
+	disc.bottom_radius = 1.6
+	disc.height = 0.02
+	disc.radial_segments = 48
+	var soil: StandardMaterial3D = StandardMaterial3D.new()
+	soil.albedo_color = Color(0.3, 0.4, 0.2)
+	soil.roughness = 1.0
+	disc.material = soil
+	ground.mesh = disc
+	ground.position = Vector3(0.0, -0.01, 0.0)
+	view.add_child(ground)

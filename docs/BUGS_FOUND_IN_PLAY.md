@@ -9,7 +9,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** the fire timer does not update after you add more wood.
 - **Context, not a diagnosis:** the "Campfire hh:mm:ss Burn time" label is shown in inspect mode and was added to the daily today (client `_fire_label` in `src/client/inventory_view.gd`, burn time from the fire's server state in `src/stream/server_items.gd`). It is not known whether the shown time is stale on the client, not resent by the server when wood is added, or something else. `test_fire_fuel_tiers` and `test_fire_midburn_save` cover the burn time on the server side only; nothing has been run in a windowed client.
-- **Status:** open, unassigned, not worked on.
+- **Status:** FIXED (3 Nov check, Dino). Adding wood now resends the fire row (`fire["fed"]` bump in `src/stream/server_items.gd`, about line 6141, from #85), so the timer shows the new time; #135 makes the timer the sum of all fuel. Needs Dave's play check.
 
 ## 2. I can't pick up the chopping block
 
@@ -41,6 +41,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **What decides the hit count (read from the code, not a diagnosis):** in `src/stream/server_items.gd` (the tree-hit handler, about line 3697) blows needed = round(`tree_base` + trunk radius in metres x `tree_per_trunk_m`), clamped between `tree_min` and `tree_max`, then divided by the player's `fell_tree` skill factor (clamped 0.25 to 4). The numbers are in `data/items/drops.json`, section `felling`: `tree_base` 2.0, `tree_per_trunk_m` 16.5, `tree_min` 3, `tree_max` 22. The tool tier does not enter the formula. One blow counts per swing, at least `HIT_COOLDOWN_MS` (400 ms) apart, and a half-chopped tree resets after `CHOP_RESET_MS` (60 s) untouched. The section's note says the blow counts were scaled by 0.55 on 31 Oct when the swing went from 0.55 s to 1.05 s, "to keep the real time per tree", and `test_felling_time` checks that.
 - **So over 20 hits means:** either a thick trunk (about 1.1 m radius or more, which reaches the 22 cap) or a low fell skill factor that divides the count up (for example a cap of 22 at skill 1.0 is 22, and at skill 0.5 it is 44). Which of those applies to Dave's tree is not known. Whether today's swing changes (Jason's `7a616fcc`, Kathleen's `e90c46d1`) altered how many swings land per hit is also not known.
 - **Status:** findings in `docs/BUG5_TREE_HITS_FINDINGS.md` (#27): the server cannot require more than 15 blows on a normal tree, so over 20 means swings the server never counted (likely landing on nearby felled logs or the ground); next step needs a Godot run with a hits/needed log (Jamie, from merged commits; not tested).
+- **Also:** fix merged in #76 (3 Nov check, Dino): blows can follow each tree's drawn trunk size, so a thin tree takes about 3 and a 1 m tree about 10. It is behind `felling.size_scaled` in drops.json, which is OFF until Dave decides (QA card tree-hits-follow-size). Until it is on, the old count stands.
 
 ## 6. Each cut on a fallen tree makes the game lag and lock up for about 2 seconds
 

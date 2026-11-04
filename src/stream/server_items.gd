@@ -1020,6 +1020,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_hoe_grade(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count, b)
+	elif kind == Net.ACT_REPAIR_STRUCT:
+		_repair_struct(peer, inv, a)
 	elif kind == Net.ACT_PLACE_BLUEPRINT:
 		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
 	elif kind == Net.ACT_THROW:
@@ -3529,7 +3531,7 @@ func _load_world_items() -> void:
 				if not _chests.has(int(row[10])):
 					_chests[int(row[10])] = InventoryScript.new(table)
 
-			if row.size() > 12 and _structures.get(str(row[9]), {}).has("support"):
+			if row.size() > 12 and (_structures.get(str(row[9]), {}).has("support") or (not BuildingWear.rule_for(_wear_cfg, str(entry["struct"]["kind"])).is_empty() and float(row[12]) > 0.0)):
 				entry["struct"]["born"] = float(row[12])
 
 			if row.size() > 12 and str(row[9]) == "remains":
@@ -5796,6 +5798,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	if attaching:
 		_refresh_pots()   # the fire under it takes the firewood cap now
 
+	if not BuildingWear.rule_for(_wear_cfg, str(def["kind"])).is_empty():
+		entry["struct"]["born"] = _now_game_s()   # last cared for: placed now
+
 	if def.has("support"):
 		entry["struct"]["born"] = _now_game_s()
 		_rebuild_supports()
@@ -5841,6 +5846,164 @@ func _snap_to_fire(peer: int, spot: Vector3) -> Vector3:
 
 
 # The structure's roof joins the cover index (both ends do the same on seeing the structure).
+# --- Building wear and repair (DESIGN_IDEAS.md Section 8.13; Dave 4 Nov 2026) ---
+const BuildingWear := preload("res://src/shared/building_wear.gd")
+var _wear_cfg: Dictionary = BuildingWear.load_config()
+
+
+# The condition (0 to 1) of a placed piece now; 1.0 for a kind that does not wear. A piece placed before wear existed starts its clock now.
+func piece_condition(id: int) -> float:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct"):
+		return 1.0
+
+	var rule: Dictionary = BuildingWear.rule_for(_wear_cfg, str(it["struct"]["kind"]))
+
+	if rule.is_empty():
+		return 1.0
+
+	if not it["struct"].has("born"):
+		it["struct"]["born"] = _now_game_s()
+
+	return BuildingWear.condition(rule, float(it["struct"]["born"]), _now_game_s())
+
+
+# Hammer, Repair mode, left click on a worn piece: spends repair_share of the piece's blueprint materials times what it lost, from loose items near the
+# piece, then containers within reach, then the pack (all or nothing), and sets the piece back to full condition.
+func _repair_struct(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or not _peer_pos.has(peer):
+		return
+
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
+		_say(peer, "Too far to repair that.")
+		return
+
+	if _tool_slot(inv, "hammer") < 0:
+		_say(peer, "You need a hammer in your hand bar to repair.")
+		return
+
+	var kind: String = str(it["struct"]["kind"])
+	var def: Dictionary = _structures.get(kind, {})
+	var piece_name: String = kind.replace("_", " ")
+	var blueprint: Dictionary = _blueprints.get(int(_blueprint_of_kit.get(str(def.get("kit", "")), 0)), {})
+
+	if BuildingWear.rule_for(_wear_cfg, kind).is_empty() or blueprint.is_empty():
+		_say(peer, "The %s does not wear, so it needs no repair." % piece_name)
+		return
+
+	var cond: float = piece_condition(id)
+
+	if cond >= float(_wear_cfg.get("good_condition", 0.98)):
+		_say(peer, "The %s is in good repair (%d percent)." % [piece_name, int(round(cond * 100.0))])
+		return
+
+	var needs: Array = BuildingWear.repair_needs(blueprint["cost"], cond, float(_wear_cfg.get("repair_share", 0.5)))
+	var log_need: int = 0
+
+	for need in needs:
+		if str(need[0]) == "log":
+			log_need = int(need[1])
+
+	if log_need > 0:
+		_pull_nearby_logs(peer, inv, maxi(0, log_need - inv.count_of(table.number_of("log"))))   # shoulder and ground logs count, as for building
+
+	var ground_m: float = float(_wear_cfg.get("ground_m", 6.0))
+	var boxes: Array = _boxes_near(peer)
+	var short: PackedStringArray = []
+
+	for need in needs:
+		var number: int = table.number_of(str(need[0]))
+		var have: int = inv.count_of(number) + _ground_count(number, it["pos"], ground_m)
+
+		for box in boxes:
+			have += box[1].count_of(number)
+
+		if have < int(need[1]):
+			short.append("%d %s" % [int(need[1]), str(table.entry(str(need[0])).get("name", need[0])).to_lower()])
+
+	if not short.is_empty():
+		_say(peer, "Repairing the %s (%d percent) needs %s." % [piece_name, int(round(cond * 100.0)), ", ".join(short)])
+		return
+
+	for need in needs:
+		var number: int = table.number_of(str(need[0]))
+		var left: int = int(need[1])
+		left -= _ground_take(number, left, it["pos"], ground_m)
+
+		for box in boxes:
+			if left <= 0:
+				break
+
+			var from_box: int = mini(left, box[1].count_of(number))
+
+			if from_box > 0 and box[1].remove(number, from_box):
+				left -= from_box
+				_push_box(int(box[0]), box[1])
+
+		if left > 0:
+			inv.remove(number, left)
+
+	it["struct"]["born"] = _now_game_s()
+	_dirty = true
+	_say(peer, "Repaired the %s (was %d percent)." % [piece_name, int(round(cond * 100.0))])
+
+
+# Loose items (not structures, fires or trees) of one kind within `radius` of a spot.
+func _ground_count(number: int, at: Vector3, radius: float) -> int:
+	var total: int = 0
+
+	for gid in _items:
+		var g: Dictionary = _items[gid]
+
+		if int(g.get("number", 0)) == number and not g.has("struct") and not g.has("fire") and not g.has("tree") and (g["pos"] as Vector3).distance_to(at) <= radius:
+			total += int(g["count"])
+
+	return total
+
+
+func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
+	var taken: int = 0
+
+	for gid in _items.keys():
+		if taken >= want:
+			break
+
+		var g: Dictionary = _items[gid]
+
+		if int(g.get("number", 0)) != number or g.has("struct") or g.has("fire") or g.has("tree") or (g["pos"] as Vector3).distance_to(at) > radius:
+			continue
+
+		var take: int = mini(int(g["count"]), want - taken)
+
+		if take >= int(g["count"]):
+			_items.erase(gid)
+		else:
+			g["count"] = int(g["count"]) - take
+
+		taken += take
+
+	return taken
+
+
+# [[item id, inventory], ...] of containers (chests) within reach of the player.
+func _boxes_near(peer: int) -> Array:
+	var out: Array = []
+
+	for sid in _items:
+		var s: Dictionary = _items[sid]
+
+		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0:
+			continue
+
+		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= Interact.server_reach_m() + 2.0:
+			out.append([sid, _chests[int(s["struct"]["uid"])]])
+
+	return out
+
+
 # --- Solid footprints (Dave 3 Nov 2026): the server knows where walls and heavy stations stand, so animals can be stopped by them ---
 const StructureGridScript := preload("res://src/stream/structure_grid.gd")
 var _grid = StructureGridScript.new()
