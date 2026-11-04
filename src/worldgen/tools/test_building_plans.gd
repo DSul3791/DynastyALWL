@@ -51,7 +51,7 @@ func _init() -> void:
 	check(bool(saved["ok"]) and saved["name"] == "Plan 1" and int(saved["pieces"]) == 2, "the menu saves a plan as Plan 1")
 	check(not bool(list.save_plan_near(rows, Vector3(0.0, 0.0, 0.0))["ok"]), "saving with nothing near says no")
 	var entries: Array = list.entries(1)
-	check(entries[0]["kind"] == "save" and entries[entries.size() - 1]["kind"] == "plan", "the menu has Save building plan first and the plan last")
+	check(entries[0]["kind"] == "repair" and entries[1]["kind"] == "save" and entries[entries.size() - 1]["kind"] == "plan", "the menu has Repair, Save building plan, the blueprints, then the plan last")
 	check(not list.can_afford(1) and not bool(entries[entries.size() - 1]["can"]), "an empty pack cannot afford the plan")
 
 	var again = ListScript.new()
@@ -73,7 +73,8 @@ func _init() -> void:
 	again.choose(1)   # the highlight starts on the picked plan, so this keeps it
 	check(again.plan_picked == 0, "the highlight starts on the picked plan")
 	again.set_open(true, 1)
-	again.move(true, 1)   # wraps to the first row: Save building plan
+	again.move(true, 1)   # wraps to the first row: Repair
+	again.move(true, 1)   # then Save building plan
 	again.choose(1)
 	check(again.mode == "save" and again.picked == 0 and again.plan_picked == -1, "Save building plan switches the hammer to saving")
 	check(again.delete_highlighted(1) == "", "Delete on Save building plan removes nothing")

@@ -10,7 +10,7 @@ const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
 const STRUCTURES_PATH := "res://data/items/structures.json"
 const BuildingPlans := preload("res://src/client/building_plans.gd")
 
-var mode: String = "place"               # "place" (blueprints and saved plans) or "save" (left click saves the building you aim at)
+var mode: String = "place"               # "place" (blueprints and saved plans), "save" (left click saves the building you aim at) or "repair" (left click repairs the piece you aim at)
 var plan_picked: int = -1                # index of the saved plan chosen, -1 for none (picked then holds the plan's anchor blueprint)
 var plans = BuildingPlans.new()
 
@@ -190,7 +190,7 @@ func save_plan_near(structure_rows: Array, near: Vector3) -> Dictionary:
 
 # The menu: "Save building plan" first, then the blueprints, then the saved plans. Each entry: {kind, name, text, can, ...}.
 func entries(hammer_tier: int) -> Array:
-	var out: Array = [{"kind": "save", "name": "Save building plan", "text": "then left click a building to keep all of it as a plan", "can": true}]
+	var out: Array = [{"kind": "repair", "name": "Repair", "text": "then left click a worn piece: it is mended from materials on the ground nearby, in containers or in your pack", "can": true}, {"kind": "save", "name": "Save building plan", "text": "then left click a building to keep all of it as a plan", "can": true}]
 
 	for row in rows(hammer_tier):
 		out.append({"kind": "bp", "number": int(row["number"]), "name": str(row["name"]), "text": str(row["text"]), "can": bool(row["can"])})
@@ -216,7 +216,7 @@ func set_open(on: bool, hammer_tier: int = 1) -> void:
 		for n in range(list.size()):
 			var entry: Dictionary = list[n]
 
-			if (entry["kind"] == "save" and mode == "save") or (entry["kind"] == "plan" and int(entry["index"]) == plan_picked) or (entry["kind"] == "bp" and mode == "place" and plan_picked < 0 and int(entry["number"]) == picked):
+			if (entry["kind"] == "save" and mode == "save") or (entry["kind"] == "repair" and mode == "repair") or (entry["kind"] == "plan" and int(entry["index"]) == plan_picked) or (entry["kind"] == "bp" and mode == "place" and plan_picked < 0 and int(entry["number"]) == picked):
 				_cursor = n
 
 	if _panel != null:
@@ -242,8 +242,8 @@ func choose(hammer_tier: int) -> void:
 		var entry: Dictionary = list[_cursor]
 		plan_picked = -1
 
-		if entry["kind"] == "save":
-			mode = "save"
+		if entry["kind"] == "save" or entry["kind"] == "repair":
+			mode = str(entry["kind"])
 			picked = 0
 		elif entry["kind"] == "plan":
 			mode = "place"

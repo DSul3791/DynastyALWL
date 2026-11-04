@@ -36,6 +36,11 @@
 			"tests": ["test_structure_grid"]
 		},
 		{
+			"why": "building wear and hammer repair",
+			"paths": ["src/shared/building_wear.gd", "data/items/building_wear.json"],
+			"tests": ["test_building_wear", "test_building_plans"]
+		},
+		{
 			"why": "sound slots read client sources as text",
 			"paths": ["data/sound/**", "src/client/slot_sounds.gd", "src/client/placed_sounds.gd", "src/client/animal_view.gd", "src/client/sound_test_menu.gd", "scenes/terrain_client/terrain_client.gd"],
 			"tests": ["test_slot_sounds", "test_batch3_slots"]

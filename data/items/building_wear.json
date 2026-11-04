@@ -1,0 +1,16 @@
+{
+	"note": "Building wear (DESIGN_IDEAS.md Section 8.13, Dave 4 Nov 2026: go). A piece's condition is worked out lazily from the game time since it was last cared for (placed or repaired, struct 'born'): condition = 1 - (1 - floor) * min(1, t / T) squared. T is in game days (a game day is 3600 real seconds, so 168 game days is one real week), floor is the lowest condition the material can wear to (stone never wears, so it is not listed). kinds maps a structures.json kind to a material; a kind not listed does not wear. Repair (hammer, Repair mode) costs repair_share of the piece's blueprint materials times the condition it lost (rounded up, at least 1 of each), taken from loose items near the piece, then containers within reach, then the pack, and sets the piece back to full condition. A piece above good_condition counts as in good repair.",
+	"materials": {
+		"log": {"T_game_days": 168, "floor": 0.5},
+		"wood": {"T_game_days": 168, "floor": 0.5},
+		"brick": {"T_game_days": 600, "floor": 0.8}
+	},
+	"kinds": {
+		"log_wall": "log", "log_floor": "log", "log_roof": "log",
+		"brick_wall": "brick", "brick_floor": "brick", "brick_roof": "brick",
+		"log_workbench": "log", "woodworking_table": "wood", "saw_mill": "wood", "stone_forge": "brick", "blacksmithy": "brick", "clay_hearth": "brick", "oven": "brick", "fireplace": "brick"
+	},
+	"repair_share": 0.5,
+	"good_condition": 0.98,
+	"ground_m": 6.0
+}
