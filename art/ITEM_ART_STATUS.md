@@ -13,29 +13,29 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 2 | stick | Stick | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
 | 3 | plant_fibre | Plant fibre | fibre | looks.json | rough |  |  |  |  |
 | 4 | log | Log | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
-| 5 | twine | Twine | coil | looks.json | rough |  | 2026-11-03 |  | twist ticks, ties, frayed end (#206); needs a PC sheet before "decent" |
+| 5 | twine | Twine | coil | looks.json | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | twist ticks, ties, frayed end (#206); cloud sheet 4 Nov (Sonny): OK: coil with frayed end reads as twine |
 | 6 | stone_axe | Stone axe | axe | looks.json | rough |  |  |  |  |
-| 7 | spear | Stone spear | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | stone point, not iron (#206); needs a PC sheet before "decent" |
-| 8 | campfire_kit | Campfire | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | tinder tuft (#206); needs a PC sheet before "decent" |
-| 9 | seed_bundle | Seeds | sack | looks.json | rough |  | 2026-11-03 |  | burlap, patch, seed spill (#206); needs a PC sheet before "decent" |
+| 7 | spear | Stone spear | override | ART_OVERRIDES | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | stone point, not iron (#206); cloud sheet 4 Nov (Sonny): OK: stone point, lashing, straight shaft |
+| 8 | campfire_kit | Campfire | override | ART_OVERRIDES | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | tinder tuft (#206); cloud sheet 4 Nov (Sonny): OK: stone ring, logs, tinder tuft |
+| 9 | seed_bundle | Seeds | sack | looks.json | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/seed_bundle.png | burlap, patch, seed spill (#206); cloud sheet 4 Nov (Sonny): OFF: reads as a ribbed clay jar, not a burlap sack (no slump, no tie, no patch visible); see seed_bundle.png |
 | 10 | wooden_spear | Wooden spear | shaft | looks.json | rough |  |  |  |  |
 | 11 | stone_knife | Stone knife | knife | looks.json | rough |  |  |  |  |
 | 12 | torch | Basic torch | torch | looks.json | rough |  |  |  |  |
-| 13 | bark | Bark | bark | looks.json | rough |  | 2026-11-03 |  | curved half-pipe strip (#206); needs a PC sheet before "decent" |
-| 14 | leaves | Leaves | leaves | looks.json | rough |  | 2026-11-03 |  | scattered heap, autumn blades (#206); needs a PC sheet before "decent" |
-| 15 | roast_forage | Campfire Stew | stew | looks.json | rough |  | 2026-11-03 |  | spoon and broth line (#206); needs a PC sheet before "decent" |
-| 16 | poultice | Herb poultice | mound | looks.json | rough |  | 2026-11-03 |  | bruised leaves pressed in (#206); needs a PC sheet before "decent" |
-| 17 | bandage | Herb bandage | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | own look: linen roll, tail, herb stain (#206); needs a PC sheet before "decent" |
-| 18 | tree_roots | Roots | override | ART_OVERRIDES | rough |  | 2026-11-03 |  | own roots look (#206); needs a PC sheet before "decent" |
-| 19 | wooden_spade | Wooden spade | spade | looks.json | rough |  | 2026-11-03 |  | earth caked on blade, worn haft (3 Nov); needs a PC sheet before "decent" |
+| 13 | bark | Bark | bark | looks.json | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/bark.png | curved half-pipe strip (#206); cloud sheet 4 Nov (Sonny): OFF: pale inner face up, so from above it reads as sawn planks; show the dark furrowed outer face or darken the inner; see bark.png |
+| 14 | leaves | Leaves | leaves | looks.json | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | scattered heap, autumn blades (#206); cloud sheet 4 Nov (Sonny): OK: mixed heap with autumn blades |
+| 15 | roast_forage | Campfire Stew | stew | looks.json | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | spoon and broth line (#206); cloud sheet 4 Nov (Sonny): OK: bowl, broth, chunks, spoon; colours vivid but natural |
+| 16 | poultice | Herb poultice | mound | looks.json | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | bruised leaves pressed in (#206); cloud sheet 4 Nov (Sonny): OK: green pressed mound in a bowl |
+| 17 | bandage | Herb bandage | override | ART_OVERRIDES | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/bandage.png | own look: linen roll, tail, herb stain (#206); cloud sheet 4 Nov (Sonny): OFF: at 0.25 m it reads as a white block, the roll and the tail are hard to see; pure-looking white; see bandage.png |
+| 18 | tree_roots | Roots | override | ART_OVERRIDES | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | own roots look (#206); cloud sheet 4 Nov (Sonny): OK: tied roots with rootlets and soil |
+| 19 | wooden_spade | Wooden spade | spade | looks.json | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | earth caked on blade, worn haft (3 Nov); cloud sheet 4 Nov (Sonny): OK: D grip, haft, caked blade |
 | 20 | lean_to_kit | Small shelter | override | ART_OVERRIDES | rough |  |  |  |  |
-| 21 | lean_to | Small shelter | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  | 2026-11-03 |  | 1.6x: walk in, lie down (#253, merged); needs a PC sheet before "decent" |
-| 22 | chest_kit | Woven chest | override | ART_OVERRIDES | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/chest_kit_after.png | woven wicker (#206); needs a PC sheet before "decent" fixed 4 Nov (Sonny): warmer withy colour, light and dark withies over-under from base to rim, woven ribs round the lid |
+| 21 | lean_to | Small shelter | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | 1.6x: walk in, lie down (#253, merged); cloud sheet 4 Nov (Sonny): n/a: no loose item, the lean-to is a hammer blueprint (blueprints.json), so nothing to draw |
+| 22 | chest_kit | Woven chest | override | ART_OVERRIDES | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/chest_kit_after.png | woven wicker (#206); cloud sheet 4 Nov (Sonny): OFF: called a woven chest but looks like a smooth blonde wooden trunk, no weave; see chest_kit.png Fixed 4 Nov (Sonny, #354): warmer withy colour, light and dark withies over-under from base to rim, woven ribs round the lid. |
 | 23 | chest | Woven chest | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 24 | chopping_block_kit | Chopping block | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 25 | chopping_block | Chopping block | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 26 | firewood | Firewood | bundle | looks.json | rough |  |  |  |  |
-| 27 | lumber | Lumber | planks | looks.json | rough |  | 2026-11-03 |  | knots, end grain, wane (#206); needs a PC sheet before "decent" |
+| 27 | lumber | Lumber | planks | looks.json | rough |  | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/sheet_14_items.png | knots, end grain, wane (#206); cloud sheet 4 Nov (Sonny): OK: stacked boards, staggered ends |
 | 28 | plank_chest_kit | Plank chest | override | ART_OVERRIDES | rough |  |  |  |  |
 | 29 | plank_chest | Plank chest | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 30 | driftwood | Driftwood | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
@@ -264,7 +264,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 255 | campfire_pot | Campfire pot | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 256 | clay_hearth_kit | Clay hearth | override | ART_OVERRIDES | rough |  |  |  |  |
 | 257 | clay_hearth | Clay hearth | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 260 | shore_net | Shore net | hand_net | looks.json | rough | BUG-022: throw net, a round bell of twine with sinkers all round the mouth, a line to a coil; no pole; needs a picture | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/shore_net_after.png |  fixed 4 Nov (Sonny): lying loose it slumps to a hand high, off-centre crown, rows follow the folds (no hoops); the hanging net keeps its bell |
+| 260 | shore_net | Shore net | hand_net | looks.json | rough | BUG-022: throw net, a round bell of twine with sinkers all round the mouth, a line to a coil; no pole | 2026-11-04 | art/CRITIQUES/picture_check_2026-11-04/shore_net_after.png | cloud sheet 4 Nov (Sonny): parts match BUG-022 (bell, sinkers, line, coil, no pole), but lying loose it stands up rigid like a birdcage; a dropped throw net should slump flat in folds Fixed 4 Nov (Sonny, #354): lying loose it slumps to a hand high, off-centre crown, rows follow the folds (no hoops); the hanging net keeps its bell. |
 | 261 | thatch_floor_kit | Thatch floor | override | ART_OVERRIDES | rough |  |  |  |  |
 | 262 | thatch_floor | Thatch floor | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 263 | thatch_roof_kit | Thatch roof | override | ART_OVERRIDES | rough |  |  |  |  |
