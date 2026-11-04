@@ -963,6 +963,7 @@ There are three kinds of group, from the shortest-lived to the longest-lived. No
 
 
 ### 6.16 Exertion, fitness and health (brainstorm)
+- **[Decided] (owner, 2026-11-04, BUG-029)** Running out of air is its own path, separate from exertion collapse (which never kills): no auto-rise and no health drain at zero air; suffocation races the heart and closes the vision, the character faints, and fainting while submerged is drowning (death). Surfacing first avoids it. Built: vitals.json breath faint_after_s and bpm.
 
 From the owner's chat with ChatGPT (2026-10-17), folded in as brainstorm. Nothing here is built. Where the owner stated a number or a rule it is marked "owner".
 
