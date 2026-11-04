@@ -121,6 +121,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
 	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
 	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp, fern stalks and fiddleheads, nettles, leafy herbs and the plain flower) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
+	var fungi: Acc = Acc.new()   # mushrooms on their own surface: they were in `bark`, so the bark shader put bark furrows, foot shade and green foot moss on every cap (Kathreen, 3 Nov)
 	var petals: Acc = Acc.new()  # wildflower heads on a plain colour material (flora_view.gd PETAL_SHADER); without that material they join the bark as before
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
@@ -217,7 +218,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"fern":
 			_fern(leaves, rng, h, crown, far)
 		"mushroom":
-			_mushroom(MUSHROOM_LOOKS.get(str(entry["name"]), MUSHROOM_LOOKS["porcini"]), bark, rng, h, crown, far)
+			_mushroom(MUSHROOM_LOOKS.get(str(entry["name"]), MUSHROOM_LOOKS["porcini"]), fungi, rng, h, crown, far)
 		"flower":
 			_flower(greens, leaves, rng, h, crown, far)
 		_:
@@ -238,6 +239,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
 	ember.commit(mesh, materials.get("ember", materials["bark"]))
 	greens.commit(mesh, materials.get("greens", materials["bark"]))
+	fungi.commit(mesh, materials.get("fungus", materials["bark"]))
 	petals.commit(mesh, materials.get("petal", materials["bark"]))
 	twigs.commit(mesh, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
