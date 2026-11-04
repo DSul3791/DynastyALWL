@@ -88,6 +88,30 @@
    "loop": false,
    "peak_db": -8,
    "status": "filled"
+  },
+  "fish_bite": {
+   "group": "fishing",
+   "files": [
+    "res://assets/audio/recorded/ambient/fish_splash_0.ogg",
+    "res://assets/audio/recorded/ambient/fish_splash_1.ogg",
+    "res://assets/audio/recorded/ambient/fish_splash_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -8,
+   "status": "filled",
+   "note": "a fish takes the hook: Dave's fish splash recording (Jason, 3 Nov 2026)"
+  },
+  "fish_land": {
+   "group": "fishing",
+   "files": [
+    "res://assets/audio/swim/swim_splash_small_0.ogg",
+    "res://assets/audio/swim/swim_splash_small_1.ogg",
+    "res://assets/audio/swim/swim_splash_small_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -8,
+   "status": "filled",
+   "note": "a fish pulled out of the water: the small swim splash (Jason, 3 Nov 2026; stand-in)"
   }
  }
 }

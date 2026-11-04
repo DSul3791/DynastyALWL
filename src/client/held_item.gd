@@ -172,6 +172,8 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_inv = inventory_view
 	blueprints.setup(_inv.table, _inv.inventory, hud_layer)
 	_net = terrain_net
+	if _net != null:
+		_net.road_marker_reached.connect(_on_road_marker_reached)
 	_camera = camera
 	_root = world_root
 	_ground_below = ground_below
@@ -1155,7 +1157,6 @@ func _hoe_repeat(delta: float) -> void:
 const HOE_MODES := [
 	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
 	{"id": "smooth", "name": "Smooth", "note": "moves dirt from high spots to low ones, no path"},
-	{"id": "grade", "name": "Grade line", "note": "levels along the A to B line (Shift + right click sets A, then B)"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
 ]
 var hoe_mode: String = "path"
@@ -1167,9 +1168,7 @@ var _hud_layer: CanvasLayer = null
 
 
 func _hoe_apply() -> void:
-	if Input.is_key_pressed(KEY_SHIFT) or hoe_mode == "grade":
-		_hoe_here(Net.ACT_HOE_GRADE)
-	elif hoe_mode == "smooth":
+	if hoe_mode == "smooth":
 		_hoe_here(Net.ACT_HOE_SMOOTH)
 	elif hoe_mode == "till":
 		_hoe_here(Net.ACT_TILL)
@@ -1188,7 +1187,7 @@ func _hoe_menu_open_now() -> void:
 		_hoe_menu_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 		_hoe_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_hoe_menu_label = Label.new()
-		_hoe_menu_label.add_theme_font_size_override("font_size", 24)
+		_hoe_menu_label.add_theme_font_size_override("font_size", 40)
 		_hoe_menu_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_hoe_menu_panel.add_child(_hoe_menu_label)
 		_hud_layer.add_child(_hoe_menu_panel)
@@ -1274,31 +1273,30 @@ func _grade_point_here() -> void:
 		_inv._on_notice("Aim the hoe at the ground within reach to set a point")
 		return
 
-	var setting_b: bool = _grade_has_a and not _grade_has_b
+	# Surveyor mode: after the first marker every new marker joins to the one before it, and the server builds the road behind the player.
+	# A marker more than 40 m from the last one starts a new road.
+	var chained: bool = _grade_has_a and _grade_a.distance_to(hit["position"]) <= 40.0
 
-	if setting_b:
-		_grade_has_b = true
-	else:
-		_grade_has_a = true
-		_grade_has_b = false
+	_grade_has_a = true
+	_grade_has_b = chained
+	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if chained else 0, 0, hit["position"])
+	_inv._on_notice("Marker set: the road builds behind you. Shift + right click to carry on" if chained else "Marker 1 set: walk on and Shift + right click again, the road builds behind you")
 
-	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if setting_b else 0, 0, hit["position"])
-	_inv._on_notice("Point B set: the ground between the pins is levelled and trodden for you" if setting_b else "Point A set: Shift + right click again for point B")
+	_grade_a = hit["position"]
+	var stake: Node3D = _make_stake()
+	_root.add_child(stake)
+	stake.global_position = hit["position"] + Vector3(0.0, 0.5, 0.0)
+	_stakes.append(stake)
 
-	for stake in _stakes:
-		if is_instance_valid(stake):
+
+# The server says the road builder has reached (or dropped) a marker: its red flag comes down.
+func _on_road_marker_reached(at: Vector3) -> void:
+	for stake in _stakes.duplicate():
+		if not is_instance_valid(stake):
+			_stakes.erase(stake)
+		elif Vector2(stake.global_position.x - at.x, stake.global_position.z - at.z).length() < 0.6:
 			stake.queue_free()
-
-	_stakes.clear()
-
-	if not setting_b:
-		_grade_a = hit["position"]
-
-	for point in ([_grade_a, hit["position"]] if setting_b else [hit["position"]]):
-		var stake: Node3D = _make_stake()
-		_root.add_child(stake)
-		stake.global_position = point + Vector3(0.0, 0.5, 0.0)
-		_stakes.append(stake)
+			_stakes.erase(stake)
 
 
 # A hoe stroke (path or smooth) at the ground under the crosshair; the server checks the hoe, the reach and the pace.
