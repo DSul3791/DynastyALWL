@@ -251,5 +251,21 @@ func _init() -> void:
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
 	check(camp._hint_trigger_true(1, pot_state, "has_campfire_kit"), "a fire kit in the pack triggers the place-fire reminder")
 	check(not camp._hint_trigger_true(1, pot_state, "near_nettle") or camp.count_for(1, "nettles") > 0, "near_nettle needs nettles in the pack")
+	# The seasonal, fruit and dig hints (hints.json: fruit_spoil, fruit_pick, orchard, season_change, winter_store, cave_in) judge their triggers now.
+	var hint_state: Dictionary = camp._goal_state_of(1)
+	check(not camp._hint_trigger_true(1, hint_state, "fruit_in_pack"), "no fruit in the pack: no fruit hint")
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("plums"), 0, 1, Vector3.ZERO)
+	check(camp._hint_trigger_true(1, hint_state, "fruit_in_pack"), "a plum in the pack fires the fruit hint")
+	var stamp: Array = [10]
+	camp.season_stamp = func(): return stamp[0]
+	check(not camp._hint_trigger_true(1, hint_state, "season_changes"), "the first look only records the season")
+	check(not camp._hint_trigger_true(1, hint_state, "season_changes"), "the same season: no season hint")
+	stamp[0] = 11
+	check(camp._hint_trigger_true(1, hint_state, "season_changes"), "a new season fires the season hint")
+	check(not camp._hint_trigger_true(1, hint_state, "digging_under_ceiling"), "no deep dig yet: no cave-in hint")
+	camp._goal_event(1, "dug_under")
+	check(camp._hint_trigger_true(1, hint_state, "digging_under_ceiling"), "a deep dig fires the cave-in hint")
+	camp.trees_near = func(_p, _r): return []
+	check(not camp._hint_trigger_true(1, hint_state, "near_orchard"), "no trees: no orchard hint")
 	print("goals: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
