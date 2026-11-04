@@ -2385,7 +2385,7 @@ func _send_water_request(now: int) -> void:
 
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
-	if _water_quiet_asks <= 1:
+	if _water_quiet_asks <= 1 and not chunks.is_empty():   # "asking again for 0 chunks" (the moved water is outside every chunk held) says nothing
 		@warning_ignore("integer_division")
 		print("Terrain client: the water moved, asking again for %d chunks (next in %.0f s or more)" % [chunks.size() / 2, _water_wait_msec / 1000.0])
 
