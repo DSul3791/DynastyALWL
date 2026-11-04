@@ -2218,3 +2218,7 @@ Answered: 2026-11-04 15:04 UTC
 Answer: No: But the bed is way too short. It’s not long enough for the character to lay on and it doesn’t have the press E to lay down function which it needs.
 Answered: 2026-11-04 15:05 UTC
 
+## pic-felled-bark-after | In the real game: do the stump and the cut log now look like brown bark (before: dark grey smooth, card pic-fh-felled-trunk)?
+Answer: Yes
+Answered: 2026-11-04 15:06 UTC
+
