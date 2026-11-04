@@ -10,6 +10,11 @@ const BasicLook := preload("res://src/client/basic_look.gd")
 
 
 func _init() -> void:
+	if DisplayServer.get_name() == "headless":   # no renderer: the viewport gives no image and the run would hang (PC, 3 Nov)
+		printerr("item_sheet needs a window (real renderer): run it without --headless")
+		quit(2)
+		return
+
 	var ids: PackedStringArray = PackedStringArray()
 	var out: String = "user://item_sheet.png"
 	var cols: int = 6
@@ -107,6 +112,12 @@ func _init() -> void:
 	await process_frame
 	await process_frame
 	var image: Image = vp.get_texture().get_image()
+
+	if image == null:
+		printerr("item_sheet: the viewport gave no image")
+		quit(1)
+		return
+
 	image.save_png(out)
 	print("saved ", out, " ", ids.size(), " items")
 	quit()
