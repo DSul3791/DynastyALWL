@@ -104,8 +104,10 @@ func _initialize() -> void:
 	view._filter_cleared(Vector2i(0, 0), false, [[128.0, 128.0, 128.0, 128.0, 0.6, 0.6]], [])
 	var one_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 	print("full filter %.1f ms, one new patch %.1f ms" % [full_ms, one_ms])
-	check(full_ms < 150.0, "a full refilter of 40000 plants against 300 boulders takes under 150 ms (%.1f)" % full_ms)
-	check(one_ms < 30.0, "one new patch in a 40000 plant chunk takes under 30 ms (%.1f)" % one_ms)
+	# Loose bars (Tyler 3 Nov: the full refilter ran 200-220 ms on a loaded 4-core cloud runner): the full refilter runs once per chunk
+	# load, so only a big regression matters; the point of #187 is that a new patch costs a small share of it, checked against the same run.
+	check(full_ms < 500.0, "a full refilter of 40000 plants against 300 boulders takes under 500 ms (%.1f)" % full_ms)
+	check(one_ms < 30.0 and one_ms < full_ms * 0.25, "one new patch in a 40000 plant chunk takes under 30 ms and under a quarter of the full refilter (%.1f vs %.1f)" % [one_ms, full_ms])
 	view.free()
 	print("Test done: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
