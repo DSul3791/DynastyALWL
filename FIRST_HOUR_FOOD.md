@@ -8,6 +8,19 @@ Numbers read from data/items/vitals.json, drops.json, spoilage.json, weights.jso
 - Empty stomach: weight drops (7700 kcal per kg), health stops regenerating; nothing kills (vitals.json note). So a player who lights the first fire at minute 15 to 20 does not starve; he is hungry from about minute 55.
 - One bite takes 0.8 s (eat_pace_ms 800).
 
+## Eating it raw (cooking.json raw_sick, sickness.json; added by Dino, 3 Nov)
+- Raw food still feeds you, but you pay afterwards: raw meat, eel, shellfish and seal 24 game hours (one real hour) sick; raw fish, eggs, fiddleheads and beans 12 game hours; acorns and wild mushrooms 6.
+- While sick you cannot rest below exertion 0.5, and every 90 real seconds you vomit (80 kcal and 100 ml lost) or run for the bushes (30 kcal and 150 ml lost). Sleeping heals it 4 times as fast.
+- The first time you eat something that would harm you, a warning shows and a second press confirms (eat-once learning).
+- So one raw rabbit (250 kcal) costs about 40 symptoms over the hour, roughly 2,200 kcal and 5 litres of water: much more than it gave. Cook meat and fish in the fire's store (F).
+
+## The water clock (added by Dino, 3 Nov, from vitals.json thirst)
+- The body holds 2400 ml, and a new character starts full.
+- It falls by 1000 ml per game day at rest, plus 1200 ml times exertion. A game day is one real hour.
+- So a full body lasts **about 1 h 25 min to 1 h 45 min at ordinary play** (exertion 0.3 to 0.6) and at least 1 h 05 min at full work. One drink a game day is enough.
+- At the water's edge (within 3 m of your feet), one mouthful gives 300 ml, every 0.9 s. **8 mouthfuls fill you from empty, about 7 s.**
+- Empty thirst stops health recovering; nothing else happens yet. The "thirsty" warning comes at 15 percent.
+
 ## What a new player can eat in the first hour, near the spawn (early summer)
 | Food | Where | kcal each | How many to fill the stomach (2400) | Notes |
 |---|---|---|---|---|
@@ -17,7 +30,7 @@ Numbers read from data/items/vitals.json, drops.json, spoilage.json, weights.jso
 | Crab apples, wild pears, cherries (wild) | forest trees | 120 (suffix "apples", "pears", "cherries") | 20 | autumn |
 | Hazelnuts, acorns | trees | 200, 150 | 12, 16 | autumn only |
 | Raw meat (rabbit gives 1 to 2) | hunt with the spear, dress with the knife | 250 raw, 700 roasted | 3.4 roast | needs a fire; raw meat makes you sick |
-| Fish (trout) | pond with a rod or net | 220 raw, 650 roasted | 3.7 roast | needs a fire |
+| Fish (trout) | pond with a rod or net | 220 raw, 650 roasted | 3.7 roast | needs a fire; raw fish makes you sick for 12 game hours (half a real hour) |
 | Roast forage (berries/nuts/roots at the fire) | fire | 400 | 6 | the starter cooked item |
 | Smoked fish, dried apples, trail bread | later | 700, 280, 950 | | for storing |
 
@@ -37,7 +50,7 @@ Numbers read from data/items/vitals.json, drops.json, spoilage.json, weights.jso
 Roasting at a fire turned ONE raw forage item into one Roast forage (400 kcal): a 4 kcal berry became 400 kcal, so a bush of 150 roasted to 60,000 kcal and undid the berry fix. Berries now roast into **Stewed berries** (item 483, 10 kcal, 144 hours shelf life, same warmth as a hot meal) through per-berry rows in cooking.json `cooks_into`; nuts, roots, caps and the rest still roast into Roast forage (400 kcal). A bush of 150 berries stewed is 1,500 kcal, about two thirds of a stomach: a real meal for the effort of cooking, no longer a free week of food. Tests updated: test_server_items (three checks now expect Stewed berries for blueberries).
 
 ## Campfire cooks only meat (Dave, 2026-10-31)
-`cooking.json cookable_suffixes` is now empty and the berry and egg rows are gone from `cooks_into`: pressing E at a campfire roasts only raw meat (roast meat), fish (roast fish), shellfish and crab meat (steamed shellfish) and seal meat. Plants are cooked in a pot or on a clay hearth:
+`cooking.json cookable_suffixes` is now empty and the berry and egg rows are gone from `cooks_into`: a campfire cooks only raw meat (since 2 Nov it cooks what is put in its store with F; no more E or hold-E roasting) (roast meat), fish (roast fish), shellfish and crab meat (steamed shellfish) and seal meat. Plants are cooked in a pot or on a clay hearth:
 - Berries: pot recipes Stewed berries (3 raspberries, blueberries, blackberries or strawberries + water give 2).
 - Nuts, caps, bananas, fiddleheads, pears: clay hearth recipes Roast forage (3 hazelnuts, chestnuts, walnuts, beechnuts, morels, fiddleheads or pears, or 2 bananas give 2; Campfire Stew item).
 - Roots and mushrooms: Roast Roots and Mushroom skewer moved to the clay hearth. Acorn mash and berry compote were already pot recipes.

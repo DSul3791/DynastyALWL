@@ -1,0 +1,10 @@
+{
+	"_about": "Inland bird nests (Sal, 3 Nov 2026; MikeW's idea: an early protein source away from the shore). MikeW's fauna side places the nest spots near grouse and songbird homes and hands them to the server as items.nests_near (pos, reach) -> [{id, kind, pos}]. E at a nest (ACT_GATHER_EDGE, or items.take_nest from the fauna side) takes its eggs: a roll in count, in its seasons only. A robbed nest is empty for refill_days game days, then can be taken again that season. The grouse lays big clutches on the ground in heather and long grass; songbirds lay small clutches in bushes and low trees. Eggs are the plain egg item (boil it, or fry it with nettles in the campfire pot).",
+	"reach_m": 2.5,
+	"say_empty": "The nest is empty. The bird may lay again in a few days.",
+	"say_season": "An old nest. Nothing in it this time of year.",
+	"kinds": {
+		"grouse": {"item": "egg", "count": [3, 7], "seasons": ["spring"], "refill_days": 4, "extra": ["feather", 1], "extra_chance": 0.5},
+		"songbird": {"item": "egg", "count": [2, 4], "seasons": ["spring", "summer"], "refill_days": 3}
+	}
+}

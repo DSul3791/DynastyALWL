@@ -906,7 +906,7 @@
 		"workbench_kit": {
 			"number": 73,
 			"name": "Camp bench",
-			"description": "Lashed sticks and a flat top. A work table for better tools.",
+			"description": "Lashed sticks and a flat top. Set it down and it counts as a workbench, for better tools.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,
@@ -916,7 +916,7 @@
 		"workbench": {
 			"number": 74,
 			"name": "Camp bench",
-			"description": "A camp bench. Stand near it to make the things that need a work table.",
+			"description": "A camp bench. It counts as a workbench: stand near it to make the things that need one.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -955,7 +955,7 @@
 			],
 			"stack": 1,
 			"unstackable": true,
-			"value": 36,
+			"value": 50,
 			"look_alikes": []
 		},
 		"trout": {

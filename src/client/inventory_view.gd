@@ -69,7 +69,9 @@ var _pack_buttons: Array = []
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
 var _drink_msec: int = 0
 var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
+var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
+var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
@@ -80,6 +82,8 @@ var weight_kg: float = 75.0
 var _vitals_cfg: Dictionary = {}
 var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
+var _path_cfg: Dictionary = {}          # data/path_speed.json: pace factors on a trodden path
+var _path_cells: Dictionary = {}        # Vector2i (1 m ground cell) -> how many path patches have their centre in it
 
 # Over-exertion from the server (data/items/exertion.json). Sounds and Art read these:
 #   strain       0 and up, 1.0 = over-exerted (no ceiling)
@@ -114,6 +118,7 @@ var remains_marks: Array = []                # [[position, seconds left, msec re
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
 var _temp_label: Label
+var air_c: float = NAN                      # outside air temperature, C, from the client weather (terrain_client._update_weather); NAN until known
 var warmth: int = 100                       # body warmth, percent (protocol 36)
 var energy: int = 100                       # the Energy pool, percent (job 95)
 var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
@@ -205,6 +210,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.reject_received.connect(_on_reject)
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
+	var path_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/path_speed.json"))
+	_path_cfg = path_parsed if typeof(path_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
@@ -516,6 +523,10 @@ func _probe_pickup() -> Dictionary:
 	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
 		pick_stamp = Time.get_ticks_msec()
+
+		if gather_event.is_valid():
+			gather_event.call()
+
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
 
 
@@ -780,6 +791,10 @@ func pick_up_nearest() -> bool:
 		return true
 
 	pick_stamp = Time.get_ticks_msec()
+
+	if gather_event.is_valid():
+		gather_event.call()
+
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	return true
 
@@ -988,9 +1003,13 @@ func loose_log_near(point: Vector3) -> int:
 		if int(entry["state"]) != 0 or not entry.has("number") or int(entry["number"]) == 0:
 			continue
 
+		# The distance first: only the few items within 1.5 m pay for the item table lookups (this runs over every loose item on each blow that lands).
+		if entry["pos"].distance_squared_to(point) >= 2.25:
+			continue
+
 		var item_id: String = table.id_of(int(entry["number"]))
 
-		if (item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder") and entry["pos"].distance_to(point) < 1.5:
+		if item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder":
 			return id
 
 	return 0
@@ -1569,6 +1588,31 @@ func move_cap() -> float:
 	return 0.0
 
 
+# Walking on a trodden path (Dave 3 Nov 2026): the pace factor for a gait ("walk", "jog", "run") at a ground position, from data/path_speed.json; 1.0 off a path.
+func path_pace_factor(pos: Vector3, gait: String) -> float:
+	if _path_cells.is_empty():
+		return 1.0
+
+	var cell: Vector2i = Vector2i(floori(pos.x), floori(pos.z))
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			if int(_path_cells.get(Vector2i(cell.x + dx, cell.y + dz), 0)) > 0:
+				return float(_path_cfg.get("%s_factor" % gait, 1.0))
+
+	return 1.0
+
+
+func _path_cell_add(pos: Vector3, amount: int) -> void:
+	var cell: Vector2i = Vector2i(floori(pos.x), floori(pos.z))
+	var now: int = int(_path_cells.get(cell, 0)) + amount
+
+	if now > 0:
+		_path_cells[cell] = now
+	else:
+		_path_cells.erase(cell)
+
+
 # Over-exerted (Dave 2026-10-21): the pace is cut by about 10 percent but the player may keep running and keep pushing the
 # exertion up until they black out.
 func over_pace_factor() -> float:
@@ -2048,6 +2092,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if StructureLook.look_of(state) == "ladder":
 				ladders[id] = {"pos": row[3], "yaw": rad_to_deg(yaw)}
+			elif StructureLook.look_of(state) == "trodden_path":
+				_path_cell_add(row[3], 1)
 
 			continue
 
@@ -2175,6 +2221,34 @@ func _refresh_pile(id: int) -> void:
 		entry["pile"] = false
 		box.mesh = _mesh_for(int(entry["number"]))
 
+
+
+# The world id of the placed structure nearest `point` within `reach` metres, or 0 (the hammer's Repair mode aims with it).
+func structure_id_near(point: Vector3, reach: float = 3.5) -> int:
+	var best: int = 0
+	var best_d: float = reach
+
+	for id in _world:
+		if _world[id].has("yaw") and int(_world[id]["state"]) >= 5:
+			var d: float = (_world[id]["pos"] as Vector3).distance_to(point)
+
+			if d <= best_d:
+				best_d = d
+				best = int(id)
+
+	return best
+
+
+# Every structure standing as {"pos", "state", "yaw" (degrees), "piece"}, for the hammer's "Save building plan".
+func structure_rows() -> Array:
+	var rows: Array = []
+
+	for id in _world:
+		if _world[id].has("yaw") and int(_world[id]["state"]) >= 5:
+			var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+			rows.append({"pos": _world[id]["pos"], "state": int(_world[id]["state"]), "yaw": float(_world[id]["yaw"]), "piece": bool(def.get("piece", false))})
+
+	return rows
 
 
 # Fires and structures standing in the world as {"pos", "state"} rows, for the placement ghost's blocked check.
@@ -2354,6 +2428,9 @@ func _forget(id: int) -> void:
 		return
 
 	var entry: Dictionary = _world[id]
+
+	if StructureLook.look_of(int(entry.get("state", 0))) == "trodden_path":
+		_path_cell_add(entry["pos"], -1)
 
 	if int(entry.get("roof", -1)) >= 0 and cover_index != null:
 		cover_index.remove_roof(int(entry["roof"]))
@@ -3346,7 +3423,23 @@ func _fire_label(entry: Dictionary, number: int) -> String:
 
 
 func _on_worn(numbers: PackedInt32Array) -> void:
+	var first: bool = worn.is_empty()
+	var changed: Array = []
+	var ids: Array = []
+
+	for i in numbers.size():
+		var before: int = worn[i] if i < worn.size() else 0
+
+		if numbers[i] != 0:
+			ids.append(table.id_of(numbers[i]))
+
+		if not first and numbers[i] != before:
+			changed.append(table.id_of(numbers[i] if numbers[i] != 0 else before))
+
 	worn = numbers
+
+	if worn_event.is_valid():
+		worn_event.call(changed, ids)
 
 	if _weight_label != null:
 		_refresh_weight()
@@ -3467,7 +3560,7 @@ func _update_panel_bars() -> void:
 	_panel_bars["Energy"].value = float(energy)
 	_panel_bars["Temperature"].value = float(warmth)
 	if _temp_label != null and is_instance_valid(_temp_label):
-		_temp_label.text = "Temperature " + DisplaySettingsScript.temp_text(float(warmth))
+		_temp_label.text = "Body temp " + DisplaySettingsScript.temp_text(float(warmth)) + ("" if is_nan(air_c) else "   Air " + DisplaySettingsScript.air_text(air_c))
 
 	if _sick_label != null and is_instance_valid(_sick_label):
 		_sick_label.text = ("Health: ill, about %d h left" % sick_hours) if sick_hours > 0 else ""

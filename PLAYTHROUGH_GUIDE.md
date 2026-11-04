@@ -28,7 +28,7 @@ Picture: `art/playthrough/03_raw_materials.jpg` shows the spawn meadow (the NPC 
 ## Step 02. First pickups: sticks and stones
 
 * **Sticks** (item `stick`) lie on the ground as thin dead branches, more of them under trees. Walk up and tap/hold E. Shrubs (bushes) also drop 1-3 sticks when picked (drops.json `by_kind.shrub`).
-* **Stones** (item `stone`; no stack cap, weight is the limit: a slot holds up to 65,535, only tools, kits, containers, clothing and shoulder logs are single) lie loose, mostly on slopes, next to rocks and along the water's edge. There is only one kind of loose rock item: `stone` (the "hand stone"). There is **no flint** anywhere yet **[BLOCKED, see findings F-02]**, and no ore you can reach with bare hands.
+* **Stones** (item `stone`; no stack cap, weight is the limit: a slot holds up to 65,535, only tools, kits, containers, clothing and shoulder logs are single) lie loose, mostly on slopes, next to rocks and along the water's edge. There is only one kind of loose rock item: `stone` (the "hand stone"). **Flint** lies along the water's edge now (F-02 fixed: drops.json bank, about 6 percent of bank stones), and no ore you can reach with bare hands.
 * **Boulders** (big grey rocks) are not pickable. An axe (or pick) breaks them: **3 axe blows give 1 stone** (boulders.json). A blow on bare rock with the axe also gives a stone.
 
 How many do you need for the whole first hour? About 12 sticks, 4 stones to start (axe 1 stone + 1 stick; fire 6 sticks + 3 stones; knife 2 stones + 1 stick), then more.
@@ -70,7 +70,7 @@ Also craftable at once with no station: **stone knife** (#6: 2 stone + 1 stick),
 
 ## Step 06. Chop a tree
 
-Walk up to a standing tree (trunk within about 2 m), hold the axe, **click repeatedly** (about one blow every 0.5 s). The number of blows is `clamp(4 + trunk_thickness_m x 30, 4, 40)`: a 0.2 m trunk takes about 10, an oak (0.6 m) about 22. Practice makes it faster (Fell tree skill). When the last blow lands the tree falls and rests on the ground as a **trunk**, leaving a **stump**. **[in progress: the fall pose and the stump chopping were just finished, see commit a641581d.]**
+Walk up to a standing tree (trunk within about 2 m), hold the axe, **click repeatedly** (one swing takes 1.05 s). The number of blows (drops.json felling, checked 3 Nov) is `round(2 + species trunk_m x 16.5)`, kept between 3 and 22, divided by your Fell tree skill factor. At the start (factor about 1.0; the blows are rounded up, so one more is possible) that gives about **birch 5, alder 6, pine and spruce 8, beech and willow 9, oak 12**; Woodcutting can reach factor 2.0, halving them. The species number is used whatever the tree's size, until Dave switches on `felling.size_scaled` (#76; QA card tree-hits-follow-size), which would make small trees quicker and big ones slower. Practice makes it faster. When the last blow lands the tree falls and rests on the ground as a **trunk**, leaving a **stump**. About 2 s after it lands the trunk splits by itself into logs, sticks, leaves, bark, seeds and a root ball (#39, #49); the stump is chopped with a few more blows.
 
 **2 Nov (bug 11 fix, main 58c94cd, and #49, not yet seen in a client): a felled tree now breaks into its whole 2.44 m logs by itself about 2 s after it lands (the count cutting would give) and also drops what hand-cutting gives: sticks, leaves, bark or thatch, seeds and the root ball.** Only a trunk you have already hit with the axe, one with no whole log in it, or one with no room for all its logs stays a trunk. The list below is what hand-cutting gives.
 
@@ -82,7 +82,7 @@ Work the trunk with the axe (one blow each, press the use key at it):
 Small trees (a sapling) give only 3 blows of firewood 1-2, kindling 2-4, stick 2-4.
 A **stump** can be chopped up with the axe too (1 Nov): the stump is **destroyed** and gives firewood and kindling (no log, `drops.json` final_by_radius).
 
-A log is carried on the shoulder, alone (Q lays it down). **[BLOCKED F-16]** The log you get is `log_oak`, `log_beech`... (one per species); the recipes that need a plain `log` (chopping block, log workbench, rough plank, lumber) cannot use it. Chop a log on the ground with the axe to get **wooden blocks** (`wooden_block`, hardwood; `wooden_block_soft` from conifers). A **chopping block** (recipe #15: 2 logs) splits one block into one firewood with the axe (E at the block).  **1 Nov: [F-16 fixed] every felled tree gives logs (the key-wood gate is gone; a species with no live log item drops the plain Log). The log on the shoulder is a pack item (one slot, burns as a log); Q or F twice lays it down.**
+A log is carried on the shoulder, alone (Q lays it down). **[F-16 FIXED since 2 Nov: the log you hold works in the plain-log recipes; the note below is history]** The log you get is `log_oak`, `log_beech`... (one per species); the recipes that need a plain `log` (chopping block, log workbench, rough plank, lumber) cannot use it. Chop a log on the ground with the axe to get **wooden blocks** (`wooden_block`, hardwood; `wooden_block_soft` from conifers). A **chopping block** (recipe #15: 2 logs) splits one block into one firewood with the axe (E at the block).  **1 Nov: [F-16 fixed] every felled tree gives logs (the key-wood gate is gone; a species with no live log item drops the plain Log). The log on the shoulder is a pack item (one slot, burns as a log); Q or F twice lays it down.**
 
 Pictures: `art/playthrough/` has no stump or trunk picture from this run (see findings, "could not photograph").
 
@@ -96,23 +96,37 @@ Walk to the biggest tree you can find (oaks, beeches, tall pines), stand under t
 
 1. Recipe **Campfire** (#4): **6 sticks + 3 stones -> campfire kit** (8 s).
 2. Hold the kit and left click. The ring on the ground is **yellow on open ground** (rain puts the fire out) and **green under a tree crown** (the fire survives rain). Fires need 2 m of space from other fires and ground no steeper than 0.6 m rise.
-3. The kit is placed already laid with a stick in its store (add more wood with F). **Press E at the fire to light it**: it uses **one tinder item** from the pack: `plant_fibre` first, or `birch_bark`, `tinder`, `tinder_fungus`. **[BLOCKED partly: only plant fibre can really be had, see F-03.]** In rain on open ground it will not light; in a drizzle there is a chance it fails and the fibre is lost.
+3. The kit is placed already laid with a stick in its store (add more wood with F). **Press E at the fire to light it**: it uses **one tinder item** from the pack: `plant_fibre` first, or `birch_bark`, `tinder`, `tinder_fungus`. (F-03 fixed: birch bark, tinder and tinder fungus can all be had; checked 3 Nov.) In rain on open ground it will not light; in a drizzle there is a chance it fails and the fibre is lost.
 4. Feed it (changed 2 Nov, fire store, main eb3b69b): press **F** at the fire to open its store (30 slots, stacks without limit) and put sticks, firewood and logs in; the wood in the store is what burns, closing it works out the burn time and tier, burned wood leaves it, an empty store means the fire goes out. **E** on a burning fire puts it out (wood kept); **hold E** on a fire that is not burning picks it up as a kit. The 1 Nov rule "tap E adds fuel" is gone. **Burn times are real time: stick 2 min, firewood 20 min, log 3 h.** The fire is a **tier** by its wood: sticks = small, 3+ firewood = medium, 3+ logs = large; light radius 3.5 / 7 / 14 m, each step twice the light and warmth, and it steps down as the big wood runs out. Several logs go on one fire. A pot is refused on a fire with logs, and logs are refused under a pot. The refusal message says why (full, no wood to put on). The fire label shows the tier and burn time.
+   **A fire you leave goes away (server_items.gd FIRE_OUT_S and FIRE_LAID_S, checked 3 Nov):** a fire that burns out (its store empty) is removed **5 real minutes** later, and a laid fire that is never lit after 30 minutes. The kit's 6 sticks and 3 stones go with it, and so does anything left in its store. Adding wood with F inside those 5 minutes saves it. One stick burns only 2 minutes, so before you go off for the lean-to's 16 sticks, put in a few firewood (20 min each) or a log (3 h). A burning fire never goes away.
 5. Raw food put in the fire's store (F) cooks while the fire burns; there is no hold-E roasting any more (2 Nov). The campfire still cooks only meat, fish and shellfish.
 
-**Warmth:** stand within 4 m of a lit fire, or under cover. Warmth below 40: you shiver and stop healing; below 20 the cold costs health. A fire plus a roof is the first cold-night answer.
+**Keeping warm (the Temperature bar, #113; checked against warmth.json and cooking.json fire_tiers, 3 Nov):** a lit fire adds heat by its tier: **stick fire +10 C within 2.5 m, firewood fire +20 C within 4 m, log fire +40 C within 5 m**. So a stick fire only helps if you stand right at it. A roof does **not** warm you; it cuts the wind to 30 percent and keeps rain off, which makes the cold bite less. A bed takes 10 percent off the cold. Below 40 percent you shiver and stop healing; below 20 percent the cold costs health. The first cold-night answer is a firewood fire beside the lean-to.
 
-Pictures: `10_campfire_placed.jpg` (the placement ghost; the lit fire itself is [in progress, Kathleen]).
+**If you die (death.json, server_items.gd `kill`, checked 3 Nov):**
+- Everything you carry, coins included, stays where you fell in a pile of **remains**. Press E on it to take things back.
+- For the first day (real time) only you can loot it, and it is gone after 7 days.
+- You keep at most 5 piles, so a sixth death clears your emptiest or oldest pile.
+- You come back with full vitals, after about 4 s:
+  - **beside your spawn bed** (1.2 m), if you set one with E and it still stands;
+  - else **in front of your last lean-to** (1.5 m past its edge, about 4.2 m from its centre since #253);
+  - else at the world spawn.
+- Two bed deaths inside 10 minutes and the third sends you to the lean-to or the spawn instead, so a bed beside a danger does not trap you.
+- Skills, luck and fitness are kept.
+- Until your best skill reaches 10 every death is a soft one. Real death is switched off for now.
+- The message says "You come back at your shelter" for the bed as well.
+
+Pictures: `10_campfire_placed.jpg` (the placement ghost; the lit fire itself is [in progress, Kathleen: the old world3/fh_campfire_lit.jpg shows only the green ghost in grass; her night campfire shot, PR #180, is queued on the PC]).
 
 ## Step 09. Water, food
 
-* **Water:** walk to a river or lake and press E at the edge to drink (300 ml a press). With a bowl, pot, bucket or waterskin in hand E fills it (500 ml). **[in progress: water in some rivers is not filling yet.]**
+* **Water:** walk to a river or lake and press E at the edge to drink (300 ml a press). With a bowl, pot, bucket or waterskin in hand E fills it (500 ml). **[in progress, Sonny: hillside water is one stream since #167 (3 Nov); spring caves and riverbeds are still being worked on.]**
 * **Food:** pick berries (raspberry 150, bramble 250, blueberry 150 per big bush, in season summer/autumn), hazelnuts, apples, roots (roots need a spade). Eat by right click. **Raw food is allowed but some makes you sick** (raw meat 24 h, acorns and mushrooms mild). Roast at the fire to be safe. First time you eat an unknown food it costs food and water only; the game remembers.
 * Herbs: plantain and comfrey give leaves (poultice, bandage recipes #8-#11).
 
 ## Step 10. The first shelter: a lean-to
 
-Recipe **Lean-to kit** (#13, known): **32 sticks + 8 leaves + 4 twine** (25 s; roof 2.6 x 3.4 m, 1.5 m high). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. Hold the kit, click to place (ghost 2.4 x 2.1 m, open front towards you). It is a roof for the cover rule (1.1 x 0.95 m half-sizes, 2.1 m high): anyone under it is "under cover", fires under it survive rain. Hold E 0.6 s at it to take it down (kit comes back). A chunk holds at most 6.
+Recipe **Lean-to kit** (#13, known): **16 sticks + 4 leaves + 2 twine** (25 s; since #253 the roof covers 4.16 x 5.44 m and the ridge is 2.4 m high, so you can walk in and lie down). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. Hold the kit, click to place (ghost 2.4 x 2.1 m, open front towards you). It is a roof for the cover rule (1.1 x 0.95 m half-sizes, 2.1 m high): anyone under it is "under cover", fires under it survive rain. Hold E 0.6 s at it to take it down (kit comes back). A chunk holds at most 6.
 
 ## Step 11. Bedding / bed
 
@@ -120,9 +134,9 @@ Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 
 
 ## Step 12. Workbench and thatch house pieces
 
-* **Workbench kit** (#45, known): **12 sticks + 3 twine**. Place it; a recipe needing "workbench" works only near it (reach + 1 m).
+* **Camp bench (workbench kit)** (#45, known): **16 sticks + 6 twine + 4 stones**. Or the **log workbench**, a hammer blueprint: 4 logs, 6 twine, 6 sticks. Place it; a recipe needing "workbench" works only near it (reach + 1 m).
 * Thatch pieces (open to everyone though not "known"): **thatch floor kit** 6 twine + 20 thatch; **wall** 20 twine + 50 thatch + 15 sticks; **roof** 10 twine + 40 thatch + 12 sticks; **doorway** 12 twine + 25 thatch + 12 sticks. All at the workbench. They are big spends: 50 thatch is five tall-grass patches.
-* Wood walls, floors and roofs (`wall_section_kit` etc.) need **lumber**, which needs a saw. **[BLOCKED, F-05.]**
+* Wood walls, floors and roofs (`wall_section_kit` etc.) need **lumber**: a saw mill, a hand saw, or a stone wedge at the workbench (`lumber_wedge`); F-05 fixed. Most of them are hammer blueprints now.
 
 ## Step 13. First tools
 
@@ -135,7 +149,7 @@ Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 
 | Wooden hammer (#161) | wooden block + stick + twine | blueprints |
 | Stone hammer (#156) | workbench: stone + stick + twine | better hammer |
 | Wooden / stone hoe (#139/#140) | sticks + twine (+stone at bench) | paths, grading |
-| **Pick axe** | stone pickaxe #186: 2 sticks + 3 stones + 2 twine at the bench, **known false: no player can learn it** | **[BLOCKED, F-01]** The stone axe breaks boulders 3x slower |
+| **Pick axe** | stone pickaxe #186: 2 sticks + 3 stones + 2 twine at the bench, **known false: learned in play, not known at start** | (F-01 fixed: all 274 recipes can be learned, PLAYTHROUGH_STATUS.md; the "known false" means learned, not given at start) The stone axe breaks boulders 3x slower |
 | Fishing rod (#46) | 2 sticks + 2 twine | catch fish at water |
 | Torch (#7) | stick + 2 fibre | |
 | Chopping block (#15), chest (#14: 10 sticks + 4 twine), rock pile (#151: 45 stones) | | |
@@ -151,7 +165,7 @@ Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 
 | Stone arrow (#172) | 2 sticks + 2 feathers + 2 stones -> 4 | |
 | Quiver (#173) | 2 hide + 2 twine | |
 | Snare (#177) | 3 twine + 2 sticks | |
-| Wooden club (#189), stone mace (#202), javelin (#181), wicker shield (#201) | **known false: not craftable** | **[BLOCKED, F-01]** |
+| Wooden club (#189), stone mace (#202), javelin (#181), wicker shield (#201) | **known false: learned in play, not known at start** | (F-01 fixed: all 274 recipes can be learned, PLAYTHROUGH_STATUS.md; the "known false" means learned, not given at start) |
 
 Left click jabs the spear; hold right click to aim a throw, left click throws. Hold the bow, hold click to draw.
 
@@ -162,7 +176,7 @@ Left click jabs the spear; hold right click to aim a throw, left click throws. H
 3. Fell a small or medium tree (10-22 blows); work the trunk: sticks, leaves, logs; split blocks.
 4. Craft the campfire kit, place it under a big tree, light it with a plant fibre.
 5. Roast berries, drink at the water.
-6. Craft the lean-to kit (8 sticks, 6 leaves, 2 twine) and place it by the fire.
+6. Craft the lean-to kit (16 sticks, 4 leaves, 2 twine) and place it by the fire.
 7. Gather 10 thatch + 4 sticks, craft the rough bed kit, place it under the lean-to.
 8. Workbench (12 sticks, 3 twine) -> stone hammer, bow, thatch pieces.
 9. Spear (stick, then 2 twine) for hunting; knife (2 stones, stick) for carcasses.
