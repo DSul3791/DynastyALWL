@@ -144,6 +144,13 @@
 	"water": {
 		"drainage_mode": true,
 		"drainage": {
+			"banks": {
+				"_note": "Sonny 3 Nov 2026 (no patchy riverbeds): a dry cell next to water higher than its ground is raised to that water plus height_m, by at most max_raise_m, so a channel across a hillside has a bank on its downhill side (tile_drainage.gd _build_banks). v2 (05:55): max_raise_m 1.5 -> 3 (759 of 919 still-leaking rim cells were at the cap); a bank taller than shoulder_drop_m raises the dry ground outside it to its top less shoulder_drop_m (at most half its lift), so it slopes away.",
+				"enabled": true,
+				"height_m": 0.2,
+				"max_raise_m": 3.0,
+				"shoulder_drop_m": 1.0
+			},
 			"river_start_km2": 0.35,
 			"lake_min_depth_m": 0.5,
 			"lake_min_catchment_km2": 0.05,
@@ -1140,6 +1147,24 @@
 				6,
 				15
 			]
+		},
+		"spring_cave": {
+			"_note": "Dave 3 Nov 2026: a brook head on a hillside comes out of a cave about 100 m deep rising gently, the spring at the back, side branches with dens; some get 2 or 3 spring passages (extra_passage_chance: 2 or more, 3); each spring gives spring_m3_s_per_km2 x the head catchment km2 and their flows add up; no cave where the main passage finds under min_length_m of room.",
+			"min_slope_deg": 10,
+			"min_spacing_m": 120,
+			"max_count": 96,
+			"length_m": [90, 115],
+			"rise": [0.02, 0.05],
+			"width_m": [3, 5],
+			"height_m": [2.5, 4],
+			"min_cover_m": 2.5,
+			"open_cut_m": 64,
+			"chamber_radius_m": [4, 7],
+			"branches": [1, 3],
+			"branch_length_m": [15, 40],
+			"extra_passage_chance": [0.4, 0.15],
+			"min_length_m": 60,
+			"spring_m3_s_per_km2": 0.1
 		},
 		"rock_shelter": {
 			"count": [
