@@ -139,6 +139,7 @@ func _init() -> void:
 	_model.add_child(inst)
 	skeleton = inst.find_children("*", "Skeleton3D", true, false)[0]
 	body_mesh = inst.find_children("*", "MeshInstance3D", true, false)[0]
+	body_mesh.layers |= 1 << 19   # no ground decals on the body (piece_look.gd NO_DECAL_LAYER)
 	animation_player = inst.find_children("*", "AnimationPlayer", true, false)[0]
 	set_meta("worn_skip_builders", WornLook.BUILDERS)      # the worn pieces are written for other bone frames: none is hung on this body yet
 	_build_mounts()
