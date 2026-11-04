@@ -9,6 +9,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const WaterChoice := preload("res://src/water2/water_choice.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
+const KeyBindingsPage := preload("res://src/client/key_bindings_page.gd")
 
 const SHOW_ADMIN := true
 const PANEL := Color(0.075, 0.08, 0.09, 1.0)
@@ -35,6 +36,8 @@ var _old_water_switch
 var _admin_mode_switch
 var _cave_button: Button
 var _sound_list: VBoxContainer
+var _controls_from_settings: bool = false   # Back on the Controls page returns to Settings when it was opened from there
+var _key_page = null
 
 
 func build(client) -> void:
@@ -164,7 +167,9 @@ func _build_main() -> void:
 	var main: VBoxContainer = _page("main")
 	_button(main, "Resume", func(): _c._set_menu(false))
 	_button(main, "Settings", func(): show_page("settings"))
-	_button(main, "Controls", func(): show_page("controls"))
+	_button(main, "Controls", func():
+		_controls_from_settings = false
+		show_page("controls"))
 	_button(main, "Quit game", func(): show_page("quit"))
 
 	if SHOW_ADMIN:
@@ -185,6 +190,9 @@ func _build_main() -> void:
 
 func _build_controls() -> void:
 	var controls: VBoxContainer = _page("controls")
+	_key_page = KeyBindingsPage.new()
+	_key_page.build(self, controls)
+	var help: VBoxContainer = _page("controls_help")
 	var text: Label = Label.new()
 	text.text = _c.HELP_TEXT + "
 
@@ -192,8 +200,8 @@ This game: build %d, commit %s" % [_c.BUILD, _c._commit]
 	text.add_theme_font_size_override("font_size", 26)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.custom_minimum_size = Vector2(1500.0, 0.0)
-	controls.add_child(text)
-	_button(controls, "Back", func(): show_page("main"))
+	help.add_child(text)
+	_button(help, "Back", func(): show_page("controls"))
 
 
 const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
@@ -218,6 +226,9 @@ func _build_settings() -> void:
 	_button(settings, "Sound", func(): show_page("sound"))
 	_button(settings, "Gameplay", func(): show_page("gameplay"))
 	_button(settings, "Inner voice", func(): show_page("inner_voice"))
+	_button(settings, "Controls (change keys)", func():
+		_controls_from_settings = true
+		show_page("controls"))
 	_button(settings, "Back", func(): show_page("main"))
 
 

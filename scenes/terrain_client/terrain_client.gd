@@ -35,6 +35,7 @@ extends Node
 # Controls (see CONTROLS.md): mouse look, W A S D, Space and Ctrl, walk WASD,
 # jog double-tap W, run Shift+W, G or F fly or walk, Esc opens the options menu.
 
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
@@ -3341,7 +3342,7 @@ func _toggle_photo() -> void:
 
 # The photo camera (K): drawn from where photo_camera.gd puts it, kept out of the ground and walls. Only the drawn camera moves.
 func _place_photo_camera(delta: float) -> void:
-	photo.raise(float(Input.is_key_pressed(KEY_PAGEUP)) - float(Input.is_key_pressed(KEY_PAGEDOWN)), delta)
+	photo.raise(float(KeyBindings.held("photo_up")) - float(KeyBindings.held("photo_down")), delta)
 	photo.step(delta)
 	var focus: Vector3 = photo.focus_point(body.global_position)
 	var want: Vector3 = photo.camera_position(focus)
@@ -3421,11 +3422,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if menu_open:
 		return
 
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_I and items != null:
+	if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "inventory") and items != null:
 		items.toggle()
 		return
 
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB and items != null:
+	if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "character") and items != null:
 		items.toggle_character()
 		return
 
@@ -3454,44 +3455,52 @@ func _unhandled_input(event: InputEvent) -> void:
 		pass
 	elif event is InputEventMouseButton and event.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED
-	elif event is InputEventKey and not event.pressed and event.keycode == KEY_E and items != null:
+	elif event is InputEventKey and KeyBindings.released(event, "interact") and items != null:
 		items.release_e()
 	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_W:
+		if KeyBindings.matches(event, "gpu_probe"):
+			_gpu_probe.toggle()
+		elif KeyBindings.matches(event, "water_hide"):
+			flora.toggle_water_visible()
+		elif KeyBindings.matches(event, "water_debug"):
+			flora.toggle_water_debug()
+		elif KeyBindings.matches(event, "sound_panel"):
+			sound_panel.toggle()
+		elif KeyBindings.matches(event, "admin_dig"):
+			_admin_dig()
+		elif KeyBindings.matches(event, "admin_npc"):
+			_go_to_npc()
+		elif KeyBindings.matches(event, "admin_rabbit"):
+			_admin_rabbit()
+		elif KeyBindings.matches(event, "move_forward"):
 			var now: int = Time.get_ticks_msec()
 
 			if now - _last_w_msec <= DOUBLE_TAP_MSEC:
 				jogging = true
 
 			_last_w_msec = now
-		elif event.keycode == KEY_K:
+		elif KeyBindings.matches(event, "photo"):
 			_toggle_photo()
-		elif event.keycode == KEY_P and items != null:
+		elif KeyBindings.matches(event, "auto_pickup") and items != null:
 			items.toggle_auto_pickup()
-		elif event.keycode == KEY_SLASH:
+		elif KeyBindings.matches(event, "inspect"):
 			inspecting = not inspecting
 			status_icons.tick(0.0, true)
 			sound.ui.play("ui_on" if inspecting else "ui_off")
 
 			if not inspecting:
 				_inspect_label.text = ""
-		elif event.keycode == KEY_EQUAL or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
+		elif KeyBindings.matches(event, "spring_up") or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
 			net.step_water_rate.rpc_id(1, 1)
-		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
+		elif KeyBindings.matches(event, "spring_down") or event.keycode == KEY_KP_SUBTRACT:
 			net.step_water_rate.rpc_id(1, -1)
-		elif event.keycode == KEY_X and event.ctrl_pressed:
-			_admin_dig()
-		elif event.keycode == KEY_N and event.ctrl_pressed:
-			_go_to_npc()
-		elif event.keycode == KEY_R and event.ctrl_pressed:
-			_admin_rabbit()
-		elif event.keycode == KEY_Q and not flying and items != null and not items.open:
+		elif KeyBindings.matches(event, "put_down_log") and not flying and items != null and not items.open:
 			items.lay_down_shoulder()
-		elif event.keycode == KEY_C and not flying:
+		elif KeyBindings.matches(event, "crouch") and not flying:
 			_set_stance(StanceScript.CROUCH, true)
-		elif event.keycode == KEY_X and not flying:
+		elif KeyBindings.matches(event, "sit") and not flying:
 			_set_stance(StanceScript.SIT, true)
-		elif event.keycode == KEY_Z and not flying:
+		elif KeyBindings.matches(event, "lie") and not flying:
 			if stance.stance == StanceScript.LIE and items != null and not items.asleep:
 				_z_down_msec = Time.get_ticks_msec()   # lying: hold Z to sleep, tap to get up (decided on release, see _check_sleep_hold)
 				_z_slept = false
@@ -3503,39 +3512,31 @@ func _unhandled_input(event: InputEvent) -> void:
 			held.press_slot(event.keycode - KEY_1)
 		elif event.keycode == KEY_0 and held != null:
 			held.press_slot(9)
-		elif event.keycode == KEY_E and items != null:
+		elif KeyBindings.matches(event, "interact") and items != null:
 			items.press_e()
-		elif event.keycode == KEY_BRACKETRIGHT and items != null:
+		elif KeyBindings.matches(event, "starter_items") and items != null:
 			items.admin_give_test_set()
-		elif event.keycode == KEY_J and _jitter_test != null:
+		elif KeyBindings.matches(event, "jitter_test") and _jitter_test != null:
 			_jitter_test.next_spot()
-		elif event.keycode == KEY_G and event.ctrl_pressed and event.shift_pressed:
-			_gpu_probe.toggle()
-		elif event.keycode == KEY_W and event.ctrl_pressed and event.shift_pressed:
-			flora.toggle_water_visible()
-		elif event.keycode == KEY_V and event.ctrl_pressed and event.shift_pressed:
-			flora.toggle_water_debug()
-		elif event.keycode == KEY_F3 and event.shift_pressed:
-			sound_panel.toggle()
-		elif event.keycode == KEY_F3:
+		elif KeyBindings.matches(event, "debug_details"):
 			debug_hud.enabled = not debug_hud.enabled
-		elif event.keycode == KEY_F4:
+		elif KeyBindings.matches(event, "hud_text"):
 			hud.visible = not hud.visible
 			display.hud_text = hud.visible
 			display.save()
-		elif event.keycode == KEY_F2:
+		elif KeyBindings.matches(event, "quality"):
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
 			_save_display()
-		elif event.keycode == KEY_DELETE and held != null and held.delete_plan():
+		elif KeyBindings.matches(event, "delete_plan") and held != null and held.delete_plan():
 			pass
-		elif event.keycode == KEY_R and not event.ctrl_pressed and items != null and not items.open:
+		elif KeyBindings.matches(event, "blueprints") and items != null and not items.open:
 			if held != null:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
-		elif event.keycode == KEY_F:
+		elif KeyBindings.matches(event, "open"):
 			if items != null and not flying:
 				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is G); with a log on the shoulder and nothing to open, F twice puts the log down
-		elif event.keycode == KEY_G:
+		elif KeyBindings.matches(event, "fly"):
 			flying = not flying
 			body.velocity = Vector3.ZERO
 
@@ -3643,7 +3644,7 @@ func _check_sleep_hold() -> void:
 	if _z_down_msec < 0:
 		return
 
-	if not Input.is_key_pressed(KEY_Z):
+	if not KeyBindings.held("lie"):
 		if not _z_slept:
 			_set_stance(StanceScript.LIE, true)
 
@@ -3678,9 +3679,9 @@ func _move_player(delta: float) -> void:
 		return
 
 	var input: Vector3 = Vector3(
-		float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A)),
+		float(KeyBindings.held("move_right")) - float(KeyBindings.held("move_left")),
 		0.0,
-		float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
+		float(KeyBindings.held("move_back")) - float(KeyBindings.held("move_forward"))
 	)
 	if items != null and items.screen_open():
 		input = Vector3.ZERO   # the inventory's quick keys (S split) are not walking
@@ -3693,7 +3694,7 @@ func _move_player(delta: float) -> void:
 	# Any movement key stands the player up from sitting or lying; those stances do not move.
 	var sleeping_now: bool = items != null and items.asleep
 
-	if sleeping_now and Input.is_key_pressed(KEY_SPACE) and input == Vector3.ZERO:
+	if sleeping_now and KeyBindings.held("jump") and input == Vector3.ZERO:
 		# Dave 2026-10-21: holding Space wakes a sleeper early (not fully rested: the energy stays where it was).
 		_space_wake_s += delta
 
@@ -3703,7 +3704,7 @@ func _move_player(delta: float) -> void:
 	else:
 		_space_wake_s = 0.0
 
-	if input != Vector3.ZERO or (Input.is_key_pressed(KEY_SPACE) and not sleeping_now):
+	if input != Vector3.ZERO or (KeyBindings.held("jump") and not sleeping_now):
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 
@@ -3714,8 +3715,8 @@ func _move_player(delta: float) -> void:
 		direction = _walk_dir
 	elif lag_run != null and _walk_dir != Vector3.ZERO:
 		direction = _walk_dir
-	var fast: float = FAST if Input.is_key_pressed(KEY_SHIFT) else 1.0
-	var forward: bool = Input.is_key_pressed(KEY_W)
+	var fast: float = FAST if KeyBindings.held("run") else 1.0
+	var forward: bool = KeyBindings.held("move_forward")
 	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
 
 	# Gaits (CONTROLS.md): walk is plain WASD, jog is a double-tap of W, run is
@@ -3723,7 +3724,7 @@ func _move_player(delta: float) -> void:
 	if not forward:
 		jogging = false
 
-	running = forward and Input.is_key_pressed(KEY_SHIFT) and strain_cap == 0.0
+	running = forward and KeyBindings.held("run") and strain_cap == 0.0
 
 	if strain_cap != 0.0:
 		jogging = false
@@ -3767,7 +3768,7 @@ func _move_player(delta: float) -> void:
 		if not body.get_world_3d().direct_space_state.intersect_ray(below).is_empty():
 			_fly_ground_msec = Time.get_ticks_msec()
 	elif flying:
-		direction.y += float(Input.is_key_pressed(KEY_SPACE)) - float(Input.is_key_pressed(KEY_CTRL))
+		direction.y += float(KeyBindings.held("jump")) - float(KeyBindings.held("down"))
 		body.global_position += direction * FLY_SPEED * fast * delta
 	elif _climb_ladder(delta, strain_cap):
 		pass
@@ -3811,7 +3812,7 @@ func _move_player(delta: float) -> void:
 				velocity.x *= slow
 				velocity.z *= slow
 
-		if not swimming and body.is_on_floor() and Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0:
+		if not swimming and body.is_on_floor() and KeyBindings.held("jump") and strain_cap >= 0.0:
 			velocity.y = 7.0
 			feel.jump()
 			sound.footstep(body, 1, -3.0, "right")        # the push off the ground (job 61: a jump had no sound, only the landing)
@@ -3861,7 +3862,7 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 		return false
 
 	var look: Vector3 = -body.global_transform.basis.z
-	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, Input.is_key_pressed(KEY_W), Input.is_key_pressed(KEY_S), Input.is_key_pressed(KEY_SPACE), delta)
+	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, KeyBindings.held("move_forward"), KeyBindings.held("move_back"), KeyBindings.held("jump"), delta)
 	var at: Vector3 = result["position"]
 
 	if at != Vector3.INF:
@@ -3938,8 +3939,8 @@ func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool
 	if strain_cap < 0.0:
 		horizontal = Vector3.ZERO
 
-	var up: bool = Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0
-	var down: bool = Input.is_key_pressed(KEY_CTRL) and strain_cap >= 0.0
+	var up: bool = KeyBindings.held("jump") and strain_cap >= 0.0
+	var down: bool = KeyBindings.held("down") and strain_cap >= 0.0
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, items.breath_ds >= 0 and items.breath_ds < 100)
@@ -4166,7 +4167,7 @@ func _process(delta: float) -> void:
 	tp = Probe.start()
 
 	if harvest != null:
-		harvest.update(delta, Input.is_key_pressed(KEY_E) and not items.open)
+		harvest.update(delta, KeyBindings.held("interact") and not items.open)
 
 	Probe.stop("harvest", tp)
 	tp = Probe.start()

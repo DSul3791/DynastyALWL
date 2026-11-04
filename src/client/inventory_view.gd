@@ -29,6 +29,7 @@ const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CharacterScreenScript := preload("res://src/client/character_screen.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
@@ -690,7 +691,7 @@ func release_e() -> void:
 
 
 func _hold_e_check() -> void:
-	if _e_active.is_empty() or not Input.is_key_pressed(KEY_E):
+	if _e_active.is_empty() or not KeyBindings.held("interact"):
 		return
 
 	if Time.get_ticks_msec() - _e_start_msec < int(HOLD_E_S * 1000.0):
@@ -3859,43 +3860,46 @@ func quick_key(event: InputEventKey) -> bool:
 
 	var slot: int = _hover if _hover >= 0 else _selected
 
-	match event.keycode:
-		KEY_E:
-			if hotbar_hover >= 0 and _hover < 0:
-				hotbar_to_pack(hotbar_hover)
-				return true
-
-			if slot >= 0 and not chest_mode:
-				eat_slot(slot)
-
+	if KeyBindings.matches(event, "use_item"):
+		if hotbar_hover >= 0 and _hover < 0:
+			hotbar_to_pack(hotbar_hover)
 			return true
-		KEY_D:
-			if slot < 0 and shoulder_id != "" and not chest_mode:
-				lay_down_shoulder()
-				return true
 
-			if slot >= 0 and not chest_mode:
-				_selected = slot
-				_drop_selected(not event.shift_pressed)
+		if slot >= 0 and not chest_mode:
+			eat_slot(slot)
 
+		return true
+
+	if KeyBindings.matches(event, "drop_item"):
+		if slot < 0 and shoulder_id != "" and not chest_mode:
+			lay_down_shoulder()
 			return true
-		KEY_R:
-			if slot >= 0 and not chest_mode:
-				_selected = slot
-				_repair_selected()
 
-			return true
-		KEY_S:
-			if slot >= 0 and not chest_mode:
-				_selected = slot
-				_split_selected()
+		if slot >= 0 and not chest_mode:
+			_selected = slot
+			_drop_selected(not event.shift_pressed)
 
-			return true
-		KEY_T:
-			if chest_mode and _chest_hover.size() == 2:
-				_on_chest_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
+		return true
 
-			return true
+	if KeyBindings.matches(event, "repair_item"):
+		if slot >= 0 and not chest_mode:
+			_selected = slot
+			_repair_selected()
+
+		return true
+
+	if KeyBindings.matches(event, "split_item"):
+		if slot >= 0 and not chest_mode:
+			_selected = slot
+			_split_selected()
+
+		return true
+
+	if KeyBindings.matches(event, "transfer_item"):
+		if chest_mode and _chest_hover.size() == 2:
+			_on_chest_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
+
+		return true
 
 	return false
 
