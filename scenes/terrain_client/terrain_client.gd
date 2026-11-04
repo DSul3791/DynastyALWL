@@ -4045,9 +4045,12 @@ func _process(delta: float) -> void:
 
 	if harvest != null:
 		harvest.update(delta, Input.is_key_pressed(KEY_E) and not items.open)
+
+	Probe.stop("harvest", tp)
+	tp = Probe.start()
 	game_clock.tick()
 	_update_weather()
-	Probe.stop("harvest, clock, weather", tp)
+	Probe.stop("clock, weather", tp)
 
 	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
