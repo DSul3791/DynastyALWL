@@ -357,6 +357,8 @@ const SIT_THIGH_OUT_DEG := 55.0
 const SIT_SHIN_FOLD_DEG := 135.0
 const SIT_HIPS_M := 0.14
 const SIT_PELVIS_BACK_DEG := 28.0     # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
+const SIT_ARM_FWD_DEG := 40.0         # hands rest on the knees: the upper arm swings forward this much from hanging (about the model's X axis), the forearm this much more
+const SIT_FOREARM_FWD_DEG := 25.0
 const SIT_SPINE_BACK_DEG := 3.0       # each of Spine, Spine1 and Spine2 leans back this much more
 
 
@@ -417,6 +419,46 @@ static func _ground_sit(anim: Animation, idle: Animation) -> void:
 		for k in range(anim.track_get_key_count(t)):
 			var q: Quaternion = anim.track_get_key_value(t, k)
 			anim.track_set_key_value(t, k, (pelvis.inverse() * extra * q) if path.ends_with("UpLeg") else (q * extra))
+
+	# The arms hang beside the hips, which are now on the ground and put a held tool in the grass: swing them forward so the hands rest on the knees. The swing is made in model space
+	# (the bones' own axes are not known), through the parent chain's rotation at the first key.
+	for side in ["Left", "Right"]:
+		var chain: Quaternion = Quaternion.IDENTITY
+
+		for bone in ["Hips", "Spine", "Spine1", "Spine2", side + "Shoulder"]:
+			var tr: int = _rot_track(anim, bone)
+
+			if tr < 0:
+				chain = Quaternion.IDENTITY
+				break
+
+			chain = chain * (anim.track_get_key_value(tr, 0) as Quaternion)
+
+		var arm_tr: int = _rot_track(anim, side + "Arm")
+		var fore_tr: int = _rot_track(anim, side + "ForeArm")
+
+		if arm_tr < 0 or fore_tr < 0:
+			continue
+
+		var swing: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_ARM_FWD_DEG))
+		var arm_new: Quaternion = chain.inverse() * swing * chain * (anim.track_get_key_value(arm_tr, 0) as Quaternion)
+		var swing2: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_FOREARM_FWD_DEG))
+		var chain2: Quaternion = chain * arm_new
+		var fore_new: Quaternion = chain2.inverse() * swing2 * chain2 * (anim.track_get_key_value(fore_tr, 0) as Quaternion)
+
+		for k in range(anim.track_get_key_count(arm_tr)):
+			anim.track_set_key_value(arm_tr, k, arm_new)
+
+		for k in range(anim.track_get_key_count(fore_tr)):
+			anim.track_set_key_value(fore_tr, k, fore_new)
+
+
+static func _rot_track(anim: Animation, bone: String) -> int:
+	for t in range(anim.get_track_count()):
+		if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and String(anim.track_get_path(t)).ends_with(P + bone):
+			return t
+
+	return -1
 
 
 # A harmless stand-in when the glb cannot be used, so nothing that holds this body meets a null (my_character.gd make_avatar never picks it; this is the last guard).
