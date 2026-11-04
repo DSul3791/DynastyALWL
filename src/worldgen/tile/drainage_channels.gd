@@ -25,6 +25,7 @@ const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above th
 const CREST_CUT_FALL_M := 0.05       # fall per cell when a gorge is cut through a crest on a river's path
 const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a cell more than this
 const BASIN_MAX_CUT_M := 12.0        # a pond or lake bowl never lowers a cell more than this
+const BASIN_MIN_BED_M := 0.5         # nor below this height: the water sim treats ground at or under 0 m as the sea, so a coastal bowl cut below it drained to the sea from inside (test_head_pond_fill, 2 Nov 2026)
 const BASIN_BANK_SLOPE := 0.15       # the bank rises this much per metre outside the lip
 const POND_MAX_SLOPE_DEG := 20.0     # no head pond on ground steeper than this
 const LAKE_MAX_SLOPE_DEG := 12.0     # lakes sit on flat reaches
@@ -40,9 +41,25 @@ const STEEP_FROM_DEG := 12.0         # valley cuts shrink on ground steeper than
 const STEEP_TO_DEG := 30.0           # ... down to (1 - STEEP_VALLEY_SHARE) of their size at this slope
 const STEEP_VALLEY_SHARE := 0.8
 const VALLEY_FREEBOARD_FLAT_M := 1.0   # the same on reaches that fall under 0.5%
+const SPAWN_GULLY_CLEAR_M := 60.0     # a river gully is faded out only this close to the spawn point (the spawn stays flat dry ground) ...
+const SPAWN_GULLY_BLEND_M := 60.0     # ... and is back in full this much further out; valleys, canyons and heads still fade out over spawn_keep_m
 const CENTRE_MIN_DEPTH_M := 0.3       # every drained centre cell holds at least this much water, so the painted river is one line
 const CENTRE_MAX_CUT_M := 1.5
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
+# Where a spring may rise (Dave 2 Nov 2026): high on a flat or plateau set back from its edge, or low at the bottom, never partway down a slope; a spring
+# running for ages carves its own pool, so every source sits in one. A head that fails the test moves its pond up the drainage line above it to the first
+# spot that passes (a brook is cut from the pond down to the old head), else down its river to the first one (the reach above dries to a gully), else
+# keeps the old rule (a pond on the head when the ground is under POND_MAX_SLOPE_DEG).
+const SOURCE_FLAT_DEG := 8.0          # the spot itself: no steeper than this to any neighbour
+const SOURCE_SETBACK_M := 64.0        # and set back from any edge: the lowest ground this far out ...
+const SOURCE_SETBACK_DEG := 9.0       # ... falls no more than this average slope
+const SOURCE_UP_CELLS := 80           # cells (640 m) searched up the drainage line above a head
+const CAVE_HEAD_MIN_SLOPE_DEG := 10.0  # a head this steep that found no flat above keeps its brook and gets a spring cave (tile_sites.gd spring_cave.min_slope_deg)
+const SOURCE_DOWN_CELLS := 200        # cells (1.6 km) searched down the river below it
+const BROOK_CUT_M := 0.6              # the brook from a raised pond is cut this deep into the ground ...
+const BROOK_FALL_M := 0.03            # ... falling at least this much per cell ...
+const BROOK_MAX_CUT_M := 3.0          # ... but never more than this below the ground
+const BROOK_DEPTH_M := 0.25           # and holds this much water (it is painted as river, so the settler finds the head in the pond)
 
 var bed: PackedFloat32Array = PackedFloat32Array()
 var centre_depth: PackedFloat32Array = PackedFloat32Array()    # depth on the centre line, 0 elsewhere
@@ -54,6 +71,7 @@ var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
 var _origin: Vector2i = Vector2i.ZERO   # world sample coordinates of cell 0, so everything below depends on the place, not on the frame
 var _centre_surface: PackedFloat32Array = PackedFloat32Array()
+var _source_dry: PackedByteArray = PackedByteArray()          # 1 on a river reach above a pond moved down to the bottom: no water painted there
 var _canyon: PackedFloat32Array = PackedFloat32Array()        # 0..1 canyon strength on centre cells (valleys give way to canyons)
 var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at centre cells (+ = turning right on the map, z down)
 
@@ -154,14 +172,21 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	_canyons(h, fill, flow, size, cell_m, rules)
 	_lap("canyons", clock)
 	clock = Time.get_ticks_msec()
+	var before_gullies: PackedFloat32Array = bed.duplicate()
 	_gullies(h, fill, flow, size, cell_m, rules)
+	var gully_cut: PackedFloat32Array = PackedFloat32Array()
+	gully_cut.resize(size * size)
+
+	for index in range(size * size):
+		gully_cut[index] = minf(bed[index] - before_gullies[index], 0.0)
+
 	_lap("gullies", clock)
 	clock = Time.get_ticks_msec()
 	_heads(h, fill, flow, size, cell_m, threshold, rules)
 	_lap("heads + basins", clock)
 	clock = Time.get_ticks_msec()
 	_ensure_centre_channel(fill, flow, threshold)
-	_keep_spawn_clear(stamped, size, cell_m, rules)
+	_keep_spawn_clear(stamped, gully_cut, size, cell_m, rules)
 	_lap("centre fix + spawn", clock)
 
 
@@ -331,7 +356,12 @@ static func stamp_channels_script(bed_in: PackedFloat32Array, surface_in: Packed
 
 # The spawn area stays as the land and the river stamp made it: valleys, canyons, gullies and heads fade out inside
 # spawn_keep_m of the spawn point and are fully back at spawn_keep_m + spawn_blend_m (Dave: the spawn must be flat dry ground).
-func _keep_spawn_clear(stamped: PackedFloat32Array, size: int, cell_m: float, rules: Dictionary) -> void:
+#
+# The rivers' own gullies stay (Dave 3 Nov 2026, x 53264..53521 z 68593..68882, 130 to 460 m from the spawn: "the river creation system didn't carve
+# this spot"): with the gullies faded out too, a brook down the steep hillside by the spawn kept only its 0.5 m stamp, the settled water ran off it, and
+# the bake painted a 13 cm film over clay and grass that showed as separate puddles. Only inside SPAWN_GULLY_CLEAR_M of the spawn point is a gully
+# faded out; elsewhere the restored ground keeps the gully's own cut (`gully_cut`: what the gully stage alone took off each cell, 0 or negative).
+func _keep_spawn_clear(stamped: PackedFloat32Array, gully_cut: PackedFloat32Array, size: int, cell_m: float, rules: Dictionary) -> void:
 	if not rules.has("spawn_x"):
 		return
 
@@ -347,7 +377,8 @@ func _keep_spawn_clear(stamped: PackedFloat32Array, size: int, cell_m: float, ru
 			var world: Vector2 = Vector2(float(column + _origin.x) + 0.5, float(row + _origin.y) + 0.5) * cell_m
 			var weight: float = smoothstep(keep, keep + blend, world.distance_to(spawn))
 			var index: int = row * size + column
-			bed[index] = lerpf(stamped[index], bed[index], weight)
+			var kept: float = gully_cut[index] * smoothstep(SPAWN_GULLY_CLEAR_M, SPAWN_GULLY_CLEAR_M + SPAWN_GULLY_BLEND_M, world.distance_to(spawn))
+			bed[index] = lerpf(stamped[index] + kept, bed[index], weight)
 
 
 # Stage 3b: valleys. Rivers with a big catchment sit in a valley graded to their water level: the floor stands just above
@@ -754,7 +785,7 @@ func _ensure_centre_channel(fill, flow, threshold: float) -> void:
 	var fixed: int = 0
 
 	for index in fill.order:
-		if flow.discharge[index] < threshold or is_nan(_centre_surface[index]):
+		if flow.discharge[index] < threshold or is_nan(_centre_surface[index]) or (not _source_dry.is_empty() and _source_dry[index] == 1):
 			continue
 
 		var wanted: float = maxf(_centre_surface[index] - CENTRE_MIN_DEPTH_M, bed[index] - CENTRE_MAX_CUT_M)
@@ -822,6 +853,22 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 	var lake_unlucky: int = 0   # of those, in a block that lost the lake_block_share draw
 	var skipped_edge: int = 0
 	var skipped_lip: int = 0
+	var skipped_sea: int = 0
+	var source_counts: Dictionary = {}   # how each head's source was placed: here, up, down, kept (no spot passed; the old rule)
+	var moved_up: int = 0
+	var moved_down: int = 0
+	var dried: int = 0
+	_source_dry.resize(size * size)
+	_source_dry.fill(0)
+	# Channel cells flowing into each cell: 2 or more is a confluence (a moved-down source never dries a reach another river feeds).
+	var up_count: PackedByteArray = PackedByteArray()
+	up_count.resize(size * size)
+
+	for k in range(size * size):
+		var next: int = fill.receiver[k]
+
+		if next >= 0 and flow.discharge[k] >= threshold and up_count[next] < 255:
+			up_count[next] += 1
 
 	for index in fill.order:
 		if flow.discharge[index] < threshold or is_nan(_centre_surface[index]) or h[index] < 2.0:
@@ -837,10 +884,26 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		var slope: float = _ground_slope(h, index, size, cell_m)
 
 		if has_up[index] == 0:
-			if slope > pond_slope:
+			var source: Dictionary = _source_spot(h, fill, flow, index, size, cell_m, threshold, edge, up_count)
+			var how: String = String(source["how"])
+
+			# Spring caves (Dave 3 Nov 2026): a head on a hillside keeps its brook and comes out of a cave (tile_sites.gd), instead of the spring moving
+			# down to the bottom and the reach above it drying (41 of the 46 dry painted reaches on tile 3,4 were those).
+			if how == "down" and slope >= tan(deg_to_rad(CAVE_HEAD_MIN_SLOPE_DEG)):
+				how = "cave"
+
+			source_counts[how] = int(source_counts.get(how, 0)) + 1
+
+			if how == "cave":
+				continue
+
+			if how != "kept":
+				var at: int = int(source["at"])
+				sites.append([at, maxf(flow.discharge[at], flow.discharge[index] if how == "up" else 0.0), false, source["path"], how])
+			elif slope > pond_slope:
 				steep += 1
 			else:
-				sites.append([index, flow.discharge[index], false])
+				sites.append([index, flow.discharge[index], false, PackedInt32Array(), "here"])
 
 			continue
 
@@ -892,12 +955,12 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 
 	if lake_pick.is_empty() and not relaxed_best.is_empty():
 		var chosen: int = int(relaxed_best[1])
-		sites.append([chosen, flow.discharge[chosen], true])
+		sites.append([chosen, flow.discharge[chosen], true, PackedInt32Array(), "lake"])
 		guaranteed = 1
 
 	for block in lake_pick:
 		var picked: int = int(lake_pick[block][1])
-		sites.append([picked, flow.discharge[picked], true])
+		sites.append([picked, flow.discharge[picked], true, PackedInt32Array(), "lake"])
 
 	var ponds: int = 0
 	var lakes: int = 0
@@ -933,6 +996,19 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 			skipped_lip += 1
 			continue
 
+		# A bowl over ground under BASIN_MIN_BED_M (a coastal flat, a tidal channel) holds no water: the water sim drains any cell at or under 0 m to the sea,
+		# so the pond emptied through its own floor (test_head_pond_fill, 2 Nov 2026: springs 1900590 and 2681336 still dry after the 0.5 m carve floor).
+		var over_sea: bool = false
+
+		for dz in range(-reach, reach + 1):
+			for dc in range(-reach, reach + 1):
+				if sqrt(float(dz * dz + dc * dc)) * cell_m <= radius and bed[(row + dz) * size + column + dc] < BASIN_MIN_BED_M:
+					over_sea = true
+
+		if over_sea:
+			skipped_sea += 1
+			continue
+
 		var wet: int = 0
 
 		for dz in range(-reach, reach + 1):
@@ -945,7 +1021,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 				var neighbor: int = (row + dz) * size + column + dc
 				var t: float = distance / radius
 				var target: float = lip - depth * (1.0 - t * t) if t <= 1.0 else lip + BASIN_BANK_SLOPE * (distance - radius)
-				var wanted: float = maxf(target, h[neighbor] - BASIN_MAX_CUT_M)
+				var wanted: float = maxf(maxf(target, h[neighbor] - BASIN_MAX_CUT_M), BASIN_MIN_BED_M)
 
 				if wanted < bed[neighbor]:
 					bed[neighbor] = wanted
@@ -959,6 +1035,28 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 					if is_nan(surface[neighbor]) or surface[neighbor] < lip:
 						surface[neighbor] = lip
 
+		var how_placed: String = String(site[4])
+
+		if how_placed == "up":
+			_cut_brook(h, site[3], basin_mask, lip)
+			moved_up += 1
+		elif how_placed == "down":
+			for k in site[3]:
+				if basin_mask[k] == 1:
+					continue
+
+				# The old channel just above the pond lies under the pond's level: the pond backs up into it (painted at the lip, so the settle and the
+				# baked water agree; test_head_pond_fill spring 3144147 spread its water into the dry gully and fell short). Above that it dries.
+				if bed[k] < lip - 0.05:
+					surface[k] = lip
+					continue
+
+				surface[k] = NAN
+				_source_dry[k] = 1
+				dried += 1
+
+			moved_down += 1
+
 		if is_lake:
 			lakes += 1
 			lake_cells += wet
@@ -970,8 +1068,116 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		if verbose:
 			print("  basin %s: world %d,%d radius %.0f depth %.1f lip %.1f wet %.2f ha" % ["lake" if is_lake else "pond", (_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), radius, depth, lip, wet * cell_m * cell_m / 10000.0])
 
-	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip])
+	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip, %d over ground at sea level" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip, skipped_sea])
+	print("  sources (Dave 2 Nov: up on a flat or down at the bottom, in a pool; 3 Nov: hillside heads keep their brook and get a spring cave, \"cave\"): %s heads checked; %d ponds raised to a flat above (brook cut down), %d moved down to the bottom (%d river cells above dried), the rest on the head" % [str(source_counts), moved_up, moved_down, dried])
 	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha, %d of them the tile's guaranteed lake), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, guaranteed, steep, POND_MAX_SLOPE_DEG])
+
+
+# Whether a spring may rise here (Dave 2 Nov 2026): flat ground, set back from any edge (the lowest land SOURCE_SETBACK_M out is not far below).
+func _source_ok(h: PackedFloat32Array, index: int, size: int, cell_m: float) -> bool:
+	if h[index] < 2.0 or _ground_slope(h, index, size, cell_m) > tan(deg_to_rad(SOURCE_FLAT_DEG)):
+		return false
+
+	var reach: int = int(ceil(SOURCE_SETBACK_M / cell_m))
+	@warning_ignore("integer_division")
+	var row: int = index / size
+	var column: int = index % size
+
+	if row < reach or column < reach or row >= size - reach or column >= size - reach:
+		return false
+
+	var low: float = INF
+
+	for dz in range(-reach, reach + 1):
+		for dc in range(-reach, reach + 1):
+			var ring: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+			if ring >= SOURCE_SETBACK_M - 0.5 * cell_m and ring <= SOURCE_SETBACK_M + 0.5 * cell_m:
+				low = minf(low, h[(row + dz) * size + column + dc])
+
+	return h[index] - low <= tan(deg_to_rad(SOURCE_SETBACK_DEG)) * SOURCE_SETBACK_M
+
+
+# Where a river head's source goes: {how: "here" | "up" | "down" | "kept", at: cell, path: cells}. "up": the first good spot on the drainage line above
+# (the largest donor each step), path from the head up to it; "down": the first good spot down the river, path from the head to the cell above it (stops
+# at a confluence: the reach below is another river's too); "kept": none found.
+func _source_spot(h: PackedFloat32Array, fill, flow, head: int, size: int, cell_m: float, threshold: float, edge: int, up_count: PackedByteArray) -> Dictionary:
+	if _source_ok(h, head, size, cell_m):
+		return {"how": "here", "at": head, "path": PackedInt32Array()}
+
+	var path: PackedInt32Array = PackedInt32Array([head])
+	var at: int = head
+
+	for step in range(SOURCE_UP_CELLS):
+		var next: int = _walk_up(fill, flow, at, 1, 0.000001, size)
+
+		if next == at:
+			break
+
+		@warning_ignore("integer_division")
+		var row: int = next / size
+		var column: int = next % size
+
+		if row < edge or column < edge or row >= size - edge or column >= size - edge:
+			break
+
+		at = next
+
+		if _source_ok(h, at, size, cell_m):
+			return {"how": "up", "at": at, "path": path}
+
+		path.append(at)
+
+	path = PackedInt32Array([head])
+	at = head
+
+	for step in range(SOURCE_DOWN_CELLS):
+		var next: int = fill.receiver[at]
+
+		if next < 0 or flow.discharge[next] < threshold or up_count[next] >= 2:
+			break
+
+		@warning_ignore("integer_division")
+		var row: int = next / size
+		var column: int = next % size
+
+		if row < edge or column < edge or row >= size - edge or column >= size - edge:
+			break
+
+		if _source_ok(h, next, size, cell_m):
+			return {"how": "down", "at": next, "path": path}
+
+		at = next
+		path.append(at)
+
+	return {"how": "kept", "at": head, "path": PackedInt32Array()}
+
+
+# The brook from a raised pond down to the old head: `path` runs from the head up to the cell below the pond. From the pond down, each cell outside a
+# bowl is cut BROOK_CUT_M into the ground (at most BROOK_MAX_CUT_M) and at least BROOK_FALL_M below the cell above it, and holds BROOK_DEPTH_M of water.
+# The first cell out of the pond is the outlet notch: cut to just under the pond's `lip`, never deeper (cut BROOK_CUT_M into a rim cell that stands at the
+# lip, the notch let the pond drain 0.6 m below its own level).
+func _cut_brook(h: PackedFloat32Array, path: PackedInt32Array, in_bowl: PackedByteArray, lip: float) -> void:
+	var above: float = lip + BROOK_FALL_M
+	var first: bool = true
+
+	for n in range(path.size() - 1, -1, -1):
+		var k: int = path[n]
+
+		if in_bowl[k] == 1:
+			continue   # the pond's own bowl (and its outlet lip): the brook starts below it
+
+		var wanted: float = maxf(minf(bed[k] - BROOK_CUT_M, above - BROOK_FALL_M), h[k] - BROOK_MAX_CUT_M)
+
+		if first:
+			wanted = minf(bed[k], lip - BROOK_FALL_M)   # the notch: no deeper than the lip
+			first = false
+		bed[k] = minf(bed[k], wanted)
+		above = bed[k]
+		var level: float = bed[k] + BROOK_DEPTH_M
+
+		if is_nan(surface[k]) or surface[k] < level:
+			surface[k] = level
 
 
 # Steepest rise per metre between a cell and its eight neighbours.
