@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 540,
+	"next_number": 542,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -260,17 +260,17 @@
 		},
 		"lean_to_kit": {
 			"number": 20,
-			"name": "Small shelter",
+			"name": "Lean-to",
 			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"value": 30
+			"value": 110
 		},
 		"lean_to": {
 			"number": 21,
-			"name": "Small shelter",
+			"name": "Lean-to",
 			"description": "A ridge pole on two forks, with a roof of leaned sticks and boughs down to the ground. Crawl in under it.",
 			"kind": "structure",
 			"stack": 1,
@@ -942,7 +942,7 @@
 		},
 		"shore_net": {
 			"number": 260,
-			"name": "Shore net",
+			"name": "Fishing net",
 			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"kind": "tool",
 			"tool_class": "net",
@@ -2903,7 +2903,7 @@
 		"wooden_block": {
 			"number": 234,
 			"name": "Wooden block",
-			"description": "A short round of log. Split it on a chopping block.",
+			"description": "A short round of a small log, bark still on. Burns longer than firewood, or split it on a chopping block.",
 			"kind": "material",
 			"pile": {"shape": "logs", "handful": 5, "color": [0.40, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true},
 			"stack": 10,
@@ -2924,7 +2924,7 @@
 		"wooden_block_soft": {
 			"number": 237,
 			"name": "Softwood block",
-			"description": "A short round of pine, spruce or fir log, about 30 cm long. Split it on a chopping block.",
+			"description": "A short round of a small pine, spruce or fir log, bark still on, about 30 cm long. Burns longer than soft firewood, or split it on a chopping block.",
 			"kind": "material",
 			"pile": {"shape": "logs", "handful": 5, "color": [0.46, 0.31, 0.2], "len": 0.3, "radius": 0.09, "round": true},
 			"stack": 10,
@@ -6262,6 +6262,26 @@
 			"name": "Sunsilver vine bush",
 			"description": "A sunsilver vine bush dug up whole, roots and all. Plant it again somewhere else.",
 			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 6
+		},
+		"wooden_block_large": {
+			"number": 540,
+			"name": "Large wooden block",
+			"description": "A thick round of a big trunk, bark still on. Split it into 4 firewood on a chopping block, or make a chopping block of it.",
+			"kind": "material",
+			"pile": {"shape": "logs", "handful": 3, "color": [0.40, 0.27, 0.17], "len": 0.4, "radius": 0.2, "round": true},
+			"stack": 5,
+			"look_alikes": [],
+			"value": 8
+		},
+		"wooden_block_soft_large": {
+			"number": 541,
+			"name": "Large softwood block",
+			"description": "A thick round of a big pine, spruce or fir trunk, bark still on. Split it into 4 soft firewood on a chopping block, or make a chopping block of it.",
+			"kind": "material",
+			"pile": {"shape": "logs", "handful": 3, "color": [0.46, 0.31, 0.2], "len": 0.4, "radius": 0.2, "round": true},
 			"stack": 5,
 			"look_alikes": [],
 			"value": 6

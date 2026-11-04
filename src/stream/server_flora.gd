@@ -142,6 +142,14 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 				items[field].append_array(extra[field])
 	bytes = PlacerScript.encode(items, placer.chunk_origin(home))
 	_mutex.lock()
+
+	# BUG-024 (Dave's QA list, 4 Nov 2026: felled trees came back after streaming): this runs on worker threads, and a tree cut while
+	# the chunk was being made would be kept in the memory copy and sent to every later asker. Removals only grow, so a changed count
+	# means a cut came in: make it again with it.
+	if _removed.get(home, {}).size() != removed.size():
+		_mutex.unlock()
+		return chunk_bytes(chunk, full)
+
 	_fill_cover(home, items)
 	chunks_made += 1
 	_memory[key] = bytes

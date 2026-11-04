@@ -501,7 +501,7 @@ static func leanto_roof_height(z: float) -> float:
 
 static func _leanto_roof_body() -> StaticBody3D:
 	var body: StaticBody3D = StaticBody3D.new()
-	body.set_meta("placed_structure", true)       # not rock: the cave module's enclosure rays skip it (BUG-027, a lean-to roof is not a cave)
+	body.set_meta("placed_structure", true)   # a roof you stand under is not ground over your head (the elevation ruler skips it)
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var slab: BoxShape3D = BoxShape3D.new()
 	var run: float = (LEANTO_RIDGE_Z - LEANTO_BACK_Z) * LEANTO_SCALE
