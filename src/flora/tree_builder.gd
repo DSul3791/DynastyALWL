@@ -123,6 +123,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp, fern stalks and fiddleheads, nettles, leafy herbs and the plain flower) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
 	var fungi: Acc = Acc.new()   # mushrooms on their own surface: they were in `bark`, so the bark shader put bark furrows, foot shade and green foot moss on every cap (Kathreen, 3 Nov)
 	var berries: Acc = Acc.new() # the berries and blossoms of the berry bushes and ground berries: in `bark` they wore the bark texture and foot moss, so ripe blueberries and raspberries came out dark, grainy and greenish (Kathreen, 3 Nov)
+	var petals: Acc = Acc.new()  # wildflower heads on a plain colour material (flora_view.gd PETAL_SHADER); without that material they join the bark as before
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
@@ -171,7 +172,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"ground_berry":
 			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, ["spring"], mid), berries)
 		"wildflower":
-			_wildflower(WILDFLOWER_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
+			_wildflower(WILDFLOWER_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, petals if materials.has("petal") else bark)
 		"leafy_herb":
 			_leafy_herb(HERB_LOOKS.get(str(entry["name"]), HERB_LOOKS["comfrey"]), greens, leaves, rng, h, crown, far)
 		"herb_nettle":
@@ -241,6 +242,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	greens.commit(mesh, materials.get("greens", materials["bark"]))
 	fungi.commit(mesh, materials.get("fungus", materials["bark"]))
 	berries.commit(mesh, materials.get("berry", materials["bark"]))
+	petals.commit(mesh, materials.get("petal", materials["bark"]))
 	twigs.commit(mesh, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"
@@ -3052,7 +3054,10 @@ static func _daisy(acc: Acc, rng: RandomNumberGenerator, at: Vector3, size: floa
 	_bead(acc, at + normal * size * 0.12, Vector3(size * 0.4, size * 0.3, size * 0.4), centre)
 
 
-static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, heads: Acc = null) -> void:
+	if heads == null:
+		heads = bark
+
 	var stems: int = 3 if far else int(look["stems"])
 	var head: String = str(look["head"])
 	var size: float = float(look["size"]) * h * 1.2 if head == "umbel" else float(look["size"]) * maxf(h, crown * 1.6) * 2.6
@@ -3082,10 +3087,10 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 
 		match head:
 			"daisy":
-				_daisy(bark, rng, tip, size, petal, look["centre"], 5 if far else int(look["petals"]))
+				_daisy(heads, rng, tip, size, petal, look["centre"], 5 if far else int(look["petals"]))
 			"umbel":
 				if far:
-					_bead(bark, tip, Vector3(size * 0.7, size * 0.18, size * 0.7), petal)
+					_bead(heads, tip, Vector3(size * 0.7, size * 0.18, size * 0.7), petal)
 					continue
 
 				for r in range(int(look["rays"])):
@@ -3093,7 +3098,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					var ring: float = size * (0.9 if r > 0 else 0.0)
 					var ray: Vector3 = tip + Vector3(cos(a) * ring, size * 0.25 * (1.0 - ring / (size * 1.0 + 0.001)), sin(a) * ring)
 					_branch(bark, tip, ray, maxf(h * 0.003, 0.001), maxf(h * 0.002, 0.001), stem_col, 3)
-					_cluster(bark, rng, ray, size * 0.4, petal, true, 3)
+					_cluster(heads, rng, ray, size * 0.4, petal, true, 3)
 			_:
 				var beads: int = 3 if far else int(look["beads"])
 
@@ -3104,7 +3109,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					var side: Vector3 = Vector3(cos(a), 0.0, sin(a)) * size * (0.6 if head == "spike" else 1.0)
 					var scale: float = size * (1.0 - 0.4 * u) * (0.8 if head == "spike" else 1.0)
 					var drop: Vector3 = Vector3(0.0, -scale * (0.9 if head == "bell" else 0.0), 0.0)
-					_bead(bark, at + side + drop, Vector3(scale * 0.5, scale * (0.75 if head == "bell" else 0.5), scale * 0.5), petal * rng.randf_range(0.88, 1.08))
+					_bead(heads, at + side + drop, Vector3(scale * 0.5, scale * (0.75 if head == "bell" else 0.5), scale * 0.5), petal * rng.randf_range(0.88, 1.08))
 
 
 # A wild rose flower: five broad flat petals round a pale yellow centre with orange-yellow stamens (Dave's photos), facing up and out.
