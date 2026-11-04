@@ -354,7 +354,7 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 # the hips drop to about 14 cm off the ground, each thigh swings out sideways (the model faces +Z, its right is -X) and each shin folds back under the other leg. The turns are
 # made in the parent bone's frame, which for this Mixamo rig is close to the model's own axes. Angles are a first guess, not yet seen in the game: rate by picture (--shot-stance=sit).
 const SIT_THIGH_OUT_DEG := 55.0
-const SIT_SHIN_FOLD_DEG := 135.0
+const SIT_SHIN_FOLD_DEG := 50.0      # added to the chair clip's ~90 degree knee bend (picture 4 Nov: 135 overshot to about 225, so the shins swung up in front of the chest); about 140 in all, heel near the other thigh
 const SIT_HIPS_M := 0.14
 const SIT_PELVIS_BACK_DEG := 28.0     # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
 const SIT_ARM_FWD_DEG := 40.0         # hands rest on the knees: the upper arm swings forward this much from hanging (about the model's X axis), the forearm this much more
