@@ -6,13 +6,13 @@ import re, sys, pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LABELS = {  # Godot key constant -> word that must appear in a CONTROLS.md control cell
     "KEY_SPACE": "Space", "KEY_CTRL": "Ctrl", "KEY_SHIFT": "Shift", "KEY_ESCAPE": "Esc",
-    "KEY_SLASH": "/", "KEY_TAB": "Tab", "KEY_PLUS": "+", "KEY_EQUAL": "+", "KEY_MINUS": "-", "KEY_KP_ADD": "numpad",
+    "KEY_SLASH": "/", "KEY_DELETE": "Delete", "KEY_TAB": "Tab", "KEY_PLUS": "+", "KEY_EQUAL": "+", "KEY_MINUS": "-", "KEY_KP_ADD": "numpad",
     "KEY_KP_SUBTRACT": "numpad", "KEY_BRACKETRIGHT": "]", "KEY_BRACKETLEFT": "[", "KEY_PAGEUP": "PageUp", "KEY_PAGEDOWN": "PageDown",
     "MOUSE_BUTTON_LEFT": "Left click", "MOUSE_BUTTON_RIGHT": "Right click",
     "MOUSE_BUTTON_MIDDLE": "Middle click", "MOUSE_BUTTON_WHEEL_UP": "Wheel", "MOUSE_BUTTON_WHEEL_DOWN": "Wheel",
 }
 # KEY_BURST and KEY_REFILL_PER_S (terrain_server.gd) are network rate limits (block keys per peer), not input bindings.
-IGNORE = {"KEY_BURST", "KEY_REFILL_PER_S", "KEY_WRAPPED_X", "KEY_WRAPPED_Z", "KEY_SOURCE_REVISION", "KEY_SOURCE_REGION", "KEY_LOGICAL_REGION", "KEY_FILE"}
+IGNORE = {"KEY_BURST", "KEY_REFILL_PER_S", "KEY_WRAPPED_X", "KEY_WRAPPED_Z", "KEY_SOURCE_REVISION", "KEY_SOURCE_REGION", "KEY_LOGICAL_REGION", "KEY_FILE", "KEY_NONE", "KEY_ALT", "KEY_META"}
 SKIP_DIRS = {"addons", "native", "tools", ".godot"}
 
 def label(const):
