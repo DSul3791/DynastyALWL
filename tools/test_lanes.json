@@ -31,6 +31,11 @@
 			"checks": ["check_look_names.py", "warnings"]
 		},
 		{
+			"why": "server solid footprints (walls and stations stop animals)",
+			"paths": ["src/stream/structure_grid.gd", "data/items/structures.json"],
+			"tests": ["test_structure_grid"]
+		},
+		{
 			"why": "sound slots read client sources as text",
 			"paths": ["data/sound/**", "src/client/slot_sounds.gd", "src/client/placed_sounds.gd", "src/client/animal_view.gd", "src/client/sound_test_menu.gd", "scenes/terrain_client/terrain_client.gd"],
 			"tests": ["test_slot_sounds", "test_batch3_slots"]
