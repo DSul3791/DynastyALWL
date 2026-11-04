@@ -1134,6 +1134,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
+	cave_dens_changed.connect(sound.dens.set_dens)       # den sounds (den_sounds.gd)
 	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
 		if sound_log_arg.begins_with("--sound-log="):
 			sound.enable_sound_log(float(sound_log_arg.trim_prefix("--sound-log=")))
@@ -2183,6 +2184,9 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 
 	_cave_streams.show_tile(tile, streams)
 
+	if sound != null:
+		sound.cavewater.set_tile(tile, streams)       # the water inside the cave makes its sound (cave_water_sounds.gd)
+
 
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
 	var material: Material = flora.water_material() if flora != null else null
@@ -2876,6 +2880,9 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 
 	if _cave_streams != null:
 		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
+
+	if sound != null:
+		sound.cavewater.clear()
 
 	for tile in cave_dens.keys():
 		cave_dens_changed.emit(tile, PackedVector3Array())
