@@ -1121,11 +1121,54 @@ static func _hash01(x: int, y: int, z: int, salt: int) -> float:
 
 # Cave shapes (capsules and chambers) whose boxes touch the block, moved
 # into the block's own coordinates when it sits across the wrap.
+#
+# BUG-007 (Dave's QA list, 3 Nov 2026: "large triangular, wall-like polygons with abrupt edges and inconsistent textures intersect cave tunnels;
+# player can walk through them"): a passage narrower than the coarse voxels fell between their samples, so at LOD 2 (4 m voxels) a 2.8 m side passage
+# was solid rock while LOD 0 and 1 had it open, and the seam between the two levels drew a wall across the tunnel. At a coarse level every passage and
+# chamber is carved at least CAVE_MIN_VOXELS voxels in radius (and tall), so it stays open at every level that carves caves; LOD 0 keeps the exact shape.
+const CAVE_MIN_VOXELS := 0.9
+
+
+static func cave_radius(radius_m: float, lod: int) -> float:
+	return radius_m if lod <= 0 else maxf(radius_m, CAVE_MIN_VOXELS * float(1 << lod))
+
+
+# The widened shape never comes nearer the ground than half a coarse voxel (Sonny 4 Nov 2026: a wider carve near a cave mouth would dent the
+# hillside, seen from far). The roof of a passage is its middle line plus its height, so the height grows only into the rock between that roof and
+# the lowest ground over the passage; at the widened sides the passage is only as high as its middle line, so it widens wherever the ground beside
+# it stays above that. Where there is no room a shape keeps its own size.
+static func cave_room(data, ends: Array, rw: float, rh: float, lod: int) -> Vector2:
+	if lod <= 0:
+		return Vector2(rw, rh)
+
+	var want_w: float = cave_radius(rw, lod)
+	var want_h: float = cave_radius(rh, lod)
+	var margin: float = 0.5 * float(1 << lod)
+	var over: float = INF
+	var beside: float = INF
+	var top: float = -INF
+
+	for end in ends:
+		var p: Vector3 = end
+		top = maxf(top, p.y)
+
+		for offset in [Vector2.ZERO, Vector2(rw, 0.0), Vector2(-rw, 0.0), Vector2(0.0, rw), Vector2(0.0, -rw)]:
+			over = minf(over, data.height_at(p.x + offset.x, p.z + offset.y))
+
+		for offset in [Vector2(want_w, 0.0), Vector2(-want_w, 0.0), Vector2(0.0, want_w), Vector2(0.0, -want_w)]:
+			beside = minf(beside, data.height_at(p.x + offset.x, p.z + offset.y))
+
+	var h: float = clampf(over - top - margin, rh, want_h)
+	var w: float = want_w if beside > top + margin else rw
+	return Vector2(w, h)
+
+
 func _cave_shapes(column_tile: Array, box: AABB, origin: Vector3i, lod: int) -> Array:
 	var seen: Dictionary = {}
 	var out: Array = []
 	var shift: Vector3 = Vector3(wrap_x(float(origin.x)) - float(origin.x), 0.0, wrap_x(float(origin.z)) - float(origin.z))
 	var local_box: AABB = AABB(box.position + shift, box.size)
+	var widen: float = cave_radius(0.0, lod)       # how much a coarse level may widen a shape: its boxes grow by as much
 
 	for data in column_tile:
 		if data == null or data.placeholder or seen.has(data.tile):
@@ -1134,16 +1177,22 @@ func _cave_shapes(column_tile: Array, box: AABB, origin: Vector3i, lod: int) -> 
 		seen[data.tile] = true
 
 		for cave in data.caves:
-			if not cave["aabb"].intersects(local_box):
+			if not cave["aabb"].grow(widen).intersects(local_box):
 				continue
 
 			for capsule in cave["capsules"]:
-				if capsule["aabb"].intersects(local_box):
-					out.append([0, capsule["a"] - shift, capsule["b"] - shift, float(capsule["rw"]), float(capsule["rh"]), AABB(capsule["aabb"].position - shift, capsule["aabb"].size)])
+				var capsule_box: AABB = capsule["aabb"].grow(widen)
+
+				if capsule_box.intersects(local_box):
+					var size: Vector2 = cave_room(data, [capsule["a"], capsule["b"]], float(capsule["rw"]), float(capsule["rh"]), lod)
+					out.append([0, capsule["a"] - shift, capsule["b"] - shift, size.x, size.y, AABB(capsule_box.position - shift, capsule_box.size)])
 
 			for chamber in cave["chambers"]:
-				if chamber["aabb"].intersects(local_box):
-					out.append([1, chamber["center"] - shift, Vector3.ZERO, float(chamber["r"]), float(chamber["rh"]), AABB(chamber["aabb"].position - shift, chamber["aabb"].size)])
+				var chamber_box: AABB = chamber["aabb"].grow(widen)
+
+				if chamber_box.intersects(local_box):
+					var size: Vector2 = cave_room(data, [chamber["center"]], float(chamber["r"]), float(chamber["rh"]), lod)
+					out.append([1, chamber["center"] - shift, Vector3.ZERO, size.x, size.y, AABB(chamber_box.position - shift, chamber_box.size)])
 
 	return out
 
