@@ -4653,6 +4653,8 @@
 			"needs": [["plant_fibre", 12]],
 			"gives": ["rope", 1],
 			"craft_s": 6.0,
+			"known": true
+		},
 		"small_blocks_from_large": {
 			"number": 339,
 			"name": "Small wooden blocks from a large one",
