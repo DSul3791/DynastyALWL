@@ -9,7 +9,6 @@ Writes assets/audio/cooking/ (2 or 3 variants each):
   drink_gulp    two swallows, 0.9 s
   heal_poultice a wet leaf poultice pressed onto skin: soft pats and a squelch, 0.8 s
   heal_bandage  a bandage wrapped round: cloth rustle and a tug, 0.9 s
-  stomach_growl a hungry stomach: a low gurgling rumble, 1.6 s
 Recordings go in assets/audio/recorded/cooking/ under the same names; the game prefers them.
 """
 import os
@@ -144,20 +143,8 @@ def heal_bandage(rng):
     return finish(out, 0.55)
 
 
-def stomach_growl(rng):
-    n = int(1.6 * SR)
-    t = np.arange(n) / SR
-    low = noise(rng, n, lambda f: band(f, 110, 0.9) * lowpass(f, 300, 3))
-    low /= np.max(np.abs(low)) + 1e-9
-    wobble = 0.5 + 0.5 * np.sin(2 * np.pi * rng.uniform(6, 11) * t + rng.uniform(0, 6))
-    swell = np.sin(np.pi * t / 1.6) ** 2
-    gurgle = noise(rng, n, lambda f: band(f, 380, 1.0) * lowpass(f, 800, 2))
-    gurgle /= np.max(np.abs(gurgle)) + 1e-9
-    return finish(low * swell * (0.4 + 0.6 * wobble) + 0.35 * gurgle * swell * wobble ** 2, 0.6)
-
-
 SOUNDS = {"cook_sizzle": (cook_sizzle, 2), "fire_fuel": (fire_fuel, 2), "eat_crunch": (eat_crunch, 3), "eat_soft": (eat_soft, 3), "drink_gulp": (drink_gulp, 2),
-          "heal_poultice": (heal_poultice, 2), "heal_bandage": (heal_bandage, 2), "stomach_growl": (stomach_growl, 2)}
+          "heal_poultice": (heal_poultice, 2), "heal_bandage": (heal_bandage, 2)}
 
 
 def main():
