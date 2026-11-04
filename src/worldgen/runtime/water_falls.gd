@@ -427,7 +427,7 @@ void fragment() {
 
 	ALBEDO = mix(deep_color, foam_color, white);
 	// Thin spots show the rock; the foot breaks up into mist.
-	float body = mix(0.3, 0.92, clamp(0.25 + streak * 1.1, 0.0, 1.0));
+	float body = mix(0.55, 0.95, clamp(0.25 + streak * 1.1, 0.0, 1.0));   // BUG-010 (Dave's QA list, 3 Nov 2026): the thinnest spots were 0.3, the fall read almost invisible
 	ALPHA = clamp(edge * max(body, lip * 0.9) * (1.0 - foot * 0.25 * (1.0 - strand)), 0.0, 1.0);
 	ROUGHNESS = 1.0;
 }
