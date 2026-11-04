@@ -2285,6 +2285,7 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 	# One texture for every publish (twice a second, 256 KB): updated in place, not a new GPU texture each time (lag review, Dave 2 Nov 2026).
 	if _flow_tex == null or _flow_tex.get_size() != Vector2(im.get_size()):
 		_flow_tex = ImageTexture.create_from_image(im)
+		flora.set_liquid_live(_flow_tex)   # chunk sheets give way only where the live sheet draws water (Dave 4 Nov 2026: a dry sim hid a baked river)
 	else:
 		_flow_tex.update(im)
 

@@ -501,6 +501,17 @@ const START_FLOW_RATE := 10.0      # water_live.gd DEFAULT_RATE (the server's st
 const LIQUID_CHUNKS := true
 var _liquid_hole: Vector4 = Vector4.ZERO   # the live window (world corner and size): chunk sheets step aside there
 var _liquid_hole_inset: float = 8.0
+var _liquid_live: Texture2D = null         # the live window's texture: chunk sheets give way only where it draws water
+
+
+func set_liquid_live(texture: Texture2D) -> void:
+	_liquid_live = texture
+
+	for chunk in _chunks:
+		var sheet = _chunks[chunk].get("liquid")
+
+		if sheet != null:
+			sheet.set_live(texture)
 
 
 func set_liquid_hole(corner: Vector2, size: Vector2, inset: float) -> void:
@@ -535,6 +546,7 @@ func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void
 		add_child(sheet)
 		entry["liquid"] = sheet
 		sheet.set_hole(Vector2(_liquid_hole.x, _liquid_hole.y), Vector2(_liquid_hole.z, _liquid_hole.w), _liquid_hole_inset)
+		sheet.set_live(_liquid_live)
 		sheet.set_mud(maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
 
 	# The image may be finer than the grid (running water laid on the ground at 2 m, LiquidSurface._lay_fine): the same span, more texels.
