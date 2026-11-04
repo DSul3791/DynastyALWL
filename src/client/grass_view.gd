@@ -246,6 +246,11 @@ var clear_edge_m: float = 1.5
 var trunks: Array = []                   # felled trunks lying on the grass: [ax, az, bx, bz, radius at a, radius at b] (set_trunks)
 var trunk_margin_m: float = 0.3
 var _trunk_msec: int = -1
+var bare: Dictionary = {}                # trodden path patches: bucket (2 m) -> [Vector3 spots]; no blade grows inside BARE_M of one (set_bare)
+var bare_spots: Array = []
+const BARE_M := 0.6                     # no blade inside this of a path patch
+const BARE_EDGE_M := 1.1                # thinning out to here, where the drawn brown fades away (it is fully gone by 1.25 m)
+const BARE_BUCKET_M := 2.0
 var third_person: bool = false          # set by the client: only then is the grass lowered round the player
 const TRUNK_EDGE_M := 0.45             # how far past the margin the pressed grass rises back
 var trunk_squash: float = 0.2           # a blade under or beside a trunk keeps this share of its height
@@ -1083,6 +1088,74 @@ func set_cleared(spots: Array, radius: float, edge: float) -> void:
 		_edits.push_front([Time.get_ticks_msec() + 50, cells])
 
 
+# Trodden hoe path patches (Dave 2 Nov 2026: "grass pops up on the path in the distance, and goes again when I walk back"). The shader presses
+# only the eight nearest logs, so a long path lost its far patches. Every patch is now left out of the cells themselves (exact, any number, near
+# or far), and the cells round a patch that was added or taken away are built again.
+func set_bare(spots: Array) -> void:
+	var old: Dictionary = {}
+
+	for spot in bare_spots:
+		old[spot] = true
+
+	var changed: Array = []
+	var fresh: Dictionary = {}
+
+	for spot in spots:
+		fresh[spot] = true
+
+		if not old.has(spot):
+			changed.append(spot)
+
+	for spot in bare_spots:
+		if not fresh.has(spot):
+			changed.append(spot)
+
+	bare_spots = spots
+	bare = {}
+
+	for spot in spots:
+		for bz in range(int(floor((spot.z - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.z + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
+			for bx in range(int(floor((spot.x - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.x + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
+				var key: Vector2i = Vector2i(bx, bz)
+
+				if not bare.has(key):
+					bare[key] = []
+
+				bare[key].append(spot)
+
+	var cells: Dictionary = {}
+
+	for spot in changed:
+		for cz in range(int(floor((spot.z - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.z + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
+			for cx in range(int(floor((spot.x - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.x + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
+				cells[Vector2i(cx, cz)] = true
+
+	if not cells.is_empty():
+		_edits.push_front([Time.get_ticks_msec() + 50, cells.keys()])
+
+
+func _bare_at(x: float, z: float) -> bool:
+	var list: Variant = bare.get(Vector2i(int(floor(x / BARE_BUCKET_M)), int(floor(z / BARE_BUCKET_M))))
+
+	if list == null:
+		return false
+
+	for spot in list:
+		var d: float = Vector2(x - spot.x, z - spot.z).length()
+
+		if d < BARE_M:
+			return true
+
+		if d < BARE_EDGE_M:
+			# The same fixed scatter as _cleared_at: the same spot always gives the same answer, thinning out over the fading brown.
+			var scatter: float = fposmod(sin(floorf(x * 3.0) * 12.9898 + floorf(z * 3.0) * 78.233) * 43758.5453, 1.0)
+
+			if smoothstep(BARE_M, BARE_EDGE_M, d) <= scatter:
+				return true
+
+	return false
+
+
 # Is (x, z) inside a placed item's circle (with the soft edge decided by a fixed scatter, so the same spot always gives the same answer).
 func _cleared_at(x: float, z: float) -> bool:
 	for spot in cleared:
@@ -1281,8 +1354,13 @@ func update(from_position: Vector3) -> void:
 	var rays: int = RAYS_PER_FRAME * (2 if speed > 2.5 and _pending.size() > 20 else 1)
 	var started: int = Time.get_ticks_usec()
 
-	while rays > 0 and not _pending.is_empty():
-		var cell: Vector2i = _pending.pop_front()
+	# Steve 3 Nov 2026 (lag run #242: "grass" 650-850 ms once after the hoe strokes): the queue held 10 thousand stale cells (freed or already
+	# built), each taken with pop_front, which moves the whole array: one frame popped them all. Walk it with an index and cut it once.
+	var taken: int = 0
+
+	while rays > 0 and taken < _pending.size():
+		var cell: Vector2i = _pending[taken]
+		taken += 1
 
 		if not _cells.has(cell) or not _cells[cell]["busy"]:
 			continue
@@ -1291,6 +1369,9 @@ func update(from_position: Vector3) -> void:
 
 		if Time.get_ticks_usec() - started > BUILD_USEC:
 			break
+
+	if taken > 0:
+		_pending = _pending.slice(taken)
 
 	_flush_groups()
 
@@ -1399,6 +1480,10 @@ func _rescan_step() -> void:
 			buckets[n] = []
 
 		for cell in _pending:
+			# Cells about to be freed (out of reach) or no longer waiting leave the queue here, so it never builds up stale entries.
+			if not _scan_keep.has(cell) or not _cells.has(cell) or not _cells[cell]["busy"]:
+				continue
+
 			var ring: int = clampi(int((Vector2(cell) + Vector2(0.5, 0.5)).distance_to(near)), 0, span + 1)    # clamped: a NaN centre gave int min
 			buckets[ring].append(cell)
 
@@ -1523,6 +1608,9 @@ func _build(cell: Vector2i) -> int:
 				continue
 
 			if not cleared.is_empty() and _cleared_at(x, z):
+				continue
+
+			if not bare.is_empty() and _bare_at(x, z):
 				continue
 
 			# Owner (2026-10-21): under a big crown almost no grass except at the edge of its canopy footprint,

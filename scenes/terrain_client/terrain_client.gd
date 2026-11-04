@@ -42,6 +42,7 @@ const MyCharacter := preload("res://src/client/character/my_character.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
@@ -100,6 +101,7 @@ const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const FlowTexture := preload("res://src/water2/water_flow_texture.gd")
 const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
+const CaveStreams := preload("res://src/water2/cave_streams.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
@@ -404,6 +406,7 @@ var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m fr
 var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
+var lag_run: Node = null               # --lag-run: the scripted early-game lag run (src/client/lag_run.gd, tools/lag_run.sh)
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
 var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
 var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
@@ -482,6 +485,8 @@ var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
+var _water_dirty_area: Rect2 = Rect2()   # protocol 88: where the water moved since the last ask (no area: everywhere)
+var _water_dirty_all: bool = false
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
 var _flora_cuts: int = 0
@@ -739,6 +744,8 @@ func _ready() -> void:
 			test_spear = true
 		elif argument == "--chop":
 			test_chop = true
+		elif argument == "--lag-run":
+			lag_run = preload("res://src/client/lag_run.gd").new()
 		elif argument == "--shoot":
 			test_shoot = true
 		elif argument == "--place-foundation":
@@ -765,6 +772,7 @@ func _ready() -> void:
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.water_changed_in_received.connect(_on_water_changed_in)
 	net.water_flow_received.connect(_on_water_flow)
 	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:
 		tunnel_on = on
@@ -788,6 +796,8 @@ func _ready() -> void:
 			HitNumbersScript.spawn(self, at, amount))
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
+	net.cave_streams_received.connect(_on_cave_streams)
+	net.cave_dens_received.connect(_on_cave_dens)
 	net.surface_received.connect(_on_surface_received)
 	net.dump_received.connect(ground_debug.on_dump_received)
 	_host = host
@@ -1406,6 +1416,11 @@ func _welcome_body(info: Dictionary) -> void:
 	if test_chop:
 		items.run_chop_test(self)
 
+	if lag_run != null and lag_run.get_parent() == null:
+		lag_run.client = self
+		add_child(lag_run)
+		lag_run.run()
+
 	if test_shoot:
 		items.run_shoot_test(self)
 
@@ -1636,6 +1651,7 @@ func _sync_cleared() -> void:
 
 	var spots: Array = []
 	var lying: Array = []
+	var paths: Array = []      # trodden path patches: left out of the grass cells (set_bare), pressed out of the plants like a log
 	var key: int = 0
 
 	if showroom == null and world.has("spawn"):
@@ -1699,7 +1715,7 @@ func _sync_cleared() -> void:
 		if int(row.get("state", 0)) == 32:
 			# A trodden hoe path (Dave 2 Nov 2026): a round patch, so the grass is pressed out of its brown middle only, not cleared 5 m round like a bench.
 			var path_at: Vector3 = row["pos"]
-			lying.append(LyingLogs.round_segment(path_at, 0.6))
+			paths.append(Vector3(snappedf(path_at.x, 0.01), path_at.y, snappedf(path_at.z, 0.01)))
 			key = key ^ hash(Vector2(path_at.x, path_at.z)) ^ int(id)
 			continue
 
@@ -1725,8 +1741,14 @@ func _sync_cleared() -> void:
 	var radius: float = float(_cleared_cfg.get("radius_m", 5.0))
 	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
 	grass.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)), float(_cleared_cfg.get("trunk_squash", 0.15)))
+	grass.set_bare(paths)
+	var plant_lying: Array = lying.duplicate()
+
+	for patch in paths:
+		plant_lying.append(LyingLogs.round_segment(patch, 0.6))
+
 	flora.set_cleared(spots, radius)
-	flora.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)))
+	flora.set_trunks(plant_lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)))
 
 
 # Water within a stride of the feet or a step or two ahead (where you look, flat): what the E-to-drink prompt needs.
@@ -2081,9 +2103,27 @@ func _update_weather() -> void:
 
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
+signal cave_dens_changed(tile: Vector2i, dens: PackedVector3Array)   # den sounds (Sound thread #211) listen here
+var cave_dens: Dictionary = {}   # tile -> PackedVector3Array of den floor points (protocol 87)
+var _cave_streams = null   # spring cave streams and pools (protocol 87), made on the first list
 var _liquid = null   # the liquid water sheet over the live window (created on the first flow packet)
 var _flow_tex: ImageTexture = null      # the live water window's texture, updated in place each publish
 var _liquid_hole_told: Rect2 = Rect2()
+
+
+func _on_cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
+	cave_dens[tile] = dens
+	cave_dens_changed.emit(tile, dens)
+
+
+func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
+	if _cave_streams == null:
+		_cave_streams = CaveStreams.new()
+		_cave_streams.name = "CaveStreams"
+		_cave_streams.add_to_group("water_draw")
+		add_child(_cave_streams)
+
+	_cave_streams.show_tile(tile, streams)
 
 
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
@@ -2169,6 +2209,12 @@ func _thousands(value: int) -> String:
 # The server's water moved: ask again for the water of every flora chunk held.
 func _on_water_changed() -> void:
 	_water_dirty = true
+	_water_dirty_all = true
+
+
+func _on_water_changed_in(area: Rect2) -> void:
+	_water_dirty = true
+	_water_dirty_area = area if not _water_dirty_area.has_area() else _water_dirty_area.merge(area)
 
 
 # Asks again for the water of the chunks held. While ground is still loading this waits up
@@ -2189,8 +2235,15 @@ func _send_water_request(now: int) -> void:
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
+	var area: Rect2 = Rect2() if _water_dirty_all else _water_dirty_area.grow(flora.chunk_m)
+	_water_dirty_all = false
+	_water_dirty_area = Rect2()
 
 	for chunk in flora.held_chunks():
+		# Only the chunks the moving water touches (protocol 88); the rest still hold the right water.
+		if area.has_area() and not area.intersects(Rect2(Vector2(chunk) * flora.chunk_m, Vector2(flora.chunk_m, flora.chunk_m))):
+			continue
+
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
 	@warning_ignore("integer_division")
@@ -2762,6 +2815,14 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	world["tiles_stamp"] = tiles_stamp
 	world["starter_stamp"] = starter_stamp
 	_reload_ground()
+
+	if _cave_streams != null:
+		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
+
+	for tile in cave_dens.keys():
+		cave_dens_changed.emit(tile, PackedVector3Array())
+
+	cave_dens.clear()
 
 	_in_generation += 1
 
@@ -3548,6 +3609,8 @@ func _move_player(delta: float) -> void:
 	if test_walk:
 		_walk_step()
 		direction = _walk_dir
+	elif lag_run != null and _walk_dir != Vector3.ZERO:
+		direction = _walk_dir
 	var fast: float = FAST if Input.is_key_pressed(KEY_SHIFT) else 1.0
 	var forward: bool = Input.is_key_pressed(KEY_W)
 	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
@@ -3603,7 +3666,7 @@ func _move_player(delta: float) -> void:
 	elif _climb_ladder(delta, strain_cap):
 		pass
 	else:
-		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and test_walk else pace)
+		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and (test_walk or lag_run != null) else pace)
 
 		# Gravity only applies once there is ground below to land on. Fresh
 		# or far-off ground has no collision yet, so wait for it; a player who
@@ -3997,6 +4060,9 @@ func _process(delta: float) -> void:
 
 	_frame_ms.append(delta * 1000.0)
 	Probe.frame(delta)
+
+	if held == null and MyCharacter.dynasty_body_on():
+		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome)
 
 	if compass != null and camera != null:
 		compass.heading = CompassScript.heading_of(camera)
@@ -5635,6 +5701,7 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
 
 	if crash_report != null:
 		crash_report.mark_clean()
