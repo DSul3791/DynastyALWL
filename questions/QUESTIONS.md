@@ -38,13 +38,6 @@ Note: Search: boar "wild boar grunt", "boar squeal"; grouse "grouse call", "blac
 Note: Drop them in the project folder at sound/incoming/<animal>/ (boar, grouse, seal, seabird), with a short urls.txt listing each clip's Pixabay page link. Jason then cuts and levels them.
 [test]
 
-## claude-leanto-cost | You said no to 32 sticks, 8 leaves, 4 twine for the lean-to. Too much or too little?
-Note: Your earlier OK was 24 sticks, 6 leaves, 4 twine. It was raised to 32 / 8 / 4. The "No" does not say which way.
-Note: Recommendation: too much for the first hour. Go to 16 sticks, 4 leaves, 2 twine, about 10 minutes of gathering.
-[A] Lighter: 16 sticks, 4 leaves, 2 twine
-[B] Heavier than now
-[C] Back to 24 / 6 / 4
-
 ## roads-early-goals | Early goals: add "make a hoe" and "tread a path from camp to water", right after the fire goal?
 Note: The first-hour goal list has no hoe or path step today, so new players may never find the road and path tools (#136, #137, #161).
 Note: Recommendation: A, because a short path from camp to water is a quick, visible win that teaches the hoe early.
