@@ -190,7 +190,8 @@ func _init() -> void:
 	pass_time(34.0, 0.3)
 	check(count("twine") == 8, "fibre is twisted into twine (lean-to 4 + chest 4)")
 	items._vitals_cfg["eat_pace_ms"] = 0
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 8, Vector3.ZERO)   # one felled tree gives only 3 to 9 leaves; the lean-to needs 8 (31 Oct)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 200, Vector3.ZERO)   # one felled tree gives only 3 to 9 leaves; the lean-to now needs 200 (Dave 4 Nov), which the real player sweeps from many trees
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 10, Vector3.ZERO)   # the lean-to needs 10 twine (30 fibre; the 8 twisted above cover the chest and part of it)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 20, Vector3.ZERO)   # the 36 gathered sticks do not cover the lean-to (32) and the chest (10); the real player sweeps more (31 Oct)
 	queue(13, 1)
 	queue(14, 1)
