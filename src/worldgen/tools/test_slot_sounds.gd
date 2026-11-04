@@ -101,6 +101,7 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	check(SlotSounds.net_cue("Something bites! Click now.") == "fish_bite" and SlotSounds.net_cue("You land a trout.") == "fish_land" and names.has("fish_bite") and names.has("fish_land"), "the rod's bite and catch lines play fish_bite and fish_land")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.

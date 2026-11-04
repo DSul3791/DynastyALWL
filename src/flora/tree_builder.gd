@@ -120,7 +120,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var fruit: Acc = Acc.new()   # the apples, pears and cherries of the fruit trees on their own surface: vertex alpha = a per-fruit rank 0..1, so a shader can hide the highest ranks as the tree is picked (5 levels 100/66/33/10/0 percent)
 	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
 	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
-	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
+	var greens: Acc = Acc.new()  # green plant bodies (grass blades and tufts, reeds, cactus, succulents, kelp, fern stalks and fiddleheads) in their own vertex colour: in `bark` they wore the bark texture, its dark foot and foot moss, about a quarter as bright as their colours (Kathreen, 3 Nov)
 	var berries: Acc = Acc.new() # the berries and blossoms of the berry bushes and ground berries: in `bark` they wore the bark texture and foot moss, so ripe blueberries and raspberries came out dark, grainy and greenish (Kathreen, 3 Nov)
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
@@ -202,7 +202,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"cane_shrub":
 			_cane_shrub(CANE_SHRUBS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, CANE_SHRUBS[str(entry["name"])].get("bloom_in", ["spring"]), mid), berries)
 		"fern_rosette":
-			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), bark, leaves, rng, h, crown, far)
+			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), greens, leaves, rng, h, crown, far)
 		"reed_stand":
 			_reed_stand(REED_LOOKS.get(str(entry["name"]), REED_LOOKS["reeds"]), greens, leaves, rng, h, crown, far)
 		"fallen_log":
