@@ -29,5 +29,9 @@ func _initialize() -> void:
 	trees._first_msec = Time.get_ticks_msec() - TreeSounds.SETTLE_MSEC - 1000
 	trees.watch(row)
 	check(trees.falls_played == 2, "after the ground is made again the id is new (%d)" % trees.falls_played)
+	var landed: Dictionary = {9: {"state": 3, "pos": Vector3(20, 0, 20), "extra": {"length": 8.0, "radius": 0.3, "landed": true}}}
+	var before: int = trees.falls_played
+	trees.watch(landed)
+	check(trees.falls_played == before, "a trunk the server marks landed makes no fall sound (%d)" % trees.falls_played)
 	print("tree fall replay: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

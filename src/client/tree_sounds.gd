@@ -71,6 +71,9 @@ func watch(world: Dictionary) -> void:
 		var extra: Dictionary = row.get("extra", {})
 		var radius: float = float(extra.get("radius", 0.3))
 
+		if state == 3 and bool(extra.get("landed", false)):
+			continue                                      # the server says this trunk already hit the ground (Steve's landed flag): a trunk coming back into range is silent
+
 		if state == 3:
 			fall(row["pos"], float(extra.get("length", 8.0)), radius)
 		else:
