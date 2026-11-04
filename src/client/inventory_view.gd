@@ -634,8 +634,8 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if state == 11 or state == 12:
 		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
 
-	if state == 6:
-		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
+	if _is_chest(state):
+		return {"prompt": "Press E to open (hold E to take it down)", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
 		return {"prompt": "Press E to split firewood (hold E to pick up the block)", "tap": func(): _use_block(id), "hold": take_down}   # tap splits, hold picks up, like the other structures (Dave 2 Nov 2026, bug 2)
@@ -732,7 +732,7 @@ func _container_near() -> int:
 		var state: int = int(_world[id]["state"])
 		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (is_station or state == 6 or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
+		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -794,7 +794,7 @@ func pick_up_nearest() -> bool:
 	if id == 0:
 		return false
 
-	if _world[id]["state"] == 6 and not Input.is_key_pressed(KEY_SHIFT):
+	if _is_chest(int(_world[id]["state"])) and not Input.is_key_pressed(KEY_SHIFT):
 		_ask_open(id)
 		return true
 
@@ -2838,6 +2838,11 @@ func _addons_near(bench_id: int, station: String, reach: float) -> int:
 			kinds[int(_world[id]["state"])] = true
 
 	return kinds.size()
+
+
+# A chest of any kind: the woven chest (state 6) or any structure with storage slots, such as the plank chest (BUG-021: only state 6 opened).
+func _is_chest(state: int) -> bool:
+	return state == 6 or int(_structure_by_state(state).get("slots", 0)) > 0
 
 
 func _structure_by_state(state: int) -> Dictionary:
