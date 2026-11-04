@@ -2886,9 +2886,9 @@
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
-			"stack": 20,
+			"stack": 40,
 			"look_alikes": [],
-			"value": 8
+			"value": 2
 		},
 		"wooden_pin": {
 			"number": 233,
