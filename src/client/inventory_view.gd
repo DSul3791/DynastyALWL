@@ -66,6 +66,8 @@ var _boulder_mesh: ArrayMesh
 var _boulder_rock: ShaderMaterial
 var _chest_buttons: Array = []
 var _pack_buttons: Array = []
+var _pack_view: Array = []             # the chest screen's pack side: button index -> real pack slot (a fire shows only what it takes, A to Z)
+var _chest_titles: Array = []          # the chest screen's two column titles [container, pack]
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
 var _drink_msec: int = 0
 var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
@@ -1879,6 +1881,7 @@ func _build_chest_panel() -> void:
 	if _chest_panel == null:
 		_chest_buttons.clear()
 		_pack_buttons.clear()
+		_chest_titles.clear()
 
 	if _chest_panel != null:
 		return
@@ -1905,6 +1908,7 @@ func _build_chest_panel() -> void:
 		title.text = side
 		_style(title, TITLE_PX)
 		box.add_child(title)
+		_chest_titles.append(title)
 		var scroll: ScrollContainer = ScrollContainer.new()
 		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		box.add_child(scroll)
@@ -1943,6 +1947,12 @@ func _build_chest_panel() -> void:
 
 
 func _on_chest_slot(chest_side: bool, slot: int) -> void:
+	if not chest_side:
+		slot = _pack_slot(slot)
+
+		if slot < 0:
+			return
+
 	if chest_side:
 		if chest_inv.numbers[slot] != 0:
 			net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, slot, chest_id, chest_inv.counts[slot], Vector3.ZERO)
@@ -1961,16 +1971,77 @@ func _refresh_chest() -> void:
 		return
 
 	var capacity: int = int(table.entry(table.id_of(int(_world.get(chest_id, {}).get("number", 0)))).get("slots", inventory.SLOTS))
+	var fire: bool = _chest_is_fire()
+	_pack_view = _pack_view_slots(fire)
+
+	if _chest_titles.size() == 2:
+		_chest_titles[0].text = "Fire  (click a stack to take it)" if fire else "Woven chest  (click a stack to take it)"
+		_chest_titles[1].text = "Your pack: wood and food, A to Z  (click to put it in)" if fire else "Your pack  (click a stack to put it in)"
 
 	for i in inventory.SLOTS:
 		_chest_buttons[i].visible = i < capacity
+		var number: int = chest_inv.numbers[i]
+		_chest_buttons[i].text = "" if number == 0 else "%s\nx%s" % [table.name_of(number), _count_text(chest_inv.counts[i])]
+		_chest_buttons[i].tooltip_text = _tooltip(number, chest_inv.counts[i], chest_inv.wear[i])
+		var slot: int = _pack_slot(i)
+		number = inventory.numbers[slot] if slot >= 0 else 0
+		_pack_buttons[i].text = "" if number == 0 else "%s\nx%s" % [table.name_of(number), _count_text(inventory.counts[slot])]
+		_pack_buttons[i].tooltip_text = "" if number == 0 else _tooltip(number, inventory.counts[slot], inventory.wear[slot])
 
-		for pair in [[_chest_buttons, chest_inv], [_pack_buttons, inventory]]:
-			var button: Button = pair[0][i]
-			var source = pair[1]
-			var number: int = source.numbers[i]
-			button.text = "" if number == 0 else "%s\nx%s" % [table.name_of(number), _count_text(source.counts[i])]
-			button.tooltip_text = _tooltip(number, source.counts[i], source.wear[i])
+
+# True when the open container is a fire (lit or out); its store takes only wood and food (Dave, 4 Nov 2026).
+func _chest_is_fire() -> bool:
+	return int(_world.get(chest_id, {}).get("state", -1)) in [1, 8, 9, 40, 41]
+
+
+# The real pack slot shown on chest-screen pack button `index`, or -1 for an empty button.
+func _pack_slot(index: int) -> int:
+	if index < 0 or index >= _pack_view.size():
+		return -1
+
+	return int(_pack_view[index])
+
+
+# The pack slots the chest screen shows, in button order. A chest shows every slot in place. A fire shows only what it takes
+# (the server's _fire_takes: cooking.json fuel or cookable food), sorted by name A to Z and packed to the top (Dave, 4 Nov 2026).
+func _pack_view_slots(fire: bool) -> Array:
+	var slots: Array = []
+
+	for i in inventory.SLOTS:
+		if not fire:
+			slots.append(i)
+		elif inventory.numbers[i] != 0 and fire_takes(table.id_of(inventory.numbers[i])):
+			slots.append(i)
+
+	if fire:
+		slots.sort_custom(func(a: int, b: int) -> bool:
+			var name_a: String = table.name_of(inventory.numbers[a]).to_lower()
+			var name_b: String = table.name_of(inventory.numbers[b]).to_lower()
+			return name_a < name_b if name_a != name_b else a < b)
+
+	return slots
+
+
+# Same rule as server_items._fire_takes: wood the fire burns (cooking.json fuel) or food it cooks.
+func fire_takes(item_id: String) -> bool:
+	if _cooking_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
+		_cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
+
+	if item_id == "":
+		return false
+
+	if _cooking_cfg.get("fuel", {}).has(item_id) or _cooking_cfg.get("cooks_into", {}).has(item_id):
+		return true
+
+	if item_id == str(_cooking_cfg.get("gives", "")):
+		return false
+
+	for suffix in _cooking_cfg.get("cookable_suffixes", []):
+		if item_id.ends_with(str(suffix)):
+			return true
+
+	return false
 
 
 
@@ -3268,6 +3339,7 @@ func set_text_scale(scale: float) -> void:
 		_chest_panel = null
 		_chest_buttons.clear()
 		_pack_buttons.clear()
+		_chest_titles.clear()
 
 	if _panel != null:
 		var was_open: bool = open
@@ -4067,16 +4139,44 @@ func _drop_selected(whole: bool) -> void:
 
 # The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name, what it makes and its ingredients (1 Nov);
 # a tab shows one category and the search works inside it. The same list is the crafting table, forge and every other station's menu.
-const SEARCH_HINT_ALL := "Search all recipes: name or ingredient (try hide)"
 func _build_recipe_filter() -> Control:
 	var holder: VBoxContainer = VBoxContainer.new()
+	# A real search box (Dave 4 Nov): a field background and border, a magnifying glass on the left, and no words in it.
+	var field: PanelContainer = PanelContainer.new()
+	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var box: StyleBoxFlat = StyleBoxFlat.new()
+	box.bg_color = Color(0.09, 0.08, 0.07, 0.95)
+	box.border_color = Color(0.62, 0.55, 0.42)
+	box.set_border_width_all(maxi(1, _px(2)))
+	box.set_corner_radius_all(_px(8))
+	box.content_margin_left = _px(10)
+	box.content_margin_right = _px(6)
+	box.content_margin_top = _px(4)
+	box.content_margin_bottom = _px(4)
+	field.add_theme_stylebox_override("panel", box)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", _px(8))
+	field.add_child(row)
+	var glass: Control = Control.new()
+	glass.custom_minimum_size = Vector2(_px(26), _px(26))
+	glass.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glass.draw.connect(func():
+		var colour: Color = Color(0.78, 0.72, 0.58)
+		var unit: float = glass.size.x
+		glass.draw_arc(Vector2(unit * 0.42, unit * 0.42), unit * 0.28, 0.0, TAU, 32, colour, maxf(1.5, unit * 0.1), true)
+		glass.draw_line(Vector2(unit * 0.63, unit * 0.63), Vector2(unit * 0.9, unit * 0.9), colour, maxf(1.5, unit * 0.12), true))
+	row.add_child(glass)
 	_recipe_search = LineEdit.new()
-	_recipe_search.placeholder_text = SEARCH_HINT_ALL
 	_recipe_search.clear_button_enabled = true
 	_recipe_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var bare: StyleBoxEmpty = StyleBoxEmpty.new()
+	for state in ["normal", "focus", "read_only"]:
+		_recipe_search.add_theme_stylebox_override(state, bare)
 	_style(_recipe_search, BODY_PX)
 	_recipe_search.text_changed.connect(func(_text): _refresh())
-	holder.add_child(_recipe_search)
+	row.add_child(_recipe_search)
+	holder.add_child(field)
 	var tabs: HFlowContainer = HFlowContainer.new()
 	holder.add_child(tabs)
 	_category_buttons.clear()
@@ -4233,9 +4333,6 @@ func _refresh() -> void:
 
 	for tab_name in _category_buttons:
 		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
-
-	if _recipe_search != null:
-		_recipe_search.placeholder_text = SEARCH_HINT_ALL if _recipe_category == "" else "Search in %s: name or ingredient" % _recipe_category
 
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(number)
@@ -5343,7 +5440,7 @@ func run_chest_test(client) -> void:
 
 	# Quick key T moves the hovered pack stack into the open chest.
 	var stone_slot: int = inventory.numbers.find(stone)
-	_chest_hover = [false, stone_slot]
+	_chest_hover = [false, _pack_view.find(stone_slot)]
 	var press: InputEventKey = InputEventKey.new()
 	press.keycode = KEY_T
 	press.pressed = true
