@@ -167,6 +167,7 @@ const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in
 const WATER_MIN_MSEC := 3000          # and never more often than this, ground loading or not
 const WATER_MAX_MSEC := 12000         # a re-ask that brought no new water doubles the wait, up to this (settled water: the log spam in the lag logs)
 const GroundColumn := preload("res://src/client/ground_column.gd")
+const WaterReask := preload("res://src/client/water_reask.gd")
 # Spawn near the ground (Dave 25 Oct, Tyler): the server's spawn y is already the ground height at the spawn x,z plus 2 m (terrain_server._spawn_point), and a respawn point is
 # a real standing place, so the player is put there with this small lift instead of 28 m up. The old +28 m was only waiting for ground to appear.
 const SPAWN_LIFT_M := 0.5
@@ -2368,7 +2369,7 @@ func _send_water_request(now: int) -> void:
 	if now - _water_asked_msec < _water_wait_msec:
 		return
 
-	_water_wait_msec = water_wait_after(_water_wait_msec, _water_new_since_ask)
+	_water_wait_msec = WaterReask.wait_after(_water_wait_msec, _water_new_since_ask, WATER_MIN_MSEC, WATER_MAX_MSEC)
 	_water_quiet_asks = 0 if _water_new_since_ask > 0 else _water_quiet_asks + 1
 	_water_new_since_ask = 0
 	_water_dirty = false
@@ -2391,15 +2392,6 @@ func _send_water_request(now: int) -> void:
 
 	if not chunks.is_empty():
 		net.request_water.rpc_id(1, chunks)
-
-
-# The wait before the next water re-ask: back to WATER_MIN_MSEC when the last one brought changed water, else twice as long
-# up to WATER_MAX_MSEC. Settled water (the server says "moved" twice a second but sends nothing new) is asked about less and less.
-static func water_wait_after(wait_msec: int, new_chunks: int) -> int:
-	if new_chunks > 0:
-		return WATER_MIN_MSEC
-
-	return mini(wait_msec * 2, WATER_MAX_MSEC)
 
 
 func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
