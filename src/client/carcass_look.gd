@@ -92,7 +92,8 @@ static func _part(root: Node3D, shape: String, at: Vector3, size: Vector3, color
 	var node: MeshInstance3D = MeshInstance3D.new()
 	node.mesh = _mesh(shape)
 	node.material_override = _material(color, fur)
-	node.transform = Transform3D(Basis.from_euler(rot).scaled(size), at)
+	# The size is along the piece's own axes, then it is turned: Basis.scaled() would scale along the parent's axes after the turn, which stood the legs, neck and antlers up as flat planks.
+	node.transform = Transform3D(Basis.from_euler(rot) * Basis.from_scale(size), at)
 	root.add_child(node)
 
 
