@@ -71,6 +71,8 @@ var _patches: FastNoiseLite
 var _grove_seed: int = 0
 var _stand_seed: int = 0
 var _patch_seed: int = 0
+var _beach_id: int = -1                 # biome ids for the sand / dirt edge rules (see _edge_m)
+var _ocean_id: int = -1
 var _clearings: Array = []              # [Vector2 centre, core radius, soft edge] where no tree or shrub stands: the spawn point and every NPC marker (starter clearing)
 
 
@@ -103,6 +105,9 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	for entry in tables.get_entries("biomes"):
 		biome_ids[str(entry["name"])] = int(entry["id"])
 
+	_beach_id = int(biome_ids.get("beach", -1))
+	_ocean_id = int(biome_ids.get("ocean", -1))
+
 	for entry in tables.get_entries("water_classes"):
 		water_ids[str(entry["name"])] = int(entry["id"])
 
@@ -129,6 +134,13 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 		if peak <= 0.0:
 			continue
 
+		# Palm belt (Dave 2026-11-02): a species with "belt": {"per_hectare": n} also grows on the dirt side of the sand / dirt edge, within BELT_M of it, where nothing else does.
+		var belt_value: float = 0.0
+
+		if entry.has("belt"):
+			belt_value = float(entry["belt"]["per_hectare"]) * density * {"tree": TREE_DENSITY, "shrub": SHRUB_DENSITY}.get(str(entry["kind"]), 1.0)
+			peak = maxf(peak, belt_value)
+
 		var water_mask: int = 0
 
 		for name in entry.get("water", []):
@@ -148,6 +160,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 			"crown": float(entry["crown_m"]),
 			"trunk": float(entry["trunk_m"]),
 			"per_biome": per_biome,
+			"belt": belt_value,
 			"peak": peak,
 			# One candidate per cell; at least 1 m so cell indices fit 16 bits.
 			"cell": maxf(sqrt(10000.0 / peak), maxf(chunk_m / 256.0, 1.0)),
@@ -342,6 +355,15 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			if not trees_only or item["kind"] == KIND_TREE:
 				candidates[item["id"]] = item
 
+	# A chunk with sand in it: the dirt beside the sand gets the palm belt species, and the edge rules apply (see _edge_m).
+	var has_beach: bool = present.has(_beach_id)
+	var edge_cache: Dictionary = {}     # 4 m cell -> edge distance (see _edge_m): a chunk asks about the same ground thousands of times
+
+	if has_beach:
+		for item in species:
+			if item["belt"] > 0.0 and (not trees_only or item["kind"] == KIND_TREE):
+				candidates[item["id"]] = item
+
 	var order: Array = candidates.keys()
 	order.sort()
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -387,6 +409,15 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 				var k: int = data.nearest(x, z)
 				var chance: float = per_biome[data.biome[k]]
+				var in_belt: bool = false
+
+				# The belt roll comes first: the edge probe (dozens of lookups) runs only for spots the roll keeps.
+				if has_beach and item["belt"] > 0.0 and roll < item["belt"] and data.biome[k] != _beach_id and data.biome[k] != _ocean_id:
+					var edge: float = _edge_m(data, x, z, edge_cache)
+
+					if edge > 0.0 and edge <= BELT_M:
+						chance = maxf(chance, item["belt"])
+						in_belt = true
 
 				if chance <= 0.0:
 					continue
@@ -406,7 +437,7 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				if roll >= chance:
 					continue
 
-				var y: float = _ground_ok(item, data, k, x, z)
+				var y: float = _ground_ok(item, data, k, x, z, in_belt)
 
 				if is_nan(y):
 					continue
@@ -533,6 +564,9 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 		if clearings_here and item["kind"] != KIND_PLANT and _cleared_at(x, z, f[1]):
 			continue
 
+		if has_beach and not _beach_rules_ok(item, data, x, z, edge_cache):
+			continue
+
 		if item["kind"] != KIND_PLANT:
 			# Young trees need light: none under a dense crown; under a light one
 			# shade-tolerant young (firs, beech) grow, others only now and then.
@@ -565,6 +599,8 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	return result
 
 
+const BELT_M := 20.0         # palm belt (Dave 2026-11-02): on the dirt side of the sand / dirt edge only the species with a "belt" row (palms, ferns) grow, this wide
+const BEACH_GRASS_M := 8.0   # and grass on the sand stays within this of the dirt: none on open sand
 const TIER_FIRST := 0
 const TIER_GROWN := 1
 const TIER_YOUNG := 2
@@ -678,6 +714,65 @@ func _montane_cells(item: Dictionary, data, chunk: Vector2i, origin: Vector2, sp
 					found.append([_tier(item, height), species_id, STAND_BASE + index, x, y, z, height, yaw, spacing])
 
 
+# Signed distance in metres from a spot to the sand / dirt edge, probed on rings of eight directions every 4 m out to `reach`:
+# positive on dirt (the distance to the nearest beach biome), negative on sand (minus the distance to the nearest dirt), and
+# 1000 or -1000 when no edge is within reach. Ocean is neither sand nor dirt.
+func _edge_m(data, x: float, z: float, cache: Dictionary) -> float:
+	var key: Vector2i = Vector2i(int(floor(x / 4.0)), int(floor(z / 4.0)))
+
+	if cache.has(key):
+		return cache[key]
+
+	# Probed from the cell centre, so every spot in a cell gets the same answer whichever is asked first (stable, and the test can ask the same way).
+	var value: float = _edge_probe(data, (float(key.x) + 0.5) * 4.0, (float(key.y) + 0.5) * 4.0, BELT_M)
+	cache[key] = value
+	return value
+
+
+func _edge_probe(data, x: float, z: float, reach: float) -> float:
+	var here: int = data.biome[data.nearest(x, z)]
+
+	if here == _ocean_id:
+		return 1000.0
+
+	var on_sand: bool = here == _beach_id
+	var r: float = 4.0
+
+	while r <= reach + 0.01:
+		for a in range(8):
+			var ang: float = TAU * float(a) / 8.0
+			var b: int = data.biome[data.nearest(x + cos(ang) * r, z + sin(ang) * r)]
+
+			if b != _ocean_id and (b == _beach_id) != on_sand:
+				return -r if on_sand else r
+
+		r += 4.0
+
+	return -1000.0 if on_sand else 1000.0
+
+
+# The edge rules for a spot in a chunk with sand: in the belt only the belt species stand; on the sand grass keeps near the dirt.
+func _beach_rules_ok(item: Dictionary, data, x: float, z: float, cache: Dictionary) -> bool:
+	var is_grass: bool = item["shape"] == "grass"
+
+	if item["belt"] > 0.0:
+		return true
+
+	var here: int = data.biome[data.nearest(x, z)]
+
+	if here == _ocean_id:
+		return true
+
+	if here == _beach_id:
+		if not is_grass:
+			return true
+
+		var edge: float = _edge_m(data, x, z, cache)
+		return edge < 0.0 and edge >= -BEACH_GRASS_M
+
+	return _edge_m(data, x, z, cache) > BELT_M
+
+
 # A shore species (flora.json "shore": within_m, optional biomes) stands only within within_m of inland water in its listed biomes
 # (water cells of the tile or the settled water); elsewhere it is not restricted. Probed on three rings of eight directions.
 func _shore_ok(item: Dictionary, data, k: int, x: float, z: float) -> bool:
@@ -776,15 +871,20 @@ func _fine_slope(x: float, z: float) -> float:
 
 
 # The ground checks every spot must pass; the ground height, or NAN.
-func _ground_ok(item: Dictionary, data, k: int, x: float, z: float) -> float:
+func _ground_ok(item: Dictionary, data, k: int, x: float, z: float, in_belt: bool = false) -> float:
 	var wet: int = data.moisture[k]
 
-	if wet < item["moisture_min"] or wet > item["moisture_max"]:
+	# Belt ground by the sand is dry; the belt species stand there whatever the moisture says.
+	if not in_belt and (wet < item["moisture_min"] or wet > item["moisture_max"]):
 		return NAN
 
 	var water: int = data.water_class[k]
 
 	if water != 0 and (item["water_mask"] & (1 << water)) == 0:
+		return NAN
+
+	# A cave mouth opened the ground here (spring caves, Dave 3 Nov 2026): nothing grows in the cut or floats over the entrance.
+	if not data.cave_openings.is_empty() and data.in_cave_opening(x, z):
 		return NAN
 
 	# Trees and shrubs never stand in water, only at its edge: no inland water

@@ -8,8 +8,9 @@ const HEART_REST_BPM := 60.0
 const BODY_PX := 30
 const TITLE_PX := 40
 const CarryRules := preload("res://src/shared/carry_rules.gd")
+const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
-const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
 
 var open: bool = false
@@ -93,9 +94,14 @@ func _make_preview() -> SubViewportContainer:
 	var light: DirectionalLight3D = DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-35.0, 25.0, 0.0)
 	_preview.add_child(light)
-	_preview_rig = RagdollScript.new()
+	# The body the player wears (Kathreen 3 Nov 2026): Dave's, in the character's own shape and skin, or the body worn before it (my_character.gd make_avatar). It was always
+	# the old ragdoll. Only the old ragdoll, which has no genome, gets the fixed clothes colours.
+	_preview_rig = MyCharacter.make_avatar()
 	_preview.add_child(_preview_rig)
-	_preview_rig.dress(Color(0.78, 0.62, 0.5), Color(0.4, 0.34, 0.28), Color(0.25, 0.22, 0.2))
+
+	if _preview_rig.get("genome") == null:
+		_preview_rig.dress(Color(0.78, 0.62, 0.5), Color(0.4, 0.34, 0.28), Color(0.25, 0.22, 0.2))
+
 	_preview_rig.play("idle")
 	return holder
 
@@ -151,7 +157,7 @@ func _build() -> void:
 	bars.add_theme_constant_override("separation", _px(12))
 	body.add_child(bars)
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Warmth", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
+	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Temperature", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
 		var row: HBoxContainer = HBoxContainer.new()
 		row.add_theme_constant_override("separation", _px(14))
 		var name_label: Label = _label(spec[0], BODY_PX)
@@ -223,11 +229,11 @@ func refresh() -> void:
 
 	var threshold: float = maxf(float(_items.exertion_threshold()), 0.1)
 	var exertion: float = clampf(float(_items.strain) / threshold, 0.0, 1.0) * 100.0
-	var values: Dictionary = {"Health": float(_items.health), "Exertion": exertion, "Energy": float(_items.energy), "Warmth": float(_items.warmth), "Food": float(_items.hunger), "Water": float(_items.thirst)}
+	var values: Dictionary = {"Health": float(_items.health), "Exertion": exertion, "Energy": float(_items.energy), "Temperature": float(_items.warmth), "Food": float(_items.hunger), "Water": float(_items.thirst)}
 
 	for key in _bars:
 		_bars[key][0].value = values[key]
-		_bars[key][1].text = "%d%%" % int(round(values[key]))
+		_bars[key][1].text = (DisplaySettingsScript.temp_text(values[key]) + ("" if is_nan(_items.air_c) else "  (air " + DisplaySettingsScript.air_text(_items.air_c) + ")")) if key == "Temperature" else "%d%%" % int(round(values[key]))
 
 	for child in _attributes.get_children():
 		child.queue_free()

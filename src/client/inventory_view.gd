@@ -1,5 +1,6 @@
 extends Node
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const CharacterKeys := preload("res://src/client/character/character_keys.gd")
@@ -68,7 +69,9 @@ var _pack_buttons: Array = []
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
 var _drink_msec: int = 0
 var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
+var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
+var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
@@ -79,6 +82,8 @@ var weight_kg: float = 75.0
 var _vitals_cfg: Dictionary = {}
 var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
+var _path_cfg: Dictionary = {}          # data/path_speed.json: pace factors on a trodden path
+var _path_cells: Dictionary = {}        # Vector2i (1 m ground cell) -> how many path patches have their centre in it
 
 # Over-exertion from the server (data/items/exertion.json). Sounds and Art read these:
 #   strain       0 and up, 1.0 = over-exerted (no ceiling)
@@ -112,6 +117,8 @@ var _structures_cfg: Dictionary = {}
 var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
+var _temp_label: Label
+var air_c: float = NAN                      # outside air temperature, C, from the client weather (terrain_client._update_weather); NAN until known
 var warmth: int = 100                       # body warmth, percent (protocol 36)
 var energy: int = 100                       # the Energy pool, percent (job 95)
 var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
@@ -168,7 +175,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	recipes = RecipeTableScript.load_default(table)
 	net.inventory_full_received.connect(func(...args): _timed("_on_full", _on_full, args))
 	net.inventory_slots_received.connect(func(...args): _timed("_on_slots", _on_slots, args))
-	net.world_items_received.connect(func(...args): _timed("_on_world_items", _on_world_items, args))
+	net.world_items_received.connect(func(...args): _timed("_queue_world_items", _queue_world_items, args))
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
@@ -203,9 +210,12 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.reject_received.connect(_on_reject)
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
+	var path_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/path_speed.json"))
+	_path_cfg = path_parsed if typeof(path_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
+	_prewarm_loose_meshes()
 	_build_vitals_hud()
 	auto_pickup = AutoPickupScript.new()
 	_auto_label = Label.new()
@@ -513,6 +523,10 @@ func _probe_pickup() -> Dictionary:
 	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
 		pick_stamp = Time.get_ticks_msec()
+
+		if gather_event.is_valid():
+			gather_event.call()
+
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
 
 
@@ -777,6 +791,10 @@ func pick_up_nearest() -> bool:
 		return true
 
 	pick_stamp = Time.get_ticks_msec()
+
+	if gather_event.is_valid():
+		gather_event.call()
+
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	return true
 
@@ -798,6 +816,7 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	_drain_world_backlog()
 	var now: int = Time.get_ticks_msec()
 	_roll_tick(_delta, now)
 	_snap_tick(now)
@@ -851,6 +870,9 @@ func _auto_pickup_tick(now: int) -> void:
 
 	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
 		return
+
+	if not auto_pickup.due(now):
+		return   # not this frame: skips the cursor check, hashing the whole pack and reading the player position every frame
 
 	if cursor_kind() != "":
 		return   # the cursor is on something specific: auto pickup stays out of it (case 3 only)
@@ -981,9 +1003,13 @@ func loose_log_near(point: Vector3) -> int:
 		if int(entry["state"]) != 0 or not entry.has("number") or int(entry["number"]) == 0:
 			continue
 
+		# The distance first: only the few items within 1.5 m pay for the item table lookups (this runs over every loose item on each blow that lands).
+		if entry["pos"].distance_squared_to(point) >= 2.25:
+			continue
+
 		var item_id: String = table.id_of(int(entry["number"]))
 
-		if (item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder") and entry["pos"].distance_to(point) < 1.5:
+		if item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder":
 			return id
 
 	return 0
@@ -1235,15 +1261,23 @@ func _update_fire_lights() -> void:
 	var lit: Array = []
 
 	for id in _world:
-		if _world[id]["light"] != null:
-			lit.append([here.distance_to(_world[id]["pos"]), _world[id]["light"]])
+		var entry: Dictionary = _world[id]
+		var light = entry["light"]
+
+		if light != null:
+			lit.append([here.distance_to(entry["pos"]), light])
+
+	if lit.is_empty():
+		return   # no fires or lanterns near: nothing to sort or flicker
 
 	lit.sort_custom(func(a, b): return a[0] < b[0])
+	var limit: int = int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS
+	var ticks: float = float(Time.get_ticks_msec())
 
 	for n in lit.size():
 		var light: Light3D = lit[n][1]
-		light.visible = n < (int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS)
-		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(float(Time.get_ticks_msec()) * 0.004 + float(n) * 2.1) + 0.02 * sin(float(Time.get_ticks_msec()) * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
+		light.visible = n < limit
+		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(ticks * 0.004 + float(n) * 2.1) + 0.02 * sin(ticks * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
 
 
 # Is a fire light that is switched on within `radius` of the point?
@@ -1281,9 +1315,26 @@ func _on_slots(bytes: PackedByteArray) -> void:
 				elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
 					tool_event.call("repaired")
 
-	_refresh()
+	_queue_refresh()
 	_refresh_chest()
 	refresh_hotbar()
+
+
+# Slot updates that arrive together (a pickup, a craft, a sale send several) rebuild the window once, at the end of the frame.
+var _refresh_queued: bool = false
+
+
+func _queue_refresh() -> void:
+	if _refresh_queued:
+		return
+
+	_refresh_queued = true
+	_flush_refresh.call_deferred()
+
+
+func _flush_refresh() -> void:
+	_refresh_queued = false
+	_refresh()
 
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
@@ -1535,6 +1586,31 @@ func move_cap() -> float:
 
 	# Over-exerted is only a slow-down (over_speed_factor, see over_pace_factor); running on is allowed until the blackout.
 	return 0.0
+
+
+# Walking on a trodden path (Dave 3 Nov 2026): the pace factor for a gait ("walk", "jog", "run") at a ground position, from data/path_speed.json; 1.0 off a path.
+func path_pace_factor(pos: Vector3, gait: String) -> float:
+	if _path_cells.is_empty():
+		return 1.0
+
+	var cell: Vector2i = Vector2i(floori(pos.x), floori(pos.z))
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			if int(_path_cells.get(Vector2i(cell.x + dx, cell.y + dz), 0)) > 0:
+				return float(_path_cfg.get("%s_factor" % gait, 1.0))
+
+	return 1.0
+
+
+func _path_cell_add(pos: Vector3, amount: int) -> void:
+	var cell: Vector2i = Vector2i(floori(pos.x), floori(pos.z))
+	var now: int = int(_path_cells.get(cell, 0)) + amount
+
+	if now > 0:
+		_path_cells[cell] = now
+	else:
+		_path_cells.erase(cell)
 
 
 # Over-exerted (Dave 2026-10-21): the pace is cut by about 10 percent but the player may keep running and keep pushing the
@@ -1901,6 +1977,48 @@ func _timed(label: String, handler: Callable, args: Array) -> void:
 	if ms > 20.0:
 		print("client slow: %s took %.0f ms" % [label, ms])
 
+# Join stall (Dave 2 Nov 2026 log: "world items 1423 ms for 334 added"): a big list of world items was dressed in one frame. A list of more
+# than WORLD_SLICE_MIN rows (or any list while an earlier one is still waiting, to keep the order) is queued and dressed in _process,
+# WORLD_SLICE_USEC a frame (at least one row). Small updates (a log cut, an item dropped) still apply at once.
+const WORLD_SLICE_MIN := 24
+const WORLD_SLICE_USEC := 4000
+var _world_backlog: Array = []        # rows to dress, and PackedInt32Array removals, in arrival order
+
+
+func _queue_world_items(added: Array, removed: PackedInt32Array) -> void:
+	if added.size() <= WORLD_SLICE_MIN and _world_backlog.is_empty():
+		_on_world_items(added, removed)
+		return
+
+	for row in added:
+		_world_backlog.append(row)
+
+	if removed.size() > 0:
+		_world_backlog.append(removed)
+
+
+func _drain_world_backlog() -> void:
+	if _world_backlog.is_empty():
+		return
+
+	var started: int = Time.get_ticks_usec()
+	var done: int = 0
+
+	while done < _world_backlog.size():
+		var entry: Variant = _world_backlog[done]
+		done += 1
+
+		if entry is PackedInt32Array:
+			_on_world_items([], entry)
+		else:
+			_on_world_items([entry], PackedInt32Array())
+
+		if Time.get_ticks_usec() - started >= WORLD_SLICE_USEC:
+			break
+
+	_world_backlog = _world_backlog.slice(done)
+
+
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
 	var t_all: int = Time.get_ticks_usec()
@@ -1974,6 +2092,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if StructureLook.look_of(state) == "ladder":
 				ladders[id] = {"pos": row[3], "yaw": rad_to_deg(yaw)}
+			elif StructureLook.look_of(state) == "trodden_path":
+				_path_cell_add(row[3], 1)
 
 			continue
 
@@ -1996,6 +2116,13 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node = box
 			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
 			_dress_item(node, int(row[1]), int(row[0]), real != null)
+
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("rot_y"):   # a split log lies along the trunk it came from
+				node.rotation.y = float(row[5]["rot_y"])
+
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("girth"):   # a split log is as thick as the trunk it came from (the mesh lies along x)
+				var girth: float = float(row[5]["girth"])
+				node.scale = Vector3(node.scale.x, node.scale.y * girth, node.scale.z * girth)
 		else:
 			node = _make_fire(_lit_state(state), state == 9, _fire_tier(state))
 			node.position = row[3]
@@ -2094,6 +2221,34 @@ func _refresh_pile(id: int) -> void:
 		entry["pile"] = false
 		box.mesh = _mesh_for(int(entry["number"]))
 
+
+
+# The world id of the placed structure nearest `point` within `reach` metres, or 0 (the hammer's Repair mode aims with it).
+func structure_id_near(point: Vector3, reach: float = 3.5) -> int:
+	var best: int = 0
+	var best_d: float = reach
+
+	for id in _world:
+		if _world[id].has("yaw") and int(_world[id]["state"]) >= 5:
+			var d: float = (_world[id]["pos"] as Vector3).distance_to(point)
+
+			if d <= best_d:
+				best_d = d
+				best = int(id)
+
+	return best
+
+
+# Every structure standing as {"pos", "state", "yaw" (degrees), "piece"}, for the hammer's "Save building plan".
+func structure_rows() -> Array:
+	var rows: Array = []
+
+	for id in _world:
+		if _world[id].has("yaw") and int(_world[id]["state"]) >= 5:
+			var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+			rows.append({"pos": _world[id]["pos"], "state": int(_world[id]["state"]), "yaw": float(_world[id]["yaw"]), "piece": bool(def.get("piece", false))})
+
+	return rows
 
 
 # Fires and structures standing in the world as {"pos", "state"} rows, for the placement ghost's blocked check.
@@ -2273,6 +2428,9 @@ func _forget(id: int) -> void:
 		return
 
 	var entry: Dictionary = _world[id]
+
+	if StructureLook.look_of(int(entry.get("state", 0))) == "trodden_path":
+		_path_cell_add(entry["pos"], -1)
 
 	if int(entry.get("roof", -1)) >= 0 and cover_index != null:
 		cover_index.remove_roof(int(entry["roof"]))
@@ -2865,6 +3023,91 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 		node.position.y -= 0.07
 
 
+# Builds the shared meshes of the loose items that appear on every join (stones, sticks, driftwood, logs, firewood, fibre) while the client is still loading, so the first
+# list of world items (282 items took 1070 ms, 961 ms of it here, PC log 2 Nov) only dresses nodes with meshes that already exist (bug 6/join freeze).
+func _prewarm_loose_meshes() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	for group in PICKUP_FILES:
+		_pickup_group(group)
+
+	for id in table.ids():
+		var name: String = str(id)
+
+		if name == "stone" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
+			_mesh_for(table.number_of(name))
+
+	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
+	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
+	for name in _trunk_drop_ids():
+		if table.number_of(name) > 0:
+			_mesh_for(table.number_of(name))
+
+	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	_prewarm_felled()
+
+
+# Bug 6 (Dave, 2 Nov 2026 16:51: "a big pause when you first cut it ... sometimes it doesn't even appear for five seconds and then poof a tree
+# appears and falls over"): the first felled trunk of a session built the bark shader and the cut-face materials, and the GPU compiled them right
+# then. One trunk and one stump are made here, out of sight under the world, so that compile happens during loading; they go after 5 s.
+var _felled_warm: Array = []
+
+
+func _prewarm_felled() -> void:
+	if _root == null:
+		return
+
+	var t0: int = Time.get_ticks_usec()
+	var extra: Dictionary = {"species": "oak", "radius": 0.3, "length": 8.0, "yaw": 0.0, "pitch": 0.0, "landed": true, "keywood": true}
+
+	for trunk in [true, false]:
+		var node: Node3D = _make_felled(trunk, extra)
+		node.position = Vector3(0.0, -10000.0, 0.0)
+		_root.add_child(node)
+		_felled_warm.append(node)
+
+	if is_inside_tree():
+		get_tree().create_timer(5.0).timeout.connect(_drop_felled_warm)
+
+	print("client prewarm: felled trunk and stump %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+
+
+func _drop_felled_warm() -> void:
+	for node in _felled_warm:
+		if is_instance_valid(node):
+			node.queue_free()
+
+	_felled_warm.clear()
+
+
+# The item ids a felled trunk can drop besides its logs (data/items/drops.json "trunk").
+func _trunk_drop_ids() -> Array:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	var trunk: Dictionary = (parsed as Dictionary).get("trunk", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+	var ids: Array = ["bark", "thatch", "seed_bundle", "kindling", "leaves"]
+
+	for key in ["branch", "small"]:
+		for row in trunk.get(key, []):
+			ids.append(str(row[0]))
+
+	var roots: Array = trunk.get("roots", [])
+
+	if not roots.is_empty():
+		ids.append(str(roots[0]))
+
+	for species in trunk.get("by_species", {}):
+		for row in trunk["by_species"][species]:
+			ids.append(str(row[0]))
+
+	var out: Array = []
+
+	for id in ids:
+		if not out.has(id):
+			out.append(id)
+
+	return out
+
+
 # Dave's real pickup meshes (assets/natural_pickups, glTF, metres, Y up, resting contact at Y=0, vertex colours).
 # Three of each kind, shared by every loose item of that kind: a loose stone or stick picks one by its world id.
 # The meshes carry generated levels of detail from the import, and each item is hidden beyond a short range, so a
@@ -3047,7 +3290,7 @@ func _build_bars_row() -> HBoxContainer:
 	row.add_theme_constant_override("separation", _px(28))
 	_panel_bars.clear()
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Warmth", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
+	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Temperature", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
 		var cell: HBoxContainer = HBoxContainer.new()
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cell.add_theme_constant_override("separation", _px(10))
@@ -3055,6 +3298,8 @@ func _build_bars_row() -> HBoxContainer:
 		label.text = spec[0]
 		_style(label, BODY_PX - 6)
 		cell.add_child(label)
+		if spec[0] == "Temperature":
+			_temp_label = label
 		var bar: ProgressBar = ProgressBar.new()
 		bar.show_percentage = false
 		bar.min_value = 0.0
@@ -3179,7 +3424,23 @@ func _fire_label(entry: Dictionary, number: int) -> String:
 
 
 func _on_worn(numbers: PackedInt32Array) -> void:
+	var first: bool = worn.is_empty()
+	var changed: Array = []
+	var ids: Array = []
+
+	for i in numbers.size():
+		var before: int = worn[i] if i < worn.size() else 0
+
+		if numbers[i] != 0:
+			ids.append(table.id_of(numbers[i]))
+
+		if not first and numbers[i] != before:
+			changed.append(table.id_of(numbers[i] if numbers[i] != 0 else before))
+
 	worn = numbers
+
+	if worn_event.is_valid():
+		worn_event.call(changed, ids)
 
 	if _weight_label != null:
 		_refresh_weight()
@@ -3298,7 +3559,9 @@ func _update_panel_bars() -> void:
 	_panel_bars["Health"].value = float(health)
 	_panel_bars["Exertion"].value = clampf(strain / threshold, 0.0, 1.0) * 100.0
 	_panel_bars["Energy"].value = float(energy)
-	_panel_bars["Warmth"].value = float(warmth)
+	_panel_bars["Temperature"].value = float(warmth)
+	if _temp_label != null and is_instance_valid(_temp_label):
+		_temp_label.text = "Body temp " + DisplaySettingsScript.temp_text(float(warmth)) + ("" if is_nan(air_c) else "   Air " + DisplaySettingsScript.air_text(air_c))
 
 	if _sick_label != null and is_instance_valid(_sick_label):
 		_sick_label.text = ("Health: ill, about %d h left" % sick_hours) if sick_hours > 0 else ""
@@ -3900,6 +4163,15 @@ func _refresh() -> void:
 
 	_note_acquired()
 	_plan_cache.clear()
+
+	# Lag fix (Sal, 2 Nov 2026): with the window shut (or the chest screen up instead) nobody sees the slot buttons or the recipe list, and rebuilding
+	# them cost 55 to 87 ms on every pickup. The window rebuilds in toggle() when it opens; only the weight HUD is kept current.
+	if not open or chest_mode:
+		if _weight_label != null:
+			_refresh_weight()
+
+		return
+
 	_arrange_slots()
 
 	if _weight_label != null:

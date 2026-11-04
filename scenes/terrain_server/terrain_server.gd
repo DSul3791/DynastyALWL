@@ -99,6 +99,7 @@ var _water_updates: int = 0
 var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
 var _weather_next_msec: int = 0
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
+var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _swell: float = 0.0
 var _dry: float = 0.0
 var _weather_bucket: int = -1
@@ -141,6 +142,10 @@ var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
 var _water_answered_msec: Dictionary = {}   # peer -> last time its water request was answered
+var _water_window: Rect2 = Rect2()          # the live water window (world m) from the last flow packet: water only moves inside it
+var _water_window_told: Rect2 = Rect2()     # the window the last "water moved" named
+var _cave_streams_sent: Dictionary = {}     # peer -> {tile: true}: spring cave streams already sent (protocol 87)
+var _water_sent: Dictionary = {}            # peer -> {chunk: hash of the water bytes it holds}: unchanged water is not sent again
 var _gather_msec: Dictionary = {}           # peer -> last gather request handled
 const BURY_QUEUE_MAX := 4000        # digs waiting for the plant check; beyond it a dig skips the check
 var _bury_mutex: Mutex = Mutex.new()
@@ -283,12 +288,14 @@ func _ready() -> void:
 		if dev_arg.begins_with("--dev-place="):
 			items.dev_place_later(dev_arg.trim_prefix("--dev-place="))   # placed as soon as the ground under it is loaded
 	items.tree_info = _tree_info
+	items.shrub_info = _shrub_info
 	items.standing_near = _standing_near
 	items.flora_changed = _flora_changed
 	flora.dynamic = func(home): return items.dynamic_items(home)
 	items.cut_tree = _cut_tree
 	@warning_ignore("confusable_local_declaration")
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
+	items.send_marker_done = func(peer, at): net.road_marker_done.rpc_id(peer, at)
 	@warning_ignore("confusable_local_declaration")
 	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)
 	@warning_ignore("confusable_local_declaration")
@@ -315,6 +322,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
 	items.send_final_death = func(peer, cause): net.final_death.rpc_id(peer, cause)
+	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
 	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
@@ -335,6 +343,10 @@ func _ready() -> void:
 
 		if tile_data.placeholder:
 			return false
+
+		# Spring cave streams run under the ground the water map knows (Dave 3 Nov 2026): drink and fill there too.
+		if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
+			return true
 
 		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
 			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
@@ -509,6 +521,7 @@ func _ready() -> void:
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
+	items.animal_lure = func(id, point): return animals.lure_to(id, point)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
@@ -637,7 +650,7 @@ func _ready() -> void:
 
 	for n in range(_max_running):
 		var thread: Thread = Thread.new()
-		thread.start(_worker_loop)
+		thread.start(_worker_loop, Thread.PRIORITY_LOW)   # low: on a player's PC (Play) the client's render, mesh and audio threads come first (Dave 2 Nov 2026: 4-10 s freezes with 11 server threads on 12 cores)
 		_workers.append(thread)
 
 	if OS.has_environment("DYNASTY_IDLE_THREADS"):
@@ -647,7 +660,7 @@ func _ready() -> void:
 
 	for n in range(_idle_threads):
 		var idle: Thread = Thread.new()
-		idle.start(_idle_loop)
+		idle.start(_idle_loop, Thread.PRIORITY_LOW)
 		_idle_workers.append(idle)
 
 	print("Terrain server listening on port %d with %d worker threads; store %s; spawn %s" % [port, _max_running, store_dir, str(spawn)])
@@ -828,11 +841,14 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	limits.forget(peer_id)
 	_warm_home.erase(peer_id)
 	_water_answered_msec.erase(peer_id)
+	_water_sent.erase(peer_id)
+	_cave_streams_sent.erase(peer_id)
 	_gather_msec.erase(peer_id)
 	_npc_sent.erase(peer_id)
 	_animal_sent.erase(peer_id)
 	trails.forget_peer(peer_id)
 	_blood_sent.erase(peer_id)
+	_burrows_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
@@ -952,13 +968,67 @@ func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 	@warning_ignore("integer_division")
 	for n in range(mini(chunks.size() / 2, WATER_CHUNKS_MAX)):
 		_queue_water(peer_id, Vector2i(chunks[2 * n], chunks[2 * n + 1]))
+		_send_cave_streams(peer_id, Vector2i(chunks[2 * n], chunks[2 * n + 1]))
+
+
+# Spring caves (Dave 3 Nov 2026): the streams down a tile's caves, and its cave dens (den sounds), go to a peer once, with the first water it asks for in that tile. Only from a tile
+# already loaded (loading one here would stall the main thread); the next water request tries again.
+func _send_cave_streams(peer_id: int, chunk: Vector2i) -> void:
+	var x: float = (float(chunk.x) + 0.5) * flora.placer.chunk_m
+	var z: float = (float(chunk.y) + 0.5) * flora.placer.chunk_m
+
+	if not generator.tile_cached(x, z):
+		return
+
+	var tile: Vector2i = generator.tile_of(x, z)
+	var sent: Dictionary = _cave_streams_sent.get(peer_id, {})
+	_cave_streams_sent[peer_id] = sent
+
+	if sent.has(tile):
+		return
+
+	sent[tile] = true
+	var data = generator.get_tile(tile)
+
+	if data == null or data.placeholder:
+		return
+
+	if not data.cave_streams.is_empty():
+		net.cave_streams.rpc_id(peer_id, tile, data.cave_streams)
+
+	if not data.cave_dens.is_empty():
+		net.cave_dens.rpc_id(peer_id, tile, data.cave_dens)
+
+
+# Lag review (Dave 2 Nov 2026): every "water moved" the client asks again for all ~22 chunks it holds, and every answer was
+# unpacked and redrawn on its main thread, though in a settled river most chunks have not changed. Each peer's last water per chunk
+# is remembered by hash; the same bytes are not sent again. Records what is sent (empty bytes forget it) and says whether to send.
+func _water_changed_for(peer_id: int, chunk: Vector2i, bytes: PackedByteArray) -> bool:
+	var held: Dictionary = _water_sent.get(peer_id, {})
+	_water_sent[peer_id] = held
+
+	if bytes.is_empty():
+		held.erase(chunk)
+		return true
+
+	var key: int = hash(bytes) ^ bytes.size()
+
+	if int(held.get(chunk, 0)) == key:
+		return false
+
+	held[chunk] = key
+	return true
 
 
 # Packing a chunk's water takes about 30 ms: ready ones go out at once, the rest are packed by a worker thread and sent
 # from _process when done.
 func _queue_water(peer_id: int, chunk: Vector2i) -> void:
 	if flora.water_ready(chunk):
-		net.deliver_water.rpc_id(peer_id, chunk, flora.water_bytes(chunk))
+		var bytes: PackedByteArray = flora.water_bytes(chunk)
+
+		if _water_changed_for(peer_id, chunk, bytes):
+			net.deliver_water.rpc_id(peer_id, chunk, bytes)
+
 		return
 
 	_queue_mutex.lock()
@@ -1060,6 +1130,8 @@ func _poll_water() -> void:
 		if not flow.is_empty():
 			# shortcut: sent to everyone each publish (about 30 KB packed); a player who joins gets the next one, none is kept for late joiners
 			net.deliver_water_flow.rpc(flow["origin"], flow["w"], flow["h"], flow["cell"], flow["raw"], flow["bytes"])
+			var cell: float = float(flow["cell"])
+			_water_window = Rect2(Vector2(flow["origin"]) - Vector2(0.5, 0.5) * cell, Vector2(float(flow["w"]), float(flow["h"])) * cell)
 
 	if not updates.is_empty():
 		for update in updates:
@@ -1080,7 +1152,14 @@ func _poll_water() -> void:
 			print("server: water update %d (%d tiles), %d wet squares on the starter tile" % [_water_updates, updates.size(), _wet_centre])
 
 		flora.clear_water()
-		net.water_changed.rpc()
+
+		# Lag review (Steve 3 Nov 2026): the levels change only inside the live window (outside it the baked ones stay, water_hub2.publish_levels),
+		# so clients re-ask only for the chunks there and where the window was, not for every chunk they hold. No window known: everything.
+		if _water_window.has_area():
+			net.water_changed_in.rpc(_water_window.merge(_water_window_told) if _water_window_told.has_area() else _water_window)
+			_water_window_told = _water_window
+		else:
+			net.water_changed.rpc()
 
 		if not water_live.busy:
 			net.water_rate.rpc(water_live.rate, false, water_live.rate * WATER_BASE_RATE)
@@ -1136,7 +1215,24 @@ func _tree_info(chunk: Vector2i, id: int) -> Dictionary:
 		return {}
 
 	var ref_height: float = 0.5 * (float(species["height_min"]) + float(species["height_max"]))   # what the client builds the model at (flora_view)
-	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"]), "ref_height": ref_height, "broadleaf": str(species.get("shape", "")) == "broadleaf"}
+	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"]), "ref_height": ref_height, "broadleaf": str(species.get("shape", "")) == "broadleaf", "id": id}
+
+
+# A standing bush or shrub (placer or planted) for the axe and the pickaxe (Dave 2 Nov 2026), or {}.
+func _shrub_info(chunk: Vector2i, id: int) -> Dictionary:
+	var home: Vector2i = flora.placer.normalize(chunk)
+	var all: Dictionary = flora.items_of(home)
+	var at: int = all["ids"].find(id)
+
+	if at < 0:
+		return items.dynamic_shrub_info(home, id)
+
+	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
+
+	if species.is_empty() or int(species["kind"]) != PlacerScript.KIND_SHRUB or flora.removed_in(home).has(id):
+		return {}
+
+	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at])}
 
 
 func _cut_tree(chunk: Vector2i, id: int) -> bool:
@@ -1213,7 +1309,9 @@ func _flora_changed(chunk: Vector2i) -> void:
 
 	for peer in items.peers_near(centre, 600.0):
 		var water_cached: bool = flora.water_ready(chunk)
-		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), flora.water_bytes(chunk) if water_cached else PackedByteArray(), true)
+		var water_bytes: PackedByteArray = flora.water_bytes(chunk) if water_cached else PackedByteArray()
+		_water_changed_for(peer, chunk, water_bytes)
+		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), water_bytes, true)
 		_send_stripped(peer, chunk)
 
 		if not water_cached:
@@ -1529,6 +1627,7 @@ func _reset_terrain_edits() -> void:
 	if tunnels != null:
 		tunnels.set_enabled(tunnels.enabled)
 
+	_cave_streams_sent.clear()
 	net.ground_reset.rpc(store.tiles_stamp, _starter_stamp())
 
 
@@ -1570,6 +1669,10 @@ func _tunnel_tick() -> void:
 
 	for warned in result["warn"]:
 		net.notice.rpc_id(int(warned), "The tunnel ceiling is creaking: brace it or leave.")
+
+	# Where each rumble comes from (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave): the dug space, its span and how short its support is.
+	for at in result.get("warn_at", []):
+		_events.event("tunnel creaking: peer %d at %s, dug space at %s (span %.1f m, need %.2f)" % [int(at[0]), str(items.position_of(int(at[0]))), str(at[1]), float(at[2]), float(at[3])])
 
 	for leak in result["leak"]:
 		net.leak.rpc_id(leak[0], leak[1], leak[2])
@@ -1815,6 +1918,13 @@ func _send_npcs(delta: float) -> void:
 			_blood_sent[peer] = trail_sig
 			net.blood.rpc_id(peer, trail)
 
+		var holes: PackedVector3Array = animals.burrows_near(at)
+		var holes_sig: int = hash(holes)
+
+		if int(_burrows_sent.get(peer, 0)) != holes_sig:
+			_burrows_sent[peer] = holes_sig
+			net.burrows.rpc_id(peer, holes)
+
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.
 func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void:
@@ -1874,7 +1984,7 @@ func _process(delta: float) -> void:
 	_done_mutex.unlock()
 
 	for entry in water_done:
-		if _peers.has(entry[0]):
+		if _peers.has(entry[0]) and _water_changed_for(entry[0], entry[1], entry[2]):
 			net.deliver_water.rpc_id(entry[0], entry[1], entry[2])
 
 	var batches: Dictionary = {}
@@ -1894,6 +2004,7 @@ func _process(delta: float) -> void:
 			continue
 
 		if entry.size() > 3:
+			_water_changed_for(entry[0], entry[1], entry[4])
 			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2], entry[4], entry[5])
 			_send_stripped(entry[0], entry[1])
 			_peers[entry[0]]["flora_bytes"] = int(_peers[entry[0]].get("flora_bytes", 0)) + (entry[2] as PackedByteArray).size()
@@ -1971,6 +2082,7 @@ func _process(delta: float) -> void:
 
 			_start_water()
 
+			_cave_streams_sent.clear()
 			net.ground_reset.rpc(store.tiles_stamp, _starter_stamp())
 			print("server: the tile files changed (a bake finished); generated ground thrown away, players reload")
 

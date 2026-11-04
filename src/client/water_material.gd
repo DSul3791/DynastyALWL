@@ -10,8 +10,8 @@ const SHADER := """
 shader_type spatial;
 render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
 
-uniform vec3 shallow_color : source_color = vec3(0.17, 0.33, 0.33);
-uniform vec3 deep_color : source_color = vec3(0.04, 0.17, 0.24);
+uniform vec3 shallow_color : source_color = vec3(0.16, 0.38, 0.34);   // Kathreen 3 Nov 2026 (art direction: vibrant, not grey): greener shallows, was 0.17, 0.33, 0.33
+uniform vec3 deep_color : source_color = vec3(0.03, 0.18, 0.28);   // bluer depths, was 0.04, 0.17, 0.24
 uniform vec3 foam_color : source_color = vec3(0.78, 0.82, 0.80);
 uniform vec3 mud_color : source_color = vec3(0.36, 0.27, 0.16);
 uniform float rough = 0.0;           // 0 calm, 1 raging (flow rate above x1, set by the client)
@@ -47,6 +47,13 @@ uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 
 const float MOUTH_FROM_M = 0.4;        // surface this high above the sea or lower is the river mouth (all sea colour)
 const float MOUTH_TO_M = 4.5;          // and this high or more is fresh river water (brown flood colour allowed)
+
+// Liquid surface (protocol 85, src/water2/liquid_surface.gd): inside the live water window the liquid sheet draws the water, so this grid look steps
+// aside there (one cell in from the window's edge, where the liquid sheet has faded fully in). 0 (no packet yet, or the old water) changes nothing.
+uniform vec2 water2_origin = vec2(0.0);
+uniform vec2 water2_size = vec2(1.0);
+uniform float water2_on = 0.0;
+uniform float water2_inset = 0.0;    // metres
 
 varying float sheet_alpha;
 varying vec2 flow;                   // downhill direction times 0..1 steepness (0 for lakes and the sea)
@@ -149,6 +156,14 @@ vec2 sea_slope(vec2 p, float time, float dist) {
 }
 
 void fragment() {
+	if (water2_on > 0.5 && sea < 0.5) {
+		vec2 inside = world_pos.xz - water2_origin;
+
+		if (inside.x > water2_inset && inside.y > water2_inset && inside.x < water2_size.x - water2_inset && inside.y < water2_size.y - water2_inset) {
+			discard;
+		}
+	}
+
 	// River mouth (owner, 2026-10-21: rivers run into the sea as one body, brown is only a test colour): within
 	// a few metres of sea level (0 m) the flood brown fades out, so the river water takes the sea's colour
 	// with no edge or step, and where fresh meets salt a soft band of foam rides the water. The sea itself
@@ -356,6 +371,24 @@ void fragment() {
 		ROUGHNESS = mix(ROUGHNESS, 0.18 + 0.2 * cracks, sheet);
 		SPECULAR = mix(SPECULAR, 0.9, sheet);
 		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz, sheet * 0.95));
+	}
+
+	// From under the water (Dave 2 Nov 2026: "being under the water looking up looks fake"): a mirror of the dark water below, with a
+	// round window overhead (Snell's window, about 49 degrees from the vertical) on the sky, rippling, bright at its rim
+	// (underwater_look.gd). The sky colours already follow the day.
+	if (!FRONT_FACING) {
+		vec3 ray = normalize(mat3(INV_VIEW_MATRIX) * VERTEX);
+		float c = clamp(dot(ray, normal_world), 0.0, 1.0);
+		float window = smoothstep(0.62, 0.70, c);
+		float rim = exp(-pow((c - 0.67) / 0.035, 2.0));
+		vec3 overhead = mix(sky_horizon, sky_top, smoothstep(0.66, 1.0, c)) * (0.9 + 2.5 * length(normal_world.xz));
+		vec3 below_col = mix(deep_color * 0.5 * mix(0.15, 1.0, daylight), overhead, window) + vec3(0.85, 0.95, 1.0) * rim * 0.3 * daylight;
+		below_col = mix(below_col, foam_tint * 0.85 * daylight, foam * 0.6);
+		ALBEDO = vec3(0.0);
+		EMISSION = below_col;
+		ROUGHNESS = 1.0;
+		SPECULAR = 0.0;
+		ALPHA = mix(0.96, 0.82, window) * sheet_alpha;
 	}
 
 	if (debug_flow > 0.5) {

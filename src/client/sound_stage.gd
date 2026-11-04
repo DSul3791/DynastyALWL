@@ -98,7 +98,7 @@ const FLOOR_SURFACES := {"plank": -9.0, "slab": -8.0, "carpet": -13.0, "thatch":
 const PUDDLE_SURFACES := ["grass", "grass_tall", "stone", "gravel", "sand", "bushes", "path", "slab"]
 const PUDDLE_DB := -13.0
 # Esc > Settings mixer groups: name -> the buses it sets. Shares step through VOLUME_STEPS.
-const MIX_GROUPS := {"wind": ["Wind"], "nature": ["Nature", "Weather"], "steps": ["Foley"]}
+const MIX_GROUPS := {"wind": ["Wind"], "surf": ["Surf"], "nature": ["Nature", "Weather"], "steps": ["Foley"]}
 const SETTINGS_PATH := "user://sound_settings.cfg"
 const EXPOSURE_RING_M := 70.0           # ground is read on this ring around the player
 const EXPOSURE_FULL_M := 40.0           # this far above or below the ring's average is a full ridge or valley
@@ -141,12 +141,21 @@ var _pending: String = ""
 var floor_surface: String = ""          # a built floor under the feet (set_floor), "" for natural ground
 var floor_under: Callable               # optional: (feet Vector3) -> floor surface name or "" (the building system sets it)
 var last_step: String = ""              # for the HUD: ground, soil id, water depth, file played
+# Dave 2 Nov 2026: at a campfire in the forest on a clear night the surf or the wind was louder than anything near. The wind is damped under a canopy
+# (a share of the trunk shelter) and both the wind and the surf drop while a lit fire is close, so the crackle stays on top.
+const ROOF_WIND_CUT_DB := 4.0          # the wind loops are this much quieter under a roof (a lean-to: dulled, not a room; weather.roofed eases it in)
+const CANOPY_WIND_CUT_DB := 14.0        # wind loops lose this much at full shelter (14 or more trunks within 18 m)
+const FIRE_DUCK_DB := -9.0              # wind and surf lose this much right at a lit fire
+const FIRE_DUCK_NEAR_M := 6.0           # full duck inside this distance, none from FIRE_DUCK_FAR_M
+const FIRE_DUCK_FAR_M := 25.0
+var fire_duck_db: float = 0.0           # 0 or less: how far the wind and the surf are pulled down by a lit fire near the player (eased)
+var canopy_wind_db: float = 0.0         # 0 or less: the wind loops' canopy cut now
 var wind_strength: float = 0.0          # the wind loudness measure now (HUD)
 var exposure: float = 0.0               # -1 valley floor .. +1 ridge or hilltop (height against the ground around)
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
 var levels: Dictionary = {"master": 1.0, "effects": 1.0, "ambient": 1.0, "interface": 1.0}   # Esc > Settings sliders, 0 to 1
-var mix_level: Dictionary = {"wind": 1.0, "nature": 1.0, "steps": 1.0}   # per group, 0 to 1 (Esc > Settings > Sound sliders)
+var mix_level: Dictionary = {"wind": 1.0, "surf": 1.0, "nature": 1.0, "steps": 1.0}   # per group, 0 to 1 (Esc > Settings > Sound sliders)
 var tier: int = 2                       # quality index (0 Low); set_quality()
 var voice_cap: int = 96                 # preset["voices"]
 var preset: Dictionary = Presets.row(2) # this tier's mixer row (sound_presets.gd); layers read their limits here
@@ -235,6 +244,8 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	_gust_noise.seed = 9
 	_gust_noise.frequency = 0.02
 	_gust_noise.fractal_octaves = 2
+	_make_bus("Surf")                      # the sea surf bed has its own bus and slider (Dave 2 Nov 2026)
+	prewarm()                              # Dave 3 Nov 2026: sound is always async; every clip starts loading on worker threads now
 	var wind_bus: int = _make_bus("Wind")
 	_wind_filter = AudioEffectLowPassFilter.new()
 	_wind_filter.cutoff_hz = 4000.0
@@ -495,6 +506,8 @@ func _sound_log_tick(body: CharacterBody3D) -> void:
 	for line in sound_log_lines(body.global_position, int(float(now - _sound_log_start_msec) / 1000.0)):
 		print(line)
 
+	print("SOUND LOG mix: " + ambient_dump(body).replace("\n", " | "))
+
 
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
 	_sound_log_tick(body)
@@ -592,9 +605,11 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	# Owner 2026-10-19, twice: still a windstorm. Now a faint breeze that only rises a little in gusts.
 	# Build 51: the low layer still sounded like surf nearby; it is lower again.
 	wind_strength = strength
+	canopy_wind_db = -CANOPY_WIND_CUT_DB * clampf(_shelter, 0.0, 1.0) - ROOF_WIND_CUT_DB * clampf(float(weather.roofed), 0.0, 1.0)
+	fire_duck_db = move_toward(fire_duck_db, fire_duck_target(float(fire.nearest_lit_m)), 12.0 * delta)
 	# Build 79: still like a river; lower again and the loops now have deep lulls between the swells.
-	_wind_low.volume_db = WIND_LIFT_DB + linear_to_db(0.8 * (0.0035 + 0.006 * strength))   # x0.8: the softer loops are 2 dB louder in RMS (Dave, build 789)
-	_wind_gust.volume_db = WIND_LIFT_DB + linear_to_db(0.8 * (0.0025 + 0.012 * pow(strength, 1.6)))
+	_wind_low.volume_db = WIND_LIFT_DB + canopy_wind_db + fire_duck_db + linear_to_db(0.8 * (0.0035 + 0.006 * strength))   # x0.8: the softer loops are 2 dB louder in RMS (Dave, build 789)
+	_wind_gust.volume_db = WIND_LIFT_DB + canopy_wind_db + fire_duck_db + linear_to_db(0.8 * (0.0025 + 0.012 * pow(strength, 1.6)))
 	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0)) * (1.0 + 0.25 * exposure)   # whistles on a ridge, hushed in a valley
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 	_wind_filter.cutoff_hz *= 1.0 - SNOW_HUSH_WIND_CUT * weather.snow_hush
@@ -647,7 +662,7 @@ func set_quality(quality: int) -> void:
 # call, the crow alarm) carry the meta "keep" and are never cut. The player's own footsteps, breath,
 # heartbeat and the interface are not in the group world_sounds, so they are never candidates.
 const OWN_M := 4.0
-const AMBIENT_BUSES := ["Nature", "Weather", "Wind"]
+const AMBIENT_BUSES := ["Nature", "Weather", "Wind", "Surf"]
 
 func _shed(body: CharacterBody3D, count: int) -> void:
 	var candidates: Array = []
@@ -772,6 +787,75 @@ func heard_text(body: CharacterBody3D, limit: int = 8) -> String:
 		lines.append("  %s %s %.0f dB %s" % [row[0], "here" if float(row[1]) < 0.0 else "%.0f m" % float(row[1]), float(row[2]), row[3]])
 
 	return "sounds heard (%d):\n%s" % [rows.size(), "\n".join(lines)]
+
+
+# The duck for a lit fire this far away (m): FIRE_DUCK_DB inside FIRE_DUCK_NEAR_M, 0 from FIRE_DUCK_FAR_M, smooth between.
+static func fire_duck_target(distance_m: float) -> float:
+	if is_inf(distance_m):
+		return 0.0
+
+	return FIRE_DUCK_DB * (1.0 - smoothstep(FIRE_DUCK_NEAR_M, FIRE_DUCK_FAR_M, distance_m))
+
+
+# The admin dump of every ambient source at the player's spot ("what is that sound", Dave 2 Nov 2026): the mix inputs (sea, water, forest weights, world wind,
+# canopy shelter, nearest lit fire, the ducks) and then each audible player under the stage or in the world_sounds group, loudest first, with its bus, level
+# at the source, distance (flat beds say "here") and the level heard after the distance drop. Also printed with the F4 text and by --sound-log.
+func ambient_dump(body: CharacterBody3D, limit: int = 14) -> String:
+	var w: Dictionary = ambient.weights
+	var lines: PackedStringArray = []
+	lines.append("ambient mix at %s: sea %.2f water %.2f forest %.2f meadow %.2f | world wind %.2f strength %.2f shelter %.2f (canopy cut %.1f dB) | nearest lit fire %s (duck %.1f dB) | surf trim %.1f dB" % [
+		str(body.global_position.snapped(Vector3(0.1, 0.1, 0.1))), ambient.sea_weight, float(w.get("water", 0.0)), float(w.get("forest", 0.0)), float(w.get("meadow", 0.0)),
+		weather.world_wind, wind_strength, _shelter, canopy_wind_db, "none" if is_inf(float(fire.nearest_lit_m)) else "%.1f m" % float(fire.nearest_lit_m), fire_duck_db, ambience.surf_db])
+	var ear_at: Vector3 = body.global_position
+	var rows: Array = []
+	var seen: Dictionary = {}
+	var players: Array = find_children("*", "AudioStreamPlayer*", true, false)
+	players.append_array(get_tree().get_nodes_in_group("world_sounds"))
+
+	for player in players:
+		if not is_instance_valid(player) or seen.has(player.get_instance_id()) or not player.playing or player.stream == null or player.stream_paused or player.volume_db <= -70.0:
+			continue
+
+		seen[player.get_instance_id()] = true
+		var distance: float = -1.0
+		var heard: float = player.volume_db
+
+		if player is AudioStreamPlayer3D:
+			distance = player.global_position.distance_to(ear_at)
+
+			if player.max_distance > 0.0 and distance > player.max_distance:
+				continue
+
+			heard -= 20.0 * log(maxf(distance / maxf(player.unit_size, 0.1), 1.0)) / log(10.0)
+
+		var bus_db: float = AudioServer.get_bus_volume_db(AudioServer.get_bus_index(player.bus)) if AudioServer.get_bus_index(player.bus) >= 0 else 0.0
+		rows.append([player.stream.resource_path.get_file().get_basename(), str(player.bus), player.volume_db, distance, heard + bus_db])
+
+	rows.sort_custom(func(a, b): return a[4] > b[4])
+
+	for n in range(mini(limit, rows.size())):
+		var row: Array = rows[n]
+		lines.append("  %-28s %-8s %6.1f dB at source, %s, heard %6.1f dB" % [row[0], row[1], float(row[2]), "here" if float(row[3]) < 0.0 else "%.0f m" % float(row[3]), float(row[4])])
+
+	lines.append("  (%d audible sources)" % rows.size())
+	return "\n".join(lines)
+
+
+# The Debug details sound block (heard list, ambient mix dump, bus meters), rebuilt at most every DEBUG_TEXT_SEC: each part walks all the players under the stage
+# and the world_sounds group, which cost milliseconds when it ran on every frame with Debug details on (audio lag review, Dave 2 Nov 2026).
+const DEBUG_TEXT_SEC := 0.5
+var _debug_text_cache: String = ""
+var _debug_text_msec: int = -100000
+
+
+func debug_sound_text(body: CharacterBody3D) -> String:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _debug_text_msec >= int(DEBUG_TEXT_SEC * 1000.0):
+		_debug_text_msec = now
+		_debug_text_cache = heard_text(body) + "\n" + ambient_dump(body, 8) + "\n" + meters_text()
+
+	return _debug_text_cache
 
 
 func wind_text() -> String:
@@ -952,7 +1036,7 @@ func set_mix(group: String, value: float) -> void:
 
 
 # Headless loudness table (job 67, --mix-levels): the highest peak seen on each bus since tracking began.
-const MIX_BUSES := ["Master", "Wind", "Foley", "Nature", "Weather", "Interface", "Body"]
+const MIX_BUSES := ["Master", "Wind", "Surf", "Foley", "Nature", "Weather", "Interface", "Body"]
 var track_peaks: bool = false
 var bus_peaks: Dictionary = {}          # bus -> highest peak in dB
 var bus_sums: Dictionary = {}           # bus -> [sum of peak dB while above -60, samples]
@@ -975,7 +1059,7 @@ func _track_peaks() -> void:
 
 # F3 meters (job 86): one line per bus, a bar from -60 to 0 dB, the peak now and the highest in the last HOLD_SEC. Built only when
 # Debug details is shown (terrain_client._debug_text), so it costs nothing otherwise: one bus peak read per bus per call.
-const METER_BUSES := ["Master", "Wind", "Foley", "Nature", "Weather", "Interface", "Body", "World"]
+const METER_BUSES := ["Master", "Wind", "Surf", "Foley", "Nature", "Weather", "Interface", "Body", "World"]
 const METER_CELLS := 20
 const HOLD_SEC := 3.0
 var meters_calls: int = 0
@@ -1071,13 +1155,13 @@ func set_level(sound_name: String, value: float) -> void:
 
 # Snow hush (job 51): at full hush wind is 3 dB and nature 4 dB quieter, the wind filter closes 30 percent and
 # steps lose 3 dB (snow steps are already the soft crunch). Eases with `weather.snow_hush` (4 s).
-const SNOW_HUSH_BUS_DB := {"Wind": -3.0, "Nature": -4.0}
+const SNOW_HUSH_BUS_DB := {"Wind": -3.0, "Nature": -4.0, "Surf": -4.0}
 const SNOW_HUSH_STEP_DB := -3.0
 const SNOW_HUSH_WIND_CUT := 0.3
 var _hush_applied: float = 0.0
 
 # A faint (breath.world_mute 0..1): these buses fade to silence, the "Body" bus (heartbeat) stays.
-const FAINT_BUSES := ["Wind", "Foley", "Nature", "Weather", "Interface"]
+const FAINT_BUSES := ["Wind", "Surf", "Foley", "Nature", "Weather", "Interface"]
 const FAINT_BUS_DB := -60.0
 var _faint_applied: float = 0.0
 
@@ -1087,6 +1171,7 @@ func _apply_buses() -> void:
 		"Master": float(levels["master"]) * float(VOLUME_STEPS[volume_index]),
 		"Foley": float(levels["effects"]) * float(mix_level["steps"]),
 		"Wind": float(levels["ambient"]) * float(mix_level["wind"]),
+		"Surf": float(levels["ambient"]) * float(mix_level["surf"]),
 		"Nature": float(levels["ambient"]) * float(mix_level["nature"]),
 		"Weather": float(levels["ambient"]) * float(mix_level["nature"]),
 		"Interface": float(levels["interface"]),
@@ -1105,6 +1190,7 @@ func _apply_buses() -> void:
 # Sound files are loaded the first time a layer needs them, which cost 5 to 20 ms frames (first rain, first
 # creak). After the first WARM_START_SEC the common ones are loaded one per frame instead.
 const WARM_START_SEC := 3.0
+const EARLY_STEP_SURFACES := ["grass", "dirt", "leaves", "grass_tall", "bushes", "stone", "gravel", "sand", "mud", "water"]   # grounds met in the first half hour (spawn is a forest pond shore)
 var _warm: Array = []                   # [module, name] still to load
 var _warm_wait: float = 0.0
 
@@ -1134,6 +1220,25 @@ func _build_warm_list() -> void:
 
 	for sound_name in ["heartbeat"]:
 		_warm.append([breath, sound_name])
+
+	# The sounds of the first minutes (audio lag review, Dave 3 Nov 2026) go to the FRONT of the list: the first steps on each ground, picking plants, the craft
+	# work sounds and cues, eating and drinking, the stance cues. Each loads on first use otherwise, a 5 to 20 ms hitch at the moment the player first walks, picks or crafts.
+	var early: Array = []
+
+	for surface in EARLY_STEP_SURFACES:
+		for foot in ["left", "right"]:
+			early.append([self, "step_%s_%s" % [surface, foot]])
+
+	for sound_name in ["pick_pluck", "pick_pull", "pick_snap", "pick_snip", "pick_twist", "plant_rustle_leaves", "plant_rustle_reeds"]:
+		early.append([harvestfx, sound_name])
+
+	for sound_name in ["craft_start", "craft_twine", "craft_knap", "craft_bind", "craft_carve", "craft_stack", "craft_pound", "craft_wrap", "item_reject", "hotbar_tick", "eat_soft", "eat_crunch", "drink_gulp"]:
+		early.append([itemfx, sound_name])
+
+	for slot in ["bed_forest_day", "bed_night", "bed_crickets", "bed_surf", "bed_forest_winter"]:
+		early.append([ambience, slot])
+
+	_warm = early + _warm
 
 
 # Loads the sounds in the warm list one entry at a time, never more than one entry per WARM_GAP_SEC, so ~80 files (each about 30 ms, and several variants per entry)
@@ -1430,6 +1535,41 @@ static var slow_load: Callable = Callable()
 const SLOW_LOAD_MS := 25
 
 
+# Dave 3 Nov 2026: "sounds should always be async". Every sound file under assets/audio is requested on the loader's worker threads at
+# start (prewarm), so a sound playing for the first time takes the ready stream from the cache instead of reading and decoding the
+# file on the main thread mid-game. Walks the folders once at load time; exported builds list name.ogg.import / .remap, which are
+# mapped back to the resource path.
+const AUDIO_ROOT := "res://assets/audio/"
+static var _prewarmed: Dictionary = {}       # path -> true once its threaded load was requested
+static var warm_requested: int = 0
+
+
+static func prewarm(folder: String = AUDIO_ROOT) -> void:
+	var dir: DirAccess = DirAccess.open(folder)
+
+	if dir == null:
+		return
+
+	for sub in dir.get_directories():
+		if not sub.begins_with(".") and sub != "__pycache__":
+			prewarm(folder + sub + "/")
+
+	for file_name in dir.get_files():
+		var clip_name: String = file_name.trim_suffix(".import").trim_suffix(".remap")
+
+		if not (clip_name.ends_with(".ogg") or clip_name.ends_with(".wav")):
+			continue
+
+		var path: String = folder + clip_name
+
+		if _prewarmed.has(path) or not ResourceLoader.exists(path):
+			continue                                                 # headless runs without imports read the file on first use instead
+
+		if ResourceLoader.load_threaded_request(path, "AudioStream", false, ResourceLoader.CACHE_MODE_REUSE) == OK:
+			_prewarmed[path] = true
+			warm_requested += 1
+
+
 static func _load(folder: String, sound_name: String) -> AudioStream:
 	var started: int = Time.get_ticks_msec()
 	var stream: AudioStream = _load_file(folder, sound_name)
@@ -1455,6 +1595,21 @@ static func _load_file(folder: String, sound_name: String) -> AudioStream:
 
 			if file != null:
 				loaded_bytes += file.get_length()
+
+		if _prewarmed.has(path):
+			_prewarmed.erase(path)                                    # load_threaded_get may be called once per request
+
+			# Steve 3 Nov 2026 (lag run #242: "welcome: sound setup" 6-10 s): load_threaded_get WAITS for the request's turn in the queue of
+			# 1100 clips, and the setup asks for dozens. A plain load() of a clip still queued reads that one clip at once (a few ms; measured: 6 ms
+			# against 613 ms for the last clip in the queue), after which load_threaded_get returns at once and frees the request.
+			if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_FAILED:
+				if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+					load(path)
+
+				var warmed: AudioStream = ResourceLoader.load_threaded_get(path) as AudioStream
+
+				if warmed != null:
+					return warmed
 
 		if ResourceLoader.exists(path):
 			var imported: AudioStream = load(path) as AudioStream
@@ -1493,7 +1648,7 @@ func _exit_tree() -> void:
 
 	AirBands.remove_all()
 
-	for sound_name in ["Wind", "Foley", "Nature", "Weather", "World"]:
+	for sound_name in ["Wind", "Surf", "Foley", "Nature", "Weather", "World"]:
 		var index: int = AudioServer.get_bus_index(sound_name)
 
 		if index >= 0:

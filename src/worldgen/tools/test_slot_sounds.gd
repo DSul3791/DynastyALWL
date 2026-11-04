@@ -101,6 +101,17 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	var animals_script = preload("res://src/client/animal_view.gd")
+	var hit_list: Array = [[Vector3(10, 0, 10), 1000]]
+	check(names.has("animal_fall") and animals_script.killed_by_hit(Vector3(11, 0, 10), hit_list, 2000) and not animals_script.killed_by_hit(Vector3(20, 0, 10), hit_list, 2000) and not animals_script.killed_by_hit(Vector3(11, 0, 10), hit_list, 4000), "an animal gone right after a hit near it falls with a thud; one walking off far from a hit, or long after, does not")
+	check(animals_script.near_blood(Vector3(5, 0, 5), PackedVector3Array([Vector3(6, 0, 5)])) and not animals_script.near_blood(Vector3(5, 0, 5), PackedVector3Array([Vector3(15, 0, 5)])), "an animal that bleeds out on its trail falls too")
+	var bow_cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/bow.json"))
+	var held_script = preload("res://src/client/held_item.gd")
+	check(bow_cfg is Dictionary and is_equal_approx(held_script.bow_power(100, bow_cfg), float(bow_cfg["weak_power"])) and is_equal_approx(held_script.bow_power(5000, bow_cfg), 1.0) and is_equal_approx(held_script.bow_power(int(bow_cfg["draw_min_ms"]), bow_cfg), float(bow_cfg["min_power"])), "the arrow sound follows the server's shot power from the draw time")
+	check(bow_cfg is Dictionary and Array(bow_cfg.get("ammo", [])) == Array(preload("res://src/client/held_item.gd").BOW_AMMO) and names.has("bow_draw") and names.has("bow_loose"), "the bow's draw and loose slots exist and its arrow list matches bow.json")
+	check(SlotSounds.net_cue("Something bites! Click now.") == "fish_bite" and SlotSounds.net_cue("You land a trout.") == "fish_land" and names.has("fish_bite") and names.has("fish_land"), "the rod's bite and catch lines play fish_bite and fish_land")
+	var gear_script = preload("res://src/client/gear_sounds.gd")
+	check(gear_script.layers_for(["hide_tunic", "grass_skirt", "mail_shirt", "iron_helm"]) == ["leather", "cloth", "chain", "plate"] and gear_script.layer_of("") == "", "worn clothing gives the step layers (hide creaks, grass rustles, mail clinks, a helm clanks)")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.
@@ -189,6 +200,13 @@ func _check_ambience() -> void:
 	check(Ambience.surf_scale(0.6, 1.0) < 0.05 and Ambience.surf_scale(1.0, 1.0) < 0.15, "deep forest keeps the surf under 15 percent even at the shore")
 	check(Ambience.surf_scale(0.7, 0.0) > Ambience.surf_scale(0.5, 0.0), "and it rises toward the water")
 	check(Ambience.surf_scale(1.0, 0.0) > Ambience.surf_scale(1.0, 0.5) and Ambience.surf_scale(1.0, 0.5) > Ambience.surf_scale(1.0, 1.0), "and falls as the trees thicken")
+	# Dave 2 Nov: a forest pond near sea level is not the sea. Surf follows the sea weight only.
+	var forest_pond: Dictionary = {"season": "summer", "time": "day", "biomes": ["temperate_forest", "woodland"], "water": 0.9, "sea": 0.0, "height": 2.0, "wind": 0.8}
+	check(Ambience.choose_bed(slots, "shore_bed", forest_pond) != "bed_surf", "a pond with no sea near gives no surf")
+	var sea_shore: Dictionary = {"season": "summer", "time": "day", "biomes": ["beach"], "water": 0.9, "sea": 0.9, "height": 2.0, "wind": 0.8}
+	check(Ambience.choose_bed(slots, "shore_bed", sea_shore) == "bed_surf", "the sea at the shore still gives surf")
+	var SoundStageScript = load("res://src/client/sound_stage.gd")
+	check(SoundStageScript.fire_duck_target(INF) == 0.0 and SoundStageScript.fire_duck_target(2.0) <= -8.9 and SoundStageScript.fire_duck_target(40.0) == 0.0, "wind and surf duck near a lit fire and not far from one")
 	var canyon: Dictionary = {"season": "summer", "time": "day", "biomes": ["canyon"], "water": 0.0, "height": 120.0}
 	check(Ambience.choose_bed(slots, "weather_bed", canyon) == "bed_canyon_wind" and Ambience.matching(slots, "oneshot", canyon).has("canyon_echo"), "a forced canyon gets its wind and its echo")
 	var day_birds: Array = Ambience.matching(slots, "oneshot", summer_forest)
@@ -233,6 +251,8 @@ func _check_ambience() -> void:
 	check(first == second, "the same day reproduces the same one-shots")
 	check(first != other_day, "another day gives another run")
 	check(int(Ambience.simulate(slots, summer_forest, 3600.0, 3)["repeats"]) == 0, "an hour of one-shots never repeats a clip back to back")
+	var owls: int = int((Ambience.simulate(slots, night, 3600.0, 3)["counts"] as Dictionary).get("owl_hoot", 0))
+	check(owls > 0 and owls <= 80, "a night hour in the forest has %d owl hoots (rests 45 to 120 s between hoots, at most 80)" % owls)
 	var rng: RandomNumberGenerator = Ambience.shot_rng(1, 1)
 	var last_clip: String = ""
 	var repeats: int = 0

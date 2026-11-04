@@ -9,21 +9,21 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** the fire timer does not update after you add more wood.
 - **Context, not a diagnosis:** the "Campfire hh:mm:ss Burn time" label is shown in inspect mode and was added to the daily today (client `_fire_label` in `src/client/inventory_view.gd`, burn time from the fire's server state in `src/stream/server_items.gd`). It is not known whether the shown time is stale on the client, not resent by the server when wood is added, or something else. `test_fire_fuel_tiers` and `test_fire_midburn_save` cover the burn time on the server side only; nothing has been run in a windowed client.
-- **Status:** open, unassigned, not worked on.
+- **Status:** FIXED (3 Nov check, Dino). Adding wood now resends the fire row (`fire["fed"]` bump in `src/stream/server_items.gd`, about line 6141, from #85), so the timer shows the new time; #135 makes the timer the sum of all fuel. Needs Dave's play check.
 
 ## 2. I can't pick up the chopping block
 
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** can't pick up the chopping block.
 - **Context, not a diagnosis:** today's E-key change (`claude/e-priority-2`, commit `18e7dcd4`) made a block's aim point its middle and made E do only the cursor's action, with no pickup of other things. It is not known whether that is related, or whether the block was never pickable. Nothing has been run in a windowed client.
-- **Status:** open, unassigned, not worked on.
+- **Status:** fix merged in #30 (2 Nov); needs Dave's play check (Jamie, from merged commits; not tested).
 
 ## 3. The firewood pile beside the chopping block does not grow
 
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** the firewood beside the chopping block does not grow when you add more wood to it by chopping wood. It should get bigger, so you can see there is a larger pile of wood there.
 - **Context, not a diagnosis:** none known. Nothing has been run in a windowed client. Whether the pile is a placed look that never reads the stack count, or a count that is not sent to the client, is not known.
-- **Status:** open, unassigned, not worked on.
+- **Status:** fix merged in #30, pile now shows from 2 pieces in #68 (2 Nov); needs Dave's play check (Jamie, from merged commits; not tested).
 
 ## 4. First-person arms need better alignment and placement
 
@@ -31,7 +31,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** these arms need to be aligned better and placed better.
 - **What the screenshot shows (observation, not a diagnosis):** standing in a meadow with the stone axe selected. Both arms enter from the bottom of the screen with fingers visible. The right hand grips the axe handle partway up, with the head pointing up and slightly away. The left hand is open and reaches across in front of the right, not holding anything. The arms look thin and long against the view and lean toward the middle, and the hands look rotated relative to the forearms.
 - **Context:** Kathleen's note says the arms are a rigid mesh cut by height into upper arm, forearm and hand on the old arm rig; the wrist and fingers do not move; the hand mounts and tool placement are the old ones; and arm size against the camera, hand scale and tool alignment in the hand were "not checked". No in-game first-person picture existed before this screenshot.
-- **Status:** open, unassigned, not worked on.
+- **Status:** picture tool merged in #46 (2 Nov); arms themselves not yet changed (Jamie, from merged commits; not tested).
 
 ## 5. Cutting a tree down takes over 20 hits (it used to take about 10)
 
@@ -40,14 +40,15 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Screenshot** (the beech Dave was cutting; not committed): `C:\Users\david\AppData\Local\Temp\claude\C--GodotProjects-DynastyALWL\48aa3172-4466-48c8-8bd4-2a4eae45a208\images\14.webp`. Its debug overlay reads "build 826 (5254215)", which is commit `52542154`, the daily's head at that time, so the build has every change merged today. It shows first person at x 53287, z 68492, stone axe in hand, close in front of a tall trunk, with felled logs in the grass.
 - **What decides the hit count (read from the code, not a diagnosis):** in `src/stream/server_items.gd` (the tree-hit handler, about line 3697) blows needed = round(`tree_base` + trunk radius in metres x `tree_per_trunk_m`), clamped between `tree_min` and `tree_max`, then divided by the player's `fell_tree` skill factor (clamped 0.25 to 4). The numbers are in `data/items/drops.json`, section `felling`: `tree_base` 2.0, `tree_per_trunk_m` 16.5, `tree_min` 3, `tree_max` 22. The tool tier does not enter the formula. One blow counts per swing, at least `HIT_COOLDOWN_MS` (400 ms) apart, and a half-chopped tree resets after `CHOP_RESET_MS` (60 s) untouched. The section's note says the blow counts were scaled by 0.55 on 31 Oct when the swing went from 0.55 s to 1.05 s, "to keep the real time per tree", and `test_felling_time` checks that.
 - **So over 20 hits means:** either a thick trunk (about 1.1 m radius or more, which reaches the 22 cap) or a low fell skill factor that divides the count up (for example a cap of 22 at skill 1.0 is 22, and at skill 0.5 it is 44). Which of those applies to Dave's tree is not known. Whether today's swing changes (Jason's `7a616fcc`, Kathleen's `e90c46d1`) altered how many swings land per hit is also not known.
-- **Status:** open, unassigned, not worked on.
+- **Status:** findings in `docs/BUG5_TREE_HITS_FINDINGS.md` (#27): the server cannot require more than 15 blows on a normal tree, so over 20 means swings the server never counted (likely landing on nearby felled logs or the ground); next step needs a Godot run with a hits/needed log (Jamie, from merged commits; not tested).
+- **Also:** fix merged in #76 (3 Nov check, Dino): blows can follow each tree's drawn trunk size, so a thin tree takes about 3 and a 1 m tree about 10. It is behind `felling.size_scaled` in drops.json, which is OFF until Dave decides (QA card tree-hits-follow-size). Until it is on, the old count stands.
 
 ## 6. Each cut on a fallen tree makes the game lag and lock up for about 2 seconds
 
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** whenever I cut up a fallen tree, each cut causes the game to lag and lock up for 2 seconds at a time.
 - **Context, not a diagnosis:** none measured. The fallen-tree cutting path is `_process_trunk` and `_cut_log_off` in `src/stream/server_items.gd`; today's change there made every felled tree give logs (`aae3a272`, `df56ffaf`). The game has an instrument that logs `SLOW RPC` over 100 ms and a `_slow_mark` helper, which may show where the time goes. The stall could be on the server (saving, creating the log item, or a world-state rewrite) or in the client (building the log mesh or re-importing). Nothing has been measured, and nothing has been run in a windowed client.
-- **Status:** open, unassigned, not worked on.
+- **Status:** timing instruments and shared bark shader merged (#28, #35, #42); cause not yet found (Jamie, from merged commits; not tested).
 
 ## 7. The game has bad lag constantly
 
@@ -73,7 +74,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** it won't let me put more than one log in the fire.
 - **Context, not a diagnosis:** same as the earlier report today ("the first log went in but the second one won't"). Steve could not reproduce it on the server (4 logs onto one laid fire all go in, and 5 onto a lit fire with a pot also go in; the only cap is the total, 18 real hours or 6 logs), and suggested the client may treat a tap on a laid fire as "light" and only a hold as "add fuel", or add sticks before logs. He then made fuel order logs first and prompts inspect-mode only (`18e7dcd4`). Since Dave still sees it on a build that includes those, the cause is not known. The pot rule (no logs while a pot hangs on the fire) may be involved if a pot was on that fire; Dave said earlier there was no pot.
-- **Status:** open, unassigned, not worked on.
+- **Status:** #32 (2 Nov) makes the fire store take unlimited wood; needs Dave's play check (Jamie, from merged commits; not tested).
 
 ## 10. The main character does not animate when jumping
 
@@ -88,7 +89,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** when trees fall they all suddenly become much taller and bigger than they were; they should be the same as they were.
 - **Cause (read from the code, not yet seen in a windowed client):** a standing tree is one model built at the species' reference height and scaled by height / reference (`src/flora/flora_view.gd`), so its trunk radius is trunk_m x that scale. The felled trunk and stump took the species' unscaled `trunk_m` as radius (`_fell_record` in `src/stream/server_items.gd`), so a small tree fell as a fat trunk (a 6 m beech: 0.40 m radius instead of 0.14 m) and a big one as a thin one. The length is the tree's whole height, as standing.
 - **Fix:** the felled trunk, its stump and the fall pose use the standing radius (`FellPose.standing_radius`); length unchanged so log counts do not change. Test: `test_fell_autosplit`. Needs a look in a windowed client (PC thread).
-- **Status:** fixed on branch `claude/project-thread-imr3n2`, waiting for the Godot test run.
+- **Status:** fix merged in #39 (2 Nov); headless tests green on Dave's PC (`test_fell_autosplit`, `test_fell_pose`, `test_trunk_cutting`). Needs Dave's play check: QA test card `felled-tree-size-and-split`.
 
 ## Triage by role (Jamie, 2 Nov 2026)
 | # | Bug | Lead | Support |

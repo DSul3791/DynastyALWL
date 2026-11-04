@@ -22,10 +22,13 @@ const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const GatherRules := preload("res://src/shared/gather_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const IceScript := preload("res://src/shared/ice.gd")
+const Probe := preload("res://src/debug/frame_probe.gd")
+const FILTER_CELL_M := 8.0   # cell of the obstacle grid _filter_cleared looks plants up in
 const KIND_TREE := 0
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
@@ -45,7 +48,7 @@ uniform float sway = 0.012;
 uniform float flutter = 0.06;
 // Leaves are not opaque: about 40% of the sunlight comes through, so a crown
 // glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
-uniform float backlight = 0.3;
+uniform float backlight = 0.4;      // 0.3 to 0.4 (Kathleen 3 Nov, Art_Direction.md: crowns read near-black at noon; more sun through the leaves)
 // Leaves that glow (the witness tree): EMISSION = glow times the instance
 // custom alpha (how strongly this tree glows; young ones weakly). Black for
 // every other species. Faint by day, plain at night.
@@ -77,7 +80,7 @@ void fragment() {
 	NORMAL = view_normal;
 	// Crown shading: undersides sit in the crown's own shadow, and each patch of leaves
 	// gets its own tone so a crown reads as clusters, not one smooth lump.
-	float under = mix(0.6, 1.0, smoothstep(-0.7, 0.5, crown_up));
+	float under = mix(0.72, 1.0, smoothstep(-0.7, 0.5, crown_up));      // undersides 0.72, was 0.6: the crowns read as dark walls (starter-area critique 3 Nov)
 	vec2 cell = floor(UV * 7.0);
 	float speck = 0.88 + 0.24 * fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
 	ALBEDO = t.rgb * COLOR.rgb * tint * under * speck;
@@ -127,6 +130,28 @@ void fragment() {
 }
 """
 
+# Wildflower heads (petals, umbels, spikes; Kathreen 3 Nov 2026): plain vertex colour, soft light through the petals, swaying exactly like the stems (the bark shader's
+# gust), so a head stays on its stem. They used the bark material, whose bark texture, ground shade and foot moss turned white chamomile and yarrow grey-blue and speckled.
+const PETAL_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled, cull_disabled;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = COLOR.rgb;
+	BACKLIGHT = COLOR.rgb * 0.35;
+	ROUGHNESS = 0.75;
+}
+"""
+
 # Fruit on a fruit tree (apples, pears, cherries; Dave 2026-10-31: the drawn fruit thins out as the tree is picked). tree_builder.gd gives every fruit a rank 0..1 in the vertex
 # alpha (spread evenly) and its colour in the vertex rgb. INSTANCE_CUSTOM.a is the share of the fruit already PICKED (0 = none, the default, so every unwired tree keeps all
 # its fruit; 0.34, 0.67, 0.9, 1.0 for the 66, 33, 10 and 0 percent levels): a fruit whose rank is at or above 1 - picked is not drawn. INSTANCE_CUSTOM.rgb is the tree's leaf tint
@@ -152,6 +177,115 @@ void fragment() {
 	}
 	ALBEDO = COLOR.rgb;
 	ROUGHNESS = 0.55;
+}
+"""
+
+# Green plant bodies (tree_builder `greens`: grass blades and tufts, reeds, cactus, succulents, kelp, nettles, leafy herbs and the plain flower). They used the bark shader, which multiplied their colour by
+# the bark texture (about 0.4), darkened the foot and laid foot moss on them, so a tuft of tall grass came out about a quarter as bright as its own colours
+# and much darker than the meadow grass round it (Kathreen, 3 Nov 2026). This keeps the vertex colour: a fine streak up the blade, a little shade at the foot,
+# light through thin blades (BACKLIGHT) and the bark shader's wind. No texture.
+const GREENS_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled;
+uniform float sway = 0.006;
+uniform float gain = 0.85;
+varying vec3 lp;
+
+float h3(vec3 p) {
+	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+	p += dot(p, p.yxz + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 0.0)), h3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0.0, 0.0, 1.0)), h3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 1.0)), h3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+
+void vertex() {
+	lp = VERTEX;
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	float streak = vnoise(lp * vec3(260.0, 30.0, 260.0));     // fine lines running up a blade or a cactus rib
+	vec3 c = COLOR.rgb * gain * (0.9 + 0.18 * streak);
+	c *= mix(0.78, 1.0, smoothstep(0.0, 0.25, lp.y));         // a little shade at the foot, among the other stems
+	ALBEDO = c;
+	BACKLIGHT = c * 0.3;
+	ROUGHNESS = 0.9;
+}
+"""
+
+# Berries and blossoms on the berry bushes and ground berries (tree_builder `berries`; colours from SHRUB_LOOKS, CANE_SHRUBS and GROUND_LOOKS in the vertex colour).
+# On the bark shader they wore bark grain and foot moss and came out about a quarter as bright as their colours (Kathreen, 3 Nov 2026). Here: the vertex
+# colour, a soft sheen so a ripe berry catches the light, a little light through it (BACKLIGHT), and the bark's wind so they stay on their canes.
+const BERRY_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = COLOR.rgb * 0.88;
+	ROUGHNESS = 0.45;
+	SPECULAR = 0.4;
+	BACKLIGHT = COLOR.rgb * 0.2;
+}
+"""
+
+# Mushrooms (tree_builder `fungi`, MUSHROOM_LOOKS colours in the vertex colour). They used the bark shader, which put bark furrows, a dark foot and green
+# foot moss on every cap, so a fly agaric read as a mossy brown lump (Kathreen, 3 Nov 2026). This keeps the species colour: a soft mottle and a fine
+# grain so caps are not plastic, a little sheen (a fresh cap is slightly moist), the shade under the cap, and earth at the foot. No texture.
+const FUNGUS_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley;
+varying vec3 lp;
+varying float up;
+
+float h3(vec3 p) {
+	p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+	p += dot(p, p.yxz + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 0.0)), h3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0.0, 0.0, 1.0)), h3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h3(i + vec3(0.0, 1.0, 1.0)), h3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+
+void vertex() {
+	lp = VERTEX;
+	up = NORMAL.y;
+}
+
+void fragment() {
+	float mottle = vnoise(lp * 90.0);
+	float grain = vnoise(lp * 420.0);
+	vec3 c = COLOR.rgb * (0.86 + 0.18 * mottle + 0.08 * grain);
+	c *= mix(0.72, 1.0, smoothstep(0.0, 0.03, lp.y));      // earth at the foot of the stem
+	c *= mix(0.78, 1.0, smoothstep(-0.6, 0.2, up));        // the gills and stem under the cap sit in its shade
+	ALBEDO = c * 0.92;
+	ROUGHNESS = 0.62;
+	SPECULAR = 0.3;
+	BACKLIGHT = c * 0.12;
 }
 """
 
@@ -233,6 +367,12 @@ const PART_M := [256.0, 128.0, 128.0]
 const PART_M_LOW := [256.0, 256.0, 256.0]   # Low, Medium and High: shrubs and plants also in one part per chunk (up to a quarter of the draws; Ultra keeps 128 m parts)
 # The share of shrubs drawn by quality (Low, Medium, High, Ultra): the thickets are dense, so lower tiers draw a hashed part of them (the same ones every time; colliders and the server are unchanged).
 const SHRUB_SHARE := [0.4, 0.6, 1.0, 1.0]
+# Distance thinning (Dave 3 Nov 2026: "thick and lush near me, less dense near the edge of my view"), the same rule and file as the grass
+# (data/look/grass_far.json): trees are drawn in full out to fade_start_share of the tree view distance, then the share drawn falls smoothly
+# to far_share at the edge. A stable hash per plant picks which stay; colliders are unaffected (only drawing).
+const FAR_FILE := "res://data/look/grass_far.json"
+const FAR_BAND_M := 48.0   # tree chunks in the thinning ring are re-planned each time the player moves this much nearer or farther
+const FAR_BAND_SLACK_M := 8.0   # and only once the player is this far past a band edge (no flip-flop while pacing at one)
 const SHAPES_PER_BODY := 64  # trunk colliders per body
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
@@ -240,6 +380,9 @@ const SHAPES_PER_BODY := 64  # trunk colliders per body
 const IMPOSTOR_M := [100.0, 150.0, 180.0, 210.0]
 const IMPOSTOR_TILE_PX := [Vector2i(64, 128), Vector2i(128, 256), Vector2i(128, 256), Vector2i(128, 256)]   # one view; the atlas holds two
 const MAX_DROPS_PER_UPDATE := 2
+# Load speed (Dave, 2 Nov 2026: flying back to spawn took far too long to load). At most this many chunk plans run on the worker pool at once,
+# nearest chunk first, so the pool also serves the ground meshing and the chunk under the player is not queued behind the far forest.
+const MAX_PLAN_TASKS := 6
 const SHADOW_M := [0.0, 45.0, 60.0, 50.0]   # full-detail trees cast shadows only this near (64 m cells; the sun's shadow range is a render setting)
 const TIER_FAR := 0
 const TIER_FULL := 1
@@ -264,6 +407,8 @@ var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # ful
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
 var _close_ms: Dictionary = {}            # the distinct "near_m" distances species ask for (shrubs and plants only) -> true
 var shrub_share: float = 1.0        # share of shrubs drawn at this quality (set_quality)
+var fade_start_share: float = 0.5   # grass_far.json: full density out to this share of the view distance
+var far_share: float = 0.3          # grass_far.json: share drawn at the edge of the view distance
 var part_m: Array = PART_M            # the size of the square one shrub or plant MultiMesh covers (set by set_quality)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
@@ -283,6 +428,10 @@ var _labels: Dictionary = {}           # species id -> name with a note on its m
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _serial: int = 0                   # numbers each chunk plan, so an outdated plan is skipped
 var _tasks: Array = []                 # WorkerThreadPool tasks making chunk plans
+var _plan_wait: Dictionary = {}        # chunk -> true: asked to be planned, not started yet (launched nearest first, MAX_PLAN_TASKS at a time)
+var _load_count: int = 0               # chunk drawings finished since the last "flora load" log line
+var _load_worst_ms: int = 0            # the longest a chunk waited from being asked to being in the scene
+var _load_start_msec: int = 0          # when the first of this batch was asked
 var _setup_queue: Array = []           # species entries still to build (see _setup_step)
 var _setup_next: int = 0
 var _models_ready: Dictionary = {}      # species id -> [near meshes, far meshes] from the worker
@@ -330,6 +479,8 @@ var cleared: Array = []               # Vector3 spots of placed items: shrubs an
 var clear_m: float = 5.0
 var trunks: Array = []               # felled trunks: [ax, az, bx, bz, radius a, radius b]; no small plants under or beside them (set_trunks)
 var trunk_margin_m: float = 0.3
+var _trash: Array = []               # old chunk drawings, hidden, freed a piece at a time (_free_trash)
+var _filter_queue: Dictionary = {}   # chunk -> {"all": bool, "trunks": [], "spots": []}: the NEW cleared spots or trunks its plants must be tested against (apply_built)
 var _last_position: Vector3 = Vector3.ZERO
 var _ground_msec: int = 0
 var falls_drawn: int = 0
@@ -343,6 +494,53 @@ var _impostor_node: Node
 # above it, like runoff after rain (fully brown from about 8 times it). The sea stays clear.
 # The start flow was x1 until 2026-10-20 and is x10 now.
 const START_FLOW_RATE := 10.0      # water_live.gd DEFAULT_RATE (the server's start rate)
+
+
+# Dave 2 Nov 2026 ("think liquid not squares"): every chunk's settled water is drawn as a liquid sheet (src/water2/liquid_surface.gd) instead of the
+# 8 m grid mesh. False brings the grid look back.
+const LIQUID_CHUNKS := true
+var _liquid_hole: Vector4 = Vector4.ZERO   # the live window (world corner and size): chunk sheets step aside there
+var _liquid_hole_inset: float = 8.0
+
+
+func set_liquid_hole(corner: Vector2, size: Vector2, inset: float) -> void:
+	_liquid_hole = Vector4(corner.x, corner.y, size.x, size.y)
+	_liquid_hole_inset = inset
+
+	for chunk in _chunks:
+		var sheet = _chunks[chunk].get("liquid")
+
+		if sheet != null:
+			sheet.set_hole(corner, size, inset)
+
+
+func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
+	if not LIQUID_CHUNKS:
+		return
+
+	var sheet = entry.get("liquid")
+	var im: Image = water["liquid_image"] if water.has("liquid_image") else LiquidSurface.image_from_grid(water)
+
+	if im == null:
+		if sheet != null:
+			sheet.queue_free()
+			entry["liquid"] = null
+
+		return
+
+	if sheet == null:
+		sheet = LiquidSurface.new()
+		sheet.add_to_group("water_draw")
+		sheet.add_to_group("liquid_sheet")
+		add_child(sheet)
+		entry["liquid"] = sheet
+		sheet.set_hole(Vector2(_liquid_hole.x, _liquid_hole.y), Vector2(_liquid_hole.z, _liquid_hole.w), _liquid_hole_inset)
+		sheet.set_mud(maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
+
+	# The image may be finer than the grid (running water laid on the ground at 2 m, LiquidSurface._lay_fine): the same span, more texels.
+	var span_m: float = float(water.get("spacing", 8.0)) * float(int(water.get("count", 2)) - 1)
+	sheet.show_points(im, Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), span_m / float(maxi(im.get_width() - 1, 1)))
+	sheet.visible = not water_hidden
 
 
 # Ctrl+Shift+W hides every river and lake drawing (debug: does an odd patch on the water stay, then it is ground).
@@ -427,10 +625,15 @@ func set_storm_murk(amount: float) -> void:
 	if _water_material != null:
 		_water_material.set_shader_parameter("storm", amount)
 
+	_liquid_storm = amount
+	_tell_liquid_mud()
+
 
 # The sky colours of the day cycle for the land water (weather_look.gd).
 func set_day_sky(top: Color, horizon: Color, cloud_shadow: Color, daylight: float) -> void:
 	WaterMaterial.apply_day(_water_material, top, horizon, cloud_shadow, daylight)
+	if is_inside_tree():
+		get_tree().call_group("liquid_sheet", "set_daylight", daylight)   # the liquid sheets (chunks and the live window): no glowing foam at night
 
 
 func set_flow_rate(rate: float) -> void:
@@ -441,8 +644,22 @@ func set_flow_rate(rate: float) -> void:
 		# Owner (2026-10-19): more flow looks more violent (raging from about 10 times the start flow).
 		_water_material.set_shader_parameter("rough", clampf(log(maxf(rate, 1.0)) / log(10.0), 0.0, 1.0))
 
+	_liquid_flow_mud = clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0)
+	_tell_liquid_mud()
+
+
+var _liquid_storm: float = 0.0
+var _liquid_flow_mud: float = 0.0
+
+
+# The liquid sheets take one mud amount: the high flow's brown, or the storm's, whichever is more.
+func _tell_liquid_mud() -> void:
+	if is_inside_tree():
+		get_tree().call_group("liquid_sheet", "set_mud", maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
+
 
 func setup(tables, tile_rules: Dictionary) -> void:
+	_load_far()
 	for argument in OS.get_cmdline_args() + OS.get_cmdline_user_args():
 		if argument.begins_with("--flora-season="):
 			season_override = argument.trim_prefix("--flora-season=")
@@ -742,6 +959,11 @@ func _make_tree_materials() -> void:
 	var fruit_material: ShaderMaterial = ShaderMaterial.new()
 	fruit_material.shader = fruit_shader
 	_tree_materials["fruit"] = fruit_material
+	var petal_shader: Shader = Shader.new()
+	petal_shader.code = PETAL_SHADER
+	var petal_material: ShaderMaterial = ShaderMaterial.new()
+	petal_material.shader = petal_shader
+	_tree_materials["petal"] = petal_material
 	var chrome: Shader = Shader.new()
 	chrome.code = CHROME_SHADER
 	var chrome_material: ShaderMaterial = ShaderMaterial.new()
@@ -753,8 +975,23 @@ func _make_tree_materials() -> void:
 	ember_material.shader = ember
 	ember_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark.png"))
 	_tree_materials["ember"] = ember_material
+	var greens: Shader = Shader.new()
+	greens.code = GREENS_SHADER
+	var greens_material: ShaderMaterial = ShaderMaterial.new()
+	greens_material.shader = greens
+	_tree_materials["greens"] = greens_material
+	var berry: Shader = Shader.new()
+	berry.code = BERRY_SHADER
+	var berry_material: ShaderMaterial = ShaderMaterial.new()
+	berry_material.shader = berry
+	_tree_materials["berry"] = berry_material
+	var fungus: Shader = Shader.new()
+	fungus.code = FUNGUS_SHADER
+	var fungus_material: ShaderMaterial = ShaderMaterial.new()
+	fungus_material.shader = fungus
+	_tree_materials["fungus"] = fungus_material
 
-	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
+	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["fern", "res://assets/trees/leaf_fern.png"], ["herb", "res://assets/trees/leaf_herb.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = foliage
 		material.set_shader_parameter("leaves", _load_texture(pair[1]))
@@ -764,6 +1001,7 @@ func _make_tree_materials() -> void:
 	_tree_materials["conifer"].set_shader_parameter("sway", 0.006)
 	_tree_materials["conifer"].set_shader_parameter("backlight", 0.25)   # needles are denser
 	_tree_materials["palm"].set_shader_parameter("sway", 0.02)
+	_tree_materials["fern"].set_shader_parameter("sway", 0.02)       # ground fern fronds (tools/make_leaf_fern.py), swaying like the palm card they replaced
 	_tree_materials["grass"].set_shader_parameter("sway", 0.09)
 	_tree_materials["grass"].set_shader_parameter("flutter", 0.01)
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
@@ -971,7 +1209,8 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 	var old: Dictionary = entry.get("grid", {})
 	WaterGridScript.steady_edges(old, water)
 
-	if water_ease and WaterGridScript.moved(old, water, EASE_MIN_M):
+	# The liquid sheets are drawn once per update (no easing steps): each step rebuilt the chunk image on the main thread every frame (lag near rivers).
+	if water_ease and not LIQUID_CHUNKS and WaterGridScript.moved(old, water, EASE_MIN_M):
 		_ease[chunk] = {"old": old, "new": water, "step": 1, "next_msec": Time.get_ticks_msec() + EASE_STEP_MSEC}
 		_draw_water(chunk, entry, WaterGridScript.blend(old, water, 1.0 / float(EASE_STEPS)))
 		return
@@ -1071,7 +1310,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	entry["grid"] = water
 	var mesh: ArrayMesh = null
 
-	if int(water.get("wet", 0)) > 0:
+	if int(water.get("wet", 0)) > 0 and not LIQUID_CHUNKS:
 		mesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 	if mesh != null and mesh.get_surface_count() > 0:
@@ -1094,6 +1333,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 		old.queue_free()
 		entry["water"] = null
 
+	_draw_liquid(chunk, entry, water)
 	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
 
@@ -1103,7 +1343,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 # own water runs down the drops, so water over a drop is shown only by the water surface. The
 # fall finder still feeds the list below (sound, mist, spray, wet rock); only the ribbon
 # meshes, their splash and foam strips are not drawn. Set true to bring them back.
-const DRAW_FALL_RIBBONS := true
+const DRAW_FALL_RIBBONS := false   # Dave 2 Nov 2026: the fall ribbon panels are the old look; the liquid sheet draws the falling water itself
 
 
 # The chunk's fall columns (water_falls.gd): kept while the same mesh is still the right one.
@@ -1172,7 +1412,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 	_filter_cleared(chunk, false)
 	CoverScript.add_chunk(cover, chunk, items, _cover_info)
 
-	if int(water.get("wet", 0)) > 0:
+	if int(water.get("wet", 0)) > 0 and not LIQUID_CHUNKS:
 		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 		if mesh.get_surface_count() > 0:
@@ -1188,6 +1428,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 			@warning_ignore("integer_division")
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
+	_draw_liquid(chunk, entry, water)
 	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
 	_refresh(chunk, from_position)
@@ -1315,6 +1556,7 @@ func water_speed_at(x: float, z: float) -> float:
 
 func drop_chunk(chunk: Vector2i) -> void:
 	_ease.erase(chunk)
+	_plan_wait.erase(chunk)
 	var entry: Dictionary = _chunks.get(chunk, {})
 
 	if entry.is_empty():
@@ -1322,6 +1564,7 @@ func drop_chunk(chunk: Vector2i) -> void:
 
 	canopy_version += 1
 	_clear_node(entry)
+	_clear_colliders(entry)
 	cover.remove_chunk(chunk)
 	var water: MeshInstance3D = entry.get("water")
 
@@ -1335,6 +1578,11 @@ func drop_chunk(chunk: Vector2i) -> void:
 	if falls != null:
 		falls_drawn -= falls.mesh.get_surface_count()
 		falls.queue_free()
+
+	var sheet = entry.get("liquid")
+
+	if sheet != null:
+		sheet.queue_free()
 
 	var ice: StaticBody3D = entry.get("ice")
 
@@ -1464,10 +1712,12 @@ func _fruit_levels_of(chunk: Vector2i, items: Dictionary) -> Dictionary:
 
 	var ids: PackedInt32Array = items["ids"]
 
-	for n in range(ids.size()):
-		var id: int = int(ids[n])
+	# Only the picked plants are looked up (find is native): this ran over every plant of the chunk on each redraw.
+	for key in taken:
+		var id: int = int(key)
+		var n: int = ids.find(id)
 
-		if not taken.has(id):
+		if n < 0:
 			continue
 
 		var species: Dictionary = _species.get(id >> 16, {})
@@ -1599,24 +1849,91 @@ func _redraw(chunk: Vector2i) -> void:
 
 
 func set_cleared(spots: Array, radius: float) -> void:
+	# Dave 2 Nov 2026 (log: "client slow: grass and plant clearing" 1.0-1.4 s, 12 times): every change refiltered every chunk, twice. Now
+	# only the chunks a NEW spot or segment reaches are queued, and the queue is worked off a few ms a frame (apply_built). A spot taken away
+	# needs nothing: plants already dropped stay dropped until their chunk is rebuilt, as before.
+	var all: bool = absf(radius - clear_m) > 0.001 and not cleared.is_empty()
+	var old: Dictionary = {}
+
+	for spot in cleared:
+		old[spot] = true
+
 	cleared = spots
 	clear_m = radius
 
-	for chunk in _chunks.keys():
-		_filter_cleared(chunk, true)
+	if all:
+		_queue_all_filters()
+		return
+
+	for spot in spots:
+		if not old.has(spot):
+			_queue_filter_box(spot.x - radius, spot.z - radius, spot.x + radius, spot.z + radius, "spots", spot)
 
 
 # Felled trunks (Dave 2026-10-21): small plants growing out of a lying log are not drawn (the grass is pressed flat in grass_view).
 func set_trunks(list: Array, margin: float) -> void:
+	var all: bool = absf(margin - trunk_margin_m) > 0.001 and not trunks.is_empty()
+	var old: Dictionary = {}
+
+	for t in trunks:
+		old[t] = true
+
 	trunks = list
 	trunk_margin_m = margin
 
+	if all:
+		_queue_all_filters()
+		return
+
+	for t in list:
+		if not old.has(t):
+			var reach: float = maxf(float(t[4]), float(t[5])) + margin + 0.2
+			_queue_filter_box(minf(t[0], t[2]) - reach, minf(t[1], t[3]) - reach, maxf(t[0], t[2]) + reach, maxf(t[1], t[3]) + reach, "trunks", t)
+
+
+# Queues the one new spot or trunk for the held chunks it reaches. Only it is tested there: the plants the older ones covered are gone already
+# (Dave 3 Nov 2026 log: every dig, cut or hoe click refiltered a whole chunk against every boulder, stump and path patch in it, 0.8-1 s a time).
+func _queue_filter_box(x0: float, z0: float, x1: float, z1: float, list: String, thing: Variant) -> void:
+	for cz in range(int(floor(z0 / chunk_m)), int(floor(z1 / chunk_m)) + 1):
+		for cx in range(int(floor(x0 / chunk_m)), int(floor(x1 / chunk_m)) + 1):
+			var chunk: Vector2i = Vector2i(cx, cz)
+
+			if not _chunks.has(chunk):
+				continue
+
+			if not _filter_queue.has(chunk):
+				_filter_queue[chunk] = {"all": false, "trunks": [], "spots": []}
+
+			(_filter_queue[chunk][list] as Array).append(thing)
+
+
+func _queue_all_filters() -> void:
 	for chunk in _chunks.keys():
-		_filter_cleared(chunk, true)
+		_filter_queue[chunk] = {"all": true, "trunks": [], "spots": []}
 
 
-func _under_trunk(p: Vector3) -> bool:
-	for t in trunks:
+# Works the queued chunk filters for about budget_usec (at least one).
+func _run_filter_queue(budget_usec: int) -> void:
+	if _filter_queue.is_empty():
+		return
+
+	var started: int = Time.get_ticks_usec()
+
+	for chunk in _filter_queue.keys():
+		var job: Dictionary = _filter_queue[chunk]
+		_filter_queue.erase(chunk)
+
+		if bool(job["all"]):
+			_filter_cleared(chunk, true)
+		else:
+			_filter_cleared(chunk, true, job["trunks"], job["spots"])
+
+		if Time.get_ticks_usec() - started >= budget_usec:
+			break
+
+
+func _under_trunk(p: Vector3, near: Array) -> bool:
+	for t in near:
 		var a: Vector2 = Vector2(t[0], t[1])
 		var ab: Vector2 = Vector2(t[2], t[3]) - a
 		var along: float = clampf((Vector2(p.x, p.z) - a).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
@@ -1627,41 +1944,126 @@ func _under_trunk(p: Vector3) -> bool:
 	return false
 
 
-func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
+# Drops the shrubs and small plants of a chunk that grow under a trunk, stump, boulder or path patch, or in a cleared spot. With only_trunks or
+# only_spots given just those are tested (new ones, _run_filter_queue), otherwise all held ones are.
+# Dave 3 Nov 2026 (log: "flora apply" 0.8-1 s after every dig, cut and hoe click): every plant of the chunk was tested against every obstacle
+# near it, and each dropped plant shifted four arrays. Now the obstacles are put in a grid of FILTER_CELL_M cells first, a plant only looks at
+# its own cell (most cells are empty: one lookup), and the arrays are rebuilt once.
+func _filter_cleared(chunk: Vector2i, redraw: bool, only_trunks: Variant = null, only_spots: Variant = null) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
+	var trunk_list: Array = trunks if only_trunks == null else only_trunks
+	var spot_list: Array = cleared if only_spots == null else only_spots
 
-	if keep_all or entry.is_empty() or (cleared.is_empty() and trunks.is_empty()):
+	if keep_all or entry.is_empty() or (spot_list.is_empty() and trunk_list.is_empty()):
 		return
 
 	var items: Dictionary = entry["items"]
 	var positions = items["positions"]
 	var ids = items["ids"]
-	var n: int = ids.size() - 1
-	var removed: bool = false
+	var count: int = ids.size()
 
-	while n >= 0:
+	if count == 0:
+		return
+
+	# The chunk's ground, a little padded (plants are placed inside their chunk).
+	var lo: Vector2 = Vector2(float(chunk.x) * chunk_m - 1.0, float(chunk.y) * chunk_m - 1.0)
+	var hi: Vector2 = lo + Vector2(chunk_m + 2.0, chunk_m + 2.0)
+	var grid: Dictionary = {}   # Vector2i cell -> [trunks reaching it, spots reaching it]
+
+	for t in trunk_list:
+		var reach: float = maxf(float(t[4]), float(t[5])) + trunk_margin_m + 0.2
+		_grid_add(grid, 0, t, Vector2(minf(t[0], t[2]) - reach, minf(t[1], t[3]) - reach), Vector2(maxf(t[0], t[2]) + reach, maxf(t[1], t[3]) + reach), lo, hi)
+
+	for spot in spot_list:
+		_grid_add(grid, 1, spot, Vector2(spot.x - clear_m, spot.z - clear_m), Vector2(spot.x + clear_m, spot.z + clear_m), lo, hi)
+
+	if grid.is_empty():
+		return
+
+	# The box of the cells used: plants outside it are passed over with four compares (a dig or hoe click touches a few cells only).
+	var c_lo: Vector2i = Vector2i(1 << 30, 1 << 30)
+	var c_hi: Vector2i = Vector2i(-(1 << 30), -(1 << 30))
+
+	for cell in grid:
+		c_lo = Vector2i(mini(c_lo.x, cell.x), mini(c_lo.y, cell.y))
+		c_hi = Vector2i(maxi(c_hi.x, cell.x), maxi(c_hi.y, cell.y))
+
+	var bx0: float = float(c_lo.x) * FILTER_CELL_M
+	var bz0: float = float(c_lo.y) * FILTER_CELL_M
+	var bx1: float = float(c_hi.x + 1) * FILTER_CELL_M
+	var bz1: float = float(c_hi.y + 1) * FILTER_CELL_M
+	var drop: PackedInt32Array = PackedInt32Array()
+	var clear_sq: float = clear_m * clear_m
+
+	for n in range(count):
+		var p: Vector3 = positions[n]
+
+		if p.x < bx0 or p.x >= bx1 or p.z < bz0 or p.z >= bz1:
+			continue
+
+		var hit: Variant = grid.get(Vector2i(floori(p.x / FILTER_CELL_M), floori(p.z / FILTER_CELL_M)))
+
+		if hit == null:
+			continue
+
 		var species: Dictionary = _species.get(int(ids[n]) >> 16, {})
 
-		if not species.is_empty() and int(species["kind"]) != KIND_TREE and not trunks.is_empty() and _under_trunk(positions[n]):
-			for key in ["ids", "positions", "heights", "yaws"]:
-				items[key].remove_at(n)
+		if species.is_empty() or int(species["kind"]) == KIND_TREE:
+			continue
 
-			removed = true
-		elif not species.is_empty() and int(species["kind"]) != KIND_TREE:
-			for spot in cleared:
-				if Vector2(positions[n].x - spot.x, positions[n].z - spot.z).length() < clear_m:
-					for key in ["ids", "positions", "heights", "yaws"]:
-						items[key].remove_at(n)
+		if not (hit[0] as Array).is_empty() and _under_trunk(p, hit[0]):
+			drop.append(n)
+			continue
 
-					removed = true
-					break
+		for spot in hit[1]:
+			var dx: float = p.x - spot.x
+			var dz: float = p.z - spot.z
 
-		n -= 1
+			if dx * dx + dz * dz < clear_sq:
+				drop.append(n)
+				break
 
-	if removed and redraw:
+	if drop.is_empty():
+		return
+
+	_drop_indices(items, drop)
+
+	if redraw:
 		entry["level"] = -1
 		entry.erase("building")
 		_refresh(chunk, _last_position)
+
+
+# Puts thing in list slot (0 trunks, 1 spots) of every grid cell its box [a, b] covers inside the chunk box [lo, hi].
+func _grid_add(grid: Dictionary, slot: int, thing: Variant, a: Vector2, b: Vector2, lo: Vector2, hi: Vector2) -> void:
+	if b.x < lo.x or a.x > hi.x or b.y < lo.y or a.y > hi.y:
+		return
+
+	a = Vector2(maxf(a.x, lo.x), maxf(a.y, lo.y))
+	b = Vector2(minf(b.x, hi.x), minf(b.y, hi.y))
+
+	for cz in range(floori(a.y / FILTER_CELL_M), floori(b.y / FILTER_CELL_M) + 1):
+		for cx in range(floori(a.x / FILTER_CELL_M), floori(b.x / FILTER_CELL_M) + 1):
+			var cell: Vector2i = Vector2i(cx, cz)
+
+			if not grid.has(cell):
+				grid[cell] = [[], []]
+
+			(grid[cell][slot] as Array).append(thing)
+
+
+# Removes the items at the given indices (ascending) from the chunk's four item arrays. remove_at is native, so a few drops cost little.
+func _drop_indices(items: Dictionary, drop: PackedInt32Array) -> void:
+	for key in ["ids", "positions", "heights", "yaws"]:
+		if not items.has(key):
+			continue
+
+		var arr = items[key]
+
+		for k in range(drop.size() - 1, -1, -1):
+			arr.remove_at(drop[k])
+
+		items[key] = arr
 
 
 # Once a second: chunks still waiting for ground are asked again; the moment it is there their plants and ribbons are shown (and stay).
@@ -1709,8 +2111,17 @@ func update(from_position: Vector3) -> Array:
 	if not _ease.is_empty():
 		_ease_water()
 
+	var order: Array = []
+
 	for chunk in _chunks.keys():
-		if _distance(chunk, from_position) > view_m[KIND_TREE] + 2.0 * chunk_m:
+		order.append([_distance(chunk, from_position), chunk])
+
+	order.sort_custom(func(a, b): return a[0] < b[0])   # nearest first: the ground under the player is drawn before the far forest
+
+	for pair in order:
+		var chunk: Vector2i = pair[1]
+
+		if pair[0] > view_m[KIND_TREE] + 2.0 * chunk_m:
 			# Freeing a chunk's draws and colliders costs up to 30 ms (build 176 probe), so a few
 			# at a time; the rest go on the next update. They are out of view range meanwhile.
 			if dropped.size() < MAX_DROPS_PER_UPDATE:
@@ -1799,6 +2210,15 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	var entry: Dictionary = _chunks[chunk]
 	var level: int = _level(chunk, from_position)
 	var masks: Dictionary = _close_masks(chunk, from_position)
+	var near_d: float = _distance(chunk, from_position)
+
+	# A chunk inside the tree thinning ring is re-planned every FAR_BAND_M the player comes closer or goes away, so its share follows the distance.
+	# Hysteresis (Steve's review): the band only changes once near_d is FAR_BAND_SLACK_M past its edge, so a player pacing at an edge
+	# does not re-plan the chunk at every update.
+	if near_d <= view_m[KIND_TREE] and near_d + chunk_m * 1.42 >= fade_start_share * view_m[KIND_TREE] and far_share < 1.0:
+		var band: int = far_band_of(near_d, int(entry.get("far_band", -1)))
+		entry["far_band"] = band
+		masks["far_band"] = band
 
 	if (level == entry["level"] and masks == entry.get("masks", {})) or (level == entry.get("building", -2) and masks == entry.get("building_masks", {})):
 		return
@@ -1807,17 +2227,52 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	entry["building"] = level
 	entry["building_masks"] = masks
 	entry["serial"] = _serial
-	# The worker gets real copies of the arrays: remove_item (felling) changes the chunk's own arrays on the
-	# main thread while the worker reads, and sharing them crashed the worker (out of bounds in _plan, 2026-10-21).
-	var items: Dictionary = {}
 
-	for key in entry["items"]:
-		var value = entry["items"][key]
-		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
+	if not entry.has("plan_asked_msec"):
+		entry["plan_asked_msec"] = Time.get_ticks_msec()
 
-	items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
-	items["fruit_levels"] = _fruit_levels_of(chunk, items)
-	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items, masks), false, "flora chunk"))
+	if _load_count == 0 and _plan_wait.is_empty() and _tasks.is_empty() and _jobs.is_empty():
+		_load_start_msec = Time.get_ticks_msec()
+
+	_plan_wait[chunk] = true
+	_launch_plans(from_position)
+
+
+# Starts waiting chunk plans, nearest first, while fewer than MAX_PLAN_TASKS run.
+func _launch_plans(from_position: Vector3) -> void:
+	if _plan_wait.is_empty() or _tasks.size() >= MAX_PLAN_TASKS:
+		return
+
+	var order: Array = []
+
+	for chunk in _plan_wait.keys():
+		order.append([_distance(chunk, from_position), chunk])
+
+	order.sort_custom(func(a, b): return a[0] < b[0])
+
+	for pair in order:
+		if _tasks.size() >= MAX_PLAN_TASKS:
+			return
+
+		var chunk: Vector2i = pair[1]
+		_plan_wait.erase(chunk)
+		var entry: Dictionary = _chunks.get(chunk, {})
+
+		if entry.is_empty() or not entry.has("building"):
+			continue
+
+		# The worker gets real copies of the arrays: remove_item (felling) changes the chunk's own arrays on the
+		# main thread while the worker reads, and sharing them crashed the worker (out of bounds in _plan, 2026-10-21).
+		var items: Dictionary = {}
+
+		for key in entry["items"]:
+			var value = entry["items"][key]
+			items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
+
+		items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
+		items["fruit_levels"] = _fruit_levels_of(chunk, items)
+		items["from"] = from_position
+		_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, int(entry["serial"]), int(entry["building"]), items, entry.get("building_masks", {})), false, "flora chunk"))
 
 
 # For each close distance a species asked for: a 64-bit mask over the chunk's 8 x 8 cells of CLOSE_CELL_M, set where the cell is within that
@@ -1863,7 +2318,17 @@ func apply_built(budget_usec: int = 3000) -> void:
 	if not _setup_done:
 		_setup_step()
 
+	# The pieces are timed apart so a HITCH line names which one stalls (Dave 3 Nov 2026: "flora apply" 0.8-1 s).
+	var t0: int = Probe.start()
 	_take_seasonal()
+	Probe.stop("flora: season redraw", t0)
+	t0 = Probe.start()
+	_run_filter_queue(2000)
+	Probe.stop("flora: plant filter", t0)
+	t0 = Probe.start()
+	_free_trash(1000)
+	Probe.stop("flora: free old drawings", t0)
+	t0 = Probe.start()
 
 	var still: Array = []
 
@@ -1874,9 +2339,14 @@ func apply_built(budget_usec: int = 3000) -> void:
 			still.append(task)
 
 	_tasks = still
+	_launch_plans(_last_position)
+	Probe.stop("flora: plans", t0)
+	t0 = Probe.start()
 
 	if _mid_task != -1 and not _mid_ready.is_empty():
 		_apply_mid(1)
+
+	Probe.stop("flora: mid models", t0)
 
 	_built_mutex.lock()
 	var arrived: Array = _built
@@ -1891,22 +2361,42 @@ func apply_built(budget_usec: int = 3000) -> void:
 			var node: Node3D = Node3D.new()
 			node.name = "Chunk_%d_%d" % [next[0].x, next[0].y]
 			add_child(node)
-			_jobs.append({"chunk": next[0], "serial": next[1], "level": next[2], "masks": next[4], "plan": next[3], "node": node, "draw": 0, "shape": 0})
+			var job: Dictionary = {"chunk": next[0], "serial": next[1], "level": next[2], "masks": next[4], "plan": next[3], "node": node, "draw": 0, "shape": 0, "cnode": null, "keep": false}
+
+			# The same trunk colliders as now (a redraw for the player's walking: shrubs and plants changed model, the trees did not): the
+			# bodies standing are kept, not rebuilt (Dave 3 Nov 2026: pauses every few steps; every 32 m walked rebuilt each near chunk's colliders).
+			if entry.has("cnode") and is_instance_valid(entry["cnode"]) and int(entry.get("shapes_key", 0)) == int(next[3].get("shapes_key", -1)):
+				job["keep"] = true
+				job["shape"] = (next[3]["shapes"] as Array).size()
+
+			_jobs.append(job)
 
 	var started: int = Time.get_ticks_usec()
+	t0 = Probe.start()
 
 	while not _jobs.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		_nearest_job_first()
 		var job: Dictionary = _jobs[0]
 		var entry: Dictionary = _chunks.get(job["chunk"], {})
 
 		if entry.is_empty() or int(entry.get("serial", -1)) != int(job["serial"]):
 			_discard(job["node"])
+
+			if job["cnode"] != null:
+				_discard(job["cnode"])
+
 			_jobs.pop_front()
 			continue
 
 		if _apply_step(job):
 			_clear_node(entry)
 			entry["node"] = job["node"]
+
+			if not bool(job["keep"]):
+				_clear_colliders(entry)
+				entry["cnode"] = job["cnode"]
+				entry["shapes_key"] = int(job["plan"].get("shapes_key", 0))
+
 			job["node"].visible = bool(entry.get("ground", true))
 			entry["level"] = job["level"]
 			entry["masks"] = job["masks"]
@@ -1914,6 +2404,60 @@ func apply_built(budget_usec: int = 3000) -> void:
 			entry.erase("building_masks")
 			entry["drawn"] = _drawn_count(job["node"])
 			_jobs.pop_front()
+			_note_loaded(entry)
+
+	Probe.stop("flora: place drawings", t0)
+
+
+# One line about the load state, for the freeze log (FrameProbe.context).
+func load_state() -> String:
+	return "flora: %d chunks held, %d plans running, %d waiting, %d drawings to place, %d instances, %d colliders" % [_chunks.size(), _tasks.size(), _plan_wait.size(), _jobs.size(), instances, colliders]
+
+
+# Puts the nearest not-yet-started drawing at the front (a drawing already begun is finished first, so no half-built node waits).
+func _nearest_job_first() -> void:
+	if _jobs.size() < 2:
+		return
+
+	var head: Dictionary = _jobs[0]
+
+	if int(head["draw"]) > 0 or int(head["shape"]) > 0:
+		return
+
+	var best: int = 0
+	var best_d: float = _distance(head["chunk"], _last_position)
+
+	for k in range(1, _jobs.size()):
+		var job: Dictionary = _jobs[k]
+
+		if int(job["draw"]) > 0 or int(job["shape"]) > 0:
+			continue
+
+		var d: float = _distance(job["chunk"], _last_position)
+
+		if d < best_d:
+			best_d = d
+			best = k
+
+	if best > 0:
+		var job: Dictionary = _jobs[best]
+		_jobs.remove_at(best)
+		_jobs.push_front(job)
+
+
+# Load timing for the log: when every asked chunk is in the scene, one line says how many, how long it took and the longest wait.
+func _note_loaded(entry: Dictionary) -> void:
+	var now: int = Time.get_ticks_msec()
+	_load_count += 1
+	_load_worst_ms = maxi(_load_worst_ms, now - int(entry.get("plan_asked_msec", now)))
+	entry.erase("plan_asked_msec")
+
+	if _jobs.is_empty() and _plan_wait.is_empty() and _tasks.is_empty():
+		if _load_count >= 4:
+			print("flora load: %d chunk drawings in %d ms, longest wait %d ms" % [_load_count, now - _load_start_msec, _load_worst_ms])
+
+		_load_count = 0
+		_load_worst_ms = 0
 
 
 # A half-built drawing that is no longer wanted.
@@ -1924,7 +2468,35 @@ func _discard(node: Node3D) -> void:
 		elif child is StaticBody3D:
 			colliders -= child.get_child_count()
 
-	node.queue_free()
+	_throw_out(node)
+
+
+# An old drawing is hidden now and freed a child at a time over the next frames (Dave 3 Nov 2026: freeing a chunk's hundreds of draws and
+# collider bodies in one go, at the end of the frame, cost up to 30 ms each time a dig or cut redrew a chunk). Its colliders are taken out
+# of the physics world at once, so nothing stands where a plant was felled.
+func _throw_out(node: Node3D) -> void:
+	node.visible = false
+
+	for child in node.get_children():
+		if child is CollisionObject3D:
+			(child as CollisionObject3D).process_mode = Node.PROCESS_MODE_DISABLED
+
+	_trash.append(node)
+
+
+func _free_trash(budget_usec: int) -> void:
+	var started: int = Time.get_ticks_usec()
+
+	while not _trash.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		var node: Node3D = _trash[0]
+
+		if not is_instance_valid(node):
+			_trash.pop_front()
+		elif node.get_child_count() > 0:
+			node.get_child(node.get_child_count() - 1).free()
+		else:
+			node.free()
+			_trash.pop_front()
 
 
 func _exit_tree() -> void:
@@ -1949,7 +2521,35 @@ func finish_tasks() -> void:
 
 # The drawing of a chunk at a level, as plain data (safe on a worker thread): per group of
 # one species, part and model a MultiMesh buffer; trunk colliders; glow lights.
+# Whether a plant is drawn at this share: a stable choice per plant id, so the same plants stay as the player moves.
+# The thinning band for a distance, kept at `band` while near_d stays within FAR_BAND_SLACK_M of it (-1: no band yet).
+static func far_band_of(near_d: float, band: int) -> int:
+	if band < 0 or absf(near_d - (float(band) + 0.5) * FAR_BAND_M) > 0.5 * FAR_BAND_M + FAR_BAND_SLACK_M:
+		return int(near_d / FAR_BAND_M)
+
+	return band
+
+
+static func far_keep(id: int, share: float) -> bool:
+	return share >= 1.0 or float(((id * 2246822519) & 0x7fffffff) % 1000) / 1000.0 < share
+
+
+# The share of plants drawn at distance d for a view distance r (Dave's rule, grass_far.json): 1 out to fade_start x r, then down to far at r.
+static func far_share_at(d: float, r: float, fade_start: float, far: float) -> float:
+	return lerpf(1.0, far, smoothstep(fade_start * r, r, d)) if r > 0.0 else 1.0
+
+
+func _load_far() -> void:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(FAR_FILE)) if FileAccess.file_exists(FAR_FILE) else null
+
+	if typeof(parsed) == TYPE_DICTIONARY:
+		fade_start_share = clampf(float(parsed.get("fade_start_share", fade_start_share)), 0.0, 1.0)
+		far_share = clampf(float(parsed.get("far_share", far_share)), 0.0, 1.0)
+
+
 func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
+	var has_from: bool = items.has("from")   # the player position when the plan was asked for (distance thinning); tests may leave it out
+	var from: Vector3 = items.get("from", Vector3.ZERO)
 	var ids: PackedInt32Array = items["ids"]
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
 	var shapes: Array = []            # [species, radius, position]
@@ -2021,10 +2621,15 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(_slugs.get(species_id, "")))
 		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near, bare]
 
-		if not groups.has(key):
-			groups[key] = PackedInt32Array()
+		# Trees only for now: a tree chunk is re-planned whenever one of its 64 m cells changes model tier, so the distance stays close enough;
+		# shrub and plant chunks are not re-planned as the player walks closer, so thinning them here would leave near plants thinned.
+		var thinned: bool = has_from and not keep_all and int(info["kind"]) == KIND_TREE and not far_keep(int(ids[n]), far_share_at(Vector2(p.x - from.x, p.z - from.z).length(), view_m[int(info["kind"])], fade_start_share, far_share))
 
-		groups[key].append(n)
+		if not thinned:
+			if not groups.has(key):
+				groups[key] = PackedInt32Array()
+
+			groups[key].append(n)
 
 		if proxy:
 			var proxy_key: Array = [species_id, key[1], key[2], variant, TIER_PROXY]
@@ -2153,7 +2758,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 		draws.append([key, indices.size(), buffer])
 
-	return {"draws": draws, "shapes": shapes, "lights": lights}
+	return {"draws": draws, "shapes": shapes, "lights": lights, "shapes_key": hash(shapes)}
 
 
 # Adds the next piece of a job's drawing: a batch of trunk colliders (each batch its own
@@ -2184,7 +2789,14 @@ func _apply_step(job: Dictionary) -> bool:
 			shape_species.append(int(item[0]))
 
 		body.set_meta("species_ids", shape_species)
-		node.add_child(body)
+
+		if job["cnode"] == null:
+			var holder: Node3D = Node3D.new()
+			holder.name = "Colliders_%d_%d" % [job["chunk"].x, job["chunk"].y]
+			add_child(holder)
+			job["cnode"] = holder
+
+		(job["cnode"] as Node3D).add_child(body)
 		colliders += last - first
 		job["shape"] = last
 		return false
@@ -2363,8 +2975,20 @@ func _clear_node(entry: Dictionary) -> void:
 		elif child is StaticBody3D:
 			colliders -= child.get_child_count()
 
-	node.queue_free()
+	_throw_out(node)
 	entry["node"] = null
+
+
+# The chunk's trunk collider bodies (kept apart from its drawing so a redraw that leaves the trees alone keeps them).
+func _clear_colliders(entry: Dictionary) -> void:
+	var holder: Variant = entry.get("cnode")
+	entry.erase("cnode")
+	entry.erase("shapes_key")
+
+	if holder == null or not is_instance_valid(holder):
+		return
+
+	_discard(holder)
 
 
 # Draw statistics for the audit and the checks: MultiMesh nodes and instances held, by kind (tree, shrub, plant, in that order),
@@ -2422,6 +3046,9 @@ func _autumn_color(id: int, palette: Array[Color] = AUTUMN) -> Color:
 
 # The foliage tint for a species: grasses stay near the painted blade color,
 # flowers show their bloom color, the rest take the species green.
+const FLOWER_LEAF := Color(0.3, 0.46, 0.2)     # a meadow herb's leaf green before the 1.9 lift (alpine flowers' own colour)
+
+
 static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 	var base: Color = Color(float(c[0]), float(c[1]), float(c[2]))
 	var shape: String = str(entry["shape"])
@@ -2430,7 +3057,11 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 		return Color(1.0, 1.0, 1.0).lerp(_natural(base) * 2.2, 0.3)
 
 	if shape == "flower":
-		return base * 1.9
+		# The flower table's colour is the BLOOM colour (owlpetal pale blue, frostglass white, sea holly blue), but this tint lands on the leaves only (the heads carry
+		# their own petal colour, tree_builder.gd WILDFLOWER_LOOKS), so pale-flowered plants grew grey-white leaf clumps (Kathreen 3 Nov 2026). Leaves are a natural
+		# green with a quarter of the species colour, so a dark fantasy flower still has darker foliage. A row can name "leaf_color" to choose its own.
+		var leaf: Color = Color(float(entry["leaf_color"][0]), float(entry["leaf_color"][1]), float(entry["leaf_color"][2])) if entry.has("leaf_color") else FLOWER_LEAF.lerp(base, 0.25)
+		return leaf * 1.9
 
 	if shape == "mushroom":
 		return Color(1.0, 1.0, 1.0)   # modelled with its own colours (tree_builder MUSHROOM_LOOKS)

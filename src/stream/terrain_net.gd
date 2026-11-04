@@ -23,6 +23,8 @@ extends Node
 #   server -> client  zone             the biome id under the player (ambience slots): at login, after a teleport or respawn, and when it changes
 #   server -> client  flora_fruit      fruit trees of a chunk: pieces taken from each this season (the prompt shows what is left)
 #   server -> client  flora_stripped   plants of a chunk that are bare this season (berries picked): sent with a flora chunk and when one is picked
+#   server -> client  cave_streams     a tile's spring cave streams and pools (TileTerrainData.cave_streams), once per tile with the first water asked there
+#   server -> client  cave_dens        a tile's cave dens (floor points), with its cave streams
 #   client -> server  hello             the player's key, once after the welcome (inventory belongs to the key)
 #   client -> server  inventory_action  move, drop, pick up or (admin) give: the server checks everything
 #   server -> client  inventory_full    the whole inventory, at hello only
@@ -32,7 +34,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 84
+const PROTOCOL_VERSION := 90   # 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -53,6 +55,7 @@ signal vent_received(at: Vector3)
 signal water_rate_requested(peer_id: int, direction: int)
 signal water_rate_received(rate: float, busy: bool, spring_m3_s: float)
 signal water_changed_received()
+signal water_changed_in_received(area: Rect2)
 signal pulse_received()
 signal quake_received(stage: int, strength: float, point: Vector3)
 signal leak_received(points: PackedVector3Array, closeness: PackedByteArray)
@@ -64,6 +67,8 @@ signal surface_received(x: float, z: float, y: float)
 signal dump_requested(peer_id: int, x: float, y: float, z: float)
 signal dump_received(text: String)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
+signal cave_streams_received(tile: Vector2i, streams: PackedFloat32Array)
+signal cave_dens_received(tile: Vector2i, dens: PackedVector3Array)
 signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array, stock: PackedInt32Array, supply_milli: PackedInt32Array, trader_purse: int)
 signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: int)
 signal purse_received(copper: int)
@@ -72,6 +77,7 @@ signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
+signal road_marker_reached(at: Vector3)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
@@ -84,6 +90,7 @@ signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
 signal animals_received(rows: Array)
 signal blood_received(points: PackedVector3Array)
+signal burrows_received(points: PackedVector3Array)
 signal npc_talk_requested(peer_id: int, npc_id: String, choice: int)
 signal npc_say_received(npc_id: String, npc_name: String, text: String, voice_id: String, choices: PackedStringArray, ends: bool)
 signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: String)
@@ -93,6 +100,7 @@ signal warmth_received(percent: int)
 signal comfort_received(level: int, rested_level: int, rested_minutes: int, tip: String)
 signal died_received(cause: String, spawn: Vector3)
 signal final_death_received(cause: String)
+signal hit_number_received(at: Vector3, amount: int)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
@@ -149,12 +157,15 @@ const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
 const ACT_WATER_BED := 53  # a = the bed's world id: pours one `water` from the pack on it (step 4)
 const ACT_HOE_PATH := 36     # at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)
 const ACT_HOE_SMOOTH := 37   # at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
-const ACT_HOE_GRADE_POINT := 42   # a = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player
+const ACT_HOE_GRADE_POINT := 42   # a = held slot, b = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player
 const ACT_HOE_GRADE := 43    # at = the ground point under the crosshair: one hoe stroke brings the ground within 1.5 m toward the straight ramp from A to B (0.25 m at most, no items)
 const ACT_SHOOT := 49          # a = pack slot of the bow, b = draw time in ms (clamped by the server), at = aim direction: one arrow from the first arrow item in the pack (data/items/bow.json; protocol 79, taken at merge)
+const ACT_REPAIR_STRUCT := 59   # a = the placed piece's world item id: with a hammer, repair it from materials on the ground nearby, in containers within reach or in the pack (building_wear.json)
 const ACT_PLACE_BLUEPRINT := 48   # a = blueprint number (data/items/blueprints.json), b = lift steps, count = yaw degrees, at = the spot: placed from the hammer, the materials taken from the pack (no kit item)
 const ACT_NET := 47          # a = pack slot of the shore net, b = 0 start (left button down), 1 cancel (let go), at = the water point in front: hold about 20 s at the water's edge, then 1 to 3 small fish (fishing.json "net"; no protocol change)
 const ACT_ADMIN_ENERGY := 56   # admin only, tests: count = the energy (0 to 100) this character is set to (no protocol change)
+const ACT_HIT_SHRUB := 57     # a = flora id, b = chunk x, count = chunk z, at.x = 1 for a pickaxe (dig it up whole), 0 for an axe (chop it into leaves and sticks); Dave 2 Nov 2026
+const ACT_PLANT_BUSH := 58    # a = pack slot of a dug-up <species>_bush, at = the ground under the crosshair: it is planted there
 const ACT_NEW_PLAYER := 45   # admin only: this character starts over as a brand new player (empty pack, nothing worn, fresh vitals, Admin mode off); stays flagged so Admin mode is off at every login until switched on again (no protocol change)
 const ACT_SHOWROOM := 44     # a = 0 fill the showroom, 1 clear it and fill again (admin only), at = the spawn point the rows in data/items/showroom.json are laid out from: real world items
 const ACT_CHEST_CLOSE := 34  # the player closed the container window: the server stops pushing its contents
@@ -294,6 +305,13 @@ func water_changed() -> void:
 	water_changed_received.emit()
 
 
+# Protocol 88 (lag review, Steve 3 Nov 2026): the water moved only inside `area` (world x, z metres: the live water window now and where it
+# was last time): clients ask again only for the chunks they hold that touch it.
+@rpc("authority", "call_remote", "reliable")
+func water_changed_in(area: Rect2) -> void:
+	water_changed_in_received.emit(area)
+
+
 # The tile files changed (a bake finished): the server threw its generated ground
 # away; clients drop their saved copy and load the ground again.
 @rpc("authority", "call_remote", "reliable")
@@ -332,7 +350,7 @@ func surface(x: float, z: float, y: float) -> void:
 	surface_received.emit(x, z, y)
 
 
-# Protocol 84: the simulated water window as a render texture (depth, flow, foam per 8 m cell), see src/water2/water_flow_texture.gd.
+# Protocol 84 (85: float, R surface and A depth): the simulated water window as a render texture per 8 m cell, see src/water2/water_flow_texture.gd.
 @rpc("authority", "call_remote", "reliable")
 func deliver_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
 	water_flow_received.emit(origin, w, h, cell_m, raw_size, bytes)
@@ -341,6 +359,18 @@ func deliver_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size
 @rpc("authority", "call_remote", "reliable")
 func deliver_water(chunk: Vector2i, water: PackedByteArray) -> void:
 	water_received.emit(chunk, water)
+
+
+# Protocol 87: the streams running down a tile's spring caves and the pools at their springs (Dave 3 Nov 2026), as TileTerrainData.cave_streams.
+@rpc("authority", "call_remote", "reliable")
+func cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
+	cave_streams_received.emit(tile, streams)
+
+
+# Protocol 87: every cave den of a tile (floor points), sent with its cave streams: the den sounds play near them (Sound thread #211).
+@rpc("authority", "call_remote", "reliable")
+func cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
+	cave_dens_received.emit(tile, dens)
 
 
 
@@ -449,6 +479,12 @@ func final_death(cause: String) -> void:
 	final_death_received.emit(cause)
 
 
+# Floating damage text where the player's hit landed (protocol 86, Dave 2 Nov 2026). The client shows it unless the Gameplay toggle is off.
+@rpc("authority", "call_remote", "reliable")
+func hit_number(at: Vector3, amount: int) -> void:
+	hit_number_received.emit(at, amount)
+
+
 # The character's skills (protocol 37, data/items/skills.json): attributes [strength, memory] (-10..10) and one row
 # [skill index in the file's "skills" order, working level 0..100, rusty 0/1, cap, training level, practised today 0/1, effective value, percent of the way to the next level 0..99, percent of today's gain left 0..100] for every skill the character has practised or reads above 1 through training.
 # Sent at hello and when a level, attribute or rusty flag changes (at most every 5 s).
@@ -487,6 +523,13 @@ func animals(rows: Array) -> void:
 @rpc("authority", "call_remote", "reliable")
 func blood(points: PackedVector3Array) -> void:
 	blood_received.emit(points)
+
+
+# Animal burrows (protocol 87, MikeW 3 Nov): ground positions of the burrows of living animals within 120 m, nearest 40, sent
+# when the set changes. The client draws a mound at each (looks: Kathleen); with nothing connected the signal is ignored.
+@rpc("authority", "call_remote", "reliable")
+func burrows(points: PackedVector3Array) -> void:
+	burrows_received.emit(points)
 
 
 # Talking (protocol 45): the player asks to talk to an NPC (choice -1) or picks a choice by index; the server answers with the NPC's
@@ -621,6 +664,12 @@ func purse(copper: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func reputation(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array) -> void:
 	reputation_received.emit(ids, names, points)
+
+
+# The road builder has reached (or dropped) the marker at this point: the client takes the red flag down (protocol 89, Dave 3 Nov 2026).
+@rpc("authority", "call_remote", "reliable")
+func road_marker_done(at: Vector3) -> void:
+	road_marker_reached.emit(at)
 
 
 # A short message for the player ("too many trunks lie here", and so on).

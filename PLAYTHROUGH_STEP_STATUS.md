@@ -1,3 +1,17 @@
+# UPDATE 2 Nov evening (PC run on main 4e8f662d, scripted; outputs on the PC in DynastyALWL_w9/out/)
+| Check | Result |
+|---|---|
+| test_first_hour | PASS, 0 failures |
+| test_playability_bot | PASS, all 11 steps (bench included now that the stick budget is 70) |
+| test_fire_store, test_fire_fuel_tiers, test_fell_autosplit, test_stump_chop | all PASS (new fire store with F, tiers, auto-split drops, stump chop) |
+| probe_place | 13 kits placed; the 13 "(silent:" lines are on successful placements, not refusals; the one probed refusal speaks ("The ground is too steep there.") |
+| probe_shelter | 15 PASS, 1 FAIL: check 16 wanted the respawn within 1.0 m of the bed; the game lands you 1.2 m beside it by design (bed.json respawn landing_m), under roof cover 1.0. Probe corrected (this commit), plus a writer flush before quit for the exit error |
+| probe_cook | meat and fish cook; plants refused with the pot/hearth notice. "morel" was a probe typo (the item is "morels"): fixed |
+| run_status | 25 fixed, 2 still broken: F-20 (orphan gathered items, Sal/flora) and S-place (a kit or blueprint refused beyond the rules, Tyler); F-01/F-24, F-19, S-craft now FIXED. 46 of 274 recipes blocked, 100 orphan items, 72 placeholder looks |
+| smoke clients (gather, chop, fire, leanto, cook, spear, plantpick, sleep) | all ran; sleep ran. Two HIGH lines come from older logs, not this run: inventory_view.gd:4562 Nil 'numbers' (chest, Tyler) and flora_view.gd:2270 cast (MikeW) |
+| windowed pictures | being taken on the PC |
+Step table below: steps 4-13 and 15-19 hold on the server; 20 (bench) now has a bot check. Still not walked by a person in a window: 2 (Tab bars), 3 (drink), the fire store by hand, lying in the bed.
+
 # UPDATE 1 Nov evening (daily 224e78bd): headless first-hour reruns after the Dynasty body, E rules, fire tiers, carry weights, logs everywhere
 Run in my worktree with the slots shared with Tyler's test pass, so frames were slow. Logs: art/playthrough/smoke/logs, outputs: art/playthrough/refresh1nov/.
 
@@ -69,13 +83,13 @@ Verified by running (headless server probes, headless real-client self-tests; **
 | 11 | campfire kit (6 sticks, 3 stones, **8 s**) | WORKS | bot; tutorial time fixed (was 3 s) |
 | 12 | place the fire | WORKS | probe 6 (re-run on the 14:40 head): places at the spawn and the other flat spots; the only refusal seen is the steep slope, with its message. The silent refusals (beyond 6 m, wet beach, fire gap, per-chunk cap) were not re-tested after Tyler's changes |
 | 13 | light it (fibre, bark) | WORKS | probe 6: state 40 with both |
-| 14 | feed it, warmth | WORKS, CLIENT | fire self-test ran; warmth numbers from data |
+| 14 | feed it, warmth | WORKS, CLIENT (rules changed 2 Nov: wood goes in with F, E puts a burning fire out; not re-run) | fire self-test ran; warmth numbers from data; test_fire_store added by Steve |
 | 15 | roast meat (campfire cooks only meat) | WORKS | probe 8: refuses berries, nuts, bulbs, fiddleheads with a message; cooks meat, fish, shellfish, seal. Plants now need a pot or hearth: **steps for the pot and hearth are not in the tutorial yet** |
-| 16 | lean-to kit (**32 sticks, 8 leaves, 4 twine**, 25 s) | WORKS, OPEN | bot builds it within its gather budget; 32 sticks is a lot for a 10-minute hour: watch the pace (budget is 60) |
+| 16 | lean-to kit (**16 sticks, 4 leaves, 2 twine** since #186, 3 Nov; 25 s) | WORKS, OPEN | halved from 32 sticks, so the pace worry is mostly answered |
 | 17 | place the lean-to | WORKS | probe 7 ran on the 14:40 head with a 2.6 x 2.4 m roof, 2.1 m high; the data now says 2.6 x 3.4 m and **height 1.5 m** (a later daily merge: probe 7 not re-run on it, so a lying player under a 1.5 m roof is unchecked); cover under it |
 | 18 | bedding and rough bed (8 bedding, 4 sticks, 2 twine, 10 s) | WORKS | recipe 231 known; ferns give bedding |
 | 19 | bed inside the lean-to, lie, sleep, spawn point | WORKS, CLIENT | probe 7: placed at the centre, cover, good bed (quality 1.0), E sets spawn, respawn on the bed. Not lain in, in the client |
-| 20 | workbench (**Camp bench: 20 sticks, 6 twine, 4 stones, 60 s**) | OPEN | tutorial said 12 sticks 3 twine: text fixed; 60 s and 20 sticks make this a long step, and the playability bot stops before it (not covered) |
+| 20 | workbench (**Camp bench: 16 sticks, 6 twine, 4 stones, 60 s**, data 2 Nov) | OPEN | tutorial said 12 sticks 3 twine: text fixed; 60 s and 20 sticks make this a long step, and the playability bot stops before it (not covered) |
 | 21 | wooden spear, stone spear | WORKS | recipes 5 and 3 known; spear self-test ran |
 | 22 | rabbit, knife, dress, roast, eat | WORKS | kill-to-roast chain driven on the server earlier (meat, hide, bone); client aiming not driven |
 
@@ -84,7 +98,7 @@ Verified by running (headless server probes, headless real-client self-tests; **
 2. See what they are making in the creator (preview opens on the back).
 3. Learn about the pot and hearth: the campfire no longer cooks forage, and no tutorial step teaches the pot (recipes exist in Sal's data).
 4. Open and use a chest from the client self-test path (chest self-test fails).
-5. Get 32 sticks, 8 leaves and a Camp bench's 20 sticks without long gathering: total sticks for steps 11-20 is 6 + 32 + 4 + 20 = 62, over the bot's 60-stick budget (no gap: sticks are re-gathered, but it is a lot of hold-E).
+5. ANSWERED by #186 (3 Nov): sticks for steps 11-20 are now 6 + 16 + 4 + 16 = 42 (lean-to 16, Camp bench 16), well under the bot's 60-stick budget.
 6. See a lit fire and a felled log picture: no rig frame yet.
 
 ## Probes to re-run when the computer is back (in this order, all headless unless noted)

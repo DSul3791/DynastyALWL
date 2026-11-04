@@ -42,6 +42,7 @@ const TRUNKS_FOR_FOREST := 28.0        # collider shapes in that radius for a fu
 const WATER_RINGS := [6.0, 16.0, 32.0, 55.0]
 const WATER_FULL_M := 8.0              # water this close counts as full water-edge weight
 const WATER_NONE_M := 55.0
+const SEA_TOP_M := 1.5                 # water whose surface is at or under this height is the sea (sea level 0); a forest pond or a river higher up is not
 # Birds live down among the trees (Dave 2026-10-21, flying at y 420 over a forest he heard startled wings): above
 # BIRD_MAX_AGL_M over the ground no take-off, alarm or call is played, and calls fade out over BIRD_FADE_M before it.
 const BIRD_MAX_AGL_M := 40.0
@@ -61,7 +62,7 @@ const DARK_BEFORE := 0.5               # dark from this long before sunrise to t
 const GAME_HOURS_PER_SEC := 24.0 / 3600.0   # game clock: 24 game hours per real hour
 const FLUSH_DB := -7.0
 const FLUSH_CHANCE := 0.12             # per scan while running in forest or meadow by day
-const FLUSH_SIZES := {"small": 0.55, "medium": 0.3, "large": 0.15}      # share of take-offs by bird size
+const FLUSH_SIZES := {"small": 0.6, "medium": 0.4, "large": 0.0}       # share of random take-offs by bird size; large (crow) only after a crow alarm (Dave 3 Nov 2026: the slow big-bird flaps read as a metal wobble)
 const FLUSH_COOLDOWN_SEC := 25.0
 const FLUSH_FLY_SEC := [1.6, 3.2]
 const FLUSH_FLY_M := [25.0, 60.0]
@@ -99,6 +100,7 @@ const ZONES := ["forest", "meadow", "water", "highland"]
 
 var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clear"}
 var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
+var sea_weight: float = 0.0              # 0..1 like the water weight, but counting only the sea (surface at SEA_TOP_M or lower): the surf follows this, not ponds or brooks
 var calls_played: Dictionary = {}       # call name -> count (for the headless check)
 var last_call: String = ""
 var _heard: Dictionary = {}              # call name -> {variant: _clock when last played}
@@ -271,6 +273,7 @@ func _scan(body: CharacterBody3D) -> void:
 	target["highland"] = clampf((position.y - HIGH_FROM_M) / (HIGH_FULL_M - HIGH_FROM_M), 0.0, 1.0)
 	_wet_points.clear()
 	var nearest: float = WATER_NONE_M + 1.0
+	var nearest_sea: float = WATER_NONE_M + 1.0
 
 	for ring in WATER_RINGS:
 		for k in range(8):
@@ -283,12 +286,19 @@ func _scan(body: CharacterBody3D) -> void:
 				_wet_points.append(Vector3(x, level, z))
 				nearest = minf(nearest, ring)
 
+				if level <= SEA_TOP_M:
+					nearest_sea = minf(nearest_sea, ring)
+
 	var here: float = _flora.water_surface_at(feet.x, feet.z)
 
 	if not is_nan(here):
 		nearest = 0.0
 
+		if here <= SEA_TOP_M:
+			nearest_sea = 0.0
+
 	target["water"] = clampf(1.0 - (nearest - WATER_FULL_M) / (WATER_NONE_M - WATER_FULL_M), 0.0, 1.0)
+	sea_weight = lerpf(sea_weight, clampf(1.0 - (nearest_sea - WATER_FULL_M) / (WATER_NONE_M - WATER_FULL_M), 0.0, 1.0), 0.4)
 
 	for zone in ZONES:
 		weights[zone] = lerpf(float(weights[zone]), float(target[zone]), 0.4)

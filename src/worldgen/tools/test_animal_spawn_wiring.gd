@@ -114,7 +114,7 @@ func _init() -> void:
 		var a2 = make(players, name)
 		a2.cfg["species"][name]["spawn_share"] = 1.0
 		a2.hour_now = func(): return c[3]
-		a2.biome_at = func(x, z): return c[2]
+		a2.biome_at = func(x, z): return "ocean" if c[2] == "beach" and fposmod(x, 80.0) < 20.0 else c[2]   # a beach has the sea beside it
 		a2.starter = Vector2(100000.0, 100000.0)
 		run(a2, 40.0)
 		check(count(a2, name) > 0, "%s spawn in %s at hour %d (%d)" % [name, c[2], int(c[3]), count(a2, name)])
@@ -158,5 +158,113 @@ func _init() -> void:
 	shift.hour_now = func(): return 2.0
 	run(shift, 20.0)
 	check(before_birds > 0 and count(shift, "songbirds") < before_birds, "songbirds spawned by day leave at night (%d -> %d)" % [before_birds, count(shift, "songbirds")])
+
+	# Resting (MikeW 2026-11-02): out of its hours a deer placed by hand beds down and stays put; by day the same deer wanders; resting shortens its spook distance.
+	var moved: Array = []
+
+	for hour in [2.0, 12.0]:
+		var rest = make([Vector3(5000.0, 10.0, 0.0)], "deer")
+		rest.cfg["species"]["deer"]["target_per_player"] = 0
+		rest.cfg["species"]["deer"]["active"] = {"day": 1.0, "dusk": 1.0, "night": 0.05}
+		rest.cfg["active_radius_m"] = 99999.0
+		rest.cfg["despawn_m"] = 99999.0
+		rest.cfg["off_hours_despawn_m"] = 99999.0
+		rest.hour_now = func(): return hour
+		var deer: int = rest.spawn("deer", 0.0, 0.0)
+		rest.animals[deer]["timer"] = 0.0
+		var start: Vector3 = rest.animals[deer]["pos"]
+		run(rest, 60.0)
+		moved.append(rest.animals[deer]["pos"].distance_to(start) if rest.animals.has(deer) else -1.0)
+
+		if hour == 2.0:
+			check(rest.resting(rest.species_def("deer")) and rest._spook_m(rest.animals[deer], rest.species_def("deer")) < float(rest.species_def("deer")["spook_m"]), "a resting deer lets a player come closer before it runs")
+
+	check(moved[0] >= 0.0 and moved[0] < 0.5 and moved[1] > 0.5, "a deer out of its hours stays put; by day it wanders (moved %.1f m at 02:00, %.1f m at noon)" % [moved[0], moved[1]])
+	# Gulls on the beach (MikeW 2026-11-02): seabirds are a land flock: they spawn on dry beach ground as one record of several birds and take off together.
+	var gulls = make([Vector3(0.0, 10.0, 0.0)], "seabird")
+	gulls.biome_at = func(x, z): return "ocean" if fposmod(x, 80.0) < 20.0 else "beach"
+	gulls.water_level = func(x, z): return NAN
+	gulls.hour_now = func(): return 12.0
+	run(gulls, 30.0)
+	var flock_id: int = 0
+
+	for id in gulls.animals:
+		if gulls.animals[id]["sp"] == "seabird":
+			flock_id = id
+
+	check(flock_id != 0 and not is_nan(float(gulls.animals[flock_id]["pos"].y)) and int(gulls.animals[flock_id].get("birds", 0)) >= 5, "seabirds spawn on dry beach as a flock of 5 or more")
+
+	if flock_id != 0:
+		var at: Vector3 = gulls.animals[flock_id]["pos"]
+		gulls.player_positions = func(): return [at + Vector3(8.0, 0.0, 0.0)]
+		var took_off: bool = false
+
+		for n in 60:
+			gulls.tick(0.05)
+			took_off = took_off or (gulls.animals.has(flock_id) and int(gulls.animals[flock_id]["state"]) == 15)
+
+		check(took_off, "a gull flock takes off together when a player walks up")
+	# A snare draws a calm rabbit (MikeW, 3 Nov): its home moves to the snare, its burrow stays; a fleeing one is not drawn.
+	var lure_a = make(players, "rabbit")
+	run(lure_a, 20.0)
+	var lure_id: int = -1
+
+	for id in lure_a.animals:
+		lure_id = id
+
+	if lure_id >= 0:
+		var la: Dictionary = lure_a.animals[lure_id]
+		la["state"] = AnimalsScript.GRAZE
+		var burrow_was: Vector3 = la.get("burrow", Vector3.INF)
+		var spot: Vector3 = la["pos"] + Vector3(20.0, 0.0, 0.0)
+		check(lure_a.lure_to(lure_id, spot) and la["home"] == spot and la["state"] == AnimalsScript.HOP and la.get("burrow", Vector3.INF) == burrow_was, "a snare draws a grazing rabbit: home moves, burrow stays")
+		la["state"] = AnimalsScript.FLEE
+		check(not lure_a.lure_to(lure_id, spot + Vector3(5.0, 0.0, 0.0)), "a fleeing rabbit is not drawn")
+	else:
+		check(false, "a rabbit spawned for the snare draw check")
+
+	# Burrow spots for the client (MikeW, 3 Nov): rabbits near the player send their burrows, nearest first.
+	var holes_a = make(players, "rabbit")
+	holes_a.cfg["species"]["rabbit"]["burrow_m"] = 40.0
+	holes_a.cfg["send_radius_m"] = 400.0
+	run(holes_a, 20.0)
+	var holes: PackedVector3Array = holes_a.burrows_near(Vector3.ZERO)
+	var sorted_ok: bool = true
+
+	for i in range(1, holes.size()):
+		sorted_ok = sorted_ok and Vector2(holes[i].x, holes[i].z).length() >= Vector2(holes[i - 1].x, holes[i - 1].z).length() - 0.001
+
+	check(holes.size() == count(holes_a, "rabbit") and holes.size() > 0 and sorted_ok, "each rabbit's burrow is sent, nearest first (%d)" % holes.size())
+	check(holes_a.burrows_near(Vector3(5000.0, 0.0, 0.0)).is_empty(), "no burrows are sent from far away")
+
+
+	# Frogs live by fresh water (MikeW, 3 Nov): a pond 20 m off is fine, a dry wood or a sea shore is not.
+	a = make(players, "frog")
+	var frog: Dictionary = a.cfg["species"]["frog"]
+	a.biome_at = func(x, z): return "temperate_forest"
+	a.water_level = func(x, z): return 9.0 if x > 18.0 and x < 26.0 else NAN
+	check(a._habitat_score(frog, 0.0, 0.0, 10.0) > 0.0, "a frog may spawn 20 m from a pond")
+	check(a._habitat_score(frog, -100.0, 0.0, 10.0) < 0.0, "a frog never spawns 100 m from any water")
+	a.biome_at = func(x, z): return "ocean" if x > 18.0 else "marsh"
+	check(a._habitat_score(frog, 0.0, 0.0, 10.0) < 0.0, "sea water does not count as a frog pond")
+	var rabbit: Dictionary = a.cfg["species"]["rabbit"]
+	a.water_level = func(x, z): return NAN
+	check(a._habitat_score(rabbit, 0.0, 0.0, 10.0) > 0.0, "a rabbit does not need water nearby")
+
+	# Ducks keep to fresh water: deep water on ocean ground is refused, a lake is fine.
+	var ducks: Dictionary = a.cfg["species"]["duck"]
+	a.blocked = func(x, z): return true
+	a.water_level = func(x, z): return 0.0
+	a.biome_at = func(x, z): return "ocean"
+	check(a._habitat_score(ducks, 0.0, 0.0, 10.0) < 0.0, "ducks do not spawn on the open sea")
+	a.biome_at = func(x, z): return "temperate_forest"
+	check(a._habitat_score(ducks, 0.0, 0.0, 10.0) > 0.0, "ducks spawn on a lake")
+
+	# Gulls and seals keep to the coast (MikeW, 3 Nov): a salt marsh by the sea is fine for gulls, one 200 m inland is not.
+	var gull: Dictionary = a.cfg["species"]["seabird"]
+	a.biome_at = func(x, z): return "ocean" if x > 40.0 else "marsh"
+	check(a._habitat_score(gull, 0.0, 0.0, 10.0) > 0.0, "gulls may spawn on a salt marsh by the sea")
+	check(a._habitat_score(gull, -200.0, 0.0, 10.0) < 0.0, "gulls never spawn on a marsh 200 m inland")
+
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

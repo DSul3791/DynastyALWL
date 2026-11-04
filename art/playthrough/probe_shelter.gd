@@ -112,8 +112,9 @@ func _init() -> void:
 			corner_txt += " (%.2f,%.2f):%d" % [sx, sz, int(c)]
 
 	say("4 cover at 4 inner points (+-0.9 m along, +-0.75 m across)", corners_ok == 4, corner_txt)
-	var out: float = CoverScript.at(lp + cx * 1.5 + Vector3(0.0, 0.3, 0.0), cover)
-	say("5 cover.at 1.5 m past the roof edge is open", out == 0.0, "%s" % out)
+	var past: float = float(def["half_x"]) + 0.5   # half a metre past the roof edge, whatever the lean-to's size (#253 made it 1.6x)
+	var out: float = CoverScript.at(lp + cx * past + Vector3(0.0, 0.3, 0.0), cover)
+	say("5 cover.at 0.5 m past the roof edge is open", out == 0.0, "%.2f m from the centre: %s" % [past, out])
 
 	# 6. can a bed be placed inside the footprint? try the centre, then offsets
 	var results: Array = []
@@ -202,5 +203,6 @@ func _init() -> void:
 	var bdist: float = Vector2(back.x - bp.x, back.z - bp.z).length()
 	say("15 death respawns at the lean-to / bed, not the world spawn", dist < 5.0, "respawn %s, %.1f m from the lean-to centre, %.1f m from the world spawn" % [back, dist, Vector2(back.x - spawn.x, back.z - spawn.y).length()])
 	print("probe7: respawn is %.1f m from the bed; roof cover at the respawn %s" % [bdist, CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover)])
-	say("16 with the bed set as spawn, you come back ON the bed, under the roof", bdist < 1.0 and CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover) > 0.0, "cover at respawn %s" % CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover))
+	say("16 with the bed set as spawn, you come back beside the bed (bed.json respawn landing_m, 1.2 m), under the roof", bdist <= float(items._bed_cfg.get("respawn", {}).get("landing_m", 1.2)) + 0.1 and CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover) > 0.0, "cover at respawn %s" % CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover))
+	items._finish_writer()   # the background save thread must finish before quit (Opcode 20 _write_file error at exit)
 	quit()

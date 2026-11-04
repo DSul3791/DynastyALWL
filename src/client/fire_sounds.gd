@@ -11,6 +11,7 @@ extends Node
 #       "open" true plays a sizzle loop on top while it rains (weather.rain), louder with more rain.
 #   sound.fire.light(at)        the lighting sound once, at a position
 #   sound.fire.put_out(at)      the put-out hiss once (rain or water on a fire)
+#   sound.fire.burnt_out(at)    a fire that ran out of wood: the same clip, low and soft (set_fires: "ashes" true)
 #   sound.fire.cook(at)         food laid on the embers sizzles (item_sounds hears a roast appear in the bag)
 #   sound.fire.fuel(at)         a stick or log laid on the fire (item_sounds hears V use up wood)
 #
@@ -38,6 +39,7 @@ const MERGE_M := 18.0                   # fires farther than this and near each 
 const CLUSTER_M := 15.0
 
 var loops_playing: int = 0              # HUD
+var nearest_lit_m: float = INF          # distance to the nearest lit fire at the last scan (the sound stage ducks wind and surf near one)
 var lit_played: int = 0
 var out_played: int = 0
 var cook_played: int = 0
@@ -90,8 +92,10 @@ func set_fires(fires: Array) -> void:
 		if _was_lit.has(id) and _was_lit[id] != lit:
 			if lit:
 				light(fire["at"])
+			elif bool(fire.get("ashes", false)):
+				burnt_out(fire["at"])   # the wood ran out: the embers settle, no water hiss
 			else:
-				put_out(fire["at"])
+				put_out(fire["at"])   # rain or a player (E) put it out
 
 		_was_lit[id] = lit
 
@@ -103,6 +107,8 @@ func set_fires(fires: Array) -> void:
 # time; a fire is "open" when the cover query says the sky reaches it.
 # Item world row states that are fires: 1 lit, 2 burnt out (old saves), 8 empty (ashes), 9 loaded but unlit.
 const FIRE_STATES := [1, 2, 8, 9, 40, 41]   # 40 survival fire and 41 bonfire are lit too (cooking.json fire_tiers)
+const BURNT_OUT_DB := -10.0
+const BURNT_OUT_PITCH := 0.7
 const FUEL_HEARD_M := 25.0
 const FUEL_DEDUP_MSEC := 1500
 var _world_states: Dictionary = {}      # fire id -> last seen row state
@@ -127,7 +133,7 @@ func sync_world(world: Dictionary, cover_at: Callable = Callable()) -> void:
 		if int(_world_states.get(id, 9)) == 8 and int(row["state"]) == 9 and _here.distance_to(at) < FUEL_HEARD_M \
 				and Time.get_ticks_msec() - _last_fuel_msec > FUEL_DEDUP_MSEC:
 			fuel(at)
-		fires.append({"id": id, "at": at, "size": FIRE_SIZE * (0.6 if int(row["state"]) == 40 else (1.5 if int(row["state"]) == 41 else 1.0)), "lit": int(row["state"]) in [1, 40, 41],
+		fires.append({"id": id, "at": at, "size": FIRE_SIZE * (0.6 if int(row["state"]) == 40 else (1.5 if int(row["state"]) == 41 else 1.0)), "lit": int(row["state"]) in [1, 40, 41], "ashes": int(row["state"]) == 8,
 			"open": not (cover_at.is_valid() and bool(cover_at.call(at)))})
 
 	_world_states = states
@@ -142,6 +148,11 @@ func light(at: Vector3) -> void:
 func put_out(at: Vector3) -> void:
 	_one_shot("fire_out", at)
 	out_played += 1
+
+
+# A fire that burnt down to ashes on its own (row state 8): the put-out clip, low and soft, so it reads as embers settling.
+func burnt_out(at: Vector3) -> void:
+	_one_shot("fire_out", at, BURNT_OUT_DB, BURNT_OUT_PITCH)
 
 
 func cook(at: Vector3) -> void:
@@ -201,9 +212,13 @@ func update(delta: float, body: CharacterBody3D) -> void:
 func _scan(body: CharacterBody3D) -> void:
 	var here: Vector3 = body.global_position
 	var near: Array = []
+	nearest_lit_m = INF
 
 	for fire in _fires:
 		var distance: float = fire["at"].distance_to(here)
+
+		if bool(fire.get("lit", true)):
+			nearest_lit_m = minf(nearest_lit_m, distance)
 
 		if distance <= REACH_M:
 			near.append({"fire": fire, "distance": distance})
@@ -317,7 +332,7 @@ func _loop_player(sound_name: String, at: Vector3) -> AudioStreamPlayer3D:
 	return player
 
 
-func _one_shot(sound_name: String, at: Vector3) -> void:
+func _one_shot(sound_name: String, at: Vector3, extra_db: float = 0.0, pitch: float = 1.0) -> void:
 	var list: Array = _variants(sound_name)
 
 	if list.is_empty() or not _stage.has_room():
@@ -327,8 +342,8 @@ func _one_shot(sound_name: String, at: Vector3) -> void:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[pick]
 	player.bus = "Foley"
-	player.volume_db = ONE_SHOT_DB + _rng.randf_range(-1.0, 1.0)
-	player.pitch_scale = _rng.randf_range(0.97, 1.03)
+	player.volume_db = ONE_SHOT_DB + extra_db + _rng.randf_range(-1.0, 1.0)
+	player.pitch_scale = pitch * _rng.randf_range(0.97, 1.03)
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = UNIT_SIZE
 	player.max_distance = REACH_M * 2.0

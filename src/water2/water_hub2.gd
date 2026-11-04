@@ -203,7 +203,7 @@ static func apply_sources(f, origin: Vector2i, x0: float, z0: float, cfg: Dictio
 	return placed
 
 
-# The drawn levels of a tile: the baked ones outside the window, inside it bed + depth where the water is thick enough to draw, the baked film where the live water is thinner than the film.
+# The drawn levels of a tile: the baked ones outside the window, inside it bed + depth where the water is thick enough to draw, and a film on the bed of every baked wet cell where the live water is thinner.
 static func publish_levels(base: PackedFloat32Array, samples: int, f, origin: Vector2i) -> PackedFloat32Array:
 	var out: PackedFloat32Array = base.duplicate()
 
@@ -219,6 +219,10 @@ static func publish_levels(base: PackedFloat32Array, samples: int, f, origin: Ve
 				out[k] = f.bed[m] + d
 			elif not is_nan(base[k]) and base[k] - f.bed[m] <= FILM_M:
 				out[k] = base[k]
+			elif not is_nan(base[k]):
+				# Dave 2 Nov 2026 ("streams break into puddle blobs"): a baked wet cell where the live water ran thin was dropped, so a stream broke into
+				# separate pools along its bed. It keeps a film on its bed instead (the 13 cm of the settled files), so the channel stays one body of water.
+				out[k] = f.bed[m] + FILM_M - 0.01
 			else:
 				out[k] = NAN
 
@@ -273,5 +277,18 @@ func _run() -> void:
 			_flow_pending = packet
 			_mutex.unlock()
 
+		# Bug 7 (lag, 2 Nov 2026): the window cost about 110 ms per simulated second, so with only the CPU_DUTY sleep the thread ran about 4.5 simulated seconds per
+		# real second, held half a core all the time and published levels and the flow texture to every client about every 3 s. It now never runs ahead of real
+		# time (TICK_S of sim per TICK_S of wall clock), still sleeps at least the duty share, and wakes every 100 ms to see a stop.
 		var used: int = Time.get_ticks_usec() - start
-		OS.delay_usec(int(float(used) * (1.0 / CPU_DUTY - 1.0)))
+		var rest_us: int = maxi(int(TICK_S * 1000000.0) - used, int(float(used) * (1.0 / CPU_DUTY - 1.0)))
+
+		while rest_us > 0:
+			OS.delay_usec(mini(rest_us, 100000))
+			rest_us -= 100000
+			_mutex.lock()
+			var stopping: bool = _quit
+			_mutex.unlock()
+
+			if stopping:
+				return

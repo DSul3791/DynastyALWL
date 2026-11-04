@@ -20,9 +20,9 @@ func _init() -> void:
 	var table = ItemTableScript.load_default()
 	var pack = InventoryScript.new(table)
 	var list = ListScript.new()
-	list.setup(table, pack)
+	list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var rows: Array = list.rows(1)
-	check(rows.size() == 6, "a wooden hammer lists the four heavy station blueprints, the clay hearth and the oven (%d)" % rows.size())
+	check(rows.size() == 16, "a wooden hammer lists the blueprints that are known: stations, log, stone and brick pieces, clay hearth, oven and the rough bed (%d)" % rows.size())
 	check(str(rows[0]["name"]) <= str(rows[1]["name"]), "the list is alphabetical")
 	check(not bool(rows[0]["can"]), "an empty pack covers nothing")
 
@@ -52,8 +52,8 @@ func _init() -> void:
 	list.clear()
 	check(list.picked == 0 and not list.is_open, "putting the hammer away clears the pick")
 	var strict_list = ListScript.new()
-	strict_list.setup(table, pack)
+	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	strict_list._book[0]["hammer"] = 2
-	check(strict_list.rows(1).size() == 5 and strict_list.rows(2).size() == 6, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 15 and strict_list.rows(2).size() == 16, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

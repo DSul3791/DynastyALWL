@@ -123,6 +123,12 @@ if _shore.get("sea_water_item") in items:
     sources[_shore["sea_water_item"]].add("shore, with a container")
 for i in ("stone", "stick"):
     add(i, "ground scatter")
+# Bushes and shrubs (#84): a pickaxe digs a standing shrub up whole as <species><dig_suffix> (server_items._hit_shrub), to plant again.
+_dig_suffix = drops.get("shrub_work", {}).get("dig_suffix", "_bush")
+for e_ in flora.values():
+    if e_["kind"] == "shrub" and not e_.get("retired") and (e_["name"] + _dig_suffix) in items:
+        sources[e_["name"] + _dig_suffix].add("dig up a " + e_["name"] + " shrub (pick)")
+        gated[e_["name"] + _dig_suffix] = "pick"
 add("driftwood", "ground scatter (water bank)")
 add("stone", "boulder")
 for sect in ("trunk", "stump"):

@@ -19,7 +19,10 @@ const FADE_S := 2.0
 const SILENT_DB := -60.0
 # Dave 24 Oct: a surf-like roar in the middle of a forest drowned the nature sounds. The forest beds are steady broadband noise at about
 # -27 dB RMS (-31 winter), as loud as everything else in the forest together, so they sit this far under the other sounds.
-const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0}   # was -12 for the old beds; Kathleen's new ones (kathleen-forest-bed f57c1bd9) are 15-20 dB quieter
+# Dave 2 Nov: the night bed (a low, breathing hush, 72 percent under 200 Hz, -27.8 dB RMS) was 8 dB hotter than the forest day bed (-35.9) and drowned a campfire; he
+# took it for the surf. He wants it kept, just much quieter: -18 dB (about -46 RMS), and it ducks near a lit fire. (The all-day metal-sheet sound is another source, not this.)
+const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0, "bed_night": -18.0}
+const FIRE_DUCK_LAYERS := ["shore_bed", "time_bed"]   # was -12 for the old beds; Kathleen's new ones (kathleen-forest-bed f57c1bd9) are 15-20 dB quieter
 const GAP_S := [4.0, 20.0]
 const PITCH_SPREAD := 0.05
 const ONESHOT_DIST_M := [12.0, 45.0]
@@ -53,6 +56,7 @@ var anchors: Dictionary = {}              # slot -> Vector3 where a positional b
 var played: Dictionary = {}               # slot -> one-shots played
 var beds_started: Dictionary = {}         # slot -> times a bed was started (the rig reads this)
 var test_note: String = ""
+var surf_db: float = -80.0                # the surf trim last applied (dump)
 var current: Dictionary = {}              # layer -> slot name playing now ("" none)
 var last: String = ""                     # the F4 sound line: the bed started, the one-shot played, or the test group heard
 
@@ -64,6 +68,8 @@ var _beds: Dictionary = {}                # layer -> Array of {"slot", "level" 0
 var _positional: Dictionary = {}          # slot -> {"level", "target", "player"}
 var _check_left: float = 0.0
 var _gap_left: float = 6.0
+var _clock: float = 0.0                  # seconds since start, for the per-slot rest
+var _rest_until: Dictionary = {}          # slot -> _clock when it may play again (scheduler.repeat_s)
 var _shot_count: int = 0                  # one-shots started; with the day number it seeds the next gap, clip, place and pitch
 var _last_clip: String = ""               # "slot:index" of the last one-shot, kept across bed changes
 var _voices: Array = []
@@ -213,7 +219,7 @@ static func matches(tags: Dictionary, ctx: Dictionary) -> bool:
 			if water < NEAR_WATER:
 				return false
 		"sea_edge":
-			if water < NEAR_WATER or height >= SEA_EDGE_M or float(ctx.get("wind", 1.0)) < SURF_MIN_WIND:
+			if float(ctx.get("sea", water)) < NEAR_WATER or height >= SEA_EDGE_M or float(ctx.get("wind", 1.0)) < SURF_MIN_WIND:   # the sea only; a test context without "sea" falls back to water
 				return false
 		"lava":
 			if not bool(ctx.get("lava", false)):
@@ -294,6 +300,17 @@ static func shot_rng(day: int, counter: int, salt: String = "") -> RandomNumberG
 	return rng
 
 
+# Slots whose own rest is over at `clock` (seconds). A slot may carry scheduler.repeat_s [lo, hi]: after it plays it rests that long, so a slot that is
+# the only one-shot left (the owl at night) is not heard every 4 to 20 s (Dave 3 Nov 2026: "the owl yaps every 5 or 10 seconds").
+static func rested(options: Array, rest_until: Dictionary, clock: float) -> Array:
+	return options.filter(func(slot): return float(rest_until.get(slot, -1.0)) <= clock)
+
+
+static func rest_s(slots: Dictionary, slot: String, rng: RandomNumberGenerator) -> float:
+	var span: Array = (slots[slot].get("scheduler", {}) as Dictionary).get("repeat_s", [])
+	return rng.randf_range(float(span[0]), float(span[1])) if span.size() == 2 else 0.0
+
+
 # The next one-shot: a slot from `options` and a clip of it, never the clip played last (`last_clip` is "slot:index"; it survives a bed change). Only a
 # single clip with nothing else to play can repeat. Returns {"slot", "index", "clip"}.
 static func pick_shot(slots: Dictionary, options: Array, last_clip: String, rng: RandomNumberGenerator) -> Dictionary:
@@ -372,6 +389,7 @@ static func simulate(slots: Dictionary, ctx: Dictionary, seconds: float, day: in
 	var last_clip: String = ""
 	var repeats: int = 0
 	var order: Array = []
+	var rest_until: Dictionary = {}
 
 	while not options.is_empty():
 		var rng: RandomNumberGenerator = shot_rng(day, counter)
@@ -382,8 +400,11 @@ static func simulate(slots: Dictionary, ctx: Dictionary, seconds: float, day: in
 
 		live = live.filter(func(end): return float(end) > clock)
 
-		if live.size() < MAX_SHOTS:
-			var shot: Dictionary = pick_shot(slots, options, last_clip, rng)
+		var ready: Array = rested(options, rest_until, clock)
+
+		if live.size() < MAX_SHOTS and not ready.is_empty():
+			var shot: Dictionary = pick_shot(slots, ready, last_clip, rng)
+			rest_until[shot["slot"]] = clock + rest_s(slots, str(shot["slot"]), shot_rng(day, counter, "rest"))
 			repeats += 1 if str(shot["clip"]) == last_clip else 0
 			last_clip = str(shot["clip"])
 			order.append(last_clip)
@@ -403,7 +424,8 @@ func context(body: Node3D) -> Dictionary:
 	var conditions: Dictionary = _stage.ambient.conditions
 	var weights: Dictionary = _stage.ambient.weights
 	var height: float = body.global_position.y
-	var biomes: Array = biomes_for(float(weights.get("forest", 0.0)), float(weights.get("meadow", 0.0)), float(weights.get("water", 0.0)), height, force_biome, zone_tags)
+	var sea: float = float(_stage.ambient.sea_weight)
+	var biomes: Array = biomes_for(float(weights.get("forest", 0.0)), float(weights.get("meadow", 0.0)), sea, height, force_biome, zone_tags)   # "beach" means the sea (a forest pond is not a beach)
 
 	if anchors.has("bed_volcano_rumble") and not biomes.has("volcano"):
 		biomes.append("volcano")
@@ -413,6 +435,7 @@ func context(body: Node3D) -> Dictionary:
 		"time": time_class(float(conditions.get("hour", 14.0)), str(conditions.get("season", "autumn"))),
 		"biomes": biomes,
 		"water": float(weights.get("water", 0.0)),
+		"sea": sea,
 		"height": height,
 		"wind": float(_stage.weather.world_wind),
 		"lava": anchors.has("bed_lava_hiss"),
@@ -437,6 +460,7 @@ func update(delta: float, body: Node3D) -> void:
 
 	_voices = _voices.filter(func(v): return is_instance_valid(v) and v.playing)
 	_gap_left -= delta
+	_clock += delta
 
 	if _gap_left <= 0.0 and not _ctx.is_empty():
 		_gap_left = shot_rng(_day(), _shot_count).randf_range(float(GAP_S[0]), float(GAP_S[1]))
@@ -454,6 +478,15 @@ func _stream(slot: String, index: int = 0) -> AudioStream:
 		return null
 
 	return load(str(files[index % files.size()]))
+
+
+# The sound stage's warm list calls this with a slot name to load the slot's first clip ahead of its first use (a 20 s bed is a big file: loading it as the bed
+# starts is a frame hitch). Returns nothing; the resource cache keeps the clip.
+func _variants(slot: String) -> Array:
+	if _slots.has(slot):
+		_stream(slot)
+
+	return []
 
 
 func _looped(stream: AudioStream) -> AudioStream:
@@ -481,7 +514,7 @@ func _set_bed(layer: String, slot: String) -> void:
 		else:
 			var player: AudioStreamPlayer = AudioStreamPlayer.new()
 			player.stream = _looped(stream)
-			player.bus = "Wind" if wanted.contains("wind") else "Nature"   # the wind beds (desert, canyon) follow the Wind slider, not Nature (Dave 24 Oct)
+			player.bus = "Wind" if wanted.contains("wind") else ("Surf" if wanted.contains("surf") else "Nature")   # the wind beds (desert, canyon) follow the Wind slider, not Nature (Dave 24 Oct)
 			player.volume_db = SILENT_DB
 			add_child(player)
 			player.play()
@@ -538,6 +571,7 @@ func _set_positional(body: Node3D) -> void:
 		_positional[slot] = {"slot": slot, "level": 0.0, "target": 1.0, "player": player}
 		beds_started[slot] = int(beds_started.get(slot, 0)) + 1
 		last = "bed %s (positional)" % slot
+		print("sound bed: %s starts at %s, player at %s (%.0f m)" % [slot, str(wanted[slot]), str(body.global_position), body.global_position.distance_to(wanted[slot])])   # the volcano rumble bed among them (Dave 2 Nov 2026: rumbles nowhere near a cave)
 
 
 # AmbientLife's nearest water square, looked up again only every WET_REFRESH_S or after WET_REFRESH_M of walking (the scan itself is every 1.5 s).
@@ -566,7 +600,10 @@ func _advance_all(delta: float) -> void:
 
 			if layer == "shore_bed":
 				var w: Dictionary = _stage.ambient.weights
-				extra = SURF_MAX_DB + linear_to_db(maxf(surf_scale(float(w.get("water", 0.0)), float(w.get("forest", 0.0))), 0.0001))
+				extra = SURF_MAX_DB + linear_to_db(maxf(surf_scale(float(_stage.ambient.sea_weight), float(w.get("forest", 0.0))), 0.0001)) + float(_stage.fire_duck_db)
+				surf_db = extra
+			elif FIRE_DUCK_LAYERS.has(layer):
+				extra = float(_stage.fire_duck_db)
 
 			entry["player"].volume_db = linear_to_db(maxf(fade_gain(float(entry["level"])), 0.0001)) + float(BED_TRIM_DB.get(str(entry["slot"]), 0.0)) + extra
 
@@ -592,7 +629,7 @@ func _one_shot(body: Node3D) -> void:
 	if _voices.size() >= MAX_SHOTS or not _stage.has_room():
 		return
 
-	var options: Array = matching(_slots, "oneshot", _ctx)
+	var options: Array = rested(matching(_slots, "oneshot", _ctx), _rest_until, _clock)
 
 	if options.is_empty():
 		return
@@ -607,6 +644,7 @@ func _one_shot(body: Node3D) -> void:
 		return
 
 	_last_clip = str(shot["clip"])
+	_rest_until[slot] = _clock + rest_s(_slots, slot, shot_rng(_day(), counter, "rest"))
 	var angle: float = rng.randf() * TAU
 	var distance: float = rng.randf_range(float(ONESHOT_DIST_M[0]), float(ONESHOT_DIST_M[1]))
 	var band: Array = ONESHOT_HEIGHT_M.get(str(_slots[slot].get("group", "")), [0.0, 0.0])

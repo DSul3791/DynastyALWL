@@ -1,5 +1,5 @@
 {
-"F-01/F-24": "STILL BROKEN",
+"F-01/F-24": "FIXED",
 "F-02": "FIXED",
 "F-03": "FIXED",
 "F-04": "FIXED",
@@ -17,7 +17,7 @@
 "F-16": "FIXED",
 "F-17": "FIXED",
 "F-18": "FIXED",
-"F-19": "STILL BROKEN",
+"F-19": "FIXED",
 "F-20": "FIXED",
 "F-21": "FIXED",
 "F-22": "FIXED",
@@ -27,5 +27,5 @@
 "F-36": "FIXED",
 "S-farm": "FIXED",
 "S-place": "FIXED",
-"S-craft": "STILL BROKEN"
+"S-craft": "FIXED"
 }
