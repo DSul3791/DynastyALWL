@@ -39,7 +39,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Drink from water source (not an item) | none? | Sonny/Steve | to verify |
 | Animal hit, death, eating (carcass) | death: `animal_view.fell` (a body gone within 1.5 s of a hit near it) -> `slots.play("animal_fall")` (land thud, soft for small kinds; 3 Nov). Hit: PR 204. Carcass: none? | MikeW | fall wired, to hear |
 | Crafting action itself (hand craft, kit use) | none? (craft_done cue only) | Steve | to verify |
-| Clothing put on / taken off | none? | Sal | to verify |
+| Clothing put on / taken off | `inventory_view.worn_event` -> `gear.dress` (one rustle, creak or clink) and `gear.set_worn(layers_for(worn ids))`, so worn clothing now sounds on steps (3 Nov) | Sal | wired, to hear |
 | Level up, goal done, hint | none? | Steve | to verify |
 
 Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Sonny, Sal) to expose any missing event, place the calls, add a test line per call.

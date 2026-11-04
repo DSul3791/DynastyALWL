@@ -5,6 +5,8 @@ extends Node
 #
 #   sound.gear.set_worn(["cloth", "chain", "iron"])     the player's worn layers (any mix, [] for none)
 #   sound.gear.step_at(["plate", "iron"], at, gait)      one step of someone else wearing those layers
+#   sound.gear.dress(item_id)                           a piece goes on or comes off (terrain_client from items.worn_event,
+#                                                       which also sets the worn layers from layers_for)
 #
 # Layers: body "cloth" (rustle), "leather" (creak), "chain" (jingle), "plate" (clank); footwear
 # "hobnail" (nail clicks) and "iron" (iron-shod clang). The footsteps (sound_stage.footstep) call
@@ -24,6 +26,11 @@ const GAIT_DB := [0.0, 3.0, 6.0]                          # walk, jog, run
 const SURFACE_DB := {"stone": 3.0, "gravel": 2.0, "sand": -2.0, "dirt": -3.0, "leaves": -4.0, "grass": -5.0, "grass_tall": -6.0,
 	"bushes": -6.0, "mud": -7.0, "snow": -9.0, "water": -9.0}
 const MAX_BODY_LAYERS := 2
+# Worn items to layers by a word in the item id (data/items/items.json clothing): the first word found wins, in this order.
+# Anything else worn (grass, fibre, wool, linen, fur, gambeson) is "cloth". Footwear has no hobnail or iron-shod item yet.
+const ITEM_LAYER_WORDS := [["plate", "plate"], ["helm", "plate"], ["mail", "chain"], ["hobnail", "hobnail"], ["iron_shod", "iron"],
+	["leather", "leather"], ["hide", "leather"]]
+const DRESS_DB := 14.0                                    # putting a piece on or off is louder than a step's layer
 
 var worn: Array = []
 var steps_played: int = 0
@@ -41,6 +48,40 @@ func setup(stage) -> void:
 
 func set_worn(layers: Array) -> void:
 	worn = layers.filter(func(l): return LAYER_DB.has(l))
+
+
+# The layer an item id adds ("" for none).
+static func layer_of(item_id: String) -> String:
+	if item_id == "":
+		return ""
+
+	for pair in ITEM_LAYER_WORDS:
+		if item_id.contains(pair[0]):
+			return pair[1]
+
+	return "cloth"
+
+
+# The layers a set of worn item ids gives, each once (for set_worn).
+static func layers_for(item_ids: Array) -> Array:
+	var out: Array = []
+
+	for id in item_ids:
+		var layer: String = layer_of(str(id))
+
+		if layer != "" and layer not in out:
+			out.append(layer)
+
+	return out
+
+
+# A piece of clothing or armour goes on or comes off: one rustle, creak or clink of its layer, close to the player.
+func dress(item_id: String) -> void:
+	var layer: String = layer_of(item_id)
+
+	if LAYER_DB.has(layer):
+		_play(layer, float(LAYER_DB[layer]) + DRESS_DB, null)
+		last = "dress " + layer
 
 
 # One footfall of the player's own gear; `boost_db` is the landing thud (sound_stage.footstep).

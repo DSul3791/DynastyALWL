@@ -1338,6 +1338,12 @@ func _welcome_body(info: Dictionary) -> void:
 		held.play_gather()
 		feel.strike(0.0, 0.3)
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
+	items.worn_event = func(changed: Array, ids: Array) -> void:
+		if not test_gear:
+			sound.gear.set_worn(SoundStageScript.GearScript.layers_for(ids))   # what is worn rustles, creaks or clinks on every step (--test-gear keeps its own set)
+
+		if not changed.is_empty():
+			sound.gear.dress(str(changed[0]))   # one sound for a change (a swap sends both pieces in one list)
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
