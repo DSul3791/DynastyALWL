@@ -114,7 +114,7 @@ func _init() -> void:
 		var a2 = make(players, name)
 		a2.cfg["species"][name]["spawn_share"] = 1.0
 		a2.hour_now = func(): return c[3]
-		a2.biome_at = func(x, z): return c[2]
+		a2.biome_at = func(x, z): return "ocean" if c[2] == "beach" and fposmod(x, 80.0) < 20.0 else c[2]   # a beach has the sea beside it
 		a2.starter = Vector2(100000.0, 100000.0)
 		run(a2, 40.0)
 		check(count(a2, name) > 0, "%s spawn in %s at hour %d (%d)" % [name, c[2], int(c[3]), count(a2, name)])
@@ -182,7 +182,7 @@ func _init() -> void:
 	check(moved[0] >= 0.0 and moved[0] < 0.5 and moved[1] > 0.5, "a deer out of its hours stays put; by day it wanders (moved %.1f m at 02:00, %.1f m at noon)" % [moved[0], moved[1]])
 	# Gulls on the beach (MikeW 2026-11-02): seabirds are a land flock: they spawn on dry beach ground as one record of several birds and take off together.
 	var gulls = make([Vector3(0.0, 10.0, 0.0)], "seabird")
-	gulls.biome_at = func(x, z): return "beach"
+	gulls.biome_at = func(x, z): return "ocean" if fposmod(x, 80.0) < 20.0 else "beach"
 	gulls.water_level = func(x, z): return NAN
 	gulls.hour_now = func(): return 12.0
 	run(gulls, 30.0)
@@ -230,6 +230,35 @@ func _init() -> void:
 	check(wood.size() > 0 and kinds.keys() == ["songbird"], "woodland holds songbird nests under the trees (%d, %s)" % [wood.size(), str(kinds.keys())])
 	nest_a.blocked = func(x, z): return true
 	check(nest_a.nests_near(Vector3.ZERO, 300.0).is_empty(), "no nests on water")
+
+
+	# Frogs live by fresh water (MikeW, 3 Nov): a pond 20 m off is fine, a dry wood or a sea shore is not.
+	a = make(players, "frog")
+	var frog: Dictionary = a.cfg["species"]["frog"]
+	a.biome_at = func(x, z): return "temperate_forest"
+	a.water_level = func(x, z): return 9.0 if x > 18.0 and x < 26.0 else NAN
+	check(a._habitat_score(frog, 0.0, 0.0, 10.0) > 0.0, "a frog may spawn 20 m from a pond")
+	check(a._habitat_score(frog, -100.0, 0.0, 10.0) < 0.0, "a frog never spawns 100 m from any water")
+	a.biome_at = func(x, z): return "ocean" if x > 18.0 else "marsh"
+	check(a._habitat_score(frog, 0.0, 0.0, 10.0) < 0.0, "sea water does not count as a frog pond")
+	var rabbit: Dictionary = a.cfg["species"]["rabbit"]
+	a.water_level = func(x, z): return NAN
+	check(a._habitat_score(rabbit, 0.0, 0.0, 10.0) > 0.0, "a rabbit does not need water nearby")
+
+	# Ducks keep to fresh water: deep water on ocean ground is refused, a lake is fine.
+	var ducks: Dictionary = a.cfg["species"]["duck"]
+	a.blocked = func(x, z): return true
+	a.water_level = func(x, z): return 0.0
+	a.biome_at = func(x, z): return "ocean"
+	check(a._habitat_score(ducks, 0.0, 0.0, 10.0) < 0.0, "ducks do not spawn on the open sea")
+	a.biome_at = func(x, z): return "temperate_forest"
+	check(a._habitat_score(ducks, 0.0, 0.0, 10.0) > 0.0, "ducks spawn on a lake")
+
+	# Gulls and seals keep to the coast (MikeW, 3 Nov): a salt marsh by the sea is fine for gulls, one 200 m inland is not.
+	var gull: Dictionary = a.cfg["species"]["seabird"]
+	a.biome_at = func(x, z): return "ocean" if x > 40.0 else "marsh"
+	check(a._habitat_score(gull, 0.0, 0.0, 10.0) > 0.0, "gulls may spawn on a salt marsh by the sea")
+	check(a._habitat_score(gull, -200.0, 0.0, 10.0) < 0.0, "gulls never spawn on a marsh 200 m inland")
 
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

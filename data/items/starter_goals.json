@@ -112,7 +112,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Lash a ridge pole, lean 32 sticks against it and weave in 8 leaves with 4 twine. Place it with the open side towards you.",
+			"hint": "Lash a ridge pole, lean 16 sticks against it and weave in 4 leaves with 2 twine. Place it with the open side towards you.",
 			"after": [
 				"fire"
 			],
@@ -128,7 +128,7 @@
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Gather bedding from ferns or thatch from grass, then lash a Rough bed from sticks and bedding and place it under cover.",
+			"hint": "Make a wooden hammer (a wooden block, a stick and a twine), press R with it in hand and build a Rough bed in your lean-to: 10 thatch from thatch grass or heather, 4 sticks and 2 twine.",
 			"after": [
 				"shelter"
 			],

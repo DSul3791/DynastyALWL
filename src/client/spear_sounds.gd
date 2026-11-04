@@ -6,6 +6,7 @@ extends Node
 #   sound.spear.throw(from, to, speed_mps, material)   the heave, then the flight (a whistle that moves
 #                                              along the path) and, on arrival, the hit; returns the
 #                                              flight time in seconds
+#   sound.spear.arrow(to, dur, material)       an arrow comes down at `to` after `dur` s (soft thunk; held_item's bow)
 #   sound.spear.hit(material, at, strength)    the spear lands: "wood", "stone", "soil" or "flesh"
 #
 # Sounds: generated in assets/audio/spear/ (make_spear.py); recordings in assets/audio/recorded/spear/ win.
@@ -20,6 +21,7 @@ const THROW_DB := -8.0
 const FLIGHT_DB := -14.0
 const HIT_DB := -4.0
 const MAX_DISTANCE_M := 150.0
+const ARROW_STRENGTH := 0.35          # an arrow lands far softer than a spear
 
 var played: Dictionary = {}             # sound name -> count
 var last: String = ""
@@ -59,6 +61,11 @@ func throw(from: Vector3, to: Vector3, speed_mps: float = 28.0, material: String
 	return dur
 
 
+# An arrow loosed from a bow: no heave and no whistle, only the soft thunk where it comes down after `dur` seconds.
+func arrow(to: Vector3, dur: float, material: String = "soil") -> void:
+	_flights.append({"player": null, "from": to, "to": to, "t": 0.0, "dur": maxf(dur, 0.05), "material": material, "strength": ARROW_STRENGTH})
+
+
 # The spear lands in `material` at `at`; strength 0 to 1 sets loudness.
 func hit(material: String, at: Vector3, strength: float = 1.0) -> bool:
 	if material not in MATERIALS:
@@ -82,7 +89,7 @@ func update(delta: float) -> void:
 				player.stop()
 				player.queue_free()
 
-			hit(str(flight["material"]), flight["to"], 1.0)
+			hit(str(flight["material"]), flight["to"], float(flight.get("strength", 1.0)))
 			_flights.remove_at(n)
 
 
