@@ -14,7 +14,10 @@ const SEGMENTS := 12
 const RINGS := 7
 const SIZE := Vector3(0.22, 0.15, 0.19)      # the lump's half extents before the per-stone scale (as before)
 
+const PILE_SEGMENTS := 7       # the stones of a rock pile: a dozen of them share the pile's 900-triangle cap, so each is about 56 triangles (the old lump's count)
+const PILE_RINGS := 4
 static var _mesh_cache: ArrayMesh
+static var _pile_cache: ArrayMesh
 static var _material: StandardMaterial3D
 
 
@@ -71,14 +74,24 @@ static func material() -> StandardMaterial3D:
 
 
 static func mesh() -> ArrayMesh:
-	if _mesh_cache != null:
-		return _mesh_cache
+	if _mesh_cache == null:
+		_mesh_cache = _build(SEGMENTS, RINGS)
+	return _mesh_cache
 
+
+# The coarser stone for rock piles: the same noise, normals, colour and material on a 7 x 4 sphere.
+static func pile_mesh() -> ArrayMesh:
+	if _pile_cache == null:
+		_pile_cache = _build(PILE_SEGMENTS, PILE_RINGS)
+	return _pile_cache
+
+
+static func _build(segments: int, rings: int) -> ArrayMesh:
 	var base: SphereMesh = SphereMesh.new()
 	base.radius = 0.5
 	base.height = 1.0
-	base.radial_segments = SEGMENTS
-	base.rings = RINGS
+	base.radial_segments = segments
+	base.rings = rings
 	var arrays: Array = base.get_mesh_arrays()
 	var source: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
@@ -131,7 +144,7 @@ static func mesh() -> ArrayMesh:
 	out[Mesh.ARRAY_TEX_UV] = arrays[Mesh.ARRAY_TEX_UV]
 	out[Mesh.ARRAY_TANGENT] = arrays[Mesh.ARRAY_TANGENT]      # the base sphere's, close enough for the fine grain (the material is triplanar)
 	out[Mesh.ARRAY_INDEX] = indices
-	_mesh_cache = ArrayMesh.new()
-	_mesh_cache.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
-	_mesh_cache.surface_set_material(0, material())
-	return _mesh_cache
+	var built: ArrayMesh = ArrayMesh.new()
+	built.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
+	built.surface_set_material(0, material())
+	return built
