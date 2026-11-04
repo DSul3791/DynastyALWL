@@ -91,6 +91,7 @@ var held_slot: int = 0
 var holding: bool = true                  # false after the held slot's key is pressed again: hands empty
 const HOTBAR_SLOTS := 10
 var aiming: bool = false
+const TORCH_PLACE_M := 3.0                # how far the crosshair reaches to stick a torch in the ground or on a wall
 var off_slot: int = -1                    # the hotbar slot carried in the left hand (items with "offhand": true: torch, shield), -1 for none
 var off_holding: bool = false             # false after its key is pressed again: left hand empty
 var blocking: bool = false                # B held with a shield in the left hand (the combat rules read this)
@@ -451,6 +452,50 @@ func flame_slot() -> int:
 	return -1
 
 
+# The hotbar slot of a torch in either hand that can be placed (items.json places_as: burning or doused), or -1.
+func _torch_hand_slot() -> int:
+	if _inv == null:
+		return -1
+
+	for spec in [[off_number(), off_slot], [held_number(), held_slot]]:
+		if int(spec[0]) != 0 and _inv.table.entry(_inv.table.id_of(int(spec[0]))).has("places_as"):
+			return int(spec[1])
+
+	return -1
+
+
+# True when the right hand holds nothing that has a right click of its own (a tool, a weapon, food).
+func _right_hand_free() -> bool:
+	if not holding or held_number() == 0:
+		return true
+
+	var entry: Dictionary = _inv.table.entry(held_id())
+	return entry.has("places_as") or not (str(entry.get("kind", "")) in ["tool", "weapon"] or _inv.edible_slot(held_slot))
+
+
+# Where the crosshair is within TORCH_PLACE_M: on ground or a floor the torch stands up facing the player, on a wall it faces out of the wall; the server checks the rest.
+func _place_torch_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * TORCH_PLACE_M))
+
+	if hit.is_empty():
+		_inv._on_notice("Aim at the ground or a wall close by to place the torch")
+		return
+
+	var normal: Vector3 = hit["normal"]
+	var at: Vector3 = hit["position"]
+	var on_wall: bool = absf(normal.y) <= 0.4
+
+	if not on_wall and normal.y < 0.65:
+		_inv._on_notice("Too steep for a torch there")
+		return
+
+	var facing: Vector3 = normal if on_wall else from - at
+	var yaw_deg: int = int(round(rad_to_deg(atan2(facing.x, facing.z))))
+	_arm_play("use", 0.5)
+	_net.inventory_action.rpc_id(1, Net.ACT_PLACE_TORCH, _torch_hand_slot(), 1 if on_wall else 0, yaw_deg, at)
+
+
 # Whether the camera is under cover from the rain (a tree's crown or a roof).
 func flame_covered() -> bool:
 	return _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))
@@ -701,6 +746,11 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	# Right click with a hammer opens its menu (or shuts it); left click in the menu picks (Dave 3 Nov 2026). Shift is left to other tools.
 	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _hammer_tier() > 0:
 		blueprints.toggle(_hammer_tier())
+		return true
+
+	# Right click with a torch in the left hand and nothing in the right that uses right click: stick the torch in the ground or on a wall (Dave, 4 Nov 2026).
+	if button == MOUSE_BUTTON_RIGHT and pressed and not blueprints.is_open and _right_hand_free() and _torch_hand_slot() >= 0:
+		_place_torch_here()
 		return true
 
 	if blueprints.is_open:

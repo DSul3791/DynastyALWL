@@ -1459,6 +1459,40 @@ static func wall_torch(lit: bool = false) -> Node3D:
 	return root
 
 
+# A torch placed from the hand on a wall (Dave, 4 Nov 2026): the wall torch's backplate, arm and torch with the backplate's middle at the origin, where the player aimed
+# (the wall is at z = 0, the torch leans out toward +z).
+static func torch_sconce(lit: bool = false) -> Node3D:
+	var root: Node3D = wall_torch(lit)
+
+	for child in root.get_children():
+		(child as Node3D).position.y -= 1.7
+
+	return root
+
+
+# A torch pushed into the ground from the hand (Dave, 4 Nov 2026): the held torch's stick, soot-dark at the top, a bound rag head about 0.8 m up, leaning a little.
+static func standing_torch(lit: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var lean: Vector3 = Vector3(0.08, 0.0, 0.0)
+	var stick: MeshInstance3D = _cyl(root, 0.022, 0.85, Vector3(0.0, 0.33, 0.0), _tone_mat(Color(0.42, 0.3, 0.17)), 7, 0.018)
+	stick.rotation = lean
+	var soot: MeshInstance3D = _cyl(root, 0.024, 0.18, Vector3(0.0, 0.66, 0.026), _tone_mat(Color(0.24, 0.17, 0.1)), 7, 0.02)
+	soot.rotation = lean
+	var head: MeshInstance3D = _cyl(root, 0.05, 0.15, Vector3(0.0, 0.8, 0.064), _tone_mat(Color(0.26, 0.17, 0.1)), 7, 0.04)
+	head.rotation = lean
+	var band: MeshInstance3D = _cyl(root, 0.052, 0.014, Vector3(0.0, 0.75, 0.06), _tone_mat(Color(0.34, 0.26, 0.17)), 7, 0.052)
+	band.rotation = lean
+	var char_top: MeshInstance3D = _cyl(root, 0.052, 0.04, Vector3(0.0, 0.87, 0.07), _tone_mat(Color(0.16, 0.1, 0.065)), 7, 0.05)
+	char_top.rotation = lean
+
+	if lit:
+		var flame: MeshInstance3D = _cyl(root, 0.0, 0.3, Vector3(0.0, 1.03, 0.08), _tone_mat(Color(1.0, 0.65, 0.15)), 6, 0.06)
+		flame.rotation = lean
+
+	return root
+
+
 # One bed builder for the comfort beds (Dave's comfort feature): `kind` "straw" (a log frame, a thick straw tick, a folded wool blanket, a rolled pillow), "feather" (a plank frame, a white
 # linen cover over a plump feather tick, two pillows, a blue wool blanket) or "canopy" (the feather bed with four turned posts, a top frame and a curtain on each long side). 1.0 x 2.0 m like the rough bed
 # (long axis along x), top of the mattress 0.5 to 0.62 m up.

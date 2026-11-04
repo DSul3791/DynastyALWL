@@ -18,6 +18,24 @@ func check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
+func _find(items, kind: String) -> int:
+	for id in items._items:
+		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == kind:
+			return id
+
+	return 0
+
+
+func _count(items, kind: String) -> int:
+	var n: int = 0
+
+	for id in items._items:
+		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == kind:
+			n += 1
+
+	return n
+
+
 func _init() -> void:
 	var table = ItemTableScript.load_default()
 	var torch: Dictionary = table.entry("torch")
@@ -86,6 +104,41 @@ func _init() -> void:
 	items._items.erase(900001)
 	items._items.erase(900002)
 	items._items.erase(900003)
+
+	# Placing (Dave, 4 Nov 2026): a burning torch stuck in the ground stays lit; the open rain puts it out; hold E gives it back doused.
+	items.ground_height = func(_x, _z): return 5.0
+	items.action(7, Net.ACT_RELIGHT, 900003, 0, 0, Vector3.ZERO)      # the fire is gone: still doused
+	check(inv.numbers[slot] == doused, "no fire, no relight")
+	inv.numbers[slot] = lit
+	items.action(7, Net.ACT_PLACE_TORCH, slot, 0, 90, Vector3(101.5, 5.0, 100.0))
+	var stood: int = _find(items, "standing_torch")
+	check(stood != 0 and inv.numbers[slot] == 0, "a torch stuck in the ground leaves the hand")
+	check(stood != 0 and bool(items._items[stood]["struct"].get("lit", false)), "the standing torch burns")
+	items.action(7, Net.ACT_PLACE_TORCH, slot, 0, 0, Vector3(101.5, 5.0, 100.0))
+	check(_count(items, "standing_torch") == 1, "an empty hand places nothing")
+	items.rain_now = func(): return 0.9
+	items.cover_at = func(_p): return 2.0
+	items._lights_tick(1.0)
+	check(stood != 0 and bool(items._items[stood]["struct"].get("lit", false)), "under a roof the standing torch burns in the rain")
+	items.cover_at = func(_p): return 0.0
+	items._lights_tick(1.0)
+	check(stood != 0 and not bool(items._items[stood]["struct"].get("lit", false)), "the open rain puts the standing torch out")
+	items._take_down(7, inv, stood)
+	check(_count(items, "standing_torch") == 0 and inv.count_of(doused) == 1, "taking it back gives a doused torch")
+
+	# On a wall: placed where aimed, off the ground; a burning one comes back burning.
+	items.rain_now = func(): return 0.0
+	var back: int = inv.numbers.find(doused)
+	inv.numbers[back] = lit
+	items.action(7, Net.ACT_PLACE_TORCH, back, 1, 180, Vector3(101.0, 6.6, 100.0))
+	var hung: int = _find(items, "torch_sconce")
+	check(hung != 0 and absf(float(items._items[hung]["pos"].y) - 6.6) < 0.01, "a torch on a wall stays where it was aimed")
+	items._take_down(7, inv, hung)
+	check(_count(items, "torch_sconce") == 0 and inv.count_of(lit) == 1, "a burning torch comes back burning")
+	items.action(7, Net.ACT_PLACE_TORCH, inv.numbers.find(lit), 0, 0, Vector3(101.0, 7.5, 100.0))
+	check(_count(items, "standing_torch") == 0, "the ground placement needs the ground")
+	items.action(7, Net.ACT_PLACE_TORCH, inv.numbers.find(lit), 0, 0, Vector3(140.0, 5.0, 100.0))
+	check(_count(items, "standing_torch") == 0, "out of reach: nothing placed")
 
 	print("torch douse tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

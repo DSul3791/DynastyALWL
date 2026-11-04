@@ -678,6 +678,18 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if str(station_def.get("station", "")) != "":
 		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
 
+	# A light (a torch stuck in the ground or on a wall, a wall torch, a chandelier): E lights it with its fuel from the pack (a stick for a torch), hold E takes it down.
+	if str(station_def.get("use", "")) == "light":
+		var burning: bool = _world[id].get("light") != null
+		var what: String = "the torch" if bool(station_def.get("hand_placed", false)) else "it"
+		var tap: Callable = func():
+			if burning:
+				show_notice("Hold E to take it back")
+			else:
+				net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+
+		return {"prompt": ("Hold E to take %s back" % what) if burning else ("Press E to light %s with a %s (hold E to take it back)" % [what, table.name_of(table.number_of(str(station_def.get("fuel", "stick")))).to_lower()]), "tap": tap, "hold": take_down}
+
 	return {"prompt": "Hold E to take down the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
 
 
