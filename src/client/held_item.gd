@@ -326,6 +326,21 @@ func _hammer_tier() -> int:
 	return int(entry.get("tier", 1)) if str(entry.get("tool_class", "")) == "hammer" else 0
 
 
+# Repair (hammer menu, then left click): the server mends the piece you aim at from materials nearby (building_wear.json) and says what it did.
+func _repair_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * 8.0)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+	var id: int = _inv.structure_id_near(hit["position"]) if not hit.is_empty() else 0
+
+	if id == 0:
+		_inv._on_notice("Aim at the wall, floor, roof or station you want to repair")
+		return
+
+	_arm_play("use", 0.6)
+	_net.inventory_action.rpc_id(1, Net.ACT_REPAIR_STRUCT, id, 0, 0, Vector3.ZERO)
+
+
 # Save building plan (hammer menu, then left click): keeps the building you aim at, every blueprint piece joined to it, as a plan in the menu.
 func _save_plan_here() -> void:
 	var from: Vector3 = _camera.global_position
@@ -662,9 +677,12 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return button == MOUSE_BUTTON_LEFT
 
-	if holding and _hammer_tier() > 0 and blueprints.mode == "save":
+	if holding and _hammer_tier() > 0 and (blueprints.mode == "save" or blueprints.mode == "repair"):
 		if button == MOUSE_BUTTON_LEFT and pressed:
-			_save_plan_here()
+			if blueprints.mode == "repair":
+				_repair_here()
+			else:
+				_save_plan_here()
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -1467,6 +1485,8 @@ func _caption() -> String:
 			text += "   (red: not enough materials; right click: the list)"
 		else:
 			text += "   (left click: build it with the materials in your pack; right click: the list)"
+	elif _hammer_tier() > 0 and blueprints.mode == "repair":
+		text += "   (Repair: left click a worn piece to mend it; right click: the menu)"
 	elif _hammer_tier() > 0 and blueprints.mode == "save":
 		text += "   (Save building plan: left click a building to keep it; right click: the menu)"
 	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":

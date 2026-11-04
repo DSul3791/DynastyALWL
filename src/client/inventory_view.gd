@@ -2222,6 +2222,22 @@ func _refresh_pile(id: int) -> void:
 
 
 
+# The world id of the placed structure nearest `point` within `reach` metres, or 0 (the hammer's Repair mode aims with it).
+func structure_id_near(point: Vector3, reach: float = 3.5) -> int:
+	var best: int = 0
+	var best_d: float = reach
+
+	for id in _world:
+		if _world[id].has("yaw") and int(_world[id]["state"]) >= 5:
+			var d: float = (_world[id]["pos"] as Vector3).distance_to(point)
+
+			if d <= best_d:
+				best_d = d
+				best = int(id)
+
+	return best
+
+
 # Every structure standing as {"pos", "state", "yaw" (degrees), "piece"}, for the hammer's "Save building plan".
 func structure_rows() -> Array:
 	var rows: Array = []
