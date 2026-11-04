@@ -2242,3 +2242,7 @@ Answered: 2026-11-04 15:14 UTC
 Answer: Well, once we get the creator made the theoretically you could make the Best look almost like anything just by adjusting randomly all of the variations and that could be used for NPC’s
 Answered: 2026-11-04 15:14 UTC
 
+## berries-stew-cook | Food: do berries (4 kcal) stew in a pot, and does the campfire refuse plants?
+Answer: No: I have been unable to place the cookpot
+Answered: 2026-11-04 15:15 UTC
+
