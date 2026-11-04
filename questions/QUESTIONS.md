@@ -71,13 +71,6 @@ Note: A blueprint would also need the feather and canopy beds changed, because t
 Note: Recommendation: No, keep it a hand craft placed in the lean-to, because it works today and the hammer needs a chopped wooden block first, which slows the first hour.
 [check]
 
-## creator-proportions-pr195 | Creator: does Dave's body change shape when you move Height, Legs, Arms, Head and Shoulders (PR #195)?
-Note: 1. Check out PR #195 and run tools/run_tests.sh --fast test_dynasty_proportions test_dynasty_body.
-Note: 2. Open the character creator and drag Height, Legs, Arms, Head and Shoulders from end to end.
-Note: 3. The body should reshape at once while the feet stay on the floor. Then press Play and check that the body in game has the same shape.
-Note: Recommendation: Yes if it reshapes cleanly. Width and face sliders are not done yet.
-[check]
-
 ## dynasty-hair-female | Dave's body: hair, beard and a female body need real meshes. Can you export them like the base male (rigged GLB on the same Mixamo skeleton)?
 Note: 1. The creator now shapes your body (PR #195), but the head is bald and every frame, feminine included, uses the male body.
 Note: 2. Code-made hair on your 55k-triangle body would look plastic and low-poly, which the art direction rules out.
