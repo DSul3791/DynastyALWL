@@ -249,7 +249,7 @@ static func _compute(data: Dictionary) -> void:
 static func _finish(data: Dictionary) -> ArrayMesh:
 	var out: ArrayMesh = ArrayMesh.new()
 	out.set_meta(SHAPED_KEY, true)
-	out.blend_shape_mode = Mesh.BLEND_SHAPE_MODE_RELATIVE
+	out.blend_shape_mode = Mesh.BLEND_SHAPE_MODE_NORMALIZED      # the shapes hold whole positions (base + offset); RELATIVE would add them on top of the base and grow or shrink the whole body
 
 	for shape_name in NAMES:
 		out.add_blend_shape(shape_name)
