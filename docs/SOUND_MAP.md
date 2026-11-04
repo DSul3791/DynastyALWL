@@ -8,7 +8,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Footstep on each ground, wet shoes, cloth | `sound_stage.gd`, `step_fx.gd` (`stepfx.step`) | Sonny (body) | wired |
 | Landing after a fall | `landing_sounds.gd`, called from `sound_stage.update` | Sonny | wired |
 | Stance change (crouch, sit, lie) | `terrain_client.gd:1087` `stance.set_stance` | Steve (stance rules) | wired |
-| Tool swing and hit (axe, pick, hammer, spade) | `held_item.gd:934-943` `hits.hit`, `hits.hit_ground`; `hits.swing` | Steve | wired for axe on wood and pick on ground; other tools to verify |
+| Tool swing and hit (axe, pick, hammer, spade) | `held_item.gd` `_strike` `hits.hit(_hit_tool())`, `hits.hit_ground`; `_start_swing` `hits.swing` (3 Nov: the swing whoosh was never called; a pick now sounds as a pick, a boulder as stone) | Steve | wired for axe and pick; hammer and spade swings use their own paths |
 | Pick a plant | `harvest.gd:145` `harvestfx.pick` | MikeW (plants) | wired |
 | Tree falls, trunk creak/crash/chips | `terrain_client.gd:3161` `trees.watch` | Steve (stump and trunk) | wired by world rows |
 | Dig terrain | `dig_sounds.gd` (5 call lines) | Sonny | wired |
@@ -34,12 +34,12 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Menu clicks | `ui.play` (9 call lines) | Tyler/Steve | wired |
 | Sleep and wake | none? | Steve | to verify |
 | Player hurt / damage taken, death, respawn | none? (landing mentions the `hurt` signal) | Steve | to verify |
-| Bow and arrow (draw, release, hit) | none? | Steve | to verify |
+| Bow and arrow (draw, release, hit) | `held_item.gd` bow press -> `slots.play("bow_draw")`, release with an arrow in the pack -> `bow_loose` (make_bow.py; 3 Nov). Landing: `spear.arrow` soft thunk where the flight (followed from bow.json) comes down; animal hits thud via hit_number | Steve | wired, to hear |
 | Fishing (cast, bite, catch) | none? (fish splash is ambient only) | Steve/MikeW | to verify |
 | Drink from water source (not an item) | none? | Sonny/Steve | to verify |
-| Animal hit, death, eating (carcass) | none? | MikeW | to verify |
+| Animal hit, death, eating (carcass) | death: `animal_view.fell` (a body gone within 1.5 s of a hit near it) -> `slots.play("animal_fall")` (land thud, soft for small kinds; 3 Nov). Hit: PR 204. Carcass: none? | MikeW | fall wired, to hear |
 | Crafting action itself (hand craft, kit use) | none? (craft_done cue only) | Steve | to verify |
-| Clothing put on / taken off | none? | Sal | to verify |
+| Clothing put on / taken off | `inventory_view.worn_event` -> `gear.dress` (one rustle, creak or clink) and `gear.set_worn(layers_for(worn ids))`, so worn clothing now sounds on steps (3 Nov) | Sal | wired, to hear |
 | Level up, goal done, hint | none? | Steve | to verify |
 
 Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Sonny, Sal) to expose any missing event, place the calls, add a test line per call.
@@ -55,3 +55,14 @@ Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Son
 - Fire put out by E (new, PR 32): covered by `fire_sounds.gd` `_was_lit` (lit to unlit plays `fire_out`); picking up an unlit fire plays the generic pickup cue.
 - Fishing cast: now plays `net_cast` at `held_item.gd` rod branch (stand-in, needs a listen). Bite and catch still wait on a client event (server text only).
 - Boar, songbird, frog, grouse, seal, seabird: step slots borrow existing clips (PR 41). Calls: songbird and frog come from the ambient layer; boar, grouse, seal, seabird have no recording.
+
+## First-day tool audit (3 Nov 2026, read from code, not heard)
+| Tool / action | Feedback today | Verdict |
+|---|---|---|
+| Stone axe on a tree, trunk, stump, log, bush | swing whoosh (`hits.swing`) plus `hit_axe_wood` on the strike; tree-fall sounds come from the world rows | covered |
+| Pickaxe or axe on the ground or a boulder | `hit_pick_stone` / `hit_pick_soil` by material (`hit_ground`) | covered |
+| Spade dig, fill | dig sounds by ground; fill plays the soil scoop | covered |
+| Hoe: path, smooth, grade, till | **none before 3 Nov** | filled: a soft `hit_spade_soil` scrape (strength 0.4, till 0.7) in `held_item.gd _hoe_here`; swap for a hoe recording when there is one |
+| Knapping, twine, carving, binding (craft work) | `craft_knap`, `craft_twine`, `craft_carve`, `craft_bind` loops while the craft bar runs, then `craft_done` | covered |
+| Fire-starting (kit placed, tinder, lit) | place sound from `placed`, `fire_light` when the fire turns lit, `fire_fuel` for fuel, `fire_out` | covered |
+| Torch/lantern held | `flame_torch`, `flame_lantern` | covered |

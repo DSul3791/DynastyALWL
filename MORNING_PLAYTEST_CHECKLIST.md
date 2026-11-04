@@ -18,6 +18,7 @@ The long version with every row and note is `MORNING_PLAYTEST_CHECKLIST_FULL.md`
 - **Lag work:** many frame-time fixes, a lower-priority server and a "HITCH" log line for frames over 100 ms. Shift+F3 lists every playing sound with a mute switch.
 - **Hoe road builder**, ocean swimming over any bed below 0 m, a palm belt at the beach, rivers drawn as one ribbon.
 - **First-person arms** smoother and set wider (bug 4, still being tuned).
+- **Merged 3 Nov:** the owl hoots every 45-120 s instead of every 4-20 s (#165); river sources sit on flats or at the bottom in their own pond (#92), and spring caves have a stream down the floor (#183); hillside water is one stream (#167); early-game text: fire hints say F, Camp bench goal, every fish counts, bought axe counts (#53); 4 in 10 animals now appear 60-120 m from you; flora stalls after digs and chops cut (#187); sound always async (#164). Later on 3 Nov: the lean-to is lighter (16 sticks, 4 leaves, 2 twine, #186) and bigger (4.16 x 5.44 m, ridge 2.4 m: walk in upright, #253); hillside brooks come out of a cave with the spring at the back (#170); river gullies near the spawn kept (#168, needs a rebake); greener shallows and bluer depths (#199); sound set-up at welcome down from 6-10 s to 0.1 s (#261).
 
 ## The first 10 minutes (what you should see)
 1. [ ] **Join.** Wait: the window may freeze for about 15 seconds (known). Then you stand in a summer forest meadow by a pond, spawn 53316, 68476, ground dry.
@@ -36,9 +37,14 @@ The long version with every row and note is `MORNING_PLAYTEST_CHECKLIST_FULL.md`
 14. [ ] **Bench** (Camp bench: 16 sticks, 6 twine, 4 stones, 60 s), then **wooden spear** (1 stick, 6 s; the stone is kept, not used up), **stone spear** (wooden spear + 2 twine, 10 s) and **stone knife** (2 stones, 1 stick, 8 s).
 
 ## Known broken or not yet checked by a person (3 Nov; bug numbers from `docs/BUGS_FOUND_IN_PLAY.md`, checks in `docs/handoff/DINO_BUG_CHECKS.md`)
-- **Still open:** 1 fire timer (now a sum of all fuel, #135: check it), 5 tree hits, 7 lag, 8 firewood tier, 10 jump animation.
+- **Fire left alone:** a burnt-out fire is removed 5 real minutes later, kit and store and all; an unlit laid fire after 30 minutes (by design in the code, not yet in any hint). Feed it before you walk off.
+- **Still open:** 7 lag (Steve), 8 firewood tier (the fire store works the tier out from its wood, #32 and #144: check that 3 firewood shows Medium), 10 jump animation.
+- **5 tree hits:** the fix (#76) is merged but switched off until you answer QA card tree-hits-follow-size. Until then a tree takes its species count: about birch 5, pine 8, beech 9, oak 12.
+- **1 fire timer:** fixed (#85, and #135 sums all fuel). Check that it jumps up when you add wood with F.
+- **Goals (fixed in #53, merged 3 Nov):** the log workbench now ticks the workbench goal (renamed "Build a Camp bench"), a bought axe counts, and the fish goal counts every live fish. Check that the fish goal opens after the bench.
+- **Hints:** since #53 the fire kit, nettle and food-at-fire hints fire. Ten later-game hints (fruit, orchard, beach, sea water, seasons, digging under a roof) still never show.
 - **Fixed, needs your check:** 2 and 3 chopping block and pile (#30), 9 logs in the fire (#32), 11 felled-tree size (#39), 6 the 2 s fell pause (#98, cutting still being timed).
-- **In-game hints still say the old fire controls** ("Press E to add wood", "Hold E to roast") until Sal's PR #53 is merged; follow this page, not the hint. The Tab and cold hints still say "Warmth".
+- **In-game hints now say the fire store controls** (F for wood and food, E lights or puts out; #53 merged 3 Nov) and the Tab and cold hints say Temperature.
 - Chest self-test fails (the chest itself is untested in the client).
 - Creator preview should now face you (Kathreen's fix, QA card pic-creator-front).
 - Lit-fire flames and felled-trunk bark: on QA cards, waiting for your answer.

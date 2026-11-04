@@ -1063,7 +1063,9 @@ static func make_face(g: Dictionary, skeleton: Skeleton3D) -> Node3D:
 		sphere.rings = 6
 		white.mesh = sphere
 		var wm: StandardMaterial3D = StandardMaterial3D.new()
-		wm.albedo_color = Color(0.96, 0.95, 0.92)
+		wm.albedo_color = Color(0.9, 0.88, 0.84)       # an eye white is never paper white
+		wm.roughness = 0.08                              # wet: the eye catches the sky (Kathreen, 3 Nov 2026)
+		wm.metallic_specular = 0.7
 		white.material_override = wm
 		eye.add_child(white)
 		var pupil: MeshInstance3D = MeshInstance3D.new()
@@ -1075,6 +1077,8 @@ static func make_face(g: Dictionary, skeleton: Skeleton3D) -> Node3D:
 		pupil.mesh = ps
 		var pm: StandardMaterial3D = StandardMaterial3D.new()
 		pm.albedo_color = Color(0.08, 0.06, 0.05)
+		pm.roughness = 0.05
+		pm.metallic_specular = 0.8
 		pupil.material_override = pm
 		pupil.position = Vector3(0.0, 0.0, -0.0155 * hs)
 		eye.add_child(pupil)

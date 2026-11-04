@@ -1928,7 +1928,9 @@
 			"name": "Log",
 			"kind": "material",
 			"description": "A heavy length of trunk. Split it for firewood, or wedge it into planks.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Any species' log from a felled tree counts (oak log, pine log and the rest)"
+			],
 			"used_for": [
 				"Used in Chopping block",
 				"Used in Log workbench",
@@ -1939,7 +1941,7 @@
 				"Used in Timber prop",
 				"Used to build Medium Forge"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"twine": {
 			"name": "Twine",
@@ -1990,7 +1992,7 @@
 				"Craft: 6 Stick, 3 Stone"
 			],
 			"used_for": [
-				"Placed on the ground as a laid fire. Press E with plant fibre, tinder, birch bark or tinder fungus in your pack to light it, then put wood in with F. Cooks, warms, lights."
+				"Placed on the ground as a laid fire. Press E with plant fibre, kindling, tinder, birch bark or tinder fungus in your pack to light it, then put wood in with F. Cooks, warms, lights."
 			],
 			"obtainable_now": true
 		},
@@ -2032,11 +2034,14 @@
 			"name": "Bark",
 			"kind": "material",
 			"description": "Bark stripped from a felled trunk.",
-			"how_to_get": [],
+			"how_to_get": [
+				"From a felled hardwood tree, now and then (birch and softwood bark comes off as thatch)",
+				"Picked from oak with a stone knife in the pack"
+			],
 			"used_for": [
 				"Used in Bark twine"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"leaves": {
 			"name": "Leaves",
@@ -2303,7 +2308,9 @@
 			"name": "Clay",
 			"kind": "material",
 			"description": "A heavy, sticky shovelful of clay. Fire it for bricks and pots.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Dug with a spade where the ground is clay, or below wet lowland soil"
+			],
 			"used_for": [
 				"Used in Brick",
 				"Used in Clay jug",
@@ -2314,7 +2321,7 @@
 				"Used to build Basic Oven",
 				"Used to build Clay hearth"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"sand": {
 			"name": "Sand",
@@ -2780,7 +2787,7 @@
 			"kind": "tool",
 			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"how_to_get": [
-				"Craft: 8 Twine, 4 Stone"
+				"Craft: 3 Rope, 4 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3940,9 +3947,11 @@
 			"name": "Rough bed",
 			"kind": "structure",
 			"description": "A low frame of sticks and branches with a heap of rough bedding, like a manger.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Build with the wooden hammer: 10 Thatch, 4 Stick, 2 Twine (inside a shelter)"
+			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"thatch_wall_kit": {
 			"name": "Thatch wall",
@@ -4159,14 +4168,16 @@
 			"name": "Flint",
 			"kind": "material",
 			"description": "A hard grey stone that sparks when struck. Common near rivers.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Lying at the water's edge now and then",
+				"Sometimes comes off a boulder you break with the axe or pick (more often near water)"
+			],
 			"used_for": [
 				"Used in Hide scraper",
 				"Used in Javelin",
 				"Used in Sickle"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"pyrite": {
 			"name": "Pyrite",
@@ -5051,14 +5062,15 @@
 			"kind": "food",
 			"description": "A wild bird's egg from a nest. Boil or fry it.",
 			"how_to_get": [
+				"Found in grouse nests on open ground (spring) and songbird nests in bushes and low trees (spring and summer)",
+				"Found in nests on the tide line (spring and summer)",
 				"Dropped by seabird when worked with a knife"
 			],
 			"used_for": [
 				"Used in Egg and nettle fry",
 				"Used in Herb omelette"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"seal_meat": {
 			"name": "Seal meat",
