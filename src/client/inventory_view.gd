@@ -101,6 +101,7 @@ var strain_fade: float = 0.0
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
+var lie_on_bed: Callable = Callable()        # (bed position, yaw degrees) after E on a bed: the client lays the player along it
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
 var _death_msec: int = 0                    # when the last death arrived, 0 when none is being shown
@@ -647,8 +648,15 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 	var station_def: Dictionary = _structure_by_state(state)
 
-	if str(station_def.get("use", "")) == "set_spawn":   # a bed: E sets it as the spawn point, hold E takes it down
-		return {"prompt": "Press E to set this bed as your spawn point (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+	if str(station_def.get("use", "")) == "set_spawn":   # a bed: E lies down on it and makes it the spawn point (Dave 4 Nov 2026), hold E takes it down
+		var bed: Dictionary = {"prompt": "Press E to lie down (hold E to take it down)", "hold": take_down}
+		bed["tap"] = func():
+			net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+
+			if lie_on_bed.is_valid() and _world.has(id):
+				lie_on_bed.call(_world[id]["pos"], float(_world[id].get("yaw", 0.0)))
+
+		return bed
 
 	if str(station_def.get("station", "")) != "":
 		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
