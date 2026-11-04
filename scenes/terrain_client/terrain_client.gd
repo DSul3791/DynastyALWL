@@ -798,6 +798,9 @@ func _ready() -> void:
 	net.died_received.connect(_on_died)
 	net.final_death_received.connect(_on_final_death)
 	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void:
+		if sound != null:
+			sound.spear.hit("flesh", at, SoundStageScript.SpearScript.hit_strength(amount))   # the hit lands: a jab, a thrown spear or an arrow in an animal (the numbers setting does not mute it)
+
 		if display.damage_numbers:
 			HitNumbersScript.spawn(self, at, amount))
 	net.start_at_received.connect(_on_start_at)
