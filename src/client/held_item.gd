@@ -68,7 +68,7 @@ const HELD_LOOK_TURN := {
 	"scythe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"striker": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"hammer": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
-	"hand_net": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # like the rod: the coil in the hand, the net bell standing up ahead of it (its top stays up)
+	"hand_net": Basis.IDENTITY,   # the net hangs from the hand instead (_make_hanging_net_model); listed so it goes through the look path
 	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
 	"rod": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # the fishing rod: butt to tip along +y, the reel underneath (-z), so the rod points forward and up in the hand
@@ -98,6 +98,7 @@ var _off_model: Node3D
 var _off_shown: int = 0
 
 var _inv                                  # InventoryView
+var _hanging_net: Mesh                    # the shore net as it hangs from the hand (BasicLook "hand_net_hanging"), built once
 var _net
 var _camera: Camera3D
 var _root: Node3D
@@ -932,6 +933,8 @@ func _process(delta: float) -> void:
 
 
 func _process_body(delta: float) -> void:
+	_hang_net()
+
 	if _draw_t >= 0.0:
 		_draw_t = _draw_t + delta if _is_bow() else -1.0   # putting the bow away lets the draw go
 
@@ -1856,6 +1859,9 @@ func _make_look_tool_model() -> Node3D:
 	if not HELD_LOOK_TURN.has(shape):
 		return null
 
+	if shape == "hand_net":
+		return _make_hanging_net_model(def)
+
 	var held: Mesh = BasicLook.mesh_for(held_id())
 	var length: float = held.get_aabb().size.x
 	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else (HELD_FIXED_SCALE[shape] if HELD_FIXED_SCALE.has(shape) else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01)))
@@ -1874,6 +1880,28 @@ func _make_look_tool_model() -> Node3D:
 		node.set_meta("grip_y", 0.1)   # an arrow is held about its middle, so the head and the shaft show in the view
 
 	return node
+
+
+# The shore net in the hand (Kathleen's check 4 Nov, net_held_right.png: held sideways and small): the hand closes on the coil and the bell hangs below it on its line,
+# mouth down, at its real size. The model's "hang" meta makes _hang_net keep it upright with the world every frame, turned only with the view.
+func _make_hanging_net_model(def: Dictionary) -> Node3D:
+	if _hanging_net == null:
+		_hanging_net = BasicLook.mesh("hand_net_hanging", Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)), def.get("bits", []))
+
+	var node: Node3D = Node3D.new()
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.mesh = _hanging_net
+	node.add_child(mesh)
+	node.set_meta("grip_y", 0.0)     # the coil is at the model's origin, in the hand
+	node.set_meta("hang", true)
+	return node
+
+
+func _hang_net() -> void:
+	if _model == null or not _model.has_meta("hang") or not _model.is_inside_tree() or _camera == null:
+		return
+
+	_model.global_basis = Basis(Vector3.UP, _camera.global_rotation.y)
 
 
 func _make_other_model() -> Node3D:
