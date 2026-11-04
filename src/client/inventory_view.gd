@@ -2878,9 +2878,8 @@ func _mesh_for(number: int) -> Mesh:
 			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}.get(id, LogLookScript.color_of(id))
 			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
 		elif id == "stone":
-			mesh = RockLook.mesh()      # an irregular faceted lump with its own vertex colours (src/client/rock_look.gd)
-			material.vertex_color_use_as_albedo = true
-			material.albedo_color = Color.WHITE
+			mesh = RockLook.mesh()      # a weathered field stone with its own vertex colours and grain (src/client/rock_look.gd)
+			material = RockLook.material()      # the stone's own grain material: the mesh is shared with the rock piles, so it keeps the one material
 		elif str(table.entry(id).get("kind", "")) in ["placeable", "structure", "tool", "weapon"]:
 			var crate: BoxMesh = BoxMesh.new()
 			crate.size = Vector3(0.3, 0.12, 0.2)

@@ -5,6 +5,7 @@ extends RefCounted
 # About 300-390 triangles per carcass. The ground model is the only thing that changes: ids, collision and the carry weight stay as they were.
 
 const PATH := "res://data/animals/carcass.json"
+const AnimalView := preload("res://src/client/animal_view.gd")
 
 static var _rows: Dictionary = {}
 static var _loaded: bool = false
@@ -62,22 +63,35 @@ static func _mesh(shape: String) -> Mesh:
 	return _meshes[shape]
 
 
-static func _material(color: Color) -> StandardMaterial3D:
-	var key: String = color.to_html()
+# The coat uses the same fur shader as the living animal (animal_view.gd COAT_SHADER), so a kill matches the animal it was. A dead coat is flatter and duller: less fuzz at the rim,
+# a little matted. Antlers and the beak take `fur = false`: horn, no hairs (Kathreen, 3 Nov 2026).
+static var _coat_shader: Shader
+
+
+static func _material(color: Color, fur: bool = true) -> Material:
+	var key: String = color.to_html() + ("f" if fur else "h")
 
 	if not _materials.has(key):
-		var m: StandardMaterial3D = StandardMaterial3D.new()
-		m.albedo_color = color
-		m.roughness = 1.0
+		if _coat_shader == null:
+			_coat_shader = Shader.new()
+			_coat_shader.code = AnimalView.COAT_SHADER
+
+		var m: ShaderMaterial = ShaderMaterial.new()
+		m.shader = _coat_shader
+		m.set_shader_parameter("coat", color)
+		m.set_shader_parameter("strands", 0.85 if fur else 0.15)
+		m.set_shader_parameter("fuzz", 0.18 if fur else 0.05)
+		m.set_shader_parameter("rough", 0.97 if fur else 0.6)
+		m.set_shader_parameter("spec", 0.12 if fur else 0.3)
 		_materials[key] = m
 
 	return _materials[key]
 
 
-static func _part(root: Node3D, shape: String, at: Vector3, size: Vector3, color: Color, rot: Vector3 = Vector3.ZERO) -> void:
+static func _part(root: Node3D, shape: String, at: Vector3, size: Vector3, color: Color, rot: Vector3 = Vector3.ZERO, fur: bool = true) -> void:
 	var node: MeshInstance3D = MeshInstance3D.new()
 	node.mesh = _mesh(shape)
-	node.material_override = _material(color)
+	node.material_override = _material(color, fur)
 	node.transform = Transform3D(Basis.from_euler(rot).scaled(size), at)
 	root.add_child(node)
 
@@ -111,12 +125,12 @@ static func build(species: String) -> Node3D:
 	_part(root, "sph", head_at, Vector3(width * 0.45, width * 0.42, head), coat if not bool(d.get("beak", false)) else Color(0.2, 0.4, 0.25))
 
 	if bool(d.get("beak", false)):
-		_part(root, "box", head_at + Vector3(0.0, -width * 0.04, -head * 0.6), Vector3(width * 0.2, width * 0.06, head * 0.5), Color(0.85, 0.65, 0.15))
+		_part(root, "box", head_at + Vector3(0.0, -width * 0.04, -head * 0.6), Vector3(width * 0.2, width * 0.06, head * 0.5), Color(0.85, 0.65, 0.15), Vector3.ZERO, false)
 
 	if bool(d["antlers"]):
 		for side in [-1.0, 1.0]:
-			_part(root, "cyl", head_at + Vector3(side * width * 0.2, width * 0.35 + head * 0.25, head * 0.25), Vector3(0.025, head * 0.9, 0.025), Color(0.78, 0.72, 0.6), Vector3(0.0, 0.0, side * 0.6))
-			_part(root, "cyl", head_at + Vector3(side * width * 0.4, width * 0.5 + head * 0.35, head * 0.1), Vector3(0.02, head * 0.5, 0.02), Color(0.78, 0.72, 0.6), Vector3(0.5, 0.0, side * 0.4))
+			_part(root, "cyl", head_at + Vector3(side * width * 0.2, width * 0.35 + head * 0.25, head * 0.25), Vector3(0.025, head * 0.9, 0.025), Color(0.78, 0.72, 0.6), Vector3(0.0, 0.0, side * 0.6), false)
+			_part(root, "cyl", head_at + Vector3(side * width * 0.4, width * 0.5 + head * 0.35, head * 0.1), Vector3(0.02, head * 0.5, 0.02), Color(0.78, 0.72, 0.6), Vector3(0.5, 0.0, side * 0.4), false)
 
 	var tail: float = float(d["tail"])
 	_part(root, "cone", Vector3(0.0, lift * 0.8, length * 0.5 + tail * 0.4), Vector3(width * 0.3, tail, width * 0.3), pale if species == "rabbit" else coat, Vector3(PI * 0.5 + 0.1, 0.0, 0.0))

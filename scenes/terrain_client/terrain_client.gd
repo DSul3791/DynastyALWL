@@ -1292,6 +1292,7 @@ func _welcome_body(info: Dictionary) -> void:
 	burrow_view.ground_at = _ground_below
 	add_child(burrow_view)
 	net.burrows_received.connect(burrow_view.on_burrows)
+	net.burrows_received.connect(_on_burrows_for_grass)
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)
@@ -1662,6 +1663,17 @@ var wet_gap_override: float = -1.0     # look rig (--shot-wet=GAP): pretend this
 var cavein_death                      # the cave-in death sequence (src/client/cavein_death.gd), made at the first one
 var showroom                          # the admin showroom at spawn (src/client/showroom.gd), shown while Admin mode is on
 var _cleared_key: int = 0
+var _burrow_spots: Array = []      # burrow mound spots from the server (burrow_view draws them), kept bare of grass
+
+
+func _on_burrows_for_grass(points: PackedVector3Array) -> void:
+	_burrow_spots = []
+
+	for point in points:
+		_burrow_spots.append(Vector3(snappedf(point.x, 0.01), point.y, snappedf(point.z, 0.01)))
+
+	if grass != null and items != null:
+		_sync_cleared()
 var _switches_applied: bool = false
 var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)
 var _cleared_cfg: Dictionary = {}
@@ -1758,6 +1770,10 @@ func _sync_cleared() -> void:
 		key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id)
 
 	_loose_segs = segs_now
+
+	for mound in _burrow_spots:      # rabbit burrow mounds are 0.13 m high: no grass stands through them (same bare patch as a path)
+		paths.append(mound)
+		key = key ^ hash(Vector2(mound.x, mound.z))
 
 	for boulder_id in items._boulders:
 		var boulder: Dictionary = items._boulders[boulder_id]
@@ -1962,6 +1978,14 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+	_respawn_gasp()
+
+
+# Back at the respawn point after a death: the player comes to with a sharp breath (batch3 slot respawn_gasp), so a death is not a
+# silent jump. Played at the new spot, after the body moved.
+func _respawn_gasp() -> void:
+	if sound != null:
+		sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
 
 
 # The end of the cave-in death sequence: back at the respawn point, as any other death does at once.
@@ -1973,6 +1997,7 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+	_respawn_gasp()
 
 
 var _water_key: Dictionary = {}   # chunk -> hash of the water bytes last received for it (unchanged water is not redrawn)
