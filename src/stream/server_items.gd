@@ -7735,7 +7735,7 @@ func _sync_breath(peer: int, tenths: int) -> void:
 
 # Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
 func _effort_at_speed(speed: float) -> float:
-	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [1.4, 0.5], [3.2, 0.75], [6.0, 1.0]])
+	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [1.4, 0.5], [3.2, 0.75], [9.0, 1.0]])
 
 	if speed <= float(anchors[0][0]):
 		return float(anchors[0][1])

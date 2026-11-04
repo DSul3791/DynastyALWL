@@ -10,13 +10,13 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Wheel (mouse) | Scroll out (wheel down) from first person to third person: the camera moves up and back a little at each step (1.6 m to 7 m behind, 0.4 m a step); in third person scrolling out pulls further, scrolling in comes closer and, past the nearest step, back to first person. The distance is remembered between sessions (`user://view.txt`); you always start in first person. The camera pulls in when a wall, the ground or a trunk is in the way. Works while flying. A plain placeholder body is drawn until there is a real character. Only while the mouse is captured (menus and the inventory keep their own scrolling) |
 | W A S D | Walk (1.4 m/s) |
 | Double-tap W (within 0.30 s) | Jog (3.2 m/s) |
-| Shift + W | Run (6 m/s) |
+| Shift + W | Run (9 m/s, BUG-011; the run animation, stride rate and footsteps keep the old 3 steps a second) |
 | B (held with a shield in the off hand) | Block with the shield while held |
 | Left click (hold) with a hoe | Does what the hoe is set to: Path (averages the ground about 2 m round, then treads a round brown patch, strong in the middle half metre and fading out by 1.25 m), Smooth, Grade line or Till. Repeats every 0.55 s while held |
 | Right click with a hoe | Opens a window to pick the hoe's mode (mouse wheel moves, left click chooses, right click closes) |
 | Shift + right click with a hoe | Sets grade point A, then B (stakes show). The moment B is set the ground along the line is levelled to the ramp between the two heights and a path is laid along it, by itself (about 2 stations a second, up to 40 m); a third click starts a new line |
 | Hold Shift + left click with a hoe | Grades the ground within 1.5 m of the A-B line toward a straight ramp (0.25 m per stroke, within 12 m of A, free; only the hoe wears) |
-| (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when jogging (4.2 m) and running (6 m) than walking (3 m) |
+| (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when jogging (4.2 m) and running (9 m, BUG-011) than walking (3 m) |
 | Space | Jump (walking) or go up (flying); on a ladder, let go and drop back |
 | Ladder (W / S) | Walk up to a placed ladder facing it and hold W to grab on and climb (1.1 m/s); S climbs down and steps off at the bottom; at the top W steps you onto the edge |
 | Ctrl | Go down (flying) |
