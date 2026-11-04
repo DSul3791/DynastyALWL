@@ -82,7 +82,7 @@ func _underground() -> bool:
 		var around: Vector3 = from + Vector3(cos(TAU * k / 8.0), 0.0, sin(TAU * k / 8.0)) * PIT_RING_M
 		var down: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(around + Vector3.UP * 60.0, around + Vector3.DOWN * 4.0))
 
-		if not down.is_empty() and not (down["collider"] as Object).has_meta("species_ids") and (down["position"] as Vector3).y >= from.y + PIT_M:
+		if not down.is_empty() and not (down["collider"] as Object).has_meta("species_ids") and not (down["collider"] as Object).has_meta("placed_structure") and (down["position"] as Vector3).y >= from.y + PIT_M:
 			higher += 1
 
 	if higher >= 5:
@@ -100,7 +100,7 @@ func _underground() -> bool:
 
 		var collider: Object = hit["collider"]
 
-		if collider is CollisionObject3D and not collider.has_meta("species_ids") and (hit["position"] as Vector3).y - from.y >= ROOF_M:
+		if collider is CollisionObject3D and not collider.has_meta("species_ids") and not collider.has_meta("placed_structure") and (hit["position"] as Vector3).y - from.y >= ROOF_M:
 			return true
 
 		if collider is CollisionObject3D:

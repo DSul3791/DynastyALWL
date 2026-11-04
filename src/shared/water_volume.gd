@@ -7,6 +7,7 @@ extends RefCounted
 # body of water: nothing is submerged in less than MIN_DEPTH_M.
 
 const MIN_DEPTH_M := 0.4
+const DRINK_DEPTH_M := 0.05   # Dave's QA list BUG-015 (3 Nov 2026): shallow reedy water is still water to drink from and to name
 
 
 # Water depth over the ground at a spot (0 when there is no water or no ground reading).

@@ -27,6 +27,8 @@ const GAP_S := [4.0, 20.0]
 const PITCH_SPREAD := 0.05
 const ONESHOT_DIST_M := [12.0, 45.0]
 const ONESHOT_HEIGHT_M := {"birds": [3.0, 10.0], "night birds": [4.0, 9.0]}
+const CALL_SLOTS := ["bed_forest_day", "bed_crickets", "bird_tweet", "bird_whistle", "bird_trill", "owl_hoot"]   # birds and insects: silent while it rains (weather calls under CALLS_FROM; BUG-004)
+const CALLS_FROM := 0.5
 const REPLACES := ["bird_whistle", "bird_trill", "owl_hoot", "frog_croak"]      # AmbientLife calls these slots take over (no doubled birds)
 const DUSK_BEFORE_H := 1.0
 const DARK_MARGIN_H := 0.5
@@ -264,7 +266,7 @@ static func choose_bed(slots: Dictionary, layer: String, ctx: Dictionary) -> Str
 	for slot in names:
 		var row: Dictionary = slots[slot]
 
-		if str(row.get("layer", "")) != layer or str(row.get("status", "")) == "empty" or not matches(row.get("tags", {}), ctx):
+		if str(row.get("layer", "")) != layer or str(row.get("status", "")) == "empty" or not matches(row.get("tags", {}), ctx) or rained_out(str(slot), ctx):
 			continue
 
 		var score: int = specificity(row.get("tags", {}))
@@ -276,6 +278,11 @@ static func choose_bed(slots: Dictionary, layer: String, ctx: Dictionary) -> Str
 	return best
 
 
+# A bird or insect slot while the weather has stopped the calls (ctx "calls", from weather_sounds.calls; 1 when absent).
+static func rained_out(slot: String, ctx: Dictionary) -> bool:
+	return CALL_SLOTS.has(slot) and float(ctx.get("calls", 1.0)) < CALLS_FROM
+
+
 # Every matching slot of a layer (one-shots and positional beds), sorted by name.
 static func matching(slots: Dictionary, layer: String, ctx: Dictionary) -> Array:
 	var list: Array = []
@@ -285,7 +292,7 @@ static func matching(slots: Dictionary, layer: String, ctx: Dictionary) -> Array
 	for slot in names:
 		var row: Dictionary = slots[slot]
 
-		if str(row.get("layer", "")) == layer and str(row.get("status", "")) != "empty" and matches(row.get("tags", {}), ctx):
+		if str(row.get("layer", "")) == layer and str(row.get("status", "")) != "empty" and matches(row.get("tags", {}), ctx) and not rained_out(str(slot), ctx):
 			list.append(str(slot))
 
 	return list
@@ -438,6 +445,7 @@ func context(body: Node3D) -> Dictionary:
 		"sea": sea,
 		"height": height,
 		"wind": float(_stage.weather.world_wind),
+		"calls": float(_stage.weather.calls),
 		"lava": anchors.has("bed_lava_hiss"),
 	}
 

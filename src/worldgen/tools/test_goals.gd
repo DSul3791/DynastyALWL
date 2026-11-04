@@ -79,6 +79,7 @@ func _init() -> void:
 	items.admin_mode_on = func(_p): return false
 	var rows: Array = items.goals_state(1)
 	check(rows.size() >= 10 and rows[0][3] == 1 and rows.any(func(r): return r[0] == "axe" and r[3] == 0), "goals_state lists the goals: the first open, the axe locked (%d goals)" % rows.size())
+	check(rows.any(func(r): return r[0] == "hoe" and r[3] == 0) and rows.any(func(r): return r[0] == "path" and r[3] == 0), "the hoe and path goals are listed, locked until the fire (Dave 4 Nov 2026)")
 
 	# Drink: needs the water and a drop in thirst room.
 	items.vitals_of(1)["wet"] = 1000.0
@@ -127,9 +128,10 @@ func _init() -> void:
 	check(done("fire"), "lighting the fire completes the fire goal")
 
 	# Shelter: a lean-to placed. Workbench: kit placed.
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 12, Vector3.ZERO)
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 32, Vector3.ZERO)   # the lean-to costs 16 sticks, 4 leaves, 2 twine (lighter 3 Nov; was 32/8/4)
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 4, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # admin give is capped at 100 a call
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 32, Vector3.ZERO)   # the lean-to costs 30 sticks, 200 leaves, 10 twine (Dave 4 Nov, claude-leanto-cost B)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 10, Vector3.ZERO)
 	craft("lean_to_kit", 1)
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(-3.0, 10.0, 0.0))
 	check(done("shelter"), "placing a lean-to completes the shelter goal")

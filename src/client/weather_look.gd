@@ -50,6 +50,8 @@ const CAVE_COME_OUT_S := 2.5             # (the eyes take longer to get used to 
 const CAVE_SHADOW_OFF := 0.05            # no sun shadows below this share of the light: nothing to cast
 const CAVE_DARK_FROM := 0.1              # rock enclosure (cave_sounds.gd) from which the light starts to fade
 const CAVE_DARK_FULL := 0.6              # and at which it is fully gone
+const CAVE_RAIN_FROM := 0.1              # rock enclosure from which falling rain and snow thin out (an overhang lets a little through)
+const CAVE_RAIN_GONE := 0.5              # and at which none falls: in a cave (cave_sounds.gd's "in a cave" mark). Dave's QA list BUG-009, 3 Nov 2026
 const EXPOSURE_CLEAR := 1.1
 const EXPOSURE_STORM := 0.95
 const SATURATION_CLEAR := 1.12
@@ -449,6 +451,11 @@ func _underwater_fog(environment: Environment, daylight: float, cover: float) ->
 	environment.fog_height_density = UNDER_DEEP_DENSITY
 
 
+# Share of the falling rain and snow that reaches the player at this rock enclosure: 1 in the open, 0 in a cave (BUG-009).
+static func sky_share(rock_enclosure: float) -> float:
+	return 1.0 - smoothstep(CAVE_RAIN_FROM, CAVE_RAIN_GONE, rock_enclosure)
+
+
 # Share of the sun and sky light that reaches the player at this rock enclosure (0 open air .. 1 a tunnel).
 static func cave_light(rock_enclosure: float, left: float = CAVE_LIGHT_DARK) -> float:
 	var shut: float = smoothstep(CAVE_DARK_FROM, CAVE_DARK_FULL, rock_enclosure)
@@ -495,17 +502,22 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	_rain.global_position = eye + Vector3(0.0, 12.0, 0.0)
 	_snow.global_position = eye + Vector3(0.0, 10.0, 0.0)
 	wind_cue.update(get_process_delta_time(), eye, _client.weather, rain, snow, under, 1.0 - day.night)
-	_rain.emitting = rain > 0.04 and not under
-	_snow.emitting = snow > 0.04 and not under
+	# BUG-009 (Dave's QA list, 3 Nov 2026): rain showed inside caves. The particles fall from above the eye, so under rock they would fall through it;
+	# they thin out under an overhang and stop in a cave, the same rock enclosure that dims the light.
+	var enclosed: float = _client.sound.cave.rock_enclosure if _client.sound != null and _client.sound.cave != null else 0.0
+	var open_sky: float = sky_share(enclosed)
+	var sheltered: bool = open_sky <= 0.0
+	_rain.emitting = rain > 0.04 and not under and not sheltered
+	_snow.emitting = snow > 0.04 and not under and not sheltered
 	# Falling streaks still in the air when you dive read as light rays fanned overhead (Dave's underwater shot, 2 Nov 2026).
-	_rain.visible = not under
-	_snow.visible = not under
-	_rain.amount_ratio = clampf(rain, 0.05, 1.0)
+	_rain.visible = not under and not sheltered
+	_snow.visible = not under and not sheltered
+	_rain.amount_ratio = clampf(rain * open_sky, 0.05, 1.0)
 	# Streak size and strength follow how hard it rains (and the storm): drizzle fine, short and faint; a storm long, thick and denser.
 	var hard: float = clampf(maxf(rain, float(_s.get("storm", 0.0))), 0.0, 1.0)
 	_rain_material.set_shader_parameter("size_scale", Vector2(lerpf(0.55, 1.7, hard), lerpf(0.5, 1.4, hard)))
 	_rain_material.set_shader_parameter("streak", Color(0.78, 0.84, 0.95, lerpf(0.10, 0.26, hard)))
-	_snow.amount_ratio = clampf(snow, 0.05, 1.0)
+	_snow.amount_ratio = clampf(snow * open_sky, 0.05, 1.0)
 
 	if _rain.emitting:
 		(_rain.process_material as ParticleProcessMaterial).direction = Vector3(tilt, -1.0, tilt * 0.4).normalized()

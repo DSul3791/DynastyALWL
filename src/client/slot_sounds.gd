@@ -17,7 +17,7 @@ const FADE_S := 0.3
 const PITCH_SPREAD := 0.05
 const START_OFFSET_S := 0.03
 const PRIORITY := {"door": 3, "ladder": 3, "table": 3, "cloth": 2, "water wheel": 1, "creature step": 1}       # by slot group; a lower number is shed first when the voices are nearly full
-const COOLDOWN_S := {"table": 0.4, "cloth": 0.5, "creature step": 0.12}
+const COOLDOWN_S := {"table": 0.4, "cloth": 0.5, "creature step": 0.12, "skill": 20.0}   # skill: the tock at most once every 20 s (Dave, 4 Nov)
 const SILENT_DB := -60.0
 
 var played: Dictionary = {}               # slot -> count of one-shots played (the rig and the tests read this)

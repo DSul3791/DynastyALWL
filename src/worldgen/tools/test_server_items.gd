@@ -1489,10 +1489,10 @@ func _init() -> void:
 
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
-	check(not cb._items.has(lying) and loose_of.call(block_n) == 4, "a log chopped on the ground makes 4 wooden blocks (%d)" % loose_of.call(block_n))
+	check(not cb._items.has(lying) and loose_of.call(block_n) == 3, "a log chopped on the ground makes 3 wooden blocks (%d)" % loose_of.call(block_n))
 
 	# A softwood log chops to softwood blocks, and those split to softwood firewood (wood_species.json class_items).
-	var soft_n: int = cb.table.number_of("wooden_block_soft")
+	var soft_n: int = cb.table.number_of("wooden_block_soft_large")   # a spruce log is a large shoulder log: large blocks (BUG-014)
 	var soft_fire_n: int = cb.table.number_of("firewood_soft")
 	cb.drop_in_world(cb.table.number_of("log_spruce"), 1, Vector3(1.0, 10.0, 0.0))
 	var spruce_lying: int = 0
@@ -1503,12 +1503,12 @@ func _init() -> void:
 
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, spruce_lying, 0, 0, Vector3.ZERO)
-	check(not cb._items.has(spruce_lying) and loose_of.call(soft_n) == 12, "a spruce log chopped on the ground makes 12 softwood blocks (%d)" % loose_of.call(soft_n))
+	check(not cb._items.has(spruce_lying) and loose_of.call(soft_n) == 3, "a spruce log chopped on the ground makes 3 large softwood blocks (%d)" % loose_of.call(soft_n))
 	cb.action(1, Net.ACT_ADMIN_GIVE, soft_n, 0, 1, Vector3.ZERO)
 	cb.inventory_of(1).remove(block_n, cb.inventory_of(1).count_of(block_n))
 	cb._last_use.clear()
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(soft_n) == 0 and loose_of.call(soft_fire_n) == 2, "a softwood block splits into softwood firewood")
+	check(cb.inventory_of(1).count_of(soft_n) == 0 and loose_of.call(soft_fire_n) == 4, "a large softwood block splits into 4 softwood firewood (%d)" % loose_of.call(soft_fire_n))
 
 	# The large log on the shoulder (Dave 2026-10-21): one at a time, named for its tree, heavy, split at the block, falls with the body.
 	var oak_log: int = cb.table.number_of("log_oak")
@@ -1632,6 +1632,13 @@ func _init() -> void:
 	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("poultice"), 0, 1, Vector3.ZERO)
 	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("poultice")), 0, 0, Vector3.ZERO)
 	check(vt.vitals_of(1)["health"] == 80.0, "a poultice restores 30 health")
+	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("herb_salve"), 0, 1, Vector3.ZERO)
+	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("herb_salve")), 0, 0, Vector3.ZERO)
+	check(vt.vitals_of(1)["health"] == 100.0, "a herb salve restores up to 25 health")
+	vt.vitals_of(1)["limp"] = 300.0
+	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("splint"), 0, 1, Vector3.ZERO)
+	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("splint")), 0, 0, Vector3.ZERO)
+	check(float(vt.vitals_of(1)["limp"]) == 0.0 and vt.inventory_of(1).count_of(vt.table.number_of("splint")) == 0, "a splint ends a limp and is used up")
 	vt.save()
 	var vt2 = make(vd)
 	vt2.peer_connected_hello(1, "abcdef123456")
@@ -1846,48 +1853,103 @@ func _init() -> void:
 
 	var floor_level: float = float(sa.strain_of(1)["s"])
 	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
-	# Fitness trains slowly like a skill (fitness.json train): any effort above min_effort adds, rest takes it back, never below the base.
+	# Fitness XP (fitness.json train, Dave 4 Nov): effort above 0.1 gives 1 + 2 x effort XP per 10 s into the day's bucket, which turns into points
+	# at game midnight (1,000 XP a point, the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, never below the base.
+	var clk: Array = [100.0]   # game seconds, day 0
+	var fit_gs: Callable = func(): return clk[0]
+	var midnight: Callable = func(x): clk[0] += 86400.0; x._train_fitness(1, 0.0, 0.0)
 	var tr = make(xd)
 	tr.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tr.game_seconds = fit_gs
 	tr.peer_connected_hello(1, "trainkey0001")
 	tr.set_fitness(1, 2)
 	check(tr.fitness_of(1) == 2, "fitness starts at its creation value")
-	tr._train_fitness(1, 1.0, 1700.0)
+	tr._train_fitness(1, 1.0, 3300.0)
+	midnight.call(tr)
 	check(tr.fitness_of(1) == 2, "just under a point of running changes nothing")
-	tr._train_fitness(1, 1.0, 200.0)
-	check(tr.fitness_of(1) == 3, "30 minutes running earns a point")
+	tr._train_fitness(1, 1.0, 400.0)
+	check(tr.fitness_of(1) == 2, "XP earned today does not count until midnight")
+	check(float(tr._characters[tr._peer_key[1]]["xp_today"]) > 100.0, "the day's XP waits in the character's bucket")
+	midnight.call(tr)
+	check(tr.fitness_of(1) == 3, "the day's running tips a point over at midnight")
 	var before_stroll: float = float(tr._characters[tr._peer_key[1]]["train"])
-	tr._train_fitness(1, 0.2, 600.0)
-	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) < before_stroll, "strolling earns nothing (and eases training back)")
+	tr._train_fitness(1, 0.05, 36000.0)
+	midnight.call(tr)
+	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "effort under the 10 percent line neither earns nor costs, even for hours")
+	tr._train_fitness(1, 0.0, 300.0)
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "a short rest under the grace time costs nothing")
+	var ts = make(xd)
+	ts.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	ts.game_seconds = fit_gs
+	ts.peer_connected_hello(1, "trainkey0005")
+	ts._train_fitness(1, 0.15, 3600.0)
+	midnight.call(ts)
+	check(float(ts._characters[ts._peer_key[1]]["train"]) > 0.0, "even a slow stroll over the 10 percent line earns a little")
 	var tw = make(xd)
 	tw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tw.game_seconds = fit_gs
 	tw.peer_connected_hello(1, "trainkey0002")
 	var tj = make(xd)
 	tj.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tj.game_seconds = fit_gs
 	tj.peer_connected_hello(1, "trainkey0003")
 	var tc = make(xd)
 	tc.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tc.game_seconds = fit_gs
 	tc.peer_connected_hello(1, "trainkey0004")
 	tw._train_fitness(1, 0.5, 3600.0)
 	tj._train_fitness(1, 0.75, 3600.0)
 	tc._train_fitness(1, 1.05, 3600.0)
+	clk[0] += 86400.0
+	tw._train_fitness(1, 0.0, 0.0)
+	tj._train_fitness(1, 0.0, 0.0)
+	tc._train_fitness(1, 0.0, 0.0)
 	var gw: float = float(tw._characters[tw._peer_key[1]]["train"])
 	var gj: float = float(tj._characters[tj._peer_key[1]]["train"])
 	var gc: float = float(tc._characters[tc._peer_key[1]]["train"])
 	check(gw > 0.0 and gw < gj and gj < gc, "an hour of walking trains less than jogging, less than hard tool work (%.2f %.2f %.2f)" % [gw, gj, gc])
+	check(absf(gw - 0.72) < 0.01, "an hour of walking is 720 XP, 0.72 of a point (%.3f)" % gw)
+	var t1 = make(xd)
+	t1.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	t1.game_seconds = fit_gs
+	t1.peer_connected_hello(1, "trainkey0007")
+	t1.set_fitness(1, 0)
+	t1._train_fitness(1, 1.0, 1800.0)
+	midnight.call(t1)
+	var first_pt: float = float(t1._characters[t1._peer_key[1]]["train"])
+	t1._characters[t1._peer_key[1]]["train"] = 5.0
+	t1._train_fitness(1, 1.0, 1800.0)
+	midnight.call(t1)
+	var gain_at_5: float = float(t1._characters[t1._peer_key[1]]["train"]) - 5.0
+	check(absf(first_pt - gain_at_5) < 1.0e-6 and gain_at_5 > 0.0, "every point costs the same XP at any level (%.3f vs %.3f)" % [first_pt, gain_at_5])
+	# Offline at midnight: the day's XP waits in the saved character and is paid at the next tick after login (one bucket only).
+	var to = make(xd)
+	to.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	to.game_seconds = fit_gs
+	to.peer_connected_hello(1, "trainkey0008")
+	to._train_fitness(1, 1.0, 3400.0)
+	clk[0] += 86400.0 * 3.0
+	to._train_fitness(1, 0.0, 1.0)
+	check(to.fitness_of(1) == 1, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
 	tr._train_fitness(1, 1.0, 1.0e7)
+	midnight.call(tr)
 	check(tr.fitness_of(1) == 10, "training stops at the top of the range")
 	tr.set_fitness(1, 2)
 	tr._train_fitness(1, 1.0, 1.0e7)
+	midnight.call(tr)
 	check(float(tr._characters[tr._peer_key[1]]["train"]) == 10.0 and tr.fitness_of(1) == 10, "training stops at max_gain above the base, clamped to the range")
 	tr.set_fitness(1, 2)
+	tr._characters[tr._peer_key[1]]["xp_today"] = 0.0
 	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
-	tr._train_fitness(1, 0.0, 14400.0 * 3.0)
-	check(tr.fitness_of(1) == 2, "rest takes points back slowly")
+	midnight.call(tr)
+	check(tr.fitness_of(1) > 2, "an hour and a half of running earns a point")
+	tr._train_fitness(1, 0.0, 43200.0 * 12.0)
+	check(tr.fitness_of(1) == 2, "full rest takes points back, slowly")
 	tr._train_fitness(1, 0.0, 1.0e7)
 	check(tr.fitness_of(1) == 2, "and never below the creation value")
 	# Saved: the training survives a restart (characters.json).
-	tr._train_fitness(1, 1.0, 1800.0 * 2.0)
+	tr._train_fitness(1, 1.0, 6700.0)
+	midnight.call(tr)
 	check(tr.fitness_of(1) == 4, "two points earned")
 	tr.save()
 	tr._finish_writer()
