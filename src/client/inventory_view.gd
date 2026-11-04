@@ -4139,16 +4139,44 @@ func _drop_selected(whole: bool) -> void:
 
 # The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name, what it makes and its ingredients (1 Nov);
 # a tab shows one category and the search works inside it. The same list is the crafting table, forge and every other station's menu.
-const SEARCH_HINT_ALL := "Search all recipes: name or ingredient (try hide)"
 func _build_recipe_filter() -> Control:
 	var holder: VBoxContainer = VBoxContainer.new()
+	# A real search box (Dave 4 Nov): a field background and border, a magnifying glass on the left, and no words in it.
+	var field: PanelContainer = PanelContainer.new()
+	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var box: StyleBoxFlat = StyleBoxFlat.new()
+	box.bg_color = Color(0.09, 0.08, 0.07, 0.95)
+	box.border_color = Color(0.62, 0.55, 0.42)
+	box.set_border_width_all(maxi(1, _px(2)))
+	box.set_corner_radius_all(_px(8))
+	box.content_margin_left = _px(10)
+	box.content_margin_right = _px(6)
+	box.content_margin_top = _px(4)
+	box.content_margin_bottom = _px(4)
+	field.add_theme_stylebox_override("panel", box)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", _px(8))
+	field.add_child(row)
+	var glass: Control = Control.new()
+	glass.custom_minimum_size = Vector2(_px(26), _px(26))
+	glass.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glass.draw.connect(func():
+		var colour: Color = Color(0.78, 0.72, 0.58)
+		var unit: float = glass.size.x
+		glass.draw_arc(Vector2(unit * 0.42, unit * 0.42), unit * 0.28, 0.0, TAU, 32, colour, maxf(1.5, unit * 0.1), true)
+		glass.draw_line(Vector2(unit * 0.63, unit * 0.63), Vector2(unit * 0.9, unit * 0.9), colour, maxf(1.5, unit * 0.12), true))
+	row.add_child(glass)
 	_recipe_search = LineEdit.new()
-	_recipe_search.placeholder_text = SEARCH_HINT_ALL
 	_recipe_search.clear_button_enabled = true
 	_recipe_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var bare: StyleBoxEmpty = StyleBoxEmpty.new()
+	for state in ["normal", "focus", "read_only"]:
+		_recipe_search.add_theme_stylebox_override(state, bare)
 	_style(_recipe_search, BODY_PX)
 	_recipe_search.text_changed.connect(func(_text): _refresh())
-	holder.add_child(_recipe_search)
+	row.add_child(_recipe_search)
+	holder.add_child(field)
 	var tabs: HFlowContainer = HFlowContainer.new()
 	holder.add_child(tabs)
 	_category_buttons.clear()
@@ -4305,9 +4333,6 @@ func _refresh() -> void:
 
 	for tab_name in _category_buttons:
 		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
-
-	if _recipe_search != null:
-		_recipe_search.placeholder_text = SEARCH_HINT_ALL if _recipe_category == "" else "Search in %s: name or ingredient" % _recipe_category
 
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(number)
