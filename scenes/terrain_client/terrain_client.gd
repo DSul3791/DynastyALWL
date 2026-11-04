@@ -130,6 +130,7 @@ const EventLogScript := preload("res://src/shared/event_log.gd")
 const CrashReportScript := preload("res://src/client/crash_report.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
+const PieceLook := preload("res://src/client/piece_look.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
@@ -1055,6 +1056,11 @@ func _welcome_body(info: Dictionary) -> void:
 	terrain.lod_count = LOD_COUNT
 	terrain.view_distance = VIEW_DISTANCE
 	terrain.mesh_block_size = 32
+	# Path decals paint only the ground: the terrain goes on its own render layer as well as the default one, when this voxel build can (piece_look.gd).
+	if "render_layers_mask" in terrain:
+		terrain.set("render_layers_mask", 1 | PieceLook.TERRAIN_DECAL_LAYER)
+		PieceLook.use_terrain_only_decals()
+
 	terrain.generate_collisions = true
 	terrain.collision_lod_count = 4
 	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
