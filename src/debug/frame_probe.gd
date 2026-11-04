@@ -22,6 +22,8 @@ static var _win_frames: int = 0
 static var _win_process_ms: float = 0.0   # engine monitors summed per frame since window_reset (the GPU probe's engine rows)
 static var _win_physics_ms: float = 0.0
 const FREEZE_MS := 500.0
+const HITCH_MS := 100.0                  # a frame this long prints a HITCH line at once (rate-limited)
+static var _hitch_next_msec: int = 0
 static var context: Callable = Callable()   # returns a short text about the game's state (set by the client), printed with every freeze line
 static var _freeze_prints: int = 0
 
@@ -84,6 +86,27 @@ static func frame(delta: float) -> void:
 		parts["~script process"] = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 		parts["~physics step"] = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 		parts["~at frame"] = float(_frames)
+
+		# Dave 3 Nov 2026: "every two steps or three it pauses for half a second". The slow-frame breakdown was only in the exit report; a hitch
+		# of 100 ms or more now prints at once with its biggest timed pieces (at most one line every 2 s), so a normal play log names it.
+		var now_msec: int = Time.get_ticks_msec()
+
+		if ms >= HITCH_MS and now_msec >= _hitch_next_msec:
+			_hitch_next_msec = now_msec + 2000
+			var named: Array = []
+
+			for name in _this_frame:
+				named.append([name, float(_this_frame[name]) / 1000.0])
+
+			named.sort_custom(func(a, b): return a[1] > b[1])
+			var text: PackedStringArray = PackedStringArray()
+
+			for k in range(mini(named.size(), 5)):
+				text.append("%s %.0f" % [named[k][0], named[k][1]])
+
+			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
+				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])
 

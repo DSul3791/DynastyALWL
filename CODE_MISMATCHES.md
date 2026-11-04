@@ -1,5 +1,7 @@
 # Data against Tyler's new systems: audit (Sal, 2026-10-31)
 
+**Status 3 Nov 2026 (checked against main):** mismatch 1 (`sow_seasons` list) and the ore-tier check (`needs_material` in `_hit_boulder`) are in the code. Camp goal events `worn_warmth`, `talked` and `moved_lit_night` are in the code (`server_items.gd` near `_worn_warmth`). Still open: the grow-days balance (2), `hints.json` triggers (they are read in `_hint_trigger_true`), and the unread proposal files (6).
+
 Checked against learn, farming, starter goals and ore/flint in src/stream/server_items.gd and boulders.json at daily head 5d7c4ac9. Tests: test_learn, test_farming, test_goals, test_ore all 0 failures after my data fixes.
 
 ## Data fixed by me
