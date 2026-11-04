@@ -416,6 +416,7 @@ var lag_run: Node = null               # --lag-run: the scripted early-game lag 
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
 var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
 var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
+var test_net: bool = false               # --net: hold the fishing net and click with it, pack before and after (NET TEST lines, BUG-022)
 var test_snare: bool = false             # --snare: set a snare and wait for a carcass (SNARE TEST lines; server knob traps.json test_chance)
 var test_place_foundation: bool = false   # --place-foundation: give a thatch floor kit and place it ahead (FOUNDATION TEST lines)
 var test_creatures: bool = false
@@ -762,6 +763,8 @@ func _ready() -> void:
 			test_sleep = true
 		elif argument == "--snare":
 			test_snare = true
+		elif argument == "--net":
+			test_net = true
 		elif argument == "--creatures":
 			test_creatures = true
 
@@ -1471,6 +1474,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_snare:
 		items.run_snare_test(self)
+
+	if test_net:
+		held.run_net_test()
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
