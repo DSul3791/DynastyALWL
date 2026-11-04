@@ -57,6 +57,7 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 
 	var anchors: Dictionary = {}
 	var count: int = 0
+	var frames: Dictionary = rig.get_meta("worn_frames", {}) if rig.has_meta("worn_frames") else {}
 
 	for item_id in item_ids:
 		var row: Dictionary = table().get(str(item_id), {})
@@ -78,7 +79,24 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 
 			# The generated body (src/client/character/body_generator.gd) has humanoid bone names; the parts below are written for the old names, so they are mapped
 			# when the skeleton has no bone of the old name. The old body is untouched by this.
-			if skeleton.find_bone(bone) < 0 and HUMANOID_NAMES.has(bone):
+			if frames.has(bone):
+				# A body in other bone frames (Dave's body, dynasty_body.gd _worn_frames) gives each old bone its own bone and a frame under it in the old axes.
+				var key: String = "frame_" + bone
+
+				if not anchors.has(key):
+					var frame_row: Array = frames[bone]
+					var holder: BoneAttachment3D = BoneAttachment3D.new()
+					holder.name = "Worn_" + bone
+					skeleton.add_child(holder)
+					holder.bone_name = str(frame_row[0])
+					var frame: Node3D = Node3D.new()
+					frame.name = "Frame"
+					frame.transform = frame_row[1]
+					holder.add_child(frame)
+					anchors[key] = frame
+
+				bone = key
+			elif skeleton.find_bone(bone) < 0 and HUMANOID_NAMES.has(bone):
 				bone = str(HUMANOID_NAMES[bone])
 
 			if not anchors.has(bone):
