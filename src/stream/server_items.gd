@@ -128,6 +128,7 @@ var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set 
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var send_notice: Callable      # (peer, text)
+var send_marker_done: Callable # (peer, Vector3): a road marker is reached or dropped, the client takes its flag down
 var standing_near: Callable    # (species name, position, radius) -> [position] of the nearest standing tree of that species, or []
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var shrub_info: Callable       # (chunk Vector2i, id) -> {name, position, height} of a standing bush or shrub (placer or planted), or {}; set by the server scene
@@ -313,6 +314,7 @@ var plant_stays: bool = false         # set by gather(): the last pick left the 
 var _arrows: Array = []             # arrows in the air: {peer, number, tip, damage, pos, vel, age, flown}
 var _traps = null                   # server_traps.gd (snares), made in setup
 var animals_near: Callable           # (point, radius) -> Array of {id, sp, pos}: the animals a snare can reach (set by the server)
+var animal_lure: Callable            # (animal id, point) -> bool: the animal moves its home to a snare and grazes there (set by the server)
 var animal_snare: Callable           # (animal id) -> bool: a snare closes on it, it leaves the world (set by the server)
 var trail_strength: Callable         # (x, z) -> how worn the game trail is there, 0 to 1 (set by the server)
 var _bow = null                     # server_bow.gd, made at the first shot
@@ -1015,11 +1017,13 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_HOE_SMOOTH:
 		_hoe_smooth(peer, inv, at)
 	elif kind == Net.ACT_HOE_GRADE_POINT:
-		_hoe_grade_point(peer, inv, a, at)
+		_hoe_grade_point(peer, inv, b, at)
 	elif kind == Net.ACT_HOE_GRADE:
 		_hoe_grade(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count, b)
+	elif kind == Net.ACT_REPAIR_STRUCT:
+		_repair_struct(peer, inv, a)
 	elif kind == Net.ACT_PLACE_BLUEPRINT:
 		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
 	elif kind == Net.ACT_THROW:
@@ -1937,7 +1941,7 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var spent: int = inv.wear[slot] + 1
 	inv.take_from_slot(slot, 1)
-	_flights.append({"number": number, "wear": spent, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+	_flights.append({"number": number, "wear": spent, "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
 
 
 # ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.
@@ -2040,9 +2044,26 @@ func _arrow_fly(delta: float) -> void:
 func _fly(delta: float) -> void:
 	_arrow_fly(delta)
 	for flight in _flights.duplicate():
+		var from: Vector3 = flight["pos"]
 		flight["vel"].y -= THROW_GRAVITY * delta
 		flight["pos"] += flight["vel"] * delta
 		flight["age"] += delta
+
+		# A thrown spear or javelin hits the first animal on its path for the weapon's throw_damage (MikeW, 3 Nov: it flew
+		# through them, so a new player could not hunt with the first weapon they make) and drops where it struck.
+		var throw_damage: float = float(table.entry(table.id_of(int(flight["number"]))).get("throw_damage", 0.0))
+
+		if throw_damage > 0.0 and hit_animal_path.is_valid() and flight.has("peer"):
+			var hit: Dictionary = hit_animal_path.call(int(flight["peer"]), from, flight["pos"], throw_damage)
+
+			if not hit.is_empty():
+				var at: Vector3 = hit["at"]
+				hit_number(int(flight["peer"]), at, throw_damage)
+				var below: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+				drop_in_world(int(flight["number"]), 1, Vector3(at.x, below if not is_nan(below) else at.y, at.z), int(flight.get("wear", 0)))
+				_flights.erase(flight)
+				continue
+
 		var ground: float = float(ground_height.call(flight["pos"].x, flight["pos"].z)) if ground_height.is_valid() else -1000000.0
 
 		if (not is_nan(ground) and flight["pos"].y <= ground) or flight["age"] >= THROW_MAX_S:
@@ -2379,7 +2400,7 @@ func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
 
 
 # The grade line (roads): point A, point B, then strokes along the line bring the ground toward the straight ramp between their heights.
-func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
+func _hoe_grade_point(peer: int, inv, _which: int, at: Vector3) -> void:
 	if not ground_height.is_valid() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > DIG_REACH_M or not _has_tool(inv, "hoe"):
 		return
 
@@ -2388,19 +2409,14 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
 	if is_nan(h):
 		return
 
-	var pair: Array = _grade_points.get(peer, [null, null])
-
-	if which == 0:
-		pair = [Vector3(at.x, h, at.z), null]
-	elif pair[0] != null:
-		pair[1] = Vector3(at.x, h, at.z)
-		_road_start(peer, pair[0], pair[1])
-
-	_grade_points[peer] = pair
+	var here: Vector3 = Vector3(at.x, h, at.z)
+	var before: Array = _grade_points.get(peer, [null, null])
+	_grade_points[peer] = [before[1] if before[1] != null else here, here]   # the last two markers, for the manual grade stroke
+	_road_marker(peer, here)
 
 
-# The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B is levelled to the straight ramp between the two
-# heights and a path is laid along it, by itself. Worked a station at a time (one every ROAD_STEP_S, at most ROAD_EDITS ground edits each), so a road
+# The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B follows the ground, averaged in 3 m sections (no straight ramp)
+# between the two heights and a path is laid along it, by itself. Worked a station at a time (one every ROAD_STEP_S, at most ROAD_EDITS ground edits each), so a road
 # never freezes the game the way one big edit would; the hoe wears once every ROAD_WEAR_EVERY stations and the job stops if the hoe is gone.
 const ROAD_MAX_M := 40.0
 const ROAD_STATION_M := 0.7
@@ -2409,22 +2425,78 @@ const ROAD_EDITS := 3
 const ROAD_WEAR_EVERY := 4
 const ROAD_HALF_WIDTH_M := 1.0
 const ROAD_DEPTH_M := 0.5
-var _roads: Dictionary = {}   # peer -> {"a": Vector3, "b": Vector3, "n": stations, "i": next station, "wait": seconds to the next one}
+const ROAD_SECTION_M := 3.0   # the ground is averaged over sections this long along the line
+var _roads: Dictionary = {}   # peer -> {"head": where the road has got to, "markers": [Vector3] waiting, "seg": null or {"a", "b", "n": stations, "i": next station, "wait": seconds to the next one}}
 
 
-func _road_start(peer: int, a: Vector3, b: Vector3) -> void:
-	var length: float = Vector2(b.x - a.x, b.z - a.z).length()
+# Surveyor mode (Dave 3 Nov 2026): the player drops markers while walking. Markers belong to the player who set them (the peer id keys the job, so a
+# builder never chases another player's markers). The first marker of an idle job is where the road starts; after that the builder takes the nearest
+# remaining marker to where it has got to, builds toward it, deletes it on arrival and goes for the next nearest. The job is done when none are left.
+const ROAD_MAX_MARKERS := 24
 
-	if length < 1.0:
-		_say(peer, "Points A and B are too close together.")
+
+func _marker_done(peer: int, at: Vector3) -> void:
+	if send_marker_done.is_valid():
+		send_marker_done.call(peer, at)
+
+
+func _road_abandon(peer: int, job: Dictionary) -> void:
+	_roads.erase(peer)
+	_marker_done(peer, job["head"])
+
+	if job["seg"] != null:
+		_marker_done(peer, job["seg"]["b"])
+
+	for marker in job["markers"]:
+		_marker_done(peer, marker)
+
+
+func _road_marker(peer: int, here: Vector3) -> void:
+	if not _roads.has(peer):
+		_roads[peer] = {"head": here, "markers": [], "seg": null}
+		_say(peer, "Road started at this marker: set more markers as you walk and the road builds toward the nearest one.")
 		return
 
-	if length > ROAD_MAX_M:
-		_say(peer, "The road is longer than %d m: set B nearer to A." % int(ROAD_MAX_M))
+	var job: Dictionary = _roads[peer]
+
+	if job["markers"].size() >= ROAD_MAX_MARKERS:
+		_say(peer, "Too many markers waiting: let the road catch up.")
 		return
 
-	_roads[peer] = {"a": a, "b": b, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
-	_say(peer, "Road marked: the ground is being levelled and trodden from A to B.")
+	job["markers"].append(here)
+	_say(peer, "Marker set: the road builds toward the nearest one, then the next.")
+
+
+# Takes the nearest marker to the head as the next stretch; returns false when no markers are left.
+func _road_next_segment(peer: int, job: Dictionary) -> bool:
+	var head: Vector3 = job["head"]
+
+	while not job["markers"].is_empty():
+		var best: int = 0
+
+		for k in job["markers"].size():
+			if Vector2(job["markers"][k].x - head.x, job["markers"][k].z - head.z).length() < Vector2(job["markers"][best].x - head.x, job["markers"][best].z - head.z).length():
+				best = k
+
+		var target: Vector3 = job["markers"][best]
+		job["markers"].remove_at(best)
+		var length: float = Vector2(target.x - head.x, target.z - head.z).length()
+
+		if length > ROAD_MAX_M:
+			_say(peer, "A marker is more than %d m from the road: skipped." % int(ROAD_MAX_M))
+			_marker_done(peer, target)
+			continue
+
+		if length < 1.0:
+			job["head"] = target
+			head = target
+			_marker_done(peer, target)
+			continue
+
+		job["seg"] = {"a": head, "b": target, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
+		return true
+
+	return false
 
 
 func _road_tick(delta: float) -> void:
@@ -2433,26 +2505,54 @@ func _road_tick(delta: float) -> void:
 
 	for peer in _roads.keys():
 		var job: Dictionary = _roads[peer]
-		job["wait"] = float(job["wait"]) - delta
-
-		if float(job["wait"]) > 0.0:
-			continue
-
-		job["wait"] = ROAD_STEP_S
 		var inv = inventory_of(peer)
 
 		if inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
-			_roads.erase(peer)
+			_road_abandon(peer, job)   # the hoe is gone: the road stops and the waiting flags come down
 			continue
 
-		var i: int = int(job["i"])
-
-		if i >= int(job["n"]):
-			_roads.erase(peer)
+		if job["seg"] == null and not _road_next_segment(peer, job):
+			_roads.erase(peer)   # no markers left: the road is done
+			_marker_done(peer, job["head"])
+			_say(peer, "The road is finished.")
 			continue
 
-		_road_station(peer, inv, job["a"], job["b"], i, int(job["n"]))
-		job["i"] = i + 1
+		var seg: Dictionary = job["seg"]
+		seg["wait"] = float(seg["wait"]) - delta
+
+		if float(seg["wait"]) > 0.0:
+			continue
+
+		seg["wait"] = ROAD_STEP_S
+		var i: int = int(seg["i"])
+
+		if i >= int(seg["n"]):
+			_marker_done(peer, seg["a"])
+			_marker_done(peer, seg["b"])
+			job["head"] = seg["b"]   # reached the marker: it is deleted (taken off the list when it was chosen) and the next nearest is next
+			job["seg"] = null
+			continue
+
+		_road_station(peer, inv, seg["a"], seg["b"], i, int(seg["n"]))
+		seg["i"] = i + 1
+
+
+# The ground height a road station is brought to: the average of the ground along the line within ROAD_SECTION_M (3 m) around the station, so the road
+# follows the lie of the land and eases over bumps and dips instead of cutting a straight ramp between the two markers (Dave 3 Nov 2026).
+func _road_section_height(a: Vector3, b: Vector3, t: float) -> float:
+	var length: float = Vector2(b.x - a.x, b.z - a.z).length()
+	var total: float = 0.0
+	var count: int = 0
+
+	for k in range(-3, 4):
+		var tt: float = clampf(t + float(k) * (ROAD_SECTION_M / 6.0) / maxf(length, 0.01), 0.0, 1.0)
+		var h: float = float(ground_height.call(lerpf(a.x, b.x, tt), lerpf(a.z, b.z, tt)))
+
+		if not is_nan(h):
+			total += h
+			count += 1
+
+	return total / float(count) if count > 0 else lerpf(a.y, b.y, t)
 
 
 func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> void:
@@ -2460,10 +2560,11 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 	var along: Vector2 = Vector2(b.x - a.x, b.z - a.z).normalized()
 	var side: Vector2 = Vector2(-along.y, along.x)
 	var centre: Vector2 = Vector2(a.x, a.z).lerp(Vector2(b.x, b.z), t)
-	var target: float = lerpf(a.y, b.y, t)
+	var target: float = _road_section_height(a, b, t)
 	var edits: int = 0
+	var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(Vector3(centre.x, target, centre.y))) > 0.05   # no digging or filling in water: the road goes on over a ford
 
-	if dig_ground.is_valid() and fill_ground.is_valid():
+	if not wet and dig_ground.is_valid() and fill_ground.is_valid():
 		for offset in [0.0, ROAD_HALF_WIDTH_M, -ROAD_HALF_WIDTH_M]:
 			if edits >= ROAD_EDITS:
 				break
@@ -2523,8 +2624,6 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 	if i % ROAD_WEAR_EVERY == 0:
 		_wear_tool(peer, inv, "hoe", "dig")
 
-	if i == n - 1:
-		_say(peer, "The road is finished.")
 
 
 func _hoe_grade(peer: int, inv, at: Vector3) -> void:
@@ -3451,7 +3550,7 @@ func _load_world_items() -> void:
 				if not _chests.has(int(row[10])):
 					_chests[int(row[10])] = InventoryScript.new(table)
 
-			if row.size() > 12 and _structures.get(str(row[9]), {}).has("support"):
+			if row.size() > 12 and (_structures.get(str(row[9]), {}).has("support") or (not BuildingWear.rule_for(_wear_cfg, str(entry["struct"]["kind"])).is_empty() and float(row[12]) > 0.0)):
 				entry["struct"]["born"] = float(row[12])
 
 			if row.size() > 12 and str(row[9]) == "remains":
@@ -3467,6 +3566,7 @@ func _load_world_items() -> void:
 				entry["wear"] = int(row[8])
 
 			_items[_next_id] = entry
+			_grid_add(_next_id, entry)
 			_next_id += 1
 			continue
 
@@ -5707,6 +5807,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_next_uid += 1
 
 	_items[_next_id] = entry
+	_grid_add(_next_id, entry)
 	_next_id += 1
 	_add_roof(entry)
 
@@ -5715,6 +5816,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	if attaching:
 		_refresh_pots()   # the fire under it takes the firewood cap now
+
+	if not BuildingWear.rule_for(_wear_cfg, str(def["kind"])).is_empty():
+		entry["struct"]["born"] = _now_game_s()   # last cared for: placed now
 
 	if def.has("support"):
 		entry["struct"]["born"] = _now_game_s()
@@ -5761,6 +5865,188 @@ func _snap_to_fire(peer: int, spot: Vector3) -> Vector3:
 
 
 # The structure's roof joins the cover index (both ends do the same on seeing the structure).
+# --- Building wear and repair (DESIGN_IDEAS.md Section 8.13; Dave 4 Nov 2026) ---
+const BuildingWear := preload("res://src/shared/building_wear.gd")
+var _wear_cfg: Dictionary = BuildingWear.load_config()
+
+
+# The condition (0 to 1) of a placed piece now; 1.0 for a kind that does not wear. A piece placed before wear existed starts its clock now.
+func piece_condition(id: int) -> float:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct"):
+		return 1.0
+
+	var rule: Dictionary = BuildingWear.rule_for(_wear_cfg, str(it["struct"]["kind"]))
+
+	if rule.is_empty():
+		return 1.0
+
+	if not it["struct"].has("born"):
+		it["struct"]["born"] = _now_game_s()
+
+	return BuildingWear.condition(rule, float(it["struct"]["born"]), _now_game_s())
+
+
+# Hammer, Repair mode, left click on a worn piece: spends repair_share of the piece's blueprint materials times what it lost, from loose items near the
+# piece, then containers within reach, then the pack (all or nothing), and sets the piece back to full condition.
+func _repair_struct(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or not _peer_pos.has(peer):
+		return
+
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
+		_say(peer, "Too far to repair that.")
+		return
+
+	if _tool_slot(inv, "hammer") < 0:
+		_say(peer, "You need a hammer in your hand bar to repair.")
+		return
+
+	var kind: String = str(it["struct"]["kind"])
+	var def: Dictionary = _structures.get(kind, {})
+	var piece_name: String = kind.replace("_", " ")
+	var blueprint: Dictionary = _blueprints.get(int(_blueprint_of_kit.get(str(def.get("kit", "")), 0)), {})
+
+	if BuildingWear.rule_for(_wear_cfg, kind).is_empty() or blueprint.is_empty():
+		_say(peer, "The %s does not wear, so it needs no repair." % piece_name)
+		return
+
+	var cond: float = piece_condition(id)
+
+	if cond >= float(_wear_cfg.get("good_condition", 0.98)):
+		_say(peer, "The %s is in good repair (%d percent)." % [piece_name, int(round(cond * 100.0))])
+		return
+
+	var needs: Array = BuildingWear.repair_needs(blueprint["cost"], cond, float(_wear_cfg.get("repair_share", 0.5)))
+	var log_need: int = 0
+
+	for need in needs:
+		if str(need[0]) == "log":
+			log_need = int(need[1])
+
+	if log_need > 0:
+		_pull_nearby_logs(peer, inv, maxi(0, log_need - inv.count_of(table.number_of("log"))))   # shoulder and ground logs count, as for building
+
+	var ground_m: float = float(_wear_cfg.get("ground_m", 6.0))
+	var boxes: Array = _boxes_near(peer)
+	var short: PackedStringArray = []
+
+	for need in needs:
+		var number: int = table.number_of(str(need[0]))
+		var have: int = inv.count_of(number) + _ground_count(number, it["pos"], ground_m)
+
+		for box in boxes:
+			have += box[1].count_of(number)
+
+		if have < int(need[1]):
+			short.append("%d %s" % [int(need[1]), str(table.entry(str(need[0])).get("name", need[0])).to_lower()])
+
+	if not short.is_empty():
+		_say(peer, "Repairing the %s (%d percent) needs %s." % [piece_name, int(round(cond * 100.0)), ", ".join(short)])
+		return
+
+	for need in needs:
+		var number: int = table.number_of(str(need[0]))
+		var left: int = int(need[1])
+		left -= _ground_take(number, left, it["pos"], ground_m)
+
+		for box in boxes:
+			if left <= 0:
+				break
+
+			var from_box: int = mini(left, box[1].count_of(number))
+
+			if from_box > 0 and box[1].remove(number, from_box):
+				left -= from_box
+				_push_box(int(box[0]), box[1])
+
+		if left > 0:
+			inv.remove(number, left)
+
+	it["struct"]["born"] = _now_game_s()
+	_dirty = true
+	_say(peer, "Repaired the %s (was %d percent)." % [piece_name, int(round(cond * 100.0))])
+
+
+# Loose items (not structures, fires or trees) of one kind within `radius` of a spot.
+func _ground_count(number: int, at: Vector3, radius: float) -> int:
+	var total: int = 0
+
+	for gid in _items:
+		var g: Dictionary = _items[gid]
+
+		if int(g.get("number", 0)) == number and not g.has("struct") and not g.has("fire") and not g.has("tree") and (g["pos"] as Vector3).distance_to(at) <= radius:
+			total += int(g["count"])
+
+	return total
+
+
+func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
+	var taken: int = 0
+
+	for gid in _items.keys():
+		if taken >= want:
+			break
+
+		var g: Dictionary = _items[gid]
+
+		if int(g.get("number", 0)) != number or g.has("struct") or g.has("fire") or g.has("tree") or (g["pos"] as Vector3).distance_to(at) > radius:
+			continue
+
+		var take: int = mini(int(g["count"]), want - taken)
+
+		if take >= int(g["count"]):
+			_items.erase(gid)
+		else:
+			g["count"] = int(g["count"]) - take
+
+		taken += take
+
+	return taken
+
+
+# [[item id, inventory], ...] of containers (chests) within reach of the player.
+func _boxes_near(peer: int) -> Array:
+	var out: Array = []
+
+	for sid in _items:
+		var s: Dictionary = _items[sid]
+
+		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0:
+			continue
+
+		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= Interact.server_reach_m() + 2.0:
+			out.append([sid, _chests[int(s["struct"]["uid"])]])
+
+	return out
+
+
+# --- Solid footprints (Dave 3 Nov 2026): the server knows where walls and heavy stations stand, so animals can be stopped by them ---
+const StructureGridScript := preload("res://src/stream/structure_grid.gd")
+var _grid = StructureGridScript.new()
+
+
+# Registers a freshly placed or loaded structure when its structures.json row says "blocks_walk".
+func _grid_add(id: int, entry: Dictionary) -> void:
+	var kind: String = str(entry["struct"]["kind"])
+	var def: Dictionary = _structures.get(kind, {})
+
+	if bool(def.get("blocks_walk", false)):
+		_grid.add(id, kind, entry["pos"].x, entry["pos"].z, float(entry["struct"]["yaw"]), float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0)))
+
+
+# True when a wall or a heavy station stands over (x, z); margin grows each piece by an animal's body radius.
+func structure_blocks(x: float, z: float, margin: float = 0.0) -> bool:
+	return _grid.blocks(x, z, margin, _items)
+
+
+# True when the straight step from (x0, z0) to (x1, z1) goes through such a piece: a long stride cannot jump a thin wall.
+func structure_blocks_step(x0: float, z0: float, x1: float, z1: float, margin: float = 0.0) -> bool:
+	return _grid.segment_blocked(x0, z0, x1, z1, margin, _items)
+
+
 func _add_roof(entry: Dictionary) -> void:
 	var def: Dictionary = _structures.get(str(entry["struct"]["kind"]), {})
 
@@ -8700,6 +8986,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 		return
 
 	practice(peer, "fish")
+	_goal_event(peer, "fish_caught")
 	var line: String = "You haul in %s." % ", ".join(caught)
 
 	if fish_stock(cell) < int(_fishing_data().get("hint_below", 3)):
@@ -8763,6 +9050,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) ->
 			drop_in_world(table.number_of(species), left, pos)
 
 		practice(peer, "fish")
+		_goal_event(peer, "fish_caught")
 		_say(peer, str(cfg.get("say_hit", "")) % table.name_of(table.number_of(species)).to_lower())
 		_dirty = true
 	else:
@@ -8859,6 +9147,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 		drop_in_world(table.number_of(species), left, _peer_pos[peer])
 
 	practice(peer, "fish")
+	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
 	var landed: String = "You land a %s." % table.name_of(table.number_of(species)).to_lower()
 
 	if int(_fish_stock[key][0]) < int(_fishing_data().get("hint_below", 3)):
@@ -9832,6 +10121,7 @@ func dev_place(spec: String) -> int:
 		_next_uid += 1
 
 	_items[_next_id] = entry
+	_grid_add(_next_id, entry)
 	_next_id += 1
 	_add_roof(entry)
 	_dirty = true
@@ -10122,7 +10412,7 @@ func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "
 		return inv.count_of(table.number_of(str(check["have_item"]))) >= need
 
 	if check.has("have_item_any"):
-		var total: int = 0
+		var total: int = int(st["goal_counts"].get(_goal_count_key(str(check["or_event"]), ""), 0)) if check.has("or_event") else 0   # a catch counts though the fish was eaten
 
 		for id in check["have_item_any"]:
 			total += inv.count_of(table.number_of(str(id)))

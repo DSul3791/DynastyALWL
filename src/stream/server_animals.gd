@@ -122,6 +122,103 @@ func _drop_blood(a: Dictionary) -> void:
 		blood.pop_front()
 
 
+# Burrow spots (protocol 87, MikeW 3 Nov): the burrows of living animals within send_radius_m of a point, nearest first, at most
+# burrows_sent (default 40). The client draws a small mound at each so a new player can see where rabbits live.
+func burrows_near(point: Vector3) -> PackedVector3Array:
+	var radius: float = float(cfg.get("send_radius_m", 120.0))
+	var found: Array = []
+
+	for id in animals:
+		var b: Vector3 = animals[id].get("burrow", Vector3.INF)
+
+		if b == Vector3.INF:
+			continue
+
+		var d: float = Vector2(b.x - point.x, b.z - point.z).length()
+
+		if d <= radius:
+			found.append([d, b])
+
+	found.sort_custom(func(l, r): return l[0] < r[0])
+	var out: PackedVector3Array = PackedVector3Array()
+
+	for f in found.slice(0, int(cfg.get("burrows_sent", 40))):
+		out.append(f[1])
+
+	return out
+
+
+# Inland bird nests (MikeW, 3 Nov; items side: Sal, data/items/nests.json): fixed spots, one chance per nests.cell_m square, so a
+# nest is in the same place every visit and its id (kind and cell) stays the same for the robbed-nest record. A grouse nest lies on
+# open ground of a grouse biome (heath, boreal forest, tundra); a songbird nest sits under trees or bushes of a songbird biome. The
+# chance per cell is nests.<kind>_chance x the species' biome weight; slopes over slope_max never hold one.
+func nests_near(point: Vector3, reach: float) -> Array:
+	var ncfg: Dictionary = cfg.get("nests", {})
+	var cell: float = float(ncfg.get("cell_m", 48.0))
+	var out: Array = []
+
+	if cell <= 0.0 or not ground_height.is_valid():
+		return out
+
+	var x0: int = int(floor((point.x - reach) / cell))
+	var x1: int = int(floor((point.x + reach) / cell))
+	var z0: int = int(floor((point.z - reach) / cell))
+	var z1: int = int(floor((point.z + reach) / cell))
+
+	for cz in range(z0, z1 + 1):
+		for cx in range(x0, x1 + 1):
+			for kind in ["grouse", "songbird"]:
+				var spot: Variant = _nest_in_cell(kind, cx, cz, cell, ncfg)
+
+				if spot != null and Vector2(spot.x - point.x, spot.z - point.z).length() <= reach:
+					out.append({"id": "%s:%d:%d" % [kind, cx, cz], "kind": kind, "pos": spot})
+
+	return out
+
+
+# The nest of `kind` in one cell, or null. Deterministic: a hash of the kind and the cell picks the roll and the spot.
+func _nest_in_cell(kind: String, cx: int, cz: int, cell: float, ncfg: Dictionary) -> Variant:
+	var sp: String = "grouse" if kind == "grouse" else "songbirds"
+	var def: Dictionary = species_def(sp)
+
+	if def.is_empty():
+		return null
+
+	var h: int = hash([kind, cx, cz, int(ncfg.get("seed", 7))])
+	var roll: float = float(h & 0xFFFF) / 65535.0
+	var fx: float = float((h >> 16) & 0xFF) / 255.0
+	var fz: float = float((h >> 24) & 0xFF) / 255.0
+	var x: float = (float(cx) + 0.1 + 0.8 * fx) * cell
+	var z: float = (float(cz) + 0.1 + 0.8 * fz) * cell
+
+	if roll >= float(ncfg.get(kind + "_chance", 0.0)) * biome_weight(def, x, z):
+		return null
+
+	var y: float = float(ground_height.call(x, z))
+
+	if is_nan(y) or (blocked.is_valid() and bool(blocked.call(x, z))):
+		return null
+
+	var steep: float = 0.0
+
+	for d in [Vector2(3.0, 0.0), Vector2(0.0, 3.0)]:
+		var other: float = float(ground_height.call(x + d.x, z + d.y))
+		steep = maxf(steep, absf(other - y) / 3.0 if not is_nan(other) else 9.0)
+
+	if steep > float(ncfg.get("slope_max", 0.5)):
+		return null
+
+	var under_trees: bool = canopy.is_valid() and bool(canopy.call(Vector3(x, y, z)))
+
+	if kind == "songbird" and canopy.is_valid() and not under_trees:
+		return null   # a songbird nests in a bush or low tree
+
+	if kind == "grouse" and under_trees:
+		return null   # a grouse nests on open ground, in heather or long grass
+
+	return Vector3(x, y, z)
+
+
 # The blood trail within send_radius_m of a point (nearest first, at most max_sent), dropping what has dried.
 func blood_near(point: Vector3) -> PackedVector3Array:
 	var life_ms: int = int(float(cfg.get("blood", {}).get("life_s", 240.0)) * 1000.0)
@@ -277,6 +374,22 @@ func list_near(point: Vector3, radius: float) -> Array:
 			out.append({"id": id, "sp": str(a["sp"]), "pos": a["pos"]})
 
 	return out
+
+
+# A snare draws the animal (its run, or bait): a calm one moves its home to the point and hops there. Its burrow stays where it was.
+func lure_to(id: int, point: Vector3) -> bool:
+	if not animals.has(id):
+		return false
+
+	var a: Dictionary = animals[id]
+
+	if int(a["state"]) != GRAZE and int(a["state"]) != HOP:
+		return false
+
+	a["home"] = point
+	a["target"] = point
+	a["state"] = HOP
+	return true
 
 
 # A snare closes on the animal: it leaves the world without a death (the snare module lays the carcass). One bird of a flock goes.
@@ -752,6 +865,9 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 
 	if def.has("flock") and not bool(def["flock"].get("on_land", false)):
 		var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+		if bool(def["flock"].get("fresh_only", false)) and biome_at.is_valid() and str(biome_at.call(x, z)) == "ocean":
+			return -1.0   # ducks keep to rivers and lakes, not the open sea
+
 		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
 
 	if hab.is_empty() or not ground_height.is_valid():
@@ -779,10 +895,45 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 			if bool(blocked.call(x + d.x, z + d.y)):
 				return -1.0
 
+	var near: float = float(hab.get("near_fresh_water_m", 0.0))
+
+	if near > 0.0 and water_level.is_valid() and not _water_near(x, z, near, false):
+		return -1.0   # a frog lives by a stream, pond or lake, never deep in a dry wood or on a sea shore
+
+	var sea: float = float(hab.get("near_ocean_m", 0.0))
+
+	if sea > 0.0 and biome_at.is_valid() and not _water_near(x, z, sea, true):
+		return -1.0   # gulls and seals keep to the coast: a salt marsh or rocks by the sea, not one inland
+
 	if bool(hab.get("forest", false)) and canopy.is_valid() and bool(canopy.call(Vector3(x, h, z))):
 		return 2.0
 
 	return 1.0
+
+
+# Whether water lies within radius of a spot: the spot itself, then eight directions at half and full radius. ocean false: fresh
+# water (a water surface that is not on ocean ground). ocean true: ocean ground.
+func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
+	for ring in [0.0, radius * 0.5, radius]:
+		for i in (1 if ring == 0.0 else 8):
+			var a: float = TAU * float(i) / 8.0
+			var px: float = x + cos(a) * ring
+			var pz: float = z + sin(a) * ring
+
+			var is_ocean: bool = biome_at.is_valid() and str(biome_at.call(px, pz)) == "ocean"
+
+			if ocean:
+				if is_ocean:
+					return true
+
+				continue
+
+			if is_nan(float(water_level.call(px, pz))) or is_ocean:
+				continue
+
+			return true
+
+	return false
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.

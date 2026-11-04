@@ -99,6 +99,7 @@ var _water_updates: int = 0
 var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
 var _weather_next_msec: int = 0
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
+var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _swell: float = 0.0
 var _dry: float = 0.0
 var _weather_bucket: int = -1
@@ -294,6 +295,7 @@ func _ready() -> void:
 	items.cut_tree = _cut_tree
 	@warning_ignore("confusable_local_declaration")
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
+	items.send_marker_done = func(peer, at): net.road_marker_done.rpc_id(peer, at)
 	@warning_ignore("confusable_local_declaration")
 	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)
 	@warning_ignore("confusable_local_declaration")
@@ -517,8 +519,10 @@ func _ready() -> void:
 		animals.damage(int(found["id"]), amount, shooter, "arrow")
 		return found
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
+	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
+	items.animal_lure = func(id, point): return animals.lure_to(id, point)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
@@ -845,6 +849,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_animal_sent.erase(peer_id)
 	trails.forget_peer(peer_id)
 	_blood_sent.erase(peer_id)
+	_burrows_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
@@ -1913,6 +1918,13 @@ func _send_npcs(delta: float) -> void:
 		if int(_blood_sent.get(peer, 0)) != trail_sig:
 			_blood_sent[peer] = trail_sig
 			net.blood.rpc_id(peer, trail)
+
+		var holes: PackedVector3Array = animals.burrows_near(at)
+		var holes_sig: int = hash(holes)
+
+		if int(_burrows_sent.get(peer, 0)) != holes_sig:
+			_burrows_sent[peer] = holes_sig
+			net.burrows.rpc_id(peer, holes)
 
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.

@@ -39,7 +39,9 @@ static func set_old_body(on: bool, path: String = SETTINGS_PATH) -> void:
 # (a fresh checkout before `godot --import`) falls back to the generated body, so there is always a body with an AnimationPlayer.
 static func make_avatar() -> Node3D:
 	if dynasty_body_on() and DynastyBodyScript.available():
-		return DynastyBodyScript.new()
+		var body: Node3D = DynastyBodyScript.new()
+		body.set_proportions(genome())      # the creator's sliders shape Dave's body too (dynasty_proportions.gd)
+		return body
 
 	return GeneratedBodyScript.new(genome()) if generated_body_on() else RagdollScript.new()
 

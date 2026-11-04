@@ -442,6 +442,32 @@ func _init() -> void:
 
 	check(landed.x > 10.0 and absf(landed.y - 10.0) < 0.01, "spear landed ahead on the ground")
 
+	# A thrown spear hits the first animal on its path for its throw_damage and drops there (MikeW, 3 Nov).
+	var struck: Array = []
+	t.hit_animal_path = func(_peer, from, to, amount) -> Dictionary:
+		if from.x <= 6.0 and to.x >= 6.0:
+			struck.append(amount)
+			return {"at": Vector3(6.0, 11.0, 0.0)}
+
+		return {}
+	t.action(1, Net.ACT_ADMIN_GIVE, spear, 0, 1, Vector3.ZERO)
+	var before: int = t.world_item_count()
+	t._last_throw.clear()
+	t.action(1, Net.ACT_THROW, t.inventory_of(1).numbers.find(spear), 0, 0, Vector3(1.0, 0.1, 0.0))
+
+	for n in range(100):
+		t.tick(0.02)
+
+	var want_damage: float = float(t.table.entry(t.table.id_of(spear)).get("throw_damage", 0.0))
+	var by_animal: bool = false
+
+	for k in t._items:
+		if t._items[k]["number"] == spear and absf((t._items[k]["pos"] as Vector3).x - 6.0) < 0.01:
+			by_animal = true
+
+	check(struck.size() == 1 and is_equal_approx(float(struck[0]), want_damage) and want_damage > 0.0, "a thrown spear hurts the animal it hits for its throw_damage (%s)" % str(struck))
+	check(by_animal and t._flights.is_empty() and t.world_item_count() == before + 1, "the spear drops where it struck the animal")
+
 	# Fires.
 	var f = make("user://test_server_items_d")
 	f.ground_height = func(x, z): return 10.0
@@ -872,8 +898,8 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_GRADE, 0, 0, 0, Vector3(8.0, 10.0, 0.0))
 	check(digs.is_empty() and fills.is_empty(), "a grade stroke without points A and B does nothing")
-	m.action(1, Net.ACT_HOE_GRADE_POINT, 0, 0, 0, Vector3(4.0, 10.0, 0.0))
-	m.action(1, Net.ACT_HOE_GRADE_POINT, 1, 0, 0, Vector3(8.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 0.0))
 	var road_patches: int = patches_of.call()
 	digs.clear()
 	fills.clear()
@@ -884,6 +910,28 @@ func _init() -> void:
 	check(patches_of.call() >= road_patches + 3, "setting point B lays a path along the A to B line by itself (%d patches more)" % (patches_of.call() - road_patches))
 	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= 3 * 13, "and levels the ground along it, a few edits a station (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	check(m._roads.is_empty(), "the road job ends when the line is done")
+	# Surveyor mode: the first marker of an idle job is the start; later markers wait and are built toward nearest first, then deleted.
+	var flags_down: Array = []
+	m.send_marker_done = func(_p, at): flags_down.append(at)
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(5.0, 10.0, -4.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 4.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 0.0))
+	check(m._roads.has(1) and m._roads[1]["markers"].size() == 2, "markers set after the first wait for the builder")
+	m._road_tick(0.6)
+	check(m._roads[1]["seg"] != null and absf(m._roads[1]["seg"]["b"].z - 0.0) < 0.01, "the builder heads for the nearest marker first, not the first one set")
+	check(m._roads[1]["markers"].size() == 1, "and that marker is off the list once it is being built toward")
+
+	for step in 120:
+		m._road_tick(0.6)
+
+	check(m._roads.is_empty(), "the road is done when no markers are left")
+	check(flags_down.size() >= 3, "each marker's flag is taken down once the builder reaches it (%d)" % flags_down.size())
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 0.0))
+
+	for step in 30:
+		m._road_tick(0.6)
+
 	digs.clear()
 	fills.clear()
 	hoe_wear = m.inventory_of(1).wear[hoe_slot]

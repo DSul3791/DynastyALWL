@@ -317,6 +317,7 @@
 			"eye_m": 0.3,
 			"tries": 40,
 			"flock": {
+				"fresh_only": true,
 				"birds": [
 					6,
 					14
@@ -549,7 +550,8 @@
 				"slope_max": 0.5,
 				"slope_run_m": 6.0,
 				"above_player_m": 250.0,
-				"water_edge_m": 0.0
+				"water_edge_m": 0.0,
+				"near_fresh_water_m": 30.0
 			},
 			"biomes": {
 				"marsh": 1.0,
@@ -652,10 +654,13 @@
 				"slope_max": 0.3,
 				"slope_run_m": 6.0,
 				"above_player_m": 250.0,
-				"water_edge_m": 0.0
+				"water_edge_m": 0.0,
+				"near_ocean_m": 30.0
 			},
 			"biomes": {
-				"beach": 1.0
+				"beach": 1.0,
+				"bare_rock": 0.6,
+				"marsh": 0.4
 			},
 			"active": {
 				"day": 1.0,
@@ -698,10 +703,13 @@
 				"slope_max": 0.4,
 				"slope_run_m": 6.0,
 				"above_player_m": 250.0,
-				"water_edge_m": 0.0
+				"water_edge_m": 0.0,
+				"near_ocean_m": 60.0
 			},
 			"biomes": {
-				"beach": 1.0
+				"beach": 1.0,
+				"marsh": 0.6,
+				"bare_rock": 0.6
 			},
 			"active": {
 				"day": 1.0,
@@ -736,6 +744,7 @@
 		"max_sent": 80,
 		"bleed_hp_per_s": 0.15
 	},
+	"nests": {"note": "Inland bird nests (MikeW 3 Nov; eggs and seasons in data/items/nests.json, Sal): one roll per cell_m square per kind, chance x the species biome weight; grouse on open ground, songbirds under trees or bushes; never steeper than slope_max.", "cell_m": 48.0, "grouse_chance": 0.25, "songbird_chance": 0.2, "slope_max": 0.5, "seed": 7},
 	"habitat_tries": 6,
 	"wolves": {
 		"natural": false,
