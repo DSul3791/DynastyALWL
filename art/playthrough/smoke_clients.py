@@ -15,7 +15,7 @@ os.makedirs(LOGS, exist_ok=True)
 PLAN = [("arrival", ["--arrival"], 2600), ("gather", ["--gather"], 12000), ("plantpick", ["--plantpick"], 6000), ("chop", ["--chop"], 8000),
         ("fire", ["--fire"], 6000), ("cook", ["--cook"], 6000), ("leanto", ["--leanto"], 4000), ("sleep", ["--sleep"], 6000), ("spear", ["--spear"], 6000),
         ("creatures", ["--creatures"], 6000), ("snare", ["--snare"], 6000), ("chest", ["--chest"], 3500), ("quickkeys", ["--quickkeys"], 3500), ("eat", ["--eat"], 7000),
-        ("placed", ["--placed"], 5000), ("walk", ["--walk"], 5000)]
+        ("placed", ["--placed"], 5000), ("walk", ["--walk"], 5000), ("net", ["--net"], 6000)]
 only = set(sys.argv[1].split(",")) if len(sys.argv) > 1 else None
 store = tempfile.mkdtemp(prefix="smoke_store_")
 port = 7990

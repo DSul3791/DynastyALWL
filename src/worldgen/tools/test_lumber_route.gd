@@ -68,12 +68,12 @@ func _init() -> void:
 	give("twine", 8)
 	craft("stone_wedge", 1)
 	check(count("stone_wedge") == 1 and count("stone") == 6, "a stone wedge from 2 stones and a stick, by hand")
-	craft("workbench_kit", 1)
-	check(count("workbench_kit") == 1, "a workbench kit from sticks, twine and stones, by hand")
+	for spent in [["stone", 4], ["stick", 20], ["twine", 6]]:   # the bench kit used to take these; the pack stays as light as it was so the lumber is not left on the ground by the carry limit
+		items.inventory_of(1).remove(items.table.number_of(str(spent[0])), int(spent[1]))
 	items.inventory_of(1).add(items.table.number_of("log_oak"), 3)   # logs in the pack: the real carry (shoulder, ground) is test_logs_carry
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 0 and count("log_oak") == 3, "no workbench near: no lumber, the log is kept")
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("workbench_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	items.place_piece(1, "workbench_kit", Vector3(2.0, 10.0, 0.0))
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 2 and count("log_oak") == 2 and count("stone_wedge") == 1, "at the workbench, a log and the wedge give 2 lumber; the wedge is kept (%d lumber, %d logs left)" % [count("lumber"), count("log_oak")])
 	craft("rough_plank", 1)

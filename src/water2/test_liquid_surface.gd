@@ -4,6 +4,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/water2/test_liquid_surface.gd
 
 const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
+const WaterMaterial := preload("res://src/client/water_material.gd")
 
 var failures: int = 0
 
@@ -46,5 +47,28 @@ func _init() -> void:
 		_check(im.get_pixel(4, 4).a == 0.0 and im.get_pixel(4, 4).r < 10.0, "a dry point by the pond tucks under its level")
 
 	_check(LiquidSurface.image_from_grid({"count": count, "spacing": 8.0, "levels": levels, "wet": 0}) == null, "a dry chunk gives no image")
+	_check_blend_band()
 	print("liquid surface test: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+func _shader_part(code: String, start: String) -> String:
+	var at: int = code.find(start)
+
+	if at < 0:
+		return ""
+
+	return code.substr(at, code.find("\n}\n", at) + 3 - at)
+
+
+# BUG-006 (Dave's QA list, 3 Nov 2026): the live window and the water around it crossfade over one band. Both shaders must work the band out the
+# same way, or the two shares stop adding up and a line shows again.
+func _check_blend_band() -> void:
+	for part in ["float blend_hash(", "float live_blend("]:
+		var a: String = _shader_part(LiquidSurface.SHADER, part)
+		_check(a != "" and a == _shader_part(WaterMaterial.SHADER, part), "%s...) is the same text in liquid_surface.gd and water_material.gd" % part)
+
+	for line in ["uniform float blend_m = 24.0;", "uniform float blend_wander_m = 12.0;"]:
+		_check(LiquidSurface.SHADER.contains(line) and WaterMaterial.SHADER.contains(line), "both shaders: " + line)
+
+	_check(not LiquidSurface.SHADER.contains("< hole.z - hole_inset"), "a chunk sheet no longer stops on a straight line one cell into the window")

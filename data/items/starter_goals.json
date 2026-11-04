@@ -80,6 +80,25 @@
 			}
 		},
 		{
+			"id": "hammer",
+			"title": "Make a wooden hammer",
+			"hint": "Cut a wooden block from a felled log, then make a wooden hammer: a wooden block, a stick and a twine. You build everything with it.",
+			"after": [
+				"fell"
+			],
+			"check": {
+				"have_item_any": [
+					"wooden_hammer",
+					"wooden_hammer_soft",
+					"stone_hammer"
+				],
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 3
+			}
+		},
+		{
 			"id": "fire",
 			"title": "Light a fire",
 			"hint": "Make a Campfire kit (6 sticks, 3 stones), place it, then press E near it with plant fibre to light it.",
@@ -89,6 +108,40 @@
 			"check": {
 				"event": "fire_lit",
 				"count": 1
+			},
+			"reward": {
+				"coin_copper": 5
+			}
+		},
+		{
+			"id": "hoe",
+			"title": "Make a hoe",
+			"hint": "A hoe treads paths and breaks ground for beds. Craft one in the inventory (I): a wooden hoe is 2 sticks and a twine (keep a stone in your pack).",
+			"after": [
+				"fire"
+			],
+			"check": {
+				"have_item_any": [
+					"wooden_hoe",
+					"stone_hoe",
+					"steel_hoe"
+				],
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 3
+			}
+		},
+		{
+			"id": "path",
+			"title": "Tread a path from camp to the water",
+			"hint": "Hold the hoe and left click along the ground from your fire towards the water. Or Shift + right click to drop survey markers as you walk and the road builds itself. Paths are faster to walk.",
+			"after": [
+				"hoe"
+			],
+			"check": {
+				"event": "path_laid",
+				"count": 15
 			},
 			"reward": {
 				"coin_copper": 5
@@ -112,9 +165,10 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Lash a ridge pole, lean 16 sticks against it and weave in 4 leaves with 2 twine. Place it with the open side towards you.",
+			"hint": "Hold your wooden hammer, press R and pick Lean-to: 30 sticks, 200 leaves and 10 twine. Build it with the open side towards you.",
 			"after": [
-				"fire"
+				"fire",
+				"hammer"
 			],
 			"check": {
 				"event": "placed",
@@ -128,7 +182,7 @@
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Make a wooden hammer (a wooden block, a stick and a twine), press R with it in hand and build a Rough bed in your lean-to: 10 thatch from thatch grass or heather, 4 sticks and 2 twine.",
+			"hint": "Make a Rough bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine) and place it in your lean-to.",
 			"after": [
 				"shelter"
 			],
@@ -144,9 +198,9 @@
 		{
 			"id": "workbench",
 			"title": "Build a Camp bench",
-			"hint": "16 sticks, 6 twine and 4 stones make a Camp bench. It unlocks better tools.",
+			"hint": "Hold your hammer, press R and pick Camp bench: 16 sticks, 6 twine and 4 stones. It unlocks better tools.",
 			"after": [
-				"axe"
+				"hammer"
 			],
 			"check": {
 				"event": "placed",
@@ -193,7 +247,7 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (2 sticks, 2 twine) or a shore net and fish at the pond.",
+			"hint": "Make a fishing rod (2 sticks, 2 twine) or a fishing net and fish at the pond.",
 			"after": [
 				"twine"
 			],
@@ -215,6 +269,36 @@
 			},
 			"reward": {
 				"coin_copper": 10
+			}
+		},
+		{
+			"id": "sell",
+			"title": "Sell to Hob",
+			"hint": "Hob the trader buys what you pick. Talk to him with E, ask what he sells, and sell him a lot of stones.",
+			"after": [
+				"fibre"
+			],
+			"check": {
+				"event": "sold",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 2
+			}
+		},
+		{
+			"id": "order",
+			"title": "Fill Hob's order",
+			"hint": "Ask Hob: Any order for today? Pick what he wants and bring it back. He pays once a day.",
+			"after": [
+				"sell"
+			],
+			"check": {
+				"event": "wanted_order",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 3
 			}
 		}
 	]

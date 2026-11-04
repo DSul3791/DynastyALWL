@@ -33,7 +33,7 @@ const BasicLook := preload("res://src/client/basic_look.gd")
 # Stage-one pick-up and put-down sounds by what the item is made of (make_items.py class_sound): the shape in data/items/looks.json says which.
 const SHAPE_CLASS := {
 	"planks": "wood", "beams": "wood", "bark": "wood", "shaft": "wood", "axe": "wood", "pick": "wood", "spade": "wood", "hoe": "wood", "knife": "wood",
-	"torch": "wood", "rod": "wood", "kit": "wood", "bucket": "wood", "bundle": "cloth", "sack": "cloth", "hide": "cloth", "coil": "cloth",
+	"torch": "wood", "rod": "wood", "kit": "wood", "bucket": "wood", "bundle": "cloth", "split_wood": "wood", "sticks": "wood", "sack": "cloth", "hide": "cloth", "coil": "cloth",
 	"skin": "cloth", "feather": "cloth", "cloth": "cloth", "hand_net": "cloth", "chunk": "stone", "block": "stone", "brick": "stone", "ingot": "metal", "coin": "metal", "needle": "metal",
 	"pile": "soft", "leaves": "soft", "fish": "food", "meat": "food", "loaf": "food", "fruit": "food", "bowl": "food", "skewer": "food",
 	"bottle": "glass", "pot": "glass", "bone": "bone", "flower": "soft", "frond": "soft", "root": "soft", "cap": "soft", "nut": "bone",

@@ -140,13 +140,13 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"wardpine":
 			_wardpine(bark, leaves, rng, h, crown, trunk, variant, far)
 		"wild_apple":
-			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, false, false, fruit, orchard)
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, false, false, fruit, orchard, berries)
 		"wild_pear":
-			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, true, false, fruit, orchard)
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, true, false, fruit, orchard, berries)
 		"wild_cherry":
-			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, false, true, fruit, orchard)
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, false, true, fruit, orchard, berries)
 		"rowan":
-			_rowan(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
+			_rowan(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, berries)
 		"willow":
 			_willow(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"alder":
@@ -178,7 +178,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"herb_nettle":
 			_herb(greens, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
 		"hazel":
-			_hazel(smooth, leaves, twigs, rng, h, variant, far, season)
+			_hazel(smooth, leaves, twigs, rng, h, variant, far, season, berries)
 		"oak":
 			_oak(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"maple":
@@ -1493,7 +1493,8 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 # catkins already hanging. Mature clumps 4 to 8 m tall and about as wide as
 # they are tall; young ones 1 to 2 m with fewer, thinner stems.
 # Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
-static func _hazel(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, season: String) -> void:
+static func _hazel(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, season: String, berries: Acc = null) -> void:
+	var crop: Acc = berries if berries != null else smooth      # catkins and nuts on the berry shader (#234): on the smooth bark they wore its grain and north moss
 	var bare: bool = season == "winter"
 	var young: bool = variant >= 2
 	var tint: Color = BARK_TINT_HAZEL.lerp(Color(0.6, 0.58, 0.55), 0.3 if young else 0.0)
@@ -1577,14 +1578,14 @@ static func _hazel(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 			for t in range(rng.randi_range(2, 4)):
 				var long: float = (rng.randf_range(0.1, 0.15) if season == "spring" else rng.randf_range(0.05, 0.08)) * big
 				var off: Vector3 = Vector3(rng.randf_range(-0.08, 0.08), 0.0, rng.randf_range(-0.08, 0.08)) * big
-				_bead(smooth, at + off - Vector3(0.0, long, 0.0), Vector3(0.025, long, 0.025) * Vector3(big, 1.0, big), (HAZEL_CATKIN_TINT if season == "spring" else HAZEL_CATKIN_WINTER) * rng.randf_range(0.9, 1.1))
+				_bead(crop, at + off - Vector3(0.0, long, 0.0), Vector3(0.025, long, 0.025) * Vector3(big, 1.0, big), (HAZEL_CATKIN_TINT if season == "spring" else HAZEL_CATKIN_WINTER) * rng.randf_range(0.9, 1.1))
 		else:
 			# Two to four nuts, each in its frilly husk.
 			for t in range(rng.randi_range(2, 4)):
 				var p: Vector3 = at + Vector3(rng.randf_range(-0.08, 0.08), rng.randf_range(-0.05, 0.03), rng.randf_range(-0.08, 0.08)) * big
 				var husk: Color = HAZEL_HUSK_TINT.lerp(Color(0.6, 0.48, 0.2), rng.randf() * 0.5)
-				_bead(smooth, p, Vector3(0.07, 0.05, 0.07) * big, husk)
-				_bead(smooth, p + Vector3(0.0, -0.04, 0.0) * big, Vector3(0.05, 0.055, 0.05) * big, HAZELNUT_TINT * rng.randf_range(0.9, 1.1))
+				_bead(crop, p, Vector3(0.07, 0.05, 0.07) * big, husk)
+				_bead(crop, p + Vector3(0.0, -0.04, 0.0) * big, Vector3(0.05, 0.055, 0.05) * big, HAZELNUT_TINT * rng.randf_range(0.9, 1.1))
 
 
 # Witness tree (fantasy). From the owner's design and pictures (2026-10-18):
@@ -2188,7 +2189,8 @@ static func _willow(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerat
 # (the game shows autumn, so the berries). A mature rowan has a short trunk
 # forking into climbing limbs under a rounded crown; a young one is a slim stem
 # with an airy upright crown. Variants: 0 and 1 mature, 2 and 3 young.
-static func _rowan(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String) -> void:
+static func _rowan(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String, berries: Acc = null) -> void:
+	var crop: Acc = berries if berries != null else smooth      # flowers and berries on the berry shader (#234): on the smooth bark they wore the bark grain
 	var bare: bool = season == "winter"
 	var young: bool = variant >= 2
 	var crown_w: float = maxf(crown, h * (0.24 if young else 0.36)) * rng.randf_range(0.9, 1.1)
@@ -2238,7 +2240,7 @@ static func _rowan(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
 		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * 0.8, v * half_h * 0.8, sin(a) * ring * crown_w * 0.8)
 		# A little larger than life (real clusters 10 to 15 cm) so they read in the storybook look.
-		_cluster(smooth, rng, at, rng.randf_range(0.28, 0.4), FLOWER_TINT_ROWAN if flowers else BERRY_TINT_ROWAN, flowers)
+		_cluster(crop, rng, at, rng.randf_range(0.28, 0.4), FLOWER_TINT_ROWAN if flowers else BERRY_TINT_ROWAN, flowers)
 
 
 # A cluster of small round fruit (or a flat flower head): little diamonds
@@ -2275,7 +2277,8 @@ static func _bead(acc: Acc, p: Vector3, size: Vector3, c: Color) -> void:
 # Wild cherry (owner's photos, 2026-10-18) shares this model: a taller clear
 # trunk of smooth gray banded bark, a rounded crown, white blossom in spring
 # and red cherries in summer and autumn.
-static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String, pear: bool = false, cherry: bool = false, fruit: Acc = null, orchard: bool = false) -> void:
+static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String, pear: bool = false, cherry: bool = false, fruit: Acc = null, orchard: bool = false, berries: Acc = null) -> void:
+	var crop: Acc = berries if berries != null else smooth      # blossom on the berry shader (#234): on the smooth bark it wore the bark grain
 	if fruit == null:
 		fruit = smooth
 
@@ -2353,7 +2356,7 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 		for k in range(0, foliage.v.size(), 4):
 			var mid: Vector3 = (foliage.v[k] + foliage.v[k + 2]) * 0.5
 			var reach: float = foliage.v[k].distance_to(foliage.v[k + 2]) * 0.4
-			_cluster(smooth, rng, mid, reach, CHERRY_BLOSSOM_TINT, false, 2 if far else 5)
+			_cluster(crop, rng, mid, reach, CHERRY_BLOSSOM_TINT, false, 2 if far else 5)
 		return
 
 	if far or (season == "summer" and not cherry):
@@ -2386,7 +2389,7 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 			depth = rng.randf_range(0.75, 1.0)
 		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * depth, v * half_h * depth, sin(a) * ring * crown_w * depth)
 		if blossom:
-			_cluster(smooth, rng, at, rng.randf_range(0.35, 0.5), BLOSSOM_TINT_PEAR if pear or cherry else BLOSSOM_TINT, true)
+			_cluster(crop, rng, at, rng.randf_range(0.35, 0.5), BLOSSOM_TINT_PEAR if pear or cherry else BLOSSOM_TINT, true)
 		elif cherry:
 			# Cherries hang in small bunches; real ones are 1 to 2 cm, drawn larger so they read.
 			_cluster(fruit, rng, at, 0.28 if orchard else 0.2, CHERRY_TINT, false, rng.randi_range(2, 4), fposmod(float(n) * 0.618034, 1.0))
@@ -3058,6 +3061,8 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	if heads == null:
 		heads = bark
 
+	# The stems go on the heads' surface too (Kathreen, 3 Nov): on the bark shader a 30 cm stem wore bark grain, the dark foot and foot moss.
+
 	var stems: int = 3 if far else int(look["stems"])
 	var head: String = str(look["head"])
 	var size: float = float(look["size"]) * h * 1.2 if head == "umbel" else float(look["size"]) * maxf(h, crown * 1.6) * 2.6
@@ -3079,8 +3084,8 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		var base: Vector3 = out * crown * 0.05
 		var mid: Vector3 = base.lerp(tip, 0.5) + out * crown * 0.08
 		var stem_r: float = maxf(h * 0.012, 0.0045 if look.has("tall") else 0.003)
-		_branch(bark, base, mid, stem_r, maxf(h * 0.009, stem_r * 0.75), stem_col, 3)
-		_branch(bark, mid, tip, maxf(h * 0.009, stem_r * 0.75), maxf(h * 0.006, stem_r * 0.55), stem_col, 3)
+		_branch(heads, base, mid, stem_r, maxf(h * 0.009, stem_r * 0.75), stem_col, 3)
+		_branch(heads, mid, tip, maxf(h * 0.009, stem_r * 0.75), maxf(h * 0.006, stem_r * 0.55), stem_col, 3)
 
 		if not far and k % 2 == 0:
 			_clump(leaves, rng, base.lerp(mid, 0.6) + out * crown * 0.1, Vector3(0.0, -h, 0.0), maxf(crown * 0.35, h * 0.18), 0.95, 2)
@@ -3097,7 +3102,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					var a: float = TAU * float(r) / float(look["rays"]) + rng.randf() * 0.4
 					var ring: float = size * (0.9 if r > 0 else 0.0)
 					var ray: Vector3 = tip + Vector3(cos(a) * ring, size * 0.25 * (1.0 - ring / (size * 1.0 + 0.001)), sin(a) * ring)
-					_branch(bark, tip, ray, maxf(h * 0.003, 0.001), maxf(h * 0.002, 0.001), stem_col, 3)
+					_branch(heads, tip, ray, maxf(h * 0.003, 0.001), maxf(h * 0.002, 0.001), stem_col, 3)
 					_cluster(heads, rng, ray, size * 0.4, petal, true, 3)
 			_:
 				var beads: int = 3 if far else int(look["beads"])

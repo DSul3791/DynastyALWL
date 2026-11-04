@@ -1195,6 +1195,15 @@ func _init() -> void:
 	var none: int = q._saplings.size()
 	q._maybe_sapling({"pos": Vector3(500.0, 10.0, 500.0), "tree": {"species": "birch", "chunk": [1, 1], "state": 4}})
 	check(q._saplings.size() == none, "no standing tree of that species near, no sapling")
+	# Nothing regrows within 50 m of a placed structure (BUG-013).
+	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(700.0, 10.0, 700.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+	q._next_id += 1
+	var before_ban: int = q._saplings.size()
+
+	for n in range(40):
+		q._maybe_sapling({"pos": Vector3(700.0 + fmod(float(n), 5.0), 10.0, 710.0), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
+
+	check(q._saplings.size() == before_ban, "no sapling is seeded within 50 m of a placed foundation")
 	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(1.0, 10.0, 1.0), "left": 1.0e9, "tree": {"state": 3, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
 	var with_trunk: int = q._saplings.size()
 
@@ -1300,17 +1309,16 @@ func _init() -> void:
 	lt.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var lean_kit: int = lt.table.number_of("lean_to_kit")
 	lt.action(1, Net.ACT_ADMIN_GIVE, lean_kit, 0, 8, Vector3.ZERO)
-	lt.action(1, Net.ACT_PLACE, 0, 0, 90, Vector3(3.0, 10.0, 0.0))
+	lt.place_item(1, lean_kit, Vector3(3.0, 10.0, 0.0), 0, 90)
 	check(lt.world_item_count() == 1 and roofs.size() == 1 and lt.inventory_of(1).count_of(lean_kit) == 7, "a lean-to is placed and registers its roof")
 	var roof: Array = roofs[1]
 	check(absf(roof[5] - PI * 0.5) < 0.01 and roof[6] < 10.0 and roof[7] > 11.0, "the roof is a yawed box from just under the ground to 2 m up")
-	lt.action(1, Net.ACT_PLACE, lt.inventory_of(1).numbers.find(lean_kit), 0, 0, Vector3(4.0, 10.0, 0.0))
+	lt.place_item(1, lean_kit, Vector3(4.0, 10.0, 0.0), 0)
 	check(lt.world_item_count() == 1, "not within 2.5 m of another structure")
 
 	for n in range(8):
 		lt.report_position(1, Vector3(10.0 + float(n) * 4.0, 10.0, 0.0))
-		lt.action(1, Net.ACT_PLACE, lt.inventory_of(1).numbers.find(lean_kit), 0, 0, Vector3(10.0 + float(n) * 4.0 + 1.0, 10.0, 0.0))
-
+		lt.place_item(1, lean_kit, Vector3(10.0 + float(n) * 4.0 + 1.0, 10.0, 0.0), 0)
 	check(lt.world_item_count() == 6, "six lean-tos fit in a chunk (%d)" % lt.world_item_count())
 	lt.save()
 	var lt2 = make(ld)
@@ -1328,7 +1336,7 @@ func _init() -> void:
 
 	lt2.roof_remove = func(key): roofs2.clear()
 	lt2.action(1, Net.ACT_PICKUP, shelter, 0, 0, Vector3.ZERO)
-	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("lean_to_kit")) == 3, "taking it down gives the kit back")
+	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("stick")) >= 30, "taking it down gives its materials back (no kit)")
 
 	# Storage chest.
 	var cd: String = "user://test_server_items_chest"
@@ -1348,9 +1356,8 @@ func _init() -> void:
 	var chest_kit: int = ch.table.number_of("chest_kit")
 	var stones_n: int = ch.table.number_of("stone")
 	ch.action(1, Net.ACT_ADMIN_GIVE, chest_kit, 0, 1, Vector3.ZERO)
-	check(ch.recipes.recipe(14)["needs"] == [[ch.table.number_of("stick"), 10], [ch.table.number_of("twine"), 4]], "the first chest is woven from 10 sticks and 4 twine")
 	ch.action(1, Net.ACT_ADMIN_GIVE, stones_n, 0, 10, Vector3.ZERO)
-	ch.action(1, Net.ACT_PLACE, ch.inventory_of(1).numbers.find(chest_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	ch.place_item(1, chest_kit, Vector3(2.0, 10.0, 0.0), 0)
 	var chest_id: int = 0
 
 	for k in ch._items:
@@ -1408,7 +1415,7 @@ func _init() -> void:
 	ch2.action(1, Net.ACT_CHEST_TAKE, ch2._chests[1].numbers.find(stones_n), chest2, 6, Vector3.ZERO)
 	check(ch2.inventory_of(1).count_of(stones_n) == 10 and ch2._chests[1].count_of(stones_n) == 0, "taking the stones out moves them back")
 	ch2.action(1, Net.ACT_PICKUP, chest2, 0, 0, Vector3.ZERO)
-	check(not ch2._items.has(chest2) and ch2.inventory_of(1).count_of(ch2.table.number_of("chest_kit")) == 1 and ch2._chests.is_empty(), "an empty chest comes down and gives the kit back")
+	check(not ch2._items.has(chest2) and ch2.inventory_of(1).count_of(ch2.table.number_of("chest_kit")) == 0 and ch2._chests.is_empty(), "an empty chest comes down and gives its materials, not a kit")
 
 	# Chopping block.
 	var bd: String = "user://test_server_items_block"
@@ -1424,7 +1431,7 @@ func _init() -> void:
 	cb.peer_connected_hello(1, "abcdef123456")
 	cb.report_position(1, Vector3(0.0, 10.0, 0.0))
 	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block"), 0, 1, Vector3.ZERO)
-	cb.action(1, Net.ACT_PLACE, cb.inventory_of(1).numbers.find(cb.table.number_of("chopping_block")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	cb.place_item(1, cb.table.number_of("chopping_block"), Vector3(2.0, 10.0, 0.0), 0)
 	var block_id: int = 0
 
 	for k in cb._items:
@@ -1489,10 +1496,10 @@ func _init() -> void:
 
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
-	check(not cb._items.has(lying) and loose_of.call(block_n) == 4, "a log chopped on the ground makes 4 wooden blocks (%d)" % loose_of.call(block_n))
+	check(not cb._items.has(lying) and loose_of.call(block_n) == 3, "a log chopped on the ground makes 3 wooden blocks (%d)" % loose_of.call(block_n))
 
 	# A softwood log chops to softwood blocks, and those split to softwood firewood (wood_species.json class_items).
-	var soft_n: int = cb.table.number_of("wooden_block_soft")
+	var soft_n: int = cb.table.number_of("wooden_block_soft_large")   # a spruce log is a large shoulder log: large blocks (BUG-014)
 	var soft_fire_n: int = cb.table.number_of("firewood_soft")
 	cb.drop_in_world(cb.table.number_of("log_spruce"), 1, Vector3(1.0, 10.0, 0.0))
 	var spruce_lying: int = 0
@@ -1503,12 +1510,12 @@ func _init() -> void:
 
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, spruce_lying, 0, 0, Vector3.ZERO)
-	check(not cb._items.has(spruce_lying) and loose_of.call(soft_n) == 12, "a spruce log chopped on the ground makes 12 softwood blocks (%d)" % loose_of.call(soft_n))
+	check(not cb._items.has(spruce_lying) and loose_of.call(soft_n) == 3, "a spruce log chopped on the ground makes 3 large softwood blocks (%d)" % loose_of.call(soft_n))
 	cb.action(1, Net.ACT_ADMIN_GIVE, soft_n, 0, 1, Vector3.ZERO)
 	cb.inventory_of(1).remove(block_n, cb.inventory_of(1).count_of(block_n))
 	cb._last_use.clear()
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(soft_n) == 0 and loose_of.call(soft_fire_n) == 2, "a softwood block splits into softwood firewood")
+	check(cb.inventory_of(1).count_of(soft_n) == 0 and loose_of.call(soft_fire_n) == 4, "a large softwood block splits into 4 softwood firewood (%d)" % loose_of.call(soft_fire_n))
 
 	# The large log on the shoulder (Dave 2026-10-21): one at a time, named for its tree, heavy, split at the block, falls with the body.
 	var oak_log: int = cb.table.number_of("log_oak")
@@ -1597,19 +1604,41 @@ func _init() -> void:
 	vt._speed3[1] = 2.0
 	vt.tick(1.0)
 	check(vt.breath_of(1) > 58.0, "the next dive starts from a full 60 s")
+	# BUG-029 (Dave 2026-11-04): out of air the swimmer stays under (no health drain): the heart races, then a faint, and a faint under water is drowning.
+	var hearts: Array = []
+	vt.send_body = func(_p, bpm, _eta, phase): hearts.append([bpm, phase])
 	vt._breath[1] = 1.0
 	vnotes.clear()
 
-	for n in range(4):
+	for n in range(6):
 		vt.tick(1.0)
 
-	check(float(vt.vitals_of(1)["health"]) < health_before - 10.0 and vnotes.has("You are out of air"), "out of air costs health (6 a second) and says so")
+	check(vnotes.has("You are out of air") and float(vt.vitals_of(1)["health"]) >= health_before - 0.5, "out of air says so and no longer drains health (%.1f)" % float(vt.vitals_of(1)["health"]))
+	check(not hearts.is_empty() and hearts[-1][0] >= 110 and hearts[-1][0] <= 190 and hearts[-1][1] == 1, "suffocating races the heart (%s)" % str(hearts[-1] if not hearts.is_empty() else []))
+	var bpm_early: int = int(hearts[-1][0])
 
+	for n in range(5):
+		vt.tick(1.0)
+
+	check(int(hearts[-1][0]) > bpm_early and vt.remains_ids().size() == 0, "the heart keeps climbing and the swimmer is still alive and conscious (%d bpm)" % int(hearts[-1][0]))
+
+	# Surfacing in time undoes it.
+	vt.set_head_under(1, false)
+	vt.tick(1.0)
+	check(vt.breath_of(1) < 0.0 and vt.remains_ids().size() == 0 and int(vt._strain.get(1, {}).get("state", 0)) == 0, "surfacing before the faint ends it: air full, no faint, no death")
+	vt.set_head_under(1, true)
+	vt._breath[1] = 1.0
 	vt.report_position(1, Vector3(50.0, 5.0, 50.0))
-	for n in range(60):
-		vt.tick(1.0)
+	var faint_seen: bool = false
 
-	check(vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] drowning to zero health kills: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	for n in range(40):
+		vt.tick(1.0)
+		faint_seen = faint_seen or int(vt._strain.get(1, {}).get("state", 0)) == 2
+
+		if vt.remains_ids().size() > 0:
+			break
+
+	check(faint_seen and vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] fainting under water drowns: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
 	vt.set_head_under(1, false)
 	vt.tick(1.0)
 	vt.vitals_of(1)["fed"] = 0.0   # the death above started the vitals over
@@ -1632,6 +1661,13 @@ func _init() -> void:
 	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("poultice"), 0, 1, Vector3.ZERO)
 	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("poultice")), 0, 0, Vector3.ZERO)
 	check(vt.vitals_of(1)["health"] == 80.0, "a poultice restores 30 health")
+	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("herb_salve"), 0, 1, Vector3.ZERO)
+	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("herb_salve")), 0, 0, Vector3.ZERO)
+	check(vt.vitals_of(1)["health"] == 100.0, "a herb salve restores up to 25 health")
+	vt.vitals_of(1)["limp"] = 300.0
+	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("splint"), 0, 1, Vector3.ZERO)
+	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("splint")), 0, 0, Vector3.ZERO)
+	check(float(vt.vitals_of(1)["limp"]) == 0.0 and vt.inventory_of(1).count_of(vt.table.number_of("splint")) == 0, "a splint ends a limp and is used up")
 	vt.save()
 	var vt2 = make(vd)
 	vt2.peer_connected_hello(1, "abcdef123456")
@@ -1846,48 +1882,103 @@ func _init() -> void:
 
 	var floor_level: float = float(sa.strain_of(1)["s"])
 	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
-	# Fitness trains slowly like a skill (fitness.json train): any effort above min_effort adds, rest takes it back, never below the base.
+	# Fitness XP (fitness.json train, Dave 4 Nov): effort above 0.1 gives 1 + 2 x effort XP per 10 s into the day's bucket, which turns into points
+	# at game midnight (1,000 XP a point, the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, never below the base.
+	var clk: Array = [100.0]   # game seconds, day 0
+	var fit_gs: Callable = func(): return clk[0]
+	var midnight: Callable = func(x): clk[0] += 86400.0; x._train_fitness(1, 0.0, 0.0)
 	var tr = make(xd)
 	tr.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tr.game_seconds = fit_gs
 	tr.peer_connected_hello(1, "trainkey0001")
 	tr.set_fitness(1, 2)
 	check(tr.fitness_of(1) == 2, "fitness starts at its creation value")
-	tr._train_fitness(1, 1.0, 1700.0)
+	tr._train_fitness(1, 1.0, 3300.0)
+	midnight.call(tr)
 	check(tr.fitness_of(1) == 2, "just under a point of running changes nothing")
-	tr._train_fitness(1, 1.0, 200.0)
-	check(tr.fitness_of(1) == 3, "30 minutes running earns a point")
+	tr._train_fitness(1, 1.0, 400.0)
+	check(tr.fitness_of(1) == 2, "XP earned today does not count until midnight")
+	check(float(tr._characters[tr._peer_key[1]]["xp_today"]) > 100.0, "the day's XP waits in the character's bucket")
+	midnight.call(tr)
+	check(tr.fitness_of(1) == 3, "the day's running tips a point over at midnight")
 	var before_stroll: float = float(tr._characters[tr._peer_key[1]]["train"])
-	tr._train_fitness(1, 0.2, 600.0)
-	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) < before_stroll, "strolling earns nothing (and eases training back)")
+	tr._train_fitness(1, 0.05, 36000.0)
+	midnight.call(tr)
+	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "effort under the 10 percent line neither earns nor costs, even for hours")
+	tr._train_fitness(1, 0.0, 300.0)
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "a short rest under the grace time costs nothing")
+	var ts = make(xd)
+	ts.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	ts.game_seconds = fit_gs
+	ts.peer_connected_hello(1, "trainkey0005")
+	ts._train_fitness(1, 0.15, 3600.0)
+	midnight.call(ts)
+	check(float(ts._characters[ts._peer_key[1]]["train"]) > 0.0, "even a slow stroll over the 10 percent line earns a little")
 	var tw = make(xd)
 	tw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tw.game_seconds = fit_gs
 	tw.peer_connected_hello(1, "trainkey0002")
 	var tj = make(xd)
 	tj.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tj.game_seconds = fit_gs
 	tj.peer_connected_hello(1, "trainkey0003")
 	var tc = make(xd)
 	tc.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tc.game_seconds = fit_gs
 	tc.peer_connected_hello(1, "trainkey0004")
 	tw._train_fitness(1, 0.5, 3600.0)
 	tj._train_fitness(1, 0.75, 3600.0)
 	tc._train_fitness(1, 1.05, 3600.0)
+	clk[0] += 86400.0
+	tw._train_fitness(1, 0.0, 0.0)
+	tj._train_fitness(1, 0.0, 0.0)
+	tc._train_fitness(1, 0.0, 0.0)
 	var gw: float = float(tw._characters[tw._peer_key[1]]["train"])
 	var gj: float = float(tj._characters[tj._peer_key[1]]["train"])
 	var gc: float = float(tc._characters[tc._peer_key[1]]["train"])
 	check(gw > 0.0 and gw < gj and gj < gc, "an hour of walking trains less than jogging, less than hard tool work (%.2f %.2f %.2f)" % [gw, gj, gc])
+	check(absf(gw - 0.72) < 0.01, "an hour of walking is 720 XP, 0.72 of a point (%.3f)" % gw)
+	var t1 = make(xd)
+	t1.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	t1.game_seconds = fit_gs
+	t1.peer_connected_hello(1, "trainkey0007")
+	t1.set_fitness(1, 0)
+	t1._train_fitness(1, 1.0, 1800.0)
+	midnight.call(t1)
+	var first_pt: float = float(t1._characters[t1._peer_key[1]]["train"])
+	t1._characters[t1._peer_key[1]]["train"] = 5.0
+	t1._train_fitness(1, 1.0, 1800.0)
+	midnight.call(t1)
+	var gain_at_5: float = float(t1._characters[t1._peer_key[1]]["train"]) - 5.0
+	check(absf(first_pt - gain_at_5) < 1.0e-6 and gain_at_5 > 0.0, "every point costs the same XP at any level (%.3f vs %.3f)" % [first_pt, gain_at_5])
+	# Offline at midnight: the day's XP waits in the saved character and is paid at the next tick after login (one bucket only).
+	var to = make(xd)
+	to.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	to.game_seconds = fit_gs
+	to.peer_connected_hello(1, "trainkey0008")
+	to._train_fitness(1, 1.0, 3400.0)
+	clk[0] += 86400.0 * 3.0
+	to._train_fitness(1, 0.0, 1.0)
+	check(to.fitness_of(1) == 1, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
 	tr._train_fitness(1, 1.0, 1.0e7)
+	midnight.call(tr)
 	check(tr.fitness_of(1) == 10, "training stops at the top of the range")
 	tr.set_fitness(1, 2)
 	tr._train_fitness(1, 1.0, 1.0e7)
+	midnight.call(tr)
 	check(float(tr._characters[tr._peer_key[1]]["train"]) == 10.0 and tr.fitness_of(1) == 10, "training stops at max_gain above the base, clamped to the range")
 	tr.set_fitness(1, 2)
+	tr._characters[tr._peer_key[1]]["xp_today"] = 0.0
 	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
-	tr._train_fitness(1, 0.0, 14400.0 * 3.0)
-	check(tr.fitness_of(1) == 2, "rest takes points back slowly")
+	midnight.call(tr)
+	check(tr.fitness_of(1) > 2, "an hour and a half of running earns a point")
+	tr._train_fitness(1, 0.0, 43200.0 * 12.0)
+	check(tr.fitness_of(1) == 2, "full rest takes points back, slowly")
 	tr._train_fitness(1, 0.0, 1.0e7)
 	check(tr.fitness_of(1) == 2, "and never below the creation value")
 	# Saved: the training survives a restart (characters.json).
-	tr._train_fitness(1, 1.0, 1800.0 * 2.0)
+	tr._train_fitness(1, 1.0, 6700.0)
+	midnight.call(tr)
 	check(tr.fitness_of(1) == 4, "two points earned")
 	tr.save()
 	tr._finish_writer()
@@ -2618,7 +2709,7 @@ func _init() -> void:
 	var box_kit: int = bx.table.number_of("chest_kit")
 	bx.action(1, Net.ACT_ADMIN_GIVE, box_kit, 0, 1, Vector3.ZERO)
 	bx.action(1, Net.ACT_ADMIN_GIVE, box_stone, 0, 50, Vector3.ZERO)
-	bx.action(1, Net.ACT_PLACE, bx.inventory_of(1).numbers.find(box_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	bx.place_item(1, box_kit, Vector3(2.0, 10.0, 0.0), 0)
 	var box_id: int = 0
 
 	for k in bx._items:
@@ -2817,6 +2908,11 @@ func _init() -> void:
 		sx6._craft_tick(0.25)
 
 	check(sx6.inventory_of(1).count_of(cord6) > cord6b, "the six-ingredient craft completes")
+
+	# The spawn boost never lowers a cell's own roll (Dino round 7: a sloped cell rolling 4 stones was cut to the cap of 2 near the spawn).
+	check(ItemsScript.boosted(4, 2, 2) == 4, "a cell rolling more than the cap keeps its roll")
+	check(ItemsScript.boosted(0, 2, 2) == 2 and ItemsScript.boosted(1, 2, 2) == 2, "a flat cell is lifted up to the cap")
+	check(ItemsScript.boosted(0, 1, 4) == 1, "the boost adds only what it rolled")
 
 	# Campfire friction (spawn_boost): a new player's surroundings hold a campfire kit's worth; far from spawn it stays sparse.
 	var qd8: String = "user://test_server_items_boost"

@@ -26,28 +26,29 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Weather: rain, wind, thunder | `weather.set_weather`, `weather.strike` | weather owner (unlisted in the scope docs) | wired |
 | Water loops, swim | `water_sounds.gd`, `swim_sounds.gd` | Sonny | wired to old water; new water `src/water2` to check |
 | Tunnel drips under water | `wet.update` (needs water-above query) | Sonny | partly |
+| Steps on built floors and trodden paths | `terrain_client._floor_under` (ray down, `floor_sound` meta set in `inventory_view._model_for_state` from `structure_look.step_surface`) -> `sound_stage.floor_under` (3 Nov: was never set) | Steve | wired, to hear |
 | Interior (inside a building), roof rain | `interior.set_inside/object` | Steve | wired |
 | Breath and heartbeat | `breath.set_exertion/set_body` | Steve | wired |
 | Armour sounds on steps | `gear.set_worn` | Sal | wired |
 | Town fire, bell, hammering, saws, chop block | `town.set_sources/ring_bell`, `workshop.chop/set_saws/plank_drop` | Steve | wired; workshops may not exist yet |
 | Spear jab/throw/hit | `spear.jab/throw/hit` | Steve | wired |
 | Menu clicks | `ui.play` (9 call lines) | Tyler/Steve | wired |
-| Sleep and wake | none? | Steve | to verify |
-| Player hurt / damage taken, death, respawn | none? (landing mentions the `hurt` signal) | Steve | to verify |
+| Sleep and wake | `terrain_client.gd` stance change -> `slots.play("bed_lie")` / `bed_rise`; falling asleep shares the faint blackout | Steve | wired (checked 3 Nov) |
+| Player hurt / damage taken, death, respawn | hurt: `inventory_view.hurt_event` (health drops 4 or more in one vitals update) -> `slots.play("player_hurt")` (breath_gasp; 3 Nov). Respawn: `terrain_client.gd` `_respawn_gasp` (after `_on_died` and the cave-in end) -> `slots.play("respawn_gasp")` (breath_gasp; 3 Nov) | Steve | wired, to hear |
 | Bow and arrow (draw, release, hit) | `held_item.gd` bow press -> `slots.play("bow_draw")`, release with an arrow in the pack -> `bow_loose` (make_bow.py; 3 Nov). Landing: `spear.arrow` soft thunk where the flight (followed from bow.json) comes down; animal hits thud via hit_number | Steve | wired, to hear |
-| Fishing (cast, bite, catch) | none? (fish splash is ambient only) | Steve/MikeW | to verify |
-| Drink from water source (not an item) | none? | Sonny/Steve | to verify |
-| Animal hit, death, eating (carcass) | death: `animal_view.fell` (a body gone within 1.5 s of a hit near it) -> `slots.play("animal_fall")` (land thud, soft for small kinds; 3 Nov). Hit: PR 204. Carcass: none? | MikeW | fall wired, to hear |
-| Crafting action itself (hand craft, kit use) | none? (craft_done cue only) | Steve | to verify |
-| Clothing put on / taken off | none? | Sal | to verify |
-| Level up, goal done, hint | none? | Steve | to verify |
+| Fishing (cast, bite, catch) | bite and catch: `slot_sounds.net_cue` maps the rod's server lines (ROD_BITE_LINES, ROD_LAND_LINES) -> `fish_bite` (Dave's fish splash) and `fish_land` (small swim splash; 3 Nov). Cast: none? | Steve/MikeW | bite and catch wired, to hear |
+| Drink from water source (not an item) | `inventory_view.drink()` then `eat_event("drink")` when thirst rises -> `itemfx.eat("drink")` (gulp) | Sonny/Steve | wired (checked 3 Nov) |
+| Animal hit, death, eating (carcass) | hit: `terrain_client.gd` `hit_number_received` -> `spear.hit("flesh")` for every hit the server reports (jab, spear, arrow; 3 Nov). Death: `animal_view.fell` (a body gone within 1.5 s of a hit near it) -> `slots.play("animal_fall")` (land thud, soft for small kinds; 3 Nov). Carcass: none? | MikeW | hit and fall wired, to hear |
+| Crafting action itself (hand craft, kit use) | `item_sounds.gd`: `craft_start`, a `craft_<type>` loop while it runs (twine, knap, bind, carve, stack, pound, wrap), then `craft_done` | Steve | wired (checked 3 Nov) |
+| Clothing put on / taken off | `inventory_view.worn_event` -> `gear.dress` (one rustle, creak or clink) and `gear.set_worn(layers_for(worn ids))`, so worn clothing now sounds on steps (3 Nov) | Sal | wired, to hear |
+| Level up, goal done, hint | skill up: `inventory_view.skill_up_event` (a skills message shows a skill's whole level higher than before) -> `slots.play("skill_tock")` (soft wooden tock, make_skill.py; group `skill` cools down 20 s; Dave, QA jason-skill-chime A, 4 Nov). Goal done, hint: none? | Steve | skill up wired, to hear |
 
 Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Sonny, Sal) to expose any missing event, place the calls, add a test line per call.
 
 ## Phase 1 update (1 Nov 2026, read-only, nothing run)
 - Ported from `claude/kathleen-materials` and `claude/kathleen-spades`: `place_stone`, `place_brick`, `place_thatch`, `soil_load`, `stone_load` (clips, generators in `make_placed.py`, levels in `placed_sounds.gd` NAMES, `place()` accepts the kinds stone, brick, thatch, `shovel_load()`). Commits `583e1312`, `9f9db474` on `claude/jason-audio-8366e4`; the `piece_look.gd` part of the first commit was dropped (already in the daily).
 - New wiring: `_fill_here()` in `src/client/held_item.gd` calls `placed.shovel_load(false, hit position)` (see the `shortcut:` comment there).
-- Still silent until Sal sets the `sound` key on the rows: stone, brick and thatch pieces in `data/items/structures.json` still use `timber`/`thump`, so the new place sounds exist but nothing asks for them.
+- Stone, brick and thatch pieces in `data/items/structures.json` now carry their own `sound` key (checked 3 Nov), so `place_stone`, `place_brick` and `place_thatch` play.
 - Code locations for the `none?` rows (where the call goes, for the backlog): sleep/wake `inventory_view.gd:1393, 4571, 4575` (`ACT_SLEEP` sent; the server owns the state); fishing cast and bite `held_item.gd:590, 621` (`ACT_FISH` sent); hurt from a fall `landing_sounds.gd:27` signal `hurt` is connected in `terrain_client.gd:1277` (only falls hurt the client; damage from animals has no client event I could find). The rest are listed in `docs/handoff/JASON_NEXT_TASKS.md`.
 
 ## Phase 2 update (2 Nov 2026, read from code, not heard)
