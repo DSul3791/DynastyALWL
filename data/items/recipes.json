@@ -4646,6 +4646,15 @@
 			"craft_s": 4.0,
 			"known": true
 		},
+		"fibre_rope": {
+			"number": 338,
+			"name": "Rope from fibre",
+			"category": "Materials",
+			"needs": [["plant_fibre", 12]],
+			"gives": ["rope", 1],
+			"craft_s": 6.0,
+			"known": true
+		},
 		"compost": {
 			"number": 224,
 			"name": "Compost",
