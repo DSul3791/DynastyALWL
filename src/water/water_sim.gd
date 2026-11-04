@@ -25,6 +25,7 @@ extends RefCounted
 const GRAVITY := 9.81
 const MANNING_N := 0.035        # bed roughness of a natural stream (s/m^(1/3))
 const STABILITY := 0.7          # share of the largest stable time step used
+const THETA := 0.8              # de Almeida 2012 flow weighting (1: none), the same in the C++ core
 const DT_MAX_S := 2.0
 const DT_MIN_S := 0.05
 const FACE_MIN_M := 0.001       # thinner water than this between two cells does not flow
@@ -408,6 +409,17 @@ func step() -> float:
 			var there: float = (gn + depth[n]) if gn > 0.0 else 0.0   # the sea holds at 0 m
 			var forward: bool = d < 2       # the stored flow points from k to n
 			var stored: float = (flow_x[k] if d == 0 else flow_z[k]) if forward else -(flow_x[n] if d == 2 else flow_z[n])
+			# de Almeida et al. 2012 (BUG-030, a funnel in a lake): blend the face's old flow with the two faces in line with it, so deep still
+			# water does not grow a chequer from cell to cell (the C++ core does the same).
+			var along_x: bool = d == 0 or d == 2
+			var f: int = k if forward else n
+			var fs: int = 1 if along_x else width
+			var fi: int = f % width if along_x else f / width
+			var q0: float = flow_x[f] if along_x else flow_z[f]
+			var q_before: float = (flow_x[f - fs] if along_x else flow_z[f - fs]) if fi > 0 else q0
+			var q_after: float = (flow_x[f + fs] if along_x else flow_z[f + fs]) if fi < width - 2 else q0
+			var blended: float = THETA * q0 + 0.5 * (1.0 - THETA) * (q_before + q_after)
+			stored = blended if forward else -blended
 			var q: float = _face(stored, here, gk, there, gn, step_s)
 
 			# Never take more than a quarter of a cell's water through one face.

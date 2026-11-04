@@ -5,9 +5,11 @@ extends SceneTree
 # ("broken patches", 48 percent of the painted cells wet). This tool works on the SAVED settled water of every tile (no simulation, no tile bake): a dry painted river cell takes the
 # water LEVEL of the wet painted river cells within --reach cells (default 3, about the half width), so the surface stays flat across the channel and the water stops where the bank
 # rises above it (never deeper than --max-depth, default 1.5 m). Old files are copied to worlds/<world>/water_archive/ first (never overwritten).
+# --relax=N (Sonny, 4 Nov 2026, BUG-030 funnel in a lake): first run the water N ticks from the saved depth (springs at the settle's rate and the x10 start key), so
+# water the settle left sloshing in a chequer (deep lakes, before the sim's theta weighting) lies level; use with --film to keep the painted rivers' film.
 # --film (31 Oct 2026, the choice for the committed files): instead of the level-fill, apply the settle tool's own film floor to every painted river cell whatever its catchment and whether
 # or not it holds water (min_seen 0, min_km2 --min-km2, default 0): every painted channel holds 13 cm from head to sea, so a headwater reach is a thin sheet, not a dry bed.
-#   godot --headless --path . --script res://src/worldgen/tools/refilm_water.gd -- [--tile=3,4] [--film [--min-km2=0] [--depth=0.13]] [--reach=3] [--max-depth=1.5] [--dry-run] [--world=DIR]
+#   godot --headless --path . --script res://src/worldgen/tools/refilm_water.gd -- [--tile=3,4] [--film [--min-km2=0] [--depth=0.13]] [--reach=3] [--max-depth=1.5] [--relax=600] [--dry-run] [--world=DIR]
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -26,6 +28,7 @@ func _initialize() -> void:
 	var reach: int = 3
 	var max_depth: float = 1.5
 	var dry: bool = false
+	var relax: int = 0
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--world="):
@@ -45,6 +48,8 @@ func _initialize() -> void:
 			max_depth = float(argument.trim_prefix("--max-depth="))
 		elif argument == "--dry-run":
 			dry = true
+		elif argument.begins_with("--relax="):
+			relax = int(argument.trim_prefix("--relax="))
 
 	var errors: Array = []
 	var settings = WorldSettingsScript.load_from_file(world + "/world.json", errors)
@@ -84,6 +89,9 @@ func _initialize() -> void:
 
 		var result: Dictionary = {}
 
+		if relax > 0:
+			_relax(depth, data, generator, relax)
+
 		if film:
 			result = WaterSettler.film_floor(depth, data.water_class, WaterSettler.flow_of(data, generator), data.spacing_m, {"enabled": true, "depth_m": film_depth, "min_seen_m": 0.0, "min_km2": min_km2})
 		else:
@@ -100,7 +108,7 @@ func _initialize() -> void:
 
 		print("tile %s: painted river cells %d, with 12 cm or more %d before and %d after; %d cells raised, %.0f m3 added%s" % [str(tile), painted, wet_before, wet_after, int(result["cells"]), float(result["volume_m3"]), " (dry run)" if dry else ""])
 
-		if dry or int(result["cells"]) == 0:
+		if dry or (int(result["cells"]) == 0 and relax == 0):
 			continue
 
 		var archive: String = world + "/water_archive"
@@ -113,6 +121,27 @@ func _initialize() -> void:
 		print("  saved %d wet cells to %s" % [WaterStore.save(path, data.samples, depth), path])
 
 	quit(0)
+
+
+# Runs the tile's water `ticks` ticks from `depth` (the settle's springs, rate 10 at the x10 start key, as settle_water.gd) and writes the result back.
+static func _relax(depth: PackedFloat32Array, data, generator, ticks: int) -> void:
+	var sim = WaterSettler.build(data, 10.0, generator)
+	sim.spring_multiplier = 10.0
+	sim.set_depth(depth)
+	sim.wake_all_wet()
+
+	for t in range(1, ticks + 1):
+		sim.step()
+
+		if t % 15 == 0:
+			sim.level_map()   # drains the native core's changed-square list (settle_water.gd)
+
+	var after: PackedFloat32Array = sim.get_depth()
+
+	for k in range(depth.size()):
+		depth[k] = after[k]
+
+	print("  relaxed %d ticks: %.0f m3 stored, %.0f m3 to the sea or edge" % [ticks, sim.total_volume(), sim.sea_m3])
 
 
 # Every dry painted river cell takes the highest water surface of the wet painted river cells within `reach` cells, when that lies above its ground (and not more than `max_depth`).
