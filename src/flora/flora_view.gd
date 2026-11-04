@@ -964,7 +964,7 @@ func _make_tree_materials() -> void:
 	fungus_material.shader = fungus
 	_tree_materials["fungus"] = fungus_material
 
-	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
+	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["fern", "res://assets/trees/leaf_fern.png"], ["herb", "res://assets/trees/leaf_herb.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = foliage
 		material.set_shader_parameter("leaves", _load_texture(pair[1]))
@@ -974,6 +974,7 @@ func _make_tree_materials() -> void:
 	_tree_materials["conifer"].set_shader_parameter("sway", 0.006)
 	_tree_materials["conifer"].set_shader_parameter("backlight", 0.25)   # needles are denser
 	_tree_materials["palm"].set_shader_parameter("sway", 0.02)
+	_tree_materials["fern"].set_shader_parameter("sway", 0.02)       # ground fern fronds (tools/make_leaf_fern.py), swaying like the palm card they replaced
 	_tree_materials["grass"].set_shader_parameter("sway", 0.09)
 	_tree_materials["grass"].set_shader_parameter("flutter", 0.01)
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)

@@ -20,6 +20,8 @@ static var _cache: Dictionary = {}              # name -> ArrayMesh
 static var _solid: StandardMaterial3D           # vertex colours, one side
 static var _cards: StandardMaterial3D           # vertex colours, both sides (leaves)
 static var _flame: ShaderMaterial
+static var _flame_card: ShaderMaterial
+static var _fixture_flame_card: ShaderMaterial
 static var _coal: ShaderMaterial
 
 const FLAME_SHADER := """
@@ -47,6 +49,53 @@ void fragment() {
 	vec3 high = vec3(1.0, 0.8, 0.3);
 	ALBEDO = mix(low, high, 1.0 - up) * (0.75 + 0.35 * flick);
 	ALPHA = soft * (1.0 - up * up) * (0.6 + 0.25 * flick);
+}
+"""
+
+# Campfire and hearth flames (Kathreen 3 Nov 2026): each tongue is three crossed upright cards and the flame is drawn by the shader, not by the geometry, so it reads as fire
+# and not as orange cones. Two noise layers scroll upward and bend the tongue more toward the top; its width narrows to a ragged tip that breaks up into licks; a pale yellow
+# core sits low and the edges run orange to deep red. Vertex colour red is a per-tongue seed, so no two tongues move together. Additive and unshaded like the cone flames.
+const FLAME_CARD_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, blend_add, depth_draw_never, shadows_disabled;
+uniform float strength = 1.0;      // the lit fixtures (torch, chandelier, fireplace) draw dimmer so overlapping flames in a room do not clip to white
+varying float seed;
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+void vertex() {
+	seed = COLOR.r * 31.0;
+	float up = UV.y;
+	VERTEX.x += sin(TIME * 4.3 + seed) * 0.025 * up;
+	VERTEX.z += cos(TIME * 3.7 + seed * 1.3) * 0.025 * up;
+}
+
+void fragment() {
+	float y = UV.y;                                   // 0 at the base, 1 at the top of the card
+	float x = UV.x * 2.0 - 1.0;
+	float n1 = noise(vec2(UV.x * 3.0 + seed, y * 2.4 - TIME * 2.3));
+	float n2 = noise(vec2(UV.x * 7.0 - seed, y * 5.5 - TIME * 3.6));
+	float n = n1 * 0.65 + n2 * 0.35;
+	float dx = x + (n - 0.5) * 0.7 * y;                // the tongue bends and wavers more toward the top
+	float width = 0.8 * pow(max(1.0 - y, 0.0), 0.6) * (0.7 + 0.6 * n);
+	float body = smoothstep(width, width * 0.45, abs(dx));
+	body *= smoothstep(0.0, 0.1, y);                   // soft where it rises from the coals
+	body *= 1.0 - smoothstep(0.45 + 0.4 * n, 1.0, y);  // the tip breaks into licks
+	float core = smoothstep(width * 0.55, 0.0, abs(dx)) * (1.0 - smoothstep(0.1, 0.6, y));
+	// Kathleen's three stops (#180, QA pic-campfire-lit-real): a hot yellow root, a deep orange body, red-orange edges and tips; dark enough that overlapping tongues do not clip.
+	vec3 col = mix(vec3(0.85, 0.2, 0.03), vec3(1.0, 0.42, 0.07), smoothstep(0.0, 0.8, body));
+	col = mix(col, vec3(1.0, 0.68, 0.2), core * 0.85);
+	ALBEDO = col * (0.5 + 0.45 * body) * strength;
+	ALPHA = body * 0.9;
 }
 """
 
@@ -120,6 +169,23 @@ static func _flame_material() -> ShaderMaterial:
 		_flame = ShaderMaterial.new()
 		_flame.shader = shader
 	return _flame
+
+
+static func _flame_card_material() -> ShaderMaterial:
+	if _flame_card == null:
+		var shader: Shader = Shader.new()
+		shader.code = FLAME_CARD_SHADER
+		_flame_card = ShaderMaterial.new()
+		_flame_card.shader = shader
+	return _flame_card
+
+
+static func _fixture_flame_card_material() -> ShaderMaterial:
+	if _fixture_flame_card == null:
+		_fixture_flame_card = ShaderMaterial.new()
+		_fixture_flame_card.shader = _flame_card_material().shader
+		_fixture_flame_card.set_shader_parameter("strength", 0.5)
+	return _fixture_flame_card
 
 
 static func _coal_material() -> ShaderMaterial:
@@ -718,6 +784,42 @@ static func _flames(tier: int = 2) -> ArrayMesh:
 	return _finish_cached(cache_key, st, _flame_material())
 
 
+# The campfire and hearth flames of a tier (FLAME_TONGUES): three crossed cards a tongue, drawn by FLAME_CARD_SHADER. The card is a little taller and wider than the old cone
+# so the ragged tip and the licks have room. The lit fixtures use them too, dimmer (strength 0.5).
+static func _flame_cards(tier: int = 2) -> ArrayMesh:
+	var cache_key: String = "flame_cards_%d" % tier
+
+	if _cache.has(cache_key):
+		return _cache[cache_key]
+
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var n: int = 0
+
+	for tongue in FLAME_TONGUES[tier]:
+		var base: Vector3 = tongue[0]
+		var height: float = float(tongue[1]) * 1.25
+		var half: float = float(tongue[2]) * 1.3
+		var lean: float = float(tongue[3])
+		var tip_shift: Vector3 = Vector3(cos(lean), 0.0, sin(lean)) * 0.05
+		var seed: Color = Color(fposmod(float(n) * 0.37 + 0.11, 1.0), 1.0, 1.0)
+		n += 1
+
+		for c in range(3):
+			var yaw: float = lean + PI * float(c) / 3.0
+			var side: Vector3 = Vector3(cos(yaw), 0.0, sin(yaw)) * half
+			var normal: Vector3 = Vector3(-sin(yaw), 0.0, cos(yaw))
+			var corners: Array = [[base - side, Vector2(0.0, 0.0)], [base + side, Vector2(1.0, 0.0)], [base + side + Vector3(0.0, height, 0.0) + tip_shift, Vector2(1.0, 1.0)], [base - side + Vector3(0.0, height, 0.0) + tip_shift, Vector2(0.0, 1.0)]]
+
+			for k in [0, 1, 2, 0, 2, 3]:
+				st.set_color(seed)
+				st.set_normal(normal)
+				st.set_uv(corners[k][1])
+				st.add_vertex(corners[k][0])
+
+	return _finish_cached(cache_key, st, _flame_card_material())
+
+
 static func _coals() -> ArrayMesh:
 	if _cache.has("coals"):
 		return _cache["coals"]
@@ -747,7 +849,10 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		var coals: MeshInstance3D = _instance(_coals())
 		coals.scale = Vector3(ring, 1.0, ring)
 		root.add_child(coals)
-		root.add_child(_instance(_flames(tier)))
+		root.add_child(_instance(_flame_cards(tier)))
+		var sparks: GPUParticles3D = _ember_sparks(tier)
+		sparks.position = Vector3(0.0, float(FLAME_TONGUES[tier][0][1]) * 0.5, 0.0)
+		root.add_child(sparks)
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = FIRE_LIGHT_COLOR[tier]
@@ -996,10 +1101,10 @@ static func lit_fixture(kind: String) -> Node3D:
 			root.add_child(coals)
 
 	for spot in spots:
-		var flame: MeshInstance3D = _instance(_flames(1))
+		var flame: MeshInstance3D = _instance(_flame_cards(1))      # the card flames, dimmer (Kathreen 3 Nov 2026; the cone flames read as cones)
 		flame.position = spot[0]
 		flame.scale = spot[1]
-		flame.material_override = _fixture_flame_material()
+		flame.material_override = _fixture_flame_card_material()
 		root.add_child(flame)
 
 	if kind == "fireplace":
@@ -1202,6 +1307,8 @@ static func stone_forge() -> Node3D:
 
 # Hooks for Dave's forge models: the "Fire" and "Smoke" marker nodes in each .glb give the points (inventory_view.gd finds them).
 static var _smoke: ParticleProcessMaterial
+static var _embers: ParticleProcessMaterial
+static var _ember_mesh: QuadMesh
 static var _smoke_mesh: QuadMesh
 
 
@@ -1223,6 +1330,77 @@ void fragment() {
 	ALPHA = puff * puff * lump * COLOR.a * 0.55;
 }
 """
+
+
+# Sparks over a lit campfire (Kathreen 3 Nov 2026): a few tiny bright embers that rise on the heat, waver and wink out, more for a bigger fire. Additive billboards, no shadows.
+const EMBER_SHADER := """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, shadows_disabled, cull_disabled;
+
+void vertex() {
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0), vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+}
+
+void fragment() {
+	float d = length(UV - vec2(0.5)) * 2.0;
+	float dot_ = smoothstep(1.0, 0.0, d);
+	float wink = 0.6 + 0.4 * sin(TIME * 23.0 + COLOR.g * 40.0);
+	ALBEDO = mix(vec3(1.0, 0.35, 0.05), vec3(1.0, 0.8, 0.4), dot_) * dot_ * wink * 2.0;
+	ALPHA = dot_ * COLOR.a;
+}
+"""
+const EMBERS_BY_TIER := {1: 4, 2: 8, 3: 16}
+
+
+static func _ember_sparks(tier: int) -> GPUParticles3D:
+	if _embers == null:
+		_embers = ParticleProcessMaterial.new()
+		_embers.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		_embers.emission_sphere_radius = 0.12
+		_embers.direction = Vector3(0.0, 1.0, 0.0)
+		_embers.spread = 18.0
+		_embers.initial_velocity_min = 0.7
+		_embers.initial_velocity_max = 1.6
+		_embers.gravity = Vector3(0.0, 0.25, 0.0)          # they keep rising on the heat
+		_embers.damping_min = 0.3
+		_embers.damping_max = 0.6
+		_embers.turbulence_enabled = true
+		_embers.turbulence_noise_strength = 0.6
+		_embers.turbulence_noise_scale = 0.8
+		_embers.scale_min = 0.6
+		_embers.scale_max = 1.2
+		var fade: Gradient = Gradient.new()
+		fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+		fade.add_point(0.6, Color(1.0, 1.0, 1.0, 0.8))
+		fade.set_color(2, Color(1.0, 1.0, 1.0, 0.0))
+		var fade_tex: GradientTexture1D = GradientTexture1D.new()
+		fade_tex.gradient = fade
+		_embers.color_ramp = fade_tex
+		var hue: Gradient = Gradient.new()                     # a random green channel per spark: its own wink phase in the shader
+		hue.set_color(0, Color(1.0, 0.0, 1.0, 1.0))
+		hue.set_color(1, Color(1.0, 1.0, 1.0, 1.0))
+		var hue_tex: GradientTexture1D = GradientTexture1D.new()
+		hue_tex.gradient = hue
+		_embers.color_initial_ramp = hue_tex
+		_ember_mesh = QuadMesh.new()
+		_ember_mesh.size = Vector2(0.025, 0.025)
+		var shader: Shader = Shader.new()
+		shader.code = EMBER_SHADER
+		var material: ShaderMaterial = ShaderMaterial.new()
+		material.shader = shader
+		_ember_mesh.material = material
+
+	var sparks: GPUParticles3D = GPUParticles3D.new()
+	sparks.name = "Embers"
+	sparks.amount = int(EMBERS_BY_TIER[tier])
+	sparks.lifetime = 1.8
+	sparks.randomness = 0.6
+	sparks.process_material = _embers
+	sparks.draw_pass_1 = _ember_mesh
+	sparks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	sparks.visibility_aabb = AABB(Vector3(-1.5, 0.0, -1.5), Vector3(3.0, 4.0, 3.0))
+	return sparks
 
 
 static func _smoke_plume() -> GPUParticles3D:
@@ -1298,7 +1476,7 @@ static func add_hooks(model: Node3D, fire_node: Variant, smoke: Variant, fx_scal
 		flames.position = spot
 		flames.scale = Vector3.ONE * 1.8 * fx_scale
 		flames.add_child(_instance(_coals()))
-		flames.add_child(_instance(_flames()))
+		flames.add_child(_instance(_flame_cards()))
 		model.add_child(flames)
 
 	if smoke != null:
