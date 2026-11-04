@@ -18,7 +18,7 @@ func check(ok: bool, what: String) -> void:
 func _initialize() -> void:
 	var trees: Node = TreeSounds.new()
 	root.add_child(trees)
-	trees._first_msec = Time.get_ticks_msec() - TreeSounds.SETTLE_MSEC - 1000      # the world has settled
+	TreeSounds.assume_settled = true      # a fresh headless process is younger than SETTLE_MSEC
 	var row: Dictionary = {7: {"state": 3, "pos": Vector3(10, 0, 10), "extra": {"length": 8.0, "radius": 0.3}}}
 	trees.watch(row)
 	check(trees.falls_played == 1, "a new felled trunk falls once (%d)" % trees.falls_played)
@@ -26,7 +26,6 @@ func _initialize() -> void:
 	trees.watch(row)
 	check(trees.falls_played == 1, "back in range after leaving: no second fall (%d)" % trees.falls_played)
 	trees.forget()
-	trees._first_msec = Time.get_ticks_msec() - TreeSounds.SETTLE_MSEC - 1000
 	trees.watch(row)
 	check(trees.falls_played == 2, "after the ground is made again the id is new (%d)" % trees.falls_played)
 	var landed: Dictionary = {9: {"state": 3, "pos": Vector3(20, 0, 20), "extra": {"length": 8.0, "radius": 0.3, "landed": true}}}

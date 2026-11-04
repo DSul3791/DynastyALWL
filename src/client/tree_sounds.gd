@@ -26,6 +26,7 @@ const MAX_DISTANCE_M := 260.0
 const REF_HEIGHT_M := 20.0
 const SEEN_CAP := 20000                 # trees remembered as already felled (ids are small ints; far more than a world holds)
 
+static var assume_settled: bool = false   # tests: a fresh process has run under SETTLE_MSEC, so nothing would count as new
 var falls_played: int = 0
 var chips_played: int = 0
 var last: String = ""
@@ -48,7 +49,7 @@ func watch(world: Dictionary) -> void:
 	if _first_msec < 0:
 		_first_msec = Time.get_ticks_msec()
 
-	var settled: bool = Time.get_ticks_msec() - _first_msec > SETTLE_MSEC
+	var settled: bool = assume_settled or Time.get_ticks_msec() - _first_msec > SETTLE_MSEC
 	var present: Dictionary = {}
 
 	for id in world:
