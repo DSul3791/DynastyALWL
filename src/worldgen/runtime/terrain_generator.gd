@@ -63,6 +63,9 @@ var _tiles: Dictionary = {}           # Vector2i -> tile data
 var failed_tiles: int = 0              # times a tile file existed but failed to load (a stand-in was used)
 var _mutex: Mutex = Mutex.new()
 var _prefetching: Dictionary = {}       # Vector2i -> true while a worker thread reads that tile
+var _loading: Dictionary = {}           # Vector2i -> true while one thread reads that tile in get_tile; the others wait for it
+var tile_reads: int = 0                 # tile files read by get_tile (one per tile unless a bad file gave a stand-in)
+var tile_load_waits: int = 0            # get_tile calls that waited for another thread's read instead of reading the file again
 var _detail: Array = []               # [FastNoiseLite, amplitude_m, wavelength_m]
 var _band: float = 3.0
 var _detail_max: float = 0.0          # largest possible detail offset (m)
@@ -161,13 +164,47 @@ func tile_of(x: float, z: float) -> Vector2i:
 
 
 func get_tile(coord: Vector2i):
-	_mutex.lock()
-	var data = _tiles.get(coord)
-	_mutex.unlock()
+	# One read per tile (Dave's PC log, 4 Nov 2026: tile (3, 3) was read 11 times at once, once per server worker asking for a block
+	# on it, each read 3.2 to 4 s instead of 1.8 s, the server's cores all busy while the client joined). The first caller reads it;
+	# the others wait for that read. The read needs no other thread, so waiting cannot deadlock.
+	var waited: bool = false
+	var data = null
+
+	while true:
+		_mutex.lock()
+		data = _tiles.get(coord)
+		var busy: bool = data == null and _loading.has(coord)
+
+		if data == null and not busy:
+			_loading[coord] = true
+
+		if busy and not waited:
+			waited = true
+			tile_load_waits += 1
+
+		_mutex.unlock()
+
+		if not busy:
+			break
+
+		OS.delay_msec(5)
 
 	if data != null:
 		return data
 
+	data = _read_tile(coord)
+	_mutex.lock()
+	_loading.erase(coord)
+	_mutex.unlock()
+	return data
+
+
+# get_tile's read (only one thread at a time per tile). A stand-in for a file that would not load is returned but not kept.
+func _read_tile(coord: Vector2i):
+	var data = null
+	_mutex.lock()
+	tile_reads += 1
+	_mutex.unlock()
 	var load_start: int = Time.get_ticks_usec()
 	data = DataScript.new()
 	var path: String = "%s/tile_%d_%d.tile" % [tiles_dir, coord.x, coord.y]

@@ -24,7 +24,7 @@ static var _material: Material
 static var _prebuild_task: int = -1         # prebuild(): the worker task building _pre_sources and _pre_skinned, or -1
 static var _pre_sources: Dictionary = {}     # the worker's own copies (the main thread never waits for it, and never shares a dictionary with it while it runs)
 static var _pre_skinned: Dictionary = {}
-static var _bare: bool = false              # true only while the prebuild worker makes its own rig to skin on (its _init builds nothing)
+static var _waiting: Array = []              # arms made before the prebuild was done; prebuild() finishes them when it is (no build on the main thread)
 
 
 # Dave 3 Nov 2026 (lag run, #242: "welcome: held item" 4.2 s at the login): reading the arm parts out of the 38 MB file and skinning the two
@@ -35,36 +35,81 @@ static var _bare: bool = false              # true only while the prebuild worke
 # Called every frame until it starts (cheap: one status check). It starts only once the loader thread has the file, so the worker never sits
 # blocked on the load while holding a pool thread the loaders need (the first try did: the start-up stall grew by seconds).
 static func prebuild() -> void:
-	if _prebuild_task >= 0 or not _skinned.is_empty() or DynastyBody.force_unavailable:
+	# Arms already made wait for the worker (Dave's PC log 4 Nov 2026: the welcome comes 44 ms after connecting to a local server, long before the
+	# file has loaded, so "welcome: held item" still built them on the main thread, 0.8 s on the PC and 2 s in the cloud). They get their meshes here.
+	_waiting = _waiting.filter(func(a): return is_instance_valid(a))   # arms freed while waiting (a quit, a test) are dropped
+
+	if not _waiting.is_empty():
+		if _prebuild_task >= 0 and WorkerThreadPool.is_task_completed(_prebuild_task):
+			WorkerThreadPool.wait_for_task_completion(_prebuild_task)
+			_prebuild_task = -1
+			_adopt_prebuilt()
+			var ready: Array = _waiting
+			_waiting = []
+
+			for arms in ready:
+				if is_instance_valid(arms):
+					arms._finish()
+
+			return
+
+		# The file failed to load (not imported): build them as before, which keeps the old tube arms.
+		if _prebuild_task < 0 and ResourceLoader.load_threaded_get_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_IN_PROGRESS and ResourceLoader.load_threaded_get_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_LOADED:
+			var stuck: Array = _waiting
+			_waiting = []
+
+			for arms in stuck:
+				if is_instance_valid(arms):
+					arms._finish()
+
+			return
+
+	if _prebuild_task >= 0 or not _skinned.is_empty() or DynastyBody.force_unavailable or _waiting.is_empty():
 		return
 
 	if ResourceLoader.load_threaded_get_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_LOADED:
 		return
 
-	_prebuild_task = WorkerThreadPool.add_task(_prebuild_job.bind(load("res://src/client/character/dynasty_arms.gd")), false, "dynasty arms prebuild")   # this script, taken here: a load() on the worker gives null
+	# The 4096 x 4096 skin texture (_arm_material) is read on a loader thread too: 0.36 s when the main thread loaded it.
+	if ResourceLoader.exists(SKIN_TEXTURE):
+		var skin_status: int = ResourceLoader.load_threaded_get_status(SKIN_TEXTURE)
 
+		if skin_status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			ResourceLoader.load_threaded_request(SKIN_TEXTURE)
+			return
 
-static func _prebuild_job(script: GDScript) -> void:
-	_bare = true
-	var rig = script.new()
-	_bare = false
+		if skin_status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			return
+
+	# The parts and the rig's bones are read here on the main thread (a few ms); the worker only does the skinning arithmetic, so it makes no
+	# node and no rendering resource (the headless renderer's stores are not thread safe: a worker rig broke item meshes made at the same time).
+	var rig = _waiting[0]
 	var sources: Dictionary = {}
 	rig._load_sources(sources)
 
-	if sources.size() == 2:
-		var skinned: Dictionary = {}
+	if sources.size() != 2:
+		return
 
-		for side in ["r", "l"]:
-			skinned[side] = rig._skin_arm(sources[side] as ArrayMesh, side)
+	var inputs: Dictionary = {}
 
-		_pre_skinned = skinned
-		_pre_sources = sources   # set last: the main thread takes both only once the task is complete
+	for side in ["r", "l"]:
+		inputs[side] = rig._skin_input(sources[side] as ArrayMesh, side)
 
-	rig.free()
+	_pre_sources = sources
+	_pre_skinned = {}
+	_prebuild_task = WorkerThreadPool.add_task(_prebuild_job.bind(inputs), false, "dynasty arms prebuild")
 
 
-# Before the game quits: a prebuild still running needs the main thread to answer its rendering calls, so the quit would hang waiting for it.
-# Lets it finish (at most 10 s) while answering them.
+static func _prebuild_job(inputs: Dictionary) -> void:
+	var skinned: Dictionary = {}
+
+	for side in inputs:
+		skinned[side] = _skin_data(inputs[side])   # arrays; the main thread makes the meshes (_adopt_prebuilt)
+
+	_pre_skinned = skinned   # the main thread reads it only once the task is complete
+
+
+# Before the game quits: lets a prebuild still running finish (at most 10 s), so the quit does not tear down under it.
 static func settle() -> void:
 	if _prebuild_task < 0:
 		return
@@ -84,22 +129,43 @@ func _init() -> void:
 	super._init(true)
 	name = "DynastyArms"
 
-	if _bare and OS.get_thread_caller_id() != OS.get_main_thread_id():
-		return
-
 	if _prebuild_task >= 0 and WorkerThreadPool.is_task_completed(_prebuild_task):
 		WorkerThreadPool.wait_for_task_completion(_prebuild_task)   # already done: returns at once and frees the task
 		_prebuild_task = -1
+		_adopt_prebuilt()
 
-		if _sources.is_empty() and _pre_sources.size() == 2:
-			_sources = _pre_sources
-			_skinned = _pre_skinned
+	# Not ready yet: the worker is on it, or the file is still loading for it. These arms wait (not drawn) and prebuild() finishes them.
+	var loading: bool = ResourceLoader.load_threaded_get_status(PARTS_GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS or (ResourceLoader.load_threaded_get_status(PARTS_GLB) == ResourceLoader.THREAD_LOAD_LOADED and not DynastyBody.force_unavailable)
 
+	if _sources.is_empty() and OS.get_thread_caller_id() == OS.get_main_thread_id() and (_prebuild_task >= 0 or loading):
+		body_mesh.visible = false
+		set_meta("own_hands", true)   # held_item.gd makes no fist balls for Dave's hands
+		_waiting.append(self)
+		return
+
+	_finish()
+
+
+static func _adopt_prebuilt() -> void:
+	if _sources.is_empty() and _pre_sources.size() == 2 and _pre_skinned.size() == 2:
+		_sources = _pre_sources
+
+		for side in _pre_skinned:
+			_skinned[side] = _mesh_from(_pre_skinned[side])
+
+
+# Puts the skinned arms on this rig (at once, or once the prebuild is done).
+func _finish() -> void:
 	if _sources.is_empty():
 		_load_sources(_sources)
 
 	# The file is not imported yet (a fresh checkout before `godot --import`): keep the old tube arms rather than draw nothing.
 	if _sources.is_empty():
+		body_mesh.visible = true
+
+		if has_meta("own_hands"):
+			remove_meta("own_hands")
+
 		return
 
 	body_mesh.visible = false                  # the old tube arms stay in the rig (they own the skeleton) but are not drawn
@@ -194,11 +260,37 @@ static func _smooth(lo: float, hi: float, x: float) -> float:
 # The arm mesh as one skinned mesh in the rig's rest pose (skeleton space): the arm is straightened along the shoulder-elbow-wrist line, the heights are remapped so the elbow and wrist land on the
 # rig's joints, and each vertex is weighted to the upper arm, forearm and hand with a smooth blend around the elbow and the wrist. Normals are smoothed across the file's UV seams.
 func _skin_arm(source: ArrayMesh, side: String) -> ArrayMesh:
-	var arrays: Array = source.surface_get_arrays(0)
+	return _mesh_from(_skin_arrays(source, side))
+
+
+# One skinned surface from _skin_arrays, with the arm material (main thread: it makes a rendering resource).
+static func _mesh_from(arrays: Array) -> ArrayMesh:
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.surface_set_material(0, _arm_material())
+	mesh.custom_aabb = AABB(Vector3(-1.2, -1.2, -1.2), Vector3(2.4, 2.4, 2.4))
+	return mesh
+
+
+# The skinned arm as plain surface arrays: no rendering resource is made, so the prebuild worker can run it while the main thread
+# makes meshes of its own (the headless renderer's mesh store is not thread safe: a worker commit at the same time broke item meshes).
+func _skin_arrays(source: ArrayMesh, side: String) -> Array:
+	return _skin_data(_skin_input(source, side))
+
+
+# What _skin_data needs, read from the rig and the source mesh on the main thread: [surface arrays, aabb, bone ids, arm bone rest].
+func _skin_input(source: ArrayMesh, side: String) -> Array:
+	var bone_names: Array = ["arm_" + side, "forearm_" + side, "hand_" + side]
+	return [source.surface_get_arrays(0), source.get_aabb(), [_bones[bone_names[0]], _bones[bone_names[1]], _bones[bone_names[2]]], _global_rest(bone_names[0])]
+
+
+# The skinning itself, plain data in and out: safe on a worker thread (no node, no rendering call).
+static func _skin_data(input: Array) -> Array:
+	var arrays: Array = input[0]
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
 	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
-	var box: AABB = source.get_aabb()
+	var box: AABB = input[1]
 	var top: float = box.end.y
 	var length: float = box.size.y
 
@@ -231,9 +323,8 @@ func _skin_arm(source: ArrayMesh, side: String) -> ArrayMesh:
 
 		axis.append(sum / float(maxi(n, 1)))
 
-	var bone_names: Array = ["arm_" + side, "forearm_" + side, "hand_" + side]
-	var ids: Array = [_bones[bone_names[0]], _bones[bone_names[1]], _bones[bone_names[2]]]
-	var rest: Transform3D = _global_rest(bone_names[0])
+	var ids: Array = input[2]
+	var rest: Transform3D = input[3]
 	var turn: Basis = Basis(Vector3.UP, PI)
 	var out_v: PackedVector3Array = PackedVector3Array()
 	var out_b: Array = []
@@ -290,14 +381,11 @@ func _skin_arm(source: ArrayMesh, side: String) -> ArrayMesh:
 
 	tool.index()
 	tool.generate_tangents()
-	tool.set_material(_arm_material())
-	var mesh: ArrayMesh = tool.commit()
-	mesh.custom_aabb = AABB(Vector3(-1.2, -1.2, -1.2), Vector3(2.4, 2.4, 2.4))
-	return mesh
+	return tool.commit_to_arrays()
 
 
 # The middle of the vertices within `band` of height `y`.
-func _centre_at(verts: PackedVector3Array, y: float, band: float) -> Vector3:
+static func _centre_at(verts: PackedVector3Array, y: float, band: float) -> Vector3:
 	var sum: Vector3 = Vector3.ZERO
 	var n: int = 0
 
