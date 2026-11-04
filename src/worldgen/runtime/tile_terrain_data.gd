@@ -69,6 +69,7 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 
 # Caves: capsules (passages) and ellipsoids (chambers) with AABBs.
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
+var spring_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of each spring cave's mouth (Dave 3 Nov 2026): the settle keeps a spring there even on steep ground
 var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
 var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 box]: ground opened by a cave mouth (entrance node to its first node): no flora there
 const CAVE_POOL_M := 0.4            # a spring cave pool: this deep in the bottom of its chamber
@@ -604,6 +605,8 @@ func _load_caves(list: Array) -> void:
 	for cave in list:
 		var nodes: Array = cave["nodes"]
 
+		if str(cave.get("cave_kind", "")) == "spring_cave" and not nodes.is_empty():
+			spring_mouths.append(Vector2(float(nodes[0][0]), float(nodes[0][2])))
 		for entrance in cave.get("entrances", []):
 			for segment in cave["segments"]:
 				if int(segment[0]) == int(entrance) or int(segment[1]) == int(entrance):
