@@ -118,6 +118,8 @@ func _check_sites(names: Array) -> void:
 	check(structure_look.step_surface(42) == "thatch" and structure_look.step_surface(54) == "slab" and structure_look.step_surface(51) == "plank" and structure_look.step_surface(32) == "path" and structure_look.step_surface(47) == "", "steps on a thatch, stone or log floor and a trodden path sound as that floor; a tilled bed does not")
 	var spear_script = preload("res://src/client/spear_sounds.gd")
 	check(spear_script.hit_strength(0) == 0.5 and spear_script.hit_strength(30) == 1.0 and spear_script.hit_strength(9) > 0.5 and FileAccess.file_exists("res://assets/audio/spear/spear_hit_flesh_0.ogg"), "a hit on an animal thuds louder with more damage, and the flesh clip exists")
+	var inv_script = preload("res://src/client/inventory_view.gd")
+	check(names.has("skill_tock") and float(SlotSounds.COOLDOWN_S.get("skill", 0.0)) >= 20.0 and inv_script.skill_rose([[3, 10, 0]], [[3, 11, 0]]) and not inv_script.skill_rose([[3, 10, 0]], [[3, 9, 1]]) and not inv_script.skill_rose([[3, 10, 0]], [[3, 10, 0], [4, 5, 0]]), "a skill rising plays the wooden tock at most once every 20 s; rust and new rows stay silent")
 	var weather_script = preload("res://src/client/weather_sounds.gd")
 	var fire_script = preload("res://src/client/fire_sounds.gd")
 	check(weather_script.calls_for("drizzle", 0.3) == 0.0 and weather_script.calls_for("rain", 0.5) == 0.0 and weather_script.calls_for("storm", 1.0) == 0.0 and weather_script.calls_for("clear", 1.0) == 1.0 and weather_script.calls_for("fog", 1.0) > 0.5, "birds and insects stop for any rain, even light drizzle, and call in clear weather (BUG-004)")
