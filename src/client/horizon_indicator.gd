@@ -24,6 +24,7 @@ var enabled: bool = false                 # underground the ruler is off until t
 var _was_underground: bool = false
 var _hint_until_msec: int = 0
 const HINT_MSEC := 8000
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const HINT_TEXT := "Press H to show inclination"
 
 
@@ -116,7 +117,7 @@ func _draw() -> void:
 	var font: Font = ThemeDB.fallback_font
 
 	if not _active:   # only the reminder is up
-		draw_string(font, Vector2(0.0, middle.y), HINT_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, MARK)
+		draw_string(font, Vector2(0.0, middle.y), KeyBindings.localize(HINT_TEXT), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, MARK)
 		return
 	# Dave (build 619): a mark every 10 degrees and one more at the 45 end; no line down the middle.
 	for degrees in [-45, -40, -30, -20, -10, 0, 10, 20, 30, 40, 45]:
