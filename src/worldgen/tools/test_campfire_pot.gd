@@ -151,7 +151,7 @@ func _init() -> void:
 	third.report_position(1, Vector3(404.0, 10.0, 401.0))
 	third._take_down(1, third.inventory_of(1), pot_id(third))
 	check(pot_id(third) < 0, "the pot is gone")
-	check(third.inventory_of(1).has(kit, 1), "the kit comes back to the pack")
+	check(not third.inventory_of(1).has(kit, 1), "no kit comes back (the pot is a hammer build and gives its materials)")
 	check(ids_with(third, "fire").size() == 1 and int(tfire["state"]) == 41 and not bool(tfire["pot"]), "the fire keeps burning and the cap lifts (state %d)" % int(tfire["state"]))
 	third._dirty = true
 	third.save()

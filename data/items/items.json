@@ -1164,7 +1164,6 @@
 		},
 		"large_forge_kit": {
 			"number": 92,
-			"retired": true,
 			"name": "Large Forge",
 			"description": "A big arched forge with a riveted iron frame, ready to raise.",
 			"kind": "placeable",
@@ -1184,7 +1183,6 @@
 		},
 		"master_forge_kit": {
 			"number": 94,
-			"retired": true,
 			"name": "Master Forge",
 			"description": "An ornate black iron and gold forge set with red gems, ready to raise.",
 			"kind": "placeable",

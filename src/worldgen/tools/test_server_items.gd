@@ -1300,7 +1300,7 @@ func _init() -> void:
 	lt.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var lean_kit: int = lt.table.number_of("lean_to_kit")
 	lt.action(1, Net.ACT_ADMIN_GIVE, lean_kit, 0, 8, Vector3.ZERO)
-	lt.action(1, Net.ACT_PLACE, 0, 0, 90, Vector3(3.0, 10.0, 0.0))
+	lt.place_item(1, lean_kit, Vector3(3.0, 10.0, 0.0), 0, 90)
 	check(lt.world_item_count() == 1 and roofs.size() == 1 and lt.inventory_of(1).count_of(lean_kit) == 7, "a lean-to is placed and registers its roof")
 	var roof: Array = roofs[1]
 	check(absf(roof[5] - PI * 0.5) < 0.01 and roof[6] < 10.0 and roof[7] > 11.0, "the roof is a yawed box from just under the ground to 2 m up")

@@ -126,7 +126,8 @@ func _init() -> void:
 
 	check(done("fire"), "lighting the fire completes the fire goal")
 
-	# Shelter: a lean-to placed. Workbench: kit placed.
+	# Shelter and workbench come after the hammer goal: a wooden hammer in the pack, then a lean-to and a bench placed.
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_hammer"), 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 12, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 32, Vector3.ZERO)   # the lean-to costs 16 sticks, 4 leaves, 2 twine (lighter 3 Nov; was 32/8/4)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 4, Vector3.ZERO)

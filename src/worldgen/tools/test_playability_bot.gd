@@ -169,7 +169,6 @@ func _init() -> void:
 	var raw: Dictionary = {}
 	raw_need("stone_axe", 1, raw)
 	raw_need("campfire", 1, raw)
-	raw_need("lean_to_kit", 1, raw)
 
 	for key in raw:
 		need(not str(key).begins_with("unknown:"), "a recipe needs %s, which a new player cannot gather or make from the starting materials" % str(key).trim_prefix("unknown:"))
@@ -335,11 +334,7 @@ func _init() -> void:
 	if halted:
 		return
 
-	step("shelter: make the lean-to and put it up")
-	why = craft("lean_to_kit", 1)
-	need(why == "", why)
-	if halted:
-		return
+	step("shelter: put the lean-to up (a hammer blueprint now; the bot lays it free)")
 	items.place_piece(1, "lean_to_kit", Vector3(-3.0, 10.0, 0.0))
 	var shelters: int = 0
 
@@ -386,7 +381,7 @@ func _init() -> void:
 func raw_twine() -> int:
 	var total: int = 0
 
-	for id in ["stone_axe", "campfire", "lean_to_kit"]:
+	for id in ["stone_axe", "campfire"]:
 		var r: Dictionary = recipe_by_id(id)
 
 		for part in r.get("needs", []):

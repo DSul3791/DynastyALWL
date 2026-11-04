@@ -5912,7 +5912,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_say(peer, "Too many of these stand here already.")
 		return
 
-	if slot < 0:
+	if slot < 0 and free_build:
+		pass   # a test or admin piece: nothing is taken
+	elif slot < 0:
 		_pay_blueprint(inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], peer)
 	else:
 		inv.take_from_slot(slot, 1)
