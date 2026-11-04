@@ -4,7 +4,8 @@ extends SceneTree
 # heading, including due north and south, without stalling. Run: godot --headless --path . --script res://src/worldgen/tools/test_step_up_slow.gd
 
 const StepUp := preload("res://src/client/step_up.gd")
-const D := 1.0 / 60.0
+const TICKS := 600   # physics ticks a second: the run is paced by the clock, so a fast tick keeps the test short
+const D := 1.0 / 600.0
 
 var failures: int = 0
 
@@ -28,15 +29,16 @@ func _box(parent: Node3D, at: Vector3, size: Vector3) -> void:
 
 
 func _initialize() -> void:
+	Engine.physics_ticks_per_second = TICKS
 	var rn: Node3D = Node3D.new()
 	root.add_child.call_deferred(rn)
 	await process_frame
 	_box(rn, Vector3(0, -0.5, 0), Vector3(200, 1, 200))
-	# Lips every 3 m along both axes: thin strips of 1.5 cm, 3 cm and 12 cm.
-	for n in range(-9, 10):
+	# Lips every 0.6 m along both axes: thin strips of 1.5 cm, 3 cm and 12 cm.
+	for n in range(-40, 41):
 		var h: float = [0.015, 0.03, 0.12][posmod(n, 3)]
-		_box(rn, Vector3(0, h * 0.5, n * 3.0 + 1.5), Vector3(200, h, 0.05))
-		_box(rn, Vector3(n * 3.0 + 1.5, h * 0.5, 0), Vector3(0.05, h, 200))
+		_box(rn, Vector3(0, h * 0.5, n * 0.6 + 0.3), Vector3(200, h, 0.05))
+		_box(rn, Vector3(n * 0.6 + 0.3, h * 0.5, 0), Vector3(0.05, h, 200))
 
 	for crouch in [false, true]:
 		for speed in ([0.63] if crouch else [1.4, 3.2]):
@@ -51,12 +53,12 @@ func _initialize() -> void:
 				sh.position.y = -0.3 if crouch else 0.0
 				body.add_child(sh)
 				rn.add_child(body)
-				body.global_position = Vector3(0.7, 1.0, 0.7)
+				body.global_position = Vector3(0.1, 1.0, 0.1)
 				await physics_frame
 				var dir: Vector3 = Vector3(sin(deg_to_rad(ang)), 0, cos(deg_to_rad(ang)))
 				var start: Vector3 = body.global_position
 
-				for k in 900:
+				for k in 1500:
 					body.velocity = dir * speed + Vector3(0, body.velocity.y - 20.0 * D, 0)
 
 					if body.is_on_floor():
@@ -66,7 +68,7 @@ func _initialize() -> void:
 					await physics_frame
 
 				var moved: float = Vector2(body.global_position.x - start.x, body.global_position.z - start.z).length()
-				var want: float = speed * 15.0
+				var want: float = speed * 2.5
 				_check(moved > want * 0.95, "%s %.2f m/s heading %.0f crosses lips: %.2f of %.2f m" % ["crouch" if crouch else "walk", speed, ang, moved, want])
 				body.queue_free()
 
