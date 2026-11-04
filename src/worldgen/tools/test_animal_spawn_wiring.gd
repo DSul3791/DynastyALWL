@@ -228,6 +228,11 @@ func _init() -> void:
 		kinds[n["kind"]] = true
 
 	check(wood.size() > 0 and kinds.keys() == ["songbird"], "woodland holds songbird nests under the trees (%d, %s)" % [wood.size(), str(kinds.keys())])
+	# Nest spots for the client (protocol 91): every songbird nest within 120 m of the player's 24 m square, kind 1, and the same answer again.
+	var sent: Array = nest_a.nest_spots_near(Vector3(3.0, 0.0, 4.0))
+	var in_range: Array = nest_a.nests_near(Vector3(12.0, 0.0, 12.0), 120.0)
+	check((sent[0] as PackedVector3Array).size() == in_range.size() and in_range.size() > 0 and (sent[1] as PackedByteArray).count(1) == in_range.size(), "the client gets the nests within 120 m as songbird spots (%d)" % in_range.size())
+	check(nest_a.nest_spots_near(Vector3(20.0, 0.0, 1.0))[0] == sent[0], "a step inside the same square sends the same spots")
 	nest_a.blocked = func(x, z): return true
 	check(nest_a.nests_near(Vector3.ZERO, 300.0).is_empty(), "no nests on water")
 

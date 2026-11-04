@@ -100,6 +100,7 @@ var weather: Dictionary = {}           # the weather at the water tile now (Weat
 var _weather_next_msec: int = 0
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
+var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _swell: float = 0.0
 var _dry: float = 0.0
 var _weather_bucket: int = -1
@@ -859,6 +860,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	trails.forget_peer(peer_id)
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
+	_nests_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
@@ -1934,6 +1936,13 @@ func _send_npcs(delta: float) -> void:
 		if int(_burrows_sent.get(peer, 0)) != holes_sig:
 			_burrows_sent[peer] = holes_sig
 			net.burrows.rpc_id(peer, holes)
+
+		var nest_rows: Array = animals.nest_spots_near(at)
+		var nests_sig: int = hash(nest_rows[0])
+
+		if int(_nests_sent.get(peer, 0)) != nests_sig:
+			_nests_sent[peer] = nests_sig
+			net.nests.rpc_id(peer, nest_rows[0], nest_rows[1])
 
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.
