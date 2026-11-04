@@ -442,6 +442,32 @@ func _init() -> void:
 
 	check(landed.x > 10.0 and absf(landed.y - 10.0) < 0.01, "spear landed ahead on the ground")
 
+	# A thrown spear hits the first animal on its path for its throw_damage and drops there (MikeW, 3 Nov).
+	var struck: Array = []
+	t.hit_animal_path = func(_peer, from, to, amount) -> Dictionary:
+		if from.x <= 6.0 and to.x >= 6.0:
+			struck.append(amount)
+			return {"at": Vector3(6.0, 11.0, 0.0)}
+
+		return {}
+	t.action(1, Net.ACT_ADMIN_GIVE, spear, 0, 1, Vector3.ZERO)
+	var before: int = t.world_item_count()
+	t._last_throw.clear()
+	t.action(1, Net.ACT_THROW, t.inventory_of(1).numbers.find(spear), 0, 0, Vector3(1.0, 0.1, 0.0))
+
+	for n in range(100):
+		t.tick(0.02)
+
+	var want_damage: float = float(t.table.entry(t.table.id_of(spear)).get("throw_damage", 0.0))
+	var by_animal: bool = false
+
+	for k in t._items:
+		if t._items[k]["number"] == spear and absf((t._items[k]["pos"] as Vector3).x - 6.0) < 0.01:
+			by_animal = true
+
+	check(struck.size() == 1 and is_equal_approx(float(struck[0]), want_damage) and want_damage > 0.0, "a thrown spear hurts the animal it hits for its throw_damage (%s)" % str(struck))
+	check(by_animal and t._flights.is_empty() and t.world_item_count() == before + 1, "the spear drops where it struck the animal")
+
 	# Fires.
 	var f = make("user://test_server_items_d")
 	f.ground_height = func(x, z): return 10.0
