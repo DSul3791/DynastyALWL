@@ -2238,3 +2238,7 @@ Answered: 2026-11-04 15:13 UTC
 Answer: A: Soft wooden tock, at most once per 20 s
 Answered: 2026-11-04 15:14 UTC
 
+## npc-dynasty-body | Should town NPCs use your new body (Dave's mesh) too?
+Answer: Well, once we get the creator made the theoretically you could make the Best look almost like anything just by adjusting randomly all of the variations and that could be used for NPC’s
+Answered: 2026-11-04 15:14 UTC
+
