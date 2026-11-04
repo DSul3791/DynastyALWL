@@ -2226,3 +2226,7 @@ Answered: 2026-11-04 15:06 UTC
 Answer: B: Heavier than now | Comment: The lead to should take around 30 sticks , 10 twine and 200 leaves
 Answered: 2026-11-04 15:07 UTC
 
+## roads-early-goals | Early goals: add "make a hoe" and "tread a path from camp to water", right after the fire goal?
+Answer: A: Yes, both goals right after the fire goal
+Answered: 2026-11-04 15:08 UTC
+
