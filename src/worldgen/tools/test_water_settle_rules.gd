@@ -23,6 +23,9 @@ class Springs:
 class Land:
 	var samples: int = 64
 	var spacing_m: float = 8.0
+	var x0: float = 0.0
+	var z0: float = 0.0
+	var spring_mouths: PackedVector2Array = PackedVector2Array()
 	var heights: PackedFloat32Array = PackedFloat32Array()
 	var water_class: PackedByteArray = PackedByteArray()
 
@@ -41,6 +44,14 @@ func _init() -> void:
 	check(WaterSettler.feeder_share(0.0001, cfg) == float(cfg.get("min_share", 0.1)), "never less than min_share")
 	check(WaterSettler.feeder_share(1.0, cfg) > WaterSettler.feeder_share(0.5, cfg), "a bigger catchment gets a bigger spring")
 	check(is_equal_approx(WaterSettler.feeder_share(1.5, cfg) / WaterSettler.feeder_share(0.75, cfg), pow(2.0, float(cfg.get("p", 0.8)))), "doubling the area multiplies the flow by 2^p")
+	# A spring cave mouth keeps its spring on steep ground (v11): the cell at the mouth and those within 3 cells count, farther ones do not.
+	var cave_land: Land = Land.new()
+	cave_land.x0 = 1000.0
+	cave_land.z0 = 2000.0
+	cave_land.spring_mouths.append(Vector2(1000.0 + 10.0 * 8.0, 2000.0 + 20.0 * 8.0))
+	check(WaterSettler._at_spring_mouth(cave_land, 64, Vector2i(10, 20)) and WaterSettler._at_spring_mouth(cave_land, 64, Vector2i(12, 21)), "a head at a spring cave mouth is kept off the steep move")
+	check(not WaterSettler._at_spring_mouth(cave_land, 64, Vector2i(15, 20)), "a head 5 cells from the mouth is not")
+	check(not WaterSettler._at_spring_mouth(Grid.new(), 5, Vector2i(0, 0)), "data with no spring mouths: none")
 	# A 5 x 5 grid: a river rising to the east (heights 5 at x=4); the top water cell is the easternmost one.
 	var grid: Grid = Grid.new()
 	grid.heights.resize(25)
