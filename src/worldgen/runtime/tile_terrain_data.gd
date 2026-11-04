@@ -706,6 +706,24 @@ func in_cave_opening(x: float, z: float) -> bool:
 	return false
 
 
+# Whether a point is in a spring cave pool (Dave 4 Nov, BUG-008: those pools are icy). The pool entries of cave_streams have a negative
+# width = minus the pool's radius; the point must be within that radius (plus `margin`) sideways of the spring, from the pool floor up.
+func in_cave_pool(p: Vector3, margin: float = 1.0) -> bool:
+	@warning_ignore("integer_division")
+	for n in range(cave_streams.size() / 7):
+		var o: int = n * 7
+
+		if cave_streams[o + 6] >= 0.0:
+			continue
+
+		var spring: Vector3 = Vector3(cave_streams[o], cave_streams[o + 1], cave_streams[o + 2])
+
+		if Vector2(p.x - spring.x, p.z - spring.z).length() <= -cave_streams[o + 6] + margin and p.y >= spring.y - 25.0:
+			return true
+
+	return false
+
+
 # Whether a point is within `reach` m of a spring cave's stream or pool (drinking and filling a container there, Dave 3 Nov 2026).
 func near_cave_water(p: Vector3, reach: float) -> bool:
 	@warning_ignore("integer_division")
