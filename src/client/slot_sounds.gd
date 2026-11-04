@@ -50,12 +50,25 @@ func setup(stage, slots_path: String = SLOTS_PATH) -> void:
 				_slots.merge(more["slots"])
 
 
-# The shore net's server lines name the cue (the server sends text, no sound event): "net_cast" when the net goes out, "net_haul" when it comes in.
+# The shore net's and the rod's server lines name the cue (the server sends text, no sound event): "net_cast" when the net goes out, "net_haul" when it comes in,
+# "fish_bite" when a fish takes the rod's hook, "fish_land" when it is pulled out.
 const NET_CAST_LINES := ["You throw the net", "You spread the net"]                        # prefixes of the server lines (fishing.json net.say_start; server_items._net_haul for the haul text)
 const NET_HAUL_LINES := ["You haul in", "The net comes up empty"]       # net.say_nothing
 
 
+const ROD_BITE_LINES := ["Something bites"]      # fishing.json say_bite: the fish takes the hook
+const ROD_LAND_LINES := ["You land a"]           # server_items._fish_land: the fish comes out
+
+
 static func net_cue(text: String) -> String:
+	for line in ROD_BITE_LINES:
+		if text.begins_with(line):
+			return "fish_bite"
+
+	for line in ROD_LAND_LINES:
+		if text.begins_with(line):
+			return "fish_land"
+
 	for line in NET_CAST_LINES:
 		if text.begins_with(line):
 			return "net_cast"
