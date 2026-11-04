@@ -18,6 +18,9 @@ static var _metal_mats: Dictionary = {}
 # even while their looks.json row is still the grey placeholder chunk. Remove a row here once looks.json carries the same shape.
 const ART_OVERRIDES := {
 	"flint": {"shape": "flint", "color": "#4a4238", "size": 1.0},
+	"spear": {"shape": "shaft", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},     # the early "Stone spear" ("a stone point on a long shaft"): looks.json drew it with the iron head
+	"bandage": {"shape": "bandage", "color": "#ece4d0", "size": 0.8},     # a rolled cloth strip, not the twisted twine coil
+	"tree_roots": {"shape": "roots", "color": "#6a4a2e", "size": 1.0},     # dug roots, not the firewood rod bundle (Kathleen 3 Nov)
 	"pyrite": {"shape": "pyrite", "color": "#d4ae33", "size": 1.0},
 	"obsidian": {"shape": "obsidian", "color": "#101014", "size": 1.0},
 	"processed_hide": {"shape": "leather", "color": "#d9c9a8", "size": 1.0},
@@ -117,7 +120,7 @@ const ART_OVERRIDES := {
 	"stairs_wood_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["ladder"]},
 	"log_cabin_set_kit": {"shape": "parcel", "color": "#5a3c22", "size": 1.3, "bits": ["chest"]},
 	"lean_to_kit": {"shape": "parcel", "color": "#5a8a38", "size": 1.0, "bits": ["leanto"]},
-	"chest_kit": {"shape": "parcel", "color": "#a8884a", "size": 1.0, "bits": ["chest"]},
+	"chest_kit": {"shape": "parcel", "color": "#a8884a", "size": 1.0, "bits": ["chest", "woven"]},
 	"plank_chest_kit": {"shape": "parcel", "color": "#a07a45", "size": 1.0, "bits": ["plankchest"]},
 	"workbench_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["workbench"]},
 	"tool_rack_kit": {"shape": "parcel", "color": "#7a5a35", "size": 1.0, "bits": ["bench", "rack"]},
@@ -327,6 +330,22 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_sph(parts, 0.05, Vector3(1.2, 0.35, 1.2), Vector3(0.0, 0.135, 0.0), light)
 			_torus(parts, 0.032, 0.007, Vector3(0.0, 0.1, 0.0), Color(0.55, 0.42, 0.25))
 			_box_rot(parts, Vector3(0.012, 0.09, 0.012), Vector3(0.05, -0.01, 0.075), Vector3(0.0, 0.0, 0.2), dark)
+			# Burlap weave: faint darker bands round the belly, a stitched seam up one side, a sewn-on patch (Art_Direction: lived-in, mended).
+			for k in 4:
+				var band_y: float = -0.07 + 0.035 * float(k)
+				var band_r: float = 0.1 * sqrt(maxf(1.0 - pow((band_y + 0.01) / 0.105, 2.0), 0.0))
+				_torus(parts, band_r + 0.001, 0.0025, Vector3(0.0, band_y, 0.0), color.darkened(0.12))
+			for k in 5:
+				_box_rot(parts, Vector3(0.012, 0.004, 0.003), Vector3(-0.099 + 0.004 * absf(float(k) - 2.0), -0.06 + 0.025 * float(k), 0.0), Vector3(0.0, 0.0, 0.5 * float(k % 2 * 2 - 1)), dark)
+			_box_rot(parts, Vector3(0.006, 0.045, 0.04), Vector3(0.0, -0.02, -0.099), Vector3(PI * 0.5, 0.0, 0.08), _tone(color, 5, 0.2).darkened(0.1))
+			# A little spill at the foot of the sack: seeds (a few warm grains) or, for pale flour, a flat dusting.
+			if color.v > 0.85:
+				_sph(parts, 0.05, Vector3(1.3, 0.06, 0.9), Vector3(0.09, -0.115, 0.04), color.lightened(0.1), true)
+			else:
+				for k in 8:
+					var sa: float = TAU * float(k) * 0.381966
+					var sr: float = 0.012 + 0.03 * sqrt(float(k) / 8.0)
+					_sph(parts, 0.008, Vector3(1.5, 0.7, 1.0), Vector3(0.11 + cos(sa) * sr, -0.11, 0.05 + sin(sa) * sr), _tone(Color(0.62, 0.47, 0.24), k, 0.15), true)
 		"backpack":
 			# A hide rucksack: tall rounded body, a flap over the top with a buckle, two side pockets, two shoulder straps, a bedroll on top.
 			_sph(parts, 0.12, Vector3(1.0, 1.25, 0.7), Vector3(0.0, 0.0, 0.0), color)
@@ -821,6 +840,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_cyl(parts, 0.009, 0.26, Vector3(0.0, -0.02 + 0.012 * float(k % 3), (float(k) - 2.5) * 0.018), Vector3(0.0, 0.0, PI * 0.5), _tone(color, k, 0.12))
 
 					_cyl(parts, 0.03, 0.012, Vector3(0.0, -0.01, 0.0), Vector3(0.0, 0.0, PI * 0.5), cord)
+					# A tuft of dry tinder grass tucked in the bundle, so it reads as a fire kit and not a bundle of sticks.
+					for k in 7:
+						var ta: float = (float(k) - 3.0) * 0.22
+						_box_rot(parts, Vector3(0.004, 0.07, 0.004), Vector3(0.02 * float(k % 3 - 1), 0.025, (float(k) - 3.0) * 0.006), Vector3(ta, 0.0, 0.3 * float(k % 2 * 2 - 1)), _tone(Color(0.82, 0.7, 0.4), k, 0.12))
 				"roll":
 					_cyl(parts, 0.075, 0.32, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
 					_cyl(parts, 0.05, 0.325, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color.darkened(0.2))
@@ -868,6 +891,18 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_box(parts, Vector3(0.02, 0.15, 0.19), Vector3(-0.08, 0.0, 0.0), dark)
 					_box(parts, Vector3(0.02, 0.15, 0.19), Vector3(0.08, 0.0, 0.0), dark)
 					_box(parts, Vector3(0.03, 0.04, 0.02), Vector3(0.0, 0.01, 0.1), Color(0.6, 0.55, 0.3))
+					if bits.has("woven"):
+						# The woven chest (item 22 is wicker, not boards): over-under withy bands round the body, upright stakes showing between them,
+						# a plaited rim at the lid line and a twine loop catch in place of the brass hasp.
+						for k in 4:
+							var wy: float = -0.06 + 0.026 * float(k)
+							var wt: Color = _tone(color, k, 0.12).darkened(0.08 if k % 2 == 0 else 0.0)
+							_box(parts, Vector3(0.286, 0.014, 0.186), Vector3(0.006 * float(k % 2 * 2 - 1), wy, 0.0), wt)
+						for k in 7:
+							var sx: float = -0.12 + 0.04 * float(k)
+							_box(parts, Vector3(0.008, 0.1, 0.19), Vector3(sx, -0.02, 0.0), color.darkened(0.25))
+						_torus_v(parts, 0.012, 0.0035, Vector3(0.0, 0.0, 0.104), cord)
+						_box(parts, Vector3(0.29, 0.012, 0.19), Vector3(0.0, 0.032, 0.0), color.lightened(0.12))
 				"leanto":
 					# The lean-to kit: a ridge pole on two forks with a row of sticks leaning on it, a few leaf cards laid on them, bound with cord (Kathleen 2026-10-31: the ten most-seen kits each look different).
 					for x in [-0.15, 0.15]:
@@ -1450,6 +1485,43 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			_torus_v(parts, 0.04, 0.008, Vector3(-0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
 			_torus_v(parts, 0.04, 0.008, Vector3(0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
+		"bandage":
+			# A herb bandage: a short roll of pale linen (a fat cylinder lying on its side) with the wound layers showing as rings on the ends,
+			# a loose tail unrolled across the ground, and a green herb stain soaked through the outer turn (Art_Direction: soft cloth, lived-in).
+			_cyl(parts, 0.04, 0.07, Vector3(0.0, -0.06, 0.0), Vector3(PI * 0.5, 0.0, 0.0), color)
+			for k in 3:
+				for side in [-1.0, 1.0]:
+					_torus_v(parts, 0.012 + 0.009 * float(k), 0.0018, Vector3(0.0, -0.06, side * 0.0355), color.darkened(0.12))
+			_box_rot(parts, Vector3(0.12, 0.004, 0.066), Vector3(0.095, -0.098, 0.0), Vector3(0.0, 0.0, -0.05), color.darkened(0.04))
+			_box_rot(parts, Vector3(0.012, 0.0045, 0.066), Vector3(0.155, -0.1, 0.0), Vector3(0.0, 0.15, 0.0), color.darkened(0.1))   # the frayed cut end
+			_sph(parts, 0.028, Vector3(1.0, 0.3, 1.15), Vector3(0.012, -0.022, 0.0), Color(0.42, 0.55, 0.27), true)        # the herb stain on the outer turn
+			_sph(parts, 0.016, Vector3(1.4, 0.15, 1.0), Vector3(0.075, -0.095, 0.01), Color(0.5, 0.6, 0.32), true)
+		"roots":
+			# A handful of dug roots tied at the crown: five wandering roots that taper from thumb-thick to a thread, each bending as it goes,
+			# fine hair rootlets off the sides, pale knife-cut ends at the crown, clods of dark soil still clinging, a twist of cord round the knot
+			# (Art_Direction: believable organic forms, lived-in imperfection, rich earthy colour rather than grey-brown).
+			var cut_end: Color = Color(0.78, 0.64, 0.44)
+			var soil: Color = Color(0.2, 0.14, 0.09)
+			for k in 5:
+				var fan: float = (float(k) - 2.0) * 0.32
+				var wave: float = 0.6 + 0.35 * float(k % 3)
+				var at: Vector3 = Vector3(-0.08, 0.004 * float(k % 2), (float(k) - 2.0) * 0.008)
+				var thick: float = 0.016 - 0.002 * float(k % 2)
+				var heading: float = fan
+				_sph(parts, thick * 1.05, Vector3(0.4, 1.0, 1.0), at - Vector3(0.004, 0.0, 0.0), cut_end, true)
+				for seg in 4:
+					heading += sin(float(seg) * wave + float(k)) * 0.35
+					var step: float = 0.075 - 0.01 * float(seg)
+					var to: Vector3 = at + Vector3(cos(heading) * step, -0.004 * float(seg), sin(heading) * step)
+					var front: float = thick * (1.0 - 0.24 * float(seg + 1))
+					_root_seg(parts, thick * (1.0 - 0.24 * float(seg)), maxf(front, 0.0025), at, to, _tone(color, k * 4 + seg, 0.12))
+					if seg > 0 and (k + seg) % 2 == 0:
+						var side: float = 1.0 if (k + seg) % 4 == 0 else -1.0
+						_root_seg(parts, 0.0025, 0.001, at, at + Vector3(cos(heading + side * 1.1) * 0.035, -0.003, sin(heading + side * 1.1) * 0.035), color.lightened(0.15))
+					at = to
+			_torus_v(parts, 0.026, 0.006, Vector3(-0.06, 0.002, 0.0), Color(0.72, 0.62, 0.38))
+			for k in 4:
+				_sph(parts, 0.016 + 0.004 * float(k % 2), Vector3(1.2, 0.6, 1.0), Vector3(-0.03 + 0.03 * float(k), -0.008, 0.03 * float(k % 3 - 1)), _tone(soil, k, 0.15), true)
 		"planks":
 			# Sawn boards stacked in a neat pile, ends slightly staggered, a pale cut end and darker grain streaks on the top board.
 			for k in 5:
@@ -1457,8 +1529,17 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_box(parts, Vector3(len_k, 0.022, 0.13), Vector3(0.012 * float((k * 2) % 3 - 1), -0.05 + 0.025 * float(k), 0.0), _tone(color, k, 0.07))
 				_box(parts, Vector3(0.012, 0.02, 0.125), Vector3(len_k * 0.5 + 0.012 * float((k * 2) % 3 - 1), -0.05 + 0.025 * float(k), 0.0), light)
 
-			_box(parts, Vector3(0.3, 0.003, 0.012), Vector3(-0.04, 0.0775, 0.03), dark)
-			_box(parts, Vector3(0.22, 0.003, 0.01), Vector3(0.05, 0.0775, -0.02), dark)
+			_box(parts, Vector3(0.3, 0.003, 0.012), Vector3(-0.04, 0.0615, 0.03), dark)
+			_box(parts, Vector3(0.22, 0.003, 0.01), Vector3(0.05, 0.0615, -0.02), dark)
+			# Real sawn wood: two dark knots with a pale ring on the top board, growth-ring arcs on the cut ends, and a thin bark edge (wane) left on one board.
+			for kn in [[-0.12, 0.035], [0.1, -0.04]]:
+				_sph(parts, 0.012, Vector3(1.4, 0.15, 1.0), Vector3(float(kn[0]), 0.0612, float(kn[1])), light.lerp(color, 0.5), true)
+				_sph(parts, 0.007, Vector3(1.3, 0.2, 1.0), Vector3(float(kn[0]), 0.062, float(kn[1])), dark.darkened(0.25), true)
+			for k in 5:
+				var end_x: float = (0.5 - 0.03 * float((k * 3) % 4)) * 0.5 + 0.012 * float((k * 2) % 3 - 1) + 0.0065
+				for ring_k in 2:
+					_box(parts, Vector3(0.002, 0.004, 0.05 - 0.02 * float(ring_k)), Vector3(end_x, -0.05 + 0.025 * float(k) - 0.004 + 0.006 * float(ring_k), 0.02 * float(k % 2 * 2 - 1)), dark)
+			_box(parts, Vector3(0.36, 0.02, 0.008), Vector3(0.0, -0.025, 0.066), Color(0.32, 0.22, 0.13))
 		"beams":
 			# Squared timbers, three in a stack with a fourth laid across the top, pale square ends, a little uneven in length.
 			_box(parts, Vector3(0.58, 0.07, 0.07), Vector3(0.0, -0.035, -0.04), color)
@@ -1498,10 +1579,21 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			_torus(parts, 0.07, 0.01, Vector3(0.0, 0.09, 0.0), color)
 		"coil":
-			# A coiled rope: three or four turns laid in a flat spiral, the free end lying out over the side.
+			# A coiled cord: four turns in a flat spiral, a little uneven, the twist of the strands showing as dark slanted ticks on each turn,
+			# two cross ties holding the hank, the free end lying out over the side with a frayed tip (Art_Direction: believable fibre, lived-in).
 			for k in 4:
-				_torus(parts, 0.035 + 0.018 * float(k), 0.014, Vector3(0.0, -0.03 + 0.004 * float(k % 2), 0.0), _tone(color, k, 0.1))
+				var ring_r: float = 0.035 + 0.018 * float(k)
+				var ring_at: Vector3 = Vector3(0.003 * float(k % 2), -0.03 + 0.004 * float(k % 2), -0.002 * float(k % 3))
+				_torus(parts, ring_r, 0.014, ring_at, _tone(color, k, 0.1))
+				var ticks: int = 7 + 3 * k
+				for t in ticks:
+					var ta: float = TAU * float(t) / float(ticks) + 0.3 * float(k)
+					_box_rot(parts, Vector3(0.032, 0.032, 0.005), ring_at + Vector3(cos(ta) * ring_r, 0.0, sin(ta) * ring_r), Vector3(0.6, -ta, 0.0), dark)
+			for side in [-1.0, 1.0]:
+				_box_rot(parts, Vector3(0.008, 0.034, 0.064), Vector3(0.0, -0.03, side * 0.07), Vector3(0.0, 0.0, 0.0), dark.lerp(color, 0.4))
 			_cyl(parts, 0.012, 0.1, Vector3(0.12, -0.02, 0.07), Vector3(0.0, 0.7, PI * 0.5), color)
+			for k in 3:
+				_box_rot(parts, Vector3(0.03, 0.003, 0.004), Vector3(0.162, -0.02 + 0.004 * float(k - 1), 0.035 + 0.004 * float(k - 1)), Vector3(0.0, 0.7 + 0.25 * float(k - 1), 0.0), light)
 		"bone":
 			_cyl(parts, 0.018, 0.22, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
 			_sph(parts, 0.035, Vector3.ONE, Vector3(-0.11, 0.0, 0.015), color)
@@ -1516,19 +1608,53 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for k in 3:
 				_box_rot(parts, Vector3(0.03, 0.005, 0.01), Vector3(-0.03 + 0.05 * float(k), -0.047, 0.04), Vector3(0.0, 0.5, 0.0), dark)
 		"bark":
-			# A strip of bark peeled off a trunk: a curled sheet (rolled edges), pale inner face, dark rough outer face with ridges.
-			_box(parts, Vector3(0.3, 0.012, 0.13), Vector3(0.0, -0.04, 0.0), light)
-			_box_rot(parts, Vector3(0.3, 0.012, 0.05), Vector3(0.0, -0.022, 0.075), Vector3(0.5, 0.0, 0.0), color)
-			_box_rot(parts, Vector3(0.3, 0.012, 0.05), Vector3(0.0, -0.022, -0.075), Vector3(-0.5, 0.0, 0.0), color)
-			for k in 3:
-				_box(parts, Vector3(0.28, 0.01, 0.008), Vector3(0.0, -0.03, -0.03 + 0.03 * float(k)), dark)
+			# A strip of bark peeled off a trunk, lying hollow side up: a curved sheet built from seven narrow staves that climb toward both
+			# edges (a shallow half-pipe), the pale warm inner face on top, the dark furrowed outer face under and showing at the rolled
+			# edges, ridges running along it, a ragged torn end and a couple of lichen spots on the rim (Art_Direction: grain, wear, warm colour).
+			var inner: Color = Color(0.78, 0.6, 0.4).lerp(light, 0.3)
+			for k in 7:
+				var u: float = (float(k) - 3.0) / 3.0                                  # -1 .. 1 across the strip
+				var lift: float = 0.03 * u * u
+				var lean: float = -0.55 * u
+				_box_rot(parts, Vector3(0.3 - 0.03 * float(k % 2), 0.012, 0.024), Vector3(0.0, -0.045 + lift, u * 0.06), Vector3(lean, 0.0, 0.0), _tone(color, k, 0.12))
+				_box_rot(parts, Vector3(0.28 - 0.03 * float(k % 2), 0.004, 0.022), Vector3(0.0, -0.038 + lift, u * 0.058), Vector3(lean, 0.0, 0.0), _tone(inner, k + 3, 0.06))
+			for side in [-1.0, 1.0]:
+				_box_rot(parts, Vector3(0.29, 0.016, 0.012), Vector3(0.0, -0.012, side * 0.072), Vector3(side * -0.9, 0.0, 0.0), dark)
+				for k in 3:
+					_box(parts, Vector3(0.26 - 0.04 * float(k), 0.006, 0.006), Vector3(0.01 * float(k), -0.055 + 0.01 * float(k), side * (0.02 + 0.016 * float(k))), dark)
+			for k in 4:
+				_box_rot(parts, Vector3(0.02 + 0.01 * float(k % 2), 0.01, 0.026), Vector3(0.155, -0.04 + 0.012 * absf(float(k) - 1.5), -0.045 + 0.03 * float(k)), Vector3(0.0, 0.4 * float(k % 3 - 1), 0.0), _tone(color, k + 9, 0.1))
+			_sph(parts, 0.012, Vector3(1.4, 0.3, 1.0), Vector3(-0.08, -0.004, 0.07), Color(0.62, 0.68, 0.42), true)
+			_sph(parts, 0.009, Vector3(1.2, 0.3, 1.0), Vector3(0.05, -0.004, -0.07), Color(0.66, 0.7, 0.5), true)
 		"leaves":
-			# A little heap of leaves: a few flat leaf blades (pointed ovals) in different directions, with a pale midrib line on the top ones.
-			for k in 6:
-				var a: float = TAU * float(k) / 6.0 + 0.4
-				_sph(parts, 0.07, Vector3(1.0, 0.1, 0.5), Vector3(cos(a) * 0.045, -0.045 + 0.012 * float(k % 3), sin(a) * 0.045), _tone(color, k, 0.14), true)
-
-			_box(parts, Vector3(0.1, 0.004, 0.006), Vector3(0.0, -0.01, 0.0), light)
+			# A little heap of picked leaves: nine pointed blades scattered on the golden angle at different sizes and headings (no flower ring),
+			# each lying along its own direction and tipped a little, the lower ones darker, two of them turning yellow and russet for warmth,
+			# a pale midrib and a short stalk on each top leaf (Art_Direction: rich natural colour, lived-in imperfection).
+			for k in 9:
+				var a: float = TAU * float(k) * 0.381966 + 0.4
+				var r: float = 0.012 + 0.05 * sqrt(float(k) / 9.0)
+				var heading: float = a + 0.6 * float(k % 3 - 1)
+				var blade: float = 0.055 + 0.018 * float(k % 3)
+				var y: float = -0.05 + 0.024 * (1.0 - float(k) / 9.0)
+				var tint: Color = _tone(color, k, 0.14)
+				if k == 4:
+					tint = tint.lerp(Color(0.85, 0.66, 0.2), 0.7)
+				elif k == 7:
+					tint = tint.lerp(Color(0.66, 0.32, 0.14), 0.6)
+				elif k > 5:
+					tint = tint.darkened(0.15)
+				var at: Vector3 = Vector3(cos(a) * r, y, sin(a) * r)
+				var turn: Basis = Basis(Vector3.UP, -heading) * Basis(Vector3.RIGHT, 0.12 * float(k % 2 * 2 - 1))
+				var leaf_mesh: SphereMesh = SphereMesh.new()
+				leaf_mesh.radius = blade
+				leaf_mesh.height = blade * 2.0
+				leaf_mesh.radial_segments = 6
+				leaf_mesh.rings = 3
+				parts.append([leaf_mesh, Transform3D(turn * Basis.from_scale(Vector3(1.0, 0.08, 0.42)), at), tint])
+				if k < 5:
+					var dir: Vector3 = turn * Vector3.RIGHT
+					parts.append([_rib_mesh(blade), Transform3D(turn, at + Vector3(0.0, blade * 0.085, 0.0)), tint.lightened(0.3)])
+					_cyl(parts, 0.003, 0.03, at - dir * (blade + 0.012) + Vector3(0.0, 0.002, 0.0), Vector3(0.0, -heading, PI * 0.5), Color(0.42, 0.36, 0.2))
 		"bottle":
 			# A stoppered flask: round body, sloping shoulder, narrow neck, a cork, a pale label band, the liquid showing darker through the glass.
 			_cyl(parts, 0.045, 0.1, Vector3(0.0, -0.02, 0.0), Vector3.ZERO, color)
@@ -1578,9 +1704,25 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"stew":
 			_bowl(parts, Color(0.5, 0.34, 0.19))      # one shared wooden bowl under every soup and stew (Dave 2026-10-22)
 			_fill(parts, color, bits, false)
+			# A carved wooden spoon left in the bowl, its handle resting on the rim, and a lighter wet line where the broth meets the wood.
+			_torus(parts, 0.1, 0.003, Vector3(0.0, 0.003, 0.0), color.lightened(0.18))
+			_sph(parts, 0.028, Vector3(1.3, 0.3, 1.0), Vector3(0.025, 0.006, 0.01), Color(0.56, 0.4, 0.23))
+			_root_seg(parts, 0.007, 0.009, Vector3(0.055, 0.008, 0.015), Vector3(0.19, 0.06, 0.05), Color(0.56, 0.4, 0.23))
 		"mound":
 			_bowl(parts, Color(0.5, 0.34, 0.19))
 			_fill(parts, color, bits, true)
+			if color.g > color.r * 1.2 and color.g > color.b * 1.2:
+				# A green herb mash (the poultice): three whole bruised leaves pressed into the top and a sprig stalk, so it reads as herbs, not porridge.
+				for k in 3:
+					var la: float = TAU * float(k) / 3.0 + 0.5
+					var turn: Basis = Basis(Vector3.UP, -la) * Basis(Vector3.FORWARD, 0.25)
+					var leaf_mesh: SphereMesh = SphereMesh.new()
+					leaf_mesh.radius = 0.03
+					leaf_mesh.height = 0.06
+					leaf_mesh.radial_segments = 6
+					leaf_mesh.rings = 3
+					parts.append([leaf_mesh, Transform3D(turn * Basis.from_scale(Vector3(1.0, 0.1, 0.45)), Vector3(cos(la) * 0.035, 0.05, sin(la) * 0.035)), _tone(Color(0.24, 0.45, 0.16), k, 0.12)])
+				_root_seg(parts, 0.0025, 0.0018, Vector3(-0.01, 0.055, 0.0), Vector3(0.06, 0.07, 0.025), Color(0.36, 0.42, 0.2))
 		"fish":
 			# A fish lying on its side: a tapering body with a pale belly, a head with an eye, a forked tail, a dorsal fin and a pectoral fin. Nose toward -x.
 			_sph(parts, 0.085, Vector3(2.0, 0.62, 0.5), Vector3(0.0, -0.025, 0.0), color)
@@ -1634,7 +1776,16 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for k in range(3):                                                                                       # a leather grip wrap
 				_cyl(parts, 0.0195, 0.014, Vector3(-0.08 + 0.02 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025) if k != 1 else Color(0.16, 0.09, 0.045))
 
-			if metal_head:
+			if bits.has("stone"):
+				# The stone spear: a knapped grey-brown flint point (a leaf plate with a ridge, matt, a little chipped) set in a split end of the shaft
+				# and lashed with dark sinew turns and a pale twine whipping above them (Art_Direction: believable materials, no metal sheen).
+				var flint_head: Color = Color(0.3, 0.27, 0.22)
+				_cyl_taper(parts, 0.0155, 0.019, 0.06, Vector3(0.48, 0.0, 0.0), ash_spear.darkened(0.12))                 # the swollen split end that holds the point
+				_plate(parts, 0.5, 0.22, 0.05, 0, 12, flint_head, true, false, 0.9, 0.0, Transform3D.IDENTITY, 3, 2.2)
+				_box_rot(parts, Vector3(0.01, 0.012, 0.01), Vector3(0.6, 0.0, 0.02), Vector3(0.0, 0.6, 0.0), flint_head.darkened(0.25))   # a chipped flake scar on the edge
+				for k in range(6):
+					_cyl(parts, 0.0205, 0.009, Vector3(0.455 + 0.009 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3 * float(k % 2 * 2 - 1)), Color(0.16, 0.1, 0.05) if k < 4 else Color(0.6, 0.48, 0.28))
+			elif metal_head:
 				var iron_head: Color = Color(0.2, 0.19, 0.17)
 				_cyl_taper(parts, 0.0165, 0.024, 0.1, Vector3(0.5, 0.0, 0.0), iron_head * 0.8)                       # the socket cone
 				_metal(parts, 0.5, 0.5)
@@ -2448,6 +2599,24 @@ static func _cyl_taper(parts: Array, back: float, front: float, length: float, a
 	parts.append([cyl, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5)), at), color])
 
 
+# A tapering round segment from `from` to `to` (radius `back` at `from`, `front` at `to`): roots, twigs, anything that wanders.
+static func _root_seg(parts: Array, back: float, front: float, from: Vector3, to: Vector3, color: Color) -> void:
+	var span: Vector3 = to - from
+	var length: float = span.length()
+	if length < 0.0001:
+		return
+	var y_axis: Vector3 = span / length
+	var x_axis: Vector3 = y_axis.cross(Vector3.FORWARD if absf(y_axis.z) < 0.9 else Vector3.RIGHT).normalized()
+	var z_axis: Vector3 = x_axis.cross(y_axis)
+	var cyl: CylinderMesh = CylinderMesh.new()
+	cyl.top_radius = front
+	cyl.bottom_radius = back
+	cyl.height = length
+	cyl.radial_segments = 6
+	cyl.rings = 1
+	parts.append([cyl, Transform3D(Basis(x_axis, y_axis, z_axis), (from + to) * 0.5), color])
+
+
 # A box turned by `tilt` (Euler) in place.
 static func _box_rot(parts: Array, dims: Vector3, at: Vector3, tilt: Vector3, color: Color) -> void:
 	var box: BoxMesh = BoxMesh.new()
@@ -2511,6 +2680,13 @@ static func _sph(parts: Array, radius: float, scale_v: Vector3, at: Vector3, col
 	sph.radial_segments = 6 if low else 8
 	sph.rings = 3 if low else 4
 	parts.append([sph, Transform3D(Basis.from_scale(scale_v), at), color])
+
+
+# A thin flat midrib bar for a leaf blade, along the leaf's local +X.
+static func _rib_mesh(blade: float) -> BoxMesh:
+	var rib: BoxMesh = BoxMesh.new()
+	rib.size = Vector3(blade * 1.7, 0.003, 0.004)
+	return rib
 
 
 static func _torus(parts: Array, ring: float, tube: float, at: Vector3, color: Color) -> void:
