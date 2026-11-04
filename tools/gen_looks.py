@@ -38,7 +38,7 @@ SPECIAL = {
     "raw_meat": ("meat", "#a8403a", 1.0), "roast_meat": ("meat", "#6a3c24", 1.0), "roast_forage": ("bowl", "#a4de02", 0.9),
     "trout": ("fish", "#8a9a7a", 1.0), "perch": ("fish", "#6f8a4a", 0.9), "carp": ("fish", "#a09060", 1.2), "pike": ("fish", "#5a7a3a", 1.4),
     "roast_fish": ("fish", "#a8703a", 1.0), "smoked_fish": ("fish", "#6e4a2a", 1.0), "herb_fish": ("fish", "#9a7a3a", 1.0),
-    "wooden_block": ("block", "#a67c4a", 0.9), "wooden_pin": ("rod", "#a88255", 0.35), "rough_plank": ("planks", "#a8875a", 1.0),
+    "wooden_block": ("wood_round", "#5a3e26", 0.9), "wooden_block_large": ("wood_round", "#5a3e26", 1.8), "wooden_block_soft_large": ("wood_round", "#6b4a2e", 1.8), "wooden_pin": ("rod", "#a88255", 0.35), "rough_plank": ("planks", "#a8875a", 1.0),
     "fine_board": ("planks", "#d4b57a", 1.0), "nails": ("needle", "#5e6166", 0.5), "hinges": ("ingot", "#4f5359", 0.45),
     "tar": ("pile", "#1c1814", 0.8), "cobblestone": ("chunk", "#8b8982", 0.8), "stone_shingle": ("chunk", "#6d7076", 0.7),
     "raspberries": ("berries", "#8e0f1c", 1.0), "blackberries": ("berries", "#2a1830", 1.0),
@@ -162,7 +162,7 @@ GATHERED.update({"pilgrims_cup_pitchers": ("bottle", "#8aa04a", 1.0), "aloe_gel"
 GATHERED.update(_rows("grit", 0.8, {"seeds": "#c9b57a", "linseed": "#7a4a2a", "henbane_seeds": "#4a3a2a", "stillwater_seeds": "#7ec8d9"}))
 
 GATHERED.update({
-    "firewood_soft": ("bundle", "#9a7a4a", 1.6), "wooden_block_soft": ("block", "#b8905a", 0.9), "saw_blade": ("bar", "#8f9296", 1.6), "water_wheel": ("coil", "#7a5a36", 1.4),
+    "firewood_soft": ("bundle", "#9a7a4a", 1.6), "wooden_block_soft": ("wood_round", "#6b4a2e", 0.9), "saw_blade": ("bar", "#8f9296", 1.6), "water_wheel": ("coil", "#7a5a36", 1.4),
     "saw_mill_kit": ("kit", "#8a6a3a", 1.2), "woodworking_table_kit": ("kit", "#7a5430", 1.0), "rock_pile": ("pile", "#7d7a74", 1.8)})
 SKIP = {"stone", "stick", "driftwood", "log"}
 

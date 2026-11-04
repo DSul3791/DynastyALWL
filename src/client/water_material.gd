@@ -53,7 +53,9 @@ const float MOUTH_TO_M = 4.5;          // and this high or more is fresh river w
 uniform vec2 water2_origin = vec2(0.0);
 uniform vec2 water2_size = vec2(1.0);
 uniform float water2_on = 0.0;
-uniform float water2_inset = 0.0;    // metres
+uniform float water2_inset = 0.0;    // metres (no longer used: the grid look crossfades over blend_m, BUG-006)
+uniform float blend_m = 24.0;        // liquid_surface.gd: the live window's crossfade band
+uniform float blend_wander_m = 12.0;
 
 varying float sheet_alpha;
 varying vec2 flow;                   // downhill direction times 0..1 steepness (0 for lakes and the sea)
@@ -71,6 +73,22 @@ float hash(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
 	p3 += dot(p3, p3.yzx + 33.33);
 	return fract((p3.x + p3.y) * p3.z);
+}
+
+// The live window's share at `d_m` metres inside its edge: the same text as liquid_surface.gd live_blend(), so the two looks add up (BUG-006).
+float blend_hash(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
+}
+
+float live_blend(float d_m, vec2 world) {
+	vec2 p = world / 37.0;
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	float n = mix(mix(blend_hash(i), blend_hash(i + vec2(1.0, 0.0)), u.x), mix(blend_hash(i + vec2(0.0, 1.0)), blend_hash(i + vec2(1.0, 1.0)), u.x), u.y);
+	return smoothstep(0.0, blend_m, d_m - n * blend_wander_m);
 }
 
 // Gradient noise (smooth, no square blocks like value noise; owner 2026-10-19: blocky water).
@@ -156,11 +174,19 @@ vec2 sea_slope(vec2 p, float time, float dist) {
 }
 
 void fragment() {
+	// Inside the live window the liquid sheet takes over across a wide, wandering band, not at a straight line one cell in (BUG-006).
+	float grid_share = 1.0;
+
 	if (water2_on > 0.5 && sea < 0.5) {
 		vec2 inside = world_pos.xz - water2_origin;
+		float d_in = min(min(inside.x, inside.y), min(water2_size.x - inside.x, water2_size.y - inside.y));
 
-		if (inside.x > water2_inset && inside.y > water2_inset && inside.x < water2_size.x - water2_inset && inside.y < water2_size.y - water2_inset) {
-			discard;
+		if (d_in > 0.0) {
+			grid_share = 1.0 - live_blend(d_in, world_pos.xz);
+
+			if (grid_share < 0.002) {
+				discard;
+			}
 		}
 	}
 
@@ -398,6 +424,8 @@ void fragment() {
 		EMISSION = mark * 0.6;
 		ALPHA = 0.95;
 	}
+
+	ALPHA *= grid_share;
 }
 """
 

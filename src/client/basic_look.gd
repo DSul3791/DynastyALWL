@@ -1485,6 +1485,15 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			_torus_v(parts, 0.04, 0.008, Vector3(-0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
 			_torus_v(parts, 0.04, 0.008, Vector3(0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
+		"wood_round":
+			# A wooden block (Dave 4 Nov 2026, BUG-014: a short intact log section with bark, not firewood): a round of trunk lying on its side,
+			# dark bark all round, pale end grain on both cut faces with a darker heart and one growth ring.
+			_cyl(parts, 0.09, 0.2, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
+			var grain: Color = Color(0.76, 0.6, 0.4)
+			for sx in [-1.0, 1.0]:
+				_cyl(parts, 0.084, 0.006, Vector3(sx * 0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), grain)
+				_cyl(parts, 0.05, 0.008, Vector3(sx * 0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), grain.darkened(0.12))
+				_cyl(parts, 0.015, 0.01, Vector3(sx * 0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)
 		"split_wood":
 			# Split firewood: a small stack of wedge billets, bark on the rounded back, a pale cut face on the split side and on each end.
 			for k in 6:
@@ -2393,29 +2402,53 @@ static func _tone(color: Color, k: int, spread: float) -> Color:
 # A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).
 static func _warm_stone(color: Color) -> Color:
 	return color.darkened(0.33).lerp(Color(0.46, 0.38, 0.29), 0.42)
-# A shore net (Dave 25 Oct: it must not look like a hammer): a pole along +X with an oval hoop at the head, a bag of twine strings and rings hanging
-# beyond the hoop, and cork floats round the rim. The hoop is square on to the pole, like a butterfly net.
+# A throw net (BUG-022, Dave: a cast net on a long rope, not a dip net on a pole). It stands as a round bell of mesh, the way a cast net sits when
+# it is set down: the horn (where the line ties on) at the top, many twine strands bowing out and down to a wide round mouth, rings of mesh between
+# them, and a lead line round the mouth hung with small stone sinkers all the way round. The hand line runs from the horn down to a coil at the
+# origin (where the hand holds it). Reads as a round net from above and as a bell from the side. No pole, no bars.
 static func _net(parts: Array, color: Color) -> void:
-	var rim: float = 0.15
-	var hoop_x: float = 0.42
-	var apex: Vector3 = Vector3(hoop_x + 0.3, 0.0, 0.0)
-	_cyl(parts, 0.016, 0.9, Vector3(-0.03, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
-	_net_ring(parts, rim, 0.011, hoop_x, Color(0.36, 0.25, 0.14))
+	var line_tint: Color = Color(0.5, 0.39, 0.25)
+	var mid: Vector3 = Vector3(0.42, 0.0, 0.0)
+	var horn: Vector3 = mid + Vector3(0.0, 0.25, 0.0)
+	var mouth_y: float = -0.035
+	var rim: float = 0.175
+	var spokes: int = 18
 
-	for k in 8:
-		var turn: float = float(k) * TAU / 8.0
-		var from: Vector3 = Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim)
-		var line: Vector3 = apex - from
-		var long: float = line.length()
-		var basis: Basis = Basis(Quaternion(Vector3.RIGHT, line / long))
-		parts.append([_net_box(Vector3(long, 0.006, 0.006)), Transform3D(basis, from + line * 0.5), color])
+	for k in 3:
+		_torus(parts, 0.05 - 0.008 * float(k), 0.006, Vector3(0.0, -0.035 + 0.011 * float(k), 0.0), line_tint if k % 2 == 0 else line_tint.lightened(0.1))
 
-	_net_ring(parts, rim * 0.62, 0.005, hoop_x + 0.12, color)
-	_net_ring(parts, rim * 0.3, 0.005, hoop_x + 0.22, color)
+	var sag: Array = [Vector3(0.05, -0.03, 0.0), Vector3(0.2, -0.03, 0.03), Vector3(0.33, 0.09, 0.015), horn]
 
-	for k in 4:
-		var turn: float = float(k) * TAU / 4.0 + PI * 0.25
-		_sph(parts, 0.024, Vector3.ONE, Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim), Color(0.8, 0.66, 0.4), true)
+	for k in sag.size() - 1:
+		_net_line(parts, sag[k], sag[k + 1], 0.009, line_tint)
+
+	_sph(parts, 0.02, Vector3(1.0, 0.8, 1.0), horn, Color(0.8, 0.74, 0.6), true)
+
+	for k in spokes:
+		var turn: float = float(k) * TAU / float(spokes)
+		var dir: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+		var wobble: float = 0.012 * float((k * 7) % 3 - 1)
+		var shoulder: Vector3 = mid + dir * (rim * 0.62 + wobble) + Vector3(0.0, 0.11, 0.0)
+		var foot: Vector3 = mid + dir * (rim + wobble * 0.5) + Vector3(0.0, mouth_y, 0.0)
+		_net_line(parts, horn, shoulder, 0.005, color)
+		_net_line(parts, shoulder, foot, 0.005, color.darkened(0.05))
+
+	_torus(parts, rim * 0.33, 0.004, mid + Vector3(0.0, 0.19, 0.0), color)
+	_torus(parts, rim * 0.62, 0.004, mid + Vector3(0.0, 0.11, 0.0), color)
+	_torus(parts, rim * 0.82, 0.004, mid + Vector3(0.0, 0.04, 0.0), color.darkened(0.06))
+	_torus(parts, rim, 0.009, mid + Vector3(0.0, mouth_y, 0.0), line_tint.darkened(0.25))
+
+	for k in 14:
+		var turn: float = float(k) * TAU / 14.0 + 0.2
+		_sph(parts, 0.015, Vector3(1.3, 1.0, 1.0), mid + Vector3(cos(turn) * rim, mouth_y - 0.004, sin(turn) * rim), Color(0.44, 0.42, 0.39).lightened(0.06 * float(k % 3)), true)
+
+
+# A straight strand of twine or rope from `from` to `to`, `thick` metres square.
+static func _net_line(parts: Array, from: Vector3, to: Vector3, thick: float, color: Color) -> void:
+	var line: Vector3 = to - from
+	var long: float = line.length()
+	var basis: Basis = Basis(Quaternion(Vector3.RIGHT, line / long))
+	parts.append([_net_box(Vector3(long, thick, thick)), Transform3D(basis, from + line * 0.5), color])
 
 
 static func _net_box(dims: Vector3) -> BoxMesh:

@@ -1870,7 +1870,7 @@
 				"Used in Foundation",
 				"Used in Quern",
 				"Used in Rock pile",
-				"Used in Shore net",
+				"Used in Fishing net",
 				"Used in Stone arrow",
 				"Used in Stone axe"
 			],
@@ -2051,7 +2051,7 @@
 				"From a felled tree"
 			],
 			"used_for": [
-				"Used in Small shelter"
+				"Used in Lean-to"
 			],
 			"obtainable_now": true
 		},
@@ -2121,17 +2121,17 @@
 			"obtainable_now": true
 		},
 		"lean_to_kit": {
-			"name": "Small shelter",
+			"name": "Lean-to",
 			"kind": "placeable",
 			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"how_to_get": [
-				"Craft: 16 Stick, 4 Leaves, 2 Twine"
+				"Craft: 30 Stick, 200 Leaves, 10 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
 		},
 		"lean_to": {
-			"name": "Small shelter",
+			"name": "Lean-to",
 			"kind": "structure",
 			"description": "A ridge pole on two forks, with a roof of leaned sticks and boughs down to the ground. Crawl in under it.",
 			"how_to_get": [],
@@ -2783,7 +2783,7 @@
 			"obtainable_now": true
 		},
 		"shore_net": {
-			"name": "Shore net",
+			"name": "Fishing net",
 			"kind": "tool",
 			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"how_to_get": [
@@ -3801,7 +3801,9 @@
 			"name": "Wooden block",
 			"kind": "material",
 			"description": "A short round of log. Split it on a chopping block.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Strike a small log lying on the ground with an axe: 3 blocks"
+			],
 			"used_for": [
 				"Used in Wooden hammer"
 			],
@@ -3821,7 +3823,9 @@
 			"name": "Softwood block",
 			"kind": "material",
 			"description": "A short round of pine, spruce or fir log, about 30 cm long. Split it on a chopping block.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Strike a small log lying on the ground with an axe: 3 blocks"
+			],
 			"used_for": [
 				"Used in Wooden hammer",
 				"Split on a chopping block into soft firewood, or shaped into a wooden hammer."
@@ -6756,6 +6760,34 @@
 				"Craft: 2 Antler, 1 Lumber, 1 Twine at a workbench"
 			],
 			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_block_large": {
+			"name": "Large wooden block",
+			"kind": "material",
+			"description": "A thick round of a big trunk, bark still on. Split it into 4 firewood on a chopping block, or make a chopping block of it.",
+			"how_to_get": [
+				"Strike a large log (oak, beech and the other big hardwood trunks) lying on the ground with an axe: 3 blocks"
+			],
+			"used_for": [
+				"Split on a chopping block: 4 firewood",
+				"Make a chopping block",
+				"Burn it in a fire"
+			],
+			"obtainable_now": true
+		},
+		"wooden_block_soft_large": {
+			"name": "Large softwood block",
+			"kind": "material",
+			"description": "A thick round of a big pine, spruce or fir trunk, bark still on. Split it into 4 soft firewood on a chopping block, or make a chopping block of it.",
+			"how_to_get": [
+				"Strike a large pine, spruce or fir log lying on the ground with an axe: 3 blocks"
+			],
+			"used_for": [
+				"Split on a chopping block: 4 firewood",
+				"Make a chopping block",
+				"Burn it in a fire"
+			],
 			"obtainable_now": true
 		}
 	}
