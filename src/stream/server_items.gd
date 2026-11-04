@@ -11492,9 +11492,14 @@ func fitness_of(peer: int) -> int:
 # earns nothing; from there the share rises in a straight line to 1 at full effort (running; hard tool work a little above), and one
 # point takes seconds_per_point of full-effort time. Time under min_effort takes training back, a point per decay_s_per_point,
 # never below the creation value. The whole-number change is sent to the client.
-var _train_streak: Dictionary = {}     # peer -> [seconds continuously above min_effort, seconds continuously at rest]
+var _train_rest: Dictionary = {}     # peer -> seconds continuously at rest (below rest_effort)
 
 
+# Fitness XP (Dave 4 Nov, BUG-023). Every 10-second tick above min_effort (0.1) gives xp_base + xp_per_effort x effort XP (1 at the line,
+# 2 at a steady walk, 3 at a run), counted continuously here per second into the character's day bucket (xp_today); at game midnight the
+# bucket is turned into points (xp_per_point = 1000 XP, the same at every level) and the player is told. A midnight that passes while
+# the player is offline is paid at the next tick after login (one bucket only, saved with the character).
+# Only effort below rest_effort held for rest_grace_s loses fitness, one point per decay_s_per_point. Effort between the two lines is neutral.
 func _train_fitness(peer: int, effort: float, spent: float) -> void:
 	var cfg: Dictionary = _fitness_cfg.get("train", {})
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
@@ -11504,29 +11509,37 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 
 	var before: int = fitness_of(peer)
 	var train: float = float(row.get("train", 0.0))
-	var min_effort: float = float(cfg.get("min_effort", 0.5))
-	var streak: Array = _train_streak.get(peer, [0.0, 0.0])
 
-	if effort >= min_effort - 1.0e-6:
-		# Dave 4 Nov: effort at or above 50 percent earns XP, more the harder it is (walking a quarter of running), more the longer
-		# you keep at it (up to streak_bonus_max extra after streak_bonus_s), and each point needs more XP than the last.
-		var base_share: float = float(cfg.get("base_share", 0.25))
-		var share: float = minf(base_share + (1.0 - base_share) * (effort - min_effort) / maxf(1.0 - min_effort, 0.05), float(cfg.get("max_share", 1.1)))
-		var bonus: float = 1.0 + float(cfg.get("streak_bonus_max", 1.0)) * clampf(float(streak[0]) / maxf(float(cfg.get("streak_bonus_s", 1200.0)), 1.0), 0.0, 1.0)
-		var cost: float = maxf(float(cfg.get("seconds_per_point", 1800.0)), 1.0) * (1.0 + float(cfg.get("level_growth", 0.15)) * floorf(train))
-		train = minf(train + share * bonus * spent / cost, float(cfg.get("max_gain", 10)))
-		streak = [float(streak[0]) + spent, 0.0]
+	var today: int = _game_day()
+
+	if int(row.get("xp_day", today)) != today:
+		var banked: float = float(row.get("xp_today", 0.0)) / maxf(float(cfg.get("xp_per_point", 1000.0)), 1.0)
+		row["xp_today"] = 0.0
+		row["xp_day"] = today
+		_dirty = true
+
+		if banked > 0.0:
+			train = minf(train + banked, float(cfg.get("max_gain", 10)))
+			row["train"] = train
+			_say(peer, "Your day's work has made you fitter." if int(floor(train)) > int(floor(train - banked)) else "You feel your day's work in your legs.")
+	elif not row.has("xp_day"):
+		row["xp_day"] = today
+
+	if effort > float(cfg.get("min_effort", 0.1)):
+		var xp_per_tick: float = float(cfg.get("xp_base", 1.0)) + float(cfg.get("xp_per_effort", 2.0)) * minf(effort, float(cfg.get("max_effort", 1.1)))
+		var pending: float = float(row.get("xp_today", 0.0)) + xp_per_tick * spent / maxf(float(cfg.get("tick_s", 10.0)), 1.0)
+		row["xp_today"] = minf(pending, float(cfg.get("max_gain", 10)) * float(cfg.get("xp_per_point", 1000.0)))
+		_dirty = true
+		_train_rest[peer] = 0.0
 	elif effort <= float(cfg.get("rest_effort", 0.02)):
-		# Only a body that sits truly still for rest_grace_s loses fitness, far slower than it gains.
-		streak = [0.0, float(streak[1]) + spent]
+		var rested: float = float(_train_rest.get(peer, 0.0)) + spent
+		_train_rest[peer] = rested
 
-		if float(streak[1]) > float(cfg.get("rest_grace_s", 600.0)):
+		if rested > float(cfg.get("rest_grace_s", 600.0)):
 			var step: float = spent / maxf(float(cfg.get("decay_s_per_point", 43200.0)), 1.0)
 			train = maxf(train - step, 0.0) if train > 0.0 else minf(train + step, 0.0)   # back toward the creation value from either side
 	else:
-		streak = [0.0, 0.0]   # a stroll under the line neither earns nor costs
-
-	_train_streak[peer] = streak
+		_train_rest[peer] = 0.0   # a dawdle between the lines neither earns nor costs
 
 	if train != float(row.get("train", 0.0)):   # an idle character at the base changes nothing: do not mark the save dirty every tick (it rewrote all files every 30 s for every online player)
 		row["train"] = train
