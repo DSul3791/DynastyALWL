@@ -4646,6 +4646,26 @@
 			"craft_s": 4.0,
 			"known": true
 		},
+		"small_blocks_from_large": {
+			"number": 339,
+			"name": "Small wooden blocks from a large one",
+			"category": "Materials",
+			"needs": [["wooden_block_large", 1]],
+			"keeps": [["stone_axe", 1]],
+			"gives": ["wooden_block", 4],
+			"craft_s": 4.0,
+			"known": true
+		},
+		"small_soft_blocks_from_large": {
+			"number": 340,
+			"name": "Small softwood blocks from a large one",
+			"category": "Materials",
+			"needs": [["wooden_block_soft_large", 1]],
+			"keeps": [["stone_axe", 1]],
+			"gives": ["wooden_block_soft", 4],
+			"craft_s": 4.0,
+			"known": true
+		},
 		"compost": {
 			"number": 224,
 			"name": "Compost",
