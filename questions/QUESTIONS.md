@@ -65,12 +65,6 @@ Note: If something still sounds bad, press Shift+F3, switch sounds off one at a 
 [B] Still a bad sound: I will send the name from Shift+F3
 [C] Better, but one thing is still off: I will say which
 
-## sal-bed-hammer | Should the rough bed be built from the wooden hammer (a blueprint) instead of crafted by hand?
-Note: You said: make our own rough bed in our own lean-to using the wooden hammer. Today it is a hand craft (10 thatch, 4 sticks, 2 twine) placed as a kit.
-Note: A blueprint would also need the feather and canopy beds changed, because they upgrade the bed kit.
-Note: Recommendation: No, keep it a hand craft placed in the lean-to, because it works today and the hammer needs a chopped wooden block first, which slows the first hour.
-[check]
-
 ## dynasty-hair-female | Dave's body: hair, beard and a female body need real meshes. Can you export them like the base male (rigged GLB on the same Mixamo skeleton)?
 Note: 1. The creator now shapes your body (PR #195), but the head is bald and every frame, feminine included, uses the male body.
 Note: 2. Code-made hair on your 55k-triangle body would look plastic and low-poly, which the art direction rules out.
