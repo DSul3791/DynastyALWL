@@ -78,8 +78,9 @@ func _init() -> void:
 	again.choose(1)
 	check(again.mode == "save" and again.picked == 0 and again.plan_picked == -1, "Save building plan switches the hammer to saving")
 	check(again.delete_highlighted(1) == "", "Delete on Save building plan removes nothing")
-	again.set_open(true, 1)
-	again.move(false, 1)
+	again.set_open(true, 1)   # the highlight starts on Save building plan (second row)
+	again.move(false, 1)      # up to Repair
+	again.move(false, 1)      # wraps to the last row: the plan
 	check(again.delete_highlighted(1) == "Plan 1" and again.plans.plans.is_empty(), "Delete on a plan removes it")
 	again.clear()
 	check(again.mode == "place", "putting the hammer away clears saving")
