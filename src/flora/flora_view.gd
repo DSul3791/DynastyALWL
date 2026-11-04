@@ -158,7 +158,7 @@ void fragment() {
 }
 """
 
-# Green plant bodies (tree_builder `greens`: grass blades and tufts, reeds, cactus, succulents, kelp). They used the bark shader, which multiplied their colour by
+# Green plant bodies (tree_builder `greens`: grass blades and tufts, reeds, cactus, succulents, kelp, nettles, leafy herbs and the plain flower). They used the bark shader, which multiplied their colour by
 # the bark texture (about 0.4), darkened the foot and laid foot moss on them, so a tuft of tall grass came out about a quarter as bright as its own colours
 # and much darker than the meadow grass round it (Kathreen, 3 Nov 2026). This keeps the vertex colour: a fine streak up the blade, a little shade at the foot,
 # light through thin blades (BACKLIGHT) and the bark shader's wind. No texture.
