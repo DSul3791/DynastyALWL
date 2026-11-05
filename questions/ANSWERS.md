@@ -2310,3 +2310,7 @@ Answered: 2026-11-05 12:27 UTC
 Answer: Wear the game's real tunic and trousers pieces in their own colours, as players do (recommended; a first try looked a bit blocky, so I'd smooth them first)
 Answered: 2026-11-05 12:27 UTC
 
+## kathreen-meadow-gain | Meadow grass tufts at noon: Sonny already toned them down a little (#416, gain 0.85 to 0.72). PC shots: /mnt/project-files/meadow421_compare_level_yaw90.png and meadow421_down30.png. How do they look now?
+Answer: They look fine, keep them (recommended)
+Answered: 2026-11-05 12:27 UTC
+
