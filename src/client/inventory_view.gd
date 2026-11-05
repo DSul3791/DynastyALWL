@@ -864,12 +864,16 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	var t: int = FrameProbe.start()
 	_drain_world_backlog()
+	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
 	var now: int = Time.get_ticks_msec()
+	t = FrameProbe.start()
 	_roll_tick(_delta, now)
 	_snap_tick(now)
 	_hold_e_check()
 	_auto_pickup_tick(now)
+	FrameProbe.stop("inventory: roll, snap, hold E, pickup", t)
 
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
 		_thought_label.text = ""
@@ -885,13 +889,19 @@ func _process_body(_delta: float) -> void:
 		return
 
 	_prompt_next_msec = now + 200
+	t = FrameProbe.start()
 	_update_fire_lights()
+	FrameProbe.stop("inventory: fire lights", t)
+	t = FrameProbe.start()
 	_update_trunk_colliders()
+	FrameProbe.stop("inventory: trunk colliders", t)
 
 	if now < _notice_until_msec:
 		return
+	t = FrameProbe.start()
 	var interaction: Dictionary = current_interaction()
 	_prompt.text = prompt_text(interaction)
+	FrameProbe.stop("inventory: prompt", t)
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = KeyBindings.localize("Hold Z to sleep")
