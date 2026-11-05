@@ -5642,12 +5642,16 @@ func _fuel(peer: int, inv, id: int) -> void:
 		_say(peer, "You have no wood, sticks or logs to put on the fire.")
 
 
-# Lighting a loaded fire (Dave 2026-10-20): bare hands, one tinder item from the pack (cooking.json
-# "tinder"). Open fires will not take while it rains.
+# Lighting a loaded fire (Dave 5 Nov 2026, simplified): any wood in the fire is enough, E lights it, and no starter (plant fibre, tinder, kindling)
+# is needed or used up. Every kind of wood goes in: sticks, kindling, tinder, firewood, blocks, logs. An open fire will not take while it rains.
 func _light(peer: int, inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
 
-	if fire.is_empty() or int(fire["state"]) != 9 or float(fire["burn_left"]) <= 0.0:
+	if fire.is_empty() or int(fire["state"]) != 9:
+		return
+
+	if float(fire["burn_left"]) <= 0.0:
+		_say(peer, "Put sticks or wood on the fire first (F), then light it.")
 		return
 
 	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
@@ -5659,24 +5663,9 @@ func _light(peer: int, inv, id: int) -> void:
 		_say(peer, "The rain will not let it light. Move it under cover.")
 		return
 
-	var tinder: String = str(_cooking.get("tinder", "plant_fibre"))
-
-	# Dave 2026-10-30: plant fibre is the main tinder, but birch bark, tinder and tinder fungus (cooking.json "tinder_also") light a fire too, so a forest start is not stuck.
-	if not inv.has(table.number_of(tinder), 1):
-		for other in _cooking.get("tinder_also", []):
-			if table.number_of(str(other)) > 0 and inv.has(table.number_of(str(other)), 1):
-				tinder = str(other)
-				break
-
-	if not inv.has(table.number_of(tinder), 1):
-		_say(peer, "Needs plant fibre, kindling, birch bark or tinder to light")
-		return
-
-	inv.remove(table.number_of(tinder), 1)
-
-	# A drizzle makes lighting a gamble (cooking.json rain_light_chance); the tinder is spent either way.
+	# A drizzle makes lighting a gamble (cooking.json rain_light_chance).
 	if rain_now_v > 0.02 and not bool(fire["covered"]) and not roll_chance(peer, _rain_rng, maxf(1.0 - rain_now_v / maxf(float(rain_cfg.get("puts_out", 0.2)), 0.01) * float(rain_cfg.get("loss", 0.8)), float(rain_cfg.get("min_chance", 0.2)))):
-		_say(peer, "The tinder will not catch in the damp. Try again.")
+		_say(peer, "The wood will not catch in the damp. Try again.")
 		return
 
 	fire["state"] = _fire_best_state(fire)
@@ -7036,6 +7025,10 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 			var left: int = inv.add(number, amount, held_wear)
 			chest.take_from_slot(a, amount - left)
 			_dirty = true
+
+	# Wood moved in or out of a fire's store counts at once (Dave 5 Nov 2026), not only when the window closes: the burn time, the tier and the laid state follow.
+	if (kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE) and _items.get(id, {}).has("fire"):
+		_sync_fire_from_box(peer, id)
 
 	if send_chest.is_valid():
 		send_chest.call(peer, id, chest.to_bytes())

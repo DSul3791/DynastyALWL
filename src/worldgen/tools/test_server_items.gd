@@ -522,7 +522,7 @@ func _init() -> void:
 	check(f._items[open_id]["fire"]["state"] == 9 and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 1, "rain will not let an open fire light")
 	rain[0] = 0.0
 	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
-	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 0, "tinder lights it once the rain stops")
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 1, "it lights once the rain stops, and no starter is used up")
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
 	check(f.inventory_of(1).count_of(f.table.number_of("stick")) == 1, "a lit fire takes another stick")
 	# A campfire cooks only meat (Dave 31 Oct 2026): berries, nuts and roots do nothing on it (they are pot and hearth recipes).

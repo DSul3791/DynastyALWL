@@ -101,7 +101,7 @@
 		{
 			"id": "fire",
 			"title": "Light a fire",
-			"hint": "Make a Campfire kit (6 sticks, 3 stones), place it, then press E near it with plant fibre to light it.",
+			"hint": "Make a Campfire (6 sticks, 3 stones) and place it. Put sticks on it with F, then press E near it to light it.",
 			"after": [
 				"fell"
 			],
