@@ -2314,3 +2314,7 @@ Answered: 2026-11-05 12:27 UTC
 Answer: They look fine, keep them (recommended)
 Answered: 2026-11-05 12:27 UTC
 
+## pic-flora-orchard-rows | In the real game: do the orchard trees read as rows of fruit trees?
+Answer: No | Comment: I have not found an orchard yet I found a few random trees. I even found three of them together, but never were they in a row or in an Orchard.
+Answered: 2026-11-05 23:51 UTC
+
