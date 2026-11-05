@@ -142,6 +142,11 @@ if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) 
     for line in text.stdout.splitlines()[:-1]:
         bad("text vs recipe: " + line)
 
+placeable = subprocess.run([sys.executable, "tools/placeables_check.py"], capture_output=True, text=True)
+if placeable.returncode != 0:   # every placeable item must be placeable (Dave 5 Nov 2026)
+    for line in placeable.stdout.splitlines()[1:]:
+        bad("placeable: " + line.strip())
+
 carry = subprocess.run([sys.executable, "tools/carry_audit.py"], capture_output=True, text=True)
 if carry.returncode != 0:   # a warning only until Dave picks the heavy-kits fix (docs/HEAVY_KITS_OPTIONS.md)
     print("WARNING: carry_audit: %d recipe(s) over the carry cap (python3 tools/carry_audit.py)" % sum(1 for l in carry.stdout.split("OVER CAP")[1].split("SLOWING")[0].splitlines() if " kg  recipe " in l))
