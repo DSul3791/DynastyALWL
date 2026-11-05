@@ -40,6 +40,9 @@ const CLIP_MAP := {
 	"fall": ["Jump_Run", 0.55, 0.8, true, 1.0],
 	"land": ["Jump_Run", 0.1, 0.5, false, 1.0],
 	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],   # post-processed into cross-legged ground sitting by _ground_sit (BUG-020: there is no floor-sit clip)
+	# Sitting ON a seat (E on a chair, stool, log seat or bench; Dave 5 Nov 2026 "we need a sitting on a chair action"): the same chair clip held on its first frame
+	# (_hold_first), not turned into the ground sit. Its hips are 0.51 m up, about 0.28 m behind the feet, hands on the thighs: the seats are all 0.45 m high (piece_look.gd).
+	"sit_chair": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
 	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
 	# the strike comes down from 1.4 s, fastest at 1.53 s, hands lowest at 1.73 s; the clip ends at 1.83 s. (The speed peak at 0.73 s is the rise, not a blow.) The game wants the blow at 0.5 s
@@ -286,6 +289,8 @@ func _build_animations() -> void:
 			if game_name == "sit":
 				_hold_first(made)
 				_ground_sit(made, own.get_animation("Idle"), skeleton)
+			elif game_name == "sit_chair":
+				_hold_first(made)
 
 			_library.add_animation(game_name, made)
 
