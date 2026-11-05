@@ -740,7 +740,7 @@ const SPRING_CAVE_DEFAULTS := {
 	"big_chamber_height_m": [8.0, 14.0], "mouth_width_max_m": 30.0, "mouth_height_max_m": 12.0, "taper_min_m": 25.0, "taper_cover_m": 1.5,
 	"den_rise": [0.1, 0.2], "den_radius_m": [3.0, 5.0], "den_height_m": [3.0, 4.0],
 	# Dave 5 Nov 2026: a wide river needs many springs; the cave's size sets how many branches end in spring pools.
-	"spring_per_mouth_m": 0.0, "max_springs": 3,
+	"spring_per_mouth_m": 0.0, "max_springs": 3, "size_by_mouth_m": {},
 	"bones": {"entrance_chance": 0.35, "end_chance": 0.35, "human_share": 0.2},
 	"formations": {"per_chamber": [8, 20], "passage_min_width_m": 5.0, "passage_chance": 0.3},
 }
@@ -840,7 +840,21 @@ func _make_spring_caves(rng: RandomNumberGenerator) -> void:
 func _spring_cave(index: int, rng: RandomNumberGenerator) -> Dictionary:
 	var sizes: Array = ["small", "medium", "large"]
 
-	for k in range(sizes.find(_pick_size(rng)), -1, -1):
+	var wanted_size: String = _pick_size(rng)
+	# The river sets the size (Dave 5 Nov 2026: "depending on the initial cave size determines how far in it goes and how many branches end in spring
+	# pools"): a river at least size_by_mouth_m.large wide at the mouth gets a large cave, at least .medium a medium one, whatever the odds rolled;
+	# a cave with no room for that size still steps down.
+	var by_mouth: Dictionary = _spring_rule("size_by_mouth_m")
+
+	if not by_mouth.is_empty():
+		var mouth_w: float = _river_width(index, _uphill_angle(index))
+
+		for key in ["large", "medium"]:
+			if by_mouth.has(key) and mouth_w >= float(by_mouth[key]) and sizes.find(key) > sizes.find(wanted_size):
+				wanted_size = key
+				break
+
+	for k in range(sizes.find(wanted_size), -1, -1):
 		var local_before: int = _local
 		var cave: Dictionary = _spring_cave_of(index, sizes[k], rng)
 

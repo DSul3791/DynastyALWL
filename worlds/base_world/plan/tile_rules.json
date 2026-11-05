@@ -1195,6 +1195,7 @@
 			"big_chamber_radius_m": [5, 9],
 			"big_chamber_height_m": [8, 14],
 			"spring_per_mouth_m": 6,
+			"size_by_mouth_m": {"medium": 10, "large": 18},
 			"spring_per_mouth_note": "Dave 5 Nov 2026: a wide river needs many spring pools; one spring passage per 6 m of the river's width at the mouth, up to the size's max_springs (small 1, medium 3, large 6), their flows joining on the way out.",
 			"mouth_width_max_m": 30,
 			"mouth_height_max_m": 12,
