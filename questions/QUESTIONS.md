@@ -126,8 +126,10 @@ Note: Recommendation (Kathleen): halfway keeps the meadow's colour from afar and
 - No, keep the 5 m circle
 
 ## jamie-rain-warmth | Rain night with no clothes (PC check): about 45% warmth at 7 C, 56% at 10 C. Rain costs only about 2.4 points. Should rain cost more?
-- Yes, rain should chill more (recommended for survival feel)
-- No, it is fine
+Note: Recommendation (Steve): 1.5 times stronger rain chill.
+- Rain chills 1.5 times as much (recommended)
+- Rain chills twice as much
+- Leave it as it is
 
 ## kathreen-npc-clothes | Town NPCs on your body: how do they get their shirt and trousers?
 - Wear the game's real tunic and trousers pieces in their own colours, as players do (recommended; a first try looked a bit blocky, so I'd smooth them first)
