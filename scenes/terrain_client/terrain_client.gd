@@ -3681,6 +3681,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_save_display()
 		elif KeyBindings.matches(event, "delete_plan") and held != null and held.delete_plan():
 			pass
+		elif KeyBindings.matches(event, "hammer_group_next") and held != null and held.step_blueprint_group(true):
+			pass
+		elif KeyBindings.matches(event, "hammer_group_prev") and held != null and held.step_blueprint_group(false):
+			pass
 		elif KeyBindings.matches(event, "blueprints") and items != null and not items.open:
 			if held != null:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list

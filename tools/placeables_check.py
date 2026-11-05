@@ -32,7 +32,7 @@ for kind, d in structs.items():
     if isinstance(d, dict) and d.get("kit"):
         kit_of[d["kit"]] = kind
 
-KNOWN_OPEN = {"vice"}
+KNOWN_OPEN = set()
 LIVE_KIT_EXCEPTIONS = {"campfire_kit", "rough_bed_kit"}   # made in the pack, not by the hammer
 
 for iid, it in items.items():
