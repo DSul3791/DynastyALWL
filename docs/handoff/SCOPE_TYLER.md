@@ -1,5 +1,7 @@
 # Scope: Tyler: Q&A testing and tooling, 1 Nov 2026
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 > Role history (Dave, 1 Nov 2026): the sub-systems (character system, comfort and Rested, food and drink, warmth, sleep and energy, lit fire/fixture RULES, kit and structure placement rules, death and respawn rules, goal and hint triggers, stump and trunk work) moved to **Steve: Systems** (`SCOPE_STEVE.md`). Fire and flame LOOKS are Kathleen's. Animal placement and behaviour are MikeW's; I keep only the shared server rules animals plug into (damage and death handling, carcass, protocol). The character LOOK is Kathleen's.
 
 Read `HANDOFF_TYLER.md` next to this one: it holds the in-flight state, risks and how to run things.
