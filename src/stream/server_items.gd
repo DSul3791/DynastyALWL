@@ -312,6 +312,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const GAME_RATE := 24.0                 # game seconds per real second
 var _slow_in: float = 0.0
 const SLOW_TICK_S := 0.25
+const HINT_EVERY_TICKS := 4   # the hint triggers are looked at every 4th slow tick (about once a second)
 var gather_pace_ms: int = GATHER_PACE_MS
 var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
@@ -357,6 +358,8 @@ var _log_tasks: Array = []           # worker tasks printing log lines (_log_off
 var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
 var _slow_prev_usec: int = 0          # when the last part of this items tick ended
 var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
+var hint_every: int = HINT_EVERY_TICKS   # tests set 1: the hints every goals tick
+var _hint_ticks: int = HINT_EVERY_TICKS - 1   # slow ticks since the hints were last looked at (the first tick looks)
 var _goals_detail: String = ""        # the last _goals_tick's split (the slow-tick line)
 var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
@@ -1160,10 +1163,13 @@ func tick(delta: float) -> void:
 		var spent: float = _slow_in
 		_slow_in = 0.0
 		_rot(spent)
+		_slow_mark("rot", t0)
 		_fires(spent)
+		_slow_mark("fires", t0)
 		_vitals_tick(spent)
+		_slow_mark("vitals", t0)
 		_craft_tick(spent)
-		_slow_mark("rot-fires-vitals-craft", t0)
+		_slow_mark("craft", t0)
 		_auto_split()
 		_slow_mark("auto-split", t0)
 		_crops_tick()
@@ -11048,11 +11054,21 @@ func _goals_tick() -> void:
 	_slowest_hint_usec = 0
 	_slowest_hint = ""
 
+	# Hints are looked at every HINT_EVERY_TICKS slow ticks (about once a second), not 4 times a second: the tree triggers
+	# (near_orchard, near_fruit_tree_in_season) scan the trees of nine flora chunks each look (lag run 5 Nov: hints 18 to 76 ms a tick).
+	_hint_ticks += 1
+	var hints_now: bool = _hint_ticks >= hint_every
+
+	if hints_now:
+		_hint_ticks = 0
+
 	for peer in _peer_key.keys():
 		var tg: int = Time.get_ticks_usec()
 		_goals_check(peer)
 		goals_usec += Time.get_ticks_usec() - tg
-		_hints_check(peer)
+
+		if hints_now:
+			_hints_check(peer)
 
 	# For the slow-tick line (lag run 5 Nov: goals 43 and 102 ms, no split).
 	_goals_detail = "(night walk %.0f, goals %.0f, hints %.0f, slowest hint trigger %s %.0f)" % [float(t1 - t0) / 1000.0, float(goals_usec) / 1000.0,
