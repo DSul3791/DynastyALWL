@@ -7,7 +7,7 @@ extends RefCounted
 
 const WORN_PATH := "res://data/items/worn.json"
 const LAYER_M := 0.015
-const BUILDERS := ["cloak", "hood", "boots", "leggings", "mittens", "skirt", "sandals", "pack", "tunic", "trousers", "gloves", "helm", "jerkin", "mailshirt", "cuirass", "padded"]
+const BUILDERS := ["cloak", "hood", "cap", "furhat", "boots", "leggings", "mittens", "skirt", "sandals", "pack", "tunic", "trousers", "gloves", "helm", "jerkin", "mailshirt", "cuirass", "padded"]
 const HUMANOID_NAMES := {
 	"hips": "Hips", "chest": "Chest", "head": "Head",
 	"hand_r": "RightHand", "hand_l": "LeftHand", "forearm_r": "RightLowerArm", "forearm_l": "LeftLowerArm", "arm_r": "RightUpperArm", "arm_l": "LeftUpperArm",
@@ -136,6 +136,33 @@ static func _mesh(shape: String) -> Mesh:
 			cyl.cap_top = false
 			cyl.cap_bottom = false
 			mesh = cyl
+		elif shape == "cyls" or shape == "frus":
+			# Smooth versions for headwear (Dave 5 Nov 2026: "what is on her head", the six-sided hood read as a brown block): 16 sides; "frus" narrows to the top (a hood's drape).
+			var round_cyl: CylinderMesh = CylinderMesh.new()
+			round_cyl.top_radius = 0.3 if shape == "frus" else 0.5
+			round_cyl.bottom_radius = 0.5
+			round_cyl.height = 1.0
+			round_cyl.radial_segments = 16
+			round_cyl.rings = 1
+			round_cyl.cap_top = false
+			round_cyl.cap_bottom = false
+			mesh = round_cyl
+		elif shape == "tor":
+			var ring: TorusMesh = TorusMesh.new()      # in the XZ plane, outer radius 0.5, tube 0.07
+			ring.inner_radius = 0.36
+			ring.outer_radius = 0.5
+			ring.rings = 20
+			ring.ring_segments = 8
+			mesh = ring
+		elif shape == "hemi":
+			mesh = _dome()
+		elif shape == "sphs":
+			var round_sph: SphereMesh = SphereMesh.new()
+			round_sph.radius = 0.5
+			round_sph.height = 1.0
+			round_sph.radial_segments = 16
+			round_sph.rings = 8
+			mesh = round_sph
 		elif shape == "cone":
 			var cone: CylinderMesh = CylinderMesh.new()
 			cone.top_radius = 0.0
@@ -156,6 +183,29 @@ static func _mesh(shape: String) -> Mesh:
 
 	return _meshes[shape]
 
+
+# A dome: the top half of a sphere of radius 0.5, its open rim at y 0 and its crown at y 0.5, 16 sides and 6 rings (a cap's crown). Built here so the shape does not depend
+# on how SphereMesh draws a hemisphere.
+static func _dome() -> ArrayMesh:
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var sides: int = 16
+	var rings: int = 6
+
+	for r in range(rings):
+		for k in range(sides):
+			var quad: Array = []
+
+			for corner in [[r, k], [r, k + 1], [r + 1, k + 1], [r + 1, k]]:
+				var up: float = PI * 0.5 * float(corner[0]) / float(rings)
+				var round_a: float = TAU * float(corner[1]) / float(sides)
+				quad.append(Vector3(cos(up) * cos(round_a), sin(up), cos(up) * sin(round_a)))
+
+			for index in [0, 2, 1, 0, 3, 2]:
+				st.set_normal(quad[index])
+				st.add_vertex((quad[index] as Vector3) * 0.5)
+
+	return st.commit()
 
 # What each worn item is made of, from its id: hide and leather show a soft grain and a little sheen, wool and padded cloth a woven nap, linen a fine weave, fur strands,
 # grass and fibre plaited stems, and bronze, iron and steel are metal. The look follows Art_Direction.md: real stuff, no plastic (Kathreen, 3 Nov 2026).
@@ -265,9 +315,24 @@ static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
 			if fringe:
 				for k in range(7):
 					out.append(_p("chest", "cone", Vector3(-0.3 + 0.1 * float(k), -0.82, 0.22 + o), Vector3(0.07, 0.2, 0.02), Vector3(PI, 0.0, 0.0), true, 0.1))
+		# Headwear (Dave 5 Nov 2026, "what is on her head": the old hood was a six-sided ball 0.33 m across over the whole head, with a band, and read as a brown block; the
+		# caps and the fur hat used it too). Head frame: y 0 about the chin, the crown at 0.24, the face at z -0.1 (front -Z). Refs: medieval hoods with a shoulder cape
+		# and a short back point (Herjolfsnes, Bocksten), round skull caps with a rim, a fur hat with a rolled fur brim.
 		"hood":
-			out.append(_p("head", "sph", Vector3(0.0, 0.12, 0.045), Vector3(0.27 + o * 2.0, 0.28 + o * 2.0, 0.28 + o * 2.0)))
-			out.append(_p("head", "cyl", Vector3(0.0, 0.04, 0.0), Vector3(0.3 + o * 2.0, 0.1, 0.3 + o * 2.0), Vector3.ZERO, false, 0.05))
+			# A hood: a smooth shell set back so the face shows, a turned rim round the face, a cape over the shoulders and a short point at the back.
+			out.append(_p("head", "sphs", Vector3(0.0, 0.135, 0.04), Vector3(0.215 + o * 2.0, 0.27 + o * 2.0, 0.25 + o * 2.0)))
+			out.append(_p("head", "tor", Vector3(0.0, 0.13, -0.07 - o), Vector3(0.18 + o * 2.0, 0.25, 0.25), Vector3(PI * 0.5, 0.0, 0.0), false, 0.15))
+			out.append(_p("head", "frus", Vector3(0.0, -0.075, 0.02), Vector3(0.36 + o * 2.0, 0.17, 0.3 + o * 2.0)))
+			out.append(_p("head", "cone", Vector3(0.0, 0.19, 0.16 + o), Vector3(0.07, 0.12, 0.12), Vector3(2.2, 0.0, 0.0), true, 0.05))
+		"cap":
+			# A round skull cap (leather or knitted wool): a smooth dome down to the brow and the tops of the ears, a darker rim, a small knot on the crown.
+			out.append(_p("head", "hemi", Vector3(0.0, 0.135, 0.015), Vector3(0.205 + o * 2.0, 0.26 + o * 2.0, 0.235 + o * 2.0)))
+			out.append(_p("head", "cyls", Vector3(0.0, 0.15, 0.015), Vector3(0.21 + o * 2.0, 0.035, 0.24 + o * 2.0), Vector3.ZERO, false, 0.15))
+			out.append(_p("head", "sphs", Vector3(0.0, 0.263 + o, 0.015), Vector3(0.025, 0.018, 0.025), Vector3.ZERO, true, 0.2))
+		"furhat":
+			# A fur hat: a taller dome and a thick rolled fur brim, a shade lighter where the fur turns over.
+			out.append(_p("head", "hemi", Vector3(0.0, 0.14, 0.015), Vector3(0.215 + o * 2.0, 0.29 + o * 2.0, 0.245 + o * 2.0)))
+			out.append(_p("head", "tor", Vector3(0.0, 0.155, 0.015), Vector3(0.26 + o * 2.0, 0.3, 0.29 + o * 2.0), Vector3.ZERO, false, -0.12))
 		"boots":
 			for side in ["r", "l"]:
 				out.append(_p("shin_" + side, "cyl", Vector3(0.0, -0.18, 0.0), Vector3(0.14 + o * 2.0, 0.26, 0.14 + o * 2.0)))
