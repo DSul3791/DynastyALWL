@@ -497,6 +497,7 @@ func _ready() -> void:
 	animals.canopy = func(point): return flora.covered(point)
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
+	animals.player_stalk = func(): return items.peer_stalk_factors()
 	animals.hour_now = func(): return game_clock.hour()
 	var biome_names: Dictionary = {}
 

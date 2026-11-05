@@ -735,9 +735,9 @@
 		"always_notice_m": 8.0,
 		"los_step_m": 4.0,
 		"forest_block": 0.45,
-		"undergrowth_noise": 1.5,
-		"undergrowth_crouch_noise": 1.2,
-		"noise_speed_ms": 1.0,
+		"brush_noise_per_ms": 0.04,
+		"brush_crouch_share": 0.5,
+		"brush_moving_ms": 0.5,
 		"noise_sample_s": 0.25
 	},
 	"blood": {

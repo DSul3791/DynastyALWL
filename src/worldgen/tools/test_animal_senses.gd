@@ -167,25 +167,28 @@ func _init() -> void:
 	check(not seen_at.call(20.0, true), "through trees the same player at 20 m is not noticed")
 	check(seen_at.call(13.0, true), "through trees a player at 13 m is noticed (later than in the open)")
 
-	# Undergrowth (Dave 5 Nov 2026): walking through bushes and ferns is loud, so a rabbit hears a player at 28 m (past its 24 m
-	# alert_m); the same walk on open ground, standing still in the bushes, or crouch-walking through them is not noticed.
-	var heard = func(in_brush: bool, speed: float, stance: int) -> bool:
-		var walkers: Array = [Vector3(28.0, 10.0, 0.0)]
+	# Undergrowth (Dave 5 Nov 2026): legs brushing the bushes add a little noise, more the faster you go, less the better a hunter
+	# you are. A rabbit's alert_m is 24 m: a beginner walking through brush at 25 m is just heard, the same walk on open ground is
+	# not, nor at 28 m (only a little), nor standing still, nor crouching, nor a skilled hunter (stalk factor 1.5).
+	var heard = func(dist: float, in_brush: bool, speed: float, stance: int, stalk: float) -> bool:
+		var walkers: Array = [Vector3(dist, 10.0, 0.0)]
 		var zoo3 = make(walkers, [stance], calm, false)
 		zoo3.undergrowth = func(_p): return in_brush
+		zoo3.player_stalk = func(): return [stalk]
 		var zid3: int = zoo3.spawn("rabbit", 0.0, 0.0)
 		zoo3.animals[zid3]["timer"] = 100.0
 
 		for n in 60:
-			walkers[0] = walkers[0] + Vector3(0.0, 0.0, speed * 0.05)   # across the rabbit's line, so the distance stays about 28 m
+			walkers[0] = walkers[0] + Vector3(0.0, 0.0, speed * 0.05)   # across the rabbit's line, so the distance stays about the same
 			zoo3.tick(0.05)
 
 		return zoo3.animals[zid3]["state"] == AnimalsScript.ALERT or zoo3.animals[zid3]["state"] == AnimalsScript.FLEE
 
-	check(heard.call(true, 2.0, 0), "walking through undergrowth at 28 m: the rabbit hears the player")
-	check(not heard.call(false, 2.0, 0), "the same walk on open ground at 28 m is not noticed")
-	check(not heard.call(true, 0.0, 0), "standing still in the bushes at 28 m is not noticed")
-	check(not heard.call(true, 2.0, 1), "crouch-walking through the bushes at 28 m is not noticed")
+	check(heard.call(25.0, true, 2.0, 0, 1.0), "a beginner walking through undergrowth at 25 m is heard")
+	check(not heard.call(25.0, false, 2.0, 0, 1.0), "the same walk on open ground at 25 m is not noticed")
+	check(not heard.call(28.0, true, 2.0, 0, 1.0), "only a little: walking through brush at 28 m is not heard")
+	check(not heard.call(25.0, true, 0.0, 0, 1.0), "standing still in the bushes at 25 m is not noticed")
+	check(not heard.call(25.0, true, 2.0, 0, 1.5), "a skilled hunter walking through the same brush at 25 m is not heard")
 
 	print("animal senses: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
