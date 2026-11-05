@@ -43,6 +43,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Clothing put on / taken off | `inventory_view.worn_event` -> `gear.dress` (one rustle, creak or clink) and `gear.set_worn(layers_for(worn ids))`, so worn clothing now sounds on steps (3 Nov) | Sal | wired, to hear |
 | Level up, goal done, hint | skill up: `inventory_view.skill_up_event` (a skills message shows a skill's whole level higher than before) -> `slots.play("skill_tock")` (soft wooden tock, make_skill.py; group `skill` cools down 20 s; Dave, QA jason-skill-chime A, 4 Nov). Goal done, hint: none? | Steve | skill up wired, to hear |
 
+| Bird nest near the player (PROTOCOL 91, `terrain_net.nests_received`) | `terrain_client._on_nests_sound` -> `ambient_life.set_nests`; `_nest_tick` calls `call_named` (bird_chirp, bird_trill) from a songbird nest within 45 m every 12-30 s, by day, spring and summer mostly, weather-gated (Jason, 5 Nov). Grouse nests: no grouse clip, silent | MikeW (nests) | songbird wired, to hear; grouse needs a clip |
 Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Sonny, Sal) to expose any missing event, place the calls, add a test line per call.
 
 ## Phase 1 update (1 Nov 2026, read-only, nothing run)
