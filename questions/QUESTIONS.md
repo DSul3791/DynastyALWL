@@ -53,11 +53,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
 
-## jamie-cold-acclimation | Cold acclimation: how does a character get used to the cold?
-- Slowly, from time spent in the cold, with a cap (recommended)
-- Not at all
-- Another way: I will say
-
 ## jamie-wet-clothes | Wet clothes: should clothes stay damp about 1 hour after rain or a swim and keep you less warm?
 - Yes (recommended)
 - No
