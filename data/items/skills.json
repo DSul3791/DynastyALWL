@@ -39,6 +39,10 @@
 		"charisma"
 	],
 	"actions": {
+		"stalk": {
+			"skill": "hunting",
+			"effect": "quiet"
+		},
 		"gather_plant": {
 			"skill": "foraging",
 			"effect": "yield"

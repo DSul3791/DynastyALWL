@@ -459,8 +459,8 @@ func _init() -> void:
 	for action in _read("skills.json").get("actions", {}):
 		var def: Dictionary = _read("skills.json")["actions"][action]
 
-		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness"]:
-			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed or toughness" % action)
+		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet"]:   # quiet: less noise (stalk, server_animals brush noise)
+			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed, toughness or quiet" % action)
 
 	# Stations: a recipe's station is a placed structure with that station, or one of the stations still to be built.
 	var stations: Dictionary = {"saw_mill": true, "forge": true, "campfire": true}   # a lit campfire is a station for dishes

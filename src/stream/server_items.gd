@@ -7964,6 +7964,17 @@ func peer_stances() -> Array:
 	return out
 
 
+# The hunting skill's effect on stalking (skills.json actions.stalk) for each player, in the same order as peer_positions: a
+# skilled hunter rustles less pushing through bushes (server_animals _sample_noise).
+func peer_stalk_factors() -> Array:
+	var out: Array = []
+
+	for peer in _peer_pos:
+		out.append(skill_factor(peer, "stalk"))
+
+	return out
+
+
 # What the wolf pack brain may know about each player: where, how they stand, health share, whether they carry raw meat, a
 # spear or a torch on the hotbar (the server does not know the selected slot).
 func wolf_info() -> Array:
