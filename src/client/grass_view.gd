@@ -1625,6 +1625,10 @@ static func ground_moved(space: PhysicsDirectSpaceState3D, x: float, z: float, o
 
 # Rays for one cell; returns how many were cast.
 func _build(cell: Vector2i) -> int:
+	# Timers only (Jason, 5 Nov 2026; Steve's lag run after #417: a 106 ms HITCH frame held "grass: build" 48 ms): "grass build: <part>" splits one
+	# build into setup (crown list, buffers), rays, and the point loop with its shore, litter and soil lookups summed per cell (the rest of
+	# "points" is the card writing). Nothing else changes.
+	var t_setup: int = Probe.start()
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var tool: VoxelTool = _terrain.get_voxel_tool()
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -1666,6 +1670,8 @@ func _build(cell: Vector2i) -> int:
 	var missed: int = 0
 	var dug_here: Array = _dug.get(cell, [])
 
+	Probe.stop("grass build: setup", t_setup)
+	var t_rays: int = Probe.start()
 	# All rays first, so a blade can be refused when ground drops away beside it (the rim of a hole, old or new).
 	var hits: Array = []
 	var heights: PackedFloat32Array = PackedFloat32Array()
@@ -1684,6 +1690,11 @@ func _build(cell: Vector2i) -> int:
 			if found.is_empty():
 				missed += 1
 
+	Probe.stop("grass build: rays", t_rays)
+	var t_points: int = Probe.start()
+	var shore_us: int = 0
+	var litter_us: int = 0
+	var soil_us: int = 0
 	var edge_cells: int = int(ceil(RIM_CLEAR_M / spacing))
 
 	for j in range(pps):
@@ -1711,7 +1722,9 @@ func _build(cell: Vector2i) -> int:
 			var water: float = _flora.water_level_at(x, z)
 
 			if shore_here:
+				var t0: int = Time.get_ticks_usec()
 				_put_shore(buffers, counts, rng, point, spacing, water)
+				shore_us += Time.get_ticks_usec() - t0
 
 			if not is_nan(water) and point.y < water + 0.3:
 				continue
@@ -1727,9 +1740,13 @@ func _build(cell: Vector2i) -> int:
 			var under: float = crown_depth_in(crowns, Vector3(x, point.y + 1.0, z))
 
 			if litter_here and under > 0.0 and litter_cards + int(counts[3]) + int(counts[4]) < litter_cap:
+				var t1: int = Time.get_ticks_usec()
 				_put_litter(buffers, counts, rng, point, spacing, under)
+				litter_us += Time.get_ticks_usec() - t1
 
+			var t2: int = Time.get_ticks_usec()
 			var soil: int = _grass_soil(tool, point - hit["normal"] * 0.4)
+			soil_us += Time.get_ticks_usec() - t2
 
 			if soil < 0:
 				continue
@@ -1819,6 +1836,11 @@ func _build(cell: Vector2i) -> int:
 					buffer[o + 15] = kept
 					buffers[layer] = buffer
 
+	var now_us: int = Time.get_ticks_usec()
+	Probe.stop("grass build: points", t_points)
+	Probe.stop("grass build: shore", now_us - shore_us)
+	Probe.stop("grass build: litter", now_us - litter_us)
+	Probe.stop("grass build: soil", now_us - soil_us)
 	entry["busy"] = false
 
 	if missed * 2 > rays:
