@@ -34,7 +34,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 91   # 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 92   # 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -103,6 +103,7 @@ signal died_received(cause: String, spawn: Vector3)
 signal final_death_received(cause: String)
 signal hit_number_received(at: Vector3, amount: int)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
+signal training_received(percent: int)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
@@ -467,6 +468,12 @@ func strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int) -> void:
 	vitals_received.emit(hunger, health, weight_dkg, thirst, luck, fitness)
+
+
+# Today's training (protocol 92): the hard work gathered today, in percent of a fitness point; at game midnight it turns into fitness.
+@rpc("authority", "call_remote", "reliable")
+func training(percent: int) -> void:
+	training_received.emit(percent)
 
 
 # The character died (protocol 34): what killed them, and where they come back. The server has already moved the pack onto
