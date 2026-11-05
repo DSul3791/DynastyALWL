@@ -118,3 +118,11 @@ else
 fi
 grep -E "shot runner: saved|ERROR|SCRIPT" "$RIG/client.log" | head -5 | cut -c1-200
 ls -la "$OUT/$NAME.png" 2>/dev/null | awk '{print $5, $9}'
+# Shaders compile only in a windowed client, never in a headless gate, so this run is where a broken shader shows (#416: a '#'
+# comment in GREENS_SHADER, "Unknown character #35 ... Shader compilation failed"). Any SHADER ERROR fails the rig run (exit 3).
+SHADERR=$(grep -cE "SHADER ERROR|Shader compilation failed" "$RIG/client.log")
+if [ "$SHADERR" -gt 0 ]; then
+  echo "FAIL: $SHADERR shader error line(s) in the client log:"; grep -E -A3 "SHADER ERROR" "$RIG/client.log" | head -24 | cut -c1-200
+  exit 3
+fi
+echo "shader errors: 0"
