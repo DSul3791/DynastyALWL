@@ -2262,3 +2262,7 @@ Answered: 2026-11-05 12:01 UTC
 Answer: Decide after the grass walk (recommended)
 Answered: 2026-11-05 12:01 UTC
 
+## jamie-cold-acclimation | Cold acclimation: how does a character get used to the cold?
+Answer: Not at all | Comment: Characters will have to wear appropriate clothing and protective gear
+Answered: 2026-11-05 12:02 UTC
+
