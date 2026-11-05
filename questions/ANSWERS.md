@@ -2294,3 +2294,7 @@ Answered: 2026-11-05 12:05 UTC
 Answer: Halfway, about 8 cm (recommended)
 Answered: 2026-11-05 12:05 UTC
 
+## jamie-footstep-clip | Your two footstep recordings (step_gravel_left, step_stone_left) clip at +0.2 dB.
+Answer: Jason trims them with declip.py (recommended)
+Answered: 2026-11-05 12:06 UTC
+
