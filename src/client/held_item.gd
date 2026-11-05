@@ -47,6 +47,7 @@ const THIRD_ROD_PITCH_DEG := 22.0     # third person: a carried fishing rod poin
 const THIRD_SPADE_PITCH_DEG := -56.0   # third person: a carried spade points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
 const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down, haft about 50 degrees below horizontal (review 2026-10-25: it was nearly horizontal)
 const THIRD_SAW_PITCH_DEG := -120.0   # third person: a saw carried by the handle, blade pointing down and back about 30 degrees
+const THIRD_TORCH_RAISE_DEG := 35.0   # third person: a torch in the left hand points forward and 35 degrees up, its flame clear of the body (Dave 5 Nov: it lay along the arm by the hip)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
@@ -1757,7 +1758,12 @@ const THIRD_FIST_SCALE := Vector3(1.0, 0.85, 1.6)     # 10 cm across, 8.5 cm thi
 
 
 func _third_fist() -> MeshInstance3D:
-	var fist: MeshInstance3D = _model.get_node_or_null(THIRD_FIST_NAME) as MeshInstance3D
+	return _third_fist_on(_model)
+
+
+# The same closed fist on any held model (the left-hand torch too).
+func _third_fist_on(model: Node3D) -> MeshInstance3D:
+	var fist: MeshInstance3D = model.get_node_or_null(THIRD_FIST_NAME) as MeshInstance3D
 
 	if fist == null:
 		fist = MeshInstance3D.new()
@@ -1772,9 +1778,9 @@ func _third_fist() -> MeshInstance3D:
 		skin.roughness = 0.9
 		ball.material = skin
 		fist.mesh = ball
-		_model.add_child(fist)
+		model.add_child(fist)
 
-	fist.transform = _model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
+	fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
 	return fist
 
 
@@ -1829,11 +1835,22 @@ func _mount_off_model() -> void:
 
 	mount.add_child(_off_model)
 	var grip: float = 0.0 if shield else float(GRIP_ALONG_Y["torch"])
+	var third_fist: Node3D = _off_model.get_node_or_null(THIRD_FIST_NAME) as Node3D
+
+	if third_fist != null:
+		third_fist.visible = false      # first person has the arms' own fist
 
 	if not _first_person and _avatar_rig != null:
-		var stand: Basis = Basis.IDENTITY if shield else Basis(Vector3.RIGHT, deg_to_rad(60.0))
+		# Dave's body's hand mount: +Y forward, +Z up the forearm (dynasty_body.gd _mount). The old 60 degrees (set for the ragdoll body) laid the torch
+		# along the forearm, its head and flame hidden by the hip (Dave 5 Nov, K camera shot). It now points forward and THIRD_TORCH_RAISE_DEG up, clear of the body,
+		# and the hand closes round it as round a right-hand tool.
+		var stand: Basis = Basis.IDENTITY if shield else Basis(Vector3.RIGHT, deg_to_rad(THIRD_TORCH_RAISE_DEG))
 		_off_model.basis = stand
-		_off_rest = stand * Vector3(0.0, grip, 0.0)
+		_off_rest = stand * Vector3(0.0, grip * THIRD_CHOKE, 0.0)
+
+		if not shield:
+			_off_model.position = _off_rest
+			_third_fist_on(_off_model).visible = true
 	else:
 		var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG))
 		var turn: Basis = Basis.IDENTITY if shield else Basis(Vector3.RIGHT, deg_to_rad(-90.0))
