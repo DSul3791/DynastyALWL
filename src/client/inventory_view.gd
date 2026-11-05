@@ -2263,7 +2263,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				# 51 ms on the main thread for each first spade, hoe or berry in view, windowed lag run 5 Nov).
 				box.mesh = _look_stand_in()
 				BasicLook.ask_soon(look_id)
-				_look_waiting.append([box, int(row[1])])
+				_look_waiting.append([box, int(row[1]), Time.get_ticks_msec()])
 			else:
 				box.mesh = real if real != null else _mesh_for(row[1])
 			node = box
@@ -3063,6 +3063,10 @@ func _swap_waiting_looks() -> void:
 			continue
 
 		node.mesh = _mesh_for(int(wait[1]))
+		var waited: int = Time.get_ticks_msec() - int(wait[2])
+
+		if waited > 100:   # how long a stand-in lump showed (for Dave's call on the stand-in)
+			print("client: %s showed a stand-in for %d ms" % [look_id, waited])
 
 	_look_waiting = still
 
