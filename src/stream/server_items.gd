@@ -6643,7 +6643,7 @@ func _finish_site(peer: int, id: int) -> void:
 
 
 # Taking a site down gives back everything deposited (100 percent, like any blueprint).
-func _take_down_site(peer: int, inv, id: int) -> void:
+func _take_down_site(peer: int, _inv, id: int) -> void:
 	var it: Dictionary = _items[id]
 
 	for item_id in _site_of(it).get("have", {}):
