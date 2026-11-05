@@ -358,6 +358,7 @@ var _log_tasks: Array = []           # worker tasks printing log lines (_log_off
 var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
 var _slow_prev_usec: int = 0          # when the last part of this items tick ended
 var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
+var _save_parts: Array = []           # this tick's save files over 10 ms to stringify, as "name ms (KB)" (the slow-tick line)
 var hint_every: int = HINT_EVERY_TICKS   # tests set 1: the hints every goals tick
 var _hint_ticks: int = HINT_EVERY_TICKS - 1   # slow ticks since the hints were last looked at (the first tick looks)
 var _goals_detail: String = ""        # the last _goals_tick's split (the slow-tick line)
@@ -1220,6 +1221,8 @@ func tick(delta: float) -> void:
 
 	_reap_writer()
 
+	_save_parts = []
+
 	if _save_in <= 0.0:
 		_save_in = SAVE_EVERY_S
 		_async_writes = true
@@ -1227,7 +1230,7 @@ func tick(delta: float) -> void:
 		_async_writes = false
 		_start_writer()
 
-	_slow_mark("save", t0)
+	_slow_mark("save" + (" (stringify %s)" % ", ".join(_save_parts) if not _save_parts.is_empty() else ""), t0)
 	var tick_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 
 	if tick_ms > SLOW_TICK_LOG_MS:
@@ -3775,7 +3778,12 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 # and the file it replaces is first copied to .prev (the fallback when a file later turns out torn or damaged).
 func _write_atomic(name: String, data: Dictionary) -> void:
 	var path: String = _dir + "/" + name
+	var t0: int = Time.get_ticks_usec()
 	var text: String = JSON.stringify(data)   # the snapshot is taken now, on the tick
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+
+	if ms > 10.0:
+		_save_parts.append("%s %.0f (%d KB)" % [name.get_basename(), ms, int(text.length() / 1024.0)])   # for the slow-tick line (lag run 5 Nov: a 675 ms save in one tick)
 
 	if _async_writes:
 		_pending_writes.append([path, text])   # the files are written by the background writer (see _start_writer)
