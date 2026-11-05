@@ -1356,17 +1356,39 @@ func _trees_near(point: Vector3, radius: float) -> Array:
 # (about 120 ms a look). Each chunk's trees are listed once and kept; felled trees are left out at each look. A chunk not made yet counts no trees until the
 # flora stream (a worker) has made it.
 const TREE_LISTS_KEPT := 200
-var _tree_lists: Dictionary = {}     # chunk Vector2i -> Array of [id, position, species name]
+const TREE_CELL_M := 16.0
+var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name]
+var _tree_names: Dictionary = {}     # placer species id -> name, trees only (built once)
 
 
+# Lag run 5 Nov: hints 108 ms in one slow tick, near_fruit_tree_in_season 54 of it. Each look scanned every tree of the nine 256 m chunks round the
+# player for an 8 m circle. Now a chunk the circle does not touch is skipped (not even listed), and a listed chunk keeps its trees in 16 m cells, so
+# a look reads only the cells under the circle.
 func _trees_near_cached(point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
 	var reach: int = maxi(int(ceil(radius / size)), 1)
 	var found: Array = []
 
+	if _tree_names.is_empty():
+		for id in flora.placer._by_id:
+			var row: Dictionary = flora.placer._by_id[id]
+
+			if int(row["kind"]) == PlacerScript.KIND_TREE:
+				_tree_names[id] = str(row["name"])
+
+	var cell_lo: Vector2i = Vector2i(int(floor((point.x - radius) / TREE_CELL_M)), int(floor((point.z - radius) / TREE_CELL_M)))
+	var cell_hi: Vector2i = Vector2i(int(floor((point.x + radius) / TREE_CELL_M)), int(floor((point.z + radius) / TREE_CELL_M)))
+
 	for dz in range(-reach, reach + 1):
 		for dx in range(-reach, reach + 1):
+			var corner: Vector2 = Vector2(float(home.x + dx) * size, float(home.y + dz) * size)
+			var near_x: float = clampf(point.x, corner.x, corner.x + size)
+			var near_z: float = clampf(point.z, corner.y, corner.y + size)
+
+			if Vector2(near_x - point.x, near_z - point.z).length() > radius:
+				continue
+
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
 
 			if not _tree_lists.has(chunk):
@@ -1375,24 +1397,48 @@ func _trees_near_cached(point: Vector3, radius: float) -> Array:
 				if trees.is_empty():
 					continue
 
-				var listed: Array = []
+				var cells: Dictionary = {}
+				var ids: PackedInt32Array = trees["ids"]
+				var positions: PackedVector3Array = trees["positions"]
 
-				for n in range(trees["ids"].size()):
-					var species: Dictionary = flora.placer._by_id.get(trees["ids"][n] >> 16, {})
+				for n in range(ids.size()):
+					var tree_name: Variant = _tree_names.get(ids[n] >> 16)
 
-					if not species.is_empty() and int(species["kind"]) == PlacerScript.KIND_TREE:
-						listed.append([trees["ids"][n], trees["positions"][n], str(species["name"])])
+					if tree_name != null:
+						var at: Vector3 = positions[n]
+						var cell: Vector2i = Vector2i(int(floor(at.x / TREE_CELL_M)), int(floor(at.z / TREE_CELL_M)))
+
+						if not cells.has(cell):
+							cells[cell] = []
+
+						cells[cell].append([ids[n], at, tree_name])
 
 				while _tree_lists.size() >= TREE_LISTS_KEPT:
 					_tree_lists.erase(_tree_lists.keys()[0])
 
-				_tree_lists[chunk] = listed
+				_tree_lists[chunk] = cells
 
-			var gone: Array = flora.removed_in(chunk)
+			var listed: Dictionary = _tree_lists[chunk]
+			var gone: Array = []
+			var gone_read: bool = false
 
-			for tree in _tree_lists[chunk]:
-				if Vector2(tree[1].x - point.x, tree[1].z - point.z).length() <= radius and not gone.has(tree[0]):
-					found.append([tree[1], tree[2]])
+			for cz in range(cell_lo.y, cell_hi.y + 1):
+				for cx in range(cell_lo.x, cell_hi.x + 1):
+					var in_cell: Variant = listed.get(Vector2i(cx, cz))
+
+					if in_cell == null:
+						continue
+
+					for tree in in_cell:
+						if Vector2(tree[1].x - point.x, tree[1].z - point.z).length() > radius:
+							continue
+
+						if not gone_read:
+							gone = flora.removed_in(chunk)
+							gone_read = true
+
+						if not gone.has(tree[0]):
+							found.append([tree[1], tree[2]])
 
 	return found
 
