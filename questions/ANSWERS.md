@@ -2290,3 +2290,7 @@ Answered: 2026-11-05 12:05 UTC
 Answer: Yes, milder (recommended)
 Answered: 2026-11-05 12:05 UTC
 
+## jamie-wildflower-size | Wildflower heads are drawn about 4 times real size (a dandelion head about 15 to 20 cm, real about 4 cm). What size?
+Answer: Halfway, about 8 cm (recommended)
+Answered: 2026-11-05 12:05 UTC
+
