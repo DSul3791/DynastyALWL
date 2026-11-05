@@ -5,8 +5,12 @@ extends Node3D
 # from the server's list (protocol 87, TileTerrainData.cave_streams), a ribbon from the spring down to the mouth with ripples running towards the
 # mouth, and a still pool in each spring chamber with rings spreading from the spring. One mesh per tile, built once when the list arrives.
 
-const RIBBON_LIFT_M := 0.25     # the ribbon sits this far above the passage floor (the carved floor is a curve, a little higher off the centre line)
-const RIBBON_SHARE := 0.3       # half the ribbon's width as a share of the passage width
+const RIBBON_LIFT_M := 0.45     # the water stands this deep over the passage floor on the centre line
+const RIBBON_SHARE := 0.3       # at most this share of the passage width either side of the centre line
+# The carved floor is the bottom of an ellipse, so it rises off the centre line: a flat ribbon 0.3 of the width out sat up to 1.2 m under the rock in the
+# wide river-sized mouths (Dave 5 Nov 2026, x 54162 z 69741: "there is no water actually running in the cave"). The ribbon now spans only the trough the
+# water fills, where an ellipse as tall as half the passage width (taller than any passage: mouths are 0.25, passages about 0.43) is still under the water.
+const FLOOR_RISE_SHARE := 0.5
 const POOL_SIDES := 20
 const CAVE_POOL_SHALLOW_M := 0.4   # an old server's pool (no depth sent)
 
@@ -113,6 +117,14 @@ func pool_surface_at(p: Vector3) -> float:
 
 # Pieces of 7 floats: upper end x, y, z, lower end x, y, z, passage width; a negative width is a pool: centre x, y, z, depth below the surface, -radius.
 # The stream's UV.y counts metres from the upper end of its piece plus the piece's height (pieces of one passage then roughly line up).
+# Half the width of the water across a passage `width` wide: where an elliptic floor as tall as FLOOR_RISE_SHARE of the width stays under RIBBON_LIFT_M.
+static func ribbon_half_width(width: float) -> float:
+	var rw: float = 0.5 * width
+	var rh: float = maxf(FLOOR_RISE_SHARE * width, RIBBON_LIFT_M)
+	var t: float = 1.0 - RIBBON_LIFT_M / rh
+	return minf(rw * sqrt(maxf(1.0 - t * t, 0.0)), RIBBON_SHARE * width)
+
+
 static func build_mesh(streams: PackedFloat32Array) -> ArrayMesh:
 	var verts: PackedVector3Array = PackedVector3Array()
 	var uvs: PackedVector2Array = PackedVector2Array()
@@ -136,10 +148,10 @@ static func build_mesh(streams: PackedFloat32Array) -> ArrayMesh:
 			continue
 
 		var dir: Vector3 = along.normalized()
-		var side: Vector3 = Vector3(-dir.z, 0.0, dir.x) * RIBBON_SHARE * width
+		var side: Vector3 = Vector3(-dir.z, 0.0, dir.x) * ribbon_half_width(width)
 		var lift: Vector3 = Vector3(0.0, RIBBON_LIFT_M, 0.0)
 		# Each piece runs a little past both its ends so the bends have no gaps.
-		var reach: Vector3 = dir * RIBBON_SHARE * width
+		var reach: Vector3 = dir * ribbon_half_width(width)
 		var top: Vector3 = a - reach + lift
 		var low: Vector3 = b + reach + lift
 		var v0: float = -a.y * 20.0   # spring passages rise 3 to 7 percent: about 20 m along per metre of height, so a passage's pieces line up
