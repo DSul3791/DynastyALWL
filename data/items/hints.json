@@ -69,7 +69,7 @@
 		{
 			"id": "light",
 			"trigger": "fire_placed",
-			"text": "Stand close and press E to light it with plant fibre.",
+			"text": "Put sticks on the fire first (F). Then stand close and press E to light it with plant fibre.",
 			"goal": "fire"
 		},
 		{

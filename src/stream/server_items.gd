@@ -5647,7 +5647,11 @@ func _fuel(peer: int, inv, id: int) -> void:
 func _light(peer: int, inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
 
-	if fire.is_empty() or int(fire["state"]) != 9 or float(fire["burn_left"]) <= 0.0:
+	if fire.is_empty() or int(fire["state"]) != 9:
+		return
+
+	if float(fire["burn_left"]) <= 0.0:   # Dave 5 Nov: a fresh laid fire has no wood, and E did nothing, silently
+		_say(peer, "Put sticks or wood on the fire first (F), then light it.")
 		return
 
 	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
