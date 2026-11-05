@@ -912,6 +912,7 @@ func _connect() -> void:
 	multiplayer.multiplayer_peer = peer
 	print("Terrain client: connecting to %s:%d" % [_host, _port])
 	GroundMaterialScript.start_early(quality)   # the ground photos are sized on a worker while the welcome is on its way
+	SoundStageScript.prewarm()   # every sound file starts loading now, not in the welcome frame (181 ms there in the 5 Nov lag run)
 
 
 # The server dropped this client or ended. A player sees a plain message with Retry and Quit and the world stays
