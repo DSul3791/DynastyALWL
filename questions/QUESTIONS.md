@@ -125,11 +125,12 @@ Note: Recommendation (Kathleen): halfway keeps the meadow's colour from afar and
 - Yes, own tile only (recommended)
 - No, keep the 5 m circle
 
-## jamie-rain-warmth | Rain night with no clothes (PC check): about 45% warmth at 7 C, 56% at 10 C. Rain costs only about 2.4 points. Should rain cost more?
-Note: Recommendation (Steve): 1.5 times stronger rain chill.
-- Rain chills 1.5 times as much (recommended)
-- Rain chills twice as much
-- Leave it as it is
+## jamie-rain-warmth | Should rain make you colder at night than it does now?
+Note: PC check, no clothes: about 45% warmth at 7 C, 56% at 10 C. It is one number in warmth.json.
+Note: Recommendation (Steve): rain x1.5, which matches the code's own default.
+- Rain x1.5: a rainy night is clearly colder, about 6 to 8 points (recommended)
+- Keep as is (rain x1.2): a rainy night costs about 2 points more than a dry one at 10 C
+- Rain x2.0: harsh, so shelter matters a lot
 
 ## kathreen-npc-clothes | Town NPCs on your body: how do they get their shirt and trousers?
 - Wear the game's real tunic and trousers pieces in their own colours, as players do (recommended; a first try looked a bit blocky, so I'd smooth them first)
