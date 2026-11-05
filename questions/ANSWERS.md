@@ -2274,3 +2274,7 @@ Answered: 2026-11-05 12:03 UTC
 Answer: Later, after roads are settled (recommended)
 Answered: 2026-11-05 12:03 UTC
 
+## jamie-torch-relight | A torch that went out (rain or water): how does it light again? Built now: E at a burning fire (#361).
+Answer: Another way: I will say | Comment: You just have to put it away and pull it back out again. The active pull out a torch is implying that you are lighting it.
+Answered: 2026-11-05 12:04 UTC
+
