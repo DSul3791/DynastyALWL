@@ -217,15 +217,16 @@ Duplicate removed 1 Nov: `PLAYTHROUGH_PLANS.md` no longer copies the budget tabl
 ## Archiving rule for tools
 `tools/merge_check.py` fails a merge when a `.md` file under `art/`, `assets/`, `design/`, `docs/`, `items/`, `src/`, `scenes/`, `worlds/` or `data/` disappears from its old path unless it is in `proposed_removals/` (it skips `docs/archive/` as a *deleted-from* path only, not as a destination). Root files and `tech/` pass. So archiving a file from `docs/`, `art/` or `design/` needs a `proposed_removals/` pointer or a rule change by Tyler (tools owner): not done yet.
 
-## Dead references (Jamie, 2 Nov 2026; found by scanning backticked `.md` names)
+## Dead references (Jamie, 2 Nov 2026; found by scanning backticked `.md` names; re-checked by Kathreen, 5 Nov 2026)
 These named documents are in no tracked path. Owner to restore, repoint or drop the mention (not fixed by Jamie: content is theirs).
 | Mentioned in | Missing | Note | Owner |
 |---|---|---|---|
-| `ART_ASSET_INVENTORY.md` | `art/MODEL_INVENTORY.md`, `art/MODEL_PLAN.md`, `art/REFERENCE_PHOTOS.md`, `art/GOAL2_RANKING.md` | copies exist only in the Dynasty project shared folder, not in git | Kathleen |
-| `ITEM_GROUPS_AND_NAMES.md` | `Items_in_other_games_Analysis.md` | not in git | Sal |
-| `DYNASTY_WATER_DESIGN.md`, `HANDOFF_SONNY.md` | `docs/WATER_OWN_SYSTEM_PROPOSAL.md` | not in git | Sonny |
-| `HANDOFF_STEVE.md`, `SCOPE_STEVE.md`, `SCOPE_TYLER.md` | `docs/CHARACTER_SYSTEM.md` | not in git | Steve |
-| `assets/audio/README.md` | `/mnt/project-files/...` (SOUND_GAPS, SWEEP, EMITTER_API, STEP_LEVELS) | paths on another machine | Jason |
+| `ART_ASSET_INVENTORY.md`, `CHARACTER_DESIGN_VISION.md`, `docs/mirror/tech/DECISIONS.md` | `art/MODEL_INVENTORY.md`, `art/MODEL_PLAN.md`, `art/REFERENCE_PHOTOS.md`, `art/GOAL2_RANKING.md` | still not in git; copies are in the project shared folder `/mnt/project-files/art/` (checked 5 Nov) | Kathleen |
+| `ITEM_GROUPS_AND_NAMES.md` | `Items_in_other_games_Analysis.md` | still not in git or the shared folder | Sal |
+| `DYNASTY_WATER_DESIGN.md`, `HANDOFF_SONNY.md` | `docs/WATER_OWN_SYSTEM_PROPOSAL.md` | still not in git or the shared folder | Sonny |
+| `assets/audio/README.md` | `/mnt/project-files/sound/` `SWEEP.md`, `EMITTER_API.md`, `STEP_LEVELS.md` (also `SLOT_AUDIT.md`, `VOICE_AUDIT.md`, `STRUCTURE_EVENTS.md`, `STEP_COVERAGE.md`) | not dead: generated outputs in the project shared folder (present 5 Nov), not in git by design; `/mnt/project-files/tech/SOUND_GAPS.md` has a git copy at `docs/mirror/tech/SOUND_GAPS.md` | Jason |
 | many | `questions/QUESTIONS.md`, `questions/ANSWERS.md` | fine: they live on branch `qa` | none |
+
+Fixed since 2 Nov: `docs/CHARACTER_SYSTEM.md` is in git (#21), so the mentions in `HANDOFF_STEVE.md`, `SCOPE_STEVE.md` and `SCOPE_TYLER.md` resolve.
 
 Checker for real links: `python3 tools/check_doc_links.py` (0 dead markdown links today).
