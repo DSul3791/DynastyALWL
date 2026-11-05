@@ -18,7 +18,7 @@ func _init() -> void:
 	var body: Node3D = Body.new()
 	root.add_child(body)
 
-	for clip in ["idle", "walk", "jog", "run", "crouch", "crouch_walk", "crouch_walk_back", "crouch_walk_left", "crouch_walk_right", "crouch_walk_torch", "crouch_walk_left_torch", "crouch_walk_right_torch", "sit", "lie", "swing", "swing_fp", "jab", "throw", "use", "chop", "pick_overhead", "carry_idle", "carry_walk", "jump", "fall", "land"]:
+	for clip in ["idle", "walk", "jog", "run", "crouch", "crouch_walk", "crouch_walk_back", "crouch_walk_left", "crouch_walk_right", "crouch_walk_torch", "crouch_walk_left_torch", "crouch_walk_right_torch", "sit", "sit_chair", "lie", "swing", "swing_fp", "jab", "throw", "use", "chop", "pick_overhead", "carry_idle", "carry_walk", "jump", "fall", "land"]:
 		_check(body.animation_player.has_animation(clip), "clip " + clip)
 
 	_check(body.animation_player.get_animation("walk").loop_mode == Animation.LOOP_LINEAR, "walk loops")
@@ -77,6 +77,21 @@ func _init() -> void:
 
 	for row in sit_at:
 		_check((row[0] as Vector3).distance_to(sit_at[0][0]) < 0.03 and (row[1] as Vector3).distance_to(sit_at[0][1]) < 0.03 and (row[2] as Vector3).distance_to(sit_at[0][2]) < 0.03, "sit: hips and knees hold still through the loop")
+
+	# Sitting on a seat (E on a chair, 5 Nov): hips at seat height, the feet on the ground in front, still through the loop.
+	var chair_at: Array = []
+
+	for at in [0.0, 5.1]:
+		body.play("sit_chair", 1.0, 0.0)
+		body.animation_player.seek(at, true)
+		await process_frame
+		await process_frame
+		chair_at.append((s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Hips"))).origin)
+
+	var chair_foot: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_LeftFoot"))).origin
+	_check((chair_at[0] as Vector3).y > 0.45 and (chair_at[0] as Vector3).y < 0.6, "sit_chair: hips at seat height (%.2f m)" % (chair_at[0] as Vector3).y)
+	_check(chair_foot.y < 0.2, "sit_chair: feet on the ground (%.2f m)" % chair_foot.y)
+	_check((chair_at[1] as Vector3).distance_to(chair_at[0]) < 0.03, "sit_chair: holds still through the loop")
 
 	body.play("crouch", 1.0, 0.0)
 	body.animation_player.seek(1.0, true)

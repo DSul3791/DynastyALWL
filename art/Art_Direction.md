@@ -104,3 +104,34 @@ When evaluating or creating an asset, ask:
 **"Does this look like it truly belongs in the living, breathing fantasy world of Dynasty: A Life Well Lived?"**
 
 If the answer is no, refine it until it does.
+---
+
+### Reference Paintings (approved by Dave, 5 Nov 2026)
+
+These twelve paintings are **the** example of this art direction: when a written rule above and a painting seem to disagree, the painting shows what Dave means. Small copies are in `art/references/approved_2026-11-05/` (the full-size originals are on Dave's PC, `Downloads/Dynasty_Approved_Artwork`). Each is also a front page design: the Dynasty logo at the top and four buttons drawn on the right (New Game, Continue, Settings, Exit).
+
+| # | Painting | What it shows |
+|---|---|---|
+| 02 | Paladin at the Inn | the paladin laughing over a tankard, a barmaid charmed; candle-lit tavern, banners, barrels |
+| 03 | Dungeon Door | the party resting at a studded oak door; the wizard reading by spell-light, the elf listening at the door |
+| 04 | Ogre Banquet | the party walks in on an ogre king's feast; goblin servant, roast on the table |
+| 05 | Escape from the Banquet | flight in chaos: flying food, a goblin on the chandelier, the wizard's lightning |
+| 07 | Exhausted in the Forest | the party collapsed in a sunny glade with their horses, a waterfall behind |
+| 08 | Riding Home | the four riding a dirt road towards a walled town with a tower, mountains and meadow flowers |
+| 11 | Dragon Battle | castle walls under a fire-breathing red dragon; arrows, lightning, shield and sword |
+| 12 | Goblin Antics | goblins steal apples and a chicken across a market square; the party gives chase |
+| 13 | Rogue Card Game | the elf caught cheating at cards, all innocence; tavern crowd laughing |
+| 14 | Dwarf Arm Wrestling | two dwarves (one a bearded woman) arm-wrestle among foaming tankards |
+| 15 | Wizard Storytelling | the wizard tells children the ogre story, the tale drawn in smoke |
+| 16 | Last Call at the Inn | the party asleep and yawning at closing time; lantern, the tree-of-life book |
+
+**What they teach, for every asset:**
+- **The party (character looks).** The same four recur, so they read as people with lives: the human paladin (dark curly hair, beard, steel plate over a blue tabard with a gold lion, red cloak), the red-haired elf ranger (green hooded cloak, leather bracers, quiver), the old wizard (long white beard, deep blue or purple robe with stars, glowing staff or hand) and the red-bearded dwarf (braids, heavy leather and metal). Faces are big and readable: open laughs, wide eyes, raised brows, a yawn. Proportions are heroic and slightly exaggerated (broad shoulders, big hands), never gritty-thin.
+- **Light.** Warm firelight and candlelight inside (amber, deep orange, gold highlights on every metal edge), bright clear daylight outside (blue sky, green-gold sun). Magic is the only cold light: blue-white or violet, with sparks.
+- **Colour.** Saturated and rich: heraldic red, royal blue and gold first, then forest green and warm wood brown. Shadows are warm brown, not grey.
+- **Wood.** Dark, warm, honey-to-walnut, with visible grain, worn edges, iron studs and straps; tables are thick slabs, barrels are hooped.
+- **Metal.** Armour is worn steel with gold or brass trim, every rivet and scratch visible, and it shines where the light hits. Tankards are pewter or brass with engraved symbols and foam heads.
+- **Fire.** Flames are big, yellow-orange with white-hot cores; torches burn on bound heads in iron brackets; candles cluster on wrought-iron chandeliers; hearths glow behind iron dogs.
+- **Cloth.** Heavy wool and velvet with gold trim, cloaks with weight and folds; banners are red with gold beasts.
+- **Places.** Packed with detail and life: crowds in the background, food on every table, moss and stone in the wild, flowers along the road.
+- **Mood.** Warm, funny, adventurous: most scenes are a joke or a small story (caught cheating, a stolen chicken, too tired to stand). Even the dragon battle is heroic, not grim.

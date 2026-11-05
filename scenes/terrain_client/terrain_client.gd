@@ -1361,6 +1361,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
 	items.lie_on_bed = _lie_on_bed
+	items.sit_on_seat = _sit_on_seat
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)
 
@@ -1427,6 +1428,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	Probe.stop("welcome: held item", tq_held_item)
+	var tq_tail: int = Probe.start()   # Low-quality lag runs (5 Nov) stuck up to 2.2 s "after held item": the rest of the welcome was not timed
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
 	held.shrub_near = _shrub_near
 	held.water_depth_at = func(x: float, z: float) -> float:
@@ -1512,10 +1514,16 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_net:
 		held.run_net_test()
+	Probe.stop("welcome: hotbar, pickup feed and tests", tq_tail)
+	var tq_print: int = Probe.start()
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
+	Probe.stop("welcome: welcome line printed", tq_print)
+	var tq_join: int = Probe.start()
 	_join_log("JOIN: at the welcome: player y %s, viewer y %s" % ["?" if body == null else "%.1f" % body.global_position.y, _viewer_y_text()])
+	Probe.stop("welcome: join line logged", tq_join)
+	_after_welcome = []   # the next frames are timed too (_note_after_welcome)
 
 
 
@@ -3422,6 +3430,9 @@ func _update_view(delta: float) -> void:
 		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
 		var clip: String = AvatarDriver.clip_for(_avatar, stance.stance if shot_stance < 0 else shot_stance, body.velocity, body.global_transform.basis, body.is_on_floor(), pace, _avatar.current(), carrying, delta)
 
+		if not _seat.is_empty() and stance.stance == StanceScript.SIT and _avatar.animation_player != null and _avatar.animation_player.has_animation("sit_chair"):
+			clip = "sit_chair"   # on a seat, not the ground
+
 		if debug_clip != "":
 			clip = debug_clip
 
@@ -3767,6 +3778,9 @@ func _step_player(delta: float) -> void:
 func _set_stance(wanted: int, toggle: bool = false) -> void:
 	var target: int = StanceScript.STAND if toggle and stance.stance == wanted else wanted
 
+	if target != StanceScript.SIT and not _seat.is_empty():
+		_leave_seat()   # off the seat first: the room check would find the seat itself
+
 	if target < stance.stance and not _room_to_rise(target):
 		_menu_note.text = "Not enough room to stand up here"
 		return
@@ -3777,6 +3791,79 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 
 		if items != null:
 			items.request_stance(stance.stance)   # the server: sitting and lying bring exertion down
+
+
+# E on a seat (docs/COMFORT_DESIGN.md 10.3; Dave 5 Nov 2026 "we need a sitting on a chair action", his picture: the body stood inside the chair). The player sits ON it in
+# the chair pose (dynasty_body.gd "sit_chair"), hips over the seat, feet on the ground in front, and is held there until a movement key stands them up in front of it.
+# structures.json says how: sit_face "front" (a chair: facing its -Z, the back at +Z), "sides" (a bench: facing the side the player came from, at the nearest of
+# sit_spots_x) or "free" (a log seat or stool: facing the way the player already faces).
+const SEAT_HIPS_BACK_M := 0.05      # a chair's hips this far behind the middle of the seat, toward its back
+const SEAT_STEP_OFF_M := 0.7        # standing up puts the player this far in front of the seat, clear of its solid (a chair is 0.5 m deep, the capsule 0.33 m wide)
+
+var _seat: Dictionary = {}          # while on a seat: {"at": the body position held, "front": the way the sitter faces}
+
+
+func _sit_on_seat(seat_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
+	if swimming or flying:
+		return
+
+	var turn: Basis = Basis(Vector3.UP, deg_to_rad(yaw_deg))
+	var local: Vector3 = turn.inverse() * (body.global_position - seat_pos)
+	var face: String = str(def.get("sit_face", "front"))
+	var spot: Vector3 = Vector3.ZERO
+	var best: float = INF
+
+	for x in def.get("sit_spots_x", [0.0]):   # the spot along the seat nearest the player (a bench has three)
+		if absf(float(x) - local.x) < best:
+			best = absf(float(x) - local.x)
+			spot.x = float(x)
+
+	var front: Vector3
+
+	if face == "free":
+		front = -body.global_transform.basis.z
+		front.y = 0.0
+		front = front.normalized() if front.length() > 0.01 else Vector3.FORWARD
+	else:
+		var front_local: Vector3 = Vector3(0.0, 0.0, 1.0 if face == "sides" and local.z > 0.0 else -1.0)
+
+		if face == "front":
+			spot.z = -front_local.z * SEAT_HIPS_BACK_M
+
+		front = turn * front_local
+
+	var at: Vector3 = seat_pos + turn * spot
+	at.y = seat_pos.y + float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
+	body.velocity = Vector3.ZERO
+	body.global_position = at
+	body.rotation.y = atan2(-front.x, -front.z)
+	_set_stance(StanceScript.SIT)
+
+	if stance.stance == StanceScript.SIT:
+		_seat = {"at": at, "front": front}
+		stance.seated = true
+
+
+# Holds a seated player on the seat (true while seated: no walking, no gravity, no sliding out of the seat's solid). A stance the server changed ends it.
+func _hold_seat() -> bool:
+	if _seat.is_empty():
+		return false
+
+	if stance.stance != StanceScript.SIT:
+		_leave_seat()
+		return false
+
+	body.velocity = Vector3.ZERO
+	body.global_position = _seat["at"]
+	return true
+
+
+# Off the seat: stepped forward in front of it, clear of its solid.
+func _leave_seat() -> void:
+	body.global_position = _seat["at"] + (_seat["front"] as Vector3) * SEAT_STEP_OFF_M
+	body.velocity = Vector3.ZERO
+	_seat = {}
+	stance.seated = false
 
 
 # E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down.
@@ -3922,6 +4009,8 @@ func _move_player(delta: float) -> void:
 	elif flying:
 		direction.y += float(KeyBindings.held("jump")) - float(KeyBindings.held("down"))
 		body.global_position += direction * FLY_SPEED * fast * delta
+	elif _hold_seat():
+		pass
 	elif _climb_ladder(delta, strain_cap):
 		pass
 	else:
@@ -4245,8 +4334,27 @@ func _log_frame(delta: float) -> void:
 	_frame_log = {"t": 0.0, "n": 0, "sum": 0.0, "worst": 0.0, "slow": 0}
 
 
+# The frames right after the welcome (Low-quality lag runs, 5 Nov: stuck 0.8 to 2.2 s there with no probe finishing): length, script
+# and physics time of each, printed once as one line after AFTER_WELCOME_FRAMES frames.
+const AFTER_WELCOME_FRAMES := 4
+var _after_welcome: Variant = null   # null: not timing; an Array of "frame ms (script, physics)" texts while timing
+
+
+func _note_after_welcome(delta: float) -> void:
+	if _after_welcome == null:
+		return
+
+	(_after_welcome as Array).append("%.0f ms (script %.0f, physics %.0f, draw calls %d)" % [delta * 1000.0, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+		Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
+
+	if (_after_welcome as Array).size() >= AFTER_WELCOME_FRAMES:
+		print("Terrain client: frames after the welcome: " + ", ".join(PackedStringArray(_after_welcome as Array)))
+		_after_welcome = null
+
+
 func _process(delta: float) -> void:
 	FreezeWatchScript.beat()
+	_note_after_welcome(delta)
 	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)
