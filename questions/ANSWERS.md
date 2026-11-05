@@ -2254,3 +2254,7 @@ Answered: 2026-11-05 12:00 UTC
 Answer: Cut it to 80 leaves (recommended)
 Answered: 2026-11-05 12:01 UTC
 
+## jamie-animal-meshes | Animals are code shapes that shaders can't improve. Model real animal meshes?
+Answer: Yes, but later at rank 6 (recommended)
+Answered: 2026-11-05 12:01 UTC
+
