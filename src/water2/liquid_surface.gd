@@ -22,6 +22,11 @@ uniform float point_grid = 0.0;                            // 1: texels sit on t
 uniform vec4 hole = vec4(0.0);                             // world x, z, size x, size z of the live window: a chunk sheet steps aside there
 uniform float hole_inset = 8.0;                           // no longer used: chunk sheets crossfade over blend_m (BUG-006)
 uniform float cell_m = 8.0;                                // metres between texels
+// Dave 4 Nov 2026 ("the game knows there is water there ... but its not showing water"): inside the live window a chunk sheet gave way to the live
+// sheet everywhere, so where the sim had run a baked river dry (a ledge damming it) neither drew while the chunk grid, the prompt and the steps still
+// said water. A chunk sheet now reads the live window's texture and gives way only as much as the live sheet itself draws there.
+uniform sampler2D live : filter_linear, repeat_disable;      // the live window's texture (chunk sheets only)
+uniform float has_live = 0.0;                              // 1 when `live` is set
 // Dave's QA list 3 Nov 2026 (BUG-006, "a sharp, straight-line boundary separates calm and active water"): the live window and the chunk sheets
 // around it crossfade over a wide, wandering band instead of switching one cell in. Both sides use live_blend(), so they always add up.
 uniform float blend_m = 24.0;                              // the crossfade band, metres in from the window's edge
@@ -99,6 +104,15 @@ float live_blend(float d_m, vec2 world) {
 	return smoothstep(0.0, blend_m, d_m - n * blend_wander_m);
 }
 
+// How strongly the live sheet draws a texel's water (its discard and its shore fade in fragment below), so a chunk sheet takes the rest.
+float live_draws(vec4 t) {
+	if (t.a < wet_min(t)) {
+		return 0.0;
+	}
+
+	return max(smoothstep(0.0, edge_m, t.a), smoothstep(0.6, 2.0, length(t.gb)) * smoothstep(0.0005, 0.004, t.a));
+}
+
 // Small waves: two octaves, as a height for the normal.
 float waves(vec2 p) {
 	return noise(p) * 0.65 + noise(p * 2.3 + 7.1) * 0.35;
@@ -121,7 +135,7 @@ void fragment() {
 		float d_in = min(min(inside.x, inside.y), min(hole.z - inside.x, hole.w - inside.y));
 
 		if (d_in > 0.0) {
-			chunk_share = 1.0 - live_blend(d_in, world);
+			chunk_share = 1.0 - live_blend(d_in, world) * (has_live > 0.5 ? live_draws(textureLod(live, inside / hole.zw, 0.0)) : 1.0);
 
 			if (chunk_share < 0.002) {
 				discard;
@@ -427,6 +441,12 @@ func show_points(im: Image, corner: Vector2, spacing: float) -> void:
 func set_hole(corner: Vector2, size: Vector2, inset: float) -> void:
 	_material.set_shader_parameter("hole", Vector4(corner.x, corner.y, size.x, size.y))
 	_material.set_shader_parameter("hole_inset", inset)
+
+
+# A chunk sheet: the live window's texture (the one the live sheet draws), so it gives way only where the live water is drawn. null: everywhere in the hole.
+func set_live(texture: Texture2D) -> void:
+	_material.set_shader_parameter("live", texture)
+	_material.set_shader_parameter("has_live", 1.0 if texture != null else 0.0)
 
 
 func _set_plane(size: Vector2) -> void:

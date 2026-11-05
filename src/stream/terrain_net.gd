@@ -25,7 +25,7 @@ extends Node
 #   server -> client  flora_stripped   plants of a chunk that are bare this season (berries picked): sent with a flora chunk and when one is picked
 #   server -> client  cave_streams     a tile's spring cave streams and pools (TileTerrainData.cave_streams), once per tile with the first water asked there
 #   server -> client  cave_dens        a tile's cave dens (floor points), with its cave streams
-#   server -> client  cave_dressing    a tile's cave bone piles and stalagmites/stalactites, with its cave dens (protocol 92)
+#   server -> client  cave_dressing    a tile's cave bone piles and stalagmites/stalactites, with its cave dens (protocol 93)
 #   client -> server  hello             the player's key, once after the welcome (inventory belongs to the key)
 #   client -> server  inventory_action  move, drop, pick up or (admin) give: the server checks everything
 #   server -> client  inventory_full    the whole inventory, at hello only
@@ -35,7 +35,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 92   # 92 (4 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 93   # 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -105,6 +105,7 @@ signal died_received(cause: String, spawn: Vector3)
 signal final_death_received(cause: String)
 signal hit_number_received(at: Vector3, amount: int)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
+signal training_received(percent: int)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
@@ -164,6 +165,9 @@ const ACT_HOE_GRADE_POINT := 42   # a = held slot, b = 0 sets point A, 1 sets po
 const ACT_HOE_GRADE := 43    # at = the ground point under the crosshair: one hoe stroke brings the ground within 1.5 m toward the straight ramp from A to B (0.25 m at most, no items)
 const ACT_SHOOT := 49          # a = pack slot of the bow, b = draw time in ms (clamped by the server), at = aim direction: one arrow from the first arrow item in the pack (data/items/bow.json; protocol 79, taken at merge)
 const ACT_REPAIR_STRUCT := 59   # a = the placed piece's world item id: with a hammer, repair it from materials on the ground nearby, in containers within reach or in the pack (building_wear.json)
+const ACT_DOUSE := 60          # a = hotbar slot of a burning torch in hand, b = 0 under water, 1 rain: it becomes its doused item (flame_rules.gd; Dave 4 Nov 2026)
+const ACT_RELIGHT := 61        # a = world id of a burning fire in reach: the first doused torch in the pack is lit again from it
+const ACT_PLACE_TORCH := 62    # a = hotbar slot of a torch in hand, b = 0 the ground, 1 a wall, count = yaw in degrees, at = the aimed point: stuck in the ground or on the wall (Dave 4 Nov 2026)
 const ACT_PLACE_BLUEPRINT := 48   # a = blueprint number (data/items/blueprints.json), b = lift steps, count = yaw degrees, at = the spot: placed from the hammer, the materials taken from the pack (no kit item)
 const ACT_NET := 47          # a = pack slot of the shore net, b = 0 start (left button down), 1 cancel (let go), at = the water point in front: hold about 20 s at the water's edge, then 1 to 3 small fish (fishing.json "net"; no protocol change)
 const ACT_ADMIN_ENERGY := 56   # admin only, tests: count = the energy (0 to 100) this character is set to (no protocol change)
@@ -473,6 +477,12 @@ func strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int) -> void:
 	vitals_received.emit(hunger, health, weight_dkg, thirst, luck, fitness)
+
+
+# Today's training (protocol 93): the hard work gathered today, in percent of a fitness point; at game midnight it turns into fitness.
+@rpc("authority", "call_remote", "reliable")
+func training(percent: int) -> void:
+	training_received.emit(percent)
 
 
 # The character died (protocol 34): what killed them, and where they come back. The server has already moved the pack onto

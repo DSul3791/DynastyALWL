@@ -1,14 +1,30 @@
-# Handoff: Jason "Champ" (audio), 1 Nov 2026
+# Handoff: Jason "Champ" (audio), 5 Nov 2026
 
-Scope: `SCOPE_JASON.md`. Backlog with owner, next step and reason: `JASON_NEXT_TASKS.md`. Sound map and hook audit: `docs/SOUND_MAP.md`. Findings record: `SOUND_AUDIT.md` (repo root). Branch `claude/jason-audio-8366e4`.
+Scope: `SCOPE_JASON.md`. Sound map and hook audit: `docs/SOUND_MAP.md`. Findings record: `SOUND_AUDIT.md` (repo root). Live backlog: `/mnt/project-files/backlog/jason.md` and `/mnt/project-files/BACKLOG.md` (Jamie assigns jobs). One branch per task, `claude/jason-YYYYMMDD-*`, cut from main.
 
-## State
-- All ten old Kathleen sound branches and the Steve sound branches are in the daily (checked with `git cherry`); the place sounds (stone, brick, thatch) and the shovel scoop (soil, stone) were ported from `kathleen-materials` and `kathleen-spades` (commits `583e1312`, `9f9db474`). `_fill_here()` in `held_item.gd` now plays the scoop.
-- `test_slot_sounds`, `test_sound_log`, `test_inner_voice_profile`, `test_inner_voice_settings` all PASS on the voxel build `godot.windows.editor.x86_64.exe` at `d4f0c350` (1 Nov; a fresh worktree needs one `--import` first, or the sound-log test fails on missing imports).
-- Nothing has been heard by anyone: every sound claim in these documents is read from code.
+## Rules in force
+- No cloud testing (Dave, 5 Nov): no Godot runs, renders or `tools/run_tests.sh` in the cloud. Only static checks (`merge_check.py`). Tyler runs tests on Dave's PC while Dave is not playing, and merges.
+- Work goes top down by Dave's priority order in BACKLOG.md; when idle, take the next open job at the highest rank. Make up nothing new.
 
-## Remaining hooks (full table in JASON_NEXT_TASKS.md)
-Sleep and wake, hurt/death/respawn, bow and arrow, fishing, animal hit/death/eating, clothing, craft action, level-up/goal/hint: the client has no event to hang a sound on yet, so each waits for its owner (Steve, MikeW, Sonny) to expose one; then I place the call. Stone, brick and thatch place sounds wait for Sal's `sound` keys in `structures.json`.
+## Merged since 1 Nov
+- #300 skill-up sound: a soft wooden tock, at most once every 20 s.
+- #314 weather sound bugs (BUG-002, 003, 004): no birds in rain, no far fish plops, one fire loop.
+- #327 BUG-005: one weather gate for every bird and insect sound.
+- #337 lag: settled water is re-asked less and less (logic in `src/client/water_reask.gd`).
+- #343 lag: settled water is published again only when a level moves 1 cm (`levels_moved` in `water_hub2.gd`, test `test_water_notify`).
+
+## Open PRs (wait on Tyler's PC run and Dave's play)
+- #358 night wind bed made quieter (`BED_TRIM_DB` bed_night -32 dB) and the stomach growl removed (oggs in `proposed_removals/`).
+- #366 settled chunk water stays drawn inside the live window where the live sim has drained it.
+- #370 water debug keys moved to Ctrl+Shift+F7 / F8. Ctrl+Shift+W was fly down + faster + forward, so flying hid all water.
+- #374 grass build spike (rank 2): grass cell build resumes per row of ground points at the 5 ms deadline. Agreed with MikeW. Not yet run in Godot.
+
+## Waiting on Dave
+- BUG-001 storm sound: Dave to name the sound he heard ("storm_growl" is not in the repo).
+- Dave's two footstep recordings clip at +0.2 dB: re-export, or trim with declip.py.
+
+## Parked (new sound, after "no new stuff" lifts)
+Nest sound cue with MikeW (hook `net.nests_received`, #335); cave den sounds after animal spawns; a Pixabay clip to replace the stand-in fish_land. Older hooks still without a client event (sleep, hurt, bow, fishing, animals, clothing, craft, level-up) are listed in `JASON_NEXT_TASKS.md`.
 
 ## Risks
-Licence record has TODOs (Pixabay page URLs; no rows for the voice files). The tree-wind hiss in clear weather is unconfirmed. The QA page cannot play audio yet.
+Licence record has TODOs (Pixabay page URLs; no rows for the voice files). Every sound claim in these docs is read from code; only Dave's play confirms how it sounds.

@@ -1,6 +1,6 @@
 # Dave's play-test: one page (refreshed 3 Nov early, on main; pull the current head of `main`)
 
-The long version with every row and note is `MORNING_PLAYTEST_CHECKLIST_FULL.md`. Tick as you go; anything wrong goes on a QA page card (the Comments box), or in chat. Numbers re-checked against data on main, 3 Nov.
+The old long version (31 Oct build) is archived at `docs/archive/2026-10/MORNING_PLAYTEST_CHECKLIST_FULL.md`; this page is the one to use. Tick as you go; anything wrong goes on a QA page card (the Comments box), or in chat. Numbers re-checked against data on main, 3 Nov.
 
 ## Before you start
 1. **Pull** `main` (there is no daily branch any more, Dave 2 Nov) and open the project in Godot.

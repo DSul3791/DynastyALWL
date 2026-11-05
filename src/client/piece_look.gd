@@ -27,8 +27,89 @@ static var _logs: StandardMaterial3D          # whole logs stacked, bark on
 static var _daub: StandardMaterial3D          # clay plaster over woven sticks
 
 
+# The pictures of the building materials (_materials, _more_materials) and the trodden path are drawn pixel by pixel in script: about 170 ms on the main thread at
+# the first building piece or hoe stroke (Steve, lag run 4 Nov 2026). prewarm() draws all of them on a worker while the world loads (inventory_view prewarm), so the
+# main thread only makes the small textures and materials. A picture asked for before then, or not in PREWARM, is drawn where it is asked for, as before.
+const PREWARM := [
+	["board", [WOOD, 8, 11, true]], ["board", [WOOD_DARK, 2, 23, false]], ["board", [Color(0.36, 0.25, 0.15), 10, 37, false]], ["board", [Color(0.42, 0.29, 0.17), 1, 71, false]],
+	["blocks", [Color(0.33, 0.25, 0.17), 1, 41, 0.35]], ["blocks", [Color(0.5, 0.49, 0.46), 4, 53, 0.22]], ["blocks", [Color(0.07, 0.065, 0.06), 1, 61, 0.3]],
+	["blocks", [Color(0.58, 0.36, 0.24), 1, 91, 0.3]], ["blocks", [Color(0.1, 0.09, 0.085), 1, 97, 0.2]],
+	["blocks", [Color(0.62, 0.3, 0.2), 12, 101, 0.28]], ["blocks", [Color(0.3, 0.32, 0.35), 6, 103, 0.3]], ["blocks", [Color(0.7, 0.36, 0.2), 8, 107, 0.25]],
+	["blocks", [Color(0.52, 0.5, 0.46), 2, 109, 0.3]], ["blocks", [Color(0.62, 0.6, 0.55), 1, 113, 0.2]],
+	["masonry", [Color(0.52, 0.5, 0.46), Color(0.45, 0.38, 0.28), 26, 13, 61, 0.14]], ["masonry", [Color(0.62, 0.3, 0.2), Color(0.72, 0.7, 0.66), 28, 10, 67, 0.12]],
+	["organic", ["logs", Color(0.4, 0.28, 0.16), 73]], ["organic", ["daub", Color(0.74, 0.64, 0.48), 79]],
+	["straw", [Color(0.74, 0.6, 0.3), 83]], ["trod", []],
+]
+static var _drawn: Dictionary = {}       # var_to_str([kind, args]) -> Image, from the worker
+static var _draw_task: int = -1
+static var _worker_drawn: Dictionary = {}
+static var drawn_here: int = 0           # pictures drawn on the calling thread (a test checks this stays 0 after prewarm)
+
+
+static func prewarm() -> void:
+	if _draw_task >= 0 or not _drawn.is_empty():
+		return
+
+	_draw_task = WorkerThreadPool.add_task(func() -> void:
+		var out: Dictionary = {}
+
+		for spec in PREWARM:
+			out[var_to_str(spec)] = _picture(str(spec[0]), spec[1])
+
+		_worker_drawn = out, false, "building pictures")
+
+
+# Waits for the prewarm worker and keeps its pictures: the inventory view calls it when it is freed, so the task never outlives the program (a pool task still running
+# at exit aborts the engine, exit code 134 in the gates).
+static func finish_prewarm() -> void:
+	if _draw_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_draw_task)
+		_draw_task = -1
+		_drawn = _worker_drawn
+		_worker_drawn = {}
+
+
+static func prewarm_done() -> bool:
+	return _draw_task < 0 or WorkerThreadPool.is_task_completed(_draw_task)
+
+
+static func _draw(kind: String, args: Array) -> Image:
+	finish_prewarm()     # started at the welcome, done long before the first piece; waits only if one is drawn in the first second
+
+	var key: String = var_to_str([kind, args])
+
+	if _drawn.has(key):
+		return _drawn[key]
+
+	drawn_here += 1
+	return _picture(kind, args)
+
+
+# Plain Image, noise and random number work only (no node, resource cache or server), so it runs on a worker.
+static func _picture(kind: String, a: Array) -> Image:
+	match kind:
+		"board":
+			return _board_image(a[0], a[1], a[2], a[3])
+		"blocks":
+			return _blocks_image(a[0], a[1], a[2], a[3])
+		"masonry":
+			return _masonry_image(a[0], a[1], a[2], a[3], a[4], a[5])
+		"organic":
+			return _organic_image(a[0], a[1], a[2])
+		"straw":
+			return _straw_image(a[0], a[1])
+		"trod":
+			return _trod_pixels()
+
+	return null
+
+
 # Boards from a little noise, drawn once: `boards` boards across, dark seams between them, long grain along y, a per-board tint, a few knots.
 static func _board_texture(base: Color, boards: int, seed_value: int, knots: bool) -> ImageTexture:
+	return ImageTexture.create_from_image(_draw("board", [base, boards, seed_value, knots]))
+
+
+static func _board_image(base: Color, boards: int, seed_value: int, knots: bool) -> Image:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var grain: FastNoiseLite = FastNoiseLite.new()
@@ -63,11 +144,20 @@ static func _board_texture(base: Color, boards: int, seed_value: int, knots: boo
 						image.set_pixel(kx + dx, ky + dy, Color(base.r * 0.4, base.g * 0.4, base.b * 0.4))
 
 	image.generate_mipmaps()
-	return ImageTexture.create_from_image(image)
+	return image
 
 
 # Mottled stone or earth: `blocks` rows of blocks with dark joints (1 = none), noise colour variation of `mottle`.
 static func _blocks_material(base: Color, blocks: int, seed_value: int, mottle: float) -> StandardMaterial3D:
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.albedo_texture = ImageTexture.create_from_image(_draw("blocks", [base, blocks, seed_value, mottle]))
+	m.roughness = 1.0
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(0.5, 0.5, 0.5)
+	return m
+
+
+static func _blocks_image(base: Color, blocks: int, seed_value: int, mottle: float) -> Image:
 	var noise: FastNoiseLite = FastNoiseLite.new()
 	noise.seed = seed_value
 	noise.frequency = 0.08
@@ -89,16 +179,20 @@ static func _blocks_material(base: Color, blocks: int, seed_value: int, mottle: 
 			image.set_pixel(x, y, Color(base.r * shade, base.g * shade, base.b * shade))
 
 	image.generate_mipmaps()
-	var m: StandardMaterial3D = StandardMaterial3D.new()
-	m.albedo_texture = ImageTexture.create_from_image(image)
-	m.roughness = 1.0
-	m.uv1_triplanar = true
-	m.uv1_scale = Vector3(0.5, 0.5, 0.5)
-	return m
+	return image
 
 
 # Courses of cut units with mortar joints, drawn once. `unit_w` by `row_h` pixels per unit (joints included), staggered by half a unit each row.
 static func _masonry_material(base: Color, mortar: Color, unit_w: int, row_h: int, seed_value: int, mottle: float, scale: float) -> StandardMaterial3D:
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.albedo_texture = ImageTexture.create_from_image(_draw("masonry", [base, mortar, unit_w, row_h, seed_value, mottle]))
+	m.roughness = 1.0
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(scale, scale, scale)
+	return m
+
+
+static func _masonry_image(base: Color, mortar: Color, unit_w: int, row_h: int, seed_value: int, mottle: float) -> Image:
 	var noise: FastNoiseLite = FastNoiseLite.new()
 	noise.seed = seed_value
 	noise.frequency = 0.12
@@ -127,16 +221,20 @@ static func _masonry_material(base: Color, mortar: Color, unit_w: int, row_h: in
 			image.set_pixel(x, y, colour)
 
 	image.generate_mipmaps()
+	return image
+
+
+# Straw, logs or plaster by `style`: thatch = long strands in bound rows, logs = horizontal rounds shaded like cylinders, daub = mottled plaster with sticks.
+static func _organic_material(style: String, base: Color, seed_value: int, scale: float) -> StandardMaterial3D:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
-	m.albedo_texture = ImageTexture.create_from_image(image)
+	m.albedo_texture = ImageTexture.create_from_image(_draw("organic", [style, base, seed_value]))
 	m.roughness = 1.0
 	m.uv1_triplanar = true
 	m.uv1_scale = Vector3(scale, scale, scale)
 	return m
 
 
-# Straw, logs or plaster by `style`: thatch = long strands in bound rows, logs = horizontal rounds shaded like cylinders, daub = mottled plaster with sticks.
-static func _organic_material(style: String, base: Color, seed_value: int, scale: float) -> StandardMaterial3D:
+static func _organic_image(style: String, base: Color, seed_value: int) -> Image:
 	var noise: FastNoiseLite = FastNoiseLite.new()
 	noise.seed = seed_value
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -169,12 +267,7 @@ static func _organic_material(style: String, base: Color, seed_value: int, scale
 			image.set_pixel(x, y, Color(base.r * shade, base.g * shade, base.b * shade))
 
 	image.generate_mipmaps()
-	var m: StandardMaterial3D = StandardMaterial3D.new()
-	m.albedo_texture = ImageTexture.create_from_image(image)
-	m.roughness = 1.0
-	m.uv1_triplanar = true
-	m.uv1_scale = Vector3(scale, scale, scale)
-	return m
+	return image
 
 
 static func _textured(base: Color, boards: int, seed_value: int, knots: bool) -> StandardMaterial3D:
@@ -188,6 +281,15 @@ static func _textured(base: Color, boards: int, seed_value: int, knots: bool) ->
 
 # Straw (Mike's picture 24 Oct: the thatch read as golden planks): fine uneven strands running across the piece, each its own shade, a few dark gaps and bright ends.
 static func _straw(base: Color, seed_value: int) -> StandardMaterial3D:
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.albedo_texture = ImageTexture.create_from_image(_draw("straw", [base, seed_value]))
+	m.roughness = 1.0
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(1.2, 1.2, 1.2)
+	return m
+
+
+static func _straw_image(base: Color, seed_value: int) -> Image:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var image: Image = Image.create(TEX, TEX, true, Image.FORMAT_RGB8)
@@ -209,12 +311,7 @@ static func _straw(base: Color, seed_value: int) -> StandardMaterial3D:
 			image.set_pixel(x, y, Color(clampf(base.r * shade, 0.0, 1.0), clampf(base.g * shade, 0.0, 1.0), clampf(base.b * shade, 0.0, 1.0)))
 
 	image.generate_mipmaps()
-	var m: StandardMaterial3D = StandardMaterial3D.new()
-	m.albedo_texture = ImageTexture.create_from_image(image)
-	m.roughness = 1.0
-	m.uv1_triplanar = true
-	m.uv1_scale = Vector3(1.2, 1.2, 1.2)
-	return m
+	return image
 
 
 static func _materials() -> void:
@@ -463,9 +560,13 @@ static var _trod_texture: ImageTexture
 
 
 static func _trod_image() -> ImageTexture:
-	if _trod_texture != null:
-		return _trod_texture
+	if _trod_texture == null:
+		_trod_texture = ImageTexture.create_from_image(_draw("trod", []))
 
+	return _trod_texture
+
+
+static func _trod_pixels() -> Image:
 	var image: Image = Image.create(TROD_PX, TROD_PX, false, Image.FORMAT_RGBA8)
 	var noise: FastNoiseLite = FastNoiseLite.new()
 	noise.seed = 77
@@ -507,8 +608,7 @@ static func _trod_image() -> ImageTexture:
 					image.set_pixel(x, y, Color(tone, tone * 0.96, tone * 0.88, under.a))
 
 	image.generate_mipmaps()
-	_trod_texture = ImageTexture.create_from_image(image)
-	return _trod_texture
+	return image
 
 
 static func trodden_path() -> Node3D:
@@ -1455,6 +1555,40 @@ static func wall_torch(lit: bool = false) -> Node3D:
 		var flame: MeshInstance3D = _cyl(root, 0.0, 0.3, Vector3(0.0, 2.38, 0.35), _tone_mat(Color(1.0, 0.65, 0.15)), 6, 0.06)
 		flame.rotation = Vector3(0.2, 0.0, 0.0)
 		flame.scale = Vector3(1.0, 1.0, 1.0)
+
+	return root
+
+
+# A torch placed from the hand on a wall (Dave, 4 Nov 2026): the wall torch's backplate, arm and torch with the backplate's middle at the origin, where the player aimed
+# (the wall is at z = 0, the torch leans out toward +z).
+static func torch_sconce(lit: bool = false) -> Node3D:
+	var root: Node3D = wall_torch(lit)
+
+	for child in root.get_children():
+		(child as Node3D).position.y -= 1.7
+
+	return root
+
+
+# A torch pushed into the ground from the hand (Dave, 4 Nov 2026): the held torch's stick, soot-dark at the top, a bound rag head about 0.8 m up, leaning a little.
+static func standing_torch(lit: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var lean: Vector3 = Vector3(0.08, 0.0, 0.0)
+	var stick: MeshInstance3D = _cyl(root, 0.022, 0.85, Vector3(0.0, 0.33, 0.0), _tone_mat(Color(0.42, 0.3, 0.17)), 7, 0.018)
+	stick.rotation = lean
+	var soot: MeshInstance3D = _cyl(root, 0.024, 0.18, Vector3(0.0, 0.66, 0.026), _tone_mat(Color(0.24, 0.17, 0.1)), 7, 0.02)
+	soot.rotation = lean
+	var head: MeshInstance3D = _cyl(root, 0.05, 0.15, Vector3(0.0, 0.8, 0.064), _tone_mat(Color(0.26, 0.17, 0.1)), 7, 0.04)
+	head.rotation = lean
+	var band: MeshInstance3D = _cyl(root, 0.052, 0.014, Vector3(0.0, 0.75, 0.06), _tone_mat(Color(0.34, 0.26, 0.17)), 7, 0.052)
+	band.rotation = lean
+	var char_top: MeshInstance3D = _cyl(root, 0.052, 0.04, Vector3(0.0, 0.87, 0.07), _tone_mat(Color(0.16, 0.1, 0.065)), 7, 0.05)
+	char_top.rotation = lean
+
+	if lit:
+		var flame: MeshInstance3D = _cyl(root, 0.0, 0.3, Vector3(0.0, 1.03, 0.08), _tone_mat(Color(1.0, 0.65, 0.15)), 6, 0.06)
+		flame.rotation = lean
 
 	return root
 
