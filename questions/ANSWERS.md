@@ -2298,3 +2298,7 @@ Answered: 2026-11-05 12:05 UTC
 Answer: Jason trims them with declip.py (recommended)
 Answered: 2026-11-05 12:06 UTC
 
+## jamie-clear-tile-340 | Thatch floor, floor section and foundation section still clear a 5 m circle of plants. Make them clear only their own tile, like log, stone and brick floors (#340)?
+Answer: No, keep the 5 m circle
+Answered: 2026-11-05 12:26 UTC
+
