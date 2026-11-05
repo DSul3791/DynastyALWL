@@ -188,7 +188,7 @@ const GREENS_SHADER := """
 shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform float sway = 0.006;
-uniform float gain = 0.72;   # 0.85 until 5 Nov 2026: in the PC meadow noon shot (spawn meadow, sun 1.0) the tall reeds read near white and the tufts a shade brighter than the meadow grass round them
+uniform float gain = 0.72;   // 0.85 until 5 Nov 2026: in the PC meadow noon shot (spawn meadow, sun 1.0) the tall reeds read near white and the tufts a shade brighter than the meadow grass round them
 varying vec3 lp;
 
 float h3(vec3 p) {
@@ -219,7 +219,7 @@ void fragment() {
 	vec3 c = COLOR.rgb * gain * (0.9 + 0.18 * streak);
 	c *= mix(0.78, 1.0, smoothstep(0.0, 0.25, lp.y));         // a little shade at the foot, among the other stems
 	ALBEDO = c;
-	BACKLIGHT = c * 0.2;   # 0.3 until 5 Nov 2026: with the noon sun behind them the pale reeds glowed white
+	BACKLIGHT = c * 0.2;   // 0.3 until 5 Nov 2026: with the noon sun behind them the pale reeds glowed white
 	ROUGHNESS = 0.9;
 }
 """
