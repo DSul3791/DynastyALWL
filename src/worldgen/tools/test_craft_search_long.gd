@@ -39,9 +39,9 @@ func _init() -> void:
 	# Whitespace other than a space (pasted text): same as spaces.
 	var axe: Dictionary = recipes.recipe(2)
 	var make_word: String = table.name_of(int(axe["number"])).to_lower()
-	var need_word: String = table.id_of(int(axe["needs"][0][0])).replace("_", " ")
-	check(RecipeFilter.shown(axe, "", make_word + "\t" + need_word, table), "a tab between words is a separator")
-	check(RecipeFilter.shown(axe, "", make_word + "\n" + need_word, table), "a new line between words is a separator")
+	var second_word: String = "axe"   # the two words come from the name, so both match
+	check(RecipeFilter.shown(axe, "", make_word + "\t" + second_word, table), "a tab between words is a separator")
+	check(RecipeFilter.shown(axe, "", make_word + "\n" + second_word, table), "a new line between words is a separator")
 	check(RecipeFilter.shown(axe, "", "\t " + make_word + " \n", table), "tabs and new lines around the entry are trimmed")
 
 	# Odd entries: long, many words, symbols, non-Latin. None shown, none crash.
