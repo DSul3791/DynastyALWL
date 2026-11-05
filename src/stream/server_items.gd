@@ -3318,8 +3318,10 @@ func _fires(delta: float) -> void:
 			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
 				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
 		elif raining and not fire["covered"]:
-			if float(fire.get("rain_grace", 0.0)) > 0.0:   # lit a moment ago in the rain: it burns until the grace is up
-				fire["rain_grace"] = float(fire["rain_grace"]) - delta
+			var grace: float = float(fire.get("rain_grace", 0.0)) - delta   # lit a moment ago in the rain: it burns until the grace is up
+
+			if grace > 0.0:
+				fire["rain_grace"] = grace
 			else:
 				fire.erase("rain_grace")
 				fire["state"] = 9
