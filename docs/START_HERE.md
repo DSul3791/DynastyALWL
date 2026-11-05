@@ -1,4 +1,4 @@
-# Start here (Jamie, updated 2 Nov 2026)
+# Start here (Jamie, updated 5 Nov 2026)
 
 One page for a new agent or a new thread of Dave's. Everything else is found through `docs/DOC_MAP.md`.
 
@@ -23,6 +23,9 @@ One page for a new agent or a new thread of Dave's. Everything else is found thr
 - NEVER merge to `main` until Dave has play-tested and says go. There is NO daily branch (Dave, 2 Nov 2026): it overcomplicated everything. Each agent works on its own NEW branch each day, named `claude/<agent>-YYYYMMDD`, cut from `origin/main`. The moderator merges agents' branches into main only on Dave's go. Never delete the `qa` branch.
 - Daily rhythm (Dave, 2 Nov 2026): (1) start with an efficiency audit of yesterday's work and decide what to improve in workflow; (2) the moderator hands each agent its first 3 tasks; (3) each agent makes its new branch and carries on; (4) when the 3 are done or blocked, the agent finds 3 more in its own purview and continues, until told otherwise.
 - Blocked or stuck (Dave, 2 Nov 2026): note it in your handoff, put a card on the QA page (branch `qa`, `questions/QUESTIONS.md`), and move straight on to your next job. No next job: find three more that improve the game in your role.
+- Priority order (Dave approved 4 Nov 2026): 1 terrain and water, 2 freezes and lag, 3 testing, 4 first-hour bugs, 5 body and movement feel, 6 flora and fauna, 7 Art Direction pass, 8 audio, 9 tuning, 10 guides and docs, 11 new ideas (parked). Bugs Dave finds in play go right after terrain. The ranked list with reasons and the live staffing table are at the top of `/mnt/project-files/BACKLOG.md` (owner: Jamie).
+- Staffing (Dave, 4 Nov 2026): work is staffed top-down by priority, not by lane. One agent per job; when yours is done or blocked, take the next open job at the highest rank. Leftovers go to `/mnt/project-files/backlog/<name>.md`.
+- NO cloud testing (Dave, 5 Nov 2026): no cloud renders, headless runs or test runs; they use up his tokens. The only testing allowed is on Dave's PC, and only while he is not play testing.
 - Max 3 heavy Godot jobs at once on this PC: run them through `tools/godot_slot.sh` (`run_tests.sh`/`run_one_test.sh` do it themselves). Never start a Godot run without a timeout (hung headless scripts have held all slots); never kill Godot processes blindly (one may be Dave's editor).
 - Nothing is deleted: unused code goes to `proposed_removals/`, documents to `docs/archive/YYYY-MM/` (`git mv`).
 - Dave decides design; reversible choices are decided and logged in `MODERATOR_QA_LOG.md`. Questions for Dave go on the QA page (branch `qa`, `questions/QUESTIONS.md`): pickable answers, one item per card. Never wait for Dave: take the next job.
