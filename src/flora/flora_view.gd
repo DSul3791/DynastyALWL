@@ -2400,12 +2400,22 @@ func apply_built(budget_usec: int = 3000) -> void:
 			_jobs.pop_front()
 			continue
 
-		if _apply_step(job):
+		# Timed apart too (5 Nov 2026: one "place drawings" of 1.1-1.4 s in the gate's flora walk, with nothing else slow).
+		var step_name: String = "flora: place colliders" if int(job["shape"]) < (job["plan"]["shapes"] as Array).size() else "flora: place a draw"
+		var t_step: int = Probe.start()
+		var done: bool = _apply_step(job)
+		Probe.stop(step_name, t_step)
+
+		if done:
+			t_step = Probe.start()
 			_clear_node(entry)
+			Probe.stop("flora: drop old drawing", t_step)
 			entry["node"] = job["node"]
 
 			if not bool(job["keep"]):
+				t_step = Probe.start()
 				_clear_colliders(entry)
+				Probe.stop("flora: drop old colliders", t_step)
 				entry["cnode"] = job["cnode"]
 				entry["shapes_key"] = int(job["plan"].get("shapes_key", 0))
 
