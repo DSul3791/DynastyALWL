@@ -2286,3 +2286,7 @@ Answered: 2026-11-05 12:05 UTC
 Answer: Leave a cold fire that stays and can be relit (Dino's idea, recommended)
 Answered: 2026-11-05 12:05 UTC
 
+## jamie-raw-meat | Raw meat sickness feels harsh. Make it milder?
+Answer: Yes, milder (recommended)
+Answered: 2026-11-05 12:05 UTC
+
