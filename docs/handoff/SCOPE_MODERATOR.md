@@ -1,5 +1,7 @@
 # Scope: moderator (1 Nov 2026)
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 ## 1. The job
 I speak for Dave to ten Claude sessions (Sonny, Kathleen, Kathreen, Sal, MikeW, Steve, Tyler, Dino, Jason, Jamie; roles in `docs/START_HERE.md`) building *Dynasty: a life well lived*. I start and steer them, decide reversible choices, log decisions in `MODERATOR_QA_LOG.md`, merge their pushes into the integration branch `DailyDev_20261029`, run the full test pass, and keep Dave's questions on the QA page (branch `qa`). I start where an agent hands me a pushed commit and stop at main: I never merge to main until Dave has play-tested and says go.
 
