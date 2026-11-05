@@ -43,6 +43,9 @@ func _init() -> void:
 	root.add_child(body)
 	body.play("idle", 1.0, 0.0)
 	body.animation_player.seek(0.0, true)
+	# Held on the first frame: under a loaded gate the two frames below can be long and the idle would play on, so the pose (and every height checked) would
+	# depend on the machine's speed (PC gate 5 Nov: the hood's cape read 1.30 m in the gate and passed alone).
+	body.animation_player.speed_scale = 0.0
 	var s: Skeleton3D = body.skeleton
 	var hung: int = WornLook.attach(body, ["hide_boots", "hide_tunic", "hide_hood", "hide_trousers", "hide_gloves"], false)
 	await process_frame
@@ -60,13 +63,14 @@ func _init() -> void:
 	for node in pieces.get("foot_r", []):
 		_check((node as Node3D).global_position.x > 0.05, "right boot on the right (+X)")
 
-	# The hood's crown (its big shell) sits on his head; its drape band hangs at the neck, a little lower (his neck joint is at about 1.40 m).
+	# The hood's crown (its big shell) sits on his head; its shoulder cape hangs round the neck down to the tops of the shoulders (his neck joint is at about
+	# 1.40 m, the cape's middle about 7 cm under the hood frame's chin line), so pieces sit between the shoulders and the crown.
 	var crown_y: float = -1.0
 
 	for node in pieces.get("head", []):
 		var at: Vector3 = (node as Node3D).global_position
 		crown_y = maxf(crown_y, at.y)
-		_check(at.y > 1.35 and at.y < 1.8, "hood piece at the head or neck (y %.2f)" % at.y)
+		_check(at.y > 1.25 and at.y < 1.8, "hood piece at the head, neck or shoulders (y %.2f)" % at.y)
 
 	_check(crown_y > 1.45, "hood crown on the head (y %.2f)" % crown_y)
 
