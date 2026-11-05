@@ -272,6 +272,18 @@ func _ready() -> void:
 	items.dig_refusal = _dig_refusal
 	items.fill_ground = _fill_ground
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
+	items.cave_scatter = func(cell: Vector2i, cell_m: float) -> PackedFloat32Array:   # cave floor stones and boulders (Dave 4 Nov: caves "riddled with rocks and collectable stones")
+		var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+		var cave_tile = generator.get_tile(generator.tile_of(centre.x, centre.y))
+		var out: PackedFloat32Array = PackedFloat32Array()
+
+		if cave_tile == null or cave_tile.placeholder:
+			return out
+
+		for n in cave_tile.cave_scatter_in(cell, cell_m):
+			out.append_array(cave_tile.cave_scatter.slice(n * 5, n * 5 + 5))
+
+		return out
 	items.ground_ready = func(x, z) -> bool:
 		if generator.tile_cached(x, z):
 			return true
@@ -326,6 +338,7 @@ func _ready() -> void:
 	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
+	items.send_training = func(peer, percent): net.training.rpc_id(peer, percent)
 	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
 		var ore_tile = generator.get_tile(generator.tile_of(pos.x, pos.z))
 
@@ -565,8 +578,8 @@ func _ready() -> void:
 	_world_dir = world_dir
 	_start_water()
 
-	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var error: int = peer.create_server(port, 32)
+	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
+	var error: int = server_peer.create_server(port, 32)
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
@@ -575,7 +588,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
-	multiplayer.multiplayer_peer = peer
+	multiplayer.multiplayer_peer = server_peer
 	_events.start("telemetry_server_%d.log" % port)
 	_events.start_watchdog()
 	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), GitStamp.short_commit()])
@@ -1011,6 +1024,13 @@ func _send_cave_streams(peer_id: int, chunk: Vector2i) -> void:
 
 	if not data.cave_dens.is_empty():
 		net.cave_dens.rpc_id(peer_id, tile, data.cave_dens)
+
+	# Cave dressing (protocol 92): the bake's bone piles and formations, once the tile data carries them.
+	var bones: PackedFloat32Array = data.get("cave_bones") if "cave_bones" in data else PackedFloat32Array()
+	var formations: PackedFloat32Array = data.get("cave_formations") if "cave_formations" in data else PackedFloat32Array()
+
+	if not bones.is_empty() or not formations.is_empty():
+		net.cave_dressing.rpc_id(peer_id, tile, bones, formations)
 
 
 # Lag review (Dave 2 Nov 2026): every "water moved" the client asks again for all ~22 chunks it holds, and every answer was

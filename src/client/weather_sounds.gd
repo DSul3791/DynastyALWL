@@ -149,20 +149,14 @@ func setup(stage, ambient) -> void:
 			frogs = float(KINDS[kind]["frogs"])
 
 	for sound_name in LOOP_DB:
-		var list: Array = _variants(sound_name)
-
-		if list.is_empty():
+		if not SoundStage.clip_known([RECORDED_DIR, GENERATED_DIR], sound_name):
 			continue
 
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
-		player.stream = list[0]
 		player.bus = "Wind" if sound_name.begins_with("wind") else "Weather"   # the storm wind follows the Wind slider, not Nature (Dave 24 Oct)
 		player.volume_db = -80.0
 		add_child(player)
-
-		if player.stream is AudioStreamOggVorbis:
-			player.stream.loop = true
-
+		SoundStage.stream_later(player, [RECORDED_DIR, GENERATED_DIR], sound_name, _variants.bind(sound_name), true)   # no file read at the join
 		_loops[sound_name] = player
 
 
@@ -370,6 +364,10 @@ func _loop(sound_name: String, level: float) -> void:
 		return
 
 	var player: AudioStreamPlayer = _loops[sound_name]
+
+	if player.stream == null:
+		return                                   # its clip is still loading (SoundStage.stream_later)
+
 	level *= _under
 
 	if level < 0.005:

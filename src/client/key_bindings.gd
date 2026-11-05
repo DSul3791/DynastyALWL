@@ -56,8 +56,10 @@ const ACTIONS := [
 	["admin_dig", "Admin: dig a hole where you aim", "Admin and debug", CONTEXT_WORLD, KEY_X, true, false, false],
 	["jitter_test", "Float jitter test", "Admin and debug", CONTEXT_WORLD, KEY_J, false, false, false],
 	["gpu_probe", "GPU probe", "Admin and debug", CONTEXT_WORLD, KEY_G, true, true, false],
-	["water_hide", "Hide or show every river and lake", "Admin and debug", CONTEXT_WORLD, KEY_W, true, true, false],
-	["water_debug", "Colour the water by what the shader sees", "Admin and debug", CONTEXT_WORLD, KEY_V, true, true, false],
+	# Dave 5 Nov 2026 (every river and lake vanished while flying): fly down (Ctrl) + fly faster (Shift) + forward (W) is Ctrl+Shift+W, which hid all the
+	# water. The two water debug keys moved off the movement keys to F7 and F8.
+	["water_hide", "Hide or show every river and lake", "Admin and debug", CONTEXT_WORLD, KEY_F7, true, true, false],
+	["water_debug", "Colour the water by what the shader sees", "Admin and debug", CONTEXT_WORLD, KEY_F8, true, true, false],
 ]
 
 # Shown in the list but not rebindable.
@@ -319,7 +321,8 @@ static func conflicts() -> Array:
 	return found
 
 
-# Which action each key letter in the game's built-in prompt texts stands for ("Press E to gather", "hold E", "F for wood").
+# Which action each key letter in the game's built-in prompt texts stands for ("Press E to gather", "hold E", "F for wood"). The server's
+# notices and hints (hints.json: "press E on nettles", "Press F at the fire") come through localize on the client too.
 const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler"}
 static var _prompt_regex: RegEx = null
 
@@ -333,7 +336,7 @@ static func localize(text: String) -> String:
 		return text
 
 	if _prompt_regex == null:
-		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap) |(?<=, )|(?<=\\())([EFZH])\\b(?= to |,|\\)| twice| for |$)")
+		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap) |(?<=, )|(?<=\\())([EFZH])\\b(?= to |,|\\)| twice| for | on | at | near | again|\\.|$)")
 
 	var found: Array[RegExMatch] = _prompt_regex.search_all(text)
 	found.reverse()

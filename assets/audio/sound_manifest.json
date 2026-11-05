@@ -1369,14 +1369,6 @@
    "priority": 3
   },
   {
-   "name": "stomach_growl",
-   "state": "generated",
-   "variants": 2,
-   "used_in": "item_sounds.gd watch_vitals(): a hungry stomach, every 50 to 110 s at 15 percent hunger or less (twice as often when starving)",
-   "to_supply": "2 recordings of a stomach growling, 1.5 s",
-   "priority": 3
-  },
-  {
    "name": "chop_split",
    "state": "generated",
    "variants": 3,

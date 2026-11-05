@@ -1,45 +1,124 @@
-     64 src/worldgen/tools/test_server_items.gd
+     65 src/worldgen/tools/test_server_items.gd
+     47 src/worldgen/tools/test_animal_spawn_wiring.gd
      19 src/worldgen/tools/test_dialogue.gd
-     13 src/worldgen/tools/terrain_bench.gd
       9 src/worldgen/tools/test_worldgen.gd
+      9 src/water2/water_field.gd
       8 src/worldgen/tools/test_wolves.gd
+      8 src/stream/server_items.gd
+      8 src/debug/shot_runner.gd
+      8 scenes/terrain_server/terrain_server.gd
       7 src/worldgen/tools/test_animals.gd
-      7 src/worldgen/tile/tile_erosion.gd
       6 src/worldgen/tools/test_items_persistence.gd
+      6 src/worldgen/tools/test_drainage_natural.gd
       6 src/worldgen/tile/tile_geology.gd
       6 src/worldgen/tile/tile_file.gd
+      6 src/worldgen/sketch/world_elevation.gd
       5 src/worldgen/tile/tile_climate.gd
-      5 src/worldgen/sketch/world_elevation.gd
-      5 src/debug/shot_runner.gd
+      5 src/flora/tree_builder.gd
+      5 src/client/inventory_view.gd
+      4 src/worldgen/tools/snare_odds.gd
+      4 src/worldgen/tools/river_report.gd
       4 src/worldgen/tile/tile_sites.gd
       4 src/worldgen/tile/tile_preview.gd
       4 src/worldgen/sketch/river_network.gd
       4 src/stream/server_wolves.gd
+      4 src/client/character/dynasty_arms.gd
+      4 src/client/basic_look.gd
+      3 tools/lake_share.gd
+      3 src/worldgen/tools/town_site_scan.gd
+      3 src/worldgen/tools/test_world_items_cost.gd
       3 src/worldgen/tools/test_persistence_drills.gd
+      3 src/worldgen/tools/test_fire_fuel_tiers.gd
       3 src/worldgen/tools/test_cover.gd
       3 src/worldgen/tools/test_animal_senses.gd
+      3 src/worldgen/runtime/flora_placer.gd
       3 src/worldgen/plan/tile_plan.gd
+      3 src/water/water_settler.gd
+      3 src/flora/flora_view.gd
       3 src/client/character_screen.gd
+      2 tools/worn_armour_view.gd
+      2 tools/proto_worn_view.gd
+      2 tools/proto_hands.gd
+      2 tools/check_body_generator.gd
+      2 src/worldgen/tools/test_water_small.gd
+      2 src/worldgen/tools/test_tunnel_watch.gd
       2 src/worldgen/tools/test_step_up.gd
+      2 src/worldgen/tools/test_stairs_climb.gd
       2 src/worldgen/tools/test_spoilage.gd
+      2 src/worldgen/tools/test_fire_two_players.gd
+      2 src/worldgen/tools/test_fire_store.gd
+      2 src/worldgen/tools/test_climate_small.gd
+      2 src/worldgen/tools/test_build_stock.gd
       2 src/worldgen/tools/soak_server.gd
       2 src/worldgen/tools/prebuild_blocks.gd
+      2 src/worldgen/tools/flora_diag.gd
+      2 src/worldgen/tile/tile_rolling.gd
       2 src/worldgen/runtime/terrain_generator.gd
-      2 src/worldgen/runtime/flora_placer.gd
+      2 src/water2/probe_water_field.gd
+      2 src/client/weather_look.gd
+      2 src/client/character/body_generator.gd
+      2 scenes/terrain_client/terrain_client.gd
       2 scenes/bot/bot_main.gd
+      1 tools/water_survey3.gd
+      1 tools/water_survey2.gd
+      1 tools/water_survey.gd
+      1 tools/water_coast_picture.gd
+      1 tools/proto_perf.gd
+      1 tools/proto_motion2_view.gd
+      1 tools/proto_hem_view.gd
+      1 tools/proto_frames_view.gd
+      1 tools/proto_far_view.gd
+      1 tools/proto_converted_view.gd
+      1 tools/proto_body.gd
+      1 tools/item_sheet.gd
+      1 tools/dynasty_parts_probe.gd
+      1 tools/dynasty_impact.gd
+      1 tools/dynasty_gait.gd
+      1 tools/chop_fp_strip.gd
+      1 tools/check_worn_generated.gd
+      1 tools/check_motion_extra.gd
+      1 tools/check_generated_body.gd
+      1 tools/animal_gallery.gd
+      1 src/worldgen/tools/water_spread_report.gd
       1 src/worldgen/tools/tree_mesh_dump.gd
-      1 src/worldgen/tools/test_tunnel_watch.gd
+      1 src/worldgen/tools/test_water_reask.gd
+      1 src/worldgen/tools/test_traps.gd
       1 src/worldgen/tools/test_trails.gd
+      1 src/worldgen/tools/test_trade_buy_rules.gd
+      1 src/worldgen/tools/test_tile_height_format.gd
+      1 src/worldgen/tools/test_thieves.gd
+      1 src/worldgen/tools/test_sound_panel.gd
+      1 src/worldgen/tools/test_playability_bot.gd
       1 src/worldgen/tools/test_npcs.gd
+      1 src/worldgen/tools/test_leanto_collider.gd
+      1 src/worldgen/tools/test_key_bindings.gd
       1 src/worldgen/tools/test_horses.gd
+      1 src/worldgen/tools/test_fruit_tree.gd
+      1 src/worldgen/tools/test_flora_filter_cost.gd
       1 src/worldgen/tools/test_fishing.gd
+      1 src/worldgen/tools/test_fell_autosplit.gd
+      1 src/worldgen/tools/test_erosion_delta_small.gd
+      1 src/worldgen/tools/test_drainage_small.gd
       1 src/worldgen/tools/test_dishes.gd
+      1 src/worldgen/tools/test_dev_place.gd
       1 src/worldgen/tools/test_coin_icons.gd
+      1 src/worldgen/tools/test_ambient_critters.gd
       1 src/worldgen/tools/stress_items_players.gd
+      1 src/worldgen/tools/meadow_flowers.gd
+      1 src/worldgen/tools/flora_wet_check.gd
+      1 src/worldgen/tools/flora_water.gd
+      1 src/worldgen/tools/clump_sight.gd
       1 src/worldgen/tile/tile_height.gd
       1 src/worldgen/sketch/world_sketch.gd
       1 src/worldgen/sketch/island_census.gd
+      1 src/worldgen/runtime/tile_terrain_data.gd
       1 src/worldgen/matrix/matrix_preview.gd
+      1 src/water2/water_window.gd
+      1 src/water2/water_hub2.gd
+      1 src/water2/test_water_field.gd
+      1 src/water2/probe_water_cost.gd
+      1 src/water2/demo_water_field.gd
+      1 src/water/water_sim.gd
       1 src/stream/tunnel_watch.gd
       1 src/stream/tunnel_stability.gd
       1 src/stream/stub_ai_provider.gd
@@ -48,4 +127,13 @@
       1 src/shared/inner_voice_profile.gd
       1 src/shared/game_clock.gd
       1 src/debug/machine_probe.gd
-      1 src/admin/tile_bake_launcher.gd
+      1 src/client/sound_stage.gd
+      1 src/client/npc_view.gd
+      1 src/client/character/my_character.gd
+      1 src/client/character/motion_proto.gd
+      1 src/client/character/generated_body.gd
+      1 src/client/character/dynasty_shapes.gd
+      1 src/client/character/dynasty_body.gd
+      1 src/client/building_look.gd
+      1 src/client/ambience_slots.gd
+      1 scenes/character_select/character_select.gd

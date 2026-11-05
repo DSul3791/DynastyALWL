@@ -304,6 +304,15 @@ var _scan_extra: float = 0.0
 var _next_rescan: int = 0                 # msec: when the next scan is due without the player changing cell (when a waiting cell's retry falls due)
 var _scan_next: int = 1 << 60
 var _scan_now: int = 0
+# Dave 4 Nov 2026 (build 826, "these rocks are floating in the air above a cave opening"): a cell's rays can land on the coarse ground collision that comes
+# first while the ground loads (a coarse level has no cave mouths and fills a narrow gully), and the pebbles, litter and grass laid on it then hung in the
+# air once the fine ground arrived, because a cell was only built again when the player came nearer or someone dug. Each new cell keeps a few of its
+# ground hits and casts them again a little later (CHECK_TIMES); where the ground has moved the cell is built again from the new ground.
+const CHECK_PROBES := 5                  # ground hits kept per cell
+const CHECK_TIMES := [1500, 3000, 6000, 12000, 24000, 48000]   # ms after the build (and after each check) that the hits are cast again
+const CHECK_MOVE_M := 0.35               # a hit this far from its old height means the ground under the cell changed
+const CHECK_CELLS_PER_FRAME := 3
+var _checks: Array = []                  # [cell, due msec, check number]
 var _scan_keep: Dictionary = {}
 const SCAN_ROWS_PER_FRAME := 4
 var _center: Vector3 = Vector3.ZERO
@@ -1314,6 +1323,7 @@ func update(from_position: Vector3) -> void:
 
 	_center = from_position
 	var now: int = Time.get_ticks_msec()
+	_check_ground(now)
 	_trample.flush()
 	_push_player(from_position)
 
@@ -1534,6 +1544,68 @@ static func _drop_beside(heights: PackedFloat32Array, pps: int, i: int, j: int, 
 				return true
 
 	return false
+
+
+# Casts the kept ground hits of the cells that are due again (a few cells a frame). A cell whose ground moved is built again; one whose ground held is
+# looked at again later, until CHECK_TIMES runs out.
+func _check_ground(now: int) -> void:
+	if _checks.is_empty():
+		return
+
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var done: int = 0
+	var n: int = 0
+
+	while n < _checks.size() and done < CHECK_CELLS_PER_FRAME:
+		var check: Array = _checks[n]
+		var entry = _cells.get(check[0])
+
+		if entry == null or not entry["built"] or entry["busy"]:
+			_checks.remove_at(n)
+			continue
+
+		if now < int(check[1]):
+			n += 1
+			continue
+
+		done += 1
+		var probes: PackedFloat32Array = entry.get("probes", PackedFloat32Array())
+		var moved: bool = false
+
+		for k in range(0, probes.size(), 3):
+			if ground_moved(space, probes[k], probes[k + 1], probes[k + 2]):
+				moved = true
+				break
+
+		if moved:
+			entry["busy"] = true
+			_pending.push_front(check[0])
+			_checks.remove_at(n)
+			ground_rebuilds += 1
+		elif int(check[2]) + 1 < CHECK_TIMES.size():
+			check[2] = int(check[2]) + 1
+			check[1] = now + int(CHECK_TIMES[check[2]])
+			n += 1
+		else:
+			_checks.remove_at(n)
+
+
+var ground_rebuilds: int = 0             # cells built again because their ground moved after the first build (for the tests and the debug panel)
+
+
+# True when the ground under (x, z) is no longer where a cell found it (old_y): the first solid thing below lies more than CHECK_MOVE_M away, or
+# nothing is there any more. A trunk in the way says nothing about the ground.
+static func ground_moved(space: PhysicsDirectSpaceState3D, x: float, z: float, old_y: float) -> bool:
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, old_y + 2.0, z), Vector3(x, old_y - 60.0, z))   # from just above: a cave roof or a bank above is not hit
+	var found: Dictionary = space.intersect_ray(query)
+
+	if found.is_empty():
+		return true
+
+	if found["collider"] != null and (found["collider"] as Object).has_meta("species_ids"):
+		return false
+
+	return absf(float((found["position"] as Vector3).y) - old_y) > CHECK_MOVE_M
 
 
 # A new build job for a cell (see _build): its band, buffers and a fresh rng from the cell's seed, so a restarted job (ground edited) makes
@@ -1780,6 +1852,15 @@ func _build(cell: Vector2i, deadline_usec: int = 0) -> int:
 	entry["built"] = true
 	entry["lod"] = lod
 	cells_built += 1
+	var probes: PackedFloat32Array = PackedFloat32Array()
+	var step: int = maxi(1, int(float(hits.size()) / float(CHECK_PROBES)))
+
+	for n in range(0, hits.size(), step):
+		if not (hits[n][2] as Dictionary).is_empty() and probes.size() < CHECK_PROBES * 3:
+			probes.append_array(PackedFloat32Array([hits[n][0], hits[n][1], heights[n]]))
+
+	entry["probes"] = probes
+	_checks.append([cell, Time.get_ticks_msec() + int(CHECK_TIMES[0]), 0])
 	_free_cell_nodes(entry)      # a rebuilt cell swaps its cards in the same frame
 
 	for layer in range(LAYERS.size()):

@@ -1,43 +1,45 @@
-# Handoff: MikeW: Flora and Fauna Density and Placement (formerly Flora), 1 Nov 2026
+# Handoff: MikeW: flora and fauna (plus the Grass leftovers), 5 Nov 2026
 
 ## Role
-I own plants and the feel of a living world: tree, shrub, berry, herb, flower and tall-grass density and placement, how they look at range, fruit harvest, and the grass shader. Branch `claude/flora-density-v2`, merged into the daily (DailyDev_20261029, head 27dfe828 when I stopped). I never merge to main. Kathleen owns flora art (models, colours, `src/flora/tree_builder.gd`); I own placement and data.
+I own plants and animals: flora density and placement, fruit and forage, fauna behaviour (wander, flee, walls, nests, burrows, snares), and the grass view. Since 4 Nov I also hold the Grass thread's leftovers. Jamie (BACKLOG.md) gives me jobs top-down by priority, so I also take docs and data jobs. I never touch or merge main: Tyler merges. Branches are `claude/mikew-YYYYMMDD-*`, a new one each day.
 
-## Done and merged (commits on claude/flora-density-v2)
-- Flora density measured and fixed (trees, bushes, berries, fibre plants): system described in docs/FLORA_HANDOVER.md.
-- `8543fc35` tools/clump_sight (tall-grass clumps with a line of sight at 25 and 40 m); tall grass clumps of 25-40 stems plus a ring (layout v20).
-- Grass player-clear radius (feet visible in third person): `src/client/grass_view.gd`, test `test_player_clear`. `fb90e7c5` keeps the smoothstep edges ordered when the radius is 0.
-- `69d43800` conifer saplings only in nurseries or beside a parent crown (layout v21), checked in test_flora_density.
-- `f0336365` meadow flowers: dandelion, yarrow, chamomile, St John's wort, wild carrot in drifts plus forest tables (layout v22). Kathleen's art rounds 2 and 3 merged (68c7901e).
-- `4458a7c0` fix: `_decimate_task` PackedInt32Array cast error when a surface has no index array (that mesh now keeps its full model).
-- QA cards posted on the qa branch (last 26aaf274): orchard, starter meadow, grass at feet, meadow saplings, tall grass 25 m, meadow flowers.
+## Rules that apply now (Dave)
+- **No cloud testing (5 Nov 00:06).** No Godot runs, test runs or renders in the cloud. Fix code and data by reading them; QA (Tyler) runs tests on Dave's PC when he is not play testing. Plain python checks (`tools/guide_vs_recipe.py`, `tools/item_master.py`) are fine.
+- **No kits (#292).** Everything placed is a hammer blueprint. Only the campfire kit and the Rough bed stay pack crafts. Never add a `*_kit` recipe.
+- The game starts in summer (day 100), when there is food on the vines and trees (`test_season_fruit.gd`). Don't move it without Dave.
+- Art follows `art/Art_Direction.md`. Short replies (Dave uses voice). Design calls and balance go to Dave; technical calls are mine.
 
-## In flight / unfinished (exact next steps)
-1. Blueberry size picture (F-13). Nearest blueberry (53331.46,68355.12); camera `--at 53331.5,68359 --yaw 0 --agl 1.0 --pitch -15`. flora.json says blueberry is 0.25-0.5 m, but F-13 saw a 3 m golden shrub labelled Blueberry in 02b_berries_herbs.jpg: find which species that was (raspberry is 1.5-2.5 m).
-2. Chamomile picture at (53326.7,68442.2) from the south, default camera (not `--cam first`, it ignores `--at`).
-3. Orchard picture (53376,68521) and a crown close-up (Kathleen's `_crown_variety`, round apples): started and killed by the stop order, nothing saved.
-4. QA cards for yarrow, blueberry, orchard, crowns (qa branch, repo C:/GodotProjects/DynastyALWL_qa, format in questions/QUESTIONS.md).
-5. Yarrow looked blue-grey, faceted and slightly metallic in shade, with pale stems (alive_check/final2/n_yarrow.png, 3/5): Kathleen's fix (warmer head colour, upward normals, matte stems).
-Task list file started: docs/FLORA_NEXT_TASKS.md (round 1 only).
+## Done and merged (3 to 5 Nov)
+- Early game fauna: #194 forage note, #209 frogs/ducks/gulls/seals by water, #219 snares draw rabbits and foxes, #224 thrown spears hit, #236 burrow spots to the client, #239 fox smell 120 m (Dave approved), #287 summer-start test.
+- Stranded stacked PRs re-landed: #328 animals stop at walls (`steering.gd` cross callable, `server_animals.gd` walls), #329 nests, #332 floor tiles clear only their footprint, #335 nest spots sent to clients (PROTOCOL 91).
+- #367 guides follow the no-kits rule, the hammer-built lean-to and the new costs (`guide_vs_recipe.py`: 0 mismatches).
 
-## Open bugs and risks
-- The 40 m tall-grass clump is small and dark in shade, barely visible.
-- Flowers sit at the grass/forest edge, not the open middle; only yellow drifts confirmed in frame at range.
-- Orchard picking and thinning never checked in the real game (only test_fruit_tree).
-- Draw-call growth at the meadow (+21 percent) if a weaker PC needs it.
-- I could not reproduce the `_decimate_task` error; the fix is a guard only.
+## Open PRs (waiting on Tyler or Dave)
+- #340 (draft): foundations clear the grass under them. Waiting on Dave's card. If he says "only under it", take it out of draft and send it to Tyler; otherwise close it.
+- #369: item notes for rough plank, hinges and wooden pins name the blueprints that use them. The dead-end check is done: the validator lists none of the five.
+- #371: the item validator lets a structure's `kit` id name a retired kit, because the code still keys pieces by it: placing, taking down, `_blueprint_of_kit`, old saves. Errors went from 66 to 13. Sal reviews it.
+- #373: the other 12 validator errors: block descriptions, small block recipe names, log block sources before the recipe check, wild seeds from `seed_drops`, `torch_doused`. Sal's #372 fixes `next_number`. Not run: it needs a PC run of `validate_items.gd`, which should show 0 errors with all three merged.
 
-## Tests and Godot
-`tools/run_tests.sh --fast test_flora_density test_player_clear test_flora_close test_flora_budget test_server_items test_spawn_dry test_first_hour` (all 7 passed at 4458a7c0; test_flora_density takes 130-155 s). Needs `godot` on PATH: I used a copy of the voxel build godot.windows.editor.x86_64.exe (C:GodotInstaller) at /tmp/gbin/godot.exe (the standard exe is Godot_v4.7.2-stable_win64_console.exe). Pictures: `tools/look_rig.sh` through `tools/godot_slot.sh` (max 3 jobs); one shot takes about 160 s, so use a timeout over 400 s and `--settle 40 --wait 80`. Rig quirks: `--cam first` ignores `--at`; the `--flora` row puts the camera in the grass (use `--nograss`) and its labels float far away: shoot real plants at coordinates from `flora_near.gd` instead.
+## Waiting on Dave
+- Real modelled animal meshes (card). The look check (`/mnt/project-files/art/look_check_20261104/README.md`) found the animals are code-built ellipsoids that fail Art Direction; coat shaders can't fix that.
+- Far grass `fade_start_share` 0.25.
+
+## Next steps
+1. When #353 (fibre rope) lands on main, add its line to the first-hour guides, then run `python3 tools/guide_vs_recipe.py`.
+2. Grass window checks are on the PC queue; follow up on what they find.
+3. Not started (stop order 4 Nov): wiring animals to Hammer's `structure_blocks` (#166).
+
+## Tools
+- `tools/guide_vs_recipe.py`: guide numbers against recipe data. It flags any stick count within 70 characters after "lean-to".
+- `tools/item_master.py /mnt/project-files/tech/ITEM_MASTER.md`; use `--check` to see if the file is stale.
+- `src/worldgen/tools/validate_items.gd`: item data validator, run on the PC now.
+- `tools/tests_for_diff.py --paths ...` then `tools/run_tests.sh --plan`: on the PC only now.
+- Fauna odds: `snare_odds.gd`, `fox_odds.gd`, `tile_biomes.gd`.
 
 ## Read first
-docs/FLORA_HANDOVER.md, docs/handoff/SCOPE_MIKEW.md, src/worldgen/runtime/flora_placer.gd, data/tables/flora.json, src/client/grass_view.gd, src/flora/flora_view.gd, questions/QUESTIONS.md on the qa branch.
+`/mnt/project-files/BACKLOG.md` (Jamie's job table), `/mnt/project-files/backlog/mikew.md` (my leftovers), `docs/FLORA_HANDOVER.md`, `docs/handoff/SCOPE_MIKEW.md`, `data/animals/animals.json`, `src/stream/server_animals.gd`, `data/tables/flora.json`, `src/client/grass_view.gd`.
 
 ## Decisions not to re-litigate
-Pictures for Dave go on the QA page (one item per card, Yes/No, rating note), not in chat. Never merge to main. No heavy Godot while Dave says the computer is his. Pale glassy flower art is Kathleen's. The PLUME_FLOWERS grass-thinning idea gave bald patches and was reverted.
-
-## Skipped or not verified
-Orchard, crown, chamomile and blueberry pictures; month-level fruit calendar; real in-game fruit picking; the `client_eat` path of the decimate error.
-
-## Next tasks I would have done
-Round 1 in docs/FLORA_NEXT_TASKS.md (pictures, F-13 data check, QA cards); then fruit calendar by month, far-tree merging for draw calls, a white-flower contrast pass with Kathleen, elder thickets to 90 percent in clumps.
+- Stacked PRs must target main. #248 and #279 were lost by being merged into dead base branches.
+- The PLUME_FLOWERS grass-thinning idea gave bald patches and was reverted.
+- Jason owns the grass build spike (resumable `_build`, agreed 5 Nov).

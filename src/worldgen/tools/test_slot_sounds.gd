@@ -201,6 +201,9 @@ func _check_ambience() -> void:
 	check(Ambience.choose_bed(slots, "time_bed", night) == "bed_crickets", "a warm night over trees or grass gets crickets (the narrower slot)")
 	night["season"] = "winter"
 	check(Ambience.choose_bed(slots, "time_bed", night) == "bed_night", "a winter night gets the general night bed")
+	check(float(Ambience.BED_TRIM_DB["bed_night"]) <= -32.0, "the night bed sits at -32 dB or lower (Dave 4 Nov: still always too loud at -18)")
+	var item_fx: GDScript = load("res://src/client/item_sounds.gd")
+	check(item_fx.get_script_method_list().all(func(m): return m["name"] != "watch_vitals") and not FileAccess.file_exists("res://assets/audio/cooking/stomach_growl_0.ogg"), "the stomach growl is gone (Dave 4 Nov: the odd repeating noise)")
 	check(Ambience.choose_bed(slots, "time_bed", summer_forest) == "", "no time bed by day")
 	var beach: Dictionary = {"season": "summer", "time": "day", "biomes": ["beach"], "water": 0.8, "height": 2.0}
 	check(Ambience.choose_bed(slots, "shore_bed", beach) == "bed_surf", "a beach at sea level gets the surf bed")

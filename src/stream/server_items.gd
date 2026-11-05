@@ -8,6 +8,7 @@ extends RefCounted
 #
 # Until accounts exist an inventory is filed under the key the client made for itself.
 
+const FlameRules := preload("res://src/shared/flame_rules.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -126,6 +127,7 @@ var _gain_source: String = SRC_PICKUP   # who is adding right now; callers set i
 var _gain_quiet: bool = false        # wearing and taking off gear moves items without gaining any
 var send_world_items: Callable # (peer, added Array, removed PackedInt32Array)
 var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set by the server scene
+var cave_scatter: Callable     # (cell Vector2i, cell_m) -> PackedFloat32Array, 5 floats per cave floor spot in that cell: x, y, z, kind (0 stone, 1 boulder), radius; set by the server scene
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var send_notice: Callable      # (peer, text)
@@ -152,6 +154,7 @@ var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left 
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
+var send_training: Callable     # (peer, today's training in percent of a fitness point) (protocol 92, Dave: fitness feedback on the Tab screen)
 var water_depth_at: Callable       # (position) -> metres of water there (optional; unset: depth is not checked)
 var water_kind_at: Callable        # (x, z) -> {"kind": brook | river | lake | pond | sea_shallow | sea_mid | sea_deep | "", "depth"} (server_fish_water.gd; optional)
 var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
@@ -280,11 +283,14 @@ var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
 const BOULDER_KEY := 1 << 50
+const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
+const CAVE_ITEMS_MAX := 256
 const BOULDER_STATE := 10            # world-item row state of a boulder          # boulder keys live apart from the loose stones' keys
 var _fate_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the server's own fate stream, the fate() hook below
 var fate_counts: Dictionary = {}    # fate kind -> times rolled (what luck has touched)
 var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
 var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
+var _training_sent: Dictionary = {}  # peer -> today's training percent last sent
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
 var _path_cfg: Dictionary = {}      # data/path_speed.json: range_m and exertion_factor for moving on or near a path
@@ -345,6 +351,7 @@ var _saplings: Array = []           # {slot, chunk [cx, cz], species (flora id),
 var _flora_by_id: Dictionary = {}
 var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
+var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
 
 
@@ -1043,6 +1050,12 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_hit_shrub(peer, inv, a, Vector2i(b, count), at.x > 0.5)
 	elif kind == Net.ACT_PLANT_BUSH:
 		_plant_bush(peer, inv, a, at)
+	elif kind == Net.ACT_DOUSE:
+		_douse(peer, inv, a, b == 1)
+	elif kind == Net.ACT_RELIGHT:
+		_relight(peer, inv, a)
+	elif kind == Net.ACT_PLACE_TORCH:
+		_place_torch(peer, inv, a, b == 1, count, at)
 	elif kind == Net.ACT_STRIKE:
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
@@ -2995,8 +3008,8 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		number = inv.numbers[slot]
 		kit_id = table.id_of(number)
 
-	if kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty():
-		return
+	if kit_id != "campfire_kit" and (_structure_of_kit(kit_id).is_empty() or bool(_structure_of_kit(kit_id).get("hand_placed", false))):
+		return      # a torch is placed from the hand (_place_torch), not as a kit
 
 	if blueprint.is_empty() and is_dead_kit(number):   # a kit that survived somewhere (a hand-edited save) is not placeable
 		return
@@ -3809,7 +3822,7 @@ func _scatter_around_players() -> void:
 					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
 
 					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
-						print("items tick slow: scatter cell %s took %.0f ms" % [str(cell), cell_ms])
+						print("items tick slow: scatter cell %s took %.0f ms (cave floor %.0f ms)" % [str(cell), cell_ms, _cell_cave_ms])
 
 					budget -= 1
 
@@ -3860,6 +3873,9 @@ static func boosted(base: int, add: int, cap: int) -> int:
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
+	var cave_usec: int = Time.get_ticks_usec()
+	_lay_out_cave_items(cell, cell_m, cfg)
+	_cell_cave_ms = float(Time.get_ticks_usec() - cave_usec) / 1000.0
 	var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
 	var h0: float = float(ground_height.call(centre.x, centre.y))
 	var h1: float = float(ground_height.call(centre.x + 4.0, centre.y))
@@ -4093,6 +4109,40 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 
 	if int(it["count"]) <= 0:
 		_items.erase(id)
+
+
+# Caves are riddled with rocks and stones (Dave 4 Nov 2026): the loose stones and boulders the baked caves under this cell hold
+# (tile_terrain_data.cave_scatter_in), a share of the stones flint as on the banks. Keys of their own (CAVE_KEY), so a stone taken stays taken.
+func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
+	if not cave_scatter.is_valid():
+		return
+
+	var spots: PackedFloat32Array = cave_scatter.call(cell, cell_m)
+	var flint: float = float(cfg.get("bank", {}).get("flint", 0.0))
+
+	@warning_ignore("integer_division")
+	for n in range(mini(spots.size() / 5, CAVE_ITEMS_MAX)):
+		var key: int = CAVE_KEY | ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8) | n
+
+		if _taken.has(key):
+			continue
+
+		var spot: Vector3 = Vector3(spots[n * 5], spots[n * 5 + 1], spots[n * 5 + 2])
+
+		if int(spots[n * 5 + 3]) == 1 and not _boulder_cfg.is_empty():
+			var radius: float = spots[n * 5 + 4]
+			var total: int = _boulder_stones(radius)
+			var left: int = mini(int(_boulder_left.get(key, total)), total)
+
+			if left > 0:
+				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": {"radius": radius, "yaw": float(hash(key) % 360), "total": total}}
+				_next_id += 1
+
+			continue
+
+		var number: String = "flint" if flint > 0.0 and float(hash(key) % 1000) < 1000.0 * flint else "stone"
+		_items[_next_id] = {"number": table.number_of(number), "count": 1, "pos": spot, "left": 1.0e9, "scatter": key}
+		_next_id += 1
 
 
 # Stones along the water's edge (Dave 2026-10-21: any rock put down is pickable, so Art's drawn pebbles and boulders became
@@ -5700,6 +5750,104 @@ func _cookable(item_id: String) -> bool:
 
 
 # The fire record of a world item id when the player stands within reach of it, else {}.
+# A torch in hand goes out under water or in the open rain (Dave, 4 Nov 2026; flame_rules.gd): the client, which knows the held slot, asks; the
+# item becomes its "doused_item" with the same wear. Rain is checked here too (the world's rain now and the cover over the player).
+func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0:
+		return
+
+	var into: String = str(table.entry(table.id_of(inv.numbers[slot])).get("doused_item", ""))
+
+	if into == "" or table.number_of(into) <= 0:
+		return
+
+	if by_rain:
+		var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+		var covered: bool = cover_at.is_valid() and _peer_pos.has(peer) and float(cover_at.call(_peer_pos[peer])) > 0.5
+
+		if not FlameRules.in_rain(rain, covered):
+			return
+
+	inv.numbers[slot] = table.number_of(into)
+	_say(peer, "The rain puts your torch out." if by_rain else "The water puts your torch out.")
+
+
+# A torch in hand stuck in the ground or on a wall (Dave, 4 Nov 2026): items.json places_as names the structure for each; a burning torch stays lit with
+# one stick's worth of fuel (structures.json fuel_s), a doused one is placed out. No gap rule (gap_exempt); the chunk cap holds. Hold E takes it back.
+func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Vector3) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
+		return
+
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var kind: String = str((entry.get("places_as", {}) as Dictionary).get("wall" if on_wall else "ground", ""))
+	var def: Dictionary = _structures.get(kind, {})
+
+	if def.is_empty():
+		return
+
+	if _peer_pos[peer].distance_to(at) > float(def.get("use_reach_m", 3.0)) + 1.0:
+		_say(peer, "Too far to place that.")
+		return
+
+	if water_depth_at.is_valid() and float(water_depth_at.call(at)) > 0.05:
+		_say(peer, "A torch will not burn in water.")
+		return
+
+	var spot: Vector3 = at
+
+	if not on_wall:
+		var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+
+		if is_nan(ground) or absf(ground - at.y) > 0.6:
+			_say(peer, "Push it into the ground.")
+			return
+
+		spot.y = minf(ground, at.y)      # on a floor or a foundation the aimed point stands; on open ground it goes in at the ground
+
+	var of_kind: int = 0
+
+	for id in _items:
+		if _items[id].has("struct") and str(_items[id]["struct"]["kind"]) == kind and _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
+			of_kind += 1
+
+	if of_kind >= int(def.get("cap_per_chunk", 24)):
+		_say(peer, "Too many of these stand here already.")
+		return
+
+	var lit: bool = bool(entry.get("flame", false))
+	var wear: int = inv.wear[slot]
+	inv.take_from_slot(slot, 1)
+	var placed: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "wear": wear, "struct": {"kind": kind, "yaw": float(posmod(yaw_deg, 360))}}
+
+	if lit:
+		placed["struct"]["lit"] = true
+		placed["struct"]["fuel_left"] = float(def.get("fuel_s", 1800.0))
+
+	_items[_next_id] = placed
+	_grid_add(_next_id, placed)
+	_next_id += 1
+	_dirty = true
+
+
+# E at a burning fire with a doused torch in the pack lights the first one again (Dave, 4 Nov 2026).
+func _relight(peer: int, inv, id: int) -> void:
+	var fire: Dictionary = _fire_in_reach(peer, id)
+
+	if fire.is_empty() or not fire_is_lit(int(fire["state"])):
+		return
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] == 0:
+			continue
+
+		var back: String = str(table.entry(table.id_of(inv.numbers[slot])).get("relit_item", ""))
+
+		if back != "" and table.number_of(back) > 0:
+			inv.numbers[slot] = table.number_of(back)
+			_say(peer, "Your torch catches and burns again.")
+			return
+
+
 func _fire_in_reach(peer: int, id: int) -> Dictionary:
 	var it: Dictionary = _items.get(id, {})
 
@@ -6271,8 +6419,8 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])]):
 			return
-	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
-		return
+	elif inv.add(table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"])), 1, int(it.get("wear", 0))) > 0:
+		return      # a placed torch comes back burning, or doused when it burned out or the rain put it out
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
 		roof_remove.call(int(it["struct"]["roof"]))
@@ -9913,10 +10061,19 @@ func _apply_lit_rows(rows: Array) -> void:
 
 
 func _lights_tick(spent: float) -> void:
+	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+
 	for id in _items:
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") and bool(it["struct"].get("lit", false)):
+			# A torch out in the open rain goes out like an open fire (Dave, 4 Nov 2026); one under a crown, a roof or an overhang burns on.
+			if rain >= FlameRules.RAIN_DOUSE and bool(_structures.get(str(it["struct"]["kind"]), {}).get("rain_douses", false)) and not (cover_at.is_valid() and float(cover_at.call(it["pos"] + Vector3(0.0, 0.5, 0.0))) > 0.5):
+				it["struct"]["lit"] = false
+				it["struct"].erase("fuel_left")
+				_dirty = true
+				continue
+
 			it["struct"]["fuel_left"] = float(it["struct"].get("fuel_left", 0.0)) - spent
 
 			if float(it["struct"]["fuel_left"]) <= 0.0:
@@ -11520,6 +11677,26 @@ func _sync_vitals(peer: int, force: bool) -> void:
 		send_vitals.call(peer, now_points[0], now_points[1], now_points[2], now_points[3], luck_of(peer), fitness_of(peer))
 		_dirty = true
 
+	_sync_training(peer, force)
+
+
+# Today's training (the XP bucket that turns into fitness at game midnight) in whole percent of a fitness point, for the Tab screen.
+func training_pm_of(peer: int) -> int:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+	var per_point: float = maxf(float(_fitness_cfg.get("train", {}).get("xp_per_point", 1000.0)), 1.0)
+	return int(floor(float(row.get("xp_today", 0.0)) / per_point * 100.0))
+
+
+func _sync_training(peer: int, force: bool) -> void:
+	if not send_training.is_valid():
+		return
+
+	var pm: int = training_pm_of(peer)
+
+	if force or int(_training_sent.get(peer, -1)) != pm:
+		_training_sent[peer] = pm
+		send_training.call(peer, pm)
+
 
 func _container_cap(number: int) -> int:
 	return int(table.entry(table.id_of(number)).get("capacity_ml", 0)) if number > 0 else 0
@@ -11767,7 +11944,7 @@ var _train_rest: Dictionary = {}     # peer -> seconds continuously at rest (bel
 # 2 at a steady walk, 3 at a run), counted continuously here per second into the character's day bucket (xp_today); at game midnight the
 # bucket is turned into points (xp_per_point = 1000 XP, the same at every level) and the player is told. A midnight that passes while
 # the player is offline is paid at the next tick after login (one bucket only, saved with the character).
-# Only effort below rest_effort held for rest_grace_s loses fitness, one point per decay_s_per_point. Effort between the two lines is neutral.
+# Only effort below rest_effort held for rest_grace_s loses fitness, one point per decay_s_per_point. Effort between the two lines is neutral, and so is sleep.
 func _train_fitness(peer: int, effort: float, spent: float) -> void:
 	var cfg: Dictionary = _fitness_cfg.get("train", {})
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
@@ -11799,6 +11976,8 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 		row["xp_today"] = minf(pending, float(cfg.get("max_gain", 10)) * float(cfg.get("xp_per_point", 1000.0)))
 		_dirty = true
 		_train_rest[peer] = 0.0
+	elif _asleep.has(peer):
+		_train_rest[peer] = 0.0   # sleep is recovery, not idleness: a night in bed (about 20 real minutes) neither earns nor costs, and the grace starts again on waking
 	elif effort <= float(cfg.get("rest_effort", 0.02)):
 		var rested: float = float(_train_rest.get(peer, 0.0)) + spent
 		_train_rest[peer] = rested
@@ -11816,6 +11995,8 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 	if fitness_of(peer) != before:
 		_vitals_sent.erase(peer)
 		_sync_vitals(peer, true)
+	else:
+		_sync_training(peer, false)   # a new whole percent of today's training (at most every few ticks), or the midnight reset to 0
 
 
 # The shared multiplier on the exertion rise: below 1 for the fit, above 1 for the unfit.

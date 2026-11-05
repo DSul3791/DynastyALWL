@@ -1,5 +1,7 @@
 # Scope: Sal, the items agent (written 1 Nov 2026)
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 > **CLARIFIED (Dave, 1 Nov 2026): you are responsible for ALL items in the game: what they are, how they are made, and how they work** (use, eat, wear, place; numbers and text). Kathleen and Kathreen handle how they look. When an item needs a new code rule, you write the data and the spec and hand the code to the system owner (Steve for sub-systems).
 
 Read `HANDOFF_SAL.md` first for the open risks and how to test. This file says what the job is, what has been done, and what is left.

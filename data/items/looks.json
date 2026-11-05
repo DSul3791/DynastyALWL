@@ -42,6 +42,11 @@
    "color": "#e08a2a",
    "size": 1.0
   },
+  "torch_doused": {
+   "shape": "torch",
+   "color": "#5a4632",
+   "size": 1.0
+  },
   "bark": {
    "shape": "bark",
    "color": "#5a4330",

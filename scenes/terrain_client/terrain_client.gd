@@ -117,7 +117,9 @@ const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
+const FlameRules := preload("res://src/shared/flame_rules.gd")
 const HorizonScript := preload("res://src/client/horizon_indicator.gd")
+const CaveDressing := preload("res://src/client/cave_dressing.gd")
 const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
@@ -223,6 +225,8 @@ var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
+var _flame_rain_s: float = 0.0          # seconds the held torch has been out in the open rain (flame_rules.gd)
+var _flame_asked_msec: int = -100000     # when the server was last asked to douse it (one ask a second at most)
 var underwater_surface: float = 0.0      # the water surface over the eye while under (fog depth, caustics), 0 in the sea
 var _ground_quality: int = -1       # quality the ground texture array was built for
 var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
@@ -817,6 +821,7 @@ func _ready() -> void:
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.cave_streams_received.connect(_on_cave_streams)
+	net.cave_dressing_received.connect(_on_cave_dressing)
 	net.cave_dens_received.connect(_on_cave_dens)
 	net.surface_received.connect(_on_surface_received)
 	net.dump_received.connect(ground_debug.on_dump_received)
@@ -1314,16 +1319,23 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
 	Probe.stop("welcome: items view", tq_items_view)
+	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
+	var tq_dialogue: int = Probe.start()
 	var dialogue_view: Node = DialogueViewScript.new()
 	dialogue_view.name = "Dialogue"
 	add_child(dialogue_view)
 	dialogue_view.setup(net, items, npc_view, layer, func(): return body.global_position)
+	Probe.stop("welcome: dialogue view", tq_dialogue)
+	var tq_voice: int = Probe.start()
 	var npc_voice: Node = NpcVoiceScript.new()
 	npc_voice.name = "NpcVoice"
 	add_child(npc_voice)
 	_npc_voice = npc_voice
+	Probe.stop("welcome: npc voice", tq_voice)
 
+	var tq_gmenu: int = Probe.start()
 	game_menu.refresh()
+	Probe.stop("welcome: game menu", tq_gmenu)
 
 	dialogue_view.voice_line = func(voice_id: String, text: String):
 		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
@@ -2245,6 +2257,18 @@ var _flow_tex: ImageTexture = null      # the live water window's texture, updat
 var _liquid_hole_told: Rect2 = Rect2()
 
 
+var _cave_dressing = null   # bone piles and stalagmites/stalactites in caves (protocol 92), made on the first list
+
+
+func _on_cave_dressing(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat32Array) -> void:
+	if _cave_dressing == null:
+		_cave_dressing = CaveDressing.new()
+		_cave_dressing.name = "CaveDressing"
+		add_child(_cave_dressing)
+
+	_cave_dressing.set_tile(tile, bones, formations)
+
+
 func _on_cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
 	cave_dens[tile] = dens
 	cave_dens_changed.emit(tile, dens)
@@ -2285,6 +2309,7 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 	# One texture for every publish (twice a second, 256 KB): updated in place, not a new GPU texture each time (lag review, Dave 2 Nov 2026).
 	if _flow_tex == null or _flow_tex.get_size() != Vector2(im.get_size()):
 		_flow_tex = ImageTexture.create_from_image(im)
+		flora.set_liquid_live(_flow_tex)   # chunk sheets give way only where the live sheet draws water (Dave 4 Nov 2026: a dry sim hid a baked river)
 	else:
 		_flow_tex.update(im)
 
@@ -2968,6 +2993,9 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 
 	if _cave_streams != null:
 		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
+
+	if _cave_dressing != null:
+		_cave_dressing.clear()   # and its cave dressing with it
 
 	if sound != null:
 		sound.cavewater.clear()
@@ -3686,7 +3714,6 @@ func _step_player(delta: float) -> void:
 	if _item_sync_left <= 0.0:
 		_item_sync_left = 0.1
 		sound.itemfx.watch(items)
-		sound.itemfx.watch_vitals(items.hunger, 0.1)
 		sound.breath.set_exertion(items.strain)   # the server's real strain replaces the stand-in
 		var cleared_t0: int = Time.get_ticks_usec()
 		_sync_cleared()
@@ -4294,6 +4321,8 @@ func _process(delta: float) -> void:
 	if critters != null and body != null and sound != null and sound.ambient != null:
 		critters.update(delta, body.global_position, sound.ambient.weights, game_clock.season(), game_clock.hour(), float(weather.get("rain", 0.0)))
 
+	_flame_wet(delta)
+
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
 
@@ -4635,7 +4664,6 @@ func _process(delta: float) -> void:
 		for kind in ["crunch", "soft", "drink", "roast_forage", "raspberries", "poultice_plantain", "bandage_plantain"]:
 			sound.itemfx.eat(kind)
 
-		sound.itemfx.watch_vitals(10, 200.0)
 		# A mouthful at the water's edge (Dave 2026-10-21): E sends the drink, the server raises thirst, the gulp plays; a rise without E is silent.
 		items.thirst = 50
 		var before_drink: int = sound.itemfx.eat_played
@@ -4645,7 +4673,7 @@ func _process(delta: float) -> void:
 		items._on_vitals(items.hunger, items.health, int(items.weight_kg * 10.0), 70, items.luck, items.fitness)
 		print("Terrain client: drink check: %d gulps without E, %d gulp after E, last %s" % [silent_rise, sound.itemfx.eat_played - before_drink - silent_rise, sound.itemfx.last])
 
-		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, growls %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.itemfx.growls_played, sound.fire.last, sound.itemfx.last])
+		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.fire.last, sound.itemfx.last])
 
 	# Headless check: every placed-thing hook once, then a synthetic chest row appears and vanishes beside the player.
 	if test_placed and now - connected_msec > 18000:
@@ -5965,3 +5993,31 @@ func _exit_tree() -> void:
 	_drain_incoming()
 	if stream != null:
 		stream.close()
+
+
+# A torch in either hand goes out under water or after a few seconds in the open rain (Dave, 4 Nov 2026; flame_rules.gd). The client knows the held slot,
+# so it asks the server to swap the torch for a doused one; a lantern (later) only goes out under water.
+func _flame_wet(delta: float) -> void:
+	if held == null or items == null or items.inventory == null or net == null:
+		return
+
+	var slot: int = held.flame_slot()
+
+	if slot < 0:
+		_flame_rain_s = 0.0
+		return
+
+	var entry: Dictionary = items.table.entry(items.table.id_of(items.inventory.numbers[slot]))
+	var rain: float = float(weather.get("rain", 0.0))
+	# Cover from the rain: a tree's crown over the eye, or rock (a cave or an overhang: the same enclosure that stops the rain particles, weather_look.gd).
+	# A built roof is the server's to see: it refuses the douse there.
+	var enclosed: float = sound.cave.rock_enclosure if sound != null and sound.cave != null else 0.0
+	var covered: bool = WeatherLookScript.sky_share(enclosed) < 0.5 or held.flame_covered() if FlameRules.in_rain(rain, false) else true    # the cover lookup only while it rains
+	_flame_rain_s = _flame_rain_s + delta if FlameRules.in_rain(rain, covered) else 0.0
+	var reason: String = FlameRules.douse_reason(entry, underwater, rain, covered, _flame_rain_s)
+
+	if reason == "" or Time.get_ticks_msec() - _flame_asked_msec < 1000:
+		return
+
+	_flame_asked_msec = Time.get_ticks_msec()
+	net.inventory_action.rpc_id(1, NetScript.ACT_DOUSE, slot, 1 if reason == "rain" else 0, 0, Vector3.ZERO)

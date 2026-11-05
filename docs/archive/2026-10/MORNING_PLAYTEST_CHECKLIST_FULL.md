@@ -1,5 +1,7 @@
 # Morning playtest checklist
 
+> **Archived 5 Nov 2026 (Jason, for Jamie's DOC_MAP pass):** written for the 31 Oct build and out of date. Use `MORNING_PLAYTEST_CHECKLIST.md` at the repo root.
+
 For Dave, 2026-10-31 build (the daily branch head a00c2e04 plus the playthrough files; updated 06:50 after the PC crash and the merges of the night). About 45 minutes. Tick the boxes as you go. "Status" is what my checks say about this build (probes on the real server code, the tests, the pictures); "Known limits" is what is already broken or in progress, so you do not have to report it. Anything that does not match, write it in the last box.
 
 ## 0. Start the game

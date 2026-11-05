@@ -2030,6 +2030,18 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
+		"torch_doused": {
+			"name": "Doused torch",
+			"kind": "tool",
+			"description": "A torch that water or rain put out. Press E at a burning fire to light it again.",
+			"how_to_get": [
+				"A torch goes out under water, or after a few seconds in the open rain"
+			],
+			"used_for": [
+				"Light it again at a burning fire"
+			],
+			"obtainable_now": true
+		},
 		"bark": {
 			"name": "Bark",
 			"kind": "material",
@@ -6589,6 +6601,26 @@
 			"description": "A torch on the wall. It lights when fuelled.",
 			"how_to_get": [
 				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"standing_torch": {
+			"name": "Standing torch",
+			"kind": "structure",
+			"description": "A torch stuck in the ground. Hold E to take it back.",
+			"how_to_get": [
+				"Hold a torch and right click the ground"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"torch_sconce": {
+			"name": "Torch on the wall",
+			"kind": "structure",
+			"description": "A torch wedged on a wall. Hold E to take it back.",
+			"how_to_get": [
+				"Hold a torch and right click a wall"
 			],
 			"used_for": [],
 			"obtainable_now": true
