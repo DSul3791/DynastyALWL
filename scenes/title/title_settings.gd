@@ -14,7 +14,8 @@ const PANEL := Color(0.075, 0.08, 0.09, 0.96)
 const BUTTON_W := 420.0
 
 var display = DisplaySettingsScript.new()
-var _controls_from_settings: bool = true      # read by key_bindings_page.gd: its Back returns here
+@warning_ignore("unused_private_class_variable")
+var _controls_from_settings: bool = true      # read by key_bindings_page.gd (menu._controls_from_settings): its Back returns here
 var _pages: Dictionary = {}
 var _column: VBoxContainer
 var _note: Label
