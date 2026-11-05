@@ -2258,3 +2258,7 @@ Answered: 2026-11-05 12:01 UTC
 Answer: Yes, but later at rank 6 (recommended)
 Answered: 2026-11-05 12:01 UTC
 
+## jamie-far-grass-fade | Far grass: start the fade at 0.25 of the draw distance instead of 0.5?
+Answer: Decide after the grass walk (recommended)
+Answered: 2026-11-05 12:01 UTC
+
