@@ -774,12 +774,16 @@ func mouse_button(button: int, pressed: bool) -> bool:
 				_start_plan_place()
 			else:
 				_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, blueprints.picked, lift_steps, _blueprint_yaw, _blueprint_at)
+		elif button == MOUSE_BUTTON_LEFT and pressed:
+			_say_why_not()
 
 		return button == MOUSE_BUTTON_LEFT
 
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
 			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, _place_slot(), lift_steps, _blueprint_yaw, _blueprint_at)
+		elif button == MOUSE_BUTTON_LEFT and pressed:
+			_say_why_not()
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -1177,6 +1181,27 @@ func _ghost_clean(node: Node) -> void:
 
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
+# A left click on a red ghost says why it will not go down (Dave 5 Nov 2026: every placement that fails tells you the reason).
+func _say_why_not() -> void:
+	var why: String = {
+		"close": "Something is in the way.",
+		"crowded": "Too many of these stand here already.",
+		"steep": "The ground is too steep there.",
+		"water": "You cannot build in water.",
+		"nofire": "Lay a small fire first: the pot hangs over it.",
+		"taken": "That fire already has a pot.",
+		"far": "Too far to place that. Step closer.",
+	}.get(blueprint_state, "")
+
+	if why == "" and _blueprinting() and not blueprints.can_afford(_hammer_tier()):
+		why = "You do not have all the materials for that."
+
+	if why == "":
+		why = "Aim at the ground where it should go."
+
+	_inv._on_notice(why)
+
+
 func _update_blueprint() -> void:
 	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != "place") and _hammer_tier() <= 0:
 		blueprints.clear()   # the hammer is put away: the pick and the list go with it
