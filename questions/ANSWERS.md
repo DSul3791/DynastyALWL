@@ -2306,3 +2306,7 @@ Answered: 2026-11-05 12:26 UTC
 Answer: Rain x1.5: a rainy night is clearly colder, about 6 to 8 points (recommended) | Comment: Yes, rain makes you colder and thus makes you slower and the only way to get dried out is to get inside a building or a structure and if you’re underneath the tree or inside a building, it will start to dry it really slow but if you like a fire that will come down rapidly
 Answered: 2026-11-05 12:27 UTC
 
+## kathreen-npc-clothes | Town NPCs on your body: how do they get their shirt and trousers?
+Answer: Wear the game's real tunic and trousers pieces in their own colours, as players do (recommended; a first try looked a bit blocky, so I'd smooth them first)
+Answered: 2026-11-05 12:27 UTC
+
