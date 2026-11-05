@@ -1929,13 +1929,13 @@ To be fleshed out when the first NPC is designed.
 
 ## 14. Current code status
 
-The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDScript, run headless in Godot). The plan and its progress log are in `GENERATOR_V2_PLAN.md`.
+The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDScript, run headless in Godot). The plan and its progress log are in `docs/archive/2026-11/GENERATOR_V2_PLAN.md` (archived 5 Nov 2026, done).
 
 **Built and tested (877 checks pass, 2026-10-16)**
 
-- Step 14 first version: the runtime terrain generator (`src/worldgen/runtime/`), GDScript, about 18 ms per 32 m block, with a walk-and-fly preview scene. **[Proposed]** Keep it in GDScript until server streaming shows it is too slow, then move it into a small C++ module in the custom engine. Details in `GENERATOR_V2_PLAN.md`.
+- Step 14 first version: the runtime terrain generator (`src/worldgen/runtime/`), GDScript, about 18 ms per 32 m block, with a walk-and-fly preview scene. **[Proposed]** Keep it in GDScript until server streaming shows it is too slow, then move it into a small C++ module in the custom engine. Details in `docs/archive/2026-11/GENERATOR_V2_PLAN.md` (archived 5 Nov 2026, done).
 - Step 15 first version: runtime trees and plants from a species table, sent by the server, drawn in the client and preview, with removals stored (Section 4.3).
-- Step 16 first version: a terrain server streaming blocks to a client with a disk cache (`src/stream/`, `scenes/terrain_server/`, `scenes/terrain_client/`). See Section 4.10 and `GENERATOR_V2_PLAN.md`.
+- Step 16 first version: a terrain server streaming blocks to a client with a disk cache (`src/stream/`, `scenes/terrain_server/`, `scenes/terrain_client/`). See Section 4.10 and `docs/archive/2026-11/GENERATOR_V2_PLAN.md` (archived 5 Nov 2026, done).
 - A Linux build of the project's engine (Godot 4.7.2 with Voxel Tools 1.7) for cloud sessions: `tools/build_godot_linux.sh`.
 
 - World settings, SHA-256 seeds, append-only data tables (biomes, soils, rocks, resources, water classes, site types, feature types, province kinds).
@@ -2036,7 +2036,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 
 ## 16. Candidate work, in dependency order
 
-Nothing here is committed. It follows `GENERATOR_V2_PLAN.md`, ordered by what affects baked data first, since baked changes force rebakes.
+Nothing here is committed. It follows `docs/archive/2026-11/GENERATOR_V2_PLAN.md` (archived 5 Nov 2026, done), ordered by what affects baked data first, since baked changes force rebakes.
 
 1. Done: world settings, tables, world sketch, tile plan, and for one tile the height, erosion, water, climate, geology and sites (plan steps 2 to 12).
 2. Done: the permanent parts of the tile file (`WORLD_FORMAT_SPEC.md` Section 4): the ID scheme, the geology list with tuff (step 12b), the resource pass design, the river plan.

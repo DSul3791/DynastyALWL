@@ -1,5 +1,7 @@
 # Land and water: findings, research and plan (Sonny, 30 Oct 2026)
 
+> **ARCHIVED 5 Nov 2026 (Sonny: old water, replaced by water2).** Current water: `docs/DYNASTY_WATER_HISTORY.md`, `docs/DYNASTY_WATER_DESIGN.md`, `docs/TERRAIN_WATER_BACKLOG.md`.
+
 Dave made me responsible for land and water (the generator, rivers, lakes, ocean, live water) on 30 Oct 2026, after the character queue. This file holds (1) what was wrong in build 826, measured, (2) the research with sources and my confidence, (3) the plan with phases and sizes. Nothing here changes the tiles on disk: no bake was run.
 
 ## 1. What was wrong (diagnosis, with measurements)
