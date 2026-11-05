@@ -271,6 +271,7 @@ func _build_animations() -> void:
 			var made: Animation = _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
 
 			if game_name == "sit":
+				_hold_first(made)
 				_ground_sit(made, own.get_animation("Idle"))
 
 			_library.add_animation(game_name, made)
@@ -362,6 +363,26 @@ const SIT_PELVIS_BACK_DEG := 3.0      # the chair clip tips the pelvis forward (
 const SIT_ARM_FWD_DEG := -15.0         # hands rest on the knees: the upper arm swings forward this much from hanging (about the model's X axis), the forearm this much more
 const SIT_FOREARM_FWD_DEG := 20.0
 const SIT_SPINE_BACK_DEG := 3.0       # each of Spine, Spine1 and Spine2 leans back this much more
+
+
+# The chair clip is not still: over its 10.7 s the hips turn up to 28 degrees, the spine 31 and the thighs 25 (shifting on the chair, leaning to a desk). With the legs swung out for
+# the ground sit those turns became a lunge with the body off the ground (PC shot 5 Nov, main 60eadc63, read at a random time in the loop). The ground sit holds the clip's first
+# frame (the one tools/sit_pose_sim.py and tools/body_pose_shot.gd checked) on every key; only the neck and head keep half of their motion, so he still looks about.
+const SIT_LOOK_KEEP := 0.5
+
+
+static func _hold_first(anim: Animation) -> void:
+	for t in range(anim.get_track_count()):
+		if anim.track_get_key_count(t) < 2:
+			continue
+
+		var bone: String = String(anim.track_get_path(t)).get_slice(":", 1)
+		var first: Variant = anim.track_get_key_value(t, 0)
+		var look: bool = anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and (bone == P + "Neck" or bone == P + "Head")
+
+		for k in range(1, anim.track_get_key_count(t)):
+			var v: Variant = (first as Quaternion).slerp(anim.track_get_key_value(t, k) as Quaternion, SIT_LOOK_KEEP) if look else first
+			anim.track_set_key_value(t, k, v)
 
 
 static func _ground_sit(anim: Animation, idle: Animation) -> void:

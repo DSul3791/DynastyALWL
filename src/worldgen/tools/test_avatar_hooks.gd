@@ -61,13 +61,11 @@ func _initialize() -> void:
 	ctx["pick_stamp"] = 3000
 	check(AvatarDriver.hook_clip(body, ctx, 4.0, 0.016) == "", "a pick-up on the run is not played")
 
-	# Sit down, stand up: on the stance change.
+	# Sitting down and standing up: the chair transitions are not played for the ground sit (the sit clip blends in directly).
 	ctx["stance"] = StanceScript.SIT
-	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.016) == "sit_down", "standing to sitting: sit_down")
-	check(AvatarDriver.hook_clip(body, ctx, 0.0, 1.5) == "", "then the sit clip takes over")
+	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.016) == "", "standing to sitting: no chair transition")
 	ctx["stance"] = StanceScript.STAND
-	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.016) == "stand_up", "sitting to standing: stand_up")
-	check(AvatarDriver.hook_clip(body, ctx, 0.0, 1.5) == "", "and over")
+	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.016) == "", "sitting to standing: no chair transition")
 	ctx["stance"] = StanceScript.CROUCH
 	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.016) == "", "crouching has no hook")
 
