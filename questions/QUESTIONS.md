@@ -53,11 +53,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
 
-## jamie-animal-meshes | Animals are code shapes that shaders can't improve. Model real animal meshes?
-- Yes, but later at rank 6 (recommended)
-- Yes, now
-- No, keep the code shapes
-
 ## jamie-far-grass-fade | Far grass: start the fade at 0.25 of the draw distance instead of 0.5?
 - Decide after the grass walk (recommended)
 - Yes, 0.25
