@@ -2154,8 +2154,8 @@ func _drain_world_backlog() -> void:
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
 	var t_all: int = Time.get_ticks_usec()
-	var slowest_usec: int = 0
-	var slowest: String = ""
+	_slowest_row_usec = 0
+	_slowest_row = ""
 	var t_mark: int = t_all
 
 	for id in removed:
@@ -2164,7 +2164,14 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	prof["forget"] = Time.get_ticks_usec() - t_mark
 	t_mark = Time.get_ticks_usec()
 
+	var row_usec: int = 0
+	var row_name: String = ""
+
 	for row in added:
+		# The slowest row, whatever path it takes (lag run 5 Nov: 44 ms for 1 added, none of it in the timed parts).
+		_note_slowest_row(row_usec, row_name)
+		row_usec = Time.get_ticks_usec()
+		row_name = "%s state %d" % [table.id_of(int(row[1])), int(row[4]) if row.size() > 4 else 0]
 		var id: int = row[0]
 		var state: int = int(row[4]) if row.size() > 4 else 0
 
@@ -2273,10 +2280,6 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_world[id]["burn_at"] = Time.get_ticks_msec()
 
 		prof["loose_mesh"] = int(prof.get("loose_mesh", 0)) + Time.get_ticks_usec() - t_d
-
-		if Time.get_ticks_usec() - t_d > slowest_usec:   # names the item in the slow line (lag run 5 Nov: "loose_mesh 43 ms" for one item, which one unknown)
-			slowest_usec = Time.get_ticks_usec() - t_d
-			slowest = table.id_of(int(row[1]))
 		var t_e: int = Time.get_ticks_usec()
 		_refresh_pile(id)
 		prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_e
@@ -2284,6 +2287,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		_snap_loose(id)
 		prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_e
 
+	_note_slowest_row(row_usec, row_name)
 	var total_ms: float = float(Time.get_ticks_usec() - t_all) / 1000.0
 
 	if total_ms > 30.0:
@@ -2292,7 +2296,22 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		for key in prof:
 			parts.append("%s %.0f ms" % [key, float(prof[key]) / 1000.0])
 
-		print("client slow: world items %.0f ms for %d added, %d removed: %s (slowest loose item: %s %.0f ms)" % [total_ms, added.size(), removed.size(), ", ".join(parts), slowest, float(slowest_usec) / 1000.0])
+		print("client slow: world items %.0f ms for %d added, %d removed: %s (slowest row: %s, %.0f ms)" % [total_ms, added.size(), removed.size(), ", ".join(parts), _slowest_row, float(_slowest_row_usec) / 1000.0])
+
+
+var _slowest_row_usec: int = 0   # the slowest added row of the last world-items list, and what it was (the slow line)
+var _slowest_row: String = ""
+
+
+func _note_slowest_row(since_usec: int, row_name: String) -> void:
+	if since_usec == 0:
+		return
+
+	var spent: int = Time.get_ticks_usec() - since_usec
+
+	if spent > _slowest_row_usec:
+		_slowest_row_usec = spent
+		_slowest_row = row_name
 
 
 # The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
