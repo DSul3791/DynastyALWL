@@ -1,4 +1,5 @@
 extends Node
+const PieceLook := preload("res://src/client/piece_look.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
@@ -81,6 +82,7 @@ var _vitals_seen: bool = false          # the first vitals after joining sets he
 const HURT_MIN := 4                     # a smaller drop is a slow drain (hunger, cold, bleeding), not a blow
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
+var training_today: int = 0           # today's training, percent of a fitness point (character screen; turns into fitness at game midnight)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
 var thirst: int = 100                  # body water, percent (100 = full; 0 = parched)
 var health: int = 100
@@ -187,6 +189,10 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
+	net.training_received.connect(func(percent: int):
+		training_today = percent
+		if _character != null:
+			_character.refresh())
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
 	net.comfort_received.connect(_on_comfort)
@@ -677,6 +683,18 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 	if str(station_def.get("station", "")) != "":
 		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
+
+	# A light (a torch stuck in the ground or on a wall, a wall torch, a chandelier): E lights it with its fuel from the pack (a stick for a torch), hold E takes it down.
+	if str(station_def.get("use", "")) == "light":
+		var burning: bool = _world[id].get("light") != null
+		var what: String = "the torch" if bool(station_def.get("hand_placed", false)) else "it"
+		var tap: Callable = func():
+			if burning:
+				show_notice("Hold E to take it back")
+			else:
+				net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+
+		return {"prompt": ("Hold E to take %s back" % what) if burning else ("Press E to light %s with a %s (hold E to take it back)" % [what, table.name_of(table.number_of(str(station_def.get("fuel", "stick")))).to_lower()]), "tap": tap, "hold": take_down}
 
 	return {"prompt": "Hold E to take down the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
 
@@ -3159,6 +3177,7 @@ func _prewarm_loose_meshes() -> void:
 			_mesh_for(table.number_of(name))
 
 	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	PieceLook.prewarm()   # the building material and trodden-path pictures, on a worker (about 170 ms on the main thread at the first piece or hoe stroke)
 	_prewarm_felled()
 
 
@@ -5565,3 +5584,8 @@ func run_chop_test(client) -> void:
 			kinds.append(_world[id]["state"])
 
 	print("Chop test: %d blows, felled states in view %s" % [blows, str(kinds)])
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		PieceLook.finish_prewarm()     # the pictures worker started by the prewarm never outlives the view

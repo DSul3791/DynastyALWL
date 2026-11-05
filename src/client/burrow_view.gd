@@ -36,8 +36,8 @@ func on_burrows(points: PackedVector3Array) -> void:
 		var at: Vector3 = points[i]
 		var seed_v: float = fposmod(sin(at.x * 12.9898 + at.z * 78.233) * 43758.5453, 1.0)
 		var size: float = 0.85 + 0.3 * seed_v
-		var basis: Basis = Basis(Vector3.UP, _yaw(at, seed_v)).scaled(Vector3(size, size * (0.9 + 0.2 * fposmod(seed_v * 7.0, 1.0)), size))
-		mm.set_instance_transform(i, Transform3D(basis, at - Vector3(0.0, SINK, 0.0)))
+		var mound_basis: Basis = Basis(Vector3.UP, _yaw(at, seed_v)).scaled(Vector3(size, size * (0.9 + 0.2 * fposmod(seed_v * 7.0, 1.0)), size))
+		mm.set_instance_transform(i, Transform3D(mound_basis, at - Vector3(0.0, SINK, 0.0)))
 
 
 # The heading: the entrance (mesh +x) faces down the steepest drop, from the ground 1 m to each side; on flat ground or without ground

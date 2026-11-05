@@ -1,5 +1,7 @@
 # Water handover for Dave (Sonny, 31 Oct 2026)
 
+> **ARCHIVED 5 Nov 2026.** The current water truth is `docs/DYNASTY_WATER_HISTORY.md` (its section 9 keeps the shader patch plan and cost options from the status doc), with `docs/DYNASTY_WATER_DESIGN.md` and `docs/TERRAIN_WATER_BACKLOG.md`. Paths and facts below are as of 31 Oct.
+
 One page: what the water and shore are now, how to look at them, how to test them, and what waits for your decision. The long version, with measurements, pictures and ratings, is `WATER_PLAN.md`; the re-bake is in `PHASE7_PLAN.md`.
 
 ## What exists

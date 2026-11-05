@@ -1,5 +1,7 @@
 # Handoff: Tyler: Q&A Testing, 1 Nov 2026
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 ## My role
 Q&A testing and tooling for DynastyALWL (Godot 4.7) since 1 Nov: the test suite, rigs and probes, regressions, the join freeze and stability, merge gates. The systems listed under "Done" (comfort, lit fixtures, placement, hints and goals, death rules) were built by me before the role change and are Steve's now. Branch `claude/tyler-gates-fee5f7`; the moderator ("More Dynasty") merges it into `DailyDev_20261029`. I never merge to the daily or main myself and never force-push.
 

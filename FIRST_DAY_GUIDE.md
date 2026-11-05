@@ -16,7 +16,7 @@ What a new player does, in order, with what it costs after the pacing pass. Ever
 | 10 | Make a Rough bed in the inventory (the one bed made by hand) and sleep | 10 thatch (or 8 bedding or straw), 4 sticks, 2 twine | 25 s | goal: make a bed |
 | 11 | Build a workbench with the hammer: the Camp bench, or the log workbench (4 logs, 6 twine and 6 more sticks) | 16 sticks, 6 twine, 4 stones for the Camp bench | - | goal: build a Camp bench (either counts, #53) |
 | 12 | Make a spear, a knife, hunt a rabbit (the wooden spear already kills a rabbit in one jab; the goal wants the stone spear) | wooden spear 1 stick (6 s, a stone kept) then 2 twine (10 s); knife 2 stones + 1 stick (8 s) | 6 s, 10 s, 8 s | goals: spear, knife |
-| 13 | Fish at the pond | rod (2 sticks, 2 twine) or shore net (8 twine, 4 stones) | rod 8 s | goal: catch a fish |
+| 13 | Fish at the pond | rod (2 sticks, 2 twine) or shore net (3 rope, 4 stones; a rope is 4 twine, or 12 plant fibre since #353) | rod 8 s | goal: catch a fish |
 
 Whole first day (re-added from data by MikeW, 5 Nov, after the 4 Nov shelter and no-kits changes): about **62 sticks** (campfire 6, axe 1, hammer 1, lean-to 30, bed 4, bench 16, spear 1, knife 1, rod 2), **10 stones** (axe 1, campfire 3, bench 4, knife 2; the spear's stone is kept), **200 leaves** (one felled tree), 1 large wooden block, 10 thatch or 8 bedding, and **25 twine = 75 fibre** (axe 2, hammer 1, lean-to 10, bed 2, bench 6, stone spear 2, rod 2). The lean-to and bench are hammer builds with no craft time; the rest of the day is gathering and walking, which nobody has timed yet.
 

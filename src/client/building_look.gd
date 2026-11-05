@@ -1083,6 +1083,16 @@ static func lit_fixture(kind: String) -> Node3D:
 			light_at = Vector3(0.0, 2.4, 0.5)
 			range_m = 6.5
 			energy = 1.9
+		"torch_sconce":
+			spots = [[Vector3(0.0, 0.57, 0.36), Vector3(0.9, 0.72, 0.9)], [Vector3(0.07, 0.55, 0.33), Vector3(0.5, 0.45, 0.5)]]
+			light_at = Vector3(0.0, 0.7, 0.5)
+			range_m = 6.5
+			energy = 1.9
+		"standing_torch":
+			spots = [[Vector3(0.0, 0.89, 0.08), Vector3(0.9, 0.72, 0.9)], [Vector3(0.05, 0.88, 0.07), Vector3(0.5, 0.45, 0.5)]]
+			light_at = Vector3(0.0, 1.2, 0.15)
+			range_m = 6.5
+			energy = 1.9
 		"chandelier":
 			for k in 6:
 				var a: float = TAU * float(k) / 6.0

@@ -59,6 +59,8 @@ const LOOKS := {
 	"wool_rug": {"builder": "rug", "args": []},
 	"hide_rug": {"builder": "hide_rug", "args": []},
 	"wall_torch": {"builder": "wall_torch", "args": [false]},
+	"standing_torch": {"builder": "standing_torch", "args": [false]},
+	"torch_sconce": {"builder": "torch_sconce", "args": [false]},
 	"straw_bed": {"builder": "comfort_bed", "args": ["straw"]},
 	"feather_bed": {"builder": "comfort_bed", "args": ["feather"]},
 	"canopy_bed": {"builder": "comfort_bed", "args": ["canopy"]},

@@ -74,6 +74,17 @@ var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its
 # Cave dressing (Dave 4 Nov 2026; bake: tile_sites._dress_cave; drawn by Kathreen's client view). Flat lists:
 var cave_bones: PackedFloat32Array = PackedFloat32Array()        # 5 floats each: x, y, z, kind (0 animal, 1 human), yaw
 var cave_formations: PackedFloat32Array = PackedFloat32Array()   # 6 floats each: x, y, z, kind (0 stalagmite, 1 stalactite), height_m, radius_m (a stalactite's y is its root on the roof)
+# Loose stones and boulders on cave floors (Dave 4 Nov 2026: "they should be riddled with rocks and collectable stones"): 5 floats each, x, y (the floor),
+# z, kind (0 stone, 1 boulder), boulder radius m. Laid out by the server's item scatter (server_items._lay_out_cave_items) through cave_scatter_in.
+var cave_scatter: PackedFloat32Array = PackedFloat32Array()
+var _cave_scatter_cells: Dictionary = {}   # Vector2i scatter cell -> PackedInt32Array of entry numbers, built for _cave_scatter_cell_m
+var _cave_scatter_cell_m: float = 0.0
+var _cave_sources: Array = []           # the tile's baked caves, kept so the scatter is worked out only when the server first asks (the client never does)
+var _cave_scatter_built: bool = false
+const CAVE_STONE_EVERY_M := 2.5     # one loose stone per this many metres of passage
+const CAVE_BOULDER_EVERY_M := 9.0   # one boulder per this many metres of passage
+const CAVE_STONE_PER_M2 := 0.12     # stones per square metre of chamber floor
+const CAVE_BOULDER_PER_M2 := 0.02
 var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 box]: ground opened by a cave mouth (entrance node to its first node): no flora there
 const CAVE_POOL_M := 0.4            # a spring cave pool's surface: this far above the bottom of its chamber as the chamber is carved
 const CAVE_POOL_DEPTH_M := 20.0     # Dave's QA list BUG-008 (answer 4 Nov 2026): the pool goes 20 m down below that, in a natural shape; the chamber stays
@@ -607,6 +618,10 @@ func _load_caves(list: Array) -> void:
 	cave_dens = PackedVector3Array()
 	cave_bones = PackedFloat32Array()
 	cave_formations = PackedFloat32Array()
+	cave_scatter = PackedFloat32Array()
+	_cave_scatter_cells = {}
+	_cave_sources = []
+	_cave_scatter_built = false
 
 	for cave in list:
 		for bone in cave.get("bones", []):
@@ -678,7 +693,110 @@ func _load_caves(list: Array) -> void:
 		if capsules.is_empty() and chambers.is_empty():
 			continue
 
+		_cave_sources.append(cave)
+
 		caves.append({"id": str(cave["id"]), "aabb": AABB(low, high - low), "capsules": capsules, "chambers": chambers})
+
+
+# Stones and boulders on one cave's floor, from a seed of the cave so they lie in the same places every time. Along each passage they lie on the floor of
+# its section (an ellipse rw wide and rh tall round the middle line, as the cave is carved), to either side of a spring stream's ribbon (0.3 of the width
+# each side, cave_streams.gd), boulders against the walls; in a chamber across its floor, never in a spring pool. A spot where the ground is below the
+# cave's floor (the open cut at a mouth) gets nothing.
+func _scatter_cave(cave: Dictionary) -> void:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash("%s/scatter" % str(cave.get("id", "")))
+	var nodes: Array = cave["nodes"]
+
+	for segment in cave["segments"]:
+		var na: Array = nodes[int(segment[0])]
+		var nb: Array = nodes[int(segment[1])]
+		var a: Vector3 = Vector3(float(na[0]), float(na[1]), float(na[2]))
+		var b: Vector3 = Vector3(float(nb[0]), float(nb[1]), float(nb[2]))
+		var rw: float = 0.5 * maxf(float(na[3]), float(nb[3]))
+		var rh: float = 0.5 * maxf(float(na[4]), float(nb[4]))
+		var flat: Vector2 = Vector2(b.x - a.x, b.z - a.z)
+		var length: float = flat.length()
+
+		if length < 0.5:
+			continue
+
+		var side_dir: Vector2 = Vector2(-flat.y, flat.x) / length
+		var stream: bool = str(segment[2]) == "water"
+
+		for k in range(int(length / CAVE_STONE_EVERY_M)):
+			var t: float = (float(k) + rng.randf()) * CAVE_STONE_EVERY_M / length
+			var side: float = (1.0 if rng.randf() < 0.5 else -1.0) * (rng.randf_range(0.36, 0.7) if stream else rng.randf_range(0.0, 0.7))
+			_add_cave_floor_spot(a.lerp(b, t), side_dir, side, rw, rh, 0, 0.0)
+
+		for k in range(int(length / CAVE_BOULDER_EVERY_M)):
+			var t: float = (float(k) + rng.randf()) * CAVE_BOULDER_EVERY_M / length
+			var radius: float = clampf(rng.randf_range(0.25, 0.7), 0.25, 0.3 * rw)
+			_add_cave_floor_spot(a.lerp(b, t), side_dir, (1.0 if rng.randf() < 0.5 else -1.0) * maxf(0.75 - radius / rw, 0.4), rw, rh, 1, radius)
+
+	for chamber in cave["chambers"]:
+		var node: Array = nodes[int(chamber["node"])]
+		var centre: Vector3 = Vector3(float(node[0]), float(node[1]), float(node[2]))
+		var r: float = float(chamber["radius_m"])
+		var rh: float = 0.5 * float(chamber["height_m"])
+		var pool_r: float = -1.0
+
+		if "spring" in chamber.get("features", []):
+			pool_r = float(spring_basin(str(cave.get("id", "")), node, chamber)["open_r"]) + 0.5
+
+		var area: float = PI * r * r
+		var count: int = int(area * (CAVE_STONE_PER_M2 + CAVE_BOULDER_PER_M2))
+
+		for k in range(count):
+			var boulder: bool = rng.randf() < CAVE_BOULDER_PER_M2 / (CAVE_STONE_PER_M2 + CAVE_BOULDER_PER_M2)
+			var angle: float = rng.randf_range(0.0, TAU)
+			var d: float = r * sqrt(rng.randf_range(0.0, 0.6))
+			var radius: float = rng.randf_range(0.3, 0.9) if boulder else 0.0
+
+			if pool_r > 0.0 and d < pool_r + radius:
+				continue
+
+			_add_cave_floor_spot(centre, Vector2(cos(angle), sin(angle)), d / r, r, rh, 1 if boulder else 0, radius)
+
+
+# A floor spot `side` (a share of the half width rw, either sign) out from `centre` along `side_dir` on a section rw wide and rh tall.
+func _add_cave_floor_spot(centre: Vector3, side_dir: Vector2, side: float, rw: float, rh: float, kind: int, radius: float) -> void:
+	var off: Vector2 = side_dir * side * rw
+	var x: float = centre.x + off.x
+	var z: float = centre.z + off.y
+	var y: float = centre.y - rh * sqrt(maxf(1.0 - side * side, 0.0))
+
+	if is_nan(height_at(x, z)) or height_at(x, z) < y + 0.5:
+		return   # open to the sky here (a mouth's cut): the surface scatter covers it
+
+	cave_scatter.append_array(PackedFloat32Array([x, y, z, float(kind), radius]))
+
+
+# The cave floor stones and boulders whose spot lies in one scatter cell (cell_m square, as the server lays its loose things out): entry numbers into
+# cave_scatter (5 floats each). The index by cell is built the first time it is asked for.
+func cave_scatter_in(cell: Vector2i, cell_m: float) -> PackedInt32Array:
+	if not _cave_scatter_built:
+		_cave_scatter_built = true
+
+		for cave in _cave_sources:
+			_scatter_cave(cave)
+
+	if cave_scatter.is_empty():
+		return PackedInt32Array()
+
+	if _cave_scatter_cell_m != cell_m:
+		_cave_scatter_cell_m = cell_m
+		_cave_scatter_cells = {}
+
+		@warning_ignore("integer_division")
+		for n in range(cave_scatter.size() / 5):
+			var key: Vector2i = Vector2i(int(floor(cave_scatter[n * 5] / cell_m)), int(floor(cave_scatter[n * 5 + 2] / cell_m)))
+
+			if not _cave_scatter_cells.has(key):
+				_cave_scatter_cells[key] = PackedInt32Array()
+
+			_cave_scatter_cells[key].append(n)
+
+	return _cave_scatter_cells.get(cell, PackedInt32Array())
 
 
 # The stream along a spring cave's floor: its "water" segments run from the mouth (lower) up to a spring (higher); each piece is stored upper end

@@ -73,7 +73,7 @@ Every row was checked in data and in the existing headless tests (re-run by `art
 | Use the hide | waterskin (2 hide + 1 twine); hide clothes 1 to 3 hides each | | craftable; leather and processed hide need flint (F-02) | PASS to cloth, BLOCKED to leather |
 | Snare | 3 twine + 2 sticks; open ground well away from buildings | catches rabbit (weight 1.0), fox (0.4), duck (0.5); never deer or bigger | test_traps 26 pass | PASS |
 | Fishing line | rod: 2 sticks + 2 twine; bait: berries, raw meat or plant fibre; water must be near | the spawn pond: carp 60 %, perch 40 % (pond table); streams trout 70 %, perch 30 %; lakes pike 30, perch 40, carp 30 | fish roast to roast fish | PASS (fish look good on `items_01.jpg`) |
-| Shore net | 8 twine + 4 stones, hold at the water's edge about 20 s | 1 to 3 small fish | test_shore_net 0 failures | PASS |
+| Shore net | 3 rope + 4 stones (a rope is 4 twine or 12 plant fibre), hold at the water's edge about 20 s | 1 to 3 small fish | test_shore_net 0 failures | PASS |
 | Big game | moose 90 HP, horse 60 HP | **not within 1,500 m of 53301, 68427** | cannot be met near the spawn | MISSING (F-28) |
 
 ## 5. The animals as drawn (art/playthrough/animals/animals_side.jpg and animals_front34.jpg)
