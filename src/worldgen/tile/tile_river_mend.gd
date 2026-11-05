@@ -6,6 +6,11 @@ extends RefCounted
 # below it (tile 3,4 had 34 such pieces, 7042 water cells, cut off from the sea). Water does not stop in the middle of a hillside, so this pass digs each one
 # on: for every piece of water with a river in it that reaches neither the sea nor the edge of the frame, a priority flood from the piece finds the lowest way
 # out (as water would) to lower water, and a channel is cut along it, its level falling the whole way, with sloping banks.
+#
+# The way out must reach water that itself drains (Dave 5 Nov 2026, x 53206 z 68502: "the river suddenly doesnt have a riverbed"). The first version stopped at
+# any lower water, so a river dug into a small landlocked pond and ended there 100 m on (tile 3,4 kept 17 rivers cut off). A piece counts as draining when it
+# has sea in it or its lowest cell is on the frame edge (a river that only enters across the edge and ends inside is not draining), or once it has been dug
+# out; the pieces are dug lowest first, so each dig can end in a lower one already opened, and a cut runs through closed ponds on its way.
 
 const PondLevel := preload("res://src/worldgen/tile/tile_pond_level.gd")
 
@@ -28,7 +33,7 @@ static func mend(heights: PackedFloat32Array, water_class: PackedByteArray, wate
 	piece_of.fill(-1)
 	var pieces: Array = []   # [cells PackedInt32Array, open bool, river cells int]
 
-	# Pieces of water, 8-connected; a piece is open when it touches the sea or the frame edge.
+	# Pieces of water, 8-connected; a piece is open when it holds sea or its lowest cell is on the frame edge (the water leaves there).
 	for start in range(n * n):
 		if water_class[start] == 0 or piece_of[start] >= 0:
 			continue
@@ -39,14 +44,18 @@ static func mend(heights: PackedFloat32Array, water_class: PackedByteArray, wate
 		var open: bool = false
 		var rivers: int = 0
 		var at: int = 0
+		var low: int = start
 
 		while at < cells.size():
 			var k: int = cells[at]
 			at += 1
 			var column: int = k % n
 
-			if water_class[k] == OCEAN or column == 0 or column == n - 1 or k < n or k >= n * (n - 1):
+			if water_class[k] == OCEAN:
 				open = true
+
+			if heights[k] < heights[low]:
+				low = k
 
 			if water_class[k] == RIVER:
 				rivers += 1
@@ -62,30 +71,47 @@ static func mend(heights: PackedFloat32Array, water_class: PackedByteArray, wate
 						piece_of[m] = id
 						cells.append(m)
 
+		var low_column: int = low % n
+		open = open or low_column == 0 or low_column == n - 1 or low < n or low >= n * (n - 1)
 		pieces.append([cells, open, rivers])
 
 	var landlocked: int = 0
 	var mended: int = 0
 	var wet: int = 0
 
-	# Highest pieces first, so a piece dug into a lower landlocked piece is carried on when that one is dug.
+	# Lowest pieces first: once dug out a piece drains, so a higher piece can end in it.
+	var open_piece: PackedByteArray = PackedByteArray()
+	open_piece.resize(pieces.size())
 	var order: Array = []
 
 	for id in range(pieces.size()):
+		open_piece[id] = 1 if bool(pieces[id][1]) else 0
+
 		if not bool(pieces[id][1]) and int(pieces[id][2]) >= MIN_RIVER_CELLS:
 			order.append(id)
 
-	order.sort_custom(func(a: int, b: int) -> bool: return _lowest(heights, pieces[a][0]) > _lowest(heights, pieces[b][0]))
+	order.sort_custom(func(a: int, b: int) -> bool: return _lowest(heights, pieces[a][0]) < _lowest(heights, pieces[b][0]))
 
 	for id in order:
 		landlocked += 1
-		var path: PackedInt32Array = _way_out(heights, water_class, piece_of, n, pieces[id][0], id)
+
+		if open_piece[id] == 1:
+			mended += 1   # a lower dig already ran through it
+			continue
+
+		var path: PackedInt32Array = _way_out(heights, water_class, piece_of, open_piece, n, pieces[id][0], id)
 
 		if path.size() < 2:
 			continue
 
 		mended += 1
 		wet += _cut(heights, water_class, water_surface, n, cell_m, path)
+		open_piece[id] = 1
+
+		# Closed ponds the cut ran through drain now too.
+		for k in path:
+			if piece_of[k] >= 0:
+				open_piece[piece_of[k]] = 1
 
 	return {"pieces": landlocked, "mended": mended, "cells": wet}
 
@@ -99,9 +125,10 @@ static func _lowest(heights: PackedFloat32Array, cells: PackedInt32Array) -> flo
 	return low
 
 
-# Priority flood from the piece, lowest ground first; the first cell of other water lying below the piece's lowest ground (or the sea, or the frame edge) ends
-# it. Returns the path from the piece's cell it started at to that cell, or an empty array when the flood gives up.
-static func _way_out(heights: PackedFloat32Array, water_class: PackedByteArray, piece_of: PackedInt32Array, n: int, cells: PackedInt32Array, id: int) -> PackedInt32Array:
+# Priority flood from the piece, lowest ground first; the first cell of other draining water (an open piece, or a cell an earlier cut made wet) lying below
+# the piece's lowest ground, or the sea, or the frame edge, ends it. Closed water on the way is crossed like ground. Returns the path from the piece's cell it
+# started at to that cell, or an empty array when the flood gives up.
+static func _way_out(heights: PackedFloat32Array, water_class: PackedByteArray, piece_of: PackedInt32Array, open_piece: PackedByteArray, n: int, cells: PackedInt32Array, id: int) -> PackedInt32Array:
 	var keys: PackedFloat32Array = PackedFloat32Array()
 	var nodes: PackedInt32Array = PackedInt32Array()
 	var came: Dictionary = {}
@@ -116,7 +143,9 @@ static func _way_out(heights: PackedFloat32Array, water_class: PackedByteArray, 
 		var column: int = k % n
 		var edge: bool = column == 0 or column == n - 1 or k < n or k >= n * (n - 1)
 
-		if piece_of[k] != id and (edge or water_class[k] == OCEAN or (water_class[k] != 0 and heights[k] < floor_m - 0.5)):
+		var draining: bool = water_class[k] != 0 and (piece_of[k] < 0 or open_piece[piece_of[k]] == 1)
+
+		if piece_of[k] != id and (edge or water_class[k] == OCEAN or (draining and heights[k] < floor_m - 0.5)):
 			var path: PackedInt32Array = PackedInt32Array()
 			var walker: int = k
 
