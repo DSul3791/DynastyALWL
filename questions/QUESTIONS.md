@@ -52,3 +52,77 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [A] Leave it as it is, I will tell you after I listen
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
+
+## jamie-hills-375 | Terrain 53 (#375): taller, more frequent hills, rivers that no longer stop at ridges, spring caves. It passed the PC tests. Merge it?
+Note: Recommendation: merge now, then look in game when you next play.
+- Yes, merge it now (recommended)
+- Wait, I will look in game first
+
+## jamie-leanto-leaves | The lean-to needs 200 leaves, about 34 trees, which is roughly 9 of the first hour's 13 minutes (#386). Change it?
+Note: Recommendation: 80 leaves, about one felled crown.
+- Cut it to 80 leaves (recommended)
+- Keep 200
+- Another number: I will say
+
+## jamie-foundations-hammer | Foundations: your 25 Oct note said made by hand, but your 4 Nov answer said hammer blueprint only (stacking is merged, #311). Settled as hammer only?
+- Yes, hammer blueprint only (recommended)
+- No, also by hand
+
+## jamie-animal-meshes | Animals are code shapes that shaders can't improve. Model real animal meshes?
+- Yes, but later at rank 6 (recommended)
+- Yes, now
+- No, keep the code shapes
+
+## jamie-far-grass-fade | Far grass: start the fade at 0.25 of the draw distance instead of 0.5?
+- Decide after the grass walk (recommended)
+- Yes, 0.25
+- No, keep 0.5
+
+## jamie-cold-acclimation | Cold acclimation: how does a character get used to the cold?
+- Slowly, from time spent in the cold, with a cap (recommended)
+- Not at all
+- Another way: I will say
+
+## jamie-wet-clothes | Wet clothes: should clothes stay damp about 1 hour after rain or a swim and keep you less warm?
+- Yes (recommended)
+- No
+
+## jamie-gravel-path | Add a gravel path mode to the hoe?
+- Later, after roads are settled (recommended)
+- Yes, now
+- No
+
+## jamie-torch-relight | A torch that went out (rain or water): how does it light again? Built now: E at a burning fire (#361).
+- E at a burning fire, as built (recommended)
+- Another way: I will say
+
+## jamie-lantern-now | Lantern item (works in rain, goes out under water): add it now?
+- Later (recommended)
+- Now
+
+## jamie-burnt-fire | A burnt-out fire is deleted after 5 minutes. Change it?
+- Leave a cold fire that stays and can be relit (Dino's idea, recommended)
+- Keep deleting it after 5 minutes
+
+## jamie-raw-meat | Raw meat sickness feels harsh. Make it milder?
+- Yes, milder (recommended)
+- Keep it as is
+
+## jamie-wildflower-size | Wildflower heads are drawn about 4 times real size (a dandelion head about 15 to 20 cm, real about 4 cm).
+- Keep them big so you see them from afar (recommended)
+- Real size
+
+## jamie-footstep-clip | Your two footstep recordings (step_gravel_left, step_stone_left) clip at +0.2 dB.
+- Jason trims them with declip.py (recommended)
+- I will re-export them
+
+## jamie-storm-sound | Storm sound (BUG-001): what was the name of the sound you heard? (Shift+F3 lists playing sounds.)
+[text]
+
+## jamie-clear-tile-340 | Thatch floor, floor section and foundation section still clear a 5 m circle of plants. Make them clear only their own tile, like log, stone and brick floors (#340)?
+- Yes, own tile only (recommended)
+- No, keep the 5 m circle
+
+## jamie-rain-warmth | Rain night with no clothes (PC check): about 45% warmth at 7 C, 56% at 10 C. Rain costs only about 2.4 points. Should rain cost more?
+- Yes, rain should chill more (recommended for survival feel)
+- No, it is fine
