@@ -126,3 +126,13 @@ Note: Recommendation: 80 leaves, about one felled crown.
 ## jamie-rain-warmth | Rain night with no clothes (PC check): about 45% warmth at 7 C, 56% at 10 C. Rain costs only about 2.4 points. Should rain cost more?
 - Yes, rain should chill more (recommended for survival feel)
 - No, it is fine
+
+## kathreen-npc-clothes | Town NPCs on your body: how do they get their shirt and trousers?
+- Wear the game's real tunic and trousers pieces in their own colours, as players do (recommended; a first try looked a bit blocky, so I'd smooth them first)
+- Paint a flat shirt and trousers on the skin
+- Wait for your skin and cloth mask texture from the body file
+
+## kathreen-meadow-gain | Meadow grass tufts at noon (PC look): since the plant shader change they draw about 1.5 to 2 times brighter. Do they look too pale or bright?
+- Haven't looked yet, ask me again after I play (recommended)
+- They look fine, keep them
+- Too pale or bright, tone them down (gain 0.85 to 0.6)
