@@ -56,11 +56,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 ## jamie-storm-sound | Storm sound (BUG-001): what was the name of the sound you heard? (Shift+F3 lists playing sounds.)
 [text]
 
-## kathreen-npc-clothes | Town NPCs on your body: how do they get their shirt and trousers?
-- Wear the game's real tunic and trousers pieces in their own colours, as players do (recommended; a first try looked a bit blocky, so I'd smooth them first)
-- Paint a flat shirt and trousers on the skin
-- Wait for your skin and cloth mask texture from the body file
-
 ## kathreen-meadow-gain | Meadow grass tufts at noon: Sonny already toned them down a little (#416, gain 0.85 to 0.72). PC shots: /mnt/project-files/meadow421_compare_level_yaw90.png and meadow421_down30.png. How do they look now?
 - They look fine, keep them (recommended)
 - Still too pale or bright, tone down more (gain 0.6)
