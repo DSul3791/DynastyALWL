@@ -59,6 +59,20 @@ func _init() -> void:
 	check(list.kit_of(list.picked) != "", "the picked blueprint names its structure's kit for the ghost")
 	list.clear()
 	check(list.picked == 0 and not list.is_open, "putting the hammer away clears the pick")
+	# Groups (Dave 5 Nov 2026): the menu can show one group of blueprints at a time; every blueprint has a group.
+	var groups: Array = list.categories(1)
+	check(groups.size() >= 5 and list.rows(1).all(func(r): return str(r["category"]) != "Other"), "every blueprint is in a named group (%s)" % str(groups))
+	list.set_open(true, 1)
+	var all_count: int = list.entries(1).size()
+	list.cycle_category(true, 1)
+	check(list.category == str(groups[0]) and list.entries(1).size() < all_count and list.entries(1).size() > 2, "the right arrow shows the first group only")
+	check(list.entries(1).all(func(e): return e["kind"] != "bp" or str(list.rows(1).filter(func(r): return int(r["number"]) == int(e["number"]))[0]["category"]) == list.category), "only that group's blueprints are listed")
+	list.cycle_category(false, 1)
+	check(list.category == "" and list.entries(1).size() == all_count, "the left arrow goes back to all of them")
+	list.cycle_category(false, 1)
+	check(list.category == str(groups[groups.size() - 1]), "left from All wraps to the last group")
+	list.category = ""
+	list.clear()
 	var strict_list = ListScript.new()
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	strict_list._book[0]["hammer"] = 2
