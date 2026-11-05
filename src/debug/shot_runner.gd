@@ -54,6 +54,7 @@ var _item_spot: Vector3 = Vector3.ZERO
 var _item_failed: bool = false
 var _item_checked: int = 0         # item views judged; a run that ends with fewer than ITEM_VIEWS is a failure, not a silent pass
 const ITEM_VIEWS := 4
+const BODY_HALF_HEIGHT := 0.9      # half the standing capsule (stance.gd SHAPE_HEIGHT[STAND]): the body origin above the feet
 var _item_box: AABB = AABB()
 var _item_node: Node3D = null
 var _item_tries: int = 0
@@ -1485,6 +1486,20 @@ func _side_view(walk: float) -> void:
 		return
 
 	client.third_person = true
+
+	# The body flies at the shot's height over the voxel raycast's whole-number cell, so a body shot could stand up to a metre off the ground (PC 5 Nov: feet 0.37 m
+	# under it, the sit cut off at the chest). Once landed, the flying body is set on the collision floor under it, feet on the ground as when walking.
+	if _landed and _placed:
+		var from: Vector3 = client.body.global_position + Vector3(0.0, 3.0, 0.0)
+		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - Vector3(0.0, 8.0, 0.0))
+		query.exclude = [client.body.get_rid()]
+		var hit: Dictionary = client.body.get_world_3d().direct_space_state.intersect_ray(query)
+
+		if not hit.is_empty():
+			var stand_y: float = float((hit["position"] as Vector3).y) + BODY_HALF_HEIGHT
+			client.body.global_position.y = stand_y
+			_want_y = stand_y
+
 	var origin: Vector3 = client._avatar.global_position + Vector3(0.0, 0.95, 0.0)
 	var left: Vector3 = client.body.global_transform.basis * Vector3(-1.0, 0.0, 0.0)
 	var aim: Vector3 = origin
