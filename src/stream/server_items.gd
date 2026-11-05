@@ -3046,19 +3046,36 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	var number: int = 0
 	var kit_id: String = ""
 
+	# Every refusal says why (Dave 5 Nov 2026: all items tell you what is wrong when they will not place): never a silent click.
 	if not blueprint.is_empty():   # from the hammer: no kit item, the materials are checked here and taken with the piece
-		if not _peer_pos.has(peer) or not _can_blueprint(peer, inv, blueprint):
+		if not _peer_pos.has(peer):
+			_say(peer, "The game does not know where you are yet. Try again in a moment.")
 			return
+
+		if not _can_blueprint(peer, inv, blueprint):
+			return   # _can_blueprint says why
 
 		kit_id = str(_structures.get(str(blueprint["structure"]), {}).get("kit", ""))
 	else:
-		if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
+		if slot < 0:
+			_say(peer, "That blueprint is not in this game's list. Open the hammer menu (right click) and pick it again.")   # an unknown blueprint number reaches here with no kit
+			return
+
+		if slot >= inv.SLOTS or inv.numbers[slot] == 0:
+			_say(peer, "There is nothing in that slot to place.")
+			return
+
+		if not _peer_pos.has(peer):
+			_say(peer, "The game does not know where you are yet. Try again in a moment.")
 			return
 
 		number = inv.numbers[slot]
 		kit_id = table.id_of(number)
 
 	if kit_id != "campfire_kit" and (_structure_of_kit(kit_id).is_empty() or bool(_structure_of_kit(kit_id).get("hand_placed", false))):
+		if _structure_of_kit(kit_id).is_empty():
+			_say(peer, "That cannot be placed.")
+
 		return      # a torch is placed from the hand (_place_torch), not as a kit
 
 	if blueprint.is_empty() and is_dead_kit(number):
