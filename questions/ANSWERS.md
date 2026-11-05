@@ -2270,3 +2270,7 @@ Answered: 2026-11-05 12:02 UTC
 Answer: Yes (recommended) | Comment: Stay near a firecould help dry you out much faster
 Answered: 2026-11-05 12:03 UTC
 
+## jamie-gravel-path | Add a gravel path mode to the hoe?
+Answer: Later, after roads are settled (recommended)
+Answered: 2026-11-05 12:03 UTC
+
