@@ -140,12 +140,10 @@ static func hook_clip(avatar, ctx: Dictionary, pace: float, delta: float) -> Str
 	var start: String = ""
 
 	# The latest event wins; each is noticed once, when its state changes.
+	# sit_down and stand_up are not started (5 Nov 2026): Dave's transitions are to and from a chair, so the body sank to chair height and hung there, leaning forward, before it dropped
+	# into the ground sit (BUG-020). The stance change blends straight into the cross-legged sit and back; the clips stay in the library for a chair later.
 	if bool(seen["asleep"]) and not bool(ctx.get("asleep", false)):
 		start = "wake_up"
-	elif int(seen["stance"]) == StanceScript.STAND and stance == StanceScript.SIT:
-		start = "sit_down"
-	elif int(seen["stance"]) == StanceScript.SIT and stance == StanceScript.STAND:
-		start = "stand_up"
 
 	if int(ctx.get("drink_stamp", 0)) != int(seen["drink"]) and int(ctx.get("drink_stamp", 0)) > 0:
 		start = "drink"

@@ -52,6 +52,19 @@ func _init() -> void:
 		else:
 			_check(hips.y > 0.05 and hips.y < 0.35, "sit: cross-legged on the ground, hips low (%.2f m)" % hips.y)
 
+	# The ground sit holds still through the chair clip's loop (PC shot 5 Nov: a lunge at a later time): hips and knees in the same place at any time.
+	var sit_at: Array = []
+
+	for at in [0.0, 2.5, 5.1, 8.0]:
+		body.play("sit", 1.0, 0.0)
+		body.animation_player.seek(at, true)
+		await process_frame
+		await process_frame
+		sit_at.append([(s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Hips"))).origin, (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_LeftLeg"))).origin, (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_RightLeg"))).origin])
+
+	for row in sit_at:
+		_check((row[0] as Vector3).distance_to(sit_at[0][0]) < 0.03 and (row[1] as Vector3).distance_to(sit_at[0][1]) < 0.03 and (row[2] as Vector3).distance_to(sit_at[0][2]) < 0.03, "sit: hips and knees hold still through the loop")
+
 	body.play("crouch", 1.0, 0.0)
 	body.animation_player.seek(1.0, true)
 	await process_frame
