@@ -62,7 +62,3 @@ Note: It did not reproduce on land or in water in tests.
 Note: Recommendation: B. Only tell me if you see it duplicate on your own.
 - A: Yes, I will try it and say what happens
 - B: Skip it, I will tell you if I see it
-
-## kathreen-title-buttons | Front page: built using the drawn buttons with a glow, Continue dimmed with no character (#457). Keep it, or change?
-- Use the drawn buttons: clickable, a gold glow on hover, Continue dimmed when you have no character yet (recommended)
-- I will make versions without buttons, and the game draws its own
