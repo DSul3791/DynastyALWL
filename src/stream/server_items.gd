@@ -357,6 +357,9 @@ var _log_tasks: Array = []           # worker tasks printing log lines (_log_off
 var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
 var _slow_prev_usec: int = 0          # when the last part of this items tick ended
 var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
+var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
+var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading the ground and asking for water (the slow-cell line)
+var _bank_water_usec: int = 0
 var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
 
@@ -1202,7 +1205,7 @@ func tick(delta: float) -> void:
 		_scatter_around_players()
 		_slow_mark("scatter", t0)
 		_sync_world_items()
-		_slow_mark("sync-world-items", t0)
+		_slow_mark("sync-world-items " + _sync_detail, t0)
 
 	_save_in -= delta
 
@@ -3431,6 +3434,9 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 func _sync_world_items() -> void:
 	# The records are filed into a NEAR_M grid once, so each player looks only at the nine cells around them instead of every
 	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
+	var t_grid: int = Time.get_ticks_usec()
+	var send_usec: int = 0
+	var sent: int = 0
 	var grid: Dictionary = {}
 
 	for id in _items:
@@ -3440,6 +3446,8 @@ func _sync_world_items() -> void:
 			grid[cell] = []
 
 		grid[cell].append(id)
+
+	var t_scan: int = Time.get_ticks_usec()
 
 	for peer in _known:
 		if not _peer_pos.has(peer):
@@ -3485,7 +3493,14 @@ func _sync_world_items() -> void:
 				known.erase(id)
 
 		if not added.is_empty() or not removed.is_empty():
+			var t_send: int = Time.get_ticks_usec()
 			send_world_items.call(peer, added, removed)
+			send_usec += Time.get_ticks_usec() - t_send
+			sent += added.size()
+
+	# For the slow-tick line: where the time went (lag run 5 Nov: sync-world-items 60-124 ms at a join).
+	var total_ms: float = float(Time.get_ticks_usec() - t_grid) / 1000.0
+	_sync_detail = "(%d records: grid %.0f, scan %.0f, send %.0f for %d items)" % [_items.size(), float(t_scan - t_grid) / 1000.0, total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0, float(send_usec) / 1000.0, sent]
 
 
 func _send_changes(peer: int, inv, before: Array) -> void:
@@ -3963,8 +3978,11 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 		_next_id += 1
 
 	part_usec = _cell_part("stones and sticks", part_usec)
+	_bank_ground_usec = 0
+	_bank_water_usec = 0
 	_lay_out_bank_stones(cell, cell_m, cfg, rng, kinds.size())
 	part_usec = _cell_part("bank stones", part_usec)
+	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
 	_lay_out_boulders(cell, cell_m, rng)
 	_cell_part("boulders", part_usec)
 
@@ -4216,15 +4234,24 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: R
 	for attempt in range(int(bank.get("tries", 40))):
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
-		var y: float = float(ground_height.call(x, z))
 		var chance: float = rng.randf()   # luck-exempt: seeded world layout
 
-		if is_nan(y) or y < 1.0 or chance > float(bank.get("chance", 0.5)):
+		if chance > float(bank.get("chance", 0.5)):   # before the ground is read (the draws are in the same order, so the stones lie where they did)
+			continue
+
+		var ground_usec: int = Time.get_ticks_usec()
+		var y: float = float(ground_height.call(x, z))
+		var water_usec: int = Time.get_ticks_usec()
+		_bank_ground_usec += water_usec - ground_usec
+
+		if is_nan(y) or y < 1.0:
 			continue
 
 		var spot: Vector3 = Vector3(x, y, z)
+		var wet: bool = bool(water_near.call(spot, 0.0)) or not bool(water_near.call(spot, reach))
+		_bank_water_usec += Time.get_ticks_usec() - water_usec
 
-		if bool(water_near.call(spot, 0.0)) or not bool(water_near.call(spot, reach)):
+		if wet:
 			continue
 
 		var key: int = ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | (used + laid)

@@ -84,8 +84,10 @@ const CAVE_STONE_PER_M2 := 0.12     # stones per square metre of chamber floor
 const CAVE_BOULDER_PER_M2 := 0.02
 var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 box]: ground opened by a cave mouth (entrance node to its first node): no flora there
 const CAVE_POOL_M := 0.4            # a spring cave pool's surface: this far above the bottom of its chamber as the chamber is carved
+const CAVE_WATER_CELL_M := 16.0     # near_cave_water's index cell (build_cave_water_cells)
 const CAVE_POOL_DEPTH_M := 20.0     # Dave's QA list BUG-008 (answer 4 Nov 2026): the pool goes 20 m down below that, in a natural shape; the chamber stays
 var cave_streams: PackedFloat32Array = PackedFloat32Array()   # spring cave streams (Dave 3 Nov 2026): per piece x, y, z of the upper end, x, y, z of the lower end (floor heights, world m), width m; then per spring pool x, y, z, -radius (a negative width marks a pool)
+var _cave_water_cells: Dictionary = {}   # Vector2i cell (CAVE_WATER_CELL_M) -> PackedInt32Array of cave_streams entry numbers near it
 var cave_pool_shapes: PackedFloat32Array = PackedFloat32Array()   # BUG-008: per spring pool basin shape (spring_basin) x, y, z of its centre, r, rh, the pool's surface y (server only, not sent)
 
 
@@ -619,6 +621,7 @@ func _load_caves(list: Array) -> void:
 	_cave_scatter_cells = {}
 	_cave_sources = []
 	_cave_scatter_built = false
+	_cave_water_cells = {}
 
 	for cave in list:
 		var nodes: Array = cave["nodes"]
@@ -685,6 +688,8 @@ func _load_caves(list: Array) -> void:
 		_cave_sources.append(cave)
 
 		caves.append({"id": str(cave["id"]), "aabb": AABB(low, high - low), "capsules": capsules, "chambers": chambers})
+
+	build_cave_water_cells()
 
 
 # Stones and boulders on one cave's floor, from a seed of the cave so they lie in the same places every time. Along each passage they lie on the floor of
@@ -913,23 +918,55 @@ func cave_pool_surface(p: Vector3, margin: float = 1.0) -> float:
 	return NAN
 
 
-# Whether a point is within `reach` m of a spring cave's stream or pool (drinking and filling a container there, Dave 3 Nov 2026).
-func near_cave_water(p: Vector3, reach: float) -> bool:
+# The stream pieces and pools of cave_streams by CAVE_WATER_CELL_M square (entry numbers), so near_cave_water looks only at the pieces near
+# a point. It looked at every piece of the tile, and the server asks it up to 80 times for one scatter cell's bank stones (lag run 5 Nov: 67-105 ms a cell).
+func build_cave_water_cells() -> void:
+	_cave_water_cells = {}
+
 	@warning_ignore("integer_division")
 	for n in range(cave_streams.size() / 7):
 		var o: int = n * 7
-		var a: Vector3 = Vector3(cave_streams[o], cave_streams[o + 1], cave_streams[o + 2])
 		var width: float = cave_streams[o + 6]
+		var a: Vector2 = Vector2(cave_streams[o], cave_streams[o + 2])
+		var b: Vector2 = a if width < 0.0 else Vector2(cave_streams[o + 3], cave_streams[o + 5])
+		var grow: float = -width if width < 0.0 else 0.5 * width
+		var lo: Vector2i = Vector2i(((a.min(b) - Vector2(grow, grow)) / CAVE_WATER_CELL_M).floor())
+		var hi: Vector2i = Vector2i(((a.max(b) + Vector2(grow, grow)) / CAVE_WATER_CELL_M).floor())
 
-		if width < 0.0:
-			if p.distance_to(a) < reach - width:
-				return true
+		for cz in range(lo.y, hi.y + 1):
+			for cx in range(lo.x, hi.x + 1):
+				var cell: Vector2i = Vector2i(cx, cz)
 
-			continue
+				if not _cave_water_cells.has(cell):
+					_cave_water_cells[cell] = PackedInt32Array()
 
-		var b: Vector3 = Vector3(cave_streams[o + 3], cave_streams[o + 4], cave_streams[o + 5])
+				_cave_water_cells[cell].append(n)
 
-		if p.distance_to(Geometry3D.get_closest_point_to_segment(p, a, b)) < reach + 0.5 * width:
-			return true
+
+# Whether a point is within `reach` m of a spring cave's stream or pool (drinking and filling a container there, Dave 3 Nov 2026).
+func near_cave_water(p: Vector3, reach: float) -> bool:
+	if _cave_water_cells.is_empty():
+		return false
+
+	var lo: Vector2i = Vector2i((Vector2(p.x - reach, p.z - reach) / CAVE_WATER_CELL_M).floor())
+	var hi: Vector2i = Vector2i((Vector2(p.x + reach, p.z + reach) / CAVE_WATER_CELL_M).floor())
+
+	for cz in range(lo.y, hi.y + 1):
+		for cx in range(lo.x, hi.x + 1):
+			for n in _cave_water_cells.get(Vector2i(cx, cz), PackedInt32Array()):
+				if _near_cave_piece(p, reach, n):
+					return true
 
 	return false
+
+
+func _near_cave_piece(p: Vector3, reach: float, n: int) -> bool:
+	var o: int = n * 7
+	var a: Vector3 = Vector3(cave_streams[o], cave_streams[o + 1], cave_streams[o + 2])
+	var width: float = cave_streams[o + 6]
+
+	if width < 0.0:
+		return p.distance_to(a) < reach - width
+
+	var b: Vector3 = Vector3(cave_streams[o + 3], cave_streams[o + 4], cave_streams[o + 5])
+	return p.distance_to(Geometry3D.get_closest_point_to_segment(p, a, b)) < reach + 0.5 * width
