@@ -3455,11 +3455,13 @@ const STICK_VIEW_M := 100.0
 # 1 to 2 m across and sticks about 2.4 to 4.5 m long (three times the 2026-10-20 size, Dave 2026-10-21); sticks rest on top of the grass (a lift), stones sit in the soil
 # but proud of the blades. A little extra brightness and a faint warm glow keep them readable in shade.
 const PICKUP_SIZE_MULT := 3.0   # Dave, 2026-10-21: three times the earlier size
-const STONE_SCALE := Vector2(2.4, 3.4) * PICKUP_SIZE_MULT
+# Dave 2026-11-05: loose stones were 1 to 2 m across, "they look like boulders in the caves"; they must be about the size of a character's fist.
+# The meshes are 10 to 15 cm across, so a scale near 1 gives 8 to 16 cm. Cave floor stones are the same item and use this too. Boulders are separate.
+const STONE_SCALE := Vector2(0.85, 1.1)
 const STICK_SIZE_SHARE := 0.75   # Dave 2026-10-21: sticks about 75 percent of that, lying on the ground
 const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT * STICK_SIZE_SHARE
 const STICK_TINT := Color(0.42, 0.29, 0.17)   # bark brown, multiplied into the mesh colours
-const STONE_LIFT_M := 0.05 * PICKUP_SIZE_MULT
+const STONE_LIFT_M := 0.01
 const PICKUP_BRIGHT := 0.9   # was 1.3 while the vertex colours were not used (flat white); with them on, 1.3 drew chalk-white stones in full sun
 const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
