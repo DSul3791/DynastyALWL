@@ -5644,7 +5644,7 @@ func _fuel(peer: int, inv, id: int) -> void:
 
 # Lighting a loaded fire (Dave 5 Nov 2026, simplified): any wood in the fire is enough, E lights it, and no starter (plant fibre, tinder, kindling)
 # is needed or used up. Every kind of wood goes in: sticks, kindling, tinder, firewood, blocks, logs. An open fire will not take while it rains.
-func _light(peer: int, inv, id: int) -> void:
+func _light(peer: int, _inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
 
 	if fire.is_empty() or int(fire["state"]) != 9:
@@ -7027,7 +7027,8 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 			_dirty = true
 
 	# Wood moved in or out of a fire's store counts at once (Dave 5 Nov 2026), not only when the window closes: the burn time, the tier and the laid state follow.
-	if (kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE) and _items.get(id, {}).has("fire"):
+	# A burning fire waits for the window to close (its burn debt must not take wood put in meanwhile, test_fire_store); a fire that is not burning has no debt.
+	if (kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE) and _items.get(id, {}).has("fire") and not fire_is_lit(int(_items[id]["fire"]["state"])):
 		_sync_fire_from_box(peer, id)
 
 	if send_chest.is_valid():
