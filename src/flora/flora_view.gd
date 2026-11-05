@@ -2389,17 +2389,21 @@ func apply_built(budget_usec: int = 3000) -> void:
 	t0 = Probe.start()
 
 	while not _jobs.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		var t_part: int = Probe.start()
 		_nearest_job_first()
+		Probe.stop("flora: nearest job", t_part)
 		var job: Dictionary = _jobs[0]
 		var entry: Dictionary = _chunks.get(job["chunk"], {})
 
 		if entry.is_empty() or int(entry.get("serial", -1)) != int(job["serial"]):
+			t_part = Probe.start()
 			_discard(job["node"])
 
 			if job["cnode"] != null:
 				_discard(job["cnode"])
 
 			_jobs.pop_front()
+			Probe.stop("flora: discard a stale drawing", t_part)
 			continue
 
 		# Timed apart too (5 Nov 2026: one "place drawings" of 1.1-1.4 s in the gate's flora walk, with nothing else slow).
@@ -2421,14 +2425,20 @@ func apply_built(budget_usec: int = 3000) -> void:
 				entry["cnode"] = job["cnode"]
 				entry["shapes_key"] = int(job["plan"].get("shapes_key", 0))
 
+			t_part = Probe.start()
 			job["node"].visible = bool(entry.get("ground", true))
+			Probe.stop("flora: show new drawing", t_part)
+			t_part = Probe.start()
 			entry["level"] = job["level"]
 			entry["masks"] = job["masks"]
 			entry.erase("building")
 			entry.erase("building_masks")
 			entry["drawn"] = _drawn_count(job["node"])
 			_jobs.pop_front()
+			Probe.stop("flora: finish a job", t_part)
+			t_part = Probe.start()
 			_note_loaded(entry)
+			Probe.stop("flora: load note", t_part)
 
 	Probe.stop("flora: place drawings", t0)
 
