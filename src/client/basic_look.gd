@@ -300,6 +300,7 @@ static func has_look(item_id: String) -> bool:
 static var _built: Dictionary = {}
 static var _lock: Mutex = Mutex.new()   # _built and the shared materials: the prewarm worker builds looks while the main thread may ask for one
 static var _prewarm_task: int = -1
+static var _prewarm_stop: bool = false   # set by finish_prewarm: the worker stops before its next look
 
 
 static func mesh_for(item_id: String) -> Mesh:
@@ -337,16 +338,33 @@ static func prewarm() -> void:
 	entry("")              # looks.json is read here, on the main thread, before the worker reads the table
 	_shared_material()     # and the shared material and its grain texture made once
 	var ids: Array = _table.keys() + ART_OVERRIDES.keys()
+	_prewarm_stop = false
 	var job: Callable = func() -> void:
 		for id in ids:
+			if _prewarm_stop:
+				return
+
 			mesh_for(str(id))
 
 	_prewarm_task = WorkerThreadPool.add_task(job, false, "item looks prewarm")
 
 
 # Waits for the prewarm worker (call before the game shuts down).
+# The worker stops after the look it is on. A mesh call that waits on the rendering server's queue only returns once the main thread flushes
+# it, so the main thread keeps flushing while it waits (the PC gate on #426: two tests that quit without a main loop hung for 300 s).
 static func finish_prewarm() -> void:
-	if _prewarm_task != -1:
+	if _prewarm_task == -1:
+		return
+
+	_prewarm_stop = true
+
+	var until: int = Time.get_ticks_msec() + 10000   # as DynastyArms.settle: at most 10 s
+
+	while not WorkerThreadPool.is_task_completed(_prewarm_task) and Time.get_ticks_msec() < until:
+		RenderingServer.force_sync()
+		OS.delay_msec(1)
+
+	if WorkerThreadPool.is_task_completed(_prewarm_task):
 		WorkerThreadPool.wait_for_task_completion(_prewarm_task)
 		_prewarm_task = -1
 
