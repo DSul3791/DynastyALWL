@@ -33,6 +33,11 @@ Also removed inside live files (git history keeps them): 23 functions nothing ca
 |---|---|---|---|---|
 | src/worldgen/tools/test_scree.gd (+ .uid) | Tyler | 30 Oct | a report, not a test: no check, cannot fail; needs the baked tile 3,4; writes a PNG to /tmp (fails on Windows); 10 s | none (git mv back and drop the .removed suffix to restore) |
 
+## Dave's sound fixes, 4 Nov 2026 (Jason, branch claude/jason-20261104-wind-stomach)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/audio/cooking/stomach_growl_0.ogg, stomach_growl_1.ogg | Jason | 4 Nov | Dave: "the funny sound that keeps happening is the stomach_growl. get rid of that." The growl and its hunger timer (item_sounds.watch_vitals) are removed | none |
+
 ## Docs archive, 5 Nov 2026 (MikeW, branch claude/mikew-20261105-docmap)
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|

@@ -1,5 +1,7 @@
 # Merge watch
 
+> **ARCHIVED 5 Nov 2026 (Tyler).** Dry runs into the deleted daily branch `DailyDev_20261029`. PR testing on Dave's PC now goes through `tools/pc_queue.sh` (one results file per sitting).
+
 Hourly dry runs of the working branches merged into the daily branch (tools/merge_day.sh via tools/merge_watch.sh), newest last. A new signature means the conflict list or the red tests changed.
 
 ## 2026-10-31 04:49Z signature 9264b5cb4c9c

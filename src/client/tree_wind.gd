@@ -73,11 +73,7 @@ func setup(stage) -> void:
 	for sound_name in LOOPS:
 		var player: AudioStreamPlayer3D = Sound3D.make(self, "Wind", 12.0, 0.0)
 		player.volume_db = -80.0
-		var list: Array = _variants("treewind_" + sound_name)
-
-		if not list.is_empty():
-			player.stream = list[0]
-
+		SoundStage.stream_later(player, [RECORDED_DIR, GENERATED_DIR], "treewind_" + sound_name, _variants.bind("treewind_" + sound_name), true)
 		_players[sound_name] = player
 
 

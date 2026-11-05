@@ -304,6 +304,32 @@ class Index:
 		return best
 
 
+	# The crowns (x, z, radius, top_y rows, as in a cell's "f") whose circle reaches the rectangle x0..x1, z0..z1. For a caller that asks
+	# covers/crown_depth at many spots in one small area (grass_view builds a 6 m cell from one list instead of scanning 3 x 3 index cells
+	# per spot; Jason, lag 5 Nov 2026).
+	func crowns_in(x0: float, z0: float, x1: float, z1: float) -> PackedFloat32Array:
+		var found: PackedFloat32Array = PackedFloat32Array()
+
+		# A crown reaches at most one cell beyond its own (see covers).
+		for cz in range(int(floor(z0 / CELL_M)) - 1, int(floor(z1 / CELL_M)) + 2):
+			for cx in range(int(floor(x0 / CELL_M)) - 1, int(floor(x1 / CELL_M)) + 2):
+				var entry: Dictionary = _cells.get(Vector2i(cx, cz), {})
+
+				if entry.is_empty():
+					continue
+
+				var f: PackedFloat32Array = entry["f"]
+
+				for n in range(0, f.size(), 4):
+					var ox: float = f[n] - clampf(f[n], x0, x1)
+					var oz: float = f[n + 1] - clampf(f[n + 1], z0, z1)
+
+					if ox * ox + oz * oz <= f[n + 2] * f[n + 2]:
+						found.append_array(PackedFloat32Array([f[n], f[n + 1], f[n + 2], f[n + 3]]))
+
+		return found
+
+
 	# Under a built roof only (a crown is rain and sun cover, not wind shelter: Dave 24 Oct, Tyler's ruling).
 	func roofed(pos: Vector3) -> bool:
 		for key in _roof_cells.get(Vector2i(int(floor(pos.x / CELL_M)), int(floor(pos.z / CELL_M))), []):

@@ -1,5 +1,7 @@
 # Handoff: Steve: Systems (written 1 Nov 2026, paper only, no Godot run)
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 Read `SCOPE_STEVE.md` next to this: it has the sub-system inventory with line numbers, the plan and the finish line. Who gave me each item is named in brackets: [Tyler] [Sal] [Sonny] [Dino] [Kathleen] [Moderator] or [me] (my own read of the code at head `d3aa3c2a`).
 
 ## My role

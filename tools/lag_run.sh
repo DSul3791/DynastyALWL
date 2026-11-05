@@ -25,7 +25,12 @@ grep -E "HITCH|FREEZE" $D/client.log | head -80
 echo "($(grep -c HITCH $D/client.log) HITCH lines, $(grep -c FREEZE $D/client.log) FREEZE lines)"
 echo "== script errors =="
 grep -E "SCRIPT ERROR|ERROR:" $D/client.log | sort | uniq -c | sort -rn | head -10
+echo "== shader errors =="
+# A headless (dummy renderer) run compiles no shaders, so this is 0 there; run with a real renderer and it fails the run (#416).
+SHADERR=$(grep -cE "SHADER ERROR|Shader compilation failed" $D/client.log); echo "($SHADERR shader error lines)"
+grep -E -A3 "SHADER ERROR" $D/client.log | head -24
 echo "== probe report =="
 awk '/^frame probe|^Frame probe|^probe:/{p=1} p' $D/client.log | head -60
 echo "logs in $D (a crash as the client quits, after LAGRUN done, is the engine tearing down; the run still counts)"
+[ "$SHADERR" -eq 0 ] || { echo "FAIL: shader errors in the client log"; exit 3; }
 grep -q "^LAGRUN done" $D/client.log

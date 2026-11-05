@@ -593,6 +593,7 @@ func _sound_log_tick(body: CharacterBody3D) -> void:
 
 
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
+	_fill_later()
 	_sound_log_tick(body)
 	_count_left -= delta
 
@@ -1636,7 +1637,18 @@ static var _clip_index: Dictionary = {}
 static var _clip_index_ready: bool = false
 
 
+# Lag run 5 Nov: the walk cost 181 ms of the welcome frame (1123 clips). The client now starts it when it begins connecting,
+# so the setup's call finds it done.
+static var _walked: bool = false
+
+
 static func prewarm(folder: String = AUDIO_ROOT) -> void:
+	if folder == AUDIO_ROOT:
+		if _walked:
+			return
+
+		_walked = true
+
 	var dir: DirAccess = DirAccess.open(folder)
 
 	if dir == null:
@@ -1663,6 +1675,82 @@ static func prewarm(folder: String = AUDIO_ROOT) -> void:
 		if ResourceLoader.load_threaded_request(path, "AudioStream", false, ResourceLoader.CACHE_MODE_REUSE) == OK:
 			_prewarmed[path] = true
 			warm_requested += 1
+
+
+# Steve 5 Nov 2026 (Dave's PC lag run: "sound setup" 2.1 s of the join, weather 790, water 463, treewind 259, interior 179 ms): the setups read
+# their loop clips on the main thread while the prewarm still had them queued. A loop player now gets its stream once that load is done
+# (stream_later; update hands them out), so the join never waits on a sound file.
+static var _later: Array = []               # [player, folders, sound name, getter (the layer's own _variants), loop]
+
+
+# True while the prewarm's threaded load of this clip (name or name_0, in any of the folders) is still running.
+static func still_loading(folders: Array, sound_name: String) -> bool:
+	for folder in folders:
+		for stem in [sound_name, sound_name + "_0"]:
+			for extension in ["ogg", "wav"]:
+				var path: String = "%s%s.%s" % [folder, stem, extension]
+
+				if _prewarmed.has(path) and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+					return true
+
+	return false
+
+
+# False only when the prewarm's index is built and holds no clip of this name (or name_0) in any of the folders.
+static func clip_known(folders: Array, sound_name: String) -> bool:
+	if not _clip_index_ready:
+		return true
+
+	for folder in folders:
+		for stem in [sound_name, sound_name + "_0"]:
+			for extension in ["ogg", "wav"]:
+				if _clip_index.has("%s%s.%s" % [folder, stem, extension]):
+					return true
+
+	return false
+
+
+# Gives the player the first clip of getter.call() now, or once the prewarm has loaded it. A layer skips a player whose stream is null.
+static func stream_later(player: Node, folders: Array, sound_name: String, getter: Callable, loop: bool) -> void:
+	if still_loading(folders, sound_name):
+		_later.append([player, folders, sound_name, getter, loop])
+	else:
+		_give_stream(player, getter, loop)
+
+
+static func _give_stream(player: Node, getter: Callable, loop: bool) -> void:
+	if not is_instance_valid(player) or player.get("stream") != null:
+		return
+
+	var list: Array = getter.call()
+
+	if list.is_empty():
+		return
+
+	var stream: AudioStream = list[0]
+
+	if loop and stream is AudioStreamOggVorbis:
+		stream.loop = true
+
+	player.set("stream", stream)
+
+
+static func _fill_later() -> void:
+	if _later.is_empty():
+		return
+
+	var still: Array = []
+
+	for item in _later:
+		if not is_instance_valid(item[0]):
+			continue
+
+		if still_loading(item[1], item[2]):
+			still.append(item)
+		else:
+			_give_stream(item[0], item[3], item[4])
+
+	_later = still
 
 
 static func _index_clips(dir: DirAccess, folder: String) -> void:
@@ -1769,6 +1857,7 @@ func _exit_tree() -> void:
 		player.stream = null
 
 	_streams.clear()
+	_later.clear()
 
 	AirBands.remove_all()
 

@@ -1,5 +1,7 @@
 # Scope: Kathleen (art and looks), 2026-11-01
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 > **SPLIT WITH KATHREEN (confirmed by Kathleen, 5 Nov 2026):** Kathreen (`SCOPE_KATHREEN.md`) has the character look (body, face, hair, worn clothes and armour, hands, creator preview, select and loading pictures), animal models, fur and carcass looks (`carcass_look.gd`), the water look, flower and stem colours, grass, and shrub and berry looks. Kathleen keeps everything in section 1 below, including how the Dynasty body moves and poses.
 
 > **ADDITION (Dave, 1 Nov 2026): water LOOKS are the art team's** (colour, transparency, shader appearance, foam, flow-texture look, reflections, shore look). Kathreen takes it first; Sonny keeps the mechanics and supplies depth and flow data.

@@ -1,0 +1,4 @@
+# PC queue for tools/pc_queue.sh: one waiting PR per line, in rank order (BACKLOG.md ranks, top first).
+# <rank> <PR number> <branch> [lane fast|slow|full, default fast]
+1 368 claude/kathreen-cave-dressing-1104
+7 357 claude/kathreen-art-1104

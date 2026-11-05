@@ -150,6 +150,7 @@ func _init() -> void:
 	# Hints: said once when their trigger holds, saved with the character, repeated only for a goal still open after 5 minutes.
 	said.clear()
 	var hinter = make("user://test_goals_hints", {}, [false])
+	hinter.hint_every = 1   # every goals tick looks at the hints (the game looks every 4th slow tick)
 	hinter.peer_connected_hello(1, "hintsplayer01")
 	hinter.report_position(1, Vector3(0.0, 10.0, 0.0))
 	hinter.vitals_of(1)["weight"] = 2000.0

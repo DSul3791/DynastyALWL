@@ -11,6 +11,7 @@ extends Node3D
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
+const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
 const CELL_M := 6.0
 const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
 const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
@@ -312,7 +313,11 @@ const CHECK_PROBES := 5                  # ground hits kept per cell
 const CHECK_TIMES := [1500, 3000, 6000, 12000, 24000, 48000]   # ms after the build (and after each check) that the hits are cast again
 const CHECK_MOVE_M := 0.35               # a hit this far from its old height means the ground under the cell changed
 const CHECK_CELLS_PER_FRAME := 3
+const CHECK_USEC := 300                    # and at most this long a frame (Steve 5 Nov 2026, PC lag run #402: the check rays were still 0.81 ms a frame, the biggest grass part)
 var _checks: Array = []                  # [cell, due msec, check number]
+# The earliest due time in _checks once a full pass has seen them all (0: not known, look). Steve 5 Nov 2026 (Dave's PC lag run, #401): "grass: check
+# ground" was 56% of the grass time, 1.07 ms every frame, walking the whole list (thousands of cells) to find the few due ones.
+var _checks_due: int = 0
 var _scan_keep: Dictionary = {}
 const SCAN_ROWS_PER_FRAME := 4
 var _center: Vector3 = Vector3.ZERO
@@ -1321,13 +1326,18 @@ func update(from_position: Vector3) -> void:
 
 	_center = from_position
 	var now: int = Time.get_ticks_msec()
+	var t_part: int = Probe.start()
 	_check_ground(now)
+	Probe.stop("grass: check ground", t_part)
+	t_part = Probe.start()
 	_trample.flush()
 	_push_player(from_position)
 
 	if _trunk_msec == 0 or (_trunk_msec > 0 and now >= _trunk_msec):
 		_trunk_msec = now + 1500
 		_push_trunks(from_position)
+
+	Probe.stop("grass: trample and trunks", t_part)
 
 	var clock: float = TrampleScript.now_s()
 
@@ -1359,6 +1369,7 @@ func update(from_position: Vector3) -> void:
 
 	# Standing still costs nothing: a rescan only repeats (to retry cells whose ground was not ready) while
 	# some cell is still unbuilt, otherwise every IDLE_RESCAN_MSEC (owner table 2026-10-21: the frame was CPU bound).
+	t_part = Probe.start()
 	if not _scan_active and (here_cell != _scan_cell or now >= _next_rescan):
 		_scan_msec = now
 		_scan_cell = here_cell
@@ -1368,6 +1379,8 @@ func update(from_position: Vector3) -> void:
 	if _scan_active:
 		_rescan_step()
 
+	Probe.stop("grass: scan", t_part)
+	t_part = Probe.start()
 	var rays: int = RAYS_PER_FRAME * (2 if speed > 2.5 and _pending.size() > 20 else 1)
 	var started: int = Time.get_ticks_usec()
 
@@ -1390,7 +1403,10 @@ func update(from_position: Vector3) -> void:
 	if taken > 0:
 		_pending = _pending.slice(taken)
 
+	Probe.stop("grass: build", t_part)
+	t_part = Probe.start()
 	_flush_groups()
+	Probe.stop("grass: apply", t_part)
 
 
 # The band of a cell by its distance: 0 near (full samples), 1 middle, 2 far, 3 very far (reach beyond 50 m).
@@ -1541,14 +1557,16 @@ static func _drop_beside(heights: PackedFloat32Array, pps: int, i: int, j: int, 
 # Casts the kept ground hits of the cells that are due again (a few cells a frame). A cell whose ground moved is built again; one whose ground held is
 # looked at again later, until CHECK_TIMES runs out.
 func _check_ground(now: int) -> void:
-	if _checks.is_empty():
+	if _checks.is_empty() or now < _checks_due:
 		return
 
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var done: int = 0
 	var n: int = 0
+	var next_due: int = 0x7fffffffffffffff
+	var started: int = Time.get_ticks_usec()
 
-	while n < _checks.size() and done < CHECK_CELLS_PER_FRAME:
+	while n < _checks.size() and done < CHECK_CELLS_PER_FRAME and (done == 0 or Time.get_ticks_usec() - started < CHECK_USEC):
 		var check: Array = _checks[n]
 		var entry = _cells.get(check[0])
 
@@ -1557,6 +1575,7 @@ func _check_ground(now: int) -> void:
 			continue
 
 		if now < int(check[1]):
+			next_due = mini(next_due, int(check[1]))
 			n += 1
 			continue
 
@@ -1577,9 +1596,13 @@ func _check_ground(now: int) -> void:
 		elif int(check[2]) + 1 < CHECK_TIMES.size():
 			check[2] = int(check[2]) + 1
 			check[1] = now + int(CHECK_TIMES[check[2]])
+			next_due = mini(next_due, int(check[1]))
 			n += 1
 		else:
 			_checks.remove_at(n)
+
+	# A full pass knows the earliest due time; one cut short by the per-frame cap looks again next frame.
+	_checks_due = next_due if n >= _checks.size() else 0
 
 
 var ground_rebuilds: int = 0             # cells built again because their ground moved after the first build (for the tests and the debug panel)
@@ -1602,6 +1625,10 @@ static func ground_moved(space: PhysicsDirectSpaceState3D, x: float, z: float, o
 
 # Rays for one cell; returns how many were cast.
 func _build(cell: Vector2i) -> int:
+	# Timers only (Jason, 5 Nov 2026; Steve's lag run after #417: a 106 ms HITCH frame held "grass: build" 48 ms): "grass build: <part>" splits one
+	# build into setup (crown list, buffers), rays, and the point loop with its shore, litter and soil lookups summed per cell (the rest of
+	# "points" is the card writing). Nothing else changes.
+	var t_setup: int = Probe.start()
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var tool: VoxelTool = _terrain.get_voxel_tool()
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -1613,6 +1640,13 @@ func _build(cell: Vector2i) -> int:
 	var big: bool = radius_m > 50.0
 	var band_share: float = float(BAND_SHARE[lod]) if big else 1.0
 	var spacing: float = CELL_M / float(pps)
+	# Lag (Jason, 5 Nov 2026; PC lag run on #401: "grass: build" worst 42 ms): every grass point asked the cover index 8 times (crown depth and the
+	# 7 closure spots), and each ask scanned every crown in 3 x 3 index cells of 16 m. The crowns that can reach this cell (plus the 4 m closure
+	# reach) are gathered once here; the answers are the same.
+	var reach: float = CLOSURE_REACH_M
+	var crowns: PackedFloat32Array = _flora.cover.crowns_in(float(cell.x) * CELL_M - reach, float(cell.y) * CELL_M - reach,
+			float(cell.x + 1) * CELL_M + reach, float(cell.y + 1) * CELL_M + reach)
+	var roofs: bool = _flora.cover.roof_count() > 0
 	# Cards are written straight into one MultiMesh buffer per layer: 12 floats of transform (rows of
 	# the 3 x 4 matrix) and 4 of custom colour each (about half the cost of building Transform3D and
 	# Color objects first).
@@ -1636,6 +1670,8 @@ func _build(cell: Vector2i) -> int:
 	var missed: int = 0
 	var dug_here: Array = _dug.get(cell, [])
 
+	Probe.stop("grass build: setup", t_setup)
+	var t_rays: int = Probe.start()
 	# All rays first, so a blade can be refused when ground drops away beside it (the rim of a hole, old or new).
 	var hits: Array = []
 	var heights: PackedFloat32Array = PackedFloat32Array()
@@ -1654,6 +1690,11 @@ func _build(cell: Vector2i) -> int:
 			if found.is_empty():
 				missed += 1
 
+	Probe.stop("grass build: rays", t_rays)
+	var t_points: int = Probe.start()
+	var shore_us: int = 0
+	var litter_us: int = 0
+	var soil_us: int = 0
 	var edge_cells: int = int(ceil(RIM_CLEAR_M / spacing))
 
 	for j in range(pps):
@@ -1681,7 +1722,9 @@ func _build(cell: Vector2i) -> int:
 			var water: float = _flora.water_level_at(x, z)
 
 			if shore_here:
+				var t0: int = Time.get_ticks_usec()
 				_put_shore(buffers, counts, rng, point, spacing, water)
+				shore_us += Time.get_ticks_usec() - t0
 
 			if not is_nan(water) and point.y < water + 0.3:
 				continue
@@ -1694,12 +1737,16 @@ func _build(cell: Vector2i) -> int:
 
 			# Owner (2026-10-21): under a big crown almost no grass except at the edge of its canopy footprint,
 			# and a floor so covered in leaves and twigs that no ground shows. `under` is 0 at the drip line, 1 at the trunk.
-			var under: float = _flora.cover.crown_depth(Vector3(x, point.y + 1.0, z))
+			var under: float = crown_depth_in(crowns, Vector3(x, point.y + 1.0, z))
 
 			if litter_here and under > 0.0 and litter_cards + int(counts[3]) + int(counts[4]) < litter_cap:
+				var t1: int = Time.get_ticks_usec()
 				_put_litter(buffers, counts, rng, point, spacing, under)
+				litter_us += Time.get_ticks_usec() - t1
 
+			var t2: int = Time.get_ticks_usec()
 			var soil: int = _grass_soil(tool, point - hit["normal"] * 0.4)
+			soil_us += Time.get_ticks_usec() - t2
 
 			if soil < 0:
 				continue
@@ -1708,7 +1755,7 @@ func _build(cell: Vector2i) -> int:
 			var thick: float = float(GRASS_SOILS[soil]) * _cover_at(x, z, hit["normal"].y)
 			# Owner (2026-10-20): in a closed forest the litter and shade under the trees stop the grass; in
 			# open fields and sparse trees it grows right up to and under them. Closure thins it gradually.
-			thick *= 1.0 - 0.95 * smoothstep(0.4, 0.9, _closure(x, point.y, z))
+			thick *= 1.0 - 0.95 * smoothstep(0.4, 0.9, _closure_in(crowns, roofs, x, point.y, z))
 			thick *= 1.0 - 0.96 * smoothstep(CROWN_GRASS_FROM, CROWN_GRASS_TO, under)
 
 			# The ground grass thins round a plumed tall-grass patch (Dave 2026-10-31: the patches must stand out): a third of it within about 2 m of a plant.
@@ -1789,6 +1836,11 @@ func _build(cell: Vector2i) -> int:
 					buffer[o + 15] = kept
 					buffers[layer] = buffer
 
+	var now_us: int = Time.get_ticks_usec()
+	Probe.stop("grass build: points", t_points)
+	Probe.stop("grass build: shore", now_us - shore_us)
+	Probe.stop("grass build: litter", now_us - litter_us)
+	Probe.stop("grass build: soil", now_us - soil_us)
 	entry["busy"] = false
 
 	if missed * 2 > rays:
@@ -1811,6 +1863,7 @@ func _build(cell: Vector2i) -> int:
 
 	entry["probes"] = probes
 	_checks.append([cell, Time.get_ticks_msec() + int(CHECK_TIMES[0]), 0])
+	_checks_due = mini(_checks_due, Time.get_ticks_msec() + int(CHECK_TIMES[0]))
 	_free_cell_nodes(entry)      # a rebuilt cell swaps its cards in the same frame
 
 	for layer in range(LAYERS.size()):
@@ -2001,6 +2054,49 @@ func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, poin
 
 # How closed the canopy is around a spot, 0 (open field) to 1 (every sample under a crown): seven points
 # within 4 m, tested against the shared cover index. Scattered trees give about 0.15 to 0.3, a forest 1.
+const CLOSURE_REACH_M := 4.5             # the farthest CLOSURE_OFFSETS spot (4 m) plus a margin
+
+
+# _closure from a cell's own crown list (Cover.Index.crowns_in); roofs still come from the index.
+func _closure_in(crowns: PackedFloat32Array, roofs: bool, x: float, y: float, z: float) -> float:
+	var covered: int = 0
+
+	for d in CLOSURE_OFFSETS:
+		var pos: Vector3 = Vector3(x + d.x, y + 1.0, z + d.y)
+
+		if (roofs and _flora.cover.roofed(pos)) or covers_in(crowns, pos):
+			covered += 1
+
+	return float(covered) / float(CLOSURE_OFFSETS.size())
+
+
+# Cover.Index.covers for crowns only, from a list of crown rows.
+static func covers_in(crowns: PackedFloat32Array, pos: Vector3) -> bool:
+	for n in range(0, crowns.size(), 4):
+		var ox: float = pos.x - crowns[n]
+		var oz: float = pos.z - crowns[n + 1]
+
+		if ox * ox + oz * oz <= crowns[n + 2] * crowns[n + 2] and pos.y <= crowns[n + 3]:
+			return true
+
+	return false
+
+
+# Cover.Index.crown_depth from a list of crown rows.
+static func crown_depth_in(crowns: PackedFloat32Array, pos: Vector3) -> float:
+	var best: float = 0.0
+
+	for n in range(0, crowns.size(), 4):
+		var ox: float = pos.x - crowns[n]
+		var oz: float = pos.z - crowns[n + 1]
+		var r2: float = crowns[n + 2] * crowns[n + 2]
+
+		if ox * ox + oz * oz < r2 and pos.y <= crowns[n + 3]:
+			best = maxf(best, 1.0 - sqrt((ox * ox + oz * oz) / r2))
+
+	return best
+
+
 func _closure(x: float, y: float, z: float) -> float:
 	var covered: int = 0
 

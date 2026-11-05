@@ -355,8 +355,21 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			if not trees_only or item["kind"] == KIND_TREE:
 				candidates[item["id"]] = item
 
-	# A chunk with sand in it: the dirt beside the sand gets the palm belt species, and the edge rules apply (see _edge_m).
+	# A chunk with sand in it or within BELT_M of it: the dirt beside the sand gets the palm belt species, and the edge rules apply (see _edge_m). Sand just
+	# over the chunk's edge counts too, or the dirt belt on this side took any species (22 in test_beach_belt once the river mouths moved the shore, 5 Nov 2026).
 	var has_beach: bool = present.has(_beach_id)
+
+	if not has_beach:
+		var reach: int = int(ceil(BELT_M / float(step))) * step
+
+		for z in range(-reach, int(chunk_m) + reach + 1, step):
+			for x in range(-reach, int(chunk_m) + reach + 1, step):
+				if (x < 0 or z < 0 or x > int(chunk_m) or z > int(chunk_m)) and data.biome[data.nearest(origin.x + float(x), origin.y + float(z))] == _beach_id:
+					has_beach = true
+					break
+
+			if has_beach:
+				break
 	var edge_cache: Dictionary = {}     # 4 m cell -> edge distance (see _edge_m): a chunk asks about the same ground thousands of times
 
 	if has_beach:
