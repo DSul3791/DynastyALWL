@@ -2246,3 +2246,7 @@ Answered: 2026-11-04 15:14 UTC
 Answer: No: I have been unable to place the cookpot
 Answered: 2026-11-04 15:15 UTC
 
+## jamie-hills-375 | Terrain 53 (#375): taller, more frequent hills, rivers that no longer stop at ridges, spring caves. It passed the PC tests. Merge it?
+Answer: Yes, merge it now (recommended)
+Answered: 2026-11-05 12:00 UTC
+
