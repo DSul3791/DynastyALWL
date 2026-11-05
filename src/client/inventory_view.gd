@@ -2171,7 +2171,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		# The slowest row, whatever path it takes (lag run 5 Nov: 44 ms for 1 added, none of it in the timed parts).
 		_note_slowest_row(row_usec, row_name)
 		row_usec = Time.get_ticks_usec()
-		row_name = "%s state %d" % [table.id_of(int(row[1])), int(row[4]) if row.size() > 4 else 0]
+		row_name = "%s state %d%s" % [table.id_of(int(row[1])), int(row[4]) if row.size() > 4 else 0, " (look not built yet)" if BasicLook.has_look(table.id_of(int(row[1]))) and not BasicLook.is_built(table.id_of(int(row[1]))) else ""]
 		var id: int = row[0]
 		var state: int = int(row[4]) if row.size() > 4 else 0
 

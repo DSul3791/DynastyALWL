@@ -345,11 +345,15 @@ static func prewarm() -> void:
 	var ids: Array = _table.keys() + ART_OVERRIDES.keys()
 	_prewarm_stop = false
 	var job: Callable = func() -> void:
+		var t0: int = Time.get_ticks_usec()
+
 		for id in ids:
 			if _prewarm_stop:
 				return
 
 			mesh_for(str(id))
+
+		print("client prewarm: %d item looks on a worker in %.0f ms" % [ids.size(), float(Time.get_ticks_usec() - t0) / 1000.0])
 
 	_prewarm_task = WorkerThreadPool.add_task(job, false, "item looks prewarm")
 
@@ -357,6 +361,14 @@ static func prewarm() -> void:
 # Waits for the prewarm worker (call before the game shuts down).
 # The worker stops after the look it is on. A mesh call that waits on the rendering server's queue only returns once the main thread flushes
 # it, so the main thread keeps flushing while it waits (the PC gate on #426: two tests that quit without a main loop hung for 300 s).
+# Whether a look is built already (the slow world-items line says so, to tell a look the prewarm had not reached yet from a slow first draw).
+static func is_built(item_id: String) -> bool:
+	_lock.lock()
+	var built: bool = _built.has(item_id)
+	_lock.unlock()
+	return built
+
+
 static func finish_prewarm() -> void:
 	if _prewarm_task == -1:
 		return
