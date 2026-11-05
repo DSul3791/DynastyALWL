@@ -166,7 +166,9 @@ const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on 
 const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_MIN_MSEC := 3000          # and never more often than this, ground loading or not
+const WATER_MAX_MSEC := 12000         # a re-ask that brought no new water doubles the wait, up to this (settled water: the log spam in the lag logs)
 const GroundColumn := preload("res://src/client/ground_column.gd")
+const WaterReask := preload("res://src/client/water_reask.gd")
 # Spawn near the ground (Dave 25 Oct, Tyler): the server's spawn y is already the ground height at the spawn x,z plus 2 m (terrain_server._spawn_point), and a respawn point is
 # a real standing place, so the player is put there with this small lift instead of 28 m up. The old +28 m was only waiting for ground to appear.
 const SPAWN_LIFT_M := 0.5
@@ -498,6 +500,9 @@ var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
+var _water_wait_msec: int = WATER_MIN_MSEC   # the wait between re-asks now (WATER_MIN_MSEC to WATER_MAX_MSEC)
+var _water_new_since_ask: int = 0           # chunks with changed water since the last re-ask
+var _water_quiet_asks: int = 0              # re-asks in a row that brought nothing new (the log line is printed for the first only)
 var _water_dirty_area: Rect2 = Rect2()   # protocol 88: where the water moved since the last ask (no area: everywhere)
 var _water_dirty_all: bool = false
 var _flora_chunks: int = 0
@@ -1312,16 +1317,23 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
 	Probe.stop("welcome: items view", tq_items_view)
+	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
+	var tq_dialogue: int = Probe.start()
 	var dialogue_view: Node = DialogueViewScript.new()
 	dialogue_view.name = "Dialogue"
 	add_child(dialogue_view)
 	dialogue_view.setup(net, items, npc_view, layer, func(): return body.global_position)
+	Probe.stop("welcome: dialogue view", tq_dialogue)
+	var tq_voice: int = Probe.start()
 	var npc_voice: Node = NpcVoiceScript.new()
 	npc_voice.name = "NpcVoice"
 	add_child(npc_voice)
 	_npc_voice = npc_voice
+	Probe.stop("welcome: npc voice", tq_voice)
 
+	var tq_gmenu: int = Probe.start()
 	game_menu.refresh()
+	Probe.stop("welcome: game menu", tq_gmenu)
 
 	dialogue_view.voice_line = func(voice_id: String, text: String):
 		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
@@ -2364,9 +2376,12 @@ func _send_water_request(now: int) -> void:
 
 	# At most one re-ask every WATER_MIN_MSEC: the server says the water moved about twice a second and answers every flora chunk
 	# held each time, which in Dave's crash logs kept its main thread about 65 percent busy.
-	if now - _water_asked_msec < WATER_MIN_MSEC:
+	if now - _water_asked_msec < _water_wait_msec:
 		return
 
+	_water_wait_msec = WaterReask.wait_after(_water_wait_msec, _water_new_since_ask, WATER_MIN_MSEC, WATER_MAX_MSEC)
+	_water_quiet_asks = 0 if _water_new_since_ask > 0 else _water_quiet_asks + 1
+	_water_new_since_ask = 0
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
@@ -2381,8 +2396,9 @@ func _send_water_request(now: int) -> void:
 
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
-	@warning_ignore("integer_division")
-	print("Terrain client: the water moved, asking again for %d chunks" % (chunks.size() / 2))
+	if _water_quiet_asks <= 1 and not chunks.is_empty():   # "asking again for 0 chunks" (the moved water is outside every chunk held) says nothing
+		@warning_ignore("integer_division")
+		print("Terrain client: the water moved, asking again for %d chunks (next in %.0f s or more)" % [chunks.size() / 2, _water_wait_msec / 1000.0])
 
 	if not chunks.is_empty():
 		net.request_water.rpc_id(1, chunks)
@@ -2400,6 +2416,7 @@ func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 		return
 
 	_water_key[chunk] = key
+	_water_new_since_ask += 1
 	_queue_in({"kind": "water", "chunk": chunk, "water": water})
 
 

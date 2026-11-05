@@ -140,6 +140,7 @@ var fill_ground: Callable        # (centre, radius, material) -> bool: add groun
 var dig_refusal: Callable        # () -> String: why the last dig changed nothing, shown to the player; set by the server scene
 var dig_ground: Callable         # (centre, radius) -> void: cut a hole in the ground and tell everyone; set by the server scene
 var trees_near: Callable        # (point, radius) -> Array of [chunk Vector2i, id int]: standing placer trees whose root is that close; set by the server scene
+var trees_near_cached: Callable # (point, radius) -> Array of [position, species name]: the same trees from chunks already made only, cheap (the hint triggers); unset = trees_near
 var dig_support: Callable       # (base, radius, depth) -> share 0..1 of the ground under a tree not dug away; set by the server scene
 var ground_material: Callable   # (x, z) -> the surface material's name there ("loam", "clay", "sand", ... or "rock"); set by the server scene, feeds dig yields
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
@@ -10554,7 +10555,13 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 		"workbench_placed":   # the camp bench or the log workbench (Dino round 6)
 			return _hint_count(st, "event:placed:workbench") + _hint_count(st, "event:placed:log_workbench") >= 1
 		"axe_held_near_tree":   # an axe on the hotbar and a standing tree within 6 m (any axe on the hotbar where the tree index is not wired)
-			return _tool_slot(inv, "axe") >= 0 and (not trees_near.is_valid() or not (trees_near.call(_peer_pos[peer], 6.0) as Array).is_empty())
+			if _tool_slot(inv, "axe") < 0:
+				return false
+
+			if trees_near_cached.is_valid():
+				return not (trees_near_cached.call(_peer_pos[peer], 6.0) as Array).is_empty()
+
+			return not trees_near.is_valid() or not (trees_near.call(_peer_pos[peer], 6.0) as Array).is_empty()
 		"has_campfire_kit":
 			return inv.count_of(table.number_of("campfire_kit")) >= 1
 		"near_fire_with_food":   # raw meat or fish in the pack, a lit fire within 4 m
@@ -10609,16 +10616,12 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 
 # Fruit trees (drops.json "fruit_tree") standing within r metres of the point; in_fruit_only counts only those whose flora row is in season.
 func _fruit_trees_near(pos: Vector3, r: float, in_fruit_only: bool) -> int:
-	if not trees_near.is_valid() or not tree_info.is_valid():
-		return 0
-
 	var fruit: Dictionary = _drops.get("fruit_tree", {})
 	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
 	var count: int = 0
 
-	for found in trees_near.call(pos, r):
-		var info: Dictionary = tree_info.call(found[0], int(found[1]))
-		var species: String = str(info.get("name", ""))
+	for tree in _standing_trees(pos, r):
+		var species: String = str(tree[1])
 
 		if not fruit.has(species):
 			continue
@@ -10629,6 +10632,26 @@ func _fruit_trees_near(pos: Vector3, r: float, in_fruit_only: bool) -> int:
 		count += 1
 
 	return count
+
+
+# [position, species name] of the standing trees within r metres, for the hint triggers: the server's cached look when it has one (trees_near_cached), else
+# trees_near and tree_info (tests).
+func _standing_trees(pos: Vector3, r: float) -> Array:
+	if trees_near_cached.is_valid():
+		return trees_near_cached.call(pos, r)
+
+	if not trees_near.is_valid() or not tree_info.is_valid():
+		return []
+
+	var out: Array = []
+
+	for found in trees_near.call(pos, r):
+		var info: Dictionary = tree_info.call(found[0], int(found[1]))
+
+		if not info.is_empty():
+			out.append([info.get("position", pos), str(info.get("name", ""))])
+
+	return out
 
 
 # Hint trigger has_plant_food_at_fire (Sal's tutorial steps 23 and 24): the player stands within 4 m of a lit fire with an ingredient of a campfire_pot or clay hearth recipe in the pack
