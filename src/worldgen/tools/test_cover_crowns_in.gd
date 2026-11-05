@@ -29,7 +29,7 @@ func _initialize() -> void:
 		var x0: float = float(cell.x) * GrassView.CELL_M
 		var z0: float = float(cell.y) * GrassView.CELL_M
 		var crowns: PackedFloat32Array = index.crowns_in(x0 - reach, z0 - reach, x0 + GrassView.CELL_M + reach, z0 + GrassView.CELL_M + reach)
-		crowns_total += crowns.size() / 4
+		crowns_total += floori(crowns.size() / 4.0)
 
 		for k in range(300):
 			var x: float = x0 + rng.randf() * GrassView.CELL_M
