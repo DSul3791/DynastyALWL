@@ -411,6 +411,15 @@ func delete_plan() -> bool:
 	return true
 
 
+# The left and right arrows with the hammer menu open step through the groups of blueprints. Returns true when it was used.
+func step_blueprint_group(forward: bool) -> bool:
+	if not blueprints.is_open:
+		return false
+
+	blueprints.cycle_category(forward, _hammer_tier())
+	return true
+
+
 # Right click (or R) with a hammer in hand opens or shuts its blueprint list.
 func toggle_blueprints() -> bool:
 	if _hammer_tier() <= 0:
