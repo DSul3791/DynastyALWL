@@ -24,7 +24,7 @@ const BARK_TINT_BEECH := Color(0.60, 0.55, 0.47)      # beech: smooth bark textu
 const BARK_TINT_ALDER := Color(0.49, 0.45, 0.38)      # alder: darker gray, paler patches
 const BARK_TINT_WILLOW := Color(0.40, 0.35, 0.30)     # willow: dark, deeply furrowed gray-brown
 const BARK_TINT_ROWAN := Color(0.54, 0.47, 0.38)      # rowan: smooth gray-brown, rougher at the foot
-const BERRY_TINT_ROWAN := Color(0.78, 0.08, 0.04)     # rowan berries: scarlet (times the bark shader's light texture)
+const BERRY_TINT_ROWAN := Color(0.86, 0.22, 0.04)     # rowan berries: orange-scarlet (times the berry shader's light texture; Dave 5 Nov 2026: they read as apples)
 const FLOWER_TINT_ROWAN := Color(0.72, 0.70, 0.62)    # rowan flower heads: creamy white
 const BARK_TINT_APPLE := Color(0.46, 0.40, 0.34)      # wild apple: scaly gray-brown
 const APPLE_TINT := Color(0.74, 0.12, 0.06)           # the apple model's base colour: red (the varieties recolour it from flora.json fruit_color)
@@ -2233,14 +2233,33 @@ static func _rowan(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 	if flowers and young:
 		return
 
-	for n in range(rng.randi_range(8, 12) if young else rng.randi_range(16, 24)):
-		# On the outside of the crown, mostly its upper part.
+	for n in range(rng.randi_range(10, 14) if young else rng.randi_range(22, 30)):
+		# On the outside of the crown at the branch tips, mostly its upper part.
 		var a: float = rng.randf() * TAU
 		var v: float = rng.randf_range(-0.5, 0.6)
 		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
-		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * 0.8, v * half_h * 0.8, sin(a) * ring * crown_w * 0.8)
-		# A little larger than life (real clusters 10 to 15 cm) so they read in the storybook look.
-		_cluster(crop, rng, at, rng.randf_range(0.28, 0.4), FLOWER_TINT_ROWAN if flowers else BERRY_TINT_ROWAN, flowers)
+		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * 0.85, v * half_h * 0.85, sin(a) * ring * crown_w * 0.85)
+		_corymb(crop, rng, at, rng.randf_range(0.12, 0.17), FLOWER_TINT_ROWAN if flowers else BERRY_TINT_ROWAN, flowers)
+
+
+# A rowan head (Dave 5 Nov 2026: the berries read as apples, big loose red cubes): a dense, flat-topped cluster of many small berries,
+# pea-sized but drawn larger (4 to 5 cm across) so the head reads as one dense mass from a few metres, a head about a hand across (radius 0.12 to 0.17 m, real ones
+# 8 to 15 cm). Berries crowd the top in a shallow dome and the whole head hangs from its point a little, heavier at the rim; flower
+# heads sit flatter and are the same many-small-florets look in cream.
+static func _corymb(acc: Acc, rng: RandomNumberGenerator, at: Vector3, radius: float, color: Color, flowers: bool) -> void:
+	var count: int = rng.randi_range(22, 28)
+	var bead: float = rng.randf_range(0.02, 0.025)
+	var tilt: Vector3 = Vector3(rng.randf_range(-0.3, 0.3), 0.0, rng.randf_range(-0.3, 0.3))   # heads face a little outward, not all level
+
+	for k in range(count):
+		var a: float = float(k) * 2.39996 + rng.randf_range(-0.2, 0.2)   # golden-angle spread: even and dense, no gaps or heaps
+		var r: float = sqrt((float(k) + 0.5) / float(count)) * radius
+		var off: Vector3 = Vector3(cos(a) * r, 0.0, sin(a) * r)
+		var dome: float = (1.0 - (r / radius) * (r / radius)) * radius * (0.12 if flowers else 0.3)
+		var sag: float = (r / radius) * radius * (0.05 if flowers else 0.25)
+		var p: Vector3 = at + off + Vector3(0.0, dome - sag + off.dot(tilt), 0.0)
+		var shade: float = rng.randf_range(0.85, 1.12)
+		_bead(acc, p, Vector3.ONE * bead * rng.randf_range(0.9, 1.15), Color(color.r * shade, color.g * shade, color.b * shade, color.a))
 
 
 # A cluster of small round fruit (or a flat flower head): little diamonds
