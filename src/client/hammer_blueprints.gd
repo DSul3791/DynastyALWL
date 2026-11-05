@@ -316,7 +316,7 @@ func list_text(hammer_tier: int, window: int = 0) -> String:
 		for n in range(list.size()):
 			lines.append(_line(list, n))
 	else:
-		var half: int = (window - 1) / 2
+		var half: int = (window - 1) >> 1
 
 		for n in range(_cursor - half, _cursor + half + 1):
 			lines.append(_line(list, n) if n >= 0 and n < list.size() else "")
