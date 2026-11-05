@@ -109,6 +109,7 @@
 		"log_maple": 259200.0,
 		"stick": 2880.0,
 		"kindling": 1440.0,
+		"tinder": 720.0,
 		"log": 259200.0,
 		"firewood": 28800.0,
 		"firewood_soft": 14400.0,
@@ -146,6 +147,7 @@
 		"log_maple": "log",
 		"stick": "weak",
 		"kindling": "weak",
+		"tinder": "weak",
 		"driftwood": "weak",
 		"firewood": "firewood",
 		"firewood_soft": "firewood",
@@ -223,7 +225,8 @@
 		"wooden_block_soft",
 		"driftwood",
 		"stick",
-		"kindling"
+		"kindling",
+		"tinder"
 	],
 	"rain_light_chance": {
 		"note": "Lighting a fire in light rain (under puts_out strength) can fail: chance = max(min_chance, 1 - rain / puts_out x loss). The tinder is used either way.",
