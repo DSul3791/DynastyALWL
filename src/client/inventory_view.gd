@@ -2154,6 +2154,8 @@ func _drain_world_backlog() -> void:
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
 	var t_all: int = Time.get_ticks_usec()
+	var slowest_usec: int = 0
+	var slowest: String = ""
 	var t_mark: int = t_all
 
 	for id in removed:
@@ -2271,6 +2273,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_world[id]["burn_at"] = Time.get_ticks_msec()
 
 		prof["loose_mesh"] = int(prof.get("loose_mesh", 0)) + Time.get_ticks_usec() - t_d
+
+		if Time.get_ticks_usec() - t_d > slowest_usec:   # names the item in the slow line (lag run 5 Nov: "loose_mesh 43 ms" for one item, which one unknown)
+			slowest_usec = Time.get_ticks_usec() - t_d
+			slowest = table.id_of(int(row[1]))
 		var t_e: int = Time.get_ticks_usec()
 		_refresh_pile(id)
 		prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_e
@@ -2286,7 +2292,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		for key in prof:
 			parts.append("%s %.0f ms" % [key, float(prof[key]) / 1000.0])
 
-		print("client slow: world items %.0f ms for %d added, %d removed: %s" % [total_ms, added.size(), removed.size(), ", ".join(parts)])
+		print("client slow: world items %.0f ms for %d added, %d removed: %s (slowest loose item: %s %.0f ms)" % [total_ms, added.size(), removed.size(), ", ".join(parts), slowest, float(slowest_usec) / 1000.0])
 
 
 # The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
@@ -3177,7 +3183,7 @@ func _prewarm_loose_meshes() -> void:
 	for id in table.ids():
 		var name: String = str(id)
 
-		if name == "stone" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
+		if name == "stone" or name == "flint" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
 			_mesh_for(table.number_of(name))
 
 	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
