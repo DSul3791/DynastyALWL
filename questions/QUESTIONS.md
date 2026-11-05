@@ -53,10 +53,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
 
-## jamie-footstep-clip | Your two footstep recordings (step_gravel_left, step_stone_left) clip at +0.2 dB.
-- Jason trims them with declip.py (recommended)
-- I will re-export them
-
 ## jamie-storm-sound | Storm sound (BUG-001): what was the name of the sound you heard? (Shift+F3 lists playing sounds.)
 [text]
 
