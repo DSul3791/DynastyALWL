@@ -53,6 +53,7 @@ var _hover: int = -1                   # pack slot under the mouse (quick keys a
 var _chest_last: Array = []            # the last chest-screen slot the mouse was on (the Transfer button uses it)
 var _chest_hover: Array = []           # [chest side (bool), slot] under the mouse in the chest screen
 var _prompt: Label
+var _site_list: RichTextLabel   # under the prompt on a blueprint site: the materials it still needs, green when you have them to hand and red when not (Dave 5 Nov 2026)
 var cover_index                        # the client's Cover.Index: lean-to roofs are added to it
 var tool_event: Callable               # ("broke" | "repaired") when a tool in the pack wears out or is mended (sounds)
 var _block_next_msec: int = 0
@@ -265,6 +266,21 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_prompt.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_prompt)
+	_site_list = RichTextLabel.new()
+	_site_list.anchor_left = 0.0
+	_site_list.anchor_right = 1.0
+	_site_list.anchor_top = 0.5
+	_site_list.anchor_bottom = 1.0
+	_site_list.offset_top = 72.0
+	_site_list.offset_bottom = 0.0
+	_site_list.bbcode_enabled = true
+	_site_list.scroll_active = false
+	_site_list.add_theme_font_size_override("normal_font_size", 28)
+	_site_list.add_theme_constant_override("outline_size", 6)
+	_site_list.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	_site_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_site_list.visible = false
+	_layer.add_child(_site_list)
 	_strain_note = Label.new()
 	_strain_note.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_strain_note.offset_top = 120.0
@@ -403,6 +419,7 @@ func character_open() -> bool:
 
 func clear_prompt() -> void:
 	_prompt.text = ""
+	_site_list.visible = false
 	_notice_until_msec = 0
 	_prompt_next_msec = Time.get_ticks_msec() + 400
 
@@ -660,6 +677,9 @@ func _probe_structure_for(id: int) -> Dictionary:
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
+	if _world[id].get("site") != null:   # a blueprint site: E deposits the materials, hold E takes it down and gives back what was put in
+		return {"prompt": "Press E to deposit materials (hold E to take the blueprint down)", "lines": _site_lines(_world[id]["site"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
 	if state == 11 or state == 12:
 		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
 
@@ -912,6 +932,8 @@ func _process_body(_delta: float) -> void:
 	t = FrameProbe.start()
 	var interaction: Dictionary = current_interaction()
 	_prompt.text = prompt_text(interaction)
+	_site_list.text = str(interaction.get("lines", "")) if _prompt.text != "" else ""
+	_site_list.visible = _site_list.text != ""
 	FrameProbe.stop("inventory: prompt", t)
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
@@ -1147,6 +1169,7 @@ func _on_notice(text: String) -> void:
 		notice_event.call(text)
 
 	_prompt.text = KeyBindings.localize(text)
+	_site_list.visible = false
 	_notice_until_msec = Time.get_ticks_msec() + 4000
 
 
@@ -2213,6 +2236,16 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
 
+				var site_now: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
+				var site_was: Variant = _world[id].get("site")
+
+				if site_now != null and site_was != null:
+					_world[id]["site"] = site_now   # a deposit or a change in what you have to hand: the list updates, the blue piece stays
+					continue
+
+				if (site_now != null) != (site_was != null):
+					shorter = true   # a site finished (drawn again as the real piece) or a piece that became a site
+
 				if not shorter:
 					continue
 
@@ -2230,8 +2263,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node.rotation.y = yaw
 			_root.add_child(node)
 			var roof_key: int = -1
+			var site_extra: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
 
-			if state == 5 and cover_index != null:
+			if site_extra != null:
+				_make_site_look(node)
+			elif state == 5 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.3, 1.7, yaw, row[3].y - 0.5, row[3].y + 1.5))
 			elif state == 24 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
@@ -2245,7 +2281,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw)}
 
-			if StructureLook.look_of(state) == "ladder":
+			if site_extra != null:
+				_world[id]["site"] = site_extra
+
+			if site_extra != null:
+				pass   # a site is walked through and climbed by nobody until it is finished
+			elif StructureLook.look_of(state) == "ladder":
 				ladders[id] = {"pos": row[3], "yaw": rad_to_deg(yaw)}
 			elif StructureLook.look_of(state) == "trodden_path":
 				_path_cell_add(row[3], 1)
@@ -3000,6 +3041,42 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 			return _make_carcass(str(extra.get("sp", "")))
 
 	return _make_block()   # the chopping block (and any name nobody drew yet) is a plain block
+
+
+# The materials a blueprint site still needs, one line each: green when the pack, the ground beside you and containers within 30 m hold enough, red when not.
+func _site_lines(site: Array) -> String:
+	var lines: PackedStringArray = []
+
+	for line in site:
+		var need: int = int(line[1])
+
+		if need <= 0:
+			continue
+
+		var colour: String = "#55ee66" if int(line[2]) >= need else "#ff5555"
+		lines.append("[color=%s]%d %s  (%d to hand)[/color]" % [colour, need, table.name_of(table.number_of(str(line[0]))).to_lower(), int(line[2])])
+
+	return "[center]%s[/center]" % "\n".join(lines)
+
+
+# A blueprint site is the real model drawn blue and 60 percent see-through, with nothing solid about it: you walk through it.
+func _make_site_look(node: Node) -> void:
+	var blue := StandardMaterial3D.new()
+	blue.albedo_color = Color(0.25, 0.5, 1.0, 0.6)
+	blue.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_blue_all(node, blue)
+
+
+func _blue_all(node: Node, blue: Material) -> void:
+	if node is GeometryInstance3D:
+		(node as GeometryInstance3D).material_override = blue
+
+	if node is CollisionObject3D:
+		(node as CollisionObject3D).collision_layer = 0
+		(node as CollisionObject3D).collision_mask = 0
+
+	for child in node.get_children():
+		_blue_all(child, blue)
 
 
 # The ghost's model: a lit campfire is shown cold.

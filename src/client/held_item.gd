@@ -1287,7 +1287,7 @@ func _update_blueprint() -> void:
 		blueprint_state = "far"
 
 	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
-	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.can_afford(_hammer_tier()))
+	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
 
@@ -1596,8 +1596,10 @@ func _caption() -> String:
 
 		if PlacementRules.reason_text(blueprint_state) != "":
 			text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
-		elif short:
+		elif short and blueprints.plan_picked >= 0:
 			text += "   (red: not enough materials; right click: the list)"
+		elif short:
+			text += "   (left click: set down a blue blueprint, then E on it to deposit materials; right click: the list)"
 		else:
 			text += "   (left click: build it with the materials in your pack; right click: the list)"
 	elif _hammer_tier() > 0 and blueprints.mode == "repair":
