@@ -1377,7 +1377,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			_cyl(parts, 0.06, 0.01, Vector3(0.0, -0.058, 0.0), Vector3.ZERO, color.darkened(0.3))
 
-			for k in 3:
+			for k in (0 if bits.has("empty") else 3):   # bits "empty": an inland nest out of its laying season (nest_view.gd)
 				var ea: float = TAU * float(k) / 3.0 + 0.4
 				_sph(parts, 0.026, Vector3(1.0, 1.28, 1.0), Vector3(cos(ea) * 0.025, -0.04, sin(ea) * 0.025), Color(0.82, 0.78, 0.6), true)
 				_sph(parts, 0.004, Vector3.ONE, Vector3(cos(ea) * 0.03, -0.022, sin(ea) * 0.02), Color(0.35, 0.27, 0.15), true)

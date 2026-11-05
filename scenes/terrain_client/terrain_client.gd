@@ -66,6 +66,7 @@ const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const BurrowViewScript := preload("res://src/client/burrow_view.gd")
+const NestViewScript := preload("res://src/client/nest_view.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
@@ -451,6 +452,7 @@ var test_dig_check: bool = false      # --dig-check: read the ground where --dig
 var flora                             # FloraView
 var ocean_ice                         # OceanIce (floes over a frozen sea)
 var shore_props                       # ShoreProps (the tide-line gather spots drawn on the beach)
+var nest_view                         # NestView (inland grouse and songbird nests, src/client/nest_view.gd)
 var swimming: bool = false            # in deep water, feet under the surface (src/shared/swim.gd)
 var _climb_until_msec: int = 0        # pulling out of the water onto a bank or floe until then
 var _under_ice_next_msec: int = 0
@@ -1313,6 +1315,10 @@ func _welcome_body(info: Dictionary) -> void:
 	burrow_view.ground_at = _ground_below
 	add_child(burrow_view)
 	net.burrows_received.connect(burrow_view.on_burrows)
+	nest_view = NestViewScript.new()                      # grouse and songbird nests (MikeW: protocol 91 spots, the basic_look ground nest)
+	nest_view.name = "Nests"
+	add_child(nest_view)
+	net.nests_received.connect(nest_view.on_nests)
 	net.burrows_received.connect(_on_burrows_for_grass)
 	items = InventoryViewScript.new()
 	items.name = "Items"
@@ -1883,6 +1889,9 @@ func _shore_prompt() -> String:
 		if number > 0 and items.inventory.numbers.has(number):
 			container = str(id)
 			break
+
+	if nest_view != null:
+		nest_view.set_season(game_clock.season())   # eggs show in the laying season only
 
 	if shore_props != null:
 		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), game_clock.season(), _shore_used, _ground_below)
