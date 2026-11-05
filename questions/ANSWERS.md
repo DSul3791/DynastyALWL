@@ -2278,3 +2278,7 @@ Answered: 2026-11-05 12:03 UTC
 Answer: Another way: I will say | Comment: You just have to put it away and pull it back out again. The active pull out a torch is implying that you are lighting it.
 Answered: 2026-11-05 12:04 UTC
 
+## jamie-lantern-now | Lantern item (works in rain, goes out under water): add it now?
+Answer: Later (recommended)
+Answered: 2026-11-05 12:05 UTC
+
