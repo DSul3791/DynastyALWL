@@ -32,7 +32,8 @@
 			"octaves": [
 				{"wavelength_m": 520, "amplitude_m": 38},
 				{"wavelength_m": 230, "amplitude_m": 20},
-				{"wavelength_m": 95, "amplitude_m": 6}
+				{"wavelength_m": 95, "amplitude_m": 6},
+				{"wavelength_m": 130, "amplitude_m": 19, "power": 2.5, "note": "Dave 5 Nov 2026: 'it should create some steeper but smaller hills', half the big hills' height on about a quarter of their width; power 2.5 keeps most ground low so these stand alone"}
 			],
 			"power": 1.2,
 			"near_water_m": 20,
@@ -189,6 +190,10 @@
 			"depth_m_per_sqrt_q": 1.0,
 			"min_depth_m": 1.5,
 			"max_depth_m": 8.0,
+			"mouth_grow_m": 3000.0,
+			"mouth_widen": 1.6,
+			"mouth_deepen_m": 2.0,
+			"mouth_grow_note": "Dave 5 Nov 2026: rivers get deeper and a little wider toward the ocean. Over the last mouth_grow_m of a river that reaches the coast the channel widens to mouth_widen times and the centre bed sinks up to mouth_deepen_m more (drainage_channels.gd _toward_mouth); the estuary (estuary_*) takes over in the last few hundred metres.",
 			"seed": 17,
 			"natural": {
 				"enabled": false,
@@ -1183,12 +1188,15 @@
 			"_sizes_note": "Dave 4 Nov 2026: some caves small, some medium, some large (a size the hill has no room for falls back to the next smaller one); the top-level values are the medium cave. The mouth is as wide as the river at the head and narrows to the passage over taper_min_m or a third of the passage; den tunnels climb den_rise and end in a den hollow; bones at entrances and far ends; stalagmites and stalactites in large caves' big chambers and wide passages.",
 			"size_odds": {"small": 0.45, "medium": 0.35, "large": 0.2},
 			"sizes": {
-				"small": {"length_m": [40, 80], "width_m": [2.5, 3.5], "height_m": [2, 3], "branches": [0, 1], "extra_passage_chance": [0, 0], "min_length_m": 40, "chamber_radius_m": [3, 5]},
-				"medium": {},
-				"large": {"length_m": [150, 300], "width_m": [5, 8], "height_m": [4, 7], "branches": [2, 4], "extra_passage_chance": [0.6, 0.3], "min_length_m": 110, "chamber_radius_m": [6, 10], "big_chambers": [1, 2]}
+				"small": {"length_m": [40, 80], "width_m": [2.5, 3.5], "height_m": [2, 3], "branches": [0, 1], "extra_passage_chance": [0, 0], "min_length_m": 40, "chamber_radius_m": [3, 5], "max_springs": 1},
+				"medium": {"max_springs": 3},
+				"large": {"length_m": [150, 300], "width_m": [5, 8], "height_m": [4, 7], "branches": [2, 4], "extra_passage_chance": [0.6, 0.3], "min_length_m": 110, "chamber_radius_m": [6, 10], "big_chambers": [1, 2], "max_springs": 6}
 			},
 			"big_chamber_radius_m": [5, 9],
 			"big_chamber_height_m": [8, 14],
+			"spring_per_mouth_m": 6,
+			"size_by_mouth_m": {"medium": 10, "large": 18},
+			"spring_per_mouth_note": "Dave 5 Nov 2026: a wide river needs many spring pools; one spring passage per 6 m of the river's width at the mouth, up to the size's max_springs (small 1, medium 3, large 6), their flows joining on the way out.",
 			"mouth_width_max_m": 30,
 			"mouth_height_max_m": 12,
 			"taper_min_m": 25,

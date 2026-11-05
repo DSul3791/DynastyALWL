@@ -1,5 +1,7 @@
 # New Generator Plan
 
+> **ARCHIVED 5 Nov 2026 (Sonny: done).** The generator moved on to terrain version 53 with drainage mode, which replaced these steps. Current rules: `DESIGN_IDEAS.md`; terrain and water work: `docs/TERRAIN_WATER_BACKLOG.md`.
+
 Working plan for the new world generator described in `DESIGN_IDEAS.md` (Sections 4.1 to 4.11) and `WORLD_FORMAT_SPEC.md`. Each step ends with something that can be seen or measured before the next step starts. Work happens on branch `claude/generator-v2`; `main` stays untouched until the new generator replaces the old one.
 
 ## Ground rules

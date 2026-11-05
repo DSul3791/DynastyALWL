@@ -30,7 +30,7 @@ var _plans_path: String = BuildingPlans.PATH
 const MENU_FONT := 40       # the hoe's mode window is 40 pt too (PR 161): one menu look for every tool
 const DETAIL_FONT := 28
 const MENU_MAX_HEIGHT := 0.75   # the menu never takes more than this share of the screen height (Dave 5 Nov 2026); a longer list scrolls past the highlight
-const LINE_FACTOR := 1.35       # a menu line is about this many font sizes tall, with its spacing
+const LINE_FACTOR := 1.5        # a menu line is about this many font sizes tall with its spacing (measured on the PC 5 Nov: 22 rows took 1258 px at 40 pt, 1.43 each; 1.5 leaves room for the panel padding)
 
 
 func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String = BuildingPlans.PATH) -> void:

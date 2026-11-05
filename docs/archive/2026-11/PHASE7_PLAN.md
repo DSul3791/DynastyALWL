@@ -1,5 +1,7 @@
 # Phase 7: natural rivers on, more lakes, one planned re-bake (Sonny, 31 Oct 2026)
 
+> **ARCHIVED 5 Nov 2026 (Sonny: superseded).** Lakes and rebakes now follow drainage mode, pond levels and the river mend (#375); the decisions are in `DESIGN_IDEAS.md`.
+
 Status: PREPARED, NOT DONE. Nothing in `worlds/base_world` is changed by this file. Dave's go is needed before any baked tile is committed.
 The measurements below come from bakes into untracked scratch worlds (`scratch_world_base`, `scratch_world_lakes`, not committed).
 

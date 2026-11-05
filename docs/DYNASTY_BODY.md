@@ -20,6 +20,7 @@ The player's body by default since 1 Nov 2026 (Dave). To go back to the body wor
 | crouch | CrouchLookAroundBow (98-clip export) | hips 0.46 m, loops, feet on the ground |
 | crouch_walk, _back, _left, _right | Cautious_Crouch_Walk_Forward, _Backward, _Left, _Right | retimed to the game's 0.9 m/s crouch pace; `avatar_driver.gd clip_for` picks one by velocity for a body that has them (the Dynasty body only) |
 | sit | Chair_Sit_Idle_M | hips 0.51 m, right |
+| sit_chair | Chair_Sit_Idle_M, held on its first frame | sitting ON a seat (E on a chair, stool, log seat or bench, 5 Nov 2026); hips 0.51 m |
 | lie | Sleep_Normally | head toward +Z, hips 0.18 m, right |
 | swing, swing_fp, chop, pick_overhead | Heavy_Hammer_Swing | two-handed overhead; impact frame not tuned to held_item's HIT_AT (0.5 s of 0.95 s) |
 | jab | Right_Jab_from_Guard | GAP: a punch, not a spear thrust |

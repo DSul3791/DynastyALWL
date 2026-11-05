@@ -147,6 +147,7 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 		var q: float = sqrt(flow.discharge[index])
 		var width: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
 		var depth: float = clampf(float(rules["depth_m_per_sqrt_q"]) * q, float(rules["min_depth_m"]), float(rules["max_depth_m"]))
+		depth += float(rules.get("mouth_deepen_m", 0.0)) * _toward_mouth(index, along, h, rules)
 		var turn: float = curvature[index]
 		var shape: float = 1.0
 
@@ -193,6 +194,18 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	_ensure_centre_channel(fill, flow, threshold)
 	_keep_spawn_clear(stamped, gully_cut, size, cell_m, rules)
 	_lap("centre fix + spawn", clock)
+
+
+# Rivers grow toward the sea (Dave 5 Nov 2026: "the rivers should get deeper meaning lower bottoms as they get closer to the ocean. they should also get a
+# little wider"): 0 at mouth_grow_m or more up the river from its mouth, rising to 1 at the mouth. Only for a river whose last cell is at the coast (ground at
+# most 1 m): a river that leaves the frame inland is measured from the frame edge, which another frame would not agree with.
+func _toward_mouth(index: int, along: PackedFloat32Array, h: PackedFloat32Array, rules: Dictionary) -> float:
+	var grow_m: float = float(rules.get("mouth_grow_m", 0.0))
+
+	if grow_m <= 0.0 or _root.is_empty() or h[_root[index]] > 1.0:
+		return 0.0
+
+	return clampf(1.0 - along[index] / grow_m, 0.0, 1.0)
 
 
 # Timing line for the bake log.
@@ -257,6 +270,7 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 		var q: float = sqrt(flow.discharge[index])
 		var radius_m: float = 0.5 * maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
+		radius_m *= lerpf(1.0, float(rules.get("mouth_widen", 1.0)), _toward_mouth(index, _along, h, rules))
 		var reach: int = maxi(int(ceil(radius_m / cell_m)), 1)
 		var turn: float = curvature[index]
 		var depth_here: float = h[index] - centre_bed[index]

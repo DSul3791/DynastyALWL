@@ -295,12 +295,25 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	print("  pond levels (tile %s): %d water bodies, %d lowered to their spill, %d cells turned dry (%d ms)" % [str(tile), pond_levels["bodies"], pond_levels["lowered"], pond_levels["dried"], timings["pond_levels"]])
 	# Rivers cut off by the lake cells that turned dry dig on through the ridge to lower water (Dave 4 Nov: "the river just runs out", tile_river_mend.gd).
 	clock = Time.get_ticks_msec()
+	# Corners first, so a brook joined up by them is a river piece the mend sees (the first PC bake of #450 left 1 or 2 short brooks per tile cut off,
+	# grown past MIN_RIVER_CELLS by the corner cells after the mend had run).
+	var corners: int = TileRiverMendScript.join_corners(water.heights, water.water_class, water.water_surface, n)
 	var mend: Dictionary = TileRiverMendScript.mend(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m)
 	print("  river mend (tile %s): %d rivers cut off, %d dug through, %d cells made river (%d ms)" % [str(tile), mend["pieces"], mend["mended"], mend["cells"], Time.get_ticks_msec() - clock])
 	# Rivers widen into the sea and the sea comes up the mouth (the 20 Oct estuary rule; Dave 5 Nov: "the ocean should overlap into the mouth", tile_river_mouth.gd).
 	clock = Time.get_ticks_msec()
 	var mouth_cut: Dictionary = TileRiverMouthScript.carve(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, tile_rules["water"])
 	print("  river mouths (tile %s): %d river cells at the sea, %d cells carved, %d made sea (%d ms)" % [str(tile), mouth_cut["mouths"], mouth_cut["cells"], mouth_cut["sea"], Time.get_ticks_msec() - clock])
+	# Every river through cells that share a side, so no grass grows across a brook on the diagonal (Dave 5 Nov, tile_river_mend.gd join_corners).
+	# And again after the mend's and the mouths' cuts, until no river touches the next only at a corner.
+	for pass_index in range(4):
+		var joined: int = TileRiverMendScript.join_corners(water.heights, water.water_class, water.water_surface, n)
+		corners += joined
+
+		if joined == 0:
+			break
+
+	print("  river corners (tile %s): %d cells made river" % [str(tile), corners])
 
 
 	clock = Time.get_ticks_msec()

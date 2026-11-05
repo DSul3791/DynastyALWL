@@ -739,6 +739,8 @@ const SPRING_CAVE_DEFAULTS := {
 	"size_odds": {"small": 0.45, "medium": 0.35, "large": 0.2}, "sizes": {}, "big_chambers": [0, 0], "big_chamber_radius_m": [5.0, 9.0],
 	"big_chamber_height_m": [8.0, 14.0], "mouth_width_max_m": 30.0, "mouth_height_max_m": 12.0, "taper_min_m": 25.0, "taper_cover_m": 1.5,
 	"den_rise": [0.1, 0.2], "den_radius_m": [3.0, 5.0], "den_height_m": [3.0, 4.0],
+	# Dave 5 Nov 2026: a wide river needs many springs; the cave's size sets how many branches end in spring pools.
+	"spring_per_mouth_m": 0.0, "max_springs": 3, "size_by_mouth_m": {},
 	"bones": {"entrance_chance": 0.35, "end_chance": 0.35, "human_share": 0.2},
 	"formations": {"per_chamber": [8, 20], "passage_min_width_m": 5.0, "passage_chance": 0.3},
 }
@@ -838,7 +840,21 @@ func _make_spring_caves(rng: RandomNumberGenerator) -> void:
 func _spring_cave(index: int, rng: RandomNumberGenerator) -> Dictionary:
 	var sizes: Array = ["small", "medium", "large"]
 
-	for k in range(sizes.find(_pick_size(rng)), -1, -1):
+	var wanted_size: String = _pick_size(rng)
+	# The river sets the size (Dave 5 Nov 2026: "depending on the initial cave size determines how far in it goes and how many branches end in spring
+	# pools"): a river at least size_by_mouth_m.large wide at the mouth gets a large cave, at least .medium a medium one, whatever the odds rolled;
+	# a cave with no room for that size still steps down.
+	var by_mouth: Dictionary = _spring_rule("size_by_mouth_m")
+
+	if not by_mouth.is_empty():
+		var mouth_w: float = _river_width(index, _uphill_angle(index))
+
+		for key in ["large", "medium"]:
+			if by_mouth.has(key) and mouth_w >= float(by_mouth[key]) and sizes.find(key) > sizes.find(wanted_size):
+				wanted_size = key
+				break
+
+	for k in range(sizes.find(wanted_size), -1, -1):
 		var local_before: int = _local
 		var cave: Dictionary = _spring_cave_of(index, sizes[k], rng)
 
@@ -858,6 +874,17 @@ func _spring_cave_of(index: int, size: String, rng: RandomNumberGenerator) -> Di
 
 	if roll < float(extra[0]):
 		wanted = 3 if roll < float(extra[1]) else 2
+
+	# A wide river needs many springs (Dave 5 Nov 2026: "if its this wide it will need many pools to create that much water. so depending on the initial
+	# cave size determines how far in it goes and how many branches end in spring pools"): one spring passage per spring_per_mouth_m of the river's width
+	# at the mouth, up to the size's max_springs; the flows join on the way out.
+	var per_m: float = float(_spring_rule("spring_per_mouth_m"))
+	var water_m3_s: float = m3_s * float(wanted)   # as before: the chance passages each brought a spring's worth; now shared by all the springs
+
+	if per_m > 0.0:
+		var mouth_w: float = clampf(_river_width(index, _uphill_angle(index)), 0.0, float(_spring_rule("mouth_width_max_m")))
+		wanted = maxi(wanted, mini(int(round(mouth_w / per_m)), int(_size_rule(size, "max_springs"))))
+
 	var cave: Dictionary = _new_cave("spring_cave", rng)
 	cave["size"] = size
 	var width: float = _size_range(size, "width_m", rng)
@@ -874,10 +901,14 @@ func _spring_cave_of(index: int, size: String, rng: RandomNumberGenerator) -> Di
 
 	var springs: Array = [main[main.size() - 1]]
 
-	# More water: extra spring passages leave the main one 15 to 40 percent of the way in, turned 30 to 50 degrees to either side.
+	# More water: extra spring passages leave the main one 15 to 60 percent of the way in (spread out when there are many), turned 30 to 50 degrees,
+	# to alternate sides.
+	var first_side: float = 1.0 if rng.randf() < 0.5 else -1.0
+
 	for k in range(wanted - 1):
-		var from: int = main[clampi(int(round(float(main.size() - 1) * rng.randf_range(0.15, 0.4))), 1, main.size() - 2)]
-		var side: float = (1.0 if k == 0 else -1.0) * (1.0 if rng.randf() < 0.5 else -1.0) * deg_to_rad(rng.randf_range(30.0, 50.0))
+		var share: float = lerpf(0.15, 0.6, (float(k) + rng.randf()) / float(maxi(wanted - 1, 1)))
+		var from: int = main[clampi(int(round(float(main.size() - 1) * share)), 1, main.size() - 2)]
+		var side: float = (1.0 if k % 2 == 0 else -1.0) * first_side * deg_to_rad(rng.randf_range(30.0, 50.0))
 		var arm: Array = _spring_passage(cave, from, heading + side, _size_range(size, "length_m", rng) * 0.8, width * 0.85, height * 0.9, rng)
 
 		if arm.size() >= 3:
@@ -890,7 +921,7 @@ func _spring_cave_of(index: int, size: String, rng: RandomNumberGenerator) -> Di
 			"node": int(node), "features": ["spring"],
 			"radius_m": snappedf(_size_range(size, "chamber_radius_m", rng), 0.1), "height_m": snappedf(height * 1.4, 0.1),
 		})
-		cave["springs"].append({"node": int(node), "m3_s": snappedf(m3_s, 0.001)})
+		cave["springs"].append({"node": int(node), "m3_s": snappedf(water_m3_s / float(springs.size()), 0.001)})   # the cave's water, shared by its springs
 
 	# Large caves: big chambers along the main passage, roomy enough for stalagmites and stalactites (Dave 4 Nov).
 	var big: Array = []

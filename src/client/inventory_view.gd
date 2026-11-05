@@ -106,6 +106,7 @@ var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 c
 var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
 var lie_on_bed: Callable = Callable()        # (bed position, yaw degrees) after E on a bed: the client lays the player along it
+var sit_on_seat: Callable = Callable()       # (seat position, yaw degrees, structures.json row) after E on a seat: the client sits the player on it
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
 var _death_msec: int = 0                    # when the last death arrived, 0 when none is being shown
@@ -686,6 +687,14 @@ func _probe_structure_for(id: int) -> Dictionary:
 				lie_on_bed.call(_world[id]["pos"], float(_world[id].get("yaw", 0.0)))
 
 		return bed
+
+	if str(station_def.get("use", "")) == "sit":   # a seat (docs/COMFORT_DESIGN.md 10.3; Dave 5 Nov 2026 "we need a sitting on a chair action"): E sits on it, hold E takes it down
+		var seat: Dictionary = {"prompt": "Press E to sit (hold E to take it down)", "hold": take_down}
+		seat["tap"] = func():
+			if sit_on_seat.is_valid() and _world.has(id):
+				sit_on_seat.call(_world[id]["pos"], float(_world[id].get("yaw", 0.0)), station_def)
+
+		return seat
 
 	if str(station_def.get("station", "")) != "":
 		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}

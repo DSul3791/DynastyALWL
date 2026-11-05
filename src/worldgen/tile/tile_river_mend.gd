@@ -223,3 +223,49 @@ static func _cut(heights: PackedFloat32Array, water_class: PackedByteArray, wate
 					water_surface[m] = level[k]
 
 	return made
+
+
+# Rivers joined only corner to corner (Dave 5 Nov 2026, x 53182 z 68505: "the grass is still there which means its not a riverbed"). A brook running on the
+# diagonal of the 8 m grid was a chain of wet cells touching at their corners, with both cells beside each corner left dry: grass grew across the channel
+# between them and the water looked like a row of puddles. For every such corner the lower of the two side cells is cut to the lower bed and made river, so
+# every river runs through cells that share a side. Returns the cells made river.
+static func join_corners(heights: PackedFloat32Array, water_class: PackedByteArray, water_surface: PackedFloat32Array, n: int) -> int:
+	var made: int = 0
+
+	for row in range(n - 1):
+		for column in range(n):
+			var k: int = row * n + column
+
+			if water_class[k] < LAKE:
+				continue
+
+			for side in [-1, 1]:
+				var c: int = column + side
+
+				if c < 0 or c >= n:
+					continue
+
+				var m: int = k + n + side   # the cell diagonally below
+
+				if water_class[m] < LAKE:
+					continue
+
+				var a: int = k + side       # the two cells beside the corner
+				var b: int = k + n
+
+				if water_class[a] != 0 or water_class[b] != 0:
+					continue
+
+				var cut: int = a if heights[a] <= heights[b] else b
+				var level: float = minf(_level_of(water_surface, heights, k), _level_of(water_surface, heights, m))
+				var bed: float = minf(heights[k], heights[m])
+				heights[cut] = minf(heights[cut], bed)
+				water_class[cut] = RIVER
+				water_surface[cut] = maxf(level, heights[cut] + 0.1)
+				made += 1
+
+	return made
+
+
+static func _level_of(water_surface: PackedFloat32Array, heights: PackedFloat32Array, k: int) -> float:
+	return heights[k] + 0.1 if is_nan(water_surface[k]) else water_surface[k]
