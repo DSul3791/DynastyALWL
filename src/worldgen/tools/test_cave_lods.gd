@@ -68,7 +68,11 @@ func _initialize() -> void:
 		for lod in range(0, max_lod + 1):
 			var sf: int = 1 << lod
 			var span: int = 32 * sf
-			var o: Vector3i = Vector3i(int(floor(p.x / span)) * span, int(floor(p.y / span)) * span, int(floor(p.z / span)) * span)
+			# The voxel nearest the point, and the block that holds that voxel. Taking the block that holds the point and clamping the rounded index to 31
+			# read a voxel a whole step away when the point lay in the last half voxel of a block (Sonny 5 Nov 2026: the PC gate on #375 failed two
+			# points this way, one read 3.9 m off sideways at LOD 2, the other 3.2 m low).
+			var g: Vector3i = Vector3i(roundi(p.x / float(sf)), roundi(p.y / float(sf)), roundi(p.z / float(sf)))
+			var o: Vector3i = Vector3i(int(floor(float(g.x) / 32.0)) * span, int(floor(float(g.y) / 32.0)) * span, int(floor(float(g.z) / 32.0)) * span)
 			var key: String = "%d %s" % [lod, str(o)]
 
 			if not blocks.has(key):
@@ -76,8 +80,8 @@ func _initialize() -> void:
 				gen.generate(buffer, o, lod)
 				blocks[key] = buffer
 
-			var local: Vector3 = (p - Vector3(o)) / float(sf)
-			var v: float = blocks[key].get_voxel_f(clampi(roundi(local.x), 0, 31), clampi(roundi(local.y), 0, 31), clampi(roundi(local.z), 0, 31), layout.CHANNEL_SDF)
+			var local: Vector3i = g - Vector3i(o.x >> lod, o.y >> lod, o.z >> lod)   # o is a whole number of blocks, so the shift is exact
+			var v: float = blocks[key].get_voxel_f(local.x, local.y, local.z, layout.CHANNEL_SDF)
 			# A point the finest level does not have open (a chamber centre under a lake bed, or right on the wall) says nothing about the coarse ones.
 			if lod == 0:
 				fine_open = v > 0.0

@@ -48,7 +48,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `GAP_PLANS.md` | Sal | Three biggest gaps: iron, leather, crops (Sal, 2026-10-31) | 10-31 | keep |
 | `GENERATION_GUIDE.md` | Sonny | Modular Island Generation Guide | 10-14 | keep |
 | `GENERATOR_NOTES.md` | Sonny | Generator notes: how it works, why, and what we measured | 10-30 | keep |
-| `GENERATOR_V2_PLAN.md` | Sonny | New Generator Plan | 10-16 | keep |
+| `GENERATOR_V2_PLAN.md` | Sonny | New Generator Plan | 10-16 | ARCHIVED in #389 to `docs/archive/2026-11/` |
 | `GENERATOR_VISION.md` | Sonny | Generator vision (Dave, 29 Oct 2026; Claude's review and additions) | 10-29 | keep |
 | `GUIDE_TASKS.md` | Dino | Guide session: self-made task rounds (standing instruction from Dave, via the  | 11-01 | keep; rename to Dino when he next edits |
 | `HANDOFF.md` | moderator | NOW (29 Oct 2026) | 10-29 | keep (banner added 9c01369a; state section is 29 Oct, to trim) |
@@ -65,11 +65,11 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `LEARN_SYSTEM_SPEC.md` | Sal / Steve | Recipe learning: rule and code spec (Sal, 2026-10-31, fixes F-01) | 10-31 | keep: Steve; built |
 | `LOG_SPECIES_SPEC.md` | Sal / Steve | log_* species chains: code spec for Tyler (Sal, 2026-10-31; guide finding F-11 | 10-31 | keep: Steve; fixed per Sal, build unknown |
 | `MEDICINE_CHAIN.md` | Sal | Medicine, poisons and cures (Sal, 2026-10-31) | 10-31 | keep |
-| `MERGE_WATCH.md` | Tyler | Merge watch | 10-31 | keep |
+| `MERGE_WATCH.md` | Tyler | Merge watch | 10-31 | ARCHIVED in #389 to `docs/archive/2026-11/` |
 | `MODERATOR_QA_LOG.md` | moderator | Night of 30-31 Oct 2026 (Dave asleep; moderator in charge) | 11-01 | keep (source of roles; first heading missing) |
 | `MORNING_PLAYTEST_CHECKLIST.md` | Dino | Dave's play-test: one page (daily branch 3494d612, 31 Oct) | 10-31 | keep (head hash removed 9c01369a) |
 | `MORNING_PLAYTEST_CHECKLIST_FULL.md` | Dino | Morning playtest checklist | 10-31 | ARCHIVED 5 Nov to `docs/archive/2026-10/` (31 Oct build; the short checklist, refreshed 3 Nov, is the one truth) |
-| `PHASE7_PLAN.md` | Sonny | Phase 7: natural rivers on, more lakes, one planned re-bake (Sonny, 31 Oct 202 | 10-31 | keep |
+| `PHASE7_PLAN.md` | Sonny | Phase 7: natural rivers on, more lakes, one planned re-bake (Sonny, 31 Oct 202 | 10-31 | ARCHIVED in #389 to `docs/archive/2026-11/` |
 | `PLAYTHROUGH_BUDGET.md` | Dino | PLAYTHROUGH_BUDGET: how long each milestone takes a new player | 10-31 | keep (5 Nov): one question each, see the table below; FIRST_WEEK_WALK and CRAFT_PACING stay with Sal. FIX: stale since kits became their own recipes; a rerun of `build_orders.py` stops at the kit and gives 0.1 min for the lean-to, bench and house, so the script needs to expand kit recipes before a rerun (owner now Sal, Dino stopped) |
 | `PLAYTHROUGH_CHAPTERS.md` | Dino | PLAYTHROUGH_CHAPTERS: the guide by tier | 10-31 | keep |
 | `PLAYTHROUGH_FINDINGS.md` | Dino | Playthrough findings: spawn to first shelter, tools and weapons | 11-01 | keep |
@@ -85,15 +85,15 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `RULES.md` | moderator | Rules (one file; replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS, 29 Oct 2026 | 10-31 | keep (team sentence fixed 9c01369a; ship.sh flow still to check) |
 | `SCALING_PLAN.md` | Steve | Scaling plan: loading and entities (50 players, villages, animals, enemies), 2 Nov | 11-02 | keep |
 | `SEASONALITY_WINTER.md` | Sal | Seasonality and the winter survival chain (Sal, 2026-10-31) | 10-31 | keep |
-| `SMOKE_TEST.md` | Dino | SMOKE_TEST: the daily branch head, run through the real server and client | 10-31 | keep |
+| `SMOKE_TEST.md` | Dino | SMOKE_TEST: the daily branch head, run through the real server and client | 10-31 | ARCHIVED in #389 to `docs/archive/2026-11/` |
 | `SOUND_AUDIT.md` | Jason | SOUND_AUDIT: cave-in rumble and rain-like sound in clear weather | 10-31 | keep; owner is Jason now (Dino wrote it) |
 | `TARGETS.md` | Tyler | World-alive targets (proposal by Tyler, 31 Oct 2026) | 10-30 | keep |
 | `TOWN_NPC_SPEC.md` | Sal | First-island town and NPC data spec (Sal, 2026-10-31) | 10-31 | keep |
 | `TUTORIAL_FIRST_30_MIN.md` | Dino | Your first 30 minutes (tutorial script) | 10-31 | keep |
-| `TYLER_GATES_REVIEW.md` | Tyler | Gate cards gates-a to gates-f: Tyler's review (30 Oct 2026) | 10-30 | keep (Tyler: merge gates are his again) |
+| `TYLER_GATES_REVIEW.md` | Tyler | Gate cards gates-a to gates-f: Tyler's review (30 Oct 2026) | 10-30 | ARCHIVED in #389 to `docs/archive/2026-11/` |
 | `TYLER_TEST_SYSTEM_REVIEW.md` | Tyler | Test and gate system review (Tyler, 30 Oct 2026) | 10-31 | keep |
 | `WATER_GATHER_SPEC.md` | Sal / Steve | Gather from water and shore: code spec for Tyler (Sal, 2026-10-31; needed for  | 10-31 | keep: Steve (server), Kathleen/Sonny (client edge); server built |
-| `WATER_PLAN.md` | Sonny | Land and water: findings, research and plan (Sonny, 30 Oct 2026) | 10-31 | keep |
+| `WATER_PLAN.md` | Sonny | Land and water: findings, research and plan (Sonny, 30 Oct 2026) | 10-31 | ARCHIVED in #389 to `docs/archive/2026-11/` |
 | `WORLD_ALIVE_LOG.md` | Tyler | World-alive log | 10-31 | keep (log) |
 | `WORLD_FORMAT_SPEC.md` | Sonny | World Format Specification (draft) | 10-29 | keep |
 | `art/ART_TASKS.md` | Kathleen | Kathleen's art task queue (standing instruction from Dave: finish, make up thr | 11-01 | keep |
@@ -136,6 +136,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `docs/FRUIT_TREES_PLAN.md` | MikeW | Fruit trees with a real fruit store (flora session, 2026-10-31; built: store,  | 10-31 | keep |
 | `docs/ISLAND_FAUNA_20261103.md` | MikeW | Starter island fauna (frogs, ducks, gulls, seals by water), 3 Nov | 11-04 | keep |
 | `docs/ITEMS_HANDOVER.md` | Sal | Items data handover (Sal, 2026-10-31): one page for Dave | 10-31 | keep (now holds \"Needs code\") |
+| `docs/BLUEPRINT_SITES.md` | Sal | Blueprint sites: placing without the materials, E to deposit (Dave 5 Nov 2026) | 11-05 | keep |
 | `docs/PONYTAIL_RULES.md` | moderator | Ponytail rules (for the Dynasty water build) | 10-31 | keep (Dave's rule for water) |
 | `docs/SEASONS_DATA.md` | MikeW | Season data for the looks (flora session, 2026-10-31) | 10-31 | keep |
 | `docs/SPAWN_BEAUTY_CHECK.md` | MikeW | Spawn-area beauty check (flora session, 2026-10-31) | 10-31 | keep |

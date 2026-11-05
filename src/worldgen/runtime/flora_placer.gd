@@ -355,8 +355,21 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			if not trees_only or item["kind"] == KIND_TREE:
 				candidates[item["id"]] = item
 
-	# A chunk with sand in it: the dirt beside the sand gets the palm belt species, and the edge rules apply (see _edge_m).
+	# A chunk with sand in it or within BELT_M of it: the dirt beside the sand gets the palm belt species, and the edge rules apply (see _edge_m). Sand just
+	# over the chunk's edge counts too, or the dirt belt on this side took any species (22 in test_beach_belt once the river mouths moved the shore, 5 Nov 2026).
 	var has_beach: bool = present.has(_beach_id)
+
+	if not has_beach:
+		var reach: int = int(ceil(BELT_M / float(step))) * step
+
+		for z in range(-reach, int(chunk_m) + reach + 1, step):
+			for x in range(-reach, int(chunk_m) + reach + 1, step):
+				if (x < 0 or z < 0 or x > int(chunk_m) or z > int(chunk_m)) and data.biome[data.nearest(origin.x + float(x), origin.y + float(z))] == _beach_id:
+					has_beach = true
+					break
+
+			if has_beach:
+				break
 	var edge_cache: Dictionary = {}     # 4 m cell -> edge distance (see _edge_m): a chunk asks about the same ground thousands of times
 
 	if has_beach:
@@ -887,6 +900,11 @@ func _ground_ok(item: Dictionary, data, k: int, x: float, z: float, in_belt: boo
 	if item["kind"] != KIND_PLANT and _near_water(data, x, z):
 		return NAN
 
+	# A river's bed is bare (Dave 5 Nov 2026, x 53182 z 68505: "the grass is still there which means its not a riverbed"): no grass or plant other than reeds
+	# within RIVER_BED_M of river water, so the channel between the wet cells reads as bed, not lawn.
+	if item["kind"] == KIND_PLANT and item["shape"] != "reed" and _near_river(data, x, z):
+		return NAN
+
 	var slope: float = _slope_at(data, x, z)
 
 	if slope > item["max_slope"]:
@@ -1155,6 +1173,18 @@ func _in_grove(groves: Array, x: float, z: float) -> bool:
 const WATER_MARGIN_M := 4.0
 const SEA_LEVEL_M := 0.0
 const WET_FOOT_M := 0.3
+
+
+const RIVER_BED_M := 4.0
+const RIVER := 3
+
+
+func _near_river(data, x: float, z: float) -> bool:
+	for offset in [Vector2.ZERO, Vector2(RIVER_BED_M, 0.0), Vector2(-RIVER_BED_M, 0.0), Vector2(0.0, RIVER_BED_M), Vector2(0.0, -RIVER_BED_M)]:
+		if data.water_class[data.nearest(x + offset.x, z + offset.y)] == RIVER:
+			return true
+
+	return false
 
 
 func _near_water(data, x: float, z: float) -> bool:

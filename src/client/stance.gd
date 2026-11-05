@@ -16,8 +16,11 @@ const EYE_Y := [0.7, 0.2, -0.05, -0.55]          # camera height above the body'
 const SHAPE_HEIGHT := [1.8, 1.2, 1.0, 0.7]       # collision capsule height (feet stay on the ground)
 const SPEED := [1.0, 0.45, 0.0, 0.0]             # share of walking pace
 const EYE_RATE := 5.0                            # per second, how fast the eye height follows
+const SEAT_EYE_Y := 0.23                         # sitting ON a seat (E on a chair): eyes about 1.13 m up, the chair clip's head at 1.22 m
 
 signal changed(stance: int)
+
+var seated: bool = false                         # sitting on a seat, not on the ground (terrain_client.gd _sit_on_seat); cleared when the stance leaves sitting
 
 var stance: int = STAND
 var eye_y: float = 0.7
@@ -37,6 +40,10 @@ func set_stance(wanted: int) -> bool:
 		return false
 
 	stance = wanted
+
+	if stance != SIT:
+		seated = false
+
 	changed.emit(stance)
 	return true
 
@@ -49,7 +56,7 @@ func moved() -> void:
 
 # Smooth eye height; call every frame.
 func step(delta: float) -> void:
-	eye_y = lerpf(eye_y, float(EYE_Y[stance]), clampf(EYE_RATE * delta, 0.0, 1.0))
+	eye_y = lerpf(eye_y, SEAT_EYE_Y if seated and stance == SIT else float(EYE_Y[stance]), clampf(EYE_RATE * delta, 0.0, 1.0))
 
 
 # The collision capsule for the stance, its centre shifted so the feet stay where they are.

@@ -30,6 +30,8 @@ const ACTIONS := [
 	["put_down_log", "Put down the log on your shoulder", "Actions", CONTEXT_WORLD, KEY_Q, false, false, false],
 	["blueprints", "Hammer in hand: blueprint list", "Actions", CONTEXT_WORLD, KEY_R, false, false, false],
 	["delete_plan", "Hammer in hand: delete the blueprint you aim at", "Actions", CONTEXT_WORLD, KEY_DELETE, false, false, false],
+	["hammer_group_next", "Hammer menu open: next group of blueprints", "Actions", CONTEXT_WORLD, KEY_RIGHT, false, false, false],
+	["hammer_group_prev", "Hammer menu open: previous group of blueprints", "Actions", CONTEXT_WORLD, KEY_LEFT, false, false, false],
 	["auto_pickup", "Auto pickup on / off", "Actions", CONTEXT_WORLD, KEY_P, false, false, false],
 	["inspect", "Inspection mode on / off", "Actions", CONTEXT_WORLD, KEY_SLASH, false, false, false],
 	["ruler", "Inclination ruler on / off", "Actions", CONTEXT_WORLD, KEY_H, false, false, false],

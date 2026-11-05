@@ -596,6 +596,15 @@ The owner approved the direction of the crafting proposal deck ("How Deep Should
 - **[Decided] (owner, 2026-11-03)** Several springs add up: their water is added in the simulation (volume is kept), so a river fed by 2 or 3 spring passages is wider and deeper, and the carved bed is sized by the catchment above it.
 - **[Decided] (owner, 2026-11-03)** A head on a hillside where a cave does not fit (no ground thick enough over it within 64 m) is not left as a spring on the open slope: its spring goes down to the bottom, as in the rule above (`_cave_fits`, PR #252). A spring at a cave mouth keeps its water even on steep ground (settle rules version 11).
 - **[Decided] (owner, 2026-11-03)** **No patchy riverbeds.** A painted river has no dry reach (the settled file gives every river cell at least a 13 cm film) and a channel cut across a hillside has a bank on its downhill side, so its water is held (river banks, `tile_drainage.gd` `_build_banks`, terrain 50, PR #264). Measured with `tools/river_survey.py` on tile 3,4: dry reaches 124 before, 0 now; leaky edges 10 percent before, 3 percent now. Routing the rivers over the final ground (with ledges and scree) was tried and made them worse (about 15 times as many stream heads, PR #221 closed), so rivers are routed over the raw ground.
+- **[Decided] (owner, 2026-11-04)** **A cave mouth matches its river.** Dave: "the cave needs to match the river size and then it can get smaller the further in the ground it goes." The mouth is as wide as the river channel at the head (measured across the water), and about half as tall as it is wide (never lower than the passage, at most 12 m). It narrows to the passage size over the first third of the passage (at least 25 m). Being built by Sonny.
+- **[Decided] (owner, 2026-11-04)** **Small, medium and large caves.** Dave: "its ok for these to be really large cave systems. some should be small, some should be medium and some should be large." Chosen at random per cave (recommended odds 45 / 35 / 20 percent):
+  - small: 40 to 80 m, 2.5 to 3.5 m wide, 2 to 3 m tall, 0 or 1 den tunnel, one spring;
+  - medium: as before (90 to 115 m, 3 to 5 m wide, 2.5 to 4 m tall, 1 to 3 den tunnels, sometimes 2 or 3 spring passages);
+  - large: 150 to 300 m (as far as the hill gives cover), 5 to 8 m wide, 4 to 7 m tall, 2 to 4 den tunnels, 1 or 2 big chambers along the way (10 to 18 m across, 8 to 14 m tall), and 2 or 3 spring passages more often.
+- **[Decided] (owner, 2026-11-04)** **Den tunnels go uphill and end in a hollow.** Dave: "if its going to be a side tunnel where something is using it as a den it needs to go up hill to keep the water from flowing up it and it should end in a den like hollow similar to the pool room." A den tunnel leaves the passage with a half-metre step up, climbs 10 to 20 percent for 15 to 40 m, and ends in a dry, round den hollow (3 to 5 m across the radius, 3 to 4 m tall). The den sits in that hollow.
+- **[Decided] (owner, 2026-11-04)** **Bones.** Dave: "randomly they can have like animal or human bones lying around the entrance or at the end of the caves." Each cave has a chance of a bone spot just inside the entrance and a chance at the far end (a spring chamber or a den hollow). Most are animal bones; about 1 in 5 are human. Art by Kathreen; the bake stores the spots.
+- **[Decided] (owner, 2026-11-04)** **Stalagmites and stalactites** in the bigger caves. Dave: "if they are bigger caves they can have stalagmites and stalactites." They stand in the big chambers and the wide passages of large caves, never on the stream line. Art by Kathreen; the bake stores the spots and sizes.
+- **[Decided] (owner, 2026-11-04)** **Caves are riddled with rocks and stones.** Dave: "they should be riddled with rocks and collectable stones." Every cave floor has loose stones you can pick up (with the same flint share as the bank stones), much denser than outside, and rocks (boulders a pick breaks into stones) along the walls, more in chambers. None lie in the stream.
 - **[Open]** On steep cascades (around 30 degrees) a bank is capped at 3 m and a sloping shoulder: some edges there stay leaky. The owner should look at the banks on the steepest brooks and say whether they look right.
 
 
@@ -1929,13 +1938,13 @@ To be fleshed out when the first NPC is designed.
 
 ## 14. Current code status
 
-The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDScript, run headless in Godot). The plan and its progress log are in `GENERATOR_V2_PLAN.md`.
+The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDScript, run headless in Godot). The plan and its progress log are in `docs/archive/2026-11/GENERATOR_V2_PLAN.md` (archived 5 Nov 2026, done).
 
 **Built and tested (877 checks pass, 2026-10-16)**
 
-- Step 14 first version: the runtime terrain generator (`src/worldgen/runtime/`), GDScript, about 18 ms per 32 m block, with a walk-and-fly preview scene. **[Proposed]** Keep it in GDScript until server streaming shows it is too slow, then move it into a small C++ module in the custom engine. Details in `GENERATOR_V2_PLAN.md`.
+- Step 14 first version: the runtime terrain generator (`src/worldgen/runtime/`), GDScript, about 18 ms per 32 m block, with a walk-and-fly preview scene. **[Proposed]** Keep it in GDScript until server streaming shows it is too slow, then move it into a small C++ module in the custom engine. Details in `docs/archive/2026-11/GENERATOR_V2_PLAN.md` (archived 5 Nov 2026, done).
 - Step 15 first version: runtime trees and plants from a species table, sent by the server, drawn in the client and preview, with removals stored (Section 4.3).
-- Step 16 first version: a terrain server streaming blocks to a client with a disk cache (`src/stream/`, `scenes/terrain_server/`, `scenes/terrain_client/`). See Section 4.10 and `GENERATOR_V2_PLAN.md`.
+- Step 16 first version: a terrain server streaming blocks to a client with a disk cache (`src/stream/`, `scenes/terrain_server/`, `scenes/terrain_client/`). See Section 4.10 and `docs/archive/2026-11/GENERATOR_V2_PLAN.md` (archived 5 Nov 2026, done).
 - A Linux build of the project's engine (Godot 4.7.2 with Voxel Tools 1.7) for cloud sessions: `tools/build_godot_linux.sh`.
 
 - World settings, SHA-256 seeds, append-only data tables (biomes, soils, rocks, resources, water classes, site types, feature types, province kinds).
@@ -2036,7 +2045,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 
 ## 16. Candidate work, in dependency order
 
-Nothing here is committed. It follows `GENERATOR_V2_PLAN.md`, ordered by what affects baked data first, since baked changes force rebakes.
+Nothing here is committed. It follows `docs/archive/2026-11/GENERATOR_V2_PLAN.md` (archived 5 Nov 2026, done), ordered by what affects baked data first, since baked changes force rebakes.
 
 1. Done: world settings, tables, world sketch, tile plan, and for one tile the height, erosion, water, climate, geology and sites (plan steps 2 to 12).
 2. Done: the permanent parts of the tile file (`WORLD_FORMAT_SPEC.md` Section 4): the ID scheme, the geology list with tuff (step 12b), the resource pass design, the river plan.

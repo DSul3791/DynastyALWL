@@ -61,6 +61,8 @@ Pictures for Dave go on the QA page, one card per picture (worktree `C:/GodotPro
 ## 9. Kept from the 31 Oct status doc (moved here word for word, 5 Nov 2026, when `DYNASTY_WATER_STATUS.md` was archived)
 
 ### Shader patch plan (for the protocol flow channel, item 2 of section 6)
+**Superseded (Sonny, 5 Nov 2026): not to be applied.** Since protocol 85 (2 Nov) the sim's flow reaches the screen through `src/water2/liquid_surface.gd`, which samples the same texture (R surface, G/B flow, A depth) and carries ripples and foam along the flow. Inside the live window the grid look (`water_material.gd`) crossfades out over `blend_m` and the liquid sheet draws the water; outside it there is no sim data. This patch would only touch the 24 m blend band. Kept below as history.
+
 - **The six-line patch for `src/client/water_material.gd`, to apply only after the tests have run** (it changes the game's shader, default path must stay identical when `water2_on` is 0): (1) paste `SHADER_INCLUDE` after the uniform block (line 45); (2) in `vertex()` compute `world_pos` first; (3) after `flow = ...` add `if (water2_on > 0.5) { vec4 w = water2_at(world_pos.xz); if (w.x >= 0.0) { flow = w.gb / fastest_m_s; } }` (the flow is then the sim's, in units of the drawn top speed); (4) add `varying float water2_foam;` set in the same branch to `w.a`; (5) in `fragment()` multiply the existing foam by `1.0 + water2_foam * rough_or_turbulence` only when `water2_on > 0.5`; (6) the client calls `FlowTexture.apply` for the window it knows (needs the protocol flow channel for real play; in the demo scene it is a direct call).
 
 ### Step 4 if GDScript is not enough: options (cost, risk)
