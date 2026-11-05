@@ -4648,7 +4648,7 @@
 		},
 		"small_blocks_from_large": {
 			"number": 339,
-			"name": "Small wooden blocks from a large one",
+			"name": "Small wooden blocks",
 			"category": "Materials",
 			"needs": [["wooden_block_large", 1]],
 			"keeps": [["stone_axe", 1]],
@@ -4658,7 +4658,7 @@
 		},
 		"small_soft_blocks_from_large": {
 			"number": 340,
-			"name": "Small softwood blocks from a large one",
+			"name": "Small softwood blocks",
 			"category": "Materials",
 			"needs": [["wooden_block_soft_large", 1]],
 			"keeps": [["stone_axe", 1]],

@@ -12,7 +12,7 @@ const DATA := "res://data/items/"
 # Items the code itself hands out (a carcass is made when an animal dies; felling a trunk, the admin give, placing a fire) and so need no drop entry.
 # Names of items and recipes are plain nouns (Dave 2026-10-20): "Basic torch", "Stone axe", never "Carve a ..." or "Make a ...".
 const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
-const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood", "sea_water"]
+const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood", "sea_water", "torch_doused"]   # torch_doused: rain or water puts a lit torch out (#361)
 
 const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
@@ -241,7 +241,7 @@ func _init() -> void:
 		var item: Dictionary = items_file["items"][id]
 		var description: String = String(item.get("description", ""))
 
-		if bool(item.get("offhand", false)) and (not ["tool", "weapon"].has(String(item.get("kind", ""))) or not ["torch", "shield"].has(String(item.get("tool_class", "")))):
+		if bool(item.get("offhand", false)) and (not ["tool", "weapon"].has(String(item.get("kind", ""))) or not ["torch", "torch_doused", "shield"].has(String(item.get("tool_class", "")))):
 			fail("items.json: '%s' is marked offhand but is not a tool or weapon of class torch or shield (the left-hand models)" % id)
 
 		if item.has("pile"):   # bulk items drawn as a pile on the ground (PileLook) and taken by the handful
@@ -347,6 +347,17 @@ func _init() -> void:
 					fail("drops.json %s.%s: bad amounts for %s" % [group, key, row[0]])
 
 				obtainable[String(row[0])] = true
+
+	# Wild seeds: gathering a listed plant in season also gives seeds (drops.json seed_drops).
+	var seed_drops: Dictionary = drops.get("seed_drops", {})
+
+	for key in seed_drops:
+		if typeof(seed_drops[key]) != TYPE_DICTIONARY:
+			continue
+
+		for row in seed_drops[key].get("rows", []):
+			want_item.call(String(row[0]), "drops.json seed_drops.%s" % key)
+			obtainable[String(row[0])] = true
 
 	var trunk: Dictionary = drops.get("trunk", {})
 
@@ -620,6 +631,10 @@ func _init() -> void:
 	for kind in _read("structures.json").get("structures", {}):
 		if _read("structures.json")["structures"][kind].has("blocks_per_log"):
 			obtainable["wooden_block"] = true
+
+			for cls in wood_file.get("class_items", {}):   # softwood logs give softwood blocks, big logs large blocks (wood_species.json class_items)
+				for step in wood_file["class_items"][cls]:
+					obtainable[String(wood_file["class_items"][cls][step])] = true
 
 	# What a fire cooks (cooking.json cooks_into) is obtainable when the raw item is.
 	for raw_id in cooking.get("cooks_into", {}):

@@ -2946,7 +2946,7 @@
 		"wooden_block_soft": {
 			"number": 237,
 			"name": "Softwood block",
-			"description": "A short round of a small pine, spruce or fir log, bark still on, about 30 cm long. Burns longer than soft firewood, or split it on a chopping block.",
+			"description": "A short round of a small softwood log. Burns longer than soft firewood, or split it on a chopping block.",
 			"kind": "material",
 			"pile": {"shape": "logs", "handful": 5, "color": [0.46, 0.31, 0.2], "len": 0.3, "radius": 0.09, "round": true},
 			"stack": 10,
@@ -6316,7 +6316,7 @@
 		"wooden_block_large": {
 			"number": 540,
 			"name": "Large wooden block",
-			"description": "A thick round of a big trunk, bark still on. Split it into 4 firewood on a chopping block, or make a chopping block of it.",
+			"description": "A thick round of a big trunk. Split it into firewood or 4 small blocks, or make a chopping block of it.",
 			"kind": "material",
 			"pile": {"shape": "logs", "handful": 3, "color": [0.40, 0.27, 0.17], "len": 0.4, "radius": 0.2, "round": true},
 			"stack": 5,
@@ -6326,7 +6326,7 @@
 		"wooden_block_soft_large": {
 			"number": 541,
 			"name": "Large softwood block",
-			"description": "A thick round of a big pine, spruce or fir trunk, bark still on. Split it into 4 soft firewood on a chopping block, or make a chopping block of it.",
+			"description": "A thick round of a big softwood trunk. Split it into soft firewood or 4 small blocks, or a chopping block.",
 			"kind": "material",
 			"pile": {"shape": "logs", "handful": 3, "color": [0.46, 0.31, 0.2], "len": 0.4, "radius": 0.2, "round": true},
 			"stack": 5,
