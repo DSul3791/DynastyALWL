@@ -183,13 +183,19 @@ func _bone_dir(bone: String, child: String) -> Vector3:
 	return (b - a).normalized()
 
 
+# Where a held handle crosses the hand, down from the wrist. Dave's hand mesh runs 0 to 19 cm from the wrist joint (its middle at 13 cm, read from the glb's skin weights).
+# 7 cm put the handle across the wrist, above the hanging hand, so the axe seemed to float by the hip (PC shot 5 Nov, axe_right.png). 11 cm is where the fingers meet the
+# palm; the hand has no finger bones, so it cannot close round the handle, but the handle now runs through it.
+const GRIP_FROM_WRIST_M := 0.11
+
+
 func _build_mounts() -> void:
-	# Fingers point along the forearm; the grip is 7 cm into the palm, and the front is model +Z. Offsets are given in model space, turned by `rest` inside _mount.
+	# Fingers point along the forearm; the grip is GRIP_FROM_WRIST_M into the hand, and the front is model +Z. Offsets are given in model space, turned by `rest` inside _mount.
 	var front: Vector3 = Vector3(0.0, 0.0, 1.0)
 	var right_dir: Vector3 = _bone_dir("RightForeArm", "RightHand")
 	var left_dir: Vector3 = _bone_dir("LeftForeArm", "LeftHand")
-	hand_mount_r = _mount("RightHand", "HandMount_R", right_dir * 0.07, right_dir, front)
-	hand_mount_l = _mount("LeftHand", "HandMount_L", left_dir * 0.07, left_dir, front)
+	hand_mount_r = _mount("RightHand", "HandMount_R", right_dir * GRIP_FROM_WRIST_M, right_dir, front)
+	hand_mount_l = _mount("LeftHand", "HandMount_L", left_dir * GRIP_FROM_WRIST_M, left_dir, front)
 	head_mount = _mount("Head", "HeadMount", Vector3(0.0, 0.1, 0.0), Vector3(0.0, -1.0, 0.0), front)
 
 
