@@ -93,6 +93,7 @@ static func carve(heights: PackedFloat32Array, water_class: PackedByteArray, wat
 		var rim: float = minf(ground[k], lerpf(ground[k], RIM_M, share))
 		var radius: float = RADIUS_M * lerpf(1.0, widen, share)
 		var reach: int = int(ceil((radius + BANK_REACH_M) / cell_m))
+		@warning_ignore("integer_division")
 		var row: int = k / n
 		var column: int = k % n
 

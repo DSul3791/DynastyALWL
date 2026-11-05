@@ -80,7 +80,7 @@ func _initialize() -> void:
 				gen.generate(buffer, o, lod)
 				blocks[key] = buffer
 
-			var local: Vector3i = g - o / sf
+			var local: Vector3i = g - Vector3i(o.x >> lod, o.y >> lod, o.z >> lod)   # o is a whole number of blocks, so the shift is exact
 			var v: float = blocks[key].get_voxel_f(local.x, local.y, local.z, layout.CHANNEL_SDF)
 			# A point the finest level does not have open (a chamber centre under a lake bed, or right on the wall) says nothing about the coarse ones.
 			if lod == 0:

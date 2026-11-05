@@ -189,6 +189,7 @@ static func _cut(heights: PackedFloat32Array, water_class: PackedByteArray, wate
 
 	for k in range(count):
 		var centre: int = path[k]
+		@warning_ignore("integer_division")
 		var row: int = centre / n
 		var column: int = centre % n
 
