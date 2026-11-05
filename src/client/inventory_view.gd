@@ -3214,14 +3214,14 @@ func _loose_prewarm_numbers() -> Array:
 	var out: Array = []
 
 	for id in table.ids():
-		var name: String = str(id)
+		var item: String = str(id)
 
-		if name == "stone" or name == "flint" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
-			out.append(table.number_of(name))
+		if item == "stone" or item == "flint" or item == "stick" or item == "firewood" or item == "plant_fibre" or item == "driftwood" or item == "log" or item.begins_with("log_"):
+			out.append(table.number_of(item))
 
-	for name in _trunk_drop_ids():
-		if table.number_of(name) > 0 and not out.has(table.number_of(name)):
-			out.append(table.number_of(name))
+	for drop in _trunk_drop_ids():
+		if table.number_of(drop) > 0 and not out.has(table.number_of(drop)):
+			out.append(table.number_of(drop))
 
 	return out
 
