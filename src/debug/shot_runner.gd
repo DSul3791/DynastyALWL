@@ -589,6 +589,7 @@ func _process(delta: float) -> void:
 		return
 
 	_print_state()
+	_print_body_height()
 
 	if not flora_names.is_empty():
 		_print_flora_row()
@@ -1576,6 +1577,23 @@ func _tally(root: Node, eye: Vector3) -> void:
 func _piece_ground(x: float, z: float) -> float:
 	var from_y: float = client.body.global_position.y
 	return ItemCam.pick_ground(float(client._ground_below(Vector3(x, from_y, z))), _ground(x, z))
+
+
+# --shot-stance: where the drawn body is against the ground under it (the sit read as sunk into the ground on 5 Nov; the pose puts the hips 0.14 m above the body's feet level).
+func _print_body_height() -> void:
+	if stance_index < 0 or client._avatar == null:
+		return
+
+	var avatar: Node3D = client._avatar
+	var foot_y: float = avatar.global_position.y
+	var ground: float = _ground(avatar.global_position.x, avatar.global_position.z)
+	var hips_y: float = NAN
+	var skeleton: Skeleton3D = avatar.get("skeleton") as Skeleton3D
+
+	if skeleton != null and skeleton.find_bone("mixamorig_Hips") >= 0:
+		hips_y = (skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("mixamorig_Hips"))).origin.y
+
+	print("shot runner: body height: stance %d clip %s, feet level %.2f, ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
 
 
 func _ground(x: float, z: float) -> float:
