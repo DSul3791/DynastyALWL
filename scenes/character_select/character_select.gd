@@ -43,6 +43,13 @@ func _to_creator() -> void:
 	get_tree().change_scene_to_file(CREATOR_SCENE)
 
 
+# Esc goes back to the title page (Dave 5 Nov 2026), which then shows the next painting of the story.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		get_tree().change_scene_to_file("res://scenes/title/title.tscn")
+
+
 func _build_ui() -> void:
 	var page: VBoxContainer = Style.page(self)
 	var title: Label = Label.new()

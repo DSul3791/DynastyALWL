@@ -1,7 +1,7 @@
 extends SceneTree
 
 # The title page (scenes/title/title.gd, Kathreen 5 Nov 2026). Checks: every painting file is there; each painting's four drawn buttons are inside the picture, in order
-# top to bottom and not overlapping; the hit areas scale with the window; the random pick never shows the same painting twice in a row and reaches all of them; the page
+# top to bottom and not overlapping; the hit areas scale with the window; each showing moves to the next page of the story, the dragon battle last, then back to the start; the page
 # builds, and Continue is dimmed and does nothing with no character, on with one. Uses user://characters_title_test, never the real characters.
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_title_page.gd
 const Title := preload("res://scenes/title/title.gd")
@@ -24,7 +24,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	_check(Title.PAINTINGS.size() == 11, "eleven paintings with drawn buttons (%d)" % Title.PAINTINGS.size())
+	_check(Title.PAINTINGS.size() == 12, "all twelve paintings (%d)" % Title.PAINTINGS.size())
 	var picture: Rect2 = Rect2(Vector2.ZERO, Title.IMAGE_SIZE)
 
 	for p in Title.PAINTINGS:
@@ -40,22 +40,24 @@ func _run() -> void:
 	var r0: Rect2 = Title.button_rect(Title.PAINTINGS[0], "exit")
 	var v: Rect2 = Title.to_view(r0, Title.IMAGE_SIZE * 2.0)
 	_check(v.position.is_equal_approx(r0.position * 2.0) and v.size.is_equal_approx(r0.size * 2.0), "hit areas scale with the window")
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = 7
-	var last: int = -1
+	var order: Array = []
+
+	for p in Title.PAINTINGS:
+		order.append(str(p["file"]).substr(0, 2))
+
+	_check(order == ["02", "03", "04", "05", "07", "08", "12", "13", "14", "15", "16", "11"], "story order, the dragon battle last (%s)" % [order])
+	_check(Title.next_after("") == 0, "nothing shown yet: the first page")
+	_check(Title.next_after("no_such.jpg") == 0, "an unknown name: the first page")
+	_check(Title.next_after(Title.PAINTINGS[0]["file"]) == 1, "after the first: the second")
+	_check(Title.next_after(Title.PAINTINGS[-1]["file"]) == 0, "after the last: back to the first")
+	var n: int = Title.next_after("")
 	var seen: Dictionary = {}
-	var repeats: int = 0
 
-	for k in range(400):
-		var n: int = Title.pick(Title.PAINTINGS.size(), last, rng)
-		repeats += 1 if n == last else 0
-		_check(n >= 0 and n < Title.PAINTINGS.size(), "pick in range (%d)" % n)
+	for _k in range(Title.PAINTINGS.size()):
 		seen[n] = true
-		last = n
+		n = Title.next_after(Title.PAINTINGS[n]["file"])
 
-	_check(repeats == 0, "never the same painting twice in a row (%d repeats)" % repeats)
-	_check(seen.size() == Title.PAINTINGS.size(), "every painting comes up (%d of %d)" % [seen.size(), Title.PAINTINGS.size()])
-	_check(Title.pick(1, 0, rng) == 0, "one painting: always that one")
+	_check(seen.size() == Title.PAINTINGS.size() and n == 0, "one round shows every page once and comes back to the start")
 	Store.dir = TEST_DIR
 	_wipe()
 	var page = TitleScene.instantiate()
