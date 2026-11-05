@@ -58,16 +58,14 @@ func _init() -> void:
 	_check(items.has("plant_fibre") and items.has("thatch"), "tall_grass gives plant_fibre and thatch %s" % str(items))
 	_check(tall["yields"].has("thatch") and tall["season"].has("summer"), "tall_grass is gatherable in summer")
 
-	# Shrub colliders: small ones step-over, big ones block, plants and grass never.
+	# Shrub colliders: none at any height (Dave 5 Nov 2026: bushes, ferns and sticks never stop the player), plants never, trees keep theirs.
 	var K = PlacerScript
 	_check(K.collider_radius(K.KIND_SHRUB, 0.02, 1.0, 0.5) == 0.0, "a 0.5 m shrub has no collider")
-	_check(K.collider_radius(K.KIND_SHRUB, 0.02, 1.0, 0.8) == 0.0, "a 0.8 m shrub is walked over or through")
-	var big: float = K.collider_radius(K.KIND_SHRUB, 0.02, 2.0, 2.4)
-	_check(big >= 0.22 and big <= 0.5, "a 2.4 m bush has a stem collider %.2f m, not the leaf spread" % big)
+	_check(K.collider_radius(K.KIND_SHRUB, 0.02, 2.0, 2.4) == 0.0, "a 2.4 m bush is walked through")
+	_check(K.collider_radius(K.KIND_SHRUB, 0.3, 1.0, 7.0) == 0.0, "a 7 m hazel or elder is walked through")
 	_check(K.collider_radius(K.KIND_PLANT, 0.0, 1.0, 1.8) == 0.0, "a 1.8 m tall grass plant has no collider")
 	_check(K.collider_radius(K.KIND_TREE, 0.4, 1.0, 20.0) > 0.3, "a tree keeps its trunk collider")
 	var step: float = float(JSON.parse_string(FileAccess.get_file_as_string("res://data/movement.json"))["step_up_m"])
-	_check(K.SHRUB_BLOCK_HEIGHT_M >= step + 0.3, "shrubs block only above the step-up height plus a margin (%.2f vs %.2f m)" % [K.SHRUB_BLOCK_HEIGHT_M, step])
 
 	# Fallen-log colliders: short logs are walk-through, long ones get a capsule of the model's radius that a 0.5 m step-up can only clear when low.
 	_check(K.log_collider(3.9, 0.5) == Vector2.ZERO, "a 3.9 m log has no collider")

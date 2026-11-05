@@ -124,6 +124,9 @@ func _init() -> void:
 	var shaped: Mesh = wide_body.body_mesh.mesh
 	_check(shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 9, "widths: shaped mesh with 9 blend shapes (5 body, 4 face)")
 
+	# The shapes hold whole positions, which only NORMALIZED reads right: RELATIVE adds them to the base, so build 0.5 drew a body half again as big (4 Nov).
+	_check(shaped is ArrayMesh and (shaped as ArrayMesh).blend_shape_mode == Mesh.BLEND_SHAPE_MODE_NORMALIZED, "widths: blend shapes hold whole positions (normalized mode)")
+
 	if shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 9:
 		var base: PackedVector3Array = (shaped as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 		var blends: Array = (shaped as ArrayMesh).surface_get_blend_shape_arrays(0)

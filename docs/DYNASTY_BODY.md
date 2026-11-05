@@ -20,6 +20,7 @@ The player's body by default since 1 Nov 2026 (Dave). To go back to the body wor
 | crouch | CrouchLookAroundBow (98-clip export) | hips 0.46 m, loops, feet on the ground |
 | crouch_walk, _back, _left, _right | Cautious_Crouch_Walk_Forward, _Backward, _Left, _Right | retimed to the game's 0.9 m/s crouch pace; `avatar_driver.gd clip_for` picks one by velocity for a body that has them (the Dynasty body only) |
 | sit | Chair_Sit_Idle_M | hips 0.51 m, right |
+| sit_chair | Chair_Sit_Idle_M, held on its first frame | sitting ON a seat (E on a chair, stool, log seat or bench, 5 Nov 2026); hips 0.51 m |
 | lie | Sleep_Normally | head toward +Z, hips 0.18 m, right |
 | swing, swing_fp, chop, pick_overhead | Heavy_Hammer_Swing | two-handed overhead; impact frame not tuned to held_item's HIT_AT (0.5 s of 0.95 s) |
 | jab | Right_Jab_from_Guard | GAP: a punch, not a spear thrust |
@@ -48,7 +49,7 @@ Estimate: wearing clothes and tinting skin: about one day. Hair, beard and creat
 Lower-detail variants of the character for low settings and distant NPCs (fewer triangles, 1k or 2k textures): to be made later, not now. Owner: Kathleen/Kathreen.
 
 ## Code owner for hooks (Steve)
-Done 1 Nov 2026 (Steve): `avatar_driver.gd hook_clip` asks for swim / swim_idle (in deep water), drink (the player's E drink), pick_up (a pick-up or gather the player asked for; skipped when running), sit_down and stand_up (stance changes between standing and sitting) and wake_up (the sleep ends). It does nothing for a body without those clips (the generated body, the old ragdoll). The call is in `terrain_client.gd _update_view`; the stamps are `inventory_view.gd _drink_msec` and `pick_stamp`. Test: `test_avatar_hooks`.
+Done 1 Nov 2026 (Steve): `avatar_driver.gd hook_clip` asks for swim / swim_idle (in deep water), drink (the player's E drink), pick_up (a pick-up or gather the player asked for; skipped when running), sit_down and stand_up (stance changes between standing and sitting; no longer started since 5 Nov 2026, because they are chair transitions and the sit is on the ground, BUG-020) and wake_up (the sleep ends). It does nothing for a body without those clips (the generated body, the old ragdoll). The call is in `terrain_client.gd _update_view`; the stamps are `inventory_view.gd _drink_msec` and `pick_stamp`. Test: `test_avatar_hooks`.
 
 ## New clips of the 98-clip export (1 Nov, later)
 14 added: Cautious_Crouch_Walk x4 and CrouchLookAroundBow (wired); Crouch_Pull_and_Throw (a crouched throw, NOT wired: the game's throw is standing; Dave to say), Crouch_Walk_with_Torch and _Left/_Right_with_Torch (candidates for a held torch while crouched), Crawl_Backward, Crawl_and_Look_Back (a prone crawl), Squat_Stance, Idle_5, Idle_10 (idle variants). None fits jab, use or the log carry; those gaps stand. Stats: `art/CRITIQUES/dynasty_base_male_2026-11-01/clip_stats_98.md`.

@@ -341,9 +341,8 @@ static func pbr_ready() -> bool:
 	return true
 
 
-# The six textures as one array, at the size the quality level allows.
-static func detail_array(quality: int) -> Texture2DArray:
-	var px: int = TEXTURE_PX[clampi(quality, 0, TEXTURE_PX.size() - 1)]
+# The ground photos read on the main thread (loading and get_image touch the renderer), not yet sized.
+static func _raw_images() -> Array[Image]:
 	var images: Array[Image] = []
 	var photo: bool = pbr_ready()
 
@@ -358,9 +357,6 @@ static func detail_array(quality: int) -> Texture2DArray:
 			if imported != null:
 				image = imported.get_image()
 
-				if image != null and image.is_compressed():
-					image.decompress()
-
 		if image == null:
 			image = Image.load_from_file(ProjectSettings.globalize_path(path))
 
@@ -368,13 +364,62 @@ static func detail_array(quality: int) -> Texture2DArray:
 			image = Image.create(8, 8, false, Image.FORMAT_RGBA8)
 			image.fill(Color(0.5, 0.5, 0.5, 0.5))
 
+		images.append(image)
+
+	return images
+
+
+# Decompress, convert, size and mipmap: plain image work, safe on a worker thread.
+static func _sized(images: Array[Image], px: int) -> Array[Image]:
+	for image in images:
+		if image.is_compressed():
+			image.decompress()
+
 		image.convert(Image.FORMAT_RGBA8)
 
 		if image.get_width() != px:
 			image.resize(px, px, Image.INTERPOLATE_LANCZOS)
 
 		image.generate_mipmaps()
-		images.append(image)
+
+	return images
+
+
+static var _early_task: int = -1
+static var _early_px: int = 0
+static var _early_images: Array[Image] = []
+
+
+# Lag run 5 Nov: the ground material took 253 ms of the welcome frame, nearly all of it sizing the six photos.
+# The client calls this when it starts connecting, so a worker sizes them while the welcome is on its way.
+# Not under headless: tests keep the old path.
+static func start_early(quality: int) -> void:
+	if _early_task != -1 or DisplayServer.get_name() == "headless":
+		return
+
+	var px: int = TEXTURE_PX[clampi(quality, 0, TEXTURE_PX.size() - 1)]
+	var images: Array[Image] = _raw_images()
+	_early_px = px
+	_early_images = images
+	_early_task = WorkerThreadPool.add_task(func() -> void: _sized(images, px), false, "ground photos")
+
+
+# The six textures as one array, at the size the quality level allows.
+static func detail_array(quality: int) -> Texture2DArray:
+	var px: int = TEXTURE_PX[clampi(quality, 0, TEXTURE_PX.size() - 1)]
+	var images: Array[Image] = []
+
+	if _early_task != -1:
+		WorkerThreadPool.wait_for_task_completion(_early_task)
+		_early_task = -1
+
+		if _early_px == px:
+			images = _early_images
+
+		_early_images = []
+
+	if images.is_empty():
+		images = _sized(_raw_images(), px)
 
 	var array: Texture2DArray = Texture2DArray.new()
 	array.create_from_images(images)

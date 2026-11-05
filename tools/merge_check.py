@@ -127,6 +127,11 @@ if dupes.returncode != 0:
         if not line.startswith("dupe names:"):
             bad("duplicate GDScript name: " + line)
 
+shaders = subprocess.run([sys.executable, "tools/check_shader_comments.py"], capture_output=True, text=True)
+if shaders.returncode != 0:   # headless gates never compile shaders, so a '#' comment only fails in a windowed client (#416)
+    for line in shaders.stdout.splitlines():
+        bad("shader: " + line)
+
 looks = subprocess.run([sys.executable, "tools/check_look_names.py"], capture_output=True, text=True)
 if looks.returncode != 0:
     for line in looks.stdout.splitlines()[1:]:
@@ -136,6 +141,11 @@ text = subprocess.run([sys.executable, "tools/text_vs_recipe.py"], capture_outpu
 if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) must match the recipes and blueprints
     for line in text.stdout.splitlines()[:-1]:
         bad("text vs recipe: " + line)
+
+placeable = subprocess.run([sys.executable, "tools/placeables_check.py"], capture_output=True, text=True)
+if placeable.returncode != 0:   # every placeable item must be placeable (Dave 5 Nov 2026)
+    for line in placeable.stdout.splitlines()[1:]:
+        bad("placeable: " + line.strip())
 
 carry = subprocess.run([sys.executable, "tools/carry_audit.py"], capture_output=True, text=True)
 if carry.returncode != 0:   # a warning only until Dave picks the heavy-kits fix (docs/HEAVY_KITS_OPTIONS.md)

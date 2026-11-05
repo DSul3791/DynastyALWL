@@ -34,6 +34,7 @@ const GameClockScript := preload("res://src/shared/game_clock.gd")
 const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
+const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
@@ -272,6 +273,18 @@ func _ready() -> void:
 	items.dig_refusal = _dig_refusal
 	items.fill_ground = _fill_ground
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
+	items.cave_scatter = func(cell: Vector2i, cell_m: float) -> PackedFloat32Array:   # cave floor stones and boulders (Dave 4 Nov: caves "riddled with rocks and collectable stones")
+		var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+		var cave_tile = generator.get_tile(generator.tile_of(centre.x, centre.y))
+		var out: PackedFloat32Array = PackedFloat32Array()
+
+		if cave_tile == null or cave_tile.placeholder:
+			return out
+
+		for n in cave_tile.cave_scatter_in(cell, cell_m):
+			out.append_array(cave_tile.cave_scatter.slice(n * 5, n * 5 + 5))
+
+		return out
 	items.ground_ready = func(x, z) -> bool:
 		if generator.tile_cached(x, z):
 			return true
@@ -326,6 +339,7 @@ func _ready() -> void:
 	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
+	items.send_training = func(peer, percent): net.training.rpc_id(peer, percent)
 	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
 		var ore_tile = generator.get_tile(generator.tile_of(pos.x, pos.z))
 
@@ -447,6 +461,7 @@ func _ready() -> void:
 		var material: int = generator._surface_material(tile_data, x, z, float(generator.surface_height(x, z)))
 		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(material, "loam"))
 	items.trees_near = _trees_near
+	items.trees_near_cached = _trees_near_cached
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
 	admin = AdminScript.new()
@@ -480,6 +495,9 @@ func _ready() -> void:
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
 	animals.canopy = func(point): return flora.covered(point)
+	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
+	animals.undergrowth = func(point): return flora.in_undergrowth(point)
+	animals.player_stalk = func(): return items.peer_stalk_factors()
 	animals.hour_now = func(): return game_clock.hour()
 	var biome_names: Dictionary = {}
 
@@ -564,8 +582,8 @@ func _ready() -> void:
 	_world_dir = world_dir
 	_start_water()
 
-	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var error: int = peer.create_server(port, 32)
+	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
+	var error: int = server_peer.create_server(port, 32)
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
@@ -574,7 +592,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
-	multiplayer.multiplayer_peer = peer
+	multiplayer.multiplayer_peer = server_peer
 	_events.start("telemetry_server_%d.log" % port)
 	_events.start_watchdog()
 	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), GitStamp.short_commit()])
@@ -808,11 +826,25 @@ func _water_at(position: Vector3) -> Array:
 	return [surface, ground]
 
 
+# As _water_at, for a player's reported position: under the hill, a spring cave pool's water counts (BUG-008), its floor taken as the
+# basin's bottom so the swim and breath rules see deep water. Only here: the other callers ask at y 0 for the open water.
+func _player_water_at(position: Vector3) -> Array:
+	var water: Array = _water_at(position)
+
+	if position.y < float(water[1]) - 1.0:
+		var cave_surface: float = _cave_pool_surface(position)
+
+		if not is_nan(cave_surface):
+			return [cave_surface, cave_surface - TileDataScript.CAVE_POOL_DEPTH_M]
+
+	return water
+
+
 # Where the player will touch the ground: straight below if hovering, farther
 # along their heading the higher and faster they are. Blocks nearest this
 # point are made first.
 func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
-	var water: Array = _water_at(position)
+	var water: Array = _player_water_at(position)
 	items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
 	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
 	items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
@@ -830,9 +862,17 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 
 # Whether a point is in a spring cave pool (icy water, BUG-008).
 func _in_cave_pool(position: Vector3) -> bool:
+	return not is_nan(_cave_pool_surface(position))
+
+
+# The surface of the spring cave pool a reported position is in (the basin as carved, BUG-008), else NAN.
+func _cave_pool_surface(position: Vector3) -> float:
 	var tile_data = generator.get_tile(generator.tile_of(position.x, position.z))
 
-	return not tile_data.placeholder and not tile_data.cave_streams.is_empty() and tile_data.in_cave_pool(position)
+	if tile_data == null or tile_data.placeholder or tile_data.cave_pool_shapes.is_empty():
+		return NAN
+
+	return tile_data.cave_pool_surface(position)
 
 
 func _is_connected_peer(peer_id: int) -> bool:
@@ -1010,6 +1050,13 @@ func _send_cave_streams(peer_id: int, chunk: Vector2i) -> void:
 
 	if not data.cave_dens.is_empty():
 		net.cave_dens.rpc_id(peer_id, tile, data.cave_dens)
+
+	# Cave dressing (protocol 92): the bake's bone piles and formations, once the tile data carries them.
+	var bones: PackedFloat32Array = data.get("cave_bones") if "cave_bones" in data else PackedFloat32Array()
+	var formations: PackedFloat32Array = data.get("cave_formations") if "cave_formations" in data else PackedFloat32Array()
+
+	if not bones.is_empty() or not formations.is_empty():
+		net.cave_dressing.rpc_id(peer_id, tile, bones, formations)
 
 
 # Lag review (Dave 2 Nov 2026): every "water moved" the client asks again for all ~22 chunks it holds, and every answer was
@@ -1202,6 +1249,27 @@ func _cover_at(point: Vector3) -> float:
 var _cover_warming: Dictionary = {}   # chunk -> true while a worker thread makes it for the cover index
 
 
+# Whether the cover index knows the crowns round a point: its flora chunk and the eight round it are made. Missing ones are started
+# on a worker as in _cover_at, so asking again a few seconds later says yes (inland nests, MikeW 5 Nov).
+func _cover_ready(point: Vector3) -> bool:
+	var size: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+	var all_made: bool = true
+
+	for dz in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+
+			if not flora.chunk_made(chunk):
+				all_made = false
+
+				if not _cover_warming.has(chunk):
+					_cover_warming[chunk] = true
+					WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
+
+	return all_made
+
+
 func _warm_cover_chunk(chunk: Vector2i) -> void:
 	flora.chunk_bytes(chunk, false)
 	_cover_warm_done.call_deferred(chunk)
@@ -1281,6 +1349,98 @@ func _trees_near(point: Vector3, radius: float) -> Array:
 
 				if Vector2(trees["positions"][n].x - point.x, trees["positions"][n].z - point.z).length() <= radius:
 					found.append([chunk, trees["ids"][n]])
+
+	return found
+
+
+# Standing placer trees within `radius` of a point, as [position, species name], from chunks whose items are already made only (server_flora items_cached): the hint
+# triggers ask 4 times a second, and _trees_near made the nine chunks round a new player on the main thread (3 to 11 s) and then scanned every plant in them
+# (about 120 ms a look). Each chunk's trees are listed once and kept; felled trees are left out at each look. A chunk not made yet counts no trees until the
+# flora stream (a worker) has made it.
+const TREE_LISTS_KEPT := 200
+const TREE_CELL_M := 16.0
+var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name]
+var _tree_names: Dictionary = {}     # placer species id -> name, trees only (built once)
+
+
+# Lag run 5 Nov: hints 108 ms in one slow tick, near_fruit_tree_in_season 54 of it. Each look scanned every tree of the nine 256 m chunks round the
+# player for an 8 m circle. Now a chunk the circle does not touch is skipped (not even listed), and a listed chunk keeps its trees in 16 m cells, so
+# a look reads only the cells under the circle.
+func _trees_near_cached(point: Vector3, radius: float) -> Array:
+	var size: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+	var reach: int = maxi(int(ceil(radius / size)), 1)
+	var found: Array = []
+
+	if _tree_names.is_empty():
+		for id in flora.placer._by_id:
+			var row: Dictionary = flora.placer._by_id[id]
+
+			if int(row["kind"]) == PlacerScript.KIND_TREE:
+				_tree_names[id] = str(row["name"])
+
+	var cell_lo: Vector2i = Vector2i(int(floor((point.x - radius) / TREE_CELL_M)), int(floor((point.z - radius) / TREE_CELL_M)))
+	var cell_hi: Vector2i = Vector2i(int(floor((point.x + radius) / TREE_CELL_M)), int(floor((point.z + radius) / TREE_CELL_M)))
+
+	for dz in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var corner: Vector2 = Vector2(float(home.x + dx) * size, float(home.y + dz) * size)
+			var near_x: float = clampf(point.x, corner.x, corner.x + size)
+			var near_z: float = clampf(point.z, corner.y, corner.y + size)
+
+			if Vector2(near_x - point.x, near_z - point.z).length() > radius:
+				continue
+
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+
+			if not _tree_lists.has(chunk):
+				var trees: Dictionary = flora.items_cached(chunk)
+
+				if trees.is_empty():
+					continue
+
+				var cells: Dictionary = {}
+				var ids: PackedInt32Array = trees["ids"]
+				var positions: PackedVector3Array = trees["positions"]
+
+				for n in range(ids.size()):
+					var tree_name: Variant = _tree_names.get(ids[n] >> 16)
+
+					if tree_name != null:
+						var at: Vector3 = positions[n]
+						var cell: Vector2i = Vector2i(int(floor(at.x / TREE_CELL_M)), int(floor(at.z / TREE_CELL_M)))
+
+						if not cells.has(cell):
+							cells[cell] = []
+
+						cells[cell].append([ids[n], at, tree_name])
+
+				while _tree_lists.size() >= TREE_LISTS_KEPT:
+					_tree_lists.erase(_tree_lists.keys()[0])
+
+				_tree_lists[chunk] = cells
+
+			var listed: Dictionary = _tree_lists[chunk]
+			var gone: Array = []
+			var gone_read: bool = false
+
+			for cz in range(cell_lo.y, cell_hi.y + 1):
+				for cx in range(cell_lo.x, cell_hi.x + 1):
+					var in_cell: Variant = listed.get(Vector2i(cx, cz))
+
+					if in_cell == null:
+						continue
+
+					for tree in in_cell:
+						if Vector2(tree[1].x - point.x, tree[1].z - point.z).length() > radius:
+							continue
+
+						if not gone_read:
+							gone = flora.removed_in(chunk)
+							gone_read = true
+
+						if not gone.has(tree[0]):
+							found.append([tree[1], tree[2]])
 
 	return found
 

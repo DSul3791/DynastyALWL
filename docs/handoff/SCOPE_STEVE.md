@@ -1,5 +1,7 @@
 # Scope: Steve: Systems (written 1 Nov 2026, paper only: no Godot run, read-through of code and handoffs)
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 > **CORRECTION (Dave, 1 Nov 2026): sound hooks are Jason's, not yours.** You keep the rules. If Jason needs an event exposed (signal or event) so he can place a sound, expose it when he asks. You do not audit or wire sounds.
 
 Steve took over the sub-systems from Tyler on 1 Nov 2026 (Dave). Sources read: SCOPE/HANDOFF of Tyler, Sonny, Sal, the moderator; `MODERATOR_QA_LOG.md` (1 Nov entries), `DESIGN_IDEAS.md` 6.1, `PONYTAIL_RULES.md`, `MORNING_PLAYTEST_CHECKLIST.md`, `PLAYTHROUGH_STEP_STATUS.md`, `docs/COMFORT_DESIGN.md` (top), and the code named below. Nothing here was executed; "state" is from reading plus the claims of the handoffs, marked as such.

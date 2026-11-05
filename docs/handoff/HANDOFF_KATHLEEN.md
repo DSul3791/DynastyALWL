@@ -1,5 +1,7 @@
 # Handoff: Kathleen (art and looks), written 2026-11-01
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 ## Role
 I own the ART side of DynastyALWL (Godot 4.7, GDScript): the looks of items, tools, weapons, armour, food, kits, furniture, structures, fauna, flora model fixes. Not mine: item data, recipes and balance (Sal); server, structure and lit-fixture rules (Steve); tests and tooling (Tyler); flora and animal placement and density (MikeW); terrain and water mechanics (Sonny); all sound (Jason). Water and body looks are the art team's (you and Kathreen). Branch: `kathleen-art` (pushed to origin). Never merge into the daily branch (DailyDev_20261029) myself; the moderator does that. After a batch, send the moderator an "approved to merge" note (branch, commit, tests, risks).
 

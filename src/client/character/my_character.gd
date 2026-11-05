@@ -20,12 +20,25 @@ static func dynasty_body_on(path: String = SETTINGS_PATH) -> bool:
 	return not old_body(path)
 
 
+# Read once per run for the game's own settings file and kept: the client asks every frame (terrain_client's arms prebuild), and opening the settings file each time was about
+# 100 file reads a second on the main thread (Steve, strace of a lag run, 4 Nov 2026). set_old_body forgets it, so the switch still applies on the next Play.
+static var _old_body_known: int = -1     # -1 not read yet, else 0 or 1
+
+
 static func old_body(path: String = SETTINGS_PATH) -> bool:
 	if OS.get_cmdline_user_args().has("--oldbody"):
 		return true
 
+	if path == SETTINGS_PATH and _old_body_known >= 0:
+		return _old_body_known == 1
+
 	var file: ConfigFile = ConfigFile.new()
-	return file.load(path) == OK and bool(file.get_value("character", "old_body", false))
+	var on: bool = file.load(path) == OK and bool(file.get_value("character", "old_body", false))
+
+	if path == SETTINGS_PATH:
+		_old_body_known = 1 if on else 0
+
+	return on
 
 
 static func set_old_body(on: bool, path: String = SETTINGS_PATH) -> void:
@@ -33,6 +46,9 @@ static func set_old_body(on: bool, path: String = SETTINGS_PATH) -> void:
 	file.load(path)
 	file.set_value("character", "old_body", on)
 	file.save(path)
+
+	if path == SETTINGS_PATH:
+		_old_body_known = -1
 
 
 # The body the player wears this run: Dave's Dynasty body when it is wanted and usable, else the generated body, else the old ragdoll (`--old-body`). A Dynasty glb that is not imported

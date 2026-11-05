@@ -34,6 +34,9 @@ static var _waiting: Array = []              # arms made before the prebuild was
 # before the worker is done, the arms are built at the welcome as before and the worker's result is left unused.
 # Called every frame until it starts (cheap: one status check). It starts only once the loader thread has the file, so the worker never sits
 # blocked on the load while holding a pool thread the loaders need (the first try did: the start-up stall grew by seconds).
+static var _skin_exists: int = -1
+
+
 static func prebuild() -> void:
 	# Arms already made wait for the worker (Dave's PC log 4 Nov 2026: the welcome comes 44 ms after connecting to a local server, long before the
 	# file has loaded, so "welcome: held item" still built them on the main thread, 0.8 s on the PC and 2 s in the cloud). They get their meshes here.
@@ -71,7 +74,10 @@ static func prebuild() -> void:
 		return
 
 	# The 4096 x 4096 skin texture (_arm_material) is read on a loader thread too: 0.36 s when the main thread loaded it.
-	if ResourceLoader.exists(SKIN_TEXTURE):
+	if _skin_exists < 0:
+		_skin_exists = 1 if ResourceLoader.exists(SKIN_TEXTURE) else 0     # asked once: exists() reads the .import file each time, every frame while the arms wait
+
+	if _skin_exists == 1:
 		var skin_status: int = ResourceLoader.load_threaded_get_status(SKIN_TEXTURE)
 
 		if skin_status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:

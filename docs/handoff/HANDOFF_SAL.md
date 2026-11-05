@@ -1,5 +1,7 @@
 # Handoff: Sal (items agent), written 1 Nov 2026
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 ## My role
 I own the item data: items, recipes, drops, cooking and dishes, economy and prices, crops, comfort design, descriptions, hints and starter goals, and the encyclopedia. I do not own code (Tyler) or art (Kathleen). My branch is `sal-items`. The moderator ("More Dynasty") merges it into `DailyDev_20261029`. I never touch `main`.
 

@@ -188,7 +188,7 @@ const GREENS_SHADER := """
 shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform float sway = 0.006;
-uniform float gain = 0.85;
+uniform float gain = 0.72;   // 0.85 until 5 Nov 2026: in the PC meadow noon shot (spawn meadow, sun 1.0) the tall reeds read near white and the tufts a shade brighter than the meadow grass round them
 varying vec3 lp;
 
 float h3(vec3 p) {
@@ -219,7 +219,7 @@ void fragment() {
 	vec3 c = COLOR.rgb * gain * (0.9 + 0.18 * streak);
 	c *= mix(0.78, 1.0, smoothstep(0.0, 0.25, lp.y));         // a little shade at the foot, among the other stems
 	ALBEDO = c;
-	BACKLIGHT = c * 0.3;
+	BACKLIGHT = c * 0.2;   // 0.3 until 5 Nov 2026: with the noon sun behind them the pale reeds glowed white
 	ROUGHNESS = 0.9;
 }
 """
@@ -429,6 +429,7 @@ var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _serial: int = 0                   # numbers each chunk plan, so an outdated plan is skipped
 var _tasks: Array = []                 # WorkerThreadPool tasks making chunk plans
 var _plan_wait: Dictionary = {}        # chunk -> true: asked to be planned, not started yet (launched nearest first, MAX_PLAN_TASKS at a time)
+var _log_tasks: Array = []             # worker tasks printing log lines (_log_off_main)
 var _load_count: int = 0               # chunk drawings finished since the last "flora load" log line
 var _load_worst_ms: int = 0            # the longest a chunk waited from being asked to being in the scene
 var _load_start_msec: int = 0          # when the first of this batch was asked
@@ -501,6 +502,17 @@ const START_FLOW_RATE := 10.0      # water_live.gd DEFAULT_RATE (the server's st
 const LIQUID_CHUNKS := true
 var _liquid_hole: Vector4 = Vector4.ZERO   # the live window (world corner and size): chunk sheets step aside there
 var _liquid_hole_inset: float = 8.0
+var _liquid_live: Texture2D = null         # the live window's texture: chunk sheets give way only where it draws water
+
+
+func set_liquid_live(texture: Texture2D) -> void:
+	_liquid_live = texture
+
+	for chunk in _chunks:
+		var sheet = _chunks[chunk].get("liquid")
+
+		if sheet != null:
+			sheet.set_live(texture)
 
 
 func set_liquid_hole(corner: Vector2, size: Vector2, inset: float) -> void:
@@ -535,6 +547,7 @@ func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void
 		add_child(sheet)
 		entry["liquid"] = sheet
 		sheet.set_hole(Vector2(_liquid_hole.x, _liquid_hole.y), Vector2(_liquid_hole.z, _liquid_hole.w), _liquid_hole_inset)
+		sheet.set_live(_liquid_live)
 		sheet.set_mud(maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
 
 	# The image may be finer than the grid (running water laid on the ground at 2 m, LiquidSurface._lay_fine): the same span, more texels.
@@ -543,7 +556,7 @@ func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void
 	sheet.visible = not water_hidden
 
 
-# Ctrl+Shift+W hides every river and lake drawing (debug: does an odd patch on the water stay, then it is ground).
+# Ctrl+Shift+F7 hides every river and lake drawing (debug: does an odd patch on the water stay, then it is ground).
 var water_hidden: bool = false
 
 
@@ -552,7 +565,7 @@ func toggle_water_visible() -> void:
 	get_tree().call_group("water_draw", "set_visible", not water_hidden)
 
 
-# Ctrl+Shift+V colours the water by what the shader sees: red running, blue still, green foam (debug for odd patches).
+# Ctrl+Shift+F8 colours the water by what the shader sees: red running, blue still, green foam (debug for odd patches).
 var water_debug: bool = false
 
 
@@ -2339,6 +2352,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 			still.append(task)
 
 	_tasks = still
+	_reap_log_tasks()
 	_launch_plans(_last_position)
 	Probe.stop("flora: plans", t0)
 	t0 = Probe.start()
@@ -2375,36 +2389,56 @@ func apply_built(budget_usec: int = 3000) -> void:
 	t0 = Probe.start()
 
 	while not _jobs.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		var t_part: int = Probe.start()
 		_nearest_job_first()
+		Probe.stop("flora: nearest job", t_part)
 		var job: Dictionary = _jobs[0]
 		var entry: Dictionary = _chunks.get(job["chunk"], {})
 
 		if entry.is_empty() or int(entry.get("serial", -1)) != int(job["serial"]):
+			t_part = Probe.start()
 			_discard(job["node"])
 
 			if job["cnode"] != null:
 				_discard(job["cnode"])
 
 			_jobs.pop_front()
+			Probe.stop("flora: discard a stale drawing", t_part)
 			continue
 
-		if _apply_step(job):
+		# Timed apart too (5 Nov 2026: one "place drawings" of 1.1-1.4 s in the gate's flora walk, with nothing else slow).
+		var step_name: String = "flora: place colliders" if int(job["shape"]) < (job["plan"]["shapes"] as Array).size() else "flora: place a draw"
+		var t_step: int = Probe.start()
+		var done: bool = _apply_step(job)
+		Probe.stop(step_name, t_step)
+
+		if done:
+			t_step = Probe.start()
 			_clear_node(entry)
+			Probe.stop("flora: drop old drawing", t_step)
 			entry["node"] = job["node"]
 
 			if not bool(job["keep"]):
+				t_step = Probe.start()
 				_clear_colliders(entry)
+				Probe.stop("flora: drop old colliders", t_step)
 				entry["cnode"] = job["cnode"]
 				entry["shapes_key"] = int(job["plan"].get("shapes_key", 0))
 
+			t_part = Probe.start()
 			job["node"].visible = bool(entry.get("ground", true))
+			Probe.stop("flora: show new drawing", t_part)
+			t_part = Probe.start()
 			entry["level"] = job["level"]
 			entry["masks"] = job["masks"]
 			entry.erase("building")
 			entry.erase("building_masks")
 			entry["drawn"] = _drawn_count(job["node"])
 			_jobs.pop_front()
+			Probe.stop("flora: finish a job", t_part)
+			t_part = Probe.start()
 			_note_loaded(entry)
+			Probe.stop("flora: load note", t_part)
 
 	Probe.stop("flora: place drawings", t0)
 
@@ -2454,7 +2488,7 @@ func _note_loaded(entry: Dictionary) -> void:
 
 	if _jobs.is_empty() and _plan_wait.is_empty() and _tasks.is_empty():
 		if _load_count >= 4:
-			print("flora load: %d chunk drawings in %d ms, longest wait %d ms" % [_load_count, now - _load_start_msec, _load_worst_ms])
+			_log_off_main("flora load: %d chunk drawings in %d ms, longest wait %d ms" % [_load_count, now - _load_start_msec, _load_worst_ms])
 
 		_load_count = 0
 		_load_worst_ms = 0
@@ -2503,8 +2537,31 @@ func _exit_tree() -> void:
 	finish_tasks()
 
 
+# A log line printed by a worker (5 Nov 2026: on Dave's PC one "flora load" print held the main thread 420-480 ms in the gate's flora walk;
+# a debug build flushes stdout and the log file on every print). The tasks are reaped in apply_built and waited for in finish_tasks.
+func _log_off_main(line: String) -> void:
+	_log_tasks.append(WorkerThreadPool.add_task(func(): print(line), false, "flora log line"))
+
+
+func _reap_log_tasks() -> void:
+	var still: Array = []
+
+	for task in _log_tasks:
+		if WorkerThreadPool.is_task_completed(task):
+			WorkerThreadPool.wait_for_task_completion(task)
+		else:
+			still.append(task)
+
+	_log_tasks = still
+
+
 # Waits for chunk work still running (call before freeing the view).
 func finish_tasks() -> void:
+	for task in _log_tasks:
+		WorkerThreadPool.wait_for_task_completion(task)
+
+	_log_tasks = []
+
 	if _models_task_id != -1:
 		WorkerThreadPool.wait_for_task_completion(_models_task_id)
 		_models_task_id = -1
@@ -2553,7 +2610,6 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 	var ids: PackedInt32Array = items["ids"]
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
 	var shapes: Array = []            # [species, radius, position]
-	var clumps: Dictionary = {}           # (species, patch slot) -> [[position, radius]]: the tall shrubs of one thicket
 	var lights: Array = []
 	# Never past the shortest of the item arrays (they change together; a mismatch must not crash the worker).
 	var count: int = mini(mini(ids.size(), items["positions"].size()), mini(items["heights"].size(), items["yaws"].size()))
@@ -2639,22 +2695,13 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 			groups[proxy_key].append(n)
 
-		# Trees from collision_m, tall shrubs only within the shrub model range (level bit 32), so the collider count stays low.
+		# Trees from collision_m; shrubs and plants never block (Dave 5 Nov 2026: walk-through, louder instead), only long fallen
+		# logs within the shrub model range (level bit 32).
 		if (level & 8) != 0 and (int(info["kind"]) == KIND_TREE or (level & 32) != 0):
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
 			var radius: float = PlacerScript.collider_radius(int(info["kind"]), float(info["trunk"]), size_scale, float(items["heights"][n]))
 
-			var item_number: int = int(ids[n]) & 0xffff
-
-			if radius > 0.0 and int(info["kind"]) == KIND_SHRUB and item_number >= PlacerScript.STAND_BASE:
-				# A tall shrub of a patch (a thicket): collected per patch, one collider round a clump of CLUMP_MIN_COLLIDER or more (below).
-				var clump_key: Vector2i = Vector2i(species_id, (item_number - PlacerScript.STAND_BASE) / PlacerScript.PATCH_MAX_PLANTS)
-
-				if not clumps.has(clump_key):
-					clumps[clump_key] = []
-
-				(clumps[clump_key] as Array).append([p, radius])
-			elif radius > 0.0:
+			if radius > 0.0:
 				shapes.append([species_id, radius, p + Vector3(0.0, 1.2, 0.0)])
 			elif bool(info.get("log", false)):
 				# A long fallen log: a capsule along its length at its yaw (shape entry: species, radius, position, length, yaw).
@@ -2662,30 +2709,6 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 				if log_size.x > 0.0:
 					shapes.append([species_id, log_size.x, p + Vector3(0.0, log_size.x, 0.0), log_size.y, float(items["yaws"][n])])
-
-	# One collider per thicket: four or more tall shrubs of one patch act as one big bush (a cylinder round their middle), fewer keep their own.
-	for clump_key in clumps:
-		var members: Array = clumps[clump_key]
-
-		if members.size() < PlacerScript.CLUMP_MIN_COLLIDER:
-			for member in members:
-				shapes.append([int(clump_key.x), float(member[1]), (member[0] as Vector3) + Vector3(0.0, 1.2, 0.0)])
-
-			continue
-
-		var middle: Vector3 = Vector3.ZERO
-
-		for member in members:
-			middle += member[0] as Vector3
-
-		middle /= float(members.size())
-		var reach: float = 0.0
-
-		for member in members:
-			reach += Vector2((member[0] as Vector3).x - middle.x, (member[0] as Vector3).z - middle.z).length()
-
-		reach = reach / float(members.size()) + 0.5
-		shapes.append([int(clump_key.x), clampf(reach, 0.6, PlacerScript.CLUMP_COLLIDER_MAX_M), middle + Vector3(0.0, 1.2, 0.0)])
 
 	# Glowing trees (everember, witness tree) light the ground around them, near the player
 	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.

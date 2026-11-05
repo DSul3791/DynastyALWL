@@ -1527,8 +1527,14 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 				if n >= 0 and n < water.water_class.size() and water.water_class[n] == 3 and water.heights[n] > water.heights[mouth_index] + 1.0:
 					spring_bad += 1
 
+		# Floors, not node centres: since Dave's 4 Nov ask the mouth is as wide as its river and up to 12 m tall, so its centre can stand above a spring
+		# whose floor is well above the mouth's floor (the stream runs on the floors: tile_terrain_data._load_cave_stream).
+		var mouth_floor: float = float(cave_mouth[1]) - 0.5 * float(cave_mouth[4])
+
 		for spring in cave["springs"]:
-			if not chamber_nodes.has(int(spring["node"])) or float(cave["nodes"][int(spring["node"])][1]) <= float(cave_mouth[1]) or float(spring["m3_s"]) <= 0.0:
+			var spring_node: Array = cave["nodes"][int(spring["node"])]
+
+			if not chamber_nodes.has(int(spring["node"])) or float(spring_node[1]) - 0.5 * float(spring_node[4]) <= mouth_floor or float(spring["m3_s"]) <= 0.0:
 				spring_bad += 1
 
 	print("  spring caves %d" % spring_caves)

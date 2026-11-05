@@ -492,7 +492,7 @@ Checklist for chapter 4:
 
 ## Chapter 5: Cooking stations: campfire, pot, clay hearth, oven
 
-Recipes cooked AT a placed fire or hearth. campfire = any lit fire; campfire_pot needs the pot kit hung on a fire; clay_hearth level 2 and oven level 3 are built from the hammer.
+Recipes cooked AT a placed fire or hearth. campfire = any lit fire; campfire_pot needs the campfire pot (a hammer blueprint: clay pot, 3 sticks, 3 twine) built on a fire; clay_hearth level 2 and oven level 3 are built from the hammer.
 
 | step | recipe # | make | needs (and where each comes from) | station | known | status | picture row |
 |---|---|---|---|---|---|---|---|

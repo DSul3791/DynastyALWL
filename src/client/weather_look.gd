@@ -43,11 +43,12 @@ const AMBIENT_DAY_WARM := Color(0.62, 0.56, 0.44)
 const DAY_SKY_SHARE := 0.75              # share of the day's ambient from the sky (1 before: all sky)
 const AMBIENT_FLOOR := 0.32             # ambient light never drops below this, so a storm night is not pure black
 const AMBIENT_STORM := 0.4               # ambient light left in a full storm (1 clear)
-const CAVE_LIGHT_DARK := 0.04            # share of the sun and sky light left deep in a cave or tunnel, setting "Dark"
+const CAVE_LIGHT_DARK := 0.0             # share of the sun and sky light left deep in a cave or tunnel, setting "Dark": none, pitch black without a torch or fire (Dave 5 Nov 2026)
 const CAVE_LIGHT_NORMAL := 0.12          # the same, setting "Normal"
 const CAVE_GO_DARK_S := 1.0              # the light fades out over this long on going in, and back over CAVE_COME_OUT_S
 const CAVE_COME_OUT_S := 2.5             # (the eyes take longer to get used to the light again)
 const CAVE_SHADOW_OFF := 0.05            # no sun shadows below this share of the light: nothing to cast
+const CAVE_REFLECT_OFF := 0.3            # no sky reflections below this share of the light (the sky is not seen from in there)
 const CAVE_DARK_FROM := 0.1              # rock enclosure (cave_sounds.gd) from which the light starts to fade
 const CAVE_DARK_FULL := 0.6              # and at which it is fully gone
 const CAVE_RAIN_FROM := 0.1              # rock enclosure from which falling rain and snow thin out (an overhang lets a little through)
@@ -408,7 +409,10 @@ func _process_body(delta: float) -> void:
 	# The sky's own light is near black on a dark night or a storm night, so a cold moonlit blue is mixed in
 	# (ambient colour counts where the sky contribution is below 1): trees and ground stay readable, never pure black.
 	var dim: float = clampf(maxf(day.night, _dark * 0.6), 0.0, 1.0)
-	environment.ambient_light_sky_contribution = lerpf(DAY_SKY_SHARE, 0.3, dim)   # night 0.3 as before
+	# Under rock the sky's share goes too (Dave 4 Nov 2026: "its day time and its light in the tunnels even at the very back"). The engine scales only the ambient
+	# colour by ambient_light_energy; the sky's share of the ambient (and the sky reflections) keep the full sky, so by day three quarters of the open-air ambient
+	# still reached the back of a tunnel. The sky's share now fades with the light, and the sky reflections (bright on damp rock and cave pools) go off under rock.
+	sky_under_rock(environment, lerpf(DAY_SKY_SHARE, 0.3, dim), under_rock)   # night 0.3 as before
 	environment.ambient_light_color = AMBIENT_DAY_WARM.lerp(AMBIENT_NIGHT_COLOR, dim)
 	# The whole picture goes dimmer and greyer with the weather.
 	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
@@ -417,9 +421,11 @@ func _process_body(delta: float) -> void:
 	if not _client.underwater:
 		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
 		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0)
-		environment.fog_light_color = _graded(day.sky_horizon, gloom)
+		# The fog is sky-coloured haze: under rock it must go dark with the light, or a long tunnel glows (pitch black means black).
+		var fog_tint: Color = _graded(day.sky_horizon, gloom)
+		environment.fog_light_color = Color(fog_tint.r * under_rock, fog_tint.g * under_rock, fog_tint.b * under_rock, fog_tint.a)
 		environment.fog_sky_affect = 0.0
-		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL
+		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL * under_rock
 		environment.fog_height_density = 0.0
 	else:
 		_underwater_fog(environment, 1.0 - day.night, cloud_cover)
@@ -454,6 +460,16 @@ func _underwater_fog(environment: Environment, daylight: float, cover: float) ->
 # Share of the falling rain and snow that reaches the player at this rock enclosure: 1 in the open, 0 in a cave (BUG-009).
 static func sky_share(rock_enclosure: float) -> float:
 	return 1.0 - smoothstep(CAVE_RAIN_FROM, CAVE_RAIN_GONE, rock_enclosure)
+
+
+# The sky's part of the light under rock: its share of the ambient (`sky_share` in the open) fades with the square of the cave light `under_rock` (1 open ..
+# CAVE_LIGHT_DARK deep in), so the ambient left is about under_rock like the sun's, and the sky reflections are off below CAVE_REFLECT_OFF.
+static func sky_under_rock(environment: Environment, sky_share: float, under_rock: float) -> void:
+	environment.ambient_light_sky_contribution = sky_share * under_rock * under_rock     # the sky part is not dimmed by the energy: x under_rock twice keeps the total near under_rock
+	var reflect: int = Environment.REFLECTION_SOURCE_SKY if under_rock >= CAVE_REFLECT_OFF else Environment.REFLECTION_SOURCE_DISABLED
+
+	if environment.reflected_light_source != reflect:
+		environment.reflected_light_source = reflect
 
 
 # Share of the sun and sky light that reaches the player at this rock enclosure (0 open air .. 1 a tunnel).

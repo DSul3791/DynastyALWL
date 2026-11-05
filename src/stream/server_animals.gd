@@ -29,6 +29,9 @@ var crossing: Callable             # Steering's `cross`: every walker of this mo
 var player_positions: Callable     # () -> Array of Vector3
 var player_stances: Callable       # () -> Array of stances in player_positions order (0 stand, 1 crouch, 2 sit, 3 lie)
 var canopy: Callable               # (Vector3) -> bool, whether a spot is under a tree crown (forest for sight and habitat)
+var canopy_ready: Callable         # (x, z) -> bool, whether the tree crowns round a spot are known yet (the flora chunks are made; a missing one is started on a worker)
+var undergrowth: Callable          # (Vector3) -> bool, the spot is in bushes, ferns or tall grass (server_flora.in_undergrowth): moving through it rustles
+var player_stalk: Callable         # () -> Array of hunting skill factors (skills.json actions.stalk, 1.0 for a beginner) in player_positions order
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
@@ -53,6 +56,9 @@ var _next_herd: int = 1
 var _wind_s: float = 0.0
 var _wind_dir: Vector2 = Vector2.ZERO
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
+var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
+var _noise_from: Array = []       # player positions at the last sample
+var _noisy: Array = []            # per player (player_positions order): how much farther they are sensed for rustling undergrowth (1.0 none)
 
 
 # True when the step from (x0, z0) to (x1, z1) goes through a wall or heavy station, grown by the body margin.
@@ -167,6 +173,7 @@ func nests_near(point: Vector3, reach: float) -> Array:
 	var ncfg: Dictionary = cfg.get("nests", {})
 	var cell: float = float(ncfg.get("cell_m", 48.0))
 	var out: Array = []
+	_nest_pending = false
 
 	if cell <= 0.0 or not ground_height.is_valid():
 		return out
@@ -191,6 +198,7 @@ func nests_near(point: Vector3, reach: float) -> Array:
 # [PackedVector3Array positions, PackedByteArray kinds (0 grouse, 1 songbird)]. The answer only depends on the point's
 # nest_send_cell_m square, so it is worked out once per square and kept (the spots never move).
 var _nest_send_cache: Dictionary = {}
+var _nest_pending: bool = false    # set by nests_near when some cell's tree crowns were not known yet: that answer is not kept
 
 
 func nest_spots_near(point: Vector3) -> Array:
@@ -207,6 +215,9 @@ func nest_spots_near(point: Vector3) -> Array:
 	for nest in nests_near(centre, float(cfg.get("send_radius_m", 120.0))):
 		spots.append(nest["pos"])
 		kinds.append(0 if str(nest["kind"]) == "grouse" else 1)
+
+	if _nest_pending:   # the flora round some cell is still being made: answer now, ask again next time (songbird nests were never kept, 5 Nov PC look)
+		return [spots, kinds]
 
 	if _nest_send_cache.size() >= 256:
 		_nest_send_cache.clear()
@@ -245,6 +256,10 @@ func _nest_in_cell(kind: String, cx: int, cz: int, cell: float, ncfg: Dictionary
 		steep = maxf(steep, absf(other - y) / 3.0 if not is_nan(other) else 9.0)
 
 	if steep > float(ncfg.get("slope_max", 0.5)):
+		return null
+
+	if canopy.is_valid() and canopy_ready.is_valid() and not bool(canopy_ready.call(x, z)):
+		_nest_pending = true   # the crowns here are not in the cover index yet, so "under trees" cannot be told: no nest for now, not kept
 		return null
 
 	var under_trees: bool = canopy.is_valid() and bool(canopy.call(Vector3(x, y, z)))
@@ -473,6 +488,7 @@ func tick(delta: float) -> void:
 	var weather: Dictionary = wind.call() if wind.is_valid() else {}
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
+	_sample_noise(players, delta)
 
 	# A quarter of the animals per tick (id mod 4), each one's elapsed time kept in acc so its step still gets the true dt; if the
 	# tick's AI budget runs out the rest wait for the next one (the rotating start keeps that fair).
@@ -503,7 +519,7 @@ func tick(delta: float) -> void:
 				near_p = p
 
 			if d <= reach_m:
-				var sensed: float = d / _sense_factor(a, def_s, p, d, int(stances[pi]) if pi < stances.size() else 0)
+				var sensed: float = d / _sense_factor(a, def_s, p, d, int(stances[pi]) if pi < stances.size() else 0, float(_noisy[pi]) if pi < _noisy.size() else 1.0)
 
 				if sensed < seen_d:
 					seen_d = sensed
@@ -1023,9 +1039,52 @@ func _to_burrow(a: Dictionary, away: Vector2, def: Dictionary) -> void:
 		a["to_burrow"] = true
 
 
+# How much each player rustles the undergrowth, sampled every senses.noise_sample_s (player positions arrive at the network rate, so
+# not per frame). Only a little (Dave 5 Nov 2026: legs brushing the bushes, not a lot, and it never means the animal hears you
+# outright): a player moving through bushes, ferns or tall grass (undergrowth) is sensed 1 + brush_noise_per_ms x speed farther,
+# so about 6 percent walking (1.4 m/s), 13 percent jogging and 36 percent running flat out (9 m/s); crouched, brush_crouch_share of
+# that. The hunting skill quietens it: the extra is divided by the square of the stalk factor (1.0 for a beginner, about 1.5 at
+# hunting 100, so a master makes under half the noise). A change in the player count resets the sample (the order may have changed).
+func _sample_noise(players: Array, delta: float) -> void:
+	var sen: Dictionary = cfg.get("senses", {})
+	_noise_acc += delta
+
+	if _noise_acc < float(sen.get("noise_sample_s", 0.25)):
+		return
+
+	var stances: Array = player_stances.call() if player_stances.is_valid() else []
+	var stalk: Array = player_stalk.call() if player_stalk.is_valid() else []
+	var fresh: Array = []
+
+	for pi in players.size():
+		var noise: float = 1.0
+
+		if players.size() == _noise_from.size() and undergrowth.is_valid():
+			var was: Vector3 = _noise_from[pi]
+			var p: Vector3 = players[pi]
+			var speed: float = Vector2(p.x - was.x, p.z - was.z).length() / _noise_acc
+
+			if speed >= float(sen.get("brush_moving_ms", 0.5)) and bool(undergrowth.call(p)):
+				var extra: float = float(sen.get("brush_noise_per_ms", 0.04)) * minf(speed, 12.0)
+				var skill: float = maxf(float(stalk[pi]) if pi < stalk.size() else 1.0, 1.0)
+
+				if pi < stances.size() and int(stances[pi]) == 1:
+					extra *= float(sen.get("brush_crouch_share", 0.5))
+
+				noise = 1.0 + extra / (skill * skill)
+
+		fresh.append(noise)
+
+	_noisy = fresh
+	_noise_from = players.duplicate()
+	_noise_acc = 0.0
+
+
 # How much farther or nearer a player seems to an animal: downwind of the player it smells them from farther off, upwind it does
-# not; a crouching or lying player is harder to see; with the ground in the way only scent and sound are left.
-func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance: int) -> float:
+# not; a crouching or lying player is harder to see; with the ground in the way only scent and sound are left. A player rustling
+# through undergrowth (noise, _sample_noise: a little, more the faster they go, less the better a hunter) is sensed a little farther
+# off. It is added last, so it also carries where the animal can't see the player.
+func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance: int, noise: float = 1.0) -> float:
 	var sen: Dictionary = cfg.get("senses", {})
 	var f: float = 1.0
 
@@ -1051,7 +1110,7 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 		if sight < 1.0:
 			f *= lerpf(float(sen.get("blind_factor", 0.35)), 1.0, sight)
 
-	return f
+	return f * noise
 
 
 # How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under

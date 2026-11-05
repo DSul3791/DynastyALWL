@@ -518,11 +518,16 @@ func _init() -> void:
 	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("stick"), 0, 3, Vector3.ZERO)
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
 	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("plant_fibre"), 0, 1, Vector3.ZERO)
+	var fibre_held: int = f.inventory_of(1).count_of(f.table.number_of("plant_fibre"))   # no starter is used up any more (Dave 5 Nov 2026): lighting never changes it
 	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
-	check(f._items[open_id]["fire"]["state"] == 9 and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 1, "rain will not let an open fire light")
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == fibre_held, "an open fire lights in the rain (Dave 5 Nov 2026), and no starter is used up")
+	f.tick(2.0)
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])), "and it burns for a few seconds")
+	f.tick(10.0)
+	check(f._items[open_id]["fire"]["state"] == 9, "then the rain puts it out again (loaded, unlit)")
 	rain[0] = 0.0
 	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
-	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 0, "tinder lights it once the rain stops")
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == fibre_held, "it lights once the rain stops, and no starter is used up")
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
 	check(f.inventory_of(1).count_of(f.table.number_of("stick")) == 1, "a lit fire takes another stick")
 	# A campfire cooks only meat (Dave 31 Oct 2026): berries, nuts and roots do nothing on it (they are pot and hearth recipes).
@@ -1889,6 +1894,8 @@ func _init() -> void:
 	var midnight: Callable = func(x): clk[0] += 86400.0; x._train_fitness(1, 0.0, 0.0)
 	var tr = make(xd)
 	tr.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	var training_sent: Array = []
+	tr.send_training = func(_p, percent): training_sent.append(percent)
 	tr.game_seconds = fit_gs
 	tr.peer_connected_hello(1, "trainkey0001")
 	tr.set_fitness(1, 2)
@@ -1899,7 +1906,12 @@ func _init() -> void:
 	tr._train_fitness(1, 1.0, 400.0)
 	check(tr.fitness_of(1) == 2, "XP earned today does not count until midnight")
 	check(float(tr._characters[tr._peer_key[1]]["xp_today"]) > 100.0, "the day's XP waits in the character's bucket")
+	check(not training_sent.is_empty() and int(training_sent[-1]) == tr.training_pm_of(1) and tr.training_pm_of(1) > 10, "today's training goes to the Tab screen as a percent of a point (%s)" % str(training_sent.slice(-1)))
+	var sends_before: int = training_sent.size()
+	tr._train_fitness(1, 1.0, 0.5)
+	check(training_sent.size() == sends_before, "a tick that adds less than a whole percent sends nothing")
 	midnight.call(tr)
+	check(int(training_sent[-1]) == 0, "at midnight the Tab screen's training goes back to 0")
 	check(tr.fitness_of(1) == 3, "the day's running tips a point over at midnight")
 	var before_stroll: float = float(tr._characters[tr._peer_key[1]]["train"])
 	tr._train_fitness(1, 0.05, 36000.0)
@@ -1907,6 +1919,13 @@ func _init() -> void:
 	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "effort under the 10 percent line neither earns nor costs, even for hours")
 	tr._train_fitness(1, 0.0, 300.0)
 	check(float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "a short rest under the grace time costs nothing")
+	tr._asleep[1] = {"rested": 0.0, "t": 0.0}
+	tr._train_fitness(1, 0.0, 1200.0)
+	tr._train_fitness(1, 0.0, 1200.0)
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "a night asleep (40 real minutes) costs no fitness")
+	tr._asleep.erase(1)
+	tr._train_fitness(1, 0.0, 300.0)
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "after waking the rest grace starts again from 0")
 	var ts = make(xd)
 	ts.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	ts.game_seconds = fit_gs

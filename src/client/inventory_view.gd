@@ -1,4 +1,5 @@
 extends Node
+const PieceLook := preload("res://src/client/piece_look.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
@@ -52,6 +53,7 @@ var _hover: int = -1                   # pack slot under the mouse (quick keys a
 var _chest_last: Array = []            # the last chest-screen slot the mouse was on (the Transfer button uses it)
 var _chest_hover: Array = []           # [chest side (bool), slot] under the mouse in the chest screen
 var _prompt: Label
+var _site_list: RichTextLabel   # under the prompt on a blueprint site: the materials it still needs, green when you have them to hand and red when not (Dave 5 Nov 2026)
 var cover_index                        # the client's Cover.Index: lean-to roofs are added to it
 var tool_event: Callable               # ("broke" | "repaired") when a tool in the pack wears out or is mended (sounds)
 var _block_next_msec: int = 0
@@ -81,6 +83,7 @@ var _vitals_seen: bool = false          # the first vitals after joining sets he
 const HURT_MIN := 4                     # a smaller drop is a slow drain (hunger, cold, bleeding), not a blow
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
+var training_today: int = 0           # today's training, percent of a fitness point (character screen; turns into fitness at game midnight)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
 var thirst: int = 100                  # body water, percent (100 = full; 0 = parched)
 var health: int = 100
@@ -104,6 +107,7 @@ var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 c
 var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
 var lie_on_bed: Callable = Callable()        # (bed position, yaw degrees) after E on a bed: the client lays the player along it
+var sit_on_seat: Callable = Callable()       # (seat position, yaw degrees, structures.json row) after E on a seat: the client sits the player on it
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
 var _death_msec: int = 0                    # when the last death arrived, 0 when none is being shown
@@ -187,6 +191,10 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
+	net.training_received.connect(func(percent: int):
+		training_today = percent
+		if _character != null:
+			_character.refresh())
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
 	net.comfort_received.connect(_on_comfort)
@@ -223,7 +231,10 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
-	_prewarm_loose_meshes()
+	if DisplayServer.get_name() == "headless":
+		_prewarm_loose_meshes()   # tests and headless runs: all at once, as before
+	else:
+		_start_loose_prewarm()    # a window: a few meshes each frame while the ground loads
 	_build_vitals_hud()
 	auto_pickup = AutoPickupScript.new()
 	_auto_label = Label.new()
@@ -256,6 +267,21 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_prompt.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_prompt)
+	_site_list = RichTextLabel.new()
+	_site_list.anchor_left = 0.0
+	_site_list.anchor_right = 1.0
+	_site_list.anchor_top = 0.5
+	_site_list.anchor_bottom = 1.0
+	_site_list.offset_top = 72.0
+	_site_list.offset_bottom = 0.0
+	_site_list.bbcode_enabled = true
+	_site_list.scroll_active = false
+	_site_list.add_theme_font_size_override("normal_font_size", 28)
+	_site_list.add_theme_constant_override("outline_size", 6)
+	_site_list.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	_site_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_site_list.visible = false
+	_layer.add_child(_site_list)
 	_strain_note = Label.new()
 	_strain_note.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_strain_note.offset_top = 120.0
@@ -394,6 +420,9 @@ func character_open() -> bool:
 
 func clear_prompt() -> void:
 	_prompt.text = ""
+
+	if _site_list != null:
+		_site_list.visible = false
 	_notice_until_msec = 0
 	_prompt_next_msec = Time.get_ticks_msec() + 400
 
@@ -403,7 +432,7 @@ func clear_prompt() -> void:
 # the first probe that finds something decides the single centre-screen prompt and what E does.
 # A probe returns {} or {"prompt": text, "tap": Callable, "hold": Callable (optional)}. With a "hold",
 # a tap acts on release and a hold (HOLD_E_S) does the other thing; without one the tap acts at once.
-const HOLD_E_S: float = 0.6
+const HOLD_E_S: float = 0.3   # halved (Dave 5 Nov 2026: picking up twice as fast)
 var fuel_event: Callable = Callable()
 var _interactables: Array = []
 var _e_active: Dictionary = {}
@@ -485,7 +514,7 @@ func hold_e_step() -> bool:
 	var now: int = Time.get_ticks_msec()
 
 	if str(found.get("kind", "")) in ["pickup", "plant"] and now >= _hold_next_msec:   # not a block: holding E on a chopping block picks it up
-		_hold_next_msec = now + 600
+		_hold_next_msec = now + 300
 		found["tap"].call()
 
 	return true
@@ -555,7 +584,7 @@ func aimed_at(point: Vector3) -> bool:
 
 
 # Held E (harvest.gd steps this): the nearest loose item within 2 m, wherever you look, one at a time. 0 when none, when
-# the pack was refused as full (until E is let go), or for an item already asked for in the last 0.6 s.
+# the pack was refused as full (until E is let go), or for an item already asked for in the last 0.3 s.
 func sweep_target(radius: float) -> Array:
 	if _sweep_blocked:
 		return [0, 99.0]
@@ -565,7 +594,7 @@ func sweep_target(radius: float) -> Array:
 	var best: Array = [0, radius + 1.0]
 
 	for id in _world:
-		if _world[id]["state"] != 0 or now - int(_sweep_asked.get(id, -100000)) < 600:
+		if _world[id]["state"] != 0 or now - int(_sweep_asked.get(id, -100000)) < 300:
 			continue
 
 		var d: float = here.distance_to(_world[id]["pos"])
@@ -593,6 +622,15 @@ func refuse_cue(reason: String) -> void:
 		reject_event.call(reason)
 
 
+# The first pack slot holding a torch that water or rain put out (items.json "relit_item"), or -1.
+func _doused_torch_slot() -> int:
+	for slot in range(inventory.numbers.size()):
+		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("relit_item", "")) != "":
+			return slot
+
+	return -1
+
+
 func _probe_fire() -> Dictionary:
 	var id: int = _nearest_fire()
 
@@ -600,6 +638,12 @@ func _probe_fire() -> Dictionary:
 		return {}
 
 	var state: int = _world[id]["state"]
+
+	if _lit_state(state) and _doused_torch_slot() >= 0:
+		# A doused torch in the pack: E at a burning fire lights it again (Dave, 4 Nov 2026), instead of putting the fire out.
+		return {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": "Press E to light your torch", "tap": func():
+			net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, id, 0, 0, Vector3.ZERO)}
+
 	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": _fire_prompt(state), "tap": func():
 		if state == 9:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
@@ -615,11 +659,14 @@ func _probe_fire() -> Dictionary:
 
 
 func _probe_structure() -> Dictionary:
-	var found: Dictionary = _probe_structure_for(_nearest_struct())
+	# A fire has its own probe (_probe_fire), so it is left out here. Before, this probe found it too, aimed a little higher, and its "Hold E to take down"
+	# line hid "Press E to light" and "Press F to add wood" (Dave 5 Nov, a campfire with no fuel).
+	var near: int = _nearest_struct(true)
+	var found: Dictionary = _probe_structure_for(near)
 
 	if not found.is_empty():
-		found["kind"] = "block" if int(_world[_nearest_struct()]["state"]) == 7 else "structure"
-		found["point"] = _world[_nearest_struct()]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
+		found["kind"] = "block" if int(_world[near]["state"]) == 7 else "structure"
+		found["point"] = _world[near]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
 
 	return found
 
@@ -632,6 +679,9 @@ func _probe_structure_for(id: int) -> Dictionary:
 	var take_down: Callable = func():
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+
+	if _world[id].get("site") != null:   # a blueprint site: E deposits the materials, hold E takes it down and gives back what was put in
+		return {"prompt": "Press E to deposit materials (hold E to take the blueprint down)", "lines": _site_lines(_world[id]["site"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if state == 11 or state == 12:
 		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
@@ -660,8 +710,28 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 		return bed
 
+	if str(station_def.get("use", "")) == "sit":   # a seat (docs/COMFORT_DESIGN.md 10.3; Dave 5 Nov 2026 "we need a sitting on a chair action"): E sits on it, hold E takes it down
+		var seat: Dictionary = {"prompt": "Press E to sit (hold E to take it down)", "hold": take_down}
+		seat["tap"] = func():
+			if sit_on_seat.is_valid() and _world.has(id):
+				sit_on_seat.call(_world[id]["pos"], float(_world[id].get("yaw", 0.0)), station_def)
+
+		return seat
+
 	if str(station_def.get("station", "")) != "":
 		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
+
+	# A light (a torch stuck in the ground or on a wall, a wall torch, a chandelier): E lights it with its fuel from the pack (a stick for a torch), hold E takes it down.
+	if str(station_def.get("use", "")) == "light":
+		var burning: bool = _world[id].get("light") != null
+		var what: String = "the torch" if bool(station_def.get("hand_placed", false)) else "it"
+		var tap: Callable = func():
+			if burning:
+				show_notice("Hold E to take it back")
+			else:
+				net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+
+		return {"prompt": ("Hold E to take %s back" % what) if burning else ("Press E to light %s with a %s (hold E to take it back)" % [what, table.name_of(table.number_of(str(station_def.get("fuel", "stick")))).to_lower()]), "tap": tap, "hold": take_down}
 
 	return {"prompt": "Hold E to take down the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
 
@@ -831,12 +901,21 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	if not _warm_queue.is_empty():
+		var tw: int = FrameProbe.start()
+		_warm_step()
+		FrameProbe.stop("inventory: loose mesh prewarm", tw)
+
+	var t: int = FrameProbe.start()
 	_drain_world_backlog()
+	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
 	var now: int = Time.get_ticks_msec()
+	t = FrameProbe.start()
 	_roll_tick(_delta, now)
 	_snap_tick(now)
 	_hold_e_check()
 	_auto_pickup_tick(now)
+	FrameProbe.stop("inventory: roll, snap, hold E, pickup", t)
 
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
 		_thought_label.text = ""
@@ -852,13 +931,22 @@ func _process_body(_delta: float) -> void:
 		return
 
 	_prompt_next_msec = now + 200
+	t = FrameProbe.start()
 	_update_fire_lights()
+	FrameProbe.stop("inventory: fire lights", t)
+	t = FrameProbe.start()
 	_update_trunk_colliders()
+	FrameProbe.stop("inventory: trunk colliders", t)
 
 	if now < _notice_until_msec:
 		return
+	t = FrameProbe.start()
 	var interaction: Dictionary = current_interaction()
 	_prompt.text = prompt_text(interaction)
+	if _site_list != null:
+		_site_list.text = str(interaction.get("lines", "")) if _prompt.text != "" else ""
+		_site_list.visible = _site_list.text != ""
+	FrameProbe.stop("inventory: prompt", t)
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = KeyBindings.localize("Hold Z to sleep")
@@ -904,11 +992,14 @@ func hold_use() -> bool:
 
 
 # The id of the placed structure (lean-to, chest) within 3 m that the cursor is on, else the nearest one; 0 when none.
-func _nearest_struct() -> int:
+func _nearest_struct(skip_fires: bool = false) -> int:
 	var here: Vector3 = _player_position.call()
 	var ids: Array = []
 
 	for id in _world:
+		if skip_fires and int(_world[id]["state"]) in [8, 9, 40, 41]:
+			continue
+
 		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
 			ids.append(id)
 
@@ -1090,6 +1181,9 @@ func _on_notice(text: String) -> void:
 		notice_event.call(text)
 
 	_prompt.text = KeyBindings.localize(text)
+
+	if _site_list != null:
+		_site_list.visible = false
 	_notice_until_msec = Time.get_ticks_msec() + 4000
 
 
@@ -2111,6 +2205,8 @@ func _drain_world_backlog() -> void:
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
 	var t_all: int = Time.get_ticks_usec()
+	_slowest_row_usec = 0
+	_slowest_row = ""
 	var t_mark: int = t_all
 
 	for id in removed:
@@ -2119,7 +2215,14 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	prof["forget"] = Time.get_ticks_usec() - t_mark
 	t_mark = Time.get_ticks_usec()
 
+	var row_usec: int = 0
+	var row_name: String = ""
+
 	for row in added:
+		# The slowest row, whatever path it takes (lag run 5 Nov: 44 ms for 1 added, none of it in the timed parts).
+		_note_slowest_row(row_usec, row_name)
+		row_usec = Time.get_ticks_usec()
+		row_name = "%s state %d" % [table.id_of(int(row[1])), int(row[4]) if row.size() > 4 else 0]
 		var id: int = row[0]
 		var state: int = int(row[4]) if row.size() > 4 else 0
 
@@ -2147,6 +2250,16 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
 
+				var site_now: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
+				var site_was: Variant = _world[id].get("site")
+
+				if site_now != null and site_was != null:
+					_world[id]["site"] = site_now   # a deposit or a change in what you have to hand: the list updates, the blue piece stays
+					continue
+
+				if (site_now != null) != (site_was != null):
+					shorter = true   # a site finished (drawn again as the real piece) or a piece that became a site
+
 				if not shorter:
 					continue
 
@@ -2164,8 +2277,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node.rotation.y = yaw
 			_root.add_child(node)
 			var roof_key: int = -1
+			var site_extra: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
 
-			if state == 5 and cover_index != null:
+			if site_extra != null:
+				_make_site_look(node)
+			elif state == 5 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.3, 1.7, yaw, row[3].y - 0.5, row[3].y + 1.5))
 			elif state == 24 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
@@ -2179,7 +2295,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw)}
 
-			if StructureLook.look_of(state) == "ladder":
+			if site_extra != null:
+				_world[id]["site"] = site_extra
+
+			if site_extra != null:
+				pass   # a site is walked through and climbed by nobody until it is finished
+			elif StructureLook.look_of(state) == "ladder":
 				ladders[id] = {"pos": row[3], "yaw": rad_to_deg(yaw)}
 			elif StructureLook.look_of(state) == "trodden_path":
 				_path_cell_add(row[3], 1)
@@ -2235,6 +2356,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		_snap_loose(id)
 		prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_e
 
+	_note_slowest_row(row_usec, row_name)
 	var total_ms: float = float(Time.get_ticks_usec() - t_all) / 1000.0
 
 	if total_ms > 30.0:
@@ -2243,7 +2365,22 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		for key in prof:
 			parts.append("%s %.0f ms" % [key, float(prof[key]) / 1000.0])
 
-		print("client slow: world items %.0f ms for %d added, %d removed: %s" % [total_ms, added.size(), removed.size(), ", ".join(parts)])
+		print("client slow: world items %.0f ms for %d added, %d removed: %s (slowest row: %s, %.0f ms)" % [total_ms, added.size(), removed.size(), ", ".join(parts), _slowest_row, float(_slowest_row_usec) / 1000.0])
+
+
+var _slowest_row_usec: int = 0   # the slowest added row of the last world-items list, and what it was (the slow line)
+var _slowest_row: String = ""
+
+
+func _note_slowest_row(since_usec: int, row_name: String) -> void:
+	if since_usec == 0:
+		return
+
+	var spent: int = Time.get_ticks_usec() - since_usec
+
+	if spent > _slowest_row_usec:
+		_slowest_row_usec = spent
+		_slowest_row = row_name
 
 
 # The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
@@ -2920,6 +3057,42 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 	return _make_block()   # the chopping block (and any name nobody drew yet) is a plain block
 
 
+# The materials a blueprint site still needs, one line each: green when the pack, the ground beside you and containers within 30 m hold enough, red when not.
+func _site_lines(site: Array) -> String:
+	var lines: PackedStringArray = []
+
+	for line in site:
+		var need: int = int(line[1])
+
+		if need <= 0:
+			continue
+
+		var colour: String = "#55ee66" if int(line[2]) >= need else "#ff5555"
+		lines.append("[color=%s]%d %s  (%d to hand)[/color]" % [colour, need, table.name_of(table.number_of(str(line[0]))).to_lower(), int(line[2])])
+
+	return "[center]%s[/center]" % "\n".join(lines)
+
+
+# A blueprint site is the real model drawn blue and 60 percent see-through, with nothing solid about it: you walk through it.
+func _make_site_look(node: Node) -> void:
+	var blue := StandardMaterial3D.new()
+	blue.albedo_color = Color(0.25, 0.5, 1.0, 0.6)
+	blue.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_blue_all(node, blue)
+
+
+func _blue_all(node: Node, blue: Material) -> void:
+	if node is GeometryInstance3D:
+		(node as GeometryInstance3D).material_override = blue
+
+	if node is CollisionObject3D:
+		(node as CollisionObject3D).collision_layer = 0
+		(node as CollisionObject3D).collision_mask = 0
+
+	for child in node.get_children():
+		_blue_all(child, blue)
+
+
 # The ghost's model: a lit campfire is shown cold.
 func ghost_model(state: int) -> Node3D:
 	return _model_for_state(state)
@@ -3125,17 +3298,72 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 
 # Builds the shared meshes of the loose items that appear on every join (stones, sticks, driftwood, logs, firewood, fibre) while the client is still loading, so the first
 # list of world items (282 items took 1070 ms, 961 ms of it here, PC log 2 Nov) only dresses nodes with meshes that already exist (bug 6/join freeze).
+# Lag runs 5 Nov: building the loose item meshes all at once cost about 540 ms of the welcome frame (stones sticks and logs 346, trunk drops 191),
+# the one freeze left at the join. In a window they are built a few each frame instead (WARM_BUDGET_USEC), in the order below, while the ground
+# is still loading (2 s or more after the welcome). A mesh wanted before its turn is built on the spot by _mesh_for, as before any prewarm.
+const WARM_BUDGET_USEC := 6000
+var _warm_queue: Array = []        # item numbers still to build
+var _warm_usec: int = 0            # time spent building them so far
+var _warm_frames: int = 0
+
+
+func _loose_prewarm_numbers() -> Array:
+	var out: Array = []
+
+	for id in table.ids():
+		var item: String = str(id)
+
+		if item == "stone" or item == "flint" or item == "stick" or item == "firewood" or item == "plant_fibre" or item == "driftwood" or item == "log" or item.begins_with("log_"):
+			out.append(table.number_of(item))
+
+	for drop in _trunk_drop_ids():
+		if table.number_of(drop) > 0 and not out.has(table.number_of(drop)):
+			out.append(table.number_of(drop))
+
+	return out
+
+
+func _start_loose_prewarm() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	for group in PICKUP_FILES:
+		_pickup_group(group)
+
+	_warm_queue = _loose_prewarm_numbers()
+	_warm_usec = Time.get_ticks_usec() - t0
+	_warm_frames = 0
+	PieceLook.prewarm()
+	_prewarm_felled()
+
+
+func _warm_step() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	while not _warm_queue.is_empty() and Time.get_ticks_usec() - t0 < WARM_BUDGET_USEC:
+		_mesh_for(int(_warm_queue.pop_front()))
+
+	_warm_usec += Time.get_ticks_usec() - t0
+	_warm_frames += 1
+
+	if _warm_queue.is_empty():
+		print("client prewarm: loose item meshes %.0f ms over %d frames" % [float(_warm_usec) / 1000.0, _warm_frames])
+
+
 func _prewarm_loose_meshes() -> void:
 	var t0: int = Time.get_ticks_usec()
 
 	for group in PICKUP_FILES:
 		_pickup_group(group)
 
+	var t_pick: int = Time.get_ticks_usec()
+
 	for id in table.ids():
 		var name: String = str(id)
 
-		if name == "stone" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
+		if name == "stone" or name == "flint" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
 			_mesh_for(table.number_of(name))
+
+	var t_items: int = Time.get_ticks_usec()
 
 	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
 	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
@@ -3143,7 +3371,9 @@ func _prewarm_loose_meshes() -> void:
 		if table.number_of(name) > 0:
 			_mesh_for(table.number_of(name))
 
-	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	var t_end: int = Time.get_ticks_usec()
+	print("client prewarm: loose item meshes %.0f ms (pickup models %.0f, stones sticks and logs %.0f, trunk drops %.0f)" % [float(t_end - t0) / 1000.0, float(t_pick - t0) / 1000.0, float(t_items - t_pick) / 1000.0, float(t_end - t_items) / 1000.0])
+	PieceLook.prewarm()   # the building material and trodden-path pictures, on a worker (about 170 ms on the main thread at the first piece or hoe stroke)
 	_prewarm_felled()
 
 
@@ -3225,11 +3455,13 @@ const STICK_VIEW_M := 100.0
 # 1 to 2 m across and sticks about 2.4 to 4.5 m long (three times the 2026-10-20 size, Dave 2026-10-21); sticks rest on top of the grass (a lift), stones sit in the soil
 # but proud of the blades. A little extra brightness and a faint warm glow keep them readable in shade.
 const PICKUP_SIZE_MULT := 3.0   # Dave, 2026-10-21: three times the earlier size
-const STONE_SCALE := Vector2(2.4, 3.4) * PICKUP_SIZE_MULT
+# Dave 2026-11-05: loose stones were 1 to 2 m across, "they look like boulders in the caves"; they must be about the size of a character's fist.
+# The meshes are 10 to 15 cm across, so a scale near 1 gives 8 to 16 cm. Cave floor stones are the same item and use this too. Boulders are separate.
+const STONE_SCALE := Vector2(0.85, 1.1)
 const STICK_SIZE_SHARE := 0.75   # Dave 2026-10-21: sticks about 75 percent of that, lying on the ground
 const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT * STICK_SIZE_SHARE
 const STICK_TINT := Color(0.42, 0.29, 0.17)   # bark brown, multiplied into the mesh colours
-const STONE_LIFT_M := 0.05 * PICKUP_SIZE_MULT
+const STONE_LIFT_M := 0.01
 const PICKUP_BRIGHT := 0.9   # was 1.3 while the vertex colours were not used (flat white); with them on, 1.3 drew chalk-white stones in full sun
 const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
@@ -3467,7 +3699,7 @@ func _on_thought(line_id: String, text: String, kind: String) -> void:
 	if not inner_settings.allows(kind):
 		return      # the player switched this kind of line off (the symptom message itself is not a line of the voice)
 
-	_thought_label.text = "(%s)" % text
+	_thought_label.text = "(%s)" % KeyBindings.localize(text)   # hints from the server name the default keys ("press E to drink"): show the bound ones (#319)
 	_thought_until_msec = Time.get_ticks_msec() + 5500
 
 	if thought_event.is_valid():
@@ -4436,7 +4668,7 @@ func _add_admin_builds() -> void:
 	for id in admin_ids:
 		var number: int = table.number_of(id)
 
-		if number == 0:
+		if number == 0 or bool(table.entry(str(id)).get("retired", false)):   # a retired kit cannot be placed (Dave 5 Nov 2026: the admin Woven chest did nothing): the hammer's blueprints build those
 			continue
 
 		var entry: Button = Button.new()
@@ -5550,3 +5782,8 @@ func run_chop_test(client) -> void:
 			kinds.append(_world[id]["state"])
 
 	print("Chop test: %d blows, felled states in view %s" % [blows, str(kinds)])
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		PieceLook.finish_prewarm()     # the pictures worker started by the prewarm never outlives the view

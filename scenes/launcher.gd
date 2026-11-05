@@ -26,12 +26,16 @@ func _launch_role(role: String) -> void:
 			)
 
 		"play":
-			# The character select page is the first page (until there are accounts); it sends a player with no characters to the creator, and
+			# The title page (scenes/title, Dave's paintings) opens first, once per launch: New Game goes to the creator, Continue to the character select page.
+			# After that (back here after a death) the character select page is the first page; it sends a player with no characters to the creator, and
 			# both come back here with creator_done set once a character is chosen.
 			# `--test` goes straight to play (no character pages): test builds, rigs and the PC test runs are not held up by the select screen. The game then
 			# uses the machine key and no character, as headless runs do.
 			if not Engine.has_meta("creator_done") and not AppConfig.has_flag("test"):
-				get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
+				if not Engine.has_meta("title_done"):
+					get_tree().change_scene_to_file("res://scenes/title/title.tscn")
+				else:
+					get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
 			else:
 				_host_and_play()
 

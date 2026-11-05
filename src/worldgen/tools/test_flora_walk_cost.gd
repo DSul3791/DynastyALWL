@@ -12,6 +12,7 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const Probe := preload("res://src/debug/frame_probe.gd")
 
 # Loose bars (Tyler 3 Nov: a loaded 4-core cloud runner gave 32-58 ms with no flora change): the stalls this guards against were 800-1000 ms
 # (every dig, cut or hoe click refiltered a whole chunk, #187), so 100 ms still catches them eight times over without failing on load alone.
@@ -46,6 +47,7 @@ func _frame(view, pos: Vector3, do_update: bool, label: String) -> void:
 		update_ms = float(Time.get_ticks_usec() - t0) / 1000.0
 
 	var t1: int = Time.get_ticks_usec()
+	Probe._this_frame.clear()     # apply_built times its pieces (FrameProbe): a slow frame prints which one
 	view.apply_built()
 	var apply_ms: float = float(Time.get_ticks_usec() - t1) / 1000.0
 	await process_frame          # deferred frees of this frame run before the next
@@ -58,6 +60,13 @@ func _frame(view, pos: Vector3, do_update: bool, label: String) -> void:
 	if frame_ms > FRAME_BAR_MS:
 		over += 1
 		print("walk: %s slow frame %.1f ms (update %.1f, apply %.1f) at %s; %s" % [label, frame_ms, update_ms, apply_ms, str(pos.round()), view.load_state()])
+		var pieces: PackedStringArray = PackedStringArray()
+
+		for piece in Probe._this_frame:
+			pieces.append("%s %.1f" % [piece, float(Probe._this_frame[piece]) / 1000.0])
+
+		# Whatever apply_built spent outside these pieces is the hand-over of finished plans (the _built lock and the new chunk nodes).
+		print("walk:   apply pieces (ms): %s" % ", ".join(pieces))
 
 
 func _run() -> void:

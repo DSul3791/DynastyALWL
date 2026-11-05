@@ -72,7 +72,7 @@ done
 for t in $FAST $TIMING $SLOW; do
 	if is_in "$t" "$RETRY_ALL" && grep -q '^FAIL' "$OUT/$t.result" 2>/dev/null; then
 		FIRST=$(cat "$OUT/$t.result"); cp "$OUT/$t.out" "$OUT/$t.first.out"
-		bash tools/run_one_test.sh "$t" "$T_TIMING" "$OUT" >/dev/null 2>&1
+		TEST_QUIET=1 bash tools/run_one_test.sh "$t" "$T_TIMING" "$OUT" >/dev/null 2>&1   # alone on the PC: every Godot slot
 		if grep -q '^PASS' "$OUT/$t.result"; then echo "FLAKE $t: first run '$FIRST', passed on the retry" >> "$OUT/retries.log"
 		else echo "RETRY-FAILED $t: first '$FIRST', second '$(cat "$OUT/$t.result")'" >> "$OUT/retries.log"; fi
 	fi
