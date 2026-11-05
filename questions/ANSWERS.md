@@ -2282,3 +2282,7 @@ Answered: 2026-11-05 12:04 UTC
 Answer: Later (recommended)
 Answered: 2026-11-05 12:05 UTC
 
+## jamie-burnt-fire | A burnt-out fire is deleted after 5 minutes. Change it?
+Answer: Leave a cold fire that stays and can be relit (Dino's idea, recommended)
+Answered: 2026-11-05 12:05 UTC
+
