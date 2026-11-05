@@ -758,14 +758,22 @@ func _add_cave_floor_spot(centre: Vector3, side_dir: Vector2, side: float, rw: f
 	cave_scatter.append_array(PackedFloat32Array([x, y, z, float(kind), radius]))
 
 
+# The cave floor stones and boulders of the whole tile. The tile loader calls it on its worker before the tile is published (Steve 5 Nov 2026:
+# built by the first scatter cell that asked, it held the server main thread 345 ms in Dave's PC lag run, cell (1666, 2136)).
+func build_cave_scatter() -> void:
+	if _cave_scatter_built:
+		return
+
+	_cave_scatter_built = true
+
+	for cave in _cave_sources:
+		_scatter_cave(cave)
+
+
 # The cave floor stones and boulders whose spot lies in one scatter cell (cell_m square, as the server lays its loose things out): entry numbers into
 # cave_scatter (5 floats each). The index by cell is built the first time it is asked for.
 func cave_scatter_in(cell: Vector2i, cell_m: float) -> PackedInt32Array:
-	if not _cave_scatter_built:
-		_cave_scatter_built = true
-
-		for cave in _cave_sources:
-			_scatter_cave(cave)
+	build_cave_scatter()
 
 	if cave_scatter.is_empty():
 		return PackedInt32Array()
