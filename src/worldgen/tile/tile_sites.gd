@@ -735,6 +735,12 @@ const SPRING_CAVE_DEFAULTS := {
 	"min_slope_deg": 10.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
 	"width_m": [3.0, 5.0], "height_m": [2.5, 4.0], "min_cover_m": 2.5, "open_cut_m": 64.0, "chamber_radius_m": [4.0, 7.0],
 	"branches": [1, 3], "branch_length_m": [15.0, 40.0], "extra_passage_chance": [0.4, 0.15], "spring_m3_s_per_km2": 0.1, "min_length_m": 60.0,
+	# Dave 4 Nov 2026: mouths match the river, small / medium / large caves, den tunnels climbing to a hollow, bones, stalagmites and stalactites.
+	"size_odds": {"small": 0.45, "medium": 0.35, "large": 0.2}, "sizes": {}, "big_chambers": [0, 0], "big_chamber_radius_m": [5.0, 9.0],
+	"big_chamber_height_m": [8.0, 14.0], "mouth_width_max_m": 30.0, "mouth_height_max_m": 12.0, "taper_min_m": 25.0, "taper_cover_m": 1.5,
+	"den_rise": [0.1, 0.2], "den_radius_m": [3.0, 5.0], "den_height_m": [3.0, 4.0],
+	"bones": {"entrance_chance": 0.35, "end_chance": 0.35, "human_share": 0.2},
+	"formations": {"per_chamber": [8, 20], "passage_min_width_m": 5.0, "passage_chance": 0.3},
 }
 
 
@@ -828,25 +834,42 @@ func _make_spring_caves(rng: RandomNumberGenerator) -> void:
 	print("  spring caves (Dave 3 Nov): %d brook heads on slopes, %d caves with %d spring passages, %d heads with no room for a cave" % [heads.size(), made, passages, refused])
 
 
+# Dave 4 Nov: small, medium and large caves. A size the hill has no room for falls back to the next smaller one.
 func _spring_cave(index: int, rng: RandomNumberGenerator) -> Dictionary:
+	var sizes: Array = ["small", "medium", "large"]
+
+	for k in range(sizes.find(_pick_size(rng)), -1, -1):
+		var local_before: int = _local
+		var cave: Dictionary = _spring_cave_of(index, sizes[k], rng)
+
+		if not cave.is_empty():
+			return cave
+
+		_local = local_before
+
+	return {}
+
+
+func _spring_cave_of(index: int, size: String, rng: RandomNumberGenerator) -> Dictionary:
 	var m3_s: float = _spring_m3_s(index)
-	var extra: Array = _spring_rule("extra_passage_chance")
+	var extra: Array = _size_rule(size, "extra_passage_chance")
 	var wanted: int = 1
 	var roll: float = rng.randf()
 
 	if roll < float(extra[0]):
 		wanted = 3 if roll < float(extra[1]) else 2
 	var cave: Dictionary = _new_cave("spring_cave", rng)
-	var width: float = _spring_range("width_m", rng)
-	var height: float = _spring_range("height_m", rng)
+	cave["size"] = size
+	var width: float = _size_range(size, "width_m", rng)
+	var height: float = _size_range(size, "height_m", rng)
 	var point: Vector2 = _point_of(index)
 	# The mouth: the floor half a metre under the head, so the stream runs straight out onto it.
 	cave["nodes"].append([snappedf(point.x, 0.1), snappedf(_heights[index] + 0.5 * height - 0.5, 0.1), snappedf(point.y, 0.1), snappedf(width, 0.1), snappedf(height, 0.1)])
 	cave["entrances"].append(0)
 	var heading: float = _uphill_angle(index)
-	var main: Array = _spring_passage(cave, 0, heading, _spring_range("length_m", rng), width, height, rng)
+	var main: Array = _spring_passage(cave, 0, heading, _size_range(size, "length_m", rng), width, height, rng)
 
-	if main.size() < 3 or _node_distance(cave, 0, main[main.size() - 1]) < float(_spring_rule("min_length_m")):
+	if main.size() < 3 or _node_distance(cave, 0, main[main.size() - 1]) < float(_size_rule(size, "min_length_m")):
 		return {}
 
 	var springs: Array = [main[main.size() - 1]]
@@ -855,7 +878,7 @@ func _spring_cave(index: int, rng: RandomNumberGenerator) -> Dictionary:
 	for k in range(wanted - 1):
 		var from: int = main[clampi(int(round(float(main.size() - 1) * rng.randf_range(0.15, 0.4))), 1, main.size() - 2)]
 		var side: float = (1.0 if k == 0 else -1.0) * (1.0 if rng.randf() < 0.5 else -1.0) * deg_to_rad(rng.randf_range(30.0, 50.0))
-		var arm: Array = _spring_passage(cave, from, heading + side, _spring_range("length_m", rng) * 0.8, width * 0.85, height * 0.9, rng)
+		var arm: Array = _spring_passage(cave, from, heading + side, _size_range(size, "length_m", rng) * 0.8, width * 0.85, height * 0.9, rng)
 
 		if arm.size() >= 3:
 			springs.append(arm[arm.size() - 1])
@@ -865,11 +888,21 @@ func _spring_cave(index: int, rng: RandomNumberGenerator) -> Dictionary:
 	for node in springs:
 		cave["chambers"].append({
 			"node": int(node), "features": ["spring"],
-			"radius_m": snappedf(_spring_range("chamber_radius_m", rng), 0.1), "height_m": snappedf(height * 1.4, 0.1),
+			"radius_m": snappedf(_size_range(size, "chamber_radius_m", rng), 0.1), "height_m": snappedf(height * 1.4, 0.1),
 		})
 		cave["springs"].append({"node": int(node), "m3_s": snappedf(m3_s, 0.001)})
 
-	# Side branches off the spring passages: roughly level, ending blind, each end a den.
+	# Large caves: big chambers along the main passage, roomy enough for stalagmites and stalactites (Dave 4 Nov).
+	var big: Array = []
+
+	for k in range(rng.randi_range(int(_size_rule(size, "big_chambers")[0]), int(_size_rule(size, "big_chambers")[1]))):
+		var at: int = main[clampi(int(round(float(main.size() - 1) * rng.randf_range(0.35, 0.75))), 1, main.size() - 2)]
+		var chamber: Dictionary = _hollow(cave, at, _size_range(size, "big_chamber_radius_m", rng), _size_range(size, "big_chamber_height_m", rng), "big", 4.0)
+
+		if not chamber.is_empty():
+			big.append(chamber)
+
+	# Den tunnels off the spring passages: they climb (so the stream never runs up them) and end in a dry den hollow (Dave 4 Nov).
 	var stream: Array = []
 
 	for segment in cave["segments"]:
@@ -877,7 +910,8 @@ func _spring_cave(index: int, rng: RandomNumberGenerator) -> Dictionary:
 			stream.append(int(segment[0]))
 
 	cave["den_nodes"] = []
-	var branches: int = rng.randi_range(int(_spring_rule("branches")[0]), int(_spring_rule("branches")[1]))
+	var hollows: Array = []
+	var branches: int = rng.randi_range(int(_size_rule(size, "branches")[0]), int(_size_rule(size, "branches")[1]))
 
 	for k in range(branches):
 		if stream.is_empty():
@@ -886,14 +920,275 @@ func _spring_cave(index: int, rng: RandomNumberGenerator) -> Dictionary:
 		var from: int = stream[rng.randi_range(0, stream.size() - 1)]
 		var turn: float = (1.0 if rng.randf() < 0.5 else -1.0) * deg_to_rad(rng.randf_range(60.0, 110.0))
 		var nodes_before: int = cave["nodes"].size()
-		var arm: Array = _cave_arm(cave, from, heading + turn, _spring_range("branch_length_m", rng), width * 0.7, height * 0.8, 0.01, "passage", rng)
+		var segments_before: int = cave["segments"].size()
+		var arm: Array = _cave_arm(cave, from, heading + turn, _spring_range("branch_length_m", rng), width * 0.7, height * 0.8, _spring_range("den_rise", rng), "passage", rng)
+		var hollow: Dictionary = {}
 
-		if arm.size() >= 2:
-			cave["den_nodes"].append(arm[arm.size() - 1])
-		else:
+		if arm.size() >= 3:
+			hollow = _hollow(cave, arm[arm.size() - 1], _spring_range("den_radius_m", rng), _spring_range("den_height_m", rng), "den", 2.2)
+
+		if hollow.is_empty():
 			cave["nodes"].resize(nodes_before)
+			cave["segments"].resize(segments_before)
+			continue
 
+		cave["den_nodes"].append(int(hollow["node"]))
+		hollows.append(hollow)
+
+	# Dave 4 Nov: the mouth is as wide as the river it feeds and narrows going in (after the rooms and tunnels, which are set from the passage floor).
+	_taper_mouth(cave, main, index, heading, width, height)
+	_dress_cave(cave, main, springs, big, hollows, rng)
 	return cave
+
+
+func _size_rule(size: String, key: String) -> Variant:
+	var sizes: Dictionary = _spring_rule("sizes")
+	return sizes.get(size, {}).get(key, _spring_rule(key))
+
+
+func _size_range(size: String, key: String, rng: RandomNumberGenerator) -> float:
+	var pair: Array = _size_rule(size, key)
+	return rng.randf_range(float(pair[0]), float(pair[1]))
+
+
+# Small, medium or large (Dave 4 Nov), by spring_cave.size_odds.
+func _pick_size(rng: RandomNumberGenerator) -> String:
+	var odds: Dictionary = _spring_rule("size_odds")
+	var total: float = 0.0
+
+	for key in odds:
+		total += float(odds[key])
+
+	var roll: float = rng.randf() * total
+
+	for key in ["small", "medium", "large"]:
+		roll -= float(odds.get(key, 0.0))
+
+		if roll < 0.0:
+			return key
+
+	return "medium"
+
+
+func _ground_at(p: Vector2) -> float:
+	var at: int = _index_at(p, 0.0)
+	return _heights[at] if at >= 0 else -INF
+
+
+# Width of the river at a brook head: water samples counted across the flow at the head and a few samples downstream, the widest.
+func _river_width(index: int, uphill: float) -> float:
+	var down: Vector2 = -Vector2(cos(uphill), sin(uphill))
+	var across: Vector2 = Vector2(-down.y, down.x)
+	var step: float = 0.5 * _spacing
+	var head: Vector2 = _point_of(index)
+	var widest: float = 0.0
+
+	for k in range(4):
+		var at: Vector2 = head + down * _spacing * float(k)
+		var run: float = step
+
+		for side in [-1.0, 1.0]:
+			for n in range(1, 16):
+				var i: int = _index_at(at + across * step * float(n) * side, 0.0)
+
+				if i < 0 or _water[i] != RIVER:
+					break
+
+				run += step
+
+		widest = maxf(widest, run)
+
+	return widest
+
+
+# The mouth matches the river (Dave 4 Nov): its width is the river's, its height half that (within the passage height and mouth_height_max_m), and both
+# narrow to the passage's over taper_m (at least a third of the passage). The floor stays where it was; the roof keeps taper_cover_m of ground over it
+# (where the hill is thinner the opening is lower, as a real one would be).
+func _taper_mouth(cave: Dictionary, main: Array, head: int, uphill: float, width: float, height: float) -> void:
+	var nodes: Array = cave["nodes"]
+	var mouth_w: float = clampf(_river_width(head, uphill), width, float(_spring_rule("mouth_width_max_m")))
+	var mouth_h: float = clampf(0.5 * mouth_w, height, float(_spring_rule("mouth_height_max_m")))
+	var length: float = 0.0
+
+	for k in range(1, main.size()):
+		length += _node_distance(cave, main[k - 1], main[k])
+
+	var taper: float = maxf(float(_spring_rule("taper_min_m")), length / 3.0)
+	var along: float = 0.0
+	cave["mouth_width_m"] = snappedf(mouth_w, 0.1)
+
+	for k in range(main.size()):
+		if k > 0:
+			along += _node_distance(cave, main[k - 1], main[k])
+
+		var node: Array = nodes[main[k]]
+		var t: float = smoothstep(0.0, taper, along)
+		var w: float = lerpf(mouth_w, float(node[3]), t)
+		var h: float = lerpf(mouth_h, float(node[4]), t)
+		var floor_y: float = float(node[1]) - 0.5 * float(node[4])
+
+		if k > 0:
+			var room: float = _ground_at(Vector2(float(node[0]), float(node[2]))) - float(_spring_rule("taper_cover_m")) - floor_y
+			h = clampf(h, float(node[4]), maxf(float(node[4]), room))
+
+		node[1] = snappedf(floor_y + 0.5 * h, 0.1)
+		node[3] = snappedf(w, 0.1)
+		node[4] = snappedf(h, 0.1)
+
+
+# A round room at the end or along a passage (a den hollow, or a large cave's big chamber): a node of its own, unlinked, set so the room's floor is level
+# with the passage floor at `at` (the room is carved as an ellipsoid round its node). It is made lower to keep min_cover_m of ground over it, and not at all
+# if under `lowest` m fits. Returns the chamber, or {} when no room fits.
+func _hollow(cave: Dictionary, at: int, radius: float, height: float, feature: String, lowest: float) -> Dictionary:
+	var nodes: Array = cave["nodes"]
+	var node: Array = nodes[at]
+	var floor_y: float = float(node[1]) - 0.5 * float(node[4])
+	var p: Vector2 = Vector2(float(node[0]), float(node[2]))
+	var room: float = INF
+
+	for k in range(9):
+		var reach: Vector2 = Vector2.ZERO if k == 0 else Vector2(cos(TAU * float(k) / 8.0), sin(TAU * float(k) / 8.0)) * radius * 0.6
+		room = minf(room, _ground_at(p + reach) - float(_spring_rule("min_cover_m")) - floor_y)
+
+	height = minf(height, room)
+
+	if height < lowest:
+		return {}
+
+	nodes.append([snappedf(p.x, 0.1), snappedf(floor_y + 0.5 * height - 0.2, 0.1), snappedf(p.y, 0.1), snappedf(2.0 * radius, 0.1), snappedf(height, 0.1)])
+	var chamber: Dictionary = {"node": nodes.size() - 1, "features": [feature], "radius_m": snappedf(radius, 0.1), "height_m": snappedf(height, 0.1)}
+	cave["chambers"].append(chamber)
+	return chamber
+
+
+# Bones at the entrance and at far ends, stalagmites and stalactites in large caves (Dave 4 Nov). The client draws them (Kathreen); here only the spots.
+# cave["bones"] = [{pos, kind: animal|human, yaw}], cave["formations"] = [{pos, kind: stalagmite|stalactite, height_m, radius_m}] (a stalactite's pos is
+# its root on the roof). Nothing lies on the stream: spots keep to the sides of a passage (the stream ribbon is 0.3 of its width either side).
+func _dress_cave(cave: Dictionary, main: Array, springs: Array, big: Array, hollows: Array, rng: RandomNumberGenerator) -> void:
+	var nodes: Array = cave["nodes"]
+	var bones_rule: Dictionary = _spring_rule("bones")
+	cave["bones"] = []
+	cave["formations"] = []
+
+	# Just inside the entrance: beside the stream, on the first node 8 m or more in.
+	if rng.randf() < float(bones_rule["entrance_chance"]):
+		for k in range(1, main.size()):
+			if _node_distance(cave, 0, main[k]) >= 8.0:
+				_add_bones(cave, _beside_stream(nodes[main[k]], rng), rng)
+				break
+
+	# At a far end: in a den hollow, or beside the last stretch of passage before a spring pool.
+	if rng.randf() < float(bones_rule["end_chance"]):
+		var ends: Array = []
+
+		for hollow in hollows:
+			var n: Array = nodes[int(hollow["node"])]
+			var a: float = rng.randf_range(0.0, TAU)
+			var d: float = float(hollow["radius_m"]) * rng.randf_range(0.0, 0.5)
+			ends.append(Vector3(float(n[0]) + cos(a) * d, float(n[1]) - 0.5 * float(n[4]) + 0.2, float(n[2]) + sin(a) * d))
+
+		for spring in springs:
+			for segment in cave["segments"]:
+				if int(segment[1]) == int(spring):
+					ends.append(_beside_stream(nodes[int(segment[0])], rng))
+
+		if not ends.is_empty():
+			_add_bones(cave, ends[rng.randi_range(0, ends.size() - 1)], rng)
+
+	# Large caves: a spread of stalagmites and stalactites in each big chamber, and now and then at the side of a wide passage.
+	var forms: Dictionary = _spring_rule("formations")
+
+	for chamber in big:
+		var n: Array = nodes[int(chamber["node"])]
+		var r: float = float(chamber["radius_m"])
+		var rh: float = 0.5 * float(chamber["height_m"])
+
+		for k in range(rng.randi_range(int(forms["per_chamber"][0]), int(forms["per_chamber"][1]))):
+			var a: float = rng.randf_range(0.0, TAU)
+			var d: float = r * sqrt(rng.randf_range(0.04, 0.7))
+			var curve: float = sqrt(maxf(1.0 - pow(d / r, 2.0), 0.0))
+			var floor_y: float = float(n[1]) - rh * curve
+			var roof_y: float = float(n[1]) + rh * curve
+			var at: Vector3 = Vector3(float(n[0]) + cos(a) * d, 0.0, float(n[2]) + sin(a) * d)
+
+			if _near_stream(cave, at, 1.5):
+				continue
+
+			_add_formation(cave, at, floor_y, roof_y, rng)
+
+	if str(cave.get("size", "")) == "large":
+		for k in range(1, main.size()):
+			var n: Array = nodes[main[k]]
+
+			if float(n[3]) < float(forms["passage_min_width_m"]) or rng.randf() > float(forms["passage_chance"]):
+				continue
+
+			var side: float = (1.0 if rng.randf() < 0.5 else -1.0) * rng.randf_range(0.36, 0.42) * float(n[3])
+			var dir: Vector2 = _passage_dir(cave, main[k])
+			var off: Vector2 = Vector2(-dir.y, dir.x) * side
+			var rh: float = 0.5 * float(n[4])
+			var curve: float = sqrt(maxf(1.0 - pow(side / (0.5 * float(n[3])), 2.0), 0.0))
+			_add_formation(cave, Vector3(float(n[0]) + off.x, 0.0, float(n[2]) + off.y), float(n[1]) - rh * curve, float(n[1]) + rh * curve, rng)
+
+
+func _add_bones(cave: Dictionary, at: Vector3, rng: RandomNumberGenerator) -> void:
+	var kind: String = "human" if rng.randf() < float(_spring_rule("bones")["human_share"]) else "animal"
+	cave["bones"].append({"pos": [snappedf(at.x, 0.1), snappedf(at.y, 0.1), snappedf(at.z, 0.1)], "kind": kind, "yaw": snappedf(rng.randf_range(0.0, TAU), 0.01)})
+
+
+# A stalagmite on the floor or a stalactite from the roof, its height a share of the clear height there (so the two never meet).
+func _add_formation(cave: Dictionary, at: Vector3, floor_y: float, roof_y: float, rng: RandomNumberGenerator) -> void:
+	var clear: float = roof_y - floor_y
+
+	if clear < 2.5:
+		return
+
+	var up: bool = rng.randf() < 0.5
+	var tall: float = clampf(clear * rng.randf_range(0.12, 0.35), 0.4, 4.0)
+	var radius: float = clampf(tall * rng.randf_range(0.12, 0.25), 0.08, 0.8)
+	var y: float = floor_y if up else roof_y
+	cave["formations"].append({
+		"pos": [snappedf(at.x, 0.1), snappedf(y, 0.1), snappedf(at.z, 0.1)], "kind": "stalagmite" if up else "stalactite",
+		"height_m": snappedf(tall, 0.1), "radius_m": snappedf(radius, 0.01),
+	})
+
+
+# A floor spot at the side of a passage node, clear of the stream ribbon.
+func _beside_stream(node: Array, rng: RandomNumberGenerator) -> Vector3:
+	var w: float = float(node[3])
+	var side: float = (1.0 if rng.randf() < 0.5 else -1.0) * rng.randf_range(0.34, 0.4) * w
+	var rh: float = 0.5 * float(node[4])
+	var curve: float = sqrt(maxf(1.0 - pow(side / (0.5 * w), 2.0), 0.0))
+	var a: float = rng.randf_range(0.0, TAU)
+	return Vector3(float(node[0]) + cos(a) * side, float(node[1]) - rh * curve + 0.1, float(node[2]) + sin(a) * side)
+
+
+func _passage_dir(cave: Dictionary, n: int) -> Vector2:
+	for segment in cave["segments"]:
+		if int(segment[1]) == n:
+			var a: Array = cave["nodes"][int(segment[0])]
+			var b: Array = cave["nodes"][n]
+			return Vector2(float(b[0]) - float(a[0]), float(b[2]) - float(a[2])).normalized()
+
+	return Vector2.RIGHT
+
+
+func _near_stream(cave: Dictionary, at: Vector3, margin: float) -> bool:
+	var p: Vector2 = Vector2(at.x, at.z)
+
+	for segment in cave["segments"]:
+		if str(segment[2]) != "water":
+			continue
+
+		var a: Array = cave["nodes"][int(segment[0])]
+		var b: Array = cave["nodes"][int(segment[1])]
+		var pa: Vector2 = Vector2(float(a[0]), float(a[2]))
+		var pb: Vector2 = Vector2(float(b[0]), float(b[2]))
+
+		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, pa, pb)) < 0.3 * minf(float(a[3]), float(b[3])) + margin:
+			return true
+
+	return false
 
 
 func _node_distance(cave: Dictionary, a: int, b: int) -> float:

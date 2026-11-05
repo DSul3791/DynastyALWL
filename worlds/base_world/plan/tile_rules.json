@@ -28,16 +28,18 @@
 		"near_water_m": 40,
 		"far_water_m": 160,
 		"hills": {
-			"note": "Dave 4 Nov 2026 (BUG-031, 'valleys and hills and rolling hills along the plains; way too flat, no character'): broad hills on the same low dry land, each octave 0 to amplitude_m high (power shapes them: above 1 rounder tops, wider vales), so the ground only rises away from the water and the rivers keep the low line of their valleys. Faded to nothing within near_water_m of water, full beyond far_water_m; times the island texture but at least texture_min; level round the spawn pad. Closed hollows the hills make are filled to their spill (drain), so no new ponds.",
+			"note": "Dave 4 Nov 2026 (BUG-031, 'valleys and hills and rolling hills along the plains; way too flat, no character'): broad hills on the same low dry land, each octave 0 to amplitude_m high (power shapes them: above 1 rounder tops, wider vales), so the ground only rises away from the water and the rivers keep the low line of their valleys. Faded to nothing within near_water_m of water, full beyond far_water_m; their own height fade (fade_from_m to fade_to_m) lets them run up into the foothills (Dave 4 Nov: 'just need variety'); times the island texture but at least texture_min; level round the spawn pad. Closed hollows the hills make are filled to their spill (drain), so no new ponds.",
 			"octaves": [
-				{"wavelength_m": 1100, "amplitude_m": 40},
-				{"wavelength_m": 450, "amplitude_m": 16},
-				{"wavelength_m": 180, "amplitude_m": 4}
+				{"wavelength_m": 520, "amplitude_m": 38},
+				{"wavelength_m": 230, "amplitude_m": 20},
+				{"wavelength_m": 95, "amplitude_m": 6}
 			],
-			"power": 1.3,
-			"near_water_m": 30,
-			"far_water_m": 420,
-			"texture_min": 0.7,
+			"power": 1.2,
+			"near_water_m": 20,
+			"far_water_m": 200,
+			"texture_min": 0.85,
+			"fade_from_m": 220,
+			"fade_to_m": 520,
 			"drain": true
 		}
 	},
@@ -1177,7 +1179,25 @@
 			"branch_length_m": [15, 40],
 			"extra_passage_chance": [0.4, 0.15],
 			"min_length_m": 60,
-			"spring_m3_s_per_km2": 0.1
+			"spring_m3_s_per_km2": 0.1,
+			"_sizes_note": "Dave 4 Nov 2026: some caves small, some medium, some large (a size the hill has no room for falls back to the next smaller one); the top-level values are the medium cave. The mouth is as wide as the river at the head and narrows to the passage over taper_min_m or a third of the passage; den tunnels climb den_rise and end in a den hollow; bones at entrances and far ends; stalagmites and stalactites in large caves' big chambers and wide passages.",
+			"size_odds": {"small": 0.45, "medium": 0.35, "large": 0.2},
+			"sizes": {
+				"small": {"length_m": [40, 80], "width_m": [2.5, 3.5], "height_m": [2, 3], "branches": [0, 1], "extra_passage_chance": [0, 0], "min_length_m": 40, "chamber_radius_m": [3, 5]},
+				"medium": {},
+				"large": {"length_m": [150, 300], "width_m": [5, 8], "height_m": [4, 7], "branches": [2, 4], "extra_passage_chance": [0.6, 0.3], "min_length_m": 110, "chamber_radius_m": [6, 10], "big_chambers": [1, 2]}
+			},
+			"big_chamber_radius_m": [5, 9],
+			"big_chamber_height_m": [8, 14],
+			"mouth_width_max_m": 30,
+			"mouth_height_max_m": 12,
+			"taper_min_m": 25,
+			"taper_cover_m": 1.5,
+			"den_rise": [0.1, 0.2],
+			"den_radius_m": [3, 5],
+			"den_height_m": [3, 4],
+			"bones": {"entrance_chance": 0.35, "end_chance": 0.35, "human_share": 0.2},
+			"formations": {"per_chamber": [8, 20], "passage_min_width_m": 5, "passage_chance": 0.3}
 		},
 		"rock_shelter": {
 			"count": [
