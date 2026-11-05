@@ -1278,6 +1278,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_menu: int = Probe.start()
 	_build_menu()
 	Probe.stop("welcome: menu", tq_menu)
+	var tq_views: int = Probe.start()   # the windowed lag run (5 Nov) froze 0.8 to 1.3 s "after welcome: menu", before "welcome: items view": these pieces were not timed
 	hud = Label.new()
 	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
 	hud.visible = display.hud_text
@@ -1320,9 +1321,12 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(nest_view)
 	net.nests_received.connect(nest_view.on_nests)
 	net.burrows_received.connect(_on_burrows_for_grass)
+	Probe.stop("welcome: hud, npc, animal, burrow and nest views", tq_views)
+	var tq_items_ready: int = Probe.start()
 	items = InventoryViewScript.new()
 	items.name = "Items"
-	add_child(items)
+	add_child(items)   # its _ready prewarms the loose item meshes
+	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
 	Probe.stop("welcome: items view", tq_items_view)
