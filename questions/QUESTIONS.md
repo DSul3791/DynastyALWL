@@ -53,10 +53,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
 
-## jamie-lantern-now | Lantern item (works in rain, goes out under water): add it now?
-- Later (recommended)
-- Now
-
 ## jamie-burnt-fire | A burnt-out fire is deleted after 5 minutes. Change it?
 - Leave a cold fire that stays and can be relit (Dino's idea, recommended)
 - Keep deleting it after 5 minutes
