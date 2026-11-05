@@ -127,6 +127,11 @@ if dupes.returncode != 0:
         if not line.startswith("dupe names:"):
             bad("duplicate GDScript name: " + line)
 
+shaders = subprocess.run([sys.executable, "tools/check_shader_comments.py"], capture_output=True, text=True)
+if shaders.returncode != 0:   # headless gates never compile shaders, so a '#' comment only fails in a windowed client (#416)
+    for line in shaders.stdout.splitlines():
+        bad("shader: " + line)
+
 looks = subprocess.run([sys.executable, "tools/check_look_names.py"], capture_output=True, text=True)
 if looks.returncode != 0:
     for line in looks.stdout.splitlines()[1:]:
