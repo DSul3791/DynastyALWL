@@ -439,6 +439,23 @@ func off_id() -> String:
 	return _inv.table.id_of(off_number())
 
 
+# The hotbar slot of a burning flame in either hand that water or rain can put out (a torch; a lantern later: items.json "doused_item"), or -1.
+func flame_slot() -> int:
+	if _inv == null:
+		return -1
+
+	for spec in [[held_number(), held_slot], [off_number(), off_slot]]:
+		if int(spec[0]) != 0 and str(_inv.table.entry(_inv.table.id_of(int(spec[0]))).get("doused_item", "")) != "":
+			return int(spec[1])
+
+	return -1
+
+
+# Whether the camera is under cover from the rain (a tree's crown or a roof).
+func flame_covered() -> bool:
+	return _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))
+
+
 func _off_class() -> String:
 	return str(_inv.table.entry(off_id()).get("tool_class", ""))
 
@@ -476,6 +493,11 @@ func _is_torch() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "torch"
 
 
+# A torch that water or rain put out (items.json "relit_item"): drawn as a torch with no flame or light.
+func _is_doused_torch() -> bool:
+	return str(_inv.table.entry(held_id()).get("relit_item", "")) != ""
+
+
 func _is_knife() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "knife"
 
@@ -485,7 +507,7 @@ func _is_knife() -> bool:
 func _is_other_tool() -> bool:
 	var kind: String = str(_inv.table.entry(held_id()).get("kind", ""))
 	var is_arrow: bool = str(BasicLook.entry(held_id()).get("shape", "")) == "arrow"   # arrows are "material" items but are held like a tool, not as a palm-sized look
-	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
+	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_axe()
 
 
 func is_holdable(number: int) -> bool:
@@ -1552,7 +1574,7 @@ func _off_caption() -> String:
 func _show_model() -> void:
 	var number: int = held_number() if _inv != null else 0
 
-	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
+	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
 		number = 0
 
 	if number == _shown_number:
@@ -1565,7 +1587,7 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
+		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() or _is_doused_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
 		_mount_model()
 
 
@@ -1939,10 +1961,11 @@ func _make_other_model() -> Node3D:
 
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).
 func _make_torch_model(id: String = "") -> Node3D:
+	var lit: bool = bool(_inv.table.entry(id if id != "" else held_id()).get("flame", false))   # a doused torch: no flame, no glow, no light
 	var torch: Node3D = Node3D.new()
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.42, 0.3, 0.17)
-	wood.emission_enabled = true
+	wood.emission_enabled = lit
 	wood.emission = Color(0.5, 0.3, 0.12)
 	wood.emission_energy_multiplier = 0.12
 	var grime: StandardMaterial3D = StandardMaterial3D.new()   # the top of the stick is dark with handling and smoke
@@ -1977,7 +2000,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	var wrap_material: StandardMaterial3D = StandardMaterial3D.new()
 	wrap_material.albedo_color = Color(0.26, 0.17, 0.1)
 	wrap_material.roughness = 1.0   # matte
-	wrap_material.emission_enabled = true   # a trace of warm light of its own so the head is brown, not black, in the dark (and not orange at noon)
+	wrap_material.emission_enabled = lit   # a trace of warm light of its own so the head is brown, not black, in the dark (and not orange at noon)
 	wrap_material.emission = Color(0.5, 0.22, 0.08)
 	wrap_material.emission_energy_multiplier = 0.2
 	var head: MeshInstance3D = MeshInstance3D.new()
@@ -1992,7 +2015,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	var char_material: StandardMaterial3D = StandardMaterial3D.new()
 	char_material.albedo_color = Color(0.16, 0.1, 0.065)
 	char_material.roughness = 1.0
-	char_material.emission_enabled = true
+	char_material.emission_enabled = lit
 	char_material.emission = Color(0.9, 0.3, 0.05)
 	char_material.emission_energy_multiplier = 0.35
 	var charred: MeshInstance3D = MeshInstance3D.new()
@@ -2018,6 +2041,13 @@ func _make_torch_model(id: String = "") -> Node3D:
 		band.mesh = ring
 		band.position = Vector3(0.0, band_y, 0.0)
 		torch.add_child(band)
+
+	if not lit:
+		for child in torch.get_children():
+			if child is MeshInstance3D:
+				(child as MeshInstance3D).layers = 2
+
+		return torch
 
 	# The flame rises from the top of the head whichever way the stick points (flame_up.gd): about 25 cm tall and 8 cm across at the base, a slim teardrop, a
 	# teardrop of three emissive cones, orange at the base to yellow at the tip with a short pale core.
