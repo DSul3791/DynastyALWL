@@ -122,7 +122,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `docs/BUGS_FOUND_IN_PLAY.md` | Tyler | Dave's in-play bug list with the owner triage table | 11-04 | keep (live; `bug-list-2026-11-03-triage.md` in the project folder is the triage) |
 | `docs/COMFORT_DESIGN.md` | Sal | Comfort and the Rested buff (Sal, 2026-10-31) [Proposed] | 10-31 | keep (design/data Sal; rules Steve) |
 | `docs/DAY_ONE_NUMBERS.md` | Sal | Day-one survival numbers (burn, stomach, water, sickness) from vitals data, 3 Nov | 11-03 | keep |
-| `docs/DEAD_END_MATERIALS.md` | Sal | Materials made but used by nothing, with proposed uses, 2 Nov | 11-02 | FIX: all seven now used (validator, 5 Nov; #369); soap and compost wait for rules |
+| `docs/DEAD_END_MATERIALS.md` | Sal | Materials made but used by nothing, with proposed uses, 2 Nov | 11-02 | keep: history (status line added 5 Nov: all seven used) |
 | `docs/DYNASTY_WATER_DESIGN.md` | Sonny | Dynasty water: design (Sonny, 31 Oct 2026, branch `dynasty-water`, code in `sr | 10-31 | keep |
 | `docs/DYNASTY_WATER_HISTORY.md` | Sonny | Dynasty water: history for the next team (Sonny, 1 Nov 2026) | 11-01 | keep |
 | `docs/DYNASTY_WATER_STATUS.md` | Sonny | Dynasty water: status (Sonny, 31 Oct 2026, branch `dynasty-water`) | 10-31 | keep (Sonny works from it; he archives it himself) |
@@ -134,7 +134,6 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `docs/FLORA_HANDOVER.md` | MikeW | Flora system handover (flora session, 2026-10-31) | 10-31 | keep |
 | `docs/FLORA_NEXT_TASKS.md` | MikeW | Flora: next tasks (standing instruction from Dave, 2026-11-01) | 11-01 | keep |
 | `docs/FRUIT_TREES_PLAN.md` | MikeW | Fruit trees with a real fruit store (flora session, 2026-10-31; built: store,  | 10-31 | keep |
-| `docs/HEAVY_KITS_OPTIONS.md` | Sal | Heavy kits: options and recommendation, 2 Nov | 11-01 | ARCHIVE: superseded by no kits (#292, Dave 4 Nov) |
 | `docs/ISLAND_FAUNA_20261103.md` | MikeW | Starter island fauna (frogs, ducks, gulls, seals by water), 3 Nov | 11-04 | keep |
 | `docs/ITEMS_HANDOVER.md` | Sal | Items data handover (Sal, 2026-10-31): one page for Dave | 10-31 | keep (now holds \"Needs code\") |
 | `docs/PONYTAIL_RULES.md` | moderator | Ponytail rules (for the Dynasty water build) | 10-31 | keep (Dave's rule for water) |
