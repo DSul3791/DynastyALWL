@@ -12,6 +12,7 @@ const RIBBON_SHARE := 0.3       # at most this share of the passage width either
 # water fills, where an ellipse as tall as half the passage width (taller than any passage: mouths are 0.25, passages about 0.43) is still under the water.
 const FLOOR_RISE_SHARE := 0.5
 const POOL_SIDES := 20
+const UNDER_REACH := 2.5        # under the surface the pool's water reaches this many rim radii out (spring_basin's lobes: 2.43), plus 1 m as the server
 const CAVE_POOL_SHALLOW_M := 0.4   # an old server's pool (no depth sent)
 
 const SHADER := """
@@ -99,7 +100,10 @@ static func pools_of(streams: PackedFloat32Array) -> Array:
 
 
 # The surface height of the cave pool a point is in (or just above), else NAN. Under the surface the basin swells wider than its rim (spring_basin:
-# up to about 1.75 times), so a swimmer below keeps the water there.
+# the main bowl to 1.74 times the rim, and its two side lobes reach up to 2.43 times out), so a swimmer below keeps the water there. At 1.75 a swimmer
+# who went down into a lobe left the water on this side while the server (the carved shapes) still ran the breath down (Dave 5 Nov 2026: "i fell because
+# apparently water in caves doesnt exist and I cant swim but it does say my oxygen is dropping"). Under the rim nothing but the basin is open, so the
+# wider test only takes in its water.
 func pool_surface_at(p: Vector3) -> float:
 	for tile in _pools:
 		for pool in _pools[tile]:
@@ -109,7 +113,7 @@ func pool_surface_at(p: Vector3) -> float:
 			if p.y > centre.y + 2.0 or p.y < centre.y - float(pool[2]) - 1.0:
 				continue
 
-			if flat <= float(pool[1]) * (1.0 if p.y >= centre.y else 1.75):
+			if flat <= float(pool[1]) * (1.0 if p.y >= centre.y else UNDER_REACH) + (1.0 if p.y < centre.y else 0.0):
 				return centre.y
 
 	return NAN
