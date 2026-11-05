@@ -2250,3 +2250,7 @@ Answered: 2026-11-04 15:15 UTC
 Answer: Yes, merge it now (recommended)
 Answered: 2026-11-05 12:00 UTC
 
+## jamie-leanto-leaves | The lean-to needs 200 leaves, about 34 trees, which is roughly 9 of the first hour's 13 minutes (#386). Change it?
+Answer: Cut it to 80 leaves (recommended)
+Answered: 2026-11-05 12:01 UTC
+
