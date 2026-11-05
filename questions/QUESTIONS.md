@@ -53,11 +53,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
 
-## jamie-hills-375 | Terrain 53 (#375): taller, more frequent hills, rivers that no longer stop at ridges, spring caves. It passed the PC tests. Merge it?
-Note: Recommendation: merge now, then look in game when you next play.
-- Yes, merge it now (recommended)
-- Wait, I will look in game first
-
 ## jamie-leanto-leaves | The lean-to needs 200 leaves, about 34 trees, which is roughly 9 of the first hour's 13 minutes (#386). Change it?
 Note: Recommendation: 80 leaves, about one felled crown.
 - Cut it to 80 leaves (recommended)
