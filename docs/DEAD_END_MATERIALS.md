@@ -1,5 +1,7 @@
 # Dead-end materials: made but used by nothing (Sal, 2 Nov 2026)
 
+**Status 5 Nov 2026 (MikeW): done.** All seven proposed materials are now used: hinges (plank chest), wooden pins (stool, chair), rough plank (ladder), leather strap (leather jerkin, gambeson), fine leather (leather cap), tar (water wheel) and hide glue (plank shield, #146). The item validator lists none of them as dead ends; item notes fixed in #369. Soap and compost still wait for a game rule.
+
 `tools/item_master.py` lists 18 materials that no recipe uses. Arrows, firewood, driftwood, roots, gravel and rotten food are used by the game rules, not by recipes, so they are fine. These nine can be crafted but lead nowhere, so making them is wasted effort.
 
 | Material | Made from | Proposed use (add 1 to 2 to an existing recipe) |
