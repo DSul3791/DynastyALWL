@@ -272,6 +272,18 @@ func _ready() -> void:
 	items.dig_refusal = _dig_refusal
 	items.fill_ground = _fill_ground
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
+	items.cave_scatter = func(cell: Vector2i, cell_m: float) -> PackedFloat32Array:   # cave floor stones and boulders (Dave 4 Nov: caves "riddled with rocks and collectable stones")
+		var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+		var cave_tile = generator.get_tile(generator.tile_of(centre.x, centre.y))
+		var out: PackedFloat32Array = PackedFloat32Array()
+
+		if cave_tile == null or cave_tile.placeholder:
+			return out
+
+		for n in cave_tile.cave_scatter_in(cell, cell_m):
+			out.append_array(cave_tile.cave_scatter.slice(n * 5, n * 5 + 5))
+
+		return out
 	items.ground_ready = func(x, z) -> bool:
 		if generator.tile_cached(x, z):
 			return true

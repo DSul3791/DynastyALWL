@@ -127,6 +127,7 @@ var _gain_source: String = SRC_PICKUP   # who is adding right now; callers set i
 var _gain_quiet: bool = false        # wearing and taking off gear moves items without gaining any
 var send_world_items: Callable # (peer, added Array, removed PackedInt32Array)
 var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set by the server scene
+var cave_scatter: Callable     # (cell Vector2i, cell_m) -> PackedFloat32Array, 5 floats per cave floor spot in that cell: x, y, z, kind (0 stone, 1 boulder), radius; set by the server scene
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var send_notice: Callable      # (peer, text)
@@ -282,6 +283,8 @@ var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
 const BOULDER_KEY := 1 << 50
+const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
+const CAVE_ITEMS_MAX := 256
 const BOULDER_STATE := 10            # world-item row state of a boulder          # boulder keys live apart from the loose stones' keys
 var _fate_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the server's own fate stream, the fate() hook below
 var fate_counts: Dictionary = {}    # fate kind -> times rolled (what luck has touched)
@@ -3869,6 +3872,7 @@ static func boosted(base: int, add: int, cap: int) -> int:
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
+	_lay_out_cave_items(cell, cell_m, cfg)
 	var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
 	var h0: float = float(ground_height.call(centre.x, centre.y))
 	var h1: float = float(ground_height.call(centre.x + 4.0, centre.y))
@@ -4102,6 +4106,40 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 
 	if int(it["count"]) <= 0:
 		_items.erase(id)
+
+
+# Caves are riddled with rocks and stones (Dave 4 Nov 2026): the loose stones and boulders the baked caves under this cell hold
+# (tile_terrain_data.cave_scatter_in), a share of the stones flint as on the banks. Keys of their own (CAVE_KEY), so a stone taken stays taken.
+func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
+	if not cave_scatter.is_valid():
+		return
+
+	var spots: PackedFloat32Array = cave_scatter.call(cell, cell_m)
+	var flint: float = float(cfg.get("bank", {}).get("flint", 0.0))
+
+	@warning_ignore("integer_division")
+	for n in range(mini(spots.size() / 5, CAVE_ITEMS_MAX)):
+		var key: int = CAVE_KEY | ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8) | n
+
+		if _taken.has(key):
+			continue
+
+		var spot: Vector3 = Vector3(spots[n * 5], spots[n * 5 + 1], spots[n * 5 + 2])
+
+		if int(spots[n * 5 + 3]) == 1 and not _boulder_cfg.is_empty():
+			var radius: float = spots[n * 5 + 4]
+			var total: int = _boulder_stones(radius)
+			var left: int = mini(int(_boulder_left.get(key, total)), total)
+
+			if left > 0:
+				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": {"radius": radius, "yaw": float(hash(key) % 360), "total": total}}
+				_next_id += 1
+
+			continue
+
+		var number: String = "flint" if flint > 0.0 and float(hash(key) % 1000) < 1000.0 * flint else "stone"
+		_items[_next_id] = {"number": table.number_of(number), "count": 1, "pos": spot, "left": 1.0e9, "scatter": key}
+		_next_id += 1
 
 
 # Stones along the water's edge (Dave 2026-10-21: any rock put down is pickable, so Art's drawn pebbles and boulders became
