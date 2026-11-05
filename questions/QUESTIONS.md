@@ -53,10 +53,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
 
-## jamie-torch-relight | A torch that went out (rain or water): how does it light again? Built now: E at a burning fire (#361).
-- E at a burning fire, as built (recommended)
-- Another way: I will say
-
 ## jamie-lantern-now | Lantern item (works in rain, goes out under water): add it now?
 - Later (recommended)
 - Now
