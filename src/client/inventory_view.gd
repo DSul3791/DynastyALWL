@@ -3199,11 +3199,15 @@ func _prewarm_loose_meshes() -> void:
 	for group in PICKUP_FILES:
 		_pickup_group(group)
 
+	var t_pick: int = Time.get_ticks_usec()
+
 	for id in table.ids():
 		var name: String = str(id)
 
 		if name == "stone" or name == "flint" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
 			_mesh_for(table.number_of(name))
+
+	var t_items: int = Time.get_ticks_usec()
 
 	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
 	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
@@ -3211,7 +3215,8 @@ func _prewarm_loose_meshes() -> void:
 		if table.number_of(name) > 0:
 			_mesh_for(table.number_of(name))
 
-	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	var t_end: int = Time.get_ticks_usec()
+	print("client prewarm: loose item meshes %.0f ms (pickup models %.0f, stones sticks and logs %.0f, trunk drops %.0f)" % [float(t_end - t0) / 1000.0, float(t_pick - t0) / 1000.0, float(t_items - t_pick) / 1000.0, float(t_end - t_items) / 1000.0])
 	PieceLook.prewarm()   # the building material and trodden-path pictures, on a worker (about 170 ms on the main thread at the first piece or hoe stroke)
 	_prewarm_felled()
 
@@ -3304,12 +3309,38 @@ const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
 
 
+# Lag run 5 Nov: the loose-mesh prewarm cost about 500 ms of the welcome frame. The twelve pickup models start loading on the
+# loader's threads when the client begins connecting; _pickup_group takes them from there. Not under headless (the dummy renderer's
+# mesh store is not thread-safe, PC gate on #426).
+static var _early_pickups: Dictionary = {}   # path -> true while its threaded load was requested and not yet taken
+
+
+static func request_pickups_early() -> void:
+	if not _early_pickups.is_empty() or DisplayServer.get_name() == "headless":
+		return
+
+	for group in PICKUP_FILES:
+		for file in PICKUP_FILES[group]:
+			var path: String = PICKUP_DIR + file + ".glb"
+
+			if ResourceLoader.exists(path) and ResourceLoader.load_threaded_request(path, "", false, ResourceLoader.CACHE_MODE_REUSE) == OK:
+				_early_pickups[path] = true
+
+
+static func _load_pickup(path: String) -> Variant:
+	if _early_pickups.has(path):
+		_early_pickups.erase(path)
+		return ResourceLoader.load_threaded_get(path)
+
+	return load(path) if ResourceLoader.exists(path) else null
+
+
 func _pickup_group(group: String) -> Array:
 	if not _pickup_meshes.has(group):
 		var meshes: Array = []
 
 		for file in PICKUP_FILES[group]:
-			var packed: Variant = load(PICKUP_DIR + file + ".glb") if ResourceLoader.exists(PICKUP_DIR + file + ".glb") else null
+			var packed: Variant = _load_pickup(PICKUP_DIR + file + ".glb")
 
 			if packed is PackedScene:
 				var instance: Node = packed.instantiate()

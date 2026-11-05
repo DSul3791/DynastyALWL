@@ -911,6 +911,7 @@ func _connect() -> void:
 
 	multiplayer.multiplayer_peer = peer
 	print("Terrain client: connecting to %s:%d" % [_host, _port])
+	InventoryViewScript.request_pickups_early()   # the twelve stone, stick and driftwood models load on threads while the welcome is on its way
 
 
 # The server dropped this client or ended. A player sees a plain message with Retry and Quit and the world stays
