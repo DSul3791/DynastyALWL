@@ -23,7 +23,8 @@ func _init() -> void:
 	check(mesh != null and mesh.get_surface_count() > 0, "the net mesh builds")
 	var box: AABB = mesh.get_aabb()
 	check(box.size.x >= 0.55 and box.size.x <= 1.0, "the coil, line and net together are well under a metre long (%.2f m)" % box.size.x)
-	check(box.size.y >= 0.2 and box.size.y <= 0.4 and box.size.z >= 0.3 and box.size.z <= 0.45, "the bell is about 30 cm tall and its round mouth about 37 cm across (%.2f x %.2f)" % [box.size.y, box.size.z])
+	# Lying loose the net slumps (picture check 4 Nov 2026: a 30 cm standing bell read as a birdcage); the full bell is checked on the hanging net below.
+	check(box.size.y >= 0.08 and box.size.y <= 0.2 and box.size.z >= 0.3 and box.size.z <= 0.45, "the dropped net lies slumped, 8 to 20 cm high, its round mouth about 37 cm across (%.2f x %.2f)" % [box.size.y, box.size.z])
 	var hammer: AABB = BasicLook.mesh_for("stone_hammer").get_aabb() if not BasicLook.entry("stone_hammer").is_empty() else AABB()
 	check(hammer.size == Vector3.ZERO or mesh.get_surface_count() != BasicLook.mesh_for("stone_hammer").get_surface_count() or box.size != hammer.size, "the net is not the hammer's mesh")
 	check(Held.HELD_LOOK_TURN.has("hand_net"), "a net in hand goes through the look path, not the generic block")

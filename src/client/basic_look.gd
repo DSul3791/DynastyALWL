@@ -120,7 +120,7 @@ const ART_OVERRIDES := {
 	"stairs_wood_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["ladder"]},
 	"log_cabin_set_kit": {"shape": "parcel", "color": "#5a3c22", "size": 1.3, "bits": ["chest"]},
 	"lean_to_kit": {"shape": "parcel", "color": "#5a8a38", "size": 1.0, "bits": ["leanto"]},
-	"chest_kit": {"shape": "parcel", "color": "#a8884a", "size": 1.0, "bits": ["chest", "woven"]},
+	"chest_kit": {"shape": "parcel", "color": "#8a6636", "size": 1.0, "bits": ["chest", "woven"]},
 	"plank_chest_kit": {"shape": "parcel", "color": "#a07a45", "size": 1.0, "bits": ["plankchest"]},
 	"workbench_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["workbench"]},
 	"tool_rack_kit": {"shape": "parcel", "color": "#7a5a35", "size": 1.0, "bits": ["bench", "rack"]},
@@ -894,15 +894,20 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					if bits.has("woven"):
 						# The woven chest (item 22 is wicker, not boards): over-under withy bands round the body, upright stakes showing between them,
 						# a plaited rim at the lid line and a twine loop catch in place of the brass hasp.
-						for k in 4:
-							var wy: float = -0.06 + 0.026 * float(k)
-							var wt: Color = _tone(color, k, 0.12).darkened(0.08 if k % 2 == 0 else 0.0)
-							_box(parts, Vector3(0.286, 0.014, 0.186), Vector3(0.006 * float(k % 2 * 2 - 1), wy, 0.0), wt)
+						# Sonny's picture check (4 Nov 2026): the bands were the body's own tone, so it read as a smooth blonde trunk. Now the withies alternate
+						# light and dark (over-under), cover the body from base to rim, and the round lid is woven too: ribs of withy round it, every other one darker.
+						for k in 6:
+							var wy: float = -0.064 + 0.017 * float(k)
+							var wt: Color = _tone(color, k, 0.1).darkened(0.4) if k % 2 == 0 else _tone(color, k, 0.1).lightened(0.12)
+							_box(parts, Vector3(0.286, 0.013, 0.187), Vector3(0.005 * float(k % 2 * 2 - 1), wy, 0.0), wt)
 						for k in 7:
 							var sx: float = -0.12 + 0.04 * float(k)
-							_box(parts, Vector3(0.008, 0.1, 0.19), Vector3(sx, -0.02, 0.0), color.darkened(0.25))
+							_box(parts, Vector3(0.009, 0.1, 0.19), Vector3(sx, -0.02, 0.0), color.darkened(0.4))
+						for k in 13:
+							var lx: float = -0.132 + 0.022 * float(k)
+							_cyl(parts, 0.0925, 0.012, Vector3(lx, 0.03, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(color, k, 0.1).darkened(0.4) if k % 2 == 0 else _tone(color, k, 0.1).lightened(0.1))
 						_torus_v(parts, 0.012, 0.0035, Vector3(0.0, 0.0, 0.104), cord)
-						_box(parts, Vector3(0.29, 0.012, 0.19), Vector3(0.0, 0.032, 0.0), color.lightened(0.12))
+						_box(parts, Vector3(0.29, 0.012, 0.19), Vector3(0.0, 0.032, 0.0), color.darkened(0.15))
 				"leanto":
 					# The lean-to kit: a ridge pole on two forks with a row of sticks leaning on it, a few leaf cards laid on them, bound with cord (Kathleen 2026-10-31: the ten most-seen kits each look different).
 					for x in [-0.15, 0.15]:
@@ -2419,7 +2424,13 @@ static func _warm_stone(color: Color) -> Color:
 static func _net(parts: Array, color: Color, hanging: bool = false) -> void:
 	var line_tint: Color = Color(0.5, 0.39, 0.25)
 	var mid: Vector3 = Vector3(0.0, -0.42, 0.0) if hanging else Vector3(0.42, 0.0, 0.0)
-	var horn: Vector3 = mid + Vector3(0.0, 0.25, 0.0)
+	# Lying loose (Sonny's picture check, 4 Nov 2026: it stood up rigid like a birdcage) a dropped throw net slumps: the crown falls to a hand's height,
+	# a little off centre, and the mesh lies in loose folds between the sinkers. Hanging from the hand it keeps its full bell.
+	var lift: float = 1.0 if hanging else 0.22
+	var spread: float = 1.0 if hanging else 1.2
+	var shoulders: Array = []
+	var inners: Array = []
+	var horn: Vector3 = mid + (Vector3(0.0, 0.25, 0.0) if hanging else Vector3(-0.035, 0.25 * lift, 0.02))
 	var mouth_y: float = -0.035
 	var rim: float = 0.175
 	var spokes: int = 18
@@ -2427,7 +2438,7 @@ static func _net(parts: Array, color: Color, hanging: bool = false) -> void:
 	for k in 3:
 		_torus(parts, 0.05 - 0.008 * float(k), 0.006, Vector3(0.0, -0.035 + 0.011 * float(k), 0.0), line_tint if k % 2 == 0 else line_tint.lightened(0.1))
 
-	var sag: Array = [Vector3(0.0, -0.04, 0.0), Vector3(0.012, -0.1, 0.006), horn] if hanging else [Vector3(0.05, -0.03, 0.0), Vector3(0.2, -0.03, 0.03), Vector3(0.33, 0.09, 0.015), horn]
+	var sag: Array = [Vector3(0.0, -0.04, 0.0), Vector3(0.012, -0.1, 0.006), horn] if hanging else [Vector3(0.05, -0.03, 0.0), Vector3(0.2, -0.03, 0.03), Vector3(0.33, 0.0, 0.015), horn]
 
 	for k in sag.size() - 1:
 		_net_line(parts, sag[k], sag[k + 1], 0.009, line_tint)
@@ -2438,14 +2449,25 @@ static func _net(parts: Array, color: Color, hanging: bool = false) -> void:
 		var turn: float = float(k) * TAU / float(spokes)
 		var dir: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
 		var wobble: float = 0.012 * float((k * 7) % 3 - 1)
-		var shoulder: Vector3 = mid + dir * (rim * 0.62 + wobble) + Vector3(0.0, 0.11, 0.0)
+		var fold: float = 0.0 if hanging else 0.018 * sin(turn * 3.0 + 0.7) + 0.01 * float(k % 2)       # loose folds in the lying mesh
+		var shoulder: Vector3 = mid + dir * (rim * 0.62 * spread + wobble) + Vector3(0.0, 0.11 * lift + fold, 0.0)
 		var foot: Vector3 = mid + dir * (rim + wobble * 0.5) + Vector3(0.0, mouth_y, 0.0)
 		_net_line(parts, horn, shoulder, 0.005, color)
 		_net_line(parts, shoulder, foot, 0.005, color.darkened(0.05))
+		shoulders.append(shoulder)
+		inners.append(horn.lerp(shoulder, 0.5) + Vector3(0.0, 0.008 * float(k % 3 - 1), 0.0))
 
-	_torus(parts, rim * 0.33, 0.004, mid + Vector3(0.0, 0.19, 0.0), color)
-	_torus(parts, rim * 0.62, 0.004, mid + Vector3(0.0, 0.11, 0.0), color)
-	_torus(parts, rim * 0.82, 0.004, mid + Vector3(0.0, 0.04, 0.0), color.darkened(0.06))
+	if hanging:
+		_torus(parts, rim * 0.33, 0.004, mid + Vector3(0.0, 0.19, 0.0), color)
+		_torus(parts, rim * 0.62, 0.004, mid + Vector3(0.0, 0.11, 0.0), color)
+		_torus(parts, rim * 0.82, 0.004, mid + Vector3(0.0, 0.04, 0.0), color.darkened(0.06))
+	else:
+		# The mesh rows follow the folds (no perfect hoops: those made it read as a cage): each row joins the spokes where they lie.
+		for k in spokes:
+			var n: int = (k + 1) % spokes
+			_net_line(parts, shoulders[k], shoulders[n], 0.004, color)
+			_net_line(parts, inners[k], inners[n], 0.004, color)
+			_net_line(parts, shoulders[k].lerp(mid + (shoulders[k] - mid).normalized() * rim, 0.55), shoulders[n].lerp(mid + (shoulders[n] - mid).normalized() * rim, 0.55), 0.004, color.darkened(0.06))
 	_torus(parts, rim, 0.009, mid + Vector3(0.0, mouth_y, 0.0), line_tint.darkened(0.25))
 
 	for k in 14:
