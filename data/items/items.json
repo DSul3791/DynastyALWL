@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 543,
+	"next_number": 545,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -173,6 +173,7 @@
 			"flame": true,
 			"rain_douses": true,
 			"doused_item": "torch_doused",
+			"places_as": {"ground": "standing_torch", "wall": "torch_sconce"},
 			"look_alikes": [],
 			"value": 6
 		},
@@ -187,6 +188,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"relit_item": "torch",
+			"places_as": {"ground": "standing_torch", "wall": "torch_sconce"},
 			"look_alikes": [],
 			"value": 4
 		},
@@ -5930,6 +5932,24 @@
 			"number": 512,
 			"name": "Wall torch",
 			"description": "A torch on the wall. It lights when fuelled.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": []
+		},
+		"standing_torch": {
+			"number": 543,
+			"name": "Standing torch",
+			"description": "A torch stuck in the ground. Hold E to take it back.",
+			"kind": "structure",
+			"stack": 1,
+			"unstackable": true,
+			"look_alikes": []
+		},
+		"torch_sconce": {
+			"number": 544,
+			"name": "Torch on the wall",
+			"description": "A torch wedged on a wall. Hold E to take it back.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,

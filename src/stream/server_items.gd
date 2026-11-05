@@ -1048,6 +1048,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_douse(peer, inv, a, b == 1)
 	elif kind == Net.ACT_RELIGHT:
 		_relight(peer, inv, a)
+	elif kind == Net.ACT_PLACE_TORCH:
+		_place_torch(peer, inv, a, b == 1, count, at)
 	elif kind == Net.ACT_STRIKE:
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
@@ -3000,8 +3002,8 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		number = inv.numbers[slot]
 		kit_id = table.id_of(number)
 
-	if kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty():
-		return
+	if kit_id != "campfire_kit" and (_structure_of_kit(kit_id).is_empty() or bool(_structure_of_kit(kit_id).get("hand_placed", false))):
+		return      # a torch is placed from the hand (_place_torch), not as a kit
 
 	if blueprint.is_empty() and is_dead_kit(number):   # a kit that survived somewhere (a hand-edited save) is not placeable
 		return
@@ -5727,6 +5729,63 @@ func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 	_say(peer, "The rain puts your torch out." if by_rain else "The water puts your torch out.")
 
 
+# A torch in hand stuck in the ground or on a wall (Dave, 4 Nov 2026): items.json places_as names the structure for each; a burning torch stays lit with
+# one stick's worth of fuel (structures.json fuel_s), a doused one is placed out. No gap rule (gap_exempt); the chunk cap holds. Hold E takes it back.
+func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Vector3) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
+		return
+
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var kind: String = str((entry.get("places_as", {}) as Dictionary).get("wall" if on_wall else "ground", ""))
+	var def: Dictionary = _structures.get(kind, {})
+
+	if def.is_empty():
+		return
+
+	if _peer_pos[peer].distance_to(at) > float(def.get("use_reach_m", 3.0)) + 1.0:
+		_say(peer, "Too far to place that.")
+		return
+
+	if water_depth_at.is_valid() and float(water_depth_at.call(at)) > 0.05:
+		_say(peer, "A torch will not burn in water.")
+		return
+
+	var spot: Vector3 = at
+
+	if not on_wall:
+		var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+
+		if is_nan(ground) or absf(ground - at.y) > 0.6:
+			_say(peer, "Push it into the ground.")
+			return
+
+		spot.y = minf(ground, at.y)      # on a floor or a foundation the aimed point stands; on open ground it goes in at the ground
+
+	var of_kind: int = 0
+
+	for id in _items:
+		if _items[id].has("struct") and str(_items[id]["struct"]["kind"]) == kind and _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
+			of_kind += 1
+
+	if of_kind >= int(def.get("cap_per_chunk", 24)):
+		_say(peer, "Too many of these stand here already.")
+		return
+
+	var lit: bool = bool(entry.get("flame", false))
+	var wear: int = inv.wear[slot]
+	inv.take_from_slot(slot, 1)
+	var placed: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "wear": wear, "struct": {"kind": kind, "yaw": float(posmod(yaw_deg, 360))}}
+
+	if lit:
+		placed["struct"]["lit"] = true
+		placed["struct"]["fuel_left"] = float(def.get("fuel_s", 1800.0))
+
+	_items[_next_id] = placed
+	_grid_add(_next_id, placed)
+	_next_id += 1
+	_dirty = true
+
+
 # E at a burning fire with a doused torch in the pack lights the first one again (Dave, 4 Nov 2026).
 func _relight(peer: int, inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
@@ -6317,8 +6376,8 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])]):
 			return
-	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
-		return
+	elif inv.add(table.number_of(str(def["kit"]) if bool(it["struct"].get("lit", false)) or not def.has("kit_out") else str(def["kit_out"])), 1, int(it.get("wear", 0))) > 0:
+		return      # a placed torch comes back burning, or doused when it burned out or the rain put it out
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
 		roof_remove.call(int(it["struct"]["roof"]))
@@ -9959,10 +10018,19 @@ func _apply_lit_rows(rows: Array) -> void:
 
 
 func _lights_tick(spent: float) -> void:
+	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+
 	for id in _items:
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") and bool(it["struct"].get("lit", false)):
+			# A torch out in the open rain goes out like an open fire (Dave, 4 Nov 2026); one under a crown, a roof or an overhang burns on.
+			if rain >= FlameRules.RAIN_DOUSE and bool(_structures.get(str(it["struct"]["kind"]), {}).get("rain_douses", false)) and not (cover_at.is_valid() and float(cover_at.call(it["pos"] + Vector3(0.0, 0.5, 0.0))) > 0.5):
+				it["struct"]["lit"] = false
+				it["struct"].erase("fuel_left")
+				_dirty = true
+				continue
+
 			it["struct"]["fuel_left"] = float(it["struct"].get("fuel_left", 0.0)) - spent
 
 			if float(it["struct"]["fuel_left"]) <= 0.0:

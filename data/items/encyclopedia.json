@@ -6605,6 +6605,26 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
+		"standing_torch": {
+			"name": "Standing torch",
+			"kind": "structure",
+			"description": "A torch stuck in the ground. Hold E to take it back.",
+			"how_to_get": [
+				"Hold a torch and right click the ground"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"torch_sconce": {
+			"name": "Torch on the wall",
+			"kind": "structure",
+			"description": "A torch wedged on a wall. Hold E to take it back.",
+			"how_to_get": [
+				"Hold a torch and right click a wall"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
 		"chandelier": {
 			"name": "Chandelier",
 			"kind": "structure",

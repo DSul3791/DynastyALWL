@@ -164,6 +164,7 @@ const ACT_SHOOT := 49          # a = pack slot of the bow, b = draw time in ms (
 const ACT_REPAIR_STRUCT := 59   # a = the placed piece's world item id: with a hammer, repair it from materials on the ground nearby, in containers within reach or in the pack (building_wear.json)
 const ACT_DOUSE := 60          # a = hotbar slot of a burning torch in hand, b = 0 under water, 1 rain: it becomes its doused item (flame_rules.gd; Dave 4 Nov 2026)
 const ACT_RELIGHT := 61        # a = world id of a burning fire in reach: the first doused torch in the pack is lit again from it
+const ACT_PLACE_TORCH := 62    # a = hotbar slot of a torch in hand, b = 0 the ground, 1 a wall, count = yaw in degrees, at = the aimed point: stuck in the ground or on the wall (Dave 4 Nov 2026)
 const ACT_PLACE_BLUEPRINT := 48   # a = blueprint number (data/items/blueprints.json), b = lift steps, count = yaw degrees, at = the spot: placed from the hammer, the materials taken from the pack (no kit item)
 const ACT_NET := 47          # a = pack slot of the shore net, b = 0 start (left button down), 1 cancel (let go), at = the water point in front: hold about 20 s at the water's edge, then 1 to 3 small fish (fishing.json "net"; no protocol change)
 const ACT_ADMIN_ENERGY := 56   # admin only, tests: count = the energy (0 to 100) this character is set to (no protocol change)
