@@ -43,25 +43,35 @@ echo "$OUTTXT" | grep -q "FLAKE test_animals"; ok $? "a retry that passed is log
 echo "$OUTTXT" | grep -q "slowest"; ok $? "the summary names the slowest tests"
 bash tools/run_tests.sh --jobs 2 --out "$T/o2" --fast test_script_error >/dev/null 2>&1; [ $? -ne 0 ]; ok $? "error text in the output fails a test"
 OUTTXT=$(bash tools/run_tests.sh --jobs 2 --out "$T/o3" --fast test_broken 2>&1); echo "$OUTTXT" | grep -q "Test done: 0 pass, 1 fail"; ok $? "a failing test not on the retry list fails at once"
-# pc_queue.sh with a fake gate: one pass, one new failure, one conflict, one missing branch; all rows land in one results file.
+# pc_queue.sh with a fake gate, slot and gh: pass, real failure (fails solo too), conflict, load noise (passes solo twice),
+# missing branch, already merged; all rows land in one results file with the full tested head.
 cat > "$T/fake_gate.sh" <<'FG'
+echo "HEAD=$1"
 case "$1" in
-	$PCQ_PASS) echo "HEAD=$1"; echo "Test done: 5 pass, 0 fail"; echo "NEW failures: none"; exit 0;;
-	$PCQ_FAIL) echo "HEAD=$1"; echo "Test done: 4 pass, 1 fail"; echo "NEW failures:  test_cave_dressing"; exit 1;;
-	*) echo "HEAD=$1"; echo "CONFLICT: the trial merge with main fails:"; exit 2;;
+	$PCQ_A) echo "Test done: 5 pass, 0 fail"; echo "NEW failures: none"; echo "CHECKS: pass"; exit 0;;
+	$PCQ_B) echo "Test done: 4 pass, 1 fail"; echo "NEW failures:  test_cave_dressing"; echo "CHECKS: pass"; exit 1;;
+	$PCQ_D) echo "Test done: 4 pass, 1 fail"; echo "NEW failures:  test_noisy"; echo "CHECKS: pass"; exit 1;;
+	*) echo "CONFLICT: the trial merge with main fails:"; exit 2;;
 esac
 FG
+mkdir -p "$T/slot/tools"
+cat > "$T/slot/tools/run_tests.sh" <<'FR'
+for a in "$@"; do case "$a" in test_noisy) echo "Test done: 1 pass, 0 fail"; exit 0;; test_*) echo "Test done: 0 pass, 1 fail"; exit 1;; esac; done
+FR
+printf '#!/bin/bash\n[ "$3" = "906" ] && echo MERGED || echo OPEN\n' > "$T/gh"; chmod +x "$T/gh"
 H=$(git rev-parse HEAD)
-git update-ref refs/remotes/origin/pcq-selftest-a "$H"; git update-ref refs/remotes/origin/pcq-selftest-b "$H~1"; git update-ref refs/remotes/origin/pcq-selftest-c "$H~2"
-printf '# test queue\n1 901 pcq-selftest-a\n\n2 902 pcq-selftest-b slow\n3 903 pcq-selftest-c\n4 904 pcq-selftest-missing\n' > "$T/queue.txt"
-OUTTXT=$(PCQ_PASS=$H PCQ_FAIL=$(git rev-parse HEAD~1) PC_QUEUE_GATE="$T/fake_gate.sh" bash tools/pc_queue.sh "$T/queue.txt" --out "$T/res.md" 2>&1); RC=$?
+for k in a:0 b:1 c:2 d:3; do git update-ref "refs/remotes/origin/pcq-selftest-${k%:*}" "$(git rev-parse "HEAD~${k#*:}")"; done
+printf '# test queue\n1 901 pcq-selftest-a\n\n2 902 pcq-selftest-b slow\n3 903 pcq-selftest-c\n4 904 pcq-selftest-missing\n5 905 pcq-selftest-d\n6 906 pcq-selftest-a' > "$T/queue.txt"
+OUTTXT=$(PCQ_A=$H PCQ_B=$(git rev-parse HEAD~1) PCQ_D=$(git rev-parse HEAD~3) PC_QUEUE_GATE="$T/fake_gate.sh" PC_QUEUE_SLOT="$T/slot" PC_QUEUE_GH="$T/gh" bash tools/pc_queue.sh "$T/queue.txt" --out "$T/res.md" 2>&1); RC=$?
 [ $RC -eq 1 ]; ok $? "pc_queue exits 1 when any PR did not pass"
-grep -q '| #901 | `pcq-selftest-a` | .* | PASS | 5 pass, 0 fail | - |' "$T/res.md"; ok $? "pc_queue writes a PASS row with the test count"
-grep -q '| #902 | .* | FAIL | 4 pass, 1 fail | test_cave_dressing |' "$T/res.md"; ok $? "pc_queue writes the new failure names"
+grep -q "| #901 | \`pcq-selftest-a\` | $H | PASS | 5 pass, 0 fail | - |" "$T/res.md"; ok $? "pc_queue writes a PASS row with the full 40-character head and the test count"
+grep -q '| #902 | .* | FAIL | 4 pass, 1 fail | test_cave_dressing |' "$T/res.md"; ok $? "pc_queue keeps FAIL when the test also fails alone"
 grep -q '| #903 | .* | CONFLICT with main |' "$T/res.md"; ok $? "pc_queue marks a trial-merge conflict"
 grep -q '| #904 | .* | ERROR: branch not found |' "$T/res.md"; ok $? "pc_queue keeps going past a missing branch"
-[ "$(grep -c '^| [0-9]' "$T/res.md")" = "4" ]; ok $? "pc_queue skips comments and blank lines (4 rows)"
-git update-ref -d refs/remotes/origin/pcq-selftest-a; git update-ref -d refs/remotes/origin/pcq-selftest-b; git update-ref -d refs/remotes/origin/pcq-selftest-c
+grep -q '| #905 | .* | PASS (load noise: test_noisy) |' "$T/res.md"; ok $? "pc_queue marks load noise when the failing test passes alone twice"
+grep -q '| #906 | .* | skipped: already merged |' "$T/res.md"; ok $? "pc_queue skips a merged PR, also on a last line with no newline"
+[ "$(grep -c '^| [0-9]' "$T/res.md")" = "6" ]; ok $? "pc_queue skips comments and blank lines (6 rows)"
+for k in a b c d; do git update-ref -d "refs/remotes/origin/pcq-selftest-$k"; done
 echo "Test done: $P pass, $F fail"
 rm -rf "$T"
 [ "$F" -eq 0 ]
