@@ -1009,7 +1009,7 @@
 		},
 		"thatch_floor_kit": {
 			"number": 166,
-			"name": "Thatch floor",
+			"name": "Thatch foundation",
 			"category": "Shelter and building",
 			"needs": [
 				[
@@ -2738,7 +2738,7 @@
 		},
 		"floor_section_kit": {
 			"number": 120,
-			"name": "Floor section",
+			"name": "Ceiling section",
 			"category": "Shelter and building",
 			"needs": [
 				[
@@ -6280,7 +6280,7 @@
 		},
 		"log_floor_kit": {
 			"number": 296,
-			"name": "Log floor",
+			"name": "Log ceiling",
 			"category": "Shelter and building",
 			"needs": [
 				[
@@ -6354,7 +6354,7 @@
 		},
 		"stone_floor_kit": {
 			"number": 299,
-			"name": "Stone floor",
+			"name": "Stone ceiling",
 			"category": "Shelter and building",
 			"needs": [
 				[
@@ -6426,7 +6426,7 @@
 		},
 		"brick_floor_kit": {
 			"number": 302,
-			"name": "Brick floor",
+			"name": "Brick ceiling",
 			"category": "Shelter and building",
 			"needs": [
 				[
