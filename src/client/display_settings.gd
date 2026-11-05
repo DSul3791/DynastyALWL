@@ -33,7 +33,7 @@ var hud_text: bool = true                # F4: the text overlay (build, position
 var idle_minutes: int = 60               # Esc > Settings > Display, Idle timeout: minutes without input before the game warns and then closes (60 to 120, idle_timeout.gd)
 var damage_numbers: bool = true         # Esc > Settings > Gameplay, Damage numbers: floating text where a hit lands (Dave 2 Nov 2026, on by default)
 static var fahrenheit: bool = false      # Esc > Settings > Gameplay, Temperature: show body temperature in C or F (Dave 2 Nov 2026, saved; static so every screen reads it)
-var cave_dark: bool = true               # Esc > Settings, Cave darkness: Dark (4% of the daylight left under rock) or Normal (12%)
+var cave_dark: bool = true               # Esc > Settings, Cave darkness: Dark (pitch black under rock without a light) or Normal (12%)
 var quality: int = -1                    # -1: not saved yet (the game's default)
 
 

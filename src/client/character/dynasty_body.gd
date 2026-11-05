@@ -14,6 +14,7 @@ const P := "mixamorig_"
 const WornLook := preload("res://src/client/worn_look.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
+const Breath := preload("res://src/client/character/dynasty_breath.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -39,6 +40,9 @@ const CLIP_MAP := {
 	"fall": ["Jump_Run", 0.55, 0.8, true, 1.0],
 	"land": ["Jump_Run", 0.1, 0.5, false, 1.0],
 	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],   # post-processed into cross-legged ground sitting by _ground_sit (BUG-020: there is no floor-sit clip)
+	# Sitting ON a seat (E on a chair, stool, log seat or bench; Dave 5 Nov 2026 "we need a sitting on a chair action"): the same chair clip held on its first frame
+	# (_hold_first), not turned into the ground sit. Its hips are 0.51 m up, about 0.28 m behind the feet, hands on the thighs: the seats are all 0.45 m high (piece_look.gd).
+	"sit_chair": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
 	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
 	# the strike comes down from 1.4 s, fastest at 1.53 s, hands lowest at 1.73 s; the clip ends at 1.83 s. (The speed peak at 0.73 s is the rise, not a blow.) The game wants the blow at 0.5 s
@@ -79,6 +83,7 @@ var head_mount: Marker3D
 var _log: MeshInstance3D
 var _model: Node3D
 var proportions: SkeletonModifier3D           # dynasty_proportions.gd, made by set_proportions
+var breath: SkeletonModifier3D               # dynasty_breath.gd, made with the body
 var _mount_rest: Dictionary = {}              # Marker3D -> its transform before set_proportions scaled the body
 
 
@@ -156,6 +161,11 @@ func _init() -> void:
 	_build_mounts()
 	set_meta("worn_frames", _worn_frames())      # worn clothing (worn_look.gd) hangs on these frames, so nothing is skipped any more (docs/DYNASTY_BODY.md gap 1)
 	_build_animations()
+	var b := Breath.new()       # breathing on the still sit frame (dynasty_breath.gd)
+	b.name = "Breath"
+	b.player = animation_player
+	skeleton.add_child(b)
+	breath = b
 
 
 # A mount on a bone, in the bone's rest frame turned so that its -Z points out along the bone (the fingers) and its +Y points to the front of the body, the same grip the old
@@ -183,13 +193,19 @@ func _bone_dir(bone: String, child: String) -> Vector3:
 	return (b - a).normalized()
 
 
+# Where a held handle crosses the hand, down from the wrist. Dave's hand mesh runs 0 to 19 cm from the wrist joint (its middle at 13 cm, read from the glb's skin weights).
+# 7 cm put the handle across the wrist, above the hanging hand, so the axe seemed to float by the hip (PC shot 5 Nov, axe_right.png). 11 cm is where the fingers meet the
+# palm; the hand has no finger bones, so it cannot close round the handle, but the handle now runs through it.
+const GRIP_FROM_WRIST_M := 0.11
+
+
 func _build_mounts() -> void:
-	# Fingers point along the forearm; the grip is 7 cm into the palm, and the front is model +Z. Offsets are given in model space, turned by `rest` inside _mount.
+	# Fingers point along the forearm; the grip is GRIP_FROM_WRIST_M into the hand, and the front is model +Z. Offsets are given in model space, turned by `rest` inside _mount.
 	var front: Vector3 = Vector3(0.0, 0.0, 1.0)
 	var right_dir: Vector3 = _bone_dir("RightForeArm", "RightHand")
 	var left_dir: Vector3 = _bone_dir("LeftForeArm", "LeftHand")
-	hand_mount_r = _mount("RightHand", "HandMount_R", right_dir * 0.07, right_dir, front)
-	hand_mount_l = _mount("LeftHand", "HandMount_L", left_dir * 0.07, left_dir, front)
+	hand_mount_r = _mount("RightHand", "HandMount_R", right_dir * GRIP_FROM_WRIST_M, right_dir, front)
+	hand_mount_l = _mount("LeftHand", "HandMount_L", left_dir * GRIP_FROM_WRIST_M, left_dir, front)
 	head_mount = _mount("Head", "HeadMount", Vector3(0.0, 0.1, 0.0), Vector3(0.0, -1.0, 0.0), front)
 
 
@@ -271,7 +287,10 @@ func _build_animations() -> void:
 			var made: Animation = _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
 
 			if game_name == "sit":
-				_ground_sit(made, own.get_animation("Idle"))
+				_hold_first(made)
+				_ground_sit(made, own.get_animation("Idle"), skeleton)
+			elif game_name == "sit_chair":
+				_hold_first(made)
 
 			_library.add_animation(game_name, made)
 
@@ -355,16 +374,34 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 # Turns the chair clip into sitting cross-legged on the ground (Dave QA BUG-020: X sat him as if on a chair). Dave's set has no floor-sit clip, so the chair pose is changed in place:
 # the hips drop to about 14 cm off the ground, each thigh swings out sideways (the model faces +Z, its right is -X) and each shin folds back under the other leg. The turns are
 # made in the parent bone's frame, which for this Mixamo rig is close to the model's own axes. Angles are a first guess, not yet seen in the game: rate by picture (--shot-stance=sit).
-const SIT_THIGH_OUT_DEG := 55.0
-const SIT_SHIN_FOLD_DEG := 135.0
+const SIT_THIGH_OUT_DEG := 85.0      # tools/sit_pose_sim.py (offline, from the glb): 85 and a fold of 85 put the knees out at the sides 10 cm up and the feet crossed under them, toes on the ground
+const SIT_SHIN_FOLD_DEG := 85.0      # 135 lifted the feet 41 cm off the ground (picture 4 Nov), 50 pushed them below it
 const SIT_HIPS_M := 0.14
-const SIT_PELVIS_BACK_DEG := 28.0     # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
-const SIT_ARM_FWD_DEG := 40.0         # hands rest on the knees: the upper arm swings forward this much from hanging (about the model's X axis), the forearm this much more
-const SIT_FOREARM_FWD_DEG := 25.0
-const SIT_SPINE_BACK_DEG := 3.0       # each of Spine, Spine1 and Spine2 leans back this much more
+const SIT_PELVIS_BACK_DEG := 3.0      # the chair clip tips the pelvis forward (the picture of #315: torso bent over at the hips): the Hips turn back this much and the thighs turn the other way, so the legs stay where they were
+const SIT_SPINE_BACK_DEG := 0.3       # each of Spine, Spine1 and Spine2 leans back this much more (3 until 5 Nov; now about 8 degrees further forward in all, so the hands reach the knees)
 
 
-static func _ground_sit(anim: Animation, idle: Animation) -> void:
+# The chair clip is not still: over its 10.7 s the hips turn up to 28 degrees, the spine 31 and the thighs 25 (shifting on the chair, leaning to a desk). With the legs swung out for
+# the ground sit those turns became a lunge with the body off the ground (PC shot 5 Nov, main 60eadc63, read at a random time in the loop). The ground sit holds the clip's first
+# frame (the one tools/sit_pose_sim.py and tools/body_pose_shot.gd checked) on every key; only the neck and head keep half of their motion, so he still looks about.
+const SIT_LOOK_KEEP := 0.5
+
+
+static func _hold_first(anim: Animation) -> void:
+	for t in range(anim.get_track_count()):
+		if anim.track_get_key_count(t) < 2:
+			continue
+
+		var bone: String = String(anim.track_get_path(t)).get_slice(":", 1)
+		var first: Variant = anim.track_get_key_value(t, 0)
+		var look: bool = anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and (bone == P + "Neck" or bone == P + "Head")
+
+		for k in range(1, anim.track_get_key_count(t)):
+			var v: Variant = (first as Quaternion).slerp(anim.track_get_key_value(t, k) as Quaternion, SIT_LOOK_KEEP) if look else first
+			anim.track_set_key_value(t, k, v)
+
+
+static func _ground_sit(anim: Animation, idle: Animation, skel: Skeleton3D = null) -> void:
 	for t in range(anim.get_track_count()):
 		var path: String = String(anim.track_get_path(t))
 		var type: int = anim.track_get_type(t)
@@ -422,37 +459,101 @@ static func _ground_sit(anim: Animation, idle: Animation) -> void:
 			var q: Quaternion = anim.track_get_key_value(t, k)
 			anim.track_set_key_value(t, k, (pelvis.inverse() * extra * q) if path.ends_with("UpLeg") else (q * extra))
 
-	# The arms hang beside the hips, which are now on the ground and put a held tool in the grass: swing them forward so the hands rest on the knees. The swing is made in model space
-	# (the bones' own axes are not known), through the parent chain's rotation at the first key.
+	_sit_aim(anim, skel)
+
+
+# Cross-legged with the hands on the knees (PC shot 5 Nov, main 3e22bde4: the thighs turned 85 degrees out put the knees straight out at the sides, level with the hips,
+# so from the side the legs were one round shape and the hands hung in the air). Each thigh is now aimed forward and out, each shin across under the other leg (the left
+# one behind, the right one in front), the spine leans forward a little and each arm reaches its knee by two-bone IK. Directions are in the skeleton's space (left +X,
+# up +Y, front +Z), worked out on the clip's first key (the sit holds one frame). Checked offline with the same maths on the glb: knees 0.23 m out and 0.2 m forward,
+# 9 cm up; feet crossed under the other knee, 7 cm up; hands 9 cm over the knees (tools/sit_pose_sim.py --ik).
+const SIT_KNEE_DIR := Vector3(0.62, 0.0, 0.78)        # the left thigh (x mirrored for the right)
+const SIT_SHIN_DIR := Vector3(-0.95, -0.04, 0.0)      # the left shin, across to the right; z per side below
+const SIT_SHIN_Z := [-0.08, 0.12]                     # left shin a little back, right shin a little forward, so they cross without meeting
+const SIT_HAND_OVER_KNEE := Vector3(-0.03, 0.06, -0.03)    # metres from the knee joint, x toward the middle (mirrored)
+const SIT_ELBOW_POLE := Vector3(1.0, 0.0, -0.6)       # elbows out and back (x mirrored)
+
+
+static func _sit_aim(anim: Animation, skel: Skeleton3D) -> void:
+	if skel == null:
+		return
+
 	for side in ["Left", "Right"]:
-		var chain: Quaternion = Quaternion.IDENTITY
+		var s: float = 1.0 if side == "Left" else -1.0
+		_aim_bone(anim, skel, ["Hips", side + "UpLeg"], side + "Leg", Vector3(SIT_KNEE_DIR.x * s, SIT_KNEE_DIR.y, SIT_KNEE_DIR.z))
+		_aim_bone(anim, skel, ["Hips", side + "UpLeg", side + "Leg"], side + "Foot", Vector3(SIT_SHIN_DIR.x * s, SIT_SHIN_DIR.y, float(SIT_SHIN_Z[0 if side == "Left" else 1])))
 
-		for bone in ["Hips", "Spine", "Spine1", "Spine2", side + "Shoulder"]:
-			var tr: int = _rot_track(anim, bone)
+	for side in ["Left", "Right"]:
+		var s: float = 1.0 if side == "Left" else -1.0
+		var knee: Vector3 = _joint(anim, skel, ["Hips", side + "UpLeg", side + "Leg"])
+		var hand_at: Vector3 = knee + Vector3(SIT_HAND_OVER_KNEE.x * s, SIT_HAND_OVER_KNEE.y, SIT_HAND_OVER_KNEE.z) * 100.0      # the skeleton is in centimetres
+		var chain: Array = ["Hips", "Spine", "Spine1", "Spine2", side + "Shoulder", side + "Arm"]
+		var shoulder: Vector3 = _joint(anim, skel, chain)
+		var upper: float = _offset(anim, skel, side + "ForeArm").length()
+		var lower: float = _offset(anim, skel, side + "Hand").length()
+		var to_hand: Vector3 = hand_at - shoulder
+		var reach: float = minf(to_hand.length(), upper + lower - 0.01)
+		var along: Vector3 = to_hand.normalized()
+		var bend: float = acos(clampf((upper * upper + reach * reach - lower * lower) / (2.0 * upper * maxf(reach, 0.01)), -1.0, 1.0))
+		var pole: Vector3 = Vector3(SIT_ELBOW_POLE.x * s, SIT_ELBOW_POLE.y, SIT_ELBOW_POLE.z)
+		var out: Vector3 = (pole - along * pole.dot(along)).normalized()
+		var elbow_dir: Vector3 = along * cos(bend) + out * sin(bend)
+		_aim_bone(anim, skel, chain, side + "ForeArm", elbow_dir)
+		var elbow: Vector3 = shoulder + elbow_dir * upper
+		_aim_bone(anim, skel, chain + [side + "ForeArm"], side + "Hand", (shoulder + along * reach - elbow).normalized())
 
-			if tr < 0:
-				chain = Quaternion.IDENTITY
-				break
 
-			chain = chain * (anim.track_get_key_value(tr, 0) as Quaternion)
+# The first key's rotation of a bone (identity when the clip has no track for it).
+static func _key_rot(anim: Animation, bone: String) -> Quaternion:
+	var t: int = _rot_track(anim, bone)
+	return (anim.track_get_key_value(t, 0) as Quaternion) if t >= 0 and anim.track_get_key_count(t) > 0 else Quaternion.IDENTITY
 
-		var arm_tr: int = _rot_track(anim, side + "Arm")
-		var fore_tr: int = _rot_track(anim, side + "ForeArm")
 
-		if arm_tr < 0 or fore_tr < 0:
-			continue
+# A bone's offset from its parent: the clip's first key when it moves the bone, else the rest.
+static func _offset(anim: Animation, skel: Skeleton3D, bone: String) -> Vector3:
+	for t in range(anim.get_track_count()):
+		if anim.track_get_type(t) == Animation.TYPE_POSITION_3D and String(anim.track_get_path(t)).ends_with(P + bone) and anim.track_get_key_count(t) > 0:
+			return anim.track_get_key_value(t, 0)
 
-		var swing: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_ARM_FWD_DEG))
-		var arm_new: Quaternion = chain.inverse() * swing * chain * (anim.track_get_key_value(arm_tr, 0) as Quaternion)
-		var swing2: Quaternion = Quaternion(Vector3.RIGHT, deg_to_rad(-SIT_FOREARM_FWD_DEG))
-		var chain2: Quaternion = chain * arm_new
-		var fore_new: Quaternion = chain2.inverse() * swing2 * chain2 * (anim.track_get_key_value(fore_tr, 0) as Quaternion)
+	var i: int = skel.find_bone(P + bone)
+	return skel.get_bone_rest(i).origin if i >= 0 else Vector3.ZERO
 
-		for k in range(anim.track_get_key_count(arm_tr)):
-			anim.track_set_key_value(arm_tr, k, arm_new)
 
-		for k in range(anim.track_get_key_count(fore_tr)):
-			anim.track_set_key_value(fore_tr, k, fore_new)
+# The joint of the last bone of `chain` (which starts at Hips), in skeleton space, at the first key.
+static func _joint(anim: Animation, skel: Skeleton3D, chain: Array) -> Vector3:
+	var at: Vector3 = _offset(anim, skel, str(chain[0]))
+	var turn: Quaternion = _key_rot(anim, str(chain[0]))
+
+	for n in range(1, chain.size()):
+		at += turn * _offset(anim, skel, str(chain[n]))
+		turn = turn * _key_rot(anim, str(chain[n]))
+
+	return at
+
+
+# Turns the last bone of `chain` (which starts at Hips) so that its child `child` lies along `dir` (skeleton space); every key of its track gets the new rotation.
+static func _aim_bone(anim: Animation, skel: Skeleton3D, chain: Array, child: String, dir: Vector3) -> void:
+	var bone: String = str(chain[chain.size() - 1])
+	var t: int = _rot_track(anim, bone)
+
+	if t < 0:
+		return
+
+	var parent: Quaternion = Quaternion.IDENTITY
+
+	for n in range(chain.size() - 1):
+		parent = parent * _key_rot(anim, str(chain[n]))
+
+	var whole: Quaternion = parent * _key_rot(anim, bone)
+	var now: Vector3 = whole * _offset(anim, skel, child)
+
+	if now.length() < 0.0001 or dir.length() < 0.0001:
+		return
+
+	var turned: Quaternion = (parent.inverse() * Quaternion(now.normalized(), dir.normalized()) * whole).normalized()
+
+	for k in range(anim.track_get_key_count(t)):
+		anim.track_set_key_value(t, k, turned)
 
 
 static func _rot_track(anim: Animation, bone: String) -> int:
@@ -511,6 +612,9 @@ func set_proportions(g: Dictionary) -> void:
 		proportions.name = "Proportions"
 		skeleton.add_child(proportions)
 
+		if breath != null:
+			skeleton.move_child(breath, -1)      # breathing after the reshape
+
 	proportions.set_genome(g)
 	_set_widths(g)
 	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)       # the skin colour of the genome; the other colours are unused on this body
@@ -529,6 +633,22 @@ func set_proportions(g: Dictionary) -> void:
 		marker.transform = Transform3D(rest.basis * (1.0 / float(spec[1])), rest.origin)
 
 
+var _widths_later: bool = false     # the widths wait for the shapes worker (dynasty_shapes.gd ready)
+
+
+func _ready() -> void:
+	set_process(_widths_later)      # the engine turns _process on at the ready; only a body still waiting for its shapes needs it
+
+
+func _process(_delta: float) -> void:
+	if not _widths_later or not Shapes.ready():
+		return
+
+	set_process(false)
+	_set_widths(genome)
+	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)      # a new mesh drops the skin colour override (_set_widths); put it back
+
+
 # The width sliders (dynasty_shapes.gd): the shared shaped mesh is put on this body the first time a width is not 0, then each slider is a blend shape weight.
 func _set_widths(g: Dictionary) -> void:
 	var any: bool = false
@@ -540,6 +660,12 @@ func _set_widths(g: Dictionary) -> void:
 	if not any and not body_mesh.mesh.has_meta(Shapes.SHAPED_KEY):
 		return       # the plain body keeps Dave's own mesh
 
+	if not Shapes.ready():
+		_widths_later = true      # the shared shapes are still being made on a worker: wear the plain mesh until _process sees them done
+		set_process(true)
+		return
+
+	_widths_later = false
 	var shaped: ArrayMesh = Shapes.shaped(body_mesh.mesh, body_mesh.skin, skeleton)
 
 	if shaped == null:

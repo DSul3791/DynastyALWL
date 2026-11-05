@@ -1,5 +1,7 @@
 # Scope: Sonny (terrain and Dynasty water), 1 Nov 2026
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 > **RULE (Dave, 1 Nov 2026): water MECHANICS are yours; water LOOKS go to the art team** (Kathreen first): colour, transparency, shader appearance, foam, flow-texture look, reflections, shore look. You supply depth and flow in a stable form (textures, levels); they own how it looks; review each other's edits.
 
 > **ROLE CHANGE (Dave, 1 Nov 2026): Sonny is the terrain and water agent only** (baked tiles, ground, shore, slopes, water: the foundation everyone plays on). The character work he did earlier is handed over: character LOOK to Kathleen, character SYSTEM (store, records, select code, goals and recipes per character, idle timeout, first-minutes smoke tests) to Steve (Tyler had it for a few hours on 1 Nov). Edited by Jamie with Sonny's OK; character history is in section 2.
@@ -32,7 +34,7 @@ Character work, now handed over (to Kathleen: look; to Steve: system): db105d36 
 2. **Real-game pictures of it working**: Dave decides by eye and none of a river or lake exists yet.
 3. **Flow and depth reaching the shader**: without it the game does not show what the sim computes.
 4. **Windows following players and digs reaching the field**: today only the starter tile's wettest km is live.
-5. Terrain: ground, shore and slope problems found by Dino or Tyler, and the lake plan in `PHASE7_PLAN.md` (needs Dave's go for any bake).
+5. Terrain: ground, shore and slope problems found by Dino or Tyler, and the lake rules in `DESIGN_IDEAS.md` (drainage mode, pond levels; the old `PHASE7_PLAN.md` is in `docs/archive/2026-11/`) (needs Dave's go for any bake).
 
 ## 5. Dependencies
 

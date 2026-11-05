@@ -145,6 +145,11 @@ func _build_bar(page: VBoxContainer) -> void:
 		var back_button: Button = Style.big_button("Back to my characters", Style.FONT_BUTTON, Style.NEUTRAL)
 		back_button.pressed.connect(func() -> void: get_tree().change_scene_to_file(SELECT_SCENE))
 		row.add_child(back_button)
+	elif Engine.has_meta("title_done"):
+		# Came from New Game on the title page with no character yet: Back returns there.
+		var title_button: Button = Style.big_button("Back", Style.FONT_BUTTON, Style.NEUTRAL)
+		title_button.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/title/title.tscn"))
+		row.add_child(title_button)
 
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL

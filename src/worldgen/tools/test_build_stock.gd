@@ -42,7 +42,7 @@ func _walls() -> int:
 	var n: int = 0
 
 	for k in items._items:
-		if items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "stone_wall":
+		if items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "stone_wall" and not items._items[k]["struct"].has("site"):   # a blueprint site is not a wall yet
 			n += 1
 
 	return n

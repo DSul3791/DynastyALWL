@@ -265,7 +265,7 @@ func _build_display() -> void:
 	_button(display, "Cave darkness: Dark / Normal", func():
 		_c.display.cave_dark = not _c.display.cave_dark
 		_c._save_display()
-		note.text = "Cave darkness: %s (saved). Dark leaves 4%% of the daylight under rock, Normal 12%%." % ("Dark" if _c.display.cave_dark else "Normal"))
+		note.text = "Cave darkness: %s (saved). Dark is pitch black under rock without a torch or fire, Normal leaves 12%% of the daylight." % ("Dark" if _c.display.cave_dark else "Normal"))
 	_button(display, "Crafting screen text size: change", func():
 		_c.display.text_index = (_c.display.text_index + 1) % _c.display.TEXT_SCALES.size()
 		_c.items.set_text_scale(_c.display.TEXT_SCALES[_c.display.text_index])
@@ -315,6 +315,8 @@ func _build_gameplay() -> void:
 		_refresh_idle_button()
 		note.text = "Idle timeout: the game closes after %d minutes without the mouse or a key (saved)." % _c.display.idle_minutes)
 	_refresh_idle_button()
+	# Camera motion (head bob, landing dip, blow jolt, speed widening; feel_kicks.gd): 0 % turns it off for anyone it bothers, 150 % is the most. Saved at once.
+	_slider(gameplay, "Camera motion", float(_c.feel.intensity), func(value: float): _c.feel.set_intensity(value), 1.5)
 	_damage_switch = _switch_row(gameplay, "Damage numbers", func(on: bool):
 		_c.display.damage_numbers = on
 		_c._save_display())
@@ -506,14 +508,14 @@ func _switch_row(parent: VBoxContainer, text: String, changed: Callable):
 	return toggle
 
 
-func _slider(parent: VBoxContainer, text: String, value: float, changed: Callable) -> void:
+func _slider(parent: VBoxContainer, text: String, value: float, changed: Callable, top: float = 1.0) -> void:
 	var label: Label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	parent.add_child(label)
 	var slider: HSlider = HSlider.new()
 	slider.min_value = 0.0
-	slider.max_value = 1.0
+	slider.max_value = top
 	slider.step = 0.01
 	slider.value = value
 	slider.custom_minimum_size = Vector2(BUTTON_W + 160.0, 40.0)

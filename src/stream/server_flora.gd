@@ -21,6 +21,9 @@ const LAYOUT_KEY := "layout"        # flora_removed.json: the flora layout versi
 const MEMORY_CHUNKS := 2048
 const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
 const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
+const BRUSH_CELL_M := 2.0             # in_undergrowth: a shrub or tall plant marks the 2 m cell it stands in
+const BRUSH_MIN_M := 0.5              # only shrubs and plants this tall or taller rustle (ferns, tall grass, bushes; not moss or berries)
+const BRUSH_CHUNKS := 64              # chunks kept in the undergrowth index (oldest dropped first; a dropped one is made again on a worker)
 
 var placer
 var dynamic: Callable                       # (home chunk) -> flora-style items of saplings and grown trees, {} when none (server_items.gd)
@@ -39,6 +42,8 @@ var _removed_dirty: bool = false       # removals not yet written to flora_remov
 var _removed_saved_msec: int = 0
 var cover = CoverScript.Index.new()    # tree crowns of the chunks made so far (Cover.at; read it under cover_lock)
 var _cover_order: Array = []           # chunks in the index, oldest first
+var _brush: Dictionary = {}            # home chunk -> {Vector2i 2 m cell: true}: where the undergrowth is (in_undergrowth; under _mutex)
+var _brush_pending: Dictionary = {}    # home chunks whose index a worker is making (_make_brush)
 
 
 # The chunk's placed items (FloraPlacer.chunk_items), kept for a while: placing a chunk takes seconds the first time and the
@@ -68,6 +73,20 @@ func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	_items[key] = made
 	_items_mutex.unlock()
 	return made
+
+
+# The placed items of a chunk only when items_of has already made them (for this or the full list), else {}: for a look that must never make a chunk on the
+# main thread (the hint triggers, 4 times a second: making the nine chunks round a new player took 3 to 11 s there; Steve, 4 Nov 2026).
+func items_cached(chunk: Vector2i) -> Dictionary:
+	var home: Vector2i = placer.normalize(chunk)
+	_items_mutex.lock()
+	var kept: Dictionary = _items.get(Vector3i(home.x, home.y, 1), {})
+
+	if kept.is_empty():
+		kept = _items.get(Vector3i(home.x, home.y, 0), {})
+
+	_items_mutex.unlock()
+	return kept
 
 
 func has_items(chunk: Vector2i) -> bool:
@@ -141,6 +160,7 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 				items[field] = items[field].duplicate()
 				items[field].append_array(extra[field])
 	bytes = PlacerScript.encode(items, placer.chunk_origin(home))
+	var brush: Dictionary = _brush_cells(items) if full else {}
 	_mutex.lock()
 
 	# BUG-024 (Dave's QA list, 4 Nov 2026: felled trees came back after streaming): this runs on worker threads, and a tree cut while
@@ -151,6 +171,10 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 		return chunk_bytes(chunk, full)
 
 	_fill_cover(home, items)
+
+	if full:
+		_keep_brush(home, brush)
+
 	chunks_made += 1
 	_memory[key] = bytes
 
@@ -188,6 +212,61 @@ func covered(pos: Vector3) -> bool:
 	var yes: bool = CoverScript.at(pos, cover) > 0.0
 	_mutex.unlock()
 	return yes
+
+
+# True when a point stands in undergrowth: a shrub or a plant of BRUSH_MIN_M or more (fern, tall grass, bramble, hazel) in the same
+# 2 m cell. Walking through it is noisy, so animals hear the player from farther off (server_animals senses.undergrowth_noise; Dave
+# 5 Nov 2026: bushes and ferns never stop the player, they make you louder instead). Safe on the main thread: a chunk's index is
+# made with its full flora (chunk_bytes, on a worker); one not known yet is started on a worker and reads false until it is done.
+func in_undergrowth(pos: Vector3) -> bool:
+	var x: float = placer.generator.wrap_x(pos.x)
+	var z: float = placer.generator.wrap_x(pos.z)
+	var home: Vector2i = placer.normalize(placer.chunk_of(x, z))
+	_mutex.lock()
+	var cells: Variant = _brush.get(home)
+
+	if cells == null and not _brush_pending.has(home):
+		_brush_pending[home] = true
+		WorkerThreadPool.add_task(_make_brush.bind(home))
+
+	_mutex.unlock()
+	return cells != null and (cells as Dictionary).has(Vector2i(int(floor(x / BRUSH_CELL_M)), int(floor(z / BRUSH_CELL_M))))
+
+
+# The 2 m cells of a chunk's items that hold a shrub or plant of BRUSH_MIN_M or more (removals already taken out).
+func _brush_cells(items: Dictionary) -> Dictionary:
+	var made: Dictionary = {}
+	var ids: PackedInt32Array = items["ids"]
+	var positions: PackedVector3Array = items["positions"]
+	var heights: PackedFloat32Array = items["heights"]
+
+	for n in range(mini(ids.size(), mini(positions.size(), heights.size()))):
+		if heights[n] >= BRUSH_MIN_M and int(placer.species_of(ids[n]).get("kind", PlacerScript.KIND_TREE)) != PlacerScript.KIND_TREE:
+			made[Vector2i(int(floor(positions[n].x / BRUSH_CELL_M)), int(floor(positions[n].z / BRUSH_CELL_M)))] = true
+
+	return made
+
+
+# Keeps a chunk's undergrowth index (called with the mutex held).
+func _keep_brush(home: Vector2i, made: Dictionary) -> void:
+	_brush.erase(home)
+
+	while _brush.size() >= BRUSH_CHUNKS:
+		_brush.erase(_brush.keys()[0])
+
+	_brush[home] = made
+
+
+# Worker task: places a chunk whose undergrowth index was asked for before its flora was made (or after it was dropped).
+func _make_brush(home: Vector2i) -> void:
+	_mutex.lock()
+	var removed: Dictionary = _removed.get(home, {}).duplicate()
+	_mutex.unlock()
+	var made: Dictionary = _brush_cells(PlacerScript.without(placer.chunk_items(home, false), removed))
+	_mutex.lock()
+	_keep_brush(home, made)
+	_brush_pending.erase(home)
+	_mutex.unlock()
 
 
 func roofed(pos: Vector3) -> bool:
@@ -307,6 +386,7 @@ func cut(chunk: Vector2i, id: int) -> bool:
 
 	_removed[home][id] = true
 	cover.remove_item(home, id)
+	_brush.erase(home)
 	_memory.erase(Vector3i(home.x, home.y, 1))
 	_memory.erase(Vector3i(home.x, home.y, 0))
 	_removed_dirty = true

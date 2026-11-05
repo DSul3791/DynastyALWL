@@ -47,6 +47,7 @@ const THIRD_ROD_PITCH_DEG := 22.0     # third person: a carried fishing rod poin
 const THIRD_SPADE_PITCH_DEG := -56.0   # third person: a carried spade points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
 const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down, haft about 50 degrees below horizontal (review 2026-10-25: it was nearly horizontal)
 const THIRD_SAW_PITCH_DEG := -120.0   # third person: a saw carried by the handle, blade pointing down and back about 30 degrees
+const THIRD_TORCH_RAISE_DEG := 35.0   # third person: a torch in the left hand points forward and 35 degrees up, its flame clear of the body (Dave 5 Nov: it lay along the arm by the hip)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
@@ -91,6 +92,7 @@ var held_slot: int = 0
 var holding: bool = true                  # false after the held slot's key is pressed again: hands empty
 const HOTBAR_SLOTS := 10
 var aiming: bool = false
+const TORCH_PLACE_M := 3.0                # how far the crosshair reaches to stick a torch in the ground or on a wall
 var off_slot: int = -1                    # the hotbar slot carried in the left hand (items with "offhand": true: torch, shield), -1 for none
 var off_holding: bool = false             # false after its key is pressed again: left hand empty
 var blocking: bool = false                # B held with a shield in the left hand (the combat rules read this)
@@ -410,6 +412,15 @@ func delete_plan() -> bool:
 	return true
 
 
+# The left and right arrows with the hammer menu open step through the groups of blueprints. Returns true when it was used.
+func step_blueprint_group(forward: bool) -> bool:
+	if not blueprints.is_open:
+		return false
+
+	blueprints.cycle_category(forward, _hammer_tier())
+	return true
+
+
 # Right click (or R) with a hammer in hand opens or shuts its blueprint list.
 func toggle_blueprints() -> bool:
 	if _hammer_tier() <= 0:
@@ -437,6 +448,67 @@ func off_number() -> int:
 
 func off_id() -> String:
 	return _inv.table.id_of(off_number())
+
+
+# The hotbar slot of a burning flame in either hand that water or rain can put out (a torch; a lantern later: items.json "doused_item"), or -1.
+func flame_slot() -> int:
+	if _inv == null:
+		return -1
+
+	for spec in [[held_number(), held_slot], [off_number(), off_slot]]:
+		if int(spec[0]) != 0 and str(_inv.table.entry(_inv.table.id_of(int(spec[0]))).get("doused_item", "")) != "":
+			return int(spec[1])
+
+	return -1
+
+
+# The hotbar slot of a torch in either hand that can be placed (items.json places_as: burning or doused), or -1.
+func _torch_hand_slot() -> int:
+	if _inv == null:
+		return -1
+
+	for spec in [[off_number(), off_slot], [held_number(), held_slot]]:
+		if int(spec[0]) != 0 and _inv.table.entry(_inv.table.id_of(int(spec[0]))).has("places_as"):
+			return int(spec[1])
+
+	return -1
+
+
+# True when the right hand holds nothing that has a right click of its own (a tool, a weapon, food).
+func _right_hand_free() -> bool:
+	if not holding or held_number() == 0:
+		return true
+
+	var entry: Dictionary = _inv.table.entry(held_id())
+	return entry.has("places_as") or not (str(entry.get("kind", "")) in ["tool", "weapon"] or _inv.edible_slot(held_slot))
+
+
+# Where the crosshair is within TORCH_PLACE_M: on ground or a floor the torch stands up facing the player, on a wall it faces out of the wall; the server checks the rest.
+func _place_torch_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * TORCH_PLACE_M))
+
+	if hit.is_empty():
+		_inv._on_notice("Aim at the ground or a wall close by to place the torch")
+		return
+
+	var normal: Vector3 = hit["normal"]
+	var at: Vector3 = hit["position"]
+	var on_wall: bool = absf(normal.y) <= 0.4
+
+	if not on_wall and normal.y < 0.65:
+		_inv._on_notice("Too steep for a torch there")
+		return
+
+	var facing: Vector3 = normal if on_wall else from - at
+	var yaw_deg: int = int(round(rad_to_deg(atan2(facing.x, facing.z))))
+	_arm_play("use", 0.5)
+	_net.inventory_action.rpc_id(1, Net.ACT_PLACE_TORCH, _torch_hand_slot(), 1 if on_wall else 0, yaw_deg, at)
+
+
+# Whether the camera is under cover from the rain (a tree's crown or a roof).
+func flame_covered() -> bool:
+	return _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))
 
 
 func _off_class() -> String:
@@ -476,6 +548,11 @@ func _is_torch() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "torch"
 
 
+# A torch that water or rain put out (items.json "relit_item"): drawn as a torch with no flame or light.
+func _is_doused_torch() -> bool:
+	return str(_inv.table.entry(held_id()).get("relit_item", "")) != ""
+
+
 func _is_knife() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "knife"
 
@@ -485,7 +562,7 @@ func _is_knife() -> bool:
 func _is_other_tool() -> bool:
 	var kind: String = str(_inv.table.entry(held_id()).get("kind", ""))
 	var is_arrow: bool = str(BasicLook.entry(held_id()).get("shape", "")) == "arrow"   # arrows are "material" items but are held like a tool, not as a palm-sized look
-	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
+	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_axe()
 
 
 func is_holdable(number: int) -> bool:
@@ -514,10 +591,10 @@ func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) in ["axe", "pick"] and not _inv.is_broken(held_slot)
 
 
-# E gathers something by hand: the arm reaches (the generic "use" clip), unless a swing or another action is already playing.
+# E gathers something by hand: the arm reaches down, takes hold and draws back (its own "gather" clip, ragdoll_body.gd _gather), unless a swing or another action is already playing.
 func play_gather() -> void:
 	if _swing_t < 0.0 and _jab_t < 0.0 and not aiming and _arms != null and _arms.visible and not _arms.is_one_shot_playing():
-		_arm_play("use", 0.5)
+		_arm_play("gather" if _arms.animation_player.has_animation("gather") else "use", 0.3)
 
 
 # True while a tool action is going on (a swing, the pause between chained swings, the hit stop): nothing nearby is picked up meanwhile.
@@ -681,6 +758,11 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		blueprints.toggle(_hammer_tier())
 		return true
 
+	# Right click with a torch in the left hand and nothing in the right that uses right click: stick the torch in the ground or on a wall (Dave, 4 Nov 2026).
+	if button == MOUSE_BUTTON_RIGHT and pressed and not blueprints.is_open and _right_hand_free() and _torch_hand_slot() >= 0:
+		_place_torch_here()
+		return true
+
 	if blueprints.is_open:
 		if button == MOUSE_BUTTON_LEFT and pressed:
 			blueprints.choose(_hammer_tier())
@@ -702,12 +784,16 @@ func mouse_button(button: int, pressed: bool) -> bool:
 				_start_plan_place()
 			else:
 				_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, blueprints.picked, lift_steps, _blueprint_yaw, _blueprint_at)
+		elif button == MOUSE_BUTTON_LEFT and pressed:
+			_say_why_not()
 
 		return button == MOUSE_BUTTON_LEFT
 
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
 			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, _place_slot(), lift_steps, _blueprint_yaw, _blueprint_at)
+		elif button == MOUSE_BUTTON_LEFT and pressed:
+			_say_why_not()
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -1105,6 +1191,27 @@ func _ghost_clean(node: Node) -> void:
 
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
+# A left click on a red ghost says why it will not go down (Dave 5 Nov 2026: every placement that fails tells you the reason).
+func _say_why_not() -> void:
+	var why: String = str({
+		"close": "Something is in the way.",
+		"crowded": "Too many of these stand here already.",
+		"steep": "The ground is too steep there.",
+		"water": "You cannot build in water.",
+		"nofire": "Lay a small fire first: the pot hangs over it.",
+		"taken": "That fire already has a pot.",
+		"far": "Too far to place that. Step closer.",
+	}.get(blueprint_state, ""))
+
+	if why == "" and _blueprinting() and not blueprints.can_afford(_hammer_tier()):
+		why = "You do not have all the materials for that."
+
+	if why == "":
+		why = "Aim at the ground where it should go."
+
+	_inv._on_notice(why)
+
+
 func _update_blueprint() -> void:
 	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != "place") and _hammer_tier() <= 0:
 		blueprints.clear()   # the hammer is put away: the pick and the list go with it
@@ -1190,7 +1297,7 @@ func _update_blueprint() -> void:
 		blueprint_state = "far"
 
 	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
-	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.can_afford(_hammer_tier()))
+	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
 
@@ -1499,8 +1606,10 @@ func _caption() -> String:
 
 		if PlacementRules.reason_text(blueprint_state) != "":
 			text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
-		elif short:
+		elif short and blueprints.plan_picked >= 0:
 			text += "   (red: not enough materials; right click: the list)"
+		elif short:
+			text += "   (left click: set down a blue blueprint, then E on it to deposit materials; right click: the list)"
 		else:
 			text += "   (left click: build it with the materials in your pack; right click: the list)"
 	elif _hammer_tier() > 0 and blueprints.mode == "repair":
@@ -1552,7 +1661,7 @@ func _off_caption() -> String:
 func _show_model() -> void:
 	var number: int = held_number() if _inv != null else 0
 
-	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
+	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
 		number = 0
 
 	if number == _shown_number:
@@ -1565,7 +1674,7 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
+		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() or _is_doused_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
 		_mount_model()
 
 
@@ -1573,6 +1682,10 @@ func _show_model() -> void:
 # Falls back to the old spot in front of the camera when there are no arms.
 func _mount_model() -> void:
 	_mounted = _arms != null
+	var third_fist: Node3D = _model.get_node_or_null(THIRD_FIST_NAME) as Node3D
+
+	if third_fist != null:
+		third_fist.visible = false      # shown again by _mount_model_third
 	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
 
 	if not _mounted:
@@ -1633,6 +1746,43 @@ func _mount_model_third(kind: String) -> void:
 	_model.basis = turn
 	_model.position = turn * grip
 
+	if kind != "kit":
+		_third_fist().visible = true
+
+
+# Third person (Dave 5 Nov, decision card): the body's hand has no finger bones and hung open under the handle, so a closed fist is drawn round the grip. It is a child of
+# the held model (it goes when the tool goes) placed back at the hand mount's origin, where the handle crosses the hand (dynasty_body.gd GRIP_FROM_WRIST_M), and long
+# enough along the fingers to hide the open hand. First person has its own fists on the arms (_make_fist), so this one is hidden there.
+const THIRD_FIST_NAME := "ThirdFist"
+const THIRD_FIST_SCALE := Vector3(1.0, 0.85, 1.6)     # 10 cm across, 8.5 cm thick, 16 cm along the fingers (the hand mesh runs 0 to 19 cm from the wrist)
+
+
+func _third_fist() -> MeshInstance3D:
+	return _third_fist_on(_model)
+
+
+# The same closed fist on any held model (the left-hand torch too).
+func _third_fist_on(model: Node3D) -> MeshInstance3D:
+	var fist: MeshInstance3D = model.get_node_or_null(THIRD_FIST_NAME) as MeshInstance3D
+
+	if fist == null:
+		fist = MeshInstance3D.new()
+		fist.name = THIRD_FIST_NAME
+		var ball: SphereMesh = SphereMesh.new()
+		ball.radius = 0.05
+		ball.height = 0.1
+		ball.radial_segments = 12
+		ball.rings = 6
+		var skin: StandardMaterial3D = StandardMaterial3D.new()
+		skin.albedo_color = FIST_COLOR
+		skin.roughness = 0.9
+		ball.material = skin
+		fist.mesh = ball
+		model.add_child(fist)
+
+	fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
+	return fist
+
 
 # The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.
 func _show_off_model(delta: float) -> void:
@@ -1685,11 +1835,22 @@ func _mount_off_model() -> void:
 
 	mount.add_child(_off_model)
 	var grip: float = 0.0 if shield else float(GRIP_ALONG_Y["torch"])
+	var third_fist: Node3D = _off_model.get_node_or_null(THIRD_FIST_NAME) as Node3D
+
+	if third_fist != null:
+		third_fist.visible = false      # first person has the arms' own fist
 
 	if not _first_person and _avatar_rig != null:
-		var stand: Basis = Basis.IDENTITY if shield else Basis(Vector3.RIGHT, deg_to_rad(60.0))
+		# Dave's body's hand mount: +Y forward, +Z up the forearm (dynasty_body.gd _mount). The old 60 degrees (set for the ragdoll body) laid the torch
+		# along the forearm, its head and flame hidden by the hip (Dave 5 Nov, K camera shot). It now points forward and THIRD_TORCH_RAISE_DEG up, clear of the body,
+		# and the hand closes round it as round a right-hand tool.
+		var stand: Basis = Basis.IDENTITY if shield else Basis(Vector3.RIGHT, deg_to_rad(THIRD_TORCH_RAISE_DEG))
 		_off_model.basis = stand
-		_off_rest = stand * Vector3(0.0, grip, 0.0)
+		_off_rest = stand * Vector3(0.0, grip * THIRD_CHOKE, 0.0)
+
+		if not shield:
+			_off_model.position = _off_rest
+			_third_fist_on(_off_model).visible = true
 	else:
 		var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG))
 		var turn: Basis = Basis.IDENTITY if shield else Basis(Vector3.RIGHT, deg_to_rad(-90.0))
@@ -1939,10 +2100,11 @@ func _make_other_model() -> Node3D:
 
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).
 func _make_torch_model(id: String = "") -> Node3D:
+	var lit: bool = bool(_inv.table.entry(id if id != "" else held_id()).get("flame", false))   # a doused torch: no flame, no glow, no light
 	var torch: Node3D = Node3D.new()
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.42, 0.3, 0.17)
-	wood.emission_enabled = true
+	wood.emission_enabled = lit
 	wood.emission = Color(0.5, 0.3, 0.12)
 	wood.emission_energy_multiplier = 0.12
 	var grime: StandardMaterial3D = StandardMaterial3D.new()   # the top of the stick is dark with handling and smoke
@@ -1977,7 +2139,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	var wrap_material: StandardMaterial3D = StandardMaterial3D.new()
 	wrap_material.albedo_color = Color(0.26, 0.17, 0.1)
 	wrap_material.roughness = 1.0   # matte
-	wrap_material.emission_enabled = true   # a trace of warm light of its own so the head is brown, not black, in the dark (and not orange at noon)
+	wrap_material.emission_enabled = lit   # a trace of warm light of its own so the head is brown, not black, in the dark (and not orange at noon)
 	wrap_material.emission = Color(0.5, 0.22, 0.08)
 	wrap_material.emission_energy_multiplier = 0.2
 	var head: MeshInstance3D = MeshInstance3D.new()
@@ -1992,7 +2154,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	var char_material: StandardMaterial3D = StandardMaterial3D.new()
 	char_material.albedo_color = Color(0.16, 0.1, 0.065)
 	char_material.roughness = 1.0
-	char_material.emission_enabled = true
+	char_material.emission_enabled = lit
 	char_material.emission = Color(0.9, 0.3, 0.05)
 	char_material.emission_energy_multiplier = 0.35
 	var charred: MeshInstance3D = MeshInstance3D.new()
@@ -2018,6 +2180,13 @@ func _make_torch_model(id: String = "") -> Node3D:
 		band.mesh = ring
 		band.position = Vector3(0.0, band_y, 0.0)
 		torch.add_child(band)
+
+	if not lit:
+		for child in torch.get_children():
+			if child is MeshInstance3D:
+				(child as MeshInstance3D).layers = 2
+
+		return torch
 
 	# The flame rises from the top of the head whichever way the stick points (flame_up.gd): about 25 cm tall and 8 cm across at the base, a slim teardrop, a
 	# teardrop of three emissive cones, orange at the base to yellow at the tip with a short pale core.

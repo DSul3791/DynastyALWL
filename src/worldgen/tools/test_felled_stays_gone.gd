@@ -43,6 +43,9 @@ class FakePlacer:
 	func species_by_id(_id: int) -> Dictionary:
 		return {}
 
+	func species_of(_id: int) -> Dictionary:
+		return {}   # server_flora's undergrowth index asks the kind (empty reads as a tree: no undergrowth)
+
 
 func make_items(dir: String):
 	DirAccess.make_dir_recursive_absolute(dir)

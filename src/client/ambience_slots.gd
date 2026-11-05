@@ -21,7 +21,8 @@ const SILENT_DB := -60.0
 # -27 dB RMS (-31 winter), as loud as everything else in the forest together, so they sit this far under the other sounds.
 # Dave 2 Nov: the night bed (a low, breathing hush, 72 percent under 200 Hz, -27.8 dB RMS) was 8 dB hotter than the forest day bed (-35.9) and drowned a campfire; he
 # took it for the surf. He wants it kept, just much quieter: -18 dB (about -46 RMS), and it ducks near a lit fire. (The all-day metal-sheet sound is another source, not this.)
-const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0, "bed_night": -18.0}
+# Dave 4 Nov: still the one sound always too loud (his sound panel: the only one left playing, at -18 dB, heard as wind). Down 14 dB more, to -32 (about -60 RMS).
+const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0, "bed_night": -32.0}
 const FIRE_DUCK_LAYERS := ["shore_bed", "time_bed"]   # was -12 for the old beds; Kathleen's new ones (kathleen-forest-bed f57c1bd9) are 15-20 dB quieter
 const GAP_S := [4.0, 20.0]
 const PITCH_SPREAD := 0.05
@@ -521,6 +522,7 @@ func _set_bed(layer: String, slot: String) -> void:
 			wanted = ""
 		else:
 			var player: AudioStreamPlayer = AudioStreamPlayer.new()
+			player.name = wanted   # the sound panel and dump show the bed's slot, not "@AudioStreamPlayer@60080" (Dave 4 Nov 2026)
 			player.stream = _looped(stream)
 			player.bus = "Wind" if wanted.contains("wind") else ("Surf" if wanted.contains("surf") else "Nature")   # the wind beds (desert, canyon) follow the Wind slider, not Nature (Dave 24 Oct)
 			player.volume_db = SILENT_DB
@@ -572,6 +574,7 @@ func _set_positional(body: Node3D) -> void:
 			continue
 
 		var player: AudioStreamPlayer3D = Sound3D.make(self, "Nature", 10.0, 90.0)
+		player.name = slot
 		player.stream = _looped(stream)
 		player.volume_db = SILENT_DB
 		player.global_position = wanted[slot]

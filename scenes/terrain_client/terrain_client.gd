@@ -66,6 +66,7 @@ const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const BurrowViewScript := preload("res://src/client/burrow_view.gd")
+const NestViewScript := preload("res://src/client/nest_view.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
@@ -117,7 +118,9 @@ const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
+const FlameRules := preload("res://src/shared/flame_rules.gd")
 const HorizonScript := preload("res://src/client/horizon_indicator.gd")
+const CaveDressing := preload("res://src/client/cave_dressing.gd")
 const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
@@ -165,7 +168,9 @@ const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on 
 const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_MIN_MSEC := 3000          # and never more often than this, ground loading or not
+const WATER_MAX_MSEC := 12000         # a re-ask that brought no new water doubles the wait, up to this (settled water: the log spam in the lag logs)
 const GroundColumn := preload("res://src/client/ground_column.gd")
+const WaterReask := preload("res://src/client/water_reask.gd")
 # Spawn near the ground (Dave 25 Oct, Tyler): the server's spawn y is already the ground height at the spawn x,z plus 2 m (terrain_server._spawn_point), and a respawn point is
 # a real standing place, so the player is put there with this small lift instead of 28 m up. The old +28 m was only waiting for ground to appear.
 const SPAWN_LIFT_M := 0.5
@@ -221,6 +226,8 @@ var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
+var _flame_rain_s: float = 0.0          # seconds the held torch has been out in the open rain (flame_rules.gd)
+var _flame_asked_msec: int = -100000     # when the server was last asked to douse it (one ask a second at most)
 var underwater_surface: float = 0.0      # the water surface over the eye while under (fog depth, caustics), 0 in the sea
 var _ground_quality: int = -1       # quality the ground texture array was built for
 var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
@@ -445,6 +452,7 @@ var test_dig_check: bool = false      # --dig-check: read the ground where --dig
 var flora                             # FloraView
 var ocean_ice                         # OceanIce (floes over a frozen sea)
 var shore_props                       # ShoreProps (the tide-line gather spots drawn on the beach)
+var nest_view                         # NestView (inland grouse and songbird nests, src/client/nest_view.gd)
 var swimming: bool = false            # in deep water, feet under the surface (src/shared/swim.gd)
 var _climb_until_msec: int = 0        # pulling out of the water onto a bank or floe until then
 var _under_ice_next_msec: int = 0
@@ -495,6 +503,9 @@ var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
+var _water_wait_msec: int = WATER_MIN_MSEC   # the wait between re-asks now (WATER_MIN_MSEC to WATER_MAX_MSEC)
+var _water_new_since_ask: int = 0           # chunks with changed water since the last re-ask
+var _water_quiet_asks: int = 0              # re-asks in a row that brought nothing new (the log line is printed for the first only)
 var _water_dirty_area: Rect2 = Rect2()   # protocol 88: where the water moved since the last ask (no area: everywhere)
 var _water_dirty_all: bool = false
 var _flora_chunks: int = 0
@@ -779,6 +790,7 @@ func _ready() -> void:
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.flora_stripped_received.connect(_on_flora_stripped)
+	net.nests_received.connect(_on_nests_sound)   # songbird nests are heard (ambient_life.set_nests); MikeW draws them from the same signal
 	net.flora_fruit_received.connect(_on_flora_fruit)
 	net.zone_received.connect(func(biome_id: int) -> void: sound.ambience.set_zone(biome_id))
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
@@ -812,6 +824,7 @@ func _ready() -> void:
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.cave_streams_received.connect(_on_cave_streams)
+	net.cave_dressing_received.connect(_on_cave_dressing)
 	net.cave_dens_received.connect(_on_cave_dens)
 	net.surface_received.connect(_on_surface_received)
 	net.dump_received.connect(ground_debug.on_dump_received)
@@ -898,6 +911,8 @@ func _connect() -> void:
 
 	multiplayer.multiplayer_peer = peer
 	print("Terrain client: connecting to %s:%d" % [_host, _port])
+	GroundMaterialScript.start_early(quality)   # the ground photos are sized on a worker while the welcome is on its way
+	SoundStageScript.prewarm()   # every sound file starts loading now, not in the welcome frame (181 ms there in the 5 Nov lag run)
 
 
 # The server dropped this client or ended. A player sees a plain message with Retry and Quit and the world stays
@@ -1265,6 +1280,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_menu: int = Probe.start()
 	_build_menu()
 	Probe.stop("welcome: menu", tq_menu)
+	var tq_views: int = Probe.start()   # the windowed lag run (5 Nov) froze 0.8 to 1.3 s "after welcome: menu", before "welcome: items view": these pieces were not timed
 	hud = Label.new()
 	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
 	hud.visible = display.hud_text
@@ -1302,23 +1318,37 @@ func _welcome_body(info: Dictionary) -> void:
 	burrow_view.ground_at = _ground_below
 	add_child(burrow_view)
 	net.burrows_received.connect(burrow_view.on_burrows)
+	nest_view = NestViewScript.new()                      # grouse and songbird nests (MikeW: protocol 91 spots, the basic_look ground nest)
+	nest_view.name = "Nests"
+	add_child(nest_view)
+	net.nests_received.connect(nest_view.on_nests)
 	net.burrows_received.connect(_on_burrows_for_grass)
+	Probe.stop("welcome: hud, npc, animal, burrow and nest views", tq_views)
+	var tq_items_ready: int = Probe.start()
 	items = InventoryViewScript.new()
 	items.name = "Items"
-	add_child(items)
+	add_child(items)   # its _ready prewarms the loose item meshes
+	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
 	Probe.stop("welcome: items view", tq_items_view)
+	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
+	var tq_dialogue: int = Probe.start()
 	var dialogue_view: Node = DialogueViewScript.new()
 	dialogue_view.name = "Dialogue"
 	add_child(dialogue_view)
 	dialogue_view.setup(net, items, npc_view, layer, func(): return body.global_position)
+	Probe.stop("welcome: dialogue view", tq_dialogue)
+	var tq_voice: int = Probe.start()
 	var npc_voice: Node = NpcVoiceScript.new()
 	npc_voice.name = "NpcVoice"
 	add_child(npc_voice)
 	_npc_voice = npc_voice
+	Probe.stop("welcome: npc voice", tq_voice)
 
+	var tq_gmenu: int = Probe.start()
 	game_menu.refresh()
+	Probe.stop("welcome: game menu", tq_gmenu)
 
 	dialogue_view.voice_line = func(voice_id: String, text: String):
 		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
@@ -1331,6 +1361,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
 	items.lie_on_bed = _lie_on_bed
+	items.sit_on_seat = _sit_on_seat
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)
 
@@ -1397,6 +1428,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	Probe.stop("welcome: held item", tq_held_item)
+	var tq_tail: int = Probe.start()   # Low-quality lag runs (5 Nov) stuck up to 2.2 s "after held item": the rest of the welcome was not timed
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
 	held.shrub_near = _shrub_near
 	held.water_depth_at = func(x: float, z: float) -> float:
@@ -1482,10 +1514,16 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_net:
 		held.run_net_test()
+	Probe.stop("welcome: hotbar, pickup feed and tests", tq_tail)
+	var tq_print: int = Probe.start()
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
+	Probe.stop("welcome: welcome line printed", tq_print)
+	var tq_join: int = Probe.start()
 	_join_log("JOIN: at the welcome: player y %s, viewer y %s" % ["?" if body == null else "%.1f" % body.global_position.y, _viewer_y_text()])
+	Probe.stop("welcome: join line logged", tq_join)
+	_after_welcome = []   # the next frames are timed too (_note_after_welcome)
 
 
 
@@ -1866,6 +1904,9 @@ func _shore_prompt() -> String:
 			container = str(id)
 			break
 
+	if nest_view != null:
+		nest_view.set_season(game_clock.season())   # eggs show in the laying season only
+
 	if shore_props != null:
 		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), game_clock.season(), _shore_used, _ground_below)
 
@@ -2018,6 +2059,11 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 func _respawn_gasp() -> void:
 	if sound != null:
 		sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
+
+
+func _on_nests_sound(points: PackedVector3Array, kinds: PackedByteArray) -> void:
+	if sound != null and sound.ambient != null:
+		sound.ambient.set_nests(points, kinds)
 
 
 # The built floor under the feet for the footsteps (sound_stage.floor_under): a short ray down hits a placed piece whose model carries
@@ -2240,6 +2286,18 @@ var _flow_tex: ImageTexture = null      # the live water window's texture, updat
 var _liquid_hole_told: Rect2 = Rect2()
 
 
+var _cave_dressing = null   # bone piles and stalagmites/stalactites in caves (protocol 92), made on the first list
+
+
+func _on_cave_dressing(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat32Array) -> void:
+	if _cave_dressing == null:
+		_cave_dressing = CaveDressing.new()
+		_cave_dressing.name = "CaveDressing"
+		add_child(_cave_dressing)
+
+	_cave_dressing.set_tile(tile, bones, formations)
+
+
 func _on_cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
 	cave_dens[tile] = dens
 	cave_dens_changed.emit(tile, dens)
@@ -2280,6 +2338,7 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 	# One texture for every publish (twice a second, 256 KB): updated in place, not a new GPU texture each time (lag review, Dave 2 Nov 2026).
 	if _flow_tex == null or _flow_tex.get_size() != Vector2(im.get_size()):
 		_flow_tex = ImageTexture.create_from_image(im)
+		flora.set_liquid_live(_flow_tex)   # chunk sheets give way only where the live sheet draws water (Dave 4 Nov 2026: a dry sim hid a baked river)
 	else:
 		_flow_tex.update(im)
 
@@ -2361,9 +2420,12 @@ func _send_water_request(now: int) -> void:
 
 	# At most one re-ask every WATER_MIN_MSEC: the server says the water moved about twice a second and answers every flora chunk
 	# held each time, which in Dave's crash logs kept its main thread about 65 percent busy.
-	if now - _water_asked_msec < WATER_MIN_MSEC:
+	if now - _water_asked_msec < _water_wait_msec:
 		return
 
+	_water_wait_msec = WaterReask.wait_after(_water_wait_msec, _water_new_since_ask, WATER_MIN_MSEC, WATER_MAX_MSEC)
+	_water_quiet_asks = 0 if _water_new_since_ask > 0 else _water_quiet_asks + 1
+	_water_new_since_ask = 0
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
@@ -2378,8 +2440,9 @@ func _send_water_request(now: int) -> void:
 
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
-	@warning_ignore("integer_division")
-	print("Terrain client: the water moved, asking again for %d chunks" % (chunks.size() / 2))
+	if _water_quiet_asks <= 1 and not chunks.is_empty():   # "asking again for 0 chunks" (the moved water is outside every chunk held) says nothing
+		@warning_ignore("integer_division")
+		print("Terrain client: the water moved, asking again for %d chunks (next in %.0f s or more)" % [chunks.size() / 2, _water_wait_msec / 1000.0])
 
 	if not chunks.is_empty():
 		net.request_water.rpc_id(1, chunks)
@@ -2397,6 +2460,7 @@ func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 		return
 
 	_water_key[chunk] = key
+	_water_new_since_ask += 1
 	_queue_in({"kind": "water", "chunk": chunk, "water": water})
 
 
@@ -2959,6 +3023,9 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	if _cave_streams != null:
 		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
 
+	if _cave_dressing != null:
+		_cave_dressing.clear()   # and its cave dressing with it
+
 	if sound != null:
 		sound.cavewater.clear()
 
@@ -3304,6 +3371,11 @@ func _update_view(delta: float) -> void:
 		return
 
 	if _avatar == null:
+		# Dave's PC log 4 Nov 2026: the first call waited for the body file still loading on a loader thread ("update view" 404 ms at the join).
+		# The body is made once the file is in; until then (a second or two, while the ground loads) there is no third-person body to draw.
+		if MyCharacter.dynasty_body_on() and ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			return
+
 		_avatar = _make_avatar()
 		body.add_child(_avatar)
 		net.worn_received.connect(func(_numbers: PackedInt32Array) -> void: _dress_avatar())
@@ -3357,6 +3429,9 @@ func _update_view(delta: float) -> void:
 		# Clip, playback speed and slope tilt come from src/client/character/avatar_driver.gd (moved there unchanged).
 		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
 		var clip: String = AvatarDriver.clip_for(_avatar, stance.stance if shot_stance < 0 else shot_stance, body.velocity, body.global_transform.basis, body.is_on_floor(), pace, _avatar.current(), carrying, delta)
+
+		if not _seat.is_empty() and stance.stance == StanceScript.SIT and _avatar.animation_player != null and _avatar.animation_player.has_animation("sit_chair"):
+			clip = "sit_chair"   # on a seat, not the ground
 
 		if debug_clip != "":
 			clip = debug_clip
@@ -3606,6 +3681,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_save_display()
 		elif KeyBindings.matches(event, "delete_plan") and held != null and held.delete_plan():
 			pass
+		elif KeyBindings.matches(event, "hammer_group_next") and held != null and held.step_blueprint_group(true):
+			pass
+		elif KeyBindings.matches(event, "hammer_group_prev") and held != null and held.step_blueprint_group(false):
+			pass
 		elif KeyBindings.matches(event, "blueprints") and items != null and not items.open:
 			if held != null:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
@@ -3671,7 +3750,6 @@ func _step_player(delta: float) -> void:
 	if _item_sync_left <= 0.0:
 		_item_sync_left = 0.1
 		sound.itemfx.watch(items)
-		sound.itemfx.watch_vitals(items.hunger, 0.1)
 		sound.breath.set_exertion(items.strain)   # the server's real strain replaces the stand-in
 		var cleared_t0: int = Time.get_ticks_usec()
 		_sync_cleared()
@@ -3704,6 +3782,9 @@ func _step_player(delta: float) -> void:
 func _set_stance(wanted: int, toggle: bool = false) -> void:
 	var target: int = StanceScript.STAND if toggle and stance.stance == wanted else wanted
 
+	if target != StanceScript.SIT and not _seat.is_empty():
+		_leave_seat()   # off the seat first: the room check would find the seat itself
+
 	if target < stance.stance and not _room_to_rise(target):
 		_menu_note.text = "Not enough room to stand up here"
 		return
@@ -3714,6 +3795,79 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 
 		if items != null:
 			items.request_stance(stance.stance)   # the server: sitting and lying bring exertion down
+
+
+# E on a seat (docs/COMFORT_DESIGN.md 10.3; Dave 5 Nov 2026 "we need a sitting on a chair action", his picture: the body stood inside the chair). The player sits ON it in
+# the chair pose (dynasty_body.gd "sit_chair"), hips over the seat, feet on the ground in front, and is held there until a movement key stands them up in front of it.
+# structures.json says how: sit_face "front" (a chair: facing its -Z, the back at +Z), "sides" (a bench: facing the side the player came from, at the nearest of
+# sit_spots_x) or "free" (a log seat or stool: facing the way the player already faces).
+const SEAT_HIPS_BACK_M := 0.05      # a chair's hips this far behind the middle of the seat, toward its back
+const SEAT_STEP_OFF_M := 0.7        # standing up puts the player this far in front of the seat, clear of its solid (a chair is 0.5 m deep, the capsule 0.33 m wide)
+
+var _seat: Dictionary = {}          # while on a seat: {"at": the body position held, "front": the way the sitter faces}
+
+
+func _sit_on_seat(seat_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
+	if swimming or flying:
+		return
+
+	var turn: Basis = Basis(Vector3.UP, deg_to_rad(yaw_deg))
+	var local: Vector3 = turn.inverse() * (body.global_position - seat_pos)
+	var face: String = str(def.get("sit_face", "front"))
+	var spot: Vector3 = Vector3.ZERO
+	var best: float = INF
+
+	for x in def.get("sit_spots_x", [0.0]):   # the spot along the seat nearest the player (a bench has three)
+		if absf(float(x) - local.x) < best:
+			best = absf(float(x) - local.x)
+			spot.x = float(x)
+
+	var front: Vector3
+
+	if face == "free":
+		front = -body.global_transform.basis.z
+		front.y = 0.0
+		front = front.normalized() if front.length() > 0.01 else Vector3.FORWARD
+	else:
+		var front_local: Vector3 = Vector3(0.0, 0.0, 1.0 if face == "sides" and local.z > 0.0 else -1.0)
+
+		if face == "front":
+			spot.z = -front_local.z * SEAT_HIPS_BACK_M
+
+		front = turn * front_local
+
+	var at: Vector3 = seat_pos + turn * spot
+	at.y = seat_pos.y + float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
+	body.velocity = Vector3.ZERO
+	body.global_position = at
+	body.rotation.y = atan2(-front.x, -front.z)
+	_set_stance(StanceScript.SIT)
+
+	if stance.stance == StanceScript.SIT:
+		_seat = {"at": at, "front": front}
+		stance.seated = true
+
+
+# Holds a seated player on the seat (true while seated: no walking, no gravity, no sliding out of the seat's solid). A stance the server changed ends it.
+func _hold_seat() -> bool:
+	if _seat.is_empty():
+		return false
+
+	if stance.stance != StanceScript.SIT:
+		_leave_seat()
+		return false
+
+	body.velocity = Vector3.ZERO
+	body.global_position = _seat["at"]
+	return true
+
+
+# Off the seat: stepped forward in front of it, clear of its solid.
+func _leave_seat() -> void:
+	body.global_position = _seat["at"] + (_seat["front"] as Vector3) * SEAT_STEP_OFF_M
+	body.velocity = Vector3.ZERO
+	_seat = {}
+	stance.seated = false
 
 
 # E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down.
@@ -3859,6 +4013,8 @@ func _move_player(delta: float) -> void:
 	elif flying:
 		direction.y += float(KeyBindings.held("jump")) - float(KeyBindings.held("down"))
 		body.global_position += direction * FLY_SPEED * fast * delta
+	elif _hold_seat():
+		pass
 	elif _climb_ladder(delta, strain_cap):
 		pass
 	else:
@@ -4182,8 +4338,27 @@ func _log_frame(delta: float) -> void:
 	_frame_log = {"t": 0.0, "n": 0, "sum": 0.0, "worst": 0.0, "slow": 0}
 
 
+# The frames right after the welcome (Low-quality lag runs, 5 Nov: stuck 0.8 to 2.2 s there with no probe finishing): length, script
+# and physics time of each, printed once as one line after AFTER_WELCOME_FRAMES frames.
+const AFTER_WELCOME_FRAMES := 4
+var _after_welcome: Variant = null   # null: not timing; an Array of "frame ms (script, physics)" texts while timing
+
+
+func _note_after_welcome(delta: float) -> void:
+	if _after_welcome == null:
+		return
+
+	(_after_welcome as Array).append("%.0f ms (script %.0f, physics %.0f, draw calls %d)" % [delta * 1000.0, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+		Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
+
+	if (_after_welcome as Array).size() >= AFTER_WELCOME_FRAMES:
+		print("Terrain client: frames after the welcome: " + ", ".join(PackedStringArray(_after_welcome as Array)))
+		_after_welcome = null
+
+
 func _process(delta: float) -> void:
 	FreezeWatchScript.beat()
+	_note_after_welcome(delta)
 	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)
@@ -4278,6 +4453,8 @@ func _process(delta: float) -> void:
 
 	if critters != null and body != null and sound != null and sound.ambient != null:
 		critters.update(delta, body.global_position, sound.ambient.weights, game_clock.season(), game_clock.hour(), float(weather.get("rain", 0.0)))
+
+	_flame_wet(delta)
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
@@ -4427,6 +4604,7 @@ func _process(delta: float) -> void:
 	if not flying and body != null:
 		var tg: int = Probe.start()
 		grass.update(body.global_position)
+		var tg_stamp: int = Probe.start()
 
 		# Stamped behind the player, out of view, so no grass is seen dropping flat in front of the camera
 		# (owner, 2026-10-20: "popping in and out of existence right in front of me").
@@ -4436,6 +4614,7 @@ func _process(delta: float) -> void:
 			grass.stamp(body.global_position - walk.normalized() * 1.3)
 
 		_stamp_walkers(now)
+		Probe.stop("grass: stamp", tg_stamp)
 		Probe.stop("grass", tg)
 
 	if _bake.running and now >= _bake_check_msec:
@@ -4620,7 +4799,6 @@ func _process(delta: float) -> void:
 		for kind in ["crunch", "soft", "drink", "roast_forage", "raspberries", "poultice_plantain", "bandage_plantain"]:
 			sound.itemfx.eat(kind)
 
-		sound.itemfx.watch_vitals(10, 200.0)
 		# A mouthful at the water's edge (Dave 2026-10-21): E sends the drink, the server raises thirst, the gulp plays; a rise without E is silent.
 		items.thirst = 50
 		var before_drink: int = sound.itemfx.eat_played
@@ -4630,7 +4808,7 @@ func _process(delta: float) -> void:
 		items._on_vitals(items.hunger, items.health, int(items.weight_kg * 10.0), 70, items.luck, items.fitness)
 		print("Terrain client: drink check: %d gulps without E, %d gulp after E, last %s" % [silent_rise, sound.itemfx.eat_played - before_drink - silent_rise, sound.itemfx.last])
 
-		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, growls %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.itemfx.growls_played, sound.fire.last, sound.itemfx.last])
+		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.fire.last, sound.itemfx.last])
 
 	# Headless check: every placed-thing hook once, then a synthetic chest row appears and vanishes beside the player.
 	if test_placed and now - connected_msec > 18000:
@@ -5390,14 +5568,8 @@ func _process(delta: float) -> void:
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
 
+	# No movement-state label (flying, running, jogging): the player knows. Only status notices show here.
 	var mode: String = ""
-
-	if flying:
-		mode = "flying"
-	elif running:
-		mode = "Running"
-	elif jogging:
-		mode = "Jogging"
 
 	if inspecting:
 		_update_inspect()
@@ -5950,3 +6122,31 @@ func _exit_tree() -> void:
 	_drain_incoming()
 	if stream != null:
 		stream.close()
+
+
+# A torch in either hand goes out under water or after a few seconds in the open rain (Dave, 4 Nov 2026; flame_rules.gd). The client knows the held slot,
+# so it asks the server to swap the torch for a doused one; a lantern (later) only goes out under water.
+func _flame_wet(delta: float) -> void:
+	if held == null or items == null or items.inventory == null or net == null:
+		return
+
+	var slot: int = held.flame_slot()
+
+	if slot < 0:
+		_flame_rain_s = 0.0
+		return
+
+	var entry: Dictionary = items.table.entry(items.table.id_of(items.inventory.numbers[slot]))
+	var rain: float = float(weather.get("rain", 0.0))
+	# Cover from the rain: a tree's crown over the eye, or rock (a cave or an overhang: the same enclosure that stops the rain particles, weather_look.gd).
+	# A built roof is the server's to see: it refuses the douse there.
+	var enclosed: float = sound.cave.rock_enclosure if sound != null and sound.cave != null else 0.0
+	var covered: bool = WeatherLookScript.sky_share(enclosed) < 0.5 or held.flame_covered() if FlameRules.in_rain(rain, false) else true    # the cover lookup only while it rains
+	_flame_rain_s = _flame_rain_s + delta if FlameRules.in_rain(rain, covered) else 0.0
+	var reason: String = FlameRules.douse_reason(entry, underwater, rain, covered, _flame_rain_s)
+
+	if reason == "" or Time.get_ticks_msec() - _flame_asked_msec < 1000:
+		return
+
+	_flame_asked_msec = Time.get_ticks_msec()
+	net.inventory_action.rpc_id(1, NetScript.ACT_DOUSE, slot, 1 if reason == "rain" else 0, 0, Vector3.ZERO)

@@ -1,6 +1,6 @@
 # Dynasty water: history for the next team (Sonny, 1 Nov 2026)
 
-Branch `dynasty-water`. Code under `src/water2/`. Read with `docs/handoff/HANDOFF_SONNY.md`, `docs/DYNASTY_WATER_DESIGN.md`, `docs/DYNASTY_WATER_STATUS.md`, `docs/PONYTAIL_RULES.md`.
+Branch `dynasty-water`. Code under `src/water2/`. Read with `docs/handoff/HANDOFF_SONNY.md`, `docs/DYNASTY_WATER_DESIGN.md`, `docs/PONYTAIL_RULES.md` (the 31 Oct stage log, `DYNASTY_WATER_STATUS.md`, and the old-water note `WATER_HANDOVER.md` are archived in `docs/archive/2026-11/`; their live parts are section 9).
 
 ## 1. Why we wrote our own water
 
@@ -32,7 +32,7 @@ Reused, not rewritten: baked tiles and `TileFile`, `TileTerrainData._load_sim_wa
 - **River flooding.** `hold_steady()` first made huge springs from steep slopes and the deep sea and flooded the window. Fixed with caps (3 m^2/s, 6 m/s), headwater-only springs, the sea held at 0 and the channel mask: 0 cells flooded.
 - **River drain.** An early figure said 12 percent of baked wet cells stopped being drawn in 180 s. `probe_drain.gd` on the current code: 98.6 percent stay drawn at 1, 3, 10 and 30 minutes (2595 of 2633), 113 cells are under half their baked depth (worst loss 2.2 m), volume 140 percent of the start. So rivers do not vanish; they get slightly deeper. No drain fix was needed.
 - **Real-game picture.** First rig picture: grey, camera inside the terrain (a walking shot at agl 12 fell through, y -37). Second: open sea (ground -49 at the chosen spot). Fix: fly the camera (agl over 40, no collision) and choose a spot with real river or lake. `probe_pick_spot.gd` finds them (its printed world x/z are wrong, see the handoff). A good picture of a river or lake is still outstanding.
-- **Shader depth and flow.** In the real game the client computes flow from received levels, so the sim's flow, depth and traits do not reach the shader. A protocol flow channel is needed; the six-line `water_material.gd` patch plan is in the status doc and is not applied.
+- **Shader depth and flow.** In the real game the client computes flow from received levels, so the sim's flow, depth and traits do not reach the shader. A protocol flow channel is needed; the six-line `water_material.gd` patch plan is in section 9 and is not applied.
 - **Imports.** A new worktree renders missing textures until `godot --headless --path . --import` is run once; the import leaves hundreds of untracked `.uid`/`.import` files that block a merge, delete only those exact files before merging.
 - Smaller ones: GDScript `%e` format unsupported; `:=` cannot infer from Variant; a `Window` const shadows a native class (renamed `WaterWindow`); test thresholds for the settled bowl and last wet cell; QA-page pushes rebased over Dave's removals.
 
@@ -43,7 +43,7 @@ Reused, not rewritten: baked tiles and `TileFile`, `TileTerrainData._load_sim_wa
 ## 6. Unfinished, exact next steps
 
 1. Real-game before/after pictures at a river or lake (fix `probe_pick_spot.gd` origin, fly at agl 50, compare `--water-old` and default).
-2. Protocol flow channel + shader patch so the game shows the sim's flow, depth and kinds (status doc has the patch plan).
+2. Protocol flow channel + shader patch so the game shows the sim's flow, depth and kinds (patch plan in section 9).
 3. Windows that follow players, with a shared seam; one window only today (starter tile).
 4. Digs and fills reaching the field (`dig` and `fill` in the hub are empty shortcuts).
 5. Swim, drown and sweep wired to the player (`water_rules.gd`).
@@ -57,3 +57,13 @@ One window only (revisit when a second player is far from the first). `dig`/`fil
 ## 8. Also useful
 
 Pictures for Dave go on the QA page, one card per picture (worktree `C:/GodotProjects/DynastyALWL_qa`, branch qa). Never `git add` `worlds/base_world/water_archive/` or `scratch_world_*`. No baked tile may be committed without Dave's go. Max 3 heavy Godot jobs at once; other sessions often fill the slots, jobs just queue. The look rig runs from this worktree and needs `--server-arg --water-old` to show the old water after the flip.
+
+## 9. Kept from the 31 Oct status doc (moved here word for word, 5 Nov 2026, when `DYNASTY_WATER_STATUS.md` was archived)
+
+### Shader patch plan (for the protocol flow channel, item 2 of section 6)
+**Superseded (Sonny, 5 Nov 2026): not to be applied.** Since protocol 85 (2 Nov) the sim's flow reaches the screen through `src/water2/liquid_surface.gd`, which samples the same texture (R surface, G/B flow, A depth) and carries ripples and foam along the flow. Inside the live window the grid look (`water_material.gd`) crossfades out over `blend_m` and the liquid sheet draws the water; outside it there is no sim data. This patch would only touch the 24 m blend band. Kept below as history.
+
+- **The six-line patch for `src/client/water_material.gd`, to apply only after the tests have run** (it changes the game's shader, default path must stay identical when `water2_on` is 0): (1) paste `SHADER_INCLUDE` after the uniform block (line 45); (2) in `vertex()` compute `world_pos` first; (3) after `flow = ...` add `if (water2_on > 0.5) { vec4 w = water2_at(world_pos.xz); if (w.x >= 0.0) { flow = w.gb / fastest_m_s; } }` (the flow is then the sim's, in units of the drawn top speed); (4) add `varying float water2_foam;` set in the same branch to `w.a`; (5) in `fragment()` multiply the existing foam by `1.0 + water2_foam * rough_or_turbulence` only when `water2_on > 0.5`; (6) the client calls `FlowTexture.apply` for the window it knows (needs the protocol flow channel for real play; in the demo scene it is a direct call).
+
+### Step 4 if GDScript is not enough: options (cost, risk)
+Measured: 92 ms of compute per simulated second for a 1 km window with 2,900 wet cells, on a 50 percent duty thread = 9 percent of a core. That is inside the budget for ONE window, so no native code is needed for the starter case. It is not enough for many windows (one per player) or a wide lake wake-up. Options when it is: (1) static lake levels, sim only for moving water: lakes already sleep after the rest snap, so this is mostly done; (2) skip stepping dry channel cells (a cell list instead of 16 x 16 blocks): about 2 to 3 times cheaper, 1 day, low risk; (3) a GDExtension in C++ for the flux and depth loops: about 20 to 50 times faster, 3 to 5 days, adds a build step and a platform binary to the repo (the main risk), keeps the same arrays; (4) compute shader on the client, server keeps the coarse state: biggest change, 5+ days, server and client could disagree. Recommendation: do (2) first if a second window is needed, (3) only if windows must cover whole tiles.

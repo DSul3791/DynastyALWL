@@ -11,6 +11,7 @@ using namespace godot;
 static const double GRAVITY = 9.81;
 static const double MANNING_N = 0.035;
 static const double STABILITY = 0.7;
+static const double THETA = 0.8;          // de Almeida 2012 flow weighting (1: none); water_sim.gd THETA
 static const double DT_MAX_S = 2.0;
 static const double DT_MIN_S = 0.05;
 static const double FACE_MIN_M = 0.001;
@@ -212,6 +213,20 @@ double WaterCore::step(double spring_multiplier) {
 			double there = gn > 0.0 ? gn + depth[n] : 0.0; // the sea holds at 0 m
 			bool forward = d < 2;
 			double stored = forward ? (d == 0 ? flow_x[k] : flow_z[k]) : -(d == 2 ? flow_x[n] : flow_z[n]);
+			// de Almeida et al. 2012 (BUG-030, a funnel in a lake): the inertial scheme has almost no friction in deep water and grows a chequer
+			// of +-1 to 4 m from cell to cell. The face's old flow is blended with the two faces in line with it (theta weighting), which damps it.
+			{
+				const bool along_x = (d == 0 || d == 2);
+				const int32_t f = forward ? k : n;              // the face is stored on its lower cell
+				const int32_t s = along_x ? 1 : width;
+				const int fi = along_x ? f % width : f / width;
+				const std::vector<float> &flows = along_x ? flow_x : flow_z;
+				double q0 = flows[f];
+				double before = fi > 0 ? flows[f - s] : q0;
+				double after = fi < width - 2 ? flows[f + s] : q0;
+				double blended = THETA * q0 + 0.5 * (1.0 - THETA) * (before + after);
+				stored = forward ? blended : -blended;
+			}
 			double q = face(stored, here, gk, there, gn, step_s);
 
 			if (q > 0.0) {

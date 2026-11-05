@@ -54,6 +54,7 @@ var _item_spot: Vector3 = Vector3.ZERO
 var _item_failed: bool = false
 var _item_checked: int = 0         # item views judged; a run that ends with fewer than ITEM_VIEWS is a failure, not a silent pass
 const ITEM_VIEWS := 4
+const BODY_HALF_HEIGHT := 0.9      # half the standing capsule (stance.gd SHAPE_HEIGHT[STAND]): the body origin above the feet
 var _item_box: AABB = AABB()
 var _item_node: Node3D = null
 var _item_tries: int = 0
@@ -589,6 +590,7 @@ func _process(delta: float) -> void:
 		return
 
 	_print_state()
+	_print_body_height()
 
 	if not flora_names.is_empty():
 		_print_flora_row()
@@ -1484,6 +1486,20 @@ func _side_view(walk: float) -> void:
 		return
 
 	client.third_person = true
+
+	# The body flies at the shot's height over the voxel raycast's whole-number cell, so a body shot could stand up to a metre off the ground (PC 5 Nov: feet 0.37 m
+	# under it, the sit cut off at the chest). Once landed, the flying body is set on the collision floor under it, feet on the ground as when walking.
+	if _landed and _placed:
+		var from: Vector3 = client.body.global_position + Vector3(0.0, 3.0, 0.0)
+		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - Vector3(0.0, 8.0, 0.0))
+		query.exclude = [client.body.get_rid()]
+		var hit: Dictionary = client.body.get_world_3d().direct_space_state.intersect_ray(query)
+
+		if not hit.is_empty():
+			var stand_y: float = float((hit["position"] as Vector3).y) + BODY_HALF_HEIGHT
+			client.body.global_position.y = stand_y
+			_want_y = stand_y
+
 	var origin: Vector3 = client._avatar.global_position + Vector3(0.0, 0.95, 0.0)
 	var left: Vector3 = client.body.global_transform.basis * Vector3(-1.0, 0.0, 0.0)
 	var aim: Vector3 = origin
@@ -1576,6 +1592,32 @@ func _tally(root: Node, eye: Vector3) -> void:
 func _piece_ground(x: float, z: float) -> float:
 	var from_y: float = client.body.global_position.y
 	return ItemCam.pick_ground(float(client._ground_below(Vector3(x, from_y, z))), _ground(x, z))
+
+
+# --shot-stance: where the drawn body is against the collision ground under it (the sit read as sunk into the ground on 5 Nov; the pose puts the hips 0.14 m above the body's feet level).
+func _print_body_height() -> void:
+	if stance_index < 0 or client._avatar == null:
+		return
+
+	var avatar: Node3D = client._avatar
+	var foot_y: float = avatar.global_position.y
+	# The voxel raycast gives the hit voxel's whole-number cell, not the surface; the physics ray gives the collision floor exactly (the body excluded).
+	var ground: float = NAN
+	var from: Vector3 = avatar.global_position + Vector3(0.0, 3.0, 0.0)
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - Vector3(0.0, 8.0, 0.0))
+	query.exclude = [client.body.get_rid()]
+	var hit: Dictionary = client.body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if not hit.is_empty():
+		ground = float((hit["position"] as Vector3).y)
+
+	var hips_y: float = NAN
+	var skeleton: Skeleton3D = avatar.get("skeleton") as Skeleton3D
+
+	if skeleton != null and skeleton.find_bone("mixamorig_Hips") >= 0:
+		hips_y = (skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("mixamorig_Hips"))).origin.y
+
+	print("shot runner: body height: stance %d clip %s, feet level %.2f, collision ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
 
 
 func _ground(x: float, z: float) -> float:

@@ -72,6 +72,30 @@ func _init() -> void:
 			carved += cave["chambers"].size()
 
 		_check(carved == 4, "the spring chamber is carved as before and the basin's three shapes under it (%d)" % carved)
+		# The cold zone covers the whole basin (BUG-008 PC probe: the old rim-wide cylinder left up to half the water out of it).
+		var missed: int = 0
+		var sampled: int = 0
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		rng.seed = 8
+
+		for n in range(2000):
+			var pick: Dictionary = basin["shapes"][n % basin["shapes"].size()]
+			var q: Vector3 = Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0))
+
+			if q.length() > 1.0:
+				continue
+
+			var point: Vector3 = pick["center"] + Vector3(q.x * pick["r"], q.y * pick["rh"], q.z * pick["r"])
+
+			if point.y > surface:
+				continue
+
+			sampled += 1
+			missed += 0 if data.in_cave_pool(point) else 1
+
+		_check(sampled > 200 and missed == 0 and is_equal_approx(data.cave_pool_surface(Vector3(16.0, surface - 12.0, 0.0)), surface)
+			and not data.in_cave_pool(Vector3(16.0, surface + 3.0, 0.0)) and not data.in_cave_pool(Vector3(60.0, surface - 5.0, 0.0)),
+			"every point of the pool's water is in its cold zone (%d of %d missed); above it or off to the side is not" % [missed, sampled])
 		var view = CaveStreams.new()
 		view._pools[Vector2i.ZERO] = CaveStreams.pools_of(s)
 		_check(is_equal_approx(view.pool_surface_at(Vector3(16.0, surface - 12.0, 0.0)), surface) and is_nan(view.pool_surface_at(Vector3(16.0, surface + 20.0, 0.0)))

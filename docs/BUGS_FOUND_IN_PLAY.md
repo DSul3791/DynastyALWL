@@ -31,7 +31,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** these arms need to be aligned better and placed better.
 - **What the screenshot shows (observation, not a diagnosis):** standing in a meadow with the stone axe selected. Both arms enter from the bottom of the screen with fingers visible. The right hand grips the axe handle partway up, with the head pointing up and slightly away. The left hand is open and reaches across in front of the right, not holding anything. The arms look thin and long against the view and lean toward the middle, and the hands look rotated relative to the forearms.
 - **Context:** Kathleen's note says the arms are a rigid mesh cut by height into upper arm, forearm and hand on the old arm rig; the wrist and fingers do not move; the hand mounts and tool placement are the old ones; and arm size against the camera, hand scale and tool alignment in the hand were "not checked". No in-game first-person picture existed before this screenshot.
-- **Status:** picture tool merged in #46 (2 Nov); arms themselves not yet changed (Jamie, from merged commits; not tested).
+- **Status:** picture tool merged in #46 (2 Nov). Arms moved back and set wider apart per Dave's QA answer (#139); now cut out and skinned on a worker (#262) and never built on the main thread (#336). Needs Dave's play check (Jason 5 Nov, from merged commits; not tested).
 
 ## 5. Cutting a tree down takes over 20 hits (it used to take about 10)
 
@@ -48,7 +48,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** whenever I cut up a fallen tree, each cut causes the game to lag and lock up for 2 seconds at a time.
 - **Context, not a diagnosis:** none measured. The fallen-tree cutting path is `_process_trunk` and `_cut_log_off` in `src/stream/server_items.gd`; today's change there made every felled tree give logs (`aae3a272`, `df56ffaf`). The game has an instrument that logs `SLOW RPC` over 100 ms and a `_slow_mark` helper, which may show where the time goes. The stall could be on the server (saving, creating the log item, or a world-state rewrite) or in the client (building the log mesh or re-importing). Nothing has been measured, and nothing has been run in a windowed client.
-- **Status:** timing instruments and shared bark shader merged (#28, #35, #42); cause not yet found (Jamie, from merged commits; not tested).
+- **Status:** timing instruments and shared bark shader merged (#28, #35, #42). Later fixes for stalls after cuts: plant clearing refilters only the chunks a new log reaches, spread at 2 ms a frame (#132); flora stalls after digs and cuts (#187). Needs Dave's play check (Jason 5 Nov, from merged commits; not tested).
 
 ## 7. The game has bad lag constantly
 
@@ -60,14 +60,14 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
   - (Struck out: three hung headless Godot scripts and two old headless servers were running earlier today, but Dave restarted the computer, so none of them exists now. If the lag remains after the restart, they were not the cause.)
   - The game was running inside the editor (embedded window), which is slower than a standalone run.
   - Fires, the photo camera, the craft search and the E-key changes also went in today.
-- **Status:** open, unassigned, not worked on.
+- **Status:** worked on as rank 2 "freezing and lag" (Steve leads). Merged since: arms textures compressed (#31), server threads at low priority (#118), per-frame trims (#122, #123, #127, #130, #132), water lag (#128, #147, #218, #337, #343), flora stalls (#187), join freezes (#336). Open: grass build spike (#374). Needs a fresh lag run on Dave's PC (Jason 5 Nov, from merged commits; not tested).
 
 ## 8. Three or more firewood in the campfire does not upgrade it to a medium fire
 
 - **Found:** 2026-11-01, Dave, playing the daily.
 - **Symptom (Dave):** when I put 3 or more firewood in the campfire it did not upgrade to a medium fire.
 - **Context, not a diagnosis:** Dave reported the same thing earlier today ("I have put many firewood in the fire, it hasn't got any bigger"). The tier rules (3 or more firewood is the medium fire; softwood firewood counts too, at twice the burn rate) were built by Steve on `claude/fire-fuel-tiers`, and `test_fire_fuel_tiers` shows them working on the server (4 logs lit the large fire; mixed soft and hard firewood made the medium fire). The server tests are not a windowed game, so the tier may not be reaching the client, the picture may not redraw when the tier changes, or the type of firewood Dave used may not count. Not known. Dave's debug overlay at the time of entry 5 shows build 826 (`5254215`, commit `52542154`), which includes the fuel tiers, so this is not an old build.
-- **Status:** open, unassigned, not worked on.
+- **Status:** #144 (Dave's QA, 2 Nov): a fire keeps its tier until that wood is gone, and firewood is 60% bigger. Needs Dave's play check (Jason 5 Nov, from merged commits; not tested).
 
 ## 9. Only one log can be put in the campfire
 
@@ -81,7 +81,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Found:** 2026-11-02, Dave, playing.
 - **Symptom (Dave):** the main character doesn't animate when he jumps; he just bounces in the air without any animation.
 - **Context, not a diagnosis:** none known. Nothing has been run in a windowed client.
-- **Status:** open, unassigned, not worked on.
+- **Status:** fix merged in #29 (jump animation for the player body). Needs Dave's play check (Jason 5 Nov, from merged commits; not tested).
 
 ## 11. A tree gets much bigger when it falls
 
@@ -106,3 +106,6 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 | 10 | No jump animation | Kathreen (character looks) | Steve (jump state signal) |
 | 11 | Tree gets bigger when it falls | Steve | Tyler (windowed check) |
 Jason (audio), Dino (guides) and MikeW have no lead bug today; Dino notes player-facing effects of each fix in the guides.
+
+## Later lists
+Dave's 3 Nov list (BUG-001 to BUG-031 and the ideas) is triaged in `/mnt/project-files/bug-list-2026-11-03-triage.md`, with owners and order in `/mnt/project-files/BACKLOG.md`. Sound bugs: BUG-002, 003 and 004 fixed in #314, BUG-005 in #327; BUG-001 (storm sound) waits on Dave naming the sound. Found in play on 4 Nov (all open PRs): a night wind bed that is always too loud and a repeating stomach growl (#358); all water hidden while flying, because fly down + faster + forward is Ctrl+Shift+W, the old water-hide debug key (#370 moves it to Ctrl+Shift+F7, debug to F8); settled water hidden where the live sim had drained it (#366).

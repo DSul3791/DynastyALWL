@@ -10,7 +10,7 @@ HEAD = see the daily branch `DailyDev_20261029` (tools/ship.sh rewrites this lin
 | `DESIGN_IDEAS.md` | The whole game design (16 sections), every decision tagged [Decided] / [Proposed] / [Idea] / [Open]. The permanent home for ideas to raise in design discussions and fold in when they fit; "(brainstorm)" marks ideas from the owner's ChatGPT sessions |
 | `DESIGN_REJECTED.md` | Ideas the owner rejected (log them here automatically) |
 | `DESIGN_PRINCIPLES.md` | Underlying philosophy (safe, kind, generous; do it yourself or hire it out; nobody is forced to build a town) |
-| `GENERATOR_V2_PLAN.md` | Step-by-step plan for the world generator, with progress notes per step |
+| `docs/archive/2026-11/GENERATOR_V2_PLAN.md` | Step-by-step plan for the world generator, with progress notes per step (archived 5 Nov 2026: done; current rules in `DESIGN_IDEAS.md`) |
 | `WORLD_FORMAT_SPEC.md` | Permanent file formats (tile file, Section 4b rivers and edge matching) |
 | `src/worldgen/` | The generator code; tools in `src/worldgen/tools/` |
 | `questions/` (branch `qa`, not in `main`) | Question page for Dave (QUESTIONS.md, ANSWERS.md, qa.html) |
