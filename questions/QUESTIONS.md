@@ -137,10 +137,10 @@ Note: Recommendation (Steve): rain x1.5, which matches the code's own default.
 - Paint a flat shirt and trousers on the skin
 - Wait for your skin and cloth mask texture from the body file
 
-## kathreen-meadow-gain | Meadow grass tufts at noon (PC look): since the plant shader change they draw about 1.5 to 2 times brighter. Do they look too pale or bright?
-- Haven't looked yet, ask me again after I play (recommended)
-- They look fine, keep them
-- Too pale or bright, tone them down (gain 0.85 to 0.6)
+## kathreen-meadow-gain | Meadow grass tufts at noon: Sonny already toned them down a little (#416, gain 0.85 to 0.72). PC shots: /mnt/project-files/meadow421_compare_level_yaw90.png and meadow421_down30.png. How do they look now?
+- They look fine, keep them (recommended)
+- Still too pale or bright, tone down more (gain 0.6)
+- Haven't looked yet, ask me again after I play
 
 ## sal-cookpot-ghost | Cookpot: when it will not place, what does the red ghost text say? Can you send a screenshot in the thread?
 Note: I could not reproduce it from the code, and a screenshot of the red text shows me which rule blocks it.
