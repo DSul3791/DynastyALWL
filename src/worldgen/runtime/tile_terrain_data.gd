@@ -86,6 +86,7 @@ var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 b
 const CAVE_POOL_M := 0.4            # a spring cave pool's surface: this far above the bottom of its chamber as the chamber is carved
 const CAVE_POOL_DEPTH_M := 20.0     # Dave's QA list BUG-008 (answer 4 Nov 2026): the pool goes 20 m down below that, in a natural shape; the chamber stays
 var cave_streams: PackedFloat32Array = PackedFloat32Array()   # spring cave streams (Dave 3 Nov 2026): per piece x, y, z of the upper end, x, y, z of the lower end (floor heights, world m), width m; then per spring pool x, y, z, -radius (a negative width marks a pool)
+var cave_pool_shapes: PackedFloat32Array = PackedFloat32Array()   # BUG-008: per spring pool basin shape (spring_basin) x, y, z of its centre, r, rh, the pool's surface y (server only, not sent)
 
 
 # Loads a tile file. `rock_ids` and `resource_ids` map names to table ids.
@@ -611,6 +612,7 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 
 func _load_caves(list: Array) -> void:
 	cave_streams = PackedFloat32Array()
+	cave_pool_shapes = PackedFloat32Array()
 	cave_openings = []
 	cave_dens = PackedVector3Array()
 	cave_scatter = PackedFloat32Array()
@@ -816,6 +818,7 @@ func _load_cave_stream(cave: Dictionary) -> void:
 		var floor_y: float = float(node[1]) - 0.5 * float(node[4])
 		var radius: float = 1.5
 		var deep: float = 0.0
+		var shapes: Array = []
 
 		# The chamber is carved as an ellipsoid round the node; the pool's basin goes CAVE_POOL_DEPTH_M down below its surface (spring_basin).
 		for chamber in cave["chambers"]:
@@ -824,6 +827,14 @@ func _load_cave_stream(cave: Dictionary) -> void:
 				floor_y = float(basin["surface_y"])
 				radius = float(basin["open_r"])
 				deep = CAVE_POOL_DEPTH_M
+				shapes = basin["shapes"]
+
+		if shapes.is_empty():   # a spring with no chamber: a shallow pool round it
+			shapes = [{"center": Vector3(float(node[0]), floor_y, float(node[2])), "r": radius, "rh": CAVE_POOL_M}]
+
+		for shape in shapes:
+			var c: Vector3 = shape["center"]
+			cave_pool_shapes.append_array(PackedFloat32Array([c.x, c.y, c.z, float(shape["r"]), float(shape["rh"]), floor_y]))
 
 		# The fourth float (unused before) carries the pool's depth below its surface, so the client can let the player swim in it.
 		cave_streams.append_array(PackedFloat32Array([float(node[0]), floor_y, float(node[2]), deep, 0.0, 0.0, -radius]))
@@ -873,22 +884,33 @@ func in_cave_opening(x: float, z: float) -> bool:
 	return false
 
 
-# Whether a point is in a spring cave pool (Dave 4 Nov, BUG-008: those pools are icy). The pool entries of cave_streams have a negative
-# width = minus the pool's radius; the point must be within that radius (plus `margin`) sideways of the spring, down to the depth stored in the entry's 4th float (#318, 20 m).
+# Whether a point is in a spring cave pool (Dave 4 Nov, BUG-008: those pools are icy).
 func in_cave_pool(p: Vector3, margin: float = 1.0) -> bool:
-	@warning_ignore("integer_division")
-	for n in range(cave_streams.size() / 7):
-		var o: int = n * 7
+	return not is_nan(cave_pool_surface(p, margin))
 
-		if cave_streams[o + 6] >= 0.0:
+
+# The surface height of the spring cave pool a point is in, else NAN. The water is the pool's basin as carved (spring_basin: a main bowl that swells
+# wider below the rim and two lobes) up to its surface; the point must be inside one of those ellipsoids grown by `margin` m, and no more than
+# `margin` above the surface. (BUG-008: the old test was a cylinder of the rim's radius, which left up to half the water out of the cold.)
+func cave_pool_surface(p: Vector3, margin: float = 1.0) -> float:
+	@warning_ignore("integer_division")
+	for n in range(cave_pool_shapes.size() / 6):
+		var o: int = n * 6
+		var surface: float = cave_pool_shapes[o + 5]
+
+		if p.y > surface + margin:
 			continue
 
-		var spring: Vector3 = Vector3(cave_streams[o], cave_streams[o + 1], cave_streams[o + 2])
+		var r: float = cave_pool_shapes[o + 3] + margin
+		var rh: float = cave_pool_shapes[o + 4] + margin
+		var dx: float = p.x - cave_pool_shapes[o]
+		var dy: float = p.y - cave_pool_shapes[o + 1]
+		var dz: float = p.z - cave_pool_shapes[o + 2]
 
-		if Vector2(p.x - spring.x, p.z - spring.z).length() <= -cave_streams[o + 6] + margin and p.y >= spring.y - maxf(cave_streams[o + 3], 0.4) - 1.0:
-			return true
+		if (dx * dx + dz * dz) / (r * r) + dy * dy / (rh * rh) <= 1.0:
+			return surface
 
-	return false
+	return NAN
 
 
 # Whether a point is within `reach` m of a spring cave's stream or pool (drinking and filling a container there, Dave 3 Nov 2026).

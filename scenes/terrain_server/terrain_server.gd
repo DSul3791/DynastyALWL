@@ -34,6 +34,7 @@ const GameClockScript := preload("res://src/shared/game_clock.gd")
 const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
+const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
@@ -822,11 +823,25 @@ func _water_at(position: Vector3) -> Array:
 	return [surface, ground]
 
 
+# As _water_at, for a player's reported position: under the hill, a spring cave pool's water counts (BUG-008), its floor taken as the
+# basin's bottom so the swim and breath rules see deep water. Only here: the other callers ask at y 0 for the open water.
+func _player_water_at(position: Vector3) -> Array:
+	var water: Array = _water_at(position)
+
+	if position.y < float(water[1]) - 1.0:
+		var cave_surface: float = _cave_pool_surface(position)
+
+		if not is_nan(cave_surface):
+			return [cave_surface, cave_surface - TileDataScript.CAVE_POOL_DEPTH_M]
+
+	return water
+
+
 # Where the player will touch the ground: straight below if hovering, farther
 # along their heading the higher and faster they are. Blocks nearest this
 # point are made first.
 func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
-	var water: Array = _water_at(position)
+	var water: Array = _player_water_at(position)
 	items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
 	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
 	items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
@@ -844,9 +859,17 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 
 # Whether a point is in a spring cave pool (icy water, BUG-008).
 func _in_cave_pool(position: Vector3) -> bool:
+	return not is_nan(_cave_pool_surface(position))
+
+
+# The surface of the spring cave pool a reported position is in (the basin as carved, BUG-008), else NAN.
+func _cave_pool_surface(position: Vector3) -> float:
 	var tile_data = generator.get_tile(generator.tile_of(position.x, position.z))
 
-	return not tile_data.placeholder and not tile_data.cave_streams.is_empty() and tile_data.in_cave_pool(position)
+	if tile_data == null or tile_data.placeholder or tile_data.cave_pool_shapes.is_empty():
+		return NAN
+
+	return tile_data.cave_pool_surface(position)
 
 
 func _is_connected_peer(peer_id: int) -> bool:
