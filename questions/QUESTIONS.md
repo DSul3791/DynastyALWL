@@ -53,12 +53,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
 
-## jamie-leanto-leaves | The lean-to needs 200 leaves, about 34 trees, which is roughly 9 of the first hour's 13 minutes (#386). Change it?
-Note: Recommendation: 80 leaves, about one felled crown.
-- Cut it to 80 leaves (recommended)
-- Keep 200
-- Another number: I will say
-
 ## jamie-animal-meshes | Animals are code shapes that shaders can't improve. Model real animal meshes?
 - Yes, but later at rank 6 (recommended)
 - Yes, now
