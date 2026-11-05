@@ -66,7 +66,52 @@ def show(P,label):
             p,_=glob(idx['mixamorig:'+b],P); print('  %-11s'%b,np.round(p,2))
 
 
+
+# --ik: the 5 Nov aim (dynasty_body.gd _sit_aim): thighs forward and out, shins crossed, spine 8 degrees forward, hands on the knees by two-bone IK.
+def qinv(q): return np.array([-q[0],-q[1],-q[2],q[3]])
+def arc(a,b):
+    a=a/np.linalg.norm(a); b=b/np.linalg.norm(b); c=np.cross(a,b); d=np.dot(a,b)
+    q=np.array([*c,1+d]); return q/np.linalg.norm(q)
+def unit(v): return v/np.linalg.norm(v)
+def _b(n): return idx['mixamorig:'+n]
+def _rot(P,n): return np.array(P[(_b(n),'rotation')],float)
+def _off(P,n):
+    k=(_b(n),'translation'); return np.array(P[k] if k in P else nodes[_b(n)]['translation'],float)*0.01
+def _chain(P,chain):
+    q=np.array([0,0,0,1.])
+    for n in chain: q=qmul(q,_rot(P,n))
+    return q
+def _pos(P,n): return glob(_b(n),P)[0]
+def aim(P,chain,child,target_dir):
+    bone=chain[-1]; par=_chain(P,chain[:-1]); g=qmul(par,_rot(P,bone)); d=qrot(g,_off(P,child))
+    P[(_b(bone),'rotation')]=qmul(qinv(par),qmul(arc(d,target_dir),g))
+def two_bone(P,chain,lower,end,target,pole):
+    a=_pos(P,chain[-1]); L1=np.linalg.norm(_off(P,lower)); L2=np.linalg.norm(_off(P,end))
+    t=target-a; dist=min(np.linalg.norm(t),L1+L2-1e-4); tn=unit(t)
+    ang=np.arccos(np.clip((L1*L1+dist*dist-L2*L2)/(2*L1*dist),-1,1))
+    side=unit(pole-np.dot(pole,tn)*tn); elbow_dir=tn*np.cos(ang)+side*np.sin(ang)
+    aim(P,chain,lower,elbow_dir); elbow=a+elbow_dir*L1
+    aim(P,chain+[lower],end,unit(a+tn*dist-elbow))
+def sit_ik(lean=8.0):
+    P=sit(85,85,3)
+    for b in ['Spine','Spine1','Spine2']:
+        P[(_b(b),'rotation')]=qmul(_rot(P,b),qaxis([1,0,0],lean/3))
+    for s,side in [(1,'Left'),(-1,'Right')]:
+        aim(P,['Hips',side+'UpLeg'],side+'Leg',unit(np.array([s*0.62,0.0,0.78])))
+        aim(P,['Hips',side+'UpLeg',side+'Leg'],side+'Foot',unit(np.array([-s*0.95,-0.04,-0.08 if s>0 else 0.12])))
+    for s,side in [(1,'Left'),(-1,'Right')]:
+        knee=_pos(P,side+'Leg')
+        two_bone(P,['Hips','Spine','Spine1','Spine2',side+'Shoulder',side+'Arm'],side+'ForeArm',side+'Hand',knee+np.array([-s*0.03,0.06,-0.03]),np.array([s*1.0,0,-0.6]))
+    return P
+
+
 if __name__ == "__main__":
+    if "--ik" in sys.argv:
+        P = sit_ik()
+        show(P, "ik (dynasty_body.gd _sit_aim)")
+        for b in ['LeftHand', 'RightHand']:
+            print('  %-11s' % b, np.round(_pos(P, b), 2))
+        sys.exit(0)
     a = [float(x) for x in sys.argv[1:4]]
     thigh, fold, pelvis_back = a if len(a) == 3 else (85.0, 85.0, 3.0)   # arms are not modelled here: render with tools/body_pose_shot.gd
     show(sit(thigh=thigh, fold=fold, pelvisd=pelvis_back), "thigh %g, fold %g, pelvis back %g" % (thigh, fold, pelvis_back))
