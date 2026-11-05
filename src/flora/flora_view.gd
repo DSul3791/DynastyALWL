@@ -555,7 +555,7 @@ func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void
 	sheet.visible = not water_hidden
 
 
-# Ctrl+Shift+W hides every river and lake drawing (debug: does an odd patch on the water stay, then it is ground).
+# Ctrl+Shift+F7 hides every river and lake drawing (debug: does an odd patch on the water stay, then it is ground).
 var water_hidden: bool = false
 
 
@@ -564,7 +564,7 @@ func toggle_water_visible() -> void:
 	get_tree().call_group("water_draw", "set_visible", not water_hidden)
 
 
-# Ctrl+Shift+V colours the water by what the shader sees: red running, blue still, green foam (debug for odd patches).
+# Ctrl+Shift+F8 colours the water by what the shader sees: red running, blue still, green foam (debug for odd patches).
 var water_debug: bool = false
 
 
