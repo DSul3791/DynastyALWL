@@ -319,20 +319,21 @@ static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
 		# caps and the fur hat used it too). Head frame: y 0 about the chin, the crown at 0.24, the face at z -0.1 (front -Z). Refs: medieval hoods with a shoulder cape
 		# and a short back point (Herjolfsnes, Bocksten), round skull caps with a rim, a fur hat with a rolled fur brim.
 		"hood":
-			# A hood: a smooth shell set back so the face shows, a turned rim round the face, a cape over the shoulders and a short point at the back.
-			out.append(_p("head", "sphs", Vector3(0.0, 0.135, 0.04), Vector3(0.215 + o * 2.0, 0.27 + o * 2.0, 0.25 + o * 2.0)))
-			out.append(_p("head", "tor", Vector3(0.0, 0.13, -0.07 - o), Vector3(0.18 + o * 2.0, 0.25, 0.25), Vector3(PI * 0.5, 0.0, 0.0), false, 0.15))
-			out.append(_p("head", "frus", Vector3(0.0, -0.075, 0.02), Vector3(0.36 + o * 2.0, 0.17, 0.3 + o * 2.0)))
-			out.append(_p("head", "cone", Vector3(0.0, 0.19, 0.16 + o), Vector3(0.07, 0.12, 0.12), Vector3(2.2, 0.0, 0.0), true, 0.05))
+			# A hood: a smooth shell set back so the face shows (its front edge 2.5 cm behind the face), a collar over the neck and shoulder tops, and a short point
+			# at the back. PC shots 5 Nov (4f58f71d): the first try was 0.31 m deep with a ring and a 0.42 m cape, and read as a box hiding the face.
+			out.append(_p("head", "sphs", Vector3(0.0, 0.15, 0.05), Vector3(0.2 + o, 0.26 + o, 0.22 + o)))
+			out.append(_p("head", "frus", Vector3(0.0, -0.045, 0.035), Vector3(0.28 + o, 0.1, 0.24 + o)))
+			out.append(_p("head", "cone", Vector3(0.0, 0.21, 0.16 + o * 0.5), Vector3(0.06, 0.1, 0.1), Vector3(2.2, 0.0, 0.0), true, 0.05))
 		"cap":
-			# A round skull cap (leather or knitted wool): a smooth dome down to the brow and the tops of the ears, a darker rim, a small knot on the crown.
-			out.append(_p("head", "hemi", Vector3(0.0, 0.135, 0.015), Vector3(0.205 + o * 2.0, 0.26 + o * 2.0, 0.235 + o * 2.0)))
-			out.append(_p("head", "cyls", Vector3(0.0, 0.15, 0.015), Vector3(0.21 + o * 2.0, 0.035, 0.24 + o * 2.0), Vector3.ZERO, false, 0.15))
-			out.append(_p("head", "sphs", Vector3(0.0, 0.263 + o, 0.015), Vector3(0.025, 0.018, 0.025), Vector3.ZERO, true, 0.2))
+			# A round skull cap (leather or knitted wool): a dome over the crown, its darker rim on the brow above the eyes (the eye line is about 0.13 in this frame:
+			# PC shot 5 Nov, a rim at 0.15 sat over the eyes), a small knot on the crown.
+			out.append(_p("head", "hemi", Vector3(0.0, 0.17, 0.015), Vector3(0.2 + o, 0.2 + o, 0.225 + o)))
+			out.append(_p("head", "cyls", Vector3(0.0, 0.182, 0.015), Vector3(0.205 + o, 0.025, 0.23 + o), Vector3.ZERO, false, 0.15))
+			out.append(_p("head", "sphs", Vector3(0.0, 0.27 + o * 0.5, 0.015), Vector3(0.025, 0.018, 0.025), Vector3.ZERO, true, 0.2))
 		"furhat":
-			# A fur hat: a taller dome and a thick rolled fur brim, a shade lighter where the fur turns over.
-			out.append(_p("head", "hemi", Vector3(0.0, 0.14, 0.015), Vector3(0.215 + o * 2.0, 0.29 + o * 2.0, 0.245 + o * 2.0)))
-			out.append(_p("head", "tor", Vector3(0.0, 0.155, 0.015), Vector3(0.26 + o * 2.0, 0.3, 0.29 + o * 2.0), Vector3.ZERO, false, -0.12))
+			# A fur hat: a taller dome and a thick rolled fur brim on the brow, above the eyes, a shade lighter where the fur turns over.
+			out.append(_p("head", "hemi", Vector3(0.0, 0.18, 0.015), Vector3(0.205 + o, 0.24 + o, 0.235 + o)))
+			out.append(_p("head", "tor", Vector3(0.0, 0.19, 0.015), Vector3(0.24 + o, 0.22, 0.27 + o), Vector3.ZERO, false, -0.12))
 		"boots":
 			for side in ["r", "l"]:
 				out.append(_p("shin_" + side, "cyl", Vector3(0.0, -0.18, 0.0), Vector3(0.14 + o * 2.0, 0.26, 0.14 + o * 2.0)))
