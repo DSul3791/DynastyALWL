@@ -298,11 +298,18 @@ static func has_look(item_id: String) -> bool:
 # Each item's look is built once per run and shared (lag, 3 Nov 2026: a held tool or food was built again, part by part, every time it was taken in
 # hand; the detailed looks take several ms each). Callers only draw the mesh, never change it.
 static var _built: Dictionary = {}
+static var _lock: Mutex = Mutex.new()   # _built and the shared materials: the prewarm worker builds looks while the main thread may ask for one
+static var _prewarm_task: int = -1
 
 
 static func mesh_for(item_id: String) -> Mesh:
-	if _built.has(item_id):
-		return _built[item_id]
+	_lock.lock()
+	var have: Mesh = _built.get(item_id)
+	var known: bool = _built.has(item_id)
+	_lock.unlock()
+
+	if known:
+		return have
 
 	var def: Dictionary = entry(item_id)
 
@@ -310,8 +317,38 @@ static func mesh_for(item_id: String) -> Mesh:
 		return null
 
 	var made: ArrayMesh = mesh(str(def.get("shape", "chunk")), Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)), def.get("bits", []))
-	_built[item_id] = made
+	_lock.lock()
+
+	if _built.has(item_id):
+		made = _built[item_id]   # the other thread finished it first: everyone shares the one mesh
+	else:
+		_built[item_id] = made
+
+	_lock.unlock()
 	return made
+
+
+# Builds every item's look on a worker thread while the client loads (lag run 5 Nov: the first loose stone spade, raspberries, arnica or elderflowers
+# in view cost 30 to 67 ms on the main thread, each the first of its kind). A look asked for before the worker reaches it is built on the spot as before.
+static func prewarm() -> void:
+	if _prewarm_task != -1:
+		return
+
+	entry("")              # looks.json is read here, on the main thread, before the worker reads the table
+	_shared_material()     # and the shared material and its grain texture made once
+	var ids: Array = _table.keys() + ART_OVERRIDES.keys()
+	var job: Callable = func() -> void:
+		for id in ids:
+			mesh_for(str(id))
+
+	_prewarm_task = WorkerThreadPool.add_task(job, false, "item looks prewarm")
+
+
+# Waits for the prewarm worker (call before the game shuts down).
+static func finish_prewarm() -> void:
+	if _prewarm_task != -1:
+		WorkerThreadPool.wait_for_task_completion(_prewarm_task)
+		_prewarm_task = -1
 
 
 static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = []) -> ArrayMesh:
@@ -2861,6 +2898,7 @@ static func _surface_arrays(parts: Array, size: float) -> Array:
 # One shared metal material, built once: the vertex colour is the metal's colour, smooth and shiny.
 static func _metal_material(rough: float = 0.4, metallic: float = 0.8) -> StandardMaterial3D:
 	var key: Vector2 = Vector2(rough, metallic)
+	_lock.lock()
 
 	if not _metal_mats.has(key):
 		var material: StandardMaterial3D = StandardMaterial3D.new()
@@ -2869,7 +2907,9 @@ static func _metal_material(rough: float = 0.4, metallic: float = 0.8) -> Standa
 		material.roughness = rough
 		_metal_mats[key] = material
 
-	return _metal_mats[key]
+	var out: StandardMaterial3D = _metal_mats[key]
+	_lock.unlock()
+	return out
 
 
 static func _shared_material() -> StandardMaterial3D:

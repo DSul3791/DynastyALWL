@@ -3193,6 +3193,7 @@ func _prewarm_loose_meshes() -> void:
 			_mesh_for(table.number_of(name))
 
 	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	BasicLook.prewarm()   # every item's look, on a worker (the first of each kind in view cost 30 to 67 ms on the main thread, lag run 5 Nov)
 	PieceLook.prewarm()   # the building material and trodden-path pictures, on a worker (about 170 ms on the main thread at the first piece or hoe stroke)
 	_prewarm_felled()
 
@@ -5605,3 +5606,4 @@ func run_chop_test(client) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		PieceLook.finish_prewarm()     # the pictures worker started by the prewarm never outlives the view
+		BasicLook.finish_prewarm()     # nor the item looks worker
