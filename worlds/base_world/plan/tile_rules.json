@@ -1187,12 +1187,14 @@
 			"_sizes_note": "Dave 4 Nov 2026: some caves small, some medium, some large (a size the hill has no room for falls back to the next smaller one); the top-level values are the medium cave. The mouth is as wide as the river at the head and narrows to the passage over taper_min_m or a third of the passage; den tunnels climb den_rise and end in a den hollow; bones at entrances and far ends; stalagmites and stalactites in large caves' big chambers and wide passages.",
 			"size_odds": {"small": 0.45, "medium": 0.35, "large": 0.2},
 			"sizes": {
-				"small": {"length_m": [40, 80], "width_m": [2.5, 3.5], "height_m": [2, 3], "branches": [0, 1], "extra_passage_chance": [0, 0], "min_length_m": 40, "chamber_radius_m": [3, 5]},
-				"medium": {},
-				"large": {"length_m": [150, 300], "width_m": [5, 8], "height_m": [4, 7], "branches": [2, 4], "extra_passage_chance": [0.6, 0.3], "min_length_m": 110, "chamber_radius_m": [6, 10], "big_chambers": [1, 2]}
+				"small": {"length_m": [40, 80], "width_m": [2.5, 3.5], "height_m": [2, 3], "branches": [0, 1], "extra_passage_chance": [0, 0], "min_length_m": 40, "chamber_radius_m": [3, 5], "max_springs": 1},
+				"medium": {"max_springs": 3},
+				"large": {"length_m": [150, 300], "width_m": [5, 8], "height_m": [4, 7], "branches": [2, 4], "extra_passage_chance": [0.6, 0.3], "min_length_m": 110, "chamber_radius_m": [6, 10], "big_chambers": [1, 2], "max_springs": 6}
 			},
 			"big_chamber_radius_m": [5, 9],
 			"big_chamber_height_m": [8, 14],
+			"spring_per_mouth_m": 6,
+			"spring_per_mouth_note": "Dave 5 Nov 2026: a wide river needs many spring pools; one spring passage per 6 m of the river's width at the mouth, up to the size's max_springs (small 1, medium 3, large 6), their flows joining on the way out.",
 			"mouth_width_max_m": 30,
 			"mouth_height_max_m": 12,
 			"taper_min_m": 25,
