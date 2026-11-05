@@ -518,11 +518,16 @@ func _init() -> void:
 	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("stick"), 0, 3, Vector3.ZERO)
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
 	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("plant_fibre"), 0, 1, Vector3.ZERO)
+	var fibre_held: int = f.inventory_of(1).count_of(f.table.number_of("plant_fibre"))   # no starter is used up any more (Dave 5 Nov 2026): lighting never changes it
 	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
-	check(f._items[open_id]["fire"]["state"] == 9 and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 1, "rain will not let an open fire light")
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == fibre_held, "an open fire lights in the rain (Dave 5 Nov 2026), and no starter is used up")
+	f.tick(2.0)
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])), "and it burns for a few seconds")
+	f.tick(10.0)
+	check(f._items[open_id]["fire"]["state"] == 9, "then the rain puts it out again (loaded, unlit)")
 	rain[0] = 0.0
 	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
-	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 0, "tinder lights it once the rain stops")
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == fibre_held, "it lights once the rain stops, and no starter is used up")
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
 	check(f.inventory_of(1).count_of(f.table.number_of("stick")) == 1, "a lit fire takes another stick")
 	# A campfire cooks only meat (Dave 31 Oct 2026): berries, nuts and roots do nothing on it (they are pot and hearth recipes).

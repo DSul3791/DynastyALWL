@@ -639,11 +639,14 @@ func _probe_fire() -> Dictionary:
 
 
 func _probe_structure() -> Dictionary:
-	var found: Dictionary = _probe_structure_for(_nearest_struct())
+	# A fire has its own probe (_probe_fire), so it is left out here. Before, this probe found it too, aimed a little higher, and its "Hold E to take down"
+	# line hid "Press E to light" and "Press F to add wood" (Dave 5 Nov, a campfire with no fuel).
+	var near: int = _nearest_struct(true)
+	var found: Dictionary = _probe_structure_for(near)
 
 	if not found.is_empty():
-		found["kind"] = "block" if int(_world[_nearest_struct()]["state"]) == 7 else "structure"
-		found["point"] = _world[_nearest_struct()]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
+		found["kind"] = "block" if int(_world[near]["state"]) == 7 else "structure"
+		found["point"] = _world[near]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
 
 	return found
 
@@ -955,11 +958,14 @@ func hold_use() -> bool:
 
 
 # The id of the placed structure (lean-to, chest) within 3 m that the cursor is on, else the nearest one; 0 when none.
-func _nearest_struct() -> int:
+func _nearest_struct(skip_fires: bool = false) -> int:
 	var here: Vector3 = _player_position.call()
 	var ids: Array = []
 
 	for id in _world:
+		if skip_fires and int(_world[id]["state"]) in [8, 9, 40, 41]:
+			continue
+
 		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
 			ids.append(id)
 
