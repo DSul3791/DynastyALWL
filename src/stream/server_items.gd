@@ -357,6 +357,9 @@ var _log_tasks: Array = []           # worker tasks printing log lines (_log_off
 var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
 var _slow_prev_usec: int = 0          # when the last part of this items tick ended
 var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
+var _goals_detail: String = ""        # the last _goals_tick's split (the slow-tick line)
+var _slowest_hint: String = ""
+var _slowest_hint_usec: int = 0
 var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
 var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading the ground and asking for water (the slow-cell line)
 var _bank_water_usec: int = 0
@@ -1171,7 +1174,7 @@ func tick(delta: float) -> void:
 		_comfort_tick(spent)
 		_slow_mark("comfort", t0)
 		_goals_tick()
-		_slow_mark("goals", t0)
+		_slow_mark("goals " + _goals_detail, t0)
 		_learn_clock += spent
 
 		if _learn_clock >= LEARN_TICK_S:
@@ -10627,6 +10630,19 @@ func _hint_count(st: Dictionary, key: String) -> int:
 	return int(st["goal_counts"].get(key, 0))
 
 
+# _hint_trigger_true, noting the slowest trigger of this goals tick (the slow-tick line).
+func _timed_trigger(peer: int, st: Dictionary, trigger: String) -> bool:
+	var t0: int = Time.get_ticks_usec()
+	var out: bool = _hint_trigger_true(peer, st, trigger)
+	var spent: int = Time.get_ticks_usec() - t0
+
+	if spent > _slowest_hint_usec:
+		_slowest_hint_usec = spent
+		_slowest_hint = trigger
+
+	return out
+
+
 func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 	var inv = inventory_of(peer)
 
@@ -10845,7 +10861,7 @@ func _hints_check(peer: int) -> void:
 				continue
 
 			st["hints_seen"][id + "#again"] = now_s
-		elif not _hint_trigger_true(peer, st, str(hint.get("trigger", ""))):
+		elif not _timed_trigger(peer, st, str(hint.get("trigger", ""))):
 			continue
 		else:
 			st["hints_seen"][id] = now_s
@@ -11025,11 +11041,22 @@ func _goals_tick() -> void:
 	if _goals_data().is_empty():
 		return
 
+	var t0: int = Time.get_ticks_usec()
 	_night_walk_tick()
+	var t1: int = Time.get_ticks_usec()
+	var goals_usec: int = 0
+	_slowest_hint_usec = 0
+	_slowest_hint = ""
 
 	for peer in _peer_key.keys():
+		var tg: int = Time.get_ticks_usec()
 		_goals_check(peer)
+		goals_usec += Time.get_ticks_usec() - tg
 		_hints_check(peer)
+
+	# For the slow-tick line (lag run 5 Nov: goals 43 and 102 ms, no split).
+	_goals_detail = "(night walk %.0f, goals %.0f, hints %.0f, slowest hint trigger %s %.0f)" % [float(t1 - t0) / 1000.0, float(goals_usec) / 1000.0,
+		float(Time.get_ticks_usec() - t1 - goals_usec) / 1000.0, _slowest_hint, float(_slowest_hint_usec) / 1000.0]
 
 
 # What the goal list would show: [[id, title, hint, state]] with state 0 locked, 1 open, 2 done.

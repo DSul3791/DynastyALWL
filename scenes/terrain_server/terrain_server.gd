@@ -495,6 +495,7 @@ func _ready() -> void:
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
 	animals.canopy = func(point): return flora.covered(point)
+	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
 	animals.hour_now = func(): return game_clock.hour()
 	var biome_names: Dictionary = {}
 
@@ -1244,6 +1245,27 @@ func _cover_at(point: Vector3) -> float:
 
 
 var _cover_warming: Dictionary = {}   # chunk -> true while a worker thread makes it for the cover index
+
+
+# Whether the cover index knows the crowns round a point: its flora chunk and the eight round it are made. Missing ones are started
+# on a worker as in _cover_at, so asking again a few seconds later says yes (inland nests, MikeW 5 Nov).
+func _cover_ready(point: Vector3) -> bool:
+	var size: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+	var all_made: bool = true
+
+	for dz in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+
+			if not flora.chunk_made(chunk):
+				all_made = false
+
+				if not _cover_warming.has(chunk):
+					_cover_warming[chunk] = true
+					WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
+
+	return all_made
 
 
 func _warm_cover_chunk(chunk: Vector2i) -> void:

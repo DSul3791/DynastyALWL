@@ -29,6 +29,7 @@ var crossing: Callable             # Steering's `cross`: every walker of this mo
 var player_positions: Callable     # () -> Array of Vector3
 var player_stances: Callable       # () -> Array of stances in player_positions order (0 stand, 1 crouch, 2 sit, 3 lie)
 var canopy: Callable               # (Vector3) -> bool, whether a spot is under a tree crown (forest for sight and habitat)
+var canopy_ready: Callable         # (x, z) -> bool, whether the tree crowns round a spot are known yet (the flora chunks are made; a missing one is started on a worker)
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
@@ -167,6 +168,7 @@ func nests_near(point: Vector3, reach: float) -> Array:
 	var ncfg: Dictionary = cfg.get("nests", {})
 	var cell: float = float(ncfg.get("cell_m", 48.0))
 	var out: Array = []
+	_nest_pending = false
 
 	if cell <= 0.0 or not ground_height.is_valid():
 		return out
@@ -191,6 +193,7 @@ func nests_near(point: Vector3, reach: float) -> Array:
 # [PackedVector3Array positions, PackedByteArray kinds (0 grouse, 1 songbird)]. The answer only depends on the point's
 # nest_send_cell_m square, so it is worked out once per square and kept (the spots never move).
 var _nest_send_cache: Dictionary = {}
+var _nest_pending: bool = false    # set by nests_near when some cell's tree crowns were not known yet: that answer is not kept
 
 
 func nest_spots_near(point: Vector3) -> Array:
@@ -207,6 +210,9 @@ func nest_spots_near(point: Vector3) -> Array:
 	for nest in nests_near(centre, float(cfg.get("send_radius_m", 120.0))):
 		spots.append(nest["pos"])
 		kinds.append(0 if str(nest["kind"]) == "grouse" else 1)
+
+	if _nest_pending:   # the flora round some cell is still being made: answer now, ask again next time (songbird nests were never kept, 5 Nov PC look)
+		return [spots, kinds]
 
 	if _nest_send_cache.size() >= 256:
 		_nest_send_cache.clear()
@@ -245,6 +251,10 @@ func _nest_in_cell(kind: String, cx: int, cz: int, cell: float, ncfg: Dictionary
 		steep = maxf(steep, absf(other - y) / 3.0 if not is_nan(other) else 9.0)
 
 	if steep > float(ncfg.get("slope_max", 0.5)):
+		return null
+
+	if canopy.is_valid() and canopy_ready.is_valid() and not bool(canopy_ready.call(x, z)):
+		_nest_pending = true   # the crowns here are not in the cover index yet, so "under trees" cannot be told: no nest for now, not kept
 		return null
 
 	var under_trees: bool = canopy.is_valid() and bool(canopy.call(Vector3(x, y, z)))
