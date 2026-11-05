@@ -64,10 +64,6 @@ Note: Recommendation: 80 leaves, about one felled crown.
 - Keep 200
 - Another number: I will say
 
-## jamie-foundations-hammer | Foundations: your 25 Oct note said made by hand, but your 4 Nov answer said hammer blueprint only (stacking is merged, #311). Settled as hammer only?
-- Yes, hammer blueprint only (recommended)
-- No, also by hand
-
 ## jamie-animal-meshes | Animals are code shapes that shaders can't improve. Model real animal meshes?
 - Yes, but later at rank 6 (recommended)
 - Yes, now
