@@ -14,12 +14,6 @@
 
 
 
-## pic-flora-orchard-rows | In the real game: do the orchard trees read as rows of fruit trees?
-Image: questions/img/flora_orchard_rows.jpg
-Note: Real game rig shot at noon from the south edge of the orchard, (53376,68535). The rows read, but it is dark under the crowns and no fruit is visible from this height. Flora rates it 3 of 5; fruit visibility is a look question for Kathleen.
-- Yes
-- No
-
 ## jason-clear-hiss | Please test this: in clear, calm weather in a forest, do you hear a rain-like hiss?
 Note: Blocked: the PC sound-log run hasn't happened yet. SOUND_AUDIT.md suspects the tree-wind loops (leaves, pine).
 Note: 1. Start the latest build, wait for clear weather (F3 shows rain 0.00). 2. Walk into a forest and stand still for 30 s. 3. Then walk into open meadow for 30 s.
