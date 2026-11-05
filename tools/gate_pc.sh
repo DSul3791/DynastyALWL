@@ -106,6 +106,7 @@ done
 grep -q '^Test done:' "$OUT/run_tests.txt" || { echo "FAILED: the tests did not run (no 'Test done' line)"; CHECK_FAIL=1; }
 echo "known PC failures (baseline): ${OLD:- none}"
 echo "NEW failures: ${NEW:- none}"
+echo "CHECKS: $([ "$CHECK_FAIL" = "0" ] && echo pass || echo fail)"   # merge_check, local_check, tests ran (read by tools/pc_queue.sh)
 echo "steps: $STEPS total $(( $(date +%s) - T0 )) s; logs $OUT"
 finish
 [ -z "$NEW" ] && [ "$CHECK_FAIL" = "0" ]

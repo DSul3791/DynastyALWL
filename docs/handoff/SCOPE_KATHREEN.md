@@ -1,5 +1,7 @@
 # Scope: Kathreen (art assistant: character, animal and plant looks), 1 Nov 2026
 
+> **CURRENT FLOW (fact check, 5 Nov 2026; supersedes the branch and merge lines below):** there is no daily branch: `DailyDev_20261029` was merged into `main` (PR #11, `a8c4d545`) and deleted on 1 Nov, so "the daily" below means `main`. Each agent cuts a new branch from `origin/main` each day and opens one pull request per job into `main`; agents never merge themselves. Tyler merges when CI is green and `tools/run_tests.sh` passes on the merged result. "Never merge to main" below means "never merge it yourself", not "never open a PR". Commit heads, test counts and "in the daily" claims below are as of the date in the title; `git log origin/main` and CI are the truth now. Priorities and job owners: `/mnt/project-files/BACKLOG.md`.
+
 > **RULE (Dave): anything about LOOKS is artistic.** Kathleen is overloaded, so Dave named a second art agent, Kathreen. The split below is PROPOSED by me and sent to Kathleen to confirm; where she answers differently, her answer wins and this file is updated.
 
 Read with `SCOPE_KATHLEEN.md` and `HANDOFF_KATHLEEN.md` (method, rating scale, QA card recipe, tests, rig quirks). I use the same method: research, block out, render several angles, honest 1 to 5 rating (5 = clearly real at 10 and 30 m), check in the real game, keep it cheap, one QA card per picture.

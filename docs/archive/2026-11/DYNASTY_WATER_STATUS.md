@@ -1,5 +1,7 @@
 # Dynasty water: status (Sonny, 31 Oct 2026, branch `dynasty-water`)
 
+> **ARCHIVED 5 Nov 2026.** The current water truth is `docs/DYNASTY_WATER_HISTORY.md` (its section 9 keeps the shader patch plan and cost options from the status doc), with `docs/DYNASTY_WATER_DESIGN.md` and `docs/TERRAIN_WATER_BACKLOG.md`. Paths and facts below are as of 31 Oct.
+
 Design: `DYNASTY_WATER_DESIGN.md`. Rules: `PONYTAIL_RULES.md` (reuse first, minimum code, one test per logic, say what was skipped).
 
 ## Stage (a) core sim: done, rated 4 of 5

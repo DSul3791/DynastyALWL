@@ -70,6 +70,20 @@ func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	return made
 
 
+# The placed items of a chunk only when items_of has already made them (for this or the full list), else {}: for a look that must never make a chunk on the
+# main thread (the hint triggers, 4 times a second: making the nine chunks round a new player took 3 to 11 s there; Steve, 4 Nov 2026).
+func items_cached(chunk: Vector2i) -> Dictionary:
+	var home: Vector2i = placer.normalize(chunk)
+	_items_mutex.lock()
+	var kept: Dictionary = _items.get(Vector3i(home.x, home.y, 1), {})
+
+	if kept.is_empty():
+		kept = _items.get(Vector3i(home.x, home.y, 0), {})
+
+	_items_mutex.unlock()
+	return kept
+
+
 func has_items(chunk: Vector2i) -> bool:
 	var home: Vector2i = placer.normalize(chunk)
 	_items_mutex.lock()

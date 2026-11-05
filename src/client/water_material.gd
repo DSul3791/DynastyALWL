@@ -36,7 +36,7 @@ uniform float ice = 0.0;             // 0 open water .. 1 a full sheet of ice on
 uniform float daylight = 1.0;       // 1 day .. about 0.14 night: the body glow follows it (day_cycle.gd, set by weather_look.gd)
 uniform vec3 sun_toward = vec3(0.3, 0.8, 0.5);   // the direction to the sun (weather_look.gd), for the sea's glints
 uniform float sea = 0.0;             // 1 on the sea plane (terrain_client.gd): swell, depth colours from the beach out, surf foam at the shore, a darker line at the horizon
-uniform float debug_flow = 0.0;      // Ctrl+Shift+V: colour the water by what the shader thinks it is (red running, blue still, green foam)
+uniform float debug_flow = 0.0;      // Ctrl+Shift+F8: colour the water by what the shader thinks it is (red running, blue still, green foam)
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
 #ifdef SCENE_READS
 // Reading the depth or the screen makes Forward+ copy the whole frame, so Low quality

@@ -60,6 +60,7 @@ const RECORDED_DIR := "res://assets/audio/recorded/"
 # Audio budget per quality tier Low, Mid, High (ARCHITECTURE_BUDGET.md section 9).
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const Probe := preload("res://src/debug/frame_probe.gd")   # "sound setup: <part>" splits of the join step (Steve, 4 Nov 2026: 0.87 s on Dave's PC)
 const Presets := preload("res://src/client/sound_presets.gd")   # the per-tier mixer limits (voices, memory, layers)
 const VOICES := 6                       # footstep and swish players, reused in turn
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
@@ -247,7 +248,9 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	_gust_noise.frequency = 0.02
 	_gust_noise.fractal_octaves = 2
 	_make_bus("Surf")                      # the sea surf bed has its own bus and slider (Dave 2 Nov 2026)
+	var t_prewarm: int = Probe.start()
 	prewarm()                              # Dave 3 Nov 2026: sound is always async; every clip starts loading on worker threads now
+	Probe.stop("sound setup: prewarm", t_prewarm)
 	var wind_bus: int = _make_bus("Wind")
 	_wind_filter = AudioEffectLowPassFilter.new()
 	_wind_filter.cutoff_hz = 4000.0
@@ -259,8 +262,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	_muffle.cutoff_hz = 20000.0
 	AudioServer.add_bus_effect(0, _muffle)
 
+	var t_wind: int = Probe.start()
 	_wind_low = _player("Wind", "wind_low")
 	_wind_gust = _player("Wind", "wind_gust")
+	Probe.stop("sound setup: wind", t_wind)
 
 	for player in [_wind_low, _wind_gust]:
 		if player.stream is AudioStreamOggVorbis:
@@ -275,147 +280,219 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	ambient = AmbientScript.new()
 	ambient.name = "Ambient"
 	add_child(ambient)
+	var t_ambient: int = Probe.start()
 	ambient.setup(self, _terrain, _flora, _grass)
+	Probe.stop("sound setup: ambient", t_ambient)
 	water = WaterSoundsScript.new()
 	water.name = "Water"
 	add_child(water)
+	var t_water: int = Probe.start()
 	water.setup(_flora, _terrain)
+	Probe.stop("sound setup: water", t_water)
 	weather = WeatherScript.new()
 	weather.name = "Weather"
 	add_child(weather)
+	var t_weather: int = Probe.start()
 	weather.setup(self, ambient)
+	Probe.stop("sound setup: weather", t_weather)
 	dig = DigScript.new()
 	dig.name = "Dig"
 	add_child(dig)
+	var t_dig: int = Probe.start()
 	dig.setup(self)
+	Probe.stop("sound setup: dig", t_dig)
 	town = TownScript.new()
 	town.name = "Town"
 	add_child(town)
+	var t_town: int = Probe.start()
 	town.setup(self)
+	Probe.stop("sound setup: town", t_town)
 	flame = FlameScript.new()
 	flame.name = "Flame"
 	add_child(flame)
+	var t_flame: int = Probe.start()
 	flame.setup(self)
+	Probe.stop("sound setup: flame", t_flame)
 	breath = BreathScript.new()
 	breath.name = "Breath"
 	add_child(breath)
+	var t_breath: int = Probe.start()
 	breath.setup(self)
+	Probe.stop("sound setup: breath", t_breath)
 	trees = TreeScript.new()
 	trees.name = "Trees"
 	add_child(trees)
+	var t_trees: int = Probe.start()
 	trees.setup(self)
+	Probe.stop("sound setup: trees", t_trees)
 	fire = FireScript.new()
 	fire.name = "Fire"
 	add_child(fire)
+	var t_fire: int = Probe.start()
 	fire.setup(self)
+	Probe.stop("sound setup: fire", t_fire)
 	itemfx = ItemScript.new()
 	itemfx.name = "ItemFx"
 	add_child(itemfx)
+	var t_itemfx: int = Probe.start()
 	itemfx.setup(self)
+	Probe.stop("sound setup: itemfx", t_itemfx)
 	inner = InnerVoiceScript.new()
 	inner.name = "InnerVoice"
 	add_child(inner)
+	var t_inner: int = Probe.start()
 	inner.setup(self)
+	Probe.stop("sound setup: inner", t_inner)
 	spear = SpearScript.new()
 	spear.name = "Spear"
 	add_child(spear)
+	var t_spear: int = Probe.start()
 	spear.setup(self)
+	Probe.stop("sound setup: spear", t_spear)
 	placed = PlacedScript.new()
 	placed.name = "Placed"
 	add_child(placed)
+	var t_placed: int = Probe.start()
 	placed.setup(self)
+	Probe.stop("sound setup: placed", t_placed)
 	treewind = TreeWindScript.new()
 	treewind.name = "TreeWind"
 	add_child(treewind)
+	var t_treewind: int = Probe.start()
 	treewind.setup(self)
+	Probe.stop("sound setup: treewind", t_treewind)
 	harvestfx = HarvestFxScript.new()
 	harvestfx.name = "HarvestFx"
 	add_child(harvestfx)
+	var t_harvestfx: int = Probe.start()
 	harvestfx.setup(self)
+	Probe.stop("sound setup: harvestfx", t_harvestfx)
 	workshop = WorkshopScript.new()
 	workshop.name = "Workshop"
 	add_child(workshop)
+	var t_workshop: int = Probe.start()
 	workshop.setup(self)
+	Probe.stop("sound setup: workshop", t_workshop)
 	interior = InteriorScript.new()
 	interior.name = "Interior"
 	add_child(interior)
+	var t_interior: int = Probe.start()
 	interior.setup(self)
+	Probe.stop("sound setup: interior", t_interior)
 	gear = GearScript.new()
 	gear.name = "Gear"
 	add_child(gear)
+	var t_gear: int = Probe.start()
 	gear.setup(self)
+	Probe.stop("sound setup: gear", t_gear)
 	stance = StanceScript.new()
 	stance.name = "Stance"
 	add_child(stance)
+	var t_stance: int = Probe.start()
 	stance.setup(self)
+	Probe.stop("sound setup: stance", t_stance)
 	creatures = CreatureScript.new()
 	creatures.name = "Creatures"
 	add_child(creatures)
+	var t_creatures: int = Probe.start()
 	creatures.setup(self)
+	Probe.stop("sound setup: creatures", t_creatures)
 	insects = InsectScript.new()
 	insects.name = "Insects"
 	add_child(insects)
+	var t_insects: int = Probe.start()
 	insects.setup(self)
+	Probe.stop("sound setup: insects", t_insects)
 	stepfx = StepFxScript.new()
 	stepfx.name = "StepFx"
 	add_child(stepfx)
+	var t_stepfx: int = Probe.start()
 	stepfx.setup(self)
+	Probe.stop("sound setup: stepfx", t_stepfx)
 	slots = SlotSoundsScript.new()
 	slots.name = "SlotSounds"
 	add_child(slots)
+	var t_slots: int = Probe.start()
 	slots.setup(self)
+	Probe.stop("sound setup: slots", t_slots)
 	ambience = AmbienceSlotsScript.new()
 	ambience.name = "AmbienceSlots"
 	add_child(ambience)
+	var t_ambience: int = Probe.start()
 	ambience.setup(self)
+	Probe.stop("sound setup: ambience", t_ambience)
 	wet = WetSoundsScript.new()
 	wet.name = "WetSounds"
 	add_child(wet)
+	var t_wet: int = Probe.start()
 	wet.setup(self)
+	Probe.stop("sound setup: wet", t_wet)
 	landing = LandingScript.new()
 	landing.name = "Landing"
 	add_child(landing)
+	var t_landing: int = Probe.start()
 	landing.setup(self)
+	Probe.stop("sound setup: landing", t_landing)
 	emitters = EmitterScript.new()
 	emitters.name = "Emitters"
 	add_child(emitters)
+	var t_emitters: int = Probe.start()
 	emitters.setup(self)
+	Probe.stop("sound setup: emitters", t_emitters)
 	ui = UiScript.new()
 	ui.name = "Ui"
 	add_child(ui)
+	var t_ui: int = Probe.start()
 	ui.setup(self)
+	Probe.stop("sound setup: ui", t_ui)
 	swim = SwimScript.new()
 	swim.name = "Swim"
 	add_child(swim)
+	var t_swim: int = Probe.start()
 	swim.setup(self)
+	Probe.stop("sound setup: swim", t_swim)
 	splashes = SplashScript.new()
 	splashes.name = "Splashes"
 	add_child(splashes)
+	var t_splashes: int = Probe.start()
 	splashes.setup(self)
+	Probe.stop("sound setup: splashes", t_splashes)
 	ice = IceScript.new()
 	ice.name = "Ice"
 	add_child(ice)
+	var t_ice: int = Probe.start()
 	ice.setup(self)
+	Probe.stop("sound setup: ice", t_ice)
 	windhole = WindHoleScript.new()
 	windhole.name = "WindHole"
 	add_child(windhole)
+	var t_windhole: int = Probe.start()
 	windhole.setup(self)
+	Probe.stop("sound setup: windhole", t_windhole)
 	hits = HitScript.new()
 	hits.name = "Hits"
 	add_child(hits)
+	var t_hits: int = Probe.start()
 	hits.setup(self)
+	Probe.stop("sound setup: hits", t_hits)
 	cave = CaveScript.new()
 	cave.name = "Cave"
 	add_child(cave)
+	var t_cave: int = Probe.start()
 	cave.setup(self)
+	Probe.stop("sound setup: cave", t_cave)
 	cavewater = CaveWaterScript.new()
 	cavewater.name = "CaveWater"
 	add_child(cavewater)
+	var t_cavewater: int = Probe.start()
 	cavewater.setup(self)
+	Probe.stop("sound setup: cavewater", t_cavewater)
 	occlusion = OcclusionScript.new()
 	occlusion.name = "Occlusion"
 	add_child(occlusion)
+	var t_occlusion: int = Probe.start()
 	occlusion.setup(self, _terrain)
+	Probe.stop("sound setup: occlusion", t_occlusion)
 
 	_load_settings()
 	_build_warm_list()
@@ -1552,6 +1629,11 @@ const SLOW_LOAD_MS := 25
 const AUDIO_ROOT := "res://assets/audio/"
 static var _prewarmed: Dictionary = {}       # path -> true once its threaded load was requested
 static var warm_requested: int = 0
+# Every clip path under AUDIO_ROOT, seen by the prewarm walk. Once it is built, a name with no file there (the name_0, name_1 ...
+# probes of _find, the .wav try of every .ogg, the recorded/ try of every generated clip) is answered from it, without the
+# ResourceLoader.exists / FileAccess.file_exists disk checks that each cost about a millisecond on a Windows disk (join lag, 4 Nov 2026).
+static var _clip_index: Dictionary = {}
+static var _clip_index_ready: bool = false
 
 
 static func prewarm(folder: String = AUDIO_ROOT) -> void:
@@ -1559,6 +1641,9 @@ static func prewarm(folder: String = AUDIO_ROOT) -> void:
 
 	if dir == null:
 		return
+
+	if folder == AUDIO_ROOT:
+		_index_clips(dir, folder)
 
 	for sub in dir.get_directories():
 		if not sub.begins_with(".") and sub != "__pycache__":
@@ -1580,6 +1665,32 @@ static func prewarm(folder: String = AUDIO_ROOT) -> void:
 			warm_requested += 1
 
 
+static func _index_clips(dir: DirAccess, folder: String) -> void:
+	_clip_index.clear()
+	_index_folder(dir, folder)
+	_clip_index_ready = true
+
+
+static func _index_folder(dir: DirAccess, folder: String) -> void:
+	for sub in dir.get_directories():
+		if not sub.begins_with("."):
+			var child: DirAccess = DirAccess.open(folder + sub + "/")
+
+			if child != null:
+				_index_folder(child, folder + sub + "/")
+
+	for file_name in dir.get_files():
+		var clip_name: String = file_name.trim_suffix(".import").trim_suffix(".remap")
+
+		if clip_name.ends_with(".ogg") or clip_name.ends_with(".wav"):
+			_clip_index[folder + clip_name] = true
+
+
+# False only when the index is built and says no file of that path exists under AUDIO_ROOT.
+static func might_exist(path: String) -> bool:
+	return not _clip_index_ready or not path.begins_with(AUDIO_ROOT) or _clip_index.has(path)
+
+
 static func _load(folder: String, sound_name: String) -> AudioStream:
 	var started: int = Time.get_ticks_msec()
 	var stream: AudioStream = _load_file(folder, sound_name)
@@ -1594,6 +1705,9 @@ static func _load(folder: String, sound_name: String) -> AudioStream:
 static func _load_file(folder: String, sound_name: String) -> AudioStream:
 	for extension in ["ogg", "wav"]:
 		var path: String = folder + sound_name + "." + extension
+
+		if not might_exist(path):
+			continue
 
 		if not _loaded_paths.has(path) and loaded_bytes >= memory_cap_bytes and (ResourceLoader.exists(path) or FileAccess.file_exists(path)):
 			refused_loads += 1                                       # over the tier's memory budget
