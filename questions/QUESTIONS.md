@@ -75,3 +75,12 @@ Note: Recommendation: A. It is a small thing: two jaws of hardwood and a screw.
 - A: 4 sticks, 2 twine and 2 wooden blocks (hammer tier 1, near a camp bench)
 - B: Leave it out of the game for now
 - C: Another cost: I will say
+
+## kathreen-title-rotate | Front page: you gave 12 paintings. Which one shows when the game starts?
+- A different one at random each launch (recommended)
+- The next one in story order each launch (02 to 16)
+- Always the same one (write which in Notes)
+
+## kathreen-title-buttons | Front page buttons: the paintings have New Game, Continue, Settings and Exit drawn in.
+- Use the drawn buttons: clickable, a gold glow on hover, Continue dimmed when you have no character yet (recommended)
+- I will make versions without buttons, and the game draws its own
