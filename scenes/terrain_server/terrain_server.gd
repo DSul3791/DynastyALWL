@@ -1012,6 +1012,13 @@ func _send_cave_streams(peer_id: int, chunk: Vector2i) -> void:
 	if not data.cave_dens.is_empty():
 		net.cave_dens.rpc_id(peer_id, tile, data.cave_dens)
 
+	# Cave dressing (protocol 92): the bake's bone piles and formations, once the tile data carries them.
+	var bones: PackedFloat32Array = data.get("cave_bones") if "cave_bones" in data else PackedFloat32Array()
+	var formations: PackedFloat32Array = data.get("cave_formations") if "cave_formations" in data else PackedFloat32Array()
+
+	if not bones.is_empty() or not formations.is_empty():
+		net.cave_dressing.rpc_id(peer_id, tile, bones, formations)
+
 
 # Lag review (Dave 2 Nov 2026): every "water moved" the client asks again for all ~22 chunks it holds, and every answer was
 # unpacked and redrawn on its main thread, though in a settled river most chunks have not changed. Each peer's last water per chunk
