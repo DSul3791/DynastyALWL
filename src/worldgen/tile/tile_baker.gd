@@ -18,6 +18,7 @@ const ErosionDeltaScript := preload("res://src/worldgen/tile/erosion_delta.gd")
 const TileRollingScript := preload("res://src/worldgen/tile/tile_rolling.gd")
 const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
 const TileRiverMendScript := preload("res://src/worldgen/tile/tile_river_mend.gd")
+const TileRiverMouthScript := preload("res://src/worldgen/tile/tile_river_mouth.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileLandTypesScript := preload("res://src/worldgen/tile/tile_land_types.gd")
@@ -296,6 +297,10 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	clock = Time.get_ticks_msec()
 	var mend: Dictionary = TileRiverMendScript.mend(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m)
 	print("  river mend (tile %s): %d rivers cut off, %d dug through, %d cells made river (%d ms)" % [str(tile), mend["pieces"], mend["mended"], mend["cells"], Time.get_ticks_msec() - clock])
+	# Rivers widen into the sea and the sea comes up the mouth (the 20 Oct estuary rule; Dave 5 Nov: "the ocean should overlap into the mouth", tile_river_mouth.gd).
+	clock = Time.get_ticks_msec()
+	var mouth_cut: Dictionary = TileRiverMouthScript.carve(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, tile_rules["water"])
+	print("  river mouths (tile %s): %d river cells at the sea, %d cells carved, %d made sea (%d ms)" % [str(tile), mouth_cut["mouths"], mouth_cut["cells"], mouth_cut["sea"], Time.get_ticks_msec() - clock])
 
 
 	clock = Time.get_ticks_msec()
