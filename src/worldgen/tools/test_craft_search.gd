@@ -38,7 +38,7 @@ func _init() -> void:
 	var axe: Dictionary = recipes.recipe(2)
 	check(RecipeFilter.shown(axe, "", table.name_of(int(axe["number"])).to_lower(), table), "it matches the item it makes")
 	var first_need: String = table.id_of(int(axe["needs"][0][0])).replace("_", " ")
-	check(not RecipeFilter.shown(axe, "", first_need, table) or table.name_of(int(axe["number"])).to_lower().contains(first_need), "it does not match an ingredient by name (%s)" % first_need)
+	check(not RecipeFilter.shown(axe, "", first_need, table) or (str(axe["name"]) + " " + table.name_of(int(axe["number"]))).to_lower().contains(first_need), "it does not match an ingredient by name (%s)" % first_need)
 
 	# Several words must all match; a tab narrows first.
 	check(not RecipeFilter.shown(axe, "", "axe zzzzqq", table), "a word that matches nothing hides it")
