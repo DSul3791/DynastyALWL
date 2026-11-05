@@ -905,6 +905,11 @@ func _ground_ok(item: Dictionary, data, k: int, x: float, z: float, in_belt: boo
 	if item["kind"] != KIND_PLANT and _near_water(data, x, z):
 		return NAN
 
+	# A river's bed is bare (Dave 5 Nov 2026, x 53182 z 68505: "the grass is still there which means its not a riverbed"): no grass or plant other than reeds
+	# within RIVER_BED_M of river water, so the channel between the wet cells reads as bed, not lawn.
+	if item["kind"] == KIND_PLANT and item["shape"] != "reed" and _near_river(data, x, z):
+		return NAN
+
 	var slope: float = _slope_at(data, x, z)
 
 	if slope > item["max_slope"]:
@@ -1176,6 +1181,18 @@ func _in_grove(groves: Array, x: float, z: float) -> bool:
 const WATER_MARGIN_M := 4.0
 const SEA_LEVEL_M := 0.0
 const WET_FOOT_M := 0.3
+
+
+const RIVER_BED_M := 4.0
+const RIVER := 3
+
+
+func _near_river(data, x: float, z: float) -> bool:
+	for offset in [Vector2.ZERO, Vector2(RIVER_BED_M, 0.0), Vector2(-RIVER_BED_M, 0.0), Vector2(0.0, RIVER_BED_M), Vector2(0.0, -RIVER_BED_M)]:
+		if data.water_class[data.nearest(x + offset.x, z + offset.y)] == RIVER:
+			return true
+
+	return false
 
 
 func _near_water(data, x: float, z: float) -> bool:

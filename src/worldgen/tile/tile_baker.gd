@@ -301,6 +301,9 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	clock = Time.get_ticks_msec()
 	var mouth_cut: Dictionary = TileRiverMouthScript.carve(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, tile_rules["water"])
 	print("  river mouths (tile %s): %d river cells at the sea, %d cells carved, %d made sea (%d ms)" % [str(tile), mouth_cut["mouths"], mouth_cut["cells"], mouth_cut["sea"], Time.get_ticks_msec() - clock])
+	# Every river through cells that share a side, so no grass grows across a brook on the diagonal (Dave 5 Nov, tile_river_mend.gd join_corners).
+	var corners: int = TileRiverMendScript.join_corners(water.heights, water.water_class, water.water_surface, n)
+	print("  river corners (tile %s): %d cells made river" % [str(tile), corners])
 
 
 	clock = Time.get_ticks_msec()
