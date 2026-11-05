@@ -2318,3 +2318,7 @@ Answered: 2026-11-05 12:27 UTC
 Answer: No | Comment: I have not found an orchard yet I found a few random trees. I even found three of them together, but never were they in a row or in an Orchard.
 Answered: 2026-11-05 23:51 UTC
 
+## kathreen-title-rotate | Front page: built as random each launch, never the same twice running (#457). Keep it, or change?
+Answer: The next one in story order each launch (02 to 16) | Comment: I already answered this, and she is already working on it
+Answered: 2026-11-05 23:52 UTC
+
