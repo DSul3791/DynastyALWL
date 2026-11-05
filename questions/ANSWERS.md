@@ -2266,3 +2266,7 @@ Answered: 2026-11-05 12:01 UTC
 Answer: Not at all | Comment: Characters will have to wear appropriate clothing and protective gear
 Answered: 2026-11-05 12:02 UTC
 
+## jamie-wet-clothes | Wet clothes: should clothes stay damp about 1 hour after rain or a swim and keep you less warm?
+Answer: Yes (recommended) | Comment: Stay near a firecould help dry you out much faster
+Answered: 2026-11-05 12:03 UTC
+
