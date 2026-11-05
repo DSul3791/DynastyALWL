@@ -4575,7 +4575,7 @@ func _add_admin_builds() -> void:
 	for id in admin_ids:
 		var number: int = table.number_of(id)
 
-		if number == 0:
+		if number == 0 or bool(table.entry(str(id)).get("retired", false)):   # a retired kit cannot be placed (Dave 5 Nov 2026: the admin Woven chest did nothing): the hammer's blueprints build those
 			continue
 
 		var entry: Button = Button.new()

@@ -3061,7 +3061,16 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	if kit_id != "campfire_kit" and (_structure_of_kit(kit_id).is_empty() or bool(_structure_of_kit(kit_id).get("hand_placed", false))):
 		return      # a torch is placed from the hand (_place_torch), not as a kit
 
-	if blueprint.is_empty() and is_dead_kit(number):   # a kit that survived somewhere (a hand-edited save) is not placeable
+	if blueprint.is_empty() and is_dead_kit(number):
+		# A kit that survived in a pack (Dave 5 Nov 2026: a Woven chest in the pack showed a ghost and the click did nothing): it turns back into the
+		# materials of its blueprint, and the player is told to build it with the hammer. Never a silent refusal.
+		var bp_number: int = int(_blueprint_of_kit.get(kit_id, 0))
+
+		if bp_number > 0 and _refund_blueprint(peer, inv, _blueprints[bp_number]):
+			inv.take_from_slot(slot, 1)
+			_say(peer, "That old kit is gone. Its materials are back in your pack: build it with the hammer (right click for blueprints).")
+			_dirty = true
+
 		return
 
 	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
