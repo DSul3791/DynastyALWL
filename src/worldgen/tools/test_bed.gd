@@ -85,12 +85,17 @@ func _init() -> void:
 	items._stance[1] = 3
 	items._bed_cache.clear()
 
-	# A far bed does not count.
+	# A far bed does not count. The moves are teleports, not walking: the server's walk-off rule (_note_motion: faster than stand_up_speed_mps stands a lying player
+	# up) would read a 4 m jump a few milliseconds apart as a sprint, so the motion record is cleared first. Without that the test passed only when every call
+	# so far landed in the same millisecond (PC gate 5 Nov, a loaded run: the player stood up and every later bed check failed).
+	items._motion.erase(1)
 	items.report_position(1, Vector3(9.0, 10.0, 5.0))
 	items._bed_cache.clear()
 	check(items._bed_of(1) == 0, "a bed 4 m away does not count")
+	items._motion.erase(1)
 	items.report_position(1, Vector3(5.0, 10.0, 5.0))
 	items._bed_cache.clear()
+	check(int(items._stance.get(1, 0)) == 3, "moving the test player does not stand them up")
 
 	# A closed room: a built roof (cover 2.0) and three wall pieces.
 	covered[0] = 2.0
