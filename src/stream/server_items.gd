@@ -153,6 +153,7 @@ var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left 
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
+var send_training: Callable     # (peer, today's training in percent of a fitness point) (protocol 92, Dave: fitness feedback on the Tab screen)
 var water_depth_at: Callable       # (position) -> metres of water there (optional; unset: depth is not checked)
 var water_kind_at: Callable        # (x, z) -> {"kind": brook | river | lake | pond | sea_shallow | sea_mid | sea_deep | "", "depth"} (server_fish_water.gd; optional)
 var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
@@ -286,6 +287,7 @@ var _fate_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exem
 var fate_counts: Dictionary = {}    # fate kind -> times rolled (what luck has touched)
 var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
 var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
+var _training_sent: Dictionary = {}  # peer -> today's training percent last sent
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
 var _path_cfg: Dictionary = {}      # data/path_speed.json: range_m and exertion_factor for moving on or near a path
@@ -11634,6 +11636,26 @@ func _sync_vitals(peer: int, force: bool) -> void:
 		send_vitals.call(peer, now_points[0], now_points[1], now_points[2], now_points[3], luck_of(peer), fitness_of(peer))
 		_dirty = true
 
+	_sync_training(peer, force)
+
+
+# Today's training (the XP bucket that turns into fitness at game midnight) in whole percent of a fitness point, for the Tab screen.
+func training_pm_of(peer: int) -> int:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+	var per_point: float = maxf(float(_fitness_cfg.get("train", {}).get("xp_per_point", 1000.0)), 1.0)
+	return int(floor(float(row.get("xp_today", 0.0)) / per_point * 100.0))
+
+
+func _sync_training(peer: int, force: bool) -> void:
+	if not send_training.is_valid():
+		return
+
+	var pm: int = training_pm_of(peer)
+
+	if force or int(_training_sent.get(peer, -1)) != pm:
+		_training_sent[peer] = pm
+		send_training.call(peer, pm)
+
 
 func _container_cap(number: int) -> int:
 	return int(table.entry(table.id_of(number)).get("capacity_ml", 0)) if number > 0 else 0
@@ -11881,7 +11903,7 @@ var _train_rest: Dictionary = {}     # peer -> seconds continuously at rest (bel
 # 2 at a steady walk, 3 at a run), counted continuously here per second into the character's day bucket (xp_today); at game midnight the
 # bucket is turned into points (xp_per_point = 1000 XP, the same at every level) and the player is told. A midnight that passes while
 # the player is offline is paid at the next tick after login (one bucket only, saved with the character).
-# Only effort below rest_effort held for rest_grace_s loses fitness, one point per decay_s_per_point. Effort between the two lines is neutral.
+# Only effort below rest_effort held for rest_grace_s loses fitness, one point per decay_s_per_point. Effort between the two lines is neutral, and so is sleep.
 func _train_fitness(peer: int, effort: float, spent: float) -> void:
 	var cfg: Dictionary = _fitness_cfg.get("train", {})
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
@@ -11913,6 +11935,8 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 		row["xp_today"] = minf(pending, float(cfg.get("max_gain", 10)) * float(cfg.get("xp_per_point", 1000.0)))
 		_dirty = true
 		_train_rest[peer] = 0.0
+	elif _asleep.has(peer):
+		_train_rest[peer] = 0.0   # sleep is recovery, not idleness: a night in bed (about 20 real minutes) neither earns nor costs, and the grace starts again on waking
 	elif effort <= float(cfg.get("rest_effort", 0.02)):
 		var rested: float = float(_train_rest.get(peer, 0.0)) + spent
 		_train_rest[peer] = rested
@@ -11930,6 +11954,8 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 	if fitness_of(peer) != before:
 		_vitals_sent.erase(peer)
 		_sync_vitals(peer, true)
+	else:
+		_sync_training(peer, false)   # a new whole percent of today's training (at most every few ticks), or the midnight reset to 0
 
 
 # The shared multiplier on the exertion rise: below 1 for the fit, above 1 for the unfit.

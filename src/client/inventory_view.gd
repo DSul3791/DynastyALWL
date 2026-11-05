@@ -82,6 +82,7 @@ var _vitals_seen: bool = false          # the first vitals after joining sets he
 const HURT_MIN := 4                     # a smaller drop is a slow drain (hunger, cold, bleeding), not a blow
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
+var training_today: int = 0           # today's training, percent of a fitness point (character screen; turns into fitness at game midnight)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
 var thirst: int = 100                  # body water, percent (100 = full; 0 = parched)
 var health: int = 100
@@ -188,6 +189,10 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
+	net.training_received.connect(func(percent: int):
+		training_today = percent
+		if _character != null:
+			_character.refresh())
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
 	net.comfort_received.connect(_on_comfort)

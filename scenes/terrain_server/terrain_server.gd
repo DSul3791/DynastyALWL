@@ -326,6 +326,7 @@ func _ready() -> void:
 	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
+	items.send_training = func(peer, percent): net.training.rpc_id(peer, percent)
 	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
 		var ore_tile = generator.get_tile(generator.tile_of(pos.x, pos.z))
 
