@@ -229,7 +229,10 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
-	_prewarm_loose_meshes()
+	if DisplayServer.get_name() == "headless":
+		_prewarm_loose_meshes()   # tests and headless runs: all at once, as before
+	else:
+		_start_loose_prewarm()    # a window: a few meshes each frame while the ground loads
 	_build_vitals_hud()
 	auto_pickup = AutoPickupScript.new()
 	_auto_label = Label.new()
@@ -864,6 +867,11 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	if not _warm_queue.is_empty():
+		var tw: int = FrameProbe.start()
+		_warm_step()
+		FrameProbe.stop("inventory: loose mesh prewarm", tw)
+
 	var t: int = FrameProbe.start()
 	_drain_world_backlog()
 	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
@@ -3193,11 +3201,64 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 
 # Builds the shared meshes of the loose items that appear on every join (stones, sticks, driftwood, logs, firewood, fibre) while the client is still loading, so the first
 # list of world items (282 items took 1070 ms, 961 ms of it here, PC log 2 Nov) only dresses nodes with meshes that already exist (bug 6/join freeze).
+# Lag runs 5 Nov: building the loose item meshes all at once cost about 540 ms of the welcome frame (stones sticks and logs 346, trunk drops 191),
+# the one freeze left at the join. In a window they are built a few each frame instead (WARM_BUDGET_USEC), in the order below, while the ground
+# is still loading (2 s or more after the welcome). A mesh wanted before its turn is built on the spot by _mesh_for, as before any prewarm.
+const WARM_BUDGET_USEC := 6000
+var _warm_queue: Array = []        # item numbers still to build
+var _warm_usec: int = 0            # time spent building them so far
+var _warm_frames: int = 0
+
+
+func _loose_prewarm_numbers() -> Array:
+	var out: Array = []
+
+	for id in table.ids():
+		var item: String = str(id)
+
+		if item == "stone" or item == "flint" or item == "stick" or item == "firewood" or item == "plant_fibre" or item == "driftwood" or item == "log" or item.begins_with("log_"):
+			out.append(table.number_of(item))
+
+	for drop in _trunk_drop_ids():
+		if table.number_of(drop) > 0 and not out.has(table.number_of(drop)):
+			out.append(table.number_of(drop))
+
+	return out
+
+
+func _start_loose_prewarm() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	for group in PICKUP_FILES:
+		_pickup_group(group)
+
+	_warm_queue = _loose_prewarm_numbers()
+	_warm_usec = Time.get_ticks_usec() - t0
+	_warm_frames = 0
+	PieceLook.prewarm()
+	_prewarm_felled()
+
+
+func _warm_step() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	while not _warm_queue.is_empty() and Time.get_ticks_usec() - t0 < WARM_BUDGET_USEC:
+		_mesh_for(int(_warm_queue.pop_front()))
+
+	_warm_usec += Time.get_ticks_usec() - t0
+	_warm_frames += 1
+
+	if _warm_queue.is_empty():
+		print("client prewarm: loose item meshes %.0f ms over %d frames" % [float(_warm_usec) / 1000.0, _warm_frames])
+
+
 func _prewarm_loose_meshes() -> void:
 	var t0: int = Time.get_ticks_usec()
 
 	for group in PICKUP_FILES:
 		_pickup_group(group)
+
+	var t_pick: int = Time.get_ticks_usec()
 
 	for id in table.ids():
 		var name: String = str(id)
@@ -3205,13 +3266,16 @@ func _prewarm_loose_meshes() -> void:
 		if name == "stone" or name == "flint" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
 			_mesh_for(table.number_of(name))
 
+	var t_items: int = Time.get_ticks_usec()
+
 	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
 	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
 	for name in _trunk_drop_ids():
 		if table.number_of(name) > 0:
 			_mesh_for(table.number_of(name))
 
-	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	var t_end: int = Time.get_ticks_usec()
+	print("client prewarm: loose item meshes %.0f ms (pickup models %.0f, stones sticks and logs %.0f, trunk drops %.0f)" % [float(t_end - t0) / 1000.0, float(t_pick - t0) / 1000.0, float(t_items - t_pick) / 1000.0, float(t_end - t_items) / 1000.0])
 	PieceLook.prewarm()   # the building material and trodden-path pictures, on a worker (about 170 ms on the main thread at the first piece or hoe stroke)
 	_prewarm_felled()
 
