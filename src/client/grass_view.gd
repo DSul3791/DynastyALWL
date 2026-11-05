@@ -314,6 +314,9 @@ const CHECK_TIMES := [1500, 3000, 6000, 12000, 24000, 48000]   # ms after the bu
 const CHECK_MOVE_M := 0.35               # a hit this far from its old height means the ground under the cell changed
 const CHECK_CELLS_PER_FRAME := 3
 var _checks: Array = []                  # [cell, due msec, check number]
+# The earliest due time in _checks once a full pass has seen them all (0: not known, look). Steve 5 Nov 2026 (Dave's PC lag run, #401): "grass: check
+# ground" was 56% of the grass time, 1.07 ms every frame, walking the whole list (thousands of cells) to find the few due ones.
+var _checks_due: int = 0
 var _scan_keep: Dictionary = {}
 const SCAN_ROWS_PER_FRAME := 4
 var _center: Vector3 = Vector3.ZERO
@@ -1553,12 +1556,13 @@ static func _drop_beside(heights: PackedFloat32Array, pps: int, i: int, j: int, 
 # Casts the kept ground hits of the cells that are due again (a few cells a frame). A cell whose ground moved is built again; one whose ground held is
 # looked at again later, until CHECK_TIMES runs out.
 func _check_ground(now: int) -> void:
-	if _checks.is_empty():
+	if _checks.is_empty() or now < _checks_due:
 		return
 
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var done: int = 0
 	var n: int = 0
+	var next_due: int = 0x7fffffffffffffff
 
 	while n < _checks.size() and done < CHECK_CELLS_PER_FRAME:
 		var check: Array = _checks[n]
@@ -1569,6 +1573,7 @@ func _check_ground(now: int) -> void:
 			continue
 
 		if now < int(check[1]):
+			next_due = mini(next_due, int(check[1]))
 			n += 1
 			continue
 
@@ -1589,9 +1594,13 @@ func _check_ground(now: int) -> void:
 		elif int(check[2]) + 1 < CHECK_TIMES.size():
 			check[2] = int(check[2]) + 1
 			check[1] = now + int(CHECK_TIMES[check[2]])
+			next_due = mini(next_due, int(check[1]))
 			n += 1
 		else:
 			_checks.remove_at(n)
+
+	# A full pass knows the earliest due time; one cut short by the per-frame cap looks again next frame.
+	_checks_due = next_due if n >= _checks.size() else 0
 
 
 var ground_rebuilds: int = 0             # cells built again because their ground moved after the first build (for the tests and the debug panel)
@@ -1823,6 +1832,7 @@ func _build(cell: Vector2i) -> int:
 
 	entry["probes"] = probes
 	_checks.append([cell, Time.get_ticks_msec() + int(CHECK_TIMES[0]), 0])
+	_checks_due = mini(_checks_due, Time.get_ticks_msec() + int(CHECK_TIMES[0]))
 	_free_cell_nodes(entry)      # a rebuilt cell swaps its cards in the same frame
 
 	for layer in range(LAYERS.size()):
