@@ -71,6 +71,9 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
 var spring_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of each spring cave's mouth (Dave 3 Nov 2026): the settle keeps a spring there even on steep ground
 var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
+# Cave dressing (Dave 4 Nov 2026; bake: tile_sites._dress_cave; drawn by Kathreen's client view). Flat lists:
+var cave_bones: PackedFloat32Array = PackedFloat32Array()        # 5 floats each: x, y, z, kind (0 animal, 1 human), yaw
+var cave_formations: PackedFloat32Array = PackedFloat32Array()   # 6 floats each: x, y, z, kind (0 stalagmite, 1 stalactite), height_m, radius_m (a stalactite's y is its root on the roof)
 # Loose stones and boulders on cave floors (Dave 4 Nov 2026: "they should be riddled with rocks and collectable stones"): 5 floats each, x, y (the floor),
 # z, kind (0 stone, 1 boulder), boulder radius m. Laid out by the server's item scatter (server_items._lay_out_cave_items) through cave_scatter_in.
 var cave_scatter: PackedFloat32Array = PackedFloat32Array()
@@ -617,6 +620,8 @@ func _load_caves(list: Array) -> void:
 	cave_pool_shapes = PackedFloat32Array()
 	cave_openings = []
 	cave_dens = PackedVector3Array()
+	cave_bones = PackedFloat32Array()
+	cave_formations = PackedFloat32Array()
 	cave_scatter = PackedFloat32Array()
 	_cave_scatter_cells = {}
 	_cave_sources = []
@@ -624,6 +629,14 @@ func _load_caves(list: Array) -> void:
 	_cave_water_cells = {}
 
 	for cave in list:
+		for bone in cave.get("bones", []):
+			var at: Array = bone["pos"]
+			cave_bones.append_array(PackedFloat32Array([float(at[0]), float(at[1]), float(at[2]), 1.0 if str(bone["kind"]) == "human" else 0.0, float(bone.get("yaw", 0.0))]))
+
+		for form in cave.get("formations", []):
+			var at: Array = form["pos"]
+			cave_formations.append_array(PackedFloat32Array([float(at[0]), float(at[1]), float(at[2]), 1.0 if str(form["kind"]) == "stalactite" else 0.0, float(form["height_m"]), float(form["radius_m"])]))
+
 		var nodes: Array = cave["nodes"]
 
 		if str(cave.get("cave_kind", "")) == "spring_cave" and not nodes.is_empty():
