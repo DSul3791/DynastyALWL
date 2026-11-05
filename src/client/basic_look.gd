@@ -300,6 +300,7 @@ static func has_look(item_id: String) -> bool:
 static var _built: Dictionary = {}
 static var _lock: Mutex = Mutex.new()   # _built and the shared materials: the prewarm worker builds looks while the main thread may ask for one
 static var _prewarm_task: int = -1
+static var _urgent: Array = []          # looks wanted now (ask_soon): the worker builds these before the rest of its list
 static var _prewarm_stop: bool = false   # set by finish_prewarm: the worker stops before its next look
 
 
@@ -346,12 +347,21 @@ static func prewarm() -> void:
 	_prewarm_stop = false
 	var job: Callable = func() -> void:
 		var t0: int = Time.get_ticks_usec()
+		var next: int = 0
 
-		for id in ids:
-			if _prewarm_stop:
-				return
+		while not _prewarm_stop:
+			_lock.lock()
+			var id: String = str(_urgent.pop_front()) if not _urgent.is_empty() else ""
+			_lock.unlock()
 
-			mesh_for(str(id))
+			if id == "":
+				if next >= ids.size():
+					break
+
+				id = str(ids[next])
+				next += 1
+
+			mesh_for(id)
 
 		print("client prewarm: %d item looks on a worker in %.0f ms" % [ids.size(), float(Time.get_ticks_usec() - t0) / 1000.0])
 
@@ -362,6 +372,21 @@ static func prewarm() -> void:
 # The worker stops after the look it is on. A mesh call that waits on the rendering server's queue only returns once the main thread flushes
 # it, so the main thread keeps flushing while it waits (the PC gate on #426: two tests that quit without a main loop hung for 300 s).
 # Whether a look is built already (the slow world-items line says so, to tell a look the prewarm had not reached yet from a slow first draw).
+# True while the prewarm worker is still building and has not built this look: the caller can show a stand-in and ask for it first (ask_soon).
+static func waiting_for(item_id: String) -> bool:
+	return _prewarm_task != -1 and not WorkerThreadPool.is_task_completed(_prewarm_task) and not is_built(item_id)
+
+
+# Puts a look at the front of the prewarm worker's list (a loose item of that kind just came into view).
+static func ask_soon(item_id: String) -> void:
+	_lock.lock()
+
+	if not _urgent.has(item_id):
+		_urgent.append(item_id)
+
+	_lock.unlock()
+
+
 static func is_built(item_id: String) -> bool:
 	_lock.lock()
 	var built: bool = _built.has(item_id)

@@ -864,6 +864,9 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	if not _look_waiting.is_empty():
+		_swap_waiting_looks()
+
 	var t: int = FrameProbe.start()
 	_drain_world_backlog()
 	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
@@ -2253,7 +2256,16 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		if state == 0:
 			var box: MeshInstance3D = MeshInstance3D.new()
 			var real: Mesh = _natural_mesh(int(row[1]), int(row[0]))
-			box.mesh = real if real != null else _mesh_for(row[1])
+			var look_id: String = table.id_of(int(row[1]))
+
+			if real == null and not _meshes.has(int(row[1])) and BasicLook.has_look(look_id) and BasicLook.waiting_for(look_id):
+				# The prewarm worker has not built this look yet: a stand-in now, the real look as soon as the worker has it (building it here took 30 to
+				# 51 ms on the main thread for each first spade, hoe or berry in view, windowed lag run 5 Nov).
+				box.mesh = _look_stand_in()
+				BasicLook.ask_soon(look_id)
+				_look_waiting.append([box, int(row[1])])
+			else:
+				box.mesh = real if real != null else _mesh_for(row[1])
 			node = box
 			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
 			_dress_item(node, int(row[1]), int(row[0]), real != null)
@@ -3013,6 +3025,48 @@ static func _fire_tier(state: int) -> int:
 
 # Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item
 # kind; each lying item is turned and scaled a little by its world id (_dress_item), so no per-frame cost.
+var _look_waiting: Array = []   # [MeshInstance3D, item number]: loose items drawn with a stand-in until the prewarm worker has their look
+var _stand_in: Mesh = null
+
+
+# A small plain lump for a loose item whose look the prewarm worker is still building (_look_waiting).
+func _look_stand_in() -> Mesh:
+	if _stand_in == null:
+		var lump: SphereMesh = SphereMesh.new()
+		lump.radius = 0.06
+		lump.height = 0.08
+		lump.radial_segments = 8
+		lump.rings = 4
+		var material: StandardMaterial3D = StandardMaterial3D.new()
+		material.albedo_color = Color(0.45, 0.4, 0.33)
+		material.roughness = 1.0
+		lump.material = material
+		_stand_in = lump
+
+	return _stand_in
+
+
+# Gives the waiting loose items their real look once the worker has built it (or builds it here if the worker has stopped).
+func _swap_waiting_looks() -> void:
+	var still: Array = []
+
+	for wait in _look_waiting:
+		if not is_instance_valid(wait[0]):
+			continue   # picked up or out of range before its look came
+
+		var node: MeshInstance3D = wait[0]
+
+		var look_id: String = table.id_of(int(wait[1]))
+
+		if BasicLook.waiting_for(look_id):
+			still.append(wait)
+			continue
+
+		node.mesh = _mesh_for(int(wait[1]))
+
+	_look_waiting = still
+
+
 func _mesh_for(number: int) -> Mesh:
 	if not _meshes.has(number):
 		var id: String = table.id_of(number)
