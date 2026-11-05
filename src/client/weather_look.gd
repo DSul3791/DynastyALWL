@@ -43,7 +43,7 @@ const AMBIENT_DAY_WARM := Color(0.62, 0.56, 0.44)
 const DAY_SKY_SHARE := 0.75              # share of the day's ambient from the sky (1 before: all sky)
 const AMBIENT_FLOOR := 0.32             # ambient light never drops below this, so a storm night is not pure black
 const AMBIENT_STORM := 0.4               # ambient light left in a full storm (1 clear)
-const CAVE_LIGHT_DARK := 0.04            # share of the sun and sky light left deep in a cave or tunnel, setting "Dark"
+const CAVE_LIGHT_DARK := 0.0             # share of the sun and sky light left deep in a cave or tunnel, setting "Dark": none, pitch black without a torch or fire (Dave 5 Nov 2026)
 const CAVE_LIGHT_NORMAL := 0.12          # the same, setting "Normal"
 const CAVE_GO_DARK_S := 1.0              # the light fades out over this long on going in, and back over CAVE_COME_OUT_S
 const CAVE_COME_OUT_S := 2.5             # (the eyes take longer to get used to the light again)
@@ -421,9 +421,11 @@ func _process_body(delta: float) -> void:
 	if not _client.underwater:
 		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
 		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0)
-		environment.fog_light_color = _graded(day.sky_horizon, gloom)
+		# The fog is sky-coloured haze: under rock it must go dark with the light, or a long tunnel glows (pitch black means black).
+		var fog_tint: Color = _graded(day.sky_horizon, gloom)
+		environment.fog_light_color = Color(fog_tint.r * under_rock, fog_tint.g * under_rock, fog_tint.b * under_rock, fog_tint.a)
 		environment.fog_sky_affect = 0.0
-		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL
+		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL * under_rock
 		environment.fog_height_density = 0.0
 	else:
 		_underwater_fog(environment, 1.0 - day.night, cloud_cover)
