@@ -54,6 +54,8 @@ const PLANT_BUSH_REACH_M := 4.0         # a dug bush is planted this close (flat
 const PLANT_BUSH_GAP_M := 1.0           # and no closer than this to another planted bush or sapling
 const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
 const SCATTER_PAD_M := 30.0             # how far past its own square the layout of a scatter cell reads the ground (water probe 24 m)
+const SLOW_TICK_LOG_MS := 100.0          # an items tick this long logs its slow parts (Tyler's join-stall aid, 31 Oct 2026)
+const SLOW_PART_LOG_MS := 10.0           # a part of such a tick this long is named in that line
 const SCATTER_TICK_MAX_MS := 40.0       # the ground scatter stops laying out cells for the tick once this long has passed (the rest follows on the next sync)
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
 const SPLIT_LIFETIME_S := 7.0 * 86400.0  # what a felled tree breaks into lies a real week, as its trunk would have (it rotted after a real week)
@@ -351,6 +353,10 @@ var _saplings: Array = []           # {slot, chunk [cx, cz], species (flora id),
 var _flora_by_id: Dictionary = {}
 var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
+var _log_tasks: Array = []           # worker tasks printing log lines (_log_off_main)
+var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
+var _slow_prev_usec: int = 0          # when the last part of this items tick ended
+var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
 var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
 
@@ -1135,9 +1141,12 @@ var admin_ok: Callable                  # set by the server: true when the peer 
 
 func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
+	_slow_parts = []
+	_slow_prev_usec = t0
 	_fly(delta)
 	_showroom_retry(delta)
 	_road_tick(delta)
+	_slow_mark("fly-showroom-roads", t0)
 	_slow_in += delta
 
 	# Fires and item lifetimes only need about 4 looks a second (TD note 2026-10-20: 1.5 ms a frame at 1300 records).
@@ -1206,13 +1215,38 @@ func tick(delta: float) -> void:
 		_async_writes = false
 		_start_writer()
 
+	_slow_mark("save", t0)
+	var tick_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 
-# Testing aid (Tyler, 31 Oct 2026): a step of the items tick that runs over 250 ms since the tick began says so in the log, so a join stall names its part.
-func _slow_mark(part: String, since_usec: int) -> void:
-	var ms: float = float(Time.get_ticks_usec() - since_usec) / 1000.0
+	if tick_ms > SLOW_TICK_LOG_MS:
+		# One line a slow tick, naming each part's own time (the old lines gave only the running total, so a 274 ms "scatter reached after"
+		# did not say whether scatter or something before it took the time). Printed from a worker: a print can stall the main thread (#397).
+		_log_off_main("items tick slow: %.0f ms; parts over %.0f ms: %s" % [tick_ms, SLOW_PART_LOG_MS, ", ".join(_slow_parts)])
 
-	if ms > 250.0:
-		print("items tick slow: %s reached after %.0f ms" % [part, ms])
+
+# Testing aid (Tyler, 31 Oct 2026): the items tick times its parts, so a join stall names its part. Each mark closes the part since the last
+# one; a part over SLOW_PART_LOG_MS goes on the tick's list, printed at the end of a tick over SLOW_TICK_LOG_MS.
+func _slow_mark(part: String, _since_usec: int) -> void:
+	var now: int = Time.get_ticks_usec()
+	var ms: float = float(now - _slow_prev_usec) / 1000.0
+	_slow_prev_usec = now
+
+	if ms > SLOW_PART_LOG_MS:
+		_slow_parts.append("%s %.0f" % [part, ms])
+
+
+# A log line printed on a worker thread (a print flushes the log on the PC's debug build and stalled the main thread 400+ ms, #397).
+func _log_off_main(line: String) -> void:
+	var still: Array = []
+
+	for task in _log_tasks:   # reap the lines already printed (a task must be waited for once)
+		if WorkerThreadPool.is_task_completed(task):
+			WorkerThreadPool.wait_for_task_completion(task)
+		else:
+			still.append(task)
+
+	still.append(WorkerThreadPool.add_task(func() -> void: print(line), false, "items log line"))
+	_log_tasks = still
 
 
 func save() -> void:
@@ -3782,6 +3816,11 @@ func _reap_writer() -> void:
 
 
 func _finish_writer() -> void:
+	for task in _log_tasks:
+		WorkerThreadPool.wait_for_task_completion(task)
+
+	_log_tasks = []
+
 	if _writer != null:
 		_writer.wait_to_finish()
 		_writer = null
@@ -3822,7 +3861,7 @@ func _scatter_around_players() -> void:
 					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
 
 					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
-						print("items tick slow: scatter cell %s took %.0f ms (cave floor %.0f ms)" % [str(cell), cell_ms, _cell_cave_ms])
+						_log_off_main("items tick slow: scatter cell %s took %.0f ms (%s)" % [str(cell), cell_ms, ", ".join(_cell_parts)])
 
 					budget -= 1
 
@@ -3873,9 +3912,11 @@ static func boosted(base: int, add: int, cap: int) -> int:
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
-	var cave_usec: int = Time.get_ticks_usec()
+	var part_usec: int = Time.get_ticks_usec()
+	_cell_parts = []
 	_lay_out_cave_items(cell, cell_m, cfg)
-	_cell_cave_ms = float(Time.get_ticks_usec() - cave_usec) / 1000.0
+	_cell_cave_ms = float(Time.get_ticks_usec() - part_usec) / 1000.0
+	part_usec = _cell_part("cave floor", part_usec)
 	var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
 	var h0: float = float(ground_height.call(centre.x, centre.y))
 	var h1: float = float(ground_height.call(centre.x + 4.0, centre.y))
@@ -3921,8 +3962,18 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 		_items[_next_id] = {"number": table.number_of(kinds[n]), "count": 1, "pos": Vector3(x, y, z), "left": 1.0e9, "scatter": key}
 		_next_id += 1
 
+	part_usec = _cell_part("stones and sticks", part_usec)
 	_lay_out_bank_stones(cell, cell_m, cfg, rng, kinds.size())
+	part_usec = _cell_part("bank stones", part_usec)
 	_lay_out_boulders(cell, cell_m, rng)
+	_cell_part("boulders", part_usec)
+
+
+# Notes a part of a scatter cell's layout in _cell_parts (for the slow-cell line); returns now, the next part's start.
+func _cell_part(part: String, since_usec: int) -> int:
+	var now: int = Time.get_ticks_usec()
+	_cell_parts.append("%s %.0f" % [part, float(now - since_usec) / 1000.0])
+	return now
 
 
 # Boulders (Dave 2026-10-21), see data/items/boulders.json: server-owned lumps of rock a pick breaks into stones. Laid out per
