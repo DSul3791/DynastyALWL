@@ -8,7 +8,7 @@ One page for a new agent or a new thread of Dave's. Everything else is found thr
 ## Who does what (Dave's decisions, source: `MODERATOR_QA_LOG.md`; detail: `docs/handoff/SCOPE_<NAME>.md` and `HANDOFF_<NAME>.md`)
 | Agent | Owns |
 |---|---|
-| Moderator | speaks for Dave, merges agents' daily branches into main only on Dave's go, decides reversible choices, QA page |
+| Moderator (coordinator) | speaks for Dave, staffs jobs, decides reversible choices, QA page |
 | Sonny | terrain and water mechanics |
 | Kathleen, Kathreen | everything about LOOKS (items, characters, animals, plants, fire, water look) |
 | Sal | all items: what they are, recipes, what they do, numbers and text |
@@ -20,7 +20,7 @@ One page for a new agent or a new thread of Dave's. Everything else is found thr
 | Jamie | documentation (this page, `DOC_MAP.md`) |
 
 ## Rules
-- NEVER merge to `main` until Dave has play-tested and says go. There is NO daily branch (Dave, 2 Nov 2026): it overcomplicated everything. Each agent works on its own NEW branch each day, named `claude/<agent>-YYYYMMDD`, cut from `origin/main`. The moderator merges agents' branches into main only on Dave's go. Never delete the `qa` branch.
+- Never merge to `main` yourself. There is NO daily branch (Dave, 2 Nov 2026): it overcomplicated everything. Each agent works on its own NEW branch each day, named `claude/<agent>-YYYYMMDD`, cut from `origin/main`. Every job is a PR to `main`; Tyler merges it after its tests pass on Dave's PC. Never merge your own PR. Never delete the `qa` branch.
 - Daily rhythm (Dave, 2 Nov 2026): (1) start with an efficiency audit of yesterday's work and decide what to improve in workflow; (2) the moderator hands each agent its first 3 tasks; (3) each agent makes its new branch and carries on; (4) when the 3 are done or blocked, the agent finds 3 more in its own purview and continues, until told otherwise.
 - Blocked or stuck (Dave, 2 Nov 2026): note it in your handoff, put a card on the QA page (branch `qa`, `questions/QUESTIONS.md`), and move straight on to your next job. No next job: find three more that improve the game in your role.
 - Priority order (Dave approved 4 Nov 2026): 1 terrain and water, 2 freezes and lag, 3 testing, 4 first-hour bugs, 5 body and movement feel, 6 flora and fauna, 7 Art Direction pass, 8 audio, 9 tuning, 10 guides and docs, 11 new ideas (parked). Bugs Dave finds in play go right after terrain. The ranked list with reasons and the live staffing table are at the top of `/mnt/project-files/BACKLOG.md` (owner: Jamie).
