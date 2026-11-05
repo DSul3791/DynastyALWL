@@ -112,9 +112,11 @@ static func _hills(samples: int, spacing_m: float, origin_sx: int, origin_sz: in
 			settings.tiles_x * tile_samples_w, settings.tiles_z * tile_samples_w, int(ceil(4.0 * float(octave["wavelength_m"]) / spacing_m))
 		)
 		var amplitude: float = float(octave["amplitude_m"])
+		# An octave may shape its own tops: a high power leaves most of the ground low and lifts only scattered steep hills (Dave 5 Nov 2026).
+		var shape: float = float(octave.get("power", power))
 
 		for index in range(out.size()):
-			out[index] += amplitude * pow(float(data[index]) / 255.0, power)
+			out[index] += amplitude * pow(float(data[index]) / 255.0, shape)
 
 		octave_index += 1
 

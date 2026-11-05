@@ -32,7 +32,8 @@
 			"octaves": [
 				{"wavelength_m": 520, "amplitude_m": 38},
 				{"wavelength_m": 230, "amplitude_m": 20},
-				{"wavelength_m": 95, "amplitude_m": 6}
+				{"wavelength_m": 95, "amplitude_m": 6},
+				{"wavelength_m": 130, "amplitude_m": 19, "power": 2.5, "note": "Dave 5 Nov 2026: 'it should create some steeper but smaller hills', half the big hills' height on about a quarter of their width; power 2.5 keeps most ground low so these stand alone"}
 			],
 			"power": 1.2,
 			"near_water_m": 20,
