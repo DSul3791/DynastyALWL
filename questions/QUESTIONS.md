@@ -108,9 +108,11 @@ Note: Recommendation: 80 leaves, about one felled crown.
 - Yes, milder (recommended)
 - Keep it as is
 
-## jamie-wildflower-size | Wildflower heads are drawn about 4 times real size (a dandelion head about 15 to 20 cm, real about 4 cm).
-- Keep them big so you see them from afar (recommended)
-- Real size
+## jamie-wildflower-size | Wildflower heads are drawn about 4 times real size (a dandelion head about 15 to 20 cm, real about 4 cm). What size?
+Note: Recommendation (Kathleen): halfway keeps the meadow's colour from afar and stops them looking giant next to the body.
+- Halfway, about 8 cm (recommended)
+- Real size, about 4 cm
+- Keep them as they are
 
 ## jamie-footstep-clip | Your two footstep recordings (step_gravel_left, step_stone_left) clip at +0.2 dB.
 - Jason trims them with declip.py (recommended)
