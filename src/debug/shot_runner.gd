@@ -1579,21 +1579,30 @@ func _piece_ground(x: float, z: float) -> float:
 	return ItemCam.pick_ground(float(client._ground_below(Vector3(x, from_y, z))), _ground(x, z))
 
 
-# --shot-stance: where the drawn body is against the ground under it (the sit read as sunk into the ground on 5 Nov; the pose puts the hips 0.14 m above the body's feet level).
+# --shot-stance: where the drawn body is against the collision ground under it (the sit read as sunk into the ground on 5 Nov; the pose puts the hips 0.14 m above the body's feet level).
 func _print_body_height() -> void:
 	if stance_index < 0 or client._avatar == null:
 		return
 
 	var avatar: Node3D = client._avatar
 	var foot_y: float = avatar.global_position.y
-	var ground: float = _ground(avatar.global_position.x, avatar.global_position.z)
+	# The voxel raycast gives the hit voxel's whole-number cell, not the surface; the physics ray gives the collision floor exactly (the body excluded).
+	var ground: float = NAN
+	var from: Vector3 = avatar.global_position + Vector3(0.0, 3.0, 0.0)
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - Vector3(0.0, 8.0, 0.0))
+	query.exclude = [client.body.get_rid()]
+	var hit: Dictionary = client.body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if not hit.is_empty():
+		ground = float((hit["position"] as Vector3).y)
+
 	var hips_y: float = NAN
 	var skeleton: Skeleton3D = avatar.get("skeleton") as Skeleton3D
 
 	if skeleton != null and skeleton.find_bone("mixamorig_Hips") >= 0:
 		hips_y = (skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("mixamorig_Hips"))).origin.y
 
-	print("shot runner: body height: stance %d clip %s, feet level %.2f, ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
+	print("shot runner: body height: stance %d clip %s, feet level %.2f, collision ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
 
 
 func _ground(x: float, z: float) -> float:
