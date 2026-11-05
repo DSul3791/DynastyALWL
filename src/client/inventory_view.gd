@@ -229,7 +229,10 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
-	_prewarm_loose_meshes()
+	if DisplayServer.get_name() == "headless":
+		_prewarm_loose_meshes()   # tests and headless runs: all at once, as before
+	else:
+		_start_loose_prewarm()    # a window: a few meshes each frame while the ground loads
 	_build_vitals_hud()
 	auto_pickup = AutoPickupScript.new()
 	_auto_label = Label.new()
@@ -864,6 +867,11 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	if not _warm_queue.is_empty():
+		var tw: int = FrameProbe.start()
+		_warm_step()
+		FrameProbe.stop("inventory: loose mesh prewarm", tw)
+
 	var t: int = FrameProbe.start()
 	_drain_world_backlog()
 	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
@@ -3193,6 +3201,57 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 
 # Builds the shared meshes of the loose items that appear on every join (stones, sticks, driftwood, logs, firewood, fibre) while the client is still loading, so the first
 # list of world items (282 items took 1070 ms, 961 ms of it here, PC log 2 Nov) only dresses nodes with meshes that already exist (bug 6/join freeze).
+# Lag runs 5 Nov: building the loose item meshes all at once cost about 540 ms of the welcome frame (stones sticks and logs 346, trunk drops 191),
+# the one freeze left at the join. In a window they are built a few each frame instead (WARM_BUDGET_USEC), in the order below, while the ground
+# is still loading (2 s or more after the welcome). A mesh wanted before its turn is built on the spot by _mesh_for, as before any prewarm.
+const WARM_BUDGET_USEC := 6000
+var _warm_queue: Array = []        # item numbers still to build
+var _warm_usec: int = 0            # time spent building them so far
+var _warm_frames: int = 0
+
+
+func _loose_prewarm_numbers() -> Array:
+	var out: Array = []
+
+	for id in table.ids():
+		var name: String = str(id)
+
+		if name == "stone" or name == "flint" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
+			out.append(table.number_of(name))
+
+	for name in _trunk_drop_ids():
+		if table.number_of(name) > 0 and not out.has(table.number_of(name)):
+			out.append(table.number_of(name))
+
+	return out
+
+
+func _start_loose_prewarm() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	for group in PICKUP_FILES:
+		_pickup_group(group)
+
+	_warm_queue = _loose_prewarm_numbers()
+	_warm_usec = Time.get_ticks_usec() - t0
+	_warm_frames = 0
+	PieceLook.prewarm()
+	_prewarm_felled()
+
+
+func _warm_step() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	while not _warm_queue.is_empty() and Time.get_ticks_usec() - t0 < WARM_BUDGET_USEC:
+		_mesh_for(int(_warm_queue.pop_front()))
+
+	_warm_usec += Time.get_ticks_usec() - t0
+	_warm_frames += 1
+
+	if _warm_queue.is_empty():
+		print("client prewarm: loose item meshes %.0f ms over %d frames" % [float(_warm_usec) / 1000.0, _warm_frames])
+
+
 func _prewarm_loose_meshes() -> void:
 	var t0: int = Time.get_ticks_usec()
 
@@ -3309,38 +3368,12 @@ const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
 
 
-# Lag run 5 Nov: the loose-mesh prewarm cost about 500 ms of the welcome frame. The twelve pickup models start loading on the
-# loader's threads when the client begins connecting; _pickup_group takes them from there. Not under headless (the dummy renderer's
-# mesh store is not thread-safe, PC gate on #426).
-static var _early_pickups: Dictionary = {}   # path -> true while its threaded load was requested and not yet taken
-
-
-static func request_pickups_early() -> void:
-	if not _early_pickups.is_empty() or DisplayServer.get_name() == "headless":
-		return
-
-	for group in PICKUP_FILES:
-		for file in PICKUP_FILES[group]:
-			var path: String = PICKUP_DIR + file + ".glb"
-
-			if ResourceLoader.exists(path) and ResourceLoader.load_threaded_request(path, "", false, ResourceLoader.CACHE_MODE_REUSE) == OK:
-				_early_pickups[path] = true
-
-
-static func _load_pickup(path: String) -> Variant:
-	if _early_pickups.has(path):
-		_early_pickups.erase(path)
-		return ResourceLoader.load_threaded_get(path)
-
-	return load(path) if ResourceLoader.exists(path) else null
-
-
 func _pickup_group(group: String) -> Array:
 	if not _pickup_meshes.has(group):
 		var meshes: Array = []
 
 		for file in PICKUP_FILES[group]:
-			var packed: Variant = _load_pickup(PICKUP_DIR + file + ".glb")
+			var packed: Variant = load(PICKUP_DIR + file + ".glb") if ResourceLoader.exists(PICKUP_DIR + file + ".glb") else null
 
 			if packed is PackedScene:
 				var instance: Node = packed.instantiate()
