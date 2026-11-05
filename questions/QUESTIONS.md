@@ -53,11 +53,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
 
-## jamie-far-grass-fade | Far grass: start the fade at 0.25 of the draw distance instead of 0.5?
-- Decide after the grass walk (recommended)
-- Yes, 0.25
-- No, keep 0.5
-
 ## jamie-cold-acclimation | Cold acclimation: how does a character get used to the cold?
 - Slowly, from time spent in the cold, with a cap (recommended)
 - Not at all
