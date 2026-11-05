@@ -1296,7 +1296,7 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0))])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else ""])
 			continue
 
 		var row: Array = [int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
@@ -3052,7 +3052,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 			_say(peer, "The game does not know where you are yet. Try again in a moment.")
 			return
 
-		if not _can_blueprint(peer, inv, blueprint):
+		if not _can_blueprint(peer, inv, blueprint, true):
 			return   # _can_blueprint says why
 
 		kit_id = str(_structures.get(str(blueprint["structure"]), {}).get("kit", ""))
@@ -3137,7 +3137,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 			if is_nan(spot.y):
 				return
 
-		_place_structure(peer, inv, slot, spot, yaw_deg, placed_def)
+		_place_structure(peer, inv, slot, spot, yaw_deg, placed_def, blueprint if (not blueprint.is_empty() and not free_build and _blueprint_short(peer, inv, blueprint)) else {})
 		return
 
 	var chunk_fires: int = 0
@@ -3522,6 +3522,15 @@ func _sync_world_items() -> void:
 				if it.has("struct") and bool(it["struct"].get("lit", false)):
 					signature += 7      # a fixture lit or put out is sent again (the client draws or drops its flame)
 
+				var site_view: Array = []
+
+				if it.has("struct") and it["struct"].has("site"):
+					site_view = _site_view(peer, it)   # this player's own list: what is still needed and what they have to put in (Dave 5 Nov 2026)
+					signature += 37
+
+					for line in site_view:
+						signature += 101 * int(line[1]) + 7 * mini(int(line[2]), int(line[1]) + 1)   # a deposit, or having enough on hand, sends it again
+
 				if it.has("fire"):
 					signature += 13 * int(it["fire"].get("fed", 0))      # wood laid on a fire is sent again (its burn time for the inspection label)
 
@@ -3530,6 +3539,8 @@ func _sync_world_items() -> void:
 
 				if not known.has(id) or known[id] != signature:
 					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else ({"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)} if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") else {}))))])
+					if not site_view.is_empty():
+						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
 					known[id] = signature
 
 		for id in known.keys():
@@ -3695,6 +3706,12 @@ func _load_world_items() -> void:
 				entry["struct"]["born"] = float(row[12])
 				entry["struct"]["cave"] = row.size() > 13 and bool(row[13])
 				entry["struct"]["coins"] = maxi(int(row[14]), 0) if row.size() > 14 else 0
+
+			if row.size() > 15 and str(row[15]) != "":
+				var saved_site: Variant = JSON.parse_string(str(row[15]))
+
+				if typeof(saved_site) == TYPE_DICTIONARY:
+					entry["struct"]["site"] = {"bp": int((saved_site as Dictionary).get("bp", 0)), "have": (saved_site as Dictionary).get("have", {})}
 
 			if row.size() > 12 and _traps != null and str(row[9]) == str(_traps.cfg.get("kind", "snare_trap")):
 				entry["struct"]["owner"] = str(row[11])
@@ -6031,7 +6048,7 @@ func place_item(peer: int, number: int, at: Vector3, lift_steps: int = 0, yaw_de
 	action(peer, Net.ACT_PLACE, inv.numbers.find(number), lift_steps, yaw_deg, at)
 
 
-func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
+func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> bool:
 	if free_build:
 		return not _structures.get(str(row["structure"]), {}).is_empty()
 
@@ -6065,10 +6082,22 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 
 	for need in row["cost"]:
 		if inv.count_fill(table.number_of(str(need[0]))) + _ground_stock_count(peer, table.number_of(str(need[0]))) < int(need[1]):
+			if site_ok:
+				continue   # a blueprint site is set down anyway; the materials are deposited later (Dave 5 Nov 2026)
+
 			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
 			return false
 
 	return true
+
+
+# True when the pack and the ground stock beside the builder cannot cover the blueprint's materials: the click then sets down a blueprint site.
+func _blueprint_short(peer: int, inv, row: Dictionary) -> bool:
+	for need in row["cost"]:
+		if inv.count_fill(table.number_of(str(need[0]))) + _ground_stock_count(peer, table.number_of(str(need[0]))) < int(need[1]):
+			return true
+
+	return false
 
 
 func _pay_blueprint(inv, row: Dictionary, peer: int = -1) -> void:
@@ -6176,7 +6205,7 @@ func _inside_shelter(shelter: Dictionary, spot: Vector3) -> bool:
 	return absf(local.x) <= float(def.get("half_x", 0.0)) and absf(local.y) <= float(def.get("half_z", 0.0)) and absf(spot.y - shelter["pos"].y) < 1.5
 
 
-func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, def: Dictionary) -> void:
+func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, def: Dictionary, site_row: Dictionary = {}) -> void:
 	var attaching: bool = str(def.get("attach_to", "")) == "fire"
 
 	if attaching:
@@ -6226,6 +6255,8 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	if slot < 0 and free_build:
 		pass   # a test or admin piece: nothing is taken
+	elif slot < 0 and not site_row.is_empty():
+		pass   # a blueprint site: nothing is taken now, the materials are deposited with E (_deposit_site)
 	elif slot < 0:
 		_pay_blueprint(inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], peer)
 	else:
@@ -6237,6 +6268,10 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		entry["struct"]["uid"] = _next_uid
 		_chests[_next_uid] = InventoryScript.new(table)
 		_next_uid += 1
+
+	if not site_row.is_empty():
+		entry["struct"]["site"] = {"bp": int(site_row["number"]), "have": {}}
+		_say(peer, "Blueprint down. Press E on it to deposit the materials.")
 
 	_items[_next_id] = entry
 	_grid_add(_next_id, entry)
@@ -6252,6 +6287,18 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	if not BuildingWear.rule_for(_wear_cfg, str(def["kind"])).is_empty():
 		entry["struct"]["born"] = _now_game_s()   # last cared for: placed now
 
+	if not site_row.is_empty():
+		_dirty = true
+		return   # a site counts as built, holds nothing up and shelters nobody until _finish_site
+
+	_after_built(peer, entry, def)
+	_dirty = true
+
+
+# What a piece does once it stands: a support holds the ground, a lean-to is a place to rest, the goal list hears of it.
+func _after_built(peer: int, entry: Dictionary, def: Dictionary) -> void:
+	var spot: Vector3 = entry["pos"]
+
 	if def.has("support"):
 		entry["struct"]["born"] = _now_game_s()
 		_rebuild_supports()
@@ -6263,8 +6310,6 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_record_rest(str(_peer_key.get(peer, "")), spot, "shelter")   # a lean-to you built is a place to come back to
 
 	_goal_event(peer, "placed", str(def.get("kind", "")))
-
-	_dirty = true
 
 
 # A campfire pot goes onto the nearest small fire (laid, lit or burnt out; never a bonfire) within POT_ATTACH_M of where it was put and
@@ -6455,6 +6500,162 @@ func _boxes_near(peer: int) -> Array:
 	return out
 
 
+# --- Blueprint sites (Dave 5 Nov 2026) ---
+# A hammer click without the materials sets down a site instead: the real piece, drawn blue and see-through, that can be walked through. E on it deposits
+# what the builder has (pack, loose stock beside them and containers within SITE_REACH_M); when every material is in, it becomes the real piece. The site
+# is the piece's own entry with struct["site"] = {"bp": blueprint number, "have": {item id: count}}; taking a site down gives back what was put in.
+const SITE_REACH_M := 30.0
+
+
+func _site_of(it: Dictionary) -> Dictionary:
+	if it.has("struct") and it["struct"].has("site"):
+		return it["struct"]["site"]
+
+	return {}
+
+
+# [[item id, still needed, total needed], ...] for a site's blueprint.
+func _site_needs(site: Dictionary) -> Array:
+	var out: Array = []
+	var have: Dictionary = site.get("have", {})
+
+	for need in _blueprints.get(int(site.get("bp", 0)), {}).get("cost", []):
+		out.append([str(need[0]), maxi(int(need[1]) - int(have.get(str(need[0]), 0)), 0), int(need[1])])
+
+	return out
+
+
+# Containers within `radius` of the player: [[item id, inventory], ...].
+func _boxes_within(peer: int, radius: float) -> Array:
+	var out: Array = []
+
+	if not _peer_pos.has(peer):
+		return out
+
+	for sid in _items:
+		var s: Dictionary = _items[sid]
+
+		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0:
+			continue
+
+		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= radius:
+			out.append([sid, _chests[int(s["struct"]["uid"])]])
+
+	return out
+
+
+# What a site's list shows one player: [[item id, still needed, on hand], ...], "on hand" being the pack, loose stock beside them and containers within reach.
+func _site_view(peer: int, it: Dictionary) -> Array:
+	var out: Array = []
+	var inv = inventory_of(peer)
+
+	if inv == null or not _peer_pos.has(peer):
+		return out
+
+	var boxes: Array = _boxes_within(peer, SITE_REACH_M)
+
+	for need in _site_needs(_site_of(it)):
+		var number: int = table.number_of(str(need[0]))
+		var on_hand: int = inv.count_of(number) + _ground_count(number, _peer_pos[peer], BUILD_STOCK_M)
+
+		for box in boxes:
+			on_hand += box[1].count_of(number)
+
+		out.append([str(need[0]), int(need[1]), on_hand])
+
+	return out
+
+
+# E on a site: moves what the builder has of each missing material into it, then finishes it when nothing is missing.
+func _deposit_site(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+	var site: Dictionary = _site_of(it)
+
+	if site.is_empty() or not _peer_pos.has(peer):
+		return
+
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
+		_say(peer, "Too far to deposit materials there.")
+		return
+
+	var boxes: Array = _boxes_within(peer, SITE_REACH_M)
+	var have: Dictionary = site["have"]
+	var moved: int = 0
+
+	for need in _site_needs(site):
+		var left: int = int(need[1])
+
+		if left <= 0:
+			continue
+
+		var number: int = table.number_of(str(need[0]))
+		var put: int = 0
+		var from_pack: int = mini(left, inv.count_of(number))
+
+		if from_pack > 0 and inv.remove(number, from_pack):
+			put += from_pack
+
+		if put < left:
+			put += _ground_take(number, left - put, _peer_pos[peer], BUILD_STOCK_M)
+
+		for box in boxes:
+			if put >= left:
+				break
+
+			var from_box: int = mini(left - put, box[1].count_of(number))
+
+			if from_box > 0 and box[1].remove(number, from_box):
+				put += from_box
+				_push_box(int(box[0]), box[1])
+
+		if put > 0:
+			have[str(need[0])] = int(have.get(str(need[0]), 0)) + put
+			moved += put
+
+	var missing: PackedStringArray = []
+
+	for need in _site_needs(site):
+		if int(need[1]) > 0:
+			missing.append("%d %s" % [int(need[1]), str(table.entry(str(need[0])).get("name", need[0])).to_lower()])
+
+	if moved == 0:
+		_say(peer, "You have none of what it needs: %s." % ", ".join(missing))
+		return
+
+	_dirty = true
+
+	if missing.is_empty():
+		_finish_site(peer, id)
+		_say(peer, "Built.")
+	else:
+		_say(peer, "Deposited. Still needed: %s." % ", ".join(missing))
+
+
+# Every material is in: the site becomes the real piece.
+func _finish_site(peer: int, id: int) -> void:
+	var it: Dictionary = _items[id]
+	it["struct"].erase("site")
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+	_grid_add(id, it)
+	_add_roof(it)
+	_after_built(peer, it, def)
+	_dirty = true
+
+
+# Taking a site down gives back everything deposited (100 percent, like any blueprint).
+func _take_down_site(peer: int, _inv, id: int) -> void:
+	var it: Dictionary = _items[id]
+
+	for item_id in _site_of(it).get("have", {}):
+		var count: int = int(_site_of(it)["have"][item_id])
+
+		if count > 0:
+			give(peer, table.number_of(str(item_id)), count)
+
+	_items.erase(id)
+	_dirty = true
+
+
 # --- Solid footprints (Dave 3 Nov 2026): the server knows where walls and heavy stations stand, so animals can be stopped by them ---
 const StructureGridScript := preload("res://src/stream/structure_grid.gd")
 var _grid = StructureGridScript.new()
@@ -6462,6 +6663,9 @@ var _grid = StructureGridScript.new()
 
 # Registers a freshly placed or loaded structure when its structures.json row says "blocks_walk".
 func _grid_add(id: int, entry: Dictionary) -> void:
+	if entry["struct"].has("site"):
+		return   # a blueprint site is walked through and blocks nothing until it is finished (_finish_site)
+
 	var kind: String = str(entry["struct"]["kind"])
 	var def: Dictionary = _structures.get(kind, {})
 
@@ -6480,6 +6684,9 @@ func structure_blocks_step(x0: float, z0: float, x1: float, z1: float, margin: f
 
 
 func _add_roof(entry: Dictionary) -> void:
+	if entry["struct"].has("site"):
+		return
+
 	var def: Dictionary = _structures.get(str(entry["struct"]["kind"]), {})
 
 	if def.is_empty() or not def.has("height") or not roof_add.is_valid() or entry["struct"].has("roof"):
@@ -6518,6 +6725,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
 	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
+		return
+
+	if it["struct"].has("site"):
+		_take_down_site(peer, inv, id)
 		return
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
@@ -6566,6 +6777,10 @@ func _use_struct(peer: int, inv, id: int) -> void:
 		return
 
 	if it.is_empty() or not it.has("struct") or not _peer_pos.has(peer):
+		return
+
+	if it["struct"].has("site"):
+		_deposit_site(peer, inv, id)
 		return
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})

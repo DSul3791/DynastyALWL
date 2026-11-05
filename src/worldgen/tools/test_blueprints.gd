@@ -111,10 +111,12 @@ func _init() -> void:
 	_give(1, "nails", 60)
 	var with_bench: int = items.world_item_count()
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
-	check(items.world_item_count() == with_bench and _have(1, "lumber") == 11 and _have(1, "nails") == 60, "a short pack places nothing and takes nothing")
+	check(items.world_item_count() == with_bench + 1 and _have(1, "lumber") == 11 and _have(1, "nails") == 60, "a short pack sets down a blueprint site and takes nothing (Dave 5 Nov 2026)")
+	var site_id: int = _ids_standing("woodworking_table")[0]
+	check(items._items[site_id]["struct"].has("site"), "the piece is a site until its materials are in")
 	_give(1, "lumber", 1)
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
-	check(items.world_item_count() == with_bench + 1 and _ids_standing("woodworking_table").size() == 1, "with the hammer, the bench and the materials the table stands")
+	items.action(1, Net.ACT_USE_STRUCT, site_id, 0, 0, Vector3.ZERO)
+	check(items.world_item_count() == with_bench + 1 and _ids_standing("woodworking_table").size() == 1 and not items._items[site_id]["struct"].has("site"), "E on the site deposits the materials and the table stands")
 	check(_have(1, "lumber") == 0 and _have(1, "nails") == 0 and _have(1, "woodworking_table_kit") == 0 and _have(1, "wooden_hammer") == 1, "exactly the materials were taken, no kit item, the hammer kept")
 
 	# A station level the bench cannot give: the blacksmithy needs level 4, the log workbench is level 2.
