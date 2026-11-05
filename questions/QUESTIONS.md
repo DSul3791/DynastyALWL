@@ -69,11 +69,11 @@ Note: Recommendation: B. Only tell me if you see it duplicate on your own.
 - A: Yes, I will try it and say what happens
 - B: Skip it, I will tell you if I see it
 
-## kathreen-title-rotate | Front page: you gave 12 paintings. Which one shows when the game starts?
+## kathreen-title-rotate | Front page: built as random each launch, never the same twice running (#457). Keep it, or change?
 - A different one at random each launch (recommended)
 - The next one in story order each launch (02 to 16)
 - Always the same one (write which in Notes)
 
-## kathreen-title-buttons | Front page buttons: the paintings have New Game, Continue, Settings and Exit drawn in.
+## kathreen-title-buttons | Front page: built using the drawn buttons with a glow, Continue dimmed with no character (#457). Keep it, or change?
 - Use the drawn buttons: clickable, a gold glow on hover, Continue dimmed when you have no character yet (recommended)
 - I will make versions without buttons, and the game draws its own
