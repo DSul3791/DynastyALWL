@@ -1252,20 +1252,20 @@ var _cover_warming: Dictionary = {}   # chunk -> true while a worker thread make
 func _cover_ready(point: Vector3) -> bool:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
-	var ready: bool = true
+	var all_made: bool = true
 
 	for dz in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
 
 			if not flora.chunk_made(chunk):
-				ready = false
+				all_made = false
 
 				if not _cover_warming.has(chunk):
 					_cover_warming[chunk] = true
 					WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
 
-	return ready
+	return all_made
 
 
 func _warm_cover_chunk(chunk: Vector2i) -> void:
