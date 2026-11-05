@@ -189,6 +189,10 @@
 			"depth_m_per_sqrt_q": 1.0,
 			"min_depth_m": 1.5,
 			"max_depth_m": 8.0,
+			"mouth_grow_m": 3000.0,
+			"mouth_widen": 1.6,
+			"mouth_deepen_m": 2.0,
+			"mouth_grow_note": "Dave 5 Nov 2026: rivers get deeper and a little wider toward the ocean. Over the last mouth_grow_m of a river that reaches the coast the channel widens to mouth_widen times and the centre bed sinks up to mouth_deepen_m more (drainage_channels.gd _toward_mouth); the estuary (estuary_*) takes over in the last few hundred metres.",
 			"seed": 17,
 			"natural": {
 				"enabled": false,
