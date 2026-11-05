@@ -2302,3 +2302,7 @@ Answered: 2026-11-05 12:06 UTC
 Answer: No, keep the 5 m circle
 Answered: 2026-11-05 12:26 UTC
 
+## jamie-rain-warmth | Should rain make you colder at night than it does now?
+Answer: Rain x1.5: a rainy night is clearly colder, about 6 to 8 points (recommended) | Comment: Yes, rain makes you colder and thus makes you slower and the only way to get dried out is to get inside a building or a structure and if you’re underneath the tree or inside a building, it will start to dry it really slow but if you like a fire that will come down rapidly
+Answered: 2026-11-05 12:27 UTC
+
