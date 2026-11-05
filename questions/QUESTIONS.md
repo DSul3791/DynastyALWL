@@ -56,10 +56,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 ## jamie-storm-sound | Storm sound (BUG-001): what was the name of the sound you heard? (Shift+F3 lists playing sounds.)
 [text]
 
-## jamie-clear-tile-340 | Thatch floor, floor section and foundation section still clear a 5 m circle of plants. Make them clear only their own tile, like log, stone and brick floors (#340)?
-- Yes, own tile only (recommended)
-- No, keep the 5 m circle
-
 ## jamie-rain-warmth | Should rain make you colder at night than it does now?
 Note: PC check, no clothes: about 45% warmth at 7 C, 56% at 10 C. It is one number in warmth.json.
 Note: Recommendation (Steve): rain x1.5, which matches the code's own default.
