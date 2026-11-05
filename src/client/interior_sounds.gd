@@ -147,15 +147,8 @@ func _level(player: AudioStreamPlayer, db: float, level: float) -> void:
 func _loop_player(sound_name: String) -> AudioStreamPlayer:
 	var player: AudioStreamPlayer = AudioStreamPlayer.new()
 	player.bus = "Foley"
-	var list: Array = _variants(sound_name)
-
-	if not list.is_empty():
-		player.stream = list[0]
-
-		if player.stream is AudioStreamOggVorbis:
-			player.stream.loop = true
-
 	add_child(player)
+	SoundStage.stream_later(player, [RECORDED_DIR, GENERATED_DIR], sound_name, _variants.bind(sound_name), true)   # no file read at the join
 	return player
 
 

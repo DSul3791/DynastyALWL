@@ -144,7 +144,8 @@ func setup(flora, terrain: VoxelLodTerrain = null) -> void:
 	add_child(_base)
 	_base.add_to_group("world_sounds")
 
-	# Loads the loops now, so the first river met doesn't stall a frame reading a file.
+	# Loads the loops now, so the first river met doesn't stall a frame reading a file (a clip the prewarm is still loading is skipped
+	# here and taken when it is met).
 	for kind in KINDS:
 		_variants(str(KINDS[kind]["file"]))
 
@@ -282,6 +283,9 @@ func brook_tag() -> String:
 func _lap_variants() -> Array:
 	if _streams.has("lake_lap"):
 		return _streams["lake_lap"]
+
+	if SoundStage.still_loading([RECORDED_DIR, GENERATED_DIR], "lake_lap"):
+		return []
 
 	var list: Array = SoundStage._find(RECORDED_DIR, "lake_lap")
 
@@ -742,6 +746,9 @@ func _aim(slot: Dictionary, candidate: Dictionary, _from: Vector3) -> void:
 func _variants(sound_name: String) -> Array:
 	if _streams.has(sound_name):
 		return _streams[sound_name]
+
+	if SoundStage.still_loading([RECORDED_DIR, GENERATED_DIR], sound_name):
+		return []                                # still in the prewarm's queue: asked again next time, no file read on the main thread
 
 	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
