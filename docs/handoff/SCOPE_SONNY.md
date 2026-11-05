@@ -34,7 +34,7 @@ Character work, now handed over (to Kathleen: look; to Steve: system): db105d36 
 2. **Real-game pictures of it working**: Dave decides by eye and none of a river or lake exists yet.
 3. **Flow and depth reaching the shader**: without it the game does not show what the sim computes.
 4. **Windows following players and digs reaching the field**: today only the starter tile's wettest km is live.
-5. Terrain: ground, shore and slope problems found by Dino or Tyler, and the lake plan in `PHASE7_PLAN.md` (needs Dave's go for any bake).
+5. Terrain: ground, shore and slope problems found by Dino or Tyler, and the lake rules in `DESIGN_IDEAS.md` (drainage mode, pond levels; the old `PHASE7_PLAN.md` is in `docs/archive/2026-11/`) (needs Dave's go for any bake).
 
 ## 5. Dependencies
 
