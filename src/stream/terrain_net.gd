@@ -380,7 +380,7 @@ func cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
 	cave_dens_received.emit(tile, dens)
 
 
-# Protocol 92: a tile's cave dressing (Dave 4 Nov 2026), as TileTerrainData.cave_bones (x, y, z, kind 0 animal / 1 human, yaw) and cave_formations
+# Protocol 93: a tile's cave dressing (Dave 4 Nov 2026), as TileTerrainData.cave_bones (x, y, z, kind 0 animal / 1 human, yaw) and cave_formations
 # (x, y, z, kind 0 stalagmite / 1 stalactite, height m, radius m); drawn by src/client/cave_dressing.gd.
 @rpc("authority", "call_remote", "reliable")
 func cave_dressing(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat32Array) -> void:
