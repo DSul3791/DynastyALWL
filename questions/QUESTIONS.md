@@ -53,10 +53,6 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 [B] Fewer owl hoots: every 60 to 120 s
 [C] No owl on the very first night
 
-## jamie-raw-meat | Raw meat sickness feels harsh. Make it milder?
-- Yes, milder (recommended)
-- Keep it as is
-
 ## jamie-wildflower-size | Wildflower heads are drawn about 4 times real size (a dandelion head about 15 to 20 cm, real about 4 cm). What size?
 Note: Recommendation (Kathleen): halfway keeps the meadow's colour from afar and stops them looking giant next to the body.
 - Halfway, about 8 cm (recommended)
