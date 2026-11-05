@@ -25,6 +25,7 @@ extends Node
 #   server -> client  flora_stripped   plants of a chunk that are bare this season (berries picked): sent with a flora chunk and when one is picked
 #   server -> client  cave_streams     a tile's spring cave streams and pools (TileTerrainData.cave_streams), once per tile with the first water asked there
 #   server -> client  cave_dens        a tile's cave dens (floor points), with its cave streams
+#   server -> client  cave_dressing    a tile's cave bone piles and stalagmites/stalactites, with its cave dens (protocol 93)
 #   client -> server  hello             the player's key, once after the welcome (inventory belongs to the key)
 #   client -> server  inventory_action  move, drop, pick up or (admin) give: the server checks everything
 #   server -> client  inventory_full    the whole inventory, at hello only
@@ -34,7 +35,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 92   # 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 93   # 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -69,6 +70,7 @@ signal dump_received(text: String)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal cave_streams_received(tile: Vector2i, streams: PackedFloat32Array)
 signal cave_dens_received(tile: Vector2i, dens: PackedVector3Array)
+signal cave_dressing_received(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat32Array)
 signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array, stock: PackedInt32Array, supply_milli: PackedInt32Array, trader_purse: int)
 signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: int)
 signal purse_received(copper: int)
@@ -378,6 +380,13 @@ func cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
 	cave_dens_received.emit(tile, dens)
 
 
+# Protocol 93: a tile's cave dressing (Dave 4 Nov 2026), as TileTerrainData.cave_bones (x, y, z, kind 0 animal / 1 human, yaw) and cave_formations
+# (x, y, z, kind 0 stalagmite / 1 stalactite, height m, radius m); drawn by src/client/cave_dressing.gd.
+@rpc("authority", "call_remote", "reliable")
+func cave_dressing(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat32Array) -> void:
+	cave_dressing_received.emit(tile, bones, formations)
+
+
 
 # A deliberate quit (Quit game, window close): sent before the connection ends. No such message = a disconnect (protocol 69).
 @rpc("any_peer", "call_remote", "reliable")
@@ -470,7 +479,7 @@ func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, f
 	vitals_received.emit(hunger, health, weight_dkg, thirst, luck, fitness)
 
 
-# Today's training (protocol 92): the hard work gathered today, in percent of a fitness point; at game midnight it turns into fitness.
+# Today's training (protocol 93): the hard work gathered today, in percent of a fitness point; at game midnight it turns into fitness.
 @rpc("authority", "call_remote", "reliable")
 func training(percent: int) -> void:
 	training_received.emit(percent)

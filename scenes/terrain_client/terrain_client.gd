@@ -119,6 +119,7 @@ const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const FlameRules := preload("res://src/shared/flame_rules.gd")
 const HorizonScript := preload("res://src/client/horizon_indicator.gd")
+const CaveDressing := preload("res://src/client/cave_dressing.gd")
 const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
@@ -820,6 +821,7 @@ func _ready() -> void:
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.cave_streams_received.connect(_on_cave_streams)
+	net.cave_dressing_received.connect(_on_cave_dressing)
 	net.cave_dens_received.connect(_on_cave_dens)
 	net.surface_received.connect(_on_surface_received)
 	net.dump_received.connect(ground_debug.on_dump_received)
@@ -2255,6 +2257,18 @@ var _flow_tex: ImageTexture = null      # the live water window's texture, updat
 var _liquid_hole_told: Rect2 = Rect2()
 
 
+var _cave_dressing = null   # bone piles and stalagmites/stalactites in caves (protocol 92), made on the first list
+
+
+func _on_cave_dressing(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat32Array) -> void:
+	if _cave_dressing == null:
+		_cave_dressing = CaveDressing.new()
+		_cave_dressing.name = "CaveDressing"
+		add_child(_cave_dressing)
+
+	_cave_dressing.set_tile(tile, bones, formations)
+
+
 func _on_cave_dens(tile: Vector2i, dens: PackedVector3Array) -> void:
 	cave_dens[tile] = dens
 	cave_dens_changed.emit(tile, dens)
@@ -2979,6 +2993,9 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 
 	if _cave_streams != null:
 		_cave_streams.clear()   # the server sends each tile's list again with the first water asked there
+
+	if _cave_dressing != null:
+		_cave_dressing.clear()   # and its cave dressing with it
 
 	if sound != null:
 		sound.cavewater.clear()
