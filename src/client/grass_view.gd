@@ -1613,6 +1613,13 @@ func _build(cell: Vector2i) -> int:
 	var big: bool = radius_m > 50.0
 	var band_share: float = float(BAND_SHARE[lod]) if big else 1.0
 	var spacing: float = CELL_M / float(pps)
+	# Lag (Jason, 5 Nov 2026; PC lag run on #401: "grass: build" worst 42 ms): every grass point asked the cover index 8 times (crown depth and the
+	# 7 closure spots), and each ask scanned every crown in 3 x 3 index cells of 16 m. The crowns that can reach this cell (plus the 4 m closure
+	# reach) are gathered once here; the answers are the same.
+	var reach: float = CLOSURE_REACH_M
+	var crowns: PackedFloat32Array = _flora.cover.crowns_in(float(cell.x) * CELL_M - reach, float(cell.y) * CELL_M - reach,
+			float(cell.x + 1) * CELL_M + reach, float(cell.y + 1) * CELL_M + reach)
+	var roofs: bool = _flora.cover.roof_count() > 0
 	# Cards are written straight into one MultiMesh buffer per layer: 12 floats of transform (rows of
 	# the 3 x 4 matrix) and 4 of custom colour each (about half the cost of building Transform3D and
 	# Color objects first).
@@ -1694,7 +1701,7 @@ func _build(cell: Vector2i) -> int:
 
 			# Owner (2026-10-21): under a big crown almost no grass except at the edge of its canopy footprint,
 			# and a floor so covered in leaves and twigs that no ground shows. `under` is 0 at the drip line, 1 at the trunk.
-			var under: float = _flora.cover.crown_depth(Vector3(x, point.y + 1.0, z))
+			var under: float = crown_depth_in(crowns, Vector3(x, point.y + 1.0, z))
 
 			if litter_here and under > 0.0 and litter_cards + int(counts[3]) + int(counts[4]) < litter_cap:
 				_put_litter(buffers, counts, rng, point, spacing, under)
@@ -1708,7 +1715,7 @@ func _build(cell: Vector2i) -> int:
 			var thick: float = float(GRASS_SOILS[soil]) * _cover_at(x, z, hit["normal"].y)
 			# Owner (2026-10-20): in a closed forest the litter and shade under the trees stop the grass; in
 			# open fields and sparse trees it grows right up to and under them. Closure thins it gradually.
-			thick *= 1.0 - 0.95 * smoothstep(0.4, 0.9, _closure(x, point.y, z))
+			thick *= 1.0 - 0.95 * smoothstep(0.4, 0.9, _closure_in(crowns, roofs, x, point.y, z))
 			thick *= 1.0 - 0.96 * smoothstep(CROWN_GRASS_FROM, CROWN_GRASS_TO, under)
 
 			# The ground grass thins round a plumed tall-grass patch (Dave 2026-10-31: the patches must stand out): a third of it within about 2 m of a plant.
@@ -2001,6 +2008,49 @@ func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, poin
 
 # How closed the canopy is around a spot, 0 (open field) to 1 (every sample under a crown): seven points
 # within 4 m, tested against the shared cover index. Scattered trees give about 0.15 to 0.3, a forest 1.
+const CLOSURE_REACH_M := 4.5             # the farthest CLOSURE_OFFSETS spot (4 m) plus a margin
+
+
+# _closure from a cell's own crown list (Cover.Index.crowns_in); roofs still come from the index.
+func _closure_in(crowns: PackedFloat32Array, roofs: bool, x: float, y: float, z: float) -> float:
+	var covered: int = 0
+
+	for d in CLOSURE_OFFSETS:
+		var pos: Vector3 = Vector3(x + d.x, y + 1.0, z + d.y)
+
+		if (roofs and _flora.cover.roofed(pos)) or covers_in(crowns, pos):
+			covered += 1
+
+	return float(covered) / float(CLOSURE_OFFSETS.size())
+
+
+# Cover.Index.covers for crowns only, from a list of crown rows.
+static func covers_in(crowns: PackedFloat32Array, pos: Vector3) -> bool:
+	for n in range(0, crowns.size(), 4):
+		var ox: float = pos.x - crowns[n]
+		var oz: float = pos.z - crowns[n + 1]
+
+		if ox * ox + oz * oz <= crowns[n + 2] * crowns[n + 2] and pos.y <= crowns[n + 3]:
+			return true
+
+	return false
+
+
+# Cover.Index.crown_depth from a list of crown rows.
+static func crown_depth_in(crowns: PackedFloat32Array, pos: Vector3) -> float:
+	var best: float = 0.0
+
+	for n in range(0, crowns.size(), 4):
+		var ox: float = pos.x - crowns[n]
+		var oz: float = pos.z - crowns[n + 1]
+		var r2: float = crowns[n + 2] * crowns[n + 2]
+
+		if ox * ox + oz * oz < r2 and pos.y <= crowns[n + 3]:
+			best = maxf(best, 1.0 - sqrt((ox * ox + oz * oz) / r2))
+
+	return best
+
+
 func _closure(x: float, y: float, z: float) -> float:
 	var covered: int = 0
 
