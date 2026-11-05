@@ -57,6 +57,7 @@ const DripViewScript := preload("res://src/client/drip_view.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
 const QuakeViewScript := preload("res://src/client/quake_view.gd")
+const CaveSoundsScript := preload("res://src/client/cave_sounds.gd")   # is_not_rock: cave roof rays skip plants and placed pieces
 const SoundNow := preload("res://src/client/sound_now.gd")
 const FeelKicksScript := preload("res://src/client/feel_kicks.gd")
 const LadderClimbScript := preload("res://src/client/ladder_climb.gd")
@@ -4154,6 +4155,9 @@ func _water_here() -> Dictionary:
 	var here: Vector3 = body.global_position
 	var surface: float = flora.water_surface_at(here.x, here.z) if flora != null else NAN
 
+	if not is_nan(surface) and here.y < surface and _rock_over(here, surface):
+		surface = NAN   # in a cave under the outside water (a hillside's film, a river): that water is on the ground above, not here
+
 	# A spring cave's pool (BUG-008: 20 m deep) lies under the ground the water grid knows: swim in it there.
 	if (is_nan(surface) or surface < here.y - 3.0) and _cave_streams != null:
 		var pool: float = _cave_streams.pool_surface_at(here)
@@ -5964,6 +5968,11 @@ func _update_underwater() -> void:
 	# spot, and the water there must be deeper than a film.
 	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 else NAN
 
+	# Dino's cave retake 5 Nov 2026 (x 52107 z 70264): 2.6 m over the cave mouth's floor the view was under water. The water grid's level there is
+	# the film on the hillside over the cave roof, 1 m above the eye, and the ray down from the eye found the cave floor 3.7 m under that level.
+	if not is_nan(surface) and eye.y < surface and _rock_over(eye, surface):
+		surface = NAN
+
 	if eye.y >= 0.0 and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
 		var pool: float = _cave_streams.pool_surface_at(eye)   # a spring cave's deep pool (BUG-008)
 
@@ -6026,6 +6035,34 @@ func _update_pit_shadow() -> void:
 		_in_pit = enclosed
 		_sun.shadow_bias = 0.1 if enclosed else 0.3
 		_sun.shadow_normal_bias = 0.8 if enclosed else 3.0
+
+
+# Rock between a point and the outside water surface over it: a ray down from just over the surface meets the ground (terrain or a boulder; plants
+# and placed pieces such as a jetty do not count) before the point, so the point is inside a cave under that water's bed. Under a sea overhang
+# the ray starts inside the rock or in the air under it and meets nothing on the way down, so the water there stays water.
+func _rock_over(p: Vector3, surface: float) -> bool:
+	if body == null:
+		return false
+
+	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
+	var skip: Array = [body.get_rid()]
+	var from: Vector3 = Vector3(p.x, surface + 0.5, p.z)
+
+	for _attempt in range(3):
+		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, p + Vector3(0.0, 0.5, 0.0), 1)   # layer 1 only (sea ice is 2); stops short of a wader's own bed
+		query.exclude = skip
+		var hit: Dictionary = space.intersect_ray(query)
+
+		if hit.is_empty():
+			return false
+
+		if hit["collider"] != null and CaveSoundsScript.is_not_rock(hit["collider"]):
+			skip.append(hit["rid"])
+			continue
+
+		return true
+
+	return false
 
 
 func _ground_below(p: Vector3) -> float:
