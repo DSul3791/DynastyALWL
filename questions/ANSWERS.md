@@ -2322,3 +2322,7 @@ Answered: 2026-11-05 23:51 UTC
 Answer: The next one in story order each launch (02 to 16) | Comment: I already answered this, and she is already working on it
 Answered: 2026-11-05 23:52 UTC
 
+## kathreen-title-buttons | Front page: built using the drawn buttons with a glow, Continue dimmed with no character (#457). Keep it, or change?
+Answer: Use the drawn buttons: clickable, a gold glow on hover, Continue dimmed when you have no character yet (recommended)
+Answered: 2026-11-05 23:52 UTC
+
