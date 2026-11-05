@@ -1306,7 +1306,9 @@ func update(from_position: Vector3) -> void:
 		for cell in due[1]:
 			var entry = _cells.get(cell)
 
-			if entry != null and entry["built"] and not entry["busy"]:
+			if entry != null and entry.has("job"):
+				entry.erase("job")      # half built when the ground changed: it starts again (same seed) and reads the new ground
+			elif entry != null and entry["built"] and not entry["busy"]:
 				entry["busy"] = true
 				_pending.push_front(cell)
 
@@ -1367,12 +1369,18 @@ func update(from_position: Vector3) -> void:
 
 	while rays > 0 and taken < _pending.size():
 		var cell: Vector2i = _pending[taken]
-		taken += 1
 
 		if not _cells.has(cell) or not _cells[cell]["busy"]:
+			taken += 1
 			continue
 
-		rays -= _build(cell)
+		rays -= _build(cell, started + BUILD_USEC)
+
+		# Not finished at the deadline: it stays first in the queue and goes on next frame.
+		if _cells.has(cell) and _cells[cell].has("job"):
+			break
+
+		taken += 1
 
 		if Time.get_ticks_usec() - started > BUILD_USEC:
 			break
@@ -1528,28 +1536,19 @@ static func _drop_beside(heights: PackedFloat32Array, pps: int, i: int, j: int, 
 	return false
 
 
-# Rays for one cell; returns how many were cast.
-func _build(cell: Vector2i) -> int:
-	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var tool: VoxelTool = _terrain.get_voxel_tool()
+# A new build job for a cell (see _build): its band, buffers and a fresh rng from the cell's seed, so a restarted job (ground edited) makes
+# the same cards a build in one go would.
+func _build_begin(cell: Vector2i, entry: Dictionary) -> Dictionary:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(cell)
-	var entry: Dictionary = _cells[cell]
 	var lod: int = _lod_of(cell, int(entry.get("lod", 0)) if entry["built"] else -1)
 	var pps: int = _lod_points(lod)
-	var width_scale: float = float((LOD_SCALE if radius_m > 50.0 else LOD_SCALE_SHORT)[lod])
 	var big: bool = radius_m > 50.0
-	var band_share: float = float(BAND_SHARE[lod]) if big else 1.0
-	var spacing: float = CELL_M / float(pps)
 	# Cards are written straight into one MultiMesh buffer per layer: 12 floats of transform (rows of
 	# the 3 x 4 matrix) and 4 of custom colour each (about half the cost of building Transform3D and
 	# Color objects first).
 	var buffers: Array = []
 	var counts: Array = []
-	# Cells are built once, as they come into grass range, so litter is made for all of them and the
-	# engine culls the ones beyond litter_m (visibility_range_end below).
-	var litter_here: bool = litter_m > 0.0 and litter_density > 0.0
-	var shore_here: bool = shore_m > 0.0 and shore_density > 0.0
 
 	for layer in range(LAYERS.size()):
 		var cap: PackedFloat32Array = PackedFloat32Array()
@@ -1560,16 +1559,52 @@ func _build(cell: Vector2i) -> int:
 		buffers.append(cap)
 		counts.append(0)
 
-	var rays: int = 0
-	var missed: int = 0
-	var dug_here: Array = _dug.get(cell, [])
-
-	# All rays first, so a blade can be refused when ground drops away beside it (the rim of a hole, old or new).
-	var hits: Array = []
 	var heights: PackedFloat32Array = PackedFloat32Array()
 	heights.resize(pps * pps)
+	# Cells are built once, as they come into grass range, so litter is made for all of them and the
+	# engine culls the ones beyond litter_m (visibility_range_end below).
+	return {"rng": rng, "lod": lod, "pps": pps, "width_scale": float((LOD_SCALE if big else LOD_SCALE_SHORT)[lod]), "band_share": float(BAND_SHARE[lod]) if big else 1.0,
+		"spacing": CELL_M / float(pps), "buffers": buffers, "counts": counts, "litter_here": litter_m > 0.0 and litter_density > 0.0,
+		"shore_here": shore_m > 0.0 and shore_density > 0.0, "dug_here": _dug.get(cell, []), "hits": [], "heights": heights, "rays": 0, "missed": 0,
+		"ray_row": 0, "card_row": 0}
 
-	for j in range(pps):
+
+# Rays for one cell; returns how many were cast this call.
+# Lag (rank 2, Jason with MikeW, 5 Nov 2026; cloud lag run 4 Nov: "grass" worst 42 ms, "grass: build" 30 ms): BUILD_USEC stopped the loop
+# only between cells, and one near cell could take 15 to 47 ms (shore, closure, crown and litter lookups per point). A cell is now built a row of
+# ground points at a time: what is done so far is kept in entry["job"], the build stops at `deadline_usec` and goes on next frame. The rng runs
+# in the same order, so the cards are the same as a build in one go; the old cards stay until the new ones are complete.
+func _build(cell: Vector2i, deadline_usec: int = 0) -> int:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var tool: VoxelTool = _terrain.get_voxel_tool()
+	var entry: Dictionary = _cells[cell]
+
+	if not entry.has("job"):
+		entry["job"] = _build_begin(cell, entry)
+
+	var job: Dictionary = entry["job"]
+	var rng: RandomNumberGenerator = job["rng"]
+	var lod: int = int(job["lod"])
+	var pps: int = int(job["pps"])
+	var width_scale: float = float(job["width_scale"])
+	var band_share: float = float(job["band_share"])
+	var spacing: float = float(job["spacing"])
+	var buffers: Array = job["buffers"]
+	var counts: Array = job["counts"]
+	var litter_here: bool = bool(job["litter_here"])
+	var shore_here: bool = bool(job["shore_here"])
+	var dug_here: Array = job["dug_here"]
+	var hits: Array = job["hits"]
+	var heights: PackedFloat32Array = job["heights"]
+	var rays: int = int(job["rays"])
+	var missed: int = int(job["missed"])
+	var cast_before: int = rays
+
+	# All rays first, so a blade can be refused when ground drops away beside it (the rim of a hole, old or new).
+	while int(job["ray_row"]) < pps:
+		var j: int = int(job["ray_row"])
+		job["ray_row"] = j + 1
+
 		for i in range(pps):
 			var x: float = float(cell.x) * CELL_M + (float(i) + rng.randf()) * spacing
 			var z: float = float(cell.y) * CELL_M + (float(j) + rng.randf()) * spacing
@@ -1582,9 +1617,29 @@ func _build(cell: Vector2i) -> int:
 			if found.is_empty():
 				missed += 1
 
+		job["heights"] = heights
+		job["rays"] = rays
+		job["missed"] = missed
+
+		if int(job["ray_row"]) < pps and Time.get_ticks_usec() > deadline_usec:
+			return rays - cast_before
+
+	# The ground collision is not ready here yet (more than half the rays missed): no cards, try again later (they were thrown away anyway).
+	if missed * 2 > rays:
+		entry.erase("job")
+		entry["busy"] = false
+		# Back off: a cell with no ground collision (beyond its range) is tried again after 0.5, 1, 2, 4, 8 s.
+		var fails: int = int(entry.get("fails", 0))
+		entry["fails"] = mini(fails + 1, 4)
+		entry["retry"] = Time.get_ticks_msec() + (RETRY_MSEC << fails)
+		return rays - cast_before
+
 	var edge_cells: int = int(ceil(RIM_CLEAR_M / spacing))
 
-	for j in range(pps):
+	while int(job["card_row"]) < pps:
+		var j: int = int(job["card_row"])
+		job["card_row"] = j + 1
+
 		for i in range(pps):
 			var x: float = hits[j * pps + i][0]
 			var z: float = hits[j * pps + i][1]
@@ -1717,16 +1772,11 @@ func _build(cell: Vector2i) -> int:
 					buffer[o + 15] = kept
 					buffers[layer] = buffer
 
+		if int(job["card_row"]) < pps and Time.get_ticks_usec() > deadline_usec:
+			return rays - cast_before
+
+	entry.erase("job")
 	entry["busy"] = false
-
-	if missed * 2 > rays:
-		# The ground collision is not ready here yet; try again later.
-		# Back off: a cell with no ground collision (beyond its range) is tried again after 0.5, 1, 2, 4, 8 s.
-		var fails: int = int(entry.get("fails", 0))
-		entry["fails"] = mini(fails + 1, 4)
-		entry["retry"] = Time.get_ticks_msec() + (RETRY_MSEC << fails)
-		return rays
-
 	entry["built"] = true
 	entry["lod"] = lod
 	cells_built += 1
@@ -1753,7 +1803,7 @@ func _build(cell: Vector2i) -> int:
 			entry["count"] += count
 			tufts += count
 
-	return rays
+	return rays - cast_before
 
 
 # How wet the ground is at a point, 0 dry to 1 at the water's edge: water within 3.5 m and no more than 2 m
