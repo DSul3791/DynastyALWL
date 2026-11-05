@@ -1637,7 +1637,18 @@ static var _clip_index: Dictionary = {}
 static var _clip_index_ready: bool = false
 
 
+# Lag run 5 Nov: the walk cost 181 ms of the welcome frame (1123 clips). The client now starts it when it begins connecting,
+# so the setup's call finds it done.
+static var _walked: bool = false
+
+
 static func prewarm(folder: String = AUDIO_ROOT) -> void:
+	if folder == AUDIO_ROOT:
+		if _walked:
+			return
+
+		_walked = true
+
 	var dir: DirAccess = DirAccess.open(folder)
 
 	if dir == null:

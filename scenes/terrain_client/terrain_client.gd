@@ -911,6 +911,8 @@ func _connect() -> void:
 
 	multiplayer.multiplayer_peer = peer
 	print("Terrain client: connecting to %s:%d" % [_host, _port])
+	GroundMaterialScript.start_early(quality)   # the ground photos are sized on a worker while the welcome is on its way
+	SoundStageScript.prewarm()   # every sound file starts loading now, not in the welcome frame (181 ms there in the 5 Nov lag run)
 	InventoryViewScript.request_pickups_early()   # the twelve stone, stick and driftwood models load on threads while the welcome is on its way
 
 
