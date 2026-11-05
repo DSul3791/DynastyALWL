@@ -1427,6 +1427,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	Probe.stop("welcome: held item", tq_held_item)
+	var tq_tail: int = Probe.start()   # Low-quality lag runs (5 Nov) stuck up to 2.2 s "after held item": the rest of the welcome was not timed
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
 	held.shrub_near = _shrub_near
 	held.water_depth_at = func(x: float, z: float) -> float:
@@ -1512,10 +1513,16 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_net:
 		held.run_net_test()
+	Probe.stop("welcome: hotbar, pickup feed and tests", tq_tail)
+	var tq_print: int = Probe.start()
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
+	Probe.stop("welcome: welcome line printed", tq_print)
+	var tq_join: int = Probe.start()
 	_join_log("JOIN: at the welcome: player y %s, viewer y %s" % ["?" if body == null else "%.1f" % body.global_position.y, _viewer_y_text()])
+	Probe.stop("welcome: join line logged", tq_join)
+	_after_welcome = []   # the next frames are timed too (_note_after_welcome)
 
 
 
@@ -4245,8 +4252,27 @@ func _log_frame(delta: float) -> void:
 	_frame_log = {"t": 0.0, "n": 0, "sum": 0.0, "worst": 0.0, "slow": 0}
 
 
+# The frames right after the welcome (Low-quality lag runs, 5 Nov: stuck 0.8 to 2.2 s there with no probe finishing): length, script
+# and physics time of each, printed once as one line after AFTER_WELCOME_FRAMES frames.
+const AFTER_WELCOME_FRAMES := 4
+var _after_welcome: Variant = null   # null: not timing; an Array of "frame ms (script, physics)" texts while timing
+
+
+func _note_after_welcome(delta: float) -> void:
+	if _after_welcome == null:
+		return
+
+	(_after_welcome as Array).append("%.0f ms (script %.0f, physics %.0f, draw calls %d)" % [delta * 1000.0, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+		Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
+
+	if (_after_welcome as Array).size() >= AFTER_WELCOME_FRAMES:
+		print("Terrain client: frames after the welcome: " + ", ".join(PackedStringArray(_after_welcome as Array)))
+		_after_welcome = null
+
+
 func _process(delta: float) -> void:
 	FreezeWatchScript.beat()
+	_note_after_welcome(delta)
 	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)
