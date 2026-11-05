@@ -312,7 +312,11 @@ const CHECK_PROBES := 5                  # ground hits kept per cell
 const CHECK_TIMES := [1500, 3000, 6000, 12000, 24000, 48000]   # ms after the build (and after each check) that the hits are cast again
 const CHECK_MOVE_M := 0.35               # a hit this far from its old height means the ground under the cell changed
 const CHECK_CELLS_PER_FRAME := 3
-var _checks: Array = []                  # [cell, due msec, check number]
+var _checks: Array = []                  # [cell, due msec, check number], kept sorted by due time (soonest first, _queue_check)
+# Lag (Jason, 5 Nov 2026; PC lag run on #401: "grass: check ground" avg 1.07 ms a frame, 56% of all grass time, worst 27.9 ms): the
+# list held every cell built in the last ~95 s and was walked end to end every frame to find the few that were due. Sorted, a frame
+# stops at the first check that is not due yet, and stale entries (cell gone or busy) count against a small cap.
+const CHECK_SKIPS_PER_FRAME := 32
 var _scan_keep: Dictionary = {}
 const SCAN_ROWS_PER_FRAME := 4
 var _center: Vector3 = Vector3.ZERO
@@ -1546,18 +1550,19 @@ func _check_ground(now: int) -> void:
 
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var done: int = 0
-	var n: int = 0
+	var skipped: int = 0
 
-	while n < _checks.size() and done < CHECK_CELLS_PER_FRAME:
-		var check: Array = _checks[n]
+	while not _checks.is_empty() and done < CHECK_CELLS_PER_FRAME and skipped < CHECK_SKIPS_PER_FRAME:
+		var check: Array = _checks[0]
+
+		if now < int(check[1]):
+			break   # sorted: nothing further on is due either
+
+		_checks.pop_front()
 		var entry = _cells.get(check[0])
 
 		if entry == null or not entry["built"] or entry["busy"]:
-			_checks.remove_at(n)
-			continue
-
-		if now < int(check[1]):
-			n += 1
+			skipped += 1
 			continue
 
 		done += 1
@@ -1572,14 +1577,20 @@ func _check_ground(now: int) -> void:
 		if moved:
 			entry["busy"] = true
 			_pending.push_front(check[0])
-			_checks.remove_at(n)
 			ground_rebuilds += 1
 		elif int(check[2]) + 1 < CHECK_TIMES.size():
 			check[2] = int(check[2]) + 1
 			check[1] = now + int(CHECK_TIMES[check[2]])
-			n += 1
-		else:
-			_checks.remove_at(n)
+			_queue_check(check)
+
+
+# Puts a ground check into _checks at its due time (binary search; the list stays soonest first).
+func _queue_check(check: Array) -> void:
+	_checks.insert(_checks.bsearch_custom(check, _due_before), check)
+
+
+func _due_before(a: Array, b: Array) -> bool:
+	return int(a[1]) < int(b[1])
 
 
 var ground_rebuilds: int = 0             # cells built again because their ground moved after the first build (for the tests and the debug panel)
@@ -1810,7 +1821,7 @@ func _build(cell: Vector2i) -> int:
 			probes.append_array(PackedFloat32Array([hits[n][0], hits[n][1], heights[n]]))
 
 	entry["probes"] = probes
-	_checks.append([cell, Time.get_ticks_msec() + int(CHECK_TIMES[0]), 0])
+	_queue_check([cell, Time.get_ticks_msec() + int(CHECK_TIMES[0]), 0])
 	_free_cell_nodes(entry)      # a rebuilt cell swaps its cards in the same frame
 
 	for layer in range(LAYERS.size()):
