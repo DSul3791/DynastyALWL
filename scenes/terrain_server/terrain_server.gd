@@ -566,8 +566,8 @@ func _ready() -> void:
 	_world_dir = world_dir
 	_start_water()
 
-	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var error: int = peer.create_server(port, 32)
+	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
+	var error: int = server_peer.create_server(port, 32)
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
@@ -576,7 +576,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
-	multiplayer.multiplayer_peer = peer
+	multiplayer.multiplayer_peer = server_peer
 	_events.start("telemetry_server_%d.log" % port)
 	_events.start_watchdog()
 	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), GitStamp.short_commit()])
