@@ -5456,14 +5456,8 @@ func _process(delta: float) -> void:
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
 
+	# No movement-state label (flying, running, jogging): the player knows. Only status notices show here.
 	var mode: String = ""
-
-	if flying:
-		mode = "flying"
-	elif running:
-		mode = "Running"
-	elif jogging:
-		mode = "Jogging"
 
 	if inspecting:
 		_update_inspect()
