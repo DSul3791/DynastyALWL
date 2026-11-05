@@ -335,6 +335,11 @@ static func prewarm() -> void:
 	if _prewarm_task != -1:
 		return
 
+	# Not under --headless: the dummy renderer's mesh store is not thread-safe, and meshes made on the worker and on the main thread at once
+	# broke its RIDs (PC gate on #426: "Initializing already initialized RID" for DummyMesh). The real renderer's mesh store takes meshes from any thread.
+	if DisplayServer.get_name() == "headless":
+		return
+
 	entry("")              # looks.json is read here, on the main thread, before the worker reads the table
 	_shared_material()     # and the shared material and its grain texture made once
 	var ids: Array = _table.keys() + ART_OVERRIDES.keys()
