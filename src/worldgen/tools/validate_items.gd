@@ -223,10 +223,29 @@ func _init() -> void:
 			if retired_ids.has(ref):
 				fail("recipes.json: live recipe %s names the retired item %s" % [rid, ref])
 
-	for file_name in ["drops.json", "structures.json"]:
-		for ref in JSON.stringify(_read(file_name)).split("\""):
+	for ref in JSON.stringify(_read("drops.json")).split("\""):
+		if retired_ids.has(ref):
+			fail("drops.json names the retired item %s" % ref)
+
+	# A structure's "kit" is the id the code knows the piece by (placing, taking down, blueprint lookup, old saves),
+	# so it may name a retired kit item: since #292 no kit is crafted and the hammer blueprints build the pieces.
+	# Every other field of structures.json must name live items.
+	var structures_top: Dictionary = _read("structures.json")
+	var structure_defs: Dictionary = structures_top.get("structures", {})
+	var top_no_defs: Dictionary = structures_top.duplicate(true)
+	top_no_defs.erase("structures")
+
+	for ref in JSON.stringify(top_no_defs).split("\""):
+		if retired_ids.has(ref):
+			fail("structures.json names the retired item %s" % ref)
+
+	for kind in structure_defs:
+		var def_no_kit: Dictionary = structure_defs[kind].duplicate(true)
+		def_no_kit.erase("kit")
+
+		for ref in JSON.stringify(def_no_kit).split("\""):
 			if retired_ids.has(ref):
-				fail("%s names the retired item %s" % [file_name, ref])
+				fail("structures.json %s names the retired item %s" % [kind, ref])
 
 	var no_key: Array = []
 
