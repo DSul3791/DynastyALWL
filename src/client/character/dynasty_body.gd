@@ -14,6 +14,7 @@ const P := "mixamorig_"
 const WornLook := preload("res://src/client/worn_look.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
+const Breath := preload("res://src/client/character/dynasty_breath.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -79,6 +80,7 @@ var head_mount: Marker3D
 var _log: MeshInstance3D
 var _model: Node3D
 var proportions: SkeletonModifier3D           # dynasty_proportions.gd, made by set_proportions
+var breath: SkeletonModifier3D               # dynasty_breath.gd, made with the body
 var _mount_rest: Dictionary = {}              # Marker3D -> its transform before set_proportions scaled the body
 
 
@@ -156,6 +158,11 @@ func _init() -> void:
 	_build_mounts()
 	set_meta("worn_frames", _worn_frames())      # worn clothing (worn_look.gd) hangs on these frames, so nothing is skipped any more (docs/DYNASTY_BODY.md gap 1)
 	_build_animations()
+	var b := Breath.new()       # breathing on the still sit frame (dynasty_breath.gd)
+	b.name = "Breath"
+	b.player = animation_player
+	skeleton.add_child(b)
+	breath = b
 
 
 # A mount on a bone, in the bone's rest frame turned so that its -Z points out along the bone (the fingers) and its +Y points to the front of the body, the same grip the old
@@ -599,6 +606,9 @@ func set_proportions(g: Dictionary) -> void:
 		proportions = Proportions.new()
 		proportions.name = "Proportions"
 		skeleton.add_child(proportions)
+
+		if breath != null:
+			skeleton.move_child(breath, -1)      # breathing after the reshape
 
 	proportions.set_genome(g)
 	_set_widths(g)
