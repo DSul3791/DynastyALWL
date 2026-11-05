@@ -1645,6 +1645,10 @@ func _show_model() -> void:
 # Falls back to the old spot in front of the camera when there are no arms.
 func _mount_model() -> void:
 	_mounted = _arms != null
+	var third_fist: Node3D = _model.get_node_or_null(THIRD_FIST_NAME) as Node3D
+
+	if third_fist != null:
+		third_fist.visible = false      # shown again by _mount_model_third
 	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
 
 	if not _mounted:
@@ -1704,6 +1708,38 @@ func _mount_model_third(kind: String) -> void:
 
 	_model.basis = turn
 	_model.position = turn * grip
+
+	if kind != "kit":
+		_third_fist().visible = true
+
+
+# Third person (Dave 5 Nov, decision card): the body's hand has no finger bones and hung open under the handle, so a closed fist is drawn round the grip. It is a child of
+# the held model (it goes when the tool goes) placed back at the hand mount's origin, where the handle crosses the hand (dynasty_body.gd GRIP_FROM_WRIST_M), and long
+# enough along the fingers to hide the open hand. First person has its own fists on the arms (_make_fist), so this one is hidden there.
+const THIRD_FIST_NAME := "ThirdFist"
+const THIRD_FIST_SCALE := Vector3(1.0, 0.85, 1.6)     # 10 cm across, 8.5 cm thick, 16 cm along the fingers (the hand mesh runs 0 to 19 cm from the wrist)
+
+
+func _third_fist() -> MeshInstance3D:
+	var fist: MeshInstance3D = _model.get_node_or_null(THIRD_FIST_NAME) as MeshInstance3D
+
+	if fist == null:
+		fist = MeshInstance3D.new()
+		fist.name = THIRD_FIST_NAME
+		var ball: SphereMesh = SphereMesh.new()
+		ball.radius = 0.05
+		ball.height = 0.1
+		ball.radial_segments = 12
+		ball.rings = 6
+		var skin: StandardMaterial3D = StandardMaterial3D.new()
+		skin.albedo_color = FIST_COLOR
+		skin.roughness = 0.9
+		ball.material = skin
+		fist.mesh = ball
+		_model.add_child(fist)
+
+	fist.transform = _model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
+	return fist
 
 
 # The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.
