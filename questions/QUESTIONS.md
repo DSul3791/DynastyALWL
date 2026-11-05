@@ -68,10 +68,3 @@ Note: It did not reproduce on land or in water in tests.
 Note: Recommendation: B. Only tell me if you see it duplicate on your own.
 - A: Yes, I will try it and say what happens
 - B: Skip it, I will tell you if I see it
-
-## sal-vice-blueprint | The wooden vice has no hammer blueprint, so nothing can place it. What should it cost?
-Note: Found by the new placeables check. The vice sits beside a camp bench for small work. It is the only placeable left with no way to build it.
-Note: Recommendation: A. It is a small thing: two jaws of hardwood and a screw.
-- A: 4 sticks, 2 twine and 2 wooden blocks (hammer tier 1, near a camp bench)
-- B: Leave it out of the game for now
-- C: Another cost: I will say
