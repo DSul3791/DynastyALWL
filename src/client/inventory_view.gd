@@ -412,7 +412,7 @@ func clear_prompt() -> void:
 # the first probe that finds something decides the single centre-screen prompt and what E does.
 # A probe returns {} or {"prompt": text, "tap": Callable, "hold": Callable (optional)}. With a "hold",
 # a tap acts on release and a hold (HOLD_E_S) does the other thing; without one the tap acts at once.
-const HOLD_E_S: float = 0.6
+const HOLD_E_S: float = 0.3   # halved (Dave 5 Nov 2026: picking up twice as fast)
 var fuel_event: Callable = Callable()
 var _interactables: Array = []
 var _e_active: Dictionary = {}
@@ -494,7 +494,7 @@ func hold_e_step() -> bool:
 	var now: int = Time.get_ticks_msec()
 
 	if str(found.get("kind", "")) in ["pickup", "plant"] and now >= _hold_next_msec:   # not a block: holding E on a chopping block picks it up
-		_hold_next_msec = now + 600
+		_hold_next_msec = now + 300
 		found["tap"].call()
 
 	return true
@@ -564,7 +564,7 @@ func aimed_at(point: Vector3) -> bool:
 
 
 # Held E (harvest.gd steps this): the nearest loose item within 2 m, wherever you look, one at a time. 0 when none, when
-# the pack was refused as full (until E is let go), or for an item already asked for in the last 0.6 s.
+# the pack was refused as full (until E is let go), or for an item already asked for in the last 0.3 s.
 func sweep_target(radius: float) -> Array:
 	if _sweep_blocked:
 		return [0, 99.0]
@@ -574,7 +574,7 @@ func sweep_target(radius: float) -> Array:
 	var best: Array = [0, radius + 1.0]
 
 	for id in _world:
-		if _world[id]["state"] != 0 or now - int(_sweep_asked.get(id, -100000)) < 600:
+		if _world[id]["state"] != 0 or now - int(_sweep_asked.get(id, -100000)) < 300:
 			continue
 
 		var d: float = here.distance_to(_world[id]["pos"])
