@@ -125,7 +125,6 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | fire_fuel | generated | 2 | -25.1 | -2.5 | -3.8 |
 | heal_bandage | generated | 2 | -21.6 | -5.3 | -0.3 |
 | heal_poultice | generated | 2 | -21.0 | -4.3 | +0.3 |
-| stomach_growl | generated | 2 | -19.6 | -4.4 | +1.7 |
 
 ## crafting (median -21.9 dB)
 

@@ -251,7 +251,7 @@ Generated placeholders: `assets/audio/workshop/` (make_workshop.py); recordings 
 
 ## Eating, healing and hunger (build 209)
 
-Items build 206 added hunger, health and the `eat_event` hook (called with the item id when the server confirms that food or medicine took effect); it already calls `sound.itemfx.eat(item_id)`. `ItemSounds.eat_kind(id)` picks the sound: poultices and bandages play `heal_poultice` / `heal_bandage`, ids ending in sap or water play `drink_gulp`, nuts, roots, bulbs, hard fruit, roast_forage and seed_bundle play `eat_crunch`, anything else (berries, greens, caps, pods) `eat_soft`. Hunger at or under 15 percent adds `stomach_growl` every 50 to 110 s, twice as often at 0 (a quiet cue at the player, `watch_vitals(hunger, delta)` from the 10 Hz item watch); above 15 the timer resets.
+Items build 206 added hunger, health and the `eat_event` hook (called with the item id when the server confirms that food or medicine took effect); it already calls `sound.itemfx.eat(item_id)`. `ItemSounds.eat_kind(id)` picks the sound: poultices and bandages play `heal_poultice` / `heal_bandage`, ids ending in sap or water play `drink_gulp`, nuts, roots, bulbs, hard fruit, roast_forage and seed_bundle play `eat_crunch`, anything else (berries, greens, caps, pods) `eat_soft`. The stomach growl that played when hungry was removed (Dave, 4 Nov 2026: its repeating was the odd noise he kept hearing).
 Generated placeholders in `assets/audio/cooking/` (make_cooking.py); recordings in `assets/audio/recorded/cooking/` win. Test: `--cooking` (every kind once and one growl); tools/sound_check.py scenario cooking.
 
 ## Rain on different ground (job 46)

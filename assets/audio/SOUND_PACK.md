@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **218 slots: 23 recorded, 185 generated placeholders, 10 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **217 slots: 23 recorded, 184 generated placeholders, 10 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -165,7 +165,6 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `stance_lie` | generated | 3 | stance_sounds.gd: lying down on the ground | 3 lying-down slides and thuds, 1 s |
 | 3 | `stance_rise` | generated | 3 | stance_sounds.gd: getting up | 3 getting-up rustles, 0.7 s |
 | 3 | `stance_sit` | generated | 3 | stance_sounds.gd: sitting down, rustle and a soft weight | 3 sitting-down rustles with a soft thud, 0.7 s |
-| 3 | `stomach_growl` | generated | 2 | item_sounds.gd watch_vitals(): a hungry stomach, every 50 to 110 s at 15 percent hunger or less (twice as often when starving) | 2 recordings of a stomach growling, 1.5 s |
 | 3 | `stump_chips` | generated | 3 | tree_sounds.gd: wood chips and a last crack as the stump is left | 3 wood chip sprays and cracks, 0.5 s |
 | 3 | `swim_dive` | generated | 3 | swim_sounds.gd: the head goes under | 3 bubbling gulps of going under, 1 s |
 | 3 | `swim_stroke` | generated | 3 | swim_sounds.gd: an arm stroke while swimming, one every 0.6 to 1.4 s | 3 breaststroke or crawl arm pulls through water, 0.5 s |
