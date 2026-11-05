@@ -17,6 +17,7 @@ const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const ErosionDeltaScript := preload("res://src/worldgen/tile/erosion_delta.gd")
 const TileRollingScript := preload("res://src/worldgen/tile/tile_rolling.gd")
 const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
+const TileRiverMendScript := preload("res://src/worldgen/tile/tile_river_mend.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileLandTypesScript := preload("res://src/worldgen/tile/tile_land_types.gd")
@@ -274,6 +275,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	water.build(frame_height, starter, river_guides, river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
 	timings["water"] = Time.get_ticks_msec() - clock
 
+
 	# Rolling swells and knolls on dry low land, added after the water so the rivers and ponds keep their shape.
 	clock = Time.get_ticks_msec()
 
@@ -284,11 +286,17 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 
 	timings["rolling"] = Time.get_ticks_msec() - clock
 
+
 	# Pond levels no higher than their spill, after every pass that cuts or raises ground (tile_pond_level.gd).
 	clock = Time.get_ticks_msec()
 	var pond_levels: Dictionary = TilePondLevelScript.clamp_to_spill(water.heights, water.water_class, water.water_surface, n)
 	timings["pond_levels"] = Time.get_ticks_msec() - clock
 	print("  pond levels (tile %s): %d water bodies, %d lowered to their spill, %d cells turned dry (%d ms)" % [str(tile), pond_levels["bodies"], pond_levels["lowered"], pond_levels["dried"], timings["pond_levels"]])
+	# Rivers cut off by the lake cells that turned dry dig on through the ridge to lower water (Dave 4 Nov: "the river just runs out", tile_river_mend.gd).
+	clock = Time.get_ticks_msec()
+	var mend: Dictionary = TileRiverMendScript.mend(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m)
+	print("  river mend (tile %s): %d rivers cut off, %d dug through, %d cells made river (%d ms)" % [str(tile), mend["pieces"], mend["mended"], mend["cells"], Time.get_ticks_msec() - clock])
+
 
 	clock = Time.get_ticks_msec()
 	var climate = TileClimateScript.new()

@@ -71,6 +71,9 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
 var spring_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of each spring cave's mouth (Dave 3 Nov 2026): the settle keeps a spring there even on steep ground
 var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
+# Cave dressing (Dave 4 Nov 2026; bake: tile_sites._dress_cave; drawn by Kathreen's client view). Flat lists:
+var cave_bones: PackedFloat32Array = PackedFloat32Array()        # 5 floats each: x, y, z, kind (0 animal, 1 human), yaw
+var cave_formations: PackedFloat32Array = PackedFloat32Array()   # 6 floats each: x, y, z, kind (0 stalagmite, 1 stalactite), height_m, radius_m (a stalactite's y is its root on the roof)
 var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 box]: ground opened by a cave mouth (entrance node to its first node): no flora there
 const CAVE_POOL_M := 0.4            # a spring cave pool's surface: this far above the bottom of its chamber as the chamber is carved
 const CAVE_POOL_DEPTH_M := 20.0     # Dave's QA list BUG-008 (answer 4 Nov 2026): the pool goes 20 m down below that, in a natural shape; the chamber stays
@@ -602,8 +605,18 @@ func _load_caves(list: Array) -> void:
 	cave_streams = PackedFloat32Array()
 	cave_openings = []
 	cave_dens = PackedVector3Array()
+	cave_bones = PackedFloat32Array()
+	cave_formations = PackedFloat32Array()
 
 	for cave in list:
+		for bone in cave.get("bones", []):
+			var at: Array = bone["pos"]
+			cave_bones.append_array(PackedFloat32Array([float(at[0]), float(at[1]), float(at[2]), 1.0 if str(bone["kind"]) == "human" else 0.0, float(bone.get("yaw", 0.0))]))
+
+		for form in cave.get("formations", []):
+			var at: Array = form["pos"]
+			cave_formations.append_array(PackedFloat32Array([float(at[0]), float(at[1]), float(at[2]), 1.0 if str(form["kind"]) == "stalactite" else 0.0, float(form["height_m"]), float(form["radius_m"])]))
+
 		var nodes: Array = cave["nodes"]
 
 		if str(cave.get("cave_kind", "")) == "spring_cave" and not nodes.is_empty():
