@@ -18,6 +18,7 @@ var picked: int = 0                      # the blueprint number now chosen, 0 fo
 var is_open: bool = false
 var _book: Array = []                    # rows sorted by name: {number, id, name, kit, cost, hammer, station}
 var _cursor: int = 0
+var category: String = ""                # the menu shows only this group of blueprints, "" for all of them (left and right arrows change it; Dave 5 Nov 2026)
 var _table
 var _pack
 var _panel: PanelContainer
@@ -29,7 +30,7 @@ var _plans_path: String = BuildingPlans.PATH
 const MENU_FONT := 40       # the hoe's mode window is 40 pt too (PR 161): one menu look for every tool
 const DETAIL_FONT := 28
 const MENU_MAX_HEIGHT := 0.75   # the menu never takes more than this share of the screen height (Dave 5 Nov 2026); a longer list scrolls past the highlight
-const LINE_FACTOR := 1.35       # a menu line is about this many font sizes tall, with its spacing
+const LINE_FACTOR := 1.5        # a menu line is about this many font sizes tall with its spacing (measured on the PC 5 Nov: 22 rows took 1258 px at 40 pt, 1.43 each; 1.5 leaves room for the panel padding)
 
 
 func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String = BuildingPlans.PATH) -> void:
@@ -95,7 +96,7 @@ func rows(hammer_tier: int) -> Array:
 			all = all and have >= int(need[1])
 			parts.append("%s %d/%d" % [str(_table.entry(str(need[0])).get("name", need[0])).to_lower(), have, int(need[1])])
 
-		out.append({"number": int(row["number"]), "name": str(row["name"]), "kit": str(row["kit"]), "text": ", ".join(parts), "can": all, "station": str(row.get("station", ""))})
+		out.append({"number": int(row["number"]), "name": str(row["name"]), "kit": str(row["kit"]), "text": ", ".join(parts), "can": all, "station": str(row.get("station", "")), "category": str(row.get("category", "Other"))})
 
 	return out
 
@@ -197,6 +198,9 @@ func entries(hammer_tier: int) -> Array:
 	var out: Array = [{"kind": "repair", "name": "Repair", "text": "then left click a worn piece: it is mended from materials on the ground nearby, in containers or in your pack", "can": true}, {"kind": "save", "name": "Save building plan", "text": "then left click a building to keep all of it as a plan", "can": true}]
 
 	for row in rows(hammer_tier):
+		if category != "" and str(row["category"]) != category:
+			continue
+
 		out.append({"kind": "bp", "number": int(row["number"]), "name": str(row["name"]), "text": str(row["text"]), "can": bool(row["can"])})
 
 	for n in range(plans.plans.size()):
@@ -204,6 +208,30 @@ func entries(hammer_tier: int) -> Array:
 		out.append({"kind": "plan", "index": n, "name": str(plan["name"]), "text": plan_text(plan), "can": plan_can(plan)})
 
 	return out
+
+
+# The groups of blueprints this hammer tier can place, in menu order.
+func categories(hammer_tier: int) -> Array:
+	var out: Array = []
+
+	for row in rows(hammer_tier):
+		if not out.has(str(row["category"])):
+			out.append(str(row["category"]))
+
+	return out
+
+
+# Steps the category tab: All, then each group, then back to All. The highlight returns to the first entry.
+func cycle_category(forward: bool, hammer_tier: int) -> void:
+	var tabs: Array = [""] + categories(hammer_tier)
+	var at: int = maxi(tabs.find(category), 0)
+	category = str(tabs[posmod(at + (1 if forward else -1), tabs.size())])
+	_cursor = 0
+	refresh(hammer_tier)
+
+
+func category_title() -> String:
+	return "All blueprints" if category == "" else category
 
 
 func toggle(hammer_tier: int) -> void:
@@ -309,7 +337,7 @@ func visible_lines(total: int) -> int:
 # The list as lines. With `window` above 0 only that many lines show, the highlight held on the middle one and the others sliding past it; blank lines pad
 # the ends, so the first and the last entry can both come up to the middle (Dave 5 Nov 2026).
 func list_text(hammer_tier: int, window: int = 0) -> String:
-	var lines: PackedStringArray = ["Hammer  (wheel: move, left click: choose, right click: close, Delete: remove a plan)", ""]
+	var lines: PackedStringArray = ["Hammer: < %s >  (left and right arrows: group, wheel: move, left click: choose, right click: close)" % category_title(), ""]
 	var list: Array = entries(hammer_tier)
 
 	if window <= 0:

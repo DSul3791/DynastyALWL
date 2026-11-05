@@ -52,21 +52,26 @@ static func apply(
 	var hill_near: float = float(hill_rules.get("near_water_m", near_m))
 	var hill_far: float = float(hill_rules.get("far_water_m", far_m))
 	var hill_texture_min: float = float(hill_rules.get("texture_min", 0.0))
+	# Dave 4 Nov 2026 ("it's ok if the hills run right into the foothills, we just need variety"): the hills have their own height fade, higher than the swells'.
+	var hill_high_from: float = float(hill_rules.get("fade_from_m", high_from))
+	var hill_high_to: float = float(hill_rules.get("fade_to_m", high_to))
+	var top: float = maxf(high_to, hill_high_to) if not hills.is_empty() else high_to
 	var pad: Dictionary = rules.get("_spawn_pad", {})
 	var before: PackedFloat32Array = heights.duplicate() if not hills.is_empty() else PackedFloat32Array()
 
 	for index in range(total):
 		var h: float = heights[index]
 
-		if h <= low_from or h >= high_to:
+		if h <= low_from or h >= top:
 			continue
 
-		var height_share: float = smoothstep(low_from, low_to, h) * (1.0 - smoothstep(high_from, high_to, h))
+		var low_share: float = smoothstep(low_from, low_to, h)
+		var height_share: float = low_share * (1.0 - smoothstep(high_from, high_to, h))
 		var strength: float = height_share * smoothstep(near_m, far_m, distance_m[index]) * texture[index]
 		var lift: float = strength * bumps[index]
 
 		if not hills.is_empty():
-			var hill_share: float = height_share * smoothstep(hill_near, hill_far, distance_m[index]) * maxf(texture[index], hill_texture_min)
+			var hill_share: float = low_share * (1.0 - smoothstep(hill_high_from, hill_high_to, h)) * smoothstep(hill_near, hill_far, distance_m[index]) * maxf(texture[index], hill_texture_min)
 
 			if not pad.is_empty():
 				var x: float = float(origin_sx + index % samples) * spacing_m
@@ -107,9 +112,11 @@ static func _hills(samples: int, spacing_m: float, origin_sx: int, origin_sz: in
 			settings.tiles_x * tile_samples_w, settings.tiles_z * tile_samples_w, int(ceil(4.0 * float(octave["wavelength_m"]) / spacing_m))
 		)
 		var amplitude: float = float(octave["amplitude_m"])
+		# An octave may shape its own tops: a high power leaves most of the ground low and lifts only scattered steep hills (Dave 5 Nov 2026).
+		var shape: float = float(octave.get("power", power))
 
 		for index in range(out.size()):
-			out[index] += amplitude * pow(float(data[index]) / 255.0, power)
+			out[index] += amplitude * pow(float(data[index]) / 255.0, shape)
 
 		octave_index += 1
 
