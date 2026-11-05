@@ -1,6 +1,6 @@
 {
 	"note": "Hammer blueprints. Dave 4 Nov 2026: no kits at all; everything placed is built with the hammer from the materials in the pack, except the Rough bed (a hand craft from the pack; blueprint 24 retired) and the campfire (a fire entity; code pending). 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near (with 'station_level'), 'near' another placed structure that must be near, 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1), 'recipe' the retired kit recipe (kept so its number is never reused, and so learning that recipe can unlock the row), 'known' false rows are learned, 'retired' rows are kept for their numbers and are not offered or placed. Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
-	"next_number": 53,
+	"next_number": 54,
 	"blueprints": {
 		"wall_section": {"category": "Walls and doors", "number": 1, "name": "Wall section", "structure": "wall_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "wall_section_kit"},
 		"floor_section": {"category": "Foundations and floors", "number": 2, "name": "Floor section", "structure": "floor_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "floor_section_kit"},
@@ -167,6 +167,7 @@
 		"wall_torch": {"category": "Lights and decoration", "number": 49, "name": "Wall torch", "structure": "wall_torch", "cost": [["stick", 2], ["tallow", 1]], "station": "", "hammer": 1, "known": true, "recipe": "wall_torch_kit"},
 		"chandelier": {"category": "Lights and decoration", "number": 50, "name": "Candle chandelier", "structure": "chandelier", "cost": [["lumber", 2], ["twine", 2], ["candle", 6]], "station": "workbench", "station_level": 1, "hammer": 1, "known": true, "recipe": "chandelier_kit"},
 		"flower_pot": {"category": "Lights and decoration", "number": 51, "name": "Flower pot", "structure": "flower_pot", "cost": [["clay", 2], ["soil", 1]], "station": "", "hammer": 1, "known": true, "recipe": "flower_pot_kit"},
-		"antler_mount": {"category": "Lights and decoration", "number": 52, "name": "Antler mount", "structure": "antler_mount", "cost": [["antler", 2], ["lumber", 1], ["twine", 1]], "station": "workbench", "hammer": 1, "known": true, "recipe": "antler_mount_kit"}
+		"antler_mount": {"category": "Lights and decoration", "number": 52, "name": "Antler mount", "structure": "antler_mount", "cost": [["antler", 2], ["lumber", 1], ["twine", 1]], "station": "workbench", "hammer": 1, "known": true, "recipe": "antler_mount_kit"},
+		"vice": {"category": "Workshops and stations", "number": 53, "name": "Wooden vice", "structure": "vice", "cost": [["stick", 8], ["stone", 4]], "station": "workbench", "hammer": 1, "known": true, "recipe": "vice_kit"}
 	}
 }
