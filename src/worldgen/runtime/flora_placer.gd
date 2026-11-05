@@ -629,12 +629,7 @@ const PARENT_REACH_M := 3.0     # a young conifer outside a nursery needs a grow
 const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
 const PATCH_MAX_PLANTS := 48   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
-const SHRUB_BLOCK_HEIGHT_M := 0.9   # a shrub this tall or taller stops the player (step-up limit 0.5 m plus margin); lower ones are stepped over
 const LOG_COLLIDER_MIN_M := 4.0   # fallen logs this long or longer get a capsule collider (near the player only)
-const CLUMP_MIN_COLLIDER := 4       # four or more tall shrubs of one patch share one collider
-const CLUMP_COLLIDER_MAX_M := 3.0   # its radius never above this
-const SHRUB_COLLIDER_MIN_M := 0.22
-const SHRUB_COLLIDER_MAX_M := 0.5
 const ORCHARD_MAX_SLOPE := 0.2     # the starter orchard stands on ground gentler than this (rise over run)
 const CLEAR_SPAWN_M := 10.0         # no tree or shrub this close to the spawn point
 const CLEAR_MARKER_M := 6.0         # ... or this close to an NPC marker
@@ -948,15 +943,12 @@ static func min_gap(kind_a: int, radius_a: float, stand_a: float, species_a: int
 	return maxf(minf(0.6 * (radius_a + radius_b), OCCUPANCY_CELL), MIN_TREE_GAP)
 
 
-# The radius of the collider a placed item gets, 0 for none. Trees: their trunk, when it is 0.1 m or thicker. Shrubs: none while the
-# plant is lower than SHRUB_BLOCK_HEIGHT_M (the player's step-up limit of 0.5 m, data/movement.json, plus a margin: it is walked over
-# or through), else a thin cylinder on the stem base, never the leaf spread (no invisible wall at the leaf edge). Plants: none.
-static func collider_radius(kind: int, trunk_m: float, size_scale: float, height: float) -> float:
+# The radius of the collider a placed item gets, 0 for none. Trees: their trunk, when it is 0.1 m or thicker. Shrubs and plants: none,
+# whatever their height (Dave 5 Nov 2026: bushes, ferns and sticks never stop the player; walking through them is louder instead,
+# server_flora.in_undergrowth and server_animals senses.undergrowth_noise).
+static func collider_radius(kind: int, trunk_m: float, size_scale: float, _height: float) -> float:
 	if kind == KIND_TREE:
 		return trunk_m * size_scale if trunk_m >= 0.1 else 0.0
-
-	if kind == KIND_SHRUB and height >= SHRUB_BLOCK_HEIGHT_M:
-		return clampf(0.16 + 0.07 * height, SHRUB_COLLIDER_MIN_M, SHRUB_COLLIDER_MAX_M)
 
 	return 0.0
 

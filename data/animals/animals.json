@@ -734,7 +734,11 @@
 		"blind_factor": 0.35,
 		"always_notice_m": 8.0,
 		"los_step_m": 4.0,
-		"forest_block": 0.45
+		"forest_block": 0.45,
+		"undergrowth_noise": 1.5,
+		"undergrowth_crouch_noise": 1.2,
+		"noise_speed_ms": 1.0,
+		"noise_sample_s": 0.25
 	},
 	"blood": {
 		"every_m": 3.0,

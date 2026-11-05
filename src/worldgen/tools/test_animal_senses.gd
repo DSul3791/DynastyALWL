@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Animal senses (Radar, 2026-10-21, Tyler report 16): wind carries scent, a crouching player is noticed later, hills block sight,
-# and a bolting rabbit goes to ground in its burrow.
+# a bolting rabbit goes to ground in its burrow, and walking through undergrowth is heard from farther off.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_senses.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -166,6 +166,26 @@ func _init() -> void:
 	check(seen_at.call(20.0, false), "open ground: a standing player at 20 m is noticed")
 	check(not seen_at.call(20.0, true), "through trees the same player at 20 m is not noticed")
 	check(seen_at.call(13.0, true), "through trees a player at 13 m is noticed (later than in the open)")
+
+	# Undergrowth (Dave 5 Nov 2026): walking through bushes and ferns is loud, so a rabbit hears a player at 28 m (past its 24 m
+	# alert_m); the same walk on open ground, standing still in the bushes, or crouch-walking through them is not noticed.
+	var heard = func(in_brush: bool, speed: float, stance: int) -> bool:
+		var walkers: Array = [Vector3(28.0, 10.0, 0.0)]
+		var zoo3 = make(walkers, [stance], calm, false)
+		zoo3.undergrowth = func(_p): return in_brush
+		var zid3: int = zoo3.spawn("rabbit", 0.0, 0.0)
+		zoo3.animals[zid3]["timer"] = 100.0
+
+		for n in 60:
+			walkers[0] = walkers[0] + Vector3(0.0, 0.0, speed * 0.05)   # across the rabbit's line, so the distance stays about 28 m
+			zoo3.tick(0.05)
+
+		return zoo3.animals[zid3]["state"] == AnimalsScript.ALERT or zoo3.animals[zid3]["state"] == AnimalsScript.FLEE
+
+	check(heard.call(true, 2.0, 0), "walking through undergrowth at 28 m: the rabbit hears the player")
+	check(not heard.call(false, 2.0, 0), "the same walk on open ground at 28 m is not noticed")
+	check(not heard.call(true, 0.0, 0), "standing still in the bushes at 28 m is not noticed")
+	check(not heard.call(true, 2.0, 1), "crouch-walking through the bushes at 28 m is not noticed")
 
 	print("animal senses: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

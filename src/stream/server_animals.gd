@@ -30,6 +30,7 @@ var player_positions: Callable     # () -> Array of Vector3
 var player_stances: Callable       # () -> Array of stances in player_positions order (0 stand, 1 crouch, 2 sit, 3 lie)
 var canopy: Callable               # (Vector3) -> bool, whether a spot is under a tree crown (forest for sight and habitat)
 var canopy_ready: Callable         # (x, z) -> bool, whether the tree crowns round a spot are known yet (the flora chunks are made; a missing one is started on a worker)
+var undergrowth: Callable          # (Vector3) -> bool, the spot is in bushes, ferns or tall grass (server_flora.in_undergrowth): moving through it is loud
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
@@ -54,6 +55,9 @@ var _next_herd: int = 1
 var _wind_s: float = 0.0
 var _wind_dir: Vector2 = Vector2.ZERO
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
+var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
+var _noise_from: Array = []       # player positions at the last sample
+var _noisy: Array = []            # per player (player_positions order): moving through undergrowth at the last sample
 
 
 # True when the step from (x0, z0) to (x1, z1) goes through a wall or heavy station, grown by the body margin.
@@ -483,6 +487,7 @@ func tick(delta: float) -> void:
 	var weather: Dictionary = wind.call() if wind.is_valid() else {}
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
+	_sample_noise(players, delta)
 
 	# A quarter of the animals per tick (id mod 4), each one's elapsed time kept in acc so its step still gets the true dt; if the
 	# tick's AI budget runs out the rest wait for the next one (the rotating start keeps that fair).
@@ -513,7 +518,7 @@ func tick(delta: float) -> void:
 				near_p = p
 
 			if d <= reach_m:
-				var sensed: float = d / _sense_factor(a, def_s, p, d, int(stances[pi]) if pi < stances.size() else 0)
+				var sensed: float = d / _sense_factor(a, def_s, p, d, int(stances[pi]) if pi < stances.size() else 0, pi < _noisy.size() and bool(_noisy[pi]))
 
 				if sensed < seen_d:
 					seen_d = sensed
@@ -1033,9 +1038,39 @@ func _to_burrow(a: Dictionary, away: Vector2, def: Dictionary) -> void:
 		a["to_burrow"] = true
 
 
+# Which players are pushing through undergrowth, sampled every senses.noise_sample_s: a player who moved at noise_speed_ms or more
+# since the last sample and stands in bushes, ferns or tall grass (undergrowth). Sampled, not per frame, because player positions
+# arrive at the network rate. A change in the player count resets the sample (the order may have changed).
+func _sample_noise(players: Array, delta: float) -> void:
+	var sen: Dictionary = cfg.get("senses", {})
+	_noise_acc += delta
+
+	if _noise_acc < float(sen.get("noise_sample_s", 0.25)):
+		return
+
+	var fresh: Array = []
+
+	for pi in players.size():
+		var moving: bool = false
+
+		if players.size() == _noise_from.size():
+			var was: Vector3 = _noise_from[pi]
+			var p: Vector3 = players[pi]
+			moving = Vector2(p.x - was.x, p.z - was.z).length() / _noise_acc >= float(sen.get("noise_speed_ms", 1.0))
+
+		fresh.append(moving and undergrowth.is_valid() and bool(undergrowth.call(players[pi])))
+
+	_noisy = fresh
+	_noise_from = players.duplicate()
+	_noise_acc = 0.0
+
+
 # How much farther or nearer a player seems to an animal: downwind of the player it smells them from farther off, upwind it does
-# not; a crouching or lying player is harder to see; with the ground in the way only scent and sound are left.
-func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance: int) -> float:
+# not; a crouching or lying player is harder to see; with the ground in the way only scent and sound are left. A player pushing
+# through undergrowth (noisy, _sample_noise) is heard from farther off, a crouching one less so (Dave 5 Nov 2026: bushes and ferns
+# don't stop you, they make you louder, which is bad when hunting). The sound is added last, so it also carries where the animal
+# can't see the player.
+func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance: int, noisy: bool = false) -> float:
 	var sen: Dictionary = cfg.get("senses", {})
 	var f: float = 1.0
 
@@ -1060,6 +1095,9 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 		if sight < 1.0:
 			f *= lerpf(float(sen.get("blind_factor", 0.35)), 1.0, sight)
+
+	if noisy:
+		f *= float(sen.get("undergrowth_crouch_noise", 1.2)) if stance == 1 else float(sen.get("undergrowth_noise", 1.5))
 
 	return f
 
