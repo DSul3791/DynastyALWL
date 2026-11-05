@@ -126,17 +126,17 @@ Pictures: `10_campfire_placed.jpg` (the placement ghost; the lit fire itself is 
 
 ## Step 10. The first shelter: a lean-to
 
-Recipe **Lean-to kit** (#13, known): **30 sticks + 200 leaves + 10 twine** (25 s; since #253 the roof covers 4.16 x 5.44 m and the ridge is 2.4 m high, so you can walk in and lie down). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. Hold the kit, click to place (ghost 2.4 x 2.1 m, open front towards you). It is a roof for the cover rule (1.1 x 0.95 m half-sizes, 2.1 m high): anyone under it is "under cover", fires under it survive rain. Hold E 0.6 s at it to take it down (kit comes back). A chunk holds at most 6.
+No kits (Dave 4 Nov, #292): the lean-to is a **hammer blueprint** (#25). First the **wooden hammer** (recipe #161): strike a big hardwood log (oak, beech) lying on the ground with the axe for a **large wooden block** (3 per log), split it into **4 small blocks** in the inventory (recipe #339; softwood #340), then **1 small block + 1 stick + 1 twine** makes the hammer (5 s). Hold the hammer, **right click** for the blueprint menu, pick **Lean-to**, left click to place it (open front towards you; the ghost turns red past 6 m). It costs **30 sticks + 200 leaves + 10 twine**, taken from the pack (#296; the roof covers 4.16 x 5.44 m and the ridge is 2.4 m high, so you can walk in and lie down). Leaves come from the branch blows of a felled tree (step 06) or from a stump/trunk. It is a roof for the cover rule: anyone under it is "under cover", fires under it survive rain. A chunk holds at most 6.
 
 ## Step 11. Bedding / bed
 
-Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 twine** (10 s), or **10 thatch + 4 sticks + 2 twine** (25 s). Thatch comes from tall grass (4 each), reeds (8), heather (4), thatching grass (10), birch/spruce/pine bark on a felled trunk (2-5). Place it under the lean-to or a tree. A lying or sleeping player within 1.2 m of it, under cover, sleeps better: health regen x1.25, food and water drain x0.5, warmth bonus 0.1. (The plant "bedding" item exists but nothing uses it.)
+Recipe **Rough bed** (#162, known; the one bed still made in the inventory, Dave 4 Nov, every other bed is a hammer blueprint): **8 bedding (or 8 straw) + 4 sticks + 2 twine** (10 s), or **10 thatch + 4 sticks + 2 twine** (25 s). Thatch comes from tall grass (4 each), reeds (8), heather (4), thatching grass (10), birch/spruce/pine bark on a felled trunk (2-5). Place it under the lean-to or a tree. A lying or sleeping player within 1.2 m of it, under cover, sleeps better: health regen x1.25, food and water drain x0.5, warmth bonus 0.1. (The plant "bedding" item exists but nothing uses it.)
 
 ## Step 12. Workbench and thatch house pieces
 
-* **Camp bench (workbench kit)** (#45, known): **16 sticks + 6 twine + 4 stones**. Or the **log workbench**, a hammer blueprint: 4 logs, 6 twine, 6 sticks. Place it; a recipe needing "workbench" works only near it (reach + 1 m).
-* Thatch pieces (open to everyone though not "known"): **thatch floor kit** 6 twine + 20 thatch; **wall** 20 twine + 50 thatch + 15 sticks; **roof** 10 twine + 40 thatch + 12 sticks; **doorway** 12 twine + 25 thatch + 12 sticks. All at the workbench. They are big spends: 50 thatch is five tall-grass patches.
-* Wood walls, floors and roofs (`wall_section_kit` etc.) need **lumber**: a saw mill, a hand saw, or a stone wedge at the workbench (`lumber_wedge`); F-05 fixed. Most of them are hammer blueprints now.
+* **Camp bench** (hammer blueprint #33): **16 sticks + 6 twine + 4 stones**. Or the **log workbench** (another blueprint): 4 logs, 6 twine, 6 sticks. A recipe needing "workbench" works only near it (reach + 1 m).
+* Thatch pieces (hammer blueprints, built near a workbench): **thatch floor** 4 twine + 20 thatch; **wall** 8 twine + 50 thatch + 15 sticks; **roof** 6 twine + 40 thatch + 12 sticks; **doorway** 6 twine + 25 thatch + 12 sticks. 50 thatch is five tall-grass patches.
+* Wood walls, floors and roofs (hammer blueprints) need **lumber**: a saw mill, a hand saw, or a stone wedge at the workbench (`lumber_wedge`); F-05 fixed.
 
 ## Step 13. First tools
 
@@ -174,9 +174,9 @@ Left click jabs the spear; hold right click to aim a throw, left click throws. H
 1. Hold E around you: 6 sticks, 4 stones, then 20 plant fibre from nettles or tall grass.
 2. Craft 2 twine, then the stone axe; put it on the hotbar.
 3. Fell a small or medium tree (10-22 blows); work the trunk: sticks, leaves, logs; split blocks.
-4. Craft the campfire kit, place it under a big tree, light it with a plant fibre.
-5. Roast berries, drink at the water.
-6. Craft the lean-to kit (30 sticks, 200 leaves, 10 twine) and place it by the fire.
-7. Gather 10 thatch + 4 sticks, craft the rough bed kit, place it under the lean-to.
-8. Workbench (12 sticks, 3 twine) -> stone hammer, bow, thatch pieces.
+4. Craft the campfire kit (the one kit left), place it under a big tree, light it with a plant fibre.
+5. Cook meat or fish in the fire store, eat berries raw, drink at the water.
+6. Split a large wooden block into small ones and make the wooden hammer (1 small block, 1 stick, 1 twine); right click it and build the Lean-to (30 sticks, 200 leaves, 10 twine) by the fire.
+7. Gather 10 thatch + 4 sticks, craft the rough bed, place it under the lean-to.
+8. Camp bench with the hammer (16 sticks, 6 twine, 4 stones) -> stone hammer, bow, thatch pieces.
 9. Spear (stick, then 2 twine) for hunting; knife (2 stones, stick) for carcasses.
