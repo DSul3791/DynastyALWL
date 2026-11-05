@@ -246,6 +246,7 @@ func _read_tile(coord: Vector2i):
 
 	if not data.placeholder:
 		data.near_water()
+		data.build_cave_scatter()   # also here: the server's first scatter cell on the tile built it on the main thread (345 ms)
 
 	print("terrain: tile %s loaded in %d ms (file %d ms, near_water %d ms)" % [str(coord), (Time.get_ticks_usec() - load_start) / 1000, (near_start - load_start) / 1000, (Time.get_ticks_usec() - near_start) / 1000])
 

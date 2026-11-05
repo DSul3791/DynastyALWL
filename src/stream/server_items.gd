@@ -351,6 +351,7 @@ var _saplings: Array = []           # {slot, chunk [cx, cz], species (flora id),
 var _flora_by_id: Dictionary = {}
 var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
+var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
 
 
@@ -3821,7 +3822,7 @@ func _scatter_around_players() -> void:
 					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
 
 					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
-						print("items tick slow: scatter cell %s took %.0f ms" % [str(cell), cell_ms])
+						print("items tick slow: scatter cell %s took %.0f ms (cave floor %.0f ms)" % [str(cell), cell_ms, _cell_cave_ms])
 
 					budget -= 1
 
@@ -3872,7 +3873,9 @@ static func boosted(base: int, add: int, cap: int) -> int:
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
+	var cave_usec: int = Time.get_ticks_usec()
 	_lay_out_cave_items(cell, cell_m, cfg)
+	_cell_cave_ms = float(Time.get_ticks_usec() - cave_usec) / 1000.0
 	var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
 	var h0: float = float(ground_height.call(centre.x, centre.y))
 	var h1: float = float(ground_height.call(centre.x + 4.0, centre.y))
