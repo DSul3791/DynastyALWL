@@ -419,7 +419,9 @@ func character_open() -> bool:
 
 func clear_prompt() -> void:
 	_prompt.text = ""
-	_site_list.visible = false
+
+	if _site_list != null:
+		_site_list.visible = false
 	_notice_until_msec = 0
 	_prompt_next_msec = Time.get_ticks_msec() + 400
 
@@ -932,8 +934,9 @@ func _process_body(_delta: float) -> void:
 	t = FrameProbe.start()
 	var interaction: Dictionary = current_interaction()
 	_prompt.text = prompt_text(interaction)
-	_site_list.text = str(interaction.get("lines", "")) if _prompt.text != "" else ""
-	_site_list.visible = _site_list.text != ""
+	if _site_list != null:
+		_site_list.text = str(interaction.get("lines", "")) if _prompt.text != "" else ""
+		_site_list.visible = _site_list.text != ""
 	FrameProbe.stop("inventory: prompt", t)
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
@@ -1169,7 +1172,9 @@ func _on_notice(text: String) -> void:
 		notice_event.call(text)
 
 	_prompt.text = KeyBindings.localize(text)
-	_site_list.visible = false
+
+	if _site_list != null:
+		_site_list.visible = false
 	_notice_until_msec = Time.get_ticks_msec() + 4000
 
 
