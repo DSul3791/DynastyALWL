@@ -4471,6 +4471,7 @@ func _process(delta: float) -> void:
 	if not flying and body != null:
 		var tg: int = Probe.start()
 		grass.update(body.global_position)
+		var tg_stamp: int = Probe.start()
 
 		# Stamped behind the player, out of view, so no grass is seen dropping flat in front of the camera
 		# (owner, 2026-10-20: "popping in and out of existence right in front of me").
@@ -4480,6 +4481,7 @@ func _process(delta: float) -> void:
 			grass.stamp(body.global_position - walk.normalized() * 1.3)
 
 		_stamp_walkers(now)
+		Probe.stop("grass: stamp", tg_stamp)
 		Probe.stop("grass", tg)
 
 	if _bake.running and now >= _bake_check_msec:

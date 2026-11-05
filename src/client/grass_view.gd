@@ -11,6 +11,7 @@ extends Node3D
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
+const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
 const CELL_M := 6.0
 const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
 const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
@@ -1321,13 +1322,18 @@ func update(from_position: Vector3) -> void:
 
 	_center = from_position
 	var now: int = Time.get_ticks_msec()
+	var t_part: int = Probe.start()
 	_check_ground(now)
+	Probe.stop("grass: check ground", t_part)
+	t_part = Probe.start()
 	_trample.flush()
 	_push_player(from_position)
 
 	if _trunk_msec == 0 or (_trunk_msec > 0 and now >= _trunk_msec):
 		_trunk_msec = now + 1500
 		_push_trunks(from_position)
+
+	Probe.stop("grass: trample and trunks", t_part)
 
 	var clock: float = TrampleScript.now_s()
 
@@ -1359,6 +1365,7 @@ func update(from_position: Vector3) -> void:
 
 	# Standing still costs nothing: a rescan only repeats (to retry cells whose ground was not ready) while
 	# some cell is still unbuilt, otherwise every IDLE_RESCAN_MSEC (owner table 2026-10-21: the frame was CPU bound).
+	t_part = Probe.start()
 	if not _scan_active and (here_cell != _scan_cell or now >= _next_rescan):
 		_scan_msec = now
 		_scan_cell = here_cell
@@ -1368,6 +1375,8 @@ func update(from_position: Vector3) -> void:
 	if _scan_active:
 		_rescan_step()
 
+	Probe.stop("grass: scan", t_part)
+	t_part = Probe.start()
 	var rays: int = RAYS_PER_FRAME * (2 if speed > 2.5 and _pending.size() > 20 else 1)
 	var started: int = Time.get_ticks_usec()
 
@@ -1390,7 +1399,10 @@ func update(from_position: Vector3) -> void:
 	if taken > 0:
 		_pending = _pending.slice(taken)
 
+	Probe.stop("grass: build", t_part)
+	t_part = Probe.start()
 	_flush_groups()
+	Probe.stop("grass: apply", t_part)
 
 
 # The band of a cell by its distance: 0 near (full samples), 1 middle, 2 far, 3 very far (reach beyond 50 m).
