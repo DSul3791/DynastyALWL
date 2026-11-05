@@ -584,7 +584,7 @@ func _is_axe() -> bool:
 # E gathers something by hand: the arm reaches down, takes hold and draws back (its own "gather" clip, ragdoll_body.gd _gather), unless a swing or another action is already playing.
 func play_gather() -> void:
 	if _swing_t < 0.0 and _jab_t < 0.0 and not aiming and _arms != null and _arms.visible and not _arms.is_one_shot_playing():
-		_arm_play("gather" if _arms.animation_player.has_animation("gather") else "use", 0.6)
+		_arm_play("gather" if _arms.animation_player.has_animation("gather") else "use", 0.3)
 
 
 # True while a tool action is going on (a swing, the pause between chained swings, the hit stop): nothing nearby is picked up meanwhile.
@@ -774,12 +774,16 @@ func mouse_button(button: int, pressed: bool) -> bool:
 				_start_plan_place()
 			else:
 				_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, blueprints.picked, lift_steps, _blueprint_yaw, _blueprint_at)
+		elif button == MOUSE_BUTTON_LEFT and pressed:
+			_say_why_not()
 
 		return button == MOUSE_BUTTON_LEFT
 
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
 			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, _place_slot(), lift_steps, _blueprint_yaw, _blueprint_at)
+		elif button == MOUSE_BUTTON_LEFT and pressed:
+			_say_why_not()
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -1177,6 +1181,27 @@ func _ghost_clean(node: Node) -> void:
 
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
+# A left click on a red ghost says why it will not go down (Dave 5 Nov 2026: every placement that fails tells you the reason).
+func _say_why_not() -> void:
+	var why: String = str({
+		"close": "Something is in the way.",
+		"crowded": "Too many of these stand here already.",
+		"steep": "The ground is too steep there.",
+		"water": "You cannot build in water.",
+		"nofire": "Lay a small fire first: the pot hangs over it.",
+		"taken": "That fire already has a pot.",
+		"far": "Too far to place that. Step closer.",
+	}.get(blueprint_state, ""))
+
+	if why == "" and _blueprinting() and not blueprints.can_afford(_hammer_tier()):
+		why = "You do not have all the materials for that."
+
+	if why == "":
+		why = "Aim at the ground where it should go."
+
+	_inv._on_notice(why)
+
+
 func _update_blueprint() -> void:
 	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != "place") and _hammer_tier() <= 0:
 		blueprints.clear()   # the hammer is put away: the pick and the list go with it
@@ -1645,6 +1670,10 @@ func _show_model() -> void:
 # Falls back to the old spot in front of the camera when there are no arms.
 func _mount_model() -> void:
 	_mounted = _arms != null
+	var third_fist: Node3D = _model.get_node_or_null(THIRD_FIST_NAME) as Node3D
+
+	if third_fist != null:
+		third_fist.visible = false      # shown again by _mount_model_third
 	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
 
 	if not _mounted:
@@ -1704,6 +1733,38 @@ func _mount_model_third(kind: String) -> void:
 
 	_model.basis = turn
 	_model.position = turn * grip
+
+	if kind != "kit":
+		_third_fist().visible = true
+
+
+# Third person (Dave 5 Nov, decision card): the body's hand has no finger bones and hung open under the handle, so a closed fist is drawn round the grip. It is a child of
+# the held model (it goes when the tool goes) placed back at the hand mount's origin, where the handle crosses the hand (dynasty_body.gd GRIP_FROM_WRIST_M), and long
+# enough along the fingers to hide the open hand. First person has its own fists on the arms (_make_fist), so this one is hidden there.
+const THIRD_FIST_NAME := "ThirdFist"
+const THIRD_FIST_SCALE := Vector3(1.0, 0.85, 1.6)     # 10 cm across, 8.5 cm thick, 16 cm along the fingers (the hand mesh runs 0 to 19 cm from the wrist)
+
+
+func _third_fist() -> MeshInstance3D:
+	var fist: MeshInstance3D = _model.get_node_or_null(THIRD_FIST_NAME) as MeshInstance3D
+
+	if fist == null:
+		fist = MeshInstance3D.new()
+		fist.name = THIRD_FIST_NAME
+		var ball: SphereMesh = SphereMesh.new()
+		ball.radius = 0.05
+		ball.height = 0.1
+		ball.radial_segments = 12
+		ball.rings = 6
+		var skin: StandardMaterial3D = StandardMaterial3D.new()
+		skin.albedo_color = FIST_COLOR
+		skin.roughness = 0.9
+		ball.material = skin
+		fist.mesh = ball
+		_model.add_child(fist)
+
+	fist.transform = _model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
+	return fist
 
 
 # The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.

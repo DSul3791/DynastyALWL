@@ -125,7 +125,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `docs/DEAD_END_MATERIALS.md` | Sal | Materials made but used by nothing, with proposed uses, 2 Nov | 11-02 | keep: history (status line added 5 Nov: all seven used) |
 | `docs/DYNASTY_WATER_DESIGN.md` | Sonny | Dynasty water: design (Sonny, 31 Oct 2026, branch `dynasty-water`, code in `sr | 10-31 | keep |
 | `docs/DYNASTY_WATER_HISTORY.md` | Sonny | Dynasty water: history for the next team (Sonny, 1 Nov 2026) | 11-01 | keep |
-| `docs/DYNASTY_WATER_STATUS.md` | Sonny | Dynasty water: status (Sonny, 31 Oct 2026, branch `dynasty-water`) | 10-31 | keep (Sonny works from it; he archives it himself) |
+| `docs/archive/2026-11/DYNASTY_WATER_STATUS.md` | Sonny | Dynasty water: status (Sonny, 31 Oct 2026, branch `dynasty-water`) | 11-05 | ARCHIVED in #384 (one water truth: `docs/DYNASTY_WATER_HISTORY.md`) |
 | `docs/DYNASTY_WATER_TASKS.md` | Sonny | Dynasty water: task list (Sonny, from 1 Nov 2026) | 11-01 | keep |
 | `docs/EARLY_FORAGE_20261103.md` | MikeW | Early-game forage at the starter spawn, 3 Nov | 11-04 | keep |
 | `docs/FAUNA_BEHAVIOUR_AUDIT_20261102.md` | MikeW | Fauna behaviour audit, 2 Nov | 11-02 | keep: history (fixes merged #194-#239, #328) |
@@ -140,7 +140,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `docs/SEASONS_DATA.md` | MikeW | Season data for the looks (flora session, 2026-10-31) | 10-31 | keep |
 | `docs/SPAWN_BEAUTY_CHECK.md` | MikeW | Spawn-area beauty check (flora session, 2026-10-31) | 10-31 | keep |
 | `docs/TYLER_NEXT_TASKS.md` | Tyler | Tyler's self-assigned tasks (standing instruction from Dave, 1 Nov 2026) | 11-01 | keep (Tyler's one task list) |
-| `docs/WATER_HANDOVER.md` | Sonny | Water handover for Dave (Sonny, 31 Oct 2026) | 10-31 | review: overlaps DYNASTY_WATER_STATUS/HISTORY |
+| `docs/archive/2026-11/WATER_HANDOVER.md` | Sonny | Water handover for Dave (Sonny, 31 Oct 2026) | 11-05 | ARCHIVED in #384 (patch plan and cost options kept in `docs/DYNASTY_WATER_HISTORY.md` section 9) |
 | `docs/WILD_CROP_PLANTS_PLAN.md` | Sal | Wild plants for the eight seedless crops (Dave option A), 3 Nov | 11-03 | keep |
 | `docs/handoff/DINO_BUG_CHECKS.md` | Dino | What each bug means for the first-hour guide and how Dave confirms each fix, 2 Nov | 11-02 | keep: history |
 | `docs/handoff/DINO_ROUND1_REPORT.md` | Dino | Round 1 paper review: placement refusals, tutorial numbers against data, 2 Nov | 11-02 | keep: history |

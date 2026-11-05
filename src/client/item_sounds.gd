@@ -47,9 +47,6 @@ const EAT_KINDS := {"roast_forage": "crunch", "tree_roots": "crunch", "seed_bund
 # An item id ending in one of these is crunchy (nuts, roots, hard fruit); "sap" is drunk; poultices and bandages heal.
 const CRUNCHY := ["nuts", "roots", "bulbs", "apples", "pears", "acorns", "chestnuts", "walnuts", "hazelnuts", "beechnuts", "coconuts", "dates", "roast_forage"]
 const DRINKS := ["sap", "water"]
-const GROWL_DB := -20.0
-const GROWL_EVERY_SEC := [50.0, 110.0]  # while hungry (hunger at or under growl_from); starving growls twice as often
-const GROWL_FROM := 15
 const COOKING_DIR := "res://assets/audio/cooking/"
 const COOKING_RECORDED_DIR := "res://assets/audio/recorded/cooking/"
 const FUEL_WINDOW_MSEC := 1500
@@ -71,8 +68,6 @@ var _was_crafting: int = 0
 var _work: AudioStreamPlayer
 var work_played: int = 0
 var eat_played: int = 0
-var growls_played: int = 0
-var _growl_left: float = 60.0
 var _mouth: AudioStreamPlayer
 var _fuel_msec: int = -100000
 var _counts_by_number: Dictionary = {}  # item number -> count in the bag, last watch
@@ -242,33 +237,6 @@ func _watch_block(items, counts: Dictionary) -> void:
 		get_parent().workshop.chop(best, true)
 
 
-# A hungry stomach growls now and then (hunger 0 to 100, the Items thread's `hunger`): every 50 to 110 s at or
-# under 15 percent, twice as often when starving; quiet, at the player, never while swimming or the like.
-func watch_vitals(hunger: int, delta: float) -> void:
-	if hunger > GROWL_FROM:
-		_growl_left = _rng.randf_range(float(GROWL_EVERY_SEC[0]), float(GROWL_EVERY_SEC[1]))
-		return
-
-	_growl_left -= delta * (2.0 if hunger <= 0 else 1.0)
-
-	if _growl_left > 0.0:
-		return
-
-	_growl_left = _rng.randf_range(float(GROWL_EVERY_SEC[0]), float(GROWL_EVERY_SEC[1]))
-	var list: Array = _variants("stomach_growl")
-
-	if list.is_empty():
-		return
-
-	var pick: int = _rng.randi_range(0, list.size() - 1)
-	_mouth.stream = list[pick]
-	_mouth.volume_db = GROWL_DB + _rng.randf_range(-1.0, 1.0)
-	_mouth.pitch_scale = _rng.randf_range(0.95, 1.05)
-	_mouth.play()
-	growls_played += 1
-	last = "stomach_growl_%d (%s)" % [pick, SoundStage.tag(list[pick])]
-
-
 # The V key at a fire: wood used up in the next moments was laid on it.
 func fuel_pressed() -> void:
 	_fuel_msec = Time.get_ticks_msec()
@@ -425,7 +393,7 @@ func _variants(sound_name: String) -> Array:
 		return _streams[sound_name]
 
 	var crafting: bool = sound_name.begins_with("craft_") and sound_name != "craft_done"
-	var eating: bool = sound_name.begins_with("eat_") or sound_name == "drink_gulp" or sound_name.begins_with("heal_") or sound_name == "stomach_growl"
+	var eating: bool = sound_name.begins_with("eat_") or sound_name == "drink_gulp" or sound_name.begins_with("heal_")
 	var list: Array = SoundStage._find(CRAFT_RECORDED_DIR if crafting else (COOKING_RECORDED_DIR if eating else RECORDED_DIR), sound_name)
 
 	if list.is_empty():

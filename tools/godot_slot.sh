@@ -10,6 +10,7 @@
 #   GODOT_SLOTS=N        allow N at once
 _SLOT_DIR="${GODOT_SLOT_DIR:-${TEMP:-${TMPDIR:-/tmp}}/dynasty_godot_slots}"
 _SLOT_MINE=""
+_SLOT_ALL=""
 
 slot_acquire() {
 	local max="${GODOT_SLOTS:-3}" waited=0 limit="${GODOT_SLOT_WAIT:-3600}" i p
@@ -28,9 +29,33 @@ slot_acquire() {
 	done
 }
 
+# Every slot at once, for a retry that must run on a quiet PC (Steve, 5 Nov 2026: test_flora_walk_cost failed its retry too, because the next
+# PR's import and local_check Godot runs overlapped it). All or none: what was taken is given back when one slot is busy, so two callers never
+# deadlock. Waits at most GODOT_SLOT_QUIET_WAIT seconds (default 900), then runs anyway.
+slot_acquire_all() {
+	local max="${GODOT_SLOTS:-3}" waited=0 limit="${GODOT_SLOT_QUIET_WAIT:-900}" i p got
+	[ "$max" -le 0 ] 2>/dev/null && return 0
+	mkdir -p "$_SLOT_DIR" 2>/dev/null || return 0
+	while true; do
+		got=""
+		for i in $(seq 1 "$max"); do
+			p=$(cat "$_SLOT_DIR/$i/pid" 2>/dev/null)
+			if [ -n "$p" ] && ! kill -0 "$p" 2>/dev/null; then rm -rf "$_SLOT_DIR/$i" 2>/dev/null; fi
+			if mkdir "$_SLOT_DIR/$i" 2>/dev/null; then echo $$ > "$_SLOT_DIR/$i/pid"; got="$got $i"; else break; fi
+		done
+		if [ "$(echo $got | wc -w)" -eq "$max" ]; then _SLOT_ALL="$got"; return 0; fi
+		for i in $got; do rm -rf "$_SLOT_DIR/$i" 2>/dev/null; done
+		[ "$waited" -ge "$limit" ] && return 0
+		sleep 2; waited=$((waited + 2))
+	done
+}
+
 slot_release() {
 	[ -n "$_SLOT_MINE" ] && rm -rf "$_SLOT_MINE" 2>/dev/null
 	_SLOT_MINE=""
+	local i
+	for i in $_SLOT_ALL; do rm -rf "$_SLOT_DIR/$i" 2>/dev/null; done
+	_SLOT_ALL=""
 }
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then

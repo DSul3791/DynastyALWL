@@ -229,7 +229,10 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
-	_prewarm_loose_meshes()
+	if DisplayServer.get_name() == "headless":
+		_prewarm_loose_meshes()   # tests and headless runs: all at once, as before
+	else:
+		_start_loose_prewarm()    # a window: a few meshes each frame while the ground loads
 	_build_vitals_hud()
 	auto_pickup = AutoPickupScript.new()
 	_auto_label = Label.new()
@@ -409,7 +412,7 @@ func clear_prompt() -> void:
 # the first probe that finds something decides the single centre-screen prompt and what E does.
 # A probe returns {} or {"prompt": text, "tap": Callable, "hold": Callable (optional)}. With a "hold",
 # a tap acts on release and a hold (HOLD_E_S) does the other thing; without one the tap acts at once.
-const HOLD_E_S: float = 0.6
+const HOLD_E_S: float = 0.3   # halved (Dave 5 Nov 2026: picking up twice as fast)
 var fuel_event: Callable = Callable()
 var _interactables: Array = []
 var _e_active: Dictionary = {}
@@ -491,7 +494,7 @@ func hold_e_step() -> bool:
 	var now: int = Time.get_ticks_msec()
 
 	if str(found.get("kind", "")) in ["pickup", "plant"] and now >= _hold_next_msec:   # not a block: holding E on a chopping block picks it up
-		_hold_next_msec = now + 600
+		_hold_next_msec = now + 300
 		found["tap"].call()
 
 	return true
@@ -561,7 +564,7 @@ func aimed_at(point: Vector3) -> bool:
 
 
 # Held E (harvest.gd steps this): the nearest loose item within 2 m, wherever you look, one at a time. 0 when none, when
-# the pack was refused as full (until E is let go), or for an item already asked for in the last 0.6 s.
+# the pack was refused as full (until E is let go), or for an item already asked for in the last 0.3 s.
 func sweep_target(radius: float) -> Array:
 	if _sweep_blocked:
 		return [0, 99.0]
@@ -571,7 +574,7 @@ func sweep_target(radius: float) -> Array:
 	var best: Array = [0, radius + 1.0]
 
 	for id in _world:
-		if _world[id]["state"] != 0 or now - int(_sweep_asked.get(id, -100000)) < 600:
+		if _world[id]["state"] != 0 or now - int(_sweep_asked.get(id, -100000)) < 300:
 			continue
 
 		var d: float = here.distance_to(_world[id]["pos"])
@@ -636,11 +639,14 @@ func _probe_fire() -> Dictionary:
 
 
 func _probe_structure() -> Dictionary:
-	var found: Dictionary = _probe_structure_for(_nearest_struct())
+	# A fire has its own probe (_probe_fire), so it is left out here. Before, this probe found it too, aimed a little higher, and its "Hold E to take down"
+	# line hid "Press E to light" and "Press F to add wood" (Dave 5 Nov, a campfire with no fuel).
+	var near: int = _nearest_struct(true)
+	var found: Dictionary = _probe_structure_for(near)
 
 	if not found.is_empty():
-		found["kind"] = "block" if int(_world[_nearest_struct()]["state"]) == 7 else "structure"
-		found["point"] = _world[_nearest_struct()]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
+		found["kind"] = "block" if int(_world[near]["state"]) == 7 else "structure"
+		found["point"] = _world[near]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
 
 	return found
 
@@ -864,12 +870,21 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	if not _warm_queue.is_empty():
+		var tw: int = FrameProbe.start()
+		_warm_step()
+		FrameProbe.stop("inventory: loose mesh prewarm", tw)
+
+	var t: int = FrameProbe.start()
 	_drain_world_backlog()
+	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
 	var now: int = Time.get_ticks_msec()
+	t = FrameProbe.start()
 	_roll_tick(_delta, now)
 	_snap_tick(now)
 	_hold_e_check()
 	_auto_pickup_tick(now)
+	FrameProbe.stop("inventory: roll, snap, hold E, pickup", t)
 
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
 		_thought_label.text = ""
@@ -885,13 +900,19 @@ func _process_body(_delta: float) -> void:
 		return
 
 	_prompt_next_msec = now + 200
+	t = FrameProbe.start()
 	_update_fire_lights()
+	FrameProbe.stop("inventory: fire lights", t)
+	t = FrameProbe.start()
 	_update_trunk_colliders()
+	FrameProbe.stop("inventory: trunk colliders", t)
 
 	if now < _notice_until_msec:
 		return
+	t = FrameProbe.start()
 	var interaction: Dictionary = current_interaction()
 	_prompt.text = prompt_text(interaction)
+	FrameProbe.stop("inventory: prompt", t)
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = KeyBindings.localize("Hold Z to sleep")
@@ -937,11 +958,14 @@ func hold_use() -> bool:
 
 
 # The id of the placed structure (lean-to, chest) within 3 m that the cursor is on, else the nearest one; 0 when none.
-func _nearest_struct() -> int:
+func _nearest_struct(skip_fires: bool = false) -> int:
 	var here: Vector3 = _player_position.call()
 	var ids: Array = []
 
 	for id in _world:
+		if skip_fires and int(_world[id]["state"]) in [8, 9, 40, 41]:
+			continue
+
 		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
 			ids.append(id)
 
@@ -2144,6 +2168,8 @@ func _drain_world_backlog() -> void:
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
 	var t_all: int = Time.get_ticks_usec()
+	_slowest_row_usec = 0
+	_slowest_row = ""
 	var t_mark: int = t_all
 
 	for id in removed:
@@ -2152,7 +2178,14 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	prof["forget"] = Time.get_ticks_usec() - t_mark
 	t_mark = Time.get_ticks_usec()
 
+	var row_usec: int = 0
+	var row_name: String = ""
+
 	for row in added:
+		# The slowest row, whatever path it takes (lag run 5 Nov: 44 ms for 1 added, none of it in the timed parts).
+		_note_slowest_row(row_usec, row_name)
+		row_usec = Time.get_ticks_usec()
+		row_name = "%s state %d" % [table.id_of(int(row[1])), int(row[4]) if row.size() > 4 else 0]
 		var id: int = row[0]
 		var state: int = int(row[4]) if row.size() > 4 else 0
 
@@ -2268,6 +2301,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		_snap_loose(id)
 		prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_e
 
+	_note_slowest_row(row_usec, row_name)
 	var total_ms: float = float(Time.get_ticks_usec() - t_all) / 1000.0
 
 	if total_ms > 30.0:
@@ -2276,7 +2310,22 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		for key in prof:
 			parts.append("%s %.0f ms" % [key, float(prof[key]) / 1000.0])
 
-		print("client slow: world items %.0f ms for %d added, %d removed: %s" % [total_ms, added.size(), removed.size(), ", ".join(parts)])
+		print("client slow: world items %.0f ms for %d added, %d removed: %s (slowest row: %s, %.0f ms)" % [total_ms, added.size(), removed.size(), ", ".join(parts), _slowest_row, float(_slowest_row_usec) / 1000.0])
+
+
+var _slowest_row_usec: int = 0   # the slowest added row of the last world-items list, and what it was (the slow line)
+var _slowest_row: String = ""
+
+
+func _note_slowest_row(since_usec: int, row_name: String) -> void:
+	if since_usec == 0:
+		return
+
+	var spent: int = Time.get_ticks_usec() - since_usec
+
+	if spent > _slowest_row_usec:
+		_slowest_row_usec = spent
+		_slowest_row = row_name
 
 
 # The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
@@ -3158,17 +3207,72 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 
 # Builds the shared meshes of the loose items that appear on every join (stones, sticks, driftwood, logs, firewood, fibre) while the client is still loading, so the first
 # list of world items (282 items took 1070 ms, 961 ms of it here, PC log 2 Nov) only dresses nodes with meshes that already exist (bug 6/join freeze).
+# Lag runs 5 Nov: building the loose item meshes all at once cost about 540 ms of the welcome frame (stones sticks and logs 346, trunk drops 191),
+# the one freeze left at the join. In a window they are built a few each frame instead (WARM_BUDGET_USEC), in the order below, while the ground
+# is still loading (2 s or more after the welcome). A mesh wanted before its turn is built on the spot by _mesh_for, as before any prewarm.
+const WARM_BUDGET_USEC := 6000
+var _warm_queue: Array = []        # item numbers still to build
+var _warm_usec: int = 0            # time spent building them so far
+var _warm_frames: int = 0
+
+
+func _loose_prewarm_numbers() -> Array:
+	var out: Array = []
+
+	for id in table.ids():
+		var item: String = str(id)
+
+		if item == "stone" or item == "flint" or item == "stick" or item == "firewood" or item == "plant_fibre" or item == "driftwood" or item == "log" or item.begins_with("log_"):
+			out.append(table.number_of(item))
+
+	for drop in _trunk_drop_ids():
+		if table.number_of(drop) > 0 and not out.has(table.number_of(drop)):
+			out.append(table.number_of(drop))
+
+	return out
+
+
+func _start_loose_prewarm() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	for group in PICKUP_FILES:
+		_pickup_group(group)
+
+	_warm_queue = _loose_prewarm_numbers()
+	_warm_usec = Time.get_ticks_usec() - t0
+	_warm_frames = 0
+	PieceLook.prewarm()
+	_prewarm_felled()
+
+
+func _warm_step() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	while not _warm_queue.is_empty() and Time.get_ticks_usec() - t0 < WARM_BUDGET_USEC:
+		_mesh_for(int(_warm_queue.pop_front()))
+
+	_warm_usec += Time.get_ticks_usec() - t0
+	_warm_frames += 1
+
+	if _warm_queue.is_empty():
+		print("client prewarm: loose item meshes %.0f ms over %d frames" % [float(_warm_usec) / 1000.0, _warm_frames])
+
+
 func _prewarm_loose_meshes() -> void:
 	var t0: int = Time.get_ticks_usec()
 
 	for group in PICKUP_FILES:
 		_pickup_group(group)
 
+	var t_pick: int = Time.get_ticks_usec()
+
 	for id in table.ids():
 		var name: String = str(id)
 
-		if name == "stone" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
+		if name == "stone" or name == "flint" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
 			_mesh_for(table.number_of(name))
+
+	var t_items: int = Time.get_ticks_usec()
 
 	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
 	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
@@ -3176,7 +3280,8 @@ func _prewarm_loose_meshes() -> void:
 		if table.number_of(name) > 0:
 			_mesh_for(table.number_of(name))
 
-	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	var t_end: int = Time.get_ticks_usec()
+	print("client prewarm: loose item meshes %.0f ms (pickup models %.0f, stones sticks and logs %.0f, trunk drops %.0f)" % [float(t_end - t0) / 1000.0, float(t_pick - t0) / 1000.0, float(t_items - t_pick) / 1000.0, float(t_end - t_items) / 1000.0])
 	PieceLook.prewarm()   # the building material and trodden-path pictures, on a worker (about 170 ms on the main thread at the first piece or hoe stroke)
 	_prewarm_felled()
 
@@ -4470,7 +4575,7 @@ func _add_admin_builds() -> void:
 	for id in admin_ids:
 		var number: int = table.number_of(id)
 
-		if number == 0:
+		if number == 0 or bool(table.entry(str(id)).get("retired", false)):   # a retired kit cannot be placed (Dave 5 Nov 2026: the admin Woven chest did nothing): the hammer's blueprints build those
 			continue
 
 		var entry: Button = Button.new()

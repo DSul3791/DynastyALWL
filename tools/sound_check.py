@@ -316,7 +316,6 @@ SCENARIOS = [
         ("a thirst rise without E is silent", r"drink check: " + NUM + r" gulps without E", 0, 0),
         ("a mouthful at the water gulps once", r"without E, " + NUM + r" gulp after E", 1, 1),
         ("the gulp is the drinking sound", r"last (drink_gulp_\d)", 0, 1, "text"),
-        ("stomach growl", r"growls " + NUM, 1, 1),
         ("sizzle", r"sizzle " + NUM, 1, 1),
     ]),
     ("harvest", ["--gather"], 4500, [

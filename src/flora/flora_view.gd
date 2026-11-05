@@ -188,7 +188,7 @@ const GREENS_SHADER := """
 shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform float sway = 0.006;
-uniform float gain = 0.85;
+uniform float gain = 0.72;   // 0.85 until 5 Nov 2026: in the PC meadow noon shot (spawn meadow, sun 1.0) the tall reeds read near white and the tufts a shade brighter than the meadow grass round them
 varying vec3 lp;
 
 float h3(vec3 p) {
@@ -219,7 +219,7 @@ void fragment() {
 	vec3 c = COLOR.rgb * gain * (0.9 + 0.18 * streak);
 	c *= mix(0.78, 1.0, smoothstep(0.0, 0.25, lp.y));         // a little shade at the foot, among the other stems
 	ALBEDO = c;
-	BACKLIGHT = c * 0.3;
+	BACKLIGHT = c * 0.2;   // 0.3 until 5 Nov 2026: with the noon sun behind them the pale reeds glowed white
 	ROUGHNESS = 0.9;
 }
 """
@@ -429,6 +429,7 @@ var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _serial: int = 0                   # numbers each chunk plan, so an outdated plan is skipped
 var _tasks: Array = []                 # WorkerThreadPool tasks making chunk plans
 var _plan_wait: Dictionary = {}        # chunk -> true: asked to be planned, not started yet (launched nearest first, MAX_PLAN_TASKS at a time)
+var _log_tasks: Array = []             # worker tasks printing log lines (_log_off_main)
 var _load_count: int = 0               # chunk drawings finished since the last "flora load" log line
 var _load_worst_ms: int = 0            # the longest a chunk waited from being asked to being in the scene
 var _load_start_msec: int = 0          # when the first of this batch was asked
@@ -2351,6 +2352,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 			still.append(task)
 
 	_tasks = still
+	_reap_log_tasks()
 	_launch_plans(_last_position)
 	Probe.stop("flora: plans", t0)
 	t0 = Probe.start()
@@ -2387,36 +2389,56 @@ func apply_built(budget_usec: int = 3000) -> void:
 	t0 = Probe.start()
 
 	while not _jobs.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		var t_part: int = Probe.start()
 		_nearest_job_first()
+		Probe.stop("flora: nearest job", t_part)
 		var job: Dictionary = _jobs[0]
 		var entry: Dictionary = _chunks.get(job["chunk"], {})
 
 		if entry.is_empty() or int(entry.get("serial", -1)) != int(job["serial"]):
+			t_part = Probe.start()
 			_discard(job["node"])
 
 			if job["cnode"] != null:
 				_discard(job["cnode"])
 
 			_jobs.pop_front()
+			Probe.stop("flora: discard a stale drawing", t_part)
 			continue
 
-		if _apply_step(job):
+		# Timed apart too (5 Nov 2026: one "place drawings" of 1.1-1.4 s in the gate's flora walk, with nothing else slow).
+		var step_name: String = "flora: place colliders" if int(job["shape"]) < (job["plan"]["shapes"] as Array).size() else "flora: place a draw"
+		var t_step: int = Probe.start()
+		var done: bool = _apply_step(job)
+		Probe.stop(step_name, t_step)
+
+		if done:
+			t_step = Probe.start()
 			_clear_node(entry)
+			Probe.stop("flora: drop old drawing", t_step)
 			entry["node"] = job["node"]
 
 			if not bool(job["keep"]):
+				t_step = Probe.start()
 				_clear_colliders(entry)
+				Probe.stop("flora: drop old colliders", t_step)
 				entry["cnode"] = job["cnode"]
 				entry["shapes_key"] = int(job["plan"].get("shapes_key", 0))
 
+			t_part = Probe.start()
 			job["node"].visible = bool(entry.get("ground", true))
+			Probe.stop("flora: show new drawing", t_part)
+			t_part = Probe.start()
 			entry["level"] = job["level"]
 			entry["masks"] = job["masks"]
 			entry.erase("building")
 			entry.erase("building_masks")
 			entry["drawn"] = _drawn_count(job["node"])
 			_jobs.pop_front()
+			Probe.stop("flora: finish a job", t_part)
+			t_part = Probe.start()
 			_note_loaded(entry)
+			Probe.stop("flora: load note", t_part)
 
 	Probe.stop("flora: place drawings", t0)
 
@@ -2466,7 +2488,7 @@ func _note_loaded(entry: Dictionary) -> void:
 
 	if _jobs.is_empty() and _plan_wait.is_empty() and _tasks.is_empty():
 		if _load_count >= 4:
-			print("flora load: %d chunk drawings in %d ms, longest wait %d ms" % [_load_count, now - _load_start_msec, _load_worst_ms])
+			_log_off_main("flora load: %d chunk drawings in %d ms, longest wait %d ms" % [_load_count, now - _load_start_msec, _load_worst_ms])
 
 		_load_count = 0
 		_load_worst_ms = 0
@@ -2515,8 +2537,31 @@ func _exit_tree() -> void:
 	finish_tasks()
 
 
+# A log line printed by a worker (5 Nov 2026: on Dave's PC one "flora load" print held the main thread 420-480 ms in the gate's flora walk;
+# a debug build flushes stdout and the log file on every print). The tasks are reaped in apply_built and waited for in finish_tasks.
+func _log_off_main(line: String) -> void:
+	_log_tasks.append(WorkerThreadPool.add_task(func(): print(line), false, "flora log line"))
+
+
+func _reap_log_tasks() -> void:
+	var still: Array = []
+
+	for task in _log_tasks:
+		if WorkerThreadPool.is_task_completed(task):
+			WorkerThreadPool.wait_for_task_completion(task)
+		else:
+			still.append(task)
+
+	_log_tasks = still
+
+
 # Waits for chunk work still running (call before freeing the view).
 func finish_tasks() -> void:
+	for task in _log_tasks:
+		WorkerThreadPool.wait_for_task_completion(task)
+
+	_log_tasks = []
+
 	if _models_task_id != -1:
 		WorkerThreadPool.wait_for_task_completion(_models_task_id)
 		_models_task_id = -1

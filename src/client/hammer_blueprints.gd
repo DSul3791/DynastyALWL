@@ -21,12 +21,15 @@ var _cursor: int = 0
 var _table
 var _pack
 var _panel: PanelContainer
+var _hud: CanvasLayer
 var _label: Label
 var _detail: Label
 var _plans_path: String = BuildingPlans.PATH
 
 const MENU_FONT := 40       # the hoe's mode window is 40 pt too (PR 161): one menu look for every tool
 const DETAIL_FONT := 28
+const MENU_MAX_HEIGHT := 0.75   # the menu never takes more than this share of the screen height (Dave 5 Nov 2026); a longer list scrolls past the highlight
+const LINE_FACTOR := 1.35       # a menu line is about this many font sizes tall, with its spacing
 
 
 func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String = BuildingPlans.PATH) -> void:
@@ -53,6 +56,7 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String =
 	_book.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["name"]) < str(b["name"]))
 
 	if hud_layer != null:
+		_hud = hud_layer
 		_panel = PanelContainer.new()
 		_panel.set_anchors_preset(Control.PRESET_CENTER)
 		_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -286,15 +290,43 @@ func clear() -> void:
 	set_open(false)
 
 
-func list_text(hammer_tier: int) -> String:
+# How many list lines fit in 75% of the screen height beside the title and the detail line (odd, so the highlight sits on the middle line); 0 when there is no
+# screen (tests) or the whole list fits.
+func visible_lines(total: int) -> int:
+	if _hud == null or _hud.get_viewport() == null:
+		return 0
+
+	var height: float = _hud.get_viewport().get_visible_rect().size.y * MENU_MAX_HEIGHT
+	var fit: int = int(floor(height / (float(MENU_FONT) * LINE_FACTOR))) - 3   # the title, the blank line under it and the detail line
+	fit = maxi(fit, 5)
+
+	if fit % 2 == 0:
+		fit -= 1
+
+	return 0 if total <= fit else fit
+
+
+# The list as lines. With `window` above 0 only that many lines show, the highlight held on the middle one and the others sliding past it; blank lines pad
+# the ends, so the first and the last entry can both come up to the middle (Dave 5 Nov 2026).
+func list_text(hammer_tier: int, window: int = 0) -> String:
 	var lines: PackedStringArray = ["Hammer  (wheel: move, left click: choose, right click: close, Delete: remove a plan)", ""]
 	var list: Array = entries(hammer_tier)
 
-	for n in range(list.size()):
-		var entry: Dictionary = list[n]
-		lines.append("%s %s%s" % [">" if n == _cursor else " ", entry["name"], "" if bool(entry["can"]) else " (short)"])
+	if window <= 0:
+		for n in range(list.size()):
+			lines.append(_line(list, n))
+	else:
+		var half: int = (window - 1) >> 1
+
+		for n in range(_cursor - half, _cursor + half + 1):
+			lines.append(_line(list, n) if n >= 0 and n < list.size() else "")
 
 	return "\n".join(lines)
+
+
+func _line(list: Array, n: int) -> String:
+	var entry: Dictionary = list[n]
+	return "%s %s%s" % [">" if n == _cursor else " ", entry["name"], "" if bool(entry["can"]) else " (short)"]
 
 
 # The line under the menu: materials (have/need) of the highlighted blueprint or plan, or what the highlighted action does.
@@ -309,7 +341,7 @@ func detail_text(hammer_tier: int) -> String:
 
 func refresh(hammer_tier: int) -> void:
 	if _label != null and is_open:
-		_label.text = list_text(hammer_tier)
+		_label.text = list_text(hammer_tier, visible_lines(entries(hammer_tier).size()))
 
 	if _detail != null and is_open:
 		_detail.text = detail_text(hammer_tier)

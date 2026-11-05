@@ -46,6 +46,14 @@ func _init() -> void:
 	list.move(false, 1)
 	list.move(false, 1)
 	check(list.list_text(1).contains(">"), "the highlight shows in the text")
+	# A long list scrolls past the highlight (Dave 5 Nov 2026): 7 lines show, the highlighted one in the middle, blank lines pad the ends so the first and last entry can reach it.
+	list.set_open(true, 1)
+	var total: int = list.entries(1).size()
+	var windowed: PackedStringArray = list.list_text(1, 7).split("\n")
+	check(windowed.size() == 2 + 7 and windowed[2 + 3].begins_with(">"), "the highlight sits on the middle of a seven line window (%d lines)" % windowed.size())
+	check(windowed[2] == "" and windowed[3] == "" and windowed[4] == "", "at the top of the list the lines above the first entry are blank")
+	check(list.list_text(1, 0).split("\n").size() == 2 + total, "no window shows the whole list")
+	list.move(false, 1)   # up from the first entry wraps to the last, as the moves above had left it
 	list.choose(1)
 	check(not list.is_open and list.picked > 0 and list.name_of(list.picked) == str(list.rows(1)[list.rows(1).size() - 1]["name"]), "the wheel wraps round and a click picks (%s)" % list.name_of(list.picked))
 	check(list.kit_of(list.picked) != "", "the picked blueprint names its structure's kit for the ghost")

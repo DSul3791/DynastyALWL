@@ -54,6 +54,8 @@ const PLANT_BUSH_REACH_M := 4.0         # a dug bush is planted this close (flat
 const PLANT_BUSH_GAP_M := 1.0           # and no closer than this to another planted bush or sapling
 const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
 const SCATTER_PAD_M := 30.0             # how far past its own square the layout of a scatter cell reads the ground (water probe 24 m)
+const SLOW_TICK_LOG_MS := 100.0          # an items tick this long logs its slow parts (Tyler's join-stall aid, 31 Oct 2026)
+const SLOW_PART_LOG_MS := 10.0           # a part of such a tick this long is named in that line
 const SCATTER_TICK_MAX_MS := 40.0       # the ground scatter stops laying out cells for the tick once this long has passed (the rest follows on the next sync)
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
 const SPLIT_LIFETIME_S := 7.0 * 86400.0  # what a felled tree breaks into lies a real week, as its trunk would have (it rotted after a real week)
@@ -106,6 +108,7 @@ const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays 
 const FIRE_MIN_GAP_M := 2.0               # fallbacks: structures.json "campfire" decides
 const FIRES_PER_CHUNK := 8
 const RAIN_PUTS_OUT := 0.2               # open fires go out when the rain is at least this strong
+const RAIN_LIGHT_GRACE_S := 6.0             # an open fire lit in the rain burns this long before the rain puts it out (Dave 5 Nov 2026)
 const COVER_RECHECK_S := 30.0
 
 var table
@@ -310,6 +313,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const GAME_RATE := 24.0                 # game seconds per real second
 var _slow_in: float = 0.0
 const SLOW_TICK_S := 0.25
+const HINT_EVERY_TICKS := 4   # the hint triggers are looked at every 4th slow tick (about once a second)
 var gather_pace_ms: int = GATHER_PACE_MS
 var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
@@ -351,6 +355,20 @@ var _saplings: Array = []           # {slot, chunk [cx, cz], species (flora id),
 var _flora_by_id: Dictionary = {}
 var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
+var _log_tasks: Array = []           # worker tasks printing log lines (_log_off_main)
+var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
+var _slow_prev_usec: int = 0          # when the last part of this items tick ended
+var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
+var _save_parts: Array = []           # this tick's save files over 10 ms to stringify, as "name ms (KB)" (the slow-tick line)
+var hint_every: int = HINT_EVERY_TICKS   # tests set 1: the hints every goals tick
+var _hint_ticks: int = HINT_EVERY_TICKS - 1   # slow ticks since the hints were last looked at (the first tick looks)
+var _goals_detail: String = ""        # the last _goals_tick's split (the slow-tick line)
+var _slowest_hint: String = ""
+var _slowest_hint_usec: int = 0
+var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
+var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading the ground and asking for water (the slow-cell line)
+var _bank_water_usec: int = 0
+var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
 
 
@@ -1134,9 +1152,12 @@ var admin_ok: Callable                  # set by the server: true when the peer 
 
 func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
+	_slow_parts = []
+	_slow_prev_usec = t0
 	_fly(delta)
 	_showroom_retry(delta)
 	_road_tick(delta)
+	_slow_mark("fly-showroom-roads", t0)
 	_slow_in += delta
 
 	# Fires and item lifetimes only need about 4 looks a second (TD note 2026-10-20: 1.5 ms a frame at 1300 records).
@@ -1144,10 +1165,13 @@ func tick(delta: float) -> void:
 		var spent: float = _slow_in
 		_slow_in = 0.0
 		_rot(spent)
+		_slow_mark("rot", t0)
 		_fires(spent)
+		_slow_mark("fires", t0)
 		_vitals_tick(spent)
+		_slow_mark("vitals", t0)
 		_craft_tick(spent)
-		_slow_mark("rot-fires-vitals-craft", t0)
+		_slow_mark("craft", t0)
 		_auto_split()
 		_slow_mark("auto-split", t0)
 		_crops_tick()
@@ -1158,7 +1182,7 @@ func tick(delta: float) -> void:
 		_comfort_tick(spent)
 		_slow_mark("comfort", t0)
 		_goals_tick()
-		_slow_mark("goals", t0)
+		_slow_mark("goals " + _goals_detail, t0)
 		_learn_clock += spent
 
 		if _learn_clock >= LEARN_TICK_S:
@@ -1192,11 +1216,13 @@ func tick(delta: float) -> void:
 		_scatter_around_players()
 		_slow_mark("scatter", t0)
 		_sync_world_items()
-		_slow_mark("sync-world-items", t0)
+		_slow_mark("sync-world-items " + _sync_detail, t0)
 
 	_save_in -= delta
 
 	_reap_writer()
+
+	_save_parts = []
 
 	if _save_in <= 0.0:
 		_save_in = SAVE_EVERY_S
@@ -1205,13 +1231,38 @@ func tick(delta: float) -> void:
 		_async_writes = false
 		_start_writer()
 
+	_slow_mark("save" + (" (stringify %s)" % ", ".join(_save_parts) if not _save_parts.is_empty() else ""), t0)
+	var tick_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 
-# Testing aid (Tyler, 31 Oct 2026): a step of the items tick that runs over 250 ms since the tick began says so in the log, so a join stall names its part.
-func _slow_mark(part: String, since_usec: int) -> void:
-	var ms: float = float(Time.get_ticks_usec() - since_usec) / 1000.0
+	if tick_ms > SLOW_TICK_LOG_MS:
+		# One line a slow tick, naming each part's own time (the old lines gave only the running total, so a 274 ms "scatter reached after"
+		# did not say whether scatter or something before it took the time). Printed from a worker: a print can stall the main thread (#397).
+		_log_off_main("items tick slow: %.0f ms; parts over %.0f ms: %s" % [tick_ms, SLOW_PART_LOG_MS, ", ".join(_slow_parts)])
 
-	if ms > 250.0:
-		print("items tick slow: %s reached after %.0f ms" % [part, ms])
+
+# Testing aid (Tyler, 31 Oct 2026): the items tick times its parts, so a join stall names its part. Each mark closes the part since the last
+# one; a part over SLOW_PART_LOG_MS goes on the tick's list, printed at the end of a tick over SLOW_TICK_LOG_MS.
+func _slow_mark(part: String, _since_usec: int) -> void:
+	var now: int = Time.get_ticks_usec()
+	var ms: float = float(now - _slow_prev_usec) / 1000.0
+	_slow_prev_usec = now
+
+	if ms > SLOW_PART_LOG_MS:
+		_slow_parts.append("%s %.0f" % [part, ms])
+
+
+# A log line printed on a worker thread (a print flushes the log on the PC's debug build and stalled the main thread 400+ ms, #397).
+func _log_off_main(line: String) -> void:
+	var still: Array = []
+
+	for task in _log_tasks:   # reap the lines already printed (a task must be waited for once)
+		if WorkerThreadPool.is_task_completed(task):
+			WorkerThreadPool.wait_for_task_completion(task)
+		else:
+			still.append(task)
+
+	still.append(WorkerThreadPool.add_task(func() -> void: print(line), false, "items log line"))
+	_log_tasks = still
 
 
 func save() -> void:
@@ -2995,22 +3046,48 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	var number: int = 0
 	var kit_id: String = ""
 
+	# Every refusal says why (Dave 5 Nov 2026: all items tell you what is wrong when they will not place): never a silent click.
 	if not blueprint.is_empty():   # from the hammer: no kit item, the materials are checked here and taken with the piece
-		if not _peer_pos.has(peer) or not _can_blueprint(peer, inv, blueprint):
+		if not _peer_pos.has(peer):
+			_say(peer, "The game does not know where you are yet. Try again in a moment.")
 			return
+
+		if not _can_blueprint(peer, inv, blueprint):
+			return   # _can_blueprint says why
 
 		kit_id = str(_structures.get(str(blueprint["structure"]), {}).get("kit", ""))
 	else:
-		if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
+		if slot < 0:
+			_say(peer, "That blueprint is not in this game's list. Open the hammer menu (right click) and pick it again.")   # an unknown blueprint number reaches here with no kit
+			return
+
+		if slot >= inv.SLOTS or inv.numbers[slot] == 0:
+			_say(peer, "There is nothing in that slot to place.")
+			return
+
+		if not _peer_pos.has(peer):
+			_say(peer, "The game does not know where you are yet. Try again in a moment.")
 			return
 
 		number = inv.numbers[slot]
 		kit_id = table.id_of(number)
 
 	if kit_id != "campfire_kit" and (_structure_of_kit(kit_id).is_empty() or bool(_structure_of_kit(kit_id).get("hand_placed", false))):
+		if _structure_of_kit(kit_id).is_empty():
+			_say(peer, "That cannot be placed.")
+
 		return      # a torch is placed from the hand (_place_torch), not as a kit
 
-	if blueprint.is_empty() and is_dead_kit(number):   # a kit that survived somewhere (a hand-edited save) is not placeable
+	if blueprint.is_empty() and is_dead_kit(number):
+		# A kit that survived in a pack (Dave 5 Nov 2026: a Woven chest in the pack showed a ghost and the click did nothing): it turns back into the
+		# materials of its blueprint, and the player is told to build it with the hammer. Never a silent refusal.
+		var bp_number: int = int(_blueprint_of_kit.get(kit_id, 0))
+
+		if bp_number > 0 and _refund_blueprint(peer, inv, _blueprints[bp_number]):
+			inv.take_from_slot(slot, 1)
+			_say(peer, "That old kit is gone. Its materials are back in your pack: build it with the hammer (right click for blueprints).")
+			_dirty = true
+
 		return
 
 	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
@@ -3267,9 +3344,15 @@ func _fires(delta: float) -> void:
 			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
 				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
 		elif raining and not fire["covered"]:
-			fire["state"] = 9
-			it["left"] = FIRE_LAID_S
-			_dirty = true
+			var grace: float = float(fire.get("rain_grace", 0.0)) - delta   # lit a moment ago in the rain: it burns until the grace is up
+
+			if grace > 0.0:
+				fire["rain_grace"] = grace
+			else:
+				fire.erase("rain_grace")
+				fire["state"] = 9
+				it["left"] = FIRE_LAID_S
+				_dirty = true
 
 
 # E on a burning fire puts it out (Dave 2 Nov 2026). It goes back to a laid fire with its wood kept, the same as when rain puts it out, so it can be lit again.
@@ -3396,6 +3479,9 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 func _sync_world_items() -> void:
 	# The records are filed into a NEAR_M grid once, so each player looks only at the nine cells around them instead of every
 	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
+	var t_grid: int = Time.get_ticks_usec()
+	var send_usec: int = 0
+	var sent: int = 0
 	var grid: Dictionary = {}
 
 	for id in _items:
@@ -3405,6 +3491,8 @@ func _sync_world_items() -> void:
 			grid[cell] = []
 
 		grid[cell].append(id)
+
+	var t_scan: int = Time.get_ticks_usec()
 
 	for peer in _known:
 		if not _peer_pos.has(peer):
@@ -3450,7 +3538,14 @@ func _sync_world_items() -> void:
 				known.erase(id)
 
 		if not added.is_empty() or not removed.is_empty():
+			var t_send: int = Time.get_ticks_usec()
 			send_world_items.call(peer, added, removed)
+			send_usec += Time.get_ticks_usec() - t_send
+			sent += added.size()
+
+	# For the slow-tick line: where the time went (lag run 5 Nov: sync-world-items 60-124 ms at a join).
+	var total_ms: float = float(Time.get_ticks_usec() - t_grid) / 1000.0
+	_sync_detail = "(%d records: grid %.0f, scan %.0f, send %.0f for %d items)" % [_items.size(), float(t_scan - t_grid) / 1000.0, total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0, float(send_usec) / 1000.0, sent]
 
 
 func _send_changes(peer: int, inv, before: Array) -> void:
@@ -3716,7 +3811,12 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 # and the file it replaces is first copied to .prev (the fallback when a file later turns out torn or damaged).
 func _write_atomic(name: String, data: Dictionary) -> void:
 	var path: String = _dir + "/" + name
+	var t0: int = Time.get_ticks_usec()
 	var text: String = JSON.stringify(data)   # the snapshot is taken now, on the tick
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+
+	if ms > 10.0:
+		_save_parts.append("%s %.0f (%d KB)" % [name.get_basename(), ms, int(text.length() / 1024.0)])   # for the slow-tick line (lag run 5 Nov: a 675 ms save in one tick)
 
 	if _async_writes:
 		_pending_writes.append([path, text])   # the files are written by the background writer (see _start_writer)
@@ -3781,6 +3881,11 @@ func _reap_writer() -> void:
 
 
 func _finish_writer() -> void:
+	for task in _log_tasks:
+		WorkerThreadPool.wait_for_task_completion(task)
+
+	_log_tasks = []
+
 	if _writer != null:
 		_writer.wait_to_finish()
 		_writer = null
@@ -3821,7 +3926,7 @@ func _scatter_around_players() -> void:
 					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
 
 					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
-						print("items tick slow: scatter cell %s took %.0f ms" % [str(cell), cell_ms])
+						_log_off_main("items tick slow: scatter cell %s took %.0f ms (%s)" % [str(cell), cell_ms, ", ".join(_cell_parts)])
 
 					budget -= 1
 
@@ -3872,7 +3977,11 @@ static func boosted(base: int, add: int, cap: int) -> int:
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
+	var part_usec: int = Time.get_ticks_usec()
+	_cell_parts = []
 	_lay_out_cave_items(cell, cell_m, cfg)
+	_cell_cave_ms = float(Time.get_ticks_usec() - part_usec) / 1000.0
+	part_usec = _cell_part("cave floor", part_usec)
 	var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
 	var h0: float = float(ground_height.call(centre.x, centre.y))
 	var h1: float = float(ground_height.call(centre.x + 4.0, centre.y))
@@ -3918,8 +4027,21 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 		_items[_next_id] = {"number": table.number_of(kinds[n]), "count": 1, "pos": Vector3(x, y, z), "left": 1.0e9, "scatter": key}
 		_next_id += 1
 
+	part_usec = _cell_part("stones and sticks", part_usec)
+	_bank_ground_usec = 0
+	_bank_water_usec = 0
 	_lay_out_bank_stones(cell, cell_m, cfg, rng, kinds.size())
+	part_usec = _cell_part("bank stones", part_usec)
+	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
 	_lay_out_boulders(cell, cell_m, rng)
+	_cell_part("boulders", part_usec)
+
+
+# Notes a part of a scatter cell's layout in _cell_parts (for the slow-cell line); returns now, the next part's start.
+func _cell_part(part: String, since_usec: int) -> int:
+	var now: int = Time.get_ticks_usec()
+	_cell_parts.append("%s %.0f" % [part, float(now - since_usec) / 1000.0])
+	return now
 
 
 # Boulders (Dave 2026-10-21), see data/items/boulders.json: server-owned lumps of rock a pick breaks into stones. Laid out per
@@ -4162,15 +4284,24 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: R
 	for attempt in range(int(bank.get("tries", 40))):
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
-		var y: float = float(ground_height.call(x, z))
 		var chance: float = rng.randf()   # luck-exempt: seeded world layout
 
-		if is_nan(y) or y < 1.0 or chance > float(bank.get("chance", 0.5)):
+		if chance > float(bank.get("chance", 0.5)):   # before the ground is read (the draws are in the same order, so the stones lie where they did)
+			continue
+
+		var ground_usec: int = Time.get_ticks_usec()
+		var y: float = float(ground_height.call(x, z))
+		var water_usec: int = Time.get_ticks_usec()
+		_bank_ground_usec += water_usec - ground_usec
+
+		if is_nan(y) or y < 1.0:
 			continue
 
 		var spot: Vector3 = Vector3(x, y, z)
+		var wet: bool = bool(water_near.call(spot, 0.0)) or not bool(water_near.call(spot, reach))
+		_bank_water_usec += Time.get_ticks_usec() - water_usec
 
-		if bool(water_near.call(spot, 0.0)) or not bool(water_near.call(spot, reach)):
+		if wet:
 			continue
 
 		var key: int = ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | (used + laid)
@@ -5544,12 +5675,16 @@ func _fuel(peer: int, inv, id: int) -> void:
 		_say(peer, "You have no wood, sticks or logs to put on the fire.")
 
 
-# Lighting a loaded fire (Dave 2026-10-20): bare hands, one tinder item from the pack (cooking.json
-# "tinder"). Open fires will not take while it rains.
-func _light(peer: int, inv, id: int) -> void:
+# Lighting a loaded fire (Dave 5 Nov 2026, simplified): any wood in the fire is enough, E lights it, and no starter (plant fibre, tinder, kindling)
+# is needed or used up. Every kind of wood goes in: sticks, kindling, tinder, firewood, blocks, logs. An open fire will not take while it rains.
+func _light(peer: int, _inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
 
-	if fire.is_empty() or int(fire["state"]) != 9 or float(fire["burn_left"]) <= 0.0:
+	if fire.is_empty() or int(fire["state"]) != 9:
+		return
+
+	if float(fire["burn_left"]) <= 0.0:
+		_say(peer, "Put sticks or wood on the fire first (F), then light it.")
 		return
 
 	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
@@ -5557,28 +5692,13 @@ func _light(peer: int, inv, id: int) -> void:
 	var rain_cfg: Dictionary = _cooking.get("rain_light_chance", {})
 	var rain_now_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 
+	# Dave 5 Nov 2026: an open fire does light in the rain, but the rain puts it out again after a few seconds (RAIN_LIGHT_GRACE_S).
 	if raining and not bool(fire["covered"]):
-		_say(peer, "The rain will not let it light. Move it under cover.")
-		return
-
-	var tinder: String = str(_cooking.get("tinder", "plant_fibre"))
-
-	# Dave 2026-10-30: plant fibre is the main tinder, but birch bark, tinder and tinder fungus (cooking.json "tinder_also") light a fire too, so a forest start is not stuck.
-	if not inv.has(table.number_of(tinder), 1):
-		for other in _cooking.get("tinder_also", []):
-			if table.number_of(str(other)) > 0 and inv.has(table.number_of(str(other)), 1):
-				tinder = str(other)
-				break
-
-	if not inv.has(table.number_of(tinder), 1):
-		_say(peer, "Needs plant fibre, kindling, birch bark or tinder to light")
-		return
-
-	inv.remove(table.number_of(tinder), 1)
-
-	# A drizzle makes lighting a gamble (cooking.json rain_light_chance); the tinder is spent either way.
-	if rain_now_v > 0.02 and not bool(fire["covered"]) and not roll_chance(peer, _rain_rng, maxf(1.0 - rain_now_v / maxf(float(rain_cfg.get("puts_out", 0.2)), 0.01) * float(rain_cfg.get("loss", 0.8)), float(rain_cfg.get("min_chance", 0.2)))):
-		_say(peer, "The tinder will not catch in the damp. Try again.")
+		fire["rain_grace"] = RAIN_LIGHT_GRACE_S
+		_say(peer, "It catches, but the rain will put it out in a moment. Move it under cover.")
+	# A drizzle makes lighting a gamble (cooking.json rain_light_chance).
+	elif rain_now_v > 0.02 and not bool(fire["covered"]) and not roll_chance(peer, _rain_rng, maxf(1.0 - rain_now_v / maxf(float(rain_cfg.get("puts_out", 0.2)), 0.01) * float(rain_cfg.get("loss", 0.8)), float(rain_cfg.get("min_chance", 0.2)))):
+		_say(peer, "The wood will not catch in the damp. Try again.")
 		return
 
 	fire["state"] = _fire_best_state(fire)
@@ -6938,6 +7058,11 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 			var left: int = inv.add(number, amount, held_wear)
 			chest.take_from_slot(a, amount - left)
 			_dirty = true
+
+	# Wood moved in or out of a fire's store counts at once (Dave 5 Nov 2026), not only when the window closes: the burn time, the tier and the laid state follow.
+	# A burning fire waits for the window to close (its burn debt must not take wood put in meanwhile, test_fire_store); a fire that is not burning has no debt.
+	if (kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE) and _items.get(id, {}).has("fire") and not fire_is_lit(int(_items[id]["fire"]["state"])):
+		_sync_fire_from_box(peer, id)
 
 	if send_chest.is_valid():
 		send_chest.call(peer, id, chest.to_bytes())
@@ -10546,6 +10671,19 @@ func _hint_count(st: Dictionary, key: String) -> int:
 	return int(st["goal_counts"].get(key, 0))
 
 
+# _hint_trigger_true, noting the slowest trigger of this goals tick (the slow-tick line).
+func _timed_trigger(peer: int, st: Dictionary, trigger: String) -> bool:
+	var t0: int = Time.get_ticks_usec()
+	var out: bool = _hint_trigger_true(peer, st, trigger)
+	var spent: int = Time.get_ticks_usec() - t0
+
+	if spent > _slowest_hint_usec:
+		_slowest_hint_usec = spent
+		_slowest_hint = trigger
+
+	return out
+
+
 func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 	var inv = inventory_of(peer)
 
@@ -10764,7 +10902,7 @@ func _hints_check(peer: int) -> void:
 				continue
 
 			st["hints_seen"][id + "#again"] = now_s
-		elif not _hint_trigger_true(peer, st, str(hint.get("trigger", ""))):
+		elif not _timed_trigger(peer, st, str(hint.get("trigger", ""))):
 			continue
 		else:
 			st["hints_seen"][id] = now_s
@@ -10944,11 +11082,32 @@ func _goals_tick() -> void:
 	if _goals_data().is_empty():
 		return
 
+	var t0: int = Time.get_ticks_usec()
 	_night_walk_tick()
+	var t1: int = Time.get_ticks_usec()
+	var goals_usec: int = 0
+	_slowest_hint_usec = 0
+	_slowest_hint = ""
+
+	# Hints are looked at every HINT_EVERY_TICKS slow ticks (about once a second), not 4 times a second: the tree triggers
+	# (near_orchard, near_fruit_tree_in_season) scan the trees of nine flora chunks each look (lag run 5 Nov: hints 18 to 76 ms a tick).
+	_hint_ticks += 1
+	var hints_now: bool = _hint_ticks >= hint_every
+
+	if hints_now:
+		_hint_ticks = 0
 
 	for peer in _peer_key.keys():
+		var tg: int = Time.get_ticks_usec()
 		_goals_check(peer)
-		_hints_check(peer)
+		goals_usec += Time.get_ticks_usec() - tg
+
+		if hints_now:
+			_hints_check(peer)
+
+	# For the slow-tick line (lag run 5 Nov: goals 43 and 102 ms, no split).
+	_goals_detail = "(night walk %.0f, goals %.0f, hints %.0f, slowest hint trigger %s %.0f)" % [float(t1 - t0) / 1000.0, float(goals_usec) / 1000.0,
+		float(Time.get_ticks_usec() - t1 - goals_usec) / 1000.0, _slowest_hint, float(_slowest_hint_usec) / 1000.0]
 
 
 # What the goal list would show: [[id, title, hint, state]] with state 0 locked, 1 open, 2 done.

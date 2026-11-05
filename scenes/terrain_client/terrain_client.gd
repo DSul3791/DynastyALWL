@@ -66,6 +66,7 @@ const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const BurrowViewScript := preload("res://src/client/burrow_view.gd")
+const NestViewScript := preload("res://src/client/nest_view.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
@@ -451,6 +452,7 @@ var test_dig_check: bool = false      # --dig-check: read the ground where --dig
 var flora                             # FloraView
 var ocean_ice                         # OceanIce (floes over a frozen sea)
 var shore_props                       # ShoreProps (the tide-line gather spots drawn on the beach)
+var nest_view                         # NestView (inland grouse and songbird nests, src/client/nest_view.gd)
 var swimming: bool = false            # in deep water, feet under the surface (src/shared/swim.gd)
 var _climb_until_msec: int = 0        # pulling out of the water onto a bank or floe until then
 var _under_ice_next_msec: int = 0
@@ -788,6 +790,7 @@ func _ready() -> void:
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.flora_stripped_received.connect(_on_flora_stripped)
+	net.nests_received.connect(_on_nests_sound)   # songbird nests are heard (ambient_life.set_nests); MikeW draws them from the same signal
 	net.flora_fruit_received.connect(_on_flora_fruit)
 	net.zone_received.connect(func(biome_id: int) -> void: sound.ambience.set_zone(biome_id))
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
@@ -908,6 +911,8 @@ func _connect() -> void:
 
 	multiplayer.multiplayer_peer = peer
 	print("Terrain client: connecting to %s:%d" % [_host, _port])
+	GroundMaterialScript.start_early(quality)   # the ground photos are sized on a worker while the welcome is on its way
+	SoundStageScript.prewarm()   # every sound file starts loading now, not in the welcome frame (181 ms there in the 5 Nov lag run)
 
 
 # The server dropped this client or ended. A player sees a plain message with Retry and Quit and the world stays
@@ -1275,6 +1280,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_menu: int = Probe.start()
 	_build_menu()
 	Probe.stop("welcome: menu", tq_menu)
+	var tq_views: int = Probe.start()   # the windowed lag run (5 Nov) froze 0.8 to 1.3 s "after welcome: menu", before "welcome: items view": these pieces were not timed
 	hud = Label.new()
 	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
 	hud.visible = display.hud_text
@@ -1312,10 +1318,17 @@ func _welcome_body(info: Dictionary) -> void:
 	burrow_view.ground_at = _ground_below
 	add_child(burrow_view)
 	net.burrows_received.connect(burrow_view.on_burrows)
+	nest_view = NestViewScript.new()                      # grouse and songbird nests (MikeW: protocol 91 spots, the basic_look ground nest)
+	nest_view.name = "Nests"
+	add_child(nest_view)
+	net.nests_received.connect(nest_view.on_nests)
 	net.burrows_received.connect(_on_burrows_for_grass)
+	Probe.stop("welcome: hud, npc, animal, burrow and nest views", tq_views)
+	var tq_items_ready: int = Probe.start()
 	items = InventoryViewScript.new()
 	items.name = "Items"
-	add_child(items)
+	add_child(items)   # its _ready prewarms the loose item meshes
+	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
 	Probe.stop("welcome: items view", tq_items_view)
@@ -1883,6 +1896,9 @@ func _shore_prompt() -> String:
 			container = str(id)
 			break
 
+	if nest_view != null:
+		nest_view.set_season(game_clock.season())   # eggs show in the laying season only
+
 	if shore_props != null:
 		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), game_clock.season(), _shore_used, _ground_below)
 
@@ -2035,6 +2051,11 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 func _respawn_gasp() -> void:
 	if sound != null:
 		sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
+
+
+func _on_nests_sound(points: PackedVector3Array, kinds: PackedByteArray) -> void:
+	if sound != null and sound.ambient != null:
+		sound.ambient.set_nests(points, kinds)
 
 
 # The built floor under the feet for the footsteps (sound_stage.floor_under): a short ray down hits a placed piece whose model carries
@@ -3714,7 +3735,6 @@ func _step_player(delta: float) -> void:
 	if _item_sync_left <= 0.0:
 		_item_sync_left = 0.1
 		sound.itemfx.watch(items)
-		sound.itemfx.watch_vitals(items.hunger, 0.1)
 		sound.breath.set_exertion(items.strain)   # the server's real strain replaces the stand-in
 		var cleared_t0: int = Time.get_ticks_usec()
 		_sync_cleared()
@@ -4472,6 +4492,7 @@ func _process(delta: float) -> void:
 	if not flying and body != null:
 		var tg: int = Probe.start()
 		grass.update(body.global_position)
+		var tg_stamp: int = Probe.start()
 
 		# Stamped behind the player, out of view, so no grass is seen dropping flat in front of the camera
 		# (owner, 2026-10-20: "popping in and out of existence right in front of me").
@@ -4481,6 +4502,7 @@ func _process(delta: float) -> void:
 			grass.stamp(body.global_position - walk.normalized() * 1.3)
 
 		_stamp_walkers(now)
+		Probe.stop("grass: stamp", tg_stamp)
 		Probe.stop("grass", tg)
 
 	if _bake.running and now >= _bake_check_msec:
@@ -4665,7 +4687,6 @@ func _process(delta: float) -> void:
 		for kind in ["crunch", "soft", "drink", "roast_forage", "raspberries", "poultice_plantain", "bandage_plantain"]:
 			sound.itemfx.eat(kind)
 
-		sound.itemfx.watch_vitals(10, 200.0)
 		# A mouthful at the water's edge (Dave 2026-10-21): E sends the drink, the server raises thirst, the gulp plays; a rise without E is silent.
 		items.thirst = 50
 		var before_drink: int = sound.itemfx.eat_played
@@ -4675,7 +4696,7 @@ func _process(delta: float) -> void:
 		items._on_vitals(items.hunger, items.health, int(items.weight_kg * 10.0), 70, items.luck, items.fitness)
 		print("Terrain client: drink check: %d gulps without E, %d gulp after E, last %s" % [silent_rise, sound.itemfx.eat_played - before_drink - silent_rise, sound.itemfx.last])
 
-		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, growls %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.itemfx.growls_played, sound.fire.last, sound.itemfx.last])
+		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.fire.last, sound.itemfx.last])
 
 	# Headless check: every placed-thing hook once, then a synthetic chest row appears and vanishes beside the player.
 	if test_placed and now - connected_msec > 18000:

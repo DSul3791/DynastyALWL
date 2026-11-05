@@ -60,8 +60,10 @@ step "worktree+merge" $s
 
 # import (warm slot keeps .godot); retry once on a crash
 s=$(date +%s)
-"$GODOT_EXE" --headless --path . --import > "$OUT/import.log" 2>&1; RC=$?
-if [ $RC -ne 0 ]; then echo "import exit $RC, retrying once"; "$GODOT_EXE" --headless --path . --import > "$OUT/import2.log" 2>&1; RC=$?; fi
+# The import and local_check's Godot runs take a Godot slot like a test (tools/godot_slot.sh), so they cannot overlap another gate's quiet retry.
+SLOT="$TOOLS_SRC/godot_slot.sh"
+bash "$SLOT" "$GODOT_EXE" --headless --path . --import > "$OUT/import.log" 2>&1; RC=$?
+if [ $RC -ne 0 ]; then echo "import exit $RC, retrying once"; bash "$SLOT" "$GODOT_EXE" --headless --path . --import > "$OUT/import2.log" 2>&1; RC=$?; fi
 [ $RC -ne 0 ] && echo "WARN: import still failing (exit $RC)"
 step "import" $s
 
@@ -71,7 +73,7 @@ s=$(date +%s); MC=$("$PYTHON" tools/merge_check.py 2>&1 | tail -3 | tr '\n' '|')
 CHECK_FAIL=0
 case "$MC" in *"all clear"*) ;; *) CHECK_FAIL=1;; esac
 echo "conflict markers: $(git grep -nE '^(<<<<<<<|>>>>>>>) ' -- . ':!*.md' ':!*.txt' 2>/dev/null | head -3 | tr '\n' '|')"
-s=$(date +%s); mkdir -p "$OUT/bin"; printf '#!/bin/bash\nexec "%s" "$@"\n' "$GODOT_EXE" > "$OUT/bin/godot"; chmod +x "$OUT/bin/godot"
+s=$(date +%s); mkdir -p "$OUT/bin"; printf '#!/bin/bash\nexec bash "%s" "%s" "$@"\n' "$SLOT" "$GODOT_EXE" > "$OUT/bin/godot"; chmod +x "$OUT/bin/godot"
 LC=$(PATH="$OUT/bin:$PATH" bash tools/local_check.sh 2>&1 | grep -E "^FAIL|LOCAL CHECK|no new warnings|new warning|change class" | head -6)
 echo "$LC"; case "$LC" in *"LOCAL CHECK: PASS"*) ;; *) CHECK_FAIL=1;; esac; step "local_check" $s
 
