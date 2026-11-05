@@ -7,7 +7,7 @@ Time and quantity budget for the first tools, compared with other survival games
 |---|---|---|---|
 | Twine | 3 plant fibre | 2 s | recipe 1 |
 | First axe | 1 stone, 1 stick, 2 twine = 6 fibre | 4 s plus 4 s twine | cut from 5 twine (15 fibre) this round |
-| First fire | 6 sticks, 3 stones (laid fire), 1 plant fibre (or bark, tinder) to light | 3 s | "campfire" recipe |
+| First fire | 6 sticks, 3 stones (laid fire), any wood in it to light (no starter) | 3 s | "campfire" recipe |
 | Shelter (lean-to) | 30 sticks, 200 leaves, 10 twine (6 fibre) | 8 s | |
 | Rough bed | 10 thatch (or 8 straw or bedding), 4 sticks, 2 twine | 10 s | |
 | Workbench | 16 sticks, 6 twine (18 fibre), 4 stones | 60 s | no station needed (cost raised 31 Oct) |
