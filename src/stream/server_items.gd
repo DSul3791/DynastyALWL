@@ -108,6 +108,7 @@ const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays 
 const FIRE_MIN_GAP_M := 2.0               # fallbacks: structures.json "campfire" decides
 const FIRES_PER_CHUNK := 8
 const RAIN_PUTS_OUT := 0.2               # open fires go out when the rain is at least this strong
+const RAIN_LIGHT_GRACE_S := 6.0             # an open fire lit in the rain burns this long before the rain puts it out (Dave 5 Nov 2026)
 const COVER_RECHECK_S := 30.0
 
 var table
@@ -3317,9 +3318,13 @@ func _fires(delta: float) -> void:
 			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
 				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
 		elif raining and not fire["covered"]:
-			fire["state"] = 9
-			it["left"] = FIRE_LAID_S
-			_dirty = true
+			if float(fire.get("rain_grace", 0.0)) > 0.0:   # lit a moment ago in the rain: it burns until the grace is up
+				fire["rain_grace"] = float(fire["rain_grace"]) - delta
+			else:
+				fire.erase("rain_grace")
+				fire["state"] = 9
+				it["left"] = FIRE_LAID_S
+				_dirty = true
 
 
 # E on a burning fire puts it out (Dave 2 Nov 2026). It goes back to a laid fire with its wood kept, the same as when rain puts it out, so it can be lit again.
@@ -5659,12 +5664,12 @@ func _light(peer: int, _inv, id: int) -> void:
 	var rain_cfg: Dictionary = _cooking.get("rain_light_chance", {})
 	var rain_now_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 
+	# Dave 5 Nov 2026: an open fire does light in the rain, but the rain puts it out again after a few seconds (RAIN_LIGHT_GRACE_S).
 	if raining and not bool(fire["covered"]):
-		_say(peer, "The rain will not let it light. Move it under cover.")
-		return
-
+		fire["rain_grace"] = RAIN_LIGHT_GRACE_S
+		_say(peer, "It catches, but the rain will put it out in a moment. Move it under cover.")
 	# A drizzle makes lighting a gamble (cooking.json rain_light_chance).
-	if rain_now_v > 0.02 and not bool(fire["covered"]) and not roll_chance(peer, _rain_rng, maxf(1.0 - rain_now_v / maxf(float(rain_cfg.get("puts_out", 0.2)), 0.01) * float(rain_cfg.get("loss", 0.8)), float(rain_cfg.get("min_chance", 0.2)))):
+	elif rain_now_v > 0.02 and not bool(fire["covered"]) and not roll_chance(peer, _rain_rng, maxf(1.0 - rain_now_v / maxf(float(rain_cfg.get("puts_out", 0.2)), 0.01) * float(rain_cfg.get("loss", 0.8)), float(rain_cfg.get("min_chance", 0.2)))):
 		_say(peer, "The wood will not catch in the damp. Try again.")
 		return
 
