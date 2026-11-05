@@ -139,6 +139,17 @@ var _alarm_wait: float = 0.0
 var _answers: Array = []                # owl answers waiting: [{left, name, at, db}]
 var answers_played: int = 0
 const ANSWER_SEC := [3.0, 6.0]
+# Nest calls (Jason, 5 Nov 2026; PROTOCOL 91: the server sends the inland nests within 120 m, kind 0 grouse, 1 songbird; "calls: Jason"): a songbird
+# nest near the player is heard now and then from just above it, by day and in the nesting seasons, through call_named (the same weather gate as
+# every bird call). Grouse nests stay silent: there is no grouse clip in assets/audio (none is made up; a clip waits on MikeW and Dave).
+const NEST_HEAR_M := 45.0              # a nest farther than this is not heard
+const NEST_EVERY_SEC := [12.0, 30.0]   # seconds between nest calls
+const NEST_CALLS := ["bird_chirp", "bird_trill"]
+const NEST_SEASONS := {"spring": 1.0, "summer": 0.8, "autumn": 0.15, "winter": 0.0}
+const NEST_SONGBIRD := 1
+var _nests: PackedVector3Array = PackedVector3Array()   # songbird nests only
+var _nest_wait: float = 6.0
+var nest_calls_played: int = 0          # for the headless check
 const REPEAT_SEC := 60.0                # a call file is not played again within this long unless all its variants were
 
 
@@ -216,6 +227,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 	_voices = _voices.filter(func(v): return is_instance_valid(v) and v.playing)
 	var step: float = tick * time_scale
 	_play_answers(step)
+	_nest_tick(step, body)
 
 	for event in EVENTS:
 		var sound_name: String = event["name"]
@@ -540,6 +552,52 @@ func call_named(sound_name: String, at: Vector3) -> bool:
 	last_call = sound_name
 	calls_played[sound_name] = int(calls_played.get(sound_name, 0)) + 1
 	return true
+
+
+# The nests the server sent (terrain_net.nests_received): only the songbird ones are kept.
+func set_nests(points: PackedVector3Array, kinds: PackedByteArray) -> void:
+	_nests = PackedVector3Array()
+
+	for n in range(mini(points.size(), kinds.size())):
+		if int(kinds[n]) == NEST_SONGBIRD:
+			_nests.append(points[n])
+
+
+func _nest_tick(step: float, body: CharacterBody3D) -> void:
+	if _nests.is_empty():
+		return
+
+	_nest_wait -= step
+
+	if _nest_wait > 0.0:
+		return
+
+	_nest_wait = _rng.randf_range(NEST_EVERY_SEC[0], NEST_EVERY_SEC[1])
+	var nest: Vector3 = nearest_nest(_nests, body.global_position, NEST_HEAR_M)
+
+	if is_nan(nest.x) or _is_night() or _since_call * time_scale < MIN_GAP_SEC or _voices.size() >= max_voices or not _stage.has_room():
+		return
+
+	if _rng.randf() > float(NEST_SEASONS.get(str(conditions["season"]), 1.0)):
+		return
+
+	if call_named(NEST_CALLS[_rng.randi_range(0, NEST_CALLS.size() - 1)], nest + Vector3(_rng.randf_range(-1.0, 1.0), _rng.randf_range(0.5, 2.5), _rng.randf_range(-1.0, 1.0))):
+		nest_calls_played += 1
+
+
+# The nest nearest `from` within range_m; a NAN vector when none is.
+static func nearest_nest(nests: PackedVector3Array, from: Vector3, range_m: float) -> Vector3:
+	var best: Vector3 = Vector3(NAN, NAN, NAN)
+	var best_d: float = range_m * range_m
+
+	for nest in nests:
+		var d: float = nest.distance_squared_to(from)
+
+		if d <= best_d:
+			best_d = d
+			best = nest
+
+	return best
 
 
 func _maybe_scare_crows(body: CharacterBody3D) -> void:

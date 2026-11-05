@@ -788,6 +788,7 @@ func _ready() -> void:
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.flora_stripped_received.connect(_on_flora_stripped)
+	net.nests_received.connect(_on_nests_sound)   # songbird nests are heard (ambient_life.set_nests); MikeW draws them from the same signal
 	net.flora_fruit_received.connect(_on_flora_fruit)
 	net.zone_received.connect(func(biome_id: int) -> void: sound.ambience.set_zone(biome_id))
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
@@ -2035,6 +2036,11 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 func _respawn_gasp() -> void:
 	if sound != null:
 		sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
+
+
+func _on_nests_sound(points: PackedVector3Array, kinds: PackedByteArray) -> void:
+	if sound != null and sound.ambient != null:
+		sound.ambient.set_nests(points, kinds)
 
 
 # The built floor under the feet for the footsteps (sound_stage.floor_under): a short ray down hits a placed piece whose model carries
