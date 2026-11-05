@@ -313,6 +313,7 @@ const CHECK_PROBES := 5                  # ground hits kept per cell
 const CHECK_TIMES := [1500, 3000, 6000, 12000, 24000, 48000]   # ms after the build (and after each check) that the hits are cast again
 const CHECK_MOVE_M := 0.35               # a hit this far from its old height means the ground under the cell changed
 const CHECK_CELLS_PER_FRAME := 3
+const CHECK_USEC := 300                    # and at most this long a frame (Steve 5 Nov 2026, PC lag run #402: the check rays were still 0.81 ms a frame, the biggest grass part)
 var _checks: Array = []                  # [cell, due msec, check number]
 # The earliest due time in _checks once a full pass has seen them all (0: not known, look). Steve 5 Nov 2026 (Dave's PC lag run, #401): "grass: check
 # ground" was 56% of the grass time, 1.07 ms every frame, walking the whole list (thousands of cells) to find the few due ones.
@@ -1563,8 +1564,9 @@ func _check_ground(now: int) -> void:
 	var done: int = 0
 	var n: int = 0
 	var next_due: int = 0x7fffffffffffffff
+	var started: int = Time.get_ticks_usec()
 
-	while n < _checks.size() and done < CHECK_CELLS_PER_FRAME:
+	while n < _checks.size() and done < CHECK_CELLS_PER_FRAME and (done == 0 or Time.get_ticks_usec() - started < CHECK_USEC):
 		var check: Array = _checks[n]
 		var entry = _cells.get(check[0])
 
