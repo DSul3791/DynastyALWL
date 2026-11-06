@@ -42,6 +42,7 @@ uniform float mud = 0.0;            // 0..1: brown runoff after storms or at hig
 uniform vec3 mud_color : source_color = vec3(0.30, 0.24, 0.15);
 uniform float rain = 0.0;           // 0..1 (weather_look.gd): raindrop rings on the surface
 uniform float contact_m = 0.35;     // the sheet fades in over this much water along the view ray where it meets the ground (no hard line on a bank)
+uniform float chunk_lift = 0.25;    // chunk sheets only: running water is drawn this much higher (see vertex)
 uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
@@ -102,6 +103,13 @@ void vertex() {
 	// hides where it meets the bank. Chunk sheets are laid on the ground at 2 m instead (_lay_fine).
 	if (point_grid < 0.5 && t.a > wet_min(t)) {
 		VERTEX.y += thin_lift * (1.0 - smoothstep(0.15, 0.5, t.a));
+	}
+	// A chunk sheet's running water is laid on the ground at 2 m (_lay_fine), 4 cm over it, but the ground the player sees is its own mesh: between the
+	// points the sheet's flat triangles went in and out of the bumps, so a steep brook showed as separate flat panes with straight edges (Dino's shots
+	// 6 Nov, x 54101 z 69709, the "diamond shaped squares" Dave saw). Running water is lifted chunk_lift clear of the bumps; the contact fade hides the
+	// lift at the banks. Still water (ponds, lakes) keeps its level.
+	if (point_grid > 0.5 && t.a > wet_min(t)) {
+		VERTEX.y += chunk_lift * smoothstep(0.3, 1.0, length(t.gb));
 	}
 }
 
