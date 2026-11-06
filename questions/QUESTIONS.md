@@ -62,3 +62,19 @@ Note: It did not reproduce on land or in water in tests.
 Note: Recommendation: B. Only tell me if you see it duplicate on your own.
 - A: Yes, I will try it and say what happens
 - B: Skip it, I will tell you if I see it
+
+## mikew-gradient-town | Starter-island fauna gradient (design/starter_island_fauna_gradient.md): until the starter town exists, is the town point the current spawn?
+- Yes, use the spawn until the town exists (recommended)
+- No, I will say where
+
+## mikew-gradient-bands | Danger bands across the starter island: wolves only on the far half, moose from about a third of the way across, boar and horse from the near middle. OK?
+- Yes (recommended)
+- Change them: I will say how
+
+## mikew-gradient-small-game | Do rabbits, deer and other small game stay everywhere, with only dangerous species banded?
+- Yes, only dangerous species are banded (recommended)
+- No, band small game too
+
+## mikew-gradient-toughness | Should animals of the same species get tougher toward the far side now?
+- Later (recommended)
+- Now
