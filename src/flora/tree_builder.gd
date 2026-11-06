@@ -3011,25 +3011,25 @@ const WILD_STEM := Color(0.38, 0.5, 0.22)
 const WILDFLOWER_DAISY_SCALE := 0.13      # daisy heads: dandelion 0.17 -> 0.022 (about 5 cm across; Kathreen: real 3-4 cm plus the 15% exaggeration, daisy heads under 6 cm)
 const WILDFLOWER_UMBEL_SCALE := 0.2       # umbels: yarrow 0.2 -> 0.04 (about 10 cm across; Kathreen: real 5-10 cm)
 const WILDFLOWER_LOOKS := {
-	"chamomile": {"head": "daisy", "stems": 7, "tall": 1.0, "head_min": 0.14, "petal": Color(1.0, 0.98, 0.9), "stem": Color(0.3, 0.42, 0.18), "centre": Color(0.55, 0.3, 0.0), "size": 0.045, "petals": 10},
-	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.95, "head_min": 0.12, "petal": Color(1.0, 1.0, 0.97), "centre": Color(0.7, 0.45, 0.0), "size": 0.04, "petals": 9},
-	"arnica": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.16, "petal": Color(1.0, 0.68, 0.0), "centre": Color(0.9, 0.45, 0.0), "size": 0.08, "petals": 12},
-	"dandelion": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.17, "petal": Color(1.0, 0.8, 0.0), "centre": Color(1.0, 0.6, 0.0), "size": 0.05, "petals": 14},
-	"st_johns_wort": {"head": "daisy", "stems": 6, "tall": 1.1, "head_min": 0.17, "petal": Color(1.0, 0.82, 0.0), "centre": Color(0.95, 0.55, 0.0), "size": 0.045, "petals": 5},
-	"wild_carrot": {"head": "umbel", "stems": 4, "tall": 1.2, "head_min": 0.22, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
+	"chamomile": {"head": "daisy", "stems": 7, "tall": 0.35, "head_min": 0.14, "petal": Color(1.0, 0.98, 0.9), "stem": Color(0.3, 0.42, 0.18), "centre": Color(0.55, 0.3, 0.0), "size": 0.045, "petals": 10},
+	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.5, "head_min": 0.12, "petal": Color(1.0, 1.0, 0.97), "centre": Color(0.7, 0.45, 0.0), "size": 0.04, "petals": 9},
+	"arnica": {"head": "daisy", "stems": 4, "tall": 0.45, "head_min": 0.16, "petal": Color(1.0, 0.68, 0.0), "centre": Color(0.9, 0.45, 0.0), "size": 0.08, "petals": 12},
+	"dandelion": {"head": "daisy", "stems": 5, "tall": 0.22, "head_min": 0.17, "petal": Color(1.0, 0.8, 0.0), "centre": Color(1.0, 0.6, 0.0), "size": 0.05, "petals": 14},
+	"st_johns_wort": {"head": "daisy", "stems": 6, "tall": 0.7, "head_min": 0.17, "petal": Color(1.0, 0.82, 0.0), "centre": Color(0.95, 0.55, 0.0), "size": 0.045, "petals": 5},
+	"wild_carrot": {"head": "umbel", "stems": 4, "tall": 0.9, "head_min": 0.22, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
 	"angelica": {"head": "umbel", "stems": 3, "petal": Color(0.88, 0.95, 0.78), "size": 0.2, "rays": 11},
-	"yarrow": {"head": "umbel", "stems": 5, "tall": 1.0, "head_min": 0.2, "petal": Color(1.0, 0.96, 0.84), "stem": Color(0.3, 0.42, 0.18), "size": 0.14, "rays": 8},
+	"yarrow": {"head": "umbel", "stems": 5, "tall": 0.55, "head_min": 0.2, "petal": Color(1.0, 0.96, 0.84), "stem": Color(0.3, 0.42, 0.18), "size": 0.14, "rays": 8},
 	"meadowsweet": {"head": "umbel", "stems": 4, "tall": 1.15, "head_min": 0.2, "petal": Color(1.0, 0.92, 0.62), "size": 0.15, "rays": 9},
 	"valerian": {"head": "umbel", "stems": 4, "tall": 1.1, "head_min": 0.2, "petal": Color(0.92, 0.3, 0.58), "size": 0.14, "rays": 9},
-	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.9, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
+	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.35, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
 	# Wild crop plants (flora ids 153 to 160, future rows until placed; recolours of the flowers above, 3 Nov 2026).
-	"wild_potato": {"head": "daisy", "stems": 4, "tall": 0.9, "head_min": 0.14, "petal": Color(0.95, 0.92, 1.0), "centre": Color(1.0, 0.8, 0.1), "size": 0.04, "petals": 5},
-	"wild_turnip": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.15, "petal": Color(1.0, 0.85, 0.1), "centre": Color(0.9, 0.7, 0.05), "size": 0.04, "petals": 4},
+	"wild_potato": {"head": "daisy", "stems": 4, "tall": 0.55, "head_min": 0.14, "petal": Color(0.95, 0.92, 1.0), "centre": Color(1.0, 0.8, 0.1), "size": 0.04, "petals": 5},
+	"wild_turnip": {"head": "daisy", "stems": 5, "tall": 0.7, "head_min": 0.15, "petal": Color(1.0, 0.85, 0.1), "centre": Color(0.9, 0.7, 0.05), "size": 0.04, "petals": 4},
 	"sea_cabbage": {"head": "spike", "stems": 5, "petal": Color(1.0, 0.9, 0.3), "size": 0.04, "beads": 10, "span": 0.3},
-	"ramsons": {"head": "umbel", "stems": 3, "tall": 0.9, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 5},
+	"ramsons": {"head": "umbel", "stems": 3, "tall": 0.35, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 5},
 	"wild_vetch": {"head": "spike", "stems": 6, "petal": Color(0.6, 0.35, 0.8), "size": 0.04, "beads": 9, "span": 0.3},
 	"sea_beet": {"head": "spike", "stems": 5, "petal": Color(0.62, 0.72, 0.3), "size": 0.035, "beads": 11, "span": 0.35},
-	"wild_radish": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.15, "petal": Color(0.98, 0.9, 0.95), "centre": Color(0.9, 0.8, 0.3), "size": 0.04, "petals": 4},
+	"wild_radish": {"head": "daisy", "stems": 5, "tall": 0.6, "head_min": 0.15, "petal": Color(0.98, 0.9, 0.95), "centre": Color(0.9, 0.8, 0.3), "size": 0.04, "petals": 4},
 	"prickly_lettuce": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.15, "petal": Color(1.0, 0.95, 0.5), "centre": Color(0.9, 0.7, 0.1), "size": 0.04, "petals": 7},
 	"lavender": {"head": "spike", "stems": 9, "petal": Color(0.55, 0.38, 0.85), "size": 0.045, "beads": 12, "span": 0.35},
 	"heather": {"head": "spike", "stems": 10, "petal": Color(0.75, 0.3, 0.6), "size": 0.04, "beads": 12, "span": 0.5},
@@ -3107,6 +3107,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	for k in range(stems):
 		az += TAU / float(stems) + rng.randf_range(-0.4, 0.4)
 		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		# "tall" is the plant's real flowering height in metres plus about 15% (Kathleen, 6 Nov: photoreal aim; the old 1 m floors made dandelions waist high).
 		var top_h: float = maxf(h * rng.randf_range(0.8, 1.0), float(look.get("tall", 0.0)) * rng.randf_range(0.85, 1.15))
 		var tip: Vector3 = out * crown * rng.randf_range(0.2, 0.7) + Vector3(0.0, top_h, 0.0)
 		var base: Vector3 = out * crown * 0.05
