@@ -40,7 +40,7 @@
 | 5-6 Nov | Rivers grow to the sea; caves only at brook heads; rivers keep their water in the bed | #450, #464 | Worked (rebakes on the PC) |
 | 6 Nov | Steep brooks drawn smooth; no bare strip between sheets | #465 | Better; square panes remained |
 | 6 Nov | Square panes on brooks traced to the sin hash at about 54 km | #470, #472 | #472 swaps in a sin-free hash; the coordinates are still large (lesson 3) |
-| 6 Nov | Rivers routed over the finished ground, cut deeper, banks drain in | #473 | Waiting on the PC rebake and gate |
+| 6 Nov | Rivers routed over the finished ground, cut 5 m deeper, dry land beside a river raised to drain to it (tile_valley_drain.gd) | #473 | Merged. Dry ground lower than the settled water beside gentle rivers, tile 3,4: 11.9% to 7.8%. Lessons: measure against the SETTLED water (.water), not the painted surface, which stands about 1.5 m higher (median) once beds are cut deeper; a spawn pad pinned in the bake is an area patch (Dave): move the spawn instead |
 
 ## What others do (with sources)
 
