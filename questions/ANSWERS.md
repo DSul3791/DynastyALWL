@@ -2341,3 +2341,7 @@ Answered: 2026-11-06 13:58 UTC
 ## jamie-river-valley-floor | Rivers sit too high (23 to 59% of cells on tile 3,4). Carve the beds last, snapped to the valley floor, with a flow check in the bake?
 Answer: Yes, built in #473 (rivers route over the finished ground); waits on the PC rebake and gate (water-plan-2026-11-06.md)
 Answered: 2026-11-06 13:58 UTC
+
+## jamie-cave-people | Caves can hold animals, creatures or people (your 6 Nov idea). On the starter islands, who may live in caves?
+Answer: Animals and creatures, plus the odd friendly survivor; no bandits until you leave the starter island (coordinator for Dave, who said 'you answer the card')
+Answered: 2026-11-06 15:48 UTC

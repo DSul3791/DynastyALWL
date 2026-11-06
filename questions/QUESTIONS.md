@@ -62,9 +62,3 @@ Note: It did not reproduce on land or in water in tests.
 Note: Recommendation: B. Only tell me if you see it duplicate on your own.
 - A: Yes, I will try it and say what happens
 - B: Skip it, I will tell you if I see it
-
-## jamie-cave-people | Caves can hold animals, creatures or people (your 6 Nov idea). On the starter islands, who may live in caves?
-Note: The design docs say starter-island caves are low level but still dangerous for a new player. They don't say whether people live there.
-- Animals and creatures, plus the odd friendly survivor; no bandits until you leave the starter island (recommended)
-- Anyone, bandits included
-- Animals and creatures only
