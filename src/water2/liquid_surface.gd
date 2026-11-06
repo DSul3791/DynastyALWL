@@ -128,14 +128,16 @@ void vertex() {
 	}
 }
 
-// No sine (as water_material.gd): at the world's coordinates (x 54 km: the ripples' noise cells are 1.6 m, so p is about 34,000) sin(dot(p, ...)) of a
-// number near 10^7 in 32-bit floats came out blocky, the same value over whole noise cells. The ripple normals jumped at every cell edge: square panes
-// with dark straight borders where the water runs fast and the chop is strong (the steep brook at x 54101 z 69709, Tyler and Dino 6 Nov 2026; the
-// debug view showed the sheet itself smooth, with no folds).
+// An integer hash of the noise cell (Tyler and Dino 6 Nov 2026, the steep brook at x 54101 z 69709: panes, then tiles, then straight "cracked ice"
+// lines that turned with the noise). Float hashes of the world's big coordinates (a cell number near 40,000) lose their low bits, and the GPU rounds
+// the same corner differently from the two cells that share it, so the noise jumped at every cell edge: the ripples and foam came in tiles with hard
+// borders. Integers hash exactly, whatever the coordinates.
 float hash(vec2 p) {
-	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-	p3 += dot(p3, p3.yzx + 33.33);
-	return fract((p3.x + p3.y) * p3.z);
+	uint qx = uint(int(floor(p.x))) * 1597334673u;
+	uint qy = uint(int(floor(p.y))) * 3812015801u;
+	uint n = (qx ^ qy) * 1597334673u;
+	n ^= n >> 16u;
+	return float(n >> 8u) / 16777216.0;
 }
 
 // Quintic blend between the cells (was the cubic smoothstep): the ripples' normals come from this noise's slope, and the cubic's slope creased along
