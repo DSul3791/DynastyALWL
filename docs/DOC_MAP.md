@@ -9,6 +9,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 |---|---|---|---|---|
 | `docs/mirror/` (tech 66, items 35, design 17, CONTROLS, README) | 120 | nobody (Technical Director retired) | last copy 22 Oct | keep frozen: cited by `tools/merge_check.py` (skip prefix), `tools/ship.sh` and `next_build.sh` (write `docs/mirror/tech/BUILD_LOG.md`), `balance_sheet.py` (writes `docs/mirror/items/BALANCE.md`), `tool_tiers.py` (reads `docs/mirror/design/TOOL_TIERS.md`), `nightly_backup.py` (cites BACKUP_PLAN.md); its CONTROLS.md is older than the root one. Archive only after those references move |
 | `tech/ACTION_PLANS/` | 4 left (41 archived to `docs/archive/2026-11/tech_ACTION_PLANS/`) | previous Steve/Sal | 24-25 Oct | kept: `Steve_ground_quiet` (cited in `ground_watchdog.gd`), `Steve_hide_traps` (`data/animals/traps.json`), `Steve_bow_shoot` (`data/items/bow.json`), `Sal_hammer_blueprints` (bridge not built). `tools/selftest_gate_tools.sh` uses the folder name only as a fake path |
+| `docs/knowledge/` (index `README.md`, one doc per topic) | 2 (index, water) | Jamie (librarian) | 6 Nov | keep: read the topic doc before coding a system or fixing a bug; add your lesson after (Dave, 6 Nov) |
 | `art/CRITIQUES/` | 43 rounds + `_archive/` | Kathleen | 30-31 Oct | keep; Kathleen archives rounds Dave has judged |
 
 ## Documents (individually)
