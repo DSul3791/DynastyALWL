@@ -570,14 +570,21 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 	for f in found:
 		var item: Dictionary = _by_id[f[1]]
-		var x: float = f[3]
-		var z: float = f[5]
+		# The spot as it is stored (positions is a PackedVector3Array, 32-bit floats): at 68 km a float64 z of 68139.997 is stored as 68140.0, the next
+		# 4 m edge cell, so the rules here and test_beach_belt read different cells (one tall grass at x 52885 z 68140 on the e9a26544 gate).
+		var stored: Vector2 = Vector2(f[3], f[5])
+		var x: float = stored.x
+		var z: float = stored.y
 		var height: float = f[6]
 
 		if clearings_here and item["kind"] != KIND_PLANT and _cleared_at(x, z, f[1]):
 			continue
 
-		if has_beach and not _beach_rules_ok(item, data, x, z, edge_cache):
+		# The chunk's sand is found from its biome samples (every `step` m), so a small beach between them left has_beach false and the edge rules off:
+		# the #464 rebake put such a beach in a chunk by the spawn and test_beach_belt found a grass on open sand. A plant standing on sand itself
+		# always gets the rules, and so does one whose 4 m probe cell centre (where _edge_m asks) is on sand: a spot on dirt or sea beside such a
+		# centre still read as open sand to the test (4d714ca2 re-gate, 1 grass).
+		if (has_beach or _on_sand(data, x, z)) and not _beach_rules_ok(item, data, x, z, edge_cache):
 			continue
 
 		if item["kind"] != KIND_PLANT:
@@ -759,6 +766,14 @@ func _edge_probe(data, x: float, z: float, reach: float) -> float:
 	return -1000.0 if on_sand else 1000.0
 
 
+# True when the spot or the centre of its 4 m edge cell stands on sand.
+func _on_sand(data, x: float, z: float) -> bool:
+	if data.biome[data.nearest(x, z)] == _beach_id:
+		return true
+
+	return data.biome[data.nearest((floor(x / 4.0) + 0.5) * 4.0, (floor(z / 4.0) + 0.5) * 4.0)] == _beach_id
+
+
 # The edge rules for a spot in a chunk with sand: in the belt only the belt species stand; on the sand grass keeps near the dirt.
 func _beach_rules_ok(item: Dictionary, data, x: float, z: float, cache: Dictionary) -> bool:
 	var is_grass: bool = item["shape"] == "grass"
@@ -769,7 +784,8 @@ func _beach_rules_ok(item: Dictionary, data, x: float, z: float, cache: Dictiona
 	var here: int = data.biome[data.nearest(x, z)]
 
 	if here == _ocean_id:
-		return true
+		# Grass on a shore cell counted as sea still keeps off open sand (its 4 m probe cell can be sand).
+		return not is_grass or _edge_m(data, x, z, cache) >= -BEACH_GRASS_M
 
 	if here == _beach_id:
 		if not is_grass:

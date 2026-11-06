@@ -6,7 +6,7 @@ extends RefCounted
 # drainage rivers ran to the beach as a narrow ditch with a sand bar across. This pass carves it on the final ground: over the last estuary_m of every river
 # that reaches the sea the bed sinks to estuary_depth_m under sea level (a submerged bar at estuary_bar_at_m, bed estuary_bar_bed_m), the channel widens to
 # estuary_widen times at the shore, the banks rise gently (estuary_bank), and every cell carved under sea level and joined to the sea becomes sea.
-# A river that meets the sea from ground higher than estuary_max_bed_m (over a cliff) is not drowned.
+# A river that meets the sea from ground higher than estuary_max_bed_m (over a cliff, at its mouth) is not drowned.
 
 const PondLevel := preload("res://src/worldgen/tile/tile_pond_level.gd")
 
@@ -16,7 +16,7 @@ const RIVER := 3
 const RADIUS_M := 12.0          # half the width of the drainage's narrowest river; the estuary widens this
 const RIM_M := 0.2              # the channel's rim at the shore stands this much over the sea
 const BANK_REACH_M := 30.0      # how far out the gentle banks reach
-const NEAR_SEA := 2             # river cells this many cells from the sea are mouths
+const NEAR_SEA := 4             # river cells this many cells (32 m) from the sea are mouths (was 2: a river behind a 3-cell sand bar was not; Dave 6 Nov x 52798 z 68114)
 
 
 # Returns {"mouths": river cells at the sea, "cells": cells carved, "sea": cells made sea}.
@@ -34,6 +34,12 @@ static func carve(heights: PackedFloat32Array, water_class: PackedByteArray, wat
 	var to_sea: PackedFloat32Array = PackedFloat32Array()
 	to_sea.resize(n * n)
 	to_sea.fill(INF)
+	# The ground where each cell's river meets the sea (Dave 6 Nov 2026, x 52798 z 68114: "the river bed doesnt continue out into the ocean. there is grass
+	# and sand in the way"): the cliff test took each cell's own ground, so a river reaching the beach at sea level through dunes 6 to 10 m high kept its
+	# bed up in the dunes and its water stood behind them. A river is over a cliff only when its mouth is high; a low mouth carves all its estuary.
+	var mouth_ground: PackedFloat32Array = PackedFloat32Array()
+	mouth_ground.resize(n * n)
+	mouth_ground.fill(INF)
 	var keys: PackedFloat32Array = PackedFloat32Array()
 	var nodes: PackedInt32Array = PackedInt32Array()
 	var mouths: int = 0
@@ -43,6 +49,7 @@ static func carve(heights: PackedFloat32Array, water_class: PackedByteArray, wat
 			continue
 
 		to_sea[k] = 0.0
+		mouth_ground[k] = heights[k]
 		PondLevel._push(keys, nodes, 0.0, k)
 		mouths += 1
 
@@ -69,6 +76,7 @@ static func carve(heights: PackedFloat32Array, water_class: PackedByteArray, wat
 
 				if d < to_sea[m]:
 					to_sea[m] = d
+					mouth_ground[m] = mouth_ground[k]
 					PondLevel._push(keys, nodes, d, m)
 
 	# The carve, from the original ground so overlapping sections do not dig each other deeper.
@@ -82,7 +90,7 @@ static func carve(heights: PackedFloat32Array, water_class: PackedByteArray, wat
 			continue
 
 		var share: float = 1.0 - to_sea[k] / estuary_m
-		share *= clampf(1.0 - (ground[k] - max_bed) / 6.0, 0.0, 1.0)
+		share *= clampf(1.0 - (mouth_ground[k] - max_bed) / 6.0, 0.0, 1.0)
 
 		if share <= 0.0:
 			continue
@@ -160,7 +168,7 @@ static func carve(heights: PackedFloat32Array, water_class: PackedByteArray, wat
 	return {"mouths": mouths, "cells": carved, "sea": made_sea}
 
 
-# Within NEAR_SEA cells of the sea: a river that stops behind a one-cell sand bar is a mouth too (the carve opens the bar).
+# Within NEAR_SEA cells of the sea: a river that stops behind a sand bar up to three cells wide is a mouth too (the carve opens the bar).
 static func _near_sea(water_class: PackedByteArray, n: int, k: int) -> bool:
 	var column: int = k % n
 

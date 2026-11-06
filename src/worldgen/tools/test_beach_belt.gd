@@ -64,9 +64,13 @@ func _init() -> void:
 
 				if edge < 0.0 and str(sp["shape"]) == "grass" and edge < -PlacerScript.BEACH_GRASS_M:
 					bad_grass += 1
+					print("  grass on open sand: %s at x %.1f z %.1f, edge %.0f m, chunk %s" % [str(sp["name"]), p.x, p.z, edge, str(chunk)])
 
 				if edge > 0.0 and edge <= PlacerScript.BELT_M and float(sp["belt"]) <= 0.0:
 					bad_belt += 1
+
+					if bad_belt <= 10:
+						print("  not a belt species in the belt: %s at x %.1f z %.1f, edge %.0f m" % [str(sp["name"]), p.x, p.z, edge])
 
 				if edge > 0.0 and edge <= PlacerScript.BELT_M and str(sp["name"]) == "coconut_palm":
 					belt_palms += 1
