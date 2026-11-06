@@ -570,8 +570,11 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 	for f in found:
 		var item: Dictionary = _by_id[f[1]]
-		var x: float = f[3]
-		var z: float = f[5]
+		# The spot as it is stored (positions is a PackedVector3Array, 32-bit floats): at 68 km a float64 z of 68139.997 is stored as 68140.0, the next
+		# 4 m edge cell, so the rules here and test_beach_belt read different cells (one tall grass at x 52885 z 68140 on the e9a26544 gate).
+		var stored: Vector2 = Vector2(f[3], f[5])
+		var x: float = stored.x
+		var z: float = stored.y
 		var height: float = f[6]
 
 		if clearings_here and item["kind"] != KIND_PLANT and _cleared_at(x, z, f[1]):
