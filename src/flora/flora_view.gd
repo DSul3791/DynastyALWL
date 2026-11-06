@@ -575,6 +575,9 @@ func toggle_water_debug() -> void:
 	if _water_material != null:
 		_water_material.set_shader_parameter("debug_flow", 1.0 if water_debug else 0.0)
 
+	LiquidSurface.debug_on = 1 if water_debug else 0
+	get_tree().call_group("liquid_sheet", "set_debug", water_debug)   # the liquid sheets: which sheet draws where, and its texels
+
 
 func water_material() -> Material:
 	return _water_material
