@@ -3008,8 +3008,8 @@ static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 # Wild flowers and herbs (daisy, umbel, spike and bell heads): a few thin stems with basal leaves, each stem ending in a flower head
 # made of beads and flat petals in explicit colours (the foliage tint only reaches the leaves).
 const WILD_STEM := Color(0.38, 0.5, 0.22)
-const WILDFLOWER_DAISY_SCALE := 0.21      # daisy heads: dandelion 0.17 -> 0.036 (about 8 cm across)
-const WILDFLOWER_UMBEL_SCALE := 0.3       # umbels: yarrow 0.2 -> 0.06 (about 15 cm across)
+const WILDFLOWER_DAISY_SCALE := 0.13      # daisy heads: dandelion 0.17 -> 0.022 (about 5 cm across; Kathreen: real 3-4 cm plus the 15% exaggeration, daisy heads under 6 cm)
+const WILDFLOWER_UMBEL_SCALE := 0.2       # umbels: yarrow 0.2 -> 0.04 (about 10 cm across; Kathreen: real 5-10 cm)
 const WILDFLOWER_LOOKS := {
 	"chamomile": {"head": "daisy", "stems": 7, "tall": 1.0, "head_min": 0.14, "petal": Color(1.0, 0.98, 0.9), "stem": Color(0.3, 0.42, 0.18), "centre": Color(0.55, 0.3, 0.0), "size": 0.045, "petals": 10},
 	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.95, "head_min": 0.12, "petal": Color(1.0, 1.0, 0.97), "centre": Color(0.7, 0.45, 0.0), "size": 0.04, "petals": 9},
@@ -3089,7 +3089,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	var size: float = float(look["size"]) * h * 1.2 if head == "umbel" else float(look["size"]) * maxf(h, crown * 1.6) * 2.6
 	size = maxf(size, float(look.get("head_min", 0.0)))      # meadow flowers (moderator 2026-10-31): bigger heads and taller stems so a drift reads from 10 m
 	# Halfway to true size (Kathleen's card, 6 Nov 2026, decided by recommendation under Dave's rule): the head_min heads were 30-40 cm across (a daisy reaches about
-	# 2.3 x size, an umbel about 2.6 x size), against 2-8 cm in life, and read as toys next to the body. A dandelion is now about 8 cm, arnica 7, yarrow 15:
+	# 2.3 x size, an umbel about 2.6 x size), against 2-8 cm in life, and read as toys next to the body. A dandelion is now about 5 cm, arnica 5, yarrow 10 (Kathreen's sizes from real ones):
 	# still a spot of colour across a meadow, no longer giant. Spikes and bells were already near life size.
 	if head == "daisy":
 		size *= WILDFLOWER_DAISY_SCALE
