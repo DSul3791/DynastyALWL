@@ -21,7 +21,7 @@ Scope: `SCOPE_JASON.md`. Sound map and hook audit: `docs/SOUND_MAP.md`. Findings
 
 ## Waiting on Dave
 - BUG-001 storm sound: Dave to name the sound he heard ("storm_growl" is not in the repo).
-- Dave's two footstep recordings clip at +0.2 dB: re-export, or trim with declip.py.
+- Dave's two footstep recordings (step_gravel_left, step_stone_left, variants 1 and 2) clipped at +0.2 dB: trimmed to -1.2 dB peak with declip.py on 6 Nov (Dave: go with the recommendation).
 
 ## Parked (new sound, after "no new stuff" lifts)
 Nest sound cue with MikeW (hook `net.nests_received`, #335); cave den sounds after animal spawns; a Pixabay clip to replace the stand-in fish_land. Older hooks still without a client event (sleep, hurt, bow, fishing, animals, clothing, craft, level-up) are listed in `JASON_NEXT_TASKS.md`.
