@@ -936,7 +936,10 @@ func _make_quad(spec: Dictionary) -> Node3D:
 		ear.name = "Ear_L" if side < 0.0 else "Ear_R"
 		ear.position = top + Vector3(side * hd * 0.2, hd * 0.2, hd * 0.1)
 		head.add_child(ear)
-		_ball(ear, hd * 0.13, Vector3(0.4, 1.7 * float(spec.get("ear", 1.0)), 0.22), Vector3(0.0, hd * 0.17 * float(spec.get("ear", 1.0)), 0.0), dark, Vector3(0.0, 0.0, side * -0.35))      # a leaf-shaped ear
+		if bool(spec.get("round_ears", false)):
+			_ball(ear, hd * 0.11, Vector3(1.0, 1.0, 0.45), Vector3(0.0, hd * 0.08, 0.0), coat.lerp(dark, 0.4))      # a bear's small round ear
+		else:
+			_ball(ear, hd * 0.13, Vector3(0.4, 1.7 * float(spec.get("ear", 1.0)), 0.22), Vector3(0.0, hd * 0.17 * float(spec.get("ear", 1.0)), 0.0), dark, Vector3(0.0, 0.0, side * -0.35))      # a leaf-shaped ear
 
 		if bool(spec.get("antlers", false)):
 			# Bull moose: broad flat palms swept out and up from above the ears, with tines along the rim.
@@ -991,7 +994,7 @@ func _make_quad(spec: Dictionary) -> Node3D:
 		pivot.name = leg[0]
 		pivot.position = Vector3(float(leg[1]) * rb * 0.55, leg_h, float(leg[2]))
 		rig.add_child(pivot)
-		var w: float = rb * 0.3
+		var w: float = rb * 0.3 * float(spec.get("leg_w", 1.0))   # leg_w: a bear's legs are thick pillars, not a deer's sticks
 		# Shoulder and haunch: a long muscle tapering down the upper leg into the body, so the leg grows out of it instead of a stick under a ball (cloud render 4 Nov).
 		_ball(pivot, w * 1.0, Vector3(1.0, 2.4, 1.3 if String(leg[0]).begins_with("Leg_F") else 1.7), Vector3(0.0, -leg_h * 0.12, 0.0), coat)
 		_box(pivot, Vector3(w, leg_h * 0.5, w), Vector3(0.0, -leg_h * 0.24, 0.0), coat)
@@ -1072,7 +1075,9 @@ func _make_horse(id: int) -> Node3D:
 # A brown bear (Dave 6 Nov 2026; FAUNA_BY_BIOME): the shared four-legged build, heavy and low. About 2 m long, 1 m at the shoulder hump, a broad
 # head on a short neck with a short snout, small round ears, thick dark brown coat a shade paler on the head and hump, no tail to speak of.
 func _make_bear() -> Node3D:
-	return _make_quad({"leg_h": 0.5, "rb": 0.5, "len": 1.15, "neck": 0.28, "head": 0.42, "snout": 0.85, "coat": Color(0.27, 0.18, 0.11), "dark": Color(0.16, 0.11, 0.07), "pale": Color(0.4, 0.3, 0.2), "hump": true, "socks": false, "pale_belly": false})
+	# Brown bear (PC look 6 Nov: the first build read as a blob on wheels with horns): shoulder about 1.1 m, legs showing about half of
+	# that under the belly, thick legs, a big head with a short snout and small round ears, the shoulder hump.
+	return _make_quad({"leg_h": 0.75, "rb": 0.45, "len": 1.2, "neck": 0.3, "head": 0.62, "snout": 0.8, "leg_w": 1.6, "round_ears": true, "coat": Color(0.27, 0.18, 0.11), "dark": Color(0.16, 0.11, 0.07), "pale": Color(0.4, 0.3, 0.2), "hump": true, "socks": false, "pale_belly": false})
 
 
 # A moose (Mandy 2026-10-22): about 2.7 m long, 2.1 m at the shoulder hump, dark brown, long pale legs, big drooping muzzle; every second one is a bull with broad antlers.
