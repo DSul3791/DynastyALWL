@@ -46,7 +46,7 @@ uniform float chunk_lift = 0.25;    // chunk sheets only: running water is drawn
 uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
-uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live window magenta, a 2 m chunk sheet yellow, an 8 m one orange, dark lines on the texel borders
+uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live window magenta, a 2 m chunk sheet yellow, an 8 m one orange, dark lines on the texel borders, darker where the sheet is steep, red seen from behind, cyan where fall white water is on
 
 varying vec2 tex_uv;
 varying float depth_v;
@@ -330,6 +330,13 @@ void fragment() {
 		vec2 to_line = min(fract(grid), 1.0 - fract(grid)) / max(fwidth(grid), vec2(0.0001));
 		float line = 1.0 - smoothstep(0.5, 1.5, min(to_line.x, to_line.y));
 		vec3 sheet = point_grid < 0.5 ? vec3(0.9, 0.1, 0.8) : (cell_m < 4.0 ? vec3(0.95, 0.85, 0.1) : vec3(0.95, 0.45, 0.05));
+		// The sheet's own geometry (Tyler 6 Nov 2026: the panes are in the water drawing, not the ground): shaded by the triangle's real slope, so a step or
+		// wall in the sheet shows dark; seen from behind (a fold) red; where the fall white water switches on, cyan.
+		vec3 world3 = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		vec3 geo = normalize(cross(dFdy(world3), dFdx(world3)));
+		sheet *= mix(0.25, 1.0, abs(geo.y));
+		sheet = mix(sheet, vec3(0.1, 0.85, 0.9), 0.6 * fall);
+		sheet = FRONT_FACING ? sheet : vec3(0.9, 0.05, 0.05);
 		ALBEDO = mix(sheet * mix(0.6, 1.0, clamp(depth, 0.0, 1.0)), vec3(0.05), line);
 		EMISSION = vec3(0.0);
 		ROUGHNESS = 1.0;
