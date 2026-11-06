@@ -29,8 +29,8 @@ uniform sampler2D live : filter_linear, repeat_disable;      // the live window'
 uniform float has_live = 0.0;                              // 1 when `live` is set
 // Dave's QA list 3 Nov 2026 (BUG-006, "a sharp, straight-line boundary separates calm and active water"): the live window and the chunk sheets
 // around it crossfade over a wide, wandering band instead of switching one cell in. Both sides use live_blend(), so they always add up.
-uniform float blend_m = 24.0;                              // the crossfade band, metres in from the window's edge
-uniform float blend_wander_m = 12.0;                       // the band's inner side wanders this far in and out (no straight line)
+uniform float blend_m = 64.0;                              // the crossfade band, metres in from the window's edge (was 24: Dave 6 Nov 2026, x 52986 z 68328, the rippled live water met the calmer baked water in a line)
+uniform float blend_wander_m = 24.0;                       // the band's inner side wanders this far in and out (no straight line)
 uniform vec3 shallow_color : source_color = vec3(0.16, 0.38, 0.34);   // Kathreen 3 Nov 2026 (art direction: vibrant, not grey): greener shallows, was 0.17, 0.33, 0.33
 uniform vec3 deep_color : source_color = vec3(0.03, 0.18, 0.28);   // bluer depths, was 0.04, 0.17, 0.24
 uniform vec3 foam_color : source_color = vec3(0.80, 0.84, 0.82);
