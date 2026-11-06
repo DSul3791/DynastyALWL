@@ -19,3 +19,21 @@ Answered: 2026-11-06 16:31 UTC
 ## mikew-temperament-mood | PR #480: should one animal's temperament also change over time (hunger, injury)?
 Answer: Later (coordinator for Dave)
 Answered: 2026-11-06 16:31 UTC
+
+## mikew-level-strength | Should each animal level above 1 add 5% health and 4% damage?
+Note: Levels now come from distance to the starter town: 1-5 near town, 5-10 half way, 10-20 on the far side (#485). A level 20 animal would have about 2x health and 1.75x damage.
+Note: Recommendation: A.
+- A: Yes, 5% health and 4% damage per level
+- B: Make it stronger per level
+- C: Make it weaker per level
+Answer: A: Yes, 5% health and 4% damage per level above 1 (coordinator for Dave, following MikeW's pick)
+Answered: 2026-11-06
+
+## mikew-level-skills-later | Should animal skills and showing an animal's level on inspect come later?
+Note: Skills means keener senses, more speed and better stalking at higher levels. For now a level only changes health and damage.
+Note: Recommendation: A.
+- A: Later
+- B: Build skills now
+- C: Show the level on inspect now, skills later
+Answer: A: Later (coordinator for Dave, following MikeW's pick)
+Answered: 2026-11-06
