@@ -215,13 +215,23 @@ static func _lap(stage: String, since_ms: int) -> void:
 
 func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary) -> void:
 	var centre_bed: PackedFloat32Array = h.duplicate()
+	# Rivers cut deeper than their depth rule into the valley floor, water and all (Dave 6 Nov 2026: "cut them an extra 5 m deeper"), so the river is the
+	# lowest line of its valley and the land beside it drains in, not into wetlands. Grows in from the smallest brooks to full at 4 x the river threshold.
+	var extra_m: float = float(rules.get("river_extra_depth_m", 0.0))
+	var extra: PackedFloat32Array = PackedFloat32Array()
+	extra.resize(h.size())
+
+	if extra_m > 0.0:
+		for index in range(h.size()):
+			if flow.discharge[index] >= threshold:
+				extra[index] = extra_m * smoothstep(threshold, threshold * 4.0, flow.discharge[index])
 
 	# Centre bed: ground minus depth, never rising going downstream (receivers are processed first).
 	for index in fill.order:
 		if flow.discharge[index] < threshold:
 			continue
 
-		var wanted: float = h[index] - centre_depth[index]
+		var wanted: float = h[index] - extra[index] - centre_depth[index]
 		var next: int = fill.receiver[index]
 
 		if next >= 0 and flow.discharge[next] >= threshold:
@@ -253,7 +263,7 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 		if flow.discharge[index] < threshold:
 			continue
 
-		var level: float = centre_bed[index] + SURFACE_SHARE * (h[index] - centre_bed[index])
+		var level: float = centre_bed[index] + SURFACE_SHARE * (h[index] - extra[index] - centre_bed[index])
 		var next: int = fill.receiver[index]
 
 		if next >= 0 and flow.discharge[next] >= threshold:

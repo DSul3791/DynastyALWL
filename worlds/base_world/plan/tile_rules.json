@@ -159,7 +159,12 @@
 	"spawn_pad": {"note": "Spawn moved 24 Oct to x 53316, z 68476 (Sal search; was Dave's x 53301, z 68427) and the showroom beside it: level inside flat_radius_m, blended into the land over blend_m. Level is the old spawn ground.", "x": 53316, "z": 68476, "level_m": 31.0, "flat_radius_m": 40, "blend_m": 70},
 	"water": {
 		"drainage_mode": true,
+		"valley_drain": {"_note": "Sonny 6 Nov 2026 (Dave: 'smoothing the surrounding area so it flows towards the river'): dry ground beside a river that lies lower than the water is raised to the water plus height_m, rising grade_per_m per metre away, within reach_m; a ridge stops it (tile_valley_drain.gd).", "enabled": true, "reach_m": 200.0, "grade_per_m": 0.01, "height_m": 0.8, "max_raise_m": 10.0, "band_samples": 50},
 		"drainage": {
+			"route_over_raw": false,
+			"route_over_note": "Sonny 6 Nov 2026 (Dave: rivers on the real valley floor): false routes the rivers over the finished ground (strata and scree included, both laid by world position so tiles still agree), not the raw pre-strata copy, so the river follows the lowest line the player sees.",
+			"river_extra_depth_m": 5.0,
+			"river_extra_depth_note": "Sonny 6 Nov 2026 (Dave: 'cut them an extra 5 m deeper'): the centre bed and the water sink this much more, growing from the river threshold to full at 4 x it (drainage_channels.gd _stamp); the valleys follow the lower water.",
 			"banks": {
 				"_note": "Sonny 3 Nov 2026 (no patchy riverbeds): a dry cell next to water higher than its ground is raised to that water plus height_m, by at most max_raise_m, so a channel across a hillside has a bank on its downhill side (tile_drainage.gd _build_banks). v2 (05:55): max_raise_m 1.5 -> 3 (759 of 919 still-leaking rim cells were at the cap); a bank taller than shoulder_drop_m raises the dry ground outside it to its top less shoulder_drop_m (at most half its lift), so it slopes away. v3 (Sonny 6 Nov 2026, Dave x 52935 z 69453: water spilling out of the beds into wetlands): height_m 0.2 -> 0.8 (the settled water stands up to ~0.9 m over the painted level on steep reaches) and every dry cell under the water plus height_m is a bank, not only those under the water.",
 				"enabled": true,

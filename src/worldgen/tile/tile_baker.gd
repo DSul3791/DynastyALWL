@@ -23,6 +23,7 @@ const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileLandTypesScript := preload("res://src/worldgen/tile/tile_land_types.gd")
 const TilePondLevelScript := preload("res://src/worldgen/tile/tile_pond_level.gd")
+const TileValleyDrainScript := preload("res://src/worldgen/tile/tile_valley_drain.gd")
 const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
 const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
 const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
@@ -320,6 +321,11 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 			break
 
 	print("  river corners (tile %s): %d cells made river" % [str(tile), corners])
+
+	# The land beside a river slopes up from it, so nothing lies lower than the river and turns to wetland (Dave 6 Nov 2026, tile_valley_drain.gd).
+	clock = Time.get_ticks_msec()
+	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, origin_sx, origin_sz, tile_rules["water"].get("valley_drain", {}), tile_rules.get("spawn_pad", {}))
+	print("  valley drain (tile %s): %d cells raised to drain to the river, up to %.1f m (%d ms)" % [str(tile), drained["raised"], drained["max_m"], Time.get_ticks_msec() - clock])
 
 
 	clock = Time.get_ticks_msec()
