@@ -892,17 +892,19 @@ func _make_quad(spec: Dictionary) -> Node3D:
 	_ball(rig, rb, Vector3(0.85, 1.0, 1.5), Vector3(0.0, leg_h + rb * 0.35, -half * 0.45), coat)       # chest
 	_ball(rig, rb * 0.95, Vector3(0.85, 0.95, 1.5), Vector3(0.0, leg_h + rb * 0.3, half * 0.5), coat)  # hips
 	_ball(rig, rb * 0.8, Vector3(0.8, 0.8, 2.2), Vector3(0.0, leg_h + rb * 0.15, 0.0), pale if bool(spec.get("pale_belly", true)) else coat)   # belly
+	# The barrel (cloud render 4 Nov: chest and hips read as two separate lumps with a pinched waist): one long ball fills the back between them.
+	_ball(rig, rb * 0.92, Vector3(0.86, 0.97, 1.9), Vector3(0.0, leg_h + rb * 0.33, 0.0), coat)
 
 	if bool(spec.get("hump", false)):
-		_ball(rig, rb * 0.7, Vector3(0.8, 0.9, 1.3), Vector3(0.0, back + rb * 0.35, -half * 0.55), dark)   # shoulder hump
+		_ball(rig, rb * 0.7, Vector3(0.8, 0.9, 1.3), Vector3(0.0, back + rb * 0.2, -half * 0.55), coat.lerp(dark, 0.45))   # shoulder hump (coat shading into dark: all-dark it read as a second animal lying on the back)
 
 	var head: Node3D = Node3D.new()
 	head.name = "Head"
 	head.position = Vector3(0.0, back - rb * 0.1, -half * 0.8)
 	rig.add_child(head)
-	for seg in 5:   # the neck: five overlapping, thinning segments from the shoulder to the skull, so it reads as one tapering neck and not a chain of beads
-		var t: float = float(seg) / 4.0
-		_ball(head, nk * lerpf(0.27, 0.19, t) * float(spec.get("neck_thick", 1.0)), Vector3(0.85, 0.85, 1.25), Vector3(0.0, lerpf(nk * 0.1, nk * 0.7, t), lerpf(-nk * 0.08, -nk * 0.75, t)), coat, Vector3(0.7, 0.0, 0.0))
+	for seg in 9:   # the neck: nine close, long, thinning segments from the shoulder to the skull (five read as a stack of rings on the deer, cloud render 4 Nov)
+		var t: float = float(seg) / 8.0
+		_ball(head, nk * lerpf(0.27, 0.19, t) * float(spec.get("neck_thick", 1.0)), Vector3(0.85, 0.85, 1.6), Vector3(0.0, lerpf(nk * 0.1, nk * 0.7, t), lerpf(-nk * 0.08, -nk * 0.75, t)), coat, Vector3(0.7, 0.0, 0.0))
 	var top: Vector3 = Vector3(0.0, nk * 0.78, -nk * 0.85)
 	_ball(head, hd * 0.28, Vector3(0.85, 0.9, 1.4), top, coat if not bool(spec.get("dark_head", false)) else dark)       # skull
 	var snout: float = float(spec.get("snout", 1.0))
@@ -974,7 +976,10 @@ func _make_quad(spec: Dictionary) -> Node3D:
 		pivot.position = Vector3(float(leg[1]) * rb * 0.55, leg_h, float(leg[2]))
 		rig.add_child(pivot)
 		var w: float = rb * 0.3
+		# Shoulder and haunch: a long muscle tapering down the upper leg into the body, so the leg grows out of it instead of a stick under a ball (cloud render 4 Nov).
+		_ball(pivot, w * 1.0, Vector3(1.0, 2.4, 1.3 if String(leg[0]).begins_with("Leg_F") else 1.7), Vector3(0.0, -leg_h * 0.12, 0.0), coat)
 		_box(pivot, Vector3(w, leg_h * 0.5, w), Vector3(0.0, -leg_h * 0.24, 0.0), coat)
+		_ball(pivot, w * 0.55, Vector3.ONE, Vector3(0.0, -leg_h * 0.5, 0.0), coat.lerp(dark, 0.5))   # the knee or hock joint
 		_box(pivot, Vector3(w * 0.7, leg_h * 0.5, w * 0.7), Vector3(0.0, -leg_h * 0.74, 0.0), dark if not bool(spec.get("socks", false)) else pale)
 		_box(pivot, Vector3(w * 0.9, leg_h * 0.06, w * 1.2), Vector3(0.0, -leg_h * 0.98, -w * 0.1), Color(0.12, 0.1, 0.09))      # hoof
 
