@@ -76,6 +76,13 @@ vec4 sample_liquid(vec2 uv) {
 	return point_grid > 0.5 ? textureLod(liquid, uv, 0.0) : sample_smooth(uv);
 }
 
+// Per pixel every sheet reads smoothly (Dino's shots 6 Nov: the steep brook at x 54101 z 69709 is drawn by chunk sheets, not the live window, and kept its
+// diamond facets). Only the vertices of a chunk sheet keep the plain reads, so its edges still meet the next sheet's; the shore, depth and white water,
+// which made the diamonds, follow the smooth surface on every sheet.
+vec4 sample_pixel(vec2 uv) {
+	return sample_smooth(uv);
+}
+
 // The least depth that still draws: 4 mm for slow water, half a millimetre where it runs fast (a fall face, a chute).
 float wet_min(vec4 t) {
 	return mix(0.004, 0.0005, smoothstep(0.6, 2.0, length(t.gb)));
@@ -154,7 +161,7 @@ float waves(vec2 p) {
 }
 
 void fragment() {
-	vec4 t = sample_liquid(tex_uv);   // per pixel: the shore follows the depth between cells, not the cell edges (smoothly in the live window)
+	vec4 t = sample_pixel(tex_uv);   // per pixel: the shore follows the depth between cells, not the cell edges (smoothly in the live window)
 	float depth = t.a;
 
 	if (depth < wet_min(t)) {
@@ -245,10 +252,10 @@ void fragment() {
 	// streaks that pour down the face, faster than the river above.
 	vec2 px = vec2(1.0) / cells;
 	// The slope from smooth reads too: bilinear differences step at every cell, so the white water came in diamond patches down a steep brook.
-	vec4 ex0 = sample_liquid(tex_uv - vec2(px.x, 0.0));
-	vec4 ex1 = sample_liquid(tex_uv + vec2(px.x, 0.0));
-	vec4 ez0 = sample_liquid(tex_uv - vec2(0.0, px.y));
-	vec4 ez1 = sample_liquid(tex_uv + vec2(0.0, px.y));
+	vec4 ex0 = sample_pixel(tex_uv - vec2(px.x, 0.0));
+	vec4 ex1 = sample_pixel(tex_uv + vec2(px.x, 0.0));
+	vec4 ez0 = sample_pixel(tex_uv - vec2(0.0, px.y));
+	vec4 ez1 = sample_pixel(tex_uv + vec2(0.0, px.y));
 	vec2 grad = vec2(
 		min(ex0.a, ex1.a) > 0.0005 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
 		min(ez0.a, ez1.a) > 0.0005 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
@@ -260,7 +267,7 @@ void fragment() {
 		vec2 down = -grad / max(drop, 0.0001);
 		vec2 c = world * 0.7 - down * TIME * 2.2;
 		float churn = noise(c) * 0.55 + noise(c * 2.1 + 5.3 - down * TIME * 1.3) * 0.3 + noise(c * 4.3 + 1.7) * 0.15;
-		foam = max(foam, fall * smoothstep(0.25, 0.7, churn));
+		foam = max(foam, fall * smoothstep(0.1, 0.85, churn));   // soft-edged billows (hard-edged ones read as white tiles down a steep brook)
 	}
 
 	// The shore: the sheet thins out with the water; the window's edge fades to the grid look.
