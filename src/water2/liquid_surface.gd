@@ -243,6 +243,12 @@ void fragment() {
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, scene, 1.0);
 	behind.xyz /= behind.w;
 	float through = max(VERTEX.z - behind.z, 0.0);
+	// A chunk sheet's running water is lifted chunk_lift over the ground (vertex), so the eye looks through only that gap, and the gap followed how the
+	// sheet's flat 2 m quads sat over the ground's own triangles: the colour and the see-through changed quad by quad, square panes with dark edges
+	// where the ground came close (Tyler's water-debug run 6 Nov 2026, x 54101 z 69709: one smooth 2 m sheet, the panes were its quads). Over running
+	// water the gap is taken from the water's own depth plus the lift instead, smooth across the quads.
+	float lifted = point_grid > 0.5 ? smoothstep(0.3, 1.0, length(t.gb)) * smoothstep(0.0, 0.05, depth) : 0.0;
+	through = mix(through, depth + chunk_lift, lifted);
 	float contact = smoothstep(0.0, contact_m, through);
 
 	// Colour by depth, a sky reflection by angle.
