@@ -577,7 +577,10 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 		if clearings_here and item["kind"] != KIND_PLANT and _cleared_at(x, z, f[1]):
 			continue
 
-		if has_beach and not _beach_rules_ok(item, data, x, z, edge_cache):
+		# The chunk's sand is found from its biome samples (every `step` m), so a small beach between them left has_beach false and the edge rules off:
+		# the #464 rebake put such a beach in a chunk by the spawn and test_beach_belt found a grass on open sand. A plant standing on sand itself
+		# always gets the rules.
+		if (has_beach or data.biome[data.nearest(x, z)] == _beach_id) and not _beach_rules_ok(item, data, x, z, edge_cache):
 			continue
 
 		if item["kind"] != KIND_PLANT:
@@ -769,7 +772,8 @@ func _beach_rules_ok(item: Dictionary, data, x: float, z: float, cache: Dictiona
 	var here: int = data.biome[data.nearest(x, z)]
 
 	if here == _ocean_id:
-		return true
+		# Grass on a shore cell counted as sea still keeps off open sand (its 4 m probe cell can be sand).
+		return not is_grass or _edge_m(data, x, z, cache) >= -BEACH_GRASS_M
 
 	if here == _beach_id:
 		if not is_grass:
@@ -1070,7 +1074,6 @@ func _groves_near(item: Dictionary, grove: Dictionary, seed: int, species_id: in
 # chunk it touches; each plant is drawn from the patch cell and its own number only, so two chunks (and two tiles) agree.
 # Item number = STAND_BASE + slot * PATCH_MAX_PLANTS + k, where slot is the patch cell's place in this chunk's window.
 func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, species_id: int, found: Array) -> void:
-	var edge_cache: Dictionary = {}   # _edge_m answers for this patch's plants (local: chunks are placed on several threads)
 	var patch: Dictionary = item["patch"]
 	var every: float = patch["every_m"]
 	# radius_m and spacing_m are given for scale 1 and grow with the patch scale (a 3x bush would overlap its neighbours).
@@ -1136,11 +1139,6 @@ func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, s
 				var k: int = data.nearest(x, z)
 
 				if per_biome[data.biome[k]] <= 0.0:
-					continue
-
-				# Grass patches keep off open sand too (the 2 Nov rule held only for single plants: the #464 rebake moved a beach under a patch, and
-				# test_beach_belt found one grass on open sand).
-				if item["shape"] == "grass" and data.biome[k] == _beach_id and _edge_m(data, x, z, edge_cache) < -BEACH_GRASS_M:
 					continue
 
 				if item["kind"] != KIND_PLANT and keep >= float(patch["fill"]) * _soil_growth[data.soil[k]]:
