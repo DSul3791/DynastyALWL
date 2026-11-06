@@ -49,16 +49,3 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 
 ## jamie-storm-sound | Storm sound (BUG-001): what was the name of the sound you heard? (Shift+F3 lists playing sounds.)
 [text]
-
-## sal-cookpot-ghost | Cookpot: when it will not place, what does the red ghost text say? Can you send a screenshot in the thread?
-Note: I could not reproduce it from the code, and a screenshot of the red text shows me which rule blocks it.
-Note: Recommendation: A. I will wait for the screenshot and then fix it.
-- A: Yes, I will send a screenshot
-- B: It places fine now, close the bug
-- C: Skip it until it happens again
-
-## sal-net-windowed | Fishing net duplicate (BUG-022): will you try the net once in the windowed game?
-Note: It did not reproduce on land or in water in tests.
-Note: Recommendation: B. Only tell me if you see it duplicate on your own.
-- A: Yes, I will try it and say what happens
-- B: Skip it, I will tell you if I see it

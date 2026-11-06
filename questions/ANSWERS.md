@@ -37,3 +37,20 @@ Note: Recommendation: A.
 - C: Show the level on inspect now, skills later
 Answer: A: Later (coordinator for Dave, following MikeW's pick)
 Answered: 2026-11-06
+
+## sal-cookpot-ghost | Cookpot: when it will not place, what does the red ghost text say? Can you send a screenshot in the thread?
+Note: I could not reproduce it from the code, and a screenshot of the red text shows me which rule blocks it.
+Note: Recommendation: A. I will wait for the screenshot and then fix it.
+- A: Yes, I will send a screenshot
+- B: It places fine now, close the bug
+- C: Skip it until it happens again
+Answer: C: Skip asking Dave; Sal gets the screenshot from Dino's windowed run on the PC instead (Dave 6 Nov 18:33: look things up and compare yourselves)
+Answered: 2026-11-06 18:35 UTC
+
+## sal-net-windowed | Fishing net duplicate (BUG-022): will you try the net once in the windowed game?
+Note: It did not reproduce on land or in water in tests.
+Note: Recommendation: B. Only tell me if you see it duplicate on your own.
+- A: Yes, I will try it and say what happens
+- B: Skip it, I will tell you if I see it
+Answer: B: Skip it; Dave will say if he sees it duplicate (agent's pick, Dave 6 Nov 18:33)
+Answered: 2026-11-06 18:35 UTC
