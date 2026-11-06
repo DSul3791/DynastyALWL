@@ -138,10 +138,12 @@ float hash(vec2 p) {
 	return fract((p3.x + p3.y) * p3.z);
 }
 
+// Quintic blend between the cells (was the cubic smoothstep): the ripples' normals come from this noise's slope, and the cubic's slope creased along
+// every cell edge, which a strong chop showed as a checkerboard of 0.5 to 1 m tiles on a fast brook (Tyler and Dino 6 Nov 2026, x 54101 z 69709).
 float noise(vec2 p) {
 	vec2 i = floor(p);
 	vec2 f = fract(p);
-	vec2 u = f * f * (3.0 - 2.0 * f);
+	vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
 	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
 }
 
@@ -185,8 +187,9 @@ float live_cover(vec2 uv) {
 }
 
 // Small waves: two octaves, as a height for the normal.
+// The two octaves are turned against each other and against the world's axes, so no cell grid lines up.
 float waves(vec2 p) {
-	return noise(p) * 0.65 + noise(p * 2.3 + 7.1) * 0.35;
+	return noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p) * 0.65 + noise(mat2(vec2(0.28, -0.96), vec2(0.96, 0.28)) * p * 2.3 + 7.1) * 0.35;
 }
 
 void fragment() {
@@ -247,7 +250,7 @@ void fragment() {
 	float hx = mix(waves(p0 + vec2(e, 0.0)), waves(p1 + vec2(e, 0.0)), mixk) - mix(h0, h1, mixk);
 	float hz = mix(waves(p0 + vec2(0.0, e)), waves(p1 + vec2(0.0, e)), mixk) - mix(h0, h1, mixk);
 	// Faster water is choppier; still water nearly glassy.
-	float chop = 0.08 + 0.5 * smoothstep(0.3, 2.5, speed);
+	float chop = 0.08 + 0.17 * smoothstep(0.3, 2.5, speed);   // at most a river's chop (was up to 0.58: a fast brook's ripples tiled, Tyler 6 Nov 2026)
 	vec3 n_world = normalize(vec3(-hx / e * chop, 1.0, -hz / e * chop));
 
 	// Rain: each 0.6 m cell gets a drop now and then (more cells as the rain grows); its ring spreads and fades in under a second.
@@ -289,7 +292,7 @@ void fragment() {
 	float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 4.0);
 
 	// Foam where it runs fast and shallow (rapids, the lip and foot of a fall), streaked along the flow.
-	float streak = mix(noise(p0 * 2.5), noise(p1 * 2.5), mixk);
+	float streak = mix(noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p0 * 2.5), noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p1 * 2.5), mixk);
 	float rough = clamp((speed - 0.9) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);   // BUG-010: white from 0.9 m/s (was 1.2)
 	// In streaks over about half the surface, not all of it (Tyler 6 Nov 2026: once the noise worked at the world's coordinates, a fast shallow brook
 	// came out white all over, "like snow"; the broken old noise had hidden how strong this was).
@@ -314,7 +317,7 @@ void fragment() {
 	if (fall > 0.01) {
 		// Dave 2 Nov 2026: no lines. Churning white water: round billows (no stretched streaks) that tumble downhill.
 		vec2 down = -grad / max(drop, 0.0001);
-		vec2 c = world * 0.7 - down * TIME * 2.2;
+		vec2 c = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * world * 0.7 - down * TIME * 2.2;
 		float churn = noise(c) * 0.55 + noise(c * 2.1 + 5.3 - down * TIME * 1.3) * 0.3 + noise(c * 4.3 + 1.7) * 0.15;
 		foam = max(foam, fall * smoothstep(0.1, 0.85, churn));   // soft-edged billows (hard-edged ones read as white tiles down a steep brook)
 	}
