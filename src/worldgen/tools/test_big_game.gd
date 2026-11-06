@@ -142,8 +142,7 @@ func _init() -> void:
 	check(int(a.animals[id]["state"]) == 2, "a wounded moose with the hunter far off flees")
 
 	# 6. Wolves count a moose as prey; big game keeps to the far side of the starter island.
-	check(a.species_def("moose").get("level", []).size() == 2, "moose carry a starter island level band")
-	check(AnimalsScript.level_share(a.species_def("moose")["level"], 0.0) == 0.0 and AnimalsScript.level_share(a.species_def("moose")["level"], 1.0) == 1.0, "no moose near the starter town, full share on the far side")
+	check(not a.species_def("moose").has("level"), "moose live wherever is natural for them: no band by distance from the town (Dave 6 Nov 2026)")
 
 	# 7. Boar (MikeW 2026-11-02, ANIMAL_SPEC armed defence): never protective, so a passing player only sees it flee; hit up close it warns first, and its charge hurts less than a moose's.
 	a = make()
@@ -226,7 +225,17 @@ func _init() -> void:
 		fishing += 1 if bool(a.animals[id].get("fishing", false)) and spot.x <= 30.0 and spot.x > 26.0 else 0
 
 	check(fishing >= 15, "a bear goes fishing at the river's edge near its den (%d of 20)" % fishing)
-	check(a.species_def("bear").get("level", []) == [0.6, 0.9], "bears only on the far side of the starter island")
+	# Levels (Dave 6 Nov 2026): by the starter town 1 to 5, the far side 10 to 20; a higher level has more health and hits harder.
+	a = make()
+	a.traits = true
+	a.starter = Vector2(0.0, 0.0)
+	a.cfg["species"]["bear"]["young"]["share"] = 0.0
+	var near_bear: int = a.spawn("bear", 100.0, 0.0)
+	var far_bear: int = a.spawn("bear", 9000.0, 0.0)
+	var near_lv: int = int(a.animals[near_bear].get("level", 0))
+	var far_lv: int = int(a.animals[far_bear].get("level", 0))
+	check(near_lv >= 1 and near_lv <= 5 and far_lv >= 10 and far_lv <= 20, "a bear by the town is level 1 to 5, one on the far side 10 to 20 (%d, %d)" % [near_lv, far_lv])
+	check(float(a.animals[far_bear]["hp"]) > float(a.animals[near_bear]["hp"]) and a.level_x(a.animals[far_bear], "damage") > a.level_x(a.animals[near_bear], "damage"), "the far bear is tougher and hits harder")
 
 	# 10. Temperaments, seasons and young (Dave 6 Nov 2026).
 	a = make()

@@ -1,7 +1,7 @@
 # Fauna spawn data plan (Sal, 2026-10-31)
 
 ## Where the animal code reads its data
-`data/animals/animals.json` (read by src/stream/server_animals.gd, top-up loop around line 610). Each species row has `target_per_player`, `spawn_share` (chance per top-up), `herd` [min, max], `habitat` {`slope_max`, `water_edge_m`, `forest`...}, a `flock` block for birds on water, `level` [from, full] bands on the starter island gradient (Dave 6 Nov: low by the town, medium on the far side; `island_level` block, replaced `exclude`), and movement numbers. Carcass loot is separate (`data/items/carcass.json`); look data is `data/animals/carcass.json`.
+`data/animals/animals.json` (read by src/stream/server_animals.gd, top-up loop around line 610). Each species row has `target_per_player`, `spawn_share` (chance per top-up), `herd` [min, max], `habitat` {`slope_max`, `water_edge_m`, `forest`...}, a `flock` block for birds on water, no distance bands: species live wherever is natural for them, and the `island_level` block sets each animal's level instead (Dave 6 Nov: about 1 to 5 by the starter town, 5 to 10 half way, 10 to 20 on the far side; more health and harder hits per level), and movement numbers. Carcass loot is separate (`data/items/carcass.json`); look data is `data/animals/carcass.json`.
 
 ## What is missing for a rich, biome-true fauna
 The loop picks a random spot 150 to 250 m from each player and asks only "is it too steep, too high, at a water edge, under trees?". It does not know the **biome**, the **time of day**, or the **season**. So every species spawns everywhere it can stand.
