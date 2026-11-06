@@ -137,9 +137,15 @@ void fragment() {
 	lw[5] = mix(lw[5] * (1.0 - scree), 1.0, face * rock_mask);
 	color = mix(color, mix(vec3(0.27, 0.25, 0.22), vec3(0.40, 0.34, 0.24), sandy), scree * 0.5);
 
+	// The projections follow the triangle's own facing where it differs a lot from the smoothed vertex normal (Dino's cave shots 6 Nov 2026: a
+	// thin steep step in a cave floor, where carved shapes meet, has vertex normals averaged with the flat floor, so it took the top projection
+	// and drew a strip of long vertical streaks; the same at a pool's rim drew a pale band like a plank).
+	vec3 face_normal = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
+	float sliver = smoothstep(0.25, 0.5, abs(world_normal.y) - abs(face_normal.y));
+	vec3 tri_normal = normalize(mix(abs(world_normal), abs(face_normal), sliver));
 	vec3 tw = vec3(0.0, 1.0, 0.0);
-	if (triplanar && world_normal.y < 0.93) {
-		tw = pow(abs(world_normal), vec3(4.0));
+	if (triplanar && tri_normal.y < 0.93) {
+		tw = pow(tri_normal, vec3(4.0));
 		tw /= tw.x + tw.y + tw.z;
 	}
 	float detail = 0.0;
@@ -244,6 +250,47 @@ void fragment() {
 
 	// Light touches on the surface: the texture's bump on the normal near the eye.
 	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(slope_push.x, 0.0, slope_push.y, 0.0)).xyz * 0.6 * closeness);
+
+	// Cave rock (Dave 5 Nov 2026: "they look boring and smooth like you drill them ... the floor should definitely be smooth or there should be
+	// like roots growing through the top"). The carved passages are smooth ellipsoids and the photo bump above only tilts surfaces that face up,
+	// so walls and roofs were bare paint. Bare stone that faces sideways or down (cave walls and roofs, cliff faces and overhangs) now gets a
+	// lumpy, cracked rock relief from 3D noise: hollows darker, bumps catching the torch. It fades out where the wall curves down into the
+	// floor, so the lower walls where the stream runs read water-worn and smooth, and floors stay flat to walk on: they get only fine grit and
+	// pebble specks in the colour. Roofs get patches of thin roots coming through. Near the eye only; nothing changes the collision ground.
+	float rock_relief = stone * (1.0 - smoothstep(0.3, 0.75, world_normal.y)) * (1.0 - smoothstep(25.0, 70.0, dist));
+	if (rock_relief > 0.01) {
+		// Small, rough relief (Dino's shots 6 Nov: the first try drew noise contour lines, big blotchy loops that read as a repeated pattern).
+		// Three octaves 0.4 m to 0.07 m across, as shading and bump only: no lines are drawn.
+		vec3 q = world_pos;
+		float e = 0.02;
+		float f0 = vnoise(q * 2.6) * 0.45 + vnoise(q * 6.5 + 2.0) * 0.33 + vnoise(q * 15.0 + 5.0) * 0.22;
+		float fx = vnoise((q + vec3(e, 0.0, 0.0)) * 2.6) * 0.45 + vnoise((q + vec3(e, 0.0, 0.0)) * 6.5 + 2.0) * 0.33 + vnoise((q + vec3(e, 0.0, 0.0)) * 15.0 + 5.0) * 0.22;
+		float fy = vnoise((q + vec3(0.0, e, 0.0)) * 2.6) * 0.45 + vnoise((q + vec3(0.0, e, 0.0)) * 6.5 + 2.0) * 0.33 + vnoise((q + vec3(0.0, e, 0.0)) * 15.0 + 5.0) * 0.22;
+		float fz = vnoise((q + vec3(0.0, 0.0, e)) * 2.6) * 0.45 + vnoise((q + vec3(0.0, 0.0, e)) * 6.5 + 2.0) * 0.33 + vnoise((q + vec3(0.0, 0.0, e)) * 15.0 + 5.0) * 0.22;
+		vec3 grad = vec3(fx - f0, fy - f0, fz - f0) / e;
+		vec3 along = grad - world_normal * dot(grad, world_normal);
+		vec3 bumped = normalize(world_normal - along * 0.12 * rock_relief);
+		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(bumped, 0.0)).xyz, rock_relief));
+		// Hollows a little darker, knobs a little lighter: mottled rock, not lines.
+		color *= 1.0 + rock_relief * 0.5 * (f0 - 0.5);
+		// Roots through the roof: sparse thin strands that run one way in a patch (stretched noise), only on surfaces that face down.
+		float roof = smoothstep(-0.2, -0.6, world_normal.y) * rock_relief;
+		if (roof > 0.01) {
+			float patch = smoothstep(0.6, 0.8, vnoise(q * 0.2 + 17.0));
+			if (patch > 0.01) {
+				float strand = 1.0 - smoothstep(0.0, 0.02, abs(vnoise(vec3(q.x * 5.0, q.y * 0.5, q.z * 0.35) + 13.0) - 0.5));
+				color = mix(color, vec3(0.16, 0.10, 0.06) * (0.8 + 0.4 * vnoise(q * 6.0)), strand * patch * roof * 0.8);
+			}
+		}
+	}
+	// Bare stone floors: fine grit and small pebble specks in the colour only (no relief, nothing to trip on).
+	float rock_floor = stone * smoothstep(0.75, 0.95, world_normal.y) * (1.0 - smoothstep(15.0, 40.0, dist));
+	if (rock_floor > 0.01) {
+		float grit = vnoise(world_pos * 9.0);
+		float speck = smoothstep(0.7, 0.76, vnoise(world_pos * 3.2 + 21.0));
+		color *= 1.0 + rock_floor * ((grit - 0.5) * 0.18);
+		color = mix(color, mix(vec3(0.30, 0.29, 0.27), vec3(0.48, 0.46, 0.42), vnoise(world_pos * 12.0)), speck * rock_floor * 0.6);
+	}
 
 	// Cloud shadows (Tyler, 2026-10-21): the cloud layer's own noise shape, projected along the sun ray from the
 	// cloud layer 2 km up, drifting with the wind. A 15 to 30 percent light drop in patches, Medium and up.
