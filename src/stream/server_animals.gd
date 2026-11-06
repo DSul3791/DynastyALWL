@@ -1038,19 +1038,26 @@ func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
 	var range_m: float = float(den_cfg.get("range_m", 80.0))
 
 	if water_level.is_valid() and rng.randf() < float(den_cfg.get("fish_share", 0.5)):   # luck-exempt: whether a bear goes fishing next
+		# It walks out from its den along a few random bearings, 2 m at a time, and stops at the first dry spot with water 3 m ahead:
+		# the near bank of the river (a random point in the range almost never lands on the thin strip along the bank).
 		for n in 8:
-			var ang: float = rng.randf() * TAU   # luck-exempt: where it looks for a fishing spot
-			var spot: Vector3 = den + Vector3(cos(ang), 0.0, sin(ang)) * rng.randf_range(2.0, range_m)   # luck-exempt: as above
+			var ang: float = rng.randf() * TAU   # luck-exempt: which way it looks for a fishing spot
+			var dir: Vector3 = Vector3(cos(ang), 0.0, sin(ang))
+			var dist: float = 2.0
 
-			if not is_nan(float(water_level.call(spot.x, spot.z))):
-				continue
+			while dist <= range_m:
+				var spot: Vector3 = den + dir * dist
 
-			for k in 4:
-				var off: Vector2 = Vector2.from_angle(float(k) * PI * 0.5) * 3.0
+				if not is_nan(float(water_level.call(spot.x, spot.z))):
+					break   # already in water: this way has no dry bank before it
 
-				if not is_nan(float(water_level.call(spot.x + off.x, spot.z + off.y))):
+				var ahead: Vector3 = spot + dir * 3.0
+
+				if not is_nan(float(water_level.call(ahead.x, ahead.z))):
 					a["fishing"] = true
 					return spot
+
+				dist += 2.0
 
 	a["fishing"] = false
 	var angle: float = rng.randf() * TAU   # luck-exempt: where it forages next
