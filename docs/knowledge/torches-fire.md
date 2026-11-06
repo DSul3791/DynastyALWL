@@ -19,6 +19,7 @@
 - **Relight:** E at a burning fire (#361); pressing the torch's hotbar key near a fire (#466); #476 (open) lets the hotkey light it anywhere and keeps the name. Sal's torch numbers (light 12 m, burn 1800 s, wolf protection 8 m) are waiting on the PC queue.
 - **Fire:** any wood counts at once; E lights it; rain puts it out in seconds; a burnt-out fire is deleted after 5 minutes (on Dave's review list). The fire store shows only wood and food (#293). One fire sound loop (#314).
 - **Third person:** the left-hand torch points forward and up in a fist (#451).
+- **Torch carry pose (Dave's infographic, 6 Nov, `art/references/torch_carry_infographic_2026-11-06.jpg`):** the torch in the LEFT hand, full grip; upper arm down and a little out, elbow bent about 95 degrees (90-120), forearm forward and up so the hand is about 1.2 m up and 35 cm in front of the shoulder; wrist neutral; shoulders relaxed and level; the right hand free with its natural opposite swing; the torch upright with a small lean forward and out, flame above head height. Built as `idle_torch`, `walk_torch`, `jog_torch`, `run_torch` in `dynasty_body.gd` (`_torch_carry`: the clip's left arm replaced, everything else kept) and `held_item.gd _stand_torch_upright` (the torch stood upright in the world every frame). Crouching keeps Dave's own crouched torch clips.
 
 ## What we tried
 
@@ -35,6 +36,7 @@
 | 6 Nov | Cave water lit by torchlight | #463 | Worked |
 | 6 Nov | Doused torch relights from the hotbar near a fire | #466 | Merged |
 | 6 Nov | Doused torch keeps its name, hotkey lights it anywhere; torch numbers | #476 | Open; PC queue |
+| 6 Nov | Torch carry pose from Dave's infographic: left arm up, elbow ~95 degrees, torch upright, right arm swings | (this PR) | Waiting on the windowed look. Lesson from #451: a fixed angle on the hand mount follows the arm, so a torch tilts as the hand swings; standing it upright in world space each frame avoids that |
 
 ## What others do (with sources)
 

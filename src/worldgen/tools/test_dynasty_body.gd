@@ -18,7 +18,7 @@ func _init() -> void:
 	var body: Node3D = Body.new()
 	root.add_child(body)
 
-	for clip in ["idle", "walk", "jog", "run", "crouch", "crouch_walk", "crouch_walk_back", "crouch_walk_left", "crouch_walk_right", "crouch_walk_torch", "crouch_walk_left_torch", "crouch_walk_right_torch", "sit", "sit_chair", "lie", "swing", "swing_fp", "jab", "throw", "use", "chop", "pick_overhead", "carry_idle", "carry_walk", "jump", "fall", "land"]:
+	for clip in ["idle", "walk", "jog", "run", "crouch", "crouch_walk", "crouch_walk_back", "crouch_walk_left", "crouch_walk_right", "crouch_walk_torch", "crouch_walk_left_torch", "crouch_walk_right_torch", "sit", "sit_chair", "idle_torch", "walk_torch", "jog_torch", "run_torch", "lie", "swing", "swing_fp", "jab", "throw", "use", "chop", "pick_overhead", "carry_idle", "carry_walk", "jump", "fall", "land"]:
 		_check(body.animation_player.has_animation(clip), "clip " + clip)
 
 	_check(body.animation_player.get_animation("walk").loop_mode == Animation.LOOP_LINEAR, "walk loops")
@@ -92,6 +92,23 @@ func _init() -> void:
 	_check((chair_at[0] as Vector3).y > 0.45 and (chair_at[0] as Vector3).y < 0.6, "sit_chair: hips at seat height (%.2f m)" % (chair_at[0] as Vector3).y)
 	_check(chair_foot.y < 0.2, "sit_chair: feet on the ground (%.2f m)" % chair_foot.y)
 	_check((chair_at[1] as Vector3).distance_to(chair_at[0]) < 0.03, "sit_chair: holds still through the loop")
+
+	# The torch carry (Dave's infographic, 6 Nov): walking with a torch in the left hand, the left hand is up in front (about 1.2 m, well forward of the hips) and
+	# holds still against the body, while the right arm keeps swinging.
+	var torch_rows: Array = []
+
+	for at in [0.1, 0.5]:
+		body.play("walk_torch", 1.0, 0.0)
+		body.animation_player.seek(at, true)
+		await process_frame
+		await process_frame
+		var g_hips: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_Hips")).origin
+		torch_rows.append([(s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_LeftHand"))).origin, s.get_bone_global_pose(s.find_bone("mixamorig_LeftHand")).origin - g_hips, (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_RightHand"))).origin])
+
+	var torch_hand: Vector3 = torch_rows[0][0]
+	_check(torch_hand.y > 1.0 and torch_hand.y < 1.45, "walk_torch: left hand up at chest height (%.2f m)" % torch_hand.y)
+	_check((torch_rows[0][1] as Vector3).z > 15.0, "walk_torch: left hand in front of the body (%.0f cm)" % (torch_rows[0][1] as Vector3).z)
+	_check((torch_rows[0][2] as Vector3).distance_to(torch_rows[1][2]) > 0.05, "walk_torch: the right arm still swings")
 
 	body.play("crouch", 1.0, 0.0)
 	body.animation_player.seek(1.0, true)
