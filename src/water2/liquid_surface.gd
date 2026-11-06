@@ -16,11 +16,6 @@ shader_type spatial;
 render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
 
 uniform sampler2D liquid : filter_linear, repeat_disable;   // R surface (m), G flow east, B flow south (m/s), A depth (m)
-// The same in half floats, R relative to the sheet's own level (chunk sheets, for the per-pixel reads). A 32-bit float texture is not filtered on every
-// GPU: on Dave's PC its reads between texels came back nearest, so everything the fragment works out from it (shore, depth, current, white water) stepped
-// texel by texel, square panes with straight borders over a steep brook (Tyler and Dino 6 Nov 2026, x 54101 z 69709). Half floats always filter.
-uniform sampler2D liquid_px : filter_linear, repeat_disable;
-uniform float has_px = 0.0;
 uniform vec2 cells = vec2(128.0);                           // texels across
 uniform float fade_cells = 1.0;                            // 0: no fade at the sheet's edge (a chunk sheet meets its neighbours)
 uniform float point_grid = 0.0;                            // 1: texels sit on the sheet's corners and edges (a chunk's grid points), 0: on cell centres (the live window)
@@ -86,9 +81,22 @@ vec4 sample_liquid(vec2 uv) {
 // Per pixel every sheet reads smoothly (Dino's shots 6 Nov: the steep brook at x 54101 z 69709 is drawn by chunk sheets, not the live window, and kept its
 // diamond facets). Only the vertices of a chunk sheet keep the plain reads, so its edges still meet the next sheet's; the shore, depth and white water,
 // which made the diamonds, follow the smooth surface on every sheet.
-// R is then relative (has_px): the fragment only takes differences of it.
+// A chunk sheet's per-pixel reads blend the four texels round the point by hand (texelFetch). A 32-bit float texture is not filtered on every GPU: on
+// Dave's PC the reads between texels came back nearest, so the current, the depth and everything worked out from them stepped texel by texel, and the
+// ripples dragged by the current jumped at every 2 m texel edge: square panes, then a square lattice (Tyler and Dino 6 Nov 2026, x 54101 z 69709).
+vec4 fetch_bilinear(sampler2D tex, vec2 uv) {
+	ivec2 size = textureSize(tex, 0);
+	vec2 p = uv * vec2(size) - 0.5;
+	vec2 f = fract(p);
+	ivec2 i0 = clamp(ivec2(floor(p)), ivec2(0), size - 1);
+	ivec2 i1 = clamp(i0 + ivec2(1), ivec2(0), size - 1);
+	vec4 a = mix(texelFetch(tex, i0, 0), texelFetch(tex, ivec2(i1.x, i0.y), 0), f.x);
+	vec4 b = mix(texelFetch(tex, ivec2(i0.x, i1.y), 0), texelFetch(tex, i1, 0), f.x);
+	return mix(a, b, f.y);
+}
+
 vec4 sample_pixel(vec2 uv) {
-	return has_px > 0.5 ? sample_smooth(liquid_px, uv) : sample_smooth(liquid, uv);
+	return point_grid > 0.5 ? fetch_bilinear(liquid, uv) : sample_smooth(liquid, uv);
 }
 
 // The least depth that still draws: 4 mm for slow water, half a millimetre where it runs fast (a fall face, a chute).
@@ -218,7 +226,9 @@ void fragment() {
 	float ph0 = fract(TIME / cycle);
 	float ph1 = fract(TIME / cycle + 0.5);
 	float mixk = abs(1.0 - 2.0 * ph0);
-	vec2 drift = vel * cycle;
+	// The ripples are dragged at most 1.5 m/s: on a steep brook the current runs at several m/s and changes fast from point to point, and dragging the
+	// pattern that hard squeezed it into a mottled, frosted look instead of ripples (Tyler 6 Nov 2026).
+	vec2 drift = vel * min(1.0, 1.5 / max(speed, 0.001)) * cycle;
 	vec2 p0 = world / 1.6 - drift * ph0 / 1.6;
 	vec2 p1 = world / 1.6 - drift * ph1 / 1.6 + 3.7;
 	float e = 0.15;
@@ -441,9 +451,7 @@ static func image_from_grid(grid: Dictionary) -> Image:
 			im.set_pixel(i, j, Color(here, 0.0, 0.0, 0.0))
 
 	_paint_falls(im, grid, count)
-	var laid: Image = _lay_fine(im, grid, count)
-	laid.set_meta("px", pixel_image(laid))
-	return laid
+	return _lay_fine(im, grid, count)
 
 
 # Running water on the real ground (Dave 3 Nov 2026: a brook on a steep hillside showed as separate puddles with clay and grass between them). The
@@ -564,24 +572,6 @@ static func _paint_falls(im: Image, grid: Dictionary, count: int) -> void:
 				im.set_pixel(i, j, Color(p.y, run.x, run.y, SHORE_DEPTH_M))
 
 
-# The per-pixel copy of a chunk's image (see liquid_px in the shader): half floats, R less the first wet texel's level (so it keeps cm precision).
-static func pixel_image(im: Image) -> Image:
-	var data: PackedFloat32Array = im.get_data().to_float32_array()
-	var base: float = 0.0
-
-	for n in range(0, data.size(), 4):
-		if data[n + 3] > 0.0:
-			base = data[n]
-			break
-
-	for n in range(0, data.size(), 4):
-		data[n] = clampf(data[n] - base, -60000.0, 60000.0)
-
-	var px: Image = Image.create_from_data(im.get_width(), im.get_height(), false, Image.FORMAT_RGBAF, data.to_byte_array())
-	px.convert(Image.FORMAT_RGBAH)
-	return px
-
-
 # A chunk's sheet: `corner` is the world x, z of grid point (0, 0); the texels sit on the grid points, the sheet spans them exactly (no overlap with the
 # next chunk's sheet).
 func show_points(im: Image, corner: Vector2, spacing: float) -> void:
@@ -595,9 +585,6 @@ func show_points(im: Image, corner: Vector2, spacing: float) -> void:
 
 	position = Vector3(corner.x + size.x * 0.5, 0.0, corner.y + size.y * 0.5)
 	_material.set_shader_parameter("liquid", ImageTexture.create_from_image(im))
-	var px: Image = im.get_meta("px") if im.has_meta("px") else pixel_image(im)
-	_material.set_shader_parameter("liquid_px", ImageTexture.create_from_image(px))
-	_material.set_shader_parameter("has_px", 1.0)
 	_material.set_shader_parameter("cells", Vector2(cells))
 	_material.set_shader_parameter("fade_cells", 0.0)
 	_material.set_shader_parameter("point_grid", 1.0)
