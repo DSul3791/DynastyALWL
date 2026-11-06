@@ -27,6 +27,7 @@ const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
+var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _mats: Dictionary = {}
 var _t: float = 0.0
 var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
@@ -324,14 +325,28 @@ func _model_rows() -> Dictionary:
 
 
 func _make_model(number: int) -> Node3D:
-	var row: Dictionary = _model_rows().get(str(KIND_OF_SPECIES.get(number, "")), {})
+	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
+	var row: Dictionary = _model_rows().get(kind, {})
 
-	if row.is_empty() or not ResourceLoader.exists(str(row.get("scene", ""))):
+	if row.is_empty():
+		return null
+
+	if not ResourceLoader.exists(str(row.get("scene", ""))):
+		_model_note(kind, "no file at %s: the code-built body is drawn" % str(row.get("scene", "")))
 		return null
 
 	var packed: PackedScene = load(str(row["scene"])) as PackedScene
 
 	if packed == null:
+		_model_note(kind, "%s did not load as a scene: the code-built body is drawn" % str(row["scene"]))
+		return null
+
+	var inst: Node = packed.instantiate()
+	var meshes: Array = inst.find_children("*", "MeshInstance3D", true, false)
+
+	if not (inst is Node3D) or meshes.is_empty():
+		_model_note(kind, "%s has no mesh: the code-built body is drawn" % str(row["scene"]))
+		inst.free()
 		return null
 
 	var root: Node3D = Node3D.new()
@@ -340,13 +355,24 @@ func _make_model(number: int) -> Node3D:
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
 	root.add_child(rig)
-	var inst: Node = packed.instantiate()
 	rig.add_child(inst)
+	var body: Node3D = inst as Node3D
+	body.rotation.y += deg_to_rad(float(row.get("yaw_deg", 0.0)))
 
-	if inst is Node3D:
-		(inst as Node3D).scale *= float(row.get("scale", 1.0))   # on top of the file's own unit scale (WildMesh FBX: 0.01, centimetres)
-		(inst as Node3D).rotation.y += deg_to_rad(float(row.get("yaw_deg", 0.0)))
+	# Size from the mesh itself, not the file's units (an FBX may be in centimetres, metres, or carry its own root scale): the
+	# longest side of the rest-pose bounds is made row.length_m, and the feet are put on the ground.
+	var box: AABB = _model_bounds(rig, meshes)
+	var longest: float = maxf(box.size.x, maxf(box.size.y, box.size.z))
 
+	if longest <= 0.0001:
+		_model_note(kind, "%s has empty bounds: the code-built body is drawn" % str(row["scene"]))
+		root.free()
+		return null
+
+	var k: float = float(row.get("length_m", longest)) / longest * float(row.get("scale", 1.0))
+	body.scale *= k
+	body.position.y -= box.position.y * k
+	_model_materials(meshes, row)
 	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
 
 	if not players.is_empty():
@@ -359,8 +385,76 @@ func _make_model(number: int) -> Node3D:
 
 			if player.has_animation(anim_name):
 				player.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
+			else:
+				_model_note(kind, "no clip %s" % anim_name)
 
+	_model_note(kind, "drawn from %s: %d meshes, %.2f m long (file size %.2f, scale x%.4f)" % [str(row["scene"]), meshes.size(), longest * k, longest, k])
 	return root
+
+
+# The rest-pose bounds of a model's meshes in the rig's space (so the file's own root scale and rotation count).
+func _model_bounds(rig: Node3D, meshes: Array) -> AABB:
+	var box: AABB = AABB()
+	var first: bool = true
+
+	for m in meshes:
+		var mi: MeshInstance3D = m
+		var t: Transform3D = Transform3D.IDENTITY
+		var n: Node = mi
+
+		while n != null and n != rig:
+			if n is Node3D:
+				t = (n as Node3D).transform * t
+
+			n = n.get_parent()
+
+		var part: AABB = (t * mi.get_aabb()) if mi.mesh != null else AABB()
+		box = part if first else box.merge(part)
+		first = false
+
+	return box
+
+
+# The pack's FBX files name normal maps that are not in the pack, so the materials are set here: each surface whose material or
+# mesh name contains a row.materials "match" gets that colour texture (the first entry with match "" covers the rest).
+func _model_materials(meshes: Array, row: Dictionary) -> void:
+	var sets: Array = row.get("materials", [])
+
+	if sets.is_empty():
+		return
+
+	for m in meshes:
+		var mi: MeshInstance3D = m
+
+		if mi.mesh == null:
+			continue
+
+		for surface in mi.mesh.get_surface_count():
+			var old: Material = mi.mesh.surface_get_material(surface)
+			var name_text: String = (str(old.resource_name) if old != null else "") + " " + str(mi.name)
+
+			for entry in sets:
+				var match_text: String = str(entry.get("match", ""))
+
+				if match_text == "" or name_text.findn(match_text) >= 0:
+					var tex: Texture2D = load(str(entry.get("albedo", ""))) as Texture2D if ResourceLoader.exists(str(entry.get("albedo", ""))) else null
+
+					if tex != null:
+						var mat: StandardMaterial3D = StandardMaterial3D.new()
+						mat.albedo_texture = tex
+						mat.roughness = float(entry.get("roughness", 0.9))
+						mi.set_surface_override_material(surface, mat)
+
+					break
+
+
+# One line per kind and message in the game log, so a model that is not drawn says why.
+func _model_note(kind: String, text: String) -> void:
+	var key: String = kind + text
+
+	if not _model_notes.has(key):
+		_model_notes[key] = true
+		print("animal model %s: %s" % [kind, text])
 
 
 # Plays the clip for the animal's state (a moving animal walks or runs by its real ground speed) and keeps the gait count for footsteps.
