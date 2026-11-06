@@ -1070,7 +1070,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_DOUSE:
 		_douse(peer, inv, a, b == 1)
 	elif kind == Net.ACT_RELIGHT:
-		_relight(peer, inv, a)
+		_relight(peer, inv, a, b)
 	elif kind == Net.ACT_PLACE_TORCH:
 		_place_torch(peer, inv, a, b == 1, count, at)
 	elif kind == Net.ACT_STRIKE:
@@ -5964,13 +5964,20 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 
 
 # E at a burning fire with a doused torch in the pack lights the first one again (Dave, 4 Nov 2026).
-func _relight(peer: int, inv, id: int) -> void:
+# `want` is the hotbar slot plus one of the torch the player holds (0 for none): pressing a doused torch on the hotbar at a burning fire lights that one
+# (Dave 6 Nov 2026); otherwise the first doused torch in the pack.
+func _relight(peer: int, inv, id: int, want: int = 0) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
 
 	if fire.is_empty() or not fire_is_lit(int(fire["state"])):
 		return
 
-	for slot in range(inv.SLOTS):
+	var order: Array = range(inv.SLOTS)
+
+	if want >= 1 and want <= inv.SLOTS:
+		order.push_front(want - 1)
+
+	for slot in order:
 		if inv.numbers[slot] == 0:
 			continue
 
