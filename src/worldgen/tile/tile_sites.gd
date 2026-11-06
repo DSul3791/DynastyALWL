@@ -1026,15 +1026,18 @@ func _ground_at(p: Vector2) -> float:
 	return _heights[at] if at >= 0 else -INF
 
 
-# Width of the river at a brook head: water samples counted across the flow at the head and a few samples downstream, the widest.
+# Width of the river just outside a brook head: water samples counted across the flow one and two cells downstream, the narrower. The widest of
+# four cells made the mouth wider than the bed right outside it (Dave 6 Nov 2026, x 53689 z 70048: "this cave is this big to allow the wide river to
+# come out but then it narrows right at the end. it should just be one smooth riverbed right out of the tunnel into the river"): a 28 m round mouth
+# opened onto a brook a few metres wide. Now the mouth is as wide as the bed it opens onto, and narrows inward from there.
 func _river_width(index: int, uphill: float) -> float:
 	var down: Vector2 = -Vector2(cos(uphill), sin(uphill))
 	var across: Vector2 = Vector2(-down.y, down.x)
 	var step: float = 0.5 * _spacing
 	var head: Vector2 = _point_of(index)
-	var widest: float = 0.0
+	var narrowest: float = INF
 
-	for k in range(4):
+	for k in range(1, 3):
 		var at: Vector2 = head + down * _spacing * float(k)
 		var run: float = step
 
@@ -1047,9 +1050,9 @@ func _river_width(index: int, uphill: float) -> float:
 
 				run += step
 
-		widest = maxf(widest, run)
+		narrowest = minf(narrowest, run)
 
-	return widest
+	return narrowest
 
 
 # The mouth matches the river (Dave 4 Nov): its width is the river's, its height half that (within the passage height and mouth_height_max_m), and both
