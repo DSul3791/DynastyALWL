@@ -440,7 +440,47 @@ static func _lay_fine(coarse: Image, grid: Dictionary, count: int) -> Image:
 				px.r = heights[b * fside + a]
 				im.set_pixel(x, y, px)
 
+	_soften_steps(im, side)
 	return im
+
+
+# Where an 8 m cell laid on the ground (fine) meets one that is not, the surface stepped by up to a metre at the cell's edge, and a steep brook showed
+# square panes with straight edges (Dino's shots of #465, 6 Nov 2026, x 54101 z 69709). Two passes of a 3 x 3 mean over the wet texels round off those
+# steps into slopes a few metres long. The border texels stay as they are: the next chunk's sheet shares them.
+const SOFTEN_PASSES := 2
+
+static func _soften_steps(im: Image, side: int) -> void:
+	for pass_index in range(SOFTEN_PASSES):
+		var levels: PackedFloat32Array = PackedFloat32Array()
+		levels.resize(side * side)
+		var wet: PackedByteArray = PackedByteArray()
+		wet.resize(side * side)
+
+		for y in range(side):
+			for x in range(side):
+				var px: Color = im.get_pixel(x, y)
+				levels[y * side + x] = px.r
+				wet[y * side + x] = 1 if px.a > 0.0 else 0
+
+		for y in range(1, side - 1):
+			for x in range(1, side - 1):
+				if wet[y * side + x] == 0:
+					continue
+
+				var sum: float = 0.0
+				var count: int = 0
+
+				for dy in range(-1, 2):
+					for dx in range(-1, 2):
+						var n: int = (y + dy) * side + x + dx
+
+						if wet[n] == 1:
+							sum += levels[n]
+							count += 1
+
+				var px: Color = im.get_pixel(x, y)
+				px.r = sum / float(count)
+				im.set_pixel(x, y, px)
 
 
 # Falls (water_falls.gd chains, chunk-local points from the lip down to the pool): a fall face's grid points are dry in the settled levels, so the sheet
