@@ -647,6 +647,9 @@ func _natural(infos: Array) -> void:
 				if Vector2(home.x - float(ex[0]), home.y - float(ex[1])).length() < float(ex[2]):
 					continue
 
+				if float(absi(h / 7) % 1000) / 1000.0 >= host.level_share(w.get("level", []), host.island_level(home.x, home.y)):
+					continue   # packs keep to the far half of the starter island (wolves.level, island_level)
+
 				var d: float = Vector2(home.x - p.x, home.y - p.z).length()
 
 				if d > active or d < float(host.cfg.get("spawn_min_m", 150.0)) * 0.9:

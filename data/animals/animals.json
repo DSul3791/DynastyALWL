@@ -239,10 +239,9 @@
 			"herd_pull_m": 0.0,
 			"eye_m": 2.0,
 			"protective_share": 0.3,
-			"exclude": [
-				53301.0,
-				68427.0,
-				1500.0
+			"level": [
+				0.35,
+				0.7
 			],
 			"habitat": {
 				"slope_max": 0.5,
@@ -483,10 +482,9 @@
 				"curious_m": 45.0,
 				"stop_m": 9.0
 			},
-			"exclude": [
-				53301.0,
-				68427.0,
-				1500.0
+			"level": [
+				0.15,
+				0.4
 			],
 			"habitat": {
 				"slope_max": 0.4,
@@ -544,6 +542,10 @@
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"boar": {
+			"level": [
+				0.2,
+				0.5
+			],
 			"number": 8,
 			"name": "Boar",
 			"target_per_player": 2,
@@ -1053,15 +1055,23 @@
 		"seed": 7
 	},
 	"habitat_tries": 6,
+	"island_level": {
+		"note": "Starter island gradient (Dave 6 Nov 2026; design /mnt/project-files/design/starter_island_fauna_gradient.md): level 0 within town_m of the town point (the real spawn until the starter town is placed), rising to 1 (medium) at far_m, about the far coast of tile 3,4. Species rows with \"level\": [from, full] spawn only from that level, at their full share from full on; small game has no band and lives everywhere.",
+		"town": [
+			53301.0,
+			68427.0
+		],
+		"town_m": 800.0,
+		"far_m": 8000.0
+	},
 	"wolves": {
 		"natural": false,
 		"cell_m": 2000.0,
 		"cell_share": 1.0,
 		"seed": 7,
-		"exclude": [
-			53301.0,
-			68427.0,
-			1500.0
+		"level": [
+			0.5,
+			0.8
 		],
 		"respawn_s": 7200.0,
 		"max_wolves": 15,

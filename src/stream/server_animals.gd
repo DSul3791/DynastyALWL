@@ -47,7 +47,7 @@ var biome_at: Callable             # (x, z) -> biome name of the ground there ("
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
 var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
 var traits: bool = true            # temperaments and young (Dave 6 Nov 2026); seeded tests that predate them turn this off, so every animal is born "defensive" with no young
-var starter: Vector2 = Vector2(INF, INF)   # the real spawn point (x, z) from the starter tile; "exclude" circles of big game are centred on it when set
+var starter: Vector2 = Vector2(INF, INF)   # the real spawn point (x, z) from the starter tile: the town point of the island level (island_level) when set
 var wolves = null                  # the pack brain (server_wolves.gd); wired by the server, tests may leave player_info unset
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -602,6 +602,34 @@ func snare(id: int) -> bool:
 	return true
 
 
+# The starter island's level at a point, 0 to 1 (Dave 6 Nov 2026: low-level content near the starter town, rising as a gradient to
+# medium on the far side; DESIGN_IDEAS 4.13). 0 within island_level.town_m of the town point (the real spawn until the starter town
+# is placed), 1 at far_m (about the far coast of tile 3,4) and beyond. Off the starter island the world danger map is to take over
+# (not built: one starter island for now).
+func island_level(x: float, z: float) -> float:
+	var il: Dictionary = cfg.get("island_level", {})
+	var town: Array = il.get("town", [53301.0, 68427.0])
+	var centre: Vector2 = starter if starter.x != INF else Vector2(float(town[0]), float(town[1]))
+	var near_m: float = float(il.get("town_m", 800.0))
+	var far_m: float = maxf(float(il.get("far_m", 8000.0)), near_m + 1.0)
+	return clampf((Vector2(x, z).distance_to(centre) - near_m) / (far_m - near_m), 0.0, 1.0)
+
+
+# The share of a species' spawns allowed at an island level: a species row's "level": [from, full] keeps it out below from, ramps it
+# up to its full share at full, and leaves it there beyond. No band (small game): everywhere.
+static func level_share(band: Array, level: float) -> float:
+	if band.size() != 2:
+		return 1.0
+
+	var from: float = float(band[0])
+	var full: float = float(band[1])
+
+	if level < from:
+		return 0.0
+
+	return 1.0 if full <= from else clampf((level - from) / (full - from), 0.0, 1.0)
+
+
 func _graze_time(def: Dictionary) -> float:
 	var span: Array = def.get("graze_s", [3.0, 10.0])
 	return rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how long an animal grazes
@@ -1091,13 +1119,10 @@ func _top_up(players: Array, only: int) -> void:
 				if too_near or ((not def.has("flock") or bool(def["flock"].get("on_land", false))) and blocked.is_valid() and bool(blocked.call(cx, cz))) or crosses_wall(cx, cz, cx, cz):
 					continue
 
-				var keep_out: Array = def.get("exclude", [])
+				var share: float = level_share(def.get("level", []), island_level(cx, cz)) if def.has("level") else 1.0
 
-				if keep_out.size() == 3:
-					var centre: Vector2 = starter if starter.x != INF else Vector2(float(keep_out[0]), float(keep_out[1]))
-
-					if Vector2(cx, cz).distance_to(centre) < float(keep_out[2]):
-						continue   # big game stays out of the starter tile
+				if share < 1.0 and (share <= 0.0 or rng.randf() >= share):   # luck-exempt: where a species lives on the starter island
+					continue   # dangerous game keeps to the far side of the starter island (level bands)
 
 				var weight: float = biome_weight(def, cx, cz)
 
