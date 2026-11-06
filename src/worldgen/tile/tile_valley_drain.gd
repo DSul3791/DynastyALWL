@@ -15,7 +15,7 @@ const RIVER := 3   # tile_water.gd
 
 
 # Raises the ground in place. `water_class` 0 is dry; `surface` is the water level of wet cells. Returns {"raised", "max_m"}.
-static func apply(heights: PackedFloat32Array, water_class: PackedByteArray, surface: PackedFloat32Array, n: int, cell_m: float, margin: int, origin_sx: int, origin_sz: int, rules: Dictionary) -> Dictionary:
+static func apply(heights: PackedFloat32Array, water_class: PackedByteArray, surface: PackedFloat32Array, n: int, cell_m: float, margin: int, rules: Dictionary) -> Dictionary:
 	var result: Dictionary = {"raised": 0, "max_m": 0.0}
 
 	if not bool(rules.get("enabled", false)):

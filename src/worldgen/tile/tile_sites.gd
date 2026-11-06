@@ -863,22 +863,19 @@ static func inland_mask(water_class: PackedByteArray, n: int, cell_m: float, min
 		out.fill(1)
 		return out
 
-	var f: int = 4
-	var m: int = int(ceil(float(n) / float(f)))
-	var step: float = cell_m * float(f)
+	var m: int = (n + 3) >> 2   # 4 samples to a cell
+	var step: float = cell_m * 4.0
 	var diag: float = step * sqrt(2.0)
 	var dist: PackedFloat32Array = PackedFloat32Array()
 	dist.resize(m * m)
 	dist.fill(INF)
 
 	for j in range(n):
-		@warning_ignore("integer_division")
-		var row: int = (j / f) * m
+		var row: int = (j >> 2) * m
 
 		for i in range(n):
 			if water_class[j * n + i] == OCEAN:
-				@warning_ignore("integer_division")
-				dist[row + i / f] = 0.0
+				dist[row + (i >> 2)] = 0.0
 
 	for j in range(m):
 		for i in range(m):
@@ -919,12 +916,10 @@ static func inland_mask(water_class: PackedByteArray, n: int, cell_m: float, min
 			dist[k] = d
 
 	for j in range(n):
-		@warning_ignore("integer_division")
-		var row: int = (j / f) * m
+		var row: int = (j >> 2) * m
 
 		for i in range(n):
-			@warning_ignore("integer_division")
-			out[j * n + i] = 1 if dist[row + i / f] >= min_m else 0
+			out[j * n + i] = 1 if dist[row + (i >> 2)] >= min_m else 0
 
 	return out
 

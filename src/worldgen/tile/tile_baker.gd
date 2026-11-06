@@ -285,7 +285,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 
 	# The land beside a river slopes up from it, so nothing lies lower than the river and turns to wetland (Dave 6 Nov 2026, tile_valley_drain.gd).
 	clock = Time.get_ticks_msec()
-	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, origin_sx, origin_sz, tile_rules["water"].get("valley_drain", {}))
+	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, tile_rules["water"].get("valley_drain", {}))
 	print("  valley drain (tile %s): %d cells raised to drain to the river, up to %.1f m (%d ms)" % [str(tile), drained["raised"], drained["max_m"], Time.get_ticks_msec() - clock])
 
 
