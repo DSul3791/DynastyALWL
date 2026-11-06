@@ -30,7 +30,7 @@
 | 4 Nov | Torches go out under water and in open rain; E at a fire relights | #361 | Worked |
 | 4 Nov | Torch placed in the ground or on a wall | #362 | Worked |
 | 5 Nov | Simplified fire: any wood lights it | #439 | Dave: "works great" |
-| 5 Nov | Torch held forward and up in a fist | #451 | Waiting on Dave's in-game check |
+| 5 Nov | Torch held forward and up in a fist | #451 | Dino's shots from behind: flame at hip height, clear of the body. Lesson: the left-hand mount kept the old ragdoll body's 60 degree turn; on Dave's body a hand mount has +Y forward and +Z up the forearm (dynasty_body.gd _mount), so 60 degrees laid the torch along the arm and the hip hid its flame. Check both hands when the body changes |
 | 5 Nov | Caves pitch black without a light | #447 | Worked; the torch is now essential |
 | 6 Nov | Cave water lit by torchlight | #463 | Worked |
 | 6 Nov | Doused torch relights from the hotbar near a fire | #466 | Merged |

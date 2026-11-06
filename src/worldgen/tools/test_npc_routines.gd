@@ -55,7 +55,7 @@ func _init() -> void:
 	npcs.hour_now = func(): return hour[0]
 	npcs.ground_height = func(_x, _z): return 10.0
 	npcs.rain_now = func(): return rain[0]
-	npcs.player_positions = func(): return [Vector3(53300.0, 10.0, 68426.0)]
+	npcs.player_positions = func(): return [Vector3(53280.0, 10.0, 68030.0)]   # near the town (moved with the spawn, #473)
 	npcs.setup("")
 	var hob: Dictionary = npcs.npcs["hob"]
 	check(npcs.package_of(hob, 10.0) == "work", "dry: Hob works at ten")

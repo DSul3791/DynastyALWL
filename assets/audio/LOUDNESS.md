@@ -2,7 +2,7 @@
 
 Active RMS and peak in dBFS per slot (recorded files win over generated). Steps add the game's surface level.
 
-## . (median -18.4 dB)
+## . (median -18.5 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
@@ -10,26 +10,26 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | step_bushes_right | recorded | 3 | -18.6 | -2.1 | -0.2 |
 | step_dirt_left | recorded | 3 | -18.4 | -1.5 | +0.1 |
 | step_dirt_right | recorded | 3 | -18.3 | -1.6 | +0.1 |
-| step_grass_left | recorded | 3 | -18.4 | -2.2 | +0.0 |
-| step_grass_right | recorded | 3 | -18.5 | -0.8 | -0.0 |
-| step_grass_tall_left | recorded | 3 | -18.5 | -0.6 | -0.1 |
+| step_grass_left | recorded | 3 | -18.4 | -2.2 | +0.1 |
+| step_grass_right | recorded | 3 | -18.5 | -0.8 | +0.0 |
+| step_grass_tall_left | recorded | 3 | -18.5 | -0.6 | -0.0 |
 | step_grass_tall_right | recorded | 3 | -18.5 | -1.8 | -0.1 |
-| step_gravel_left | recorded | 3 | -18.3 | 0.2 | +0.1 |
+| step_gravel_left | recorded | 3 | -19.2 | -1.4 | -0.7 |
 | step_gravel_right | recorded | 3 | -18.7 | -1.0 | -0.3 |
 | step_leaves_left | recorded | 3 | -18.7 | -2.4 | -0.2 |
-| step_leaves_right | recorded | 3 | -18.6 | -1.8 | -0.2 |
+| step_leaves_right | recorded | 3 | -18.6 | -1.8 | -0.1 |
 | step_mud_left | recorded | 3 | -18.1 | -1.7 | +0.3 |
 | step_mud_right | recorded | 3 | -18.2 | -3.8 | +0.2 |
 | step_sand_left | recorded | 3 | -18.4 | -2.4 | +0.1 |
 | step_sand_right | recorded | 3 | -18.4 | -1.4 | +0.1 |
-| step_snow_left | recorded | 3 | -18.4 | -0.5 | +0.0 |
-| step_snow_right | recorded | 3 | -18.5 | -1.5 | -0.1 |
-| step_stone_left | recorded | 3 | -18.3 | 0.2 | +0.1 |
+| step_snow_left | recorded | 3 | -18.4 | -0.5 | +0.1 |
+| step_snow_right | recorded | 3 | -18.5 | -1.5 | -0.0 |
+| step_stone_left | recorded | 3 | -19.2 | -1.4 | -0.7 |
 | step_stone_right | recorded | 3 | -18.7 | -1.0 | -0.3 |
-| step_water_left | recorded | 3 | -18.5 | -2.1 | -0.1 |
-| step_water_right | recorded | 3 | -18.4 | -1.1 | +0.0 |
-| wind_gust | generated | 1 | -18.4 | -2.1 | +0.0 |
-| wind_low | generated | 1 | -18.4 | -2.3 | -0.0 |
+| step_water_left | recorded | 3 | -18.5 | -2.1 | -0.0 |
+| step_water_right | recorded | 3 | -18.4 | -1.1 | +0.1 |
+| wind_gust | generated | 1 | -18.4 | -2.1 | +0.1 |
+| wind_low | generated | 1 | -18.4 | -2.3 | +0.0 |
 
 ## ambient (median -20.0 dB)
 
@@ -48,7 +48,7 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | owl_hoot | generated | 3 | -7.5 | -1.8 | +12.5 **outlier** |
 | tree_frog_peep | recorded | 6 | -21.3 | -2.5 | -1.3 |
 | wing_grain | recorded | 3 | -17.5 | -3.1 | +2.5 |
-| wing_large | generated | 4 | -25.2 | -3.0 | -5.2 |
+| wing_large | generated | 4 | -25.5 | -3.3 | -5.5 |
 | wing_medium | generated | 4 | -25.7 | -3.3 | -5.7 |
 | wing_small | generated | 4 | -25.6 | -3.4 | -5.6 |
 | woodpecker | generated | 3 | -23.5 | -2.5 | -3.5 |
@@ -108,23 +108,30 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | breath_out | generated | 3 | -40.9 | -11.2 | -17.1 **outlier** |
 | heartbeat | generated | 3 | -16.4 | -1.9 | +7.4 |
 
+## bow (median -20.6 dB)
+
+| slot | source | files | RMS dB | peak dB | vs median |
+|---|---|---|---|---|---|
+| bow_draw | generated | 3 | -22.3 | -5.1 | -1.6 |
+| bow_loose | generated | 3 | -19.0 | -3.2 | +1.6 |
+
 ## cave (median -21.2 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
 | cave_drip | generated | 5 | -21.2 | -1.7 | +0.0 |
 
-## cooking (median -21.3 dB)
+## cooking (median -21.6 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
-| cook_sizzle | generated | 2 | -20.5 | -4.6 | +0.8 |
-| drink_gulp | generated | 2 | -17.7 | -4.4 | +3.6 |
-| eat_crunch | generated | 3 | -25.5 | -2.9 | -4.2 |
-| eat_soft | generated | 3 | -22.7 | -4.1 | -1.3 |
-| fire_fuel | generated | 2 | -25.1 | -2.5 | -3.8 |
-| heal_bandage | generated | 2 | -21.6 | -5.3 | -0.3 |
-| heal_poultice | generated | 2 | -21.0 | -4.3 | +0.3 |
+| cook_sizzle | generated | 2 | -20.5 | -4.6 | +1.1 |
+| drink_gulp | generated | 2 | -17.7 | -4.4 | +3.9 |
+| eat_crunch | generated | 3 | -25.5 | -2.9 | -3.9 |
+| eat_soft | generated | 3 | -22.7 | -4.1 | -1.1 |
+| fire_fuel | generated | 2 | -25.1 | -2.5 | -3.5 |
+| heal_bandage | generated | 2 | -21.6 | -5.3 | +0.0 |
+| heal_poultice | generated | 2 | -21.0 | -4.3 | +0.5 |
 
 ## crafting (median -21.9 dB)
 
@@ -138,26 +145,33 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | craft_twine | generated | 2 | -21.1 | -4.4 | +0.7 |
 | craft_wrap | generated | 2 | -21.9 | -4.3 | +0.0 |
 
-## creatures (median -23.1 dB)
+## creatures (median -25.9 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
-| bear_growl | recorded | 2 | -26.6 | -14.2 | -3.4 |
-| bear_roar | generated | 2 | -12.2 | -0.1 | +10.9 **outlier** |
-| deer_grunt | recorded | 2 | -29.4 | -13.7 | -6.3 |
-| deer_snort | generated | 2 | -21.4 | -3.3 | +1.7 |
-| duck_quack | recorded | 2 | -21.9 | -10.9 | +1.2 |
-| fox_bark | recorded | 2 | -27.2 | -14.1 | -4.0 |
-| fox_scream | recorded | 1 | -28.3 | -14.0 | -5.2 |
-| horse_snort | generated | 2 | -21.8 | -2.6 | +1.4 |
-| horse_whinny | recorded | 2 | -30.5 | -14.1 | -7.4 |
-| moose_bellow | recorded | 2 | -29.0 | -14.3 | -5.9 |
-| moose_grunt | recorded | 2 | -28.5 | -14.0 | -5.3 |
-| moose_snort | generated | 2 | -21.0 | -3.1 | +2.2 |
-| rabbit_squeak | generated | 2 | -9.9 | -4.0 | +13.2 **outlier** |
-| rabbit_thump | generated | 2 | -15.7 | -1.9 | +7.4 |
-| wolf_growl | generated | 2 | -18.6 | -2.5 | +4.5 |
-| wolf_howl | recorded | 2 | -24.4 | -13.8 | -1.2 |
+| bear_growl | recorded | 2 | -26.6 | -14.2 | -0.6 |
+| bear_roar | generated | 2 | -19.5 | -7.2 | +6.4 |
+| deer_grunt | recorded | 2 | -29.4 | -13.7 | -3.5 |
+| deer_snort | generated | 2 | -26.0 | -7.3 | -0.1 |
+| duck_quack | recorded | 2 | -21.9 | -10.9 | +4.0 |
+| fox_bark | recorded | 2 | -27.2 | -14.1 | -1.2 |
+| fox_scream | recorded | 1 | -28.3 | -14.0 | -2.4 |
+| horse_snort | generated | 2 | -25.9 | -7.8 | +0.1 |
+| horse_whinny | recorded | 2 | -30.5 | -14.1 | -4.6 |
+| moose_bellow | recorded | 2 | -29.0 | -14.3 | -3.1 |
+| moose_grunt | recorded | 2 | -28.5 | -14.0 | -2.6 |
+| moose_snort | generated | 2 | -24.8 | -7.2 | +1.2 |
+| rabbit_squeak | generated | 2 | -14.1 | -7.2 | +11.8 **outlier** |
+| rabbit_thump | generated | 2 | -20.8 | -7.0 | +5.1 |
+| wolf_growl | generated | 2 | -23.2 | -7.4 | +2.8 |
+| wolf_howl | recorded | 2 | -24.4 | -13.8 | +1.5 |
+
+## den (median -24.6 dB)
+
+| slot | source | files | RMS dB | peak dB | vs median |
+|---|---|---|---|---|---|
+| den_breath | generated | 3 | -21.4 | -5.9 | +3.1 |
+| den_shuffle | generated | 3 | -27.7 | -8.2 | -3.1 |
 
 ## dig (median -20.8 dB)
 
@@ -171,17 +185,17 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | dig_soil | generated | 3 | -24.0 | -1.4 | -3.2 |
 | dig_water | generated | 3 | -20.8 | -1.1 | +0.0 |
 
-## fire (median -22.7 dB)
+## fire (median -24.0 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
-| fire_large | generated | 1 | -27.2 | -0.2 | -4.5 |
-| fire_light | generated | 3 | -22.0 | -3.7 | +0.7 |
-| fire_out | generated | 3 | -24.6 | -5.6 | -1.9 |
-| fire_rain | generated | 1 | -19.7 | 1.1 | +3.0 |
-| fire_small | generated | 1 | -24.2 | -0.3 | -1.5 |
-| flame_lantern | generated | 1 | -18.7 | -6.2 | +4.0 |
-| flame_torch | generated | 1 | -22.7 | -3.5 | +0.0 |
+| fire_large | generated | 1 | -27.2 | -0.2 | -3.3 |
+| fire_light | generated | 3 | -22.0 | -3.7 | +1.9 |
+| fire_out | generated | 3 | -24.6 | -5.6 | -0.6 |
+| fire_rain | generated | 1 | -24.0 | -3.0 | +0.0 |
+| fire_small | generated | 1 | -24.2 | -0.3 | -0.3 |
+| flame_lantern | generated | 1 | -18.7 | -6.2 | +5.3 |
+| flame_torch | generated | 1 | -22.7 | -3.5 | +1.3 |
 
 ## floors (median -20.3 dB)
 
@@ -703,6 +717,12 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | thatch_pick | generated | 3 | -30.6 | -5.4 | -0.9 |
 | twine_lash | generated | 3 | -21.9 | -6.1 | +7.7 |
 
+## skill (median -27.8 dB)
+
+| slot | source | files | RMS dB | peak dB | vs median |
+|---|---|---|---|---|---|
+| skill_tock | generated | 3 | -27.8 | -14.0 | +0.0 |
+
 ## spear (median -20.4 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
@@ -756,14 +776,14 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | swim_surface | generated | 3 | -20.9 | -2.1 | -1.1 |
 | swim_under | generated | 1 | -15.3 | -3.3 | +4.5 |
 
-## town (median -13.8 dB)
+## town (median -14.7 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
-| town_bell | generated | 3 | -16.3 | -2.1 | -2.5 |
-| town_crowd | generated | 1 | -14.6 | -1.7 | -0.8 |
-| town_fire | generated | 1 | -12.9 | -1.1 | +0.8 |
-| town_hammering | generated | 1 | -11.6 | 0.2 | +2.2 |
+| town_bell | generated | 3 | -16.3 | -2.1 | -1.6 |
+| town_crowd | generated | 1 | -14.6 | -1.7 | +0.1 |
+| town_fire | generated | 1 | -12.9 | -1.1 | +1.7 |
+| town_hammering | generated | 1 | -14.8 | -1.8 | -0.1 |
 
 ## trees (median -19.7 dB)
 
@@ -778,9 +798,9 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
-| treewind_bare | generated | 1 | -15.3 | -1.6 | +0.1 |
-| treewind_dry | generated | 1 | -16.7 | 3.9 | -1.2 |
-| treewind_leaves | generated | 1 | -15.4 | -2.0 | +0.0 |
+| treewind_bare | generated | 1 | -15.3 | -2.2 | +0.1 |
+| treewind_dry | generated | 1 | -22.0 | -2.2 | -6.6 |
+| treewind_leaves | generated | 1 | -15.4 | -2.3 | +0.0 |
 | treewind_pine | generated | 1 | -15.4 | -1.8 | -0.0 |
 
 ## ui (median -16.3 dB)
@@ -803,26 +823,26 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | water_pond | generated | 1 | -15.4 | -3.2 | +0.2 |
 | water_river | generated | 1 | -15.4 | -3.3 | +0.2 |
 
-## weather (median -16.7 dB)
+## weather (median -19.3 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
-| rain_drip | generated | 4 | -18.0 | -3.0 | -1.3 |
-| rain_heavy | generated | 1 | -16.5 | -1.2 | +0.2 |
-| rain_leaves | generated | 1 | -16.4 | 0.5 | +0.4 |
-| rain_light | generated | 1 | -16.9 | -0.1 | -0.1 |
-| rain_litter | generated | 1 | -16.4 | 0.8 | +0.3 |
-| rain_mud | generated | 1 | -17.1 | -0.3 | -0.4 |
-| rain_roof | generated | 1 | -16.3 | 2.3 | +0.5 |
-| rain_snow | generated | 1 | -17.0 | 0.8 | -0.2 |
-| rain_stone | generated | 1 | -17.3 | 1.5 | -0.5 |
-| rain_water | generated | 1 | -16.5 | 0.2 | +0.2 |
-| rain_woodroof_heavy | generated | 1 | -16.6 | 2.3 | +0.1 |
-| rain_woodroof_light | generated | 1 | -17.0 | 1.1 | -0.2 |
-| thunder | generated | 3 | -21.0 | -1.3 | -4.3 |
-| thunder_far | generated | 3 | -15.3 | -2.8 | +1.4 |
-| thunder_near | generated | 3 | -22.4 | -1.1 | -5.6 |
-| wind_storm | generated | 1 | -15.3 | -2.9 | +1.4 |
+| rain_drip | generated | 4 | -18.0 | -3.0 | +1.3 |
+| rain_heavy | generated | 1 | -16.5 | -1.2 | +2.8 |
+| rain_leaves | generated | 1 | -18.4 | -1.1 | +0.8 |
+| rain_light | generated | 1 | -16.9 | -0.1 | +2.4 |
+| rain_litter | generated | 1 | -19.0 | -1.2 | +0.3 |
+| rain_mud | generated | 1 | -17.1 | -0.3 | +2.2 |
+| rain_roof | generated | 1 | -19.9 | -1.1 | -0.7 |
+| rain_snow | generated | 1 | -20.0 | -1.5 | -0.7 |
+| rain_stone | generated | 1 | -20.0 | -1.5 | -0.7 |
+| rain_water | generated | 1 | -19.6 | -1.8 | -0.3 |
+| rain_woodroof_heavy | generated | 1 | -19.7 | -1.4 | -0.5 |
+| rain_woodroof_light | generated | 1 | -20.6 | -1.4 | -1.3 |
+| thunder | generated | 3 | -21.0 | -1.3 | -1.7 |
+| thunder_far | generated | 3 | -15.3 | -2.8 | +4.0 |
+| thunder_near | generated | 3 | -22.4 | -1.1 | -3.1 |
+| wind_storm | generated | 1 | -15.3 | -2.9 | +3.9 |
 
 ## wet (median -20.4 dB)
 
@@ -856,12 +876,12 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | dirt | -18.3 | -10.0 | -28.3 |
 | grass | -18.4 | -15.0 | -33.4 |
 | grass_tall | -18.5 | -14.0 | -32.5 |
-| gravel | -18.5 | -9.0 | -27.5 |
+| gravel | -19.0 | -9.0 | -28.0 |
 | leaves | -18.6 | -6.0 | -24.6 |
 | mud | -18.2 | -10.0 | -28.2 |
 | sand | -18.4 | -11.0 | -29.4 |
 | snow | -18.5 | -11.0 | -29.5 |
-| stone | -18.5 | -8.0 | -26.5 |
+| stone | -19.0 | -8.0 | -27.0 |
 | water | -18.5 | -10.0 | -28.5 |
 
 Median -28.5 dB. Surfaces more than 3 dB off (a deliberate hierarchy: soft grass, crunchy leaves; judge by ear): bushes (-3.2), grass (-5.0), grass_tall (-4.1), leaves (+3.8)

@@ -181,6 +181,7 @@ var _breath_sent: Dictionary = {}   # peer -> tenths of a second last sent (-1 =
 var _speed3: Dictionary = {}        # peer -> smoothed speed in m/s, vertical included (the breath drain)
 var _cave_pool: Dictionary = {}     # peer -> true while swimming in a spring cave pool (icy; BUG-008)
 var _swimming: Dictionary = {}      # peer -> true while the server reads them as swimming
+var _soak: Dictionary = {}          # peer -> 0..1, how rain-soaked they are (warmth.json soak_*: rain wets, only shelter dries; Dave 5 Nov on the rain card)
 var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
@@ -586,6 +587,7 @@ func peer_left(peer: int) -> void:
 	_wear_carry.erase(peer)
 	_swimming.erase(peer)
 	_cave_pool.erase(peer)
+	_soak.erase(peer)
 	_last_dose.erase(peer)
 	_remains_sent.erase(peer)
 	_worn_sent.erase(peer)
@@ -8877,8 +8879,12 @@ func warmth_target(peer: int) -> float:
 	stress *= float(rested_tier(peer).get("cold_stress_mult", 1.0))   # Rested: the cold bites a little less
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 
-	if precip > 0.05 and not covered:
-		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * minf(precip * 2.0, 1.0)
+	# Wet from rain or snow (Dave 5 Nov, rain card: "Rain x1.5"; only shelter dries you, slowly under a tree or roof, fast by a fire): the chill follows
+	# how soaked the player is (_update_soak), not only the rain falling this moment. A peer the tick has not seen yet uses the rain falling now.
+	var soak: float = float(_soak[peer]) if _soak.has(peer) else (minf(precip * 2.0, 1.0) if precip > 0.05 and not covered else 0.0)
+
+	if soak > 0.0:
+		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak
 
 	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
 
@@ -8899,6 +8905,7 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 		return
 
 	var cfg: Dictionary = _warmth_cfg
+	_update_soak(peer, game_s)
 	var w: float = float(v.get("warmth", 100.0))
 	var target: float = warmth_target(peer)
 	var tau_h: float = float(cfg.get("tau_warm_h", 0.5)) if target > w else (float(cfg.get("tau_water_h", 0.7)) if bool(_swimming.get(peer, false)) else float(cfg.get("tau_cool_h", 3.0)))
@@ -8927,6 +8934,39 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 		_say(peer, str(cfg.get("say_warm", "You feel warm again")))
 
 	_sync_warmth(peer, false)
+
+
+# Rain or snow on an uncovered player soaks them toward the rain's strength (soak_per_h), swimming soaks them through; out of it they dry only in shelter:
+# slowly under a tree or roof (dry_cover_per_h), fast within reach of a lit fire (dry_fire_per_h); in the open they stay wet.
+func _update_soak(peer: int, game_s: float) -> void:
+	var cfg: Dictionary = _warmth_cfg
+	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
+	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
+	var soak: float = float(_soak.get(peer, 0.0))
+	var hours: float = game_s / 3600.0
+
+	var by_fire: bool = false
+	var tiers: Dictionary = _cooking.get("fire_tiers", {})
+
+	for row in _lit_rows():   # within a lit fire's heat reach, as warmth_target counts it
+		var tier_row: Dictionary = tiers.get(_fire_class_of_state(int(row[1])), {})
+
+		if (row[0] as Vector3).distance_to(pos) <= float(tier_row.get("heat_radius_m", cfg.get("fire_radius_m", 4.0))):
+			by_fire = true
+			break
+
+	if bool(_swimming.get(peer, false)):
+		soak = 1.0   # in the water: soaked through
+	elif precip > 0.05 and not covered:
+		soak = minf(soak + float(cfg.get("soak_per_h", 4.0)) * hours, maxf(soak, minf(precip * 2.0, 1.0)))
+	elif by_fire:
+		soak = maxf(soak - float(cfg.get("dry_fire_per_h", 6.0)) * hours, 0.0)
+	elif covered:
+		soak = maxf(soak - float(cfg.get("dry_cover_per_h", 1.0)) * hours, 0.0)
+
+	_soak[peer] = soak
 
 
 func _sync_warmth(peer: int, force: bool) -> void:
