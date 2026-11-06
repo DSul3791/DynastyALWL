@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Animal spawn wiring (flora session, 2026-10-31): biome weights, time-of-day activity, the near-spawn mix and the starter exclusion centre.
+# Animal spawn wiring (flora session, 2026-10-31): biome weights, time-of-day activity, the near-spawn mix and the starter island level.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_spawn_wiring.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -91,19 +91,34 @@ func _init() -> void:
 
 	check(near.animals.size() > 0 and inside == near.animals.size(), "near-share spawns land 60 to 120 m out (%d of %d)" % [inside, near.animals.size()])
 
-	# Starter exclusion: moose keep out of the circle around the real spawn point (the row's old fixed centre is replaced).
+	# Starter island gradient (Dave 6 Nov 2026): moose keep to the far side; the real spawn point is the town point.
 	var moose = make(players, "moose")
 	moose.cfg["species"]["moose"]["spawn_share"] = 1.0
 	moose.starter = Vector2(0.0, 0.0)
 	moose.biome_at = func(x, z): return "boreal_forest"
 	run(moose, 40.0)
-	check(count(moose, "moose") == 0, "moose stay out of 1500 m around the real spawn (%d)" % count(moose, "moose"))
+	check(count(moose, "moose") == 0, "no moose near the starter town (%d)" % count(moose, "moose"))
 	var far = make(players, "moose")
 	far.cfg["species"]["moose"]["spawn_share"] = 1.0
 	far.starter = Vector2(60000.0, 60000.0)
 	far.biome_at = func(x, z): return "boreal_forest"
 	run(far, 40.0)
 	check(count(far, "moose") > 0, "moose spawn when the real spawn is far away (%d)" % count(far, "moose"))
+	var lv = make(players, "rabbit")
+	lv.starter = Vector2(0.0, 0.0)
+	var il: Dictionary = lv.cfg["island_level"]
+	check(lv.island_level(float(il["town_m"]) * 0.5, 0.0) == 0.0 and lv.island_level(float(il["far_m"]) + 100.0, 0.0) == 1.0, "the island level is 0 by the town and 1 on the far side")
+	var mid: float = lv.island_level((float(il["town_m"]) + float(il["far_m"])) * 0.5, 0.0)
+	check(mid > 0.45 and mid < 0.55, "half way across, the island level is about 0.5 (%.2f)" % mid)
+	check(lv.level_share([], 0.0) == 1.0 and not lv.species_def("rabbit").has("level") and not lv.species_def("deer").has("level"), "small game has no band and lives everywhere")
+	check(lv.level_share(lv.cfg["wolves"]["level"], 0.4) == 0.0 and lv.level_share(lv.cfg["wolves"]["level"], 0.9) == 1.0, "wolf packs only on the far half")
+	var boar_near = make(players, "boar")
+	boar_near.cfg["species"]["boar"]["spawn_share"] = 1.0
+	boar_near.starter = Vector2(0.0, 0.0)
+	boar_near.hour_now = func(): return 23.0
+	boar_near.biome_at = func(x, z): return "temperate_forest"
+	run(boar_near, 40.0)
+	check(count(boar_near, "boar") == 0, "no boar right by the starter town (%d)" % count(boar_near, "boar"))
 	# The newer species (boar 8, songbirds 9, frog 10): spawn in their own biome and time only, have a model and a carcass row; the ones waiting for models never spawn.
 	var carcass: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/carcass.json"))["species"]
 	var view = AnimalViewScript.new()
