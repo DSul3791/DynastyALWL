@@ -13,7 +13,7 @@ const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
 static func apply(
 	heights: PackedFloat32Array, water_class: PackedByteArray, samples: int, spacing_m: float,
-	origin_sx: int, origin_sz: int, settings, rules: Dictionary, elevation
+	origin_sx: int, origin_sz: int, settings, rules: Dictionary, elevation, water_surface: PackedFloat32Array = PackedFloat32Array()
 ) -> void:
 	var total: int = samples * samples
 	var bumps: PackedFloat32Array = PackedFloat32Array()
@@ -87,6 +87,17 @@ static func apply(
 		var raised: Dictionary = _drain_new_hollows(before, heights, water_class, samples)
 		print("  rolling hills: %d cells raised so new hollows drain (most %.1f m)" % [int(raised["cells"]), float(raised["most_m"])])
 
+	# Dave 6 Nov 2026 (x 52935 z 69453): "these riverbeds arent deep enough to keep the water in. its constantly flowing out and making wetlands everywhere".
+	# The drain above lets a hollow out at a river's BED, so a bowl beside a river with its floor under the river's water was "drained" and the settle
+	# filled it from the river: 11,000 wet land cells on tile 3,4, most of them bowls 2 to 6 m deep by a river (x 58023 z 69452: land at 53 m beside a
+	# river at 59 m). Every dry cell that would drain only to water standing higher than it is raised to that water plus above_water_m (at most
+	# max_fill_m), a flat vale floor just over the river's level; deeper bowls keep their water.
+	var above: float = float(hill_rules.get("above_water_m", -1.0))
+
+	if above >= 0.0 and water_surface.size() == total:
+		var filled: Dictionary = _fill_below_water(heights, water_class, water_surface, samples, above, float(hill_rules.get("max_fill_m", 6.0)))
+		print("  rolling hills: %d cells under a river's or lake's water raised to it (most %.1f m)" % [int(filled["cells"]), float(filled["most_m"])])
+
 
 # Dave 4 Nov 2026 ("valleys and hills and rolling hills along the plains on the islands; the terrain is way too flat"): broad hills, 0 to amplitude_m
 # high per octave (never below the ground, so the rivers' valleys stay the low ground). Empty when no octaves.
@@ -142,8 +153,28 @@ static func _drain_new_hollows(before: PackedFloat32Array, heights: PackedFloat3
 	return {"cells": cells, "most_m": most}
 
 
+static func _fill_below_water(heights: PackedFloat32Array, water_class: PackedByteArray, water_surface: PackedFloat32Array, samples: int, above: float, max_fill: float) -> Dictionary:
+	var level: PackedFloat32Array = _flood(heights, water_class, samples, 0.0, water_surface, above)
+	var cells: int = 0
+	var most: float = 0.0
+
+	for index in range(heights.size()):
+		if water_class[index] != 0 or heights[index] <= 0.0:
+			continue
+
+		var raise: float = level[index] - heights[index]
+
+		if raise > 0.001 and raise <= max_fill:
+			heights[index] = level[index]
+			cells += 1
+			most = maxf(most, raise)
+
+	return {"cells": cells, "most_m": most}
+
+
 # Priority flood (Barnes et al. 2014, a bucket queue at 2 cm): the lowest level each cell can drain at, rising `step` per cell over flats and hollows.
-static func _flood(heights: PackedFloat32Array, water_class: PackedByteArray, samples: int, step: float) -> PackedFloat32Array:
+# With `surface`, a river or lake cell lets water out at its surface plus `above` (when it has one), not at its bed.
+static func _flood(heights: PackedFloat32Array, water_class: PackedByteArray, samples: int, step: float, surface: PackedFloat32Array = PackedFloat32Array(), above: float = 0.0) -> PackedFloat32Array:
 	const BUCKET_M := 0.02
 	var total: int = samples * samples
 	var level: PackedFloat32Array = heights.duplicate()
@@ -170,7 +201,11 @@ static func _flood(heights: PackedFloat32Array, water_class: PackedByteArray, sa
 
 		if water_class[index] != 0 or heights[index] <= 0.0 or i == 0 or j == 0 or i == samples - 1 or j == samples - 1:
 			done[index] = 1
-			buckets[int((heights[index] - low) / BUCKET_M)].append(index)
+
+			if (water_class[index] == 2 or water_class[index] == 3) and surface.size() == total and not is_nan(surface[index]):
+				level[index] = maxf(heights[index], surface[index] + above)
+
+			buckets[mini(int((level[index] - low) / BUCKET_M), count - 1)].append(index)
 
 	var b: int = 0
 
