@@ -46,6 +46,7 @@ uniform float chunk_lift = 0.25;    // chunk sheets only: running water is drawn
 uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
+uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live window magenta, a 2 m chunk sheet yellow, an 8 m one orange, dark lines on the texel borders
 
 varying vec2 tex_uv;
 varying float depth_v;
@@ -310,6 +311,19 @@ void fragment() {
 		SPECULAR = 0.0;
 		ALPHA = mix(0.96, 0.82, window) * shore * edge;
 	}
+
+	// Which sheet draws a spot, and its texels (Tyler 6 Nov 2026: square see-through panes with dark borders in the brook at x 54101 z 69709).
+	if (debug_sheet > 0.5) {
+		vec2 grid = point_grid > 0.5 ? tex_uv * cells - 0.5 : tex_uv * cells;   // a chunk sheet: lines through its grid points (the mesh quads), the live window: its cell squares
+		vec2 to_line = min(fract(grid), 1.0 - fract(grid)) / max(fwidth(grid), vec2(0.0001));
+		float line = 1.0 - smoothstep(0.5, 1.5, min(to_line.x, to_line.y));
+		vec3 sheet = point_grid < 0.5 ? vec3(0.9, 0.1, 0.8) : (cell_m < 4.0 ? vec3(0.95, 0.85, 0.1) : vec3(0.95, 0.45, 0.05));
+		ALBEDO = mix(sheet * mix(0.6, 1.0, clamp(depth, 0.0, 1.0)), vec3(0.05), line);
+		EMISSION = vec3(0.0);
+		ROUGHNESS = 1.0;
+		SPECULAR = 0.0;
+		ALPHA = 0.9 * (point_grid > 0.5 ? chunk_share : edge);
+	}
 }
 """
 
@@ -319,6 +333,8 @@ const SHORE_DEPTH_M := 0.3      # a chunk sheet's depth at wet points next to th
 const OPEN_DEPTH_M := 1.0       # and further in
 
 static var _shader: Shader = null
+
+static var debug_on: int = -1   # -1: not read yet (then --water-debug on the command line turns it on)
 
 var _material: ShaderMaterial = null
 var _cells: Vector2i = Vector2i.ZERO
@@ -334,7 +350,18 @@ func _init() -> void:
 
 	_material = ShaderMaterial.new()
 	_material.shader = _shader
+
+	if debug_on < 0:
+		debug_on = 1 if AppConfig.has_flag("water-debug") else 0
+
+	_material.set_shader_parameter("debug_sheet", float(debug_on))
 	visible = false
+
+
+# The debug colours (see debug_sheet in the shader), for this sheet and every one made after.
+func set_debug(on: bool) -> void:
+	debug_on = 1 if on else 0
+	_material.set_shader_parameter("debug_sheet", float(debug_on))
 
 
 # A chunk's settled water (water_grid.gd decode: count x count points `spacing` apart from the chunk's corner) as a liquid image: R surface, G/B the current,
