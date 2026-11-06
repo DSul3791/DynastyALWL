@@ -1,17 +1,21 @@
 
 
-## mikew-bear-threat-ranges | Bear PR #480: how close before an animal charges instead of fleeing? Built: bear 15 m at its den and 9 m elsewhere, moose 8, boar 6, deer 3.5, horse 3, fox 2.
-Answer: Keep these ranges (coordinator for Dave)
-Answered: 2026-11-06 16:08 UTC
+## mikew-temperament-mix | PR #480: temperament mix per species. Bear 60% defensive, 25% neutral, 15% aggressive. Moose 70% defensive, 30% neutral. Boar 70% defensive, 30% aggressive. Deer 80% passive, 20% defensive. Fox 60% passive, 25% neutral, 15% friendly. Rabbits and birds stay passive.
+Answer: Keep this mix (coordinator for Dave)
+Answered: 2026-11-06 16:31 UTC
 
-## mikew-cornered-attack | Bear PR #480: do deer, horses and foxes attack when cornered or surprised that close?
-Answer: Yes, with weak hits of 4 to 10 damage (coordinator for Dave)
-Answered: 2026-11-06 16:08 UTC
+## mikew-season-effects | PR #480: seasons. A bear's threat range is 1.5 times bigger in spring and 0.7 times in autumn; moose and deer are 1.5 times touchier in the autumn rut.
+Answer: Keep (coordinator for Dave)
+Answered: 2026-11-06 16:31 UTC
 
-## mikew-bear-numbers | Bear PR #480: a bear hit does 35 damage, it charges at 12 m/s, has 120 HP, wanders up to 80 m from its den, and half its trips go fishing at the river.
-Answer: Keep these numbers (coordinator for Dave)
-Answered: 2026-11-06 16:08 UTC
+## mikew-young | PR #480: young. Some mothers have young (moose, bear, boar 30%, deer 25%, horse 20%) in spring and summer, bear cubs also in autumn. Mothers run 1.4 times sooner, and anyone within 5 to 10 m of the young gets charged, torch or not, even by a deer.
+Answer: Keep (coordinator for Dave)
+Answered: 2026-11-06 16:31 UTC
 
-## mikew-bear-poses | Bear PR #480: fishing, foraging and sleeping poses. For now the bear only walks to those spots.
+## mikew-wolf-temperament | PR #480: should wolves get temperaments too, or keep their pack rules?
+Answer: Keep their pack rules (coordinator for Dave)
+Answered: 2026-11-06 16:31 UTC
+
+## mikew-temperament-mood | PR #480: should one animal's temperament also change over time (hunger, injury)?
 Answer: Later (coordinator for Dave)
-Answered: 2026-11-06 16:08 UTC
+Answered: 2026-11-06 16:31 UTC
