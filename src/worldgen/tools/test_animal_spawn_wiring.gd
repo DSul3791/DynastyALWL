@@ -111,13 +111,13 @@ func _init() -> void:
 	check(lv.island_level(float(il["town_m"]) * 0.5, 0.0) == 0.0 and lv.island_level(float(il["far_m"]) + 100.0, 0.0) == 1.0, "the island level is 0 by the town and 1 on the far side")
 	var mid: float = lv.island_level((float(il["town_m"]) + float(il["far_m"])) * 0.5, 0.0)
 	check(mid > 0.45 and mid < 0.55, "half way across, the island level is about 0.5 (%.2f)" % mid)
-	check(lv.level_share([], 0.0) == 1.0 and not lv.species_def("rabbit").has("level") and not lv.species_def("deer").has("level"), "small game has no band and lives everywhere")
-	check(lv.level_share(lv.cfg["wolves"]["level"], 0.4) == 0.0 and lv.level_share(lv.cfg["wolves"]["level"], 0.9) == 1.0, "wolf packs only on the far half")
+	check(AnimalsScript.level_share([], 0.0) == 1.0 and not lv.species_def("rabbit").has("level") and not lv.species_def("deer").has("level"), "small game has no band and lives everywhere")
+	check(AnimalsScript.level_share(lv.cfg["wolves"]["level"], 0.4) == 0.0 and AnimalsScript.level_share(lv.cfg["wolves"]["level"], 0.9) == 1.0, "wolf packs only on the far half")
 	var boar_near = make(players, "boar")
 	boar_near.cfg["species"]["boar"]["spawn_share"] = 1.0
 	boar_near.starter = Vector2(0.0, 0.0)
 	boar_near.hour_now = func(): return 23.0
-	boar_near.biome_at = func(x, z): return "temperate_forest"
+	boar_near.biome_at = func(_x, _z): return "temperate_forest"
 	run(boar_near, 40.0)
 	check(count(boar_near, "boar") == 0, "no boar right by the starter town (%d)" % count(boar_near, "boar"))
 	# The newer species (boar 8, songbirds 9, frog 10): spawn in their own biome and time only, have a model and a carcass row; the ones waiting for models never spawn.

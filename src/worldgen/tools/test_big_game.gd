@@ -143,7 +143,7 @@ func _init() -> void:
 
 	# 6. Wolves count a moose as prey; big game keeps to the far side of the starter island.
 	check(a.species_def("moose").get("level", []).size() == 2, "moose carry a starter island level band")
-	check(a.level_share(a.species_def("moose")["level"], 0.0) == 0.0 and a.level_share(a.species_def("moose")["level"], 1.0) == 1.0, "no moose near the starter town, full share on the far side")
+	check(AnimalsScript.level_share(a.species_def("moose")["level"], 0.0) == 0.0 and AnimalsScript.level_share(a.species_def("moose")["level"], 1.0) == 1.0, "no moose near the starter town, full share on the far side")
 
 	# 7. Boar (MikeW 2026-11-02, ANIMAL_SPEC armed defence): never protective, so a passing player only sees it flee; hit up close it warns first, and its charge hurts less than a moose's.
 	a = make()
