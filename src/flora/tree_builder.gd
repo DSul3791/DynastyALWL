@@ -3102,7 +3102,10 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	# Basal leaves: a few low clumps round the foot.
 	for k in range(mini(2, int(look.get("basal", 3))) if far else int(look.get("basal", 3))):
 		var a: float = rng.randf() * TAU
-		_clump(leaves, rng, Vector3(cos(a), 0.0, sin(a)) * crown * 0.25 + Vector3(0.0, h * 0.12, 0.0), Vector3(0.0, -h, 0.0), maxf(crown * 0.7, h * 0.3), rng.randf_range(0.85, 1.05), 2)
+		# The clump sits on the ground, not in it (Dino's #490 close-up, 6 Nov): its cards are half a size tall each way, so a centre at h * 0.12
+		# buried the lower few cm, and that band in the ground's shadow drew a black fringe along every clump's bottom edge.
+		var clump: float = maxf(crown * 0.7, h * 0.3)
+		_clump(leaves, rng, Vector3(cos(a), 0.0, sin(a)) * crown * 0.25 + Vector3(0.0, maxf(h * 0.12, clump * 0.5), 0.0), Vector3(0.0, -h, 0.0), clump, rng.randf_range(0.85, 1.05), 2)
 
 	for k in range(stems):
 		az += TAU / float(stems) + rng.randf_range(-0.4, 0.4)
