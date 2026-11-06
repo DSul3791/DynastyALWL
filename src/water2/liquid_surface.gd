@@ -354,6 +354,7 @@ void fragment() {
 		vec3 geo = normalize(cross(dFdy(world3), dFdx(world3)));
 		sheet *= mix(0.25, 1.0, abs(geo.y));
 		sheet = mix(sheet, vec3(0.1, 0.85, 0.9), 0.6 * fall);
+		sheet *= 0.75 + 0.25 * sin(raw_speed * 6.0);   // bands of the current's speed: smooth curves if the reads blend, squares if they step
 		sheet = FRONT_FACING ? sheet : vec3(0.9, 0.05, 0.05);
 		ALBEDO = mix(sheet * mix(0.6, 1.0, clamp(depth, 0.0, 1.0)), vec3(0.05), line);
 		EMISSION = vec3(0.0);
