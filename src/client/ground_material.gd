@@ -137,9 +137,15 @@ void fragment() {
 	lw[5] = mix(lw[5] * (1.0 - scree), 1.0, face * rock_mask);
 	color = mix(color, mix(vec3(0.27, 0.25, 0.22), vec3(0.40, 0.34, 0.24), sandy), scree * 0.5);
 
+	// The projections follow the triangle's own facing where it differs a lot from the smoothed vertex normal (Dino's cave shots 6 Nov 2026: a
+	// thin steep step in a cave floor, where carved shapes meet, has vertex normals averaged with the flat floor, so it took the top projection
+	// and drew a strip of long vertical streaks; the same at a pool's rim drew a pale band like a plank).
+	vec3 face_normal = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
+	float sliver = smoothstep(0.25, 0.5, abs(world_normal.y) - abs(face_normal.y));
+	vec3 tri_normal = normalize(mix(abs(world_normal), abs(face_normal), sliver));
 	vec3 tw = vec3(0.0, 1.0, 0.0);
-	if (triplanar && world_normal.y < 0.93) {
-		tw = pow(abs(world_normal), vec3(4.0));
+	if (triplanar && tri_normal.y < 0.93) {
+		tw = pow(tri_normal, vec3(4.0));
 		tw /= tw.x + tw.y + tw.z;
 	}
 	float detail = 0.0;
