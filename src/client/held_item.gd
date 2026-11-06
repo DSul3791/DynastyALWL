@@ -531,7 +531,25 @@ func flame_covered() -> bool:
 
 
 func _off_class() -> String:
-	return str(_inv.table.entry(off_id()).get("tool_class", ""))
+	return str(_inv.table.entry(_left_id()).get("tool_class", ""))
+
+
+# What the left hand shows: the off hand's item, or, in third person, a torch held as the main item (Dave's torch carry infographic, 6 Nov 2026: the torch is
+# always carried in the LEFT hand; #488's first look failed because a torch taken as the main item stayed in the right hand by the hip).
+func _left_number() -> int:
+	var number: int = off_number()
+
+	if number != 0:
+		return number
+
+	if not _first_person and _avatar_rig != null and holding and (_is_torch() or _is_doused_torch()):
+		return held_number()
+
+	return 0
+
+
+func _left_id() -> String:
+	return _inv.table.id_of(_left_number())
 
 
 func _is_spear() -> bool:
@@ -561,7 +579,7 @@ func _is_placeable() -> bool:
 # True while a torch is the held item (the Dynasty body then crouch-walks with it, avatar_driver.gd).
 # A torch in the left hand (the off hand's item is a torch): the third-person body takes the torch carry pose (Dave's infographic, 6 Nov 2026).
 func torch_in_left() -> bool:
-	return _inv != null and off_number() != 0 and _off_class() == "torch"
+	return _inv != null and _left_number() != 0 and _off_class() == "torch"
 
 
 func holding_torch() -> bool:
@@ -1693,6 +1711,9 @@ func _show_model() -> void:
 	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
 		number = 0
 
+	if number != 0 and _left_number() == number and off_number() == 0:
+		number = 0      # a torch taken as the main item is drawn in the left hand in third person (_left_number)
+
 	if number == _shown_number:
 		return
 
@@ -1815,7 +1836,7 @@ func _third_fist_on(model: Node3D) -> MeshInstance3D:
 
 # The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.
 func _show_off_model(delta: float) -> void:
-	var number: int = off_number() if _inv != null else 0
+	var number: int = _left_number() if _inv != null else 0
 	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_key_pressed(KEY_B)
 
 	if number != _off_shown:
@@ -1826,7 +1847,7 @@ func _show_off_model(delta: float) -> void:
 			_off_model = null
 
 		if number != 0:
-			_off_model = _make_shield_model() if _off_class() == "shield" else _make_torch_model(off_id())
+			_off_model = _make_shield_model() if _off_class() == "shield" else _make_torch_model(_left_id())
 			_mount_off_model()
 
 	if _off_model == null:
