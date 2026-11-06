@@ -62,3 +62,17 @@ Note: It did not reproduce on land or in water in tests.
 Note: Recommendation: B. Only tell me if you see it duplicate on your own.
 - A: Yes, I will try it and say what happens
 - B: Skip it, I will tell you if I see it
+
+## mikew-level-strength | Should each animal level above 1 add 5% health and 4% damage?
+Note: Levels now come from distance to the starter town: 1-5 near town, 5-10 half way, 10-20 on the far side (#485). A level 20 animal would have about 2x health and 1.75x damage.
+Note: Recommendation: A.
+- A: Yes, 5% health and 4% damage per level
+- B: Make it stronger per level
+- C: Make it weaker per level
+
+## mikew-level-skills-later | Should animal skills and showing an animal's level on inspect come later?
+Note: Skills means keener senses, more speed and better stalking at higher levels. For now a level only changes health and damage.
+Note: Recommendation: A.
+- A: Later
+- B: Build skills now
+- C: Show the level on inspect now, skills later
