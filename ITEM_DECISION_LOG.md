@@ -369,3 +369,5 @@ Dave: "The rough bed is the only one that you could make in your inventory. Ever
 - Feather bed now costs 10 thatch, 30 feathers, 2 fibre cloth; Canopy bed 30 feathers, 8 lumber, 4 fibre cloth (no bed kit inside).
 - New starter goal "Make a wooden hammer" after felling; shelter and Camp bench come after it. Kit item numbers stay in items.json for old saves.
 - Code (Hammer): campfire, campfire pot snapping to the fire, learning unlocking blueprint rows, clearing kits from saves and the world, and the tests that craft and place kits.
+
+- 5 Nov 2026 (Dave): NO FLOOR PIECE. A floor on the ground is a foundation; a floor on a higher storey, joined to walls, is the ceiling of the room below. Renamed (names only; ids, numbers, states and saves unchanged): Floor section is Ceiling section, Log, Stone and Brick floor are Log, Stone and Brick ceiling (all in the hammer's Roofs and ceilings group), Thatch floor is Thatch foundation (it already was the tier 1 foundation). The hammer group "Foundations and floors" is now "Foundations".

@@ -1530,7 +1530,7 @@
 			"used_for": [
 				"Used in Rough bed",
 				"Used in Thatch doorway",
-				"Used in Thatch floor",
+				"Used in Thatch foundation",
 				"Used in Thatch roof",
 				"Used in Thatch wall",
 				"Used in Tinder"
@@ -1959,7 +1959,7 @@
 				"Used in Doorway",
 				"Used in Fibre sandals",
 				"Used in Fishing rod",
-				"Used in Floor section",
+				"Used in Ceiling section",
 				"Used in Gambeson"
 			],
 			"obtainable_now": true
@@ -2218,7 +2218,7 @@
 				"Used in Bucket",
 				"Used in Doorway",
 				"Used in Fine board",
-				"Used in Floor section",
+				"Used in Ceiling section",
 				"Used in Iron-banded shield",
 				"Used in Ladder",
 				"Used in Plank chest"
@@ -3465,9 +3465,9 @@
 			"obtainable_now": false
 		},
 		"floor_section_kit": {
-			"name": "Floor section",
+			"name": "Ceiling section",
 			"kind": "placeable",
-			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
+			"description": "A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge.",
 			"how_to_get": [
 				"Build with a hammer (press R): 4 Lumber, 1 Twine"
 			],
@@ -3475,9 +3475,9 @@
 			"obtainable_now": true
 		},
 		"floor_section": {
-			"name": "Floor section",
+			"name": "Ceiling section",
 			"kind": "structure",
-			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
+			"description": "A plank ceiling, two metres square: the ceiling of the room below, set on walls. Set pieces edge to edge.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
@@ -3485,7 +3485,7 @@
 		"roof_section_kit": {
 			"name": "Roof section",
 			"kind": "placeable",
-			"description": "A plank roof on four posts, to set over walls and floors.",
+			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"how_to_get": [
 				"Build with a hammer (press R): 5 Lumber, 2 Twine, 2 Stick"
 			],
@@ -3495,7 +3495,7 @@
 		"roof_section": {
 			"name": "Roof section",
 			"kind": "structure",
-			"description": "A plank roof on four posts, to set over walls and floors.",
+			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
@@ -3503,7 +3503,7 @@
 		"foundation_section_kit": {
 			"name": "Foundation",
 			"kind": "placeable",
-			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
+			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
 				"Build with a hammer (press R): 8 Stone, 2 Clay"
 			],
@@ -3513,7 +3513,7 @@
 		"foundation_section": {
 			"name": "Foundation",
 			"kind": "structure",
-			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
+			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
@@ -4019,7 +4019,7 @@
 			"obtainable_now": false
 		},
 		"thatch_floor_kit": {
-			"name": "Thatch floor",
+			"name": "Thatch foundation",
 			"kind": "placeable",
 			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
 			"how_to_get": [
@@ -4029,9 +4029,9 @@
 			"obtainable_now": true
 		},
 		"thatch_floor": {
-			"name": "Thatch floor",
+			"name": "Thatch foundation",
 			"kind": "structure",
-			"description": "A thatch floor on stakes. Walls and roofs stand on it.",
+			"description": "A thatch foundation on stakes. Walls and roofs stand on it.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
@@ -6255,9 +6255,9 @@
 			"obtainable_now": true
 		},
 		"log_floor_kit": {
-			"name": "Log floor",
+			"name": "Log ceiling",
 			"kind": "placeable",
-			"description": "Logs laid side by side on a frame. A rough, strong floor.",
+			"description": "Logs laid side by side on a frame. A rough, strong ceiling.",
 			"how_to_get": [
 				"Build with a hammer (press R): 8 Log, 2 Twine"
 			],
@@ -6267,9 +6267,9 @@
 			"obtainable_now": true
 		},
 		"log_floor": {
-			"name": "Log floor",
+			"name": "Log ceiling",
 			"kind": "structure",
-			"description": "A floor of laid logs.",
+			"description": "A ceiling of laid logs.",
 			"how_to_get": [
 				"Found in the world"
 			],
@@ -6319,9 +6319,9 @@
 			"obtainable_now": true
 		},
 		"stone_floor_kit": {
-			"name": "Stone floor",
+			"name": "Stone ceiling",
 			"kind": "placeable",
-			"description": "Cobbles bedded in sand. A hard dry floor.",
+			"description": "Cobbles bedded in sand. A hard dry ceiling.",
 			"how_to_get": [
 				"Build with a hammer (press R): 16 Cobblestone, 4 Sand near a workbench"
 			],
@@ -6329,9 +6329,9 @@
 			"obtainable_now": true
 		},
 		"stone_floor": {
-			"name": "Stone floor",
+			"name": "Stone ceiling",
 			"kind": "structure",
-			"description": "A cobbled stone floor.",
+			"description": "A cobbled stone ceiling.",
 			"how_to_get": [
 				"Found in the world"
 			],
@@ -6379,9 +6379,9 @@
 			"obtainable_now": true
 		},
 		"brick_floor_kit": {
-			"name": "Brick floor",
+			"name": "Brick ceiling",
 			"kind": "placeable",
-			"description": "Bricks laid on sand. A smooth hard floor.",
+			"description": "Bricks laid on sand. A smooth hard ceiling.",
 			"how_to_get": [
 				"Build with a hammer (press R): 20 Brick, 4 Sand"
 			],
@@ -6389,9 +6389,9 @@
 			"obtainable_now": true
 		},
 		"brick_floor": {
-			"name": "Brick floor",
+			"name": "Brick ceiling",
 			"kind": "structure",
-			"description": "A brick floor.",
+			"description": "A brick ceiling.",
 			"how_to_get": [
 				"Found in the world"
 			],
