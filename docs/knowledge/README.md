@@ -28,6 +28,6 @@ Each doc has these sections:
 | Topic | Doc | Last checked | Owner of the system |
 |---|---|---|---|
 | Water in Godot (rivers, brooks, lakes, falls, flow, precision) | [water.md](water.md) | 2026-11-06 | Sonny |
-| Caves | next | | Sonny, Kathleen (look) |
-| Animal behaviour | next | | MikeW |
-| Torches and fire | next | | Kathleen, Sal |
+| Caves (placement, shape, darkness, life) | [caves.md](caves.md) | 2026-11-06 | Sonny, Kathleen and Kathreen (look) |
+| Animal behaviour (senses, ranges, temperaments, seasons, young) | [animal-behaviour.md](animal-behaviour.md) | 2026-11-06 | MikeW |
+| Torches and fire | [torches-fire.md](torches-fire.md) | 2026-11-06 | Sal, Kathleen (poses) |
