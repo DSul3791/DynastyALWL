@@ -170,6 +170,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"light_m": 12.0,
+			"burn_s": 1800,
 			"flame": true,
 			"rain_douses": true,
 			"doused_item": "torch_doused",

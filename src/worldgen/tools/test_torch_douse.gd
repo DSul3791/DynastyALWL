@@ -148,5 +148,18 @@ func _init() -> void:
 	items.action(7, Net.ACT_PLACE_TORCH, inv.numbers.find(lit), 0, 0, Vector3(140.0, 5.0, 100.0))
 	check(_count(items, "standing_torch") == 0, "out of reach: nothing placed")
 
+	# Burning down (Dave 6 Nov 2026): about half an hour in hand; the bearer scares wolves like a small fire while it burns.
+	check(float(table.entry("torch").get("burn_s", 0.0)) == 1800.0, "a torch burns for 30 minutes")
+	items.action(7, Net.ACT_ADMIN_GIVE, lit, 0, 1, Vector3.ZERO)
+	var burning: int = inv.numbers.find(lit)
+	items._torch_seen.erase(7)
+	items.action(7, Net.ACT_TORCH_BURN, burning, 0, 0, Vector3.ZERO)
+	check(inv.numbers[burning] == lit and inv.wear[burning] > 0, "a burning torch wears down")
+	check(items._lit_fires().has(Vector3(100.0, 5.0, 100.0)) and absf(items.fire_protect_m(Vector3(100.0, 5.0, 100.0)) - items.TORCH_PROTECT_M) < 0.01, "its bearer keeps wolves off")
+	inv.wear[burning] = 17990
+	items._torch_seen[7] = Time.get_ticks_msec() - 1500
+	items.action(7, Net.ACT_TORCH_BURN, burning, 0, 0, Vector3.ZERO)
+	check(inv.numbers[burning] == 0, "after half an hour the torch is gone")
+
 	print("torch douse tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

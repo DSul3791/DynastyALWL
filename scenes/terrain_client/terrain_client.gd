@@ -228,6 +228,7 @@ var _work_serial: int = 0               # the held tool's swing count the avatar
 var flying: bool = false
 var underwater: bool = false
 var _flame_rain_s: float = 0.0          # seconds the held torch has been out in the open rain (flame_rules.gd)
+var _torch_burn_msec: int = -100000
 var _flame_asked_msec: int = -100000     # when the server was last asked to douse it (one ask a second at most)
 var underwater_surface: float = 0.0      # the water surface over the eye while under (fog depth, caustics), 0 in the sea
 var _ground_quality: int = -1       # quality the ground texture array was built for
@@ -6189,6 +6190,10 @@ func _flame_wet(delta: float) -> void:
 	var covered: bool = WeatherLookScript.sky_share(enclosed) < 0.5 or held.flame_covered() if FlameRules.in_rain(rain, false) else true    # the cover lookup only while it rains
 	_flame_rain_s = _flame_rain_s + delta if FlameRules.in_rain(rain, covered) else 0.0
 	var reason: String = FlameRules.douse_reason(entry, underwater, rain, covered, _flame_rain_s)
+
+	if reason == "" and float(entry.get("burn_s", 0.0)) > 0.0 and Time.get_ticks_msec() - _torch_burn_msec >= 1000:
+		_torch_burn_msec = Time.get_ticks_msec()      # it burns: the server wears it down and counts the bearer as a small fire to animals
+		net.inventory_action.rpc_id(1, NetScript.ACT_TORCH_BURN, slot, 0, 0, Vector3.ZERO)
 
 	if reason == "" or Time.get_ticks_msec() - _flame_asked_msec < 1000:
 		return
