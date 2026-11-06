@@ -108,7 +108,11 @@ func _init() -> void:
 	# Placing (Dave, 4 Nov 2026): a burning torch stuck in the ground stays lit; the open rain puts it out; hold E gives it back doused.
 	items.ground_height = func(_x, _z): return 5.0
 	items.action(7, Net.ACT_RELIGHT, 900003, 0, 0, Vector3.ZERO)      # the fire is gone: still doused
-	check(inv.numbers[slot] == doused, "no fire, no relight")
+	check(inv.numbers[slot] == doused, "E at a missing fire does not relight")
+	items.action(7, Net.ACT_RELIGHT, 0, slot + 1, 0, Vector3.ZERO)      # the hotkey: no fire needed (Dave 6 Nov 2026)
+	check(inv.numbers[slot] == lit, "pressing the torch's key lights it again, with no fire")
+	check(str(table.entry("torch")["name"]) == str(table.entry("torch_doused")["name"]), "a torch that went out keeps its name")
+	inv.numbers[slot] = doused
 	inv.numbers[slot] = lit
 	items.action(7, Net.ACT_PLACE_TORCH, slot, 0, 90, Vector3(101.5, 5.0, 100.0))
 	var stood: int = _find(items, "standing_torch")

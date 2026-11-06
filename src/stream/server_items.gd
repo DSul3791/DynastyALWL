@@ -5903,7 +5903,7 @@ func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 			return
 
 	inv.numbers[slot] = table.number_of(into)
-	_say(peer, "The rain puts your torch out." if by_rain else "The water puts your torch out.")
+	_say(peer, "The rain puts your torch out. Press its key to light it again." if by_rain else "The water puts your torch out. Press its key to light it again.")
 
 
 # A torch in hand stuck in the ground or on a wall (Dave, 4 Nov 2026): items.json places_as names the structure for each; a burning torch stays lit with
@@ -5967,10 +5967,13 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 # `want` is the hotbar slot plus one of the torch the player holds (0 for none): pressing a doused torch on the hotbar at a burning fire lights that one
 # (Dave 6 Nov 2026); otherwise the first doused torch in the pack.
 func _relight(peer: int, inv, id: int, want: int = 0) -> void:
-	var fire: Dictionary = _fire_in_reach(peer, id)
+	# id 0 is the hotkey: a torch that went out simply lights again, wherever you are (Dave 6 Nov 2026: nobody is stuck in a cave without light). With a fire id
+	# (E at a burning fire) the fire has to be lit and in reach, as before.
+	if id != 0:
+		var fire: Dictionary = _fire_in_reach(peer, id)
 
-	if fire.is_empty() or not fire_is_lit(int(fire["state"])):
-		return
+		if fire.is_empty() or not fire_is_lit(int(fire["state"])):
+			return
 
 	var order: Array = range(inv.SLOTS)
 
@@ -5985,7 +5988,7 @@ func _relight(peer: int, inv, id: int, want: int = 0) -> void:
 
 		if back != "" and table.number_of(back) > 0:
 			inv.numbers[slot] = table.number_of(back)
-			_say(peer, "Your torch catches and burns again.")
+			_say(peer, "You light your torch again.")
 			return
 
 

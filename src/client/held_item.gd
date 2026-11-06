@@ -289,20 +289,18 @@ func equip_toggle(slot: int) -> void:
 	press_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))
 
 
-# A doused torch pressed on the hotbar lights again when a burning fire is within a few steps (Dave 6 Nov 2026); away from a fire it says what it needs
-# (unless `quiet`, as when the same key puts the torch away). The doused torch is an off-hand item, so press_slot calls this for it too.
+# A torch that went out lights again when its hotbar key is pressed, wherever you are (Dave 6 Nov 2026: it keeps its name and just goes out; nobody is stuck in
+# a cave without light). The torch is an off-hand item, so press_slot calls this for it too; in rain or water it goes out again by the usual rules.
 func _relight_on_press(slot: int, quiet: bool = false) -> void:
 	var number: int = _inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]
 
 	if number == 0 or str(_inv.table.entry(_inv.table.id_of(number)).get("relit_item", "")) == "":
 		return
 
-	var fire: int = _inv.lit_fire_in_reach()
+	if quiet:
+		return   # the same key again puts the torch away
 
-	if fire != 0:
-		_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, fire, clampi(slot, 0, HOTBAR_SLOTS - 1) + 1, 0, Vector3.ZERO)
-	elif not quiet:
-		_inv._on_notice("Hold the torch to a burning fire to light it again")
+	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, clampi(slot, 0, HOTBAR_SLOTS - 1) + 1, 0, Vector3.ZERO)   # no fire needed (Dave 6 Nov 2026)
 
 
 func select(slot: int) -> void:
