@@ -108,7 +108,7 @@ If the answer is no, refine it until it does.
 
 ### Reference Paintings (approved by Dave, 5 Nov 2026)
 
-These twelve paintings are **the** example of this art direction: when a written rule above and a painting seem to disagree, the painting shows what Dave means. Small copies are in `art/references/approved_2026-11-05/` (the full-size originals are on Dave's PC, `Downloads/Dynasty_Approved_Artwork`). Each is also a front page design: the Dynasty logo at the top and four buttons drawn on the right (New Game, Continue, Settings, Exit). The title page (`scenes/title/`) shows one at random on each launch, never the same twice running, and uses its drawn buttons; full-size copies are in `assets/ui/title/`. 16 Last Call at the Inn has no drawn buttons, so it is not on the title page.
+These twelve paintings are **the** example of this art direction: when a written rule above and a painting seem to disagree, the painting shows what Dave means. Small copies are in `art/references/approved_2026-11-05/` (the full-size originals are on Dave's PC, `Downloads/Dynasty_Approved_Artwork`). Each is also a front page design: the Dynasty logo at the top and four buttons drawn on the right (New Game, Continue, Settings, Exit). They tell one story, like a comic book, in the order of their numbers; 11 Dragon Battle is a stand-alone and goes last. The title page (`scenes/title/`) shows the next one in that order each time it opens and uses its drawn buttons; full-size copies are in `assets/ui/title/`. 16 Last Call at the Inn came without buttons, so its title copy has 13's buttons laid on.
 
 | # | Painting | What it shows |
 |---|---|---|

@@ -58,6 +58,13 @@ func _ready() -> void:
 	_rebuild_body()
 
 
+# Esc goes back to the title page (Dave 5 Nov 2026), which then shows the next painting of the story.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		get_tree().change_scene_to_file("res://scenes/title/title.tscn")
+
+
 func _process(delta: float) -> void:
 	if turntable and _body != null:
 		_turn += delta * 25.0
