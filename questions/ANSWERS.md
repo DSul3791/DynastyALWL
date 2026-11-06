@@ -2343,5 +2343,5 @@ Answer: Yes, built in #473 (rivers route over the finished ground); waits on the
 Answered: 2026-11-06 13:58 UTC
 
 ## jamie-cave-people | Caves can hold animals, creatures or people (your 6 Nov idea). On the starter islands, who may live in caves?
-Answer: Animals and creatures, plus the odd friendly survivor; no bandits until you leave the starter island (coordinator for Dave, who said 'you answer the card')
+Answer: Animals and creatures, the odd friendly survivor, and low-level bandits (Dave 15:48: "low level bandits can be on the starter island")
 Answered: 2026-11-06 15:48 UTC
