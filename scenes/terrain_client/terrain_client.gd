@@ -2911,7 +2911,7 @@ func _load_brain_icon() -> Texture2D:
 
 # ------------------------------------------------------------------ options menu
 
-# The Esc menu: Resume, Settings, Advanced (clear saved ground), Quit game.
+# The Esc menu: the painted front (Continue, Settings, Exit), then the settings pages (game_menu.gd).
 func _build_menu() -> void:
 	game_menu.build(self)
 	_menu = game_menu.root
@@ -2929,6 +2929,7 @@ func _set_menu(open: bool) -> void:
 
 	if open:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		game_menu.next_painting()         # the painted front shows the next page of the story each time (Dave 6 Nov 2026)
 		_show_menu_page("main")
 	elif DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED

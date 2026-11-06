@@ -3,6 +3,9 @@ extends RefCounted
 # (Resume, Settings, Controls, Quit with a confirm), Settings split into Display, Sound and Gameplay pages with slide switches
 # (green On / red Off), the sound test as its own scrolling page, and one Admin button at the bottom for the developer buttons
 # (SHOW_ADMIN false hides it). Moved out of terrain_client.gd; it drives the client through `_c`.
+# 6 Nov 2026 (Kathreen; Dave: "when I press escape ... I want it to go to the new opening page with the settings button", "a settings page and menu that matches our
+# artistic guide"): Esc opens the title page's painted front (scenes/title/title_art.gd, the next story painting each time) instead of the old button list: Continue
+# resumes, Settings opens the settings pages, Exit asks to leave; New Game is dimmed in game. The pages wear the paintings' look (src/client/ui/dynasty_theme.gd).
 
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -10,12 +13,16 @@ const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const WaterChoice := preload("res://src/water2/water_choice.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const KeyBindingsPage := preload("res://src/client/key_bindings_page.gd")
+const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
+const TitleArt := preload("res://scenes/title/title_art.gd")
 
 const SHOW_ADMIN := true
-const PANEL := Color(0.075, 0.08, 0.09, 1.0)
 const BUTTON_W := 420.0
 
 var root: Control
+var front: Control                        # the painted front page (title_art.gd), shown for "main"
+var _shade: ColorRect
+var _center: CenterContainer
 var note: Label
 var quality_buttons: Array = []
 var _c
@@ -48,22 +55,23 @@ func build(client) -> void:
 	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.visible = false
+	root.theme = DynastyTheme.make()
 	layer.add_child(root)
-	var shade: ColorRect = ColorRect.new()
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.0, 0.0, 0.0, 0.7)
-	root.add_child(shade)
-	var center: CenterContainer = CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.add_child(center)
+	_shade = ColorRect.new()
+	_shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_shade.color = Color(0.0, 0.0, 0.0, 0.7)
+	root.add_child(_shade)
+	_center = CenterContainer.new()
+	_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(_center)
 	var panel: PanelContainer = PanelContainer.new()
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = PANEL
-	style.border_color = Color(0.35, 0.33, 0.28)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(6)
-	panel.add_theme_stylebox_override("panel", style)
-	center.add_child(panel)
+	panel.add_theme_stylebox_override("panel", DynastyTheme.panel_style())
+	_center.add_child(panel)
+	front = TitleArt.new()
+	front.visible = false
+	front.chosen.connect(_front_chosen)
+	front.set_enabled("new_game", false)       # a new character starts from the title page, before the world loads
+	root.add_child(front)
 	var margin: MarginContainer = MarginContainer.new()
 
 	for side in ["left", "right", "top", "bottom"]:
@@ -76,7 +84,7 @@ func build(client) -> void:
 	var title: Label = Label.new()
 	title.text = "Dynasty"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
+	DynastyTheme.heading(title, 52)
 	_column.add_child(title)
 	_build_main()
 	_build_controls()
@@ -127,6 +135,15 @@ func show_page(page_name: String) -> void:
 	for key in _pages:
 		_pages[key].visible = key == page_name
 
+	# "main" is the painted front; every other page is in the wood panel.
+	var on_front: bool = page_name == "main"
+	front.visible = on_front
+	_center.visible = not on_front
+	_shade.visible = not on_front
+
+	if on_front:
+		front.focus_first(["continue", "settings"])
+
 	# The two long sound pages scroll inside what the window leaves under the title, the back button and the note.
 	var room: float = 480.0
 
@@ -162,6 +179,21 @@ func refresh() -> void:
 
 
 # ---- pages ----
+
+# Each time Esc opens the menu: the next page of the story (shared with the title page).
+func next_painting() -> void:
+	front.show_painting(TitleArt.advance())
+
+
+func _front_chosen(action: String) -> void:
+	match action:
+		"continue":
+			_c._set_menu(false)
+		"settings":
+			show_page("settings")
+		"exit":
+			show_page("quit")
+
 
 func _build_main() -> void:
 	var main: VBoxContainer = _page("main")
@@ -229,6 +261,10 @@ func _build_settings() -> void:
 	_button(settings, "Controls (change keys)", func():
 		_controls_from_settings = true
 		show_page("controls"))
+
+	if SHOW_ADMIN:
+		_button(settings, "Admin", func(): show_page("admin"))
+
 	_button(settings, "Back", func(): show_page("main"))
 
 
@@ -470,8 +506,7 @@ func _heading(parent: VBoxContainer, text: String) -> void:
 	var label: Label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 28)
-	label.add_theme_color_override("font_color", Color(0.85, 0.78, 0.55))
+	DynastyTheme.heading(label, 30)
 	parent.add_child(label)
 
 
