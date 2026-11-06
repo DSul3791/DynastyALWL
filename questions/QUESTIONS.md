@@ -78,7 +78,7 @@ Note: Godot shaders stay 32-bit even in double builds, so this is the standard f
 - No, keep the grid
 
 ## jamie-river-valley-floor | Rivers sit too high (23 to 59% of cells on tile 3,4). Carve the beds last, snapped to the valley floor, with a flow check in the bake?
-Note: Needs a rebake on your PC.
+Note: Needs a rebake on your PC. This is the same question as Sonny's river card in his thread; whichever you answer counts for both.
 - Yes (recommended)
 - Later
 - No
