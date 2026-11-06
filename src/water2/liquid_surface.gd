@@ -43,6 +43,8 @@ uniform vec3 mud_color : source_color = vec3(0.30, 0.24, 0.15);
 uniform float rain = 0.0;           // 0..1 (weather_look.gd): raindrop rings on the surface
 uniform float contact_m = 0.35;     // the sheet fades in over this much water along the view ray where it meets the ground (no hard line on a bank)
 uniform float chunk_lift = 0.25;    // chunk sheets only: running water is drawn this much higher (see vertex)
+uniform float steep_lift = 0.2;     // and more on a slope: this share of the drop over one texel (see vertex)
+uniform float steep_lift_max = 0.6;   // at most this much extra
 uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
@@ -50,6 +52,7 @@ uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live windo
 
 varying vec2 tex_uv;
 varying float depth_v;
+varying float lift_v;   // how far a chunk sheet's running water was lifted over its laid level (vertex)
 varying vec2 flow_v;
 
 // Smooth sampling (Dave 6 Nov 2026, x 54101 z 69709, a steep brook below a cave: "these should look like water not diamond shaped squares"). Straight
@@ -109,8 +112,28 @@ void vertex() {
 	// points the sheet's flat triangles went in and out of the bumps, so a steep brook showed as separate flat panes with straight edges (Dino's shots
 	// 6 Nov, x 54101 z 69709, the "diamond shaped squares" Dave saw). Running water is lifted chunk_lift clear of the bumps; the contact fade hides the
 	// lift at the banks. Still water (ponds, lakes) keeps its level.
+	// On a steep brook a fixed lift was not enough (Tyler's shots after #470, 6 Nov 2026, x 54101 z 69709: the ground falls 3 to 8 m per 8 m cell there,
+	// and the ground mesh between the sheet's 2 m points bends by more than 25 cm, so it still came up through the water in flat panes and slits).
+	// The lift grows with the surface's slope and its bend between neighbouring points (only where all four neighbours are wet).
+	lift_v = 0.0;
+
 	if (point_grid > 0.5 && t.a > wet_min(t)) {
-		VERTEX.y += chunk_lift * smoothstep(0.3, 1.0, length(t.gb));
+		float running = smoothstep(0.3, 1.0, length(t.gb));
+		vec2 px = vec2(1.0) / cells;
+		vec4 x0 = textureLod(liquid, tex_uv - vec2(px.x, 0.0), 0.0);
+		vec4 x1 = textureLod(liquid, tex_uv + vec2(px.x, 0.0), 0.0);
+		vec4 z0 = textureLod(liquid, tex_uv - vec2(0.0, px.y), 0.0);
+		vec4 z1 = textureLod(liquid, tex_uv + vec2(0.0, px.y), 0.0);
+		float extra = 0.0;
+
+		if (min(min(x0.a, x1.a), min(z0.a, z1.a)) > 0.0005) {
+			float slope = length(vec2(x1.r - x0.r, z1.r - z0.r)) / (2.0 * cell_m);
+			float bend = max(abs(x0.r + x1.r - 2.0 * t.r), abs(z0.r + z1.r - 2.0 * t.r));
+			extra = min(steep_lift * slope * cell_m + 0.6 * bend, steep_lift_max);
+		}
+
+		lift_v = (chunk_lift + extra) * running;
+		VERTEX.y += lift_v;
 	}
 }
 
@@ -248,7 +271,7 @@ void fragment() {
 	// where the ground came close (Tyler's water-debug run 6 Nov 2026, x 54101 z 69709: one smooth 2 m sheet, the panes were its quads). Over running
 	// water the gap is taken from the water's own depth plus the lift instead, smooth across the quads.
 	float lifted = point_grid > 0.5 ? smoothstep(0.3, 1.0, length(t.gb)) * smoothstep(0.0, 0.05, depth) : 0.0;
-	through = mix(through, depth + chunk_lift, lifted);
+	through = mix(through, depth + max(lift_v, chunk_lift), lifted);
 	float contact = smoothstep(0.0, contact_m, through);
 
 	// Colour by depth, a sky reflection by angle.
