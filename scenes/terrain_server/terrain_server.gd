@@ -515,6 +515,8 @@ func _ready() -> void:
 	animals.wolves.player_info = func(): return items.wolf_info()
 	animals.wolves.fires = func(): return items._lit_fires()
 	animals.wolves.fire_radius = func(at): return items.fire_protect_m(at)
+	animals.fires = func(): return items._lit_fires()             # every wild animal keeps out of a fire's or a torch's keep-off radius (Dave 6 Nov 2026)
+	animals.fire_radius = func(at): return items.fire_protect_m(at)
 	@warning_ignore("confusable_local_declaration")
 	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
 	@warning_ignore("confusable_local_declaration")

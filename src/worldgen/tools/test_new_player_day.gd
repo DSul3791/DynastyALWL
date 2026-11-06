@@ -71,6 +71,7 @@ func _init() -> void:
 	zoo.setup()
 	zoo.cfg["species"]["rabbit"]["target_per_player"] = 0
 	zoo.cfg["species"]["deer"]["target_per_player"] = 0
+	zoo.cfg["species"]["bear"]["target_per_player"] = 0   # the bear has its own checks (test_big_game)
 	zoo.died = func(sp, pos, _p): items.make_carcass(sp, pos)
 	items.hit_animal = func(peer, origin, aim, reach, amount) -> bool:
 		var target: int = zoo.target_along(origin, aim, reach)

@@ -17,7 +17,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -109,6 +109,8 @@ func _make_species_body(number: int, id: int) -> Node3D:
 			return _make_seal()
 		13:
 			return _make_gull_flock(id)      # one record per flock since MikeW's seabird flock block (PR 73): 5 to 12 gulls standing on the beach, all taking off in state 15
+		14:
+			return _make_bear()
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
@@ -1051,6 +1053,12 @@ func _make_horse(id: int) -> Node3D:
 	var coats: Array = [[Color(0.36, 0.2, 0.11), Color(0.08, 0.06, 0.05)], [Color(0.5, 0.26, 0.12), Color(0.34, 0.17, 0.08)], [Color(0.66, 0.66, 0.64), Color(0.45, 0.45, 0.44)], [Color(0.1, 0.09, 0.09), Color(0.05, 0.04, 0.04)], [Color(0.62, 0.5, 0.32), Color(0.2, 0.14, 0.09)]]
 	var pick: Array = coats[id % coats.size()]
 	return _make_quad({"leg_h": 0.85, "rb": 0.32, "len": 1.05, "neck": 0.66, "neck_thick": 1.45, "head": 0.6, "snout": 1.2, "coat": pick[0], "dark": pick[1], "pale": pick[0].lerp(Color(0.9, 0.85, 0.78), 0.25), "mane": true, "socks": false, "long_tail": true, "blaze": id % 3 == 0})
+
+
+# A brown bear (Dave 6 Nov 2026; FAUNA_BY_BIOME): the shared four-legged build, heavy and low. About 2 m long, 1 m at the shoulder hump, a broad
+# head on a short neck with a short snout, small round ears, thick dark brown coat a shade paler on the head and hump, no tail to speak of.
+func _make_bear() -> Node3D:
+	return _make_quad({"leg_h": 0.5, "rb": 0.5, "len": 1.15, "neck": 0.28, "head": 0.42, "snout": 0.85, "coat": Color(0.27, 0.18, 0.11), "dark": Color(0.16, 0.11, 0.07), "pale": Color(0.4, 0.3, 0.2), "hump": true, "socks": false, "pale_belly": false})
 
 
 # A moose (Mandy 2026-10-22): about 2.7 m long, 2.1 m at the shoulder hump, dark brown, long pale legs, big drooping muzzle; every second one is a bull with broad antlers.

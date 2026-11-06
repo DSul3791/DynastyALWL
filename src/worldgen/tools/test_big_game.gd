@@ -25,7 +25,7 @@ func make():
 	a.player_stances = func(): return players.map(func(_p): return 0)
 	a.setup()
 
-	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird"]:
+	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear"]:
 		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
 
 	a.cfg["species"]["rabbit"]["target_per_player"] = 0
@@ -175,5 +175,56 @@ func _init() -> void:
 	check(int(a.animals[id]["state"]) == 10, "a wounded boar with the hunter close warns first")
 	run(a, 6.0)
 	check(hurt_log.size() <= 1 and (hurt_log.is_empty() or hurt_log[0][1] < 25.0), "a boar's charge hurts less than a moose's (%s)" % str(hurt_log))
+
+	# 8. Threat range (Dave 6 Nov 2026, most animals): a player who gets inside threat_m is attacked, not fled from; one standing in a fire's or a
+	# torch's keep-off radius is left alone, except at a bear's den.
+	a = make()
+	hurt_log.clear()
+	players = [player(5.0, 0.0)]
+	id = moose_at(a, 0.0, 0.0, false)
+	run(a, 0.3)
+	check(int(a.animals[id]["state"]) == 10, "a moose a player surprises at 5 m (inside threat_m 8) warns, then charges (state %d)" % int(a.animals[id]["state"]))
+	a = make()
+	players = [player(5.0, 0.0)]
+	a.fires = func(): return [players[0]["pos"]]      # the player carries a burning torch
+	a.fire_radius = func(_at): return 8.0
+	id = moose_at(a, 0.0, 0.0, false)
+	run(a, 0.3)
+	check(int(a.animals[id]["state"]) == 2, "the same moose runs from a torch bearer instead (state %d)" % int(a.animals[id]["state"]))
+	check(a.species_def("deer").get("defend", {}).get("threat_m", 0.0) > 0.0 and a.species_def("fox").has("defend") and a.species_def("horse").has("defend"), "deer, horse and fox have a threat range too")
+	check(not a.species_def("rabbit").has("defend"), "a rabbit only ever runs")
+
+	# 9. The bear (Dave 6 Nov 2026): its den is where it spawned; a torch does not protect you there, it does away from the den.
+	a = make()
+	a.cfg["species"]["bear"]["target_per_player"] = 0
+	players = [player(10.0, 0.0)]
+	a.fires = func(): return [players[0]["pos"]]
+	a.fire_radius = func(_at): return 8.0
+	id = a.spawn("bear", 0.0, 0.0)
+	a.animals[id]["timer"] = 100.0
+	check(a.animals[id].has("den") and a._in_den(a.animals[id], a.species_def("bear")), "a bear starts at its den")
+	run(a, 0.3)
+	check(int(a.animals[id]["state"]) == 10, "a torch bearer 10 m from a bear at its den is attacked (state %d)" % int(a.animals[id]["state"]))
+	a = make()
+	a.cfg["species"]["bear"]["target_per_player"] = 0
+	players = [player(65.0, 0.0)]
+	a.fires = func(): return [players[0]["pos"]]
+	a.fire_radius = func(_at): return 8.0
+	id = a.spawn("bear", 0.0, 0.0)
+	a.animals[id]["pos"] = Vector3(60.0, 10.0, 0.0)   # out foraging, 60 m from its den
+	a.animals[id]["timer"] = 100.0
+	run(a, 0.3)
+	check(int(a.animals[id]["state"]) == 2, "away from its den the bear runs from the torch (state %d)" % int(a.animals[id]["state"]))
+	a.water_level = func(x, _z): return 9.5 if x > 30.0 else NAN    # a river beyond x = 30
+	a.cfg["species"]["bear"]["den"]["fish_share"] = 1.0
+	var fishing: int = 0
+
+	for n in 20:
+		var spot: Vector3 = a._den_target(a.animals[id], a.species_def("bear"))
+		fishing += 1 if bool(a.animals[id].get("fishing", false)) and spot.x <= 30.0 and spot.x > 26.0 else 0
+
+	check(fishing >= 15, "a bear goes fishing at the river's edge near its den (%d of 20)" % fishing)
+	check(a.species_def("bear").get("level", []) == [0.6, 0.9], "bears only on the far side of the starter island")
+
 	print("big game: %d failures" % failures)
 	quit(failures)

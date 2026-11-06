@@ -32,6 +32,8 @@ var canopy: Callable               # (Vector3) -> bool, whether a spot is under 
 var canopy_ready: Callable         # (x, z) -> bool, whether the tree crowns round a spot are known yet (the flora chunks are made; a missing one is started on a worker)
 var undergrowth: Callable          # (Vector3) -> bool, the spot is in bushes, ferns or tall grass (server_flora.in_undergrowth): moving through it rustles
 var player_stalk: Callable         # () -> Array of hunting skill factors (skills.json actions.stalk, 1.0 for a beginner) in player_positions order
+var fires: Callable                # () -> Array of Vector3, burning fires and torch bearers (server_items._lit_fires; wolves read the same list)
+var fire_radius: Callable          # (Vector3) -> how far animals keep from that fire (server_items.fire_protect_m: a campfire's tier, 8 m for a torch)
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
@@ -56,6 +58,7 @@ var _next_herd: int = 1
 var _wind_s: float = 0.0
 var _wind_dir: Vector2 = Vector2.ZERO
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
+var _fire_cache: Array = []       # [Vector3 fire, keep-off metres] this tick (fires, fire_radius)
 var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
 var _noise_from: Array = []       # player positions at the last sample
 var _noisy: Array = []            # per player (player_positions order): how much farther they are sensed for rustling undergrowth (1.0 none)
@@ -116,8 +119,12 @@ func spawn(sp: String, x: float, z: float) -> int:
 	if def.has("tame"):
 		animals[id]["tame"] = rng.randf()   # luck-exempt: how tamable this horse is born (0 flighty, 1 friendly)
 
+	if def.has("den"):
+		animals[id]["den"] = pos   # where it spawned is its den (a bear's, near the river: habitat near_fresh_water_m); it ranges round it and defends it
+
 	if def.has("defend"):
-		animals[id]["protective"] = rng.randf() < float(def.get("protective_share", 0.3))   # luck-exempt: whether this animal defends young
+		var share: float = float(def.get("protective_share", 0.3))
+		animals[id]["protective"] = share > 0.0 and rng.randf() < share   # luck-exempt: whether this animal defends young
 		animals[id]["cool"] = 0.0
 
 	return id
@@ -489,6 +496,10 @@ func tick(delta: float) -> void:
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
 	_sample_noise(players, delta)
+	_fire_cache = []
+
+	for at in (fires.call() if fires.is_valid() else []):
+		_fire_cache.append([at, float(fire_radius.call(at)) if fire_radius.is_valid() else 10.0])
 
 	# A quarter of the animals per tick (id mod 4), each one's elapsed time kept in acc so its step still gets the true dt; if the
 	# tick's AI budget runs out the rest wait for the next one (the rotating start keeps that fair).
@@ -654,6 +665,23 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			a["alarm"] = -1.0
 			_bolt(a, near_p, def)
 
+	# Fire (Dave 6 Nov 2026): wild animals keep away from a burning fire or a torch bearer, out of its keep-off radius (the wolves' rule),
+	# unless trapped; a bear at its den does not give way to a torch.
+	var in_den: bool = _in_den(a, def)
+	var fire_at: Vector3 = Vector3.INF if in_den or a.has("pack") else _fire_guard(a["pos"])
+
+	if fire_at != Vector3.INF and a["state"] != FLEE:
+		_bolt(a, fire_at, def)
+		return
+
+	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
+	# threat_m (a surprise up close, a chase that catches it, a walk into its den) makes it feel threatened, and it attacks: a short warning,
+	# then the dodgeable charge (server_big_game.gd). A player standing in a fire's or a torch's keep-off radius is left alone, except at
+	# the den. The distance is the one the animal perceives, so a hunter who sneaks up unnoticed is not charged until it notices.
+	if def.has("defend") and seen_p != Vector3.INF and seen_d <= _threat_m(a, def) and (in_den or _fire_guard(seen_p) == Vector3.INF):
+		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8))):
+			return
+
 	# A protective animal (defending young) does not bolt: it warns a player who comes too close, and only then charges.
 	var stands: bool = def.has("defend") and bool(a.get("protective", false)) and a["state"] != FLEE
 
@@ -715,6 +743,12 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			var angle: float = rng.randf() * TAU   # luck-exempt: where a grazing animal hops next
 			a["target"] = a["home"] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
 
+			if a.has("den"):
+				a["target"] = _den_target(a, def)
+
+			if _fire_guard(a["target"]) != Vector3.INF and not _in_den(a, def, a["target"]):
+				a["target"] = a["pos"]   # never wanders into a fire's light
+
 			# A friendly horse is curious: it ambles toward a player it can see until it is stop_m away.
 			if _curious(a, def, seen_d) and seen_d > float(def["tame"].get("stop_m", 9.0)):
 				var toward: Vector3 = Vector3(seen_p.x - a["pos"].x, 0.0, seen_p.z - a["pos"].z).normalized()
@@ -771,6 +805,62 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 		a["state"] = GRAZE
 		a["timer"] = _graze_time(def)
+
+
+# The fire whose keep-off radius covers a point (a burning fire or a torch bearer this tick), or Vector3.INF.
+func _fire_guard(p: Vector3) -> Vector3:
+	for f in _fire_cache:
+		var at: Vector3 = f[0]
+
+		if Vector2(at.x - p.x, at.z - p.z).length() <= float(f[1]):
+			return at
+
+	return Vector3.INF
+
+
+# Whether an animal (or a point, when given) is at its den: within den.den_m of where it spawned. Only species with a den block.
+func _in_den(a: Dictionary, def: Dictionary, at: Vector3 = Vector3.INF) -> bool:
+	if not a.has("den"):
+		return false
+
+	var p: Vector3 = a["pos"] if at == Vector3.INF else at
+	return Vector2(p.x - a["den"].x, p.z - a["den"].z).length() <= float(def["den"].get("den_m", 15.0))
+
+
+# How close a player may come before this animal feels threatened and attacks: defend.threat_m, den.threat_m at its den.
+func _threat_m(a: Dictionary, def: Dictionary) -> float:
+	if _in_den(a, def):
+		return float(def["den"].get("threat_m", 15.0))
+
+	return float(def["defend"].get("threat_m", 0.0))
+
+
+# Where a den animal goes next (Dave 6 Nov 2026: a bear wanders round the river near its den and spends most of its time fishing,
+# foraging berries or sleeping): within den.range_m of its den; fish_share of the time to the water's edge (a dry spot with water
+# a few metres off), else somewhere in its range to forage. Sleeping is its rest hours (active, rest.graze_x).
+func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
+	var den_cfg: Dictionary = def["den"]
+	var den: Vector3 = a["den"]
+	var range_m: float = float(den_cfg.get("range_m", 80.0))
+
+	if water_level.is_valid() and rng.randf() < float(den_cfg.get("fish_share", 0.5)):   # luck-exempt: whether a bear goes fishing next
+		for n in 8:
+			var ang: float = rng.randf() * TAU   # luck-exempt: where it looks for a fishing spot
+			var spot: Vector3 = den + Vector3(cos(ang), 0.0, sin(ang)) * rng.randf_range(2.0, range_m)   # luck-exempt: as above
+
+			if not is_nan(float(water_level.call(spot.x, spot.z))):
+				continue
+
+			for k in 4:
+				var off: Vector2 = Vector2.from_angle(float(k) * PI * 0.5) * 3.0
+
+				if not is_nan(float(water_level.call(spot.x + off.x, spot.z + off.y))):
+					a["fishing"] = true
+					return spot
+
+	a["fishing"] = false
+	var angle: float = rng.randf() * TAU   # luck-exempt: where it forages next
+	return den + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(2.0, range_m)   # luck-exempt: as above
 
 
 # Keep each player's share topped up: new animals out of sight (spawn_min_m..spawn_max_m away), never near any player.
