@@ -63,6 +63,31 @@ def paw(rng, f0):
     return fade(out)
 
 
+def bear_paw(rng):
+    """A bear's padded footfall (Jason 6 Nov 2026, for MikeW's bear #480): a heavy low pad thud, the weight settling a moment later, and a
+    soft crush of litter under a broad foot. No claws click: a bear walks on its soles."""
+    n = int(0.42 * SR)
+    out = np.zeros(n)
+    add(out, thump(rng, 0.22, 52 * rng.uniform(0.9, 1.1), 0.05, 380), 0.003)
+    add(out, 0.45 * thump(rng, 0.2, 64 * rng.uniform(0.9, 1.1), 0.045, 300), 0.07 + 0.02 * rng.uniform())
+    m = int(0.18 * SR)
+    add(out, 0.18 * noise(rng, m, lambda f: band(f, 900, 0.9) * lowpass(f, 2400, 2)) * env(m, 0.01, 0.08), 0.02)
+    return fade(lowpass_soft(out))
+
+
+def lowpass_soft(x):
+    """Rounds off the top of a heavy step so it reads as fur and pad, not a knock."""
+    spectrum = np.fft.rfft(x)
+    freqs = np.fft.rfftfreq(len(x), 1.0 / SR)
+    return np.fft.irfft(spectrum * lowpass(freqs, 1600, 2), len(x))
+
+
+def make_bear_steps():
+    """bear_step_0..2 (separate seeds, so adding them left every other clip of this batch as it was)."""
+    for v in range(VARIANTS):
+        write("bear_step_%d" % v, bear_paw(np.random.default_rng(1400 + v)), DB12)
+
+
 def webbed(rng):
     """A duck's flat foot slap on ground: quick, wet, soft."""
     n = int(0.16 * SR)
@@ -208,6 +233,7 @@ def main():
         write("table_vice_%d" % v, vice_clamp(np.random.default_rng(2000 + v)), DB6)
 
     write("water_wheel_loop_0", wheel_loop(np.random.default_rng(3000)), DB6)
+    make_bear_steps()
 
 
 if __name__ == "__main__":
