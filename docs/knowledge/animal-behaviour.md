@@ -12,11 +12,11 @@
 6. **Fire keeps animals away, with two exceptions.** A bear at its den and a mother with young ignore fire and torches (Dave 6 Nov). Wolves keep their own pack rules.
 7. **Animals live on a schedule of needs.** theHunter gives each species zones to eat, drink and rest, on day or night schedules with some randomness; that is what makes animals findable and huntable. Our bear's fishing, foraging and sleeping trips are the start of this.
 8. **Groups follow a leader.** In theHunter a herd leader decides and the others follow after finishing what they were doing. That small delay reads as natural; everyone turning at once reads as a machine. Boids (separation, alignment, cohesion) suit birds and fish.
-9. **Danger rises with distance from the starter town.** Small game everywhere, boar and horse from the near middle, moose from a third of the way, wolves and bears on the far half (#479, Dave 6 Nov).
+9. **Levels rise with distance from the starter town; habitats don't change.** Every animal has a level: about 1-5 near the town, 5-10 further out, 10-20 on the far side. Each species still lives wherever is natural for it (Dave corrected this on 6 Nov; #479 placed species by distance and is being reworked by MikeW).
 
 ## How ours works (6 Nov 2026)
 
-- **Spawning:** the starter-island level gradient (#479) runs from the town point (spawn) across about 8 km; each species has a level band.
+- **Spawning:** species live in their natural habitat. The starter-island gradient sets each animal's level from its distance to the town point (spawn): about 1-5 near, 5-10 mid, 10-20 far (Dave 6 Nov). #479 first used it to decide which species spawn where; MikeW is changing that.
 - **Ranges** (`animals.json`): `spook_m` is the flee range; `defend.threat_m` is the attack range. Bear 15 m at its den and 9 m elsewhere, moose 8, boar 6, deer 3.5, horse 3, fox 2. Cornered animals hit weakly (4 to 10 damage).
 - **Temperament** (`"temperament"` in `animals.json`, drawn at birth): passive (never attacks), defensive, neutral (never runs, attacks inside its range), aggressive (never runs, attacks from twice its range), friendly (walks up and stops 5 m short). Mixes: bear 60/25/15 defensive/neutral/aggressive, moose 70/30, boar 70/30 defensive/aggressive, deer 80/20 passive/defensive, fox 60/25/15 passive/neutral/friendly.
 - **Seasons** (`"seasons"`): scale `threat_x` and `spook_x`. Bear ×1.5 in spring and ×0.7 in autumn; moose and deer ×1.5 in the autumn rut.
@@ -35,7 +35,7 @@
 | 4 Nov | Animals stop at walls and heavy stations | #328 | Worked |
 | 4-5 Nov | Coats, shadows, wolf looks, one barrel body with a smooth neck | #229, #266, #64, #347 | Worked (looks) |
 | 5 Nov | Undergrowth never blocks the player but is louder to animals | #445 | Worked |
-| 6 Nov | Starter island wildlife gradient from the town | #479 | Merged |
+| 6 Nov | Starter island wildlife gradient from the town | #479 | Merged, but it moved species by distance; Dave wants levels instead (rework by MikeW) |
 | 6 Nov | Bear, threat range, temperaments, seasons, young | #480 | Open; PC gate and windowed look queued |
 
 ## What others do (with sources)
