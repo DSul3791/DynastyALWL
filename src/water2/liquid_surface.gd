@@ -46,6 +46,8 @@ uniform float chunk_lift = 0.25;    // chunk sheets only: running water is drawn
 uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
+uniform sampler2D foam_tex : hint_default_black, filter_linear_mipmap, repeat_enable;   // tileable smooth noise (foam_texture()): the foam's pattern, no lattice
+uniform float foam_tile_m = 8.0;    // metres across one repeat of foam_tex (divides 256, see foam_at)
 uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live window magenta, a 2 m chunk sheet yellow, an 8 m one orange, dark lines on the texel borders, darker where the sheet is steep, red seen from behind, cyan where fall white water is on
 
 varying vec2 tex_uv;
@@ -147,6 +149,13 @@ float noise(vec2 p) {
 	vec2 f = fract(p);
 	vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
 	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+// The foam pattern from a tileable texture (Tyler 6 Nov 2026, after #472: "light angular foam patches, diamonds and squares about forearm size"; value
+// noise cut by a threshold shows its square lattice as diamonds). `local` is the world position taken modulo 256 m (a whole number of repeats), so the
+// texture coordinates stay small at the world's large coordinates and the pattern still meets itself across chunks.
+float foam_at(vec2 local) {
+	return texture(foam_tex, local / foam_tile_m).r;
 }
 
 // The live window's share of the water at a point `d_m` metres inside the window's edge: 0 at the edge, 1 from blend_m + blend_wander_m in.
@@ -294,13 +303,14 @@ void fragment() {
 	float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 4.0);
 
 	// Foam where it runs fast and shallow (rapids, the lip and foot of a fall), streaked along the flow.
-	float streak = mix(noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p0 * 2.5), noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p1 * 2.5), mixk);
+	vec2 local = mod(world, 256.0);
+	float streak = mix(foam_at(local - drift * ph0), foam_at(local - drift * ph1 + 3.7), mixk);
 	float rough = clamp((speed - 0.9) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);   // BUG-010: white from 0.9 m/s (was 1.2)
 	// In streaks over about half the surface, not all of it (Tyler 6 Nov 2026: once the noise worked at the world's coordinates, a fast shallow brook
 	// came out white all over, "like snow"; the broken old noise had hidden how strong this was).
 	float foam = smoothstep(0.6, 0.9, streak + rough * 0.15) * rough * 0.7;
 	// Lapping at the bank: a broken foam line that comes and goes where the water thins against the ground.
-	float lap = (1.0 - smoothstep(0.05, lap_m, through)) * smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(TIME * 1.1 + noise(world * 0.35) * 9.0)) * noise(world * 1.3 + TIME * 0.2);
+	float lap = (1.0 - smoothstep(0.05, lap_m, through)) * smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(TIME * 1.1 + noise(world * 0.35) * 9.0)) * foam_at(local + vec2(1.3, 4.1) + TIME * 0.2);
 	foam = max(foam, lap * 0.7);
 	// Falls: where the surface itself drops steeply (only between wet texels; a shore texel's level is the bank), the water turns white, in long
 	// streaks that pour down the face, faster than the river above.
@@ -388,6 +398,7 @@ const SHORE_DEPTH_M := 0.3      # a chunk sheet's depth at wet points next to th
 const OPEN_DEPTH_M := 1.0       # and further in
 
 static var _shader: Shader = null
+static var _foam: NoiseTexture2D = null   # shared by every sheet
 
 static var debug_on: int = -1   # -1: not read yet (then --water-debug on the command line turns it on)
 
@@ -405,12 +416,34 @@ func _init() -> void:
 
 	_material = ShaderMaterial.new()
 	_material.shader = _shader
+	_material.set_shader_parameter("foam_tex", foam_texture())
 
 	if debug_on < 0:
 		debug_on = 1 if AppConfig.has_flag("water-debug") else 0
 
 	_material.set_shader_parameter("debug_sheet", float(debug_on))
 	visible = false
+
+
+# The foam pattern: smooth simplex noise in a few octaves, seamless, so it has no square lattice to show (foam_at in the shader). Made once, on a thread.
+static func foam_texture() -> NoiseTexture2D:
+	if _foam == null:
+		var noise := FastNoiseLite.new()
+		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		noise.seed = 4127
+		noise.frequency = 0.025   # about 6 blobs across the 256 texel repeat: about 1.3 m on the 8 m repeat, finer octaves on top
+		noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+		noise.fractal_octaves = 4
+		_foam = NoiseTexture2D.new()
+		_foam.width = 256
+		_foam.height = 256
+		_foam.seamless = true
+		_foam.seamless_blend_skirt = 0.15
+		_foam.generate_mipmaps = true
+		_foam.normalize = true
+		_foam.noise = noise
+
+	return _foam
 
 
 # The debug colours (see debug_sheet in the shader), for this sheet and every one made after.
