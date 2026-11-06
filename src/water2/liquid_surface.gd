@@ -16,6 +16,11 @@ shader_type spatial;
 render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
 
 uniform sampler2D liquid : filter_linear, repeat_disable;   // R surface (m), G flow east, B flow south (m/s), A depth (m)
+// The same in half floats, R relative to the sheet's own level (chunk sheets, for the per-pixel reads). A 32-bit float texture is not filtered on every
+// GPU: on Dave's PC its reads between texels came back nearest, so everything the fragment works out from it (shore, depth, current, white water) stepped
+// texel by texel, square panes with straight borders over a steep brook (Tyler and Dino 6 Nov 2026, x 54101 z 69709). Half floats always filter.
+uniform sampler2D liquid_px : filter_linear, repeat_disable;
+uniform float has_px = 0.0;
 uniform vec2 cells = vec2(128.0);                           // texels across
 uniform float fade_cells = 1.0;                            // 0: no fade at the sheet's edge (a chunk sheet meets its neighbours)
 uniform float point_grid = 0.0;                            // 1: texels sit on the sheet's corners and edges (a chunk's grid points), 0: on cell centres (the live window)
@@ -56,7 +61,7 @@ varying vec2 flow_v;
 // bilinear reads of the 8 m cells drew a steep stream as flat tilted plates with diamond-shaped shores and white patches: the creases run along the cell
 // edges and the mesh's diagonals. A cubic B-spline over the 4 x 4 texels round the point (four filtered reads) bends smoothly across the cells, with no
 // creases. Only the live window: a chunk sheet must meet its neighbour exactly at their shared grid points, which bilinear does.
-vec4 sample_smooth(vec2 uv) {
+vec4 sample_smooth(sampler2D tex, vec2 uv) {
 	vec2 p = uv * cells - 0.5;
 	vec2 i = floor(p);
 	vec2 f = p - i;
@@ -70,19 +75,20 @@ vec4 sample_smooth(vec2 uv) {
 	vec2 g1 = w2 + w3;
 	vec2 h0 = (i - 0.5 + w1 / g0) / cells;
 	vec2 h1 = (i + 1.5 + w3 / g1) / cells;
-	return g0.y * (g0.x * textureLod(liquid, vec2(h0.x, h0.y), 0.0) + g1.x * textureLod(liquid, vec2(h1.x, h0.y), 0.0))
-		+ g1.y * (g0.x * textureLod(liquid, vec2(h0.x, h1.y), 0.0) + g1.x * textureLod(liquid, vec2(h1.x, h1.y), 0.0));
+	return g0.y * (g0.x * textureLod(tex, vec2(h0.x, h0.y), 0.0) + g1.x * textureLod(tex, vec2(h1.x, h0.y), 0.0))
+		+ g1.y * (g0.x * textureLod(tex, vec2(h0.x, h1.y), 0.0) + g1.x * textureLod(tex, vec2(h1.x, h1.y), 0.0));
 }
 
 vec4 sample_liquid(vec2 uv) {
-	return point_grid > 0.5 ? textureLod(liquid, uv, 0.0) : sample_smooth(uv);
+	return point_grid > 0.5 ? textureLod(liquid, uv, 0.0) : sample_smooth(liquid, uv);
 }
 
 // Per pixel every sheet reads smoothly (Dino's shots 6 Nov: the steep brook at x 54101 z 69709 is drawn by chunk sheets, not the live window, and kept its
 // diamond facets). Only the vertices of a chunk sheet keep the plain reads, so its edges still meet the next sheet's; the shore, depth and white water,
 // which made the diamonds, follow the smooth surface on every sheet.
+// R is then relative (has_px): the fragment only takes differences of it.
 vec4 sample_pixel(vec2 uv) {
-	return sample_smooth(uv);
+	return has_px > 0.5 ? sample_smooth(liquid_px, uv) : sample_smooth(liquid, uv);
 }
 
 // The least depth that still draws: 4 mm for slow water, half a millimetre where it runs fast (a fall face, a chute).
@@ -265,7 +271,9 @@ void fragment() {
 	// Foam where it runs fast and shallow (rapids, the lip and foot of a fall), streaked along the flow.
 	float streak = mix(noise(p0 * 2.5), noise(p1 * 2.5), mixk);
 	float rough = clamp((speed - 0.9) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);   // BUG-010: white from 0.9 m/s (was 1.2)
-	float foam = smoothstep(0.45, 0.8, streak + rough * 0.6) * rough;
+	// In streaks over about half the surface, not all of it (Tyler 6 Nov 2026: once the noise worked at the world's coordinates, a fast shallow brook
+	// came out white all over, "like snow"; the broken old noise had hidden how strong this was).
+	float foam = smoothstep(0.6, 0.9, streak + rough * 0.15) * rough * 0.7;
 	// Lapping at the bank: a broken foam line that comes and goes where the water thins against the ground.
 	float lap = (1.0 - smoothstep(0.05, lap_m, through)) * smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(TIME * 1.1 + noise(world * 0.35) * 9.0)) * noise(world * 1.3 + TIME * 0.2);
 	foam = max(foam, lap * 0.7);
@@ -281,7 +289,7 @@ void fragment() {
 		min(ex0.a, ex1.a) > 0.0005 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
 		min(ez0.a, ez1.a) > 0.0005 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
 	float drop = length(grad);
-	float fall = smoothstep(0.35, 0.9, drop);   // from about 20 degrees: a riffle between pools stays water, not white sheet
+	float fall = smoothstep(0.55, 1.1, drop);   // from about 30 degrees (was 20: with the noise fixed, a steep brook at x 54101 z 69709 read as snow, Tyler 6 Nov 2026)
 
 	if (fall > 0.01) {
 		// Dave 2 Nov 2026: no lines. Churning white water: round billows (no stretched streaks) that tumble downhill.
@@ -433,7 +441,9 @@ static func image_from_grid(grid: Dictionary) -> Image:
 			im.set_pixel(i, j, Color(here, 0.0, 0.0, 0.0))
 
 	_paint_falls(im, grid, count)
-	return _lay_fine(im, grid, count)
+	var laid: Image = _lay_fine(im, grid, count)
+	laid.set_meta("px", pixel_image(laid))
+	return laid
 
 
 # Running water on the real ground (Dave 3 Nov 2026: a brook on a steep hillside showed as separate puddles with clay and grass between them). The
@@ -554,6 +564,24 @@ static func _paint_falls(im: Image, grid: Dictionary, count: int) -> void:
 				im.set_pixel(i, j, Color(p.y, run.x, run.y, SHORE_DEPTH_M))
 
 
+# The per-pixel copy of a chunk's image (see liquid_px in the shader): half floats, R less the first wet texel's level (so it keeps cm precision).
+static func pixel_image(im: Image) -> Image:
+	var data: PackedFloat32Array = im.get_data().to_float32_array()
+	var base: float = 0.0
+
+	for n in range(0, data.size(), 4):
+		if data[n + 3] > 0.0:
+			base = data[n]
+			break
+
+	for n in range(0, data.size(), 4):
+		data[n] = clampf(data[n] - base, -60000.0, 60000.0)
+
+	var px: Image = Image.create_from_data(im.get_width(), im.get_height(), false, Image.FORMAT_RGBAF, data.to_byte_array())
+	px.convert(Image.FORMAT_RGBAH)
+	return px
+
+
 # A chunk's sheet: `corner` is the world x, z of grid point (0, 0); the texels sit on the grid points, the sheet spans them exactly (no overlap with the
 # next chunk's sheet).
 func show_points(im: Image, corner: Vector2, spacing: float) -> void:
@@ -567,6 +595,9 @@ func show_points(im: Image, corner: Vector2, spacing: float) -> void:
 
 	position = Vector3(corner.x + size.x * 0.5, 0.0, corner.y + size.y * 0.5)
 	_material.set_shader_parameter("liquid", ImageTexture.create_from_image(im))
+	var px: Image = im.get_meta("px") if im.has_meta("px") else pixel_image(im)
+	_material.set_shader_parameter("liquid_px", ImageTexture.create_from_image(px))
+	_material.set_shader_parameter("has_px", 1.0)
 	_material.set_shader_parameter("cells", Vector2(cells))
 	_material.set_shader_parameter("fade_cells", 0.0)
 	_material.set_shader_parameter("point_grid", 1.0)
