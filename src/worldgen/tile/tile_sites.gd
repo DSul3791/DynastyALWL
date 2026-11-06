@@ -67,6 +67,7 @@ var _geology
 var _limestone: int = -1
 var _local: int = 0
 var _keep_clear: Array = []      # [center Vector2, radius] where no entrance may open
+var inland: PackedByteArray = PackedByteArray()   # 1 where the sea is at least spring_cave.min_sea_m away (inland_mask, from the frame); empty: no such rule
 var _ore_by_id: Dictionary = {}
 var ore_report: Dictionary = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
 
@@ -736,7 +737,7 @@ func _make_shelters(rng: RandomNumberGenerator) -> void:
 # tile 3,4), so the flow cannot pick which brooks get more: chance does. cave["springs"] = [{node, m3_s}]. A main passage shorter than min_length_m
 # (no room under the hill) gives no cave.
 const SPRING_CAVE_DEFAULTS := {
-	"min_slope_deg": 10.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
+	"min_slope_deg": 10.0, "hill_rise_m": 0.0, "hill_reach_m": 100.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
 	"width_m": [3.0, 5.0], "height_m": [2.5, 4.0], "min_cover_m": 2.5, "open_cut_m": 64.0, "chamber_radius_m": [4.0, 7.0],
 	"branches": [1, 3], "branch_length_m": [15.0, 40.0], "extra_passage_chance": [0.4, 0.15], "spring_m3_s_per_km2": 0.1, "min_length_m": 60.0,
 	# Dave 4 Nov 2026: mouths match the river, small / medium / large caves, den tunnels climbing to a hollow, bones, stalagmites and stalactites.
@@ -774,7 +775,12 @@ func _brook_heads() -> Array:
 		for i in range(margin, _samples - margin):
 			var index: int = j * _samples + i
 
-			if _water[index] != RIVER or _heights[index] < 2.0 or _slope(index) < min_slope:
+			if _water[index] != RIVER or _heights[index] < 2.0:
+				continue
+
+			# Way inland only (Dave 6 Nov 2026: "its important they only show up way inland wherever the river starts"): the 96 caves of the terrain 59
+			# bake had 30 within 1 km of the sea, at the heads of short coastal brooks.
+			if not inland.is_empty() and inland[index] == 0:
 				continue
 
 			var head: bool = true
@@ -811,10 +817,116 @@ func _brook_heads() -> Array:
 						if _water[n] == RIVER and _flow[n] > head_max:
 							head = false
 
+			# On the side of a hill, or at its foot (Dave 6 Nov 2026: "if its at the base or on the side of a hill or mountain it gets a cave"; a river
+			# that starts on flat ground has its head pond instead): the head is steep, or the ground rises hill_rise_m within hill_reach_m.
+			if head and _slope(index) < min_slope and not _hill_behind(i, j):
+				head = false
+
 			if head:
 				heads.append(index)
 
 	return heads
+
+
+# The ground within spring_cave.hill_reach_m stands hill_rise_m or more over this sample (a hill or mountain a cave can run into).
+func _hill_behind(i: int, j: int) -> bool:
+	var rise: float = float(_spring_rule("hill_rise_m"))
+
+	if rise <= 0.0:
+		return false
+
+	var reach: int = int(ceil(float(_spring_rule("hill_reach_m")) / _spacing))
+	var top: float = _heights[j * _samples + i] + rise
+
+	for dj in range(-reach, reach + 1):
+		var jj: int = j + dj
+
+		if jj < 0 or jj >= _samples:
+			continue
+
+		for di in range(-reach, reach + 1):
+			var ii: int = i + di
+
+			if ii >= 0 and ii < _samples and di * di + dj * dj <= reach * reach and _heights[jj * _samples + ii] >= top:
+				return true
+
+	return false
+
+
+# 1 where no OCEAN sample lies within min_m, on an n by n grid (the baker's whole frame, so two tiles agree along their seam: the frame reaches 3.2 km
+# past each edge). Chamfer distance on a grid coarsened 4 times (32 m cells), which is close enough for a distance of a kilometre or more.
+static func inland_mask(water_class: PackedByteArray, n: int, cell_m: float, min_m: float) -> PackedByteArray:
+	var out: PackedByteArray = PackedByteArray()
+	out.resize(n * n)
+
+	if min_m <= 0.0:
+		out.fill(1)
+		return out
+
+	var f: int = 4
+	var m: int = int(ceil(float(n) / float(f)))
+	var step: float = cell_m * float(f)
+	var diag: float = step * sqrt(2.0)
+	var dist: PackedFloat32Array = PackedFloat32Array()
+	dist.resize(m * m)
+	dist.fill(INF)
+
+	for j in range(n):
+		@warning_ignore("integer_division")
+		var row: int = (j / f) * m
+
+		for i in range(n):
+			if water_class[j * n + i] == OCEAN:
+				@warning_ignore("integer_division")
+				dist[row + i / f] = 0.0
+
+	for j in range(m):
+		for i in range(m):
+			var k: int = j * m + i
+			var d: float = dist[k]
+
+			if i > 0:
+				d = minf(d, dist[k - 1] + step)
+
+			if j > 0:
+				d = minf(d, dist[k - m] + step)
+
+				if i > 0:
+					d = minf(d, dist[k - m - 1] + diag)
+
+				if i < m - 1:
+					d = minf(d, dist[k - m + 1] + diag)
+
+			dist[k] = d
+
+	for j in range(m - 1, -1, -1):
+		for i in range(m - 1, -1, -1):
+			var k: int = j * m + i
+			var d: float = dist[k]
+
+			if i < m - 1:
+				d = minf(d, dist[k + 1] + step)
+
+			if j < m - 1:
+				d = minf(d, dist[k + m] + step)
+
+				if i < m - 1:
+					d = minf(d, dist[k + m + 1] + diag)
+
+				if i > 0:
+					d = minf(d, dist[k + m - 1] + diag)
+
+			dist[k] = d
+
+	for j in range(n):
+		@warning_ignore("integer_division")
+		var row: int = (j / f) * m
+
+		for i in range(n):
+			@warning_ignore("integer_division")
+			out[j * n + i] = 1 if dist[row + i / f] >= min_m else 0
+
+	return out
 
 
 func _spring_m3_s(index: int) -> float:

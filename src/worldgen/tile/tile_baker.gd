@@ -329,6 +329,8 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 
 	water.starter_path = shifted
 	water.heights = crop(water.heights, n, core)
+	# Where the sea is far enough for a spring cave, worked out on the whole frame before it is cropped (tile_sites.gd inland_mask).
+	var inland: PackedByteArray = crop(TileSitesScript.inland_mask(water.water_class, n, frame_height.spacing_m, float(tile_rules["sites"].get("spring_cave", {}).get("min_sea_m", 0.0))), n, core)
 	water.water_class = crop(water.water_class, n, core)
 	water.water_surface = crop(water.water_surface, n, core)
 	water.flow = crop(water.flow, n, core)
@@ -356,6 +358,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	clock = Time.get_ticks_msec()
 	var sites = TileSitesScript.new()
 	sites.setup(settings, tile_rules, tables)
+	sites.inland = inland
 	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow)
 	timings["sites"] = Time.get_ticks_msec() - clock
 
