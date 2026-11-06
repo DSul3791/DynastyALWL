@@ -327,6 +327,19 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, origin_sx, origin_sz, tile_rules["water"].get("valley_drain", {}), tile_rules.get("spawn_pad", {}))
 	print("  valley drain (tile %s): %d cells raised to drain to the river, up to %.1f m (%d ms)" % [str(tile), drained["raised"], drained["max_m"], Time.get_ticks_msec() - clock])
 
+	# The spawn pad again, raise only, on dry ground: the deeper rivers and their valleys (5 m more, #473) cut into the pad's edge and left it 0.4 m low
+	# and dimpled, and the settled rain stood in the dimples 0.3 m deep (test_spawn_dry on the #473 rebake: ground 31.2 m, water 30.9 m).
+	if tile_rules.has("spawn_pad"):
+		var repinned: PackedFloat32Array = _pin_spawn_pad(water.heights, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules["spawn_pad"])
+		var lifted_pad: int = 0
+
+		for k in range(repinned.size()):
+			if water.water_class[k] == TileWaterScript.NONE and repinned[k] > water.heights[k]:
+				water.heights[k] = repinned[k]
+				lifted_pad += 1
+
+		print("  spawn pad (tile %s): %d cells raised back to the pad" % [str(tile), lifted_pad])
+
 
 	clock = Time.get_ticks_msec()
 	var climate = TileClimateScript.new()
