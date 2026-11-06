@@ -579,8 +579,9 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 		# The chunk's sand is found from its biome samples (every `step` m), so a small beach between them left has_beach false and the edge rules off:
 		# the #464 rebake put such a beach in a chunk by the spawn and test_beach_belt found a grass on open sand. A plant standing on sand itself
-		# always gets the rules.
-		if (has_beach or data.biome[data.nearest(x, z)] == _beach_id) and not _beach_rules_ok(item, data, x, z, edge_cache):
+		# always gets the rules, and so does one whose 4 m probe cell centre (where _edge_m asks) is on sand: a spot on dirt or sea beside such a
+		# centre still read as open sand to the test (4d714ca2 re-gate, 1 grass).
+		if (has_beach or _on_sand(data, x, z)) and not _beach_rules_ok(item, data, x, z, edge_cache):
 			continue
 
 		if item["kind"] != KIND_PLANT:
@@ -760,6 +761,14 @@ func _edge_probe(data, x: float, z: float, reach: float) -> float:
 		r += 4.0
 
 	return -1000.0 if on_sand else 1000.0
+
+
+# True when the spot or the centre of its 4 m edge cell stands on sand.
+func _on_sand(data, x: float, z: float) -> bool:
+	if data.biome[data.nearest(x, z)] == _beach_id:
+		return true
+
+	return data.biome[data.nearest((floor(x / 4.0) + 0.5) * 4.0, (floor(z / 4.0) + 0.5) * 4.0)] == _beach_id
 
 
 # The edge rules for a spot in a chunk with sand: in the belt only the belt species stand; on the sand grass keeps near the dirt.
