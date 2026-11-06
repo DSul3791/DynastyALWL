@@ -258,6 +258,23 @@ static func _add_hollow_springs(sim, data, flow: PackedFloat32Array, side: int, 
 		var members: Dictionary = {}
 		var km2: float = 0.35
 
+		# Dave 6 Nov 2026 (x 52935 z 69453): "its constantly flowing out and making wetlands everywhere". A dry hollow with no river or lake got at
+		# least catchment min_m3s forever, filled and spilled down the hillside as a sheet beside the rivers. Only a hollow that holds a painted
+		# lake gets a spring now; a dry bowl stays dry (springs come from caves and river heads).
+		if bool(cfg.get("lakes_only", false)):
+			var has_lake: bool = false
+
+			for k in hollow["cells"]:
+				@warning_ignore("integer_division")
+				var fine: int = (k / coarse) * step * side + (k % coarse) * step
+
+				if fine >= 0 and fine < data.water_class.size() and data.water_class[fine] == LAKE:
+					has_lake = true
+					break
+
+			if not has_lake:
+				continue
+
 		if not flow.is_empty():
 			km2 = 0.0
 

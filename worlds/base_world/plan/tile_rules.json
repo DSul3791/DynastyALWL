@@ -161,9 +161,9 @@
 		"drainage_mode": true,
 		"drainage": {
 			"banks": {
-				"_note": "Sonny 3 Nov 2026 (no patchy riverbeds): a dry cell next to water higher than its ground is raised to that water plus height_m, by at most max_raise_m, so a channel across a hillside has a bank on its downhill side (tile_drainage.gd _build_banks). v2 (05:55): max_raise_m 1.5 -> 3 (759 of 919 still-leaking rim cells were at the cap); a bank taller than shoulder_drop_m raises the dry ground outside it to its top less shoulder_drop_m (at most half its lift), so it slopes away.",
+				"_note": "Sonny 3 Nov 2026 (no patchy riverbeds): a dry cell next to water higher than its ground is raised to that water plus height_m, by at most max_raise_m, so a channel across a hillside has a bank on its downhill side (tile_drainage.gd _build_banks). v2 (05:55): max_raise_m 1.5 -> 3 (759 of 919 still-leaking rim cells were at the cap); a bank taller than shoulder_drop_m raises the dry ground outside it to its top less shoulder_drop_m (at most half its lift), so it slopes away. v3 (Sonny 6 Nov 2026, Dave x 52935 z 69453: water spilling out of the beds into wetlands): height_m 0.2 -> 0.8 (the settled water stands up to ~0.9 m over the painted level on steep reaches) and every dry cell under the water plus height_m is a bank, not only those under the water.",
 				"enabled": true,
-				"height_m": 0.2,
+				"height_m": 0.8,
 				"max_raise_m": 3.0,
 				"shoulder_drop_m": 1.0
 			},
