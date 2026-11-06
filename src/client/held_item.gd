@@ -258,9 +258,11 @@ func press_slot(slot: int) -> void:
 		if off_holding and off_slot == slot:
 			off_holding = false
 			blocking = false
+			_relight_on_press(slot, true)
 		else:
 			off_slot = slot
 			off_holding = true
+			_relight_on_press(slot)
 
 		_inv.refresh_hotbar()
 
@@ -287,16 +289,19 @@ func equip_toggle(slot: int) -> void:
 	press_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))
 
 
-# A doused torch pressed on the hotbar lights again when a burning fire is within a few steps (Dave 6 Nov 2026); away from a fire it says what it needs.
-func _relight_on_select() -> void:
-	if not _is_doused_torch():
+# A doused torch pressed on the hotbar lights again when a burning fire is within a few steps (Dave 6 Nov 2026); away from a fire it says what it needs
+# (unless `quiet`, as when the same key puts the torch away). The doused torch is an off-hand item, so press_slot calls this for it too.
+func _relight_on_press(slot: int, quiet: bool = false) -> void:
+	var number: int = _inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]
+
+	if number == 0 or str(_inv.table.entry(_inv.table.id_of(number)).get("relit_item", "")) == "":
 		return
 
 	var fire: int = _inv.lit_fire_in_reach()
 
 	if fire != 0:
-		_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, fire, held_slot + 1, 0, Vector3.ZERO)
-	else:
+		_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, fire, clampi(slot, 0, HOTBAR_SLOTS - 1) + 1, 0, Vector3.ZERO)
+	elif not quiet:
 		_inv._on_notice("Hold the torch to a burning fire to light it again")
 
 
@@ -309,7 +314,7 @@ func select(slot: int) -> void:
 	aiming = false
 	_inv.refresh_hotbar()
 	var number: int = _inv.inventory.numbers[held_slot]
-	_relight_on_select()
+	_relight_on_press(held_slot)
 
 	if number != 0 and not is_holdable(number):
 		_inv._on_notice("%s cannot be held in the hand (Use or Eat it from the inventory)" % _inv.table.name_of(number))
