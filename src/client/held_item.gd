@@ -287,6 +287,19 @@ func equip_toggle(slot: int) -> void:
 	press_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))
 
 
+# A doused torch pressed on the hotbar lights again when a burning fire is within a few steps (Dave 6 Nov 2026); away from a fire it says what it needs.
+func _relight_on_select() -> void:
+	if not _is_doused_torch():
+		return
+
+	var fire: int = _inv.lit_fire_in_reach()
+
+	if fire != 0:
+		_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, fire, held_slot + 1, 0, Vector3.ZERO)
+	else:
+		_inv._on_notice("Hold the torch to a burning fire to light it again")
+
+
 func select(slot: int) -> void:
 	if _sound != null and (clampi(slot, 0, HOTBAR_SLOTS - 1) != held_slot or not holding):
 		_sound.itemfx.hotbar(clampi(slot, 0, HOTBAR_SLOTS - 1))
@@ -296,6 +309,7 @@ func select(slot: int) -> void:
 	aiming = false
 	_inv.refresh_hotbar()
 	var number: int = _inv.inventory.numbers[held_slot]
+	_relight_on_select()
 
 	if number != 0 and not is_holdable(number):
 		_inv._on_notice("%s cannot be held in the hand (Use or Eat it from the inventory)" % _inv.table.name_of(number))
