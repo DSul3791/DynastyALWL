@@ -300,8 +300,8 @@ func _relight_on_press(slot: int, quiet: bool = false) -> void:
 	if quiet:
 		return   # the same key again puts the torch away
 
-	if light_block != "":
-		_inv._on_notice("It is too wet to light the torch. Get out of the water and the rain, or into a cave or under cover." if light_block == "water" or light_block == "rain" else "")
+	if light_block_fn.is_valid() and str(light_block_fn.call()) != "":
+		_inv._on_notice("It is too wet to light the torch. Get out of the water and the rain, or into a cave or under cover.")
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, clampi(slot, 0, HOTBAR_SLOTS - 1) + 1, 0, Vector3.ZERO)   # no fire needed (Dave 6 Nov 2026)
@@ -528,7 +528,7 @@ func _place_torch_here() -> void:
 
 
 # Whether the camera is under cover from the rain (a tree's crown or a roof).
-var light_block: String = ""   # "water" or "rain" while a flame cannot be lit here (set every frame by the client from FlameRules; Dave 6 Nov 2026), else ""
+var light_block_fn: Callable   # () -> "water", "rain" or "": why a flame cannot be lit here (the client reads FlameRules at the key press; Dave 6 Nov 2026)
 
 
 func flame_covered() -> bool:

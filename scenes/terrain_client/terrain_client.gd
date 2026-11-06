@@ -1429,6 +1429,7 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.light_block_fn = _light_block
 	Probe.stop("welcome: held item", tq_held_item)
 	var tq_tail: int = Probe.start()   # Low-quality lag runs (5 Nov) stuck up to 2.2 s "after held item": the rest of the welcome was not timed
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
@@ -6165,6 +6166,21 @@ func _exit_tree() -> void:
 		stream.close()
 
 
+# Why a torch cannot be lit right now: "water" (the eye is under water), "rain" (open rain, no tree, rock or roof over you; a cave is cover), or "".
+# Asked at the moment of the key press, so it reads the state of that frame.
+func _light_block() -> String:
+	if underwater:
+		return "water"
+
+	var wet: float = float(weather.get("rain", 0.0))
+
+	if not FlameRules.in_rain(wet, false):
+		return ""
+
+	var rock: float = sound.cave.rock_enclosure if sound != null and sound.cave != null else 0.0
+	return "" if WeatherLookScript.sky_share(rock) < 0.5 or held.flame_covered() else "rain"
+
+
 # A torch in either hand goes out under water or after a few seconds in the open rain (Dave, 4 Nov 2026; flame_rules.gd). The client knows the held slot,
 # so it asks the server to swap the torch for a doused one; a lantern (later) only goes out under water.
 func _flame_wet(delta: float) -> void:
@@ -6173,11 +6189,6 @@ func _flame_wet(delta: float) -> void:
 
 	var slot: int = held.flame_slot()
 	# A torch can only be lit where it would not go out at once: not under water, not in the open rain (rock or a roof or a crown over you is cover, so a cave works).
-	var wet: float = float(weather.get("rain", 0.0))
-	var rock: float = sound.cave.rock_enclosure if sound != null and sound.cave != null else 0.0
-	var sheltered: bool = true if not FlameRules.in_rain(wet, false) else (WeatherLookScript.sky_share(rock) < 0.5 or held.flame_covered())
-	held.light_block = "water" if underwater else ("rain" if FlameRules.in_rain(wet, sheltered) else "")
-
 	if slot < 0:
 		_flame_rain_s = 0.0
 		return
