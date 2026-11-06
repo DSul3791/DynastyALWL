@@ -26,6 +26,7 @@ func make():
 	a.player_positions = func(): return players.map(func(p): return p["pos"])
 	a.player_stances = func(): return players.map(func(p): return 0)
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 	a.rng.seed = 3
 	a.cfg["species"]["rabbit"]["target_per_player"] = 0
 	a.cfg["species"]["moose"]["target_per_player"] = 0

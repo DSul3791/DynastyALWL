@@ -22,6 +22,7 @@ func make(players: Array, species: String):
 	a.blocked = func(x, z): return false
 	a.player_positions = func(): return players
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
 	for sp in a.cfg["species"]:
 		a.cfg["species"][sp]["target_per_player"] = 0

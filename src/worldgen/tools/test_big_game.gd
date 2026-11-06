@@ -24,6 +24,7 @@ func make():
 	a.player_positions = func(): return players.map(func(p): return p["pos"])
 	a.player_stances = func(): return players.map(func(_p): return 0)
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
 	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear"]:
 		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
@@ -225,6 +226,91 @@ func _init() -> void:
 
 	check(fishing >= 15, "a bear goes fishing at the river's edge near its den (%d of 20)" % fishing)
 	check(a.species_def("bear").get("level", []) == [0.6, 0.9], "bears only on the far side of the starter island")
+
+	# 10. Temperaments, seasons and young (Dave 6 Nov 2026).
+	a = make()
+	a.traits = true
+	players = [player(2.0, 0.0)]
+	a.cfg["species"]["deer"]["young"]["share"] = 0.0
+	id = a.spawn("deer", 0.0, 0.0)
+	a.animals[id]["temper"] = "passive"
+	a.animals[id]["timer"] = 100.0
+	run(a, 0.3)
+	check(int(a.animals[id]["state"]) == 2, "a passive deer runs even from a player 2 m away (state %d)" % int(a.animals[id]["state"]))
+	a = make()
+	a.traits = true
+	players = [player(14.0, 0.0)]
+	a.cfg["species"]["moose"]["young"]["share"] = 0.0
+	id = a.spawn("moose", 0.0, 0.0)
+	a.animals[id]["temper"] = "neutral"
+	a.animals[id]["protective"] = false
+	a.animals[id]["timer"] = 100.0
+	run(a, 0.5)
+	check(int(a.animals[id]["state"]) == 0, "a neutral moose ignores a player 14 m away (state %d)" % int(a.animals[id]["state"]))
+	players[0]["pos"] = Vector3(6.0, 10.0, 0.0)
+	run(a, 0.3)
+	check(int(a.animals[id]["state"]) == 10, "and attacks one who comes inside its threat range (state %d)" % int(a.animals[id]["state"]))
+	a = make()
+	a.traits = true
+	players = [player(10.0, 0.0)]
+	a.cfg["species"]["boar"]["young"]["share"] = 0.0
+	id = a.spawn("boar", 0.0, 0.0)
+	a.animals[id]["temper"] = "aggressive"
+	a.animals[id]["protective"] = false
+	a.animals[id]["timer"] = 100.0
+	run(a, 0.3)
+	check(int(a.animals[id]["state"]) == 10, "an aggressive boar attacks from 10 m, twice its threat range (state %d)" % int(a.animals[id]["state"]))
+	a = make()
+	a.traits = true
+	players = [player(20.0, 0.0)]
+	id = a.spawn("fox", 0.0, 0.0)
+	a.animals[id]["temper"] = "friendly"
+	a.animals[id]["timer"] = 0.0
+	run(a, 8.0)
+	var fox_d: float = Vector2(a.animals[id]["pos"].x - 20.0, a.animals[id]["pos"].z).length() if a.animals.has(id) else 99.0
+	check(fox_d < 18.0 and fox_d >= 4.0, "a friendly fox comes up to a player and stops short (%.1f m)" % fox_d)
+	check(not a.may_attack(a.animals[id]), "a friendly animal never attacks")
+	a = make()
+	a.traits = true
+	id = a.spawn("bear", 0.0, 0.0)
+	a.animals[id]["pos"] = Vector3(60.0, 10.0, 0.0)
+	a.animals[id]["temper"] = "defensive"
+	var summer_m: float = a._threat_m(a.animals[id], a.species_def("bear"))
+	a.season_now = func(): return "spring"
+	var spring_m: float = a._threat_m(a.animals[id], a.species_def("bear"))
+	a.season_now = func(): return "autumn"
+	var autumn_m: float = a._threat_m(a.animals[id], a.species_def("bear"))
+	check(spring_m > summer_m and autumn_m < summer_m, "a bear is bolder in spring and calmer in autumn (%.1f, %.1f, %.1f m)" % [spring_m, summer_m, autumn_m])
+	a = make()
+	a.traits = true
+	a.cfg["species"]["moose"]["young"]["share"] = 1.0
+	a.cfg["species"]["moose"]["young"]["count"] = [1, 1]
+	players = [player(200.0, 0.0)]
+	id = a.spawn("moose", 0.0, 0.0)
+	var kids: Array = a._young_of(a.animals[id])
+	check(kids.size() == 1 and int(a.animals[kids[0]]["num"]) == 104, "a moose cow with a calf (sent as number 104)")
+
+	if kids.size() == 1:
+		var kid: int = kids[0]
+		a.animals[id]["timer"] = 100.0
+		a.animals[id]["temper"] = "defensive"
+		check(a._spook_m(a.animals[id], a.species_def("moose")) > float(a.species_def("moose")["spook_m"]), "a mother with young runs from a player sooner")
+		check(not a.may_attack(a.animals[kid]), "a young one never attacks")
+		players = [player(a.animals[kid]["pos"].x + (1.0 if a.animals[kid]["pos"].x >= 0.0 else -1.0), a.animals[kid]["pos"].z)]
+		a.fires = func(): return [players[0]["pos"]]
+		a.fire_radius = func(_at): return 8.0
+		run(a, 0.3)
+		check(int(a.animals[id]["state"]) == 10, "a player next to her calf is attacked, torch or not (state %d)" % int(a.animals[id]["state"]))
+		a = make()
+		a.traits = true
+		a.cfg["species"]["moose"]["young"]["share"] = 1.0
+		a.cfg["species"]["moose"]["young"]["count"] = [1, 1]
+		players = [player(50.0, 0.0)]
+		id = a.spawn("moose", 0.0, 0.0)
+		kid = a._young_of(a.animals[id])[0]
+		a._bolt(a.animals[id], Vector3(-20.0, 10.0, 0.0), a.species_def("moose"))
+		run(a, 1.0)
+		check(int(a.animals[kid]["state"]) == 2, "the calf runs when its mother runs (state %d)" % int(a.animals[kid]["state"]))
 
 	print("big game: %d failures" % failures)
 	quit(failures)

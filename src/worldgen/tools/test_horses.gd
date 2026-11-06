@@ -22,6 +22,7 @@ func make(players: Array):
 	a.player_stances = func(): return [0]
 	a.wind = func(): return {"wind": 0.0, "wind_dir": 0.0}
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
 	for sp in a.cfg["species"]:
 		a.cfg["species"][sp]["target_per_player"] = 0

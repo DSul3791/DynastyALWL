@@ -69,6 +69,7 @@ func _init() -> void:
 	zoo.blocked = func(_x, _z): return false
 	zoo.player_positions = func(): return items.peer_positions()
 	zoo.setup()
+	zoo.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 	zoo.cfg["species"]["rabbit"]["target_per_player"] = 0
 	zoo.cfg["species"]["deer"]["target_per_player"] = 0
 	zoo.cfg["species"]["bear"]["target_per_player"] = 0   # the bear has its own checks (test_big_game)

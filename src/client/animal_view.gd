@@ -71,6 +71,8 @@ void fragment() {
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
 # on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model is not drawn.
 const SMALL_SPECIES := [9, 10, 11, 13]
+const YOUNG_NUM := 100       # a young animal's species number + 100 (server_animals.gd)
+const YOUNG_SCALE := 0.5     # how big the young are drawn
 
 
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
@@ -150,6 +152,14 @@ func on_rows(rows: Array) -> void:
 		var id: int = int(row[0])
 		seen[id] = true
 
+		# A young animal (calf, cub, fawn, piglet, foal: Dave 6 Nov 2026) comes as its species number + 100 (ServerAnimals.YOUNG_NUM);
+		# it is drawn as its species, smaller.
+		var young: bool = int(row[1]) >= YOUNG_NUM
+
+		if young:
+			row = row.duplicate()
+			row[1] = int(row[1]) - YOUNG_NUM
+
 		if not _bodies.has(id):
 			if _bodies.size() >= MAX_DRAWN:
 				continue
@@ -160,6 +170,10 @@ func on_rows(rows: Array) -> void:
 				continue
 
 			node.position = row[2]
+
+			if young:
+				node.scale = Vector3.ONE * YOUNG_SCALE
+
 			add_child(node)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
 

@@ -145,7 +145,33 @@
 				"provoked_warn_s": 0.5,
 				"threat_m": 3.5,
 				"threat_warn_s": 0.5
-			}
+			},
+			"temperament": {
+				"passive": 0.8,
+				"defensive": 0.2
+			},
+			"seasons": {
+				"autumn": {
+					"threat_x": 1.5
+				}
+			},
+			"young": {
+				"share": 0.25,
+				"count": [
+					1,
+					2
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 5.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"wolf": {
 			"number": 3,
@@ -253,7 +279,36 @@
 				"day": 0.6,
 				"dusk": 1.0,
 				"night": 0.3
-			}
+			},
+			"temperament": {
+				"defensive": 0.7,
+				"neutral": 0.3
+			},
+			"seasons": {
+				"spring": {
+					"threat_x": 1.2
+				},
+				"autumn": {
+					"threat_x": 1.5
+				}
+			},
+			"young": {
+				"share": 0.3,
+				"count": [
+					1,
+					2
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 10.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"fox": {
 			"number": 5,
@@ -332,7 +387,13 @@
 				"provoked_warn_s": 0.5,
 				"threat_m": 2.0,
 				"threat_warn_s": 0.5
-			}
+			},
+			"temperament": {
+				"passive": 0.6,
+				"neutral": 0.25,
+				"friendly": 0.15
+			},
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"duck": {
 			"number": 6,
@@ -463,7 +524,24 @@
 				"provoked_warn_s": 0.5,
 				"threat_m": 3.0,
 				"threat_warn_s": 0.5
-			}
+			},
+			"young": {
+				"share": 0.2,
+				"count": [
+					1,
+					1
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 6.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"boar": {
 			"number": 8,
@@ -538,7 +616,28 @@
 				3,
 				6
 			],
-			"model": true
+			"model": true,
+			"temperament": {
+				"defensive": 0.7,
+				"aggressive": 0.3
+			},
+			"young": {
+				"share": 0.3,
+				"count": [
+					2,
+					5
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 6.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"songbirds": {
 			"number": 9,
@@ -883,7 +982,40 @@
 				"dusk": 1.0,
 				"night": 0.05
 			},
-			"model": true
+			"model": true,
+			"temperament": {
+				"defensive": 0.6,
+				"neutral": 0.25,
+				"aggressive": 0.15
+			},
+			"seasons": {
+				"spring": {
+					"threat_x": 1.5,
+					"spook_x": 0.7
+				},
+				"autumn": {
+					"threat_x": 0.7,
+					"spook_x": 1.2
+				}
+			},
+			"young": {
+				"share": 0.3,
+				"count": [
+					1,
+					3
+				],
+				"seasons": [
+					"spring",
+					"summer",
+					"autumn"
+				],
+				"follow_m": 4.0,
+				"spook_x": 1.3,
+				"between_m": 10.0,
+				"warn_s": 0.5,
+				"hp_x": 0.3
+			},
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		}
 	},
 	"senses": {
@@ -983,5 +1115,42 @@
 	"near_min_m": 60.0,
 	"near_max_m": 120.0,
 	"off_hours_despawn_m": 40.0,
-	"off_hours_chance": 0.05
+	"off_hours_chance": 0.05,
+	"temperament": {
+		"note": "Dave 6 Nov 2026: every animal has an inherent temperament. Passive ones hide or run at all costs; neutral ones ignore us; aggressive ones attack; some are friendly, as in the real wild. A species row's 'temperament' gives the share of each kind it is born with (none = all defensive). spook_x scales how close a player may come before it runs (0 = it never runs), threat_x scales its defend.threat_m (0 = never attacks there), attacks false = never attacks unless defending its young, alert false = it does not stop to watch. Seasons and young change these further (species 'seasons', 'young').",
+		"kinds": {
+			"passive": {
+				"spook_x": 1.0,
+				"threat_x": 0.0,
+				"attacks": false,
+				"alert": true
+			},
+			"defensive": {
+				"spook_x": 1.0,
+				"threat_x": 1.0,
+				"attacks": true,
+				"alert": true
+			},
+			"neutral": {
+				"spook_x": 0.0,
+				"threat_x": 1.0,
+				"attacks": true,
+				"alert": false
+			},
+			"aggressive": {
+				"spook_x": 0.0,
+				"threat_x": 2.0,
+				"attacks": true,
+				"alert": false
+			},
+			"friendly": {
+				"spook_x": 0.0,
+				"threat_x": 0.0,
+				"attacks": false,
+				"alert": false,
+				"curious_m": 25.0,
+				"stop_m": 5.0
+			}
+		}
+	}
 }

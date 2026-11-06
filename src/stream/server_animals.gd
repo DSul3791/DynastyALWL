@@ -45,12 +45,16 @@ var drop_loot: Callable            # (item number, count, position) when a thief
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
+var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
+var traits: bool = true            # temperaments and young (Dave 6 Nov 2026); seeded tests that predate them turn this off, so every animal is born "defensive" with no young
 var starter: Vector2 = Vector2(INF, INF)   # the real spawn point (x, z) from the starter tile; "exclude" circles of big game are centred on it when set
 var wolves = null                  # the pack brain (server_wolves.gd); wired by the server, tests may leave player_info unset
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 var blood: Array = []              # drops [position Vector3, born msec] a wounded animal left, oldest first
 var _next_id: int = 1
+var _spawning_young: bool = false
+const YOUNG_NUM := 100             # a young animal is sent as its species number + 100 (a calf, cub, fawn, piglet or foal: the client draws it smaller)
 var _spawn_acc: float = 0.0
 var _tick_no: int = 0
 var _top_idx: int = 0
@@ -122,12 +126,127 @@ func spawn(sp: String, x: float, z: float) -> int:
 	if def.has("den"):
 		animals[id]["den"] = pos   # where it spawned is its den (a bear's, near the river: habitat near_fresh_water_m); it ranges round it and defends it
 
+	if traits and def.has("temperament") and not _spawning_young:
+		animals[id]["temper"] = _draw_share(def["temperament"])   # its inherent temperament (passive, defensive, neutral, aggressive, friendly)
+
 	if def.has("defend"):
 		var share: float = float(def.get("protective_share", 0.3))
-		animals[id]["protective"] = share > 0.0 and rng.randf() < share   # luck-exempt: whether this animal defends young
+
+		if traits and def.has("young"):
+			share = float(def["young"].get("share", 0.0)) if _young_season(def) else 0.0
+
+		animals[id]["protective"] = share > 0.0 and not _spawning_young and rng.randf() < share   # luck-exempt: whether this animal has young with it
 		animals[id]["cool"] = 0.0
 
+		if traits and def.has("young") and bool(animals[id]["protective"]):
+			_spawn_young(id)
+
 	return id
+
+
+# Young (Dave 6 Nov 2026): a mother with young runs from a player sooner, but a player who comes between her and them (near a young
+# one) is attacked hard, torch or not. The young are animals of the same species that follow her at follow_m and run when she runs.
+func _spawn_young(mother: int) -> void:
+	var m: Dictionary = animals[mother]
+	var y: Dictionary = species_def(m["sp"])["young"]
+	var span: Array = y.get("count", [1, 2])
+	var kids: Array = []
+	_spawning_young = true
+
+	for n in rng.randi_range(int(span[0]), int(span[1])):   # luck-exempt: how many young
+		var ang: float = rng.randf() * TAU   # luck-exempt: where each young one keeps to
+		var off: Vector3 = Vector3(cos(ang), 0.0, sin(ang)) * float(y.get("follow_m", 3.0))
+		var kid: int = spawn(m["sp"], m["pos"].x + off.x, m["pos"].z + off.z)
+
+		if kid > 0 and animals.has(kid):
+			animals[kid]["mother"] = mother
+			animals[kid]["off"] = off
+			animals[kid]["num"] = int(m["num"]) + YOUNG_NUM
+			animals[kid]["hp"] = float(animals[kid]["hp"]) * float(y.get("hp_x", 0.3))
+			animals[kid]["temper"] = "passive"
+			animals[kid].erase("den")
+			kids.append(kid)
+
+	_spawning_young = false
+	m["young"] = kids
+
+
+# Whether young are about in the current season (young.seasons; every season without a clock).
+func _young_season(def: Dictionary) -> bool:
+	return not season_now.is_valid() or str(season_now.call()) in def["young"].get("seasons", ["spring", "summer"])
+
+
+# A mother's living young (ids still in the map), or [].
+func _young_of(a: Dictionary) -> Array:
+	return (a.get("young", []) as Array).filter(func(k): return animals.has(k))
+
+
+# One key from {key: share} weighted by its share (keys in sorted order so a seed gives the same draw).
+func _draw_share(shares: Dictionary) -> String:
+	var keys: Array = shares.keys()
+	keys.sort()
+	var total: float = 0.0
+
+	for k in keys:
+		total += maxf(float(shares[k]), 0.0)
+
+	var r: float = rng.randf() * total   # luck-exempt: an animal's inherent temperament
+
+	for k in keys:
+		r -= maxf(float(shares[k]), 0.0)
+
+		if r < 0.0:
+			return str(k)
+
+	return str(keys.back()) if not keys.is_empty() else "defensive"
+
+
+# Temperament (Dave 6 Nov 2026): every animal has one. Passive animals hide or run at all costs and never attack; defensive ones run
+# but attack a player inside their threat range; neutral ones ignore a player until it is inside their threat range; aggressive ones
+# do not run and attack from twice as far; friendly ones come up to a player and never attack. The kinds are in animals.json "temperament".
+func temper_of(a: Dictionary) -> String:
+	return str(a.get("temper", "defensive"))
+
+
+func _temper_row(a: Dictionary) -> Dictionary:
+	return cfg.get("temperament", {}).get("kinds", {}).get(temper_of(a), {})
+
+
+# The species' change for this season ({threat_x, spook_x}), e.g. a bear hungry after its winter sleep is bolder in spring.
+func _season_row(def: Dictionary) -> Dictionary:
+	if not def.has("seasons") or not season_now.is_valid():
+		return {}
+
+	return def["seasons"].get(str(season_now.call()), {})
+
+
+# Whether this animal may attack at all (server_big_game.warn asks). The young never do; passive and friendly animals only when
+# forced (a mother whose young a player has come between).
+func may_attack(a: Dictionary, forced: bool = false) -> bool:
+	if a.has("mother"):
+		return false
+
+	return forced or bool(_temper_row(a).get("attacks", true))
+
+
+# A young animal keeps to its mother: walks where she walks (at its own spot beside her), runs when she runs.
+func _step_young(a: Dictionary, dt: float) -> void:
+	var m: Dictionary = animals[a["mother"]]
+	var def: Dictionary = species_def(a["sp"])
+	a["target"] = m["pos"] + a["off"]
+	var far: float = Vector2(a["pos"].x - a["target"].x, a["pos"].z - a["target"].z).length()
+	var running: bool = int(m["state"]) == FLEE or int(m["state"]) == WARN + 1   # charging
+	a["state"] = FLEE if running else (HOP if far > 1.0 else GRAZE)
+
+	if a["state"] == GRAZE:
+		return
+
+	var speed: float = float(def.get("flee_mps", 7.5)) if running else float(def.get("walk_mps", 1.5)) * (2.0 if far > 6.0 else 1.0)
+	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"], crossing)
+
+	if r["moved"]:
+		a["pos"] = r["pos"]
+		a["heading"] = r["heading"]
 
 
 # One drop of blood where a wounded animal is (a trail: every_m apart, at most max_drops per animal, max_total on the map,
@@ -352,6 +471,15 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	a["drops"] = 0
 	a["last_drop"] = a["pos"]
 	_drop_blood(a)
+
+	# Hurting a young one brings its mother at the hunter, if the hunter is near enough for her to reach.
+	if a.has("mother") and animals.has(a["mother"]):
+		var m: Dictionary = animals[a["mother"]]
+		var reach: float = float(species_def(m["sp"]).get("young", {}).get("between_m", 8.0)) * 2.0
+
+		for info in (big_game.player_info.call() if big_game.player_info.is_valid() else []):
+			if int(info["peer"]) == source_peer and Vector2(info["pos"].x - m["pos"].x, info["pos"].z - m["pos"].z).length() <= reach:
+				big_game.warn(m, info["pos"], float(species_def(m["sp"])["young"].get("warn_s", 0.6)), true)
 
 	if a.has("pack"):
 		wolves.on_hit(a)   # a wolf does not bolt: its pack decides
@@ -602,14 +730,32 @@ func _spook_m(a: Dictionary, def: Dictionary) -> float:
 		if float(a["tame"]) >= float(def["tame"].get("curious_min", 0.7)):
 			run_at = minf(run_at, float(def["tame"].get("stop_m", 9.0)) * 0.6)   # a curious horse only shies when you are right on it
 
-		return run_at
+		base = run_at
+
+	# Temperament, season and young: a neutral or aggressive animal does not run (0), a mother with young runs sooner.
+	base *= float(_temper_row(a).get("spook_x", 1.0)) * float(_season_row(def).get("spook_x", 1.0))
+
+	if def.has("young") and not _young_of(a).is_empty():
+		base *= float(def["young"].get("spook_x", 1.4))
 
 	return base
 
 
 # A friendly horse (tame value at curious_min or more) is not wary of a player within curious_m: it watches and ambles over.
+# A friendly-tempered animal is curious the same way, within its temperament's curious_m.
 func _curious(a: Dictionary, def: Dictionary, seen_d: float) -> bool:
+	if temper_of(a) == "friendly":
+		return seen_d <= float(_temper_row(a).get("curious_m", 25.0))
+
 	return def.has("tame") and float(a.get("tame", 0.0)) >= float(def["tame"].get("curious_min", 0.7)) and seen_d <= float(def["tame"].get("curious_m", 45.0))
+
+
+# How far short of a player a curious animal stops.
+func _stop_m(a: Dictionary, def: Dictionary) -> float:
+	if temper_of(a) == "friendly":
+		return float(_temper_row(a).get("stop_m", 5.0))
+
+	return float(def.get("tame", {}).get("stop_m", 9.0))
 
 
 func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: float, seen_p: Vector3) -> void:
@@ -658,12 +804,28 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 		return
 
+	if a.has("mother"):
+		if animals.has(a["mother"]):
+			_step_young(a, dt)
+			return
+
+		a.erase("mother")   # orphaned: from now on an ordinary (passive) animal
+
 	if a["alarm"] >= 0.0:
 		a["alarm"] -= dt
 
 		if a["alarm"] < 0.0 and a["state"] != FLEE:
 			a["alarm"] = -1.0
 			_bolt(a, near_p, def)
+
+	# A player who has come between a mother and her young (near one of them) is attacked at once, torch or not.
+	if def.has("defend") and def.has("young") and seen_p != Vector3.INF:
+		for kid in _young_of(a):
+			if Vector2(seen_p.x - animals[kid]["pos"].x, seen_p.z - animals[kid]["pos"].z).length() <= float(def["young"].get("between_m", 8.0)):
+				if big_game.warn(a, seen_p, float(def["young"].get("warn_s", 0.6)), true):
+					return
+
+				break
 
 	# Fire (Dave 6 Nov 2026): wild animals keep away from a burning fire or a torch bearer, out of its keep-off radius (the wolves' rule),
 	# unless trapped; a bear at its den does not give way to a torch.
@@ -683,7 +845,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			return
 
 	# A protective animal (defending young) does not bolt: it warns a player who comes too close, and only then charges.
-	var stands: bool = def.has("defend") and bool(a.get("protective", false)) and a["state"] != FLEE
+	# With its young modelled (traits on) it runs sooner instead, and fights only for them (above).
+	var stands: bool = def.has("defend") and bool(a.get("protective", false)) and a["state"] != FLEE and not (traits and def.has("young"))
 
 	if stands and seen_d <= float(def["defend"].get("warn_m", 20.0)):
 		if big_game.warn(a, seen_p):
@@ -712,7 +875,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 		return
 
-	if a["state"] != FLEE and alert_m > 0.0 and seen_d <= alert_m and a["alert"] <= 0.0 and not _curious(a, def, seen_d) and seen_d > _spook_m(a, def):
+	if a["state"] != FLEE and alert_m > 0.0 and seen_d <= alert_m and a["alert"] <= 0.0 and not _curious(a, def, seen_d) and seen_d > _spook_m(a, def) and bool(_temper_row(a).get("alert", true)):
 		var span2: Array = def.get("alert_s", [1.0, 2.0])
 		a["state"] = ALERT
 		a["alert"] = rng.randf_range(float(span2[0]), float(span2[1]))   # luck-exempt: how long an animal watches
@@ -750,9 +913,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 				a["target"] = a["pos"]   # never wanders into a fire's light
 
 			# A friendly horse is curious: it ambles toward a player it can see until it is stop_m away.
-			if _curious(a, def, seen_d) and seen_d > float(def["tame"].get("stop_m", 9.0)):
+			if _curious(a, def, seen_d) and seen_d > _stop_m(a, def):
 				var toward: Vector3 = Vector3(seen_p.x - a["pos"].x, 0.0, seen_p.z - a["pos"].z).normalized()
-				a["target"] = a["pos"] + toward * minf(wander, seen_d - float(def["tame"].get("stop_m", 9.0)))
+				a["target"] = a["pos"] + toward * minf(wander, seen_d - _stop_m(a, def))
 				a["home"] = a["target"]
 
 			a["state"] = HOP
@@ -828,11 +991,14 @@ func _in_den(a: Dictionary, def: Dictionary, at: Vector3 = Vector3.INF) -> bool:
 
 
 # How close a player may come before this animal feels threatened and attacks: defend.threat_m, den.threat_m at its den.
+# Scaled by the season (a hungry spring bear is bolder) and, away from a den, by its temperament (0 for passive and friendly ones).
 func _threat_m(a: Dictionary, def: Dictionary) -> float:
-	if _in_den(a, def):
-		return float(def["den"].get("threat_m", 15.0))
+	var season_x: float = float(_season_row(def).get("threat_x", 1.0))
 
-	return float(def["defend"].get("threat_m", 0.0))
+	if _in_den(a, def):
+		return float(def["den"].get("threat_m", 15.0)) * season_x
+
+	return float(def["defend"].get("threat_m", 0.0)) * season_x * float(_temper_row(a).get("threat_x", 1.0))
 
 
 # Where a den animal goes next (Dave 6 Nov 2026: a bear wanders round the river near its den and spends most of its time fishing,

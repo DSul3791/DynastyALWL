@@ -499,6 +499,7 @@ func _ready() -> void:
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
 	animals.hour_now = func(): return game_clock.hour()
+	animals.season_now = func(): return game_clock.season()
 	var biome_names: Dictionary = {}
 
 	for biome_entry in tables.get_entries("biomes"):
