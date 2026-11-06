@@ -97,7 +97,7 @@ func _init() -> void:
 	var moose = make(players, "moose")
 	moose.cfg["species"]["moose"]["spawn_share"] = 1.0
 	moose.starter = Vector2(0.0, 0.0)
-	moose.biome_at = func(x, z): return "boreal_forest"
+	moose.biome_at = func(_x, _z): return "boreal_forest"
 	run(moose, 40.0)
 	check(count(moose, "moose") > 0, "moose live by the starter town too, where the land suits them (%d)" % count(moose, "moose"))
 	var lv = make(players, "rabbit")
@@ -121,7 +121,7 @@ func _init() -> void:
 	boar_near.cfg["species"]["boar"]["spawn_share"] = 1.0
 	boar_near.starter = Vector2(0.0, 0.0)
 	boar_near.hour_now = func(): return 23.0
-	boar_near.biome_at = func(x, z): return "temperate_forest"
+	boar_near.biome_at = func(_x, _z): return "temperate_forest"
 	run(boar_near, 40.0)
 	check(count(boar_near, "boar") > 0, "boar live by the starter town too (%d)" % count(boar_near, "boar"))
 	# The newer species (boar 8, songbirds 9, frog 10): spawn in their own biome and time only, have a model and a carcass row; the ones waiting for models never spawn.
