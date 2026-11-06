@@ -49,3 +49,11 @@ Note: Recommendation: A. It is already calm; only tune after you have listened o
 
 ## jamie-storm-sound | Storm sound (BUG-001): what was the name of the sound you heard? (Shift+F3 lists playing sounds.)
 [text]
+
+## mikew-buy-animal-pack | Buy one realistic, rigged animal pack for our mammals (deer, moose, bear, boar, wolf, fox, horse, rabbit)?
+Note: It costs money, so it is your call. Our code-built animals can't reach the photorealism you asked for.
+Note: MikeW would buy one pack from Fab, CGTrader or RenderHub, with the licence checked for Godot and a sold game. First he proves the import works with WildMesh's free bear demo. Plan: design/realistic_animals_plan.md in the project files.
+Note: Recommendation: A.
+- A: Yes, buy one pack after the free bear test works
+- B: Yes, but show me the pack and price first
+- C: No, keep the code-built animals for now
