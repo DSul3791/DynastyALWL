@@ -6169,10 +6169,11 @@ func _exit_tree() -> void:
 # Why a torch cannot be lit right now: "water" (the eye is under water), "rain" (open rain, no tree, rock or roof over you; a cave is cover), or "".
 # Asked at the moment of the key press, so it reads the state of that frame.
 func _light_block() -> String:
+	var wet: float = float(weather.get("rain", 0.0))
+	print("torch light check: rain %.2f (puts out from %.2f), eye under water %s, depth %.2f" % [wet, FlameRules.RAIN_DOUSE, str(underwater), underwater_surface - camera.global_position.y if underwater else 0.0])
+
 	if underwater:
 		return "water"
-
-	var wet: float = float(weather.get("rain", 0.0))
 
 	if not FlameRules.in_rain(wet, false):
 		return ""
