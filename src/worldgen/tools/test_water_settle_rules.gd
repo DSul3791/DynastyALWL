@@ -174,10 +174,19 @@ func _init() -> void:
 	for j in range(0, 20):
 		land.heights[j * 64 + 32] = 9.0
 
-	var sim: Springs = Springs.new()
 	var placed: Array = []
 	var no_flow: PackedFloat32Array = PackedFloat32Array()
-	check(WaterSettler._add_hollow_springs(sim, land, no_flow, 64, placed) == 1, "a 3 m bowl with no spring gets one inflow")
+	# v12 (lakes_only, Dave 6 Nov 2026: dry hollows filled and spilled as wetlands): a dry bowl stays dry ...
+	land.water_class.resize(64 * 64)
+	check(WaterSettler._add_hollow_springs(Springs.new(), land, no_flow, 64, []) == 0, "a dry 3 m bowl (no painted lake) gets no inflow")
+
+	# ... a bowl holding a painted lake gets one.
+	for j in range(20, 44):
+		for i in range(20, 44):
+			land.water_class[j * 64 + i] = 2
+
+	var sim: Springs = Springs.new()
+	check(WaterSettler._add_hollow_springs(sim, land, no_flow, 64, placed) == 1, "a 3 m bowl with a lake and no spring gets one inflow")
 	check(sim.added.size() == 1 and sim.added[0][2] == WaterSettler.catchment_flow(0.35), "its flow is the catchment flow (0.35 km2 without a flow map)")
 	check(sim.added.size() == 1 and sim.added[0][0] >= 20 and sim.added[0][0] < 44, "the inflow sits inside the bowl")
 	var sim2: Springs = Springs.new()

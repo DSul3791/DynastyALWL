@@ -1070,6 +1070,7 @@ func _groves_near(item: Dictionary, grove: Dictionary, seed: int, species_id: in
 # chunk it touches; each plant is drawn from the patch cell and its own number only, so two chunks (and two tiles) agree.
 # Item number = STAND_BASE + slot * PATCH_MAX_PLANTS + k, where slot is the patch cell's place in this chunk's window.
 func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, species_id: int, found: Array) -> void:
+	var edge_cache: Dictionary = {}   # _edge_m answers for this patch's plants (local: chunks are placed on several threads)
 	var patch: Dictionary = item["patch"]
 	var every: float = patch["every_m"]
 	# radius_m and spacing_m are given for scale 1 and grow with the patch scale (a 3x bush would overlap its neighbours).
@@ -1135,6 +1136,11 @@ func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, s
 				var k: int = data.nearest(x, z)
 
 				if per_biome[data.biome[k]] <= 0.0:
+					continue
+
+				# Grass patches keep off open sand too (the 2 Nov rule held only for single plants: the #464 rebake moved a beach under a patch, and
+				# test_beach_belt found one grass on open sand).
+				if item["shape"] == "grass" and data.biome[k] == _beach_id and _edge_m(data, x, z, edge_cache) < -BEACH_GRASS_M:
 					continue
 
 				if item["kind"] != KIND_PLANT and keep >= float(patch["fill"]) * _soil_growth[data.soil[k]]:
