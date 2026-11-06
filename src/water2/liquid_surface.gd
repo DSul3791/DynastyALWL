@@ -217,6 +217,16 @@ void fragment() {
 	// A still pond in the sim still sloshes at a few cm/s, and a block at rest reads exactly 0: below CALM_MS the water counts as still, so the look does
 	// not step at the sim's 128 m block edges (PR #91 pond shot, 2 Nov 2026: dark rectangles in a light pond).
 	vec2 vel = t.gb;
+
+	// A chunk sheet's look follows the current averaged over about 12 m, not the current at the pixel (Tyler and Dino 6 Nov 2026, the steep brook at
+	// x 54101 z 69709): the ripples are dragged by the current, so where it changed from texel to texel (a fast steep brook, and the 2 m texels' blend
+	// creases along every row and column) the dragged pattern tore along the texel grid, a lattice of squares, and the foam and chop followed it.
+	if (point_grid > 0.5) {
+		vec2 reach = vec2(3.0) / cells;
+		vel = (vel + sample_pixel(tex_uv + vec2(reach.x, 0.0)).gb + sample_pixel(tex_uv - vec2(reach.x, 0.0)).gb
+			+ sample_pixel(tex_uv + vec2(0.0, reach.y)).gb + sample_pixel(tex_uv - vec2(0.0, reach.y)).gb) / 5.0;
+	}
+
 	float raw_speed = length(vel);
 	vel *= smoothstep(0.15, 0.45, raw_speed);
 	float speed = length(vel);
