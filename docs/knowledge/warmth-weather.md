@@ -29,7 +29,7 @@
 | 4 Nov | Fire heat in the early-game guide | #198 | Worked |
 | 4-5 Nov | Spring cave pools icy; the cold covers the whole basin | #316, #410 | Worked (BUG-008) |
 | 5 Nov | Rain chill: Dave picked ×1.5 on his card | card | Answered |
-| 6 Nov | Rain chill follows a soak level that dries only under shelter (1/h) or by a fire (6/h); `rain_mult` 1.2 to 1.5 | #491 | Open; PC gate (test_warmth) |
+| 6 Nov | Rain chill follows a soak level that dries only under shelter (1/h) or by a fire (6/h); `rain_mult` 1.2 to 1.5 | #491 | Worked: merged 6 Nov (110abbec), PC gate 112/0. Lesson: the first head broke test_warmth's "a built roof cuts the wind". After the test's snowfall the body stayed wet, as designed, so the roof check measured a soaked player. When adding a lasting state, check later tests that assume it's gone and reset it there on purpose. |
 
 ## What others do (with sources)
 
@@ -40,7 +40,7 @@
 
 ## Decided / next
 
-1. #491 through the PC gate (test_warmth).
+1. ~~#491 through the PC gate (test_warmth).~~ Done (merged 6 Nov).
 2. Wet clothes (DAVE_TODO 7): clothes stay damp about 1 hour after rain or a swim and keep you less warm. The soak level from #491 is the natural place for it.
 3. Cold acclimation (DAVE_TODO 6): the team suggests time spent in the cold, slowly, capped.
 4. Worth a card if Dave wants it: rain gear and leafy trees that slow soaking, as in Don't Starve.
