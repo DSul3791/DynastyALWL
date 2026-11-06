@@ -392,27 +392,48 @@ func _make_model(number: int) -> Node3D:
 	return root
 
 
-# The rest-pose bounds of a model's meshes in the rig's space (so the file's own root scale and rotation count).
+# The bounds of a model in the rig's space (so the file's own root scale and rotation count). With a skeleton, the bones' posed
+# positions are used: a skinned FBX can keep its centimetre scale on a bone, which the mesh's own bounds never see (Dave 6 Nov saw
+# a bear five times taller than a tree). The bones stop short of the skin, so their box is widened by 12%.
 func _model_bounds(rig: Node3D, meshes: Array) -> AABB:
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+
+	if not skeletons.is_empty():
+		var sk: Skeleton3D = skeletons[0]
+		var to_rig: Transform3D = _to_ancestor(sk, rig)
+		var bones: AABB = AABB()
+
+		for i in sk.get_bone_count():
+			var at: Vector3 = to_rig * sk.get_bone_global_pose(i).origin
+			bones = AABB(at, Vector3.ZERO) if i == 0 else bones.expand(at)
+
+		if maxf(bones.size.x, maxf(bones.size.y, bones.size.z)) > 0.0001:
+			return bones.grow(maxf(bones.size.x, maxf(bones.size.y, bones.size.z)) * 0.06)
+
 	var box: AABB = AABB()
 	var first: bool = true
 
 	for m in meshes:
 		var mi: MeshInstance3D = m
-		var t: Transform3D = Transform3D.IDENTITY
-		var n: Node = mi
-
-		while n != null and n != rig:
-			if n is Node3D:
-				t = (n as Node3D).transform * t
-
-			n = n.get_parent()
-
-		var part: AABB = (t * mi.get_aabb()) if mi.mesh != null else AABB()
+		var part: AABB = (_to_ancestor(mi, rig) * mi.get_aabb()) if mi.mesh != null else AABB()
 		box = part if first else box.merge(part)
 		first = false
 
 	return box
+
+
+# The transform from a node's space to one of its ancestors' space.
+func _to_ancestor(node: Node, ancestor: Node) -> Transform3D:
+	var t: Transform3D = Transform3D.IDENTITY
+	var n: Node = node
+
+	while n != null and n != ancestor:
+		if n is Node3D:
+			t = (n as Node3D).transform * t
+
+		n = n.get_parent()
+
+	return t
 
 
 # The pack's FBX files name normal maps that are not in the pack, so the materials are set here: each surface whose material or
