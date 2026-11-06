@@ -1798,14 +1798,30 @@ func _third_fist_on(model: Node3D) -> MeshInstance3D:
 		ball.radial_segments = 12
 		ball.rings = 6
 		var skin: StandardMaterial3D = StandardMaterial3D.new()
-		skin.albedo_color = FIST_COLOR
-		skin.roughness = 0.9
+		skin.albedo_color = _third_skin_color()
+		skin.roughness = 0.64          # the body's own skin roughness (Dave's glb, the metallic-roughness texture's median)
+		skin.metallic_specular = 0.35
 		ball.material = skin
 		fist.mesh = ball
 		model.add_child(fist)
 
 	fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
 	return fist
+
+
+# The third-person fist's colour (Dino's #488 look, 6 Nov 2026: the grip read as a pale blob): the body's painted skin, not the first-person arms' FIST_COLOR.
+# THIRD_SKIN is the median of Dave's skin texture (Dynasty_Base_Male.glb, sRGB), times the skin tint the body wears for this character (dynasty_body.gd dress).
+const THIRD_SKIN := Color(0.718, 0.498, 0.376)
+
+
+func _third_skin_color() -> Color:
+	var tint: Color = Color.WHITE
+	var worn: Variant = _avatar_rig.get("_skin_material") if _avatar_rig != null else null
+
+	if worn is BaseMaterial3D:
+		tint = (worn as BaseMaterial3D).albedo_color
+
+	return Color(THIRD_SKIN.r * tint.r, THIRD_SKIN.g * tint.g, THIRD_SKIN.b * tint.b)
 
 
 # The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.
