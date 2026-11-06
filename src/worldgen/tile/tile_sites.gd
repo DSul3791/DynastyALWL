@@ -62,6 +62,7 @@ var _heights: PackedFloat32Array
 var _water: PackedByteArray
 var _soil: PackedByteArray
 var _flow: PackedFloat32Array
+var _river_start_cells: float = 0.0   # drainage cells where a river starts (water river_start_km2)
 var _geology
 var _limestone: int = -1
 var _local: int = 0
@@ -77,6 +78,9 @@ func setup(settings, rules: Dictionary, tables) -> void:
 	_master = settings.master_seed
 	_spacing = float(settings.map_spacing_m)
 	_tile_m = float(settings.tile_size_m)
+	var water_rules: Dictionary = rules.get("water", {})
+	var start_km2: float = float(water_rules.get("drainage", {}).get("river_start_km2", water_rules.get("river_start_km2", 0.35)))
+	_river_start_cells = start_km2 * 1000000.0 / (_spacing * _spacing)
 
 
 # starter_info: bay details for starter tiles ({} otherwise), as build_tile passes to TileWater.
@@ -741,6 +745,10 @@ const SPRING_CAVE_DEFAULTS := {
 	"den_rise": [0.1, 0.2], "den_radius_m": [3.0, 5.0], "den_height_m": [3.0, 4.0],
 	# Dave 5 Nov 2026: a wide river needs many springs; the cave's size sets how many branches end in spring pools.
 	"spring_per_mouth_m": 0.0, "max_springs": 3, "size_by_mouth_m": {},
+	# Dave 6 Nov 2026, x 52441 z 68924: "a random cave that seems to not be in the right place for the start of a river". A head's catchment is the river's
+	# start size; a river cell carrying more than head_max_start times that is part of a river already running (a flat reach beside a steep bank passed
+	# the old height tests). 0 = off.
+	"head_max_start": 0.0,
 	"bones": {"entrance_chance": 0.35, "end_chance": 0.35, "human_share": 0.2},
 	"formations": {"per_chamber": [8, 20], "passage_min_width_m": 5.0, "passage_chance": 0.3},
 }
@@ -789,6 +797,18 @@ func _brook_heads() -> Array:
 						var n: int = (j + dj) * _samples + i + di
 
 						if _water[n] == RIVER and _heights[n] > _heights[index] + 1.0:
+							head = false
+
+			# And not on a river that is already running: the water there comes from upstream, so a cave would sit mid-river with the river carrying
+			# on above it (Dave's cave at x 52472 z 68920: a 30 m mouth on a river of 2.8 km2 catchment, 8 times the start size).
+			var head_max: float = float(_spring_rule("head_max_start")) * _river_start_cells
+
+			if head and head_max > 0.0 and not _flow.is_empty():
+				for dj in range(-2, 3):
+					for di in range(-2, 3):
+						var n: int = (j + dj) * _samples + i + di
+
+						if _water[n] == RIVER and _flow[n] > head_max:
 							head = false
 
 			if head:

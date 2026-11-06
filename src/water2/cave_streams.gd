@@ -19,7 +19,7 @@ const CAVE_POOL_SHALLOW_M := 0.4   # an old server's pool (no depth sent)
 
 const SHADER := """
 shader_type spatial;
-render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
+render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx, ambient_light_disabled;   // no sky light or sky reflection: in a cave mouth the water mirrored the sky white (Dave 6 Nov)
 
 uniform vec4 water_colour : source_color = vec4(0.03, 0.07, 0.08, 0.86);
 uniform vec3 foam_colour : source_color = vec3(0.62, 0.74, 0.78);
