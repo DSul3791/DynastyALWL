@@ -588,7 +588,10 @@ static func _build_banks(channels, sea: PackedByteArray, samples: int, rules: Di
 
 				var neighbor: int = nr * samples + nc
 
-				if wet[neighbor] == 0 and is_nan(channels.surface[neighbor]) and level > before[neighbor] and level > float(water_by.get(neighbor, -INF)):
+				# Dave 6 Nov 2026 (x 52935 z 69453): "these riverbeds arent deep enough to keep the water in". The settled water stands up to about 0.9 m
+				# over the painted level on steep reaches, so a bank only where the painted water was over the ground (and only height_m over it) let it
+				# spill down the hillside beside the channel. Every dry cell beside water whose ground is under the water plus height_m is now a bank.
+				if wet[neighbor] == 0 and is_nan(channels.surface[neighbor]) and level + height_m > before[neighbor] and level > float(water_by.get(neighbor, -INF)):
 					water_by[neighbor] = level
 
 	var raised: int = 0

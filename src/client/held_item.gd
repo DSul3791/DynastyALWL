@@ -258,9 +258,11 @@ func press_slot(slot: int) -> void:
 		if off_holding and off_slot == slot:
 			off_holding = false
 			blocking = false
+			_relight_on_press(slot, true)
 		else:
 			off_slot = slot
 			off_holding = true
+			_relight_on_press(slot)
 
 		_inv.refresh_hotbar()
 
@@ -287,6 +289,22 @@ func equip_toggle(slot: int) -> void:
 	press_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))
 
 
+# A doused torch pressed on the hotbar lights again when a burning fire is within a few steps (Dave 6 Nov 2026); away from a fire it says what it needs
+# (unless `quiet`, as when the same key puts the torch away). The doused torch is an off-hand item, so press_slot calls this for it too.
+func _relight_on_press(slot: int, quiet: bool = false) -> void:
+	var number: int = _inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]
+
+	if number == 0 or str(_inv.table.entry(_inv.table.id_of(number)).get("relit_item", "")) == "":
+		return
+
+	var fire: int = _inv.lit_fire_in_reach()
+
+	if fire != 0:
+		_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, fire, clampi(slot, 0, HOTBAR_SLOTS - 1) + 1, 0, Vector3.ZERO)
+	elif not quiet:
+		_inv._on_notice("Hold the torch to a burning fire to light it again")
+
+
 func select(slot: int) -> void:
 	if _sound != null and (clampi(slot, 0, HOTBAR_SLOTS - 1) != held_slot or not holding):
 		_sound.itemfx.hotbar(clampi(slot, 0, HOTBAR_SLOTS - 1))
@@ -296,6 +314,7 @@ func select(slot: int) -> void:
 	aiming = false
 	_inv.refresh_hotbar()
 	var number: int = _inv.inventory.numbers[held_slot]
+	_relight_on_press(held_slot)
 
 	if number != 0 and not is_holdable(number):
 		_inv._on_notice("%s cannot be held in the hand (Use or Eat it from the inventory)" % _inv.table.name_of(number))
@@ -1387,7 +1406,9 @@ func _hoe_repeat(delta: float) -> void:
 
 	_hoe_t += delta
 
-	if _hoe_t >= HOE_REPEAT_S:
+	if _hoe_t >= HOE_REPEAT_S and hoe_mode == "survey":
+		_hoe_t = 0.0   # a held click sets one marker, not a line of them
+	elif _hoe_t >= HOE_REPEAT_S:
 		_hoe_t = 0.0
 		_arm_play("use", 0.6)
 		_hoe_apply()
@@ -1398,6 +1419,7 @@ const HOE_MODES := [
 	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
 	{"id": "smooth", "name": "Smooth", "note": "moves dirt from high spots to low ones, no path"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
+	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; walk on and set the next, the road builds behind you (Shift + right click does the same in any mode)"},
 ]
 var hoe_mode: String = "path"
 var _hoe_menu_open: bool = false
@@ -1412,6 +1434,8 @@ func _hoe_apply() -> void:
 		_hoe_here(Net.ACT_HOE_SMOOTH)
 	elif hoe_mode == "till":
 		_hoe_here(Net.ACT_TILL)
+	elif hoe_mode == "survey":
+		_grade_point_here()   # one marker a click, never repeated while the button is held
 	else:
 		_hoe_here(Net.ACT_HOE_PATH)
 
@@ -1583,7 +1607,7 @@ func _other_tool_hint() -> String:
 		"net":
 			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
-			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, grade line or till. It uses no items, only its own wear" % hoe_mode
+			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till or survey a path. It uses no items, only its own wear" % hoe_mode
 		"hammer":
 			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
 		"spade":

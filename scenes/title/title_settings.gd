@@ -3,14 +3,15 @@ extends Control
 # Settings on the title page (Kathreen 5 Nov 2026): the choices that make sense before the world is loaded, in the same dark panel and slide switches as the Esc menu.
 # Fullscreen, window size and VSync are saved to the same file as Esc > Settings > Display (display_settings.gd), and Controls is the Esc menu's own key page
 # (key_bindings_page.gd, which calls _heading, show_page and _controls_from_settings on the menu it is built into). Everything else stays in the Esc menu in game.
+# It wears the paintings' look (src/client/ui/dynasty_theme.gd), like the Esc menu.
 
 signal closed
 
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const KeyBindingsPage := preload("res://src/client/key_bindings_page.gd")
+const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 
-const PANEL := Color(0.075, 0.08, 0.09, 0.96)
 const BUTTON_W := 420.0
 
 var display = DisplaySettingsScript.new()
@@ -28,6 +29,7 @@ var _key_page = null
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	theme = DynastyTheme.make()
 	display.load_saved()
 	var shade: ColorRect = ColorRect.new()
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -37,12 +39,7 @@ func _ready() -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	var panel: PanelContainer = PanelContainer.new()
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = PANEL
-	style.border_color = Color(0.55, 0.45, 0.28)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(6)
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel", DynastyTheme.panel_style())
 	center.add_child(panel)
 	var margin: MarginContainer = MarginContainer.new()
 
@@ -56,7 +53,7 @@ func _ready() -> void:
 	var title: Label = Label.new()
 	title.text = "Settings"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
+	DynastyTheme.heading(title, 48)
 	_column.add_child(title)
 	var page: VBoxContainer = _page("settings")
 	_fullscreen_switch = _switch_row(page, "Fullscreen", func(on: bool) -> void:
@@ -74,7 +71,7 @@ func _ready() -> void:
 	more.text = "Sound, quality and the rest: Esc > Settings in the game."
 	more.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	more.add_theme_font_size_override("font_size", 22)
-	more.add_theme_color_override("font_color", Color(0.7, 0.7, 0.65))
+	more.add_theme_color_override("font_color", DynastyTheme.CREAM_DIM)
 	page.add_child(more)
 	_note = Label.new()
 	_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -154,8 +151,7 @@ func _heading(parent: VBoxContainer, text: String) -> void:
 	var label: Label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 28)
-	label.add_theme_color_override("font_color", Color(0.85, 0.78, 0.55))
+	DynastyTheme.heading(label, 30)
 	parent.add_child(label)
 
 

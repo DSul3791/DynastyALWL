@@ -631,6 +631,20 @@ func _doused_torch_slot() -> int:
 	return -1
 
 
+# The nearest burning fire within a few steps (a doused torch pressed on the hotbar lights at it), or 0.
+func lit_fire_in_reach() -> int:
+	var here: Vector3 = _player_position.call()
+	var best: int = 0
+	var best_d: float = 3.0
+
+	for id in _world:
+		if _world[id]["state"] in [1, 40, 41] and here.distance_to(_world[id]["pos"]) <= best_d:
+			best = id
+			best_d = here.distance_to(_world[id]["pos"])
+
+	return best
+
+
 func _probe_fire() -> Dictionary:
 	var id: int = _nearest_fire()
 
