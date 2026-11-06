@@ -2326,3 +2326,18 @@ Answered: 2026-11-05 23:52 UTC
 Answer: Use the drawn buttons: clickable, a gold glow on hover, Continue dimmed when you have no character yet (recommended)
 Answered: 2026-11-05 23:52 UTC
 
+## jamie-water-precision | Water research (water/water-research-2026-11-06.md): fix the ripple noise at 54 km with small local shader coordinates and no sin hash?
+Answer: Yes, now (decided by Sonny for Dave, see water/water-plan-2026-11-06.md): finish #472, then camera-relative coordinates with the textures
+Answered: 2026-11-06 13:58 UTC
+
+## jamie-water-textures | Water ripples and foam from tiled textures dragged along our flow (Valve's method), instead of procedural noise?
+Answer: Yes, free CC0 textures now; Kathreen can replace them to Art_Direction later (water-plan-2026-11-06.md)
+Answered: 2026-11-06 13:58 UTC
+
+## jamie-brook-ribbons | Small steep brooks: draw them as downhill-only ribbon meshes with steps and pools (like our cave streams), instead of on the 8 m grid?
+Answer: No: ribbons cannot follow a player-dug ditch; a fine 2 m live sim window follows each player instead (water-plan-2026-11-06.md)
+Answered: 2026-11-06 13:58 UTC
+
+## jamie-river-valley-floor | Rivers sit too high (23 to 59% of cells on tile 3,4). Carve the beds last, snapped to the valley floor, with a flow check in the bake?
+Answer: Yes, built in #473 (rivers route over the finished ground); waits on the PC rebake and gate (water-plan-2026-11-06.md)
+Answered: 2026-11-06 13:58 UTC
