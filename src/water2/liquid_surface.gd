@@ -50,8 +50,30 @@ varying vec2 tex_uv;
 varying float depth_v;
 varying vec2 flow_v;
 
+// Smooth sampling (Dave 6 Nov 2026, x 54101 z 69709, a steep brook below a cave: "these should look like water not diamond shaped squares"). Straight
+// bilinear reads of the 8 m cells drew a steep stream as flat tilted plates with diamond-shaped shores and white patches: the creases run along the cell
+// edges and the mesh's diagonals. A cubic B-spline over the 4 x 4 texels round the point (four filtered reads) bends smoothly across the cells, with no
+// creases. Only the live window: a chunk sheet must meet its neighbour exactly at their shared grid points, which bilinear does.
+vec4 sample_smooth(vec2 uv) {
+	vec2 p = uv * cells - 0.5;
+	vec2 i = floor(p);
+	vec2 f = p - i;
+	vec2 f2 = f * f;
+	vec2 f3 = f2 * f;
+	vec2 w0 = (1.0 - 3.0 * f + 3.0 * f2 - f3) / 6.0;
+	vec2 w1 = (4.0 - 6.0 * f2 + 3.0 * f3) / 6.0;
+	vec2 w2 = (1.0 + 3.0 * f + 3.0 * f2 - 3.0 * f3) / 6.0;
+	vec2 w3 = f3 / 6.0;
+	vec2 g0 = w0 + w1;
+	vec2 g1 = w2 + w3;
+	vec2 h0 = (i - 0.5 + w1 / g0) / cells;
+	vec2 h1 = (i + 1.5 + w3 / g1) / cells;
+	return g0.y * (g0.x * textureLod(liquid, vec2(h0.x, h0.y), 0.0) + g1.x * textureLod(liquid, vec2(h1.x, h0.y), 0.0))
+		+ g1.y * (g0.x * textureLod(liquid, vec2(h0.x, h1.y), 0.0) + g1.x * textureLod(liquid, vec2(h1.x, h1.y), 0.0));
+}
+
 vec4 sample_liquid(vec2 uv) {
-	return textureLod(liquid, uv, 0.0);
+	return point_grid > 0.5 ? textureLod(liquid, uv, 0.0) : sample_smooth(uv);
 }
 
 // The least depth that still draws: 4 mm for slow water, half a millimetre where it runs fast (a fall face, a chute).
@@ -119,7 +141,7 @@ float waves(vec2 p) {
 }
 
 void fragment() {
-	vec4 t = texture(liquid, tex_uv);   // per pixel: the shore follows the depth between cells, not the cell edges
+	vec4 t = sample_liquid(tex_uv);   // per pixel: the shore follows the depth between cells, not the cell edges (smoothly in the live window)
 	float depth = t.a;
 
 	if (depth < wet_min(t)) {
@@ -209,10 +231,11 @@ void fragment() {
 	// Falls: where the surface itself drops steeply (only between wet texels; a shore texel's level is the bank), the water turns white, in long
 	// streaks that pour down the face, faster than the river above.
 	vec2 px = vec2(1.0) / cells;
-	vec4 ex0 = texture(liquid, tex_uv - vec2(px.x, 0.0));
-	vec4 ex1 = texture(liquid, tex_uv + vec2(px.x, 0.0));
-	vec4 ez0 = texture(liquid, tex_uv - vec2(0.0, px.y));
-	vec4 ez1 = texture(liquid, tex_uv + vec2(0.0, px.y));
+	// The slope from smooth reads too: bilinear differences step at every cell, so the white water came in diamond patches down a steep brook.
+	vec4 ex0 = sample_liquid(tex_uv - vec2(px.x, 0.0));
+	vec4 ex1 = sample_liquid(tex_uv + vec2(px.x, 0.0));
+	vec4 ez0 = sample_liquid(tex_uv - vec2(0.0, px.y));
+	vec4 ez1 = sample_liquid(tex_uv + vec2(0.0, px.y));
 	vec2 grad = vec2(
 		min(ex0.a, ex1.a) > 0.0005 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
 		min(ez0.a, ez1.a) > 0.0005 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
