@@ -160,37 +160,6 @@ func paste(frame: Variant, n: int, core: Variant, core_n: int) -> Variant:
 # per stage. Height, water and climate are built on a frame with a margin
 # around the tile and cropped to the tile's own 1,921 by 1,921 samples; the
 # margin is what lets two neighboring tiles agree along their shared edge.
-# The spawn point and the showroom beside it stay level and cliff-free whatever the land
-# around them does: heights are pinned to the pad level inside flat_radius_m and blend back
-# to the land over blend_m.
-static func _pin_spawn_pad(heights: PackedFloat32Array, n: int, spacing_m: float, origin_sx: int, origin_sz: int, pad: Dictionary) -> PackedFloat32Array:
-	var out: PackedFloat32Array = heights.duplicate()
-	var cx: float = float(pad["x"])
-	var cz: float = float(pad["z"])
-	var flat: float = float(pad["flat_radius_m"])
-	var blend: float = float(pad["blend_m"])
-	var level: float = float(pad["level_m"])
-
-	for j in range(n):
-		var z: float = float(origin_sz + j) * spacing_m
-
-		if absf(z - cz) > flat + blend:
-			continue
-
-		for i in range(n):
-			var distance: float = Vector2(float(origin_sx + i) * spacing_m - cx, z - cz).length()
-
-			if distance >= flat + blend:
-				continue
-
-			var t: float = clampf((distance - flat) / blend, 0.0, 1.0)
-			var weight: float = 1.0 - t * t * (3.0 - 2.0 * t)
-			out[j * n + i] = lerpf(out[j * n + i], level, weight)
-
-	return out
-
-
-
 func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var timings: Dictionary = {}
 	var tile_samples: int = int(settings.tile_size_m / settings.map_spacing_m)
@@ -259,10 +228,6 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	eroded = crop(frame_height.heights, n, core)
 	timings["scree"] = Time.get_ticks_msec() - clock
 
-	if tile_rules.has("spawn_pad"):
-		frame_height.heights = _pin_spawn_pad(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules["spawn_pad"])
-		eroded = crop(frame_height.heights, n, core)
-
 	clock = Time.get_ticks_msec()
 	var starter: Dictionary = starter_info(tile)
 	var water = TileWaterScript.new()
@@ -270,9 +235,6 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	water.world_network = river_network
 	water.routing_raw = raw_frame
 
-	if tile_rules.has("spawn_pad"):
-		# Rivers must steer round the spawn pad exactly as they did over the pinned ground.
-		water.routing_raw = _pin_spawn_pad(raw_frame, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules["spawn_pad"])
 	var river_guides: Array = river_network.guides_in(frame_rect, 4.0)
 	water.build(frame_height, starter, river_guides, river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
 	timings["water"] = Time.get_ticks_msec() - clock
@@ -283,7 +245,6 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 
 	if tile_rules.has("rolling"):
 		var rolling_rules: Dictionary = tile_rules["rolling"].duplicate()
-		rolling_rules["_spawn_pad"] = tile_rules.get("spawn_pad", {})   # the hills leave the spawn pad level
 		TileRollingScript.apply(water.heights, water.water_class, n, frame_height.spacing_m, origin_sx, origin_sz, settings, rolling_rules, elevation)
 
 	timings["rolling"] = Time.get_ticks_msec() - clock
@@ -324,7 +285,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 
 	# The land beside a river slopes up from it, so nothing lies lower than the river and turns to wetland (Dave 6 Nov 2026, tile_valley_drain.gd).
 	clock = Time.get_ticks_msec()
-	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, origin_sx, origin_sz, tile_rules["water"].get("valley_drain", {}), tile_rules.get("spawn_pad", {}))
+	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, origin_sx, origin_sz, tile_rules["water"].get("valley_drain", {}))
 	print("  valley drain (tile %s): %d cells raised to drain to the river, up to %.1f m (%d ms)" % [str(tile), drained["raised"], drained["max_m"], Time.get_ticks_msec() - clock])
 
 

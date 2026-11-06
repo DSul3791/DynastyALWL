@@ -4,7 +4,7 @@ extends RefCounted
 # river ... we should be smoothing the surrounding area so it flows towards the river"). Dry ground next to water that lies lower than the water
 # is where the settled water spreads into wetlands. This pass spreads out from every river cell over the dry ground lower than the
 # water (only through such ground: a ridge stops it), and raises that ground to the water level plus grade_per_m for each metre from the water,
-# so it slopes up from the river and drains back into it. Lakes and the sea keep their shores; ground higher than the water is never touched.
+# so it slopes up from the river and drains back into it. The same everywhere in the world: no place is left out. Lakes and the sea keep their shores; ground higher than the water is never touched.
 #
 # Rules (tile_rules.json water.valley_drain): enabled, reach_m (how far from the water), grade_per_m (rise away from the water), height_m (the
 # raised ground stands at least this far over the water at the bank), max_raise_m, band_samples (how far past the tile edge it runs in the frame,
@@ -15,7 +15,7 @@ const RIVER := 3   # tile_water.gd
 
 
 # Raises the ground in place. `water_class` 0 is dry; `surface` is the water level of wet cells. Returns {"raised", "max_m"}.
-static func apply(heights: PackedFloat32Array, water_class: PackedByteArray, surface: PackedFloat32Array, n: int, cell_m: float, margin: int, origin_sx: int, origin_sz: int, rules: Dictionary, pad: Dictionary = {}) -> Dictionary:
+static func apply(heights: PackedFloat32Array, water_class: PackedByteArray, surface: PackedFloat32Array, n: int, cell_m: float, margin: int, origin_sx: int, origin_sz: int, rules: Dictionary) -> Dictionary:
 	var result: Dictionary = {"raised": 0, "max_m": 0.0}
 
 	if not bool(rules.get("enabled", false)):
@@ -96,20 +96,11 @@ static func apply(heights: PackedFloat32Array, water_class: PackedByteArray, sur
 			queue = queue.slice(head)
 			head = 0
 
-	var pad_on: bool = not pad.is_empty()
-	var pad_x: float = float(pad.get("x", 0.0))
-	var pad_z: float = float(pad.get("z", 0.0))
-	var pad_r: float = float(pad.get("flat_radius_m", 0.0)) + float(pad.get("blend_m", 0.0))
-
 	for j in range(lo, hi):
 		for i in range(lo, hi):
 			var k: int = j * n + i
 
 			if water_class[k] != NONE or need[k] == INF or heights[k] >= need[k]:
-				continue
-
-			# The spawn pad stays level.
-			if pad_on and Vector2(float(origin_sx + i) * cell_m - pad_x, float(origin_sz + j) * cell_m - pad_z).length() < pad_r:
 				continue
 
 			var raise: float = minf(need[k] - heights[k], max_raise)
