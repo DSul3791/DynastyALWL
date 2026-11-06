@@ -26,6 +26,7 @@ func make():
 	a.player_positions = func(): return players.map(func(p): return p["pos"])
 	a.player_stances = func(): return players.map(func(p): return 0)
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 	a.rng.seed = 3
 	a.cfg["species"]["rabbit"]["target_per_player"] = 0
 	a.cfg["species"]["moose"]["target_per_player"] = 0
@@ -34,7 +35,7 @@ func make():
 	a.cfg["species"]["horse"]["target_per_player"] = 0
 	a.cfg["species"]["deer"]["target_per_player"] = 0
 
-	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird"]:
+	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear"]:
 		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
 
 	a.cfg["senses"] = {}

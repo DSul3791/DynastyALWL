@@ -18,6 +18,7 @@ func run(minutes: float, trail: float, draw: bool, cfg: Dictionary) -> float:
 	a.player_positions = func(): return [Vector3(0.0, 10.0, 0.0)]
 	a.hour_now = func(): return 12.0
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
 	for sp in a.cfg["species"]:
 		if sp != "rabbit":

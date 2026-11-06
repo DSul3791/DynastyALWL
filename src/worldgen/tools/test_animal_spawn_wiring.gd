@@ -22,6 +22,7 @@ func make(players: Array, species: String):
 	a.blocked = func(x, z): return false
 	a.player_positions = func(): return players
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
 	for sp in a.cfg["species"]:
 		a.cfg["species"][sp]["target_per_player"] = 0
@@ -148,7 +149,7 @@ func _init() -> void:
 	waiting.biome_at = func(x, z): return "beach"
 	run(waiting, 40.0)
 	check(count(waiting, "seal") == 0, "a species waiting for its model never spawns")
-	check(view._make_for_species(14, 1) == null and view._make_for_species(99, 1) == null, "an unknown species number draws nothing, not a rabbit")
+	check(view._make_for_species(15, 1) == null and view._make_for_species(99, 1) == null, "an unknown species number draws nothing, not a rabbit")
 	# Hours (Sal's spawn_plan active flags): songbirds, grouse and seabirds are diurnal, boar and frog come out at dusk and night; the chance by hour per species.
 	var by_hour = make(players, "rabbit")
 	var expected: Dictionary = {"songbirds": [1.0, 0.0], "grouse": [1.0, 0.0], "seabird": [1.0, 0.0], "boar": [0.0, 1.0], "frog": [0.0, 1.0]}   # [wanted at noon, wanted at 02:00]

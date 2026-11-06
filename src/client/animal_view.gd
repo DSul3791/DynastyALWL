@@ -17,7 +17,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -71,6 +71,8 @@ void fragment() {
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
 # on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model is not drawn.
 const SMALL_SPECIES := [9, 10, 11, 13]
+const YOUNG_NUM := 100       # a young animal's species number + 100 (server_animals.gd)
+const YOUNG_SCALE := 0.5     # how big the young are drawn
 
 
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
@@ -109,6 +111,8 @@ func _make_species_body(number: int, id: int) -> Node3D:
 			return _make_seal()
 		13:
 			return _make_gull_flock(id)      # one record per flock since MikeW's seabird flock block (PR 73): 5 to 12 gulls standing on the beach, all taking off in state 15
+		14:
+			return _make_bear()
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
@@ -148,6 +152,14 @@ func on_rows(rows: Array) -> void:
 		var id: int = int(row[0])
 		seen[id] = true
 
+		# A young animal (calf, cub, fawn, piglet, foal: Dave 6 Nov 2026) comes as its species number + 100 (ServerAnimals.YOUNG_NUM);
+		# it is drawn as its species, smaller.
+		var young: bool = int(row[1]) >= YOUNG_NUM
+
+		if young:
+			row = row.duplicate()
+			row[1] = int(row[1]) - YOUNG_NUM
+
 		if not _bodies.has(id):
 			if _bodies.size() >= MAX_DRAWN:
 				continue
@@ -158,6 +170,10 @@ func on_rows(rows: Array) -> void:
 				continue
 
 			node.position = row[2]
+
+			if young:
+				node.scale = Vector3.ONE * YOUNG_SCALE
+
 			add_child(node)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
 
@@ -920,7 +936,10 @@ func _make_quad(spec: Dictionary) -> Node3D:
 		ear.name = "Ear_L" if side < 0.0 else "Ear_R"
 		ear.position = top + Vector3(side * hd * 0.2, hd * 0.2, hd * 0.1)
 		head.add_child(ear)
-		_ball(ear, hd * 0.13, Vector3(0.4, 1.7 * float(spec.get("ear", 1.0)), 0.22), Vector3(0.0, hd * 0.17 * float(spec.get("ear", 1.0)), 0.0), dark, Vector3(0.0, 0.0, side * -0.35))      # a leaf-shaped ear
+		if bool(spec.get("round_ears", false)):
+			_ball(ear, hd * 0.11, Vector3(1.0, 1.0, 0.45), Vector3(0.0, hd * 0.08, 0.0), coat.lerp(dark, 0.4))      # a bear's small round ear
+		else:
+			_ball(ear, hd * 0.13, Vector3(0.4, 1.7 * float(spec.get("ear", 1.0)), 0.22), Vector3(0.0, hd * 0.17 * float(spec.get("ear", 1.0)), 0.0), dark, Vector3(0.0, 0.0, side * -0.35))      # a leaf-shaped ear
 
 		if bool(spec.get("antlers", false)):
 			# Bull moose: broad flat palms swept out and up from above the ears, with tines along the rim.
@@ -975,7 +994,7 @@ func _make_quad(spec: Dictionary) -> Node3D:
 		pivot.name = leg[0]
 		pivot.position = Vector3(float(leg[1]) * rb * 0.55, leg_h, float(leg[2]))
 		rig.add_child(pivot)
-		var w: float = rb * 0.3
+		var w: float = rb * 0.3 * float(spec.get("leg_w", 1.0))   # leg_w: a bear's legs are thick pillars, not a deer's sticks
 		# Shoulder and haunch: a long muscle tapering down the upper leg into the body, so the leg grows out of it instead of a stick under a ball (cloud render 4 Nov).
 		_ball(pivot, w * 1.0, Vector3(1.0, 2.4, 1.3 if String(leg[0]).begins_with("Leg_F") else 1.7), Vector3(0.0, -leg_h * 0.12, 0.0), coat)
 		_box(pivot, Vector3(w, leg_h * 0.5, w), Vector3(0.0, -leg_h * 0.24, 0.0), coat)
@@ -1051,6 +1070,14 @@ func _make_horse(id: int) -> Node3D:
 	var coats: Array = [[Color(0.36, 0.2, 0.11), Color(0.08, 0.06, 0.05)], [Color(0.5, 0.26, 0.12), Color(0.34, 0.17, 0.08)], [Color(0.66, 0.66, 0.64), Color(0.45, 0.45, 0.44)], [Color(0.1, 0.09, 0.09), Color(0.05, 0.04, 0.04)], [Color(0.62, 0.5, 0.32), Color(0.2, 0.14, 0.09)]]
 	var pick: Array = coats[id % coats.size()]
 	return _make_quad({"leg_h": 0.85, "rb": 0.32, "len": 1.05, "neck": 0.66, "neck_thick": 1.45, "head": 0.6, "snout": 1.2, "coat": pick[0], "dark": pick[1], "pale": pick[0].lerp(Color(0.9, 0.85, 0.78), 0.25), "mane": true, "socks": false, "long_tail": true, "blaze": id % 3 == 0})
+
+
+# A brown bear (Dave 6 Nov 2026; FAUNA_BY_BIOME): the shared four-legged build, heavy and low. About 2 m long, 1 m at the shoulder hump, a broad
+# head on a short neck with a short snout, small round ears, thick dark brown coat a shade paler on the head and hump, no tail to speak of.
+func _make_bear() -> Node3D:
+	# Brown bear (PC look 6 Nov: the first build read as a blob on wheels with horns): shoulder about 1.1 m, legs showing about half of
+	# that under the belly, thick legs, a big head with a short snout and small round ears, the shoulder hump.
+	return _make_quad({"leg_h": 0.75, "rb": 0.45, "len": 1.2, "neck": 0.3, "head": 0.62, "snout": 0.8, "leg_w": 1.6, "round_ears": true, "coat": Color(0.27, 0.18, 0.11), "dark": Color(0.16, 0.11, 0.07), "pale": Color(0.4, 0.3, 0.2), "hump": true, "socks": false, "pale_belly": false})
 
 
 # A moose (Mandy 2026-10-22): about 2.7 m long, 2.1 m at the shoulder hump, dark brown, long pale legs, big drooping muzzle; every second one is a bull with broad antlers.

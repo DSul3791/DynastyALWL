@@ -18,6 +18,7 @@ func run(minutes: float, smell: float, seed_n: int) -> int:
 	a.player_stances = func(): return [0]
 	a.hour_now = func(): return 23.0
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
 	for sp in a.cfg["species"]:
 		if sp != "fox":

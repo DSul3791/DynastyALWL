@@ -42,11 +42,12 @@ func _nearest(pos: Vector3) -> Dictionary:
 	return best
 
 
-# Start a warning at a player (or a short one when provoked). Returns true when the animal took it.
-func warn(a: Dictionary, at: Vector3, warn_s: float = -1.0) -> bool:
+# Start a warning at a player (or a short one when provoked). Returns true when the animal took it. Its temperament decides
+# whether it attacks at all (host.may_attack: never the young, passive or friendly ones unless forced, as a mother for her young).
+func warn(a: Dictionary, at: Vector3, warn_s: float = -1.0, forced: bool = false) -> bool:
 	var def: Dictionary = host.species_def(a["sp"]).get("defend", {})
 
-	if def.is_empty() or float(a.get("cool", 0.0)) > 0.0 or handles(a):
+	if def.is_empty() or float(a.get("cool", 0.0)) > 0.0 or handles(a) or not host.may_attack(a, forced):
 		return false
 
 	a["state"] = WARN
