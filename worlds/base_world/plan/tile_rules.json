@@ -156,7 +156,7 @@
 		"hardness": {"sediment": 0.05, "shale": 0.15, "coal": 0.15, "tuff": 0.3, "chalk": 0.35, "slate": 0.6, "sandstone": 0.65, "limestone": 0.7, "marble": 0.8, "basalt": 0.85, "granite": 0.95},
 		"ledges": {"sandstone": 1.0, "limestone": 1.0, "basalt": 0.9, "chalk": 0.6, "marble": 0.6, "slate": 0.5, "tuff": 0.3}
 	},
-	"spawn_pad": {"note": "Spawn moved 24 Oct to x 53316, z 68476 (Sal search; was Dave's x 53301, z 68427) and the showroom beside it: level inside flat_radius_m, blended into the land over blend_m. Level is the old spawn ground.", "x": 53316, "z": 68476, "level_m": 31.0, "flat_radius_m": 40, "blend_m": 70},
+	"spawn_pad_removed_note": "Sonny 6 Nov 2026 (#473; Dave: 'we should not be adjust individual heights. it should be a systemic thing so it works across our entire world. the spawn point can just be moved'): the spawn pad (heights pinned level round the spawn) is gone; the spawn moved to x 53296 z 68080, naturally flat dry ground on a valley floor 2 m and more over any water (src/shared/spawn_point.gd).",
 	"water": {
 		"drainage_mode": true,
 		"valley_drain": {"_note": "Sonny 6 Nov 2026 (Dave: 'smoothing the surrounding area so it flows towards the river'): dry ground beside a river that lies lower than the water is raised to the water plus height_m, rising grade_per_m per metre away, within reach_m; a ridge stops it (tile_valley_drain.gd).", "enabled": true, "reach_m": 200.0, "grade_per_m": 0.01, "height_m": 0.8, "max_raise_m": 10.0, "band_samples": 50},
@@ -181,7 +181,7 @@
 			"valley_radius_widths": 12.0,
 			"valley_side_slope": 0.06,
 			"valley_max_radius_m": 400.0,
-			"farm_height_from_m": 120.0, "farm_height_to_m": 250.0, "farm_valley_start_km2": 0.4, "farm_valley_radius_widths": 24.0, "farm_valley_max_radius_m": 600.0, "farm_valley_cut_max_m": 25.0, "farm_valley_side_slope": 0.10, "spawn_x": 53316, "spawn_z": 68476, "spawn_keep_m": 450, "spawn_blend_m": 650, "gully_start_km2": 0.08, "gully_end_km2": 1.2, "gully_depth_m_per_sqrt_q": 12.0, "gully_max_m": 10.0, "gully_wall_slope": 0.55, "gully_slope_from": 0.105, "gully_slope_to": 0.176, "canyon_start_km2": 0.6,
+			"farm_height_from_m": 120.0, "farm_height_to_m": 250.0, "farm_valley_start_km2": 0.4, "farm_valley_radius_widths": 24.0, "farm_valley_max_radius_m": 600.0, "farm_valley_cut_max_m": 25.0, "farm_valley_side_slope": 0.10, "spawn_x": 53296, "spawn_z": 68080, "spawn_keep_m": 450, "spawn_blend_m": 650, "gully_start_km2": 0.08, "gully_end_km2": 1.2, "gully_depth_m_per_sqrt_q": 12.0, "gully_max_m": 10.0, "gully_wall_slope": 0.55, "gully_slope_from": 0.105, "gully_slope_to": 0.176, "canyon_start_km2": 0.6,
 			"canyon_cut_max_m": 90.0,
 			"canyon_wall_slope": 1.1,
 			"canyon_rim_max_m": 160.0,
