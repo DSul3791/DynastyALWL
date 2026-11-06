@@ -153,7 +153,7 @@ func _spawn_young(mother: int) -> void:
 	var kids: Array = []
 	_spawning_young = true
 
-	for n in rng.randi_range(int(span[0]), int(span[1])):   # luck-exempt: how many young
+	for _kid_n in rng.randi_range(int(span[0]), int(span[1])):   # luck-exempt: how many young
 		var ang: float = rng.randf() * TAU   # luck-exempt: where each young one keeps to
 		var off: Vector3 = Vector3(cos(ang), 0.0, sin(ang)) * float(y.get("follow_m", 3.0))
 		var kid: int = spawn(m["sp"], m["pos"].x + off.x, m["pos"].z + off.z)
@@ -1040,7 +1040,7 @@ func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
 	if water_level.is_valid() and rng.randf() < float(den_cfg.get("fish_share", 0.5)):   # luck-exempt: whether a bear goes fishing next
 		# It walks out from its den along a few random bearings, 2 m at a time, and stops at the first dry spot with water 3 m ahead:
 		# the near bank of the river (a random point in the range almost never lands on the thin strip along the bank).
-		for n in 8:
+		for _try in 8:
 			var ang: float = rng.randf() * TAU   # luck-exempt: which way it looks for a fishing spot
 			var dir: Vector3 = Vector3(cos(ang), 0.0, sin(ang))
 			var dist: float = 2.0
