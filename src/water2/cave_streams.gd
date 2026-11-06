@@ -19,9 +19,9 @@ const CAVE_POOL_SHALLOW_M := 0.4   # an old server's pool (no depth sent)
 
 const SHADER := """
 shader_type spatial;
-render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
+render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx, ambient_light_disabled;   // no sky light or sky reflection: in a cave mouth the water mirrored the sky white (Dave 6 Nov)
 
-uniform vec4 water_colour : source_color = vec4(0.03, 0.07, 0.08, 0.86);
+uniform vec4 water_colour : source_color = vec4(0.06, 0.16, 0.18, 0.8);
 uniform vec3 foam_colour : source_color = vec3(0.62, 0.74, 0.78);
 uniform float speed = 0.9;     // m/s along the stream
 
@@ -33,12 +33,13 @@ void fragment() {
 	float pool_wave = sin(UV.x * 14.0 - TIME * 1.4) * 0.5 + 0.5;
 	float wave = mix(stream_wave, pool_wave, pool);
 	float tilt = mix(cos(v * 5.0 + UV.x * 2.0), cos(UV.x * 14.0 - TIME * 1.4), pool);
-	NORMAL_MAP = vec3(0.5 + 0.06 * tilt, 0.5 + 0.06 * (wave - 0.5), 1.0);
-	// Dark, clear water with faint ripples (Dino's shots 6 Nov: a pale glossy band read as a tan plank strip).
-	ALBEDO = mix(water_colour.rgb, foam_colour, wave * mix(0.07, 0.04, pool));
-	// Little gloss: at a low angle a glossy surface mirrors the bright sky (a flying camera keeps the sky light on in a cave), which read pale tan.
-	ROUGHNESS = 0.35;
-	SPECULAR = 0.12;
+	NORMAL_MAP = vec3(0.5 + 0.12 * tilt, 0.5 + 0.12 * (wave - 0.5), 1.0);
+	// Glossy water that shows in torchlight: ripples and rings catch the flame (Dave 6 Nov 2026: "I just fell in a spring pool again ... there is no
+	// water to be seen". The dark matte water of 6 Nov morning vanished into the rock by torchlight). The sky's light and reflection stay off
+	// (ambient_light_disabled), which is what drew a pale band at a low angle and a white pool in a cave mouth.
+	ALBEDO = mix(water_colour.rgb, foam_colour, wave * mix(0.15, 0.1, pool));
+	ROUGHNESS = 0.08;
+	SPECULAR = 0.55;
 	float edge = mix(1.0 - smoothstep(0.7, 1.0, abs(UV.x)), 1.0 - smoothstep(0.85, 1.0, UV.x), pool);
 	ALPHA = water_colour.a * edge;
 }
