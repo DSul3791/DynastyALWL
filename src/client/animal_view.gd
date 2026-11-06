@@ -344,13 +344,21 @@ func _make_model(number: int) -> Node3D:
 	rig.add_child(inst)
 
 	if inst is Node3D:
-		(inst as Node3D).scale = Vector3.ONE * float(row.get("scale", 1.0))
-		(inst as Node3D).rotation.y = deg_to_rad(float(row.get("yaw_deg", 0.0)))
+		(inst as Node3D).scale *= float(row.get("scale", 1.0))   # on top of the file's own unit scale (WildMesh FBX: 0.01, centimetres)
+		(inst as Node3D).rotation.y += deg_to_rad(float(row.get("yaw_deg", 0.0)))
 
 	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
 
 	if not players.is_empty():
-		root.set_meta("player", players[0])
+		var player: AnimationPlayer = players[0]
+		root.set_meta("player", player)
+
+		# The clips import as play-once; every clip the row uses (graze, walk, run, warn...) loops.
+		for key in (row.get("clips", {}) as Dictionary):
+			var anim_name: String = str(row.get("clip_prefix", "")) + str(row["clips"][key])
+
+			if player.has_animation(anim_name):
+				player.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
 
 	return root
 
@@ -375,6 +383,8 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		return
 
 	var player: AnimationPlayer = node.get_meta("player")
+
+	clip = str(row.get("clip_prefix", "")) + clip if clip != "" else ""
 
 	if clip != "" and player.has_animation(clip) and player.current_animation != clip:
 		player.play(clip, 0.25)
