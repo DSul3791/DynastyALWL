@@ -1,0 +1,4 @@
+{
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover. Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}.",
+	"species": {}
+}

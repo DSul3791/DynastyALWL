@@ -7,6 +7,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
 
 const MAX_DRAWN := 30
+const MODELS_PATH := "res://data/animals/models.json"
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -25,6 +26,7 @@ const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
+var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
 var _mats: Dictionary = {}
 var _t: float = 0.0
 var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
@@ -86,6 +88,11 @@ func _make_for_species(number: int, id: int) -> Node3D:
 
 
 func _make_species_body(number: int, id: int) -> Node3D:
+	var model: Node3D = _make_model(number)
+
+	if model != null:
+		return model
+
 	match number:
 		2:
 			return _make_deer(id)
@@ -175,7 +182,7 @@ func on_rows(rows: Array) -> void:
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
@@ -273,6 +280,12 @@ func _process_body(delta: float) -> void:
 		var before: Vector3 = node.position
 		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 or state == 14 or state == 15 else 5.0), 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		if bool(b.get("model", false)):
+			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
+			_animate_model(node, b, state, model_speed, delta)
+			_emit_steps(b, node, state, model_speed)
+			continue
+
 		var rig: Node3D = node.get_node("Rig")
 		var rate: float = 9.0 if state == FLEE else 5.0
 		var big: bool = bool(b.get("deer", false))
@@ -293,6 +306,80 @@ func _process_body(delta: float) -> void:
 			_animate_gulls(rig, state == 15)
 
 		_emit_steps(b, node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
+
+
+# Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md): a species listed in
+# data/animals/models.json with a scene that exists is drawn from that scene (a rigged, animated mesh) instead of the code-built
+# body; a missing file falls back to the code body, so a model can be added one species at a time. The row gives the scene, its
+# scale and yaw (to face -Z), the clip for each protocol state, and the ground speed its walk and run clips were made at.
+func _model_rows() -> Dictionary:
+	if _models == null:
+		_models = {}
+
+		if FileAccess.file_exists(MODELS_PATH):
+			var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MODELS_PATH))
+			_models = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
+
+	return _models
+
+
+func _make_model(number: int) -> Node3D:
+	var row: Dictionary = _model_rows().get(str(KIND_OF_SPECIES.get(number, "")), {})
+
+	if row.is_empty() or not ResourceLoader.exists(str(row.get("scene", ""))):
+		return null
+
+	var packed: PackedScene = load(str(row["scene"])) as PackedScene
+
+	if packed == null:
+		return null
+
+	var root: Node3D = Node3D.new()
+	root.set_meta("model", true)
+	root.set_meta("model_row", row)
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var inst: Node = packed.instantiate()
+	rig.add_child(inst)
+
+	if inst is Node3D:
+		(inst as Node3D).scale = Vector3.ONE * float(row.get("scale", 1.0))
+		(inst as Node3D).rotation.y = deg_to_rad(float(row.get("yaw_deg", 0.0)))
+
+	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
+
+	if not players.is_empty():
+		root.set_meta("player", players[0])
+
+	return root
+
+
+# Plays the clip for the animal's state (a moving animal walks or runs by its real ground speed) and keeps the gait count for footsteps.
+func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var row: Dictionary = node.get_meta("model_row", {})
+	var clips: Dictionary = row.get("clips", {})
+	var clip: String = str(clips.get(str(state), clips.get("0", "")))
+	var walk_mps: float = float(row.get("walk_mps", 1.5))
+	var run_mps: float = float(row.get("run_mps", 7.0))
+	var ref: float = 0.0
+
+	if speed > 0.3 and state != 10 and state != 12:
+		var running: bool = speed > (walk_mps + run_mps) * 0.5
+		clip = str(clips.get("run" if running else "walk", clip))
+		ref = run_mps if running else walk_mps
+
+	b["gait"] = float(b.get("gait", 0.0)) + speed * delta / maxf(float(row.get("stride_m", 1.2)), 0.1)
+
+	if not node.has_meta("player"):
+		return
+
+	var player: AnimationPlayer = node.get_meta("player")
+
+	if clip != "" and player.has_animation(clip) and player.current_animation != clip:
+		player.play(clip, 0.25)
+
+	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
 
 
 # A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).
