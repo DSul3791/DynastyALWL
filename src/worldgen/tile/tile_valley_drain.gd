@@ -37,6 +37,7 @@ static func apply(heights: PackedFloat32Array, water_class: PackedByteArray, sur
 	dist.fill(INF)
 	var queued: PackedByteArray = PackedByteArray()
 	queued.resize(total)
+	queued.fill(0)   # resize does not promise zeros
 	var queue: PackedInt32Array = PackedInt32Array()
 	var diag: float = cell_m * sqrt(2.0)
 	var offsets: PackedInt32Array = PackedInt32Array([-1, 1, -n, n, -n - 1, -n + 1, n - 1, n + 1])

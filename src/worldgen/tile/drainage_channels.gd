@@ -220,6 +220,7 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 	var extra_m: float = float(rules.get("river_extra_depth_m", 0.0))
 	var extra: PackedFloat32Array = PackedFloat32Array()
 	extra.resize(h.size())
+	extra.fill(0.0)
 
 	if extra_m > 0.0:
 		for index in range(h.size()):
