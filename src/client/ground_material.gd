@@ -253,25 +253,28 @@ void fragment() {
 	// pebble specks in the colour. Roofs get patches of thin roots coming through. Near the eye only; nothing changes the collision ground.
 	float rock_relief = stone * (1.0 - smoothstep(0.3, 0.75, world_normal.y)) * (1.0 - smoothstep(25.0, 70.0, dist));
 	if (rock_relief > 0.01) {
+		// Small, rough relief (Dino's shots 6 Nov: the first try drew noise contour lines, big blotchy loops that read as a repeated pattern).
+		// Three octaves 0.4 m to 0.07 m across, as shading and bump only: no lines are drawn.
 		vec3 q = world_pos;
-		float e = 0.06;
-		float f0 = vnoise(q * 1.3) * 0.55 + vnoise(q * 3.7 + 2.0) * 0.3 + vnoise(q * 9.0 + 5.0) * 0.15;
-		float fx = vnoise((q + vec3(e, 0.0, 0.0)) * 1.3) * 0.55 + vnoise((q + vec3(e, 0.0, 0.0)) * 3.7 + 2.0) * 0.3 + vnoise((q + vec3(e, 0.0, 0.0)) * 9.0 + 5.0) * 0.15;
-		float fy = vnoise((q + vec3(0.0, e, 0.0)) * 1.3) * 0.55 + vnoise((q + vec3(0.0, e, 0.0)) * 3.7 + 2.0) * 0.3 + vnoise((q + vec3(0.0, e, 0.0)) * 9.0 + 5.0) * 0.15;
-		float fz = vnoise((q + vec3(0.0, 0.0, e)) * 1.3) * 0.55 + vnoise((q + vec3(0.0, 0.0, e)) * 3.7 + 2.0) * 0.3 + vnoise((q + vec3(0.0, 0.0, e)) * 9.0 + 5.0) * 0.15;
+		float e = 0.02;
+		float f0 = vnoise(q * 2.6) * 0.45 + vnoise(q * 6.5 + 2.0) * 0.33 + vnoise(q * 15.0 + 5.0) * 0.22;
+		float fx = vnoise((q + vec3(e, 0.0, 0.0)) * 2.6) * 0.45 + vnoise((q + vec3(e, 0.0, 0.0)) * 6.5 + 2.0) * 0.33 + vnoise((q + vec3(e, 0.0, 0.0)) * 15.0 + 5.0) * 0.22;
+		float fy = vnoise((q + vec3(0.0, e, 0.0)) * 2.6) * 0.45 + vnoise((q + vec3(0.0, e, 0.0)) * 6.5 + 2.0) * 0.33 + vnoise((q + vec3(0.0, e, 0.0)) * 15.0 + 5.0) * 0.22;
+		float fz = vnoise((q + vec3(0.0, 0.0, e)) * 2.6) * 0.45 + vnoise((q + vec3(0.0, 0.0, e)) * 6.5 + 2.0) * 0.33 + vnoise((q + vec3(0.0, 0.0, e)) * 15.0 + 5.0) * 0.22;
 		vec3 grad = vec3(fx - f0, fy - f0, fz - f0) / e;
 		vec3 along = grad - world_normal * dot(grad, world_normal);
-		vec3 bumped = normalize(world_normal - along * 0.55 * rock_relief);
+		vec3 bumped = normalize(world_normal - along * 0.12 * rock_relief);
 		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(bumped, 0.0)).xyz, rock_relief));
-		// Cracks: thin dark lines where a ridged noise is near zero.
-		float crack = 1.0 - smoothstep(0.0, 0.06, abs(vnoise(q * vec3(0.8, 2.2, 0.8) + 9.0) - 0.5));
-		color *= 1.0 - rock_relief * (0.35 * (0.55 - f0) + 0.35 * crack);
-		// Roots through the roof: thin brown strands in patches, only on surfaces that face down.
+		// Hollows a little darker, knobs a little lighter: mottled rock, not lines.
+		color *= 1.0 + rock_relief * 0.5 * (f0 - 0.5);
+		// Roots through the roof: sparse thin strands that run one way in a patch (stretched noise), only on surfaces that face down.
 		float roof = smoothstep(-0.2, -0.6, world_normal.y) * rock_relief;
 		if (roof > 0.01) {
-			float strand = 1.0 - smoothstep(0.0, 0.035, abs(vnoise(vec3(q.x * 2.4, q.y * 0.6, q.z * 2.4) + 13.0) - 0.5));
-			float patch = smoothstep(0.55, 0.75, vnoise(q * 0.25 + 17.0));
-			color = mix(color, vec3(0.16, 0.10, 0.06) * (0.8 + 0.4 * vnoise(q * 6.0)), strand * patch * roof * 0.85);
+			float patch = smoothstep(0.6, 0.8, vnoise(q * 0.2 + 17.0));
+			if (patch > 0.01) {
+				float strand = 1.0 - smoothstep(0.0, 0.02, abs(vnoise(vec3(q.x * 5.0, q.y * 0.5, q.z * 0.35) + 13.0) - 0.5));
+				color = mix(color, vec3(0.16, 0.10, 0.06) * (0.8 + 0.4 * vnoise(q * 6.0)), strand * patch * roof * 0.8);
+			}
 		}
 	}
 	// Bare stone floors: fine grit and small pebble specks in the colour only (no relief, nothing to trip on).
