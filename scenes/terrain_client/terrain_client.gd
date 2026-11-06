@@ -2312,6 +2312,8 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 		add_child(_cave_streams)
 
 	_cave_streams.show_tile(tile, streams)
+	@warning_ignore("integer_division")
+	print("Terrain client: cave streams for tile %s (%d pieces, %d pools)" % [str(tile), streams.size() / 7, CaveStreams.pools_of(streams).size()])
 
 	if sound != null:
 		sound.cavewater.set_tile(tile, streams)       # the water inside the cave makes its sound (cave_water_sounds.gd)

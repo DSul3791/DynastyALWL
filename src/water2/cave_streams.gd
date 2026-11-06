@@ -21,7 +21,7 @@ const SHADER := """
 shader_type spatial;
 render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
 
-uniform vec4 water_colour : source_color = vec4(0.03, 0.07, 0.08, 0.86);
+uniform vec4 water_colour : source_color = vec4(0.10, 0.24, 0.26, 0.86);
 uniform vec3 foam_colour : source_color = vec3(0.62, 0.74, 0.78);
 uniform float speed = 0.9;     // m/s along the stream
 
@@ -33,12 +33,14 @@ void fragment() {
 	float pool_wave = sin(UV.x * 14.0 - TIME * 1.4) * 0.5 + 0.5;
 	float wave = mix(stream_wave, pool_wave, pool);
 	float tilt = mix(cos(v * 5.0 + UV.x * 2.0), cos(UV.x * 14.0 - TIME * 1.4), pool);
-	NORMAL_MAP = vec3(0.5 + 0.06 * tilt, 0.5 + 0.06 * (wave - 0.5), 1.0);
-	// Dark, clear water with faint ripples (Dino's shots 6 Nov: a pale glossy band read as a tan plank strip).
-	ALBEDO = mix(water_colour.rgb, foam_colour, wave * mix(0.07, 0.04, pool));
-	// Little gloss: at a low angle a glossy surface mirrors the bright sky (a flying camera keeps the sky light on in a cave), which read pale tan.
-	ROUGHNESS = 0.35;
-	SPECULAR = 0.12;
+	NORMAL_MAP = vec3(0.5 + 0.12 * tilt, 0.5 + 0.12 * (wave - 0.5), 1.0);
+	// The glossy teal of 5 Nov (#450), when the cave streams showed (Dave 6 Nov 2026: "nope there is no water in the tunnels ... they use to work"); the
+	// dark matte water of #461 vanished into the rock by torchlight. A spring pool used to be 0.4 m deep, so the torch lit its floor through the water;
+	// since BUG-008 it is 20 m deep and the water over the black hole read as nothing (Dino's torch shots 6 Nov: only the rock rim). So the water itself
+	// is a lighter teal that the torch lights, and the pool's rings stand out as much as the stream's ripples.
+	ALBEDO = mix(water_colour.rgb, foam_colour, wave * mix(0.18, 0.2, pool));
+	ROUGHNESS = 0.06;
+	SPECULAR = 0.6;
 	float edge = mix(1.0 - smoothstep(0.7, 1.0, abs(UV.x)), 1.0 - smoothstep(0.85, 1.0, UV.x), pool);
 	ALPHA = water_colour.a * edge;
 }
