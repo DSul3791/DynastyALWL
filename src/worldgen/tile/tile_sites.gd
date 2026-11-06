@@ -67,7 +67,7 @@ var _geology
 var _limestone: int = -1
 var _local: int = 0
 var _keep_clear: Array = []      # [center Vector2, radius] where no entrance may open
-var inland: PackedByteArray = PackedByteArray()   # 1 where the sea is at least spring_cave.min_sea_m away (inland_mask, from the frame); empty: no such rule
+var far_from_sea: PackedByteArray = PackedByteArray()   # 1 where the sea is at least spring_cave.min_sea_m away (inland_mask, from the frame); empty: no such rule
 var _ore_by_id: Dictionary = {}
 var ore_report: Dictionary = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
 
@@ -780,7 +780,7 @@ func _brook_heads() -> Array:
 
 			# Way inland only (Dave 6 Nov 2026: "its important they only show up way inland wherever the river starts"): the 96 caves of the terrain 59
 			# bake had 30 within 1 km of the sea, at the heads of short coastal brooks.
-			if not inland.is_empty() and inland[index] == 0:
+			if not far_from_sea.is_empty() and far_from_sea[index] == 0:
 				continue
 
 			var head: bool = true
