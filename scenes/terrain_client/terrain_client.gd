@@ -6171,6 +6171,11 @@ func _flame_wet(delta: float) -> void:
 		return
 
 	var slot: int = held.flame_slot()
+	# A torch can only be lit where it would not go out at once: not under water, not in the open rain (rock or a roof or a crown over you is cover, so a cave works).
+	var wet: float = float(weather.get("rain", 0.0))
+	var rock: float = sound.cave.rock_enclosure if sound != null and sound.cave != null else 0.0
+	var sheltered: bool = true if not FlameRules.in_rain(wet, false) else (WeatherLookScript.sky_share(rock) < 0.5 or held.flame_covered())
+	held.light_block = "water" if underwater else ("rain" if FlameRules.in_rain(wet, sheltered) else "")
 
 	if slot < 0:
 		_flame_rain_s = 0.0

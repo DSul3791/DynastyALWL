@@ -109,6 +109,10 @@ func _init() -> void:
 	items.ground_height = func(_x, _z): return 5.0
 	items.action(7, Net.ACT_RELIGHT, 900003, 0, 0, Vector3.ZERO)      # the fire is gone: still doused
 	check(inv.numbers[slot] == doused, "E at a missing fire does not relight")
+	items.set_swimming(7, true)
+	items.action(7, Net.ACT_RELIGHT, 0, slot + 1, 0, Vector3.ZERO)
+	check(inv.numbers[slot] == doused, "a torch cannot be lit in the water")
+	items.set_swimming(7, false)
 	items.action(7, Net.ACT_RELIGHT, 0, slot + 1, 0, Vector3.ZERO)      # the hotkey: no fire needed (Dave 6 Nov 2026)
 	check(inv.numbers[slot] == lit, "pressing the torch's key lights it again, with no fire")
 	check(str(table.entry("torch")["name"]) == str(table.entry("torch_doused")["name"]), "a torch that went out keeps its name")

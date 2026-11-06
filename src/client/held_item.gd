@@ -300,6 +300,10 @@ func _relight_on_press(slot: int, quiet: bool = false) -> void:
 	if quiet:
 		return   # the same key again puts the torch away
 
+	if light_block != "":
+		_inv._on_notice("It is too wet to light the torch. Get out of the water and the rain, or into a cave or under cover." if light_block == "water" or light_block == "rain" else "")
+		return
+
 	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, clampi(slot, 0, HOTBAR_SLOTS - 1) + 1, 0, Vector3.ZERO)   # no fire needed (Dave 6 Nov 2026)
 
 
@@ -524,6 +528,9 @@ func _place_torch_here() -> void:
 
 
 # Whether the camera is under cover from the rain (a tree's crown or a roof).
+var light_block: String = ""   # "water" or "rain" while a flame cannot be lit here (set every frame by the client from FlameRules; Dave 6 Nov 2026), else ""
+
+
 func flame_covered() -> bool:
 	return _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))
 
@@ -1107,7 +1114,7 @@ func _process_body(delta: float) -> void:
 		if flicker != null:
 			# Own light: one, shadowless. At Low it gives way to a fire light within 8 m, so no more than one lamp lights the same spot.
 			flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
-			flicker.light_energy = 1.4 + 0.3 * sin(float(Time.get_ticks_msec()) * 0.017)
+			flicker.light_energy = 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
 
 		if not _mounted:
 			_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
@@ -1829,7 +1836,7 @@ func _show_off_model(delta: float) -> void:
 
 	if flicker != null:
 		flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
-		flicker.light_energy = 1.4 + 0.3 * sin(float(Time.get_ticks_msec()) * 0.017)
+		flicker.light_energy = 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
 
 	if _off_class() == "shield":
 		var lift: float = 1.0 if blocking else 0.0

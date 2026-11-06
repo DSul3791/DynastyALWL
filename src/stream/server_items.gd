@@ -5975,6 +5975,10 @@ func _relight(peer: int, inv, id: int, want: int = 0) -> void:
 		if fire.is_empty() or not fire_is_lit(int(fire["state"])):
 			return
 
+	if bool(_swimming.get(peer, false)):
+		_say(peer, "It is too wet to light the torch in the water.")      # rain is the client's call: it sees caves and roofs (_flame_wet)
+		return
+
 	var order: Array = range(inv.SLOTS)
 
 	if want >= 1 and want <= inv.SLOTS:
