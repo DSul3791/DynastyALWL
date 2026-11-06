@@ -29,8 +29,8 @@ uniform sampler2D live : filter_linear, repeat_disable;      // the live window'
 uniform float has_live = 0.0;                              // 1 when `live` is set
 // Dave's QA list 3 Nov 2026 (BUG-006, "a sharp, straight-line boundary separates calm and active water"): the live window and the chunk sheets
 // around it crossfade over a wide, wandering band instead of switching one cell in. Both sides use live_blend(), so they always add up.
-uniform float blend_m = 24.0;                              // the crossfade band, metres in from the window's edge
-uniform float blend_wander_m = 12.0;                       // the band's inner side wanders this far in and out (no straight line)
+uniform float blend_m = 64.0;                              // the crossfade band, metres in from the window's edge (was 24: Dave 6 Nov 2026, x 52986 z 68328, the rippled live water met the calmer baked water in a line)
+uniform float blend_wander_m = 24.0;                       // the band's inner side wanders this far in and out (no straight line)
 uniform vec3 shallow_color : source_color = vec3(0.16, 0.38, 0.34);   // Kathreen 3 Nov 2026 (art direction: vibrant, not grey): greener shallows, was 0.17, 0.33, 0.33
 uniform vec3 deep_color : source_color = vec3(0.03, 0.18, 0.28);   // bluer depths, was 0.04, 0.17, 0.24
 uniform vec3 foam_color : source_color = vec3(0.80, 0.84, 0.82);
@@ -42,6 +42,7 @@ uniform float mud = 0.0;            // 0..1: brown runoff after storms or at hig
 uniform vec3 mud_color : source_color = vec3(0.30, 0.24, 0.15);
 uniform float rain = 0.0;           // 0..1 (weather_look.gd): raindrop rings on the surface
 uniform float contact_m = 0.35;     // the sheet fades in over this much water along the view ray where it meets the ground (no hard line on a bank)
+uniform float chunk_lift = 0.25;    // chunk sheets only: running water is drawn this much higher (see vertex)
 uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
@@ -50,8 +51,37 @@ varying vec2 tex_uv;
 varying float depth_v;
 varying vec2 flow_v;
 
+// Smooth sampling (Dave 6 Nov 2026, x 54101 z 69709, a steep brook below a cave: "these should look like water not diamond shaped squares"). Straight
+// bilinear reads of the 8 m cells drew a steep stream as flat tilted plates with diamond-shaped shores and white patches: the creases run along the cell
+// edges and the mesh's diagonals. A cubic B-spline over the 4 x 4 texels round the point (four filtered reads) bends smoothly across the cells, with no
+// creases. Only the live window: a chunk sheet must meet its neighbour exactly at their shared grid points, which bilinear does.
+vec4 sample_smooth(vec2 uv) {
+	vec2 p = uv * cells - 0.5;
+	vec2 i = floor(p);
+	vec2 f = p - i;
+	vec2 f2 = f * f;
+	vec2 f3 = f2 * f;
+	vec2 w0 = (1.0 - 3.0 * f + 3.0 * f2 - f3) / 6.0;
+	vec2 w1 = (4.0 - 6.0 * f2 + 3.0 * f3) / 6.0;
+	vec2 w2 = (1.0 + 3.0 * f + 3.0 * f2 - 3.0 * f3) / 6.0;
+	vec2 w3 = f3 / 6.0;
+	vec2 g0 = w0 + w1;
+	vec2 g1 = w2 + w3;
+	vec2 h0 = (i - 0.5 + w1 / g0) / cells;
+	vec2 h1 = (i + 1.5 + w3 / g1) / cells;
+	return g0.y * (g0.x * textureLod(liquid, vec2(h0.x, h0.y), 0.0) + g1.x * textureLod(liquid, vec2(h1.x, h0.y), 0.0))
+		+ g1.y * (g0.x * textureLod(liquid, vec2(h0.x, h1.y), 0.0) + g1.x * textureLod(liquid, vec2(h1.x, h1.y), 0.0));
+}
+
 vec4 sample_liquid(vec2 uv) {
-	return textureLod(liquid, uv, 0.0);
+	return point_grid > 0.5 ? textureLod(liquid, uv, 0.0) : sample_smooth(uv);
+}
+
+// Per pixel every sheet reads smoothly (Dino's shots 6 Nov: the steep brook at x 54101 z 69709 is drawn by chunk sheets, not the live window, and kept its
+// diamond facets). Only the vertices of a chunk sheet keep the plain reads, so its edges still meet the next sheet's; the shore, depth and white water,
+// which made the diamonds, follow the smooth surface on every sheet.
+vec4 sample_pixel(vec2 uv) {
+	return sample_smooth(uv);
 }
 
 // The least depth that still draws: 4 mm for slow water, half a millimetre where it runs fast (a fall face, a chute).
@@ -73,6 +103,13 @@ void vertex() {
 	// hides where it meets the bank. Chunk sheets are laid on the ground at 2 m instead (_lay_fine).
 	if (point_grid < 0.5 && t.a > wet_min(t)) {
 		VERTEX.y += thin_lift * (1.0 - smoothstep(0.15, 0.5, t.a));
+	}
+	// A chunk sheet's running water is laid on the ground at 2 m (_lay_fine), 4 cm over it, but the ground the player sees is its own mesh: between the
+	// points the sheet's flat triangles went in and out of the bumps, so a steep brook showed as separate flat panes with straight edges (Dino's shots
+	// 6 Nov, x 54101 z 69709, the "diamond shaped squares" Dave saw). Running water is lifted chunk_lift clear of the bumps; the contact fade hides the
+	// lift at the banks. Still water (ponds, lakes) keeps its level.
+	if (point_grid > 0.5 && t.a > wet_min(t)) {
+		VERTEX.y += chunk_lift * smoothstep(0.3, 1.0, length(t.gb));
 	}
 }
 
@@ -113,13 +150,26 @@ float live_draws(vec4 t) {
 	return max(smoothstep(0.0, edge_m, t.a), smoothstep(0.6, 2.0, length(t.gb)) * smoothstep(0.0005, 0.004, t.a));
 }
 
+// How fully the live sheet covers a point: the least of live_draws here and one live cell to each side. The live sheet tucks under the bed at its first
+// dry cell, so over the last cell before it the water it draws is under the ground; a chunk sheet that gave way there left a straight strip of bare
+// bed between the two sheets along a live block's edge (Dave 6 Nov 2026, x 52986 z 68328: "here is another weird line"). Now the chunk sheet keeps
+// drawing up to a cell into the live water, so the two overlap there instead of leaving a gap.
+float live_cover(vec2 uv) {
+	vec2 px = vec2(1.0) / vec2(textureSize(live, 0));
+	float c = live_draws(textureLod(live, uv, 0.0));
+	c = min(c, live_draws(textureLod(live, uv + vec2(px.x, 0.0), 0.0)));
+	c = min(c, live_draws(textureLod(live, uv - vec2(px.x, 0.0), 0.0)));
+	c = min(c, live_draws(textureLod(live, uv + vec2(0.0, px.y), 0.0)));
+	return min(c, live_draws(textureLod(live, uv - vec2(0.0, px.y), 0.0)));
+}
+
 // Small waves: two octaves, as a height for the normal.
 float waves(vec2 p) {
 	return noise(p) * 0.65 + noise(p * 2.3 + 7.1) * 0.35;
 }
 
 void fragment() {
-	vec4 t = texture(liquid, tex_uv);   // per pixel: the shore follows the depth between cells, not the cell edges
+	vec4 t = sample_pixel(tex_uv);   // per pixel: the shore follows the depth between cells, not the cell edges (smoothly in the live window)
 	float depth = t.a;
 
 	if (depth < wet_min(t)) {
@@ -135,7 +185,7 @@ void fragment() {
 		float d_in = min(min(inside.x, inside.y), min(hole.z - inside.x, hole.w - inside.y));
 
 		if (d_in > 0.0) {
-			chunk_share = 1.0 - live_blend(d_in, world) * (has_live > 0.5 ? live_draws(textureLod(live, inside / hole.zw, 0.0)) : 1.0);
+			chunk_share = 1.0 - live_blend(d_in, world) * (has_live > 0.5 ? live_cover(inside / hole.zw) : 1.0);
 
 			if (chunk_share < 0.002) {
 				discard;
@@ -209,10 +259,11 @@ void fragment() {
 	// Falls: where the surface itself drops steeply (only between wet texels; a shore texel's level is the bank), the water turns white, in long
 	// streaks that pour down the face, faster than the river above.
 	vec2 px = vec2(1.0) / cells;
-	vec4 ex0 = texture(liquid, tex_uv - vec2(px.x, 0.0));
-	vec4 ex1 = texture(liquid, tex_uv + vec2(px.x, 0.0));
-	vec4 ez0 = texture(liquid, tex_uv - vec2(0.0, px.y));
-	vec4 ez1 = texture(liquid, tex_uv + vec2(0.0, px.y));
+	// The slope from smooth reads too: bilinear differences step at every cell, so the white water came in diamond patches down a steep brook.
+	vec4 ex0 = sample_pixel(tex_uv - vec2(px.x, 0.0));
+	vec4 ex1 = sample_pixel(tex_uv + vec2(px.x, 0.0));
+	vec4 ez0 = sample_pixel(tex_uv - vec2(0.0, px.y));
+	vec4 ez1 = sample_pixel(tex_uv + vec2(0.0, px.y));
 	vec2 grad = vec2(
 		min(ex0.a, ex1.a) > 0.0005 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
 		min(ez0.a, ez1.a) > 0.0005 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
@@ -224,7 +275,7 @@ void fragment() {
 		vec2 down = -grad / max(drop, 0.0001);
 		vec2 c = world * 0.7 - down * TIME * 2.2;
 		float churn = noise(c) * 0.55 + noise(c * 2.1 + 5.3 - down * TIME * 1.3) * 0.3 + noise(c * 4.3 + 1.7) * 0.15;
-		foam = max(foam, fall * smoothstep(0.25, 0.7, churn));
+		foam = max(foam, fall * smoothstep(0.1, 0.85, churn));   // soft-edged billows (hard-edged ones read as white tiles down a steep brook)
 	}
 
 	// The shore: the sheet thins out with the water; the window's edge fades to the grid look.
@@ -389,7 +440,47 @@ static func _lay_fine(coarse: Image, grid: Dictionary, count: int) -> Image:
 				px.r = heights[b * fside + a]
 				im.set_pixel(x, y, px)
 
+	_soften_steps(im, side)
 	return im
+
+
+# Where an 8 m cell laid on the ground (fine) meets one that is not, the surface stepped by up to a metre at the cell's edge, and a steep brook showed
+# square panes with straight edges (Dino's shots of #465, 6 Nov 2026, x 54101 z 69709). Two passes of a 3 x 3 mean over the wet texels round off those
+# steps into slopes a few metres long. The border texels stay as they are: the next chunk's sheet shares them.
+const SOFTEN_PASSES := 2
+
+static func _soften_steps(im: Image, side: int) -> void:
+	for pass_index in range(SOFTEN_PASSES):
+		var levels: PackedFloat32Array = PackedFloat32Array()
+		levels.resize(side * side)
+		var wet: PackedByteArray = PackedByteArray()
+		wet.resize(side * side)
+
+		for y in range(side):
+			for x in range(side):
+				var px: Color = im.get_pixel(x, y)
+				levels[y * side + x] = px.r
+				wet[y * side + x] = 1 if px.a > 0.0 else 0
+
+		for y in range(1, side - 1):
+			for x in range(1, side - 1):
+				if wet[y * side + x] == 0:
+					continue
+
+				var sum: float = 0.0
+				var count: int = 0
+
+				for dy in range(-1, 2):
+					for dx in range(-1, 2):
+						var n: int = (y + dy) * side + x + dx
+
+						if wet[n] == 1:
+							sum += levels[n]
+							count += 1
+
+				var px: Color = im.get_pixel(x, y)
+				px.r = sum / float(count)
+				im.set_pixel(x, y, px)
 
 
 # Falls (water_falls.gd chains, chunk-local points from the lip down to the pool): a fall face's grid points are dry in the settled levels, so the sheet
