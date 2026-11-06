@@ -33,11 +33,12 @@ void fragment() {
 	float pool_wave = sin(UV.x * 14.0 - TIME * 1.4) * 0.5 + 0.5;
 	float wave = mix(stream_wave, pool_wave, pool);
 	float tilt = mix(cos(v * 5.0 + UV.x * 2.0), cos(UV.x * 14.0 - TIME * 1.4), pool);
-	NORMAL_MAP = vec3(0.5 + 0.12 * tilt, 0.5 + 0.12 * (wave - 0.5), 1.0);
+	NORMAL_MAP = vec3(0.5 + 0.06 * tilt, 0.5 + 0.06 * (wave - 0.5), 1.0);
 	// Dark, clear water with faint ripples (Dino's shots 6 Nov: a pale glossy band read as a tan plank strip).
 	ALBEDO = mix(water_colour.rgb, foam_colour, wave * mix(0.07, 0.04, pool));
-	ROUGHNESS = 0.18;
-	SPECULAR = 0.3;
+	// Little gloss: at a low angle a glossy surface mirrors the bright sky (a flying camera keeps the sky light on in a cave), which read pale tan.
+	ROUGHNESS = 0.35;
+	SPECULAR = 0.12;
 	float edge = mix(1.0 - smoothstep(0.7, 1.0, abs(UV.x)), 1.0 - smoothstep(0.85, 1.0, UV.x), pool);
 	ALPHA = water_colour.a * edge;
 }
