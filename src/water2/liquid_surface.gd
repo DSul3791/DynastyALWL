@@ -46,7 +46,7 @@ uniform float chunk_lift = 0.25;    // chunk sheets only: running water is drawn
 uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
-uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live window magenta, a 2 m chunk sheet yellow, an 8 m one orange, dark lines on the texel borders
+uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live window magenta, a 2 m chunk sheet yellow, an 8 m one orange, dark lines on the texel borders, darker where the sheet is steep, red seen from behind, cyan where fall white water is on
 
 varying vec2 tex_uv;
 varying float depth_v;
@@ -56,7 +56,7 @@ varying vec2 flow_v;
 // bilinear reads of the 8 m cells drew a steep stream as flat tilted plates with diamond-shaped shores and white patches: the creases run along the cell
 // edges and the mesh's diagonals. A cubic B-spline over the 4 x 4 texels round the point (four filtered reads) bends smoothly across the cells, with no
 // creases. Only the live window: a chunk sheet must meet its neighbour exactly at their shared grid points, which bilinear does.
-vec4 sample_smooth(vec2 uv) {
+vec4 sample_smooth(sampler2D tex, vec2 uv) {
 	vec2 p = uv * cells - 0.5;
 	vec2 i = floor(p);
 	vec2 f = p - i;
@@ -70,19 +70,33 @@ vec4 sample_smooth(vec2 uv) {
 	vec2 g1 = w2 + w3;
 	vec2 h0 = (i - 0.5 + w1 / g0) / cells;
 	vec2 h1 = (i + 1.5 + w3 / g1) / cells;
-	return g0.y * (g0.x * textureLod(liquid, vec2(h0.x, h0.y), 0.0) + g1.x * textureLod(liquid, vec2(h1.x, h0.y), 0.0))
-		+ g1.y * (g0.x * textureLod(liquid, vec2(h0.x, h1.y), 0.0) + g1.x * textureLod(liquid, vec2(h1.x, h1.y), 0.0));
+	return g0.y * (g0.x * textureLod(tex, vec2(h0.x, h0.y), 0.0) + g1.x * textureLod(tex, vec2(h1.x, h0.y), 0.0))
+		+ g1.y * (g0.x * textureLod(tex, vec2(h0.x, h1.y), 0.0) + g1.x * textureLod(tex, vec2(h1.x, h1.y), 0.0));
 }
 
 vec4 sample_liquid(vec2 uv) {
-	return point_grid > 0.5 ? textureLod(liquid, uv, 0.0) : sample_smooth(uv);
+	return point_grid > 0.5 ? textureLod(liquid, uv, 0.0) : sample_smooth(liquid, uv);
 }
 
 // Per pixel every sheet reads smoothly (Dino's shots 6 Nov: the steep brook at x 54101 z 69709 is drawn by chunk sheets, not the live window, and kept its
 // diamond facets). Only the vertices of a chunk sheet keep the plain reads, so its edges still meet the next sheet's; the shore, depth and white water,
 // which made the diamonds, follow the smooth surface on every sheet.
+// A chunk sheet's per-pixel reads blend the four texels round the point by hand (texelFetch). A 32-bit float texture is not filtered on every GPU: on
+// Dave's PC the reads between texels came back nearest, so the current, the depth and everything worked out from them stepped texel by texel, and the
+// ripples dragged by the current jumped at every 2 m texel edge: square panes, then a square lattice (Tyler and Dino 6 Nov 2026, x 54101 z 69709).
+vec4 fetch_bilinear(sampler2D tex, vec2 uv) {
+	ivec2 size = textureSize(tex, 0);
+	vec2 p = uv * vec2(size) - 0.5;
+	vec2 f = fract(p);
+	ivec2 i0 = clamp(ivec2(floor(p)), ivec2(0), size - 1);
+	ivec2 i1 = clamp(i0 + ivec2(1), ivec2(0), size - 1);
+	vec4 a = mix(texelFetch(tex, i0, 0), texelFetch(tex, ivec2(i1.x, i0.y), 0), f.x);
+	vec4 b = mix(texelFetch(tex, ivec2(i0.x, i1.y), 0), texelFetch(tex, i1, 0), f.x);
+	return mix(a, b, f.y);
+}
+
 vec4 sample_pixel(vec2 uv) {
-	return sample_smooth(uv);
+	return point_grid > 0.5 ? fetch_bilinear(liquid, uv) : sample_smooth(liquid, uv);
 }
 
 // The least depth that still draws: 4 mm for slow water, half a millimetre where it runs fast (a fall face, a chute).
@@ -114,14 +128,24 @@ void vertex() {
 	}
 }
 
+// An integer hash of the noise cell (Tyler and Dino 6 Nov 2026, the steep brook at x 54101 z 69709: panes, then tiles, then straight "cracked ice"
+// lines that turned with the noise). Float hashes of the world's big coordinates (a cell number near 40,000) lose their low bits, and the GPU rounds
+// the same corner differently from the two cells that share it, so the noise jumped at every cell edge: the ripples and foam came in tiles with hard
+// borders. Integers hash exactly, whatever the coordinates.
 float hash(vec2 p) {
-	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+	uint qx = uint(int(floor(p.x))) * 1597334673u;
+	uint qy = uint(int(floor(p.y))) * 3812015801u;
+	uint n = (qx ^ qy) * 1597334673u;
+	n ^= n >> 16u;
+	return float(n >> 8u) / 16777216.0;
 }
 
+// Quintic blend between the cells (was the cubic smoothstep): the ripples' normals come from this noise's slope, and the cubic's slope creased along
+// every cell edge, which a strong chop showed as a checkerboard of 0.5 to 1 m tiles on a fast brook (Tyler and Dino 6 Nov 2026, x 54101 z 69709).
 float noise(vec2 p) {
 	vec2 i = floor(p);
 	vec2 f = fract(p);
-	vec2 u = f * f * (3.0 - 2.0 * f);
+	vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
 	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
 }
 
@@ -165,8 +189,9 @@ float live_cover(vec2 uv) {
 }
 
 // Small waves: two octaves, as a height for the normal.
+// The two octaves are turned against each other and against the world's axes, so no cell grid lines up.
 float waves(vec2 p) {
-	return noise(p) * 0.65 + noise(p * 2.3 + 7.1) * 0.35;
+	return noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p) * 0.65 + noise(mat2(vec2(0.28, -0.96), vec2(0.96, 0.28)) * p * 2.3 + 7.1) * 0.35;
 }
 
 void fragment() {
@@ -197,6 +222,16 @@ void fragment() {
 	// A still pond in the sim still sloshes at a few cm/s, and a block at rest reads exactly 0: below CALM_MS the water counts as still, so the look does
 	// not step at the sim's 128 m block edges (PR #91 pond shot, 2 Nov 2026: dark rectangles in a light pond).
 	vec2 vel = t.gb;
+
+	// A chunk sheet's look follows the current averaged over about 12 m, not the current at the pixel (Tyler and Dino 6 Nov 2026, the steep brook at
+	// x 54101 z 69709): the ripples are dragged by the current, so where it changed from texel to texel (a fast steep brook, and the 2 m texels' blend
+	// creases along every row and column) the dragged pattern tore along the texel grid, a lattice of squares, and the foam and chop followed it.
+	if (point_grid > 0.5) {
+		vec2 reach = vec2(3.0) / cells;
+		vel = (vel + sample_pixel(tex_uv + vec2(reach.x, 0.0)).gb + sample_pixel(tex_uv - vec2(reach.x, 0.0)).gb
+			+ sample_pixel(tex_uv + vec2(0.0, reach.y)).gb + sample_pixel(tex_uv - vec2(0.0, reach.y)).gb) / 5.0;
+	}
+
 	float raw_speed = length(vel);
 	vel *= smoothstep(0.15, 0.45, raw_speed);
 	float speed = length(vel);
@@ -206,7 +241,9 @@ void fragment() {
 	float ph0 = fract(TIME / cycle);
 	float ph1 = fract(TIME / cycle + 0.5);
 	float mixk = abs(1.0 - 2.0 * ph0);
-	vec2 drift = vel * cycle;
+	// The ripples are dragged at most 1.5 m/s: on a steep brook the current runs at several m/s and changes fast from point to point, and dragging the
+	// pattern that hard squeezed it into a mottled, frosted look instead of ripples (Tyler 6 Nov 2026).
+	vec2 drift = vel * min(1.0, 1.5 / max(speed, 0.001)) * cycle;
 	vec2 p0 = world / 1.6 - drift * ph0 / 1.6;
 	vec2 p1 = world / 1.6 - drift * ph1 / 1.6 + 3.7;
 	float e = 0.15;
@@ -215,7 +252,7 @@ void fragment() {
 	float hx = mix(waves(p0 + vec2(e, 0.0)), waves(p1 + vec2(e, 0.0)), mixk) - mix(h0, h1, mixk);
 	float hz = mix(waves(p0 + vec2(0.0, e)), waves(p1 + vec2(0.0, e)), mixk) - mix(h0, h1, mixk);
 	// Faster water is choppier; still water nearly glassy.
-	float chop = 0.08 + 0.5 * smoothstep(0.3, 2.5, speed);
+	float chop = 0.08 + 0.17 * smoothstep(0.3, 2.5, speed);   // at most a river's chop (was up to 0.58: a fast brook's ripples tiled, Tyler 6 Nov 2026)
 	vec3 n_world = normalize(vec3(-hx / e * chop, 1.0, -hz / e * chop));
 
 	// Rain: each 0.6 m cell gets a drop now and then (more cells as the rain grows); its ring spreads and fades in under a second.
@@ -257,9 +294,11 @@ void fragment() {
 	float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 4.0);
 
 	// Foam where it runs fast and shallow (rapids, the lip and foot of a fall), streaked along the flow.
-	float streak = mix(noise(p0 * 2.5), noise(p1 * 2.5), mixk);
+	float streak = mix(noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p0 * 2.5), noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p1 * 2.5), mixk);
 	float rough = clamp((speed - 0.9) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);   // BUG-010: white from 0.9 m/s (was 1.2)
-	float foam = smoothstep(0.45, 0.8, streak + rough * 0.6) * rough;
+	// In streaks over about half the surface, not all of it (Tyler 6 Nov 2026: once the noise worked at the world's coordinates, a fast shallow brook
+	// came out white all over, "like snow"; the broken old noise had hidden how strong this was).
+	float foam = smoothstep(0.6, 0.9, streak + rough * 0.15) * rough * 0.7;
 	// Lapping at the bank: a broken foam line that comes and goes where the water thins against the ground.
 	float lap = (1.0 - smoothstep(0.05, lap_m, through)) * smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(TIME * 1.1 + noise(world * 0.35) * 9.0)) * noise(world * 1.3 + TIME * 0.2);
 	foam = max(foam, lap * 0.7);
@@ -275,12 +314,14 @@ void fragment() {
 		min(ex0.a, ex1.a) > 0.0005 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
 		min(ez0.a, ez1.a) > 0.0005 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
 	float drop = length(grad);
-	float fall = smoothstep(0.35, 0.9, drop);   // from about 20 degrees: a riffle between pools stays water, not white sheet
+	float fall = smoothstep(0.55, 1.1, drop);   // from about 30 degrees (was 20: with the noise fixed, a steep brook at x 54101 z 69709 read as snow, Tyler 6 Nov 2026)
 
 	if (fall > 0.01) {
 		// Dave 2 Nov 2026: no lines. Churning white water: round billows (no stretched streaks) that tumble downhill.
 		vec2 down = -grad / max(drop, 0.0001);
-		vec2 c = world * 0.7 - down * TIME * 2.2;
+		mat2 turn = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8));   // off the world's axes (see waves)
+		down = turn * down;
+		vec2 c = turn * world * 0.7 - down * TIME * 2.2;
 		float churn = noise(c) * 0.55 + noise(c * 2.1 + 5.3 - down * TIME * 1.3) * 0.3 + noise(c * 4.3 + 1.7) * 0.15;
 		foam = max(foam, fall * smoothstep(0.1, 0.85, churn));   // soft-edged billows (hard-edged ones read as white tiles down a steep brook)
 	}
@@ -324,6 +365,14 @@ void fragment() {
 		vec2 to_line = min(fract(grid), 1.0 - fract(grid)) / max(fwidth(grid), vec2(0.0001));
 		float line = 1.0 - smoothstep(0.5, 1.5, min(to_line.x, to_line.y));
 		vec3 sheet = point_grid < 0.5 ? vec3(0.9, 0.1, 0.8) : (cell_m < 4.0 ? vec3(0.95, 0.85, 0.1) : vec3(0.95, 0.45, 0.05));
+		// The sheet's own geometry (Tyler 6 Nov 2026: the panes are in the water drawing, not the ground): shaded by the triangle's real slope, so a step or
+		// wall in the sheet shows dark; seen from behind (a fold) red; where the fall white water switches on, cyan.
+		vec3 world3 = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		vec3 geo = normalize(cross(dFdy(world3), dFdx(world3)));
+		sheet *= mix(0.25, 1.0, abs(geo.y));
+		sheet = mix(sheet, vec3(0.1, 0.85, 0.9), 0.6 * fall);
+		sheet *= 0.75 + 0.25 * sin(raw_speed * 6.0);   // bands of the current's speed: smooth curves if the reads blend, squares if they step
+		sheet = FRONT_FACING ? sheet : vec3(0.9, 0.05, 0.05);
 		ALBEDO = mix(sheet * mix(0.6, 1.0, clamp(depth, 0.0, 1.0)), vec3(0.05), line);
 		EMISSION = vec3(0.0);
 		ROUGHNESS = 1.0;
