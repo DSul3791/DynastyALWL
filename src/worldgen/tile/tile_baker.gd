@@ -303,6 +303,12 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	# Rivers widen into the sea and the sea comes up the mouth (the 20 Oct estuary rule; Dave 5 Nov: "the ocean should overlap into the mouth", tile_river_mouth.gd).
 	clock = Time.get_ticks_msec()
 	var mouth_cut: Dictionary = TileRiverMouthScript.carve(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, tile_rules["water"])
+	# Twice: one river's estuary can bring the sea next to another river that stopped short of it (Dave 6 Nov 2026, x 52798 z 68114: "the river bed doesnt
+	# continue out into the ocean. there is grass and sand in the way"); the second pass gives that river its own estuary. A river carved in the first pass
+	# is carved again from its lowered ground, which only lowers its banks a little more.
+	var mouth_again: Dictionary = TileRiverMouthScript.carve(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, tile_rules["water"])
+	mouth_cut["cells"] += mouth_again["cells"]
+	mouth_cut["sea"] += mouth_again["sea"]
 	print("  river mouths (tile %s): %d river cells at the sea, %d cells carved, %d made sea (%d ms)" % [str(tile), mouth_cut["mouths"], mouth_cut["cells"], mouth_cut["sea"], Time.get_ticks_msec() - clock])
 	# Every river through cells that share a side, so no grass grows across a brook on the diagonal (Dave 5 Nov, tile_river_mend.gd join_corners).
 	# And again after the mend's and the mouths' cuts, until no river touches the next only at a corner.
