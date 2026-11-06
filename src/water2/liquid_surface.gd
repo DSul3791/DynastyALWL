@@ -317,7 +317,9 @@ void fragment() {
 	if (fall > 0.01) {
 		// Dave 2 Nov 2026: no lines. Churning white water: round billows (no stretched streaks) that tumble downhill.
 		vec2 down = -grad / max(drop, 0.0001);
-		vec2 c = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * world * 0.7 - down * TIME * 2.2;
+		mat2 turn = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8));   // off the world's axes (see waves)
+		down = turn * down;
+		vec2 c = turn * world * 0.7 - down * TIME * 2.2;
 		float churn = noise(c) * 0.55 + noise(c * 2.1 + 5.3 - down * TIME * 1.3) * 0.3 + noise(c * 4.3 + 1.7) * 0.15;
 		foam = max(foam, fall * smoothstep(0.1, 0.85, churn));   // soft-edged billows (hard-edged ones read as white tiles down a steep brook)
 	}
