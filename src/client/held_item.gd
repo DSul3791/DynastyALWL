@@ -1406,7 +1406,9 @@ func _hoe_repeat(delta: float) -> void:
 
 	_hoe_t += delta
 
-	if _hoe_t >= HOE_REPEAT_S:
+	if _hoe_t >= HOE_REPEAT_S and hoe_mode == "survey":
+		_hoe_t = 0.0   # a held click sets one marker, not a line of them
+	elif _hoe_t >= HOE_REPEAT_S:
 		_hoe_t = 0.0
 		_arm_play("use", 0.6)
 		_hoe_apply()
@@ -1417,6 +1419,7 @@ const HOE_MODES := [
 	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
 	{"id": "smooth", "name": "Smooth", "note": "moves dirt from high spots to low ones, no path"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
+	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; walk on and set the next, the road builds behind you (Shift + right click does the same in any mode)"},
 ]
 var hoe_mode: String = "path"
 var _hoe_menu_open: bool = false
@@ -1431,6 +1434,8 @@ func _hoe_apply() -> void:
 		_hoe_here(Net.ACT_HOE_SMOOTH)
 	elif hoe_mode == "till":
 		_hoe_here(Net.ACT_TILL)
+	elif hoe_mode == "survey":
+		_grade_point_here()   # one marker a click, never repeated while the button is held
 	else:
 		_hoe_here(Net.ACT_HOE_PATH)
 
@@ -1602,7 +1607,7 @@ func _other_tool_hint() -> String:
 		"net":
 			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
-			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, grade line or till. It uses no items, only its own wear" % hoe_mode
+			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till or survey a path. It uses no items, only its own wear" % hoe_mode
 		"hammer":
 			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
 		"spade":
