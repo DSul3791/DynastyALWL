@@ -135,6 +135,19 @@ float live_draws(vec4 t) {
 	return max(smoothstep(0.0, edge_m, t.a), smoothstep(0.6, 2.0, length(t.gb)) * smoothstep(0.0005, 0.004, t.a));
 }
 
+// How fully the live sheet covers a point: the least of live_draws here and one live cell to each side. The live sheet tucks under the bed at its first
+// dry cell, so over the last cell before it the water it draws is under the ground; a chunk sheet that gave way there left a straight strip of bare
+// bed between the two sheets along a live block's edge (Dave 6 Nov 2026, x 52986 z 68328: "here is another weird line"). Now the chunk sheet keeps
+// drawing up to a cell into the live water, so the two overlap there instead of leaving a gap.
+float live_cover(vec2 uv) {
+	vec2 px = vec2(1.0) / vec2(textureSize(live, 0));
+	float c = live_draws(textureLod(live, uv, 0.0));
+	c = min(c, live_draws(textureLod(live, uv + vec2(px.x, 0.0), 0.0)));
+	c = min(c, live_draws(textureLod(live, uv - vec2(px.x, 0.0), 0.0)));
+	c = min(c, live_draws(textureLod(live, uv + vec2(0.0, px.y), 0.0)));
+	return min(c, live_draws(textureLod(live, uv - vec2(0.0, px.y), 0.0)));
+}
+
 // Small waves: two octaves, as a height for the normal.
 float waves(vec2 p) {
 	return noise(p) * 0.65 + noise(p * 2.3 + 7.1) * 0.35;
@@ -157,7 +170,7 @@ void fragment() {
 		float d_in = min(min(inside.x, inside.y), min(hole.z - inside.x, hole.w - inside.y));
 
 		if (d_in > 0.0) {
-			chunk_share = 1.0 - live_blend(d_in, world) * (has_live > 0.5 ? live_draws(textureLod(live, inside / hole.zw, 0.0)) : 1.0);
+			chunk_share = 1.0 - live_blend(d_in, world) * (has_live > 0.5 ? live_cover(inside / hole.zw) : 1.0);
 
 			if (chunk_share < 0.002) {
 				discard;
