@@ -62,19 +62,3 @@ Note: It did not reproduce on land or in water in tests.
 Note: Recommendation: B. Only tell me if you see it duplicate on your own.
 - A: Yes, I will try it and say what happens
 - B: Skip it, I will tell you if I see it
-
-## mikew-bear-threat-ranges | Bear PR #480: how close before an animal charges instead of fleeing? Built: bear 15 m at its den and 9 m elsewhere, moose 8, boar 6, deer 3.5, horse 3, fox 2.
-- Keep these ranges (recommended)
-- Change them: I will say how
-
-## mikew-cornered-attack | Bear PR #480: do deer, horses and foxes attack when cornered or surprised that close?
-- Yes, with weak hits of 4 to 10 damage (recommended)
-- No, they only flee
-
-## mikew-bear-numbers | Bear PR #480: a bear hit does 35 damage, it charges at 12 m/s, has 120 HP, wanders up to 80 m from its den, and half its trips go fishing at the river.
-- Keep these numbers (recommended)
-- Change them: I will say how
-
-## mikew-bear-poses | Bear PR #480: fishing, foraging and sleeping poses. For now the bear only walks to those spots.
-- Later (recommended)
-- Now
