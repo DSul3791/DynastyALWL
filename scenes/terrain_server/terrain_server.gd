@@ -849,6 +849,12 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
 	items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
 	items.report_position(peer_id, position)
+	# The player's own tile's cave streams and pools, once (Dave 6 Nov 2026: "nope there is no water in the tunnels", and in a spring pool "I cant swim
+	# in it. its not really there" while the breath ran down). They went only with the first water asked in a tile, and since the client asks only for
+	# the chunks the live water touches (#218) a tile could go without them: the client then had no stream to draw and no pool to swim in, the server
+	# still had the basin. Now the tile the player stands in sends them too (no more than once per peer and tile).
+	if flora != null:
+		_send_cave_streams(peer_id, Vector2i(int(floor(position.x / flora.placer.chunk_m)), int(floor(position.z / flora.placer.chunk_m))))
 	generator.prefetch_around(position.x, position.z)
 	_warm_flora(peer_id, position)
 	var height: float = maxf(position.y - generator.surface_height(position.x, position.z), 0.0) if generator.tile_cached(position.x, position.z) else 0.0
@@ -1047,6 +1053,8 @@ func _send_cave_streams(peer_id: int, chunk: Vector2i) -> void:
 
 	if not data.cave_streams.is_empty():
 		net.cave_streams.rpc_id(peer_id, tile, data.cave_streams)
+		@warning_ignore("integer_division")
+		print("Terrain server: cave streams for tile %s to peer %d (%d pieces)" % [str(tile), peer_id, data.cave_streams.size() / 7])
 
 	if not data.cave_dens.is_empty():
 		net.cave_dens.rpc_id(peer_id, tile, data.cave_dens)
