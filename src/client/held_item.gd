@@ -559,6 +559,11 @@ func _is_placeable() -> bool:
 
 
 # True while a torch is the held item (the Dynasty body then crouch-walks with it, avatar_driver.gd).
+# A torch in the left hand (the off hand's item is a torch): the third-person body takes the torch carry pose (Dave's infographic, 6 Nov 2026).
+func torch_in_left() -> bool:
+	return _inv != null and off_number() != 0 and _off_class() == "torch"
+
+
 func holding_torch() -> bool:
 	return holding and _is_torch()
 
@@ -1833,12 +1838,44 @@ func _show_off_model(delta: float) -> void:
 		flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
 		flicker.light_energy = 1.4 + 0.3 * sin(float(Time.get_ticks_msec()) * 0.017)
 
+	if _off_class() == "torch" and not _first_person and _avatar_rig != null and _off_model.get_parent() == _avatar_rig.hand_mount_l:
+		_stand_torch_upright()
+
 	if _off_class() == "shield":
 		var lift: float = 1.0 if blocking else 0.0
 		_off_model.position = _off_model.position.lerp(_off_rest + Vector3(0.0, 0.0, -0.18 * lift), clampf(delta * 16.0, 0.0, 1.0))
 
 
 var _off_rest: Vector3 = Vector3.ZERO
+
+const TORCH_LEAN := 0.12      # third-person torch carry: the shaft leans this much forward and this much out to the left per metre up (about 7 degrees each)
+
+
+# Third person, torch in the left hand (Dave's torch carry infographic, 6 Nov 2026): the torch stands upright in the world, leaning a little forward and out
+# from the body, whatever the hand's own angle, with the grip in the fist. The arm pose that puts the hand up in front is the body's (dynasty_body.gd _torch_carry).
+func _stand_torch_upright() -> void:
+	var skel: Node3D = _avatar_rig.get("skeleton") as Node3D
+	var mount: Node3D = _avatar_rig.hand_mount_l as Node3D
+
+	if skel == null or mount == null or not mount.is_inside_tree():
+		return
+
+	var front: Vector3 = skel.global_basis * Vector3.BACK      # the Dynasty skeleton faces +Z, its left is +X
+	var left: Vector3 = skel.global_basis * Vector3.RIGHT
+	front.y = 0.0
+	left.y = 0.0
+
+	if front.length() < 0.001 or left.length() < 0.001:
+		return
+
+	front = front.normalized()
+	left = left.normalized()
+	var shaft: Vector3 = (Vector3.UP + front * TORCH_LEAN + left * TORCH_LEAN).normalized()
+	var across: Vector3 = shaft.cross(front).normalized()
+	var upright: Basis = Basis(across, shaft, across.cross(shaft).normalized())
+	var grip: float = float(_off_model.get_meta("grip_y", GRIP_ALONG_Y["torch"])) * THIRD_CHOKE
+	_off_model.global_transform = Transform3D(upright, mount.global_position + shaft * grip)
+	_third_fist_on(_off_model).visible = true
 
 
 # Same grips as the right hand, on the left mount (first person arms, or the body in third person).

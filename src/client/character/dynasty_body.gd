@@ -294,6 +294,13 @@ func _build_animations() -> void:
 
 			_library.add_animation(game_name, made)
 
+			# Carrying a torch in the left hand (Dave's infographic, 6 Nov 2026): the same gait with the left arm held up in the carry pose; the legs, the body and the
+			# right arm keep the clip, so the right arm still swings opposite the legs.
+			if game_name in TORCH_CARRY_CLIPS:
+				var carry: Animation = made.duplicate(true)
+				_torch_carry(carry, skeleton)
+				_library.add_animation(game_name + "_torch", carry)
+
 	for library_name in animation_player.get_animation_library_list():
 		animation_player.remove_animation_library(library_name)
 
@@ -562,6 +569,32 @@ static func _rot_track(anim: Animation, bone: String) -> int:
 			return t
 
 	return -1
+
+
+# The torch carry (docs/knowledge/torches-fire.md, Dave's torch carry infographic, 6 Nov 2026): the torch in the LEFT hand in a firm full grip, the upper arm down and a
+# little out and forward, the elbow bent about 95 degrees (Dave: 90 to 120), the forearm forward and a little up so the hand is about 1.2 m up, 35 cm in front of
+# the shoulder and clear of the body, the wrist neutral (the clip's own first key), the shoulder left as the clip has it (relaxed, level). The torch itself is
+# stood upright in the world by held_item.gd, so the flame rides above head height a little forward and to the left, lighting the path without blocking the view.
+# Directions are skeleton space (left +X, up +Y, front +Z), on the clip's first key; the arm then rides the torso's own sway.
+const TORCH_CARRY_CLIPS := ["idle", "walk", "jog", "run"]
+const TORCH_UPPER_DIR := Vector3(0.45, -0.82, 0.35)      # shoulder to elbow
+const TORCH_FORE_DIR := Vector3(0.1, 0.38, 0.92)         # elbow to wrist
+
+
+static func _torch_carry(anim: Animation, skel: Skeleton3D) -> void:
+	if skel == null:
+		return
+
+	var chain: Array = ["Hips", "Spine", "Spine1", "Spine2", "LeftShoulder", "LeftArm"]
+	_aim_bone(anim, skel, chain, "LeftForeArm", TORCH_UPPER_DIR)
+	_aim_bone(anim, skel, chain + ["LeftForeArm"], "LeftHand", TORCH_FORE_DIR)
+	var wrist: int = _rot_track(anim, "LeftHand")
+
+	if wrist >= 0 and anim.track_get_key_count(wrist) > 0:
+		var still: Variant = anim.track_get_key_value(wrist, 0)
+
+		for k in range(1, anim.track_get_key_count(wrist)):
+			anim.track_set_key_value(wrist, k, still)
 
 
 # A harmless stand-in when the glb cannot be used, so nothing that holds this body meets a null (my_character.gd make_avatar never picks it; this is the last guard).
