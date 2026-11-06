@@ -114,8 +114,14 @@ void vertex() {
 	}
 }
 
+// No sine (as water_material.gd): at the world's coordinates (x 54 km: the ripples' noise cells are 1.6 m, so p is about 34,000) sin(dot(p, ...)) of a
+// number near 10^7 in 32-bit floats came out blocky, the same value over whole noise cells. The ripple normals jumped at every cell edge: square panes
+// with dark straight borders where the water runs fast and the chop is strong (the steep brook at x 54101 z 69709, Tyler and Dino 6 Nov 2026; the
+// debug view showed the sheet itself smooth, with no folds).
 float hash(vec2 p) {
-	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
 }
 
 float noise(vec2 p) {
