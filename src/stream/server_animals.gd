@@ -126,6 +126,11 @@ func spawn(sp: String, x: float, z: float) -> int:
 	if def.has("den"):
 		animals[id]["den"] = pos   # where it spawned is its den (a bear's, near the river: habitat near_fresh_water_m); it ranges round it and defends it
 
+	if traits:
+		var span: Vector2i = level_span(x, z)
+		animals[id]["level"] = rng.randi_range(span.x, span.y)   # luck-exempt: an animal's level, from where it lives on the island
+		animals[id]["hp"] = float(animals[id]["hp"]) * level_x(animals[id], "hp")
+
 	if traits and def.has("temperament") and not _spawning_young:
 		animals[id]["temper"] = _draw_share(def["temperament"])   # its inherent temperament (passive, defensive, neutral, aggressive, friendly)
 
@@ -615,19 +620,22 @@ func island_level(x: float, z: float) -> float:
 	return clampf((Vector2(x, z).distance_to(centre) - near_m) / (far_m - near_m), 0.0, 1.0)
 
 
-# The share of a species' spawns allowed at an island level: a species row's "level": [from, full] keeps it out below from, ramps it
-# up to its full share at full, and leaves it there beyond. No band (small game): everywhere.
-static func level_share(band: Array, level: float) -> float:
-	if band.size() != 2:
-		return 1.0
+# An animal's level at a point (Dave 6 Nov 2026: every animal, creature and NPC has a level; near the starter town about 1 to 5, half way
+# across 5 to 10, the far side 10 to 20). The span blends from island_level.levels.town through middle to far with the island level.
+func level_span(x: float, z: float) -> Vector2i:
+	var lv: Dictionary = cfg.get("island_level", {}).get("levels", {})
+	var t: float = island_level(x, z)
+	var lo: Array = lv.get("town", [1, 5]) if t < 0.5 else lv.get("middle", [5, 10])
+	var hi: Array = lv.get("middle", [5, 10]) if t < 0.5 else lv.get("far", [10, 20])
+	var u: float = t * 2.0 if t < 0.5 else (t - 0.5) * 2.0
+	return Vector2i(roundi(lerpf(float(lo[0]), float(hi[0]), u)), roundi(lerpf(float(lo[1]), float(hi[1]), u)))
 
-	var from: float = float(band[0])
-	var full: float = float(band[1])
 
-	if level < from:
-		return 0.0
-
-	return 1.0 if full <= from else clampf((level - from) / (full - from), 0.0, 1.0)
+# How much stronger an animal is for its level: 1 at level 1, plus island_level.levels.<what>_per_level for each level above ("hp" or
+# "damage"). Animals born without a level (traits off) are level 1.
+func level_x(a: Dictionary, what: String) -> float:
+	var per: float = float(cfg.get("island_level", {}).get("levels", {}).get("%s_per_level" % what, 0.0))
+	return 1.0 + per * float(maxi(int(a.get("level", 1)) - 1, 0))
 
 
 func _graze_time(def: Dictionary) -> float:
@@ -1125,11 +1133,6 @@ func _top_up(players: Array, only: int) -> void:
 
 				if too_near or ((not def.has("flock") or bool(def["flock"].get("on_land", false))) and blocked.is_valid() and bool(blocked.call(cx, cz))) or crosses_wall(cx, cz, cx, cz):
 					continue
-
-				var share: float = level_share(def.get("level", []), island_level(cx, cz)) if def.has("level") else 1.0
-
-				if share < 1.0 and (share <= 0.0 or rng.randf() >= share):   # luck-exempt: where a species lives on the starter island
-					continue   # dangerous game keeps to the far side of the starter island (level bands)
 
 				var weight: float = biome_weight(def, cx, cz)
 

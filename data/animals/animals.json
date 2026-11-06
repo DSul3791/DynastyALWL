@@ -239,10 +239,6 @@
 			"herd_pull_m": 0.0,
 			"eye_m": 2.0,
 			"protective_share": 0.3,
-			"level": [
-				0.35,
-				0.7
-			],
 			"habitat": {
 				"slope_max": 0.5,
 				"slope_run_m": 6.0,
@@ -482,10 +478,6 @@
 				"curious_m": 45.0,
 				"stop_m": 9.0
 			},
-			"level": [
-				0.15,
-				0.4
-			],
 			"habitat": {
 				"slope_max": 0.4,
 				"slope_run_m": 6.0,
@@ -542,10 +534,6 @@
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"boar": {
-			"level": [
-				0.2,
-				0.5
-			],
 			"number": 8,
 			"name": "Boar",
 			"target_per_player": 2,
@@ -913,10 +901,6 @@
 			"spawn_share": 0.3,
 			"health": 120.0,
 			"protective_share": 0.0,
-			"level": [
-				0.6,
-				0.9
-			],
 			"den": {
 				"den_m": 15.0,
 				"threat_m": 15.0,
@@ -1056,23 +1040,35 @@
 	},
 	"habitat_tries": 6,
 	"island_level": {
-		"note": "Starter island gradient (Dave 6 Nov 2026; design /mnt/project-files/design/starter_island_fauna_gradient.md): level 0 within town_m of the town point (the real spawn until the starter town is placed), rising to 1 (medium) at far_m, about the far coast of tile 3,4. Species rows with \"level\": [from, full] spawn only from that level, at their full share from full on; small game has no band and lives everywhere.",
+		"note": "Starter island levels (Dave 6 Nov 2026, corrected 17:20): every animal has a level. Species live wherever is natural for them (biome, water, terrain); the island only sets their level. island_level is 0 within town_m of the town point (the real spawn until the starter town is placed) and 1 at far_m, about the far coast of tile 3,4. An animal's level is drawn from levels.town near the town, levels.middle half way across and levels.far on the far side (blended between). Each level above 1 adds hp_per_level to its health and damage_per_level to its hit.",
 		"town": [
 			53301.0,
 			68427.0
 		],
 		"town_m": 800.0,
-		"far_m": 8000.0
+		"far_m": 8000.0,
+		"levels": {
+			"town": [
+				1,
+				5
+			],
+			"middle": [
+				5,
+				10
+			],
+			"far": [
+				10,
+				20
+			],
+			"hp_per_level": 0.05,
+			"damage_per_level": 0.04
+		}
 	},
 	"wolves": {
 		"natural": false,
 		"cell_m": 2000.0,
 		"cell_share": 1.0,
 		"seed": 7,
-		"level": [
-			0.5,
-			0.8
-		],
 		"respawn_s": 7200.0,
 		"max_wolves": 15,
 		"notice_m": 35.0,
