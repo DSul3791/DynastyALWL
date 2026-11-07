@@ -748,8 +748,8 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused:
 		for full in player.get_animation_list():
 			var bare: String = str(full).get_slice("|", str(full).count("|")).to_lower().replace(" ", "_")      # "idle to walk fwd" reads as idle_to_walk_fwd
 
-			if bare.contains("dead") or bare.contains("death") or bare.contains("hit_") or bare.contains("interact") or bare.begins_with("start") or bare.ends_with("end") or bare.contains("stop"):
-				continue      # the raccoon's "dead run" is not its run
+			if bare.contains("dead") or bare.contains("death") or bare.contains("hit_") or bare.contains("interact") or bare.contains("attack") or bare.begins_with("start") or bare.ends_with("end") or bare.contains("stop"):
+				continue      # the raccoon's "dead run" is not its run, nor the second wolf's "Attack_Run"
 
 			if refused.has(str(full)):
 				continue

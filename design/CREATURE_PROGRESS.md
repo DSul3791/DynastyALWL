@@ -19,21 +19,21 @@ What the animal view already does for every model (do not rebuild): size from th
 ## Status (7 Nov 2026, creature check pictures in E:/Software/godotDev/creature_check)
 | Creature | Species | 1-5 | 6 live game | Notes |
 |---|---|---|---|---|
-| Brown bear | 14 | done | waiting | Run and Sprint carried the body 6 to 10 m/s ahead: travel now taken out |
-| Deer | 2 | done | waiting | |
+| Brown bear | 14 | done | live check passed (Dino, #538) | Second look (Bear). Run and Sprint carried the body 6 to 10 m/s ahead: travel now taken out |
+| Deer | 2 | done | waiting | Seven looks by id: four stags (deer, buck, red deer, second-rig stag), three hinds; two needed their body texture drawn opaque |
 | Moose | 4 | done | waiting | |
 | Duck (flock) | 6 | done | waiting | Was a code flock; now each flock is 6 to 13 duck models that swim, look up and fly (flock_of) |
-| Wild boar | 8 | done | waiting | |
-| Wolf | 3 | done | waiting | Idle is a howl: alert and recover now Idle_Breathing |
-| Fox | 5 | done | waiting | |
+| Wild boar | 8 | done | waiting | Second look (Boar) |
+| Wolf | 3 | done | live check passed (Dino, #538) | Idle is a howl: alert and recover now Idle_Breathing. Second look (Wolf_1) with its own clips |
+| Fox | 5 | done | waiting | Second look (Fox_1) |
 | Rabbit | 1 | done | waiting | |
 | Horse | 7 | done | waiting | Walk and gallop travel taken out; no graze clip, an idle stands in |
-| Donkey | 15 | done | waiting | |
-| Goblin (Skritch, Rukz) | 16 | done | waiting | Was drawn about 85 times too big (skinned box read through the wrong node): fixed |
+| Donkey | 15 | done | waiting | Second look: a dark donkey |
+| Goblin (Skritch, Rukz) | 16 | done | live check passed (Dino, #538); graze clip is Idle_02 | Was drawn about 85 times too big (skinned box read through the wrong node): fixed |
 | Lynx | 17 | done | waiting | Its idle is a low, stalking stance; a taller idle is polish |
 | Black bear | 18 | done | waiting | |
-| Elk | 19 | done | waiting | Vanished while walking (a second Walk clip shrinks the rig to 1%): walk is Walk_2, graze is Idle |
-| Bighorn sheep | 20 | done | waiting | Its Idle_Breathing lies down: alert stands in Idle |
+| Elk | 19 | done | live check passed (Dino, #538) | Vanished while walking (a second Walk clip shrinks the rig to 1%): walk is Walk_2, graze is Idle |
+| Bighorn sheep | 20 | done | live check passed (Dino, #538) | Its Idle_Breathing lies down: alert stands in Idle |
 | Mountain goat | 21 | done | waiting | |
 | Beaver | 22 | done | waiting | Grazes sitting up (Idle_2); does not swim |
 | Chamois | 23 | done | waiting | Idle_3 grazes, Alert stands |
