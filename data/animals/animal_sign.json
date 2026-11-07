@@ -481,6 +481,20 @@
 					"hint": "Green droppings on the grass. A flock of geese fed here."
 				}
 			]
+		},
+		"warthog": {
+			"group": "hoofed",
+			"track": "small cloven prints and rooted soil",
+			"signs": [
+				{
+					"kind": "rooting",
+					"hint": "Turned-up earth around grass roots. Warthogs fed here."
+				},
+				{
+					"kind": "wallow",
+					"hint": "A muddy hollow, rubbed smooth. Warthogs wallow here."
+				}
+			]
 		}
 	}
 }

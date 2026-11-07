@@ -676,6 +676,40 @@
 					"albedo": "res://assets/animals/goose/Textures/T_Goose.png"
 				}
 			]
+		},
+		"warthog": {
+			"scene": "res://assets/animals/warthog/SK_Warthog.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Warthog",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 8.0,
+			"stride_m": 0.7,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Idle_Breathing",
+				"10": "Idle_Breathing",
+				"11": "RunFast_F",
+				"12": "Idle",
+				"walk": [
+					"WalkMedium_F",
+					"GrazingWalkMedium_F"
+				],
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Warthog (Realistic Animals/Warthog/SK_Warthog.fbx). Imported mid-run: sized by its Idle (size_clip). GrazingOnSpotA2IdleThreat drops onto its haunches, so warn stands in Idle_Breathing. Checked 7 Nov 2026.",
+			"length_m": 1.4,
+			"materials": [
+				{
+					"match": "Tusk",
+					"albedo": "res://assets/animals/warthog/Textures/T_Warthog_Tusks.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/warthog/Textures/T_Warthog_Body.png"
+				}
+			],
+			"size_clip": "Idle"
 		}
 	}
 }

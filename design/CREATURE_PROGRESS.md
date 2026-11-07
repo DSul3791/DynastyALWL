@@ -40,6 +40,7 @@ What the animal view already does for every model (do not rebuild): size from th
 | Crow | 27 | done | waiting | Imported with wings spread: sized and grounded by its Walk pose (size_clip); feathers reach twice past its bones |
 | Pheasant | 28 | done | waiting | Walks on the ground, does not fly yet |
 | Goose | 29 | done | waiting | Walks on the ground, does not fly or swim yet |
+| Warthog | 38 | done | waiting | Savanna. Imported mid-run: sized by its Idle |
 
 New species are added with `python tools/add_species.py <spec.json>` (specs for batch 2 in E:/Software/godotDev/specs on the PC); `--clips` on the creature check lists a file's clips.
 
