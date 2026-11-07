@@ -382,12 +382,12 @@ func _make_model(number: int) -> Node3D:
 
 		# The clips import as play-once; every clip the row uses (graze, walk, run, warn...) loops.
 		for key in (row.get("clips", {}) as Dictionary):
-			var anim_name: String = str(row.get("clip_prefix", "")) + str(row["clips"][key])
+			var anim_name: String = _clip_full(player, row, str(row["clips"][key]))
 
-			if player.has_animation(anim_name):
+			if anim_name != "":
 				player.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
 			else:
-				_model_note(kind, "no clip %s" % anim_name)
+				_model_note(kind, "no clip %s" % str(row["clips"][key]))
 
 	_model_note(kind, "drawn from %s: %d meshes, %.2f m long (file size %.2f, scale x%.4f)" % [str(row["scene"]), meshes.size(), longest * k, longest, k])
 	return root
@@ -498,6 +498,25 @@ func _has_alpha(tex: Texture2D) -> bool:
 	return bool(_alpha_of[key])
 
 
+# A clip's full name in the player: row.clip_prefix + name when that exists, else the one clip whose name after its armature
+# ("Armature|Idle") is the name, so a row need not know each file's armature name. "" when there is none. Cached per player.
+func _clip_full(player: AnimationPlayer, row: Dictionary, clip_name: String) -> String:
+	var prefixed: String = str(row.get("clip_prefix", "")) + clip_name
+
+	if player.has_animation(prefixed):
+		return prefixed
+
+	if not player.has_meta("clip_map"):
+		var by_bare: Dictionary = {}
+
+		for full in player.get_animation_list():
+			by_bare[str(full).get_slice("|", str(full).count("|"))] = str(full)
+
+		player.set_meta("clip_map", by_bare)
+
+	return str((player.get_meta("clip_map") as Dictionary).get(clip_name, ""))
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -528,9 +547,9 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 
 	var player: AnimationPlayer = node.get_meta("player")
 
-	clip = str(row.get("clip_prefix", "")) + clip if clip != "" else ""
+	clip = _clip_full(player, row, clip) if clip != "" else ""
 
-	if clip != "" and player.has_animation(clip) and player.current_animation != clip:
+	if clip != "" and player.current_animation != clip:
 		player.play(clip, 0.25)
 
 	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
