@@ -3008,26 +3008,28 @@ static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 # Wild flowers and herbs (daisy, umbel, spike and bell heads): a few thin stems with basal leaves, each stem ending in a flower head
 # made of beads and flat petals in explicit colours (the foliage tint only reaches the leaves).
 const WILD_STEM := Color(0.38, 0.5, 0.22)
+const WILDFLOWER_DAISY_SCALE := 0.13      # daisy heads: dandelion 0.17 -> 0.022 (about 5 cm across; Kathreen: real 3-4 cm plus the 15% exaggeration, daisy heads under 6 cm)
+const WILDFLOWER_UMBEL_SCALE := 0.2       # umbels: yarrow 0.2 -> 0.04 (about 10 cm across; Kathreen: real 5-10 cm)
 const WILDFLOWER_LOOKS := {
-	"chamomile": {"head": "daisy", "stems": 7, "tall": 1.0, "head_min": 0.14, "petal": Color(1.0, 0.98, 0.9), "stem": Color(0.3, 0.42, 0.18), "centre": Color(0.55, 0.3, 0.0), "size": 0.045, "petals": 10},
-	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.95, "head_min": 0.12, "petal": Color(1.0, 1.0, 0.97), "centre": Color(0.7, 0.45, 0.0), "size": 0.04, "petals": 9},
-	"arnica": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.16, "petal": Color(1.0, 0.68, 0.0), "centre": Color(0.9, 0.45, 0.0), "size": 0.08, "petals": 12},
-	"dandelion": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.17, "petal": Color(1.0, 0.8, 0.0), "centre": Color(1.0, 0.6, 0.0), "size": 0.05, "petals": 14},
-	"st_johns_wort": {"head": "daisy", "stems": 6, "tall": 1.1, "head_min": 0.17, "petal": Color(1.0, 0.82, 0.0), "centre": Color(0.95, 0.55, 0.0), "size": 0.045, "petals": 5},
-	"wild_carrot": {"head": "umbel", "stems": 4, "tall": 1.2, "head_min": 0.22, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
+	"chamomile": {"head": "daisy", "stems": 7, "tall": 0.35, "head_min": 0.14, "petal": Color(1.0, 0.98, 0.9), "stem": Color(0.3, 0.42, 0.18), "centre": Color(0.55, 0.3, 0.0), "size": 0.045, "petals": 10},
+	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.5, "head_min": 0.12, "petal": Color(1.0, 1.0, 0.97), "centre": Color(0.7, 0.45, 0.0), "size": 0.04, "petals": 9},
+	"arnica": {"head": "daisy", "stems": 4, "tall": 0.45, "head_min": 0.16, "petal": Color(1.0, 0.68, 0.0), "centre": Color(0.9, 0.45, 0.0), "size": 0.08, "petals": 12},
+	"dandelion": {"head": "daisy", "stems": 5, "tall": 0.22, "head_min": 0.17, "petal": Color(1.0, 0.8, 0.0), "centre": Color(1.0, 0.6, 0.0), "size": 0.05, "petals": 14},
+	"st_johns_wort": {"head": "daisy", "stems": 6, "tall": 0.7, "head_min": 0.17, "petal": Color(1.0, 0.82, 0.0), "centre": Color(0.95, 0.55, 0.0), "size": 0.045, "petals": 5},
+	"wild_carrot": {"head": "umbel", "stems": 4, "tall": 0.9, "head_min": 0.22, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
 	"angelica": {"head": "umbel", "stems": 3, "petal": Color(0.88, 0.95, 0.78), "size": 0.2, "rays": 11},
-	"yarrow": {"head": "umbel", "stems": 5, "tall": 1.0, "head_min": 0.2, "petal": Color(1.0, 0.96, 0.84), "stem": Color(0.3, 0.42, 0.18), "size": 0.14, "rays": 8},
+	"yarrow": {"head": "umbel", "stems": 5, "tall": 0.55, "head_min": 0.2, "petal": Color(1.0, 0.96, 0.84), "stem": Color(0.3, 0.42, 0.18), "size": 0.14, "rays": 8},
 	"meadowsweet": {"head": "umbel", "stems": 4, "tall": 1.15, "head_min": 0.2, "petal": Color(1.0, 0.92, 0.62), "size": 0.15, "rays": 9},
 	"valerian": {"head": "umbel", "stems": 4, "tall": 1.1, "head_min": 0.2, "petal": Color(0.92, 0.3, 0.58), "size": 0.14, "rays": 9},
-	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.9, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
+	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.35, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
 	# Wild crop plants (flora ids 153 to 160, future rows until placed; recolours of the flowers above, 3 Nov 2026).
-	"wild_potato": {"head": "daisy", "stems": 4, "tall": 0.9, "head_min": 0.14, "petal": Color(0.95, 0.92, 1.0), "centre": Color(1.0, 0.8, 0.1), "size": 0.04, "petals": 5},
-	"wild_turnip": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.15, "petal": Color(1.0, 0.85, 0.1), "centre": Color(0.9, 0.7, 0.05), "size": 0.04, "petals": 4},
+	"wild_potato": {"head": "daisy", "stems": 4, "tall": 0.55, "head_min": 0.14, "petal": Color(0.95, 0.92, 1.0), "centre": Color(1.0, 0.8, 0.1), "size": 0.04, "petals": 5},
+	"wild_turnip": {"head": "daisy", "stems": 5, "tall": 0.7, "head_min": 0.15, "petal": Color(1.0, 0.85, 0.1), "centre": Color(0.9, 0.7, 0.05), "size": 0.04, "petals": 4},
 	"sea_cabbage": {"head": "spike", "stems": 5, "petal": Color(1.0, 0.9, 0.3), "size": 0.04, "beads": 10, "span": 0.3},
-	"ramsons": {"head": "umbel", "stems": 3, "tall": 0.9, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 5},
+	"ramsons": {"head": "umbel", "stems": 3, "tall": 0.35, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 5},
 	"wild_vetch": {"head": "spike", "stems": 6, "petal": Color(0.6, 0.35, 0.8), "size": 0.04, "beads": 9, "span": 0.3},
 	"sea_beet": {"head": "spike", "stems": 5, "petal": Color(0.62, 0.72, 0.3), "size": 0.035, "beads": 11, "span": 0.35},
-	"wild_radish": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.15, "petal": Color(0.98, 0.9, 0.95), "centre": Color(0.9, 0.8, 0.3), "size": 0.04, "petals": 4},
+	"wild_radish": {"head": "daisy", "stems": 5, "tall": 0.6, "head_min": 0.15, "petal": Color(0.98, 0.9, 0.95), "centre": Color(0.9, 0.8, 0.3), "size": 0.04, "petals": 4},
 	"prickly_lettuce": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.15, "petal": Color(1.0, 0.95, 0.5), "centre": Color(0.9, 0.7, 0.1), "size": 0.04, "petals": 7},
 	"lavender": {"head": "spike", "stems": 9, "petal": Color(0.55, 0.38, 0.85), "size": 0.045, "beads": 12, "span": 0.35},
 	"heather": {"head": "spike", "stems": 10, "petal": Color(0.75, 0.3, 0.6), "size": 0.04, "beads": 12, "span": 0.5},
@@ -3086,6 +3088,13 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	var head: String = str(look["head"])
 	var size: float = float(look["size"]) * h * 1.2 if head == "umbel" else float(look["size"]) * maxf(h, crown * 1.6) * 2.6
 	size = maxf(size, float(look.get("head_min", 0.0)))      # meadow flowers (moderator 2026-10-31): bigger heads and taller stems so a drift reads from 10 m
+	# Halfway to true size (Kathleen's card, 6 Nov 2026, decided by recommendation under Dave's rule): the head_min heads were 30-40 cm across (a daisy reaches about
+	# 2.3 x size, an umbel about 2.6 x size), against 2-8 cm in life, and read as toys next to the body. A dandelion is now about 5 cm, arnica 5, yarrow 10 (Kathreen's sizes from real ones):
+	# still a spot of colour across a meadow, no longer giant. Spikes and bells were already near life size.
+	if head == "daisy":
+		size *= WILDFLOWER_DAISY_SCALE
+	elif head == "umbel":
+		size *= WILDFLOWER_UMBEL_SCALE
 	var petal: Color = look["petal"]
 	var stem_col: Color = look.get("stem", WILD_STEM)   # yarrow and chamomile: darker stem so it is not pale and glassy (Kathreen, by reading; check by picture)
 	var az: float = rng.randf() * TAU
@@ -3093,11 +3102,15 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	# Basal leaves: a few low clumps round the foot.
 	for k in range(mini(2, int(look.get("basal", 3))) if far else int(look.get("basal", 3))):
 		var a: float = rng.randf() * TAU
-		_clump(leaves, rng, Vector3(cos(a), 0.0, sin(a)) * crown * 0.25 + Vector3(0.0, h * 0.12, 0.0), Vector3(0.0, -h, 0.0), maxf(crown * 0.7, h * 0.3), rng.randf_range(0.85, 1.05), 2)
+		# The clump sits on the ground, not in it (Dino's #490 close-up, 6 Nov): its cards are half a size tall each way, so a centre at h * 0.12
+		# buried the lower few cm, and that band in the ground's shadow drew a black fringe along every clump's bottom edge.
+		var clump: float = maxf(crown * 0.7, h * 0.3)
+		_clump(leaves, rng, Vector3(cos(a), 0.0, sin(a)) * crown * 0.25 + Vector3(0.0, maxf(h * 0.12, clump * 0.5), 0.0), Vector3(0.0, -h, 0.0), clump, rng.randf_range(0.85, 1.05), 2)
 
 	for k in range(stems):
 		az += TAU / float(stems) + rng.randf_range(-0.4, 0.4)
 		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		# "tall" is the plant's real flowering height in metres plus about 15% (Kathleen, 6 Nov: photoreal aim; the old 1 m floors made dandelions waist high).
 		var top_h: float = maxf(h * rng.randf_range(0.8, 1.0), float(look.get("tall", 0.0)) * rng.randf_range(0.85, 1.15))
 		var tip: Vector3 = out * crown * rng.randf_range(0.2, 0.7) + Vector3(0.0, top_h, 0.0)
 		var base: Vector3 = out * crown * 0.05
