@@ -1169,7 +1169,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 
 # Dries a river from a head that has no spring, down to the first cell another river flows into (or the frame's edge): no water is painted
 # there and the centre stage leaves it out (`_source_dry`). Returns the cells dried.
-func _dry_unsourced(head: int, fill, flow, size: int, threshold: float, up_count: PackedByteArray) -> int:
+func _dry_unsourced(head: int, fill, flow, _size: int, threshold: float, up_count: PackedByteArray) -> int:
 	var k: int = head
 	var count: int = 0
 
