@@ -26,7 +26,7 @@ func make():
 	a.setup()
 	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
-	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear"]:
+	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear", "donkey"]:
 		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
 
 	a.cfg["species"]["rabbit"]["target_per_player"] = 0

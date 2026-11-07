@@ -242,6 +242,9 @@ var _fish_stock: Dictionary = {}      # cell key -> [fish left, unix time of the
 var _last_fish: Dictionary = {}
 var _fishing_cfg: Dictionary = {}
 var _station_said: Dictionary = {}
+var _torch_seen: Dictionary = {}    # peer -> msec of the last burning-torch report (ACT_TORCH_BURN): while recent, the torch bearer scares animals like a small fire
+const TORCH_REPORT_MS := 3000
+const TORCH_PROTECT_M := 8.0        # how far wolves keep from a bearer of a burning torch (a campfire's tiers are 5, 10, 20 m); Dave 6 Nov 2026: torches give the best protection of what you carry. Tune.
 var _wear_carry: Dictionary = {}     # peer -> fraction of a wear point not yet charged (tool_care skill)
 var _clothing: Dictionary = {}
 var send_limp: Callable             # (peer, percent of normal speed, 100 = none)
@@ -586,6 +589,7 @@ func peer_left(peer: int) -> void:
 	_last_fish.erase(peer)
 	_wear_carry.erase(peer)
 	_swimming.erase(peer)
+	_torch_seen.erase(peer)
 	_cave_pool.erase(peer)
 	_soak.erase(peer)
 	_last_dose.erase(peer)
@@ -1071,6 +1075,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_plant_bush(peer, inv, a, at)
 	elif kind == Net.ACT_DOUSE:
 		_douse(peer, inv, a, b == 1)
+	elif kind == Net.ACT_TORCH_BURN:
+		_torch_burn(peer, inv, a)
 	elif kind == Net.ACT_RELIGHT:
 		_relight(peer, inv, a, b)
 	elif kind == Net.ACT_PLACE_TORCH:
@@ -5905,7 +5911,7 @@ func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 			return
 
 	inv.numbers[slot] = table.number_of(into)
-	_say(peer, "The rain puts your torch out." if by_rain else "The water puts your torch out.")
+	_say(peer, "The rain puts your torch out. Press its key to light it again." if by_rain else "The water puts your torch out. Press its key to light it again.")
 
 
 # A torch in hand stuck in the ground or on a wall (Dave, 4 Nov 2026): items.json places_as names the structure for each; a burning torch stays lit with
@@ -5969,9 +5975,16 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 # `want` is the hotbar slot plus one of the torch the player holds (0 for none): pressing a doused torch on the hotbar at a burning fire lights that one
 # (Dave 6 Nov 2026); otherwise the first doused torch in the pack.
 func _relight(peer: int, inv, id: int, want: int = 0) -> void:
-	var fire: Dictionary = _fire_in_reach(peer, id)
+	# id 0 is the hotkey: a torch that went out simply lights again, wherever you are (Dave 6 Nov 2026: nobody is stuck in a cave without light). With a fire id
+	# (E at a burning fire) the fire has to be lit and in reach, as before.
+	if id != 0:
+		var fire: Dictionary = _fire_in_reach(peer, id)
 
-	if fire.is_empty() or not fire_is_lit(int(fire["state"])):
+		if fire.is_empty() or not fire_is_lit(int(fire["state"])):
+			return
+
+	if bool(_swimming.get(peer, false)):
+		_say(peer, "It is too wet to light the torch in the water.")      # rain is the client's call: it sees caves and roofs (_flame_wet)
 		return
 
 	var order: Array = range(inv.SLOTS)
@@ -5987,8 +6000,38 @@ func _relight(peer: int, inv, id: int, want: int = 0) -> void:
 
 		if back != "" and table.number_of(back) > 0:
 			inv.numbers[slot] = table.number_of(back)
-			_say(peer, "Your torch catches and burns again.")
+			_say(peer, "You light your torch again.")
 			return
+
+
+# A torch in hand burns down (Dave 6 Nov 2026: about half an hour of real time). The client says once a second that it holds a burning torch; the server
+# adds the elapsed time (tenths of a second, capped, so a gap does not burn it) to the slot's wear and the torch is gone at items.json "burn_s".
+func _torch_burn(peer: int, inv, slot: int) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0:
+		return
+
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var burn_s: float = float(entry.get("burn_s", 0.0))
+
+	if burn_s <= 0.0 or str(entry.get("doused_item", "")) == "":
+		return
+
+	var now: int = Time.get_ticks_msec()
+	var last: int = int(_torch_seen.get(peer, now - 1000))
+	_torch_seen[peer] = now
+	inv.wear[slot] += int(round(float(clampi(now - last, 0, 2000)) / 100.0))
+	_dirty = true
+
+	if float(inv.wear[slot]) < burn_s * 10.0:
+		return
+
+	var before: Array = _snapshot(inv)
+	inv.numbers[slot] = 0
+	inv.counts[slot] = 0
+	inv.wear[slot] = 0
+	_torch_seen.erase(peer)
+	_say(peer, "Your torch has burned down to nothing.")
+	_send_changes(peer, inv, before)
 
 
 func _fire_in_reach(peer: int, id: int) -> Dictionary:
@@ -8806,6 +8849,11 @@ func daily_offset(weather: Dictionary, altitude_m: float = 0.0) -> float:
 # scanning every world record per player); anywhere else the scan is live.
 func _lit_fires() -> Array:
 	var found: Array = []
+	var now: int = Time.get_ticks_msec()
+
+	for peer in _torch_seen:      # a bearer of a burning torch keeps wolves off like a small fire
+		if now - int(_torch_seen[peer]) <= TORCH_REPORT_MS and _peer_pos.has(peer):
+			found.append(_peer_pos[peer])
 
 	for row in _lit_rows():
 		found.append(row[0])
@@ -8815,6 +8863,10 @@ func _lit_fires() -> Array:
 
 # How far wolves keep from the lit fire at this spot: its tier's protect_m (cooking.json fire_tiers; 10 m when unknown).
 func fire_protect_m(at: Vector3) -> float:
+	for peer in _torch_seen:
+		if _peer_pos.has(peer) and (_peer_pos[peer] as Vector3).is_equal_approx(at):
+			return TORCH_PROTECT_M
+
 	for row in _lit_rows():
 		if (row[0] as Vector3).is_equal_approx(at):
 			return float(((_cooking.get("fire_tiers", {}) as Dictionary).get(_fire_class_of_state(int(row[1])), {}) as Dictionary).get("protect_m", 10.0))

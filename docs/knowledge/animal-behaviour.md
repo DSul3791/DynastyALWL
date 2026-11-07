@@ -36,8 +36,10 @@
 | 4-5 Nov | Coats, shadows, wolf looks, one barrel body with a smooth neck | #229, #266, #64, #347 | Worked (looks) |
 | 5 Nov | Undergrowth never blocks the player but is louder to animals | #445 | Worked |
 | 6 Nov | Starter island wildlife gradient: level bands that kept big game away from the town | #479 | Wrong reading of Dave's ask; merged, then reworked |
-| 6 Nov | Levels change strength, never placement: each animal draws a level at birth (1-5 by the town, 5-10 half way, 10-20 far side) | #485 | Open, stacked on #480 |
-| 6 Nov | Bear, threat range, temperaments, seasons, young | #480 | Open; PC gate and windowed look queued |
+| 6 Nov | Levels change strength, never placement: each animal draws a level at birth (1-5 by the town, 5-10 half way, 10-20 far side) | #485 | Worked (merged) |
+| 6 Nov | Bear, threat range, temperaments, seasons, young | #480 | Worked (merged) |
+| 6 Nov | Realistic bought models (WildMesh FBX) drawn per species from data/animals/models.json; the code body is the fallback | #495 | Worked. The FBX keeps its cm scale on a bone, so size from the posed bones, not the mesh bounds (a 100x giant before). A black neck band on the bear was taken for fur cards drawn solid; alpha scissor added, look not yet rechecked. Model files are never committed (public repo) |
+| 7 Nov | Offline animal sheet and live-game shots of animals: animal_sheet.gd `--models`, shot runner `--shot-animals=bear,deer` | this branch | animal_sheet works windowed only (the headless dummy renderer cannot draw). The live game shot had no way to place an animal before this |
 
 ## What others do (with sources)
 

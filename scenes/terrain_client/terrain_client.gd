@@ -228,6 +228,7 @@ var _work_serial: int = 0               # the held tool's swing count the avatar
 var flying: bool = false
 var underwater: bool = false
 var _flame_rain_s: float = 0.0          # seconds the held torch has been out in the open rain (flame_rules.gd)
+var _torch_burn_msec: int = -100000
 var _flame_asked_msec: int = -100000     # when the server was last asked to douse it (one ask a second at most)
 var underwater_surface: float = 0.0      # the water surface over the eye while under (fog depth, caustics), 0 in the sea
 var _ground_quality: int = -1       # quality the ground texture array was built for
@@ -1428,6 +1429,7 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.light_block_fn = _light_block
 	Probe.stop("welcome: held item", tq_held_item)
 	var tq_tail: int = Probe.start()   # Low-quality lag runs (5 Nov) stuck up to 2.2 s "after held item": the rest of the welcome was not timed
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
@@ -6165,6 +6167,19 @@ func _exit_tree() -> void:
 		stream.close()
 
 
+# Why a torch cannot be lit right now: "water" (the eye is under water), "rain" (open rain, no tree, rock or roof over you; a cave is cover), or "".
+# Asked at the moment of the key press, so it reads the state of that frame.
+func _light_block() -> String:
+	var wet: float = float(weather.get("rain", 0.0))
+	print("torch light check: rain %.2f (puts out from %.2f), eye under water %s, depth %.2f" % [wet, FlameRules.RAIN_DOUSE, str(underwater), underwater_surface - camera.global_position.y if underwater else 0.0])
+
+	if underwater or not FlameRules.in_rain(wet, false):
+		return FlameRules.light_block(underwater, wet, false)
+
+	var rock: float = sound.cave.rock_enclosure if sound != null and sound.cave != null else 0.0
+	return FlameRules.light_block(false, wet, WeatherLookScript.sky_share(rock) < 0.5 or held.flame_covered())
+
+
 # A torch in either hand goes out under water or after a few seconds in the open rain (Dave, 4 Nov 2026; flame_rules.gd). The client knows the held slot,
 # so it asks the server to swap the torch for a doused one; a lantern (later) only goes out under water.
 func _flame_wet(delta: float) -> void:
@@ -6172,7 +6187,7 @@ func _flame_wet(delta: float) -> void:
 		return
 
 	var slot: int = held.flame_slot()
-
+	# A torch can only be lit where it would not go out at once: not under water, not in the open rain (rock or a roof or a crown over you is cover, so a cave works).
 	if slot < 0:
 		_flame_rain_s = 0.0
 		return
@@ -6185,6 +6200,10 @@ func _flame_wet(delta: float) -> void:
 	var covered: bool = WeatherLookScript.sky_share(enclosed) < 0.5 or held.flame_covered() if FlameRules.in_rain(rain, false) else true    # the cover lookup only while it rains
 	_flame_rain_s = _flame_rain_s + delta if FlameRules.in_rain(rain, covered) else 0.0
 	var reason: String = FlameRules.douse_reason(entry, underwater, rain, covered, _flame_rain_s)
+
+	if reason == "" and float(entry.get("burn_s", 0.0)) > 0.0 and Time.get_ticks_msec() - _torch_burn_msec >= 1000:
+		_torch_burn_msec = Time.get_ticks_msec()      # it burns: the server wears it down and counts the bearer as a small fire to animals
+		net.inventory_action.rpc_id(1, NetScript.ACT_TORCH_BURN, slot, 0, 0, Vector3.ZERO)
 
 	if reason == "" or Time.get_ticks_msec() - _flame_asked_msec < 1000:
 		return

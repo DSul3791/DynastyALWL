@@ -260,6 +260,11 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	elif shape == "grass" or shape == "reed":
 		leaf_kind = "grass"
 
+	# Meadow wildflowers' basal clumps are a rosette of separate leaves: the one-leaf herb card (tools/make_leaf_herb.py), not the speckled tree-crown card,
+	# whose grey speckle read as a pale lichen ball at clump height (Dino's #490 close-ups, 7 Nov).
+	if str(entry.get("model", "")) == "wildflower" and materials.has("herb"):
+		leaf_kind = "herb"
+
 	# A species can name its own leaf texture (oak: lobed leaves).
 	leaf_kind = str(entry.get("leaf", leaf_kind))
 	leaves.commit(mesh, materials.get(leaf_kind, materials["broad"]))
