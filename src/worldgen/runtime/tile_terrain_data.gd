@@ -313,11 +313,40 @@ func make_placeholder(tile_coord: Vector2i, tile_size_m: float, depth_m: float) 
 
 # ---------------------------------------------------------------- sampling
 
-# Smooth (Catmull-Rom) height at a world position inside the tile.
+# Ground height at a world position inside the tile: smooth (Catmull-Rom) on dry land, and under water the same straight-line (bilinear)
+# shape the water is drawn and simulated with, blended by wet_at.
+# Dave 7 Nov 2026 (x 54358 z 68702, "the water runs under the dirt at the lip of the waterfall"; "from an LOD away I see the river,
+# up close it disappears"): the water's surface is bilinear between its 8 m samples, but the ground was a Catmull-Rom curve through the
+# same samples, which bulges above the straight line at every convex bend. Over a pond's lip it rose up to about 7% of the fall
+# (1.5 m over a 20 m fall), and down a steep stream it stood metres over the water, so the near ground (LOD 0 follows the curve)
+# buried the water while the far, coarse levels (which only meet the curve at the samples) showed it.
 func height_at(x: float, z: float) -> float:
 	if placeholder:
 		return placeholder_depth_m
 
+	var wet: float = wet_at(x, z)
+
+	if wet <= 0.0:
+		return _smooth_height_at(x, z)
+
+	var flat: float = _straight_height_at(x, z)
+	return flat if wet >= 1.0 else lerpf(_smooth_height_at(x, z), flat, wet)
+
+
+# Bilinear height between the four samples round the point (the water's own interpolation).
+func _straight_height_at(x: float, z: float) -> float:
+	var u: float = (x - x0) / spacing_m
+	var v: float = (z - z0) / spacing_m
+	var i: int = clampi(int(floor(u)), 0, samples - 2)
+	var j: int = clampi(int(floor(v)), 0, samples - 2)
+	var tu: float = clampf(u - float(i), 0.0, 1.0)
+	var tv: float = clampf(v - float(j), 0.0, 1.0)
+	var k: int = j * samples + i
+	return lerpf(lerpf(heights[k], heights[k + 1], tu), lerpf(heights[k + samples], heights[k + samples + 1], tu), tv)
+
+
+# Smooth (Catmull-Rom) height through the samples.
+func _smooth_height_at(x: float, z: float) -> float:
 	var u: float = (x - x0) / spacing_m
 	var v: float = (z - z0) / spacing_m
 	var i: int = clampi(int(floor(u)), 0, samples - 2)
