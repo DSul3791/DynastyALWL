@@ -2629,6 +2629,20 @@
 			"months": "all year",
 			"note": "year round"
 		},
+		"puma": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"pronghorn": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
 		"warthog": {
 			"seasons": [
 				"all"
