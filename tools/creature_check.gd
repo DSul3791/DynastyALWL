@@ -8,6 +8,7 @@ extends SceneTree
 # the skeleton stands in each role against its rest pose, and the animal view's own notes (skin rebuilt, clip rescaled, clip refused).
 # Needs a window (pictures): run without --headless.
 #   godot --path . --script res://tools/creature_check.gd -- --kinds=bear,deer --out=E:/Software/godotDev/creature_check [--px=360] [--clips]
+# --id=N builds the animal with that id (a species with variants picks its look by id: --id=1 is the second look).
 # --clips also lists every clip in the file (with its length), to pick the clip for each role in a new model row.
 
 const AnimalView := preload("res://src/client/animal_view.gd")
@@ -20,12 +21,15 @@ func _init() -> void:
 	var out: String = "user://creature_check"
 	var px: int = 360
 	var list_clips: bool = false
+	var look_id: int = 0
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--kinds="):
 			kinds = a.trim_prefix("--kinds=").split(",", false)
 		elif a.begins_with("--out="):
 			out = a.trim_prefix("--out=")
+		elif a.begins_with("--id="):
+			look_id = int(a.trim_prefix("--id="))
 		elif a == "--clips":
 			list_clips = true
 		elif a.begins_with("--px="):
@@ -40,7 +44,7 @@ func _init() -> void:
 	var report: PackedStringArray = PackedStringArray()
 
 	for kind in kinds:
-		var lines: PackedStringArray = await _check(kind, int(number_of.get(kind, -1)), out, px, list_clips)
+		var lines: PackedStringArray = await _check(kind, int(number_of.get(kind, -1)), out, px, list_clips, look_id)
 		report.append_array(lines)
 		report.append("")
 
@@ -52,7 +56,7 @@ func _init() -> void:
 	quit()
 
 
-func _check(kind: String, number: int, out: String, px: int, list_clips: bool = false) -> PackedStringArray:
+func _check(kind: String, number: int, out: String, px: int, list_clips: bool = false, look_id: int = 0) -> PackedStringArray:
 	var lines: PackedStringArray = PackedStringArray(["== %s (species %d)" % [kind, number]])
 
 	if number < 0:
@@ -67,7 +71,7 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 		return lines
 
 	lines.append("file %s: %s" % [str(row.get("scene", "")), "found" if ResourceLoader.exists(str(row.get("scene", ""))) else "MISSING (run tools/install_animal_models.py, then import)"])
-	var probe: Node3D = view._make_model(number, 0)
+	var probe: Node3D = view._make_model(number, look_id)
 
 	if probe == null:
 		lines.append("FAIL not drawn from the model: the code body is drawn")
@@ -104,7 +108,7 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 
 	for c in cols:
 		var role: String = wanted[c]
-		var model: Node3D = view._make_model(number, 0)
+		var model: Node3D = view._make_model(number, look_id)
 		var cx: float = (float(c) - float(cols - 1) * 0.5) * cell
 		model.position = Vector3(cx, 0.0, 0.0)
 		model.rotation.y = -PI * 0.5      # faces -Z in the game: turned to face the left of the picture
@@ -148,7 +152,7 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 		await process_frame
 
 	var image: Image = vp.get_texture().get_image()
-	var path: String = "%s/%s.png" % [out, kind]
+	var path: String = "%s/%s%s.png" % [out, kind, "" if look_id == 0 else "_%d" % look_id]
 	image.save_png(path)
 	lines.append("picture %s" % path)
 	vp.queue_free()

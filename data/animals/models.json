@@ -676,6 +676,203 @@
 					"albedo": "res://assets/animals/goose/Textures/T_Goose.png"
 				}
 			]
+		},
+		"cow": {
+			"scene": "res://assets/animals/cow/SK_Cow.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Cow",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 6.0,
+			"stride_m": 0.8,
+			"clips": {
+				"0": "Idle",
+				"3": "Alert",
+				"12": "NeutralStand",
+				"walk": "Walk_100",
+				"run": "Run_600"
+			},
+			"note": "WildMesh Cow (Realistic Animals/Cow/SK_Cow.fbx).",
+			"length_m": 2.4,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/cow/Textures/T_Cow.png"
+				}
+			]
+		},
+		"goat": {
+			"scene": "res://assets/animals/goat/SK_Goat.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Goat",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 6.0,
+			"stride_m": 0.8,
+			"clips": {
+				"0": "idle2",
+				"3": "idle",
+				"12": "idle",
+				"walk": "walk",
+				"run": "run"
+			},
+			"note": "WildMesh Goat (Realistic Animals/Goat/SK_Goat.fbx). T_Goat.png's alpha is nearly all zero (not a cut-out): its material entry is opaque, or the goat is invisible.",
+			"length_m": 1.3,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/goat/Textures/T_Goat.png",
+					"opaque": true
+				}
+			]
+		},
+		"chicken": {
+			"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Chicken",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 6.0,
+			"stride_m": 0.8,
+			"clips": {
+				"0": "Idle",
+				"3": "Idle2",
+				"12": "Idle",
+				"walk": "Walk",
+				"run": "Run"
+			},
+			"note": "WildMesh Chicken (Realistic Animals/Chicken/SK_Chicken.fbx).",
+			"length_m": 0.45,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/chicken/Textures/T_Chicken.png"
+				}
+			],
+			"variants": [
+				{
+					"scene": "res://assets/animals/chicken/SK_Chicken.fbx"
+				},
+				{
+					"scene": "res://assets/animals/rooster/SK_Rooster.fbx",
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/rooster/Textures/T_Rooster.png"
+						}
+					],
+					"pack": "WildMesh3D/Realistic Animals/Rooster",
+					"clips": {
+						"0": "Idle_2",
+						"3": "Alert",
+						"12": "NeutralStand",
+						"walk": "Walk",
+						"run": "Run"
+					}
+				}
+			]
+		},
+		"cat": {
+			"scene": "res://assets/animals/cat/SK_Cat.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Cat",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 6.0,
+			"stride_m": 0.8,
+			"clips": {
+				"0": "Idle",
+				"3": "Idle02",
+				"12": "Idle_2",
+				"walk": "Walk",
+				"run": "Run"
+			},
+			"note": "WildMesh Cat (Realistic Animals/Cat/SK_Cat.fbx).",
+			"length_m": 0.7,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/cat/Textures/T_Cat.png"
+				}
+			]
+		},
+		"dog": {
+			"scene": "res://assets/animals/dog/SK_Labrador.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Labrador",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 6.0,
+			"stride_m": 0.8,
+			"clips": {
+				"0": "idle_sniff_01",
+				"3": "Idle",
+				"10": "idle_bark_04_warning",
+				"12": "Idle",
+				"walk": "walk_fwd_01",
+				"run": "run_fwd_01"
+			},
+			"note": "WildMesh Dog (Realistic Animals/Labrador/SK_Labrador.fbx).",
+			"length_m": 1.1,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/dog/Textures/T_Labrador_Body.png"
+				}
+			],
+			"variants": [
+				{
+					"scene": "res://assets/animals/dog/SK_Labrador.fbx"
+				},
+				{
+					"scene": "res://assets/animals/bloodhound/SK_Bloodhund.fbx",
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/bloodhound/Textures/T_Bloodhund.jpg"
+						}
+					],
+					"pack": "WildMesh3D/Realistic Animals/Bloodhund",
+					"clips": {
+						"0": "Idle",
+						"3": "Idle",
+						"10": "Idle",
+						"12": "Idle",
+						"walk": "walk fwd",
+						"run": "run fwd"
+					}
+				}
+			]
+		},
+		"buffalo": {
+			"scene": "res://assets/animals/buffalo/SK_Buffalo.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Buffalo",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 6.0,
+			"stride_m": 0.8,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Standstraight_Breathing",
+				"10": "GrazingOnspotA2IdleThreat",
+				"11": "RunFast_F",
+				"12": "Idle",
+				"walk": "WalkMedium_F",
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Wild ox (Realistic Animals/Buffalo/SK_Buffalo.fbx).",
+			"length_m": 3.0,
+			"materials": [
+				{
+					"match": "Antler",
+					"albedo": "res://assets/animals/buffalo/Textures/T_Buffalo_Antler.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/buffalo/Textures/T_Buffalo_Body.png"
+				}
+			]
 		}
 	}
 }

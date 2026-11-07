@@ -2586,6 +2586,48 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"cow": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"goat": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"chicken": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"cat": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"dog": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"buffalo": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {

@@ -20,7 +20,14 @@ rows = json.load(open(os.path.join(args.project, "data/animals/models.json"), en
 want = [k for k in args.kinds.split(",") if k]
 bad = 0
 
+jobs = []
 for kind, row in rows.items():
+    jobs.append((kind, row))
+    for v in row.get("variants", []):      # a look with its own file and pack folder (the rooster beside the hen)
+        if "pack" in v and "scene" in v:
+            jobs.append((kind, v))
+
+for kind, row in jobs:
     if want and kind not in want:
         continue
     if "pack" not in row:
