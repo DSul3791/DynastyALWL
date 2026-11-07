@@ -42,7 +42,7 @@
 		]
 	},
 	"evolve": {
-		"_note": "Stage B (evolve.py). K, m and D follow the earlier pre-carve runs (tools/erosion_precarve real_run: K 4e-6, m 0.5, D 0.05 m2/yr). G is the dimensionless deposition coefficient (about 1: deposition matters, floodplains and fans form). channel_area_m2: no fluvial cutting below this drainage area (2 ha), so the smallest hollows are shaped by creep, not gullied. Not yet tuned on our island: R2's first run sets them.",
+		"_note": "Stage B (evolve.py). K, m and D follow the earlier pre-carve runs (tools/erosion_precarve real_run: K 4e-6, m 0.5, D 0.05 m2/yr). G is the dimensionless deposition coefficient (about 1: deposition matters, floodplains and fans form). channel_area_m2: no fluvial cutting below this drainage area (2 ha), so the smallest hollows are shaped by creep, not gullied. Not yet tuned on our island: R2's first run sets them. start_roughness_m: uncorrelated starting roughness (fixed by world position) so channels branch instead of running in parallel lines; erosion removes it.",
 		"years": 1000000.0,
 		"dt": 4000.0,
 		"K": 4e-06,
@@ -53,6 +53,7 @@
 		"sweeps": 4,
 		"tol_m": 0.01,
 		"cover_m": 4.0,
-		"cover_erodibility": 5.0
+		"cover_erodibility": 5.0,
+		"start_roughness_m": 0.5
 	}
 }
