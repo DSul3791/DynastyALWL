@@ -36,3 +36,12 @@ Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the
 - Every goblin gets its own random height change each time it spawns: up to **0.5 m shorter or 0.5 m taller** (`height_variation_m`), so 0.6 m to 1.6 m.
 - Systemic: scale = (base_height_m + roll) / model_height_m, uniform, from the data in `data/creatures/goblins.json`. No per-goblin hand scales. Same approach as `length_m` for animals.
 - Open: whether the roll is flat or bell-shaped, and whether it is saved with the goblin. Not decided; ask Dave if it matters.
+
+## Behaviour (Dave, 7 Nov 2026)
+- **Groups:** when goblins spawn there are **2 to 5** of them together.
+- **Den:** they spawn in a **river-side cave** (caves exist only at river starts, inland; see DESIGN_IDEAS 4.4 and the caves doc).
+- **Night only:** they come out at night to **forage for berries**, to **sneak around**, and to **steal anything they can that is not protected by light** (campfire, torch or lamp light). By day they stay in the den.
+- **Watchers:** they often sneak to the very edge of a campfire's light, staying in the shadows, and **watch people**.
+- **Skittish:** they keep away from people and light, but **fight if backed into a corner or threatened in their den**.
+- Not decided: how much they can steal and where it goes (hoard in the den?), what a fight does (levels, damage), and whether they drop what they stole when killed. Ask Dave before building those.
+- Fits the temperament system (skittish, with a threat range that makes them fight) and the animal levels rule (level set by distance from town, not placement). See `docs/knowledge/animal-behaviour.md`.

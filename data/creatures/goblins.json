@@ -2,6 +2,17 @@
 	"note": "Goblin models and the systemic height rule (Dave, 7 Nov 2026). Every spawned goblin gets its own random height change, rolled fresh at each spawn, from -height_variation_m to +height_variation_m around base_height_m. Size the model from its real height (model_height_m), never a per-goblin hand scale: scale = (base_height_m + roll) / model_height_m, uniform on all axes. The .glb files are in git at full size (38-43 MB each). Textures are never shrunk in the source files; they only get smaller through LOD on lower graphics settings.",
 	"base_height_m": 1.1,
 	"height_variation_m": 0.5,
+	"behaviour": {
+		"note": "Dave 7 Nov 2026, see docs/GOBLINS.md.",
+		"group_size": [2, 5],
+		"den": "river_side_cave",
+		"active": "night",
+		"forage": "berries",
+		"steals": "anything not lit by campfire, torch or lamp",
+		"watches_from": "edge of light, in shadow",
+		"temperament": "skittish",
+		"fights_when": ["cornered", "threatened in den"]
+	},
 	"quality_tiers": {
 		"note": "Dave 7 Nov 2026: each goblin model is made once at ultra quality (about 40k triangles). Lower graphics settings use Godot's own downgrading (import-time mesh LODs, texture compression and mipmaps), NOT separate hand-made models.",
 		"ultra": "the source file itself"
