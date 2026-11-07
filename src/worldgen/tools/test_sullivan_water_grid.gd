@@ -31,6 +31,9 @@ func _init() -> void:
 	_mirror()
 	_f13_withdrawal()
 	_m1_ten_thousand()
+	_daves_smoke_tests()
+	_backlog_kept()
+	_service()
 	print("%d failures, %d ms" % [failures, Time.get_ticks_msec() - begun])
 	quit(1 if failures > 0 else 0)
 
@@ -356,3 +359,91 @@ func _m1_ten_thousand() -> void:
 		grid.step()
 
 	_check(grid.max_wet_head() < 0.005, "M1: with inflow stopped the pond settles (largest step between wet cells %.4f m)" % grid.max_wet_head())
+
+
+# Dave's companion smoke tests (docs/water/edition3_code/edition_1_baseline/tests/TestWaterGrid.gd), the same setups and pass conditions,
+# run with both face laws: conservation, a ditch cut through a ridge, and a dam built then removed.
+func _daves_smoke_tests() -> void:
+	for law in [Grid.LAW_PIPE, Grid.LAW_ORIFICE]:
+		var name: String = "pipe" if law == Grid.LAW_PIPE else "orifice"
+
+		var grid = Grid.new(12, 12, 2.0)
+		grid.law = law
+		grid.add_water(4, 4, 20.0)
+		var initial: float = grid.total_volume()
+
+		for _t in range(150):
+			grid.step()
+
+		_check(absf(grid.total_volume() - initial) < 0.00001 and grid.min_volume() >= 0.0, "Dave's conservation test (%s law): 20 m3 kept, no negative cell" % name)
+
+		var ditch = Grid.new(8, 5, 2.0)
+		ditch.law = law
+
+		for z in range(5):
+			ditch.set_bed(3, z, 5.0)
+
+		for z in range(5):
+			ditch.add_water(1, z, 12.0)
+
+		for _t in range(60):
+			ditch.step()
+
+		var before: float = ditch.total_volume()
+		ditch.set_bed(3, 2, 0.0)
+
+		for _t in range(300):
+			ditch.step()
+
+		_check(ditch.depth(4, 2) > 0.0 and absf(ditch.total_volume() - before) < 0.00001, "Dave's ditch test (%s law): water crosses the cut ridge (%.3f m deep beyond), none made or lost" % [name, ditch.depth(4, 2)])
+
+		var dam = Grid.new(4, 3, 2.0)
+		dam.law = law
+
+		for z in range(3):
+			dam.set_crest_east(1, z, 4.0)
+
+		dam.add_water(1, 1, 8.0)
+
+		for _t in range(60):
+			dam.step()
+
+		var held: bool = dam.depth(2, 1) < 0.000001
+
+		for z in range(3):
+			dam.set_crest_east(1, z, Grid.OPEN)
+
+		for _t in range(100):
+			dam.step()
+
+		_check(held and dam.depth(2, 1) > 0.0, "Dave's dam test (%s law): the dam holds, and once removed the water reaches the far side" % name)
+
+
+# Dave's runner rule: time the tick could not run yet is kept, never thrown away.
+func _backlog_kept() -> void:
+	var grid = Grid.new(4, 4)
+	var ran: int = grid.advance(1.0 + 1.0e-9)   # 10 ticks of time (a hair over, so float rounding cannot make it 9), at most 4 a call
+	var total: int = ran
+
+	while grid.backlog_s() >= grid.dt:
+		total += grid.advance(0.0)
+
+	_check(ran == Grid.MAX_CATCH_UP_STEPS and total == 10, "runner: a 1 s pause runs %d ticks at once and all 10 in the end (%d)" % [ran, total])
+
+
+# The water query (Dave's water_service.gd, adapted): a wet cell answers with its surface, bed and current; a dry one finds nothing; with no
+# freshwater the ocean answers.
+func _service() -> void:
+	var Service = load("res://src/sullivan_water/core/water_service.gd")
+	var grid = Grid.new(4, 4)
+	grid.fill_to_level(1.0)
+	grid.set_bed(3, 3, 2.0)
+	grid.volume[grid.index(3, 3)] = 0.0
+	var service = Service.new()
+	service.grid = grid
+	service.grid_origin_xz = Vector2(100.0, 200.0)
+	var wet = service.sample(Vector3(101.0, 0.5, 201.0))
+	var dry = service.sample(Vector3(107.0, 3.0, 207.0))
+	_check(wet.found and absf(wet.surface_y_m - 1.0) < 1.0e-9 and wet.submerged and wet.body_id == 100, "service: a point in the pond is found, surface %.3f m, submerged" % wet.surface_y_m)
+	_check(not dry.found, "service: a dry cell finds no water (and there is no ocean)")
+	_check(not service.sample(Vector3(0.0, 0.0, 0.0)).found, "service: outside the grid finds nothing")

@@ -22,6 +22,14 @@ static func douse_reason(entry: Dictionary, underwater: bool, rain: float, cover
 	return ""
 
 
+# Why a torch cannot be lit now: "water" when the eye is under water, "rain" in open rain with nothing over you (a cave, a roof or a crown is cover), else "".
+static func light_block(underwater: bool, rain: float, covered: bool) -> String:
+	if underwater:
+		return "water"
+
+	return "rain" if in_rain(rain, covered) else ""
+
+
 # Whether an open flame is out in rain strong enough to put it out.
 static func in_rain(rain: float, covered: bool) -> bool:
 	return rain >= RAIN_DOUSE and not covered
