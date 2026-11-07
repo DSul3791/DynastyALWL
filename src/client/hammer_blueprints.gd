@@ -354,7 +354,7 @@ func list_text(hammer_tier: int, window: int = 0) -> String:
 
 func _line(list: Array, n: int) -> String:
 	var entry: Dictionary = list[n]
-	return "%s %s%s" % [">" if n == _cursor else " ", entry["name"], "" if bool(entry["can"]) else " (short)"]
+	return "%s %s%s" % [">" if n == _cursor else " ", entry["name"], "" if bool(entry["can"]) else " (need materials)"]
 
 
 # The line under the menu: materials (have/need) of the highlighted blueprint or plan, or what the highlighted action does.

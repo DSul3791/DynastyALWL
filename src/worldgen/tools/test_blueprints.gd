@@ -101,10 +101,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
 	check(items.world_item_count() == before and _have(1, "lumber") == 12, "no hammer: nothing placed, nothing taken")
 	_give(1, "wooden_hammer", 1)
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
-	check(items.world_item_count() == before and _have(1, "lumber") == 12, "no workbench near: nothing placed, nothing taken")
-	items.place_piece(1, "log_workbench_kit", Vector3(200.0, 10.0, 202.0))
-	check(_ids_standing("log_workbench").size() == 1, "a log workbench stands (the station)")
+	# Blueprints never need a workbench (Dave 7 Nov 2026): none stands here, and the next placement below still works.
 	_clear(1)
 	_give(1, "wooden_hammer", 1)
 	_give(1, "lumber", 11)
@@ -118,15 +115,6 @@ func _init() -> void:
 	items.action(1, Net.ACT_USE_STRUCT, site_id, 0, 0, Vector3.ZERO)
 	check(items.world_item_count() == with_bench + 1 and _ids_standing("woodworking_table").size() == 1 and not items._items[site_id]["struct"].has("site"), "E on the site deposits the materials and the table stands")
 	check(_have(1, "lumber") == 0 and _have(1, "nails") == 0 and _have(1, "woodworking_table_kit") == 0 and _have(1, "wooden_hammer") == 1, "exactly the materials were taken, no kit item, the hammer kept")
-
-	# A station level the bench cannot give: the blacksmithy needs level 4, the log workbench is level 2.
-	var smith: Dictionary = live["blacksmithy"]
-	_give(1, "stone", 30)
-	_give(1, "log", 10)
-	_give(1, "clay", 10)
-	var smith_before: int = items.world_item_count()
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(smith["number"]), 0, 0, Vector3(204.0, 10.0, 205.0))
-	check(items.world_item_count() == smith_before and _have(1, "stone") == 30, "a bench of too low a level places nothing and takes nothing")
 
 	# Row hammer tier: a row asking for hammer 2 refuses the wooden hammer.
 	items._blueprints[int(table_bp["number"])]["hammer"] = 2

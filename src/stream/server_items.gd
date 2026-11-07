@@ -6117,9 +6117,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 		_say(peer, "This hammer is too light for that. A stone hammer or better.")
 		return false
 
-	if str(row.get("station", "")) != "" and not station_near(peer, str(row["station"]), int(row.get("station_level", 1))):
-		_say(peer, "You need a %s close by." % str(row["station"]).replace("_", " "))
-		return false
+	# Blueprints never need a workbench (Dave 7 Nov 2026): workbenches are for crafting tools and the like, a blueprint can always be placed.
 
 	if str(row.get("near", "")) != "" and not station_near(peer, str(row["near"]), int(row.get("near_level", 1))):
 		_say(peer, "You need a %s close by." % str(row["near"]).replace("_", " "))
