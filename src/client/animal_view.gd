@@ -24,6 +24,7 @@ const FELL_M := 3.0                      # how near the hit (the hit is placed a
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
+const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
@@ -93,6 +94,14 @@ func _make_for_species(number: int, id: int, young: bool = false) -> Node3D:
 
 
 func _make_species_body(number: int, id: int, young: bool = false) -> Node3D:
+	var flock_row: Dictionary = _model_rows().get(str(KIND_OF_SPECIES.get(number, "")), {})
+
+	if flock_row.has("flock_of"):
+		var flock: Node3D = _make_model_flock(number, id, flock_row)
+
+		if flock != null:
+			return flock
+
 	var model: Node3D = _make_model(number, id, young)
 
 	if model != null:
@@ -368,7 +377,11 @@ func _process_body(delta: float) -> void:
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
 		if bool(b.get("model", false)):
 			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
-			_animate_model(node, b, state, model_speed, delta)
+			if node.has_meta("flock_birds"):
+				for bird in node.get_meta("flock_birds"):
+					_animate_model(bird, b, state, model_speed, delta)
+			else:
+				_animate_model(node, b, state, model_speed, delta)
 			_emit_steps(b, node, state, model_speed)
 			continue
 
@@ -1056,6 +1069,38 @@ func _strip_root_drift(player: AnimationPlayer, anim: Animation, rig: Node3D, ki
 		_model_note(kind, "clip %s travels %.1f m/s by itself: travel taken out (the server moves the animal), played at speed / %.1f" % [anim_name, mps, mps])
 
 
+# A flock drawn from a model (ducks, Dave 7 Nov 2026: all the animals we have models for): one wire record is a whole flock, so
+# the row's "flock_of" [min, max] birds are built from the model, spread over "spread_m" round the record, each turned its own
+# way and set "sink_m" into the surface (a swimming bird sits low in the water). Every bird plays the record's state (_animate_model).
+func _make_model_flock(number: int, id: int, row: Dictionary) -> Node3D:
+	var span: Array = row["flock_of"]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = id * 7919
+	var count: int = int(span[0]) + id % maxi(1, int(span[1]) - int(span[0]) + 1)
+	var spread: float = float(row.get("spread_m", 3.0))
+	var root: Node3D = Node3D.new()
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var birds: Array = []
+
+	for k in count:
+		var bird: Node3D = _make_model(number, id * 31 + k)
+
+		if bird == null:
+			root.free()
+			return null      # no model file: the code flock is drawn
+
+		bird.position = Vector3(rng.randf_range(-spread, spread), -float(row.get("sink_m", 0.0)), rng.randf_range(-spread, spread))
+		bird.rotation.y = rng.randf_range(-0.6, 0.6)
+		rig.add_child(bird)
+		birds.append(bird)
+
+	root.set_meta("model", true)
+	root.set_meta("flock_birds", birds)
+	return root
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -1088,8 +1133,10 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = str(state) if roles.has(str(state)) else "0"
 
-	if ref > 0.0:
+	if ref > 0.0 and not (state in AIR_STATES and roles.has(str(state))):      # in the air a flock plays its flight clip at any speed
 		role = "run" if ref == run_mps else "walk"
+	elif state in AIR_STATES and roles.has(str(state)):
+		ref = 0.0
 
 	clip = str(roles.get(role, roles.get("0", "")))
 
