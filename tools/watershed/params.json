@@ -1,17 +1,32 @@
 {
 	"_note": "Watershed rebuild parameters (docs/water/watershed_rebuild_design.md). One file for every stage, so a run is reproduced from it and the input hashes in its manifest.",
-	"tiles": [2, 3, 4, 5],
+	"tiles": [
+		2,
+		3,
+		4,
+		5
+	],
 	"model_step": 2,
 	"seed": 9137,
 	"uplift": {
 		"_note": "Stage A2: where and how fast the land rose (m/yr). Design part: high where the landform is high, from the smoothed landform; hill part: plane-wave variation at hill scale, so erosion carves real ridges and spurs instead of noise laid on top.",
-		"base_m_per_yr": 1.2e-3,
+		"base_m_per_yr": 0.0012,
 		"smooth_m": 1200.0,
 		"ref_height_m": 900.0,
 		"power": 1.0,
 		"coast_floor": 0.05,
-		"hill_wavelengths_m": [2400.0, 1100.0, 520.0, 230.0],
-		"hill_amplitudes": [0.35, 0.25, 0.15, 0.08],
+		"hill_wavelengths_m": [
+			2400.0,
+			1100.0,
+			520.0,
+			230.0
+		],
+		"hill_amplitudes": [
+			0.35,
+			0.25,
+			0.15,
+			0.08
+		],
 		"min_factor": 0.2
 	},
 	"rain": {
@@ -25,6 +40,23 @@
 	},
 	"rock": {
 		"_note": "Stage A3: rock ids from the geology export (export_geology.gd --step equal to the model cell). Soluble rocks may hold karst (cave springs, stage C7).",
-		"soluble": ["limestone", "marble"]
+		"soluble": [
+			"limestone",
+			"marble"
+		]
+	},
+	"evolve": {
+		"_note": "Stage B (evolve.py). K, m and D follow the earlier pre-carve runs (tools/erosion_precarve real_run: K 4e-6, m 0.5, D 0.05 m2/yr). G is the dimensionless deposition coefficient (about 1: deposition matters, floodplains and fans form). channel_area_m2: no fluvial cutting below this drainage area (2 ha), so the smallest hollows are shaped by creep, not gullied. Not yet tuned on our island: R2's first run sets them.",
+		"years": 1000000.0,
+		"dt": 4000.0,
+		"K": 4e-06,
+		"m": 0.5,
+		"D": 0.05,
+		"G": 1.0,
+		"channel_area_m2": 20000.0,
+		"sweeps": 4,
+		"tol_m": 0.01,
+		"cover_m": 4.0,
+		"cover_erodibility": 5.0
 	}
 }
