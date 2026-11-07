@@ -88,5 +88,29 @@ func _init() -> void:
 	var k: int = 4 * samples + 12   # the 8 m sample covering x 96..104, z 32..40
 	_check(changed and not is_nan(drawn[k]), "publish draws the ditch water into the 8 m levels (%.2f m at z 32)" % drawn[k])
 
+	# The ditch goes on north past z 0, the edge of the 96 m tile: the region joins the next tile in one grid, with every cubic metre
+	# copied, and the water keeps running up the ditch across the old edge (guide 26.1: one owner per face, no seam).
+	var before_m3: float = grid.total_volume()
+
+	for step in range(14, 44):
+		var c: Vector3 = Vector3(100.0, 1.0, 40.0 - step * 1.5)
+		ground.digs.append([c, 1.5])
+		live.dig(c, 1.5, false)
+
+	live.update(0.0, level_at)
+	_check(live.windows.size() == 1 and live.windows[0]["tiles"].get_area() == 2, "the ditch past the tile edge joined one region of 2 tiles (%d regions, %s)" % [live.windows.size(), str(live.windows[0]["tiles"])])
+	_check(live.joined == 1 and live.last_copied_m3 == before_m3, "the join copied every m3 of the old region (%.6f of %.6f)" % [live.last_copied_m3, before_m3])
+	grid = live.windows[0]["grid"]
+	adapter = live.windows[0]["adapter"]
+
+	for _s in range(300):
+		live.update(1.0, level_at)
+
+	var far_i: int = int((100.0 - adapter.origin.x) / 2.0)
+	var far_j: int = int((-19.0 - adapter.origin.y) / 2.0)
+	var far_d: float = grid.depth(far_i, far_j)
+	_check(far_d > 0.2, "river water ran up the ditch past the old tile edge (%.2f m deep at z -19)" % far_d)
+	_check(absf(grid.ledger_residual()) < 1.0e-6 * maxf(grid.total_volume(), 1.0), "joined region ledger balances (%s)" % String.num_scientific(grid.ledger_residual()))
+
 	print("%d failures" % failures)
 	quit(1 if failures > 0 else 0)
