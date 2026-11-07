@@ -1,5 +1,5 @@
 {
-	"note": "Goblin models and the systemic height rule (Dave, 7 Nov 2026). Every spawned goblin gets its own random height change, rolled fresh at each spawn, from -height_variation_m to +height_variation_m around base_height_m. Size the model from its real height (model_height_m), never a per-goblin hand scale: scale = (base_height_m + roll) / model_height_m, uniform on all axes. The .glb is NOT yet in git (38 MB, textures not shrunk); put it at assets/creatures/goblin_skritch/ on a build machine until it is.",
+	"note": "Goblin models and the systemic height rule (Dave, 7 Nov 2026). Every spawned goblin gets its own random height change, rolled fresh at each spawn, from -height_variation_m to +height_variation_m around base_height_m. Size the model from its real height (model_height_m), never a per-goblin hand scale: scale = (base_height_m + roll) / model_height_m, uniform on all axes. The .glb files are NOT yet in git (38-43 MB each, textures not shrunk); put them at assets/creatures/<folder>/ on a build machine until they are.",
 	"base_height_m": 1.1,
 	"height_variation_m": 0.5,
 	"quality_tiers": {
@@ -16,6 +16,16 @@
 			"yaw_deg": 0,
 			"clips": ["Alert", "BeHit_FlyUp", "Block1", "Cautious_Crouch_Walk_Forward", "Collect_Object", "Combat_Stance", "Dead", "Idle_02", "Knock_Down", "Right_Hand_Sword_Slash", "Roll_Dodge", "Running", "Sit_Cross_Legged_on_Floor", "Sleep_Normally", "Sneaky_Walk", "Stand_Dodge", "Stand_and_Drink", "Thrust_Slash", "Walking"],
 			"note": "Mixamo-style 24-bone skeleton, 19 clips, two embedded PNG textures. Facing direction (yaw_deg) not checked in Godot yet."
+		},
+		"rukz_the_scavenger": {
+			"scene": "res://assets/creatures/goblin_rukz/Goblin_Rukz_The_Scavenger.glb",
+			"source": "Meshy, made by Dave, 7 Nov 2026",
+			"quality": "ultra",
+			"triangles": 41303,
+			"model_height_m": 1.1,
+			"yaw_deg": 0,
+			"clips": ["Running", "Walking", "Alert", "Attack", "Cautious_Crouch_Walk_Forward", "Collect_Object", "Dead", "Hit_Reaction", "Idle_02", "Idle_5", "Roll_Dodge", "Sit_Cross_Legged_on_Floor", "Sleep_Normally", "Sneaky_Walk", "Stand_Dodge", "Stand_and_Drink", "Sword_Judgment", "Sword_Parry", "Thrust_Slash", "falling_down"],
+			"note": "Same Mixamo-style 24-bone skeleton, 20 clips, two embedded PNG textures (23 MB colour, 10 MB metallic-roughness). Clip names differ from Skritch (Attack, Hit_Reaction, Idle_5, Sword_Judgment, Sword_Parry, falling_down), so map clips per model by role. Facing direction not checked in Godot yet."
 		}
 	}
 }
