@@ -35,7 +35,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 93   # 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 94   # 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -62,6 +62,7 @@ signal quake_received(stage: int, strength: float, point: Vector3)
 signal leak_received(points: PackedVector3Array, closeness: PackedByteArray)
 signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_flow_received(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray)
+signal fine_water_received(keys: PackedStringArray, packets: Array)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal surface_requested(peer_id: int, x: float, z: float)
 signal surface_received(x: float, z: float, y: float)
@@ -362,6 +363,13 @@ func surface(x: float, z: float, y: float) -> void:
 @rpc("authority", "call_remote", "reliable")
 func deliver_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
 	water_flow_received.emit(origin, w, h, cell_m, raw_size, bytes)
+
+
+# Protocol 94: the dig regions' 2 m water (Sullivan water, docs/water/fine_drawing_2m.md). `keys` names every region drawn (drop the rest);
+# each packet is [key, origin of cell (0, 0), w, h, cell_m, raw size, zstd bytes] in the form of deliver_water_flow.
+@rpc("authority", "call_remote", "reliable")
+func deliver_fine_water(keys: PackedStringArray, packets: Array) -> void:
+	fine_water_received.emit(keys, packets)
 
 
 @rpc("authority", "call_remote", "reliable")

@@ -126,5 +126,18 @@ func _init() -> void:
 	_check(live.sleeping.size() == 1 and live.windows.size() == 1 and live.windows[0]["tiles"].get_area() == 2, "a dig in the ditch wakes its region (the far one sleeps instead)")
 	_check(live.last_copied_m3 == kept_m3 and live.closed_m3 == 0.0, "woken with exactly the water it slept with (%.6f of %.6f m3), none dropped" % [live.last_copied_m3, kept_m3])
 
+	var rect: Rect2 = live.drawn_rect()
+	_check(rect == Rect2(96.0, -96.0, 96.0, 192.0), "drawn_rect names the running region's ground for the client refresh (%s)" % str(rect))
+
+	# The fine sheets' packets (docs/water/fine_drawing_2m.md): every region named, the running one sent, its ditch texel wet.
+	var fine: Dictionary = live.fine_packets(false)
+	_check(fine["keys"].size() == 2 and fine["packets"].size() == 1, "fine packets name both regions and send the running one (%d keys, %d packets)" % [fine["keys"].size(), fine["packets"].size()])
+	var pk: Array = fine["packets"][0]
+	var raw: PackedByteArray = PackedByteArray(pk[6]).decompress(int(pk[5]), FileAccess.COMPRESSION_ZSTD)
+	var im: Image = Image.create_from_data(int(pk[2]), int(pk[3]), false, Image.FORMAT_RGBAF, raw)
+	var texel: Color = im.get_pixel(far_i, far_j)
+	_check(texel.a > 0.2 and absf(texel.r - grid.surface(far_i, far_j)) < 1.0e-4, "the ditch texel carries its depth and surface (%.2f m deep, surface %.3f)" % [texel.a, texel.r])
+	_check(fine["packets"][0][1] == Vector2(97.0, -95.0) and live.fine_packets(true)["packets"].size() == 2, "packet origin is cell (0, 0)'s centre, and sleeping regions go too when asked")
+
 	print("%d failures" % failures)
 	quit(1 if failures > 0 else 0)

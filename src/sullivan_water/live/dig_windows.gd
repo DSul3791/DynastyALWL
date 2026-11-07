@@ -245,6 +245,62 @@ func _tiles_running() -> int:
 	return n
 
 
+# The regions as texture packets for the clients' fine sheets (docs/water/fine_drawing_2m.md), in the 8 m window's form
+# (water_flow_texture.gd, protocol 85: RGBAF per cell, R surface or bed where dry, G and B flow east and south, A depth; sea cells left out).
+# {"keys": every drawn region, "packets": [[key, origin of cell (0, 0), w, h, cell_m, raw size, zstd bytes], ...]} with the running regions,
+# and the sleeping ones too when `with_sleeping`. Water thread.
+func fine_packets(with_sleeping: bool) -> Dictionary:
+	var keys: PackedStringArray = PackedStringArray()
+	var packets: Array = []
+
+	for win in sleeping + windows:
+		var t: Rect2i = win["tiles"]
+		var key: String = "%d_%d_%d_%d" % [t.position.x, t.position.y, t.size.x, t.size.y]
+		keys.append(key)
+
+		if not with_sleeping and sleeping.has(win):
+			continue
+
+		var grid = win["grid"]
+		var im: Image = Image.create(grid.w, grid.h, false, Image.FORMAT_RGBAF)
+
+		for j in range(grid.h):
+			for i in range(grid.w):
+				var b: float = grid.bed[grid.index(i, j)]
+
+				if b < 0.0:
+					im.set_pixel(i, j, Color(0.0, 0.0, 0.0, 0.0))
+					continue
+
+				var d: float = grid.depth(i, j)
+
+				# A film thinner than DRAW_M (the 2 m cells seeded from the 8 m level leave a few mm to cm on gentle banks) is not drawn,
+				# as the 8 m drawing leaves out water under its WetMeters: drawn, the sheet's shore foam traced pale lines over the grass
+				# (Dino's #513 picture over the pond, 7 Nov 2026).
+				if d < DRAW_M:
+					im.set_pixel(i, j, Color(b, 0.0, 0.0, 0.0))
+					continue
+
+				var v: Vector2 = grid.velocity(i, j)
+				im.set_pixel(i, j, Color(b + d, v.x, v.y, d))
+
+		var raw: PackedByteArray = im.get_data()
+		var origin: Vector2 = win["origin"] + Vector2(0.5, 0.5) * CELL_M
+		packets.append([key, origin, grid.w, grid.h, CELL_M, raw.size(), raw.compress(FileAccess.COMPRESSION_ZSTD)])
+
+	return {"keys": keys, "packets": packets}
+
+
+# The world rectangle (x, z) round the running regions (the only ones whose drawing changes), or an empty Rect2. Water thread.
+func drawn_rect() -> Rect2:
+	var out: Rect2 = Rect2()
+
+	for win in windows:
+		var r: Rect2 = Rect2(win["origin"], Vector2(win["tiles"].size) * TILE_M)
+		out = r if not out.has_area() else out.merge(r)
+	return out
+
+
 # Draws the regions into the hub's 8 m levels (a tile's `samples` x `samples`, first sample at x0, z0). Returns true when any sample changed.
 func publish(levels: PackedFloat32Array, samples: int, x0: float, z0: float) -> bool:
 	var changed: bool = false
