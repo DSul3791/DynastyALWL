@@ -287,6 +287,10 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	clock = Time.get_ticks_msec()
 	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, tile_rules["water"].get("valley_drain", {}))
 	print("  valley drain (tile %s): %d cells raised to drain to the river, up to %.1f m (%d ms)" % [str(tile), drained["raised"], drained["max_m"], Time.get_ticks_msec() - clock])
+	# Last of the ground passes: no dry hollow is left for rain to pool in (tile_valley_drain.gd drain_hollows).
+	clock = Time.get_ticks_msec()
+	var hollows: Dictionary = TileValleyDrainScript.drain_hollows(water.heights, water.water_class, n, tile_rules["water"].get("valley_drain", {}))
+	print("  dry hollows (tile %s): %d cells raised to their spill, up to %.1f m (%d ms)" % [str(tile), hollows["cells"], hollows["most_m"], Time.get_ticks_msec() - clock])
 
 
 	clock = Time.get_ticks_msec()
