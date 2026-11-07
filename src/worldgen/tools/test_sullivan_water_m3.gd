@@ -22,6 +22,7 @@ class MadeUpGround:
 	extends RefCounted
 	var berms: Array = []     # [Rect2 (x, z), top y]
 	var bridges: Array = []   # [AABB]
+	var caves: Array = []     # [AABB] of air under the ground
 	var ops: Array = []       # [add: bool, centre: Vector3, radius: float]
 	var loaded: Rect2 = Rect2(-1000.0, -1000.0, 2000.0, 2000.0)
 
@@ -38,6 +39,11 @@ class MadeUpGround:
 			var a: AABB = box
 			var inside: Vector3 = (p - a.get_center()).abs() - a.size * 0.5
 			d = minf(d, maxf(inside.x, maxf(inside.y, inside.z)))
+
+		for box in caves:
+			var c: AABB = box
+			var inside_c: Vector3 = (p - c.get_center()).abs() - c.size * 0.5
+			d = maxf(d, -maxf(inside_c.x, maxf(inside_c.y, inside_c.z)))
 
 		for op in ops:
 			var r: float = (p - Vector3(op[1])).length() - float(op[2])
@@ -65,6 +71,7 @@ func _init() -> void:
 	print("engine %s" % Engine.get_version_info().get("string", "?"))
 	_g01_g02_f06_berm_and_cut()
 	_g03_bridge()
+	_deep_cave()
 	_f07_raise_under_water()
 	_f14_unloaded()
 	_roof_over_water()
@@ -148,6 +155,16 @@ func _g03_bridge() -> void:
 	_check(int(built["stacked"]) == 8 and adapter.classification[grid.index(4, 1)] == Adapter.STACKED, "G03: the 2 columns x 4 rows under the bridge are found STACKED (%d)" % int(built["stacked"]))
 	_check(grid.crest_e[grid.index(3, 1)] == Grid.WALL and grid.crest_e[grid.index(5, 1)] == Grid.WALL, "G03: their faces are closed, so no water is put on the bridge deck")
 	print("BLOCKED G03: flow under a bridge needs the layered water graph (guide 3.10, 24.3), not built yet")
+
+
+# A cave 10 m under the ground does not make the surface STACKED: only air within stack_depth_m under the top does.
+func _deep_cave() -> void:
+	var ground = MadeUpGround.new()
+	ground.caves.append(AABB(Vector3(-100.0, -12.0, -100.0), Vector3(200.0, 3.0, 200.0)))
+	var parts: Array = _setup(ground, 4, 4)
+	parts[1].y_min = -20.0
+	var built: Dictionary = parts[2].build()
+	_check(bool(built["ok"]) and int(built["stacked"]) == 0 and absf(parts[0].bed[0]) < SURFACE_TOL, "4.1: a cave 9 m down leaves the surface open, bed %.3f m" % parts[0].bed[0])
 
 
 # F07: a fill raises ground under 1 m of standing water; the cell keeps its water, the surface rises, and the flow spreads it.

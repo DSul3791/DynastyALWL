@@ -8,11 +8,15 @@ extends RefCounted
 # The ground comes from a SOURCE object, so the same code reads made-up ground in tests, the server's ground, or a client VoxelTool:
 #   source.sdf(world: Vector3) -> float        signed distance in metres, NEGATIVE = solid (the project's convention, terrain_layout.gd)
 #   source.is_loaded(world_box: AABB) -> bool   false where ground is not loaded or not editable: those columns are UNKNOWN, never air
+#   source.scan_range(x, z) -> Vector2           optional: the y range (lo, hi) worth scanning in this column, e.g. the generator's surface
+#                                                height plus and minus a margin; without it the adapter scans y_min..y_max
 #
 # Per column (guide 24.2, the simple outdoor surface layer): scan from y_max down to y_min in steps of scan_step_m. The first air-to-solid
-# crossing met is the top of the ground, refined by bisection to refine_m. If the scan then finds air again under that solid (a roof over
-# a cave, a bridge over a river), the column holds more than one surface: it is STACKED, and this one-surface grid must not simulate it
-# (guide 3.10, 24.1). Its faces are closed until the layered water graph exists.
+# crossing met is the top of the ground, refined by bisection to refine_m. If the scan then finds air again within stack_depth_m under that
+# top (a bridge deck over a river, a thin roof over standing water), the column holds more than one surface: it is STACKED, and this
+# one-surface grid must not simulate it (guide 3.10, 24.1). Its faces are closed until the layered water graph exists. A cave deeper than
+# stack_depth_m under solid ground does not touch the surface water and leaves the column OPEN_SURFACE (guide 4.1: the bed is the highest
+# solid support under that water layer).
 #
 # Face crests: the highest ground at the face's two ends and its midpoint (guide 24.2: "at both ends plus midpoint ... use the maximum").
 # A berm on a face boundary raises the crest even though both cell centres stay low (test G01).
@@ -30,6 +34,7 @@ var y_min: float = -64.0         # scan range, world metres
 var y_max: float = 256.0
 var scan_step_m: float = 0.25    # guide 24.2: min(voxel size, cell / 4); our voxels are 1 m and cells 2 m, so 0.5 m would do: 0.25 is safer
 var refine_m: float = 0.01       # guide 24.2: refine crossings to at most 0.05 m
+var stack_depth_m: float = 4.0   # air this close under the top makes the column STACKED (a bridge deck, a thin roof)
 
 var classification: PackedByteArray   # per grid cell, after the last extract
 
@@ -58,7 +63,15 @@ func column(x: float, z: float) -> Dictionary:
 	if not source.is_loaded(probe):
 		return {"state": UNKNOWN, "top": NAN}
 
-	var y: float = y_max
+	var lo_y: float = y_min
+	var hi_y: float = y_max
+
+	if source.has_method("scan_range"):
+		var r: Vector2 = source.scan_range(x, z)
+		lo_y = r.x
+		hi_y = r.y
+
+	var y: float = hi_y
 	var above: float = source.sdf(Vector3(x, y, z))
 
 	if above <= 0.0:
@@ -66,8 +79,8 @@ func column(x: float, z: float) -> Dictionary:
 
 	var top: float = NAN
 
-	while y > y_min:
-		var lower: float = maxf(y - scan_step_m, y_min)
+	while y > lo_y:
+		var lower: float = maxf(y - scan_step_m, lo_y)
 		var below: float = source.sdf(Vector3(x, lower, z))
 
 		if is_nan(top):
@@ -75,6 +88,8 @@ func column(x: float, z: float) -> Dictionary:
 				top = _refine(x, z, lower, y)
 		elif below > 0.0:
 			return {"state": STACKED, "top": top}   # air again under the first solid: a roof or a bridge
+		elif lower <= top - stack_depth_m:
+			break   # solid all the way down to stack_depth_m: whatever lies deeper (a cave) is not this water's business
 
 		y = lower
 
