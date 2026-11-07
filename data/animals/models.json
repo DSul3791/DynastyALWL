@@ -37,6 +37,58 @@
 				}
 			]
 		},
+		"goblin": {
+			"scene": "res://assets/creatures/goblin_skritch/Goblin_Skritch_Ragtooth.glb",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.2,
+			"run_mps": 5.0,
+			"stride_m": 0.7,
+			"height_m": 1.1,
+			"height_variation_m": 0.5,
+			"clips": {
+				"0": "Idle_02",
+				"1": "Walking",
+				"2": "Running",
+				"3": "Alert",
+				"10": "Combat_Stance",
+				"11": "Running",
+				"12": "Idle_02",
+				"walk": "Walking",
+				"run": "Running"
+			},
+			"note": "Goblins (Dave 7 Nov 2026, docs/GOBLINS.md). Sized by mesh height: height_m plus a bell-shaped roll of up to height_variation_m, per animal id. variants are laid over this row, one per goblin by id: Skritch Ragtooth and Rukz the Scavenger, whose clip names differ. The .glb files are committed (made by Dave in Meshy, not the bought pack). Facing (yaw_deg 180, as the bear) is to be checked on the PC.",
+			"variants": [
+				{
+					"scene": "res://assets/creatures/goblin_skritch/Goblin_Skritch_Ragtooth.glb",
+					"clips": {
+						"0": "Idle_02",
+						"1": "Walking",
+						"2": "Running",
+						"3": "Alert",
+						"10": "Combat_Stance",
+						"11": "Running",
+						"12": "Idle_02",
+						"walk": "Walking",
+						"run": "Running"
+					}
+				},
+				{
+					"scene": "res://assets/creatures/goblin_rukz/Goblin_Rukz_The_Scavenger.glb",
+					"clips": {
+						"0": "Idle_02",
+						"1": "Walking",
+						"2": "Running",
+						"3": "Alert",
+						"10": "Alert",
+						"11": "Running",
+						"12": "Idle_02",
+						"walk": "Walking",
+						"run": "Running"
+					}
+				}
+			]
+		},
 		"deer": {
 			"scene": "res://assets/animals/deer/SK_Deer.fbx",
 			"scale": 1.0,

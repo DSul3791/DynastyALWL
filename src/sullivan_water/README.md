@@ -12,9 +12,9 @@ This code runs beside `src/water2` (today's live water) until its gates pass. No
 |---|---|---|---|
 | M0 | `docs/water/runtime_inventory.md` | the PC probes P1 to P4 | written; P1 and P2 PASS, P3 and P4 waiting for Dino |
 | M1 | `freshwater/water_grid_2d.gd`, one closed conservative region | `test_sullivan_water_grid`: F01, F02, F03, F04, F05, F07 (open-air part), F09, F13, a 10k tick ledger, a stable pond | PASS on David4 headless, 611db289: 30 ok, 0 failures, ledger residual 1.9e-13 m³ over 10k ticks |
-| M2 | ditch, dam, spillway and irrigation sandbox: `freshwater/irrigation_field.gd` (soil moisture, granted intake only, runoff back) | `test_sullivan_water_m2`: partial dam opening, bypass, spillway, uphill canal, canal split, shutoff gates, drought withdrawal, field runoff | code written; test NOT RUN |
-| M3 | terrain adapter on our `VoxelLodTerrain` and edit transaction (guide 17, 24, 25) | real digs change cells and crests without a reset | |
-| M4 | chunk seams, sleep and wake, persisted boundary reservoirs (guide 26) | cross-region and unload/reload comparisons | |
+| M2 | ditch, dam, spillway and irrigation sandbox: `freshwater/irrigation_field.gd` (soil moisture, granted intake only, runoff back) | `test_sullivan_water_m2`: partial dam opening, bypass, spillway, uphill canal, canal split, shutoff gates, drought withdrawal, field runoff | PASS on David4 (#499) |
+| M3 | `freshwater/terrain_adapter.gd` (beds and face crests read from the ground, STACKED and UNKNOWN columns never guessed) and `freshwater/terrain_water_edit_coordinator.gd` (precheck, edit, reconcile, commit; undo or freeze) | first half `test_sullivan_water_m3` on made-up ground: G01, G02, G03 (detection; flow BLOCKED), F06, F07, F14, roof over water. Second half: a server ground source (generator plus the dig log) and wiring the real digs | first half written; test NOT RUN |
+| M4 | chunk seams, sleep and wake, persisted boundary reservoirs (guide 26) | cross-region and unload/reload comparisons | first step written: live regions are 96 m tiles on a fixed lattice; touching tiles join into one grid (one owner per face, no seam), copying every m³ (`test_sullivan_water_live`, waiting for David4). Still open: a region's dry border is closed and closing a region drops its 2 m water (both labelled limitations, guide 26.2); sleep and save come next |
 | M5 | ocean baseline, one wave function for CPU and GPU (guide 6, 28) | height and normal cross-check (F10) | |
 | M6 | river and ocean look (guide 5, 27) | shore, foam, refraction, underwater | |
 | M7 | swimmers, boats, sources and sinks, river mouths (guide 7, 29) | movement and volume consistency | |
@@ -36,3 +36,17 @@ This code runs beside `src/water2` (today's live water) until its gates pass. No
 - Riverbeds run through the lowest part of each valley, in a neat carved channel that holds the river (Dave, 6 Nov 2026). The baked rivers (`tile_valley_drain.gd`, `drainage_channels.gd`) feed the guide's section 4.3 ("procedural river creation before runtime flow").
 - A river starts at a lake or head pond with a spring on flat ground, or at a cave with springs on a hillside. Caves appear only far inland.
 - No area-specific code and no height patches. Only rules that hold across the whole world.
+
+## Dave's companion code (7 Nov 2026), compared and reconciled
+
+Dave sent the guide's code files: `docs/water/edition3_code/`, kept as he sent them. A `.gdignore` keeps that folder out of the game, so its `class_name`s never clash with ours. `implementation/WaterGrid2D.gd` and `implementation/OceanWater.gd` are byte-for-byte the same as the `edition_1_baseline` copies.
+
+| Dave's file | What we did |
+|---|---|
+| `WaterGrid2D.gd` | **Adopted as `LAW_ORIFICE`, exactly**: C = 0.18, heads under 1e-6 m ignored, each face capped at the donor's volume, then the same per-cell scaling. Our grid follows the same transaction and adds the ledger, springs and sinks, persistent crests and the kept-discharge pipe law (decision 1), which stays the default, because a law with no memory needs a slope to carry any flow. Measured on David4: a spring-fed 3 m reservoir tilts 1 m with the orifice law and stays level with the pipe law. `test_sullivan_water_grid` runs his smoke tests on both laws. |
+| `TestWaterGrid.gd` | **Adopted**: his three tests (conservation, ditch through a ridge, dam built and removed) run with the same setups and pass conditions in `test_sullivan_water_grid._daves_smoke_tests`, under both laws. |
+| `freshwater_runner.gd` | **Adopted its rule**: at most 4 ticks per frame, and time that could not run is **kept, never thrown away**, with a warning after 1 s of backlog. Our first `advance()` threw the backlog away. That is fixed. |
+| `core/water_sample.gd`, `core/water_service.gd` | **Adopted** as `core/water_sample.gd` and `core/water_service.gd`, with the same field names (`surface_y_m`, `current_world_mps`, ...) and freshwater taking priority over the ocean. Adapted to read our grid directly and to run without a scene. |
+| `OceanWater.gd`, `ocean_baseline.gdshader` | **Waiting for M5.** One thing to fix when they come in: the shader takes `world_vertex_coords`, and our world is about 54 km across. A wave phase `k·x` near x = 54,000 m loses precision in the shader's 32-bit floats, while the CPU copy uses 64-bit. The swimmer and the picture would then disagree, which is exactly what test F10 catches (knowledge doc water.md, lesson 3). The fix is a shared phase origin near the camera, given to both. |
+| `water_buoyancy.gd` | **Waiting for M7** (swimmers and boats). It reads the service, so it slots in unchanged. |
+| `voxel_terrain_edit_bridge.gd` | **Waiting for M3, second half.** Its checks (unit scale, `is_area_editable` before the edit, a revision per edit) match our edit coordinator's precheck. In our game the server owns the ground, so the server adapter reads the server's ground. The bridge's VoxelTool code is the client-side source. `is_area_editable` still needs probing on Dave's build (P2 did not list it). |

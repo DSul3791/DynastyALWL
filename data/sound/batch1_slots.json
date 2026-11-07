@@ -255,6 +255,18 @@
    "status": "filled",
    "note": "padded paw step, borrowed from wolf (a much heavier animal; level -8 below). Jason may replace it"
   },
+  "goblin_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/wolf_step_0.ogg",
+    "res://assets/audio/batch1/wolf_step_1.ogg",
+    "res://assets/audio/batch1/wolf_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "light footstep, borrowed from wolf paws (a goblin is small; level -14 below). Jason may replace it with a bare-foot step"
+  },
   "songbird_step": {
    "group": "creature step",
    "files": [

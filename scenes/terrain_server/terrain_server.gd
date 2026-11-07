@@ -508,6 +508,9 @@ func _ready() -> void:
 	animals.biome_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
 		return "" if tile_data.placeholder else str(biome_names.get(int(tile_data.biome[tile_data.nearest(x, z)]), ""))
+	animals.lair_mouths = func(x, z):   # the cave mouths of the tile the player stands in (already loaded, so no wait); goblins live at them
+		var lair_tile = generator.get_tile(generator.tile_of(x, z))
+		return PackedVector2Array() if lair_tile.placeholder else lair_tile.spring_mouths
 	animals.setup()
 	trails = TrailsScript.new()
 	trails.game_seconds = func(): return game_clock.seconds
@@ -795,6 +798,9 @@ func _start_water() -> void:
 	var dry_start: bool = OS.get_cmdline_user_args().has("--dry-water") and not OS.get_cmdline_user_args().has("--settled-water")
 	water_live = WaterHubScript.new() if OS.get_cmdline_user_args().has("--water-old") else WaterHub2Script.new()
 	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, dry_start)
+
+	if water_live.has_method("set_store"):
+		water_live.set_store(store)   # Sullivan dig windows read the server's ground (src/sullivan_water/live/dig_windows.gd)
 
 	# Saved digs and fills shape the water's ground again after every restart and re-bake.
 	for edit in store.ops.edits():

@@ -27,10 +27,10 @@ extends RefCounted
 #   last tick and gravity accelerates it, Q' = (Q + dt g A_face head / cell_m) / (1 + dt damping), with A_face = cell_m * (eta_up - sill),
 #   the wetted area over the sill. The damping is linear friction. Steady flow through deep water needs almost no slope, so a reservoir
 #   stays level and a river keeps its water moving. The speed through a face is capped at MAX_COURANT * cell_m / dt.
-# - LAW_ORIFICE, the guide's baseline formula (3.1), Q = C * face_width * max(0, eta_up - sill) * sqrt(2 g |head|) * sign(head), with no
-#   memory. Its slope is infinite at zero head, so near-level water would overshoot every tick, and each face is capped at ORIFICE_SHARE of
-#   the levelling volume (|head| * area / 2). Measured on Dave's PC (#498, first run): that cap makes deep water so slow that a 3 m reservoir
-#   fed 2 m3/s stood 0.57 m over its dam crest, sloping 0.9 m from end to end. So it stays only as the guide's reference.
+# - LAW_ORIFICE, the guide's baseline exactly as Dave's companion file has it (docs/water/edition3_code/implementation/WaterGrid2D.gd):
+#   Q = C * face_width * max(0, eta_up - sill) * sqrt(2 g |head|) * sign(head) with C = 0.18, no memory, heads under 1e-6 m ignored, and
+#   each face's transfer at most the donor's volume. Kept for comparison. Measured on Dave's PC (#498): a law without memory needs a
+#   slope to carry any flow, so a reservoir fed by a spring tilts; the pipe law keeps it level.
 #
 # Edges are sealed (guide 3.5: the starter is a closed region; open boundaries, chunks and reservoirs come in M4). Caves and stacked water
 # are not this model (guide 3.10): one water surface per column only.
@@ -40,13 +40,14 @@ extends RefCounted
 const GRAVITY := 9.81
 const DEFAULT_DT := 0.1            # s: 10 ticks a second (guide 3.4 test value)
 const DEFAULT_CELL_M := 2.0        # m (guide 3.4 test value)
-const DEFAULT_C := 0.6             # discharge coefficient, deliberately low (guide 3.4: "visibly conservative")
+const DEFAULT_C := 0.18            # LAW_ORIFICE discharge coefficient, Dave's file's value ("intentional game-tuning parameter")
+const ORIFICE_MIN_HEAD := 0.000001 # LAW_ORIFICE: heads smaller than this move nothing (Dave's file)
 const LAW_PIPE := 0
 const LAW_ORIFICE := 1
 const DEFAULT_DAMPING_PER_S := 0.5 # LAW_PIPE linear friction, 1/s: a moving face loses this share of its discharge each second when nothing drives it
 const MAX_COURANT := 0.5           # LAW_PIPE: water crosses at most half a cell per tick (10 m/s at 2 m and 0.1 s)
-const ORIFICE_SHARE := 0.2         # LAW_ORIFICE: of the volume that would level the two cells, per face per tick (see above)
-const MAX_CATCH_UP_STEPS := 8      # advance() never runs more than this in one call, so a pause does not become a giant step (guide 3.4)
+const MAX_CATCH_UP_STEPS := 4      # advance() runs at most this many ticks a call (Dave's freshwater_runner.gd), so a pause is never one giant step
+const BACKLOG_WARN_S := 1.0        # ... and the time it could not run yet is KEPT, never thrown away; over this much, it warns (same file)
 const OPEN := -INF                 # a face with no built crest
 const WALL := INF                  # a face nothing passes
 
@@ -70,6 +71,8 @@ var pipe_s: PackedFloat64Array     # LAW_PIPE: each south face's discharge kept 
 
 var springs: Dictionary = {}       # cell index -> {"id": String, "m3_per_s": float}
 var sinks: Dictionary = {}         # cell index -> {"id": String, "m3_per_s": float} (the most it asks for)
+var fixed: Dictionary = {}         # cell index -> surface level held there: a fixed-stage reservoir boundary (guide 3.5), e.g. the river
+                                   # where it enters and leaves a window. What it adds or takes each tick is booked as boundary_in/out.
 
 # Ledger (guide 26.3): expected = start + added + springs - removed - sinks - rounding. Interior faces cancel and never appear here.
 var start_m3: float = 0.0
@@ -77,6 +80,8 @@ var added_m3: float = 0.0          # add_water calls
 var removed_m3: float = 0.0        # remove_water calls (what was actually granted)
 var spring_m3: float = 0.0
 var sink_m3: float = 0.0           # what sinks were actually granted
+var boundary_in_m3: float = 0.0   # fixed-level cells topped up (water coming in from outside the region)
+var boundary_out_m3: float = 0.0  # fixed-level cells drained (water leaving the region)
 var rounding_m3: float = 0.0       # float traces under zero set back to zero (step 6); reported, so a real leak cannot hide here
 var by_id: Dictionary = {}         # source or sink id -> signed m^3 (positive = into the water)
 
@@ -84,6 +89,7 @@ var ticks: int = 0
 var max_negative_m3: float = 0.0   # the most negative volume ever seen before step 6 (0 = never)
 var last_scaled_cells: int = 0     # cells whose outflow was scaled down in the last tick (step 4)
 var _accum: float = 0.0
+var behind: bool = false           # the backlog passed BACKLOG_WARN_S (warned once until it catches up)
 var _out: PackedFloat64Array       # scratch: candidate outflow per cell
 var _scale: PackedFloat64Array     # scratch: share of its outflow each cell may send
 var _eta: PackedFloat64Array       # scratch: the snapshot surfaces
@@ -173,7 +179,7 @@ func fill_to_level(level: float) -> void:
 	for k in range(w * h):
 		volume[k] = maxf(0.0, level - bed[k]) * area_m2
 
-	start_m3 = total_volume() - added_m3 - spring_m3 + removed_m3 + sink_m3 + rounding_m3
+	start_m3 = total_volume() - (expected_volume() - start_m3)
 
 
 func add_spring(i: int, j: int, m3_per_s: float, id: String) -> void:
@@ -188,7 +194,8 @@ func add_sink(i: int, j: int, m3_per_s: float, id: String) -> void:
 
 # --- Time ------------------------------------------------------------------------------------------------------------------------------
 
-# Runs as many fixed ticks as `elapsed_s` holds, at most MAX_CATCH_UP_STEPS; the rest waits. Render frames call this; the result does not
+# Runs as many fixed ticks as `elapsed_s` holds, at most MAX_CATCH_UP_STEPS; the rest waits for the next call, never discarded (Dave's
+# runner: "do not silently discard remaining simulation time"; if it keeps falling behind, report it, lower resolution or activate fewer cells). Render frames call this; the result does not
 # depend on the frame rate, only on the number of fixed ticks (test F09).
 func advance(elapsed_s: float) -> int:
 	_accum += maxf(0.0, elapsed_s)
@@ -199,9 +206,17 @@ func advance(elapsed_s: float) -> int:
 		_accum -= dt
 		ran += 1
 
-	if ran == MAX_CATCH_UP_STEPS and _accum > dt:
-		_accum = dt   # drop the backlog: a long pause is not replayed as a burst
+	if _accum > BACKLOG_WARN_S and not behind:
+		behind = true
+		push_warning("Sullivan water: simulation backlog over %.1f s" % BACKLOG_WARN_S)
+	elif _accum <= dt:
+		behind = false
 	return ran
+
+
+# Simulation time waiting to run (s).
+func backlog_s() -> float:
+	return _accum
 
 
 func step() -> void:
@@ -220,6 +235,18 @@ func step() -> void:
 		volume[k] -= got
 		sink_m3 += got
 		_book(String(sinks[k]["id"]), -got)
+
+	# 0b. Fixed-stage boundaries: each held cell is set back to its level, and the difference is booked as water in or out.
+	for k in fixed:
+		var want_m3: float = maxf(0.0, float(fixed[k]) - bed[k]) * area_m2
+		var delta: float = want_m3 - volume[k]
+
+		if delta > 0.0:
+			boundary_in_m3 += delta
+		else:
+			boundary_out_m3 -= delta
+
+		volume[k] = want_m3
 
 	# 1. Snapshot.
 	for k in range(n):
@@ -297,11 +324,12 @@ func _candidate(a: int, b: int, crest: float, kept: float) -> float:
 	var q: float
 
 	if law == LAW_ORIFICE:
-		if head == 0.0:
+		if absf(head) < ORIFICE_MIN_HEAD:
 			return 0.0
 
-		q = coefficient * cell_m * over * sqrt(2.0 * GRAVITY * absf(head))
-		q = minf(q * dt, ORIFICE_SHARE * absf(head) * area_m2 * 0.5) / dt
+		var up: int = a if head > 0.0 else b
+		var proposed: float = coefficient * cell_m * over * sqrt(2.0 * GRAVITY * absf(head)) * dt
+		q = minf(proposed, volume[up]) / dt
 		q = q if head > 0.0 else -q
 	else:
 		var wet_area: float = cell_m * over
@@ -343,7 +371,7 @@ func total_volume() -> float:
 
 
 func expected_volume() -> float:
-	return start_m3 + added_m3 + spring_m3 - removed_m3 - sink_m3 - rounding_m3
+	return start_m3 + added_m3 + spring_m3 + boundary_in_m3 - removed_m3 - sink_m3 - boundary_out_m3 - rounding_m3
 
 
 # actual - expected, m^3 (guide 26.3). Zero up to float rounding when no water is made or lost.
@@ -384,6 +412,12 @@ func velocity(i: int, j: int) -> Vector2:
 
 	var wet: float = cell_m * d * dt   # m^2 * s: converts m^3 per tick to m/s
 	return Vector2(qx / maxi(faces_x, 1) / wet, qz / maxi(faces_z, 1) / wet)
+
+
+# The same current as a world vector (x east, y 0, z south), the shape the water query hands out (core/water_sample.gd).
+func current_mps(i: int, j: int) -> Vector3:
+	var v: Vector2 = velocity(i, j)
+	return Vector3(v.x, 0.0, v.y)
 
 
 # The largest surface difference across any face where at least `min_over_m` of water stands over the sill (m): how far the water is from
