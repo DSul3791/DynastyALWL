@@ -201,6 +201,7 @@ func _open(wanted: Rect2i, level_at: Callable, dug: bool) -> void:
 			return
 
 	var t0: int = Time.get_ticks_msec()
+	var blocks0: int = int(source.blocks_loaded) if "blocks_loaded" in source else 0
 	var origin: Vector2 = Vector2(rect.position) * TILE_M
 	var w: int = rect.size.x * TILE_CELLS
 	var h: int = rect.size.y * TILE_CELLS
@@ -282,7 +283,7 @@ func _open(wanted: Rect2i, level_at: Callable, dug: bool) -> void:
 
 	windows.append({"grid": grid, "adapter": adapter, "coordinator": coordinator, "origin": origin, "tiles": rect, "dug": dug})
 	built += 1
-	print("water live: window %d x %d at %s (tiles %s, %d joined), %.0f m3 of water (%.0f copied, %.0f from the 8 m levels), %d border cells held, built in %d ms" % [w, h, str(origin), str(rect), joining.size(), grid.total_volume(), copied, seeded, grid.fixed.size(), Time.get_ticks_msec() - t0])
+	print("water live: window %d x %d at %s (tiles %s, %d joined), %.0f m3 of water (%.0f copied, %.0f from the 8 m levels), %d border cells held, built in %d ms (%d ground blocks loaded)" % [w, h, str(origin), str(rect), joining.size(), grid.total_volume(), copied, seeded, grid.fixed.size(), Time.get_ticks_msec() - t0, (int(source.blocks_loaded) if "blocks_loaded" in source else 0) - blocks0])
 
 
 # Two tile rectangles overlap or share an edge (not just a corner).

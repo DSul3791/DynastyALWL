@@ -94,7 +94,11 @@ func _column(x: float, z: float, wide: bool) -> Dictionary:
 		lo_y = r.x
 		hi_y = r.y
 
-	var y: float = hi_y
+	# A source whose sdf is linear in y between voxels `voxel_m` apart (the server's ground): step voxel by voxel from a voxel height, and the
+	# crossing between two samples is exact by interpolation, no bisection (a 4 tile region took 8.8 s to read on Dave's PC, 7 Nov 2026).
+	var voxel: float = float(source.voxel_m()) if source.has_method("voxel_m") else 0.0
+	var step: float = voxel if voxel > 0.0 else scan_step_m
+	var y: float = ceilf(hi_y / voxel) * voxel if voxel > 0.0 else hi_y
 	var above: float = source.sdf(Vector3(x, y, z))
 
 	if above <= 0.0:
@@ -103,18 +107,19 @@ func _column(x: float, z: float, wide: bool) -> Dictionary:
 	var top: float = NAN
 
 	while y > lo_y:
-		var lower: float = maxf(y - scan_step_m, lo_y)
+		var lower: float = maxf(y - step, lo_y)
 		var below: float = source.sdf(Vector3(x, lower, z))
 
 		if is_nan(top):
 			if below <= 0.0:
-				top = _refine(x, z, lower, y)
+				top = lower + (y - lower) * (-below / (above - below)) if voxel > 0.0 else _refine(x, z, lower, y)
 		elif below > 0.0:
 			return {"state": STACKED, "top": top}   # air again under the first solid: a roof or a bridge
 		elif lower <= top - stack_depth_m:
 			break   # solid all the way down to stack_depth_m: whatever lies deeper (a cave) is not this water's business
 
 		y = lower
+		above = below
 
 	if is_nan(top):
 		return {"state": UNKNOWN, "top": NAN}   # no ground in the whole scan
