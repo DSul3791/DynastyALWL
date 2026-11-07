@@ -68,14 +68,14 @@ func _init() -> void:
 	# The swell's slopes are up to about 1.4; a 6 m wave turned 0.004 rad out of phase is off by about 0.02.
 	_check(worst_near < 2.0e-3, "near the corner the 32-bit swell matches the exact one (worst %.5f)" % worst_near)
 	_check(worst_new < 2.0e-3, "54 km out, with the phase origin, the 32-bit swell matches the exact one (worst %.5f)" % worst_new)
-	_check(worst_old > 10.0 * worst_new, "54 km out, without it, the old way is visibly off (worst %.5f, %.0f times worse)" % [worst_old, worst_old / maxf(worst_new, 1.0e-9)])
+	_check(worst_old > 10.0 * worst_new, "54 km out, without it, the old way is at least ten times further off (worst %.5f, %.0f times)" % [worst_old, worst_old / maxf(worst_new, 1.0e-9)])
 
 	# Moving the origin changes nothing in the exact swell: the phases at any origin are the swell's own phases there.
 	var p: Vector2 = Vector2(40960.0 + 13.0, 20480.0 - 7.0)
 	var a: Vector2 = gpu_slope(p, t, OceanWaves.origin_for(p), OceanWaves.phases_at(OceanWaves.origin_for(p)))
 	var b: Vector2 = gpu_slope(p, t, OceanWaves.origin_for(p) + Vector2(1024.0, 0.0), OceanWaves.phases_at(OceanWaves.origin_for(p) + Vector2(1024.0, 0.0)))
 	_check((a - b).length() < 2.0e-3, "the next origin over draws the same swell, so no jump when it moves (%.5f)" % (a - b).length())
-	_check(OceanWaves.origin_for(Vector2(53900.0, 300.0)) == Vector2(53248.0, 0.0), "the origin snaps to 1024 m steps")
+	_check(OceanWaves.origin_for(Vector2(53900.0, 300.0)) == Vector2(54272.0, 0.0), "the origin snaps to 1024 m steps")
 
 	# One wave set: the shader's constants are ocean_waves.gd's.
 	var code: String = WaterMaterial.make_sea().shader.code

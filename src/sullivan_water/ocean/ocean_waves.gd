@@ -33,26 +33,32 @@ static func phases_at(origin: Vector2) -> PackedVector2Array:
 	var out: PackedVector2Array = PackedVector2Array()
 
 	for wv in WAVES:
-		var d: Vector2 = Vector2(wv.x, wv.y)
 		var k: float = TAU / wv.z
-		out.append(Vector2(fposmod(k * d.dot(origin), TAU), fposmod(CREST_K * k * Vector2(-d.y, d.x).dot(origin), TAU)))
+		# Scalar sums, not Vector2.dot: Vector2 maths runs in 32-bit floats in Godot, which is the very error this file removes (David4, #515).
+		var along: float = float(wv.x) * float(origin.x) + float(wv.y) * float(origin.y)
+		var across: float = -float(wv.y) * float(origin.x) + float(wv.x) * float(origin.y)
+		out.append(Vector2(fposmod(k * along, TAU), fposmod(CREST_K * k * across, TAU)))
 
 	return out
 
 
 # The swell's slope at world p, time t (s), without the shader's distance fade: what the shader draws, for CPU checks and later the swimmers.
 static func slope(p: Vector2, t: float) -> Vector2:
-	var s: Vector2 = Vector2.ZERO
+	var sx: float = 0.0
+	var sz: float = 0.0
 
 	for i in range(WAVES.size()):
 		var wv: Vector4 = WAVES[i]
-		var d: Vector2 = Vector2(wv.x, wv.y)
 		var k: float = TAU / wv.z
-		var phase: float = k * d.dot(p) - t * sqrt(G * k) * SPEED
-		var crest: float = 0.65 + 0.35 * sin(CREST_K * k * Vector2(-d.y, d.x).dot(p) + float(i) * 1.7)
-		s += d * k * wv.w * crest * cos(phase)
+		var along: float = float(wv.x) * float(p.x) + float(wv.y) * float(p.y)    # 64-bit scalar sums (see phases_at)
+		var across: float = -float(wv.y) * float(p.x) + float(wv.x) * float(p.y)
+		var phase: float = k * along - t * sqrt(G * k) * SPEED
+		var crest: float = 0.65 + 0.35 * sin(CREST_K * k * across + float(i) * 1.7)
+		var amp: float = k * wv.w * crest * cos(phase)
+		sx += float(wv.x) * amp
+		sz += float(wv.y) * amp
 
-	return s
+	return Vector2(sx, sz)
 
 
 # Hands the waves and the phase origin to a sea material (water_material.gd). Call when origin_for(camera) changes.
