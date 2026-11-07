@@ -250,6 +250,13 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	timings["rolling"] = Time.get_ticks_msec() - clock
 
 
+	# The land beside every river, pond and lake slopes up from its water BEFORE the pond levels are checked (Sonny 7 Nov 2026): with no bank raise, a
+	# rim lower than its pond on the downhill side spilled the pond, and the check then dried it (tile_valley_drain.gd seed_lakes). Run again below,
+	# after the passes that cut ground.
+	clock = Time.get_ticks_msec()
+	var first_drain: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, tile_rules["water"].get("valley_drain", {}))
+	print("  valley drain before pond levels (tile %s): %d cells raised, up to %.1f m (%d ms)" % [str(tile), first_drain["raised"], first_drain["max_m"], Time.get_ticks_msec() - clock])
+
 	# Pond levels no higher than their spill, after every pass that cuts or raises ground (tile_pond_level.gd).
 	clock = Time.get_ticks_msec()
 	var pond_levels: Dictionary = TilePondLevelScript.clamp_to_spill(water.heights, water.water_class, water.water_surface, n)
@@ -287,6 +294,10 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	clock = Time.get_ticks_msec()
 	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, tile_rules["water"].get("valley_drain", {}))
 	print("  valley drain (tile %s): %d cells raised to drain to the river, up to %.1f m (%d ms)" % [str(tile), drained["raised"], drained["max_m"], Time.get_ticks_msec() - clock])
+	# Last of the ground passes: no dry hollow is left for rain to pool in (tile_valley_drain.gd drain_hollows).
+	clock = Time.get_ticks_msec()
+	var hollows: Dictionary = TileValleyDrainScript.drain_hollows(water.heights, water.water_class, n, tile_rules["water"].get("valley_drain", {}))
+	print("  dry hollows (tile %s): %d cells raised to their spill, up to %.1f m (%d ms)" % [str(tile), hollows["cells"], hollows["most_m"], Time.get_ticks_msec() - clock])
 
 
 	clock = Time.get_ticks_msec()
@@ -334,6 +345,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	water.water_class = crop(water.water_class, n, core)
 	water.water_surface = crop(water.water_surface, n, core)
 	water.flow = crop(water.flow, n, core)
+	var cave_heads: PackedByteArray = crop(water.cave_heads, n, core) if water.cave_heads.size() == n * n else PackedByteArray()
 	water.samples = core
 	climate.biome = crop(climate.biome, n, core)
 	climate.soil = crop(climate.soil, n, core)
@@ -359,6 +371,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var sites = TileSitesScript.new()
 	sites.setup(settings, tile_rules, tables)
 	sites.far_from_sea = inland
+	sites.cave_heads = cave_heads
 	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow)
 	timings["sites"] = Time.get_ticks_msec() - clock
 
