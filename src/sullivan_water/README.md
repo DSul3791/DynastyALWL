@@ -36,3 +36,17 @@ This code runs beside `src/water2` (today's live water) until its gates pass. No
 - Riverbeds run through the lowest part of each valley, in a neat carved channel that holds the river (Dave, 6 Nov 2026). The baked rivers (`tile_valley_drain.gd`, `drainage_channels.gd`) feed the guide's section 4.3 ("procedural river creation before runtime flow").
 - A river starts at a lake or head pond with a spring on flat ground, or at a cave with springs on a hillside. Caves appear only far inland.
 - No area-specific code and no height patches. Only rules that hold across the whole world.
+
+## Dave's companion code (7 Nov 2026), compared and reconciled
+
+Dave sent the guide's code files: `docs/water/edition3_code/`, kept as he sent them. A `.gdignore` keeps that folder out of the game, so its `class_name`s never clash with ours. `implementation/WaterGrid2D.gd` and `implementation/OceanWater.gd` are byte-for-byte the same as the `edition_1_baseline` copies.
+
+| Dave's file | What we did |
+|---|---|
+| `WaterGrid2D.gd` | **Adopted as `LAW_ORIFICE`, exactly**: C = 0.18, heads under 1e-6 m ignored, each face capped at the donor's volume, then the same per-cell scaling. Our grid follows the same transaction and adds the ledger, springs and sinks, persistent crests and the kept-discharge pipe law (decision 1), which stays the default, because a law with no memory needs a slope to carry any flow. Measured on David4: a spring-fed 3 m reservoir tilts 1 m with the orifice law and stays level with the pipe law. `test_sullivan_water_grid` runs his smoke tests on both laws. |
+| `TestWaterGrid.gd` | **Adopted**: his three tests (conservation, ditch through a ridge, dam built and removed) run with the same setups and pass conditions in `test_sullivan_water_grid._daves_smoke_tests`, under both laws. |
+| `freshwater_runner.gd` | **Adopted its rule**: at most 4 ticks per frame, and time that could not run is **kept, never thrown away**, with a warning after 1 s of backlog. Our first `advance()` threw the backlog away. That is fixed. |
+| `core/water_sample.gd`, `core/water_service.gd` | **Adopted** as `core/water_sample.gd` and `core/water_service.gd`, with the same field names (`surface_y_m`, `current_world_mps`, ...) and freshwater taking priority over the ocean. Adapted to read our grid directly and to run without a scene. |
+| `OceanWater.gd`, `ocean_baseline.gdshader` | **Waiting for M5.** One thing to fix when they come in: the shader takes `world_vertex_coords`, and our world is about 54 km across. A wave phase `k·x` near x = 54,000 m loses precision in the shader's 32-bit floats, while the CPU copy uses 64-bit. The swimmer and the picture would then disagree, which is exactly what test F10 catches (knowledge doc water.md, lesson 3). The fix is a shared phase origin near the camera, given to both. |
+| `water_buoyancy.gd` | **Waiting for M7** (swimmers and boats). It reads the service, so it slots in unchanged. |
+| `voxel_terrain_edit_bridge.gd` | **Waiting for M3, second half.** Its checks (unit scale, `is_area_editable` before the edit, a revision per edit) match our edit coordinator's precheck. In our game the server owns the ground, so the server adapter reads the server's ground. The bridge's VoxelTool code is the client-side source. `is_area_editable` still needs probing on Dave's build (P2 did not list it). |
