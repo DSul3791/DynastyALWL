@@ -41,6 +41,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
+const OceanWaves := preload("res://src/sullivan_water/ocean/ocean_waves.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
@@ -225,6 +226,7 @@ var _sound_now_logged: String = ""
 var _sound_now_log_msec: int = -100000
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
+var _sea_origin: Vector2 = Vector2(INF, INF)   # the swell's phase origin last handed to the sea shader (M5, ocean_waves.gd)
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
@@ -3388,6 +3390,17 @@ func _make_environment(root: Node3D) -> void:
 
 
 
+# The sea plane follows the body; its swell is drawn relative to a phase origin near the body, so the waves stay exact 54 km from the
+# world's corner (M5, docs/water/ocean_m5.md). The origin moves in 1024 m steps, and the new phases come from ocean_waves.gd in 64-bit floats.
+func _follow_sea() -> void:
+	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
+	var origin: Vector2 = OceanWaves.origin_for(Vector2(body.global_position.x, body.global_position.z))
+
+	if origin != _sea_origin:
+		_sea_origin = origin
+		OceanWaves.apply(sea.material_override as ShaderMaterial, origin)
+
+
 # Third-person view (Dave, 2026-10-21): scroll out from first person to look at yourself from up and back
 # of the shoulders; scrolling out more pulls the camera further away, scrolling in comes back and, past
 # the nearest distance, returns to first person. The distance is remembered between sessions.
@@ -4179,7 +4192,7 @@ func _move_player(delta: float) -> void:
 		if stance.stance != StanceScript.STAND:
 			_set_stance(StanceScript.STAND)
 
-	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
+	_follow_sea()
 	_update_underwater()
 
 
@@ -4213,7 +4226,7 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 		_ladder_climbed_m = fmod(_ladder_climbed_m, LADDER_RUNG_M)
 		sound.slots.play("ladder_rung", body.global_position - Vector3(0.0, 0.9, 0.0))      # one per rung climbed, by distance, not by a timer
 
-	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
+	_follow_sea()
 	_update_underwater()
 	return true
 
