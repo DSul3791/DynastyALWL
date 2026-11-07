@@ -48,3 +48,7 @@ worlds/*/setup_cache/
 worlds/base_world/plan/*.png
 worlds/base_world/plan/*.png.import
 crash_reports/telemetry_client.log
+
+# Bought animal models (WildMesh 3D, Dave 6 Nov 2026): licensed, never committed to this public repo. They live only on the
+# machines that build the game; data/animals/models.json falls back to the code-built animals when they are missing.
+/assets/animals/
