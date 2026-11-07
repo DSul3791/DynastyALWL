@@ -354,6 +354,9 @@ func _make_model(number: int) -> Node3D:
 		inst.free()
 		return null
 
+	for m in meshes:
+		_fit_skin(m as MeshInstance3D, inst, kind)
+
 	var root: Node3D = Node3D.new()
 	root.set_meta("model", true)
 	root.set_meta("model_row", row)
@@ -574,6 +577,61 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String) -> Strin
 				return str(full)
 
 	return ""
+
+
+# A skinned mesh's bind poses must undo its skeleton's rest pose, so that at rest the skin draws the mesh as it was modelled.
+# Some files' binds are in other units or another space than their bones (the bear stood on the offline sheet, where no
+# skinning ran, but lay as a legless tube in the game while its skeleton stood: 7 Nov 2026). Each bind is checked against
+# its bone's rest; when they disagree by more than 5% of the skeleton's size, the skin is rebuilt from the rest pose and the
+# mesh's place under the skeleton (a copy, so the shared file is untouched), and a log line says so.
+func _fit_skin(mi: MeshInstance3D, top: Node, kind: String) -> void:
+	if mi.skin == null or mi.mesh == null:
+		return
+
+	var sk: Skeleton3D = mi.get_node_or_null(mi.skeleton) as Skeleton3D
+
+	if sk == null:
+		var found: Array = top.find_children("*", "Skeleton3D", true, false)
+		sk = found[0] if not found.is_empty() else null
+
+	if sk == null or sk.get_bone_count() == 0:
+		return
+
+	# The mesh's space in the skeleton's space (through their common ancestor, the file's top node).
+	var mesh_in_sk: Transform3D = _to_ancestor(sk, top).affine_inverse() * _to_ancestor(mi, top)
+	var size: float = 0.0001
+
+	for i in sk.get_bone_count():
+		size = maxf(size, sk.get_bone_global_rest(i).origin.length())
+
+	var worst: float = 0.0
+	var bones: PackedInt32Array = PackedInt32Array()
+
+	for b in mi.skin.get_bind_count():
+		var bone_name: String = str(mi.skin.get_bind_name(b))
+		var bone: int = sk.find_bone(bone_name) if bone_name != "" else mi.skin.get_bind_bone(b)
+		bones.append(bone)
+
+		if bone < 0 or bone >= sk.get_bone_count():
+			continue
+
+		# At rest, skinning maps a mesh point p to rest * bind * p; it should land where the mesh itself puts p.
+		var at_rest: Transform3D = sk.get_bone_global_rest(bone) * mi.skin.get_bind_pose(b)
+
+		for probe in [Vector3.ZERO, Vector3(size, 0.0, 0.0), Vector3(0.0, size, 0.0), Vector3(0.0, 0.0, size)]:
+			worst = maxf(worst, (at_rest * probe).distance_to(mesh_in_sk * probe))
+
+	if worst <= size * 0.05:
+		return
+
+	var skin: Skin = mi.skin.duplicate() as Skin
+
+	for b in skin.get_bind_count():
+		if bones[b] >= 0 and bones[b] < sk.get_bone_count():
+			skin.set_bind_pose(b, sk.get_bone_global_rest(bones[b]).affine_inverse() * mesh_in_sk)
+
+	mi.skin = skin
+	_model_note(kind, "skin of %s rebuilt from the skeleton's rest (binds were off by %.2f against a skeleton %.2f across)" % [str(mi.name), worst, size])
 
 
 # How tall the skeleton stands in the rig's space (the height of its bones' box) in a clip's first frame, or in its imported pose with no clip.
