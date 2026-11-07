@@ -1002,6 +1002,81 @@
 				"hp_x": 0.3
 			},
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
+		},
+		"goblin": {
+			"number": 15,
+			"name": "Goblin",
+			"note": "Dave 7 Nov 2026 (docs/GOBLINS.md): 2 to 5 goblins live in a river-side cave (a spring cave mouth), never one that has a bear in or near it. They bed down at the mouth by day (active) and come out at night; skittish: they watch from the edge of firelight (alert) and run, but fight if cornered or threatened at their den. Still to build: foraging berries, stealing, fighting bears, sleeping inside the cave (needs the cave floor height on the server). Two models (Skritch, Rukz) are picked per goblin on the client; height 1.1 m +-0.5 m, bell-shaped, from the animal id.",
+			"target_per_player": 0,
+			"health": 25.0,
+			"protective_share": 0.0,
+			"lair": {
+				"group": [
+					2,
+					5
+				],
+				"range_m": 200.0,
+				"claim_m": 40.0,
+				"avoid": [
+					"bear"
+				],
+				"avoid_m": 120.0
+			},
+			"den": {
+				"den_m": 12.0,
+				"threat_m": 8.0,
+				"range_m": 70.0,
+				"fish_share": 0.0
+			},
+			"defend": {
+				"warn_m": 0.0,
+				"warn_s": 0.6,
+				"charge_mps": 5.0,
+				"charge_m": 15.0,
+				"turn_rad_s": 0.5,
+				"hit_m": 1.0,
+				"damage": 8.0,
+				"recover_s": 3.0,
+				"calm_m": 25.0,
+				"cool_s": 20.0,
+				"corner_m": 4.0,
+				"corner_warn_s": 0.5,
+				"provoked_m": 8.0,
+				"provoked_warn_s": 0.4,
+				"threat_m": 3.0,
+				"threat_warn_s": 0.5
+			},
+			"walk_mps": 1.2,
+			"spook_m": 30.0,
+			"safe_m": 60.0,
+			"graze_s": [
+				10.0,
+				30.0
+			],
+			"wander_m": 20.0,
+			"flee_run_m": 40.0,
+			"alarm_s": [
+				0.2,
+				0.9
+			],
+			"alert_m": 60.0,
+			"alert_s": [
+				3.0,
+				8.0
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.6,
+			"zig_deg": 25.0,
+			"zig_leg_m": 10.0,
+			"eye_m": 0.9,
+			"flee_mps": 5.5,
+			"herd_pull_m": 0.0,
+			"active": {
+				"day": 0.0,
+				"dusk": 0.5,
+				"night": 1.0
+			},
+			"model": true
 		}
 	},
 	"senses": {

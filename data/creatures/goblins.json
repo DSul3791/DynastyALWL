@@ -1,5 +1,5 @@
 {
-	"note": "Goblin models and the systemic height rule (Dave, 7 Nov 2026). Every spawned goblin gets its own random height change, rolled fresh at each spawn, from -height_variation_m to +height_variation_m around base_height_m. Size the model from its real height (model_height_m), never a per-goblin hand scale: scale = (base_height_m + roll) / model_height_m, uniform on all axes. The .glb files are in git at full size (38-43 MB each). Textures are never shrunk in the source files; they only get smaller through LOD on lower graphics settings.",
+	"note": "RECORD of the goblin models and rules (Dave, 7 Nov 2026). The game READS the same numbers from data/animals/models.json (row goblin: height_m, height_variation_m, variants) and data/animals/animals.json (row goblin: lair, den, defend). Every goblin gets its own bell-shaped random height change (seeded from its animal id), from -height_variation_m to +height_variation_m around base_height_m. Size the model from its real height (model_height_m), never a per-goblin hand scale: scale = (base_height_m + roll) / model_height_m, uniform on all axes. The .glb files are in git at full size (38-43 MB each). Textures are never shrunk in the source files; they only get smaller through LOD on lower graphics settings.",
 	"base_height_m": 1.1,
 	"height_variation_m": 0.5,
 	"behaviour": {

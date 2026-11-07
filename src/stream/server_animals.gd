@@ -45,6 +45,7 @@ var drop_loot: Callable            # (item number, count, position) when a thief
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
+var lair_mouths: Callable             # (x, z) -> PackedVector2Array: the cave mouths (world x, z) of the tile there; species with a "lair" row spawn their groups at them (goblins, Dave 7 Nov 2026)
 var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
 var traits: bool = true            # temperaments and young (Dave 6 Nov 2026); seeded tests that predate them turn this off, so every animal is born "defensive" with no young
 var starter: Vector2 = Vector2(INF, INF)   # the real spawn point (x, z) from the starter tile: the town point of the island level (island_level) when set
@@ -1096,6 +1097,10 @@ func _top_up(players: Array, only: int) -> void:
 			if not bool(def.get("model", true)):
 				continue   # waiting for a model: never spawned, so nothing invisible (or a stand-in rabbit) appears
 
+			if def.has("lair"):
+				_top_up_lair(sp, def, p, players)
+				continue
+
 			var have: int = 0
 			var all_near: int = 0
 
@@ -1169,6 +1174,59 @@ func _top_up(players: Array, only: int) -> void:
 				if id != 0:
 					animals[id]["herd"] = hid
 					_herds[hid].append(id)
+
+
+# Lair species (goblins, Dave 7 Nov 2026): a group of lair.group[0]..group[1] lives at a cave mouth near a player, beside a river (caves are
+# only at river starts), and never in a cave that already has a bear in or near it (lair.avoid within lair.avoid_m). They are made whatever the
+# hour: by day they bed down at the mouth (their "active" row, resting()), at night they range round it (den.range_m). Each mouth holds one
+# group at a time. The group is a herd, so when one bolts the others follow. Underground dens need the cave floor height on the server, which
+# it does not have yet, so the den is the mouth.
+func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> void:
+	if not lair_mouths.is_valid():
+		return
+
+	var lair: Dictionary = def["lair"]
+	var group: Array = lair.get("group", [2, 5])
+	var range_m: float = float(lair.get("range_m", 200.0))
+	var never: float = float(cfg.get("never_within_m", 60.0))
+
+	for mouth in lair_mouths.call(p.x, p.z):
+		var m: Vector2 = mouth
+
+		if Vector2(p.x - m.x, p.z - m.y).length() > range_m:
+			continue
+
+		var taken: bool = false
+
+		for q in players:
+			taken = taken or Vector2(q.x - m.x, q.z - m.y).length() < never
+
+		for id in animals:
+			var other: Dictionary = animals[id]
+			var d: float = Vector2(other["pos"].x - m.x, other["pos"].z - m.y).length()
+			taken = taken or (other["sp"] == sp and d <= float(lair.get("claim_m", 40.0)))
+			taken = taken or ((lair.get("avoid", []) as Array).has(other["sp"]) and d <= float(lair.get("avoid_m", 120.0)))
+
+		if taken or (blocked.is_valid() and bool(blocked.call(m.x, m.y))) or crosses_wall(m.x, m.y, m.x, m.y):
+			continue
+
+		var members: int = clampi(rng.randi_range(int(group[0]), int(group[1])), 1, maxi(int(cfg.get("per_player_cap", 30)) - animals.size(), 1))   # luck-exempt: how many goblins in a group
+		var hid: int = _next_herd
+		_next_herd += 1
+		_herds[hid] = []
+		var den_at: Vector3 = Vector3.INF
+
+		for _k in members:
+			var id: int = spawn(sp, m.x + rng.randf_range(-3.0, 3.0), m.y + rng.randf_range(-3.0, 3.0))   # luck-exempt: group spread
+
+			if id != 0:
+				animals[id]["herd"] = hid
+				den_at = animals[id]["pos"] if den_at == Vector3.INF else den_at   # one shared den: the first goblin's spot
+				animals[id]["den"] = den_at
+				animals[id]["home"] = den_at
+				_herds[hid].append(id)
+
+		return   # one new group per top-up
 
 
 # The period of the game day for a clock hour: "dusk" for the hours around sunrise (5 to 8) and sunset (18 to 21), "day" between, "night" otherwise.

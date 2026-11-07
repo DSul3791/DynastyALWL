@@ -18,7 +18,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "goblin"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -90,7 +90,7 @@ func _make_for_species(number: int, id: int) -> Node3D:
 
 
 func _make_species_body(number: int, id: int) -> Node3D:
-	var model: Node3D = _make_model(number)
+	var model: Node3D = _make_model(number, id)
 
 	if model != null:
 		return model
@@ -325,9 +325,25 @@ func _model_rows() -> Dictionary:
 	return _models
 
 
-func _make_model(number: int) -> Node3D:
+func _make_model(number: int, id: int = 0) -> Node3D:
 	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
 	var row: Dictionary = _model_rows().get(kind, {})
+
+	# Several looks for one species (goblins, Dave 7 Nov 2026: Skritch and Rukz): the row's "variants" are laid over it, one picked by the
+	# animal's id, so every goblin keeps its look. A row with height_m is sized by its mesh height, not its longest side, and each animal
+	# gets its own height: height_m plus a bell-shaped roll of up to height_variation_m either way (the mean of three even rolls), seeded
+	# from its id so it is the same on every client and every time it comes into view.
+	if row.has("variants") and not (row["variants"] as Array).is_empty():
+		var looks: Array = row["variants"]
+		row = row.duplicate()
+		row.merge(looks[id % looks.size()], true)
+
+	if row.has("height_m"):
+		var dice: RandomNumberGenerator = RandomNumberGenerator.new()
+		dice.seed = id * 7919 + 13
+		var roll: float = (dice.randf_range(-1.0, 1.0) + dice.randf_range(-1.0, 1.0) + dice.randf_range(-1.0, 1.0)) / 3.0
+		row = row.duplicate()
+		row["length_m"] = float(row["height_m"]) + roll * float(row.get("height_variation_m", 0.0))
 
 	if row.is_empty():
 		return null
@@ -362,8 +378,8 @@ func _make_model(number: int) -> Node3D:
 
 	# Size from the mesh itself, not the file's units (an FBX may be in centimetres, metres, or carry its own root scale): the
 	# longest side of the rest-pose bounds is made row.length_m, and the feet are put on the ground.
-	var box: AABB = _model_bounds(rig, meshes)
-	var longest: float = maxf(box.size.x, maxf(box.size.y, box.size.z))
+	var box: AABB = _model_bounds(rig, meshes, row.has("height_m"))
+	var longest: float = box.size.y if row.has("height_m") else maxf(box.size.x, maxf(box.size.y, box.size.z))
 
 	if longest <= 0.0001:
 		_model_note(kind, "%s has empty bounds: the code-built body is drawn" % str(row["scene"]))
@@ -396,10 +412,10 @@ func _make_model(number: int) -> Node3D:
 # The bounds of a model in the rig's space (so the file's own root scale and rotation count). With a skeleton, the bones' posed
 # positions are used: a skinned FBX can keep its centimetre scale on a bone, which the mesh's own bounds never see (Dave 6 Nov saw
 # a bear five times taller than a tree). The bones stop short of the skin, so their box is widened by 12%.
-func _model_bounds(rig: Node3D, meshes: Array) -> AABB:
+func _model_bounds(rig: Node3D, meshes: Array, by_mesh: bool = false) -> AABB:
 	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
 
-	if not skeletons.is_empty():
+	if not by_mesh and not skeletons.is_empty():
 		var sk: Skeleton3D = skeletons[0]
 		var to_rig: Transform3D = _to_ancestor(sk, rig)
 		var bones: AABB = AABB()
