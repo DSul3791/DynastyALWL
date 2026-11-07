@@ -228,6 +228,24 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	eroded = crop(frame_height.heights, n, core)
 	timings["scree"] = Time.get_ticks_msec() - clock
 
+	# Rolling swells, knolls and hills BEFORE the water (docs/water/terrain_water_pipeline.md, stage A2; Dave 7 Nov 2026: "we have to make a better
+	# terrain generator and then manage the water better on how it flows"). The land is finished first and the rivers are routed over it, so they
+	# follow the hills' own valleys. Added after the water, the bumps had to be faded near every river and their hollows drained, and the water
+	# patched back afterwards. Only the sea is known here: the fades near water are fades near the sea.
+	clock = Time.get_ticks_msec()
+
+	if tile_rules.has("rolling"):
+		var rolling_rules: Dictionary = tile_rules["rolling"].duplicate()
+		var sea_only: PackedByteArray = PackedByteArray()
+		sea_only.resize(n * n)
+
+		for index in range(n * n):
+			sea_only[index] = 1 if frame_height.heights[index] <= 0.0 else 0
+
+		TileRollingScript.apply(frame_height.heights, sea_only, n, frame_height.spacing_m, origin_sx, origin_sz, settings, rolling_rules, elevation)
+
+	timings["rolling"] = Time.get_ticks_msec() - clock
+
 	clock = Time.get_ticks_msec()
 	var starter: Dictionary = starter_info(tile)
 	var water = TileWaterScript.new()
@@ -240,14 +258,6 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	timings["water"] = Time.get_ticks_msec() - clock
 
 
-	# Rolling swells and knolls on dry low land, added after the water so the rivers and ponds keep their shape.
-	clock = Time.get_ticks_msec()
-
-	if tile_rules.has("rolling"):
-		var rolling_rules: Dictionary = tile_rules["rolling"].duplicate()
-		TileRollingScript.apply(water.heights, water.water_class, n, frame_height.spacing_m, origin_sx, origin_sz, settings, rolling_rules, elevation)
-
-	timings["rolling"] = Time.get_ticks_msec() - clock
 
 
 	# Pond levels no higher than their spill, after every pass that cuts or raises ground (tile_pond_level.gd).
