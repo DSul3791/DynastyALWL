@@ -33,8 +33,8 @@
     "near_water": "any",
     "altitude": "any"
    },
-   "status": "filled",
-   "note": ""
+   "status": "empty",
+   "note": "Dave 7 Nov: does not sound natural, better without it. Switched off (status empty); the file stays on disk."
   },
   "bed_forest_winter": {
    "group": "forest ambience",
