@@ -33,11 +33,12 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 
 	var holder: Node3D = Node3D.new()
 	holder.name = "Tile_%d_%d" % [tile.x, tile.y]
-	var rows: Dictionary = {"bones_animal": [], "bones_human": [], "stalagmite": [], "stalactite": []}
+	var rows: Dictionary = {"bones_animal": [], "bones_human": [], "goblin_litter": [], "goblin_fire": [], "stalagmite": [], "stalactite": []}
 
 	for n in range(0, bones.size() - BONE_FIELDS + 1, BONE_FIELDS):
 		var spin: Basis = Basis(Vector3.UP, bones[n + 4])
-		rows["bones_human" if int(bones[n + 3]) == 1 else "bones_animal"].append(Transform3D(spin, Vector3(bones[n], bones[n + 1], bones[n + 2])))
+		var kind: int = int(bones[n + 3])      # 0 animal bones, 1 human bones, 2 goblin den litter, 3 goblin den fire (Dave 7 Nov 2026)
+		rows[["bones_animal", "bones_human", "goblin_litter", "goblin_fire"][clampi(kind, 0, 3)]].append(Transform3D(spin, Vector3(bones[n], bones[n + 1], bones[n + 2])))
 
 	for n in range(0, formations.size() - FORMATION_FIELDS + 1, FORMATION_FIELDS):
 		var at: Vector3 = Vector3(formations[n], formations[n + 1], formations[n + 2])
@@ -113,6 +114,10 @@ static func look_mesh(look: String) -> ArrayMesh:
 			_animal_bones(parts)
 		"bones_human":
 			_human_bones(parts)
+		"goblin_litter":
+			_goblin_litter(parts)
+		"goblin_fire":
+			_goblin_fire(parts)
 		"stalagmite":
 			_formation(parts, false)
 		"stalactite":
@@ -222,6 +227,38 @@ static func _human_bones(parts: Array) -> void:
 	for k in 5:
 		BasicLook._box_rot(parts, Vector3(0.03, 0.01, 0.01), Vector3(0.28 + 0.02 * float(k), 0.006, 0.26 + 0.012 * float(k % 3)), Vector3(0.0, 0.4 * float(k), 0.0), BONE)   # finger bones
 	_fragments(parts, 9, 0.4)
+
+
+# Goblin den litter (Dave 7 Nov 2026: bones, sticks and thatch strewn on the floor): a small heap about 1 m across with a few gnawed bones, a
+# criss-cross of sticks and a flat mat of straw-coloured thatch.
+static func _goblin_litter(parts: Array) -> void:
+	_fragments(parts, 5, 0.35)
+	var stick: Color = Color(0.36, 0.26, 0.17)
+	var straw: Color = Color(0.72, 0.62, 0.34)
+
+	for k in 6:
+		var a: float = TAU * float(k) * 0.381966
+		BasicLook._box_rot(parts, Vector3(0.5 + 0.1 * float(k % 3), 0.025, 0.025), Vector3(cos(a) * 0.15, 0.03 + 0.02 * float(k % 3), sin(a) * 0.15), Vector3(0.0, a, 0.1 * float((k % 3) - 1)), BasicLook._tone(stick, k, 0.15))
+
+	for k in 7:
+		var a: float = TAU * float(k) * 0.618034
+		BasicLook._box_rot(parts, Vector3(0.38, 0.012, 0.05), Vector3(cos(a) * 0.22, 0.01 + 0.004 * float(k), sin(a) * 0.22), Vector3(0.0, a * 1.7, 0.0), BasicLook._tone(straw, k, 0.12))
+
+
+# A small goblin campfire: a ring of stones round a few charred sticks, a heap of orange embers and a low flame. About 0.7 m across, 0.35 m high.
+static func _goblin_fire(parts: Array) -> void:
+	var stone: Color = Color(0.45, 0.43, 0.4)
+
+	for k in 8:
+		var a: float = TAU * float(k) / 8.0
+		BasicLook._box_rot(parts, Vector3(0.14, 0.1, 0.12), Vector3(cos(a) * 0.3, 0.05, sin(a) * 0.3), Vector3(0.0, a, 0.0), BasicLook._tone(stone, k, 0.12))
+
+	for k in 4:
+		var a: float = TAU * float(k) * 0.25 + 0.4
+		BasicLook._box_rot(parts, Vector3(0.45, 0.04, 0.04), Vector3(cos(a) * 0.08, 0.06, sin(a) * 0.08), Vector3(0.0, a, 0.0), Color(0.12, 0.09, 0.07))
+
+	BasicLook._box_rot(parts, Vector3(0.3, 0.05, 0.3), Vector3(0.0, 0.07, 0.0), Vector3.ZERO, Color(0.95, 0.4, 0.1))
+	BasicLook._cyl(parts, 0.08, 0.28, Vector3(0.0, 0.2, 0.0), Vector3.ZERO, Color(1.0, 0.7, 0.2))
 
 
 static func _fragments(parts: Array, count: int, reach: float) -> void:

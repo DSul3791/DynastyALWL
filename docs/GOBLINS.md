@@ -64,3 +64,10 @@ Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the
 
 ## Idea: roaming bands (Dave, 7 Nov 2026, "might also add")
 - Roaming bands of goblins that **slink around at night, migrating around the islands**. By day they find **bushes to sleep under, or caves to hide in**. Not decided; separate from the den groups. Build only after the den groups work.
+
+## Den build, stage A (7 Nov 2026; not yet run in Godot)
+Design (from Dave's spec above): a goblin den is the dry end of a side branch of a spring cave we already make, with bones, sticks and thatch on the floor and a small campfire. No new tunnel generator and no bake change.
+- **Which caves:** `TileTerrainData._load_caves` picks, in `GOBLIN_DEN_PERCENT` (60) of spring caves that have a branch den, the last branch den as the goblin den. The pick is from a hash of the cave's id, so the server and every client agree and no tile needs rebaking. Constants at the top of the file.
+- **Dressing:** the den is added to `cave_bones` as kind 3 (small fire) and 5 piles of kind 2 (litter: gnawed bones, crossed sticks, thatch) round it. They travel in the existing cave dressing message (no protocol change) and `cave_dressing.gd` draws them (`goblin_litter`, `goblin_fire`). The fire is a visual only for now: no light and no heat, because a real fire would be a server structure; whether goblins' own fire counts as light is undecided.
+- **Spawning:** goblin groups now come out of the mouths of caves that have a goblin den (`goblin_den_mouths`, used by `lair_mouths`), no longer every spring cave. They still stand at the cave mouth, not in the den, until the server knows the cave floor height.
+- **Still open:** goblins living inside the den (needs cave floor height and a way for the server to walk them through the 100 m tunnel), respawn rules, a real fire with light.

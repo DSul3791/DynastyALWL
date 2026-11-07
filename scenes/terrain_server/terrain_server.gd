@@ -508,9 +508,9 @@ func _ready() -> void:
 	animals.biome_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
 		return "" if tile_data.placeholder else str(biome_names.get(int(tile_data.biome[tile_data.nearest(x, z)]), ""))
-	animals.lair_mouths = func(x, z):   # the cave mouths of the tile the player stands in (already loaded, so no wait); goblins live at them
+	animals.lair_mouths = func(x, z):   # the mouths of the spring caves with a goblin den in the tile the player stands in (already loaded, so no wait); goblin groups come out of them
 		var lair_tile = generator.get_tile(generator.tile_of(x, z))
-		return PackedVector2Array() if lair_tile.placeholder else lair_tile.spring_mouths
+		return PackedVector2Array() if lair_tile.placeholder else lair_tile.goblin_den_mouths
 	animals.setup()
 	trails = TrailsScript.new()
 	trails.game_seconds = func(): return game_clock.seconds
