@@ -57,36 +57,52 @@ The live sim stays the truth at runtime, because players' ditches change it (reb
 | NPC markers | `data/npcs/markers.json`, `server_npcs.gd` | fixed positions | unchanged positions, plus a new `island_checks --markers` check: each marker is dry, on walkable slope, and not in a wetland. Failures are listed for the markers' owner to move | Dave: move the thing, do not adjust heights. No automatic moves, because a marker is a design choice |
 | Tools | `island_checks.gd`, `edge_compare.gd`, `export_tile_maps.gd`, `tile_preview.gd` | tile sections | the same sections, plus the new ones | edge_compare also compares `fresh_m` across seams |
 
-## 3. What I need in the record (to agree with Sonny)
+## 3. The record shape (agreed with Sonny, 7 Nov 2026)
 
-This is my proposal. It follows the rebuild design's Stage D list, so no new science is asked for. Sonny decides.
+Sonny's reply is in `/mnt/project-files/water/record_schema_reply_to_steve.md`. This section is the summary readers code against.
 
-1. **Reachable from Godot.** The record is written by Python (tools/watershed). Godot cannot read `.npz`. I propose this layout per tile:
-   - `record/tile_X_Z.json`, holding the vectors and a manifest;
-   - raw little-endian `.f32` and `.u8` grids at 8 m, cut by world position so the tiles agree at seams.
-2. **Water class codes.** Keep 0 none, 1 ocean, 2 lake and 3 river, so no runtime reader breaks. Add 4 marsh, 5 swamp, 6 fen, 7 bog and 8 seasonal channel or pond.
-3. **Per-cell rasters:** ground, water class, water level, discharge (mean), regime, depth to the water table and basin id, exactly as Stage D lists them. From these the bake makes `fresh_m`. Sonny needs to do nothing extra for it.
+1. **Layout.**
+   - **Rasters:** raw little-endian grids at 8 m, one set per tile, (T+1)² samples with shared edge samples. This is the `export_raw_heights` convention, so neighbouring tiles agree at their edges by construction.
+   - **Vectors:** one island-wide `record/network.json`. A reach is never clipped at a tile edge, and the bake loads the file once.
+   - **Manifest:** `record/manifest.json` holds `record_version`, the params, the input hashes, the grid origin and the cell size.
+   - **Units:** metres and m3/s. Coordinates are world x and z, with y up.
+2. **Water class codes:**
+   - 0 none, 1 ocean, 2 lake, 3 perennial river (unchanged, so no runtime reader breaks);
+   - 4 marsh, 5 swamp, 6 fen, 7 bog;
+   - 8 seasonal channel, 9 seasonal pond;
+   - 10 salt marsh or tidal flat. This needs its own biome row, separate from freshwater marsh.
+
+   Perennial, intermittent or ephemeral is in the regime raster, not the class.
+3. **Rasters:**
+   - ground, water class, water level, mean discharge, regime, depth to the water table, basin id;
+   - `fresh_m`, the distance to perennial fresh water. It is island-wide, so the bake needs no frame for it;
+   - `sediment_m` (alluvium, till and colluvium), for the placers and the soils.
 4. **Vectors:**
-   - reaches, as polylines with Q per season, width, depth, reach type, regime and bed material;
-   - heads, by kind;
-   - falls (lip, drop, rock);
+   - reaches: polyline; wet-season, mean and dry-season flow; width, depth, reach type, regime, bed material and the downstream reach id;
+   - heads (by kind);
+   - falls;
    - lakes (cause, level, spill point);
    - springs and seeps;
-   - **cave springs**: mouth x, y, z; flow in m3/s; rock; and the direction the underground passage runs, to build the cave along;
+   - cave springs (mouth, flow, rock, underground catchment area);
+   - karst sinks, each linked to the cave spring it feeds, so a cave can follow the route from sink to spring;
    - coast outlets.
-5. **Stable ids** per reach, lake and cave spring, so a goblin den or a placer can name its source and the log can follow the water.
+
+   Every feature also carries the seven plausibility answers and its appearance fields.
+5. **Ids** are deterministic from the seed and params, and stable within one record version only. Readers never keep them across rebakes, except in bake output that is rebuilt with the record.
+6. **Ground:** in R6 the record's ground becomes the tile `height`. The current tile_height pipeline is bypassed for baked tiles, so M2 also switches `height`.
 
 ## 4. The bake-time reader (one script)
 
 `src/worldgen/record/water_record.gd`, a RefCounted script. It gives the bake one API:
 
 - `load_tile(tile) -> String` (an error text, empty when it loaded);
-- `water_class`, `water_level`, `discharge`, `table_depth`, `ground` (rasters cropped to the tile, the same layout as today's `water` object, so `tile_baker` hands them on unchanged);
-- `reaches_in(rect) -> Array`;
+- `water_class`, `water_level`, `discharge`, `regime`, `table_depth`, `basin`, `ground` (rasters cropped to the tile, the same layout as today's `water` object, so `tile_baker` hands them on unchanged);
+- `reaches_in(rect) -> Array` (queries the island-wide `network.json`);
 - `cave_springs_in(rect) -> Array`;
 - `falls_in(rect) -> Array`;
 - `lakes_in(rect) -> Array`;
-- `fresh_distance() -> PackedFloat32Array` (computed once, with an 8-neighbour chamfer over the frame, so the tiles agree);
+- `fresh_distance() -> PackedFloat32Array` (M0 and M1: computed with an 8-neighbour chamfer over the bake frame from today's water; M2: read from the record's `fresh_m`);
+- `sediment() -> PackedFloat32Array` (M2; empty before it);
 - `placer_traps(ore_rect) -> Array` (positions where the water slows, from reach type changes, bends, falls and confluences).
 
 At runtime, `tile_terrain_data.gd` gains:
@@ -97,7 +113,7 @@ At runtime, `tile_terrain_data.gd` gains:
 
 - Kept, written from the record: `height`, `water_surface`, `water_class` (with the extended codes), `flow` (now the record's discharge), and `moisture` (from the climate, which reads the record).
 - Added:
-  - `fresh_m` (uint8, 4 m steps up to 1 km);
+  - `fresh_m` (uint8, 4 m steps up to 1 km; from the record's island-wide raster at M2);
   - `table_depth` (uint8, 0.25 m steps);
   - a `water` list holding this tile's reaches, falls, lakes and cave springs, for tools and later systems.
 - `sites` stays as it is (caves, lairs, harbour). A den row gains its source cave id.
@@ -129,8 +145,8 @@ M0 and M1 can be built before R6 because they use today's data. Nothing waits on
 
 ## 7. Questions (to the coordinator, not to Sonny)
 
-- **Q1, for Dave: goblin dens.** Dave's 7 Nov rule puts goblins in "any spring tunnel". With the rebuild, spring caves become rare, which follows his watershed document. I recommend letting goblin dens use dry side branches of any cave (karst, lava tube or spring cave). Goblins then stay common enough on the starter island, and the caves stay natural.
-- **Q2, for Sonny, when he is free:** whether the per-tile JSON and raw-grid layout (section 3, item 1) suits his R6 writer, or what he would rather write.
+- **Q1, for Dave: goblin dens.** Sonny agrees with the recommendation below. Under Dave's 6 Nov QA rule (go with the recommendation), M1 builds it, and Dave can still overrule it. Dave's 7 Nov rule puts goblins in "any spring tunnel". With the rebuild, spring caves become rare, which follows his watershed document. I recommend letting goblin dens use dry side branches of any cave (karst, lava tube or spring cave). Goblins then stay common enough on the starter island, and the caves stay natural.
+- **Q2 (answered, Sonny 7 Nov):** raw grids per tile, plus one island-wide `network.json` for the vectors (section 3).
 
 ## 8. Sources
 
