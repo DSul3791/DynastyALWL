@@ -663,6 +663,20 @@
 					"hint": "A carcass wedged high in a tree. A leopard cached it."
 				}
 			]
+		},
+		"rhino": {
+			"group": "hoofed",
+			"track": "huge three-toed round prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Huge three-toed prints, deep in the dust. A rhino passed."
+				},
+				{
+					"kind": "droppings",
+					"hint": "A big dung heap, kicked apart. A rhino marks this spot."
+				}
+			]
 		}
 	}
 }

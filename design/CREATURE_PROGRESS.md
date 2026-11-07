@@ -56,6 +56,7 @@ What the animal view already does for every model (do not rebuild): size from th
 | Wildebeest | 40 | done | waiting | Savanna herds of 5 to 12 |
 | Lion (lion, two lionesses) | 41 | done | waiting | Savanna prides; three looks by id |
 | Leopard | 42 | done | waiting | Savanna and forest edge, dusk and night |
+| Rhinoceros | 43 | done | waiting | Savanna, alone or in twos; charges when close |
 
 New species are added with `python tools/add_species.py <spec.json>` (specs for batch 2 in E:/Software/godotDev/specs on the PC); `--clips` on the creature check lists a file's clips.
 
