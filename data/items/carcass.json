@@ -1572,6 +1572,38 @@
 			],
 			"hunt_difficulty": 4.0,
 			"blows": 8
+		},
+		"camel": {
+			"size_kg": 500.0,
+			"parts": [
+				[
+					"raw_meat",
+					16,
+					22
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					8,
+					12
+				],
+				[
+					"sinew",
+					4,
+					6
+				],
+				[
+					"animal_fat",
+					6,
+					9
+				]
+			],
+			"hunt_difficulty": 1.6,
+			"blows": 8
 		}
 	},
 	"species_note": "Per-species `blows` (Sal, 2026-10-31) = knife blows to dress the body, by size: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8. The server currently reads the single top-level `blows` (4) for every species; reading the per-species value is a small code change (server_items.gd make_carcass / _process_carcass). All species use tool_class knife."
