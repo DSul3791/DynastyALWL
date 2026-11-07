@@ -24,6 +24,7 @@ extends Node
 #   --flood           with --frames: 18 s in, start 80 tool hits at once and check the voice cap sheds the farthest and quietest
 #   --ui              with --frames: 18 s in, play the interface cues one every 0.5 s
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
+#   --dig-ditch=X,Z,L 20 s in, ask the server to dig a ditch from (X, Z) L metres north (-Z), 1.5 m spheres every 1.5 m, two a second (water check, #506)
 #   --water-step      with --frames: 12 s in, press + twice (the server re-settles the water)
 #   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
 #   --walk            with --frames: 15 s in, drop to the ground, walk east for 30 s, then
@@ -334,6 +335,8 @@ var _walk_msec: int = 0
 var _walk_dir: Vector3 = Vector3.ZERO
 var _walk_stats: Dictionary = {}
 var test_dig: bool = false
+var _ditch: Array = []                  # --dig-ditch: dig centres still to request (x, z), oldest first
+var _ditch_next_msec: int = 0
 var test_swim: bool = false
 var test_ui: bool = false
 var test_flood: bool = false
@@ -647,6 +650,12 @@ func _ready() -> void:
 			test_dig_check = true
 		elif argument == "--dig":
 			test_dig = true
+		elif argument.begins_with("--dig-ditch="):
+			var d: PackedStringArray = argument.trim_prefix("--dig-ditch=").split(",")
+
+			if d.size() == 3:
+				for n in range(int(float(d[2]) / 1.5) + 1):
+					_ditch.append(Vector2(float(d[0]), float(d[1]) - 1.5 * float(n)))
 		elif argument == "--cut":
 			test_cut = true
 		elif argument == "--swim":
@@ -5563,6 +5572,17 @@ func _process(delta: float) -> void:
 	if test_dig and now - connected_msec > 20000:
 		test_dig = false
 		net.dig.rpc_id(1, Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0), 4.0)
+
+	if not _ditch.is_empty() and now - connected_msec > 20000 and now >= _ditch_next_msec:
+		_ditch_next_msec = now + 500
+		var at: Vector2 = _ditch.pop_front()
+		var hit = terrain.get_voxel_tool().raycast(Vector3(at.x, 400.0, at.y), Vector3.DOWN, 800.0)
+
+		if hit != null:
+			net.dig.rpc_id(1, Vector3(at.x, hit.position.y, at.y), 1.5)
+			print("Terrain client: ditch dig at %.1f, %.1f, %.1f (%d left)" % [at.x, float(hit.position.y), at.y, _ditch.size()])
+		else:
+			print("Terrain client: ditch dig at %.1f, %.1f: no ground loaded there yet" % [at.x, at.y])
 
 	if test_dig_check and now - connected_msec > 24000:
 		test_dig_check = false

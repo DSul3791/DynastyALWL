@@ -46,8 +46,10 @@ func build() -> Dictionary:
 
 
 # One sphere edit in world space. `add` true raises ground (a fill, a dam), false removes it (a dig, a ditch).
+# `already_applied`: the ground's owner (the server's dig handler) has already made the edit; only steps A, C and D run here, and the
+# source forgets its cached ground around it so the re-read sees the edit.
 # Returns {"result": one of the constants above, "reason": String, "revision": int, "cells": Rect2i}.
-func edit_sphere(center: Vector3, radius: float, add: bool) -> Dictionary:
+func edit_sphere(center: Vector3, radius: float, add: bool, already_applied: bool = false) -> Dictionary:
 	if frozen:
 		return _answer(FROZEN, frozen_reason, Rect2i())
 
@@ -71,7 +73,10 @@ func edit_sphere(center: Vector3, radius: float, add: bool) -> Dictionary:
 	var before: float = grid.total_volume()
 
 	# B. Edit.
-	if not source.edit_sphere(center, radius, add):
+	if already_applied:
+		if source.has_method("forget"):
+			source.forget(box)
+	elif not source.edit_sphere(center, radius, add):
 		return _answer(REJECTED_EDIT_FAILED, "the ground refused the edit", cells)
 
 	terrain_revision += 1

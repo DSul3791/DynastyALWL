@@ -71,6 +71,8 @@ var pipe_s: PackedFloat64Array     # LAW_PIPE: each south face's discharge kept 
 
 var springs: Dictionary = {}       # cell index -> {"id": String, "m3_per_s": float}
 var sinks: Dictionary = {}         # cell index -> {"id": String, "m3_per_s": float} (the most it asks for)
+var fixed: Dictionary = {}         # cell index -> surface level held there: a fixed-stage reservoir boundary (guide 3.5), e.g. the river
+                                   # where it enters and leaves a window. What it adds or takes each tick is booked as boundary_in/out.
 
 # Ledger (guide 26.3): expected = start + added + springs - removed - sinks - rounding. Interior faces cancel and never appear here.
 var start_m3: float = 0.0
@@ -78,6 +80,8 @@ var added_m3: float = 0.0          # add_water calls
 var removed_m3: float = 0.0        # remove_water calls (what was actually granted)
 var spring_m3: float = 0.0
 var sink_m3: float = 0.0           # what sinks were actually granted
+var boundary_in_m3: float = 0.0   # fixed-level cells topped up (water coming in from outside the region)
+var boundary_out_m3: float = 0.0  # fixed-level cells drained (water leaving the region)
 var rounding_m3: float = 0.0       # float traces under zero set back to zero (step 6); reported, so a real leak cannot hide here
 var by_id: Dictionary = {}         # source or sink id -> signed m^3 (positive = into the water)
 
@@ -175,7 +179,7 @@ func fill_to_level(level: float) -> void:
 	for k in range(w * h):
 		volume[k] = maxf(0.0, level - bed[k]) * area_m2
 
-	start_m3 = total_volume() - added_m3 - spring_m3 + removed_m3 + sink_m3 + rounding_m3
+	start_m3 = total_volume() - (expected_volume() - start_m3)
 
 
 func add_spring(i: int, j: int, m3_per_s: float, id: String) -> void:
@@ -231,6 +235,18 @@ func step() -> void:
 		volume[k] -= got
 		sink_m3 += got
 		_book(String(sinks[k]["id"]), -got)
+
+	# 0b. Fixed-stage boundaries: each held cell is set back to its level, and the difference is booked as water in or out.
+	for k in fixed:
+		var want_m3: float = maxf(0.0, float(fixed[k]) - bed[k]) * area_m2
+		var delta: float = want_m3 - volume[k]
+
+		if delta > 0.0:
+			boundary_in_m3 += delta
+		else:
+			boundary_out_m3 -= delta
+
+		volume[k] = want_m3
 
 	# 1. Snapshot.
 	for k in range(n):
@@ -355,7 +371,7 @@ func total_volume() -> float:
 
 
 func expected_volume() -> float:
-	return start_m3 + added_m3 + spring_m3 - removed_m3 - sink_m3 - rounding_m3
+	return start_m3 + added_m3 + spring_m3 + boundary_in_m3 - removed_m3 - sink_m3 - boundary_out_m3 - rounding_m3
 
 
 # actual - expected, m^3 (guide 26.3). Zero up to float rounding when no water is made or lost.

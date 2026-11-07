@@ -18,8 +18,9 @@ extends RefCounted
 # stack_depth_m under solid ground does not touch the surface water and leaves the column OPEN_SURFACE (guide 4.1: the bed is the highest
 # solid support under that water layer).
 #
-# Face crests: the highest ground at the face's two ends and its midpoint (guide 24.2: "at both ends plus midpoint ... use the maximum").
-# A berm on a face boundary raises the crest even though both cell centres stay low (test G01).
+# Face crests: five samples along the face in two half-faces; each half-face takes its highest sample (the guide's conservative maximum)
+# and the face takes the lower half-face (the guide's subsegments, for narrow openings such as a 3 m ditch on 2 m cells). A berm on a face
+# boundary still raises the crest even though both cell centres stay low (test G01). See _face_crest.
 #
 # Units: metres. The grid's cell (i, j) covers x in [origin.x + i*cell, origin.x + (i+1)*cell), z likewise; its centre is the sample point.
 
@@ -146,7 +147,7 @@ func extract(grid, i0: int, j0: int, i1: int, j1: int) -> Dictionary:
 		for i in range(maxi(i0 - 1, 0), mini(i1, grid.w - 2) + 1):
 			var x: float = origin.x + (i + 1) * cell_m
 			var z0: float = origin.y + j * cell_m
-			var crest: float = _face_crest([Vector2(x, z0), Vector2(x, z0 + 0.5 * cell_m), Vector2(x, z0 + cell_m)])
+			var crest: float = _face_crest([Vector2(x, z0), Vector2(x, z0 + 0.25 * cell_m), Vector2(x, z0 + 0.5 * cell_m), Vector2(x, z0 + 0.75 * cell_m), Vector2(x, z0 + cell_m)])
 
 			if is_nan(crest):
 				return {"ok": false, "reason": "UNKNOWN ground on the east face of cell %d,%d" % [i, j], "cells": 0, "stacked": 0}
@@ -157,7 +158,7 @@ func extract(grid, i0: int, j0: int, i1: int, j1: int) -> Dictionary:
 		for i in range(i0, i1 + 1):
 			var z: float = origin.y + (j + 1) * cell_m
 			var x0: float = origin.x + i * cell_m
-			var crest: float = _face_crest([Vector2(x0, z), Vector2(x0 + 0.5 * cell_m, z), Vector2(x0 + cell_m, z)])
+			var crest: float = _face_crest([Vector2(x0, z), Vector2(x0 + 0.25 * cell_m, z), Vector2(x0 + 0.5 * cell_m, z), Vector2(x0 + 0.75 * cell_m, z), Vector2(x0 + cell_m, z)])
 
 			if is_nan(crest):
 				return {"ok": false, "reason": "UNKNOWN ground on the south face of cell %d,%d" % [i, j], "cells": 0, "stacked": 0}
@@ -189,8 +190,13 @@ func _crest_or_wall(grid, a: int, b: int, crest: float) -> float:
 	return crest if crest > maxf(grid.bed[a], grid.bed[b]) else grid.OPEN
 
 
+# The face's crest from five samples along it (end, quarter, middle, quarter, end), in two half-faces of three samples each. A half-face's
+# crest is its highest sample (guide 24.1: the conservative maximum), and the face's crest is the lower half-face, since water passes
+# where the face is open. Guide 24.1 asks for subsegments when the plain maximum over-blocks narrow openings: a player's ditch is about 3 m
+# wide, so on 2 m cells one end of most faces along it sits on the uncut bank, and the plain maximum shut the ditch (test_sullivan_water_live).
+# A berm or dam along the whole face still raises both halves (G01).
 func _face_crest(points: Array) -> float:
-	var most: float = -INF
+	var tops: Array = []
 
 	for p in points:
 		var col: Dictionary = column(p.x, p.y)
@@ -198,5 +204,15 @@ func _face_crest(points: Array) -> float:
 		if int(col["state"]) == UNKNOWN:
 			return NAN
 
-		most = maxf(most, float(col["top"]))
-	return most
+		tops.append(float(col["top"]))
+
+	var half: int = tops.size() >> 1
+	var first: float = -INF
+	var second: float = -INF
+
+	for n in range(tops.size()):
+		if n <= half:
+			first = maxf(first, tops[n])
+		if n >= half:
+			second = maxf(second, tops[n])
+	return minf(first, second)

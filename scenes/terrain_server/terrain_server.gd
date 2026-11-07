@@ -799,6 +799,9 @@ func _start_water() -> void:
 	water_live = WaterHubScript.new() if OS.get_cmdline_user_args().has("--water-old") else WaterHub2Script.new()
 	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, dry_start)
 
+	if water_live.has_method("set_store"):
+		water_live.set_store(store)   # Sullivan dig windows read the server's ground (src/sullivan_water/live/dig_windows.gd)
+
 	# Saved digs and fills shape the water's ground again after every restart and re-bake.
 	for edit in store.ops.edits():
 		if int(edit[0]) == store.ops.KIND_FILL:

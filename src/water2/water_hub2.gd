@@ -9,6 +9,7 @@ extends RefCounted
 const Field := preload("res://src/water2/water_field.gd")
 const WaterWindow := preload("res://src/water2/water_window.gd")
 const FlowTexture := preload("res://src/water2/water_flow_texture.gd")
+const DigWindows := preload("res://src/sullivan_water/live/dig_windows.gd")
 
 const SOURCES_PATH := "res://src/water2/water_sources.json"
 const RAIN_PER_RUNOFF := 0.0001   # shortcut: metres of rain per second for each 1.0 the server's runoff is above 1.0 (the weather swell); tune with real storms
@@ -40,6 +41,8 @@ var _base: PackedFloat32Array = PackedFloat32Array()
 var _sim_tile: Vector2i = Vector2i(-9999, -9999)
 var _told: PackedFloat32Array = PackedFloat32Array()   # the levels last put in _pending (water thread only); empty = publish the next one
 var _stats: Dictionary = {"moved_m3": 0.0, "memory": 0, "loaded": 0}
+var _live = DigWindows.new()   # Sullivan water (7 Nov 2026): fine 2 m windows where players dig, so ditches and dams change the flow
+var _last_levels: PackedFloat32Array = PackedFloat32Array()   # the levels last built on the water thread (what a new dig window starts from)
 
 
 func setup(centre_tile: Vector2i, _water_dir: String, _base_rate: float, tile_generator, _dry_start: bool = false) -> void:
@@ -99,12 +102,18 @@ func set_runoff(value: float) -> void:
 	runoff = value
 
 
-func dig(_center: Vector3, _radius: float) -> void:
-	pass   # shortcut: digs and fills do not reach the field yet (the bed would change under the window; stage e)
+# The server's ground store, so the dig windows read the same ground the players get (src/sullivan_water/live/dig_windows.gd).
+func set_store(store) -> void:
+	_live.set_store(store)
 
 
-func fill(_center: Vector3, _radius: float) -> void:
-	pass
+# Digs and fills reach the water through the Sullivan dig windows; the 8 m field around them keeps its baked bed.
+func dig(center: Vector3, radius: float) -> void:
+	_live.dig(center, radius, false)
+
+
+func fill(center: Vector3, radius: float) -> void:
+	_live.dig(center, radius, true)
 
 
 func take_updates() -> Array:
@@ -292,6 +301,16 @@ func _run() -> void:
 		var start: int = Time.get_ticks_usec()
 		_field.rain_mps = maxf(runoff - 1.0, 0.0) * RAIN_PER_RUNOFF
 		_field.step(TICK_S)
+		var levels_now: PackedFloat32Array = _last_levels if not _last_levels.is_empty() else _base
+		var samples: int = tile_data.samples
+		var x0: float = tile_data.x0
+		var z0: float = tile_data.z0
+		_live.update(TICK_S, func(x: float, z: float) -> float:
+			var si: int = int(round((x - x0) / 8.0))
+			var sj: int = int(round((z - z0) / 8.0))
+			if si < 0 or sj < 0 or si >= samples or sj >= samples or levels_now.is_empty():
+				return NAN
+			return levels_now[sj * samples + si])
 		ticks += 1
 		busy = _field.awake_blocks() > 0
 
@@ -299,6 +318,8 @@ func _run() -> void:
 			var levels: PackedFloat32Array = publish_levels(_base, tile_data.samples, _field, window_origin)
 			var packet: Dictionary = FlowTexture.packet(_field, Vector2(tile_data.x0 + float(window_origin.x) * 8.0, tile_data.z0 + float(window_origin.y) * 8.0))
 			var moved: bool = levels_moved(_told, levels, tile_data.samples, window_origin, _field.w, _field.h)
+			_last_levels = levels.duplicate()   # before the dig windows draw in: a new window starts from the 8 m water, not from itself
+			moved = _live.publish(levels, tile_data.samples, tile_data.x0, tile_data.z0) or moved
 
 			if moved:
 				_told = levels
