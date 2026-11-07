@@ -13,8 +13,11 @@ spec.json (one species):
   "season": "year round",                 data/items/seasons.json game note (skipped when one is there)
   "sign": {...} or "deer",                data/animals/animal_sign.json row, or the kind to copy (skipped when one is there)
   "step": ["deer", -13],                  a <kind>_step slot borrowing that animal's step clips at that level
-  "stand_in": ["_make_deer(id)", 0.6]     the code-built body drawn until the model files are there, and its scale
+  "stand_in": ["_make_deer(id)", 0.6],    the code-built body drawn until the model files are there, and its scale
+  "progress": "| Kind | n | done | ... |"  its row for design/CREATURE_PROGRESS.md (added before the notes under the table)
 }
+Run it again on a fresh copy of main to rebuild a branch after main moved (a merge that conflicts on these files: take
+main's side of every conflicted file, then run this for each species the branch adds).
 Each file is rewritten in its own style (tab JSON, or text insertion where the file is hand-formatted); run it once per species.
 """
 import copy, json, re, sys
@@ -35,14 +38,15 @@ def save(p, d):
 A = "data/animals/animals.json"
 a = load(A)
 sp = a["species"]
-assert kind not in sp, kind + " is already a species"
-assert all(int(v.get("number", -1)) != number for v in sp.values() if isinstance(v, dict)), "number %d is taken" % number
-row = copy.deepcopy(sp[spec["copy"]])
+already = kind in sp      # a rebuild after main moved: every step below skips what is already there
+assert already or all(int(v.get("number", -1)) != number for v in sp.values() if isinstance(v, dict)), "number %d is taken" % number
+assert not already or int(sp[kind].get("number", -1)) == number, kind + " is already a species with another number"
+row = copy.deepcopy(sp[spec["copy"]]) if not already else sp[kind]
 for k in ("note", "note_temperament", "model", "den"):
     row.pop(k, None)
 row["number"] = number
 row["name"] = spec["name"]
-for k, v in spec.get("row", {}).items():
+for k, v in ({} if already else spec.get("row", {})).items():
     if v is None:
         row.pop(k, None)
     elif isinstance(v, dict) and isinstance(row.get(k), dict) and k not in ("biomes", "active", "temperament"):
@@ -104,9 +108,10 @@ if "step" in spec:
 # Animal view: the kind's number, and a code-built stand-in
 V = "src/client/animal_view.gd"
 t = open(V, encoding="utf8").read()
-t, n = re.subn(r'(const KIND_OF_SPECIES := \{[^}]*)\}', lambda mm: mm.group(1) + ', %d: "%s"}' % (number, kind), t, count=1)
-assert n == 1
-if "stand_in" in spec:
+if '%d: "%s"' % (number, kind) not in t:
+    t, n = re.subn(r'(const KIND_OF_SPECIES := \{[^}]*)\}', lambda mm: mm.group(1) + ', %d: "%s"}' % (number, kind), t, count=1)
+    assert n == 1
+if "stand_in" in spec and ("\t\t%d:\n" % number) not in t:
     call, scale = spec["stand_in"]
     anchor = '\n\treturn null   # a species number with no model is not drawn'
     assert anchor in t
@@ -120,8 +125,20 @@ open(V, "w", encoding="utf8", newline="\n").write(t)
 for f in ("test_animal_senses", "test_animals", "test_big_game", "test_flocks", "test_thieves", "test_wolves"):
     p = "src/worldgen/tools/%s.gd" % f
     t = open(p, encoding="utf8").read()
-    t2, n = re.subn(r'("beaver"(?:, "[a-z_]+")*)\]', lambda mm: mm.group(1) + ', "%s"]' % kind, t, count=1)
-    assert n == 1, p
+    if ('"%s"]' % kind) not in t and (', "%s",' % kind) not in t:
+        t2, n = re.subn(r'("beaver"(?:, "[a-z_]+")*)\]', lambda mm: mm.group(1) + ', "%s"]' % kind, t, count=1)
+        assert n == 1, p
+    else:
+        t2 = t
     open(p, "w", encoding="utf8", newline="\n").write(t2)
+
+if "progress" in spec:
+    P = "design/CREATURE_PROGRESS.md"
+    t = open(P, encoding="utf8").read()
+    if spec["progress"] not in t:
+        lines = t.split("\n")
+        last = max(i for i, l in enumerate(lines) if l.startswith("| ") and not l.startswith("| Creature") and not l.startswith("|---"))
+        lines.insert(last + 1, spec["progress"])
+        open(P, "w", encoding="utf8", newline="\n").write("\n".join(lines))
 
 print("added", kind, number)
