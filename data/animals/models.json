@@ -1420,6 +1420,35 @@
 				}
 			],
 			"size_clip": "Idle"
+		},
+		"hyena": {
+			"scene": "res://assets/animals/hyena/SK_Hyena.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Hyena",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.3,
+			"run_mps": 9.0,
+			"stride_m": 1.0,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Idle_Breathing",
+				"10": "Laughing_A",
+				"11": "RunFast_F",
+				"12": "Idle_SecondaryMoveCalm_1",
+				"walk": [
+					"WalkMedium_F",
+					"GrazingWalkMedium_F"
+				],
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Hyena (Realistic Animals/Hyena/SK_Hyena.fbx). Laughs when it warns. Checked 7 Nov 2026.",
+			"length_m": 1.5,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/hyena/Textures/T_Hyena.png"
+				}
+			]
 		}
 	}
 }
