@@ -6173,14 +6173,11 @@ func _light_block() -> String:
 	var wet: float = float(weather.get("rain", 0.0))
 	print("torch light check: rain %.2f (puts out from %.2f), eye under water %s, depth %.2f" % [wet, FlameRules.RAIN_DOUSE, str(underwater), underwater_surface - camera.global_position.y if underwater else 0.0])
 
-	if underwater:
-		return "water"
-
-	if not FlameRules.in_rain(wet, false):
-		return ""
+	if underwater or not FlameRules.in_rain(wet, false):
+		return FlameRules.light_block(underwater, wet, false)
 
 	var rock: float = sound.cave.rock_enclosure if sound != null and sound.cave != null else 0.0
-	return "" if WeatherLookScript.sky_share(rock) < 0.5 or held.flame_covered() else "rain"
+	return FlameRules.light_block(false, wet, WeatherLookScript.sky_share(rock) < 0.5 or held.flame_covered())
 
 
 # A torch in either hand goes out under water or after a few seconds in the open rain (Dave, 4 Nov 2026; flame_rules.gd). The client knows the held slot,

@@ -51,6 +51,13 @@ func _init() -> void:
 	check(FlameRules.douse_reason(lantern, true, 0.0, false, 0.0) == "water", "a lantern goes out under water")
 	check(FlameRules.douse_reason(table.entry("torch_doused"), true, 1.0, false, grace * 2.0) == "", "a doused torch has nothing to put out")
 
+	check(FlameRules.light_block(true, 0.0, false) == "water", "a torch cannot be lit under water")
+	check(FlameRules.light_block(true, 1.0, true) == "water", "nor under water with cover")
+	check(FlameRules.light_block(false, 0.9, false) == "rain", "nor in open rain")
+	check(FlameRules.light_block(false, 0.9, true) == "", "a cave or cover lets it light in rain")
+	check(FlameRules.light_block(false, 0.1, false) == "", "a drizzle does not stop it")
+	check(FlameRules.light_block(false, 0.0, false) == "", "dry and above water it lights")
+
 	var dir: String = "user://test_torch_douse"
 	DirAccess.make_dir_recursive_absolute(dir)
 
