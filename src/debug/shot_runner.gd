@@ -864,7 +864,7 @@ func _show_animals(now: int) -> void:
 			drawn.append("%s unknown" % name_text)
 			continue
 
-		var node: Node3D = view._make_for_species(int(number), 900000 + i)
+		var node: Node3D = view._make_for_species(int(number), 900000 + i, young)
 
 		if node == null:
 			drawn.append("%s not drawn" % name_text)
@@ -879,7 +879,7 @@ func _show_animals(now: int) -> void:
 
 		node.position = Vector3(x, g, z)
 		node.rotation.y = PI * 0.5       # side on to the camera
-		if young:
+		if young and not node.has_meta("young_model"):
 			node.scale = Vector3.ONE * AnimalViewScript.YOUNG_SCALE
 
 		view.add_child(node)

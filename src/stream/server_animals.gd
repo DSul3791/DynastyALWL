@@ -1298,6 +1298,13 @@ func biome_weight(def: Dictionary, x: float, z: float) -> float:
 	return float((def["biomes"] as Dictionary).get(str(biome_at.call(x, z)), 0.0))
 
 
+# Optional habitat keys from the guiding document (docs/design/GUIDING_DOCUMENT.md section 5, 7 Nov 2026) are accepted in a
+# row's "habitat" and not used yet, so data can be written ahead of the terrain that answers them (R6): altitude_m [min, max],
+# slope_deg [min, max], rock, water_kind, cave, canopy, sea_depth_m [min, max], sky, lair, season. A row with them spawns and
+# scores exactly as one without (test_habitat_keys.gd).
+const HABITAT_KEYS_LATER := ["altitude_m", "slope_deg", "rock", "water_kind", "cave", "canopy", "sea_depth_m", "sky", "lair", "season"]
+
+
 # How well a spot suits a species: -1 when it cannot live there (too steep, a summit far above the player, at the water's edge),
 # 1 for open ground, 2 under trees for a species that likes forest ("forest": true in its habitat).
 func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> float:

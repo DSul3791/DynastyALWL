@@ -313,6 +313,78 @@
    "status": "filled",
    "note": "borrowed from deer"
   },
+  "cow_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/horse_step_0.ogg",
+    "res://assets/audio/batch1/horse_step_1.ogg",
+    "res://assets/audio/batch1/horse_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -12,
+   "status": "filled",
+   "note": "borrowed from horse"
+  },
+  "goat_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -15,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "chicken_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -28,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "cat_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -24,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "dog_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/wolf_step_0.ogg",
+    "res://assets/audio/batch1/wolf_step_1.ogg",
+    "res://assets/audio/batch1/wolf_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -16,
+   "status": "filled",
+   "note": "borrowed from wolf"
+  },
+  "buffalo_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/moose_step_0.ogg",
+    "res://assets/audio/batch1/moose_step_1.ogg",
+    "res://assets/audio/batch1/moose_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -8,
+   "status": "filled",
+   "note": "borrowed from moose"
+  },
   "warthog_step": {
    "group": "creature step",
    "files": [
