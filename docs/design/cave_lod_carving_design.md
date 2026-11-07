@@ -57,6 +57,10 @@ Two ways to get there:
 | **B1 (recommended)** | The cave bake (Sonny's R5 caves) sizes every passage the inside can be seen from, at least `0.9 x 4 m` in radius (about 7 m wide and tall), or narrows a passage on purpose so that LOD 2 closes it fully and its mouth is drawn as a dead end. Then the generator carves the baked size at every level, removes the per-level widening, and every consumer already agrees because they all read the bake | R5 caves and a rebake. Dave's yes on the sizes, via the coordinator |
 | B2 | Runtime: the generator widens at every level, the floor stays where it is (the shape grows upward), and formations and scatter are re-placed at load from the carved section instead of the baked one | No rebake, but baked dressing positions get overridden at runtime, and the look changes now |
 
+**Decided (coordinator, 7 Nov 2026): B1, no B2.** The requirement for Sonny's R5 cave bake:
+
+> **R5 cave requirement:** every cave passage and chamber that a player can see from inside must be baked at a size LOD 2 can hold: at least `CAVE_MIN_VOXELS x 4 m` = 3.6 m in half-width and half-height (about 7.2 m wide and tall) wherever the rock over it allows, keeping Dave's small, medium and large difference above that floor. A passage meant to be narrower must be a dead end that LOD 2 closes in full. Formations, scatter, streams and pools are placed on that baked section. The generator then carves the baked size at LOD 0 to 2 with no per-level widening, and `test_cave_lods` check 4 (the LOD 2 lip count) becomes a failing check that must read 0.
+
 B1 fits "one owner per decision" (caves.md lesson 8): the bake owns the cave's shape, and everything else reads it. Until then, fix A removes the solid wall, and the walk-through lip stays visible only at the LOD 1 and 2 seam, roughly 100 to 200 m down a straight passage.
 
 ## 4. How BUG-007 ends
