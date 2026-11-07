@@ -306,6 +306,18 @@ func _relight_on_press(slot: int, quiet: bool = false) -> void:
 
 
 func select(slot: int) -> void:
+	# A left-hand item picked this way (Use from the pack, a number key) goes in the left hand, never the right.
+	if is_offhand(_inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]):
+		off_slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
+		off_holding = true
+		_relight_on_press(off_slot)
+		_inv.refresh_hotbar()
+
+		if _sound != null:
+			_sound.itemfx.hotbar(off_slot)
+
+		return
+
 	if _sound != null and (clampi(slot, 0, HOTBAR_SLOTS - 1) != held_slot or not holding):
 		_sound.itemfx.hotbar(clampi(slot, 0, HOTBAR_SLOTS - 1))
 
@@ -325,8 +337,14 @@ func select(slot: int) -> void:
 		file.store_string(str(held_slot))
 
 
+# The right hand's item. Left-hand items (torch, shield: items.json "offhand") are never the right hand's: a torch that lands in the selected hotbar slot
+# (crafted, picked up, dragged there) does nothing until its key is pressed, and then it goes in the LEFT hand (Dave, 7 Nov 2026).
 func held_number() -> int:
-	return _inv.inventory.numbers[held_slot] if holding else 0
+	if not holding:
+		return 0
+
+	var number: int = _inv.inventory.numbers[held_slot]
+	return 0 if is_offhand(number) else number
 
 
 func held_id() -> String:
