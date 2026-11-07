@@ -86,8 +86,14 @@ static func apply(
 		heights[index] = h + lift
 
 	if not hills.is_empty() and bool(hill_rules.get("drain", true)):
-		var raised: Dictionary = _drain_new_hollows(before, heights, water_class, samples)
-		print("  rolling hills: %d cells raised so new hollows drain (most %.1f m)" % [int(raised["cells"]), float(raised["most_m"])])
+		if str(hill_rules.get("drain_mode", "fill")) == "breach":
+			var cut: Dictionary = _breach_new_hollows(before, heights, water_class, samples, float(hill_rules.get("max_breach_m", 4.0)))
+			print("  rolling hills (breach): %d hollows breached, %d cells cut (most %.1f m), %d cells raised (most %.1f m), %d kept as natural hollow" % [
+				int(cut["breached"]), int(cut["cut_cells"]), float(cut["most_cut_m"]), int(cut["raised_cells"]), float(cut["most_raised_m"]), int(cut["natural"])
+			])
+		else:
+			var raised: Dictionary = _drain_new_hollows(before, heights, water_class, samples)
+			print("  rolling hills: %d cells raised so new hollows drain (most %.1f m)" % [int(raised["cells"]), float(raised["most_m"])])
 
 
 # The land's own valley lines, found BEFORE any water is placed (docs/water/terrain_water_pipeline.md, stage A2). The bumps and hills fade near these
@@ -113,6 +119,15 @@ static func valley_lines(heights: PackedFloat32Array, sea: PackedByteArray, samp
 	for index in range(total):
 		if lines[index] == 0 and (flow.discharge[index] >= catchment_km2 or fill.lake_id[index] != 0):
 			lines[index] = 2
+
+	# The way out of every natural hollow, down to the sea or the frame edge, whatever its catchment: a hill on that path would raise the hollow's spill
+	# and deepen it (Dino's tile 3,4 census, 7 Nov 2026). Lines with the catchment are already complete downstream, so a walk stops at one.
+	for lake in fill.lakes:
+		var k: int = int(lake.get("outlet", -1))
+
+		while k >= 0 and lines[k] == 0:
+			lines[k] = 2
+			k = fill.receiver[k]
 
 	return lines
 
@@ -169,6 +184,147 @@ static func _drain_new_hollows(before: PackedFloat32Array, heights: PackedFloat3
 			most = maxf(most, deeper)
 
 	return {"cells": cells, "most_m": most}
+
+
+# The hills drain by construction (Sonny 7 Nov 2026; Dino's tile 3,4 census: the hills made 6x the hollow volume of the ground before them, up to
+# 23.6 m deep, and filling those to their spill left flat vale floors up to 16 m thick). A hollow the hills made is breached, as a river cuts a gap
+# through ground that rises across it: a priority flood (Barnes et al. 2014) from the sea and the frame edge, and where it steps down into a hollow
+# the path it came by (the lowest way out) is cut so it falls all the way out (Lindsay 2016, "Efficient hybrid breaching-filling sink removal").
+# No cut is deeper than max_breach_m; a hollow deeper than that has its floor raised by the rest (hybrid). A hollow the ground had before the hills
+# (a natural basin, possibly a lake with a river out) keeps its old depth and is left to the water step. Outlets: the sea (class 1), ground at or
+# below 0, the frame edge; valley lines (class 2) are not outlets here.
+static func _breach_new_hollows(before: PackedFloat32Array, heights: PackedFloat32Array, water_class: PackedByteArray, samples: int, max_breach_m: float) -> Dictionary:
+	const BUCKET_M := 0.02
+	const GRADE_M := 0.002   # fall per cell along a cut, so the cut drains
+	var total: int = samples * samples
+	var sea: PackedByteArray = PackedByteArray()
+	sea.resize(total)
+
+	for index in range(total):
+		sea[index] = 1 if water_class[index] == 1 else 0
+
+	var filled_before: PackedFloat32Array = _flood(before, sea, samples, 0.0)
+	var made: PackedFloat32Array = heights.duplicate()   # the ground as the hills made it: no cell is cut more than max_breach_m below this in all
+	var level: PackedFloat32Array = heights.duplicate()
+	var parent: PackedInt32Array = PackedInt32Array()
+	parent.resize(total)
+	parent.fill(-1)
+	var done: PackedByteArray = PackedByteArray()
+	done.resize(total)
+	var result: Dictionary = {"breached": 0, "cut_cells": 0, "most_cut_m": 0.0, "raised_cells": 0, "most_raised_m": 0.0, "natural": 0}
+	var low: float = INF
+	var high: float = -INF
+
+	for index in range(total):
+		low = minf(low, heights[index])
+		high = maxf(high, heights[index])
+
+	var count: int = int(ceil((high - low) / BUCKET_M)) + 2
+	var buckets: Array = []
+	buckets.resize(count)
+
+	for b in range(count):
+		buckets[b] = PackedInt32Array()
+
+	for index in range(total):
+		var i: int = index % samples
+		var j: int = index / samples
+
+		if sea[index] != 0 or heights[index] <= 0.0 or i == 0 or j == 0 or i == samples - 1 or j == samples - 1:
+			done[index] = 1
+			buckets[maxi(int((heights[index] - low) / BUCKET_M), 0)].append(index)
+
+	var b: int = 0
+
+	while b < count:
+		var bucket: PackedInt32Array = buckets[b]
+
+		if bucket.is_empty():
+			b += 1
+			continue
+
+		var c: int = bucket[bucket.size() - 1]
+		bucket.resize(bucket.size() - 1)
+		buckets[b] = bucket
+		var i: int = c % samples
+
+		for nb in [c - 1 if i > 0 else -1, c + 1 if i < samples - 1 else -1, c - samples, c + samples]:
+			if nb < 0 or nb >= total or done[nb] != 0:
+				continue
+
+			var here: float = level[c]   # a cut for one neighbour lowers c for the next
+			done[nb] = 1
+			parent[nb] = c
+
+			if heights[nb] < here:
+				var natural_m: float = filled_before[nb] - before[nb]
+
+				if natural_m > 0.001 or level[c] > heights[c] + 0.001:
+					# A natural hollow (or ground draining into one): it keeps its old depth at most, and the water step decides on it.
+					var floor_m: float = here - natural_m
+
+					if heights[nb] < floor_m:
+						result["most_raised_m"] = maxf(result["most_raised_m"], floor_m - heights[nb])
+						result["raised_cells"] += 1
+						heights[nb] = floor_m
+
+					if natural_m > 0.001:
+						result["natural"] += 1
+				else:
+					# A hollow the hills made: cut the way out from here, raising the floor only by what a cut deeper than max_breach_m would need.
+					var target: float = heights[nb]
+					var deepest: float = _cut_depth(heights, made, parent, c, target, GRADE_M)
+
+					if deepest > max_breach_m:
+						var lift: float = deepest - max_breach_m
+						target += lift
+						result["most_raised_m"] = maxf(result["most_raised_m"], lift)
+						result["raised_cells"] += 1
+						heights[nb] = target
+
+					var k: int = c
+					var allowed: float = target
+
+					while k >= 0:
+						allowed -= GRADE_M
+
+						if heights[k] <= allowed:
+							break
+
+						result["most_cut_m"] = maxf(result["most_cut_m"], made[k] - allowed)
+						result["cut_cells"] += 1
+						heights[k] = allowed
+						level[k] = allowed
+						k = parent[k]
+
+					result["breached"] += 1
+
+			var lvl: float = maxf(heights[nb], here) if level[c] > heights[c] + 0.001 or filled_before[nb] - before[nb] > 0.001 else heights[nb]
+			level[nb] = lvl
+			var bucket_index: int = clampi(int((lvl - low) / BUCKET_M), 0, count - 1)
+			buckets[bucket_index].append(nb)
+			b = mini(b, bucket_index)
+
+	return result
+
+
+# How deep below the ground the hills made (`made`) the cut out of a hollow would leave the path, counting earlier cuts on it: walk the flood's
+# path out from `from` until the ground falls below the cut's line.
+static func _cut_depth(heights: PackedFloat32Array, made: PackedFloat32Array, parent: PackedInt32Array, from: int, target: float, grade_m: float) -> float:
+	var k: int = from
+	var allowed: float = target
+	var deepest: float = 0.0
+
+	while k >= 0:
+		allowed -= grade_m
+
+		if heights[k] <= allowed:
+			break
+
+		deepest = maxf(deepest, made[k] - allowed)
+		k = parent[k]
+
+	return deepest
 
 
 # Priority flood (Barnes et al. 2014, a bucket queue at 2 cm): the lowest level each cell can drain at, rising `step` per cell over flats and hollows.

@@ -47,7 +47,10 @@
 			"texture_min": 0.85,
 			"fade_from_m": 220,
 			"fade_to_m": 520,
-			"drain": true
+			"drain": true,
+			"drain_mode": "breach",
+			"max_breach_m": 6.0,
+			"drain_mode_note": "Sonny 7 Nov 2026 (Dino's tile 3,4 census: the hills made 6x the hollow volume of the ground, up to 23.6 m deep, and fill mode left flat vale floors up to 16 m thick): breach mode cuts the lowest way out of each hollow the hills made, as a stream cuts a gap through rising ground, at most max_breach_m deep (about the 6 m river carve); a deeper hollow has its floor raised by the rest. Natural hollows keep their depth for the water step. tile_rolling.gd _breach_new_hollows. fill is the old mode."
 		}
 	},
 	"detail": {
