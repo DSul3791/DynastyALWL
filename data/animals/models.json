@@ -739,6 +739,39 @@
 					"albedo": "res://assets/animals/hyena/Textures/T_Hyena.png"
 				}
 			]
+		},
+		"wildebeest": {
+			"scene": "res://assets/animals/wildebeest/SK_Wildebeest.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Wildebeest",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.3,
+			"run_mps": 10.0,
+			"stride_m": 1.3,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Idle_Breathing",
+				"10": "Idle_Breathing",
+				"11": "RunFast_F",
+				"12": "Idle_SecondaryMovesCalm_1",
+				"walk": [
+					"WalkMedium_F",
+					"GrazingWalkMedium_F"
+				],
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Wildebeest (Realistic Animals/Wildebeest/SK_Wildebeest.fbx). Checked 7 Nov 2026.",
+			"length_m": 2.3,
+			"materials": [
+				{
+					"match": "Antler",
+					"albedo": "res://assets/animals/wildebeest/Textures/T_Wildebeest_Antler.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/wildebeest/Textures/T_Wildebeest_Body.png"
+				}
+			]
 		}
 	}
 }

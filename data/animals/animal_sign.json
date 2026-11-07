@@ -509,6 +509,20 @@
 					"hint": "Chalk-white droppings full of bone. Hyenas feed nearby."
 				}
 			]
+		},
+		"wildebeest": {
+			"group": "hoofed",
+			"track": "broad cloven prints in a trampled band",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "A wide band of trampled cloven prints. A wildebeest herd passed."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Dung piles on a bare patch. Wildebeest bulls mark here."
+				}
+			]
 		}
 	}
 }

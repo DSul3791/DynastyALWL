@@ -2600,6 +2600,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"wildebeest": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {
