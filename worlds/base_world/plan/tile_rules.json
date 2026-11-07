@@ -28,6 +28,11 @@
 		"fade_to_m": 200,
 		"near_water_m": 40,
 		"far_water_m": 160,
+		"valley_fade": {
+			"enabled": true,
+			"catchment_km2": 0.35,
+			"note": "Sonny 7 Nov 2026 (Dino's P1 bake: hills made before the water dammed valley floors, dry hollow cells on tile 3,4 went from 17,076 to 59,757 and were filled up to 16 m flat): the swells and hills fade near the land's own valley lines, found by the same fill and flow the water uses, run on the ground before the bumps (tile_rolling.gd valley_lines). A cell is a valley line when it gathers catchment_km2 (the river start) or lies in a natural hollow. So hills rise between the valleys and never across them, as near_water_m and far_water_m did when the bumps came after the water."
+		},
 		"hills": {
 			"note": "Dave 4 Nov 2026 (BUG-031, 'valleys and hills and rolling hills along the plains; way too flat, no character'): broad hills on the same low dry land, each octave 0 to amplitude_m high (power shapes them: above 1 rounder tops, wider vales), so the ground only rises away from the water and the rivers keep the low line of their valleys. Faded to nothing within near_water_m of water, full beyond far_water_m; their own height fade (fade_from_m to fade_to_m) lets them run up into the foothills (Dave 4 Nov: 'just need variety'); times the island texture but at least texture_min; level round the spawn pad. Closed hollows the hills make are filled to their spill (drain), so no new ponds.",
 			"octaves": [

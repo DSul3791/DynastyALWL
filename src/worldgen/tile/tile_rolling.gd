@@ -1,14 +1,16 @@
 extends RefCounted
 
 # Rolling ground for the low land: the swells and knolls a player walks over (about 30 m to 300 m across).
-# Added AFTER the water is carved, and faded out near any water, so rivers, ponds and their banks keep the
-# shape the drainage gave them (bumps made before the water step broke the river and pond tests: see
-# GENERATOR_NOTES.md). Away from water the bumps are strongest; the beach stays calm; high ground is left to
+# Since 7 Nov 2026 (P1) added BEFORE the water, faded out near the sea and near the land's own valley lines
+# (valley_lines), so the rivers routed afterwards keep the low line of their valleys. Before P1 the bumps came
+# after the water and faded near it (see GENERATOR_NOTES.md). Away from water the bumps are strongest; the beach stays calm; high ground is left to
 # the normal detail noise. Everything is a function of world position (noise, island texture) plus the water
 # cells of the frame, so tiles agree along shared edges.
 
 const WrapNoiseScript := preload("res://src/worldgen/tile/wrap_noise.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const FillScript := preload("res://src/worldgen/tile/drainage_fill.gd")
+const FlowScript := preload("res://src/worldgen/tile/drainage_flow.gd")
 
 
 static func apply(
@@ -86,6 +88,33 @@ static func apply(
 	if not hills.is_empty() and bool(hill_rules.get("drain", true)):
 		var raised: Dictionary = _drain_new_hollows(before, heights, water_class, samples)
 		print("  rolling hills: %d cells raised so new hollows drain (most %.1f m)" % [int(raised["cells"]), float(raised["most_m"])])
+
+
+# The land's own valley lines, found BEFORE any water is placed (docs/water/terrain_water_pipeline.md, stage A2). The bumps and hills fade near these
+# instead of near the rivers, so a hill never stands across a valley floor and dams it. Without this, the hills made after P1 moved them before the
+# water dammed the valleys into closed basins up to 16 m deep that drain_hollows then filled flat (Dino's P1 bake, 7 Nov 2026: dry hollow cells on
+# tile 3,4 went from 17,076 to 59,757). A cell is a valley line when the ground's own drainage (the same fill and flow the water step uses) gathers at
+# least catchment_km2 there, or when it lies in a natural hollow the fill found. Sea cells are 1, valley cells 2, others 0.
+static func valley_lines(heights: PackedFloat32Array, sea: PackedByteArray, samples: int, spacing_m: float, catchment_km2: float) -> PackedByteArray:
+	var total: int = samples * samples
+	var fill = FillScript.new()
+	fill.build(heights, sea, samples, 0.5)
+	var unit: float = spacing_m * spacing_m * 1.0e-6
+	var runoff: PackedFloat32Array = PackedFloat32Array()
+	runoff.resize(total)
+
+	for index in range(total):
+		runoff[index] = 0.0 if sea[index] == 1 else unit
+
+	var flow = FlowScript.new()
+	flow.build(fill, runoff)
+	var lines: PackedByteArray = sea.duplicate()
+
+	for index in range(total):
+		if lines[index] == 0 and (flow.discharge[index] >= catchment_km2 or fill.lake_id[index] != 0):
+			lines[index] = 2
+
+	return lines
 
 
 # Dave 4 Nov 2026 ("valleys and hills and rolling hills along the plains on the islands; the terrain is way too flat"): broad hills, 0 to amplitude_m
