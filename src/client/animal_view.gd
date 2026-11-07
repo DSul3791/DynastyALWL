@@ -7,6 +7,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
 
 const MAX_DRAWN := 30
+const MODELS_PATH := "res://data/animals/models.json"
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -17,7 +18,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -25,6 +26,9 @@ const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
+var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
+var _model_notes: Dictionary = {}  # log lines already printed by _model_note
+var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
 var _mats: Dictionary = {}
 var _t: float = 0.0
 var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
@@ -86,6 +90,11 @@ func _make_for_species(number: int, id: int) -> Node3D:
 
 
 func _make_species_body(number: int, id: int) -> Node3D:
+	var model: Node3D = _make_model(number)
+
+	if model != null:
+		return model
+
 	match number:
 		2:
 			return _make_deer(id)
@@ -113,6 +122,10 @@ func _make_species_body(number: int, id: int) -> Node3D:
 			return _make_gull_flock(id)      # one record per flock since MikeW's seabird flock block (PR 73): 5 to 12 gulls standing on the beach, all taking off in state 15
 		14:
 			return _make_bear()
+		15:
+			var donkey: Node3D = _make_horse(id)      # no code-built donkey: a smaller horse until its model files are there (Dave 7 Nov 2026)
+			donkey.scale = Vector3.ONE * 0.8
+			return donkey
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
@@ -175,7 +188,7 @@ func on_rows(rows: Array) -> void:
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
@@ -273,6 +286,12 @@ func _process_body(delta: float) -> void:
 		var before: Vector3 = node.position
 		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 or state == 14 or state == 15 else 5.0), 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		if bool(b.get("model", false)):
+			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
+			_animate_model(node, b, state, model_speed, delta)
+			_emit_steps(b, node, state, model_speed)
+			continue
+
 		var rig: Node3D = node.get_node("Rig")
 		var rate: float = 9.0 if state == FLEE else 5.0
 		var big: bool = bool(b.get("deer", false))
@@ -293,6 +312,355 @@ func _process_body(delta: float) -> void:
 			_animate_gulls(rig, state == 15)
 
 		_emit_steps(b, node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
+
+
+# Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md): a species listed in
+# data/animals/models.json with a scene that exists is drawn from that scene (a rigged, animated mesh) instead of the code-built
+# body; a missing file falls back to the code body, so a model can be added one species at a time. The row gives the scene, its
+# scale and yaw (to face -Z), the clip for each protocol state, and the ground speed its walk and run clips were made at.
+func _model_rows() -> Dictionary:
+	if _models == null:
+		_models = {}
+
+		if FileAccess.file_exists(MODELS_PATH):
+			var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MODELS_PATH))
+			_models = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
+
+	return _models
+
+
+func _make_model(number: int) -> Node3D:
+	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
+	var row: Dictionary = _model_rows().get(kind, {})
+
+	if row.is_empty():
+		return null
+
+	if not ResourceLoader.exists(str(row.get("scene", ""))):
+		_model_note(kind, "no file at %s: the code-built body is drawn" % str(row.get("scene", "")))
+		return null
+
+	var packed: PackedScene = load(str(row["scene"])) as PackedScene
+
+	if packed == null:
+		_model_note(kind, "%s did not load as a scene: the code-built body is drawn" % str(row["scene"]))
+		return null
+
+	var inst: Node = packed.instantiate()
+	var meshes: Array = inst.find_children("*", "MeshInstance3D", true, false)
+
+	if not (inst is Node3D) or meshes.is_empty():
+		_model_note(kind, "%s has no mesh: the code-built body is drawn" % str(row["scene"]))
+		inst.free()
+		return null
+
+	var root: Node3D = Node3D.new()
+	root.set_meta("model", true)
+	root.set_meta("model_row", row)
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	rig.add_child(inst)
+	var body: Node3D = inst as Node3D
+	body.rotation.y += deg_to_rad(float(row.get("yaw_deg", 0.0)))
+
+	# Size from the mesh itself, not the file's units (an FBX may be in centimetres, metres, or carry its own root scale): the
+	# longest side of the rest-pose bounds is made row.length_m, and the feet are put on the ground.
+	var box: AABB = _model_bounds(rig, meshes)
+	var longest: float = maxf(box.size.x, maxf(box.size.y, box.size.z))
+
+	if longest <= 0.0001:
+		_model_note(kind, "%s has empty bounds: the code-built body is drawn" % str(row["scene"]))
+		root.free()
+		return null
+
+	var k: float = float(row.get("length_m", longest)) / longest * float(row.get("scale", 1.0))
+	body.scale *= k
+	body.position.y -= box.position.y * k
+	_model_materials(meshes, row)
+	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
+
+	if not players.is_empty():
+		var player: AnimationPlayer = players[0]
+		root.set_meta("player", player)
+
+		# Each role the row names (state numbers, walk, run) is resolved once to a clip in this file (_role_clip: the row's
+		# names first, then a clip whose name says the role), and those clips loop. A clip whose bone positions are in other
+		# units than the skeleton (the bear lay flat as a legless tube, 7 Nov 2026) is rescaled to it (_fit_clip_units).
+		var roles: Dictionary = {}
+
+		for key in _ROLE_WORDS.keys() + (row.get("clips", {}) as Dictionary).keys():
+			var anim_name: String = _role_clip(player, row, str(key))
+
+			if anim_name == "":
+				if (row.get("clips", {}) as Dictionary).has(key):
+					_model_note(kind, "no clip for role %s (%s)" % [str(key), str(row["clips"][key])])
+				continue
+
+			roles[str(key)] = anim_name
+			var anim: Animation = player.get_animation(anim_name)
+			anim.loop_mode = Animation.LOOP_LINEAR
+			_fit_clip_units(player, anim, kind, anim_name)
+
+		player.set_meta("roles", roles)
+		_model_note(kind, "clips by role %s" % str(roles))
+
+	_model_note(kind, "drawn from %s: %d meshes, %.2f m long (file size %.2f, scale x%.4f)" % [str(row["scene"]), meshes.size(), longest * k, longest, k])
+	return root
+
+
+# The bounds of a model in the rig's space (so the file's own root scale and rotation count). With a skeleton, the bones' posed
+# positions are used: a skinned FBX can keep its centimetre scale on a bone, which the mesh's own bounds never see (Dave 6 Nov saw
+# a bear five times taller than a tree). The bones stop short of the skin, so their box is widened by 12%.
+func _model_bounds(rig: Node3D, meshes: Array) -> AABB:
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+
+	if not skeletons.is_empty():
+		var sk: Skeleton3D = skeletons[0]
+		var to_rig: Transform3D = _to_ancestor(sk, rig)
+		var bones: AABB = AABB()
+
+		for i in sk.get_bone_count():
+			var at: Vector3 = to_rig * sk.get_bone_global_pose(i).origin
+			bones = AABB(at, Vector3.ZERO) if i == 0 else bones.expand(at)
+
+		if maxf(bones.size.x, maxf(bones.size.y, bones.size.z)) > 0.0001:
+			return bones.grow(maxf(bones.size.x, maxf(bones.size.y, bones.size.z)) * 0.06)
+
+	var box: AABB = AABB()
+	var first: bool = true
+
+	for m in meshes:
+		var mi: MeshInstance3D = m
+		var part: AABB = (_to_ancestor(mi, rig) * mi.get_aabb()) if mi.mesh != null else AABB()
+		box = part if first else box.merge(part)
+		first = false
+
+	return box
+
+
+# The transform from a node's space to one of its ancestors' space.
+func _to_ancestor(node: Node, ancestor: Node) -> Transform3D:
+	var t: Transform3D = Transform3D.IDENTITY
+	var n: Node = node
+
+	while n != null and n != ancestor:
+		if n is Node3D:
+			t = (n as Node3D).transform * t
+
+		n = n.get_parent()
+
+	return t
+
+
+# The pack's FBX files name normal maps that are not in the pack, so the materials are set here: each surface whose material or
+# mesh name contains a row.materials "match" gets that colour texture (the first entry with match "" covers the rest).
+func _model_materials(meshes: Array, row: Dictionary) -> void:
+	var sets: Array = row.get("materials", [])
+
+	if sets.is_empty():
+		return
+
+	for m in meshes:
+		var mi: MeshInstance3D = m
+
+		if mi.mesh == null:
+			continue
+
+		for surface in mi.mesh.get_surface_count():
+			var old: Material = mi.mesh.surface_get_material(surface)
+			var file_tex: Texture2D = (old as BaseMaterial3D).albedo_texture if old is BaseMaterial3D else null
+			# The imported material's own colour texture names the part best (T_Bear_Head.png), then the material, then the mesh.
+			var name_text: String = (file_tex.resource_path.get_file() if file_tex != null else "") + " " + (str(old.resource_name) if old != null else "") + " " + str(mi.name)
+
+			for entry in sets:
+				var match_text: String = str(entry.get("match", ""))
+
+				if match_text == "" or name_text.findn(match_text) >= 0:
+					# A hide entry (a horse's saddle on a wild horse) cuts that part away entirely.
+					if bool(entry.get("hide", false)):
+						var gone: StandardMaterial3D = StandardMaterial3D.new()
+						gone.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+						gone.albedo_color = Color(1.0, 1.0, 1.0, 0.0)
+						mi.set_surface_override_material(surface, gone)
+						_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] hidden" % [surface, str(mi.name), name_text.strip_edges()])
+						break
+
+					var tex: Texture2D = load(str(entry.get("albedo", ""))) as Texture2D if ResourceLoader.exists(str(entry.get("albedo", ""))) else null
+
+					if tex != null:
+						var mat: StandardMaterial3D = StandardMaterial3D.new()
+						mat.albedo_texture = tex
+						mat.roughness = float(entry.get("roughness", 0.9))
+
+						# Fur cards (the ruff round a bear's neck, lashes, lips) are cut out by the texture's alpha: drawn solid,
+						# their cut-away parts show as black bands. Cut them, and draw both sides of the cards.
+						if _has_alpha(tex) or bool(entry.get("alpha", false)):
+							mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+							mat.alpha_scissor_threshold = float(entry.get("alpha_cut", 0.5))
+							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+						mi.set_surface_override_material(surface, mat)
+
+					# One line per surface, so a part that takes the wrong texture (a dark band, dark eyes) shows which name it matched.
+					_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] takes %s" % [surface, str(mi.name), name_text.strip_edges(), str(entry.get("albedo", "")).get_file()])
+					break
+
+
+# Whether a texture has see-through pixels (checked once per texture).
+func _has_alpha(tex: Texture2D) -> bool:
+	var key: String = tex.resource_path
+
+	if not _alpha_of.has(key):
+		var img: Image = tex.get_image()
+
+		if img != null and img.is_compressed():
+			img = img.duplicate() as Image
+			img.decompress()
+
+		_alpha_of[key] = img != null and img.detect_alpha() != Image.ALPHA_NONE
+
+	return bool(_alpha_of[key])
+
+
+# A clip's full name in the player: row.clip_prefix + name when that exists, else the one clip whose name after its armature
+# ("Armature|Idle") is the name, so a row need not know each file's armature name. "" when there is none. Cached per player.
+func _clip_full(player: AnimationPlayer, row: Dictionary, clip_name: String) -> String:
+	var prefixed: String = str(row.get("clip_prefix", "")) + clip_name
+
+	if player.has_animation(prefixed):
+		return prefixed
+
+	if not player.has_meta("clip_map"):
+		var by_bare: Dictionary = {}
+
+		for full in player.get_animation_list():
+			by_bare[str(full).get_slice("|", str(full).count("|"))] = str(full)
+
+		player.set_meta("clip_map", by_bare)
+
+	return str((player.get_meta("clip_map") as Dictionary).get(clip_name, ""))
+
+
+# The words that name a role's clip in a file, tried in order when the row's own names are not in it (WildMesh files differ:
+# G0_Walk, WalkMedium_F, walk_fwd_01). Transitions and turns ("Idle_to_Walk", "WalkL") are skipped.
+const _ROLE_WORDS := {"0": ["idle_breathing", "graz", "idle"], "walk": ["walkmedium", "walk"], "run": ["gallop", "runfast", "run", "canter", "trot", "sprint"]}
+
+
+func _role_clip(player: AnimationPlayer, row: Dictionary, role: String) -> String:
+	var wanted: Variant = (row.get("clips", {}) as Dictionary).get(role, [])
+
+	for name_text in (wanted if wanted is Array else [wanted]):
+		var full: String = _clip_full(player, row, str(name_text))
+
+		if full != "":
+			return full
+
+	for word in _ROLE_WORDS.get(role, []):
+		for full in player.get_animation_list():
+			var bare: String = str(full).get_slice("|", str(full).count("|")).to_lower()
+
+			if bare.contains(str(word)) and not bare.contains("_to_") and not bare.contains("2") and not bare.ends_with("l") and not bare.ends_with("r") and not bare.contains("wound") and not bare.contains("injur") and not bare.contains("lying"):
+				return str(full)
+
+	return ""
+
+
+# Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
+# played as they are, every bone falls into the body. The middle ratio of rest length to the clip's first key over the
+# position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it. Once per clip.
+func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, anim_name: String) -> void:
+	if anim.has_meta("units_fitted"):
+		return
+
+	anim.set_meta("units_fitted", true)
+	var base: Node = player.get_node_or_null(player.root_node)
+
+	if base == null:
+		return
+
+	var ratios: Array = []
+	var tracks: Array = []
+
+	for t in anim.get_track_count():
+		if anim.track_get_type(t) != Animation.TYPE_POSITION_3D or anim.track_get_key_count(t) == 0:
+			continue
+
+		var path: NodePath = anim.track_get_path(t)
+		var sk: Skeleton3D = base.get_node_or_null(NodePath(str(path.get_concatenated_names()))) as Skeleton3D
+
+		if sk == null:
+			continue
+
+		var bone: int = sk.find_bone(str(path.get_concatenated_subnames()))
+
+		if bone < 0:
+			continue
+
+		tracks.append(t)
+		var rest_len: float = sk.get_bone_rest(bone).origin.length()
+		var key_len: float = (anim.track_get_key_value(t, 0) as Vector3).length()
+
+		if rest_len > 0.0001 and key_len > 0.000001:
+			ratios.append(rest_len / key_len)
+
+	if ratios.size() < 3:
+		return
+
+	ratios.sort()
+	var k: float = float(ratios[int(ratios.size() * 0.5)])
+
+	if k > 0.2 and k < 5.0:
+		return
+
+	for t in tracks:
+		for i in anim.track_get_key_count(t):
+			anim.track_set_key_value(t, i, (anim.track_get_key_value(t, i) as Vector3) * k)
+
+	_model_note(kind, "clip %s bone positions rescaled x%.4f to the skeleton" % [anim_name, k])
+
+
+# One line per kind and message in the game log, so a model that is not drawn says why.
+func _model_note(kind: String, text: String) -> void:
+	var key: String = kind + text
+
+	if not _model_notes.has(key):
+		_model_notes[key] = true
+		print("animal model %s: %s" % [kind, text])
+
+
+# Plays the clip for the animal's state (a moving animal walks or runs by its real ground speed) and keeps the gait count for footsteps.
+func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var row: Dictionary = node.get_meta("model_row", {})
+	var clips: Dictionary = row.get("clips", {})
+	var clip: String = str(clips.get(str(state), clips.get("0", "")))
+	var walk_mps: float = float(row.get("walk_mps", 1.5))
+	var run_mps: float = float(row.get("run_mps", 7.0))
+	var ref: float = 0.0
+
+	if speed > 0.3 and state != 10 and state != 12:
+		var running: bool = speed > (walk_mps + run_mps) * 0.5
+		clip = str(clips.get("run" if running else "walk", clip))
+		ref = run_mps if running else walk_mps
+
+	b["gait"] = float(b.get("gait", 0.0)) + speed * delta / maxf(float(row.get("stride_m", 1.2)), 0.1)
+
+	if not node.has_meta("player"):
+		return
+
+	var player: AnimationPlayer = node.get_meta("player")
+	var roles: Dictionary = player.get_meta("roles", {})
+	var role: String = str(state) if roles.has(str(state)) else "0"
+
+	if ref > 0.0:
+		role = "run" if ref == run_mps else "walk"
+
+	clip = str(roles.get(role, roles.get("0", "")))
+
+	if clip != "" and player.current_animation != clip:
+		player.play(clip, 0.25)
+
+	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
 
 
 # A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).

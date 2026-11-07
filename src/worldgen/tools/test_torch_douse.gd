@@ -51,6 +51,13 @@ func _init() -> void:
 	check(FlameRules.douse_reason(lantern, true, 0.0, false, 0.0) == "water", "a lantern goes out under water")
 	check(FlameRules.douse_reason(table.entry("torch_doused"), true, 1.0, false, grace * 2.0) == "", "a doused torch has nothing to put out")
 
+	check(FlameRules.light_block(true, 0.0, false) == "water", "a torch cannot be lit under water")
+	check(FlameRules.light_block(true, 1.0, true) == "water", "nor under water with cover")
+	check(FlameRules.light_block(false, 0.9, false) == "rain", "nor in open rain")
+	check(FlameRules.light_block(false, 0.9, true) == "", "a cave or cover lets it light in rain")
+	check(FlameRules.light_block(false, 0.1, false) == "", "a drizzle does not stop it")
+	check(FlameRules.light_block(false, 0.0, false) == "", "dry and above water it lights")
+
 	var dir: String = "user://test_torch_douse"
 	DirAccess.make_dir_recursive_absolute(dir)
 
@@ -108,7 +115,15 @@ func _init() -> void:
 	# Placing (Dave, 4 Nov 2026): a burning torch stuck in the ground stays lit; the open rain puts it out; hold E gives it back doused.
 	items.ground_height = func(_x, _z): return 5.0
 	items.action(7, Net.ACT_RELIGHT, 900003, 0, 0, Vector3.ZERO)      # the fire is gone: still doused
-	check(inv.numbers[slot] == doused, "no fire, no relight")
+	check(inv.numbers[slot] == doused, "E at a missing fire does not relight")
+	items.set_swimming(7, true)
+	items.action(7, Net.ACT_RELIGHT, 0, slot + 1, 0, Vector3.ZERO)
+	check(inv.numbers[slot] == doused, "a torch cannot be lit in the water")
+	items.set_swimming(7, false)
+	items.action(7, Net.ACT_RELIGHT, 0, slot + 1, 0, Vector3.ZERO)      # the hotkey: no fire needed (Dave 6 Nov 2026)
+	check(inv.numbers[slot] == lit, "pressing the torch's key lights it again, with no fire")
+	check(str(table.entry("torch")["name"]) == str(table.entry("torch_doused")["name"]), "a torch that went out keeps its name")
+	inv.numbers[slot] = doused
 	inv.numbers[slot] = lit
 	items.action(7, Net.ACT_PLACE_TORCH, slot, 0, 90, Vector3(101.5, 5.0, 100.0))
 	var stood: int = _find(items, "standing_torch")
@@ -139,6 +154,19 @@ func _init() -> void:
 	check(_count(items, "standing_torch") == 0, "the ground placement needs the ground")
 	items.action(7, Net.ACT_PLACE_TORCH, inv.numbers.find(lit), 0, 0, Vector3(140.0, 5.0, 100.0))
 	check(_count(items, "standing_torch") == 0, "out of reach: nothing placed")
+
+	# Burning down (Dave 6 Nov 2026): about half an hour in hand; the bearer scares wolves like a small fire while it burns.
+	check(float(table.entry("torch").get("burn_s", 0.0)) == 1800.0, "a torch burns for 30 minutes")
+	items.action(7, Net.ACT_ADMIN_GIVE, lit, 0, 1, Vector3.ZERO)
+	var burning: int = inv.numbers.find(lit)
+	items._torch_seen.erase(7)
+	items.action(7, Net.ACT_TORCH_BURN, burning, 0, 0, Vector3.ZERO)
+	check(inv.numbers[burning] == lit and inv.wear[burning] > 0, "a burning torch wears down")
+	check(items._lit_fires().has(Vector3(100.0, 5.0, 100.0)) and absf(items.fire_protect_m(Vector3(100.0, 5.0, 100.0)) - items.TORCH_PROTECT_M) < 0.01, "its bearer keeps wolves off")
+	inv.wear[burning] = 17990
+	items._torch_seen[7] = Time.get_ticks_msec() - 1500
+	items.action(7, Net.ACT_TORCH_BURN, burning, 0, 0, Vector3.ZERO)
+	check(inv.numbers[burning] == 0, "after half an hour the torch is gone")
 
 	print("torch douse tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

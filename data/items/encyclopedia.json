@@ -2031,9 +2031,9 @@
 			"obtainable_now": true
 		},
 		"torch_doused": {
-			"name": "Doused torch",
+			"name": "Basic torch",
 			"kind": "tool",
-			"description": "A torch that water or rain put out. Press E at a burning fire to light it again.",
+			"description": "A stick wrapped in fibre. Lights your way after dark.",
 			"how_to_get": [
 				"A torch goes out under water, or after a few seconds in the open rain"
 			],

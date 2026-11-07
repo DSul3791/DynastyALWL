@@ -1,0 +1,276 @@
+{
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover. Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them.",
+	"species": {
+		"bear": {
+			"scene": "res://assets/animals/bear/SK_Bear.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"clip_prefix": "RigRoot|",
+			"walk_mps": 1.3,
+			"run_mps": 9.0,
+			"stride_m": 1.1,
+			"clips": {
+				"0": "Idle",
+				"1": "Walk",
+				"3": "IdleHind_Idle_01",
+				"10": "IdleAngry_Breathing_01",
+				"11": "Sprint",
+				"12": "Idle_Breathing_01",
+				"walk": "Walk",
+				"run": "Run"
+			},
+			"note": "WildMesh BrownBear (Realistic Animals/BrownBear/SK_Bear.fbx, textures in its Textures folder): 7508 triangles, 35 bones, 81 clips; faces +Z, so yaw 180. Alert stands up on its hind legs; warn is the angry breathing stance; charge sprints.",
+			"length_m": 2.0,
+			"materials": [
+				{
+					"match": "Teeth",
+					"albedo": "res://assets/animals/bear/Textures/T_Bear_Teeth.png",
+					"roughness": 0.4
+				},
+				{
+					"match": "Head",
+					"albedo": "res://assets/animals/bear/Textures/T_Bear_Head.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/bear/Textures/T_Bear_Body.png"
+				}
+			]
+		},
+		"deer": {
+			"scene": "res://assets/animals/deer/SK_Deer.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.4,
+			"run_mps": 10.0,
+			"stride_m": 1.4,
+			"clips": {
+				"0": "GrazingOnSpotB_1",
+				"3": "Idle_Breathing",
+				"12": "Idle",
+				"walk": "WalkMedium_F",
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Deer (Realistic Animals/Deer/SK_Deer.fbx, textures in its Textures folder). 113 clips. Alert stands breathing, head up.",
+			"length_m": 2.0,
+			"materials": [
+				{
+					"match": "Antler",
+					"albedo": "res://assets/animals/deer/Textures/T_Deer_Antler.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/deer/Textures/T_Deer_Body.png"
+				}
+			]
+		},
+		"moose": {
+			"scene": "res://assets/animals/moose/SK_Moose.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.5,
+			"run_mps": 9.0,
+			"stride_m": 1.8,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Idle_Breathing",
+				"10": "Idle_Breathing",
+				"12": "Idle",
+				"walk": "WalkMedium_F",
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget).",
+			"length_m": 3.0,
+			"materials": [
+				{
+					"match": "Antler",
+					"albedo": "res://assets/animals/moose/Textures/T_Moose_Antler.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/moose/Textures/T_Moose_Body.png"
+				}
+			]
+		},
+		"boar": {
+			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.2,
+			"run_mps": 7.0,
+			"stride_m": 0.8,
+			"clips": {
+				"0": "idle_eat_grazing_01",
+				"3": "idle_alerted_bark_01",
+				"10": "idle_bark_01",
+				"12": "Idle",
+				"walk": "walk_fwd_01",
+				"run": "run_fwd_01"
+			},
+			"note": "WildMesh WildBoar (Realistic Animals/WildBoar/SK_WildBoar.fbx, textures in its Textures folder). 84 clips. Warn barks.",
+			"length_m": 1.7,
+			"materials": [
+				{
+					"match": "Tusk",
+					"albedo": "res://assets/animals/boar/Textures/T_WildBoar_Tusk.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/boar/Textures/T_WildBoar_Body.png"
+				}
+			]
+		},
+		"wolf": {
+			"scene": "res://assets/animals/wolf/SK_Wolf.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.5,
+			"run_mps": 10.0,
+			"stride_m": 1.3,
+			"clips": {
+				"0": "Idle_Breathing",
+				"3": "Idle",
+				"12": "Idle",
+				"walk": "WalkMedium_F",
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Wolf (Realistic Animals/Wolf/SK_Wolf.fbx, textures in its Textures folder). 70 clips.",
+			"length_m": 2.0,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/wolf/Textures/T_Wolf.png"
+				}
+			]
+		},
+		"fox": {
+			"scene": "res://assets/animals/fox/SK_Fox.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.2,
+			"run_mps": 8.0,
+			"stride_m": 0.9,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Idle",
+				"12": "Idle",
+				"walk": "WalkMedium_F",
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Fox (Realistic Animals/Fox/SK_Fox.fbx, textures in its Textures folder). 51 clips. T_Fox_Fur is the small fur-card texture.",
+			"length_m": 1.1,
+			"materials": [
+				{
+					"match": "Fur",
+					"albedo": "res://assets/animals/fox/Textures/T_Fox_Fur.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/fox/Textures/T_Fox_Body.png"
+				}
+			]
+		},
+		"rabbit": {
+			"scene": "res://assets/animals/rabbit/SK_Rabbit.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.5,
+			"run_mps": 8.0,
+			"stride_m": 0.6,
+			"clips": {
+				"0": "GrazingOnSpot_1",
+				"1": "HoppingSlow_F",
+				"3": "Idle",
+				"12": "Idle",
+				"walk": "HoppingSlow_F",
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Rabbit (Realistic Animals/Rabbit/SK_Rabbit.fbx, textures in its Textures folder). 32 clips.",
+			"length_m": 0.45,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/rabbit/Textures/T_Rabbit.png"
+				}
+			]
+		},
+		"horse": {
+			"scene": "res://assets/animals/horse/SK_Horse.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.6,
+			"run_mps": 12.0,
+			"stride_m": 1.6,
+			"clips": {
+				"0": "Idle_02",
+				"3": "Idle",
+				"10": "Idle_03",
+				"12": "Idle",
+				"walk": "G0_Walk",
+				"run": "G3_Gallop"
+			},
+			"note": "WildMesh Horse (Realistic Animals/Horse/SK_Horse.fbx, textures in its Textures folder). 54 clips, 1094 bones (heavy). Wild horses: the saddle is hidden (hide entry).",
+			"length_m": 2.4,
+			"materials": [
+				{
+					"match": "Saddle",
+					"hide": true
+				},
+				{
+					"match": "Eye",
+					"albedo": "res://assets/animals/horse/Textures/T_Horse_Eye.png",
+					"roughness": 0.2
+				},
+				{
+					"match": "Hair",
+					"albedo": "res://assets/animals/horse/Textures/T_Horse_Hair.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/horse/Textures/T_Horse_Body.png"
+				}
+			]
+		},
+		"donkey": {
+			"scene": "res://assets/animals/donkey/SK_Donkey.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.3,
+			"run_mps": 10.0,
+			"stride_m": 1.3,
+			"clips": {
+				"0": "Idle_02",
+				"3": "Idle",
+				"10": "Idle_03",
+				"12": "Idle",
+				"walk": "G0_Walk",
+				"run": "G3_Gallop"
+			},
+			"note": "WildMesh Donkey_1 (Realistic Animals/Donkey_1/SK_Donkey.fbx, textures in its Textures folder). 54 clips, 185 MB: the same clip set as the horse is assumed (same count, same saddles); a 'no clip' log line says otherwise. The light Donkey folder (4.6 MB, 12 clips) is the fallback if this one is too heavy. Saddle hidden.",
+			"length_m": 2.0,
+			"materials": [
+				{
+					"match": "Saddle",
+					"hide": true
+				},
+				{
+					"match": "Eye",
+					"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Eye.png",
+					"roughness": 0.2
+				},
+				{
+					"match": "Fur",
+					"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Fur.png"
+				},
+				{
+					"match": "Head",
+					"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Head.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Body.png"
+				}
+			]
+		}
+	}
+}

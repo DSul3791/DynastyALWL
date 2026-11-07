@@ -289,23 +289,37 @@ func equip_toggle(slot: int) -> void:
 	press_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))
 
 
-# A doused torch pressed on the hotbar lights again when a burning fire is within a few steps (Dave 6 Nov 2026); away from a fire it says what it needs
-# (unless `quiet`, as when the same key puts the torch away). The doused torch is an off-hand item, so press_slot calls this for it too.
+# A torch that went out lights again when its hotbar key is pressed, wherever you are (Dave 6 Nov 2026: it keeps its name and just goes out; nobody is stuck in
+# a cave without light). The torch is an off-hand item, so press_slot calls this for it too; in rain or water it goes out again by the usual rules.
 func _relight_on_press(slot: int, quiet: bool = false) -> void:
 	var number: int = _inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]
 
 	if number == 0 or str(_inv.table.entry(_inv.table.id_of(number)).get("relit_item", "")) == "":
 		return
 
-	var fire: int = _inv.lit_fire_in_reach()
+	if quiet:
+		return   # the same key again puts the torch away
 
-	if fire != 0:
-		_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, fire, clampi(slot, 0, HOTBAR_SLOTS - 1) + 1, 0, Vector3.ZERO)
-	elif not quiet:
-		_inv._on_notice("Hold the torch to a burning fire to light it again")
+	if light_block_fn.is_valid() and str(light_block_fn.call()) != "":
+		_inv._on_notice("It is too wet to light the torch. Get out of the water and the rain, or into a cave or under cover.")
+		return
+
+	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, clampi(slot, 0, HOTBAR_SLOTS - 1) + 1, 0, Vector3.ZERO)   # no fire needed (Dave 6 Nov 2026)
 
 
 func select(slot: int) -> void:
+	# A left-hand item picked this way (Use from the pack, a number key) goes in the left hand, never the right.
+	if is_offhand(_inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]):
+		off_slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
+		off_holding = true
+		_relight_on_press(off_slot)
+		_inv.refresh_hotbar()
+
+		if _sound != null:
+			_sound.itemfx.hotbar(off_slot)
+
+		return
+
 	if _sound != null and (clampi(slot, 0, HOTBAR_SLOTS - 1) != held_slot or not holding):
 		_sound.itemfx.hotbar(clampi(slot, 0, HOTBAR_SLOTS - 1))
 
@@ -325,8 +339,14 @@ func select(slot: int) -> void:
 		file.store_string(str(held_slot))
 
 
+# The right hand's item. Left-hand items (torch, shield: items.json "offhand") are never the right hand's: a torch that lands in the selected hotbar slot
+# (crafted, picked up, dragged there) does nothing until its key is pressed, and then it goes in the LEFT hand (Dave, 7 Nov 2026).
 func held_number() -> int:
-	return _inv.inventory.numbers[held_slot] if holding else 0
+	if not holding:
+		return 0
+
+	var number: int = _inv.inventory.numbers[held_slot]
+	return 0 if is_offhand(number) else number
 
 
 func held_id() -> String:
@@ -526,6 +546,9 @@ func _place_torch_here() -> void:
 
 
 # Whether the camera is under cover from the rain (a tree's crown or a roof).
+var light_block_fn: Callable   # () -> "water", "rain" or "": why a flame cannot be lit here (the client reads FlameRules at the key press; Dave 6 Nov 2026)
+
+
 func flame_covered() -> bool:
 	return _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))
 
@@ -1132,7 +1155,7 @@ func _process_body(delta: float) -> void:
 		if flicker != null:
 			# Own light: one, shadowless. At Low it gives way to a fire light within 8 m, so no more than one lamp lights the same spot.
 			flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
-			flicker.light_energy = 1.4 + 0.3 * sin(float(Time.get_ticks_msec()) * 0.017)
+			flicker.light_energy = 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
 
 		if not _mounted:
 			_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
@@ -1873,7 +1896,7 @@ func _show_off_model(delta: float) -> void:
 
 	if flicker != null:
 		flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
-		flicker.light_energy = 1.4 + 0.3 * sin(float(Time.get_ticks_msec()) * 0.017)
+		flicker.light_energy = 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
 
 	if _off_class() == "torch" and not _first_person and _avatar_rig != null and _off_model.get_parent() == _avatar_rig.hand_mount_l:
 		_stand_torch_upright()

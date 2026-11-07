@@ -289,6 +289,20 @@
 					"hint": "White hair snagged on rock. Goats climb here."
 				}
 			]
+		},
+		"donkey": {
+			"group": "hoofed",
+			"track": "small round single hoof prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Small round hoof prints, narrower than a horse's. Donkeys graze nearby."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Dung balls, smaller than a horse's. Donkeys were here."
+				}
+			]
 		}
 	}
 }
