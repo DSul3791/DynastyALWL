@@ -2,7 +2,8 @@
 
 Usage (on Dave's PC):
   python tools/watershed/plots.py ground OUT_DIR      # redraws OUT_DIR/evolve.png from OUT_DIR/ground.npz (stage B1)
-  python tools/watershed/plots.py glacial OUT_DIR     # redraws OUT_DIR/glacial.png from OUT_DIR/glacial.npz (stage B2)"""
+  python tools/watershed/plots.py glacial OUT_DIR     # redraws OUT_DIR/glacial.png from OUT_DIR/glacial.npz (stage B2)
+  python tools/watershed/plots.py lakes OUT_DIR       # redraws OUT_DIR/lakes.png from lakes.npz and lakes.json (stage C1, C2)"""
 import sys
 import numpy as np
 
@@ -99,10 +100,56 @@ def glacial_picture(npz_path, png_path):
     plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
 
 
+def lakes_picture(npz_path, json_path, png_path):
+    """Three panels: basins (each sea outlet's catchment in its own pale colour) with the rivers; lakes coloured by cause
+    on a hillshade, closed lakes ringed; and the leftover hollows that were filled (no cause), so a missing cause shows."""
+    import json
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource, ListedColormap
+    d = np.load(npz_path)
+    lakes = json.load(open(json_path))
+    g = d['ground'].astype(np.float64); sea = d['sea'].astype(bool); dx = float(d['cell_m']); land = ~sea
+    ox, oz = float(d['origin_x']), float(d['origin_z'])
+    shade = LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    fig, ax = plt.subplots(1, 3, figsize=(30, 11))
+    b = d['basin_id'].astype(np.int64)
+    rng = np.random.default_rng(7)
+    pal = rng.uniform(0.55, 0.95, (max(int(b.max()) + 1, 1), 3))
+    rgb = np.where((land & (b >= 0))[..., None], pal[np.maximum(b, 0)], 1.0) * (0.6 + 0.4 * shade[..., None])
+    ax[0].imshow(np.clip(rgb, 0, 1))
+    q = d['quick_area_m2'].astype(np.float64)
+    ax[0].imshow(np.where(land & (q >= 5e4), np.log10(np.maximum(q, 5e4)), np.nan), cmap='Blues', vmin=4.0, vmax=max(float(np.log10(q.max() + 1)), 5.0))
+    ax[0].set_title(f'basins (one colour per sea outlet) and rivers; {int((np.bincount(b[land & (b >= 0)]) * dx * dx > 1e6).sum())} basins over 1 km2')
+    causes = ['cirque', 'glacial rock basin', 'moraine or till dam', 'fan or delta dam', 'unexplained']
+    cols = ['#1f5fbf', '#17becf', '#8c564b', '#f2b400', '#d62728']
+    cmap = {c: i for i, c in enumerate(causes)}
+    lid = d['lake_id'].astype(np.int64)
+    code = np.full(g.shape, np.nan)
+    for lk in lakes:
+        code[lid == lk['id']] = cmap.get(lk['cause'], 4)
+    ax[1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    ax[1].imshow(code, cmap=ListedColormap(cols), vmin=-0.5, vmax=4.5)
+    for lk in lakes:
+        if not lk['full']:
+            ax[1].plot((lk['deepest_x'] - ox) / dx, (lk['deepest_z'] - oz) / dx, 'o', mfc='none', mec='red', ms=14, mew=2)
+    ax[1].set_title('lakes: cirque (blue), rock basin (cyan), moraine or till dam (brown), fan or delta dam (gold), '
+                    'unexplained (red); closed lakes ringed red', fontsize=10)
+    lf = d['leftover_filled_m'].astype(np.float64)
+    ax[2].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    im = ax[2].imshow(np.where(land & (lf > 0.05), lf, np.nan), cmap='Reds', vmin=0, vmax=max(float(lf.max()), 0.5))
+    ax[2].set_title('hollows with no cause, filled (m)'); fig.colorbar(im, ax=ax[2], shrink=0.6)
+    for a in ax:
+        a.axis('off')
+    plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
+
+
 if __name__ == '__main__':
     if len(sys.argv) == 3 and sys.argv[1] == 'ground':
         ground_picture(f'{sys.argv[2]}/ground.npz', f'{sys.argv[2]}/evolve.png')
     elif len(sys.argv) == 3 and sys.argv[1] == 'glacial':
         glacial_picture(f'{sys.argv[2]}/glacial.npz', f'{sys.argv[2]}/glacial.png')
+    elif len(sys.argv) == 3 and sys.argv[1] == 'lakes':
+        lakes_picture(f'{sys.argv[2]}/lakes.npz', f'{sys.argv[2]}/lakes.json', f'{sys.argv[2]}/lakes.png')
     else:
         raise SystemExit(__doc__)

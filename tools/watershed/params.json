@@ -16,7 +16,10 @@
 		"power": 1.0,
 		"coast_floor": 0.05,
 		"calibration_offset_m": 100.0,
-		"calibration_clip": [0.33, 3.0],
+		"calibration_clip": [
+			0.33,
+			3.0
+		],
 		"_calibration_note": "Sonny 7 Nov, after run c3b1b846 (35 degree slope limit): the summit fell to 835 m (landform 1,459 m) while the mean land rose to 190 m (landform 155 m). The massif centres were cut about 400 m and their flanks rose, because the uplift is flat-topped (clipped at ref_height_m) and broad, and the eroded island's heights follow drainage distance, not the landform's peaks. One scalar cannot fix both, so evolve.py --calibrate=PREV_RUN_DIR scales the uplift by (landform + offset) / (previous result + offset), both smoothed at smooth_m (massif scale only; no hill-scale pattern). Relief scales with U at steady state, so one pass should bring both the summit and the mean near the landform. The summary's massif_scale_height_mismatch_m says how close it is."
 	},
 	"rain": {
@@ -100,5 +103,13 @@
 		"post_glacial_years": 11700.0,
 		"post_glacial_dt": 1950.0,
 		"scour_m": 10.0
+	},
+	"lakes": {
+		"_note": "Stage C1 and C2 (lakes.py, step R3). open_water_factor: lake evaporation over grass PET. Penman (1948) found grass loses about 0.6 (winter) to 0.8 (summer) of open-water evaporation, 0.7 at the equinoxes, so open water is about PET / 0.7. Seepage through a lake floor (mm/yr over the lake's area) is a stand-in until R4's groundwater solve gives each lake its exchange from the head: on cave-forming limestone and marble a floor leaks through open passages (swallow holes), so it is large; on other soluble rock (chalk) moderate; elsewhere lake floors seal with fine sediment and it is 0. None of the three is from a source yet. cirque_floor_below_ela_m: an ice-scoured hollow whose floor lies above (snowline minus this) counts as a cirque; cirque floors sit near the snowline (they are used to reconstruct it), lower ice-scoured hollows are rock basins in the troughs. Not from a source yet.",
+		"open_water_factor": 1.43,
+		"seepage_mm_yr_cave_forming": 10000.0,
+		"seepage_mm_yr_other_soluble": 1000.0,
+		"seepage_mm_yr_other": 0.0,
+		"cirque_floor_below_ela_m": 100.0
 	}
 }
