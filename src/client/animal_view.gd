@@ -370,6 +370,9 @@ func _make_model(number: int, id: int = 0) -> Node3D:
 		inst.free()
 		return null
 
+	for m in meshes:
+		_fit_skin(m as MeshInstance3D, inst, kind)
+
 	var root: Node3D = Node3D.new()
 	root.set_meta("model", true)
 	root.set_meta("model_row", row)
@@ -413,10 +416,20 @@ func _make_model(number: int, id: int = 0) -> Node3D:
 					_model_note(kind, "no clip for role %s (%s)" % [str(key), str(row["clips"][key])])
 				continue
 
-			roles[str(key)] = anim_name
 			var anim: Animation = player.get_animation(anim_name)
 			anim.loop_mode = Animation.LOOP_LINEAR
 			_fit_clip_units(player, anim, kind, anim_name)
+
+			# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
+			# measured against the rest pose, and the model keeps its rest pose for that role instead.
+			var rest_h: float = _clip_height(player, null, rig)
+			var clip_h: float = _clip_height(player, anim, rig)
+
+			if rest_h > 0.0001 and clip_h < rest_h * 0.5:
+				_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used, standing pose instead" % [anim_name, clip_h, rest_h])
+				continue
+
+			roles[str(key)] = anim_name
 
 		player.set_meta("roles", roles)
 		_model_note(kind, "clips by role %s" % str(roles))
@@ -580,6 +593,154 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String) -> Strin
 				return str(full)
 
 	return ""
+
+
+# A skinned mesh draws right when every bind agrees with its bone's rest: rest * bind maps the mesh into the skeleton the
+# same way for every bone (one shared transform C, whatever units or armature scale the file uses). The bear lay as a
+# legless tube in the game while its skeleton stood (7 Nov 2026): binds that disagree pull parts of the skin apart. The
+# spread of rest * bind across bones is measured at the mesh's own box corners against that box's size under C (unitless,
+# so a file's scale never triggers it). Over 5%, every bind is rebuilt as inverse(rest) * C on a copy of the skin, C being
+# the transform most binds agree with, and a log line says so.
+func _fit_skin(mi: MeshInstance3D, top: Node, kind: String) -> void:
+	if mi.skin == null or mi.mesh == null or mi.skin.get_bind_count() < 2:
+		return
+
+	var sk: Skeleton3D = mi.get_node_or_null(mi.skeleton) as Skeleton3D
+
+	if sk == null:
+		var found: Array = top.find_children("*", "Skeleton3D", true, false)
+		sk = found[0] if not found.is_empty() else null
+
+	if sk == null or sk.get_bone_count() == 0:
+		return
+
+	var box: AABB = mi.mesh.get_aabb()
+	var probes: Array = [box.position, box.end, Vector3(box.end.x, box.position.y, box.position.z), Vector3(box.position.x, box.end.y, box.end.z)]
+	var maps: Array = []      # [bind index, rest * bind]
+	var bones: PackedInt32Array = PackedInt32Array()
+
+	for b in mi.skin.get_bind_count():
+		var bone_name: String = str(mi.skin.get_bind_name(b))
+		var bone: int = sk.find_bone(bone_name) if bone_name != "" else mi.skin.get_bind_bone(b)
+		bones.append(bone)
+
+		if bone >= 0 and bone < sk.get_bone_count():
+			maps.append([b, sk.get_bone_global_rest(bone) * mi.skin.get_bind_pose(b)])
+
+	if maps.size() < 2:
+		return
+
+	# C: the map most binds agree with (the one nearest the rest, over an even sample of at most 24, so big rigs stay cheap).
+	var step: int = maxi(1, int(maps.size() / 24.0))
+	var shared: Transform3D = maps[0][1]
+	var best: float = INF
+
+	for i in range(0, maps.size(), step):
+		var total: float = 0.0
+
+		for j in range(0, maps.size(), step):
+			total += _map_gap(maps[i][1], maps[j][1], probes)
+
+		if total < best:
+			best = total
+			shared = maps[i][1]
+
+	var scale_ref: float = (shared * box.end).distance_to(shared * box.position)
+	var worst: float = 0.0
+
+	for m in maps:
+		worst = maxf(worst, _map_gap(m[1], shared, probes))
+
+	if scale_ref <= 0.0 or worst <= scale_ref * 0.05:
+		return
+
+	var skin: Skin = mi.skin.duplicate() as Skin
+
+	for b in skin.get_bind_count():
+		if bones[b] >= 0 and bones[b] < sk.get_bone_count():
+			skin.set_bind_pose(b, sk.get_bone_global_rest(bones[b]).affine_inverse() * shared)
+
+	mi.skin = skin
+	_model_note(kind, "skin of %s rebuilt: its binds disagreed by %.0f%% of the body's size" % [str(mi.name), 100.0 * worst / scale_ref])
+
+
+# How far apart two mesh-to-skeleton maps put the probe points (the largest gap).
+func _map_gap(x: Transform3D, y: Transform3D, probes: Array) -> float:
+	var gap: float = 0.0
+
+	for probe in probes:
+		gap = maxf(gap, (x * (probe as Vector3)).distance_to(y * (probe as Vector3)))
+
+	return gap
+
+
+# How tall the skeleton stands in the rig's space (the height of its bones' box) in a clip's first frame, or in its imported pose with no clip.
+# Worked out from the clip's own tracks and the bone rests, so it needs no running player.
+func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> float:
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+
+	if skeletons.is_empty():
+		return 0.0
+
+	var sk: Skeleton3D = skeletons[0]
+	var local: Array = []
+
+	for i in sk.get_bone_count():
+		local.append(sk.get_bone_pose(i))      # the pose as imported (the bear stands in it on the animal sheet)
+
+	if anim != null:
+		var base: Node = player.get_node_or_null(player.root_node)
+
+		for t in anim.get_track_count():
+			var kind: int = anim.track_get_type(t)
+
+			if kind != Animation.TYPE_POSITION_3D and kind != Animation.TYPE_ROTATION_3D and kind != Animation.TYPE_SCALE_3D:
+				continue
+
+			var path: NodePath = anim.track_get_path(t)
+
+			if base == null or base.get_node_or_null(NodePath(str(path.get_concatenated_names()))) != sk:
+				continue
+
+			var bone: int = sk.find_bone(str(path.get_concatenated_subnames()))
+
+			if bone < 0 or anim.track_get_key_count(t) == 0:
+				continue
+
+			var bone_xf: Transform3D = local[bone]
+
+			if kind == Animation.TYPE_POSITION_3D:
+				bone_xf.origin = anim.position_track_interpolate(t, 0.0)
+			elif kind == Animation.TYPE_ROTATION_3D:
+				bone_xf.basis = Basis(anim.rotation_track_interpolate(t, 0.0)).scaled(bone_xf.basis.get_scale())
+			else:
+				bone_xf.basis = Basis(bone_xf.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, 0.0))
+
+			local[bone] = bone_xf
+
+	var to_rig: Transform3D = _to_ancestor(sk, rig)
+	var world: Array = []
+	world.resize(sk.get_bone_count())
+	var lo: float = INF
+	var hi: float = -INF
+
+	for i in sk.get_bone_count():
+		var chain: Array = []
+		var b: int = i
+
+		while b >= 0 and world[b] == null:
+			chain.push_front(b)
+			b = sk.get_bone_parent(b)
+
+		for c in chain:
+			var parent: int = sk.get_bone_parent(c)
+			world[c] = (world[parent] as Transform3D) * (local[c] as Transform3D) if parent >= 0 else local[c]
+
+		var y: float = (to_rig * (world[i] as Transform3D).origin).y
+		lo = minf(lo, y)
+		hi = maxf(hi, y)
+
+	return hi - lo if hi > lo else 0.0
 
 
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
