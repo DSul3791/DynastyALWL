@@ -2,14 +2,20 @@
 	"note": "Goblin models and the systemic height rule (Dave, 7 Nov 2026). Every spawned goblin gets its own random height change, rolled fresh at each spawn, from -height_variation_m to +height_variation_m around base_height_m. Size the model from its real height (model_height_m), never a per-goblin hand scale: scale = (base_height_m + roll) / model_height_m, uniform on all axes. The .glb is NOT yet in git (38 MB, textures not shrunk); put it at assets/creatures/goblin_skritch/ on a build machine until it is.",
 	"base_height_m": 1.1,
 	"height_variation_m": 0.5,
+	"quality_tiers": {
+		"note": "Dave 7 Nov 2026: each goblin model is made once at ultra quality (about 40k triangles). Lower graphics settings use Godot's own downgrading (import-time mesh LODs, texture compression and mipmaps), NOT separate hand-made models.",
+		"ultra": "the source file itself"
+	},
 	"models": {
 		"skritch_ragtooth": {
 			"scene": "res://assets/creatures/goblin_skritch/Goblin_Skritch_Ragtooth.glb",
 			"source": "Meshy, made by Dave, 7 Nov 2026",
+			"quality": "ultra",
+			"triangles": 41202,
 			"model_height_m": 1.06,
 			"yaw_deg": 0,
 			"clips": ["Alert", "BeHit_FlyUp", "Block1", "Cautious_Crouch_Walk_Forward", "Collect_Object", "Combat_Stance", "Dead", "Idle_02", "Knock_Down", "Right_Hand_Sword_Slash", "Roll_Dodge", "Running", "Sit_Cross_Legged_on_Floor", "Sleep_Normally", "Sneaky_Walk", "Stand_Dodge", "Stand_and_Drink", "Thrust_Slash", "Walking"],
-			"note": "Mixamo-style 24-bone skeleton, 41k triangles, 19 clips, two embedded PNG textures. Facing direction (yaw_deg) not checked in Godot yet."
+			"note": "Mixamo-style 24-bone skeleton, 19 clips, two embedded PNG textures. Facing direction (yaw_deg) not checked in Godot yet."
 		}
 	}
 }
