@@ -47,6 +47,7 @@ var joined: int = 0            # regions that were joined into a bigger one
 var closed_m3: float = 0.0     # water dropped with sleeping regions past MAX_SLEEPING
 var followed: int = 0             # regions opened to follow a player
 var _follow_next_ms: int = 0
+var _follow_dry_told: Rect2i = Rect2i()   # the dry tiles last logged, so the log says it once
 var last_copied_m3: float = 0.0   # water the newest region copied from the regions it joined
 var refused: int = 0
 var _queue: Array = []         # [center: Vector3, radius: float, add: bool]
@@ -143,12 +144,16 @@ func follow(points: PackedVector2Array, level_at: Callable) -> void:
 			return
 
 	var want: Rect2i = tiles_of(p - Vector2.ONE * TILE_M * 0.5, p + Vector2.ONE * TILE_M * 0.5)
+	_follow_next_ms = now + FOLLOW_EVERY_MS
 
 	if not _wet_in(want, level_at):
+		if want != _follow_dry_told:
+			_follow_dry_told = want
+			print("water live: follow: no 8 m water in tiles %s round the player at %s, no 2 m region" % [str(want), str(p.round())])
 		return
 
-	_follow_next_ms = now + FOLLOW_EVERY_MS
 	followed += 1
+	print("water live: follow: opening tiles %s round the player at %s" % [str(want), str(p.round())])
 	_open(want, level_at, false)
 
 
@@ -195,6 +200,7 @@ func _open(wanted: Rect2i, level_at: Callable, dug: bool) -> void:
 			print("water live: no region at %s: %d tiles needed, %d allowed" % [str(wanted), rect.get_area(), MAX_TILES])
 			return
 
+	var t0: int = Time.get_ticks_msec()
 	var origin: Vector2 = Vector2(rect.position) * TILE_M
 	var w: int = rect.size.x * TILE_CELLS
 	var h: int = rect.size.y * TILE_CELLS
@@ -276,7 +282,7 @@ func _open(wanted: Rect2i, level_at: Callable, dug: bool) -> void:
 
 	windows.append({"grid": grid, "adapter": adapter, "coordinator": coordinator, "origin": origin, "tiles": rect, "dug": dug})
 	built += 1
-	print("water live: window %d x %d at %s (tiles %s, %d joined), %.0f m3 of water (%.0f copied, %.0f from the 8 m levels), %d border cells held" % [w, h, str(origin), str(rect), joining.size(), grid.total_volume(), copied, seeded, grid.fixed.size()])
+	print("water live: window %d x %d at %s (tiles %s, %d joined), %.0f m3 of water (%.0f copied, %.0f from the 8 m levels), %d border cells held, built in %d ms" % [w, h, str(origin), str(rect), joining.size(), grid.total_volume(), copied, seeded, grid.fixed.size(), Time.get_ticks_msec() - t0])
 
 
 # Two tile rectangles overlap or share an edge (not just a corner).
