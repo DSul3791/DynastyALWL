@@ -1329,6 +1329,70 @@
 			"hunt_difficulty": 2.8,
 			"blows": 8
 		},
+		"puma": {
+			"size_kg": 60.0,
+			"parts": [
+				[
+					"raw_meat",
+					5,
+					8
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					2,
+					3
+				],
+				[
+					"claw",
+					2,
+					4
+				]
+			],
+			"hunt_difficulty": 2.8,
+			"blows": 4
+		},
+		"pronghorn": {
+			"size_kg": 50.0,
+			"parts": [
+				[
+					"raw_meat",
+					5,
+					7
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					2,
+					3
+				],
+				[
+					"animal_fat",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 2.4,
+			"blows": 3
+		},
 		"warthog": {
 			"size_kg": 75.0,
 			"parts": [
