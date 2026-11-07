@@ -10,7 +10,8 @@ Everything here runs offline on Dave's PC (Dino), never in the cloud. Each stage
 | R2, stage B (landscape evolution) | `evolve.py` | `ground.npz`, `evolve.png`, `evolve_manifest.json` |
 | R2b, stage B2 (glacial history, then post-glacial) | `glacial.py` | `glacial.npz`, `glacial.png`, `glacial_manifest.json` |
 | R3, stage C1 and C2 (basins, lakes by water balance) | `lakes.py` | `lakes.npz`, `lakes.json`, `lakes.png`, `lakes_manifest.json` |
-| R4 to R5, stage C3 to C8 | to come | |
+| R4, stage C3, C4 and C6 (water table, heads, wetlands) | `groundwater.py` | `groundwater.npz`, `groundwater.png`, `groundwater_manifest.json` |
+| R5, stage C5, C7 and C8 | to come | |
 | R6, stage D (island water record) | to come | |
 
 ## R1: inputs
@@ -101,4 +102,23 @@ Check `lakes.png`, `lakes.json` and the summary for:
 - each outflow going on to the sea or a lower lake (`spills_to`), and `overflow_lost_m3_s` 0;
 - the filled leftovers shallow (a few decimetres); a deep one marks a cause the model lacks;
 - basins of many sizes, not one per valley of equal size.
+
+## R4: water table, heads and wetlands (stages C3, C4 and C6)
+
+`python tools/watershed/groundwater.py INPUTS_DIR GEOLOGY_DIR B2_DIR R3_DIR OUT_DIR`, where B2_DIR holds `glacial.npz` and R3_DIR holds `lakes.npz`.
+
+- The water table: steady groundwater flow on a 64 m grid from the recharge of the one water budget. Conductivity comes from the rock (Gleeson et al. 2011 classes), with loose cover over it and conduits in cave-forming rock. The sea and the lakes hold their levels, and the ground is a ceiling, so groundwater comes out where the table meets it (springs, seeps, gaining reaches).
+- At 16 m: depth to the table, groundwater discharge, baseflow down the routing, and a first regime (perennial, intermittent, ephemeral).
+- Heads labelled by what feeds them: spring, seep or damp hollow, lake outlet, wetland outlet, seasonal rill.
+- Wetlands typed by what wets them: salt marsh, fen (groundwater), marsh and swamp (river or lake), bog (rain).
+
+`python tools/watershed/plots.py groundwater RUN_DIR` redraws `groundwater.png`.
+
+Check `groundwater.png` and the summary for:
+- `balance_m3_s.closure` near 0: recharge comes out at the land surface, into lakes or into the sea;
+- a deep table under ridges and permeable rock, a shallow one in valley floors and on tight rock;
+- perennial channels fed by baseflow; seasonal ones on chalk and in small catchments (chalk dry valleys);
+- most heads seeps and damp hollows, a few springs, and those mostly where permeable rock meets tight rock or at the foot of karst;
+- wetlands only on low ground and gentle slopes (`wetland_on_steep_ground_cells` 0): fens where groundwater comes out, bogs on wet, tight uplands, marsh and swamp along rivers and lakes, salt marsh at the coast;
+- the largest springs (`springs_largest`): the ones on or beside cave-forming rock are the cave-spring candidates for R5.
 

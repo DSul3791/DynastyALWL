@@ -3,7 +3,8 @@
 Usage (on Dave's PC):
   python tools/watershed/plots.py ground OUT_DIR      # redraws OUT_DIR/evolve.png from OUT_DIR/ground.npz (stage B1)
   python tools/watershed/plots.py glacial OUT_DIR     # redraws OUT_DIR/glacial.png from OUT_DIR/glacial.npz (stage B2)
-  python tools/watershed/plots.py lakes OUT_DIR       # redraws OUT_DIR/lakes.png from lakes.npz and lakes.json (stage C1, C2)"""
+  python tools/watershed/plots.py lakes OUT_DIR       # redraws OUT_DIR/lakes.png from lakes.npz and lakes.json (stage C1, C2)
+  python tools/watershed/plots.py groundwater OUT_DIR # redraws OUT_DIR/groundwater.png (stages C3, C4, C6)"""
 import sys
 import numpy as np
 
@@ -144,11 +145,50 @@ def lakes_picture(npz_path, json_path, png_path):
     plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
 
 
+def groundwater_picture(npz_path, png_path):
+    """Four panels: depth to the water table; groundwater coming out (log, springs and seeps); the channels by regime
+    (perennial dark blue, intermittent light blue, ephemeral grey) with the heads by kind; and the wetlands by type."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource, ListedColormap
+    d = np.load(npz_path)
+    g = d['ground'].astype(np.float64); sea = d['sea'].astype(bool); dx = float(d['cell_m']); land = ~sea
+    shade = LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    fig, ax = plt.subplots(2, 2, figsize=(22, 22))
+    im = ax[0, 0].imshow(np.where(land, d['depth_to_table_m'], np.nan), cmap='viridis_r', vmin=0, vmax=30)
+    ax[0, 0].set_title('depth to the water table (m)'); fig.colorbar(im, ax=ax[0, 0], shrink=0.6)
+    q = d['gw_discharge_m3_s'].astype(np.float64)
+    ax[0, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    im = ax[0, 1].imshow(np.where(land & (q > 0), np.log10(np.maximum(q, 1e-6)), np.nan), cmap='plasma', vmin=-5, vmax=-1)
+    ax[0, 1].set_title('groundwater coming out, log10 m3/s (springs bright)'); fig.colorbar(im, ax=ax[0, 1], shrink=0.6)
+    reg = d['regime'].astype(np.float64)
+    ax[1, 0].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    ax[1, 0].imshow(np.where(reg > 0, reg, np.nan), cmap=ListedColormap(['#08306b', '#6baed6', '#9e9e9e']), vmin=0.5, vmax=3.5)
+    hk = d['head_kind'].astype(np.int64)
+    cols = ['#d62728', '#2ca02c', '#1f77b4', '#9467bd', '#ff7f0e']
+    for k, c in enumerate(cols):
+        rr, cc = np.nonzero(hk == k)
+        ax[1, 0].plot(cc, rr, '.', color=c, ms=3)
+    ax[1, 0].set_title('channels: perennial, intermittent, ephemeral; heads: spring red, seep green, lake outlet blue, '
+                       'wetland outlet purple, seasonal rill orange', fontsize=10)
+    w = d['wetland'].astype(np.float64)
+    ax[1, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    code = np.select([w == 4, w == 5, w == 6, w == 7, w == 10], [0, 1, 2, 3, 4], np.nan)
+    ax[1, 1].imshow(code, cmap=ListedColormap(['#9acd32', '#2e8b57', '#20b2aa', '#8b4513', '#da70d6']), vmin=-0.5, vmax=4.5)
+    ax[1, 1].imshow(np.where(d['lake'], 1.0, np.nan), cmap='Blues', vmin=0, vmax=1)
+    ax[1, 1].set_title('wetlands: marsh (yellow-green), swamp (green), fen (teal), bog (brown), salt marsh (orchid); lakes blue', fontsize=10)
+    for a in ax.ravel():
+        a.axis('off')
+    plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
+
+
 if __name__ == '__main__':
     if len(sys.argv) == 3 and sys.argv[1] == 'ground':
         ground_picture(f'{sys.argv[2]}/ground.npz', f'{sys.argv[2]}/evolve.png')
     elif len(sys.argv) == 3 and sys.argv[1] == 'glacial':
         glacial_picture(f'{sys.argv[2]}/glacial.npz', f'{sys.argv[2]}/glacial.png')
+    elif len(sys.argv) == 3 and sys.argv[1] == 'groundwater':
+        groundwater_picture(f'{sys.argv[2]}/groundwater.npz', f'{sys.argv[2]}/groundwater.png')
     elif len(sys.argv) == 3 and sys.argv[1] == 'lakes':
         lakes_picture(f'{sys.argv[2]}/lakes.npz', f'{sys.argv[2]}/lakes.json', f'{sys.argv[2]}/lakes.png')
     else:
