@@ -127,28 +127,64 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell,
 
 
 @nb.njit(cache=True)
-def _diffuse(h, sea, n, dx, dt, D, ery):
-    # Explicit creep is stable only while D_eff dt / dx^2 stays under 0.25 for the softest ground, so the sub-steps are set by
-    # the largest D_eff = D * ery^0.3 (as lem.py does). The first R2 run counted D alone: soil cover (ery up to 5) put
-    # D_eff dt / dx^2 near 0.3 per sub-step and the ground grew in a chequer until it overflowed (Dino, 7 Nov).
-    dmax = 1.0
-    for i in range(h.size):
-        if not sea[i] and ery[i] ** 0.3 > dmax:
-            dmax = ery[i] ** 0.3
-    ns = int(np.ceil(D * dmax * dt / (dx * dx) / 0.2))
-    if ns < 1:
-        ns = 1
-    kk = D * dt / ns / (dx * dx)
-    for s in range(ns):
-        b = h.copy()
-        for r in range(1, n - 1):
-            for c in range(1, n - 1):
-                i = r * n + c
-                if sea[i]:
-                    continue
-                lap = b[i - 1] + b[i + 1] + b[i - n] + b[i + n] - 4.0 * b[i]
-                v = b[i] + kk * ery[i] ** 0.3 * lap      # creep depends only weakly on rock hardness (as lem.py)
-                h[i] = v if v > 0.05 else 0.05
+def _thomas(a, b, c, d, x, m):
+    """Solve a[i] x[i-1] + b[i] x[i] + c[i] x[i+1] = d[i] for i in 0..m-1 (a[0] and c[m-1] unused). Overwrites c and d."""
+    c[0] = c[0] / b[0]
+    d[0] = d[0] / b[0]
+    for i in range(1, m):
+        w = b[i] - a[i] * c[i - 1]
+        c[i] = c[i] / w
+        d[i] = (d[i] - a[i] * d[i - 1]) / w
+    x[m - 1] = d[m - 1]
+    for i in range(m - 2, -1, -1):
+        x[i] = d[i] - c[i] * x[i + 1]
+
+
+@nb.njit(cache=True, parallel=True)
+def _creep_sweep(h, fixed, k, n, along_rows):
+    """One backward-Euler creep step along every row (or every column), each a tridiagonal solve. k[i] = dt * D_i / dx^2.
+    Fixed cells (sea and the model frame) keep their height. Face coefficients are the mean of the two cells, so the
+    exchange is conservative between land cells."""
+    out = np.empty_like(h)
+    for line in nb.prange(n):
+        a = np.zeros(n)
+        b = np.ones(n)
+        c = np.zeros(n)
+        d = np.empty(n)
+        x = np.empty(n)
+        for j in range(n):
+            i = line * n + j if along_rows else j * n + line
+            d[j] = h[i]
+            if fixed[i]:
+                continue
+            if j > 0:
+                im = i - 1 if along_rows else i - n
+                kf = 0.5 * (k[i] + k[im])
+                a[j] = -kf
+                b[j] += kf
+            if j < n - 1:
+                ip = i + 1 if along_rows else i + n
+                kf = 0.5 * (k[i] + k[ip])
+                c[j] = -kf
+                b[j] += kf
+        _thomas(a, b, c, d, x, n)
+        for j in range(n):
+            i = line * n + j if along_rows else j * n + line
+            out[i] = x[j]
+    return out
+
+
+def _diffuse(h, fixed, dx, dt, D, ery):
+    """Soil creep, implicit (one backward-Euler sweep along the rows, then one along the columns), so it is stable at any time
+    step. The earlier explicit form needed sub-steps in proportion to D dt / dx^2 (26 a step at dt 16 kyr), and its first
+    version blew up when the sub-steps ignored the softer ground (Dino, 7 Nov). Creep runs at D * ery^0.3 (depends only
+    weakly on rock hardness, as in lem.py)."""
+    n = int(round(np.sqrt(h.size)))
+    k = np.where(fixed, 0.0, dt * D * ery ** 0.3 / (dx * dx))
+    hr = _creep_sweep(h, fixed, k, n, True)
+    hc = _creep_sweep(hr, fixed, k, n, False)
+    land = ~fixed
+    h[land] = np.maximum(hc[land], 0.05)
 
 
 def sha(path):
@@ -194,6 +230,8 @@ def main():
     t0 = time.time()
     deposit = np.zeros(n * n)
     land0 = sea == 0
+    frame = np.zeros((n, n), bool); frame[0, :] = frame[-1, :] = frame[:, 0] = frame[:, -1] = True
+    fixed = (sea == 1) | frame.ravel()                     # creep leaves the sea and the model frame as they are
     track = []                                             # (step, summit, mean land height): is the ground still rising?
     for s in range(steps):
         filled, rec, order = lem.route(h, sea, n)
@@ -203,7 +241,7 @@ def main():
         ery = ery_fn(h)
         h0 = h.copy()
         flux = _fluvial(h, h0, sea, order, rec, n, dx, E['dt'], E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'])
-        _diffuse(h, sea, n, dx, E['dt'], E['D'], ery)
+        _diffuse(h, fixed, dx, E['dt'], E['D'], ery)
         change = h - (h0 + U * E['dt'])
         deposit = np.maximum(deposit + change, 0.0)          # sediment lying on bedrock: grows where it lands, wears where it erodes
         ery_fn.update(change)

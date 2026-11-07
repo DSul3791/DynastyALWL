@@ -46,7 +46,7 @@ It writes:
 - the sediment thickness (floodplains, fans, deltas);
 - a picture and a manifest.
 
-`python tools/watershed/plots.py ground OUT_DIR` redraws `evolve.png` from a saved run in seconds.
+`python tools/watershed/plots.py ground RUN_DIR` redraws `evolve.png` from a saved run in seconds. RUN_DIR is the run's output folder, the one holding `ground.npz`.
 
 Check `evolve.png` and the summary for:
 - branching valleys everywhere, with hills between them;
