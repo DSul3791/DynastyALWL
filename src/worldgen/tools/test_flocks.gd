@@ -27,7 +27,7 @@ func make():
 	a.setup()
 	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
-	for sp in ["rabbit", "deer", "moose", "fox", "duck", "horse", "boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear", "donkey", "goblin", "lynx", "black_bear", "elk", "bighorn", "mountain_goat", "beaver", "chamois", "mink", "raccoon", "rat", "crow", "pheasant", "goose", "cow", "goat", "chicken", "cat", "dog", "buffalo", "puma", "pronghorn", "warthog", "hyena", "wildebeest", "lion", "leopard", "rhino"]:
+	for sp in ["rabbit", "deer", "moose", "fox", "duck", "horse", "boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear", "donkey", "goblin", "lynx", "black_bear", "elk", "bighorn", "mountain_goat", "beaver", "chamois", "mink", "raccoon", "rat", "crow", "pheasant", "goose", "cow", "goat", "chicken", "cat", "dog", "buffalo", "puma", "pronghorn", "warthog", "hyena", "wildebeest", "lion", "leopard", "rhino", "elephant"]:
 		a.cfg["species"][sp]["target_per_player"] = 0
 
 	a.cfg["senses"] = {}
