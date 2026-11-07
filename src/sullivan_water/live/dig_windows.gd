@@ -245,6 +245,16 @@ func _tiles_running() -> int:
 	return n
 
 
+# The world rectangle (x, z) round the running regions (the only ones whose drawing changes), or an empty Rect2. Water thread.
+func drawn_rect() -> Rect2:
+	var out: Rect2 = Rect2()
+
+	for win in windows:
+		var r: Rect2 = Rect2(win["origin"], Vector2(win["tiles"].size) * TILE_M)
+		out = r if not out.has_area() else out.merge(r)
+	return out
+
+
 # Draws the regions into the hub's 8 m levels (a tile's `samples` x `samples`, first sample at x0, z0). Returns true when any sample changed.
 func publish(levels: PackedFloat32Array, samples: int, x0: float, z0: float) -> bool:
 	var changed: bool = false

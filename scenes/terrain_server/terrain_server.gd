@@ -146,6 +146,7 @@ var _never_joined: bool = true
 var _water_answered_msec: Dictionary = {}   # peer -> last time its water request was answered
 var _water_window: Rect2 = Rect2()          # the live water window (world m) from the last flow packet: water only moves inside it
 var _water_window_told: Rect2 = Rect2()     # the window the last "water moved" named
+var _live_told: Rect2 = Rect2()             # the dig windows' area the last "water moved" named (Sullivan water)
 var _cave_streams_sent: Dictionary = {}     # peer -> {tile: true}: spring cave streams already sent (protocol 87)
 var _water_sent: Dictionary = {}            # peer -> {chunk: hash of the water bytes it holds}: unchanged water is not sent again
 var _gather_msec: Dictionary = {}           # peer -> last gather request handled
@@ -1234,6 +1235,14 @@ func _poll_water() -> void:
 		if _water_window.has_area():
 			net.water_changed_in.rpc(_water_window.merge(_water_window_told) if _water_window_told.has_area() else _water_window)
 			_water_window_told = _water_window
+
+			# Sullivan water (Sonny, 7 Nov 2026): a dug ditch can lie outside the 8 m window, so the chunks under the dig windows are named
+			# too, in their own message (one rectangle round both could cover kilometres of chunks), with where they were last time.
+			var live: Rect2 = water_live.live_rect() if water_live.has_method("live_rect") else Rect2()
+
+			if live.has_area() or _live_told.has_area():
+				net.water_changed_in.rpc(live.merge(_live_told) if live.has_area() and _live_told.has_area() else (live if live.has_area() else _live_told))
+				_live_told = live
 		else:
 			net.water_changed.rpc()
 

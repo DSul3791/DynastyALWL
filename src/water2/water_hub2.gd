@@ -43,6 +43,7 @@ var _told: PackedFloat32Array = PackedFloat32Array()   # the levels last put in 
 var _stats: Dictionary = {"moved_m3": 0.0, "memory": 0, "loaded": 0}
 var _live = DigWindows.new()   # Sullivan water (7 Nov 2026): fine 2 m windows where players dig, so ditches and dams change the flow
 var _last_levels: PackedFloat32Array = PackedFloat32Array()   # the levels last built on the water thread (what a new dig window starts from)
+var _live_rect: Rect2 = Rect2()   # world x, z the dig windows draw into, as of the last publish (clients must re-ask chunks there too)
 
 
 func setup(centre_tile: Vector2i, _water_dir: String, _base_rate: float, tile_generator, _dry_start: bool = false) -> void:
@@ -136,6 +137,14 @@ func take_flow() -> Dictionary:
 	_flow_pending = {}
 	_mutex.unlock()
 	return packet
+
+
+# Where the dig windows draw (world x, z), so the server tells clients to re-ask those chunks as well as the 8 m window's. Empty when none.
+func live_rect() -> Rect2:
+	_mutex.lock()
+	var r: Rect2 = _live_rect
+	_mutex.unlock()
+	return r
 
 
 func data_of(tile: Vector2i):
@@ -330,6 +339,7 @@ func _run() -> void:
 				_pending = levels
 
 			_flow_pending = packet
+			_live_rect = _live.drawn_rect()
 			_mutex.unlock()
 
 		# Bug 7 (lag, 2 Nov 2026): the window cost about 110 ms per simulated second, so with only the CPU_DUTY sleep the thread ran about 4.5 simulated seconds per

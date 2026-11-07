@@ -126,5 +126,8 @@ func _init() -> void:
 	_check(live.sleeping.size() == 1 and live.windows.size() == 1 and live.windows[0]["tiles"].get_area() == 2, "a dig in the ditch wakes its region (the far one sleeps instead)")
 	_check(live.last_copied_m3 == kept_m3 and live.closed_m3 == 0.0, "woken with exactly the water it slept with (%.6f of %.6f m3), none dropped" % [live.last_copied_m3, kept_m3])
 
+	var rect: Rect2 = live.drawn_rect()
+	_check(rect == Rect2(96.0, -96.0, 96.0, 192.0), "drawn_rect names the running region's ground for the client refresh (%s)" % str(rect))
+
 	print("%d failures" % failures)
 	quit(1 if failures > 0 else 0)
