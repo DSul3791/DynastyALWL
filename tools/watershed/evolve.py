@@ -8,7 +8,7 @@ Starts from the landform (stage A1) and runs, per time step:
   2. discharge: rain-weighted drainage area, Q_i = sum over the cells draining through i of rain share x cell area;
   3. stream power with deposition, implicit (Braun and Willett 2013 for the erosion; the deposition term of the Davy and Lague
      2009 / Yuan et al. 2019 erosion-deposition model):
-        dh/dt = U - K e Q^m S + (G / Q) * sum over the catchment of (U - dh/dt) * rain * cell
+        dh/dt = U - K e Q^m S + (G / Q) * sum over the catchment of (U - dh/dt) * cell
      solved node by node from the outlets up, with Gauss-Seidel sweeps for the sediment term;
      no fluvial erosion where the drainage area is under channel_area_m2 (hillslope only), so weak flows cut no gullies;
   4. hillslope diffusion (soil creep), explicit with sub-steps.
@@ -55,7 +55,7 @@ def _channel_share(area, a_c):
 
 
 @nb.njit(cache=True)
-def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, rain, share, cell, sweeps, tol):
+def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell, sweeps, tol):
     """Implicit stream power with deposition. h holds h0 on entry and the new heights on exit.
     Returns the sediment flux through each cell (m3/yr, own cell included) from the last sweep."""
     N = n * n
@@ -68,7 +68,7 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, rain, share,
             if sea[i]:
                 continue
             Qi = Q[i] if Q[i] > 0.0 else cell
-            c = G * rain[i] * cell / Qi                  # the node's own share of the sediment term
+            c = G * cell / Qi                            # the node's own share of the sediment term (its own eroded volume)
             dist = dx
             if d >= 0 and abs(d - i) != 1 and abs(d - i) != n:
                 dist = dx * 1.4142135623730951
@@ -86,11 +86,14 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, rain, share,
             if change > biggest:
                 biggest = change
             h[i] = x
-        # sediment from upstream for the next sweep: accumulate (U - dh/dt) * rain * cell up the tree, then shift by one node
+        # sediment from upstream for the next sweep: accumulate the eroded volume (U - dh/dt) * cell up the tree, then shift by
+        # one node. It is a volume of rock and soil, so it is NOT weighted by rain; the rain enters through Q (the water that
+        # carries it): deposition rate = G * sediment flux / Q (Davy and Lague 2009 in the form of Yuan et al. 2019, with Q the
+        # rain-weighted area, so G stays dimensionless).
         own = np.zeros(N)
         for q in range(order.size):
             i = order[q]
-            own[i] = (U[i] - (h[i] - h0[i]) / dt) * rain[i] * cell
+            own[i] = (U[i] - (h[i] - h0[i]) / dt) * cell
         total = own.copy()
         for q in range(order.size - 1, -1, -1):
             i = order[q]; d = rec[i]
@@ -107,7 +110,14 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, rain, share,
 
 @nb.njit(cache=True)
 def _diffuse(h, sea, n, dx, dt, D, ery):
-    ns = int(np.ceil(D * dt / (dx * dx) / 0.2))
+    # Explicit creep is stable only while D_eff dt / dx^2 stays under 0.25 for the softest ground, so the sub-steps are set by
+    # the largest D_eff = D * ery^0.3 (as lem.py does). The first R2 run counted D alone: soil cover (ery up to 5) put
+    # D_eff dt / dx^2 near 0.3 per sub-step and the ground grew in a chequer until it overflowed (Dino, 7 Nov).
+    dmax = 1.0
+    for i in range(h.size):
+        if not sea[i] and ery[i] ** 0.3 > dmax:
+            dmax = ery[i] ** 0.3
+    ns = int(np.ceil(D * dmax * dt / (dx * dx) / 0.2))
     if ns < 1:
         ns = 1
     kk = D * dt / ns / (dx * dx)
@@ -167,13 +177,17 @@ def main():
         share = _channel_share(area, a_c)
         ery = ery_fn(h)
         h0 = h.copy()
-        flux = _fluvial(h, h0, sea, order, rec, n, dx, E['dt'], E['K'], E['m'], E['G'], U, ery, Q, rain, share, cell, E['sweeps'], E['tol_m'])
+        flux = _fluvial(h, h0, sea, order, rec, n, dx, E['dt'], E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'])
         _diffuse(h, sea, n, dx, E['dt'], E['D'], ery)
         change = h - (h0 + U * E['dt'])
         deposit = np.maximum(deposit + change, 0.0)          # sediment lying on bedrock: grows where it lands, wears where it erodes
         ery_fn.update(change)
         if s % 25 == 0:
             print(f'step {s}/{steps} t {time.time() - t0:.0f} s, max h {h.max():.0f} m', flush=True)
+        # Fail loudly, never carry on: uplift alone over the whole run cannot lift any cell more than U * years above its start.
+        bound = float(start.max()) + float(U.max()) * E['years'] + 100.0
+        if not np.isfinite(h).all() or h.max() > bound:
+            raise SystemExit(f'evolve: unstable at step {s}: max height {h.max():.3g} m is above the physical bound {bound:.0f} m')
     filled, rec, order = lem.route(h, sea, n)
     Q = _discharge(order, rec, sea, rain, cell, n * n)
     area = _discharge(order, rec, sea, np.ones(n * n), cell, n * n)
