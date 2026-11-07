@@ -39,12 +39,12 @@ The scope is the creatures that exist today: bear, wolf, boar, deer, frog and go
 | **Horse, donkey** | **Tame (start)**: a tamable value per animal from 0 to 1 sets its spook distance; a curious one walks up to a calm player. **Avoid**: kicks inside `threat_m`. Carcass rows | **Tame (bond)**: no bond, owner or record. That waits for G-09 and the companion record (#547 section 5). No mount |
 | **Cow, goat, chicken, cat, dog, buffalo** | models only (batch 3) | everything: no species row yet. Their cards are stubs listing the intended verbs (Tame, Harvest) for MikeW's integration |
 
-## 3. Where section 7 does not match the game today (for the coordinator)
+## 3. Corrections to section 7 (decided by the coordinator, 7 Nov; folded into the guiding document with D-09)
 
-1. **The wolf torch distance.** Card 7.1 says "Torch 8 m" and project memory says wolf protection is 8 m (Sal's number, for Dave to tune). The data has `wolves.torch_light_m` 9.0. One of them should change. I recommend the card cites the data rather than repeating a number.
-2. **Goblins and Ally.** Card 7.1 gives goblins **Ally**. Dave's `docs/GOBLINS.md` describes skittish night thieves that fight when cornered, with nothing allied. Ally should be marked a Proposal until Dave says so.
-3. **Wolf: Tame (pup).** There are no wolf young in the game, so this verb has nothing under it yet.
-4. **Bear warning.** Card 7.1's huff, jaw-pop and standing are not in the game. Only a turn-to-face is. The card should mark them `built: false`, not describe them as current.
+1. **Wolf torch distance:** `animals.json` wins, at 9 m (`wolves.torch_light_m`). The card references it and never copies it. Card 7.1's "8 m" was wrong.
+2. **Goblin Ally:** now a **Proposal**. Dave's `docs/GOBLINS.md` describes skittish night thieves only.
+3. **Wolf Tame (pup):** now a **Proposal**. There are no wolf young or tame rows.
+4. **Bear warning:** the huff, jaw-pop and standing are now a **Proposal**. Only the turn-to-face (`WARN`, 1.5 s) is Existing.
 
 ## 4. Dependencies
 
