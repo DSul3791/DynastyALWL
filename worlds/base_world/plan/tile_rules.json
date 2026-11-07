@@ -1058,10 +1058,7 @@
 		"min_roof_m": 5,
 		"town_clear_m": 600,
 		"karst": {
-			"count": [
-				8,
-				14
-			],
+			"count": [0, 0], "count_note": "Off (Dave: caves only at river starts; coordinator 7 Nov 2026). Goblins, bears and cave life use the spring caves.",
 			"candidate_step_m": 48,
 			"min_spacing_m": 700,
 			"length_m": [
@@ -1155,10 +1152,7 @@
 			]
 		},
 		"sea_cave": {
-			"count": [
-				2,
-				5
-			],
+			"count": [0, 0], "count_note": "Off (Dave: caves only at river starts; coordinator 7 Nov 2026). Goblins, bears and cave life use the spring caves.",
 			"min_spacing_m": 800,
 			"cliff_rise_m": 8,
 			"length_m": [
