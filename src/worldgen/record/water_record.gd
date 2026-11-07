@@ -67,8 +67,14 @@ static func encode_fresh(dist: PackedFloat32Array) -> PackedByteArray:
 	var out: PackedByteArray = PackedByteArray()
 	out.resize(dist.size())
 
+	# 255 is kept for "far": a distance of 255 steps or more, and INF (no fresh water in the frame). Finite distances round to 0..254, so 509 m
+	# reads back as 508 m, not as far (round(254.5) is 255). int(INF) is not a number GDScript can clamp (it came out 0, "at the water"), so INF and
+	# NAN are caught before the division.
+	var far_m: float = FRESH_STEP_M * 255.0
+
 	for k in dist.size():
-		out[k] = clampi(int(round(dist[k] / FRESH_STEP_M)), 0, 255)
+		var d: float = dist[k]
+		out[k] = 255 if not is_finite(d) or d >= far_m else clampi(int(round(d / FRESH_STEP_M)), 0, 254)
 
 	return out
 
