@@ -42,6 +42,7 @@ const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const OceanWaves := preload("res://src/sullivan_water/ocean/ocean_waves.gd")
+const OceanMesh := preload("res://src/sullivan_water/ocean/ocean_mesh.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
@@ -226,7 +227,6 @@ var _sound_now_logged: String = ""
 var _sound_now_log_msec: int = -100000
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
-var _sea_origin: Vector2 = Vector2(INF, INF)   # the swell's phase origin last handed to the sea shader (M5, ocean_waves.gd)
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
@@ -3382,23 +3382,29 @@ func _make_environment(root: Node3D) -> void:
 	world_environment.environment = environment
 	root.add_child(world_environment)
 	sea = MeshInstance3D.new()
-	var plane: PlaneMesh = PlaneMesh.new()
-	plane.size = Vector2(12000.0, 12000.0)
-	sea.mesh = plane
+	sea.mesh = OceanMesh.make()   # 12 km, 1 m vertices at the centre: the swell lifts it near the camera (M5)
 	sea.material_override = WaterMaterial.make_sea()   # the rivers' shader with the sea look on (swell, depth colours, surf)
 	root.add_child(sea)
 
 
 
 # The sea plane follows the body; its swell is drawn relative to a phase origin near the body, so the waves stay exact 54 km from the
-# world's corner (M5, docs/water/ocean_m5.md). The origin moves in 1024 m steps, and the new phases come from ocean_waves.gd in 64-bit floats.
+# world's corner (M5, docs/water/ocean_m5.md). The origin moves in 1024 m steps. Every frame the sea clock is folded into the phases in
+# 64-bit floats (ocean_waves.gd), so the shader's swell and _sea_height_at() are the same water at the same moment.
 func _follow_sea() -> void:
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	var origin: Vector2 = OceanWaves.origin_for(Vector2(body.global_position.x, body.global_position.z))
+	OceanWaves.apply(sea.material_override as ShaderMaterial, origin, _sea_clock())
 
-	if origin != _sea_origin:
-		_sea_origin = origin
-		OceanWaves.apply(sea.material_override as ShaderMaterial, origin)
+
+# The sea clock (s): this client's own (M5 second step; a shared server clock comes with the boats, M7).
+func _sea_clock() -> float:
+	return float(Time.get_ticks_msec()) / 1000.0
+
+
+# The sea surface at p: the swell's height, the same the shader lifts the plane by near the camera.
+func _sea_height_at(p: Vector3) -> float:
+	return OceanWaves.height(Vector2(p.x, p.z), _sea_clock())
 
 
 # Third-person view (Dave, 2026-10-21): scroll out from first person to look at yourself from up and back
@@ -4281,7 +4287,7 @@ func _water_here() -> Dictionary:
 		_water_ground_msec = now
 		_water_ground_at = Vector2(here.x, here.z)
 
-	return SwimScript.water_at(here.y, surface, ground)
+	return SwimScript.water_at(here.y, surface, ground, _sea_height_at(here))   # a swimmer in the sea rides the swell (M5)
 
 
 # The swimmer's velocity: strokes at the swim pace (never more than the walking pace the player's
@@ -6090,13 +6096,19 @@ func _update_underwater() -> void:
 		if not is_nan(pool):
 			surface = pool
 
-	var under: bool = eye.y < 0.0
+	# The sea's surface at the eye is the swell's (M5): a crest over the eye is under water, but only where the ground is under the sea.
+	var sea_y: float = _sea_height_at(eye)
+	var under: bool = eye.y < minf(sea_y, 0.0)
+
+	if not under and eye.y < sea_y:
+		var bed: float = _ground_below(eye)
+		under = is_nan(bed) or bed < 0.0   # no ground found: open deep sea
 
 	if not under and not is_nan(surface) and eye.y < surface:
 		under = WaterVolume.submerged(eye.y, surface, _ground_below(eye))
 
 	if under:
-		underwater_surface = surface if not is_nan(surface) and surface > 0.0 else 0.0
+		underwater_surface = surface if not is_nan(surface) and surface > 0.0 else sea_y
 
 	var daylight: float = 1.0 - float(weather_look.day.night) if weather_look != null else 1.0
 	UnderwaterLook.set_caustics(terrain.material as ShaderMaterial if terrain != null else null, under, underwater_surface, daylight)
