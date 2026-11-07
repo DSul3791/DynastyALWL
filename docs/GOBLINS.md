@@ -47,7 +47,7 @@ Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the
 - Fits the temperament system (skittish, with a threat range that makes them fight) and the animal levels rule (level set by distance from town, not placement). See `docs/knowledge/animal-behaviour.md`.
 
 ## Built so far (first step, 7 Nov 2026; not yet run in Godot)
-- **Species 15, "goblin"** in `data/animals/animals.json`, drawn from `data/animals/models.json` (row goblin, two `variants`: Skritch and Rukz, picked by animal id, clips mapped by role per model).
+- **Species 16, "goblin"** (15 is the donkey) in `data/animals/animals.json`, drawn from `data/animals/models.json` (row goblin, two `variants`: Skritch and Rukz, picked by animal id, clips mapped by role per model).
 - **Height:** the client sizes each goblin by its mesh height to `height_m` 1.1 plus a bell-shaped roll (mean of three even rolls) of up to `height_variation_m` 0.5 either way, seeded from the animal id. One rule, no per-goblin scales.
 - **Spawning (`server_animals.gd` `_top_up_lair`):** a group of 2 to 5 at a spring cave mouth near a player, in the tile the player stands in; one group per mouth; never at a mouth with a bear within 120 m. Made at any hour.
 - **Day and night:** by day they bed down at the mouth (the existing rest rule from their `active` row), at night they range up to 70 m round it. They keep out of fire, torch and lamp light (the existing keep-off rule), stop and watch a player they notice from 60 m (alert), run at 30 m, and fight if cornered or threatened at the den (the bear's defend code, small numbers).
