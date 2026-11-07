@@ -126,12 +126,20 @@ def _hollows(pit, rec, sea, n, min_depth):
     return lab, deep[:k], size[:k], outlet
 
 
-@nb.njit(cache=True)
 def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell, sweeps, tol, Sc):
-    """Implicit stream power with deposition. h holds h0 on entry and the new heights on exit.
-    Returns the sediment flux through each cell (m3/yr, own cell included) from the last sweep.
+    """Implicit stream power with deposition (stage B1). h holds h0 on entry and the new heights on exit. Returns the
+    sediment flux through each cell (m3/yr, own cell included) from the last sweep. The erosion coefficient of each cell is
+    K e share Q^m; the glacial stage (glacial.py) adds the ice's own term and solves with the same _solve."""
+    Qi = np.where(Q > 0.0, Q, cell)
+    return _solve(h, h0, sea, order, rec, n, dx, dt, K * ery * share * Qi ** m, G, U, Qi, cell, sweeps, tol, np.full(h.size, Sc))
 
-    Threshold hillslopes (Sc, the tangent of the threshold angle; 0 turns it off). Where uplift outpaces erosion, real
+
+@nb.njit(cache=True)
+def _solve(h, h0, sea, order, rec, n, dx, dt, kq, G, U, Qd, cell, sweeps, tol, Sc):
+    """The implicit erosion-deposition solve. kq: each cell's erosion coefficient (erosion = kq * S, S the slope to the
+    receiver). Qd: each cell's carrying flow for the deposition term (G / Qd times the sediment flux), never zero.
+
+    Threshold hillslopes (Sc per cell, the tangent of the threshold angle; 0 turns it off there, as under a glacier). Where uplift outpaces erosion, real
     hillslopes do not steepen without end: past a threshold angle they fail by landslides, so their mean angle stays near that
     threshold whatever the erosion rate (Burbank et al. 1996, Nature 379:505; Montgomery 2001, Am. J. Sci. 301:432). Linear
     creep alone has no such limit, and run 624bd23c grew a ridge more than 1,000 m above its landform with 40 to 45 degree
@@ -149,14 +157,14 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell,
             i = order[q]; d = rec[i]
             if sea[i]:
                 continue
-            Qi = Q[i] if Q[i] > 0.0 else cell
+            Qi = Qd[i]
             c = G * cell / Qi                            # the node's own share of the sediment term (its own eroded volume)
             dist = dx
             if d >= 0 and abs(d - i) != 1 and abs(d - i) != n:
                 dist = dx * 1.4142135623730951
             F = 0.0
             if d >= 0:
-                F = K * ery[i] * share[i] * Qi ** m / dist
+                F = kq[i] / dist
             hr = h[d] if d >= 0 else h0[i]
             num = h0[i] * (1.0 + c) / dt + U[i] * (1.0 + c) + F * hr + G / Qi * up[i]
             x = num / ((1.0 + c) / dt + F)
@@ -164,12 +172,12 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell,
                 x = (h0[i] * (1.0 + c) / dt + U[i] * (1.0 + c) + G / Qi * up[i]) / ((1.0 + c) / dt)
                 if x > hr:
                     x = hr
-            if Sc > 0.0 and d >= 0:
+            if Sc[i] > 0.0 and d >= 0:
                 base = hr
                 if sea[d] and base < 0.0:
                     base = 0.0
-                if x > base + Sc * dist:
-                    x = base + Sc * dist
+                if x > base + Sc[i] * dist:
+                    x = base + Sc[i] * dist
             change = abs(x - h[i])
             if change > biggest:
                 biggest = change
@@ -257,6 +265,24 @@ def _diffuse(h, fixed, dx, dt, D, ery):
     h[land] = np.maximum(hc[land], 0.05)
 
 
+def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, fixed):
+    """One step of the river era (B1; also the post-glacial era in glacial.py): route, discharge from the quick runoff of the
+    rock at today's surface, channel heads, the implicit erosion-deposition solve, then creep. h is updated in place.
+    Returns the height change apart from uplift (negative eroded, positive laid down) and the sediment flux."""
+    cell = dx * dx
+    filled, rec, order = lem.route(h, sea, n)
+    quick = runoff.budget(rain_mm, rock.rock_ids(g, h), bfi, W)['quick'] / q_ref    # the rock at today's surface
+    Q = _discharge(order, rec, sea, quick, cell, n * n)
+    share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
+    ery = ery_fn(h)
+    h0 = h.copy()
+    flux = _fluvial(h, h0, sea, order, rec, n, dx, dt, E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'], Sc)
+    _diffuse(h, fixed, dx, dt, E['D'], ery)
+    change = h - (h0 + U * dt)
+    ery_fn.update(change)
+    return change, flux
+
+
 def sha(path):
     return hashlib.sha256(open(path, 'rb').read()).hexdigest()
 
@@ -305,17 +331,8 @@ def main():
     fixed = (sea == 1) | frame.ravel()                     # creep leaves the sea and the model frame as they are
     track = []                                             # (step, summit, mean land height): is the ground still rising?
     for s in range(steps):
-        filled, rec, order = lem.route(h, sea, n)
-        quick = runoff.budget(rain_mm, rock.rock_ids(g, h), bfi, W)['quick'] / q_ref    # the rock at today's surface
-        Q = _discharge(order, rec, sea, quick, cell, n * n)
-        share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
-        ery = ery_fn(h)
-        h0 = h.copy()
-        flux = _fluvial(h, h0, sea, order, rec, n, dx, E['dt'], E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'], Sc)
-        _diffuse(h, fixed, dx, E['dt'], E['D'], ery)
-        change = h - (h0 + U * E['dt'])
+        change, flux = river_step(h, sea, n, dx, E['dt'], E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, fixed)
         deposit = np.maximum(deposit + change, 0.0)          # sediment lying on bedrock: grows where it lands, wears where it erodes
-        ery_fn.update(change)
         track.append((s, float(h.max()), float(h[land0].mean())))
         if s % 25 == 0:
             print(f'step {s}/{steps} t {time.time() - t0:.0f} s, max h {h.max():.0f} m, mean land {track[-1][2]:.0f} m', flush=True)

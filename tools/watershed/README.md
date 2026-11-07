@@ -8,6 +8,7 @@ Everything here runs offline on Dave's PC (Dino), never in the cloud. Each stage
 |---|---|---|
 | R1, stage A (inputs) | `inputs.py` | `inputs.npz`, `inputs.png`, `inputs_manifest.json` |
 | R2, stage B (landscape evolution) | `evolve.py` | `ground.npz`, `evolve.png`, `evolve_manifest.json` |
+| R2b, stage B2 (glacial history, then post-glacial) | `glacial.py` | `glacial.npz`, `glacial.png`, `glacial_manifest.json` |
 | R3 to R5, stage C (hydrology) | to come | |
 | R6, stage D (island water record) | to come | |
 
@@ -56,3 +57,25 @@ Check `evolve.png` and the summary for:
 - no slopes above the threshold angle (`max_slope_deg`, `share_of_land_steeper_than_deg`), and `share_of_land_near_threshold` small: a large share would mean the uplift is too fast for the rock, so landslides, not rivers, set the form;
 - a summit and relief close to the landform's, and `last_tenth_summit_change_m_per_kyr` near zero (steady state); if the summit is still rising at about the uplift rate, the run is too short;
 - fewer channels (lower drainage density in the summary) on chalk and on the dry lee slopes than on the wet west flanks.
+
+## R2b: glacial history (stage B2)
+
+`python tools/watershed/glacial.py INPUTS_DIR GEOLOGY_DIR B1_DIR OUT_DIR`, where B1_DIR is the R2 output folder (the one holding `ground.npz`). It starts from the river era's final ground, so the ice settings can be changed and rerun without rerunning R2.
+
+One cold stage (`params.json` `glacial`) with the glacial stream-power model of Hergarten (2021):
+- ice made above the snowline (`ela_m`) from the same rain field, and melted below it;
+- the ice flux accumulated down the ice surface, spread over each glacier's width (the swath), and a finite ice thickness;
+- erosion and deposition with the same implicit solve as R2, so moraines, till and outwash come from the sediment budget;
+- frozen ground, so all runoff is quick;
+- then 11,700 years of today's rivers and creep.
+
+`python tools/watershed/plots.py glacial RUN_DIR` redraws `glacial.png`.
+
+Check `glacial.png` and the summary for:
+- ice on the high ground only, thickest in the big valley heads, with tongues down the main valleys (`ice_max_km2`, `ice_thickest_m`, `lowest_ice_m`);
+- U-shaped troughs where the ice was, and V-shaped valleys left where it was not;
+- tributary valleys hanging above the troughs they join;
+- hollows with a cause (`hollows.by_cause`): ice-scoured floors high up (cirques) and in troughs (rock basins), and glacial deposit sills near where the ice ended (moraine dams). Many hollows with no cause would mean a numerical leftover, not a lake;
+- till under the ice's reach and outwash beyond it;
+- trough floors cut 100 to 300 m below the river-era valley floors (`glacial_cut_max_m`), not thousands. If the cut is far off, `years` is the setting to change first.
+

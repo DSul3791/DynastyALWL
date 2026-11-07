@@ -79,5 +79,23 @@
 			"ref_slope": 0.15,
 			"slope_exponent": 2.0
 		}
+	},
+	"glacial": {
+		"_note": "Stage B2 (glacial.py, step R2b): one cold stage after the B1 river era, then the post-glacial era. Model: Hergarten 2021 (Earth Surface Dynamics 9:937), glacial stream power with a swath and finite ice thickness; benchmarked against iSOSIA by Liebl et al. 2023 (GMD 16:1315). From the paper: full_ice_above_ela_m 500 (his examples: H_f - H_e = 2 units of 250 m); glacial_K_ratio 2 (his fluvioglacial runs, K_g = 2 K); width w = width_m_at_ref_flux * (A_i / ref_flux_m2)^0.3 (eq. 13; his examples set w = A_i^0.3 in grid units with 50 m cells, so 50 m at 2,500 m2; that gives about 1.3 km for a 120 km2 ice catchment); thickness_to_width 0.25 (his delta 0.05 in units of 250 m vertical over 50 m horizontal); swath_eps 0.25 (eq. 22, used in all his runs); ice_carry_ratio 10 (section 5 says the glacier carries sediment 10 times more efficiently than water; the K_t values printed there were not legible in the cloud copy, to check against the PDF). Not from a source yet, judged on the maps: ela_m 487 is the design's start, the reconstructed Loch Lomond Stadial equilibrium line at Coire Breac (eastern Grampians); years 100,000 is the time the island spends under stadial-sized ice, a stand-in for many Pleistocene cold stages (checked against trough overdeepening of 100 to 300 m and cirque floors in the result); cold_pet_mm_yr 250 is a guess at a stadial PET (about half of today's 483). Frozen ground: all cold-stage runoff is quick (permafrost made chalk impervious, the classic dry-valley explanation; Goudie 1990, p. 176). post_glacial_years 11,700: the Holocene. scour_m: a hollow whose floor the ice lowered more than this counts as ice-scoured (R3 names it a rock basin, or a cirque when it lies high).",
+		"ela_m": 487.0,
+		"full_ice_above_ela_m": 500.0,
+		"glacial_K_ratio": 2.0,
+		"width_m_at_ref_flux": 50.0,
+		"ref_flux_m2": 2500.0,
+		"width_exponent": 0.3,
+		"thickness_to_width": 0.25,
+		"swath_eps": 0.25,
+		"ice_carry_ratio": 10.0,
+		"cold_pet_mm_yr": 250.0,
+		"years": 100000.0,
+		"dt": 2000.0,
+		"post_glacial_years": 11700.0,
+		"post_glacial_dt": 1950.0,
+		"scour_m": 10.0
 	}
 }

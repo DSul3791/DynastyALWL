@@ -91,12 +91,20 @@ Where the chosen snowline puts no ice, there is no glacial imprint: glaciated an
 - **Snowline.** For a stadial like Scotland's last one, a reconstructed equilibrium line at Coire Breac (eastern Grampians) is 487 m (Loch Lomond Stadial). Ours comes from the mass balance with the A4 precipitation, so the wet west builds more ice than the dry lee, which adds regional variety by cause.
 - **Moraines.** Hergarten 2021 uses a shared stream-power law, E/K_d + Q_s/(K_t A) = A^m S^n (his eq. 3). It is the same erosion-deposition balance as our B1 solver, with K_d/K_t taking the place of G. The glacier carries sediment while its transport capacity lasts and drops it where the ice flux falls near the terminus, where meltwater may cut it again (eqs. 30 to 36: one sediment flux, carried by whichever of ice or meltwater spends less power). The paper does not build moraine ridges as such, so moraine dams are a result to check on our maps, not a promise.
 
-*R2b method (to code after Dino's R2 run confirms the B1 solver):*
+*R2b method:*
 1. Mass balance on the ice surface: the share of precipitation that becomes ice rises linearly from 0 at the snowline H_e to 1 at H_f, and is negative below H_e (melt). The precipitation is A4's field. Ice flux A_i accumulates down the routing like discharge until it reaches zero (the terminus).
 2. Width w = a A_i^0.3 and thickness h = δ w. The ice flux is spread over a swath (his section 3). Every cell with ice is a start point c0 on its cardinal path, where each upstream point is the largest donor. Donors of c0 that are off the path join c0's swath if they lie within w_i/2 of an upstream path point c_i, and the search repeats outward through their donors. A swath cell takes the ice flux of its path point, and where swaths overlap the largest flux wins. Erosion then uses A_i,eff = A^0.25 A_i^0.75 (his eq. 22, ε = 0.25). The weighting by the unextended total flux A keeps a slightly parabolic valley floor and stops flow running in parallel lines down the flat floor.
 3. Each step: add h to the ground, route on the ice surface (depressions in it filled), solve the same implicit erosion-deposition with K_eff = γ^m K_g + (1 − γ)^m K_f and γ = A_i / A, then subtract h.
 4. Climate history: B1's long river era, then one cold stage with the snowline lowered (the parameter, starting near the stadial value), then the post-glacial era (about 11,700 years) of river and creep work with today's climate.
 5. Outputs: each lake basin's cause (cirque, rock basin behind a sill, moraine or till dam), hanging-valley lips (fall candidates), till and outwash cover, and the ice extent, for R3 and R5.
+
+*R2b as coded (`tools/watershed/glacial.py`, 7 Nov):* the method above, starting from B1's saved ground so the ice settings can be rerun alone. Choices the paper leaves open, each written in the code:
+- the swath half-width is measured from each ice cell, walking up its donor tree, rather than from the nearest upstream path point; cells further up the valley get the swaths of the path cells there, which carry almost the same flux;
+- the ice thickness comes from the effective flux A^0.25 A_i^0.75, so it thins toward the swath margins;
+- the slope limit of B1 does not apply to ice cells (a glacier front is steep ice, not a hillslope). Ice-free walls are measured against the ice surface beside them, because the ice holds them up. After it melts, the post-glacial era lets oversteepened walls fail, as paraglacial rock slope failures do (a cause for landslide dams);
+- the cold-stage water is the rain that does not become ice, plus melt where ice arrives, less a cold-stage evaporation. All of it is quick, because frozen ground makes even chalk impervious (Goudie 1990);
+- land never goes below sea level, so no fjords: the coastline is fixed in this model.
+Each hollow left after the post-glacial era is labelled ice-scoured floor, glacial deposit sill, other sediment sill, or none, for R3.
 
 **B3 other lake makers, by condition.** Each is a named cause the lake table records:
 - karst sinkholes (dolines) on limestone and chalk, where water dissolves the rock and drains down (closed, and explainable);
@@ -239,7 +247,7 @@ Per Dave, these are listed, not fixed now:
 | R2b | Stage B2 and B3: glacial history (model chosen by research first), then other lake makers by condition | cirques, troughs, lake basins with causes |
 | R3 | Stage C1 to C2: routing, basins, lakes by water balance | basin and lake maps, closed-basin list with reasons |
 | R4 | Stage C3, C4, C6: groundwater, heads, wetlands | head kinds map, wetland map, groundwater depth |
-| R5 | Stage C5, C7, C8: network, reach types, cave springs, coast outlets; never-see checks; follow-the-water report | follow-the-water profiles in several basins |
+| R5 | Stage C5, C7, C8: network, reach types, cave springs, coast outlets; never-see checks; follow-the-water report. Cave passages from sink to spring are sized in the record so they hold at LOD 2: every passage and chamber a player can see from inside is at least 3.6 m in half-width and half-height (about 7.2 m wide and tall) wherever the rock over it allows, keeping Dave's small, medium and large difference above that floor; a narrower passage must be a dead end that LOD 2 closes in full. Formations, scatter, cave streams and pools sit on that baked section, and the generator carves the baked size at LOD 0 to 2 with no per-level widening (test_cave_lods check 4, the LOD 2 lip count, must read 0). Source: docs/design/cave_lod_carving_design.md (#554) | follow-the-water profiles in several basins |
 | R6 | Stage D and E: record file, tile bake reads it, old passes switched off; TERRAIN_VERSION bump, nine-tile rebake | the island in game |
 | R7 | runtime: sub-cell brooks from polylines; live water seeded from the record; falls and sounds read it | walk the island |
 | R8 | archive the retired code; list the dependent-system repairs | clean tree |
