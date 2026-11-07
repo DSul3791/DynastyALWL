@@ -14,7 +14,7 @@ class Ground:
 	extends RefCounted
 	var digs: Array = []   # [centre, radius]
 
-	func top(x: float, z: float) -> float:
+	func top(_x: float, z: float) -> float:
 		return -1.0 if z >= 40.0 and z < 48.0 else 1.0
 
 	func sdf(p: Vector3) -> float:
@@ -59,9 +59,10 @@ func _init() -> void:
 		var sj: int = int(round(z / 8.0))
 		return levels[sj * samples + si] if si >= 0 and sj >= 0 and si < samples and sj < samples else NAN
 
-	# The ditch: a row of digs from the river bank (z 40) north to z 20, 1.5 m deep, along x 100.
-	for step in range(12):
-		var c: Vector3 = Vector3(100.0, 0.5, 40.0 - step * 2.0)
+	# The ditch, dug the way the client's --dig-ditch does it: a 1.5 m sphere centred on the ground surface every 1.5 m, from the river bank
+	# (z 40) north to about z 20, along x 100. That is a 3 m wide ditch whose axis lies on a cell edge, as at the game's check spot.
+	for step in range(14):
+		var c: Vector3 = Vector3(100.0, 1.0, 40.0 - step * 1.5)
 		ground.digs.append([c, 1.5])
 		live.dig(c, 1.5, false)
 
