@@ -14,6 +14,8 @@ What the animal view already does for every model (do not rebuild): size from th
 ## Done means
 1. Installed and imported. 2. Drawn from the model, right length, facing its travel, feet on the ground. 3. Every role it uses (graze, alert, walk, run; warn and charge for fighters) plays a standing, fitting clip. 4. No clip carries the body away. 5. Server row, spawn biomes, carcass, sign, season and step sound in place, animal tests green. 6. Seen in the live game (shot runner or Dave).
 
+## Summary (7 Nov 2026): done in the model check 35 species (36 models with the calf); in progress: none; waiting for the live-game check: all 35; blocked: none.
+
 ## Status (7 Nov 2026, creature check pictures in E:/Software/godotDev/creature_check)
 | Creature | Species | 1-5 | 6 live game | Notes |
 |---|---|---|---|---|
@@ -40,9 +42,19 @@ What the animal view already does for every model (do not rebuild): size from th
 | Crow | 27 | done | waiting | Imported with wings spread: sized and grounded by its Walk pose (size_clip); feathers reach twice past its bones |
 | Pheasant | 28 | done | waiting | Walks on the ground, does not fly yet |
 | Goose | 29 | done | waiting | Walks on the ground, does not fly or swim yet |
+| Cow (and calf) | 30 | done | waiting | Farm: not spawned wild until the farm system places it. Its young are drawn from the calf model (young_model) |
+| Goat | 31 | done | waiting | Farm. Was invisible: its texture's alpha is not a cut-out (material entry "opaque") |
+| Chicken (hen, rooster) | 32 | done | waiting | Farm. Two looks of one species, each with its own clips |
+| Cat | 33 | done | waiting | Farm. Grazes sitting |
+| Dog (labrador, bloodhound) | 34 | done | waiting | Farm. Two looks; the bloodhound has no bark clip |
+| Wild ox (pack buffalo) | 35 | done | waiting | Wild, grassland herds, stands its ground |
 | Warthog | 38 | done | waiting | Savanna. Imported mid-run: sized by its Idle |
 
 New species are added with `python tools/add_species.py <spec.json>` (specs for batch 2 in E:/Software/godotDev/specs on the PC); `--clips` on the creature check lists a file's clips.
 
-## Next: batch 3, farm, one at a time: cow, calf, goat, chicken, rooster, cat, dogs, buffalo. Birds fly and geese swim: later, needs flight on the server.
+## Next
+- Farm animals need the farm and town system to place them (design to come).
+- Birds fly and geese swim: later, needs flight and swimming on the server.
+- Live-game check (point 6) for every creature, once 538, 540 and this batch are merged and the models are on Dave's PC (through Dino).
+- Left in the pack, wrong world for the island: see design/ANIMALS_BATCHES.md.
 ## Blocked: none.
