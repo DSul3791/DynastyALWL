@@ -1020,7 +1020,8 @@
 				"avoid": [
 					"bear"
 				],
-				"avoid_m": 120.0
+				"avoid_m": 120.0,
+				"respawn_s": 1800.0
 			},
 			"den": {
 				"den_m": 12.0,
