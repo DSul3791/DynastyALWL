@@ -68,6 +68,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 		print("  natural rivers: %d reaches, %d bent, longest %.0f m, mean sinuosity %.3f" % [
 			channels.reaches_made, channels.reaches_bent, channels.longest_reach_m, channels.sinuosity_sum / maxf(float(channels.sinuosity_count), 1.0)
 		])
+		print("  river sources (natural): %s" % str(channels.source_counts))
 		_lap("natural rivers", clock)
 		clock = Time.get_ticks_msec()
 	else:

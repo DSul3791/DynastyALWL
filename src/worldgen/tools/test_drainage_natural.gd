@@ -100,6 +100,25 @@ func _init() -> void:
 
 	_check(untouched > 0 and untouched < SIZE * SIZE / 2, "some ground carved, not most of it (%d cells)" % untouched)
 	_check(changed_far == 0, "ground more than 100 m from a river is untouched (%d changed)" % changed_far)
+	# Every river head has exactly one source (docs/water/terrain_water_pipeline.md B3): a lake, a spring cave or a spring pool, or it comes in over the edge.
+	var sourced: int = 0
+
+	for key in natural.source_counts:
+		sourced += int(natural.source_counts[key])
+
+	_check(natural.heads_seen > 0 and sourced == natural.heads_seen, "every river head has one source (%d heads, %s)" % [natural.heads_seen, str(natural.source_counts)])
+	var pools: int = 0
+	var floating: int = 0
+
+	for index in range(SIZE * SIZE):
+		if natural.basin_mask[index] == 1:
+			pools += 1
+
+			if not (natural.surface[index] > natural.bed[index]):
+				floating += 1
+
+	_check(int(natural.source_counts.get("pool", 0)) == 0 or pools > 0, "spring pools are cut (%d pool cells)" % pools)
+	_check(floating == 0, "every spring pool cell holds water over its bed (%d do not)" % floating)
 	print("failures: %d" % failures)
 	quit(1 if failures > 0 else 0)
 
