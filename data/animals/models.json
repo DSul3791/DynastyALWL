@@ -953,6 +953,38 @@
 				}
 			],
 			"size_clip": "idle pose"
+		},
+		"pronghorn": {
+			"scene": "res://assets/animals/pronghorn/SK_Pronghorn.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Pronghorn",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.4,
+			"run_mps": 12.0,
+			"stride_m": 1.2,
+			"clips": {
+				"0": "Idle",
+				"3": "Idle_Breathing_01",
+				"12": "Idle_Breathing_01",
+				"walk": "Walk_2",
+				"run": "Run"
+			},
+			"note": "WildMesh Pronghorn (Realistic Animals/Pronghorn/SK_Pronghorn.fbx). Same rig as the elk: Idle grazes head down, the real walk is Walk_2. Checked 7 Nov 2026.",
+			"length_m": 1.45,
+			"materials": [
+				{
+					"match": "Teeth",
+					"albedo": "res://assets/animals/pronghorn/Textures/T_Pronghorn_Teeth.png"
+				},
+				{
+					"match": "Head",
+					"albedo": "res://assets/animals/pronghorn/Textures/T_Pronghorn_Head.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/pronghorn/Textures/T_Pronghorn_Body.png"
+				}
+			]
 		}
 	}
 }
