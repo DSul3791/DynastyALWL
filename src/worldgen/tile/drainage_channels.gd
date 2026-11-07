@@ -986,7 +986,11 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 				var at: int = int(source["at"])
 				sites.append([at, maxf(flow.discharge[at], flow.discharge[index] if how == "up" else 0.0), false, source["path"], how])
 			elif slope > pond_slope:
+				# Dave 7 Nov 2026 (x 53724 z 69473: "head of a river with no headpond no lake and no cave"): a head with no spot for a pond up or
+				# down its river, too steep for one here and with no room for a cave, used to keep its river with no source. A river starts only at
+				# a spring (pond, lake or cave), so its reach dries down to where another river joins it.
 				steep += 1
+				dried += _dry_unsourced(index, fill, flow, size, threshold, up_count)
 			else:
 				sites.append([index, flow.discharge[index], false, PackedInt32Array(), "here"])
 
@@ -1156,6 +1160,21 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip, %d over ground at sea level" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip, skipped_sea])
 	print("  sources (Dave 2 Nov: up on a flat or down at the bottom, in a pool; 3 Nov: hillside heads keep their brook and get a spring cave, \"cave\"): %s heads checked; %d ponds raised to a flat above (brook cut down), %d moved down to the bottom (%d river cells above dried), the rest on the head" % [str(source_counts), moved_up, moved_down, dried])
 	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha, %d of them the tile's guaranteed lake), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, guaranteed, steep, POND_MAX_SLOPE_DEG])
+
+
+# Dries a river from a head that has no spring, down to the first cell another river flows into (or the frame's edge): no water is painted
+# there and the centre stage leaves it out (`_source_dry`). Returns the cells dried.
+func _dry_unsourced(head: int, fill, flow, size: int, threshold: float, up_count: PackedByteArray) -> int:
+	var k: int = head
+	var count: int = 0
+
+	while k >= 0 and flow.discharge[k] >= threshold and (k == head or up_count[k] < 2) and _source_dry[k] == 0:
+		surface[k] = NAN
+		_source_dry[k] = 1
+		count += 1
+		k = fill.receiver[k]
+
+	return count
 
 
 # Whether a spring cave has room at this head (Dave 3 Nov 2026): walking straight uphill from it, a passage rising CAVE_RISE gets CAVE_COVER_M of
