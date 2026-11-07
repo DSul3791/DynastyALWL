@@ -18,7 +18,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -150,6 +150,35 @@ func _make_species_body(number: int, id: int) -> Node3D:
 			var beaver: Node3D = _make_fox()
 			beaver.scale = Vector3.ONE * 0.6
 			return beaver
+		23:
+			var chamois: Node3D = _make_deer(id)      # stand-in until the model files are there
+			chamois.scale = Vector3.ONE * 0.6
+			return chamois
+		24:
+			var mink: Node3D = _make_fox()      # stand-in until the model files are there
+			mink.scale = Vector3.ONE * 0.45
+			return mink
+		25:
+			var raccoon: Node3D = _make_fox()      # stand-in until the model files are there
+			raccoon.scale = Vector3.ONE * 0.7
+			return raccoon
+		26:
+			var rat: Node3D = _make_rabbit()      # stand-in until the model files are there
+			rat.scale = Vector3.ONE * 0.5
+			return rat
+		27:
+			var crow: Node3D = _make_grouse()      # stand-in until the model files are there
+			crow.scale = Vector3.ONE * 1.0
+			return crow
+		28:
+			var pheasant: Node3D = _make_grouse()      # stand-in until the model files are there
+			pheasant.scale = Vector3.ONE * 1.3
+			return pheasant
+		29:
+			var goose: Node3D = _make_grouse()      # stand-in until the model files are there
+			goose.scale = Vector3.ONE * 1.8
+			return goose
+
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
@@ -409,7 +438,27 @@ func _make_model(number: int, id: int = 0) -> Node3D:
 
 	# Size from the mesh itself, not the file's units (an FBX may be in centimetres, metres, or carry its own root scale): the
 	# longest side of the rest-pose bounds is made row.length_m, and the feet are put on the ground.
-	var box: AABB = _model_bounds(rig, meshes, row.has("height_m"))
+	# "bounds": "mesh" sizes by the skinned mesh instead of the bones: a bird's feathers reach far past its bones (the crow's bone
+	# box is half its body), so a bone-sized crow was drawn twice too long.
+	var box: AABB = _model_bounds(rig, meshes, row.has("height_m") or str(row.get("bounds", "")) == "mesh")
+
+	# "size_clip": a model whose imported pose is not how it stands (the crow's is wings spread, three times its folded length) is
+	# sized and grounded by its bones in the first frame of that clip instead, grown by the same 6% as the rest-pose bones.
+	if row.has("size_clip"):
+		var size_players: Array = inst.find_children("*", "AnimationPlayer", true, false)
+
+		if not size_players.is_empty():
+			var sp: AnimationPlayer = size_players[0]
+			var size_name: String = _clip_full(sp, row, str(row["size_clip"]))
+
+			if size_name != "":
+				var posed: AABB = _clip_box(sp, sp.get_animation(size_name), rig)
+				var side: float = maxf(posed.size.x, maxf(posed.size.y, posed.size.z))
+
+				if side > 0.0001:
+					box = posed.grow(side * 0.06)
+			else:
+				_model_note(kind, "no clip %s to size by" % str(row["size_clip"]))
 	var longest: float = box.size.y if row.has("height_m") else maxf(box.size.x, maxf(box.size.y, box.size.z))
 
 	if longest <= 0.0001:
@@ -636,7 +685,10 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused:
 
 	for word in _ROLE_WORDS.get(role, []):
 		for full in player.get_animation_list():
-			var bare: String = str(full).get_slice("|", str(full).count("|")).to_lower()
+			var bare: String = str(full).get_slice("|", str(full).count("|")).to_lower().replace(" ", "_")      # "idle to walk fwd" reads as idle_to_walk_fwd
+
+			if bare.contains("dead") or bare.contains("death") or bare.contains("hit_") or bare.contains("interact") or bare.begins_with("start"):
+				continue      # the raccoon's "dead run" is not its run
 
 			if refused.has(str(full)):
 				continue
@@ -729,10 +781,15 @@ func _map_gap(x: Transform3D, y: Transform3D, probes: Array) -> float:
 # How tall the skeleton stands in the rig's space (the height of its bones' box) in a clip's first frame, or in its imported pose with no clip.
 # Worked out from the clip's own tracks and the bone rests, so it needs no running player.
 func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> float:
+	return _clip_box(player, anim, rig).size.y
+
+
+# The box of the skeleton's bones in the rig's space in a clip's first frame (or the imported pose with no clip).
+func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
 
 	if skeletons.is_empty():
-		return 0.0
+		return AABB()
 
 	var sk: Skeleton3D = skeletons[0]
 	var local: Array = []
@@ -807,8 +864,7 @@ func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> floa
 
 	var world: Array = []
 	world.resize(sk.get_bone_count())
-	var lo: float = INF
-	var hi: float = -INF
+	var box: AABB = AABB()
 
 	for i in sk.get_bone_count():
 		var chain: Array = []
@@ -822,11 +878,10 @@ func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> floa
 			var parent: int = sk.get_bone_parent(c)
 			world[c] = (world[parent] as Transform3D) * (local[c] as Transform3D) if parent >= 0 else local[c]
 
-		var y: float = (to_rig * (world[i] as Transform3D).origin).y
-		lo = minf(lo, y)
-		hi = maxf(hi, y)
+		var at: Vector3 = to_rig * (world[i] as Transform3D).origin
+		box = AABB(at, Vector3.ZERO) if i == 0 else box.expand(at)
 
-	return hi - lo if hi > lo else 0.0
+	return box
 
 
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
@@ -956,7 +1011,7 @@ func _strip_root_drift(player: AnimationPlayer, anim: Animation, rig: Node3D, ki
 
 		mps = maxf(mps, drift.length() / span)
 
-	if mps > 0.0:
+	if mps >= 0.3:      # a start clip drifts a few centimetres: too little to set the playing speed by (the mink's sprint start)
 		anim.set_meta("travel_mps", mps)
 		_model_note(kind, "clip %s travels %.1f m/s by itself: travel taken out (the server moves the animal), played at speed / %.1f" % [anim_name, mps, mps])
 

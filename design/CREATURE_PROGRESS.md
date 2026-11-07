@@ -33,6 +33,15 @@ What the animal view already does for every model (do not rebuild): size from th
 | Bighorn sheep | 20 | done | waiting | Its Idle_Breathing lies down: alert stands in Idle |
 | Mountain goat | 21 | done | waiting | |
 | Beaver | 22 | done | waiting | Grazes sitting up (Idle_2); does not swim |
+| Chamois | 23 | done | waiting | Idle_3 grazes, Alert stands |
+| Mink | 24 | done | waiting | No looping walk or run in the file: its start clips loop instead; alert stands up |
+| Raccoon | 25 | done | waiting | "dead run" was being picked as its run: death and hit clips are never picked by role words now |
+| Rat | 26 | done | waiting | Grazes sitting up |
+| Crow | 27 | done | waiting | Imported with wings spread: sized and grounded by its Walk pose (size_clip); feathers reach twice past its bones |
+| Pheasant | 28 | done | waiting | Walks on the ground, does not fly yet |
+| Goose | 29 | done | waiting | Walks on the ground, does not fly or swim yet |
 
-## Next (batch 2, one at a time): chamois, mink, raccoon, rat, crow, pheasant, goose. Then batch 3, farm: cow, calf, goat, chicken, rooster, cat, dogs, buffalo.
+New species are added with `python tools/add_species.py <spec.json>` (specs for batch 2 in E:/Software/godotDev/specs on the PC); `--clips` on the creature check lists a file's clips.
+
+## Next: batch 3, farm, one at a time: cow, calf, goat, chicken, rooster, cat, dogs, buffalo. Birds fly and geese swim: later, needs flight on the server.
 ## Blocked: none.

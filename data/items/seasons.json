@@ -2551,6 +2551,41 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"chamois": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"mink": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"raccoon": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"rat": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"crow": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {

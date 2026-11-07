@@ -383,6 +383,104 @@
 					"hint": "Gnawed bones and rags by the rocks. Goblins camp nearby."
 				}
 			]
+		},
+		"chamois": {
+			"group": "hoofed",
+			"track": "small pointed two-toed prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Small pointed hoof prints on a scree slope. Chamois crossed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Tiny dark pellets on a ledge. Chamois rested here."
+				}
+			]
+		},
+		"mink": {
+			"group": "pawed",
+			"track": "small five-toed prints in mud",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Tiny five-toed prints in the bank mud. A mink hunts here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Twisted dark scat full of fish scales on a rock. A mink marked it."
+				}
+			]
+		},
+		"raccoon": {
+			"group": "pawed",
+			"track": "small hand-like five-toed prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Prints like small hands in the mud. A raccoon foraged here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Scat in a heap at the foot of a tree. Raccoons use this spot."
+				}
+			]
+		},
+		"rat": {
+			"group": "pawed",
+			"track": "tiny prints with a tail drag",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Tiny prints and a thin tail line. Rats run here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small dark pellets along a bank. Rats live close by."
+				}
+			]
+		},
+		"crow": {
+			"group": "bird",
+			"track": "three-toed prints, one toe back",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Slim three-toed prints in a row. Crows walked here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "White splashes under a branch. Crows roost above."
+				}
+			]
+		},
+		"pheasant": {
+			"group": "bird",
+			"track": "three-toed prints with a long middle toe",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Long three-toed prints at the field edge. A pheasant walked here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small droppings near a dust bath. Pheasants are close."
+				}
+			]
+		},
+		"goose": {
+			"group": "bird",
+			"track": "webbed prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Broad webbed prints by the water. Geese grazed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Green droppings on the grass. A flock of geese fed here."
+				}
+			]
 		}
 	}
 }

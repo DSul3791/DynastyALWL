@@ -1,5 +1,5 @@
 {
-	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover. Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it).",
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover. Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones.",
 	"species": {
 		"bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -503,6 +503,179 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Beaver"
+		},
+		"chamois": {
+			"scene": "res://assets/animals/chamois/SK_ChamoisMale.fbx",
+			"pack": "WildMesh3D/Realistic Animals/ChamoisMale",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.3,
+			"run_mps": 9.0,
+			"stride_m": 0.9,
+			"clips": {
+				"0": "Idle_3",
+				"3": "Alert",
+				"12": "Idle_2",
+				"walk": "Walk",
+				"run": "Run"
+			},
+			"note": "WildMesh Chamois male (Realistic Animals/ChamoisMale/SK_ChamoisMale.fbx). Checked 7 Nov 2026: Idle_3 grazes head down, Alert stands head up; clips are in place.",
+			"length_m": 1.25,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/chamois/Textures/T_ChamoisMale.png"
+				}
+			]
+		},
+		"mink": {
+			"scene": "res://assets/animals/mink/SK_AmericanMink.fbx",
+			"pack": "WildMesh3D/Realistic Animals/AmericanMink",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.8,
+			"run_mps": 5.0,
+			"stride_m": 0.3,
+			"clips": {
+				"0": "idle_eat_01",
+				"3": "idle_alerted_look_01",
+				"12": "idle",
+				"walk": "starttrot_fwd_01",
+				"run": "startsprint_fwd_01"
+			},
+			"note": "WildMesh American Mink (Realistic Animals/AmericanMink/SK_AmericanMink.fbx). Checked 7 Nov 2026: the file has no looping walk or run, only start clips; starttrot_fwd_01 and startsprint_fwd_01 loop as walk and run. Alert stands up on its hind legs.",
+			"length_m": 0.6,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/mink/Textures/T_AmericanMink.png"
+				}
+			]
+		},
+		"raccoon": {
+			"scene": "res://assets/animals/raccoon/SK_Racoon.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Racoon",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.8,
+			"run_mps": 5.0,
+			"stride_m": 0.4,
+			"clips": {
+				"0": "idle eat",
+				"3": "idle 3",
+				"12": "rest idle",
+				"walk": "trot fwd",
+				"run": "sprint fwd"
+			},
+			"note": "WildMesh Raccoon (Realistic Animals/Racoon/SK_Racoon.fbx).",
+			"length_m": 0.75,
+			"materials": [
+				{
+					"match": "Card",
+					"albedo": "res://assets/animals/raccoon/Textures/T_Racoon_Cards.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/raccoon/Textures/T_Racoon_Body.png"
+				}
+			]
+		},
+		"rat": {
+			"scene": "res://assets/animals/rat/SK_Rat.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Rat",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.5,
+			"run_mps": 3.0,
+			"stride_m": 0.12,
+			"clips": {
+				"0": "Idle",
+				"3": "NeutralStand01",
+				"12": "NeutralStand00",
+				"walk": "Walk",
+				"run": "Run"
+			},
+			"note": "WildMesh Rat (Realistic Animals/Rat/SK_Rat.fbx).",
+			"length_m": 0.4,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/rat/Textures/T_Rat.png"
+				}
+			]
+		},
+		"crow": {
+			"scene": "res://assets/animals/crow/SK_Crow.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Crow",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.6,
+			"run_mps": 4.0,
+			"stride_m": 0.2,
+			"clips": {
+				"0": "Look",
+				"3": "Look2",
+				"12": "Look",
+				"walk": "Walk",
+				"run": "WalkSpeed"
+			},
+			"note": "WildMesh Crow (Realistic Animals/Crow/SK_Crow.fbx). Its imported pose has the wings spread: sized by its bones in the Walk clip (size_clip). Checked 7 Nov 2026. Its feathers reach about twice past its bones, so length_m 0.25 (bone length) draws a crow about 0.45 m long.",
+			"length_m": 0.25,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/crow/Textures/T_Crow.png"
+				}
+			],
+			"size_clip": "Walk"
+		},
+		"pheasant": {
+			"scene": "res://assets/animals/pheasant/SK_Pheasant.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Pheasant",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.6,
+			"run_mps": 4.0,
+			"stride_m": 0.2,
+			"clips": {
+				"0": "StandGrazingA",
+				"3": "Idle_Breathing",
+				"12": "Idle",
+				"walk": "WalkMedium_NoRootMotion",
+				"run": "RunFast_NoRootMotion"
+			},
+			"note": "WildMesh Pheasant (Realistic Animals/Pheasant/SK_Pheasant.fbx).",
+			"length_m": 0.8,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/pheasant/Textures/T_Pheasant.png"
+				}
+			]
+		},
+		"goose": {
+			"scene": "res://assets/animals/goose/SK_Goose.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Goose",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.6,
+			"run_mps": 4.0,
+			"stride_m": 0.2,
+			"clips": {
+				"0": "StandGrazingA",
+				"3": "Idle_Breathing",
+				"12": "Idle",
+				"walk": "WalkMedium",
+				"run": "RunFast"
+			},
+			"note": "WildMesh Goose (Realistic Animals/Goose/SK_Goose.fbx).",
+			"length_m": 0.9,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/goose/Textures/T_Goose.png"
+				}
+			]
 		}
 	}
 }
