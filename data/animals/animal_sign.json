@@ -566,6 +566,34 @@
 				}
 			]
 		},
+		"puma": {
+			"group": "clawed",
+			"track": "big round prints, no claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Big round cat prints without claw marks. A puma prowls here."
+				},
+				{
+					"kind": "kill",
+					"hint": "A deer carcass half buried under leaves. A puma cached it."
+				}
+			]
+		},
+		"pronghorn": {
+			"group": "hoofed",
+			"track": "pointed heart-shaped prints, far apart",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Pointed hoof prints, far apart. Pronghorn ran through here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small pellets in a scrape. Pronghorn graze nearby."
+				}
+			]
+		},
 		"warthog": {
 			"group": "hoofed",
 			"track": "small cloven prints and rooted soil",
