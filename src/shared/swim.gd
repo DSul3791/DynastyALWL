@@ -69,19 +69,21 @@ static func breath_drain(speed: float, rest_speed: float, rest_mult: float, hard
 const DEEP_SEA_BED_M := -1000.0
 
 
-static func water_at(y: float, surface: float, ground: float) -> Dictionary:
+static func water_at(y: float, surface: float, ground: float, sea: float = 0.0) -> Dictionary:
+	# `sea` is the sea surface here (M5: the swell's height, ocean_waves.gd height(), on the client; 0 m where nobody passes it). Whether
+	# ground is under the sea is still decided at the still level, 0 m, so a passing crest does not flood a beach.
 	if is_nan(ground):
 		if is_nan(surface):
-			if y >= 0.0:
+			if y >= maxf(sea, 0.0):
 				return {}
 
-			surface = 0.0
+			surface = sea
 			ground = DEEP_SEA_BED_M
 		elif surface < 0.0 and y < 0.0:
-			surface = 0.0
+			surface = sea
 			ground = DEEP_SEA_BED_M
 	elif ground < 0.0 and (is_nan(surface) or surface < 0.0):
-		surface = 0.0
+		surface = sea
 
 	if is_nan(surface):
 		return {}

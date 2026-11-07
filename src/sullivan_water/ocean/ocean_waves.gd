@@ -1,6 +1,6 @@
 extends RefCounted
 
-# Sullivan water M5, first step (Sonny, 7 Nov 2026): the sea's one wave set, and the phase origin that keeps it exact far from the world's
+# Sullivan water M5 (Sonny, 7 Nov 2026): the sea's one wave set, and the phase origin that keeps it exact far from the world's
 # corner. Design: docs/water/ocean_m5.md. Guide sections 6 and 28, test F10, knowledge doc water.md lesson 3.
 #
 # The sea's swell is four waves (src/client/water_material.gd sea_slope). A wave's phase is k * (d . p) - w * t. Our world is about 54 km
@@ -23,13 +23,18 @@ const WAVES: Array[Vector4] = [
 	Vector4(-0.97, -0.24, 6.0, 0.40),
 ]
 
+# M5 second step: each wave's height in m (amplitude). Only the long swell lifts the surface (steepness k * a about 0.03, a calm sea); the
+# short waves stay slopes for the light. The shader's SEA_HEIGHTS_M is the same list.
+const HEIGHTS_M: Array[float] = [0.30, 0.14, 0.0, 0.0]
+
 
 static func origin_for(camera_xz: Vector2) -> Vector2:
 	return (camera_xz / ORIGIN_SNAP_M).round() * ORIGIN_SNAP_M
 
 
-# Per wave, in 64-bit floats: (k * (d . origin)) mod 2 pi and (CREST_K * k * (perp . origin)) mod 2 pi, for the shader's sea_phase uniform.
-static func phases_at(origin: Vector2) -> PackedVector2Array:
+# Per wave, in 64-bit floats: (k * (d . origin) - w * t) mod 2 pi and (CREST_K * k * (perp . origin)) mod 2 pi, for the shader's sea_phase
+# uniform. With t the time is folded in too (the shader's sea_clock), so the shader's own TIME, which rolls over, is not used.
+static func phases_at(origin: Vector2, t: float = 0.0) -> PackedVector2Array:
 	var out: PackedVector2Array = PackedVector2Array()
 
 	for wv in WAVES:
@@ -37,7 +42,7 @@ static func phases_at(origin: Vector2) -> PackedVector2Array:
 		# Scalar sums, not Vector2.dot: Vector2 maths runs in 32-bit floats in Godot, which is the very error this file removes (David4, #515).
 		var along: float = float(wv.x) * float(origin.x) + float(wv.y) * float(origin.y)
 		var across: float = -float(wv.y) * float(origin.x) + float(wv.x) * float(origin.y)
-		out.append(Vector2(fposmod(k * along, TAU), fposmod(CREST_K * k * across, TAU)))
+		out.append(Vector2(fposmod(k * along - t * sqrt(G * k) * SPEED, TAU), fposmod(CREST_K * k * across, TAU)))
 
 	return out
 
@@ -61,10 +66,30 @@ static func slope(p: Vector2, t: float) -> Vector2:
 	return Vector2(sx, sz)
 
 
-# Hands the waves and the phase origin to a sea material (water_material.gd). Call when origin_for(camera) changes.
-static func apply(material: ShaderMaterial, origin: Vector2) -> void:
+# The sea surface's height at world p, time t (s): what the shader lifts the plane by near the camera, for swimmers and the underwater check.
+static func height(p: Vector2, t: float) -> float:
+	var h: float = 0.0
+
+	for i in range(WAVES.size()):
+		if HEIGHTS_M[i] == 0.0:
+			continue
+
+		var wv: Vector4 = WAVES[i]
+		var k: float = TAU / wv.z
+		var along: float = float(wv.x) * float(p.x) + float(wv.y) * float(p.y)    # 64-bit scalar sums (see phases_at)
+		var across: float = -float(wv.y) * float(p.x) + float(wv.x) * float(p.y)
+		var crest: float = 0.65 + 0.35 * sin(CREST_K * k * across + float(i) * 1.7)
+		h += HEIGHTS_M[i] * crest * sin(k * along - t * sqrt(G * k) * SPEED)
+
+	return h
+
+
+# Hands the phase origin and the clock to a sea material (water_material.gd). Call every frame: t is the sea clock (seconds), folded into the
+# phases in 64-bit floats, so the shader's swell and height() are the same water at the same moment.
+static func apply(material: ShaderMaterial, origin: Vector2, t: float) -> void:
 	if material == null:
 		return
 
 	material.set_shader_parameter("sea_origin", origin)
-	material.set_shader_parameter("sea_phase", phases_at(origin))
+	material.set_shader_parameter("sea_phase", phases_at(origin, t))
+	material.set_shader_parameter("sea_clock", 1.0)

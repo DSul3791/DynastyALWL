@@ -1093,7 +1093,24 @@ func _top_up(players: Array, only: int) -> void:
 	var never: float = float(cfg.get("never_within_m", 60.0))
 
 	for p in [players[only]]:
+		# One pass over the animals counts them all near this player, by species (it was one pass per species: 22 species x 150
+		# animals each top-up once species 17 to 22 came in, Tyler 7 Nov 2026: tick 1.89 -> 2.14 ms).
+		var spawn_max_sq: float = pow(float(cfg.get("spawn_max_m", 250.0)), 2.0)
+		var near_by_sp: Dictionary = {}
+		var all_near: int = 0
+
+		for id in animals:
+			var at: Vector3 = animals[id]["pos"]
+
+			if (at.x - p.x) * (at.x - p.x) + (at.z - p.z) * (at.z - p.z) <= spawn_max_sq:
+				all_near += 1
+				near_by_sp[animals[id]["sp"]] = int(near_by_sp.get(animals[id]["sp"], 0)) + 1
+
+		var counted: int = animals.size()
+
 		for sp in cfg.get("species", {}):
+			all_near += animals.size() - counted      # what the species before spawned this pass (all within spawn_max_m of this player)
+			counted = animals.size()
 			var def: Dictionary = species_def(sp)
 
 			if not bool(def.get("model", true)):
@@ -1103,13 +1120,7 @@ func _top_up(players: Array, only: int) -> void:
 				_top_up_lair(sp, def, p, players)
 				continue
 
-			var have: int = 0
-			var all_near: int = 0
-
-			for id in animals:
-				if Vector2(animals[id]["pos"].x - p.x, animals[id]["pos"].z - p.z).length() <= float(cfg.get("spawn_max_m", 250.0)):
-					all_near += 1
-					have += 1 if animals[id]["sp"] == sp else 0
+			var have: int = int(near_by_sp.get(sp, 0))
 
 			if have >= int(def.get("target_per_player", 6)) or all_near >= per_player or animals.size() >= int(cfg.get("server_cap", 150)):
 				continue

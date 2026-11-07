@@ -1178,6 +1178,529 @@
 				"hp_x": 0.3
 			},
 			"note_temperament": "Dave 7 Nov 2026: donkeys added (MikeW, first values copied from the horse, calmer and slower)."
+		},
+		"lynx": {
+			"number": 17,
+			"name": "Lynx",
+			"target_per_player": 1,
+			"spawn_share": 0.25,
+			"health": 30.0,
+			"walk_mps": 1.5,
+			"flee_mps": 12.0,
+			"spook_m": 30.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				4.0,
+				14.0
+			],
+			"wander_m": 12.0,
+			"flee_run_m": 50.0,
+			"herd": [],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.0,
+				2.5
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.55,
+			"zig_deg": 20.0,
+			"zig_leg_m": 12.0,
+			"herd_pull_m": 0.0,
+			"eye_m": 0.7,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": true
+			},
+			"biomes": {
+				"boreal_forest": 1.0,
+				"mixed_forest": 0.8,
+				"temperate_forest": 0.5,
+				"alpine_meadow": 0.5
+			},
+			"active": {
+				"day": 0.15,
+				"dusk": 0.9,
+				"night": 1.0
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 10.0,
+				"charge_m": 6.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 1.4,
+				"damage": 10.0,
+				"recover_s": 3.0,
+				"calm_m": 6.0,
+				"cool_s": 30.0,
+				"corner_m": 2.5,
+				"corner_warn_s": 0.6,
+				"provoked_m": 4.0,
+				"provoked_warn_s": 0.5,
+				"threat_m": 2.5,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.6,
+				"neutral": 0.25,
+				"friendly": 0.15
+			},
+			"note": "Dave 7 Nov 2026 (add all the animals we have models for), batch 1. A lynx is a shy night hunter of boreal and mixed forest and alpine meadow (FAUNA_BY_BIOME rarity 4): it keeps well away from a player, bites one who corners it. Fox movement numbers, bigger and rarer."
+		},
+		"black_bear": {
+			"number": 18,
+			"name": "Black bear",
+			"target_per_player": 1,
+			"spawn_share": 0.3,
+			"health": 90.0,
+			"protective_share": 0.0,
+			"defend": {
+				"warn_m": 0.0,
+				"warn_s": 1.5,
+				"charge_mps": 10.0,
+				"charge_m": 18.0,
+				"turn_rad_s": 0.35,
+				"hit_m": 2.0,
+				"damage": 25.0,
+				"recover_s": 4.0,
+				"calm_m": 24.0,
+				"cool_s": 25.0,
+				"corner_m": 6.0,
+				"corner_warn_s": 0.8,
+				"provoked_m": 9.0,
+				"provoked_warn_s": 0.6,
+				"threat_m": 6.0,
+				"threat_warn_s": 0.8
+			},
+			"walk_mps": 1.3,
+			"spook_m": 32.0,
+			"safe_m": 50.0,
+			"graze_s": [
+				10.0,
+				40.0
+			],
+			"wander_m": 20.0,
+			"flee_run_m": 40.0,
+			"alarm_s": [
+				0.2,
+				0.9
+			],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.5,
+				3.0
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.5,
+			"zig_deg": 20.0,
+			"zig_leg_m": 15.0,
+			"eye_m": 1.1,
+			"flee_mps": 9.0,
+			"herd_pull_m": 0.0,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 2.0,
+				"forest": true
+			},
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0,
+				"boreal_forest": 0.8
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 1.0,
+				"night": 0.05
+			},
+			"temperament": {
+				"defensive": 0.6,
+				"neutral": 0.25,
+				"aggressive": 0.15
+			},
+			"seasons": {
+				"spring": {
+					"threat_x": 1.5,
+					"spook_x": 0.7
+				},
+				"autumn": {
+					"threat_x": 0.7,
+					"spook_x": 1.2
+				}
+			},
+			"young": {
+				"share": 0.3,
+				"count": [
+					1,
+					3
+				],
+				"seasons": [
+					"spring",
+					"summer",
+					"autumn"
+				],
+				"follow_m": 4.0,
+				"spook_x": 1.3,
+				"between_m": 10.0,
+				"warn_s": 0.5,
+				"hp_x": 0.3
+			},
+			"note": "Dave 7 Nov 2026, batch 1. A black bear is smaller and shyer than the brown bear and has no den: it wanders forest and berry ground, runs from a player at spook_m, charges only one who gets close or corners it."
+		},
+		"elk": {
+			"number": 19,
+			"name": "Elk",
+			"target_per_player": 2,
+			"spawn_share": 0.35,
+			"health": 70.0,
+			"walk_mps": 1.6,
+			"flee_mps": 13.0,
+			"spook_m": 35.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				8.0,
+				25.0
+			],
+			"wander_m": 14.0,
+			"flee_run_m": 70.0,
+			"herd": [
+				2,
+				5
+			],
+			"alarm_s": [
+				0.3,
+				1.0
+			],
+			"alert_m": 55.0,
+			"alert_s": [
+				2.0,
+				4.0
+			],
+			"burst_s": 8.0,
+			"trot_share": 0.45,
+			"zig_deg": 10.0,
+			"zig_leg_m": 20.0,
+			"herd_pull_m": 14.0,
+			"eye_m": 2.0,
+			"protective_share": 0.0,
+			"habitat": {
+				"slope_max": 0.5,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": true
+			},
+			"defend": {
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 10.0,
+				"charge_m": 10.0,
+				"turn_rad_s": 0.25,
+				"hit_m": 2.2,
+				"damage": 18.0,
+				"recover_s": 5.0,
+				"calm_m": 10.0,
+				"cool_s": 30.0,
+				"corner_m": 4.0,
+				"corner_warn_s": 1.2,
+				"provoked_m": 6.0,
+				"provoked_warn_s": 0.8,
+				"threat_m": 4.0,
+				"threat_warn_s": 0.8
+			},
+			"biomes": {
+				"mixed_forest": 1.0,
+				"temperate_forest": 0.7,
+				"temperate_grassland": 0.8,
+				"boreal_forest": 0.5,
+				"alpine_meadow": 0.4
+			},
+			"active": {
+				"day": 0.6,
+				"dusk": 1.0,
+				"night": 0.3
+			},
+			"temperament": {
+				"defensive": 0.7,
+				"neutral": 0.3
+			},
+			"seasons": {
+				"spring": {
+					"threat_x": 1.2
+				},
+				"autumn": {
+					"threat_x": 1.5
+				}
+			},
+			"young": {
+				"share": 0.3,
+				"count": [
+					1,
+					2
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 10.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note": "Dave 7 Nov 2026, batch 1. An elk is a herd animal of open mixed forest and meadow edge, taller and fleeter than a moose, a bull strikes one who corners it. Deer herd habits with moose size."
+		},
+		"bighorn": {
+			"number": 20,
+			"name": "Bighorn sheep",
+			"target_per_player": 3,
+			"health": 30.0,
+			"walk_mps": 1.6,
+			"flee_mps": 11.0,
+			"spook_m": 35.0,
+			"safe_m": 65.0,
+			"graze_s": [
+				5.0,
+				20.0
+			],
+			"wander_m": 10.0,
+			"flee_run_m": 60.0,
+			"herd": [
+				3,
+				6
+			],
+			"alarm_s": [
+				0.2,
+				0.9
+			],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.5,
+				3.0
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.5,
+			"zig_deg": 15.0,
+			"zig_leg_m": 15.0,
+			"herd_pull_m": 12.0,
+			"eye_m": 1.0,
+			"habitat": {
+				"slope_max": 1.2,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": false
+			},
+			"biomes": {
+				"alpine_meadow": 1.0,
+				"bare_rock": 0.6,
+				"tundra": 0.5,
+				"heath": 0.3
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.5,
+				"night": 0.05
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 8.0,
+				"charge_m": 8.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 1.4,
+				"damage": 10.0,
+				"recover_s": 3.0,
+				"calm_m": 8.75,
+				"cool_s": 30.0,
+				"corner_m": 3.0,
+				"corner_warn_s": 0.6,
+				"provoked_m": 5.25,
+				"provoked_warn_s": 0.5,
+				"threat_m": 3.0,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.8,
+				"defensive": 0.2
+			},
+			"seasons": {
+				"autumn": {
+					"threat_x": 1.6
+				}
+			},
+			"young": {
+				"share": 0.25,
+				"count": [
+					1,
+					2
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 5.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note": "Dave 7 Nov 2026, batch 1. Bighorn sheep graze alpine meadow and bare rock in small flocks and run to steep ground when spooked (wild sheep, FAUNA_BY_BIOME rarity 3).",
+			"spawn_share": 0.3
+		},
+		"mountain_goat": {
+			"number": 21,
+			"name": "Mountain goat",
+			"target_per_player": 2,
+			"health": 28.0,
+			"walk_mps": 1.4,
+			"flee_mps": 9.0,
+			"spook_m": 28.0,
+			"safe_m": 60.0,
+			"graze_s": [
+				5.0,
+				20.0
+			],
+			"wander_m": 10.0,
+			"flee_run_m": 60.0,
+			"herd": [
+				2,
+				3
+			],
+			"alarm_s": [
+				0.2,
+				0.9
+			],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.5,
+				3.0
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.5,
+			"zig_deg": 15.0,
+			"zig_leg_m": 15.0,
+			"herd_pull_m": 8.0,
+			"eye_m": 0.9,
+			"habitat": {
+				"slope_max": 1.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": false
+			},
+			"biomes": {
+				"bare_rock": 1.0,
+				"alpine_meadow": 0.9,
+				"tundra": 0.4
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.5,
+				"night": 0.05
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 8.0,
+				"charge_m": 8.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 1.4,
+				"damage": 9.0,
+				"recover_s": 3.0,
+				"calm_m": 8.75,
+				"cool_s": 30.0,
+				"corner_m": 3.0,
+				"corner_warn_s": 0.6,
+				"provoked_m": 5.25,
+				"provoked_warn_s": 0.5,
+				"threat_m": 3.0,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.8,
+				"defensive": 0.2
+			},
+			"seasons": {
+				"autumn": {
+					"threat_x": 1.5
+				}
+			},
+			"young": {
+				"share": 0.25,
+				"count": [
+					1,
+					2
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 5.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note": "Dave 7 Nov 2026, batch 1. Mountain goats live on the highest bare rock and alpine meadow, singly or in pairs, and climb steep slopes that stop a hunter (FAUNA_BY_BIOME rarity 3).",
+			"spawn_share": 0.3
+		},
+		"beaver": {
+			"number": 22,
+			"name": "Beaver",
+			"target_per_player": 2,
+			"health": 14.0,
+			"walk_mps": 0.9,
+			"flee_mps": 4.0,
+			"spook_m": 20.0,
+			"safe_m": 40.0,
+			"graze_s": [
+				3.0,
+				10.0
+			],
+			"wander_m": 6.0,
+			"flee_run_m": 25.0,
+			"alert_m": 24.0,
+			"alert_s": [
+				1.0,
+				2.0
+			],
+			"burst_s": 3.0,
+			"trot_share": 0.5,
+			"zig_deg": 35.0,
+			"zig_leg_m": 8.0,
+			"eye_m": 0.35,
+			"habitat": {
+				"slope_max": 0.5,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 2.0,
+				"near_fresh_water_m": 25.0,
+				"forest": true
+			},
+			"biomes": {
+				"mixed_forest": 1.0,
+				"boreal_forest": 1.0,
+				"temperate_forest": 0.7,
+				"marsh": 0.8
+			},
+			"active": {
+				"day": 0.3,
+				"dusk": 1.0,
+				"night": 0.8
+			},
+			"note": "Dave 7 Nov 2026, batch 1. A beaver keeps to the water edge in forest and marsh, mostly at dusk and night, and slips away from a player (FAUNA_BY_BIOME rarity 3). Rabbit movement numbers, no burrow, slow on land; it does not swim in this version.",
+			"spawn_share": 0.4
 		}
 	},
 	"senses": {
