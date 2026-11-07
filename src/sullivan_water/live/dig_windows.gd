@@ -13,8 +13,11 @@ extends RefCounted
 # - A region's border cells that are wet in the 8 m levels are held at that level (fixed-stage boundaries, booked in the ledger), so a
 #   river flows in and out. Its dry border is closed: guide 26.2 FROZEN_CLOSED, a labelled limitation until the 8 m field takes 2 m
 #   water back (later in M4).
-# - When the tiles would pass MAX_TILES, the oldest regions close (labelled limitation: their 2 m water is dropped and the 8 m levels show
-#   again; the log says how much). When the join alone would pass MAX_TILES, only the new tiles open, beside the others, unjoined.
+# - When the tiles would pass MAX_TILES, the region nearest rest (smallest head across any wet face) goes to SLEEP: it stops stepping
+#   but keeps every cell's water and is still drawn (guide 26.2: never discard a sleeping region's inventory). A dig that reaches a
+#   sleeping region wakes it: it joins the new grid like a running one, its water copied exactly. At most MAX_SLEEPING sleep; past that
+#   the oldest is dropped (labelled limitation until saving, M8; the log says how much). When the join alone would pass MAX_TILES, only
+#   the new tiles open, beside the others, unjoined.
 # - publish(): each region's water drawn back into the hub's 8 m levels, so the existing client drawing shows it (an 8 m sample shows the
 #   mean surface of its wet 2 m cells, or nothing when fewer than MIN_WET of its 16 cells are wet). Drawing at 2 m is milestone M6.
 #
@@ -32,12 +35,14 @@ const MAX_TILES := 4           # tiles running at once, over all regions (the sa
 const MIN_WET := 4             # of the 16 cells under an 8 m sample, how many must be wet for the sample to show water
 const DRAW_M := 0.05           # thinner 2 m water than this is not counted as wet
 const PER := 4                 # 2 m cells along one 8 m sample
+const MAX_SLEEPING := 32       # sleeping regions kept (each at most MAX_TILES tiles: about 0.7 MB)
 
 var source = null
-var windows: Array = []        # the regions, oldest first: each {"grid", "adapter", "coordinator", "origin": Vector2, "tiles": Rect2i}
+var windows: Array = []        # the running regions, oldest first: each {"grid", "adapter", "coordinator", "origin": Vector2, "tiles": Rect2i}
+var sleeping: Array = []       # regions put to sleep for the tile budget, oldest first, same shape; not stepped, still drawn
 var built: int = 0
 var joined: int = 0            # regions that were joined into a bigger one
-var closed_m3: float = 0.0     # water dropped by regions closed for the tile budget
+var closed_m3: float = 0.0     # water dropped with sleeping regions past MAX_SLEEPING
 var last_copied_m3: float = 0.0   # water the newest region copied from the regions it joined
 var refused: int = 0
 var _queue: Array = []         # [center: Vector3, radius: float, add: bool]
@@ -120,6 +125,10 @@ func _open(wanted: Rect2i, level_at: Callable) -> void:
 		if _touches(win["tiles"], rect):
 			joining.append(win)
 
+	for win in sleeping:
+		if win["tiles"].intersects(rect):
+			joining.append(win)   # woken: its cells cannot be held twice
+
 	for win in joining:
 		rect = rect.merge(win["tiles"])
 
@@ -128,9 +137,9 @@ func _open(wanted: Rect2i, level_at: Callable) -> void:
 		rect = wanted
 		joining = []
 
-		for win in windows:
+		for win in windows + sleeping:
 			if win["tiles"].intersects(rect):
-				joining.append(win)   # overlapping tiles cannot run twice; whatever overlaps must join or close
+				joining.append(win)   # overlapping tiles cannot be held twice; whatever overlaps must join
 				rect = rect.merge(win["tiles"])
 
 		if rect.get_area() > MAX_TILES:
@@ -183,13 +192,25 @@ func _open(wanted: Rect2i, level_at: Callable) -> void:
 
 	for win in joining:
 		windows.erase(win)
+		sleeping.erase(win)
 		joined += 1
 
-	# The tile budget: the oldest regions close.
+	# The tile budget: the running region nearest rest goes to sleep, keeping its water.
 	while _tiles_running() + rect.get_area() > MAX_TILES and not windows.is_empty():
-		var gone = windows.pop_front()
+		var calm = windows[0]
+
+		for win in windows:
+			if win["grid"].max_wet_head() < calm["grid"].max_wet_head():
+				calm = win
+
+		windows.erase(calm)
+		sleeping.append(calm)
+		print("water live: region %s sleeps for the %d tile budget, keeping %.0f m3 (head %.3f m)" % [str(calm["tiles"]), MAX_TILES, calm["grid"].total_volume(), calm["grid"].max_wet_head()])
+
+	while sleeping.size() > MAX_SLEEPING:
+		var gone = sleeping.pop_front()
 		closed_m3 += gone["grid"].total_volume()
-		print("water live: region %s closed for the %d tile budget, %.0f m3 of 2 m water dropped (the 8 m levels show again)" % [str(gone["tiles"]), MAX_TILES, gone["grid"].total_volume()])
+		print("water live: sleeping region %s dropped past %d sleeping, %.0f m3 of 2 m water lost (the 8 m levels show again)" % [str(gone["tiles"]), MAX_SLEEPING, gone["grid"].total_volume()])
 
 	windows.append({"grid": grid, "adapter": adapter, "coordinator": coordinator, "origin": origin, "tiles": rect})
 	built += 1
@@ -228,7 +249,7 @@ func _tiles_running() -> int:
 func publish(levels: PackedFloat32Array, samples: int, x0: float, z0: float) -> bool:
 	var changed: bool = false
 
-	for win in windows:
+	for win in sleeping + windows:
 		var grid = win["grid"]
 		var o: Vector2 = win["origin"]
 		var si0: int = int(round((o.x - x0) / 8.0))
