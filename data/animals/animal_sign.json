@@ -451,6 +451,90 @@
 					"hint": "Green droppings on the grass. A flock of geese fed here."
 				}
 			]
+		},
+		"cow": {
+			"group": "hoofed",
+			"track": "broad cloven hoof prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Broad cloven prints in the mud. Cattle walked here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "A wide dung pat. Cattle grazed here."
+				}
+			]
+		},
+		"goat": {
+			"group": "hoofed",
+			"track": "small cloven prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Small cloven prints. Goats browsed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small round pellets. Goats are near."
+				}
+			]
+		},
+		"chicken": {
+			"group": "bird",
+			"track": "three-toed scratch marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Scratched-up earth and three-toed prints. Chickens fed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small droppings and a loose feather. Chickens roost near."
+				}
+			]
+		},
+		"cat": {
+			"group": "pawed",
+			"track": "small round prints without claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Small round prints, no claws. A cat passed here."
+				},
+				{
+					"kind": "scratch",
+					"hint": "Fine claw scratches on a post. A cat sharpens its claws here."
+				}
+			]
+		},
+		"dog": {
+			"group": "pawed",
+			"track": "four-toed prints with claw tips",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Four-toed prints with claw tips, wandering. A dog roamed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Dog dung by the path. Someone's dog was here."
+				}
+			]
+		},
+		"buffalo": {
+			"group": "hoofed",
+			"track": "huge cloven prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Huge cloven prints in a trampled line. Wild oxen passed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Great dung pats across the grass. A herd of wild oxen grazed here."
+				}
+			]
 		}
 	}
 }

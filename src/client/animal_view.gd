@@ -18,7 +18,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose", 30: "cow", 31: "goat", 32: "chicken", 33: "cat", 34: "dog", 35: "buffalo"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -178,6 +178,30 @@ func _make_species_body(number: int, id: int) -> Node3D:
 			var goose: Node3D = _make_grouse()      # stand-in until the model files are there
 			goose.scale = Vector3.ONE * 1.8
 			return goose
+		30:
+			var cow: Node3D = _make_horse(id)      # stand-in until the model files are there
+			cow.scale = Vector3.ONE * 0.85
+			return cow
+		31:
+			var goat: Node3D = _make_deer(id)      # stand-in until the model files are there
+			goat.scale = Vector3.ONE * 0.6
+			return goat
+		32:
+			var chicken: Node3D = _make_grouse()      # stand-in until the model files are there
+			chicken.scale = Vector3.ONE * 1.0
+			return chicken
+		33:
+			var cat: Node3D = _make_fox()      # stand-in until the model files are there
+			cat.scale = Vector3.ONE * 0.55
+			return cat
+		34:
+			var dog: Node3D = _make_wolf()      # stand-in until the model files are there
+			dog.scale = Vector3.ONE * 0.7
+			return dog
+		35:
+			var buffalo: Node3D = _make_moose(id)      # stand-in until the model files are there
+			buffalo.scale = Vector3.ONE * 1.0
+			return buffalo
 
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
@@ -618,7 +642,8 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 
 						# Fur cards (the ruff round a bear's neck, lashes, lips) are cut out by the texture's alpha: drawn solid,
 						# their cut-away parts show as black bands. Cut them, and draw both sides of the cards.
-						if _has_alpha(tex) or bool(entry.get("alpha", false)):
+						# "opaque": a texture whose alpha holds something else (the goat's is nearly all zero) is drawn solid.
+						if (_has_alpha(tex) or bool(entry.get("alpha", false))) and not bool(entry.get("opaque", false)):
 							mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 							mat.alpha_scissor_threshold = float(entry.get("alpha_cut", 0.5))
 							mat.cull_mode = BaseMaterial3D.CULL_DISABLED

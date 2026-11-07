@@ -1156,6 +1156,178 @@
 			],
 			"hunt_difficulty": 1.5,
 			"blows": 1
+		},
+		"cow": {
+			"size_kg": 500.0,
+			"parts": [
+				[
+					"raw_meat",
+					16,
+					22
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					8,
+					12
+				],
+				[
+					"sinew",
+					4,
+					6
+				],
+				[
+					"animal_fat",
+					4,
+					7
+				]
+			],
+			"hunt_difficulty": 1.0,
+			"blows": 8
+		},
+		"goat": {
+			"size_kg": 45.0,
+			"parts": [
+				[
+					"raw_meat",
+					4,
+					7
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					1,
+					2
+				],
+				[
+					"animal_fat",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 1.0,
+			"blows": 3
+		},
+		"chicken": {
+			"size_kg": 2.0,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					2
+				],
+				[
+					"feather",
+					3,
+					6
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.0,
+			"blows": 1
+		},
+		"cat": {
+			"size_kg": 4.0,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.6,
+			"blows": 2
+		},
+		"dog": {
+			"size_kg": 28.0,
+			"parts": [
+				[
+					"raw_meat",
+					3,
+					5
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					2,
+					4
+				],
+				[
+					"sinew",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 1.5,
+			"blows": 3
+		},
+		"buffalo": {
+			"size_kg": 700.0,
+			"parts": [
+				[
+					"raw_meat",
+					20,
+					28
+				],
+				[
+					"hide",
+					3,
+					4
+				],
+				[
+					"bone",
+					10,
+					14
+				],
+				[
+					"sinew",
+					6,
+					9
+				],
+				[
+					"animal_fat",
+					6,
+					10
+				],
+				[
+					"antler",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 2.8,
+			"blows": 8
 		}
 	},
 	"species_note": "Per-species `blows` (Sal, 2026-10-31) = knife blows to dress the body, by size: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8. The server currently reads the single top-level `blows` (4) for every species; reading the per-species value is a small code change (server_items.gd make_carcass / _process_carcass). All species use tool_class knife."

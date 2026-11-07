@@ -35,7 +35,7 @@ func make():
 	a.cfg["species"]["horse"]["target_per_player"] = 0
 	a.cfg["species"]["deer"]["target_per_player"] = 0
 
-	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear", "donkey", "goblin", "lynx", "black_bear", "elk", "bighorn", "mountain_goat", "beaver", "chamois", "mink", "raccoon", "rat", "crow", "pheasant", "goose"]:
+	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear", "donkey", "goblin", "lynx", "black_bear", "elk", "bighorn", "mountain_goat", "beaver", "chamois", "mink", "raccoon", "rat", "crow", "pheasant", "goose", "cow", "goat", "chicken", "cat", "dog", "buffalo"]:
 		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
 
 	a.cfg["senses"] = {}
