@@ -1,17 +1,28 @@
 {
 	"_note": "Watershed rebuild parameters (docs/water/watershed_rebuild_design.md). One file for every stage, so a run is reproduced from it and the input hashes in its manifest.",
-	"tiles": [2, 3, 4, 5],
+	"tiles": [
+		2,
+		3,
+		4,
+		5
+	],
 	"model_step": 2,
 	"seed": 9137,
 	"uplift": {
-		"_note": "Stage A2: where and how fast the land rose (m/yr). Design part: high where the landform is high, from the smoothed landform; hill part: plane-wave variation at hill scale, so erosion carves real ridges and spurs instead of noise laid on top.",
-		"base_m_per_yr": 1.2e-3,
+		"_note": "Stage A2: where and how fast the land rose (m/yr). Design part: high where the landform is high, from the smoothed landform. Structural part: plane-wave variation at kilometre scale only (2.4 and 1.1 km), the scale at which uplift really varies. Hills and valleys below a kilometre are NOT put in here: they come from the erosion itself, which spaces valleys by the balance of stream cutting and soil creep (document sections 10 and 11: terrain shaped by water, variety from conditions, not random). Sonny 7 Nov 19:30, holistic review: the 520 m and 230 m octaves were removed because uplift bumps at hill scale would make hills that the water did not shape.",
+		"base_m_per_yr": 0.0012,
 		"smooth_m": 1200.0,
 		"ref_height_m": 900.0,
 		"power": 1.0,
 		"coast_floor": 0.05,
-		"hill_wavelengths_m": [2400.0, 1100.0, 520.0, 230.0],
-		"hill_amplitudes": [0.35, 0.25, 0.15, 0.08],
+		"hill_wavelengths_m": [
+			2400.0,
+			1100.0
+		],
+		"hill_amplitudes": [
+			0.35,
+			0.25
+		],
 		"min_factor": 0.2
 	},
 	"rain": {
@@ -25,6 +36,9 @@
 	},
 	"rock": {
 		"_note": "Stage A3: rock ids from the geology export (export_geology.gd --step equal to the model cell). Soluble rocks may hold karst (cave springs, stage C7).",
-		"soluble": ["limestone", "marble"]
+		"soluble": [
+			"limestone",
+			"marble"
+		]
 	}
 }
