@@ -22,6 +22,7 @@ What the animal view already does for every model (do not rebuild): size from th
 | Brown bear | 14 | done | waiting | Run and Sprint carried the body 6 to 10 m/s ahead: travel now taken out |
 | Deer | 2 | done | waiting | |
 | Moose | 4 | done | waiting | |
+| Duck (flock) | 6 | done | waiting | Was a code flock; now each flock is 6 to 13 duck models that swim, look up and fly (flock_of) |
 | Wild boar | 8 | done | waiting | |
 | Wolf | 3 | done | waiting | Idle is a howl: alert and recover now Idle_Breathing |
 | Fox | 5 | done | waiting | |

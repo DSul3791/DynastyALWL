@@ -13,8 +13,8 @@ extends SceneTree
 # --clips also lists every clip in the file (with its length), to pick the clip for each role in a new model row.
 
 const AnimalView := preload("res://src/client/animal_view.gd")
-const ROLE_ORDER := ["rest", "0", "3", "10", "11", "12", "walk", "run"]
-const ROLE_NAMES := {"rest": "rest pose", "0": "graze", "3": "alert", "10": "warn", "11": "charge", "12": "recover", "walk": "walk", "run": "run"}
+const ROLE_ORDER := ["rest", "0", "3", "10", "11", "12", "15", "walk", "run"]
+const ROLE_NAMES := {"rest": "rest pose", "0": "graze", "3": "alert", "10": "warn", "11": "charge", "12": "recover", "15": "fly", "walk": "walk", "run": "run"}
 
 
 func _init() -> void:
@@ -107,6 +107,13 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 			wanted.append(r)
 
 	probe.free()
+
+	if row.has("flock_of"):
+		var flock: Node3D = view._make_for_species(number, 7)
+		lines.append("flock: %s birds from the model (row asks %s)" % [str((flock.get_meta("flock_birds", []) as Array).size()) if flock != null else "no", str(row["flock_of"])])
+
+		if flock != null:
+			flock.free()
 
 	# One model per column, each built fresh so every column plays only its own clip.
 	var cell: float = maxf(float(row.get("length_m", 1.5)), float(row.get("height_m", 0.0))) * 1.35 + 0.4
