@@ -50,6 +50,7 @@ What the animal view already does for every model (do not rebuild): size from th
 | Dog (labrador, bloodhound) | 34 | done | waiting | Farm. Two looks; the bloodhound has no bark clip |
 | Puma | 36 | done | waiting | Imported crouched: sized by its standing pose; roars when it warns |
 | Pronghorn | 37 | done | waiting | Same rig as the elk (walk is Walk_2); fastest runner on the island |
+| Warthog | 38 | done | waiting | Savanna. Imported mid-run: sized by its Idle |
 | Wild ox (pack buffalo) | 35 | done | waiting | Wild, grassland herds, stands its ground |
 
 New species are added with `python tools/add_species.py <spec.json>` (specs for batch 2 in E:/Software/godotDev/specs on the PC); `--clips` on the creature check lists a file's clips.

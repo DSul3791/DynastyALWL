@@ -593,6 +593,20 @@
 					"hint": "Small pellets in a scrape. Pronghorn graze nearby."
 				}
 			]
+		},
+		"warthog": {
+			"group": "hoofed",
+			"track": "small cloven prints and rooted soil",
+			"signs": [
+				{
+					"kind": "rooting",
+					"hint": "Turned-up earth around grass roots. Warthogs fed here."
+				},
+				{
+					"kind": "wallow",
+					"hint": "A muddy hollow, rubbed smooth. Warthogs wallow here."
+				}
+			]
 		}
 	}
 }

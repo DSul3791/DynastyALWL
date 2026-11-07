@@ -2642,6 +2642,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"warthog": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {
