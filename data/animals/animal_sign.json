@@ -303,6 +303,56 @@
 					"hint": "Dung balls, smaller than a horse's. Donkeys were here."
 				}
 			]
+		},
+		"black_bear": {
+			"group": "clawed",
+			"track": "wide flat prints with long claws",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Clawed prints, smaller than a brown bear. A black bear walked here."
+				},
+				{
+					"kind": "scratch",
+					"hint": "Deep claw marks high on a trunk. A black bear marked it."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Berry-filled scat. A black bear feeds nearby."
+				}
+			]
+		},
+		"elk": {
+			"group": "hoofed",
+			"track": "large two-toed prints, rounder than deer",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Split hoof prints. Elk passed here lately."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Dark pellets in a heap. An elk fed here."
+				},
+				{
+					"kind": "rubbing",
+					"hint": "Bark rubbed off a trunk. A bull elk marked this tree."
+				}
+			]
+		},
+		"bighorn": {
+			"group": "hoofed",
+			"track": "small two-toed prints on stony ground",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Blunt two-toed prints on rock. Bighorn sheep crossed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small dark pellets on a ledge. Bighorn sheep bedded here."
+				}
+			]
 		}
 	}
 }
