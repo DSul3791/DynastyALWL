@@ -10,8 +10,8 @@ The guide says no water integration code is written until this file exists. Ever
 |---|---|---|---|
 | Engine | Godot 4.7 features, Forward Plus | `project.godot` line 22 (`config/features`) | from repo |
 | Voxel Tools | Built into the engine as a custom module build, not a GDExtension. The Linux headless build is `godot-4.7.2-voxel1.7-linux-headless`. | `tools/build_godot_linux.sh`, `/mnt/project-files/engine/` | from repo |
-| Exact `--version` output and the binary path on Dave's PC | unknown | needs probe P1 | **NOT RUN** |
-| Voxel Tools version string and commit | unknown | needs probe P2 | **NOT RUN** |
+| Exact `--version` output | `Godot Engine v4.7.2.stable.custom_build.ed1daf0bf` (2026-08-17) | probe P1, David4 headless, 7 Nov 2026 | **PASS** (the binary path on Dave's PC is still to come from Dino) |
+| Voxel Tools version string and commit | Voxel Tools 1.7.0 as a module, git 2ac9f5f8. `VoxelLodTerrain` and `VoxelTool` exist, with `do_sphere`, `get_voxel_f`, `raycast`, `set_voxel_f`, `paste` and `do_box`. | probe P2, David4 headless, 7 Nov 2026 | **PASS** |
 | Other native code | `addons/water_core` is a GDExtension used by the current water (src/water2). It is separate from Voxel Tools. | `addons/water_core/water_core.gdextension` | from repo |
 
 ## 2. Terrain node
