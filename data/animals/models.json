@@ -1139,6 +1139,40 @@
 					"albedo": "res://assets/animals/rhino/Textures/T_Rhinoceros.png"
 				}
 			]
+		},
+		"elephant": {
+			"scene": "res://assets/animals/elephant/SK_AfricanElephant.fbx",
+			"pack": "WildMesh3D/Realistic Animals/AfricanElephant",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.3,
+			"run_mps": 6.0,
+			"stride_m": 1.8,
+			"clips": {
+				"0": "Idle",
+				"3": "Idle_2",
+				"10": "Idle_3",
+				"11": "Sprint-IP",
+				"12": "Stand_00-IP",
+				"walk": "Walk-IP",
+				"run": "Run-IP"
+			},
+			"note": "WildMesh African Elephant (Realistic Animals/AfricanElephant/SK_AfricanElephant.fbx). Checked 7 Nov 2026.",
+			"length_m": 6.0,
+			"materials": [
+				{
+					"match": "Eye",
+					"albedo": "res://assets/animals/elephant/Textures/T_AfricanElephant_Eye.png"
+				},
+				{
+					"match": "Fur",
+					"albedo": "res://assets/animals/elephant/Textures/T_AfricanElephant_Fur.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/elephant/Textures/T_AfricanElephant_Body.png"
+				}
+			]
 		}
 	}
 }

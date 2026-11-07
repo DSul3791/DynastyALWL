@@ -2670,6 +2670,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"elephant": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {

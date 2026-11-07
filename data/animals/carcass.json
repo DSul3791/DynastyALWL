@@ -35,6 +35,7 @@
 		"lion": {"len": 2.0, "width": 0.5, "height": 0.6, "legs": 0.6, "head": 0.4, "neck": 0.3, "tail": 0.9, "coat": "#b58e57", "pale": "#e2d2b0", "antlers": false, "beak": false},
 		"leopard": {"len": 1.4, "width": 0.35, "height": 0.45, "legs": 0.45, "head": 0.25, "neck": 0.18, "tail": 0.8, "coat": "#c49a52", "pale": "#ece0c4", "antlers": false, "beak": false},
 		"rhino": {"len": 3.2, "width": 1.1, "height": 1.1, "legs": 0.7, "head": 0.8, "neck": 0.4, "tail": 0.5, "coat": "#6f6a64", "pale": "#8f8a83", "antlers": false, "beak": false},
+		"elephant": {"len": 5.0, "width": 1.6, "height": 1.8, "legs": 1.5, "head": 1.2, "neck": 0.5, "tail": 1.0, "coat": "#77716b", "pale": "#958f88", "antlers": false, "beak": false},
 		"bear": {"len": 2.0, "width": 0.95, "height": 0.9, "legs": 0.5, "head": 0.42, "neck": 0.3, "tail": 0.05, "coat": "#452e1c", "pale": "#664d33", "antlers": false, "beak": false}
 	}
 }

@@ -649,6 +649,20 @@
 					"hint": "A big dung heap, kicked apart. A rhino marks this spot."
 				}
 			]
+		},
+		"elephant": {
+			"group": "hoofed",
+			"track": "great round pad prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Great round prints, wide as a shield. Elephants passed."
+				},
+				{
+					"kind": "browse",
+					"hint": "Trees stripped of bark and snapped. Elephants fed here."
+				}
+			]
 		}
 	}
 }
