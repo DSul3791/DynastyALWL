@@ -22,7 +22,12 @@ This code runs beside `src/water2` (today's live water) until its gates pass. No
 
 ## Decisions recorded (guide 22: a departure needs a short record)
 
-1. **Damping cap per face (M1).** The guide's orifice law, `Q = C·w·over·sqrt(2g|head|)`, has an infinite slope at zero head. At dt 0.1 s, near-level water would overshoot and swap sides every tick. So each face moves at most 0.2 of the volume that would level its two cells. That is below the 1/4 stability bound for a cell with four faces. It changes only how fast the last centimetres settle, never how much water there is. The algorithm (snapshot, candidates, scaling per cell, paired apply) is unchanged. If ponds settle too slowly in play, raise the share toward 0.25, never above it.
+1. **Face law: the virtual pipe with memory (M1, changed after the first PC run).** The guide's baseline formula (3.1) is `Q = C·w·over·sqrt(2g|head|)`, with no memory between ticks. Its slope is infinite at zero head, so at dt 0.1 s, near-level water overshoots, and a cap is needed to stop it. The first run on Dave's PC (#498, 7 Nov 2026) showed the cost of that cap. With the cap at 0.2 of the levelling volume, a 3 m reservoir fed 2 m³/s stood 0.57 m over its dam crest and sloped 0.9 m from end to end. Every metre of flow needs a slope, so deep water moves like syrup. The guide allows this change. Its 3.1 says to "select and calibrate an appropriate weir/channel relation" when the baseline is not realistic enough, and its 3.4 says to "adjust damping or upgrade momentum treatment".
+   - **The change:** the default is now the classic virtual pipe (Mei, Decaudin and Hu 2007). It is the model the guide names in 3.1. Each face keeps its discharge, and gravity accelerates it by the head over the wetted area above the sill. Linear friction of 0.5/s damps it, and the speed is capped at half a cell per tick.
+   - **What stays the same:** the transaction (snapshot, candidates, scaling per cell, paired apply) and the ledger.
+   - **The guide's formula:** it stays as `LAW_ORIFICE` for comparison.
+   - **Cost:** two more float64 arrays per region.
+   - **Tests:** the same test file, with F04's reservoir level as the check that tells the two laws apart.
 2. **Rounding guard.** After the paired apply, a donor can sit a few 1e-17 m³ under zero from float rounding. Those traces are set to zero and added to `rounding_m3` in the ledger. They are not hidden, so a real leak still shows as a residual.
 
 ## Dave's standing water rules this system must keep

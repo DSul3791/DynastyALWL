@@ -14,8 +14,7 @@ extends RefCounted
 # One tick (guide 3.2 and 19, in this order; nothing else changes the grid during a tick):
 #   0. Springs and sinks, each written in the ledger (a sink takes only what is there).
 #   1. Snapshot the surfaces.
-#   2. Every face once: a signed candidate transfer from the snapshot,
-#        Q = C * face_width * max(0, eta_up - sill) * sqrt(2 g |head|) * sign(head), transfer = Q * dt (m^3).
+#   2. Every face once: a signed candidate transfer from the snapshot, transfer = Q * dt (m^3), with Q from the face law (below).
 #   3. Each cell sums what it would send.
 #   4. A cell that would send more than it holds scales ALL its outgoing transfers by the same share.
 #   5. Each face applies its equal and opposite change once.
@@ -23,11 +22,15 @@ extends RefCounted
 #   7. Keep each face's transfer for currents.
 #   8. Ledger totals.
 #
-# One damping rule is ours, written down here and in docs/water/m1_decisions.md: the guide's orifice law has an infinite slope at zero head,
-# so near level water an explicit tick overshoots and the two cells swap places every tick (chatter). A face therefore never moves more than
-# MAX_FACE_SHARE of the volume that would level its two cells (|head| * area / 2). That share is below 1/4, the 2D explicit stability bound for
-# a cell with four faces, so a cell cannot overshoot its neighbours even when all four faces pull the same way. It changes only how fast the
-# last centimetres settle, never how much water there is.
+# The face law (decision record in src/sullivan_water/README.md, decision 1). The transaction above is the same for both laws.
+# - LAW_PIPE (default), the virtual pipe of Mei, Decaudin and Hu 2007, the model the guide names in 3.1: each face keeps its discharge from the
+#   last tick and gravity accelerates it, Q' = (Q + dt g A_face head / cell_m) / (1 + dt damping), with A_face = cell_m * (eta_up - sill),
+#   the wetted area over the sill. The damping is linear friction. Steady flow through deep water needs almost no slope, so a reservoir
+#   stays level and a river keeps its water moving. The speed through a face is capped at MAX_COURANT * cell_m / dt.
+# - LAW_ORIFICE, the guide's baseline formula (3.1), Q = C * face_width * max(0, eta_up - sill) * sqrt(2 g |head|) * sign(head), with no
+#   memory. Its slope is infinite at zero head, so near-level water would overshoot every tick, and each face is capped at ORIFICE_SHARE of
+#   the levelling volume (|head| * area / 2). Measured on Dave's PC (#498, first run): that cap makes deep water so slow that a 3 m reservoir
+#   fed 2 m3/s stood 0.57 m over its dam crest, sloping 0.9 m from end to end. So it stays only as the guide's reference.
 #
 # Edges are sealed (guide 3.5: the starter is a closed region; open boundaries, chunks and reservoirs come in M4). Caves and stacked water
 # are not this model (guide 3.10): one water surface per column only.
@@ -38,7 +41,11 @@ const GRAVITY := 9.81
 const DEFAULT_DT := 0.1            # s: 10 ticks a second (guide 3.4 test value)
 const DEFAULT_CELL_M := 2.0        # m (guide 3.4 test value)
 const DEFAULT_C := 0.6             # discharge coefficient, deliberately low (guide 3.4: "visibly conservative")
-const MAX_FACE_SHARE := 0.2        # of the volume that would level the two cells, per face per tick (see above)
+const LAW_PIPE := 0
+const LAW_ORIFICE := 1
+const DEFAULT_DAMPING_PER_S := 0.5 # LAW_PIPE linear friction, 1/s: a moving face loses this share of its discharge each second when nothing drives it
+const MAX_COURANT := 0.5           # LAW_PIPE: water crosses at most half a cell per tick (10 m/s at 2 m and 0.1 s)
+const ORIFICE_SHARE := 0.2         # LAW_ORIFICE: of the volume that would level the two cells, per face per tick (see above)
 const MAX_CATCH_UP_STEPS := 8      # advance() never runs more than this in one call, so a pause does not become a giant step (guide 3.4)
 const OPEN := -INF                 # a face with no built crest
 const WALL := INF                  # a face nothing passes
@@ -49,6 +56,8 @@ var cell_m: float
 var area_m2: float
 var dt: float = DEFAULT_DT
 var coefficient: float = DEFAULT_C
+var law: int = LAW_PIPE
+var damping_per_s: float = DEFAULT_DAMPING_PER_S
 
 var bed: PackedFloat64Array        # m, per cell
 var volume: PackedFloat64Array     # m^3, per cell
@@ -56,6 +65,8 @@ var crest_e: PackedFloat64Array    # m, built crest of each cell's east face (OP
 var crest_s: PackedFloat64Array    # m, built crest of each cell's south face
 var flow_e: PackedFloat64Array     # m^3 moved east through each east face in the last tick (negative = west)
 var flow_s: PackedFloat64Array     # m^3 moved south through each south face in the last tick (negative = north)
+var pipe_e: PackedFloat64Array     # LAW_PIPE: each east face's discharge kept from the last tick (m^3/s, after scaling)
+var pipe_s: PackedFloat64Array     # LAW_PIPE: each south face's discharge kept from the last tick
 
 var springs: Dictionary = {}       # cell index -> {"id": String, "m3_per_s": float}
 var sinks: Dictionary = {}         # cell index -> {"id": String, "m3_per_s": float} (the most it asks for)
@@ -97,6 +108,10 @@ func _init(width: int, height: int, p_cell_m: float = DEFAULT_CELL_M, bed_height
 	flow_e.fill(0.0)
 	flow_s.resize(n)
 	flow_s.fill(0.0)
+	pipe_e.resize(n)
+	pipe_e.fill(0.0)
+	pipe_s.resize(n)
+	pipe_s.fill(0.0)
 	_out.resize(n)
 	_scale.resize(n)
 	_eta.resize(n)
@@ -217,14 +232,14 @@ func step() -> void:
 			var k: int = j * w + i
 
 			if i < w - 1:
-				var t: float = _candidate(k, k + 1, crest_e[k])
+				var t: float = _candidate(k, k + 1, crest_e[k], pipe_e[k])
 				flow_e[k] = t
 				_out[k if t > 0.0 else k + 1] += absf(t)
 			else:
 				flow_e[k] = 0.0
 
 			if j < h - 1:
-				var t: float = _candidate(k, k + w, crest_s[k])
+				var t: float = _candidate(k, k + w, crest_s[k], pipe_s[k])
 				flow_s[k] = t
 				_out[k if t > 0.0 else k + w] += absf(t)
 			else:
@@ -245,15 +260,17 @@ func step() -> void:
 		for i in range(w):
 			var k: int = j * w + i
 
-			if i < w - 1 and flow_e[k] != 0.0:
+			if i < w - 1:
 				var t: float = flow_e[k] * _scale[k if flow_e[k] > 0.0 else k + 1]
 				flow_e[k] = t
+				pipe_e[k] = t / dt   # the pipe keeps only what really moved
 				volume[k] -= t
 				volume[k + 1] += t
 
-			if j < h - 1 and flow_s[k] != 0.0:
+			if j < h - 1:
 				var t: float = flow_s[k] * _scale[k if flow_s[k] > 0.0 else k + w]
 				flow_s[k] = t
+				pipe_s[k] = t / dt
 				volume[k] -= t
 				volume[k + w] += t
 
@@ -267,27 +284,39 @@ func step() -> void:
 	ticks += 1
 
 
-# Signed m^3 from a to b this tick (negative = b to a), from the snapshot. Zero when the higher side is dry or sits at or below the sill.
-func _candidate(a: int, b: int, crest: float) -> float:
-	var head: float = _eta[a] - _eta[b]
-
-	if head == 0.0:
-		return 0.0
-
-	var up: int = a if head > 0.0 else b
-
-	if volume[up] <= 0.0:
-		return 0.0   # a dry cell cannot send water
-
+# Signed m^3 from a to b this tick (negative = b to a), from the snapshot. `kept` is the face's discharge from the last tick (LAW_PIPE).
+# Zero when the side the water would leave is dry or sits at or below the sill.
+func _candidate(a: int, b: int, crest: float, kept: float) -> float:
 	var sill: float = maxf(maxf(bed[a], bed[b]), crest)
-	var over: float = _eta[up] - sill
+	var head: float = _eta[a] - _eta[b]
+	var over: float = maxf(_eta[a], _eta[b]) - sill   # water standing over the sill on the higher side
 
 	if over <= 0.0:
 		return 0.0
 
-	var q: float = coefficient * cell_m * over * sqrt(2.0 * GRAVITY * absf(head))
-	var t: float = minf(q * dt, MAX_FACE_SHARE * absf(head) * area_m2 * 0.5)
-	return t if head > 0.0 else -t
+	var q: float
+
+	if law == LAW_ORIFICE:
+		if head == 0.0:
+			return 0.0
+
+		q = coefficient * cell_m * over * sqrt(2.0 * GRAVITY * absf(head))
+		q = minf(q * dt, ORIFICE_SHARE * absf(head) * area_m2 * 0.5) / dt
+		q = q if head > 0.0 else -q
+	else:
+		var wet_area: float = cell_m * over
+		q = (kept + dt * GRAVITY * wet_area * head / cell_m) / (1.0 + dt * damping_per_s)
+		var most: float = wet_area * MAX_COURANT * cell_m / dt
+		q = clampf(q, -most, most)
+
+	var donor: int = a if q > 0.0 else b
+
+	# A dry cell cannot send water, and neither can a side whose surface is at or under the sill (the pipe's kept discharge cannot pull
+	# water up over a crest).
+	if q == 0.0 or volume[donor] <= 0.0 or _eta[donor] <= sill:
+		return 0.0
+
+	return q * dt
 
 
 func _book(id: String, m3: float) -> void:

@@ -24,6 +24,7 @@ func _init() -> void:
 	_f02_one_cell()
 	_f03_raised_face()
 	_f04_f05_dam()
+	_law_compare()
 	_f07_raise_under_water()
 	_surface_not_ground()
 	_f09_frame_rate()
@@ -41,6 +42,11 @@ func _check(ok: bool, what: String) -> void:
 		failures += 1
 
 
+# Godot's % has no %e: small numbers go through num_scientific.
+func _e(x: float) -> String:
+	return String.num_scientific(x)
+
+
 # A bumpy basin bed: deterministic, a few decimetres of relief, no random state.
 func _bumpy(grid, relief: float) -> void:
 	for j in range(grid.h):
@@ -49,9 +55,9 @@ func _bumpy(grid, relief: float) -> void:
 
 
 func _report(name: String, grid) -> void:
-	print("  %s: ticks %d, volume %.9f m3, expected %.9f, residual %.3e, min cell %.3e, worst negative %.3e, rounding %.3e, scaled cells last tick %d" % [
-		name, grid.ticks, grid.total_volume(), grid.expected_volume(), grid.ledger_residual(), grid.min_volume(), grid.max_negative_m3,
-		grid.rounding_m3, grid.last_scaled_cells])
+	print("  %s: ticks %d, volume %.9f m3, expected %.9f, residual %s, min cell %s, worst negative %s, rounding %s, scaled cells last tick %d" % [
+		name, grid.ticks, grid.total_volume(), grid.expected_volume(), _e(grid.ledger_residual()), _e(grid.min_volume()), _e(grid.max_negative_m3),
+		_e(grid.rounding_m3), grid.last_scaled_cells])
 
 
 # F01: 16 x 16 closed basin with 100 m^3; relative volume error < 1e-6 after 1000 ticks; no negative cells.
@@ -72,8 +78,8 @@ func _f01_closed_basin() -> void:
 		negative = negative or grid.min_volume() < 0.0
 
 	_report("F01", grid)
-	_check(absf(grid.total_volume() - 100.0) / 100.0 < REL_TOL, "F01: 100 m3 in a closed 16x16 basin stays 100 m3 after 1000 ticks (relative error %.2e)" % (absf(grid.total_volume() - 100.0) / 100.0))
-	_check(not negative and grid.max_negative_m3 >= NEG_TOL, "F01: no cell goes negative (worst %.2e m3)" % grid.max_negative_m3)
+	_check(absf(grid.total_volume() - 100.0) / 100.0 < REL_TOL, "F01: 100 m3 in a closed 16x16 basin stays 100 m3 after 1000 ticks (relative error %s)" % _e(absf(grid.total_volume() - 100.0) / 100.0))
+	_check(not negative and grid.max_negative_m3 >= NEG_TOL, "F01: no cell goes negative (worst %s m3)" % _e(grid.max_negative_m3))
 
 
 # F02: all the water in one cell; none created or lost, nonnegative every tick, a stable spread.
@@ -94,7 +100,7 @@ func _f02_one_cell() -> void:
 		wet += 1 if grid.volume[k] > 1.0e-9 else 0
 
 	_report("F02", grid)
-	_check(worst < LEDGER_TOL * 100.0, "F02: no water made or lost on any tick (worst residual %.2e m3)" % worst)
+	_check(worst < LEDGER_TOL * 100.0, "F02: no water made or lost on any tick (worst residual %s m3)" % _e(worst))
 	_check(not negative, "F02: every cell nonnegative on every tick")
 	_check(wet == 256, "F02: the tower spread over the whole flat basin (%d of 256 cells wet)" % wet)
 	_check(grid.max_wet_head() < 0.005, "F02: and settled level, no sloshing (largest step between wet cells %.4f m; flat at %.4f m deep)" % [grid.max_wet_head(), 100.0 / 1024.0])
@@ -116,7 +122,7 @@ func _f03_raised_face() -> void:
 
 	var east_before: float = _volume_in(grid, 8, 16)
 	var west_before: float = _volume_in(grid, 0, 8)
-	_check(east_before == 0.0, "F03: nothing crosses a 2 m crest from 1 m deep water (east side %.3e m3)" % east_before)
+	_check(east_before == 0.0, "F03: nothing crosses a 2 m crest from 1 m deep water (east side %s m3)" % _e(east_before))
 
 	for j in range(8):
 		grid.set_crest_east(7, j, Grid.OPEN)
@@ -172,7 +178,7 @@ func _f04_f05_dam() -> void:
 	_check(spilled_at > 1800, "F04: the reservoir filled first and spilled only at tick %d (3 m needs about 1920 ticks of the spring)" % spilled_at)
 	_check(first_spill < 1.0, "F04: the first spill is a trickle, not a jump to level (%.4f m3 in its first tick)" % first_spill)
 	_check(level_up >= 3.0 and level_up < 3.5, "F04: the reservoir holds just over the crest while it spills (%.3f m)" % level_up)
-	_check(absf(grid.ledger_residual()) < LEDGER_TOL * grid.total_volume(), "F04: ledger balances with the named spring (residual %.2e m3, spring %.3f m3)" % [grid.ledger_residual(), float(grid.by_id.get("f04 spring", 0.0))])
+	_check(absf(grid.ledger_residual()) < LEDGER_TOL * grid.total_volume(), "F04: ledger balances with the named spring (residual %s m3, spring %.3f m3)" % [_e(grid.ledger_residual()), float(grid.by_id.get("f04 spring", 0.0))])
 
 	# F05: the dam goes at a recorded tick; the spring and the outlet stop so the stored water alone moves, with nothing leaving.
 	grid.springs.clear()
@@ -192,6 +198,24 @@ func _f04_f05_dam() -> void:
 	_report("F05", grid)
 	_check(down_after - down_before > 0.25 * up_before, "F05: removing the dam at tick %d sent the stored water downstream (%.1f m3 of %.1f)" % [removed_at, down_after - down_before, up_before])
 	_check(absf((up_before + down_before) - (up_after + down_after)) < LEDGER_TOL * (up_before + down_before), "F05: same combined inventory before and after (%.6f / %.6f m3)" % [up_before + down_before, up_after + down_after])
+
+
+# Not a check: the same F04 reservoir with the guide's orifice law, so the decision record (README decision 1) has its measurement each run.
+func _law_compare() -> void:
+	for law in [Grid.LAW_PIPE, Grid.LAW_ORIFICE]:
+		var grid = Grid.new(16, 4)
+		grid.law = law
+
+		for j in range(4):
+			grid.set_crest_east(7, j, 3.0)
+
+		grid.add_spring(0, 1, 2.0, "spring")
+		grid.add_sink(15, 1, 5.0, "outlet")
+
+		for _t in range(4000):
+			grid.step()
+
+		print("  law %s: reservoir far end %.3f m, at the dam %.3f m (crest 3.0)" % ["pipe" if law == Grid.LAW_PIPE else "orifice", grid.surface(0, 1), grid.surface(7, 1)])
 
 
 # F07 (the open-air part; the voxel edit part is M3): raising ground under standing water keeps the water; the surface rises with the bed.
@@ -261,7 +285,7 @@ func _f09_frame_rate() -> void:
 	for k in range(256):
 		most = maxf(most, absf(a.volume[k] - b.volume[k]))
 
-	_check(a.ticks == 300 and b.ticks == 300 and most == 0.0, "F09: 10 fps and 60 fps agree exactly after 300 ticks (largest cell difference %.3e m3)" % most)
+	_check(a.ticks == 300 and b.ticks == 300 and most == 0.0, "F09: 10 fps and 60 fps agree exactly after 300 ticks (largest cell difference %s m3)" % _e(most))
 
 
 # No directional bias (guide 3.2): a setup and its east-west mirror give mirrored water.
@@ -288,7 +312,7 @@ func _mirror() -> void:
 		for i in range(15):
 			most = maxf(most, absf(a.volume[a.index(i, j)] - b.volume[b.index(14 - i, j)]))
 
-	_check(most < 1.0e-9, "3.2: mirrored setups give mirrored water, so face order adds no bias (largest difference %.3e m3)" % most)
+	_check(most < 1.0e-9, "3.2: mirrored setups give mirrored water, so face order adds no bias (largest difference %s m3)" % _e(most))
 
 
 # F13: a withdrawal asking for more than there is gets only what is there; inventory never negative.
@@ -302,7 +326,7 @@ func _f13_withdrawal() -> void:
 	grid.add_sink(2, 2, 10.0, "intake")   # 1 m3 a tick asked of 0.5 m3
 	grid.step()
 	_check(grid.min_volume() >= 0.0 and absf(float(grid.by_id["intake"]) + 0.5) < 1.0e-12, "F13: a sink asking 1 m3 a tick of a 0.5 m3 cell took 0.5 (booked %.3f)" % float(grid.by_id["intake"]))
-	_check(absf(grid.ledger_residual()) < 1.0e-12, "F13: ledger balances (residual %.2e)" % grid.ledger_residual())
+	_check(absf(grid.ledger_residual()) < 1.0e-12, "F13: ledger balances (residual %s)" % _e(grid.ledger_residual()))
 
 
 # M1 gate: a 10k tick ledger with a spring and a sink running, dry and wet cells, ending in a stable pond.
@@ -320,8 +344,8 @@ func _m1_ten_thousand() -> void:
 		negative = negative or grid.min_volume() < 0.0
 
 	_report("M1", grid)
-	print("  M1 ledger: spring %.3f m3, drain %.3f m3, rounding %.3e m3" % [float(grid.by_id.get("spring", 0.0)), -float(grid.by_id.get("drain", 0.0)), grid.rounding_m3])
-	_check(worst < LEDGER_TOL, "M1: 10000 ticks with a spring and a drain, ledger residual never above %.0e of the water (worst %.2e)" % [LEDGER_TOL, worst])
+	print("  M1 ledger: spring %.3f m3, drain %.3f m3, rounding %s m3" % [float(grid.by_id.get("spring", 0.0)), -float(grid.by_id.get("drain", 0.0)), _e(grid.rounding_m3)])
+	_check(worst < LEDGER_TOL, "M1: 10000 ticks with a spring and a drain, ledger residual never above %s of the water (worst %s)" % [_e(LEDGER_TOL), _e(worst)])
 	_check(not negative, "M1: no negative cell in 10000 ticks")
 
 	# Stop the inflow and outflow; the pond must come to rest.
