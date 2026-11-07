@@ -125,6 +125,15 @@ One record, written once per bake and read by everything:
 
 Tiles are cut from it by world position, so seams agree by construction.
 
+*Record layout, agreed with Steve's Stage E design (#541), 7 Nov:*
+- rasters are raw little-endian grids at 8 m, one set per tile, (T+1)² samples with shared edge samples (the `export_raw_heights` convention);
+- vectors live in one island-wide `record/network.json`, so a reach that crosses a tile edge stays one object with one id and is never clipped at a seam;
+- `record/manifest.json` holds the record version, params, input hashes, origin and cell size. Units are metres and m³/s, in world x, z and y up;
+- water class codes: 0 none, 1 ocean, 2 lake, 3 river (kept from today), then 4 marsh, 5 swamp, 6 fen, 7 bog, 8 seasonal channel, 9 seasonal pond, 10 salt marsh or tidal flat. Perennial, intermittent or ephemeral is carried by the regime raster;
+- extra rasters: `fresh_m` (distance to perennial fresh water) and `sediment_m` (loose cover), both computed island-wide so seams agree;
+- each reach carries wet-season, mean and dry-season flow, bed material and its downstream reach id. Karst sinks are listed with the id of the cave spring they feed;
+- ids are deterministic from the seed and params: stable within one record version, never kept across rebakes.
+
 ### Stage E: readers
 - **Tile bake** (`tile_baker.gd`): heights and water come from the record. The rule channels and all eight repair passes are switched off and archived (section 6).
 - **Runtime ground**: brooks narrower than a cell are drawn from the reach polylines at voxel scale (their real width and depth), not as 8 m trenches.
