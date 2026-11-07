@@ -10,6 +10,7 @@
 4. **The floor must be walkable.** Starbound keeps cave floors on low-amplitude noise so players don't snag. Dave wants the same: rough rock walls, a smooth-enough floor with small detail such as roots from above, nothing that blocks movement (5 Nov). Dressing (stalagmites, bone piles, stones) must keep off the walking line.
 5. **Dark means dark: kill every sky term under rock.** Brightness in caves comes from sky ambient, reflections, fog colour and auto-exposure, not only from the sun. Ours fades sky ambient and reflections under rock (#365) and goes pitch black with no light (#447). Unreal users report the same: auto-exposure brightens a dark cave, so clamp it; fade the sky in gradually along a winding entrance.
 6. **Water inside a cave needs its own look.** The sky mirror makes cave water white; light it by torchlight only (#463). The outside water sheet must not flood the cave view (#459).
+7. **A swimmer is not falling.** Swimming up out of a spring cave's pool, the "off the floor, under the ground" rescue (`src/client/rescue.gd`) saw a mountain overhead and stood Dave on top of it (7 Nov). Any rescue that counts time off the floor must count water as a floor.
 7. **Heavy work goes off the main thread.** Floor scatter took 345 ms on the main thread; it now runs on a worker (#399). Cave water is indexed by cell (#417).
 8. **Every cave can be lived in.** Dens sit in chambers, dead ends and near entrances, each with a tier from regional danger and depth. Starter islands: animals, the odd friendly survivor and low-level bandits (Dave 6 Nov, DESIGN_IDEAS 4.4).
 
@@ -38,6 +39,7 @@
 | 5-6 Nov | Outside water no longer floods the cave view; cave water lit by torchlight | #459, #463 | Worked |
 | 5 Nov | Rough cave rock look | #461 | Dave still found walls smooth and "drilled" (5 Nov); asked Sonny for rough rock |
 | 6 Nov | Cave life and starter-island occupants written up | #475, #477, #478 | Docs only; not built (IDEA-CAVE-LIFE) |
+| 7 Nov | Grass and forest litter laid in caves, floating in the air (Dave): grass rays start 80 m above the player, inside the rock over a deep cave, and a ray from inside rock lands on the cave floor | this PR | One ray up from a ground hit of each grass cell: rock or a roof within 14 m above means no grass or litter there. Not yet checked on the PC |
 | 6 Nov | Spring caves only 1.5 km or more from the sea (spring_cave.min_sea_m, distance from the bake frame so tiles agree), and at a hill's foot as well as on its side (hill_rise_m 15 within 100 m) | #473 | Tile 3,4: 96 caves to 39, the nearest 1.4 km from the sea. Was: 30 of 96 within 1 km of the sea at short coastal brook heads |
 
 ## What others do (with sources)

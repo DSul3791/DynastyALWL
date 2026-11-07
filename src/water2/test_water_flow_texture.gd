@@ -48,5 +48,13 @@ func _init() -> void:
 	_check(pk["origin"] == Vector2(100.0, 200.0) and pk["bytes"].size() < pk["raw"], "origin kept, packet smaller than raw (%d of %d bytes)" % [pk["bytes"].size(), pk["raw"]])
 	_check(back != null and absf(back.get_pixel(16, 4).r - px.r) < 1.0e-4, "the surface height survives the wire exactly (float)")
 	_check(FlowTexture.unpack(32, 8, 7, pk["bytes"]) == null and FlowTexture.unpack(9999, 8, 9999 * 64, pk["bytes"]) == null, "a wrong size or a huge size is refused")
+	# Dry texels up a steep bank tuck to the water beside them; one below the water keeps its bed (Sonny 7 Nov 2026, Dave x 54204 z 69155).
+	var bank: Image = Image.create(3, 1, false, Image.FORMAT_RGBAF)
+	bank.set_pixel(0, 0, Color(5.0, 0.0, 0.0, 0.0))    # dry, below the water (under a lip)
+	bank.set_pixel(1, 0, Color(10.0, 0.0, 0.0, 1.0))   # water at 10 m
+	bank.set_pixel(2, 0, Color(30.0, 0.0, 0.0, 0.0))   # dry bank 20 m up
+	FlowTexture.tuck_dry_edges(bank)
+	_check(absf(bank.get_pixel(2, 0).r - 10.0) < 1.0e-4, "a dry texel up a bank takes the water's level (%.2f)" % bank.get_pixel(2, 0).r)
+	_check(absf(bank.get_pixel(0, 0).r - 5.0) < 1.0e-4 and absf(bank.get_pixel(1, 0).r - 10.0) < 1.0e-4, "a dry texel below the water keeps its bed; the wet one is untouched")
 	print("%d failures" % failures)
 	quit(1 if failures > 0 else 0)

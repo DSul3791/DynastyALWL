@@ -2530,6 +2530,27 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"black_bear": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "no hibernation in the data yet (same as the brown bear)"
+		},
+		"elk": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"bighorn": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {

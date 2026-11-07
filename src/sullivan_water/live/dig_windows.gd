@@ -33,7 +33,8 @@ const TILE_CELLS := 48         # cells along a tile: 96 m, a whole number of 8 m
 const TILE_M := 96.0
 const MAX_TILES := 4           # tiles running at once, over all regions (the same 9216 cells as four 48 x 48 windows)
 const MIN_WET := 4             # of the 16 cells under an 8 m sample, how many must be wet for the sample to show water
-const DRAW_M := 0.05           # thinner 2 m water than this is not counted as wet
+const DRAW_M := 0.05           # thinner 2 m water than this is not drawn on the 2 m sheet
+const LEVEL_M := 0.12          # thinner 2 m water than this gives no 8 m level: the hub's own DRAW_M (water_hub2.gd, the WetMeters contract)
 const PER := 4                 # 2 m cells along one 8 m sample
 const MIN_POOL_CELLS := 16     # a separate piece under the 8 m level this big (one 8 m sample) is a pond, smaller is a bank hollow
 const FOLLOW_EDGE_M := 24.0    # a player this far inside a running region keeps it; nearer its edge, a new region opens round them
@@ -450,7 +451,11 @@ func publish(levels: PackedFloat32Array, samples: int, x0: float, z0: float) -> 
 						var i: int = si * PER + di
 						var j: int = sj * PER + dj
 
-						if grid.depth(i, j) >= DRAW_M:
+						# Dave 7 Nov 2026: footsteps splashed running up a dry hillside inside a followed region. The films still draining
+						# off its slopes (5 to 12 cm) counted as wet here, and an 8 m sample's mean surface over a slope stands up to
+						# metres above the downhill ground, where footsteps, swimming and the underwater view all read it. The 8 m levels
+						# take only water the hub itself would count (LEVEL_M), so 2 m films stay a picture on the fine sheet.
+						if grid.depth(i, j) >= LEVEL_M:
 							wet += 1
 							sum += grid.surface(i, j)
 

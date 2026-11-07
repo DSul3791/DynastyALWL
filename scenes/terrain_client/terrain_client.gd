@@ -2347,6 +2347,8 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 	if im == null:
 		return
 
+	FlowTexture.tuck_dry_edges(im)   # the sheet runs flat into the bank instead of up it (water_flow_texture.gd)
+
 	# Protocol 85: the liquid sheet draws the live window (src/water2/liquid_surface.gd), the grid look steps aside there.
 	if _liquid == null:
 		_liquid = LiquidSurface.new()
@@ -2400,6 +2402,8 @@ func _on_fine_water(keys: PackedStringArray, packets: Array) -> void:
 
 		if im == null:
 			continue
+
+		FlowTexture.tuck_dry_edges(im)
 
 		var key: String = String(p[0])
 		var origin: Vector2 = p[1]
@@ -3416,8 +3420,10 @@ const VIEW_MAX_M := 7.0
 const VIEW_STEP_M := 0.4
 const VIEW_HEIGHT := 0.12              # camera rise per metre of distance
 const VIEW_CLEAR_M := 0.25             # how far short of a wall or trunk the camera stops
+const VIEW_BALL_M := 0.3               # the camera is a ball this wide, not a point: a thin ray slips through the rock at a shallow angle or a ragged cave wall and the camera ends up inside the hill (Dave 7 Nov 2026: spring cave drawn from inside the rock, no ground)
 
 var view_cam: Camera3D
+var _view_ball: SphereShape3D          # the camera's ball for the wall sweep (VIEW_BALL_M)
 const PhotoCameraScript := preload("res://src/client/photo_camera.gd")
 var photo = PhotoCameraScript.new()                      # K: the photo camera (src/client/photo_camera.gd), a free orbiting view of the character
 var third_person: bool = false:
@@ -3463,6 +3469,41 @@ func _scroll_view(out: bool) -> void:
 	_save_view()
 
 
+# How far along from -> to the drawn camera may go: stops short of the first rock, trunk or wall by VIEW_CLEAR_M. A ray alone misses walls it meets at a shallow
+# angle, so a ball of VIEW_BALL_M is swept along the same line too, and the nearer of the two wins (7 Nov 2026: the camera slipped through a cave wall).
+func _clear_view_m(from: Vector3, to: Vector3) -> float:
+	var full: float = from.distance_to(to)
+
+	if full < 0.001:
+		return 0.0
+
+	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
+	var reach: float = full
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, to)
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = space.intersect_ray(query)
+
+	if not hit.is_empty():
+		reach = from.distance_to(hit["position"])
+
+	if _view_ball == null:
+		_view_ball = SphereShape3D.new()
+		_view_ball.radius = VIEW_BALL_M
+
+	var sweep: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
+	sweep.shape = _view_ball
+	sweep.transform = Transform3D(Basis.IDENTITY, from)
+	sweep.motion = to - from
+	sweep.exclude = [body.get_rid()]
+	var span: PackedFloat32Array = space.cast_motion(sweep)
+
+	# A ball that already touches rock at the start (standing against a wall) says 0: the ray alone decides then, or the view would flip to first person.
+	if span.size() >= 2 and span[0] > 0.0 and span[0] < 1.0:
+		reach = minf(reach, full * span[0])
+
+	return maxf(reach - VIEW_CLEAR_M, 0.0)
+
+
 # Each drawn frame: place the drawn camera, keep it out of walls and trunks, and show the ragdoll body.
 # The log on the shoulder: about two and a half metres of trunk (the species' real length is not sent; Radar's item data has the weight).
 const CARRY_LOG_LENGTH_M := 2.4
@@ -3492,12 +3533,7 @@ func _update_view(delta: float) -> void:
 	var aim: Vector3 = camera.global_transform.basis * Vector3(0.0, VIEW_HEIGHT, 1.0)
 
 	if third_person and want > 0.0:
-		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(eye, eye + aim * want)
-		query.exclude = [body.get_rid()]
-		var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
-
-		if not hit.is_empty():
-			want = maxf(eye.distance_to(hit["position"]) - VIEW_CLEAR_M, 0.0)
+		want = _clear_view_m(eye, eye + aim * want)
 
 	# Pull in at once when blocked, ease out otherwise.
 	_view_now = want if want < _view_now else lerpf(_view_now, want, clampf(delta * 10.0, 0.0, 1.0))
@@ -3529,6 +3565,9 @@ func _update_view(delta: float) -> void:
 		_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
 	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
+
+	if not _seat.is_empty() and stance.stance == StanceScript.SIT:
+		_avatar.position.y += _seat_lift()   # hips on the seat whatever the clip's own hips height (Dave 7 Nov 2026: the body sank through the chair)
 
 	if _avatar.visible:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
@@ -3604,13 +3643,8 @@ func _place_photo_camera(delta: float) -> void:
 	photo.step(delta)
 	var focus: Vector3 = photo.focus_point(body.global_position)
 	var want: Vector3 = photo.camera_position(focus)
-	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(focus, want)
-	query.exclude = [body.get_rid()]
-	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
-
-	if not hit.is_empty():
-		want = (hit["position"] as Vector3).move_toward(focus, VIEW_CLEAR_M)
-
+	var reach: float = _clear_view_m(focus, want)
+	want = focus.move_toward(want, reach)
 	want = photo.clamp_to_ground(want, _ground_below(want))
 	view_cam.top_level = true
 	view_cam.global_transform = Transform3D(photo.camera_basis(want, focus), want)
@@ -3757,7 +3791,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif KeyBindings.matches(event, "crouch") and not flying:
 			_set_stance(StanceScript.CROUCH, true)
 		elif KeyBindings.matches(event, "sit") and not flying:
-			_set_stance(StanceScript.SIT, true)
+			var near_seat: Dictionary = items.seat_near(body.global_position, SEAT_SIT_KEY_REACH_M) if items != null and stance.stance != StanceScript.SIT else {}
+
+			if not near_seat.is_empty():
+				_sit_on_seat(near_seat["pos"], float(near_seat["yaw"]), near_seat["def"])   # beside or inside a seat, X sits ON it, not on the ground through it
+			else:
+				_set_stance(StanceScript.SIT, true)
 		elif KeyBindings.matches(event, "lie") and not flying:
 			if stance.stance == StanceScript.LIE and items != null and not items.asleep:
 				_z_down_msec = Time.get_ticks_msec()   # lying: hold Z to sleep, tap to get up (decided on release, see _check_sleep_hold)
@@ -3909,6 +3948,10 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 # structures.json says how: sit_face "front" (a chair: facing its -Z, the back at +Z), "sides" (a bench: facing the side the player came from, at the nearest of
 # sit_spots_x) or "free" (a log seat or stool: facing the way the player already faces).
 const SEAT_HIPS_BACK_M := 0.05      # a chair's hips this far behind the middle of the seat, toward its back
+const SEAT_SIT_KEY_REACH_M := 0.9  # the sit key (X) within this of a seat's middle sits on the seat (Dave 7 Nov 2026: X in a chair sat through it on the ground)
+const SEAT_TOP_M := 0.45            # every seat's top above its foot (piece_look.gd: chair, stool, bench, log seat); a row can say "seat_m"
+const SEAT_HIPS_ABOVE_M := 0.07     # the hips joint above the seat top when sitting on it (the chair clip: hips 0.51 m, seat 0.45 m)
+const SEAT_LIFT_MAX_M := 0.6        # never move the body more than this to meet the seat
 const SEAT_STEP_OFF_M := 0.7        # standing up puts the player this far in front of the seat, clear of its solid (a chair is 0.5 m deep, the capsule 0.33 m wide)
 
 var _seat: Dictionary = {}          # while on a seat: {"at": the body position held, "front": the way the sitter faces}
@@ -3951,8 +3994,25 @@ func _sit_on_seat(seat_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
 	_set_stance(StanceScript.SIT)
 
 	if stance.stance == StanceScript.SIT:
-		_seat = {"at": at, "front": front}
+		_seat = {"at": at, "front": front, "top": seat_pos.y + float(def.get("seat_m", SEAT_TOP_M))}
 		stance.seated = true
+
+
+# How far to raise the body so its hips joint rests on the seat top: measured from the posed skeleton each frame, so it holds for any clip, body or seat.
+func _seat_lift() -> float:
+	var skel: Skeleton3D = _avatar.get("skeleton") as Skeleton3D if _avatar != null else null
+
+	if skel == null:
+		return 0.0
+
+	var hips: int = skel.find_bone("mixamorig_Hips")
+
+	if hips < 0:
+		return 0.0
+
+	var hips_y: float = (skel.global_transform * skel.get_bone_global_pose(hips).origin).y
+	var want: float = float(_seat["top"]) + SEAT_HIPS_ABOVE_M
+	return clampf(want - hips_y, -SEAT_LIFT_MAX_M, SEAT_LIFT_MAX_M)
 
 
 # Holds a seated player on the seat (true while seated: no walking, no gravity, no sliding out of the seat's solid). A stance the server changed ends it.
