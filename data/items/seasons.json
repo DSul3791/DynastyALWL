@@ -2635,6 +2635,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"pronghorn": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {
