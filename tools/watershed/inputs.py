@@ -5,7 +5,7 @@ Usage (on Dave's PC, never in the cloud):
   godot --headless --path . --script res://src/worldgen/tools/export_geology.gd -- --step=16 --out=GEOLOGY_DIR
   python tools/watershed/inputs.py LANDFORM_DIR GEOLOGY_DIR OUT_DIR [params.json]
 
-Writes OUT_DIR/inputs.npz (landform, uplift, rain, rock id, soluble mask, sea mask, on the model grid; plus the grid origin and cell),
+Writes OUT_DIR/inputs.npz (landform, uplift, rain, rock id, soluble and cave-forming masks, sea mask, on the model grid; plus the grid origin and cell),
 inputs.png (the four maps) and inputs_manifest.json (parameters, input hashes, summary numbers)."""
 import sys, os, json, hashlib
 import numpy as np
@@ -13,7 +13,7 @@ from scipy.ndimage import gaussian_filter, zoom
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
-import noise, orographic   # noqa: E402
+import orographic   # noqa: E402
 
 T = 1920          # samples per tile edge (8 m)
 SPACING = 8.0
@@ -44,20 +44,15 @@ def to_model_grid(fine, step):
     return out / float((2 * r + 1) ** 2)
 
 
-def world_coords(n, dx, origin_x, origin_z):
-    xs = origin_x + np.arange(n) * dx
-    zs = origin_z + np.arange(n) * dx
-    return np.meshgrid(xs, zs)
-
-
-def uplift_field(h, sea, X, Z, dx, P, seed):
+def uplift_field(h, sea, dx, P):
+    """Uplift follows the massifs only (the smoothed landform). No pattern is added at hill scale: a pattern there is arbitrary
+    (the plane waves of the first R1 run showed as regular blobs), and the watershed document wants variety from conditions.
+    Hill-scale variety comes from the rock bands, the rain and the drainage itself."""
     u = P['uplift']
     smooth = gaussian_filter(np.maximum(h, 0.0), u['smooth_m'] / dx)
     design = np.clip(smooth / u['ref_height_m'], 0.0, 1.0) ** u['power']
     design = np.maximum(design, u['coast_floor'])
-    hills = noise.plane_waves(X, Z, u['hill_wavelengths_m'], u['hill_amplitudes'], seed)
-    factor = np.maximum(1.0 + hills, u['min_factor'])
-    U = u['base_m_per_yr'] * design * factor
+    U = u['base_m_per_yr'] * design
     U[sea] = 0.0
     return U
 
@@ -76,8 +71,9 @@ def rain_field(h, dx, origin_x, origin_z, wind_by_row, z0, P):
         dirs = [1, -1] if sign == 0 else [sign]
         acc = np.zeros_like(coarse)
         for d in dirs:
-            acc += orographic.precipitation_mm_per_year(coarse, cdx, d * r['wind_m_s'], 0.0, r['background_mm_yr'], r['tau_c_s'], r['tau_f_s'])
-        acc /= len(dirs)
+            # storm-time orographic rate (background 0 here), scaled by the share of the year it applies
+            acc += r['storm_share'] * orographic.precipitation_mm_per_year(coarse, cdx, d * r['wind_m_s'], 0.0, 0.0, r['tau_c_s'], r['tau_f_s'], clip=False)
+        acc = r['background_mm_yr'] + acc / len(dirs)
         fine = zoom(acc, step, order=1)[:n, :n]
         if fine.shape != h.shape:
             fine = np.pad(fine, ((0, n - fine.shape[0]), (0, n - fine.shape[1])), mode='edge')
@@ -85,7 +81,8 @@ def rain_field(h, dx, origin_x, origin_z, wind_by_row, z0, P):
     for j in range(n):
         tile_row = z0 + min(j // rows_per_tile, len(wind_by_row) - 1)
         rain[j, :] = maps[int(wind_by_row[str(tile_row)])][j, :]
-    return np.maximum(rain, r['min_share'] * r['background_mm_yr'])
+    floor = r['min_share'] * r['background_mm_yr']
+    return np.maximum(rain, floor), rain < floor
 
 
 def sha(path):
@@ -106,9 +103,8 @@ def main():
     n = h.shape[0]
     origin_x, origin_z = x0 * T * SPACING, z0 * T * SPACING
     sea = h <= 0.0
-    X, Z = world_coords(n, dx, origin_x, origin_z)
-    U = uplift_field(h, sea, X, Z, dx, P, int(P['seed']))
-    rain = rain_field(h, dx, origin_x, origin_z, man_in['wind_toward_x_by_tile_row'], z0, P)
+    U = uplift_field(h, sea, dx, P)
+    rain, at_floor = rain_field(h, dx, origin_x, origin_z, man_in['wind_toward_x_by_tile_row'], z0, P)
 
     import rock
     g = rock.load(geology_dir)
@@ -116,14 +112,19 @@ def main():
     rid = rock.rock_ids(g, h).reshape(n, n)
     soluble_ids = [k for k, v in g['names'].items() if v in P['rock']['soluble']]
     soluble = np.isin(rid, soluble_ids) & ~sea
+    cave_ids = [k for k, v in g['names'].items() if v in P['rock']['cave_forming']]
+    cave_forming = np.isin(rid, cave_ids) & ~sea
 
     np.savez_compressed(f'{out_dir}/inputs.npz', landform=h.astype(np.float32), uplift=U.astype(np.float32), rain=rain.astype(np.float32),
-                        rock=rid.astype(np.int16), soluble=soluble, sea=sea, cell_m=dx, origin_x=origin_x, origin_z=origin_z)
+                        rock=rid.astype(np.int16), soluble=soluble, cave_forming=cave_forming, sea=sea, cell_m=dx, origin_x=origin_x, origin_z=origin_z)
     land = ~sea
     summary = dict(grid=n, cell_m=dx, land_km2=float(land.sum() * dx * dx / 1e6), summit_m=float(h.max()),
-                   rain_mm_yr=dict(min=float(rain[land].min()), mean=float(rain[land].mean()), max=float(rain[land].max())),
+                   rain_mm_yr=dict(min=float(rain[land].min()), mean=float(rain[land].mean()), max=float(rain[land].max()),
+                                   land_share_at_floor=float(at_floor[land].mean()),
+                                   calibration=P['rain']['calibration_peak']),
                    uplift_mm_yr=dict(mean=float(U[land].mean() * 1e3), max=float(U.max() * 1e3)),
                    soluble_km2=float(soluble.sum() * dx * dx / 1e6),
+                   cave_forming_km2=float(cave_forming.sum() * dx * dx / 1e6),
                    rock_km2={g['names'][int(k)]: float(c * dx * dx / 1e6) for k, c in zip(*np.unique(rid[land], return_counts=True))})
     inputs = {f: sha(f'{landform_dir}/{f}') for f in sorted(os.listdir(landform_dir)) if f.endswith('.f32')}
     inputs.update({f: sha(f'{geology_dir}/{f}') for f in sorted(os.listdir(geology_dir)) if f.startswith('geology')})
