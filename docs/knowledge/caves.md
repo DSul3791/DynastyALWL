@@ -38,6 +38,7 @@
 | 5-6 Nov | Outside water no longer floods the cave view; cave water lit by torchlight | #459, #463 | Worked |
 | 5 Nov | Rough cave rock look | #461 | Dave still found walls smooth and "drilled" (5 Nov); asked Sonny for rough rock |
 | 6 Nov | Cave life and starter-island occupants written up | #475, #477, #478 | Docs only; not built (IDEA-CAVE-LIFE) |
+| 7 Nov | Grass and forest litter laid in caves, floating in the air (Dave): grass rays start 80 m above the player, inside the rock over a deep cave, and a ray from inside rock lands on the cave floor | this PR | One ray up from a ground hit of each grass cell: rock or a roof within 14 m above means no grass or litter there. Not yet checked on the PC |
 | 6 Nov | Spring caves only 1.5 km or more from the sea (spring_cave.min_sea_m, distance from the bake frame so tiles agree), and at a hill's foot as well as on its side (hill_rise_m 15 within 100 m) | #473 | Tile 3,4: 96 caves to 39, the nearest 1.4 km from the sea. Was: 30 of 96 within 1 km of the sea at short coastal brook heads |
 
 ## What others do (with sources)
