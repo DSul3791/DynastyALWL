@@ -18,7 +18,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -122,6 +122,10 @@ func _make_species_body(number: int, id: int) -> Node3D:
 			return _make_gull_flock(id)      # one record per flock since MikeW's seabird flock block (PR 73): 5 to 12 gulls standing on the beach, all taking off in state 15
 		14:
 			return _make_bear()
+		15:
+			var donkey: Node3D = _make_horse(id)      # no code-built donkey: a smaller horse until its model files are there (Dave 7 Nov 2026)
+			donkey.scale = Vector3.ONE * 0.8
+			return donkey
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
@@ -461,6 +465,15 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 				var match_text: String = str(entry.get("match", ""))
 
 				if match_text == "" or name_text.findn(match_text) >= 0:
+					# A hide entry (a horse's saddle on a wild horse) cuts that part away entirely.
+					if bool(entry.get("hide", false)):
+						var gone: StandardMaterial3D = StandardMaterial3D.new()
+						gone.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+						gone.albedo_color = Color(1.0, 1.0, 1.0, 0.0)
+						mi.set_surface_override_material(surface, gone)
+						_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] hidden" % [surface, str(mi.name), name_text.strip_edges()])
+						break
+
 					var tex: Texture2D = load(str(entry.get("albedo", ""))) as Texture2D if ResourceLoader.exists(str(entry.get("albedo", ""))) else null
 
 					if tex != null:
