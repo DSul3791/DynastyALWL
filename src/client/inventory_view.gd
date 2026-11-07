@@ -4,6 +4,7 @@ const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
+const HeldItem := preload("res://src/client/held_item.gd")   # HeldItem.HOTBAR_SLOTS: the one hotbar size
 const CharacterKeys := preload("res://src/client/character/character_keys.gd")
 const CharacterStore := preload("res://src/client/character/character_store.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
@@ -4611,7 +4612,7 @@ func _refresh() -> void:
 		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
 		# The hotbar (slots 0 to 9) is an inventory spot of its own, shown on the hotbar strip: the backpack grid lists only the other slots, so an item
 		# on the hotbar leaves no second marker in the backpack (Dave, 7 Nov 2026).
-		button.visible = i >= HOTBAR_SLOTS and (filter == "" or (number != 0 and _matches(table.name_of(number), filter)))
+		button.visible = i >= HeldItem.HOTBAR_SLOTS and (filter == "" or (number != 0 and _matches(table.name_of(number), filter)))
 		button.tooltip_text = _tooltip(number, inventory.counts[i], inventory.wear[i])
 
 		if number != 0 and container_cap(i) > 0:
