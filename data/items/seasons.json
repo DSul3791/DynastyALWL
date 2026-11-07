@@ -2593,6 +2593,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"hyena": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {
