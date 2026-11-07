@@ -2298,6 +2298,7 @@ var _liquid = null   # the liquid water sheet over the live window (created on t
 var _flow_tex: ImageTexture = null      # the live water window's texture, updated in place each publish
 var _liquid_hole_told: Rect2 = Rect2()
 var _fine_holes: PackedVector4Array = PackedVector4Array()   # their rectangles, given to every 8 m sheet
+var _fine_received: int = 0   # 2 m water messages received (the log line for the PC check)
 var _fine_sheets: Dictionary = {}   # Sullivan water: region key -> {"sheet": LiquidSurface in fine mode, "rect": Vector4 world x, z, size x, size z}
 
 
@@ -2373,6 +2374,11 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 
 # Sullivan water (protocol 94, docs/water/fine_drawing_2m.md): each dig region's 2 m water on its own fine sheet; the 8 m sheets step aside there.
 func _on_fine_water(keys: PackedStringArray, packets: Array) -> void:
+	_fine_received += 1
+
+	if _fine_received == 1 or _fine_received % 20 == 0:
+		print("Terrain client: 2 m water message %d: %d regions, %d textures%s" % [_fine_received, keys.size(), packets.size(), "" if flora != null else " (no flora yet, not drawn)"])
+
 	if flora == null:
 		return
 
