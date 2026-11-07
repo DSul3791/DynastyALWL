@@ -207,7 +207,7 @@
 			"mouth_grow_note": "Dave 5 Nov 2026: rivers get deeper and a little wider toward the ocean. Over the last mouth_grow_m of a river that reaches the coast the channel widens to mouth_widen times and the centre bed sinks up to mouth_deepen_m more (drainage_channels.gd _toward_mouth); the estuary (estuary_*) takes over in the last few hundred metres.",
 			"seed": 17,
 			"natural": {
-				"enabled": false,
+				"enabled": true, "enabled_note": "Sonny 7 Nov 2026 (docs/water/terrain_water_pipeline.md P2): natural rivers on, over the slow1 erosion delta (4 M years, K 4e-6, D 0.02; worlds/base_world/erosion_delta_v2.bin, manifest in tools/erosion_precarve/real_run). Sources per head from P3.",
 				"note": "Natural rivers (GENERATOR_NOTES.md): the rivers are the drainage's own lines, bent on flat ground and carved from the flow; no ponds or craters. Width = width_base_m + width_per_sqrt_km2_m x sqrt(km2 drained), depth = depth_base_m + depth_per_km2_pow04_m x km2^0.4; the sideways swing is up to amp_widths x width (x noise_gain, capped) where the fall is under slope_flat, in knot_widths x width wavelengths, never up a bank more than valley_limit_m.",
 				"width_base_m": 16.0,
 				"width_per_sqrt_km2_m": 10.0,
