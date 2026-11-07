@@ -231,7 +231,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	# Rolling swells, knolls and hills BEFORE the water (docs/water/terrain_water_pipeline.md, stage A2; Dave 7 Nov 2026: "we have to make a better
 	# terrain generator and then manage the water better on how it flows"). The land is finished first and the rivers are routed over it, so they
 	# follow the hills' own valleys. Added after the water, the bumps had to be faded near every river and their hollows drained, and the water
-	# patched back afterwards. Only the sea is known here: the fades near water are fades near the sea.
+	# patched back afterwards. No water is placed yet, so the fades act near the sea and near the land's own valley lines (rolling.valley_fade).
 	clock = Time.get_ticks_msec()
 
 	if tile_rules.has("rolling"):
@@ -242,7 +242,14 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 		for index in range(n * n):
 			sea_only[index] = 1 if frame_height.heights[index] <= 0.0 else 0
 
-		TileRollingScript.apply(frame_height.heights, sea_only, n, frame_height.spacing_m, origin_sx, origin_sz, settings, rolling_rules, elevation)
+		var fade_from: PackedByteArray = sea_only
+		var valley_fade: Dictionary = rolling_rules.get("valley_fade", {})
+
+		if bool(valley_fade.get("enabled", false)):
+			var catchment_km2: float = float(valley_fade.get("catchment_km2", tile_rules.get("water", {}).get("drainage", {}).get("river_start_km2", 0.35)))
+			fade_from = TileRollingScript.valley_lines(frame_height.heights, sea_only, n, frame_height.spacing_m, catchment_km2)
+
+		TileRollingScript.apply(frame_height.heights, fade_from, n, frame_height.spacing_m, origin_sx, origin_sz, settings, rolling_rules, elevation)
 
 	timings["rolling"] = Time.get_ticks_msec() - clock
 
