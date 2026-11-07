@@ -53,6 +53,24 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 		if not hanging and wide >= SOLID_RADIUS_M:
 			holder.add_child(_solid(at, tall, wide))
 
+	# A goblin den's fire gives light (a cave is pitch black otherwise, so its litter and stone ring were not seen): one warm omni light per fire,
+	# faded out with distance so far dens cost nothing.
+	for fire in rows["goblin_fire"]:
+		var glow: OmniLight3D = OmniLight3D.new()
+		glow.name = "GoblinFireLight"
+		glow.light_color = Color(1.0, 0.6, 0.25)
+		glow.light_energy = 1.6
+		glow.omni_range = 7.0
+		glow.shadow_enabled = false
+		glow.distance_fade_enabled = true
+		glow.distance_fade_begin = 50.0
+		glow.distance_fade_length = 20.0
+		glow.position = (fire as Transform3D).origin + Vector3(0.0, 0.35, 0.0)
+		holder.add_child(glow)
+
+	if not (rows["goblin_fire"] as Array).is_empty() or not (rows["goblin_litter"] as Array).is_empty():
+		print("Cave dressing: tile %s has %d goblin den fires and %d litter piles" % [str(tile), (rows["goblin_fire"] as Array).size(), (rows["goblin_litter"] as Array).size()])
+
 	for look in rows:
 		if (rows[look] as Array).is_empty():
 			continue
