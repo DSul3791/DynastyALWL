@@ -8,6 +8,7 @@ extends SceneTree
 # the skeleton stands in each role against its rest pose, and the animal view's own notes (skin rebuilt, clip rescaled, clip refused).
 # Needs a window (pictures): run without --headless.
 #   godot --path . --script res://tools/creature_check.gd -- --kinds=bear,deer --out=E:/Software/godotDev/creature_check [--px=360] [--clips]
+# --young builds the young animal (its young_model when the row has one).
 # --id=N builds the animal with that id (a species with variants picks its look by id: --id=1 is the second look).
 # --clips also lists every clip in the file (with its length), to pick the clip for each role in a new model row.
 
@@ -22,6 +23,7 @@ func _init() -> void:
 	var px: int = 360
 	var list_clips: bool = false
 	var look_id: int = 0
+	var young: bool = false
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--kinds="):
@@ -30,6 +32,8 @@ func _init() -> void:
 			out = a.trim_prefix("--out=")
 		elif a.begins_with("--id="):
 			look_id = int(a.trim_prefix("--id="))
+		elif a == "--young":
+			young = true
 		elif a == "--clips":
 			list_clips = true
 		elif a.begins_with("--px="):
@@ -44,7 +48,7 @@ func _init() -> void:
 	var report: PackedStringArray = PackedStringArray()
 
 	for kind in kinds:
-		var lines: PackedStringArray = await _check(kind, int(number_of.get(kind, -1)), out, px, list_clips, look_id)
+		var lines: PackedStringArray = await _check(kind, int(number_of.get(kind, -1)), out, px, list_clips, look_id, young)
 		report.append_array(lines)
 		report.append("")
 
@@ -56,7 +60,7 @@ func _init() -> void:
 	quit()
 
 
-func _check(kind: String, number: int, out: String, px: int, list_clips: bool = false, look_id: int = 0) -> PackedStringArray:
+func _check(kind: String, number: int, out: String, px: int, list_clips: bool = false, look_id: int = 0, young: bool = false) -> PackedStringArray:
 	var lines: PackedStringArray = PackedStringArray(["== %s (species %d)" % [kind, number]])
 
 	if number < 0:
@@ -66,12 +70,16 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 	var view: Node3D = AnimalView.new()
 	var row: Dictionary = view._model_rows().get(kind, {})
 
+	if young and row.get("young_model", null) is Dictionary:
+		row = row.duplicate()
+		row.merge(row["young_model"], true)
+
 	if row.is_empty():
 		lines.append("FAIL no row in data/animals/models.json")
 		return lines
 
 	lines.append("file %s: %s" % [str(row.get("scene", "")), "found" if ResourceLoader.exists(str(row.get("scene", ""))) else "MISSING (run tools/install_animal_models.py, then import)"])
-	var probe: Node3D = view._make_model(number, look_id)
+	var probe: Node3D = view._make_model(number, look_id, young)
 
 	if probe == null:
 		lines.append("FAIL not drawn from the model: the code body is drawn")
@@ -108,7 +116,7 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 
 	for c in cols:
 		var role: String = wanted[c]
-		var model: Node3D = view._make_model(number, look_id)
+		var model: Node3D = view._make_model(number, look_id, young)
 		var cx: float = (float(c) - float(cols - 1) * 0.5) * cell
 		model.position = Vector3(cx, 0.0, 0.0)
 		model.rotation.y = -PI * 0.5      # faces -Z in the game: turned to face the left of the picture
@@ -152,7 +160,7 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 		await process_frame
 
 	var image: Image = vp.get_texture().get_image()
-	var path: String = "%s/%s%s.png" % [out, kind, "" if look_id == 0 else "_%d" % look_id]
+	var path: String = "%s/%s%s%s.png" % [out, "young_" if young else "", kind, "" if look_id == 0 else "_%d" % look_id]
 	image.save_png(path)
 	lines.append("picture %s" % path)
 	vp.queue_free()

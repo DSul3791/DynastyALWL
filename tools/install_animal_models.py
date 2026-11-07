@@ -23,7 +23,7 @@ bad = 0
 jobs = []
 for kind, row in rows.items():
     jobs.append((kind, row))
-    for v in row.get("variants", []):      # a look with its own file and pack folder (the rooster beside the hen)
+    for v in row.get("variants", []) + ([row["young_model"]] if isinstance(row.get("young_model"), dict) else []):      # a look or a young model with its own file and pack folder (the rooster beside the hen, the calf)
         if "pack" in v and "scene" in v:
             jobs.append((kind, v))
 

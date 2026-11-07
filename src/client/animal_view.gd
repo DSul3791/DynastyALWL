@@ -82,15 +82,18 @@ const YOUNG_SCALE := 0.5     # how big the young are drawn
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
 
 
-func _make_for_species(number: int, id: int) -> Node3D:
+# young: a young animal. When its species' model row has a young_model, that model is drawn at its own size (the calf beside
+# the cow, Dave 7 Nov 2026); the node then carries the "young_model" meta and must not be shrunk. Otherwise the adult is drawn
+# and the caller shrinks it to YOUNG_SCALE as before.
+func _make_for_species(number: int, id: int, young: bool = false) -> Node3D:
 	_coat = "feather" if FEATHERED.has(number) else "fur"
-	var node: Node3D = _make_species_body(number, id)
+	var node: Node3D = _make_species_body(number, id, young)
 	_coat = "fur"
 	return node
 
 
-func _make_species_body(number: int, id: int) -> Node3D:
-	var model: Node3D = _make_model(number, id)
+func _make_species_body(number: int, id: int, young: bool = false) -> Node3D:
+	var model: Node3D = _make_model(number, id, young)
 
 	if model != null:
 		return model
@@ -254,14 +257,14 @@ func on_rows(rows: Array) -> void:
 			if _bodies.size() >= MAX_DRAWN:
 				continue
 
-			var node: Node3D = _make_for_species(int(row[1]), id)
+			var node: Node3D = _make_for_species(int(row[1]), id, young)
 
 			if node == null:
 				continue
 
 			node.position = row[2]
 
-			if young:
+			if young and not node.has_meta("young_model"):
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
@@ -406,7 +409,7 @@ func _model_rows() -> Dictionary:
 	return _models
 
 
-func _make_model(number: int, id: int = 0) -> Node3D:
+func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
 	var row: Dictionary = _model_rows().get(kind, {})
 
@@ -418,6 +421,15 @@ func _make_model(number: int, id: int = 0) -> Node3D:
 		var looks: Array = row["variants"]
 		row = row.duplicate()
 		row.merge(looks[id % looks.size()], true)
+
+	# A young animal with a model of its own (young_model: scene, pack, clips, materials, length_m ...) is drawn from it, at its own size.
+	var own_young: bool = young and row.get("young_model", null) is Dictionary
+
+	if own_young:
+		var young_row: Dictionary = row["young_model"]
+		row = row.duplicate()
+		row.erase("variants")
+		row.merge(young_row, true)
 
 	if row.has("height_m"):
 		var dice: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -453,6 +465,9 @@ func _make_model(number: int, id: int = 0) -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.set_meta("model", true)
 	root.set_meta("model_row", row)
+
+	if own_young:
+		root.set_meta("young_model", true)
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
 	root.add_child(rig)
@@ -712,7 +727,7 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused:
 		for full in player.get_animation_list():
 			var bare: String = str(full).get_slice("|", str(full).count("|")).to_lower().replace(" ", "_")      # "idle to walk fwd" reads as idle_to_walk_fwd
 
-			if bare.contains("dead") or bare.contains("death") or bare.contains("hit_") or bare.contains("interact") or bare.begins_with("start"):
+			if bare.contains("dead") or bare.contains("death") or bare.contains("hit_") or bare.contains("interact") or bare.begins_with("start") or bare.ends_with("end") or bare.contains("stop"):
 				continue      # the raccoon's "dead run" is not its run
 
 			if refused.has(str(full)):
