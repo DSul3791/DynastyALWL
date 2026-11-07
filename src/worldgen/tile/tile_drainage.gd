@@ -84,6 +84,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 	water.heights = channels.bed
 	water.flow = flow.discharge.duplicate()
+	water.cave_heads = channels.cave_head.duplicate() if "cave_head" in channels else PackedByteArray()
 
 	for index in range(total):
 		water.flow[index] /= unit   # the tile stores drained cells, as encode_flow and the settler expect

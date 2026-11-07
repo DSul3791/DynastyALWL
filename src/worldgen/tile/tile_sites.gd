@@ -41,6 +41,7 @@ const RIVER := 3
 # Site local ids sit apart from geology ids (cell x 100 + n, below 1600)
 # and placers (from 9001), so every id in a tile is unique.
 const LOCAL_ID_BASE := 8000
+const CAVE_HEAD_NEAR_CELLS := 2  # a spring cave's head is within this many samples (16 m) of a head the drainage gave a cave
 const HEAD_CLEAR_CELLS := 5   # a brook head for a spring cave has no river cell over 1 m higher within this many samples (40 m)
 
 var caves: Array = []
@@ -67,6 +68,7 @@ var _geology
 var _limestone: int = -1
 var _local: int = 0
 var _keep_clear: Array = []      # [center Vector2, radius] where no entrance may open
+var cave_heads: PackedByteArray = PackedByteArray()     # 1 where the drainage chose a spring cave as a river's source (tile_water.cave_heads); empty: the old head search alone
 var far_from_sea: PackedByteArray = PackedByteArray()   # 1 where the sea is at least spring_cave.min_sea_m away (inland_mask, from the frame); empty: no such rule
 var _ore_by_id: Dictionary = {}
 var ore_report: Dictionary = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
@@ -766,6 +768,18 @@ func _spring_range(key: String, rng: RandomNumberGenerator) -> float:
 
 # Brook heads on slopes: a RIVER sample with no RIVER or LAKE sample above it among its 8 neighbours, no LAKE within 3 samples (that head has its pond)
 # and no river over 1 m higher within HEAD_CLEAR_CELLS.
+func _near_cave_head(i: int, j: int) -> bool:
+	for dj in range(-CAVE_HEAD_NEAR_CELLS, CAVE_HEAD_NEAR_CELLS + 1):
+		for di in range(-CAVE_HEAD_NEAR_CELLS, CAVE_HEAD_NEAR_CELLS + 1):
+			var ni: int = i + di
+			var nj: int = j + dj
+
+			if ni >= 0 and nj >= 0 and ni < _samples and nj < _samples and cave_heads[nj * _samples + ni] == 1:
+				return true
+
+	return false
+
+
 func _brook_heads() -> Array:
 	var heads: Array = []
 	var margin: int = int(float(_rules["edge_margin_m"]) / _spacing) + 2
@@ -784,6 +798,13 @@ func _brook_heads() -> Array:
 				continue
 
 			var head: bool = true
+
+			# Only where the drainage chose a cave as this river's source (Sonny 7 Nov 2026, Dave x 55520 z 68920: "a lake that runs into the cave ...
+			# there shouldnt be a cave here"). This search found its own heads in the finished water map, so a pond's rim or a lake's shore that looked
+			# like a brook head got a cave even though its source was the pond. The drainage's own choice (drainage_channels.gd cave_head) is the rule;
+			# the checks below still apply, within CAVE_HEAD_NEAR_CELLS of it (the later passes can move the river's top cell a little).
+			if not cave_heads.is_empty() and not _near_cave_head(i, j):
+				continue
 
 			for dj in range(-3, 4):
 				for di in range(-3, 4):

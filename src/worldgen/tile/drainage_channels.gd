@@ -76,6 +76,7 @@ var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
 var _origin: Vector2i = Vector2i.ZERO   # world sample coordinates of cell 0, so everything below depends on the place, not on the frame
 var _centre_surface: PackedFloat32Array = PackedFloat32Array()
+var cave_head: PackedByteArray = PackedByteArray()           # 1 at a head whose source is a spring cave ("cave" in _heads); tile_sites.gd opens caves only there
 var _source_dry: PackedByteArray = PackedByteArray()          # 1 on a river reach above a pond moved down to the bottom: no water painted there
 var _canyon: PackedFloat32Array = PackedFloat32Array()        # 0..1 canyon strength on centre cells (valleys give way to canyons)
 var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at centre cells (+ = turning right on the map, z down)
@@ -941,6 +942,8 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 	var dried: int = 0
 	_source_dry.resize(size * size)
 	_source_dry.fill(0)
+	cave_head.resize(size * size)
+	cave_head.fill(0)
 	# Channel cells flowing into each cell: 2 or more is a confluence (a moved-down source never dries a reach another river feeds).
 	var up_count: PackedByteArray = PackedByteArray()
 	up_count.resize(size * size)
@@ -980,6 +983,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 			source_counts[how] = int(source_counts.get(how, 0)) + 1
 
 			if how == "cave":
+				cave_head[index] = 1
 				continue
 
 			if how != "kept":

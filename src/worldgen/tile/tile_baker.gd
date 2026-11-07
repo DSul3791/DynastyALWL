@@ -338,6 +338,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	water.water_class = crop(water.water_class, n, core)
 	water.water_surface = crop(water.water_surface, n, core)
 	water.flow = crop(water.flow, n, core)
+	var cave_heads: PackedByteArray = crop(water.cave_heads, n, core) if water.cave_heads.size() == n * n else PackedByteArray()
 	water.samples = core
 	climate.biome = crop(climate.biome, n, core)
 	climate.soil = crop(climate.soil, n, core)
@@ -363,6 +364,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var sites = TileSitesScript.new()
 	sites.setup(settings, tile_rules, tables)
 	sites.far_from_sea = inland
+	sites.cave_heads = cave_heads
 	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow)
 	timings["sites"] = Time.get_ticks_msec() - clock
 

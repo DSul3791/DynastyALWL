@@ -55,3 +55,4 @@
 3. Worth trying when the look work comes: reflection probes in interior mode in big chambers, and a gradual fade along the entrance instead of one switch.
 
 Open questions go on the QA page.
+8. One owner per decision (7 Nov, Dave x 55520 z 68920: a cave on the shore of a lake with no outlet). The drainage chose each river's source (pond, lake or cave), but the cave placer searched the finished water map for heads on its own, and a pond rim or lake shore that looked like a brook head got a cave too. Now the drainage marks its cave heads (drainage_channels.gd cave_head) and tile_sites.gd opens spring caves only within 16 m of one. Lesson: when one pass decides something, later passes read that decision; they never infer it again from the result.
