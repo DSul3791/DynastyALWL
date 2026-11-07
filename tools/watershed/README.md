@@ -23,6 +23,6 @@ Everything here runs offline on Dave's PC (Dino), never in the cloud. Each stage
 
 Check `inputs.png` against these:
 - the landform has the island's shape and massifs, but no valleys yet;
-- the uplift is highest under the mountains, zero at sea, and varies at hill scale;
-- the rain is heavier on windward slopes, with a rain shadow behind the high ground;
-- the rock map shows the provinces, with soluble rock outlined.
+- the uplift is highest under the mountains, zero at sea, and smooth: no blobs or other pattern at hill scale;
+- the rain is heavier on windward slopes, with a rain shadow behind the high ground, and its peak is near the calibration peak in params.json (about 4,100 mm/yr), not several times it;
+- the rock map shows the provinces, with soluble rock (limestone, marble, chalk) outlined.

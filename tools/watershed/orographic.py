@@ -20,9 +20,12 @@ G = 9.81
 RHO_S_REF = 7.4e-3      # kg/m3 saturation vapour density at T_REF
 
 
-def precipitation_mm_per_year(h, dx, wind_u, wind_v, background_mm_yr, tau_c=1000.0, tau_f=1000.0, pad=0.5):
+def precipitation_mm_per_year(h, dx, wind_u, wind_v, background_mm_yr, tau_c=1000.0, tau_f=1000.0, pad=0.5, clip=True):
     """h: 2-D heights (m, sea <= 0 is set to 0), dx: cell size (m), wind (m/s), background_mm_yr: rain far from relief.
-    Returns rain in mm per year on the same grid, never below 0."""
+    Returns the rate the linear theory gives WHILE moist air is lifted (a storm-time rate), expressed in mm per year, on the
+    same grid; never below 0 when clip is True. It is not an annual total: over a year, multiply the orographic part by the
+    share of the year with such flow (inputs.py storm_share). Treating it as an annual total gave rain about three times too
+    heavy on the first R1 run (13,300 mm/yr peak)."""
     hz = np.maximum(np.asarray(h, np.float64), 0.0)
     nz, nx = hz.shape
     pz, px = int(nz * pad), int(nx * pad)
@@ -43,4 +46,5 @@ def precipitation_mm_per_year(h, dx, wind_u, wind_v, background_mm_yr, tau_c=100
     denom = np.where(np.abs(denom) < eps, eps, denom)
     p_hat = Cw * 1j * sigma * np.fft.fft2(hp) / denom
     p = np.real(np.fft.ifft2(p_hat))[pz:pz + nz, px:px + nx]    # mm/s
-    return np.maximum(background_mm_yr + p * 3600.0 * 24.0 * 365.25, 0.0)
+    out = background_mm_yr + p * 3600.0 * 24.0 * 365.25
+    return np.maximum(out, 0.0) if clip else out
