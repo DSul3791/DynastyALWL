@@ -565,6 +565,20 @@
 					"hint": "Great dung pats across the grass. A herd of wild oxen grazed here."
 				}
 			]
+		},
+		"puma": {
+			"group": "clawed",
+			"track": "big round prints, no claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Big round cat prints without claw marks. A puma prowls here."
+				},
+				{
+					"kind": "kill",
+					"hint": "A deer carcass half buried under leaves. A puma cached it."
+				}
+			]
 		}
 	}
 }

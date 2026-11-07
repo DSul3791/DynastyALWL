@@ -922,6 +922,37 @@
 			],
 			"spread_m": 3.0,
 			"sink_m": 0.15
+		},
+		"puma": {
+			"scene": "res://assets/animals/puma/SK_Puma.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Puma",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.3,
+			"run_mps": 10.0,
+			"stride_m": 1.0,
+			"clips": {
+				"0": "idle_eat",
+				"3": "idle_alerted_look",
+				"10": "aggressive_roar",
+				"11": "sprint_fwd",
+				"12": "idle pose",
+				"walk": "walk_fwd",
+				"run": "run_fwd"
+			},
+			"note": "WildMesh Puma (Realistic Animals/Puma/SK_Puma.fbx). Imported crouched: sized by its standing 'idle pose' (size_clip); length_m 2.0 is nose to tail tip. Checked 7 Nov 2026.",
+			"length_m": 2.0,
+			"materials": [
+				{
+					"match": "Whisk",
+					"albedo": "res://assets/animals/puma/Textures/T_Puma_Whiskers.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/puma/Textures/T_Puma_Body.png"
+				}
+			],
+			"size_clip": "idle pose"
 		}
 	}
 }
