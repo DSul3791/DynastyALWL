@@ -72,7 +72,7 @@ Three parts, in the order the land would have lived through them.
 - K from rock, and a channel threshold so weak flows do not incise ("no deep gullies under tiny flows"). The threshold is on the runoff-weighted area together with slope (the slope-area form of Montgomery and Dietrich 1988), not a fixed area, so wet hills carry more channels than dry or permeable ones (document sections 1 and 8);
 - creep rate from the rock and its soil cover, and from the climate: valley spacing is set by the balance of creep and channel cutting (Perron et al. 2009), so one creep rate everywhere would space valleys evenly across unrelated catchments (a never-see item). R2 scales creep by the rock and cover (as `lem.py` did); a climate term waits for a source;
 - sediment deposition where carrying capacity drops (inside bends, valley floors, lake entries, coast), so floodplains and deltas form;
-- run long enough to approach steady state, at 16 m over the nine tiles (8.3 M cells).
+- run long enough to reach steady state, at 16 m over the nine tiles (8.3 M cells). The summary reports how fast the summit and the mean land height still change over the last tenth of the run; near zero means uplift and erosion balance. Steady-state relief scales with uplift over erodibility, so the uplift is calibrated once so that the final summit matches the landform's (Sal's relief bands), rather than shaping the result afterwards.
 
 A long river era fills closed hollows with sediment. That is right in nature too, and it means any hollow left at its end is not, by itself, a lake.
 

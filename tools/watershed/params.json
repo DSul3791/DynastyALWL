@@ -59,9 +59,9 @@
 		"reference_bfi": 0.4
 	},
 	"evolve": {
-		"_note": "Stage B (evolve.py). K, m and D follow the earlier pre-carve runs (tools/erosion_precarve real_run: K 4e-6, m 0.5, D 0.05 m2/yr). G is the dimensionless deposition coefficient (about 1: deposition matters, floodplains and fans form). channel_head: where channels begin (slope-area rule, below). Not yet tuned on our island: R2's first run sets them. start_roughness_m: uncorrelated starting roughness (fixed by world position) so channels branch instead of running in parallel lines; erosion removes it.",
-		"years": 1000000.0,
-		"dt": 4000.0,
+		"_note": "Stage B (evolve.py). K, m and D follow the earlier pre-carve runs (tools/erosion_precarve real_run: K 4e-6, m 0.5, D 0.05 m2/yr). G is the dimensionless deposition coefficient (about 1: deposition matters, floodplains and fans form). channel_head: where channels begin (slope-area rule, below). Not yet tuned on our island: R2's first run sets them. start_roughness_m: uncorrelated starting roughness (fixed by world position) so channels branch instead of running in parallel lines; erosion removes it. years and dt (Sonny 7 Nov, after Dino's stable 1 Myr run): in 1 Myr the summit still rose 0.8 m/kyr, almost the full uplift (0.96), because the erosion had not yet climbed to the tops (a knickpoint moves at about K Q^m, a few m/kyr in small catchments). 4 Myr in 250 steps of 16 kyr costs the same run time; the implicit fluvial step is stable at any dt and creep takes its own sub-steps. The summary's last_tenth_* numbers say whether steady state was reached. Relief at steady state scales with U/K, so uplift.base_m_per_yr is then calibrated once so the final summit matches the landform's.",
+		"years": 4000000.0,
+		"dt": 16000.0,
 		"K": 4e-06,
 		"m": 0.5,
 		"D": 0.05,

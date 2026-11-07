@@ -50,5 +50,5 @@ Check `evolve.png` and the summary for:
 - branching valleys everywhere, with hills between them;
 - sediment on the valley floors and at the coast;
 - few closed hollows: a long river era fills them, and lakes come from named causes in R2b and R3, not from leftovers;
-- a summit and relief close to the landform's;
+- a summit and relief close to the landform's, and `last_tenth_summit_change_m_per_kyr` near zero (steady state); if the summit is still rising at about the uplift rate, the run is too short;
 - fewer channels (lower drainage density in the summary) on chalk and on the dry lee slopes than on the wet west flanks.

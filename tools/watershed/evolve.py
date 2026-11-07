@@ -193,6 +193,8 @@ def main():
     steps = int(round(E['years'] / E['dt']))
     t0 = time.time()
     deposit = np.zeros(n * n)
+    land0 = sea == 0
+    track = []                                             # (step, summit, mean land height): is the ground still rising?
     for s in range(steps):
         filled, rec, order = lem.route(h, sea, n)
         quick = runoff.budget(rain_mm, rock.rock_ids(g, h), bfi, W)['quick'] / q_ref    # the rock at today's surface
@@ -205,8 +207,9 @@ def main():
         change = h - (h0 + U * E['dt'])
         deposit = np.maximum(deposit + change, 0.0)          # sediment lying on bedrock: grows where it lands, wears where it erodes
         ery_fn.update(change)
+        track.append((s, float(h.max()), float(h[land0].mean())))
         if s % 25 == 0:
-            print(f'step {s}/{steps} t {time.time() - t0:.0f} s, max h {h.max():.0f} m', flush=True)
+            print(f'step {s}/{steps} t {time.time() - t0:.0f} s, max h {h.max():.0f} m, mean land {track[-1][2]:.0f} m', flush=True)
         # Fail loudly, never carry on: uplift alone over the whole run cannot lift any cell more than U * years above its start.
         bound = float(start.max()) + float(U.max()) * E['years'] + 100.0
         if not np.isfinite(h).all() or h.max() > bound:
@@ -231,7 +234,14 @@ def main():
     gy, gx = np.gradient(hh, dx)
     slope = np.degrees(np.arctan(np.hypot(gx, gy)))
     pits = (filled - h).reshape(n, n)
+    # Steady state check: how fast the summit and the mean land height still change over the last tenth of the run. Near zero
+    # means uplift and erosion balance (a mature landscape); a rise near the uplift rate means erosion never reached the tops.
+    k = max(len(track) // 10, 1)
+    span_kyr = k * E['dt'] / 1e3
     summary = dict(seconds=time.time() - t0, steps=steps, summit_m=float(hh.max()), landform_summit_m=float(start.max()),
+                   last_tenth_summit_change_m_per_kyr=(track[-1][1] - track[-1 - k][1]) / span_kyr if len(track) > k else None,
+                   last_tenth_mean_land_change_m_per_kyr=(track[-1][2] - track[-1 - k][2]) / span_kyr if len(track) > k else None,
+                   uplift_max_m_per_kyr=float(U.max()) * 1e3, mean_land_m=float(hh[land].mean()), landform_mean_land_m=float(start[land].mean()),
                    land_km2=float(land.sum() * cell / 1e6),
                    median_slope_deg=float(np.median(slope[land])), share_under_10deg_below_250m=float((slope[land & (hh < 250)] < 10).mean()),
                    closed_hollow_cells=int((pits[land] > 0.01).sum()), deepest_hollow_m=float(pits[land].max()),
