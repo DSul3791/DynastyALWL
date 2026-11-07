@@ -761,6 +761,20 @@
 					"hint": "Long brown hair snagged on rocks. Mammoths rubbed here."
 				}
 			]
+		},
+		"tiger": {
+			"group": "clawed",
+			"track": "huge round prints, no claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Huge round cat prints in the mud. A tiger walks here."
+				},
+				{
+					"kind": "scratch",
+					"hint": "Deep claw marks high on a trunk. A tiger marks its ground."
+				}
+			]
 		}
 	}
 }

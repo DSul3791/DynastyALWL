@@ -1817,6 +1817,36 @@
 					"albedo": "res://assets/animals/mammoth/Textures/Mammoth_Body.png"
 				}
 			]
+		},
+		"tiger": {
+			"scene": "res://assets/animals/tiger/SK_Tiger.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Tiger",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.4,
+			"run_mps": 11.0,
+			"stride_m": 1.4,
+			"clips": {
+				"0": "Eating_01-IP",
+				"3": "Idle_2",
+				"10": "Idle_3",
+				"11": "Sprint-IP",
+				"12": "Idle",
+				"walk": "Walk-IP",
+				"run": "Run-IP"
+			},
+			"note": "WildMesh Tiger (Realistic Animals/Tiger/SK_Tiger.fbx). Same rig as the leopard. Checked 7 Nov 2026.",
+			"length_m": 3.0,
+			"materials": [
+				{
+					"match": "Eye",
+					"albedo": "res://assets/animals/tiger/Textures/T_Tiger_Eye.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/tiger/Textures/T_Tiger_Body.png"
+				}
+			]
 		}
 	}
 }

@@ -553,6 +553,18 @@
    "status": "filled",
    "note": "borrowed from moose"
   },
+  "tiger_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/wolf_step_0.ogg",
+    "res://assets/audio/batch1/wolf_step_1.ogg",
+    "res://assets/audio/batch1/wolf_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -10,
+   "status": "filled",
+   "note": "borrowed from wolf"
+  },
   "ladder_rung": {
    "group": "ladder",
    "files": [
