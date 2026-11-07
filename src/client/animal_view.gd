@@ -707,16 +707,16 @@ func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> floa
 			if bone < 0 or anim.track_get_key_count(t) == 0:
 				continue
 
-			var tr: Transform3D = local[bone]
+			var bone_xf: Transform3D = local[bone]
 
 			if kind == Animation.TYPE_POSITION_3D:
-				tr.origin = anim.position_track_interpolate(t, 0.0)
+				bone_xf.origin = anim.position_track_interpolate(t, 0.0)
 			elif kind == Animation.TYPE_ROTATION_3D:
-				tr.basis = Basis(anim.rotation_track_interpolate(t, 0.0)).scaled(tr.basis.get_scale())
+				bone_xf.basis = Basis(anim.rotation_track_interpolate(t, 0.0)).scaled(bone_xf.basis.get_scale())
 			else:
-				tr.basis = Basis(tr.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, 0.0))
+				bone_xf.basis = Basis(bone_xf.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, 0.0))
 
-			local[bone] = tr
+			local[bone] = bone_xf
 
 	var to_rig: Transform3D = _to_ancestor(sk, rig)
 	var world: Array = []
