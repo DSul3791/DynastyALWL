@@ -28,6 +28,7 @@ const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
+var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
 var _mats: Dictionary = {}
 var _t: float = 0.0
 var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
@@ -452,7 +453,9 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 
 		for surface in mi.mesh.get_surface_count():
 			var old: Material = mi.mesh.surface_get_material(surface)
-			var name_text: String = (str(old.resource_name) if old != null else "") + " " + str(mi.name)
+			var file_tex: Texture2D = (old as BaseMaterial3D).albedo_texture if old is BaseMaterial3D else null
+			# The imported material's own colour texture names the part best (T_Bear_Head.png), then the material, then the mesh.
+			var name_text: String = (file_tex.resource_path.get_file() if file_tex != null else "") + " " + (str(old.resource_name) if old != null else "") + " " + str(mi.name)
 
 			for entry in sets:
 				var match_text: String = str(entry.get("match", ""))
@@ -464,9 +467,35 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 						var mat: StandardMaterial3D = StandardMaterial3D.new()
 						mat.albedo_texture = tex
 						mat.roughness = float(entry.get("roughness", 0.9))
+
+						# Fur cards (the ruff round a bear's neck, lashes, lips) are cut out by the texture's alpha: drawn solid,
+						# their cut-away parts show as black bands. Cut them, and draw both sides of the cards.
+						if _has_alpha(tex) or bool(entry.get("alpha", false)):
+							mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+							mat.alpha_scissor_threshold = float(entry.get("alpha_cut", 0.5))
+							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
 						mi.set_surface_override_material(surface, mat)
 
+					# One line per surface, so a part that takes the wrong texture (a dark band, dark eyes) shows which name it matched.
+					_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] takes %s" % [surface, str(mi.name), name_text.strip_edges(), str(entry.get("albedo", "")).get_file()])
 					break
+
+
+# Whether a texture has see-through pixels (checked once per texture).
+func _has_alpha(tex: Texture2D) -> bool:
+	var key: String = tex.resource_path
+
+	if not _alpha_of.has(key):
+		var img: Image = tex.get_image()
+
+		if img != null and img.is_compressed():
+			img = img.duplicate() as Image
+			img.decompress()
+
+		_alpha_of[key] = img != null and img.detect_alpha() != Image.ALPHA_NONE
+
+	return bool(_alpha_of[key])
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
