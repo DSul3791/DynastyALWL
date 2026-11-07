@@ -35,6 +35,8 @@ const MAX_TILES := 4           # tiles running at once, over all regions (the sa
 const MIN_WET := 4             # of the 16 cells under an 8 m sample, how many must be wet for the sample to show water
 const DRAW_M := 0.05           # thinner 2 m water than this is not counted as wet
 const PER := 4                 # 2 m cells along one 8 m sample
+const FOLLOW_EDGE_M := 24.0    # a player this far inside a running region keeps it; nearer its edge, a new region opens round them
+const FOLLOW_EVERY_MS := 10000 # at most one follow open this often (each reads the ground of up to 4 tiles)
 const MAX_SLEEPING := 32       # sleeping regions kept (each at most MAX_TILES tiles: about 0.7 MB)
 
 var source = null
@@ -43,6 +45,8 @@ var sleeping: Array = []       # regions put to sleep for the tile budget, oldes
 var built: int = 0
 var joined: int = 0            # regions that were joined into a bigger one
 var closed_m3: float = 0.0     # water dropped with sleeping regions past MAX_SLEEPING
+var followed: int = 0             # regions opened to follow a player
+var _follow_next_ms: int = 0
 var last_copied_m3: float = 0.0   # water the newest region copied from the regions it joined
 var refused: int = 0
 var _queue: Array = []         # [center: Vector3, radius: float, add: bool]
@@ -107,17 +111,61 @@ func _edit(center: Vector3, radius: float, add: bool, level_at: Callable) -> voi
 
 		if lo.x >= o.x and lo.y >= o.y and hi.x < far.x and hi.y < far.y:
 			var answer: Dictionary = win["coordinator"].edit_sphere(center, radius, add, true)
+			win["dug"] = true
 
 			if answer["result"] != Coordinator.COMMITTED:
 				refused += 1
 				print("water live: edit at %s not taken: %s %s" % [str(center.round()), answer["result"], answer["reason"]])
 			return
 
-	_open(touched, level_at)
+	_open(touched, level_at, true)
+
+
+# On the water thread, every hub tick: a 2 m region follows the first player while there is water near them (docs/water/follow_players_2m.md).
+# Opens the 2 x 2 tiles round the player when they are not well inside a running region (FOLLOW_EDGE_M) and the 8 m levels show water there.
+# At most one open per FOLLOW_EVERY_MS. Such a region is not DUG: under the tile budget it closes (the 8 m field still holds that river)
+# rather than sleeps; a dig inside it makes it dug, and then it sleeps with its water like any dug region.
+func follow(points: PackedVector2Array, level_at: Callable) -> void:
+	if source == null or points.is_empty():
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < _follow_next_ms:
+		return
+
+	var p: Vector2 = points[0]
+
+	for win in windows:
+		var inner: Rect2 = Rect2(win["origin"], Vector2(win["tiles"].size) * TILE_M).grow(-FOLLOW_EDGE_M)
+
+		if inner.has_point(p):
+			return
+
+	var want: Rect2i = tiles_of(p - Vector2.ONE * TILE_M * 0.5, p + Vector2.ONE * TILE_M * 0.5)
+
+	if not _wet_in(want, level_at):
+		return
+
+	_follow_next_ms = now + FOLLOW_EVERY_MS
+	followed += 1
+	_open(want, level_at, false)
+
+
+# Any 8 m sample in the tiles wet?
+func _wet_in(tiles: Rect2i, level_at: Callable) -> bool:
+	var o: Vector2 = Vector2(tiles.position) * TILE_M
+	var steps: int = int(TILE_M / 8.0)
+
+	for sj in range(tiles.size.y * steps):
+		for si in range(tiles.size.x * steps):
+			if not is_nan(float(level_at.call(o.x + si * 8.0 + 4.0, o.y + sj * 8.0 + 4.0))):
+				return true
+	return false
 
 
 # Opens `wanted` tiles, joined with every region that overlaps or borders them.
-func _open(wanted: Rect2i, level_at: Callable) -> void:
+func _open(wanted: Rect2i, level_at: Callable, dug: bool) -> void:
 	var rect: Rect2i = wanted
 	var joining: Array = []
 
@@ -194,9 +242,23 @@ func _open(wanted: Rect2i, level_at: Callable) -> void:
 		windows.erase(win)
 		sleeping.erase(win)
 		joined += 1
+		dug = dug or bool(win.get("dug", true))
 
-	# The tile budget: the running region nearest rest goes to sleep, keeping its water.
+	# The tile budget: a region nobody dug in closes first (the 8 m field holds its river); then the dug region nearest rest goes to sleep,
+	# keeping its water.
 	while _tiles_running() + rect.get_area() > MAX_TILES and not windows.is_empty():
+		var plain = null
+
+		for win in windows:
+			if not bool(win.get("dug", true)):
+				plain = win
+				break
+
+		if plain != null:
+			windows.erase(plain)
+			print("water live: region %s closes for the %d tile budget (nobody dug there; the 8 m levels show its river again)" % [str(plain["tiles"]), MAX_TILES])
+			continue
+
 		var calm = windows[0]
 
 		for win in windows:
@@ -212,7 +274,7 @@ func _open(wanted: Rect2i, level_at: Callable) -> void:
 		closed_m3 += gone["grid"].total_volume()
 		print("water live: sleeping region %s dropped past %d sleeping, %.0f m3 of 2 m water lost (the 8 m levels show again)" % [str(gone["tiles"]), MAX_SLEEPING, gone["grid"].total_volume()])
 
-	windows.append({"grid": grid, "adapter": adapter, "coordinator": coordinator, "origin": origin, "tiles": rect})
+	windows.append({"grid": grid, "adapter": adapter, "coordinator": coordinator, "origin": origin, "tiles": rect, "dug": dug})
 	built += 1
 	print("water live: window %d x %d at %s (tiles %s, %d joined), %.0f m3 of water (%.0f copied, %.0f from the 8 m levels), %d border cells held" % [w, h, str(origin), str(rect), joining.size(), grid.total_volume(), copied, seeded, grid.fixed.size()])
 

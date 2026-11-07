@@ -139,5 +139,21 @@ func _init() -> void:
 	_check(texel.a > 0.2 and absf(texel.r - grid.surface(far_i, far_j)) < 1.0e-4, "the ditch texel carries its depth and surface (%.2f m deep, surface %.3f)" % [texel.a, texel.r])
 	_check(fine["packets"][0][1] == Vector2(97.0, -95.0) and live.fine_packets(true)["packets"].size() == 2, "packet origin is cell (0, 0)'s centre, and sleeping regions go too when asked")
 
+	# Following a player (docs/water/follow_players_2m.md): a player by the river gets a 2 x 2 tile region, not dug; staying inside it opens
+	# nothing more; under the budget a region nobody dug in closes instead of sleeping.
+	var live2 = DigWindows.new()
+	live2.source = ground
+	live2.follow(PackedVector2Array([Vector2(150.0, 44.0)]), level_at)
+	_check(live2.windows.size() == 1 and live2.windows[0]["tiles"] == Rect2i(1, -1, 2, 2) and not bool(live2.windows[0]["dug"]), "a player by the river gets a 2 x 2 tile region, not dug (%d regions)" % live2.windows.size())
+	_check(live2.windows[0]["grid"].total_volume() > 0.0, "the followed region starts with the river's water (%.0f m3)" % live2.windows[0]["grid"].total_volume())
+	live2.follow(PackedVector2Array([Vector2(150.0, 44.0)]), level_at)
+	_check(live2.followed == 1, "a player well inside the region opens nothing more (%d opens)" % live2.followed)
+	live2._follow_next_ms = 0   # past the rate limit, so only the dryness decides
+	live2.follow(PackedVector2Array([Vector2(150.0, 200.0)]), level_at)
+	_check(live2.followed == 1, "dry ground (no 8 m water) opens nothing")
+	live2.dig(Vector3(288.0, 1.0, 288.0), 1.5, false)
+	live2.update(0.0, level_at)
+	_check(live2.sleeping.is_empty() and live2.windows.size() == 1 and bool(live2.windows[0]["dug"]), "under the budget the region nobody dug in closes rather than sleeps")
+
 	print("%d failures" % failures)
 	quit(1 if failures > 0 else 0)
