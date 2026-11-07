@@ -15,7 +15,8 @@ Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the
 | Textures | 21 MB colour + 10 MB metallic-roughness | 23 MB colour + 10 MB metallic-roughness |
 | Target path | `assets/creatures/goblin_skritch/` | `assets/creatures/goblin_rukz/` |
 
-- Neither .glb is committed yet: the two embedded textures make them too big. Plan: shrink the textures to 2048 px on the PC, then commit (about 5-8 MB each). Dave made them himself, so committing is allowed.
+- Both .glb files are committed at full size (under GitHub's 100 MB file limit; about 81 MB added to the repo in total, so every clone carries it). Dave made them himself, so committing is allowed.
+- **Textures are NOT shrunk** (Dave, 7 Nov 2026). The full-size originals are the ultra tier and stay as they are. Textures get smaller only as part of LOD, on lower graphics settings (import mipmaps / mipmap bias / Godot's own downgrading), never by replacing the source files.
 - Skritch clips: Alert, BeHit_FlyUp, Block1, Cautious_Crouch_Walk_Forward, Collect_Object, Combat_Stance, Dead, Idle_02, Knock_Down, Right_Hand_Sword_Slash, Roll_Dodge, Running, Sit_Cross_Legged_on_Floor, Sleep_Normally, Sneaky_Walk, Stand_Dodge, Stand_and_Drink, Thrust_Slash, Walking.
 - Rukz clips: Running, Walking, Alert, Attack, Cautious_Crouch_Walk_Forward, Collect_Object, Dead, Hit_Reaction, Idle_02, Idle_5, Roll_Dodge, Sit_Cross_Legged_on_Floor, Sleep_Normally, Sneaky_Walk, Stand_Dodge, Stand_and_Drink, Sword_Judgment, Sword_Parry, Thrust_Slash, falling_down.
 - The two models share a skeleton but not clip names, so code must map clips by role (idle, walk, run, attack, hit, dead) per model, not by name.
