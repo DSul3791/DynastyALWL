@@ -20,6 +20,10 @@ const WetMeters := 0.12   # water drawn from this depth (the water simulation's 
 const RIVER_CLASS := 3
 const RIVER_FILM_M := 0.05   # a painted river cell thinner than WetMeters is still drawn, this deep (riffles between pools)
 
+const GOBLIN_DEN_PERCENT := 60      # share of spring caves with a side branch that hold a goblin den (Dave 7 Nov 2026: "any spring tunnel")
+const GOBLIN_LITTER_PILES := 5      # litter piles round a goblin den's fire
+const GOBLIN_LITTER_RING_M := 1.6   # how far from the fire
+
 var tile: Vector2i = Vector2i.ZERO
 var samples: int = 0
 var spacing_m: float = 8.0
@@ -70,6 +74,8 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 # Caves: capsules (passages) and ellipsoids (chambers) with AABBs.
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
 var spring_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of each spring cave's mouth (Dave 3 Nov 2026): the settle keeps a spring there even on steep ground
+var goblin_dens: PackedVector3Array = PackedVector3Array()          # the floor point of each goblin den (Dave 7 Nov 2026): a dry side branch of a spring cave, picked by GOBLIN_DEN_PERCENT of the cave's id
+var goblin_den_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of the mouth of each spring cave that has a goblin den: where its goblin group comes out (server_animals lair_mouths)
 var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
 # Cave dressing (Dave 4 Nov 2026; bake: tile_sites._dress_cave; drawn by Kathreen's client view). Flat lists:
 var cave_bones: PackedFloat32Array = PackedFloat32Array()        # 5 floats each: x, y, z, kind (0 animal, 1 human), yaw
@@ -620,6 +626,8 @@ func _load_caves(list: Array) -> void:
 	cave_pool_shapes = PackedFloat32Array()
 	cave_openings = []
 	cave_dens = PackedVector3Array()
+	goblin_dens = PackedVector3Array()
+	goblin_den_mouths = PackedVector2Array()
 	cave_bones = PackedFloat32Array()
 	cave_formations = PackedFloat32Array()
 	cave_scatter = PackedFloat32Array()
@@ -654,9 +662,25 @@ func _load_caves(list: Array) -> void:
 		if str(cave.get("cave_kind", "")) == "spring_cave":
 			_load_cave_stream(cave)
 
+		var branch_den: Vector3 = Vector3.INF
+
 		for den in cave.get("dens", []):
 			var dn: Array = nodes[int(den["node"])]
 			cave_dens.append(Vector3(float(dn[0]), float(dn[1]) - 0.5 * float(dn[4]), float(dn[2])))
+
+			if str(den.get("where", "")) == "branch":
+				branch_den = cave_dens[cave_dens.size() - 1]   # the last dry side branch of a spring cave
+
+		# A goblin den (Dave 7 Nov 2026): the dry end of one side branch of a spring cave, in GOBLIN_DEN_PERCENT of them (picked by the cave's id, so
+		# the server and every client agree). Dressed with litter (bones, sticks, thatch) and a small fire as cave_bones kinds 2 and 3.
+		if branch_den != Vector3.INF and str(cave.get("cave_kind", "")) == "spring_cave" and not nodes.is_empty() and absi(hash(str(cave.get("id", "")))) % 100 < GOBLIN_DEN_PERCENT:
+			goblin_dens.append(branch_den)
+			goblin_den_mouths.append(Vector2(float(nodes[0][0]), float(nodes[0][2])))
+			cave_bones.append_array(PackedFloat32Array([branch_den.x, branch_den.y, branch_den.z, 3.0, 0.0]))
+
+			for k in GOBLIN_LITTER_PILES:
+				var turn: float = TAU * float(k) / float(GOBLIN_LITTER_PILES) + 0.7
+				cave_bones.append_array(PackedFloat32Array([branch_den.x + cos(turn) * GOBLIN_LITTER_RING_M, branch_den.y, branch_den.z + sin(turn) * GOBLIN_LITTER_RING_M, 2.0, fposmod(turn * 2.3, TAU)]))
 		var capsules: Array = []
 		var chambers: Array = []
 		var low: Vector3 = Vector3(INF, INF, INF)
