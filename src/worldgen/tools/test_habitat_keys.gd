@@ -19,9 +19,9 @@ func check(ok: bool, what: String) -> void:
 func make(with_keys: bool):
 	var a = AnimalsScript.new()
 	a.ground_height = func(x, z): return 10.0 + 0.3 * sin(x * 0.05) * 20.0 + 0.01 * z
-	a.blocked = func(x, z): return x > 400.0 and x < 420.0
-	a.water_level = func(x, z): return 9.0
-	a.biome_at = func(x, z): return ["temperate_forest", "alpine_meadow", "marsh", "bare_rock", "temperate_grassland"][int(absf(x + z)) / 50 % 5]
+	a.blocked = func(x, _z): return x > 400.0 and x < 420.0
+	a.water_level = func(_x, _z): return 9.0
+	a.biome_at = func(x, z): return ["temperate_forest", "alpine_meadow", "marsh", "bare_rock", "temperate_grassland"][int(absf(x + z) / 50.0) % 5]
 	a.player_positions = func(): return [Vector3.ZERO]
 	a.setup()
 
