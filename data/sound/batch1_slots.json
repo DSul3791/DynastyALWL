@@ -229,6 +229,90 @@
    "status": "filled",
    "note": "borrowed from fox, light"
   },
+  "chamois_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -15,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "mink_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -20,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "raccoon_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -18,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "rat_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -26,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "crow_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -28,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "pheasant_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -26,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "goose_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -24,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
   "ladder_rung": {
    "group": "ladder",
    "files": [

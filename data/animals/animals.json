@@ -1701,6 +1701,459 @@
 			},
 			"note": "Dave 7 Nov 2026, batch 1. A beaver keeps to the water edge in forest and marsh, mostly at dusk and night, and slips away from a player (FAUNA_BY_BIOME rarity 3). Rabbit movement numbers, no burrow, slow on land; it does not swim in this version.",
 			"spawn_share": 0.4
+		},
+		"chamois": {
+			"number": 23,
+			"name": "Chamois",
+			"target_per_player": 3,
+			"health": 22.0,
+			"walk_mps": 1.5,
+			"flee_mps": 12.0,
+			"spook_m": 40.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				5.0,
+				20.0
+			],
+			"wander_m": 10.0,
+			"flee_run_m": 60.0,
+			"herd": [
+				3,
+				6
+			],
+			"alarm_s": [
+				0.2,
+				0.9
+			],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.5,
+				3.0
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.5,
+			"zig_deg": 15.0,
+			"zig_leg_m": 15.0,
+			"herd_pull_m": 10.0,
+			"eye_m": 0.8,
+			"habitat": {
+				"slope_max": 1.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": false
+			},
+			"biomes": {
+				"alpine_meadow": 1.0,
+				"bare_rock": 0.8,
+				"boreal_forest": 0.2
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.5,
+				"night": 0.05
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 8.0,
+				"charge_m": 8.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 1.4,
+				"damage": 9.0,
+				"recover_s": 3.0,
+				"calm_m": 8.75,
+				"cool_s": 30.0,
+				"corner_m": 3.0,
+				"corner_warn_s": 0.6,
+				"provoked_m": 5.25,
+				"provoked_warn_s": 0.5,
+				"threat_m": 3.0,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.8,
+				"defensive": 0.2
+			},
+			"seasons": {
+				"autumn": {
+					"threat_x": 1.5
+				}
+			},
+			"young": {
+				"share": 0.25,
+				"count": [
+					1,
+					2
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 5.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"spawn_share": 0.3,
+			"note": "Dave 7 Nov 2026 (add all the animals we have models for), batch 2. A chamois is a small, quick goat-antelope of alpine meadow and the steep rock above the tree line, in small groups; it bolts uphill at the first sight of a player. Mountain goat numbers, lighter and faster."
+		},
+		"mink": {
+			"number": 24,
+			"name": "Mink",
+			"target_per_player": 2,
+			"spawn_share": 0.35,
+			"health": 6.0,
+			"walk_mps": 1.0,
+			"flee_mps": 6.0,
+			"spook_m": 15.0,
+			"safe_m": 35.0,
+			"graze_s": [
+				4.0,
+				14.0
+			],
+			"wander_m": 8.0,
+			"flee_run_m": 50.0,
+			"herd": [],
+			"alert_m": 40.0,
+			"alert_s": [
+				1.0,
+				2.5
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.55,
+			"zig_deg": 20.0,
+			"zig_leg_m": 12.0,
+			"herd_pull_m": 0.0,
+			"eye_m": 0.15,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 2.0,
+				"forest": true,
+				"near_fresh_water_m": 20.0
+			},
+			"biomes": {
+				"marsh": 1.0,
+				"mixed_forest": 0.6,
+				"boreal_forest": 0.6,
+				"temperate_forest": 0.5
+			},
+			"active": {
+				"day": 0.2,
+				"dusk": 1.0,
+				"night": 0.9
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 5.0,
+				"charge_m": 3.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 0.6,
+				"damage": 2.0,
+				"recover_s": 3.0,
+				"calm_m": 3.0,
+				"cool_s": 30.0,
+				"corner_m": 1.5,
+				"corner_warn_s": 0.6,
+				"provoked_m": 2.0,
+				"provoked_warn_s": 0.5,
+				"threat_m": 1.2,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.6,
+				"neutral": 0.25,
+				"friendly": 0.15
+			},
+			"note": "Dave 7 Nov 2026, batch 2. A mink is a small dark hunter of river banks and marsh edges, mostly at dusk and night; it slips away from a player and bites only one who corners it. Fox numbers, much smaller, kept to the water edge; it does not swim or steal in this version."
+		},
+		"raccoon": {
+			"number": 25,
+			"name": "Raccoon",
+			"target_per_player": 1,
+			"spawn_share": 0.35,
+			"health": 10.0,
+			"walk_mps": 1.0,
+			"flee_mps": 7.0,
+			"spook_m": 18.0,
+			"safe_m": 40.0,
+			"graze_s": [
+				4.0,
+				14.0
+			],
+			"wander_m": 12.0,
+			"flee_run_m": 50.0,
+			"herd": [],
+			"alert_m": 40.0,
+			"alert_s": [
+				1.0,
+				2.5
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.55,
+			"zig_deg": 20.0,
+			"zig_leg_m": 12.0,
+			"herd_pull_m": 0.0,
+			"eye_m": 0.3,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": true,
+				"near_fresh_water_m": 60.0
+			},
+			"thief": {
+				"smell_m": 120.0,
+				"look_s": 2.0,
+				"scare_m": 18.0,
+				"fire_m": 10.0,
+				"sneak_mps": 2.5,
+				"run_mps": 9.0,
+				"run_m": 70.0,
+				"again_s": 20.0
+			},
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 0.9,
+				"marsh": 0.6
+			},
+			"active": {
+				"day": 0.05,
+				"dusk": 0.8,
+				"night": 1.0
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 5.0,
+				"charge_m": 3.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 0.8,
+				"damage": 3.0,
+				"recover_s": 3.0,
+				"calm_m": 4.0,
+				"cool_s": 30.0,
+				"corner_m": 2.0,
+				"corner_warn_s": 0.6,
+				"provoked_m": 2.5,
+				"provoked_warn_s": 0.5,
+				"threat_m": 1.5,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.6,
+				"neutral": 0.25,
+				"friendly": 0.15
+			},
+			"note": "Dave 7 Nov 2026, batch 2. A raccoon forages forest edges and stream banks at night and raids camps for food like the fox; it runs from a player and bites one who corners it. Fox numbers, slower and stockier."
+		},
+		"rat": {
+			"number": 26,
+			"name": "Rat",
+			"target_per_player": 3,
+			"health": 2.0,
+			"walk_mps": 0.8,
+			"flee_mps": 4.0,
+			"spook_m": 8.0,
+			"safe_m": 20.0,
+			"graze_s": [
+				3.0,
+				10.0
+			],
+			"wander_m": 5.0,
+			"flee_run_m": 25.0,
+			"alert_m": 24.0,
+			"alert_s": [
+				1.0,
+				2.0
+			],
+			"burst_s": 3.0,
+			"trot_share": 0.5,
+			"zig_deg": 35.0,
+			"zig_leg_m": 8.0,
+			"eye_m": 0.08,
+			"habitat": {
+				"slope_max": 0.5,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0
+			},
+			"biomes": {
+				"marsh": 1.0,
+				"temperate_forest": 0.6,
+				"mixed_forest": 0.5,
+				"temperate_grassland": 0.5,
+				"beach": 0.4
+			},
+			"active": {
+				"day": 0.2,
+				"dusk": 0.8,
+				"night": 1.0
+			},
+			"note": "Dave 7 Nov 2026, batch 2. A rat scurries round water edges, marsh and forest floor, mostly at night, and bolts from a player. Rabbit numbers, smaller, no burrow in this version.",
+			"spawn_share": 0.4
+		},
+		"crow": {
+			"number": 27,
+			"name": "Crow",
+			"target_per_player": 3,
+			"health": 3.0,
+			"walk_mps": 1.5,
+			"flee_mps": 7.5,
+			"spook_m": 16.0,
+			"safe_m": 35.0,
+			"graze_s": [
+				3.0,
+				10.0
+			],
+			"wander_m": 6.0,
+			"flee_run_m": 25.0,
+			"alert_m": 24.0,
+			"alert_s": [
+				1.0,
+				2.0
+			],
+			"burst_s": 3.0,
+			"trot_share": 0.5,
+			"zig_deg": 35.0,
+			"zig_leg_m": 8.0,
+			"eye_m": 0.25,
+			"habitat": {
+				"slope_max": 0.5,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0
+			},
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"heath": 0.8,
+				"temperate_forest": 0.6,
+				"mixed_forest": 0.5,
+				"beach": 0.5
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.4,
+				"night": 0.0
+			},
+			"spawn_share": 0.5,
+			"herd": [
+				2,
+				5
+			],
+			"herd_pull_m": 4.0,
+			"note": "Dave 7 Nov 2026, batch 2. Crows walk and peck on open ground, field edges and the shore in small groups by day and flush when a player comes close. Grouse numbers; it does not fly in this version, it runs and flaps."
+		},
+		"pheasant": {
+			"number": 28,
+			"name": "Pheasant",
+			"target_per_player": 3,
+			"health": 6.0,
+			"walk_mps": 1.5,
+			"flee_mps": 7.5,
+			"spook_m": 14.0,
+			"safe_m": 35.0,
+			"graze_s": [
+				3.0,
+				10.0
+			],
+			"wander_m": 6.0,
+			"flee_run_m": 25.0,
+			"alert_m": 24.0,
+			"alert_s": [
+				1.0,
+				2.0
+			],
+			"burst_s": 3.0,
+			"trot_share": 0.5,
+			"zig_deg": 35.0,
+			"zig_leg_m": 8.0,
+			"eye_m": 0.25,
+			"habitat": {
+				"slope_max": 0.5,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0
+			},
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"temperate_forest": 0.7,
+				"heath": 0.6,
+				"mixed_forest": 0.4
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.6,
+				"night": 0.0
+			},
+			"spawn_share": 0.5,
+			"herd": [
+				1,
+				2
+			],
+			"herd_pull_m": 4.0,
+			"note": "Dave 7 Nov 2026, batch 2. A pheasant picks through grassland, heath and forest edges, alone or in twos, and runs or bursts away when a player comes near (FAUNA_BY_BIOME rarity 2). Grouse numbers; it does not fly in this version."
+		},
+		"goose": {
+			"number": 29,
+			"name": "Goose",
+			"target_per_player": 3,
+			"health": 10.0,
+			"walk_mps": 1.5,
+			"flee_mps": 7.5,
+			"spook_m": 20.0,
+			"safe_m": 35.0,
+			"graze_s": [
+				3.0,
+				10.0
+			],
+			"wander_m": 6.0,
+			"flee_run_m": 25.0,
+			"alert_m": 24.0,
+			"alert_s": [
+				1.0,
+				2.0
+			],
+			"burst_s": 3.0,
+			"trot_share": 0.5,
+			"zig_deg": 35.0,
+			"zig_leg_m": 8.0,
+			"eye_m": 0.25,
+			"habitat": {
+				"slope_max": 0.5,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0
+			},
+			"biomes": {
+				"marsh": 1.0,
+				"temperate_grassland": 0.7,
+				"beach": 0.5,
+				"tundra": 0.4
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.5,
+				"night": 0.05
+			},
+			"spawn_share": 0.5,
+			"herd": [
+				3,
+				8
+			],
+			"herd_pull_m": 4.0,
+			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger; it does not fly in this version."
 		}
 	},
 	"senses": {

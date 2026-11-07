@@ -7,7 +7,8 @@ extends SceneTree
 # The report lists, per creature: file found, drawn from the model or the code body, length, the clip picked for each role, how tall
 # the skeleton stands in each role against its rest pose, and the animal view's own notes (skin rebuilt, clip rescaled, clip refused).
 # Needs a window (pictures): run without --headless.
-#   godot --path . --script res://tools/creature_check.gd -- --kinds=bear,deer --out=E:/Software/godotDev/creature_check [--px=360]
+#   godot --path . --script res://tools/creature_check.gd -- --kinds=bear,deer --out=E:/Software/godotDev/creature_check [--px=360] [--clips]
+# --clips also lists every clip in the file (with its length), to pick the clip for each role in a new model row.
 
 const AnimalView := preload("res://src/client/animal_view.gd")
 const ROLE_ORDER := ["rest", "0", "3", "10", "11", "12", "walk", "run"]
@@ -18,12 +19,15 @@ func _init() -> void:
 	var kinds: PackedStringArray = PackedStringArray()
 	var out: String = "user://creature_check"
 	var px: int = 360
+	var list_clips: bool = false
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--kinds="):
 			kinds = a.trim_prefix("--kinds=").split(",", false)
 		elif a.begins_with("--out="):
 			out = a.trim_prefix("--out=")
+		elif a == "--clips":
+			list_clips = true
 		elif a.begins_with("--px="):
 			px = int(a.trim_prefix("--px="))
 
@@ -36,7 +40,7 @@ func _init() -> void:
 	var report: PackedStringArray = PackedStringArray()
 
 	for kind in kinds:
-		var lines: PackedStringArray = await _check(kind, int(number_of.get(kind, -1)), out, px)
+		var lines: PackedStringArray = await _check(kind, int(number_of.get(kind, -1)), out, px, list_clips)
 		report.append_array(lines)
 		report.append("")
 
@@ -48,7 +52,7 @@ func _init() -> void:
 	quit()
 
 
-func _check(kind: String, number: int, out: String, px: int) -> PackedStringArray:
+func _check(kind: String, number: int, out: String, px: int, list_clips: bool = false) -> PackedStringArray:
 	var lines: PackedStringArray = PackedStringArray(["== %s (species %d)" % [kind, number]])
 
 	if number < 0:
@@ -75,6 +79,14 @@ func _check(kind: String, number: int, out: String, px: int) -> PackedStringArra
 
 	if probe.has_meta("player"):
 		roles = (probe.get_meta("player") as AnimationPlayer).get_meta("roles", {})
+
+		if list_clips:
+			var all: PackedStringArray = PackedStringArray()
+
+			for full in (probe.get_meta("player") as AnimationPlayer).get_animation_list():
+				all.append("%s %.1f" % [str(full).get_slice("|", str(full).count("|")), (probe.get_meta("player") as AnimationPlayer).get_animation(full).length])
+
+			lines.append("clips (%d): %s" % [all.size(), ", ".join(all)])
 
 	var wanted: Array = ["rest"]
 

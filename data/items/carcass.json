@@ -1036,6 +1036,126 @@
 			],
 			"hunt_difficulty": 1.8,
 			"blows": 3
+		},
+		"chamois": {
+			"size_kg": 35.0,
+			"parts": [
+				[
+					"raw_meat",
+					4,
+					6
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					3,
+					4
+				],
+				[
+					"sinew",
+					1,
+					2
+				],
+				[
+					"animal_fat",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 2.2,
+			"blows": 3
+		},
+		"mink": {
+			"size_kg": 1.2,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.8,
+			"blows": 1
+		},
+		"raccoon": {
+			"size_kg": 7.0,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					2
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					2
+				],
+				[
+					"animal_fat",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.4,
+			"blows": 2
+		},
+		"rat": {
+			"size_kg": 0.3,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.2,
+			"blows": 1
+		},
+		"crow": {
+			"size_kg": 0.5,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"feather",
+					2,
+					5
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.5,
+			"blows": 1
 		}
 	},
 	"species_note": "Per-species `blows` (Sal, 2026-10-31) = knife blows to dress the body, by size: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8. The server currently reads the single top-level `blows` (4) for every species; reading the per-species value is a small code change (server_items.gd make_carcass / _process_carcass). All species use tool_class knife."
