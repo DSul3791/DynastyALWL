@@ -994,7 +994,8 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 				# down its river, too steep for one here and with no room for a cave, used to keep its river with no source. A river starts only at
 				# a spring (pond, lake or cave), so its reach dries down to where another river joins it.
 				steep += 1
-				dried += _dry_unsourced(index, fill, flow, size, threshold, up_count)
+				if bool(rules.get("dry_unsourced", true)):
+					dried += _dry_unsourced(index, fill, flow, size, threshold, up_count)
 			else:
 				sites.append([index, flow.discharge[index], false, PackedInt32Array(), "here"])
 
