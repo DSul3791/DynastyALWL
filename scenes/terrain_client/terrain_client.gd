@@ -809,6 +809,7 @@ func _ready() -> void:
 	net.water_changed_received.connect(_on_water_changed)
 	net.water_changed_in_received.connect(_on_water_changed_in)
 	net.water_flow_received.connect(_on_water_flow)
+	net.fine_water_received.connect(_on_fine_water)
 	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:
 		tunnel_on = on
 		tunnel_cave_in_s = cave_in_s
@@ -2296,6 +2297,8 @@ var _cave_streams = null   # spring cave streams and pools (protocol 87), made o
 var _liquid = null   # the liquid water sheet over the live window (created on the first flow packet)
 var _flow_tex: ImageTexture = null      # the live water window's texture, updated in place each publish
 var _liquid_hole_told: Rect2 = Rect2()
+var _fine_holes: PackedVector4Array = PackedVector4Array()   # their rectangles, given to every 8 m sheet
+var _fine_sheets: Dictionary = {}   # Sullivan water: region key -> {"sheet": LiquidSurface in fine mode, "rect": Vector4 world x, z, size x, size z}
 
 
 var _cave_dressing = null   # bone piles and stalagmites/stalactites in caves (protocol 92), made on the first list
@@ -2348,6 +2351,7 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 		_liquid.add_to_group("liquid_sheet")
 		_liquid.add_to_group("water_draw")
 		flora.add_child(_liquid)
+		_liquid.set_fine_holes(_fine_holes)
 
 	# One texture for every publish (twice a second, 256 KB): updated in place, not a new GPU texture each time (lag review, Dave 2 Nov 2026).
 	if _flow_tex == null or _flow_tex.get_size() != Vector2(im.get_size()):
@@ -2365,6 +2369,56 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 		flora.set_liquid_hole(hole.position, hole.size, cell_m)
 
 	FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m, _flow_tex)
+
+
+# Sullivan water (protocol 94, docs/water/fine_drawing_2m.md): each dig region's 2 m water on its own fine sheet; the 8 m sheets step aside there.
+func _on_fine_water(keys: PackedStringArray, packets: Array) -> void:
+	if flora == null:
+		return
+
+	for key in _fine_sheets.keys():
+		if not keys.has(key):
+			_fine_sheets[key]["sheet"].queue_free()
+			_fine_sheets.erase(key)
+
+	for p in packets:
+		if typeof(p) != TYPE_ARRAY or p.size() != 7 or not keys.has(String(p[0])):
+			continue
+
+		var w: int = int(p[2])
+		var h: int = int(p[3])
+		var cell_m: float = float(p[4])
+		var im: Image = FlowTexture.unpack(w, h, int(p[5]), p[6])
+
+		if im == null:
+			continue
+
+		var key: String = String(p[0])
+		var origin: Vector2 = p[1]
+
+		if not _fine_sheets.has(key):
+			var sheet = LiquidSurface.new()
+			sheet.name = "FineWater_" + key
+			sheet.add_to_group("liquid_sheet")
+			sheet.add_to_group("water_draw")
+			flora.add_child(sheet)
+			_fine_sheets[key] = {"sheet": sheet}
+
+		var corner: Vector2 = origin - Vector2(0.5, 0.5) * cell_m
+		_fine_sheets[key]["rect"] = Vector4(corner.x, corner.y, float(w) * cell_m, float(h) * cell_m)
+		_fine_sheets[key]["sheet"].show_fine(im, origin, cell_m)
+
+	var holes: PackedVector4Array = PackedVector4Array()
+
+	for key in _fine_sheets:
+		if _fine_sheets[key].has("rect"):
+			holes.append(_fine_sheets[key]["rect"])
+
+	_fine_holes = holes
+	flora.set_liquid_fine_holes(holes)
+
+	if _liquid != null:
+		_liquid.set_fine_holes(holes)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:

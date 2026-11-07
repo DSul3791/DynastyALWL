@@ -1210,6 +1210,13 @@ func _poll_water() -> void:
 			var cell: float = float(flow["cell"])
 			_water_window = Rect2(Vector2(flow["origin"]) - Vector2(0.5, 0.5) * cell, Vector2(float(flow["w"]), float(flow["h"])) * cell)
 
+	# Sullivan water: the dig regions' 2 m water for the clients' fine sheets (docs/water/fine_drawing_2m.md).
+	if water_live.has_method("take_fine"):
+		var fine: Dictionary = water_live.take_fine()
+
+		if not fine.is_empty():
+			net.deliver_fine_water.rpc(fine["keys"], fine["packets"])
+
 	if not updates.is_empty():
 		for update in updates:
 			var tile_data = water_live.data_of(update[0])

@@ -9,6 +9,8 @@ extends MeshInstance3D
 # The grid look (water_material.gd) steps aside inside the window; outside it nothing changes.
 
 const SHEET_STEP_M := 4.0       # vertex spacing of the sheet (the sim cell is 8 m; the texture is filtered between). Was 2 m: 250,000 quads over the 1 km window, lag near rivers (Dave 2 Nov 2026)
+const FINE_STEP_M := 1.0        # vertex spacing of a fine sheet (Sullivan water's 2 m cells; a 96 m tile is 9216 quads)
+const FINE_THIN_LIFT_M := 0.05  # a fine sheet's lift for thin water (the live window's thin_lift is for 8 m cells over bumpy ground)
 const FADE_CELLS := 1.0         # > 0: this sheet is the live window and fades in at its edge (over the shader's blend_m band, not one cell any more)
 
 const SHADER := """
@@ -46,6 +48,11 @@ uniform float chunk_lift = 0.25;    // chunk sheets only: running water is drawn
 uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
+// Sullivan water (Sonny, 7 Nov 2026; docs/water/fine_drawing_2m.md): the dig regions' 2 m water has its own fine sheets. An 8 m sheet (the live
+// window or a chunk) steps aside inside each of up to 8 rectangles, over the same wandering band the fine sheet fades in on, so the two add up.
+uniform vec4 fine_holes[8];         // world x, z, size x, size z
+uniform int fine_count = 0;
+uniform float fine_sheet = 0.0;     // 1: this is a fine sheet; its edge fades in over fine_blend instead of the live window's band
 uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live window magenta, a 2 m chunk sheet yellow, an 8 m one orange, dark lines on the texel borders, darker where the sheet is steep, red seen from behind, cyan where fall white water is on
 
 varying vec2 tex_uv;
@@ -166,6 +173,37 @@ float live_blend(float d_m, vec2 world) {
 	return smoothstep(0.0, blend_m, d_m - n * blend_wander_m);
 }
 
+// The fine sheet's share at a point d_m metres inside its rectangle: 0 at the edge, 1 from FINE_BAND_M plus up to FINE_WANDER_M in.
+// An 8 m sheet takes 1 minus this, so the two always add up and the meeting line wanders (BUG-006).
+const float FINE_BAND_M = 6.0;
+const float FINE_WANDER_M = 2.0;
+
+float fine_blend(float d_m, vec2 world) {
+	vec2 p = world / 9.0;
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	float n = mix(mix(blend_hash(i), blend_hash(i + vec2(1.0, 0.0)), u.x), mix(blend_hash(i + vec2(0.0, 1.0)), blend_hash(i + vec2(1.0, 1.0)), u.x), u.y);
+	return smoothstep(0.0, FINE_BAND_M, d_m - n * FINE_WANDER_M);
+}
+
+// An 8 m sheet's share against the fine sheets: 1 outside them, 0 well inside.
+float coarse_share(vec2 world) {
+	float share = 1.0;
+
+	for (int n = 0; n < fine_count && n < 8; n++) {
+		vec4 r = fine_holes[n];
+		vec2 inside = world - r.xy;
+		float d_in = min(min(inside.x, inside.y), min(r.z - inside.x, r.w - inside.y));
+
+		if (d_in > 0.0) {
+			share = min(share, 1.0 - fine_blend(d_in, world));
+		}
+	}
+
+	return share;
+}
+
 // How strongly the live sheet draws a texel's water (its discard and its shore fade in fragment below), so a chunk sheet takes the rest.
 float live_draws(vec4 t) {
 	if (t.a < wet_min(t)) {
@@ -217,6 +255,12 @@ void fragment() {
 				discard;
 			}
 		}
+	}
+
+	float fine_share = fine_sheet > 0.5 ? 1.0 : coarse_share(world);
+
+	if (fine_share < 0.002) {
+		discard;
 	}
 
 	// A still pond in the sim still sloshes at a few cm/s, and a block at rest reads exactly 0: below CALM_MS the water counts as still, so the look does
@@ -328,7 +372,8 @@ void fragment() {
 
 	// The shore: the sheet thins out with the water; the window's edge fades to the grid look.
 	vec2 in_cells = tex_uv * cells;
-	float edge = fade_cells > 0.0 ? live_blend(min(min(in_cells.x, in_cells.y), min(cells.x - in_cells.x, cells.y - in_cells.y)) * cell_m, world) : chunk_share;
+	float in_edge_m = min(min(in_cells.x, in_cells.y), min(cells.x - in_cells.x, cells.y - in_cells.y)) * cell_m;
+	float edge = fine_sheet > 0.5 ? fine_blend(in_edge_m, world) : (fade_cells > 0.0 ? live_blend(in_edge_m, world) : chunk_share) * fine_share;
 	// A thin fast sheet (a fall face) is not a shore: it shows at full strength from a few millimetres.
 	float shore = max(smoothstep(0.0, edge_m, depth), smoothstep(0.6, 2.0, raw_speed) * smoothstep(0.0005, 0.004, depth));
 
@@ -651,6 +696,24 @@ func show_window(im: Image, origin: Vector2, cell_m: float, texture: Texture2D =
 	_material.set_shader_parameter("fade_cells", FADE_CELLS)
 	_material.set_shader_parameter("cell_m", cell_m)
 	visible = true
+
+
+# Sullivan water: the dig regions' rectangles (Vector4 world x, z, size x, size z; at most 8). This 8 m sheet steps aside inside them.
+func set_fine_holes(holes: PackedVector4Array) -> void:
+	var n: int = mini(holes.size(), 8)
+	var padded: PackedVector4Array = holes.slice(0, n)
+	padded.resize(8)
+	_material.set_shader_parameter("fine_holes", padded)
+	_material.set_shader_parameter("fine_count", n)
+
+
+# Sullivan water: this sheet draws one dig region's 2 m water (docs/water/fine_drawing_2m.md). Same texture form as show_window, 1 m vertices,
+# thin water barely lifted (the 2 m cells follow the ground, unlike the 8 m window's), edge faded over fine_blend.
+func show_fine(im: Image, origin: Vector2, cell_m: float) -> void:
+	_step_m = FINE_STEP_M
+	_material.set_shader_parameter("fine_sheet", 1.0)
+	_material.set_shader_parameter("thin_lift", FINE_THIN_LIFT_M)
+	show_window(im, origin, cell_m)
 
 
 func set_mud(value: float) -> void:

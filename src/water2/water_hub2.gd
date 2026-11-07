@@ -43,6 +43,8 @@ var _told: PackedFloat32Array = PackedFloat32Array()   # the levels last put in 
 var _stats: Dictionary = {"moved_m3": 0.0, "memory": 0, "loaded": 0}
 var _live = DigWindows.new()   # Sullivan water (7 Nov 2026): fine 2 m windows where players dig, so ditches and dams change the flow
 var _last_levels: PackedFloat32Array = PackedFloat32Array()   # the levels last built on the water thread (what a new dig window starts from)
+var _fine_pending: Dictionary = {}   # the newest fine sheet packets (dig_windows.fine_packets), taken once by take_fine
+var _fine_sent: bool = false      # the last fine packets named any region (so one more, empty, tells clients to drop them)
 var _live_rect: Rect2 = Rect2()   # world x, z the dig windows draw into, as of the last publish (clients must re-ask chunks there too)
 
 
@@ -135,6 +137,15 @@ func take_flow() -> Dictionary:
 	_mutex.lock()
 	var packet: Dictionary = _flow_pending
 	_flow_pending = {}
+	_mutex.unlock()
+	return packet
+
+
+# The newest fine sheet packets for clients ({} when nothing new): see dig_windows.fine_packets.
+func take_fine() -> Dictionary:
+	_mutex.lock()
+	var packet: Dictionary = _fine_pending
+	_fine_pending = {}
 	_mutex.unlock()
 	return packet
 
@@ -341,6 +352,14 @@ func _run() -> void:
 			_flow_pending = packet
 			_live_rect = _live.drawn_rect()
 			_mutex.unlock()
+			# Outside the lock: building the 2 m textures takes a few ms. Sleeping regions every 4th publish (late joiners get them within a minute).
+			var fine: Dictionary = _live.fine_packets(ticks % (PUBLISH_TICKS * 4) == 1)
+
+			if not fine["keys"].is_empty() or _fine_sent:
+				_fine_sent = not fine["keys"].is_empty()
+				_mutex.lock()
+				_fine_pending = fine
+				_mutex.unlock()
 
 		# Bug 7 (lag, 2 Nov 2026): the window cost about 110 ms per simulated second, so with only the CPU_DUTY sleep the thread ran about 4.5 simulated seconds per
 		# real second, held half a core all the time and published levels and the flow texture to every client about every 3 s. It now never runs ahead of real
