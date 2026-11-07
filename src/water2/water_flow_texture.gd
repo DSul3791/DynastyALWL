@@ -82,6 +82,48 @@ static func unpack(w: int, h: int, raw_size: int, bytes: PackedByteArray) -> Ima
 	return Image.create_from_data(w, h, false, Image.FORMAT_RGBAF, raw)
 
 
+# Dry texels next to water take the lowest level of their wet neighbours as R when that is under their own bed (client side, after unpack; Sonny 7 Nov 2026).
+# The liquid sheet puts a dry texel's vertex at R - 0.4, so with R the bed, the sheet between a wet texel and a dry one 8 m away up a steep bank climbed
+# the bank: Dave saw ribbed water standing up the slope beside a cave mouth (x 54204 z 69155) and over bare ground beside a gully (x 54849 z 67771).
+# At the water's own level the sheet runs flat into the bank and goes under the ground there, as the chunk sheets already do with their dry points (liquid_surface.gd).
+# A dry texel lower than the water beside it (below a lip or a fall) keeps its bed. `wet_m` is the shader's least drawn depth for slow water.
+static func tuck_dry_edges(im: Image, wet_m: float = 0.004) -> void:
+	var w: int = im.get_width()
+	var h: int = im.get_height()
+	var px: PackedFloat32Array = im.get_data().to_float32_array()
+	var out: PackedFloat32Array = px.duplicate()
+	var changed: bool = false
+
+	for j in range(h):
+		for i in range(w):
+			var k: int = (j * w + i) * 4
+
+			if px[k + 3] > wet_m:
+				continue
+
+			var low: float = INF
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var ni: int = i + di
+					var nj: int = j + dj
+
+					if (di == 0 and dj == 0) or ni < 0 or nj < 0 or ni >= w or nj >= h:
+						continue
+
+					var m: int = (nj * w + ni) * 4
+
+					if px[m + 3] > wet_m:
+						low = minf(low, px[m])
+
+			if low < px[k]:
+				out[k] = low
+				changed = true
+
+	if changed:
+		im.set_data(w, h, false, Image.FORMAT_RGBAF, out.to_byte_array())
+
+
 static func apply_image(material: ShaderMaterial, im: Image, origin: Vector2, cell_m: float, texture: Texture2D = null) -> void:
 	material.set_shader_parameter("water2_tex", texture if texture != null else ImageTexture.create_from_image(im))
 	material.set_shader_parameter("water2_origin", origin - Vector2(0.5, 0.5) * cell_m)

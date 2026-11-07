@@ -192,7 +192,7 @@ func _check_ambience() -> void:
 		check(known_layers.has(row["layer"]) and known_near.has(tags["near_water"]) and known_altitude.has(tags["altitude"]) and known_time.has(tags["time"]), "batch 2 slot %s: layer and tag words are known to the rules" % slot)
 
 	var summer_forest: Dictionary = {"season": "summer", "time": "day", "biomes": ["temperate_forest", "woodland"], "water": 0.0, "height": 40.0}
-	check(Ambience.choose_bed(slots, "weather_bed", summer_forest) == "bed_forest_day", "a summer forest day gets the forest day bed")
+	check(Ambience.choose_bed(slots, "weather_bed", summer_forest) == "", "a summer forest day gets no bed (the forest day bed is switched off, Dave 7 Nov)")
 	var winter_forest: Dictionary = summer_forest.duplicate()
 	winter_forest["season"] = "winter"
 	check(Ambience.choose_bed(slots, "weather_bed", winter_forest) == "bed_forest_winter", "winter gets the winter forest bed")
@@ -211,7 +211,7 @@ func _check_ambience() -> void:
 	check(Ambience.choose_bed(slots, "shore_bed", beach) != "bed_surf", "and not the same water 30 m up")
 	# Dave 1 Nov: a forest next to the sea kept only the surf. Surf no longer replaces the forest bed, and fades out inland and under trees.
 	var wooded_shore: Dictionary = {"season": "summer", "time": "day", "biomes": ["temperate_forest", "woodland", "beach"], "water": 0.6, "height": 2.0, "wind": 0.8}
-	check(Ambience.choose_bed(slots, "weather_bed", wooded_shore) == "bed_forest_day", "trees near the sea still get the forest bed (surf is its own layer)")
+	check(Ambience.choose_bed(slots, "weather_bed", wooded_shore) == "", "trees near the sea get no forest day bed (switched off); surf is its own layer")
 	check(Ambience.surf_scale(1.0, 0.0) > 0.99, "on the beach the surf is full")
 	check(Ambience.surf_scale(0.4, 0.0) < 0.01 and Ambience.surf_scale(0.0, 0.0) == 0.0, "36 m or more from the sea the surf is silent")
 	check(Ambience.surf_scale(0.6, 1.0) < 0.05 and Ambience.surf_scale(1.0, 1.0) < 0.15, "deep forest keeps the surf under 15 percent even at the shore")
@@ -371,7 +371,7 @@ func _check_zone() -> void:
 	var polar: Dictionary = {"season": "winter", "time": "day", "biomes": Ambience.biomes_for(0.0, 0.0, 0.0, 40.0, "", Ambience.zone_tags_for(17, names, rows)), "water": 0.0, "height": 40.0}
 	check(Ambience.matching(slots, "oneshot", polar).has("ice_crack"), "glacier (biome 17) wakes the ice crack")
 	var forest: Dictionary = {"season": "summer", "time": "day", "biomes": Ambience.biomes_for(0.0, 0.0, 0.0, 40.0, "", Ambience.zone_tags_for(8, names, rows)), "water": 0.0, "height": 40.0}
-	check(Ambience.choose_bed(slots, "weather_bed", forest) == "bed_forest_day", "temperate forest (biome 8) wakes the forest day bed even before trees are measured")
+	check(Ambience.choose_bed(slots, "weather_bed", forest) == "", "temperate forest (biome 8) plays no forest day bed (switched off, Dave 7 Nov)")
 
 	# Wire agreement: the version in terrain_net.gd has its row in PROTOCOL.md, and the message is sent by the server and received by the client.
 	var net_text: String = FileAccess.get_file_as_string("res://src/stream/terrain_net.gd")

@@ -6,6 +6,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_sullivan_water_live.gd
 
 const DigWindows := preload("res://src/sullivan_water/live/dig_windows.gd")
+const Grid := preload("res://src/sullivan_water/freshwater/water_grid_2d.gd")
 
 var failures: int = 0
 
@@ -158,6 +159,23 @@ func _init() -> void:
 	live2.dig(Vector3(288.0, 1.0, 288.0), 1.5, false)
 	live2.update(0.0, level_at)
 	_check(live2.sleeping.is_empty() and live2.windows.size() == 1 and bool(live2.windows[0]["dug"]), "under the budget the region nobody dug in closes rather than sleeps")
+
+	# Dave 7 Nov 2026 (footsteps splashed on a dry hillside): 2 m films draining off a slope give no 8 m level; real water still does.
+	var live3 = DigWindows.new()
+	var slope_grid = Grid.new(8, 4, 2.0)
+
+	for j in range(4):
+		for i in range(8):
+			slope_grid.set_bed(i, j, float(i) * 0.5)          # a hillside rising 0.5 m per 2 m cell
+			slope_grid.add_water(i, j, (0.08 if i < 4 else 0.3) * 4.0)   # films 8 cm thick on the first 8 m sample, 30 cm on the second
+
+	live3.windows.append({"grid": slope_grid, "origin": Vector2(1.0, 1.0)})
+	var levels3: PackedFloat32Array = PackedFloat32Array()
+	levels3.resize(4)
+	levels3.fill(NAN)
+	live3.publish(levels3, 2, 0.0, 0.0)
+	_check(is_nan(levels3[0]), "8 cm films on a hillside give no 8 m level (%.2f)" % levels3[0])
+	_check(not is_nan(levels3[1]), "30 cm of water does (%.2f)" % levels3[1])
 
 	print("%d failures" % failures)
 	quit(1 if failures > 0 else 0)
