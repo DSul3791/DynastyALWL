@@ -1721,6 +1721,35 @@
 				}
 			],
 			"size_clip": "Idle"
+		},
+		"honey_badger": {
+			"scene": "res://assets/animals/honey_badger/SK_HoneyBadger.fbx",
+			"pack": "WildMesh3D/Realistic Animals/HoneyBadger",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 6.0,
+			"stride_m": 0.6,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Idle",
+				"10": "Idle",
+				"11": "RunFast_F",
+				"12": "Idle",
+				"walk": [
+					"WalkMedium_F",
+					"GrazingWalkMedium_F"
+				],
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Honey badger (Realistic Animals/HoneyBadger/SK_HoneyBadger.fbx). Checked 7 Nov 2026.",
+			"length_m": 0.95,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/honey_badger/Textures/T_HoneyBadger.png"
+				}
+			]
 		}
 	}
 }

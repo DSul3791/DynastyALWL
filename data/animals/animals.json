@@ -3556,6 +3556,88 @@
 				12
 			],
 			"herd_pull_m": 4.0
+		},
+		"honey_badger": {
+			"number": 47,
+			"name": "Honey badger",
+			"target_per_player": 1,
+			"spawn_share": 0.2,
+			"health": 25.0,
+			"walk_mps": 1.0,
+			"flee_mps": 7.0,
+			"spook_m": 8.0,
+			"safe_m": 20.0,
+			"graze_s": [
+				4.0,
+				14.0
+			],
+			"wander_m": 12.0,
+			"flee_run_m": 50.0,
+			"herd": [],
+			"alert_m": 40.0,
+			"alert_s": [
+				1.0,
+				2.5
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.55,
+			"zig_deg": 20.0,
+			"zig_leg_m": 12.0,
+			"herd_pull_m": 0.0,
+			"eye_m": 0.3,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": true,
+				"near_fresh_water_m": 60.0
+			},
+			"thief": {
+				"smell_m": 120.0,
+				"look_s": 2.0,
+				"scare_m": 18.0,
+				"fire_m": 10.0,
+				"sneak_mps": 2.5,
+				"run_mps": 9.0,
+				"run_m": 70.0,
+				"again_s": 20.0
+			},
+			"biomes": {
+				"savanna": 1.0,
+				"heath": 0.3
+			},
+			"active": {
+				"day": 0.3,
+				"dusk": 0.9,
+				"night": 1.0
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 7.0,
+				"charge_m": 6.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 0.9,
+				"damage": 8.0,
+				"recover_s": 3.0,
+				"calm_m": 6.0,
+				"cool_s": 30.0,
+				"corner_m": 3.0,
+				"corner_warn_s": 0.6,
+				"provoked_m": 5.0,
+				"provoked_warn_s": 0.5,
+				"threat_m": 3.0,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.6,
+				"neutral": 0.25,
+				"friendly": 0.15
+			},
+			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). A honey badger digs through savanna and scrub alone, mostly at night, and fears nothing: it stands its ground and bites hard. Raccoon numbers, far tougher and bolder."
 		}
 	},
 	"senses": {

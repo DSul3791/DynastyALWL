@@ -30,7 +30,7 @@ func make(players: Array):
 	a.setup()
 	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
-	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear", "donkey", "goblin", "lynx", "black_bear", "elk", "bighorn", "mountain_goat", "beaver", "chamois", "mink", "raccoon", "rat", "crow", "pheasant", "goose", "cow", "goat", "chicken", "cat", "dog", "buffalo", "puma", "pronghorn", "warthog", "hyena", "wildebeest", "lion", "leopard", "rhino", "elephant", "camel", "guineafowl"]:
+	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear", "donkey", "goblin", "lynx", "black_bear", "elk", "bighorn", "mountain_goat", "beaver", "chamois", "mink", "raccoon", "rat", "crow", "pheasant", "goose", "cow", "goat", "chicken", "cat", "dog", "buffalo", "puma", "pronghorn", "warthog", "hyena", "wildebeest", "lion", "leopard", "rhino", "elephant", "camel", "guineafowl", "honey_badger"]:
 		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
 
 	a.cfg["species"]["rabbit"]["burrow_m"] = 0.0   # burrows are tested in test_animal_senses.gd

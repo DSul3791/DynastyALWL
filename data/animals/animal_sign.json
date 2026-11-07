@@ -719,6 +719,20 @@
 					"hint": "Spotted grey feathers in the grass. Guineafowl roost near."
 				}
 			]
+		},
+		"honey_badger": {
+			"group": "clawed",
+			"track": "long-clawed broad prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Broad prints with very long claws. A honey badger dug here."
+				},
+				{
+					"kind": "den",
+					"hint": "A burrow ripped open, earth thrown wide. A honey badger hunted."
+				}
+			]
 		}
 	}
 }

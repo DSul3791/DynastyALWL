@@ -2705,6 +2705,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"honey_badger": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {
