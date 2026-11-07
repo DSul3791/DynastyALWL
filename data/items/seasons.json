@@ -2691,6 +2691,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"camel": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {

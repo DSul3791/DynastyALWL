@@ -1667,6 +1667,35 @@
 					"albedo": "res://assets/animals/elephant/Textures/T_AfricanElephant_Body.png"
 				}
 			]
+		},
+		"camel": {
+			"scene": "res://assets/animals/camel/SK_Camel.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Camel",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.2,
+			"run_mps": 8.0,
+			"stride_m": 1.5,
+			"clips": {
+				"0": "Eating_RootMotion",
+				"3": "Idle",
+				"12": "Idle",
+				"walk": "Walk_RootMotion",
+				"run": "Run_RootMotion"
+			},
+			"note": "WildMesh Camel (Realistic Animals/Camel/SK_Camel.fbx). Its two texture sets go by material name (Body_02 takes T_Camel_Body2, or a leg is drawn pink). Sized by its Idle. Checked 7 Nov 2026.",
+			"length_m": 3.0,
+			"materials": [
+				{
+					"match": "Body_02",
+					"albedo": "res://assets/animals/camel/Textures/T_Camel_Body2.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/camel/Textures/T_Camel_Body.png"
+				}
+			],
+			"size_clip": "Idle"
 		}
 	}
 }

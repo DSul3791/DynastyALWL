@@ -3409,6 +3409,106 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			}
+		},
+		"camel": {
+			"number": 45,
+			"name": "Camel",
+			"target_per_player": 1,
+			"spawn_share": 0.15,
+			"health": 70.0,
+			"walk_mps": 1.1,
+			"flee_mps": 9.0,
+			"spook_m": 15.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				6.0,
+				22.0
+			],
+			"wander_m": 12.0,
+			"flee_run_m": 80.0,
+			"herd": [
+				2,
+				5
+			],
+			"alarm_s": [
+				0.2,
+				0.8
+			],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.5,
+				3.5
+			],
+			"burst_s": 8.0,
+			"trot_share": 0.5,
+			"zig_deg": 12.0,
+			"zig_leg_m": 20.0,
+			"herd_pull_m": 14.0,
+			"eye_m": 1.6,
+			"tame": {
+				"note": "Each horse is born with a tamable value 0..1. Its spook distance scales from spook_scale[0] (0, flighty: runs from far off) to spook_scale[1] (1, tame: lets you close); at curious_min or more it walks up to a calm player to within stop_m, watching from curious_m.",
+				"spook_scale": [
+					2.0,
+					0.3
+				],
+				"curious_min": 0.7,
+				"curious_m": 45.0,
+				"stop_m": 9.0
+			},
+			"habitat": {
+				"slope_max": 0.4,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": false
+			},
+			"biomes": {
+				"savanna": 0.8,
+				"bare_rock": 0.4,
+				"heath": 0.3
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.4,
+				"night": 0.0
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a wild horse runs from a player at spook_m but kicks one who gets within threat_m or corners it. protective_share 0.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 7.0,
+				"charge_m": 6.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 1.6,
+				"damage": 10.0,
+				"recover_s": 3.0,
+				"calm_m": 7.5,
+				"cool_s": 30.0,
+				"corner_m": 3.0,
+				"corner_warn_s": 0.6,
+				"provoked_m": 4.5,
+				"provoked_warn_s": 0.5,
+				"threat_m": 3.0,
+				"threat_warn_s": 0.5
+			},
+			"young": {
+				"share": 0.2,
+				"count": [
+					1,
+					1
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 6.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). Camels roam dry savanna and bare ground in small groups by day, walk off from a player and kick one who corners it. Horse numbers, slower, drier ground; tamable value like the horse for later riding."
 		}
 	},
 	"senses": {

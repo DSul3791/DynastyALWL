@@ -691,6 +691,20 @@
 					"hint": "Trees stripped of bark and snapped. Elephants fed here."
 				}
 			]
+		},
+		"camel": {
+			"group": "hoofed",
+			"track": "broad two-toed pads",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Broad soft two-toed pads in the dust. Camels walked here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Dry dung pellets in a line. Camels passed this way."
+				}
+			]
 		}
 	}
 }

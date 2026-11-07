@@ -493,6 +493,18 @@
    "status": "filled",
    "note": "borrowed from moose"
   },
+  "camel_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/horse_step_0.ogg",
+    "res://assets/audio/batch1/horse_step_1.ogg",
+    "res://assets/audio/batch1/horse_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "borrowed from horse"
+  },
   "ladder_rung": {
    "group": "ladder",
    "files": [
