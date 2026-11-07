@@ -579,13 +579,14 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String) -> Strin
 	return ""
 
 
-# A skinned mesh's bind poses must undo its skeleton's rest pose, so that at rest the skin draws the mesh as it was modelled.
-# Some files' binds are in other units or another space than their bones (the bear stood on the offline sheet, where no
-# skinning ran, but lay as a legless tube in the game while its skeleton stood: 7 Nov 2026). Each bind is checked against
-# its bone's rest; when they disagree by more than 5% of the skeleton's size, the skin is rebuilt from the rest pose and the
-# mesh's place under the skeleton (a copy, so the shared file is untouched), and a log line says so.
+# A skinned mesh draws right when every bind agrees with its bone's rest: rest * bind maps the mesh into the skeleton the
+# same way for every bone (one shared transform C, whatever units or armature scale the file uses). The bear lay as a
+# legless tube in the game while its skeleton stood (7 Nov 2026): binds that disagree pull parts of the skin apart. The
+# spread of rest * bind across bones is measured at the mesh's own box corners against that box's size under C (unitless,
+# so a file's scale never triggers it). Over 5%, every bind is rebuilt as inverse(rest) * C on a copy of the skin, C being
+# the transform most binds agree with, and a log line says so.
 func _fit_skin(mi: MeshInstance3D, top: Node, kind: String) -> void:
-	if mi.skin == null or mi.mesh == null:
+	if mi.skin == null or mi.mesh == null or mi.skin.get_bind_count() < 2:
 		return
 
 	var sk: Skeleton3D = mi.get_node_or_null(mi.skeleton) as Skeleton3D
@@ -597,14 +598,9 @@ func _fit_skin(mi: MeshInstance3D, top: Node, kind: String) -> void:
 	if sk == null or sk.get_bone_count() == 0:
 		return
 
-	# The mesh's space in the skeleton's space (through their common ancestor, the file's top node).
-	var mesh_in_sk: Transform3D = _to_ancestor(sk, top).affine_inverse() * _to_ancestor(mi, top)
-	var size: float = 0.0001
-
-	for i in sk.get_bone_count():
-		size = maxf(size, sk.get_bone_global_rest(i).origin.length())
-
-	var worst: float = 0.0
+	var box: AABB = mi.mesh.get_aabb()
+	var probes: Array = [box.position, box.end, Vector3(box.end.x, box.position.y, box.position.z), Vector3(box.position.x, box.end.y, box.end.z)]
+	var maps: Array = []      # [bind index, rest * bind]
 	var bones: PackedInt32Array = PackedInt32Array()
 
 	for b in mi.skin.get_bind_count():
@@ -612,26 +608,54 @@ func _fit_skin(mi: MeshInstance3D, top: Node, kind: String) -> void:
 		var bone: int = sk.find_bone(bone_name) if bone_name != "" else mi.skin.get_bind_bone(b)
 		bones.append(bone)
 
-		if bone < 0 or bone >= sk.get_bone_count():
-			continue
+		if bone >= 0 and bone < sk.get_bone_count():
+			maps.append([b, sk.get_bone_global_rest(bone) * mi.skin.get_bind_pose(b)])
 
-		# At rest, skinning maps a mesh point p to rest * bind * p; it should land where the mesh itself puts p.
-		var at_rest: Transform3D = sk.get_bone_global_rest(bone) * mi.skin.get_bind_pose(b)
+	if maps.size() < 2:
+		return
 
-		for probe in [Vector3.ZERO, Vector3(size, 0.0, 0.0), Vector3(0.0, size, 0.0), Vector3(0.0, 0.0, size)]:
-			worst = maxf(worst, (at_rest * probe).distance_to(mesh_in_sk * probe))
+	# C: the map most binds agree with (the one nearest the rest, over an even sample of at most 24, so big rigs stay cheap).
+	var step: int = maxi(1, int(maps.size() / 24.0))
+	var shared: Transform3D = maps[0][1]
+	var best: float = INF
 
-	if worst <= size * 0.05:
+	for i in range(0, maps.size(), step):
+		var total: float = 0.0
+
+		for j in range(0, maps.size(), step):
+			total += _map_gap(maps[i][1], maps[j][1], probes)
+
+		if total < best:
+			best = total
+			shared = maps[i][1]
+
+	var scale_ref: float = (shared * box.end).distance_to(shared * box.position)
+	var worst: float = 0.0
+
+	for m in maps:
+		worst = maxf(worst, _map_gap(m[1], shared, probes))
+
+	if scale_ref <= 0.0 or worst <= scale_ref * 0.05:
 		return
 
 	var skin: Skin = mi.skin.duplicate() as Skin
 
 	for b in skin.get_bind_count():
 		if bones[b] >= 0 and bones[b] < sk.get_bone_count():
-			skin.set_bind_pose(b, sk.get_bone_global_rest(bones[b]).affine_inverse() * mesh_in_sk)
+			skin.set_bind_pose(b, sk.get_bone_global_rest(bones[b]).affine_inverse() * shared)
 
 	mi.skin = skin
-	_model_note(kind, "skin of %s rebuilt from the skeleton's rest (binds were off by %.2f against a skeleton %.2f across)" % [str(mi.name), worst, size])
+	_model_note(kind, "skin of %s rebuilt: its binds disagreed by %.0f%% of the body's size" % [str(mi.name), 100.0 * worst / scale_ref])
+
+
+# How far apart two mesh-to-skeleton maps put the probe points (the largest gap).
+func _map_gap(x: Transform3D, y: Transform3D, probes: Array) -> float:
+	var gap: float = 0.0
+
+	for probe in probes:
+		gap = maxf(gap, (x * (probe as Vector3)).distance_to(y * (probe as Vector3)))
+
+	return gap
 
 
 # How tall the skeleton stands in the rig's space (the height of its bones' box) in a clip's first frame, or in its imported pose with no clip.
