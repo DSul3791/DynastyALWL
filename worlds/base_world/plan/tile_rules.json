@@ -47,7 +47,10 @@
 			"texture_min": 0.85,
 			"fade_from_m": 220,
 			"fade_to_m": 520,
-			"drain": true
+			"drain": true,
+			"drain_mode": "breach",
+			"max_breach_m": 6.0,
+			"drain_mode_note": "Sonny 7 Nov 2026 (Dino's tile 3,4 census: the hills made 6x the hollow volume of the ground, up to 23.6 m deep, and fill mode left flat vale floors up to 16 m thick): breach mode cuts the lowest way out of each hollow the hills made, as a stream cuts a gap through rising ground, at most max_breach_m deep (about the 6 m river carve); a deeper hollow has its floor raised by the rest. Natural hollows keep their depth for the water step. tile_rolling.gd _breach_new_hollows. fill is the old mode."
 		}
 	},
 	"detail": {
@@ -165,7 +168,7 @@
 	"spawn_pad_removed_note": "Sonny 6 Nov 2026 (#473; Dave: 'we should not be adjust individual heights. it should be a systemic thing so it works across our entire world. the spawn point can just be moved'): the spawn pad (heights pinned level round the spawn) is gone; the spawn moved to x 53296 z 68080, naturally flat dry ground on a valley floor 2 m and more over any water (src/shared/spawn_point.gd).",
 	"water": {
 		"drainage_mode": true,
-		"valley_drain": {"_note": "Sonny 6 Nov 2026 (Dave: 'smoothing the surrounding area so it flows towards the river'): dry ground beside a river that lies lower than the water is raised to the water plus height_m, rising grade_per_m per metre away, within reach_m; a ridge stops it (tile_valley_drain.gd).", "enabled": true, "reach_m": 200.0, "grade_per_m": 0.01, "height_m": 0.8, "max_raise_m": 10.0, "band_samples": 50, "drain_hollows": true, "drain_hollows_note": "Sonny 7 Nov 2026: after every pass that shapes the ground (banks, rolling, mend, mouths, drain) each dry closed hollow is raised to its spill, so rain cannot pool in a dip with no outlet on dry land; rivers, lakes, the sea and the frame edge are the outlets (tile_valley_drain.gd drain_hollows)."},
+		"valley_drain": {"_note": "Sonny 6 Nov 2026 (Dave: 'smoothing the surrounding area so it flows towards the river'): dry ground beside a river that lies lower than the water is raised to the water plus height_m, rising grade_per_m per metre away, within reach_m; a ridge stops it (tile_valley_drain.gd).", "enabled": true, "reach_m": 200.0, "grade_per_m": 0.01, "height_m": 0.8, "max_raise_m": 10.0, "band_samples": 50, "drain_hollows": true, "hollow_census": true, "hollow_census_note": "Sonny 7 Nov 2026: prints the dry closed hollows (cells under their spill, cells 2 m or more, deepest, summed fill) before and after rolling and after each later ground pass, without changing the ground (tile_valley_drain.gd hollow_census), so a bake shows which pass makes the hollows drain_hollows fills.", "drain_hollows_note": "Sonny 7 Nov 2026: after every pass that shapes the ground (banks, rolling, mend, mouths, drain) each dry closed hollow is raised to its spill, so rain cannot pool in a dip with no outlet on dry land; rivers, lakes, the sea and the frame edge are the outlets (tile_valley_drain.gd drain_hollows)."},
 		"drainage": {
 			"route_over_raw": false,
 			"route_over_note": "Sonny 6 Nov 2026 (Dave: rivers on the real valley floor): false routes the rivers over the finished ground (strata and scree included, both laid by world position so tiles still agree), not the raw pre-strata copy, so the river follows the lowest line the player sees.",
