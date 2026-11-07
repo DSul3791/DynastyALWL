@@ -26,6 +26,7 @@ const TilePondLevelScript := preload("res://src/worldgen/tile/tile_pond_level.gd
 const TileValleyDrainScript := preload("res://src/worldgen/tile/tile_valley_drain.gd")
 const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
 const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
+const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
 const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
@@ -338,6 +339,9 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	water.heights = crop(water.heights, n, core)
 	# Where the sea is far enough for a spring cave, worked out on the whole frame before it is cropped (tile_sites.gd inland_mask).
 	var inland: PackedByteArray = crop(TileSitesScript.inland_mask(water.water_class, n, frame_height.spacing_m, float(tile_rules["sites"].get("spring_cave", {}).get("min_sea_m", 0.0))), n, core)
+	# Distance to perennial fresh water, on the whole frame before it is cropped so the tile edges see the water beyond them (Stage E readers,
+	# water_record.gd; animals' near_fresh_water_m habitats read it from the tile file's fresh_m section).
+	water.fresh_m = crop(WaterRecordScript.fresh_distance(water.water_class, n, frame_height.spacing_m), n, core)
 	water.water_class = crop(water.water_class, n, core)
 	water.water_surface = crop(water.water_surface, n, core)
 	water.flow = crop(water.flow, n, core)
