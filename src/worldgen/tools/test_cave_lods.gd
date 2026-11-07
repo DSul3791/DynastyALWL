@@ -149,7 +149,7 @@ func _initialize() -> void:
 func _sdf(gen, layout, blocks: Dictionary, lod: int, w: Vector3i) -> float:
 	var sf: int = 1 << lod
 	var span: int = 32 * sf
-	var g: Vector3i = w / sf
+	var g: Vector3i = Vector3i(w.x >> lod, w.y >> lod, w.z >> lod)   # w is a whole number of voxels at this level, so the shift is exact
 	var o: Vector3i = Vector3i(int(floor(float(g.x) / 32.0)) * span, int(floor(float(g.y) / 32.0)) * span, int(floor(float(g.z) / 32.0)) * span)
 	var key: String = "%d %s" % [lod, str(o)]
 
