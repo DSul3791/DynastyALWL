@@ -649,6 +649,20 @@
 					"hint": "A picked carcass and flattened grass. A pride fed here."
 				}
 			]
+		},
+		"leopard": {
+			"group": "clawed",
+			"track": "round cat prints, no claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Round cat prints without claws. A leopard prowls here."
+				},
+				{
+					"kind": "kill",
+					"hint": "A carcass wedged high in a tree. A leopard cached it."
+				}
+			]
 		}
 	}
 }

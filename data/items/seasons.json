@@ -2670,6 +2670,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"leopard": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {
