@@ -1,0 +1,64 @@
+extends RefCounted
+
+# Sullivan water M5, first step (Sonny, 7 Nov 2026): the sea's one wave set, and the phase origin that keeps it exact far from the world's
+# corner. Design: docs/water/ocean_m5.md. Guide sections 6 and 28, test F10, knowledge doc water.md lesson 3.
+#
+# The sea's swell is four waves (src/client/water_material.gd sea_slope). A wave's phase is k * (d . p) - w * t. Our world is about 54 km
+# across, so at p near 54,000 m the phase is tens of thousands of radians, and the GPU's 32-bit floats keep only about 0.008 rad of it:
+# the swell steps and shimmers far from the corner, and a CPU copy (for swimmers and boats, M7) in 64-bit floats would not match it.
+# The fix (guide 6.3, "floating origin"): the shader takes positions relative to a PHASE ORIGIN near the camera (snapped to ORIGIN_SNAP_M,
+# so it moves rarely), and the CPU works out, in 64-bit floats, each wave's phase at that origin modulo 2 pi. The shader adds that small
+# number to k * (d . (p - origin)), which stays small. The CPU's slope() is the same sum, so both sides agree to float precision.
+
+const G := 9.81
+const ORIGIN_SNAP_M := 1024.0
+const SPEED := 0.6             # the swell runs at 0.6 of deep-water speed (water_material.gd's tuning, Kathreen 1 Nov)
+const CREST_K := 0.21          # the slow cross-crest modulation that breaks the four waves' lattice (Kathreen 1 Nov)
+
+# Each wave: direction x, z; wavelength m; slope strength. The values water_material.gd's sea_slope had, now in one place.
+const WAVES: Array[Vector4] = [
+	Vector4(0.94, 0.34, 64.0, 0.55),
+	Vector4(-0.55, 0.83, 29.0, 0.50),
+	Vector4(0.38, -0.92, 13.0, 0.45),
+	Vector4(-0.97, -0.24, 6.0, 0.40),
+]
+
+
+static func origin_for(camera_xz: Vector2) -> Vector2:
+	return (camera_xz / ORIGIN_SNAP_M).round() * ORIGIN_SNAP_M
+
+
+# Per wave, in 64-bit floats: (k * (d . origin)) mod 2 pi and (CREST_K * k * (perp . origin)) mod 2 pi, for the shader's sea_phase uniform.
+static func phases_at(origin: Vector2) -> PackedVector2Array:
+	var out: PackedVector2Array = PackedVector2Array()
+
+	for wv in WAVES:
+		var d: Vector2 = Vector2(wv.x, wv.y)
+		var k: float = TAU / wv.z
+		out.append(Vector2(fposmod(k * d.dot(origin), TAU), fposmod(CREST_K * k * Vector2(-d.y, d.x).dot(origin), TAU)))
+
+	return out
+
+
+# The swell's slope at world p, time t (s), without the shader's distance fade: what the shader draws, for CPU checks and later the swimmers.
+static func slope(p: Vector2, t: float) -> Vector2:
+	var s: Vector2 = Vector2.ZERO
+
+	for i in range(WAVES.size()):
+		var wv: Vector4 = WAVES[i]
+		var d: Vector2 = Vector2(wv.x, wv.y)
+		var k: float = TAU / wv.z
+		var phase: float = k * d.dot(p) - t * sqrt(G * k) * SPEED
+		var crest: float = 0.65 + 0.35 * sin(CREST_K * k * Vector2(-d.y, d.x).dot(p) + float(i) * 1.7)
+		s += d * k * wv.w * crest * cos(phase)
+
+	return s
+
+
+# Hands the waves and the phase origin to a sea material (water_material.gd). Call when origin_for(camera) changes.
+static func apply(material: ShaderMaterial, origin: Vector2) -> void:
+	if material == null:
+		return
+
+	material.set_shader_parameter("sea_origin", origin)
+	material.set_shader_parameter("sea_phase", phases_at(origin))

@@ -35,6 +35,8 @@ uniform vec2 wind_m_s = vec2(9.0, 4.0);
 uniform float ice = 0.0;             // 0 open water .. 1 a full sheet of ice on STILL water (src/shared/ice.gd; flora_view.gd set_ice_cover)
 uniform float daylight = 1.0;       // 1 day .. about 0.14 night: the body glow follows it (day_cycle.gd, set by weather_look.gd)
 uniform vec3 sun_toward = vec3(0.3, 0.8, 0.5);   // the direction to the sun (weather_look.gd), for the sea's glints
+uniform vec2 sea_origin = vec2(0.0);   // M5 (ocean_waves.gd): the swell is drawn relative to this phase origin near the camera, so it stays exact far out
+uniform vec2 sea_phase[4];           // per wave: its phase and its crest phase at sea_origin, mod 2 pi, worked out in 64-bit floats on the CPU
 uniform float sea = 0.0;             // 1 on the sea plane (terrain_client.gd): swell, depth colours from the beach out, surf foam at the shore, a darker line at the horizon
 uniform float debug_flow = 0.0;      // Ctrl+Shift+F8: colour the water by what the shader thinks it is (red running, blue still, green foam)
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
@@ -160,14 +162,16 @@ vec2 ripple_slope(vec2 p) {
 // The sea's swell: four waves of different length and direction (slopes, not heights: the plane is flat). Long swell runs onto the beach, the short ones glitter in the sun.
 vec2 sea_slope(vec2 p, float time, float dist) {
 	vec2 slope = vec2(0.0);
+	vec2 q = p - sea_origin;   // small numbers, so the phases keep their precision (guide F10)
+	// The same four waves as ocean_waves.gd WAVES (its test checks they match).
 	const vec4 dirs[4] = vec4[4](vec4(0.94, 0.34, 64.0, 0.55), vec4(-0.55, 0.83, 29.0, 0.50), vec4(0.38, -0.92, 13.0, 0.45), vec4(-0.97, -0.24, 6.0, 0.40));
 	for (int i = 0; i < 4; i++) {
 		vec2 d = dirs[i].xy;
 		float k = 6.2831853 / dirs[i].z;
 		float speed = sqrt(9.81 * k) * 0.6;
-		float phase = dot(d, p) * k - time * speed;
+		float phase = dot(d, q) * k + sea_phase[i].x - time * speed;
 		// Kathreen 1 Nov: sea pictures showed a regular lattice (four pure sine waves). A slow cross-crest modulation breaks the grid; UNTESTED, check by picture and revert if worse.
-		float crest = 0.65 + 0.35 * sin(dot(vec2(-d.y, d.x), p) * k * 0.21 + float(i) * 1.7);
+		float crest = 0.65 + 0.35 * sin(dot(vec2(-d.y, d.x), q) * k * 0.21 + sea_phase[i].y + float(i) * 1.7);
 		slope += d * k * dirs[i].w * crest * cos(phase) / (1.0 + dist / (dirs[i].z * 25.0));      // a wave fades out at 25 of its own lengths, so far water has only the long swell (no moire)
 	}
 	return slope;
