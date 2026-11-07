@@ -2347,6 +2347,8 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 	if im == null:
 		return
 
+	FlowTexture.tuck_dry_edges(im)   # the sheet runs flat into the bank instead of up it (water_flow_texture.gd)
+
 	# Protocol 85: the liquid sheet draws the live window (src/water2/liquid_surface.gd), the grid look steps aside there.
 	if _liquid == null:
 		_liquid = LiquidSurface.new()
@@ -2400,6 +2402,8 @@ func _on_fine_water(keys: PackedStringArray, packets: Array) -> void:
 
 		if im == null:
 			continue
+
+		FlowTexture.tuck_dry_edges(im)
 
 		var key: String = String(p[0])
 		var origin: Vector2 = p[1]
