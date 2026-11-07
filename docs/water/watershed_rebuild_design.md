@@ -6,6 +6,8 @@ This doc replaces `docs/water/terrain_water_pipeline.md` (#529), whose P1 to P6 
 
 Where this doc states a natural fact or a method, it names the source (section 9). Where a number has not been measured on our island yet, it says so.
 
+**Revision, 7 Nov 2026 (Dave asked for a reread of the document and the assignment).** The direction stands. The reread, with Dino's first input maps (R1 run), changed these parts: rain is a storm-time rate scaled to its share of the year (A4); uplift has no hill-scale pattern (A2); rock carries water properties and faults (A3); one water budget drives both the erosion and the rivers (principle 7, A5, B1); lakes come from named natural causes, chiefly a glacial history of the high ground (B2, B3, C2); groundwater has its own divides and streams can lose water (C3, C5); cave springs also come from fractured basalt and faults (C7); every feature can answer the document's seven questions (principle 8, D); and new checks (section 5). Section 4.7 explains how the document's note about architecture is read alongside the assignment.
+
 ---
 
 ## 1. Why the current approach fails
@@ -42,6 +44,8 @@ The cure is not another pass. It is a new order: **landform, rock and climate fi
 4. **Water appears for a reason.** Channel heads come from a slope-area threshold. Springs and seeps come from a groundwater model. Lakes come from basins and a water balance. Wetlands come from saturation. Cave springs come only from soluble or fractured rock with enough catchment.
 5. **Variety from conditions.** Rock, rain and slope differ between catchments, so their water differs. No random templates.
 6. **Seams by construction.** The whole baked island is solved on one grid, and tiles sample it by world position.
+7. **One water budget for ground and water.** The same runoff (rain, minus evaporation, split by the rock into quick runoff and groundwater recharge) drives the erosion that shapes the valleys and the rivers that later run in them. If the erosion used all the rain while the rivers used only what runs off, chalk, limestone and dry slopes would get valleys cut by water that is not there: deep valleys with no stream, which the document's last never-see item forbids (water and ground that disagree).
+8. **Every feature can explain itself.** Each lake, spring, seep, head, wetland, reach and outlet carries in the record the answers to the document's seven plausibility questions (section 13): what area and pathways feed it, why it is here and not nearby, what controls its level or outlet, what rock and soil made it, how it behaves in storm, normal weather and drought, what evidence it leaves, and how it reaches the coast or an internal sink. A feature that cannot answer one is a defect.
 
 ---
 
@@ -51,33 +55,60 @@ All heavy stages run offline on Dave's PC (Dino), never in the cloud. They are d
 
 ### Stage A: landform, rock, climate (inputs, kept from today)
 - **A1 macro landform**: `world_elevation.gd` exported as raw heights (the export already exists) with **no** fine detail noise, **no** valley guides and **no** rolling hills. It gives the coastline, the massifs and the base level.
-- **A2 tectonic uplift field**: where and how fast the land rose. It comes from the macro landform (the existing "design uplift"). The variety the rolling hills and the detail noise gave today moves here, as uplift variation at hill scale. Erosion then turns it into real ridges and spurs with drainage between them, never closed bumps.
-- **A3 rock**: `tile_geology` provinces and layers (`rock.py` already loads them). Per cell this gives erodibility (K), permeability, and soluble rock (limestone, marble). Hard beds make ledges, gorges and falls; soft beds make wide valleys (document section 10, "Geological controls").
-- **A4 climate**: rain and snow per cell from wind and relief (orographic), plus seasonal shares (snowmelt). Today `climate.py` reads moisture from a finished bake, which is circular. In the rebuild the climate is computed from A1 and the world air before any water.
+- **A2 tectonic uplift field**: where and how fast the land rose. It comes from the macro landform (the existing "design uplift"), smoothed, so it varies only at the scale of the massifs. Nothing is added at hill scale: the first R1 run tried plane waves at 1 to 2 km and they showed as regular blobs, an arbitrary pattern (document section 11: "Variety should emerge from differing environmental conditions rather than arbitrary randomization"). The variety the rolling hills and detail noise gave today comes instead from the rock bands, the rain and the drainage itself. Fault blocks from `tile_geology` may later step the uplift, because that is a geological cause.
+- **A3 rock**: `tile_geology` provinces, layers and features (`rock.py` already loads the layers). Per cell this gives erodibility (K) and the rock's water properties:
+  - **aquifers and aquitards**: chalk and sandstone hold and pass water (porous aquifers); limestone and marble pass it through dissolved fractures (karst); basalt through joints and lava tubes; shale, slate, coal measures and most granite hardly at all. Springs and seeps form where a permeable bed lies on a tight one (document section 3), and the R1 map shows many such contacts in the folded bands, so spring lines along them are expected;
+  - **soluble rock**: limestone, marble and chalk. Caves form mainly in limestone and marble; chalk is weak and porous, so it gives dry valleys, seasonal bournes and springs at its base, rarely caves;
+  - **faults and joints** (`tile_geology` already places faults): weaker, more permeable zones, so valleys can follow them (rectangular drainage), springs can rise along them, and drainage can be redirected (document sections 3, 4 and 10).
+  The first R1 map shows folded alternating hard and soft beds (sandstone, limestone, slate against shale, chalk, tuff). Where they strike across a massif, trellis drainage should emerge from the erosion by itself (document section 4). Hard beds make ledges, gorges and falls; soft beds make wide valleys (section 10). Numbers for permeability by rock type are researched before R4 (Gleeson et al. 2011 and the British Geological Survey aquifer classes are the starting points).
+- **A4 climate**: rain from wind and relief by the linear orographic model (Smith and Barstad 2004). That model gives the rain rate while moist air is lifted, not a yearly total, so the yearly rain is the background plus the orographic rate times the share of the year with moist onshore flow (`storm_share`). The share is calibrated once against a real maritime peak (Ben Nevis, 1,345 m: 4,104 mm a year, observatory mean 1883 to 1904) and then fixed as a climate property. The first run, without it, peaked at 13,300 mm a year, which is beyond any temperate mountain of this height. Snow: the share of precipitation falling as snow comes from temperature, falling with height by the lapse rate; snowmelt makes the spring high flow (document section 8). Today `climate.py` reads moisture from a finished bake, which is circular. In the rebuild the climate is computed from A1 and the world air before any water.
+- **A5 runoff (new)**: one water budget, computed here and used by every later stage (principle 7). Evaporation by the Fu form of the Budyko curve (ET/P from P and the potential evaporation, which falls with height), then the rest split by the rock into quick runoff and groundwater recharge. Stage B erodes with the quick runoff, so a valley is as large as the floods that really run in it; Stage C sends the recharge through the groundwater to springs, seeps and baseflow. Coefficients are researched before they are coded.
 
 ### Stage B: landscape evolution (the ground)
-Stream power with deposition (FastScape style: Braun and Willett 2013; deposition per Yuan et al. 2019), plus hillslope diffusion:
-- discharge-driven erosion, using rain-weighted area, not plain area;
-- K from rock, and a threshold so weak flows do not incise ("no deep gullies under tiny flows");
-- sediment deposition where carrying capacity drops (inside bends, valley floors, lake entries, coast), so floodplains and deltas form;
-- run long enough to approach steady state, at 16 m over the nine tiles (8.3 M cells; the existing model runs about 1 M years in minutes at this size). The final 8 m ground is the 16 m result refined, plus small hillslope roughness that cannot make pits (section 4.6).
+Three parts, in the order the land would have lived through them.
 
-The output is the **final ground**, not a delta, together with the routing graph it was eroded with.
+**B1 the long river era.** Stream power with deposition (FastScape style: Braun and Willett 2013; deposition per Yuan et al. 2019), plus hillslope creep:
+- erosion driven by the quick runoff of A5 accumulated downstream, not by the rain alone, so permeable and dry ground cuts less (principle 7);
+- K from rock, and a channel threshold so weak flows do not incise ("no deep gullies under tiny flows"). The threshold is on the runoff-weighted area together with slope (the slope-area form of Montgomery and Dietrich 1988), not a fixed area, so wet hills carry more channels than dry or permeable ones (document sections 1 and 8);
+- creep rate from the rock and its soil cover, and from the climate: valley spacing is set by the balance of creep and channel cutting (Perron et al. 2009), so one creep rate everywhere would space valleys evenly across unrelated catchments (a never-see item);
+- sediment deposition where carrying capacity drops (inside bends, valley floors, lake entries, coast), so floodplains and deltas form;
+- run long enough to approach steady state, at 16 m over the nine tiles (8.3 M cells).
+
+A long river era fills closed hollows with sediment. That is right in nature too, and it means any hollow left at its end is not, by itself, a lake.
+
+**B2 glacial history (new).** The island's climate has snowy winters, a treeline at 620 m and summits near 1,450 m. A landscape like that (western Scotland, Norway, coastal British Columbia) carries a recent glacial history on its high ground, and that history is where most of its lakes, many of its falls and much of its wetland come from. The document names it twice (sections 6, 10 and 11: "glacial depressions", "glacial history"). So after B1:
+- an ice stage with a lowered snowline (the equilibrium-line altitude, a parameter): glaciers grow where snow outlasts melt and flow down the B1 valleys;
+- glacial erosion rises with ice flux and sliding, so it is strongest where ice converges and is confined: bowl-shaped cirques at valley heads (tarns after the ice), U-shaped troughs, and overdeepened rock basins behind bedrock sills at confluences and narrows (Kessler, Anderson and Briner 2008; Alley et al. 2003);
+- tributary valleys with less ice are left hanging above the main trough: natural falls with a cause;
+- moraines where the ice ended dam valleys (moraine lakes); till and hummocky ground in the lowlands it reached (kettle ponds, poorly drained flats for fens and bogs); outwash below the ice margins (braided channels have a reason there);
+- then a short post-glacial era (about 11,700 years) of river and creep work, too short to fill these basins, as in nature.
+Where the chosen snowline puts no ice, there is no glacial imprint: glaciated and unglaciated catchments then differ by cause (document section 11). The model is chosen by research before any code (step R2b).
+
+**B3 other lake makers, by condition.** Each is a named cause the lake table records:
+- karst sinkholes (dolines) on limestone and chalk, where water dissolves the rock and drains down (closed, and explainable);
+- landslide dams in steep valleys of weak rock, rare, where slope, relief and rock make a failure likely;
+- oxbows and backswamps on meandering lowland reaches (stage C5);
+- coastal lagoons behind bars where sediment supply is high and the shore is low (stage C8);
+- beaver ponds belong to the ecology later (small, low-gradient streams near woodland); they are not made here.
+
+The output is the **final ground**, not a delta, together with the routing graph it was eroded with. The final 8 m ground is the 16 m result refined, plus small hillslope roughness that cannot make pits (section 4.6).
 
 ### Stage C: hydrology on the final ground (the water)
 - **C1 routing**: priority flood (Barnes et al. 2014) and steepest descent on the final ground. That gives basins, divides, receivers and rain-weighted discharge. This is the only routing.
-- **C2 lakes**: each depression left after Stage B is tested with a water balance: inflow (catchment rain plus groundwater) against evaporation and seepage over its area. If inflow wins, it fills to its lowest saddle (the controlling spill point) and a river leaves there. If it never fills, it is a pond at its balance level, or a seasonal wetland. A closed basin needs that explanation, which makes them rare (document section 6, and "closed basins are exceptional").
-- **C3 groundwater**: a steady water-table solve on a coarse grid (64 m), with recharge = rain minus runoff and transmissivity from rock. Where the water table meets the ground there is seepage: springs at slope breaks and permeability contrasts, broad seeps, and wetlands on flats (USGS; document sections 3 and 7). Each stream gets a baseflow share, and that sets perennial versus intermittent.
+- **C2 lakes**: every depression of the final ground is first given its cause from Stage B (cirque, glacial rock basin, moraine dam, kettle, doline, landslide dam, oxbow, lagoon). A hollow with no cause is a numerical leftover, a few decimetres of resampling, and is filled; it is not a lake. Each caused depression is then tested with a water balance (fill, spill and merge over the depression hierarchy: Barnes et al. 2020 and 2021): inflow (its catchment's runoff plus groundwater) against evaporation and seepage over its area. If inflow wins, it fills to its lowest saddle (the controlling spill point) and a river leaves there; full neighbours merge into one lake. If it never fills, it is a pond at its balance level, or a seasonal wetland. A closed basin needs that explanation, which makes them rare (document section 6, and "closed basins are exceptional").
+- **C3 groundwater**: a steady water-table solve on a coarse grid (64 m), with recharge from A5 and transmissivity from rock. The water table follows hydraulic head, not the surface routing, so a groundwater divide can sit off the surface divide, and karst conduits can carry water under a ridge to a spring in the next basin (document section 3). Where the water table meets the ground there is seepage: springs at slope breaks and where a permeable bed meets a tight one, broad seeps, and wetlands on flats (USGS; document sections 3 and 7). Each stream gets a baseflow share, and that sets perennial versus intermittent.
 - **C4 channel heads**: a channel starts where drainage area times slope passes a threshold (Montgomery and Dietrich 1988). The threshold rises in dry or permeable ground, so heads sit higher in wet catchments and lower in dry ones. A head is then labelled by what feeds it: a seep or damp hollow (the common case), a spring, a wetland outlet, a lake outlet, or a seasonal rill. Ponds and caves are never added to make a head.
-- **C5 network**: reaches between confluences, each with discharge (mean, wet season, dry season), slope, flow regime (perennial, intermittent or ephemeral), width and depth from hydraulic geometry (width about Q^0.5, depth about Q^0.4: Leopold and Maddock 1953), and reach type from slope (cascade above about 0.065, step-pool 0.03 to 0.065, plane-bed 0.015 to 0.03, pool-riffle below that: Montgomery and Buffington 1997). Meanders only on pool-riffle reaches with room in the valley floor. Falls only where the bed drops sharply over hard rock.
+- **C5 network**: reaches between confluences. Discharge is the quick runoff from upstream plus groundwater gained, minus water lost where the bed lies above the water table (losing reaches on permeable rock, karst and alluvium), so a river can shrink as well as grow (document section 4). Each reach has discharge (mean, wet season, dry season), slope, flow regime (perennial, intermittent or ephemeral), width and depth from hydraulic geometry (width about Q^0.5, depth about Q^0.4: Leopold and Maddock 1953), and reach type from slope (cascade above about 0.065, step-pool 0.03 to 0.065, plane-bed 0.015 to 0.03, pool-riffle below that: Montgomery and Buffington 1997). Meanders only on pool-riffle reaches with room in the valley floor, their wavelength scaled to the channel width, so meanders differ between rivers. Falls only where the bed drops sharply over hard rock or from a hanging valley. Natural levees only on lowland alluvial reaches with fine sediment, low and broad (not the retired bank walls). More than one channel only in wetlands, deltas and braided outwash, where the conditions for it exist (a never-see item).
 - **C6 wetlands**: cells that stay saturated (water table at or near the ground, low slope, convergent flow). They are typed by the document's section 7 and EPA definitions: marsh (surface water, soft plants), swamp (woody), fen (groundwater fed, peat), bog (rain fed, peat, acidic).
-- **C7 cave springs**: only where soluble rock (limestone or marble) has a catchment that drains underground (sinks, a losing reach), with the outlet lower down where the rock meets the surface. The spring's flow equals what the karst catchment loses. Rare by construction.
+- **C7 cave springs**: only where the rock lets water travel underground in open passages: limestone and marble (karst caves), fractured basalt (lava tubes, which `tile_rules` already defines) and fault zones; chalk mainly gives springs without caves. The cave catchment drains underground (sinkholes, a losing reach) and the outlet sits lower down where the passage meets the surface, perhaps in another surface basin. The spring's flow equals what that underground catchment receives, so no large river comes from a small opening without supply. Rare by construction.
 - **C8 coast outlets**: from slope, sediment load and coast shape: a rocky outlet, a tidal creek, an estuary or a delta (document section 9).
 
 ### Stage D: the island water record
 One record, written once per bake and read by everything:
 - per-cell rasters at 8 m: ground, water class (sea, lake, river, wetland by type, seasonal), water level, discharge, flow regime, depth to water table, basin id;
-- vector network: reaches (polyline, Q per season, width, depth, reach type, regime), heads (kind), confluences, falls, lakes (level, spill point, outlet reach), springs and seeps, cave springs, coast outlets.
+- vector network: reaches (polyline, Q per season, width, depth, reach type, regime), heads (kind), confluences, falls, lakes (cause, level, spill point, outlet reach), springs and seeps, cave springs, coast outlets;
+- per feature, the answers to the seven plausibility questions (principle 8);
+- per reach and lake, what the water should look like (document section 12): bed material (boulders, cobbles, gravel, sand, silt, peat), sediment load (clear, cloudy after rain, silty), peat colour where fed from bogs, and turbulence class. The water and ground shaders read these later, so the look agrees with the hydrology.
 
 Tiles are cut from it by world position, so seams agree by construction.
 
@@ -109,6 +140,9 @@ The record keeps wet-season, mean and dry-season discharge, and the regime. Late
 ### 4.6 Fine detail without pits
 The 8 m ground is the 16 m result refined with a smooth interpolation. It adds roughness only on hillslopes away from channels, and that roughness is depression-checked: a priority flood after it must show no new closed cells, or the roughness is removed there. Channel beds come from the reach polylines, at the reach's width and depth.
 
+### 4.7 The document's note on architecture
+The document says it describes natural behaviour, not a replacement architecture, and asks Claude to preserve the architecture where it works. Dave's assignment then authorises redesigning the terrain generator and the water "wherever necessary", while reusing what genuinely supports the new approach. I read the two together: the generation order is rebuilt because it is the cause of the failures (section 1), and everything else in the game's architecture is kept: Voxel Tools terrain, the tile format and bake, the geology and climate rules, the 2 m and 8 m live water, and the readers, which switch to one record. Old tools that place features by chance are not reused: `lem.py`'s random "tarn" sink patches and `meander.py`'s random meanders.
+
 ---
 
 ## 5. How we will validate (no success by "it runs")
@@ -124,7 +158,12 @@ Every check runs on Dave's PC (Dino or David4), never in the cloud.
    - no flow uphill: every reach strictly descends, with falls flagged;
    - incision depth scaled to discharge (no deep cut where Q is tiny);
    - no single shape repeated across catchments (variation statistics for meander wavelength and fall spacing);
-   - closed basins counted and each one explained.
+   - closed basins counted and each one explained;
+   - every lake has a named cause from Stage B (no leftover pits as lakes);
+   - every feature answers the seven questions (principle 8);
+   - confluences point downstream (junction angles acute, not T-shaped);
+   - valley spacing and channel density differ between catchments in step with their rock and rain, not evenly across the island;
+   - rain stays within real bounds for the climate (the calibration peak in `params.json`).
 2. **Follow-the-water report.** A tool that picks heads in several contrasting basins and walks each to its destination. It prints, at each step, supply, discharge, width, slope, reach type, tributaries joined and destination, and writes a profile picture. Dave reads these.
 3. **Overview maps**: basins coloured, network by order, lakes and wetlands, heads by kind, groundwater depth.
 4. **Ground pictures by Dino** at chosen points in contrasting basins, and in the old trouble spots from Dave's play test.
@@ -173,7 +212,8 @@ Per Dave, these are listed, not fixed now:
 |---|---|---|
 | R0 | this design | this doc |
 | R1 | Stage A inputs: raw macro landform with no detail, uplift field, rock and climate maps for the nine tiles; export tools | input maps (pictures) |
-| R2 | Stage B: landscape evolution with discharge, rock K, threshold and deposition | before and after relief maps, basin map |
+| R2 | Stage B1: the long river era with quick runoff (A5), rock K and creep, a slope-area threshold and deposition | before and after relief maps, basin map |
+| R2b | Stage B2 and B3: glacial history (model chosen by research first), then other lake makers by condition | cirques, troughs, lake basins with causes |
 | R3 | Stage C1 to C2: routing, basins, lakes by water balance | basin and lake maps, closed-basin list with reasons |
 | R4 | Stage C3, C4, C6: groundwater, heads, wetlands | head kinds map, wetland map, groundwater depth |
 | R5 | Stage C5, C7, C8: network, reach types, cave springs, coast outlets; never-see checks; follow-the-water report | follow-the-water profiles in several basins |
@@ -196,3 +236,8 @@ Steps R1 to R5 are offline tools and pictures, with no game change. Dave can jud
 - Groundwater, gaining and losing streams, baseflow, springs and seeps: https://waterportal.ca/gw-surface/ ; USGS Water Science School.
 - Topography-controlled versus recharge-controlled water tables (Haitjema and Mitchell-Bruker 2005; Gleeson et al. 2011): https://pubs.usgs.gov/publication/70003883
 - Wetland types (EPA): https://19january2025snapshot.epa.gov/wetlands/classification-and-types-wetlands/index.html
+- Perron, J. T., Kirchner, J. W. and Dietrich, W. E. (2009), "Formation of evenly spaced ridges and valleys", Nature 460: valley spacing set by the ratio of soil creep to channel incision.
+- Overdeepening and glacial erosion (cirque floors, constrictions, sills; fjord and tarn lakes): Kessler, Anderson and Briner (2008), Nature Geoscience; Alley et al. (2003), Nature; summary at https://en.wikipedia.org/wiki/Overdeepening (checked 7 Nov 2026). The model for B2 is still to be researched.
+- Rain calibration: Ben Nevis summit observatory 1883 to 1904, mean 4,103.8 mm a year at 1,345 m (https://en.wikipedia.org/wiki/Ben_Nevis climate table, checked 7 Nov 2026).
+- Depression hierarchy and fill-spill-merge: Barnes, Callaghan and Wickert (2020, 2021), Earth Surface Dynamics.
+- Evaporation: Fu (1981) form of the Budyko curve; Zhang et al. (2004) for the parameter. Permeability by rock type: Gleeson et al. (2011), Geophysical Research Letters (values still to be read from the paper).

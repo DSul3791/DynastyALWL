@@ -160,7 +160,9 @@ func paste(frame: Variant, n: int, core: Variant, core_n: int) -> Variant:
 # per stage. Height, water and climate are built on a frame with a margin
 # around the tile and cropped to the tile's own 1,921 by 1,921 samples; the
 # margin is what lets two neighboring tiles agree along their shared edge.
-func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
+# landform_only (with raw_only): the macro landform for the watershed model, with no valley shaping, detail or strata
+# (docs/water/watershed_rebuild_design.md, stage A1).
+func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -> Dictionary:
 	var timings: Dictionary = {}
 	var tile_samples: int = int(settings.tile_size_m / settings.map_spacing_m)
 	var core: int = tile_samples + 1
@@ -180,7 +182,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	# the heights the pre-carve was run on: tools/export_raw_heights.gd uses the same switch).
 	var use_guides: bool = erosion_delta == null or bool(tile_rules.get("precarve", {}).get("valley_guides", true))
 
-	if tile_rules.has("valleys") and use_guides:
+	if tile_rules.has("valleys") and use_guides and not landform_only:
 		frame_height.valley_guides = river_network.guides_in(frame_rect.grow(float(tile_rules["valleys"]["half_width_max_m"])), 4.0)
 
 	# The rock under the frame (positions only), so erosion and ledges follow the real layers.
@@ -189,6 +191,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	frame_rock.prepare_frame(float(origin_sx) * float(settings.map_spacing_m), float(origin_sz) * float(settings.map_spacing_m), n)
 	frame_height.rock = frame_rock
 	frame_height.defer_strata = true
+	frame_height.landform_only = landform_only and raw_only
 	frame_height.build_frame(origin_sx, origin_sz, n)
 	timings["height"] = Time.get_ticks_msec() - clock
 	var raw_heights: PackedFloat32Array = crop(frame_height.heights, n, core)

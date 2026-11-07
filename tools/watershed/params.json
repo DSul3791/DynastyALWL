@@ -1,0 +1,42 @@
+{
+	"_note": "Watershed rebuild parameters (docs/water/watershed_rebuild_design.md). One file for every stage, so a run is reproduced from it and the input hashes in its manifest.",
+	"tiles": [
+		2,
+		3,
+		4,
+		5
+	],
+	"model_step": 2,
+	"seed": 9137,
+	"uplift": {
+		"_note": "Stage A2: where and how fast the land rose (m/yr): high where the landform is high, from the landform smoothed at smooth_m, so it varies only at the scale of the massifs. Nothing is added at hill scale. Sonny 7 Nov: the first R1 run's plane-wave variation (2.4 and 1.1 km) showed as regular blobs, an arbitrary pattern the watershed document rules out (section 11: variety from conditions, not randomisation). Hill-scale variety comes from the folded rock bands (hard and soft beds), the rain and the drainage itself.",
+		"base_m_per_yr": 0.0012,
+		"smooth_m": 1200.0,
+		"ref_height_m": 900.0,
+		"power": 1.0,
+		"coast_floor": 0.05
+	},
+	"rain": {
+		"_note": "Stage A4: Smith and Barstad (2004) linear orographic rain on a coarse grid, smoothed up to the model grid; wind direction per tile row from the landform manifest (climate.wind_toward_x). The linear theory gives the rate WHILE moist air is lifted, not an annual total. Annual rain = max(background + storm_share x orographic rate, min_share x background): all background rain is taken to fall in the moist onshore spells, and lee slopes keep at least min_share of it from other weather. storm_share is calibrated once against a real maritime peak (calibration_peak): the first R1 run (storm rate used all year) peaked at 13,300 mm/yr on the middle massif's west flank; 0.25 brings that peak to about 4,100 mm/yr. It is a climate property (share of the year with moist onshore flow), so it stays fixed if the landform changes.",
+		"cell_m": 128.0,
+		"wind_m_s": 10.0,
+		"background_mm_yr": 1100.0,
+		"storm_share": 0.25,
+		"tau_c_s": 1000.0,
+		"tau_f_s": 1000.0,
+		"min_share": 0.25,
+		"calibration_peak": "Ben Nevis summit observatory, 1,345 m, west Scotland, mean 4,104 mm/yr over 1883-1904 (Wikipedia climate table, checked 7 Nov 2026)"
+	},
+	"rock": {
+		"_note": "Stage A3: rock ids from the geology export (export_geology.gd --step equal to the model cell). soluble: carbonate rock that water dissolves (karst: sinkholes, sinking streams, springs, dry valleys). cave_forming: the soluble rocks strong enough to hold open caves; chalk is soluble but weak and porous, so it gives dry valleys, bournes and springs at its base, rarely caves. Fractured basalt (lava tubes) and fault zones can also feed cave springs (stage C7); they come from the geology features, not from this list.",
+		"soluble": [
+			"limestone",
+			"marble",
+			"chalk"
+		],
+		"cave_forming": [
+			"limestone",
+			"marble"
+		]
+	}
+}
