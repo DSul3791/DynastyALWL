@@ -25,8 +25,9 @@ func make():
 	a.player_positions = func(): return players
 	a.player_stances = func(): return players.map(func(_p): return 0)
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
-	for sp in ["rabbit", "deer", "moose", "fox", "duck", "horse", "boar", "songbirds", "frog", "grouse", "seal", "seabird"]:
+	for sp in ["rabbit", "deer", "moose", "fox", "duck", "horse", "boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear"]:
 		a.cfg["species"][sp]["target_per_player"] = 0
 
 	a.cfg["senses"] = {}

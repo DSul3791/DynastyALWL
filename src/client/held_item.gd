@@ -536,7 +536,25 @@ func flame_covered() -> bool:
 
 
 func _off_class() -> String:
-	return str(_inv.table.entry(off_id()).get("tool_class", ""))
+	return str(_inv.table.entry(_left_id()).get("tool_class", ""))
+
+
+# What the left hand shows: the off hand's item, or, in third person, a torch held as the main item (Dave's torch carry infographic, 6 Nov 2026: the torch is
+# always carried in the LEFT hand; #488's first look failed because a torch taken as the main item stayed in the right hand by the hip).
+func _left_number() -> int:
+	var number: int = off_number()
+
+	if number != 0:
+		return number
+
+	if not _first_person and _avatar_rig != null and holding and (_is_torch() or _is_doused_torch()):
+		return held_number()
+
+	return 0
+
+
+func _left_id() -> String:
+	return _inv.table.id_of(_left_number())
 
 
 func _is_spear() -> bool:
@@ -564,6 +582,11 @@ func _is_placeable() -> bool:
 
 
 # True while a torch is the held item (the Dynasty body then crouch-walks with it, avatar_driver.gd).
+# A torch in the left hand (the off hand's item is a torch): the third-person body takes the torch carry pose (Dave's infographic, 6 Nov 2026).
+func torch_in_left() -> bool:
+	return _inv != null and _left_number() != 0 and _off_class() == "torch"
+
+
 func holding_torch() -> bool:
 	return holding and _is_torch()
 
@@ -1693,6 +1716,9 @@ func _show_model() -> void:
 	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
 		number = 0
 
+	if number != 0 and _left_number() == number and off_number() == 0:
+		number = 0      # a torch taken as the main item is drawn in the left hand in third person (_left_number)
+
 	if number == _shown_number:
 		return
 
@@ -1803,8 +1829,9 @@ func _third_fist_on(model: Node3D) -> MeshInstance3D:
 		ball.radial_segments = 12
 		ball.rings = 6
 		var skin: StandardMaterial3D = StandardMaterial3D.new()
-		skin.albedo_color = FIST_COLOR
-		skin.roughness = 0.9
+		skin.albedo_color = _third_skin_color()
+		skin.roughness = 0.64          # the body's own skin roughness (Dave's glb, the metallic-roughness texture's median)
+		skin.metallic_specular = 0.35
 		ball.material = skin
 		fist.mesh = ball
 		model.add_child(fist)
@@ -1813,9 +1840,24 @@ func _third_fist_on(model: Node3D) -> MeshInstance3D:
 	return fist
 
 
+# The third-person fist's colour (Dino's #488 look, 6 Nov 2026: the grip read as a pale blob): the body's painted skin, not the first-person arms' FIST_COLOR.
+# THIRD_SKIN is the median of Dave's skin texture (Dynasty_Base_Male.glb, sRGB), times the skin tint the body wears for this character (dynasty_body.gd dress).
+const THIRD_SKIN := Color(0.718, 0.498, 0.376)
+
+
+func _third_skin_color() -> Color:
+	var tint: Color = Color.WHITE
+	var worn: Variant = _avatar_rig.get("_skin_material") if _avatar_rig != null else null
+
+	if worn is BaseMaterial3D:
+		tint = (worn as BaseMaterial3D).albedo_color
+
+	return Color(THIRD_SKIN.r * tint.r, THIRD_SKIN.g * tint.g, THIRD_SKIN.b * tint.b)
+
+
 # The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.
 func _show_off_model(delta: float) -> void:
-	var number: int = off_number() if _inv != null else 0
+	var number: int = _left_number() if _inv != null else 0
 	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_key_pressed(KEY_B)
 
 	if number != _off_shown:
@@ -1826,7 +1868,7 @@ func _show_off_model(delta: float) -> void:
 			_off_model = null
 
 		if number != 0:
-			_off_model = _make_shield_model() if _off_class() == "shield" else _make_torch_model(off_id())
+			_off_model = _make_shield_model() if _off_class() == "shield" else _make_torch_model(_left_id())
 			_mount_off_model()
 
 	if _off_model == null:
@@ -1838,12 +1880,44 @@ func _show_off_model(delta: float) -> void:
 		flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
 		flicker.light_energy = 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
 
+	if _off_class() == "torch" and not _first_person and _avatar_rig != null and _off_model.get_parent() == _avatar_rig.hand_mount_l:
+		_stand_torch_upright()
+
 	if _off_class() == "shield":
 		var lift: float = 1.0 if blocking else 0.0
 		_off_model.position = _off_model.position.lerp(_off_rest + Vector3(0.0, 0.0, -0.18 * lift), clampf(delta * 16.0, 0.0, 1.0))
 
 
 var _off_rest: Vector3 = Vector3.ZERO
+
+const TORCH_LEAN := 0.12      # third-person torch carry: the shaft leans this much forward and this much out to the left per metre up (about 7 degrees each)
+
+
+# Third person, torch in the left hand (Dave's torch carry infographic, 6 Nov 2026): the torch stands upright in the world, leaning a little forward and out
+# from the body, whatever the hand's own angle, with the grip in the fist. The arm pose that puts the hand up in front is the body's (dynasty_body.gd _torch_carry).
+func _stand_torch_upright() -> void:
+	var skel: Node3D = _avatar_rig.get("skeleton") as Node3D
+	var mount: Node3D = _avatar_rig.hand_mount_l as Node3D
+
+	if skel == null or mount == null or not mount.is_inside_tree():
+		return
+
+	var front: Vector3 = skel.global_basis * Vector3.BACK      # the Dynasty skeleton faces +Z, its left is +X
+	var left: Vector3 = skel.global_basis * Vector3.RIGHT
+	front.y = 0.0
+	left.y = 0.0
+
+	if front.length() < 0.001 or left.length() < 0.001:
+		return
+
+	front = front.normalized()
+	left = left.normalized()
+	var shaft: Vector3 = (Vector3.UP + front * TORCH_LEAN + left * TORCH_LEAN).normalized()
+	var across: Vector3 = shaft.cross(front).normalized()
+	var upright: Basis = Basis(across, shaft, across.cross(shaft).normalized())
+	var grip: float = float(_off_model.get_meta("grip_y", GRIP_ALONG_Y["torch"])) * THIRD_CHOKE
+	_off_model.global_transform = Transform3D(upright, mount.global_position + shaft * grip)
+	_third_fist_on(_off_model).visible = true
 
 
 # Same grips as the right hand, on the left mount (first person arms, or the body in third person).

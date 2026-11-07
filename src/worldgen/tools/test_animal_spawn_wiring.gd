@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Animal spawn wiring (flora session, 2026-10-31): biome weights, time-of-day activity, the near-spawn mix and the starter exclusion centre.
+# Animal spawn wiring (flora session, 2026-10-31): biome weights, time-of-day activity, the near-spawn mix and the starter island level.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_spawn_wiring.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -22,6 +22,7 @@ func make(players: Array, species: String):
 	a.blocked = func(x, z): return false
 	a.player_positions = func(): return players
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
 	for sp in a.cfg["species"]:
 		a.cfg["species"][sp]["target_per_player"] = 0
@@ -91,19 +92,38 @@ func _init() -> void:
 
 	check(near.animals.size() > 0 and inside == near.animals.size(), "near-share spawns land 60 to 120 m out (%d of %d)" % [inside, near.animals.size()])
 
-	# Starter exclusion: moose keep out of the circle around the real spawn point (the row's old fixed centre is replaced).
+	# Starter island levels (Dave 6 Nov 2026, corrected): species live wherever is natural for them, the town too; only their level
+	# rises with distance from the town point (the real spawn): about 1 to 5 by the town, 5 to 10 half way, 10 to 20 on the far side.
 	var moose = make(players, "moose")
 	moose.cfg["species"]["moose"]["spawn_share"] = 1.0
 	moose.starter = Vector2(0.0, 0.0)
-	moose.biome_at = func(x, z): return "boreal_forest"
+	moose.biome_at = func(_x, _z): return "boreal_forest"
 	run(moose, 40.0)
-	check(count(moose, "moose") == 0, "moose stay out of 1500 m around the real spawn (%d)" % count(moose, "moose"))
-	var far = make(players, "moose")
-	far.cfg["species"]["moose"]["spawn_share"] = 1.0
-	far.starter = Vector2(60000.0, 60000.0)
-	far.biome_at = func(x, z): return "boreal_forest"
-	run(far, 40.0)
-	check(count(far, "moose") > 0, "moose spawn when the real spawn is far away (%d)" % count(far, "moose"))
+	check(count(moose, "moose") > 0, "moose live by the starter town too, where the land suits them (%d)" % count(moose, "moose"))
+	var lv = make(players, "rabbit")
+	lv.starter = Vector2(0.0, 0.0)
+	var il: Dictionary = lv.cfg["island_level"]
+	check(lv.island_level(float(il["town_m"]) * 0.5, 0.0) == 0.0 and lv.island_level(float(il["far_m"]) + 100.0, 0.0) == 1.0, "the island level is 0 by the town and 1 on the far side")
+	var mid: float = lv.island_level((float(il["town_m"]) + float(il["far_m"])) * 0.5, 0.0)
+	check(mid > 0.45 and mid < 0.55, "half way across, the island level is about 0.5 (%.2f)" % mid)
+	var mid_x: float = (float(il["town_m"]) + float(il["far_m"])) * 0.5
+	check(lv.level_span(0.0, 0.0) == Vector2i(1, 5) and lv.level_span(float(il["far_m"]) + 100.0, 0.0) == Vector2i(10, 20), "levels 1 to 5 by the town, 10 to 20 on the far side (%s, %s)" % [str(lv.level_span(0.0, 0.0)), str(lv.level_span(float(il["far_m"]) + 100.0, 0.0))])
+	var mid_span: Vector2i = lv.level_span(mid_x, 0.0)
+	check(mid_span.x >= 4 and mid_span.x <= 6 and mid_span.y >= 9 and mid_span.y <= 11, "about 5 to 10 half way across (%s)" % str(mid_span))
+	var banded: Array = []
+
+	for sp in lv.cfg["species"]:
+		if lv.cfg["species"][sp].has("level"):
+			banded.append(sp)
+
+	check(banded.is_empty() and not lv.cfg["wolves"].has("level"), "no species or wolf pack is kept away from the town by a level band (%s)" % str(banded))
+	var boar_near = make(players, "boar")
+	boar_near.cfg["species"]["boar"]["spawn_share"] = 1.0
+	boar_near.starter = Vector2(0.0, 0.0)
+	boar_near.hour_now = func(): return 23.0
+	boar_near.biome_at = func(_x, _z): return "temperate_forest"
+	run(boar_near, 40.0)
+	check(count(boar_near, "boar") > 0, "boar live by the starter town too (%d)" % count(boar_near, "boar"))
 	# The newer species (boar 8, songbirds 9, frog 10): spawn in their own biome and time only, have a model and a carcass row; the ones waiting for models never spawn.
 	var carcass: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/carcass.json"))["species"]
 	var view = AnimalViewScript.new()
@@ -133,7 +153,7 @@ func _init() -> void:
 	waiting.biome_at = func(x, z): return "beach"
 	run(waiting, 40.0)
 	check(count(waiting, "seal") == 0, "a species waiting for its model never spawns")
-	check(view._make_for_species(14, 1) == null and view._make_for_species(99, 1) == null, "an unknown species number draws nothing, not a rabbit")
+	check(view._make_for_species(15, 1) == null and view._make_for_species(99, 1) == null, "an unknown species number draws nothing, not a rabbit")
 	# Hours (Sal's spawn_plan active flags): songbirds, grouse and seabirds are diurnal, boar and frog come out at dusk and night; the chance by hour per species.
 	var by_hour = make(players, "rabbit")
 	var expected: Dictionary = {"songbirds": [1.0, 0.0], "grouse": [1.0, 0.0], "seabird": [1.0, 0.0], "boar": [0.0, 1.0], "frog": [0.0, 1.0]}   # [wanted at noon, wanted at 02:00]

@@ -7,6 +7,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
 
 const MAX_DRAWN := 30
+const MODELS_PATH := "res://data/animals/models.json"
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -17,7 +18,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -25,6 +26,9 @@ const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
+var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
+var _model_notes: Dictionary = {}  # log lines already printed by _model_note
+var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
 var _mats: Dictionary = {}
 var _t: float = 0.0
 var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
@@ -71,6 +75,8 @@ void fragment() {
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
 # on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model is not drawn.
 const SMALL_SPECIES := [9, 10, 11, 13]
+const YOUNG_NUM := 100       # a young animal's species number + 100 (server_animals.gd)
+const YOUNG_SCALE := 0.5     # how big the young are drawn
 
 
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
@@ -84,6 +90,11 @@ func _make_for_species(number: int, id: int) -> Node3D:
 
 
 func _make_species_body(number: int, id: int) -> Node3D:
+	var model: Node3D = _make_model(number)
+
+	if model != null:
+		return model
+
 	match number:
 		2:
 			return _make_deer(id)
@@ -109,6 +120,8 @@ func _make_species_body(number: int, id: int) -> Node3D:
 			return _make_seal()
 		13:
 			return _make_gull_flock(id)      # one record per flock since MikeW's seabird flock block (PR 73): 5 to 12 gulls standing on the beach, all taking off in state 15
+		14:
+			return _make_bear()
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
@@ -148,6 +161,14 @@ func on_rows(rows: Array) -> void:
 		var id: int = int(row[0])
 		seen[id] = true
 
+		# A young animal (calf, cub, fawn, piglet, foal: Dave 6 Nov 2026) comes as its species number + 100 (ServerAnimals.YOUNG_NUM);
+		# it is drawn as its species, smaller.
+		var young: bool = int(row[1]) >= YOUNG_NUM
+
+		if young:
+			row = row.duplicate()
+			row[1] = int(row[1]) - YOUNG_NUM
+
 		if not _bodies.has(id):
 			if _bodies.size() >= MAX_DRAWN:
 				continue
@@ -158,8 +179,12 @@ func on_rows(rows: Array) -> void:
 				continue
 
 			node.position = row[2]
+
+			if young:
+				node.scale = Vector3.ONE * YOUNG_SCALE
+
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
@@ -257,6 +282,12 @@ func _process_body(delta: float) -> void:
 		var before: Vector3 = node.position
 		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 or state == 14 or state == 15 else 5.0), 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		if bool(b.get("model", false)):
+			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
+			_animate_model(node, b, state, model_speed, delta)
+			_emit_steps(b, node, state, model_speed)
+			continue
+
 		var rig: Node3D = node.get_node("Rig")
 		var rate: float = 9.0 if state == FLEE else 5.0
 		var big: bool = bool(b.get("deer", false))
@@ -277,6 +308,232 @@ func _process_body(delta: float) -> void:
 			_animate_gulls(rig, state == 15)
 
 		_emit_steps(b, node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
+
+
+# Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md): a species listed in
+# data/animals/models.json with a scene that exists is drawn from that scene (a rigged, animated mesh) instead of the code-built
+# body; a missing file falls back to the code body, so a model can be added one species at a time. The row gives the scene, its
+# scale and yaw (to face -Z), the clip for each protocol state, and the ground speed its walk and run clips were made at.
+func _model_rows() -> Dictionary:
+	if _models == null:
+		_models = {}
+
+		if FileAccess.file_exists(MODELS_PATH):
+			var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MODELS_PATH))
+			_models = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
+
+	return _models
+
+
+func _make_model(number: int) -> Node3D:
+	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
+	var row: Dictionary = _model_rows().get(kind, {})
+
+	if row.is_empty():
+		return null
+
+	if not ResourceLoader.exists(str(row.get("scene", ""))):
+		_model_note(kind, "no file at %s: the code-built body is drawn" % str(row.get("scene", "")))
+		return null
+
+	var packed: PackedScene = load(str(row["scene"])) as PackedScene
+
+	if packed == null:
+		_model_note(kind, "%s did not load as a scene: the code-built body is drawn" % str(row["scene"]))
+		return null
+
+	var inst: Node = packed.instantiate()
+	var meshes: Array = inst.find_children("*", "MeshInstance3D", true, false)
+
+	if not (inst is Node3D) or meshes.is_empty():
+		_model_note(kind, "%s has no mesh: the code-built body is drawn" % str(row["scene"]))
+		inst.free()
+		return null
+
+	var root: Node3D = Node3D.new()
+	root.set_meta("model", true)
+	root.set_meta("model_row", row)
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	rig.add_child(inst)
+	var body: Node3D = inst as Node3D
+	body.rotation.y += deg_to_rad(float(row.get("yaw_deg", 0.0)))
+
+	# Size from the mesh itself, not the file's units (an FBX may be in centimetres, metres, or carry its own root scale): the
+	# longest side of the rest-pose bounds is made row.length_m, and the feet are put on the ground.
+	var box: AABB = _model_bounds(rig, meshes)
+	var longest: float = maxf(box.size.x, maxf(box.size.y, box.size.z))
+
+	if longest <= 0.0001:
+		_model_note(kind, "%s has empty bounds: the code-built body is drawn" % str(row["scene"]))
+		root.free()
+		return null
+
+	var k: float = float(row.get("length_m", longest)) / longest * float(row.get("scale", 1.0))
+	body.scale *= k
+	body.position.y -= box.position.y * k
+	_model_materials(meshes, row)
+	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
+
+	if not players.is_empty():
+		var player: AnimationPlayer = players[0]
+		root.set_meta("player", player)
+
+		# The clips import as play-once; every clip the row uses (graze, walk, run, warn...) loops.
+		for key in (row.get("clips", {}) as Dictionary):
+			var anim_name: String = str(row.get("clip_prefix", "")) + str(row["clips"][key])
+
+			if player.has_animation(anim_name):
+				player.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
+			else:
+				_model_note(kind, "no clip %s" % anim_name)
+
+	_model_note(kind, "drawn from %s: %d meshes, %.2f m long (file size %.2f, scale x%.4f)" % [str(row["scene"]), meshes.size(), longest * k, longest, k])
+	return root
+
+
+# The bounds of a model in the rig's space (so the file's own root scale and rotation count). With a skeleton, the bones' posed
+# positions are used: a skinned FBX can keep its centimetre scale on a bone, which the mesh's own bounds never see (Dave 6 Nov saw
+# a bear five times taller than a tree). The bones stop short of the skin, so their box is widened by 12%.
+func _model_bounds(rig: Node3D, meshes: Array) -> AABB:
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+
+	if not skeletons.is_empty():
+		var sk: Skeleton3D = skeletons[0]
+		var to_rig: Transform3D = _to_ancestor(sk, rig)
+		var bones: AABB = AABB()
+
+		for i in sk.get_bone_count():
+			var at: Vector3 = to_rig * sk.get_bone_global_pose(i).origin
+			bones = AABB(at, Vector3.ZERO) if i == 0 else bones.expand(at)
+
+		if maxf(bones.size.x, maxf(bones.size.y, bones.size.z)) > 0.0001:
+			return bones.grow(maxf(bones.size.x, maxf(bones.size.y, bones.size.z)) * 0.06)
+
+	var box: AABB = AABB()
+	var first: bool = true
+
+	for m in meshes:
+		var mi: MeshInstance3D = m
+		var part: AABB = (_to_ancestor(mi, rig) * mi.get_aabb()) if mi.mesh != null else AABB()
+		box = part if first else box.merge(part)
+		first = false
+
+	return box
+
+
+# The transform from a node's space to one of its ancestors' space.
+func _to_ancestor(node: Node, ancestor: Node) -> Transform3D:
+	var t: Transform3D = Transform3D.IDENTITY
+	var n: Node = node
+
+	while n != null and n != ancestor:
+		if n is Node3D:
+			t = (n as Node3D).transform * t
+
+		n = n.get_parent()
+
+	return t
+
+
+# The pack's FBX files name normal maps that are not in the pack, so the materials are set here: each surface whose material or
+# mesh name contains a row.materials "match" gets that colour texture (the first entry with match "" covers the rest).
+func _model_materials(meshes: Array, row: Dictionary) -> void:
+	var sets: Array = row.get("materials", [])
+
+	if sets.is_empty():
+		return
+
+	for m in meshes:
+		var mi: MeshInstance3D = m
+
+		if mi.mesh == null:
+			continue
+
+		for surface in mi.mesh.get_surface_count():
+			var old: Material = mi.mesh.surface_get_material(surface)
+			var file_tex: Texture2D = (old as BaseMaterial3D).albedo_texture if old is BaseMaterial3D else null
+			# The imported material's own colour texture names the part best (T_Bear_Head.png), then the material, then the mesh.
+			var name_text: String = (file_tex.resource_path.get_file() if file_tex != null else "") + " " + (str(old.resource_name) if old != null else "") + " " + str(mi.name)
+
+			for entry in sets:
+				var match_text: String = str(entry.get("match", ""))
+
+				if match_text == "" or name_text.findn(match_text) >= 0:
+					var tex: Texture2D = load(str(entry.get("albedo", ""))) as Texture2D if ResourceLoader.exists(str(entry.get("albedo", ""))) else null
+
+					if tex != null:
+						var mat: StandardMaterial3D = StandardMaterial3D.new()
+						mat.albedo_texture = tex
+						mat.roughness = float(entry.get("roughness", 0.9))
+
+						# Fur cards (the ruff round a bear's neck, lashes, lips) are cut out by the texture's alpha: drawn solid,
+						# their cut-away parts show as black bands. Cut them, and draw both sides of the cards.
+						if _has_alpha(tex) or bool(entry.get("alpha", false)):
+							mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+							mat.alpha_scissor_threshold = float(entry.get("alpha_cut", 0.5))
+							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+						mi.set_surface_override_material(surface, mat)
+
+					# One line per surface, so a part that takes the wrong texture (a dark band, dark eyes) shows which name it matched.
+					_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] takes %s" % [surface, str(mi.name), name_text.strip_edges(), str(entry.get("albedo", "")).get_file()])
+					break
+
+
+# Whether a texture has see-through pixels (checked once per texture).
+func _has_alpha(tex: Texture2D) -> bool:
+	var key: String = tex.resource_path
+
+	if not _alpha_of.has(key):
+		var img: Image = tex.get_image()
+
+		if img != null and img.is_compressed():
+			img = img.duplicate() as Image
+			img.decompress()
+
+		_alpha_of[key] = img != null and img.detect_alpha() != Image.ALPHA_NONE
+
+	return bool(_alpha_of[key])
+
+
+# One line per kind and message in the game log, so a model that is not drawn says why.
+func _model_note(kind: String, text: String) -> void:
+	var key: String = kind + text
+
+	if not _model_notes.has(key):
+		_model_notes[key] = true
+		print("animal model %s: %s" % [kind, text])
+
+
+# Plays the clip for the animal's state (a moving animal walks or runs by its real ground speed) and keeps the gait count for footsteps.
+func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var row: Dictionary = node.get_meta("model_row", {})
+	var clips: Dictionary = row.get("clips", {})
+	var clip: String = str(clips.get(str(state), clips.get("0", "")))
+	var walk_mps: float = float(row.get("walk_mps", 1.5))
+	var run_mps: float = float(row.get("run_mps", 7.0))
+	var ref: float = 0.0
+
+	if speed > 0.3 and state != 10 and state != 12:
+		var running: bool = speed > (walk_mps + run_mps) * 0.5
+		clip = str(clips.get("run" if running else "walk", clip))
+		ref = run_mps if running else walk_mps
+
+	b["gait"] = float(b.get("gait", 0.0)) + speed * delta / maxf(float(row.get("stride_m", 1.2)), 0.1)
+
+	if not node.has_meta("player"):
+		return
+
+	var player: AnimationPlayer = node.get_meta("player")
+
+	clip = str(row.get("clip_prefix", "")) + clip if clip != "" else ""
+
+	if clip != "" and player.has_animation(clip) and player.current_animation != clip:
+		player.play(clip, 0.25)
+
+	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
 
 
 # A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).
@@ -920,7 +1177,10 @@ func _make_quad(spec: Dictionary) -> Node3D:
 		ear.name = "Ear_L" if side < 0.0 else "Ear_R"
 		ear.position = top + Vector3(side * hd * 0.2, hd * 0.2, hd * 0.1)
 		head.add_child(ear)
-		_ball(ear, hd * 0.13, Vector3(0.4, 1.7 * float(spec.get("ear", 1.0)), 0.22), Vector3(0.0, hd * 0.17 * float(spec.get("ear", 1.0)), 0.0), dark, Vector3(0.0, 0.0, side * -0.35))      # a leaf-shaped ear
+		if bool(spec.get("round_ears", false)):
+			_ball(ear, hd * 0.11, Vector3(1.0, 1.0, 0.45), Vector3(0.0, hd * 0.08, 0.0), coat.lerp(dark, 0.4))      # a bear's small round ear
+		else:
+			_ball(ear, hd * 0.13, Vector3(0.4, 1.7 * float(spec.get("ear", 1.0)), 0.22), Vector3(0.0, hd * 0.17 * float(spec.get("ear", 1.0)), 0.0), dark, Vector3(0.0, 0.0, side * -0.35))      # a leaf-shaped ear
 
 		if bool(spec.get("antlers", false)):
 			# Bull moose: broad flat palms swept out and up from above the ears, with tines along the rim.
@@ -975,7 +1235,7 @@ func _make_quad(spec: Dictionary) -> Node3D:
 		pivot.name = leg[0]
 		pivot.position = Vector3(float(leg[1]) * rb * 0.55, leg_h, float(leg[2]))
 		rig.add_child(pivot)
-		var w: float = rb * 0.3
+		var w: float = rb * 0.3 * float(spec.get("leg_w", 1.0))   # leg_w: a bear's legs are thick pillars, not a deer's sticks
 		# Shoulder and haunch: a long muscle tapering down the upper leg into the body, so the leg grows out of it instead of a stick under a ball (cloud render 4 Nov).
 		_ball(pivot, w * 1.0, Vector3(1.0, 2.4, 1.3 if String(leg[0]).begins_with("Leg_F") else 1.7), Vector3(0.0, -leg_h * 0.12, 0.0), coat)
 		_box(pivot, Vector3(w, leg_h * 0.5, w), Vector3(0.0, -leg_h * 0.24, 0.0), coat)
@@ -1051,6 +1311,14 @@ func _make_horse(id: int) -> Node3D:
 	var coats: Array = [[Color(0.36, 0.2, 0.11), Color(0.08, 0.06, 0.05)], [Color(0.5, 0.26, 0.12), Color(0.34, 0.17, 0.08)], [Color(0.66, 0.66, 0.64), Color(0.45, 0.45, 0.44)], [Color(0.1, 0.09, 0.09), Color(0.05, 0.04, 0.04)], [Color(0.62, 0.5, 0.32), Color(0.2, 0.14, 0.09)]]
 	var pick: Array = coats[id % coats.size()]
 	return _make_quad({"leg_h": 0.85, "rb": 0.32, "len": 1.05, "neck": 0.66, "neck_thick": 1.45, "head": 0.6, "snout": 1.2, "coat": pick[0], "dark": pick[1], "pale": pick[0].lerp(Color(0.9, 0.85, 0.78), 0.25), "mane": true, "socks": false, "long_tail": true, "blaze": id % 3 == 0})
+
+
+# A brown bear (Dave 6 Nov 2026; FAUNA_BY_BIOME): the shared four-legged build, heavy and low. About 2 m long, 1 m at the shoulder hump, a broad
+# head on a short neck with a short snout, small round ears, thick dark brown coat a shade paler on the head and hump, no tail to speak of.
+func _make_bear() -> Node3D:
+	# Brown bear (PC look 6 Nov: the first build read as a blob on wheels with horns): shoulder about 1.1 m, legs showing about half of
+	# that under the belly, thick legs, a big head with a short snout and small round ears, the shoulder hump.
+	return _make_quad({"leg_h": 0.75, "rb": 0.45, "len": 1.2, "neck": 0.3, "head": 0.62, "snout": 0.8, "leg_w": 1.6, "round_ears": true, "coat": Color(0.27, 0.18, 0.11), "dark": Color(0.16, 0.11, 0.07), "pale": Color(0.4, 0.3, 0.2), "hump": true, "socks": false, "pale_belly": false})
 
 
 # A moose (Mandy 2026-10-22): about 2.7 m long, 2.1 m at the shoulder hump, dark brown, long pale legs, big drooping muzzle; every second one is a bull with broad antlers.

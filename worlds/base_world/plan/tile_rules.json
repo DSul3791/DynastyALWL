@@ -156,10 +156,15 @@
 		"hardness": {"sediment": 0.05, "shale": 0.15, "coal": 0.15, "tuff": 0.3, "chalk": 0.35, "slate": 0.6, "sandstone": 0.65, "limestone": 0.7, "marble": 0.8, "basalt": 0.85, "granite": 0.95},
 		"ledges": {"sandstone": 1.0, "limestone": 1.0, "basalt": 0.9, "chalk": 0.6, "marble": 0.6, "slate": 0.5, "tuff": 0.3}
 	},
-	"spawn_pad": {"note": "Spawn moved 24 Oct to x 53316, z 68476 (Sal search; was Dave's x 53301, z 68427) and the showroom beside it: level inside flat_radius_m, blended into the land over blend_m. Level is the old spawn ground.", "x": 53316, "z": 68476, "level_m": 31.0, "flat_radius_m": 40, "blend_m": 70},
+	"spawn_pad_removed_note": "Sonny 6 Nov 2026 (#473; Dave: 'we should not be adjust individual heights. it should be a systemic thing so it works across our entire world. the spawn point can just be moved'): the spawn pad (heights pinned level round the spawn) is gone; the spawn moved to x 53296 z 68080, naturally flat dry ground on a valley floor 2 m and more over any water (src/shared/spawn_point.gd).",
 	"water": {
 		"drainage_mode": true,
+		"valley_drain": {"_note": "Sonny 6 Nov 2026 (Dave: 'smoothing the surrounding area so it flows towards the river'): dry ground beside a river that lies lower than the water is raised to the water plus height_m, rising grade_per_m per metre away, within reach_m; a ridge stops it (tile_valley_drain.gd).", "enabled": true, "reach_m": 200.0, "grade_per_m": 0.01, "height_m": 0.8, "max_raise_m": 10.0, "band_samples": 50},
 		"drainage": {
+			"route_over_raw": false,
+			"route_over_note": "Sonny 6 Nov 2026 (Dave: rivers on the real valley floor): false routes the rivers over the finished ground (strata and scree included, both laid by world position so tiles still agree), not the raw pre-strata copy, so the river follows the lowest line the player sees.",
+			"river_extra_depth_m": 5.0,
+			"river_extra_depth_note": "Sonny 6 Nov 2026 (Dave: 'cut them an extra 5 m deeper'): the centre bed and the water sink this much more, growing from the river threshold to full at 4 x it (drainage_channels.gd _stamp); the valleys follow the lower water.",
 			"banks": {
 				"_note": "Sonny 3 Nov 2026 (no patchy riverbeds): a dry cell next to water higher than its ground is raised to that water plus height_m, by at most max_raise_m, so a channel across a hillside has a bank on its downhill side (tile_drainage.gd _build_banks). v2 (05:55): max_raise_m 1.5 -> 3 (759 of 919 still-leaking rim cells were at the cap); a bank taller than shoulder_drop_m raises the dry ground outside it to its top less shoulder_drop_m (at most half its lift), so it slopes away. v3 (Sonny 6 Nov 2026, Dave x 52935 z 69453: water spilling out of the beds into wetlands): height_m 0.2 -> 0.8 (the settled water stands up to ~0.9 m over the painted level on steep reaches) and every dry cell under the water plus height_m is a bank, not only those under the water.",
 				"enabled": true,
@@ -176,7 +181,7 @@
 			"valley_radius_widths": 12.0,
 			"valley_side_slope": 0.06,
 			"valley_max_radius_m": 400.0,
-			"farm_height_from_m": 120.0, "farm_height_to_m": 250.0, "farm_valley_start_km2": 0.4, "farm_valley_radius_widths": 24.0, "farm_valley_max_radius_m": 600.0, "farm_valley_cut_max_m": 25.0, "farm_valley_side_slope": 0.10, "spawn_x": 53316, "spawn_z": 68476, "spawn_keep_m": 450, "spawn_blend_m": 650, "gully_start_km2": 0.08, "gully_end_km2": 1.2, "gully_depth_m_per_sqrt_q": 12.0, "gully_max_m": 10.0, "gully_wall_slope": 0.55, "gully_slope_from": 0.105, "gully_slope_to": 0.176, "canyon_start_km2": 0.6,
+			"farm_height_from_m": 120.0, "farm_height_to_m": 250.0, "farm_valley_start_km2": 0.4, "farm_valley_radius_widths": 24.0, "farm_valley_max_radius_m": 600.0, "farm_valley_cut_max_m": 25.0, "farm_valley_side_slope": 0.10, "gully_start_km2": 0.08, "gully_end_km2": 1.2, "gully_depth_m_per_sqrt_q": 12.0, "gully_max_m": 10.0, "gully_wall_slope": 0.55, "gully_slope_from": 0.105, "gully_slope_to": 0.176, "canyon_start_km2": 0.6,
 			"canyon_cut_max_m": 90.0,
 			"canyon_wall_slope": 1.1,
 			"canyon_rim_max_m": 160.0,
@@ -1172,6 +1177,11 @@
 			"_note": "Dave 3 Nov 2026: a brook head on a hillside comes out of a cave about 100 m deep rising gently, the spring at the back, side branches with dens; some get 2 or 3 spring passages (extra_passage_chance: 2 or more, 3); each spring gives spring_m3_s_per_km2 x the head catchment km2 and their flows add up; no cave where the main passage finds under min_length_m of room.",
 			"min_slope_deg": 10,
 			"head_max_start": 1.6,
+			"min_sea_m": 1500,
+			"hill_rise_m": 15,
+			"hill_reach_m": 100,
+			"hill_note": "Sonny 6 Nov 2026 (Dave: a river starting at the base or on the side of a hill or mountain gets a cave, on flat ground a head pond): a brook head flatter than min_slope_deg still gets a cave when the ground rises hill_rise_m within hill_reach_m (the foot of a hill).",
+			"min_sea_note": "Sonny 6 Nov 2026 (Dave: caves \"only show up way inland wherever the river starts\"): no spring cave at a brook head with the sea within this many metres (tile_sites.gd inland_mask, on the whole frame so tiles agree). The terrain 59 bake had 30 of its 96 caves within 1 km of the sea.",
 			"_head_max_start_note": "Dave 6 Nov 2026 (x 52441 z 68924, a cave not at a river start): a cave mouth only where no river within 16 m drains more than 1.6 times river_start_km2, so caves open at the heads of brooks, never beside a river already running.",
 			"min_spacing_m": 120,
 			"max_count": 96,

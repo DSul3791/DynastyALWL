@@ -41,6 +41,7 @@ func _init() -> void:
 	a.blocked = func(_x, _z): return false
 	a.player_positions = func(): return []
 	a.setup()
+	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
 	var grid = GridScript.new()
 	var items: Dictionary = {1: {"struct": {"kind": "log_wall"}}, 2: {"struct": {"kind": "log_wall"}}}
@@ -67,6 +68,7 @@ func _init() -> void:
 	# Without the hook (tests, old saves) nothing is blocked.
 	var b = AnimalsScript.new()
 	b.setup()
+	b.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 	check(not b.crosses_wall(0.0, 3.0, 0.0, -3.0), "no walls hook means no walls")
 
 	print("test_animal_walls: %d fail" % failures)

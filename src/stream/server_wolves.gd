@@ -515,7 +515,7 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 
 		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
-			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)), pack["maimed"].has(target), "wolves"))
+			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves"))   # a higher-level wolf bites harder
 
 			# Meat is the prize: a few bites in, the pack tears it out of the pack and runs (never in a fire's or torch's light).
 			if result == "hurt" and bool(pack["for_meat"]) and not lit_target and take_meat.is_valid():

@@ -7,6 +7,7 @@
 		"moose": {"len": 2.5, "width": 0.85, "height": 0.95, "legs": 1.15, "head": 0.65, "neck": 0.6, "tail": 0.1, "coat": "#33241a", "pale": "#665444", "antlers": true, "beak": false},
 		"fox": {"len": 0.7, "width": 0.2, "height": 0.24, "legs": 0.26, "head": 0.15, "neck": 0.09, "tail": 0.42, "coat": "#b85620", "pale": "#ede0cc", "antlers": false, "beak": false},
 		"duck": {"len": 0.42, "width": 0.2, "height": 0.2, "legs": 0.07, "head": 0.08, "neck": 0.14, "tail": 0.07, "coat": "#665738", "pale": "#d9d2bc", "antlers": false, "beak": true},
-		"horse": {"len": 2.0, "width": 0.6, "height": 0.7, "legs": 0.9, "head": 0.55, "neck": 0.7, "tail": 0.6, "coat": "#5c3319", "pale": "#a1624a", "antlers": false, "beak": false}
+		"horse": {"len": 2.0, "width": 0.6, "height": 0.7, "legs": 0.9, "head": 0.55, "neck": 0.7, "tail": 0.6, "coat": "#5c3319", "pale": "#a1624a", "antlers": false, "beak": false},
+		"bear": {"len": 2.0, "width": 0.95, "height": 0.9, "legs": 0.5, "head": 0.42, "neck": 0.3, "tail": 0.05, "coat": "#452e1c", "pale": "#664d33", "antlers": false, "beak": false}
 	}
 }

@@ -70,6 +70,31 @@ func _init() -> void:
 	run(items, 9000)
 	check(float(items.vitals_of(1)["health"]) == 1.0, "cold stops at 1 health (like hunger)")
 
+	# Wet clothes (Dave 5 Nov rain card: only shelter dries you, slowly under a tree or roof, fast by a fire).
+	weather = {"temp_c": -3.0, "wind": 0.6, "rain": 0.0, "snow": 0.0}
+	check(float(items._soak.get(1, 0.0)) > 0.7, "the snowfall soaked them (%.2f)" % float(items._soak.get(1, 0.0)))
+	var wet_target: float = items.warmth_target(1)
+	items._update_soak(1, 3600.0)
+	check(float(items._soak[1]) > 0.7, "in the open with the snow stopped they stay wet")
+	items._soak[1] = 0.0
+	check(items.warmth_target(1) > wet_target, "dry is warmer than wet (%.0f dry, %.0f wet)" % [items.warmth_target(1), wet_target])
+	items._soak[1] = 1.0
+	items.cover_at = func(_p): return 1.0
+	items._update_soak(1, 1800.0)
+	var under_tree: float = float(items._soak[1])
+	items.cover_at = Callable()
+	items._soak[1] = 1.0
+	items._items[778] = {"number": 1, "count": 1, "pos": Vector3(11.0, 0.0, 10.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 1000.0, "covered": false, "recheck": 0.0}}
+	items._update_soak(1, 1800.0)
+	var by_fire: float = float(items._soak[1])
+	items._items.erase(778)
+	check(under_tree < 1.0 and by_fire < under_tree, "a tree dries slowly, a fire fast (%.2f under a tree, %.2f by a fire after half an hour)" % [under_tree, by_fire])
+	weather = {"temp_c": -3.0, "wind": 0.6, "rain": 0.8, "snow": 0.0}
+	items._soak[1] = 0.0
+	items._update_soak(1, 900.0)
+	check(float(items._soak[1]) > 0.5, "rain in the open soaks them within a quarter hour (%.2f)" % float(items._soak[1]))
+	items._soak[1] = 0.0   # the cover and fire checks below are for a dry body
+
 	# Cover and a fire, on an ordinary cold day.
 	weather = {"temp_c": -3.0, "wind": 0.6, "rain": 0.0, "snow": 0.0}
 	var open_target: float = items.warmth_target(1)

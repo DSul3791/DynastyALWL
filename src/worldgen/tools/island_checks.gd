@@ -32,6 +32,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const CensusScript := preload("res://src/worldgen/sketch/island_census.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
+const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 const WaterStoreScript := preload("res://src/water/water_store.gd")
 const EdgeCompareScript := preload("res://src/worldgen/tile/edge_compare.gd")
 
@@ -1526,18 +1527,11 @@ func _spawn_of(world_dir: String) -> Vector2:
 	if typeof(rules) == TYPE_DICTIONARY and (rules as Dictionary).has("spawn_pad"):
 		return Vector2(float(rules["spawn_pad"]["x"]), float(rules["spawn_pad"]["z"]))
 
-	return Vector2.ZERO
+	return SpawnPointScript.OVERRIDE   # no spawn pad any more (6 Nov 2026): the one spawn point
 
 
 func _spawn_check(settings, world_dir: String, directory: String, tile_limits: Dictionary) -> void:
-	var rules: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/tile_rules.json"))
-
-	if typeof(rules) != TYPE_DICTIONARY or not (rules as Dictionary).has("spawn_pad"):
-		_row("spawn gate", "no spawn_pad in tile_rules.json", "-", "INFO")
-		return
-
-	var pad: Dictionary = rules["spawn_pad"]
-	var spawn: Vector2 = Vector2(float(pad["x"]), float(pad["z"]))
+	var spawn: Vector2 = _spawn_of(world_dir)
 	var tile: Vector2i = Vector2i(int(floor(spawn.x / float(settings.tile_size_m))), int(floor(spawn.y / float(settings.tile_size_m))))
 	var path: String = "%s/tile_%d_%d.tile" % [directory, tile.x, tile.y]
 	var title: String = "spawn (%d, %d) tile (%d,%d)" % [int(spawn.x), int(spawn.y), tile.x, tile.y]

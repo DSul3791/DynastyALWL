@@ -86,6 +86,8 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	if player == null or not player.has_animation("jump"):
 		return choose_clip(stance, pace, current, carrying)
 
+	current = current.trim_suffix("_torch")   # the gait thresholds read the plain names
+
 	var panic_t: float = maxf(float(avatar.get_meta("panic_t", 0.0)) - delta, 0.0)
 	avatar.set_meta("panic_t", panic_t)
 
@@ -111,7 +113,14 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 
 	# The Dynasty body has the air clips but no walk_back or strafe clips: standing on the floor it gets the plain clip.
 	if dynasty and (on_floor or stance != StanceScript.STAND):
-		return choose_clip(stance, pace, current, carrying)
+		var plain: String = choose_clip(stance, pace, current, carrying)
+
+		# A torch in the left hand (Dave's torch carry infographic, 6 Nov 2026): standing still, walking, jogging or running, the same gait with the left arm up in
+		# the carry pose (dynasty_body.gd _torch_carry). The client sets the meta `torch_left` each frame.
+		if stance == StanceScript.STAND and bool(avatar.get_meta("torch_left", false)) and player.has_animation(plain + "_torch"):
+			return plain + "_torch"
+
+		return plain
 
 	var local: Vector3 = basis.inverse() * velocity
 	return choose_clip_moving(stance, Vector2(local.x, local.z), velocity.y, air_t > AIR_DELAY, current, carrying)
@@ -183,6 +192,9 @@ static func crouch_walk_clip(velocity_local: Vector2) -> String:
 
 # The AnimationPlayer's speed scale that keeps the stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
 static func speed_scale(clip: String, pace: float) -> float:
+	if clip.ends_with("_torch") and not clip.begins_with("crouch_walk"):
+		clip = clip.trim_suffix("_torch")   # the torch carry gaits keep their gait's stride
+
 	if clip == "panic_run":
 		return 1.0
 
@@ -213,7 +225,7 @@ static func speed_scale(clip: String, pace: float) -> float:
 # Lean into a slope: uphill by the slope angle (up to 25 degrees), downhill a little back (Tyler's table). `local_normal` is the floor normal in the
 # body's own frame. Returns the tilt in radians (0 when not on the floor, nearly still or idle).
 static func slope_tilt(on_floor: bool, local_normal: Vector3, pace: float, clip: String) -> float:
-	if not on_floor or pace <= WALK_MIN_PACE or clip == "idle":
+	if not on_floor or pace <= WALK_MIN_PACE or clip == "idle" or clip == "idle_torch":
 		return 0.0
 
 	var angle: float = atan2(local_normal.z, maxf(local_normal.y, 0.1))
