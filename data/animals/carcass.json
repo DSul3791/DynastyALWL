@@ -28,6 +28,7 @@
 		"cat": {"len": 0.5, "width": 0.12, "height": 0.15, "legs": 0.15, "head": 0.08, "neck": 0.05, "tail": 0.3, "coat": "#7a6a58", "pale": "#d9cfc2", "antlers": false, "beak": false},
 		"dog": {"len": 0.9, "width": 0.25, "height": 0.3, "legs": 0.35, "head": 0.2, "neck": 0.15, "tail": 0.35, "coat": "#3a2a1c", "pale": "#8a6d52", "antlers": false, "beak": false},
 		"buffalo": {"len": 2.8, "width": 0.9, "height": 1.0, "legs": 0.8, "head": 0.6, "neck": 0.5, "tail": 0.6, "coat": "#3b2a1e", "pale": "#6b5340", "antlers": false, "beak": false},
+		"puma": {"len": 1.4, "width": 0.35, "height": 0.45, "legs": 0.45, "head": 0.25, "neck": 0.18, "tail": 0.7, "coat": "#a8865e", "pale": "#e3d6c0", "antlers": false, "beak": false},
 		"bear": {"len": 2.0, "width": 0.95, "height": 0.9, "legs": 0.5, "head": 0.42, "neck": 0.3, "tail": 0.05, "coat": "#452e1c", "pale": "#664d33", "antlers": false, "beak": false}
 	}
 }
