@@ -11,7 +11,8 @@ extends RefCounted
 # so two tiles agree along their seam).
 
 const NONE := 0
-const RIVER := 3   # tile_water.gd
+const LAKE := 2    # tile_water.gd
+const RIVER := 3
 const TileRollingScript := preload("res://src/worldgen/tile/tile_rolling.gd")
 
 
@@ -27,6 +28,10 @@ static func apply(heights: PackedFloat32Array, water_class: PackedByteArray, sur
 	var lift: float = float(rules.get("height_m", 0.3))
 	var max_raise: float = float(rules.get("max_raise_m", 10.0))
 	var band: int = int(rules.get("band_samples", 50))
+	# Ponds and lakes seed too (seed_lakes): with the 3 Nov bank raise off (Dave 7 Nov: no dykes), a pond whose rim stood lower than its water on the
+	# downhill side spilled out (the #524 test bake dried 1,485 of 1,550 water bodies on tile 3,4). The ground there now slopes up from the water like a
+	# river's valley side, never a lip that comes back down.
+	var seed_lakes: bool = bool(rules.get("seed_lakes", false))
 	var lo: int = maxi(margin - band, 1)
 	var hi: int = mini(n - margin + band, n - 1)   # exclusive
 	var total: int = n * n
@@ -49,7 +54,7 @@ static func apply(heights: PackedFloat32Array, water_class: PackedByteArray, sur
 		for i in range(lo, hi):
 			var k: int = j * n + i
 
-			if water_class[k] == RIVER and not is_nan(surface[k]):
+			if (water_class[k] == RIVER or (seed_lakes and water_class[k] == LAKE)) and not is_nan(surface[k]):
 				need[k] = surface[k] + lift
 				dist[k] = 0.0
 				queue.append(k)
