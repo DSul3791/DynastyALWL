@@ -11,13 +11,32 @@ extends RefCounted
 #   section   a parabola whose rim stands at the bankfull depth, banks rising on from there and blended into the land, cut and filled so the
 #             water stays in the channel on a side slope too.
 # Width and depth grow with the drained area (stream power). Everything depends on world position and the ground only, so tiles agree.
-# `bed` holds the carved ground; `surface` the water level in river cells (NAN elsewhere); `basin_mask` stays empty (lakes come from DrainageFill).
+# `bed` holds the carved ground; `surface` the water level in river cells (NAN elsewhere); `basin_mask` marks the spring pools at river heads (_spring_pool; lakes come from DrainageFill).
 
 const NOISE_SPACINGS := [8, 12, 16, 24, 32, 48, 64]
+
+# Sources (docs/water/terrain_water_pipeline.md B3; Dave: a river starts at a lake or head pond with a spring, or a cave with springs at a hill's
+# base). Every river head gets exactly one, decided here and written down (cave_head, source_counts): a head in or beside a lake has the lake; a
+# head on a hillside with room under cover comes out of a spring cave (tile_sites.gd opens it there); any other head rises in a spring pool cut
+# into the ground at the head's own water level. There is no head without a source.
+const LAKE_NEAR_CELLS := 2
+const CAVE_MIN_SLOPE_DEG := 10.0       # tile_sites spring_cave.min_slope_deg
+const CAVE_RISE := 0.035               # the cave room walk, as drainage_channels.gd _cave_fits
+const CAVE_HEIGHT_M := 3.2
+const CAVE_COVER_M := 2.5
+const CAVE_OPEN_CUT_M := 64.0
+const CAVE_MIN_LENGTH_M := 60.0
+const POOL_RADIUS_M := 16.0            # a spring pool: a round bowl this wide ...
+const POOL_DEPTH_M := 1.2              # ... this deep at its centre, its water at the head's level
+const ENTERING_FLOW := 1.6             # a "head" with this many times the river start already drains a neighbour frame's land: not a head
+const EDGE_CELLS := 3
 
 var bed: PackedFloat32Array = PackedFloat32Array()
 var surface: PackedFloat32Array = PackedFloat32Array()
 var basin_mask: PackedByteArray = PackedByteArray()
+var cave_head: PackedByteArray = PackedByteArray()   # 1 at a head whose source is a spring cave (tile_sites.gd opens spring caves only there)
+var source_counts: Dictionary = {}
+var heads_seen: int = 0
 var reaches_made: int = 0
 var reaches_bent: int = 0
 var longest_reach_m: float = 0.0
@@ -96,6 +115,15 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	for cells in made:
 		_cut_reach(cells, h, flow, size, cell_m, cfg)
 		reaches_made += 1
+
+	cave_head = PackedByteArray()
+	cave_head.resize(total)
+	source_counts = {"lake": 0, "cave": 0, "pool": 0, "entering": 0}
+
+	heads_seen = heads.size()
+
+	for head in heads:
+		_give_source(head, h, fill, flow, size, cell_m, threshold)
 
 
 func _cut_reach(cells: PackedInt32Array, land: PackedFloat32Array, flow, size: int, cell_m: float, cfg: Dictionary) -> void:
@@ -347,3 +375,117 @@ func _knot(kx: int, kz: int, spacing: int) -> float:
 	var v: int = (kx * 73856093) ^ (kz * 83492791) ^ (_seed * 19349663) ^ (spacing * 2654435761)
 	v = (v ^ (v >> 13)) * 1274126177
 	return float((v ^ (v >> 16)) & 0xFFFF) / 65535.0 * 2.0 - 1.0
+
+
+# One source for this head (see LAKE_NEAR_CELLS above).
+func _give_source(head: int, land: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float) -> void:
+	@warning_ignore("integer_division")
+	var row: int = head / size
+	var column: int = head % size
+
+	# A river coming in over the frame edge has its source in the next frame.
+	if flow.discharge[head] >= ENTERING_FLOW * threshold or row < EDGE_CELLS or column < EDGE_CELLS or row >= size - EDGE_CELLS or column >= size - EDGE_CELLS:
+		source_counts["entering"] += 1
+		return
+
+	for dz in range(-LAKE_NEAR_CELLS, LAKE_NEAR_CELLS + 1):
+		for dc in range(-LAKE_NEAR_CELLS, LAKE_NEAR_CELLS + 1):
+			var r: int = row + dz
+			var c: int = column + dc
+
+			if r >= 0 and c >= 0 and r < size and c < size and fill.lake_id[r * size + c] > 0:
+				source_counts["lake"] += 1
+				return
+
+	if _slope(head, size, cell_m) >= tan(deg_to_rad(CAVE_MIN_SLOPE_DEG)) and _cave_fits(head, size, cell_m):
+		cave_head[head] = 1
+		source_counts["cave"] += 1
+		return
+
+	_spring_pool(head, land, size, cell_m)
+	source_counts["pool"] += 1
+
+
+# A spring pool at the head: a bowl cut into the ground at the head's water level. Only ground that stands at or above that level is cut, so the
+# bowl opens into the hillside and the river leaves it at the head; ground below the level (downhill) is left as it is.
+func _spring_pool(head: int, land: PackedFloat32Array, size: int, cell_m: float) -> void:
+	@warning_ignore("integer_division")
+	var row: int = head / size
+	var column: int = head % size
+	var lip: float = surface[head] if not is_nan(surface[head]) else bed[head] + 0.3
+	var reach: int = int(ceil(POOL_RADIUS_M / cell_m))
+
+	for dz in range(-reach, reach + 1):
+		for dc in range(-reach, reach + 1):
+			var r: int = row + dz
+			var c: int = column + dc
+
+			if r < 0 or c < 0 or r >= size or c >= size:
+				continue
+
+			var k: int = r * size + c
+			var t: float = Vector2(float(dc), float(dz)).length() * cell_m / POOL_RADIUS_M
+
+			if t > 1.0 or land[k] < lip - 0.05:
+				continue
+
+			var floor_m: float = lip - POOL_DEPTH_M * (1.0 - t * t)
+
+			if floor_m < lip - 0.05:
+				bed[k] = minf(bed[k], floor_m)
+				surface[k] = lip
+				basin_mask[k] = 1
+
+
+func _slope(index: int, size: int, cell_m: float) -> float:
+	@warning_ignore("integer_division")
+	var row: int = index / size
+	var column: int = index % size
+	var steepest: float = 0.0
+
+	for dz in range(-1, 2):
+		for dc in range(-1, 2):
+			var r: int = row + dz
+			var c: int = column + dc
+
+			if (dz == 0 and dc == 0) or r < 0 or c < 0 or r >= size or c >= size:
+				continue
+
+			steepest = maxf(steepest, absf(bed[r * size + c] - bed[index]) / (sqrt(float(dz * dz + dc * dc)) * cell_m))
+
+	return steepest
+
+
+# Room for a spring cave (the walk of drainage_channels.gd _cave_fits and tile_sites.gd _cave_arm): straight uphill from the head, a passage rising
+# CAVE_RISE gets CAVE_COVER_M of ground over its roof within CAVE_OPEN_CUT_M and keeps it to CAVE_MIN_LENGTH_M.
+func _cave_fits(head: int, size: int, cell_m: float) -> bool:
+	@warning_ignore("integer_division")
+	var row: int = head / size
+	var column: int = head % size
+	var g: Vector2 = Vector2(bed[row * size + mini(column + 2, size - 1)] - bed[row * size + maxi(column - 2, 0)],
+		bed[mini(row + 2, size - 1) * size + column] - bed[maxi(row - 2, 0) * size + column])
+
+	if g.length() < 0.0001:
+		return false
+
+	var direction: Vector2 = g.normalized()
+	var roof0: float = bed[head] - 0.5 + CAVE_HEIGHT_M
+	var covered: bool = false
+	var distance: float = 0.0
+
+	while distance < CAVE_MIN_LENGTH_M:
+		distance += cell_m
+		var c: int = column + int(round(direction.x * distance / cell_m))
+		var r: int = row + int(round(direction.y * distance / cell_m))
+
+		if c < 0 or r < 0 or c >= size or r >= size:
+			return false
+
+		var cover: float = bed[r * size + c] - (roof0 + CAVE_RISE * distance)
+
+		if cover >= CAVE_COVER_M:
+			covered = true
+		elif covered or distance > CAVE_OPEN_CUT_M:
+			return false
+
+	return covered
