@@ -397,10 +397,20 @@ func _make_model(number: int) -> Node3D:
 					_model_note(kind, "no clip for role %s (%s)" % [str(key), str(row["clips"][key])])
 				continue
 
-			roles[str(key)] = anim_name
 			var anim: Animation = player.get_animation(anim_name)
 			anim.loop_mode = Animation.LOOP_LINEAR
 			_fit_clip_units(player, anim, kind, anim_name)
+
+			# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
+			# measured against the rest pose, and the model keeps its rest pose for that role instead.
+			var rest_h: float = _clip_height(player, null, rig)
+			var clip_h: float = _clip_height(player, anim, rig)
+
+			if rest_h > 0.0001 and clip_h < rest_h * 0.5:
+				_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used, standing pose instead" % [anim_name, clip_h, rest_h])
+				continue
+
+			roles[str(key)] = anim_name
 
 		player.set_meta("roles", roles)
 		_model_note(kind, "clips by role %s" % str(roles))
@@ -564,6 +574,75 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String) -> Strin
 				return str(full)
 
 	return ""
+
+
+# How tall the skeleton stands in the rig's space (the height of its bones' box) in a clip's first frame, or in its imported pose with no clip.
+# Worked out from the clip's own tracks and the bone rests, so it needs no running player.
+func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> float:
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+
+	if skeletons.is_empty():
+		return 0.0
+
+	var sk: Skeleton3D = skeletons[0]
+	var local: Array = []
+
+	for i in sk.get_bone_count():
+		local.append(sk.get_bone_pose(i))      # the pose as imported (the bear stands in it on the animal sheet)
+
+	if anim != null:
+		var base: Node = player.get_node_or_null(player.root_node)
+
+		for t in anim.get_track_count():
+			var kind: int = anim.track_get_type(t)
+
+			if kind != Animation.TYPE_POSITION_3D and kind != Animation.TYPE_ROTATION_3D and kind != Animation.TYPE_SCALE_3D:
+				continue
+
+			var path: NodePath = anim.track_get_path(t)
+
+			if base == null or base.get_node_or_null(NodePath(str(path.get_concatenated_names()))) != sk:
+				continue
+
+			var bone: int = sk.find_bone(str(path.get_concatenated_subnames()))
+
+			if bone < 0 or anim.track_get_key_count(t) == 0:
+				continue
+
+			var tr: Transform3D = local[bone]
+
+			if kind == Animation.TYPE_POSITION_3D:
+				tr.origin = anim.position_track_interpolate(t, 0.0)
+			elif kind == Animation.TYPE_ROTATION_3D:
+				tr.basis = Basis(anim.rotation_track_interpolate(t, 0.0)).scaled(tr.basis.get_scale())
+			else:
+				tr.basis = Basis(tr.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, 0.0))
+
+			local[bone] = tr
+
+	var to_rig: Transform3D = _to_ancestor(sk, rig)
+	var world: Array = []
+	world.resize(sk.get_bone_count())
+	var lo: float = INF
+	var hi: float = -INF
+
+	for i in sk.get_bone_count():
+		var chain: Array = []
+		var b: int = i
+
+		while b >= 0 and world[b] == null:
+			chain.push_front(b)
+			b = sk.get_bone_parent(b)
+
+		for c in chain:
+			var parent: int = sk.get_bone_parent(c)
+			world[c] = (world[parent] as Transform3D) * (local[c] as Transform3D) if parent >= 0 else local[c]
+
+		var y: float = (to_rig * (world[i] as Transform3D).origin).y
+		lo = minf(lo, y)
+		hi = maxf(hi, y)
+
+	return hi - lo if hi > lo else 0.0
 
 
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
