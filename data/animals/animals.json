@@ -3338,6 +3338,54 @@
 				"hp_x": 0.3
 			},
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). Camels roam dry savanna and bare ground in small groups by day, walk off from a player and kick one who corners it. Horse numbers, slower, drier ground; tamable value like the horse for later riding."
+		},
+		"guineafowl": {
+			"number": 46,
+			"name": "Guineafowl",
+			"target_per_player": 3,
+			"health": 6.0,
+			"walk_mps": 1.5,
+			"flee_mps": 7.5,
+			"spook_m": 14.0,
+			"safe_m": 35.0,
+			"graze_s": [
+				3.0,
+				10.0
+			],
+			"wander_m": 6.0,
+			"flee_run_m": 25.0,
+			"alert_m": 24.0,
+			"alert_s": [
+				1.0,
+				2.0
+			],
+			"burst_s": 3.0,
+			"trot_share": 0.5,
+			"zig_deg": 35.0,
+			"zig_leg_m": 8.0,
+			"eye_m": 0.25,
+			"habitat": {
+				"slope_max": 0.5,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0
+			},
+			"biomes": {
+				"savanna": 1.0,
+				"temperate_grassland": 0.3
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.6,
+				"night": 0.0
+			},
+			"spawn_share": 0.5,
+			"herd": [
+				5,
+				12
+			],
+			"herd_pull_m": 4.0,
+			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). Guineafowl scratch about the savanna in noisy flocks by day and run from a player. Pheasant numbers, bigger flocks; no flying yet."
 		}
 	},
 	"senses": {

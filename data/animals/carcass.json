@@ -37,6 +37,7 @@
 		"rhino": {"len": 3.2, "width": 1.1, "height": 1.1, "legs": 0.7, "head": 0.8, "neck": 0.4, "tail": 0.5, "coat": "#6f6a64", "pale": "#8f8a83", "antlers": false, "beak": false},
 		"elephant": {"len": 5.0, "width": 1.6, "height": 1.8, "legs": 1.5, "head": 1.2, "neck": 0.5, "tail": 1.0, "coat": "#77716b", "pale": "#958f88", "antlers": false, "beak": false},
 		"camel": {"len": 2.8, "width": 0.7, "height": 0.9, "legs": 1.1, "head": 0.5, "neck": 0.9, "tail": 0.5, "coat": "#b8946a", "pale": "#d9c2a0", "antlers": false, "beak": false},
+		"guineafowl": {"len": 0.5, "width": 0.18, "height": 0.2, "legs": 0.1, "head": 0.05, "neck": 0.1, "tail": 0.1, "coat": "#3a3c45", "pale": "#d8d8e0", "antlers": false, "beak": true},
 		"bear": {"len": 2.0, "width": 0.95, "height": 0.9, "legs": 0.5, "head": 0.42, "neck": 0.3, "tail": 0.05, "coat": "#452e1c", "pale": "#664d33", "antlers": false, "beak": false}
 	}
 }

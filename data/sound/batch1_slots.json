@@ -481,6 +481,18 @@
    "status": "filled",
    "note": "borrowed from horse"
   },
+  "guineafowl_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -27,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
   "ladder_rung": {
    "group": "ladder",
    "files": [

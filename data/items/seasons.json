@@ -2684,6 +2684,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"guineafowl": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {
