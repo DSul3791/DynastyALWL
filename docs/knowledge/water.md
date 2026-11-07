@@ -41,6 +41,7 @@
 | 6 Nov | Steep brooks drawn smooth; no bare strip between sheets | #465 | Better; square panes remained |
 | 6 Nov | Square panes on brooks traced to the sin hash at about 54 km | #470, #472 | #472 swaps in a sin-free hash; the coordinates are still large (lesson 3) |
 | 6 Nov | Rivers routed over the finished ground, cut 5 m deeper, dry land beside a river raised to drain to it (tile_valley_drain.gd) | #473 | Merged. Dry ground lower than the settled water beside gentle rivers, tile 3,4: 11.9% to 7.8%. Lessons: measure against the SETTLED water (.water), not the painted surface, which stands about 1.5 m higher (median) once beds are cut deeper; a spawn pad pinned in the bake is an area patch (Dave): move the spawn instead |
+| 7 Nov | Dave's guide made the water foundation; M1 closed grid built (m³ volumes, paired faces with crests, outflow scaled per cell, ledger) in `src/sullivan_water/` beside water2; the current water ignores digs (`water_hub2.gd:102`) | this PR | PASS on David4 (30 ok). Lesson: the guide's sqrt(head) law chatters near level water; cap each face below 1/4 of the levelling volume |
 
 ## What others do (with sources)
 
