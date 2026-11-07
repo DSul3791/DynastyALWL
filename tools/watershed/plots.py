@@ -10,7 +10,7 @@ def ground_picture(npz_path, png_path):
     """Six panels, so the result can be judged by eye:
     landform and final ground on ONE height scale (so a rise or a cut shows as a colour change, not a rescale);
     height change (red rose, blue cut): where erosion has not reached, the change is close to the full uplift;
-    rivers (quick-runoff area of 5 ha or more, wider and darker as it grows) on a grey hillshade;
+    rivers (quick-runoff area of 5 ha or more, darker as it grows) and closed hollows (red) on a grey hillshade;
     sediment thickness; slope (texture: evenly corrugated ground would show here)."""
     import matplotlib; matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -35,7 +35,10 @@ def ground_picture(npz_path, png_path):
         q = d['quick_area_m2'].astype(np.float64)
         riv = np.where(land & (q >= 5e4), np.log10(np.maximum(q, 5e4)), np.nan)
         ax[1, 0].imshow(riv, cmap='Blues', vmin=4.0, vmax=float(np.nanmax(riv)) if np.isfinite(riv).any() else 8.0)
-    ax[1, 0].set_title('rivers: quick-runoff area 5 ha and more (darker = more water)')
+    if 'pit_m' in d.files:
+        pit = d['pit_m'].astype(np.float64)
+        ax[1, 0].imshow(np.where(land & (pit > 0.1), 1.0, np.nan), cmap='autumn', vmin=0, vmax=1)
+    ax[1, 0].set_title('rivers: quick-runoff area 5 ha and more (darker = more water); closed hollows 0.1 m deep and more in red')
     ax[1, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
     im = ax[1, 1].imshow(np.where(land & (d['sediment_m'] > 0.05), d['sediment_m'], np.nan), cmap='YlOrBr', vmin=0, vmax=10, alpha=0.85)
     ax[1, 1].set_title('sediment (m): floodplains, fans, deltas'); fig.colorbar(im, ax=ax[1, 1], shrink=0.6)
