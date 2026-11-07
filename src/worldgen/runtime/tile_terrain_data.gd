@@ -16,6 +16,7 @@ extends RefCounted
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
+const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
 const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
 const RIVER_CLASS := 3
 const RIVER_FILM_M := 0.05   # a painted river cell thinner than WetMeters is still drawn, this deep (riffles between pools)
@@ -52,6 +53,7 @@ var _near_mutex: Mutex = Mutex.new()
 var water_surface: PackedFloat32Array = PackedFloat32Array()   # NAN = no water above sea level
 var biome: PackedByteArray = PackedByteArray()
 var moisture: PackedByteArray = PackedByteArray()
+var fresh_m: PackedFloat32Array = PackedFloat32Array()   # distance (m) to perennial fresh water per sample (fresh_m section, water_record.gd); empty in tiles baked before it
 var flora_seed: int = 0
 
 # Provinces, one entry per index of the province map.
@@ -141,6 +143,8 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	water_surface = TileFileScript.decode_water_surface(maps["water_surface"], TileFileScript.height_step_of(header))
 	biome = maps["biome"]
 	moisture = maps["moisture"]
+	var fresh: Dictionary = TileFileScript.read_section(path, table, "fresh_m")   # optional: tiles baked before Stage E have none
+	fresh_m = WaterRecordScript.decode_fresh(fresh["raw"]) if fresh["ok"] and fresh["raw"].size() == samples * samples else PackedFloat32Array()
 
 	var lists: Dictionary = {}
 
@@ -457,6 +461,15 @@ func offset_at(x: float, z: float) -> float:
 
 
 # Share of the four surrounding samples that hold water (0 to 1).
+# Distance (m) to perennial fresh water (a river or lake) at a point, from the baked fresh_m section; NAN when the tile has none (baked before
+# Stage E) or is open ocean, so callers fall back to their own probe. INF: farther than the section holds (510 m).
+func fresh_water_m(x: float, z: float) -> float:
+	if placeholder or fresh_m.size() != samples * samples:
+		return NAN
+
+	return fresh_m[nearest(x, z)]
+
+
 func wet_at(x: float, z: float) -> float:
 	if placeholder:
 		return 1.0
