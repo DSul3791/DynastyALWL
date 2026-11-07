@@ -445,6 +445,18 @@
    "status": "filled",
    "note": "borrowed from fox"
   },
+  "rhino_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/moose_step_0.ogg",
+    "res://assets/audio/batch1/moose_step_1.ogg",
+    "res://assets/audio/batch1/moose_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -6,
+   "status": "filled",
+   "note": "borrowed from moose"
+  },
   "ladder_rung": {
    "group": "ladder",
    "files": [

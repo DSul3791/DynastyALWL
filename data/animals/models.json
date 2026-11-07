@@ -1113,6 +1113,32 @@
 					"albedo": "res://assets/animals/leopard/Textures/T_Leopard_Body.png"
 				}
 			]
+		},
+		"rhino": {
+			"scene": "res://assets/animals/rhino/SK_Rhinoceros.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Rhinoceros",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.2,
+			"run_mps": 9.0,
+			"stride_m": 1.3,
+			"clips": {
+				"0": "Idle",
+				"3": "Idle_2",
+				"10": "Idle_3",
+				"11": "Run-IP",
+				"12": "Idle_2",
+				"walk": "Walk-IP",
+				"run": "Run-IP"
+			},
+			"note": "WildMesh Rhinoceros (Realistic Animals/Rhinoceros/SK_Rhinoceros.fbx). Checked 7 Nov 2026.",
+			"length_m": 3.6,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/rhino/Textures/T_Rhinoceros.png"
+				}
+			]
 		}
 	}
 }
