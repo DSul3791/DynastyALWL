@@ -58,6 +58,7 @@ What the animal view already does for every model (do not rebuild): size from th
 | Camel | 45 | done | waiting | Dry savanna and bare ground |
 | Guineafowl | 46 | done | waiting | Savanna flocks, ground only |
 | Honey badger | 47 | done | waiting | Savanna, fearless, stands its ground |
+| Kangaroo | 48 | done | waiting | Savanna and grassland mobs |
 
 New species are added with `python tools/add_species.py <spec.json>` (specs for batch 2 in E:/Software/godotDev/specs on the PC); `--clips` on the creature check lists a file's clips.
 

@@ -2698,6 +2698,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"kangaroo": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {

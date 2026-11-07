@@ -1256,6 +1256,39 @@
 					"albedo": "res://assets/animals/honey_badger/Textures/T_HoneyBadger.png"
 				}
 			]
+		},
+		"kangaroo": {
+			"scene": "res://assets/animals/kangaroo/SK_Kangaroo.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Kangaroo",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 6.0,
+			"stride_m": 0.6,
+			"clips": {
+				"0": "idle_eat",
+				"3": "idle_alerted_look_01",
+				"10": "agressive_idle_01",
+				"11": "sprint_fwd_01",
+				"12": "idle_02",
+				"walk": [
+					"walk_fwd_01",
+					"trot_fwd_01"
+				],
+				"run": "sprint_fwd_01"
+			},
+			"note": "WildMesh Kangaroo (Realistic Animals/Kangaroo/SK_Kangaroo.fbx). Checked 7 Nov 2026.",
+			"length_m": 1.8,
+			"materials": [
+				{
+					"match": "Eyelash",
+					"albedo": "res://assets/animals/kangaroo/Textures/T_Kangaroo_Eyelashes.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/kangaroo/Textures/T_Kangaroo_Body.png"
+				}
+			]
 		}
 	}
 }

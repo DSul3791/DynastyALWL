@@ -705,6 +705,20 @@
 					"hint": "A burrow ripped open, earth thrown wide. A honey badger hunted."
 				}
 			]
+		},
+		"kangaroo": {
+			"group": "pawed",
+			"track": "long hind feet in pairs and a tail mark",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Long paired hind prints and a tail drag. Kangaroos bounded here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small dry pellets in the grass. Kangaroos graze nearby."
+				}
+			]
 		}
 	}
 }
