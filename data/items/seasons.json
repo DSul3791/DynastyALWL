@@ -2719,6 +2719,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"mammoth": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {
