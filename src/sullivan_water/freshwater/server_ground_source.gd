@@ -24,8 +24,11 @@ extends RefCounted
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 const BLOCK := 16
-const SCAN_UP_M := 16.0
+const SCAN_UP_M := 4.0         # first try: generated ground plus a small fill (a 19.7 s build of 4 tiles on Dave's PC, 7 Nov, came mostly from
+                               # loading air blocks 16 m up). A column still solid there is scanned again up to SCAN_UP_WIDE_M (scan_range_wide).
+const SCAN_UP_WIDE_M := 16.0
 const SCAN_DOWN_M := 32.0
+const MAX_BLOCKS := 2048       # cached blocks (a 4 tile region over 2 to 4 blocks of height is about 600)
 const FILL_MATERIAL := 0       # the soil number a water-side fill uses; the caller can set `fill_material`
 
 var store                      # server_block_store.gd
@@ -54,6 +57,21 @@ func sdf(p: Vector3) -> float:
 func scan_range(x: float, z: float) -> Vector2:
 	var surface: float = float(store.generator.surface_height(x, z))
 	return Vector2(surface - SCAN_DOWN_M, surface + SCAN_UP_M)
+
+
+func scan_range_wide(x: float, z: float) -> Vector2:
+	var surface: float = float(store.generator.surface_height(x, z))
+	return Vector2(surface - SCAN_DOWN_M, surface + SCAN_UP_WIDE_M)
+
+
+# sdf() is linear in y between voxels 1 m apart: the adapter steps voxel by voxel and interpolates the crossing exactly.
+func voxel_m() -> float:
+	return 1.0
+
+
+# sdf() reads the voxel at floor(x), floor(z), so every point in one 1 m square reads the same column: the adapter reads it once.
+func column_key(x: float, z: float) -> Vector2i:
+	return Vector2i(floori(x), floori(z))
 
 
 func is_loaded(box: AABB) -> bool:
@@ -87,6 +105,9 @@ func _voxel(x: int, y: int, z: int) -> float:
 	var buffer: VoxelBuffer = _blocks.get(block)
 
 	if buffer == null:
+		if _blocks.size() >= MAX_BLOCKS:
+			_blocks.clear()   # a long walk along rivers: start over rather than grow without end (about 4 tiles' worth kept)
+
 		buffer = Layout.make_buffer(BLOCK)
 		store.load_block(buffer, block, 0)
 		_blocks[block] = buffer
