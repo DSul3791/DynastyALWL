@@ -34,12 +34,14 @@ Check `inputs.png` against these:
 The run starts from the landform and uses:
 - the uplift (stage A2), the rock (A3) and the rain (A4);
 - stream power with deposition, solved implicitly;
-- no gullying below 2 ha of drainage area;
+- the quick runoff of the one water budget (`runoff.py`: rain minus evaporation, times the rock's quick share), so chalk, limestone and dry slopes cut less;
+- channels that begin by the slope-area rule (steeper hollows need less water) and then run on downstream;
 - soil creep.
 
 It writes:
 - the final ground;
-- discharge, drainage area and receivers;
+- quick-runoff area, drainage area, receivers and the channel map;
+- the water budget fields (evaporation, quick runoff, recharge) for R3 and R4;
 - the hollows left (pit depth);
 - the sediment thickness (floodplains, fans, deltas);
 - a picture and a manifest.
@@ -48,4 +50,5 @@ Check `evolve.png` and the summary for:
 - branching valleys everywhere, with hills between them;
 - sediment on the valley floors and at the coast;
 - few closed hollows: a long river era fills them, and lakes come from named causes in R2b and R3, not from leftovers;
-- a summit and relief close to the landform's.
+- a summit and relief close to the landform's;
+- fewer channels (lower drainage density in the summary) on chalk and on the dry lee slopes than on the wet west flanks.

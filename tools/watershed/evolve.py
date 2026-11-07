@@ -5,14 +5,17 @@ Usage (on Dave's PC, never in the cloud):
 
 Starts from the landform (stage A1) and runs, per time step:
   1. routing: priority flood and steepest descent on the filled surface (tools/erosion_precarve/lem.py route, reused);
-  2. discharge: rain-weighted drainage area, Q_i = sum over the cells draining through i of rain share x cell area;
+  2. discharge: the QUICK runoff of the one water budget (stage A5, runoff.py: rain minus evaporation, times the rock's quick
+     share) accumulated downstream, in units of the reference quick runoff times area, so permeable and dry ground cuts less;
   3. stream power with deposition, implicit (Braun and Willett 2013 for the erosion; the deposition term of the Davy and Lague
      2009 / Yuan et al. 2019 erosion-deposition model):
         dh/dt = U - K e Q^m S + (G / Q) * sum over the catchment of (U - dh/dt) * cell
      solved node by node from the outlets up, with Gauss-Seidel sweeps for the sediment term;
-     no fluvial erosion where the drainage area is under channel_area_m2 (hillslope only), so weak flows cut no gullies;
+     fluvial erosion only where a channel has begun: a channel begins where Q * S^theta passes a threshold (the slope-area rule
+     of Montgomery and Dietrich 1988: steeper hollows need less water) and then continues downstream whatever the slope, so
+     weak flows cut no gullies and wet hills carry more channels than dry or permeable ones;
   4. hillslope diffusion (soil creep), explicit with sub-steps.
-U is the uplift (stage A2), e the rock erodibility at each cell's current height (stage A3, rock.py), rain from stage A4.
+U is the uplift (stage A2), e the rock erodibility at each cell's current height (stage A3, rock.py), Q from stages A4 and A5.
 The sea and its level never change. Sediment reaching the sea leaves the model; its flux through each river mouth is saved
 (sediment_flux_m3_yr) so stage C8 can tell a delta (high supply, low slope) from a rocky outlet.
 
@@ -28,14 +31,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
 import lem    # noqa: E402  (route: priority flood + receivers)
 import rock   # noqa: E402
+import runoff  # noqa: E402  (stage A5: the one water budget)
 
 
 @nb.njit(cache=True)
-def _discharge(order, rec, sea, rain, cell, N):
+def _discharge(order, rec, sea, w, cell, N):
     Q = np.zeros(N)
     for q in range(order.size):
         i = order[q]
-        Q[i] = rain[i] * cell
+        Q[i] = w[i] * cell
     for q in range(order.size - 1, -1, -1):
         i = order[q]; d = rec[i]
         if d >= 0 and not sea[d]:
@@ -44,13 +48,27 @@ def _discharge(order, rec, sea, rain, cell, N):
 
 
 @nb.njit(cache=True)
-def _channel_share(area, a_c):
-    # 0 below half the channel area, 1 above it, smooth between: fluvial erosion only where a channel can hold.
-    out = np.empty(area.size)
-    for i in range(area.size):
-        t = (area[i] - 0.5 * a_c) / (0.5 * a_c)
+def _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta):
+    """How much of each cell is channel (0 hillslope, 1 channel). A channel begins where Q * S^theta passes c_ch (smoothly
+    from half of it), with S the slope to the receiver, and once begun it continues downstream at any slope."""
+    out = np.zeros(Q.size)
+    for q in range(order.size):
+        i = order[q]; d = rec[i]
+        if d < 0:
+            continue
+        dist = dx
+        if abs(d - i) != 1 and abs(d - i) != n:
+            dist = dx * 1.4142135623730951
+        s = (h[i] - h[d]) / dist
+        if s < 0.0:
+            s = 0.0
+        t = (Q[i] * s ** theta / c_ch - 0.5) / 0.5
         t = 0.0 if t < 0.0 else (1.0 if t > 1.0 else t)
         out[i] = t * t * (3.0 - 2.0 * t)
+    for q in range(order.size - 1, -1, -1):          # upstream first: a channel carries on down to the sea or a lake
+        i = order[q]; d = rec[i]
+        if d >= 0 and not sea[d] and out[i] > out[d]:
+            out[d] = out[i]
     return out
 
 
@@ -60,7 +78,7 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell,
     Returns the sediment flux through each cell (m3/yr, own cell included) from the last sweep."""
     N = n * n
     up = np.zeros(N)
-    total = np.zeros(N)          # sum over strictly upstream cells of (U - dh/dt) * rain * cell, from the previous sweep
+    total = np.zeros(N)          # sum over strictly upstream cells of (U - dh/dt) * cell, from the previous sweep
     for s in range(sweeps):
         biggest = 0.0
         for q in range(order.size):                     # downstream first: a receiver is always solved before its donors
@@ -89,7 +107,7 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell,
         # sediment from upstream for the next sweep: accumulate the eroded volume (U - dh/dt) * cell up the tree, then shift by
         # one node. It is a volume of rock and soil, so it is NOT weighted by rain; the rain enters through Q (the water that
         # carries it): deposition rate = G * sediment flux / Q (Davy and Lague 2009 in the form of Yuan et al. 2019, with Q the
-        # rain-weighted area, so G stays dimensionless).
+        # quick-runoff-weighted area, so G stays dimensionless). Little water carries little sediment: dry ground fills.
         own = np.zeros(N)
         for q in range(order.size):
             i = order[q]
@@ -149,7 +167,9 @@ def main():
     cell = dx * dx
     sea = data['sea'].ravel().astype(np.uint8)
     U = data['uplift'].astype(np.float64).ravel()
-    rain = (data['rain'].astype(np.float64) / P['rain']['background_mm_yr']).ravel()
+    rain_mm = data['rain'].astype(np.float64).ravel()
+    W = P['water_budget']
+    q_ref = runoff.reference_quick_mm(P['rain']['background_mm_yr'], W)
     h = start.ravel().copy()
     # Initial roughness: a smooth landform drains in straight parallel lines (steepest descent on a plane); small uncorrelated
     # roughness, fixed by world position, lets the channels find each other and branch, as on any real surface. The erosion
@@ -165,16 +185,19 @@ def main():
         h = np.where(sea == 1, h, np.maximum(h + rough.ravel(), 0.05))
     h[sea == 1] = np.minimum(h[sea == 1], -1.0)
     g = rock.load(geology_dir, E['cover_m'], E['cover_erodibility'])
+    bfi = runoff.bfi_by_rock_id(g['names'], W['bfi_by_rock'])
     ery_fn = rock.make_fn(g, start, sea, dx)
-    a_c = float(E['channel_area_m2'])
+    CH = E['channel_head']
+    theta = float(CH['slope_exponent'])
+    c_ch = float(CH['area_m2_at_ref_slope']) * float(CH['ref_slope']) ** theta
     steps = int(round(E['years'] / E['dt']))
     t0 = time.time()
     deposit = np.zeros(n * n)
     for s in range(steps):
         filled, rec, order = lem.route(h, sea, n)
-        Q = _discharge(order, rec, sea, rain, cell, n * n)
-        area = _discharge(order, rec, sea, np.ones(n * n), cell, n * n)
-        share = _channel_share(area, a_c)
+        quick = runoff.budget(rain_mm, rock.rock_ids(g, h), bfi, W)['quick'] / q_ref    # the rock at today's surface
+        Q = _discharge(order, rec, sea, quick, cell, n * n)
+        share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
         ery = ery_fn(h)
         h0 = h.copy()
         flux = _fluvial(h, h0, sea, order, rec, n, dx, E['dt'], E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'])
@@ -189,11 +212,17 @@ def main():
         if not np.isfinite(h).all() or h.max() > bound:
             raise SystemExit(f'evolve: unstable at step {s}: max height {h.max():.3g} m is above the physical bound {bound:.0f} m')
     filled, rec, order = lem.route(h, sea, n)
-    Q = _discharge(order, rec, sea, rain, cell, n * n)
+    rid = rock.rock_ids(g, h)
+    wb = runoff.budget(rain_mm, rid, bfi, W)
+    Q = _discharge(order, rec, sea, wb['quick'] / q_ref, cell, n * n)
+    share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
     area = _discharge(order, rec, sea, np.ones(n * n), cell, n * n)
     hh = h.reshape(n, n)
     np.savez_compressed(f'{out_dir}/ground.npz', ground=hh.astype(np.float32), start=start.astype(np.float32),
-                        discharge_m3_rain=Q.reshape(n, n).astype(np.float32), area_m2=area.reshape(n, n).astype(np.float32),
+                        quick_area_m2=Q.reshape(n, n).astype(np.float32), area_m2=area.reshape(n, n).astype(np.float32),
+                        channel=share.reshape(n, n).astype(np.float32), rock=rid.reshape(n, n).astype(np.int16),
+                        et_mm=wb['et'].reshape(n, n).astype(np.float32), quick_mm=wb['quick'].reshape(n, n).astype(np.float32),
+                        recharge_mm=wb['recharge'].reshape(n, n).astype(np.float32),
                         receiver=rec.reshape(n, n).astype(np.int32), pit_m=(filled - h).reshape(n, n).astype(np.float32),
                         sediment_m=deposit.reshape(n, n).astype(np.float32), sea=sea.reshape(n, n).astype(bool),
                         sediment_flux_m3_yr=flux.reshape(n, n).astype(np.float32),
@@ -207,6 +236,12 @@ def main():
                    median_slope_deg=float(np.median(slope[land])), share_under_10deg_below_250m=float((slope[land & (hh < 250)] < 10).mean()),
                    closed_hollow_cells=int((pits[land] > 0.01).sum()), deepest_hollow_m=float(pits[land].max()),
                    sediment_km2_over_1m=float((deposit.reshape(n, n)[land] > 1.0).sum() * cell / 1e6),
+                   reference_quick_mm_yr=q_ref,
+                   water_mm_yr={k: float(wb[k].reshape(n, n)[land].mean()) for k in ('et', 'runoff', 'quick', 'recharge')},
+                   drainage_density_km_per_km2=float((share.reshape(n, n)[land] > 0.5).sum() * dx / 1e3 / (land.sum() * cell / 1e6)),
+                   drainage_density_by_rock={g['names'][int(k)]: float(((share > 0.5) & (rid == k) & (sea == 0)).sum() * dx / 1e3
+                                                                     / max(((rid == k) & (sea == 0)).sum() * cell / 1e6, 1e-9))
+                                             for k in np.unique(rid[sea == 0])},
                    max_cut_m=float((start - hh)[land].max()), max_fill_m=float((hh - start)[land].max()))
     json.dump(dict(params=P, inputs_sha256={'inputs.npz': sha(f'{inputs_dir}/inputs.npz')}, summary=summary),
               open(f'{out_dir}/evolve_manifest.json', 'w'), indent=1)
@@ -219,7 +254,7 @@ def main():
     fig, ax = plt.subplots(1, 3, figsize=(27, 9))
     for a, z, t in ((ax[0], start, 'landform (start)'), (ax[1], hh, 'final ground')):
         a.imshow(ls.shade(np.where(land, z, -30), cmap=plt.cm.terrain, vert_exag=3, blend_mode='soft', dx=dx, dy=dx)); a.set_title(t)
-    ax[1].imshow(np.where(land & (area.reshape(n, n) > 0.5e6), 1, np.nan), cmap='winter', alpha=0.8)
+    ax[1].imshow(np.where(land & (share.reshape(n, n) > 0.5), 1, np.nan), cmap='winter', alpha=0.8)
     im = ax[2].imshow(np.where(land, deposit.reshape(n, n), np.nan), cmap='YlOrBr', vmax=10); ax[2].set_title('sediment (m): floodplains, fans, deltas')
     fig.colorbar(im, ax=ax[2], shrink=0.7)
     for a in ax: a.axis('off')
