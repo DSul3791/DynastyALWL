@@ -3560,6 +3560,9 @@ func _update_view(delta: float) -> void:
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
 	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
 
+	if not _seat.is_empty() and stance.stance == StanceScript.SIT:
+		_avatar.position.y += _seat_lift()   # hips on the seat whatever the clip's own hips height (Dave 7 Nov 2026: the body sank through the chair)
+
 	if _avatar.visible:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
 		# Clip, playback speed and slope tilt come from src/client/character/avatar_driver.gd (moved there unchanged).
@@ -3782,7 +3785,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif KeyBindings.matches(event, "crouch") and not flying:
 			_set_stance(StanceScript.CROUCH, true)
 		elif KeyBindings.matches(event, "sit") and not flying:
-			_set_stance(StanceScript.SIT, true)
+			var near_seat: Dictionary = items.seat_near(body.global_position, SEAT_SIT_KEY_REACH_M) if items != null and stance.stance != StanceScript.SIT else {}
+
+			if not near_seat.is_empty():
+				_sit_on_seat(near_seat["pos"], float(near_seat["yaw"]), near_seat["def"])   # beside or inside a seat, X sits ON it, not on the ground through it
+			else:
+				_set_stance(StanceScript.SIT, true)
 		elif KeyBindings.matches(event, "lie") and not flying:
 			if stance.stance == StanceScript.LIE and items != null and not items.asleep:
 				_z_down_msec = Time.get_ticks_msec()   # lying: hold Z to sleep, tap to get up (decided on release, see _check_sleep_hold)
@@ -3934,6 +3942,10 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 # structures.json says how: sit_face "front" (a chair: facing its -Z, the back at +Z), "sides" (a bench: facing the side the player came from, at the nearest of
 # sit_spots_x) or "free" (a log seat or stool: facing the way the player already faces).
 const SEAT_HIPS_BACK_M := 0.05      # a chair's hips this far behind the middle of the seat, toward its back
+const SEAT_SIT_KEY_REACH_M := 0.9  # the sit key (X) within this of a seat's middle sits on the seat (Dave 7 Nov 2026: X in a chair sat through it on the ground)
+const SEAT_TOP_M := 0.45            # every seat's top above its foot (piece_look.gd: chair, stool, bench, log seat); a row can say "seat_m"
+const SEAT_HIPS_ABOVE_M := 0.07     # the hips joint above the seat top when sitting on it (the chair clip: hips 0.51 m, seat 0.45 m)
+const SEAT_LIFT_MAX_M := 0.6        # never move the body more than this to meet the seat
 const SEAT_STEP_OFF_M := 0.7        # standing up puts the player this far in front of the seat, clear of its solid (a chair is 0.5 m deep, the capsule 0.33 m wide)
 
 var _seat: Dictionary = {}          # while on a seat: {"at": the body position held, "front": the way the sitter faces}
@@ -3976,8 +3988,25 @@ func _sit_on_seat(seat_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
 	_set_stance(StanceScript.SIT)
 
 	if stance.stance == StanceScript.SIT:
-		_seat = {"at": at, "front": front}
+		_seat = {"at": at, "front": front, "top": seat_pos.y + float(def.get("seat_m", SEAT_TOP_M))}
 		stance.seated = true
+
+
+# How far to raise the body so its hips joint rests on the seat top: measured from the posed skeleton each frame, so it holds for any clip, body or seat.
+func _seat_lift() -> float:
+	var skel: Skeleton3D = _avatar.get("skeleton") as Skeleton3D if _avatar != null else null
+
+	if skel == null:
+		return 0.0
+
+	var hips: int = skel.find_bone("mixamorig_Hips")
+
+	if hips < 0:
+		return 0.0
+
+	var hips_y: float = (skel.global_transform * skel.get_bone_global_pose(hips).origin).y
+	var want: float = float(_seat["top"]) + SEAT_HIPS_ABOVE_M
+	return clampf(want - hips_y, -SEAT_LIFT_MAX_M, SEAT_LIFT_MAX_M)
 
 
 # Holds a seated player on the seat (true while seated: no walking, no gravity, no sliding out of the seat's solid). A stance the server changed ends it.
