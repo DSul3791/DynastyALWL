@@ -157,6 +157,78 @@
    "peak_db": -15,
    "status": "filled"
   },
+  "lynx_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -13,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "black_bear_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/wolf_step_0.ogg",
+    "res://assets/audio/batch1/wolf_step_1.ogg",
+    "res://assets/audio/batch1/wolf_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -9,
+   "status": "filled",
+   "note": "borrowed from wolf like the brown bear"
+  },
+  "elk_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -10,
+   "status": "filled",
+   "note": "borrowed from deer, heavier"
+  },
+  "bighorn_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -13,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "mountain_goat_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "beaver_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -16,
+   "status": "filled",
+   "note": "borrowed from fox, light"
+  },
   "ladder_rung": {
    "group": "ladder",
    "files": [

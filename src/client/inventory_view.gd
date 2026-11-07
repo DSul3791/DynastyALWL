@@ -3001,6 +3001,29 @@ func _is_chest(state: int) -> bool:
 	return state == 6 or int(_structure_by_state(state).get("slots", 0)) > 0
 
 
+# The seat nearest `at` within `reach` metres across the ground ({"pos", "yaw", "def"}), or {} (Dave 7 Nov 2026: X beside or inside a chair sat the body on the ground
+# through the seat). The client's sit key sits on it instead of on the ground.
+func seat_near(at: Vector3, reach: float) -> Dictionary:
+	var best: Dictionary = {}
+	var best_d: float = reach
+
+	for id in _world:
+		var row: Dictionary = _world[id]
+		var def: Dictionary = _structure_by_state(int(row.get("state", -1)))
+
+		if str(def.get("use", "")) != "sit" or not (row.get("pos") is Vector3):
+			continue
+
+		var pos: Vector3 = row["pos"]
+		var d: float = Vector2(pos.x - at.x, pos.z - at.z).length()
+
+		if d <= best_d and absf(pos.y - at.y) < 1.5:
+			best_d = d
+			best = {"pos": pos, "yaw": float(row.get("yaw", 0.0)), "def": def}
+
+	return best
+
+
 func _structure_by_state(state: int) -> Dictionary:
 	if _structures_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))

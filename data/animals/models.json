@@ -323,6 +323,171 @@
 					"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Body.png"
 				}
 			]
+		},
+		"lynx": {
+			"scene": "res://assets/animals/lynx/SK_Lynx.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.3,
+			"run_mps": 9.0,
+			"stride_m": 0.9,
+			"clips": {
+				"0": "idle_eat",
+				"3": "Idle",
+				"12": "Idle",
+				"walk": "walk_fwd_01",
+				"run": "run_fwd_01"
+			},
+			"note": "WildMesh Lynx (Realistic Animals/Lynx/SK_Lynx.fbx, textures in its Textures folder). 95 clips; units are metres. Fur cards are the M_lynx_cards surface.",
+			"length_m": 1.0,
+			"materials": [
+				{
+					"match": "cards",
+					"albedo": "res://assets/animals/lynx/Textures/T_Lynx_Cards.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/lynx/Textures/T_Lynx_Body.png"
+				}
+			]
+		},
+		"black_bear": {
+			"scene": "res://assets/animals/black_bear/SK_BlackBear.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.2,
+			"run_mps": 8.0,
+			"stride_m": 1.0,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Sniffing",
+				"10": "Idle_Breathing",
+				"11": "RunFast_F",
+				"12": "Idle",
+				"walk": "WalkMedium_F",
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh BlackBear (Realistic Animals/BlackBear/SK_BlackBear.fbx). 136 clips; units are centimetres (rescaled by length_m).",
+			"length_m": 1.7,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/black_bear/Textures/T_BlackBear.png"
+				}
+			]
+		},
+		"elk": {
+			"scene": "res://assets/animals/elk/SK_Elk.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.4,
+			"run_mps": 10.0,
+			"stride_m": 1.6,
+			"clips": {
+				"0": "Food_Eating_01_Wolf",
+				"3": "Idle_Breathing_01",
+				"10": "Idle_Breathing_01",
+				"12": "Idle",
+				"walk": "Walk",
+				"run": "Run"
+			},
+			"note": "WildMesh Elk (Realistic Animals/Elk/SK_Elk.fbx). 58 clips; antler surface is called Chifre. Body texture may be 4096: set its import size limit to 2048 like the moose.",
+			"length_m": 2.4,
+			"materials": [
+				{
+					"match": "Chifre",
+					"albedo": "res://assets/animals/elk/Textures/T_Elk_Antler.png"
+				},
+				{
+					"match": "Eye",
+					"albedo": "res://assets/animals/elk/Textures/T_Elk_Eye.png"
+				},
+				{
+					"match": "Head",
+					"albedo": "res://assets/animals/elk/Textures/T_Elk_Head.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/elk/Textures/T_Elk_Body.png"
+				}
+			]
+		},
+		"bighorn": {
+			"scene": "res://assets/animals/bighorn/SK_BighornSheep.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.3,
+			"run_mps": 9.0,
+			"stride_m": 1.0,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Idle_Breathing",
+				"12": "Idle",
+				"walk": "WalkMedium_F",
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Bighorn Sheep (Realistic Animals/BighornSheep/SK_BighornSheep.fbx). 114 clips; units are centimetres.",
+			"length_m": 1.6,
+			"materials": [
+				{
+					"match": "Antler",
+					"albedo": "res://assets/animals/bighorn/Textures/T_BighornSheep_Antler.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/bighorn/Textures/T_BighornSheep_Body.png"
+				}
+			]
+		},
+		"mountain_goat": {
+			"scene": "res://assets/animals/mountain_goat/SK_MountainGoat.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.2,
+			"run_mps": 8.0,
+			"stride_m": 0.9,
+			"clips": {
+				"0": "GrazingOnSpotA_1",
+				"3": "Idle_Breathing",
+				"12": "Idle_Breathing",
+				"walk": "WalkMedium_F",
+				"run": "RunFast_F"
+			},
+			"note": "WildMesh Mountain Goat (Realistic Animals/MountainGoat/SK_MountainGoat.fbx). 116 clips; units are centimetres. Horn surface is called MountainGoat_Antle.",
+			"length_m": 1.4,
+			"materials": [
+				{
+					"match": "Antle",
+					"albedo": "res://assets/animals/mountain_goat/Textures/T_MountainGoat_Antler.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/mountain_goat/Textures/T_MountainGoat_Body.png"
+				}
+			]
+		},
+		"beaver": {
+			"scene": "res://assets/animals/beaver/SK_Beaver.fbx",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.7,
+			"run_mps": 3.5,
+			"stride_m": 0.5,
+			"clips": {
+				"0": "Idle_2",
+				"3": "Idle",
+				"12": "Idle",
+				"walk": "Walk_F_IP",
+				"run": "Run_F_IP"
+			},
+			"note": "WildMesh Beaver (Realistic Animals/Beaver/SK_Beaver.fbx). 20 clips; units are centimetres. No graze clip: Idle_2 stands in.",
+			"length_m": 0.8,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/beaver/Textures/T_Beaver.png"
+				}
+			]
 		}
 	}
 }

@@ -37,6 +37,9 @@ uniform float daylight = 1.0;       // 1 day .. about 0.14 night: the body glow 
 uniform vec3 sun_toward = vec3(0.3, 0.8, 0.5);   // the direction to the sun (weather_look.gd), for the sea's glints
 uniform vec2 sea_origin = vec2(0.0);   // M5 (ocean_waves.gd): the swell is drawn relative to this phase origin near the camera, so it stays exact far out
 uniform vec2 sea_phase[4];           // per wave: its phase and its crest phase at sea_origin, mod 2 pi, worked out in 64-bit floats on the CPU
+uniform float sea_clock = 0.0;       // 1: the client folds the time into sea_phase too (ocean_waves.gd), so TIME (which rolls over) is not used for the swell
+uniform float sea_lift_from_m = 80.0;    // the swell's heights lift the sea plane out to here, then fade to flat by sea_lift_to_m (the far mesh is coarse)
+uniform float sea_lift_to_m = 240.0;
 uniform float sea = 0.0;             // 1 on the sea plane (terrain_client.gd): swell, depth colours from the beach out, surf foam at the shore, a darker line at the horizon
 uniform float debug_flow = 0.0;      // Ctrl+Shift+F8: colour the water by what the shader thinks it is (red running, blue still, green foam)
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
@@ -63,11 +66,36 @@ varying float sheet_alpha;
 varying vec2 flow;                   // downhill direction times 0..1 steepness (0 for lakes and the sea)
 varying vec3 world_pos;
 
+// The sea's four waves: direction x, z; wavelength m; slope strength. The same as ocean_waves.gd WAVES and HEIGHTS_M (its test checks they match).
+const vec4 SEA_WAVES[4] = vec4[4](vec4(0.94, 0.34, 64.0, 0.55), vec4(-0.55, 0.83, 29.0, 0.50), vec4(0.38, -0.92, 13.0, 0.45), vec4(-0.97, -0.24, 6.0, 0.40));
+const float SEA_HEIGHTS_M[4] = float[4](0.30, 0.14, 0.0, 0.0);   // only the long swell lifts the surface; the short waves are slopes for the light
+
+// The sea surface's height at world p (M5 second step): the same sum as ocean_waves.gd height(), relative to the phase origin.
+float sea_height(vec2 p, float time) {
+	vec2 q = p - sea_origin;
+	float h = 0.0;
+	for (int i = 0; i < 2; i++) {
+		vec2 d = SEA_WAVES[i].xy;
+		float k = 6.2831853 / SEA_WAVES[i].z;
+		float phase = dot(d, q) * k + sea_phase[i].x - time * sqrt(9.81 * k) * 0.6;
+		float crest = 0.65 + 0.35 * sin(dot(vec2(-d.y, d.x), q) * k * 0.21 + sea_phase[i].y + float(i) * 1.7);
+		h += SEA_HEIGHTS_M[i] * crest * sin(phase);
+	}
+	return h;
+}
+
 void vertex() {
 	sheet_alpha = COLOR.a;
 	// Blue 0 marks a flow from the water grid; meshes without colours (the sea) are still.
 	flow = COLOR.b < 0.5 ? (COLOR.rg - 0.5) * 2.0 : vec2(0.0);
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	if (sea > 0.5) {
+		// The swell lifts the sea plane near the camera (ocean_mesh.gd is dense there); far out it fades to flat.
+		float lift = 1.0 - smoothstep(sea_lift_from_m, sea_lift_to_m, length(world_pos.xz - INV_VIEW_MATRIX[3].xz));
+		float h = sea_height(world_pos.xz, sea_clock > 0.5 ? 0.0 : TIME) * lift;
+		VERTEX.y += h;
+		world_pos.y += h;
+	}
 }
 
 float hash(vec2 p) {
@@ -159,20 +187,18 @@ vec2 ripple_slope(vec2 p) {
 	return vec2(ripples(p + vec2(e, 0.0)) - h, ripples(p + vec2(0.0, e)) - h) / e;
 }
 
-// The sea's swell: four waves of different length and direction (slopes, not heights: the plane is flat). Long swell runs onto the beach, the short ones glitter in the sun.
+// The sea's swell: four waves of different length and direction, as slopes for the light (the two long ones also lift the plane, sea_height). Long swell runs onto the beach, the short ones glitter in the sun.
 vec2 sea_slope(vec2 p, float time, float dist) {
 	vec2 slope = vec2(0.0);
 	vec2 q = p - sea_origin;   // small numbers, so the phases keep their precision (guide F10)
-	// The same four waves as ocean_waves.gd WAVES (its test checks they match).
-	const vec4 dirs[4] = vec4[4](vec4(0.94, 0.34, 64.0, 0.55), vec4(-0.55, 0.83, 29.0, 0.50), vec4(0.38, -0.92, 13.0, 0.45), vec4(-0.97, -0.24, 6.0, 0.40));
 	for (int i = 0; i < 4; i++) {
-		vec2 d = dirs[i].xy;
-		float k = 6.2831853 / dirs[i].z;
+		vec2 d = SEA_WAVES[i].xy;
+		float k = 6.2831853 / SEA_WAVES[i].z;
 		float speed = sqrt(9.81 * k) * 0.6;
 		float phase = dot(d, q) * k + sea_phase[i].x - time * speed;
 		// Kathreen 1 Nov: sea pictures showed a regular lattice (four pure sine waves). A slow cross-crest modulation breaks the grid; UNTESTED, check by picture and revert if worse.
 		float crest = 0.65 + 0.35 * sin(dot(vec2(-d.y, d.x), q) * k * 0.21 + sea_phase[i].y + float(i) * 1.7);
-		slope += d * k * dirs[i].w * crest * cos(phase) / (1.0 + dist / (dirs[i].z * 25.0));      // a wave fades out at 25 of its own lengths, so far water has only the long swell (no moire)
+		slope += d * k * SEA_WAVES[i].w * crest * cos(phase) / (1.0 + dist / (SEA_WAVES[i].z * 25.0));      // a wave fades out at 25 of its own lengths, so far water has only the long swell (no moire)
 	}
 	return slope;
 }
@@ -243,7 +269,7 @@ void fragment() {
 	bump *= 1.0 / (1.0 + distance_m / 35.0);
 	if (sea > 0.5) {
 		// The swell carries to the horizon, fading slowly; the shortest waves fade first so far water does not shimmer.
-		vec2 sw = sea_slope(world_pos.xz, TIME, distance_m);
+		vec2 sw = sea_slope(world_pos.xz, sea_clock > 0.5 ? 0.0 : TIME, distance_m);
 		bump += sw * 0.55;
 	}
 	// The mesh's own normal tilts differently on each 8 m square; water is nearly flat, so

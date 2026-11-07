@@ -79,7 +79,10 @@ func lift_when_no_ground_below(here: Vector3, hit: Dictionary) -> void:
 func step() -> void:
 	var now: int = Time.get_ticks_msec()
 
-	if _client.body.is_on_floor():
+	# Water holds a swimmer up as a floor holds a walker (Dave 7 Nov 2026: swimming up out of a spring cave's 20 m pool, the "off the floor,
+	# under the ground" rescue saw a mountain overhead and stood him on top of it). A swimmer has not slipped through the world, so the
+	# off-the-floor clock does not run while swimming; a swimmer inside solid rock is still freed once out of the water.
+	if _client.body.is_on_floor() or _client.swimming:
 		floor_msec = now
 	elif now - floor_msec > 1200 and _under_the_ground():
 		rescued += 1
