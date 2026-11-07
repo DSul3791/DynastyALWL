@@ -3667,6 +3667,79 @@
 				"hp_x": 0.3
 			},
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own; coordinator: tundra islands are in the plan). Woolly mammoths roam tundra and alpine meadow in small herds, warn a player off and charge one who comes close. Elephant numbers, cold ground."
+		},
+		"tiger": {
+			"number": 50,
+			"name": "Tiger",
+			"target_per_player": 1,
+			"spawn_share": 0.08,
+			"health": 120.0,
+			"walk_mps": 1.3,
+			"flee_mps": 13.0,
+			"spook_m": 25.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				4.0,
+				14.0
+			],
+			"wander_m": 12.0,
+			"flee_run_m": 50.0,
+			"herd": [],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.0,
+				2.5
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.55,
+			"zig_deg": 20.0,
+			"zig_leg_m": 12.0,
+			"herd_pull_m": 0.0,
+			"eye_m": 0.7,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": true
+			},
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 0.8,
+				"marsh": 0.5,
+				"boreal_forest": 0.4
+			},
+			"active": {
+				"day": 0.15,
+				"dusk": 1.0,
+				"night": 1.0
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 13.0,
+				"charge_m": 14.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 2.0,
+				"damage": 40.0,
+				"recover_s": 3.0,
+				"calm_m": 20.0,
+				"cool_s": 30.0,
+				"corner_m": 6.0,
+				"corner_warn_s": 0.6,
+				"provoked_m": 9.0,
+				"provoked_warn_s": 0.5,
+				"threat_m": 7.0,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.6,
+				"neutral": 0.25,
+				"friendly": 0.15
+			},
+			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). A tiger is the biggest of the cats: solitary, in deep forest and marsh edge, out at dusk and night; it keeps away but attacks one who comes close or corners it. Leopard numbers, much bigger and stronger, forest instead of savanna."
 		}
 	},
 	"senses": {
