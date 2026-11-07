@@ -29,7 +29,7 @@ func make(weather: Dictionary = {}):
 	a.setup()
 	a.traits = false   # seeded checks from before temperaments and young (test_big_game covers those)
 
-	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear", "donkey"]:
+	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird", "bear", "donkey", "goblin"]:
 		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
 
 
