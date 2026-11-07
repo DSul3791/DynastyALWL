@@ -39,7 +39,9 @@
 | 6 Nov | Levels change strength, never placement: each animal draws a level at birth (1-5 by the town, 5-10 half way, 10-20 far side) | #485 | Worked (merged) |
 | 6 Nov | Bear, threat range, temperaments, seasons, young | #480 | Worked (merged) |
 | 6 Nov | Realistic bought models (WildMesh FBX) drawn per species from data/animals/models.json; the code body is the fallback | #495 | Worked. The FBX keeps its cm scale on a bone, so size from the posed bones, not the mesh bounds (a 100x giant before). A black neck band on the bear was taken for fur cards drawn solid; alpha scissor added, look not yet rechecked. Model files are never committed (public repo) |
-| 7 Nov | Offline animal sheet and live-game shots of animals: animal_sheet.gd `--models`, shot runner `--shot-animals=bear,deer` | this branch | animal_sheet works windowed only (the headless dummy renderer cannot draw). The live game shot had no way to place an animal before this |
+| 7 Nov | Offline animal sheet and live-game shots of animals: animal_sheet.gd `--models`, shot runner `--shot-animals=bear,deer` | #501 | animal_sheet works windowed only (the headless dummy renderer cannot draw). The live game shot had no way to place an animal before this |
+| 7 Nov | Seven more WildMesh species (deer, moose, boar, wolf, fox, rabbit, horse) and a new donkey (species 15); clips found by role, saddles hidden | #505 | Worked: sizes right, saddles hidden, donkey clip names differ from the horse and the role lookup found them. Tests that use an "unknown" species number must derive it (highest known + 1) |
+| 7 Nov | Realistic bear drew as a legless fur tube in the live game (it stood on the offline sheet) | #509 | Cause NOT pinned down. Ruled out: clip bone units (no rescale fired), clip pose height (guard never fired). A skin rebuild measured against an assumed mesh space broke 8 good animals (steady 1.4x offset): measure bind agreement across bones instead. After #509 the bear stands at 4 m with no guard firing. All three guards stay and log one line if they ever act; if the tube returns, read those lines first |
 
 ## What others do (with sources)
 
