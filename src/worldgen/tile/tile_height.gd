@@ -18,6 +18,7 @@ var heights: PackedFloat32Array = PackedFloat32Array()
 var valley_guides: Array = []        # world rivers near the frame (RiverNetwork.guides_in): the land is shaped into valleys around them
 var rock = null                      # optional TileGeology prepared for this frame (prepare_frame): ledges follow its rock layers
 var defer_strata: bool = false       # build_frame leaves the rock beds for add_strata (the baker runs it after erosion)
+var landform_only: bool = false      # the macro landform only (watershed rebuild, docs/water/watershed_rebuild_design.md stage A1): no valleys cut round the world rivers, no detail noise, no strata
 var _detail_scale: PackedFloat32Array = PackedFloat32Array()
 var _edge_cache: Dictionary = {}
 
@@ -124,6 +125,11 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 
 	_lap("frame cubic", clock)
 	clock = Time.get_ticks_msec()
+	# The landform for the watershed model: the world's shape only. Its valleys and hills come from the model's own erosion.
+	if landform_only:
+		_add_summits()
+		return
+
 	_detail_scale = _shape_valleys()
 	_lap("shape valleys", clock)
 	clock = Time.get_ticks_msec()

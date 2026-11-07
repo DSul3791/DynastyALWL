@@ -26,7 +26,35 @@ def load(geo_dir, cover_m=4.0, cover_ery=5.0, cover_slope_deg=42.0):
     return dict(n=n, prov=prov, surf=surf, gran=gran, basa=basa, er=er, cycle=cycle, repeat=repeat, base=base, marble=marble, ptr=ptr,
                 lrock=lrock, lbot=lbot, gid=[int(float(k)) for k, v in info['rocks'].items() if v['name'] == 'granite'][0],
                 bid=[int(float(k)) for k, v in info['rocks'].items() if v['name'] == 'basalt'][0],
-                lid=int(info['limestone_id']), mid=int(info['marble_id']), cover_m=cover_m, cover_ery=cover_ery)
+                lid=int(info['limestone_id']), mid=int(info['marble_id']), cover_m=cover_m, cover_ery=cover_ery,
+                names={int(float(k)): v['name'] for k, v in info['rocks'].items()})
+
+
+@nb.njit(cache=True)
+def _rock_at(i, y, prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid):
+    """Rock id at height y over cell i (same rule as TileGeology.layer_at): intrusions and vents first, then the province's layers."""
+    if y <= gran[i]:
+        return gid
+    if y <= basa[i]:
+        return bid
+    p = prov[i]
+    depth = surf[i] - y
+    a = ptr[p]; b = ptr[p + 1]
+    if b == a:
+        return base[p]
+    if depth < 0.0:
+        return lrock[a]
+    if depth >= repeat[p]:
+        return base[p]
+    inc = depth % cycle[p]
+    rock = base[p]
+    for k in range(a, b):
+        if inc < lbot[k]:
+            rock = lrock[k]
+            if rock == lid and depth > marble[p]:
+                rock = mid
+            break
+    return rock
 
 
 @nb.njit(cache=True)
@@ -34,31 +62,24 @@ def _ery(h, cover, veg, sea, prov, surf, gran, basa, er, cycle, repeat, base, ma
     for i in range(h.size):
         if sea[i]:
             out[i] = 1.0; continue
-        y = h[i]
         if cover[i] > 0.0:                       # loose cover is not yet washed off
             out[i] = cover_ery * veg[i]; continue
-        if y <= gran[i]:
-            out[i] = er[gid]; continue
-        if y <= basa[i]:
-            out[i] = er[bid]; continue
-        p = prov[i]
-        depth = surf[i] - y
-        a = ptr[p]; b = ptr[p + 1]
-        if b == a:
-            out[i] = er[base[p]]; continue
-        if depth < 0.0:
-            out[i] = er[lrock[a]]; continue
-        if depth >= repeat[p]:
-            out[i] = er[base[p]]; continue
-        inc = depth % cycle[p]
-        rock = base[p]
-        for k in range(a, b):
-            if inc < lbot[k]:
-                rock = lrock[k]
-                if rock == lid and depth > marble[p]:
-                    rock = mid
-                break
-        out[i] = er[rock]
+        out[i] = er[_rock_at(i, h[i], prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid)]
+
+
+@nb.njit(cache=True)
+def _rocks(h, prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid, out):
+    for i in range(h.size):
+        out[i] = _rock_at(i, h[i], prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid)
+
+
+def rock_ids(g, h):
+    """Bedrock id at the given heights (flat array or grid), ignoring loose cover."""
+    hh = np.asarray(h, np.float64).ravel()
+    out = np.zeros(hh.size, np.int32)
+    _rocks(hh, g['prov'], g['surf'], g['gran'], g['basa'], g['cycle'], g['repeat'], g['base'], g['marble'], g['ptr'], g['lrock'], g['lbot'],
+           g['gid'], g['bid'], g['lid'], g['mid'], out)
+    return out
 
 
 @nb.njit(cache=True)

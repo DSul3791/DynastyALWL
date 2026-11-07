@@ -10,6 +10,9 @@ extends SceneTree
 #   --tiles=X0,Z0,X1,Z1   tile rectangle, inclusive (default 2,3,4,5: the nine island tiles)
 #   --cell=N       world elevation cell size in meters (default from sketch_rules.json)
 #   --world=DIR    world folder (default res://worlds/base_world)
+#   --landform     the macro landform only, for the watershed model (tools/watershed, docs/water/watershed_rebuild_design.md stage A1):
+#                  no valleys cut round the world rivers, no detail noise, no strata. The manifest then also lists the prevailing
+#                  wind of each tile row (climate.wind_toward_x of its zone group: 1 toward +x, -1 toward -x, 0 calm or mixed).
 #
 # Per tile writes raw_X_Z.f32 (little-endian float32, row-major, rows run along +z, 1921 x 1921 samples, metres above sea
 # level, sample (i, j) at world x = (X * 1920 + i) * 8, z = (Z * 1920 + j) * 8; neighbouring tiles share their edge samples)
@@ -23,6 +26,7 @@ func _init() -> void:
 	var rect: Array = [2, 3, 4, 5]
 	var cell: float = 0.0
 	var world_dir: String = "res://worlds/base_world"
+	var landform: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--out="):
@@ -36,11 +40,13 @@ func _init() -> void:
 			cell = float(argument.trim_prefix("--cell="))
 		elif argument.begins_with("--world="):
 			world_dir = argument.trim_prefix("--world=")
+		elif argument == "--landform":
+			landform = true
 
-	quit(_run(world_dir, out_dir, rect, cell))
+	quit(_run(world_dir, out_dir, rect, cell, landform))
 
 
-func _run(world_dir: String, out_dir: String, rect: Array, cell: float) -> int:
+func _run(world_dir: String, out_dir: String, rect: Array, cell: float, landform: bool) -> int:
 	var baker = TileBakerScript.new()
 	var problem: String = baker.setup(world_dir, cell)
 
@@ -55,7 +61,7 @@ func _run(world_dir: String, out_dir: String, rect: Array, cell: float) -> int:
 	for z in range(int(rect[1]), int(rect[3]) + 1):
 		for x in range(int(rect[0]), int(rect[2]) + 1):
 			var started: int = Time.get_ticks_msec()
-			var result: Dictionary = baker.bake(Vector2i(x, z), true)
+			var result: Dictionary = baker.bake(Vector2i(x, z), true, landform)
 			var heights: PackedFloat32Array = result["raw_heights"]
 			var file := FileAccess.open("%s/raw_%d_%d.f32" % [out_dir, x, z], FileAccess.WRITE)
 
@@ -68,10 +74,16 @@ func _run(world_dir: String, out_dir: String, rect: Array, cell: float) -> int:
 			tiles.append([x, z])
 			print("raw heights tile (%d, %d): %d samples in %d ms" % [x, z, heights.size(), Time.get_ticks_msec() - started])
 
+	var wind_by_row: Dictionary = {}
+
+	for z in range(int(rect[1]), int(rect[3]) + 1):
+		wind_by_row[str(z)] = int(baker.tile_rules["climate"]["wind_toward_x"][baker.settings.get_zone_group_for_row(z)])
+
 	var manifest := FileAccess.open("%s/raw_manifest.json" % out_dir, FileAccess.WRITE)
 	manifest.store_string(JSON.stringify({
 		"samples": tile_samples + 1, "spacing_m": baker.settings.map_spacing_m, "tile_size_m": baker.settings.tile_size_m,
 		"tiles": tiles, "format": "float32 little-endian, row-major, metres, before erosion",
+		"landform": landform, "wind_toward_x_by_tile_row": wind_by_row, "master_seed": baker.settings.master_seed,
 	}, "\t"))
 	manifest.close()
 	return 0
