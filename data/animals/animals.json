@@ -2631,6 +2631,180 @@
 			},
 			"note": "Batch 3. A wild ox (the pack's buffalo model) grazes open grassland in small herds, stands its ground and charges one who comes close (protective). FAUNA_BY_BIOME has no wild cattle yet: grassland, rarity like the moose."
 		},
+		"puma": {
+			"number": 36,
+			"name": "Puma",
+			"target_per_player": 1,
+			"spawn_share": 0.15,
+			"health": 60.0,
+			"walk_mps": 1.4,
+			"flee_mps": 13.0,
+			"spook_m": 30.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				4.0,
+				14.0
+			],
+			"wander_m": 12.0,
+			"flee_run_m": 50.0,
+			"herd": [],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.0,
+				2.5
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.55,
+			"zig_deg": 20.0,
+			"zig_leg_m": 12.0,
+			"herd_pull_m": 0.0,
+			"eye_m": 0.8,
+			"habitat": {
+				"slope_max": 1.0,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": true
+			},
+			"biomes": {
+				"alpine_meadow": 1.0,
+				"bare_rock": 0.6,
+				"mixed_forest": 0.6,
+				"boreal_forest": 0.5,
+				"temperate_forest": 0.4
+			},
+			"active": {
+				"day": 0.15,
+				"dusk": 1.0,
+				"night": 0.9
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 12.0,
+				"charge_m": 12.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 1.6,
+				"damage": 22.0,
+				"recover_s": 3.0,
+				"calm_m": 14.0,
+				"cool_s": 30.0,
+				"corner_m": 5.0,
+				"corner_warn_s": 0.6,
+				"provoked_m": 7.0,
+				"provoked_warn_s": 0.5,
+				"threat_m": 5.0,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.6,
+				"neutral": 0.25,
+				"friendly": 0.15
+			},
+			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). A puma is a big, solitary mountain cat of forest edge, alpine meadow and rock, active at dusk and night; it keeps away from a player but charges one who comes close or corners it. Lynx numbers, bigger and more dangerous; rarity 4."
+		},
+		"pronghorn": {
+			"number": 37,
+			"name": "Pronghorn",
+			"target_per_player": 3,
+			"health": 22.0,
+			"walk_mps": 1.6,
+			"flee_mps": 16.0,
+			"spook_m": 45.0,
+			"safe_m": 90.0,
+			"graze_s": [
+				5.0,
+				20.0
+			],
+			"wander_m": 10.0,
+			"flee_run_m": 90.0,
+			"herd": [
+				3,
+				8
+			],
+			"alarm_s": [
+				0.2,
+				0.9
+			],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.5,
+				3.0
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.5,
+			"zig_deg": 15.0,
+			"zig_leg_m": 15.0,
+			"herd_pull_m": 12.0,
+			"eye_m": 0.9,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": false
+			},
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"heath": 0.8,
+				"savanna": 0.6,
+				"alpine_meadow": 0.3
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.7,
+				"night": 0.1
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
+				"warn_m": 0.0,
+				"warn_s": 1.0,
+				"charge_mps": 8.0,
+				"charge_m": 8.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 1.4,
+				"damage": 8.0,
+				"recover_s": 3.0,
+				"calm_m": 8.75,
+				"cool_s": 30.0,
+				"corner_m": 3.5,
+				"corner_warn_s": 0.6,
+				"provoked_m": 5.25,
+				"provoked_warn_s": 0.5,
+				"threat_m": 3.5,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.8,
+				"defensive": 0.2
+			},
+			"seasons": {
+				"autumn": {
+					"threat_x": 1.5
+				}
+			},
+			"young": {
+				"share": 0.25,
+				"count": [
+					1,
+					2
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 5.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). A pronghorn grazes open grassland and heath in herds and is the fastest runner on the island: it bolts from far off and runs far. Deer numbers, open ground, faster.",
+			"spawn_share": 0.3
+		},
 		"warthog": {
 			"number": 38,
 			"name": "Warthog",
@@ -2892,7 +3066,6 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). Wildebeest graze the savanna in big herds by day and stampede when spooked; a bull hooks one who corners it. Deer numbers, bigger, open ground, larger herds.",
 			"spawn_share": 0.35
 		},
 		"lion": {
@@ -3037,8 +3210,7 @@
 				"passive": 0.6,
 				"neutral": 0.25,
 				"friendly": 0.15
-			},
-			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). A leopard is a solitary, secretive cat of savanna woodland and forest edge, out at dusk and night; it slips away from a player and attacks one who corners it. Lynx numbers, bigger and stronger."
+			}
 		},
 		"rhino": {
 			"number": 43,
