@@ -233,6 +233,16 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	# follow the hills' own valleys. Added after the water, the bumps had to be faded near every river and their hollows drained, and the water
 	# patched back afterwards. No water is placed yet, so the fades act near the sea and near the land's own valley lines (rolling.valley_fade).
 	clock = Time.get_ticks_msec()
+	var census_on: bool = bool(tile_rules["water"].get("valley_drain", {}).get("hollow_census", false))
+
+	if census_on:
+		var sea_before: PackedByteArray = PackedByteArray()
+		sea_before.resize(n * n)
+
+		for index in range(n * n):
+			sea_before[index] = 1 if frame_height.heights[index] <= 0.0 else 0
+
+		_census("before rolling (sea outlets only)", frame_height.heights, sea_before, n, tile)
 
 	if tile_rules.has("rolling"):
 		var rolling_rules: Dictionary = tile_rules["rolling"].duplicate()
@@ -248,10 +258,20 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 		if bool(valley_fade.get("enabled", false)):
 			var catchment_km2: float = float(valley_fade.get("catchment_km2", tile_rules.get("water", {}).get("drainage", {}).get("river_start_km2", 0.35)))
 			fade_from = TileRollingScript.valley_lines(frame_height.heights, sea_only, n, frame_height.spacing_m, catchment_km2)
+			print("  rolling valley lines (tile %s): %d of %d cells" % [str(tile), fade_from.count(2), n * n])
 
 		TileRollingScript.apply(frame_height.heights, fade_from, n, frame_height.spacing_m, origin_sx, origin_sz, settings, rolling_rules, elevation)
 
 	timings["rolling"] = Time.get_ticks_msec() - clock
+
+	if census_on:
+		var sea_now: PackedByteArray = PackedByteArray()
+		sea_now.resize(n * n)
+
+		for index in range(n * n):
+			sea_now[index] = 1 if frame_height.heights[index] <= 0.0 else 0
+
+		_census("after rolling (sea outlets only)", frame_height.heights, sea_now, n, tile)
 
 	clock = Time.get_ticks_msec()
 	var starter: Dictionary = starter_info(tile)
@@ -264,6 +284,9 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	water.build(frame_height, starter, river_guides, river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
 	timings["water"] = Time.get_ticks_msec() - clock
 
+	if census_on:
+		_census("after water build", water.heights, water.water_class, n, tile)
+
 
 
 
@@ -272,6 +295,8 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var pond_levels: Dictionary = TilePondLevelScript.clamp_to_spill(water.heights, water.water_class, water.water_surface, n)
 	timings["pond_levels"] = Time.get_ticks_msec() - clock
 	print("  pond levels (tile %s): %d water bodies, %d lowered to their spill, %d cells turned dry (%d ms)" % [str(tile), pond_levels["bodies"], pond_levels["lowered"], pond_levels["dried"], timings["pond_levels"]])
+	if census_on:
+		_census("after pond levels", water.heights, water.water_class, n, tile)
 	# Rivers cut off by the lake cells that turned dry dig on through the ridge to lower water (Dave 4 Nov: "the river just runs out", tile_river_mend.gd).
 	clock = Time.get_ticks_msec()
 	# Corners first, so a brook joined up by them is a river piece the mend sees (the first PC bake of #450 left 1 or 2 short brooks per tile cut off,
@@ -279,6 +304,8 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var corners: int = TileRiverMendScript.join_corners(water.heights, water.water_class, water.water_surface, n)
 	var mend: Dictionary = TileRiverMendScript.mend(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m)
 	print("  river mend (tile %s): %d rivers cut off, %d dug through, %d cells made river (%d ms)" % [str(tile), mend["pieces"], mend["mended"], mend["cells"], Time.get_ticks_msec() - clock])
+	if census_on:
+		_census("after river mend", water.heights, water.water_class, n, tile)
 	# Rivers widen into the sea and the sea comes up the mouth (the 20 Oct estuary rule; Dave 5 Nov: "the ocean should overlap into the mouth", tile_river_mouth.gd).
 	clock = Time.get_ticks_msec()
 	var mouth_cut: Dictionary = TileRiverMouthScript.carve(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, tile_rules["water"])
@@ -299,11 +326,15 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 			break
 
 	print("  river corners (tile %s): %d cells made river" % [str(tile), corners])
+	if census_on:
+		_census("after mouths and corners", water.heights, water.water_class, n, tile)
 
 	# The land beside a river slopes up from it, so nothing lies lower than the river and turns to wetland (Dave 6 Nov 2026, tile_valley_drain.gd).
 	clock = Time.get_ticks_msec()
 	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, tile_rules["water"].get("valley_drain", {}))
 	print("  valley drain (tile %s): %d cells raised to drain to the river, up to %.1f m (%d ms)" % [str(tile), drained["raised"], drained["max_m"], Time.get_ticks_msec() - clock])
+	if census_on:
+		_census("after valley drain", water.heights, water.water_class, n, tile)
 	# Last of the ground passes: no dry hollow is left for rain to pool in (tile_valley_drain.gd drain_hollows).
 	clock = Time.get_ticks_msec()
 	var hollows: Dictionary = TileValleyDrainScript.drain_hollows(water.heights, water.water_class, n, tile_rules["water"].get("valley_drain", {}))
@@ -413,3 +444,12 @@ func bake_to_file(tile: Vector2i, directory: String = "") -> Dictionary:
 		"ok": written["ok"], "error": written["error"], "path": path,
 		"bytes": written["bytes"], "timings": result["timings"],
 	}
+
+
+# One bake-log line: the dry closed hollows standing in the ground at this point of the bake (rule water.valley_drain.hollow_census).
+static func _census(label: String, heights: PackedFloat32Array, water_class: PackedByteArray, n: int, tile) -> void:
+	var c: Dictionary = TileValleyDrainScript.hollow_census(heights, water_class, n)
+	print("  hollow census (tile %s) %s: %d dry cells under their spill, %d at least 2 m, deepest %.1f m, %.0f m of fill summed" % [
+		str(tile), label, int(c["cells"]), int(c["deep_cells"]), float(c["most_m"]), float(c["volume_m"])
+	])
+
