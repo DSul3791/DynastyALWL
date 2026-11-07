@@ -803,7 +803,7 @@ func _brook_heads() -> Array:
 			# there shouldnt be a cave here"). This search found its own heads in the finished water map, so a pond's rim or a lake's shore that looked
 			# like a brook head got a cave even though its source was the pond. The drainage's own choice (drainage_channels.gd cave_head) is the rule;
 			# the checks below still apply, within CAVE_HEAD_NEAR_CELLS of it (the later passes can move the river's top cell a little).
-			if not cave_heads.is_empty() and not _near_cave_head(i, j):
+			if bool(_rules.get("spring_cave", {}).get("need_cave_head", true)) and not cave_heads.is_empty() and not _near_cave_head(i, j):
 				continue
 
 			for dj in range(-3, 4):
