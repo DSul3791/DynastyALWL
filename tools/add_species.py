@@ -13,8 +13,11 @@ spec.json (one species):
   "season": "year round",                 data/items/seasons.json game note (skipped when one is there)
   "sign": {...} or "deer",                data/animals/animal_sign.json row, or the kind to copy (skipped when one is there)
   "step": ["deer", -13],                  a <kind>_step slot borrowing that animal's step clips at that level
-  "stand_in": ["_make_deer(id)", 0.6]     the code-built body drawn until the model files are there, and its scale
+  "stand_in": ["_make_deer(id)", 0.6],    the code-built body drawn until the model files are there, and its scale
+  "progress": "| Kind | n | done | ... |"  its row for design/CREATURE_PROGRESS.md (added before the notes under the table)
 }
+Run it again on a fresh copy of main to rebuild a branch after main moved (a merge that conflicts on these files: take
+main's side of every conflicted file, then run this for each species the branch adds).
 Each file is rewritten in its own style (tab JSON, or text insertion where the file is hand-formatted); run it once per species.
 """
 import copy, json, re, sys
@@ -123,5 +126,14 @@ for f in ("test_animal_senses", "test_animals", "test_big_game", "test_flocks", 
     t2, n = re.subn(r'("beaver"(?:, "[a-z_]+")*)\]', lambda mm: mm.group(1) + ', "%s"]' % kind, t, count=1)
     assert n == 1, p
     open(p, "w", encoding="utf8", newline="\n").write(t2)
+
+if "progress" in spec:
+    P = "design/CREATURE_PROGRESS.md"
+    t = open(P, encoding="utf8").read()
+    if spec["progress"] not in t:
+        lines = t.split("\n")
+        last = max(i for i, l in enumerate(lines) if l.startswith("| ") and not l.startswith("| Creature") and not l.startswith("|---"))
+        lines.insert(last + 1, spec["progress"])
+        open(P, "w", encoding="utf8", newline="\n").write("\n".join(lines))
 
 print("added", kind, number)
