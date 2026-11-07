@@ -76,6 +76,7 @@ var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
 var _origin: Vector2i = Vector2i.ZERO   # world sample coordinates of cell 0, so everything below depends on the place, not on the frame
 var _centre_surface: PackedFloat32Array = PackedFloat32Array()
+var cave_head: PackedByteArray = PackedByteArray()           # 1 at a head whose source is a spring cave ("cave" in _heads); tile_sites.gd opens caves only there
 var _source_dry: PackedByteArray = PackedByteArray()          # 1 on a river reach above a pond moved down to the bottom: no water painted there
 var _canyon: PackedFloat32Array = PackedFloat32Array()        # 0..1 canyon strength on centre cells (valleys give way to canyons)
 var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at centre cells (+ = turning right on the map, z down)
@@ -329,6 +330,7 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 	bed = stamped["bed"]
 	surface = stamped["surface"]
+	_soften_banks(h, centre_surface, size, cell_m, jobs_i, jobs_f, float(rules.get("bank_cut_slope", 0.0)))
 
 	for index in range(h.size()):
 		if flow.discharge[index] >= threshold:
@@ -340,6 +342,56 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 		if flow.discharge[index] >= threshold and next >= 0 and flow.discharge[next] >= threshold:
 			bed[index] = maxf(bed[index], bed[next])
+
+
+# Gentler banks (Dave 7 Nov 2026, x 53545 z 68378: "the river carvings are a little too deep ... maybe 6 with gentler slopes"). The stamp's
+# parabola meets the old ground at the channel's edge, as steep as 2 x depth / half-width (45 degrees and more on a small river). Beside each
+# river cell the ground is cut down to a bank that rises `slope` per metre from just above the water at the water's edge (0.87 of the
+# half-width, where the parabola crosses the water line) until it meets the old ground. The water's width does not change: the bank starts
+# BANK_LIP_M above the water. Reads only h, centre_surface and the stamp's jobs, so two tiles agree along their edge. 0 turns it off.
+const BANK_LIP_M := 0.2
+
+
+func _soften_banks(h: PackedFloat32Array, centre_surface: PackedFloat32Array, size: int, cell_m: float, jobs_i: PackedInt32Array, jobs_f: PackedFloat64Array, slope: float) -> void:
+	if slope <= 0.0:
+		return
+
+	@warning_ignore("integer_division")
+	for job in range(jobs_i.size() / 2):
+		var index: int = jobs_i[job * 2]
+		var radius_m: float = jobs_f[job * 4]
+		var shift_x: float = jobs_f[job * 4 + 1]
+		var shift_z: float = jobs_f[job * 4 + 2]
+		var edge_m: float = radius_m * 0.866
+		var lip: float = centre_surface[index] + BANK_LIP_M
+		var rise: float = h[index] - lip
+
+		if rise <= 0.0:
+			continue
+
+		var reach_m: float = edge_m + rise / slope
+		var span: int = int(ceil((reach_m + sqrt(shift_x * shift_x + shift_z * shift_z)) / cell_m)) + 1
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		for dz in range(-span, span + 1):
+			for dc in range(-span, span + 1):
+				var nr: int = row + dz
+				var nc: int = column + dc
+
+				if nr < 0 or nr >= size or nc < 0 or nc >= size:
+					continue
+
+				var off_x: float = float(dc) * cell_m - shift_x
+				var off_z: float = float(dz) * cell_m - shift_z
+				var d: float = sqrt(off_x * off_x + off_z * off_z)
+
+				if d <= edge_m or d >= reach_m:
+					continue
+
+				var neighbor: int = nr * size + nc
+				bed[neighbor] = minf(bed[neighbor], lip + slope * (d - edge_m))
 
 
 # The river stamps of _stamp, one after the other into copies of `bed_in` and `surface_in`: the GDScript the C++ GenCore.stamp_channels must match bit for bit.
@@ -890,6 +942,8 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 	var dried: int = 0
 	_source_dry.resize(size * size)
 	_source_dry.fill(0)
+	cave_head.resize(size * size)
+	cave_head.fill(0)
 	# Channel cells flowing into each cell: 2 or more is a confluence (a moved-down source never dries a reach another river feeds).
 	var up_count: PackedByteArray = PackedByteArray()
 	up_count.resize(size * size)
@@ -929,13 +983,19 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 			source_counts[how] = int(source_counts.get(how, 0)) + 1
 
 			if how == "cave":
+				cave_head[index] = 1
 				continue
 
 			if how != "kept":
 				var at: int = int(source["at"])
 				sites.append([at, maxf(flow.discharge[at], flow.discharge[index] if how == "up" else 0.0), false, source["path"], how])
 			elif slope > pond_slope:
+				# Dave 7 Nov 2026 (x 53724 z 69473: "head of a river with no headpond no lake and no cave"): a head with no spot for a pond up or
+				# down its river, too steep for one here and with no room for a cave, used to keep its river with no source. A river starts only at
+				# a spring (pond, lake or cave), so its reach dries down to where another river joins it.
 				steep += 1
+				if bool(rules.get("dry_unsourced", true)):
+					dried += _dry_unsourced(index, fill, flow, size, threshold, up_count)
 			else:
 				sites.append([index, flow.discharge[index], false, PackedInt32Array(), "here"])
 
@@ -1105,6 +1165,21 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip, %d over ground at sea level" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip, skipped_sea])
 	print("  sources (Dave 2 Nov: up on a flat or down at the bottom, in a pool; 3 Nov: hillside heads keep their brook and get a spring cave, \"cave\"): %s heads checked; %d ponds raised to a flat above (brook cut down), %d moved down to the bottom (%d river cells above dried), the rest on the head" % [str(source_counts), moved_up, moved_down, dried])
 	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha, %d of them the tile's guaranteed lake), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, guaranteed, steep, POND_MAX_SLOPE_DEG])
+
+
+# Dries a river from a head that has no spring, down to the first cell another river flows into (or the frame's edge): no water is painted
+# there and the centre stage leaves it out (`_source_dry`). Returns the cells dried.
+func _dry_unsourced(head: int, fill, flow, _size: int, threshold: float, up_count: PackedByteArray) -> int:
+	var k: int = head
+	var count: int = 0
+
+	while k >= 0 and flow.discharge[k] >= threshold and (k == head or up_count[k] < 2) and _source_dry[k] == 0:
+		surface[k] = NAN
+		_source_dry[k] = 1
+		count += 1
+		k = fill.receiver[k]
+
+	return count
 
 
 # Whether a spring cave has room at this head (Dave 3 Nov 2026): walking straight uphill from it, a passage rising CAVE_RISE gets CAVE_COVER_M of

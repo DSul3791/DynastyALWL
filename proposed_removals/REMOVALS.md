@@ -42,3 +42,8 @@ Also removed inside live files (git history keeps them): 23 functions nothing ca
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | docs/HEAVY_KITS_OPTIONS.md (pointer only) | MikeW for Jamie, Sal told | 5 Nov | superseded by no kits (#292) | docs/archive/2026-11/HEAVY_KITS_OPTIONS.md |
+
+## #524 rebake, 7 Nov 2026 (Sonny, branch sonny-20261107-river-carve-6m)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/worldgen/tools/test_drainage_flow.gd (+ .uid) | Sonny, coordinator's call | 7 Nov | checks the old rule-carved channel shape ("outer bank at least 1.3x the inner bank depth"); the only red test on the #524 nine-tile rebake; planned for archive in TYLER_TEST_SYSTEM_REVIEW.md once natural rivers are on | test_drainage_small (shared fill and flow invariants) and test_drainage_natural (P2 natural rivers) |

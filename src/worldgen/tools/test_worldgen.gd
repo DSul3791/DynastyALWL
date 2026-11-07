@@ -1446,7 +1446,7 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 
 		ids[cave["id"]] = true
 
-		if str(cave["cave_kind"]) == "karst":
+		if str(cave["cave_kind"]) == "karst" or str(cave["cave_kind"]) == "sea_cave":
 			karst += 1
 
 		var nodes: Array = cave["nodes"]
@@ -1486,13 +1486,14 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 			if not ore_ids.has(ore_id):
 				unknown_ore += 1
 
-	_check(sites.caves.size() >= 8 and karst >= 5, "the starter tile has caves (%d, %d limestone)" % [sites.caves.size(), karst])
+	# Caves only at river starts (Dave; coordinator 7 Nov 2026): no karst or sea caves, only spring caves where the drainage chose one.
+	_check(karst == 0, "no karst or sea caves (%d caves, %d karst or sea)" % [sites.caves.size(), karst])
 	_check(outside == 0, "cave nodes stay inside the tile margin")
 	_check(thin_roof == 0, "cave passages stay under the ground away from entrances (%d too shallow)" % thin_roof)
 	_check(bad_links == 0, "cave segments join real nodes with known types")
 	_check(bad_tiers == 0, "starter tile dens are low tier (1 or 2)")
 	print("  caves %d, exposing ore %d, unknown ore %d, ore steering %s" % [sites.caves.size(), exposed, unknown_ore, str(sites.ore_report)])
-	_check(exposed > 0 and unknown_ore == 0, "some caves expose ore bodies (%d)" % exposed)
+	_check(unknown_ore == 0, "caves expose only known ore bodies (%d exposed)" % exposed)
 	_check(near_town == 0, "no cave opens near the starter spawn or town block")
 	_check(duplicate_ids == 0, "site ids do not clash with geology ids")
 

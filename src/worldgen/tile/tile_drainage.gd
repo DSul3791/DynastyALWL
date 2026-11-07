@@ -23,6 +23,10 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var fill = FillScript.new()
 	var lake_min_depth: float = float(rules.get("lake_min_depth_m", 0.5))
 	var lake_min_catchment: float = float(rules.get("lake_min_catchment_km2", 0.05))
+	# Lakes need a river out, and every other hollow is filled, shallow ones too (they held rain puddles on dry shelves): lake_needs_river_out.
+	var river_out: bool = bool(rules.get("lake_needs_river_out", false))
+	var lake_keep_km2: float = maxf(lake_min_catchment, float(rules.get("river_start_km2", 0.5))) if river_out else lake_min_catchment
+	var fill_from_m: float = 0.001 if river_out else lake_min_depth
 	var origin := Vector2i(water._origin_sx, water._origin_sz)
 	# Water is routed over the ground as it was before erosion: erosion only runs inside each tile, so beyond 640 m from a seam
 	# the two tiles' eroded ground differs and so would their lakes and divides. The raw ground is the same in every frame.
@@ -80,6 +84,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 	water.heights = channels.bed
 	water.flow = flow.discharge.duplicate()
+	water.cave_heads = channels.cave_head.duplicate() if "cave_head" in channels else PackedByteArray()
 
 	for index in range(total):
 		water.flow[index] /= unit   # the tile stores drained cells, as encode_flow and the settler expect
@@ -129,7 +134,10 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 		var catchment: float = flow.discharge[outlet] if outlet >= 0 else 0.0
 
 		# Dave 2026-10-23: any hollow that collects enough water holds it; only hollows with no catchment are filled in.
-		if catchment >= lake_min_catchment:
+		# Sonny 7 Nov 2026 (Dave, x 53453 z 68888: "if these areas are all higher than the river how did water get in them"): a hollow keeps its lake
+		# only when it drains enough land to start a river (river_start_km2), so a river always runs out of it and the water has a way down. A
+		# smaller hollow held a pond with no stream in or out on a shelf above the river; it is filled in and drains instead.
+		if catchment >= lake_keep_km2:
 			keep[lake_index + 1] = 1
 			water.lakes.append({
 				"cells": count, "area_m2": float(count) * cell_m * cell_m,
@@ -146,7 +154,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 		if id > 0 and keep[id] == 1:
 			water.water_class[index] = water.LAKE
 			water.water_surface[index] = fill.lakes[id - 1]["level"]
-		elif fill.filled[index] - routing[index] >= lake_min_depth:
+		elif fill.filled[index] - routing[index] >= fill_from_m:
 			water.heights[index] += fill.filled[index] - routing[index]
 			water.filled_cells += 1
 

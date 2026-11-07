@@ -159,19 +159,24 @@
 	"spawn_pad_removed_note": "Sonny 6 Nov 2026 (#473; Dave: 'we should not be adjust individual heights. it should be a systemic thing so it works across our entire world. the spawn point can just be moved'): the spawn pad (heights pinned level round the spawn) is gone; the spawn moved to x 53296 z 68080, naturally flat dry ground on a valley floor 2 m and more over any water (src/shared/spawn_point.gd).",
 	"water": {
 		"drainage_mode": true,
-		"valley_drain": {"_note": "Sonny 6 Nov 2026 (Dave: 'smoothing the surrounding area so it flows towards the river'): dry ground beside a river that lies lower than the water is raised to the water plus height_m, rising grade_per_m per metre away, within reach_m; a ridge stops it (tile_valley_drain.gd).", "enabled": true, "reach_m": 200.0, "grade_per_m": 0.01, "height_m": 0.8, "max_raise_m": 10.0, "band_samples": 50},
+		"valley_drain": {"_note": "Sonny 6 Nov 2026 (Dave: 'smoothing the surrounding area so it flows towards the river'): dry ground beside a river that lies lower than the water is raised to the water plus height_m, rising grade_per_m per metre away, within reach_m; a ridge stops it (tile_valley_drain.gd).", "enabled": true, "reach_m": 200.0, "grade_per_m": 0.01, "height_m": 0.8, "max_raise_m": 10.0, "band_samples": 50, "drain_hollows": true, "drain_hollows_note": "Sonny 7 Nov 2026: after every pass that shapes the ground (banks, rolling, mend, mouths, drain) each dry closed hollow is raised to its spill, so rain cannot pool in a dip with no outlet on dry land; rivers, lakes, the sea and the frame edge are the outlets (tile_valley_drain.gd drain_hollows)."},
 		"drainage": {
 			"route_over_raw": false,
 			"route_over_note": "Sonny 6 Nov 2026 (Dave: rivers on the real valley floor): false routes the rivers over the finished ground (strata and scree included, both laid by world position so tiles still agree), not the raw pre-strata copy, so the river follows the lowest line the player sees.",
 			"river_extra_depth_m": 5.0,
-			"river_extra_depth_note": "Sonny 6 Nov 2026 (Dave: 'cut them an extra 5 m deeper'): the centre bed and the water sink this much more, growing from the river threshold to full at 4 x it (drainage_channels.gd _stamp); the valleys follow the lower water.",
+			"river_extra_depth_note": "Sonny 7 Nov 2026, later: back to 5 with max_depth_m 8 and bank_cut_slope 0 (Dino bisect: the 6 m carve doubled the dried pond cells and failed test_head_pond_fill; the bank cut changed nothing). The shallower valleys Dave wants come with natural rivers (P2), where depth follows flow. Earlier: Sonny 7 Nov 2026 (Dave: 'too deep ... 12 m at the valley floor ... maybe 6 with gentler slopes'): back to 0, with max_depth_m 6 and bank_cut_slope. Was 5 (6 Nov, Dave: 'cut them an extra 5 m deeper'): the centre bed and the water sink this much more, growing from the river threshold to full at 4 x it (drainage_channels.gd _stamp); the valleys follow the lower water.",
 			"banks": {
 				"_note": "Sonny 3 Nov 2026 (no patchy riverbeds): a dry cell next to water higher than its ground is raised to that water plus height_m, by at most max_raise_m, so a channel across a hillside has a bank on its downhill side (tile_drainage.gd _build_banks). v2 (05:55): max_raise_m 1.5 -> 3 (759 of 919 still-leaking rim cells were at the cap); a bank taller than shoulder_drop_m raises the dry ground outside it to its top less shoulder_drop_m (at most half its lift), so it slopes away. v3 (Sonny 6 Nov 2026, Dave x 52935 z 69453: water spilling out of the beds into wetlands): height_m 0.2 -> 0.8 (the settled water stands up to ~0.9 m over the painted level on steep reaches) and every dry cell under the water plus height_m is a bank, not only those under the water.",
 				"enabled": true,
+				"enabled_note": "Back on (Sonny 7 Nov 2026, Dino bisect on tile 3,4: with them off, rule-carved rivers on side slopes leaked and test_river_surface and test_head_pond_fill failed; the dykes go for good with natural rivers, docs/water/terrain_water_pipeline.md P2). Was: Sonny 7 Nov 2026 (Dave x 54413 z 66833: 'there shouldnt be any bank dykes the river should have carved a valley nice and smooth'): off. The raised lips held ponds behind them. Ground lower than a river is now handled only by the valley drain (raised to slope up from the water, no lip) and drain_hollows.",
 				"height_m": 0.8,
 				"max_raise_m": 3.0,
 				"shoulder_drop_m": 1.0
 			},
+			"dry_unsourced": false,
+			"dry_unsourced_note": "Sonny 7 Nov 2026: off for now (Dino bisect on tile 3,4: drying sourceless heads left carved dry reaches whose junctions settled as falls, 46 extra cells over 4 m above their bank). Every head gets a source in natural rivers instead (P3).",
+			"lake_needs_river_out": true,
+			"lake_needs_river_out_note": "Sonny 7 Nov 2026 (Dave x 53453 z 68888: ponds on the shelves above the river with no stream in or out): a natural hollow keeps a lake only when its catchment reaches river_start_km2, so a river runs out of it; every other hollow, shallow ones included, is filled in so it drains (tile_drainage.gd). valley_drain drain_hollows does the same for dry hollows the later passes leave.",
 			"river_start_km2": 0.35,
 			"lake_min_depth_m": 0.5,
 			"lake_min_catchment_km2": 0.05,
@@ -195,6 +200,8 @@
 			"depth_m_per_sqrt_q": 1.0,
 			"min_depth_m": 1.5,
 			"max_depth_m": 8.0,
+			"bank_cut_slope": 0.0,
+			"bank_cut_note": "Sonny 7 Nov 2026 (Dave: gentler slopes): beside each river the ground is cut to a bank rising this much per metre (about 17 degrees) from 0.2 m above the water at its edge until it meets the old ground (drainage_channels.gd _soften_banks); the water keeps its width. max_depth_m was 8.",
 			"mouth_grow_m": 3000.0,
 			"mouth_widen": 1.6,
 			"mouth_deepen_m": 2.0,
@@ -1053,10 +1060,7 @@
 		"min_roof_m": 5,
 		"town_clear_m": 600,
 		"karst": {
-			"count": [
-				8,
-				14
-			],
+			"count": [0, 0], "count_note": "Off (Dave: caves only at river starts; coordinator 7 Nov 2026). Goblins, bears and cave life use the spring caves.",
 			"candidate_step_m": 48,
 			"min_spacing_m": 700,
 			"length_m": [
@@ -1150,10 +1154,7 @@
 			]
 		},
 		"sea_cave": {
-			"count": [
-				2,
-				5
-			],
+			"count": [0, 0], "count_note": "Off (Dave: caves only at river starts; coordinator 7 Nov 2026). Goblins, bears and cave life use the spring caves.",
 			"min_spacing_m": 800,
 			"cliff_rise_m": 8,
 			"length_m": [

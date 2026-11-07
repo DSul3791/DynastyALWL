@@ -29,6 +29,7 @@ var heights: PackedFloat32Array = PackedFloat32Array()
 var water_class: PackedByteArray = PackedByteArray()
 var water_surface: PackedFloat32Array = PackedFloat32Array()
 var flow: PackedFloat32Array = PackedFloat32Array()
+var cave_heads: PackedByteArray = PackedByteArray()   # 1 where the drainage chose a spring cave as a river's source (drainage_channels.gd cave_head); empty: none chosen
 
 # Report after build().
 var river_cells: int = 0

@@ -12,6 +12,7 @@ extends RefCounted
 
 const NONE := 0
 const RIVER := 3   # tile_water.gd
+const TileRollingScript := preload("res://src/worldgen/tile/tile_rolling.gd")
 
 
 # Raises the ground in place. `water_class` 0 is dry; `surface` is the water level of wet cells. Returns {"raised", "max_m"}.
@@ -108,5 +109,31 @@ static func apply(heights: PackedFloat32Array, water_class: PackedByteArray, sur
 			heights[k] += raise
 			result["raised"] += 1
 			result["max_m"] = maxf(result["max_m"], raise)
+
+	return result
+
+
+# Every dry closed hollow drains (Sonny 7 Nov 2026, Dave x 53453 z 68888: "if these areas are all higher than the river how did water get in them").
+# The passes after the drainage (bank shoulders, rolling ground, river mend, mouths) leave small dips on dry shelves, and the live water's rain pools in
+# them as ponds with no stream in or out. A priority flood from the outlets (rivers, lakes, the sea, the frame edge) finds each dry cell's spill level, and
+# every dry cell under it is raised to it: the dip becomes a flat that drains over its lip. Rule water.valley_drain.drain_hollows. Returns {"cells", "most_m"}.
+static func drain_hollows(heights: PackedFloat32Array, water_class: PackedByteArray, n: int, rules: Dictionary) -> Dictionary:
+	var result: Dictionary = {"cells": 0, "most_m": 0.0}
+
+	if not bool(rules.get("drain_hollows", false)):
+		return result
+
+	var spill: PackedFloat32Array = TileRollingScript._flood(heights, water_class, n, 0.0)
+
+	for k in range(heights.size()):
+		if water_class[k] != NONE:
+			continue
+
+		var lift: float = spill[k] - heights[k]
+
+		if lift > 0.001:
+			heights[k] = spill[k]
+			result["cells"] += 1
+			result["most_m"] = maxf(result["most_m"], lift)
 
 	return result
