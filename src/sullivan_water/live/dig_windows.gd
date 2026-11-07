@@ -273,6 +273,14 @@ func fine_packets(with_sleeping: bool) -> Dictionary:
 					continue
 
 				var d: float = grid.depth(i, j)
+
+				# A film thinner than DRAW_M (the 2 m cells seeded from the 8 m level leave a few mm to cm on gentle banks) is not drawn,
+				# as the 8 m drawing leaves out water under its WetMeters: drawn, the sheet's shore foam traced pale lines over the grass
+				# (Dino's #513 picture over the pond, 7 Nov 2026).
+				if d < DRAW_M:
+					im.set_pixel(i, j, Color(b, 0.0, 0.0, 0.0))
+					continue
+
 				var v: Vector2 = grid.velocity(i, j)
 				im.set_pixel(i, j, Color(b + d, v.x, v.y, d))
 
