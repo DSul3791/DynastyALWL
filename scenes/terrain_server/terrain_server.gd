@@ -146,6 +146,7 @@ var _never_joined: bool = true
 var _water_answered_msec: Dictionary = {}   # peer -> last time its water request was answered
 var _water_window: Rect2 = Rect2()          # the live water window (world m) from the last flow packet: water only moves inside it
 var _water_window_told: Rect2 = Rect2()     # the window the last "water moved" named
+var _fine_sends: int = 0                    # 2 m water messages sent (the log line for the PC check)
 var _live_told: Rect2 = Rect2()             # the dig windows' area the last "water moved" named (Sullivan water)
 var _cave_streams_sent: Dictionary = {}     # peer -> {tile: true}: spring cave streams already sent (protocol 87)
 var _water_sent: Dictionary = {}            # peer -> {chunk: hash of the water bytes it holds}: unchanged water is not sent again
@@ -1216,6 +1217,15 @@ func _poll_water() -> void:
 
 		if not fine.is_empty():
 			net.deliver_fine_water.rpc(fine["keys"], fine["packets"])
+			_fine_sends += 1
+
+			if _fine_sends == 1 or _fine_sends % 20 == 0:
+				var bytes: int = 0
+
+				for p in fine["packets"]:
+					bytes += PackedByteArray(p[6]).size()
+
+				print("server: 2 m water message %d: %d regions, %d textures, %d bytes" % [_fine_sends, fine["keys"].size(), fine["packets"].size(), bytes])
 
 	if not updates.is_empty():
 		for update in updates:
