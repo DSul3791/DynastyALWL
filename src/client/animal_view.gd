@@ -432,28 +432,37 @@ func _make_model(number: int, id: int = 0) -> Node3D:
 		# units than the skeleton (the bear lay flat as a legless tube, 7 Nov 2026) is rescaled to it (_fit_clip_units).
 		var roles: Dictionary = {}
 
+		# A refused clip (it lays the model flat) does not leave the role empty: the next clip that names the role is tried (the elk's
+		# file has two clips called Walk, one of them shrinking the rig to a hundredth; MikeW, 7 Nov 2026).
+		var rest_h: float = _clip_height(player, null, rig)
+
 		for key in _ROLE_WORDS.keys() + (row.get("clips", {}) as Dictionary).keys():
-			var anim_name: String = _role_clip(player, row, str(key))
+			var refused: Dictionary = {}
 
-			if anim_name == "":
-				if (row.get("clips", {}) as Dictionary).has(key):
-					_model_note(kind, "no clip for role %s (%s)" % [str(key), str(row["clips"][key])])
-				continue
+			for attempt in 6:
+				var anim_name: String = _role_clip(player, row, str(key), refused)
 
-			var anim: Animation = player.get_animation(anim_name)
-			anim.loop_mode = Animation.LOOP_LINEAR
-			_fit_clip_units(player, anim, kind, anim_name)
+				if anim_name == "":
+					if (row.get("clips", {}) as Dictionary).has(key) and refused.is_empty():
+						_model_note(kind, "no clip for role %s (%s)" % [str(key), str(row["clips"][key])])
+					break
 
-			# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
-			# measured against the rest pose, and the model keeps its rest pose for that role instead.
-			var rest_h: float = _clip_height(player, null, rig)
-			var clip_h: float = _clip_height(player, anim, rig)
+				var anim: Animation = player.get_animation(anim_name)
+				_fit_clip_units(player, anim, kind, anim_name)
 
-			if rest_h > 0.0001 and clip_h < rest_h * 0.5:
-				_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used, standing pose instead" % [anim_name, clip_h, rest_h])
-				continue
+				# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
+				# measured against the rest pose, and the next clip for the role is tried; with none, the model keeps its rest pose.
+				var clip_h: float = _clip_height(player, anim, rig)
 
-			roles[str(key)] = anim_name
+				if rest_h > 0.0001 and clip_h < rest_h * 0.5:
+					_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
+					refused[anim_name] = true
+					continue
+
+				anim.loop_mode = Animation.LOOP_LINEAR
+				_strip_root_drift(player, anim, rig, kind, anim_name)
+				roles[str(key)] = anim_name
+				break
 
 		player.set_meta("roles", roles)
 		_model_note(kind, "clips by role %s" % str(roles))
@@ -486,6 +495,18 @@ func _model_bounds(rig: Node3D, meshes: Array, by_mesh: bool = false) -> AABB:
 	for m in meshes:
 		var mi: MeshInstance3D = m
 		var part: AABB = (_to_ancestor(mi, rig) * mi.get_aabb()) if mi.mesh != null else AABB()
+		var sk_of: Skeleton3D = mi.get_node_or_null(mi.skeleton) as Skeleton3D
+
+		# A skinned mesh is drawn through its skeleton (bone pose * bind), not through its own node: the goblins' files keep the
+		# armature at a hundredth with the mesh node at 1, so the node box was 1 cm tall and the goblin was drawn 85 times too
+		# big (MikeW's creature check, 7 Nov 2026). The box is taken through the first bind instead.
+		if mi.mesh != null and mi.skin != null and sk_of != null and mi.skin.get_bind_count() > 0:
+			var bone_name: String = str(mi.skin.get_bind_name(0))
+			var bone: int = sk_of.find_bone(bone_name) if bone_name != "" else mi.skin.get_bind_bone(0)
+
+			if bone >= 0:
+				part = (_to_ancestor(sk_of, rig) * sk_of.get_bone_global_pose(bone) * mi.skin.get_bind_pose(0)) * mi.get_aabb()
+
 		box = part if first else box.merge(part)
 		first = false
 
@@ -600,18 +621,25 @@ func _clip_full(player: AnimationPlayer, row: Dictionary, clip_name: String) -> 
 const _ROLE_WORDS := {"0": ["idle_breathing", "graz", "idle"], "walk": ["walkmedium", "walk"], "run": ["gallop", "runfast", "run", "canter", "trot", "sprint"]}
 
 
-func _role_clip(player: AnimationPlayer, row: Dictionary, role: String) -> String:
+func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused: Dictionary = {}) -> String:
 	var wanted: Variant = (row.get("clips", {}) as Dictionary).get(role, [])
 
 	for name_text in (wanted if wanted is Array else [wanted]):
 		var full: String = _clip_full(player, row, str(name_text))
 
-		if full != "":
+		if full != "" and not refused.has(full):
 			return full
+
+		for other in player.get_animation_list():      # another clip with the same bare name (a file can hold two)
+			if str(other).get_slice("|", str(other).count("|")) == str(name_text) and not refused.has(str(other)):
+				return str(other)
 
 	for word in _ROLE_WORDS.get(role, []):
 		for full in player.get_animation_list():
 			var bare: String = str(full).get_slice("|", str(full).count("|")).to_lower()
+
+			if refused.has(str(full)):
+				continue
 
 			if bare.contains(str(word)) and not bare.contains("_to_") and not bare.contains("2") and not bare.ends_with("l") and not bare.ends_with("r") and not bare.contains("wound") and not bare.contains("injur") and not bare.contains("lying"):
 				return str(full)
@@ -742,7 +770,41 @@ func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> floa
 
 			local[bone] = bone_xf
 
-	var to_rig: Transform3D = _to_ancestor(sk, rig)
+	# Tracks on the nodes above the skeleton (RigRoot) count too: a clip can scale or turn the whole rig (the elk's second Walk
+	# shrinks it to a hundredth).
+	var to_rig: Transform3D = Transform3D.IDENTITY
+	var up: Node = sk
+
+	while up != null and up != rig:
+		if up is Node3D:
+			var xf: Transform3D = (up as Node3D).transform
+
+			if anim != null and up != sk:
+				var base_node: Node = player.get_node_or_null(player.root_node)
+				var origin: Vector3 = xf.origin
+				var turn: Quaternion = xf.basis.get_rotation_quaternion()
+				var size: Vector3 = xf.basis.get_scale()
+
+				for t in anim.get_track_count():
+					var tp: NodePath = anim.track_get_path(t)
+
+					if tp.get_subname_count() > 0 or anim.track_get_key_count(t) == 0 or base_node == null or base_node.get_node_or_null(NodePath(str(tp.get_concatenated_names()))) != up:
+						continue
+
+					match anim.track_get_type(t):
+						Animation.TYPE_POSITION_3D:
+							origin = anim.position_track_interpolate(t, 0.0)
+						Animation.TYPE_ROTATION_3D:
+							turn = anim.rotation_track_interpolate(t, 0.0)
+						Animation.TYPE_SCALE_3D:
+							size = anim.scale_track_interpolate(t, 0.0)
+
+				xf = Transform3D(Basis(turn) * Basis.from_scale(size), origin)
+
+			to_rig = xf * to_rig
+
+		up = up.get_parent()
+
 	var world: Array = []
 	world.resize(sk.get_bone_count())
 	var lo: float = INF
@@ -821,6 +883,84 @@ func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, ani
 	_model_note(kind, "clip %s bone positions rescaled x%.4f to the skeleton" % [anim_name, k])
 
 
+# Some clips carry the animal forward themselves (root motion). In the WildMesh files the travel sits on the RigRoot node above
+# the skeleton: the bear's Sprint moves it 6 m in half a second, its Walk 1.4 m in 1.7 s. The server already moves the animal, so
+# such a clip drew the body running ahead of where the animal is and snapping back at every loop (MikeW's creature check,
+# 7 Nov 2026). The steady horizontal travel from the first key to the last is taken out of every key of a node above the
+# skeleton, the root bone and its first children; the sway and bob inside the stride stay, and so does up and down travel (a
+# rearing or lying-down clip needs it). Only travel over a tenth of the standing height counts. The travel speed is kept on the
+# clip ("travel_mps", metres a second at the drawn size): it is the speed the feet were made for, so the walk and run clips are
+# played at speed / travel_mps and the feet do not slide. Once per clip.
+func _strip_root_drift(player: AnimationPlayer, anim: Animation, rig: Node3D, kind: String, anim_name: String) -> void:
+	if anim.has_meta("drift_stripped"):
+		return
+
+	anim.set_meta("drift_stripped", true)
+	var base: Node = player.get_node_or_null(player.root_node)
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+
+	if base == null or skeletons.is_empty() or anim.length <= 0.0:
+		return
+
+	var sk: Skeleton3D = skeletons[0]
+	var sk_to_rig: Basis = _to_ancestor(sk, rig).basis
+	var lo: float = INF
+	var hi: float = -INF
+
+	for i in sk.get_bone_count():
+		var y: float = (sk_to_rig * sk.get_bone_global_rest(i).origin).y
+		lo = minf(lo, y)
+		hi = maxf(hi, y)
+
+	var tall: float = hi - lo
+
+	if tall <= 0.0001:
+		return
+
+	var mps: float = 0.0
+
+	for t in anim.get_track_count():
+		if anim.track_get_type(t) != Animation.TYPE_POSITION_3D or anim.track_get_key_count(t) < 2:
+			continue
+
+		var path: NodePath = anim.track_get_path(t)
+		var target: Node = base.get_node_or_null(NodePath(str(path.get_concatenated_names())))
+		var to_parent: Basis
+
+		if target == sk and path.get_subname_count() > 0:
+			var bone: int = sk.find_bone(str(path.get_concatenated_subnames()))
+			var parent: int = sk.get_bone_parent(bone) if bone >= 0 else -1
+
+			if bone < 0 or (parent >= 0 and sk.get_bone_parent(parent) >= 0):
+				continue      # only the root bone and its first children carry the travel
+
+			to_parent = sk_to_rig * (sk.get_bone_global_rest(parent).basis if parent >= 0 else Basis.IDENTITY)
+		elif target is Node3D and path.get_subname_count() == 0 and (target == sk or (target as Node).is_ancestor_of(sk)) and target.get_parent() != null:
+			to_parent = _to_ancestor(target.get_parent(), rig).basis
+		else:
+			continue
+
+		var last: int = anim.track_get_key_count(t) - 1
+		var drift: Vector3 = to_parent * ((anim.track_get_key_value(t, last) as Vector3) - (anim.track_get_key_value(t, 0) as Vector3))
+		drift.y = 0.0
+
+		if drift.length() < tall * 0.1:
+			continue
+
+		var span: float = maxf(anim.track_get_key_time(t, last) - anim.track_get_key_time(t, 0), 0.0001)
+		var local_drift: Vector3 = to_parent.inverse() * drift
+
+		for k in anim.track_get_key_count(t):
+			var f: float = (anim.track_get_key_time(t, k) - anim.track_get_key_time(t, 0)) / span
+			anim.track_set_key_value(t, k, (anim.track_get_key_value(t, k) as Vector3) - local_drift * f)
+
+		mps = maxf(mps, drift.length() / span)
+
+	if mps > 0.0:
+		anim.set_meta("travel_mps", mps)
+		_model_note(kind, "clip %s travels %.1f m/s by itself: travel taken out (the server moves the animal), played at speed / %.1f" % [anim_name, mps, mps])
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -860,6 +1000,9 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 
 	if clip != "" and player.current_animation != clip:
 		player.play(clip, 0.25)
+
+	if ref > 0.0 and clip != "" and player.has_animation(clip):
+		ref = float(player.get_animation(clip).get_meta("travel_mps", ref))      # the speed the clip's feet were made for (_strip_root_drift)
 
 	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
 
