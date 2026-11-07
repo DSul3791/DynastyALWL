@@ -17,7 +17,7 @@ extends Node
 #                       diag) 0.2 to 1.5 m away aimed at it, each logged with the pose read back and the fill of the frame (FAILED under a third, exit code 1);
 #                       --shot-item-at=X,Z drops it there instead of 1 m ahead of the shot position (item_cam.gd)
 #   --shot-stance=NAME  hold a stance (stand, crouch, sit, lie) so the third-person body shows that pose (use with --cam left, --walk 0)
-#   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
+#   --shot-animals=bear,deer[,young_bear]  one animal of each in a row ahead of the player (at least 4 m, farther for a long row so all fit), built by the game's own animal view (a realistic
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
@@ -871,7 +871,7 @@ func _show_animals(now: int) -> void:
 			continue
 
 		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * spacing
-		var z: float = p.z - 4.0
+		var z: float = p.z - maxf(4.0, float(n) * spacing * 0.75)      # far enough that the whole row fits the picture
 		var g: float = _ground(x, z)
 
 		if is_nan(g):
@@ -885,11 +885,10 @@ func _show_animals(now: int) -> void:
 		view.add_child(node)
 
 		if node.has_meta("player"):
-			var row: Dictionary = node.get_meta("model_row", {})
-			var clip: String = str(row.get("clip_prefix", "")) + str((row.get("clips", {}) as Dictionary).get("0", ""))
 			var player: AnimationPlayer = node.get_meta("player")
+			var clip: String = str((player.get_meta("roles", {}) as Dictionary).get("0", ""))     # the graze role the animal view resolved
 
-			if player.has_animation(clip):
+			if clip != "" and player.has_animation(clip):
 				player.play(clip)
 
 		drawn.append("%s %s" % [name_text, "model" if node.has_meta("model") else "code"])
