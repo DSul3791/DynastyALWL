@@ -523,6 +523,20 @@
 					"hint": "Dung piles on a bare patch. Wildebeest bulls mark here."
 				}
 			]
+		},
+		"lion": {
+			"group": "clawed",
+			"track": "huge round prints, no claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Huge round cat prints in the dust. Lions walked here."
+				},
+				{
+					"kind": "kill",
+					"hint": "A picked carcass and flattened grass. A pride fed here."
+				}
+			]
 		}
 	}
 }

@@ -772,6 +772,59 @@
 					"albedo": "res://assets/animals/wildebeest/Textures/T_Wildebeest_Body.png"
 				}
 			]
+		},
+		"lion": {
+			"scene": "res://assets/animals/lion/SK_Lion.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Lion",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.4,
+			"run_mps": 11.0,
+			"stride_m": 1.3,
+			"clips": {},
+			"note": "WildMesh Lion (Realistic Animals/Lion/SK_Lion.fbx); lionesses are the second and third looks.",
+			"length_m": 2.8,
+			"materials": [
+				{
+					"match": "Mane",
+					"albedo": "res://assets/animals/lion/Textures/T_Lion_Mane.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/lion/Textures/T_Lion_Body.png"
+				}
+			],
+			"variants": [
+				{
+					"scene": "res://assets/animals/lion/SK_Lion.fbx"
+				},
+				{
+					"scene": "res://assets/animals/lioness/SK_Lioness.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Lioness",
+					"length_m": 2.5,
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/lioness/Textures/T_Lioness.png"
+						}
+					]
+				},
+				{
+					"scene": "res://assets/animals/lioness_1/SK_Lioness 1.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Lioness_1",
+					"length_m": 2.5,
+					"materials": [
+						{
+							"match": "Whisk",
+							"albedo": "res://assets/animals/lioness_1/Textures/T_Lioness_Whiskers.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/lioness_1/Textures/T_Lioness_Body.png"
+						}
+					]
+				}
+			]
 		}
 	}
 }

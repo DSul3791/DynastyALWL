@@ -2419,6 +2419,79 @@
 			},
 			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). Wildebeest graze the savanna in big herds by day and stampede when spooked; a bull hooks one who corners it. Deer numbers, bigger, open ground, larger herds.",
 			"spawn_share": 0.35
+		},
+		"lion": {
+			"number": 41,
+			"name": "Lion",
+			"target_per_player": 1,
+			"spawn_share": 0.15,
+			"health": 110.0,
+			"walk_mps": 1.5,
+			"flee_mps": 12.0,
+			"spook_m": 20.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				4.0,
+				14.0
+			],
+			"wander_m": 12.0,
+			"flee_run_m": 50.0,
+			"herd": [
+				2,
+				5
+			],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.0,
+				2.5
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.55,
+			"zig_deg": 20.0,
+			"zig_leg_m": 12.0,
+			"herd_pull_m": 12.0,
+			"eye_m": 1.0,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": false
+			},
+			"biomes": {
+				"savanna": 1.0,
+				"temperate_grassland": 0.3
+			},
+			"active": {
+				"day": 0.4,
+				"dusk": 1.0,
+				"night": 0.9
+			},
+			"protective_share": 0.0,
+			"defend": {
+				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
+				"warn_m": 18.0,
+				"warn_s": 1.5,
+				"charge_mps": 14.0,
+				"charge_m": 20.0,
+				"turn_rad_s": 0.4,
+				"hit_m": 2.0,
+				"damage": 35.0,
+				"recover_s": 3.0,
+				"calm_m": 25.0,
+				"cool_s": 30.0,
+				"corner_m": 6.0,
+				"corner_warn_s": 0.6,
+				"provoked_m": 10.0,
+				"provoked_warn_s": 0.5,
+				"threat_m": 8.0,
+				"threat_warn_s": 0.5
+			},
+			"temperament": {
+				"passive": 0.6,
+				"neutral": 0.25,
+				"friendly": 0.15
+			}
 		}
 	},
 	"senses": {

@@ -26,6 +26,7 @@
 		"warthog": {"len": 1.3, "width": 0.4, "height": 0.45, "legs": 0.35, "head": 0.35, "neck": 0.15, "tail": 0.3, "coat": "#5a4a3e", "pale": "#7a6a5c", "antlers": false, "beak": false},
 		"hyena": {"len": 1.3, "width": 0.35, "height": 0.45, "legs": 0.5, "head": 0.28, "neck": 0.22, "tail": 0.25, "coat": "#a08a66", "pale": "#cbbd9e", "antlers": false, "beak": false},
 		"wildebeest": {"len": 2.1, "width": 0.6, "height": 0.8, "legs": 0.75, "head": 0.5, "neck": 0.45, "tail": 0.5, "coat": "#5d5a55", "pale": "#8d8780", "antlers": false, "beak": false},
+		"lion": {"len": 2.0, "width": 0.5, "height": 0.6, "legs": 0.6, "head": 0.4, "neck": 0.3, "tail": 0.9, "coat": "#b58e57", "pale": "#e2d2b0", "antlers": false, "beak": false},
 		"bear": {"len": 2.0, "width": 0.95, "height": 0.9, "legs": 0.5, "head": 0.42, "neck": 0.3, "tail": 0.05, "coat": "#452e1c", "pale": "#664d33", "antlers": false, "beak": false}
 	}
 }
