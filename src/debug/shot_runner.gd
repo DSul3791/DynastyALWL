@@ -101,6 +101,8 @@ var _selected: bool = false
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 var animal_names: PackedStringArray = PackedStringArray()   # --shot-animals=bear,deer: one animal of each in a row (_show_animals)
 var _animals_t: int = 0
+var animals_dist_m: float = 4.0       # --shot-animals-dist=M: how far ahead of the body the animal row stands (default 4)
+var tell_server: bool = false         # --shot-tell-server: report the flown spot to the server as the player position (so spawns, cave mouths and animals work round it)
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
 var frametime_s: float = 0.0             # --shot-frametime=SECONDS: after a 10 s warm-up, measure frame times this long and print one "shot runner: frametime" line
@@ -205,6 +207,10 @@ func setup(owner_client, args: Array) -> void:
 
 			if views.is_empty():
 				views = [{"name": "wide", "dist": 9.0, "pitch": -8.0, "above": 1.5}, {"name": "close", "dist": 4.0, "pitch": -10.0, "above": 1.2}]
+		elif argument == "--shot-tell-server":
+			tell_server = true
+		elif argument.begins_with("--shot-animals-dist="):
+			animals_dist_m = float(argument.trim_prefix("--shot-animals-dist="))
 		elif argument.begins_with("--shot-animals="):
 			animal_names = argument.trim_prefix("--shot-animals=").split(",", false)
 		elif argument.begins_with("--shot-flora="):
@@ -318,6 +324,10 @@ func _process(delta: float) -> void:
 	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null:
 		_selected = true
 		client.held.select(0)      # slot 0 = key 1: hold what was given
+
+	if tell_server and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:
+		client._anchor = client.body.global_position      # the server now thinks the player stands here (the report goes out every 200 ms)
+		client._anchor_set = true
 
 	if drop_it and place_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:
 		# The server refuses a kit placed farther than its reach from where IT thinks the player is, and a shot that moves the body reports nothing (the flying anchor stays at the spawn):
@@ -871,7 +881,7 @@ func _show_animals(now: int) -> void:
 			continue
 
 		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * spacing
-		var z: float = p.z - 4.0
+		var z: float = p.z - animals_dist_m
 		var g: float = _ground(x, z)
 
 		if is_nan(g):
