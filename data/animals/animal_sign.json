@@ -719,6 +719,20 @@
 					"hint": "Small dry pellets in the grass. Kangaroos graze nearby."
 				}
 			]
+		},
+		"mammoth": {
+			"group": "hoofed",
+			"track": "great round pad prints in frost",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Great round prints in the frost. Mammoths passed here."
+				},
+				{
+					"kind": "hair",
+					"hint": "Long brown hair snagged on rocks. Mammoths rubbed here."
+				}
+			]
 		}
 	}
 }

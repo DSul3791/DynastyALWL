@@ -3566,6 +3566,107 @@
 			},
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). Kangaroos graze open savanna and grassland in mobs at dusk and dawn, bound away from a player and kick one who corners them. Deer numbers, open ground.",
 			"spawn_share": 0.2
+		},
+		"mammoth": {
+			"number": 49,
+			"name": "Mammoth",
+			"target_per_player": 1,
+			"spawn_share": 0.1,
+			"health": 300.0,
+			"walk_mps": 1.2,
+			"flee_mps": 10.0,
+			"spook_m": 25.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				8.0,
+				25.0
+			],
+			"wander_m": 14.0,
+			"flee_run_m": 70.0,
+			"herd": [
+				2,
+				5
+			],
+			"alarm_s": [
+				0.3,
+				1.0
+			],
+			"alert_m": 60.0,
+			"alert_s": [
+				2.0,
+				4.0
+			],
+			"burst_s": 8.0,
+			"trot_share": 0.45,
+			"zig_deg": 10.0,
+			"zig_leg_m": 20.0,
+			"herd_pull_m": 20.0,
+			"eye_m": 2.8,
+			"protective_share": 0.3,
+			"habitat": {
+				"slope_max": 0.5,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": true
+			},
+			"defend": {
+				"warn_m": 20.0,
+				"warn_s": 2.2,
+				"charge_mps": 11.0,
+				"charge_m": 24.0,
+				"turn_rad_s": 0.25,
+				"hit_m": 2.2,
+				"damage": 25.0,
+				"recover_s": 5.0,
+				"calm_m": 24.0,
+				"cool_s": 30.0,
+				"corner_m": 7.0,
+				"corner_warn_s": 1.2,
+				"provoked_m": 10.0,
+				"provoked_warn_s": 0.8,
+				"threat_m": 8.0,
+				"threat_warn_s": 0.8
+			},
+			"biomes": {
+				"tundra": 1.0,
+				"alpine_meadow": 0.4,
+				"boreal_forest": 0.2
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.7,
+				"night": 0.4
+			},
+			"temperament": {
+				"defensive": 0.7,
+				"neutral": 0.3
+			},
+			"seasons": {
+				"spring": {
+					"threat_x": 1.2
+				},
+				"autumn": {
+					"threat_x": 1.5
+				}
+			},
+			"young": {
+				"share": 0.3,
+				"count": [
+					1,
+					2
+				],
+				"seasons": [
+					"spring",
+					"summer"
+				],
+				"follow_m": 3.0,
+				"spook_x": 1.4,
+				"between_m": 10.0,
+				"warn_s": 0.6,
+				"hp_x": 0.3
+			},
+			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own; coordinator: tundra islands are in the plan). Woolly mammoths roam tundra and alpine meadow in small herds, warn a player off and charge one who comes close. Elephant numbers, cold ground."
 		}
 	},
 	"senses": {
