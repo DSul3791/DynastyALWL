@@ -137,3 +137,28 @@ static func drain_hollows(heights: PackedFloat32Array, water_class: PackedByteAr
 			result["most_m"] = maxf(result["most_m"], lift)
 
 	return result
+
+
+# Bake-log census of dry closed hollows, without changing the ground: how many dry cells lie under their spill, how deep the deepest, and the
+# volume (Sonny 7 Nov 2026: the P1 bakes raised 3x more hollow cells than #524 and the pass that makes them was unknown; tile_baker prints this
+# after each ground pass when water.valley_drain.hollow_census is on). Same flood as drain_hollows.
+static func hollow_census(heights: PackedFloat32Array, water_class: PackedByteArray, n: int) -> Dictionary:
+	var result: Dictionary = {"cells": 0, "most_m": 0.0, "deep_cells": 0, "volume_m": 0.0}
+	var spill: PackedFloat32Array = TileRollingScript._flood(heights, water_class, n, 0.0)
+
+	for k in range(heights.size()):
+		if water_class[k] != NONE:
+			continue
+
+		var lift: float = spill[k] - heights[k]
+
+		if lift > 0.001:
+			result["cells"] += 1
+			result["volume_m"] += lift
+			result["most_m"] = maxf(result["most_m"], lift)
+
+			if lift >= 2.0:
+				result["deep_cells"] += 1
+
+	return result
+
