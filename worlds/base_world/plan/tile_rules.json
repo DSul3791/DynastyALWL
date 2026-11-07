@@ -163,8 +163,8 @@
 		"drainage": {
 			"route_over_raw": false,
 			"route_over_note": "Sonny 6 Nov 2026 (Dave: rivers on the real valley floor): false routes the rivers over the finished ground (strata and scree included, both laid by world position so tiles still agree), not the raw pre-strata copy, so the river follows the lowest line the player sees.",
-			"river_extra_depth_m": 5.0,
-			"river_extra_depth_note": "Sonny 6 Nov 2026 (Dave: 'cut them an extra 5 m deeper'): the centre bed and the water sink this much more, growing from the river threshold to full at 4 x it (drainage_channels.gd _stamp); the valleys follow the lower water.",
+			"river_extra_depth_m": 0.0,
+			"river_extra_depth_note": "Sonny 7 Nov 2026 (Dave: 'too deep ... 12 m at the valley floor ... maybe 6 with gentler slopes'): back to 0, with max_depth_m 6 and bank_cut_slope. Was 5 (6 Nov, Dave: 'cut them an extra 5 m deeper'): the centre bed and the water sink this much more, growing from the river threshold to full at 4 x it (drainage_channels.gd _stamp); the valleys follow the lower water.",
 			"banks": {
 				"_note": "Sonny 3 Nov 2026 (no patchy riverbeds): a dry cell next to water higher than its ground is raised to that water plus height_m, by at most max_raise_m, so a channel across a hillside has a bank on its downhill side (tile_drainage.gd _build_banks). v2 (05:55): max_raise_m 1.5 -> 3 (759 of 919 still-leaking rim cells were at the cap); a bank taller than shoulder_drop_m raises the dry ground outside it to its top less shoulder_drop_m (at most half its lift), so it slopes away. v3 (Sonny 6 Nov 2026, Dave x 52935 z 69453: water spilling out of the beds into wetlands): height_m 0.2 -> 0.8 (the settled water stands up to ~0.9 m over the painted level on steep reaches) and every dry cell under the water plus height_m is a bank, not only those under the water.",
 				"enabled": true,
@@ -194,7 +194,9 @@
 			"min_width_m": 24.0,
 			"depth_m_per_sqrt_q": 1.0,
 			"min_depth_m": 1.5,
-			"max_depth_m": 8.0,
+			"max_depth_m": 6.0,
+			"bank_cut_slope": 0.3,
+			"bank_cut_note": "Sonny 7 Nov 2026 (Dave: gentler slopes): beside each river the ground is cut to a bank rising this much per metre (about 17 degrees) from 0.2 m above the water at its edge until it meets the old ground (drainage_channels.gd _soften_banks); the water keeps its width. max_depth_m was 8.",
 			"mouth_grow_m": 3000.0,
 			"mouth_widen": 1.6,
 			"mouth_deepen_m": 2.0,

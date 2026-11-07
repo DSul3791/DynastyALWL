@@ -329,6 +329,7 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 	bed = stamped["bed"]
 	surface = stamped["surface"]
+	_soften_banks(h, centre_surface, size, cell_m, jobs_i, jobs_f, float(rules.get("bank_cut_slope", 0.0)))
 
 	for index in range(h.size()):
 		if flow.discharge[index] >= threshold:
@@ -340,6 +341,56 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 		if flow.discharge[index] >= threshold and next >= 0 and flow.discharge[next] >= threshold:
 			bed[index] = maxf(bed[index], bed[next])
+
+
+# Gentler banks (Dave 7 Nov 2026, x 53545 z 68378: "the river carvings are a little too deep ... maybe 6 with gentler slopes"). The stamp's
+# parabola meets the old ground at the channel's edge, as steep as 2 x depth / half-width (45 degrees and more on a small river). Beside each
+# river cell the ground is cut down to a bank that rises `slope` per metre from just above the water at the water's edge (0.87 of the
+# half-width, where the parabola crosses the water line) until it meets the old ground. The water's width does not change: the bank starts
+# BANK_LIP_M above the water. Reads only h, centre_surface and the stamp's jobs, so two tiles agree along their edge. 0 turns it off.
+const BANK_LIP_M := 0.2
+
+
+func _soften_banks(h: PackedFloat32Array, centre_surface: PackedFloat32Array, size: int, cell_m: float, jobs_i: PackedInt32Array, jobs_f: PackedFloat64Array, slope: float) -> void:
+	if slope <= 0.0:
+		return
+
+	@warning_ignore("integer_division")
+	for job in range(jobs_i.size() / 2):
+		var index: int = jobs_i[job * 2]
+		var radius_m: float = jobs_f[job * 4]
+		var shift_x: float = jobs_f[job * 4 + 1]
+		var shift_z: float = jobs_f[job * 4 + 2]
+		var edge_m: float = radius_m * 0.866
+		var lip: float = centre_surface[index] + BANK_LIP_M
+		var rise: float = h[index] - lip
+
+		if rise <= 0.0:
+			continue
+
+		var reach_m: float = edge_m + rise / slope
+		var span: int = int(ceil((reach_m + sqrt(shift_x * shift_x + shift_z * shift_z)) / cell_m)) + 1
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		for dz in range(-span, span + 1):
+			for dc in range(-span, span + 1):
+				var nr: int = row + dz
+				var nc: int = column + dc
+
+				if nr < 0 or nr >= size or nc < 0 or nc >= size:
+					continue
+
+				var off_x: float = float(dc) * cell_m - shift_x
+				var off_z: float = float(dz) * cell_m - shift_z
+				var d: float = sqrt(off_x * off_x + off_z * off_z)
+
+				if d <= edge_m or d >= reach_m:
+					continue
+
+				var neighbor: int = nr * size + nc
+				bed[neighbor] = minf(bed[neighbor], lip + slope * (d - edge_m))
 
 
 # The river stamps of _stamp, one after the other into copies of `bed_in` and `surface_in`: the GDScript the C++ GenCore.stamp_channels must match bit for bit.
