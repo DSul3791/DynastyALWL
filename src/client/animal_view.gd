@@ -18,7 +18,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose", 38: "warthog", 39: "hyena", 40: "wildebeest"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose", 30: "cow", 31: "goat", 32: "chicken", 33: "cat", 34: "dog", 35: "buffalo", 38: "warthog", 39: "hyena", 40: "wildebeest"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -82,15 +82,18 @@ const YOUNG_SCALE := 0.5     # how big the young are drawn
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
 
 
-func _make_for_species(number: int, id: int) -> Node3D:
+# young: a young animal. When its species' model row has a young_model, that model is drawn at its own size (the calf beside
+# the cow, Dave 7 Nov 2026); the node then carries the "young_model" meta and must not be shrunk. Otherwise the adult is drawn
+# and the caller shrinks it to YOUNG_SCALE as before.
+func _make_for_species(number: int, id: int, young: bool = false) -> Node3D:
 	_coat = "feather" if FEATHERED.has(number) else "fur"
-	var node: Node3D = _make_species_body(number, id)
+	var node: Node3D = _make_species_body(number, id, young)
 	_coat = "fur"
 	return node
 
 
-func _make_species_body(number: int, id: int) -> Node3D:
-	var model: Node3D = _make_model(number, id)
+func _make_species_body(number: int, id: int, young: bool = false) -> Node3D:
+	var model: Node3D = _make_model(number, id, young)
 
 	if model != null:
 		return model
@@ -178,6 +181,30 @@ func _make_species_body(number: int, id: int) -> Node3D:
 			var goose: Node3D = _make_grouse()      # stand-in until the model files are there
 			goose.scale = Vector3.ONE * 1.8
 			return goose
+		30:
+			var cow: Node3D = _make_horse(id)      # stand-in until the model files are there
+			cow.scale = Vector3.ONE * 0.85
+			return cow
+		31:
+			var goat: Node3D = _make_deer(id)      # stand-in until the model files are there
+			goat.scale = Vector3.ONE * 0.6
+			return goat
+		32:
+			var chicken: Node3D = _make_grouse()      # stand-in until the model files are there
+			chicken.scale = Vector3.ONE * 1.0
+			return chicken
+		33:
+			var cat: Node3D = _make_fox()      # stand-in until the model files are there
+			cat.scale = Vector3.ONE * 0.55
+			return cat
+		34:
+			var dog: Node3D = _make_wolf()      # stand-in until the model files are there
+			dog.scale = Vector3.ONE * 0.7
+			return dog
+		35:
+			var buffalo: Node3D = _make_moose(id)      # stand-in until the model files are there
+			buffalo.scale = Vector3.ONE * 1.0
+			return buffalo
 		38:
 			var warthog: Node3D = _make_boar()      # stand-in until the model files are there
 			warthog.scale = Vector3.ONE * 0.85
@@ -242,14 +269,14 @@ func on_rows(rows: Array) -> void:
 			if _bodies.size() >= MAX_DRAWN:
 				continue
 
-			var node: Node3D = _make_for_species(int(row[1]), id)
+			var node: Node3D = _make_for_species(int(row[1]), id, young)
 
 			if node == null:
 				continue
 
 			node.position = row[2]
 
-			if young:
+			if young and not node.has_meta("young_model"):
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
@@ -394,7 +421,7 @@ func _model_rows() -> Dictionary:
 	return _models
 
 
-func _make_model(number: int, id: int = 0) -> Node3D:
+func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
 	var row: Dictionary = _model_rows().get(kind, {})
 
@@ -406,6 +433,15 @@ func _make_model(number: int, id: int = 0) -> Node3D:
 		var looks: Array = row["variants"]
 		row = row.duplicate()
 		row.merge(looks[id % looks.size()], true)
+
+	# A young animal with a model of its own (young_model: scene, pack, clips, materials, length_m ...) is drawn from it, at its own size.
+	var own_young: bool = young and row.get("young_model", null) is Dictionary
+
+	if own_young:
+		var young_row: Dictionary = row["young_model"]
+		row = row.duplicate()
+		row.erase("variants")
+		row.merge(young_row, true)
 
 	if row.has("height_m"):
 		var dice: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -441,6 +477,9 @@ func _make_model(number: int, id: int = 0) -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.set_meta("model", true)
 	root.set_meta("model_row", row)
+
+	if own_young:
+		root.set_meta("young_model", true)
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
 	root.add_child(rig)
@@ -630,7 +669,8 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 
 						# Fur cards (the ruff round a bear's neck, lashes, lips) are cut out by the texture's alpha: drawn solid,
 						# their cut-away parts show as black bands. Cut them, and draw both sides of the cards.
-						if _has_alpha(tex) or bool(entry.get("alpha", false)):
+						# "opaque": a texture whose alpha holds something else (the goat's is nearly all zero) is drawn solid.
+						if (_has_alpha(tex) or bool(entry.get("alpha", false))) and not bool(entry.get("opaque", false)):
 							mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 							mat.alpha_scissor_threshold = float(entry.get("alpha_cut", 0.5))
 							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -699,7 +739,7 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused:
 		for full in player.get_animation_list():
 			var bare: String = str(full).get_slice("|", str(full).count("|")).to_lower().replace(" ", "_")      # "idle to walk fwd" reads as idle_to_walk_fwd
 
-			if bare.contains("dead") or bare.contains("death") or bare.contains("hit_") or bare.contains("interact") or bare.begins_with("start"):
+			if bare.contains("dead") or bare.contains("death") or bare.contains("hit_") or bare.contains("interact") or bare.begins_with("start") or bare.ends_with("end") or bare.contains("stop"):
 				continue      # the raccoon's "dead run" is not its run
 
 			if refused.has(str(full)):
