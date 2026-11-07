@@ -1696,6 +1696,31 @@
 				}
 			],
 			"size_clip": "Idle"
+		},
+		"guineafowl": {
+			"scene": "res://assets/animals/guineafowl/SK_Guineafowl.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Guineafowl",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.0,
+			"run_mps": 6.0,
+			"stride_m": 0.6,
+			"clips": {
+				"0": "StandGrazingA_1",
+				"3": "Idle_Breathing",
+				"12": "Idle",
+				"walk": "WalkMedium",
+				"run": "RunFast"
+			},
+			"note": "WildMesh Guineafowl (Realistic Animals/Guineafowl/SK_Guineafowl.fbx). Imported with its wings spread: sized by its Idle (size_clip). Checked 7 Nov 2026.",
+			"length_m": 0.5,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/guineafowl/Textures/T_Guineafowl.png"
+				}
+			],
+			"size_clip": "Idle"
 		}
 	}
 }

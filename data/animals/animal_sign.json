@@ -705,6 +705,20 @@
 					"hint": "Dry dung pellets in a line. Camels passed this way."
 				}
 			]
+		},
+		"guineafowl": {
+			"group": "bird",
+			"track": "three-toed prints in scratched earth",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Scratched earth and three-toed prints. Guineafowl fed here."
+				},
+				{
+					"kind": "feathers",
+					"hint": "Spotted grey feathers in the grass. Guineafowl roost near."
+				}
+			]
 		}
 	}
 }
