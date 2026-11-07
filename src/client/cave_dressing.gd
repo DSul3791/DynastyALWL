@@ -16,8 +16,40 @@ const SOLID_RADIUS_M := 0.25
 const BONE_FIELDS := 5
 const FORMATION_FIELDS := 6
 
+var _flicker: Array = []                # [light, base energy, phase] per goblin den fire, so the light dances
 static var _meshes: Dictionary = {}     # look name -> ArrayMesh, made once
 var _tiles: Dictionary = {}             # tile -> Node3D holding that tile's dressing
+
+
+func _process(_delta: float) -> void:
+	if _flicker.is_empty():
+		return
+
+	var now: float = float(Time.get_ticks_msec()) / 1000.0
+	var live: Array = []
+
+	for entry in _flicker:
+		var glow: OmniLight3D = entry[0] if is_instance_valid(entry[0]) else null
+
+		if glow == null:
+			continue
+
+		var phase: float = float(entry[2])
+		glow.light_energy = float(entry[1]) * (0.9 + 0.12 * sin(now * 11.0 + phase) + 0.07 * sin(now * 23.0 + phase * 2.0) + 0.05 * sin(now * 41.0 + phase * 3.0))
+		live.append(entry)
+
+	_flicker = live
+
+
+# The flame's material: lit by itself (emission), colour from the flame tongues' own vertex colours, so the core reads yellow-white and the edges orange.
+static func flame_material() -> StandardMaterial3D:
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.vertex_color_use_as_albedo = true
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.emission_enabled = true
+	m.emission = Color(1.0, 0.5, 0.12)
+	m.emission_energy_multiplier = 2.0
+	return m
 
 
 # The tile's dressing, replacing what it had (empty lists take it away).
@@ -33,7 +65,7 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 
 	var holder: Node3D = Node3D.new()
 	holder.name = "Tile_%d_%d" % [tile.x, tile.y]
-	var rows: Dictionary = {"bones_animal": [], "bones_human": [], "goblin_litter": [], "goblin_fire": [], "stalagmite": [], "stalactite": []}
+	var rows: Dictionary = {"bones_animal": [], "bones_human": [], "goblin_litter": [], "goblin_fire": [], "goblin_flame": [], "stalagmite": [], "stalactite": []}
 
 	for n in range(0, bones.size() - BONE_FIELDS + 1, BONE_FIELDS):
 		var spin: Basis = Basis(Vector3.UP, bones[n + 4])
@@ -56,6 +88,7 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 	# A goblin den's fire gives light (a cave is pitch black otherwise, so its litter and stone ring were not seen): one warm omni light per fire,
 	# faded out with distance so far dens cost nothing.
 	for fire in rows["goblin_fire"]:
+		rows["goblin_flame"].append(fire)      # the flame is its own look (a glowing material), at the same spot
 		var glow: OmniLight3D = OmniLight3D.new()
 		glow.name = "GoblinFireLight"
 		glow.light_color = Color(1.0, 0.6, 0.25)
@@ -67,6 +100,7 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 		glow.distance_fade_length = 20.0
 		glow.position = (fire as Transform3D).origin + Vector3(0.0, 0.35, 0.0)
 		holder.add_child(glow)
+		_flicker.append([glow, 1.6, fposmod((fire as Transform3D).origin.x * 0.73 + (fire as Transform3D).origin.z * 1.31, TAU)])
 
 	if not (rows["goblin_fire"] as Array).is_empty() or not (rows["goblin_litter"] as Array).is_empty():
 		print("Cave dressing: tile %s has %d goblin den fires and %d litter piles" % [str(tile), (rows["goblin_fire"] as Array).size(), (rows["goblin_litter"] as Array).size()])
@@ -87,6 +121,10 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 		node.name = look
 		node.multimesh = multi
 		node.visibility_range_end = 90.0     # inside a cave nothing further is seen
+
+		if look == "goblin_flame":
+			node.material_override = flame_material()
+			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		holder.add_child(node)
 
 	holder.set_meta("rows", rows)      # look -> instance transforms (a headless run's MultiMesh keeps none)
@@ -136,6 +174,8 @@ static func look_mesh(look: String) -> ArrayMesh:
 			_goblin_litter(parts)
 		"goblin_fire":
 			_goblin_fire(parts)
+		"goblin_flame":
+			_goblin_flame(parts)
 		"stalagmite":
 			_formation(parts, false)
 		"stalactite":
@@ -263,7 +303,8 @@ static func _goblin_litter(parts: Array) -> void:
 		BasicLook._box_rot(parts, Vector3(0.38, 0.012, 0.05), Vector3(cos(a) * 0.22, 0.01 + 0.004 * float(k), sin(a) * 0.22), Vector3(0.0, a * 1.7, 0.0), BasicLook._tone(straw, k, 0.12))
 
 
-# A small goblin campfire: a ring of stones round a few charred sticks, a heap of orange embers and a low flame. About 0.7 m across, 0.35 m high.
+# A small goblin campfire (the base, without the flame): a ring of stones round a teepee of five charred logs on a dark bed of dull embers.
+# About 0.7 m across. The flame is its own look, "goblin_flame", so it can glow.
 static func _goblin_fire(parts: Array) -> void:
 	var stone: Color = Color(0.45, 0.43, 0.4)
 
@@ -271,12 +312,36 @@ static func _goblin_fire(parts: Array) -> void:
 		var a: float = TAU * float(k) / 8.0
 		BasicLook._box_rot(parts, Vector3(0.14, 0.1, 0.12), Vector3(cos(a) * 0.3, 0.05, sin(a) * 0.3), Vector3(0.0, a, 0.0), BasicLook._tone(stone, k, 0.12))
 
-	for k in 4:
-		var a: float = TAU * float(k) * 0.25 + 0.4
-		BasicLook._box_rot(parts, Vector3(0.45, 0.04, 0.04), Vector3(cos(a) * 0.08, 0.06, sin(a) * 0.08), Vector3(0.0, a, 0.0), Color(0.12, 0.09, 0.07))
+	BasicLook._box_rot(parts, Vector3(0.4, 0.03, 0.4), Vector3(0.0, 0.03, 0.0), Vector3.ZERO, Color(0.28, 0.1, 0.05))      # the bed of dull embers
 
-	BasicLook._box_rot(parts, Vector3(0.3, 0.05, 0.3), Vector3(0.0, 0.07, 0.0), Vector3.ZERO, Color(0.95, 0.4, 0.1))
-	BasicLook._cyl(parts, 0.08, 0.28, Vector3(0.0, 0.2, 0.0), Vector3.ZERO, Color(1.0, 0.7, 0.2))
+	for k in 5:
+		var a: float = TAU * float(k) / 5.0 + 0.3
+		# A log leaning in against the middle: its foot out at the ring, its top meeting the others (a tilt of (-sin a, 0, cos a) leans the top toward the centre).
+		var lean: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		BasicLook._cyl(parts, 0.03, 0.42, Vector3(lean.x * 0.1, 0.16, lean.z * 0.1), Vector3(-sin(a) * 0.55, 0.0, cos(a) * 0.55), Color(0.2, 0.13, 0.08) if k % 2 == 0 else Color(0.1, 0.07, 0.05))
+
+
+# The flame of a goblin den fire: a tall core tongue with four shorter ones leaning out round it, yellow-white inside, orange outside. About 0.25 m
+# across and 0.45 m tall, standing on the logs. Drawn with a glowing material (flame_material) and a light that flickers.
+static func _goblin_flame(parts: Array) -> void:
+	_tongue(parts, 0.07, 0.46, Vector3(0.0, 0.16, 0.0), Vector3.ZERO, Color(1.0, 0.92, 0.55))
+
+	for k in 4:
+		var a: float = TAU * float(k) / 4.0 + 0.5
+		var lean: float = 0.28
+		_tongue(parts, 0.06, 0.3 + 0.04 * float(k % 2), Vector3(cos(a) * 0.07, 0.1, sin(a) * 0.07), Vector3(sin(a) * lean, 0.0, -cos(a) * lean), Color(1.0, 0.55, 0.12))
+
+
+# One flame tongue: a cone standing on `foot` (its base centre), `height` tall, leaning by `tilt` (radians about x, y, z).
+static func _tongue(parts: Array, radius: float, height: float, foot: Vector3, tilt: Vector3, color: Color) -> void:
+	var cone: CylinderMesh = CylinderMesh.new()
+	cone.top_radius = 0.0
+	cone.bottom_radius = radius
+	cone.height = height
+	cone.radial_segments = 6
+	cone.rings = 1
+	var tilt_basis: Basis = Basis.from_euler(tilt)
+	parts.append([cone, Transform3D(tilt_basis, foot + tilt_basis * Vector3(0.0, height * 0.5, 0.0)), color])
 
 
 static func _fragments(parts: Array, count: int, reach: float) -> void:

@@ -76,3 +76,7 @@ Design (from Dave's spec above): a goblin den is the dry end of a side branch of
 - A cave mouth that has made a goblin group and then finds it gone (killed, or the player walked far enough that it was dropped) waits `lair.respawn_s` (1800 s, 30 real minutes of server time) before it makes another, then a new group of 2 to 5 comes at the next top-up when a player is within range. A mouth that never made one makes its first at once.
 - It does not respawn while `lair_guarded(x, z)` says patrols or buildings hold the area (the hook is in `server_animals.gd`; nothing answers it yet because no server query for "buildings near a point" exists, so today it is always false). Wire it to the first building-near query that exists.
 - Change the wait in `data/animals/animals.json` (goblin, lair, respawn_s). Not tested in Godot.
+
+## Den fire look (7 Nov 2026, after Dave's cave screenshot; not yet run in Godot)
+- Dave saw a light on the floor and no fire: the den fire was a lit stone ring with a bright orange block, no flame. It now has a real look: a ring of stones round a teepee of five charred logs on dull embers, and a **flame** of five cone tongues (a tall yellow-white core and four orange ones leaning out) drawn with a glowing material (`cave_dressing.gd` `goblin_flame`, `flame_material`). Its light flickers (`_process`).
+- Still to improve later: the litter shapes (bones, sticks, thatch), a smoke wisp, a crackle sound, and a real fire structure that goblins treat as their own light.
