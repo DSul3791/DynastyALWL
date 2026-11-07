@@ -1482,6 +1482,105 @@
 					"albedo": "res://assets/animals/wildebeest/Textures/T_Wildebeest_Body.png"
 				}
 			]
+		},
+		"lion": {
+			"scene": "res://assets/animals/lion/SK_Lion.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Lion",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.4,
+			"run_mps": 11.0,
+			"stride_m": 1.3,
+			"clips": {
+				"0": "Idle",
+				"3": "idle_smell_01",
+				"10": "aggressive_roar_01",
+				"11": [
+					"sprint_fwd_01",
+					"run_fwd_01"
+				],
+				"12": "idle_smell_01",
+				"walk": "walk_fwd_01",
+				"run": "run_fwd_01"
+			},
+			"note": "WildMesh Lion (Realistic Animals/Lion/SK_Lion.fbx); lionesses are the second and third looks. The lion and the second lioness share a rig imported crouched (size_clip Idle); the first lioness has the WildMesh grazing rig. Roars when it warns. Checked 7 Nov 2026.",
+			"length_m": 2.8,
+			"materials": [
+				{
+					"match": "Mane",
+					"albedo": "res://assets/animals/lion/Textures/T_Lion_Mane.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/lion/Textures/T_Lion_Body.png"
+				}
+			],
+			"variants": [
+				{
+					"scene": "res://assets/animals/lion/SK_Lion.fbx",
+					"clips": {
+						"0": "Idle",
+						"3": "idle_smell_01",
+						"10": "aggressive_roar_01",
+						"11": [
+							"sprint_fwd_01",
+							"run_fwd_01"
+						],
+						"12": "idle_smell_01",
+						"walk": "walk_fwd_01",
+						"run": "run_fwd_01"
+					}
+				},
+				{
+					"scene": "res://assets/animals/lioness/SK_Lioness.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Lioness",
+					"length_m": 2.5,
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/lioness/Textures/T_Lioness.png"
+						}
+					],
+					"clips": {
+						"0": "Idle_Breathing",
+						"3": "Idle_Breathing_001",
+						"10": "Idle_Breathing",
+						"11": "RunFast_F",
+						"12": "Idle",
+						"walk": "WalkMedium_F",
+						"run": "RunFast_F"
+					}
+				},
+				{
+					"scene": "res://assets/animals/lioness_1/SK_Lioness 1.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Lioness_1",
+					"length_m": 2.5,
+					"materials": [
+						{
+							"match": "Whisk",
+							"albedo": "res://assets/animals/lioness_1/Textures/T_Lioness_Whiskers.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/lioness_1/Textures/T_Lioness_Body.png"
+						}
+					],
+					"clips": {
+						"0": "Idle",
+						"3": "idle_smell_01",
+						"10": "aggressive_roar_01",
+						"11": [
+							"sprint_fwd_01",
+							"run_fwd_01"
+						],
+						"12": "idle_smell_01",
+						"walk": "walk_fwd_01",
+						"run": "run_fwd_01"
+					},
+					"size_clip": "Idle"
+				}
+			],
+			"size_clip": "Idle"
 		}
 	}
 }
