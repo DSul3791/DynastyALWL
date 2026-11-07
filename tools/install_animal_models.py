@@ -6,7 +6,8 @@ into the folder of the row's scene. .blend files are skipped: a headless import 
 
     python tools/install_animal_models.py --pack "C:/Users/david/Downloads/ultimate 3d animal pack" [--kinds=bear,deer] [--project=.]
 
-Then import once (godot --headless --path . --import) and check with tools/creature_check.gd.
+Then import (--import=<godot exe> does it here, retrying once: Dino saw the first import in a fresh worktree crash on the
+CSV reimport step, exit 139, and pass on the retry) and check with tools/creature_check.gd.
 """
 import argparse, json, os, shutil, sys
 
@@ -14,6 +15,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--pack", default="C:/Users/david/Downloads/ultimate 3d animal pack")
 ap.add_argument("--project", default=".")
 ap.add_argument("--kinds", default="")
+ap.add_argument("--import", dest="godot", default="", help="the Godot editor to run the import with (retried once)")
 args = ap.parse_args()
 
 rows = json.load(open(os.path.join(args.project, "data/animals/models.json"), encoding="utf8"))["species"]
@@ -55,5 +57,15 @@ for kind, row in jobs:
     ok = os.path.exists(scene)
     print("%-14s %s  %d files copied%s" % (kind, dst, copied, "" if ok else "  SCENE NOT FOUND: " + row["scene"]))
     bad += 0 if ok else 1
+
+if args.godot:
+    import subprocess
+    for attempt in (1, 2):
+        rc = subprocess.run([args.godot, "--headless", "--path", args.project, "--import"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
+        print("import attempt %d: exit %d" % (attempt, rc))
+        if rc == 0:
+            break
+    else:
+        bad += 1
 
 sys.exit(1 if bad else 0)
