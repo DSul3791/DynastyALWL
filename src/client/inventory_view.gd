@@ -4609,7 +4609,9 @@ func _refresh() -> void:
 			bar.offset_right = -_px(4)
 			button.text += "   BROKEN" if is_broken(i) else "   %d%%" % int(c * 100.0)
 		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
-		button.visible = filter == "" or (number != 0 and _matches(table.name_of(number), filter))
+		# The hotbar (slots 0 to 9) is an inventory spot of its own, shown on the hotbar strip: the backpack grid lists only the other slots, so an item
+		# on the hotbar leaves no second marker in the backpack (Dave, 7 Nov 2026).
+		button.visible = i >= HOTBAR_SLOTS and (filter == "" or (number != 0 and _matches(table.name_of(number), filter)))
 		button.tooltip_text = _tooltip(number, inventory.counts[i], inventory.wear[i])
 
 		if number != 0 and container_cap(i) > 0:
