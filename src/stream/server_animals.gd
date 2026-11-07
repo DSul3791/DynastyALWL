@@ -45,6 +45,8 @@ var drop_loot: Callable            # (item number, count, position) when a thief
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
+var lair_guarded: Callable            # (x, z) -> bool: true when a patrol or buildings hold the area round a lair, so no new group comes (not wired yet: there is no such query; Dave 7 Nov 2026)
+var _lair_state: Dictionary = {}   # mouth "x,z" -> {"made": a group has been made here, "empty_since": seconds when it was found empty, -1 while a group is there}
 var lair_mouths: Callable             # (x, z) -> PackedVector2Array: the cave mouths (world x, z) of the tile there; species with a "lair" row spawn their groups at them (goblins, Dave 7 Nov 2026)
 var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
 var traits: bool = true            # temperaments and young (Dave 6 Nov 2026); seeded tests that predate them turn this off, so every animal is born "defensive" with no young
@@ -1197,6 +1199,25 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 			continue
 
 		var taken: bool = false
+		var key: String = "%d,%d" % [int(m.x), int(m.y)]
+		var state: Dictionary = _lair_state.get(key, {"made": false, "empty_since": -1.0})
+		var now_s: float = float(Time.get_ticks_msec()) / 1000.0
+		var has_group: bool = false
+
+		for gid in animals:
+			has_group = has_group or (animals[gid]["sp"] == sp and Vector2(animals[gid]["pos"].x - m.x, animals[gid]["pos"].z - m.y).length() <= float(lair.get("claim_m", 40.0)))
+
+		# Respawn (Dave 7 Nov 2026: a killed group "eventually" comes back, depending on patrols or buildings): a mouth that had a group and found it
+		# gone waits lair.respawn_s before it makes another, and not at all while lair_guarded says a patrol or buildings hold the area.
+		if has_group:
+			state["empty_since"] = -1.0
+		elif bool(state["made"]):
+			if float(state["empty_since"]) < 0.0:
+				state["empty_since"] = now_s
+
+			taken = now_s - float(state["empty_since"]) < float(lair.get("respawn_s", 1800.0)) or (lair_guarded.is_valid() and bool(lair_guarded.call(m.x, m.y)))
+
+		_lair_state[key] = state
 
 		for q in players:
 			taken = taken or Vector2(q.x - m.x, q.z - m.y).length() < never
@@ -1210,6 +1231,9 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 		if taken or (blocked.is_valid() and bool(blocked.call(m.x, m.y))) or crosses_wall(m.x, m.y, m.x, m.y):
 			continue
 
+		state["made"] = true
+		state["empty_since"] = -1.0
+		_lair_state[key] = state
 		var members: int = clampi(rng.randi_range(int(group[0]), int(group[1])), 1, maxi(int(cfg.get("per_player_cap", 30)) - animals.size(), 1))   # luck-exempt: how many goblins in a group
 		var hid: int = _next_herd
 		_next_herd += 1

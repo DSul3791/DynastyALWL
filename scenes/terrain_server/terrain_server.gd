@@ -508,9 +508,9 @@ func _ready() -> void:
 	animals.biome_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
 		return "" if tile_data.placeholder else str(biome_names.get(int(tile_data.biome[tile_data.nearest(x, z)]), ""))
-	animals.lair_mouths = func(x, z):   # the cave mouths of the tile the player stands in (already loaded, so no wait); goblins live at them
+	animals.lair_mouths = func(x, z):   # the mouths of the spring caves with a goblin den in the tile the player stands in (already loaded, so no wait); goblin groups come out of them
 		var lair_tile = generator.get_tile(generator.tile_of(x, z))
-		return PackedVector2Array() if lair_tile.placeholder else lair_tile.spring_mouths
+		return PackedVector2Array() if lair_tile.placeholder else lair_tile.goblin_den_mouths
 	animals.setup()
 	trails = TrailsScript.new()
 	trails.game_seconds = func(): return game_clock.seconds
@@ -1067,6 +1067,9 @@ func _send_cave_streams(peer_id: int, chunk: Vector2i) -> void:
 
 	if not data.cave_dens.is_empty():
 		net.cave_dens.rpc_id(peer_id, tile, data.cave_dens)
+
+	for k in data.goblin_dens.size():   # where the goblin dens are (floor point) and the mouth their group comes out of, for checking a den by eye
+		print("Terrain server: goblin den for tile %s at %.1f, %.1f, %.1f (floor), group mouth %.1f, %.1f" % [str(tile), data.goblin_dens[k].x, data.goblin_dens[k].y, data.goblin_dens[k].z, data.goblin_den_mouths[k].x, data.goblin_den_mouths[k].y])
 
 	# Cave dressing (protocol 92): the bake's bone piles and formations, once the tile data carries them.
 	var bones: PackedFloat32Array = data.get("cave_bones") if "cave_bones" in data else PackedFloat32Array()
