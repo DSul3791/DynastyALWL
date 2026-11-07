@@ -12,8 +12,8 @@ This code runs beside `src/water2` (today's live water) until its gates pass. No
 |---|---|---|---|
 | M0 | `docs/water/runtime_inventory.md` | the PC probes P1 to P4 | written; P1 and P2 PASS, P3 and P4 waiting for Dino |
 | M1 | `freshwater/water_grid_2d.gd`, one closed conservative region | `test_sullivan_water_grid`: F01, F02, F03, F04, F05, F07 (open-air part), F09, F13, a 10k tick ledger, a stable pond | PASS on David4 headless, 611db289: 30 ok, 0 failures, ledger residual 1.9e-13 m³ over 10k ticks |
-| M2 | ditch, dam, spillway and irrigation sandbox: `freshwater/irrigation_field.gd` (soil moisture, granted intake only, runoff back) | `test_sullivan_water_m2`: partial dam opening, bypass, spillway, uphill canal, canal split, shutoff gates, drought withdrawal, field runoff | code written; test NOT RUN |
-| M3 | terrain adapter on our `VoxelLodTerrain` and edit transaction (guide 17, 24, 25) | real digs change cells and crests without a reset | |
+| M2 | ditch, dam, spillway and irrigation sandbox: `freshwater/irrigation_field.gd` (soil moisture, granted intake only, runoff back) | `test_sullivan_water_m2`: partial dam opening, bypass, spillway, uphill canal, canal split, shutoff gates, drought withdrawal, field runoff | PASS on David4 (#499) |
+| M3 | `freshwater/terrain_adapter.gd` (beds and face crests read from the ground, STACKED and UNKNOWN columns never guessed) and `freshwater/terrain_water_edit_coordinator.gd` (precheck, edit, reconcile, commit; undo or freeze) | first half `test_sullivan_water_m3` on made-up ground: G01, G02, G03 (detection; flow BLOCKED), F06, F07, F14, roof over water. Second half: a server ground source (generator plus the dig log) and wiring the real digs | first half written; test NOT RUN |
 | M4 | chunk seams, sleep and wake, persisted boundary reservoirs (guide 26) | cross-region and unload/reload comparisons | |
 | M5 | ocean baseline, one wave function for CPU and GPU (guide 6, 28) | height and normal cross-check (F10) | |
 | M6 | river and ocean look (guide 5, 27) | shore, foam, refraction, underwater | |
