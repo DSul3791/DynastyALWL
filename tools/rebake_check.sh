@@ -9,9 +9,9 @@ export PATH="$PWD/tools:$PATH"
 JOBS=3; MARK=0
 while [ $# -gt 0 ]; do case "$1" in --jobs) JOBS="$2"; shift 2;; --mark) MARK=1; shift;; *) shift;; esac; done
 OUT=$(mktemp -d)
-bash tools/run_tests.sh --jobs "$JOBS" --out "$OUT" --slow test_drainage_fill test_river_surface test_drainage_flow test_head_pond_fill > "$OUT/summary.txt" 2>&1
-declare -A ACTION=( [test_drainage_fill]="re-pin its numbers on the new tile" [test_river_surface]="re-pin the cross-section limit with a recorded reason" [test_drainage_flow]="archive (natural rivers replace the channels)" [test_head_pond_fill]="archive (natural rivers have no head ponds)" )
-for t in test_drainage_fill test_river_surface test_drainage_flow test_head_pond_fill; do
+bash tools/run_tests.sh --jobs "$JOBS" --out "$OUT" --slow test_drainage_fill test_river_surface test_head_pond_fill > "$OUT/summary.txt" 2>&1
+declare -A ACTION=( [test_drainage_fill]="re-pin its numbers on the new tile" [test_river_surface]="re-pin the cross-section limit with a recorded reason" [test_head_pond_fill]="archive (natural rivers have no head ponds)" )
+for t in test_drainage_fill test_river_surface test_head_pond_fill; do
 	R=$(cat "$OUT/$t.result" 2>/dev/null || echo "FAIL no result")
 	if [ "${R%% *}" = PASS ]; then echo "PASS  $t   ($R)"
 	else echo "RED   $t   ($R)  -> ${ACTION[$t]}"; [ $MARK = 1 ] && echo "$t red after the re-bake: ${ACTION[$t]}" >> tools/known_red.txt; fi
