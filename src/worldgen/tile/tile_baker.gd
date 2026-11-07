@@ -250,13 +250,6 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	timings["rolling"] = Time.get_ticks_msec() - clock
 
 
-	# The land beside every river, pond and lake slopes up from its water BEFORE the pond levels are checked (Sonny 7 Nov 2026): with no bank raise, a
-	# rim lower than its pond on the downhill side spilled the pond, and the check then dried it (tile_valley_drain.gd seed_lakes). Run again below,
-	# after the passes that cut ground.
-	clock = Time.get_ticks_msec()
-	var first_drain: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, tile_rules["water"].get("valley_drain", {}))
-	print("  valley drain before pond levels (tile %s): %d cells raised, up to %.1f m (%d ms)" % [str(tile), first_drain["raised"], first_drain["max_m"], Time.get_ticks_msec() - clock])
-
 	# Pond levels no higher than their spill, after every pass that cuts or raises ground (tile_pond_level.gd).
 	clock = Time.get_ticks_msec()
 	var pond_levels: Dictionary = TilePondLevelScript.clamp_to_spill(water.heights, water.water_class, water.water_surface, n)
