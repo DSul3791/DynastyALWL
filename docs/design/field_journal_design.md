@@ -29,15 +29,14 @@ Each rung needs the one below it. A kill can count for Studied (as the carcass) 
 - Each record carries a version field. A saved rung is never taken away by later data changes; new rows simply start at zero.
 - The client gets the rungs only. They are sent when they change and when the player joins, the same as warmth.
 
-## 3. Heirs
+## 3. Heirs (two layers; adopted 7 Nov via the coordinator, flagged for Dave with G-18)
 
-D-04 says the journal is inherited by the heir. DESIGN_IDEAS 6.15 describes journals as real objects that can be lost or looted, and says being a descendant "passes on nothing by itself".
+DESIGN_IDEAS 6.15 is Dave's own text, so it wins over D-04 as first written. D-04 now reads: **family knowledge is inherited by the heir; journal pages are copyable items that are not inherited by themselves.**
 
-**I recommend both layers.** The family journal is dynasty knowledge, and the heir inherits it whole. A written journal page is an item copied from that knowledge, which can be traded, lost or looted. Reading a page raises your own rungs up to the page's rungs.
+- **Family knowledge.** The rungs belong to the dynasty's knowledge, and the heir gets them whole. This is the dynasty's long game.
+- **Journal pages.** A written page is an item copied from that knowledge. It can be traded, lost or looted, and it follows the remains rules (DESIGN_IDEAS 6.1). Reading a page raises the reader's own rungs up to the page's rungs.
 
 The heir and new-character flow is not built yet (`send_final_death` has nothing set). The journal therefore exposes `inherit(from_key, to_key)`, and the heir flow calls it when that flow lands.
-
-**Question for Dave (with G-18):** is the inherited journal knowledge (my recommendation), or only the object?
 
 ## 4. Rebakes
 
@@ -60,7 +59,7 @@ A tamed animal becomes a named individual that persists. It is saved in `compani
 
 ## 6. Dependencies
 
-1. **G-18 accepted by Dave**, plus his answer on heirs (section 3).
+1. **G-18 accepted by Dave**, including the two-layer heir rule (section 3).
 2. **Sign kinds per species** in `animal_sign.json` (MikeW, Phase 2), for Tracked.
 3. **The journal page look** (Kathleen) and the client page. The client needs only the rungs.
 4. **The heir flow** (not built), which calls `inherit`. Until it exists, the journal is per character.
