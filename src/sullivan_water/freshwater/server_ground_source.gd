@@ -24,7 +24,9 @@ extends RefCounted
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 const BLOCK := 16
-const SCAN_UP_M := 16.0
+const SCAN_UP_M := 4.0         # first try: generated ground plus a small fill (a 19.7 s build of 4 tiles on Dave's PC, 7 Nov, came mostly from
+                               # loading air blocks 16 m up). A column still solid there is scanned again up to SCAN_UP_WIDE_M (scan_range_wide).
+const SCAN_UP_WIDE_M := 16.0
 const SCAN_DOWN_M := 32.0
 const FILL_MATERIAL := 0       # the soil number a water-side fill uses; the caller can set `fill_material`
 
@@ -54,6 +56,16 @@ func sdf(p: Vector3) -> float:
 func scan_range(x: float, z: float) -> Vector2:
 	var surface: float = float(store.generator.surface_height(x, z))
 	return Vector2(surface - SCAN_DOWN_M, surface + SCAN_UP_M)
+
+
+func scan_range_wide(x: float, z: float) -> Vector2:
+	var surface: float = float(store.generator.surface_height(x, z))
+	return Vector2(surface - SCAN_DOWN_M, surface + SCAN_UP_WIDE_M)
+
+
+# sdf() reads the voxel at floor(x), floor(z), so every point in one 1 m square reads the same column: the adapter reads it once.
+func column_key(x: float, z: float) -> Vector2i:
+	return Vector2i(floori(x), floori(z))
 
 
 func is_loaded(box: AABB) -> bool:

@@ -45,6 +45,7 @@ var _live = DigWindows.new()   # Sullivan water (7 Nov 2026): fine 2 m windows w
 var _last_levels: PackedFloat32Array = PackedFloat32Array()   # the levels last built on the water thread (what a new dig window starts from)
 var _fine_pending: Dictionary = {}   # the newest fine sheet packets (dig_windows.fine_packets), taken once by take_fine
 var _players: PackedVector2Array = PackedVector2Array()   # player x, z, newest first (set_players): a 2 m region follows the first
+var _fine_built: int = 0          # 2 m water packet sets built (the log line for the PC check)
 var _fine_sent: bool = false      # the last fine packets named any region (so one more, empty, tells clients to drop them)
 var _live_rect: Rect2 = Rect2()   # world x, z the dig windows draw into, as of the last publish (clients must re-ask chunks there too)
 
@@ -370,6 +371,10 @@ func _run() -> void:
 
 			if not fine["keys"].is_empty() or _fine_sent:
 				_fine_sent = not fine["keys"].is_empty()
+				_fine_built += 1
+
+				if _fine_built == 1 or _fine_built % 20 == 0:
+					print("water live: 2 m water packets %d: %d regions, %d textures (tick %d)" % [_fine_built, fine["keys"].size(), fine["packets"].size(), ticks])
 				_mutex.lock()
 				_fine_pending = fine
 				_mutex.unlock()

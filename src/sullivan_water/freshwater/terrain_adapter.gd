@@ -38,6 +38,8 @@ var refine_m: float = 0.01       # guide 24.2: refine crossings to at most 0.05 
 var stack_depth_m: float = 4.0   # air this close under the top makes the column STACKED (a bridge deck, a thin roof)
 
 var classification: PackedByteArray   # per grid cell, after the last extract
+var _columns: Dictionary = {}   # column key -> column(): one extract reads each ground column once (faces share corners)
+var _caching: bool = false      # only inside extract(): between calls the ground may change
 
 
 func _init(p_source, p_origin: Vector2, p_cell_m: float) -> void:
@@ -59,6 +61,26 @@ func cells_box(i0: int, j0: int, i1: int, j1: int) -> AABB:
 
 # The ground at one world x, z: {"state": OPEN_SURFACE | STACKED | UNKNOWN, "top": metres (NAN unless OPEN_SURFACE or STACKED)}.
 func column(x: float, z: float) -> Dictionary:
+	var key = source.column_key(x, z) if source.has_method("column_key") else Vector2(x, z)
+
+	if _caching and _columns.has(key):
+		return _columns[key]
+
+	var col: Dictionary = _column(x, z, false)
+
+	if int(col["state"]) == UNKNOWN and bool(col.get("solid_top", false)) and source.has_method("scan_range_wide"):
+		col = _column(x, z, true)   # ground higher than the first scan (a tall fill): look again over the wide range
+
+	if _caching:
+		_columns[key] = col
+	return col
+
+
+func forget_columns() -> void:
+	_columns.clear()
+
+
+func _column(x: float, z: float, wide: bool) -> Dictionary:
 	var probe: AABB = AABB(Vector3(x - 0.5, y_min, z - 0.5), Vector3(1.0, y_max - y_min, 1.0))
 
 	if not source.is_loaded(probe):
@@ -68,7 +90,7 @@ func column(x: float, z: float) -> Dictionary:
 	var hi_y: float = y_max
 
 	if source.has_method("scan_range"):
-		var r: Vector2 = source.scan_range(x, z)
+		var r: Vector2 = source.scan_range_wide(x, z) if wide else source.scan_range(x, z)
 		lo_y = r.x
 		hi_y = r.y
 
@@ -76,7 +98,7 @@ func column(x: float, z: float) -> Dictionary:
 	var above: float = source.sdf(Vector3(x, y, z))
 
 	if above <= 0.0:
-		return {"state": UNKNOWN, "top": NAN}   # solid at the top of the scan: the range is wrong for this ground, never guess
+		return {"state": UNKNOWN, "top": NAN, "solid_top": true}   # solid at the top of the scan: the range is wrong for this ground, never guess
 
 	var top: float = NAN
 
@@ -116,6 +138,15 @@ func _refine(x: float, z: float, lo: float, hi: float) -> float:
 # sample is known: no grid is ever left half updated (guide 24.2: "No tile is publishable with partially updated faces").
 # Returns {"ok": bool, "reason": String, "cells": int, "stacked": int}.
 func extract(grid, i0: int, j0: int, i1: int, j1: int) -> Dictionary:
+	forget_columns()
+	_caching = true
+	var report: Dictionary = _extract(grid, i0, j0, i1, j1)
+	_caching = false
+	forget_columns()
+	return report
+
+
+func _extract(grid, i0: int, j0: int, i1: int, j1: int) -> Dictionary:
 	i0 = maxi(i0, 0)
 	j0 = maxi(j0, 0)
 	i1 = mini(i1, grid.w - 1)
