@@ -257,19 +257,8 @@ def main():
               open(f'{out_dir}/evolve_manifest.json', 'w'), indent=1)
     print(json.dumps(summary, indent=1))
 
-    import matplotlib; matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import LightSource
-    ls = LightSource(315, 40)
-    fig, ax = plt.subplots(1, 3, figsize=(27, 9))
-    for a, z, t in ((ax[0], start, 'landform (start)'), (ax[1], hh, 'final ground')):
-        a.imshow(ls.shade(np.where(land, z, -30), cmap=plt.cm.terrain, vert_exag=3, blend_mode='soft', dx=dx, dy=dx)); a.set_title(t)
-    ax[1].imshow(np.where(land & (share.reshape(n, n) > 0.5), 1, np.nan), cmap='winter', alpha=0.8)
-    im = ax[2].imshow(np.where(land, deposit.reshape(n, n), np.nan), cmap='YlOrBr', vmax=10); ax[2].set_title('sediment (m): floodplains, fans, deltas')
-    fig.colorbar(im, ax=ax[2], shrink=0.7)
-    for a in ax: a.axis('off')
-    plt.tight_layout(); plt.savefig(f'{out_dir}/evolve.png', dpi=70)
-
+    import plots
+    plots.ground_picture(f'{out_dir}/ground.npz', f'{out_dir}/evolve.png')
 
 if __name__ == '__main__':
     main()

@@ -46,6 +46,8 @@ It writes:
 - the sediment thickness (floodplains, fans, deltas);
 - a picture and a manifest.
 
+`python tools/watershed/plots.py ground OUT_DIR` redraws `evolve.png` from a saved run in seconds.
+
 Check `evolve.png` and the summary for:
 - branching valleys everywhere, with hills between them;
 - sediment on the valley floors and at the coast;
