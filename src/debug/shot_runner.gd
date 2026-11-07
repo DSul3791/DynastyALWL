@@ -17,6 +17,8 @@ extends Node
 #                       diag) 0.2 to 1.5 m away aimed at it, each logged with the pose read back and the fill of the frame (FAILED under a third, exit code 1);
 #                       --shot-item-at=X,Z drops it there instead of 1 m ahead of the shot position (item_cam.gd)
 #   --shot-stance=NAME  hold a stance (stand, crouch, sit, lie) so the third-person body shows that pose (use with --cam left, --walk 0)
+#   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
+#                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
@@ -96,6 +98,9 @@ var _finish_done: bool = false
 var _spin_i: int = 0
 var _spin_next_msec: int = 0
 var _selected: bool = false
+const AnimalViewScript := preload("res://src/client/animal_view.gd")
+var animal_names: PackedStringArray = PackedStringArray()   # --shot-animals=bear,deer: one animal of each in a row (_show_animals)
+var _animals_t: int = 0
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
 var frametime_s: float = 0.0             # --shot-frametime=SECONDS: after a 10 s warm-up, measure frame times this long and print one "shot runner: frametime" line
@@ -200,6 +205,8 @@ func setup(owner_client, args: Array) -> void:
 
 			if views.is_empty():
 				views = [{"name": "wide", "dist": 9.0, "pitch": -8.0, "above": 1.5}, {"name": "close", "dist": 4.0, "pitch": -10.0, "above": 1.2}]
+		elif argument.begins_with("--shot-animals="):
+			animal_names = argument.trim_prefix("--shot-animals=").split(",", false)
 		elif argument.begins_with("--shot-flora="):
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
@@ -548,6 +555,13 @@ func _process(delta: float) -> void:
 		_show_flora(now)
 		return
 
+	if not animal_names.is_empty() and _animals_t == 0:
+		_show_animals(now)
+		return
+
+	if _animals_t != 0 and now - _animals_t < 6000:
+		return
+
 	if not showroom_rows.is_empty() and _showroom_t == 0:
 		_show_showroom(now)
 		return
@@ -820,6 +834,73 @@ func _print_state() -> void:
 		rows.append("%s x%d server y %.2f drawn y %.2f collision ground %.2f voxel ground %s gap %s dist %.1f" % [client.items.table.id_of(int(it["number"])), int(it["count"]), at.y, drawn_y, phys_y, "?" if is_nan(floor_y) else "%.2f" % floor_y, "?" if is_nan(floor_y) else "%.2f" % (drawn_y - floor_y), Vector2(at.x - p.x, at.z - p.z).length()])
 
 	print("shot runner: state: expect \"%s\"; player %s pitch %.0f; %d loose items within 6 m: %s" % [expect, str(p), rad_to_deg(client.pitch), rows.size(), "; ".join(rows)])
+
+
+# A labelled row of animals (MikeW, 7 Nov 2026): one of each named kind 4 m ahead of the player, built by the real animal view, so a
+# realistic model (data/animals/models.json) shows as it does in the game. The bodies are the view's children but not in its live rows,
+# so the server's animal updates leave them alone. Prints one "shot runner: animals row" line naming how each was drawn.
+func _show_animals(now: int) -> void:
+	var view = client._animal_view_node      # src/client/animal_view.gd (untyped: its own functions are called)
+	_animals_t = now
+
+	if view == null:
+		print("shot runner: animals row: no animal view")
+		return
+
+	var p: Vector3 = client.body.global_position
+	var n: int = animal_names.size()
+	var spacing: float = 3.0
+	var drawn: PackedStringArray = PackedStringArray()
+	var middle: Vector3 = Vector3.ZERO
+	var count: int = 0
+
+	for i in range(n):
+		var name_text: String = animal_names[i]
+		var young: bool = name_text.begins_with("young_")
+		var kind: String = name_text.trim_prefix("young_")
+		var number: Variant = AnimalViewScript.KIND_OF_SPECIES.find_key(kind)
+
+		if number == null:
+			drawn.append("%s unknown" % name_text)
+			continue
+
+		var node: Node3D = view._make_for_species(int(number), 900000 + i)
+
+		if node == null:
+			drawn.append("%s not drawn" % name_text)
+			continue
+
+		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * spacing
+		var z: float = p.z - 4.0
+		var g: float = _ground(x, z)
+
+		if is_nan(g):
+			g = p.y - 1.5
+
+		node.position = Vector3(x, g, z)
+		node.rotation.y = PI * 0.5       # side on to the camera
+		if young:
+			node.scale = Vector3.ONE * AnimalViewScript.YOUNG_SCALE
+
+		view.add_child(node)
+
+		if node.has_meta("player"):
+			var row: Dictionary = node.get_meta("model_row", {})
+			var clip: String = str(row.get("clip_prefix", "")) + str((row.get("clips", {}) as Dictionary).get("0", ""))
+			var player: AnimationPlayer = node.get_meta("player")
+
+			if player.has_animation(clip):
+				player.play(clip)
+
+		drawn.append("%s %s" % [name_text, "model" if node.has_meta("model") else "code"])
+		middle += node.position
+		count += 1
+
+	print("shot runner: animals row: %s" % ", ".join(drawn))
+
+	if count > 0:
+		_subject = middle / float(count)
+		_subject_set = true
 
 
 # A labelled row of plants (look rig): one of each named species 4 m ahead of the player, drawn by the real flora view.
