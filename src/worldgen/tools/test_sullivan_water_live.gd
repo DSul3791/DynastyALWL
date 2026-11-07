@@ -141,11 +141,15 @@ func _init() -> void:
 
 	# Following a player (docs/water/follow_players_2m.md): a player by the river gets a 2 x 2 tile region, not dug; staying inside it opens
 	# nothing more; under the budget a region nobody dug in closes instead of sleeping.
+	ground.digs.append([Vector3(160.0, 1.0, 37.0), 1.5])   # a hollow on the bank under the river's 8 m level, cut off by the bank
 	var live2 = DigWindows.new()
 	live2.source = ground
 	live2.follow(PackedVector2Array([Vector2(150.0, 44.0)]), level_at)
 	_check(live2.windows.size() == 1 and live2.windows[0]["tiles"] == Rect2i(1, -1, 2, 2) and not bool(live2.windows[0]["dug"]), "a player by the river gets a 2 x 2 tile region, not dug (%d regions)" % live2.windows.size())
 	_check(live2.windows[0]["grid"].total_volume() > 0.0, "the followed region starts with the river's water (%.0f m3)" % live2.windows[0]["grid"].total_volume())
+	var g2 = live2.windows[0]["grid"]
+	var hollow: Vector2i = Vector2i(int((160.0 - live2.windows[0]["origin"].x) / 2.0), int((37.0 - live2.windows[0]["origin"].y) / 2.0))
+	_check(g2.depth(hollow.x, hollow.y) == 0.0 and live2.dry_pieces >= 1, "a bank hollow under the 8 m level but cut off from the river stays dry (%.2f m, %d dry pieces)" % [g2.depth(hollow.x, hollow.y), live2.dry_pieces])
 	live2.follow(PackedVector2Array([Vector2(150.0, 44.0)]), level_at)
 	_check(live2.followed == 1, "a player well inside the region opens nothing more (%d opens)" % live2.followed)
 	live2._follow_next_ms = 0   # past the rate limit, so only the dryness decides

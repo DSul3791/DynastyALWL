@@ -35,6 +35,7 @@ const MAX_TILES := 4           # tiles running at once, over all regions (the sa
 const MIN_WET := 4             # of the 16 cells under an 8 m sample, how many must be wet for the sample to show water
 const DRAW_M := 0.05           # thinner 2 m water than this is not counted as wet
 const PER := 4                 # 2 m cells along one 8 m sample
+const MIN_POOL_CELLS := 16     # a separate piece under the 8 m level this big (one 8 m sample) is a pond, smaller is a bank hollow
 const FOLLOW_EDGE_M := 24.0    # a player this far inside a running region keeps it; nearer its edge, a new region opens round them
 const FOLLOW_EVERY_MS := 10000 # at most one follow open this often (each reads the ground of up to 4 tiles)
 const MAX_SLEEPING := 32       # sleeping regions kept (each at most MAX_TILES tiles: about 0.7 MB)
@@ -45,6 +46,7 @@ var sleeping: Array = []       # regions put to sleep for the tile budget, oldes
 var built: int = 0
 var joined: int = 0            # regions that were joined into a bigger one
 var closed_m3: float = 0.0     # water dropped with sleeping regions past MAX_SLEEPING
+var dry_pieces: int = 0           # bank hollows under an 8 m level left dry when seeding (the log and the test)
 var followed: int = 0             # regions opened to follow a player
 var _follow_next_ms: int = 0
 var _follow_dry_told: Rect2i = Rect2i()   # the dry tiles last logged, so the log says it once
@@ -216,31 +218,83 @@ func _open(wanted: Rect2i, level_at: Callable, dug: bool) -> void:
 		print("water live: no region at %s: %s" % [str(rect), report["reason"]])
 		return
 
-	# Water: copied exactly from the joining regions, from the 8 m levels elsewhere.
+	# Water: copied exactly from the joining regions, from the 8 m levels elsewhere. An 8 m level is a mean surface: a 2 m hollow on the
+	# bank beside a river sits under it too, and seeding it left soft puddles on dry grass (Dino's #513 picture, 7 Nov 2026). So the cells
+	# under the level are grouped (4-neighbour pieces), and a piece gets its water only when it is real 8 m water: it reaches the region's
+	# border (a river coming through), joins copied water, or is at least MIN_POOL_CELLS big (a pond inside the region). Small separate
+	# hollows stay dry, as they are in the 8 m field's own reckoning.
 	var copied: float = 0.0
 	var seeded: float = 0.0
+	var candidate: Dictionary = {}   # cell -> the 8 m level over it
+	var wet_copy: Dictionary = {}
 
 	for j in range(h):
 		for i in range(w):
 			var k: int = grid.index(i, j)
 			var c: Vector2 = adapter.cell_centre(i, j)
 			var old = _cell_of(joining, c)
+			var border: bool = i == 0 or j == 0 or i == w - 1 or j == h - 1
 
 			if old != null:
 				grid.volume[k] = old[0].volume[old[1]]
 				copied += grid.volume[k]
+
+				if grid.volume[k] > 0.0:
+					wet_copy[k] = true
+
+				if border:
+					var held: float = float(level_at.call(c.x, c.y))
+
+					if not is_nan(held) and held > grid.bed[k] and adapter.classification[k] == Adapter.OPEN_SURFACE:
+						grid.fixed[k] = held   # a copied cell on the new border is held at the 8 m level like any other
 			elif adapter.classification[k] == Adapter.OPEN_SURFACE:
 				var level: float = float(level_at.call(c.x, c.y))
 
 				if not is_nan(level) and level > grid.bed[k]:
-					grid.volume[k] = (level - grid.bed[k]) * grid.area_m2
-					seeded += grid.volume[k]
+					candidate[k] = level
+
+	var done: Dictionary = {}
+
+	for start_k in candidate:
+		if done.has(start_k):
+			continue
+
+		var piece: Array[int] = [start_k]
+		var real: bool = false
+		done[start_k] = true
+		var head: int = 0
+
+		while head < piece.size():
+			var k: int = piece[head]
+			head += 1
+			var i: int = k % w
+			var j: int = floori(k / float(w))
 
 			if i == 0 or j == 0 or i == w - 1 or j == h - 1:
-				var held: float = float(level_at.call(c.x, c.y))
+				real = true
 
-				if not is_nan(held) and held > grid.bed[k] and adapter.classification[k] == Adapter.OPEN_SURFACE:
-					grid.fixed[k] = held
+			for n in [k - 1 if i > 0 else -1, k + 1 if i < w - 1 else -1, k - w if j > 0 else -1, k + w if j < h - 1 else -1]:
+				if n < 0:
+					continue
+
+				if wet_copy.has(n):
+					real = true
+				elif candidate.has(n) and not done.has(n):
+					done[n] = true
+					piece.append(n)
+
+		if not real and piece.size() < MIN_POOL_CELLS:
+			dry_pieces += 1
+			continue
+
+		for k in piece:
+			grid.volume[k] = (float(candidate[k]) - grid.bed[k]) * grid.area_m2
+			seeded += grid.volume[k]
+			var i: int = k % w
+			var j: int = floori(k / float(w))
+
+			if i == 0 or j == 0 or i == w - 1 or j == h - 1:
+				grid.fixed[k] = float(candidate[k])
 
 	grid.start_m3 = grid.total_volume()
 	last_copied_m3 = copied
