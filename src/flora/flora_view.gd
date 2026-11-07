@@ -3082,7 +3082,9 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 	if shape == "grass" or shape == "reed":
 		return Color(1.0, 1.0, 1.0).lerp(_natural(base) * 2.2, 0.3)
 
-	if shape == "flower":
+	# The 26 meadow wildflowers (model "wildflower", shape "shrub": dandelion, yarrow, chamomile ...) take the same leaf green. Their shrub tint, the desaturated
+	# table colour times 1.5, made the basal clumps a pale grey-olive beside the meadow grass (Dino's #490 close-ups, 7 Nov; real dandelion and yarrow leaves are a clear mid green).
+	if shape == "flower" or str(entry.get("model", "")) == "wildflower":
 		# The flower table's colour is the BLOOM colour (owlpetal pale blue, frostglass white, sea holly blue), but this tint lands on the leaves only (the heads carry
 		# their own petal colour, tree_builder.gd WILDFLOWER_LOOKS), so pale-flowered plants grew grey-white leaf clumps (Kathreen 3 Nov 2026). Leaves are a natural
 		# green with a quarter of the species colour, so a dark fantasy flower still has darker foliage. A row can name "leaf_color" to choose its own.
