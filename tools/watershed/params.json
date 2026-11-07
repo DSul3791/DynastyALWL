@@ -14,7 +14,10 @@
 		"smooth_m": 1200.0,
 		"ref_height_m": 900.0,
 		"power": 1.0,
-		"coast_floor": 0.05
+		"coast_floor": 0.05,
+		"calibration_offset_m": 100.0,
+		"calibration_clip": [0.33, 3.0],
+		"_calibration_note": "Sonny 7 Nov, after run c3b1b846 (35 degree slope limit): the summit fell to 835 m (landform 1,459 m) while the mean land rose to 190 m (landform 155 m). The massif centres were cut about 400 m and their flanks rose, because the uplift is flat-topped (clipped at ref_height_m) and broad, and the eroded island's heights follow drainage distance, not the landform's peaks. One scalar cannot fix both, so evolve.py --calibrate=PREV_RUN_DIR scales the uplift by (landform + offset) / (previous result + offset), both smoothed at smooth_m (massif scale only; no hill-scale pattern). Relief scales with U at steady state, so one pass should bring both the summit and the mean near the landform. The summary's massif_scale_height_mismatch_m says how close it is."
 	},
 	"rain": {
 		"_note": "Stage A4: Smith and Barstad (2004) linear orographic rain on a coarse grid, smoothed up to the model grid; wind direction per tile row from the landform manifest (climate.wind_toward_x). The linear theory gives the rate WHILE moist air is lifted, not an annual total. Annual rain = max(background + storm_share x orographic rate, min_share x background): all background rain is taken to fall in the moist onshore spells, and lee slopes keep at least min_share of it from other weather. storm_share is calibrated once against a real maritime peak (calibration_peak): the first R1 run (storm rate used all year) peaked at 13,300 mm/yr on the middle massif's west flank; 0.25 brings that peak to about 4,100 mm/yr. It is a climate property (share of the year with moist onshore flow), so it stays fixed if the landform changes.",

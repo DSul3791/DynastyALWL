@@ -1,7 +1,9 @@
 """Stage B of the watershed rebuild (docs/water/watershed_rebuild_design.md): landscape evolution that makes the final ground.
 
 Usage (on Dave's PC, never in the cloud):
-  python tools/watershed/evolve.py INPUTS_DIR GEOLOGY_DIR OUT_DIR [params.json]
+  python tools/watershed/evolve.py INPUTS_DIR GEOLOGY_DIR OUT_DIR [params.json] [--calibrate=PREV_RUN_DIR]
+--calibrate: the uplift is calibrated from a previous run's result so the eroded island keeps the landform's heights at the
+scale of the massifs (see calibrated_uplift).
 
 Starts from the landform (stage A1) and runs, per time step:
   1. routing: priority flood and steepest descent on the filled surface (tools/erosion_precarve/lem.py route, reused);
@@ -283,13 +285,39 @@ def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch,
     return change, flux
 
 
+def calibrated_uplift(U, start, prev_dir, sea, dx, P):
+    """Uplift calibrated from a previous run (stage A2's one free choice, design B1). The real uplift of the island is
+    unknown; the landform says how high its massifs should stand. At steady state the height of the ground scales with the
+    uplift (relief about U/K), so the uplift is multiplied by the ratio of the landform to the previous result, both smoothed
+    at the uplift's own scale (uplift.smooth_m, so no hill-scale pattern enters, R1's rule) and both offset by
+    calibration_offset_m so the low coast does not give wild ratios. The valleys, ridges and slopes still come only from
+    the erosion. One pass is expected to be enough; the summary reports how far the result still is from the landform."""
+    from scipy.ndimage import gaussian_filter
+    u = P['uplift']
+    prev = np.load(f'{prev_dir}/ground.npz')
+    U_prev = prev['uplift'].astype(np.float64).ravel() if 'uplift' in prev.files else U
+    g_prev = prev['ground'].astype(np.float64)
+    if g_prev.shape != start.shape:
+        raise SystemExit('evolve: the run to calibrate from is on another grid')
+    s = u['smooth_m'] / dx
+    off = float(u['calibration_offset_m'])
+    want = gaussian_filter(np.maximum(start, 0.0), s)
+    got = gaussian_filter(np.maximum(g_prev, 0.0), s)
+    lo, hi = u['calibration_clip']
+    f = np.clip((want + off) / (got + off), lo, hi).ravel()
+    f[sea == 1] = 0.0
+    return U_prev * f, f, sha(f'{prev_dir}/ground.npz')
+
+
 def sha(path):
     return hashlib.sha256(open(path, 'rb').read()).hexdigest()
 
 
 def main():
-    inputs_dir, geology_dir, out_dir = sys.argv[1], sys.argv[2], sys.argv[3]
-    P = json.load(open(sys.argv[4] if len(sys.argv) > 4 else os.path.join(HERE, 'params.json')))
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    opts = dict(a[2:].split('=', 1) for a in sys.argv[1:] if a.startswith('--') and '=' in a)
+    inputs_dir, geology_dir, out_dir = args[0], args[1], args[2]
+    P = json.load(open(args[3] if len(args) > 3 else os.path.join(HERE, 'params.json')))
     E = P['evolve']
     os.makedirs(out_dir, exist_ok=True)
     data = np.load(f'{inputs_dir}/inputs.npz')
@@ -299,6 +327,13 @@ def main():
     cell = dx * dx
     sea = data['sea'].ravel().astype(np.uint8)
     U = data['uplift'].astype(np.float64).ravel()
+    calib = None
+    if 'calibrate' in opts:
+        U, factor, prev_sha = calibrated_uplift(U, start, opts['calibrate'], sea, dx, P)
+        calib = dict(from_dir=opts['calibrate'], from_ground_sha256=prev_sha,
+                     factor_land_min=float(factor[sea == 0].min()), factor_land_mean=float(factor[sea == 0].mean()),
+                     factor_land_max=float(factor[sea == 0].max()), uplift_max_m_per_kyr=float(U.max()) * 1e3)
+        print(f'calibrated uplift from {opts["calibrate"]}: factor {calib["factor_land_min"]:.2f} to {calib["factor_land_max"]:.2f}', flush=True)
     rain_mm = data['rain'].astype(np.float64).ravel()
     W = P['water_budget']
     q_ref = runoff.reference_quick_mm(P['rain']['background_mm_yr'], W)
@@ -354,7 +389,7 @@ def main():
                         recharge_mm=wb['recharge'].reshape(n, n).astype(np.float32),
                         receiver=rec.reshape(n, n).astype(np.int32), pit_m=(filled - h).reshape(n, n).astype(np.float32),
                         sediment_m=deposit.reshape(n, n).astype(np.float32), sea=sea.reshape(n, n).astype(bool),
-                        sediment_flux_m3_yr=flux.reshape(n, n).astype(np.float32),
+                        sediment_flux_m3_yr=flux.reshape(n, n).astype(np.float32), uplift=U.reshape(n, n).astype(np.float32),
                         cell_m=dx, origin_x=float(data['origin_x']), origin_z=float(data['origin_z']))
     land = sea.reshape(n, n) == 0
     gy, gx = np.gradient(hh, dx)
@@ -392,7 +427,13 @@ def main():
     # means uplift and erosion balance (a mature landscape); a rise near the uplift rate means erosion never reached the tops.
     k = max(len(track) // 10, 1)
     span_kyr = k * E['dt'] / 1e3
+    from scipy.ndimage import gaussian_filter
+    sm = P['uplift']['smooth_m'] / dx
+    mismatch = (gaussian_filter(np.maximum(hh, 0.0), sm) - gaussian_filter(np.maximum(start, 0.0), sm))[land]
     summary = dict(seconds=time.time() - t0, steps=steps, summit_m=float(hh.max()), landform_summit_m=float(start.max()),
+                   uplift_calibration=calib,
+                   massif_scale_height_mismatch_m=dict(mean=float(mismatch.mean()), p5=float(np.percentile(mismatch, 5)),
+                                                       p95=float(np.percentile(mismatch, 95))),
                    last_tenth_summit_change_m_per_kyr=(track[-1][1] - track[-1 - k][1]) / span_kyr if len(track) > k else None,
                    last_tenth_mean_land_change_m_per_kyr=(track[-1][2] - track[-1 - k][2]) / span_kyr if len(track) > k else None,
                    uplift_max_m_per_kyr=float(U.max()) * 1e3, mean_land_m=float(hh[land].mean()), landform_mean_land_m=float(start[land].mean()),
