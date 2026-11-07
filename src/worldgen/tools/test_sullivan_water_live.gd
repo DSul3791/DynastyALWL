@@ -112,5 +112,19 @@ func _init() -> void:
 	_check(far_d > 0.2, "river water ran up the ditch past the old tile edge (%.2f m deep at z -19)" % far_d)
 	_check(absf(grid.ledger_residual()) < 1.0e-6 * maxf(grid.total_volume(), 1.0), "joined region ledger balances (%s)" % String.num_scientific(grid.ledger_residual()))
 
+	# Sleep and wake (guide 26.2): a dig far away needs all 4 tiles (its reach crosses a tile corner), so the ditch's region sleeps with
+	# all its water; a dig back in the ditch wakes it, and the new grid starts from exactly that water.
+	var kept_m3: float = grid.total_volume()
+	ground.digs.append([Vector3(288.0, 1.0, 288.0), 1.5])
+	live.dig(Vector3(288.0, 1.0, 288.0), 1.5, false)
+	live.update(0.0, level_at)
+	_check(live.windows.size() == 1 and live.sleeping.size() == 1 and live.sleeping[0]["grid"].total_volume() == kept_m3, "the ditch region sleeps with all %.3f m3 when the far dig needs the tiles" % kept_m3)
+
+	ground.digs.append([Vector3(100.0, 1.0, 30.0), 1.5])
+	live.dig(Vector3(100.0, 1.0, 30.0), 1.5, false)
+	live.update(0.0, level_at)
+	_check(live.sleeping.size() == 1 and live.windows.size() == 1 and live.windows[0]["tiles"].get_area() == 2, "a dig in the ditch wakes its region (the far one sleeps instead)")
+	_check(live.last_copied_m3 == kept_m3 and live.closed_m3 == 0.0, "woken with exactly the water it slept with (%.6f of %.6f m3), none dropped" % [live.last_copied_m3, kept_m3])
+
 	print("%d failures" % failures)
 	quit(1 if failures > 0 else 0)
