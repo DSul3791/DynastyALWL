@@ -1176,6 +1176,18 @@ func _top_up(players: Array, only: int) -> void:
 					_herds[hid].append(id)
 
 
+var _lair_seen: int = -1
+var _lair_why: Dictionary = {}
+
+
+func _lair_note(m: Vector2, why: String) -> void:   # TEST BRANCH LOG: one line per mouth when its reason changes
+	var key: String = "%d,%d" % [int(m.x), int(m.y)]
+
+	if str(_lair_why.get(key, "")) != why.get_slice(" ", 0):
+		_lair_why[key] = why.get_slice(" ", 0)
+		print("goblin lair: mouth %s %s" % [key, why])
+
+
 # Lair species (goblins, Dave 7 Nov 2026): a group of lair.group[0]..group[1] lives at a cave mouth near a player, beside a river (caves are
 # only at river starts), and never in a cave that already has a bear in or near it (lair.avoid within lair.avoid_m). They are made whatever the
 # hour: by day they bed down at the mouth (their "active" row, resting()), at night they range round it (den.range_m). Each mouth holds one
@@ -1190,10 +1202,17 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 	var range_m: float = float(lair.get("range_m", 200.0))
 	var never: float = float(cfg.get("never_within_m", 60.0))
 
-	for mouth in lair_mouths.call(p.x, p.z):
+	var seen_mouths: Array = lair_mouths.call(p.x, p.z)
+
+	if seen_mouths.size() != _lair_seen:   # TEST BRANCH LOG: only when the number of mouths in the player's tile changes
+		_lair_seen = seen_mouths.size()
+		print("goblin lair: %d cave mouths in the player's tile %s" % [_lair_seen, str(seen_mouths)])
+
+	for mouth in seen_mouths:
 		var m: Vector2 = mouth
 
 		if Vector2(p.x - m.x, p.z - m.y).length() > range_m:
+			_lair_note(m, "player %.0f m away (range %.0f)" % [Vector2(p.x - m.x, p.z - m.y).length(), range_m])
 			continue
 
 		var taken: bool = false
@@ -1208,8 +1227,10 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 			taken = taken or ((lair.get("avoid", []) as Array).has(other["sp"]) and d <= float(lair.get("avoid_m", 120.0)))
 
 		if taken or (blocked.is_valid() and bool(blocked.call(m.x, m.y))) or crosses_wall(m.x, m.y, m.x, m.y):
+			_lair_note(m, "skipped: taken (player within %.0f m, a goblin group or a bear near)=%s, deep water=%s" % [never, str(taken), str(blocked.is_valid() and bool(blocked.call(m.x, m.y)))])
 			continue
 
+		_lair_note(m, "SPAWNING a group")
 		var members: int = clampi(rng.randi_range(int(group[0]), int(group[1])), 1, maxi(int(cfg.get("per_player_cap", 30)) - animals.size(), 1))   # luck-exempt: how many goblins in a group
 		var hid: int = _next_herd
 		_next_herd += 1
