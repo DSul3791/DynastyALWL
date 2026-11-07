@@ -309,6 +309,7 @@ var _scan_now: int = 0
 # first while the ground loads (a coarse level has no cave mouths and fills a narrow gully), and the pebbles, litter and grass laid on it then hung in the
 # air once the fine ground arrived, because a cell was only built again when the player came nearer or someone dug. Each new cell keeps a few of its
 # ground hits and casts them again a little later (CHECK_TIMES); where the ground has moved the cell is built again from the new ground.
+const ROOF_CHECK_M := 14.0                # rock or a roof this close above a cell's ground means it is a cave or a room: no grass or litter there
 const CHECK_PROBES := 5                  # ground hits kept per cell
 const CHECK_TIMES := [1500, 3000, 6000, 12000, 24000, 48000]   # ms after the build (and after each check) that the hits are cast again
 const CHECK_MOVE_M := 0.35               # a hit this far from its old height means the ground under the cell changed
@@ -1691,6 +1692,29 @@ func _build(cell: Vector2i) -> int:
 				missed += 1
 
 	Probe.stop("grass build: rays", t_rays)
+
+	# Under a roof, no grass and no litter (Dave 7 Nov 2026, "leaves floating in the air" in a cave): the rays start 80 m above the player, which in a
+	# hill over a deep cave is inside the rock, and a ray from inside rock passes through its back faces and lands on the cave floor, so grass and forest
+	# litter were laid in caves, and where the floor under them was later refined they hung in the air. One ray up from a ground hit of the cell: rock or
+	# a building roof within ROOF_CHECK_M above it means the cell is covered and gets nothing (a tree's collision does not count).
+	var middle: int = (pps * pps) >> 1
+
+	for probe in range(pps * pps):
+		var at: int = (middle + probe) % (pps * pps)
+		var probe_hit: Dictionary = hits[at][2]
+
+		if probe_hit.is_empty():
+			continue
+
+		var floor_at: Vector3 = probe_hit["position"]
+		var roof: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(floor_at + Vector3(0.0, 0.3, 0.0), floor_at + Vector3(0.0, ROOF_CHECK_M, 0.0)))
+
+		if not roof.is_empty() and not (roof["collider"] as Object).has_meta("species_ids"):
+			for k in hits.size():
+				hits[k][2] = {}
+
+		break
+
 	var t_points: int = Probe.start()
 	var shore_us: int = 0
 	var litter_us: int = 0
