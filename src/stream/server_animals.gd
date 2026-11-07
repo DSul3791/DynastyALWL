@@ -40,6 +40,7 @@ var ticks_run: int = 0
 var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
 var flocks = null                  # bird flocks on water (server_flocks.gd)
 var water_level: Callable          # (x, z) -> water surface height, NAN on dry land (flocks float on it)
+var fresh_water_m: Callable        # (x, z) -> distance (m) to perennial fresh water from the baked tile (Stage E), NAN when the tile has none
 var thieves = null                 # opportunists (fox; server_thieves.gd): smell loose food, creep up, take it and run
 var drop_loot: Callable            # (item number, count, position) when a thief is killed carrying food
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
@@ -1343,7 +1344,7 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 
 	var near: float = float(hab.get("near_fresh_water_m", 0.0))
 
-	if near > 0.0 and water_level.is_valid() and not _water_near(x, z, near, false):
+	if near > 0.0 and not _fresh_near(x, z, near):
 		return -1.0   # a frog lives by a stream, pond or lake, never deep in a dry wood or on a sea shore
 
 	var sea: float = float(hab.get("near_ocean_m", 0.0))
@@ -1359,6 +1360,18 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 
 # Whether water lies within radius of a spot: the spot itself, then eight directions at half and full radius. ocean false: fresh
 # water (a water surface that is not on ocean ground). ocean true: ocean ground.
+# Whether perennial fresh water (a river or lake) is within `radius`. The baked distance (the water as the bake made it, the same for every
+# server run) when the tile has it; otherwise the live water probe, which also sees ditches and puddles and nothing before the sim settles.
+func _fresh_near(x: float, z: float, radius: float) -> bool:
+	if fresh_water_m.is_valid():
+		var d: float = float(fresh_water_m.call(x, z))
+
+		if not is_nan(d):
+			return d <= radius
+
+	return not water_level.is_valid() or _water_near(x, z, radius, false)   # no water source at all (a test without water): no rule, as before
+
+
 func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
 	for ring in [0.0, radius * 0.5, radius]:
 		for i in (1 if ring == 0.0 else 8):
