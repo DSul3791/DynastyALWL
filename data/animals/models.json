@@ -1,5 +1,5 @@
 {
-	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover. Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half.",
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover. Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface.",
 	"species": {
 		"bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -36,7 +36,56 @@
 					"albedo": "res://assets/animals/bear/Textures/T_Bear_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/BrownBear"
+			"pack": "WildMesh3D/Realistic Animals/BrownBear",
+			"variants": [
+				{
+					"scene": "res://assets/animals/bear/SK_Bear.fbx",
+					"materials": [
+						{
+							"match": "Teeth",
+							"albedo": "res://assets/animals/bear/Textures/T_Bear_Teeth.png",
+							"roughness": 0.4
+						},
+						{
+							"match": "Head",
+							"albedo": "res://assets/animals/bear/Textures/T_Bear_Head.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/bear/Textures/T_Bear_Body.png"
+						}
+					],
+					"clips": {
+						"0": "Idle",
+						"1": "Walk",
+						"3": "IdleHind_Idle_01",
+						"10": "IdleAngry_Breathing_01",
+						"11": "Sprint",
+						"12": "Idle_Breathing_01",
+						"walk": "Walk",
+						"run": "Run"
+					}
+				},
+				{
+					"scene": "res://assets/animals/bear_2/SK_Bear.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Bear",
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/bear_2/Textures/T_Bear_Body.png"
+						}
+					],
+					"clips": {
+						"0": "Idle",
+						"3": "Idle_Breathing_01",
+						"10": "Attack_StandAngry_01_Low",
+						"11": "Sprint",
+						"12": "Idle_Breathing_01",
+						"walk": "Walk",
+						"run": "Run"
+					}
+				}
+			]
 		},
 		"goblin": {
 			"scene": "res://assets/creatures/goblin_skritch/Goblin_Skritch_Ragtooth.glb",
@@ -104,7 +153,7 @@
 				"walk": "WalkMedium_F",
 				"run": "RunFast_F"
 			},
-			"note": "WildMesh Deer (Realistic Animals/Deer/SK_Deer.fbx, textures in its Textures folder). 113 clips. Alert stands breathing, head up.",
+			"note": "WildMesh Deer (Realistic Animals/Deer/SK_Deer.fbx, textures in its Textures folder). 113 clips. Alert stands breathing, head up. Seven looks picked by id (variants): four stags (deer, buck, red deer, second-rig stag) and three hinds (doe, doe second rig, hind), each with its own clips. Checked 7 Nov 2026.",
 			"length_m": 2.0,
 			"materials": [
 				{
@@ -116,7 +165,178 @@
 					"albedo": "res://assets/animals/deer/Textures/T_Deer_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Deer"
+			"pack": "WildMesh3D/Realistic Animals/Deer",
+			"variants": [
+				{
+					"scene": "res://assets/animals/deer/SK_Deer.fbx",
+					"materials": [
+						{
+							"match": "Antler",
+							"albedo": "res://assets/animals/deer/Textures/T_Deer_Antler.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/deer/Textures/T_Deer_Body.png"
+						}
+					],
+					"clips": {
+						"0": "GrazingOnSpotB_1",
+						"3": "Idle_Breathing",
+						"12": "Idle",
+						"walk": "WalkMedium_F",
+						"run": "RunFast_F"
+					}
+				},
+				{
+					"scene": "res://assets/animals/deer_buck/SK_Buck.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Buck",
+					"materials": [
+						{
+							"match": "Antler",
+							"albedo": "res://assets/animals/deer_buck/Textures/T_Buck_Antler.png"
+						},
+						{
+							"match": "Eye",
+							"albedo": "res://assets/animals/deer_buck/Textures/T_Buck_Eye.png"
+						},
+						{
+							"match": "Head",
+							"albedo": "res://assets/animals/deer_buck/Textures/T_Buck_Head.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/deer_buck/Textures/T_Buck_Body.png"
+						}
+					],
+					"clips": {
+						"0": "Idle",
+						"3": "Idle_Breathing_01",
+						"12": "Idle_Breathing_01",
+						"walk": [
+							"Walk_2",
+							"Walk"
+						],
+						"run": "Run"
+					},
+					"note": "Buck (stag)"
+				},
+				{
+					"scene": "res://assets/animals/deer_red_stag/SK_RedDeerMale.fbx",
+					"pack": "WildMesh3D/Realistic Animals/RedDeerMale",
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/deer_red_stag/Textures/T_RedDeerMale.png"
+						}
+					],
+					"clips": {
+						"0": "Idle_Eating",
+						"3": "Idle_2",
+						"12": "Idle_3",
+						"walk": "Walk",
+						"run": "Run"
+					},
+					"size_clip": "Idle",
+					"note": "Red deer stag"
+				},
+				{
+					"scene": "res://assets/animals/deer_doe/SK_Doe.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Doe",
+					"materials": [
+						{
+							"match": "Eye",
+							"albedo": "res://assets/animals/deer_doe/Textures/T_Doe_Eye.png"
+						},
+						{
+							"match": "Head",
+							"albedo": "res://assets/animals/deer_doe/Textures/T_Doe_Head.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/deer_doe/Textures/T_Doe_Body.png"
+						}
+					],
+					"clips": {
+						"0": "Idle",
+						"3": "Idle_Breathing_01",
+						"12": "Idle_Breathing_01",
+						"walk": [
+							"Walk_2",
+							"Walk"
+						],
+						"run": "Run"
+					},
+					"length_m": 1.8,
+					"note": "Doe"
+				},
+				{
+					"scene": "res://assets/animals/deer_doe_1/SK_Doe_1.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Doe_1",
+					"materials": [
+						{
+							"match": "Fur",
+							"albedo": "res://assets/animals/deer_doe_1/Textures/T_Doe_1_Fur.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/deer_doe_1/Textures/T_Doe_1_Body.png",
+							"opaque": true
+						}
+					],
+					"clips": {
+						"0": "grazing",
+						"3": "alerted",
+						"12": "idle",
+						"walk": "walk",
+						"run": "run"
+					},
+					"length_m": 1.8,
+					"note": "Hind (second rig): body texture alpha is not a cut-out (opaque)"
+				},
+				{
+					"scene": "res://assets/animals/deer_female/SK_FemaleDeer.fbx",
+					"pack": "WildMesh3D/Realistic Animals/FemaleDeer",
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/deer_female/Textures/T_FemaleDeer.png"
+						}
+					],
+					"clips": {
+						"0": "Idle_Eating_01",
+						"3": "Idle_Breathing_01",
+						"12": "Idle",
+						"walk": "Walk",
+						"run": "Run"
+					},
+					"size_clip": "Idle",
+					"length_m": 1.8,
+					"note": "Hind"
+				},
+				{
+					"scene": "res://assets/animals/deer_1/SK_Deer_1.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Deer_1",
+					"materials": [
+						{
+							"match": "Fur",
+							"albedo": "res://assets/animals/deer_1/Textures/T_Deer_1_Fur.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/deer_1/Textures/T_Deer_1_Body.png",
+							"opaque": true
+						}
+					],
+					"clips": {
+						"0": "grazing",
+						"3": "alerted",
+						"12": "idle",
+						"walk": "walk",
+						"run": "run"
+					},
+					"note": "Stag (second rig): body texture alpha is not a cut-out (opaque)"
+				}
+			]
 		},
 		"moose": {
 			"scene": "res://assets/animals/moose/SK_Moose.fbx",
@@ -174,7 +394,55 @@
 					"albedo": "res://assets/animals/boar/Textures/T_WildBoar_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/WildBoar"
+			"pack": "WildMesh3D/Realistic Animals/WildBoar",
+			"variants": [
+				{
+					"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
+					"materials": [
+						{
+							"match": "Tusk",
+							"albedo": "res://assets/animals/boar/Textures/T_WildBoar_Tusk.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/boar/Textures/T_WildBoar_Body.png"
+						}
+					],
+					"clips": {
+						"0": "idle_eat_grazing_01",
+						"3": "idle_alerted_bark_01",
+						"10": "idle_bark_01",
+						"12": "Idle",
+						"walk": "walk_fwd_01",
+						"run": "run_fwd_01"
+					}
+				},
+				{
+					"scene": "res://assets/animals/boar_2/SK_Boar.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Boar",
+					"materials": [
+						{
+							"match": "Lower",
+							"albedo": "res://assets/animals/boar_2/Textures/T_Boar_Lower.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/boar_2/Textures/T_Boar_Body.png"
+						}
+					],
+					"clips": {
+						"0": "GrazingOnSpotA_1",
+						"3": "Idle_Breathing",
+						"10": "Idle_Breathing",
+						"12": "Idle",
+						"walk": [
+							"WalkMedium_F",
+							"GrazingWalkMedium_F"
+						],
+						"run": "RunFast_F"
+					}
+				}
+			]
 		},
 		"wolf": {
 			"scene": "res://assets/animals/wolf/SK_Wolf.fbx",
@@ -198,7 +466,42 @@
 					"albedo": "res://assets/animals/wolf/Textures/T_Wolf.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Wolf"
+			"pack": "WildMesh3D/Realistic Animals/Wolf",
+			"variants": [
+				{
+					"scene": "res://assets/animals/wolf/SK_Wolf.fbx",
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/wolf/Textures/T_Wolf.png"
+						}
+					],
+					"clips": {
+						"0": "Idle_Breathing",
+						"3": "Idle_Breathing",
+						"12": "Idle_Breathing",
+						"walk": "WalkMedium_F",
+						"run": "RunFast_F"
+					}
+				},
+				{
+					"scene": "res://assets/animals/wolf_1/SK_Wolf 1.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Wolf_1",
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/wolf_1/Textures/T_Wolf_Body 1.png"
+						}
+					],
+					"clips": {
+						"0": "Idle_Eating",
+						"3": "Idle_2",
+						"12": "Idle_3",
+						"walk": "Walk",
+						"run": "Run"
+					}
+				}
+			]
 		},
 		"fox": {
 			"scene": "res://assets/animals/fox/SK_Fox.fbx",
@@ -226,7 +529,46 @@
 					"albedo": "res://assets/animals/fox/Textures/T_Fox_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Fox"
+			"pack": "WildMesh3D/Realistic Animals/Fox",
+			"variants": [
+				{
+					"scene": "res://assets/animals/fox/SK_Fox.fbx",
+					"materials": [
+						{
+							"match": "Fur",
+							"albedo": "res://assets/animals/fox/Textures/T_Fox_Fur.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/fox/Textures/T_Fox_Body.png"
+						}
+					],
+					"clips": {
+						"0": "GrazingOnSpotA_1",
+						"3": "Idle",
+						"12": "Idle",
+						"walk": "WalkMedium_F",
+						"run": "RunFast_F"
+					}
+				},
+				{
+					"scene": "res://assets/animals/fox_1/SK_Fox 1.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Fox_1",
+					"materials": [
+						{
+							"match": "",
+							"albedo": "res://assets/animals/fox_1/Textures/T_Fox_Body 1.png"
+						}
+					],
+					"clips": {
+						"0": "Idle_2",
+						"3": "Idle",
+						"12": "Idle_3",
+						"walk": "Walk",
+						"run": "Run"
+					}
+				}
+			]
 		},
 		"rabbit": {
 			"scene": "res://assets/animals/rabbit/SK_Rabbit.fbx",
@@ -331,7 +673,66 @@
 					"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Donkey_1"
+			"pack": "WildMesh3D/Realistic Animals/Donkey_1",
+			"variants": [
+				{
+					"scene": "res://assets/animals/donkey/SK_Donkey.fbx",
+					"materials": [
+						{
+							"match": "Saddle",
+							"hide": true
+						},
+						{
+							"match": "Eye",
+							"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Eye.png",
+							"roughness": 0.2
+						},
+						{
+							"match": "Fur",
+							"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Fur.png"
+						},
+						{
+							"match": "Head",
+							"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Head.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/donkey/Textures/T_Donkey_Body.png"
+						}
+					],
+					"clips": {
+						"0": "Idle_02",
+						"3": "Idle",
+						"10": "Idle_03",
+						"12": "Idle",
+						"walk": "G0_Walk",
+						"run": "G3_Gallop"
+					}
+				},
+				{
+					"scene": "res://assets/animals/donkey_2/SK_Donkey.fbx",
+					"pack": "WildMesh3D/Realistic Animals/Donkey",
+					"materials": [
+						{
+							"match": "Hair",
+							"albedo": "res://assets/animals/donkey_2/Textures/T_Donkey_1_Hair.png"
+						},
+						{
+							"match": "",
+							"albedo": "res://assets/animals/donkey_2/Textures/T_Donkey_1_Body.png"
+						}
+					],
+					"clips": {
+						"0": "grazing",
+						"3": "idle",
+						"10": "call",
+						"12": "idle",
+						"walk": "walk",
+						"run": "run"
+					},
+					"note": "Dark donkey (Realistic Animals/Donkey): its own clips."
+				}
+			]
 		},
 		"lynx": {
 			"scene": "res://assets/animals/lynx/SK_Lynx.fbx",
@@ -890,6 +1291,99 @@
 				{
 					"match": "",
 					"albedo": "res://assets/animals/buffalo/Textures/T_Buffalo_Body.png"
+				}
+			]
+		},
+		"duck": {
+			"scene": "res://assets/animals/duck/SK_Duck.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Duck",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.4,
+			"run_mps": 3.0,
+			"stride_m": 0.2,
+			"clips": {
+				"0": "SwimSteady_1",
+				"3": "Idle_Breathing",
+				"15": "FlyFlapping",
+				"walk": "SwimMoveMedium",
+				"run": "SwimMoveFast"
+			},
+			"note": "WildMesh Duck (Realistic Animals/Duck/SK_Duck.fbx). One wire record is a flock: flock_of birds built from the model, spread_m apart, sink_m low in the water (_make_model_flock). Swims, takes off and flies in state 15. sink_m 0.15 puts the paddling legs under the water line (the swim clips stand on the feet).",
+			"length_m": 0.55,
+			"materials": [
+				{
+					"match": "",
+					"albedo": "res://assets/animals/duck/Textures/T_Duck.png"
+				}
+			],
+			"flock_of": [
+				6,
+				13
+			],
+			"spread_m": 3.0,
+			"sink_m": 0.15
+		},
+		"puma": {
+			"scene": "res://assets/animals/puma/SK_Puma.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Puma",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.3,
+			"run_mps": 10.0,
+			"stride_m": 1.0,
+			"clips": {
+				"0": "idle_eat",
+				"3": "idle_alerted_look",
+				"10": "aggressive_roar",
+				"11": "sprint_fwd",
+				"12": "idle pose",
+				"walk": "walk_fwd",
+				"run": "run_fwd"
+			},
+			"note": "WildMesh Puma (Realistic Animals/Puma/SK_Puma.fbx). Imported crouched: sized by its standing 'idle pose' (size_clip); length_m 2.0 is nose to tail tip. Checked 7 Nov 2026.",
+			"length_m": 2.0,
+			"materials": [
+				{
+					"match": "Whisk",
+					"albedo": "res://assets/animals/puma/Textures/T_Puma_Whiskers.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/puma/Textures/T_Puma_Body.png"
+				}
+			],
+			"size_clip": "idle pose"
+		},
+		"pronghorn": {
+			"scene": "res://assets/animals/pronghorn/SK_Pronghorn.fbx",
+			"pack": "WildMesh3D/Realistic Animals/Pronghorn",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 1.4,
+			"run_mps": 12.0,
+			"stride_m": 1.2,
+			"clips": {
+				"0": "Idle",
+				"3": "Idle_Breathing_01",
+				"12": "Idle_Breathing_01",
+				"walk": "Walk_2",
+				"run": "Run"
+			},
+			"note": "WildMesh Pronghorn (Realistic Animals/Pronghorn/SK_Pronghorn.fbx). Same rig as the elk: Idle grazes head down, the real walk is Walk_2. Checked 7 Nov 2026.",
+			"length_m": 1.45,
+			"materials": [
+				{
+					"match": "Teeth",
+					"albedo": "res://assets/animals/pronghorn/Textures/T_Pronghorn_Teeth.png"
+				},
+				{
+					"match": "Head",
+					"albedo": "res://assets/animals/pronghorn/Textures/T_Pronghorn_Head.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/pronghorn/Textures/T_Pronghorn_Body.png"
 				}
 			]
 		},
