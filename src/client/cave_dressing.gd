@@ -340,8 +340,8 @@ static func _tongue(parts: Array, radius: float, height: float, foot: Vector3, t
 	cone.height = height
 	cone.radial_segments = 6
 	cone.rings = 1
-	var basis: Basis = Basis.from_euler(tilt)
-	parts.append([cone, Transform3D(basis, foot + basis * Vector3(0.0, height * 0.5, 0.0)), color])
+	var tilt_basis: Basis = Basis.from_euler(tilt)
+	parts.append([cone, Transform3D(tilt_basis, foot + tilt_basis * Vector3(0.0, height * 0.5, 0.0)), color])
 
 
 static func _fragments(parts: Array, count: int, reach: float) -> void:
