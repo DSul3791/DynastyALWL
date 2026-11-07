@@ -607,6 +607,20 @@
 					"hint": "A muddy hollow, rubbed smooth. Warthogs wallow here."
 				}
 			]
+		},
+		"hyena": {
+			"group": "clawed",
+			"track": "big front paws, smaller hind paws",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Big front paws, small hind ones. Hyenas passed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Chalk-white droppings full of bone. Hyenas feed nearby."
+				}
+			]
 		}
 	}
 }
