@@ -2402,7 +2402,19 @@ func _on_fine_water(keys: PackedStringArray, packets: Array) -> void:
 			sheet.add_to_group("liquid_sheet")
 			sheet.add_to_group("water_draw")
 			flora.add_child(sheet)
-			_fine_sheets[key] = {"sheet": sheet}
+			_fine_sheets[key] = {"sheet": sheet, "shown": 0}
+
+		# The log line for the PC check: on the first picture of a sheet and every 20th after (about every 5 minutes).
+		if int(_fine_sheets[key]["shown"]) % 20 == 0:
+			var wet: int = 0
+
+			for j in range(h):
+				for i in range(w):
+					wet += 1 if im.get_pixel(i, j).a >= 0.05 else 0
+
+			print("Terrain client: 2 m water sheet %s, %d x %d cells at %s, %d wet cells, %d fine sheets" % [key, w, h, str(origin.round()), wet, _fine_sheets.size()])
+
+		_fine_sheets[key]["shown"] = int(_fine_sheets[key]["shown"]) + 1
 
 		var corner: Vector2 = origin - Vector2(0.5, 0.5) * cell_m
 		_fine_sheets[key]["rect"] = Vector4(corner.x, corner.y, float(w) * cell_m, float(h) * cell_m)
