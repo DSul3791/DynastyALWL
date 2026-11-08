@@ -35,7 +35,7 @@ Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the
 - Goblins are about **1.1 m** tall (`base_height_m`). Skritch and Rukz are both sized to this.
 - Every goblin gets its own random height change each time it spawns: up to **0.5 m shorter or 0.5 m taller** (`height_variation_m`), so 0.6 m to 1.6 m.
 - Systemic: scale = (base_height_m + roll) / model_height_m, uniform, from the data in `data/creatures/goblins.json`. No per-goblin hand scales. Same approach as `length_m` for animals.
-- Open: whether the roll is flat or bell-shaped, and whether it is saved with the goblin. Not decided; ask Dave if it matters.
+- The roll is bell-shaped (as built). **Not saved with the goblin (decided by Dave, 8 Nov 2026):** it comes from the animal id, so it is always the same.
 
 ## Behaviour (Dave, 7 Nov 2026)
 - **Groups:** when goblins spawn there are **2 to 5** of them together.
@@ -43,7 +43,7 @@ Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the
 - **Night only:** they come out at night to **forage for berries**, to **sneak around**, and to **steal anything they can that is not protected by light** (campfire, torch or lamp light). By day they stay in the den.
 - **Watchers:** they often sneak to the very edge of a campfire's light, staying in the shadows, and **watch people**.
 - **Skittish:** they keep away from people and light, but **fight if backed into a corner or threatened in their den**.
-- Not decided: how much they can steal and where it goes (hoard in the den?), what a fight does (levels, damage), and whether they drop what they stole when killed. Ask Dave before building those.
+- **Decided by Dave (8 Nov 2026), see "Decisions, 8 Nov 2026" below:** how much they steal, where it goes, and whether they drop it when killed. A fight uses the den and defend numbers in `animals.json` with the animal levels rule.
 - Fits the temperament system (skittish, with a threat range that makes them fight) and the animal levels rule (level set by distance from town, not placement). See `docs/knowledge/animal-behaviour.md`.
 
 ## Built so far (first step, 7 Nov 2026; not yet run in Godot)
@@ -51,7 +51,9 @@ Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the
 - **Height:** the client sizes each goblin by its mesh height to `height_m` 1.1 plus a bell-shaped roll (mean of three even rolls) of up to `height_variation_m` 0.5 either way, seeded from the animal id. One rule, no per-goblin scales.
 - **Spawning (`server_animals.gd` `_top_up_lair`):** a group of 2 to 5 at a spring cave mouth near a player, in the tile the player stands in; one group per mouth; never at a mouth with a bear within 120 m. Made at any hour.
 - **Day and night:** by day they bed down at the mouth (the existing rest rule from their `active` row), at night they range up to 70 m round it. They keep out of fire, torch and lamp light (the existing keep-off rule), stop and watch a player they notice from 60 m (alert), run at 30 m, and fight if cornered or threatened at the den (the bear's defend code, small numbers).
-- **Not built yet:** sleeping inside the cave (the server has no cave floor height, so the den is the mouth); foraging berries; sneaking to the edge of firelight on purpose; stealing; fighting bears (no animal-versus-animal fighting exists); goblin carcass; goblin calls and a footstep sound of their own (the `goblin_step` slot borrows the wolf's).
+- **Den life (8 Nov 2026, `docs/design/goblin_den_life_design.md`; not yet run in Godot):** sleeping inside the cave by day (walking the cave floor path, `goblin_den_paths`), watching from the edge of a fire's light at night, and foraging at berry bushes without stripping them.
+- **Stealing (8 Nov 2026, `docs/design/goblin_stealing_design.md`; not yet run in Godot):** at night a goblin creeps to one small unlit loose thing, takes one piece, carries it to the den pile; killed or bled out, it drops it.
+- **Not built yet:** fighting bears (no animal-versus-animal fighting exists); goblin carcass; goblin calls and a footstep sound of their own (the `goblin_step` slot borrows the wolf's).
 - **To check on the PC:** that the .glb files import (the editor makes their .import files first), which way they face (yaw 180 is a guess), that the height comes out near 1.1 m, the clips play, and that groups appear at a cave mouth at night.
 
 ## The den and respawn (Dave, 7 Nov 2026) - supersedes "at the cave mouth" above
@@ -74,9 +76,19 @@ Design (from Dave's spec above): a goblin den is the dry end of a side branch of
 
 ## Respawn rule (decided by the build, 7 Nov 2026, Dave: "pick a sensible one")
 - A cave mouth that has made a goblin group and then finds it gone (killed, or the player walked far enough that it was dropped) waits `lair.respawn_s` (1800 s, 30 real minutes of server time) before it makes another, then a new group of 2 to 5 comes at the next top-up when a player is within range. A mouth that never made one makes its first at once.
-- It does not respawn while `lair_guarded(x, z)` says patrols or buildings hold the area (the hook is in `server_animals.gd`; nothing answers it yet because no server query for "buildings near a point" exists, so today it is always false). Wire it to the first building-near query that exists.
+- It does not respawn while `lair_guarded(x, z, radius)` finds a burning placed fire (a campfire, hearth or forge; not a torch bearer) within `lair.guard_m` (100 m) of the mouth (Dave 8 Nov 2026, decision 13; `server_items.lit_fire_near`).
 - Change the wait in `data/animals/animals.json` (goblin, lair, respawn_s). Not tested in Godot.
 
 ## Den fire look (7 Nov 2026, after Dave's cave screenshot; not yet run in Godot)
 - Dave saw a light on the floor and no fire: the den fire was a lit stone ring with a bright orange block, no flame. It now has a real look: a ring of stones round a teepee of five charred logs on dull embers, and a **flame** of five cone tongues (a tall yellow-white core and four orange ones leaning out) drawn with a glowing material (`cave_dressing.gd` `goblin_flame`, `flame_material`). Its light flickers (`_process`).
 - Still to improve later: the litter shapes (bones, sticks, thatch), a smoke wisp, a crackle sound, and a real fire structure that goblins treat as their own light.
+
+## Decisions, 8 Nov 2026 (Dave: "I agree to all recommendations")
+- **Stealing:** one small item at a time, only from what no fire, torch or lamp lights.
+- **Stolen things** go into a pile in the band's den, where a player can find them and take them back.
+- **A killed goblin** drops what it is carrying.
+- **Height:** not saved; it comes from the animal id.
+- **Foraging:** goblins eat at berry bushes without stripping them, for now.
+- **Respawn:** no new group while a lit building or a player camp with a fire sits within 100 m of the cave mouth. This is what `lair_guarded` answers once it is wired.
+- **Friendship:** yes, slowly, by gifts left outside the firelight over many nights: that band stops stealing from that player, leaves small gifts back and whistles when a bear or wolves come near. They never enter light or follow anyone. Design: `docs/design/goblin_ally_design.md`.
+- **Build order (coordinator):** den life (`docs/design/goblin_den_life_design.md`), then stealing and the den pile, then friendship.

@@ -78,6 +78,7 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
 var spring_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of each spring cave's mouth (Dave 3 Nov 2026): the settle keeps a spring there even on steep ground
 var goblin_dens: PackedVector3Array = PackedVector3Array()          # the floor point of each goblin den (Dave 7 Nov 2026): a dry side branch of a spring cave, or a dry dead end of a karst cave or lava tube, picked by GOBLIN_DEN_PERCENT of the cave's id
+var goblin_den_paths: Array = []   # per goblin den (parallel to goblin_dens): PackedVector3Array of floor points along the cave skeleton from the mouth node to the den node, the way its goblins walk in and out (docs/design/goblin_den_life_design.md)
 var goblin_den_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of the mouth of each cave that has a goblin den: where its goblin group comes out (server_animals lair_mouths)
 var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
 # Cave dressing (Dave 4 Nov 2026; bake: tile_sites._dress_cave; drawn by Kathreen's client view). Flat lists:
@@ -671,6 +672,7 @@ func _load_caves(list: Array) -> void:
 	cave_dens = PackedVector3Array()
 	goblin_dens = PackedVector3Array()
 	goblin_den_mouths = PackedVector2Array()
+	goblin_den_paths = []
 	cave_bones = PackedFloat32Array()
 	cave_formations = PackedFloat32Array()
 	cave_scatter = PackedFloat32Array()
@@ -707,6 +709,8 @@ func _load_caves(list: Array) -> void:
 
 		var branch_den: Vector3 = Vector3.INF
 		var dry_end: Vector3 = Vector3.INF
+		var branch_node: int = -1
+		var dry_node: int = -1
 
 		for den in cave.get("dens", []):
 			var dn: Array = nodes[int(den["node"])]
@@ -714,8 +718,10 @@ func _load_caves(list: Array) -> void:
 
 			if str(den.get("where", "")) == "branch":
 				branch_den = cave_dens[cave_dens.size() - 1]   # the last dry side branch of a spring cave
+				branch_node = int(den["node"])
 			elif str(den.get("where", "")) == "dead_end":
 				dry_end = cave_dens[cave_dens.size() - 1]      # the last dead end (a karst cave or lava tube has no stream: all of it is dry)
+				dry_node = int(den["node"])
 
 		# A goblin den (Dave 7 Nov 2026): a dry spot deep in an inland cave, in GOBLIN_DEN_PERCENT of them (picked by the cave's id, so the server and
 		# every client agree). A spring cave's den is the end of a dry side branch, never its stream passage; a karst cave or lava tube's is a dead
@@ -728,6 +734,7 @@ func _load_caves(list: Array) -> void:
 		if goblin_spot != Vector3.INF and GOBLIN_DEN_CAVES.has(kind) and not nodes.is_empty() and absi(hash(str(cave.get("id", "")))) % 100 < GOBLIN_DEN_PERCENT:
 			goblin_dens.append(goblin_spot)
 			goblin_den_mouths.append(Vector2(float(nodes[mouth_node][0]), float(nodes[mouth_node][2])))
+			goblin_den_paths.append(cave_floor_path(cave, mouth_node, branch_node if kind == "spring_cave" else dry_node))
 			cave_bones.append_array(PackedFloat32Array([goblin_spot.x, goblin_spot.y, goblin_spot.z, 3.0, 0.0]))
 
 			for k in GOBLIN_LITTER_PILES:
@@ -892,6 +899,51 @@ func cave_scatter_in(cell: Vector2i, cell_m: float) -> PackedInt32Array:
 
 # The stream along a spring cave's floor: its "water" segments run from the mouth (lower) up to a spring (higher); each piece is stored upper end
 # first, so the water runs from the first point to the second. Every spring gets a pool in its chamber.
+# The floor points along a cave's skeleton from one node to another (a breadth-first walk over its segments): each node's floor is its middle
+# line less half its height, the floor the carve leaves (terrain_generator.gd _carve_caves). Empty when the two are not joined. Goblins walk this
+# path between the mouth and their den (docs/design/goblin_den_life_design.md); the skeleton is what is carved at every level (#555), so it is open.
+static func cave_floor_path(cave: Dictionary, from_node: int, to_node: int) -> PackedVector3Array:
+	var nodes: Array = cave.get("nodes", [])
+	var out: PackedVector3Array = PackedVector3Array()
+
+	if from_node < 0 or to_node < 0 or from_node >= nodes.size() or to_node >= nodes.size():
+		return out
+
+	var links: Dictionary = {}
+
+	for segment in cave.get("segments", []):
+		var a: int = int(segment[0])
+		var b: int = int(segment[1])
+		links[a] = (links.get(a, []) as Array) + [b]
+		links[b] = (links.get(b, []) as Array) + [a]
+
+	var came: Dictionary = {from_node: -1}
+	var queue: Array = [from_node]
+
+	while not queue.is_empty() and not came.has(to_node):
+		var at: int = int(queue.pop_front())
+
+		for next in links.get(at, []):
+			if not came.has(int(next)):
+				came[int(next)] = at
+				queue.append(int(next))
+
+	if not came.has(to_node):
+		return out
+
+	var chain: Array = []
+	var step: int = to_node
+
+	while step != -1:
+		chain.push_front(step)
+		step = int(came[step])
+
+	for k in chain:
+		var n: Array = nodes[int(k)]
+		out.append(Vector3(float(n[0]), float(n[1]) - 0.5 * float(n[4]), float(n[2])))
+
+	return out
+
 func _load_cave_stream(cave: Dictionary) -> void:
 	var nodes: Array = cave["nodes"]
 
