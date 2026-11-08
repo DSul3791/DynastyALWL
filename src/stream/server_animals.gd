@@ -37,6 +37,7 @@ var player_stalk: Callable         # () -> Array of hunting skill factors (skill
 var fires: Callable                # () -> Array of Vector3, burning fires and torch bearers (server_items._lit_fires; wolves read the same list)
 var fire_radius: Callable          # (Vector3) -> how far animals keep from that fire (server_items.fire_protect_m: a campfire's tier, 8 m for a torch)
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
+var weather_ahead: Callable        # (hours) -> the weather dictionary that many game hours from now (WeatherScript.state; animals_in_weather_design.md 3)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
 var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
@@ -71,6 +72,10 @@ var _top_idx: int = 0
 var _next_herd: int = 1
 var _wind_s: float = 0.0
 var _wind_dir: Vector2 = Vector2.ZERO
+var _wx: Dictionary = {}           # this tick's weather (animals_in_weather_design.md 3): rain, snow, storm, wind, mist
+var _storm_ahead: bool = false     # a storm (storm 0.5 or more) 12 to 24 game hours ahead: the falling pressure prey feel (lesson 4)
+var _ahead_acc: float = INF        # real seconds since weather_ahead was last sampled
+var _dogs: Array = []              # this tick's companion dogs as a presence for wild animals: [animal id, position, barking] (dog_companion_design.md 11)
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
 var _fire_cache: Array = []       # [Vector3 fire, keep-off metres] this tick (fires, fire_radius)
 var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
@@ -705,6 +710,8 @@ func tick(delta: float) -> void:
 	var weather: Dictionary = wind.call() if wind.is_valid() else {}
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
+	_read_weather(weather, delta)
+	_dogs = _dog_presences()
 	_sample_noise(players, delta)
 	_fire_cache = []
 
@@ -829,7 +836,7 @@ func _spook_m(a: Dictionary, def: Dictionary) -> float:
 		base = run_at
 
 	# Temperament, season and young: a neutral or aggressive animal does not run (0), a mother with young runs sooner.
-	base *= float(_temper_row(a).get("spook_x", 1.0)) * float(_season_row(def).get("spook_x", 1.0))
+	base *= float(_temper_row(a).get("spook_x", 1.0)) * float(_season_row(def).get("spook_x", 1.0)) * weather_spook_x(def)
 
 	if def.has("young") and not _young_of(a).is_empty():
 		base *= float(def["young"].get("spook_x", 1.4))
@@ -936,6 +943,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		_bolt(a, fire_at, def)
 		return
 
+	# A player's dog (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md): prey flee it from farther than from a walking player, big game stands to it.
+	if def.has("dog") and _dog_react(a, def, seen_d):   # at its den too: a bear stands to a dog there
+		return
+
 	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
 	# threat_m (a surprise up close, a chase that catches it, a walk into its den) makes it feel threatened, and it attacks: a short warning,
 	# then the dodgeable charge (server_big_game.gd). A player standing in a fire's or a torch's keep-off radius is left alone, except at
@@ -955,14 +966,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		_bolt(a, seen_p, def)
 
 		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
-		if a["herd"] != 0:
-			var span: Array = def.get("alarm_s", [0.2, 0.9])
+		_alarm_herd(a, def)
 
-			for mate_id in _herds.get(a["herd"], []):
-				if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
-					animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
-
-	var alert_m: float = float(def.get("alert_m", 0.0))
+	var alert_m: float = float(def.get("alert_m", 0.0)) * weather_spook_x(def)
 
 	if a["state"] == ALERT:
 		a["alert"] -= dt
@@ -1001,9 +1007,13 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			a["timer"] = _graze_time(def) * float(cfg.get("rest", {}).get("graze_x", 3.0))   # out of its hours it beds down: stays put, longer
 			return
 
+		if a["timer"] <= 0.0 and _wind_goes_down(a, def):
+			return
+
 		if a["timer"] <= 0.0:
-			var wander: float = float(def.get("wander_m", 6.0))
+			var wander: float = float(def.get("wander_m", 6.0)) * weather_wander_x(def)
 			var angle: float = rng.randf() * TAU   # luck-exempt: where a grazing animal hops next
+			angle = _upwind_angle(def, angle)
 			a["target"] = a["home"] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
 
 			if a.has("den"):
@@ -1048,7 +1058,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if a.get("wound", false) and a["pos"].distance_to(a["last_drop"]) >= float(cfg.get("blood", {}).get("every_m", 2.5)):
 			_drop_blood(a)
 
-	if a["state"] == FLEE and a["to_burrow"] and (r["arrived"] or not r["moved"]):
+	if (a["state"] == FLEE or a["state"] == HOP) and a["to_burrow"] and (r["arrived"] or not r["moved"]):
 		a["to_burrow"] = false
 
 		if r["arrived"]:
@@ -1103,6 +1113,27 @@ func bleed(a: Dictionary, dt: float) -> bool:
 		died.call(a["sp"], a["pos"], a.get("hurt_by", -1))
 
 	return true
+
+
+# Alarm groups (ANIMAL_SPEC.md, 8 Nov 2026): a bolting animal flushes every animal of its alarm_group within alarm_group_m, of any species or
+# herd, each after its own alarm_s moment (a crow taking off sends the pheasants and grouse beside it up too).
+func _alarm_group(a: Dictionary, def: Dictionary) -> void:
+	var group: String = str(def["alarm_group"])
+	var reach: float = float(def.get("alarm_group_m", 15.0))
+
+	for id in animals:
+		var o: Dictionary = animals[id]
+
+		if id == a["id"] or int(o["state"]) == FLEE or int(o["state"]) == HIDDEN or float(o["alarm"]) >= 0.0:
+			continue
+
+		var odef: Dictionary = species_def(str(o["sp"]))
+
+		if str(odef.get("alarm_group", "")) != group or Vector2(o["pos"].x - a["pos"].x, o["pos"].z - a["pos"].z).length() > reach:
+			continue
+
+		var span: Array = odef.get("alarm_s", [0.2, 0.9])
+		o["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a neighbouring bird reacts
 
 
 # The fire whose keep-off radius covers a point (a burning fire or a torch bearer this tick), or Vector3.INF.
@@ -1393,14 +1424,18 @@ static func period_of(hour: float) -> String:
 # The chance (0..1) that a top-up may spawn this species now: the row's "active" value for the current period, 1 without a clock or a row.
 func activity_chance(def: Dictionary) -> float:
 	if not def.has("active") or not hour_now.is_valid():
-		return 1.0
+		return clampf(weather_activity_x(def), 0.0, 1.0)
 
-	return clampf(float((def["active"] as Dictionary).get(period_of(float(hour_now.call())), 1.0)), 0.0, 1.0)
+	return clampf(float((def["active"] as Dictionary).get(period_of(float(hour_now.call())), 1.0)) * weather_activity_x(def), 0.0, 1.0)
 
 
 # Resting (MikeW 2026-11-02, Dave's behaviour list): outside its active hours (its "active" chance for the period at or under rest.below)
 # an animal beds down where it is: it does not wander, and a player gets closer (rest.spook_share of spook_m) before it wakes and runs.
+# Before a storm (animals_in_weather_design.md 8) feeding animals skip their daytime rest.
 func resting(def: Dictionary) -> bool:
+	if _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_of(float(hour_now.call())) == "day":
+		return false
+
 	return def.has("active") and hour_now.is_valid() and activity_chance(def) <= float(cfg.get("rest", {}).get("below", 0.1))
 
 
@@ -1549,6 +1584,8 @@ func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
+# An animal warning at, charging or recovering from a dog (states 10 to 12 with foe_dog, dog_companion_design.md 11) adds a sixth field:
+# the dog's position, so the client looks at the dog and not the player (MikeW, 8 Nov 2026). Rows without it are unchanged.
 func rows_near(point: Vector3) -> Array:
 	var radius: float = float(cfg.get("send_radius_m", 120.0))
 	var found: Array = []
@@ -1558,7 +1595,12 @@ func rows_near(point: Vector3) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			found.append([d, [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), a["state"]]])
+			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), a["state"]]
+
+			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
+				row.append(animals[int(a["foe_dog"])]["pos"])
+
+			found.append([d, row])
 
 	found.sort_custom(func(l, r): return l[0] < r[0])
 	var rows: Array = []
@@ -1676,7 +1718,7 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 	if _wind_s > 0.0 and d > 0.01:
 		var to_animal: Vector2 = Vector2(a["pos"].x - p.x, a["pos"].z - p.z) / d
-		f = maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)
+		f *= maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)   # times the bed's, never in place of it
 
 	if stance == 1:
 		f *= float(sen.get("crouch_factor", 0.6))
@@ -1695,8 +1737,12 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 
 # How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under
-# tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees).
+# tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees). Mist cuts it (animals_in_weather_design.md 10).
 func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
+	return _sight_clear(a, def, p, d, low) * (1.0 - float(_wx_rules().get("mist_sight", 0.6)) * float(_wx.get("mist", 0.0)) if _wx_on() else 1.0)
+
+
+func _sight_clear(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
 	if not ground_height.is_valid():
 		return 1.0
 
@@ -1740,3 +1786,231 @@ func _herd_centre(hid: int) -> Vector3:
 			n += 1
 
 	return sum / float(n) if n > 0 else Vector3.INF
+
+
+# --- animals in weather, step 1 (docs/design/animals_in_weather_design.md; research docs/knowledge/animals-in-weather.md, Jamie) ---
+# Weather tilts what an animal does through multipliers on rows that already exist; a species row's "weather" role picks which. Calm, dry
+# weather (or a row with no role, or weather.on false) is exactly the behaviour without this.
+
+func _wx_rules() -> Dictionary:
+	return cfg.get("weather", {})
+
+
+func _wx_on() -> bool:
+	return bool(_wx_rules().get("on", false))
+
+
+# This tick's weather, and every weather.ahead_every_s real seconds a look 12 to 24 game hours ahead for a storm.
+func _read_weather(weather: Dictionary, delta: float) -> void:
+	_wx = {"rain": float(weather.get("rain", 0.0)), "snow": float(weather.get("snow", 0.0)), "storm": float(weather.get("storm", 0.0)),
+		"wind": float(weather.get("wind", 0.0)), "mist": float(weather.get("mist", 0.0))}
+	_ahead_acc += delta
+
+	if not _wx_on() or not weather_ahead.is_valid() or _ahead_acc < float(_wx_rules().get("ahead_every_s", 2.5)):
+		return
+
+	_ahead_acc = 0.0
+	_storm_ahead = false
+
+	for hours in _wx_rules().get("ahead_hours", [12, 15, 18, 21, 24]):
+		var later: Dictionary = weather_ahead.call(float(hours))
+
+		if float(later.get("storm", 0.0)) >= float(_wx_rules().get("storm_from", 0.5)):
+			_storm_ahead = true
+			return
+
+
+# True in a storm or a heavy snowfall: most animals bed down (lesson 5).
+func _wx_stormy() -> bool:
+	var r: Dictionary = _wx_rules()
+	return float(_wx.get("storm", 0.0)) >= float(r.get("storm_from", 0.5)) or float(_wx.get("snow", 0.0)) >= float(r.get("snowfall_from", 0.5))
+
+
+# Spook and alert distances: prey are jumpier in wind (lesson 3: vigilance about doubles), x1.2 at wind 0.3, x1.4 at 0.6; mist shortens them.
+func weather_spook_x(def: Dictionary) -> float:
+	if not _wx_on():
+		return 1.0
+
+	var r: Dictionary = _wx_rules()
+	var x: float = 1.0
+
+	if str(def.get("weather", "")) in r.get("jumpy_roles", ["deer", "stock", "small", "bird"]):
+		x *= lerpf(1.0, float(r.get("wind_spook_max", 1.4)), clampf(float(_wx.get("wind", 0.0)) / float(r.get("wind_spook_at", 0.6)), 0.0, 1.0))
+
+	return x * (1.0 - float(r.get("mist_spook", 0.3)) * float(_wx.get("mist", 0.0)))
+
+
+# The activity chance (spawns, rest): small animals stay in in wind, hunters hunt more in wind, a storm beds most animals down, and
+# feeding animals are busier before a storm.
+func weather_activity_x(def: Dictionary) -> float:
+	var role: String = str(def.get("weather", ""))
+
+	if not _wx_on() or role == "":
+		return 1.0
+
+	var r: Dictionary = _wx_rules()
+	var w: float = float(_wx.get("wind", 0.0))
+	var x: float = 1.0
+
+	if role == "small":
+		x *= 1.0 - (float(r.get("small_wind_cut_high", 0.65)) if w > float(r.get("small_wind_high", 0.35)) else (float(r.get("small_wind_cut", 0.25)) if w > float(r.get("small_wind_from", 0.25)) else 0.0))
+	elif role == "hunter" and w > float(r.get("small_wind_from", 0.25)):
+		x *= float(r.get("hunter_wind_x", 1.25))
+
+	if _wx_stormy():
+		x *= float(r.get("storm_activity_x", 0.3))
+	elif _storm_ahead and role in ["bird", "small", "deer"]:
+		x *= float(r.get("ahead_feed_x", 1.4))
+
+	return x
+
+
+# How far an animal wanders: a storm or a heavy snowfall keeps them close (lesson 5).
+func weather_wander_x(def: Dictionary) -> float:
+	if not _wx_on() or str(def.get("weather", "")) == "" or not _wx_stormy():
+		return 1.0
+
+	return float(_wx_rules().get("storm_wander_x", 0.3))
+
+
+# Deer and hunters graze and travel facing into a light or moderate wind (lesson 2): most wander targets lie within upwind_spread of upwind.
+func _upwind_angle(def: Dictionary, angle: float) -> float:
+	var r: Dictionary = _wx_rules()
+
+	if not _wx_on() or not str(def.get("weather", "")) in ["deer", "hunter"] or _wind_s <= 0.0 or _wind_s >= float(r.get("gale_from", 0.6)):
+		return angle
+
+	if rng.randf() >= float(r.get("upwind_share", 0.7)):   # luck-exempt: whether this hop goes into the wind
+		return angle
+
+	var spread: float = deg_to_rad(float(r.get("upwind_spread_deg", 40.0)))
+	return _wind_dir.angle() + PI + rng.randf_range(-spread, spread)   # luck-exempt: as above
+
+
+# A small animal in wind goes down its burrow when its grazing spell ends, with the chance its activity was cut by (lesson 3).
+func _wind_goes_down(a: Dictionary, def: Dictionary) -> bool:
+	if not _wx_on() or str(def.get("weather", "")) != "small" or a.get("burrow", Vector3.INF) == Vector3.INF:
+		return false
+
+	var r: Dictionary = _wx_rules()
+	var w: float = float(_wx.get("wind", 0.0))
+	var cut: float = float(r.get("small_wind_cut_high", 0.65)) if w > float(r.get("small_wind_high", 0.35)) else (float(r.get("small_wind_cut", 0.25)) if w > float(r.get("small_wind_from", 0.25)) else 0.0)
+
+	if cut <= 0.0 or rng.randf() >= cut:   # luck-exempt: whether a rabbit stays in out of the wind
+		return false
+
+	var to_b: Vector2 = Vector2(a["burrow"].x - a["pos"].x, a["burrow"].z - a["pos"].z)
+
+	if to_b.length() > float(def.get("burrow_m", 0.0)) * 2.0:
+		return false
+
+	a["target"] = a["burrow"]
+	a["to_burrow"] = true
+	a["state"] = HOP
+	return true
+
+
+
+# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment; and its alarm group (ground birds).
+func _alarm_herd(a: Dictionary, def: Dictionary) -> void:
+	if a["herd"] != 0:
+		var span: Array = def.get("alarm_s", [0.2, 0.9])
+
+		for mate_id in _herds.get(a["herd"], []):
+			if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
+				animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
+
+	if def.has("alarm_group"):
+		_alarm_group(a, def)
+
+
+# --- the player's dog as a presence (dog_companion_design.md 11; MikeW, docs/design/DOG_REACTIONS.md) ---
+
+# The companion dogs out in the world this tick: [animal id, position, barking (it barked within dogs.bark_s)].
+func _dog_presences() -> Array:
+	var out: Array = []
+	var bark_ms: int = int(float(cfg.get("dogs", {}).get("bark_s", 3.0)) * 1000.0)
+	var now_ms: int = Time.get_ticks_msec()
+
+	for id in animals:
+		var d: Dictionary = animals[id]
+
+		if d.has("companion_id") and str(d["sp"]) in cfg.get("dogs", {}).get("species", ["dog"]) and not bool(d.get("young", false)):
+			out.append([int(id), d["pos"], now_ms - int(d.get("bark_ms", -1000000)) < bark_ms])
+
+	return out
+
+
+# The nearest dog as this animal senses it (the wind's scent and the ground as for a player, never crouched; a barking dog is heard
+# dogs.bark_x farther): [sensed distance, position, dog id, barking], or [] for none within reach.
+func _dog_sensed(a: Dictionary, def: Dictionary, reach: float) -> Array:
+	var best: Array = []
+	var bark_x: float = float(cfg.get("dogs", {}).get("bark_x", 2.0))
+
+	for dog in _dogs:
+		var p: Vector3 = dog[1]
+		var d: float = Vector2(p.x - a["pos"].x, p.z - a["pos"].z).length()
+
+		if d > reach * bark_x or d < 0.01:
+			continue
+
+		var sensed: float = d / (_sense_factor(a, def, p, d, 0) * (bark_x if bool(dog[2]) else 1.0))
+
+		if best.is_empty() or sensed < float(best[0]):
+			best = [sensed, p, int(dog[0]), bool(dog[2])]
+
+	return best
+
+
+# How a wild animal meets a dog, by its species' dog row: "flee" (within flee_m it bolts, alarming its herd; within notice_m it watches),
+# "stand" (within notice_m it warns at the dog, and charges it once the dog comes within attack_m: big_game with the dog as the foe;
+# young_only: only a mother with young stands, otherwise it flees). True when the dog decided this step.
+func _dog_react(a: Dictionary, def: Dictionary, seen_d: float = INF) -> bool:
+	if _dogs.is_empty() or a["state"] == FLEE or a["state"] == HIDDEN or seen_d <= _spook_m(a, def):
+		return false   # a player close enough to spook it comes first
+
+	var row: Dictionary = def["dog"]
+	var notice: float = float(row.get("notice_m", 30.0))
+	var near: Array = _dog_sensed(a, def, notice)
+
+	if near.is_empty() or float(near[0]) > notice:
+		return false
+
+	var at: Vector3 = near[1]
+	var reaction: String = str(row.get("reaction", "flee"))
+
+	if reaction == "stand" and bool(row.get("young_only", false)) and _young_of(a).is_empty():
+		reaction = "flee"
+
+	if reaction == "stand" and big_game != null:
+		if big_game.warn(a, at, float(row.get("warn_s", -1.0)), true):
+			a["foe_dog"] = int(near[2])
+			return true
+
+		return false
+
+	if float(near[0]) <= float(row.get("flee_m", notice * 0.66)):
+		_bolt(a, at, def)
+		_alarm_herd(a, def)
+		return true
+
+	if a["state"] == GRAZE or a["state"] == HOP or a["state"] == ALERT:
+		a["state"] = ALERT   # it watches the dog while it is within notice_m (a player near is still handled by the ALERT rules next step)
+		a["alert"] = maxf(float(a.get("alert", 0.0)), 1.0)
+		a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
+		return true
+
+	return false
+
+
+# The barking dogs within `radius` of a point (goblins back off from them): [[position, dog id], ...].
+func barking_dogs_near(point: Vector3, radius: float) -> Array:
+	var out: Array = []
+
+	for dog in _dogs:
+		var p: Vector3 = dog[1]
+
+		if bool(dog[2]) and Vector2(p.x - point.x, p.z - point.z).length() <= radius:
+			out.append([p, int(dog[0])])
+
+	return out

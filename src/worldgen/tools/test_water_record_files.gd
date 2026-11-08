@@ -136,5 +136,19 @@ func _init() -> void:
 	var changed: int = WaterRecordScript.apply_wet_land(with_wet, biome, soil, tables)
 	check(changed == 3 and biome[2] == tables.id_of("biomes", "marsh") and soil[3] == tables.id_of("soils", "peat") and biome[0] == 7 and biome[5] == 7 and soil[5] == tables.id_of("soils", "gravel"), "a swamp and a bog take marsh and their soils; a seasonal channel keeps its biome (%s, %s)" % [str(biome), str(soil)])
 
+	# 7. Placer traps (M1 step 3): where the water slows.
+	var steep_then_flat: Array = [[0.0, 0.0, 50.0, 10.0], [100.0, 0.0, 40.0, 10.0], [200.0, 0.0, 30.0, 10.0], [300.0, 0.0, 29.5, 10.0], [400.0, 0.0, 29.0, 10.0], [500.0, 0.0, 28.5, 10.0]]
+	var traps: Array = WaterRecordScript.placer_traps(steep_then_flat, {})
+	check(traps.size() >= 1 and int(traps[0][0]) == 2 and str(traps[0][1]) == "slope_break", "a slope break where a steep reach meets a gentle one (%s)" % str(traps))
+	var bend_path: Array = [[0.0, 0.0, 30.0, 10.0], [100.0, 0.0, 29.9, 10.0], [100.0, 100.0, 29.8, 10.0], [100.0, 200.0, 29.7, 10.0]]
+	traps = WaterRecordScript.placer_traps(bend_path, {})
+	check(traps.size() >= 1 and int(traps[0][0]) == 1 and str(traps[0][1]) == "bend", "a bend where the course turns (%s)" % str(traps))
+	var join_path: Array = [[0.0, 0.0, 30.0, 10.0], [100.0, 0.0, 29.9, 10.0], [200.0, 0.0, 29.8, 20.0], [300.0, 0.0, 29.7, 20.0]]
+	traps = WaterRecordScript.placer_traps(join_path, {})
+	check(traps.size() >= 1 and int(traps[0][0]) == 2 and str(traps[0][1]) == "confluence", "a confluence where the flow doubles (%s)" % str(traps))
+	var even: Array = [[0.0, 0.0, 30.0, 10.0], [100.0, 0.0, 29.9, 10.0], [200.0, 0.0, 29.8, 10.0], [300.0, 0.0, 29.7, 10.0]]
+	traps = WaterRecordScript.placer_traps(even, {})
+	check(traps.size() == 1 and str(traps[0][1]) == "slow", "an even river still gets one placer at its gentlest step (%s)" % str(traps))
+
 	print("test_water_record_files: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

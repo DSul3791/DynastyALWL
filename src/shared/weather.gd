@@ -59,6 +59,10 @@ const SEA_FOG_TOP_MAX_M := 200.0
 # The sun path of day_cycle.gd (LATITUDE_DEG, AXIAL_TILT_DEG): the burn-off follows the real sunrise. Keep the two the same.
 const SUN_LATITUDE_DEG := 52.0
 const SUN_TILT_DEG := 23.44
+# --one-sky (docs/design/one_sky_design.md): the latitude of the tile row (Climate.latitude_of_row; the starter row 4 is 57 S with the
+# placeholder spread) and the starter calendar's declination, calendar_sign() x 23.44 sin(2 pi phase), as day_cycle.gd draws them.
+# Off: 52 N as before.
+static var one_sky_on: bool = AppConfig.has_flag("one-sky")
 
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
@@ -68,6 +72,21 @@ static func year_phase(game_s: float) -> float:
 
 static func season_of(game_s: float) -> String:
 	return GameClockScript.SEASON_NAMES[int(year_phase(game_s) * 4.0) % 4]
+
+
+# --one-sky: the year phase of a tile row (Climate.local_year_phase): half a year on across the equator from the starter island, whose
+# calendar the game clock keeps. Off, or on the starter's side of the equator: year_phase as before. STARTER_ROW is Climate.STARTER_ROW.
+const STARTER_ROW := 4
+
+
+static func year_phase_at(game_s: float, row: int = STARTER_ROW, equator_row: int = 0) -> float:
+	var phase: float = year_phase(game_s)
+	return Climate.local_year_phase(phase, row, equator_row) if one_sky_on else phase
+
+
+# The season name at a world position (z metres; the world's tile_size_m and equator_tile_row), for season reads by place.
+static func season_at(game_s: float, z_m: float, tile_size_m: float, equator_row: int = 0) -> String:
+	return GameClockScript.SEASON_NAMES[int(year_phase_at(game_s, Climate.row_of_z(z_m, tile_size_m), equator_row) * 4.0) % 4]
 
 
 # Hour of the game day, 0..24.
@@ -118,9 +137,9 @@ static func temp_at(game_s: float, group: String, altitude_m: float = 0.0, seed_
 # The air temperature (C) at this hour: temp_at plus the day and night swing (Climate.air_c: coldest 05:00, warmest 15:00). The one
 # live temperature (docs/design/one_temperature.md): Weather.state's temp_c is this, less the rain's cooling. Pass the world seed:
 # the spells come from it, so the server and every client agree.
-static func air_c(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0) -> float:
+static func air_c(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0, row: int = STARTER_ROW, equator_row: int = 0) -> float:
 	var climate: Dictionary = Climate.of_zone(group)
-	return Climate.air_c(climate, year_phase(game_s), hour_of(game_s), altitude_m) + Climate.spell_c(climate, seed_value, game_s)
+	return Climate.air_c(climate, year_phase_at(game_s, row, equator_row), hour_of(game_s), altitude_m) + Climate.spell_c(climate, seed_value, game_s)
 
 
 static func day_shape(hour: float) -> float:
@@ -130,10 +149,13 @@ static func day_shape(hour: float) -> float:
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "wind_dir" (radians), "temp_c", "season"}.
 # wind_dir is the way the wind blows TOWARD, as an angle in the ground plane: direction = (cos, sin) on (x, z). It turns slowly
 # (a new heading about every 20 game hours) and swings further in a storm; same on server and client, nothing saved.
-static func state(seed_value: int, game_s: float, group: String, altitude_m: float = 0.0, spirit: float = 0.0) -> Dictionary:
+# `row`, `equator_row` (--one-sky): the tile row, for its own seasons (half a year off across the equator) and the fog's sunrise at its
+# latitude. The default is the starter row.
+static func state(seed_value: int, game_s: float, group: String, altitude_m: float = 0.0, spirit: float = 0.0, row: int = STARTER_ROW, equator_row: int = 0) -> Dictionary:
 	var zone: Dictionary = ZONES.get(group, ZONES["temperate"])
-	var phase: float = year_phase(game_s)
-	var temp: float = air_c(game_s, group, altitude_m, seed_value)
+	var phase: float = year_phase_at(game_s, row, equator_row)
+	var latitude_deg: float = Climate.latitude_of_row(row, equator_row)
+	var temp: float = air_c(game_s, group, altitude_m, seed_value, row, equator_row)
 	# Wetter in autumn and winter, a little drier in high summer.
 	var wet: float = float(zone["wet"]) * (1.0 + 0.2 * cos(TAU * (phase - 0.75)))
 	var front: float = _noise(seed_value, 1, game_s / (FRONT_HOURS * 3600.0))
@@ -159,9 +181,9 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	var snowing: bool = temp < 0.5
 	var cloud: float = clampf(maxf(precip, front * wet * 1.2), 0.0, 1.0)
 	var wind: float = clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0)
-	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit)
+	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit, latitude_deg)
 	var sea_fog: float = _sea_fog(seed_value, game_s, group, phase, wind, front, precip)
-	var sea_fog_land: float = sea_fog * _land_keeps_sea_fog(phase, hour)
+	var sea_fog_land: float = sea_fog * _land_keeps_sea_fog(year_phase(game_s), hour, latitude_deg)   # the calendar's phase: the sunrise takes the hemisphere from the latitude
 
 	return {
 		"rain": 0.0 if snowing else precip,
@@ -172,7 +194,7 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 		"wind": wind,
 		"wind_dir": TAU * _noise(seed_value, 4, game_s / (20.0 * 3600.0)) + 0.8 * storm * (_noise(seed_value, 5, game_s / (2.0 * 3600.0)) - 0.5),
 		"temp_c": temp - RAIN_COOL_C * (0.0 if snowing else precip),
-		"season": season_of(game_s),
+		"season": GameClockScript.SEASON_NAMES[int(phase * 4.0) % 4],
 		"mist": mist,
 		"mist_top_m": mist_top_m(seed_value, game_s, mist),
 		"sea_fog": sea_fog,
@@ -181,20 +203,22 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	}
 
 
-# Hour of sunrise (sun centre on the horizon) on a day of the year, for the sun path day_cycle.gd draws.
-static func sunrise_hour(day_of_year: float) -> float:
-	var phi: float = deg_to_rad(SUN_LATITUDE_DEG)
-	var delta: float = deg_to_rad(SUN_TILT_DEG) * sin(TAU * day_of_year / float(GameClockScript.DAYS_PER_YEAR))
+# Hour of sunrise (sun centre on the horizon) on a day of the year, for the sun path day_cycle.gd draws (`latitude_deg`: the tile
+# row's, which --one-sky reads; NAN takes the starter row's).
+static func sunrise_hour(day_of_year: float, latitude_deg: float = NAN) -> float:
+	var sky_lat: float = Climate.latitude_of_row(Climate.STARTER_ROW) if is_nan(latitude_deg) else latitude_deg
+	var phi: float = deg_to_rad(sky_lat if one_sky_on else SUN_LATITUDE_DEG)
+	var delta: float = (Climate.calendar_sign() if one_sky_on else 1.0) * deg_to_rad(SUN_TILT_DEG) * sin(TAU * day_of_year / float(GameClockScript.DAYS_PER_YEAR))
 	var half_day_h: float = rad_to_deg(acos(clampf(-tan(phi) * tan(delta), -1.0, 1.0))) / 15.0
 	return 12.0 - half_day_h
 
 
 # Valley fog strength, 0..1 (see the MIST_ constants): calm, clear nights in a humid zone, gathering from 22:00, thickest at
 # dawn, burnt off 1 to 3 hours after sunrise, strongest in autumn, a different night each time. None while rain or snow falls.
-static func _mist(seed_value: int, game_s: float, group: String, phase: float, hour: float, wind: float, front: float, precip: float, spirit: float) -> float:
+static func _mist(seed_value: int, game_s: float, group: String, phase: float, hour: float, wind: float, front: float, precip: float, spirit: float, latitude_deg: float = NAN) -> float:
 	var since: float = fposmod(hour - MIST_FROM_HOUR, 24.0)                  # hours since the fog started to gather
-	var day_of_year: float = phase * float(GameClockScript.DAYS_PER_YEAR)
-	var sunrise_since: float = fposmod(sunrise_hour(day_of_year) - MIST_FROM_HOUR, 24.0)
+	var day_of_year: float = year_phase(game_s) * float(GameClockScript.DAYS_PER_YEAR)   # the calendar's day: sunrise_hour takes the hemisphere from the latitude
+	var sunrise_since: float = fposmod(sunrise_hour(day_of_year, latitude_deg) - MIST_FROM_HOUR, 24.0)
 	var timing: float = smoothstep(0.0, MIST_GATHER_H, since) * (1.0 - smoothstep(sunrise_since + MIST_BURN_FROM_H, sunrise_since + MIST_BURN_TO_H, since))
 
 	if timing <= 0.0:
@@ -223,8 +247,8 @@ static func _sea_fog(seed_value: int, game_s: float, group: String, phase: float
 
 # Share of the sea fog that lies over the land: all of it at night and in the early morning, SEA_FOG_LAND_AFTERNOON in the
 # afternoon (the warm land burns it back toward the coast; it comes in again in the evening).
-static func _land_keeps_sea_fog(phase: float, hour: float) -> float:
-	var sunrise: float = sunrise_hour(phase * float(GameClockScript.DAYS_PER_YEAR))
+static func _land_keeps_sea_fog(phase: float, hour: float, latitude_deg: float = NAN) -> float:
+	var sunrise: float = sunrise_hour(phase * float(GameClockScript.DAYS_PER_YEAR), latitude_deg)
 	var heating: float = smoothstep(sunrise + 2.0, sunrise + 5.0, hour) * (1.0 - smoothstep(17.0, 20.0, hour))
 	return lerpf(1.0, SEA_FOG_LAND_AFTERNOON, heating)
 

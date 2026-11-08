@@ -191,5 +191,22 @@ func _init() -> void:
 	check(not heard.call(25.0, true, 0.0, 0, 1.0), "standing still in the bushes at 25 m is not noticed")
 	check(not heard.call(25.0, true, 2.0, 0, 1.5), "a skilled hunter walking through the same brush at 25 m is not heard")
 
+	# A player lying on a covered bed (stance 4) or in a closed room (stance 5) stays that much harder to sense when the wind blows: the wind's
+	# scent factor multiplies the bed's, it does not replace it (Jamie 8 Nov 2026: the wind never drops below 0.15, so a closed room counted
+	# as the open).
+	var zoo4 = make([Vector3(-5.0, 10.0, 0.0)], [5], toward_x, false)
+	zoo4._wind_s = 1.0
+	zoo4._wind_dir = Vector2(1.0, 0.0)
+	var rid4: int = zoo4.spawn("rabbit", 0.0, 0.0)
+	var rab: Dictionary = zoo4.animals[rid4]
+	var rdef: Dictionary = zoo4.cfg["species"]["rabbit"]
+	var open_lying: float = zoo4._sense_factor(rab, rdef, Vector3(-5.0, 10.0, 0.0), 5.0, 3)
+	var in_room: float = zoo4._sense_factor(rab, rdef, Vector3(-5.0, 10.0, 0.0), 5.0, 5)
+	var on_bed: float = zoo4._sense_factor(rab, rdef, Vector3(-5.0, 10.0, 0.0), 5.0, 4)
+	check(absf(open_lying - 0.75) < 0.001, "lying in the open, upwind of the rabbit in a wind of 1: 1.5 x 0.5 (%.3f)" % open_lying)
+	check(absf(in_room - open_lying * 0.05) < 0.001, "lying in a closed room in the same wind is 0.05 of that (%.4f)" % in_room)
+	check(absf(on_bed - open_lying * 0.7) < 0.001, "lying on a covered bed in the same wind is 0.7 of that (%.3f)" % on_bed)
+	check(not alerted(-12.0, 5, toward_x, false), "a rabbit downwind does not notice a player lying in a closed room 12 m off")
+
 	print("animal senses: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
