@@ -128,7 +128,8 @@ def stores(end, dist, T, sy, recharge, karst, KS, dx):
     measured time, not Rorabaugh's) and the matrix (Rorabaugh with matrix_sy, matrix_path_m to the nearest conduit and the
     matrix T = matrix_k_m_s x matrix_thickness_m).
     Returns a dict of block arrays (NaN where a block is not an end of anything): share and tau_days of the diffuse,
-    conduit and matrix stores, and the diffuse store's sy, flow_path_m (L) and catchment_m2."""
+    conduit and matrix stores, the diffuse store's sy and flow_path_m (L), and catchment_m2, the whole groundwater
+    catchment (karst blocks included)."""
     shp = end.shape
     e = end.ravel()
     ok = e >= 0
@@ -235,7 +236,7 @@ def spring_row(st, ks, i, q, rnd):
     - q_base_dry_m3_s: their dry flows summed, the dry quarter's mean;
     - tau_days: the tau of the store that gives most of the dry flow (the matrix on karst), for a one-store drought reader;
       the exact drought is the sum of each store's dry flow times exp(-t / its tau);
-    - karst_share, and the diffuse store's sy, flow_path_m (L) and catchment_km2."""
+    - karst_share, the diffuse store's sy and flow_path_m (L), and catchment_km2, the whole groundwater catchment."""
     rows = []
     for kind in STORE_KINDS:
         s = float(st[f'{kind}_share'][i])
