@@ -7,6 +7,8 @@ extends RefCounted
 
 const SLOTS := 10
 const HOTBAR_LABELS := ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # --new-inventory: the same slot as the pack (look doc section 3)
+const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 
 var _items                              # InventoryView
 var _held                               # HeldItem
@@ -35,6 +37,11 @@ func _build() -> void:
 	_built_scale = _items.text_scale
 	_row.add_theme_constant_override("separation", _items.text_px(6))
 	_row.offset_bottom = -_items.text_px(14)
+
+	if InventoryLook.on:
+		_build_look()
+		refresh()
+		return
 
 	for slot in range(SLOTS):
 		var panel: PanelContainer = PanelContainer.new()
@@ -79,6 +86,12 @@ func refresh() -> void:
 		var number: int = _items.inventory.numbers[slot]
 		var off_here: bool = _held != null and _held.off_holding and _held.off_slot == slot
 		var held_here: bool = (_held != null and _held.holding and _held.held_slot == slot) or off_here
+
+		if cell.has("look"):
+			var look = cell["look"]
+			InventoryLook.show_stack(_items, look, number, _items.inventory.counts[slot], _items.inventory.wear[slot], _items.hotbar_tip(slot))
+			look.set_marked((ItemSlot.MARK_CREAM if off_here else ItemSlot.MARK_GOLD) if held_here else 0)
+			continue
 		var style: StyleBoxFlat = StyleBoxFlat.new()
 		style.bg_color = Color(0.1, 0.1, 0.12, 0.8) if not held_here else Color(0.28, 0.22, 0.08, 0.92)
 		style.set_border_width_all(_items.text_px(3) if held_here else 1)
@@ -91,6 +104,22 @@ func refresh() -> void:
 		cell["count"].text = "x%d" % count if number != 0 and count > 1 else ""
 		cell["panel"].modulate = Color(1.0, 0.6, 0.6) if number != 0 and _items.is_broken(slot) else Color.WHITE
 		cell["panel"].tooltip_text = _items.hotbar_tip(slot)
+
+
+# --new-inventory: ten item slots, each with its key at the top-left; the held one has the bright gold edge (the off hand cream).
+func _build_look() -> void:
+	for slot in range(SLOTS):
+		var look = InventoryLook.make_slot(_items, slot)
+		look.set_key_number(slot)
+		look.mouse_filter = Control.MOUSE_FILTER_PASS
+		look.focus_mode = Control.FOCUS_NONE     # the number keys belong to the game, not to a focused slot
+		look.mouse_entered.connect(func(): _items.hotbar_hover = slot)
+		look.mouse_exited.connect(func(): _items.hotbar_hover = -1 if _items.hotbar_hover == slot else _items.hotbar_hover)
+		look.drag_data = func() -> Variant: return {"slot": slot} if _items.inventory.numbers[slot] != 0 else null
+		look.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
+		look.on_drop = func(data: Variant) -> void: _items.move_slot(int(data["slot"]), slot)
+		_row.add_child(look)
+		_cells.append({"look": look})
 
 
 func _drag(_at: Vector2, slot: int) -> Variant:

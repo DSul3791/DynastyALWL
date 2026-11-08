@@ -13,6 +13,8 @@ extends Control
 #   slot.set_greyed(on)                    icon 70 % desaturated at 60 % opacity (a recipe ingredient you lack)
 #   slot.flash_refused()                   a 150 ms heraldic-red flash for a drop that is refused
 #   slot.flash_new()                       a gold shimmer fading over 2 s, the first time an item appears
+#   slot.set_caption(text)                 the item's name, drawn small in the slot while it has no icon yet (icons come from tools/icon_bake.gd)
+#   slot.set_marked(mode)                  0 plain, MARK_GOLD the held or selected slot (a bright gold edge), MARK_CREAM the off hand
 # The top-right corner is kept free for a quality mark later (Morgan's call 6).
 # Hover and keyboard focus look the same, so a controller later needs no new art. Each change eases in 80 ms; with
 # Reduce motion (display_settings.reduce_motion) it is instant and the new-item shimmer is skipped.
@@ -37,6 +39,9 @@ const HOVER_LIFT := 0.3          # the fill moves this far toward WOOD_LIT under
 const DRAG_DIM := 0.5
 const GREY_DESAT := 0.7
 const GREY_ALPHA := 0.6
+const CAPTION_PX := 12
+const MARK_GOLD := 1
+const MARK_CREAM := 2
 
 signal clicked(button: int, shift: bool)     # a single press: left, right (the owner opens the menu), middle
 signal double_clicked                         # double-click: use
@@ -52,6 +57,8 @@ var favourite: bool = false
 var key_number: int = -1
 var linked_key: int = -1
 var greyed: bool = false
+var caption: String = ""
+var marked: int = 0
 var dragging: bool = false        # this slot's item is being carried by the pointer
 var can_drop: Callable            # (data: Variant) -> bool, set by the owner; unset means nothing drops here
 var on_drop: Callable             # (data: Variant) -> void
@@ -131,6 +138,16 @@ func set_linked_key(n: int) -> void:
 func set_greyed(on: bool) -> void:
 	greyed = on
 	_refresh()
+
+
+func set_caption(text: String) -> void:
+	caption = text
+	_over.queue_redraw()
+
+
+func set_marked(mode: int) -> void:
+	marked = mode
+	queue_redraw()
 
 
 func set_dragging(on: bool) -> void:
@@ -252,6 +269,9 @@ func _draw() -> void:
 	var lit: float = hover * HOVER_LIFT
 	var fill: Color = DynastyTheme.SLOT_BG.lerp(DynastyTheme.WOOD_LIT, lit)
 
+	if marked != 0:
+		fill = fill.lerp(DynastyTheme.WOOD_LIT, 0.5)
+
 	if _pressed:
 		fill = DynastyTheme.WOOD_PRESSED
 
@@ -267,6 +287,10 @@ func _draw() -> void:
 	if hover > 0.0:
 		back.shadow_color = Color(DynastyTheme.GLOW, DynastyTheme.GLOW.a * hover)
 		back.shadow_size = roundi(GLOW_PX * unit)
+
+	if marked != 0:
+		back.border_color = DynastyTheme.GOLD_BRIGHT if marked == MARK_GOLD else DynastyTheme.CREAM
+		back.set_border_width_all(maxi(2, roundi(2.0 * unit)))
 
 	if refused > 0.0:
 		back.border_color = back.border_color.lerp(DynastyTheme.BAD, refused)
@@ -301,6 +325,13 @@ func _draw_over() -> void:
 		_over.draw_rect(Rect2(pad, s.y - pad - h, (s.x - pad * 2.0) * wear, h), DynastyTheme.wear_color(wear))
 
 	var cinzel: Font = DynastyTheme.heading_font()
+	var garamond: Font = DynastyTheme.text_font()
+
+	if icon == null and caption != "" and garamond != null:
+		var cpx: int = maxi(8, roundi(CAPTION_PX * unit))
+		var pad_x: float = 4.0 * unit
+		var top: float = s.y * 0.5 - float(cpx) * 0.6
+		_over.draw_multiline_string(garamond, Vector2(pad_x, top), caption, HORIZONTAL_ALIGNMENT_CENTER, s.x - pad_x * 2.0, cpx, 2, DynastyTheme.CREAM)
 
 	if count > 1 and cinzel != null:
 		var px: int = maxi(8, roundi(COUNT_PX * unit))

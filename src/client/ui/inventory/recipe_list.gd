@@ -7,6 +7,7 @@ extends RefCounted
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
+const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
@@ -30,6 +31,11 @@ func build(queue_root: Control) -> Control:
 	var left_title: Label = Label.new()
 	left_title.text = "Make"
 	view._style(left_title, view.TITLE_PX - 6)
+
+	if InventoryLook.on:
+		# STUB(step 2-4): with a station open the plate will name it and show its emblem (InventoryLook.plate's station), once Steve's station context lands.
+		InventoryLook.plate(left_title, "Make", view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
+
 	left.add_child(left_title)
 	left.add_child(_build_recipe_filter())
 	var list_scroll: ScrollContainer = ScrollContainer.new()
