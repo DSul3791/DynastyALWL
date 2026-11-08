@@ -10,6 +10,11 @@ const AdminScript := preload("res://src/stream/server_admin.gd")
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
+var _recipe_category: String = ""        # "" = All
+var _category_buttons: Dictionary = {}   # category name -> its tab button
+var _detail: VBoxContainer                # the chosen recipe: its needs, the quantity box and Craft
+var _quantity: SpinBox                    # the How many box (null while no recipe is shown)
+var _qty: int = 1                         # the last quantity chosen, kept between refreshes
 
 
 func _init(owner_view) -> void:
@@ -43,9 +48,9 @@ func build(queue_root: Control) -> Control:
 	detail_scroll.size_flags_stretch_ratio = 1.0
 	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(detail_scroll)
-	view._detail = VBoxContainer.new()
-	view._detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_scroll.add_child(view._detail)
+	_detail = VBoxContainer.new()
+	_detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_scroll.add_child(_detail)
 
 	root = left
 	return root
@@ -62,8 +67,8 @@ func refresh() -> void:
 	var can: Array = []
 	var cannot: Array = []
 
-	for tab_name in view._category_buttons:
-		(view._category_buttons[tab_name] as Button).button_pressed = str(tab_name) == view._recipe_category
+	for tab_name in _category_buttons:
+		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
 
 	for number in view.recipes.numbers():
 		var r: Dictionary = view.recipes.recipe(number)
@@ -144,7 +149,7 @@ func _build_recipe_filter() -> Control:
 	holder.add_child(field)
 	var tabs: HFlowContainer = HFlowContainer.new()
 	holder.add_child(tabs)
-	view._category_buttons.clear()
+	_category_buttons.clear()
 
 	for label in [""] + RecipeFilter.CATEGORIES:
 		var tab: Button = Button.new()
@@ -152,16 +157,16 @@ func _build_recipe_filter() -> Control:
 		tab.toggle_mode = true
 		view._style(tab, view.BODY_PX - 6)
 		tab.pressed.connect(func():
-			view._recipe_category = str(label)
+			_recipe_category = str(label)
 			view._refresh())
 		tabs.add_child(tab)
-		view._category_buttons[str(label)] = tab
+		_category_buttons[str(label)] = tab
 
 	return holder
 
 
 func _recipe_shown(r: Dictionary) -> bool:
-	return RecipeFilter.shown(r, view._recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
+	return RecipeFilter.shown(r, _recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
 
 
 func _select_recipe(number: int) -> void:
@@ -179,11 +184,11 @@ func craft_selected() -> void:
 
 # The quantity box's number, counting digits typed but not yet confirmed with Enter (BUG-025).
 func chosen_quantity() -> int:
-	if view._quantity == null:
+	if _quantity == null:
 		return 1
 
-	view._quantity.apply()
-	return clampi(int(view._quantity.value), 1, 20)
+	_quantity.apply()
+	return clampi(int(_quantity.value), 1, 20)
 
 
 # The Admin heading at the bottom of the list (Dave 2026-10-22): the building pieces to test plus the other placeables, free and unlocked. Click one to get it; put it in a quick key
@@ -220,10 +225,10 @@ func _add_admin_builds() -> void:
 
 # The chosen recipe: what it needs (have / need), how many, and the Craft button.
 func _refresh_detail() -> void:
-	for child in view._detail.get_children():
+	for child in _detail.get_children():
 		child.queue_free()
 
-	view._quantity = null
+	_quantity = null
 	var r: Dictionary = view.recipes.recipe(view._selected_recipe)
 
 	if r.is_empty():
@@ -233,14 +238,14 @@ func _refresh_detail() -> void:
 	heading.text = str(r["name"])
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	view._style(heading, view.BODY_PX)
-	view._detail.add_child(heading)
+	_detail.add_child(heading)
 
 	if str(r.get("station", "")) != "":
 		var where: Label = Label.new()
 		where.text = ("Made at a %s (you are near one)" if view._station_ok(r) else "Needs a %s within reach") % view._station_label(r)
 		where.modulate = Color(0.55, 1.0, 0.55) if view._station_ok(r) else Color(1.0, 0.8, 0.4)
 		view._style(where, view.BODY_PX)
-		view._detail.add_child(where)
+		_detail.add_child(where)
 
 	var parts: Dictionary = view._parts_plan(view._selected_recipe)
 
@@ -250,13 +255,13 @@ func _refresh_detail() -> void:
 		auto_line.text = "Makes %s first" % " and ".join(made)
 		auto_line.modulate = Color(0.55, 1.0, 0.55)
 		view._style(auto_line, view.BODY_PX)
-		view._detail.add_child(auto_line)
+		_detail.add_child(auto_line)
 	elif int(parts["ambiguous"]) != 0:
 		var choose_line: Label = Label.new()
 		choose_line.text = str(parts["msg"])
 		choose_line.modulate = Color(1.0, 0.8, 0.4)
 		view._style(choose_line, view.BODY_PX)
-		view._detail.add_child(choose_line)
+		_detail.add_child(choose_line)
 
 	for need in r["needs"] + r["keeps"]:
 		var kept: bool = r["keeps"].has(need)
@@ -265,22 +270,22 @@ func _refresh_detail() -> void:
 		line.text = "%s   %d / %d%s" % [view._item_label(need[0]), have, need[1], "  (kept)" if kept else ""]
 		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)
 		view._style(line, view.BODY_PX)
-		view._detail.add_child(line)
+		_detail.add_child(line)
 
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", view._px(12))
-	view._detail.add_child(row)
+	_detail.add_child(row)
 	var times: Label = Label.new()
 	times.text = "How many:"
 	view._style(times, view.BODY_PX)
 	row.add_child(times)
-	view._quantity = SpinBox.new()
-	view._quantity.min_value = 1
-	view._quantity.max_value = 20
-	view._quantity.value = view._qty
-	view._quantity.value_changed.connect(func(v): view._qty = int(v))
-	view._quantity.get_line_edit().add_theme_font_size_override("font_size", view._px(view.BODY_PX))
-	row.add_child(view._quantity)
+	_quantity = SpinBox.new()
+	_quantity.min_value = 1
+	_quantity.max_value = 20
+	_quantity.value = _qty
+	_quantity.value_changed.connect(func(v): _qty = int(v))
+	_quantity.get_line_edit().add_theme_font_size_override("font_size", view._px(view.BODY_PX))
+	row.add_child(_quantity)
 	var make: Button = Button.new()
 	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
 	make.disabled = not (view._can_craft(view._selected_recipe) and view._station_ok(r))

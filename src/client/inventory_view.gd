@@ -3271,18 +3271,18 @@ func _prewarm_loose_meshes() -> void:
 	var t_pick: int = Time.get_ticks_usec()
 
 	for id in table.ids():
-		var name: String = str(id)
+		var item_key: String = str(id)
 
-		if name == "stone" or name == "flint" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
-			_mesh_for(table.number_of(name))
+		if item_key == "stone" or item_key == "flint" or item_key == "stick" or item_key == "firewood" or item_key == "plant_fibre" or item_key == "driftwood" or item_key == "log" or item_key.begins_with("log_"):
+			_mesh_for(table.number_of(item_key))
 
 	var t_items: int = Time.get_ticks_usec()
 
 	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
 	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
-	for name in _trunk_drop_ids():
-		if table.number_of(name) > 0:
-			_mesh_for(table.number_of(name))
+	for item_key in _trunk_drop_ids():
+		if table.number_of(item_key) > 0:
+			_mesh_for(table.number_of(item_key))
 
 	var t_end: int = Time.get_ticks_usec()
 	print("client prewarm: loose item meshes %.0f ms (pickup models %.0f, stones sticks and logs %.0f, trunk drops %.0f)" % [float(t_end - t0) / 1000.0, float(t_pick - t0) / 1000.0, float(t_items - t_pick) / 1000.0, float(t_end - t_items) / 1000.0])
@@ -3468,18 +3468,12 @@ const TITLE_PX := 40
 
 var _search: LineEdit
 var _recipe_search: LineEdit             # the search box at the top of the Make list: filters recipes by name as you type
-var _recipe_category: String = ""        # "" = All
-var _category_buttons: Dictionary = {}   # category name -> its tab button
 var _recipe_list: VBoxContainer
-var _detail: VBoxContainer
 var _selected_recipe: int = 0
 var _hover_recipe: int = 0                 # the recipe under the mouse in the crafting list, 0 when none (E crafts it)
-var _quantity: SpinBox
-var _qty: int = 1
 var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
 var max_lights: Callable               # () -> how many fire lights the quality tier allows
 var is_inspecting: Callable            # () -> true while inspection mode is on
-var _slot_scroll: ScrollContainer
 
 
 var sort_index: int = 0                # 0 unsorted (order picked up), 1 name, 2 weight, 3 value

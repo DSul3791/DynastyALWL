@@ -10,6 +10,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
+var _slot_scroll: ScrollContainer   # holds the slot grid
 
 
 func _init(owner_view) -> void:
@@ -63,16 +64,16 @@ func build() -> Control:
 		if view.sort_changed.is_valid():
 			view.sort_changed.call(index))
 	right.add_child(view._sort_menu)
-	view._slot_scroll = ScrollContainer.new()
-	view._slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	view._slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	right.add_child(view._slot_scroll)
+	_slot_scroll = ScrollContainer.new()
+	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	right.add_child(_slot_scroll)
 	view._grid = GridContainer.new()
 	view._grid.columns = 4
 	view._grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	view._grid.add_theme_constant_override("h_separation", view._px(8))
 	view._grid.add_theme_constant_override("v_separation", view._px(8))
-	view._slot_scroll.add_child(view._grid)
+	_slot_scroll.add_child(view._grid)
 
 	for i in view.inventory.SLOTS:
 		var slot: Control = _make_slot(i)
