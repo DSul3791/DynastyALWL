@@ -92,9 +92,9 @@ Input rules (Dave):
 - Left click uses the held item; right click is the secondary (aim a throw, eat/apply).
 - Effect symbols (brain, ghosted house, more later) sit side by side in one row at the top, recentred.
 
-## New inventory window (the default, #753 to #758)
+## Inventory window (#753 to #758)
 
-The new one-window screen is the default (design: [INVENTORY_CRAFTING_REPORT.md](docs/design/INVENTORY_CRAFTING_REPORT.md), [INVENTORY_CRAFTING_LOOK.md](docs/design/INVENTORY_CRAFTING_LOOK.md), rulings rows 22 to 24 in [OVERNIGHT_DECISIONS_8NOV.md](docs/design/OVERNIGHT_DECISIONS_8NOV.md)). Start the game with `--old-inventory` to get the old window above back for comparison. The hotbar keys and what crafting may use are the same in both.
+The one-window screen is the only inventory window; the old window and its `--old-inventory` switch are gone (design: [INVENTORY_CRAFTING_REPORT.md](docs/design/INVENTORY_CRAFTING_REPORT.md), [INVENTORY_CRAFTING_LOOK.md](docs/design/INVENTORY_CRAFTING_LOOK.md), rulings rows 22 to 24 in [OVERNIGHT_DECISIONS_8NOV.md](docs/design/OVERNIGHT_DECISIONS_8NOV.md)). The keys above still work in it; a chest or fire opens in its middle column.
 
 | Control | Action |
 |---|---|
