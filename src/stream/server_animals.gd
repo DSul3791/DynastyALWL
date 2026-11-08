@@ -32,6 +32,7 @@ var blocked: Callable              # (x, z) -> bool (deep water)
 var ice_cover_at: Callable         # (Vector3) -> Ice.cover there (0 open .. 1 a 20 cm sheet; 0.5, 10 cm, bears a person); set by the server scene
 var _ice_cache: Dictionary = {}    # animals on ice: Vector2i(1 km band of z, 5 m of height) -> [Ice.cover, msec worked out]
 var ice_moat_at: Callable          # (Vector3) -> true in a thaw's shore moat (frozen_water_look.md 4, #729): open water though the sheet bears; unset: none
+var spring_ice_x: Callable         # (Vector3) -> the ice's share by springs (Jamie #739): 0 on the open brook below a spring, 0.5 within 10 to 30 m of a spring mouth or inflow, else 1; unset: 1 (wired with #719 step 2's spring rows)
 var walls: Callable                # (x0, z0, x1, z1, margin) -> bool, a wall or heavy station on that step (server_items.structure_blocks_step)
 var crossing: Callable             # Steering's `cross`: every walker of this module stops at walls
 var player_positions: Callable     # () -> Array of Vector3
@@ -2307,7 +2308,9 @@ func ice_at(x: float, z: float) -> float:
 	if not _ice_cache.has(key) or now - int(_ice_cache[key][1]) > int(float(_ice_cfg().get("cache_s", 60.0)) * 1000.0):
 		_ice_cache[key] = [float(ice_cover_at.call(at)), now]
 
-	return float(_ice_cache[key][0])
+	# By a spring (Jamie #739): its brook stays open for its open length, and the ice is half as thick near a mouth or an inflow, so the
+	# open water below springs is where animals and water birds gather in a freeze.
+	return float(_ice_cache[key][0]) * (clampf(float(spring_ice_x.call(at)), 0.0, 1.0) if spring_ice_x.is_valid() else 1.0)
 
 
 # Whether ice at (x, z) holds an animal of `mass` kg for sure (Jamie #736, from the Minnesota DNR table): mass <= sure_k (0.9) x h^2, with

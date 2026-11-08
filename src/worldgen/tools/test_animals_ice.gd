@@ -79,6 +79,13 @@ func _init() -> void:
 	check(spot.x > 185.0 and spot.x < 195.0, "a flock on the ice stands at the open water's edge (x %.0f)" % spot.x)
 	moat_from_x[0] = INF
 	check(a.ice_edge_spot(150.0, 0.0, "duck").x == INF, "a pond frozen all over has no flock")
+	a.spring_ice_x = func(p): return 0.0 if p.x > 170.0 else 1.0   # the open brook below a spring, east of x 170
+	var by_spring: Vector2 = a.ice_edge_spot(150.0, 0.0, "duck")
+	check(by_spring.x > 165.0 and by_spring.x < 175.0, "the flock gathers at the open water below a spring (x %.0f)" % by_spring.x)
+	cover[0] = 0.6
+	a._ice_cache.clear()
+	check(bool(a.ice_moves(wolf, "wolf")[1].call(200.0, 0.0)), "a wolf does not walk on the open brook below a spring")
+	a.spring_ice_x = Callable()
 	cover[0] = 0.0
 	a._ice_cache.clear()
 	check(a.ice_edge_spot(150.0, 0.0, "duck") == Vector2(150.0, 0.0), "open water: the flock floats where it was")
@@ -89,6 +96,9 @@ func _init() -> void:
 	items.ice_cover_at = func(_p): return 0.6
 	items.water_near = func(_p, _r): return true
 	check(items._on_ice(Vector3(5.0, 0.0, 0.0)), "a 12 cm sheet is ice to stand on")
+	items.spring_ice_x = func(_p): return 0.5
+	check(not items._on_ice(Vector3(5.0, 0.0, 0.0)), "near a spring mouth the 12 cm sheet counts as 6 cm: not ice to stand on (#739)")
+	items.spring_ice_x = Callable()
 	items.ice_moat_at = func(_p): return true
 	check(not items._on_ice(Vector3(5.0, 0.0, 0.0)), "the thaw moat is open water to a player")
 	items._holes = [{"pos": Vector3(30.0, 0.0, 0.0), "owner": "a", "until": 5000.0}, {"pos": Vector3(10.0, 0.0, 0.0), "owner": "b", "until": 4000.0},

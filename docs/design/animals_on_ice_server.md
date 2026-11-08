@@ -75,6 +75,13 @@ So the starter ice (2.8 to 5.6 cm) carries birds, hares and foxes. It may carry 
 - **Wolves chasing deer onto ice, and deer falling there:** needs the fall state and the client's pose first.
 - **Snow:** sinking (a coyote-like animal 9.5 cm, a lynx-like one 7.7 cm, deer belly-deep and hampered over 50 cm), predators using packed trails about half the time, and snow building on a standing animal's back over 15 to 30 game minutes. All of these need lying snow on the server, from Sonny's A4 snow window.
 
+## 3b. By springs (Jamie #739)
+
+- **The rule:** a spring never freezes. Its brook stays open for Jamie's open length (440 m × √(L/s) at −5 °C calm, in #720's `drink_rules.open_length_m`), and ice is half as thick within 10 to 30 m of a spring mouth or an inflow.
+- **The hook:** `spring_ice_x(pos)`, on `server_animals` and on `server_items._on_ice`, multiplies the ice cover: 0 on the open brook, 0.5 near a mouth or inflow, 1 elsewhere.
+- **Not wired yet:** it waits for #719 step 2's baked spring rows.
+- **The effect:** the open water below springs is open to the flock search, so water birds gather there in a freeze. Wolves do not walk on it.
+
 ## 4. The ice holes to the client (protocol 97)
 
 - **Message:** new rpc `ice_holes(points: PackedVector3Array, untils: PackedFloat32Array)`. It carries up to 8 live holes within 120 m, nearest first, and the game second each stays open until.
