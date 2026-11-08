@@ -99,7 +99,7 @@ for b in eyeshine wet-look eye-placement; do
   bash tools/gate_pc.sh $h --lane fast 2>&1 | grep -E "CONFLICT|FAIL|warnings|LOCAL CHECK|Test done|NEW fail|CHECKS:"
 done
 ```
-Pass: `CHECKS: pass` for each. On a `CONFLICT`, main has moved: merge `origin/main` into that branch first (MikeW).
+Pass: `CHECKS: pass` for each. For the cost check, play once with `--life-layer-off` and once without in the same spot and compare the frame probe (PERF_BUDGET.md). On a `CONFLICT`, main has moved: merge `origin/main` into that branch first (MikeW).
 
 ## 6. PRs (5 min), in this order, only after their gate passed
 1. Eye shine (`claude/mikew-eyeshine`, already open as #596: `gh pr ready 596`).
