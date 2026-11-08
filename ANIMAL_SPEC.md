@@ -62,3 +62,15 @@ Every planned species with a body to work now has a row in data/items/carcass.js
 | 14 | bear | loot only | 200.0 | 6 | raw_meat 12-18, hide 2-3, bone 6-9, sinew 3-5, animal_fat 5-9, claw 2-4 |
 
 Rabbit, deer, fox, wolf and duck are live today; their carcass looks are in data/animals/carcass.json (Kathleen). The rest fall back to the deer body shape until each gets a row there.
+
+## Alarm groups: ground birds scatter together (Steve, 8 Nov 2026)
+
+**Today:** a bolting animal alarms its own herd (`alarm_s`).
+
+**New:** a species row may name an `alarm_group`. When one animal of that group bolts, every other animal of the same group within `alarm_group_m` (15 m) bolts after the same short `alarm_s` delay, whatever its species or herd. So a crow taking off flushes the pheasants and grouse feeding near it.
+
+Birds react to other species' alarm calls and flushes; the review is Magrath, Haff, Fallow and Radford, 2015, "Eavesdropping on heterospecific alarm signals: from mechanisms to consequences", *Biological Reviews* 90: 560-586.
+
+The group "ground_birds" holds the crow, pheasant, grouse, guineafowl and songbirds. Farm chickens are left out: they live by the farm and do not flush.
+
+This is server data only (`data/animals/animals.json`, `server_animals.gd` `_alarm_group`). The client's scatter reads the FLEE state it already gets (MikeW, `docs/design/HERD_CLIENT.md`).
