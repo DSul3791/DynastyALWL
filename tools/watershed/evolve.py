@@ -149,7 +149,7 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell,
         kq_c = kq; cv = np.zeros(h.size)
     else:
         kq_c = K * np.asarray(ery_cover, np.float64) * share * Qi ** m; cv = np.asarray(cover, np.float64)
-    return _solve(h, h0, sea, order, rec, n, dx, dt, kq, kq * ps / Qi ** m, kq_c, cv, G, U, Qi, cell, sweeps, tol, sc)
+    return _solve(h, h0, sea, order, rec, n, dx, dt, kq, kq * ps / Qi ** m, kq_c, cv, G, U, Qi, cell, sweeps, tol, sc, np.zeros(h.size))
 
 
 @nb.njit(cache=True)
@@ -166,7 +166,7 @@ def _cell_height(B, A, F, hr, kc):
 
 
 @nb.njit(cache=True)
-def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cell, sweeps, tol, Sc):
+def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cell, sweeps, tol, Sc, lift):
     """The implicit erosion-deposition solve. kq: each cell's erosion coefficient (erosion = kq * S - kc, S the slope to the
     receiver, never below 0). kc: each cell's critical erosion rate, kq times the incision threshold on Q^m S (0 for none).
     Qd: each cell's carrying flow for the deposition term (G / Qd times the sediment flux), never zero.
@@ -186,7 +186,7 @@ def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cel
     Erosion rates rise with channel steepness far faster than linearly once a threshold is in (DiBiase et al. 2010, EPSL 289:134;
     DiBiase and Whipple 2011, JGR 116:F04036). Loose sediment over 1 m has none (the caller sets kc 0 there).
 
-    Threshold hillslopes (Sc per cell, the tangent of the threshold angle; 0 turns it off there, as under a glacier). Where uplift
+    Threshold hillslopes (Sc per cell, the tangent of the threshold angle; 0 turns it off there). Where uplift
     outpaces erosion, real hillslopes do not steepen without end: past a threshold angle they fail by landslides, so their mean
     angle stays near that threshold whatever the erosion rate (Burbank et al. 1996, Nature 379:505; Montgomery 2001, Am. J. Sci.
     301:432). Linear creep alone has no such limit, and run 624bd23c grew a ridge more than 1,000 m above its landform with 40
@@ -194,7 +194,9 @@ def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cel
     The cap lowers the cell; the volume it loses counts as eroded material in the sediment sum below, so the slide debris
     travels down the same tree and is laid down where the water cannot carry it (talus and fans at the slope foot, as the
     hybrid landslide model of Campforts et al. 2020, GMD 13:3863, routes it), instead of vanishing. Against the sea, the cap is
-    measured from sea level, not from the sea floor, which this model does not evolve.
+    measured from sea level, not from the sea floor, which this model does not evolve. lift (per cell, m) is what h carries
+    above the ground: the ice thickness when glacial.py solves on the ice surface, 0 in the river era. The cap holds the ground,
+    not the ice: a cell's ground stands at most Sc times the distance above its receiver's ground.
 
     Hollows fill to their spill, no higher. A cell that starts the step below its receiver (in a closed hollow, draining over
     the receiver's sill) can be filled with sediment up to the receiver's height and no further; the rest goes on downstream.
@@ -231,11 +233,11 @@ def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cel
             if d >= 0 and h0[i] < hr and x > hr:         # a hollow fills to its sill, no higher
                 x = hr
             if Sc[i] > 0.0 and d >= 0:
-                base = hr
+                base = hr - lift[d]                      # the receiver's ground
                 if sea[d] and base < 0.0:
                     base = 0.0
-                if x > base + Sc[i] * dist:
-                    x = base + Sc[i] * dist
+                if x - lift[i] > base + Sc[i] * dist:
+                    x = base + Sc[i] * dist + lift[i]
             change = abs(x - h[i])
             if change > biggest:
                 biggest = change
