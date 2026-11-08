@@ -1318,7 +1318,10 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(animal_view)
 	_animal_view_node = animal_view
 	animal_view.torch_light = func() -> Array: return held.held_light() if held != null else []      # eye shine in the player's own torchlight
-	animal_view.conditions_now = func() -> Dictionary: return sound.ambient.conditions if sound != null and sound.ambient != null else {}      # the clock and season: sleep, tail swish
+	animal_view.conditions_now = func() -> Dictionary: return _animal_conditions()      # the clock, season and wet ground: sleep, tail swish, splashes
+	animal_view.footfall.connect(func(_kind: String, at: Vector3, ground: String, _speed: float) -> void:
+		if animal_view.footfall_fx and (ground == "water" or ground == "puddle"):
+			sound.slots.play("step_water", at, body.global_position))      # an animal splashing through water or a puddle
 	animal_view.ground_height = func(x: float, z: float) -> float: return _animal_ground(x, z)      # feet on uneven ground (foot_ik)
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	net.animals_received.connect(animal_view.on_rows)
@@ -6402,3 +6405,16 @@ func _animal_ground(x: float, z: float) -> float:
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	var hit = tool.raycast(Vector3(x, 1500.0, z), Vector3.DOWN, 2000.0)
 	return float(hit.position.y) if hit != null else NAN
+
+
+# What the animal view needs of the client's weather and clock (animal_view.gd conditions_now).
+func _animal_conditions() -> Dictionary:
+	var out: Dictionary = {}
+
+	if sound != null and sound.ambient != null:
+		out = (sound.ambient.conditions as Dictionary).duplicate()
+
+	if sound != null and sound.weather != null:
+		out["ground_wet"] = float(sound.weather.ground_wet)
+
+	return out

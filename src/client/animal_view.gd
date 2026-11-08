@@ -1783,6 +1783,10 @@ func _ground_kind(node: Node3D, b: Dictionary) -> String:
 		if not is_nan(level) and node.global_position.y < level:
 			return "water"
 
+	# Rain-soaked ground (the sound stage's puddle rule: ground_wet from 0.6) splashes like the player's steps do.
+	if conditions_now.is_valid() and float((conditions_now.call() as Dictionary).get("ground_wet", 0.0)) >= 0.6:
+		return "puddle"
+
 	var season: String = str((conditions_now.call() as Dictionary).get("season", "")) if conditions_now.is_valid() else season_now
 
 	if season == "winter":
@@ -1973,6 +1977,38 @@ func _feet(node: Node3D, b: Dictionary, delta: float) -> void:
 		fix.leg_drop[i] = lerpf(fix.leg_drop[i], float(w[i]), clampf(delta * 6.0, 0.0, 1.0))
 
 
+# A splash where a foot lands in water or a puddle (FOOTFALL.md step 6): a few droplets thrown up and out, more and higher at a run
+# and in open water. The sound is the sound stage's own step_water slot, played by the client on the footfall signal.
+func _splash(at: Vector3, deep: bool, speed: float) -> void:
+	if not is_inside_tree():
+		return
+
+	var drops: CPUParticles3D = CPUParticles3D.new()
+	drops.one_shot = true
+	drops.emitting = false
+	drops.amount = (8 if deep else 4) + int(minf(speed, 8.0))
+	drops.lifetime = 0.5
+	drops.explosiveness = 1.0
+	drops.direction = Vector3.UP
+	drops.spread = 55.0
+	drops.initial_velocity_min = 0.6
+	drops.initial_velocity_max = 1.4 + speed * 0.15
+	drops.gravity = Vector3(0.0, -9.8, 0.0)
+	var mesh: SphereMesh = SphereMesh.new()
+	mesh.radius = 0.015
+	mesh.height = 0.03
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.75, 0.82, 0.9, 0.7)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.roughness = 0.1
+	mesh.material = mat
+	drops.mesh = mesh
+	add_child(drops)
+	drops.global_position = at + Vector3(0.0, 0.05, 0.0)
+	drops.emitting = true
+	get_tree().create_timer(drops.lifetime + 0.3).timeout.connect(drops.queue_free)
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -2094,8 +2130,11 @@ func _emit_steps(b: Dictionary, node: Node3D, state: int, speed: float) -> void:
 		var ground: String = _ground_kind(node, b)
 		footfall.emit(kind, node.global_position, ground, speed)
 
-		if footfall_fx and speed > 2.0 and ground != "water":
+		if footfall_fx and speed > 2.0 and ground != "water" and ground != "puddle":
 			_puff(node.global_position, ground, speed)
+
+		if footfall_fx and (ground == "water" or ground == "puddle") and speed > 0.4:
+			_splash(node.global_position, ground == "water", speed)
 
 		if prints_fx and (ground == "snow" or ground == "mud"):
 			_print_at(kind, node, ground)

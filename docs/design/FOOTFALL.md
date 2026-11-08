@@ -8,7 +8,7 @@
 ## Next steps (design only)
 4. **Foot IK** (built for deer, horse and cow, flag `foot_ik`; a two-bone reach per leg in the bone layer): per leg, a two-bone IK (Godot `SkeletonIK3D` or a small solver in the bone layer) that puts each foot on the terrain height under it during stance. Needs the terrain height under each foot: a voxel raycast is too dear per foot per frame, so sample the four foot points once per landing (the footfall event) and hold them while the foot is planted. Only within 25 m of the camera.
 5. **Tracks in snow and mud** (built, flag `prints_fx`): a decal per landing in snow or mud (a hoof, paw or claw print chosen by the sign group in animal_sign.json: hoofed, pawed, clawed), oriented by the heading, fading over 10 game minutes in mud and until fresh snow in snow; a cap of 200 decals near the player. These are the same prints the tracking skill reads, so the hunting trail can later point at real ones.
-6. **Splashes**: wading or swimming landings (`ground == "water"`) get a ring and a few droplets (with the wet line shader).
+6. **Splashes** (built, flag `footfall_fx`; ground `puddle` when the sound stage's ground_wet is 0.6 or more, its `step_water` slot for the sound): wading or swimming landings (`ground == "water"`) get a ring and a few droplets (with the wet line shader).
 
 ## Check
 `creature_motion --speed=8` with `footfall_fx` and `slope_tilt` set on (the run sheet's step 4 gains two lines), a horse on a 20-degree slope, and Kathleen's listening for the ground-aware hoof slots.
