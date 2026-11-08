@@ -2084,7 +2084,7 @@ func _flap_bob(node: Node3D, b: Dictionary, state: int) -> void:
 
 	if state in AIR_STATES:
 		rig.position.y = float(flight["bob_m"]) * sin(TAU * float(flight.get("beat_hz", 4.0)) * float(b.get("air_t", 0.0)))
-	elif absf(rig.position.y) > 0.0005 and not b.has("hop"):
+	elif absf(rig.position.y) > 0.0005 and b.get("hop") == null and float(b.get("pounce_t", -1.0)) < 0.0:      # not while hopping or pouncing
 		rig.position.y = 0.0
 
 
