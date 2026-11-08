@@ -167,6 +167,52 @@ def _cell_height(B, A, F, hr, kc):
 
 
 @nb.njit(cache=True)
+def _slope_ceiling(h0, lift, Sc, sea, n, dx):
+    """The highest each cell's ground may stand: at most Sc (its threshold, a tangent) times the distance above the ground of
+    each of its 8 neighbours (sea counted at sea level), carried through chains of neighbours by forward and backward raster
+    sweeps until nothing changes. Returned as the ceiling on h (ground plus lift).
+
+    Why, beside the cap against the receiver in _solve: a cell is capped only against the neighbour it drains to, chosen at
+    the start of the step, so when the cell beside it is cut deep (a slot on a smooth flank, where neighbouring flow lines
+    drain in parallel and never into each other) nothing lowers it until a later step routes it there, one cell a step.
+    Run a3ffca14 left walls of 86 degrees and 270 m in granite that way, and 1.3% of land steeper to a neighbour than any
+    rock stands. A real wall fails along its whole height as soon as it is over its threshold."""
+    N = n * n
+    top = h0 - lift
+    for i in range(N):
+        if sea[i] and top[i] < 0.0:
+            top[i] = 0.0
+    diag = dx * 1.4142135623730951
+    for p in range(64):
+        changed = False
+        for sweep in range(2):
+            for q in range(N):
+                i = q if sweep == 0 else N - 1 - q
+                if sea[i] or Sc[i] <= 0.0:
+                    continue
+                r = i // n
+                c = i % n
+                lim = top[i]
+                for dr in range(-1, 2):
+                    for dc in range(-1, 2):
+                        if dr == 0 and dc == 0:
+                            continue
+                        rr = r + dr
+                        cc = c + dc
+                        if rr < 0 or rr >= n or cc < 0 or cc >= n:
+                            continue
+                        v = top[rr * n + cc] + Sc[i] * (diag if dr != 0 and dc != 0 else dx)
+                        if v < lim:
+                            lim = v
+                if lim < top[i] - 1e-6:
+                    top[i] = lim
+                    changed = True
+        if not changed:
+            break
+    return top + lift
+
+
+@nb.njit(cache=True)
 def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cell, sweeps, tol, Sc, lift):
     """The implicit erosion-deposition solve. kq: each cell's erosion coefficient (erosion = kq * S - kc, S the slope to the
     receiver, never below 0). kc: each cell's critical erosion rate, kq times the incision threshold on Q^m S (0 for none).
@@ -197,13 +243,16 @@ def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cel
     hybrid landslide model of Campforts et al. 2020, GMD 13:3863, routes it), instead of vanishing. Against the sea, the cap is
     measured from sea level, not from the sea floor, which this model does not evolve. lift (per cell, m) is what h carries
     above the ground: the ice thickness when glacial.py solves on the ice surface, 0 in the river era. The cap holds the ground,
-    not the ice: a cell's ground stands at most Sc times the distance above its receiver's ground.
+    not the ice: a cell's ground stands at most Sc times the distance above its receiver's ground. It is also held under
+    _slope_ceiling, the same limit against every neighbour as the step starts, so a wall beside a slot comes down along its
+    whole height in one step; what the ceiling takes off counts as eroded volume and goes down the tree like any slide.
 
     Hollows fill to their spill, no higher. A cell that starts the step below its receiver (in a closed hollow, draining over
     the receiver's sill) can be filled with sediment up to the receiver's height and no further; the rest goes on downstream.
     Without this, run d9f89615 built sediment mounds hundreds of metres high: a filled hollow rose above its sill, its upstream
     neighbours became a hollow behind it, and the mound climbed the valley."""
     N = n * n
+    ceiling = _slope_ceiling(h0 + U * dt, lift, Sc, sea, n, dx)
     up = np.zeros(N)
     total = np.zeros(N)          # sum over strictly upstream cells of (U - dh/dt) * cell, from the previous sweep
     for s in range(sweeps):
@@ -239,6 +288,8 @@ def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cel
                     base = 0.0
                 if x - lift[i] > base + Sc[i] * dist:
                     x = base + Sc[i] * dist + lift[i]
+            if x > ceiling[i]:                           # and against every neighbour (_slope_ceiling)
+                x = ceiling[i]
             change = abs(x - h[i])
             if change > biggest:
                 biggest = change
@@ -400,6 +451,32 @@ def calibrated_uplift(U, start, prev_dir, sea, dx, P):
     return U_prev * f, f, sha(f'{prev_dir}/ground.npz')
 
 
+def start_roughness(landform, sea, dx, R, seed):
+    """Starting roughness with the spectrum of real ground: random phases with amplitude falling as wavelength^(hurst + 1)
+    (a self-affine surface; measured topography is self-affine with Hurst exponents mostly between 0.5 and 0.9, Turcotte
+    1997, Fractals and Chaos in Geology and Geophysics, ch. 7; 0.8 keeps the short end smooth), between
+    shortest_m and longest_m, scaled so its mean slope (root mean square) is rms_slope. It fades out below coast_fade_m of
+    landform height, so the coast does not move. Seeded, so a world always starts the same.
+
+    Why not uncorrelated noise (start_roughness_m until 8 Nov 2026, +-0.5 m per cell): on 16 m cells sloping 0.3 to 0.65 a
+    cell drops 5 to 10 m to its neighbour, so half a metre of noise never turns a flow line, and the 8a38328c zoom pictures
+    showed the flanks combed into straight parallel gullies; granite, which wears least, kept the comb (drainage density 38).
+    Landscape models start from a perturbed surface for this reason; real ground is never smooth at any scale. With the
+    defaults (0.1, 48 m to 1.5 km, hurst 0.8) the height spread is about 7 m, under 1% of the starter island's relief."""
+    n = landform.shape[0]
+    rng = np.random.default_rng(seed)
+    k = np.fft.fftfreq(n, dx)
+    kk = np.hypot(*np.meshgrid(k, k))
+    band = (kk >= 1.0 / float(R['longest_m'])) & (kk <= 1.0 / float(R['shortest_m']))
+    amp = np.zeros_like(kk)
+    amp[band] = kk[band] ** (-(float(R['hurst']) + 1.0))
+    f = np.real(np.fft.ifft2(np.fft.fft2(rng.standard_normal((n, n))) * amp))
+    gy, gx = np.gradient(f, dx)
+    f *= float(R['rms_slope']) / max(float(np.sqrt(np.mean(gx * gx + gy * gy))), 1e-12)
+    t = np.clip(landform / float(R['coast_fade_m']), 0.0, 1.0)
+    return np.where(sea, 0.0, f * t * t * (3.0 - 2.0 * t))
+
+
 def sha(path):
     return hashlib.sha256(open(path, 'rb').read()).hexdigest()
 
@@ -442,18 +519,16 @@ def main():
     W = P['water_budget']
     q_ref = runoff.reference_quick_mm(P['rain']['background_mm_yr'], W)
     h = start.ravel().copy()
-    # Initial roughness: a smooth landform drains in straight parallel lines (steepest descent on a plane); small uncorrelated
-    # roughness, fixed by world position, lets the channels find each other and branch, as on any real surface. The erosion
-    # then removes it: it is a starting condition, not detail laid on the result.
-    if E.get('start_roughness_m', 0.0) > 0.0:
-        col = int(round(float(data['origin_x']) / dx)) + np.arange(n, dtype=np.int64)
-        row = int(round(float(data['origin_z']) / dx)) + np.arange(n, dtype=np.int64)
-        C, R = np.meshgrid(col, row)
-        k = (C * 73856093) ^ (R * 19349663) ^ int(P['seed'])
-        k = ((k ^ (k >> 13)) * 1274126177) & 0x7FFFFFFF
-        k = (k ^ (k >> 16)) & 0xFFFFFF
-        rough = (k.astype(np.float64) / float(0xFFFFFF) - 0.5) * 2.0 * E['start_roughness_m']
-        h = np.where(sea == 1, h, np.maximum(h + rough.ravel(), 0.05))
+    # Initial roughness (start_roughness, see start_roughness()): a smooth landform drains in straight parallel lines, so the
+    # channels never find each other; a rough start lets them branch, as on any real surface. It is a starting condition the
+    # erosion works on, not detail laid on the result.
+    R_ = E.get('start_roughness', {})
+    rough = start_roughness(start, sea.reshape(n, n) == 1, dx, R_, int(P['seed'])) if R_.get('rms_slope', 0.0) > 0.0 else np.zeros((n, n))
+    h = np.where(sea == 1, h, np.maximum(h + rough.ravel(), 0.05))
+    rgy, rgx = np.gradient(rough, dx)
+    rough_stats = dict(rms_m=float(np.sqrt(np.mean(rough[sea.reshape(n, n) == 0] ** 2))), max_abs_m=float(np.abs(rough).max()),
+                       rms_slope=float(np.sqrt(np.mean((rgx * rgx + rgy * rgy)[sea.reshape(n, n) == 0]))))
+    print(f'start roughness: {rough_stats}', flush=True)
     h[sea == 1] = np.minimum(h[sea == 1], -1.0)
     g = rock.load(geology_dir, E['cover_m'], E['cover_erodibility'])
     bfi = runoff.bfi_by_rock_id(g['names'], W['bfi_by_rock'])
@@ -561,6 +636,7 @@ def main():
         lowering = {name: dict(river_and_slides_m=float(by_river[msk].mean()), creep_m=float(by_creep[msk].mean()))
                     for name, msk in (('near_landform_peaks', near_pk), ('all_land', sea == 0)) if msk.any()}
         summary = dict(seconds=time.time() - t0, steps=len(track), years=years_done, summit_m=float(hh.max()), landform_summit_m=float(start.max()),
+                       start_roughness=rough_stats,
                        uplift_calibration=calib,
                        massif_scale_height_mismatch_m=dict(mean=float(mismatch.mean()), p5=float(np.percentile(mismatch, 5)),
                                                            p95=float(np.percentile(mismatch, 95))),
