@@ -23,7 +23,7 @@ Each part is read from R4's own solve, so there is one groundwater model:
 - **Groundwater catchments.** On the 64 m head field H, each block passes its water to its steepest-descent neighbour in H, the same D8 rule the surface routing uses, until it reaches a block that discharges (`dis` > 0) or a fixed sea or lake block. A discharge block's catchment is every block that ends there.
 - **L = 2 × the mean flow distance** of the catchment's blocks to its discharge block. A strip with even recharge has a mean distance of L/2.
 - **T** is the harmonic mean of the catchment's block transmissivities along the flow, because flow in series takes the harmonic mean.
-- **S_y** is the storage-weighted mean over the saturated thickness. It combines rock and loose cover by thickness, the same way R4 already combines their transmissivities (`T16 = Kc dcov + Krock (b − dcov)`), and storage adds across the catchment.
+- **S_y** is the specific yield at the water table: that of the layer R4's head sits in (loose cover, or one of the near-surface zones of section 7), averaged over the catchment's blocks. The table rises and falls there, so the column's mean would overstate the store (Jamie's #713).
 
 R4 writes `gw_tau_days`, `gw_sy` and `gw_flow_path_m` at the 16 m cells where it puts the groundwater out, the same cells as `gw_discharge_m3_s`, with NaN elsewhere. Its manifest summary gives the τ quartiles by rock.
 
@@ -80,32 +80,46 @@ Each `springs` row keeps `pos`, `m3_s`, `rock` and `feeds_reach`, and gains:
 3. **Mean flows unchanged.** Only the season shares move, so every reach's `q_mean_m3_s` must match the run before to rounding.
 4. **Reported:** the island's flow-weighted dry share against the old 45-day store, the kilometres of perennial stream before and after, and the springs that change regime.
 
-## 7. The known risk: R4's transmissivity
+## 7. R4's transmissivity: the near-surface layer and karst's two stores
 
-At L = 500 m, R4's present T (Gleeson's permeability over a uniform 50 m, conduits ×100 in cave-forming rock) gives:
+At a fixed L of 500 m, R4's present T (Gleeson's permeability over a uniform 50 m, conduits ×100 in cave-forming rock) gives karst a τ of 2 hours and shale about 2,700 years. Jamie's #713 (`docs/knowledge/groundwater-layers-recession.md`) shows three causes: the flow path, the layer and the store. The fixes are physical, in R4, and no clamp is put on τ.
 
-| rock | T (m²/day) | S_y | τ |
-|---|---|---|---|
-| karst limestone | 5,140 | 0.004 | 2 hours |
-| chalk | 51 | 0.01 | 20 days |
-| old basalt | 10 | 0.01 | 99 days |
-| sandstone | 10 | 0.08 | 2.2 years |
-| fresh granite | 0.26 | 0.002 | 2.2 years |
-| shale | 0.001 | 0.01 | about 2,700 years |
-| 5 m of outwash on granite | 41 | 0.024 | 59 days |
+**The flow path comes from R4's catchments, never a fixed distance.** Hard rock has perennial streams 200 to 250 m apart. Chalk and karst take the water underground and have few streams, so their groundwater catchments run for kilometres. Section 1 already reads L from R4's own head field, so a karst or chalk spring gets its kilometres. The fixed 500 m was the misleading part.
 
-The karst and shale rows are not real springs. Real hard-rock uplands drain through soil, drift and the fractured top few metres of the rock: #686 says the store sits in that weathered zone, and the Low Flow Studies give such rocks a base flow index of about 0.4, which needs a store of weeks, not millennia. A karst spring has a fast conduit store sitting on a slower matrix store (#686: conduits under 0.001, fractures 0.001, matrix 0.003).
+**(a) The near-surface layer on tight rock** (granite, slate, old basalt, shale and coal measures). R4 replaces the uniform 50 m under these rocks with the zones the surveys measured:
 
-The fix is in R4 and is physical. No clamp is put on τ.
-- **(a) A near-surface layer** of soil and fractured rock, with its own thickness, conductivity and S_y. It is added to T and to the store the way the loose cover is. This also gives hard-rock hillsides their seasonal seeps.
-- **(b) Karst as two stores in parallel**, conduit and matrix, each with its own share of the recharge and its own τ.
+| layer | thickness | K (m/day) | S_y | source (#713) |
+|---|---|---|---|---|
+| soil, head and thin till | 1 m (0.5 to 2) | 0.3 (0.1 to 1) | 0.05 | judged |
+| zone 1, the broken, weathered top of the rock | 2 m (1 to 3) | 0.1 | 0.02 | GSI 2015; BGS OR/15/028 |
+| zone 2, shallow fractures | to 15 m | 0.01 | 0.005 | K: GSI; depth and S_y judged |
+| zone 3, deeper fractures | to 100 m | 0.001 | 0.002 | GSI; BGS |
 
-Jamie is asked for:
-- the near-surface thickness and conductivity in glaciated hard-rock uplands;
-- the conduit and matrix split of karst spring flow;
-- measured recession times by aquifer type, for check 1.
+- **T is about 0.7 m²/day.** That matches the Dalradian specific capacity, 0.8 m³/day per metre.
+- **Sandstone keeps its own K.** The check is Torridonian's median T, 16 m²/day. Chalk, karst and loose cover are not changed by (a).
+- **S_y at the table** (section 1): a hillside table in zone 1 uses 0.02.
+- **Shale.** The zones are its whole store, because the rock below adds about 0.001 m²/day against their 0.7. This follows from the sums with no special case.
+- **Seeps and springs.** Where the zones cannot carry the recharge down the hillside, R4's head reaches the ground and the water comes out near where it fell. Those discharge cells have short catchments and a τ of weeks: the seep at the foot of the drift that fails in August. The rock springs lower down have flow paths of about 200 m and a τ of 1.5 to 2 years, as the Cairngorm plateau springs' 2-year water shows (Soulsby et al. 1999).
 
-The build waits for those numbers. Section 7(a) and (b) then go into this plan before any code.
+**(b) Karst as two stores in parallel.** In R4's karst cells, each discharge cell's recharge splits in two.
+- **The conduits** take 0.55 of it: that is 1 − i, with Mangin's i at 0.20 to 0.65 (Olarinoye et al. 2022), and the middle is judged. Their τ is 5 days (2 to 10, from the 3 or 4 days of storm flow, judged), with S_y under 0.001. Conduit flow is pipe flow, not Darcy flow, so this τ is the measured one, not Rorabaugh's.
+- **The matrix** takes the other 0.45. Its τ is Rorabaugh's, with:
+  - S_y 0.003 (ORNL 1994, #686);
+  - L the distance to the nearest conduit, judged at 300 m;
+  - T from the matrix's own K. R4 does not hold that K yet, because its ×100 factor is the conduits. Jamie is asked for a sourced value.
+  The checks are Mangin's regulation capacity, under 0.5 years for typical karst, and Fiorillo et al. (2012), 150 days to 7 years in large massifs.
+- **The cell's season shares** are the two stores' shares added. A karst spring then floods within a day of a storm and falls back within a week. After that it tails off for months, and its dry-season flow is nearly all matrix.
+
+**Check 1** (section 6) reads τ against #713's table (c) by rock. Only the karst rows are measured, so the other rows are reported, not failed. #713's never-see list joins #686's:
+- a karst spring still in flood a week after a storm, or dry in a normal summer;
+- a granite or slate hillside where the rock spring and the soil seep fail together in August;
+- a shale valley with a strong summer base flow;
+- a chalk stream that rises within hours of a storm;
+- a τ of hours or of millennia for any spring.
+
+The base flow index is not a separate check here, because R4's recharge split already uses it (`water_budget.bfi_by_rock`).
+
+**Still asked of Jamie:** a sourced karst matrix K, and stream density on chalk and karst.
 
 ## Cost and what does not change
 

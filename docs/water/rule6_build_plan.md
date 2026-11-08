@@ -2,7 +2,7 @@
 
 Sonny, 8 Nov 2026. This is the build note for design A1 rule 6 in `docs/water/watershed_rebuild_design.md`. It says which lines change in which files, the settings and their sources, how the run is made on Dave's PC, and the lines that judge it.
 
-Build it only after the ws580g pictures pass `ws580f_signoff.md`. Nothing here is run in the cloud. Locally only `py_compile`, `pyflakes`, `check_doc_links.py` and the GDScript parse and lint run.
+Built on 8 Nov after ws580g: change 1 on #580 (`sonny-landform-standing`), change 2 on R2b, change 3 before. ws580g passed every number of `ws580f_signoff.md` but one: the second massif stood on chalk (rule 3 tested the world-map summit, not the ground's) and lost 41 m to the rivers and about 320 m to the ice. Rule 3 is fixed in the same landform commit (TERRAIN_VERSION 69), so the ws580h run tests both. Nothing here is run in the cloud. Locally only `py_compile`, `pyflakes`, `check_doc_links.py` and the GDScript parse and lint run.
 
 ## Why
 
@@ -38,8 +38,8 @@ It applies only when `landform_only` is set: the watershed model's input, set on
 
 New settings in `tile_rules.json` `summit` (both judged, checked below):
 
-- `"head_depth_share": 0.4`. At its deepest, the valley head lies 0.4 times the tent's rise below the ground beside it. On the starter summit that is 0.4 × 232 m, or 93 m.
-- `"head_peak_share": 0.35`. The head is deepest at 0.35 of the tent's reach from the top. On the starter summit that is about 325 m.
+- `"head_depth_share": 0.4`. At its deepest, the valley head lies 0.4 times the tent's rise below the ground beside it. On the starter summit (1,266 m on the world map, so the tent rises 202 m) that is about 81 m.
+- `"head_peak_share": 0.35`. The head is deepest at 0.35 of the tent's reach from the top. On the starter summit (reach 810 m) that is about 284 m.
 
 The code, inside the loop over samples (`w` replaces the second call to `spur_weight_at`):
 
@@ -185,7 +185,7 @@ This goes on R2b (#556) as a new `tools/watershed/peaks.py`, which reads the run
 
 Its settings are in `params.json` `peaks`. Its unit tests, `test_peaks.py`, use small synthetic peaks.
 
-- **`summits(landform, sea, dx, min_m)`.** The landform's peaks, as evolve.py already finds them: the highest point within 1 km. Only those at least 300 m above the stadial snowline count (487 + 300 = 787 m on the starter island), because lower tops hold no cirque glacier. On the starter island that is the 1,438 m summit and the 1,018 m second massif.
+- **`summits(landform, sea, dx, min_m)`.** The landform's peaks, as evolve.py already finds them: the highest point within 1 km. Only those at least 300 m above the stadial snowline count (487 + 300 = 787 m on the starter island), because lower tops hold no cirque glacier. On the starter island that is the 1,441 m summit, the 977 m second massif and the 910 m peak beside it (ws580g's landform).
 - **`axes(landform, tops)`.** The valley-head bearings, read from the landform itself: the heads on whichever ring (300 to 1,000 m) shows the most, nearest first. If no ring shows a head, the minima of the 500 m ring are used.
 - **`shapes(ground, landform, sea, dx, tops, axes)`.** For each summit, on a 2.5 km window round it:
   - `top_m`, and `top_change_m` against the landform (the highest ground within 200 m, as evolve.py measures);
@@ -218,7 +218,7 @@ These lines are judged as written. Failing lines are relayed word for word, with
 9. Headwalls in the shady quarter (south-east on the starter island) retreat 1.5 to 2 times faster than those in the sunny quarter (north-west) (noted with the measured ratio; fails only if under 1.2 or over 3). Shady cirque floors lie 100 to 200 m below sunny ones (noted).
 10. Cirques get most of their depth early: the rate after cycle 3 is at most a fifth of that in the first three cycles.
 
-**Glacial zooms (Dino, at 54800 71424 and 66960 79296, from the final ground and the cycle 20 and 39 snapshots):**
+**Glacial zooms (Dino, at 54800 71424 and 66960 79296, from the final ground and the cycle 20 and 39 snapshots; `plots.py zoom` takes a snapshot file):**
 
 11. Cirques sit at the valley heads, with arêtes between them and a pyramid top.
 12. No ring cliff, no star of straight rays, no even wall ribbon round the top beyond the open 57-degree item below.
