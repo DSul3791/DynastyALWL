@@ -456,6 +456,13 @@ def main():
                    history=history, years=total_years,
                    active_ice_years=sum(int(e['cycles']) * float(e['active_years']) for e in history),
                    ice_cut_max_m=float(st['ice_cut'][land].max()), cycles=cycles)
+    # Lowering over the run (uplift aside), to set beside measured 10Be rates (Portenga and Bierman 2011, GSA Today 21(8):4: bare
+    # outcrops 12 m/Myr mean; drainage basins 182 m/Myr mean where seismically inactive, 54 m/Myr median over all). 8 Nov 2026.
+    low = (ground0.ravel() + U * total_years - h) * 1000.0 / max(total_years, 1.0)
+    g0 = ground0.ravel()
+    summary['lowering_mm_yr'] = {name: float(low[land & m].mean()) if (land & m).any() else None
+                                 for name, m in (('land', g0 > -1e9), ('above_300m', g0 > 300.0), ('above_600m', g0 > 600.0),
+                                                 ('above_900m', g0 > 900.0))}
     summary['where'] = report(f'{out_dir}/glacial.npz', geology_dir, E)
     man = dict(params=P, inputs={'inputs.npz': evolve.sha(f'{inputs_dir}/inputs.npz'), 'ground.npz': evolve.sha(f'{b1_dir}/ground.npz')},
                summary=summary)

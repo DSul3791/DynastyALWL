@@ -131,3 +131,29 @@ The step track shows what does cause the loss. The summit falls about 1 mm a yea
 - Measured soil creep needs soil. On bare rock the lowering is limited by how fast rock becomes soil, and that "soil production speed limit" is about a tenth of a millimetre a year at most (Heimsath et al. 1997; Dixon and von Blanckenburg 2012; to be checked with numbers before any change). So linear creep on a bare horn top is about ten times faster than anything measured.
 
 **Probe M** is probe L with creep off (`evolve.D` 0; params `/mnt/project-files/water/ws580i_probe_params_M.json`; a diagnostic, not a setting). If M's main summit loses at most a fifth of L's (49 m), creep is the cause. The fix is then soil-limited creep: rock creeps only as fast as soil is made from it. That gets a design note with measured soil production numbers first. It also touches B1, so it comes with its own check of B1's peaks.
+
+## Probe M result and what holds a summit (8 Nov 22:20; `manifest_M.json`)
+
+Creep off lost more: 293 m against L's 247 m. **Creep is not the cause.** In M, the whole cone under the summit falls together:
+
+| ring | before | after 240 kyr | fall |
+|---|---|---|---|
+| top | 1,383 m | 1,090 m | 293 m |
+| ground 300 m out | 936 m | 646 m | 290 m |
+| ground 500 m out | 643 m | 338 m | 305 m |
+
+That is about 1.25 mm a year of valley lowering, with little or no ice for most of the time. So the horn top falls as fast as the valleys around it.
+
+That one fact explains the difference between ws580i's cycles 1 to 33 and the fall after. While the top keeps a plateau (114 m wide at cycle 1, 48 m at cycle 33), the threshold-slope faces only eat into it sideways. The valleys at 300 m fell 222 m in those cycles while the top fell 13 m, which is measured outcrop behaviour. Once the plateau is gone (cycle 36), the faces meet, and the top falls one for one with its valleys: in the 100 kyr world 441 m against 459 m. Nothing about the processes changes, only the geometry. So the question for line 4 is how fast the valleys round the summit are cut.
+
+**Measured rates.** Cosmogenic 10Be (Portenga and Bierman 2011, GSA Today 21(8):4) gives:
+
+- bare outcrops: 12 m/Myr mean, 0.012 mm a year;
+- drainage basins in seismically inactive settings: 182 m/Myr mean;
+- drainage basins overall: 54 m/Myr median.
+
+The model's valleys round the horn are cut at 1.25 mm a year, about 7 times the inactive mean. Its rivers still use the K that was tripled (4e-6 to 1.2e-5) to make B1's runs quick. B1's time is not real years, but the glacial stage's is, in its cold phases (frozen-ground runoff) and its interglacials alike. ws580i fixed this for the ice's K only.
+
+**Probe N** is probe L with the stage's river K back at 4e-6, and Hergarten's glacial_K_ratio of 2, so the ice's K stays at 8e-6. Its params are `/mnt/project-files/water/ws580i_probe_params_N.json`. glacial.py now reports `lowering_mm_yr` over land, and above 300, 600 and 900 m, to set beside the 10Be rates.
+
+**Decision.** If N's main summit loses at most a fifth of L's (49 m), the valleys' river K is the cause. The fix is a real-year river K for the glacial stage, set from the measured basin rates the way the ice's K was set from cirque rates, and not tied to B1's quick-run K. If N's loss falls only in proportion to K (about 80 m), K is the lever but not by itself enough. Its lowering rates then say what river K the measured rates call for, and that goes into the design note before any full run.
