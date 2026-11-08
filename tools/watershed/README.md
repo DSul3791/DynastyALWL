@@ -156,7 +156,7 @@ Look for: `closed_cells_outside_lakes` near 0; `summit_8m` within a metre of `su
   - the valley heads kept;
   - steeper near the top;
   - no flat cap over 300 m;
-  - the headwall retreat rate, the NE/SW ratio and the early cirque depth, read from the glacial cycles.
+  - the headwall retreat rate, the shady/sunny ratio (SE against NW on the starter island, from `glacial.shady_bearing_deg`) and the early cirque depth, read from the glacial cycles.
   It writes `peaks_glacial.json` and `.md`.
 
 Each line reads PASS, FAIL or N/A with its numbers. A run of one cold stage has no cycles, so lines 8 to 10 read N/A. Settings are in `params.json` `peaks`. `python tools/watershed/test_peaks.py` runs its unit tests on small synthetic peaks (numpy and scipy only, a few seconds).
