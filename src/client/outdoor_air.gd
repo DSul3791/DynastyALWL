@@ -12,6 +12,8 @@ extends RefCounted
 # - Cold and fog (3.5): frost eats the far high end about twice as fast; fog trims it past 100 m. Near sounds stay crisp.
 # - Masking (3.4): rain and a gale hide small sounds past a mask distance (12 dB down over one more of it); big low sounds come through.
 # - Rivers (3.7): river voices fade like a line out to 50 m (line_db; sound_occlusion.gd adds it for voices marked "air_line").
+# - Breeze (3.8, step 5): a moderate breeze cuts every range about five times (Jamie #683): past 200 m, every source 6 dB down at
+#   wind 0.3 rising to 14 dB at wind 0.5, big low sounds too.
 # - Fresh snow (3.5): far sounds 4 dB down and duller on fresh snow; the freshness lasts about 2 game days, faster gone in a thaw or rain.
 
 const NEAR_M := 50.0                    # closer than this the wind changes nothing
@@ -63,6 +65,9 @@ const ECHO_SNOW_DB := -5.0
 const ECHO_REPEAT_DB := -8.0            # each further bounce in a gorge
 const GORGE_M := 60.0
 const ECHO_HZ := 2500.0
+const BREEZE_DB := [-6.0, -14.0]        # step 5: every source past BREEZE_M, at wind 0.3 (4 m/s) .. 0.5 (8 m/s)
+const BREEZE_WIND := [0.15, 0.3, 0.5]     # fades in from 0.15, -6 dB at 0.3, -14 dB from 0.5
+const BREEZE_M := [200.0, 400.0]        # full from 400 m; nothing within 200 m
 const MAX_DB := 6.0                     # the sum is held inside these
 const MIN_DB := -30.0
 
@@ -216,6 +221,14 @@ static func gorge_repeats(first_delay: float, width_m: float) -> Array:
 	return [[first_delay + step, ECHO_REPEAT_DB], [first_delay + 2.0 * step, 2.0 * ECHO_REPEAT_DB]]
 
 
+# Step 5 (3.8): the breeze's own noise hides far sounds of every size (Jamie #683: a force 4 breeze cuts every range about
+# five times, about 14 dB). Nothing within 200 m.
+static func breeze_db(distance: float, wind: float) -> float:
+	var w: float = clampf(wind, 0.0, 1.0)
+	var amount: float = lerpf(float(BREEZE_DB[0]), float(BREEZE_DB[1]), smoothstep(float(BREEZE_WIND[1]), float(BREEZE_WIND[2]), w))
+	return amount * smoothstep(float(BREEZE_WIND[0]), float(BREEZE_WIND[1]), w) * smoothstep(float(BREEZE_M[0]), float(BREEZE_M[1]), distance)
+
+
 # Everything for one voice. `air`: {"wind", "toward" (Vector2), "gust", "night", "calm", "fog", "temp_c", "forest"}, and from step 2
 # "rain", "leaves" (under crowns 0..1), "snow_fresh", "ground_snow" (missing keys: none of it).
 static func total(listener: Vector3, source: Vector3, unit: float, air: Dictionary) -> Vector2:
@@ -225,6 +238,6 @@ static func total(listener: Vector3, source: Vector3, unit: float, air: Dictiona
 	var n: Vector2 = night_effect(distance, float(air.get("night", 0.0)), float(air.get("calm", 0.0)), float(air.get("fog", 0.0)), unit)
 	var snow: Vector2 = snow_effect(distance, float(air.get("snow_fresh", 0.0)), float(air.get("ground_snow", 0.0)))
 	var mask_m: float = minf(rain_mask_m(float(air.get("rain", 0.0)), float(air.get("leaves", 0.0))), gale_mask_m(float(air.get("wind", 0.0))))
-	var db: float = w.x + n.x + snow.x + forest_db(distance, float(air.get("forest", 0.0))) + mask_db(distance, mask_m, unit)
+	var db: float = w.x + n.x + snow.x + forest_db(distance, float(air.get("forest", 0.0))) + mask_db(distance, mask_m, unit) + breeze_db(distance, float(air.get("wind", 0.0)))
 	var cut: float = w.y * n.y * snow.y * air_cutoff(distance, float(air.get("temp_c", 10.0)), float(air.get("fog", 0.0)))
 	return Vector2(clampf(db, MIN_DB, MAX_DB), cut)

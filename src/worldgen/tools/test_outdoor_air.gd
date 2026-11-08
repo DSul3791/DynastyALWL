@@ -74,6 +74,7 @@ func _init() -> void:
 	_check_step2()
 	_check_step3()
 	_check_step4()
+	_check_step5()
 
 	var source: String = FileAccess.get_file_as_string("res://src/client/sound_occlusion.gd")
 	_check(source.contains("has(\"--sound-outdoors\")") and not source.contains("player.volume_db"), "behind --sound-outdoors, and the scan never writes volume_db")
@@ -135,3 +136,14 @@ func _check_step4() -> void:
 		marked += 1 if FileAccess.get_file_as_string(path).contains("set_meta(\"air_sharp\"") else 0
 
 	_check(marked == 4, "blows, picks, spear strikes and tree crashes are the sharp sounds that echo")
+
+
+# Step 5 (3.8): a moderate breeze cuts every range, big sounds too, past 200 m.
+func _check_step5() -> void:
+	_check(OutdoorAir.breeze_db(150.0, 0.8) == 0.0, "nothing within 200 m, whatever the wind")
+	_check(OutdoorAir.breeze_db(800.0, 0.1) == 0.0, "a calm takes nothing")
+	_check(is_equal_approx(OutdoorAir.breeze_db(800.0, 0.3), -6.0), "a light breeze (wind 0.3, 4 m/s): 6 dB off a far sound")
+	_check(is_equal_approx(OutdoorAir.breeze_db(800.0, 0.5), -14.0), "a moderate breeze (wind 0.5): 14 dB, about five times less range (Jamie #683)")
+	var calm_fall: Vector2 = OutdoorAir.total(Vector3.ZERO, Vector3(0.0, 0.0, 800.0), 20.0, {"wind": 0.0})
+	var breezy_fall: Vector2 = OutdoorAir.total(Vector3.ZERO, Vector3(0.0, 0.0, 800.0), 20.0, {"wind": 0.5, "toward": Vector2(1.0, 0.0)})
+	_check(breezy_fall.x <= calm_fall.x - 14.0 + 0.01, "a big fall 800 m off is quieter in a breeze too (%.1f against %.1f dB)" % [breezy_fall.x, calm_fall.x])
