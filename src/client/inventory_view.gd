@@ -4857,25 +4857,50 @@ func run_plant_test(client) -> void:
 	print("Plant test: tried %d, gone %d, still standing %d, skipped (nothing pickable) %d" % [tried, gone, tried - gone, skipped])
 
 
+# The self-tests build with the hammer, as players do since kits left the game (4 Nov 2026): data/items/blueprints.json numbers and costs.
+# The wooden hammer goes on a hotbar key by itself when it comes into the pack (inventory step 4).
+const CHEST_BLUEPRINT := 26
+const CHEST_MATERIALS := [["wooden_hammer", 1], ["stick", 10], ["twine", 4]]
+const LEAN_TO_BLUEPRINT := 25
+const LEAN_TO_MATERIALS := [["wooden_hammer", 1], ["stick", 30], ["leaves", 100], ["leaves", 100], ["twine", 10]]
+
+
+func _give_blueprint_kit(materials: Array) -> void:
+	for row in materials:
+		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(str(row[0])), 0, int(row[1]), Vector3.ZERO)
+
+
+func _has_blueprint_kit(materials: Array) -> bool:
+	var need: Dictionary = {}
+
+	for row in materials:
+		need[str(row[0])] = int(need.get(str(row[0]), 0)) + int(row[1])
+
+	for item_id in need:
+		if inventory.count_of(table.number_of(item_id)) < int(need[item_id]):
+			return false
+
+	return true
+
+
 # Headless check (--leanto): place a lean-to ahead of the player and look for its row and its roof.
 func run_leanto_test(_client) -> void:
 	await get_tree().create_timer(6.0).timeout
-	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+	_give_blueprint_kit(LEAN_TO_MATERIALS)   # kits left the game (4 Nov 2026): the lean-to is built with the hammer from its blueprint
 
-	for wait in 30:   # a cold join gets its pack late: poll up to 15 s for the kit
+	for wait in 30:   # a cold join gets its pack late: poll up to 15 s for the hammer and the materials
 		await get_tree().create_timer(0.5).timeout
 
-		if inventory.numbers.has(table.number_of("lean_to_kit")):
+		if _has_blueprint_kit(LEAN_TO_MATERIALS):
 			break
 
-		if wait == 16 and inventory.count_of(table.number_of("lean_to_kit")) == 0:   # still nothing after 8 s: the give was lost, send it once more
-			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+		if wait == 16:   # still not all there after 8 s: the give was lost, send it once more
+			_give_blueprint_kit(LEAN_TO_MATERIALS)
 
 	var here: Vector3 = _player_position.call()
 	var ground: float = float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0)))
 	var spot: Vector3 = Vector3(here.x + 2.0, ground, here.z)
-	var slot: int = inventory.numbers.find(table.number_of("lean_to_kit"))
-	net.inventory_action.rpc_id(1, Net.ACT_PLACE, slot, 0, 0, spot)
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, LEAN_TO_BLUEPRINT, 0, 0, spot)
 	await get_tree().create_timer(2.0).timeout
 	var seen: int = 0
 
@@ -5273,10 +5298,12 @@ func run_eat_test(client) -> void:
 		await get_tree().create_timer(0.3).timeout
 		client.held.select(9)
 		await get_tree().create_timer(0.3).timeout
-		held_ok += 1 if client.held.held_id() == id else 0
-		modelled += 1 if client.held._model != null else 0
+		var held_here: bool = client.held.held_id() == id or client.held.off_id() == id   # a torch or shield goes in the left hand (items.json "offhand", 7 Nov 2026)
+		var drawn: bool = client.held._off_model != null if client.held.off_id() == id else client.held._model != null
+		held_ok += 1 if held_here else 0
+		modelled += 1 if drawn else 0
 
-		if client.held.held_id() != id or client.held._model == null:
+		if not held_here or not drawn:
 			print("Tools test: NOT held or no model: %s" % id)
 
 		# Put it down: 190 tools in the pack outweigh the carrying limit, and the last heavy ones (the quern) were then never given (31 Oct 2026).
@@ -5306,7 +5333,7 @@ func run_chest_test(client) -> void:
 		_finish_early(client)
 		return
 
-	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+	_give_blueprint_kit(CHEST_MATERIALS)   # kits left the game (4 Nov 2026): the chest is built with the hammer from its blueprint
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var id: int = 0
@@ -5320,11 +5347,11 @@ func run_chest_test(client) -> void:
 			await get_tree().create_timer(2.0).timeout
 			continue
 
-		if inventory.numbers.find(table.number_of("chest_kit")) < 0:
-			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+		if not _has_blueprint_kit(CHEST_MATERIALS):
+			_give_blueprint_kit(CHEST_MATERIALS)
 			await get_tree().create_timer(1.0).timeout
 
-		net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("chest_kit")), 0, 0, Vector3(here.x + 2.0 + float(attempt), ground, here.z))
+		net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, CHEST_BLUEPRINT, 0, 0, Vector3(here.x + 2.0 + float(attempt), ground, here.z))
 
 		for wait in 40:
 			for k in _world:
