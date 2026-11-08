@@ -29,11 +29,17 @@ func _mergeable(number: int, wear_a: int, wear_b: int) -> bool:
 	if table == null:
 		return true
 
+	if table.wood_class(number) != "":   # wet wood (cooking.json wet_wood): stacks join when their drying left is within wet_merge_h
+		return absi(wear_a - wear_b) < int(round(float(table.wet_wood().get("wet_merge_h", 2.0)) * 10.0))
+
 	var life: int = table.shelf_units(number)
 	return life == 0 or absi(wear_a - wear_b) <= int(float(life) * float(table.spoilage().get("merge_gap", 0.1)))
 
 
 func _joined_age(number: int, wear_a: int, count_a: int, wear_b: int, count_b: int) -> int:
+	if table != null and table.wood_class(number) != "":
+		return maxi(wear_a, wear_b)   # a join keeps the wetter: never drier than it is
+
 	if table == null or table.shelf_units(number) == 0:
 		return wear_a
 
