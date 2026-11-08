@@ -1317,6 +1317,7 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.name = "Animals"
 	add_child(animal_view)
 	_animal_view_node = animal_view
+	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
@@ -2282,8 +2283,8 @@ func _update_weather() -> void:
 		flora.set_ice_cover(ice_now)
 
 	if ocean_ice != null:
-		# Salt water freezes harder to start: the sea only shows floes once the ice is well on.
-		ocean_ice.update(_anchor, maxf(IceScript.cover(game_clock.seconds, group, 0.0, 12.0) * 1.0 - 0.05, 0.0))
+		# The sea never freezes outside the arctic zone (Ice.sea_cover); there, salt water freezes at -1.8 C.
+		ocean_ice.update(_anchor, IceScript.sea_cover(game_clock.seconds, group))
 
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
