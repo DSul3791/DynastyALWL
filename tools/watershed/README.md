@@ -75,12 +75,14 @@ Check `evolve.png` and the summary for:
 
 `python tools/watershed/glacial.py INPUTS_DIR GEOLOGY_DIR B1_DIR OUT_DIR`, where B1_DIR is the R2 output folder (the one holding `ground.npz`). It starts from the river era's final ground, so the ice settings can be changed and rerun without rerunning R2. Point B1_DIR at the chosen snapshot (for example `ground_<sha>\t1000k`) to glaciate the ground at that run length. The slope limit by rock and the uplift are B1's.
 
-One cold stage (`params.json` `glacial`) with the glacial stream-power model of Hergarten (2021):
+The glacial history (`params.json` `glacial`), with the glacial stream-power model of Hergarten (2021) in each cold phase:
 - ice made above the snowline (`ela_m`) from the same rain field, and melted below it;
 - the ice flux accumulated down the ice surface, spread over each glacier's width (the swath), and a finite ice thickness;
 - erosion and deposition with the same implicit solve as R2, so moraines, till and outwash come from the sediment budget;
 - frozen ground, so all runoff is quick;
-- then 11,700 years of today's rivers and creep.
+- then an interglacial of today's rivers and creep.
+
+`glacial.history` (design A1 rule 6, `docs/water/rule6_build_plan.md`) runs the whole Pleistocene as cycles of a cold phase and an interglacial: 39 cycles of the 41 kyr world (snowline 150 m higher), then 10 of the 100 kyr world, the last interglacial the Holocene's 11,700 years. The snowline lies `aspect_ela_m` lower on steep ground facing the shady lee quarter (`shady_bearing_deg`, SE on the starter island) and as much higher facing the sunny one. After every cycle the peak shapes go into the manifest's `summary.cycles`; `summary.peaks` holds the rule 6 lines 4 to 10; `snapshot_after_cycles` saves `glacial_cycle_NN.npz` (ground and that cycle's ice), which `python tools/watershed/plots.py zoom RUN_DIR/glacial_cycle_NN.npz X Z` draws beside the river-era ground. `ice_cut_m` is the ice's own cut (cold phases only); `glacial_cut_m` also holds the rivers' work between. About 650 steps, some 70 minutes on Dave's PC. With no `history` it is one cold stage of `years`, then `post_glacial_years`, as before.
 
 `python tools/watershed/plots.py glacial RUN_DIR` redraws `glacial.png`. `python tools/watershed/glacial.py report GEOLOGY_DIR RUN_DIR` reads a saved run in seconds and writes `glacial_report.json`: where the ice cut most and into what rock, and where the ground is steepest (the same report is in the manifest's summary under `where`).
 
@@ -90,7 +92,7 @@ Check `glacial.png` and the summary for:
 - tributary valleys hanging above the troughs they join;
 - hollows with a cause (`hollows.by_cause`): ice-scoured floors high up (cirques) and in troughs (rock basins), and glacial deposit sills near where the ice ended (moraine dams). Many hollows with no cause would mean a numerical leftover, not a lake;
 - till under the ice's reach and outwash beyond it;
-- trough floors cut 100 to 300 m below the river-era valley floors (`where.cut_under_ice_m`, p90 and p99), not thousands. The single deepest cell (`glacial_cut_max_m`, listed in `where.deepest_cut`) can be a truncated spur or a cirque cut back into a steep flank, and may be twice that. If the cut is far off, `years` is the setting to change first;
+- for one cold stage, trough floors cut 100 to 300 m below the river-era valley floors (`where.cut_under_ice_m`, p90 and p99, the ice's own cut), not thousands; the whole history cuts deeper. The single deepest cell (`glacial_cut_max_m`, listed in `where.deepest_cut`) can be a truncated spur or a cirque cut back into a steep flank, and may be twice that. If the cut is far off, `years` is the setting to change first;
 - no cliffs the slope cap should have stopped: `where.neighbour_drop_steepest` above 48 degrees (granite's cap) away from the coast and from hollows is a fault. The summary's `max_slope_deg` is the plain gradient, which also spans the sea floor, so a shore cell beside deep water reads as a cliff; `where.slope_shore_max_deg` counts the sea at sea level.
 
 ## R3: basins and lakes (stage C1 and C2)
