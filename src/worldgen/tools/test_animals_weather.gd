@@ -227,6 +227,17 @@ func _init() -> void:
 	a._read_weather({"wind": 0.0, "temp_c": 2.0}, 0.1)
 	check(not a._cold(d3), "2 C is not cold")
 
+	# 14b. With the server's air_at (Weather.air_c at the animal), that number wins over temp_c, less the rain's cooling.
+	a.air_at = func(p): return 4.0 - 0.0065 * p.y
+	a._read_weather({"wind": 0.0, "temp_c": -20.0}, 0.1)
+	check(near(a._air_c(d3), 4.0 - 0.0065 * d3["pos"].y), "air_at gives the air at the animal (%.2f)" % a._air_c(d3))
+	a._read_weather({"wind": 0.0, "temp_c": -20.0, "rain": 0.5}, 0.1)
+	check(near(a._air_c(d3), 2.0 - 0.0065 * d3["pos"].y), "rain 0.5 cools it by 2 C, as Weather.state does")
+	a.air_at = func(_p): return -9.0
+	a._read_weather({"wind": 0.0, "temp_c": 5.0}, 0.1)
+	check(a._cold(d3), "-9 C from air_at is cold even when the starter's temp_c is mild")
+	a.air_at = Callable()
+
 	# 15. Stock in midday heat go to the shade; not in the morning, not when it is mild.
 	a._read_weather({"wind": 0.0, "temp_c": 28.0}, 0.1)
 	hour = 9.0

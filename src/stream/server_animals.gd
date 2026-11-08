@@ -13,6 +13,7 @@ const FlocksScript := preload("res://src/stream/server_flocks.gd")
 const GoblinsScript := preload("res://src/stream/server_goblins.gd")
 const CompanionsScript := preload("res://src/stream/server_companions.gd")
 const FlightScript := preload("res://src/stream/server_flight.gd")
+const WeatherRules := preload("res://src/shared/weather.gd")
 
 const GRAZE := 0
 const HOP := 1
@@ -53,6 +54,7 @@ var drop_loot: Callable            # (item number, count, position) when a thief
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
+var air_at: Callable               # (Vector3) -> Weather.air_c at that point: its zone's air at that height, this hour (docs/design/one_temperature.md); unset: temp_c less the lapse
 var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burning placed fire lies within radius of a lair's mouth (lair.guard_m), so no new group comes (Dave 8 Nov 2026, decision 13)
 var _lair_state: Dictionary = {}   # mouth "x,z" -> {"made": a group has been made here, "empty_since": seconds when it was found empty, -1 while a group is there}
 var lair_path: Callable              # (mouth x, z) -> PackedVector3Array: the cave floor path from that den mouth to the den (tile goblin_den_paths), empty when none
@@ -2128,6 +2130,9 @@ func _seeks_cover(a: Dictionary, def: Dictionary) -> bool:
 # The air at an animal (step 3): the weather's seasonal temperature less the lapse with its height (no day and night swing on the server
 # side of animals yet).
 func _air_c(a: Dictionary) -> float:
+	if air_at.is_valid():   # the one temperature (#620): the zone's own air at the animal's height, less the rain's cooling as in Weather.state
+		return float(air_at.call(a["pos"])) - WeatherRules.RAIN_COOL_C * float(_wx.get("rain", 0.0))
+
 	return float(_wx.get("temp_c", 10.0)) - maxf(a["pos"].y, 0.0) * float(_wx_rules().get("lapse_c_per_m", 0.0065))
 
 
