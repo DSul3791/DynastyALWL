@@ -119,7 +119,7 @@
 
 - **Winter**, outside air 3 °C or more below the cave mean: a thin steam plume leaves the top of the mouth, and frost and icicles form on its lip. The cave air is saturated, so any colder outside air will do.
 - **Summer**, outside air 5 °C or more above the cave mean and humid: a mist hangs under the ceiling of the first chamber, the walls near the mouth run wet, and drips come from condensation.
-- **Weather fronts**: before a storm, as the pressure falls, the mouth blows out. It lasts hours, and a narrow mouth makes it stronger (judged).
+- **Weather fronts**: before a storm, as the pressure falls, the mouth blows out. This holds only for a very large cave behind a narrow mouth. Our caves are far too small to feel it ([underground-climate.md](underground-climate.md) lesson 3).
 
 ### Daylight reach (for `weather_look.gd`)
 
