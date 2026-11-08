@@ -5,6 +5,7 @@ extends RefCounted
 # The queue itself (craft_entries, the head's finish time) stays on the view: the network fills it and the work sounds read it.
 
 const Net := preload("res://src/stream/terrain_net.gd")
+const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
@@ -54,6 +55,17 @@ func rebuild() -> void:
 
 		if i == 0:
 			view._queue_head_button = button
+
+			if InventoryLook.on:
+				# --new-inventory: a gold ring at the head's left fills as the craft works (look doc section 9).
+				var ring_px: int = view._px(view.BODY_PX)
+				var ring: Control = InventoryLook.craft_ring(view, ring_px)
+				button.add_child(ring)
+				ring.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+				ring.offset_left = -float(ring_px) - view._px(6)
+				ring.offset_right = -view._px(6)
+				ring.offset_top = -float(ring_px) * 0.5
+				ring.offset_bottom = float(ring_px) * 0.5
 
 
 func queue_text(index: int) -> String:

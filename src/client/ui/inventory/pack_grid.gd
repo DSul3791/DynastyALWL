@@ -13,6 +13,10 @@ const LOOK_COLUMNS := 6     # --new-inventory: slots across the pack column
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
 var _slot_scroll: ScrollContainer   # holds the slot grid
+var _last_numbers: PackedInt32Array = PackedInt32Array()   # --new-inventory: the pack at the last refresh, to see what just arrived
+var _last_counts: PackedInt32Array = PackedInt32Array()
+var _crafted: Dictionary = {}        # item number a queued craft gives -> msec it was last seen in the queue (its arrival flies in)
+const CRAFT_FLY_WINDOW_MS := 30000
 
 
 func _init(owner_view) -> void:
@@ -22,6 +26,8 @@ func _init(owner_view) -> void:
 # The right column: the pack's weight, purse and carry bar, the sort menu, the slot grid and the action row.
 func build() -> Control:
 	view._buttons.clear()   # a rebuilt panel starts with a fresh list; never keep freed buttons
+	_last_numbers = PackedInt32Array()
+	_last_counts = PackedInt32Array()
 
 	# Right: the inventory slots.
 	var right: VBoxContainer = VBoxContainer.new()
@@ -141,9 +147,13 @@ func refresh() -> void:
 	var filter: String = view._search.text.strip_edges().to_lower() if view._search != null else ""
 
 	if InventoryLook.on:
+		_note_crafts()
+
 		for i in view.inventory.SLOTS:
 			_refresh_look_slot(i, filter)
 
+		_last_numbers = view.inventory.numbers.duplicate()
+		_last_counts = view.inventory.counts.duplicate()
 		return
 
 	# Inventory slots: with a search, only slots that match; otherwise every slot.
@@ -243,8 +253,7 @@ func _slot_menu(index: int) -> void:
 	menu.add_item("Drop (D)", 2)
 	menu.add_item("Drop one (Shift+D)", 3)
 	menu.add_item("Repair (R)", 4)
-	menu.add_item("Favourite (coming)", 5)       # STUB(step 2-4): favourites need Steve's saved flag; Sort and the bulk buttons will skip them
-	menu.set_item_disabled(5, true)
+	menu.add_item("Unfavourite" if view.inventory.is_fav(index) else "Favourite (Sort and the bulk buttons leave it)", 5)
 
 	if view.chest_mode:
 		menu.add_item("Move to the container (Shift+click)", 6)
@@ -258,6 +267,7 @@ func _slot_menu(index: int) -> void:
 			2: view._drop_selected(true)
 			3: view._drop_selected(false)
 			4: view._repair_selected()
+			5: view.set_favourite(index, not view.inventory.is_fav(index))
 			6: view._container_part.put_from_pack(index)
 
 		view._refresh())
@@ -278,7 +288,38 @@ func _refresh_look_slot(i: int, filter: String) -> void:
 
 	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], tip)
 	slot.set_marked(ItemSlot.MARK_GOLD if i == view._selected else 0)
+	slot.set_favourite(view.inventory.is_fav(i))
+	slot.set_linked_key(view.linked_key(i))
+	_note_arrival(i, slot, number)
 	slot.visible = (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
+
+
+# What the queue is making, so its arrival in the pack can fly in from the queue (look doc section 9).
+func _note_crafts() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	for entry in view.craft_entries:
+		var gives: Array = view.recipes.recipe(int(entry[0])).get("gives", [0, 0])
+		_crafted[int(gives[0])] = now
+
+
+# A stack that grew or appeared since the last refresh: a made item flies in from the queue; any other new kind of item shimmers.
+func _note_arrival(i: int, slot, number: int) -> void:
+	if number == 0 or _last_numbers.size() != view.inventory.SLOTS:
+		return
+
+	var grew: bool = _last_numbers[i] != number or view.inventory.counts[i] > _last_counts[i]
+
+	if not grew:
+		return
+
+	if Time.get_ticks_msec() - int(_crafted.get(number, -CRAFT_FLY_WINDOW_MS)) < CRAFT_FLY_WINDOW_MS:
+		_crafted.erase(number)
+		var source: Control = view._queue_box if view._queue_box != null and view._queue_box.is_visible_in_tree() else root
+		var from: Vector2 = source.global_position + source.size * 0.5 if source != null else slot.global_position
+		InventoryLook.fly_to(view._layer, from, slot, slot.icon, view.table.name_of(number), InventoryLook.unit_of(view))
+	elif not _last_numbers.has(number):
+		slot.flash_new()
 
 
 # Dragging a stack from one slot to another (also onto the hotbar strip on screen).

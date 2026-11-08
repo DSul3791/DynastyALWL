@@ -52,11 +52,13 @@ const RecipeListScript := preload("res://src/client/ui/inventory/recipe_list.gd"
 const PackGridScript := preload("res://src/client/ui/inventory/pack_grid.gd")
 const ContainerPanelScript := preload("res://src/client/ui/inventory/container_panel.gd")
 const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd")
-const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # --new-inventory: the new look (step B)
+const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # --new-inventory: the new look (steps B and C)
+const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe.gd")
 var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
 var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store beside the pack
 var _queue_part: CraftQueueScript              # the crafting queue under the recipe list
+var _pinned_part: PinnedRecipeScript           # --new-inventory: the pinned recipe's checklist card
 
 
 func _init() -> void:
@@ -64,6 +66,7 @@ func _init() -> void:
 	_pack_part = PackGridScript.new(self)
 	_container_part = ContainerPanelScript.new(self)
 	_queue_part = CraftQueueScript.new(self)
+	_pinned_part = PinnedRecipeScript.new(self)
 
 
 var _panel: PanelContainer
@@ -2763,6 +2766,9 @@ func _on_chest_info(id: int, keep_out: bool, may_set: bool) -> void:
 	chest_keep_out = keep_out
 	chest_may_keep_out = may_set
 
+	if InventoryLook.on and chest_mode:
+		_container_part.refresh()   # the new look: the lock on the plate and the tick follow the server's answer
+
 
 # The open container's "keep out" tick (the owner only; the server checks and answers with chest_info).
 func set_keep_out(on: bool) -> void:
@@ -2795,6 +2801,18 @@ func _on_favourites(flags: PackedByteArray) -> void:
 
 	for i in mini(flags.size(), inventory.SLOTS):
 		inventory.set_fav(i, flags[i] == 1)
+
+
+# --new-inventory: a bulk button's answer as a parchment toast, and each container that took something glows warm a moment (look doc section 9).
+func _bulk_look(kind: int, stacks: int, containers: int, ids: PackedInt32Array) -> void:
+	InventoryLook.toast(_layer, InventoryLook.bulk_text(kind, stacks, containers), InventoryLook.unit_of(self))
+	var spots: Array = []
+
+	for id in ids:
+		if _world.has(int(id)):
+			spots.append(_world[int(id)]["pos"])
+
+	InventoryLook.glow_chests(_root, spots)
 
 
 func _on_bulk_done(kind: int, stacks: int, containers: int, ids: PackedInt32Array) -> void:
@@ -4079,6 +4097,9 @@ func _build_panel() -> void:
 	_panel.clip_contents = true   # the window keeps its size whatever the text size; contents scroll or wrap
 	if InventoryLook.on:
 		InventoryLook.style_window(_panel, _px(18))
+
+		if not bulk_event.is_valid():
+			bulk_event = _bulk_look
 	else:
 		var back: StyleBoxFlat = StyleBoxFlat.new()
 		back.bg_color = Color(0.07, 0.07, 0.08, 0.93)
@@ -4367,6 +4388,9 @@ func _note_acquired() -> void:
 
 
 func _refresh() -> void:
+	if InventoryLook.on and _pinned_part.number != 0:
+		_pinned_part.refresh()   # the pinned checklist ticks as you gather, window open or shut
+
 	if _panel == null:
 		_note_acquired()
 		return
