@@ -175,6 +175,8 @@ const PuddlesScript := preload("res://src/client/puddles.gd")
 const SummitsScript := preload("res://src/client/summits.gd")
 const CapCloudScript := preload("res://src/client/cap_cloud.gd")
 const WeatherRules := preload("res://src/shared/weather.gd")
+const HazeScript := preload("res://src/client/haze.gd")
+var haze = HazeScript.new()             # Haze: the clear-air haze follows temperature and humidity, only with --haze (art_weather_light.md 7.2)
 var summits                             # Summits: the tops near the player from the tiles' coarse heights (cap cloud, summit snow)
 var cap_cloud                           # CapCloud: caps on high summits, only with --cap-cloud (art_weather_light.md 7.1)
 var summit_snow: Vector2 = Vector2.ZERO # what the ground was last told: summit height, lowest share (for checks)
@@ -207,6 +209,7 @@ func setup(client) -> void:
 	cap_cloud = CapCloudScript.new()
 	add_child(cap_cloud)
 	cap_cloud.setup(client)
+	haze.setup()
 	_bolt_material = StandardMaterial3D.new()
 	_bolt_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_bolt_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -513,13 +516,16 @@ func _process_body(delta: float) -> void:
 	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark) * night_colour
 
 	if not _client.underwater:
-		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
+		var ground_wet: float = float(_client.sound.weather.ground_wet) if _client.sound != null and _client.sound.weather != null else 0.0
+		haze.update(delta, float(_client.weather.get("temp_c", 10.0)), float(_s["cloud"]), rain, float(_client.weather.get("mist", 0.0)), ground_wet)
+		# The clear-air base (1, or the haze rule's share with --haze), thickened by rain, snow, storm and fog.
+		var thick: float = haze.density_scale + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
 		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0)
 		# The fog is sky-coloured haze: under rock it must go dark with the light, or a long tunnel glows (pitch black means black).
-		var fog_tint: Color = _graded(day.sky_horizon, gloom)
+		var fog_tint: Color = _graded(haze.tint(day.sky_horizon), gloom)
 		environment.fog_light_color = Color(fog_tint.r * under_rock, fog_tint.g * under_rock, fog_tint.b * under_rock, fog_tint.a)
 		environment.fog_sky_affect = 0.0
-		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL * under_rock
+		environment.fog_aerial_perspective = haze.aerial(LookSettings.FOG_AERIAL) * under_rock
 		environment.fog_height_density = 0.0
 	else:
 		_underwater_fog(environment, 1.0 - day.night, cloud_cover)
