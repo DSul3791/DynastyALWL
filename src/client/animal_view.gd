@@ -62,6 +62,9 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var fog_looks: bool = false       # animals in fog, mist and dusk: eye shine sooner, steam into the mist, herds closer in thick fog (ANIMAL_FOG.md; off until the PC check)
+var fog_now: Callable             # () -> {visibility_m, mist 0..1, mist_top_m}: the client's fog, from Kathleen's weather look (ANIMAL_FOG.md names the fields)
+var _f_fog: Dictionary = {}
 var wind_looks: bool = false      # animals and the wind's direction: rumps to wind and rain, deer grazing into it, fur on the windward side, breath blown downwind, birds into wind (ANIMAL_WIND.md; off until the PC check)
 var swim_rig: bool = false        # whales and dolphins posed from their spines: tail beat, flipper strokes, porpoise pitch (SWIM_RIG.md; off until a Meshy whale or dolphin arrives)
 var bird_rig: bool = false        # birds and bats posed from their skeletons: wingbeat, glide hold, perch fold, landing flare (BIRD_FLIGHT.md part 3; off until a Meshy bird arrives)
@@ -534,7 +537,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -3049,7 +3052,12 @@ func _eye_shine_night(node: Node3D) -> void:
 	var sky: Dictionary = _night() if night_light.is_valid() else {}
 	var night: float = float(sky.get("night", 1.0 if not night_light.is_valid() else 0.0))
 
-	if cam != null and night > 0.15:
+	var night_from: float = 0.15
+
+	if fog_looks and _fog_visibility() < FOG_SHINE_M:
+		night_from = 0.05      # in fog the light goes sooner: the shine shows from dusk (ANIMAL_FOG.md)
+
+	if cam != null and night > night_from:
 		var eye: Vector3 = node.global_position + Vector3.UP * float(row.get("length_m", 1.0)) * 0.35
 		var to_cam: Vector3 = cam.global_position - eye
 		var dist: float = to_cam.length()
@@ -3064,6 +3072,9 @@ func _eye_shine_night(node: Node3D) -> void:
 		# overhead: inside that range the torch's glint is full, the moon's a tenth of it.
 		var moon: float = float(sky.get("moon", 0.0))
 		var reads_m: float = lerpf(SHINE_READS_DARK_M, SHINE_READS_MOON_M, clampf(moon, 0.0, 1.0))
+
+		if fog_looks:
+			reads_m = minf(reads_m, _fog_visibility() / 3.0)      # in fog the shine shows to about a third of the visibility (Jamie's fog page, #716)
 		var fade: float = 1.0 - smoothstep(reads_m * 0.75, reads_m * 1.25, dist)
 
 		if light.size() >= 2:
@@ -3072,7 +3083,7 @@ func _eye_shine_night(node: Node3D) -> void:
 		if sky.has("moon_to"):
 			lit += SHINE_MOON_SHARE * moon * _retro((sky["moon_to"] as Vector3).normalized(), to_cam)
 
-		energy = float(row.get("shine", 0.0)) * minf(lit, 1.0) * face * fade * smoothstep(0.15, 0.4, night) * 2.0
+		energy = float(row.get("shine", 0.0)) * minf(lit, 1.0) * face * fade * smoothstep(night_from, night_from + 0.25, night) * 2.0
 		var dot_a: float = clampf(energy / 3.0, 0.0, 1.0) * smoothstep(SHINE_DOTS_FROM_M, SHINE_DOTS_FULL_M, dist)
 
 		for dot in node.get_meta("eye_dots", []):
@@ -3476,6 +3487,11 @@ func _steam_breath(node: Node3D, b: Dictionary, air: float, speed: float, delta:
 	mat.albedo_color = Color(0.95, 0.96, 1.0, clampf((COLD_C - air) / 15.0, 0.12, 0.35))      # thicker the colder it is
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	if fog_looks and float(_f_fog.get("mist", 0.0)) > 0.3:      # in the mist the breath is fainter and lingers, merging into it (ANIMAL_FOG.md)
+		mat.albedo_color.a *= 0.5
+		cloud.lifetime *= 1.6
+
 	mesh.material = mat
 	cloud.mesh = mesh
 	LifeUtil.fire_once(self, cloud, muzzle, 0.4)
@@ -3634,8 +3650,12 @@ func _refresh_frame() -> void:
 	_f_night = night_light.call() if night_light.is_valid() else {}
 	_f_torch = torch_light.call() if torch_light.is_valid() else []
 	_f_wind = float(wind_now.call()) if wind_now.is_valid() else 0.0
+	_f_fog = fog_now.call() if fog_now.is_valid() else {}
 	var cam: Camera3D = _cam()
 	_f_herd_space = HERD_SPACE_M * (0.6 if weather_looks and _air(cam.global_position if cam != null else Vector3.ZERO, _f_wx) < HUDDLE_C else 1.0)
+
+	if fog_looks and _fog_visibility() < THICK_FOG_M:
+		_f_herd_space *= 0.5      # herds keep closer when they cannot see each other: spread halved (ANIMAL_FOG.md, Jamie #716)
 
 
 func _cond() -> Dictionary:
@@ -3661,13 +3681,14 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks"]
 
 func _all_flags_off() -> void:
 	cover_still = false
 	bird_rig = false
 	swim_rig = false
 	wind_looks = false
+	fog_looks = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -3988,6 +4009,22 @@ func _into_wind(node: Node3D, delta: float) -> void:
 	var upwind: float = -_wind_to() - PI * 0.5 + PI
 	var want: float = clampf(angle_difference(node.rotation.y, upwind), -PI * 0.5, PI * 0.5)
 	rig.rotation.y = lerp_angle(rig.rotation.y, want, clampf(delta * 4.0, 0.0, 1.0))
+
+
+# Fog (docs/design/ANIMAL_FOG.md): how far one can see, from the client's fog (Kathleen's weather look). `visibility_m` when it is
+# given; else from the scene's exponential fog density (contrast falls to 5 percent at 3 / density metres); INF in clear air.
+const FOG_M := 1000.0         # fog proper below this visibility (Jamie #716: mist 1 to 2 km, fog 180 to 1,000 m, thick 50 to 180, dense under 50)
+const THICK_FOG_M := FOG_M    # herds bunch in fog: spread halved (Jamie #716, judged)
+const FOG_SHINE_M := 180.0    # eye shine from dusk in thick fog
+
+func _fog_visibility() -> float:
+	_refresh_frame()
+
+	if _f_fog.has("visibility_m"):
+		return float(_f_fog["visibility_m"])
+
+	var density: float = float(_f_fog.get("density", 0.0))
+	return 3.0 / density if density > 0.0001 else INF
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

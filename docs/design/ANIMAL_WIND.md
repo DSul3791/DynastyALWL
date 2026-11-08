@@ -4,7 +4,8 @@ From Jamie's animals-in-weather page (#639, `docs/knowledge/animals-in-weather.m
 weather rules (#651, #667). Client looks behind `wind_looks` (off). The direction is the shared weather's `wind_dir` (the way the
 wind blows toward); Kathleen's prevailing wind (`docs/design/prevailing_wind.md`, a per-group direction in Weather behind `--wind-dir`)
 feeds the same field when it lands, so nothing here changes then. Until a world gives a direction (the motion tool), a westerly:
-blowing toward +X.
+blowing toward +X. Seasons are the game calendar's (the island is at 57 degrees south): the windy season is the local winter, when
+the rump-to-the-wind stand and the gale turns will be seen most.
 
 ## What animals do (knowledge)
 - **Rump to the wind in wind and rain.** Stock and deer standing out strong wind with rain turn their backs to it, head down (the

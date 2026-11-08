@@ -1327,6 +1327,7 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.night_light = func() -> Dictionary: return {"night": float(weather_look.day.night), "moon": float(weather_look.day.night) * float(weather_look.day.moon_light), "moon_to": (weather_look.day.light_basis as Basis).z} if weather_look != null else {}      # eye shine by moonlight
 	animal_view.soil_at = func(p: Vector3) -> String: return str(SoundStageScript.SOIL_SURFACE.get(sound._ground_under(p), "dirt")) if sound != null and sound._tool != null else "dirt"      # animal sign: soft or hard ground
 	animal_view.air_at = func(p: Vector3) -> float: return WeatherScript.air_c(game_clock.seconds, weather_group, p.y)      # the one temperature by height (#620), at the animal
+	animal_view.fog_now = func() -> Dictionary: return {"density": _environment.fog_density if _environment != null and _environment.fog_enabled else 0.0, "mist": float(weather.get("mist", 0.0)), "mist_top_m": float(weather.get("mist_top_m", 0.0))}      # fog looks: the scene fog Kathleen's weather look sets (visibility_m when she exposes it)
 	animal_view.weather_now = func() -> Dictionary: return weather      # weather looks: temp_c, rain, snow, wind, wind_dir (the shared weather state)
 	animal_view.wind_now = func() -> float: return float(sound.weather.wind) if sound != null and sound.weather != null else 0.0      # ears and tails in the wind
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
