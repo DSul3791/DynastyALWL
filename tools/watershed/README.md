@@ -11,6 +11,7 @@ Everything here runs offline on Dave's PC (Dino), never in the cloud. Each stage
 | R2b, stage B2 (glacial history, then post-glacial) | `glacial.py` | `glacial.npz`, `glacial.png`, `glacial_manifest.json` |
 | R3, stage C1 and C2 (basins, lakes by water balance) | `lakes.py` | `lakes.npz`, `lakes.json`, `lakes.png`, `lakes_manifest.json` |
 | R4, stage C3, C4 and C6 (water table, heads, wetlands) | `groundwater.py` | `groundwater.npz`, `groundwater.png`, `groundwater_manifest.json` |
+| R6, stage D (the island water record) | `record.py` | `record/manifest.json`, `record/climate.json`, `record/network.json`, `record/tiles/X_Z/*` |
 | R5, stage C5, C7 and C8 | to come | |
 | R6, stage D (island water record) | to come | |
 
@@ -131,3 +132,14 @@ Check `groundwater.png` and the summary for:
 - wetlands only on low ground and gentle slopes (`wetland_on_steep_ground_cells` 0): fens where groundwater comes out, bogs on wet, tight uplands, marsh and swamp along rivers and lakes, salt marsh at the coast;
 - the largest springs (`springs_largest`): the ones on or beside cave-forming rock are the cave-spring candidates for R5.
 
+## R6: the island water record (stage D)
+
+`python tools/watershed/record.py INPUTS_DIR B2_DIR R3_DIR R4_DIR OUT_DIR [--network=R5_DIR]`, where the four folders are one run's chain: each stage's manifest must name the very files given, or the writer stops.
+
+- It refuses a window with land on its frame, so no river or groundwater divide is cut by the edge.
+- The 8 m ground is R3's 16 m ground refined by a separable monotone cubic (it passes through every 16 m height and does not overshoot), plus fine roughness at 16 to 48 m on hillslopes only, continuing the B1 start spectrum. An epsilon-free priority flood then checks for closed cells: where the roughness made one, it is taken out round it, and any closed cell left is counted and listed (`closed_cells_outside_lakes`), never filled.
+- Lakes take their R3 levels on the refined ground, so their shores follow the 8 m ground; the sea is at 0.
+- Per tile (T + 1 samples at 8 m, shared edges, little-endian): `ground` and `water_level` (f4), `water_class`, `discharge` (log-coded u2), `regime`, `table_depth`, `basin`, `fresh_m`, `sediment_m`; the manifest lists each field's type and scale. `network.json` and `climate.json` are island-wide.
+- Until R5 exists it writes no rivers as water and marks the record `complete: false`, which the bake must refuse.
+
+Look for: `closed_cells_outside_lakes` near 0; `summit_8m` within a metre of `summit_16m`; a lake area close to R3's.

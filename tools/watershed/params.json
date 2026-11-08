@@ -183,5 +183,17 @@
 		"treeline_m": 620.0,
 		"swamp_min_depth_m": 0.1,
 		"bog_rain_mm_yr": 1000.0
+	},
+	"record": {
+		"_note": "Stage D, the island water record (record.py, step R6; docs/water/watershed_rebuild_design.md R6 method). The writer refines R3's 16 m ground to the 8 m record grid by a separable monotone cubic, adds fine roughness on hillslopes, checks for closed cells with an epsilon-free priority flood and writes per-tile raw grids plus the island-wide network and climate. closed_tolerance_m: a land cell the flood raises by more than this is closed (5 cm: below the tile bake's 0.1 m step). lake_shore_passes: how many 8 m samples a lake's 16 m footprint may grow to meet its refined shore. Judged, not sourced: roughness band 16 to 48 m (the 8 m grid carries nothing shorter; the B1 start roughness starts at 48 m) and fade_m 24 m (three samples clear of any water); its rms slope is not set here but continues the B1 start roughness's spectrum (record.roughness()).",
+		"closed_tolerance_m": 0.05,
+		"lake_shore_passes": 2,
+		"roughness": {"on": true, "shortest_m": 16.0, "longest_m": 48.0, "fade_m": 24.0, "seed_offset": 1},
+		"encoding": {"discharge_codes_per_decade": 6553.5, "table_depth_step_m": 0.25, "sediment_step_m": 0.01},
+		"climate": {
+			"_note": "Design A4: one climate per island; the air at a place is sea_level_mean_c + seasonal_swing_c cos(2 pi (phase - warmest_year_phase)) + the daily term (daily_range_c / 2, coldest 05:00, warmest 15:00) - lapse_c_per_km x height / 1000. Starter values from the coordinator's snow decision (8 Nov 2026: about 9 C, swing about 5 C); daily_range_c 8 is Jamie's live cycle (#616) until a sourced maritime value replaces it; rain_mm_yr is the background rain of params rain. Islands without their own entry take default.",
+			"default": {"sea_level_mean_c": 9.0, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 1100.0},
+			"by_island": {}
+		}
 	}
 }
