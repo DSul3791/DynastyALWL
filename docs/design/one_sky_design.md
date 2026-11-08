@@ -117,3 +117,10 @@ Then repeat each line without the switches, with `_off` added to each name.
 ## 6. Cost
 
 A few more trig calls twice a second, the same as today: no new light, no new uniform.
+
+## 7. Temperature by row and the snow bias (decision #717 row 21, 8 Nov; recorded only, no code yet)
+
+- **Real temperature comes from the row's latitude:** `world.json` `temperature_by_abs_latitude` at `latitude_for_z`, so the starter is about **14.4 °C at sea level**, with the lapse of 6.5 °C per km and a season of ±5 °C. That replaces `climate.gd`'s 9 °C (Steve's change).
+- **Snow and ice alone add a per-island `snow_bias_c`** to the island's climate params. The starter's is **-6 °C**, so the epic peaks stay snowy.
+- **Who reads it:** the ice (`Ice.cover`, `Ice.season`), the snow line and whether rain falls as snow read the temperature plus `snow_bias_c`. Everything else reads the plain temperature: the HUD, breath, warmth, fire, cold water and the weather's `temp_c`.
+- The code waits until after Dave's freeze.
