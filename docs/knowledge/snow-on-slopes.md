@@ -43,7 +43,7 @@ These are proposals for Sonny's `snow_on` and `snow_off` bytes and for Kathleen'
 - **Open slopes:** about the mean.
 - **Windward slopes and crests:** **0 to 0.3 times** the mean. Crests are scoured to rock or turf, apart from snow caught in rocks.
 - **Cornices:** on lee crest edges steeper than about 35° below. A lip of 1 to 3 m on the starter, to check by eye.
-- **Moving snow:** only after a fall, while the weather's wind is strong, about 0.5 or more on our 0 to 1 scale (taken as above about 5 m/s, judged). Snow older than about 2 days is treated as set.
+- **Moving snow:** only after a fall, while the weather's wind is strong, about 0.5 or more on our 0 to 1 scale. On the shared mapping in `wind-over-terrain.md` (m/s = 20 × wind^1.3) that is about 8 m/s. Real fresh snow starts moving at 4 to 5 m/s, about 0.35, so 0.5 keeps drifting to clearly windy days (judged; see `CONTRADICTIONS.md` A4). Snow older than about 2 days is treated as set.
 
 **Melt order:** shift each cell's `snow_off` later by aspect and shade, and by drift depth.
 - **By aspect and shade** at the same height:
