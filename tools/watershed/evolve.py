@@ -8,7 +8,8 @@ records the parameters as run, so a variant needs no edited params file.
 scale of the massifs (see calibrated_uplift).
 
 Starts from the landform (stage A1) and runs, per time step:
-  1. routing: priority flood and steepest descent on the filled surface (tools/erosion_precarve/lem.py route, reused);
+  1. routing: priority flood on the filled surface (tools/erosion_precarve/lem.py route, reused), each cell draining to the
+     neighbour that keeps its flow path closest to the true downhill direction (D8-LTD, see route);
   2. discharge: the QUICK runoff of the one water budget (stage A5, runoff.py: rain minus evaporation, times the rock's quick
      share) accumulated downstream, in units of the reference quick runoff times area, so permeable and dry ground cuts less;
   3. stream power with deposition, implicit (Braun and Willett 2013 for the erosion; the deposition term of the Davy and Lague
@@ -38,6 +39,105 @@ sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
 import lem    # noqa: E402  (route: priority flood + receivers)
 import rock   # noqa: E402
 import runoff  # noqa: E402  (stage A5: the one water budget)
+
+
+# The eight triangular facets round a cell (Tarboton 1997): a side neighbour (column step, row step) and the corner
+# neighbour beside it.
+_FACETS = np.array([[1, 0, 1, -1], [0, -1, 1, -1], [0, -1, -1, -1], [-1, 0, -1, -1],
+                    [-1, 0, -1, 1], [0, 1, -1, 1], [0, 1, 1, 1], [1, 0, 1, 1]], np.int64)
+
+
+@nb.njit(cache=True)
+def _ltd_receivers(filled, order, sea, n, dx, lam, facets):
+    """Each cell's receiver by D8-LTD (Orlandini et al. 2003, Water Resources Research 39(6):1144): the true downhill direction
+    is the steepest of the eight facets round the cell (D-infinity, Tarboton 1997, WRR 33(2):309), which lies between a side
+    neighbour and a corner neighbour; of those two, the cell drains to the one that keeps the flow path's sideways drift from
+    the true direction, carried down the path (times lam per cell), the smaller. Cells are placed from the highest down, so a
+    cell's drift comes from the donor that drains the most ground into it (the main stem). Where neither neighbour of the
+    facet lies lower on the filled surface, the cell drains to the steepest lower neighbour, as lem.route does."""
+    N = n * n
+    rec = np.full(N, -1, np.int64)
+    acc = np.ones(N)
+    main = np.zeros(N)
+    drift_in = np.zeros(N)
+    root2 = 1.4142135623730951
+    for q in range(order.size - 1, -1, -1):
+        i = order[q]
+        r = i // n
+        c = i % n
+        e0 = filled[i]
+        smax = 0.0
+        fx = 0.0
+        fy = 0.0
+        k1 = -1
+        k2 = -1
+        for f in range(8):
+            c1 = c + facets[f, 0]; r1 = r + facets[f, 1]; c2 = c + facets[f, 2]; r2 = r + facets[f, 3]
+            if c1 < 0 or c1 >= n or r1 < 0 or r1 >= n or c2 < 0 or c2 >= n or r2 < 0 or r2 >= n:
+                continue
+            e1 = filled[r1 * n + c1]
+            e2 = filled[r2 * n + c2]
+            s1 = (e0 - e1) / dx
+            s2 = (e1 - e2) / dx
+            a = np.arctan2(s2, s1)
+            if a < 0.0:
+                a = 0.0
+                s = s1
+            elif a > 0.25 * np.pi:
+                a = 0.25 * np.pi
+                s = (e0 - e2) / (dx * root2)
+            else:
+                s = np.sqrt(s1 * s1 + s2 * s2)
+            if s > smax:
+                smax = s
+                ux = float(facets[f, 0]); uy = float(facets[f, 1])
+                wx = float(facets[f, 2] - facets[f, 0]); wy = float(facets[f, 3] - facets[f, 1])
+                fx = np.cos(a) * ux + np.sin(a) * wx
+                fy = np.cos(a) * uy + np.sin(a) * wy
+                k1 = r1 * n + c1
+                k2 = r2 * n + c2
+        best = -1
+        drift = 0.0
+        for t in range(2):
+            k = k1 if t == 0 else k2
+            if k < 0 or filled[k] >= e0:
+                continue
+            ox = float(k % n - c) * dx
+            oy = float(k // n - r) * dx
+            d = lam * drift_in[i] + (fx * oy - fy * ox)          # sideways drift of the path if it steps to k
+            if best < 0 or abs(d) < abs(drift):
+                best = k
+                drift = d
+        if best < 0:
+            bd = 0.0
+            for dr in range(-1, 2):
+                for dc in range(-1, 2):
+                    rr = r + dr; cc = c + dc
+                    if (dr == 0 and dc == 0) or rr < 0 or rr >= n or cc < 0 or cc >= n:
+                        continue
+                    j = rr * n + cc
+                    g = (e0 - filled[j]) / (root2 if dr != 0 and dc != 0 else 1.0)
+                    if g > bd:
+                        bd = g
+                        best = j
+            drift = 0.0
+        rec[i] = best
+        if best >= 0:
+            acc[best] += acc[i]
+            if acc[i] > main[best]:
+                main[best] = acc[i]
+                drift_in[best] = drift
+    return rec
+
+
+def route(h, sea, n, dx, lam):
+    """Filled surface, receivers and order (downstream first). The fill and order are lem.route's (priority flood); the
+    receivers are D8-LTD (_ltd_receivers). Plain steepest descent among the eight neighbours sends all the flow on a smooth
+    face along one of eight compass and diagonal directions, so every flank was combed into straight parallel gullies set by
+    the grid, not by the slope (zoom pictures of runs 8a38328c and 4edbc722). D8-LTD keeps one receiver per cell (the implicit
+    solve needs a tree) while the flow paths follow the true downhill direction."""
+    filled, rec, order = lem.route(h, sea, n)
+    return filled, _ltd_receivers(filled, order, sea, n, dx, lam, _FACETS), order
 
 
 @nb.njit(cache=True)
@@ -167,21 +267,30 @@ def _cell_height(B, A, F, hr, kc):
 
 @nb.njit(cache=True)
 def _slope_ceiling(h0, lift, Sc, sea, n, dx):
-    """The highest each cell's ground may stand: at most Sc (its threshold, a tangent) times the distance above the ground of
-    each of its 8 neighbours (sea counted at sea level), carried through chains of neighbours by forward and backward raster
-    sweeps until nothing changes. Returned as the ceiling on h (ground plus lift).
+    """The highest each cell's ground may stand: at most Sc (its threshold, a tangent) times the straight-line distance above
+    any ground of the same threshold (sea counted at sea level), and at most Sc times the step above each of its 8 neighbours.
+    Returned as the ceiling on h (ground plus lift). Each cell carries the cell its limit hangs from (its source) and offers it
+    to its neighbours in forward and backward raster sweeps until nothing changes (vector propagation, as in Danielsson 1980):
+    within one rock the limit is a true round cone from its source, and where the threshold changes it is taken on from the
+    neighbour, so a hard-rock wall stands on the soft slope below it.
 
     Why, beside the cap against the receiver in _solve: a cell is capped only against the neighbour it drains to, chosen at
     the start of the step, so when the cell beside it is cut deep (a slot on a smooth flank, where neighbouring flow lines
     drain in parallel and never into each other) nothing lowers it until a later step routes it there, one cell a step.
     Run a3ffca14 left walls of 86 degrees and 270 m in granite that way, and 1.3% of land steeper to a neighbour than any
-    rock stands. A real wall fails along its whole height as soon as it is over its threshold."""
+    rock stands. A real wall fails along its whole height as soon as it is over its threshold.
+
+    Why a straight-line distance: until 8 Nov 2026 the limit was carried only from neighbour to neighbour, in steps of one
+    cell or one diagonal, and such a distance is eight-sided: every face the limit set came out as a flat facet with straight
+    edges along the compass and the diagonals, and the summit massifs as cut crystals (zoom pictures of glacial run
+    bc02d1aa). This is the same lesson as the landform's flank cones (world_elevation.gd _stand_high_ground)."""
     N = n * n
-    top = h0 - lift
+    val = h0 - lift
     for i in range(N):
-        if sea[i] and top[i] < 0.0:
-            top[i] = 0.0
-    diag = dx * 1.4142135623730951
+        if sea[i] and val[i] < 0.0:
+            val[i] = 0.0
+    src = np.arange(N)
+    root2 = 1.4142135623730951
     for p in range(64):
         changed = False
         for sweep in range(2):
@@ -191,24 +300,36 @@ def _slope_ceiling(h0, lift, Sc, sea, n, dx):
                     continue
                 r = i // n
                 c = i % n
-                lim = top[i]
+                best = val[i]
+                bs = src[i]
                 for dr in range(-1, 2):
+                    rr = r + dr
+                    if rr < 0 or rr >= n:
+                        continue
                     for dc in range(-1, 2):
-                        if dr == 0 and dc == 0:
-                            continue
-                        rr = r + dr
                         cc = c + dc
-                        if rr < 0 or rr >= n or cc < 0 or cc >= n:
+                        if (dr == 0 and dc == 0) or cc < 0 or cc >= n:
                             continue
-                        v = top[rr * n + cc] + Sc[i] * (diag if dr != 0 and dc != 0 else dx)
-                        if v < lim:
-                            lim = v
-                if lim < top[i] - 1e-6:
-                    top[i] = lim
+                        j = rr * n + cc
+                        v = val[j] + Sc[i] * dx * (root2 if dr != 0 and dc != 0 else 1.0)
+                        if v < best:                     # from the neighbour itself
+                            best = v
+                            bs = j
+                        s = src[j]
+                        if s != j and (sea[s] or Sc[s] == Sc[i]):
+                            a = float(s // n - r)
+                            b = float(s % n - c)
+                            v = val[s] + Sc[i] * dx * np.sqrt(a * a + b * b)
+                            if v < best:                 # straight from the neighbour's source
+                                best = v
+                                bs = s
+                if best < val[i] - 1e-6:
+                    val[i] = best
+                    src[i] = bs
                     changed = True
         if not changed:
             break
-    return top + lift
+    return val + lift
 
 
 @nb.njit(cache=True)
@@ -483,6 +604,7 @@ def main():
     bfi = runoff.bfi_by_rock_id(g['names'], W['bfi_by_rock'])
     ery_fn = rock.make_fn(g, start, sea, dx)
     CH = E['channel_head']
+    lam = float(E.get('flow_paths', {}).get('drift_memory', 1.0))      # D8-LTD (route)
     theta = float(CH['slope_exponent'])
     c_ch = float(CH['area_m2_at_ref_slope']) * float(CH['ref_slope']) ** theta
     a_min = float(CH.get('min_area_m2', 0.0))
@@ -509,7 +631,7 @@ def main():
     def write(od, years_done):
         """All outputs for the ground as it stands: ground.npz, the summary (evolve_manifest.json) and evolve.png."""
         os.makedirs(od, exist_ok=True)
-        filled, rec, order = lem.route(h, sea, n)
+        filled, rec, order = route(h, sea, n, dx, lam)
         rid = rock.rock_ids(g, h)
         wb = runoff.budget(rain_mm, rid, bfi, W)
         Q = _discharge(order, rec, sea, wb['quick'] / q_ref, cell, n * n)
@@ -636,7 +758,7 @@ def main():
 
     snaps = {int(round(y / E['dt'])): y for y in E.get('snapshot_years', [])}
     for s in range(steps):
-        filled, rec, order = lem.route(h, sea, n)
+        filled, rec, order = route(h, sea, n, dx, lam)
         rid_now = rock.rock_ids(g, h)
         quick = runoff.budget(rain_mm, rid_now, bfi, W)['quick'] / q_ref    # the rock at today's surface
         sc = np.where(deposit > 1.0, Sc, sc_rock[rid_now])

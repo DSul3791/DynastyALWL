@@ -38,7 +38,8 @@ The run starts from the landform and uses:
 - channels that begin by the slope-area rule (steeper and wetter hollows need less water; `channel_head`, from measured source areas, with at least `min_area_m2` of drainage) and then run on downstream;
 - loose cover over the rock: a river cuts through the cover at the cover's rate and the rest of the step at the rock's rate, so a thin cover never lets hard rock wear like soft;
 - an incision threshold: bedrock channels cut only where Q^m S passes `incision_threshold_m` (none in loose cover);
-- threshold hillslopes: no cell stands steeper than its threshold above its receiver or any other neighbour (the neighbour limit is carried through chains of cells each step, so a wall beside a slot comes down along its whole height), set by rock (`threshold_slope_deg_by_rock`: hard rock holds steeper walls) and `threshold_slope_deg` under loose cover; landslide debris joins the sediment;
+- threshold hillslopes: no cell stands steeper than its threshold above its receiver or any other ground (the limit is a true round cone within each rock, carried from cell to cell each step, so a wall beside a slot comes down along its whole height and faces are not cut into eight-sided facets), set by rock (`threshold_slope_deg_by_rock`: hard rock holds steeper walls) and `threshold_slope_deg` under loose cover; landslide debris joins the sediment;
+- flow paths that follow the true downhill direction (`flow_paths`, D8-LTD): one receiver per cell, chosen between the two neighbours beside the steepest facet so the path's sideways drift stays small, so smooth faces are not combed along the compass;
 - a rough start (`start_roughness`): the landform plus roughness with the spectrum of real ground (mean slope 0.1, 48 m to 1.5 km), so flow lines find each other and valleys branch instead of combing the flanks in parallel lines; the summary's `start_roughness` gives its size;
 - soil creep.
 
