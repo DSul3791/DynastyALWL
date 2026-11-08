@@ -149,6 +149,7 @@ func open(record_dir: String, allow_incomplete: bool = false) -> String:
 	var cl: Variant = _json(dir + "/climate.json")
 	climate_rows = cl if typeof(cl) == TYPE_DICTIONARY else {}
 	_reach_by_id = {}
+	_code_to_id = code_map()
 
 	for r in network.get("reaches", []):
 		_reach_by_id[int(r.get("id", -1))] = r
@@ -196,6 +197,11 @@ func raster(tx: int, tz: int, name: String) -> PackedFloat32Array:
 		return out
 
 	out = decode(row, raw, count)
+
+	if name == "water_class":
+		for k in count:
+			out[k] = float(_code_to_id[int(out[k])])   # the record's code -> the game's table id (255: a code the table lacks)
+
 	_keep(key, "%d_%d" % [tx, tz], out)
 	return out
 
@@ -374,3 +380,98 @@ func downstream(id: int) -> Array:
 # An island's climate (A4): its by_island row, else the default. The live temperature is Weather.air_c; this only hands the numbers over.
 func climate(island: String) -> Dictionary:
 	return climate_rows.get("by_island", {}).get(island, climate_rows.get("default", {}))
+
+
+# --- water classes (data/tables/water_classes.json; docs/water/stage_e_readers_design.md 6c) ---
+# The table's ids are the game's (tile files, flora, land types); the record writes its own codes (0 none to 10 salt marsh), mapped to the
+# table by each row's record_code. A "land" class (a wetland, a dry-season bed) is ground to the climate and the land types; its biome
+# and soil are given to it after them. Today's bake writes only 0 to 3, so none of this changes a tile baked by the rules.
+
+const CLASSES_PATH := "res://data/tables/water_classes.json"
+
+var _code_to_id: PackedByteArray = PackedByteArray()
+
+
+# Record code -> table id (255 for a code the table does not know), from the table file.
+static func code_map() -> PackedByteArray:
+	var out: PackedByteArray = PackedByteArray()
+	out.resize(256)
+	out.fill(255)
+	var parsed: Variant = _json(CLASSES_PATH)
+
+	for row in (parsed.get("entries", []) if typeof(parsed) == TYPE_DICTIONARY else []):
+		if row.has("record_code") and not bool(row.get("retired", false)):
+			out[int(row["record_code"])] = int(row["id"])
+
+	return out
+
+
+# 256 flags: 1 where the class with that id is ground to the climate and the land types.
+static func land_flags(tables) -> PackedByteArray:
+	var out: PackedByteArray = PackedByteArray()
+	out.resize(256)
+
+	for row in tables.get_entries("water_classes"):
+		if bool(row.get("land", false)) and not bool(row.get("retired", false)):
+			out[int(row["id"])] = 1
+
+	return out
+
+
+# The water classes as the climate and the land types see them: "land" classes as 0 (ground). The same array when there are none.
+static func land_view(water_class: PackedByteArray, tables) -> PackedByteArray:
+	var flags: PackedByteArray = land_flags(tables)
+	var any: bool = false
+
+	for id in 256:
+		if flags[id] == 1 and water_class.has(id):
+			any = true
+			break
+
+	if not any:
+		return water_class
+
+	var out: PackedByteArray = water_class.duplicate()
+
+	for k in out.size():
+		if flags[out[k]] == 1:
+			out[k] = 0
+
+	return out
+
+
+# After the climate and the land types: each "land" class cell takes its row's biome and soil (by name; a row without one keeps what
+# the climate gave). Returns how many cells changed.
+static func apply_wet_land(water_class: PackedByteArray, biome: PackedByteArray, soil: PackedByteArray, tables) -> int:
+	var biome_of: PackedInt32Array = PackedInt32Array()
+	var soil_of: PackedInt32Array = PackedInt32Array()
+	biome_of.resize(256)
+	soil_of.resize(256)
+	biome_of.fill(-1)
+	soil_of.fill(-1)
+	var any: bool = false
+
+	for row in tables.get_entries("water_classes"):
+		if bool(row.get("land", false)) and not bool(row.get("retired", false)) and water_class.has(int(row["id"])):
+			biome_of[int(row["id"])] = tables.id_of("biomes", str(row["biome"])) if row.has("biome") else -1
+			soil_of[int(row["id"])] = tables.id_of("soils", str(row["soil"])) if row.has("soil") else -1
+			any = true
+
+	if not any:
+		return 0
+
+	var changed: int = 0
+
+	for k in water_class.size():
+		var c: int = water_class[k]
+
+		if biome_of[c] >= 0:
+			biome[k] = biome_of[c]
+
+		if soil_of[c] >= 0:
+			soil[k] = soil_of[c]
+
+		if biome_of[c] >= 0 or soil_of[c] >= 0:
+			changed += 1
+
+	return changed
