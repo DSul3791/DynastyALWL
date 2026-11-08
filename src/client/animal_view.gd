@@ -62,6 +62,7 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var wind_looks: bool = false      # animals and the wind's direction: rumps to wind and rain, deer grazing into it, fur on the windward side, breath blown downwind, birds into wind (ANIMAL_WIND.md; off until the PC check)
 var swim_rig: bool = false        # whales and dolphins posed from their spines: tail beat, flipper strokes, porpoise pitch (SWIM_RIG.md; off until a Meshy whale or dolphin arrives)
 var bird_rig: bool = false        # birds and bats posed from their skeletons: wingbeat, glide hold, perch fold, landing flare (BIRD_FLIGHT.md part 3; off until a Meshy bird arrives)
 var cover_still: bool = false     # state 20 in cover (Steve #701): hunched and still, the idle slowed, breathing slow, the wet look held (COVER_STILL in ANIMAL_WEATHER_LOOKS.md; off until the PC check)
@@ -533,7 +534,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -623,6 +624,9 @@ func _process_body(delta: float) -> void:
 			if weather_looks:
 				_weather_look(node, b, state, model_speed, delta)
 
+			if wind_looks:
+				_wind_look(node, b, state, model_speed, delta)
+
 			if hunt_feedback and (b.has("react") or float(b.get("damage", 0.0)) > 0.0):
 				_hunt_motion(node, b, model_speed, delta)
 
@@ -655,7 +659,9 @@ func _process_body(delta: float) -> void:
 				elif bird_rig and state == 0 and posed.poses.has(18) and not posed.poses.has(0):
 					pose_key = 18      # a posed bird at rest holds its perch fold
 
-				if weather_looks and bool(b.get("cold_huddle", false)) and posed.poses.has(HUNCH) and (state == 0 or state == 12):
+				if wind_looks and bool(b.get("wind_hunch", false)) and posed.poses.has(HUNCH):
+					pose_key = HUNCH      # rump to the wind and rain, head down (ANIMAL_WIND.md)
+				elif weather_looks and bool(b.get("cold_huddle", false)) and posed.poses.has(HUNCH) and (state == 0 or state == 12):
 					pose_key = HUNCH      # head lowered in the cold (ANIMAL_WEATHER_LOOKS.md)
 
 				if posed.poses.has(pose_key):
@@ -2395,6 +2401,11 @@ func _coat_tick(node: Node3D, b: Dictionary, state: int, delta: float) -> void:
 				(mat as ShaderMaterial).set_shader_parameter("albedo_color", colour)
 				(mat as ShaderMaterial).set_shader_parameter("roughness_v", minf(rough, 1.0))
 				(mat as ShaderMaterial).set_shader_parameter("amp", amp * (1.0 if bool(mat.get_meta("card", false)) else 0.33))
+
+				if wind_looks:
+					var to: float = _wind_to()
+					(mat as ShaderMaterial).set_shader_parameter("wind_dir", Vector3(cos(to), 0.0, sin(to)))
+					(mat as ShaderMaterial).set_shader_parameter("windward_share", 0.6)
 			else:
 				(mat as StandardMaterial3D).albedo_color = colour
 				(mat as StandardMaterial3D).roughness = minf(rough, 1.0)
@@ -2412,11 +2423,13 @@ uniform float roughness_v = 0.9;
 uniform float alpha_cut = 0.0;
 uniform float amp = 0.0;
 uniform vec3 wind_dir = vec3(0.96, 0.0, 0.28);
+uniform float windward_share = 0.0;
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	vec3 wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	float ripple = sin(dot(wp.xz, vec2(9.1, 6.7)) - TIME * 7.0) * 0.5 + sin(dot(wp.xz, vec2(-4.3, 11.3)) - TIME * 4.3) * 0.5;
-	vec3 push = (wn * 0.5 + wind_dir * 0.5) * amp * (0.5 + 0.5 * ripple);
+	float windward = clamp(dot(-wn, wind_dir), 0.0, 1.0);      // the side the wind meets ruffles most (wind_looks)
+	vec3 push = (wn * 0.5 + wind_dir * 0.5) * amp * (0.5 + 0.5 * ripple) * (1.0 - windward_share + windward_share * windward);
 	VERTEX += (inverse(MODEL_MATRIX) * vec4(push, 0.0)).xyz;
 }
 void fragment() {
@@ -3374,7 +3387,9 @@ func _weather_look(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 	# 2. Tail to the wind in a gale: standing grazers turn their rump to it (on the Rig, as the herd facing does), up to 60 degrees.
 	var wind: float = float(wx.get("wind", 0.0))
 
-	if kind in TAIL_TO_WIND and standing and wind >= GALE and wx.has("wind_dir"):
+	if wind_looks:
+		pass      # the turn to the wind is _wind_look's (ANIMAL_WIND.md), with rain and the deer's graze into the wind
+	elif kind in TAIL_TO_WIND and standing and wind >= GALE and wx.has("wind_dir"):
 		var downwind: float = -float(wx["wind_dir"]) - PI * 0.5      # the node turn that faces the way the wind blows
 		var want: float = clampf(angle_difference(node.rotation.y, downwind), -PI / 3.0, PI / 3.0)
 		b["wind_turn"] = lerp_angle(float(b.get("wind_turn", 0.0)), want, clampf(delta * 0.5, 0.0, 1.0))
@@ -3448,6 +3463,10 @@ func _steam_breath(node: Node3D, b: Dictionary, air: float, speed: float, delta:
 	cloud.initial_velocity_min = 0.2
 	cloud.initial_velocity_max = 0.5
 	cloud.gravity = Vector3(0.0, 0.15, 0.0)
+
+	if wind_looks:      # the breath drifts downwind (ANIMAL_WIND.md)
+		var to: float = _wind_to()
+		cloud.gravity += Vector3(cos(to), 0.0, sin(to)) * 1.5 * float(_wx_state().get("wind", 0.0))
 	cloud.scale_amount_min = length * 0.04
 	cloud.scale_amount_max = length * 0.09
 	var mesh: SphereMesh = SphereMesh.new()
@@ -3642,12 +3661,13 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks"]
 
 func _all_flags_off() -> void:
 	cover_still = false
 	bird_rig = false
 	swim_rig = false
+	wind_looks = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -3919,6 +3939,57 @@ func _porpoise_pitch(node: Node3D, b: Dictionary) -> void:
 	rig.rotation.x = -0.6 * cos(PI * phase) if rig.position.y > 0.02 else lerpf(rig.rotation.x, 0.0, 0.2)
 
 
+# Animals and the wind's direction (docs/design/ANIMAL_WIND.md). The way the wind blows toward: the shared weather's wind_dir, which
+# becomes Kathleen's per-group prevailing wind (prevailing_wind.md) once it lands, else a westerly (blowing toward +X, the east).
+const WESTERLY_TO := 0.0
+const RUMP_WIND := 0.45      # with rain over RUMP_RAIN, stock and deer stand rump to the wind from here (Jamie #639); a gale alone does it too
+const RUMP_RAIN := 0.3
+const GRAZE_WIND := [0.15, 0.6]   # deer graze moving into a light or moderate wind (Jamie #639; Steve's _upwind_angle on the server)
+
+func _wind_to() -> float:
+	var wx: Dictionary = _wx_state()
+	return float(wx["wind_dir"]) if wx.has("wind_dir") else WESTERLY_TO
+
+
+func _wind_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var rig: Node3D = LifeUtil.rig(node)
+
+	if rig == null:
+		return
+
+	var wx: Dictionary = _wx_state()
+	var wind: float = float(wx.get("wind", 0.0))
+	var rain: float = maxf(float(wx.get("rain", 0.0)), float(wx.get("snow", 0.0)))
+	var kind: String = str(b.get("kind", ""))
+	var standing: bool = speed < 0.3 and (state == 0 or state == 3 or state == 12 or state == HUNCH)
+	var downwind: float = -_wind_to() - PI * 0.5      # the node turn that faces the way the wind blows
+	var want: float = 0.0
+	b["wind_hunch"] = false
+
+	if kind in TAIL_TO_WIND and standing and (wind >= GALE or (wind >= RUMP_WIND and rain >= RUMP_RAIN)):
+		want = clampf(angle_difference(node.rotation.y, downwind), -PI / 3.0, PI / 3.0)      # rump to the wind
+		b["wind_hunch"] = rain >= RUMP_RAIN      # and the head down in the rain
+	elif kind in ["deer", "elk", "moose"] and state == 0 and wind >= float(GRAZE_WIND[0]) and wind < float(GRAZE_WIND[1]):
+		want = clampf(angle_difference(node.rotation.y, downwind + PI), -PI / 4.0, PI / 4.0)      # grazing into the wind, nose to the scent
+
+	b["wind_turn"] = lerp_angle(float(b.get("wind_turn", 0.0)), want, clampf(delta * 0.5, 0.0, 1.0))
+
+	if absf(float(b["wind_turn"])) > 0.005 or absf(want) > 0.0:
+		rig.rotation.y = float(b.get("herd_bias", 0.0)) + float(b["wind_turn"])
+
+
+# A bird taking off or landing turns into the wind (the Rig, up to 90 degrees, eased), as real birds do for lift.
+func _into_wind(node: Node3D, delta: float) -> void:
+	var rig: Node3D = LifeUtil.rig(node)
+
+	if rig == null or float(_wx_state().get("wind", 0.0)) < 0.1:
+		return
+
+	var upwind: float = -_wind_to() - PI * 0.5 + PI
+	var want: float = clampf(angle_difference(node.rotation.y, upwind), -PI * 0.5, PI * 0.5)
+	rig.rotation.y = lerp_angle(rig.rotation.y, want, clampf(delta * 4.0, 0.0, 1.0))
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -4056,6 +4127,9 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		fb["air_once"] = maxf(0.0, float(fb.get("air_once", 0.0)) - delta)
 
 		if float(fb["air_once"]) > 0.0:
+			if wind_looks:
+				_into_wind(node, delta)      # birds take off and land facing into the wind
+
 			return      # a take-off or landing plays to its end
 
 		if air:
