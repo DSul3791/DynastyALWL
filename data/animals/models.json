@@ -1,5 +1,5 @@
 {
-	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md).",
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md).",
 	"species": {
 		"bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -358,9 +358,10 @@
 				"10": "Idle_Breathing",
 				"12": "Idle",
 				"walk": "WalkMedium_F",
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"swim": "WalkSlow_F"
 			},
-			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget).",
+			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget). Swim clip (8 Nov 2026): its file has no swim clip: the slow walk, mostly under water. gait_fallback swim: a hand-made paddling walk with the neck and head lifted out of the water; rename to gait to use it instead of the slow walk (axes a first guess until a creature check).",
 			"length_m": 3.0,
 			"materials": [
 				{
@@ -373,6 +374,79 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Moose",
+			"swim_mps": 1.0,
+			"gait_fallback": {
+				"swim": {
+					"period_s": 1.4,
+					"bones": {
+						"LegFL1": [
+							0.25,
+							30,
+							"x"
+						],
+						"LegFR1": [
+							0.75,
+							30,
+							"x"
+						],
+						"LegBL1": [
+							0.0,
+							26,
+							"x"
+						],
+						"LegBR1": [
+							0.5,
+							26,
+							"x"
+						],
+						"LegFL2": [
+							0.35,
+							25,
+							"x"
+						],
+						"LegFR2": [
+							0.85,
+							25,
+							"x"
+						],
+						"LegBL2": [
+							0.1,
+							22,
+							"x"
+						],
+						"LegBR2": [
+							0.6,
+							22,
+							"x"
+						],
+						"Neck1": [
+							0.0,
+							-12,
+							"x"
+						],
+						"Neck2": [
+							0.0,
+							-8,
+							"x"
+						],
+						"Head": [
+							0.0,
+							-10,
+							"x"
+						],
+						"Spine1": [
+							0.0,
+							2,
+							"x"
+						],
+						"Tail1": [
+							0.0,
+							3,
+							"y"
+						]
+					}
+				}
+			},
 			"shine": 2,
 			"shine_color": "#f0b45a"
 		},
@@ -922,9 +996,10 @@
 				"3": "Idle",
 				"12": "Idle",
 				"walk": "Walk_F_IP",
-				"run": "Run_F_IP"
+				"run": "Run_F_IP",
+				"swim": "Walk_F_IP"
 			},
-			"note": "WildMesh Beaver (Realistic Animals/Beaver/SK_Beaver.fbx). 20 clips; units are centimetres. No graze clip: Idle_2 stands in.",
+			"note": "WildMesh Beaver (Realistic Animals/Beaver/SK_Beaver.fbx). 20 clips; units are centimetres. No graze clip: Idle_2 stands in. Swim clip (8 Nov 2026): its file has no swim clip: the forward walk paddles. gait_fallback swim: a hand-made swim (hind feet paddling in turn, front legs held still, tail sculling side to side, head up); rename to gait to use it instead of the walk (axes a first guess until a creature check).",
 			"length_m": 0.8,
 			"materials": [
 				{
@@ -933,6 +1008,89 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Beaver",
+			"swim_mps": 1.2,
+			"gait_fallback": {
+				"swim": {
+					"period_s": 0.9,
+					"bones": {
+						"thigh_L": [
+							0.0,
+							35,
+							"x"
+						],
+						"thigh_R": [
+							0.5,
+							35,
+							"x"
+						],
+						"shin_L": [
+							0.1,
+							25,
+							"x"
+						],
+						"shin_R": [
+							0.6,
+							25,
+							"x"
+						],
+						"foot_L": [
+							0.2,
+							30,
+							"x"
+						],
+						"foot_R": [
+							0.7,
+							30,
+							"x"
+						],
+						"front_thigh_L": [
+							0.0,
+							5,
+							"x"
+						],
+						"front_thigh_R": [
+							0.0,
+							5,
+							"x"
+						],
+						"Tail_1": [
+							0.25,
+							10,
+							"y"
+						],
+						"Tail_2": [
+							0.35,
+							14,
+							"y"
+						],
+						"Tail_3": [
+							0.45,
+							18,
+							"y"
+						],
+						"Tail_4": [
+							0.55,
+							20,
+							"y"
+						],
+						"spine_006": [
+							0.0,
+							3,
+							"y"
+						],
+						"Neck": [
+							0.5,
+							-4,
+							"x"
+						],
+						"Head": [
+							0.5,
+							-3,
+							"x"
+						]
+					}
+				}
+			},
 			"shine": 1,
 			"shine_color": "#e6643c"
 		},
@@ -1257,16 +1415,18 @@
 				"3": "Idle_Breathing",
 				"12": "Idle",
 				"walk": "WalkMedium",
-				"run": "RunFast"
+				"run": "RunFast",
+				"swim": "SwimMoveMedium"
 			},
-			"note": "WildMesh Goose (Realistic Animals/Goose/SK_Goose.fbx).",
+			"note": "WildMesh Goose (Realistic Animals/Goose/SK_Goose.fbx). Swim clip (8 Nov 2026): SwimMoveMedium from its own swim clips.",
 			"length_m": 0.9,
 			"materials": [
 				{
 					"match": "",
 					"albedo": "res://assets/animals/goose/Textures/T_Goose.png"
 				}
-			]
+			],
+			"swim_mps": 0.8
 		},
 		"cow": {
 			"scene": "res://assets/animals/cow/SK_Cow.fbx",
@@ -2075,6 +2235,39 @@
 			],
 			"shine": 3,
 			"shine_color": "#b4e05a"
+		},
+		"alligator": {
+			"scene": "res://assets/animals/alligator/SK_AmericanAligator.fbx",
+			"pack": "WildMesh3D/Realistic Animals/AmericanAligator",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.8,
+			"run_mps": 6.0,
+			"swim_mps": 2.0,
+			"stride_m": 0.8,
+			"clips": {
+				"0": "Idle",
+				"3": "Low pose",
+				"10": "Idle call shared",
+				"11": "Sprint fwd",
+				"12": "Idle",
+				"walk": "Walk fwd",
+				"run": "Sprint fwd",
+				"swim": "Swim fwd surface"
+			},
+			"note": "WildMesh American Alligator (Realistic Animals/AmericanAligator/SK_AmericanAligator.fbx). In the water it plays its swim clip (role swim, client water level). Clips checked 8 Nov 2026; it lies low, so its walk and call clips read under half its imported height: flat_share 0.3.",
+			"length_m": 3.8,
+			"materials": [
+				{
+					"match": "Eye",
+					"albedo": "res://assets/animals/alligator/Textures/T_American_Alligator_Eye.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/alligator/Textures/T_American_Alligator.png"
+				}
+			],
+			"flat_share": 0.3
 		}
 	}
 }
