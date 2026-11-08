@@ -2013,6 +2013,19 @@ func _look_motion(node: Node3D, b: Dictionary, state: int, delta: float) -> void
 		fix.look_target = (b["foe"] as Vector3) + Vector3(0.0, 0.4, 0.0)      # the dog (or player) it is warning, not the camera
 		want = 1.0
 
+	# In noise (rain over 0.3 or wind over 0.4) a grazer looks round more often (Jamie's hearing page #742: hearing masked, the eyes
+	# do more): a glance every 4 to 10 s while it grazes, with wind_looks on.
+	if wind_looks and state == 0:
+		var wx: Dictionary = _wx_state()
+
+		if float(wx.get("rain", 0.0)) > 0.3 or float(wx.get("wind", 0.0)) > 0.4:
+			b["noise_glance"] = float(b.get("noise_glance", randf_range(4.0, 10.0))) - delta      # luck-exempt: the next glance (client look)
+
+			if float(b["noise_glance"]) <= 0.0:
+				b["noise_glance"] = randf_range(4.0, 10.0)      # luck-exempt: as above
+				b["look_left"] = maxf(float(b.get("look_left", 0.0)), randf_range(1.0, 2.0))      # luck-exempt: how long
+				want = 1.0
+
 	# A herd mate looked up: this one follows a moment later (_herd_glance).
 	if float(b.get("glance_at", -1.0)) >= 0.0 and _t >= float(b["glance_at"]):
 		b["glance_at"] = -1.0

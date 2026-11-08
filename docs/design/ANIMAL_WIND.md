@@ -46,6 +46,10 @@ With `wind_looks` on, the gale turn of `weather_looks` steps aside (the same tur
   - **Herds stand tail to the wind in rain** (as above), and **face into it when alert** (state 3, stock and deer, wind 0.15 or more:
     up to 45 degrees toward upwind, to scent what alarmed them).
 
+## In noise (Jamie's hearing page #742)
+Animals look round more in noise and keep moving in wind (hearing masked, the eyes do more). With `wind_looks` a grazer glances every
+4 to 10 s in rain over 0.3 or wind over 0.4 (`_look_motion`, rows with look bones). The server's `hear_factor` is Steve's.
+
 ## For Steve (no new wire fields)
 - The scent rule is his already; nothing is asked. If he wants herds to drift to the lee of a slope as well as a wood, that is a
   cover-search candidate on the server (the lowest of his eight samples already does it for deer in a gale).
