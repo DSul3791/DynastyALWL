@@ -651,6 +651,15 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 
 				anim.loop_mode = Animation.LOOP_LINEAR
 				_strip_root_drift(player, anim, rig, kind, anim_name)
+
+				# An in-place walk or run (no travel in the clip) gets its speed from its feet: docs/design/FOOT_SLIDING.md.
+				if (str(key) == "walk" or str(key) == "run") and not anim.has_meta("travel_mps") and not anim.has_meta("stride_measured"):
+					anim.set_meta("stride_measured", true)
+					var stride_mps: float = _measure_stride(player, anim, rig)
+
+					if stride_mps >= 0.2 and stride_mps <= 25.0:
+						anim.set_meta("travel_mps", stride_mps)
+						_model_note(kind, "clip %s: feet move %.2f m/s on the ground, played at speed / %.2f" % [anim_name, stride_mps, stride_mps])
 				roles[str(key)] = anim_name
 				break
 
@@ -928,10 +937,22 @@ func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> floa
 
 # The box of the skeleton's bones in the rig's space in a clip's first frame (or the imported pose with no clip).
 func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
+	var bones: PackedVector3Array = _clip_bones(player, anim, rig, 0.0)
+	var box: AABB = AABB()
+
+	for i in bones.size():
+		box = AABB(bones[i], Vector3.ZERO) if i == 0 else box.expand(bones[i])
+
+	return box
+
+
+# The bones of the skeleton in the rig's space at `time` into a clip (or the imported pose with no clip), from the clip's own tracks
+# and the bone rests: no running player needed.
+func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: float = 0.0) -> PackedVector3Array:
 	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
 
 	if skeletons.is_empty():
-		return AABB()
+		return PackedVector3Array()
 
 	var sk: Skeleton3D = skeletons[0]
 	var local: Array = []
@@ -961,11 +982,11 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 			var bone_xf: Transform3D = local[bone]
 
 			if kind == Animation.TYPE_POSITION_3D:
-				bone_xf.origin = anim.position_track_interpolate(t, 0.0)
+				bone_xf.origin = anim.position_track_interpolate(t, time)
 			elif kind == Animation.TYPE_ROTATION_3D:
-				bone_xf.basis = Basis(anim.rotation_track_interpolate(t, 0.0)).scaled(bone_xf.basis.get_scale())
+				bone_xf.basis = Basis(anim.rotation_track_interpolate(t, time)).scaled(bone_xf.basis.get_scale())
 			else:
-				bone_xf.basis = Basis(bone_xf.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, 0.0))
+				bone_xf.basis = Basis(bone_xf.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, time))
 
 			local[bone] = bone_xf
 
@@ -992,11 +1013,11 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 
 					match anim.track_get_type(t):
 						Animation.TYPE_POSITION_3D:
-							origin = anim.position_track_interpolate(t, 0.0)
+							origin = anim.position_track_interpolate(t, time)
 						Animation.TYPE_ROTATION_3D:
-							turn = anim.rotation_track_interpolate(t, 0.0)
+							turn = anim.rotation_track_interpolate(t, time)
 						Animation.TYPE_SCALE_3D:
-							size = anim.scale_track_interpolate(t, 0.0)
+							size = anim.scale_track_interpolate(t, time)
 
 				xf = Transform3D(Basis(turn) * Basis.from_scale(size), origin)
 
@@ -1006,7 +1027,8 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 
 	var world: Array = []
 	world.resize(sk.get_bone_count())
-	var box: AABB = AABB()
+	var out: PackedVector3Array = PackedVector3Array()
+	out.resize(sk.get_bone_count())
 
 	for i in sk.get_bone_count():
 		var chain: Array = []
@@ -1020,10 +1042,9 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 			var parent: int = sk.get_bone_parent(c)
 			world[c] = (world[parent] as Transform3D) * (local[c] as Transform3D) if parent >= 0 else local[c]
 
-		var at: Vector3 = to_rig * (world[i] as Transform3D).origin
-		box = AABB(at, Vector3.ZERO) if i == 0 else box.expand(at)
+		out[i] = to_rig * (world[i] as Transform3D).origin
 
-	return box
+	return out
 
 
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
@@ -1235,6 +1256,50 @@ func _track_at(anim: Animation, t: int, kind: int, time: float) -> Variant:
 	if kind == Animation.TYPE_POSITION_3D:
 		return anim.position_track_interpolate(t, time)
 	return anim.scale_track_interpolate(t, time)
+
+
+# How fast a clip's feet move over the ground while they touch it (docs/design/FOOT_SLIDING.md, MikeW 8 Nov 2026). In an in-place
+# walk the body stays put and a planted foot slides backward at exactly the speed the animal should travel, so: sample the bones 40
+# times over the clip in the rig's space (metres, the model's size scale is in it), take the lowest point the clip reaches as the
+# ground, call a bone planted while it is within 3% of the standing height of that ground, and return the middle horizontal speed
+# of planted bones between neighbouring samples. 0 when nothing is planted long enough to tell.
+func _measure_stride(player: AnimationPlayer, anim: Animation, rig: Node3D) -> float:
+	if anim.length <= 0.0:
+		return 0.0
+
+	var samples: int = 40
+	var frames: Array = []
+	var low: float = INF
+	var high: float = -INF
+
+	for i in samples + 1:
+		var bones: PackedVector3Array = _clip_bones(player, anim, rig, anim.length * float(i) / float(samples))
+		frames.append(bones)
+
+		for p in bones:
+			low = minf(low, p.y)
+			high = maxf(high, p.y)
+
+	if frames.is_empty() or high <= low:
+		return 0.0
+
+	var near_ground: float = low + (high - low) * 0.03
+	var dt: float = anim.length / float(samples)
+	var speeds: Array = []
+
+	for i in samples:
+		var a: PackedVector3Array = frames[i]
+		var b: PackedVector3Array = frames[i + 1]
+
+		for bone in a.size():
+			if a[bone].y <= near_ground and b[bone].y <= near_ground:
+				speeds.append(Vector2(b[bone].x - a[bone].x, b[bone].z - a[bone].z).length() / dt)
+
+	if speeds.size() < 4:
+		return 0.0
+
+	speeds.sort()
+	return float(speeds[int(speeds.size() / 2.0)])
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
