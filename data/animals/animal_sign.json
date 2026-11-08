@@ -229,6 +229,10 @@
 				{
 					"kind": "trail",
 					"hint": "A smooth trail to the water. Seals rest on this beach."
+				},
+				{
+					"kind": "scat",
+					"hint": "Fishy scat on the rocks above the tide. Seals haul out here."
 				}
 			]
 		},
@@ -239,6 +243,10 @@
 				{
 					"kind": "nests",
 					"hint": "Nests in the rock ledges. Seabirds breed here; eggs in season."
+				},
+				{
+					"kind": "droppings",
+					"hint": "White streaks down the cliff face. Seabirds roost above."
 				}
 			]
 		},
@@ -249,6 +257,10 @@
 				{
 					"kind": "croak",
 					"hint": "A chorus of croaks at dusk. Frogs live by this water."
+				},
+				{
+					"kind": "spawn",
+					"hint": "Jelly clumps of frog spawn in the shallows. Frogs breed here."
 				}
 			]
 		},
@@ -287,6 +299,10 @@
 				{
 					"kind": "hair",
 					"hint": "White hair snagged on rock. Goats climb here."
+				},
+				{
+					"kind": "tracks",
+					"hint": "Narrow split prints on a high ledge. A goat climbed here."
 				}
 			]
 		},
@@ -351,6 +367,426 @@
 				{
 					"kind": "droppings",
 					"hint": "Small dark pellets on a ledge. Bighorn sheep bedded here."
+				}
+			]
+		},
+		"goblin": {
+			"group": "biped",
+			"track": "small bare feet with long clawed toes",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Small clawed footprints, bare and splayed. Goblins walked here."
+				},
+				{
+					"kind": "litter",
+					"hint": "Gnawed bones and rags by the rocks. Goblins camp nearby."
+				}
+			]
+		},
+		"chamois": {
+			"group": "hoofed",
+			"track": "small pointed two-toed prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Small pointed hoof prints on a scree slope. Chamois crossed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Tiny dark pellets on a ledge. Chamois rested here."
+				}
+			]
+		},
+		"mink": {
+			"group": "pawed",
+			"track": "small five-toed prints in mud",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Tiny five-toed prints in the bank mud. A mink hunts here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Twisted dark scat full of fish scales on a rock. A mink marked it."
+				}
+			]
+		},
+		"raccoon": {
+			"group": "pawed",
+			"track": "small hand-like five-toed prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Prints like small hands in the mud. A raccoon foraged here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Scat in a heap at the foot of a tree. Raccoons use this spot."
+				}
+			]
+		},
+		"rat": {
+			"group": "pawed",
+			"track": "tiny prints with a tail drag",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Tiny prints and a thin tail line. Rats run here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small dark pellets along a bank. Rats live close by."
+				}
+			]
+		},
+		"crow": {
+			"group": "bird",
+			"track": "three-toed prints, one toe back",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Slim three-toed prints in a row. Crows walked here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "White splashes under a branch. Crows roost above."
+				}
+			]
+		},
+		"pheasant": {
+			"group": "bird",
+			"track": "three-toed prints with a long middle toe",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Long three-toed prints at the field edge. A pheasant walked here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small droppings near a dust bath. Pheasants are close."
+				}
+			]
+		},
+		"goose": {
+			"group": "bird",
+			"track": "webbed prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Broad webbed prints by the water. Geese grazed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Green droppings on the grass. A flock of geese fed here."
+				}
+			]
+		},
+		"cow": {
+			"group": "hoofed",
+			"track": "broad cloven hoof prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Broad cloven prints in the mud. Cattle walked here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "A wide dung pat. Cattle grazed here."
+				}
+			]
+		},
+		"goat": {
+			"group": "hoofed",
+			"track": "small cloven prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Small cloven prints. Goats browsed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small round pellets. Goats are near."
+				}
+			]
+		},
+		"chicken": {
+			"group": "bird",
+			"track": "three-toed scratch marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Scratched-up earth and three-toed prints. Chickens fed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small droppings and a loose feather. Chickens roost near."
+				}
+			]
+		},
+		"cat": {
+			"group": "pawed",
+			"track": "small round prints without claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Small round prints, no claws. A cat passed here."
+				},
+				{
+					"kind": "scratch",
+					"hint": "Fine claw scratches on a post. A cat sharpens its claws here."
+				}
+			]
+		},
+		"dog": {
+			"group": "pawed",
+			"track": "four-toed prints with claw tips",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Four-toed prints with claw tips, wandering. A dog roamed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Dog dung by the path. Someone's dog was here."
+				}
+			]
+		},
+		"buffalo": {
+			"group": "hoofed",
+			"track": "huge cloven prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Huge cloven prints in a trampled line. Wild oxen passed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Great dung pats across the grass. A herd of wild oxen grazed here."
+				}
+			]
+		},
+		"puma": {
+			"group": "clawed",
+			"track": "big round prints, no claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Big round cat prints without claw marks. A puma prowls here."
+				},
+				{
+					"kind": "kill",
+					"hint": "A deer carcass half buried under leaves. A puma cached it."
+				}
+			]
+		},
+		"pronghorn": {
+			"group": "hoofed",
+			"track": "pointed heart-shaped prints, far apart",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Pointed hoof prints, far apart. Pronghorn ran through here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small pellets in a scrape. Pronghorn graze nearby."
+				}
+			]
+		},
+		"warthog": {
+			"group": "hoofed",
+			"track": "small cloven prints and rooted soil",
+			"signs": [
+				{
+					"kind": "rooting",
+					"hint": "Turned-up earth around grass roots. Warthogs fed here."
+				},
+				{
+					"kind": "wallow",
+					"hint": "A muddy hollow, rubbed smooth. Warthogs wallow here."
+				}
+			]
+		},
+		"hyena": {
+			"group": "clawed",
+			"track": "big front paws, smaller hind paws",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Big front paws, small hind ones. Hyenas passed here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Chalk-white droppings full of bone. Hyenas feed nearby."
+				}
+			]
+		},
+		"wildebeest": {
+			"group": "hoofed",
+			"track": "broad cloven prints in a trampled band",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "A wide band of trampled cloven prints. A wildebeest herd passed."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Dung piles on a bare patch. Wildebeest bulls mark here."
+				}
+			]
+		},
+		"lion": {
+			"group": "clawed",
+			"track": "huge round prints, no claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Huge round cat prints in the dust. Lions walked here."
+				},
+				{
+					"kind": "kill",
+					"hint": "A picked carcass and flattened grass. A pride fed here."
+				}
+			]
+		},
+		"leopard": {
+			"group": "clawed",
+			"track": "round cat prints, no claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Round cat prints without claws. A leopard prowls here."
+				},
+				{
+					"kind": "kill",
+					"hint": "A carcass wedged high in a tree. A leopard cached it."
+				}
+			]
+		},
+		"rhino": {
+			"group": "hoofed",
+			"track": "huge three-toed round prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Huge three-toed prints, deep in the dust. A rhino passed."
+				},
+				{
+					"kind": "droppings",
+					"hint": "A big dung heap, kicked apart. A rhino marks this spot."
+				}
+			]
+		},
+		"elephant": {
+			"group": "hoofed",
+			"track": "great round pad prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Great round prints, wide as a shield. Elephants passed."
+				},
+				{
+					"kind": "browse",
+					"hint": "Trees stripped of bark and snapped. Elephants fed here."
+				}
+			]
+		},
+		"camel": {
+			"group": "hoofed",
+			"track": "broad two-toed pads",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Broad soft two-toed pads in the dust. Camels walked here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Dry dung pellets in a line. Camels passed this way."
+				}
+			]
+		},
+		"guineafowl": {
+			"group": "bird",
+			"track": "three-toed prints in scratched earth",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Scratched earth and three-toed prints. Guineafowl fed here."
+				},
+				{
+					"kind": "feathers",
+					"hint": "Spotted grey feathers in the grass. Guineafowl roost near."
+				}
+			]
+		},
+		"honey_badger": {
+			"group": "clawed",
+			"track": "long-clawed broad prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Broad prints with very long claws. A honey badger dug here."
+				},
+				{
+					"kind": "den",
+					"hint": "A burrow ripped open, earth thrown wide. A honey badger hunted."
+				}
+			]
+		},
+		"kangaroo": {
+			"group": "pawed",
+			"track": "long hind feet in pairs and a tail mark",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Long paired hind prints and a tail drag. Kangaroos bounded here."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Small dry pellets in the grass. Kangaroos graze nearby."
+				}
+			]
+		},
+		"mammoth": {
+			"group": "hoofed",
+			"track": "great round pad prints in frost",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Great round prints in the frost. Mammoths passed here."
+				},
+				{
+					"kind": "hair",
+					"hint": "Long brown hair snagged on rocks. Mammoths rubbed here."
+				}
+			]
+		},
+		"tiger": {
+			"group": "clawed",
+			"track": "huge round prints, no claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Huge round cat prints in the mud. A tiger walks here."
+				},
+				{
+					"kind": "scratch",
+					"hint": "Deep claw marks high on a trunk. A tiger marks its ground."
+				}
+			]
+		},
+		"alligator": {
+			"group": "clawed",
+			"track": "splayed clawed prints and a tail drag",
+			"signs": [
+				{
+					"kind": "slide",
+					"hint": "A flattened mud slide into the water. An alligator basks here."
+				},
+				{
+					"kind": "tracks",
+					"hint": "Splayed clawed prints and a tail drag. An alligator crossed."
 				}
 			]
 		}

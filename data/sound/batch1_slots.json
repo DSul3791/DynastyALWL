@@ -229,6 +229,354 @@
    "status": "filled",
    "note": "borrowed from fox, light"
   },
+  "chamois_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -15,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "mink_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -20,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "raccoon_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -18,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "rat_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -26,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "crow_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -28,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "pheasant_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -26,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "goose_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -24,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "cow_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/horse_step_0.ogg",
+    "res://assets/audio/batch1/horse_step_1.ogg",
+    "res://assets/audio/batch1/horse_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -12,
+   "status": "filled",
+   "note": "borrowed from horse"
+  },
+  "goat_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -15,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "chicken_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -28,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "cat_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -24,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "dog_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/wolf_step_0.ogg",
+    "res://assets/audio/batch1/wolf_step_1.ogg",
+    "res://assets/audio/batch1/wolf_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -16,
+   "status": "filled",
+   "note": "borrowed from wolf"
+  },
+  "buffalo_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/moose_step_0.ogg",
+    "res://assets/audio/batch1/moose_step_1.ogg",
+    "res://assets/audio/batch1/moose_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -8,
+   "status": "filled",
+   "note": "borrowed from moose"
+  },
+  "puma_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -16,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "pronghorn_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "warthog_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -15,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "hyena_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/wolf_step_0.ogg",
+    "res://assets/audio/batch1/wolf_step_1.ogg",
+    "res://assets/audio/batch1/wolf_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "borrowed from wolf"
+  },
+  "wildebeest_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -11,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "lion_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/wolf_step_0.ogg",
+    "res://assets/audio/batch1/wolf_step_1.ogg",
+    "res://assets/audio/batch1/wolf_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -10,
+   "status": "filled",
+   "note": "borrowed from wolf"
+  },
+  "leopard_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -16,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "rhino_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/moose_step_0.ogg",
+    "res://assets/audio/batch1/moose_step_1.ogg",
+    "res://assets/audio/batch1/moose_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -6,
+   "status": "filled",
+   "note": "borrowed from moose"
+  },
+  "elephant_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/moose_step_0.ogg",
+    "res://assets/audio/batch1/moose_step_1.ogg",
+    "res://assets/audio/batch1/moose_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -4,
+   "status": "filled",
+   "note": "borrowed from moose"
+  },
+  "camel_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/horse_step_0.ogg",
+    "res://assets/audio/batch1/horse_step_1.ogg",
+    "res://assets/audio/batch1/horse_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "borrowed from horse"
+  },
+  "guineafowl_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -27,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "honey_badger_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -20,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
+  "kangaroo_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "borrowed from deer"
+  },
+  "mammoth_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/moose_step_0.ogg",
+    "res://assets/audio/batch1/moose_step_1.ogg",
+    "res://assets/audio/batch1/moose_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -3,
+   "status": "filled",
+   "note": "borrowed from moose"
+  },
+  "tiger_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/wolf_step_0.ogg",
+    "res://assets/audio/batch1/wolf_step_1.ogg",
+    "res://assets/audio/batch1/wolf_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -10,
+   "status": "filled",
+   "note": "borrowed from wolf"
+  },
+  "alligator_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/fox_step_0.ogg",
+    "res://assets/audio/batch1/fox_step_1.ogg",
+    "res://assets/audio/batch1/fox_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "borrowed from fox"
+  },
   "ladder_rung": {
    "group": "ladder",
    "files": [
