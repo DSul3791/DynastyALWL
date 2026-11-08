@@ -91,6 +91,7 @@ const MIST_WHITE := Color(0.9, 0.9, 0.9)
 const MIST_WHITEN := 0.55                # how far the fog colour moves from the horizon colour toward white by day
 const MIST_SKY_HIDE := 0.9               # share of the sky the fog hides when you stand deep inside it
 const MIST_OWN_COLOR := 0.8              # the fog keeps its own colour instead of taking the sky's (aerial perspective) by this much
+const MIST_ABOVE_CLEAR := 0.3           # above the layer the air is clear (the cold sits below): the distance haze x this, so hills above it stay sharp (#603 shot)
 const MIST_SUN_SCATTER := 0.25           # glow toward the low sun through the fog
 
 # Rain streaks: a streak over a canopy is not drawn (the map is canopy_map.gd).
@@ -472,7 +473,7 @@ func _process_body(delta: float) -> void:
 		var mist_top: float = float(_s["mist_top_m"])
 		mist_inside = mist * smoothstep(-MIST_EDGE_M, MIST_EDGE_M, mist_top - _client.camera.global_position.y) * under_rock
 		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"]) + MIST_INSIDE_THICK * mist_inside
-		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0)
+		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0) * above_clear(mist, mist_inside)
 		# The fog is sky-coloured haze: under rock it must go dark with the light, or a long tunnel glows (pitch black means black).
 		# Valley fog is whiter than the haze: lit by the sky and the sun (white by day, warm at sunrise from the dusk horizon colour,
 		# blue-grey at night from the night horizon), never a flat grey card (art_weather_light.md section 7 rule 2).
@@ -539,6 +540,12 @@ static func sky_under_rock(environment: Environment, sky_share: float, under_roc
 static func cave_light(rock_enclosure: float, left: float = CAVE_LIGHT_DARK) -> float:
 	var shut: float = smoothstep(CAVE_DARK_FROM, CAVE_DARK_FULL, rock_enclosure)
 	return lerpf(1.0, left, shut)
+
+
+# Dino's #603 fog_above shot: the hill standing above the layer was washed snow-white, because in mist the fog colour turns white and the
+# ordinary distance haze took it. Above a valley fog the air is clear, so the haze thins there; the layer itself is height fog and stays white.
+static func above_clear(mist: float, inside: float) -> float:
+	return lerpf(1.0, MIST_ABOVE_CLEAR, clampf(mist, 0.0, 1.0) * (1.0 - clampf(inside, 0.0, 1.0)))
 
 
 # The same grading the sky shader applies, so the fog meets the sky's horizon.
