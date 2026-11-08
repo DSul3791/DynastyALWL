@@ -1383,7 +1383,7 @@ func _top_up(players: Array, only: int) -> void:
 				continue
 
 			if def.has("flock") and not bool(def["flock"].get("on_land", false)) and ice_on():
-				var edge: Vector2 = ice_edge_spot(x, z)   # on a frozen pond the flock stands on the ice at the open water's edge, or is not there
+				var edge: Vector2 = ice_edge_spot(x, z, sp)   # on a frozen pond the flock stands on the ice at the open water's edge, or is not there
 
 				if edge.x == INF:
 					continue
@@ -2310,13 +2310,22 @@ func ice_at(x: float, z: float) -> float:
 	return float(_ice_cache[key][0])
 
 
-func ice_bears(x: float, z: float) -> bool:
-	return ice_at(x, z) >= float(_ice_cfg().get("bears_cover", 0.5))
+# Whether ice at (x, z) holds an animal of `mass` kg for sure (Jamie #736, from the Minnesota DNR table): mass <= sure_k (0.9) x h^2, with
+# h the thickness in cm (cover x 20). Animals keep off doubtful ice (judged), so the chance band up to 3.5 h^2 is not used here.
+func ice_holds(x: float, z: float, mass: float) -> bool:
+	var h_cm: float = ice_at(x, z) * 20.0
+	return h_cm > 0.0 and mass <= float(_ice_cfg().get("sure_k", 0.9)) * h_cm * h_cm
 
 
-# [ground, blocked] callables for a walker this tick: a skirting species (deer role, skirt_species) is also blocked by any ice it could see
-# (skirt_cover, skim and up), even over shallows it would wade; a crossing species (cross_species, the wolf) walks on a sheet that bears,
-# at the water's surface, and only open deep water blocks it; any other keeps the plain rules.
+# An animal's mass for the ice (ice.mass_kg, Jamie #736's table), or NAN for a species the table leaves out (it keeps the plain rules).
+func ice_mass(sp: String) -> float:
+	var masses: Dictionary = _ice_cfg().get("mass_kg", {})
+	return float(masses[sp]) if masses.has(sp) else NAN
+
+
+# [ground, blocked] callables for a walker this tick: a skirting animal (deer role, skirt_species: deer fall on bare ice, Jamie #736) is
+# also blocked by any ice it could see (skirt_cover, skim and up), even over shallows it would wade; any other animal with a mass in
+# ice.mass_kg walks on ice that holds it for sure, at the water's surface, and only open deep water blocks it; the rest keep the plain rules.
 func ice_moves(def: Dictionary, sp: String) -> Array:
 	var ic: Dictionary = _ice_cfg()
 	var base_blocked: Callable = blocked
@@ -2327,17 +2336,19 @@ func ice_moves(def: Dictionary, sp: String) -> Array:
 		var skirt: float = float(ic.get("skirt_cover", 0.1))
 		return [base_ground, func(x: float, z: float) -> bool: return (base_blocked.is_valid() and bool(base_blocked.call(x, z))) or me.ice_at(x, z) >= skirt]
 
-	if sp in ic.get("cross_species", ["wolf"]):
-		return [me.ice_ground(base_ground), me.ice_blocked(base_blocked)]
+	var mass: float = ice_mass(sp)
+
+	if not is_nan(mass):
+		return [ice_ground(base_ground, mass), ice_blocked(base_blocked, mass)]
 
 	return [base_ground, base_blocked]
 
 
-# A crossing walker's ground: the water's surface where the ice bears, else the ground.
-func ice_ground(base_ground: Callable) -> Callable:
+# A walker's ground on ice: the water's surface where the ice holds `mass` for sure, else the ground.
+func ice_ground(base_ground: Callable, mass: float) -> Callable:
 	var me = self
 	var ground: Callable = func(x: float, z: float) -> float:
-		if me.ice_bears(x, z):
+		if me.ice_holds(x, z, mass):
 			return float(me.water_level.call(x, z))
 
 		return float(base_ground.call(x, z)) if base_ground.is_valid() else 0.0
@@ -2345,19 +2356,23 @@ func ice_ground(base_ground: Callable) -> Callable:
 	return ground
 
 
-# A crossing walker's block: deep water only where the ice does not bear.
-func ice_blocked(base_blocked: Callable) -> Callable:
+# A walker's block on ice: deep water only where the ice does not hold `mass` for sure.
+func ice_blocked(base_blocked: Callable, mass: float) -> Callable:
 	var me = self
-	return func(x: float, z: float) -> bool: return base_blocked.is_valid() and bool(base_blocked.call(x, z)) and not me.ice_bears(x, z)
+	return func(x: float, z: float) -> bool: return base_blocked.is_valid() and bool(base_blocked.call(x, z)) and not me.ice_holds(x, z, mass)
 
 
-# Where a water flock settles at (x, z): there when the water is open (cover under bird_cover); on ice, the nearest open water within
+# Where a water flock settles at (x, z) (Jamie #736: water birds stand at the ice edge by open water and leave a pond frozen over): there when
+# the ice would not hold one of them for sure (open water or a skim it swims through); on ice that holds it, the nearest such water within
 # edge_search_m (8 bearings, 4 m steps), the flock standing edge_back_m back from it on the ice; Vector2(INF, INF) when the pond is shut.
-func ice_edge_spot(x: float, z: float) -> Vector2:
+func ice_edge_spot(x: float, z: float, sp: String) -> Vector2:
 	var ic: Dictionary = _ice_cfg()
-	var bird_cover: float = float(ic.get("bird_cover", 0.25))
+	var mass: float = ice_mass(sp)
 
-	if ice_at(x, z) < bird_cover:
+	if is_nan(mass):
+		mass = float(ic.get("flock_mass_kg", 1.2))
+
+	if not ice_holds(x, z, mass):
 		return Vector2(x, z)
 
 	var back: float = float(ic.get("edge_back_m", 2.0))
@@ -2367,8 +2382,7 @@ func ice_edge_spot(x: float, z: float) -> Vector2:
 			var dir: Vector2 = Vector2.from_angle(TAU * float(b) / 8.0)
 			var p: Vector2 = Vector2(x, z) + dir * 4.0 * float(step)
 
-			if not is_nan(float(water_level.call(p.x, p.y))) and ice_at(p.x, p.y) < bird_cover:
+			if not is_nan(float(water_level.call(p.x, p.y))) and not ice_holds(p.x, p.y, mass):
 				return p - dir * back
 
 	return Vector2(INF, INF)
-

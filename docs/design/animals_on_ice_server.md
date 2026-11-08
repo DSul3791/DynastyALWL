@@ -4,7 +4,8 @@
 **Asked by:**
 - MikeW, `docs/design/ANIMAL_WEATHER_LOOKS.md` (ice section): deer and boar skirt frozen ponds, wolves cross them, birds stand on the ice at open-water edges;
 - Kathleen, `docs/design/frozen_water_look.md` (#729) section 9: holes to the client, the thaw moat, and the frozen brook check (that one is in #720).
-**Decided:** coordinator, 8 Nov 2026 (yes to all three of Kathleen's asks). Dave may revert.
+**Research:** Jamie, `docs/knowledge/animals-on-ice-and-snow.md` (#736): ice strength by mass, the per-animal table, deer on bare ice, water birds at the edge.
+**Decided:** coordinator, 8 Nov 2026 (yes to all three of Kathleen's asks; Jamie's rule for the ice). Dave may revert.
 **Status:** animal moves behind `animals.json` `ice.on` (off). The hole message (protocol 97) and the moat hook are live but quiet: nothing draws the holes until the ice look connects, and nothing wires the moat until Kathleen's `Ice.season` lands. Static checks only.
 
 ## 1. What happens today (read from the code, 8 Nov; not tested)
@@ -22,8 +23,11 @@
 ## 2. What the player will notice (flag on)
 
 - **Deer and boar walk round ice** of skim or more (2 cm, cover 0.1), even over shallows they would wade on an open day. Elk, moose, chamois and pronghorn go round too, since they share the deer role.
-- **Wolves cross a sheet that bears** (10 cm), walking at the ice's surface over deep water. So in a hard winter a pack takes the short way over a lake. Thinner ice over deep water still stops them.
-- **Ducks, geese and seabirds on a frozen pond** stand on the ice 2 m back from the nearest open water, such as a moat or an unfrozen patch within 40 m. A pond frozen all over has no flock.
+- **Lighter animals cross ice that holds them for sure** (Jamie's rule, below), walking at the ice's surface over deep water.
+  - Foxes and hares cross the starter island's skim (2.8 cm).
+  - A wolf needs 6.7 cm, so in a hard winter a pack takes the short way over a lake, but never on the starter island.
+  - Thinner ice over deep water still stops them.
+- **Ducks, geese and seabirds on a frozen pond** stand on the ice 2 m back from the nearest open water, such as a moat or an unfrozen patch within 40 m. A pond frozen all over has no flock (Jamie #736: water birds stand at the ice edge by open water, and leave a pond that is frozen over).
 - **The thaw moat is open water:**
   - a player standing in it is not on ice (`_on_ice` false), so they drink there without a hole;
   - a wolf does not cross it.
@@ -31,16 +35,45 @@
 
 ## 3. The rules
 
+**Ice strength** (Jamie #736, from the Minnesota DNR table): with h the ice thickness in cm (Ice.cover × 20),
+- ice holds an animal of mass m kg for sure if m ≤ 0.9 × h² (`sure_k`);
+- it breaks if m > 3.5 × h² (`break_k`), with a chance in between;
+- halve h for white (snow) ice and near springs and inflows.
+
+| Animal (game species) | Mass | May hold (3.5 h²) | Holds for sure (0.9 h²) |
+|---|---|---|---|
+| Raven (`crow`) | 1.2 kg | 0.6 cm | 1.2 cm |
+| Hare (`rabbit`) | 3.5 kg | 1.0 cm | 2 cm |
+| Fox | 6 kg | 1.3 cm | 2.6 cm |
+| Roe deer | 25 kg | 2.7 cm | 5.3 cm |
+| Wolf | 40 kg | 3.4 cm | 6.7 cm |
+| Sheep | 60 kg | 4.1 cm | 8.2 cm |
+| Person | 80 kg | 4.8 cm | 9.4 cm (the 10 cm rule; `_on_ice`'s cover 0.5) |
+| Red deer hind, boar | 90 kg | 5.1 cm | 10 cm |
+| Red deer stag | 150 kg | 6.5 cm | 13 cm |
+
+So the starter ice (2.8 to 5.6 cm) carries birds, hares and foxes. It may carry a wolf or a roe deer, and never red deer, boar or people.
+
 1. **The ice at a point** (`ice_at(x, z)`):
    - 0 on dry land or in the moat (`ice_moat_at`);
    - otherwise `Ice.cover` at the water's surface.
    - `Ice.cover` runs an hourly loop over weeks, so it is kept per 1 km band of z and 5 m of height for `cache_s` 60 real seconds.
-2. **Skirting** (deer role, plus `skirt_species` boar and warthog): the walker's block is "deep water, or ice of `skirt_cover` 0.1 or more".
-3. **Crossing** (`cross_species`, the wolf, in its own walks, its pack walks and its den walks):
-   - its ground is the water's surface where the ice bears (`bears_cover` 0.5);
-   - its block is deep water only where the ice does not bear.
-4. **Flocks:** when a water flock is about to settle on ice of `bird_cover` 0.25 (5 cm) or more, it looks out to `edge_search_m` 40 m for open water, in 8 directions and 4 m steps. It settles `edge_back_m` 2 m back from the first open water it finds, on the ice. With none, it does not settle.
-5. **Swimmers** (the moose, the beaver) keep their swim rules. Ice under a swimmer is left for later.
+2. **Animals keep off doubtful ice** (judged). They step only on ice that holds them for sure, so the chance band is not used for animals yet. It is the band for a future break-through.
+3. **Skirting** (deer role, plus `skirt_species` boar and warthog): the walker's block is "deep water, or ice of `skirt_cover` 0.1 or more".
+   - Jamie: deer on bare ice fall and stay down, one fall in three running strides.
+   - They also weigh 90 kg, more than any ice on the island holds.
+4. **Crossing** (any other species in `mass_kg`; the wolf in its pack and den walks too):
+   - its ground is the water's surface where the ice holds it for sure (`ice_holds`);
+   - its block is deep water only where it does not.
+   - `mass_kg`: crow 1.2, rabbit 3.5, fox 6 and wolf 40 come from #736. Duck 1.1, goose 4 and seabird 1 are judged.
+   - Species not in the table keep the plain rules.
+5. **Flocks:** a water flock about to settle on ice that holds one of its birds looks out to `edge_search_m` 40 m for water whose ice would not (open water or skim it swims through), in 8 directions and 4 m steps. It settles `edge_back_m` 2 m back from the first such water it finds, on the ice. With none, it does not settle.
+6. **Swimmers** (the moose, the beaver) keep their swim rules. Ice under a swimmer is left for later.
+
+**Left out, for later steps:**
+- **Halving h for white ice and near springs:** the server has no snow on ice and no spring positions yet (#719 step 2, Sonny's snow window).
+- **Wolves chasing deer onto ice, and deer falling there:** needs the fall state and the client's pose first.
+- **Snow:** sinking (a coyote-like animal 9.5 cm, a lynx-like one 7.7 cm, deer belly-deep and hampered over 50 cm), predators using packed trails about half the time, and snow building on a standing animal's back over 15 to 30 game minutes. All of these need lying snow on the server, from Sonny's A4 snow window.
 
 ## 4. The ice holes to the client (protocol 97)
 
@@ -59,7 +92,9 @@
 New `test_animals_ice.gd`, with a stub pond (shallow to x 150, deep beyond):
 - **Flag off:** nothing.
 - **Skirting:** a deer and a boar are blocked by skim in the shallows, and wade open shallows.
-- **Crossing:** a wolf crosses a 12 cm sheet over deep water at the surface, and is blocked by 6 cm.
+- **Mass rule:**
+  - 2.8 cm holds a fox over deep water, not a wolf (0.9 × 2.8² = 7.1 kg);
+  - a wolf crosses a 12 cm sheet at the surface, and is blocked by 6 cm.
 - **Moat:** it stops a wolf, and `_on_ice` is false in it.
-- **Flocks:** a flock on ice stands at the open water's edge. A pond frozen all over has none. On open water it floats where it was.
+- **Flocks:** a duck flock on ice stands at the open water's edge. A pond frozen all over has none. On open water it floats where it was.
 - **Holes:** `ice_holes_near` gives live holes within 120 m, nearest first, with their closing time.

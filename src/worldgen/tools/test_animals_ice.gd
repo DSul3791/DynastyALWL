@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Ice for animals and the ice look's server asks (docs/design/animals_on_ice_server.md section 6; MikeW ANIMAL_WEATHER_LOOKS.md; Kathleen
-# frozen_water_look.md #729): deer and boar never step on ice, wolves walk on a sheet that bears, a water flock stands at the open water's
+# frozen_water_look.md #729; Jamie #736): deer and boar never step on ice, others walk on ice that holds their mass for sure, a water flock stands at the open water's
 # edge on a frozen pond, a thaw moat is open water (for animals and for the players' _on_ice), and the live ice holes go to the client
 # (protocol 97) nearest first. With animals.json ice.on false the animals keep today's rules.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animals_ice.gd
@@ -52,7 +52,14 @@ func _init() -> void:
 	a._ice_cache.clear()
 	check(not bool(a.ice_moves(deer, "deer")[1].call(120.0, 0.0)), "open shallows: a deer wades as before")
 
-	# Wolves cross a sheet that bears (10 cm), at the water's surface; thinner ice over deep water still blocks them.
+	# Jamie #736: ice holds an animal for sure when mass kg <= 0.9 h^2 (h cm). Starter skim (2.8 cm) holds a fox (6 kg), not a wolf (40 kg).
+	cover[0] = 0.14
+	a._ice_cache.clear()
+	check(not bool(a.ice_moves(a.species_def("fox"), "fox")[1].call(200.0, 0.0)), "2.8 cm holds a fox over deep water")
+	check(bool(a.ice_moves(wolf, "wolf")[1].call(200.0, 0.0)), "2.8 cm does not hold a wolf")
+	check(a.ice_holds(200.0, 0.0, 40.0) == false and a.ice_holds(200.0, 0.0, 6.0), "ice_holds: 0.9 x 2.8^2 = 7.1 kg")
+
+	# Wolves cross a 12 cm sheet (holds 130 kg), at the water's surface; 6 cm (32 kg) over deep water still blocks them.
 	cover[0] = 0.6
 	a._ice_cache.clear()
 	var wolf_moves: Array = a.ice_moves(wolf, "wolf")
@@ -68,13 +75,13 @@ func _init() -> void:
 	check(bool(a.ice_moves(wolf, "wolf")[1].call(200.0, 0.0)), "the thaw moat stops a wolf as open water does")
 
 	# A water flock on a frozen pond stands at the edge of the open water (here the moat east of x 190), or does not settle.
-	var spot: Vector2 = a.ice_edge_spot(150.0, 0.0)
+	var spot: Vector2 = a.ice_edge_spot(150.0, 0.0, "duck")
 	check(spot.x > 185.0 and spot.x < 195.0, "a flock on the ice stands at the open water's edge (x %.0f)" % spot.x)
 	moat_from_x[0] = INF
-	check(a.ice_edge_spot(150.0, 0.0).x == INF, "a pond frozen all over has no flock")
+	check(a.ice_edge_spot(150.0, 0.0, "duck").x == INF, "a pond frozen all over has no flock")
 	cover[0] = 0.0
 	a._ice_cache.clear()
-	check(a.ice_edge_spot(150.0, 0.0) == Vector2(150.0, 0.0), "open water: the flock floats where it was")
+	check(a.ice_edge_spot(150.0, 0.0, "duck") == Vector2(150.0, 0.0), "open water: the flock floats where it was")
 
 	# The players' side: the moat is not ice, and the holes go out nearest first, live ones only.
 	var items = ItemsScript.new()
