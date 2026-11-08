@@ -190,3 +190,15 @@ The pictures rig cannot judge sound, so the checks are listens on Dave's PC, eac
 - Forest between source and listener (not around the listener) would need rays or a canopy map read along the line. Left until someone hears the case.
 - Thunder echoes in mountains: left to the clips.
 - The river length L comes from R7's record when it exists. 150 m until then.
+
+## 8. Checked against Jamie's hearing ranges (#683, 8 Nov)
+
+Jamie's table, "How far it is heard: calm night against a moderate breeze", set beside the rules above:
+
+- **Night carry matches.** Our +4.5 dB past 150 to 300 m is her +4 dB past 200 m.
+- **Gap 1: the cut-off distances, not the air rules, set the range.**
+  - River and brook voices stop at 140 m and fall voices at 110 m (`max_distance` in `water_sounds.gd`). Jamie hears a brook at 0.5 to 1 km and a large fall at 3 km or more on a calm night.
+  - The fire's voice stops at 52 m (`REACH_M` 35 x 1.5). Its pops should carry about 100 m on a calm night.
+  - So none of the far rules (night carry, line rivers) can be heard past those distances. Raising them is a cost question (more voices kept alive, the voice shedder) and is left to the water sound work after R7, when each reach and fall has its size from the record.
+- **Gap 2: a moderate breeze cuts every range about five times (about 14 dB).** Our gale mask starts at wind 0.5 (about 8 m/s), takes at most 12 dB and only from small sounds. At force 4 (7 m/s, wind about 0.42) a fall should be heard to 850 m, not 3 km, and our big sounds lose nothing except by direction. The game's own wind bed masks some of it by ear. A breeze loss for every source past 200 m, about -6 dB at wind 0.3 rising to -14 dB at wind 0.5, is a candidate step 5 once Dave has listened to steps 1 to 4.
+- **Thunder** is its own note: `docs/design/thunder_delay_design.md`.
