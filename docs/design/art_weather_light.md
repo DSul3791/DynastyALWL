@@ -310,11 +310,15 @@ Sonny's A4 design (in #537): each island gets one climate record; the R6 record 
    | Spring | 62 percent (old winter snow melting back) |
    | Winter | 50 percent, the treeline (art_mountains rule 4) |
 
-3. **Where inside the window:**
-   - **Faces that look north (-Z)** hold snow about 8 percent of the summit lower than faces that look south (A4 shade rule; art_mountains rule 3).
-   - **Lee faces**, the ones that look downwind of the prevailing wind, hold snow 5 percent lower, because the wind piles it there. The prevailing wind is taken as from the west for now; the island's climate record will give it.
+3. **Where inside the window** (checked against Jamie's snow-on-slopes page, #632: Scottish hills under south-west winds keep the deepest old snow on north to east aspects; lee drifts are 2 to 5 times the mean, windward crests nearly bare; the last patches lie below north-east cliffs at about 84 percent of the summit):
+   - The prevailing wind is taken as from the **south-west** until the island's climate record gives one.
+   - **Faces that look north (-Z)** hold snow 7 percent of the summit lower (shade).
+   - **Lee faces, looking north-east,** hold it 6 percent lower (the wind fills them), so a north-east face gets both.
+   - **Windward faces, looking south-west,** hold it 7 percent higher and keep at most 30 percent of the cover, even in winter (scoured).
+   - **Summer:** only the lee and shaded spots and the creases keep patches; open and windward ground is bare.
    - **Gullies and ledges:** on slopes steeper than about 45° snow holds only in creases and on small flat ledges, so dark cliffs carry white streaks (art_mountains rule 1). Gentle ground takes broad patches.
-   - **Patchy edges:** the lower edge breaks up into patches from two sizes of noise (about 60 m and 15 m), never a straight line. In summer only the best spots hold snow; in winter the patches join.
+   - **Patchy edges:** the lower edge breaks up into patches from two sizes of noise (about 60 m and 15 m), never a straight line.
+   - **Cornices** on lee crest edges (a 1 to 3 m lip above slopes steeper than 35°) need shapes, not paint; they are for the baked window (R7).
 4. **The look:** the same soft blue-white as the rest of the snow (about 0.86, 0.88, 0.92), a little rougher than ice, with no distance fade, because it is meant to be read from the town.
 5. **Not yet:** footsteps on summit patches still sound like rock, and the patches are drawn, not walked through; both wait for the baked window, which the server will also know.
 
