@@ -4,6 +4,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_weather.gd
 
 const Weather := preload("res://src/shared/weather.gd")
+const Climate := preload("res://src/shared/climate.gd")
 
 var failures: int = 0
 
@@ -104,7 +105,52 @@ func _init() -> void:
 	# Seasons: summer warmer than winter, winter is phase 0.
 	var cold: float = float(Weather.state(1, 0.875 * 365.0 * 86400.0, "temperate")["temp_c"])
 	var warm: float = float(Weather.state(1, 0.375 * 365.0 * 86400.0, "temperate")["temp_c"])
-	check(warm > cold + 15.0, "summer %.1f warmer than winter %.1f" % [warm, cold])
+	check(warm > cold + 6.0, "summer %.1f warmer than winter %.1f" % [warm, cold])
+	# One temperature (docs/design/one_temperature.md): temp_c is the island air with its day and night swing, less the rain's cooling;
+	# the starter island (the temperate zone) is 9 C +-5 at sea level, coldest at 05:00 and warmest at 15:00.
+	var starter_bad: int = 0
+
+	for h in range(24 * 365):
+		var t: float = float(h) * 3600.0
+		var w: Dictionary = Weather.state(777, t, "temperate")
+		var air: float = Weather.air_c(t, "temperate", 0.0, 777)
+
+		if float(w["temp_c"]) > air + 0.001 or float(w["temp_c"]) < air - Weather.RAIN_COOL_C - 0.001:
+			starter_bad += 1
+
+	check(starter_bad == 0, "temp_c is the island air less the rain's cooling (%d bad hours)" % starter_bad)
+	var midwinter: float = 0.875 * 365.0 * 86400.0
+	var starter: Dictionary = Climate.of_zone("temperate")
+	check(absf(Climate.mean_c(starter, 0.875) - 4.0) < 0.01 and absf(Climate.mean_c(starter, 0.375) - 14.0) < 0.01, "the starter's sea-level mean runs from 4 C in midwinter to 14 C in high summer (before cold and warm spells)")
+	var dawn: float = Climate.air_c(starter, 0.875, 5.0)
+	var afternoon: float = Climate.air_c(starter, 0.875, 15.0)
+	check(absf(afternoon - dawn - 8.0) < 0.1, "the day's range is 8 C from 05:00 to 15:00 (%.1f to %.1f)" % [dawn, afternoon])
+	check(absf(Weather.temp_at(midwinter, "temperate", 1000.0, 777) - (Weather.temp_at(midwinter, "temperate", 0.0, 777) - 6.5)) < 0.01, "6.5 C colder per km of height")
+	# Cold and warm spells: within the island's spell_amplitude_c, slow (under 2.5 C a day), the same for the same seed, and on the coast some winter
+	# nights fall below freezing (Fort William gets air frosts in most winters).
+	var spell_low: float = 100.0
+	var spell_high: float = -100.0
+	var spell_step: float = 0.0
+	var frost_nights: int = 0
+
+	for d in range(365):
+		var day_s: float = float(d) * 86400.0
+		var spell: float = Climate.spell_c(starter, 777, day_s)
+		spell_low = minf(spell_low, spell)
+		spell_high = maxf(spell_high, spell)
+		spell_step = maxf(spell_step, absf(Climate.spell_c(starter, 777, day_s + 86400.0) - spell))
+		var night_low: float = 100.0
+
+		for h in range(9):
+			night_low = minf(night_low, Weather.air_c(day_s + float(h) * 3600.0, "temperate", 0.0, 777))
+
+		if night_low < 0.0:
+			frost_nights += 1
+
+	check(spell_low >= -float(starter["spell_amplitude_c"]) - 0.001 and spell_high <= float(starter["spell_amplitude_c"]) + 0.001 and spell_high - spell_low > 3.0, "spells stay within +-%.0f C and do swing (%.1f to %.1f)" % [float(starter["spell_amplitude_c"]), spell_low, spell_high])
+	check(spell_step < 2.5, "spells change slowly (worst %.2f C in a day)" % spell_step)
+	check(Climate.spell_c(starter, 777, 5.0e6) == Climate.spell_c(starter, 777, 5.0e6) and Climate.spell_c(starter, 778, 5.0e6) != Climate.spell_c(starter, 777, 5.0e6), "spells follow the seed")
+	check(frost_nights >= 10 and frost_nights <= 120, "the starter coast gets some air frosts (%d nights a year)" % frost_nights)
 	check(Weather.season_of(0.0) == "spring" and Weather.season_of(0.375 * 365.0 * 86400.0) == "summer" and Weather.season_of(0.875 * 365.0 * 86400.0) == "winter", "season names")
 
 	# Town spirit.
@@ -161,6 +207,48 @@ func _init() -> void:
 	var sunrise_winter: float = Weather.sunrise_hour(0.75 * 365.0)
 	check(sunrise_summer > 3.0 and sunrise_summer < 4.5 and sunrise_winter > 7.5 and sunrise_winter < 8.7, "sunrise at 52 N: midsummer %.2f, midwinter %.2f" % [sunrise_summer, sunrise_winter])
 	print("weather: mist autumn %s spring %s desert %s" % [str(autumn_dawns), str(spring_dawns), str(desert_dawns)])
+	# Sea fog (docs/design/fog_pools_and_sea_fog.md part B): 0..1, none in a calm or in rain or snow, never more over the land than over
+	# the sea, a top only with it, and far more in late spring than in mid autumn.
+	var sea_bad: int = 0
+	var sea_calm: int = 0
+	var sea_wet: int = 0
+	var sea_top_bad: int = 0
+	var spring_sea: float = 0.0
+	var autumn_sea: float = 0.0
+
+	for seed_value in [777, 778, 779]:
+		for h in range(24 * 365):
+			var t: float = float(h) * 3600.0
+			var w: Dictionary = Weather.state(seed_value, t, "temperate")
+			var sea: float = float(w["sea_fog"])
+			var land: float = float(w["sea_fog_land"])
+			var top: float = float(w["sea_fog_top_m"])
+
+			if sea < 0.0 or sea > 1.0 or land < 0.0 or land > sea + 1.0e-6 or not is_finite(sea):
+				sea_bad += 1
+
+			if sea > 0.0 and float(w["wind"]) <= Weather.SEA_FOG_WIND_FROM:
+				sea_calm += 1
+
+			if sea > 0.0 and float(w["rain"]) + float(w["snow"]) > 0.1:
+				sea_wet += 1
+
+			if (sea > 0.0 and (top < Weather.SEA_FOG_TOP_MIN_M * 0.6 - 0.01 or top > Weather.SEA_FOG_TOP_MAX_M + 0.01)) or (sea == 0.0 and top != 0.0):
+				sea_top_bad += 1
+
+			var phase: float = Weather.year_phase(t)
+
+			if phase >= 0.1 and phase < 0.3:
+				spring_sea += sea
+			elif phase >= 0.55 and phase < 0.75:
+				autumn_sea += sea
+
+	check(sea_bad == 0, "sea fog within 0..1 and never more over the land than over the sea (%d bad)" % sea_bad)
+	check(sea_calm == 0, "no sea fog in a calm (%d hours)" % sea_calm)
+	check(sea_wet == 0, "no sea fog while rain or snow falls (%d hours)" % sea_wet)
+	check(sea_top_bad == 0, "sea fog top only with sea fog, within its range (%d bad)" % sea_top_bad)
+	check(spring_sea > 0.0 and spring_sea > 3.0 * autumn_sea, "late spring has far more sea fog than mid autumn (%.1f vs %.1f)" % [spring_sea, autumn_sea])
+	print("weather: sea fog spring %.1f autumn %.1f" % [spring_sea, autumn_sea])
 	print("weather: desert %s temperate %s" % [str(desert), str(temperate)])
 	print("weather: high %s neutral %s low %s" % [str(high), str(neutral), str(low)])
 	print("weather: %d failures" % failures)

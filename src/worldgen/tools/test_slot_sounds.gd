@@ -87,6 +87,13 @@ func _init() -> void:
 	check(slots.loaded_clips > 0 and slots.loaded_bytes > 0, "clips load on first use (%d clips, %.2f MB)" % [slots.loaded_clips, float(slots.loaded_bytes) / 1048576.0])
 	check(slots.loaded_clips < clips, "not every clip was loaded by touching a few slots (lazy)")
 
+	# Ground-aware animal steps (footfall hook): hoofed or paw layer by ground, nothing on dust, louder for a bigger animal and at a run.
+	check(SlotSounds.footfall_slot("hoofed", "mud") == "hoof_mud" and SlotSounds.footfall_slot("clawed", "snow") == "paw_snow" and SlotSounds.footfall_slot("pawed", "puddle") == "paw_water" and SlotSounds.footfall_slot("hoofed", "dust") == "", "a hoof in mud, a paw in snow or a puddle pick their ground layer; dust adds none")
+	check(names.has("hoof_mud") and names.has("hoof_snow") and names.has("hoof_water") and names.has("paw_mud") and names.has("paw_snow") and names.has("paw_water"), "the six ground layers exist")
+	check(SlotSounds.footfall_strength(-12.0, 6.0) > SlotSounds.footfall_strength(-12.0, 1.0) and SlotSounds.footfall_strength(-12.0, 1.0) > SlotSounds.footfall_strength(-26.0, 1.0), "a run lands louder than a walk, a horse louder than a rat")
+	check(slots.sign_group("deer") == "hoofed" and slots.sign_group("young_wolf") == "clawed", "the sign groups come from animal_sign.json (a young animal as its species)")
+	check(slots.footfall("deer", Vector3(3, 0, 0), "mud", 4.0, origin) and not slots.footfall("deer", Vector3(3, 0, 0), "dust", 4.0, origin), "a deer in mud plays its layer; on dust nothing extra")
+
 	# Loop hysteresis: starts inside 40 m, stays on until 45 m.
 	slots.loop_near("water_wheel_loop", 1, Vector3(39, 0, 0), origin)
 	check(slots.loops_playing() == 1, "the wheel loop starts at 39 m")
