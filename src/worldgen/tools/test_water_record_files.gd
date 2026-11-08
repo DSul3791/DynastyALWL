@@ -53,7 +53,7 @@ func write_record(version: int, complete: bool) -> void:
 	for tx in 2:
 		DirAccess.make_dir_recursive_absolute("%s/tiles/%d_0" % [DIR, tx])
 		write_raster(tx, "ground", "f4", func(gx, gz): return gx * 10 + gz)
-		write_raster(tx, "water_level", "f4", func(gx, gz): return NAN if gx == 0 else 5.5)
+		write_raster(tx, "water_level", "f4", func(gx, _gz): return NAN if gx == 0 else 5.5)
 		write_raster(tx, "discharge", "u2", func(gx, _gz): return 0 if gx == 0 else roundi((log(2.0) / log(10.0) + 4.0) * 6553.5))
 		write_raster(tx, "basin", "i4", func(gx, _gz): return -1 if gx == 0 else 7)
 		write_raster(tx, "table_depth", "u1", func(_gx, _gz): return 8)
