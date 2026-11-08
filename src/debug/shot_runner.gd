@@ -4,7 +4,7 @@ extends Node
 # started with --shots. Each shot: fly to a point, face a direction, freeze the game clock at an hour,
 # optionally force the weather, wait for the ground and flora to stream in, save the 3D view as a PNG.
 #
-#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist)
+#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist, seafog)
 #   an 8th number (m/s) shows the third-person body walking at that speed, seen from the side (e.g. 4 = walk, 8 = run)
 #   agl is metres above the ground at x,z (a NEGATIVE y is an absolute height in metres instead): the runner first goes to 400 m above sea level there, waits until the
 #   ground under it has loaded, then drops to the ground height plus agl
@@ -146,6 +146,7 @@ const RAIN := {"rain": 0.65, "snow": 0.0, "storm": 0.0, "cloud": 0.8, "sun": 0.0
 const SNOW := {"rain": 0.0, "snow": 0.6, "storm": 0.0, "cloud": 0.8, "sun": 0.0, "wind": 0.1, "wind_dir": 1.0, "temp_c": -3.0}
 const CLEAR := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.15, "sun": 1.0, "wind": 0.1, "wind_dir": 1.0, "temp_c": 14.0}
 const MIST := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.05, "sun": 1.0, "wind": 0.15, "wind_dir": 1.0, "temp_c": 6.0, "mist": 1.0, "mist_top_m": 90.0}   # valley fog, top 90 m (docs/design/valley_fog.md)
+const SEAFOG := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.1, "sun": 1.0, "wind": 0.35, "wind_dir": 1.0, "temp_c": 11.0, "sea_fog": 1.0, "sea_fog_land": 1.0, "sea_fog_top_m": 120.0}   # sea fog, top 120 m, over the land too (docs/design/fog_pools_and_sea_fog.md)
 
 
 func setup(owner_client, args: Array) -> void:
@@ -299,6 +300,7 @@ func _process(delta: float) -> void:
 			"snow": client.weather = SNOW.duplicate()
 			"clear": client.weather = CLEAR.duplicate()
 			"mist": client.weather = MIST.duplicate()
+			"seafog": client.weather = SEAFOG.duplicate()
 
 		client.body.velocity = Vector3.ZERO
 
