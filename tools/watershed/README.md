@@ -12,8 +12,7 @@ Everything here runs offline on Dave's PC (Dino), never in the cloud. Each stage
 | R3, stage C1 and C2 (basins, lakes by water balance) | `lakes.py` | `lakes.npz`, `lakes.json`, `lakes.png`, `lakes_manifest.json` |
 | R4, stage C3, C4 and C6 (water table, heads, wetlands) | `groundwater.py` | `groundwater.npz`, `groundwater.png`, `groundwater_manifest.json` |
 | R6, stage D (the island water record) | `record.py` | `record/manifest.json`, `record/climate.json`, `record/network.json`, `record/tiles/X_Z/*` |
-| R5, stage C5, C7 and C8 | to come | |
-| R6, stage D (island water record) | to come | |
+| R5, stage C5, C7 and C8 (streams, flows, sizes, reach types, falls, outlets) | `network.py` | `network.json`, `network.npz`, `network_manifest.json`, `follow_the_water.md`, `network.png` |
 
 ## R1: inputs
 
@@ -134,6 +133,22 @@ Check `groundwater.png` and the summary for:
 - wetlands only on low ground and gentle slopes (`wetland_on_steep_ground_cells` 0): fens where groundwater comes out, bogs on wet, tight uplands, marsh and swamp along rivers and lakes, salt marsh at the coast;
 - the largest springs (`springs_largest`): the ones on or beside cave-forming rock are the cave-spring candidates for R5.
 
+## R5: the stream network (stages C5, C7 and C8)
+
+`python tools/watershed/network.py INPUTS_DIR GEOLOGY_DIR B2_DIR R3_DIR R4_DIR OUT_DIR`, where the folders are one run's chain (the record's chain check). Nothing in it is random.
+
+- Routing on the final ground with the closed lakes as outlets, so a closed basin's water ends in its lake.
+- Flows by season: quick runoff from the one water budget shaped by the year's rain and evaporation, baseflow from R4's groundwater through one store; full lakes lose their evaporation and seepage at their exit; beds well above the water table on ground that takes water leak at the streambed's conductivity.
+- Streams: B1's channels whose wet-season flow passes one island threshold, set so the streams run 2.25 km per km2. Perennial where the dry-season baseflow, after losses, keeps them running; the rest seasonal; the other channels are gullies.
+- Size: bankfull at 0.9 QMED (FEH ratios by area and permeability, cut by lakes), width by bank trees (Hey and Thorne), depth 0.24 Q^0.4, narrower and shallower below bankfull.
+- Reach type from the slope over about ten widths; braided, meandering or confined by the numbers; meanders as sine-generated curves.
+- Falls only at a step ten times steeper than the reach above, pinned at a hard bed over softer rock or a hanging valley's lip; anything else steep is a cascade. Staircases of equal falls are listed as defects.
+- Outlets to the sea and into lakes: a delta only where the river's sand beats the waves (Nienhuis), else a tidal creek, estuary, beach-blocked mouth or rocky outlet.
+- Every reach, head, fall and outlet carries the seven answers of the watershed document; `follow_the_water.md` follows contrasting basins from the top of their main stem to the sea.
+- `network.json` keeps the reader's conventions (`src/worldgen/record/water_record.gd`): every point is `[x, y, z]` in world metres, y up (`pos` on heads, confluences, springs and outlets; a fall's `lip` and `foot`); each reach's `polyline` rows follow `point_fields` (x, bed y, z, bankfull width and depth, the mean, wet-season and dry-season flows, and `q_base_dry_m3_s`, the dry-season baseflow alone, which is what runs in a rain-free August); and a reach's `down` is the next reach its water enters, through a full lake to its outlet reach, or -1.
+
+`python tools/watershed/test_network.py` runs its unit tests on tiny synthetic grids (seconds; on David4 or Dave's PC). `python tools/watershed/plots.py network RUN_DIR` redraws `network.png`. Look for: `density_km_per_km2.streams` 2.25 with most of it perennial; `never_see` all 0 or empty; falls few, of varied height, each with a cause; deltas only in lakes and sheltered bays; the `missing` list (snowmelt, faults, cave springs, floodplain drawing, fans, distributaries, bank trees from biomes, losses back into R4).
+
 ## R6: the island water record (stage D)
 
 `python tools/watershed/record.py INPUTS_DIR B2_DIR R3_DIR R4_DIR OUT_DIR [--network=R5_DIR]`, where the four folders are one run's chain: each stage's manifest must name the very files given, or the writer stops.
@@ -142,7 +157,7 @@ Check `groundwater.png` and the summary for:
 - The 8 m ground is R3's 16 m ground refined by a separable monotone cubic (it passes through every 16 m height and does not overshoot), plus fine roughness at 16 to 48 m on hillslopes only, continuing the B1 start spectrum. An epsilon-free priority flood then checks for closed cells: where the roughness made one, it is taken out round it, and any closed cell left is counted and listed (`closed_cells_outside_lakes`), never filled.
 - Lakes take their R3 levels on the refined ground, so their shores follow the 8 m ground; the sea is at 0.
 - Per tile (T + 1 samples at 8 m, shared edges, little-endian): `ground` and `water_level` (f4), `water_class`, `discharge` (log-coded u2), `regime`, `table_depth`, `basin`, `fresh_m`, `sediment_m`; the manifest lists each field's type and scale. `network.json` and `climate.json` are island-wide.
-- Until R5 exists it writes no rivers as water and marks the record `complete: false`, which the bake must refuse.
+- With `--network=R5_DIR` it takes the regime and discharge from the network (the same chain, checked), and copies the island's season shares to `summary.seasons`. Until rivers are carved and drawn and the seasonal ponds, the cold-air pools and the snow window are in, `manifest.json` lists them under `missing` and says `complete: false`, which the bake must refuse.
 
 Look for: `closed_cells_outside_lakes` near 0; `summit_8m` within a metre of `summit_16m`; a lake area close to R3's.
 ## Peak checks (design A1 rule 6)
