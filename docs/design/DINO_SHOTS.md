@@ -59,6 +59,9 @@ camera and focus move along +Z with the animals. Pictures are 480 by 480 px, one
 | The basin pond frozen, live | 10:00 on a frosty winter day | the world's own (the pond frozen: Kathleen's frozen water look) | whatever crosses or skirts it | `--shots="pond_ice:63584,3,80060,0,-15,10" --life=ice_looks,weather_looks,animal_sign` (x 63584, 3 m above the ground, z 80060 on the pond's south side, yaw 0 facing north (-Z) toward the centre at z 80024, pitch -15, hour 10) | tracks on the snow at the edge, a wolf on the ice, deer going round; needs live animals and a winter world |
 | A clap of thunder | 12:00 | a clap 2 s in (`--thunder=2`) | deer, dog, crow | `$M --kinds=deer,dog,crow --state=0 --thunder=2 --cam=6 --frames=8 --every=0.2 --out=$O/thunder` | the crow hopping up flapping, the deer jolting, the dog low; camera (6, 1.8, 0), yaw 90, pitch -11.3 |
 | Storm wind | 12:00 | storm wind 0.9 toward +X (`--wx=gale`) | deer, horse | `$M --kinds=deer,horse --state=0 --wx=gale --windlooks --cam=6 --frames=4 --every=1 --out=$O/storm_wind` | rumps toward +X (toward the camera), heads low; camera (6, 1.8, 0), pitch -11.3 |
+| Pose library: drinking (21) | 12:00 | clear | deer, horse, cow | `$M --kinds=deer,horse,cow --state=21 --poselib --cam=6 --frames=2 --out=$O/pose_drink` | heads down toward the ground; camera (6, 1.8, 0), yaw 90, pitch -11.3 |
+| Pose library: lying (19) | 12:00 | clear | deer, horse, cow | `$M --kinds=deer,horse,cow --state=19 --poselib --cam=6 --frames=2 --out=$O/pose_lie` | legs folded under the body (a wrong-way bend on the cow means its row needs `pose_axis`) |
+| Pose library: hunch (20) | 12:00 | clear | goat, elk | `$M --kinds=goat,elk --state=20 --poselib --cam=6 --frames=2 --out=$O/pose_hunch` | heads low on rigs with no hunch pose of their own |
 
 All of them are also in the run sheet (m19 to m48); these are the ones to keep as reference pictures. Send the strips to MikeW;
 nothing else is needed from the sitting for them.
@@ -171,5 +174,8 @@ has no strip: it is the gate run with and without `--life-layer-off`. The refere
 
 **pr23 thunder**
 - m57 [storm_looks] the frames after 2 s: the crow hops up flapping, the deer jolts, the dog drops low and stays low for a few seconds.
+
+**pr24 pose library**
+- m58 [pose_lib] heads in 21, legs in 19: in 21 the heads are down toward the ground; in 19 the legs fold (the cow may need `pose_axis`).
 
 Then step 5 (the gates) and step 6 (the PRs, opened in the summary page's order).

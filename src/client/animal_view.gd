@@ -1,6 +1,7 @@
 extends Node3D
 
-const LifeUtil := preload("res://src/client/life_layer_util.gd")   # shared helpers of the life layer hooks (REVIEW_NOTES.md)
+const LifeUtil := preload("res://src/client/life_layer_util.gd")
+const PoseLib := preload("res://src/client/pose_library.gd")      # poses by body part for states a model has no clip for (POSE_LIBRARY.md)   # shared helpers of the life layer hooks (REVIEW_NOTES.md)
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
 # Animals on the client (protocol 48): a simple rabbit until Art makes a real one (brown body, head, two ears, white
@@ -62,6 +63,7 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var pose_lib: bool = false        # the pose library fills states the model has no clip or pose for: alert, sit, lie, hunch, drink, sleep (POSE_LIBRARY.md; off until the PC check)
 var storm_looks: bool = false     # thunder: birds startle up, herds flinch and bunch, dogs cower, ears flat; storm wind turns tails to it (ANIMAL_WEATHER_LOOKS.md storm section; off until the PC check)
 var thunder_count: Callable       # () -> how many thunders the sound stage has played (weather_sounds.thunders_played): a change is a clap heard now
 var _thunders_seen: int = -1
@@ -160,6 +162,7 @@ void fragment() {
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
 # on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model is not drawn.
 const SMALL_SPECIES := [9, 10, 11, 13]
+const DRINK := 21           # server state 21 (Steve #734): standing at fresh water facing it, drinking; wire-only like 20
 const HUNCH := 20           # server state 20 (Steve's #646): standing still against the weather, head low, ears back
 const YOUNG_NUM := 100       # a young animal's species number + 100 (server_animals.gd)
 const YOUNG_SCALE := 0.5     # how big the young are drawn
@@ -551,7 +554,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (storm_looks or ice_looks or drink_looks or cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (pose_lib or storm_looks or ice_looks or drink_looks or cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -690,6 +693,9 @@ func _process_body(delta: float) -> void:
 				if idle_variety and b.has("idle_pose"):
 					pose_key = int(b["idle_pose"])
 
+				if pose_lib and b.get("drink_at") != null and (state == 0 or state == DRINK) and posed.poses.has(DRINK):
+					pose_key = DRINK      # drinking at the water's edge: the library's drink pose (Steve's state 21, #734)
+
 				if bird_rig and float(b.get("flare_t", 0.0)) > 0.0 and posed.poses.has(-20):
 					b["flare_t"] = float(b["flare_t"]) - delta
 					pose_key = -20      # wings up and forward, tail fanned: the landing flare
@@ -704,7 +710,8 @@ func _process_body(delta: float) -> void:
 				if posed.poses.has(pose_key):
 					posed.pose_state = pose_key
 
-				posed.pose_weight = move_toward(float(posed.pose_weight), 1.0 if posed.poses.has(pose_key) else 0.0, delta / (0.25 if pose_key != -1 else 1.5))
+				var blend: float = float(posed.pose_blend.get(pose_key, 0.25 if pose_key != -1 else 1.5))      # the pose library's blend time, else the old default
+				posed.pose_weight = move_toward(float(posed.pose_weight), 1.0 if posed.poses.has(pose_key) else 0.0, delta / maxf(blend, 0.05))
 			if node.has_meta("flock_birds"):
 				if swarm_fx and bool(_row_of(node).get("swarm", false)):
 					_swarm(node, state)
@@ -887,7 +894,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_dots", inst.get_meta("eye_dots"))      # the far-off glints (eye_shine)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or (row.has("idles") and idle_variety) or (bird_rig and _posed_flight(row)) or (swim_rig and _posed_swim(row)):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or (row.has("idles") and idle_variety) or (bird_rig and _posed_flight(row)) or (swim_rig and _posed_swim(row)) or (pose_lib and (row.has("look") or row.has("feet"))):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -913,6 +920,28 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 			if row.has("state_poses"):
 				missing.append_array(fix.setup_poses(sks[0], row["state_poses"]))
 				root.set_meta("poses", fix)
+
+			# The pose library (POSE_LIBRARY.md): each of Steve's states the row has no clip and no pose for gets the library's pose.
+			if pose_lib:
+				var lib_parts: Dictionary = PoseLib.parts(sks[0], row)
+				var lib_poses: Dictionary = {}
+				var own: Dictionary = row.get("state_poses", {})
+				var row_clips: Dictionary = row.get("clips", {})
+
+				for key in PoseLib.STATE_POSES:
+					if own.has(key) or row_clips.has(PoseLib.CLIP_ROLE[key]):
+						continue
+
+					var built: Dictionary = PoseLib.build(PoseLib.STATE_POSES[key], lib_parts, row)
+
+					if not built.is_empty():
+						lib_poses[key] = built
+						fix.pose_blend[int(key)] = PoseLib.blend_s(PoseLib.STATE_POSES[key])
+
+				if not lib_poses.is_empty():
+					missing.append_array(fix.setup_poses(sks[0], lib_poses))
+					root.set_meta("poses", fix)
+					_model_note(kind, "pose library: %s" % str(lib_poses.keys()))
 
 			# A whale or dolphin posed from its own spine (SWIM_RIG.md): the tail beat in states 0, 1, 2.
 			if swim_rig and _posed_swim(row):
@@ -3736,7 +3765,7 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air", "drink_looks", "ice_looks", "storm_looks"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air", "drink_looks", "ice_looks", "storm_looks", "pose_lib"]
 
 func _all_flags_off() -> void:
 	cover_still = false
@@ -3748,6 +3777,7 @@ func _all_flags_off() -> void:
 	drink_looks = false
 	ice_looks = false
 	storm_looks = false
+	pose_lib = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -4149,7 +4179,16 @@ func _cave_c(at: Vector3) -> float:
 func _drink_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
 	var row: Dictionary = node.get_meta("model_row", {})
 
-	if b.get("drink_at") != null and state == 0 and speed < 0.3:
+	if bool(b.get("drink_by_state", false)) and state != DRINK:
+		b.erase("drink_by_state")      # it has stopped drinking: the spot the state gave goes with it
+		b["drink_at"] = null
+
+	if state == DRINK and b.get("drink_at") == null:      # Steve's drinking state: the water is ahead of the muzzle by his rule
+		var muzzle: Vector3 = node.global_position - node.global_transform.basis.z.normalized() * float(row.get("length_m", 1.0)) * 0.55 * maxf(node.scale.x, 0.3)
+		b["drink_at"] = muzzle
+		b["drink_by_state"] = true
+
+	if b.get("drink_at") != null and (state == 0 or state == DRINK) and speed < 0.3:
 		b["sip_t"] = float(b.get("sip_t", randf_range(6.0, 14.0))) - delta      # luck-exempt: when it next lifts its head (client look)
 
 		if float(b["sip_t"]) <= 0.0:

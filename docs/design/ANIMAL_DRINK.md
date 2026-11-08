@@ -20,6 +20,11 @@ server callable (spring, brook, river, lake, wet ground; never salt; ice needs a
 | Churned bank | the first drink at a spot lays a trampled patch at the drinker's feet, in the animal-sign pool (ground "mud", three game days), with `animal_sign` on; tracks there are animal_sign's own |
 | Birds bathing | a bird with a flight row standing in water under 30 percent of its height: a 0.8 s burst of its flap clip at double speed with small splashes, every 4 to 9 s |
 
+## Steve's answer (#734)
+State 21 DRINK, wire-only like 20, no protocol bump: deer and stock walk to fresh water at dawn and dusk and stand 1 to 3 minutes
+facing it; wolf packs prowl 15 m back. The client takes 21 as drinking (the water ahead of the muzzle by his rule): the sips and
+glances, the churned bank, and with `pose_lib` the drink pose. Requests 1 and 2 below are answered by it.
+
 ## Requests to Steve (server; no client sampler)
 1. **To water at dawn and dusk:** herds (deer, stock) set their target to the nearest `water_source` within a few hundred metres at
    dawn and dusk (springs first, by its order), stand there grazing for a few minutes (state 0, so the client's drinking spot lights
