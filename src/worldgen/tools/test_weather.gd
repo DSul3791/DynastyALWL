@@ -4,6 +4,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_weather.gd
 
 const Weather := preload("res://src/shared/weather.gd")
+const Climate := preload("res://src/shared/climate.gd")
 
 var failures: int = 0
 
@@ -112,18 +113,44 @@ func _init() -> void:
 	for h in range(24 * 365):
 		var t: float = float(h) * 3600.0
 		var w: Dictionary = Weather.state(777, t, "temperate")
-		var air: float = Weather.air_c(t, "temperate")
+		var air: float = Weather.air_c(t, "temperate", 0.0, 777)
 
 		if float(w["temp_c"]) > air + 0.001 or float(w["temp_c"]) < air - Weather.RAIN_COOL_C - 0.001:
 			starter_bad += 1
 
 	check(starter_bad == 0, "temp_c is the island air less the rain's cooling (%d bad hours)" % starter_bad)
 	var midwinter: float = 0.875 * 365.0 * 86400.0
-	check(absf(Weather.temp_at(midwinter, "temperate") - 4.0) < 0.01 and absf(Weather.temp_at(0.375 * 365.0 * 86400.0, "temperate") - 14.0) < 0.01, "the starter's sea-level mean runs from 4 C in midwinter to 14 C in high summer")
-	var dawn: float = Weather.air_c(floorf(midwinter / 86400.0) * 86400.0 + 5.0 * 3600.0, "temperate")
-	var afternoon: float = Weather.air_c(floorf(midwinter / 86400.0) * 86400.0 + 15.0 * 3600.0, "temperate")
+	var starter: Dictionary = Climate.of_zone("temperate")
+	check(absf(Climate.mean_c(starter, 0.875) - 4.0) < 0.01 and absf(Climate.mean_c(starter, 0.375) - 14.0) < 0.01, "the starter's sea-level mean runs from 4 C in midwinter to 14 C in high summer (before cold and warm spells)")
+	var dawn: float = Climate.air_c(starter, 0.875, 5.0)
+	var afternoon: float = Climate.air_c(starter, 0.875, 15.0)
 	check(absf(afternoon - dawn - 8.0) < 0.1, "the day's range is 8 C from 05:00 to 15:00 (%.1f to %.1f)" % [dawn, afternoon])
-	check(absf(Weather.temp_at(midwinter, "temperate", 1000.0) - (Weather.temp_at(midwinter, "temperate") - 6.5)) < 0.01, "6.5 C colder per km of height")
+	check(absf(Weather.temp_at(midwinter, "temperate", 1000.0, 777) - (Weather.temp_at(midwinter, "temperate", 0.0, 777) - 6.5)) < 0.01, "6.5 C colder per km of height")
+	# Cold and warm spells: within the island's spell_amplitude_c, slow (under 2.5 C a day), the same for the same seed, and on the coast some winter
+	# nights fall below freezing (Fort William gets air frosts in most winters).
+	var spell_low: float = 100.0
+	var spell_high: float = -100.0
+	var spell_step: float = 0.0
+	var frost_nights: int = 0
+
+	for d in range(365):
+		var day_s: float = float(d) * 86400.0
+		var spell: float = Climate.spell_c(starter, 777, day_s)
+		spell_low = minf(spell_low, spell)
+		spell_high = maxf(spell_high, spell)
+		spell_step = maxf(spell_step, absf(Climate.spell_c(starter, 777, day_s + 86400.0) - spell))
+		var night_low: float = 100.0
+
+		for h in range(9):
+			night_low = minf(night_low, Weather.air_c(day_s + float(h) * 3600.0, "temperate", 0.0, 777))
+
+		if night_low < 0.0:
+			frost_nights += 1
+
+	check(spell_low >= -float(starter["spell_amplitude_c"]) - 0.001 and spell_high <= float(starter["spell_amplitude_c"]) + 0.001 and spell_high - spell_low > 3.0, "spells stay within +-%.0f C and do swing (%.1f to %.1f)" % [float(starter["spell_amplitude_c"]), spell_low, spell_high])
+	check(spell_step < 2.5, "spells change slowly (worst %.2f C in a day)" % spell_step)
+	check(Climate.spell_c(starter, 777, 5.0e6) == Climate.spell_c(starter, 777, 5.0e6) and Climate.spell_c(starter, 778, 5.0e6) != Climate.spell_c(starter, 777, 5.0e6), "spells follow the seed")
+	check(frost_nights >= 10 and frost_nights <= 120, "the starter coast gets some air frosts (%d nights a year)" % frost_nights)
 	check(Weather.season_of(0.0) == "spring" and Weather.season_of(0.375 * 365.0 * 86400.0) == "summer" and Weather.season_of(0.875 * 365.0 * 86400.0) == "winter", "season names")
 
 	# Town spirit.
