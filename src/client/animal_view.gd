@@ -1,5 +1,6 @@
 extends Node3D
 
+const LifeUtil := preload("res://src/client/life_layer_util.gd")   # shared helpers of the life layer hooks (REVIEW_NOTES.md)
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
 # Animals on the client (protocol 48): a simple rabbit until Art makes a real one (brown body, head, two ears, white
@@ -13,7 +14,7 @@ const GRAZE := 0
 const HOP := 1
 const FLEE := 2
 
-signal voiced(kind: String, call: Dictionary, at: Vector3)    # voice_fx: a call by state from data/animals/voices.json (ANIMAL_VOICES.md); {mood} or {slot, db, unit, reach}
+signal voiced(kind: String, voice: Dictionary, at: Vector3)    # voice_fx: a call by state from data/animals/voices.json (ANIMAL_VOICES.md); {mood} or {slot, db, unit, reach}
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
 signal footfall(kind: String, at: Vector3, ground: String, speed: float)   # the same landing with the ground it lands on (dust, mud, snow, water) and the speed: puffs, tracks, ground-aware hoof sounds (docs/design/FOOTFALL.md)
@@ -607,7 +608,7 @@ func _process_body(delta: float) -> void:
 			if foot_ik and node.has_meta("feet"):
 				_feet(node, b, delta)
 
-			if bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)) and not life_layer_all_off:
+			if bool(_row_of(node).get("herd", false)) and not life_layer_all_off:
 				_herd_look(node, b, state, model_speed, delta)
 
 			if node.has_meta("poses"):
@@ -1050,7 +1051,10 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 						var is_eye: bool = name_text.findn("eye") >= 0 and name_text.findn("lid") < 0
-						var coat: Material = _ruffle_material(mat) if coat_ruffle and float(row.get("ruffle_cm", 0.0)) > 0.0 and not is_eye else mat
+						var coat: Material = mat
+
+						if coat_ruffle and float(row.get("ruffle_cm", 0.0)) > 0.0 and not is_eye:
+							coat = _ruffle_material(mat)
 						mi.set_surface_override_material(surface, coat)
 
 						if not is_eye:
@@ -1560,7 +1564,7 @@ func _eye_shine(node: Node3D) -> void:
 	var mats: Array = node.get_meta("eye_mats")
 	var energy: float = 0.0
 	var light: Array = _torch() if torch_light.is_valid() else []
-	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var cam: Camera3D = _cam()
 
 	if light.size() >= 2 and cam != null:
 		var row: Dictionary = node.get_meta("model_row", {})
@@ -1798,7 +1802,7 @@ func _tail_motion(node: Node3D, state: int, speed: float) -> void:
 # knows of: the camera), harder when the animal is alert, and lie back flat when it warns or charges. Eased so they move like ears.
 func _ear_motion(node: Node3D, state: int) -> void:
 	var fix = node.get_meta("ears")      # bone_offsets.gd (untyped: its own properties)
-	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var cam: Camera3D = _cam()
 	var turn: float = 0.0
 
 	if cam != null:
@@ -1832,8 +1836,8 @@ func _breath_motion(node: Node3D, b: Dictionary, state: int, speed: float, delta
 # 4 s, again for every 5 m closer. "track" (predators): alert, stalking or warning, it keeps looking. The clip plays underneath.
 func _look_motion(node: Node3D, b: Dictionary, state: int, delta: float) -> void:
 	var fix = node.get_meta("look")      # bone_offsets.gd (untyped: its own properties)
-	var spec: Dictionary = (node.get_meta("model_row", {}) as Dictionary).get("look", {})
-	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var spec: Dictionary = _row_of(node).get("look", {})
+	var cam: Camera3D = _cam()
 	var want: float = 0.0
 
 	if cam != null:
@@ -1881,7 +1885,7 @@ func _look_motion(node: Node3D, b: Dictionary, state: int, delta: float) -> void
 # The body's rise and fall over each bound of a hopping animal (see the hop block in _animate_model): a half sine of arc_m per bound,
 # so the feet leave and meet the ground once a bound; settles to the ground when it stops.
 func _hop_arc(node: Node3D, b: Dictionary, speed: float, delta: float) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null:
 		return
@@ -1924,7 +1928,7 @@ const HERD_M := 12.0
 const HERD_SPACE_M := 2.0
 
 func _herd_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null:
 		return
@@ -1981,7 +1985,7 @@ func _herd_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 
 # One herd member looked up: grazing mates of its kind within HERD_M follow 0.3 to 2 s later.
 func _herd_glance(node: Node3D, b: Dictionary) -> void:
-	if not bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)):
+	if not bool(_row_of(node).get("herd", false)):
 		return
 
 	for other_id in _bodies:
@@ -2045,17 +2049,14 @@ func _puff(at: Vector3, ground: String, speed: float) -> void:
 	mat.albedo_color = {"dust": Color(0.55, 0.47, 0.36, 0.5), "mud": Color(0.25, 0.19, 0.12, 0.7), "snow": Color(0.95, 0.96, 1.0, 0.7)}.get(ground, Color(0.55, 0.47, 0.36, 0.5))
 	mesh.material = mat
 	puff.mesh = mesh
-	add_child(puff)
-	puff.global_position = at + Vector3(0.0, 0.05, 0.0)
-	puff.emitting = true
-	get_tree().create_timer(puff.lifetime + 0.3).timeout.connect(puff.queue_free)
+	LifeUtil.fire_once(self, puff, at + Vector3(0.0, 0.05, 0.0), 0.3)
 
 
 # Slope planting, simple form (docs/design/FOOTFALL.md): the body pitches with the ground it walks on, learnt from its own movement
 # (the server puts it on the ground, so its rise over its run is the slope), held while it stands, at most 20 degrees. Feet stay
 # on the ground at both ends of a long body; full foot IK is the later step.
 func _slope_pitch(node: Node3D, b: Dictionary, before: Vector3, delta: float) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null:
 		return
@@ -2082,7 +2083,7 @@ func _print_at(kind: String, node: Node3D, ground: String) -> void:
 	var tex: ImageTexture = _print_texture(group)
 	var decal: Decal = Decal.new()
 	decal.texture_albedo = tex
-	var big: float = clampf(float((node.get_meta("model_row", {}) as Dictionary).get("length_m", 1.0)) * 0.08, 0.04, 0.35)
+	var big: float = clampf(float(_row_of(node).get("length_m", 1.0)) * 0.08, 0.04, 0.35)
 	decal.size = Vector3(big, 0.3, big)
 	decal.modulate = Color(0.35, 0.28, 0.2, 0.85) if ground == "mud" else Color(0.75, 0.8, 0.9, 0.8)
 	add_child(decal)
@@ -2164,7 +2165,7 @@ func _print_texture(group: String) -> ImageTexture:
 # (at most 25 cm), eased. Grazers only for now (rows with "feet").
 func _feet(node: Node3D, b: Dictionary, delta: float) -> void:
 	var fix = node.get_meta("feet")      # bone_offsets.gd (untyped: its own properties)
-	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var cam: Camera3D = _cam()
 
 	if not ground_height.is_valid() or cam == null or cam.global_position.distance_to(node.global_position) > 25.0:
 		for i in fix.leg_drop.size():
@@ -2225,10 +2226,7 @@ func _splash(at: Vector3, deep: bool, speed: float) -> void:
 	mat.roughness = 0.1
 	mesh.material = mat
 	drops.mesh = mesh
-	add_child(drops)
-	drops.global_position = at + Vector3(0.0, 0.05, 0.0)
-	drops.emitting = true
-	get_tree().create_timer(drops.lifetime + 0.3).timeout.connect(drops.queue_free)
+	LifeUtil.fire_once(self, drops, at + Vector3(0.0, 0.05, 0.0), 0.3)
 
 
 # Whether this animal is in one of its row's stalk states (wolves 6, the thief's sneak 13).
@@ -2250,8 +2248,8 @@ func _prey_looking(node: Node3D) -> bool:
 
 # The pounce arc: a 0.2 s crouch back, then a leap of the row's arc_m height over 0.5 s, then down.
 func _pounce(node: Node3D, b: Dictionary, delta: float) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
-	var spec: Dictionary = (node.get_meta("model_row", {}) as Dictionary).get("pounce", {})
+	var rig: Node3D = LifeUtil.rig(node)
+	var spec: Dictionary = _row_of(node).get("pounce", {})
 	b["pounce_t"] = float(b["pounce_t"]) + delta
 	var t: float = float(b["pounce_t"])
 
@@ -2272,12 +2270,12 @@ func _wind() -> float:
 
 # The small up-and-down of a small bird's body with each wingbeat (row flight.bob_m, at beat_hz), only while flapping in the air.
 func _flap_bob(node: Node3D, b: Dictionary, state: int) -> void:
-	var flight: Dictionary = (node.get_meta("model_row", {}) as Dictionary).get("flight", {})
+	var flight: Dictionary = (node.get_meta("model_row", {}) as Dictionary).get("flight", {})      # the node's own row: a model flock's node has none, so the flock itself does not bob
 
 	if flight.is_empty() or float(flight.get("bob_m", 0.0)) <= 0.0:
 		return
 
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null:
 		return
@@ -2435,7 +2433,7 @@ func _young_age_now(b: Dictionary) -> float:
 
 # A newborn's wobble: under wobble_days old it sways side to side (up to 6 degrees, quicker while walking), fading out day by day. Uses the Rig's roll, which no other model look turns.
 func _young_wobble(node: Node3D, b: Dictionary, _state: int, speed: float) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null:
 		return
@@ -2462,7 +2460,7 @@ func _young_wobble(node: Node3D, b: Dictionary, _state: int, speed: float) -> vo
 # water just ahead of its muzzle, it drinks: the graze clip (head down) and a ring on the water every 1.6 s.
 # Returns true while swimming (the clip is chosen here).
 func _water_body(node: Node3D, b: Dictionary, row: Dictionary, player: AnimationPlayer, state: int, delta: float) -> bool:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null or not node.is_inside_tree():
 		return false
@@ -2666,7 +2664,7 @@ func _idle_start(node: Node3D, b: Dictionary, row: Dictionary, player: Animation
 
 
 func _idle_end(node: Node3D, b: Dictionary) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig != null and b.has("idle_act"):
 		rig.rotation.z = 0.0
@@ -2684,7 +2682,7 @@ func _idle_end(node: Node3D, b: Dictionary) -> void:
 
 # The Rig acts, for files with no clip for them. t runs 0 to s.
 func _idle_act(node: Node3D, b: Dictionary, row: Dictionary, delta: float) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null:
 		return
@@ -2716,7 +2714,7 @@ func _idle_act(node: Node3D, b: Dictionary, row: Dictionary, delta: float) -> vo
 # server sends no bank), up to 45 degrees, eased; a roll event (the raven's play, Steve's #653) adds a half or full roll over 1 s.
 # Uses the Rig's roll, which no other look turns while a bird flies.
 func _bank(node: Node3D, b: Dictionary, delta: float) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null or delta <= 0.0:
 		return
@@ -2746,7 +2744,7 @@ func _bank(node: Node3D, b: Dictionary, delta: float) -> void:
 
 # Back level once the bird is down.
 func _bank_level(node: Node3D, b: Dictionary, delta: float) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 	b["bank"] = lerpf(float(b["bank"]), 0.0, clampf(delta * 4.0, 0.0, 1.0))
 
 	if rig != null:
@@ -2779,13 +2777,16 @@ func play_roll(id: int, turns: float = 1.0) -> void:
 # within 8 m as the mother. Grazing beside her (state 0, still, within 3 m): it looks to her for 1.5 to 3 s every 6 to 15 s (look
 # bones, where the row has them); every 40 to 120 s it nurses for 6 to 12 s: it moves in under her flank (the Rig, at most 1 m, as the
 # herd spacing does) with its head turned up to her belly. Moving or a new state ends it.
+const MOTHER_SEARCH_M := 8.0   # the nearest grown animal of its kind within this is taken as the mother
+const NURSE_NEAR_M := 3.0      # grazing this close to her: glances and nursing
+
 func _young_follow(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
 	b["mother_t"] = float(b.get("mother_t", 0.0)) - delta
 
 	if float(b["mother_t"]) <= 0.0:
 		b["mother_t"] = 2.0
 		b.erase("mother_node")
-		var best: float = 8.0
+		var best: float = MOTHER_SEARCH_M
 
 		for other_id in _bodies:
 			var o: Dictionary = _bodies[other_id]
@@ -2799,7 +2800,7 @@ func _young_follow(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 				best = d
 				b["mother_node"] = o["node"]
 
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 	var mother: Node3D = b.get("mother_node") as Node3D if is_instance_valid(b.get("mother_node")) else null
 
 	if mother == null or rig == null or not node.is_inside_tree():
@@ -2809,7 +2810,7 @@ func _young_follow(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 
 	var row: Dictionary = mother.get_meta("model_row", {})
 	var h: float = float(row.get("height_m", float(row.get("length_m", 1.0)) * 0.55))
-	var calm: bool = state == 0 and speed < 0.3 and mother.global_position.distance_to(node.global_position) < 3.0
+	var calm: bool = state == 0 and speed < 0.3 and mother.global_position.distance_to(node.global_position) < NURSE_NEAR_M
 	b["mother_at"] = mother.global_position + Vector3(0.0, h * 0.85, 0.0)      # her head
 	b["mother_look"] = maxf(0.0, float(b.get("mother_look", 0.0)) - delta)
 	b["mother_glance"] = float(b.get("mother_glance", randf_range(6.0, 15.0))) - delta      # luck-exempt: the first glance (client look)
@@ -2838,7 +2839,7 @@ func _young_follow(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 
 		if float(b["nurse_left"]) <= 0.0:
 			b.erase("nurse_left")
-	elif absf(rig.position.x) + absf(rig.position.z) > 0.01 and not bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)):
+	elif absf(rig.position.x) + absf(rig.position.z) > 0.01 and not bool(_row_of(node).get("herd", false)):
 		rig.position.x = lerpf(rig.position.x, 0.0, clampf(delta, 0.0, 1.0))      # back to its own place (herd rows ease it themselves)
 		rig.position.z = lerpf(rig.position.z, 0.0, clampf(delta, 0.0, 1.0))
 
@@ -2920,10 +2921,7 @@ func _sea_blow(node: Node3D, b: Dictionary, delta: float) -> void:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mesh.material = mat
 	spout.mesh = mesh
-	add_child(spout)
-	spout.global_position = Vector3(node.global_position.x, level + 0.1, node.global_position.z)
-	spout.emitting = true
-	get_tree().create_timer(spout.lifetime + 0.5).timeout.connect(spout.queue_free)
+	LifeUtil.fire_once(self, spout, Vector3(node.global_position.x, level + 0.1, node.global_position.z), 0.5)
 
 
 # A call by state (docs/design/ANIMAL_VOICES.md): the species' states map in voices.json names a call for the new state; a young one
@@ -2968,8 +2966,17 @@ func _voice(b: Dictionary, kind: String, state: int, at: Vector3) -> void:
 #   x facing: the animal's head within 60 degrees of the viewer (full inside 30)
 #   x the light: torch by its reach (inverse square), moon by night x moon phase
 # and nothing in daylight (night below 0.15). The eye material glows by it, and the far-off dots (_add_eyes) show above 8 m.
+const SHINE_FACE_FULL_DEG := 30.0   # the head within this of the viewer: full glow
+const SHINE_FACE_OFF_DEG := 60.0    # past this: none
+const SHINE_READS_DARK_M := 20.0    # how far the shine reads on a moonless night (Jamie #679)
+const SHINE_READS_MOON_M := 5.0     # and under a full moon
+const SHINE_MOON_SHARE := 0.1       # the moon's glint against the held torch's (0.25 lux against 3.5 at 1 m)
+const SHINE_DOTS_FROM_M := 6.0      # the far-off eye dots fade in from here
+const SHINE_DOTS_FULL_M := 10.0     # full from here
+const RETRO_DEG := 12.0             # a retroreflector returns nothing past this angle between light and viewer
+
 func _eye_shine_night(node: Node3D) -> void:
-	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var cam: Camera3D = _cam()
 	var row: Dictionary = node.get_meta("model_row", {})
 	var energy: float = 0.0
 	var sky: Dictionary = _night() if night_light.is_valid() else {}
@@ -2981,7 +2988,7 @@ func _eye_shine_night(node: Node3D) -> void:
 		var dist: float = to_cam.length()
 		to_cam = to_cam.normalized()
 		var facing: Vector3 = -node.global_transform.basis.z.normalized()
-		var face: float = smoothstep(cos(deg_to_rad(60.0)), cos(deg_to_rad(30.0)), facing.dot(to_cam))
+		var face: float = smoothstep(cos(deg_to_rad(SHINE_FACE_OFF_DEG)), cos(deg_to_rad(SHINE_FACE_FULL_DEG)), facing.dot(to_cam))
 		var light: Array = _torch() if torch_light.is_valid() else []
 		var lit: float = 0.0
 
@@ -2989,17 +2996,17 @@ func _eye_shine_night(node: Node3D) -> void:
 		# moon, where the brighter ground takes the contrast away. A torch gives 3.5 lux at 1 m and 0.035 at 10 m, the full moon 0.25 lux
 		# overhead: inside that range the torch's glint is full, the moon's a tenth of it.
 		var moon: float = float(sky.get("moon", 0.0))
-		var reads_m: float = lerpf(20.0, 5.0, clampf(moon, 0.0, 1.0))
+		var reads_m: float = lerpf(SHINE_READS_DARK_M, SHINE_READS_MOON_M, clampf(moon, 0.0, 1.0))
 		var fade: float = 1.0 - smoothstep(reads_m * 0.75, reads_m * 1.25, dist)
 
 		if light.size() >= 2:
 			lit += _retro(((light[0] as Vector3) - eye).normalized(), to_cam)
 
 		if sky.has("moon_to"):
-			lit += 0.1 * moon * _retro((sky["moon_to"] as Vector3).normalized(), to_cam)
+			lit += SHINE_MOON_SHARE * moon * _retro((sky["moon_to"] as Vector3).normalized(), to_cam)
 
 		energy = float(row.get("shine", 0.0)) * minf(lit, 1.0) * face * fade * smoothstep(0.15, 0.4, night) * 2.0
-		var dot_a: float = clampf(energy / 3.0, 0.0, 1.0) * smoothstep(6.0, 10.0, dist)
+		var dot_a: float = clampf(energy / 3.0, 0.0, 1.0) * smoothstep(SHINE_DOTS_FROM_M, SHINE_DOTS_FULL_M, dist)
 
 		for dot in node.get_meta("eye_dots", []):
 			(dot as MeshInstance3D).visible = dot_a > 0.01
@@ -3012,7 +3019,7 @@ func _eye_shine_night(node: Node3D) -> void:
 # How much a retroreflector returns toward the viewer: full when the light comes from the viewer's direction, nothing past 12 degrees.
 func _retro(to_light: Vector3, to_cam: Vector3) -> float:
 	var angle: float = rad_to_deg(acos(clampf(to_light.dot(to_cam), -1.0, 1.0)))
-	return clampf(1.0 - angle / 12.0, 0.0, 1.0)
+	return clampf(1.0 - angle / RETRO_DEG, 0.0, 1.0)
 
 
 # Animal sign (docs/design/ANIMAL_SIGN.md). One pool of ground decals for tracks, droppings, browse and beds: at most SIGN_CAP, the
@@ -3062,7 +3069,7 @@ func _sign_life(ground: String) -> float:
 
 
 func _sign_track(kind: String, node: Node3D, b: Dictionary, speed: float) -> void:
-	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var cam: Camera3D = _cam()
 
 	if cam == null or cam.global_position.distance_to(node.global_position) > SIGN_NEAR_M:
 		return
@@ -3114,7 +3121,7 @@ func _sign_rest(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 	if spot != Vector3.INF and spot.distance_to(at) < 3.0:
 		return      # this spot is already marked
 
-	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var cam: Camera3D = _cam()
 
 	if cam == null or cam.global_position.distance_to(at) > SIGN_NEAR_M:
 		return
@@ -3226,6 +3233,7 @@ func _sign_texture(what: String) -> ImageTexture:
 const SHAKERS := ["dog", "wolf", "fox", "bear", "black_bear"]
 const TAIL_TO_WIND := ["deer", "elk", "horse", "donkey", "cow", "buffalo", "goat", "bighorn", "mountain_goat", "chamois", "wildebeest"]
 const COLD_C := 5.0          # steam breath below this
+const STEAM_NEAR_M := 30.0   # steam is drawn only this near the camera
 const HUDDLE_C := -5.0       # herds stand closer, heads low, below this (Steve's cold_c)
 const GALE := 0.6            # wind at which stock turn tail to it (Steve's gale_from)
 
@@ -3237,7 +3245,7 @@ func _herd_space() -> float:
 func _weather_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
 	var wx: Dictionary = _wx_state() if weather_now.is_valid() else {}
 	var kind: String = str(b.get("kind", ""))
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 	var air: float = float(wx.get("temp_c", 10.0))
 	var standing: bool = speed < 0.3 and (state == 0 or state == 3 or state == 12 or state == HUNCH)
 
@@ -3313,9 +3321,9 @@ func _weather_look(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 
 
 func _steam_breath(node: Node3D, b: Dictionary, air: float, speed: float, delta: float) -> void:
-	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var cam: Camera3D = _cam()
 
-	if cam == null or cam.global_position.distance_to(node.global_position) > 30.0:
+	if cam == null or cam.global_position.distance_to(node.global_position) > STEAM_NEAR_M:
 		return
 
 	var row: Dictionary = _row_of(node)
@@ -3350,10 +3358,7 @@ func _steam_breath(node: Node3D, b: Dictionary, air: float, speed: float, delta:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mesh.material = mat
 	cloud.mesh = mesh
-	add_child(cloud)
-	cloud.global_position = muzzle
-	cloud.emitting = true
-	get_tree().create_timer(cloud.lifetime + 0.4).timeout.connect(cloud.queue_free)
+	LifeUtil.fire_once(self, cloud, muzzle, 0.4)
 
 
 # Hunting feedback (docs/design/HUNT_FEEDBACK.md). The client hears of a hit only as the floating hit number (protocol 85, sent to
@@ -3403,7 +3408,7 @@ func _hit_reaction(at: Vector3, amount: int) -> void:
 # front dipping; leg: a buckle), then the lasting gait: a hip hit drags the hind end low and the steps uneven, and below half health
 # (of the damage this client saw) the animal limps, with a slower, uneven stride.
 func _hunt_motion(node: Node3D, b: Dictionary, speed: float, delta: float) -> void:
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null:
 		return
@@ -3480,7 +3485,7 @@ func _death_fall(node: Node3D) -> void:
 			tilt = atan2(right - left, 2.0 * width)      # the slope across the body
 
 	var falls_right: bool = tilt <= 0.0      # it falls downhill
-	var rig: Node3D = node.get_node_or_null("Rig")
+	var rig: Node3D = LifeUtil.rig(node)
 	var target: Node3D = rig if rig != null else node
 	var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
 
@@ -3562,6 +3567,10 @@ func _enter_tree() -> void:
 		life_layer_all_off = true
 		_all_flags_off()
 
+
+# The camera the life layer measures distances and angles from, or null outside the tree.
+func _cam() -> Camera3D:
+	return get_viewport().get_camera_3d() if is_inside_tree() else null
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:

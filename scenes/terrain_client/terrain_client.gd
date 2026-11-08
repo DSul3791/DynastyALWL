@@ -1332,11 +1332,11 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		if not animal_view.voice_fx:      # with voice_fx the calls come from voices.json instead (below)
 			sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
-	animal_view.voiced.connect(func(kind: String, call: Dictionary, at: Vector3) -> void:
-		if call.has("slot"):
-			sound.slots.play(str(call["slot"]), at, body.global_position)      # a slot with no file yet is skipped (ANIMAL_VOICES.md table)
+	animal_view.voiced.connect(func(kind: String, voice: Dictionary, at: Vector3) -> void:
+		if voice.has("slot"):
+			sound.slots.play(str(voice["slot"]), at, body.global_position)      # a slot with no file yet is skipped (ANIMAL_VOICES.md table)
 		else:
-			sound.creatures.call_at(kind, at, str(call.get("mood", "alert"))))      # the creature sound files, rate limited by the voice budget
+			sound.creatures.call_at(kind, at, str(voice.get("mood", "alert"))))      # the creature sound files, rate limited by the voice budget
 	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
 		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
 	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void: animal_view.note_hit(at, amount))      # the amount drives the wounded gait (hunt_feedback)
