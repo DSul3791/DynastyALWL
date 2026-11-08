@@ -43,6 +43,22 @@ uniform float sea_lift_to_m = 240.0;
 uniform float sea = 0.0;             // 1 on the sea plane (terrain_client.gd): swell, depth colours from the beach out, surf foam at the shore, a darker line at the horizon
 uniform float debug_flow = 0.0;      // Ctrl+Shift+F8: colour the water by what the shader thinks it is (red running, blue still, green foam)
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
+// The water writes its own fog (FOG), with the same sums as Godot's environment fog, fed every frame by weather_look.gd
+// (_water_fog), so that the sea plane can leave out the land's valley fog (docs/design/fog_pools_and_sea_fog.md part B).
+// Rivers and lakes (sea 0) take the environment's height layer; the sea plane takes sea_fog_height and sea_fog_height_density.
+// The defaults are the clear-air haze of look_settings.gd, for views that never feed them (terrain_preview, demos).
+uniform vec3 fog_color : source_color = vec3(0.63, 0.68, 0.75);
+uniform float fog_energy = 1.0;
+uniform float fog_density = 0.0009;
+uniform float fog_aerial = 0.7;               // share of the fog colour taken from the sky (Godot's aerial perspective)
+uniform vec3 fog_sky_color : source_color = vec3(0.63, 0.68, 0.75);   // stands in for the sky behind the fog (the horizon colour)
+uniform float fog_height = 0.0;
+uniform float fog_height_density = 0.0;
+uniform float sea_fog_height = 0.0;
+uniform float sea_fog_height_density = 0.0;
+uniform float fog_sun_scatter = 0.0;
+uniform vec3 fog_sun_color : source_color = vec3(1.0, 0.92, 0.8);
+uniform float fog_sun_energy = 0.0;
 #ifdef SCENE_READS
 // Reading the depth or the screen makes Forward+ copy the whole frame, so Low quality
 // (no SCENE_READS) leaves them out: the sky colour and the depth tint come from the vertices.
@@ -456,6 +472,26 @@ void fragment() {
 	}
 
 	ALPHA *= grid_share;
+
+	// Fog, the way Godot's fog_process works it out: distance fog, then height fog below its top (whichever is thicker); the colour
+	// mixed toward the sky by the aerial share, plus a glow toward the sun. The sea plane has its own height layer (sea fog only).
+	float fog_amount = 1.0 - exp(min(0.0, -length(VERTEX) * fog_density));
+	float layer_density = sea > 0.5 ? sea_fog_height_density : fog_height_density;
+	float layer_top = sea > 0.5 ? sea_fog_height : fog_height;
+
+	if (abs(layer_density) >= 0.0001) {
+		float y_world = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).y;
+		fog_amount = max(fog_amount, 1.0 - exp(min(0.0, (y_world - layer_top) * layer_density)));
+	}
+
+	vec3 fog_rgb = mix(fog_color * fog_energy, fog_sky_color, fog_aerial);
+
+	if (fog_sun_scatter > 0.001) {
+		vec3 view_world = normalize(mat3(INV_VIEW_MATRIX) * VERTEX);
+		fog_rgb += fog_sun_color * fog_sun_energy * pow(max(dot(view_world, normalize(sun_toward)), 0.0), 8.0) * fog_sun_scatter;
+	}
+
+	FOG = vec4(fog_rgb, fog_amount);
 }
 """
 
