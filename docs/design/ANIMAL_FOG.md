@@ -2,7 +2,7 @@
 
 From Jamie's fog page (#716, `docs/knowledge`), her sound-outdoors page (lesson 7) and sounds-of-weather page (#683), with
 Kathleen's valley fog (#672) and sea fog (#608). Client looks behind `fog_looks` (off). Seasons are the game calendar's local seasons for the island's row
-(latitude from the row, Kathleen's #711): at the starter's latitude sea fog comes in local spring to early summer, valley fog in local
+(latitude from the island's grid row, starter about 34° S; Kathleen's #711): at the starter's latitude sea fog comes in local spring to early summer, valley fog in local
 autumn into early winter.
 
 ## What fog does (knowledge, Jamie #716)

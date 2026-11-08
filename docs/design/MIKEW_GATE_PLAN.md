@@ -1,7 +1,8 @@
 # MikeW's PC gate, in one sitting (8 Nov 2026)
 
 The exact order for Dave's PC slot (Dino or MikeW at the keyboard), from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. Everything runs
-on the full branch `claude/mikew-eye-placement`, whose tree is the top PR branch's (`claude/mikew-pr25-breath`). Commands are the run
+on the full branch `claude/mikew-eye-placement` (current main merged in, 8 Nov 2026 freeze), whose tree is the top PR branch's
+(`claude/mikew-pr25-breath`). Commands are the run
 sheet's (PC_SESSION_MIKEW.md) and the shot list's (DINO_SHOTS.md); this page is the order, the flags and the time. **About 1 h 55 min.**
 
 | Step | What | Flags on | Proves | Time |

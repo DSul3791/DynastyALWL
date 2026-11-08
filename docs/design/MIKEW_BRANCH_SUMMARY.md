@@ -55,15 +55,15 @@ PR 1 (#596) is `claude/mikew-eyeshine`; PR 2, the wet look, is `claude/mikew-wet
 | 12c | `claude/mikew-pr14-airc-tracks-cover-shots` | `claude/mikew-pr13` | 89247c9c1854a2876650d8db2eaf38632144f8ae | m38, m39, m48 |
 | 13 | `claude/mikew-pr15-posed-birds` | `claude/mikew-pr14` | b3f2d9f2e7b8c585e00b2a4723dba260f199ccd1 | m49 |
 | 14 | `claude/mikew-pr16-posed-swimmers` | `claude/mikew-pr15-posed-birds` | 844ee18441c7832d3b8f8343d1e45c8c14b9242e | m50 |
-| 15 | `claude/mikew-pr17-wind-direction` | `claude/mikew-pr16-posed-swimmers` | d397abd9d7ac7f6612ec9836e03fcc9b4a96eda0 | m51 |
-| 16 | `claude/mikew-pr18-fog` | `claude/mikew-pr17-wind-direction` | 68dd89c1b154d1aa3cd07bcd44b9db2881e656b9 | m52 |
-| 17 | `claude/mikew-pr19-prevailing-wind` | `claude/mikew-pr18-fog` | 04be535ec4c452eae4f0cbcab9ab4128a29b9c7b | m53 |
-| 18 | `claude/mikew-pr20-cave-air` | `claude/mikew-pr19-prevailing-wind` | fe2f3a2be9b898f7a0d44c6c0952600f717bbfe5 | m54 |
-| 19 | `claude/mikew-pr21-drinking` | `claude/mikew-pr20-cave-air` | 318d6027b4cdb6072aa000822f062421559323b9 | m55 |
-| 20 | `claude/mikew-pr22-ice-snow` | `claude/mikew-pr21-drinking` | e6230c12c2a2dc4af150d1bb04cae9e99f3d00fe | m56 |
-| 21 | `claude/mikew-pr23-thunder` | `claude/mikew-pr22-ice-snow` | ed4a39f1cc286b915c72c0010de284fd5bae0ceb | m57 |
-| 22 | `claude/mikew-pr24-pose-library` | `claude/mikew-pr23-thunder` | 0207aec99abc7a68279b0022b06a0d49690af1c1 | m58 |
-| 23 | `claude/mikew-pr25-breath` | `claude/mikew-pr24-pose-library` | (this commit; reported in the thread) | m60 |
+| 15 | `claude/mikew-pr17-wind-direction` | `claude/mikew-pr16-posed-swimmers` | 287071ca4c48832b75485b8f8e110b4e61da25f6 | m51 |
+| 16 | `claude/mikew-pr18-fog` | `claude/mikew-pr17-wind-direction` | 475d90d521d152ba9c4a1ddc8f4c759cfd197fee | m52 |
+| 17 | `claude/mikew-pr19-prevailing-wind` | `claude/mikew-pr18-fog` | cd7ec380c25595cfa35fa4a2ddc0d23ec716b520 | m53 |
+| 18 | `claude/mikew-pr20-cave-air` | `claude/mikew-pr19-prevailing-wind` | ee6be6e852e1f716935b8d88070a86463f7e7d3d | m54 |
+| 19 | `claude/mikew-pr21-drinking` | `claude/mikew-pr20-cave-air` | e73c3560b9f9cc9cffb84de5c7224332e3087637 | m55 |
+| 20 | `claude/mikew-pr22-ice-snow` | `claude/mikew-pr21-drinking` | 73857596a2da55625f2f5d937d48278366cfd318 | m56 |
+| 21 | `claude/mikew-pr23-thunder` | `claude/mikew-pr22-ice-snow` | c693188ec6a045ede583f0f00aa67715eab194f5 | m57 |
+| 22 | `claude/mikew-pr24-pose-library` | `claude/mikew-pr23-thunder` | 96d224a77d9118b8b022e99ac954f429bb4643a6 | m58 |
+| 23 | `claude/mikew-pr25-breath` | `claude/mikew-pr24-pose-library` | (this commit, merged with main f7f3fe742; reported in the thread) | m60 |
 
 12b and 12c hold the cross-cutting passes that came after PR 12 in time (the cost pass and kill switch, the self review, then Weather.air_c,
 Jamie's track numbers, state 20 in cover, the hunt readers and Dino's shot list); they cannot be folded back into earlier families
@@ -86,3 +86,7 @@ remaining conflicts in those PRs are between Steve's chain and main itself (GOBL
 server_items, server_big_game), not this branch.
 
 The PC gate's order, flags and times are in MIKEW_GATE_PLAN.md.
+
+**Freeze (Dave, 8 Nov 2026):** no new looks. The full branch `claude/mikew-eye-placement` is current main merged with the whole stack;
+it is the branch to gate and merge. The stacked PR branches below pr25 are not merged with the newest main; if the PRs are opened one by
+one they will each need main merged in first, or the full branch can go in as one PR after the gate.

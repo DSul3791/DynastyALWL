@@ -107,9 +107,9 @@ twice, divisions by zero, and reads of server fields not on main.
   DRINK state 21 and HUNCH 20 are states, harmless when not sent. Nothing reads a field that main does not send without a guard.
 - **Left:** as before (two older terrain_client warnings, the herd look's n x n at 5 Hz, `fire_near`, the cave mouth blend).
 
-## Latitude (8 Nov 2026: the island is a 21 by 21 grid with the equator in the middle)
+## Latitude (8 Nov 2026: the island is a 21 by 21 grid with the equator in the middle; latitude from the island's grid row, starter about 34° S)
 Every look checked for an assumed hemisphere, sun side, season name or month.
-- **Fixed:** the wind direction's fallback was a constant (a westerly in pr17, the 57 S WNW mean in pr19). Now there is none: with no
+- **Fixed:** the wind direction's fallback was a constant (a westerly in pr17, a WNW mean from Jamie's first wind page in pr19). Now there is none: with no
   `wind_dir` in the client's weather there is no wind turn, ruffle direction or breath drift (pr17, merged forward; pr25's body steam
   guarded too). The in-game weather always carries `wind_dir`, which Kathleen's prevailing wind (and #711's latitude) will set per row.
 - **Already from the client's values:** season names (coat tint, young ages, the fly swish, prints in snow) come from the client's
@@ -117,6 +117,6 @@ Every look checked for an assumed hemisphere, sun side, season name or month.
   melt) is `Weather.air_c` at the animal; the moon and night are the client's day cycle. None of them is a constant here.
 - **Not mine:** the day cycle's `LATITUDE_DEG` (Kathleen's sky) and the season by row (#711) are upstream; when they change, the looks
   follow without a change here.
-- **Docs:** ANIMAL_WIND.md and ANIMAL_FOG.md now speak of the local seasons and the prevailing wind of the island's row; Jamie's 57 S
-  pages are the knowledge for the starter's latitude.
+- **Docs:** ANIMAL_WIND.md and ANIMAL_FOG.md now speak of the local seasons and the prevailing wind of the island's row; latitude from the island's
+  grid row (starter about 34° S); Jamie is correcting her pages, which were written for 57° S.
 
