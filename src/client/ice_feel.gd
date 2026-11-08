@@ -1,9 +1,7 @@
 extends RefCounted
 
-# Ice walk feel (docs/design/ice_walk_feel.md, Kathleen 8 Nov 2026), behind --ice-feel, client only. Pure numbers: the band of the ice under the
+# Ice walk feel (docs/design/ice_walk_feel.md, Kathleen 8 Nov 2026; always on since Dave's 8 Nov ruling), client only. Pure numbers: the band of the ice under the
 # player from the collider's own cover (terrain_client ice_now, Ice.cover at 3 m), and what each band does to the steps, the sounds and the eye.
-
-static var on: bool = AppConfig.has_flag("ice-feel")
 
 enum Band { OPEN, SKIM, FILM, THIN, THICK }
 const BAND_NAMES := ["open", "skim", "film", "thin sheet", "thick sheet"]
