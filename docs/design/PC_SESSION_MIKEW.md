@@ -96,3 +96,54 @@ Pass: `CHECKS: pass` for each. On a `CONFLICT`, main has moved: merge `origin/ma
 3. Animal life layer (`claude/mikew-eye-placement`: eye placement, dog clips, tails, ears, breathing, head tracking, posed states, hop, sleep, herds, footfall, stalk, flight, coats, young, water, hunch, idle variety; new PR; every new look behind its own flag, off).
 
 Send each head to the coordinator after the push prints it.
+
+## Pre-sitting review (MikeW, 8 Nov 2026)
+
+The whole branch was read against #596 (`git diff $(git merge-base HEAD origin/claude/mikew-eyeshine)`: 31 files, about 4,900 lines).
+
+**Flags.** All fourteen client flags default to false (`footfall_fx`, `prints_fx`, `slope_tilt`, `foot_ik`, `stalk_fx`, `season_coats`,
+`coat_dust`, `coat_ruffle`, `young_gait`, `water_life`, `idle_variety`, `flight_bank`, `look_at_foe`, plus the tool-only `young_age_days`
+and `idle_first_s` at -1). terrain_client sets only callables (torch, conditions, ground, wind, water), never a flag. Server
+`groups.enabled` is false in animals.json.
+
+**On without a flag, by design (state- or row-driven, on the merged-ready part):** eye placement, dog clips 10/18/19, tail, ears,
+breathing, head tracking, jaw-pop pose, hop arc, sleep, herd facing and spacing, flight part 1 (take-off, flap and glide, bob),
+state 17 glide, hunch 20 (only when the server sends 20). These are proved by m1 to m18, m26 and m33.
+
+**Fixed in this review:**
+1. Flocks in flight shared one record per flock, and the flight block runs once per bird a frame: air time ran N times fast, only
+   the first bird played its take-off, and with `flight_bank` the bank flickered between birds. Each flock bird now keeps its own
+   flight record (`flight_b` meta); a single bird still uses its own record, so `play_roll` and `_flap_bob` are unchanged.
+2. The reverse walk for an animal backing away ran in every state, so a fleeing animal turning round would have run backward for a
+   moment. It now applies only while facing something (states 3, 10, 12: Steve's goblin back-off is ALERT).
+3. A row with `idles` built a bone layer (a SkeletonModifier3D running every frame) even with `idle_variety` off, for species that had
+   none before (rabbit, cat, cow, goat). The layer and the idle poses are now built only when the flag is on.
+
+**Checked, no change needed:** every clip lookup goes through `_clip_full`, which returns "" and is logged and skipped; every bone list
+goes through bone_offsets `setup_*`, which reports missing bones and skips them; Rig and meta reads use `get_node_or_null` /
+`get_meta(..., default)`; coat materials are typed checked (ShaderMaterial or StandardMaterial3D); the per-frame work with flags off is
+the flag tests themselves plus the backing test (one dot product per model animal).
+
+**Server files touched (separate PR, Steve to review):** `src/stream/server_animals.gd` (herd groups, behind `groups.enabled`: one weather
+copy per tick, two guarded call sites), `data/animals/animals.json` (the groups block, `group_drift` and `group_spacing_m` on 13 herd
+species), `src/worldgen/tools/test_herd_groups.gd`. The server code is untouched with the flag off apart from `_weather = weather`.
+
+**Known open:** the raven roll event's wire format (Steve); Mandy-style clips for horses' pawing are posed guesses (front-leg waves) until
+the strip shows them; the ruffle shader's first compile is on the PC (m21).
+
+## PR split after the gates (for Tyler, in merge order)
+
+The branch is one linear chain (with main merged in), so the client PRs are stacked ranges of it; each later PR's branch is cut at
+its last commit and lists the earlier PR as its base. No history is rewritten.
+
+1. **#596 eye shine** (`claude/mikew-eyeshine`), as now.
+2. **Wet look** (`claude/mikew-wet-look`), new PR.
+3. **Life layer A, the always-on looks:** commits 45cd36d33 to 6c9522c85 (eye placement, dog clips, tail, ears, breathing, head tracking,
+   jaw-pop, hop, sleep, client herds, creature_check, creature_motion and this run sheet). Proved by m1 to m10.
+4. **Life layer B, footfall and feet (flags):** d0f95093d to d2f0a14aa (puffs, slope pitch, prints, foot reach, splashes). m11 to m14.
+5. **Life layer C, predators and birds:** a7165110c to 5924e90fc (stalk and pounce behind `stalk_fx`, wind ears and tails, flight part 1
+   on). m15 to m18.
+6. **Life layer D, coats, young, water, idles (flags):** 1a5373d83, f9af2f2f1, 308ff3a9f, cd4331724. m19 to m27.
+7. **Herd groups (server, flag off):** 1528fa6f9 cherry-picked onto main as its own PR (it touches only the server files above and three
+   docs), so Steve can review it apart from the client chain. test_herd_groups.gd in the gate.
+8. **Life layer E, flight part 2, backing, wiring:** d16abcf5f, f34903104, aef1d008f and this review's fix commit. m28 to m34.
