@@ -48,7 +48,7 @@ One switch, `--canopy-drip`, on top of `--rain-look`. It stays off until Dino's 
 
 Run with `--rain-look --canopy-drip --shot-settle=60`, then with `--rain-look` only. The camera is under the broadleaf stand of the trees note (#682):
 
-- **Camera:** x 53296, z 68056, 1.7 m above the ground, yaw 90, pitch 10 (looking west, slightly up into the crowns), hour 12.
+- **Camera:** x 53296, z 68056, 2 m above the ground, yaw 90, pitch 10 (looking west, slightly up into the crowns), hour 12.
 - If no crown is overhead in the first frame, run `flora_near.gd -- --at=53296,68080 --species=oak,beech,birch,spruce` and stand 2 m inside the edge of the nearest stand. Send me the numbers.
 
 `--shots="drip_rain:53296,2,68056,90,10,12,rain;drip_after_1:53296,2,68056,90,10,12,clear;drip_after_2:53296,2,68056,90,10,12,clear;drip_after_3:53296,2,68056,90,10,12,clear"`
