@@ -62,6 +62,7 @@ camera and focus move along +Z with the animals. Pictures are 480 by 480 px, one
 | Pose library: drinking (21) | 12:00 | clear | deer, horse, cow | `$M --kinds=deer,horse,cow --state=21 --poselib --cam=6 --frames=2 --out=$O/pose_drink` | heads down toward the ground; camera (6, 1.8, 0), yaw 90, pitch -11.3 |
 | Pose library: lying (19) | 12:00 | clear | deer, horse, cow | `$M --kinds=deer,horse,cow --state=19 --poselib --cam=6 --frames=2 --out=$O/pose_lie` | legs folded under the body (a wrong-way bend on the cow means its row needs `pose_axis`) |
 | Pose library: hunch (20) | 12:00 | clear | goat, elk | `$M --kinds=goat,elk --state=20 --poselib --cam=6 --frames=2 --out=$O/pose_hunch` | heads low on rigs with no hunch pose of their own |
+| A deer down on the ice | 12:00, winter | bare ice at the surface (`--water=0.01 --wlife --ice`) | deer, running | `$M --kinds=deer --state=2 --speed=7 --water=0.01 --wlife --ice --poselib --season=winter --cam=8 --frames=12 --every=0.3 --out=$O/ice_fall` | down splayed on all fours in some frames (Jamie #736); camera (8, 1.8, 0), yaw 90, pitch -8.5 |
 
 All of them are also in the run sheet (m19 to m48); these are the ones to keep as reference pictures. Send the strips to MikeW;
 nothing else is needed from the sitting for them.
@@ -177,5 +178,6 @@ has no strip: it is the gate run with and without `--life-layer-off`. The refere
 
 **pr24 pose library**
 - m58 [pose_lib] heads in 21, legs in 19: in 21 the heads are down toward the ground; in 19 the legs fold (the cow may need `pose_axis`).
+- m59 [pose_lib, ice_looks] the running deer on bare ice: down splayed on all fours in some frames, up again in others.
 
 Then step 5 (the gates) and step 6 (the PRs, opened in the summary page's order).
