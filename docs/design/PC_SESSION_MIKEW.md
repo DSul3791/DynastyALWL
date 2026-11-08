@@ -53,9 +53,12 @@ $M --kinds=deer,wolf --state=0 --torch --hour=23 --cam=8 --out=$O/motion_night >
 $M --kinds=rabbit,kangaroo --state=0 --speed=3 --out=$O/motion > $O/m9.log 2>&1   # hop arc
 $M --kinds=black_bear --state=16 --out=$O/motion > $O/m10.log 2>&1                # jaw-pop pose
 $M --kinds=horse,deer --state=2 --speed=8 --fx --every=0.1 --out=$O/motion_fx > $O/m11.log 2>&1   # dust puffs at running footfalls
+$M --kinds=deer,wolf --state=0 --speed=1.5 --season=winter --prints --frames=4 --every=1 --out=$O/motion_prints > $O/m12.log 2>&1   # prints in snow (hoof and paw)
+$M --kinds=deer,horse,cow --state=0 --ik --cam=4 --out=$O/motion_ik > $O/m13.log 2>&1   # feet reach a 15 cm step on one side
+$M --kinds=deer --state=2 --speed=6 --water=0.3 --fx --every=0.1 --out=$O/motion_splash > $O/m14.log 2>&1   # splashes wading
 grep -h "saved\|SCRIPT" $O/m*.log
 ```
-Pass, per strip, by eye: the tail or ears move between frames; sleeping animals lie (deer, dog) or stand head-low (horse) and `asleep true` in the log; the deer herd faces roughly one way and `look_left` above 0 on more than one frame as the camera nears; the beaver and moose show `wet` near 1; eyes glow in the night strip (deer pale green, wolf yellow-green); the rabbit and kangaroo rise and land; the black bear's head is low with the jaw open; brown puffs at the running hooves.
+Pass, per strip, by eye: the tail or ears move between frames; sleeping animals lie (deer, dog) or stand head-low (horse) and `asleep true` in the log; the deer herd faces roughly one way and `look_left` above 0 on more than one frame as the camera nears; the beaver and moose show `wet` near 1; eyes glow in the night strip (deer pale green, wolf yellow-green); the rabbit and kangaroo rise and land; the black bear's head is low with the jaw open; brown puffs at the running hooves; a line of hoof and paw prints behind the deer and wolf on snow, fading only slowly; the deer's, horse's and cow's right-hand feet stand 15 cm higher than the left without the body tipping; droplets at the wading deer's feet.
 
 ## 5. Gates (15 min, in order)
 ```bash
