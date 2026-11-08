@@ -331,7 +331,15 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card).",
+			"water": {
+				"swim": true,
+				"surface_sink_m": 1.5,
+				"bank_m": 60.0,
+				"swim_mps": 1.8,
+				"lives_on_land": true
+			},
+			"note": " Swims (water row, 8 Nov 2026): wades into lakes to feed and swims across, only head and hump above the water (sinks to 1.5 m where it is that deep); on land its forest habitat applies as before."
 		},
 		"fox": {
 			"dog": {"notice_m": 25.0, "flee_m": 15.0, "reaction": "flee"},
@@ -964,7 +972,12 @@
 				"provoked_m": 12.0,
 				"provoked_warn_s": 0.6,
 				"threat_m": 9.0,
-				"threat_warn_s": 0.8
+				"threat_warn_s": 0.8,
+				"huff_share": 0.5,
+				"bluff_share": 0.6,
+				"bluff_stop_m": 4.0,
+				"den_bluff_x": 0.5,
+				"run_trigger_mps": 6.0
 			},
 			"walk_mps": 1.3,
 			"spook_m": 25.0,
@@ -1377,7 +1390,12 @@
 				"provoked_m": 9.0,
 				"provoked_warn_s": 0.6,
 				"threat_m": 6.0,
-				"threat_warn_s": 0.8
+				"threat_warn_s": 0.8,
+				"huff_share": 0.5,
+				"bluff_share": 0.75,
+				"bluff_stop_m": 4.0,
+				"den_bluff_x": 0.5,
+				"run_trigger_mps": 6.0
 			},
 			"walk_mps": 1.3,
 			"spook_m": 32.0,
@@ -1806,8 +1824,14 @@
 				"dusk": 1.0,
 				"night": 0.8
 			},
-			"note": "Dave 7 Nov 2026, batch 1. A beaver keeps to the water edge in forest and marsh, mostly at dusk and night, and slips away from a player (FAUNA_BY_BIOME rarity 3). Rabbit movement numbers, no burrow, slow on land; it does not swim in this version.",
-			"spawn_share": 0.4
+			"note": "Dave 7 Nov 2026, batch 1. A beaver keeps to the water edge in forest and marsh, mostly at dusk and night, and slips away from a player (FAUNA_BY_BIOME rarity 3). Rabbit movement numbers, no burrow, slow on land; it swims (water row, 8 Nov 2026): low in the water with only its head showing, and keeps within 20 m of the bank to feed.",
+			"spawn_share": 0.4,
+			"water": {
+				"swim": true,
+				"surface_sink_m": 0.15,
+				"bank_m": 20.0,
+				"swim_mps": 1.2
+			}
 		},
 		"chamois": {
 			"number": 23,
@@ -2275,7 +2299,14 @@
 				8
 			],
 			"herd_pull_m": 4.0,
-			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger; it does not fly in this version."
+			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger; it does not fly in this version. Swims (water row, 8 Nov 2026): floats high, body mostly above the water; grazes lakeside meadows by its own habitat rules.",
+			"water": {
+				"swim": true,
+				"surface_sink_m": 0.1,
+				"bank_m": 40.0,
+				"swim_mps": 0.8,
+				"lives_on_land": true
+			}
 		},
 		"cow": {
 			"dog": {"notice_m": 30.0, "flee_m": 20.0, "reaction": "stand", "young_only": true, "attack_m": 12.0},
@@ -4066,6 +4097,91 @@
 				"friendly": 0.15
 			},
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). A tiger is the biggest of the cats: solitary, in deep forest and marsh edge, out at dusk and night; it keeps away but attacks one who comes close or corners it. Leopard numbers, much bigger and stronger, forest instead of savanna."
+		},
+		"alligator": {
+			"number": 51,
+			"name": "Alligator",
+			"target_per_player": 1,
+			"spawn_share": 0.2,
+			"health": 110.0,
+			"protective_share": 0.0,
+			"defend": {
+				"warn_m": 0.0,
+				"warn_s": 0.4,
+				"charge_mps": 9.0,
+				"charge_m": 8.0,
+				"turn_rad_s": 0.35,
+				"hit_m": 1.8,
+				"damage": 30.0,
+				"recover_s": 6.0,
+				"calm_m": 12.0,
+				"cool_s": 25.0,
+				"corner_m": 4.0,
+				"corner_warn_s": 0.3,
+				"provoked_m": 6.0,
+				"provoked_warn_s": 0.3,
+				"threat_m": 4.0,
+				"threat_warn_s": 0.3
+			},
+			"walk_mps": 0.8,
+			"spook_m": 6.0,
+			"safe_m": 25.0,
+			"graze_s": [
+				10.0,
+				40.0
+			],
+			"wander_m": 20.0,
+			"flee_run_m": 40.0,
+			"alarm_s": [
+				0.2,
+				0.9
+			],
+			"alert_m": 30.0,
+			"alert_s": [
+				1.5,
+				3.0
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.5,
+			"zig_deg": 20.0,
+			"zig_leg_m": 15.0,
+			"eye_m": 0.3,
+			"flee_mps": 4.0,
+			"herd_pull_m": 0.0,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 2.0,
+				"forest": true,
+				"water_kind": [
+					"fen",
+					"bog",
+					"river",
+					"lake"
+				],
+				"lair": "den"
+			},
+			"biomes": {
+				"marsh": 1.0,
+				"temperate_forest": 0.2
+			},
+			"active": {
+				"day": 0.7,
+				"dusk": 1.0,
+				"night": 0.8
+			},
+			"temperament": {
+				"aggressive": 0.6,
+				"defensive": 0.4
+			},
+			"note": "Dave 8 Nov 2026 (docs/design/ALLIGATOR_SWIMMING.md): an alligator lives in the fresh water of marsh and slow rivers and on their banks, rides the surface, basks on the bank and ambushes: it attacks a swimming player and anyone at the water's edge (decided by the coordinator for Dave). Black bear defend rows reshaped for an ambush predator: short warning, long reach in water, one hard bite.",
+			"water": {
+				"swim": true,
+				"surface_sink_m": 0.25,
+				"bank_m": 6.0,
+				"swim_mps": 4.0
+			}
 		}
 	},
 	"flight": {
@@ -4243,7 +4359,7 @@
 	"off_hours_despawn_m": 40.0,
 	"off_hours_chance": 0.05,
 	"temperament": {
-		"note": "Dave 6 Nov 2026: every animal has an inherent temperament. Passive ones hide or run at all costs; neutral ones ignore us; aggressive ones attack; some are friendly, as in the real wild. A species row's 'temperament' gives the share of each kind it is born with (none = all defensive). spook_x scales how close a player may come before it runs (0 = it never runs), threat_x scales its defend.threat_m (0 = never attacks there), attacks false = never attacks unless defending its young, alert false = it does not stop to watch. Seasons and young change these further (species 'seasons', 'young').",
+		"note": "Dave 6 Nov 2026: every animal has an inherent temperament. Passive ones hide or run at all costs; neutral ones ignore us; aggressive ones attack; some are friendly, as in the real wild. A species row's 'temperament' gives the share of each kind it is born with (none = all defensive). spook_x scales how close a player may come before it runs (0 = it never runs), threat_x scales its defend.threat_m (0 = never attacks there), attacks false = never attacks unless defending its young, alert false = it does not stop to watch. bluff_x scales a species' defend.bluff_share (how often a charge is a bluff; docs/design/bear_threat_design.md). Seasons and young change these further (species 'seasons', 'young').",
 		"kinds": {
 			"passive": {
 				"spook_x": 1.0,
@@ -4254,6 +4370,7 @@
 			"defensive": {
 				"spook_x": 1.0,
 				"threat_x": 1.0,
+				"bluff_x": 1.2,
 				"attacks": true,
 				"alert": true
 			},
@@ -4266,6 +4383,7 @@
 			"aggressive": {
 				"spook_x": 0.0,
 				"threat_x": 2.0,
+				"bluff_x": 0.5,
 				"attacks": true,
 				"alert": false
 			},

@@ -1,14 +1,21 @@
 extends RefCounted
 # The sun, the moon and the sky colours follow the game clock (Art direction job 6a, DESIGN_IDEAS 7.5): sunrise and
 # sunset, long golden dusk and dawn, a blue moon and stars at night, never pitch black. Client only, no network traffic:
-# `update(hour, day_of_year)` from the shared game clock (a game day is one real hour). weather_look.gd applies the
+# `update(hour, day_of_year, days)` from the shared game clock (a game day is one real hour). weather_look.gd applies the
 # numbers (it already owns the sun, ambient light, fog and sky uniforms and multiplies them by the weather).
 #
 # The sun path is the real one for LATITUDE_DEG: it rises in the east, stands in the south at noon (north is -Z) and sets
 # in the west; the noon sun is high in summer and low in winter, so days are long in summer and short in winter. The moon
-# is always opposite the sun (a full moon) and lights the ground with one cold, dim directional light. There is one light
+# is always opposite the sun and lights the ground with one cold, dim directional light whose strength follows the moon's
+# phase (below). There is one light
 # (and one shadow map) in the game, so at night the same light is the moon; both are faded to nothing while the sun
 # crosses the horizon, and the light snaps from sun to moon in that gap.
+#
+# Moon phases (docs/design/art_weather_light.md 5.3 and 12, decided 8 Nov 2026): the moon waxes and wanes over its real
+# synodic month, so a few nights a month are moonless "eye nights", when a torch matters most and eyes shine at the edge of
+# its light. Only the moonlight follows the phase: the night's ambient light and its floor are weather_look.gd's, so a
+# moonless night is never darker than the outdoor floor (never pitch black outdoors, the decided rule). The moon stays
+# opposite the sun, a simplification that is fine for brightness. A new world starts on a full moon, the night it always had.
 # Cost: a few trig calls twice a second and a handful of uniforms per frame; no extra light, no extra draw.
 
 const LATITUDE_DEG := 52.0
@@ -20,6 +27,10 @@ const SUN_RED := Color(1.0, 0.42, 0.2)          # sun on the horizon
 const MOON_COLOR := Color(0.62, 0.72, 1.0)
 const MOON_ENERGY := 0.22                       # share of the daytime sun light energy the moon gives (a full moon)
 const AMBIENT_NIGHT := 0.24                     # share of the daytime ambient light left at night
+const SYNODIC_DAYS := 29.53                     # new moon to new moon, in game days
+const MOON_FULL_DAY := 100.0                    # a full moon on this game day (a new world starts on day 100, game_clock START_SECONDS)
+const MOON_FALLOFF := 1.5                       # moonlight against the lit share of the disc: a half moon gives about a third of a full moon's light
+const STARS_DARK := 1.35                        # the stars on a moonless night, against a full moon's (1, as before): a bright moon washes out the faint ones
 
 # Sky palettes: top, horizon, below the horizon, cloud shadow.
 const DAY := [Color(0.33, 0.47, 0.68), Color(0.63, 0.68, 0.75), Color(0.63, 0.68, 0.75), Color(0.46, 0.52, 0.62)]
@@ -31,14 +42,21 @@ var light_basis: Basis = Basis.IDENTITY         # for the directional light: the
 var light_color: Color = SUN_WHITE
 var light_factor: float = 1.0                   # multiplies the daytime sun energy (look_settings SUN_ENERGY)
 var ambient_factor: float = 1.0                 # multiplies the sky's ambient light
-var night: float = 0.0                          # 0 day .. 1 night: stars
+var night: float = 0.0                          # 0 day .. 1 night
+var moon_phase: float = 0.5                     # 0 new .. 0.5 full .. 1 new again
+var moon_light: float = 1.0                     # 0 new moon .. 1 full moon: multiplies the moonlight
+var stars: float = 0.0                          # how bright the stars are (the sky shader's `night`): night, brighter when the moon is dark
 var sky_top: Color = DAY[0]
 var sky_horizon: Color = DAY[1]
 var ground_horizon: Color = DAY[2]
 var cloud_shadow: Color = DAY[3]
 
 
-func update(hour: float, day_of_year: int) -> void:
+# `days`: game days since the world began (game_clock seconds / SECONDS_PER_DAY), for the moon's phase; below 0 keeps a full moon.
+func update(hour: float, day_of_year: int, days: float = -1.0) -> void:
+	moon_phase = moon_phase_at(days) if days >= 0.0 else 0.5
+	moon_light = moon_light_at(moon_phase)
+
 	var phi: float = deg_to_rad(LATITUDE_DEG)
 	# Day 0 is the first day of spring (equinox): the sun's declination is zero, peaks in summer.
 	var delta: float = deg_to_rad(AXIAL_TILT_DEG) * sin(TAU * (float(day_of_year) + hour / 24.0) / 365.0)
@@ -62,17 +80,29 @@ func update(hour: float, day_of_year: int) -> void:
 		light_factor = sun_up * (0.8 + 0.2 * smoothstep(0.0, 0.3, up))
 	else:
 		light_color = MOON_COLOR
-		light_factor = MOON_ENERGY * moon_up
+		light_factor = MOON_ENERGY * moon_up * moon_light
 
 	var day_w: float = smoothstep(0.0, 0.3, up)
 	var night_w: float = smoothstep(0.0, -0.2, up)
 	var dusk_w: float = clampf(1.0 - day_w - night_w, 0.0, 1.0)
 	night = smoothstep(-0.03, -0.2, up)
+	stars = night * lerpf(STARS_DARK, 1.0, moon_light)
 	ambient_factor = lerpf(AMBIENT_NIGHT, 1.0, clampf(day_w + dusk_w * 0.55, 0.0, 1.0))
 	sky_top = _mix(0, day_w, dusk_w, night_w)
 	sky_horizon = _mix(1, day_w, dusk_w, night_w)
 	ground_horizon = _mix(2, day_w, dusk_w, night_w)
 	cloud_shadow = _mix(3, day_w, dusk_w, night_w)
+
+
+# The moon's phase on a game day: 0 new, 0.5 full (on MOON_FULL_DAY and every SYNODIC_DAYS after it), 1 new again.
+static func moon_phase_at(days: float) -> float:
+	return fposmod((days - MOON_FULL_DAY) / SYNODIC_DAYS + 0.5, 1.0)
+
+
+# Moonlight from the phase, 0 (new) to 1 (full): the lit share of the disc, (1 - cos) / 2, raised to MOON_FALLOFF so a
+# thin crescent gives almost nothing.
+static func moon_light_at(phase: float) -> float:
+	return pow(0.5 * (1.0 - cos(TAU * phase)), MOON_FALLOFF)
 
 
 func _mix(slot: int, day_w: float, dusk_w: float, night_w: float) -> Color:
