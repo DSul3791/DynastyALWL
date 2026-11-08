@@ -217,7 +217,27 @@ Today there is one even haze. That is right for clear air, but **mist is what ma
    - Starter summits (1000 to 1450 m) stay below it.
    - The bigger islands go higher: volcano 1500 to 2300 m, three-peak 2000 to 2700 m, giant up to 3400 m (art_mountains, D-10). The higher ones **reach or rise through the cloud layer**.
    - The sky draws its clouds behind the terrain, so a peak can never be **in** the cloud.
-   - **[Check, then Proposal]** On a giant island, look at a summit above 2 km. If the clouds cannot wrap it, add cap-cloud cards (item 3 in the table) at the cloud level around high summits, and let the cloud layer thin near the peak. "Above the clouds" is a great picture if it is drawn honestly.
+   - **[Check, then Proposal]** On a giant island, look at a summit above 2 km. If the clouds cannot wrap it, add cap-cloud cards (item 3 in the table) at the cloud level around high summits, and let the cloud layer thin near the peak. "Above the clouds" is a great picture if it is drawn honestly. The rules for building it are in 7.1.
+
+### 7.1 Cap cloud on high summits (built behind a switch, off until Dino's check picture)
+
+Decided (section 12, item 7): build it, but it stays off until a picture shows it works. The switch is `--cap-cloud` (off by default); `--cap-cloud=METRES` sets the lowest summit that takes one (default 2000 m, the cloud layer), so the check can be made on the starter hero peak (about 1430 m) with `--cap-cloud=1200`.
+
+1. **The real rule:** a cap cloud forms when moist air is pushed up over a summit and cools to its condensation level. It sits on the top and streams downwind as a banner. The air blows through it, but the cloud stays put and keeps re-forming, so it does not drift away with the wind.
+2. **Where:** the summits near the player that reach the switch height. They are found on the player's machine from the baked tiles' coarse height map (32 m), at most 4 caps, the nearest first.
+3. **When:**
+   - Moist air: cloud cover above about 0.3, fully from 0.6, or any rain.
+   - Some wind: from 0.1, fully from 0.35. In a storm the summit is wrapped whatever the wind.
+   - In clear, dry air there is no cap. It comes and goes slowly (about a minute), never in a blink.
+4. **The look:**
+   - A soft lens sitting from just below the top to about 120 m above it, about 250 m across, with a banner of thinner puffs trailing downwind (`wind_dir`) for 300 to 1000 m (longer in stronger wind).
+   - Made of 8 big soft camera-facing puffs per cap, each with its own slowly turning detail.
+   - Lit by the sun and the sky like the cloud layer: a white, sunlit top, a grey underside, gold at sunrise and sunset, dark blue-grey at night with only the moon on it. It never glows.
+   - The puffs fade softly where they meet the rock, so no hard line shows where the cloud cuts the mountain, and they fade out near the eye, so walking up into one never shows a flat card.
+   - The distance haze covers them like any far thing.
+5. **Not yet:** the cloud layer does not thin near the peak (the sky cannot know where peaks are). Standing inside the cap does not yet thicken the fog around the player. Both are for after the check.
+6. **Cost:** at most 32 cards with one material; nothing at all while the switch is off. The summit search reads about 2 million coarse heights once, on a worker thread.
+
 
 ## 8. Rain, snow, wind and storms
 
@@ -298,7 +318,30 @@ Puddles are the cheapest strong sign that it has rained, and a track that shines
      - Rocks and roofs are still open.
    - **Steep faces stay dark**: snow does not hold above about 50°. This gives mountains their black-and-white striping (art_mountains).
    - **Footprints and trails** in snow, a later gameplay look.
-3. **The snow line:** the climate rule (snow below -8 °C, lapse 6.5 °C per km) gives no snow on a 1450 m starter summit. Summer snow patches above about 80 percent of the summit are decided in art_mountains section 10, and the per-island snow line is on Sonny's list after the chain.
+3. **The snow line:** the climate rule (snow below -8 °C, lapse 6.5 °C per km) gives no snow on a 1450 m starter summit. Summer snow patches above about 80 percent of the summit are decided in art_mountains section 10, and the per-island snow line is on Sonny's list after the chain. The look until then is in 8.2.1.
+
+### 8.2.1 Summit snow (the look of Sonny's A4 snow window)
+
+Sonny's A4 design (in #537): each island gets one climate record; the R6 record bakes a snow window per cell (the summer patches at 80 to 85 percent of the summit, in lee and shaded gullies, with more shade on faces that look north, -Z), and R7 reads it. That bake does not exist yet. Until it does, the ground draws the same picture from a rule, so the peaks look right now and the change later is only where the numbers come from.
+
+1. **The island's summit:** the highest summit within about 10 km of the player, from the same coarse height search as the cap cloud (7.1). It needs no switch. Until it is found, no summit snow is drawn.
+2. **How low the patches reach, as a share of that summit:**
+
+   | Season | Lowest patches |
+   |---|---|
+   | Summer | 82 percent (the A4 window, 80 to 85) |
+   | Autumn | 70 percent |
+   | Spring | 62 percent (old winter snow melting back) |
+   | Winter | 50 percent, the treeline (art_mountains rule 4) |
+
+3. **Where inside the window:**
+   - **Faces that look north (-Z)** hold snow about 8 percent of the summit lower than faces that look south (A4 shade rule; art_mountains rule 3).
+   - **Lee faces**, the ones that look downwind of the prevailing wind, hold snow 5 percent lower, because the wind piles it there. The prevailing wind is taken as from the west for now; the island's climate record will give it.
+   - **Gullies and ledges:** on slopes steeper than about 45° snow holds only in creases and on small flat ledges, so dark cliffs carry white streaks (art_mountains rule 1). Gentle ground takes broad patches.
+   - **Patchy edges:** the lower edge breaks up into patches from two sizes of noise (about 60 m and 15 m), never a straight line. In summer only the best spots hold snow; in winter the patches join.
+4. **The look:** the same soft blue-white as the rest of the snow (about 0.86, 0.88, 0.92), a little rougher than ice, with no distance fade, because it is meant to be read from the town.
+5. **Not yet:** footsteps on summit patches still sound like rock, and the patches are drawn, not walked through; both wait for the baked window, which the server will also know.
+
 4. **Snow at night** brightens the land (6.2). Flakes caught in torchlight glow warm near the flame.
 5. **Blizzard:** white-out, the far land gone, wind-driven snow at an angle. The most dangerous, most beautiful weather.
 
@@ -386,7 +429,7 @@ ART_DIRECTION 9 already rules that sky, light, fog and rain read three inputs: z
 4. **A small exposure drop while a torch is held (6.2.3): yes.** Owner: Kathleen. It is built as a 15 percent drop of the moon and sky light rather than of the exposure, because exposure would also dim the torch's own pool of light; the picture beyond the flame is the same.
 5. **A held torch shadow from Medium up (6.4): only after a GPU check on Dave's PC.** Dino does the check when the PC frees up, not now.
 6. **Height fog and a `mist` value in the weather state, valley fog first (7): yes.** Owner: Jamie, after his rivers doc.
-7. **Cap cloud cards for summits above the cloud layer (7.3): only after a check picture from Dino.**
+7. **Cap cloud cards for summits above the cloud layer (7.3): only after a check picture from Dino.** Kathleen builds it behind the `--cap-cloud` switch, off by default (7.1), so that Dino's picture decides.
 8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Kathleen owns lower colour at night and breath (#605), then snow on branches and rainbows, each on one branch. Puddles: Kathleen, rules in 8.1.1, code stacked on the snow and rainbow branch.
 9. Still open: the rest of the rain additions in 8.1.2, the Milky Way (5.4) and the arctic aurora (9).
 
