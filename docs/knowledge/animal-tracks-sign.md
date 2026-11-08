@@ -1,6 +1,6 @@
 # Animal tracks and sign: prints, gaits, how long they last, droppings, browse and beds
 
-**Last checked:** 2026-11-08 (Jamie, mostly from memory of the standard field guides; little web today). **System owner:** MikeW (`docs/design/ANIMAL_SIGN.md` and `data/animals/animal_sign.json` on his life-layer branch, behind the `animal_sign` flag). **Related:** [animal-behaviour.md](animal-behaviour.md), [animals-in-weather.md](animals-in-weather.md), [soils-ground-wetness.md](soils-ground-wetness.md) (puddle and wetness times), [snow-on-slopes.md](snow-on-slopes.md) (drifting), [CONTRADICTIONS.md](CONTRADICTIONS.md).
+**Last checked:** 2026-11-08 (Jamie, mostly from memory of the standard field guides; little web today). **System owner:** MikeW (`docs/design/ANIMAL_SIGN.md` and `data/animals/animal_sign.json` on his life-layer branch, behind the `animal_sign` flag). **Related:** [animal-behaviour.md](animal-behaviour.md), [animals-in-weather.md](animals-in-weather.md), [soils-ground-wetness.md](soils-ground-wetness.md) (puddle and wetness times), [snow-on-slopes.md](snow-on-slopes.md) (drifting), `CONTRADICTIONS.md` (#690).
 
 **Labels used on this page:**
 - **"FG"** means a field-guide figure recalled from Bang and Dahlström, *Animal Tracks and Signs*; Elbroch, *Mammal Tracks and Sign*; and Elbroch and Marks, *Bird Tracks and Sign*. These are the usual European and North American guides. I did not recheck the numbers against the books today, so treat them as good to about ±20%.
