@@ -17,7 +17,7 @@
    - "Groundwater equilibrates to the mean annual air temperature", about 9 °C in south-east Minnesota. When it enters a stream in winter "it warms the water, preventing it from freezing" (University of Minnesota, Why Daley Creek doesn't freeze).
    - A Vermont spring "measures 41 degrees in midwinter, just as it does in August" (5 °C). Groundwater-fed springs "can flow year-round, regardless of plunging temperatures" (*Northern Woodlands*, Springs in Winter).
    - Even below −40 °C in Alaska, river reaches fed by groundwater springs stay ice-free or have "dangerously thin ice" all winter (Modeling the thermal balance between groundwater springs and river ice, abstract).
-   - **For us:** the year mean at the spring's height. At spring #8002 (533 m) that is 5.5 °C, the same as the cave air there (`underground-climate.md`, #709).
+   - **For us:** the year mean at the spring's height. The starter's warmth follows the grid's curve, about 14.4 °C a year at sea level (`OVERNIGHT_DECISIONS_8NOV.md` row 20, #717). So spring #8002 (533 m) comes out at about **10.9 °C**, the same as the cave air there (`underground-climate.md`, #709). The tables below are for a 5.5 °C spring, as on a colder island or high in the mountains. For a 10.9 °C spring, the open lengths are about 1.4 to 1.8 times longer (our sums).
 
 2. **The brook below a spring stays open until its water has cooled to 0 °C, and that takes hundreds of metres.**
    - **Our sums:** open water loses heat to cold air at about h = 20 to 40 W/m² per °C. This counts convection, radiation and evaporation, from calm to breezy (judged, typical values).
@@ -40,11 +40,13 @@
    - Where spring water rises into a pond or under a lake's ice, it melts the ice from below. That leaves an open hole or a ring of thin ice (the Alaska abstract: "dangerously thin ice").
    - **Judged:** count ice as half as thick within about 10 to 30 m of a spring mouth or an inflow. That is the same halving rule as `animals-on-ice-and-snow.md` (#736); the 10 to 30 m reach is new here.
 
-4. **On the starter island, winter is too mild for much ice, and spring water never freezes.**
-   - **Our sums** from `climate.gd` (starter: 9.0 °C mean, ±5 °C season, 8 °C day range, 6.5 °C per km, cold spells ±4 °C):
-     - the midwinter mean at sea level is 4 °C. At spring #8002 (533 m) it is about 0.5 °C;
-     - at #8002 a cold night in a cold spell reaches about −7.5 °C (0.5 − 4 for the night − 4 for the spell);
-     - so a small spring there (2 L/s) keeps its brook open for about 230 m (breeze) to 460 m (calm) even on the coldest night. Ponds get the skim of 2.8 cm at most that the coordinator gave for the spawn pond (#731).
+4. **On the starter island, the low ground hardly freezes at all, and its brooks never do.**
+   - **Our sums** at the grid's warmth (#717 rows 19 and 20: about 34° S, 14.4 °C a year at sea level). They keep `climate.gd`'s ±5 °C season, 8 °C day range, 6.5 °C per km and ±4 °C cold spells:
+     - the midwinter mean at sea level is about 9.4 °C. At spring #8002 (533 m) it is about 5.9 °C;
+     - at #8002 the coldest dawn, in a cold spell, is about −2 °C (5.9 − 4 for the night − 4 for the spell), and it is above freezing again by mid-morning;
+     - so brooks below about 800 m never freeze, and ponds there get at most a dawn skim of a few millimetres (`animals-on-ice-and-snow.md`, #736);
+     - the lesson 2 table matters only high up: above about 800 m, a brook can ice at its edges in a midwinter cold spell, and above about 1,200 m, tarns can freeze over.
+   - The earlier version of this page used the old 9 °C climate (−7.5 °C dawns, 2.8 cm of pond ice). That no longer holds.
 
 ## Judged numbers for Steve, Sonny and Kathleen
 
@@ -52,19 +54,19 @@
 
 | Source | In winter | Drink? |
 |---|---|---|
-| Spring mouth | always open, at the year mean (5.5 °C at #8002) | yes, always |
+| Spring mouth | always open, at the year mean (about 10.9 °C at #8002) | yes, always |
 | Brook below a spring, within the open length above | open | yes |
 | Brook further down, or a brook with no spring | may be ice-edged; open in its fast riffles | yes where open; ice needs a hole |
 | Pond or lake | skim or sheet ice | needs a hole; at a spring inflow there may be an open patch |
 | Sea | — | no (salt), as #719 |
 
 - **The open length** can come from the table (lesson 2), or from Sonny's spring row: `m3_s` gives Q, and the brook's width gives W.
-  - A simpler rule for the game (a fit to the table, within about 30%): open length ≈ 440 m × √(flow in L/s) in calm air at −5 °C. Halve it in a breeze. Multiply by 1.8 at −2 °C, 0.6 at −10 °C and 0.4 at −15 °C. The square root is there because bigger springs make wider brooks, which lose heat faster.
-- **Cold water to drink:** a spring at 5.5 °C is cold but safe. Ice-melt water at 0 °C is colder. Neither needs a warmth penalty beyond what eating snow would give (judged).
+  - A simpler rule for the game (a fit to the table, within about 30%): open length ≈ 440 m × √(flow in L/s) in calm air at −5 °C. Halve it in a breeze. Multiply by 1.8 at −2 °C, 0.6 at −10 °C and 0.4 at −15 °C. That is for a 5.5 °C spring; for a spring at about 11 °C (the starter at 533 m), multiply again by about 1.5. The square root is there because bigger springs make wider brooks, which lose heat faster.
+- **Cold water to drink:** a spring at 5 to 11 °C is cool but safe. Ice-melt water at 0 °C is colder. Neither needs a warmth penalty beyond what eating snow would give (judged).
 
 ### Ice holes and fishing (#719, #737)
 
-- **A person can stand on ice** from about 10 cm of clear ice (`animals-on-ice-and-snow.md`, #736). On the starter, no pond reaches that, so no fishing hole can be cut there. That is the coordinator's #731 decision.
+- **A person can stand on ice** from about 10 cm of clear ice (`animals-on-ice-and-snow.md`, #736). On the starter, only high tarns above about 1,200 m reach that in a cold winter, so ice fishing is a high-mountain thing there. The low ponds never bear a person.
 - **Near a spring inflow** the ice is half as thick, so the place where the fish gather in winter (the warmer spring water) is the most dangerous ice.
 - **An open patch at an inflow** is the natural "hole" on a frozen pond. Water birds sit at it, and a person could fish from the bank there without walking on ice (judged).
 
@@ -76,8 +78,8 @@
 
 ### The look (#729, #731)
 
-- **A spring mouth in frost:** water steams only when the air is about 10 to 15 °C colder than the water (`breath-and-steam-in-cold.md`, #744, our sums tuned to sea smoke). For a 5.5 °C spring that means air below about −8 °C (−5 °C in humid, calm air).
-  - On the starter the coldest dawn at #8002 is about −7.5 °C, so its spring steams only faintly, on the stillest dawns of a cold spell. Steaming springs belong to colder worlds and high mountains.
+- **A spring mouth in frost:** water steams only when the air is about 10 to 15 °C colder than the water (`breath-and-steam-in-cold.md`, #744, our sums tuned to sea smoke). For a 5.5 °C spring that means air below about −8 °C (−5 °C in humid, calm air). For the starter's 10.9 °C spring at #8002, it means air below about −3 °C, or about 0 °C in humid, calm air.
+  - The coldest dawns at #8002 are about −2 °C, so its spring steams faintly on calm, damp dawns in a midwinter cold spell, and the mist clears by mid-morning.
   - When it does steam, frost and rime build on the stones and plants beside it (judged).
 - **The open length:** dark open water first; then ice shelves growing out from the banks; then full ice on the slow pools; fast riffles open longest.
 - **Green moss and cress** stay green in the spring run all winter (judged).
@@ -88,12 +90,12 @@
 - a pond frozen solid right up to a spring inflow;
 - a spring-fed brook iced over within a few metres of its source;
 - a frozen brook whose fast riffles freeze before its slow pools;
-- people walking or fishing on starter pond ice.
+- people walking or fishing on ice on the starter's low ground.
 
 ## How ours works today (read from the PR titles and notes, 8 Nov, not tested)
 
 - #719 (design): drinking water comes from the record. Springs work always, brooks by season, ice needs a hole, and there is no salt. #720 is step 1 of the code (flag off).
-- #731: the frozen water look on the liquid sheets (`--frozen-water`). The starter ponds get at most 2.8 cm of ice (spawn pond) and 5.6 cm (#8002), so they show a dark skim only.
+- #731: the frozen water look on the liquid sheets (`--frozen-water`). Its note gives the starter ponds at most 2.8 cm (spawn pond) and 5.6 cm (#8002), for the old 9 °C climate. At the grid's 14.4 °C the low ponds get almost none (#736).
 - #734: herds drink at dawn and dusk, and wolves wait there (flag off).
 - #737: animals on ice, ice holes sent to the client (protocol 97), and a thaw moat hook.
 - No spring-temperature or open-length rule was read in code for this page.
@@ -103,7 +105,7 @@
 - University of Minnesota, Why Daley Creek doesn't freeze. https://midge.cfans.umn.edu/news/why-daley-creek-doesn%E2%80%99t-freeze
 - *Northern Woodlands*, Springs in Winter (The Outside Story). https://northernwoodlands.org/pdf/TOS_Springs_in_Winter.pdf
 - Modeling the thermal balance between groundwater springs and river ice (abstract). https://core.ac.uk/works/9356593
-- Our sums: the open-water lengths, the starter's winter air, the steam at the spring.
+- Our sums: the open-water lengths, the starter's winter air at the grid's 14.4 °C, the steam at the spring.
 - **Judged:** heat loss h 20 to 40 W/m² per °C, half ice within 10 to 30 m of a spring, the order of freezing along a brook, animals and birds at open water, the square-root game rule.
 
 ## Fetches still to do
