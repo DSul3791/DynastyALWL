@@ -59,3 +59,28 @@ If D does not pass, nothing is changed in `params.json`, and the probe numbers d
 - `tools/watershed/glacial.py`: `_swath` with the below-the-surface rule; the balance ratio in the mass balance; `--start SNAPSHOT.npz`; snapshots keep `sediment_m`.
 - `tools/watershed/test_glacial.py` (new): the swath on a head wall and on a gentle floor.
 - `params.json` `glacial`: no change until the probe decides. Both settings default to off, so older manifests reproduce.
+
+## Probe result (Dino, Dave's PC, 8 Nov 19:10; manifests `manifest_A.json` to `manifest_E.json`)
+
+The main summit, from 1,426.2 m at ws580h's cycle 20, after 5 more cycles of the 41 kyr world:
+
+| probe | top after 5 cycles | loss | share of A's | 300 m floors, m a cycle |
+|---|---|---|---|---|
+| A as ws580h | 1,361.0 m | 65.2 m | 1 | 19 and 29 |
+| B swath below the ice surface | 1,353.7 m | 72.5 m | 1.11 | 18 and 30 |
+| C balance ratio 1.56 | 1,370.7 m | 55.5 m | 0.85 | 28 |
+| D both | 1,320.6 m | 105.6 m | 1.62 | 30 to 38 |
+| E glacial_K_ratio 0.667 | 1,413.0 m | 13.2 m | 0.20 | 5.5 (north-east) and 25 (south) |
+
+**D fails the rule**, and no probe passes it: E comes closest, at 0.20 of A's loss, but its south head still falls 25 m a cycle. `params.json` is not changed. Neither fault is the main cause. Fault 1's fix makes the loss worse: the floors under the summit fall faster when the walls above the ice keep their own small flux. Why is not yet known. Fault 2's fix helps a little, but the glaciers still reach the sea (`lowest_ice_m` 0.05).
+
+What the numbers show:
+
+- **The summit stands at the threshold slope over the ground 300 m out** (1,321 m over 860 m in D is 57 degrees, granite's threshold). So it falls as fast as that ground does. The faces met at the top by cycle 21, as in ws580h.
+- **The loss scales with the glacial erosion rate.** In A, the north-east floor falls about 1.2 mm a year of active ice. That is above every bedrock cirque floor rate in the compilation by Barr et al. (2019, Earth Surface Processes and Landforms, table 1): 0.1 to 0.9 mm a year (Ben Ohau Range, New Zealand, 0.29; Kråkenes, Norway, 0.5 to 0.6; Canadian Rockies 0.5 to 0.9). Only the rates from proglacial sediment run higher, and those measure sediment evacuation, not bedrock erosion. In E it falls 0.34 mm a year, inside that range. The same paper says a cirque grows about ten times slower after the cycle that first cuts it, so cycles 21 to 25 should sit at the low end. E's K is Hergarten's ratio of 2 applied to the river K before it was tripled for quick runs (4e-6), which is the time-base note above.
+- **Even at measured rates, line 4 cannot be met with no rock uplift.** E loses about 2.6 m a cycle. Carried through the remaining 14 cycles of the 41 kyr world and the 100 kyr world (2.4 times the active ice per cycle), that is about 130 m more, against the 9 m left under the 25 m line. The design's own headwall rates (0.5 to 1 km of retreat over the history, rule 6's history note) also take a horn whose faces have met down by hundreds of metres. Horns stay high where rock uplift keeps pace.
+
+## Next
+
+1. Glacial K is set from the measured cirque floor rate, not from the quick-run river K: `glacial_K_ratio` 0.667 (2 times 4e-6, over the river K of 1.2e-5). With the measured balance ratio of 1.56, this is ws580i's glacial stage, run in full from ws580h's B1 output. All of rule 6's lines (5 to 12) are judged as written, and line 4 is judged and reported. That run gives the summit loss curve at measured rates.
+2. Line 4 then needs rock uplift through the history (the second suspect above). Uplift comes from a design note first: its source, a measured rate, and where on the island it acts. Then code. The swath rule (fault 1) stays off until it is understood why it speeds the floors under a horn.
