@@ -34,7 +34,7 @@ Built facts: under rock, sky ambient and reflections fade (#365); with no light 
 3. **Looking back out:** the mouth glows white-bright, overexposed, framing the outside world; this is one of the most beautiful shots a cave gives, so keep it.
 4. **Skylights (lava tubes):** a hard shaft of daylight with dust or mist in it, a lit circle of floor with green growth, and dark all around. Rain falls through the shaft only (no rain elsewhere in caves, #304).
 5. **Torchlight is the cave's palette:** warm orange on wet rock, deep falloff in about 6 to 10 m, strong glints on wet surfaces and flowstone, long moving shadows from formations. A lantern is steadier and a little whiter. The light must make wet rock shine and dry rock look matt; that difference is how a player reads where water runs.
-6. **The one fantasy accent [Proposal]:** in deep chambers only, rare patches of a faintly glowing cave fungus (the game already lists "lumencap" among the fantasy plants) giving a cold blue-green glow too weak to see by. It rewards going deep and never lights a passage.
+6. **The one fantasy accent (decided by coordinator, Dave may overrule):** in deep chambers only, rare patches of a faintly glowing cave fungus (the game already lists "lumencap" among the fantasy plants) giving a cold blue-green glow too weak to see by. It rewards going deep and never lights a passage.
 
 ## 5. Rock: walls, floor, wet rock and flowstone
 
@@ -88,7 +88,7 @@ Caves have natural hazards (DESIGN_IDEAS 4.4: steep slopes, thin rock bridges, t
 2. **Floor:** dry, fine, pale dust and grit, with older ash patches and a ring of fire-blackened stones in some (someone camped here before); scattered animal bones in a few (a predator's lunch spot).
 3. **Roof:** smoke-blackened in a fan over the old fire ring; swallow or wren nests; spider webs in the dry corners.
 4. **The drip line:** a sharp edge where rain falls from the brow: wet dark soil and taller greener plants exactly along it, dry dust just inside. That one line makes a shelter believable.
-5. **[Proposal] Old marks:** on a few shelters on harder ground, faint, very old ochre hand marks or simple animal figures on the back wall, as a quiet trace of people long gone (the storybook part, and a journal discovery later). Rare, never more than one shelter in a wide area.
+5. **Old marks (decided by coordinator, Dave may overrule):** on a few shelters on harder ground, faint, very old ochre hand marks or simple animal figures on the back wall, as a quiet trace of people long gone (the storybook part, and a journal discovery later). Rare, never more than one shelter in a wide area.
 
 ## 10. Never, checks and pictures
 
@@ -98,4 +98,4 @@ Caves have natural hazards (DESIGN_IDEAS 4.4: steep slopes, thin rock bridges, t
 
 **Pictures to collect (Dave's own are best):** a spring flowing out of a limestone cave mouth, a rock shelter with a drip line, a lava tube with a skylight, wet scalloped limestone under torchlight, flowstone and rimstone pools, a bear den with a scratched entrance (wildlife photography), a still cave pool. Game pictures to take with the look rig when the cave work resumes: from 10 m inside a spring cave mouth looking in and looking out, the goblin den at 10 m and 3 m by torchlight, a rock shelter from 20 m outside.
 
-**For the owners (how, not what):** Sonny and Steve own the shape, carve and placement (R5 cave sizes); the client cave light owner picks how the zone fade and exposure clamp are made; the dressing (`cave_dressing.gd`) gets new rows for bear dens, the goblin hoard and scratches, shelter fire rings and drip-line plants when those are built. Two calls for Dave or the coordinator, with my recommendations: (1) the faint glowing cave fungus in deep chambers: **yes, rare**, because it rewards exploring without breaking "pitch black"; (2) old ochre marks in a few rock shelters: **yes, rare**, because it adds history and a later journal find at almost no cost.
+**For the owners (how, not what):** Sonny and Steve own the shape, carve and placement (R5 cave sizes); the client cave light owner picks how the zone fade and exposure clamp are made; the dressing (`cave_dressing.gd`) gets new rows for bear dens, the goblin hoard and scratches, shelter fire rings and drip-line plants when those are built. **Decided by coordinator, Dave may overrule:** (1) the faint glowing cave fungus in deep chambers: **yes, rare**, because it rewards exploring without breaking "pitch black"; (2) old ochre marks in a few rock shelters: **yes, rare**, because it adds history and a later journal find at almost no cost.
