@@ -19,6 +19,6 @@ The pack's American alligator is the last land-and-water animal not yet a specie
 ## What it reuses and what it adds
 Reuses: species row recipe (`tools/add_species.py`), model checks, the flock's water-level lookup, the defend and temperament system. Adds: one row key (`water`), a water branch in the habitat score and the movement step, and one client role (`swim`). The same pieces would later let the beaver, goose and moose swim; the goose and beaver rows only need `"water": {"swim": true}` and their swim clips named.
 
-## Open points for Dave
-- Alligators are New World animals; on the island they would read as a fantasy marsh beast. Keep the name "alligator" or call it a marsh drake or bog lizard?
-- Should it attack a swimming player in deep water (a real danger at river crossings) or only on the bank?
+## Decided (coordinator for Dave, 8 Nov 2026)
+- The name stays "alligator" (realistic, light fantasy exaggeration).
+- It attacks a swimming player and anyone at the water's edge: that is what makes a swamp dangerous. Its threat range applies in deep water as on the bank; a swimming player cannot outrun it.
