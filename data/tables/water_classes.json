@@ -1,38 +1,100 @@
 {
 	"table": "water_classes",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
-	"next_id": 6,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. record_code: the code the island water record (tools/watershed/record.py, R6) writes for this class; water_record.gd maps it to this id, so tile files keep the table's ids. land: the cell is ground for the climate and land types (a wetland or a dry-season bed), and biome and soil (names) are given to it after them (water_record.gd land_view and apply_wet_land; docs/water/stage_e_readers_design.md 6c). fresh: perennial fresh water.",
+	"next_id": 12,
 	"entries": [
 		{
 			"id": 0,
 			"name": "none",
-			"display": "None"
+			"display": "None",
+			"record_code": 0
 		},
 		{
 			"id": 1,
 			"name": "ocean",
-			"display": "Ocean"
+			"display": "Ocean",
+			"record_code": 1
 		},
 		{
 			"id": 2,
 			"name": "lake",
-			"display": "Lake"
+			"display": "Lake",
+			"record_code": 2,
+			"fresh": true
 		},
 		{
 			"id": 3,
 			"name": "river",
-			"display": "River"
+			"display": "River",
+			"record_code": 3,
+			"fresh": true
 		},
 		{
 			"id": 4,
 			"name": "marsh",
-			"display": "Marsh"
+			"display": "Marsh",
+			"record_code": 4,
+			"land": true,
+			"biome": "marsh",
+			"soil": "mud"
 		},
 		{
 			"id": 5,
 			"name": "estuary",
 			"display": "Estuary"
+		},
+		{
+			"id": 6,
+			"name": "swamp",
+			"display": "Swamp",
+			"record_code": 5,
+			"land": true,
+			"biome": "marsh",
+			"soil": "mud"
+		},
+		{
+			"id": 7,
+			"name": "fen",
+			"display": "Fen",
+			"record_code": 6,
+			"land": true,
+			"biome": "marsh",
+			"soil": "peat"
+		},
+		{
+			"id": 8,
+			"name": "bog",
+			"display": "Bog",
+			"record_code": 7,
+			"land": true,
+			"biome": "marsh",
+			"soil": "peat"
+		},
+		{
+			"id": 9,
+			"name": "seasonal_channel",
+			"display": "Seasonal channel",
+			"record_code": 8,
+			"land": true,
+			"soil": "gravel"
+		},
+		{
+			"id": 10,
+			"name": "seasonal_pond",
+			"display": "Seasonal pond",
+			"record_code": 9,
+			"land": true,
+			"soil": "silt"
+		},
+		{
+			"id": 11,
+			"name": "salt_marsh",
+			"display": "Salt marsh",
+			"record_code": 10,
+			"land": true,
+			"biome": "marsh",
+			"soil": "mud"
 		}
 	]
 }
