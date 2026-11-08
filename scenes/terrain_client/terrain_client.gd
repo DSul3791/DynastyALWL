@@ -76,6 +76,7 @@ const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
+const FrozenWater := preload("res://src/client/frozen_water.gd")   # --frozen-water: the liquid sheets' ice look (docs/design/frozen_water_look.md)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
@@ -2289,8 +2290,45 @@ func _update_weather() -> void:
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
 
+	if FrozenWater.on:
+		_update_frozen_water(group, now)
+
 	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
+
+
+# Frozen water look (docs/design/frozen_water_look.md, --frozen-water): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
+# near the player (their brooks stay open) and the ice holes go to every liquid sheet. --frozen-force=open[,thaw[,snow]] and --frozen-hole=x,z are
+# picture switches (a solid sheet the starter island never grows; a hole before the server sends them).
+var ice_holes: Array = []   # {"pos": Vector3, "until": game seconds}: the server's fishing holes, once it sends them (section 5; Steve)
+var _frozen_next_msec: int = 0
+var _frozen_force: Vector4 = Vector4(-2.0, 0.0, 0.0, 0.0)   # -2: not read yet
+var _frozen_hole: Array = []
+
+
+func _update_frozen_water(group: String, now: int) -> void:
+	if now < _frozen_next_msec:
+		return
+
+	_frozen_next_msec = now + 5000
+	var seed_value: int = int(world.get("master_seed", 0))
+
+	if _frozen_force.x < -1.5:
+		_frozen_force = FrozenWater.force_of(AppConfig.get_command_line_value("frozen-force", ""))
+		_frozen_hole = FrozenWater.hole_of(AppConfig.get_command_line_value("frozen-hole", ""))
+
+	var snow: float = sound.weather.ground_snow if sound != null and sound.weather != null else 0.0
+	var look: Vector4 = _frozen_force if _frozen_force.x >= 0.0 else FrozenWater.look(game_clock.seconds, group, maxf(_anchor.y, 0.0), seed_value, snow)
+	var pools: Array = []
+
+	if _cave_streams != null:
+		for tile in _cave_streams._pools:
+			pools.append_array(_cave_streams._pools[tile])
+
+	var air: float = WeatherScript.air_c(game_clock.seconds, group, maxf(_anchor.y, 0.0), seed_value)
+	var springs: PackedVector4Array = FrozenWater.springs_near(pools, _anchor, air, group)
+	var holes: PackedVector4Array = FrozenWater.holes_near(ice_holes + _frozen_hole, _anchor, game_clock.seconds)
+	LiquidSurface.set_ice_all(get_tree(), true, look, springs, holes)
 
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
