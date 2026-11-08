@@ -35,7 +35,7 @@ The run starts from the landform and uses:
 - the uplift (stage A2), the rock (A3) and the rain (A4);
 - stream power with deposition, solved implicitly;
 - the quick runoff of the one water budget (`runoff.py`: rain minus evaporation, times the rock's quick share), so chalk, limestone and dry slopes cut less;
-- channels that begin by the slope-area rule (steeper hollows need less water) and then run on downstream;
+- channels that begin by the slope-area rule (steeper and wetter hollows need less water; `channel_head`, from measured source areas, with at least `min_area_m2` of drainage) and then run on downstream;
 - loose cover over the rock: a river cuts through the cover at the cover's rate and the rest of the step at the rock's rate, so a thin cover never lets hard rock wear like soft;
 - an incision threshold: bedrock channels cut only where Q^m S passes `incision_threshold_m` (none in loose cover);
 - threshold hillslopes: no slope steeper than the threshold above its receiver, set by rock (`threshold_slope_deg_by_rock`: hard rock holds steeper walls) and `threshold_slope_deg` under loose cover; landslide debris joins the sediment;
@@ -59,6 +59,7 @@ Check `evolve.png` and the summary for:
 - branching valleys everywhere, with hills between them;
 - sediment on the valley floors and at the coast;
 - few closed hollows: a long river era fills them, and lakes come from named causes in R2b and R3, not from leftovers. The summary's `hollows` says whether each is held by a sediment sill (a fan or floodplain laid across a valley, a real cause) or by rock, and lists the ten deepest in world metres; the picture marks them red;
+- a drainage density near measured ones (`drainage_density_km_per_km2`; Tennessee Valley, at 760 mm of rain, is 7.3 km/km²), higher on wet steep ground and low on chalk, and no rock where nearly every cell is a channel;
 - hard rock wearing least: in `cut_by_start_rock_m`, granite and basalt show the smallest mean and 99th-percentile cut, and soft rock (shale, chalk, tuff) the largest;
 - no slopes above the threshold angle (`max_slope_deg`, `share_of_land_steeper_than_deg`), and `share_of_land_near_threshold` small: a large share would mean the uplift is too fast for the rock, so landslides, not rivers, set the form;
 - a summit near the landform's and tall peaks kept: `land_height_percentiles_m` close to `landform_height_percentiles_m` at 99 and 99.9, and `local_relief_2km_on_high_ground_m` above the landform's (valleys cut deep between the peaks); with uplift, `last_tenth_summit_change_m_per_kyr` near zero (steady state);
