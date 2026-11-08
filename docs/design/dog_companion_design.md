@@ -111,3 +111,36 @@ These settle small points the sections above left open. The coordinator chose th
 - **Never frozen:** a companion is never frozen by distance or sent off for its off hours. When its owner logs off it leaves the world, and it is made again beside them when they return. It steps over snares.
 - **Hits:** a hit from its owner does nothing. Other players' hits hurt it like any animal's, pending Dave's player-versus-player rules. A killed companion's record is kept, with a "died" event.
 - **At bond 0** the record is kept with no owner and a "lost" event, and that player can befriend a new stray.
+
+## 11. Wild animals and the dog (MikeW's `DOG_REACTIONS.md`, 8 Nov 2026)
+
+MikeW's plan (his branch `claude/mikew-eye-placement`, `docs/design/DOG_REACTIONS.md`) treats the player's dog as a second presence for wild animals. Everything here uses states the client already draws.
+
+- **The presence:** each tick, every companion dog (`dogs.species`) is a presence `[id, position, barking]`. Barking means it barked within `dogs.bark_s` (3 s). Wild animals sense it as they sense a standing player, with the wind's scent and the ground in the way. It is never crouched, and a barking dog is heard `dogs.bark_x` (2) times as far.
+- **Species rows** get a `dog` block: `notice_m`, `flee_m`, `reaction`, and `attack_m` for a stand. The first values are MikeW's:
+
+  | Animal | notice_m | flee_m | reaction | attack_m |
+  |---|---|---|---|---|
+  | deer, elk, pronghorn | 60 | 40 | flee | |
+  | rabbit | 30 | 20 | flee | |
+  | fox, raccoon, mink | 25 | 15 | flee | |
+  | boar, warthog | 25 | | stand | 8 |
+  | bear, black bear | 30 | | stand (at its den too) | 10 |
+  | moose, cow | 30 | 20 | stand, mothers with young only, otherwise flee | 12 |
+
+- **Flee:** within `flee_m` the animal bolts and alarms its herd and its alarm group. Within `notice_m` it watches the dog (ALERT, facing it). A player close enough to spook it comes first.
+- **Stand:** within `notice_m` it warns at the dog (state 10, `big_game.warn`). The dog is its foe (`foe_dog`). It keeps warning while the dog stays outside `attack_m`, calms if the dog goes past `calm_m`, and charges once the dog comes within `attack_m`. The charge hits the dog through the damage hook, and a player in its path is still hit. So a dog can bring a bear onto its owner.
+- **Wolves:** a pack that is prowling, stalking or waiting goes for a dog within `distract_m` (80 m) before any deer. At the dog it bites every `wolves.dog_bite_s` (1 s) for `dog_bite` (25), through the damage hook. A dead dog is the companion's death (section 10). `wolves.dog_prey` false turns this off.
+- **Goblins:** a barking dog within `dog_back_m` (20 m) makes a goblin step back `dog_back_step_m` (5 m), face the dog (ALERT) and hold `dog_back_s` (4 to 8 s). Then it comes on again. Two barking dogs make it flee. A silent dog does nothing, and a goblin already fighting is not stopped.
+- **Left for later:**
+  - MikeW's "a dog beside its armed owner makes a goblin flee": the server does not yet know what a player holds outside the wolves' `spear` flag;
+  - the dog fighting back;
+  - dogs among the senses for flocks and thieves.
+
+**Test:** `test_dog_reactions`.
+- a deer watches a dog at 50 m and bolts at 39 m;
+- a rabbit 35 m away ignores a silent dog but flees a barking one;
+- a goblin backs off, holds, faces the dog, comes on again once it is quiet, and flees two dogs;
+- a bear warns, keeps warning at 25 m, then charges and hits the dog at 9 m;
+- a moose with no calf flees;
+- a prowling pack goes for the dog and bites it.

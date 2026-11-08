@@ -8,6 +8,7 @@ extends RefCounted
 # front (+Z), chest 0.9 x 0.55 x 0.55, block 0.6 m across and 0.55 high, fire ring 0.84 m across.
 # Triangle budget: lean-to about 900, chest about 400, block about 300, fire ring about 500.
 
+const FireWeather := preload("res://src/client/fire_weather.gd")   # --firelight-weather: fire lights in fog and snow
 const WOOD_DARK := Color(0.30, 0.20, 0.11)
 const WOOD := Color(0.42, 0.29, 0.16)
 const WOOD_PALE := Color(0.62, 0.48, 0.30)
@@ -752,6 +753,7 @@ const FLAME_TONGUES := {
 const FIRE_LIGHT := {1: [3.5, 1.0], 2: [7.0, 2.0], 3: [14.0, 4.0]}
 const FIRE_LIGHT_COLOR := {1: Color(1.0, 0.64, 0.34), 2: Color(1.0, 0.62, 0.3), 3: Color(1.0, 0.54, 0.2)}
 const LIGHT_FALLOFF := 2.0
+const FIRE_HALO_SCALE := {1: 1.0, 2: 1.2, 3: 1.5}   # the fog halo round a fire, as a share of a torch's (firelight_weather_design.md)
 # The stone ring and ash patch scale with the fire: a small ring for a few sticks, a wide one for logs.
 const FIRE_RING_SCALE := {1: 0.6, 2: 1.0, 3: 1.3}
 
@@ -898,6 +900,7 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		light.position = Vector3(0.0, 0.8, 0.0)
 		light.visible = false
 		root.add_child(light)
+		FireWeather.register(light, FIRE_HALO_SCALE[tier])   # --firelight-weather: reach and halo follow fog and snow
 
 	return root
 
@@ -1508,6 +1511,7 @@ static func add_hooks(model: Node3D, fire_node: Variant, smoke: Variant, fx_scal
 		light.position = spot + Vector3(0.0, 0.25, 0.0)
 		light.visible = false
 		model.add_child(light)
+		FireWeather.register(light, 1.2 * maxf(fx_scale, 0.6))   # --firelight-weather (a forge or hearth fire)
 
 		# Dave's "Fire_Coals" is a flat untextured card; swap it for the shared coals and flame tongues at the fire_node marker.
 		var card: Node3D = model.find_child("Fire_Coals", true, false) as Node3D

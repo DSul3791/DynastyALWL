@@ -33,6 +33,7 @@ extends RefCounted
 # decides what lives there.
 
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const SpawnPickerScript := preload("res://src/worldgen/tile/spawn_picker.gd")
 
 const OCEAN := 1
 const LAKE := 2
@@ -63,6 +64,7 @@ var _heights: PackedFloat32Array
 var _water: PackedByteArray
 var _soil: PackedByteArray
 var _flow: PackedFloat32Array
+var _surface: PackedFloat32Array   # water surface per sample (empty: unknown), for the spawn picker
 var _river_start_cells: float = 0.0   # drainage cells where a river starts (water river_start_km2)
 var _geology
 var _limestone: int = -1
@@ -89,9 +91,11 @@ func setup(settings, rules: Dictionary, tables) -> void:
 # starter_info: bay details for starter tiles ({} otherwise), as build_tile passes to TileWater.
 # river_mouth: world position where the starter river meets the bay (starter tiles).
 # flow: upstream cells per sample (TileWater.flow); sizes the spring caves (empty: one spring passage each).
-func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteArray, soil: PackedByteArray, geology, starter_info: Dictionary = {}, river_mouth: Vector2 = Vector2(NAN, NAN), flow: PackedFloat32Array = PackedFloat32Array()) -> void:
+# surface: the water surface per sample (TileWater.water_surface), read by the spawn picker (empty: the wet cell's ground).
+func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteArray, soil: PackedByteArray, geology, starter_info: Dictionary = {}, river_mouth: Vector2 = Vector2(NAN, NAN), flow: PackedFloat32Array = PackedFloat32Array(), surface: PackedFloat32Array = PackedFloat32Array()) -> void:
 	_tile = tile
 	_flow = flow
+	_surface = surface
 	_heights = heights
 	_water = water_class
 	_soil = soil
@@ -1569,6 +1573,7 @@ func _make_starter(info: Dictionary, river_mouth: Vector2) -> void:
 				best = index
 
 	if best < 0:
+		_pick_spawn(target)
 		return
 
 	var spawn: Vector2 = _point_of(best)
@@ -1610,6 +1615,27 @@ func _make_starter(info: Dictionary, river_mouth: Vector2) -> void:
 		_keep_clear.append([block, float(_rules["town_clear_m"])])
 
 	_keep_clear.append([spawn, float(_rules["town_clear_m"])])
+	_pick_spawn(target)
+
+
+# The spawn picker (Stage E M1 step 4, stage_e_readers_design.md 6e): with starter.spawn_picker.on, the spawn is picked by rule near the bay head
+# and written as starter.spawn_picked = [x, ground + 1, z], which spawn_point.gd reads in place of its hand-set OVERRIDE. Off until the R6
+# rebake, so today's tiles have no spawn_picked and keep their bytes.
+func _pick_spawn(target: Vector2) -> void:
+	var rules: Dictionary = _rules["starter"].get("spawn_picker", {})
+
+	if not bool(rules.get("on", false)):
+		return
+
+	var picked: Dictionary = SpawnPickerScript.pick({"heights": _heights, "water": _water, "surface": _surface, "flow": _flow, "n": _samples, "spacing": _spacing,
+		"origin": Vector2(_x0, _z0)}, target, rules)
+
+	if not bool(picked["ok"]):
+		push_warning("tile %s: no spot passes the spawn picker; the spawn stays at spawn_point.gd OVERRIDE" % str(_tile))
+		return
+
+	starter["spawn_picked"] = [snappedf(float(picked["x"]), 0.1), snappedf(float(picked["ground"]) + 1.0, 0.1), snappedf(float(picked["z"]), 0.1)]
+	_keep_clear.append([Vector2(float(picked["x"]), float(picked["z"])), float(_rules["town_clear_m"])])
 
 
 # ==================================================

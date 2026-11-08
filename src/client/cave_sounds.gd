@@ -43,6 +43,7 @@ var rock_enclosure: float = 0.0         # the same, rock only (no building floor
 var drips_played: int = 0
 var interior_floor: float = 0.0        # a building sets this (interior_sounds.gd): enclosure never below it, no drips from it
 var forced: float = -1.0                # --cave=0..1 forces it (headless checks), -1 measures
+var measure_flying: bool = false       # the shot runner sets this: its camera flies, but a cave picture must be lit as a cave (Dino 8 Nov 2026: every rig cave shot read "open")
 var depth_m: float = 0.0                # metres walked inside rock (see above)
 var wet: float = 0.0                    # 0 dry cave to 1 dripping ceiling overhead, held wet_hold_s after the last leak message
 var air: Dictionary = {}                # data/sound/cave_air.json
@@ -127,7 +128,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool = false) -> void:
 
 		if forced >= 0.0:
 			_target = forced
-		elif flying:
+		elif flying and not measure_flying:
 			_target = 0.0                                       # no rays while flying (admin look-around)
 		else:
 			_target = _measure(body)

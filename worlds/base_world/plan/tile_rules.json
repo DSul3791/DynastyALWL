@@ -8,10 +8,14 @@
 		"margin_samples": 400
 	},
 	"summit": {
-		"note": "A real peak on every summit of the world map (WorldElevation.summits): adds spire_share of the summit height as a tent that reaches radius_factor x that far, sharp for power above 1; capped at max_m. See GENERATOR_NOTES.md.",
+		"note": "A real peak on every summit of the world map (WorldElevation.summits): adds spire_share of the summit height as a tent that reaches radius_factor x that far, sharp for power above 1; capped at max_m. See GENERATOR_NOTES.md. 8 Nov 2026 (peaks that can stand, docs/water/watershed_rebuild_design.md A1): radius_factor 3.2 to 4.0 and power 1.7 to 1.3, so the tip slope (power / radius_factor) is 0.33 instead of 0.53; with the sketch's standing cones (sketch_rules standing.slope 0.32) the summit stays under 35 degrees, which any rock holds. spur_reach: along the summit's spurs (sketch_rules standing.tip_spurs) the tent reaches that much farther (gentler), so the spurs run on as ridges and the point is not round. power 2 (8 Nov 2026, was 1.3): the tent's slope then runs out to nothing at its foot at a steady rate; below 2 it drops to nothing in the last few metres and drew a ring round every summit (run 4edbc722 zooms). Near the point every direction lies on the spurs (WorldElevation.spur_weight_at measures across a spur in metres), so the tip slope is power / (radius_factor x (1 + spur_reach)), about 0.31, and the top is round, not a star of thin rays.",
 		"spire_share": 0.16,
-		"radius_factor": 3.2,
-		"power": 1.7,
+		"spur_reach": 0.6,
+		"head_depth_share": 0.4,
+		"head_peak_share": 0.35,
+		"head_note": "Valley heads, in the watershed model's landform only (tile_baker landform_only; design A1 rule 6, docs/water/rule6_build_plan.md change 1, 8 Nov 2026): between the summit's spurs the tent is hollowed by head_depth_share x its rise at its deepest, head_peak_share of its reach from the top, as (1 - spur weight) x sin^2, nothing at the top or at the tent's foot, so 3 to 5 valley heads converge on each peak for the rivers and then the ice to cut into cirques. Both judged: on the starter summit (world map 1,266 m) the heads are about 81 m deep, about 284 m from the top; the run's peaks.py landform lines 1 to 3 check that they show, make no pits and leave the tops as they were. The live game's ground is unchanged.",
+		"radius_factor": 4.0,
+		"power": 2.0,
 		"max_m": 3950
 	},
 	"rolling": {
@@ -594,6 +598,17 @@
 			"mountain_reduction": 0.7
 		},
 		"features": {
+			"summit_pluton": {
+				"note": "Hard rock under the tall peaks (docs/water/watershed_rebuild_design.md, A1 rule 3, 8 Nov 2026): every summit whose ground stands at or above min_summit_m stands on a granite intrusion centred on it. The ground's summit is the world-map summit plus the tile tent on it (summit spire_share, capped at max_m), the height the rivers and the ice meet; run ws580g (8 Nov) tested the world-map height alone, and the second massif (about 860 m there, 977 m on the ground) kept a chalk top that lost about 320 m to the ice. Its roof is roof_above_summit_share above the summit at the centre (so above the summit tent too) and falls to edge_share of the summit height at the ellipse edge, so the upper massif is granite. Not in volcanic cells. Not one disc (8 Nov 2026, after run c793c47c wore a round dome in a circular cliff ring): a core of core_radius_share x the radius under the summit, then up to lobes.max lobes, one along each of the summit's spurs (sketch_rules standing.tip_spurs), each an ellipse of radius_share x the radius stretched along the spur (aspect) and centred offset_share x the radius out, so the granite runs under the ridges and its edge is lobed, as real batholiths are clusters of plutons.",
+				"min_summit_m": 900,
+				"core_radius_share": [0.6, 0.75],
+				"lobes": {"max": 4, "radius_share": [0.4, 0.6], "offset_share": [0.4, 0.65], "aspect": [0.45, 0.75], "angle_jitter_rad": 0.3},
+				"radius_m": [1800, 2600],
+				"aspect": [0.7, 1.0],
+				"roof_above_summit_share": 0.2,
+				"edge_share": 0.5,
+				"depth_m": [2500, 4000]
+			},
 			"pluton": {
 				"granite": [
 					1,
