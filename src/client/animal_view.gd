@@ -637,6 +637,16 @@ func _process_body(delta: float) -> void:
 					_animate_model(bird, b, state, model_speed, delta)
 			else:
 				_animate_model(node, b, state, model_speed, delta)
+
+				# Clip-rate changes the looks asked for this frame (the ice's careful steps, the wounded limp), applied after
+				# _animate_model has set the clip's rate, so they are not overwritten (REVIEW_NOTES.md bug pass).
+				if b.has("speed_x"):
+					var sped: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
+
+					if sped != null and sped.speed_scale > 0.0:
+						sped.speed_scale *= float(b["speed_x"])
+
+					b.erase("speed_x")
 			_emit_steps(b, node, state, model_speed)
 			continue
 
@@ -3444,7 +3454,6 @@ func _hunt_motion(node: Node3D, b: Dictionary, speed: float, delta: float) -> vo
 	var limp: float = 0.0
 
 	if speed > 0.3 and (bool(b.get("hip_hit", false)) or bool(b.get("wounded", false))):
-		var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
 		var beat: float = float(b.get("gait", 0.0)) * TAU
 		limp = absf(sin(beat))
 
@@ -3456,8 +3465,7 @@ func _hunt_motion(node: Node3D, b: Dictionary, speed: float, delta: float) -> vo
 			roll += 0.05 * sin(beat)
 			drop += 0.03 * limp
 
-			if player != null and player.speed_scale > 0.0:
-				player.speed_scale *= 0.85 + 0.15 * limp      # an uneven, slower stride
+			b["speed_x"] = float(b.get("speed_x", 1.0)) * (0.85 + 0.15 * limp)      # an uneven, slower stride (applied after the clip, below)
 
 	rig.rotation.x = pitch
 	rig.rotation.z = roll
