@@ -22,7 +22,7 @@ One switch, `--canopy-drip`, on top of `--rain-look`. It stays off until Dino's 
 - **Filling, while rain falls (rain over 0.05):** the store gains the rain's own rate (rain 0..1 is 50 x rain^2.5 mm/h, as the puddles use) until it reaches the cap. So a light shower half-fills a broadleaf, and steady rain (17 mm/h) fills a conifer in about 10 game minutes.
 - **Emptying, after the rain:**
   - `dS/dt = -(0.04 + 0.01 x S) mm per game minute`, times `(1 + 2 x wind) x (1 + sun)`;
-  - a full conifer (3 mm) drips for about 53 game minutes on a still grey day, a full broadleaf (1.5 mm) for about 28 and a light shower's 0.75 mm for about 15. That is Jamie's 15 to 60, longer in calm air;
+  - a full conifer (3 mm) drips for about 56 game minutes on a still grey day, a full broadleaf (1.5 mm) for about 32 and a light shower's 0.75 mm for about 17. That is Jamie's 15 to 60, longer in calm air;
   - a sunny breeze takes it to a few minutes.
 - **The drip strength** the drops and the sound use is `min(S / 1.5, 1)`.
 
@@ -40,7 +40,7 @@ One switch, `--canopy-drip`, on top of `--rain-look`. It stays off until Dino's 
 ## 3. Never-see and never-hear checks (`test_canopy_drip.gd`)
 
 1. A two-minute shower dripping as long as a day of rain: after 2 game minutes of rain 0.3 (about 2.5 mm/h) the store is under 0.15 mm, so it is dry within about 4 minutes.
-2. A conifer and a broadleaf dripping the same: full stores drip about 53 and 28 game minutes on a still grey day.
+2. A conifer and a broadleaf dripping the same: full stores drip about 56 and 32 game minutes on a still grey day.
 3. Drips on in a sunny breeze an hour later: with sun 1 and wind 0.5 the conifer's store is gone within 15 game minutes.
 4. A silent forest just after the rain: a drip strength over 0.05 lets the drip sound play with rain 0.
 
