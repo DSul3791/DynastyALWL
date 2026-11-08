@@ -29,6 +29,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Coat ruffle | fur moves in the wind (shader) | `ruffle_cm` | `coat_ruffle` (**off**) | COAT_SHADER.md |
 | Coat dust | dusty after a roll, washed by water and rain | `roll_states` | `coat_dust` (**off**) | COAT_SHADER.md |
 | Young animals | young at their species size, quick short steps, newborn wobble | `young_look` | `young_gait` (**off**) | YOUNG_ANIMALS.md |
+| Young and mother | size by age (birth to 180 days, all 22 species with young); young look to the mother and nurse | `young_look.grown_scale` | `young_gait`, `young_follow` (**off**) | YOUNG_ANIMALS.md part 2 |
 | Water | drinking rings at the bank, swimming low and paddling, shake-off | `water_swim`, `swim_depth_x` | `water_life` (**off**) | ANIMALS_AND_WATER.md |
 | Hunch (state 20) | head low, ears back, tail still against the weather; storm_ahead stops the fly swish | `state_poses` "20" | none (server state) | ANIMALS_AND_WATER.md, Steve #646 |
 | Idle variety | scratch, shake, stretch after lying, groom, lick, roll, paw, look round, from a weighted table | `idles` | `idle_variety` (**off**) | IDLE_VARIETY.md |
