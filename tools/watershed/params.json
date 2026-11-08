@@ -7,6 +7,13 @@
 		5
 	],
 	"model_step": 2,
+	"world": {
+		"_note": "The island's place on the world grid (world.py; WORLD_FORMAT_SPEC.md sections 2 and 3; world_settings.gd latitude_for_z; Dave 8 Nov 2026: 21 by 21 tiles, the centre row the equator). The tile size, rows and equator row are read from world_json, the game's own world. Latitude fraction = -(z - equator z) / half the north-south span, wrapped; degrees = fraction x degrees_at_pole, 90 at the wrap seam (8.57 degrees a row; Jamie 8 Nov). The starter island's middle (z 69,120 m, row 4) is at 34.3 S. shady_bearing_north_deg and shady_bearing_south_deg: the middle of the shady lee quarter (facing the pole, in the lee of the westerlies), where the snowline sits lowest and cirques are busiest, 45 (NE) north of the equator and 135 (SE) south of it; glacial.py's aspect term (aspect_ela_m) and peaks.py's shady/sunny lines take the one for the island's latitude (docs/water/rule6_build_plan.md).",
+		"world_json": "worlds/base_world/world.json",
+		"degrees_at_pole": 90.0,
+		"shady_bearing_north_deg": 45.0,
+		"shady_bearing_south_deg": 135.0
+	},
 	"seed": 9137,
 	"uplift": {
 		"_note": "Stage A2: where and how fast the land rose (m/yr): high where the landform is high, from the landform smoothed at smooth_m, so it varies only at the scale of the massifs. Nothing is added at hill scale. Sonny 7 Nov: the first R1 run's plane-wave variation (2.4 and 1.1 km) showed as regular blobs, an arbitrary pattern the watershed document rules out (section 11: variety from conditions, not randomisation). Hill-scale variety comes from the folded rock bands (hard and soft beds), the rain and the drainage itself.",
@@ -141,9 +148,7 @@
 		"aspect_ela_m": 75.0,
 		"aspect_smoothing_m": 240.0,
 		"aspect_full_slope_deg": 30.0,
-		"snapshot_after_cycles": [1, 3, 10, 20, 39, 44, 49],
-		"_shady_note": "shady_bearing_deg: the middle of the shady lee quarter (facing the pole, in the lee of the westerlies), where the snowline sits lowest and cirques are busiest: 45 (NE) north of the equator, 135 (SE) south of it. The starter island is at 57 S (design A4, one sky). Read by peaks.py and by glacial.py's aspect term (aspect_ela_m; docs/water/rule6_build_plan.md).",
-		"shady_bearing_deg": 135.0
+		"snapshot_after_cycles": [1, 3, 10, 20, 39, 44, 49]
 	},
 	"lakes": {
 		"_note": "Stage C1 and C2 (lakes.py, step R3). open_water_factor: lake evaporation over grass PET. Penman (1948) found grass loses about 0.6 (winter) to 0.8 (summer) of open-water evaporation, 0.7 at the equinoxes, so open water is about PET / 0.7. Seepage through a lake floor (mm/yr over the lake's area) is a stand-in until R4's groundwater solve gives each lake its exchange from the head: on cave-forming limestone and marble a floor leaks through open passages (swallow holes), so it is large; on other soluble rock (chalk) moderate; elsewhere lake floors seal with fine sediment and it is 0. None of the three is from a source yet. cirque_floor_below_ela_m: an ice-scoured hollow whose floor lies above (snowline minus this) counts as a cirque; cirque floors sit near the snowline (they are used to reconstruct it), lower ice-scoured hollows are rock basins in the troughs. Not from a source yet.",
@@ -153,8 +158,97 @@
 		"seepage_mm_yr_other": 0.0,
 		"cirque_floor_below_ela_m": 100.0
 	},
+	"groundwater": {
+		"_note": "Stages C3, C4, C6 (groundwater.py, step R4). Permeability classes and geometric-mean permeabilities k (m2, stored as -log10 k) from Gleeson et al. 2011 (GRL 38, doi:10.1029/2010GL045565), read from the table reproduced after them in a University of Victoria thesis; K = k x 7.5e6 m/s. Rock to class: carbonate for limestone, marble and chalk; sandstone coarse siliciclastic; shale and coal (coal measures) fine siliciclastic; granite and slate crystalline; basalt and tuff volcanic; loose sediment coarse unconsolidated, till fine. treeline_m 620 is the game's own (tile_land_types.gd). Not from a source yet, flagged: thickness_m (one transmissive thickness, 50 m); karst_factor (100: carbonate permeability rises with scale where conduits join, Gleeson et al. 2011 note it, the factor is a guess); perennial_baseflow_m3_s (1 L/s of dry-season groundwater flow keeps a channel running); intermittent_quick_area_m2 (20 ha of quick runoff carries a seasonal stream); spring_m3_s (0.5 L/s within two cells makes a head a spring rather than a seep); wetland_depth_m (table within 0.3 m) and wetland_slope_deg (3 degrees); tidal_band_m and salt_marsh_max_from_sea_m for salt marsh; floodplain_reach_m (marsh and swamp within 50 m of a perennial river or lake on alluvium); swamp_min_depth_m (the drier fringe where woody plants hold); bog_rain_mm_yr (blanket bog needs about 1,000 mm and 160 rain days a year; to verify).",
+		"cell_m": 64.0,
+		"thickness_m": 50.0,
+		"karst_factor": 100.0,
+		"seepage_iterations": 40,
+		"rock_class": {
+			"limestone": "carbonate",
+			"marble": "carbonate",
+			"chalk": "carbonate",
+			"sandstone": "coarse siliciclastic",
+			"shale": "fine siliciclastic",
+			"coal": "fine siliciclastic",
+			"granite": "crystalline",
+			"slate": "crystalline",
+			"basalt": "volcanic",
+			"tuff": "volcanic",
+			"sediment": "coarse unconsolidated"
+		},
+		"log10_k_m2_negated": {
+			"unconsolidated": 13.0,
+			"coarse unconsolidated": 10.9,
+			"fine unconsolidated": 14.0,
+			"siliciclastic": 15.2,
+			"coarse siliciclastic": 12.5,
+			"fine siliciclastic": 16.5,
+			"carbonate": 11.8,
+			"crystalline": 14.1,
+			"volcanic": 12.5
+		},
+		"perennial_baseflow_m3_s": 0.001,
+		"intermittent_quick_area_m2": 200000.0,
+		"spring_m3_s": 0.0005,
+		"wetland_depth_m": 0.3,
+		"wetland_slope_deg": 3.0,
+		"tidal_band_m": 1.5,
+		"salt_marsh_max_from_sea_m": 300.0,
+		"floodplain_reach_m": 50.0,
+		"treeline_m": 620.0,
+		"swamp_min_depth_m": 0.1,
+		"bog_rain_mm_yr": 1000.0,
+		"_stores_note": "Each spring's own store (springstore.py; docs/water/spring_store_build_plan.md sections 1 to 8). near_surface: on tight rock the water moves in the soil and head and the broken top of the rock, zones 1 to 3 measured below the rock's top (K from GSI 2015 and BGS OR/15/028; the soil layer, zone 2's depth and S_y judged; all via Jamie's #713, docs/knowledge/groundwater-layers-recession.md): T about 0.715 m2/day under 1 m of soil, near the Dalradian specific capacity of 0.8 m3/day per metre. specific_yield by rock (Jamie's #686; Johnson 1967 for loose sediment, field values for fractured and karst rock, not lab porosity), read at the water table, not as the column's mean (#713). karst_stores (#713): on cave-forming rock 0.55 of the recharge goes through conduits (1 - i, with Mangin's i 0.20 to 0.65 from Olarinoye et al. 2022, the middle judged) that empty in about 5 days (2 to 10, judged from 3 or 4 days of storm flow; pipe flow, so not Rorabaugh), the rest drains through the matrix to the nearest conduit, Rorabaugh with matrix_sy 0.003, matrix_path_m 300 and matrix K 1e-7 m/s (judged by Jamie inside the Floridan range 1.9e-8 to 3e-5 m/s, #713 a36c3fa0) over matrix_thickness_m 50, about 250 days. own_block_path_share: water born inside a discharge block walks half a block to its outflow (judged).",
+		"near_surface": {"rocks": ["granite", "slate", "basalt", "shale", "coal"], "soil": {"thickness_m": 1.0, "k_m_day": 0.3, "sy": 0.05},
+		                 "zones": [{"to_m": 2.0, "k_m_day": 0.1, "sy": 0.02}, {"to_m": 15.0, "k_m_day": 0.01, "sy": 0.005}, {"to_m": 100.0, "k_m_day": 0.001, "sy": 0.002}]},
+		"specific_yield": {"limestone": 0.015, "marble": 0.015, "chalk": 0.01, "sandstone": 0.08, "shale": 0.01, "coal": 0.01, "granite": 0.002,
+		                   "slate": 0.002, "basalt": 0.01, "tuff": 0.03, "sediment": 0.22, "fine unconsolidated": 0.03, "coarse unconsolidated": 0.22},
+		"karst_stores": {"conduit_share": 0.55, "conduit_tau_days": 5.0, "matrix_sy": 0.003, "matrix_k_m_s": 1e-7, "matrix_thickness_m": 50.0, "matrix_path_m": 300.0},
+		"own_block_path_share": 0.5
+	},
+	"network": {
+		"_note": "Stage C5, C7, C8 (network.py, step R5; design R5 method items 1 to 12). Sourced: stream density (Plynlimon perennial network 2.0 to 2.4 km/km2, Kirchner 2009 via docs/knowledge/upland-streams-numbers.md #612); QMED over mean flow by area and permeability, area exponent -0.15, FARL exponent (Flood Estimation Handbook 2008 via #612: 50/36/25 at 1/10/100 km2 on tight peat over granite or slate, 22/16/11 permeable; QMED proportional to FARL^3.445); bankfull 0.9 QMED (judged in the design); width coefficients by bank trees (Hey and Thorne 1986 via #612); depth 0.24 Q^0.4 (Parker et al. 2007 via #612); at-a-station width and depth exponents 0.26 and 0.40 (Leopold and Maddock 1953, mean of their stations); reach-type slopes (Montgomery and Buffington 1997); braiding S Q^0.44 > 0.0125 in m3/s (Leopold and Wolman 1957, converted from 0.06 in cfs); meander wavelength 11 widths (7 to 15), amplitude 2.7 W^1.1, bend radius at least 2 widths, riffles every 5 to 7 widths (rivers-floodplains #599); levees 0.2 bankfull depth (Albernaz et al. 2020 via #599); falls 10 times steeper than the reach above (design item 8); deltas where sand supply over 90 Hs^2.4 Tp^0.2 passes 1 (Nienhuis et al. 2015 via #599); fetch-limited waves (Shore Protection Manual, CERC 1984). Judged or flagged, to verify: season shapes (rain_swing_share 0.33, wettest phase about five months after the warmest, et_swing_share 0.9 for an upland where winter evaporation is near nothing, baseflow_recession_days 45); qmed bfi_tight 0.4 and bfi_permeable 0.9 as the ends the FEH figures stand for; area_floor_km2 0.5 (the FEH's smallest catchments); farl_alpha_floor 0.05; the incised test (valley floor under 3 bankfull widths); bank trees from the treeline until the biome map is read; loss bed_k_m_s 1e-5 (riverbed conductivities span 1e-9 to 1e-2 m/s, Calver 2001; a middle value) and disconnected_depth_m 1; wavelength by bank (8 cohesive, 13 loose gravel, 11 otherwise, inside the 7 to 15 range); falls min_slope 0.2, min_height_m 3, above_window_m 200, hard_ratio 0.5 (lip rock at least twice as hard), trough_ice_m 50 and hanging_ice_ratio 0.5, plunge_share 0.5 (design: judged), staircase_tolerance 0.2; coast wind_stress_m_s 10 (reproduces #599's 2 kg/s at 2 km and about 100 kg/s at 50 km), sand_share 0.3 of the eroded load, the outlet kind thresholds; report basins 6. season.store_bands (judged): the reaches' base_stores rows group the groundwater from upstream into two tau bands a decade over the tau bins' range, each band's tau its flow-weighted geometric mean and its twelfths summed exactly from each cell's own stores (docs/design/spring_to_river_flow.md section 2).",
+		"stream_density_km_per_km2": 2.25,
+		"season": {"samples": 24, "rain_swing_share": 0.33, "rain_wettest_year_phase": 0.8, "et_swing_share": 0.9, "baseflow_recession_days": 45.0,
+		           "tau_bins": {"count": 48, "min_days": 0.1, "max_days": 36525.0},
+		           "store_bands": {"per_decade": 2, "min_days": 0.1, "max_days": 36525.0}},
+		"qmed": {"over_mean_at_10km2_tight": 36.0, "over_mean_at_10km2_permeable": 16.0, "area_exponent": -0.15, "area_floor_km2": 0.5,
+		         "bfi_tight": 0.4, "bfi_permeable": 0.9, "farl_exponent": 3.445, "farl_alpha_floor": 0.05, "bankfull_over_qmed": 0.9},
+		"size": {"width_coefficient": {"grass": 4.33, "trees_1_5": 3.33, "trees_5_50": 2.73, "trees_over_50_or_incised": 2.34},
+		         "depth_coefficient": 0.24, "depth_exponent": 0.4, "at_station_width_exponent": 0.26, "at_station_depth_exponent": 0.40,
+		         "incised_floor_widths": 3.0},
+		"loss": {"bed_k_m_s": 1e-5, "disconnected_depth_m": 1.0},
+		"slope_window_widths": 10.0, "slope_window_min_m": 96.0,
+		"valley_floor": {"above_bed_depths": 2.0, "max_m": 2000.0, "ahead_cells": 3},
+		"reach_slope": {"cascade": 0.065, "step_pool": 0.03, "plane_bed": 0.015, "dune_ripple": 0.001},
+		"loose_cover_m": 1.0,
+		"braid": {"threshold": 0.0125, "exponent": 0.44},
+		"meander": {"wavelength_widths": 11.0, "wavelength_widths_cohesive": 8.0, "wavelength_widths_loose": 13.0, "amplitude_coefficient": 2.7,
+		            "amplitude_exponent": 1.1, "min_bend_radius_widths": 2.0, "riffle_spacing_widths": 6.0},
+		"levee_height_depths": 0.2,
+		"falls": {"steeper_than_above": 10.0, "min_slope": 0.2, "min_height_m": 3.0, "above_window_m": 200.0, "hard_ratio": 0.5,
+		          "trough_ice_m": 50.0, "hanging_ice_ratio": 0.5, "foot_cells": 3, "plunge_share": 0.5, "staircase_tolerance": 0.2},
+		"coast": {"wind_stress_m_s": 10.0, "nienhuis_k": 90.0, "sand_share": 0.3, "rock_density_kg_m3": 2650.0, "fetch_rays": 32,
+		          "max_fetch_m": 60000.0, "estuary_radius_m": 500.0, "estuary_sea_share": 0.25, "tidal_creek_m": 100.0,
+		          "beach_sediment_m": 1.0, "beach_slope": 0.01},
+		"report": {"basins": 6}
+	},
+	"record": {
+		"_note": "Stage D, the island water record (record.py, step R6; docs/water/watershed_rebuild_design.md R6 method). The writer refines R3's 16 m ground to the 8 m record grid by a separable monotone cubic, adds fine roughness on hillslopes, checks for closed cells with an epsilon-free priority flood and writes per-tile raw grids plus the island-wide network and climate. closed_tolerance_m: a land cell the flood raises by more than this is closed (5 cm: below the tile bake's 0.1 m step). lake_shore_passes: how many 8 m samples a lake's 16 m footprint may grow to meet its refined shore. Judged, not sourced: roughness band 16 to 48 m (the 8 m grid carries nothing shorter; the B1 start roughness starts at 48 m) and fade_m 24 m (three samples clear of any water); its rms slope is not set here but continues the B1 start roughness's spectrum (record.roughness()).",
+		"closed_tolerance_m": 0.05,
+		"fresh_spring_min_m3_s": 1e-5,
+		"lake_shore_passes": 2,
+		"roughness": {"on": true, "shortest_m": 16.0, "longest_m": 48.0, "fade_m": 24.0, "seed_offset": 1},
+		"encoding": {"discharge_codes_per_decade": 6553.5, "table_depth_step_m": 0.25, "sediment_step_m": 0.01},
+		"climate": {
+			"_note": "Design A4: one climate per island; the air at a place is sea_level_mean_c + seasonal_swing_c cos(2 pi (phase - warmest_year_phase)) + the daily term (daily_range_c / 2, coldest 05:00, warmest 15:00) - lapse_c_per_km x height / 1000. sea_level_mean_c is not set here: record.py writes each island's from the world's temperature curve (world.json) at its latitude (coordinator 8 Nov 2026, #717 row 21; about 14.2 C on the starter island), unless by_island sets one. snow_bias_c (starter -6 C, same decision) is read only by the snow and ice layer: present-day snow uses the temperature plus snow_bias_c; the glacial stage's cirques are relics of a colder time and keep glacial.ela_m. The swing (about 5 C) is from the coordinator's snow decision; daily_range_c 8 is Jamie's live cycle (#616) until a sourced maritime value replaces it; rain_mm_yr is the background rain of params rain. spell_amplitude_c and spell_days are the live multi-day warm and cold spells (a random walk of about +/- spell_amplitude_c that relaxes back to the season over spell_days, Jamie's #620, starter values); the record and the baked snow window use the climate without spells, the client adds them live. latitude_deg (the signed latitude of the sun and moon path, south negative) is not set here: record.py writes each island's from its tile row on the world grid (world.py, params world; Dave 8 Nov 2026), 34.3 S for the starter island. Islands without their own entry take default.",
+			"default": {"snow_bias_c": -6.0, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 1100.0, "spell_amplitude_c": 4.0, "spell_days": [3, 6]},
+			"by_island": {}
+		}
+	},
 	"peaks": {
-		"_note": "The peak checks of design A1 rule 6 (peaks.py; sign-off lines 1 to 10 of docs/water/rule6_build_plan.md). Checked summits: the landform's peaks (highest within summit_window_m) at least above_snowline_m above the stadial snowline, since lower tops hold no cirque glacier. Valley heads: on rings_m round the top, lows at least head_drop_m below the ridges either side; heads_needed of them within heads_within_m. top_search_m: a top may move a cell or two as its faces wear (as evolve.py). Flat cap: ground within plateau_within_m of the top, under plateau_max_deg, joined to it; limit plateau_max_m. Headwall: the first point steeper than headwall_deg walking out from the top along a valley head, its cirque floor the lowest ground within floor_beyond_m beyond it. Measured values (Jamie's cirque page #654): long-term headwall retreat 0.1 to 1.3 mm/yr, 0.5 to 1.0 while a glacier is active; shady lee sides 1.5 to 2 times faster than sunny ones (north-east north of the equator, south-east south of it: glacial.shady_bearing_deg); most of a cirque's depth in its first cycle, then about 10 times slower (depth_slowdown 5 leaves room). Judged: the ring radii, head_drop_m 50, headwall_deg 40, the plateau thresholds, met_at_top_m and the fail limits of the shady/sunny ratio.",
+		"_note": "The peak checks of design A1 rule 6 (peaks.py; sign-off lines 1 to 10 of docs/water/rule6_build_plan.md). Checked summits: the landform's peaks (highest within summit_window_m) at least above_snowline_m above the stadial snowline, since lower tops hold no cirque glacier. Valley heads: on rings_m round the top, lows at least head_drop_m below the ridges either side; heads_needed of them within heads_within_m. top_search_m: a top may move a cell or two as its faces wear (as evolve.py). Flat cap: ground within plateau_within_m of the top, under plateau_max_deg, joined to it; limit plateau_max_m. Headwall: the first point steeper than headwall_deg walking out from the top along a valley head, its cirque floor the lowest ground within floor_beyond_m beyond it. Measured values (Jamie's cirque page #654): long-term headwall retreat 0.1 to 1.3 mm/yr, 0.5 to 1.0 while a glacier is active; shady lee sides 1.5 to 2 times faster than sunny ones (north-east north of the equator, south-east south of it: the island's, from its latitude, params world); most of a cirque's depth in its first cycle, then about 10 times slower (depth_slowdown 5 leaves room). Judged: the ring radii, head_drop_m 50, headwall_deg 40, the plateau thresholds, met_at_top_m and the fail limits of the shady/sunny ratio.",
 		"above_snowline_m": 300.0,
 		"summit_window_m": 1000.0,
 		"window_m": 2500.0,
