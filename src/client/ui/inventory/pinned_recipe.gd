@@ -1,7 +1,7 @@
 extends RefCounted
 
 # The pinned recipe (docs/design/INVENTORY_CRAFTING_LOOK.md section 9; Morgan's report: a pinned recipe stays on screen as a checklist).
-# --new-inventory only. "Pin" in the chosen recipe's detail puts a small parchment card at the right edge of the screen, shown with the
+# "Pin" in the chosen recipe's detail puts a small parchment card at the right edge of the screen, shown with the
 # window open or shut: the recipe's name, then each ingredient with what you have of it now (the pack and what crafting may reach) and a
 # check mark that ticks as you gather. "Unpin" on the card takes it away. The pin lasts until unpinned or the game closes.
 
@@ -44,7 +44,7 @@ func lines() -> Array:
 
 
 func refresh() -> void:
-	if not InventoryLook.on or view._layer == null:
+	if view._layer == null:
 		return
 
 	var r: Dictionary = view.recipes.recipe(number) if number != 0 else {}

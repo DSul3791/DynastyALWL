@@ -1371,7 +1371,7 @@ const ICE_REACH := 2             # the sheet reaches this far from the body, so 
 # above) at the water level: the quads whose four points are wet, flat and slow and that lie within
 # ICE_REACH of the body of a pond or lake. Rivers are narrower than ICE_CORE * 2 + 1 cells and
 # never freeze. Walkable ice for the client (a collider only; the sheet is drawn by the water).
-# `moat` (ice_walk_feel.md section 5, --ice-feel): in a thaw the shore goes first, so quads with a corner within `moat` cells of a dry point
+# `moat` (ice_walk_feel.md section 5): in a thaw the shore goes first, so quads with a corner within `moat` cells of a dry point
 # are left out (the open moat refuses a walk). 0 gives exactly the old sheet.
 static func ice_triangles(grid: Dictionary, moat: int = 0) -> PackedVector3Array:
 	var triangles: PackedVector3Array = PackedVector3Array()

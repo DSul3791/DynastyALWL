@@ -35,9 +35,8 @@ func build(queue_root: Control) -> Control:
 	left_title.text = "Make"
 	view._style(left_title, view.TITLE_PX - 6)
 
-	if InventoryLook.on:
-		# STUB(step 2-4): with a station open the plate will name it and show its emblem (InventoryLook.plate's station), once Steve's station context lands.
-		InventoryLook.plate(left_title, "Make", view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
+	# STUB(step 2-4): with a station open the plate will name it and show its emblem (InventoryLook.plate's station), once Steve's station context lands.
+	InventoryLook.plate(left_title, "Make", view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
 
 	left.add_child(left_title)
 	left.add_child(_build_recipe_filter())
@@ -108,18 +107,16 @@ func refresh() -> void:
 		entry.flat = r["number"] != view._selected_recipe
 		view._style(entry, view.BODY_PX)
 
-		if InventoryLook.on:
-			# --new-inventory (look doc section 9): a makeable row has the gold bar on its left; the others are dim and say what they still need.
-			InventoryLook.style_recipe_row(entry, makeable, r["number"] == view._selected_recipe, InventoryLook.unit_of(view))
+		# Look doc section 9: a makeable row has the gold bar on its left; the others are dim and say what they still need.
+		InventoryLook.style_recipe_row(entry, makeable, r["number"] == view._selected_recipe, InventoryLook.unit_of(view))
 
-			if not makeable and view._station_ok(r):
-				entry.text += "   " + missing_text(r)
+		if not makeable and view._station_ok(r):
+			entry.text += "   " + missing_text(r)
 
 		entry.pressed.connect(_select_recipe.bind(r["number"]))
-
-		if InventoryLook.on:   # --new-inventory: a click on the row crafts (one, shift five, held as many as possible); the old window keeps its Craft button
-			entry.button_down.connect(func(): _press_msec = Time.get_ticks_msec())
-			entry.button_up.connect(func(): view.craft_click(int(r["number"]), Input.is_key_pressed(KEY_SHIFT), Time.get_ticks_msec() - _press_msec >= CRAFT_HOLD_MS))
+		# A click on the row crafts (one, shift five, held as many as possible).
+		entry.button_down.connect(func(): _press_msec = Time.get_ticks_msec())
+		entry.button_up.connect(func(): view.craft_click(int(r["number"]), Input.is_key_pressed(KEY_SHIFT), Time.get_ticks_msec() - _press_msec >= CRAFT_HOLD_MS))
 
 		entry.mouse_entered.connect(func(): view._hover_recipe = int(r["number"]))
 		entry.mouse_exited.connect(func(): view._hover_recipe = 0 if view._hover_recipe == int(r["number"]) else view._hover_recipe)
@@ -273,23 +270,14 @@ func _refresh_detail() -> void:
 
 	if bool(parts["ok"]):
 		var made: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], view.table.name_of(m[0]).to_lower()])
-		var auto_line: Label = Label.new()
-		auto_line.text = "Makes %s first" % " and ".join(made)
-		auto_line.modulate = Color(0.55, 1.0, 0.55)
-		view._style(auto_line, view.BODY_PX)
-
-		if InventoryLook.on:
-			# The helper as a small wooden button (look doc section 9): one press queues the recipe, and the server makes the parts first.
-			var helper: Button = Button.new()
-			helper.text = "Make it  (%s)" % auto_line.text.to_lower()
-			helper.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-			view._style(helper, view.BODY_PX - 4)
-			var helper_number: int = view._selected_recipe
-			helper.pressed.connect(func() -> void: view.craft_click(helper_number, false, false))
-			auto_line.free()
-			_detail.add_child(helper)
-		else:
-			_detail.add_child(auto_line)
+		# The helper as a small wooden button (look doc section 9): one press queues the recipe, and the server makes the parts first.
+		var helper: Button = Button.new()
+		helper.text = "Make it  (makes %s first)" % " and ".join(made)
+		helper.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		view._style(helper, view.BODY_PX - 4)
+		var helper_number: int = view._selected_recipe
+		helper.pressed.connect(func() -> void: view.craft_click(helper_number, false, false))
+		_detail.add_child(helper)
 	elif int(parts["ambiguous"]) != 0:
 		var choose_line: Label = Label.new()
 		choose_line.text = str(parts["msg"])
@@ -305,11 +293,7 @@ func _refresh_detail() -> void:
 		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)
 		view._style(line, view.BODY_PX)
 
-		if InventoryLook.on:
-			_detail.add_child(_need_row(line, int(need[0]), int(need[1]), have))
-			continue
-
-		_detail.add_child(line)
+		_detail.add_child(_need_row(line, int(need[0]), int(need[1]), have))
 
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", view._px(12))
@@ -333,25 +317,24 @@ func _refresh_detail() -> void:
 	make.pressed.connect(craft_selected)
 	row.add_child(make)
 
-	if InventoryLook.on:
-		# Pin (Morgan's report): the recipe stays on screen as a checklist, window open or shut.
-		var pinned: bool = view._pinned_part.number == view._selected_recipe
-		var pin: Button = Button.new()
-		pin.text = "Unpin" if pinned else "Pin"
-		pin.tooltip_text = "Keep this recipe on screen as a checklist that ticks as you gather"
-		view._style(pin, view.BODY_PX - 4)
-		var pin_number: int = view._selected_recipe
-		pin.pressed.connect(func() -> void:
-			if view._pinned_part.number == pin_number:
-				view._pinned_part.unpin()
-			else:
-				view._pinned_part.pin(pin_number)
+	# Pin (Morgan's report): the recipe stays on screen as a checklist, window open or shut.
+	var pinned: bool = view._pinned_part.number == view._selected_recipe
+	var pin: Button = Button.new()
+	pin.text = "Unpin" if pinned else "Pin"
+	pin.tooltip_text = "Keep this recipe on screen as a checklist that ticks as you gather"
+	view._style(pin, view.BODY_PX - 4)
+	var pin_number: int = view._selected_recipe
+	pin.pressed.connect(func() -> void:
+		if view._pinned_part.number == pin_number:
+			view._pinned_part.unpin()
+		else:
+			view._pinned_part.pin(pin_number)
 
-			view._refresh())
-		row.add_child(pin)
+		view._refresh())
+	row.add_child(pin)
 
 
-# --new-inventory: what a recipe still needs, for its dim row: "needs twine 2 / 5" (the first short ingredient, and how many more are short).
+# What a recipe still needs, for its dim row: "needs twine 2 / 5" (the first short ingredient, and how many more are short).
 func missing_text(r: Dictionary) -> String:
 	var short: Array = []
 
@@ -367,7 +350,7 @@ func missing_text(r: Dictionary) -> String:
 	return "needs " + str(short[0]) + (" and %d more" % (short.size() - 1) if short.size() > 1 else "")
 
 
-# --new-inventory: one ingredient line of the chosen recipe: a small slot with the item, the line in red with its count while short (green
+# One ingredient line of the chosen recipe: a small slot with the item, the line in red with its count while short (green
 # when met), and the chest mark when some of it comes from your chests in reach rather than the pack.
 func _need_row(line: Label, number: int, need: int, have: int) -> Control:
 	var row: HBoxContainer = HBoxContainer.new()

@@ -1,10 +1,8 @@
 extends RefCounted
-# Firelight in fog, rain and snow (--firelight-weather, docs/design/firelight_weather_design.md, Jamie #645). Client only.
+# Firelight in fog, rain and snow (docs/design/firelight_weather_design.md, Jamie #645; always on since Dave's 8 Nov ruling). Client only.
 # Every fire light (the held torch, campfires, forges and hearths) registers here: it keeps its base range as metadata and joins the
 # group "fire_light". weather_look.gd calls update() once a second with the weather at the eye; it sets each light's reach and the
-# shared halo (one mesh and one material, so one update moves every halo). With the switch off nothing is registered or touched.
-
-static var on: bool = AppConfig.has_flag("firelight-weather")
+# shared halo (one mesh and one material, so one update moves every halo).
 
 const GROUP := "fire_light"
 const REACH_MIN := 0.4
@@ -46,7 +44,7 @@ static func heavy_snow(snow: float) -> float:
 
 # Called where a fire light is made. halo_scale: 1 for a torch, larger for a big fire.
 static func register(light: OmniLight3D, halo_scale: float = 1.0) -> void:
-	if not on or light == null:
+	if light == null:
 		return
 
 	light.set_meta("base_range", light.omni_range)
@@ -99,7 +97,7 @@ static func _shared_material() -> StandardMaterial3D:
 # Once a second from weather_look.gd: veil = mist x mist_inside, snow = eased falling snow (0..1), ground_snow = the ground's
 # snow memory, daylight 0 night .. 1 day.
 static func update(tree: SceneTree, veil: float, snow: float, ground_snow: float, daylight: float) -> void:
-	if not on or tree == null:
+	if tree == null:
 		return
 
 	var heavy: float = heavy_snow(snow)
