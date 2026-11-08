@@ -29,7 +29,6 @@ class FakeView:
 	var stock: Dictionary = {1: 2, 2: 3}
 	var craft_entries: Array = []
 	var _craft_head_end_msec: int = 0
-	var _layer: CanvasLayer = null
 
 	func stock_fill(number: int) -> int:
 		return int(stock.get(number, 0))
