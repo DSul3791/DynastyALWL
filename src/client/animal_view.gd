@@ -40,6 +40,7 @@ var conditions_now: Callable     # () -> {"hour": float, "season": String} from 
 var _species_cfg: Variant = null  # data/animals/animals.json (the server's species file: active hours and the rest rule)
 var footfall_fx: bool = false     # docs/design/FOOTFALL.md: dust, mud and snow puffs at running footfalls (off until the PC check)
 var prints_fx: bool = false       # footprints in snow and mud that fade (FOOTFALL.md step 5; off until the PC check)
+var _print_fade_t: float = 0.0
 var _prints: Array = []           # [Decal, born msec, life s]
 var _print_tex: Dictionary = {}   # sign group -> ImageTexture
 var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
@@ -50,6 +51,14 @@ var idle_first_s: float = -1.0     # tools only: the first idle comes after this
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
+var life_layer_all_off: bool = false   # kill switch for Dave's PC gate (--life-layer-off): every life-layer flag off and the always-on looks skipped, the model path as on main (PERF_BUDGET.md)
+var _f_frame: int = -1            # the frame the caches below were read in
+var _f_cond: Dictionary = {}
+var _f_wx: Dictionary = {}
+var _f_night: Dictionary = {}
+var _f_torch: Array = []
+var _f_wind: float = 0.0
+var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false   # hit reactions by body zone, wounded gait, a death fall on the slope (HUNT_FEEDBACK.md; off until the PC check)
 var _health: Variant = null       # species -> health from data/animals/animals.json (the client's own count of the damage it saw)
 var weather_looks: bool = false   # shake-off after rain, tail to the wind, cold huddle, steam breath, snow on backs (ANIMAL_WEATHER_LOOKS.md; off until the PC check)
@@ -499,11 +508,17 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if not _prints.is_empty():
+	if life_layer_all_off and (footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+		_all_flags_off()
+
+	_print_fade_t -= delta
+
+	if not _prints.is_empty() and _print_fade_t <= 0.0:
+		_print_fade_t = 0.25      # four times a second: a 10-minute fade does not need every frame
 		_fade_prints()
 
 	if weather_looks and weather_now.is_valid():
-		var rain_now: float = float((weather_now.call() as Dictionary).get("rain", 0.0))
+		var rain_now: float = float((_wx_state() as Dictionary).get("rain", 0.0))
 		_wx_shake_due = _wx_last_rain >= 0.4 and rain_now < 0.1      # the rain has just stopped: shakers shake (this frame only)
 		_wx_last_rain = rain_now if rain_now >= 0.4 or rain_now < 0.1 else _wx_last_rain
 
@@ -534,25 +549,28 @@ func _process_body(delta: float) -> void:
 			# for a moment, and must not run backward.
 			b["backing"] = state in [3, 10, 12] and model_speed > 0.3 and moved.normalized().dot(Vector2(facing.x, facing.z).normalized()) < -0.3
 
-			if node.has_meta("eye_mats"):
+			if life_layer_all_off:
+				pass      # the kill switch: no life-layer looks at all (below, the clip still plays)
+			elif node.has_meta("eye_mats"):
 				if eye_shine:
 					_eye_shine_night(node)
 				else:
 					_eye_shine(node)
 
-			if node.has_meta("tail"):
+			if node.has_meta("tail") and not life_layer_all_off:
 				_tail_motion(node, state, model_speed)
 
-			if node.has_meta("ears"):
+			if node.has_meta("ears") and not life_layer_all_off:
 				_ear_motion(node, state)
 
-			if node.has_meta("breath"):
+			if node.has_meta("breath") and not life_layer_all_off:
 				_breath_motion(node, b, state, model_speed, delta)
 
-			if node.has_meta("look"):
+			if node.has_meta("look") and not life_layer_all_off:
 				_look_motion(node, b, state, delta)
 
-			_hop_arc(node, b, model_speed, delta)
+			if not life_layer_all_off:
+				_hop_arc(node, b, model_speed, delta)
 
 			if float(b.get("pounce_t", -1.0)) >= 0.0:
 				_pounce(node, b, delta)
@@ -589,7 +607,7 @@ func _process_body(delta: float) -> void:
 			if foot_ik and node.has_meta("feet"):
 				_feet(node, b, delta)
 
-			if bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)):
+			if bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)) and not life_layer_all_off:
 				_herd_look(node, b, state, model_speed, delta)
 
 			if node.has_meta("poses"):
@@ -1541,7 +1559,7 @@ func _track_at(anim: Animation, t: int, kind: int, time: float) -> Variant:
 func _eye_shine(node: Node3D) -> void:
 	var mats: Array = node.get_meta("eye_mats")
 	var energy: float = 0.0
-	var light: Array = torch_light.call() if torch_light.is_valid() else []
+	var light: Array = _torch() if torch_light.is_valid() else []
 	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
 
 	if light.size() >= 2 and cam != null:
@@ -1759,10 +1777,10 @@ func _tail_motion(node: Node3D, state: int, speed: float) -> void:
 		"alert":     # a cat's flick: when it watches something
 			want = 1.0 if state == 3 or state == 6 else 0.15
 		"flies":     # a horse's or cow's swish against flies: grazing in the warm months
-			var season: String = str((conditions_now.call() as Dictionary).get("season", "")) if conditions_now.is_valid() else season_now
+			var season: String = str((_cond() as Dictionary).get("season", "")) if conditions_now.is_valid() else season_now
 			want = (1.0 if speed < 0.3 else 0.3) * (1.0 if season == "" or season == "summer" or season == "spring" else 0.0)
 
-			if conditions_now.is_valid() and float((conditions_now.call() as Dictionary).get("storm_ahead", 0.0)) > 0.5:
+			if conditions_now.is_valid() and float((_cond() as Dictionary).get("storm_ahead", 0.0)) > 0.5:
 				want = 0.0      # the flies go to ground before a storm (Steve's #646 storm_ahead), so no swish
 
 	if state == HUNCH:
@@ -1894,7 +1912,7 @@ func _asleep_now(kind: String) -> bool:
 	if not def.has("active"):
 		return false
 
-	var hour: float = float((conditions_now.call() as Dictionary).get("hour", 12.0))
+	var hour: float = float((_cond() as Dictionary).get("hour", 12.0))
 	var period: String = "day" if hour >= 8.0 and hour < 18.0 else ("dusk" if (hour >= 5.0 and hour < 8.0) or (hour >= 18.0 and hour < 21.0) else "night")
 	return float((def["active"] as Dictionary).get(period, 1.0)) <= float((cfg.get("rest", {}) as Dictionary).get("below", 0.1))
 
@@ -1915,8 +1933,15 @@ func _herd_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 	var sum: Vector2 = Vector2.ZERO
 	var push: Vector3 = Vector3.ZERO
 	var mates: int = 0
+	b["herd_t"] = float(b.get("herd_t", float(b.get("phase", 0.0)) * 0.03)) - delta
+	var fresh: bool = float(b["herd_t"]) <= 0.0      # the mates are looked at 5 times a second (PERF_BUDGET.md worst 2), eased between
 
-	if state == 0 and speed < 0.3:
+	if fresh:
+		b["herd_t"] = 0.2
+
+	if fresh and state == 0 and speed < 0.3:
+		var space: float = _herd_space()
+
 		for other_id in _bodies:
 			var o: Dictionary = _bodies[other_id]
 
@@ -1934,13 +1959,15 @@ func _herd_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 			mates += 1
 			sum += Vector2(cos(on.rotation.y), sin(on.rotation.y))
 
-			if d < _herd_space() and d > 0.01:
-				push += gap.normalized() * (_herd_space() - d) * 0.5
+			if d < space and d > 0.01:
+				push += gap.normalized() * (space - d) * 0.5
 
-	var bias: float = 0.0
+	if fresh:
+		b["herd_aim"] = clampf(angle_difference(node.rotation.y, sum.angle()), -0.35, 0.35) if mates > 0 and sum.length() > 0.01 else 0.0      # at most 20 degrees toward the herd's facing
+		b["herd_push"] = push
 
-	if mates > 0 and sum.length() > 0.01:
-		bias = clampf(angle_difference(node.rotation.y, sum.angle()), -0.35, 0.35)      # at most 20 degrees toward the herd's facing
+	var bias: float = float(b.get("herd_aim", 0.0))
+	push = b.get("herd_push", Vector3.ZERO)
 
 	b["herd_bias"] = lerpf(float(b.get("herd_bias", 0.0)), bias, clampf(delta * 0.5, 0.0, 1.0))
 	rig.rotation.y = float(b["herd_bias"]) + float(b.get("wind_turn", 0.0))      # on the rig, not the node: the node's facing follows the server every frame (plus the gale turn, weather_looks)
@@ -1977,10 +2004,10 @@ func _ground_kind(node: Node3D, b: Dictionary) -> String:
 			return "water"
 
 	# Rain-soaked ground (the sound stage's puddle rule: ground_wet from 0.6) splashes like the player's steps do.
-	if conditions_now.is_valid() and float((conditions_now.call() as Dictionary).get("ground_wet", 0.0)) >= 0.6:
+	if conditions_now.is_valid() and float((_cond() as Dictionary).get("ground_wet", 0.0)) >= 0.6:
 		return "puddle"
 
-	var season: String = str((conditions_now.call() as Dictionary).get("season", "")) if conditions_now.is_valid() else season_now
+	var season: String = str((_cond() as Dictionary).get("season", "")) if conditions_now.is_valid() else season_now
 
 	if season == "winter":
 		return "snow"
@@ -2149,12 +2176,14 @@ func _feet(node: Node3D, b: Dictionary, delta: float) -> void:
 	if float(b["feet_t"]) <= 0.0:
 		b["feet_t"] = 0.25
 		var centre: float = float(ground_height.call(node.global_position.x, node.global_position.z))
-		var sks: Array = node.find_children("*", "Skeleton3D", true, false)
+		if not node.has_meta("feet_sk"):
+			var found: Array = node.find_children("*", "Skeleton3D", true, false)
+			node.set_meta("feet_sk", found[0] if not found.is_empty() else null)
 
-		if sks.is_empty() or is_nan(centre):
+		var sk: Skeleton3D = node.get_meta("feet_sk") as Skeleton3D
+
+		if sk == null or is_nan(centre):
 			return
-
-		var sk: Skeleton3D = sks[0]
 		var wants: Array = []
 
 		for chain in fix.legs:
@@ -2237,7 +2266,8 @@ func _pounce(node: Node3D, b: Dictionary, delta: float) -> void:
 
 
 func _wind() -> float:
-	return float(wind_now.call()) if wind_now.is_valid() else 0.0
+	_refresh_frame()
+	return _f_wind
 
 
 # The small up-and-down of a small bird's body with each wingbeat (row flight.bob_m, at beat_hz), only while flapping in the air.
@@ -2287,7 +2317,7 @@ func _coat_tick(node: Node3D, b: Dictionary, state: int, delta: float) -> void:
 	var tint: Color = Color.WHITE
 
 	if season_coats and row.has("season_tint"):
-		var season: String = str((conditions_now.call() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
+		var season: String = str((_cond() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
 		tint = Color.html(str((row["season_tint"] as Dictionary).get(season, "#ffffff")))
 
 	var now: Color = (b.get("coat_now", tint) as Color).lerp(tint, 0.3)
@@ -2389,7 +2419,16 @@ func _young_age(b: Dictionary) -> float:
 	if young_age_days >= 0.0:
 		return young_age_days
 
-	var season: String = str((conditions_now.call() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
+	if b.has("age_cache") and _t - float(b.get("age_cache_t", -9.0)) < 1.0:
+		return float(b["age_cache"])
+
+	b["age_cache_t"] = _t
+	b["age_cache"] = _young_age_now(b)
+	return float(b["age_cache"])
+
+
+func _young_age_now(b: Dictionary) -> float:
+	var season: String = str((_cond() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
 	var base: float = float(int(b.get("age_hash", 0)) % 41)
 	return base if season == "spring" else base + 60.0
 
@@ -2933,7 +2972,7 @@ func _eye_shine_night(node: Node3D) -> void:
 	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
 	var row: Dictionary = node.get_meta("model_row", {})
 	var energy: float = 0.0
-	var sky: Dictionary = night_light.call() if night_light.is_valid() else {}
+	var sky: Dictionary = _night() if night_light.is_valid() else {}
 	var night: float = float(sky.get("night", 1.0 if not night_light.is_valid() else 0.0))
 
 	if cam != null and night > 0.15:
@@ -2943,7 +2982,7 @@ func _eye_shine_night(node: Node3D) -> void:
 		to_cam = to_cam.normalized()
 		var facing: Vector3 = -node.global_transform.basis.z.normalized()
 		var face: float = smoothstep(cos(deg_to_rad(60.0)), cos(deg_to_rad(30.0)), facing.dot(to_cam))
-		var light: Array = torch_light.call() if torch_light.is_valid() else []
+		var light: Array = _torch() if torch_light.is_valid() else []
 		var lit: float = 0.0
 
 		# How far the shine reads (Jamie's moonlight-and-starlight page, #679): 10 to 20 m on a moonless night, about 5 m under a full
@@ -2989,7 +3028,7 @@ const SOFT_DRY := ["mud", "sand", "snow"]
 const SOFT_WET := ["dirt", "grass", "grass_tall", "path", "bushes"]
 
 func _sign_ground(node: Node3D) -> String:
-	var cond: Dictionary = conditions_now.call() if conditions_now.is_valid() else {}
+	var cond: Dictionary = _cond() if conditions_now.is_valid() else {}
 	var soil: String = str(soil_at.call(node.global_position)) if soil_at.is_valid() else "dirt"
 
 	if water_level.is_valid():
@@ -3011,7 +3050,7 @@ func _sign_ground(node: Node3D) -> String:
 
 
 func _sign_life(ground: String) -> float:
-	var season: String = str((conditions_now.call() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
+	var season: String = str((_cond() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
 
 	match ground:
 		"snow":
@@ -3118,7 +3157,7 @@ func _sign_decal(tex: Texture2D, at: Vector3, size: float, turn: float, ground: 
 # Every 2 s: each sign fades with its age; rain over 0.5 washes sand prints, falling snow covers snow prints, and thawed ground
 # (lying snow under 0.2) melts them; a strong wind (0.6) blurs sand.
 func _fade_signs() -> void:
-	var cond: Dictionary = conditions_now.call() if conditions_now.is_valid() else {}
+	var cond: Dictionary = _cond() if conditions_now.is_valid() else {}
 	var rain: float = float(cond.get("rain", 0.0))
 	var snowing: bool = bool(cond.get("snowing", false))
 	var thawed: bool = float(cond.get("ground_snow", 1.0)) < 0.2
@@ -3191,14 +3230,12 @@ const HUDDLE_C := -5.0       # herds stand closer, heads low, below this (Steve'
 const GALE := 0.6            # wind at which stock turn tail to it (Steve's gale_from)
 
 func _herd_space() -> float:
-	if not weather_looks or not weather_now.is_valid():
-		return HERD_SPACE_M
-
-	return HERD_SPACE_M * (0.6 if float((weather_now.call() as Dictionary).get("temp_c", 10.0)) < HUDDLE_C else 1.0)
+	_refresh_frame()
+	return _f_herd_space
 
 
 func _weather_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
-	var wx: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var wx: Dictionary = _wx_state() if weather_now.is_valid() else {}
 	var kind: String = str(b.get("kind", ""))
 	var rig: Node3D = node.get_node_or_null("Rig")
 	var air: float = float(wx.get("temp_c", 10.0))
@@ -3456,6 +3493,74 @@ func _death_fall(node: Node3D) -> void:
 	down.tween_callback(func() -> void: if player != null: player.speed_scale = 0.0)
 	down.tween_interval(1.5)
 	down.tween_callback(node.queue_free)
+
+
+# One read a frame of each client callable (PERF_BUDGET.md worst 1): conditions, weather, night light, torch and wind were called
+# once per animal per look, and the client's conditions builds a new Dictionary each call. Every look reads these instead.
+func _refresh_frame() -> void:
+	var f: int = Engine.get_process_frames()
+
+	if f == _f_frame:
+		return
+
+	_f_frame = f
+	_f_cond = conditions_now.call() if conditions_now.is_valid() else {}
+	_f_wx = weather_now.call() if weather_now.is_valid() else {}
+	_f_night = night_light.call() if night_light.is_valid() else {}
+	_f_torch = torch_light.call() if torch_light.is_valid() else []
+	_f_wind = float(wind_now.call()) if wind_now.is_valid() else 0.0
+	_f_herd_space = HERD_SPACE_M * (0.6 if weather_looks and float(_f_wx.get("temp_c", 10.0)) < HUDDLE_C else 1.0)
+
+
+func _cond() -> Dictionary:
+	_refresh_frame()
+	return _f_cond
+
+
+func _wx_state() -> Dictionary:
+	_refresh_frame()
+	return _f_wx
+
+
+func _night() -> Dictionary:
+	_refresh_frame()
+	return _f_night
+
+
+func _torch() -> Array:
+	_refresh_frame()
+	return _f_torch
+
+
+# The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
+func _all_flags_off() -> void:
+	footfall_fx = false
+	prints_fx = false
+	slope_tilt = false
+	foot_ik = false
+	stalk_fx = false
+	season_coats = false
+	coat_dust = false
+	coat_ruffle = false
+	young_gait = false
+	young_follow = false
+	water_life = false
+	idle_variety = false
+	flight_bank = false
+	look_at_foe = false
+	swarm_fx = false
+	sea_life = false
+	voice_fx = false
+	eye_shine = false
+	animal_sign = false
+	weather_looks = false
+	hunt_feedback = false
+
+
+func _enter_tree() -> void:
+	if OS.get_cmdline_user_args().has("--life-layer-off"):
+		life_layer_all_off = true
+		_all_flags_off()
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

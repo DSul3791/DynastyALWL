@@ -48,7 +48,8 @@ Weather step 2 (#667): moving under trees in rain, stock facing downwind in a ga
 | Weather state (temp_c, rain, snow, wind, wind_dir) | shared weather (main), terrain_client.weather | `weather_now`; `_weather_look` (shake-off, tail to wind, cold huddle), `_steam_breath`, snow on backs, `_herd_space` | `weather_looks` | m41 to m44 |
 | Hit number (protocol 85: point and damage, to the hunter only) | server_items hit_number (main) | `note_hit(at, amount)`: `_hit_reaction` (zone), `_hunt_motion` (reaction, hip drag, limp) | `hunt_feedback` | m45, m46 |
 | Animal leaves the rows after a hit | server rows (main) | `killed_by_hit`, `fell`; `_death_fall` along the slope | `hunt_feedback` (the fall; the sound always) | m47 |
-| Wounded flag, hit zone to nearby players | requested of Steve (HUNT_FEEDBACK.md) | none yet: the hunter's own hit count stands in | `hunt_feedback` | waits for the server |
+| Wounded health (0 to 1 by 0.1, while hurt) and hit event (zone, id) to players within 60 m | accepted by Steve, one protocol bump after his fire step 3 (HUNT_FEEDBACK.md) | none yet: the hunter's own hit count stands in | `hunt_feedback` | waits for the server |
+| Kill switch | command line `--life-layer-off` | `life_layer_all_off`, `_all_flags_off`: every flag off and the always-on looks skipped | the switch itself | gate (PERF_BUDGET.md) |
 | Rain cover, conifers, shade, gale drift (Steve #667, #671) | server positions and headings | none needed: drawn as sent; state 20 in rain as the hunch | none | m26 |
 | Ground wet, season, hour | weather sounds, ambient conditions (main) | `conditions_now`: sleep, prints, puddle splashes, coat season | per look | m6, m12, m19, m20 |
 | Water level | flora.water_level_at (main) | `water_level`: swim clips, wet look, water life | `water_life` | m7, m24, m25 |

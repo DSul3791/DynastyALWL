@@ -37,6 +37,13 @@ and dies where its health runs out; big game warns, charges and recovers (server
 3. **Blood in weather:** drops dry sooner in rain (`life_s` x 0.5 at rain 0.6) and none are laid in water; on lying snow they last
    until the next snowfall.
 
+## Steve's answer (8 Nov 2026)
+Requests 1 and 2 are accepted together behind one protocol bump, after his fire step 3 and the state-20 cover change: the animal row
+gets one field, **health 0 to 1 snapped to 0.1, sent only while the animal is hurt**, and the **hit event (zone and animal id) goes
+to every player within 60 m**. When it lands, `hunt_feedback` reads the health field for the limp (below 0.5) instead of the
+hunter's own count, and takes the zone from the event instead of working it out from the hit point. Request 3 waits for the snow
+window.
+
 ## What a hunter can read
 A head toss or stumble says the shot struck; a dragging hind end says a hip hit, a slow follow; a limp says the animal is past half
 its strength; the blood trail leads to where it fell, lying along the slope.
