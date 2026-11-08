@@ -3316,7 +3316,8 @@ func _showroom_retry(delta: float) -> void:
 
 # Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
 func _fires(delta: float) -> void:
-	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+	var rain_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+	var raining: bool = rain_v >= RAIN_PUTS_OUT
 	_refresh_pots()
 
 	for id in _items.keys():
@@ -3334,8 +3335,16 @@ func _fires(delta: float) -> void:
 			_fire_embers(it, fire, delta, raining)
 			continue
 
-		_fire_burn(fire, delta)
+		# A large fire on a coal bed burns on through rain of any strength, uncovered (fire design 4): faster in heavy rain, and smoking.
+		var rain_proof: bool = _fire_rain_proof(fire)
+		var in_rain: bool = raining and not bool(fire["covered"])
+		var heavy: bool = rain_proof and in_rain and rain_v >= float(_coals_cfg().get("rain_burn_from", 0.6))
+		_fire_burn(fire, delta * (float(_coals_cfg().get("rain_burn_x", 1.25)) if heavy else 1.0))
 		fire["lit_s"] = float(fire.get("lit_s", 0.0)) + delta   # the coal bed builds while it burns
+		var smoke: int = 1 if rain_proof and in_rain else 0
+
+		if smoke != int(fire.get("smoke", 0)):
+			fire["smoke"] = smoke   # the row is sent again (fire design 5: thick smoke while it burns wet)
 
 		if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_trim_store(fire, _chests[int(fire["uid"])]):
 			_push_box(id, _chests[int(fire["uid"])])   # burned wood leaves the store; whoever has it open sees it go
@@ -3355,7 +3364,7 @@ func _fires(delta: float) -> void:
 
 			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
 				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
-		elif raining and not fire["covered"]:
+		elif raining and not fire["covered"] and not _fire_rain_proof(fire):
 			var grace: float = float(fire.get("rain_grace", 0.0)) - delta   # lit a moment ago in the rain: it burns until the grace is up
 
 			if grace > 0.0:
@@ -3363,6 +3372,7 @@ func _fires(delta: float) -> void:
 			else:
 				fire.erase("rain_grace")
 				fire.erase("lit_s")   # rained out: the coals are drowned too
+				fire.erase("smoke")
 				fire["state"] = 9
 				it["left"] = FIRE_LAID_S
 				_dirty = true
@@ -3383,10 +3393,14 @@ func _expire_items(spent: float) -> void:
 			_dirty = true
 
 
-# A fire's world row extra: its burn time and, for coals and warm ash, glow (1 fresh .. 0 at the end of that stage).
+# A fire's world row extra: its burn time, smoke 1 while a large fire burns on in the rain, and, for coals and warm ash, glow (1 fresh .. 0 at
+# the end of that stage).
 func _fire_extra(it: Dictionary) -> Dictionary:
 	var extra: Dictionary = {"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)}
 	var state: int = int(it["fire"]["state"])
+
+	if int(it["fire"].get("smoke", 0)) > 0 and fire_is_lit(state):
+		extra["smoke"] = int(it["fire"]["smoke"])
 
 	if state == FIRE_STATE_COALS or state == FIRE_STATE_ASH:
 		extra["glow"] = snappedf(_fire_glow(it), 0.01)
@@ -3414,6 +3428,7 @@ func _fire_burnt_out(it: Dictionary, fire: Dictionary) -> void:
 	var cfg: Dictionary = _coals_cfg()
 	_lit_valid = false
 	fire.erase("rain_grace")
+	fire.erase("smoke")
 
 	if not cfg.is_empty() and float(fire.get("lit_s", 0.0)) >= float(cfg.get("coal_bed_s", 600.0)):
 		fire["state"] = FIRE_STATE_COALS
@@ -3422,6 +3437,13 @@ func _fire_burnt_out(it: Dictionary, fire: Dictionary) -> void:
 		return
 
 	_fire_cold(it, fire)
+
+
+# A large fire (state 41) with a coal bed (coals.coal_bed_s burned since it was last cold) is not put out by rain (fire design 4, coordinator
+# decision 8 Nov 2026). Small and medium fires, and a large one lit a moment ago, go out as before; once a large fire's logs are gone it is
+# medium again and the rain takes it.
+func _fire_rain_proof(fire: Dictionary) -> bool:
+	return int(fire["state"]) == FIRE_STATE_BONFIRE and not _coals_cfg().is_empty() and float(fire.get("lit_s", 0.0)) >= float(_coals_cfg().get("coal_bed_s", 600.0))
 
 
 # Coals run out (or are rained out) to warm ash.
@@ -3700,6 +3722,7 @@ func _sync_world_items() -> void:
 				if it.has("fire"):
 					signature += 13 * int(it["fire"].get("fed", 0))      # wood laid on a fire is sent again (its burn time for the inspection label)
 					signature += 17 * int(floor(_fire_glow(it) * 10.0))   # coals and warm ash are sent again each tenth of their time (the client dims them)
+					signature += 19 * int(it["fire"].get("smoke", 0))   # a fire that starts or stops smoking is sent again
 
 				if it.has("tree"):
 					signature += int(round(float(it["tree"].get("length", 0.0)) * 20.0)) * 7      # a trunk that got shorter (a log was cut off) is sent again
