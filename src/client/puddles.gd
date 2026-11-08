@@ -5,8 +5,10 @@ extends Node3D
 # is drawn. A look and a sound only: nothing in the game reads puddles, they are not saved and the server does not know them.
 #
 # - One level per ground layer (0 turf, 1 litter, 2 gravel, 3 mud and clay, 4 sand, 5 rock), plus 6 worn tracks and 7 peat, 0 dry .. 1
-#   full. It rises while the rain is above RAIN_FROM, by FILL_PER_H x (rain - RAIN_FROM) per game hour, and drains after it in game hours
-#   by kind (half as fast in light rain; not at all while frozen). Sand never holds water.
+#   full. It rises only while the rain falls faster than that ground soaks it in (SOAK_MM_H, Sonny's and Jamie's soak-in rates: gravel 40,
+#   sand 20, loam 7.6, silt 5.1, clay 1.5 mm/h), by the excess x CATCH_SHARE / FULL_MM a game hour, and drains after it in game hours
+#   by kind (half as fast while rain still falls; not at all while frozen). Sand never holds water. So drizzle fills dips in rock and
+#   clay tracks, steady rain turf, and only a downpour loose gravel.
 # - Drain times (Jamie's judged numbers, coordinator 8 Nov 2026): turf about 3 h, litter 2 h, gravel 1 h; tracks and clay 3 game days
 #   in summer and 10 in winter; dips in rock 2 and 6 days; shallow pools on peat never dry. Between summer and winter the time follows
 #   the season (warmest at year phase WARMEST_PHASE, as the climate record). The slow ones keep the shader's puddle work on for days:
@@ -27,8 +29,14 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GroundMaterial := preload("res://src/client/ground_material.gd")
 const GameClock := preload("res://src/shared/game_clock.gd")
 
-const RAIN_FROM := 0.15
-const FILL_PER_H := 2.5
+const RAIN_FROM := 0.15                              # the wetness memory (--rain-look) soaks from this rain
+const RAIN_MM_H := 50.0                               # rain 1.0 (a downpour) in mm/h; rain^RAIN_MM_POWER of it below (judged: 0.15 drizzle 0.4,
+const RAIN_MM_POWER := 2.5                            #   0.4 moderate 5, 0.65 the forced "rain" 17, 0.7 heavy 20 mm/h, the Met Office's bands)
+# How fast each level's ground soaks rain in, mm/h: turf on loam, litter on humus (as loam), gravel, mud and clay, sand, dips in rock (none),
+# worn tracks (packed hard, as clay), peat (wet to the top, judged). Silt (5.1) is drawn as turf; loam's rate stands for it.
+const SOAK_MM_H := [7.6, 7.6, 40.0, 1.5, 20.0, 0.0, 1.5, 1.0]
+const CATCH_SHARE := 3.0                              # a hollow gathers the run-off of about three times its own area (judged)
+const FULL_MM := 30.0                                 # standing water at level 1 (judged)
 const TRACK := 6                                      # the level for worn trails (any ground but sand)
 const PEAT := 7                                       # the level for peat (soil 6, drawn as litter)
 const PEAT_SOIL := 6
@@ -179,6 +187,15 @@ func _load_sizes() -> void:
 
 # Every frame from weather_look.gd: the rain and wind now (eased, test kinds included), the cave light (1 open air .. 0 deep in)
 # and the ground material to tell.
+static func rain_mm_h(rain: float) -> float:
+	return RAIN_MM_H * pow(clampf(rain, 0.0, 1.0), RAIN_MM_POWER)
+
+
+# Level gained per game hour on level `k`'s ground in `rain` (0 when the ground soaks it all in).
+static func fill_per_h(k: int, rain: float) -> float:
+	return maxf(rain_mm_h(rain) - float(SOAK_MM_H[k]), 0.0) * CATCH_SHARE / FULL_MM
+
+
 # 0 in high summer .. 1 in deep winter, for a game time in seconds (day 0 the spring equinox).
 static func winter_share(seconds: float) -> float:
 	var phase: float = fposmod(seconds / GameClock.SECONDS_PER_DAY, float(GameClock.DAYS_PER_YEAR)) / float(GameClock.DAYS_PER_YEAR)
@@ -205,8 +222,8 @@ func update(delta: float, rain: float, wind: float, wind_dir: Vector2, cave_open
 			level[k] = 0.0
 		elif _held >= 0.0:
 			level[k] = _held
-		elif rain > RAIN_FROM:
-			level[k] = minf(float(level[k]) + FILL_PER_H * (rain - RAIN_FROM) * hours, 1.0)
+		elif fill_per_h(k, rain) > 0.0:
+			level[k] = minf(float(level[k]) + fill_per_h(k, rain) * hours, 1.0)
 		elif not frozen:
 			var drain: float = hours / drain_hours(k, winter) * (0.5 if rain > 0.02 else 1.0)
 			level[k] = maxf(float(level[k]) - drain, 0.0)
