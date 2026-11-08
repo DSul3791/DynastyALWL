@@ -1823,6 +1823,21 @@ func _groups_on() -> bool:
 	return bool((cfg.get("groups", {}) as Dictionary).get("enabled", false))
 
 
+# Whether a herd member (not the leader) is far from the herd with groups on: more than three times its spacing plus 4 m from the
+# leader. A scattered herd regroups before it stands a rain spell out.
+func _group_strayed(a: Dictionary, def: Dictionary) -> bool:
+	if a["herd"] == 0 or not _groups_on():
+		return false
+
+	var lead_id: int = _group_leader(a["herd"])
+
+	if lead_id == 0 or lead_id == int(a["id"]):
+		return false
+
+	var spacing: float = float(def.get("group_spacing_m", (cfg["groups"] as Dictionary).get("spacing_m", 3.0)))
+	return Vector2(a["pos"].x - animals[lead_id]["pos"].x, a["pos"].z - animals[lead_id]["pos"].z).length() > spacing * 3.0 + 4.0
+
+
 func _group_leader(hid: int) -> int:
 	for id in _herds.get(hid, []):
 		if animals.has(id) and not animals[id].has("fly") and not bool(animals[id].get("perched", false)):
@@ -2187,7 +2202,7 @@ func _weather_wander(a: Dictionary, def: Dictionary) -> bool:
 		a.erase("hunch")
 		return true
 
-	if _raining():
+	if _raining() and not _group_strayed(a, def):   # a herd member far from its place goes back to the herd first, rain or not (HERD_GROUPS.md)
 		a["hunch"] = rng.randf() < float(r.get("hunch_share", 0.6))   # luck-exempt: whether a wet grazer stands this spell out
 
 		if bool(a["hunch"]):
