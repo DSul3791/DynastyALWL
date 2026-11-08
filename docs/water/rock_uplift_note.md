@@ -1,5 +1,7 @@
 # Rock uplift through the glacial history (design note, no code)
 
+**On hold (8 Nov, 21:15).** ws580i lost 499 m, not about 145 m, and most of it in the 100 kyr world. The likelier cause is the glacial history's snowline: all active ice at the stadial line, against the LR04 record (see `glacial_summit_fix.md`, probe L). This note applies only if probe L shows the history is not the cause.
+
 Sonny, 8 Nov 2026. This follows `docs/water/glacial_summit_fix.md`. Rule 6 line 4 (each checked summit within 25 m of its landform after the ice; D-10) fails even at measured erosion rates. Probe E, with glacial K set from measured cirque floor rates, still loses about 2.6 m a cycle at the main summit. Over the whole history that comes to about 145 m from the 1,441 m landform. The ws580i run measures it for every checked summit.
 
 ## What the measurements say

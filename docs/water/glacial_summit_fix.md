@@ -84,3 +84,32 @@ What the numbers show:
 
 1. Glacial K is set from the measured cirque floor rate, not from the quick-run river K: `glacial_K_ratio` 0.667 (2 times 4e-6, over the river K of 1.2e-5). With the measured balance ratio of 1.56, this is ws580i's glacial stage, run in full from ws580h's B1 output. All of rule 6's lines (5 to 12) are judged as written, and line 4 is judged and reported. That run gives the summit loss curve at measured rates.
 2. Line 4 then needs rock uplift through the history (the second suspect above). Uplift comes from a design note first: its source, a measured rate, and where on the island it acts. Then code. The swath rule (fault 1) stays off until it is understood why it speeds the floors under a horn.
+
+## ws580i result (Dino, 8 Nov 21:00; `manifest_ws580i_full.json`)
+
+ws580i was run with K set from the measured cirque rate and a balance ratio of 1.56. Lines 5 to 10 pass. Line 4 fails: the main summit ends at 942 m, 499 m below its landform. The time line shows where the loss comes from:
+
+- **41 kyr world.** The summit holds within 25 m of the landform until cycle 33 (1,425 m), then falls to 1,383 m by cycle 39.
+- **100 kyr world.** It loses 441 m in 10 cycles, about 1 mm a year while active.
+
+The estimate in the uplift note (about 145 m) was wrong. It carried E's 41 kyr rate into the 100 kyr world, where the ice is twice as large (56.7 km² at most).
+
+## The cause: all active ice at the stadial line
+
+Rule 6's history puts all 40 kyr of active ice in each 100 kyr cycle at the stadial line (487 m), the coldest stage. It puts all 16.4 kyr in each 41 kyr cycle at 637 m. The measured climate record says otherwise.
+
+- **What the LR04 stack shows.** LR04 is the global benthic oxygen isotope stack (Lisiecki and Raymo 2005, `tools/watershed/data/lr04_stack.csv`). Scaled linearly, it puts the snowline at today's line (1,500 m, design A4's 1,450 to 1,550 m) at the Holocene mean and at the stadial line at the LGM mean.
+  - In the last 1 Myr the line stood at or below 550 m for only 40 kyr, not 400 kyr. Its mean while the summit held ice was 955 m.
+  - From 2.6 to 1.0 Ma the line never fell below 727 m, and its mean was 1,208 m.
+- **This matches Porter.** Porter (1989, Quaternary Research 32:245) finds that most of Quaternary time had intermediate conditions, with snowlines about 500 m below today's. The design cited him for the active share but applied the full stadial depression to all of it.
+- **It also matches the measured buzzsaw.** Against a mean line of 955 m, the 1,441 m summit stands about 490 m above. That is inside the about 600 m that measured summits rise above their cirque floors (Mitchell and Montgomery 2006). Against 487 m it stood 950 m above, and the ice took it down.
+
+So the uplift note's question falls away if this is the cause: the ice was too large for too long, and the summit did not lack uplift.
+
+`tools/watershed/lr04_history.py` writes the snowline history from the stack into `glacial.history`, in glacial.py's own format, with no change to glacial.py. It cuts the time into steps of glacial.dt and joins runs that stay within 100 m into one entry. Time with the line at or above today's is river time. A new setting, `glacial.today_ela_m` (1,500 m), sets the warm end of the scale.
+
+## Probe L (Dino, about 15 minutes)
+
+Probe L starts from ws580i's `glacial_cycle_39.npz` (the end of the 41 kyr world). It runs the last 240 kyr of the LR04 history: MIS 7 to today, two full 100 kyr cycles with the LGM and MIS 6, 43 entries and 226 kyr of ice. Params are `/mnt/project-files/water/ws580i_probe_params_L.json`, ws580i's settings plus that history.
+
+**Decision.** The baseline is ws580i's cycles 40 and 41, where the main summit lost 65.3 m (1,383.4 to 1,318.1 m). If L's main summit loses at most a fifth of that (13 m), the full LR04 history run from B1 is worth its time, about 2 hours: 1,243 cold steps against ws580i's 520. Rule 6's lines 4 to 12 are then judged as written. If L loses more, the history is not the main cause, and the uplift note's options come back.

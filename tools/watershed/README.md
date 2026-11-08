@@ -185,3 +185,5 @@ Look for: `closed_cells_outside_lakes` near 0; `summit_8m` within a metre of `su
   It writes `peaks_glacial.json` and `.md`.
 
 Each line reads PASS, FAIL or N/A with its numbers. A run of one cold stage has no cycles, so lines 8 to 10 read N/A. Settings are in `params.json` `peaks`. `python tools/watershed/test_peaks.py` runs its unit tests on small synthetic peaks (numpy and scipy only, a few seconds).
+
+`lr04_history.py` writes `glacial.history` from the LR04 benthic d18O stack (`data/lr04_stack.csv`, Lisiecki and Raymo 2005). The snowline is scaled between today's line (`glacial.today_ela_m`) and the stadial line (`glacial.ela_m`). It reads a params file and writes another, and runs no model (`docs/water/glacial_summit_fix.md`, probe L).
