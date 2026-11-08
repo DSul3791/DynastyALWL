@@ -123,6 +123,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `docs/BUGS_FOUND_IN_PLAY.md` | Tyler | Dave's in-play bug list with the owner triage table | 11-04 | keep (live; `bug-list-2026-11-03-triage.md` in the project folder is the triage) |
 | `docs/COMFORT_DESIGN.md` | Sal | Comfort and the Rested buff (Sal, 2026-10-31) [Proposed] | 10-31 | keep (design/data Sal; rules Steve) |
 | `docs/design/still_water_ice.md` | Jamie | Ice on still water: the air's day and night swing (`Weather.air_c`), water that must cool first, a frosty night's ice gone by early afternoon, the sea frozen only in the arctic zone (builds art_water.md ask 3) | 11-08 | keep |
+| `docs/design/one_temperature.md` | Jamie | One temperature: the island climate (`src/shared/climate.gd`, Sonny's climate.json shape, starter 9 °C ±5, day range 8 °C) read by weather, warmth, ice and snow, and what moved | 11-08 | keep |
 | `docs/design/GUIDING_DOCUMENT.md` | Coordinator | The guiding document: what the game is for, the laws, the implementation path, creatures by habitat, interaction cards, the phased plan (Dave, 7 Nov) | 11-07 | keep: sits above DESIGN_IDEAS.md; the coordinator owns it |
 | `docs/design/valley_fog.md` | Jamie | Valley fog: the weather's `mist` and `mist_top_m`, height fog from above, thick fog from inside, numbers and known limits (builds art_weather_light.md section 7, kind 1) | 11-08 | keep |
 | `docs/DAY_ONE_NUMBERS.md` | Sal | Day-one survival numbers (burn, stomach, water, sickness) from vitals data, 3 Nov | 11-03 | keep |
