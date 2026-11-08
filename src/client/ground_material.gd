@@ -364,13 +364,24 @@ void fragment() {
 	// for now), broad on gentle ground and only in creases and streaks on faces steeper than about 45 degrees. No distance fade:
 	// it is meant to be read from the town.
 	if (summit_snow.x > 1.0 && world_pos.y > summit_snow.x * 0.4) {
+		// Jamie's snow-on-slopes page (#632): under a south-west prevailing wind the deepest old snow lies on north to east aspects, lee slopes
+		// fill (2 to 5 times the mean) and windward ones are scoured nearly bare; the last summer patches lie only where lee and shade meet.
+		// -Z is north: north-east is (+x, -z). The island's climate record will give the wind; south-west stands in for now.
 		float rel = world_pos.y / summit_snow.x;
-		float line = summit_snow.y - 0.08 * clamp(-world_normal.z, 0.0, 1.0) - 0.05 * clamp(world_normal.x, 0.0, 1.0);
+		vec2 flat_n = world_normal.xz / max(length(world_normal.xz), 0.001) * min(length(world_normal.xz) * 3.0, 1.0);
+		float north = clamp(-flat_n.y, 0.0, 1.0);
+		float lee = dot(flat_n, vec2(0.7071, -0.7071));          // +1 facing north-east (downwind), -1 facing south-west (into the wind)
+		float line = summit_snow.y - 0.07 * north - 0.06 * max(lee, 0.0) + 0.07 * max(-lee, 0.0);
 		float patches = 0.6 * vnoise(world_pos * 0.017 + 31.0) + 0.4 * vnoise(world_pos * 0.07 + 7.0);
 		float above = smoothstep(0.0, 0.035, rel - line + (patches - 0.5) * 0.12);
 		float gentle = smoothstep(0.66, 0.78, world_normal.y);
 		float streak = smoothstep(0.6, 0.74, vnoise(vec3(world_pos.x * 0.09, world_pos.y * 0.012, world_pos.z * 0.09)));
 		float hold = max(gentle, (1.0 - gentle) * max(streak * 0.8, crease * 0.6));
+		// In summer (a high line) only the lee and shaded spots keep their patches; open and windward ground is bare.
+		float summer = smoothstep(0.72, 0.8, summit_snow.y);
+		hold *= mix(1.0, smoothstep(0.25, 0.65, 0.5 * north + 0.5 * max(lee, 0.0) + 0.3 * crease), summer);
+		// Windward faces stay scoured nearly bare even in winter (0 to 0.3 of the mean).
+		hold *= 1.0 - 0.7 * smoothstep(0.3, 0.8, -lee);
 		lying = max(lying, above * hold * (1.0 - 0.5 * shelter));
 	}
 	color = mix(color, vec3(0.88, 0.9, 0.94), lying);
