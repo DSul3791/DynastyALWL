@@ -72,6 +72,11 @@ const FLAME_COLOUR_BACK := 0.8           # share of the lost colour a flame give
 const FIRE_COLOUR_NEAR_M := 6.0          # a lit fire this close gives it all back
 const FIRE_COLOUR_FAR_M := 14.0          # and none from this far (the biggest fire's light)
 const FLAME_COLOUR_S := 1.5              # seconds to ease the colour in or out
+# Rainbows on passing showers (art_weather_light.md 4): the sun up and under 42 degrees, rain within the last RAINBOW_HOLD_S,
+# the sun breaking through (cloud cover clearing), not a storm. The bow itself is drawn by the sky shader (sky_clouds.gd).
+const RAINBOW_HOLD_S := 90.0             # the rain is remembered this long (falling off evenly) after it stops
+const RAINBOW_EASE_S := 4.0
+const RAINBOW_SIN_MAX := 0.669           # sin 42 degrees: a higher sun puts the whole bow below the horizon
 const CAVE_LIGHT_DARK := 0.0             # share of the sun and sky light left deep in a cave or tunnel, setting "Dark": none, pitch black without a torch or fire (Dave 5 Nov 2026)
 const CAVE_LIGHT_NORMAL := 0.12          # the same, setting "Normal"
 const CAVE_GO_DARK_S := 1.0              # the light fades out over this long on going in, and back over CAVE_COME_OUT_S
@@ -172,6 +177,9 @@ var canopy_night: float = 0.0           # 0 open .. 1 under closed crowns, at ni
 var torch_adapt: float = 0.0            # 0 .. 1: the eyes adapted to a held flame at night, eased (TORCH_NIGHT_DIM)
 var flame_colour: float = 0.0           # 0 .. 1: how much a flame in the hand or a fire close by gives the colour back, eased
 var night_colour: float = 1.0           # share of the colour left by the night, after a flame's share (1 by day), for checks
+var rainbow: float = 0.0                # 0 .. 1 the bow's strength now, eased (for checks)
+var _rain_memory: float = 0.0           # the recent rain, falling off over RAINBOW_HOLD_S
+var _rainbow_sent: float = -1.0
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
@@ -192,6 +200,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const WindCueScript := preload("res://src/client/wind_cue.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 var _fire_light_next_msec: int = 0
+const GameClock := preload("res://src/shared/game_clock.gd")
 var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
 const BreathLookScript := preload("res://src/client/breath_look.gd")
 var breath                              # BreathLook: breath puffs in the cold (art_weather_light.md 8.4)
@@ -461,7 +470,18 @@ func _process_body(delta: float) -> void:
 			sky_material.set_shader_parameter("cloud_shadow_color", day.cloud_shadow)
 			sky_material.set_shader_parameter("night", day.stars)   # the stars: brighter on a moonless night (day_cycle.gd)
 
+	# A rainbow as a shower passes: recent rain, the sun low and breaking through the clearing cloud.
+	_rain_memory = maxf(rain, _rain_memory - delta / RAINBOW_HOLD_S)
+	var sun_through: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
+	var sun_low: float = smoothstep(0.0, 0.05, day.elevation) * (1.0 - smoothstep(RAINBOW_SIN_MAX - 0.07, RAINBOW_SIN_MAX, day.elevation))
+	var bow_target: float = 0.0 if clear_day else smoothstep(0.03, 0.25, _rain_memory) * smoothstep(0.15, 0.6, sun_through) * sun_low * (1.0 - storm)
+	rainbow = move_toward(rainbow, bow_target, delta / RAINBOW_EASE_S)
+
 	if sky_material != null:
+		if absf(rainbow - _rainbow_sent) > 0.004:
+			_rainbow_sent = rainbow
+			sky_material.set_shader_parameter("rainbow", rainbow)
+
 		sky_material.set_shader_parameter("coverage", lerpf(0.62, 0.30, cloud_cover))
 		sky_material.set_shader_parameter("gloom", gloom)
 		sky_material.set_shader_parameter("flash", flash_level)
@@ -677,6 +697,70 @@ func _update_ground(rain: float, snow: float) -> void:
 	if FireWeather.on and Time.get_ticks_msec() >= _fire_light_next_msec:
 		_fire_light_next_msec = Time.get_ticks_msec() + 1000
 		FireWeather.update(get_tree(), float(_s["mist"]) * mist_inside, snow, lying, 1.0 - day.night)
+
+	# Snow on the branches and crowns (art_weather_light.md 8.2.2): the crowns keep their own memory, which holds in frost and sheds in a
+	# thaw or a strong wind, never more than the ground's.
+	_update_crown_snow(snow, lying)
+
+
+# Snow that holds and sheds (docs/design/trees_weather_design.md part C, Jamie #675 "Snow on trees"; always on since Dave's 8 Nov ruling). Conifers catch
+# about half a snowfall and hold it for weeks in frost, losing about 1 % a game hour; above 0 °C or in a wind over 8 m/s they
+# shed it within about 3 game hours. Bare broadleaves hold a thin line only (0.35); in leaf they load like a conifer.
+# Crown snow is never more than its share of the ground's snow memory (weather_sounds.gd), so a tree is never white over bare ground.
+const CROWN_CONIFER_CAP := 0.5
+const CROWN_BARE_CAP := 0.35
+const CROWN_FROST_KEEP := 0.99         # share kept each game hour in frost
+const CROWN_SHED_TAU_H := 1.0          # thaw or wind: e-folding time in game hours (0.5 -> 0.025 after 3 h)
+const CROWN_SHED_WIND_MS := 8.0
+const CROWN_FALLING := 0.05            # eased snow above this loads the crowns
+var crown_snow_conifer: float = 0.0
+var crown_snow_broad: float = 0.0
+var _crown_next_msec: int = 0
+var _crown_last_msec: int = 0
+var _crown_sent: Vector2 = Vector2(-1.0, -1.0)
+
+
+# One step of one crown kind's snow: value now, its cap, the ground's snow memory (0..1), the eased falling snow (0..1), air
+# temperature, wind in m/s and the game hours since the last step.
+static func crown_snow_step(value: float, cap: float, ground: float, falling: float, temp_c: float, wind_ms: float, hours: float) -> float:
+	var top: float = cap * clampf(ground, 0.0, 1.0)
+
+	if wind_ms > CROWN_SHED_WIND_MS or (temp_c > 0.0 and falling <= CROWN_FALLING):
+		value *= exp(-hours / CROWN_SHED_TAU_H)
+	elif falling > CROWN_FALLING:
+		value = maxf(value, top)
+	else:
+		value *= pow(CROWN_FROST_KEEP, hours)
+
+	return clampf(minf(value, top), 0.0, 1.0)
+
+
+func _update_crown_snow(falling: float, ground: float) -> void:
+	if _client.flora == null:
+		return
+
+	var now_msec: int = Time.get_ticks_msec()
+
+	if now_msec < _crown_next_msec:
+		return
+
+	_crown_next_msec = now_msec + 1000
+	var hours: float = 0.0 if _crown_last_msec == 0 else float(now_msec - _crown_last_msec) / 1000.0 * GameClock.RATIO / 3600.0
+	_crown_last_msec = now_msec
+	var temp_c: float = 10.0
+	var wind_ms: float = 20.0 * pow(clampf(float(_s["wind"]), 0.0, 1.0), 1.3)
+
+	if _client.sound != null and _client.sound.weather != null:
+		temp_c = float(_client.sound.weather.temp_c)
+
+	var broad_cap: float = CROWN_BARE_CAP if str(_client.flora.season) == "winter" else CROWN_CONIFER_CAP
+	crown_snow_conifer = crown_snow_step(crown_snow_conifer, CROWN_CONIFER_CAP, ground, falling, temp_c, wind_ms, hours)
+	crown_snow_broad = crown_snow_step(crown_snow_broad, broad_cap, ground, falling, temp_c, wind_ms, hours)
+	var now: Vector2 = Vector2(crown_snow_conifer, crown_snow_broad)
+
+	if absf(now.x - _crown_sent.x) > 0.01 or absf(now.y - _crown_sent.y) > 0.01:
+		_crown_sent = now
+		_client.flora.set_snow_kinds(now.x, now.y)
 
 
 func _update_particles(rain: float, snow: float, wind: float) -> void:
