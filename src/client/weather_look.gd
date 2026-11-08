@@ -171,6 +171,8 @@ const WindCueScript := preload("res://src/client/wind_cue.gd")
 var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
 const BreathLookScript := preload("res://src/client/breath_look.gd")
 var breath                              # BreathLook: breath puffs in the cold (art_weather_light.md 8.4)
+const PuddlesScript := preload("res://src/client/puddles.gd")
+var puddles                             # Puddles: levels, ice and splashes for the puddles the ground draws (art_weather_light.md 8.1.1)
 
 func setup(client) -> void:
 	_client = client
@@ -186,6 +188,9 @@ func setup(client) -> void:
 	breath = BreathLookScript.new()
 	add_child(breath)
 	breath.setup(client)
+	puddles = PuddlesScript.new()
+	add_child(puddles)
+	puddles.setup(client)
 	_bolt_material = StandardMaterial3D.new()
 	_bolt_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_bolt_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -506,6 +511,9 @@ func _process_body(delta: float) -> void:
 	canopy.update(_client.flora, Vector2(_client.camera.global_position.x, _client.camera.global_position.z))
 	_rain_material.set_shader_parameter("canopy_box", Vector3(canopy.origin.x, canopy.origin.y, canopy.METRES))
 	_update_ground(rain, snow)
+	var heading: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
+	var cave_open: float = clampf((_cave_factor - CAVE_LIGHT_DARK) / maxf(1.0 - CAVE_LIGHT_DARK, 0.001), 0.0, 1.0)
+	puddles.update(delta, rain, float(_s["wind"]), Vector2(cos(heading), sin(heading)), smoothstep(0.6, 0.95, cave_open), _client.terrain.material as ShaderMaterial)
 	_update_particles(rain, snow, float(_s["wind"]))
 	breath.update(delta)
 

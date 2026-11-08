@@ -36,6 +36,13 @@ uniform vec4 fall_zone[3];              // nearest waterfalls: base x, z, spray 
 uniform vec2 fall_height[3];            // their base and top height; the walls are damp up to the top
 uniform sampler2D canopy : filter_linear, hint_default_black;   // where trees shelter the ground (canopy_map.gd)
 uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);                // its corner x, z and width in metres
+uniform float puddle_level[6];         // puddles (puddles.gd, art_weather_light.md 8.1.1): 0 dry .. 1 full, per ground layer
+uniform float puddle_any = 0.0;         // the highest of them, already faded in caves; 0 skips the puddle work
+uniform float puddle_ice = 0.0;         // 0 open .. 1 frozen (ice.gd at 0.1 m)
+uniform vec4 puddle_air = vec4(0.0, 0.0, 1.0, 0.0);    // rain 0..1, wind 0..1, wind heading x, z (where it blows toward)
+uniform vec2 puddle_origin = vec2(0.0); // a corner near the camera, in 60 m steps: the ripples are drawn from it, so they keep their precision far from 0
+uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black;   // worn game trails (grass_view.gd), 4 m texels over 1024 m
+uniform float trail_draw = 0.25;
 uniform vec3 caustics = vec3(0.0);      // under water (underwater_look.gd): surface height, strength 0..1 (0 off), how deep the lines reach
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -68,6 +75,45 @@ float vnoise(vec3 x) {
 		mix(mix(hash3(i), hash3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(hash3(i + vec3(0.0, 1.0, 0.0)), hash3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
 		mix(mix(hash3(i + vec3(0.0, 0.0, 1.0)), hash3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(hash3(i + vec3(0.0, 1.0, 1.0)), hash3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y),
 		f.z);
+}
+
+// Puddles: an exact integer hash, so puddles.gd draws the same hollows on the CPU (the splash under a foot).
+float puddle_hash(ivec2 c) {
+	uint h = uint(c.x) * 374761393u + uint(c.y) * 668265263u;
+	h = (h ^ (h >> 13u)) * 1274126177u;
+	h = h ^ (h >> 16u);
+	return float(h & 16777215u) / 16777215.0;
+}
+
+float puddle_noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	ivec2 c = ivec2(i);
+	return mix(mix(puddle_hash(c), puddle_hash(c + ivec2(1, 0)), f.x), mix(puddle_hash(c + ivec2(0, 1)), puddle_hash(c + ivec2(1, 1)), f.x), f.y);
+}
+
+// 0 .. 1: higher is a deeper hollow. Two sizes, about 3.6 m and 1.1 m.
+float puddle_hollow(vec2 xz) {
+	return 0.65 * puddle_noise(xz * 0.28) + 0.35 * puddle_noise(xz * 0.9 + vec2(4.0));
+}
+
+// One layer of rain rings on a jittered 0.3 m grid: the slope of the water surface (x, z) at `q` (metres from puddle_origin).
+vec2 rain_rings(vec2 q, float rain, float t, int salt) {
+	vec2 cell = floor(q / 0.3);
+	ivec2 c = ivec2(cell) + ivec2(salt * 7, salt * 13);
+	float offset = puddle_hash(c + ivec2(41, 11));
+	float cycle = floor(t / 0.6 + offset);
+	float phase = fract(t / 0.6 + offset);
+	if (puddle_hash(c + ivec2(int(cycle) * 7, 3)) > rain) {
+		return vec2(0.0);
+	}
+	vec2 centre = (cell + vec2(0.35) + 0.3 * vec2(puddle_hash(c + ivec2(17, 3)), puddle_hash(c + ivec2(5, 29)))) * 0.3;
+	vec2 away = q - centre;
+	float d = length(away);
+	float off_ring = d - phase * 0.11;
+	float bump = exp(-off_ring * off_ring / 0.00012) * (1.0 - phase);
+	return away / max(d, 0.001) * bump * sin(off_ring * 160.0) * 0.6;
 }
 
 void fragment() {
@@ -303,7 +349,7 @@ void fragment() {
 
 	// Weather: rain darkens the ground and gives it a sheen, snow whitens level ground above the sea.
 	float shelter = 0.0;
-	if (wet + snow > 0.01) {
+	if (wet + snow + puddle_any > 0.01) {
 		vec2 cuv = (world_pos.xz - canopy_box.xy) / canopy_box.z;
 		if (cuv.x > 0.0 && cuv.x < 1.0 && cuv.y > 0.0 && cuv.y < 1.0) {
 			shelter = texture(canopy, cuv).r;      // under a crown the rain and the snow do not reach the ground
@@ -313,12 +359,67 @@ void fragment() {
 	color *= 1.0 - 0.35 * soak * (1.0 - snow);
 	float lying = snow * (1.0 - 0.75 * shelter) * smoothstep(0.62, 0.9, world_normal.y) * smoothstep(0.0, 1.0, world_pos.y) * (1.0 - 0.6 * rock_mask);
 	color = mix(color, vec3(0.88, 0.9, 0.94), lying);
+
+	// Puddles (art_weather_light.md 8.1.1): flat ground only, in a fixed pattern of hollows, more of each hollow under water the
+	// fuller the ground's level and the more easily water stands on it. A mirror of the sky over dark mud, a damp rim, rain rings
+	// and a wind ruffle; frozen, pale and glossy with no ripples. Not on river and lake beds (the mud soil), not under crowns, not
+	// on snow or by the sea. puddles.gd keeps the levels and reads the same hollows under a foot.
+	float puddle = 0.0;
+	float puddle_rim = 0.0;
+	vec2 ripple = vec2(0.0);
+	if (puddle_any > 0.001 && dist < 220.0 && world_normal.y > 0.951) {
+		float trail = smoothstep(trail_draw, trail_draw + 0.35, texture(trail_map, world_pos.xz / 1024.0).r);
+		float prone[6] = float[6](0.35, 0.25, 0.7, 1.0, 0.0, 0.6);
+		float amount = 0.0;
+		for (int k = 0; k < 6; k++) {
+			amount += lw[k] * puddle_level[k] * min(prone[k] + (k == 4 ? 0.0 : 0.5 * trail), 1.2);
+		}
+		amount *= smoothstep(0.951, 0.985, world_normal.y) * (1.0 - shelter) * (1.0 - lying) * (1.0 - mud) * smoothstep(1.0, 1.5, world_pos.y);
+		if (amount > 0.001) {
+			float hollow = puddle_hollow(world_pos.xz);
+			float level_at = 1.02 - 0.54 * amount;
+			float fade = 1.0 - smoothstep(120.0, 220.0, dist);
+			puddle = smoothstep(level_at, level_at + 0.035, hollow) * fade;
+			puddle_rim = smoothstep(level_at - 0.05, level_at, hollow) * (1.0 - puddle) * fade;
+			if (puddle > 0.01 && puddle_ice < 0.99 && dist < 40.0) {
+				vec2 q = world_pos.xz - puddle_origin;
+				float near = 1.0 - smoothstep(25.0, 40.0, dist);
+				float rain_now = puddle_air.x;
+				if (rain_now > 0.05) {
+					ripple += rain_rings(q, rain_now, TIME, 0) + rain_rings(q + vec2(0.15), rain_now * 0.8, TIME + 0.3, 1);
+				}
+				float wind = smoothstep(0.2, 0.8, puddle_air.y);
+				if (wind > 0.01) {
+					vec2 drift = q * 5.0 - puddle_air.zw * TIME * 0.9;
+					float e = 0.05;
+					float w0 = puddle_noise(drift) + 0.5 * puddle_noise(drift * 2.3 + vec2(9.0));
+					float wx = puddle_noise(drift + vec2(e, 0.0)) + 0.5 * puddle_noise((drift + vec2(e, 0.0)) * 2.3 + vec2(9.0));
+					float wz = puddle_noise(drift + vec2(0.0, e)) + 0.5 * puddle_noise((drift + vec2(0.0, e)) * 2.3 + vec2(9.0));
+					ripple += vec2(wx - w0, wz - w0) / e * 0.05 * wind;
+				}
+				ripple *= near * (1.0 - puddle_ice);
+			}
+		}
+	}
+	if (puddle + puddle_rim > 0.001) {
+		color *= 1.0 - 0.3 * puddle_rim;                                       // the damp edge
+		vec3 water = color * 0.3 + vec3(0.012, 0.010, 0.007);                    // clear water over mud: dark, the sky does the rest
+		vec3 ice_look = mix(color * 0.5, vec3(0.6, 0.64, 0.68), 0.55);
+		float crack = 1.0 - smoothstep(0.0, 0.025, abs(puddle_noise((world_pos.xz - puddle_origin) * 3.0) - 0.5));
+		float bubble = smoothstep(0.82, 0.86, puddle_noise((world_pos.xz - puddle_origin) * 9.0 + vec2(3.0)));
+		ice_look = mix(ice_look, vec3(0.82, 0.85, 0.88), max(crack * 0.5, bubble * 0.35));
+		color = mix(color, mix(water, ice_look, puddle_ice), puddle);
+		vec3 surface = normalize(vec3(-ripple.x, 1.0, -ripple.y));
+		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(surface, 0.0)).xyz, puddle));
+	}
 	ALBEDO = color;
 	// Mud is wet: a little sheen.
 	// Photo roughness near the eye, fading to the flat value with distance (it shimmers when far).
 	float base_rough = has_pbr && rough_w > 0.01 ? mix(0.92, clamp(tex_rough / rough_w, 0.35, 1.0), closeness) : 0.92;
 	ROUGHNESS = mix(mix(base_rough, 0.55, mud), 0.38, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
 	ROUGHNESS = mix(ROUGHNESS, 0.18, wet_sand);      // wet sand shines and mirrors the sky
+	ROUGHNESS = mix(ROUGHNESS, 0.3, puddle_rim);
+	ROUGHNESS = mix(ROUGHNESS, mix(0.03, 0.15, puddle_ice), puddle);      // a puddle mirrors the sky; ice a little less
 
 	// Caustics while the player is under water: the ripples overhead focus the sun into a moving net of bright lines on the bed,
 	// strongest in shallow water facing up, gone with depth, with distance and at night (the sun's own light carries them).
