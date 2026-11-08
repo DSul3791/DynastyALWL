@@ -2001,6 +2001,39 @@
 					"albedo": "res://assets/animals/tiger/Textures/T_Tiger_Body.png"
 				}
 			]
+		},
+		"alligator": {
+			"scene": "res://assets/animals/alligator/SK_AmericanAligator.fbx",
+			"pack": "WildMesh3D/Realistic Animals/AmericanAligator",
+			"scale": 1.0,
+			"yaw_deg": 180,
+			"walk_mps": 0.8,
+			"run_mps": 6.0,
+			"swim_mps": 2.0,
+			"stride_m": 0.8,
+			"clips": {
+				"0": "Idle",
+				"3": "Low pose",
+				"10": "Idle call shared",
+				"11": "Sprint fwd",
+				"12": "Idle",
+				"walk": "Walk fwd",
+				"run": "Sprint fwd",
+				"swim": "Swim fwd surface"
+			},
+			"note": "WildMesh American Alligator (Realistic Animals/AmericanAligator/SK_AmericanAligator.fbx). In the water it plays its swim clip (role swim, client water level). Clips checked 8 Nov 2026; it lies low, so its walk and call clips read under half its imported height: flat_share 0.3.",
+			"length_m": 3.8,
+			"materials": [
+				{
+					"match": "Eye",
+					"albedo": "res://assets/animals/alligator/Textures/T_American_Alligator_Eye.png"
+				},
+				{
+					"match": "",
+					"albedo": "res://assets/animals/alligator/Textures/T_American_Alligator.png"
+				}
+			],
+			"flat_share": 0.3
 		}
 	}
 }
