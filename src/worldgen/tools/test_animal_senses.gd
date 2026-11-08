@@ -197,8 +197,8 @@ func _init() -> void:
 	var zoo4 = make([Vector3(-5.0, 10.0, 0.0)], [5], toward_x, false)
 	zoo4._wind_s = 1.0
 	zoo4._wind_dir = Vector2(1.0, 0.0)
-	var rid: int = zoo4.spawn("rabbit", 0.0, 0.0)
-	var rab: Dictionary = zoo4.animals[rid]
+	var rid4: int = zoo4.spawn("rabbit", 0.0, 0.0)
+	var rab: Dictionary = zoo4.animals[rid4]
 	var rdef: Dictionary = zoo4.cfg["species"]["rabbit"]
 	var open_lying: float = zoo4._sense_factor(rab, rdef, Vector3(-5.0, 10.0, 0.0), 5.0, 3)
 	var in_room: float = zoo4._sense_factor(rab, rdef, Vector3(-5.0, 10.0, 0.0), 5.0, 5)
