@@ -130,29 +130,43 @@ def _hollows(pit, rec, sea, n, min_depth):
     return lab, deep[:k], size[:k], outlet
 
 
-def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell, sweeps, tol, Sc):
+def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell, sweeps, tol, Sc, psi):
     """Implicit stream power with deposition (stage B1). h holds h0 on entry and the new heights on exit. Returns the
     sediment flux through each cell (m3/yr, own cell included) from the last sweep. The erosion coefficient of each cell is
-    K e share Q^m; the glacial stage (glacial.py) adds the ice's own term and solves with the same _solve."""
+    K e share Q^m, and psi (per cell) the incision threshold on Q^m S, below which the flow does not cut bedrock. The glacial
+    stage (glacial.py) adds the ice's own term and solves with the same _solve."""
     Qi = np.where(Q > 0.0, Q, cell)
+    kq = K * ery * share * Qi ** m
     sc = np.full(h.size, float(Sc)) if np.ndim(Sc) == 0 else np.asarray(Sc, np.float64)
-    return _solve(h, h0, sea, order, rec, n, dx, dt, K * ery * share * Qi ** m, G, U, Qi, cell, sweeps, tol, sc)
+    ps = np.full(h.size, float(psi)) if np.ndim(psi) == 0 else np.asarray(psi, np.float64)
+    return _solve(h, h0, sea, order, rec, n, dx, dt, kq, kq * ps / Qi ** m, G, U, Qi, cell, sweeps, tol, sc)
 
 
 @nb.njit(cache=True)
-def _solve(h, h0, sea, order, rec, n, dx, dt, kq, G, U, Qd, cell, sweeps, tol, Sc):
-    """The implicit erosion-deposition solve. kq: each cell's erosion coefficient (erosion = kq * S, S the slope to the
-    receiver). Qd: each cell's carrying flow for the deposition term (G / Qd times the sediment flux), never zero.
+def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, G, U, Qd, cell, sweeps, tol, Sc):
+    """The implicit erosion-deposition solve. kq: each cell's erosion coefficient (erosion = kq * S - kc, S the slope to the
+    receiver, never below 0). kc: each cell's critical erosion rate, kq times the incision threshold on Q^m S (0 for none).
+    Qd: each cell's carrying flow for the deposition term (G / Qd times the sediment flux), never zero.
 
-    Threshold hillslopes (Sc per cell, the tangent of the threshold angle; 0 turns it off there, as under a glacier). Where uplift outpaces erosion, real
-    hillslopes do not steepen without end: past a threshold angle they fail by landslides, so their mean angle stays near that
-    threshold whatever the erosion rate (Burbank et al. 1996, Nature 379:505; Montgomery 2001, Am. J. Sci. 301:432). Linear
-    creep alone has no such limit, and run 624bd23c grew a ridge more than 1,000 m above its landform with 40 to 45 degree
-    flanks. So each cell, solved after its receiver, is capped at the receiver's height plus Sc times the distance. The cap
-    lowers the cell; the volume it loses counts as eroded material in the sediment sum below, so the slide debris travels down
-    the same tree and is laid down where the water cannot carry it (talus and fans at the slope foot, as the hybrid landslide
-    model of Campforts et al. 2020, GMD 13:3863, routes it), instead of vanishing. Against the sea, the cap is measured from sea
-    level, not from the sea floor, which this model does not evolve."""
+    Incision threshold. A channel cuts bedrock only where its flow is strong enough to move the boulders and gravel on its bed,
+    so small steep headwater flows and gentle bedrock reaches barely cut (the document: no deep gullies under tiny flows).
+    Erosion rates rise with channel steepness far faster than linearly once a threshold is in (DiBiase et al. 2010, EPSL 289:134;
+    DiBiase and Whipple 2011, JGR 116:F04036). Loose sediment over 1 m has none (the caller sets kc 0 there).
+
+    Threshold hillslopes (Sc per cell, the tangent of the threshold angle; 0 turns it off there, as under a glacier). Where uplift
+    outpaces erosion, real hillslopes do not steepen without end: past a threshold angle they fail by landslides, so their mean
+    angle stays near that threshold whatever the erosion rate (Burbank et al. 1996, Nature 379:505; Montgomery 2001, Am. J. Sci.
+    301:432). Linear creep alone has no such limit, and run 624bd23c grew a ridge more than 1,000 m above its landform with 40
+    to 45 degree flanks. So each cell, solved after its receiver, is capped at the receiver's height plus Sc times the distance.
+    The cap lowers the cell; the volume it loses counts as eroded material in the sediment sum below, so the slide debris
+    travels down the same tree and is laid down where the water cannot carry it (talus and fans at the slope foot, as the
+    hybrid landslide model of Campforts et al. 2020, GMD 13:3863, routes it), instead of vanishing. Against the sea, the cap is
+    measured from sea level, not from the sea floor, which this model does not evolve.
+
+    Hollows fill to their spill, no higher. A cell that starts the step below its receiver (in a closed hollow, draining over
+    the receiver's sill) can be filled with sediment up to the receiver's height and no further; the rest goes on downstream.
+    Without this, run d9f89615 built sediment mounds hundreds of metres high: a filled hollow rose above its sill, its upstream
+    neighbours became a hollow behind it, and the mound climbed the valley."""
     N = n * n
     up = np.zeros(N)
     total = np.zeros(N)          # sum over strictly upstream cells of (U - dh/dt) * cell, from the previous sweep
@@ -171,12 +185,17 @@ def _solve(h, h0, sea, order, rec, n, dx, dt, kq, G, U, Qd, cell, sweeps, tol, S
             if d >= 0:
                 F = kq[i] / dist
             hr = h[d] if d >= 0 else h0[i]
-            num = h0[i] * (1.0 + c) / dt + U[i] * (1.0 + c) + F * hr + G / Qi * up[i]
-            x = num / ((1.0 + c) / dt + F)
-            if x < hr and F > 0.0:                       # never cut below the receiver: no erosion there, only deposition
-                x = (h0[i] * (1.0 + c) / dt + U[i] * (1.0 + c) + G / Qi * up[i]) / ((1.0 + c) / dt)
-                if x > hr:
-                    x = hr
+            A = (1.0 + c) / dt
+            B = h0[i] * (1.0 + c) / dt + U[i] * (1.0 + c) + G / Qi * up[i]
+            x = B / A                                    # no erosion
+            if F > 0.0:
+                x1 = (B + F * hr + kc[i]) / (A + F)      # erosion F (x - hr) - kc, while it is positive
+                if F * (x1 - hr) >= kc[i]:
+                    x = x1
+                elif F * (x - hr) > kc[i]:               # between the two: the flow stands exactly at its threshold
+                    x = hr + kc[i] / F
+            if d >= 0 and h0[i] < hr and x > hr:         # a hollow fills to its sill, no higher
+                x = hr
             if Sc[i] > 0.0 and d >= 0:
                 base = hr
                 if sea[d] and base < 0.0:
@@ -288,6 +307,11 @@ def cell_limits(Sc, sc_rock, rid, deposit):
     return np.where(deposit > 1.0, Sc, sc_rock[rid])
 
 
+def bedrock_threshold(E, deposit):
+    """Each cell's incision threshold on Q^m S: incision_threshold_m on bedrock, none on loose sediment over 1 m."""
+    return np.where(deposit > 1.0, 0.0, float(E.get('incision_threshold_m', 0.0)))
+
+
 def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, sc_rock, deposit, fixed):
     """One step of the river era (B1; also the post-glacial era in glacial.py): route, discharge from the quick runoff of the
     rock at today's surface, channel heads, the implicit erosion-deposition solve (slope limit by rock, see slope_limits),
@@ -298,11 +322,12 @@ def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch,
     rid = rock.rock_ids(g, h)
     quick = runoff.budget(rain_mm, rid, bfi, W)['quick'] / q_ref    # the rock at today's surface
     sc = cell_limits(Sc, sc_rock, rid, deposit)
+    psi = bedrock_threshold(E, deposit)
     Q = _discharge(order, rec, sea, quick, cell, n * n)
     share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
     ery = ery_fn(h)
     h0 = h.copy()
-    flux = _fluvial(h, h0, sea, order, rec, n, dx, dt, E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'], sc)
+    flux = _fluvial(h, h0, sea, order, rec, n, dx, dt, E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'], sc, psi)
     h1 = h.copy()
     _diffuse(h, fixed, dx, dt, E['D'], ery)
     change = h - (h0 + U * dt)
@@ -486,6 +511,9 @@ def main():
                      highest_ten=[dict(x=ox + float(q % n) * dx, z=oz + float(q // n) * dx, landform_m=float(start.ravel()[q]),
                                        loss_m=float(lq), rock=g['names'][int(rid2[q])])
                                   for q, lq in sorted(zip(pk, loss), key=lambda t: -start.ravel()[t[0]])[:10]])
+        lgy, lgx = np.gradient(start, dx)
+        over = (np.hypot(lgx, lgy) > sc_rock[rock.rock_ids(g, start.ravel())].reshape(n, n)) & land
+        landform_over = dict(all_land=float(over[land].mean()), near_landform_peaks=float(over.ravel()[near_pk].mean()) if near_pk.any() else 0.0)
         lowering = {name: dict(river_and_slides_m=float(by_river[msk].mean()), creep_m=float(by_creep[msk].mean()))
                     for name, msk in (('near_landform_peaks', near_pk), ('all_land', sea == 0)) if msk.any()}
         summary = dict(seconds=time.time() - t0, steps=len(track), years=years_done, summit_m=float(hh.max()), landform_summit_m=float(start.max()),
@@ -498,7 +526,8 @@ def main():
                        land_height_percentiles_m={str(q): float(np.percentile(hh[land], q)) for q in pct},
                        landform_height_percentiles_m={str(q): float(np.percentile(start[land], q)) for q in pct},
                        local_relief_2km_on_high_ground_m=_relief(hh), landform_local_relief_2km_on_high_ground_m=_relief(start),
-                       landform_peaks=peaks, height_change_by_process=lowering,
+                       landform_peaks=peaks, height_change_by_process=lowering, landform_steeper_than_its_rock_threshold=landform_over,
+                       incision_threshold_m=float(E.get('incision_threshold_m', 0.0)),
                        land_km2=float(land.sum() * cell / 1e6),
                        median_slope_deg=float(np.median(slope[land])), share_under_10deg_below_250m=float((slope[land & (hh < 250)] < 10).mean()),
                        closed_hollow_cells=int((pits[land] > 0.01).sum()), deepest_hollow_m=float(pits[land].max()), hollows=hollows,

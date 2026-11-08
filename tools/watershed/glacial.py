@@ -212,7 +212,9 @@ def main():
         # ice-free walls are measured against the ice surface beside them (the ice holds them up; after it melts, the
         # post-glacial era lets the oversteepened walls fail, as paraglacial rock slope failures do).
         sc = np.where(thick > 0.0, 0.0, evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h), deposit))
-        flux = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc)
+        # The incision threshold is for flowing water on bedrock; ice cuts whatever its flux (none under the ice).
+        kc = np.where(thick > 0.0, 0.0, E['K'] * ery * share * evolve.bedrock_threshold(E, deposit))
+        flux = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, kc, E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc)
         h0 = h.copy()
         h = x - thick
         h[land] = np.maximum(h[land], 0.05)
