@@ -31,6 +31,8 @@
 		"geology": ["granite", "basin", "fold_belt"]
 	},
 
+	"spine_smoothing_m": 480,
+	"spine_smoothing_note": "8 Nov 2026 (watershed rebuild, no generator marks): island heights follow the distance from the sea, whose ridge (the line midway between two coasts) is a sharp crease; it drew a knife-edge crest, ruler-straight wherever two coasts run parallel (due west of the starter summit). The height bands, foothills and coast caps follow it rounded by a Gaussian of this sigma (WorldElevation._spine_distance); near a straight coast nothing changes. 480 m (3 map cells) keeps it to the massif scale: a ridge about a kilometre across at its crest, with the hill-scale shape left to the erosion.",
 	"starter_islands": {
 		"area_km2": {"inner": [64, 78], "outer": [86, 104]},
 		"aspect": [1.2, 1.6],

@@ -717,7 +717,7 @@ func _shape_shelf_coasts(sketch: Dictionary) -> void:
 		var size: int = radius * 2 + 1
 		var center_column: int = int(floor((float(outline["center_m"][0]) - origin_x) / cell_m))
 		var center_row: int = int(floor((float(outline["center_m"][1]) - origin_z) / cell_m))
-		var sea: PackedFloat32Array = _sea_distance(center_column, center_row, radius)
+		var sea: PackedFloat32Array = _spine_distance(center_column, center_row, radius, _spine_smoothing_cells())
 
 		for row in range(size):
 			for column in range(size):
@@ -905,7 +905,7 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 	var size: int = radius * 2 + 1
 	var center_column: int = int(floor((float(mount["x"]) - origin_x) / cell_m))
 	var center_row: int = int(floor((float(mount["z"]) - origin_z) / cell_m))
-	var distance_cells: PackedFloat32Array = _sea_distance(center_column, center_row, radius)
+	var distance_cells: PackedFloat32Array = _spine_distance(center_column, center_row, radius, _spine_smoothing_cells())
 
 	var rotation: float = deg_to_rad(float(mount["rot"]))
 	var cos_r: float = cos(rotation)
@@ -1135,7 +1135,7 @@ func _raise_foothills(mount: Dictionary) -> void:
 	var size: int = radius * 2 + 1
 	var center_column: int = int(floor((float(mount["x"]) - origin_x) / cell_m))
 	var center_row: int = int(floor((float(mount["z"]) - origin_z) / cell_m))
-	var sea: PackedFloat32Array = _sea_distance(center_column, center_row, radius)
+	var sea: PackedFloat32Array = _spine_distance(center_column, center_row, radius, _spine_smoothing_cells())
 	var rotation: float = deg_to_rad(float(mount["rot"]))
 	var cos_r: float = cos(rotation)
 	var sin_r: float = sin(rotation)
@@ -1236,14 +1236,99 @@ func _crater_at_summit(mount: Dictionary, crater: Dictionary, radius: int) -> vo
 # the diagonals (a straight crest running due west from the starter island's summit, zoom pictures of run 4edbc722).
 func _sea_distance(center_column: int, center_row: int, radius: int) -> PackedFloat32Array:
 	var size: int = radius * 2 + 1
+	var sites: PackedByteArray = PackedByteArray()
+	sites.resize(size * size)
+
+	for row in range(size):
+		for column in range(size):
+			sites[row * size + column] = 1 if heights[index_of(center_column - radius + column, center_row - radius + row)] <= 0.0 else 0
+
+	return _distance_to_sites(sites, size)
+
+
+# The island's spine distance, which the height bands, foothills (_raise_foothills) and the coast caps (_shape_coast_profile,
+# _shape_shelf_coasts) follow: the sea distance with its ridge rounded over `smoothing_cells` (a Gaussian of that sigma,
+# averaged over land cells only), and never above the sea distance itself. The sea distance has a sharp crease along its
+# ridge, the line midway between two coasts, and heights that follow it drew that line as a knife-edge crest, ruler-straight
+# wherever two coasts run parallel (the crest due west of the starter summit in the 4edbc722 and 2c7b3bd2 zooms; pictured
+# stage by stage with dump_sketch_stages.gd, it appears with the foothills). Near a coast the land-only average is above the
+# sea distance (the cells further inland weigh in, the sea cells do not), so the cap keeps the true distance there and only
+# the ridge is rounded; a narrow headland or islet keeps a rounded top above zero. Island heights follow the rank of this
+# distance, so the summit keeps its height.
+func _spine_distance(center_column: int, center_row: int, radius: int, smoothing_cells: float) -> PackedFloat32Array:
+	var to_sea: PackedFloat32Array = _sea_distance(center_column, center_row, radius)
+
+	if smoothing_cells <= 0.0:
+		return to_sea
+
+	var size: int = radius * 2 + 1
+	var land: PackedFloat64Array = PackedFloat64Array()
+	var on_land: PackedFloat64Array = PackedFloat64Array()
+	land.resize(size * size)
+	on_land.resize(size * size)
+
+	for at in range(size * size):
+		var is_land: bool = to_sea[at] > 0.0
+		land[at] = 1.0 if is_land else 0.0
+		on_land[at] = minf(to_sea[at], 1.0e6) if is_land else 0.0
+
+	var reach: int = int(ceil(3.0 * smoothing_cells))
+	var weights: PackedFloat64Array = PackedFloat64Array()
+	weights.resize(2 * reach + 1)
+
+	for k in range(-reach, reach + 1):
+		weights[k + reach] = exp(-0.5 * float(k * k) / (smoothing_cells * smoothing_cells))
+
+	var total: PackedFloat64Array = _blur_axis(_blur_axis(on_land, size, weights, reach, true), size, weights, reach, false)
+	var share: PackedFloat64Array = _blur_axis(_blur_axis(land, size, weights, reach, true), size, weights, reach, false)
+	var spine: PackedFloat32Array = PackedFloat32Array()
+	spine.resize(size * size)
+
+	for at in range(size * size):
+		spine[at] = minf(to_sea[at], float(total[at] / share[at])) if land[at] > 0.0 else 0.0
+
+	return spine
+
+
+# sketch_rules spine_smoothing_m, in cells (_spine_distance).
+func _spine_smoothing_cells() -> float:
+	return float(rules.get("spine_smoothing_m", 0.0)) / cell_m
+
+
+# One pass of a normalised blur along rows (along_rows) or columns, clamped at the square's edge.
+static func _blur_axis(field: PackedFloat64Array, size: int, weights: PackedFloat64Array, reach: int, along_rows: bool) -> PackedFloat64Array:
+	var out: PackedFloat64Array = PackedFloat64Array()
+	out.resize(size * size)
+
+	for row in range(size):
+		for column in range(size):
+			var total: float = 0.0
+			var weight_sum: float = 0.0
+
+			for k in range(-reach, reach + 1):
+				var c: int = column + k if along_rows else column
+				var r: int = row if along_rows else row + k
+
+				if c < 0 or c >= size or r < 0 or r >= size:
+					continue
+
+				total += weights[k + reach] * field[r * size + c]
+				weight_sum += weights[k + reach]
+
+			out[row * size + column] = total / weight_sum
+
+	return out
+
+
+# Straight-line distance, in cells, from each cell of a size x size square to the nearest cell with sites[] = 1 (an exact
+# Euclidean distance transform, one axis then the other); 1e9 where the square holds no site.
+static func _distance_to_sites(sites: PackedByteArray, size: int) -> PackedFloat32Array:
 	var far: float = 1.0e12
 	var squared: PackedFloat64Array = PackedFloat64Array()
 	squared.resize(size * size)
 
-	for row in range(size):
-		for column in range(size):
-			var h: float = heights[index_of(center_column - radius + column, center_row - radius + row)]
-			squared[row * size + column] = 0.0 if h <= 0.0 else far
+	for at in range(size * size):
+		squared[at] = 0.0 if sites[at] == 1 else far
 
 	var line: PackedFloat64Array = PackedFloat64Array()
 	line.resize(size)
