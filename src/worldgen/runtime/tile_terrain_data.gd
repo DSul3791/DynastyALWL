@@ -698,8 +698,8 @@ func _load_caves(list: Array) -> void:
 		if str(cave.get("cave_kind", "")) == "spring_cave" and not nodes.is_empty():
 			spring_mouths.append(Vector2(float(nodes[0][0]), float(nodes[0][2])))
 		for entrance in cave.get("entrances", []):
-			var mouth_node: Array = nodes[int(entrance)]
-			var mouth: Vector3 = Vector3(float(mouth_node[0]), float(mouth_node[1]), float(mouth_node[2]))
+			var entrance_node: Array = nodes[int(entrance)]
+			var mouth: Vector3 = Vector3(float(entrance_node[0]), float(entrance_node[1]), float(entrance_node[2]))
 			var mouth_kind: int = CaveClimate.LEVEL
 
 			for segment in cave["segments"]:

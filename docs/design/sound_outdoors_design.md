@@ -139,6 +139,26 @@ A quiet sound past the mask distance fades out. A loud low one does not.
 - **Night:** the same river carries about twice as far on a calm night (3.2 already does it).
 - **Not here:** the roar over a calm lake. That is R7's to fix by its cause, and this does not touch it.
 
+### 3.8 Breeze loss (step 5, Jamie #683)
+
+- **What:** a moderate breeze cuts every range about five times (about 14 dB): Jamie's force 4 column, where a large fall is heard to 850 m, not 3 km.
+- **Rule:** past 200 m, full from 400 m, every source (big low sounds too) loses `lerp(6, 14, smoothstep(0.3, 0.5, wind))` dB, faded in from wind 0.15. That is -6 dB at wind 0.3 (4 m/s) and -14 dB from wind 0.5 (8 m/s).
+- **With the others:** it adds to the wind direction (3.1) and the gale mask (3.4); the total is still held to -30 dB.
+
+### 3.9 Running water hides small sounds (step 6, Jamie #742)
+
+- **What:** a brook or rapids beside the player is a loud bed, and small sounds farther off are lost in it, just as in rain. Jamie's sums: within about 20 m of a brook, or 40 m of rapids, the bed is as loud as a force 4 wind (42 to 45 dBA). So a stalker who comes in under the water's noise gets close.
+- **The bed at the player:** a brook is 55 dBA at 5 m and rapids (or a fall) 62 dBA at 5 m (Jamie's 56 at 10 m). Each falls 6 dB per doubling of distance, and two beds add as power. Nothing is taken off nearer than 5 m.
+- **Mask distance:** `water_mask_m = 100 m x hearing factor`, where the factor is `10^(-(bed - 28) / 20)` against Jamie's calm day bed of 28 dBA.
+  - Beside a brook (5 m): 4.5 m, the same as heavy rain.
+  - 20 m from a brook: about 18 m. 40 m from rapids: about 16 m.
+  - 40 m from a brook: about 36 m. Past about 65 m from a brook nothing is masked (a mask wider than 60 m is dropped).
+  - The 100 m is judged. It puts Jamie's hearing factors close to 3.4's rain table: drizzle (x 0.35) at 35 m against 30 m, heavy rain (x 0.04) at 4 m against 5 m.
+- **Loss:** the same as 3.4, -12 dB x smoothstep(M, 2M, d) x small. The mask distance used is the smallest of rain, gale and water. Big low sounds (a bear, a howl, thunder) come through.
+- **Where the distances come from:** `water_sounds.gd`'s last scan (every 2.5 s, 64 m each way) keeps `brook_m` and `rapids_m`, the nearest flowing square of each and the nearest fall. A flowing square with a drop of 1 m or more to a neighbour counts as rapids. A brook kept quiet beside a lake does not count.
+- **The water's own voices are left out:** the brook, river, fall, fall base and lap voices carry `air_water`, so the bed does not hide itself or the fall's spray.
+- **Player side only.** How well animals hear the player in noise is Steve's and MikeW's (`server_animals.gd` `_sense_factor`; Jamie's suggested `hear_factor`). This is what the player hears.
+
 ## 4. Never-hear checks (from Jamie's list, each a test or a listen)
 
 - a far sound as loud upwind as downwind on a windy day (test: `wind_db` gap ≥ 10 dB at wind 0.4, d 400 m);
@@ -146,7 +166,8 @@ A quiet sound past the mask distance fades out. A loud low one does not.
 - a crisp echo in open woodland (test: `echo_paths` empty for a field of trunks; listen in the forest);
 - snow that muffles sound for weeks (test: `snow_fresh` 0 after 3 game days of no snow below freezing);
 - a calm night valley louder in the wind than by day (night carry is 0 at wind ≥ 0.35);
-- a river that sounds the same at 10 m and 200 m (test: `line_db` gives ≥ 12 dB between them; listen).
+- a river that sounds the same at 10 m and 200 m (test: `line_db` gives ≥ 12 dB between them; listen);
+- a footstep 20 m off heard clearly by a player standing beside a brook (test: `total` ≤ -12 dB with `brook_m` 5, unit 4; Jamie #742).
 
 Plus our own:
 
@@ -163,6 +184,8 @@ Plus our own:
 2. **Masking by rain and gale; fresh-snow hush that ages** (`weather_sounds.gd` `snow_fresh`).
 3. **Rivers as a line** (`water_sounds.gd` sets `air_line` on river and rapids voices, and the scan adds `line_db`).
 4. **Echoes off cliffs:** the `Echo` bus, `air_sharp` on the four modules, the search and the repeats.
+5. **Breeze loss** (3.8): `breeze_db` in `outdoor_air.gd`, added in `total`.
+6. **Running water hides small sounds** (3.9): `water_mask_m` and `mask_m_of` in `outdoor_air.gd`; `water_sounds.gd` keeps `brook_m` and `rapids_m` and marks its voices `air_water`.
 
 Cost: steps 1 to 3 are a few multiplies per playing world voice every 0.5 s (96 voices at most on High). Step 4 is at most 8 to 12 voxel rays every 0.5 s, and only when a sharp sound played.
 
@@ -176,6 +199,7 @@ The pictures rig cannot judge sound, so the checks are listens on Dave's PC, eac
 4. A day after fresh snow, then 3 days later: hushed, then normal.
 5. Chop beside a 30 m crag (tile 3,4 has granite walls) and in an open field: an echo at the crag only.
 6. Walk away from a river: 10 m, 50 m, 150 m. It fades slowly, then falls off.
+7. Stand beside a brook while a friend walks toward you from 30 m: their steps come up only in the last few metres. Then do the same 80 m from the brook: the steps are heard from the start.
 
 ## 7. Open points
 
@@ -183,6 +207,7 @@ The pictures rig cannot judge sound, so the checks are listens on Dave's PC, eac
 - Forest between source and listener (not around the listener) would need rays or a canopy map read along the line. Left until someone hears the case.
 - Thunder echoes in mountains: left to the clips.
 - The river length L comes from R7's record when it exists. 150 m until then.
+- **Wolf howls carry far too short (Jamie #742 lesson 6).** A howl is drawn 150 to 520 m off and never past 950 m (`creature_sounds.gd`). Jamie gives 6 to 10 km for a reply, about 7 km on a calm night and about 2 km in a force 4 wind. A far howl at 1.5 to 3 km on calm nights, and the 950 m reach raised to match, is a candidate step after Dave's listen of steps 1 to 6. It is a level and voice-count question, and the far rules (night carry, breeze) already shape it.
 
 ## 8. Checked against Jamie's hearing ranges (#683, 8 Nov)
 
@@ -195,3 +220,12 @@ Jamie's table, "How far it is heard: calm night against a moderate breeze", set 
   - So none of the far rules (night carry, line rivers) can be heard past those distances. Raising them is a cost question (more voices kept alive, the voice shedder) and is left to the water sound work after R7, when each reach and fall has its size from the record.
 - **Gap 2: a moderate breeze cuts every range about five times (about 14 dB).** Our gale mask starts at wind 0.5 (about 8 m/s), takes at most 12 dB and only from small sounds. At force 4 (7 m/s, wind about 0.42) a fall should be heard to 850 m, not 3 km, and our big sounds lose nothing except by direction. The game's own wind bed masks some of it by ear. A breeze loss for every source past 200 m, about -6 dB at wind 0.3 rising to -14 dB at wind 0.5, is a candidate step 5 once Dave has listened to steps 1 to 4.
 - **Thunder** is its own note: `docs/design/thunder_delay_design.md`.
+
+## 9. Checked against Jamie's hearing in weather page (#742, 8 Nov)
+
+- **Hearing factors against a calm day:** calm night x2, force 2 x0.6, drizzle x0.35, force 4 open x0.2, moderate rain x0.1, force 4 forest x0.08, heavy rain x0.04.
+  - **Calm night:** x2 is +6 dB. Our night carry is +4.5 dB past 150 to 300 m (3.2), close enough, and it fades by wind 0.35.
+  - **Rain:** 3.4's table (30 m in drizzle, 5 m in heavy rain) sits within the factors' spread. Moderate rain at 15 m is a little generous against x0.1. Left for Dave's listen.
+  - **Force 4 in the open:** the gale mask starts at wind 0.5 (60 m) and the breeze loss (3.8) takes far sounds. A force 4 mask for small near sounds (about 20 m) is not in. Left for the listen: the game's own wind bed already masks by ear.
+- **Running water:** step 6 (3.9).
+- **Wolf howls:** see the open point in section 7.

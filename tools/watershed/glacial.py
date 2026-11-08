@@ -57,6 +57,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
 import rock     # noqa: E402
 import runoff   # noqa: E402
 import evolve   # noqa: E402  (the B1 solver, creep, river step, hollows)
+import world    # noqa: E402  (the island's latitude from its tile row)
 
 
 @nb.njit(cache=True)
@@ -149,7 +150,8 @@ def _swath(Ai, ptr, don, order, n, dx, w0, a0, alpha):
 
 def _aspect_shift(h, GL, n, dx):
     """Metres the snowline lies lower on each cell (design A1 rule 6): aspect_ela_m on steep ground facing the shady lee
-    quarter (glacial.shady_bearing_deg: 45, NE, north of the equator; 135, SE, south of it), as much higher facing the
+    quarter (GL['shady_bearing_deg'], set by main() from the island's latitude, world.py: 45, NE, north of the equator; 135,
+    SE, south of it), as much higher facing the
     sunny one, scaled by the slope up to aspect_full_slope_deg. The aspect is that of the ground smoothed over
     aspect_smoothing_m: a valley head's, not one cell's. 0 everywhere when aspect_ela_m is 0 or missing."""
     a = float(GL.get('aspect_ela_m', 0.0))
@@ -178,6 +180,9 @@ def main():
     N = n * n
     if abs(dx - float(data['cell_m'])) > 1e-6 or data['landform'].shape[0] != n:
         raise SystemExit('glacial: the B1 ground and the inputs are on different grids')
+    # One sky (design A4): the shady lee quarter follows the island's latitude from its tile row on the world grid.
+    sky = world.sky(P, float(data['origin_z']), n * dx)
+    GL = dict(GL, shady_bearing_deg=sky['shady_bearing_deg'])
     sea = b1['sea'].ravel().astype(np.uint8)
     land = sea == 0
     # The uplift B1 used (zero when B1 dissects the landform as it stands, uplift_share 0); the inputs' A2 uplift for older runs.
@@ -304,7 +309,7 @@ def main():
 
     # The peak shapes after every cycle (peaks.py, the rule 6 checks), on the landform's own peaks and valley-head bearings.
     import peaks
-    Q = peaks._checks(P)
+    Q = peaks._checks(P, sky)
     lf, sea2, _, lox, loz = peaks._load_inputs(inputs_dir)
     tops = peaks.summits(lf, sea2, dx, peaks.snowline(P) + float(Q['above_snowline_m']), float(Q['summit_window_m']))
     axes = peaks.axes(lf, sea2, dx, tops, Q)
@@ -386,7 +391,7 @@ def main():
     gy, gx = np.gradient(hh, dx)
     slope = np.degrees(np.arctan(np.hypot(gx, gy)))
     iced = ice_max > 0.0
-    summary = dict(seconds=time.time() - t0, cold_steps=steps, post_glacial_steps=psteps, ela_m=He,
+    summary = dict(seconds=time.time() - t0, cold_steps=steps, post_glacial_steps=psteps, ela_m=He, sky=sky,
                    ice_max_km2=float((iced & land).sum() * cell / 1e6), ice_thickest_m=float(ice_max.max()),
                    ice_at_coast_cells=int((iced & land & _coast(sea, n)).sum()),
                    lowest_ice_m=float(b1_ground[iced & land].min()) if (iced & land).any() else None,
