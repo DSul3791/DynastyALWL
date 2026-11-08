@@ -773,6 +773,7 @@
 			"model": true
 		},
 		"grouse": {
+			"flight": {"kind": "flush", "flush_m": 9.0, "burst_s": 1.5, "climb_m": [8.0, 12.0], "fly_m": [100.0, 250.0], "fly_mps": 17.0, "glide_share": 0.3, "run_m": 6.0},
 			"weather": "bird",
 			"alarm_group": "ground_birds",
 			"alarm_group_m": 15.0,
@@ -2141,6 +2142,7 @@
 			"spawn_share": 0.4
 		},
 		"crow": {
+			"flight": {"kind": "perch", "burst_s": 1.0, "climb_m": [3.0, 5.0], "fly_m": [40.0, 150.0], "fly_mps": 12.0, "glide_share": 0.4, "perch_up_m": 8.0, "perch_s": [30.0, 90.0]},
 			"weather": "bird",
 			"alarm_group": "ground_birds",
 			"alarm_group_m": 15.0,
@@ -2195,6 +2197,7 @@
 			"note": "Dave 7 Nov 2026, batch 2. Crows walk and peck on open ground, field edges and the shore in small groups by day and flush when a player comes close. Grouse numbers; it does not fly in this version, it runs and flaps."
 		},
 		"pheasant": {
+			"flight": {"kind": "flush", "flush_m": 9.0, "burst_s": 1.5, "climb_m": [10.0, 15.0], "fly_m": [120.0, 300.0], "fly_mps": 18.0, "glide_share": 0.3, "run_m": 8.0},
 			"weather": "bird",
 			"alarm_group": "ground_birds",
 			"alarm_group_m": 15.0,
@@ -3692,6 +3695,7 @@
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). Camels roam dry savanna and bare ground in small groups by day, walk off from a player and kick one who corners it. Horse numbers, slower, drier ground; tamable value like the horse for later riding."
 		},
 		"guineafowl": {
+			"flight": {"kind": "flush", "flush_m": 9.0, "burst_s": 1.5, "climb_m": [6.0, 10.0], "fly_m": [60.0, 150.0], "fly_mps": 14.0, "glide_share": 0.3, "run_m": 10.0},
 			"weather": "bird",
 			"alarm_group": "ground_birds",
 			"alarm_group_m": 15.0,
@@ -4179,6 +4183,10 @@
 				"swim_mps": 4.0
 			}
 		}
+	},
+	"flight": {
+		"note": "Single birds in flight, step 1 (docs/design/bird_flight_server_design.md; MikeW's client layer): a species row with a flight block flies when it bolts. flush: sits tight to flush_m, bursts up climb_m in burst_s, flies fly_m at fly_mps bending to cover, glides the last glide_share down, lands and runs run_m. perch: flies to tree cover fly_m off and sits perch_up_m up for perch_s, then comes down once nobody is within safe_m. Every flight stays clear_m over the ground except where it lands. Wire: 15 flying, 17 gliding.",
+		"clear_m": 3.0
 	},
 	"dogs": {
 		"note": "A player's companion dog as a presence for wild animals (dog_companion_design.md 11; MikeW, docs/design/DOG_REACTIONS.md): species rows with a dog block react to it; a dog that barked within bark_s is sensed bark_x farther.",

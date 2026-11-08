@@ -12,6 +12,7 @@ const ThievesScript := preload("res://src/stream/server_thieves.gd")
 const FlocksScript := preload("res://src/stream/server_flocks.gd")
 const GoblinsScript := preload("res://src/stream/server_goblins.gd")
 const CompanionsScript := preload("res://src/stream/server_companions.gd")
+const FlightScript := preload("res://src/stream/server_flight.gd")
 
 const GRAZE := 0
 const HOP := 1
@@ -54,6 +55,7 @@ var _lair_state: Dictionary = {}   # mouth "x,z" -> {"made": a group has been ma
 var lair_path: Callable              # (mouth x, z) -> PackedVector3Array: the cave floor path from that den mouth to the den (tile goblin_den_paths), empty when none
 var berry_bushes: Callable           # (Vector3, radius) -> PackedVector3Array: standing berry plants near a point, from flora chunks already made (goblins forage at them)
 var goblins = null                   # den life (server_goblins.gd): species with a "den_life" row sleep in the cave by day, watch fires and forage at night
+var flight = null                    # single birds in flight (server_flight.gd, bird_flight_server_design.md): species with a "flight" row fly when they bolt
 var companions = null                # companions (server_companions.gd): the stray a player befriends with food, then their dog (Dave 8 Nov 2026, decisions 5 and 6)
 var lair_mouths: Callable             # (x, z) -> PackedVector2Array: the cave mouths (world x, z) of the tile there; species with a "lair" row spawn their groups at them (goblins, Dave 7 Nov 2026)
 var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
@@ -108,6 +110,8 @@ func setup() -> void:
 	goblins = GoblinsScript.new()
 	goblins.host = self
 	goblins.trust.cfg = species_def("goblin").get("ally", {})
+	flight = FlightScript.new()
+	flight.host = self
 	companions = CompanionsScript.new()
 	companions.host = self
 
@@ -785,7 +789,7 @@ func tick(delta: float) -> void:
 		a["acc"] = 0.0
 		_step(a, dt, near_d, near_p, seen_d, seen_p)
 
-		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)):
+		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
 			trails.note(id, str(a["sp"]), a["pos"])
 
 	for id in gone:
@@ -824,7 +828,8 @@ func tick(delta: float) -> void:
 # How close a player may come before this animal runs: the species' spook_m, scaled by a horse's own tame value (a flighty one
 # runs from far off, a friendly one lets you close).
 func _spook_m(a: Dictionary, def: Dictionary) -> float:
-	var base: float = float(def.get("spook_m", 14.0)) * (float(cfg.get("rest", {}).get("spook_share", 0.6)) if resting(def) else 1.0)
+	var spook: float = float(def["flight"].get("flush_m", def.get("spook_m", 14.0))) if str(def.get("flight", {}).get("kind", "")) == "flush" else float(def.get("spook_m", 14.0))   # a flusher sits tight
+	var base: float = spook * (float(cfg.get("rest", {}).get("spook_share", 0.6)) if resting(def) else 1.0)
 
 	if def.has("tame") and a.has("tame"):
 		var scale: Array = def["tame"].get("spook_scale", [1.0, 1.0])
@@ -867,6 +872,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	if def.has("flock"):
 		flocks.step(a, dt, seen_d, seen_p)
+		return
+
+	if flight != null and flight.handles(a):
+		flight.step(a, dt, seen_d, seen_p)   # in the air, or sitting on a perch (bird_flight_server_design.md)
 		return
 
 	if def.has("thief") and thieves.handles(a):
@@ -925,6 +934,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			a["alarm"] = -1.0
 			_bolt(a, near_p, def)
 
+			if a.has("fly"):
+				return   # alarmed into the air
+
 	# A player who has come between a mother and her young (near one of them) is attacked at once, torch or not.
 	if def.has("defend") and def.has("young") and seen_p != Vector3.INF:
 		for kid in _young_of(a):
@@ -967,6 +979,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
 		_alarm_herd(a, def)
+
+	if a.has("fly"):
+		return   # it took off: the flight moves it from the next step (server_flight.gd)
 
 	var alert_m: float = float(def.get("alert_m", 0.0)) * weather_spook_x(def)
 
@@ -1612,6 +1627,10 @@ func rows_near(point: Vector3) -> Array:
 
 
 func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
+	if def.has("flight") and flight != null:
+		flight.take_off(a, from)   # a bird with a flight row flies instead of running (bird_flight_server_design.md)
+		return
+
 	var away: Vector2 = Vector2(a["pos"].x - from.x, a["pos"].z - from.z).normalized()
 
 	if away == Vector2.ZERO:
