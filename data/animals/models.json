@@ -1,5 +1,5 @@
 {
-	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md). tail_motion (optional): {period_s, when rest|alert|flies, bones {bone: [phase, swing degrees, axis]}} swings tail bones over every clip: a dog's wag at rest, a cat's flick when alert, a swish against flies in the warm months (docs/design/TAIL_MOTION.md). ear_motion (optional): {left, right, swivel_axis, flatten_axis, swivel_deg, flatten_deg} turns the ears toward a player within 20 m and lays them back when the animal warns or charges (docs/design/EAR_AND_BREATH.md). breath (optional): {bone, per_min, swell, long_axis} swells the chest bone at the species' resting breath rate, faster after a run (docs/design/EAR_AND_BREATH.md). look (optional): {bones [neck ... head], max_deg, mode glance|track, range_m, hold_s} turns the head toward the player over the clip (docs/design/HEAD_TRACKING.md). state_poses (optional): {state: {bones {bone: [x, y, z] degrees}, waves {bone: [phase, swing, axis]}, period_s}} lays a bone-built pose over the clip for a state the file has no clip for (docs/design/POSED_STATES.md). hop (optional): {walk|run: {bound_m, arc_m}} a hopping animal bounds on an arc, one hop clip per bound (docs/design/HOP_ARC.md). clips.sleep and wake_clip (optional): the clip played while the animal is bedded down (the server's rest rule, worked out on the client) and the get-up clip played as it wakes; state_poses -1 is a sleep pose for a file with no lying clip (docs/design/ANIMAL_SLEEP.md). herd (optional, true): grazing herd mates face roughly the same way, stay 2 m apart on screen and look up together (docs/design/HERD_CLIENT.md). feet (optional): [[upper, lower, end], ...] one two-bone chain per leg; with foot_ik on, each foot reaches the ground under it (docs/design/FOOTFALL.md). stalk (optional): {states, pose {bones}, clip, rate, freeze_s} crouches and creeps in those states and freezes when prey looks up; pounce: {clip, arc_m} a leap on the attack (docs/design/STALK_POUNCE.md, flag stalk_fx). flight (optional): {takeoff, flap, glide, land, flap_s, glide_s, beat_hz, bob_m} how a bird looks in the air (state 15): take-off and landing once, flapping and gliding in turns at its wingbeat (docs/design/BIRD_FLIGHT.md). season_tint (optional): {spring, summer, autumn, winter: colour} multiplies the coat by the season (docs/design/COAT_SHADER.md, flag season_coats). ruffle_cm (optional): how far the coat ruffles in a full wind (flag coat_ruffle); roll_states (optional, default [8]): states that dust the coat (flag coat_dust) (docs/design/COAT_SHADER.md). young_look (optional): {scale, wobble_days} how big the young are drawn and how long a newborn wobbles (flag young_gait, docs/design/YOUNG_ANIMALS.md). water_swim (optional): a land animal that swims in deep water, body low and legs paddling; swim_depth_x (default 0.7) of its height starts the swim (flag water_life, docs/design/ANIMALS_AND_WATER.md). state_poses \"20\": the hunch against the weather (server state 20, Steve's #646): head and neck low over the standing idle.",
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md). tail_motion (optional): {period_s, when rest|alert|flies, bones {bone: [phase, swing degrees, axis]}} swings tail bones over every clip: a dog's wag at rest, a cat's flick when alert, a swish against flies in the warm months (docs/design/TAIL_MOTION.md). ear_motion (optional): {left, right, swivel_axis, flatten_axis, swivel_deg, flatten_deg} turns the ears toward a player within 20 m and lays them back when the animal warns or charges (docs/design/EAR_AND_BREATH.md). breath (optional): {bone, per_min, swell, long_axis} swells the chest bone at the species' resting breath rate, faster after a run (docs/design/EAR_AND_BREATH.md). look (optional): {bones [neck ... head], max_deg, mode glance|track, range_m, hold_s} turns the head toward the player over the clip (docs/design/HEAD_TRACKING.md). state_poses (optional): {state: {bones {bone: [x, y, z] degrees}, waves {bone: [phase, swing, axis]}, period_s}} lays a bone-built pose over the clip for a state the file has no clip for (docs/design/POSED_STATES.md). hop (optional): {walk|run: {bound_m, arc_m}} a hopping animal bounds on an arc, one hop clip per bound (docs/design/HOP_ARC.md). clips.sleep and wake_clip (optional): the clip played while the animal is bedded down (the server's rest rule, worked out on the client) and the get-up clip played as it wakes; state_poses -1 is a sleep pose for a file with no lying clip (docs/design/ANIMAL_SLEEP.md). herd (optional, true): grazing herd mates face roughly the same way, stay 2 m apart on screen and look up together (docs/design/HERD_CLIENT.md). feet (optional): [[upper, lower, end], ...] one two-bone chain per leg; with foot_ik on, each foot reaches the ground under it (docs/design/FOOTFALL.md). stalk (optional): {states, pose {bones}, clip, rate, freeze_s} crouches and creeps in those states and freezes when prey looks up; pounce: {clip, arc_m} a leap on the attack (docs/design/STALK_POUNCE.md, flag stalk_fx). flight (optional): {takeoff, flap, glide, land, flap_s, glide_s, beat_hz, bob_m} how a bird looks in the air (state 15): take-off and landing once, flapping and gliding in turns at its wingbeat (docs/design/BIRD_FLIGHT.md). season_tint (optional): {spring, summer, autumn, winter: colour} multiplies the coat by the season (docs/design/COAT_SHADER.md, flag season_coats). ruffle_cm (optional): how far the coat ruffles in a full wind (flag coat_ruffle); roll_states (optional, default [8]): states that dust the coat (flag coat_dust) (docs/design/COAT_SHADER.md). young_look (optional): {scale, wobble_days} how big the young are drawn and how long a newborn wobbles (flag young_gait, docs/design/YOUNG_ANIMALS.md). water_swim (optional): a land animal that swims in deep water, body low and legs paddling; swim_depth_x (default 0.7) of its height starts the swim (flag water_life, docs/design/ANIMALS_AND_WATER.md). state_poses \"20\": the hunch against the weather (server state 20, Steve's #646): head and neck low over the standing idle. idles (optional): a weighted table [{clip | pose | act (shake, look_around, stretch, roll), w, s, after lie, needs dry}] of grooming and idle variety played now and then while standing (flag idle_variety, docs/design/IDLE_VARIETY.md).",
 	"species": {
 		"bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -454,7 +454,18 @@
 						]
 					}
 				}
-			}
+			},
+			"idles": [
+				{
+					"clip": "GrazingStepsLookat",
+					"w": 3
+				},
+				{
+					"act": "shake",
+					"s": 0.9,
+					"w": 1.0
+				}
+			]
 		},
 		"moose": {
 			"scene": "res://assets/animals/moose/SK_Moose.fbx",
@@ -621,7 +632,18 @@
 						]
 					}
 				}
-			}
+			},
+			"idles": [
+				{
+					"clip": "GrazingStepsLookat",
+					"w": 3
+				},
+				{
+					"act": "shake",
+					"s": 0.9,
+					"w": 1.0
+				}
+			]
 		},
 		"boar": {
 			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
@@ -714,7 +736,21 @@
 			"young_look": {
 				"scale": 0.3,
 				"wobble_days": 10
-			}
+			},
+			"idles": [
+				{
+					"clip": "idle_shake_head_01",
+					"w": 2
+				},
+				{
+					"clip": "idle_eat_look_around_01",
+					"w": 3
+				},
+				{
+					"clip": "idle_eat_look_up_right_01",
+					"w": 1.0
+				}
+			]
 		},
 		"wolf": {
 			"scene": "res://assets/animals/wolf/SK_Wolf.fbx",
@@ -889,7 +925,24 @@
 						]
 					}
 				}
-			}
+			},
+			"idles": [
+				{
+					"clip": "GrazingStepsLookAt",
+					"w": 2
+				},
+				{
+					"act": "shake",
+					"s": 0.9,
+					"w": 1.0
+				},
+				{
+					"act": "stretch",
+					"s": 2.5,
+					"w": 1,
+					"after": "lie"
+				}
+			]
 		},
 		"fox": {
 			"scene": "res://assets/animals/fox/SK_Fox.fbx",
@@ -1069,7 +1122,24 @@
 						]
 					}
 				}
-			}
+			},
+			"idles": [
+				{
+					"clip": "GrazingStepsLookat",
+					"w": 2
+				},
+				{
+					"act": "shake",
+					"s": 0.9,
+					"w": 1.0
+				},
+				{
+					"act": "stretch",
+					"s": 2.0,
+					"w": 1,
+					"after": "lie"
+				}
+			]
 		},
 		"rabbit": {
 			"scene": "res://assets/animals/rabbit/SK_Rabbit.fbx",
@@ -1118,7 +1188,19 @@
 				"summer": "#ffffff",
 				"autumn": "#f6efe8",
 				"winter": "#e8e4e0"
-			}
+			},
+			"idles": [
+				{
+					"act": "look_around",
+					"s": 2.0,
+					"w": 2
+				},
+				{
+					"act": "shake",
+					"s": 0.5,
+					"w": 1.0
+				}
+			]
 		},
 		"horse": {
 			"scene": "res://assets/animals/horse/SK_Horse.fbx",
@@ -1289,7 +1371,44 @@
 				"scale": 0.55,
 				"wobble_days": 10
 			},
-			"water_swim": true
+			"water_swim": true,
+			"idles": [
+				{
+					"act": "shake",
+					"s": 1.0,
+					"w": 2
+				},
+				{
+					"act": "look_around",
+					"s": 3.0,
+					"w": 2
+				},
+				{
+					"act": "roll",
+					"s": 5.0,
+					"w": 1,
+					"needs": "dry"
+				},
+				{
+					"pose": {
+						"waves": {
+							"upperarm_r": [
+								0.0,
+								20,
+								"x"
+							],
+							"lowerarm_r": [
+								0.25,
+								35,
+								"x"
+							]
+						},
+						"period_s": 0.9
+					},
+					"s": 2.7,
+					"w": 2
+				}
+			]
 		},
 		"donkey": {
 			"scene": "res://assets/animals/donkey/SK_Donkey.fbx",
@@ -1495,7 +1614,25 @@
 			"young_look": {
 				"scale": 0.5,
 				"wobble_days": 10
-			}
+			},
+			"idles": [
+				{
+					"act": "shake",
+					"s": 1.0,
+					"w": 2
+				},
+				{
+					"act": "look_around",
+					"s": 3.0,
+					"w": 2
+				},
+				{
+					"act": "roll",
+					"s": 5.0,
+					"w": 1,
+					"needs": "dry"
+				}
+			]
 		},
 		"lynx": {
 			"scene": "res://assets/animals/lynx/SK_Lynx.fbx",
@@ -1586,7 +1723,19 @@
 				"arc_m": 1.0,
 				"bound_m": 4.0
 			},
-			"ruffle_cm": 0.6
+			"ruffle_cm": 0.6,
+			"idles": [
+				{
+					"clip": "idle_shake_01",
+					"w": 2
+				},
+				{
+					"clip": "idle_stretching_01",
+					"w": 2,
+					"after": "lie",
+					"also_awake": true
+				}
+			]
 		},
 		"black_bear": {
 			"scene": "res://assets/animals/black_bear/SK_BlackBear.fbx",
@@ -1691,7 +1840,25 @@
 				"scale": 0.3,
 				"wobble_days": 10
 			},
-			"water_swim": true
+			"water_swim": true,
+			"idles": [
+				{
+					"clip": "Sniffing",
+					"w": 2
+				},
+				{
+					"clip": "Snorting",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_3",
+					"w": 1.0
+				},
+				{
+					"clip": "GrazingStepsLookAt",
+					"w": 2
+				}
+			]
 		},
 		"elk": {
 			"scene": "res://assets/animals/elk/SK_Elk.fbx",
@@ -1841,7 +2008,17 @@
 					4
 				]
 			},
-			"herd": true
+			"herd": true,
+			"idles": [
+				{
+					"clip": "GrazingStepsLookAt",
+					"w": 3
+				},
+				{
+					"clip": "A_Sniffing_3",
+					"w": 1.0
+				}
+			]
 		},
 		"mountain_goat": {
 			"scene": "res://assets/animals/mountain_goat/SK_MountainGoat.fbx",
@@ -1888,7 +2065,33 @@
 					4
 				]
 			},
-			"herd": true
+			"herd": true,
+			"idles": [
+				{
+					"clip": "GrazingStepsLookAt",
+					"w": 3
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_1",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_2",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_3",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_4",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_5",
+					"w": 1.0
+				}
+			]
 		},
 		"beaver": {
 			"scene": "res://assets/animals/beaver/SK_Beaver.fbx",
@@ -2198,7 +2401,17 @@
 				}
 			},
 			"shine": 1,
-			"shine_color": "#c8dc78"
+			"shine_color": "#c8dc78",
+			"idles": [
+				{
+					"clip": "idle_shake_01",
+					"w": 2
+				},
+				{
+					"clip": "idle_alerted_look_01",
+					"w": 2
+				}
+			]
 		},
 		"raccoon": {
 			"scene": "res://assets/animals/raccoon/SK_Racoon.fbx",
@@ -2265,7 +2478,19 @@
 				]
 			},
 			"ruffle_cm": 0.5,
-			"water_swim": true
+			"water_swim": true,
+			"idles": [
+				{
+					"clip": "idle stretch",
+					"w": 2,
+					"after": "lie",
+					"also_awake": true
+				},
+				{
+					"clip": "idle rest stretching",
+					"w": 1.0
+				}
+			]
 		},
 		"rat": {
 			"scene": "res://assets/animals/rat/SK_Rat.fbx",
@@ -2539,7 +2764,19 @@
 			"young_look": {
 				"scale": 0.45,
 				"wobble_days": 10
-			}
+			},
+			"idles": [
+				{
+					"act": "shake",
+					"s": 1.0,
+					"w": 1.0
+				},
+				{
+					"act": "look_around",
+					"s": 3.0,
+					"w": 2
+				}
+			]
 		},
 		"goat": {
 			"scene": "res://assets/animals/goat/SK_Goat.fbx",
@@ -2595,7 +2832,19 @@
 			"young_look": {
 				"scale": 0.45,
 				"wobble_days": 10
-			}
+			},
+			"idles": [
+				{
+					"act": "shake",
+					"s": 0.8,
+					"w": 1.0
+				},
+				{
+					"act": "look_around",
+					"s": 2.5,
+					"w": 2
+				}
+			]
 		},
 		"chicken": {
 			"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
@@ -2719,7 +2968,20 @@
 				"per_min": 24,
 				"swell": 0.03,
 				"long_axis": "y"
-			}
+			},
+			"idles": [
+				{
+					"act": "look_around",
+					"s": 2.5,
+					"w": 2
+				},
+				{
+					"act": "stretch",
+					"s": 2.0,
+					"w": 1,
+					"after": "lie"
+				}
+			]
 		},
 		"dog": {
 			"scene": "res://assets/animals/dog/SK_Labrador.fbx",
@@ -2851,7 +3113,45 @@
 				"scale": 0.35,
 				"wobble_days": 10
 			},
-			"water_swim": true
+			"water_swim": true,
+			"idles": [
+				{
+					"clip": "idle_shake_01",
+					"w": 2
+				},
+				{
+					"clip": "idle_shake_02",
+					"w": 1.0
+				},
+				{
+					"clip": "idle_sit_one_off_scratch_01",
+					"w": 2
+				},
+				{
+					"clip": "idle_one_off_dig_01",
+					"w": 1.0
+				},
+				{
+					"clip": "idle_sniff_one_off_01",
+					"w": 3
+				},
+				{
+					"clip": "idle_one_off_chin_drag_01",
+					"w": 1.0
+				},
+				{
+					"act": "roll",
+					"s": 4.0,
+					"w": 1,
+					"needs": "dry"
+				},
+				{
+					"act": "stretch",
+					"s": 2.5,
+					"w": 1,
+					"after": "lie"
+				}
+			]
 		},
 		"buffalo": {
 			"scene": "res://assets/animals/buffalo/SK_Buffalo.fbx",
@@ -2916,7 +3216,13 @@
 				"scale": 0.4,
 				"wobble_days": 10
 			},
-			"water_swim": true
+			"water_swim": true,
+			"idles": [
+				{
+					"clip": "GrazingStepsLookat",
+					"w": 3
+				}
+			]
 		},
 		"duck": {
 			"scene": "res://assets/animals/duck/SK_Duck.fbx",
@@ -2998,7 +3304,35 @@
 				"max_deg": 70,
 				"mode": "track",
 				"range_m": 30
-			}
+			},
+			"idles": [
+				{
+					"clip": "dle_rest_yawn",
+					"w": 1.0
+				},
+				{
+					"clip": "idle_rest_grooming",
+					"w": 2
+				},
+				{
+					"clip": "idle_rest_lick_paw",
+					"w": 2
+				},
+				{
+					"clip": "idle_shake",
+					"w": 1.0
+				},
+				{
+					"clip": "idle_alerted_look",
+					"w": 2
+				},
+				{
+					"clip": "idle_stretching",
+					"w": 1,
+					"after": "lie",
+					"also_awake": true
+				}
+			]
 		},
 		"pronghorn": {
 			"scene": "res://assets/animals/pronghorn/SK_Pronghorn.fbx",
@@ -3086,7 +3420,29 @@
 				}
 			],
 			"size_clip": "Idle",
-			"herd": true
+			"herd": true,
+			"idles": [
+				{
+					"clip": "GrazingStepsLookAt",
+					"w": 2
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_2",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_3",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_4",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_5",
+					"w": 1.0
+				}
+			]
 		},
 		"hyena": {
 			"scene": "res://assets/animals/hyena/SK_Hyena.fbx",
@@ -3130,7 +3486,33 @@
 				"mode": "track",
 				"range_m": 30
 			},
-			"herd": true
+			"herd": true,
+			"idles": [
+				{
+					"clip": "GrazingStepsLookAt",
+					"w": 2
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_1",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_2",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_3",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_4",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMoveCalm_5",
+					"w": 1.0
+				}
+			]
 		},
 		"wildebeest": {
 			"scene": "res://assets/animals/wildebeest/SK_Wildebeest.fbx",
@@ -3208,7 +3590,37 @@
 					4
 				]
 			},
-			"herd": true
+			"herd": true,
+			"idles": [
+				{
+					"clip": "GrazingStepsLookAt",
+					"w": 2
+				},
+				{
+					"clip": "WildebeestSnort_001",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMovesCalm_1",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMovesCalm_2",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMovesCalm_3",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMovesCalm_4",
+					"w": 1.0
+				},
+				{
+					"clip": "Idle_SecondaryMovesCalm_5",
+					"w": 1.0
+				}
+			]
 		},
 		"lion": {
 			"scene": "res://assets/animals/lion/SK_Lion.fbx",
@@ -3329,7 +3741,31 @@
 				"mode": "track",
 				"range_m": 30
 			},
-			"herd": true
+			"herd": true,
+			"idles": [
+				{
+					"clip": "idle_rest_grooming_01",
+					"w": 2
+				},
+				{
+					"clip": "idle_rest_lick_paws",
+					"w": 2
+				},
+				{
+					"clip": "idle_rest_yawn_01",
+					"w": 1.0
+				},
+				{
+					"clip": "idle_shake_01",
+					"w": 1.0
+				},
+				{
+					"clip": "idle_stretching_01",
+					"w": 1,
+					"after": "lie",
+					"also_awake": true
+				}
+			]
 		},
 		"leopard": {
 			"scene": "res://assets/animals/leopard/SK_Leopard.fbx",
@@ -3612,7 +4048,23 @@
 					"arc_m": 0.9
 				}
 			},
-			"herd": true
+			"herd": true,
+			"idles": [
+				{
+					"clip": "idle_eat_look_around_01",
+					"w": 3
+				},
+				{
+					"clip": "idle_eat_search_01",
+					"w": 2
+				},
+				{
+					"clip": "idle_rest_stretching_01",
+					"w": 1,
+					"after": "lie",
+					"also_awake": true
+				}
+			]
 		},
 		"mammoth": {
 			"scene": "res://assets/animals/mammoth/SK_Mammoth.fbx",

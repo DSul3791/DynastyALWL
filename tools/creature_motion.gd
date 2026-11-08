@@ -16,7 +16,7 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 
 
 func _init() -> void:
-	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "wlife": false, "bank": false, "wind": 0.0}
+	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "wlife": false, "bank": false, "idles": false, "wind": 0.0}
 
 	for a in OS.get_cmdline_user_args():
 		var key: String = a.trim_prefix("--").get_slice("=", 0)
@@ -94,6 +94,8 @@ func _strip(kind: String, opts: Dictionary) -> void:
 	view.young_gait = int(opts["young"]) > 0
 	view.young_age_days = float(opts["age"])
 	view.water_life = bool(opts["wlife"]) or bool(opts["bank"])
+	view.idle_variety = bool(opts["idles"])
+	view.idle_first_s = 1.0 if bool(opts["idles"]) else -1.0
 	view.wind_now = func() -> float: return float(opts["wind"])
 	view.ground_height = func(x: float, _z: float) -> float: return 0.15 if x > 0.3 else 0.0      # --ik: a 15 cm step under the right-hand feet
 	view.conditions_now = func() -> Dictionary: return {"hour": float(opts["hour"]), "season": str(opts["season"])}

@@ -43,6 +43,8 @@ var _prints: Array = []           # [Decal, born msec, life s]
 var _print_tex: Dictionary = {}   # sign group -> ImageTexture
 var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
 var slope_tilt: bool = false
+var idle_first_s: float = -1.0     # tools only: the first idle comes after this many seconds (-1: 8 to 25 s)
+var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
 var young_gait: bool = false      # young drawn at their species' size, quick short steps, wobbly when newborn (YOUNG_ANIMALS.md; off until the PC check)
@@ -519,6 +521,9 @@ func _process_body(delta: float) -> void:
 				if not stalk_fx and _stalking(node, state):
 					pose_key = -2      # the stalk crouch is off until the PC check
 
+				if idle_variety and b.has("idle_pose"):
+					pose_key = int(b["idle_pose"])
+
 				if posed.poses.has(pose_key):
 					posed.pose_state = pose_key
 
@@ -684,7 +689,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_mats", eye_mats)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk"):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or row.has("idles"):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -710,6 +715,18 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 			if row.has("state_poses"):
 				missing.append_array(fix.setup_poses(sks[0], row["state_poses"]))
 				root.set_meta("poses", fix)
+
+			# Posed idles (IDLE_VARIETY.md): entry i of the row's idles with a "pose" is pose key -10 - i.
+			if row.has("idles"):
+				var idle_poses: Dictionary = {}
+
+				for i in (row["idles"] as Array).size():
+					if (row["idles"][i] as Dictionary).has("pose"):
+						idle_poses[str(-10 - i)] = row["idles"][i]["pose"]
+
+				if not idle_poses.is_empty():
+					missing.append_array(fix.setup_poses(sks[0], idle_poses))
+					root.set_meta("poses", fix)
 
 			if row.has("stalk") and (row["stalk"] as Dictionary).has("pose"):
 				var stalk_poses: Dictionary = {}
@@ -2365,6 +2382,161 @@ func _ring(at: Vector3, wide: float) -> void:
 	grow.chain().tween_callback(ring.queue_free)
 
 
+# Grooming and idle variety (docs/design/IDLE_VARIETY.md). The row's idles is a weighted table: [{clip | pose | act, w, s, after,
+# needs}]. A standing animal (graze 0, alert 3, recover 12, still, awake) waits 8 to 25 s, then picks one entry by weight and plays
+# it once: a clip from the file to its end; a pose (bone offsets and waves, pose key -10 - i) for s seconds; or an act on the Rig for
+# s seconds (shake, look_around, stretch, roll). An entry with after "lie" is played as the animal gets up from sleep; one with
+# needs "dry" is skipped in water and on wet ground. Moving or a new state ends it at once. Returns true while a clip plays.
+const IDLE_STATES := [0, 3, 12]
+
+func _idle_variety(node: Node3D, b: Dictionary, row: Dictionary, player: AnimationPlayer, state: int, speed: float, delta: float) -> bool:
+	var table: Array = row["idles"]
+	var asleep: bool = bool(b.get("asleep", false))
+	var woke: bool = bool(b.get("idle_woke", false))      # set where the sleep block sees the animal wake
+	b.erase("idle_woke")
+
+	if b.has("idle_left") and (speed > 0.3 or not (state in IDLE_STATES) or asleep):
+		_idle_end(node, b)
+
+	if not b.has("idle_left"):
+		if asleep or speed > 0.3 or not (state in IDLE_STATES):
+			b["idle_wait"] = randf_range(8.0, 25.0)      # luck-exempt: when the next idle comes (client look)
+			return false
+
+		var pick: int = -1
+
+		if woke:
+			for i in table.size():
+				if str((table[i] as Dictionary).get("after", "")) == "lie":
+					pick = i
+					break
+		else:
+			b["idle_wait"] = float(b.get("idle_wait", idle_first_s if idle_first_s >= 0.0 else randf_range(8.0, 25.0))) - delta      # luck-exempt: the first wait
+
+			if float(b["idle_wait"]) <= 0.0:
+				b["idle_wait"] = randf_range(8.0, 25.0)      # luck-exempt: the next wait
+				pick = _idle_pick(node, b, table)
+
+		if pick < 0:
+			return false
+
+		_idle_start(node, b, row, player, pick)
+
+	if not b.has("idle_left"):
+		return false
+
+	b["idle_left"] = float(b["idle_left"]) - delta
+	b["idle_t"] = float(b.get("idle_t", 0.0)) + delta
+
+	if b.has("idle_act"):
+		_idle_act(node, b, row, delta)
+
+	if float(b["idle_left"]) <= 0.0:
+		var was_clip: bool = b.has("idle_clip")
+		_idle_end(node, b)
+		return was_clip
+
+	return b.has("idle_clip")
+
+
+func _idle_pick(node: Node3D, b: Dictionary, table: Array) -> int:
+	var total: float = 0.0
+	var ok: Array = []
+
+	for i in table.size():
+		var e: Dictionary = table[i]
+
+		if str(e.get("after", "")) == "lie" and not bool(e.get("also_awake", false)):
+			continue
+
+		if str(e.get("needs", "")) == "dry" and (_ground_kind(node, b) in ["water", "puddle"]):
+			continue
+
+		ok.append(i)
+		total += float(e.get("w", 1.0))
+
+	var roll: float = randf() * total      # luck-exempt: which idle (client look)
+
+	for i in ok:
+		roll -= float((table[i] as Dictionary).get("w", 1.0))
+
+		if roll <= 0.0:
+			return int(i)
+
+	return -1
+
+
+func _idle_start(node: Node3D, b: Dictionary, row: Dictionary, player: AnimationPlayer, i: int) -> void:
+	var e: Dictionary = row["idles"][i]
+	b["idle_t"] = 0.0
+
+	if e.has("clip"):
+		var full: String = _clip_full(player, row, str(e["clip"]))
+
+		if full == "":
+			_model_note(str(row.get("scene", "")).get_file(), "idle clip %s not in the file" % str(e["clip"]))
+			return
+
+		player.play(full, 0.25)
+		player.speed_scale = 1.0
+		b["idle_clip"] = full
+		b["idle_left"] = player.get_animation(full).length
+	elif e.has("pose"):
+		b["idle_pose"] = -10 - i
+		b["idle_left"] = float(e.get("s", 2.0))
+	elif e.has("act"):
+		b["idle_act"] = str(e["act"])
+		b["idle_left"] = float(e.get("s", 1.0))
+		b["idle_yaw0"] = (node.get_node("Rig") as Node3D).rotation.y if node.has_node("Rig") else 0.0
+
+
+func _idle_end(node: Node3D, b: Dictionary) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig != null and b.has("idle_act"):
+		rig.rotation.z = 0.0
+		rig.rotation.x = 0.0
+
+		if str(b["idle_act"]) == "look_around":
+			rig.rotation.y = float(b.get("idle_yaw0", 0.0))
+
+		if str(b["idle_act"]) == "roll":
+			rig.position.y = 0.0
+
+	for k in ["idle_left", "idle_clip", "idle_pose", "idle_act", "idle_t", "idle_yaw0"]:
+		b.erase(k)
+
+
+# The Rig acts, for files with no clip for them. t runs 0 to s.
+func _idle_act(node: Node3D, b: Dictionary, row: Dictionary, delta: float) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null:
+		return
+
+	var t: float = float(b["idle_t"])
+	var span: float = maxf(t + float(b["idle_left"]), 0.1)
+	var arc: float = sin(PI * clampf(t / span, 0.0, 1.0))
+
+	match str(b["idle_act"]):
+		"shake":      # a shake from head to tail, dying away
+			rig.rotation.z = 0.22 * sin(t * 40.0) * (1.0 - t / span)
+		"look_around":      # the whole body turns a little one way, then the other
+			rig.rotation.y = float(b.get("idle_yaw0", 0.0)) + 0.35 * sin(TAU * t / span)
+		"stretch":      # front low, hindquarters up, held, then back
+			rig.rotation.x = 0.12 * arc
+		"roll":      # down on its side and back up (horses, dogs); dusts the coat when coat_dust is on
+			var h: float = float(row.get("height_m", float(row.get("length_m", 1.0)) * 0.55))
+			rig.rotation.z = PI * 0.5 * arc
+			rig.position.y = 0.25 * h * arc
+
+			if coat_dust:
+				b["dust"] = minf(1.0, float(b.get("dust", 0.0)) + delta * 0.5)
+
+				if not b.has("dust_col"):
+					b["dust_col"] = DUST_COLOURS.get(_ground_kind(node, b), DUST_COLOURS["dust"])
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -2417,6 +2589,9 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		player.speed_scale = 1.0
 		return
 
+	if was_asleep and not bool(b["asleep"]):
+		b["idle_woke"] = true      # idle variety: a stretch on getting up (IDLE_VARIETY.md)
+
 	if was_asleep and not bool(b["asleep"]) and row.has("wake_clip"):
 		var wake: String = _clip_full(player, row, str(row["wake_clip"]))
 
@@ -2428,6 +2603,10 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	if float(b.get("waking", 0.0)) > 0.0:
 		b["waking"] = float(b["waking"]) - delta
 		return
+	# Idle variety (IDLE_VARIETY.md): now and then a standing animal scratches, shakes, stretches, looks round or rolls.
+	if idle_variety and row.has("idles") and _idle_variety(node, b, row, player, state, speed, delta):
+		return
+
 	# Land animals and water (ANIMALS_AND_WATER.md): deep enough, a row with water_swim swims low and paddles; at the bank it drinks.
 	if water_life and not roles.has("swim") and water_level.is_valid() and _water_body(node, b, row, player, state, delta):
 		return

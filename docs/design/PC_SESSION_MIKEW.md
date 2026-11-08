@@ -1,6 +1,6 @@
 # PC session run sheet: the animal life layer (MikeW, 8 Nov 2026)
 
-For whoever runs it on Dave's PC (MikeW or Dino), word for word. About 35 minutes. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
+For whoever runs it on Dave's PC (MikeW or Dino), word for word. About 60 minutes in one sitting (Godot starts about 30 s per strip line; 27 lines). Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
 
 ```bash
 cd /c/GodotProjects/DynastyALWL_gate
@@ -38,8 +38,8 @@ grep -E "^==|^role|NO CLIP|flat" $O/still.log
 ```
 Proves: dog sit (18) and lie (19), alligator swim, black bear warn under the jaw-pop pose, rabbit and kangaroo hop clips. Pass: no `NO CLIP` for sit, lie or swim.
 
-## 4. Moving frames (12 min)
-Each line makes one strip of 6 frames.
+## 4. Moving frames (22 min)
+Each line makes one strip (6 frames unless it says). If time runs short, m1 to m18 come first: they prove what is already merged-ready; m19 to m27 are the newer flags.
 ```bash
 M="timeout 300 $GE --path . --script res://tools/creature_motion.gd --"
 $M --kinds=dog --state=0 --out=$O/motion > $O/m1.log 2>&1                         # tail wag at rest, breathing
@@ -68,9 +68,10 @@ $M --kinds=deer,horse,cow --state=0 --speed=1.5 --young=2 --age=3 --season=sprin
 $M --kinds=deer,dog --state=2 --speed=1 --wlife --water=1.2 --every=0.15 --out=$O/motion_swim > $O/m24.log 2>&1   # swimming low, legs paddling
 $M --kinds=deer,horse --state=0 --bank --frames=4 --every=0.5 --out=$O/motion_drink > $O/m25.log 2>&1   # drinking at the bank, rings
 $M --kinds=deer,horse,wolf --state=20 --frames=2 --out=$O/motion_hunch > $O/m26.log 2>&1   # hunch: head low, ears back
+$M --kinds=dog,lion,horse,boar --state=0 --idles --frames=8 --every=0.5 --out=$O/motion_idles > $O/m27.log 2>&1   # idle variety: a scratch, groom, shake or paw
 grep -h "saved\|SCRIPT" $O/m*.log
 ```
-Pass, per strip, by eye: the tail or ears move between frames; sleeping animals lie (deer, dog) or stand head-low (horse) and `asleep true` in the log; the deer herd faces roughly one way and `look_left` above 0 on more than one frame as the camera nears; the beaver and moose show `wet` near 1; eyes glow in the night strip (deer pale green, wolf yellow-green); the rabbit and kangaroo rise and land; the black bear's head is low with the jaw open; brown puffs at the running hooves; a line of hoof and paw prints behind the deer and wolf on snow, fading only slowly; the deer's, horse's and cow's right-hand feet stand 15 cm higher than the left without the body tipping; droplets at the wading deer's feet; the stalking wolf low with its head level and tail still; the fox and lynx leave the ground in the pounce strip; the horse's and dog's tails swing and ears lie a little back in the gale; the goose and pheasant take off, then flap and glide in turns; the winter deer is greyer and the winter fox and wolf paler than in summer; the fox's and bear's fur moves between ruffle frames (no shader error in m21.log); the rolling horse turns dusty; the fawn, foal and calf keep pace with short quick steps and sway side to side; the swimming deer and dog ride low with only back and head above the water; rings at the drinking muzzles; the hunched deer, horse and wolf hold their heads low.
+Pass, per strip, by eye: the tail or ears move between frames; sleeping animals lie (deer, dog) or stand head-low (horse) and `asleep true` in the log; the deer herd faces roughly one way and `look_left` above 0 on more than one frame as the camera nears; the beaver and moose show `wet` near 1; eyes glow in the night strip (deer pale green, wolf yellow-green); the rabbit and kangaroo rise and land; the black bear's head is low with the jaw open; brown puffs at the running hooves; a line of hoof and paw prints behind the deer and wolf on snow, fading only slowly; the deer's, horse's and cow's right-hand feet stand 15 cm higher than the left without the body tipping; droplets at the wading deer's feet; the stalking wolf low with its head level and tail still; the fox and lynx leave the ground in the pounce strip; the horse's and dog's tails swing and ears lie a little back in the gale; the goose and pheasant take off, then flap and glide in turns; the winter deer is greyer and the winter fox and wolf paler than in summer; the fox's and bear's fur moves between ruffle frames (no shader error in m21.log); the rolling horse turns dusty; the fawn, foal and calf keep pace with short quick steps and sway side to side; the swimming deer and dog ride low with only back and head above the water; rings at the drinking muzzles; the hunched deer, horse and wolf hold their heads low; in the idles strip each animal starts one idle (dog scratch or shake, lion grooming, horse shake, look round or pawing, boar head shake) and no `idle clip ... not in the file` in m27.log.
 
 ## 5. Gates (15 min, in order)
 ```bash
@@ -81,9 +82,9 @@ done
 ```
 Pass: `CHECKS: pass` for each. On a `CONFLICT`, main has moved: merge `origin/main` into that branch first (MikeW).
 
-## 6. PRs, in this order, only after their gate passed
+## 6. PRs (5 min), in this order, only after their gate passed
 1. Eye shine (`claude/mikew-eyeshine`, already open as #596: `gh pr ready 596`).
 2. Wet look (`claude/mikew-wet-look`, new PR).
-3. Animal life layer (`claude/mikew-eye-placement`: eye placement, dog clips, tails, ears, breathing, head tracking, posed states, hop, sleep, herds; new PR).
+3. Animal life layer (`claude/mikew-eye-placement`: eye placement, dog clips, tails, ears, breathing, head tracking, posed states, hop, sleep, herds, footfall, stalk, flight, coats, young, water, hunch, idle variety; new PR; every new look behind its own flag, off).
 
 Send each head to the coordinator after the push prints it.
