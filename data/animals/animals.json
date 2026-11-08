@@ -303,7 +303,15 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card).",
+			"water": {
+				"swim": true,
+				"surface_sink_m": 1.5,
+				"bank_m": 60.0,
+				"swim_mps": 1.8,
+				"lives_on_land": true
+			},
+			"note": " Swims (water row, 8 Nov 2026): wades into lakes to feed and swims across, only head and hump above the water (sinks to 1.5 m where it is that deep); on land its forest habitat applies as before."
 		},
 		"fox": {
 			"number": 5,
@@ -1699,8 +1707,14 @@
 				"dusk": 1.0,
 				"night": 0.8
 			},
-			"note": "Dave 7 Nov 2026, batch 1. A beaver keeps to the water edge in forest and marsh, mostly at dusk and night, and slips away from a player (FAUNA_BY_BIOME rarity 3). Rabbit movement numbers, no burrow, slow on land; it does not swim in this version.",
-			"spawn_share": 0.4
+			"note": "Dave 7 Nov 2026, batch 1. A beaver keeps to the water edge in forest and marsh, mostly at dusk and night, and slips away from a player (FAUNA_BY_BIOME rarity 3). Rabbit movement numbers, no burrow, slow on land; it swims (water row, 8 Nov 2026): low in the water with only its head showing, and keeps within 20 m of the bank to feed.",
+			"spawn_share": 0.4,
+			"water": {
+				"swim": true,
+				"surface_sink_m": 0.15,
+				"bank_m": 20.0,
+				"swim_mps": 1.2
+			}
 		},
 		"chamois": {
 			"number": 23,
@@ -2153,7 +2167,14 @@
 				8
 			],
 			"herd_pull_m": 4.0,
-			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger; it does not fly in this version."
+			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger; it does not fly in this version. Swims (water row, 8 Nov 2026): floats high, body mostly above the water; grazes lakeside meadows by its own habitat rules.",
+			"water": {
+				"swim": true,
+				"surface_sink_m": 0.1,
+				"bank_m": 40.0,
+				"swim_mps": 0.8,
+				"lives_on_land": true
+			}
 		},
 		"cow": {
 			"number": 30,

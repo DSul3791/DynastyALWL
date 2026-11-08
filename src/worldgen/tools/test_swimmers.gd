@@ -69,6 +69,14 @@ func _init() -> void:
 	var deer_r: Dictionary = Steering.step(Vector3(0.5, 9.525, 0.0), Vector3(-8.0, 0.0, 0.0), 2.0, 0.5, a.ground_height, a.blocked, 0.4, PI)
 	check(not deer_r["moved"] or float(deer_r["pos"].x) >= 0.0, "a deer still cannot step into deep water")
 
+	# Beaver, goose and moose swim too; the moose and goose keep their land habitat (lives_on_land), the beaver stays near the bank.
+	for sp in ["beaver", "goose", "moose"]:
+		check(a.swims(a.species_def(sp)), "%s swims" % sp)
+
+	check(a._habitat_score(a.species_def("beaver"), 60.0, 0.0, 10.0) == -1.0, "a beaver never lives 60 m from water")
+	check(a._habitat_score(a.species_def("moose"), -10.0, 0.0, 10.0) == 1.0, "water is open to a moose (score 1)")
+	check(a._habitat_score(a.species_def("moose"), 60.0, 0.0, 10.0) != -1.0 or not a.swims(a.species_def("moose")), "a moose still lives inland by its own rules")
+
 	print("swimmers: %d checks failed" % failures)
 	print("Test done: ", "FAIL" if failures > 0 else "PASS")
 	quit(1 if failures > 0 else 0)

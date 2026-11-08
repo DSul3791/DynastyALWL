@@ -351,9 +351,10 @@
 				"10": "Idle_Breathing",
 				"12": "Idle",
 				"walk": "WalkMedium_F",
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"swim": "WalkSlow_F"
 			},
-			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget).",
+			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget). Swim clip (8 Nov 2026): its file has no swim clip: the slow walk, mostly under water.",
 			"length_m": 3.0,
 			"materials": [
 				{
@@ -365,7 +366,8 @@
 					"albedo": "res://assets/animals/moose/Textures/T_Moose_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Moose"
+			"pack": "WildMesh3D/Realistic Animals/Moose",
+			"swim_mps": 1.0
 		},
 		"boar": {
 			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
@@ -893,9 +895,10 @@
 				"3": "Idle",
 				"12": "Idle",
 				"walk": "Walk_F_IP",
-				"run": "Run_F_IP"
+				"run": "Run_F_IP",
+				"swim": "Walk_F_IP"
 			},
-			"note": "WildMesh Beaver (Realistic Animals/Beaver/SK_Beaver.fbx). 20 clips; units are centimetres. No graze clip: Idle_2 stands in.",
+			"note": "WildMesh Beaver (Realistic Animals/Beaver/SK_Beaver.fbx). 20 clips; units are centimetres. No graze clip: Idle_2 stands in. Swim clip (8 Nov 2026): its file has no swim clip: the forward walk paddles.",
 			"length_m": 0.8,
 			"materials": [
 				{
@@ -903,7 +906,8 @@
 					"albedo": "res://assets/animals/beaver/Textures/T_Beaver.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Beaver"
+			"pack": "WildMesh3D/Realistic Animals/Beaver",
+			"swim_mps": 1.2
 		},
 		"chamois": {
 			"scene": "res://assets/animals/chamois/SK_ChamoisMale.fbx",
@@ -1101,16 +1105,18 @@
 				"3": "Idle_Breathing",
 				"12": "Idle",
 				"walk": "WalkMedium",
-				"run": "RunFast"
+				"run": "RunFast",
+				"swim": "SwimMoveMedium"
 			},
-			"note": "WildMesh Goose (Realistic Animals/Goose/SK_Goose.fbx).",
+			"note": "WildMesh Goose (Realistic Animals/Goose/SK_Goose.fbx). Swim clip (8 Nov 2026): SwimMoveMedium from its own swim clips.",
 			"length_m": 0.9,
 			"materials": [
 				{
 					"match": "",
 					"albedo": "res://assets/animals/goose/Textures/T_Goose.png"
 				}
-			]
+			],
+			"swim_mps": 0.8
 		},
 		"cow": {
 			"scene": "res://assets/animals/cow/SK_Cow.fbx",
