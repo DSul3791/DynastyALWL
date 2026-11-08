@@ -30,7 +30,8 @@
 		"drink_ml": 300,
 		"fill_ml": 500,
 		"drink_pace_ms": 900,
-		"reach_m": 3.0
+		"reach_m": 3.0,
+		"sources": {"enabled": false, "note": "Drinking water from the record (docs/design/drinking_water_design.md; Sonny springs_and_drinking_water.md). Off by default. On, with the scene's water_source rows: springs run always (unless their drought flow is 0 in summer), brooks by regime (2 dry in summer unless it rained within rain_memory_h game hours; 3 only within flash_memory_h of rain), salt water (ocean, estuary) is refused, frozen water needs an ice hole. No sickness: one kind of water (sickness.json, Dave 21 Oct).", "rain_memory_h": 24.0, "flash_memory_h": 6.0, "night_h_w_m2k": 20.0, "say_salt": "Salt water. It would only make you thirstier.", "say_frozen": "The water is frozen. Break a hole in the ice first.", "say_dry": "The bed is dry."}
 	},
 	"drink": {
 		"by_id": {},

@@ -2,7 +2,7 @@
 
 **Owner:** Steve, for the drink path (`_drink_water` and `water_near` in `src/stream/server_items.gd`, and the terrain server's `water_near`).
 **Research:** Sonny, `docs/water/springs_and_drinking_water.md` (on the R5 branch until it merges).
-**Status:** design only. The code waits until the R stack merges (R2 to R6 and the reader on #630), because it reads record fields that only exist there.
+**Status:** build step 1 (section 7) is in code behind `thirst.sources.enabled` (off): `src/shared/drink_rules.gd`, the `water_source` callable in `server_items`, and `test_drinking_water.gd`. Step 2, the baked rows, waits until the R stack merges (R2 to R6 and the reader on #630), because it reads record fields that only exist there.
 **Decided:** coordinator, 8 Nov 2026. Dave may revert.
 
 ## 1. What happens today (read from the code on main, 8 Nov, not tested)
