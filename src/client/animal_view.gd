@@ -62,6 +62,7 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var ice_looks: bool = false       # animals on ice and in snow: careful steps and slips on ice, snow on still backs melting by the air, deeper snow prints (ANIMAL_WEATHER_LOOKS.md ice section; off until the PC check)
 var drink_looks: bool = false     # drinking: sips with the head lifted to look between, a churned bank at used spots, birds bathing in shallows (ANIMAL_DRINK.md; off until the PC check)
 var cave_air: bool = false        # animals underground take the cave's air (the year mean at the height), steam by it, coats dry by it (ANIMAL_WEATHER_LOOKS.md cave section; off until the PC check)
 var cave_c_at: Callable           # (position) -> the cave air C there, or NAN under open sky (terrain_client: rock overhead, Weather year mean)
@@ -544,7 +545,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (drink_looks or cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (ice_looks or drink_looks or cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -642,6 +643,9 @@ func _process_body(delta: float) -> void:
 
 			if drink_looks:
 				_drink_look(node, b, state, model_speed, delta)
+
+			if ice_looks:
+				_ice_look(node, b, state, model_speed, delta)
 
 			if hunt_feedback and (b.has("react") or float(b.get("damage", 0.0)) > 0.0):
 				_hunt_motion(node, b, model_speed, delta)
@@ -3214,6 +3218,10 @@ func _sign_track(kind: String, node: Node3D, b: Dictionary, speed: float) -> voi
 func _sign_lay(kind: String, node: Node3D, b: Dictionary, row: Dictionary, at: Vector3, running: bool, trotting: bool, ground: String) -> void:
 	b["track_side"] = -float(b.get("track_side", 1.0))
 	var size: float = clampf(float(row.get("length_m", 1.0)) * 0.08, 0.04, 0.35) * maxf(node.scale.x, 0.3)
+
+	if ice_looks and ground == "snow":
+		size *= 1.0 + 0.4 * clampf(float(_cond().get("ground_snow", 0.0)), 0.0, 1.0)      # deeper snow: a bigger, blurred hole (Jamie's tracks page #696)
+
 	var across: Vector3 = node.global_transform.basis.x.normalized()
 	var ahead: Vector3 = -node.global_transform.basis.z.normalized()
 	var width: float = float(row.get("length_m", 1.0)) * 0.1 * maxf(node.scale.x, 0.3)
@@ -3278,7 +3286,7 @@ func _sign_decal(tex: Texture2D, at: Vector3, size: float, turn: float, ground: 
 	var decal: Decal = Decal.new()
 	decal.texture_albedo = tex
 	decal.size = Vector3(size, 0.4, size)
-	decal.modulate = {"snow": Color(0.72, 0.78, 0.9, 0.85), "sand": Color(0.55, 0.47, 0.35, 0.7), "mud": Color(0.3, 0.23, 0.16, 0.85),
+	decal.modulate = {"snow": Color(0.62, 0.7, 0.86, 0.95) if ice_looks else Color(0.72, 0.78, 0.9, 0.85), "sand": Color(0.55, 0.47, 0.35, 0.7), "mud": Color(0.3, 0.23, 0.16, 0.85),
 		"clay": Color(0.36, 0.27, 0.18, 0.8), "turf": Color(0.28, 0.3, 0.18, 0.6), "bed": Color(0.45, 0.48, 0.3, 0.45),
 		"browse": Color(0.5, 0.55, 0.3, 0.6), "droppings": Color(0.2, 0.15, 0.1, 0.95)}.get(ground, Color(0.3, 0.25, 0.2, 0.8))
 	add_child(decal)
@@ -3317,6 +3325,8 @@ func _fade_signs() -> void:
 			gone = true
 		elif ground == "snow" and (snowing or thawed or drifted):
 			gone = true
+		elif ground == "snow" and ice_looks and _air(decal.global_position, _wx_state()) > 2.0 and age > 2.0 * GAME_HOUR_S:
+			gone = true      # a thaw (air above 2 C for a while) softens snow prints away
 		elif (ground == "mud" or ground == "clay") and washed:
 			gone = true
 
@@ -3432,10 +3442,14 @@ func _weather_look(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 	# 5. Snow on the back: lying (19 or asleep) in falling snow it builds over 2 minutes, getting up shakes it off (the coat whitens).
 	var lying: bool = state == 19 or bool(b.get("asleep", false))
 	var snowing: float = float(wx.get("snow", 0.0))
+	b["still_t"] = float(b.get("still_t", 0.0)) + delta if speed < 0.1 else 0.0
+	var holds_snow: bool = lying or (ice_looks and float(b["still_t"]) > 30.0)      # ice_looks: a still animal gathers snow too
 
-	if lying and snowing > 0.2:
+	if holds_snow and snowing > 0.2:
 		b["snow_back"] = minf(1.0, float(b.get("snow_back", 0.0)) + delta / 120.0 * snowing)
-	elif not lying and float(b.get("snow_back", 0.0)) > 0.0:
+	elif holds_snow and ice_looks and float(b.get("snow_back", 0.0)) > 0.0 and air > 0.0:
+		b["snow_back"] = maxf(0.0, float(b["snow_back"]) - delta * air / 600.0)      # it melts on the back above 0 C, faster the warmer (Weather.air_c)
+	elif not holds_snow and float(b.get("snow_back", 0.0)) > 0.0:
 		if float(b["snow_back"]) > 0.2 and not b.has("wx_shake"):
 			b["wx_shake"] = 0.0      # it shakes the snow off as it gets up
 			_puff(node.global_position + Vector3(0.0, float(_row_of(node).get("length_m", 1.0)) * 0.3, 0.0), "snow", 6.0)
@@ -3694,7 +3708,7 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air", "drink_looks"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air", "drink_looks", "ice_looks"]
 
 func _all_flags_off() -> void:
 	cover_still = false
@@ -3704,6 +3718,7 @@ func _all_flags_off() -> void:
 	fog_looks = false
 	cave_air = false
 	drink_looks = false
+	ice_looks = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -4136,6 +4151,54 @@ func _drink_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: f
 
 				for k in 3:
 					_splash(node.global_position + Vector3(randf_range(-0.1, 0.1), 0.0, randf_range(-0.1, 0.1)), false, 2.0)      # luck-exempt: where the drops fly
+
+
+# On ice (ANIMAL_WEATHER_LOOKS.md ice section; the behaviour is judged, not from a knowledge page): an animal standing or walking at the water's surface where the still water
+# is frozen (the weather's ice_cover, the same number the walkable ice uses) steps carefully, the clip slowed to three quarters; deer,
+# elk, boar and stock, who avoid open ice, slip now and then (a sideways lurch that rights itself); wolves and foxes cross it surely.
+# Where they go is the server's (deer and boar skirting frozen ponds, wolves crossing: requests to Steve).
+const SURE_ON_ICE := ["wolf", "fox", "lynx", "dog", "bear", "black_bear", "crow", "duck", "goose", "pheasant", "guineafowl", "chicken"]
+
+func _ice_look(node: Node3D, b: Dictionary, _state: int, speed: float, delta: float) -> void:
+	b["ice_t"] = float(b.get("ice_t", 0.0)) - delta
+
+	if float(b["ice_t"]) <= 0.0:
+		b["ice_t"] = 0.5
+		var on: bool = false
+
+		if water_level.is_valid() and node.is_inside_tree() and float(_cond().get("ice_cover", 0.0)) > 0.5:
+			var level: float = float(water_level.call(node.global_position.x, node.global_position.z))
+			on = not is_nan(level) and absf(node.global_position.y - level) < 0.15
+
+		b["on_ice"] = on
+
+	if not bool(b.get("on_ice", false)) or speed < 0.2:
+		return
+
+	var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
+
+	if player != null and player.speed_scale > 0.0:
+		player.speed_scale *= 0.75      # short, careful steps
+
+	if str(b.get("kind", "")) in SURE_ON_ICE:
+		return
+
+	var rig: Node3D = LifeUtil.rig(node)
+	b["slip_wait"] = float(b.get("slip_wait", randf_range(2.0, 6.0))) - delta      # luck-exempt: when it next slips (client look)
+
+	if float(b["slip_wait"]) <= 0.0:
+		b["slip_wait"] = randf_range(2.0, 6.0)      # luck-exempt: as above
+		b["slip_t"] = 0.0
+		b["slip_side"] = 1.0 if randf() < 0.5 else -1.0      # luck-exempt: which way
+
+	if rig != null and b.has("slip_t"):
+		b["slip_t"] = float(b["slip_t"]) + delta
+		var t: float = float(b["slip_t"])
+		rig.rotation.z = float(b["slip_side"]) * 0.18 * sin(PI * clampf(t / 0.5, 0.0, 1.0))
+
+		if t >= 0.5:
+			b.erase("slip_t")
+			rig.rotation.z = 0.0
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
