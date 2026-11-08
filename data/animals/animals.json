@@ -931,7 +931,12 @@
 				"provoked_m": 12.0,
 				"provoked_warn_s": 0.6,
 				"threat_m": 9.0,
-				"threat_warn_s": 0.8
+				"threat_warn_s": 0.8,
+				"huff_share": 0.5,
+				"bluff_share": 0.6,
+				"bluff_stop_m": 4.0,
+				"den_bluff_x": 0.5,
+				"run_trigger_mps": 6.0
 			},
 			"walk_mps": 1.3,
 			"spook_m": 25.0,
@@ -1283,7 +1288,12 @@
 				"provoked_m": 9.0,
 				"provoked_warn_s": 0.6,
 				"threat_m": 6.0,
-				"threat_warn_s": 0.8
+				"threat_warn_s": 0.8,
+				"huff_share": 0.5,
+				"bluff_share": 0.75,
+				"bluff_stop_m": 4.0,
+				"den_bluff_x": 0.5,
+				"run_trigger_mps": 6.0
 			},
 			"walk_mps": 1.3,
 			"spook_m": 32.0,
@@ -4135,7 +4145,7 @@
 	"off_hours_despawn_m": 40.0,
 	"off_hours_chance": 0.05,
 	"temperament": {
-		"note": "Dave 6 Nov 2026: every animal has an inherent temperament. Passive ones hide or run at all costs; neutral ones ignore us; aggressive ones attack; some are friendly, as in the real wild. A species row's 'temperament' gives the share of each kind it is born with (none = all defensive). spook_x scales how close a player may come before it runs (0 = it never runs), threat_x scales its defend.threat_m (0 = never attacks there), attacks false = never attacks unless defending its young, alert false = it does not stop to watch. Seasons and young change these further (species 'seasons', 'young').",
+		"note": "Dave 6 Nov 2026: every animal has an inherent temperament. Passive ones hide or run at all costs; neutral ones ignore us; aggressive ones attack; some are friendly, as in the real wild. A species row's 'temperament' gives the share of each kind it is born with (none = all defensive). spook_x scales how close a player may come before it runs (0 = it never runs), threat_x scales its defend.threat_m (0 = never attacks there), attacks false = never attacks unless defending its young, alert false = it does not stop to watch. bluff_x scales a species' defend.bluff_share (how often a charge is a bluff; docs/design/bear_threat_design.md). Seasons and young change these further (species 'seasons', 'young').",
 		"kinds": {
 			"passive": {
 				"spook_x": 1.0,
@@ -4146,6 +4156,7 @@
 			"defensive": {
 				"spook_x": 1.0,
 				"threat_x": 1.0,
+				"bluff_x": 1.2,
 				"attacks": true,
 				"alert": true
 			},
@@ -4158,6 +4169,7 @@
 			"aggressive": {
 				"spook_x": 0.0,
 				"threat_x": 2.0,
+				"bluff_x": 0.5,
 				"attacks": true,
 				"alert": false
 			},

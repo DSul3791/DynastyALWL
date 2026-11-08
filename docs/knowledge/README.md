@@ -34,3 +34,4 @@ Each doc has these sections:
 | Torches and fire | [torches-fire.md](torches-fire.md) | 2026-11-06 | Sal, Kathleen (poses) |
 | Warmth and weather (cold, rain, wet, drying, fire heat) | [warmth-weather.md](warmth-weather.md) | 2026-11-06 | Steve |
 | The guiding document (G-ids, D-ids, how designs reach the game) | [guiding-document.md](guiding-document.md) | 2026-11-07 | Coordinator |
+| Rivers and floodplains (meanders, braids, floodplains, levees, terraces, fans, deltas) | [rivers-floodplains.md](rivers-floodplains.md) | 2026-11-08 | Sonny |
