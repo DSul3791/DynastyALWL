@@ -52,6 +52,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Drinking | sips with the head lifted to look round, a churned bank, birds bathing | none | `drink_looks` (**off**) | ANIMAL_DRINK.md |
 | Ice and snow | careful steps and slips on ice, snow on still backs melting by the air, deeper snow prints | none | `ice_looks` (**off**) | ANIMAL_WEATHER_LOOKS.md |
 | Thunder | birds startle up, herds flinch and bunch with ears flat, dogs cower; storm wind tails to it | none | `storm_looks` (**off**) | ANIMAL_WEATHER_LOOKS.md |
+| Pose library | alert, sit, lie, hunch, drink, sleep posed from the rig's bones where a model has no clip | `pose_axis`, `pose_sign` | `pose_lib` (**off**) | POSE_LIBRARY.md |
 | Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |

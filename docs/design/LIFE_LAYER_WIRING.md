@@ -18,6 +18,7 @@ with no client handler or no strip; every gap found is filled below (marked **fi
 | 17 | gliding | #653 (design; server_flight.gd to come) | `AIR_STATES`, flight block glide clip, `seen_glide` | none | m33 (**filled**: had no strip) |
 | 18 | dog sits | dog companion (#651) | clip role 18, tail wag in `_tail_motion` | none | step 3 still (dog), m1 |
 | 19 | dog lies | dog companion (#651) | clip role 19, tail wag | none | step 3 still (dog), m1 |
+| 21 | DRINK (Steve #734): at fresh water at dawn and dusk, facing it | #734 | `_drink_look` (sips and glances), the library's drink pose; voices.json names no call (silent) | `drink_looks`, `pose_lib` | m55, m58 |
 | 20 | hunch against the weather (in rain deer and stock hunch 60% of grazing spells: Steve's #667 on #661) | #646, #667 | `HUNCH`: idle clip (12, 3) under `state_poses` 20 (deer, wolf, fox, elk, moose, horse, donkey; cattle and goats on the idle clip alone), ears 0.7 flat, tail still | none (server state) | m26 |
 
 Single birds (Steve's #661, bird flight step 1, head 6ab02d10): flying and perched birds send their height in the row's position and
@@ -59,6 +60,7 @@ Weather step 2 (#667): moving under trees in rain, stock facing downwind in a ga
 | Drinking spot (water ahead of a grazer), shallow water under a bird | water_level (main), server positions; Steve's `water_source` stays on the server (#719) | `_drink_look`: sip glances, churned bank, bird bathing | `drink_looks` (with `water_life`) | m55 |
 | Ice cover, lying snow, the air | weather sounds `ice_cover` and `ground_snow` (main), Weather.air_c | `_animal_conditions` adds `ice_cover`; `_ice_look` (careful steps, slips), still-snow on backs melting by `_air`, deeper and thaw-softened snow prints | `ice_looks` | m56 |
 | Thunder heard (`weather_sounds.thunders_played` changing; Kathleen #692 counts at the heard moment) | sound stage (main) | `thunder_count` from terrain_client; `_thunder_clap`, `_storm_look` (startle, flinch, cower), `_startle_until` (bunching, ears flat); storm wind through `_wind_look` | `storm_looks` | m57 |
+| States 3, 18, 19, 20, 21 (DRINK, Steve #734) and the sleep key for models with no clip | server states | `PoseLib.parts`, `PoseLib.build`, `pose_blend`; state 21 also lights `_drink_look` | `pose_lib` | m58 |
 | Kill switch | command line `--life-layer-off` | `life_layer_all_off`, `_all_flags_off`: every flag off and the always-on looks skipped | the switch itself | gate (PERF_BUDGET.md) |
 | Rain cover, conifers, shade, gale drift (Steve #667, #671) | server positions and headings | none needed: drawn as sent; state 20 in rain as the hunch | none | m26 |
 | Ground wet, season, hour | weather sounds, ambient conditions (main) | `conditions_now`: sleep, prints, puddle splashes, coat season | per look | m6, m12, m19, m20 |

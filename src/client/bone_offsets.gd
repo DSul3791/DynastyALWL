@@ -26,6 +26,7 @@ var look_max: float = 1.2         # radians the whole neck may turn
 var look_target: Vector3 = Vector3.ZERO      # world position looked at (animal_view: the camera)
 var look_weight: float = 0.0      # 0 the clip's own head to 1 looking at the target
 var poses: Dictionary = {}        # state -> [offsets {bone: Quaternion}, waves [[bone, axis, swing, phase, period]]] (state_poses)
+var pose_blend: Dictionary = {}   # state -> seconds to blend into its pose (the pose library's blend times); absent: animal_view's default
 var pose_state: int = -1          # the state whose pose is laid over the clip (animal_view sets it)
 var pose_weight: float = 0.0
 var _pose_t: float = 0.0

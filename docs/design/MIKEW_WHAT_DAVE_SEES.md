@@ -75,3 +75,6 @@ warms; prints in deep snow are bigger.
 
 **PR 23, thunder.** At a clap of thunder birds start up flapping, deer and cattle flinch and bunch together with ears flat for a few
 seconds, and your dog cowers.
+
+**PR 24, pose library.** An animal whose model has no animation for sitting, lying, sheltering hunched, drinking or sleeping is posed from
+its own skeleton instead: head down to the water when it drinks, legs folded when it lies.
