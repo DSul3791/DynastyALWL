@@ -31,6 +31,7 @@ const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const CanopyMapScript := preload("res://src/client/canopy_map.gd")
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const BuildingLook := preload("res://src/client/building_look.gd")
 
 signal flash_started(at_world: Vector3, distance_m: float)
 
@@ -148,6 +149,7 @@ var flash_level: float = 0.0            # 0..1, for the HUD and tests
 var gloom: float = 0.0
 var day = DayCycleScript.new()         # sun, moon and sky colours from the game clock (day_cycle.gd), refreshed twice a second
 var _day_next_msec: int = 0
+var _fire_next_msec: int = 0            # --fire-smoke: the fires' smoke and sparks take the wind once a second
 var _sky_next_msec: int = 0
 var _cave_factor: float = 1.0           # share of the sun and sky light let in under rock, eased (1 open air)
 var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
@@ -397,6 +399,13 @@ func _process_body(delta: float) -> void:
 			_client._sun.basis = day.light_basis
 			_client._sun.light_color = day.light_color
 
+	if BuildingLook.fire_smoke_on and now_msec >= _fire_next_msec and _client.get("game_clock") != null:
+		_fire_next_msec = now_msec + 1000
+		var world_weather: Variant = _client.get("weather")
+		var heading: float = float(world_weather.get("wind_dir", 0.0)) if world_weather is Dictionary else 0.0
+		var wind_now: float = float(_s["wind"])
+		BuildingLook.set_fire_air(fire_wind_ms(wind_now), heading, still_night(day.elevation, _client.game_clock.hour(), cloud_cover, wind_now))
+
 	# The sky colours change in coarser steps than the sun: a changed sky shader parameter may make the engine redraw the
 	# sky's lighting cubemap, so it is paid once every few seconds (two game minutes), not every frame. Check the GPU table
 	# ("sky clouds at Low quality") and the frame time over a dusk if this is ever raised.
@@ -539,6 +548,18 @@ static func sky_under_rock(environment: Environment, sky_share: float, under_roc
 static func cave_light(rock_enclosure: float, left: float = CAVE_LIGHT_DARK) -> float:
 	var shut: float = smoothstep(CAVE_DARK_FROM, CAVE_DARK_FULL, rock_enclosure)
 	return lerpf(1.0, left, shut)
+
+
+# --fire-smoke (fire_smoke_wind_design.md): the wind 0..1 in m/s (Jamie's wind page #637: 20 x wind^1.3).
+static func fire_wind_ms(wind: float) -> float:
+	return 20.0 * pow(clampf(wind, 0.0, 1.0), 1.3)
+
+
+# 0 .. 1: a still, clear night, when smoke stops at the cold layer and spreads flat. From about an hour after sunset to an hour after
+# sunrise (`elevation` the sin of the sun's height), little cloud, little wind. The same shares as the sound outdoors work.
+static func still_night(elevation: float, hour: float, cloud: float, wind: float) -> float:
+	var night: float = 1.0 - smoothstep(0.02, 0.17, elevation) if hour < 12.0 else 1.0 - smoothstep(-0.17, -0.02, elevation)
+	return night * (1.0 - smoothstep(0.3, 0.5, cloud)) * (1.0 - smoothstep(0.2, 0.35, wind))
 
 
 # The same grading the sky shader applies, so the fog meets the sky's horizon.

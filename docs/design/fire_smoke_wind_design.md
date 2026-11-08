@@ -32,15 +32,15 @@ The world wind is one value for the island (`weather.gd` `wind`, `wind_dir`), so
 
   | | Small (tier 1) | Medium (tier 2) | Large (tier 3) |
   |---|---|---|---|
-  | Particles | 10 | 16 | 24 |
-  | Life | 9 s | 9 s | 9 s |
+  | Particles | 14 | 22 | 32 |
+  | Life | 16 s | 16 s | 16 s |
   | Rise speed `w` | 0.30 m/s | 0.39 m/s | 0.53 m/s |
   | Starting puff | 0.5 m | 0.7 m | 0.9 m |
 
-  The rise speeds are Jamie's Briggs table: 3.0 / 3.9 / 5.3 m above the flames at 10 m downwind in 1 m/s of wind. The puffs grow 4 times over their life.
+  The rise speeds are Jamie's Briggs table: 3.0 / 3.9 / 5.3 m above the flames at 10 m downwind in 1 m/s of wind. Each puff grows 4 times over its life. A plume is already full when it comes into view (preprocess).
 - **Speed and direction:** each puff leaves with the wind's speed along the heading, plus its rise speed up. The direction is `normalize(wind_dir x u + up x w)` and the speed is that vector's length. The height at 10 m downwind is then 10 x w / u, which matches the table: 3 m at 1 m/s for a small fire, and about 1.5 m (head height) at 2 m/s.
 - **Near calm** (u under 0.5 m/s): a column. The rise speed is at least 0.8 m/s, and the spread is 8 degrees.
-- **Still, clear night** (`still_night` > 0): the column rises at 0.8 m/s and slows to a stop at about 12 m (vertical gravity -0.8² / (2 x 12)). There it spreads flat as the puffs grow and fade. The life is lengthened to reach the top (15 s), at the same particle count, so it reads as a thin layer.
+- **Still, clear night** (`still_night` > 0): the column rises at 1.5 m/s and slows to a stop at about 12 m as its 16 s life ends (vertical brake -1.5 / 16 m/s²). There it spreads flat as the puffs grow and fade, so it reads as a thin layer.
 - **Look:** a lit grey-white smoke (`CAMP_SMOKE_SHADER`). The fire's own light shows on its underside at night, so it never glows on its own in the dark.
 
 ### 3.2 Forge smoke
