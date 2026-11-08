@@ -153,6 +153,48 @@
 		"seepage_mm_yr_other": 0.0,
 		"cirque_floor_below_ela_m": 100.0
 	},
+	"groundwater": {
+		"_note": "Stages C3, C4, C6 (groundwater.py, step R4). Permeability classes and geometric-mean permeabilities k (m2, stored as -log10 k) from Gleeson et al. 2011 (GRL 38, doi:10.1029/2010GL045565), read from the table reproduced after them in a University of Victoria thesis; K = k x 7.5e6 m/s. Rock to class: carbonate for limestone, marble and chalk; sandstone coarse siliciclastic; shale and coal (coal measures) fine siliciclastic; granite and slate crystalline; basalt and tuff volcanic; loose sediment coarse unconsolidated, till fine. treeline_m 620 is the game's own (tile_land_types.gd). Not from a source yet, flagged: thickness_m (one transmissive thickness, 50 m); karst_factor (100: carbonate permeability rises with scale where conduits join, Gleeson et al. 2011 note it, the factor is a guess); perennial_baseflow_m3_s (1 L/s of dry-season groundwater flow keeps a channel running); intermittent_quick_area_m2 (20 ha of quick runoff carries a seasonal stream); spring_m3_s (0.5 L/s within two cells makes a head a spring rather than a seep); wetland_depth_m (table within 0.3 m) and wetland_slope_deg (3 degrees); tidal_band_m and salt_marsh_max_from_sea_m for salt marsh; floodplain_reach_m (marsh and swamp within 50 m of a perennial river or lake on alluvium); swamp_min_depth_m (the drier fringe where woody plants hold); bog_rain_mm_yr (blanket bog needs about 1,000 mm and 160 rain days a year; to verify).",
+		"cell_m": 64.0,
+		"thickness_m": 50.0,
+		"karst_factor": 100.0,
+		"seepage_iterations": 40,
+		"rock_class": {
+			"limestone": "carbonate",
+			"marble": "carbonate",
+			"chalk": "carbonate",
+			"sandstone": "coarse siliciclastic",
+			"shale": "fine siliciclastic",
+			"coal": "fine siliciclastic",
+			"granite": "crystalline",
+			"slate": "crystalline",
+			"basalt": "volcanic",
+			"tuff": "volcanic",
+			"sediment": "coarse unconsolidated"
+		},
+		"log10_k_m2_negated": {
+			"unconsolidated": 13.0,
+			"coarse unconsolidated": 10.9,
+			"fine unconsolidated": 14.0,
+			"siliciclastic": 15.2,
+			"coarse siliciclastic": 12.5,
+			"fine siliciclastic": 16.5,
+			"carbonate": 11.8,
+			"crystalline": 14.1,
+			"volcanic": 12.5
+		},
+		"perennial_baseflow_m3_s": 0.001,
+		"intermittent_quick_area_m2": 200000.0,
+		"spring_m3_s": 0.0005,
+		"wetland_depth_m": 0.3,
+		"wetland_slope_deg": 3.0,
+		"tidal_band_m": 1.5,
+		"salt_marsh_max_from_sea_m": 300.0,
+		"floodplain_reach_m": 50.0,
+		"treeline_m": 620.0,
+		"swamp_min_depth_m": 0.1,
+		"bog_rain_mm_yr": 1000.0
+	},
 	"peaks": {
 		"_note": "The peak checks of design A1 rule 6 (peaks.py; sign-off lines 1 to 10 of docs/water/rule6_build_plan.md). Checked summits: the landform's peaks (highest within summit_window_m) at least above_snowline_m above the stadial snowline, since lower tops hold no cirque glacier. Valley heads: on rings_m round the top, lows at least head_drop_m below the ridges either side; heads_needed of them within heads_within_m. top_search_m: a top may move a cell or two as its faces wear (as evolve.py). Flat cap: ground within plateau_within_m of the top, under plateau_max_deg, joined to it; limit plateau_max_m. Headwall: the first point steeper than headwall_deg walking out from the top along a valley head, its cirque floor the lowest ground within floor_beyond_m beyond it. Measured values (Jamie's cirque page #654): long-term headwall retreat 0.1 to 1.3 mm/yr, 0.5 to 1.0 while a glacier is active; shady lee sides 1.5 to 2 times faster than sunny ones (north-east north of the equator, south-east south of it: glacial.shady_bearing_deg); most of a cirque's depth in its first cycle, then about 10 times slower (depth_slowdown 5 leaves room). Judged: the ring radii, head_drop_m 50, headwall_deg 40, the plateau thresholds, met_at_top_m and the fail limits of the shady/sunny ratio.",
 		"above_snowline_m": 300.0,
