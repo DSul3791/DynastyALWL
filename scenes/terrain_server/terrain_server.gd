@@ -66,6 +66,7 @@ const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
+const ThunderScript := preload("res://src/shared/thunder.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const LandTypeScript := preload("res://src/water/land_type.gd")
@@ -504,6 +505,8 @@ func _ready() -> void:
 	animals.canopy = func(point): return flora.covered(point)
 	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
 	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
+	animals.game_seconds = func(): return game_clock.seconds
+	animals.thunder_between = func(t0, t1, centre, reach): return ThunderScript.strikes(int(settings.master_seed), t0, t1, weather, centre, reach)   # the shared strikes (birds_and_thunder_server.md)
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
