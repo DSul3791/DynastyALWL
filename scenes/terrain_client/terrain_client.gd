@@ -2303,6 +2303,9 @@ func _update_weather() -> void:
 	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
 
+	if sound != null and sound.occlusion != null and sound.occlusion.outdoors:     # --sound-outdoors (sound_outdoors_design.md)
+		sound.occlusion.set_air(weather, weather_look.day.elevation if weather_look != null else 0.5, game_clock.hour(), weather_look.fog_now() if weather_look != null else 0.0)
+
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
 signal cave_dens_changed(tile: Vector2i, dens: PackedVector3Array)   # den sounds (Sound thread #211) listen here
@@ -5915,6 +5918,10 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nswim sounds: %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last]
 	text += "\ntown sounds: %d loops, %d bell strikes" % [sound.town.loops_playing, sound.town.bells_rung]
 	text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
+
+	if sound.occlusion.outdoors:
+		text += "; open air: %d shadowed by the wind, %d carried, %d masked by rain or gale; snow fresh %.2f" % [sound.occlusion.air_shadowed, sound.occlusion.air_carried, sound.occlusion.air_masked, sound.weather.snow_fresh]
+
 	text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	text += "\nlast dig sound: %s" % sound.dig.last_dig
 	text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if sound_tests.weather_at >= 0 else "the world weather above")
