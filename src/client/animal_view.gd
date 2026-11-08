@@ -461,6 +461,8 @@ func _process_body(delta: float) -> void:
 			if node.has_meta("look"):
 				_look_motion(node, b, state, delta)
 
+			_hop_arc(node, b, model_speed, delta)
+
 			if node.has_meta("poses"):
 				var posed = node.get_meta("poses")      # bone_offsets.gd: a pose for a state the file has no clip for
 
@@ -1620,6 +1622,23 @@ func _look_motion(node: Node3D, b: Dictionary, state: int, delta: float) -> void
 	fix.look_weight = move_toward(float(fix.look_weight), want, delta / 0.3)
 
 
+# The body's rise and fall over each bound of a hopping animal (see the hop block in _animate_model): a half sine of arc_m per bound,
+# so the feet leave and meet the ground once a bound; settles to the ground when it stops.
+func _hop_arc(node: Node3D, b: Dictionary, speed: float, delta: float) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null:
+		return
+
+	var hop: Variant = b.get("hop", null)
+
+	if hop is Array:
+		b["hop_phase"] = float(b.get("hop_phase", 0.0)) + speed * delta / maxf(float(hop[0]), 0.05)
+		rig.position.y = float(hop[1]) * sin(PI * fposmod(float(b["hop_phase"]), 1.0))
+	elif absf(rig.position.y) > 0.0005:
+		rig.position.y = move_toward(rig.position.y, 0.0, delta * 0.5)
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -1666,6 +1685,17 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		ref = float(player.get_animation(clip).get_meta("travel_mps", ref))      # the speed the clip's feet were made for (_strip_root_drift)
 
 	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
+
+	# A hopping animal (docs/design/HOP_ARC.md, row "hop" {walk|run: {bound_m, arc_m}}) bounds on an arc instead of skating on a
+	# sped-up hop: one hop clip cycle per bound, the bound lengthening above the clip's own rate (_hop_arc lifts the body).
+	var hop: Dictionary = row.get("hop", {})
+
+	if hop.has(role) and speed > 0.3 and clip != "" and player.has_animation(clip):
+		var bound: float = float(hop[role].get("bound_m", 0.5))
+		player.speed_scale = clampf(speed / bound * player.get_animation(clip).length, 0.5, 1.5)
+		b["hop"] = [bound * maxf(1.0, (speed / bound * player.get_animation(clip).length) / 1.5), float(hop[role].get("arc_m", 0.1))]
+	else:
+		b["hop"] = null
 
 
 # A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).

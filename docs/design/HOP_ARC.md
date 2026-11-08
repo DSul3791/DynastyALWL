@@ -1,4 +1,4 @@
-# Small animals hop, not skate (MikeW, 8 Nov 2026; design only)
+# Small animals hop, not skate (MikeW, 8 Nov 2026; built on the eye-placement branch: rabbit and kangaroo rows)
 
 **Problem.** The rabbit's walk clip is a slow hop: its feet move 0.31 m/s on the ground (#591). A rabbit grazing forward at 1 to 1.5 m/s plays that clip 3 to 5 times too fast (clamped to 2×), so it looks like it skates between hops, and a fleeing rabbit at 7.5 m/s plays its run at the clamp while the body slides far further per bound than the legs push.
 
