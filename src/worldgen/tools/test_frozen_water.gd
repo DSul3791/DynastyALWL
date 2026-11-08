@@ -51,7 +51,7 @@ func _init() -> void:
 	check(spring_morning.x > 0.2 and spring_morning.x < 0.36, "spring level day 343 09:00: cover about 0.28 (%.3f)" % spring_morning.x)
 	check(spring_morning.z < 0.1, "spring level day 343 09:00: not thawing yet (%.2f)" % spring_morning.z)
 	check(spring_thaw.z > 0.35, "spring level day 344 12:00: thawing (%.2f)" % spring_thaw.z)
-	check(FrozenWater.look(at(342, 7.0), "temperate", SPAWN_POND_M, SEED, 0.7).w == 0.7, "the lying snow is passed through")
+	check(absf(FrozenWater.look(at(342, 7.0), "temperate", SPAWN_POND_M, SEED, 0.7).w - 0.7) < 0.0001, "the lying snow is passed through (a Vector4 holds 32-bit floats)")
 	check(FrozenWater.thaw_of(0.05, 0.1) == 0.0, "no thaw counted below a 2.5 cm peak")
 	check(is_equal_approx(FrozenWater.thaw_of(0.1, 0.4), 0.75), "thaw = 1 - cover / peak")
 
@@ -85,7 +85,7 @@ func _init() -> void:
 		{"pos": Vector3(5.0, 0.0, 0.0), "until": now - 1.0},
 		{"pos": Vector3(4000.0, 0.0, 0.0), "until": now + 3600.0}], Vector3.ZERO, now)
 	check(holes.size() == 1, "an expired hole and a far one are left out (%d)" % holes.size())
-	check(holes.size() == 1 and is_equal_approx(holes[0].w, 0.5) and holes[0].z == FrozenWater.HOLE_RADIUS_M, "a hole half way through its 18 h: age 0.5")
+	check(holes.size() == 1 and is_equal_approx(holes[0].w, 0.5) and absf(holes[0].z - FrozenWater.HOLE_RADIUS_M) < 0.0001, "a hole half way through its 18 h: age 0.5")
 	var picture: Array = FrozenWater.hole_of("53316,68484")
 	check(picture.size() == 1 and FrozenWater.holes_near(picture, Vector3(53316.0, 0.0, 68495.0), now)[0].w == 0.0, "the picture hole is there, age 0")
 	check(FrozenWater.hole_of("53316").is_empty() and FrozenWater.hole_of("").is_empty(), "a bad picture hole is ignored")
