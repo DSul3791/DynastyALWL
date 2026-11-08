@@ -1,4 +1,4 @@
-# Fog and visibility: how far you see, when fog comes, what it does to sound, smell, animals and lights, and the dusk curve at 57° S
+# Fog and visibility: how far you see, when fog comes, what it does to sound, smell, animals and lights, and the dusk curve at about 34° S
 
 **Last checked:** 2026-11-08 (Jamie; built from this library and our sums, then upgraded the same day with Met Office, NWS, the haar, twilight light levels, birds and scent dogs. What is still judged is listed under Sources). **Owners:**
 - Kathleen: the fog look (#608 sea fog, #672 fog from above, valley fog in `weather.gd`).
@@ -33,13 +33,13 @@
    - **Light wind feeds it and a breeze kills it.** Winds of 2 to 7 knots (1 to 3.6 m/s) bring more moist air against the cold ground and thicken the layer. A "stronger breeze" prevents it (NWS fog guide). After sunrise the fog thins, clears from its edges inward, and often lifts into a thin stratus sheet before it goes (NWS).
    - **It deepens just after sunrise** (judged, common observation): the first sun stirs the layer, and for half an hour to an hour the fog can thicken and rise before it thins.
    - **Season:** radiation fog "usually occurs in winter" and "dissipates soon after sunrise as the ground warms" (Met Office 2025). Autumn and early winter, when nights are long and the ground is still wet, is when it is most common in the game too (`weather.gd` notes autumn).
-   - **At 57° S the winter sun is weak.** The midwinter noon sun is only 9.6° high (`one-sky.md`, #706). So in midwinter a valley fog can last all day in a deep valley (judged). Burn-off also follows sunrise, which is 08:39 at midwinter.
-     - On main, `weather.gd` draws its sunrise for 52° N (`SUN_LATITUDE_DEG` 52.0). Kathleen's #711 fixes this behind `--one-sky`: `Weather.sunrise_hour` then reads the island's latitude, so the burn-off follows 57° S.
+   - **At about 34° S the winter sun is strong enough to clear it.** The starter island is at 33.7° S at the spawn, from the 21 by 21 grid (`one-sky.md`, #706; `OVERNIGHT_DECISIONS_8NOV.md` row 19, #717). The midwinter noon sun stands 32.9° high, and sunrise is 07:03. So valley fog goes by late morning, and only a deep, shaded valley holds it to about noon (judged). An earlier version of this page put the island at 57° S, with fog lasting all day. That was wrong.
+     - On main, `weather.gd` draws its sunrise for 52° N (`SUN_LATITUDE_DEG` 52.0). Kathleen's #711 fixes this behind `--one-sky`: `Weather.sunrise_hour` then reads the island's latitude. #711 sets −57 today, which should become the position's own latitude.
      - The fog season needs no change: the game calendar's autumn is the island's own local autumn.
 
 3. **Sea fog comes in on light onshore winds when warm, damp air crosses a cold sea. It lasts day and night and drifts inland.**
    - This is advection fog. On the east coast of Scotland it is the haar: warm, moist air over the cold North Sea, brought in by sea breezes and easterly winds, "most often ... between April and September". It "can continue for several miles inland", and can shroud Ben Nevis "sometimes for several days" (Wikipedia, Haar).
-   - **For us** (judged): the same season, **local spring to early autumn** on the game calendar, at its most likely in early summer when the sea is coldest against the air. The warm, damp air comes from the north in the southern hemisphere, so look for sea fog on a light N to NW wind over a cold sea.
+   - **For us** (judged): the same season, **local spring to early autumn** on the game calendar, at its most likely in early summer when the sea is coldest against the air. The warm, damp air comes from the north in the southern hemisphere. At 34° S the summer wind is mostly south-easterly (`prevailing-wind-57s.md`, #714), so look for sea fog on the days it swings to a light N to NE wind, or in a calm, over a cooler sea.
    - **How it behaves** (judged):
      - day or night, it does not need clear skies;
      - it lies on the sea and the shore and drifts several miles (about 3 to 8 km) inland up low ground (Wikipedia, Haar, for "several miles");
@@ -47,7 +47,7 @@
      - light winds of 3 to 9 knots (1.5 to 4.6 m/s) suit it, and winds over 9 knots usually lift it into low stratus (NWS). With our mapping that is **wind 0.15 to 0.32, lifting at about 0.32**;
      - if it lasts through the late afternoon, it can move well inland after evening cooling and stay until the next morning (NWS);
      - a calm lets it sit for days.
-   - The west coast of a Hebrides-like island gets less of it than the east, because the westerlies blow off the open ocean (judged).
+   - The north-facing coasts get most of it, since that is where the damp northerly air comes ashore (judged).
 
 4. **Fog does not carry sound; calm air does. And damp, calm air holds scent near the ground.**
    - **Sound:** fog damps the high notes, and low sounds carry best. A foggy morning is quiet because it is calm, with a cold layer at the ground ([sound-outdoors.md](sound-outdoors.md) lesson 7). Kathleen's #683 page has the hearing ranges.
@@ -73,14 +73,14 @@
    - **Judged:** in fog, eye shine shows to about a third of the visibility, and only with the torch held low.
    - A torch in fog makes a glowing ball and a halo, and its reach falls by 10 to 50% with the fog class ([firelight-in-weather.md](firelight-in-weather.md) lessons 2 to 4).
 
-7. **After sunset at 57° S, the light falls over about an hour and a half to two and a half hours. In midsummer it never gets fully dark.**
+7. **After sunset at about 34° S, the light falls fast: full dark comes an hour and a half to an hour and three quarters after sunset, all year.**
    - **Twilight times** (`one-sky.md`, #706, from standard solar formulas):
 
      | Day | Sunset | Civil end (sun 6° down) | Nautical end (12°) | Astronomical end (18°) |
      |---|---|---|---|---|
-     | Equinox | 18:06 | 18:44 (+38 min) | 19:30 (+84 min) | 20:18 (+132 min) |
-     | Midwinter | 15:21 | 16:11 (+50 min) | 17:02 (+101 min) | 17:49 (+148 min) |
-     | Midsummer | 20:56 | about 22:05 (+69 min) | never | never |
+     | Equinox | 18:04 | 18:29 (+25 min) | 18:58 (+54 min) | 19:27 (+83 min) |
+     | Midwinter | 16:57 | 17:25 (+28 min) | 17:56 (+59 min) | 18:27 (+90 min) |
+     | Midsummer | 19:12 | 19:41 (+29 min) | 20:17 (+65 min) | 20:56 (+104 min) |
 
    - **Light at each stage** (MacInnis, Williamson and Nielsen 1995, *SAE Transactions* 104, via the moonlit package's twilight curve):
      - about 760 lux with the sun on the horizon, clear sky;
@@ -113,13 +113,13 @@
   - in the valley floor, thick fog (50 to 180 m visibility) at its height;
   - mist on the slopes just above the top (`mist_top_m` 30 to 140 m);
   - clear above, with the fog sea seen from the hills (#672).
-- **Burn-off at 57° S** (`weather.gd` burns it from 1 to 3 hours after sunrise; sunrise from `one-sky.md`, #706; with `--one-sky` on, #711 makes the code follow these):
+- **Burn-off at 33.7° S** (`weather.gd` burns it from 1 to 3 hours after sunrise; sunrise from `one-sky.md`, #706; with `--one-sky` on, #711 makes the code follow these):
 
   | Day | Sunrise | Fog starts to go | Fog gone |
   |---|---|---|---|
-  | Midsummer | 03:04 | 04:04 | 06:04 |
-  | Equinox | 05:54 | 06:54 | 08:54 |
-  | Midwinter | 08:39 | 09:39 | 11:39 (in a deep valley it may last all day: judged, and the Met Office notes it lingers where the sun has little effect) |
+  | Midsummer | 04:48 | 05:48 | 07:48 |
+  | Equinox | 05:56 | 06:56 | 08:56 |
+  | Midwinter | 07:03 | 08:03 | 10:03 (a deep, shaded valley may hold it to about noon: judged, and the Met Office notes it lingers where the sun has little effect) |
 
 - **The knobs that move it** (read from the code and the open PRs, 8 Nov, not tested):
   - how thick: Kathleen's `MIST_INSIDE_THICK` (14 today, about 167 m inside the fog), mirrored by Steve's `Weather.VIS_MIST_THICK` (#724, #730). Raising it moves the fog toward 50 m;
@@ -132,7 +132,7 @@
 
 ### Sea fog (#608)
 
-- **When:** local spring to early autumn on the game calendar (the haar comes "most often on the east coast of Scotland between April and September", Wikipedia, Haar), on a light N to NW onshore wind, wind 0.15 to 0.32 (NWS's 3 to 9 knots). Lifts to low cloud at about 0.32 (NWS: over 9 knots).
+- **When:** local spring to early autumn on the game calendar (the haar comes "most often on the east coast of Scotland between April and September", Wikipedia, Haar), on a light N to NE onshore wind, or in a calm, wind 0.15 to 0.32 (NWS's 3 to 9 knots). Lifts to low cloud at about 0.32 (NWS: over 9 knots).
 - **Visibility:** 50 to 500 m on the shore (judged).
 - **Reach:** the sea and the coast, drifting 1 to 5 km up low ground. Burns back to the coast on a sunny afternoon and returns at evening.
 - **Days:** it can last 1 to 3 days in a calm (judged).
@@ -154,18 +154,18 @@
 - **Eye shine:** shows to about ⅓ V (2-way loss), and only with the light near the viewer's eye or held low. Inside 5 m in dense fog, the torch's own glow hides it.
 - **Torch and fire:** use [firelight-in-weather.md](firelight-in-weather.md). The reach falls 10% in fog and 50% in dense fog, with a halo of about 4° and a glowing ball round the flame. A far fire through fog shows as a point with a halo within 1 V, as a glow out to 3 V, and as nothing beyond.
 
-### Dusk at 57° S
+### Dusk at about 34° S
 
 | From sunset | Light (clear sky) | What you see (judged) |
 |---|---|---|
 | 0 | about 760 lux | daylight colours, fading |
-| civil end, +40 to +70 min | 3.4 lux | colours gone; shapes clear; a deer at 100 m against the sky |
+| civil end, +25 to +30 min | 3.4 lux | colours gone; shapes clear; a deer at 100 m against the sky |
 | between civil and nautical | 0.1 to 1 lux | outlines; large animals at 30 to 50 m |
-| nautical end, +85 to +100 min | 0.008 lux | the horizon line only; animals at under 10 m unless against the sky |
-| astronomical end, +130 to +150 min | 0.0006 lux | starlight; nothing without a moon or a torch |
+| nautical end, +55 to +65 min | 0.008 lux | the horizon line only; animals at under 10 m unless against the sky |
+| astronomical end, +85 to +105 min | 0.0006 lux | starlight; nothing without a moon or a torch |
 
 - **Cloud** divides the light by 3 to 10 (judged; `moonlight-starlight.md` has overcast). **Fog** adds its own V limit on top.
-- **Midsummer:** after civil twilight the light stays around nautical-twilight levels all night, a low pale glow in the south. Never pitch black.
+- **Midsummer:** full dark comes at about 21:00 and lasts about 6 hours. There is no all-night glow at this latitude.
 
 ## Never-see checks
 
@@ -184,7 +184,7 @@
   - `mist` (0..1) and `mist_top_m` (30 to 140 m), gathering from 22:00 (`MIST_FROM_HOUR`) over 4 hours;
   - burning off 1 to 3 hours after sunrise, only in calm (`MIST_CALM_WIND` 0.3, none from 0.5) and clear weather;
   - `MIST_BY_ZONE` temperate 1.0.
-  - `SUN_LATITUDE_DEG` is 52.0 on main. #711 (open) makes the burn-off read the island's latitude (57° S) behind `--one-sky`.
+  - `SUN_LATITUDE_DEG` is 52.0 on main. #711 (open) makes the burn-off read the island's latitude behind `--one-sky`; it sets −57 today, which should become the position's latitude (about −34 at the starter).
 - **`weather_look.gd`:** has a "fog" look preset with `mist` 1.0 and `mist_top_m` 90. Its thickness grows by 12 × fog on top of rain and snow.
 - **Sea fog** is Kathleen's #608 (open), and fog from above is #672 (open). Neither was read for this page.
 - **Animals:** no fog rule found in `server_animals.gd` in this pass (not searched in depth).

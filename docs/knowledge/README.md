@@ -71,7 +71,7 @@ Where a number still needs a source, the cell names it.
 | Upland streams (stream density, bankfull flood ratio, Hey and Thorne widths, waterfalls, wave limit on deltas) | [upland-streams-numbers.md](upland-streams-numbers.md) | 2026-11-08 | Sonny | Mostly sourced: still needs the Hey and Thorne depth equation checked, stream density on permeable rock, and an upland sand yield |
 | Contradictions between pages and with the code, and which to follow | [CONTRADICTIONS.md](CONTRADICTIONS.md) | 2026-11-08 | Jamie | Audit |
 | Specific yield by rock type (granite, basalt, karst and other limestone, sandstone, shale, chalk, till, sand and gravel, peat; for spring stores and Rorabaugh recession) | [specific-yield.md](specific-yield.md) | 2026-11-08 | Sonny (springs, watershed) | Mostly sourced: a few rock types judged |
-| Fog and visibility (how far you see by fog class, valley and sea fog timing and seasons, sound and scent in fog, animals in fog, eye shine and torches in fog, dusk light at 57° S) | [fog-and-visibility.md](fog-and-visibility.md) | 2026-11-08 | Kathleen (look), MikeW (animals) | Mixed: sourced fog classes and sums; much judged (fetch list on the page) |
+| Fog and visibility (how far you see by fog class, valley and sea fog timing and seasons, sound and scent in fog, animals in fog, eye shine and torches in fog, dusk light at about 34° S) | [fog-and-visibility.md](fog-and-visibility.md) | 2026-11-08 | Kathleen (look), MikeW (animals) | Mixed: sourced fog classes and sums; much judged (fetch list on the page) |
 
 ### Most wanted sources
 
