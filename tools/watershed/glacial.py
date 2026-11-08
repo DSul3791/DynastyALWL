@@ -26,7 +26,8 @@ process-based ice model iSOSIA by Liebl et al. (2023, Geoscientific Model Develo
      is K_g e A_eff^m (glacial, eq. 19) plus K e share Q_w^m (the meltwater and rain not held as ice, eq. 24), and the
      carrying flow of the deposition term is Q_w + tau A_eff (ice carries sediment far better than water, his section 5), so
      the load drops where the ice thins and ends: moraines, till and outwash come from the sediment budget, not from a rule;
-  7. creep on ice-free ground only.
+  7. creep on ice-free ground only. The threshold-slope cap of B1 holds the ground under the ice as well (measured ground to
+     ground, not on the ice surface), so rock walls stand no steeper under a glacier than beside a river.
 Frozen ground: through the cold stage the ground is taken as permafrost, so all runoff is quick, even on chalk and limestone
 (the classic explanation of chalk dry valleys: permafrost made the permeable rock impervious; Goudie 1990, The Landforms of
 England and Wales, p. 176). Evaporation uses the cold-stage PET.
@@ -215,13 +216,16 @@ def main():
         thick[sea == 1] = 0.0
         x = h + thick                                  # solve on the ice surface (his section 4: add h, erode, subtract h)
         x0 = x.copy()
-        # The slope limit is for ground, not ice: none on ice cells (a glacier's front is steep ice, not a hillslope), while
-        # ice-free walls are measured against the ice surface beside them (the ice holds them up; after it melts, the
-        # post-glacial era lets the oversteepened walls fail, as paraglacial rock slope failures do).
-        sc = np.where(thick > 0.0, 0.0, evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h), deposit))
+        # The slope limit is for the ground, under the ice too, measured ground to ground (lift = the ice thickness, so a
+        # glacier's steep front or surface is not capped, only the rock under it). Run 7b0dfbff had no limit under the ice:
+        # on the smooth flanks each one-cell flow line was cut on its own (the swath spreads a glacier's flux only over the
+        # cells that drain into it, and parallel lines do not), leaving slots with walls up to 87 degrees and 300 m high,
+        # more than the 11,700 post-glacial years could bring down. A rock wall fails past its threshold whether or not ice
+        # lies beside it; the debris joins the ice's load (rockfall onto glaciers).
+        sc = evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h), deposit)
         # The incision threshold is for flowing water on bedrock; ice cuts whatever its flux (none under the ice).
         kc = np.where(thick > 0.0, 0.0, E['K'] * ery_rock * share * evolve.bedrock_threshold(E))
-        flux = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cov.copy(), E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc)
+        flux = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cov.copy(), E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc, thick)
         h0 = h.copy()
         h = x - thick
         h[land] = np.maximum(h[land], 0.05)
