@@ -146,6 +146,11 @@ static func day_shape(hour: float) -> float:
 	return Climate.day_shape(hour)
 
 
+# The day and night part of the air (C) at this hour: daily_range_c / 2 x day_shape, what air_c adds to temp_at (cave mouths halve it, #709).
+static func day_part_c(game_s: float, group: String) -> float:
+	return 0.5 * float(Climate.of_zone(group).get("daily_range_c", 0.0)) * Climate.day_shape(hour_of(game_s))
+
+
 # The year's mean air (C) for a zone group at `altitude_m` (Climate.year_mean_c): what still cave air sits at (Jamie #664).
 static func year_mean_c(group: String, altitude_m: float = 0.0) -> float:
 	return Climate.year_mean_c(Climate.of_zone(group), altitude_m)

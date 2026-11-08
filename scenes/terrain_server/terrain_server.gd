@@ -297,6 +297,7 @@ func _ready() -> void:
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at
+	items.cave_air = func(pos): return _cave_air(pos)   # depth in from the mouth and the day swing, for the cave air blend (docs/design/cave_climate_design.md)
 	items.cave_mean_c = func(pos): return WeatherScript.year_mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), pos.y) if _in_cave(pos) else NAN   # cave air: the island's year mean at that height (#664)
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
@@ -1353,6 +1354,18 @@ func _in_cave(point: Vector3) -> bool:
 		return false
 
 	return tile_data.in_cave(Vector3(generator.wrap_x(point.x), point.y, generator.wrap_x(point.z)), CAVE_ROOF_M)
+
+
+# Inside a cave: {"deep_c" (the year mean at the height), "depth_m" (straight distance to the nearest mouth), "kind" (CaveAir), "day_part_c"
+# (the day and night part of the outside air now)}; {} outside one. server_items blends its own outside air to deep_c with these.
+func _cave_air(point: Vector3) -> Dictionary:
+	if not _in_cave(point):
+		return {}
+
+	var group: String = settings.get_zone_group_for_row(int(floor(point.z / float(settings.tile_size_m))))
+	var tile_data = generator.get_tile(generator.tile_of(point.x, point.z))
+	var mouth: Array = tile_data.nearest_cave_mouth(Vector3(generator.wrap_x(point.x), point.y, generator.wrap_x(point.z)))
+	return {"deep_c": WeatherScript.year_mean_c(group, point.y), "depth_m": float(mouth[0]), "kind": int(mouth[1]), "day_part_c": WeatherScript.day_part_c(game_clock.seconds, group)}
 
 
 # Whether the cover index knows the crowns round a point: its flora chunk and the eight round it are made. Missing ones are started
