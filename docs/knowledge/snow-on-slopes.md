@@ -14,18 +14,18 @@
    - That is the threshold for new or slightly aged cold, dry snow. Wind-packing starts at about 5 m/s. Old, hard, bonded snow needs far more: a threshold friction velocity of about 1.7 m/s, roughly 40 m/s at 10 m, counts as immovable (Liston et al. 2007, SnowTran-3D).
    - **Vegetation holds snow up to its height** before any can blow away (SnowTran-3D). Heather and grass hold a few tens of centimetres, and forest holds its snow almost entirely.
    - **Drift shape:** lee drifts build to an equilibrium surface slope of about 24% in Colorado and Wyoming and 29 to 36% in arctic Alaska, that is about 13 to 20 degrees (SnowTran-3D, citing Tabler).
-3. **Sun decides the melt order. Slopes facing away from the noon sun keep their snow.** In Scotland that is the north. On our starter island, at 57° S with the noon sun in the north (`one-sky.md`), it is the **south**.
+3. **Sun decides the melt order. Slopes facing away from the noon sun keep their snow.** In Scotland that is the north. On our starter island, at about 34° S with the noon sun in the north (`one-sky.md`), it is the **south**.
    - In late winter the east-to-west aspects (through south) lose their soft surface snow to the sun, while "high, steep, shady North-West to North-East aspects" stay wintry (SAIS, "It's all about aspect").
-   - **Our sums:** clear-sky direct sun on a 30° slope against flat ground, at 57° S (the starter island, `one-sky.md`), as a daily total:
+   - **Our sums:** clear-sky direct sun on a 30° slope against flat ground, at 33.7° S (the starter island's spawn, `one-sky.md`), as a daily total:
 
      | Season | South | South-east | East | North | North-west | South, 45° slope |
      |---|---|---|---|---|---|---|
-     | August (late winter) | 0 | 0.24 | 1.17 | 2.62 | 2.14 | 0 |
-     | Equinox | 0.10 | 0.52 | 1.07 | 1.64 | 1.48 | 0 |
-     | November | 0.72 | 0.78 | 0.98 | 1.07 | 1.07 | 0.50 |
-     | December (midsummer) | 0.83 | 0.84 | 0.97 | 0.98 | 1.00 | 0.66 |
+     | August (late winter) | 0.24 | 0.53 | 0.98 | 1.53 | 1.36 | 0 |
+     | Equinox | 0.53 | 0.70 | 0.96 | 1.20 | 1.14 | 0.24 |
+     | November | 0.85 | 0.88 | 0.94 | 0.90 | 0.93 | 0.69 |
+     | December (midsummer) | 0.92 | 0.92 | 0.93 | 0.84 | 0.89 | 0.79 |
 
-     In August a south 30° slope gets no direct sun at all, because the noon sun is only 19.5° high. By December the aspects nearly even out, so the melt-order difference is set in late winter and spring. Steep south walls of 45° stay shaded into November. (The Scottish figures in this lesson are the same physics mirrored: their north is our south.)
+     In August a south 30° slope gets about a quarter of flat ground's direct sun, and a 45° south wall none, because the noon sun is 42.5° high. By November the aspects nearly even out, and at midsummer the high sun even favours south slopes a little. So the melt-order difference is set in winter and early spring, and it is gentler than in Scotland. (The Scottish figures in this lesson are the same physics mirrored and at a higher latitude: their north is our south. An earlier version of this table was for 57° S, which was wrong.)
 4. **The last snow lies in shaded, wind-filled hollows below lee cliffs (north-east in Scotland, south-east on our island), at about 80 to 85% of summit height.**
    - **Ben Nevis:** Observatory Gully, below the north-east cliffs at about 1,130 m (the summit is 1,345 m), holds the mountain's largest patch. It has been snow-free only once since 2006 (2017). Point 5 Gully, a little lower, also survives from one winter to the next.
    - **Braeriach:** Garbh Choire Mòr, at about 1,140 m, holds "Britain's most persistent snow beds". They have been absent only 12 times in a century.
@@ -39,7 +39,7 @@
 
 These are proposals for Sonny's `snow_on` and `snow_off` bytes and for Kathleen's summit snow, to check on pictures.
 
-**Wind exposure index** from the terrain, per cell, relative to the prevailing wind (judged: from the west to north-west on the starter, the southern westerlies at 57° S; the weather has no prevailing direction yet):
+**Wind exposure index** from the terrain, per cell, relative to the prevailing wind (judged: from the west to north-west on the starter, the winter westerlies at about 34° S, with south-easterlies in local summer, `prevailing-wind-57s.md` (#714); the weather has no prevailing direction yet):
 - **Lee and filled:** hollows, gullies and the first 50 to 150 m below a crest, downwind. Snow depth is **2 to 5 times** the open-ground mean. The deepest drifts are in gullies below crests.
 - **Open slopes:** about the mean.
 - **Windward slopes and crests:** **0 to 0.3 times** the mean. Crests are scoured to rock or turf, apart from snow caught in rocks.
@@ -61,7 +61,7 @@ These are proposals for Sonny's `snow_on` and `snow_off` bytes and for Kathleen'
 
 **Never-see checks:**
 - an even white blanket on a windward summit after a windy week;
-- the last snow of spring on a north-facing open slope (the sunny side at 57° S);
+- the last snow of spring on a north-facing open slope (the sunny side on the starter);
 - deep snow in forest canopy gaps on a windward crest;
 - a cornice on the windward side.
 
@@ -78,4 +78,4 @@ Not checked in code for this page.
 - SAIS Lochaber, It's all about aspect (March 2025): https://lochaberblog.sais.gov.uk/2025/03/its-all-about-aspect
 - Liston, G. E. et al. (2007), Simulating complex snow distributions in windy environments using SnowTran-3D, Journal of Glaciology: https://www.cambridge.org/core/services/aop-cambridge-core/content/view/9D28335437B0D4732991D0137A96EDFD/S0022143000201330a.pdf/simulating_complex_snow_distributions_in_windy_environments_using_snowtran3d.pdf
 - Wikipedia, Snow patches in Scotland: https://en.wikipedia.org/wiki/Snow_patches_in_Scotland
-- The sun sums use the standard solar geometry (declination, hour angle, slope normal) at 57° S, the starter island's latitude (`one-sky.md`).
+- The sun sums use the standard solar geometry (declination, hour angle, slope normal) at 33.7° S, the starter island's spawn latitude (`one-sky.md`).

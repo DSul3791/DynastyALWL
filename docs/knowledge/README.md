@@ -71,7 +71,7 @@ Where a number still needs a source, the cell names it.
 | Upland streams (stream density, bankfull flood ratio, Hey and Thorne widths, waterfalls, wave limit on deltas) | [upland-streams-numbers.md](upland-streams-numbers.md) | 2026-11-08 | Sonny | Mostly sourced: still needs the Hey and Thorne depth equation checked, stream density on permeable rock, and an upland sand yield |
 | Contradictions between pages and with the code, and which to follow | [CONTRADICTIONS.md](CONTRADICTIONS.md) | 2026-11-08 | Jamie | Audit |
 | Specific yield by rock type (granite, basalt, karst and other limestone, sandstone, shale, chalk, till, sand and gravel, peat; for spring stores and Rorabaugh recession) | [specific-yield.md](specific-yield.md) | 2026-11-08 | Sonny (springs, watershed) | Mostly sourced: a few rock types judged |
-| One sky (the starter island at 57° S: noon sun in the north, south and south-east faces shaded, sun times, twilight, where the moon is) | [one-sky.md](one-sky.md) | 2026-11-08 | Sonny (decision), Kathleen (day_cycle.gd) | Sourced: Sonny's decision; times checked with standard solar formulas |
+| One sky (the starter island at about 34° S, from the 21 by 21 grid: noon sun in the north, south and south-east faces shaded, sun times, twilight, where the moon is) | [one-sky.md](one-sky.md) | 2026-11-08 | Sonny (decision), Kathleen (day_cycle.gd) | Sourced: Sonny's decision; times checked with standard solar formulas |
 
 ### Most wanted sources
 
