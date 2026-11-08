@@ -487,7 +487,9 @@ func _process_body(delta: float) -> void:
 			# Stepping backward while facing something (a goblin backing off from a barking dog, Steve's #659): the walk plays in reverse.
 			var moved: Vector2 = Vector2(node.position.x - before.x, node.position.z - before.z)
 			var facing: Vector3 = -node.global_transform.basis.z if node.is_inside_tree() else Vector3.FORWARD
-			b["backing"] = model_speed > 0.3 and moved.normalized().dot(Vector2(facing.x, facing.z).normalized()) < -0.3
+			# Only while facing something (alert 3, warn 10, recover 12): a fleeing animal turning round also moves against its facing
+			# for a moment, and must not run backward.
+			b["backing"] = state in [3, 10, 12] and model_speed > 0.3 and moved.normalized().dot(Vector2(facing.x, facing.z).normalized()) < -0.3
 
 			if node.has_meta("eye_mats"):
 				_eye_shine(node)
@@ -705,7 +707,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_mats", eye_mats)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or row.has("idles"):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or (row.has("idles") and idle_variety):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -733,7 +735,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 				root.set_meta("poses", fix)
 
 			# Posed idles (IDLE_VARIETY.md): entry i of the row's idles with a "pose" is pose key -10 - i.
-			if row.has("idles"):
+			if row.has("idles") and idle_variety:
 				var idle_poses: Dictionary = {}
 
 				for i in (row["idles"] as Array).size():
@@ -2721,43 +2723,54 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var flight: Dictionary = row.get("flight", {})
 
 	if not flight.is_empty():
+		# Each bird of a model flock keeps its own take-off, air time and bank (the flock shares one record b, and this runs once per
+		# bird a frame); a single bird uses b itself, so play_roll and _flap_bob see the same values.
+		var fb: Dictionary = b
+
+		if node != b.get("node"):
+			if not node.has_meta("flight_b"):
+				node.set_meta("flight_b", {})
+
+			fb = node.get_meta("flight_b")
+
 		var air: bool = state in AIR_STATES
-		var was_air: bool = bool(b.get("was_air", false))
-		b["was_air"] = air
+		var was_air: bool = bool(fb.get("was_air", false))
+		fb["was_air"] = air
 
 		if air and not was_air:
-			b["air_t"] = 0.0
+			fb["air_t"] = 0.0
 			var lift: String = _clip_full(player, row, str(flight.get("takeoff", "")))
 
 			if lift != "":
 				player.play(lift, 0.1)
-				b["air_once"] = player.get_animation(lift).length
+				fb["air_once"] = player.get_animation(lift).length
 
 		elif was_air and not air:
 			var flare: String = _clip_full(player, row, str(flight.get("land", "")))
 
 			if flare != "":
 				player.play(flare, 0.1)
-				b["air_once"] = player.get_animation(flare).length
+				fb["air_once"] = player.get_animation(flare).length
 
-		b["air_once"] = maxf(0.0, float(b.get("air_once", 0.0)) - delta)
+		fb["air_once"] = maxf(0.0, float(fb.get("air_once", 0.0)) - delta)
 
-		if float(b["air_once"]) > 0.0:
+		if float(fb["air_once"]) > 0.0:
 			return      # a take-off or landing plays to its end
 
 		if air:
-			b["air_t"] = float(b.get("air_t", 0.0)) + delta
+			fb["air_t"] = float(fb.get("air_t", 0.0)) + delta
 			var flap_s: float = float(flight.get("flap_s", 99.0))
 			var glide_s: float = float(flight.get("glide_s", 0.0))
 			# State 17 is the server's glide (Steve's #653: the pheasant's locked-wing glide into cover, the eagle's glide between
 			# thermals). Once a bird has been sent 17, its 15 means flapping; a flock that never sends 17 keeps the timed turns.
 			if state == 17:
-				b["seen_glide"] = true
+				fb["seen_glide"] = true
 
-			var gliding: bool = state == 17 or (not b.has("seen_glide") and glide_s > 0.0 and fposmod(float(b["air_t"]), flap_s + glide_s) > flap_s)
+			var gliding: bool = state == 17 or (not fb.has("seen_glide") and glide_s > 0.0 and fposmod(float(fb["air_t"]), flap_s + glide_s) > flap_s)
 
 			if flight_bank:
-				_bank(node, b, delta)
+				fb["heading"] = b.get("heading", 0.0)
+				_bank(node, fb, delta)
 			var air_clip: String = _clip_full(player, row, str(flight.get("glide" if gliding else "flap", "")))
 
 			if air_clip != "":
