@@ -252,6 +252,94 @@ def cell_shares(st, ks):
     return np.where(any_, wet, np.nan), np.where(any_, dry, np.nan)
 
 
+# ---------------------------------------------------------------------------------------------------------------------------
+# R5: the reaches' flow in each twelfth and their store bands (docs/design/spring_to_river_flow.md section 2)
+
+def month_bins(shape, bins):
+    """(bins, 12): month_means at each tau bin, the table month_share_at reads between."""
+    return np.array([month_means(shape, t) for t in bins])
+
+
+def month_share_at(tau_days, mb, bins, m):
+    """Twelfth m's share of a store's outflow over its year's mean, for an array of tau (days): read in log tau between the
+    bins' exact month_means (mb, from month_bins), as shares_for reads the quarters. NaN tau gives NaN."""
+    tau = np.asarray(tau_days, float)
+    good = np.isfinite(tau)
+    lt = np.log(np.clip(np.where(good, tau, bins[0]), bins[0], bins[-1]))
+    return np.where(good, np.interp(lt, np.log(bins), mb[:, m]), np.nan)
+
+
+def cell_month_share(st, mb, bins, m):
+    """Per cell, twelfth m's share of its groundwater outflow over its year's mean: each store's share of the recharge times
+    its own month share, summed over the stores (cell_shares for one twelfth; st: the store arrays, already taken at the
+    cells wanted). NaN where the cell has no stores. Over the twelve twelfths it averages the sum of the shares, 1."""
+    out = np.zeros(np.shape(st['diffuse_share']))
+    any_ = np.zeros(out.shape, bool)
+    for kind in STORE_KINDS:
+        s = np.asarray(st[f'{kind}_share'], float)
+        v = month_share_at(st[f'{kind}_tau_days'], mb, bins, m)
+        use = np.isfinite(s) & (s > 0.0) & np.isfinite(v)
+        out = out + np.where(use, s * np.nan_to_num(v), 0.0)
+        any_ |= use
+    return np.where(any_, out, np.nan)
+
+
+def store_bands(BD):
+    """The tau band edges (days) that a reach's base_stores rows group the stores into: per_decade bands a decade on exact
+    decade fractions from min_days, the last ending at or above max_days (network.season.store_bands)."""
+    lo, hi, pd = np.log10(float(BD['min_days'])), np.log10(float(BD['max_days'])), float(BD['per_decade'])
+    nb = max(int(np.ceil((hi - lo) * pd - 1e-9)), 1)
+    return 10.0 ** (lo + np.arange(nb + 1) / pd)
+
+
+def band_of(tau_days, edges):
+    """Band index of each tau (days); tau beyond the ends goes in the first or last band, NaN gives -1."""
+    tau = np.asarray(tau_days, float)
+    good = np.isfinite(tau)
+    b = np.clip(np.searchsorted(edges, np.where(good, tau, edges[0]), side='right') - 1, 0, edges.size - 2)
+    return np.where(good, b, -1)
+
+
+def _band_split(st, q, edges):
+    """For each store kind with a share: (its flow q share, its tau, its band) at each cell."""
+    q = np.asarray(q, float)
+    for kind in STORE_KINDS:
+        s = np.asarray(st[f'{kind}_share'], float)
+        tau = np.asarray(st[f'{kind}_tau_days'], float)
+        use = np.isfinite(s) & (s > 0.0) & np.isfinite(tau)
+        if use.any():
+            yield np.where(use, q * np.nan_to_num(s), 0.0), tau, np.where(use, band_of(tau, edges), -1)
+
+
+def band_means(st, q, edges):
+    """The groundwater q (m3/s) put out at each cell, split by tau band: {band: (mean flow, mean flow times ln tau)} at each
+    cell, the sources R5 sums down the network for a reach's base_stores rows (the second sums to the band's flow-weighted
+    geometric-mean tau). Bands no store falls in are left out. Over the bands the flows sum to q times the stores' shares."""
+    out = {}
+    for f, tau, b in _band_split(st, q, edges):
+        for band in np.unique(b[b >= 0]):
+            w = b == band
+            a = np.where(w, f, 0.0)
+            ln = np.where(w, f * np.log(np.where(w, tau, 1.0)), 0.0)
+            if int(band) in out:
+                out[int(band)] = (out[int(band)][0] + a, out[int(band)][1] + ln)
+            else:
+                out[int(band)] = (a, ln)
+    return out
+
+
+def band_month(st, q, edges, mb, bins, m):
+    """As band_means, each band's flow in twelfth m at each cell: {band: q share month_share_at(tau)}, summed exactly from each
+    cell's own stores, so over the bands it is q times cell_month_share."""
+    out = {}
+    for f, tau, b in _band_split(st, q, edges):
+        v = f * np.nan_to_num(month_share_at(tau, mb, bins, m))
+        for band in np.unique(b[b >= 0]):
+            a = np.where(b == band, v, 0.0)
+            out[int(band)] = out[int(band)] + a if int(band) in out else a
+    return out
+
+
 def spring_row(st, ks, i, q, rnd, shape=None):
     """The store keys of the spring row at flat cell i with mean outflow q (m3/s), rounded by rnd:
     - stores: [kind, share of the recharge, tau_days, its dry-quarter flow m3/s] for each store with a share, and with the

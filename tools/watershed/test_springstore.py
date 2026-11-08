@@ -2,7 +2,7 @@
 transmissivity and the specific yield at the water table on tight rock, the groundwater catchments on a block grid, Rorabaugh's
 response time on a strip, karst's two stores, the store response and its tau bins, the drought recession, the params against
 Jamie's #713 recession times, and the springs that count as fresh water, and the game's spring sums (flow by month, a drought over the stores, a storm's
-pulse; docs/design/r7_plan.md section 4.1). They use small synthetic arrays and the repo's
+pulse; docs/design/r7_plan.md section 4.1), and R5's twelfths and store bands for the reaches (docs/design/spring_to_river_flow.md). They use small synthetic arrays and the repo's
 params.json, read no run files, need numpy only, and take a second or two.
 
 Run on David4 or Dave's PC, never in the cloud:
@@ -315,6 +315,85 @@ def test_storm_pulse_volume_and_shape():
     # and a chalk or gravel spring (one store of months) rises less than 20% on the first day
     assert ss.storm_pulse(q, 1.0, 120.0, storm, R, 0.0) < 0.2 * q
 
+
+# R5: the reaches' twelfths and store bands (docs/design/spring_to_river_flow.md section 2)
+
+def _three_cells():
+    nan = np.nan
+    return dict(diffuse_share=np.array([1.0, 0.0, nan, 0.5]), diffuse_tau_days=np.array([453.0, nan, nan, 28.0]),
+                conduit_share=np.array([0.0, 0.55, nan, 0.25]), conduit_tau_days=np.array([5.0, 5.0, nan, 5.0]),
+                matrix_share=np.array([0.0, 0.45, nan, 0.25]), matrix_tau_days=np.array([253.0, 253.0, nan, 253.0]))
+
+
+def test_month_share_at_reads_the_bins():
+    shape, wk, dk, t = _year()
+    bins = ss.tau_bins(P['network']['season']['tau_bins'])
+    mb = ss.month_bins(shape, bins)
+    assert mb.shape == (48, 12) and np.allclose(mb.mean(axis=1), 1.0, rtol=0.0, atol=1e-12)
+    for m in (0, 4, 10):
+        assert np.allclose(ss.month_share_at(bins, mb, bins, m), mb[:, m], rtol=0.0, atol=1e-12)   # exact at the bins
+    rng = np.random.default_rng(11)
+    taus = np.exp(rng.uniform(np.log(0.1), np.log(36525.0), 100))
+    got = np.array([ss.month_share_at(taus, mb, bins, m) for m in range(12)])
+    exact = np.array([ss.month_means(shape, x) for x in taus]).T
+    assert np.abs(got - exact).max() < 0.005                                   # as the quarters (test_bins_interpolate)
+    assert np.allclose(got.mean(axis=0), 1.0, rtol=0.0, atol=1e-12)             # the twelfths still average 1
+    v = ss.month_share_at(np.array([np.nan, 1e-3, 1e7]), mb, bins, 3)
+    assert np.isnan(v[0]) and np.isfinite(v[1:]).all()
+
+
+def test_cell_month_share():
+    shape, wk, dk, t = _year()
+    bins = ss.tau_bins(P['network']['season']['tau_bins'])
+    mb = ss.month_bins(shape, bins)
+    st = _three_cells()
+    cm = np.array([ss.cell_month_share(st, mb, bins, m) for m in range(12)])
+    assert np.isnan(cm[:, 2]).all() and np.isfinite(cm[:, [0, 1, 3]]).all()
+    assert np.allclose(cm[:, [0, 1, 3]].mean(axis=0), 1.0, rtol=0.0, atol=1e-12)
+    want = 0.55 * ss.month_means(shape, 5.0) + 0.45 * ss.month_means(shape, 253.0)
+    assert np.abs(cm[:, 1] - want).max() < 0.005
+    # the dry quarter's twelfths average the cell's dry share, the wet quarter's its wet share
+    wet, dry = ss.cell_shares(st, ss.kind_shares(st, shape, wk, dk, bins))
+    dm = [m for m in range(12) if dk[2 * m:2 * m + 2].all()]
+    wm = [m for m in range(12) if wk[2 * m:2 * m + 2].all()]
+    assert len(dm) == 3 and len(wm) == 3
+    assert np.allclose(cm[dm][:, [0, 1, 3]].mean(axis=0), dry[[0, 1, 3]], rtol=0.0, atol=1e-12)
+    assert np.allclose(cm[wm][:, [0, 1, 3]].mean(axis=0), wet[[0, 1, 3]], rtol=0.0, atol=1e-12)
+
+
+def test_store_bands():
+    edges = ss.store_bands(P['network']['season']['store_bands'])
+    assert abs(edges[0] - 0.1) < 1e-12 and edges[-1] >= 36525.0 and edges[-2] < 36525.0
+    assert np.allclose(edges[1:] / edges[:-1], np.sqrt(10.0), rtol=1e-12, atol=0.0)    # two a decade
+    assert edges.size - 1 == 12
+    b = ss.band_of(np.array([0.01, 0.1, 5.0, 253.0, 453.0, 36525.0, 1e7, np.nan]), edges)
+    assert list(b) == [0, 0, 3, 6, 7, 11, 11, -1]
+
+
+def test_band_sums():
+    shape, wk, dk, t = _year()
+    bins = ss.tau_bins(P['network']['season']['tau_bins'])
+    mb = ss.month_bins(shape, bins)
+    edges = ss.store_bands(P['network']['season']['store_bands'])
+    st = _three_cells()
+    q = np.array([2e-3, 2e-3, 0.0, 1e-3])
+    means = ss.band_means(st, q, edges)
+    assert sorted(means) == [3, 4, 6, 7]                    # 5, 28, 253 and 453 days
+    tot = np.sum([v[0] for v in means.values()], axis=0)
+    assert np.allclose(tot, [2e-3, 2e-3, 0.0, 1e-3], rtol=1e-12, atol=0.0)
+    q6, ln6 = means[6]
+    q7, ln7 = means[7]
+    assert abs(q6[1] - 0.45 * 2e-3) < 1e-15 and abs(np.exp(ln6[1] / q6[1]) - 253.0) < 1e-9 and q6[0] == 0.0
+    assert abs(np.exp(ln6[3] / q6[3]) - 253.0) < 1e-9 and abs(np.exp(ln7[0] / q7[0]) - 453.0) < 1e-9
+    months = [ss.band_month(st, q, edges, mb, bins, m) for m in range(12)]
+    for m in range(12):
+        assert sorted(months[m]) == [3, 4, 6, 7]
+        summed = np.sum(list(months[m].values()), axis=0)
+        assert np.allclose(summed, q * np.nan_to_num(ss.cell_month_share(st, mb, bins, m)), rtol=1e-12, atol=1e-18)
+    for band in means:                                      # each band's twelfths average its mean flow
+        year = np.mean([months[m][band] for m in range(12)], axis=0)
+        assert np.allclose(year, means[band][0], rtol=1e-12, atol=1e-18)
+    assert np.ptp([months[m][3][1] for m in range(12)]) > 3.0 * np.ptp([months[m][6][1] for m in range(12)])   # conduits swing, the matrix holds
 
 if __name__ == '__main__':
     tests = [v for k, v in sorted(globals().items()) if k.startswith('test_') and callable(v)]

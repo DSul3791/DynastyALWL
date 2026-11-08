@@ -322,7 +322,28 @@ def seasons(rain, et, land, SN, warmest_phase):
     shape = shape / max(float(shape.mean()), 1e-12)
     base_wet, base_dry = springstore.quarter_shares(shape, wk, dk, float(SN['baseflow_recession_days']))
     return dict(quick_wet=f_wet, quick_dry=f_dry, base_wet=base_wet, base_dry=base_dry,
-                evap_wet=float(es[wk].mean()), evap_dry=float(es[dk].mean()), _shape=shape, _wk=wk, _dk=dk)
+                evap_wet=float(es[wk].mean()), evap_dry=float(es[dk].mean()), _shape=shape, _wk=wk, _dk=dk,
+                _rs=rs, _es=es, _tot=tot)
+
+
+def quick_month(rain, et, sn, m):
+    """Twelfth m's share of each cell's quick runoff over its year's mean (docs/design/spring_to_river_flow.md section 1): the
+    water left over (rain less evaporation, never below 0) in the twelfth's samples over the year's, as seasons() takes the
+    quarters; 1 where nothing is left over all year. Twelfth m holds samples m S/12 to (m + 1) S/12, from phase 0."""
+    rs, es, tot = sn['_rs'], sn['_es'], sn['_tot']
+    per = rs.size // 12
+    acc = np.zeros_like(tot)
+    for k in range(m * per, (m + 1) * per):
+        acc += np.maximum(rain * rs[k] - et * es[k], 0.0)
+    acc /= per
+    return np.where(tot > 0.0, acc / np.maximum(tot, 1e-12), 1.0)
+
+
+def twelfths_in(mask):
+    """The twelfths whose samples all lie in a season mask (seasons' _wk or _dk): the dry quarter is twelfths 3 to 5 (indices 2
+    to 4) with the rain's low at phase 0.3."""
+    per = mask.size // 12
+    return [m for m in range(12) if bool(mask[m * per:(m + 1) * per].all())]
 
 
 def _stores_summary(source, gw, base_wet, base_dry, sea_sn, island_days, springs, perennial_km, perennial_km_island, perennial_q):
@@ -339,6 +360,54 @@ def _stores_summary(source, gw, base_wet, base_dry, sea_sn, island_days, springs
                                             island_store=sum(1 for s in springs if s['m3_s'] * sea_sn['base_dry'] >= perennial_q)),
                 springs_by_main_store={k: sum(1 for s in springs if s.get('stores') and max(s['stores'], key=lambda r: r[3])[0] == k)
                                        for k in springstore.STORE_KINDS})
+
+
+def _months_summary(qm, qbm, before, band_m, q_mean, q_wet, q_dry, base_dry, lost_up, wet_m, dry_m, perennial_q, length_m,
+                    rock_names, rock_area):
+    """The manifest's report on the reaches' twelfths (docs/design/spring_to_river_flow.md sections 2 and 5), per reach end:
+    qm and qbm the twelve flows and base flows after losses, before the base flows before losses, band_m the store bands'
+    twelfths, lost_up the mean flow lost upstream, rock_area each rock's upstream land area. Largest relative differences
+    over the reaches that carry at least 1 mL/s:
+    - months_keep_the_mean: the twelfths' mean against q_mean, on reaches with nothing lost upstream (rounding only) and on
+      the rest (the losses scale with width, which is not linear in flow);
+    - months_agree_with_quarters: the dry and wet quarters' twelfths against q_dry and q_wet;
+    - bands_sum_to_the_base_flow: the bands' twelfths summed against the base flow before losses;
+    - driest_twelfth_under_perennial: reaches whose dry quarter's base flow passes the perennial threshold but whose driest
+      twelfth's does not;
+    - by_rock: on reaches with 80% of their land on one rock, the medians of the base flow index (the base flow's share of
+      the year's flow) and of the base flow's share in the reach's driest twelfth. Reported, not judged."""
+    flowing = q_mean > 1e-6
+    clean = flowing & (lost_up <= 0.0)
+
+    def rel(a, b, w):
+        return r3(float(np.max(np.abs(a[w] / b[w] - 1.0)))) if np.any(w) else None
+    mean_m = qm.mean(axis=0)
+    dry_q = qm[dry_m].mean(axis=0) if dry_m else np.full(q_mean.shape, np.nan)
+    wet_q = qm[wet_m].mean(axis=0) if wet_m else np.full(q_mean.shape, np.nan)
+    bands = np.sum(list(band_m.values()), axis=0) if band_m else np.zeros_like(before)
+    cols = np.arange(qm.shape[1])
+    driest = np.argmin(qm, axis=0) if qm.shape[1] else np.zeros(0, np.int64)
+    under = (qbm.min(axis=0) < perennial_q) & (base_dry >= perennial_q) if qm.shape[1] else np.zeros(0, bool)
+    tot_area = rock_area.sum(axis=0) if len(rock_names) else np.zeros(qm.shape[1])
+    by_rock = {}
+    for j, name in enumerate(rock_names):
+        w = flowing & (rock_area[j] >= 0.8 * np.maximum(tot_area, 1e-12))
+        if w.any():
+            bfi = qbm[:, w].sum(axis=0) / np.maximum(qm[:, w].sum(axis=0), 1e-30)
+            dshare = qbm[driest[w], cols[w]] / np.maximum(qm[driest[w], cols[w]], 1e-30)
+            by_rock[name] = dict(reaches=int(w.sum()), base_flow_index_median=r3(np.median(bfi)),
+                                 driest_twelfth_base_share_median=r3(np.median(dshare)))
+    return dict(dry_quarter_twelfths=[m + 1 for m in dry_m], wet_quarter_twelfths=[m + 1 for m in wet_m],
+                reaches_flowing=int(flowing.sum()), reaches_without_losses=int(clean.sum()),
+                months_keep_the_mean=dict(without_losses=rel(mean_m, q_mean, clean), with_losses=rel(mean_m, q_mean, flowing & ~clean)),
+                months_agree_with_quarters=dict(dry_without_losses=rel(dry_q, q_dry, clean & (q_dry > 1e-9)),
+                                                dry_all=rel(dry_q, q_dry, flowing & (q_dry > 1e-9)),
+                                                wet_without_losses=rel(wet_q, q_wet, clean & (q_wet > 1e-9)),
+                                                wet_all=rel(wet_q, q_wet, flowing & (q_wet > 1e-9))),
+                bands_sum_to_the_base_flow=rel(bands, before, before > 1e-9),
+                bands_used=len(band_m),
+                driest_twelfth_under_perennial=dict(reaches=int(under.sum()), km=round(float(length_m[under].sum()) / 1000.0, 1)),
+                by_rock=by_rock)
 
 
 def meander_table():
@@ -749,6 +818,64 @@ def main():
                             losing=bool(lost['mean'][c].sum() > 0.0), stretches=stretches, polyline=polyline))
     reach_end_cell = [p[-1] for p in pts]
 
+    # 2b. Twelfths and store bands (docs/design/spring_to_river_flow.md section 2). Each twelfth of the climate year is routed
+    # as the seasons are: quick runoff by its share of the twelfth's leftover water, groundwater through each spring's own
+    # stores, a full lake's losses by the twelfth's evaporation and the beds' losses by the twelfth's wetted width; and the
+    # groundwater alone, for the base flow. Only the reach ends are kept, one twelfth at a time. The groundwater from upstream
+    # is also summed by tau band (before losses), so the game can run a drought or a storm at any reach.
+    if int(SN['samples']) % 12:
+        raise SystemExit(f"network: season.samples {SN['samples']} is not a multiple of 12, so the twelfths are not equal")
+    ends_c = np.asarray(reach_end_cell, np.int64)
+    gi = np.flatnonzero(gw > 0.0)
+    if st is not None:
+        sti = {k: st[k][gi] for k in springstore.FIELDS}
+    else:                                                    # an R4 run without stores: the island's one store everywhere
+        one = np.ones(gi.size)
+        sti = dict(diffuse_share=one, diffuse_tau_days=one * float(SN['baseflow_recession_days']),
+                   conduit_share=one * 0.0, conduit_tau_days=one * np.nan, matrix_share=one * 0.0, matrix_tau_days=one * np.nan)
+    bins = springstore.tau_bins(SN['tau_bins'])
+    mb = springstore.month_bins(sea_sn['_shape'], bins)
+    edges = springstore.store_bands(SN['store_bands'])
+    expo = float(S3['at_station_width_exponent'])
+    per = int(SN['samples']) // 12
+    nr = ends_c.size
+    q_month, q_base_month, base_before = np.zeros((12, nr)), np.zeros((12, nr)), np.zeros((12, nr))
+    band_q, band_ln, band_m = {}, {}, {}
+
+    def at_ends(vals):
+        v = zero.copy()
+        v[gi] = vals
+        return _accumulate(order, rec, outlet, v)[ends_c]
+    for m in range(12):
+        bm = zero.copy()
+        bm[gi] = gw[gi] * np.nan_to_num(springstore.cell_month_share(sti, mb, bins, m), nan=1.0)
+        src_m = q_cell * quick_month(rain, et, sea_sn, m) + bm
+        lake_m = zero.copy()
+        es_m = float(sea_sn['_es'][m * per:(m + 1) * per].mean())
+        for L, i in exits.items():
+            lake_m[i] = float(by_id[L]['losses_m3_s']) * es_m
+        Q0_m = _flow(order, rec, outlet, src_m, lake_m)[0]
+        cap_m = rate * at_flow(Q0_m, Wbf, expo) * step + lake_m
+        q_month[m] = _flow(order, rec, outlet, src_m, cap_m)[0][ends_c]
+        q_base_month[m] = _flow(order, rec, outlet, bm, cap_m)[0][ends_c]
+        base_before[m] = _accumulate(order, rec, outlet, bm)[ends_c]
+        for band, v in springstore.band_month(sti, gw[gi], edges, mb, bins, m).items():
+            band_m.setdefault(band, np.zeros((12, nr)))[m] = at_ends(v)
+    for band, (v, ln) in springstore.band_means(sti, gw[gi], edges).items():
+        band_q[band], band_ln[band] = at_ends(v), at_ends(ln)
+    for k, r in enumerate(reaches):
+        r['q_month_m3_s'] = [r3(v) for v in q_month[:, k]]
+        r['q_base_month_m3_s'] = [r3(v) for v in q_base_month[:, k]]
+        r['base_stores'] = [[r3(np.exp(band_ln[b][k] / band_q[b][k])), r3(band_q[b][k]), [r3(v) for v in band_m.get(b, np.zeros((12, nr)))[:, k]]]
+                            for b in sorted(band_q) if band_q[b][k] > 0.0]
+    lost_up = _accumulate(order, rec, outlet, lost['mean'])[ends_c]
+    rock_ids = [int(x) for x in np.unique(rid[land])]
+    rock_area = np.array([_accumulate(order, rec, outlet, np.where(land & (rid == x), cell, 0.0))[ends_c] for x in rock_ids]).reshape(len(rock_ids), nr)
+    months_sum = _months_summary(q_month, q_base_month, base_before, band_m, Q['mean'][ends_c], Q['wet'][ends_c], Q['dry'][ends_c],
+                                 base_dry[ends_c], lost_up, twelfths_in(sea_sn['_wk']), twelfths_in(sea_sn['_dk']),
+                                 float(G['perennial_baseflow_m3_s']), np.array([float(r['length_m']) for r in reaches]),
+                                 [names.get(x, str(x)) for x in rock_ids], rock_area)
+
     # Heads and confluences
     gw2 = (uniform_filter(gw.reshape(n, n), size=5, mode='constant') * 25.0).ravel()
     wet_near = (maximum_filter((wetland > 0).reshape(n, n), size=3) > 0).ravel()
@@ -1035,6 +1162,7 @@ def main():
                    seasons={k: (r3(float(np.mean(v[land]))) if isinstance(v, np.ndarray) else r3(v)) for k, v in sea_sn.items() if not k.startswith('_')},
                    stores=_stores_summary(store_source, gw, base_wet, base_dry_share, sea_sn, float(SN['baseflow_recession_days']), springs, km(perennial),
                                           km(vis & (base_dry_island >= float(G['perennial_baseflow_m3_s']))), float(G['perennial_baseflow_m3_s'])),
+                   months=months_sum,
                    density_km_per_km2=dict(streams=round(km(vis) / land_km2, 2), perennial=round(km(perennial) / land_km2, 2),
                                            intermittent=round(km(vis & ~perennial) / land_km2, 2), all_channels=round(km(channel) / land_km2, 2)),
                    r4_perennial_now_gullies_km=km(channel & ~vis & (r4reg == 1)),

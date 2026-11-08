@@ -1,5 +1,5 @@
 """Unit tests for network.py (R5) on tiny synthetic grids: the tree walks, the flows with losses, the sizes of meanders,
-waves and seasons. They need numpy, scipy and numba, as the watershed tools do, and take a few seconds (numba compiles).
+waves and seasons, and the twelfths (quick runoff by twelfth and the reaches' report on them). They need numpy, scipy and numba, as the watershed tools do, and take a few seconds (numba compiles).
 
 Run on David4 or Dave's PC, never in the cloud:
   python tools/watershed/test_network.py        (or: python -m pytest tools/watershed/test_network.py)
@@ -138,6 +138,48 @@ def test_main_keeps_the_stores_name():
     main = next(f for f in tree.body if isinstance(f, ast.FunctionDef) and f.name == 'main')
     stores = [x.lineno for x in ast.walk(main) if isinstance(x, ast.Name) and x.id == 'st' and isinstance(x.ctx, ast.Store)]
     assert len(stores) == 2, stores        # the stores from groundwater.npz, or None for an R4 run without them
+
+def test_quick_month_and_twelfths():
+    rain = np.array([1200.0, 1700.0, 300.0, 0.0])
+    et = np.array([450.0, 458.0, 450.0, 450.0])
+    SN = dict(samples=24, rain_swing_share=0.33, rain_wettest_year_phase=0.8, et_swing_share=0.9, baseflow_recession_days=45.0)
+    s = nw.seasons(rain, et, np.ones(4, bool), SN, 0.375)
+    qm = np.array([nw.quick_month(rain, et, s, m) for m in range(12)])
+    assert np.allclose(qm[:, :3].mean(axis=0), 1.0, rtol=0.0, atol=1e-12)     # the twelfths keep the year's quick runoff
+    assert (qm[:, 3] == 1.0).all()                                            # nothing left over all year: 1, as the quarters
+    dm, wm = nw.twelfths_in(s['_dk']), nw.twelfths_in(s['_wk'])
+    assert dm == [2, 3, 4] and wm == [8, 9, 10]                               # around the rain's low (0.3) and peak (0.8)
+    assert np.allclose(qm[dm].mean(axis=0), s['quick_dry'], rtol=0.0, atol=1e-12)
+    assert np.allclose(qm[wm].mean(axis=0), s['quick_wet'], rtol=0.0, atol=1e-12)
+    assert int(np.argmin(qm[:, 1])) in (3, 4)                                 # driest between the rain's low and the warmest phase
+
+
+def test_months_summary():
+    qm = np.zeros((12, 3))
+    qm[:, 0], qm[:, 1], qm[:, 2] = 2e-3, 1.05e-3, 3e-3
+    qm[5, 2] = 1e-3
+    qbm = np.zeros((12, 3))
+    qbm[:, 0], qbm[:, 1], qbm[:, 2] = 1e-3, 0.5e-3, 2e-3
+    qbm[5, 2] = 0.5e-3
+    before = qbm.copy()
+    bands = {3: 0.4 * before, 6: 0.6 * before}
+    q_mean = np.array([2e-3, 1e-3, qm[:, 2].mean()])
+    q_dry = np.array([2e-3, 1e-3, 3e-3])
+    q_wet = np.array([2e-3, 1e-3, 3e-3])
+    base_dry = np.array([1e-3, 0.5e-3, 1.5e-3])
+    lost_up = np.array([0.0, 1e-4, 0.0])                                       # reach 1 loses water upstream
+    area = np.array([[1e6, 1e6, 0.1e6], [0.0, 0.1e6, 1e6]])
+    out = nw._months_summary(qm, qbm, before, bands, q_mean, q_wet, q_dry, base_dry, lost_up, [8, 9, 10], [2, 3, 4], 1e-3,
+                             np.array([1000.0, 1200.0, 2500.0]), ['granite', 'chalk'], area)
+    assert out['dry_quarter_twelfths'] == [3, 4, 5] and out['wet_quarter_twelfths'] == [9, 10, 11]
+    assert out['reaches_flowing'] == 3 and out['reaches_without_losses'] == 2 and out['bands_used'] == 2
+    assert out['months_keep_the_mean']['without_losses'] < 1e-12 and abs(out['months_keep_the_mean']['with_losses'] - 0.05) < 1e-9
+    assert abs(out['months_agree_with_quarters']['dry_all'] - 0.05) < 1e-9 and out['months_agree_with_quarters']['dry_without_losses'] < 1e-12
+    assert out['bands_sum_to_the_base_flow'] < 1e-12
+    assert out['driest_twelfth_under_perennial'] == dict(reaches=1, km=2.5)    # reach 2: dry quarter 2 L/s, its driest twelfth 0.5
+    g, c = out['by_rock']['granite'], out['by_rock']['chalk']
+    assert g['reaches'] == 2 and g['base_flow_index_median'] == 0.488 and g['driest_twelfth_base_share_median'] == 0.488
+    assert c['reaches'] == 1 and c['base_flow_index_median'] == 0.662 and c['driest_twelfth_base_share_median'] == 0.5
 
 if __name__ == '__main__':
     tests = [v for k, v in sorted(globals().items()) if k.startswith('test_') and callable(v)]
