@@ -38,6 +38,7 @@ Each doc has these sections:
 | Sound outdoors (distance, air loss, wind shadow and carry, night carry, rain masking, snow and fog, forest, echoes, rivers) | [sound-outdoors.md](sound-outdoors.md) | 2026-11-08 | Kathleen (sound stage), Jason (audio) |
 | Animal behaviour (senses, ranges, temperaments, seasons, young) | [animal-behaviour.md](animal-behaviour.md) | 2026-11-06 | MikeW |
 | Animals in weather (rain, wind, storms, snow, cold, heat: shelter, facing the wind, feeding before storms) | [animals-in-weather.md](animals-in-weather.md) | 2026-11-08 | MikeW, Steve |
+| Animal tracks and sign (print size and shape by species, walk, trot and gallop patterns, how long prints last by ground, droppings, browse height, beds) | [animal-tracks-sign.md](animal-tracks-sign.md) | 2026-11-08 | MikeW | Mixed: field-guide figures from memory, not rechecked; lifetimes and print spacing judged |
 | Torches and fire | [torches-fire.md](torches-fire.md) | 2026-11-06 | Sal, Kathleen (poses) |
 | Wind over terrain (crest speed-up, lee shelter, gaps, night drainage, gusts, how trees, grass, smoke, flags and sound read the wind) | [wind-over-terrain.md](wind-over-terrain.md) | 2026-11-08 | Kathleen (look), MikeW (animals) |
 | Warmth and weather (cold, rain, wet, drying, fire heat) | [warmth-weather.md](warmth-weather.md) | 2026-11-06 | Steve |
