@@ -97,7 +97,7 @@ func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) ->
 	_terrain = tile_rules.get("runtime_terrain", {})
 	_band = float(_terrain.get("sdf_band_voxels", 3))
 	_placeholder_depth = float(_terrain.get("placeholder_depth_m", -200.0))
-	_cave_max_lod = int(_terrain.get("cave_max_lod", 2))
+	_cave_max_lod = cave_carve_lods(int(_terrain.get("cave_max_lod", 2)))
 	_ore_max_lod = int(_terrain.get("ore_max_lod", 0))
 
 	for entry in tables.get_entries("rocks"):
@@ -1128,6 +1128,13 @@ static func _hash01(x: int, y: int, z: int, salt: int) -> float:
 # was solid rock while LOD 0 and 1 had it open, and the seam between the two levels drew a wall across the tunnel. At a coarse level every passage and
 # chamber is carved at least CAVE_MIN_VOXELS voxels in radius (and tall), so it stays open at every level that carves caves; LOD 0 keeps the exact shape.
 const CAVE_MIN_VOXELS := 0.9
+
+
+# The last level that carves caves: the rule's cave_max_lod, but never fewer than the levels that have collision (fake cave wall, Dave's bug list, 7 Nov
+# 2026: collision was made at LOD 0 to 3 while caves were carved only to LOD 2, so an LOD 3 block over a cave, shown while the finer blocks load after a
+# fast run or a teleport, was solid rock to see and to touch). docs/design/cave_lod_carving_design.md.
+static func cave_carve_lods(rule_max_lod: int) -> int:
+	return maxi(rule_max_lod, Layout.COLLISION_LODS - 1)
 
 
 static func cave_radius(radius_m: float, lod: int) -> float:

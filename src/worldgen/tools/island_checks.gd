@@ -19,6 +19,8 @@ extends SceneTree
 #   --picture=DIR  write DIR/island_<id>_bearings.png: the six bearing sections in one labelled row (sketch checks); with tiles baked also island_<id>_bearings_tile.png from the 8 m maps, plus the summit plateau width
 #   --bakelog=FILE the bake log; its line "gullies: N, dead ends: M" feeds the dead-end gully row
 #   --spawn-search=M list pads within M metres of the spawn that pass the spawn gate (nearest first)
+#   --markers      check every NPC marker (data/npcs/markers.json) on the baked tiles: dry (no water class within one 8 m sample) and walkable
+#                  (slope at most marker_max_slope_deg, default 20). Failures are listed for the markers' owner to move: never moved here.
 #   --probe=X,Z    print painted class, settled class and settled depth for the 32 m cells from X,Z 1.5 km toward +z
 #   --gullies=TEXT the same line pasted directly
 #   --fine         walking routes on the 8 m maps instead of the 32 m maps (about 10 minutes; run in the background)
@@ -53,6 +55,7 @@ var _fine: bool = false
 var _gully_line: String = ""
 var _probe: Vector2 = Vector2(-1.0, -1.0)
 var _spawn_search_m: float = 0.0
+var _markers: bool = false
 var _rules: Dictionary = {}
 var _sketch: Dictionary = {}
 var _features: Dictionary = {}   # island id -> feature name of island_list.json
@@ -86,6 +89,8 @@ func _run() -> int:
 			_fine = true
 		elif argument.begins_with("--bakelog="):
 			_gully_line = _find_gully_line(FileAccess.get_file_as_string(argument.trim_prefix("--bakelog=")))
+		elif argument == "--markers":
+			_markers = true
 		elif argument.begins_with("--spawn-search="):
 			_spawn_search_m = float(argument.trim_prefix("--spawn-search="))
 		elif argument.begins_with("--probe="):
@@ -1346,6 +1351,10 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 	_seam_checks(settings, directory, tiles)
 	_gully_checks(float(tiles.size()) * pow(float(settings.tile_size_m) / 1000.0, 2.0), tile_limits)
 	_spawn_check(settings, world_dir, directory, tile_limits)
+
+	if _markers:
+		_marker_checks(settings, directory, tile_limits)
+
 	var stitched: Dictionary = _stitch(tiles, directory)
 
 	if not stitched["ok"]:
@@ -1591,6 +1600,69 @@ func _spawn_check(settings, world_dir: String, directory: String, tile_limits: D
 
 	if _spawn_search_m > 0.0:
 		_spawn_candidates(heights, water, n, spacing, origin, spawn, ring, tile_limits)
+
+
+# NPC markers on the baked ground (Stage E readers, docs/water/stage_e_readers_design.md): a marker must stand dry and on walkable ground. After a
+# rebake the water or the slope can move under a fixed marker; this lists each one that no longer fits, for its owner to move (Dave: move the
+# thing, do not adjust heights). Read-only, like every check here.
+func _marker_checks(settings, directory: String, tile_limits: Dictionary) -> void:
+	var rows: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/markers.json"))
+	var markers: Array = (rows as Dictionary).get("markers", []) if typeof(rows) == TYPE_DICTIONARY else []
+	var max_slope: float = float(tile_limits.get("marker_max_slope_deg", 20.0))
+	var tiles: Dictionary = {}   # Vector2i -> {"heights", "water", "n", "spacing"} or {} when not baked
+	var bad: int = 0
+
+	for marker in markers:
+		var at: Vector2 = Vector2(float(marker.get("x", 0.0)), float(marker.get("z", 0.0)))
+		var tile: Vector2i = Vector2i(int(floor(at.x / float(settings.tile_size_m))), int(floor(at.y / float(settings.tile_size_m))))
+
+		if not tiles.has(tile):
+			tiles[tile] = _marker_tile(directory, tile)
+
+		var maps: Dictionary = tiles[tile]
+		var title: String = "marker %s (%d, %d)" % [str(marker.get("id", "?")), int(at.x), int(at.y)]
+
+		if maps.is_empty():
+			_row(title, "tile not baked", "-", "INFO")
+			continue
+
+		var n: int = int(maps["n"])
+		var spacing: float = float(maps["spacing"])
+		var i: int = clampi(int(round((at.x - float(tile.x * settings.tile_size_m)) / spacing)), 1, n - 2)
+		var j: int = clampi(int(round((at.y - float(tile.y * settings.tile_size_m)) / spacing)), 1, n - 2)
+		var heights: PackedFloat32Array = maps["heights"]
+		var water: PackedByteArray = maps["water"]
+		var wet: bool = false
+
+		for dj in range(-1, 2):
+			for di in range(-1, 2):
+				wet = wet or water[(j + dj) * n + i + di] != 0
+
+		var dx: float = (heights[j * n + i + 1] - heights[j * n + i - 1]) / (2.0 * spacing)
+		var dz: float = (heights[(j + 1) * n + i] - heights[(j - 1) * n + i]) / (2.0 * spacing)
+		var slope: float = rad_to_deg(atan(Vector2(dx, dz).length()))
+		var ok: bool = not wet and slope <= max_slope
+		bad += 0 if ok else 1
+		_row(title, "%s, %.1f deg, ground %.1f m" % ["wet" if wet else "dry", slope, heights[j * n + i]], "dry, <= %.0f deg" % max_slope, "PASS" if ok else "FAIL")
+
+	_row("NPC markers that fit the ground", "%d of %d" % [markers.size() - bad, markers.size()], "all", "PASS" if bad == 0 else "FAIL")
+
+
+func _marker_tile(directory: String, tile: Vector2i) -> Dictionary:
+	var path: String = "%s/tile_%d_%d.tile" % [directory, tile.x, tile.y]
+
+	if not FileAccess.file_exists(path):
+		return {}
+
+	var header: Dictionary = TileFileScript.read_header(path)
+	var height_section: Dictionary = TileFileScript.read_section(path, header["table"], "height")
+	var water_section: Dictionary = TileFileScript.read_section(path, header["table"], "water_class")
+
+	if not height_section["ok"] or not water_section["ok"]:
+		return {}
+
+	return {"heights": TileFileScript.decode_height(height_section["raw"], TileFileScript.height_step_of(header["header"])), "water": water_section["raw"],
+		"n": int(header["header"]["samples"]), "spacing": float(header["header"]["map_spacing_m"])}
 
 
 # Pads near the spawn that pass the same gate (slope, range, no water, above the beach top), nearest first, at least 300 m apart.
