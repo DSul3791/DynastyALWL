@@ -64,15 +64,27 @@ func _init() -> void:
 	items.report_position(1, cave_spot)
 	var outside: float = items.warmth_target(1)
 	items.cover_at = func(_p): return 2.0
-	items.cave_mean_c = func(_p): return WeatherScript.mean_c("temperate")
+	items.cave_mean_c = func(p): return WeatherScript.year_mean_c("temperate", p.y)
 	var inside: float = items.warmth_target(1)
-	var mean_here: float = WeatherScript.mean_c("temperate") - cave_spot.y * float(items._warmth_cfg.get("lapse_c_per_m", 0.0065))
-	check(absf(mean_here - 6.5) < 0.1, "temperate cave air at 533 m is about 6.5 C (%.1f)" % mean_here)
+	var mean_here: float = WeatherScript.year_mean_c("temperate", cave_spot.y)
+	check(absf(mean_here - 5.5) < 0.1, "the starter island's cave air at 533 m is about 5.5 C (%.1f; Jamie #664: 5.5 to 6.5)" % mean_here)
 	check(inside > outside + 10.0, "in the cave it is far warmer than out in the storm (%.0f inside, %.0f outside)" % [inside, outside])
 	items._soak[1] = 0.0
 	weather["temp_c"] = 25.0   # a hot afternoon outside changes nothing in the cave
 	check(is_equal_approx(items.warmth_target(1), inside), "and the same on a hot day: cave air does not follow the weather")
 	weather["temp_c"] = -6.0
+
+	# 2b. A cave pool's water is at the cave air's year mean (Jamie #664, CONTRADICTIONS.md), warmer than the old fixed 2 C fallback.
+	items._swimming[1] = true
+	items.set_cave_pool(1, true)
+	var pool: float = items.warmth_target(1)
+	var keep_cave: Callable = items.cave_mean_c
+	items.cave_mean_c = Callable()
+	var old_pool: float = items.warmth_target(1)
+	items.cave_mean_c = keep_cave
+	check(pool > old_pool, "a cave pool at the year mean (5.5 C) is less cold than the old 2 C (%.0f against %.0f)" % [pool, old_pool])
+	items._swimming[1] = false
+	items.set_cave_pool(1, false)
 
 	# 3. Rain: in the cave it does not soak you; out of it you are wet, and in the cave only a fire dries you.
 	items._update_soak(1, 1800.0)

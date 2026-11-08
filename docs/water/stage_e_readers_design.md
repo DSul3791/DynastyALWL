@@ -143,6 +143,147 @@ At runtime, `tile_terrain_data.gd` gains:
 
 M0 and M1 can be built before R6 because they use today's data. Nothing waits on Sonny except M2.
 
+## 6b. The R6 files and the reader (8 Nov, matched to Sonny's writer #622)
+
+Sonny's field list is firm (#537, Stage D "Record layout" and R6 item 4), and his writer `tools/watershed/record.py` (#622) fixes the bytes. **Sonny owns the schema.** The reader follows the writer, and it reads each raster's coding from the manifest's field table instead of hard-coding it, so a new field or a changed scale needs no reader change.
+
+### Files (as #622 writes them)
+
+All files are under `<world>/record/`:
+- `manifest.json`
+- `network.json`
+- `climate.json`
+- `tiles/<tx>_<tz>/<name>.<type>`
+
+A raster is raw, row-major (row = z, column = x, the `export_raw_heights` convention), little-endian, with `tile_samples`² samples (T + 1 at 8 m: 1,921 for a starter tile) and shared edge samples. `<type>` is `f4`, `u1`, `u2` or `i4`.
+
+| raster | type | coding (manifest `fields`) |
+|---|---|---|
+| `ground` | f4 | metres |
+| `water_level` | f4 | metres; NaN = no water |
+| `water_class` | u1 | 0 to 10, as agreed |
+| `discharge` | u2 | log10(m³/s) = code / `codes_per_decade` − 4; 0 = none |
+| `regime` | u1 | 0 none, 1 perennial, 2 intermittent, 3 ephemeral |
+| `table_depth` | u1 | × `scale` m |
+| `basin` | i4 | basin id; −1 = none |
+| `fresh_m` | u2 | × `scale` (1 m) |
+| `sediment_m` | u2 | × `scale` m |
+| `snow_on`, `snow_off` (A4, later) | u1 | year phase 0 to 255. The window runs from `on` to `off`; equal = none; `on` 0 and `off` 255 = all year |
+| `fog_pool` (later) | u1 | depth below the cold-air surface |
+
+**`manifest.json`:** `{version, complete, record_sha, cell_m, origin_x, origin_z, tile_samples, tiles [x0, z0, x1, z1], inputs, stage_manifests, fields [{name, type, file, scale?, nodata?, codes_per_decade?, units?}], params, summary}`.
+- **The bake refuses a record with `complete` false.** Until R5, #622 writes no rivers, and says so.
+- It also refuses a `version` it does not know, and any raster whose byte length is wrong for its type and `tile_samples`.
+- Tools and tests may open an incomplete record on purpose (`allow_incomplete`).
+
+**`network.json`:** `{reaches, heads, confluences, falls, springs, cave_springs, coast_outlets, cold_air_pools, lakes}`. #622 writes the lakes alone until R5. The reader queries every list the same way: a feature is "in" a rect when one of its points lies in the rect. A point is `pos`, `mouth`, `lip` or `spill` as [x, y, z], any `<name>_x` and `<name>_z` pair (R3's lakes give `deepest_x` and `spill_x`), or any point of its `polyline` or `outline`. Nothing is clipped.
+
+**`climate.json`:** `{default, by_island: {<island id>: …}}`. Each entry is `{sea_level_mean_c, seasonal_swing_c, warmest_year_phase, daily_range_c, lapse_c_per_km, rain_mm_yr}` (A4), and `climate(island)` falls back to `default`. The live air formula stays Jamie's `Weather.air_c` (#616 and #620); the reader hands these numbers over and never works out a second air formula.
+
+### The reader (`src/worldgen/record/water_record.gd`)
+
+An instance opens one world's record, keeps the network and climate in memory, and reads rasters per tile on demand (one tile's 8 m set is about 30 MB, so at most the nine tiles of a bake frame are held):
+
+- `open(record_dir, allow_incomplete = false) -> String`: reads the manifest, network and climate. Returns an error text, or empty when it loaded;
+- `has_tile(tx, tz) -> bool`;
+- `raster(tx, tz, name) -> PackedFloat32Array`: decoded by the field table to metres, m³/s and codes, with no-data as NaN, cached per tile;
+- `frame(tile, margin, name) -> PackedFloat32Array`: the tile's raster with `margin` samples taken from its eight neighbours, the bake frame the baker works on. A sample beyond a missing neighbour repeats the nearest edge sample, and the bake reports it;
+- `reaches_in(rect)`, `falls_in(rect)`, `lakes_in(rect)`, `cave_springs_in(rect)`, `springs_in(rect)`, `pools_in(rect)`: features whose position (or any polyline point) lies in the rect, never clipped;
+- `reach(id)`, and `downstream(id) -> Array` (the ids to the sea, for the follow-the-water checks);
+- `climate(island) -> Dictionary` (the live temperature is `Weather.air_c`, one formula);
+- the static helpers already there (`fresh_distance`, `encode_fresh`, `decode_fresh`) stay, for tiles baked with `water_source` "rules".
+
+The M0 check is a headless test (`test_water_record.gd`). It writes a small record in #622's format (two tiles of 3 × 3 samples, a network with a reach across their seam, a climate), opens it, and checks:
+- the decodings (f4 with NaN, the log discharge, scales, i4 no-data);
+- the seam samples;
+- the frame margin from the neighbour;
+- a reach found from both tiles with one id;
+- `downstream`;
+- the refusals: an incomplete record, an unknown version, a wrong length.
+
+## 6c. Water classes: one code space (M1 step 2, 8 Nov)
+
+**The clash:** `data/tables/water_classes.json` is append-only. It already holds 4 marsh and 5 estuary. The record's codes put swamp at 5 and run on to 10 salt marsh. Nothing bakes estuary today, but the rule forbids reusing its id.
+
+**The fix, with no change asked of Sonny:**
+- The table keeps the game's ids, which tile files, flora and land types use. New rows are 6 swamp, 7 fen, 8 bog, 9 seasonal channel, 10 seasonal pond and 11 salt marsh.
+- Each row carries `record_code`, the code the record writes.
+- `water_record.gd` maps record codes to table ids when it reads `water_class`. A code the table lacks reads as 255, and the bake reports it.
+
+**What each class means to the land:** a row with `land: true` is ground to the climate and the land types. That covers the wetlands and the dry-season beds.
+- The bake hands them a `land_view` of the classes, with those cells as 0.
+- After the land types, `apply_wet_land` lays on the row's `biome` and `soil`:
+  - marsh, swamp and salt marsh: marsh biome on mud;
+  - fen and bog: marsh biome on peat;
+  - a seasonal channel: its climate biome on gravel;
+  - a seasonal pond: its climate biome on silt.
+- MikeW's own wetland biome rows replace "marsh" per row when they exist.
+- The native climate loop (`GenCore.classify_climate`) needs no change, because it never sees a land class.
+
+**Rules bakes are unchanged:** today's bake writes only classes 0 to 3, so `land_view` returns the same array and `apply_wet_land` changes nothing. A rules tile is byte-identical before and after.
+
+## 6d. Placers where the water slows (M1 step 3, 8 Nov)
+
+**Today:** `tile_geology.gd` `_find_placers` walks from an ore outcrop down to a river, then lays one long placer along the river below it, the same grade all the way.
+
+**The real rule:** heavy grains settle where the water slows. That happens at:
+- the inside of a bend;
+- a break in slope, where a steep reach meets a gentle one;
+- a confluence, where a tributary joins and the flow spreads;
+- the plunge pool at the foot of a fall.
+(USGS placer model and prospecting guides, section 8.)
+
+**The finder:** `WaterRecord.placer_traps(path, rules)` takes the river walked downstream, one row per recorded step, as [x, z, bed height, flow]. It returns the steps that are traps, in order. The kinds, checked in this order at each step:
+
+| Kind | Test | Rule key, default |
+|---|---|---|
+| `confluence` | the flow grows by this factor in one step | `confluence_x` 1.4 |
+| `slope_break` | the bed's fall below is under 1/ratio of the fall above (and the fall above is over 0.002) | `slope_ratio` 2 |
+| `bend` | the course turns by this much or more | `bend_deg` 35 |
+
+- Never two traps within `min_gap` steps (2), and at most `max_traps` (4) per river.
+- If nothing qualifies, it returns the gentlest step as kind `slow`, so every source still gets one placer.
+- The foot of a fall comes at M2, when the reader reads the record's falls list. A drop in today's rules heights is not a fall.
+
+**The bake:** with `ores.placer_traps.on` true, each trap gets one short placer:
+- 3 points, the trap step and one either side;
+- the grade is the ore's grade × `grade_x` (0.8);
+- the tonnage is for a length of 2 × `record_every` steps;
+- each placer names its `trap` kind.
+
+The old single long placer is not written then.
+
+**Off until R6:** the flag is absent from `tile_rules.json`, so it reads as off and rules tiles stay byte-identical. It turns on with R6's single TERRAIN_VERSION bump, when the path comes from the record's reaches (bed height and discharge) and not from the rules flow grid.
+
+## 6e. The spawn picker (M1 step 4, 8 Nov)
+
+**Today:** the spawn is a constant, `src/shared/spawn_point.gd` `OVERRIDE` (x 53296, z 68080), moved by hand on 6 Nov when the rivers moved. The starter tile already writes a `spawn_point` in its `starter` section (the beach by the river mouth), but the server ignores it, because `OVERRIDE` always wins. The NPC markers (`data/npcs/markers.json`) were moved by hand with it.
+
+**The rule (Dave: "move the spawn, do not adjust heights"):** every bake of the starter tile picks the spawn again, by rule. A spot is a candidate only when all of these hold:
+
+| Test | Rule key, default | Why |
+|---|---|---|
+| inside `ring_m`: steepest step, height range, wet cells | `ring_m` 30, `max_slope_deg` 7, `range_m` 1.5, no wet cell | the same gate as `island_checks` (spawn gate) and room for the town markers (within 12 m) |
+| the ground is high enough over the sea | `min_ground_m` 10 | above the beach and storm reach |
+| no water within `dry_m` | `dry_m` 12 | test_spawn_dry: 5 m from any wet cell, with margin |
+| over the nearest water surface by `above_water_m` or more | `above_water_m` 2.5 | not on a floodplain (test_spawn_dry asks 2 m) |
+| a perennial river (catchment `perennial_km2` or more) or a lake within a short walk | `walk_m` [40, 400], `perennial_km2` 2 | drinking water and a landmark, Dave's bear and town rules |
+
+Of the candidates, the one nearest the bay head wins: the river mouth, or the bay centre when the tile has no river. A tie goes to the first in row order, so the pick is stable. It searches within `search_m` (3000) of that point, every 2 samples.
+
+**Where it runs:** `src/worldgen/tile/spawn_picker.gd` `pick(maps, target, rules)`, a static function on plain arrays: heights, water class, water surface and flow. The two distance fields (to any water, carrying that water's surface, and to a perennial river) are chamfer passes over the search window only. `tile_sites.gd` `_make_starter` calls it when `starter.spawn_picker.on` is true, and writes `starter.spawn_picked` = [x, ground + 1, z]. The old beach `spawn_point` stays as it is.
+
+**One reader:** `spawn_point.gd` gets:
+- `use_world(world_dir)`, which reads the starter tile's `spawn_picked` once;
+- `current()`, the picked spawn, or `OVERRIDE` when the tile has none;
+- `town_shift()` = `current() − OVERRIDE`.
+
+The server calls `use_world` before it builds the flora placer. Each reader goes through `current()`: the server spawn, the flora clearing, the orchard and the island checks. The shipped NPC markers move by `town_shift()`, so the town moves with the spawn as one piece. Markers an admin placed in a world save stay where they were put. Clients already get the spawn in the welcome message, and flora is placed on the server only, so the two sides cannot disagree.
+
+**Off until R6:** the flag is absent from `tile_rules.json`, so no tile has `spawn_picked`. `current()` is then `OVERRIDE`, and the shift is zero. Every tile, spawn and marker stays exactly as today. At R6 the flag turns on with the one TERRAIN_VERSION bump, and the picker then reads the record's water level and its wetland and floodplain classes: a wetland cell counts as wet. A small tool, `spawn_pick.gd` (headless, run on the PC), runs the picker on today's baked starter tile and prints where it would put the spawn, against the gate. So the rule can be checked before R6.
+
+**Left for M2:** the starter ground the client ships (`prebuild_blocks.gd`, its fixed corner) has to follow the picked spawn. So do the old debug tools that still name x 53301 z 68427.
+
 ## 7. Questions (to the coordinator, not to Sonny)
 
 - **Q1, for Dave: goblin dens.** Sonny agrees with the recommendation below. Under Dave's 6 Nov QA rule (go with the recommendation), M1 builds it, and Dave can still overrule it. Dave's 7 Nov rule puts goblins in "any spring tunnel". With the rebuild, spring caves become rare, which follows his watershed document. I recommend letting goblin dens use dry side branches of any cave (karst, lava tube or spring cave). Goblins then stay common enough on the starter island, and the caves stay natural.
