@@ -10,6 +10,9 @@ extends RefCounted
 #   morning does the same at 60 % for big low sounds.
 # - Forest (3.3): 10 dB per 100 m of trees around the listener, at most 18 dB.
 # - Cold and fog (3.5): frost eats the far high end about twice as fast; fog trims it past 100 m. Near sounds stay crisp.
+# - Masking (3.4): rain and a gale hide small sounds past a mask distance (12 dB down over one more of it); big low sounds come through.
+# - Rivers (3.7): river voices fade like a line out to 50 m (line_db; sound_occlusion.gd adds it for voices marked "air_line").
+# - Fresh snow (3.5): far sounds 4 dB down and duller on fresh snow; the freshness lasts about 2 game days, faster gone in a thaw or rain.
 
 const NEAR_M := 50.0                    # closer than this the wind changes nothing
 const FULL_M := 100.0                   # the wind's effect is full from here
@@ -38,6 +41,18 @@ const COLD_STRETCH := 0.8               # air bands: the effective distance grow
 const FOG_CUT := 0.8
 const FOG_M := [100.0, 150.0]
 
+const RAIN_MASK := [[0.15, 30.0], [0.4, 15.0], [0.7, 8.0], [1.0, 5.0]]   # rain -> metres past which small sounds are lost (Jamie's table)
+const RAIN_MASK_FROM := 0.1             # no mask under this rain
+const LEAVES_MASK := 0.7                # under crowns the rain on leaves is louder: the mask distance x this
+const GALE_FROM := 0.5
+const GALE_MASK_M := [60.0, 25.0]       # from wind 0.5 to 1.0
+const MASK_DB := -12.0                  # past the mask distance, over one more of it
+const SMALL_UNIT := [6.0, 15.0]         # unit_size: small sounds (fully masked) .. big low ones (never)
+const SNOW_FRESH_H := 48.0              # fresh snow ages to settled over this many game hours
+const SNOW_THAW_FASTER := 3.0           # above 0 C or in rain
+const SNOW_FAR_DB := -4.0
+const SNOW_CUT := 0.3
+const LINE_REACH_M := 150.0             # a river reach's length until R7's record gives each its own (judged)
 const MAX_DB := 6.0                     # the sum is held inside these
 const MIN_DB := -30.0
 
@@ -104,12 +119,74 @@ static func band_stretch(temp_c: float) -> float:
 	return 1.0 + COLD_STRETCH * cold_share(temp_c)
 
 
-# Everything for one voice. `air`: {"wind", "toward" (Vector2), "gust", "night", "calm", "fog", "temp_c", "forest"}.
+# Metres past which rain hides small sounds (INF none). `under_leaves` 0..1 under crowns.
+static func rain_mask_m(rain: float, under_leaves: float = 0.0) -> float:
+	if rain < RAIN_MASK_FROM:
+		return INF
+
+	var metres: float = float(RAIN_MASK[0][1])
+
+	for k in range(1, RAIN_MASK.size()):
+		var a: Array = RAIN_MASK[k - 1]
+		var b: Array = RAIN_MASK[k]
+
+		if rain >= float(a[0]):
+			metres = lerpf(float(a[1]), float(b[1]), clampf((rain - float(a[0])) / (float(b[0]) - float(a[0])), 0.0, 1.0))
+
+	return metres * lerpf(1.0, LEAVES_MASK, clampf(under_leaves, 0.0, 1.0))
+
+
+static func gale_mask_m(wind: float) -> float:
+	if wind < GALE_FROM:
+		return INF
+
+	return lerpf(float(GALE_MASK_M[0]), float(GALE_MASK_M[1]), smoothstep(GALE_FROM, 1.0, wind))
+
+
+# 1 for a small sound (a step, a rustle, a thump) .. 0 for a big low one (a bear, a wolf, a fall, a bell), by its unit_size.
+static func small_share(unit: float) -> float:
+	return clampf((float(SMALL_UNIT[1]) - unit) / (float(SMALL_UNIT[1]) - float(SMALL_UNIT[0])), 0.0, 1.0)
+
+
+static func mask_db(distance: float, mask_m: float, unit: float) -> float:
+	if is_inf(mask_m):
+		return 0.0
+
+	return MASK_DB * smoothstep(mask_m, 2.0 * mask_m, distance) * small_share(unit)
+
+
+# One step of the snow's freshness (1 just fallen .. 0 settled, crusted or wet) over `hours` of game time.
+static func snow_fresh_step(fresh: float, hours: float, snowing: bool, temp_c: float, raining: bool) -> float:
+	if snowing:
+		return 1.0
+
+	var faster: float = SNOW_THAW_FASTER if temp_c > 0.0 or raining else 1.0
+	return maxf(fresh - hours / SNOW_FRESH_H * faster, 0.0)
+
+
+static func snow_effect(distance: float, fresh: float, ground_snow: float) -> Vector2:
+	var on: float = clampf(fresh, 0.0, 1.0) * clampf(ground_snow, 0.0, 1.0)
+	return Vector2(SNOW_FAR_DB * on * smoothstep(50.0, 100.0, distance), 1.0 - SNOW_CUT * on * smoothstep(50.0, 100.0, distance))
+
+
+# Rivers as a line (3.7): a long reach fades 3 dB a doubling, not 6, out to a third of its length, then as a point. Added to an
+# inverse-distance voice of size `unit` (which falls 6 dB a doubling), so 10 log10(d / unit) up to that knee. Outside the +6 dB hold.
+static func line_db(distance: float, unit: float, reach_m: float = LINE_REACH_M) -> float:
+	if unit <= 0.0 or distance <= unit:
+		return 0.0
+
+	return 10.0 * log(minf(distance, reach_m / 3.0) / unit) / log(10.0)
+
+
+# Everything for one voice. `air`: {"wind", "toward" (Vector2), "gust", "night", "calm", "fog", "temp_c", "forest"}, and from step 2
+# "rain", "leaves" (under crowns 0..1), "snow_fresh", "ground_snow" (missing keys: none of it).
 static func total(listener: Vector3, source: Vector3, unit: float, air: Dictionary) -> Vector2:
 	var to: Vector3 = listener - source
 	var distance: float = to.length()
 	var w: Vector2 = wind_effect(Vector2(to.x, to.z), distance, float(air.get("wind", 0.0)), air.get("toward", Vector2.ZERO), float(air.get("gust", 0.0)))
 	var n: Vector2 = night_effect(distance, float(air.get("night", 0.0)), float(air.get("calm", 0.0)), float(air.get("fog", 0.0)), unit)
-	var db: float = w.x + n.x + forest_db(distance, float(air.get("forest", 0.0)))
-	var cut: float = w.y * n.y * air_cutoff(distance, float(air.get("temp_c", 10.0)), float(air.get("fog", 0.0)))
+	var snow: Vector2 = snow_effect(distance, float(air.get("snow_fresh", 0.0)), float(air.get("ground_snow", 0.0)))
+	var mask_m: float = minf(rain_mask_m(float(air.get("rain", 0.0)), float(air.get("leaves", 0.0))), gale_mask_m(float(air.get("wind", 0.0))))
+	var db: float = w.x + n.x + snow.x + forest_db(distance, float(air.get("forest", 0.0))) + mask_db(distance, mask_m, unit)
+	var cut: float = w.y * n.y * snow.y * air_cutoff(distance, float(air.get("temp_c", 10.0)), float(air.get("fog", 0.0)))
 	return Vector2(clampf(db, MIN_DB, MAX_DB), cut)

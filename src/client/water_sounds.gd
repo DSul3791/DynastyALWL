@@ -640,6 +640,8 @@ func _assign(chosen: Array, origin: Vector3) -> void:
 			player.set_meta("air_kind", "fall")                    # sound_occlusion.gd moves it to a dull band bus by distance and cover
 		elif player.has_meta("air_kind"):
 			player.remove_meta("air_kind")
+
+		player.set_meta("air_line", candidate["kind"] == "river")      # --sound-outdoors: a river reach fades like a line (sound_occlusion.gd)
 		player.global_position = candidate["at"]
 		player.volume_db = -80.0
 		slot["kind"] = candidate["kind"]
