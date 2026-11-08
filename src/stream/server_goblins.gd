@@ -11,16 +11,26 @@ extends RefCounted
 #
 # Stealing (docs/design/goblin_stealing_design.md, Dave 8 Nov 2026): at night a goblin may creep (SNEAK) to one small loose thing outside every
 # fire's light, take one piece, run home with it (CARRY) and lay it on the den pile, where a player can find it and take it back.
+#
+# Friendship, step 1 (docs/design/goblin_friendship_step1_design.md, Dave 8 Nov 2026): a thing a player dropped that the band takes is a gift
+# (once a night). A Tolerated player is watched, not fled from, until within watch_spook_m; a Known player's things are no longer stolen
+# (their food still is: a gift), and a goblin that watched at a fire beside them leaves a return gift; a player who hurts one makes the band
+# wary of them, and it runs from them at twice spook_m.
 
 const SNEAK := 13              # the thief's states (server_thieves.gd): the client's creep and carry poses
 const CARRY := 14
 
 const Steering := preload("res://src/shared/steering.gd")
+const TrustScript := preload("res://src/stream/server_goblin_trust.gd")
 
 var host                       # ServerAnimals
 var stealable: Callable        # (centre Vector3, radius) -> Array of [world id, position]: loose small things on the ground (server_items.stealable_near)
 var take_one: Callable         # (world id) -> [item number, 1], or [] when it is gone (server_items.take_one)
 var hoard_drop: Callable       # (item number, count, position, lifetime s) -> bool: lays a piece on a den pile (server_items.drop_in_world)
+var peer_key: Callable         # (peer) -> the player's character key (server_items.key_of); friendship is per character
+var item_number: Callable      # (item id) -> item number (the item table), for return gifts
+var gift_drop: Callable        # (item number, count, position, by) -> bool: lays a return gift, marked as the band's (server_items.drop_in_world)
+var trust = TrustScript.new()  # friendship (docs/design/goblin_friendship_step1_design.md): per band and character
 
 
 # Length (m) of a cave path, mouth to den.
@@ -120,6 +130,15 @@ func step(a: Dictionary, dt: float, seen_d: float, seen_p: Vector3) -> bool:
 		a["task"] = ""
 		return false
 
+	var band: String = str(a.get("lair", ""))
+	var who: String = _who_at(seen_p)
+
+	# A band that was hurt by this player runs from them at twice the distance.
+	if who != "" and trust.wary(band, who) and seen_d <= host._spook_m(a, def) * 2.0:
+		a["task"] = ""
+		host._bolt(a, seen_p, def)
+		return true
+
 	# Carrying loot (after a fright, or picked up again): home with it.
 	if a.has("loot") and str(a.get("task", "")) != "carry":
 		a["task"] = "carry"
@@ -150,6 +169,13 @@ func step(a: Dictionary, dt: float, seen_d: float, seen_p: Vector3) -> bool:
 
 	if str(a.get("task", "")) == "watch":
 		return _step_watch(a, def, dt, seen_d, seen_p)
+
+	# A Tolerated player is watched openly, not fled from, until they come within watch_spook_m.
+	if who != "" and trust.at_least(band, who, "tolerated") and seen_d <= host._spook_m(a, def) and seen_d > float(row.get("watch_spook_m", 6.0)):
+		a["state"] = host.ALERT
+		a["alert"] = 1.0
+		a["heading"] = atan2(seen_p.z - a["pos"].z, seen_p.x - a["pos"].x)
+		return true
 
 	if str(a.get("task", "")) == "forage":
 		# The ordinary HOP takes it to the bush; once there it eats for forage_s instead of an ordinary idle, then the task ends.
@@ -187,9 +213,19 @@ func _pick_steal(a: Dictionary, def: Dictionary) -> bool:
 	var best: Array = []
 	var best_d: float = INF
 
+	var band: String = str(a.get("lair", ""))
+
 	for found in stealable.call(_home(a), float(row.get("steal_reach_m", 150.0))):
 		var at: Vector3 = found[1]
 		var d: float = Vector2(at.x - a["pos"].x, at.z - a["pos"].z).length()
+		var by: String = str(found[2]) if found.size() > 2 else ""
+
+		if by.begins_with("goblin:"):
+			continue   # a band's own return gift, left for a player
+
+		# A Known player's things are not stolen any more; the food they leave is a gift, and is taken.
+		if by != "" and trust.at_least(band, by, "known") and (str(found[3]) if found.size() > 3 else "") != "food":
+			continue
 
 		if d < best_d and _may_take(at, def):
 			best_d = d
@@ -201,6 +237,7 @@ func _pick_steal(a: Dictionary, def: Dictionary) -> bool:
 	a["task"] = "steal"
 	a["prize"] = int(best[0])
 	a["prize_at"] = best[1]
+	a["prize_by"] = str(best[2]) if best.size() > 2 else ""
 	a["state"] = SNEAK
 	return true
 
@@ -272,6 +309,7 @@ func _step_steal(a: Dictionary, def: Dictionary, dt: float) -> bool:
 		return _give_up(a, def)
 
 	a["loot"] = taken
+	trust.gift(str(a.get("lair", "")), str(a.get("prize_by", "")))   # a thing a player left in the dark: a gift, once a night
 	a["task"] = "carry"
 	a["state"] = CARRY
 	return true
@@ -371,6 +409,7 @@ func _pick_watch(a: Dictionary, def: Dictionary) -> bool:
 		a["task"] = "watch"
 		a["watching"] = false
 		a["fire"] = fire
+		a["fire_r"] = float(best[1])
 		a["target"] = spot
 		a["state"] = host.HOP
 		return true
@@ -438,6 +477,7 @@ func _step_watch(a: Dictionary, def: Dictionary, dt: float, seen_d: float, seen_
 		a["heading"] = atan2(fire.z - a["pos"].z, fire.x - a["pos"].x)
 
 		if float(a["alert"]) <= 0.0:
+			_return_gift(a, def)
 			a["task"] = ""
 			a["state"] = host.GRAZE
 			a["timer"] = host._graze_time(def)
@@ -457,6 +497,59 @@ func _step_watch(a: Dictionary, def: Dictionary, dt: float, seen_d: float, seen_
 		a["heading"] = atan2(fire.z - a["pos"].z, fire.x - a["pos"].x)
 
 	return true
+
+
+# The character key of the player standing at a point ("" for none or unknown): the player_info entry within 1 m of it.
+func _who_at(p: Vector3) -> String:
+	if p == Vector3.INF or not peer_key.is_valid() or not host.big_game.player_info.is_valid():
+		return ""
+
+	for info in host.big_game.player_info.call():
+		if (info["pos"] as Vector3).distance_to(p) <= 1.0:
+			return str(peer_key.call(int(info["peer"])))
+
+	return ""
+
+
+# After watching at a fire with a Known player beside it, a goblin leaves a return gift at its spot (once a day per band and player).
+func _return_gift(a: Dictionary, def: Dictionary) -> void:
+	if not peer_key.is_valid() or not host.big_game.player_info.is_valid() or not gift_drop.is_valid() or not item_number.is_valid():
+		return
+
+	var band: String = str(a.get("lair", ""))
+	var fire: Vector3 = a["fire"]
+	var gifts: Array = def.get("ally", {}).get("return_gifts", [])
+
+	for info in host.big_game.player_info.call():
+		var who: String = str(peer_key.call(int(info["peer"])))
+
+		if Vector2(info["pos"].x - fire.x, info["pos"].z - fire.z).length() > float(a.get("fire_r", 10.0)) + 10.0 or not trust.return_gift_due(band, who, true):
+			continue
+
+		var total: float = 0.0
+
+		for g in gifts:
+			total += float(g.get("weight", 1.0))
+
+		var roll: float = host.rng.randf() * total   # luck-exempt: which return gift a band leaves
+		for g in gifts:
+			roll -= float(g.get("weight", 1.0))
+
+			if roll <= 0.0:
+				var number: int = int(item_number.call(str(g["item"])))
+
+				if number > 0:
+					gift_drop.call(number, int(g.get("count", 1)), a["pos"], "goblin:" + band)
+
+				break
+
+		return
+
+
+# Harm (Dave's ally design): a player who hurts one of the band resets their trust with it and makes it wary of them.
+func harm(a: Dictionary, peer: int) -> void:
+	if peer >= 0 and peer_key.is_valid() and a.has("lair"):
+		trust.harm(str(a["lair"]), str(peer_key.call(peer)))
 
 
 # The nearest player in the cave with this goblin: {d: metres along the cave, s: where along the path, pos, peer}, {} for none. A player counts
