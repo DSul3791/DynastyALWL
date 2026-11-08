@@ -133,7 +133,7 @@ Built facts:
    - torn ears and old scars on the older ones;
    - mud on the feet.
    Their kit is made from what the den shows: bones, sticks, thatch (`cave_dressing.gd`). It should look scavenged, never forged.
-5. **Eyes:** see section 6. **[Proposal: coordinator]** Goblins get eye shine: amber-yellow, about half the strength of a cat's. This is because they are night creatures, and it makes Steve's "creep to the firelight edge at night" behaviour show as **pairs of eyes at the edge of the light**. It is the one place where the fantasy pays off in play.
+5. **Eyes:** see section 6. **Decided by coordinator, Dave may overrule:** goblins get eye shine: amber-yellow, about half the strength of a cat's. This is because they are night creatures, and it makes Steve's "creep to the firelight edge at night" behaviour show as **pairs of eyes at the edge of the light**. It is the one place where the fantasy pays off in play.
 6. **Never:**
    - cartoon-goblin green;
    - shiny plastic skin;
@@ -265,7 +265,7 @@ Some animals have no tapetum and give only a faint red glow from the blood vesse
 | Rabbit, rat | Faint red (no tapetum) | 0.5 | Good |
 | Boar, warthog | None (pigs have no tapetum) | 0 | Good |
 | All birds in the list | None | 0 | Good |
-| Goblin | Amber-yellow | 1.5 | Fantasy, see 3.5 [Proposal] |
+| Goblin | Amber-yellow | 1.5 | Fantasy, see 3.5 (decided by coordinator) |
 
 ## 7. Wet looks for swimmers
 
@@ -392,7 +392,7 @@ They look **looked after but working**. They are clean, but with honest dirt on 
 
 ## 10. Proposals and checks (owners)
 
-1. **[Proposal: coordinator]** Goblin eye shine, amber-yellow at strength 1.5 (3.5, 6).
+1. **Decided by coordinator, Dave may overrule:** goblin eye shine, amber-yellow at strength 1.5 (3.5, 6). The section 10 items below are handed to MikeW by the coordinator.
 2. **[Proposal: MikeW]**
    - eye shine as one emissive term, with `shine_color` and `shine` per row (6.7);
    - one `wet` value and `wet_line` per animal (7.5);
@@ -413,7 +413,7 @@ They look **looked after but working**. They are clean, but with honest dirt on 
    - a bear;
    - a raccoon;
    - a boar (to check it has no shine);
-   - goblins, once a decision is made.
+   - goblins.
 3. A seal wet in the water and dry on a rock; a moose wading; a duck swimming and dabbling.
 4. A stag in each season (velvet, hard, cast) once seasons drive the antlers.
 5. A wounded deer at 5 m and 15 m (the wet patch and the trail), and its carcass.
