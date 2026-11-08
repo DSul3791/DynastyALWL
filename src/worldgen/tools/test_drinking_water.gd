@@ -152,6 +152,22 @@ func _server() -> void:
 	items.season_at = Callable()
 	check(_drinks(items, v), "without season_at the calendar's season stands (winter: the brook runs)")
 
+	# The terrain server's rows carry no ice field: the server's own ice rule at the player (_on_ice, the fishing ice) decides.
+	items._holes.clear()
+	items.ice_cover_at = func(_pos): return 1.0
+	rows_here = [{"kind": "lake"}]
+	check(not _drinks(items, v), "a lake row without an ice field is frozen where the ice rule says ice")
+	items.ice_cover_at = Callable()
+	check(_drinks(items, v), "and a drink where it says none")
+
+	# The sea: no drinking water in reach (the sim holds no sea), salt water is: the salt line, not the plain refusal.
+	var said: Array = []
+	items.send_notice = func(_p, text): said.append(str(text))
+	items.water_near = func(_pos, _reach): return false
+	rows_here = [{"kind": "salt"}]
+	check(not _drinks(items, v) and said.has(str(sources.get("say_salt", ""))), "at the sea the player hears the salt line (%s)" % str(said))
+	items.water_near = func(_pos, _reach): return true
+
 
 func _drinks(items, v: Dictionary) -> bool:
 	v["wet"] = 500.0

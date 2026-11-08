@@ -382,6 +382,36 @@ func _ready() -> void:
 				return true
 
 		return false
+	# The drink's source rows (docs/design/drinking_water_design.md 3, "without the record": today's water, minus salt water), for
+	# vitals.json thirst.sources. From the baked tile, at the same five points as water_near: a spring cave's stream is spring water; ocean
+	# and estuary cells are salt; wet lake and river cells are lakes and rivers; any other cell the live sim has wet is a puddle. No ice field:
+	# server_items puts its own ice rule (_on_ice) on each row. Springs and brooks by regime need the baked drink rows (build step 2).
+	items.water_source = func(pos, reach) -> Array:
+		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
+		var rows: Array = []
+
+		if tile_data.placeholder or tile_data.water_class.is_empty():
+			return rows
+
+		if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
+			rows.append({"kind": "spring"})
+
+		var sim: PackedFloat32Array = tile_data.sim_snapshot()
+
+		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
+			var cls: int = int(tile_data.water_class[k])
+
+			if cls == 1 or cls == 5:
+				rows.append({"kind": "salt"})   # ocean, estuary (data/tables/water_classes.json)
+				continue
+
+			var wet: bool = (not is_nan(sim[k])) if not sim.is_empty() else (cls > 1 and not is_nan(tile_data.water_surface[k]))
+
+			if wet:
+				rows.append({"kind": "lake" if cls == 2 else ("river" if cls == 3 else "puddle")})
+
+		return rows
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
