@@ -160,6 +160,7 @@ var strikes_seen: int = 0
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const WindCueScript := preload("res://src/client/wind_cue.gd")
+const FloraView := preload("res://src/flora/flora_view.gd")
 var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
 
 func setup(client) -> void:
@@ -495,6 +496,7 @@ func _process_body(delta: float) -> void:
 	_rain_material.set_shader_parameter("canopy_box", Vector3(canopy.origin.x, canopy.origin.y, canopy.METRES))
 	_update_ground(rain, snow)
 	_update_particles(rain, snow, float(_s["wind"]))
+	_update_tree_wind()
 
 
 # Under water (Dave 2 Nov 2026: "being under the water looking up looks fake"): no flat blue screen. The water itself is the fog:
@@ -572,6 +574,28 @@ func _update_ground(rain: float, snow: float) -> void:
 
 	if _client.grass != null:
 		_client.grass.visible = lying < 0.5      # snow buries the grass
+
+
+# Trees sway by the eased world wind (--tree-wind, trees_weather_design.md part A), once a second. Wind in m/s = 20 x wind^1.3 (#637).
+var _tree_wind_next_msec: int = 0
+
+
+static func tree_wind_ms(wind: float) -> float:
+	return 20.0 * pow(clampf(wind, 0.0, 1.0), 1.3)
+
+
+func _update_tree_wind() -> void:
+	if not FloraView.tree_wind_on or _client == null or _client.flora == null:
+		return
+
+	var now_msec: int = Time.get_ticks_msec()
+
+	if now_msec < _tree_wind_next_msec:
+		return
+
+	_tree_wind_next_msec = now_msec + 1000
+	var world: Dictionary = _client.weather if _client.weather is Dictionary else {}
+	_client.flora.set_wind(tree_wind_ms(float(_s["wind"])), float(world.get("wind_dir", 0.0)))
 
 
 func _update_particles(rain: float, snow: float, wind: float) -> void:
