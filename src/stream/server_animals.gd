@@ -1555,7 +1555,7 @@ func rows_near(point: Vector3) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), HUNCH if a["state"] == GRAZE and bool(a.get("hunch", false)) else a["state"]]
+			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), HUNCH if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))) else a["state"]]
 
 			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
 				row.append(animals[int(a["foe_dog"])]["pos"])
@@ -1585,6 +1585,7 @@ func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 	a["burst"] = 0.0
 	a["alert"] = 0.0
 	a.erase("hunch")
+	a.erase("sheltered")
 	a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
 	_to_burrow(a, away, def)
 
@@ -2032,6 +2033,19 @@ func _weather_graze(a: Dictionary, def: Dictionary, dt: float) -> void:
 
 	if a.has("hunch") and not _raining():
 		a.erase("hunch")
+
+	# HUNCH in cover (design 11, MikeW's ANIMAL_WEATHER_LOOKS.md): a deer or stock animal grazing in its cover stands hunched for as long as the
+	# rain, a gale or the cold lasts: within cover_stand_m of the cover home it moved to, or under tree crowns (a herd follower round its
+	# leader). Midday heat in the shade is not a hunch.
+	var role: String = str(def.get("weather", ""))
+	var foul: bool = role in ["deer", "stock"] and (_raining() or _gale() or _cold(a))
+	var stand_m: float = float(_wx_rules().get("cover_stand_m", 8.0))
+	var at_cover: bool = a.has("dry_home") and Vector2(a["pos"].x - a["home"].x, a["pos"].z - a["home"].z).length() <= stand_m
+
+	if foul and (at_cover or (canopy.is_valid() and bool(canopy.call(a["pos"])))):
+		a["sheltered"] = true
+	else:
+		a.erase("sheltered")
 
 
 # When a grazing spell ends in bad weather. True when the weather chose what it does next:
