@@ -52,6 +52,9 @@ var _spur_width: float = 0.15         # standing.tip_spurs.width_share (spur_wei
 var _spur_widen: float = 0.0          # standing.tip_spurs.widen (spur_weight_at)
 var _bend_cache: Dictionary = {}      # summit position -> how much each spur bends (_spur_bends)
 var _starters: Array = []   # starter mounts (ellipses), so shelf hills away from them can be given more relief
+# Told after each stage of build() (on_stage(name, self)), so a tool can picture the map stage by stage and find which one
+# draws a mark (tools/dump_sketch_stages.gd). An Object, so the setup cache (setup_cache.gd) leaves it out. Null in a bake.
+var stage_listener: Object = null
 
 
 # cell_override lets tests build a coarser map quickly.
@@ -80,6 +83,7 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 	_make_noise_fields()
 	_build_sea_floor()
 	_carve_trenches()
+	_stage("sea floor")
 
 	feature_ids.clear()
 
@@ -100,6 +104,7 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 
 		index += 1
 
+	_stage("shelves")
 	_roll_giants(sketch)
 	index = 0
 
@@ -109,19 +114,27 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 
 		index += 1
 
+	_stage("mounts")
+
 	for feature in sketch.get("features", []):
 		for mount in feature.get("mounts", []):
 			if str(mount["type"]) == "starter" and mount.has("beach_dir"):
 				_carve_bay(mount)
 
+	_stage("bays")
+
 	for feature in sketch.get("features", []):
 		for mount in feature.get("mounts", []):
 			if str(mount["type"]) == "starter" and mount.has("beach_cap_m"):
 				_shape_coast_profile(mount)
+				_stage("coast profile")
 				_raise_foothills(mount)
+				_stage("foothills")
 
 	_shape_shelf_coasts(sketch)
+	_stage("shelf coasts")
 	_raise_landmark_islands()
+	_stage("landmark islands")
 
 	# Craters last: the shelf and coast caps above would otherwise level the rim again.
 	for feature in sketch.get("features", []):
@@ -131,11 +144,20 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 			if str(mount["type"]) == "starter" and mount.has("beach_cap_m") and not crater.is_empty():
 				_crater_at_summit(mount, crater, int(ceil(maxf(float(mount["a"]), float(mount["b"])) * 1.6 / cell_m)))
 	_clamp_heights()
+	_stage("craters and clamp")
 	_stand_high_ground()
+	_stage("flank cones")
 	_find_summits()
 
 	if _stand_summits():
 		_find_summits()
+
+	_stage("summit tops")
+
+
+func _stage(name: String) -> void:
+	if stage_listener != null:
+		stage_listener.call("on_stage", name, self)
 
 
 # Now and then an island (never a starter) is a giant: `giant_peaks` in sketch_rules.json gives the chance, a size
