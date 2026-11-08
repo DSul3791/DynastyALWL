@@ -544,9 +544,6 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	root.set_meta("model", true)
 	root.set_meta("model_row", row)
 
-	if not eye_mats.is_empty():
-		root.set_meta("eye_mats", eye_mats)
-
 	if own_young:
 		root.set_meta("young_model", true)
 	var rig: Node3D = Node3D.new()
@@ -594,6 +591,9 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 
 	for m in meshes:
 		eye_mats.append_array((m as MeshInstance3D).get_meta("eye_mats", []))
+
+	if not eye_mats.is_empty():
+		root.set_meta("eye_mats", eye_mats)
 
 	# Bone corrections laid over every clip (bone_offsets.gd: the crow stands up and folds its wings).
 	if row.has("bone_offsets"):
