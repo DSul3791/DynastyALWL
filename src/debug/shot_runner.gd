@@ -311,6 +311,11 @@ func _process(delta: float) -> void:
 		if client._avatar != null and float(shots[_index]["walk"]) < 0.0:
 			client._avatar.visible = false
 
+	# A first-person shot (no 8th number, look rig --cam first) stays first person on every frame: no third-person or photo camera, the drawn camera on the eye.
+	# Dino's cave picture (8 Nov 2026) was asked first person yet showed the body standing ahead of the camera.
+	if _index >= 0 and _index < shots.size() and float(shots[_index]["walk"]) < 0.0:
+		_hold_first_person()
+
 	var now: int = Time.get_ticks_msec()
 
 	if give_item != "" and not _given and now - client.connected_msec > 8000:
@@ -636,6 +641,7 @@ func _process(delta: float) -> void:
 	# The floor is read from just above the camera, not from 1500 m: from the sky the ray stops on the hilltop over a cave and every cave shot warned (Sonny, 8 Nov 2026).
 	var guard_ground: float = _ground(p.x, p.z, p.y + GUARD_ABOVE_M)
 	var in_rock: bool = _solid_at(p)
+	_print_view()
 
 	if is_nan(guard_ground) or in_rock or p.y < guard_ground - 3.0 or guard_ground <= -30.0:
 		print("shot runner: WARNING ground not loaded at (%.1f, %.1f): floor reading %.1f, camera y %.1f%s; the picture may be from under the world, raise --shot-settle (75 s worked)" % [p.x, p.z, guard_ground, p.y, ", the camera is inside solid ground" if in_rock else ""])
@@ -1559,6 +1565,44 @@ func _print_flora_row() -> void:
 				print("shot runner: flora piece: %s tier %s kind %s verts %d aabb %s instance0 at %s scale %s camera %s in tree %s range_end %.0f" % [str(mmi.get_meta("species", "")), str(mmi.get_meta("tier", -1)), str(mmi.get_meta("kind", -1)), verts, str(mesh.get_aabb()), str(first.origin), str(first.basis.get_scale()), str(cam), str(mmi.is_visible_in_tree()), mmi.visibility_range_end])
 
 	print("shot runner: flora row: chunk %s items %d level %d ground %s visible %s pieces %d instances %d setup_done %s" % [str(here), (entry["items"]["ids"] as PackedInt32Array).size(), int(entry["level"]), str(entry.get("ground")), ("no node" if node == null else str(node.visible)), pieces, instances, str(client.flora._setup_done)])
+
+
+# First person for a first-person shot: the client draws the body whenever its drawn camera stands more than half a metre behind the eye
+# (terrain_client.gd _update_view: third person, or the K photo camera), so both are switched off and the drawn camera is put back on the eye.
+func _hold_first_person() -> void:
+	if client.third_person:
+		client.third_person = false
+
+	if client.photo != null and client.photo.active:
+		client.photo.active = false
+
+	client._view_now = 0.0
+
+	if client.view_cam != null and not client.view_cam.top_level:
+		client.view_cam.position = Vector3.ZERO
+
+	if client._avatar != null:
+		client._avatar.visible = false
+
+
+# Where the picture was really taken from: the drawn camera (view_cam), its distance from the eye, and whether the body was drawn. A first-person shot
+# whose drawn camera is off the eye, or whose body is visible, says so; a drawn camera inside solid ground says so too (the body can stand in open air
+# while a third-person camera behind it is in the rock).
+func _print_view() -> void:
+	if client.view_cam == null or client.camera == null:
+		return
+
+	var eye: Vector3 = client.camera.global_position
+	var drawn: Vector3 = client.view_cam.global_position
+	var body_drawn: bool = client._avatar != null and client._avatar.visible
+	var first: bool = _index >= 0 and _index < shots.size() and float(shots[_index]["walk"]) < 0.0
+	print("shot runner: view: drawn camera at %s, %.2f m from the eye, third person %s, photo %s, body drawn %s" % [str(drawn), eye.distance_to(drawn), str(client.third_person), str(client.photo != null and client.photo.active), str(body_drawn)])
+
+	if first and (eye.distance_to(drawn) > 0.05 or body_drawn):
+		print("shot runner: WARNING first-person shot drawn from %.2f m off the eye%s" % [eye.distance_to(drawn), ", the body is in the picture" if body_drawn else ""])
+
+	if drawn.distance_to(eye) > 0.05 and _solid_at(drawn):
+		print("shot runner: WARNING the drawn camera is inside solid ground at %s" % str(drawn))
 
 
 # A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
