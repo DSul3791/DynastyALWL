@@ -43,6 +43,10 @@ var _prints: Array = []           # [Decal, born msec, life s]
 var _print_tex: Dictionary = {}   # sign group -> ImageTexture
 var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
 var slope_tilt: bool = false
+var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
+var young_gait: bool = false      # young drawn at their species' size, quick short steps, wobbly when newborn (YOUNG_ANIMALS.md; off until the PC check)
+var coat_dust: bool = false       # coats dusty after a roll, washed by water and rain (COAT_SHADER.md section 4; off until the PC check)
+var coat_ruffle: bool = false     # coats ruffle in the wind, a vertex shader on the coat (COAT_SHADER.md section 1; off until the PC check)
 var season_coats: bool = false    # the coat's colour follows the season (COAT_SHADER.md; off until the PC check)
 var stalk_fx: bool = false        # predators crouch and creep when stalking and pounce on the attack (STALK_POUNCE.md; off until the PC check)
 var wind_now: Callable            # () -> wind 0..1 (Jamie's #637: 20 x wind^1.3 m/s); ears lie back and tails swing above about 0.5
@@ -357,10 +361,10 @@ func on_rows(rows: Array) -> void:
 			node.position = row[2]
 
 			if young and not node.has_meta("young_model"):
-				node.scale = Vector3.ONE * YOUNG_SCALE
+				node.scale = Vector3.ONE * (_young_scale(int(row[1])) if young_gait else YOUNG_SCALE)
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "young": young, "age_hash": (id * 2654435761) % 1000}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
@@ -490,8 +494,11 @@ func _process_body(delta: float) -> void:
 
 			_flap_bob(node, b, state)
 
-			if season_coats and (node.get_meta("model_row", {}) as Dictionary).has("season_tint"):
-				_coat_season(node, b, delta)
+			if young_gait and bool(b.get("young", false)):
+				_young_wobble(node, b, state, model_speed)
+
+			if season_coats or coat_dust or coat_ruffle:
+				_coat_tick(node, b, state, delta)
 
 			if slope_tilt:
 				_slope_pitch(node, b, before, delta)
@@ -917,11 +924,15 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 							mat.alpha_scissor_threshold = float(entry.get("alpha_cut", 0.5))
 							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
-						mi.set_surface_override_material(surface, mat)
+						var is_eye: bool = name_text.findn("eye") >= 0 and name_text.findn("lid") < 0
+						var coat: Material = _ruffle_material(mat) if coat_ruffle and float(row.get("ruffle_cm", 0.0)) > 0.0 and not is_eye else mat
+						mi.set_surface_override_material(surface, coat)
 
-						if not (name_text.findn("eye") >= 0 and name_text.findn("lid") < 0):
+						if not is_eye:
+							coat.set_meta("rough", mat.roughness)
+							coat.set_meta("card", mat.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED)
 							var coat_mats: Array = mi.get_meta("coat_mats", [])
-							coat_mats.append(mat)
+							coat_mats.append(coat)
 							mi.set_meta("coat_mats", coat_mats)
 
 						# The eye surfaces (a material or texture named for the eye, not a lid or lash) carry the eye shine (_eye_shine).
@@ -2098,26 +2109,149 @@ func _flap_bob(node: Node3D, b: Dictionary, state: int) -> void:
 		rig.position.y = 0.0
 
 
-# The coat's colour by the season (COAT_SHADER.md section 3): the row's season_tint {spring, summer, autumn, winter: colour} multiplies
-# the coat textures, eased over a few seconds when the season changes (a real moult takes weeks; the client's season is the moult's
-# middle). Checked once a second. Eyes keep their own colour.
-func _coat_season(node: Node3D, b: Dictionary, delta: float) -> void:
+# The coat (COAT_SHADER.md): season tint x dust, and the wind ruffle's strength, set once a second on the coat materials.
+# Season (section 3): the row's season_tint {spring, summer, autumn, winter: colour} multiplies the coat textures, eased 30 percent a
+# check (a real moult takes weeks; the client's season is the moult's middle).
+# Dust (section 4): builds while the animal rolls (state 8, or the row's roll_states) over about 2 s, takes the ground's colour, fades
+# over 3 minutes, and is washed off at once in water or in rain (ground_wet 0.6). The coat leans toward the dust colour by
+# dust x 0.35 and is 0.1 rougher.
+# Ruffle (section 1): the shader's amp = ruffle_cm x wind^1.3, alpha cards (ruffs, manes) full, the body at a third.
+# Eyes are not in coat_mats and keep their own colour.
+const DUST_COLOURS := {"dust": Color(0.62, 0.54, 0.42), "mud": Color(0.32, 0.25, 0.17), "snow": Color(1.0, 1.0, 1.0), "grass": Color(0.6, 0.55, 0.42)}
+
+func _coat_tick(node: Node3D, b: Dictionary, state: int, delta: float) -> void:
+	var row: Dictionary = node.get_meta("model_row", {})
+
+	if coat_dust and (row.get("roll_states", [8]) as Array).has(state):
+		b["dust"] = minf(1.0, float(b.get("dust", 0.0)) + delta * 0.5)
+
+		if not b.has("dust_col"):
+			var ground: String = _ground_kind(node, b)
+			b["dust_col"] = DUST_COLOURS.get(ground, DUST_COLOURS["dust"])
+
 	b["coat_t"] = float(b.get("coat_t", 0.0)) - delta
 
 	if float(b["coat_t"]) > 0.0 and b.has("coat_now"):
 		return
 
 	b["coat_t"] = 1.0
-	var row: Dictionary = node.get_meta("model_row", {})
-	var season: String = str((conditions_now.call() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
-	var want: Color = Color.html(str((row["season_tint"] as Dictionary).get(season, "#ffffff")))
-	var now: Color = b.get("coat_now", want)
-	now = now.lerp(want, 0.3)
+	var tint: Color = Color.WHITE
+
+	if season_coats and row.has("season_tint"):
+		var season: String = str((conditions_now.call() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
+		tint = Color.html(str((row["season_tint"] as Dictionary).get(season, "#ffffff")))
+
+	var now: Color = (b.get("coat_now", tint) as Color).lerp(tint, 0.3)
 	b["coat_now"] = now
+	var dust: float = float(b.get("dust", 0.0))
+
+	if coat_dust and dust > 0.0 and not (row.get("roll_states", [8]) as Array).has(state):
+		var ground: String = _ground_kind(node, b)
+		dust = 0.0 if ground == "water" or ground == "puddle" else maxf(0.0, dust - 1.0 / 180.0)
+		b["dust"] = dust
+
+		if dust <= 0.0:
+			b.erase("dust_col")
+
+	var colour: Color = now.lerp(b.get("dust_col", Color.WHITE), dust * 0.35) if coat_dust else now
+	var amp: float = float(row.get("ruffle_cm", 0.0)) * 0.01 * pow(clampf(_wind(), 0.0, 1.0), 1.3) if coat_ruffle else 0.0
 
 	for mi in node.get_meta("meshes", []):
 		for mat in (mi as MeshInstance3D).get_meta("coat_mats", []):
-			(mat as StandardMaterial3D).albedo_color = now
+			var rough: float = float(mat.get_meta("rough", 0.9)) + (0.1 * dust if coat_dust else 0.0)
+
+			if mat is ShaderMaterial:
+				(mat as ShaderMaterial).set_shader_parameter("albedo_color", colour)
+				(mat as ShaderMaterial).set_shader_parameter("roughness_v", minf(rough, 1.0))
+				(mat as ShaderMaterial).set_shader_parameter("amp", amp * (1.0 if bool(mat.get_meta("card", false)) else 0.33))
+			else:
+				(mat as StandardMaterial3D).albedo_color = colour
+				(mat as StandardMaterial3D).roughness = minf(rough, 1.0)
+
+
+# The ruffle shader (COAT_SHADER.md section 1): the coat's texture, colour, roughness and alpha cut, with each vertex pushed a little
+# along its normal and the wind by a travelling ripple. Two shaders, one per cull mode (fur cards draw both sides).
+static var _ruffle_shaders: Dictionary = {}
+
+const RUFFLE_CODE := """shader_type spatial;
+render_mode %s;
+uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform vec4 albedo_color : source_color = vec4(1.0);
+uniform float roughness_v = 0.9;
+uniform float alpha_cut = 0.0;
+uniform float amp = 0.0;
+uniform vec3 wind_dir = vec3(0.96, 0.0, 0.28);
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	vec3 wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	float ripple = sin(dot(wp.xz, vec2(9.1, 6.7)) - TIME * 7.0) * 0.5 + sin(dot(wp.xz, vec2(-4.3, 11.3)) - TIME * 4.3) * 0.5;
+	vec3 push = (wn * 0.5 + wind_dir * 0.5) * amp * (0.5 + 0.5 * ripple);
+	VERTEX += (inverse(MODEL_MATRIX) * vec4(push, 0.0)).xyz;
+}
+void fragment() {
+	vec4 c = texture(albedo_tex, UV) * albedo_color;
+	if (c.a < alpha_cut) {
+		discard;
+	}
+	ALBEDO = c.rgb;
+	ROUGHNESS = roughness_v;
+}
+"""
+
+func _ruffle_material(mat: StandardMaterial3D) -> ShaderMaterial:
+	var both: bool = mat.cull_mode == BaseMaterial3D.CULL_DISABLED
+	var key: String = "both" if both else "back"
+
+	if not _ruffle_shaders.has(key):
+		var shader: Shader = Shader.new()
+		shader.code = RUFFLE_CODE % ("cull_disabled" if both else "cull_back")
+		_ruffle_shaders[key] = shader
+
+	var out: ShaderMaterial = ShaderMaterial.new()
+	out.shader = _ruffle_shaders[key]
+	out.set_shader_parameter("albedo_tex", mat.albedo_texture)
+	out.set_shader_parameter("roughness_v", mat.roughness)
+	out.set_shader_parameter("alpha_cut", mat.alpha_scissor_threshold if mat.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR else 0.0)
+	return out
+
+# Young animals (docs/design/YOUNG_ANIMALS.md). The row's young_look {scale, wobble_days} sets how big the young are drawn (default
+# YOUNG_SCALE) and how many days they stay unsteady (default 10).
+func _young_scale(number: int) -> float:
+	var row: Variant = _models.get(KIND_OF_SPECIES.get(number, ""), null) if _models is Dictionary else null
+	return float((row as Dictionary).get("young_look", {}).get("scale", YOUNG_SCALE)) if row is Dictionary else YOUNG_SCALE
+
+
+# How old a young one looks, in days. The server keeps no birthdays (animals are not saved), so the client gives each young one a
+# steady age from its id: born through spring (0 to 40 days old in spring, 60 and more later in the year), so about a quarter of
+# spring's young are under 10 days. When the server sends a real birth day this reads it instead.
+func _young_age(b: Dictionary) -> float:
+	if young_age_days >= 0.0:
+		return young_age_days
+
+	var season: String = str((conditions_now.call() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
+	var base: float = float(int(b.get("age_hash", 0)) % 41)
+	return base if season == "spring" else base + 60.0
+
+
+# A newborn's wobble: under wobble_days old it sways side to side (up to 6 degrees, quicker while walking), fading out day by day. Uses the Rig's roll, which no other model look turns.
+func _young_wobble(node: Node3D, b: Dictionary, _state: int, speed: float) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null:
+		return
+
+	var row: Dictionary = node.get_meta("model_row", {})
+	var days: float = float(row.get("young_look", {}).get("wobble_days", 10.0))
+	var w: float = clampf(1.0 - _young_age(b) / maxf(days, 0.1), 0.0, 1.0)
+
+	if w <= 0.0:
+		if absf(rig.rotation.z) > 0.0005:
+			rig.rotation.z = 0.0
+		return
+
+	var phase: float = float(b.get("phase", 0.0))
+	var rate: float = 6.0 if speed > 0.3 else 1.4
+	rig.rotation.z = w * deg_to_rad(6.0) * (0.7 * sin(_t * rate + phase) + 0.3 * sin(_t * rate * 2.7 + phase * 1.9))
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
@@ -2252,6 +2386,11 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		ref = float(player.get_animation(clip).get_meta("travel_mps", ref))      # the speed the clip's feet were made for (_strip_root_drift)
 
 	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
+
+	# A young one drawn smaller than the clip's measured size (YOUNG_ANIMALS.md): its feet cover less ground a step, so the same speed
+	# needs quicker steps (shorter stride, higher rate); up to three times the clip's rate so a foal keeps up with a trotting mare.
+	if young_gait and bool(b.get("young", false)) and not node.has_meta("young_model") and ref > 0.0:
+		player.speed_scale = clampf(speed / (ref * maxf(node.scale.x, 0.1)), 0.5, 3.0)
 
 	# Stalking (STALK_POUNCE.md): the walk at the row's slower rate, a stalk clip if the file has one, and a freeze for 1 to 3 s
 	# when a grazer near it looks up. On the attack a pounce clip plays once and _pounce lifts the body on an arc.

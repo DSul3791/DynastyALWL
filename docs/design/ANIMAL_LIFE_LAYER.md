@@ -26,6 +26,9 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Stalk and pounce | crouch, creep, freeze when prey looks up; pounce arc | `stalk`, `pounce` | `stalk_fx` (**off**) | STALK_POUNCE.md |
 | Wind | ears back and tails swing above about 0.5 | none | needs `wind_now` (on) | STALK_POUNCE.md (wind note) |
 | Seasonal coat colour | coat tint by season (deer, elk, moose, wolf, fox, rabbit) | `season_tint` | `season_coats` (**off**) | COAT_SHADER.md |
+| Coat ruffle | fur moves in the wind (shader) | `ruffle_cm` | `coat_ruffle` (**off**) | COAT_SHADER.md |
+| Coat dust | dusty after a roll, washed by water and rain | `roll_states` | `coat_dust` (**off**) | COAT_SHADER.md |
+| Young animals | young at their species size, quick short steps, newborn wobble | `young_look` | `young_gait` (**off**) | YOUNG_ANIMALS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |
 

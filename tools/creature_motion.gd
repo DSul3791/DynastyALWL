@@ -9,14 +9,14 @@ extends SceneTree
 #       [--approach]   the camera walks in from 30 m to 6 m over the frames (head tracking, herd glances, ears)
 #       [--water=0.4]  water this deep over the ground everywhere (swim role, wet look)
 #       [--torch]      a held torch at the camera, night sky (eye shine)
-#       [--fx] [--tilt] [--prints] [--ik] [--stalk] [--coats] [--wind=0.8] turn on the footfall puffs and the slope pitch (FOOTFALL.md)
+#       [--fx] [--tilt] [--prints] [--ik] [--stalk] [--coats] [--dust] [--ruffle] [--young=2 --age=3] [--wind=0.8] turn on the footfall puffs and the slope pitch (FOOTFALL.md)
 # A picture is saved per kind as <out>/motion_<kind>_<state>.png, and a line per frame says what the view did (sleep, look weight).
 
 const AnimalView := preload("res://src/client/animal_view.gd")
 
 
 func _init() -> void:
-	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "wind": 0.0}
+	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "wind": 0.0}
 
 	for a in OS.get_cmdline_user_args():
 		var key: String = a.trim_prefix("--").get_slice("=", 0)
@@ -89,6 +89,10 @@ func _strip(kind: String, opts: Dictionary) -> void:
 	view.foot_ik = bool(opts["ik"])
 	view.stalk_fx = bool(opts["stalk"])
 	view.season_coats = bool(opts["coats"])
+	view.coat_dust = bool(opts["dust"])
+	view.coat_ruffle = bool(opts["ruffle"])
+	view.young_gait = int(opts["young"]) > 0
+	view.young_age_days = float(opts["age"])
 	view.wind_now = func() -> float: return float(opts["wind"])
 	view.ground_height = func(x: float, _z: float) -> float: return 0.15 if x > 0.3 else 0.0      # --ik: a 15 cm step under the right-hand feet
 	view.conditions_now = func() -> Dictionary: return {"hour": float(opts["hour"]), "season": str(opts["season"])}
@@ -125,6 +129,10 @@ func _strip(kind: String, opts: Dictionary) -> void:
 		for i in count:
 			var at: Vector3 = Vector3(float(i % 3) * 2.5 - 2.5, max(water_d - 0.25, 0.0) if water_d > 0.0 else 0.0, float(int(i / 3.0)) * 2.5 + speed * t)
 			rows.append([1000 + i, int(number), at, PI * 0.5, int(opts["state"])])      # heading pi/2: the animal walks toward +Z
+
+		for i in int(opts["young"]):      # --young: young ones (species + 100) 1.5 m behind and beside the first animal
+			var at: Vector3 = Vector3(-2.5 + (1.2 if i % 2 == 0 else -1.2), 0.0, speed * t - 1.5 - float(i / 2.0))
+			rows.append([2000 + i, int(number) + AnimalView.YOUNG_NUM, at, PI * 0.5, int(opts["state"])])
 
 		view.on_rows(rows)
 		var dist: float = float(opts["cam"])
