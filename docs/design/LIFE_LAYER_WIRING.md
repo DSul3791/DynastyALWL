@@ -33,6 +33,9 @@ Weather step 2 (#667): moving under trees in rain, stock facing downwind in a ga
 | Signal | Server | Client handler | Flag | Proof |
 |---|---|---|---|---|
 | `footfall(kind, at, ground, speed)` | client signal; sound stage connects it by name (Kathleen #647) | `_emit_steps`, `_ground_kind`, `_puff`, `_splash`, `_print_at` | `footfall_fx`, `prints_fx` (looks); the signal itself always | m11, m12, m14 |
+| Footfall to animal sign | same signal (#647 shape) | `_sign_track` (stride gap, walk or run pattern) and `_sign_ground` from `soil_at` (sound stage soil map) | `animal_sign` | m38, m39, m40 |
+| Rest states for sign (0 feeding, 19 lying, asleep) | server states, client sleep rule | `_sign_rest`: browse, droppings, beds | `animal_sign` | in game (beds need 30 s) |
+| Rain, falling snow, lying snow | weather sounds (main): rain, kind, ground_snow | `terrain_client._animal_conditions` adds rain, snowing, ground_snow; `_fade_signs` washes, covers or melts | `animal_sign` | in game |
 | Alarm groups (`alarm_group`, ground birds across species) | #636 | none needed: each bird arrives as flee (2) and is drawn fleeing; the herd glance (`_herd_glance`) is the client's look-up-together | none | Steve's test_alarm_group; m4 for the glance |
 | `storm_ahead` (0..1) | #646 shared weather | `terrain_client._animal_conditions` reads it when the weather has it; `_tail_motion` stops the fly swish above 0.5 | none | m29 (**filled**: had no strip) |
 | Herd leader and followers | herd groups, `groups.enabled` (this branch) | none needed: positions come from the server; the client herd look (`_herd_look`) sits on top | `groups.enabled` (server, off) | test_herd_groups.gd (run sheet, after m27) |
