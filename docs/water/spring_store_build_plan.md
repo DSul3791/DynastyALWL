@@ -1,6 +1,6 @@
 # Each spring's own store, and springs in fresh_m: build plan
 
-Sonny, 8 Nov 2026. This builds additions 1 and 2 of `springs_and_drinking_water.md`. It is docs only for now. The code is a short step in R4 (`groundwater.py`), R5 (`network.py`) and R6 (`record.py`) once the ws580g pictures are in, and every run is on Dave's PC.
+Sonny, 8 Nov 2026. This builds additions 1 and 2 of `springs_and_drinking_water.md`. The code is drafted in `tools/watershed/springstore.py`, with short steps in R4 (`groundwater.py`), R5 (`network.py`) and R6 (`record.py`), on the spring store branch stacked on R5. Every run and test is on Dave's PC or David4.
 
 ## Why
 
@@ -25,7 +25,7 @@ Each part is read from R4's own solve, so there is one groundwater model:
 - **T** is the harmonic mean of the catchment's block transmissivities along the flow, because flow in series takes the harmonic mean.
 - **S_y** is the specific yield at the water table: that of the layer R4's head sits in (loose cover, or one of the near-surface zones of section 7), averaged over the catchment's blocks. The table rises and falls there, so the column's mean would overstate the store (Jamie's #713).
 
-R4 writes `gw_tau_days`, `gw_sy` and `gw_flow_path_m` at the 16 m cells where it puts the groundwater out, the same cells as `gw_discharge_m3_s`, with NaN elsewhere. Its manifest summary gives the τ quartiles by rock.
+R4 writes each store's share and τ (`gw_diffuse_share` and `gw_diffuse_tau_days`, the same for `conduit` and `matrix`, section 7), with `gw_sy`, `gw_flow_path_m` and `gw_catchment_m2`, at the 16 m cells where it puts the groundwater out, the same cells as `gw_discharge_m3_s`, with NaN elsewhere. Its manifest summary (`stores`) gives the diffuse store's τ quartiles by rock.
 
 ## 2. Specific yield by rock (Jamie's #686, the "Use" column)
 
@@ -58,13 +58,13 @@ Peat is not in the aquifer. Its water is the soil's perched store (`soils-ground
 ## 4. Spring rows (network.json)
 
 Each `springs` row keeps `pos`, `m3_s`, `rock` and `feeds_reach`, and gains:
-- `tau_days`;
-- `sy`;
-- `flow_path_m` (L);
-- `catchment_km2`;
-- `q_base_dry_m3_s`: `m3_s` × `base_dry(τ)`, the dry quarter's mean.
+- `stores`: one row per store with a share, [store, share of the recharge, τ in days, its dry flow in m³/s];
+- `q_base_dry_m3_s`: the stores' dry flows added, each `m3_s` × share × `base_dry(τ)`, the dry quarter's mean;
+- `tau_days`: the τ of the store that gives most of the dry flow (the matrix on karst);
+- `karst_share`;
+- `sy`, `flow_path_m` (L) and `catchment_km2` of the diffuse store.
 
-**In a drought** the game runs the store on: from the start of a rain-free spell, q(t) = q_base_dry × exp(−t / τ). A karst spring then fails in a week or two, while a gravel terrace spring hardly changes in a month. Steve's reader keeps the spell's start day.
+**In a drought** the game runs the stores on: from the start of a rain-free spell, each store's dry flow falls as exp(−t / its τ), and the spring gives their sum. With one store that is q_base_dry × exp(−t / τ), and a reader that keeps one store uses `tau_days`. A karst spring's conduit flow is gone in a week or two and its matrix then holds it for months, while a gravel terrace spring hardly changes in a month. Steve's reader keeps the spell's start day.
 
 ## 5. Springs in fresh_m (R6)
 
@@ -106,7 +106,7 @@ At a fixed L of 500 m, R4's present T (Gleeson's permeability over a uniform 50 
 - **The matrix** takes the other 0.45. Its τ is Rorabaugh's, with:
   - S_y 0.003 (ORNL 1994, #686);
   - L the distance to the nearest conduit, judged at 300 m;
-  - T from the matrix's own K. R4 does not hold that K yet, because its ×100 factor is the conduits. Jamie is asked for a sourced value.
+  - T from the matrix's own K over 50 m (R4's thickness, judged). R4 does not hold that K, because its ×100 factor is the conduits. Jamie's value is 1e-7 m/s (0.009 m/day), judged inside the sourced Floridan range of 1.9e-8 to 3e-5 m/s (#713). The matrix τ is then about 250 days.
   The checks are Mangin's regulation capacity, under 0.5 years for typical karst, and Fiorillo et al. (2012), 150 days to 7 years in large massifs.
 - **The cell's season shares** are the two stores' shares added. A karst spring then floods within a day of a storm and falls back within a week. After that it tails off for months, and its dry-season flow is nearly all matrix.
 
@@ -119,7 +119,7 @@ At a fixed L of 500 m, R4's present T (Gleeson's permeability over a uniform 50 
 
 The base flow index is not a separate check here, because R4's recharge split already uses it (`water_budget.bfi_by_rock`).
 
-**Still asked of Jamie:** a sourced karst matrix K, and stream density on chalk and karst.
+**Still asked of Jamie:** stream density on chalk and karst.
 
 ## 8. Test plan (unit tests; nothing run in the cloud)
 
@@ -127,14 +127,16 @@ The pure functions go in a new module, `tools/watershed/springstore.py`, which R
 
 | test | checks | fixture |
 |---|---|---|
-| `test_tight_rock_transmissivity` | One granite cell with no cover has T = soil 1 m × 0.3 + zone 1 2 m × 0.1 + zone 2 13 m × 0.01 + zone 3 85 m × 0.001 = 0.715 m²/day. Under 3 m of coarse cover the soil zone is gone and the cover's K × 3 m is added. A sandstone cell keeps Gleeson's K × (50 m − cover). | `params.json` `groundwater`; three cells |
+| `test_tight_rock_transmissivity` | One granite cell with no cover has T = soil 1 m × 0.3 + zone 1 2 m × 0.1 + zone 2 13 m × 0.01 + zone 3 85 m × 0.001 = 0.715 m²/day. Under 3 m of coarse cover the soil zone is gone and the cover's K × 3 m is added. Sandstone, chalk, limestone and loose sediment are not in the tight-rock mask, so they keep Gleeson's K × (50 m − cover). | `params.json` `groundwater`; three cells and a rock list |
 | `test_sy_at_the_table` | On tight rock, S_y at a table depth of 0.5, 2, 10, 50 and 150 m is the soil's, then zones 1, 2 and 3, and zone 3 below the stack. Under 3 m of coarse cover a table at 1 m reads 0.22. On sandstone it is the cover's, then the rock's #686 value. | the same cells, five depths |
+| `test_sy_by_rock_id` | Every rock in `groundwater.rock_class` has a specific yield; an unlisted rock stops the run. | `params.json` |
 | `test_catchments_on_a_plane` | H falls east on a 6 × 6 block grid, and the east column discharges. Each block ends at the east block of its row, at a distance of (columns to go) × the block size + half a block. | synthetic H |
 | `test_catchments_on_a_mound` | H peaks in the middle and every edge block discharges. Every block ends at an edge, none is left out, and each block's end is downhill of it. | synthetic H |
 | `test_rorabaugh_strip` | On a strip of uniform T and S_y, τ = 4 S_y L² / (π² T), with L twice the mean distance. Two halves of T₁ and T₂ in series give the harmonic mean. | one row of blocks |
 | `test_karst_two_stores` | An all-karst catchment has shares of 0.55 (conduit, 5 days) and 0.45 (matrix, Rorabaugh with S_y 0.003, L 300 m and the matrix T), and no diffuse store. A catchment with half its recharge on karst has shares 0.5, 0.275 and 0.225. | synthetic catchments with a karst mask |
-| `test_store_response_limits` | The response keeps the year's mean at 1 for every τ, so mean flows cannot change (section 6, check 3). τ near 0 returns the recharge shape's quarter means. τ of 100 years gives wet and dry within 0.5% of 1. τ of 45 days matches the old island store in `network.seasons` on the same shape. | a cosine recharge shape, 24 samples |
-| `test_bins_interpolate` | The shares from 48 log-spaced τ bins are within 0.5% of the exact response at 200 random τ between 0.1 days and 100 years. | random τ, fixed seed |
+| `test_store_response_limits` | The response keeps the year's mean at 1 for every τ, so mean flows cannot change (section 6, check 3). τ near 0 returns the recharge shape's quarter means. τ of 100 years gives wet and dry within 0.5% of 1. τ of 45 days, the old island store (`network.seasons` now calls the same function for it), matches the response worked by hand for a cosine. | a cosine recharge shape, 24 samples |
+| `test_bins_interpolate` | The shares from 48 log-spaced τ bins are within 0.005 of the exact response at 200 random τ between 0.1 days and 100 years. The shares are over the year's mean flow, so that is 0.5% of the mean flow; linear in log τ between bins 1.31 apart, the error stays under about 0.003. | random τ, fixed seed |
+| `test_cell_shares_and_spring_row` | A cell's dry share is its stores' shares times their own dry shares, added. A karst spring row lists the conduit and the matrix, takes the matrix's τ as `tau_days`, and sums their dry flows. | three synthetic cells |
 | `test_drought_recession` | q(t) = q_base_dry × exp(−t/τ) falls to 1/e after τ days and is never negative. | scalars |
 | `test_params_give_713_times` | The params give #713's table (c): tight rock at L 50 m within 2 weeks to 3 months and at L 200 m within 6 months to 2 years; a karst matrix within 3 months to 2 years; a conduit at 2 to 10 days. Nothing reads hours or millennia. | `params.json` only |
 | `test_fresh_spring_sources` | Two spring rows: one with `q_base_dry_m3_s` 2e-5 marks its nearest 8 m sample as fresh water; one with 5e-6 marks nothing; one outside the window is ignored. | a 20 × 20 sample grid |
