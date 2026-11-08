@@ -87,8 +87,8 @@ A crown snow memory of its own, beside the ground's, one value per crown kind:
 
 ## 5. Never-see checks
 
-1. Trees swaying the same in a calm and a gale. Test: `k(1) = 0`, `k(12) = 1`, `k(25) > 4`.
-2. Full green or full brown crowns on oak, beech or birch in deep winter. Test (`test_bare_winter.gd`): with the switch, the deciduous names are seasonal and the evergreens are not.
+1. Trees swaying the same in a calm and a gale. Test (`test_tree_sway.gd`): `k(1) = 0`, `k(12) = 1`, `k(25) > 4`, and every swaying material gets the same wind.
+2. Full green or full brown crowns on oak, beech or birch in deep winter. Test (`test_bare_winter.gd`): the deciduous names are seasonal and the evergreens are not.
 3. Snow on conifers through a thaw day. Test: the crown snow after 3 thaw hours is under 0.1. Snow piled thick on bare twigs: the bare broadleaf cap is 0.35.
 
 ## 6. Pictures (Dino, switch on and off)

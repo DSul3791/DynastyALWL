@@ -201,6 +201,7 @@ const WindCueScript := preload("res://src/client/wind_cue.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 var _fire_light_next_msec: int = 0
 const GameClock := preload("res://src/shared/game_clock.gd")
+const FloraView := preload("res://src/flora/flora_view.gd")
 var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
 const BreathLookScript := preload("res://src/client/breath_look.gd")
 var breath                              # BreathLook: breath puffs in the cold (art_weather_light.md 8.4)
@@ -581,6 +582,7 @@ func _process_body(delta: float) -> void:
 	_update_ground(rain, snow)
 	_update_particles(rain, snow, float(_s["wind"]))
 	breath.update(delta)
+	_update_tree_wind()
 
 
 # The water shader writes its own fog (FOG), so it is fed the environment's fog each frame: the same distance and height fog,
@@ -761,6 +763,28 @@ func _update_crown_snow(falling: float, ground: float) -> void:
 	if absf(now.x - _crown_sent.x) > 0.01 or absf(now.y - _crown_sent.y) > 0.01:
 		_crown_sent = now
 		_client.flora.set_snow_kinds(now.x, now.y)
+
+
+# Trees sway by the eased world wind (trees_weather_design.md part A), once a second. Wind in m/s = 20 x wind^1.3 (#637).
+var _tree_wind_next_msec: int = 0
+
+
+static func tree_wind_ms(wind: float) -> float:
+	return 20.0 * pow(clampf(wind, 0.0, 1.0), 1.3)
+
+
+func _update_tree_wind() -> void:
+	if _client == null or _client.flora == null:
+		return
+
+	var now_msec: int = Time.get_ticks_msec()
+
+	if now_msec < _tree_wind_next_msec:
+		return
+
+	_tree_wind_next_msec = now_msec + 1000
+	var world: Dictionary = _client.weather if _client.weather is Dictionary else {}
+	_client.flora.set_wind(tree_wind_ms(float(_s["wind"])), float(world.get("wind_dir", 0.0)))
 
 
 func _update_particles(rain: float, snow: float, wind: float) -> void:
