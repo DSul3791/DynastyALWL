@@ -1,6 +1,6 @@
 # PC session run sheet: the animal life layer (MikeW, 8 Nov 2026)
 
-For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 92 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 48 motion strips about 37 (Godot starts about 25 s per line; m44 takes 2 minutes), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m48 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
+For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 92 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 49 motion strips about 38 (Godot starts about 25 s per line; m44 takes 2 minutes), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m49 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
 
 ```bash
 cd /c/GodotProjects/DynastyALWL_gate
@@ -38,8 +38,8 @@ grep -E "^==|^role|NO CLIP|flat" $O/still.log
 ```
 Proves: dog sit (18) and lie (19), alligator swim, black bear warn under the jaw-pop pose, rabbit and kangaroo hop clips. Pass: no `NO CLIP` for sit, lie or swim.
 
-## 4. Moving frames (about 37 min: 48 lines, about 45 s each)
-One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m48 are the newer flags and follow in the same sitting.
+## 4. Moving frames (about 38 min: 49 lines, about 45 s each)
+One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m49 are the newer flags and follow in the same sitting.
 ```bash
 M="timeout 300 $GE --path . --script res://tools/creature_motion.gd --"
 $M --kinds=dog --state=0 --out=$O/motion > $O/m1.log 2>&1   # m1 [none] look: dog tail and chest. PASS: tail swings between frames, chest rises. FAIL: anything else, or SCRIPT ERROR in the log
@@ -90,6 +90,7 @@ $M --kinds=deer --state=0 --speed=1.5 --hit=hip --frames=8 --every=0.25 --out=$O
 $M --kinds=deer,boar --state=0 --hit=head --frames=6 --every=0.1 --out=$O/motion_hit_head > $O/m46.log 2>&1   # m46 [hunt_feedback] look: the first animal at 2 s. PASS: its head and front toss up and back. FAIL: anything else, or SCRIPT ERROR in the log
 $M --kinds=deer --state=0 --hit=chest --kill --frames=6 --every=0.3 --out=$O/motion_kill > $O/m47.log 2>&1   # m47 [hunt_feedback] look: the deer after 3 s. PASS: it goes down onto its side and lies still, not vanishing. FAIL: anything else, or SCRIPT ERROR in the log
 $M --kinds=deer,horse --state=20 --cover --frames=4 --every=0.5 --out=$O/motion_cover > $O/m48.log 2>&1   # m48 [cover_still] look: both animals. PASS: heads low, ears back, barely moving between frames. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=crow --state=15 --birdrig --posed --frames=8 --every=0.06 --cam=3 --out=$O/motion_posed_wings > $O/m49.log 2>&1   # m49 [bird_rig] look: the crow's wings. PASS: both wings beat up and down together between frames, mirrored, and `posed flight: wing bones` names six bones in m49.log. FAIL: one wing only, wings through the body, or `no wing bones found`
 grep -h "saved\|SCRIPT ERROR" $O/m*.log
 ```
 
@@ -160,3 +161,4 @@ its last commit and lists the earlier PR as its base. No history is rewritten.
 10. **Life layer G, animal sign:** `animal_sign` (tracks on soft ground by stride and gait, droppings, browse and beds, a 400-decal pool with Jamie's soak lifetimes; m38 to m40). Herd groups is #666 on Steve's stack, not in this chain; the old herd groups commit 1528fa6f9 is undone on this branch (consolidation), so no client PR carries server code.
 11. **Life layer H, weather looks:** `weather_looks` (shake-off after rain, tail to the wind in gales, cold huddle with heads low, steam breath below 5 C, snow on backs; m41 to m44) and `cover_still` (state 20 in cover held still; m48).
 12. **Life layer I, hunting feedback:** `hunt_feedback` (hit reactions by zone, a dragged hind leg after a hip hit, a wounded limp past half health, a death fall along the slope; m45 to m47).
+13. **Life layer J, posed birds:** `bird_rig` (wingbeat, glide hold, perch fold and landing flare from the wing bones, for the Meshy eagle, raven, owl and bat; m49 with the crow as a stand-in).

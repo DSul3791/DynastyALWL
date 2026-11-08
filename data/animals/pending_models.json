@@ -60,7 +60,20 @@
 				0.0,
 				0.0,
 				0.0
-			]
+			],
+			"posed_flight": true,
+			"wing_axis": "z",
+			"wing_swing_deg": 35,
+			"glide_deg": 8,
+			"fold_deg": 70,
+			"wing_bones": {
+				"l_up": "<left upper wing>",
+				"l_fore": "<left fore wing>",
+				"l_hand": "<left hand>",
+				"r_up": "<right upper wing>",
+				"r_fore": "<right fore wing>",
+				"r_hand": "<right hand>"
+			}
 		},
 		"raven": {
 			"scene": "res://assets/animals/raven/<file>.fbx",
@@ -123,7 +136,20 @@
 				0.0,
 				0.0,
 				0.0
-			]
+			],
+			"posed_flight": true,
+			"wing_axis": "z",
+			"wing_swing_deg": 45,
+			"glide_deg": 10,
+			"fold_deg": 65,
+			"wing_bones": {
+				"l_up": "<left upper wing>",
+				"l_fore": "<left fore wing>",
+				"l_hand": "<left hand>",
+				"r_up": "<right upper wing>",
+				"r_fore": "<right fore wing>",
+				"r_hand": "<right hand>"
+			}
 		},
 		"owl": {
 			"scene": "res://assets/animals/owl/<file>.fbx",
@@ -182,7 +208,20 @@
 				0.0,
 				0.0,
 				0.0
-			]
+			],
+			"posed_flight": true,
+			"wing_axis": "z",
+			"wing_swing_deg": 40,
+			"glide_deg": 12,
+			"fold_deg": 70,
+			"wing_bones": {
+				"l_up": "<left upper wing>",
+				"l_fore": "<left fore wing>",
+				"l_hand": "<left hand>",
+				"r_up": "<right upper wing>",
+				"r_fore": "<right fore wing>",
+				"r_hand": "<right hand>"
+			}
 		},
 		"bat": {
 			"scene": "res://assets/animals/bat/<file>.fbx",
@@ -240,7 +279,20 @@
 					}
 				}
 			},
-			"notes": "BAT_RIG.md: a colony is one record (flock); by day hanging under a cave roof (roost_flip turns a wings-folded rest pose head down if there is no roost clip), at dusk out over forest and water; swarm jitter per bat (flag swarm_fx). No eye shine."
+			"notes": "BAT_RIG.md: a colony is one record (flock); by day hanging under a cave roof (roost_flip turns a wings-folded rest pose head down if there is no roost clip), at dusk out over forest and water; swarm jitter per bat (flag swarm_fx). No eye shine.",
+			"posed_flight": true,
+			"wing_axis": "z",
+			"wing_swing_deg": 60,
+			"glide_deg": 5,
+			"fold_deg": 85,
+			"wing_bones": {
+				"l_up": "<left upper wing>",
+				"l_fore": "<left fore wing>",
+				"l_hand": "<left hand>",
+				"r_up": "<right upper wing>",
+				"r_fore": "<right fore wing>",
+				"r_hand": "<right hand>"
+			}
 		},
 		"whale": {
 			"scene": "res://assets/animals/whale/<file>.fbx",

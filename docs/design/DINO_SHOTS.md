@@ -31,6 +31,10 @@ camera and focus move along +Z with the animals. Pictures are 480 by 480 px, one
 | Hit in the head | 12:00 | clear | deer, standing | `$M --kinds=deer --state=0 --hit=head --cam=4 --frames=6 --every=0.1 --out=$O/hit_head` | the head and front tossed up at 2 s |
 | The death fall | 12:00 | clear | deer | `$M --kinds=deer --state=0 --hit=chest --kill --cam=6 --frames=6 --every=0.3 --out=$O/fall` | down onto its side from 3 s, lying still |
 | Sheltering in cover | 12:00 | (state 20 sent) | deer, horse | `$M --kinds=deer,horse --state=20 --cover --cam=6 --frames=4 --every=0.5 --out=$O/cover` | heads low, ears back, barely moving |
+| Posed wings, flapping (stand-in) | 12:00 | clear | crow, its wings posed from its bones | `$M --kinds=crow --state=15 --birdrig --posed --cam=3 --frames=8 --every=0.06 --out=$O/wings_flap` | both wings up and down, mirrored, over 8 frames at 0.06 s (about one beat at 4 Hz); camera (3, 1.8, 0), pitch -21.8 |
+| Posed wings, gliding (stand-in) | 12:00 | clear | crow | `$M --kinds=crow --state=17 --birdrig --posed --cam=3 --frames=2 --out=$O/wings_glide` | wings held out level, hands swept back; camera (3, 1.8, 0), pitch -21.8 |
+| Posed wings, perched (stand-in) | 12:00 | clear | crow | `$M --kinds=crow --state=0 --birdrig --posed --cam=3 --frames=2 --out=$O/wings_perch` | wings folded to the body |
+| Posed wings, the Meshy birds | 12:00 | clear | golden_eagle, raven, owl, bat (once Dave's models and rows are in) | `$M --kinds=raven --state=15 --birdrig --cam=4 --frames=8 --every=0.07 --out=$O/wings_raven` (the same for each) | the same three checks per bird; a wrong axis or sign shows at once (row `wing_axis`, `wing_swing_deg`); camera (4, 1.8, 0), pitch -16.7 |
 
 All of them are also in the run sheet (m19 to m48); these are the ones to keep as reference pictures. Send the strips to MikeW;
 nothing else is needed from the sitting for them.

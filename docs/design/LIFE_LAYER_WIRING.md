@@ -51,6 +51,7 @@ Weather step 2 (#667): moving under trees in rain, stock facing downwind in a ga
 | Wounded health (0 to 1 by 0.1, while hurt; a number after the five fields) | Steve's hunt fields (one protocol bump) | `on_rows` reads extra fields by type: `health`, `wounded` | `hunt_feedback` | waits for the server |
 | Hit event (animal id, zone) to players within 60 m | Steve's hunt fields, protocol `HIT_EVENT_PROTOCOL` | `on_hit_event`, connected when `net` has `animal_hit_received` | `hunt_feedback` | waits for the server |
 | State 20 in cover | Steve #646 s.11, #701 | `_cover_still`: idle at half speed, slow breath, no glances, `wet_hold` | `cover_still` | m48 |
+| States 15, 17, 18, 0 and landing for posed birds | server flight (#653, #661), states as drawn | `_posed_flight`, `_wing_poses` (bone_offsets state poses 15, 17, 18, -20), `flare_t` | `bird_rig` | m49 |
 | Kill switch | command line `--life-layer-off` | `life_layer_all_off`, `_all_flags_off`: every flag off and the always-on looks skipped | the switch itself | gate (PERF_BUDGET.md) |
 | Rain cover, conifers, shade, gale drift (Steve #667, #671) | server positions and headings | none needed: drawn as sent; state 20 in rain as the hunch | none | m26 |
 | Ground wet, season, hour | weather sounds, ambient conditions (main) | `conditions_now`: sleep, prints, puddle splashes, coat season | per look | m6, m12, m19, m20 |

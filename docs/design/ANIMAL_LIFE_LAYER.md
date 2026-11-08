@@ -44,6 +44,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Animal sign | tracks on soft ground by stride and gait, browse, droppings, beds; 400-decal pool with soak lifetimes | `stride_m`, animal_sign.json groups | `animal_sign` (**off**) | ANIMAL_SIGN.md |
 | Weather looks | shake-off after rain, tail to the wind, cold huddle, steam breath, snow on backs | none | `weather_looks` (**off**) | ANIMAL_WEATHER_LOOKS.md |
 | Hunting feedback | hit reactions by zone, hip drag, wounded limp, death fall on the slope | none | `hunt_feedback` (**off**) | HUNT_FEEDBACK.md |
+| Posed birds | wingbeat, glide hold, perch fold, landing flare from the wing bones (Meshy birds) | `posed_flight`, `wing_bones`, `wing_axis`, `wing_swing_deg`, `glide_deg`, `fold_deg` | `bird_rig` (**off**) | BIRD_FLIGHT.md part 3 |
 | Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |
