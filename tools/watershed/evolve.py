@@ -1,7 +1,9 @@
 """Stage B of the watershed rebuild (docs/water/watershed_rebuild_design.md): landscape evolution that makes the final ground.
 
 Usage (on Dave's PC, never in the cloud):
-  python tools/watershed/evolve.py INPUTS_DIR GEOLOGY_DIR OUT_DIR [params.json] [--calibrate=PREV_RUN_DIR]
+  python tools/watershed/evolve.py INPUTS_DIR GEOLOGY_DIR OUT_DIR [params.json] [--calibrate=PREV_RUN_DIR] [--set.BLOCK.KEY=VALUE ...]
+--set.BLOCK.KEY=VALUE: one parameter changed for this run only (VALUE read as JSON, e.g. --set.evolve.D=0.01); the manifest
+records the parameters as run, so a variant needs no edited params file.
 --calibrate: the uplift is calibrated from a previous run's result so the eroded island keeps the landform's heights at the
 scale of the massifs (see calibrated_uplift).
 
@@ -292,6 +294,16 @@ def main():
     opts = dict(a[2:].split('=', 1) for a in sys.argv[1:] if a.startswith('--') and '=' in a)
     inputs_dir, geology_dir, out_dir = args[0], args[1], args[2]
     P = json.load(open(args[3] if len(args) > 3 else os.path.join(HERE, 'params.json')))
+    for key, val in opts.items():                          # --set.BLOCK.KEY=VALUE overrides, recorded in the manifest's params
+        if key.startswith('set.'):
+            *path, last = key[4:].split('.')
+            node = P
+            for part in path:
+                node = node[part]
+            if last not in node:
+                raise SystemExit(f'evolve: --{key}: no such parameter')
+            node[last] = json.loads(val)
+            print(f'parameter {key[4:]} = {node[last]!r} for this run', flush=True)
     E = P['evolve']
     os.makedirs(out_dir, exist_ok=True)
     data = np.load(f'{inputs_dir}/inputs.npz')
@@ -349,6 +361,9 @@ def main():
     frame = np.zeros((n, n), bool); frame[0, :] = frame[-1, :] = frame[:, 0] = frame[:, -1] = True
     fixed = (sea == 1) | frame.ravel()                     # creep leaves the sea and the model frame as they are
     track = []                                             # (step, summit, mean land height): is the ground still rising?
+    # Which process lowers the ground: the river solve (with the slides of the slope limit) or creep, summed over the run.
+    by_river = np.zeros(n * n)
+    by_creep = np.zeros(n * n)
     def write(od, years_done):
         """All outputs for the ground as it stands: ground.npz, the summary (evolve_manifest.json) and evolve.png."""
         os.makedirs(od, exist_ok=True)
@@ -416,6 +431,21 @@ def main():
         def _relief(z):
             r = (maximum_filter(z, win) - minimum_filter(z, win))[land & (start > 600.0)]
             return dict(p50=float(np.percentile(r, 50)), p90=float(np.percentile(r, 90))) if r.size else {}
+        # The landform's peaks (highest point within 1 km, above 600 m): is each still standing? Its loss is the landform height
+        # less the highest ground now within 200 m of it (a peak may shift a cell or two as its faces wear). The summit rule:
+        # erosion carves valleys but does not take the peaks below the landform's heights.
+        top = (start == maximum_filter(start, int(round(1000.0 / dx)) | 1)) & land & (start > 600.0)
+        pk = np.flatnonzero(top.ravel())
+        loss = start.ravel()[pk] - maximum_filter(hh, int(round(200.0 / dx)) | 1).ravel()[pk]
+        rid2 = rid.reshape(n, n).ravel()
+        near_pk = maximum_filter(top, int(round(200.0 / dx)) | 1).ravel() & (sea == 0)
+        peaks = dict(count=int(pk.size), lost_over_25m=int((loss > 25.0).sum()), lost_over_100m=int((loss > 100.0).sum()),
+                     mean_loss_m=float(loss.mean()) if pk.size else 0.0, worst_loss_m=float(loss.max()) if pk.size else 0.0,
+                     highest_ten=[dict(x=ox + float(q % n) * dx, z=oz + float(q // n) * dx, landform_m=float(start.ravel()[q]),
+                                       loss_m=float(lq), rock=g['names'][int(rid2[q])])
+                                  for q, lq in sorted(zip(pk, loss), key=lambda t: -start.ravel()[t[0]])[:10]])
+        lowering = {name: dict(river_and_slides_m=float(by_river[msk].mean()), creep_m=float(by_creep[msk].mean()))
+                    for name, msk in (('near_landform_peaks', near_pk), ('all_land', sea == 0)) if msk.any()}
         summary = dict(seconds=time.time() - t0, steps=len(track), years=years_done, summit_m=float(hh.max()), landform_summit_m=float(start.max()),
                        uplift_calibration=calib,
                        massif_scale_height_mismatch_m=dict(mean=float(mismatch.mean()), p5=float(np.percentile(mismatch, 5)),
@@ -426,6 +456,7 @@ def main():
                        land_height_percentiles_m={str(q): float(np.percentile(hh[land], q)) for q in pct},
                        landform_height_percentiles_m={str(q): float(np.percentile(start[land], q)) for q in pct},
                        local_relief_2km_on_high_ground_m=_relief(hh), landform_local_relief_2km_on_high_ground_m=_relief(start),
+                       landform_peaks=peaks, height_change_by_process=lowering,
                        land_km2=float(land.sum() * cell / 1e6),
                        median_slope_deg=float(np.median(slope[land])), share_under_10deg_below_250m=float((slope[land & (hh < 250)] < 10).mean()),
                        closed_hollow_cells=int((pits[land] > 0.01).sum()), deepest_hollow_m=float(pits[land].max()), hollows=hollows,
@@ -460,7 +491,10 @@ def main():
         ery = ery_fn(h)
         h0 = h.copy()
         flux = _fluvial(h, h0, sea, order, rec, n, dx, E['dt'], E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'], sc)
+        h1 = h.copy()
         _diffuse(h, fixed, dx, E['dt'], E['D'], ery)
+        by_river += h1 - (h0 + U * E['dt'])
+        by_creep += h - h1
         change = h - (h0 + U * E['dt'])
         deposit = np.maximum(deposit + change, 0.0)          # sediment lying on bedrock: grows where it lands, wears where it erodes
         ery_fn.update(change)
