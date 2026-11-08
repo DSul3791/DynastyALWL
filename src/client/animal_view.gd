@@ -443,6 +443,7 @@ func _process_body(delta: float) -> void:
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
 		if bool(b.get("model", false)):
 			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
+			_wet_look(node, b, delta)
 			if node.has_meta("flock_birds"):
 				for bird in node.get_meta("flock_birds"):
 					_animate_model(bird, b, state, model_speed, delta)
@@ -544,6 +545,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.set_meta("model", true)
 	root.set_meta("model_row", row)
+	root.set_meta("meshes", meshes)
 
 	if own_young:
 		root.set_meta("young_model", true)
@@ -771,6 +773,9 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 						mi.set_surface_override_material(surface, mat)
+						var all_mats: Array = mi.get_meta("coat_mats", [])
+						all_mats.append(mat)
+						mi.set_meta("coat_mats", all_mats)
 
 					# One line per surface, so a part that takes the wrong texture (a dark band, dark eyes) shows which name it matched.
 					_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] takes %s" % [surface, str(mi.name), name_text.strip_edges(), str(entry.get("albedo", "")).get_file()])
@@ -1240,6 +1245,40 @@ func _track_at(anim: Animation, t: int, kind: int, time: float) -> Variant:
 	if kind == Animation.TYPE_POSITION_3D:
 		return anim.position_track_interpolate(t, time)
 	return anim.scale_track_interpolate(t, time)
+
+
+# The wet look (docs/design/EYE_SHINE_AND_WET.md section 2, Kathleen's art_animals.md 7): an animal in water goes darker and
+# shinier, and dries over about three minutes once out. A first version wets the whole coat (the water line comes with a shader).
+# Birds shed water (rows with "wet_shed": true, and every model flock) and stay dry. wet_dark and wet_rough per row (0.35, 0.45).
+const DRY_S := 180.0
+
+func _wet_look(node: Node3D, b: Dictionary, delta: float) -> void:
+	var row: Dictionary = node.get_meta("model_row", {})
+
+	if bool(row.get("wet_shed", false)) or row.has("flock_of") or not water_level.is_valid() or not node.is_inside_tree():
+		return
+
+	var wet: float = float(b.get("wet", 0.0))
+	var level: float = float(water_level.call(node.global_position.x, node.global_position.z))
+	var in_water: bool = not is_nan(level) and node.global_position.y < level - 0.02
+	var was: float = wet
+	wet = 1.0 if in_water else maxf(0.0, wet - delta / DRY_S)
+	b["wet"] = wet
+
+	if absf(wet - was) < 0.002 and not (in_water and was < 1.0):
+		return      # unchanged: leave the materials alone
+
+	var dark: float = float(row.get("wet_dark", 0.35))
+	var rough: float = float(row.get("wet_rough", 0.45))
+
+	for mi in node.get_meta("meshes", []):
+		for mat in (mi as MeshInstance3D).get_meta("coat_mats", []):
+			var m: StandardMaterial3D = mat
+			if not m.has_meta("dry_rough"):
+				m.set_meta("dry_rough", m.roughness)
+
+			m.albedo_color = Color(1.0, 1.0, 1.0).lerp(Color(1.0 - dark, 1.0 - dark, 1.0 - dark), wet)
+			m.roughness = lerpf(float(m.get_meta("dry_rough")), rough, wet)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
