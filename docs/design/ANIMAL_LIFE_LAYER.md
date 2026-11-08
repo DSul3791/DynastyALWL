@@ -36,6 +36,9 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Herd groups (server) | one leader drifts (into the wind for deer, with a storm for cattle), the rest keep places, closer in rain and wind; fan out on alarm, regroup once safe | `group_drift`, `group_spacing_m` | animals.json `groups.enabled` (**off**) | HERD_GROUPS.md |
 | Bird flight part 2 | state 17 glide, bank into turns, raven roll event (Steve #653) | `flight` | `flight_bank` (**off**) | BIRD_FLIGHT.md part 2 |
 | Look at the foe | a warning animal looks at the dog it warns (row field 6, Steve #659) | none | `look_at_foe` (**off**) | LIFE_LAYER_WIRING.md |
+| New models (Meshy) | row templates for eagle, raven, owl, bat, whale, dolphin; 10-minute import checklist | pending_models.json | none | NEW_MODEL_IMPORT.md |
+| Bat colony | boils in flight, hangs head down at the roost | `swarm`, `roost_flip` | `swarm_fx` (**off**) | SEA_MAMMALS.md, BAT_RIG.md |
+| Whales and dolphins | blow spout at the surface; dolphins porpoise on the hop arc | `sea`, `hop` | `sea_life` (**off**) | SEA_MAMMALS.md |
 | Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |

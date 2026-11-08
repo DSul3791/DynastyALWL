@@ -49,6 +49,8 @@ var idle_first_s: float = -1.0     # tools only: the first idle comes after this
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
+var swarm_fx: bool = false        # bat colonies boil in flight and hang head down at the roost (BAT_RIG.md, NEW_MODEL_IMPORT.md; off until the model and PC check)
+var sea_life: bool = false        # whales and dolphins blow at the surface (SEA_MAMMALS.md; off until the models and PC check)
 var young_follow: bool = false    # young look to their mother and nurse at her flank now and then (YOUNG_ANIMALS.md part 2; off until the PC check)
 var young_gait: bool = false      # young drawn at their species' size, quick short steps, wobbly when newborn (YOUNG_ANIMALS.md; off until the PC check)
 var coat_dust: bool = false       # coats dusty after a roll, washed by water and rain (COAT_SHADER.md section 4; off until the PC check)
@@ -523,6 +525,9 @@ func _process_body(delta: float) -> void:
 			if young_follow and bool(b.get("young", false)):
 				_young_follow(node, b, state, model_speed, delta)
 
+			if sea_life and _row_of(node).has("sea"):
+				_sea_blow(node, b, delta)
+
 			if season_coats or coat_dust or coat_ruffle:
 				_coat_tick(node, b, state, delta)
 
@@ -551,6 +556,9 @@ func _process_body(delta: float) -> void:
 
 				posed.pose_weight = move_toward(float(posed.pose_weight), 1.0 if posed.poses.has(pose_key) else 0.0, delta / (0.25 if pose_key != -1 else 1.5))
 			if node.has_meta("flock_birds"):
+				if swarm_fx and bool(_row_of(node).get("swarm", false)):
+					_swarm(node, state)
+
 				for bird in node.get_meta("flock_birds"):
 					_animate_model(bird, b, state, model_speed, delta)
 			else:
@@ -2712,6 +2720,89 @@ func _young_follow(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 	elif absf(rig.position.x) + absf(rig.position.z) > 0.01 and not bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)):
 		rig.position.x = lerpf(rig.position.x, 0.0, clampf(delta, 0.0, 1.0))      # back to its own place (herd rows ease it themselves)
 		rig.position.z = lerpf(rig.position.z, 0.0, clampf(delta, 0.0, 1.0))
+
+
+# The model row of an animal, or of a model flock's first bird (the flock's own node carries none).
+func _row_of(node: Node3D) -> Dictionary:
+	if node.has_meta("model_row"):
+		return node.get_meta("model_row")
+
+	var birds: Array = node.get_meta("flock_birds", [])
+	return (birds[0] as Node3D).get_meta("model_row", {}) if not birds.is_empty() else {}
+
+# A bat colony (BAT_RIG.md 3, row "swarm"): in the air every bat wanders round its place in the colony on its own slow loops, so the
+# swarm boils instead of moving as a plate; at rest (state 0) with "roost_flip" each hangs head down from the roof point (the bird's
+# origin is at its feet, so a half turn about its side puts the body below the feet). Positions are local to the colony's Rig.
+func _swarm(node: Node3D, state: int) -> void:
+	var row: Dictionary = _row_of(node)
+	var spread: float = float(row.get("spread_m", 1.5))
+	var flying: bool = state in AIR_STATES
+	var k: int = 0
+
+	for bird in node.get_meta("flock_birds"):
+		var b3: Node3D = bird
+		k += 1
+
+		if not b3.has_meta("swarm_home"):
+			b3.set_meta("swarm_home", b3.position)
+
+		var home: Vector3 = b3.get_meta("swarm_home")
+		var ph: float = float(k) * 1.618
+
+		if flying:
+			b3.position = home + Vector3(sin(_t * 1.7 + ph), 0.5 * sin(_t * 2.3 + ph * 2.0), cos(_t * 1.3 + ph * 3.0)) * spread * 0.8
+			b3.rotation.z = 0.0
+		else:
+			b3.position = home
+			b3.rotation.z = PI if bool(row.get("roost_flip", false)) else 0.0
+
+
+# A whale or dolphin at the surface (SEA_MAMMALS.md, row "sea"): every blow_every_s it blows, a white spout spout_m high, while it is
+# within 1.5 m below the water's surface. Breach, dive and leap clips wait for the server's sea events.
+func _sea_blow(node: Node3D, b: Dictionary, delta: float) -> void:
+	if not water_level.is_valid() or not node.is_inside_tree():
+		return
+
+	var sea: Dictionary = _row_of(node)["sea"]
+	var span: Array = sea.get("blow_every_s", [20.0, 60.0])
+	b["blow_t"] = float(b.get("blow_t", randf_range(2.0, float(span[1])))) - delta      # luck-exempt: when it next blows (client look)
+
+	if float(b["blow_t"]) > 0.0:
+		return
+
+	b["blow_t"] = randf_range(float(span[0]), float(span[1]))      # luck-exempt: as above
+	var level: float = float(water_level.call(node.global_position.x, node.global_position.z))
+
+	if is_nan(level) or level - node.global_position.y > 1.5:
+		return
+
+	var high: float = float(sea.get("spout_m", 3.0))
+	var spout: CPUParticles3D = CPUParticles3D.new()
+	spout.one_shot = true
+	spout.emitting = false
+	spout.amount = 40
+	spout.lifetime = 1.6
+	spout.explosiveness = 0.6
+	spout.direction = Vector3.UP
+	spout.spread = 8.0
+	spout.initial_velocity_min = sqrt(2.0 * 9.8 * high) * 0.8
+	spout.initial_velocity_max = sqrt(2.0 * 9.8 * high)
+	spout.gravity = Vector3(0.0, -9.8, 0.0)
+	spout.scale_amount_min = 0.5
+	spout.scale_amount_max = 1.5
+	var mesh: SphereMesh = SphereMesh.new()
+	mesh.radius = 0.08 + high * 0.02
+	mesh.height = mesh.radius * 2.0
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.92, 0.95, 1.0, 0.45)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mesh.material = mat
+	spout.mesh = mesh
+	add_child(spout)
+	spout.global_position = Vector3(node.global_position.x, level + 0.1, node.global_position.z)
+	spout.emitting = true
+	get_tree().create_timer(spout.lifetime + 0.5).timeout.connect(spout.queue_free)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
