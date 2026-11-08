@@ -1342,7 +1342,7 @@ const CAVE_ROOF_M := 2.0   # ground at least this far over a player's feet for a
 
 # Whether a point is inside a cave with rock over it (tile_terrain_data.in_cave; Jamie's caves page, #664). A tile not loaded yet: no.
 func _in_cave(point: Vector3) -> bool:
-	if not generator.tile_cached(point.x, point.z):
+	if generator == null or not generator.tile_cached(point.x, point.z):   # no generator yet (a test that sets only the flora store)
 		return false
 
 	var tile_data = generator.get_tile(generator.tile_of(point.x, point.z))
