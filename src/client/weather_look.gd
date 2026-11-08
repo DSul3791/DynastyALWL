@@ -914,7 +914,17 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 		_update_rain_look(eye, hard, float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0)
 		_update_splash(rain if _rain.emitting else 0.0, open_sky)
 		var sun_now: float = clampf(1.0 - float(_s["cloud"]) * 1.1, 0.0, 1.0) * smoothstep(0.0, 0.2, day.elevation)
+		if RainDripsScript.canopy_drip_on:
+			var stands: Dictionary = _client.sound.treewind._density if _client.sound != null and _client.sound.get("treewind") != null else {}
+			var conifer: float = float(stands.get("conifer", 0.0))
+			var broad: float = float(stands.get("broadleaf", 0.0))
+			drips.conifer_share = conifer / (conifer + broad) if conifer + broad > 0.01 else 0.0
+			drips.winter = _client.flora != null and str(_client.flora.season) == "winter"
+
 		drips.update(get_process_delta_time(), rain, wind, sun_now, eye, canopy, Callable(_client, "_ground_below"), under or sheltered)
+
+		if RainDripsScript.canopy_drip_on and _client.sound != null and _client.sound.weather != null:
+			_client.sound.weather.canopy_drip = drips.store   # the drip sound after the rain (canopy_drip_design.md)
 	elif _rain.emitting:
 		(_rain.process_material as ParticleProcessMaterial).direction = Vector3(tilt, -1.0, tilt * 0.4).normalized()
 

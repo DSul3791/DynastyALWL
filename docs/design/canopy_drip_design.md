@@ -42,7 +42,7 @@ One switch, `--canopy-drip`, on top of `--rain-look`. It stays off until Dino's 
 1. A two-minute shower dripping as long as a day of rain: after 2 game minutes of rain 0.3 (about 2.5 mm/h) the store is under 0.15 mm, so it is dry within about 4 minutes.
 2. A conifer and a broadleaf dripping the same: full stores drip about 56 and 32 game minutes on a still grey day.
 3. Drips on in a sunny breeze an hour later: with sun 1 and wind 0.5 the conifer's store is gone within 15 game minutes.
-4. A silent forest just after the rain: a drip strength over 0.05 lets the drip sound play with rain 0.
+4. A silent forest just after the rain: a drip strength over 0.05 lets the drip sound play with rain 0 (a listen: the drip player needs the sound stage).
 
 ## 4. Pictures and listen
 

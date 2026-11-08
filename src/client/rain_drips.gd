@@ -24,7 +24,22 @@ const GRAVITY := 9.8
 const DROP_LENGTH_M := 0.14
 const DROP_HALF_WIDTH_M := 0.004
 
-var store: float = 0.0                    # 0 dry crowns .. 1 full (for checks)
+var store: float = 0.0                    # 0 dry crowns .. 1 full (for checks); with --canopy-drip the drip strength min(store_mm / 1.5, 1)
+# Canopy drip by rain amount and tree kind (--canopy-drip, docs/design/canopy_drip_design.md, Jamie #675): the store is mm of water,
+# capped by the trees around (conifers 3 mm, broadleaves 1.5, bare winter broadleaves 0.5), filled at the rain's own rate and emptied
+# at (0.04 + 0.01 x mm) mm a game minute, faster in sun and wind: a full conifer drips about 56 game minutes, a light shower 17.
+static var canopy_drip_on: bool = AppConfig.has_flag("canopy-drip")
+const CAP_CONIFER_MM := 3.0
+const CAP_BROAD_MM := 1.5
+const CAP_BARE_MM := 0.5
+const DRAIN_MM_MIN := 0.04
+const DRAIN_PER_MM_MIN := 0.01
+const STRENGTH_MM := 1.5
+const RAIN_MM_H := 50.0                   # rain 0..1 as 50 x rain^2.5 mm/h (as puddles.gd)
+const RAIN_MM_POWER := 2.5
+var store_mm: float = 0.0
+var conifer_share: float = 0.0            # set by weather_look from tree_wind's stand densities
+var winter: bool = false
 var drops_live: int = 0                   # for checks
 var _root: MultiMeshInstance3D
 var _multimesh: MultiMesh
@@ -45,6 +60,29 @@ static func store_step(now: float, hours: float, rain: float, wind: float, sun: 
 	var half: float = HALF_H * (1.0 - 0.5 * clampf(sun, 0.0, 1.0)) / (1.0 + 2.0 * clampf(wind, 0.0, 1.0))
 	var left: float = now * pow(0.5, hours / maxf(half, 0.001))
 	return left if left > 0.01 else 0.0
+
+
+# The crowns' water capacity in mm for this mix of trees.
+static func cap_mm(conifer: float, is_winter: bool) -> float:
+	var c: float = clampf(conifer, 0.0, 1.0)
+	return CAP_CONIFER_MM * c + (CAP_BARE_MM if is_winter else CAP_BROAD_MM) * (1.0 - c)
+
+
+# The store in mm after `hours` of game time (--canopy-drip). Rain over 0.05 fills it at its own rate up to the cap; after the rain it
+# empties as dS/dt = -(a + b S) per game minute, a closed form so a long step is exact.
+static func store_mm_step(now_mm: float, hours: float, rain: float, wind: float, sun: float, cap: float) -> float:
+	if rain > 0.05:
+		return minf(now_mm + RAIN_MM_H * pow(clampf(rain, 0.0, 1.0), RAIN_MM_POWER) * hours, cap)
+
+	var speed: float = (1.0 + 2.0 * clampf(wind, 0.0, 1.0)) * (1.0 + clampf(sun, 0.0, 1.0))
+	var a: float = DRAIN_MM_MIN * speed
+	var b: float = DRAIN_PER_MM_MIN * speed
+	var left: float = (minf(now_mm, cap) + a / b) * exp(-b * hours * 60.0) - a / b
+	return maxf(left, 0.0)
+
+
+static func drip_strength(mm: float) -> float:
+	return minf(mm / STRENGTH_MM, 1.0)
 
 
 func setup(parent: Node3D, material: Material) -> void:
@@ -69,7 +107,11 @@ func set_quality(quality: int) -> void:
 
 # Every frame: the rain, wind and sun now (0..1), the eye, the canopy map (cover_at) and the ground below a point (NAN when none).
 func update(delta: float, rain: float, wind: float, sun: float, eye: Vector3, canopy, ground_below: Callable, sheltered: bool) -> void:
-	store = store_step(store, delta * GameClock.RATIO / 3600.0, rain, wind, sun)
+	if canopy_drip_on:
+		store_mm = store_mm_step(store_mm, delta * GameClock.RATIO / 3600.0, rain, wind, sun, cap_mm(conifer_share, winter))
+		store = drip_strength(store_mm)
+	else:
+		store = store_step(store, delta * GameClock.RATIO / 3600.0, rain, wind, sun)
 
 	if _root == null:
 		return
