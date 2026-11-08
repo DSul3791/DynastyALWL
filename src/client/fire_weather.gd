@@ -17,16 +17,17 @@ const HALO_SNOW := 0.6        # heavy snow's share of the halo, for the sphere o
 
 static var _halo_mesh: QuadMesh
 static var _halo_material: StandardMaterial3D
+static var _lights: Array = []          # every registered fire light: kept here as well as in the group, so a light not yet in a tree is still moved
 
 
 # How far a fire light reaches, as a share of its base range.
-static func reach(veil: float, heavy_snow: float, ground_snow: float) -> float:
-	var r: float = (1.0 - FOG_CUT * clampf(veil, 0.0, 1.0)) * (1.0 - SNOW_FALL_CUT * clampf(heavy_snow, 0.0, 1.0)) * (1.0 + SNOW_LYING_GAIN * clampf(ground_snow, 0.0, 1.0))
+static func reach(veil: float, heavy: float, ground_snow: float) -> float:
+	var r: float = (1.0 - FOG_CUT * clampf(veil, 0.0, 1.0)) * (1.0 - SNOW_FALL_CUT * clampf(heavy, 0.0, 1.0)) * (1.0 + SNOW_LYING_GAIN * clampf(ground_snow, 0.0, 1.0))
 	return clampf(r, REACH_MIN, REACH_MAX)
 
 
-static func halo_strength(veil: float, heavy_snow: float) -> float:
-	return maxf(clampf(veil, 0.0, 1.0), HALO_SNOW * clampf(heavy_snow, 0.0, 1.0))
+static func halo_strength(veil: float, heavy: float) -> float:
+	return maxf(clampf(veil, 0.0, 1.0), HALO_SNOW * clampf(heavy, 0.0, 1.0))
 
 
 # The torch halo's diameter in metres: 1.5 m in a light fog, 5 m in a dense one.
@@ -50,6 +51,7 @@ static func register(light: OmniLight3D, halo_scale: float = 1.0) -> void:
 
 	light.set_meta("base_range", light.omni_range)
 	light.add_to_group(GROUP)
+	_lights.append(light)
 	var halo: MeshInstance3D = MeshInstance3D.new()
 	halo.name = "Halo"
 	halo.mesh = _shared_mesh()
@@ -103,7 +105,9 @@ static func update(tree: SceneTree, veil: float, snow: float, ground_snow: float
 	var heavy: float = heavy_snow(snow)
 	var r: float = reach(veil, heavy, ground_snow)
 
-	for node in tree.get_nodes_in_group(GROUP):
+	_lights = _lights.filter(func(item): return is_instance_valid(item))
+
+	for node in _lights:
 		var light: OmniLight3D = node as OmniLight3D
 
 		if light != null and light.has_meta("base_range"):
