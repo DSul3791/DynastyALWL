@@ -12,7 +12,7 @@ extends RefCounted
 # record's shape; the live weather does not read it yet (its wetness stays per zone). The other zones keep the weather's old zone
 # numbers in the same fields until their islands have records.
 const DEFAULTS := {
-	"starter": {"sea_level_mean_c": 9.0, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 2000.0, "spell_amplitude_c": 4.0, "spell_days": [3.0, 6.0], "spell_stream": 31, "latitude_deg": -57.0},
+	"starter": {"sea_level_mean_c": 9.0, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 2000.0, "spell_amplitude_c": 4.0, "spell_days": [3.0, 6.0], "spell_stream": 31},
 	"desert": {"sea_level_mean_c": 28.0, "seasonal_swing_c": 8.0, "warmest_year_phase": 0.375, "daily_range_c": 14.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 150.0, "spell_amplitude_c": 3.0, "spell_days": [3.0, 6.0], "spell_stream": 32},
 	"transition": {"sea_level_mean_c": 19.0, "seasonal_swing_c": 11.0, "warmest_year_phase": 0.375, "daily_range_c": 10.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 700.0, "spell_amplitude_c": 3.0, "spell_days": [3.0, 6.0], "spell_stream": 33},
 	"arctic": {"sea_level_mean_c": -9.0, "seasonal_swing_c": 14.0, "warmest_year_phase": 0.375, "daily_range_c": 5.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 400.0, "spell_amplitude_c": 3.0, "spell_days": [3.0, 6.0], "spell_stream": 34},
@@ -33,10 +33,38 @@ const DAY_COLDEST_HOUR := 5.0             # just before dawn (Met Office: the co
 const DAY_WARMEST_HOUR := 15.0            # mid afternoon
 
 
-# The island's signed latitude in degrees, south negative (Sonny's A4 "One sky": the starter island -57, the Hebrides' climate south of
-# the equator row). An island whose record has none yet takes the starter's. Read by the sun and moon with --one-sky.
-static func latitude_deg(climate: Dictionary) -> float:
-	return float(climate.get("latitude_deg", DEFAULTS["starter"]["latitude_deg"]))
+# Latitude comes from the world grid (Dave, 8 Nov): 21 x 21 tiles, the centre row (world.json `equator_tile_row`) is the equator.
+# North is -Z, so a row with a larger number than the equator's lies south, and its latitude is negative. Read by the sun and moon
+# (and the fog's sunrise) with --one-sky.
+# world_settings.gd latitude_for_z runs from 0 at the equator row's centre to 1 at the poles (the wrap seam half the world away), so
+# latitude in degrees is that x 90 (Jamie, 8 Nov), and one row is 90 / 10.5 = 8.57 degrees: the starter row 4's centre is 34.3 S.
+const TILES_Z := 21                       # worlds/base_world/world.json tiles_z
+const DEG_PER_ROW := 90.0 / (float(TILES_Z) * 0.5)
+const STARTER_ROW := 4                    # the starter island's tile row (world.json starter_tiles: [3, 4]; the cave tile 3,4)
+
+
+# The tile row a world z (metres) lies in: row 0 runs from z 0 to one tile south (+Z), as terrain_client's weather zone counts it.
+static func row_of_z(z_m: float, tile_size_m: float) -> int:
+	return floori(z_m / tile_size_m)
+
+
+# One tile row in, its signed latitude in degrees out (south negative), held to the poles: latitude_for_z x 90 at the row's centre.
+static func latitude_of_row(row: int, equator_row: int = 0) -> float:
+	return clampf(-float(row - equator_row) * DEG_PER_ROW, -90.0, 90.0)
+
+
+# The game calendar is the starter island's (day 0 its spring equinox, midsummer at phase 0.25), so the sun's declination takes the
+# sign of the starter's hemisphere: -1 south of the equator, +1 north.
+static func calendar_sign() -> float:
+	return -1.0 if latitude_of_row(STARTER_ROW) < 0.0 else 1.0
+
+
+# A row's own year phase (0 its spring equinox, 0.25 its midsummer) from the calendar's: half a year on across the equator from the
+# starter's hemisphere, the same on its side and on the equator row itself. For season reads by place (Steve's season_at).
+static func local_year_phase(year_phase: float, row: int, equator_row: int = 0) -> float:
+	var lat: float = latitude_of_row(row, equator_row)
+	var across: bool = lat != 0.0 and signf(lat) != calendar_sign()
+	return fposmod(year_phase + (0.5 if across else 0.0), 1.0)
 
 
 static func of_zone(group: String) -> Dictionary:

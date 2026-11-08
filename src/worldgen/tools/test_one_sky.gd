@@ -5,6 +5,7 @@ extends SceneTree
 
 const DayCycle := preload("res://src/client/day_cycle.gd")
 const Weather := preload("res://src/shared/weather.gd")
+const Climate := preload("res://src/shared/climate.gd")
 
 const RISE_DEG := -0.833          # sun centre at rise and set with refraction (the upper limb on the horizon), as in Sonny's table
 
@@ -64,7 +65,9 @@ static func _hm(hour: float) -> String:
 
 func _init() -> void:
 	DayCycle.one_sky_on = true
-	_check(is_equal_approx(DayCycle.sky_latitude_deg(), -57.0), "the starter island's sky is at 57 S (%.1f)" % DayCycle.sky_latitude_deg())
+	DayCycle.sky_row_latitude = -57.0             # Sonny's table below is for 57 S, whatever the grid's spread per row
+	_check(is_equal_approx(DayCycle.sky_latitude_deg(), -57.0), "the sky follows the row's latitude, here 57 S (%.1f)" % DayCycle.sky_latitude_deg())
+	_check_grid_rows()
 
 	# Noon: 56.4, 33.0 and 9.6 degrees, due north, so shadows point south (+Z).
 	for row in [[0.25, 56.4, "midsummer"], [0.0, 33.0, "equinox"], [0.75, 9.6, "midwinter"]]:
@@ -120,7 +123,7 @@ func _init() -> void:
 
 	for day in [91.0, 0.0, 274.0]:
 		var phase: float = day / 365.0
-		var weather_rise: float = Weather.sunrise_hour(day, "temperate")
+		var weather_rise: float = Weather.sunrise_hour(day, DayCycle.sky_latitude_deg())
 		var cycle_rise: float = weather_rise
 		var lo: float = 0.0
 		var hi: float = 12.0
@@ -154,3 +157,38 @@ func _init() -> void:
 
 	print("test_one_sky: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
+
+
+# Latitude from the world grid (Dave, 8 Nov): the centre row is the equator, rows south of it (larger numbers, +Z) are negative.
+func _check_grid_rows() -> void:
+	Weather.one_sky_on = true
+	_check(Climate.latitude_of_row(0) == 0.0, "the equator row is at 0 degrees")
+	_check(Climate.latitude_of_row(Climate.STARTER_ROW) < 0.0 and is_equal_approx(Climate.latitude_of_row(Climate.STARTER_ROW), -Climate.DEG_PER_ROW * float(Climate.STARTER_ROW)), "the starter row is south: %.1f" % Climate.latitude_of_row(Climate.STARTER_ROW))
+	_check(is_equal_approx(Climate.latitude_of_row(-4), -Climate.latitude_of_row(4)), "row -4 is the same latitude north (%.1f)" % Climate.latitude_of_row(-4))
+	_check(is_equal_approx(Climate.latitude_of_row(5, 1), Climate.latitude_of_row(4)), "rows count from the world's own equator row")
+	_check(Climate.latitude_of_row(10) >= -90.0 and Climate.latitude_of_row(-10) <= 90.0, "the edge rows stay at the poles or nearer")
+	_check(absf(Climate.latitude_of_row(Climate.STARTER_ROW) + 34.29) < 0.05, "the starter row 4 is about 34.3 S, latitude_for_z x 90 (%.2f)" % Climate.latitude_of_row(Climate.STARTER_ROW))
+	var starter: float = Climate.latitude_of_row(Climate.STARTER_ROW)
+	var summer_day: float = 2.0 * (12.0 - Weather.sunrise_hour(0.25 * 365.0, starter))
+	var winter_day: float = 2.0 * (12.0 - Weather.sunrise_hour(0.75 * 365.0, starter))
+	_check(absf(summer_day - 14.3) < 0.2 and absf(winter_day - 9.7) < 0.2, "on the starter row the day runs %.1f h at midsummer and %.1f h at midwinter (about 14 and 10, Jamie)" % [summer_day, winter_day])
+	_check(is_equal_approx(Climate.local_year_phase(0.25, Climate.STARTER_ROW), 0.25), "the starter row's own year is the calendar's")
+	_check(is_equal_approx(Climate.local_year_phase(0.25, -4), 0.75), "across the equator (row -4) calendar midsummer is local midwinter")
+	_check(is_equal_approx(Climate.local_year_phase(0.9, -4), 0.4) and is_equal_approx(Climate.local_year_phase(0.3, 0), 0.3), "the shift wraps, and the equator row keeps the calendar's")
+	_check(Weather.STARTER_ROW == Climate.STARTER_ROW, "the weather's starter row is the climate's")
+	var midsummer_s: float = 0.3 * 365.0 * 86400.0
+	_check(Weather.season_at(midsummer_s, 4.5 * 15360.0, 15360.0) == "summer" and Weather.season_at(midsummer_s, -3.5 * 15360.0, 15360.0) == "winter", "season_at: summer on the starter row, winter on row -4 at the same hour")
+	var south_air: float = Weather.air_c(midsummer_s, "temperate", 0.0, 0, 4)
+	var north_air: float = Weather.air_c(midsummer_s, "temperate", 0.0, 0, -4)
+	_check(south_air > north_air + 5.0, "the warmest phase flips across the equator: %.1f C south against %.1f C north at calendar midsummer" % [south_air, north_air])
+	_check(Weather.state(0, midsummer_s, "temperate", 0.0, 0.0, -4)["season"] == "winter", "Weather.state's season follows the row")
+	_check(Climate.calendar_sign() == -1.0, "the starter row is south, so the calendar's midsummer has the sun at -23.44")
+	DayCycle.sky_row_latitude = Climate.latitude_of_row(-4)
+	_check(DayCycle.sky_latitude_deg() > 0.0, "a player on row -4 gets a northern sky (%.1f)" % DayCycle.sky_latitude_deg())
+	var north_noon: Vector3 = _sun(0.0, 12.0)
+	_check(north_noon.z > 0.0, "on a northern row the equinox noon sun stands in the south (+Z)")
+	_check(Weather.sunrise_hour(0.25 * 365.0, Climate.latitude_of_row(-4)) > Weather.sunrise_hour(0.25 * 365.0), "at calendar midsummer a northern row has a later sunrise (its winter)")
+	DayCycle.sky_row_latitude = NAN
+	_check(is_equal_approx(DayCycle.sky_latitude_deg(), Climate.latitude_of_row(Climate.STARTER_ROW)), "before terrain_client sets a row, the sky is the starter row's")
+	DayCycle.sky_row_latitude = -57.0
+

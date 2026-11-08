@@ -23,12 +23,14 @@ const LATITUDE_DEG := 52.0
 const AXIAL_TILT_DEG := 23.44
 const Climate := preload("res://src/shared/climate.gd")
 
-# --one-sky (docs/design/one_sky_design.md; Sonny's A4 "One sky", 8 Nov 2026): the sky of the island's climate record, `latitude_deg`
-# signed, south negative (the starter island -57), instead of the fixed LATITUDE_DEG. The game calendar is the starter island's: day 0
-# its spring equinox, so the sun's declination is -23.44 sin(2 pi phase) and midsummer stays at phase 0.25. At 57 S the noon sun stands
+# --one-sky (docs/design/one_sky_design.md; Sonny's A4 "One sky", 8 Nov 2026): the sky at the latitude of the player's tile row on the
+# 21 x 21 world grid (Climate.latitude_of_row: the equator row 0, south negative; the starter row 4 is 57 S with the placeholder
+# spread), instead of the fixed LATITUDE_DEG. The game calendar is the starter island's: day 0 its spring equinox, so the sun's
+# declination is calendar_sign() x 23.44 sin(2 pi phase) (-1 for the southern starter) and midsummer stays at phase 0.25. At 57 S the noon sun stands
 # due north (-Z) and shadows point south (+Z). With --moon-phase the moon sits 360 x phase east of the sun along the ecliptic, so a
 # full moon rides low in midsummer and high in midwinter. Off: 52 N with the noon sun in the south, as before (Dave may veto the flip).
 static var one_sky_on: bool = AppConfig.has_flag("one-sky")
+static var sky_row_latitude: float = NAN         # the player's tile row's latitude, set by terrain_client; NAN: the starter row's
 
 const SUN_WHITE := Color(1.0, 0.92, 0.80)       # the daytime colour (look_settings SUN_COLOR)
 const SUN_GOLD := Color(1.0, 0.66, 0.36)        # low sun
@@ -132,16 +134,19 @@ static func moon_direction(phi: float, delta: float, h: float, phase: float) -> 
 	return Vector3(east, up, -north).normalized()
 
 
-# The sky's latitude in degrees, south negative: the island's climate record with --one-sky (the starter island's, the only one with a
-# sky yet), else LATITUDE_DEG.
+# The sky's latitude in degrees, south negative: with --one-sky the player's tile row's (the starter row's until terrain_client
+# sets it), else LATITUDE_DEG.
 static func sky_latitude_deg() -> float:
-	return Climate.latitude_deg(Climate.of_zone("temperate")) if one_sky_on else LATITUDE_DEG
+	if not one_sky_on:
+		return LATITUDE_DEG
+
+	return Climate.latitude_of_row(Climate.STARTER_ROW) if is_nan(sky_row_latitude) else sky_row_latitude
 
 
 # The sun's declination (radians) at a year phase: zero at the spring equinox (phase 0), and at phase 0.25 the summer's: -23.44 degrees
-# for the starter island's southern summer with --one-sky, +23.44 for the old northern sky.
+# for the starter island's southern summer with --one-sky (the sign of its row's hemisphere), +23.44 for the old northern sky.
 static func sun_declination(year_phase: float) -> float:
-	return (-1.0 if one_sky_on else 1.0) * deg_to_rad(AXIAL_TILT_DEG) * sin(TAU * year_phase)
+	return (Climate.calendar_sign() if one_sky_on else 1.0) * deg_to_rad(AXIAL_TILT_DEG) * sin(TAU * year_phase)
 
 
 # From the ground toward a body in the sky (unit vector, north is -Z): latitude `phi`, declination `delta`, hour angle `h`, radians.
@@ -158,7 +163,7 @@ static func sky_direction(phi: float, delta: float, h: float) -> Vector3:
 # `phi` latitude and `h` the sun's hour angle, radians.
 static func moon_on_ecliptic(phi: float, year_phase: float, h: float, phase: float) -> Vector3:
 	var tilt: float = deg_to_rad(AXIAL_TILT_DEG)
-	var sun_lon: float = TAU * year_phase + PI
+	var sun_lon: float = TAU * year_phase + (PI if Climate.calendar_sign() < 0.0 else 0.0)   # the calendar's spring is the south's (autumn point) or the north's
 	var moon_lon: float = sun_lon + TAU * phase
 	var moon_delta: float = tilt * sin(moon_lon)
 	var moon_h: float = h - (_right_ascension(moon_lon, tilt) - _right_ascension(sun_lon, tilt))
