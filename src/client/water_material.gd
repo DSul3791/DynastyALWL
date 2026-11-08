@@ -59,8 +59,8 @@ uniform vec2 water2_origin = vec2(0.0);
 uniform vec2 water2_size = vec2(1.0);
 uniform float water2_on = 0.0;
 uniform float water2_inset = 0.0;    // metres (no longer used: the grid look crossfades over blend_m, BUG-006)
-uniform float blend_m = 24.0;        // liquid_surface.gd: the live window's crossfade band
-uniform float blend_wander_m = 12.0;
+uniform float blend_m = 64.0;        // liquid_surface.gd: the live window's crossfade band; the two shaders must match (was 24 here after #465 made it 64 there)
+uniform float blend_wander_m = 24.0;
 
 varying float sheet_alpha;
 varying vec2 flow;                   // downhill direction times 0..1 steepness (0 for lakes and the sea)
