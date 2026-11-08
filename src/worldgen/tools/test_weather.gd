@@ -106,7 +106,7 @@ func _init() -> void:
 	var afternoon: float = Climate.air_c(starter, 0.875, 15.0)
 	check(absf(afternoon - dawn - 8.0) < 0.1, "the day's range is 8 C from 05:00 to 15:00 (%.1f to %.1f)" % [dawn, afternoon])
 	check(absf(Weather.temp_at(midwinter, "temperate", 1000.0, 777) - (Weather.temp_at(midwinter, "temperate", 0.0, 777) - 6.5)) < 0.01, "6.5 C colder per km of height")
-	# Cold and warm spells: within the island's spell_c, slow (under 2.5 C a day), the same for the same seed, and on the coast some winter
+	# Cold and warm spells: within the island's spell_amplitude_c, slow (under 2.5 C a day), the same for the same seed, and on the coast some winter
 	# nights fall below freezing (Fort William gets air frosts in most winters).
 	var spell_low: float = 100.0
 	var spell_high: float = -100.0
@@ -127,7 +127,7 @@ func _init() -> void:
 		if night_low < 0.0:
 			frost_nights += 1
 
-	check(spell_low >= -float(starter["spell_c"]) - 0.001 and spell_high <= float(starter["spell_c"]) + 0.001 and spell_high - spell_low > 3.0, "spells stay within +-%.0f C and do swing (%.1f to %.1f)" % [float(starter["spell_c"]), spell_low, spell_high])
+	check(spell_low >= -float(starter["spell_amplitude_c"]) - 0.001 and spell_high <= float(starter["spell_amplitude_c"]) + 0.001 and spell_high - spell_low > 3.0, "spells stay within +-%.0f C and do swing (%.1f to %.1f)" % [float(starter["spell_amplitude_c"]), spell_low, spell_high])
 	check(spell_step < 2.5, "spells change slowly (worst %.2f C in a day)" % spell_step)
 	check(Climate.spell_c(starter, 777, 5.0e6) == Climate.spell_c(starter, 777, 5.0e6) and Climate.spell_c(starter, 778, 5.0e6) != Climate.spell_c(starter, 777, 5.0e6), "spells follow the seed")
 	check(frost_nights >= 10 and frost_nights <= 120, "the starter coast gets some air frosts (%d nights a year)" % frost_nights)

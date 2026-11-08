@@ -107,20 +107,23 @@ The air temperature shown in the inventory and character screens, and in the deb
 
 **Why.** Without spells the starter coast never froze. Its coldest hour sat at about 0 °C, while the real Fort William gets air frosts in most winters.
 
-**The rule** (`Climate.spell_c`):
-- The day's mean gets a slow walk on top: `spell_c` × (2 × mix − 1), where mix = 0.6 × noise(day / 6) + 0.4 × noise(day / 3). Both are smooth value noise from the world seed, in the island's own stream (`spell_stream`), so a spell lasts about 3 to 6 days.
-- It is the same on the server and every client. The server's pond ice for fishing, the client's ice and the weather all pass the world seed.
-- `spell_c` per island (judged):
+**The rule** (`Climate.spell_c`), with Sonny's field names:
+- **Air** = mean + seasonal + spell + daily − lapse × h.
+- **The spell** = `spell_amplitude_c` × (2 × mix − 1), where mix = 0.6 × noise(day / longest) + 0.4 × noise(day / shortest).
+  - `spell_days` = [shortest, longest] = [3, 6].
+  - Both are smooth value noise from the world seed in the island's own stream (`spell_stream`, ours).
+  - This is a bounded random walk that relaxes back to the season, so a spell lasts about 3 to 6 days.
+- **Long-run record.** The record and the baked snow window use the climate **without** spells (the long-run average); the live air adds them.
+- **The same everywhere.** Server and clients agree: the server's pond ice for fishing, the client's ice and the weather all pass the world seed.
+- `spell_amplitude_c` per island (judged):
 
-  | Island | spell_c |
+  | Island | spell_amplitude_c |
   |---|---|
-  | starter | ±4 °C (coordinator) |
+  | starter | ±4 °C (coordinator and Sonny) |
   | desert | ±3 |
   | transition | ±3 |
   | arctic | ±3 (kept low so the arctic pond's yearly melt still has no sudden jump) |
-  | small ocean island, later | about ±2 (coordinator) |
-
-- Sonny can add `spell_c` (and a stream, or derive one from the island id) to `climate.json`.
+  | small ocean island, later | about ±2 |
 
 **What it gives** (sums from an exact Python copy of the noise; seeds 0, 777 and 12345):
 - **Air frosts:** 25 to 60 nights a year at sea level on the starter. The real Fort William figure was not checked today.
@@ -133,7 +136,7 @@ The air temperature shown in the inventory and character screens, and in the deb
 - **Snow** can now fall at sea level on cold-spell nights in winter, and summers have warm spells up to about 22 °C at 15:00.
 
 **Checks:**
-- `test_weather`: spells stay within ±`spell_c` and do swing; they change by under 2.5 °C a day; they follow the seed; and the coast gets 10 to 120 air-frost nights a year.
+- `test_weather`: spells stay within ±`spell_amplitude_c` and do swing; they change by under 2.5 °C a day; they follow the seed; and the coast gets 10 to 120 air-frost nights a year.
 - `test_ice`: uses world seed 777. The coast gets some icy mornings, but fewer than at 300 m.
 
 ## Follow-ups for others
