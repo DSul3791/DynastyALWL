@@ -123,6 +123,72 @@ void fragment() {
 }
 """
 
+# --rain-look (docs/design/rain_look_design.md 3.1): the streaks are lit by the scene (sun, moon, sky ambient, a held torch or a fire's light),
+# never self-lit, with forward scatter so rain backlit by a low sun or a flame is the brightest; a dark night shows rain only in the light.
+const RAIN_SHADER_LIT := """
+shader_type spatial;
+render_mode cull_disabled, blend_mix, specular_disabled;
+uniform vec4 streak : source_color = vec4(0.78, 0.84, 0.95, 0.42);
+uniform vec2 size_scale = vec2(1.0, 1.0);
+uniform sampler2D canopy : filter_linear, hint_default_black;
+uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);
+
+void vertex() {
+	vec3 o = MODEL_MATRIX[3].xyz;
+	vec2 uv = (o.xz - canopy_box.xy) / canopy_box.z;
+	if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {
+		VERTEX *= 1.0 - smoothstep(0.2, 0.8, textureLod(canopy, uv, 0.0).r);
+	}
+	VERTEX *= vec3(size_scale.x, size_scale.y, size_scale.x);
+}
+
+void fragment() {
+	ALBEDO = streak.rgb;
+	ALPHA = streak.a;
+	NORMAL = VIEW;          // a drop has no face: it takes the light the same from any side
+	ROUGHNESS = 1.0;
+}
+
+void light() {
+	// Forward scatter: light from behind the drop, toward the eye, comes through brightest.
+	float scatter = pow(max(dot(LIGHT, -VIEW), 0.0), 6.0);
+	DIFFUSE_LIGHT += ATTENUATION * LIGHT_COLOR / PI * (0.35 + 2.5 * scatter);
+}
+"""
+const RAIN_LOOK_LIFETIME_S := 2.4        # fixed (a change of lifetime restarts the particles): the slower the fall, the lower the streaks start
+const RAIN_LOOK_BELOW_M := 8.0           # streaks end about this far below the eye
+const RAIN_LOOK_FALL := [2.5, 9.0]       # m/s, drizzle to a downpour (Gunn and Kinzer: no drop falls faster than about 9 m/s)
+const RAIN_LOOK_SPREAD := 0.12           # each streak's speed varies this much
+const RAIN_LOOK_STREAK_S := 0.05         # a streak is as long as the drop falls in this time
+const RAIN_LOOK_MAX_SLANT_DEG := 65.0
+const RAIN_LOOK_GUST := 0.5              # gusts add up to this share of the mean wind (Jamie #637: gusts about 1.5 x the mean)
+const MESH_STREAK_M := 0.6               # the streak mesh's own length (_make_rain)
+var rain_look: bool = OS.get_cmdline_user_args().has("--rain-look")
+var rain_fall_ms: float = 0.0            # with --rain-look: the streaks' fall and drift now, for checks
+var rain_drift_ms: Vector2 = Vector2.ZERO
+
+
+# Wind in m/s from the weather's 0..1 (Jamie #637: m/s = 20 x wind^1.3).
+static func wind_ms(wind: float) -> float:
+	return 20.0 * pow(clampf(wind, 0.0, 1.0), 1.3)
+
+
+# How fast the drops fall at a rain strength (drizzle 2.5 m/s, a downpour 9 m/s).
+static func rain_fall(hard: float) -> float:
+	return lerpf(float(RAIN_LOOK_FALL[0]), float(RAIN_LOOK_FALL[1]), smoothstep(0.1, 0.9, hard))
+
+
+# The streaks' sideways drift in m/s: the wind (with its gust share) along the way it blows toward, held to the slant cap.
+static func rain_drift(fall: float, wind: float, heading: float, gust: float) -> Vector2:
+	var speed: float = minf(wind_ms(wind) * (1.0 + RAIN_LOOK_GUST * clampf(gust, 0.0, 1.0)), fall * tan(deg_to_rad(RAIN_LOOK_MAX_SLANT_DEG)))
+	return Vector2(cos(heading), sin(heading)) * speed
+
+
+# A smooth 0..1 gust from the real time: two slow waves (periods 5.3 and 3.1 s), no repeat a player could hear or see.
+static func gust_at(seconds: float) -> float:
+	return clampf(0.5 + 0.25 * sin(seconds * TAU / 5.3) + 0.25 * sin(seconds * TAU / 3.1 + 1.7), 0.0, 1.0)
+
+
 # What the sound stage's weather test kinds look like.
 const TEST := {
 	"clear": {"cloud": 0.15, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0},
@@ -241,7 +307,7 @@ func set_quality(quality: int) -> void:
 func _make_rain() -> GPUParticles3D:
 	var particles: GPUParticles3D = GPUParticles3D.new()
 	particles.amount = int(RAIN_AMOUNT[_quality])
-	particles.lifetime = 1.2
+	particles.lifetime = RAIN_LOOK_LIFETIME_S if rain_look else 1.2
 	particles.local_coords = false
 	particles.visibility_aabb = AABB(Vector3(-40.0, -40.0, -40.0), Vector3(80.0, 80.0, 80.0))
 	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -269,7 +335,7 @@ func _make_rain() -> GPUParticles3D:
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	var shader: Shader = Shader.new()
-	shader.code = RAIN_SHADER
+	shader.code = RAIN_SHADER_LIT if rain_look else RAIN_SHADER
 	var material: ShaderMaterial = ShaderMaterial.new()
 	material.shader = shader
 	material.set_shader_parameter("canopy", canopy.texture)
@@ -277,6 +343,26 @@ func _make_rain() -> GPUParticles3D:
 	mesh.surface_set_material(0, material)
 	particles.draw_pass_1 = mesh
 	return particles
+
+
+# --rain-look: real fall speeds, a slant along the wind's own heading with gusts, streak length from the speed. The lifetime is fixed, so
+# the box starts lower for slow drizzle and higher for a downpour, and upwind by half the drift so the streaks fill the view around the eye.
+func _update_rain_look(eye: Vector3, hard: float, heading: float) -> void:
+	var fall: float = rain_fall(hard)
+	var drift: Vector2 = rain_drift(fall, float(_s["wind"]), heading, gust_at(float(Time.get_ticks_msec()) / 1000.0))
+	rain_fall_ms = fall
+	rain_drift_ms = drift
+	var path: float = fall * RAIN_LOOK_LIFETIME_S
+	var start: float = maxf(path - RAIN_LOOK_BELOW_M, 2.0)
+	_rain.global_position = eye + Vector3(-drift.x * RAIN_LOOK_LIFETIME_S * 0.5, start, -drift.y * RAIN_LOOK_LIFETIME_S * 0.5)
+	var velocity: Vector3 = Vector3(drift.x, -fall, drift.y)
+	var speed: float = velocity.length()
+	var process: ParticleProcessMaterial = _rain.process_material as ParticleProcessMaterial
+	process.direction = velocity / maxf(speed, 0.001)
+	process.spread = 0.6
+	process.initial_velocity_min = speed * (1.0 - RAIN_LOOK_SPREAD)
+	process.initial_velocity_max = speed * (1.0 + RAIN_LOOK_SPREAD)
+	_rain_material.set_shader_parameter("size_scale", Vector2(lerpf(0.55, 1.7, hard), speed * RAIN_LOOK_STREAK_S / MESH_STREAK_M))
 
 
 func _make_snow() -> GPUParticles3D:
@@ -717,7 +803,9 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	_rain_material.set_shader_parameter("streak", Color(0.78, 0.84, 0.95, lerpf(0.10, 0.26, hard)))
 	_snow.amount_ratio = clampf(snow * open_sky, 0.05, 1.0)
 
-	if _rain.emitting:
+	if rain_look:
+		_update_rain_look(eye, hard, float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0)
+	elif _rain.emitting:
 		(_rain.process_material as ParticleProcessMaterial).direction = Vector3(tilt, -1.0, tilt * 0.4).normalized()
 
 	if _snow.emitting:
