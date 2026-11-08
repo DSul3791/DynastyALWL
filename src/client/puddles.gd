@@ -29,7 +29,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GroundMaterial := preload("res://src/client/ground_material.gd")
 const GameClock := preload("res://src/shared/game_clock.gd")
 
-const RAIN_FROM := 0.15                              # the wetness memory (--rain-look) soaks from this rain
+const RAIN_FROM := 0.15                              # the wetness memory soaks from this rain
 const RAIN_MM_H := 50.0                               # rain 1.0 (a downpour) in mm/h; rain^RAIN_MM_POWER of it below (judged: 0.15 drizzle 0.4,
 const RAIN_MM_POWER := 2.5                            #   0.4 moderate 5, 0.65 the forced "rain" 17, 0.7 heavy 20 mm/h, the Met Office's bands)
 # How fast each level's ground soaks rain in, mm/h: turf on loam, litter on humus (as loam), gravel, mud and clay, sand, dips in rock (none),
@@ -72,7 +72,7 @@ void fragment() {
 }
 """
 
-# --rain-look (docs/design/rain_look_design.md 3.4): how wet each ground layer is, 0 dry .. 1 soaked. It soaks in over 3 game minutes of
+# Wet surfaces (docs/design/rain_look_design.md 3.4): how wet each ground layer is, 0 dry .. 1 soaked. It soaks in over 3 game minutes of
 # rain from RAIN_FROM, holds in light rain, and dries in game hours by layer (rock first, litter last; mud keeps half), twice as fast in full
 # sun and half again in a full wind. Steep rock keeps its run-off streaks an hour longer than its face.
 const WET_SOAK_H := 0.05
@@ -84,7 +84,7 @@ const WET_STREAK_HOLD_H := 1.0
 
 var _client
 var level: Array = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]   # 6 ground layers, worn tracks, peat
-var wet: Array = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]       # with --rain-look: each layer's wetness
+var wet: Array = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]       # each layer's wetness
 var wet_streak: float = 0.0                           # the run-off streaks on steep rock
 var wet_mean: float = 0.0                             # the mean of the layers, for the haze
 var _wet_sent: Array = []
@@ -304,7 +304,7 @@ static func wet_step(wet_now: Array, streak: float, hours: float, rain: float, w
 	return out
 
 
-# Every frame from weather_look.gd with --rain-look: steps the memory and sends it to the ground shader (faded in caves like the puddles).
+# Every frame from weather_look.gd: steps the memory and sends it to the ground shader (faded in caves like the puddles).
 func update_wet(delta: float, rain: float, wind: float, sun: float, wind_dir: Vector2, material: ShaderMaterial) -> void:
 	var stepped: Array = wet_step(wet, wet_streak, delta * GameClock.RATIO / 3600.0, rain, wind, sun)
 	wet_streak = float(stepped.pop_back())

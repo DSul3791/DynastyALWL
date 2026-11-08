@@ -44,11 +44,11 @@ uniform vec2 puddle_origin = vec2(0.0); // a corner near the camera, in 60 m ste
 uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black;   // worn game trails (grass_view.gd), 4 m texels over 1024 m
 uniform float trail_draw = 0.25;
 uniform vec2 summit_snow = vec2(0.0, 0.82); // summit snow (weather_look.gd, art_weather_light.md 8.2.1): the island's summit height (0 none known), lowest patches as a share of it
-uniform bool wet_look = false;          // --rain-look (rain_look_design.md 3.4): wetness per layer (puddles.gd) instead of the one wet value
+uniform bool wet_look = false;          // set on by puddles.gd for the terrain (rain_look_design.md 3.4): wetness per layer (puddles.gd) instead of the one wet value
 uniform float wet_layer[6];             // turf, litter, gravel, mud, sand, rock: 0 dry .. 1 soaked
 uniform float wet_streak = 0.0;         // run-off streaks on steep rock, kept an hour longer than the face
 uniform vec2 wet_wind = vec2(1.0, 0.0); // where the wind blows toward (x, z): faces looking into it wet first
-uniform float splash_rain = 0.0;        // --rain-look (rain_look_design.md 3.2): how hard it rains on open ground now; 0 skips the splash flecks
+uniform float splash_rain = 0.0;        // (rain_look_design.md 3.2): how hard it rains on open ground now; 0 skips the splash flecks
 uniform vec3 caustics = vec3(0.0);      // under water (underwater_look.gd): surface height, strength 0..1 (0 off), how deep the lines reach
 varying vec3 world_pos;
 varying vec3 world_normal;

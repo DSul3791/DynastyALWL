@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Frozen water look (docs/design/frozen_water_look.md, --frozen-water): the numbers the liquid sheets' ice is drawn from, the picture days, the
+# Frozen water look (docs/design/frozen_water_look.md): the numbers the liquid sheets' ice is drawn from, the picture days, the
 # spring open length, the picture switches and the shader's bands.
 #   godot --headless --path . --script res://src/worldgen/tools/test_frozen_water.gd
 
@@ -27,8 +27,6 @@ func at(day: int, hour: float) -> float:
 
 
 func _init() -> void:
-	check(not FrozenWater.on, "the switch is off unless --frozen-water is given")
-
 	# season() is the same loop as cover(): the server's number is unchanged.
 	for t in [at(342, 7.0), at(343, 9.0), at(100, 12.0), at(344, 15.0)]:
 		for alt in [SPAWN_POND_M, SPRING_M]:

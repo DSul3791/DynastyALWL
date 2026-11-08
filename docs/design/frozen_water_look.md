@@ -1,6 +1,6 @@
 # Frozen water look: skim, sheet, snow, holes and thaw
 
-**Owner:** Kathleen. **Status:** design, 8 Nov 2026. **Behind:** `--frozen-water` (client only, off until Dino's pictures).
+**Owner:** Kathleen. **Status:** design, 8 Nov 2026. **On** by default (client only; Dave 8 Nov: no flags, decisions row 30).
 **Builds on:** `still_water_ice.md` (the ice rule, `src/shared/ice.gd`, unchanged). **Reads:** Jamie's snow pages (`snow-on-slopes.md`, `snow-lines-mountain-climate.md`, #632 and #594) and water clarity (`water-clarity-after-rain.md`, #623). Neither page covers ice, so the ice facts below come from the sources in section 8.
 **Why now:** Steve's drink rules (#719, #720) refuse frozen water without an ice hole, so the player has to be able to see when water is frozen, and see the hole.
 
@@ -75,7 +75,7 @@ All of this is per pixel on the liquid sheet. Every sheet draws it: the live win
 
 ## 6. Code
 
-All of this is behind `--frozen-water`. With the switch off, nothing changes: the liquid sheets draw no ice, as today.
+All of this is on by default (the `--frozen-water` switch is gone, decisions row 30).
 
 - **`src/shared/ice.gd`:** new `Ice.season(game_s, zone, altitude, depth, seed)` returns `{cover, peak}` from the same hourly loop. `cover` and `_thickness` give exactly what they give today: the loop is shared, and the server output is unchanged.
 - **`src/client/frozen_water.gd` (new, pure):**

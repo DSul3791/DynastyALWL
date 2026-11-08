@@ -1,5 +1,5 @@
 extends SceneTree
-# Headless check of canopy drip after rain (--canopy-drip, docs/design/canopy_drip_design.md, Jamie #675): the crowns drip by how much
+# Headless check of canopy drip after rain (docs/design/canopy_drip_design.md, Jamie #675): the crowns drip by how much
 # rain fell and by tree kind, and the drip sound goes on after the rain.
 
 const RainDrips := preload("res://src/client/rain_drips.gd")

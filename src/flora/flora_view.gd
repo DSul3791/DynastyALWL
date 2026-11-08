@@ -124,7 +124,7 @@ uniform vec2 uv_scale = vec2(1.0);
 uniform vec3 lift = vec3(1.0);                   // a felled trunk, log or stump is lit by the sky only from above and read half as bright as a standing trunk in the real game: it sets a lift here
 uniform float foot_offset = 0.0;            // metres from the model origin up to the trunk foot (a felled trunk's mesh is centred)
 uniform float snow = 0.0;                   // snow lying on the upper side of branches (art_weather_light.md 8.2.2), set by set_snow
-uniform float wet = 0.0;                    // --rain-look (rain_look_design.md 3.4 item 5): rain on the bark, set by set_wet
+uniform float wet = 0.0;                    // (rain_look_design.md 3.4 item 5): rain on the bark, set by set_wet
 uniform vec2 wet_wind = vec2(1.0, 0.0);     // where the wind blows toward (x, z): the side facing into it is wetter
 varying float base_h;
 varying float north_face;
@@ -843,7 +843,7 @@ func _apply_snow(conifer: float, broadleaf: float) -> void:
 			(made["material"] as ShaderMaterial).set_shader_parameter("snow", broadleaf if hardwood else conifer)
 
 
-# --rain-look: how wet the bark is (0 dry .. 1 soaked) and where the wind blows toward, for every bark material (rain_look_design.md 3.4 item 5).
+# How wet the bark is (0 dry .. 1 soaked) and where the wind blows toward, for every bark material (rain_look_design.md 3.4 item 5).
 func set_wet(level: float, wind_toward: Vector2) -> void:
 	for key in _tree_materials:
 		var material: ShaderMaterial = _tree_materials[key] as ShaderMaterial
@@ -879,11 +879,11 @@ var _liquid_flow_mud: float = 0.0
 # The liquid sheets take one mud amount: the high flow's brown, or the storm's, whichever is more.
 func _tell_liquid_mud() -> void:
 	if is_inside_tree():
-		# With --water-look the cloud after rain comes from its own clearing curve (set_water_look), so the storm murk's brown is left out here.
+		# The cloud after rain comes from its own clearing curve (set_water_look), so the storm murk's brown is left out here.
 		get_tree().call_group("liquid_sheet", "set_mud", _liquid_flow_mud if water_look else maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
 
 
-# --water-look (docs/design/water_look_after_rain.md, weather_look.gd): the cloud after rain in running and still water and the foam supply,
+# Water after rain (docs/design/water_look_after_rain.md, weather_look.gd): the cloud after rain in running and still water and the foam supply,
 # for the grid look and the liquid sheets.
 var water_look: bool = false
 

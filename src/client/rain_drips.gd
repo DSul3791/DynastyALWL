@@ -1,8 +1,7 @@
 extends RefCounted
 
-# Drips from tree crowns and roof eaves (docs/design/rain_look_design.md 3.3), with --rain-look. Crowns hold 0.5 to 2 mm of rain: they fill
-# in about 10 game minutes of rain and go on dripping after it stops, less and less, gone in about 45 game minutes on a still grey day and
-# in about 10 in a sunny breeze. The drops fall along a crown's edge (the drip line) and a roof's eaves, where the canopy map (which holds
+# Drips from tree crowns and roof eaves (docs/design/rain_look_design.md 3.3; how long by rain amount and tree
+# kind below, canopy_drip_design.md). The drops fall along a crown's edge (the drip line) and a roof's eaves, where the canopy map (which holds
 # crowns and roofs) meets open ground, with a few from inside the cover. Big drops (4 to 6 mm) falling from a few metres: lit by the scene
 # like the rain streaks, never glowing. One MultiMesh, a pool of drops moved on the CPU (at most 240).
 # A crown memory per tree, the conifers' larger store and roof heights are not known on the client yet: one memory for the cover around
@@ -10,9 +9,6 @@ extends RefCounted
 
 const GameClock := preload("res://src/shared/game_clock.gd")
 
-const FILL_H := 10.0 / 60.0               # game hours of rain from FILL_FROM to fill the crowns
-const FILL_FROM := 0.3
-const HALF_H := 15.0 / 60.0               # half-life of the store after the rain, still and grey
 const POOL := [60, 120, 180, 240]         # drops by quality
 const RATE_PER_S := [40.0, 80.0, 120.0, 160.0]   # new drops a second with full crowns, by quality
 const RADIUS_M := 12.0
@@ -24,11 +20,10 @@ const GRAVITY := 9.8
 const DROP_LENGTH_M := 0.14
 const DROP_HALF_WIDTH_M := 0.004
 
-var store: float = 0.0                    # 0 dry crowns .. 1 full (for checks); with --canopy-drip the drip strength min(store_mm / 1.5, 1)
-# Canopy drip by rain amount and tree kind (--canopy-drip, docs/design/canopy_drip_design.md, Jamie #675): the store is mm of water,
+var store: float = 0.0                    # 0 dry crowns .. 1 full (for checks); the drip strength min(store_mm / 1.5, 1)
+# Canopy drip by rain amount and tree kind (docs/design/canopy_drip_design.md, Jamie #675): the store is mm of water,
 # capped by the trees around (conifers 3 mm, broadleaves 1.5, bare winter broadleaves 0.5), filled at the rain's own rate and emptied
 # at (0.04 + 0.01 x mm) mm a game minute, faster in sun and wind: a full conifer drips about 56 game minutes, a light shower 17.
-static var canopy_drip_on: bool = AppConfig.has_flag("canopy-drip")
 const CAP_CONIFER_MM := 3.0
 const CAP_BROAD_MM := 1.5
 const CAP_BARE_MM := 0.5
@@ -49,26 +44,13 @@ var _quality: int = 2
 var _rng := RandomNumberGenerator.new()
 
 
-# The crown store after `hours` of game time: fills in rain, empties on a half-life that sun and wind shorten.
-static func store_step(now: float, hours: float, rain: float, wind: float, sun: float) -> float:
-	if rain >= FILL_FROM:
-		return minf(now + hours / FILL_H, 1.0)
-
-	if rain > 0.05:
-		return now      # light rain keeps the crowns wet
-
-	var half: float = HALF_H * (1.0 - 0.5 * clampf(sun, 0.0, 1.0)) / (1.0 + 2.0 * clampf(wind, 0.0, 1.0))
-	var left: float = now * pow(0.5, hours / maxf(half, 0.001))
-	return left if left > 0.01 else 0.0
-
-
 # The crowns' water capacity in mm for this mix of trees.
 static func cap_mm(conifer: float, is_winter: bool) -> float:
 	var c: float = clampf(conifer, 0.0, 1.0)
 	return CAP_CONIFER_MM * c + (CAP_BARE_MM if is_winter else CAP_BROAD_MM) * (1.0 - c)
 
 
-# The store in mm after `hours` of game time (--canopy-drip). Rain over 0.05 fills it at its own rate up to the cap; after the rain it
+# The store in mm after `hours` of game time. Rain over 0.05 fills it at its own rate up to the cap; after the rain it
 # empties as dS/dt = -(a + b S) per game minute, a closed form so a long step is exact.
 static func store_mm_step(now_mm: float, hours: float, rain: float, wind: float, sun: float, cap: float) -> float:
 	if rain > 0.05:
@@ -107,11 +89,8 @@ func set_quality(quality: int) -> void:
 
 # Every frame: the rain, wind and sun now (0..1), the eye, the canopy map (cover_at) and the ground below a point (NAN when none).
 func update(delta: float, rain: float, wind: float, sun: float, eye: Vector3, canopy, ground_below: Callable, sheltered: bool) -> void:
-	if canopy_drip_on:
-		store_mm = store_mm_step(store_mm, delta * GameClock.RATIO / 3600.0, rain, wind, sun, cap_mm(conifer_share, winter))
-		store = drip_strength(store_mm)
-	else:
-		store = store_step(store, delta * GameClock.RATIO / 3600.0, rain, wind, sun)
+	store_mm = store_mm_step(store_mm, delta * GameClock.RATIO / 3600.0, rain, wind, sun, cap_mm(conifer_share, winter))
+	store = drip_strength(store_mm)
 
 	if _root == null:
 		return

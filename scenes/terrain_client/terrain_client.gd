@@ -78,7 +78,7 @@ const WeatherScript := preload("res://src/shared/weather.gd")
 const ClimateScript := preload("res://src/shared/climate.gd")
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
-const FrozenWater := preload("res://src/client/frozen_water.gd")   # --frozen-water: the liquid sheets' ice look (docs/design/frozen_water_look.md)
+const FrozenWater := preload("res://src/client/frozen_water.gd")   # the liquid sheets' ice look (docs/design/frozen_water_look.md)
 const SpringSteam := preload("res://src/client/spring_steam.gd")   # --ice-feel: steam over spring mouths on frosty mornings (Jamie #739)
 const IceFeelScript := preload("res://src/client/ice_feel.gd")     # --ice-feel: ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
@@ -2311,8 +2311,7 @@ func _update_weather() -> void:
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
 
-	if FrozenWater.on:
-		_update_frozen_water(group, now)
+	_update_frozen_water(group, now)
 
 	if weather_look != null and weather_look.puddles != null:
 		weather_look.puddles.set_ice_from(game_clock.seconds, group, _anchor.y)      # puddles freeze by the same rule, shallow (every 10 s)
@@ -2324,7 +2323,7 @@ func _update_weather() -> void:
 		sound.occlusion.set_air(weather, weather_look.day.elevation if weather_look != null else 0.5, game_clock.hour(), weather_look.fog_now() if weather_look != null else 0.0)
 
 
-# Frozen water look (docs/design/frozen_water_look.md, --frozen-water): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
+# Frozen water look (docs/design/frozen_water_look.md): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
 # near the player (their brooks stay open) and the ice holes go to every liquid sheet. --frozen-force=open[,thaw[,snow]] and --frozen-hole=x,z are
 # picture switches (a solid sheet the starter island never grows; a hole before the server sends them).
 var ice_holes: Array = []   # {"pos": Vector3, "until": game seconds}: the server's fishing holes, once it sends them (section 5; Steve)

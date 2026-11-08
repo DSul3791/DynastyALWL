@@ -1,7 +1,6 @@
 extends Node3D
 
-# Cap cloud on high summits (docs/design/art_weather_light.md 7.1). Off unless the client is started with --cap-cloud; Dave's
-# rule is that it stays off until Dino's check picture. --cap-cloud=METRES sets the lowest summit that takes a cap (default
+# Cap cloud on high summits (docs/design/art_weather_light.md 7.1), always on (Dave 8 Nov: no flags). --cap-cloud=METRES sets the lowest summit that takes a cap (default
 # MIN_M, the cloud layer), so the starter hero peak (about 1430 m) can be checked with --cap-cloud=1200.
 #
 # Moist air pushed up over a summit condenses into a lens on the top and a banner trailing downwind. The air blows through it
@@ -65,7 +64,6 @@ void fragment() {
 """
 
 var _client
-var on: bool = false
 var min_m: float = MIN_M
 var strength: float = 0.0             # 0 .. 1 the caps now, eased (for checks)
 var caps_drawn: int = 0               # for checks
@@ -78,14 +76,8 @@ func setup(client) -> void:
 	_client = client
 
 	for argument in OS.get_cmdline_user_args():
-		if argument == "--cap-cloud":
-			on = true
-		elif argument.begins_with("--cap-cloud="):
-			on = true
+		if argument.begins_with("--cap-cloud="):
 			min_m = float(argument.trim_prefix("--cap-cloud="))
-
-	if not on:
-		return
 
 	var shader: Shader = Shader.new()
 	shader.code = SHADER
@@ -109,7 +101,7 @@ func setup(client) -> void:
 
 # Every frame from weather_look.gd: the weather now (eased) and the summits found (summits.gd).
 func update(delta: float, cloud: float, rain: float, storm: float, wind: float, wind_dir: Vector2, summits) -> void:
-	if not on or _client == null or _client.camera == null:
+	if _client == null or _client.camera == null:
 		return
 
 	var moist: float = smoothstep(0.3, 0.6, maxf(cloud, minf(rain * 3.0, 1.0)))

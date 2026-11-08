@@ -43,7 +43,7 @@ uniform float daylight = 1.0;
 uniform float mud = 0.0;            // 0..1: brown runoff after storms or at high flow (flora_view.gd, as the grid look)
 uniform vec3 mud_color : source_color = vec3(0.30, 0.24, 0.15);
 uniform float rain = 0.0;           // 0..1 (weather_look.gd): raindrop rings on the surface
-uniform float look_v2 = 0.0;        // 1 with --water-look (docs/design/water_look_after_rain.md): clarity after rain, white water by Froude number, foam lines
+uniform float look_v2 = 1.0;        // 1: water after rain (docs/design/water_look_after_rain.md): clarity after rain, white water by Froude number, foam lines
 uniform vec2 turbid = vec2(0.0);    // with look_v2: the cloud after rain in running and in still water, 0 clear .. 1 (weather_look.gd)
 uniform float foam_supply = 0.6;    // with look_v2: how much foam the river makes (season, recent rain)
 uniform float contact_m = 0.35;     // the sheet fades in over this much water along the view ray where it meets the ground (no hard line on a bank)
@@ -57,7 +57,7 @@ uniform vec4 fine_holes[8];         // world x, z, size x, size z
 uniform int fine_count = 0;
 uniform float fine_sheet = 0.0;     // 1: this is a fine sheet; its edge fades in over fine_blend instead of the live window's band
 uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live window magenta, a 2 m chunk sheet yellow, an 8 m one orange, dark lines on the texel borders, darker where the sheet is steep, red seen from behind, cyan where fall white water is on
-// Frozen water (docs/design/frozen_water_look.md, Kathleen 8 Nov 2026; --frozen-water, client): src/client/frozen_water.gd works the numbers out, set_ice_all
+// Frozen water (docs/design/frozen_water_look.md, Kathleen 8 Nov 2026; client): src/client/frozen_water.gd works the numbers out, set_ice_all
 // hands them to every sheet. Off (frozen_on 0) the sheet draws no ice, as before.
 uniform float frozen_on = 0.0;
 uniform vec4 ice_look = vec4(0.0);  // open (Ice.cover at 3 m), shore (at 1 m), thaw 0..1 (the shore moat first), snow 0..1 (lying snow)
@@ -344,7 +344,7 @@ void fragment() {
 	float contact = smoothstep(0.0, contact_m, through);
 
 	// Colour by depth, a sky reflection by angle.
-	// With --water-look the cloud after rain clears on its own curve, running water faster than still (water_look_after_rain.md 1).
+	// The cloud after rain clears on its own curve, running water faster than still (water_look_after_rain.md 1).
 	float mud_here = look_v2 > 0.5 ? max(mud, mix(turbid.y, turbid.x, smoothstep(0.1, 0.5, speed))) : mud;
 	float thick = 1.0 - exp(-min(through, depth * 3.0 + 0.2) / (clear_m * (1.0 - 0.6 * look_v2 * mud_here)));
 	vec3 water = mix(mix(shallow_color, deep_color, thick), mud_color * (1.0 - 0.4 * thick), mud_here * 0.8);
@@ -353,7 +353,7 @@ void fragment() {
 	// Foam where it runs fast and shallow (rapids, the lip and foot of a fall), streaked along the flow.
 	float streak = mix(noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p0 * 2.5), noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p1 * 2.5), mixk);
 	float rough = clamp((speed - 0.9) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);   // BUG-010: white from 0.9 m/s (was 1.2)
-	// With --water-look, white water needs a jump: the Froude number, not the speed alone (water_look_after_rain.md 3): waves with little white below
+	// White water needs a jump: the Froude number, not the speed alone (water_look_after_rain.md 3): waves with little white below
 	// about 1.7, white crests from 2, a full roller from 4.5. A deep fast river stays dark and smooth.
 	float froude = speed / sqrt(9.81 * max(depth, 0.02));
 	if (look_v2 > 0.5) {
@@ -377,7 +377,7 @@ void fragment() {
 		min(ex0.a, ex1.a) > 0.0005 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
 		min(ez0.a, ez1.a) > 0.0005 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
 	float drop = length(grad);
-	// Foam lines (with --water-look, water_look_after_rain.md 4): flecks riding the flow that gather on the seam between fast and slow water, where the
+	// Foam lines (water_look_after_rain.md 4): flecks riding the flow that gather on the seam between fast and slow water, where the
 	// speed changes most from cell to cell, white where fresh and tan where old in slow water; more in autumn and after rain. None on still water.
 	float foam_line = 0.0;
 	float foam_age = 0.0;
@@ -545,7 +545,7 @@ static var _shader: Shader = null
 
 static var debug_on: int = -1   # -1: not read yet (then --water-debug on the command line turns it on)
 
-# Frozen water (docs/design/frozen_water_look.md; --frozen-water): the numbers every sheet draws its ice from, kept here so a sheet made later starts
+# Frozen water (docs/design/frozen_water_look.md): the numbers every sheet draws its ice from, kept here so a sheet made later starts
 # with them (no flash of open water on a frozen pond while it waits for the next update).
 static var _ice_on: bool = false
 static var _ice_look: Vector4 = Vector4.ZERO
@@ -841,7 +841,7 @@ func set_rain(value: float) -> void:
 	_material.set_shader_parameter("rain", value)
 
 
-# --water-look (docs/design/water_look_after_rain.md): on or off, the cloud after rain in running and still water, the foam supply.
+# Water after rain (docs/design/water_look_after_rain.md): on or off, the cloud after rain in running and still water, the foam supply.
 func set_look(on: bool, turbid: Vector2, foam_supply: float) -> void:
 	_material.set_shader_parameter("look_v2", 1.0 if on else 0.0)
 	_material.set_shader_parameter("turbid", turbid)
