@@ -1584,8 +1584,8 @@ func _ear_motion(node: Node3D, state: int) -> void:
 		to.y = 0.0
 
 		if to.length() < 20.0 and to.length() > 0.01:
-			var basis: Basis = node.global_transform.basis
-			var side: float = (-basis.x.normalized()).dot(to.normalized())      # the model faces -Z, so its left is -X
+			var frame: Basis = node.global_transform.basis      # not "basis": that is Node3D's own
+			var side: float = (-frame.x.normalized()).dot(to.normalized())      # the model faces -Z, so its left is -X
 			turn = clampf(side * (1.5 if state == 3 else 1.0), -1.0, 1.0)
 
 	var flat: float = 1.0 if state == 10 or state == 11 or state == 16 else 0.0
