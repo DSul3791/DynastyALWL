@@ -476,6 +476,10 @@ func _process_body(delta: float) -> void:
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
 		if bool(b.get("model", false)):
 			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
+			# Stepping backward while facing something (a goblin backing off from a barking dog, Steve's #659): the walk plays in reverse.
+			var moved: Vector2 = Vector2(node.position.x - before.x, node.position.z - before.z)
+			var facing: Vector3 = -node.global_transform.basis.z if node.is_inside_tree() else Vector3.FORWARD
+			b["backing"] = model_speed > 0.3 and moved.normalized().dot(Vector2(facing.x, facing.z).normalized()) < -0.3
 
 			if node.has_meta("eye_mats"):
 				_eye_shine(node)
@@ -2759,6 +2763,9 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		ref = float(player.get_animation(clip).get_meta("travel_mps", ref))      # the speed the clip's feet were made for (_strip_root_drift)
 
 	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
+
+	if bool(b.get("backing", false)) and ref > 0.0:
+		player.speed_scale = -player.speed_scale      # backing away: the steps run backward, no moonwalk
 
 	# A young one drawn smaller than the clip's measured size (YOUNG_ANIMALS.md): its feet cover less ground a step, so the same speed
 	# needs quicker steps (shorter stride, higher rate); up to three times the clip's rate so a foal keeps up with a trotting mare.
