@@ -54,6 +54,7 @@ Weather step 2 (#667): moving under trees in rain, stock facing downwind in a ga
 | States 15, 17, 18, 0 and landing for posed birds | server flight (#653, #661), states as drawn | `_posed_flight`, `_wing_poses` (bone_offsets state poses 15, 17, 18, -20), `flare_t` | `bird_rig` | m49 |
 | States 0, 1, 2 for posed swimmers, and the hop arc at sea | sea species (Steve, SEA_MAMMALS.md; to come) | `_posed_swim`, `_swim_poses` (state poses 0, 1, 2), `_porpoise_pitch` | `swim_rig` | m50 |
 | Wind direction (`wind_dir`, the way it blows toward; Kathleen's prevailing wind when it lands) | shared weather (main), prevailing_wind.md | `_wind_to` (westerly 0.0 without one), `_wind_look`, `_into_wind`, ruffle `wind_dir` and `windward_share`, steam drift | `wind_looks` | m51 |
+| Fog: `visibility_m` (asked of Kathleen), else the scene `fog_density`; `mist`, `mist_top_m` | weather look (#672, #608), shared weather | `fog_now` from terrain_client; `_fog_visibility`, eye shine range and dusk start, steam in mist, `_herd_space` | `fog_looks` | m52 |
 | Kill switch | command line `--life-layer-off` | `life_layer_all_off`, `_all_flags_off`: every flag off and the always-on looks skipped | the switch itself | gate (PERF_BUDGET.md) |
 | Rain cover, conifers, shade, gale drift (Steve #667, #671) | server positions and headings | none needed: drawn as sent; state 20 in rain as the hunch | none | m26 |
 | Ground wet, season, hour | weather sounds, ambient conditions (main) | `conditions_now`: sleep, prints, puddle splashes, coat season | per look | m6, m12, m19, m20 |

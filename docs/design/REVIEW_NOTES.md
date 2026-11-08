@@ -44,3 +44,15 @@ the same throughout; every change is a fold, a rename or a named constant.
 `animal_view.gd` grew with the branch; it now holds about 30 look functions behind 21 flags. A split into one script per look
 family (feet, coats, weather, hunting) is the natural next step once the PC check says which looks stay; it is not done here
 because it would move every line and hide the behaviour review in a diff of moves.
+
+## After the gate: one weather sampler (8 Nov 2026)
+Checked how the animal looks read the weather against Kathleen's client code:
+- **Air temperature:** both call the shared `Weather.air_c` (#620); the animals through terrain_client's `air_at`. One function, no copy.
+- **Wind direction:** both read the same `terrain_client.weather` dictionary (`wind_dir`), which `wind_cue.gd` also reads; Kathleen's
+  prevailing wind will feed that one field. One source.
+- **Fog:** the animals read the scene Environment's `fog_density` that her weather look sets, and the shared state's `mist`; her sky
+  and sound code read her own smoothed `_s` values in weather_look.gd. Two readings of one thing: the animals' visibility is a
+  guess from the density. **After the gate:** a `visibility_m` exposed by the weather look (asked of Kathleen in ANIMAL_FOG.md)
+  becomes the one sampler for both, and `fog_now` reads only that.
+- The animal side reads each source once a frame (`_refresh_frame`), so there is one cache per frame on this side whatever the source.
+
