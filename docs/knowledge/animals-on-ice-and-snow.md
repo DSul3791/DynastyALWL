@@ -79,12 +79,12 @@
   - it breaks if mass > 3.5 × h²;
   - in between, it holds with a chance falling from 1 to 0 across the band.
   - Halve h for white (snow) ice and near springs and inflows, where the ice is thinner (judged).
-- **On the starter island, ice belongs to the high ground.** The starter is at about 34° S and follows the grid's warmth curve, about 14.4 °C a year at sea level (`OVERNIGHT_DECISIONS_8NOV.md` rows 19 and 20, #717). The coordinator's #731 figures (2.8 cm at the spawn pond, 5.6 cm at spring #8002) were for the old 9 °C climate.
-  - **Our sums** keep the ±5 °C season, 8 °C day range, ±4 °C cold spells and 6.5 °C per km. Ice growth is judged at about 2 to 3 cm per √(freezing degree-day).
-  - **Below about 800 m:** no lasting ice. At most a skim of a few millimetres on still water at dawn in a midwinter cold spell, gone by midday. The spawn pond and spring #8002 (about 10.9 °C water) get none.
-  - **800 to 1,200 m:** in a midwinter cold spell, pools and tarns get a few centimetres. That is enough for birds, hares and foxes, and nothing heavier.
-  - **Above about 1,200 to 1,450 m:** high tarns can freeze over through midwinter, perhaps 10 to 20 cm in a cold winter. That carries a person on clear ice by the 10 cm rule, and wolves and deer.
-  - So on the starter, walking on ice and cutting holes is a high-mountain thing. #731's own sums should be redone once `climate.gd` follows the curve.
+- **On the starter island:** at most 2.8 cm at the spawn pond and 5.6 cm by spring #8002 (the coordinator's #731 note).
+  - These figures hold because ice reads the starter's `snow_bias_c` of −6 °C (`OVERNIGHT_DECISIONS_8NOV.md` row 21, #717). So for ice the island behaves like about 8.4 °C at sea level, close to the old 9 °C, even though the plain air follows the grid's 14.4 °C.
+  - The spring's own pool stays open: its water is about 10.9 °C (`springs-and-brooks-in-winter.md`, #739).
+  - 2.8 cm carries birds, hares and foxes for sure, and a roe deer at best. Nothing heavier.
+  - 5.6 cm carries a fox for sure and may carry a wolf or a roe deer. It breaks under red deer, boar and people.
+  - So on the starter's low ground the ice is for small animals only. That fits "dark skim only" for people. Higher up, colder ice grows thicker, and high tarns can bear a person in midwinter (judged).
 
 ### Slipping
 
@@ -122,7 +122,7 @@
 ## How ours works today (read from notes, 8 Nov, not tested)
 
 - No ice has been drawn on land water since 2 Nov (the water sheets replaced the grid that held it). #731 (Kathleen) puts it back.
-- On the starter, the low ground never gets ice that bears a person. At about 14.4 °C a year at sea level (#717 row 20), low ponds get at most a dawn skim, and only high tarns above about 1,200 m freeze thick enough (our sums, above).
+- The starter ice never gets thick enough to bear a person on the low ground: at most 2.8 cm at the spawn pond and 5.6 cm by spring #8002 (coordinator, 8 Nov; ice reads the −6 °C `snow_bias_c`, #717 row 21).
 - No animal ice rule was read for this page.
 
 ## Sources
@@ -132,7 +132,7 @@
 - Wikipedia, Wolves and moose on Isle Royale. https://en.wikipedia.org/wiki/Wolves_and_moose_on_Isle_Royale
 - Murray, D. L. and Boutin, S. (1991). The influence of snow on lynx and coyote movements. *Oecologia*. https://www.originalwisdom.com/wp-content/uploads/bsk-pdf-manager/2019/03/Murray-and-Boutin_1991_InfluenceOfSnowOnLynxAndCoyoteMovements.pdf
 - Telfer, E. S. and Kelsall, J. P. (1984). Adaptation of some large North American mammals for survival in snow. *Ecology* 65 (abstract read; numbers not in it). https://openpolar.no/Record/crwiley:10.2307%2F1937779/Details
-- Our sums: the metric Gold rule, the ice table, the starter ice by height (at the grid's 14.4 °C; growth rate judged).
+- Our sums: the metric Gold rule, the ice table, the starter figures.
 - **Judged or from memory:** white ice as half, deer foot load 400 to 500 g/cm², deer hampered over 50 cm, snow on backs, water birds at the ice edge, slip rates, the break-through band.
 
 ## Fetches still to do
