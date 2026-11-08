@@ -21,6 +21,8 @@
 	"spawn_every_s": 2.0,
 	"per_player_cap": 30,
 	"server_cap": 150,
+	"groups": {"enabled": false, "spacing_m": 3.0, "drift_m": 2.0, "scatter_deg": 25.0, "rain_bunch": 0.35, "wind_bunch": 0.25, "min_bunch": 0.5,
+		"note": "Herd groups (docs/design/HERD_GROUPS.md, MikeW 8 Nov 2026): off until gated. One leader per herd (on the ground) drifts drift_m a graze step, turned by the weather's _upwind_angle; the rest keep a spiral place round it at spacing_m (species group_spacing_m), closer in rain and wind when weather.on; on alarm they scatter up to scatter_deg either side and regroup at their places once safe."},
 	"species": {
 		"rabbit": {
 			"dog": {"notice_m": 30.0, "flee_m": 20.0, "reaction": "flee"},
@@ -75,6 +77,7 @@
 			}
 		},
 		"deer": {
+			"group_spacing_m": 3.0,
 			"dog": {"notice_m": 60.0, "flee_m": 40.0, "reaction": "flee"},
 			"number": 2,
 			"weather": "deer",
@@ -464,6 +467,7 @@
 			}
 		},
 		"horse": {
+			"group_spacing_m": 3.5,
 			"number": 7,
 			"weather": "stock",
 			"name": "Horse",
@@ -565,6 +569,7 @@
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"boar": {
+			"group_spacing_m": 2.0,
 			"dog": {"notice_m": 25.0, "reaction": "stand", "attack_m": 8.0},
 			"number": 8,
 			"name": "Boar",
@@ -765,6 +770,7 @@
 			"model": true
 		},
 		"grouse": {
+			"group_spacing_m": 1.2,
 			"flight": {"kind": "flush", "flush_m": 9.0, "burst_s": 1.5, "climb_m": [8.0, 12.0], "fly_m": [100.0, 250.0], "fly_mps": 17.0, "glide_share": 0.3, "run_m": 6.0},
 			"weather": "bird",
 			"alarm_group": "ground_birds",
@@ -1178,6 +1184,7 @@
 			"model": true
 		},
 		"donkey": {
+			"group_spacing_m": 3.0,
 			"number": 15,
 			"weather": "stock",
 			"name": "Donkey",
@@ -1456,6 +1463,7 @@
 			"note": "Dave 7 Nov 2026, batch 1. A black bear is smaller and shyer than the brown bear and has no den: it wanders forest and berry ground, runs from a player at spook_m, charges only one who gets close or corners it."
 		},
 		"elk": {
+			"group_spacing_m": 4.0,
 			"dog": {"notice_m": 60.0, "flee_m": 40.0, "reaction": "flee"},
 			"number": 19,
 			"weather": "deer",
@@ -2118,6 +2126,7 @@
 			"spawn_share": 0.4
 		},
 		"crow": {
+			"group_spacing_m": 1.5,
 			"flight": {"kind": "perch", "burst_s": 1.0, "climb_m": [3.0, 5.0], "fly_m": [40.0, 150.0], "fly_mps": 12.0, "glide_share": 0.4, "perch_up_m": 8.0, "perch_s": [30.0, 90.0]},
 			"weather": "bird",
 			"alarm_group": "ground_birds",
@@ -2173,6 +2182,7 @@
 			"note": "Dave 7 Nov 2026, batch 2. Crows walk and peck on open ground, field edges and the shore in small groups by day and flush when a player comes close. Grouse numbers; it does not fly in this version, it runs and flaps."
 		},
 		"pheasant": {
+			"group_spacing_m": 1.5,
 			"flight": {"kind": "flush", "flush_m": 9.0, "burst_s": 1.5, "climb_m": [10.0, 15.0], "fly_m": [120.0, 300.0], "fly_mps": 18.0, "glide_share": 0.3, "run_m": 8.0},
 			"weather": "bird",
 			"alarm_group": "ground_birds",
@@ -2278,6 +2288,7 @@
 			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger; it does not fly in this version."
 		},
 		"cow": {
+			"group_spacing_m": 3.0,
 			"dog": {"notice_m": 30.0, "flee_m": 20.0, "reaction": "stand", "young_only": true, "attack_m": 12.0},
 			"number": 30,
 			"weather": "stock",
@@ -2674,6 +2685,7 @@
 			"note": "Batch 3 (farm). A dog stays near farms and town, barks at a stranger and bites one who corners it; labrador and bloodhound are two looks of one species. Not spawned in the wild (target_per_player 0): the model, server row and carcass are ready for the farm and town system, which places them (Dave 7 Nov 2026: add all the animals we have models for; farm design to come)."
 		},
 		"buffalo": {
+			"group_spacing_m": 3.5,
 			"number": 35,
 			"weather": "stock",
 			"name": "Wild ox",
@@ -2953,6 +2965,7 @@
 			"spawn_share": 0.3
 		},
 		"warthog": {
+			"group_spacing_m": 2.0,
 			"dog": {"notice_m": 25.0, "reaction": "stand", "attack_m": 8.0},
 			"number": 38,
 			"name": "Warthog",
@@ -3121,6 +3134,7 @@
 			}
 		},
 		"wildebeest": {
+			"group_spacing_m": 3.0,
 			"number": 40,
 			"weather": "stock",
 			"name": "Wildebeest",
@@ -3664,6 +3678,7 @@
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). Camels roam dry savanna and bare ground in small groups by day, walk off from a player and kick one who corners it. Horse numbers, slower, drier ground; tamable value like the horse for later riding."
 		},
 		"guineafowl": {
+			"group_spacing_m": 1.0,
 			"flight": {"kind": "flush", "flush_m": 9.0, "burst_s": 1.5, "climb_m": [6.0, 10.0], "fly_m": [60.0, 150.0], "fly_mps": 14.0, "glide_share": 0.3, "run_m": 10.0},
 			"weather": "bird",
 			"alarm_group": "ground_birds",
