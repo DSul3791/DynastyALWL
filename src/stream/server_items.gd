@@ -12610,7 +12610,7 @@ func _bulk_take_all(peer: int, inv, id: int, box) -> int:
 
 # Store all: every pack stack past the hotbar, not a favourite and not the log on the shoulder, into the open container (the rules of one put:
 # a fire takes only wood and food, a take-only container nothing, a heavy one up to its max_kg). Returns the stacks moved.
-func _bulk_store_all(peer: int, inv, id: int, box) -> int:
+func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 	var it: Dictionary = _items.get(id, {})
 	var def: Dictionary = _structures.get(str(it.get("struct", {}).get("kind", "")), {})
 
