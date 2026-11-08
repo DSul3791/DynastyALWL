@@ -54,9 +54,10 @@ def _discharge(order, rec, sea, w, cell, N):
 
 
 @nb.njit(cache=True)
-def _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta):
+def _channel_share(Q, A, h, rec, order, sea, n, dx, c_ch, theta, a_min):
     """How much of each cell is channel (0 hillslope, 1 channel). A channel begins where Q * S^theta passes c_ch (smoothly
-    from half of it), with S the slope to the receiver, and once begun it continues downstream at any slope."""
+    from half of it), with S the slope to the receiver, and where the drainage area A (m2, not weighted by rain) passes
+    a_min (smoothly from half of it; 0 for none), and once begun it continues downstream at any slope."""
     out = np.zeros(Q.size)
     for q in range(order.size):
         i = order[q]; d = rec[i]
@@ -69,6 +70,10 @@ def _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta):
         if s < 0.0:
             s = 0.0
         t = (Q[i] * s ** theta / c_ch - 0.5) / 0.5
+        if a_min > 0.0:
+            ta = (A[i] / a_min - 0.5) / 0.5
+            if ta < t:
+                t = ta
         t = 0.0 if t < 0.0 else (1.0 if t > 1.0 else t)
         out[i] = t * t * (3.0 - 2.0 * t)
     for q in range(order.size - 1, -1, -1):          # upstream first: a channel carries on down to the sea or a lake
@@ -343,7 +348,7 @@ def bedrock_threshold(E):
     return float(E.get('incision_threshold_m', 0.0))
 
 
-def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, sc_rock, deposit, fixed):
+def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, a_min, Sc, sc_rock, deposit, fixed):
     """One step of the river era (B1; also the post-glacial era in glacial.py): route, discharge from the quick runoff of the
     rock at today's surface, channel heads, the implicit erosion-deposition solve (slope limit by rock, see slope_limits),
     then creep. h is updated in place. Returns the height change apart from uplift (negative eroded, positive laid down),
@@ -355,7 +360,8 @@ def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch,
     sc = cell_limits(Sc, sc_rock, rid, deposit)
     psi = bedrock_threshold(E)
     Q = _discharge(order, rec, sea, quick, cell, n * n)
-    share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
+    area = _discharge(order, rec, sea, np.ones(n * n), cell, n * n)
+    share = _channel_share(Q, area, h, rec, order, sea, n, dx, c_ch, theta, a_min)
     ery = ery_fn(h)                                   # the top layer, cover where there is any: creep moves it
     ery_rock, ery_cov, cov = ery_fn.parts(h)          # the rivers cut through the cover, then the rock under it
     h0 = h.copy()
@@ -453,6 +459,8 @@ def main():
     CH = E['channel_head']
     theta = float(CH['slope_exponent'])
     c_ch = float(CH['area_m2_at_ref_slope']) * float(CH['ref_slope']) ** theta
+    a_min = float(CH.get('min_area_m2', 0.0))
+    ones = np.ones(n * n)
     Sc, sc_rock = slope_limits(g, E)
     steps = int(round(E['years'] / E['dt']))
     t0 = time.time()
@@ -472,8 +480,8 @@ def main():
         rid = rock.rock_ids(g, h)
         wb = runoff.budget(rain_mm, rid, bfi, W)
         Q = _discharge(order, rec, sea, wb['quick'] / q_ref, cell, n * n)
-        share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
-        area = _discharge(order, rec, sea, np.ones(n * n), cell, n * n)
+        area = _discharge(order, rec, sea, ones, cell, n * n)
+        share = _channel_share(Q, area, h, rec, order, sea, n, dx, c_ch, theta, a_min)
         hh = h.reshape(n, n)
         np.savez_compressed(f'{od}/ground.npz', ground=hh.astype(np.float32), start=start.astype(np.float32),
                             quick_area_m2=Q.reshape(n, n).astype(np.float32), area_m2=area.reshape(n, n).astype(np.float32),
@@ -594,7 +602,7 @@ def main():
 
     snaps = {int(round(y / E['dt'])): y for y in E.get('snapshot_years', [])}
     for s in range(steps):
-        change, flux, creep = river_step(h, sea, n, dx, E['dt'], E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, sc_rock,
+        change, flux, creep = river_step(h, sea, n, dx, E['dt'], E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, a_min, Sc, sc_rock,
                                          deposit, fixed)
         by_river += change - creep
         by_creep += creep
