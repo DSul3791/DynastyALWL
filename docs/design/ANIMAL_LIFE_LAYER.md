@@ -29,6 +29,9 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Coat ruffle | fur moves in the wind (shader) | `ruffle_cm` | `coat_ruffle` (**off**) | COAT_SHADER.md |
 | Coat dust | dusty after a roll, washed by water and rain | `roll_states` | `coat_dust` (**off**) | COAT_SHADER.md |
 | Young animals | young at their species size, quick short steps, newborn wobble | `young_look` | `young_gait` (**off**) | YOUNG_ANIMALS.md |
+| Water | drinking rings at the bank, swimming low and paddling, shake-off | `water_swim`, `swim_depth_x` | `water_life` (**off**) | ANIMALS_AND_WATER.md |
+| Hunch (state 20) | head low, ears back, tail still against the weather; storm_ahead stops the fly swish | `state_poses` "20" | none (server state) | ANIMALS_AND_WATER.md, Steve #646 |
+| Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |
 

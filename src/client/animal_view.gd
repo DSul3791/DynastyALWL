@@ -43,6 +43,7 @@ var _prints: Array = []           # [Decal, born msec, life s]
 var _print_tex: Dictionary = {}   # sign group -> ImageTexture
 var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
 var slope_tilt: bool = false
+var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
 var young_gait: bool = false      # young drawn at their species' size, quick short steps, wobbly when newborn (YOUNG_ANIMALS.md; off until the PC check)
 var coat_dust: bool = false       # coats dusty after a roll, washed by water and rain (COAT_SHADER.md section 4; off until the PC check)
@@ -99,6 +100,7 @@ void fragment() {
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
 # on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model is not drawn.
 const SMALL_SPECIES := [9, 10, 11, 13]
+const HUNCH := 20           # server state 20 (Steve's #646): standing still against the weather, head low, ears back
 const YOUNG_NUM := 100       # a young animal's species number + 100 (server_animals.gd)
 const YOUNG_SCALE := 0.5     # how big the young are drawn
 
@@ -1631,6 +1633,12 @@ func _tail_motion(node: Node3D, state: int, speed: float) -> void:
 			var season: String = str((conditions_now.call() as Dictionary).get("season", "")) if conditions_now.is_valid() else season_now
 			want = (1.0 if speed < 0.3 else 0.3) * (1.0 if season == "" or season == "summer" or season == "spring" else 0.0)
 
+			if conditions_now.is_valid() and float((conditions_now.call() as Dictionary).get("storm_ahead", 0.0)) > 0.5:
+				want = 0.0      # the flies go to ground before a storm (Steve's #646 storm_ahead), so no swish
+
+	if state == HUNCH:
+		want = 0.0      # hunched against the weather: the tail clamped down
+
 	if stalk_fx and _stalking(node, state):
 		want = 0.0      # a stalker's tail is low and still
 
@@ -1655,7 +1663,7 @@ func _ear_motion(node: Node3D, state: int) -> void:
 			var side: float = (-frame.x.normalized()).dot(to.normalized())      # the model faces -Z, so its left is -X
 			turn = clampf(side * (1.5 if state == 3 else 1.0), -1.0, 1.0)
 
-	var flat: float = 1.0 if state == 10 or state == 11 or state == 16 or (stalk_fx and state == 7) else clampf((_wind() - 0.5) * 0.8, 0.0, 0.4)      # threat flat; a strong wind lays them back a little
+	var flat: float = 1.0 if state == 10 or state == 11 or state == 16 or (stalk_fx and state == 7) else 0.7 if state == HUNCH else clampf((_wind() - 0.5) * 0.8, 0.0, 0.4)      # threat flat; a strong wind lays them back a little
 	fix.ear_turn = lerpf(float(fix.ear_turn), turn, 0.08)
 	fix.ear_flat = lerpf(float(fix.ear_flat), flat, 0.15)
 
@@ -2254,6 +2262,109 @@ func _young_wobble(node: Node3D, b: Dictionary, _state: int, speed: float) -> vo
 	rig.rotation.z = w * deg_to_rad(6.0) * (0.7 * sin(_t * rate + phase) + 0.3 * sin(_t * rate * 2.7 + phase * 1.9))
 
 
+# Land animals and water (docs/design/ANIMALS_AND_WATER.md). Probed four times a second: the water depth over the ground the server
+# stands the animal on. Wading (below swim depth) changes nothing but the footfall splashes already there. Deeper than
+# swim_depth_x (0.7) of its shoulder height, an animal whose row has water_swim floats with its back at the surface (the Rig raised
+# so 15 percent of its height shows), plays its walk clip quickly as a paddle and leaves rings behind it. Out on the bank again it
+# shakes off: a fast roll that dies away over 0.9 s with a spray of drops (the wet look sheds its wet_shed share then). Grazing with
+# water just ahead of its muzzle, it drinks: the graze clip (head down) and a ring on the water every 1.6 s.
+# Returns true while swimming (the clip is chosen here).
+func _water_body(node: Node3D, b: Dictionary, row: Dictionary, player: AnimationPlayer, state: int, delta: float) -> bool:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null or not node.is_inside_tree():
+		return false
+
+	var size: float = maxf(node.scale.y, 0.05)
+	var h: float = float(row.get("height_m", float(row.get("length_m", 1.0)) * 0.55)) * size
+	b["water_t"] = float(b.get("water_t", 0.0)) - delta
+
+	if float(b["water_t"]) <= 0.0:
+		b["water_t"] = 0.25
+		var level: float = float(water_level.call(node.global_position.x, node.global_position.z))
+		b["depth"] = level - node.global_position.y if not is_nan(level) else 0.0
+		b["drink_at"] = null
+
+		if state == 0 and float(b["depth"]) < 0.1 * h:
+			var muzzle: Vector3 = node.global_position - node.global_transform.basis.z.normalized() * float(row.get("length_m", 1.0)) * 0.55 * size
+			var ahead: float = float(water_level.call(muzzle.x, muzzle.z))
+
+			if not is_nan(ahead):
+				b["drink_at"] = Vector3(muzzle.x, ahead, muzzle.z)
+
+	var depth: float = float(b.get("depth", 0.0))
+	var swims: bool = bool(row.get("water_swim", false)) and depth > float(row.get("swim_depth_x", 0.7)) * h
+
+	if swims:
+		b["swum"] = true
+		rig.position.y = lerpf(rig.position.y, (depth - 0.85 * h) / size, clampf(delta * 4.0, 0.0, 1.0))
+		var paddle: String = _clip_full(player, row, str((row.get("clips", {}) as Dictionary).get("walk", "")))
+
+		if paddle != "" and player.current_animation != paddle:
+			player.play(paddle, 0.3)
+
+		player.speed_scale = 1.8
+		b["ring_t"] = float(b.get("ring_t", 0.0)) - delta
+
+		if float(b["ring_t"]) <= 0.0:
+			b["ring_t"] = 0.6
+			_ring(Vector3(node.global_position.x, node.global_position.y + depth, node.global_position.z), h * 0.6)
+
+		return true
+
+	if b.has("swum") and depth < 0.15 * h:
+		b.erase("swum")
+		b["shake_t"] = 0.9
+		b["shed"] = true      # the wet look (claude/mikew-wet-look) drops its wet_shed share on this
+		_splash(node.global_position + Vector3(0.0, h * 0.6, 0.0), true, 6.0)
+
+	if absf(rig.position.y) > 0.002 and b.get("hop") == null and float(b.get("pounce_t", -1.0)) < 0.0:
+		rig.position.y = lerpf(rig.position.y, 0.0, clampf(delta * 3.0, 0.0, 1.0))      # back down as it wades out
+
+	if float(b.get("shake_t", 0.0)) > 0.0:
+		b["shake_t"] = float(b["shake_t"]) - delta
+		rig.rotation.z = 0.3 * sin(float(b["shake_t"]) * 45.0) * maxf(float(b["shake_t"]), 0.0) / 0.9
+
+		if float(b["shake_t"]) <= 0.0:
+			rig.rotation.z = 0.0
+
+	if b.get("drink_at") != null:
+		b["ring_t"] = float(b.get("ring_t", 0.0)) - delta
+
+		if float(b["ring_t"]) <= 0.0:
+			b["ring_t"] = 1.6
+			_ring(b["drink_at"], 0.35 * size + 0.1)
+
+	return false
+
+
+# A ring on the water that spreads to `wide` metres across and fades over 1.5 s (drinking, a swimmer's wake).
+func _ring(at: Vector3, wide: float) -> void:
+	if not is_inside_tree():
+		return
+
+	var ring: MeshInstance3D = MeshInstance3D.new()
+	var torus: TorusMesh = TorusMesh.new()
+	torus.inner_radius = 0.46
+	torus.outer_radius = 0.5
+	torus.rings = 24
+	torus.ring_segments = 4
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.85, 0.9, 0.95, 0.55)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	torus.material = mat
+	ring.mesh = torus
+	add_child(ring)
+	ring.global_position = at + Vector3(0.0, 0.01, 0.0)
+	ring.scale = Vector3(0.1, 0.02, 0.1)
+	var grow: Tween = create_tween()
+	grow.set_parallel(true)
+	grow.tween_property(ring, "scale", Vector3(wide, 0.02, wide), 1.5)
+	grow.tween_property(mat, "albedo_color:a", 0.0, 1.5)
+	grow.chain().tween_callback(ring.queue_free)
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -2286,6 +2397,11 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = str(state) if roles.has(str(state)) else "0"
 
+	# State 20 hunch (Steve's #646, weather): standing still head low; with no clip of its own the standing idle (12, then 3) plays
+	# under the row's state_poses "20" (head and neck down), never the grazing clip.
+	if state == HUNCH and not roles.has("20"):
+		role = "12" if roles.has("12") else ("3" if roles.has("3") else "0")
+
 	# Asleep (docs/design/ANIMAL_SLEEP.md): the server beds an animal down outside its active hours but sends it as grazing; the client
 	# applies the same rule from the species file and its clock and plays the row's sleep clip (or holds its sleep pose). The server's
 	# alert or flee wakes it; a get-up clip plays first when the row names one.
@@ -2312,6 +2428,10 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	if float(b.get("waking", 0.0)) > 0.0:
 		b["waking"] = float(b["waking"]) - delta
 		return
+	# Land animals and water (ANIMALS_AND_WATER.md): deep enough, a row with water_swim swims low and paddles; at the bank it drinks.
+	if water_life and not roles.has("swim") and water_level.is_valid() and _water_body(node, b, row, player, state, delta):
+		return
+
 	# A swimmer (a row with a "swim" clip, the alligator) in the water plays its swim clip whatever its state, at its swim speed.
 	if roles.has("swim") and water_level.is_valid():
 		var level: float = float(water_level.call(node.global_position.x, node.global_position.z)) if node.is_inside_tree() else NAN

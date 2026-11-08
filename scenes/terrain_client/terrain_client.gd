@@ -6418,4 +6418,7 @@ func _animal_conditions() -> Dictionary:
 	if sound != null and sound.weather != null:
 		out["ground_wet"] = float(sound.weather.ground_wet)
 
+		if "storm_ahead" in sound.weather:      # Steve's #646: a storm on its way (0..1); quietens the animals' fly swish
+			out["storm_ahead"] = float(sound.weather.storm_ahead)
+
 	return out
