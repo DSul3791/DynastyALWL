@@ -37,7 +37,7 @@ A bear goes up one rung at a time. Each rung is a visible and audible cue, so th
 | 3. Charge | WARN runs out | Sprint at the player | CHARGE. With `bluff_share`, a **bluff**: it stops short at `bluff_stop_m` and then recovers |
 | 4. Contact | A real charge reaches `hit_m` | Swipe | CHARGE hit (exists) |
 
-**Running makes it worse.** A player who runs (sprint speed) during rung 1 or 2 skips the rest of the warning: it goes straight to rung 3, and that charge is never a bluff. This is the one new rule that teaches the real-world advice.
+**Running makes it worse.** A player who runs **away** (faster than `run_trigger_mps` away from the bear) during rung 1 or 2 skips the rest of the warning. A player who runs in and stops still gets the whole warning, so the warning contract holds: it goes straight to rung 3, and that charge is never a bluff. This is the one new rule that teaches the real-world advice.
 
 **The den keeps its own rule.** Fire still does not help inside the den ring, and the bluff share is halved there. A mother between her and her cubs never bluffs.
 
@@ -49,7 +49,7 @@ A bear goes up one rung at a time. Each rung is a visible and audible cue, so th
   "bluff_share": 0.6,          // chance a charge is a bluff (scaled by temperament: defensive x1.2, aggressive x0.5)
   "bluff_stop_m": 4.0,         // a bluff stops this far from the player
   "den_bluff_x": 0.5,          // bluff share inside the den ring
-  "run_trigger_mps": 6.0       // a player moving faster than this during WARN skips to a real charge
+  "run_trigger_mps": 6.0       // a player moving away faster than this during WARN skips to a real charge
 }
 ```
 
@@ -58,10 +58,10 @@ Black bear: a higher `bluff_share` (0.75). Black bears bluff more and rarely pre
 ## 5. Systems touched
 
 1. **`server_big_game.gd`:**
-   - WARN carries a `phase` (huff, jaw-pop), sent as the animal's state byte. Either a new state 13 (WARN_POP), or WARN keeps its number and the client times the jaw-pop from `huff_share`. I recommend state 13, so the server stays the single source.
+   - WARN carries a `phase` (huff, jaw-pop), sent as the animal's state byte: a new state **16** (WARN_POP), so the server stays the single source. (13 to 15 are already taken by the thief's sneak and carry and the flock's take-off, so it is 16, not 13 as this note first said.)
    - CHARGE gets a `bluff` flag that ends it at `bluff_stop_m` without a hit.
-   - The run trigger reads the player speed that `player_info` already carries.
-2. **`src/client/animal_view.gd`:** maps the clips of the new phase. MikeW picks the clips from the bear's 81 (huff, jaw-pop, swat or stomp) and the black bear's 136. `models.json` `clips` gets key "13".
+   - The run trigger reads each player's ground velocity from the animals' existing noise sample (`player_velocity_at`); `player_info` carries no speed.
+2. **`src/client/animal_view.gd`:** maps the clips of the new phase. MikeW picks the clips from the bear's 81 (huff, jaw-pop, swat or stomp) and the black bear's 136. `models.json` `clips` gets key "16".
 3. **Sounds (Jason):** a huff, a jaw-pop and a woof, played on state change. Two growl recordings exist in the shared folder (`bear_01_growling…`, `bear_02_growling…_needs_trim`); they are growls, not huffs. These are QA listening items (Dave listens).
 4. **The interaction card (`cards.json`, #550):** the warning cues move from `built: false` to built as each one lands.
 5. **Journal (#547):** watching a full ladder without being hit counts as an **Observed** event for the bear.
@@ -69,9 +69,9 @@ Black bear: a higher `bluff_share` (0.75). Black bears bluff more and rarely pre
 ## 6. How we know it works (David4 headless, then Dino on the PC)
 
 - **Headless test (`test_bear_threat.gd`):**
-  - A scripted player walks into the den ring, and the states run 10 → 13 → 11.
-  - Backing off during 10 or 13 ends in calm with no charge.
-  - Sprinting during 10 skips to a real charge.
+  - A scripted player walks into the den ring, and the states run 10 → 16 → 11.
+  - Backing off during 10 or 16 ends in calm with no charge.
+  - Running away during 10 skips to a real charge.
   - With `bluff_share` 1, the charge ends at `bluff_stop_m` with no damage.
   - A mother with cubs never bluffs.
   - Old rows without the new keys behave exactly as today.
@@ -87,7 +87,7 @@ Black bear: a higher `bluff_share` (0.75). Black bears bluff more and rarely pre
 ## 8. Depends on
 
 - ~~Dave's reaction to this design~~: given 8 Nov 2026 (section 9).
-- **MikeW:** the clip mapping for state 13.
+- **MikeW:** the clip mapping for state 16.
 - **Jason:** the huff and jaw-pop sounds.
 
 It needs no rebake and no water or terrain work.
