@@ -17,6 +17,7 @@ const LuckScript := preload("res://src/shared/luck.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const FloraLayout := preload("res://src/worldgen/runtime/flora_layout.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -169,6 +170,7 @@ var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
+var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
@@ -310,6 +312,7 @@ var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
 var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the water
+var _last_rain_s: float = -INF      # game seconds when it last rained (thirst.sources: intermittent brooks run for a day after rain)
 var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
@@ -3317,7 +3320,8 @@ func _showroom_retry(delta: float) -> void:
 
 # Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
 func _fires(delta: float) -> void:
-	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+	var rain_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+	var raining: bool = rain_v >= RAIN_PUTS_OUT
 	_refresh_pots()
 
 	for id in _items.keys():
@@ -3335,8 +3339,16 @@ func _fires(delta: float) -> void:
 			_fire_embers(it, fire, delta, raining)
 			continue
 
-		_fire_burn(fire, delta)
+		# A large fire on a coal bed burns on through rain of any strength, uncovered (fire design 4): faster in heavy rain, and smoking.
+		var rain_proof: bool = _fire_rain_proof(fire)
+		var in_rain: bool = raining and not bool(fire["covered"])
+		var heavy: bool = rain_proof and in_rain and rain_v >= float(_coals_cfg().get("rain_burn_from", 0.6))
+		_fire_burn(fire, delta * (float(_coals_cfg().get("rain_burn_x", 1.25)) if heavy else 1.0))
 		fire["lit_s"] = float(fire.get("lit_s", 0.0)) + delta   # the coal bed builds while it burns
+		var smoke: int = 1 if rain_proof and in_rain else 0
+
+		if smoke != int(fire.get("smoke", 0)):
+			fire["smoke"] = smoke   # the row is sent again (fire design 5: thick smoke while it burns wet)
 
 		if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_trim_store(fire, _chests[int(fire["uid"])]):
 			_push_box(id, _chests[int(fire["uid"])])   # burned wood leaves the store; whoever has it open sees it go
@@ -3356,7 +3368,7 @@ func _fires(delta: float) -> void:
 
 			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
 				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
-		elif raining and not fire["covered"]:
+		elif raining and not fire["covered"] and not _fire_rain_proof(fire):
 			var grace: float = float(fire.get("rain_grace", 0.0)) - delta   # lit a moment ago in the rain: it burns until the grace is up
 
 			if grace > 0.0:
@@ -3364,6 +3376,7 @@ func _fires(delta: float) -> void:
 			else:
 				fire.erase("rain_grace")
 				fire.erase("lit_s")   # rained out: the coals are drowned too
+				fire.erase("smoke")
 				fire["state"] = 9
 				it["left"] = FIRE_LAID_S
 				_dirty = true
@@ -3384,10 +3397,14 @@ func _expire_items(spent: float) -> void:
 			_dirty = true
 
 
-# A fire's world row extra: its burn time and, for coals and warm ash, glow (1 fresh .. 0 at the end of that stage).
+# A fire's world row extra: its burn time, smoke 1 while a large fire burns on in the rain, and, for coals and warm ash, glow (1 fresh .. 0 at
+# the end of that stage).
 func _fire_extra(it: Dictionary) -> Dictionary:
 	var extra: Dictionary = {"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)}
 	var state: int = int(it["fire"]["state"])
+
+	if int(it["fire"].get("smoke", 0)) > 0 and fire_is_lit(state):
+		extra["smoke"] = int(it["fire"]["smoke"])
 
 	if state == FIRE_STATE_COALS or state == FIRE_STATE_ASH:
 		extra["glow"] = snappedf(_fire_glow(it), 0.01)
@@ -3415,6 +3432,7 @@ func _fire_burnt_out(it: Dictionary, fire: Dictionary) -> void:
 	var cfg: Dictionary = _coals_cfg()
 	_lit_valid = false
 	fire.erase("rain_grace")
+	fire.erase("smoke")
 
 	if not cfg.is_empty() and float(fire.get("lit_s", 0.0)) >= float(cfg.get("coal_bed_s", 600.0)):
 		fire["state"] = FIRE_STATE_COALS
@@ -3423,6 +3441,13 @@ func _fire_burnt_out(it: Dictionary, fire: Dictionary) -> void:
 		return
 
 	_fire_cold(it, fire)
+
+
+# A large fire (state 41) with a coal bed (coals.coal_bed_s burned since it was last cold) is not put out by rain (fire design 4, coordinator
+# decision 8 Nov 2026). Small and medium fires, and a large one lit a moment ago, go out as before; once a large fire's logs are gone it is
+# medium again and the rain takes it.
+func _fire_rain_proof(fire: Dictionary) -> bool:
+	return int(fire["state"]) == FIRE_STATE_BONFIRE and not _coals_cfg().is_empty() and float(fire.get("lit_s", 0.0)) >= float(_coals_cfg().get("coal_bed_s", 600.0))
 
 
 # Coals run out (or are rained out) to warm ash.
@@ -3701,6 +3726,7 @@ func _sync_world_items() -> void:
 				if it.has("fire"):
 					signature += 13 * int(it["fire"].get("fed", 0))      # wood laid on a fire is sent again (its burn time for the inspection label)
 					signature += 17 * int(floor(_fire_glow(it) * 10.0))   # coals and warm ash are sent again each tenth of their time (the client dims them)
+					signature += 19 * int(it["fire"].get("smoke", 0))   # a fire that starts or stops smoking is sent again
 
 				if it.has("tree"):
 					signature += int(round(float(it["tree"].get("length", 0.0)) * 20.0)) * 7      # a trunk that got shorter (a log was cut off) is sent again
@@ -8745,6 +8771,9 @@ func _vitals_tick(spent: float) -> void:
 	_lit_valid = false
 	_in_vitals = true
 
+	if weather_now.is_valid() and float((weather_now.call() as Dictionary).get("rain", 0.0)) > 0.05:
+		_last_rain_s = _now_game_s()
+
 	for peer in _peer_key:
 		var v: Dictionary = _vitals.get(_peer_key[peer], {})
 
@@ -12855,6 +12884,9 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		_reject(peer, 0)
 		return
 
+	if not _drink_source_ok(peer, thirst):
+		return
+
 	# A water container in hand with room is filled instead (job 89); a full one lets you drink from the water as before.
 	if inv != null and slot >= 0 and slot < inv.SLOTS and inv.numbers[slot] != 0:
 		var room: int = _container_cap(inv.numbers[slot]) - inv.wear[slot]
@@ -12876,6 +12908,40 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 	_last_drink[peer] = now
 	v["wet"] = minf(float(v["wet"]) + float(thirst.get("drink_ml", 300)), cap)
 	_sync_vitals(peer, true)
+
+
+# With thirst.sources on and the scene's water_source set (docs/design/drinking_water_design.md): salt water is refused, a dry bed is refused,
+# and frozen water needs an ice hole within reach (the fishing hole). Off, or with no source rows, the drink goes on as before.
+func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
+	var cfg: Dictionary = thirst.get("sources", {})
+
+	if not bool(cfg.get("enabled", false)) or not water_source.is_valid():
+		return true
+
+	var pos: Vector3 = _peer_pos[peer]
+	var rows: Array = water_source.call(pos, float(thirst.get("reach_m", 3.0)))
+
+	if rows.is_empty():
+		return true   # the record knows nothing here (an older world): today's water test stands
+
+	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var ctx: Dictionary = {"season": _season(), "rain_h_ago": (_now_game_s() - _last_rain_s) / 3600.0, "raining": float(weather.get("rain", 0.0)) > 0.05,
+		"air_c": float(weather.get("temp_c", 10.0)) - maxf(pos.y, 0.0) * float(_warmth_cfg.get("lapse_c_per_m", 0.0065)), "wind": float(weather.get("wind", 0.0))}
+	var found: Dictionary = DrinkRules.pick(cfg, rows, ctx)
+
+	if str(found.get("refused", "")) == "salt":
+		_say(peer, str(cfg.get("say_salt", "Salt water. It would only make you thirstier.")))
+		return false
+
+	if str(found.get("refused", "")) == "dry":
+		_say(peer, str(cfg.get("say_dry", "The bed is dry.")))
+		return false
+
+	if bool(found.get("frozen", false)) and not _hole_near(pos):
+		_say(peer, str(cfg.get("say_frozen", "The water is frozen. Break a hole in the ice first.")))
+		return false
+
+	return true
 
 
 func _save_vitals() -> void:
