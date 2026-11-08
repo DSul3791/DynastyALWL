@@ -651,6 +651,8 @@
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"songbirds": {
+			"alarm_group": "ground_birds",
+			"alarm_group_m": 15.0,
 			"number": 9,
 			"name": "Songbird",
 			"target_per_player": 4,
@@ -751,6 +753,8 @@
 			"model": true
 		},
 		"grouse": {
+			"alarm_group": "ground_birds",
+			"alarm_group_m": 15.0,
 			"number": 11,
 			"name": "Grouse",
 			"target_per_player": 3,
@@ -2082,6 +2086,8 @@
 			"spawn_share": 0.4
 		},
 		"crow": {
+			"alarm_group": "ground_birds",
+			"alarm_group_m": 15.0,
 			"number": 27,
 			"name": "Crow",
 			"target_per_player": 3,
@@ -2133,6 +2139,8 @@
 			"note": "Dave 7 Nov 2026, batch 2. Crows walk and peck on open ground, field edges and the shore in small groups by day and flush when a player comes close. Grouse numbers; it does not fly in this version, it runs and flaps."
 		},
 		"pheasant": {
+			"alarm_group": "ground_birds",
+			"alarm_group_m": 15.0,
 			"number": 28,
 			"name": "Pheasant",
 			"target_per_player": 3,
@@ -3605,6 +3613,8 @@
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). Camels roam dry savanna and bare ground in small groups by day, walk off from a player and kick one who corners it. Horse numbers, slower, drier ground; tamable value like the horse for later riding."
 		},
 		"guineafowl": {
+			"alarm_group": "ground_birds",
+			"alarm_group_m": 15.0,
 			"number": 46,
 			"name": "Guineafowl",
 			"target_per_player": 3,
