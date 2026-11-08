@@ -37,6 +37,7 @@ Each doc has these sections:
 | Caves (placement, shape, darkness, life) | [caves.md](caves.md) | 2026-11-06 | Sonny, Kathleen and Kathreen (look) |
 | Cave microclimate (deep-cave temperature, damp, air at the mouth, daylight reach, eyes, drips, dens and smoke) | [cave-microclimate.md](cave-microclimate.md) | 2026-11-08 | Kathleen (light, sound), Steve (dens, warmth), MikeW |
 | Sound outdoors (distance, air loss, wind shadow and carry, night carry, rain masking, snow and fog, forest, echoes, rivers) | [sound-outdoors.md](sound-outdoors.md) | 2026-11-08 | Kathleen (sound stage), Jason (audio) |
+| Sounds of weather and water (rain by surface and rate, wind by Beaufort in grass, trees and rock, how far water, surf and fire carry, thunder delay and range) | [weather-water-sounds.md](weather-water-sounds.md) | 2026-11-08 | Kathleen (sound stack), Steve (fire sounds) |
 | Animal behaviour (senses, ranges, temperaments, seasons, young) | [animal-behaviour.md](animal-behaviour.md) | 2026-11-06 | MikeW |
 | Animals in weather (rain, wind, storms, snow, cold, heat: shelter, facing the wind, feeding before storms) | [animals-in-weather.md](animals-in-weather.md) | 2026-11-08 | MikeW, Steve |
 | Torches and fire | [torches-fire.md](torches-fire.md) | 2026-11-06 | Sal, Kathleen (poses) |
