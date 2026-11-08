@@ -42,6 +42,7 @@ Each doc has these sections:
 | Torches and fire | [torches-fire.md](torches-fire.md) | 2026-11-06 | Sal, Kathleen (poses) |
 | Fire outdoors (wood moisture and drying, rain on fires, embers, wind, smoke drift and plume height, burn rates) | [fire-outdoors.md](fire-outdoors.md) | 2026-11-08 | Kathleen (look), Steve (rules) |
 | Wind over terrain (crest speed-up, lee shelter, gaps, night drainage, gusts, how trees, grass, smoke, flags and sound read the wind) | [wind-over-terrain.md](wind-over-terrain.md) | 2026-11-08 | Kathleen (look), MikeW (animals) |
+| Prevailing wind at 57° S (W to NW, a wind rose, steadiness, southern hemisphere fronts, coast and inland, sea breezes, windy season) | [prevailing-wind-57s.md](prevailing-wind-57s.md) | 2026-11-08 | Kathleen, weather owner | Mostly judged: directions and analog speeds sourced |
 | Trees in weather (crown sway by wind force, branch break, windthrow and wet soils, leaf fall, snow on trees, canopy drip and shelter) | [trees-in-weather.md](trees-in-weather.md) | 2026-11-08 | Kathleen (look, sound), MikeW, Steve (cover) |
 | Warmth and weather (cold, rain, wet, drying, fire heat) | [warmth-weather.md](warmth-weather.md) | 2026-11-06 | Steve |
 | Soils and ground wetness (infiltration by soil, puddle drain times, peat and clay waterlogging, frost heave, mud season) | [soils-ground-wetness.md](soils-ground-wetness.md) | 2026-11-08 | Sonny (record), Kathleen (puddles) |
