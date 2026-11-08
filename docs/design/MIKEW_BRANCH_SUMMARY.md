@@ -43,6 +43,7 @@ PR 1 (#596) is `claude/mikew-eyeshine`; PR 2, the wet look, is `claude/mikew-wet
 | 12b | `claude/mikew-pr13-cost-review` | `claude/mikew-pr12` | e812a7228da9e52e0b6030b79b6e05d92d4240fd | gate with --life-layer-off |
 | 12c | `claude/mikew-pr14-airc-tracks-cover-shots` | `claude/mikew-pr13` | 9b3fc47a64c398ab4754cfe36ee292c0d44341f0 | m38, m39, m48 |
 | 13 | `claude/mikew-pr15-posed-birds` | `claude/mikew-pr14` | 03f6e041a0356fda00164353453eb6dae501cecb | m49 |
+| 14 | `claude/mikew-pr16-posed-swimmers` | `claude/mikew-pr15-posed-birds` | 5338fc064e9e6b0c81aa84682875f66a3c754f3b (the full branch's tree then, less this table row) | m50 |
 
 12b and 12c hold the cross-cutting passes that came after PR 12 in time (the cost pass and kill switch, the self review, then Weather.air_c,
 Jamie's track numbers, state 20 in cover, the hunt readers and Dino's shot list); they cannot be folded back into earlier families
