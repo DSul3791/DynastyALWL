@@ -13,7 +13,7 @@
   - a cell the live water sim has wet;
   - or, before the sim runs, a cell whose `water_class` is over 1.
 - **Not water:** the open sea (class 1, and the sim has no sea cells).
-- **One kind of water.** Dave's rule of 21 Oct, in `sickness.json`, is "clean and dirty water do not exist". A salt marsh (class 10) counts as a drink today, which is a small bug.
+- **One kind of water.** Dave's rule of 21 Oct, in `sickness.json`, is "clean and dirty water do not exist". An estuary cell (game class 5, `data/tables/water_classes.json`) counts as a drink today, which is a small bug: estuary water is brackish.
 - **No seasons and no ice.** A brook that only runs after rain can be drunk from in August if the sim still holds water there. Water that is frozen over can be drunk without breaking the ice, although fishing asks for a hole.
 
 ## 2. What the player will notice
@@ -26,7 +26,7 @@
   - In a dry August, a spring's brook runs down from the spring and stops where the record says its dry baseflow is used up. Below that point, the bed is dry.
 - **Lakes and wide rivers** are a drink all year.
 - **Winter ice:** lakes, still water and slow brooks far below a spring freeze on frosty nights. To drink there you break a hole first, the same hole fishing uses. A spring and the open brook just below it stay open.
-- **Salt water is never a drink:** the sea and salt marsh both say "Salt water. It would only make you thirstier."
+- **Salt water is never a drink:** the sea and an estuary both say "Salt water. It would only make you thirstier."
 - **Wet ground** (a seep, a bog, marsh) has no open water. Phase 2 lets a dug scrape fill there.
 - **Sickness:** none, by Dave's rule. The source kind is carried through, so the coordinator's pond odds (1 in 5, spring never) can plug in if Dave says yes.
 
@@ -40,7 +40,7 @@ A new server callable, `water_source(pos, reach_m) -> Dictionary`, is filled by 
 | `brook` | within reach of a `reaches_in(rect)` polyline, plus half its bankfull width | regime 1 always; regime 2 except in summer, or within `rain_memory_h` 24 game hours of rain; regime 3 only in rain or within `flash_memory_h` 6 game hours of it. In summer the brook is a drink only where the polyline row's `q_base_dry_m3_s` is above 0 (the walk below the spring). |
 | `lake` | `water_class` 2 | always |
 | `river` | `water_class` 3, once R6 item 3 writes it | always |
-| `salt` | `water_class` 1 or 10 | never: say `say_salt` |
+| `salt` | the game's `water_class` 1 (ocean) or 5 (estuary); the record's salt marsh (10) arrives mapped to one of these by the reader | never: say `say_salt` |
 | `wet_ground` | `table_depth` 0, or classes 4 to 7 | phase 2: only from a dug scrape |
 
 - **Order:** the cleanest source within reach wins: spring, then river, lake, brook, wet ground. This is Sonny's physical order. Salt never wins over fresh water within reach.
@@ -50,7 +50,7 @@ A new server callable, `water_source(pos, reach_m) -> Dictionary`, is filled by 
   - a brook with no spring upstream, or still water, follows the existing ice rule (`_on_ice`, #616).
   - Frozen water asks for `_hole_near` within reach, the fishing hole. Otherwise the player sees `say_frozen` ("The water is frozen. Break a hole in the ice first.").
 - **The sim still counts.** Where the live sim has wet a cell that the record calls dry (a flood, a fresh puddle after rain), it is a `puddle` drink. This keeps today's rain puddles drinkable, and it comes last in the order.
-- **Without the record** (an older world, or no `record/`), `water_source` falls back to today's `water_near`, minus salt marsh.
+- **Without the record** (an older world, or no `record/`), `water_source` falls back to today's `water_near`, minus salt water.
 
 ## 4. Data (`vitals.json` `thirst.sources`)
 
@@ -61,7 +61,7 @@ A new server callable, `water_source(pos, reach_m) -> Dictionary`, is filled by 
             "say_dry": "The bed is dry."}
 ```
 
-The flag ships off. With it off, today's `water_near` path runs unchanged, except that salt marsh stops counting. That fix is safe on its own and goes in with the code.
+The flag ships off. With it off, today's `water_near` path runs unchanged.
 
 ## 5. Phase 2 (after this)
 
@@ -80,10 +80,22 @@ New `test_drinking_water.gd`, with a stub record:
   - a regime 3 gully is wet only within 6 h of rain.
 - **Brook below a spring:** in summer it is a drink above the row where `q_base_dry_m3_s` is 0 and dry below it. On a −4 °C night (Sonny's worked example, about 810 m) it is open at 500 m and frozen at 1000 m.
 - **Frozen water:** with no hole the player gets the frozen line; with a hole they drink.
-- **Salt:** the sea and salt marsh are refused with the salt line, even beside a lake 4 m off, and a lake 2 m off still wins.
-- **Flag off:** today's drink, except salt marsh.
+- **Salt:** the sea and an estuary are refused with the salt line, and a lake 2 m off still wins.
+- **Flag off:** today's drink.
 
-## 7. Questions for Dave (through the coordinator)
+## 7. Build steps
+
+The game reads baked tiles, not the record, at run time: today only `fresh_m` reaches the tiles, through `tile_baker`. So the code comes in two steps.
+1. **The rule, behind the flag (now):**
+   - `src/shared/drink_rules.gd` holds the pure rule. It takes the source rows near a point, the season, the hours since rain and the air, and gives the kind, temperature and frozen state.
+   - `server_items` calls it through a `water_source` callable when the flag is on, with salt refusal and the ice hole.
+   - Tests use a stub, so nothing reads a record yet.
+2. **The baked rows (after the R stack merges, a bake on Dave's PC):**
+   - `tile_baker` writes a `drink` section per tile: the springs with their flow and temperature, and the reach polylines with regime, width and per-row `q_base_dry`;
+   - `tile_terrain_data` reads it;
+   - the terrain server's `water_source` builds the rows from it.
+
+## 8. Questions for Dave (through the coordinator)
 
 - Pond or still water sickness reverses his 21 Oct rule, so it stays out unless he says yes.
 - Should salt water ever be drinkable in an emergency, at a cost? This design says never.
