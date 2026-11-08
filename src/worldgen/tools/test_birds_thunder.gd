@@ -53,9 +53,16 @@ func _init() -> void:
 	a._thunder_tick([Vector3.ZERO])
 	check(a._claps.is_empty() and not near_crow.has("fly"), "flag off: no thunder")
 	a._thunder_cfg()["on"] = true
+	a._thunder_tick([Vector3.ZERO])   # the first tick with thunder on only starts its clock (no backlog of strikes from while it was off)
 	game_s[0] += 60.0
 	a._thunder_tick([Vector3.ZERO])
 	check(a._claps.size() == 1 and not near_crow.has("fly"), "the flash: the sound has not reached the crow yet")
+
+	if a._claps.is_empty():
+		print("birds and thunder: no clap queued, stopping (%d failures)" % failures)
+		quit(1)
+		return
+
 	a._claps[0][1] = int(a._claps[0][1]) - 2000   # two real seconds later: the sound is 686 m out
 	a._thunder_tick([Vector3.ZERO])
 	check(near_crow.has("fly") and int(near_crow["state"]) == 15, "the crow 200 m from the strike flies up (state %d)" % int(near_crow["state"]))
