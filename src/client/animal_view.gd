@@ -50,6 +50,8 @@ var idle_first_s: float = -1.0     # tools only: the first idle comes after this
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
+var hunt_feedback: bool = false   # hit reactions by body zone, wounded gait, a death fall on the slope (HUNT_FEEDBACK.md; off until the PC check)
+var _health: Variant = null       # species -> health from data/animals/animals.json (the client's own count of the damage it saw)
 var weather_looks: bool = false   # shake-off after rain, tail to the wind, cold huddle, steam breath, snow on backs (ANIMAL_WEATHER_LOOKS.md; off until the PC check)
 var weather_now: Callable         # () -> the client's weather state (temp_c, rain, snow, wind, wind_dir ...), the same on every client
 var _wx_last_rain: float = 0.0
@@ -341,10 +343,13 @@ static func near_blood(at: Vector3, points: PackedVector3Array) -> bool:
 
 
 # A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
-func note_hit(at: Vector3) -> void:
+func note_hit(at: Vector3, amount: int = 0) -> void:
 	var now: int = Time.get_ticks_msec()
 	_hits = _hits.filter(func(h): return now - int(h[1]) <= FELL_WINDOW_MS)
 	_hits.append([at, now])
+
+	if hunt_feedback:
+		_hit_reaction(at, amount)
 
 
 # Whether a body last seen at `at` that left the rows at `now_ms` was killed: a hit landed within FELL_M of it in the last
@@ -410,10 +415,16 @@ func on_rows(rows: Array) -> void:
 
 	for id in _bodies.keys():
 		if not seen.has(id):
-			if killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points)):
+			var killed: bool = killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points))
+
+			if killed:
 				fell.emit(str(_bodies[id]["kind"]), _bodies[id]["target"], str(_bodies[id]["kind"]) in SMALL_FALL_KINDS)
 
-			_bodies[id]["node"].queue_free()
+			if killed and hunt_feedback and bool(_bodies[id].get("model", false)):
+				_death_fall(_bodies[id]["node"])      # it goes down on the slope, then is freed (the carcass item takes its place)
+			else:
+				_bodies[id]["node"].queue_free()
+
 			_bodies.erase(id)
 
 
@@ -565,6 +576,9 @@ func _process_body(delta: float) -> void:
 
 			if weather_looks:
 				_weather_look(node, b, state, model_speed, delta)
+
+			if hunt_feedback and (b.has("react") or float(b.get("damage", 0.0)) > 0.0):
+				_hunt_motion(node, b, model_speed, delta)
 
 			if season_coats or coat_dust or coat_ruffle:
 				_coat_tick(node, b, state, delta)
@@ -3303,6 +3317,145 @@ func _steam_breath(node: Node3D, b: Dictionary, air: float, speed: float, delta:
 	cloud.global_position = muzzle
 	cloud.emitting = true
 	get_tree().create_timer(cloud.lifetime + 0.4).timeout.connect(cloud.queue_free)
+
+
+# Hunting feedback (docs/design/HUNT_FEEDBACK.md). The client hears of a hit only as the floating hit number (protocol 85, sent to
+# the hunter alone: the point and the damage), so the nearest drawn animal within FELL_M of the point takes it, and the zone is read
+# from where the point sits on its body: head (front quarter, upper half), chest (front half), hip (back quarter), leg (lower third).
+func _hit_reaction(at: Vector3, amount: int) -> void:
+	var best: float = FELL_M
+	var hit_b: Dictionary = {}
+
+	for id in _bodies:
+		var o: Dictionary = _bodies[id]
+		var d: float = (o["node"] as Node3D).global_position.distance_to(at) if is_inside_tree() else INF
+
+		if bool(o.get("model", false)) and d < best:
+			best = d
+			hit_b = o
+
+	if hit_b.is_empty():
+		return
+
+	var node: Node3D = hit_b["node"]
+	var row: Dictionary = _row_of(node)
+	var length: float = float(row.get("length_m", 1.0)) * maxf(node.scale.x, 0.3)
+	var local: Vector3 = node.global_transform.affine_inverse() * at      # -Z is forward
+	var along: float = clampf(-local.z / maxf(length * 0.5, 0.05), -1.0, 1.0)      # +1 the nose, -1 the tail
+	var up: float = local.y / maxf(length * 0.6, 0.05)
+	var zone: String = "leg" if up < 0.3 else ("head" if along > 0.55 and up > 0.5 else ("hip" if along < -0.45 else "chest"))
+	hit_b["react"] = zone
+	hit_b["react_t"] = 0.0
+
+	if zone == "hip":
+		hit_b["hip_hit"] = true      # the hind leg drags from now on
+
+	if _health == null:
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
+		_health = {}
+
+		if parsed is Dictionary:
+			for k in ((parsed as Dictionary).get("species", {}) as Dictionary):
+				_health[k] = float(parsed["species"][k].get("health", 10.0))
+
+	hit_b["damage"] = float(hit_b.get("damage", 0.0)) + float(amount)
+	hit_b["wounded"] = float(hit_b["damage"]) >= 0.5 * float((_health as Dictionary).get(str(hit_b.get("kind", "")), 10.0))
+
+
+# The reaction plays on the Rig over a few tenths of a second (flinch: a jolt sideways; head: a toss up and back; chest: a stumble,
+# front dipping; leg: a buckle), then the lasting gait: a hip hit drags the hind end low and the steps uneven, and below half health
+# (of the damage this client saw) the animal limps, with a slower, uneven stride.
+func _hunt_motion(node: Node3D, b: Dictionary, speed: float, delta: float) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null:
+		return
+
+	var pitch: float = 0.0
+	var roll: float = 0.0
+	var drop: float = 0.0
+
+	if b.has("react"):
+		b["react_t"] = float(b["react_t"]) + delta
+		var t: float = float(b["react_t"])
+		var span: float = 0.45
+		var k: float = sin(PI * clampf(t / span, 0.0, 1.0))
+
+		match str(b["react"]):
+			"head":
+				pitch = -0.3 * k      # the head and front thrown up
+			"chest":
+				pitch = 0.22 * k      # a stumble: the front dips
+				drop = 0.06 * k
+			"hip":
+				pitch = -0.18 * k
+				drop = 0.05 * k
+			"leg":
+				roll = 0.2 * k
+				drop = 0.08 * k
+			_:
+				roll = 0.12 * k
+
+		if t >= span:
+			b.erase("react")
+
+	var limp: float = 0.0
+
+	if speed > 0.3 and (bool(b.get("hip_hit", false)) or bool(b.get("wounded", false))):
+		var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
+		var beat: float = float(b.get("gait", 0.0)) * TAU
+		limp = absf(sin(beat))
+
+		if bool(b.get("hip_hit", false)):
+			pitch -= 0.08      # hind end low: the dragged leg
+			roll += 0.06 * sin(beat)
+
+		if bool(b.get("wounded", false)):
+			roll += 0.05 * sin(beat)
+			drop += 0.03 * limp
+
+			if player != null and player.speed_scale > 0.0:
+				player.speed_scale *= 0.85 + 0.15 * limp      # an uneven, slower stride
+
+	rig.rotation.x = pitch
+	rig.rotation.z = roll
+	rig.position.y = -drop
+
+
+# The death fall (HUNT_FEEDBACK.md): the body goes down onto its side over 0.8 s and comes to rest lying along the ground's slope (the
+# ground sampled a body's width either side), then is freed; the server's carcass item takes its place. No canned drop.
+func _death_fall(node: Node3D) -> void:
+	if not is_instance_valid(node) or not node.is_inside_tree():
+		if is_instance_valid(node):
+			node.queue_free()
+		return
+
+	var row: Dictionary = _row_of(node)
+	var width: float = float(row.get("length_m", 1.0)) * 0.25 * maxf(node.scale.x, 0.3)
+	var side: Vector3 = node.global_transform.basis.x.normalized()
+	var tilt: float = 0.0
+
+	if ground_height.is_valid():
+		var left: float = float(ground_height.call(node.global_position.x - side.x * width, node.global_position.z - side.z * width))
+		var right: float = float(ground_height.call(node.global_position.x + side.x * width, node.global_position.z + side.z * width))
+
+		if not is_nan(left) and not is_nan(right):
+			tilt = atan2(right - left, 2.0 * width)      # the slope across the body
+
+	var falls_right: bool = tilt <= 0.0      # it falls downhill
+	var rig: Node3D = node.get_node_or_null("Rig")
+	var target: Node3D = rig if rig != null else node
+	var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
+
+	if player != null:
+		player.speed_scale = 0.3      # the legs slow as it goes down
+
+	var down: Tween = create_tween()
+	down.tween_property(target, "rotation:z", (-PI * 0.5 if falls_right else PI * 0.5) + tilt, 0.8).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	down.parallel().tween_property(target, "position:y", -width * 0.2, 0.8)
+	down.tween_callback(func() -> void: if player != null: player.speed_scale = 0.0)
+	down.tween_interval(1.5)
+	down.tween_callback(node.queue_free)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
