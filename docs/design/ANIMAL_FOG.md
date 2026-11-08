@@ -29,8 +29,9 @@ at 57 degrees south): sea fog comes in local spring to early summer, valley fog 
 ## The fog values the client reads (for Kathleen, #608 and #672)
 `fog_now` in terrain_client returns a Dictionary. Today it builds it from what exists: `density` (the scene Environment's
 `fog_density`, which the weather look sets), `mist` and `mist_top_m` (the shared weather state). The client turns density into a
-visibility as 3 / density (contrast down to 5 percent). **Asked of Kathleen:** expose `visibility_m` (metres, the V above, at the
-camera) from the weather look, so the animal looks and her sound and sky code use one number; with it, the density guess is not used.
+visibility as 3 / density (contrast down to 5 percent). **Done by Kathleen (#724):** `weather_look.visibility_m`. `_animal_fog` reads it
+when present (after #724 merges) and only falls back to the density before that, so the animal looks and her sound and sky code
+use one number.
 
 ## Requests to Steve (server, from Jamie's judged behaviour)
 1. An animal's sight in fog: the smaller of its clear range and half V (the senses' sight distance), with hearing unchanged.

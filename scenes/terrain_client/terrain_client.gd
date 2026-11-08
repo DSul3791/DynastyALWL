@@ -1327,7 +1327,7 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.night_light = func() -> Dictionary: return {"night": float(weather_look.day.night), "moon": float(weather_look.day.night) * float(weather_look.day.moon_light), "moon_to": (weather_look.day.light_basis as Basis).z} if weather_look != null else {}      # eye shine by moonlight
 	animal_view.soil_at = func(p: Vector3) -> String: return str(SoundStageScript.SOIL_SURFACE.get(sound._ground_under(p), "dirt")) if sound != null and sound._tool != null else "dirt"      # animal sign: soft or hard ground
 	animal_view.air_at = func(p: Vector3) -> float: return WeatherScript.air_c(game_clock.seconds, weather_group, p.y)      # the one temperature by height (#620), at the animal
-	animal_view.fog_now = func() -> Dictionary: return {"density": _environment.fog_density if _environment != null and _environment.fog_enabled else 0.0, "mist": float(weather.get("mist", 0.0)), "mist_top_m": float(weather.get("mist_top_m", 0.0))}      # fog looks: the scene fog Kathleen's weather look sets (visibility_m when she exposes it)
+	animal_view.fog_now = func() -> Dictionary: return _animal_fog()      # fog looks: Kathleen's visibility_m (#724) when the weather look has it, else the scene fog density
 	animal_view.cave_c_at = func(p: Vector3) -> float: return _animal_cave_c(p)      # cave air: the year mean at the height under rock (Steve #715)
 	animal_view.weather_now = func() -> Dictionary: return weather      # weather looks: temp_c, rain, snow, wind, wind_dir (the shared weather state)
 	animal_view.wind_now = func() -> float: return float(sound.weather.wind) if sound != null and sound.weather != null else 0.0      # ears and tails in the wind
@@ -6459,3 +6459,17 @@ func _animal_cave_c(p: Vector3) -> float:
 
 	var zone: Dictionary = WeatherScript.Climate.of_zone(weather_group)
 	return float(zone["sea_level_mean_c"]) - float(zone["lapse_c_per_km"]) * maxf(p.y, 0.0) / 1000.0
+
+
+# The fog for the animal looks (animal_view.gd fog_now): Kathleen's weather look's visibility_m (#724: 3 / the drawn fog density
+# round the eye, rain, snow, storm, fog, valley fog and under water, 50 km when clear) once it is there; before #724 merges, the
+# scene fog density, which the animal view turns into the same 3 / density. The shared weather's mist and its top go with it.
+func _animal_fog() -> Dictionary:
+	var out: Dictionary = {"mist": float(weather.get("mist", 0.0)), "mist_top_m": float(weather.get("mist_top_m", 0.0))}
+
+	if weather_look != null and "visibility_m" in weather_look:
+		out["visibility_m"] = float(weather_look.visibility_m)
+	else:
+		out["density"] = _environment.fog_density if _environment != null and _environment.fog_enabled else 0.0
+
+	return out
