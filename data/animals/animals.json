@@ -4298,6 +4298,7 @@
 			"damage_per_level": 0.04
 		}
 	},
+	"drink": {"on": false, "note": "Steve 8 Nov 2026 (docs/design/animals_at_water_server.md; MikeW ANIMAL_DRINK.md; drinking_water_design.md #719). Off by default. At dawn and dusk (the dusk period) a deer or stock animal (roles) goes, with the chance chance once a twilight, to the nearest fresh water edge within reach_m of its home (rings ring_m apart in bearings directions; ground above the sea; wet_m deep), stands there stand_s real seconds drinking (wire state 21), and goes home; it gives up after max_legs legs. One search is kept per 50 m cell for cache_s. Wolf packs prowl wolf_back_m back from the water nearest home within wolf_water_m, within wolf_ring_m, at those hours. Springs first waits for the baked drink rows (#719 step 2).", "roles": ["deer", "stock"], "chance": 0.7, "reach_m": 300.0, "ring_m": 25.0, "bearings": 8, "wet_m": 0.05, "cache_s": 600.0, "near_m": 4.0, "stand_s": [60.0, 180.0], "max_legs": 12, "wolf_water_m": 500.0, "wolf_back_m": 15.0, "wolf_ring_m": 12.0},
 	"wolves": {
 		"natural": false,
 		"dog_prey": true, "dog_bite": 25.0, "dog_bite_s": 1.0, "dog_note": "MikeW's DOG_REACTIONS.md (dog_companion_design.md 11): a pack goes for a player's dog within distract_m before any deer, and bites it dog_bite every dog_bite_s through the damage hook.",

@@ -23,6 +23,7 @@ const SNEAK := 13               # a thief creeping up on food, 14 running off wi
 const HIDDEN := 5               # in its burrow: never sent, never hunted
 const HIT_ZONES := ["body", "head", "chest", "hip", "leg"]   # animal_hit zone codes, the order of MikeW's animal_view HIT_ZONES (docs/design/hunt_feedback_server.md 3)
 const HUNCH := 20               # wire only: a grazer standing out the rain, still, head low (animals_in_weather_design.md 6; GRAZE on the server)
+const DRINK := 21               # wire only: a deer or stock animal at its drinking place, head down at the water (animals_at_water_server.md; GRAZE on the server)
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
 var cfg: Dictionary = {}
@@ -78,6 +79,7 @@ var _next_herd: int = 1
 var _wind_s: float = 0.0
 var _wind_dir: Vector2 = Vector2.ZERO
 var _wx: Dictionary = {}           # this tick's weather (animals_in_weather_design.md 3): rain, snow, storm, wind, mist
+var _water_spots: Dictionary = {}  # animals at water: Vector2i 50 m cell of the asker and reach -> [[stand spot, water point] or [], msec found]
 var _storm_ahead: bool = false     # a storm (storm 0.5 or more) 12 to 24 game hours ahead: the falling pressure prey feel (lesson 4)
 var _ahead_acc: float = INF        # real seconds since weather_ahead was last sampled
 var _dogs: Array = []              # this tick's companion dogs as a presence for wild animals: [animal id, position, barking] (dog_companion_design.md 11)
@@ -1066,7 +1068,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if a["herd"] != 0 and float(def.get("herd_pull_m", 0.0)) > 0.0:
 			var centre: Vector3 = _herd_centre(a["herd"])
 
-			if centre != Vector3.INF and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)):
+			if centre != Vector3.INF and not a.has("drink_home") and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)):
 				a["home"] = a["home"].lerp(centre, 0.5)
 
 		if a["timer"] <= 0.0 and resting(def):
@@ -1077,6 +1079,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			return
 
 		if a["timer"] <= 0.0 and _weather_wander(a, def):
+			return
+
+		if a["timer"] <= 0.0 and _drink_wander(a, def):
 			return
 
 		if a["timer"] <= 0.0:
@@ -1664,7 +1669,7 @@ func rows_near(point: Vector3) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), HUNCH if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))) else a["state"]]
+			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), DRINK if a["state"] == GRAZE and bool(a.get("drinking", false)) else (HUNCH if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))) else a["state"])]
 
 			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
 				row.append(animals[int(a["foe_dog"])]["pos"])
@@ -2253,3 +2258,163 @@ func _cover_near(a: Dictionary, or_low: bool, conifer: bool = false) -> Vector3:
 				low = p
 
 	return low
+
+
+# --- animals at water (docs/design/animals_at_water_server.md; MikeW ANIMAL_DRINK.md; Steve's drinking_water_design.md, #719) ---
+# Behind animals.json drink.on. At dawn and dusk (the "dusk" period) a deer or stock animal walks, with the chance drink.chance once a
+# twilight, to the nearest fresh water's edge within reach_m of its home, stands there stand_s drinking (DRINK on the wire, GRAZE here),
+# then goes home. A wolf pack prowls at the water nearest its home at those hours, where the prey must come.
+
+func _drink_cfg() -> Dictionary:
+	return cfg.get("drink", {})
+
+
+func drink_on() -> bool:
+	return bool(_drink_cfg().get("on", false)) and water_level.is_valid()
+
+
+func _twilight() -> bool:
+	return hour_now.is_valid() and period_of(float(hour_now.call())) == "dusk"
+
+
+# Fresh open water at a spot: a water surface over ground above the sea (salt water is never a drink, #719).
+func _fresh_wet(x: float, z: float) -> bool:
+	var level: float = float(water_level.call(x, z))
+
+	if is_nan(level) or not ground_height.is_valid():
+		return false
+
+	var ground: float = float(ground_height.call(x, z))
+	return not is_nan(ground) and ground > 0.0 and level > ground + float(_drink_cfg().get("wet_m", 0.05))
+
+
+# The nearest fresh water's edge from `from` within `reach` m: rings ring_m apart in `bearings` directions, the first wet sample on the
+# nearest ring, then stepped back toward `from` 2 m at a time (up to a ring) to dry ground. [stand spot, water point], or [] for none. Kept per 50 m
+# cell for cache_s real seconds (one search serves a herd).
+func drink_spot(from: Vector3, reach: float) -> Array:
+	var dc: Dictionary = _drink_cfg()
+	var key: Vector3i = Vector3i(floori(from.x / 50.0), floori(from.z / 50.0), floori(reach))
+	var now: int = Time.get_ticks_msec()
+
+	if _water_spots.has(key) and now - int(_water_spots[key][1]) < int(float(dc.get("cache_s", 600.0)) * 1000.0):
+		return _water_spots[key][0]
+
+	var found: Array = []
+	var ring_m: float = maxf(float(dc.get("ring_m", 25.0)), 5.0)
+	var bearings: int = maxi(int(dc.get("bearings", 8)), 4)
+
+	for ring in range(1, int(reach / ring_m) + 1):
+		for b in bearings:
+			var ang: float = TAU * float(b) / float(bearings)
+			var dir: Vector3 = Vector3(cos(ang), 0.0, sin(ang))
+			var wet: Vector3 = from + dir * ring_m * float(ring)
+
+			if not _fresh_wet(wet.x, wet.z):
+				continue
+
+			var stand: Vector3 = wet
+
+			for _step in int(ceil(ring_m / 2.0)) + 1:
+				stand -= dir * 2.0
+
+				if not _fresh_wet(stand.x, stand.z):
+					stand.y = float(ground_height.call(stand.x, stand.z))
+					found = [stand, wet]
+					break
+
+			if not found.is_empty():
+				break
+
+		if not found.is_empty():
+			break
+
+	_water_spots[key] = [found, now]
+	return found
+
+
+func _drink_done(a: Dictionary) -> void:
+	a["home"] = a["drink_home"]
+
+	for key in ["drink_home", "drink_at", "drink_to", "drinking", "drink_legs"]:
+		a.erase(key)
+
+
+# A grazing spell has ended: start, continue or end a walk to water (true when it set the next target or stand).
+func _drink_wander(a: Dictionary, def: Dictionary) -> bool:
+	var dc: Dictionary = _drink_cfg()
+
+	if not drink_on() or not str(def.get("weather", "")) in dc.get("roles", ["deer", "stock"]) or a.has("companion_id"):
+		return false
+
+	if not _twilight():
+		a.erase("drank")
+
+		if a.has("drink_home"):
+			_drink_done(a)
+
+		return false
+
+	if a.has("drink_home"):
+		var spot: Vector3 = a["drink_at"]
+
+		if bool(a.get("drinking", false)) or int(a.get("drink_legs", 0)) >= int(dc.get("max_legs", 12)):
+			_drink_done(a)   # drunk its fill, or it cannot get there: home
+			return false
+
+		if Vector2(a["pos"].x - spot.x, a["pos"].z - spot.z).length() <= float(dc.get("near_m", 4.0)):
+			var to: Vector3 = a["drink_to"]
+			var stand: Array = dc.get("stand_s", [60.0, 180.0])
+			a["drinking"] = true
+			a["state"] = GRAZE
+			a["target"] = a["pos"]
+			a["heading"] = atan2(to.z - a["pos"].z, to.x - a["pos"].x)
+			a["timer"] = rng.randf_range(float(stand[0]), float(stand[1]))   # luck-exempt: how long an animal stands at the water
+			return true
+
+		a["drink_legs"] = int(a.get("drink_legs", 0)) + 1
+		a["target"] = spot
+		a["state"] = HOP
+		return true
+
+	if a.has("drank"):
+		return false
+
+	a["drank"] = true
+
+	if rng.randf() >= float(dc.get("chance", 0.7)):   # luck-exempt: whether an animal goes to water this twilight
+		return false
+
+	var found: Array = drink_spot(a["home"], float(dc.get("reach_m", 300.0)))
+
+	if found.is_empty():
+		return false
+
+	var jitter: Vector3 = Vector3(rng.randf_range(-2.0, 2.0), 0.0, rng.randf_range(-2.0, 2.0))   # luck-exempt: where along the bank each one stands
+	a["drink_home"] = a["home"]
+	a["drink_at"] = found[0] + jitter
+	a["drink_to"] = found[1]
+	a["home"] = a["drink_at"]
+	a["target"] = a["drink_at"]
+	a["state"] = HOP
+	a.erase("hunch")
+	return true
+
+
+# Where a prowling wolf pack wanders: at dawn and dusk, wait_m back from the water nearest its home within wolf_water_m (the prey's drinking
+# place); otherwise its home. Vector3.INF when there is no such water or the rule is off.
+func wolf_wait_point(home: Vector3) -> Vector3:
+	if not drink_on() or not _twilight():
+		return Vector3.INF
+
+	var dc: Dictionary = _drink_cfg()
+	var found: Array = drink_spot(home, float(dc.get("wolf_water_m", 500.0)))
+
+	if found.is_empty():
+		return Vector3.INF
+
+	var stand: Vector3 = found[0]
+	var back: Vector3 = Vector3(stand.x - found[1].x, 0.0, stand.z - found[1].z).normalized()
+	var at: Vector3 = stand + back * float(dc.get("wolf_back_m", 15.0))
+	at.y = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else stand.y
+	return at
+
