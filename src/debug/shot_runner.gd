@@ -4,7 +4,7 @@ extends Node
 # started with --shots. Each shot: fly to a point, face a direction, freeze the game clock at an hour,
 # optionally force the weather, wait for the ground and flora to stream in, save the 3D view as a PNG.
 #
-#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow)
+#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist)
 #   an 8th number (m/s) shows the third-person body walking at that speed, seen from the side (e.g. 4 = walk, 8 = run)
 #   agl is metres above the ground at x,z (a NEGATIVE y is an absolute height in metres instead): the runner first goes to 400 m above sea level there, waits until the
 #   ground under it has loaded, then drops to the ground height plus agl
@@ -145,6 +145,7 @@ const STORM := {"rain": 1.0, "snow": 0.0, "storm": 1.0, "cloud": 1.0, "sun": 0.0
 const RAIN := {"rain": 0.65, "snow": 0.0, "storm": 0.0, "cloud": 0.8, "sun": 0.0, "wind": 0.3, "wind_dir": 1.0, "temp_c": 9.0}
 const SNOW := {"rain": 0.0, "snow": 0.6, "storm": 0.0, "cloud": 0.8, "sun": 0.0, "wind": 0.1, "wind_dir": 1.0, "temp_c": -3.0}
 const CLEAR := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.15, "sun": 1.0, "wind": 0.1, "wind_dir": 1.0, "temp_c": 14.0}
+const MIST := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.05, "sun": 1.0, "wind": 0.15, "wind_dir": 1.0, "temp_c": 6.0, "mist": 1.0, "mist_top_m": 90.0}   # valley fog, top 90 m (docs/design/valley_fog.md)
 
 
 func setup(owner_client, args: Array) -> void:
@@ -297,6 +298,7 @@ func _process(delta: float) -> void:
 			"rain": client.weather = RAIN.duplicate()
 			"snow": client.weather = SNOW.duplicate()
 			"clear": client.weather = CLEAR.duplicate()
+			"mist": client.weather = MIST.duplicate()
 
 		client.body.velocity = Vector3.ZERO
 
