@@ -448,7 +448,9 @@ func on_rows(rows: Array) -> void:
 
 		# Fields after the five are read by type, so their order does not matter: a Vector3 is the foe (Steve #659), a number is the
 		# animal's health 0 to 1 by tenths, sent only while it is hurt (Steve's hunt fields, HUNT_FEEDBACK.md); none means unhurt.
-		for extra in row.slice(5):
+		for fi in range(5, row.size()):
+			var extra: Variant = row[fi]
+
 			if extra is Vector3:
 				_bodies[id]["foe"] = extra
 			elif extra is float or extra is int:
@@ -596,7 +598,7 @@ func _process_body(delta: float) -> void:
 			var facing: Vector3 = -node.global_transform.basis.z if node.is_inside_tree() else Vector3.FORWARD
 			# Only while facing something (alert 3, warn 10, recover 12): a fleeing animal turning round also moves against its facing
 			# for a moment, and must not run backward.
-			b["backing"] = state in [3, 10, 12] and model_speed > 0.3 and moved.normalized().dot(Vector2(facing.x, facing.z).normalized()) < -0.3
+			b["backing"] = state in BACKING_STATES and model_speed > 0.3 and moved.normalized().dot(Vector2(facing.x, facing.z).normalized()) < -0.3
 
 			if life_layer_all_off:
 				pass      # the kill switch: no life-layer looks at all (below, the clip still plays)
@@ -711,6 +713,16 @@ func _process_body(delta: float) -> void:
 					_animate_model(bird, b, state, model_speed, delta)
 			else:
 				_animate_model(node, b, state, model_speed, delta)
+
+				# Clip-rate changes the looks asked for this frame (the ice's careful steps, the wounded limp), applied after
+				# _animate_model has set the clip's rate, so they are not overwritten (REVIEW_NOTES.md bug pass).
+				if b.has("speed_x"):
+					var sped: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
+
+					if sped != null and sped.speed_scale > 0.0:
+						sped.speed_scale *= float(b["speed_x"])
+
+					b.erase("speed_x")
 
 				if cover_still and state == HUNCH:
 					_cover_still(node, b)
@@ -3252,7 +3264,7 @@ func _sign_lay(kind: String, node: Node3D, b: Dictionary, row: Dictionary, at: V
 			var f: float = float(k) - 1.5
 			_sign_decal(tex, at + ahead * size * 1.6 * f + across * width * (0.5 if k % 2 == 0 else -0.5), size, node.rotation.y, ground, -1.0, kind)
 	else:      # walk or trot: alternating single prints, a trotting fox or wolf almost on one line
-		var line: float = 0.25 if trotting and kind in ["fox", "wolf", "dog"] else 1.0
+		var line: float = 0.25 if trotting and kind in ONE_LINE_TROTTERS else 1.0
 		_sign_decal(tex, at + across * width * line * float(b["track_side"]), size, node.rotation.y, ground, -1.0, kind)
 
 
@@ -3622,7 +3634,6 @@ func _hunt_motion(node: Node3D, b: Dictionary, speed: float, delta: float) -> vo
 	var limp: float = 0.0
 
 	if speed > 0.3 and (bool(b.get("hip_hit", false)) or bool(b.get("wounded", false))):
-		var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
 		var beat: float = float(b.get("gait", 0.0)) * TAU
 		limp = absf(sin(beat))
 
@@ -3634,8 +3645,7 @@ func _hunt_motion(node: Node3D, b: Dictionary, speed: float, delta: float) -> vo
 			roll += 0.05 * sin(beat)
 			drop += 0.03 * limp
 
-			if player != null and player.speed_scale > 0.0:
-				player.speed_scale *= 0.85 + 0.15 * limp      # an uneven, slower stride
+			b["speed_x"] = float(b.get("speed_x", 1.0)) * (0.85 + 0.15 * limp)      # an uneven, slower stride (applied after the clip, below)
 
 	rig.rotation.x = pitch
 	rig.rotation.z = roll
@@ -4019,6 +4029,9 @@ func _porpoise_pitch(node: Node3D, b: Dictionary) -> void:
 # becomes Kathleen's per-group prevailing wind (prevailing_wind.md) once it lands, else the prevailing wind at 57 S: from about 310
 # degrees (WNW to NW, Jamie's prevailing-wind page, #714), so blowing toward about 130 degrees, the south-east: +X east, +Z south.
 const PREVAILING_TO := 0.70
+const GRAZE_INTO_WIND := ["deer", "elk", "moose"]
+const ONE_LINE_TROTTERS := ["fox", "wolf", "dog"]
+const BACKING_STATES := [3, 10, 12]
 const RUMP_WIND := 0.45      # with rain over RUMP_RAIN, stock and deer stand rump to the wind from here (Jamie #639); a gale alone does it too
 const RUMP_RAIN := 0.3
 const GRAZE_WIND := [0.15, 0.6]   # deer graze moving into a light or moderate wind (Jamie #639; Steve's _upwind_angle on the server)
@@ -4046,9 +4059,9 @@ func _wind_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 	if kind in TAIL_TO_WIND and standing and (wind >= GALE or (wind >= RUMP_WIND and rain >= RUMP_RAIN)):
 		want = clampf(angle_difference(node.rotation.y, downwind), -PI / 3.0, PI / 3.0)      # rump to the wind
 		b["wind_hunch"] = rain >= RUMP_RAIN      # and the head down in the rain
-	elif state == 3 and (kind in TAIL_TO_WIND or kind in ["deer", "elk", "moose"]) and wind >= float(GRAZE_WIND[0]):
+	elif state == 3 and (kind in TAIL_TO_WIND or kind in GRAZE_INTO_WIND) and wind >= float(GRAZE_WIND[0]):
 		want = clampf(angle_difference(node.rotation.y, downwind + PI), -PI / 4.0, PI / 4.0)      # alert: face into the wind, to scent what alarmed it
-	elif kind in ["deer", "elk", "moose"] and state == 0 and wind >= float(GRAZE_WIND[0]) and wind < float(GRAZE_WIND[1]):
+	elif kind in GRAZE_INTO_WIND and state == 0 and wind >= float(GRAZE_WIND[0]) and wind < float(GRAZE_WIND[1]):
 		want = clampf(angle_difference(node.rotation.y, downwind + PI), -PI / 4.0, PI / 4.0)      # grazing into the wind, nose to the scent
 
 	b["wind_turn"] = lerp_angle(float(b.get("wind_turn", 0.0)), want, clampf(delta * 0.5, 0.0, 1.0))
@@ -4194,10 +4207,7 @@ func _ice_look(node: Node3D, b: Dictionary, _state: int, speed: float, delta: fl
 	if not bool(b.get("on_ice", false)) or speed < 0.2:
 		return
 
-	var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
-
-	if player != null and player.speed_scale > 0.0:
-		player.speed_scale *= 0.75      # short, careful steps
+	b["speed_x"] = float(b.get("speed_x", 1.0)) * 0.75      # short, careful steps (applied after the clip)
 
 	if str(b.get("kind", "")) in SURE_ON_ICE:
 		return
