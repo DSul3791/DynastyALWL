@@ -646,7 +646,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 				# are eased back to the first pose so the loop has no jump.
 				var loop_spec: Variant = (row.get("clip_loop", {}) as Dictionary).get(str(key), null)
 
-				if loop_spec is Array and (loop_spec as Array).size() >= 2:
+				if loop_spec is Array and (loop_spec as Array).size() >= 2 and not anim_name.begins_with("gait_"):      # a hand-made gait already loops
 					var loop_name: String = anim_name + "_loop_%s" % str(key)      # imported clips sit in the default library, "armature|clip"
 
 					if player.has_animation_library("") and not player.has_animation(loop_name):
