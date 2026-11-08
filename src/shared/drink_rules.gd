@@ -5,10 +5,10 @@ extends RefCounted
 # not. No sickness: Dave's 21 Oct rule (sickness.json) has one kind of water, so the kind is carried only for the look and later rules.
 #
 # A row: {"kind": "spring" | "river" | "lake" | "brook" | "puddle" | "salt", "iced": bool (the ice rule at that spot, #616)}, and by kind:
-#   spring: "dry_m3_s" (its August flow; 0 means it fails in a drought), "temp_c" (its water, about the year mean + 1)
+#   spring: "dry_m3_s" (its August flow; 0 means it fails in a drought), "temp_c" (its water: the year mean at its height, Jamie #739)
 #   brook:  "regime" (1 perennial, 2 intermittent, 3 ephemeral), "dry_ok" (this polyline row keeps baseflow in a drought),
 #           "below_spring_m" (how far below its spring, INF without one), "q_m3_s", "width_m", "spring_c" (the spring's water)
-# ctx: {"season", "rain_h_ago" (game hours since it last rained, INF never), "raining" (bool), "air_c"}
+# ctx: {"season", "rain_h_ago" (game hours since it last rained, INF never), "raining" (bool), "air_c", "wind" (0..1, the weather's)}
 
 const ORDER := ["spring", "river", "lake", "brook", "puddle"]   # cleanest first (Sonny's physical order); salt is never picked
 const RHO_C := 4.19e6   # J/m3K, water
@@ -91,9 +91,9 @@ static func water_c(row: Dictionary, ctx: Dictionary) -> float:
 	return maxf(air, 0.0)
 
 
-# Frozen over: a spring never; a brook below a spring past its open length on a frosty night (Sonny: x0 = lambda ln((Tw - Ta)/(0 - Ta)))
-# and only where the ice rule at that spot also says ice (row "iced", _on_ice: Kathleen #729, coordinator 8 Nov), so a hole is asked for
-# only where the look shows a sheet; any other water by the ice rule at that spot.
+# Frozen over: a spring never; a brook below a spring past its open length on a frosty night (open_length_m, Jamie #739) and only where
+# the ice rule at that spot also says ice (row "iced", _on_ice: Kathleen #729, coordinator 8 Nov), so a hole is asked for only where the
+# look shows a sheet; any other water by the ice rule at that spot.
 static func frozen(cfg: Dictionary, row: Dictionary, ctx: Dictionary) -> bool:
 	var kind: String = str(row.get("kind", ""))
 
@@ -106,24 +106,33 @@ static func frozen(cfg: Dictionary, row: Dictionary, ctx: Dictionary) -> bool:
 		if air >= 0.0:
 			return false
 
-		return bool(row.get("iced", false)) and float(row["below_spring_m"]) > open_length_m(row, air, float(cfg.get("night_h_w_m2k", 20.0)))
+		return bool(row.get("iced", false)) and float(row["below_spring_m"]) > open_length_m(cfg, row, air, float(ctx.get("wind", 0.0)))
 
 	return bool(row.get("iced", false))
 
 
-# lambda = rho c Q / (h W): the metres over which a brook's water cools by a factor e toward the night air.
+# lambda = rho c Q / (h W): the metres over which a brook's water cools by a factor e toward the air (Sonny), for its temperature.
 static func open_scale_m(row: Dictionary, h: float) -> float:
 	return RHO_C * float(row.get("q_m3_s", 0.0)) / maxf(h * float(row.get("width_m", 1.0)), 0.01)
 
 
-# x0: how far below its spring a brook stays open on a night at air_c (under 0); INF when the spring water is no warmer than 0.
-static func open_length_m(row: Dictionary, air_c: float, h: float) -> float:
-	var spring_c: float = float(row.get("spring_c", 0.0))
-
+# How far below its spring a brook stays open on a night at air_c (Jamie #739's game rule, a fit to the heat-loss sums within about 30%):
+# open_m (440) x sqrt(flow in L/s) in calm air at -5 C, times cold_x by the air (1.8 at -2, 1.0 at -5, 0.6 at -10, 0.4 at -15, straight
+# between, held past the ends), halved (breeze_x) at wind breeze_wind or more. INF above 0 C. A 2 L/s spring on the starter island's worst
+# night (about -7.5 C) keeps 230 m (breeze) to 460 m (calm) open.
+static func open_length_m(cfg: Dictionary, row: Dictionary, air_c: float, wind: float) -> float:
 	if air_c >= 0.0:
 		return INF
 
-	if spring_c <= 0.0:
-		return 0.0
+	var points: Array = cfg.get("cold_x", [[-2.0, 1.8], [-5.0, 1.0], [-10.0, 0.6], [-15.0, 0.4]])
+	var x: float = float(points[0][1]) if air_c >= float(points[0][0]) else float(points[points.size() - 1][1])
 
-	return open_scale_m(row, h) * log((spring_c - air_c) / (0.0 - air_c))
+	for k in points.size() - 1:
+		var hi: Array = points[k]
+		var lo: Array = points[k + 1]
+
+		if air_c <= float(hi[0]) and air_c >= float(lo[0]):
+			x = lerpf(float(hi[1]), float(lo[1]), (float(hi[0]) - air_c) / (float(hi[0]) - float(lo[0])))
+
+	var length: float = float(cfg.get("open_m", 440.0)) * sqrt(maxf(float(row.get("q_m3_s", 0.0)) * 1000.0, 0.0)) * x
+	return length * (float(cfg.get("breeze_x", 0.5)) if wind >= float(cfg.get("breeze_wind", 0.3)) else 1.0)
