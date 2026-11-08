@@ -292,16 +292,16 @@ ART_DIRECTION 9 already rules that sky, light, fog and rain read three inputs: z
 5. A summit above 2 km on a giant island seed, with clouds: does the peak sit in front of the cloud?
 6. The same forest scene at night in the open and under crowns.
 
-## 12. Proposals in one list
+## 12. Decisions (8 Nov 2026, decided by the coordinator from these recommendations; Dave may overrule)
 
-The coordinator decides and names the owners.
+1. **Moon phases (5.3): yes.** Owner: Kathleen.
+2. **"Never pitch black outdoors" (6.2.1): a decided rule.** Owner: Kathleen. Caves stay pitch black.
+3. **A darker night under crowns using the canopy map (6.2): yes.** Owner: Kathleen. The brighter night with snow is still open.
+4. **A small exposure drop while a torch is held (6.2.3): yes.** Owner: Kathleen.
+5. **A held torch shadow from Medium up (6.4): only after a GPU check on Dave's PC.** Dino does the check when the PC frees up, not now.
+6. **Height fog and a `mist` value in the weather state, valley fog first (7): yes.** Owner: Jamie, after his rivers doc.
+7. **Cap cloud cards for summits above the cloud layer (7.3): only after a check picture from Dino.**
+8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Owners still to be named.
+9. Still open: the rest of the rain additions in 8.1.2, the Milky Way (5.4) and the arctic aurora (9).
 
-1. Moon phases (5.3), recommended yes.
-2. "Never pitch black outdoors" made decided (6.2.1), recommended yes.
-3. A darker night under crowns using the canopy map (6.2), and a brighter night with snow (6.2).
-4. A small exposure drop while a torch is held (6.2.3).
-5. A held torch shadow from Medium up (6.4), after a GPU check.
-6. Height fog and a `mist` value in the weather state, with valley fog first (7).
-7. Cap cloud cards for summits above the cloud layer (7.3), after the check.
-8. Rain additions (8.1.2), snow on branches and rocks (8.2.2), breath in the cold (8.4).
-9. Night saturation lower (5.2), rainbows (4), the Milky Way (5.4), aurora in the arctic (9).
+Kathleen's night-light code is one branch, in this order: moon phases, the never-pitch-black rule, canopy darkening, the torch exposure drop. This document stays the source of truth.
