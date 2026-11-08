@@ -29,6 +29,7 @@ Each doc has these sections:
 |---|---|---|---|
 | Creature models (bought rigged animals: install, check, clips, sizes) | [creature-models.md](creature-models.md) | 2026-11-07 | MikeW |
 | Water in Godot (rivers, brooks, lakes, falls, flow, precision) | [water.md](water.md) | 2026-11-06 | Sonny |
+| Sea and shore (tides, waves by fetch, surf zone by beach slope, swash, wrack line, salt spray, shore ice) | [sea-and-shore.md](sea-and-shore.md) | 2026-11-08 | Sonny, Kathleen (look) |
 | Caves (placement, shape, darkness, life) | [caves.md](caves.md) | 2026-11-06 | Sonny, Kathleen and Kathreen (look) |
 | Animal behaviour (senses, ranges, temperaments, seasons, young) | [animal-behaviour.md](animal-behaviour.md) | 2026-11-06 | MikeW |
 | Torches and fire | [torches-fire.md](torches-fire.md) | 2026-11-06 | Sal, Kathleen (poses) |
