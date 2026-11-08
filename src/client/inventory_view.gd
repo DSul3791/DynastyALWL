@@ -660,7 +660,7 @@ func _probe_fire() -> Dictionary:
 			net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, id, 0, 0, Vector3.ZERO)}
 
 	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": _fire_prompt(state), "tap": func():
-		if state == 9:
+		if state == 9 or state == StructureLook.FIRE_ASH:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
 		elif _lit_state(state):
 			net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)   # E on a burning fire puts it out (Dave 2 Nov 2026)
@@ -801,6 +801,12 @@ func _fire_prompt(state: int) -> String:
 	if state == 8:
 		return "Press F to add wood (hold E to pick it up)"
 
+	if state == StructureLook.FIRE_COALS:
+		return "Glowing coals: press F to add wood, it catches by itself (hold E to pick it up)"
+
+	if state == StructureLook.FIRE_ASH:
+		return "Warm ash: press E to light with tinder and wood (hold E to pick it up, F for wood)"
+
 	if state == 9:
 		return "Press E to light (hold E to pick it up, F for wood)"
 
@@ -819,7 +825,7 @@ func _container_near() -> int:
 		var state: int = int(_world[id]["state"])
 		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
+		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or StructureLook.is_unlit_fire(state)) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -1012,7 +1018,7 @@ func _nearest_struct(skip_fires: bool = false) -> int:
 	var ids: Array = []
 
 	for id in _world:
-		if skip_fires and int(_world[id]["state"]) in [8, 9, 40, 41]:
+		if skip_fires and int(_world[id]["state"]) in StructureLook.CAMPFIRE_STATES:
 			continue
 
 		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
@@ -1050,7 +1056,7 @@ func _nearest_fire() -> int:
 	var ids: Array = []
 
 	for id in _world:
-		if _world[id]["state"] in [1, 8, 9, 40, 41] and here.distance_to(_world[id]["pos"]) <= 3.0:
+		if _world[id]["state"] in StructureLook.CAMPFIRE_STATES and here.distance_to(_world[id]["pos"]) <= 3.0:
 			ids.append(id)
 
 	return _aimed_or_nearest(ids, here)
@@ -1409,7 +1415,7 @@ func fire_light_near(point: Vector3, radius: float) -> bool:
 	for id in _world:
 		var light: Light3D = _world[id]["light"]
 
-		if light != null and light.visible and point.distance_to(_world[id]["pos"]) <= radius:
+		if light != null and light.visible and not light.has_meta("ember") and point.distance_to(_world[id]["pos"]) <= radius:   # glowing coals do not stand in for a torch light
 			return true
 
 	return false
@@ -2111,7 +2117,7 @@ func _refresh_chest() -> void:
 
 # True when the open container is a fire (lit or out); its store takes only wood and food (Dave, 4 Nov 2026).
 func _chest_is_fire() -> bool:
-	return int(_world.get(chest_id, {}).get("state", -1)) in [1, 8, 9, 40, 41]
+	return int(_world.get(chest_id, {}).get("state", -1)) in StructureLook.CAMPFIRE_STATES
 
 
 # The real pack slot shown on chest-screen pack button `index`, or -1 for an empty button.
@@ -2263,6 +2269,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 					_world[id]["burn"] = float(row[5]["burn"])
 					_world[id]["burn_at"] = Time.get_ticks_msec()
 
+				if state == StructureLook.FIRE_COALS and _world[id].get("light") != null and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("glow"):
+					BuildingLook.coals_glow(_world[id]["light"], float(row[5]["glow"]))   # the coals dim as their time runs down
+
 				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
 
 				var site_now: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
@@ -2283,7 +2292,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		var node: Node3D
 		var light: OmniLight3D = null
 
-		if state >= 5 and state != 8 and state != 9 and not _lit_state(state):   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
+		if state >= 5 and not StructureLook.is_unlit_fire(state) and not _lit_state(state):   # 8 is a burnt-out fire, 9 a loaded one, 76 coals, 77 warm ash: the campfire model without flames
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
 			var t_c: int = Time.get_ticks_usec()
 			node = _model_for_state(state, row[5] if row.size() > 5 else {})
@@ -2349,7 +2358,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				var girth: float = float(row[5]["girth"])
 				node.scale = Vector3(node.scale.x, node.scale.y * girth, node.scale.z * girth)
 		else:
-			node = _make_fire(_lit_state(state), state == 9, _fire_tier(state))
+			var fire_extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
+			node = BuildingLook.coals_fire(float(fire_extra.get("glow", 1.0))) if state == StructureLook.FIRE_COALS else _make_fire(_lit_state(state), state == 9, _fire_tier(state))
 			node.position = row[3]
 			light = node.get_node_or_null("Light")
 
@@ -2411,7 +2421,7 @@ var _unsnapped: Dictionary = {}      # world item id -> tries left
 func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 	var entry: Dictionary = _world.get(id, {})
 
-	var on_fire: bool = _lit_state(int(entry.get("state", 0))) or int(entry.get("state", 0)) == 8 or int(entry.get("state", 0)) == 9   # a fire rests on the drawn ground too (it hung about a metre up where the drawn ground sits under the server's height field, Dave 2 Nov)
+	var on_fire: bool = _lit_state(int(entry.get("state", 0))) or StructureLook.is_unlit_fire(int(entry.get("state", 0)))   # a fire rests on the drawn ground too (it hung about a metre up where the drawn ground sits under the server's height field, Dave 2 Nov)
 
 	if entry.is_empty() or (int(entry.get("state", 0)) != 0 and not on_fire) or not _ground_below.is_valid() or _rolling.has(id):
 		_unsnapped.erase(id)
@@ -2511,7 +2521,7 @@ func placed_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if _lit_state(state) or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21 or state == 38:
+		if _lit_state(state) or StructureLook.is_unlit_fire(state) or state == 5 or state == 6 or state == 7 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21 or state == 38:
 			rows.append({"pos": _world[id]["pos"], "state": state})
 
 	return rows
@@ -3803,6 +3813,12 @@ func _fire_label(entry: Dictionary, number: int) -> String:
 
 	if _lit_state(state):
 		left -= float(Time.get_ticks_msec() - int(entry.get("burn_at", Time.get_ticks_msec()))) / 1000.0
+
+	if state == StructureLook.FIRE_COALS:
+		return "%s, glowing coals" % _item_label(number) + (" and wood catching" if left > 0.0 else "")
+
+	if state == StructureLook.FIRE_ASH:
+		return "%s, warm ash" % _item_label(number)
 
 	if state == 8 or left <= 0.0:
 		return "%s, no fuel" % _item_label(number)

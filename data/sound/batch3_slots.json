@@ -157,6 +157,96 @@
    "peak_db": -14,
    "status": "filled",
    "note": "a skill rises: a soft wooden tock, at most once every 20 s (Dave, QA jason-skill-chime A, 4 Nov 2026)"
+  },
+  "hoof_mud": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/recorded/step_mud_left_0.ogg",
+    "res://assets/audio/recorded/step_mud_left_1.ogg",
+    "res://assets/audio/recorded/step_mud_left_2.ogg",
+    "res://assets/audio/recorded/step_mud_right_0.ogg",
+    "res://assets/audio/recorded/step_mud_right_1.ogg",
+    "res://assets/audio/recorded/step_mud_right_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -12,
+   "status": "filled",
+   "note": "an animal landing in mud (FOOTFALL.md ground, slot_sounds.gd footfall); borrowed from the player's recorded mud steps until animal clips are recorded"
+  },
+  "hoof_snow": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/recorded/step_snow_left_0.ogg",
+    "res://assets/audio/recorded/step_snow_left_1.ogg",
+    "res://assets/audio/recorded/step_snow_left_2.ogg",
+    "res://assets/audio/recorded/step_snow_right_0.ogg",
+    "res://assets/audio/recorded/step_snow_right_1.ogg",
+    "res://assets/audio/recorded/step_snow_right_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -12,
+   "status": "filled",
+   "note": "an animal landing in snow (FOOTFALL.md ground, slot_sounds.gd footfall); borrowed from the player's recorded snow steps until animal clips are recorded"
+  },
+  "hoof_water": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/recorded/step_water_left_0.ogg",
+    "res://assets/audio/recorded/step_water_left_1.ogg",
+    "res://assets/audio/recorded/step_water_left_2.ogg",
+    "res://assets/audio/recorded/step_water_right_0.ogg",
+    "res://assets/audio/recorded/step_water_right_1.ogg",
+    "res://assets/audio/recorded/step_water_right_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -12,
+   "status": "filled",
+   "note": "an animal landing in water or a puddle (FOOTFALL.md ground, slot_sounds.gd footfall); borrowed from the player's recorded water steps until animal clips are recorded"
+  },
+  "paw_mud": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/recorded/step_mud_left_0.ogg",
+    "res://assets/audio/recorded/step_mud_left_1.ogg",
+    "res://assets/audio/recorded/step_mud_left_2.ogg",
+    "res://assets/audio/recorded/step_mud_right_0.ogg",
+    "res://assets/audio/recorded/step_mud_right_1.ogg",
+    "res://assets/audio/recorded/step_mud_right_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -16,
+   "status": "filled",
+   "note": "an animal landing in mud (FOOTFALL.md ground, slot_sounds.gd footfall); borrowed from the player's recorded mud steps until animal clips are recorded"
+  },
+  "paw_snow": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/recorded/step_snow_left_0.ogg",
+    "res://assets/audio/recorded/step_snow_left_1.ogg",
+    "res://assets/audio/recorded/step_snow_left_2.ogg",
+    "res://assets/audio/recorded/step_snow_right_0.ogg",
+    "res://assets/audio/recorded/step_snow_right_1.ogg",
+    "res://assets/audio/recorded/step_snow_right_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -16,
+   "status": "filled",
+   "note": "an animal landing in snow (FOOTFALL.md ground, slot_sounds.gd footfall); borrowed from the player's recorded snow steps until animal clips are recorded"
+  },
+  "paw_water": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/recorded/step_water_left_0.ogg",
+    "res://assets/audio/recorded/step_water_left_1.ogg",
+    "res://assets/audio/recorded/step_water_left_2.ogg",
+    "res://assets/audio/recorded/step_water_right_0.ogg",
+    "res://assets/audio/recorded/step_water_right_1.ogg",
+    "res://assets/audio/recorded/step_water_right_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -16,
+   "status": "filled",
+   "note": "an animal landing in water or a puddle (FOOTFALL.md ground, slot_sounds.gd footfall); borrowed from the player's recorded water steps until animal clips are recorded"
   }
  }
 }
