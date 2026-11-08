@@ -24,6 +24,7 @@
 	"species": {
 		"rabbit": {
 			"number": 1,
+			"weather": "small",
 			"name": "Rabbit",
 			"target_per_player": 6,
 			"health": 5.0,
@@ -74,6 +75,7 @@
 		},
 		"deer": {
 			"number": 2,
+			"weather": "deer",
 			"name": "Deer",
 			"target_per_player": 5,
 			"health": 20.0,
@@ -174,6 +176,7 @@
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"wolf": {
+			"weather": "hunter",
 			"companion": {
 				"note": "An orphaned pup (wolves.pups, wolf_packs_and_pups_design.md 5): food a player dropped within smell_m, eaten once they are trust_gap_m off, is +1 trust once a game day; at trust_to_follow it follows them as a young companion (young_hp_x of a wolf's health, drawn young) and grows up over grow_days game days. Bond, warning and heir as the dog's (server_companions.gd). keep_off_torch: it keeps out of its owner's torch light too.",
 				"source": "orphan",
@@ -229,6 +232,7 @@
 		},
 		"moose": {
 			"number": 4,
+			"weather": "deer",
 			"name": "Moose",
 			"target_per_player": 1,
 			"spawn_share": 0.2,
@@ -328,6 +332,7 @@
 		},
 		"fox": {
 			"number": 5,
+			"weather": "hunter",
 			"name": "Fox",
 			"target_per_player": 1,
 			"spawn_share": 0.5,
@@ -456,6 +461,7 @@
 		},
 		"horse": {
 			"number": 7,
+			"weather": "stock",
 			"name": "Horse",
 			"target_per_player": 2,
 			"spawn_share": 0.5,
@@ -651,6 +657,7 @@
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"songbirds": {
+			"weather": "bird",
 			"alarm_group": "ground_birds",
 			"alarm_group_m": 15.0,
 			"number": 9,
@@ -753,6 +760,7 @@
 			"model": true
 		},
 		"grouse": {
+			"weather": "bird",
 			"alarm_group": "ground_birds",
 			"alarm_group_m": 15.0,
 			"number": 11,
@@ -920,6 +928,7 @@
 		},
 		"bear": {
 			"number": 14,
+			"weather": "hunter",
 			"name": "Brown bear",
 			"note": "Dave 6 Nov 2026: a brown bear wanders round the river near its den, spends most of its time fishing, foraging berries or sleeping, keeps away from fire unless trapped (a torch does not protect you at its den), runs from a player at spook_m but charges one who gets within threat_m, and anyone who walks into its den (den.threat_m). Far side of the starter island only (level). FAUNA_BY_BIOME: rarity 4, temperate, mixed and boreal forest; ANIMAL_SPEC carcass 200 kg. Hibernation: later (no winter yet).",
 			"target_per_player": 1,
@@ -1162,6 +1171,7 @@
 		},
 		"donkey": {
 			"number": 15,
+			"weather": "stock",
 			"name": "Donkey",
 			"target_per_player": 1,
 			"spawn_share": 0.3,
@@ -1262,6 +1272,7 @@
 		},
 		"lynx": {
 			"number": 17,
+			"weather": "hunter",
 			"name": "Lynx",
 			"target_per_player": 1,
 			"spawn_share": 0.25,
@@ -1335,6 +1346,7 @@
 		},
 		"black_bear": {
 			"number": 18,
+			"weather": "hunter",
 			"name": "Black bear",
 			"target_per_player": 1,
 			"spawn_share": 0.3,
@@ -1436,6 +1448,7 @@
 		},
 		"elk": {
 			"number": 19,
+			"weather": "deer",
 			"name": "Elk",
 			"target_per_player": 2,
 			"spawn_share": 0.35,
@@ -1539,6 +1552,7 @@
 		},
 		"bighorn": {
 			"number": 20,
+			"weather": "stock",
 			"name": "Bighorn sheep",
 			"target_per_player": 3,
 			"health": 30.0,
@@ -1639,6 +1653,7 @@
 		},
 		"mountain_goat": {
 			"number": 21,
+			"weather": "stock",
 			"name": "Mountain goat",
 			"target_per_player": 2,
 			"health": 28.0,
@@ -1738,6 +1753,7 @@
 		},
 		"beaver": {
 			"number": 22,
+			"weather": "small",
 			"name": "Beaver",
 			"target_per_player": 2,
 			"health": 14.0,
@@ -1785,6 +1801,7 @@
 		},
 		"chamois": {
 			"number": 23,
+			"weather": "deer",
 			"name": "Chamois",
 			"target_per_player": 3,
 			"health": 22.0,
@@ -1884,6 +1901,7 @@
 		},
 		"mink": {
 			"number": 24,
+			"weather": "small",
 			"name": "Mink",
 			"target_per_player": 2,
 			"spawn_share": 0.35,
@@ -1958,6 +1976,7 @@
 		},
 		"raccoon": {
 			"number": 25,
+			"weather": "small",
 			"name": "Raccoon",
 			"target_per_player": 1,
 			"spawn_share": 0.35,
@@ -2041,6 +2060,7 @@
 		},
 		"rat": {
 			"number": 26,
+			"weather": "small",
 			"name": "Rat",
 			"target_per_player": 3,
 			"health": 2.0,
@@ -2086,6 +2106,7 @@
 			"spawn_share": 0.4
 		},
 		"crow": {
+			"weather": "bird",
 			"alarm_group": "ground_birds",
 			"alarm_group_m": 15.0,
 			"number": 27,
@@ -2139,6 +2160,7 @@
 			"note": "Dave 7 Nov 2026, batch 2. Crows walk and peck on open ground, field edges and the shore in small groups by day and flush when a player comes close. Grouse numbers; it does not fly in this version, it runs and flaps."
 		},
 		"pheasant": {
+			"weather": "bird",
 			"alarm_group": "ground_birds",
 			"alarm_group_m": 15.0,
 			"number": 28,
@@ -2192,6 +2214,7 @@
 		},
 		"goose": {
 			"number": 29,
+			"weather": "bird",
 			"name": "Goose",
 			"target_per_player": 3,
 			"health": 10.0,
@@ -2242,6 +2265,7 @@
 		},
 		"cow": {
 			"number": 30,
+			"weather": "stock",
 			"name": "Cow",
 			"target_per_player": 0,
 			"spawn_share": 0.5,
@@ -2331,6 +2355,7 @@
 		},
 		"goat": {
 			"number": 31,
+			"weather": "stock",
 			"name": "Goat",
 			"target_per_player": 0,
 			"health": 25.0,
@@ -2429,6 +2454,7 @@
 		},
 		"chicken": {
 			"number": 32,
+			"weather": "bird",
 			"name": "Chicken",
 			"target_per_player": 0,
 			"health": 3.0,
@@ -2634,6 +2660,7 @@
 		},
 		"buffalo": {
 			"number": 35,
+			"weather": "stock",
 			"name": "Wild ox",
 			"target_per_player": 1,
 			"spawn_share": 0.2,
@@ -2735,6 +2762,7 @@
 		},
 		"puma": {
 			"number": 36,
+			"weather": "hunter",
 			"name": "Puma",
 			"target_per_player": 1,
 			"spawn_share": 0.15,
@@ -2809,6 +2837,7 @@
 		},
 		"pronghorn": {
 			"number": 37,
+			"weather": "deer",
 			"name": "Pronghorn",
 			"target_per_player": 3,
 			"health": 22.0,
@@ -3002,6 +3031,7 @@
 		},
 		"hyena": {
 			"number": 39,
+			"weather": "hunter",
 			"name": "Hyena",
 			"target_per_player": 1,
 			"spawn_share": 0.25,
@@ -3075,6 +3105,7 @@
 		},
 		"wildebeest": {
 			"number": 40,
+			"weather": "stock",
 			"name": "Wildebeest",
 			"target_per_player": 4,
 			"health": 60.0,
@@ -3172,6 +3203,7 @@
 		},
 		"lion": {
 			"number": 41,
+			"weather": "hunter",
 			"name": "Lion",
 			"target_per_player": 1,
 			"spawn_share": 0.15,
@@ -3245,6 +3277,7 @@
 		},
 		"leopard": {
 			"number": 42,
+			"weather": "hunter",
 			"name": "Leopard",
 			"target_per_player": 1,
 			"spawn_share": 0.15,
@@ -3514,6 +3547,7 @@
 		},
 		"camel": {
 			"number": 45,
+			"weather": "stock",
 			"name": "Camel",
 			"target_per_player": 1,
 			"spawn_share": 0.15,
@@ -3613,6 +3647,7 @@
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). Camels roam dry savanna and bare ground in small groups by day, walk off from a player and kick one who corners it. Horse numbers, slower, drier ground; tamable value like the horse for later riding."
 		},
 		"guineafowl": {
+			"weather": "bird",
 			"alarm_group": "ground_birds",
 			"alarm_group_m": 15.0,
 			"number": 46,
@@ -3942,6 +3977,7 @@
 		},
 		"tiger": {
 			"number": 50,
+			"weather": "hunter",
 			"name": "Tiger",
 			"target_per_player": 1,
 			"spawn_share": 0.08,
@@ -4013,6 +4049,30 @@
 			},
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). A tiger is the biggest of the cats: solitary, in deep forest and marsh edge, out at dusk and night; it keeps away but attacks one who comes close or corners it. Leopard numbers, much bigger and stronger, forest instead of savanna."
 		}
+	},
+	"weather": {
+		"note": "Steve 8 Nov 2026 (docs/design/animals_in_weather_design.md, step 1; research docs/knowledge/animals-in-weather.md, Jamie): weather tilts behaviour by a species row's weather role (deer, stock, small, bird, hunter). Wind: jumpy roles spook and alert up to wind_spook_max times farther by wind_spook_at; small animals lose small_wind_cut of their activity above small_wind_from and small_wind_cut_high above small_wind_high, and go down their burrows that often; hunters hunt hunter_wind_x more; deer and hunters wander into the wind (upwind_share, within upwind_spread_deg) below gale_from. A storm (storm_from) or snowfall (snowfall_from) cuts activity to storm_activity_x and wander to storm_wander_x. A storm in any of ahead_hours (sampled every ahead_every_s real seconds) makes birds, small animals and deer feed ahead_feed_x more and skip their daytime rest. Mist cuts sight by mist_sight and spook by mist_spook.",
+		"on": true,
+		"jumpy_roles": ["deer", "stock", "small", "bird"],
+		"wind_spook_max": 1.4,
+		"wind_spook_at": 0.6,
+		"small_wind_from": 0.25,
+		"small_wind_cut": 0.25,
+		"small_wind_high": 0.35,
+		"small_wind_cut_high": 0.65,
+		"hunter_wind_x": 1.25,
+		"gale_from": 0.6,
+		"upwind_share": 0.7,
+		"upwind_spread_deg": 40.0,
+		"storm_from": 0.5,
+		"snowfall_from": 0.5,
+		"storm_activity_x": 0.3,
+		"storm_wander_x": 0.3,
+		"ahead_hours": [12, 15, 18, 21, 24],
+		"ahead_every_s": 2.5,
+		"ahead_feed_x": 1.4,
+		"mist_sight": 0.6,
+		"mist_spook": 0.3
 	},
 	"senses": {
 		"far_factor": 1.5,
