@@ -31,11 +31,12 @@
 
 `_fog_v(pos)` gives the visibility V in metres at a point:
 
-- **Kathleen's number first.** If the weather state carries `visibility_m` (asked of Kathleen by MikeW: the V inside the fog), that is the V inside the layer.
+- **The server's own number first.** If `Weather.state` carries `visibility_m` (the follow-on PR below), that is the V inside the layer.
 - **Otherwise, from `mist`.** V = clear_v^(1 − mist) × fog_v^mist, with `clear_v_m` 20,000 and `fog_v_m` 120 (Jamie's thick fog, 50 to 180 m, in a valley floor at its height). That gives:
   - mist 0.3: about 4 km (haze);
   - mist 0.6: about 930 m (fog);
   - mist 1: 120 m (thick fog).
+- **Kathleen's `visibility_m` is the client's** (#724, `weather_look.visibility_m`). The server's `Weather.state` has no fog-density number yet. So the mist rule above is what the server uses, and a small follow-on PR adds `Weather.visibility_m` from `mist` and `mist_top_m` with the same formula as #724's `visibility_of_density`, so both sides give the same V. When it lands, `_read_weather` reads it and the mist fallback goes unused.
 - **Only inside the layer.** Above `mist_top_m` the air is clear (V = `clear_v_m`). Across the top it is eased over ±`top_ease_m` 6 m, the same ease as Kathleen's look (`valley_fog.md`). Sea fog (#608) is not in the shared weather yet; when Kathleen adds it with `visibility_m`, nothing here changes shape.
 
 ## 4. The rules
