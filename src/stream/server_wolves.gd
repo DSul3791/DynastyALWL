@@ -465,7 +465,7 @@ func _stalk(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 			fire_d = d
 			fire = f
 
-	var stalk_m: float = float(w.get("stalk_m", 25.0))
+	var stalk_m: float = host.fog_stalk_m(float(w.get("stalk_m", 25.0)), p)   # closer in fog, to half the visibility (animals_in_fog_server.md 4.3)
 
 	if fire != Vector3.INF:
 		# Circle just outside the firelight, visible at its edge: each wolf on its own bearing, drifting round the fire.
