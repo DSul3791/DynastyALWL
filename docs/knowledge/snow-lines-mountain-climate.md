@@ -11,7 +11,7 @@
    - Britain's most lasting patches lie at about 1130 m in Observatory Gully on Ben Nevis and about 1140 m in Garbh Choire Mòr on Braeriach (summit 1296 m). Garbh Choire Mòr was snow-free only about a dozen times in the last century, though now more often (every year from 2021 to 2025).
    - The patches sit in gullies, in hollows and under cliffs, and many face north-east, the lee side of the westerly winds. Patches on other Highland hills (Ben Wyvis, the Grey Corries, Glen Affric) usually melt in July or August, and a patch at 955 m under the Aonach Beag cliffs counts as unusually low.
    - So summer patches sit at about 84 to 88% of the summit height (1130 of 1345 m, 1140 of 1296 m), in the shade and in the lee.
-4. **Shade and wind move snow more than height does.** In the northern hemisphere, north faces get less sun and hold snow lower and longer. The prevailing wind strips snow off the windward crest and drops it on lee slopes and in gullies. Purves et al. (1998) modelled this on Aonach Mòr (1221 m), next to Ben Nevis, with simple cell rules: lee cells within 45° of the downwind direction get shelter, wind slows there, and snow eroded upwind is deposited. Their model piled snow into gullies, as experts see on the hill. This is why a modest summit can carry patches while a much higher open slope is bare.
+4. **Shade and wind move snow more than height does.** In the northern hemisphere, north faces get less sun and hold snow lower and longer. On our starter island, at about 34° S with the noon sun in the north, it is the south faces (`one-sky.md`). The prevailing wind strips snow off the windward crest and drops it on lee slopes and in gullies. Purves et al. (1998) modelled this on Aonach Mòr (1221 m), next to Ben Nevis, with simple cell rules: lee cells within 45° of the downwind direction get shelter, wind slows there, and snow eroded upwind is deposited. Their model piled snow into gullies, as experts see on the hill. This is why a modest summit can carry patches while a much higher open slope is bare.
 5. **Steep faces shed their snow to the foot.** Above about 45° snow does not build up; it slides off. Kathleen's rule 1 and lesson 6 of `glaciers-mountains.md` (#588) say the same (avalanches start on 30-45°, fewer above 60°). The snow that falls off a face collects in the gully or on the apron below, which is often exactly where the last summer patch survives.
 6. **Melt can be counted in degree-days.** Daily melt is about DDF × the day's mean temperature above 0°C. For snow, measured DDFs average about 5 mm water per °C per day (5.1 ± 2.2 over 18 sites). Ice melts faster (8.9 ± 3.7) because it is darker (Hock 2003, as summarised in the review linked below). A patch survives the summer if the snow piled into it (snowfall × drift) is more than the summer's degree-days × DDF. That one comparison is enough to place snow on a peak.
 
@@ -32,7 +32,7 @@ There are **two temperature models**, and they disagree.
   - It rises to full in 60 real seconds while it snows. It melts in 120 seconds above 1°C, or 900 seconds below that.
   - `weather_look.gd` feeds it to the ground shader's `snow` parameter and hides grass at 0.5 or more.
   - Nothing remembers where snow fell, so there is no snowpack, no drift and no aspect. Snow either covers everything around you or nothing.
-- **The sun** (`src/client/day_cycle.gd`): it always follows the real path for 52°N (`LATITUDE_DEG`) and stands in the south at noon, with north at -Z. Shaded faces in the game are therefore always the -Z (north) faces, even though world generation puts the starter island on the negative-latitude side of the equator. Any shade rule should follow the sun the player sees.
+- **The sun** (`src/client/day_cycle.gd`): the code still follows the real path for 52°N (`LATITUDE_DEG`), with the noon sun in the south and north at -Z. **Decided (Sonny, 8 Nov; latitude corrected by the 21 by 21 grid, #717 row 19):** the starter island is at about 34° S (`world.json` `latitude_for_z`), so the noon sun stands in the north and the shaded faces are the south-facing (+Z) ones. The sun times are in `one-sky.md`.
 
 ## What we tried
 
@@ -69,7 +69,7 @@ What this says:
   - Open slopes clear in late spring or early summer.
   - Gullies on a 1450 m summit keep their snow all year, and on a 1200 m summit almost to autumn.
   - A 1000 m summit keeps gully snow to mid-summer only. That fits Scotland, where the lasting patches sit above about 1100 m and one at 955 m is unusual.
-- **The equivalent "summer snow-patch line" is about 1200-1250 m on a 1450 m starter summit**, about 80-85% of the summit height, in north- and lee-facing gullies only. Kathleen's 80% is a good art rule of thumb because it matches the physics.
+- **The equivalent "summer snow-patch line" is about 1200-1250 m on a 1450 m starter summit**, about 80-85% of the summit height, in south- and lee-facing gullies only (south-east on the starter). Kathleen's 80% is a good art rule of thumb because it matches the physics.
 
 ## What others do (with sources)
 
@@ -90,7 +90,7 @@ Item 4 was decided by the coordinator (answering for Dave) on 8 Nov 2026. The re
    - snowfall from the island's climate and height;
    - times a drift factor: lee of the prevailing wind within 45° (Purves et al.), hollows and gullies, about 0.3-0.5 on scoured crests, about 2-3 in lee gullies;
    - with snow shed from slopes over about 45° to their foot;
-   - minus degree-day melt, scaled down on shaded (-Z) faces.
+   - minus degree-day melt, scaled down on shaded faces (south-facing, +Z, at the starter's 34° S).
 
    The client then shows snow on a cell when the clock is inside that cell's window. Footsteps and the ground shader can read the same answer at the player's feet, so the look, the sound and the warmth agree. The bake runs on Dave's PC like every other bake.
 3. **[Proposal] Per-island climate inputs**, set at the same island-type stage as `summit_m` (D-10): a sea-level mean, a seasonal swing and a precipitation level.
@@ -100,4 +100,4 @@ Item 4 was decided by the coordinator (answering for Dave) on 8 Nov 2026. The re
    - **(a) Chosen: a cooler, wetter starter island.** Sea-level mean about 9-10°C instead of 15°C (the weather already uses 10°C), a small swing and high orographic rain. This is real physics, as in Scotland or western Norway. It touches the warmth system (`warmth.json` reads the weather temperature), so Steve should check the night cold still feels fair.
    - **(b) Not chosen: a per-island `snow_bias_c`** of about -5 to -6°C, used only by the snow layer (the "mountain makes its own cold" fantasy). This is cheaper, but it is a stated fantasy rule that would need to be written into the guiding document. Otherwise it is the kind of disguise D-10 warns against.
 5. **[Open, with Sonny] The two temperature models should become one.** World generation gives the starter 15°C and the weather gives it 10°C. Pick one source and have the other read it. The coordinator handed this to Sonny with the snow line work (8 Nov).
-6. **[Open] The sun and the hemisphere.** The sun always stands in the south (52°N), while world latitude flips the hemisphere across the equator row. Shade rules (and the cirque bias in `glaciers-mountains.md` (#588)) should follow whatever the sun does. Handed to Sonny with the snow line work (coordinator, 8 Nov).
+6. **Decided (Sonny, 8 Nov 2026; latitude corrected by the grid, #717 row 19): one sky.** The starter island is at about 34° S (33.7° S at the spawn), so the noon sun is in the north, and shade, late snow and cirques favour south to south-east slopes. `day_cycle.gd` still uses 52°N until it is changed to match. See `one-sky.md`.

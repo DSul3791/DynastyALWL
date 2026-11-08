@@ -68,6 +68,15 @@ def _ery(h, cover, veg, sea, prov, surf, gran, basa, er, cycle, repeat, base, ma
 
 
 @nb.njit(cache=True)
+def _rock_ery(h, sea, prov, surf, gran, basa, er, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid, out):
+    # the bedrock's erodibility at each height, under any loose cover
+    for i in range(h.size):
+        if sea[i]:
+            out[i] = 1.0; continue
+        out[i] = er[_rock_at(i, h[i], prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid)]
+
+
+@nb.njit(cache=True)
 def _rocks(h, prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid, out):
     for i in range(h.size):
         out[i] = _rock_at(i, h[i], prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid)
@@ -104,4 +113,13 @@ def make_fn(g, start_h, sea, dx, veg_map=None):
              g['lrock'], g['lbot'], g['gid'], g['bid'], g['lid'], g['mid'], g['cover_m'], g['cover_ery'], out)
         return out
     fn.update = lambda delta: _wear(cover, delta, sea)
+    rock_out = np.ones(cover.size)
+    def parts(h):
+        """The two layers of each cell, for a solver that erodes through a thin cover within one step: (bedrock
+        erodibility under the cover, loose cover erodibility, cover thickness in m). fn(h) gives only the top layer's
+        erodibility, which over a long step erodes a few centimetres of cover at the cover's rate for the whole step."""
+        _rock_ery(h, sea, g['prov'], g['surf'], g['gran'], g['basa'], g['er'], g['cycle'], g['repeat'], g['base'], g['marble'], g['ptr'],
+                  g['lrock'], g['lbot'], g['gid'], g['bid'], g['lid'], g['mid'], rock_out)
+        return rock_out, g['cover_ery'] * veg, cover
+    fn.parts = parts
     return fn
