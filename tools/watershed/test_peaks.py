@@ -115,6 +115,11 @@ def test_snowline_and_history_years():
                                                  dict(cycles=10, active_years=40000.0, ela_offset_m=0.0)]))
     y = pk._history_years(H)
     assert pk.snowline(H) == 487.0 and len(y) == 49 and y[38] == 39 * 16400.0 and y[-1] == 39 * 16400.0 + 400000.0
+    # An LR04 history (lr04_history.py): the lowest line with ice time, not the last era's (the Holocene's, with no ice).
+    L = dict(glacial=dict(ela_m=487.0, history=[dict(cycles=1, active_years=4000.0, ela_offset_m=120.0),
+                                                 dict(cycles=1, active_years=0.0, interglacial_years=6000.0, ela_offset_m=1013.0),
+                                                 dict(cycles=1, active_years=2000.0, ela_offset_m=980.0)]))
+    assert pk.snowline(L) == 607.0
 
 
 def test_check_glacial_end_to_end():

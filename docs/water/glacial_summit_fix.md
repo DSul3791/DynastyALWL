@@ -115,3 +115,19 @@ Probe L starts from ws580i's `glacial_cycle_39.npz` (the end of the 41 kyr world
 The first try (8 Nov 21:30) crashed on a river phase of zero years, a division by its dt in evolve._solve. glacial.py now skips a phase of no years, and a cold phase starts from the last cold phase's ice when no interglacial came between. Without that, every LR04 entry would start bare, while histories with an interglacial in every cycle run exactly as before.
 
 **Decision.** The baseline is ws580i's cycles 40 and 41, where the main summit lost 65.3 m (1,383.4 to 1,318.1 m). If L's main summit loses at most a fifth of that (13 m), the full LR04 history run from B1 is worth its time, about 2 hours: 1,243 cold steps against ws580i's 520. Rule 6's lines 4 to 12 are then judged as written. If L loses more, the history is not the main cause, and the uplift note's options come back.
+
+## Probe L result (Dino, 8 Nov 21:45; `manifest_L.json`)
+
+The highest ground, the main summit, fell from 1,382.7 to 1,135.6 m in 240 kyr: 247 m. By the decision rule, **the history is not the main cause.** The per-summit list was empty because `peaks.snowline` took the last era's line, which for an LR04 history is the Holocene's, about 1,465 m. It now takes the lowest line with ice time, which is unchanged for rule 6's history (`test_peaks.py`).
+
+The step track shows what does cause the loss. The summit falls about 1 mm a year (0.4 to 1.8) whatever the ice. It falls 1.0 to 1.1 mm a year at a snowline of 1,279 to 1,314 m with 0.01 to 0.03 km² of ice, a few cells, and 0.6 to 1.2 mm a year at 488 to 560 m with 13 to 15 km². No glacier cuts a top that it does not reach, so the process that does is one that runs everywhere: **creep.**
+
+- `evolve._diffuse` moves rock as well as soil at D = 0.005 m² a year (times ery^0.3), with no limit from the soil there is to move.
+- On a horn whose faces have met (plateau 0 from ws580i's cycle 36), the top cell stands about 1.5 cells above each neighbour, 16 m cells at 56 degrees. Linear creep then lowers it by D × 6 / dx: about 1.9 mm a year, times ery^0.3. That is the measured 1 mm a year if ery^0.3 is about 0.55.
+- This also explains three earlier readings:
+  - The summit held through ws580i's cycles 1 to 33, when it still had a 90 to 110 m plateau of small curvature.
+  - It fell faster in L than in ws580i's 100 kyr world (1.0 against 0.63 mm a year of model time): creep is off under ice (`fixed | thick > 0`), and at ws580i's 487 m line ice covered the top for 40 kyr a cycle.
+  - It fell in the river phases too.
+- Measured soil creep needs soil. On bare rock the lowering is limited by how fast rock becomes soil, and that "soil production speed limit" is about a tenth of a millimetre a year at most (Heimsath et al. 1997; Dixon and von Blanckenburg 2012; to be checked with numbers before any change). So linear creep on a bare horn top is about ten times faster than anything measured.
+
+**Probe M** is probe L with creep off (`evolve.D` 0; params `/mnt/project-files/water/ws580i_probe_params_M.json`; a diagnostic, not a setting). If M's main summit loses at most a fifth of L's (49 m), creep is the cause. The fix is then soil-limited creep: rock creeps only as fast as soil is made from it. That gets a design note with measured soil production numbers first. It also touches B1, so it comes with its own check of B1's peaks.
