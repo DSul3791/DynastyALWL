@@ -46,6 +46,25 @@ var _layer: CanvasLayer
 var _root: Node3D
 var _player_position: Callable
 var _ground_below: Callable
+# The crafting and inventory screen's four parts (src/client/ui/inventory/; docs/design/INVENTORY_CRAFTING_REPORT.md step 1): each builds and
+# refreshes its own controls, and the state they show stays on this view (the network, the quick keys and the tests read it here).
+const RecipeListScript := preload("res://src/client/ui/inventory/recipe_list.gd")
+const PackGridScript := preload("res://src/client/ui/inventory/pack_grid.gd")
+const ContainerPanelScript := preload("res://src/client/ui/inventory/container_panel.gd")
+const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd")
+var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
+var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
+var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store beside the pack
+var _queue_part: CraftQueueScript              # the crafting queue under the recipe list
+
+
+func _init() -> void:
+	_recipe_part = RecipeListScript.new(self)
+	_pack_part = PackGridScript.new(self)
+	_container_part = ContainerPanelScript.new(self)
+	_queue_part = CraftQueueScript.new(self)
+
+
 var _panel: PanelContainer
 var _grid: GridContainer
 var _buttons: Array = []
@@ -211,7 +230,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 		shoulder_id = item_id
 
 		if chest_mode:
-			_refresh_chest()
+			_container_part.refresh()
 
 		if _weight_label != null:
 			_refresh_weight())
@@ -311,7 +330,6 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 
 	for forgotten in CharacterKeys.take_forgotten():
 		net.forget_character.rpc_id(1, str(forgotten))
-
 
 
 # Public for the Esc > Advanced "Show my player key" button (admin.json lists these keys).
@@ -755,7 +773,7 @@ func press_e() -> bool:
 	# In the crafting window, E over a recipe crafts it, as many as the quantity box says (Dave 2026-10-23; BUG-025, 4 Nov: a quantity of 20 made only 1).
 	if open and not chest_mode and _hover_recipe != 0:
 		if _can_craft(_hover_recipe):
-			_start_craft(_hover_recipe, _chosen_quantity())
+			_start_craft(_hover_recipe, _recipe_part.chosen_quantity())
 		else:
 			_on_notice("You do not have what that needs")
 
@@ -946,7 +964,7 @@ func _process_body(_delta: float) -> void:
 
 	if _queue_head_button != null and now >= _queue_next_msec:
 		_queue_next_msec = now + 250
-		_queue_head_button.text = _queue_text(0)
+		_queue_head_button.text = _queue_part.queue_text(0)
 
 	if now < _prompt_next_msec:
 		return
@@ -971,7 +989,6 @@ func _process_body(_delta: float) -> void:
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = KeyBindings.localize("Hold Z to sleep")
-
 
 
 # P (terrain_client.gd): auto pickup on or off, announced slightly above the middle of the screen.
@@ -1446,7 +1463,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 					tool_event.call("repaired")
 
 	_queue_refresh()
-	_refresh_chest()
+	_container_part.refresh()
 	refresh_hotbar()
 
 
@@ -1750,7 +1767,6 @@ func over_pace_factor() -> float:
 	return float(_exertion_cfg.get("over_speed_factor", 0.9)) if strain_state == 1 else 1.0
 
 
-
 # The picture's state name and progress for faint.set_state (Art's faint_effect.gd): vision fades over the
 # first vision_frac of a faint ("fainting", progress 0 to 1), then "fainted" holds black while only the heart is heard.
 func faint_state() -> Array:
@@ -1978,14 +1994,14 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 		open = true
 		_build_panel()
 		_panel.visible = false
-		_build_chest_panel()
+		_container_part.build()
 		_chest_panel.visible = true
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 		if chest_event.is_valid() and _world.has(id):
 			chest_event.call("open", _world[id]["pos"])
 
-	_refresh_chest()
+	_container_part.refresh()
 
 
 func _close_chest() -> void:
@@ -2003,172 +2019,24 @@ func _close_chest() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-func _build_chest_panel() -> void:
-	if _chest_panel == null:
-		_chest_buttons.clear()
-		_pack_buttons.clear()
-		_chest_titles.clear()
-
-	if _chest_panel != null:
-		return
-
-	_chest_panel = PanelContainer.new()
-	_chest_panel.theme = _tooltip_theme()
-	_chest_panel.anchor_left = 0.125
-	_chest_panel.anchor_right = 0.875
-	_chest_panel.anchor_top = 0.1
-	_chest_panel.anchor_bottom = 0.9
-	var columns: HBoxContainer = HBoxContainer.new()
-	columns.add_theme_constant_override("separation", _px(24))
-	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var chest_outer: VBoxContainer = VBoxContainer.new()
-	chest_outer.add_theme_constant_override("separation", _px(10))
-	_chest_panel.add_child(chest_outer)
-	chest_outer.add_child(columns)
-
-	for side in ["Woven chest  (click a stack to take it)", "Your pack  (click a stack to put it in)"]:
-		var box: VBoxContainer = VBoxContainer.new()
-		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		columns.add_child(box)
-		var title: Label = Label.new()
-		title.text = side
-		_style(title, TITLE_PX)
-		box.add_child(title)
-		_chest_titles.append(title)
-		var scroll: ScrollContainer = ScrollContainer.new()
-		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		box.add_child(scroll)
-		var grid: GridContainer = GridContainer.new()
-		grid.columns = 4
-		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		grid.add_theme_constant_override("h_separation", _px(8))
-		grid.add_theme_constant_override("v_separation", _px(8))
-		scroll.add_child(grid)
-		var chest_side: bool = _chest_buttons.is_empty()
-
-		for i in inventory.SLOTS:
-			var button: Button = Button.new()
-			button.custom_minimum_size = Vector2(0.0, _px(88))
-			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			button.clip_text = true
-			_style(button, BODY_PX - 4)
-			button.pressed.connect(_on_chest_slot.bind(chest_side, i))
-			button.mouse_entered.connect(func():
-				_chest_hover = [chest_side, i]
-				_chest_last = [chest_side, i])
-			button.mouse_exited.connect(func(): _chest_hover = [] if _chest_hover == [chest_side, i] else _chest_hover)
-			grid.add_child(button)
-			(_chest_buttons if chest_side else _pack_buttons).append(button)
-
-	var transfer: Button = Button.new()
-	transfer.text = "Transfer (T)"
-	transfer.tooltip_text = "Move the last stack you pointed at between your pack and the container (clicking a stack does the same)"
-	_style(transfer, BODY_PX)
-	transfer.pressed.connect(func():
-		if _chest_last.size() == 2:
-			_on_chest_slot(bool(_chest_last[0]), int(_chest_last[1])))
-	transfer.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	chest_outer.add_child(transfer)
-	_layer.add_child(_chest_panel)
-
-
-func _on_chest_slot(chest_side: bool, slot: int) -> void:
-	if not chest_side:
-		slot = _pack_slot(slot)
-
-		if slot < 0:
-			return
-
-	if chest_side:
-		if chest_inv.numbers[slot] != 0:
-			net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, slot, chest_id, chest_inv.counts[slot], Vector3.ZERO)
-
-			if chest_event.is_valid() and _world.has(chest_id):
-				chest_event.call("take", _world[chest_id]["pos"])
-	elif inventory.numbers[slot] != 0:
-		net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, slot, chest_id, inventory.counts[slot], Vector3.ZERO)
-
-		if chest_event.is_valid() and _world.has(chest_id):
-			chest_event.call("put", _world[chest_id]["pos"])
-
-
-func _refresh_chest() -> void:
-	if not chest_mode or _chest_panel == null:
-		return
-
-	var capacity: int = int(table.entry(table.id_of(int(_world.get(chest_id, {}).get("number", 0)))).get("slots", inventory.SLOTS))
-	var fire: bool = _chest_is_fire()
-	_pack_view = _pack_view_slots(fire)
-
-	if _chest_titles.size() == 2:
-		_chest_titles[0].text = "Fire  (click a stack to take it)" if fire else "Woven chest  (click a stack to take it)"
-		_chest_titles[1].text = "Your pack: wood and food, A to Z  (click to put it in)" if fire else "Your pack  (click a stack to put it in)"
-
-	for i in inventory.SLOTS:
-		_chest_buttons[i].visible = i < capacity
-		var number: int = chest_inv.numbers[i]
-		_chest_buttons[i].text = "" if number == 0 else "%s\nx%s" % [table.name_of(number), _count_text(chest_inv.counts[i])]
-		_chest_buttons[i].tooltip_text = _tooltip(number, chest_inv.counts[i], chest_inv.wear[i])
-		var slot: int = _pack_slot(i)
-		number = inventory.numbers[slot] if slot >= 0 else 0
-		_pack_buttons[i].text = "" if number == 0 else "%s\nx%s" % [table.name_of(number), _count_text(inventory.counts[slot])]
-		_pack_buttons[i].tooltip_text = "" if number == 0 else _tooltip(number, inventory.counts[slot], inventory.wear[slot])
-
-
-# True when the open container is a fire (lit or out); its store takes only wood and food (Dave, 4 Nov 2026).
+# Kept on the view for the tests: _container_part.is_fire (src/client/ui/inventory/container_panel.gd).
 func _chest_is_fire() -> bool:
-	return int(_world.get(chest_id, {}).get("state", -1)) in StructureLook.CAMPFIRE_STATES
+	return _container_part.is_fire()
 
 
-# The real pack slot shown on chest-screen pack button `index`, or -1 for an empty button.
+# Kept on the view for the tests: _container_part.pack_slot (src/client/ui/inventory/container_panel.gd).
 func _pack_slot(index: int) -> int:
-	if index < 0 or index >= _pack_view.size():
-		return -1
-
-	return int(_pack_view[index])
+	return _container_part.pack_slot(index)
 
 
-# The pack slots the chest screen shows, in button order. A chest shows every slot in place. A fire shows only what it takes
-# (the server's _fire_takes: cooking.json fuel or cookable food), sorted by name A to Z and packed to the top (Dave, 4 Nov 2026).
+# Kept on the view for the tests: _container_part.pack_view_slots (src/client/ui/inventory/container_panel.gd).
 func _pack_view_slots(fire: bool) -> Array:
-	var slots: Array = []
-
-	for i in inventory.SLOTS:
-		if not fire:
-			slots.append(i)
-		elif inventory.numbers[i] != 0 and fire_takes(table.id_of(inventory.numbers[i])):
-			slots.append(i)
-
-	if fire:
-		slots.sort_custom(func(a: int, b: int) -> bool:
-			var name_a: String = table.name_of(inventory.numbers[a]).to_lower()
-			var name_b: String = table.name_of(inventory.numbers[b]).to_lower()
-			return name_a < name_b if name_a != name_b else a < b)
-
-	return slots
+	return _container_part.pack_view_slots(fire)
 
 
-# Same rule as server_items._fire_takes: wood the fire burns (cooking.json fuel) or food it cooks.
+# Kept on the view for the tests: _container_part.fire_takes (src/client/ui/inventory/container_panel.gd).
 func fire_takes(item_id: String) -> bool:
-	if _cooking_cfg.is_empty():
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
-		_cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
-
-	if item_id == "":
-		return false
-
-	if _cooking_cfg.get("fuel", {}).has(item_id) or _cooking_cfg.get("cooks_into", {}).has(item_id):
-		return true
-
-	if item_id == str(_cooking_cfg.get("gives", "")):
-		return false
-
-	for suffix in _cooking_cfg.get("cookable_suffixes", []):
-		if item_id.ends_with(str(suffix)):
-			return true
-
-	return false
-
+	return _container_part.fire_takes(item_id)
 
 
 # Finds a hitch (Dave's bug 6, 2 Nov 2026: "every time I cut a log off it pauses"): a message handler that takes over 20 ms prints one line, so the cause shows in the client log.
@@ -2471,7 +2339,6 @@ func _refresh_pile(id: int) -> void:
 	elif entry.get("pile", false):
 		entry["pile"] = false
 		box.mesh = _mesh_for(int(entry["number"]))
-
 
 
 # The world id of the placed structure nearest `point` within `reach` metres, or 0 (the hammer's Repair mode aims with it).
@@ -2825,8 +2692,6 @@ func _part(root: Node3D, size: Vector3, at: Vector3, color: Color, tilt: Vector3
 	piece.position = at
 	piece.rotation_degrees = tilt
 	root.add_child(piece)
-
-
 
 
 # Medium: a thick hewn top on two log trestles, a rack of pegs at the back and a wooden vice at one end, about 2 by 1 m.
@@ -3982,8 +3847,6 @@ func _build_panel() -> void:
 	if _panel != null:
 		return
 
-	_buttons.clear()   # a rebuilt panel starts with a fresh list; never keep freed buttons
-
 	_panel = PanelContainer.new()
 	_panel.theme = _tooltip_theme()
 	_panel.anchor_left = 0.05
@@ -4034,129 +3897,10 @@ func _build_panel() -> void:
 	columns.add_theme_constant_override("separation", _px(24))
 	box.add_child(columns)
 
-	# Left: recipes, then the chosen recipe's needs and the Craft button.
-	var left: VBoxContainer = VBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.size_flags_stretch_ratio = 1.0
-	columns.add_child(left)
-	var left_title: Label = Label.new()
-	left_title.text = "Make"
-	_style(left_title, TITLE_PX - 6)
-	left.add_child(left_title)
-	left.add_child(_build_recipe_filter())
-	var list_scroll: ScrollContainer = ScrollContainer.new()
-	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	list_scroll.size_flags_stretch_ratio = 1.6
-	left.add_child(list_scroll)
-	_queue_box = VBoxContainer.new()
-	_queue_box.visible = false
-	left.add_child(_queue_box)
-	_recipe_list = VBoxContainer.new()
-	_recipe_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list_scroll.add_child(_recipe_list)
-
-	# The chosen recipe's detail scrolls in its own area so it never overlaps the recipe list.
-	var detail_scroll: ScrollContainer = ScrollContainer.new()
-	detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	detail_scroll.size_flags_stretch_ratio = 1.0
-	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(detail_scroll)
-	_detail = VBoxContainer.new()
-	_detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_scroll.add_child(_detail)
-
-	# Right: the inventory slots.
-	var right: VBoxContainer = VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.size_flags_stretch_ratio = 1.0
-	columns.add_child(right)
-	var right_title: Label = Label.new()
-	right_title.text = "Inventory"
-	_style(right_title, TITLE_PX - 6)
-	right.add_child(right_title)
-	_weight_label = Label.new()
-	_style(_weight_label, BODY_PX - 6)
-	_weight_label.text = "Body weight %.1f kg" % weight_kg
-	_weight_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	right.add_child(_weight_label)
-	_purse_label = make_coin_label(_px(BODY_PX - 6))
-	right.add_child(_purse_label)
-	_refresh_purse()
-	_carry_bar = ProgressBar.new()
-	_carry_bar.show_percentage = false
-	_carry_bar.max_value = 100.0
-	_carry_bar.custom_minimum_size = Vector2(0.0, _px(22))
-	_carry_bar.add_theme_stylebox_override("fill", StyleBoxFlat.new())
-	var carry_empty: StyleBoxFlat = StyleBoxFlat.new()
-	carry_empty.bg_color = Color(0.0, 0.0, 0.0, 0.5)
-	_carry_bar.add_theme_stylebox_override("background", carry_empty)
-	right.add_child(_carry_bar)
-	_carried_slot = Label.new()
-	_style(_carried_slot, BODY_PX - 6)
-	_carried_slot.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
-	right.add_child(_carried_slot)
-	_sort_menu = OptionButton.new()
-	_style(_sort_menu, BODY_PX - 6)
-
-	for sort_name in ["Sort: unsorted (picked up order)", "Sort: name", "Sort: weight (ascending)", "Sort: weight (descending)", "Sort: value (ascending)", "Sort: value (descending)"]:
-		_sort_menu.add_item(sort_name)
-
-	_sort_menu.select(sort_index)
-	_sort_menu.item_selected.connect(func(index):
-		sort_index = index
-		_arrange_slots()
-
-		if sort_changed.is_valid():
-			sort_changed.call(index))
-	right.add_child(_sort_menu)
-	_slot_scroll = ScrollContainer.new()
-	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	right.add_child(_slot_scroll)
-	_grid = GridContainer.new()
-	_grid.columns = 4
-	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_grid.add_theme_constant_override("h_separation", _px(8))
-	_grid.add_theme_constant_override("v_separation", _px(8))
-	_slot_scroll.add_child(_grid)
-
-	for i in inventory.SLOTS:
-		var button: Button = Button.new()
-		button.custom_minimum_size = Vector2(0.0, _px(88))
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.clip_text = true
-		_style(button, BODY_PX - 4)
-		button.pressed.connect(_on_slot_pressed.bind(i))
-		button.mouse_entered.connect(func(): _hover = i)
-		button.mouse_exited.connect(func(): _hover = -1 if _hover == i else _hover)
-		button.set_drag_forwarding(_slot_drag.bind(i), _slot_can_drop.bind(i), _slot_drop.bind(i))
-		_grid.add_child(button)
-		_buttons.append(button)
-		var bar: ColorRect = ColorRect.new()          # condition bar along the bottom of a worn tool's slot
-		bar.name = "Condition"
-		bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		bar.offset_top = -_px(8)
-		bar.offset_left = _px(4)
-		bar.offset_bottom = -_px(3)
-		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bar.visible = false
-		button.add_child(bar)
-
-	var row: HFlowContainer = HFlowContainer.new()   # wraps onto a second line when the text is large
-	row.add_theme_constant_override("h_separation", _px(12))
-	row.add_theme_constant_override("v_separation", _px(6))
-	right.add_child(row)
-
-	# One row; each button carries its key (the same keys work on the slot under the mouse).
-	for spec in [["Split (S)", "Split the selected stack in half", _split_selected], ["Drop (D)", "Drop the whole stack. Shift+D drops one", _drop_selected.bind(true)], ["Use (E)", "Eat the food, apply the medicine, or hold a tool in your hand (again to put it away)", func(): eat_slot(_selected)], ["Repair (R)", "Repair a worn tool with its materials", _repair_selected]]:
-		var action: Button = Button.new()
-		action.text = spec[0]
-		action.tooltip_text = spec[1]
-		_style(action, BODY_PX)
-		action.pressed.connect(spec[2])
-		row.add_child(action)
-
+	# Left: recipes and the crafting queue. Right: the pack. Each part builds its own column (src/client/ui/inventory/).
+	_queue_part.build()
+	columns.add_child(_recipe_part.build(_queue_part.root))
+	columns.add_child(_pack_part.build())
 	_layer.add_child(_panel)
 
 
@@ -4217,66 +3961,11 @@ func quick_key(event: InputEventKey) -> bool:
 
 	if KeyBindings.matches(event, "transfer_item"):
 		if chest_mode and _chest_hover.size() == 2:
-			_on_chest_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
+			_container_part.on_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
 
 		return true
 
 	return false
-
-
-# Dragging a stack from one slot to another (also onto the hotbar strip on screen).
-func _slot_drag(_at: Vector2, slot: int) -> Variant:
-	if inventory.numbers[slot] == 0:
-		return null
-
-	var preview: Label = Label.new()
-	preview.text = table.name_of(inventory.numbers[slot])
-	preview.add_theme_font_size_override("font_size", _px(BODY_PX - 4))
-	_buttons[slot].set_drag_preview(preview)
-	return {"slot": slot}
-
-
-func _slot_can_drop(_at: Vector2, data: Variant, _slot: int) -> bool:
-	return typeof(data) == TYPE_DICTIONARY and data.has("slot")
-
-
-func _slot_drop(_at: Vector2, data: Variant, slot: int) -> void:
-	move_slot(int(data["slot"]), slot)
-
-
-func _on_slot_pressed(slot: int) -> void:
-	if _selected < 0:
-		if inventory.numbers[slot] != 0:
-			_selected = slot
-	else:
-		if slot != _selected:
-			net.inventory_action.rpc_id(1, Net.ACT_MOVE, _selected, slot, 0, Vector3.ZERO)
-
-		_selected = -1
-
-	_refresh()
-
-
-func _select_recipe(number: int) -> void:
-	_selected_recipe = number
-	_refresh()
-
-
-# Queue the chosen recipe `quantity` times. The server takes the ingredients now and makes the crafts in order.
-func _craft_selected() -> void:
-	if _selected_recipe == 0:
-		return
-
-	_start_craft(_selected_recipe, _chosen_quantity())
-
-
-# The quantity box's number, counting digits typed but not yet confirmed with Enter (BUG-025).
-func _chosen_quantity() -> int:
-	if _quantity == null:
-		return 1
-
-	_quantity.apply()
-	return clampi(int(_quantity.value), 1, 20)
 
 
 func _start_craft(number: int, count: int = 1) -> void:
@@ -4306,54 +3995,7 @@ func _on_craft_queue(entries: Array, left_ms: int) -> void:
 	craft_entries = entries
 	_crafting = int(entries[0][0]) if not entries.is_empty() else 0
 	_craft_head_end_msec = Time.get_ticks_msec() + left_ms
-	_rebuild_queue()
-
-
-func _queue_text(index: int) -> String:
-	var entry: Array = craft_entries[index]
-	var text: String = str(recipes.recipe(int(entry[0])).get("name", "?"))
-
-	if int(entry[1]) > 1:
-		text += "  x%d" % int(entry[1])
-
-	if index == 0:
-		text += "   %.0f s" % ceilf(maxf(float(_craft_head_end_msec - Time.get_ticks_msec()) / 1000.0, 0.0))
-
-	return text
-
-
-# One button per queued craft; pressing it cancels the entry and the server hands back what it cost.
-func _rebuild_queue() -> void:
-	if _queue_box == null:
-		return
-
-	for child in _queue_box.get_children():
-		child.queue_free()
-
-	_queue_head_button = null
-
-	if craft_entries.is_empty():
-		_queue_box.visible = false
-		return
-
-	_queue_box.visible = true
-	var title: Label = Label.new()
-	title.text = "Crafting queue  (press one to cancel it)"
-	_style(title, BODY_PX - 4)
-	_queue_box.add_child(title)
-
-	for i in craft_entries.size():
-		var button: Button = Button.new()
-		button.text = _queue_text(i)
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.clip_text = true
-		_style(button, BODY_PX - 4)
-		var index: int = i
-		button.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_CRAFT_CANCEL, index, 0, 0, Vector3.ZERO))
-		_queue_box.add_child(button)
-
-		if i == 0:
-			_queue_head_button = button
+	_queue_part.rebuild()
 
 
 func _repair_selected() -> void:
@@ -4473,118 +4115,6 @@ func _drop_selected(whole: bool) -> void:
 	_selected = -1
 
 
-# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name, what it makes and its ingredients (1 Nov);
-# a tab shows one category and the search works inside it. The same list is the crafting table, forge and every other station's menu.
-func _build_recipe_filter() -> Control:
-	var holder: VBoxContainer = VBoxContainer.new()
-	# A real search box (Dave 4 Nov): a field background and border, a magnifying glass on the left, and no words in it.
-	var field: PanelContainer = PanelContainer.new()
-	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var box: StyleBoxFlat = StyleBoxFlat.new()
-	box.bg_color = Color(0.09, 0.08, 0.07, 0.95)
-	box.border_color = Color(0.62, 0.55, 0.42)
-	box.set_border_width_all(maxi(1, _px(2)))
-	box.set_corner_radius_all(_px(8))
-	box.content_margin_left = _px(10)
-	box.content_margin_right = _px(6)
-	box.content_margin_top = _px(4)
-	box.content_margin_bottom = _px(4)
-	field.add_theme_stylebox_override("panel", box)
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", _px(8))
-	field.add_child(row)
-	var glass: Control = Control.new()
-	glass.custom_minimum_size = Vector2(_px(26), _px(26))
-	glass.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glass.draw.connect(func():
-		var colour: Color = Color(0.78, 0.72, 0.58)
-		var unit: float = glass.size.x
-		glass.draw_arc(Vector2(unit * 0.42, unit * 0.42), unit * 0.28, 0.0, TAU, 32, colour, maxf(1.5, unit * 0.1), true)
-		glass.draw_line(Vector2(unit * 0.63, unit * 0.63), Vector2(unit * 0.9, unit * 0.9), colour, maxf(1.5, unit * 0.12), true))
-	row.add_child(glass)
-	_recipe_search = LineEdit.new()
-	_recipe_search.clear_button_enabled = true
-	_recipe_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var bare: StyleBoxEmpty = StyleBoxEmpty.new()
-	for state in ["normal", "focus", "read_only"]:
-		_recipe_search.add_theme_stylebox_override(state, bare)
-	_style(_recipe_search, BODY_PX)
-	_recipe_search.text_changed.connect(func(_text): _refresh())
-	row.add_child(_recipe_search)
-	holder.add_child(field)
-	var tabs: HFlowContainer = HFlowContainer.new()
-	holder.add_child(tabs)
-	_category_buttons.clear()
-
-	for label in [""] + RecipeFilter.CATEGORIES:
-		var tab: Button = Button.new()
-		tab.text = "All" if label == "" else str(label)
-		tab.toggle_mode = true
-		_style(tab, BODY_PX - 6)
-		tab.pressed.connect(func():
-			_recipe_category = str(label)
-			_refresh())
-		tabs.add_child(tab)
-		_category_buttons[str(label)] = tab
-
-	return holder
-
-
-func _recipe_shown(r: Dictionary) -> bool:
-	return RecipeFilter.shown(r, _recipe_category, _recipe_search.text if _recipe_search != null else "", table)
-
-
-func _matches(text: String, filter: String) -> bool:
-	return filter == "" or text.to_lower().contains(filter)
-
-
-
-# The slot buttons keep their slot (clicks, moves and the hotbar are unchanged); only where they sit in the grid
-# changes. Empty slots go last. Unsorted is the order the item kinds were picked up in.
-func _arrange_slots() -> void:
-	if _panel == null or _buttons.is_empty():
-		return
-
-	var order: Array = range(inventory.SLOTS)
-	var cfg: Dictionary = _carry_cfg
-
-	var key: Callable = func(slot: int) -> Variant:
-		var number: int = inventory.numbers[slot]
-		var count: int = inventory.counts[slot]
-
-		match sort_index:
-			1:
-				return table.name_of(number).to_lower()
-			2:
-				return CarryRules.weight_of(table.id_of(number), cfg) * float(count)
-			3:
-				return -CarryRules.weight_of(table.id_of(number), cfg) * float(count)
-			4:
-				return table.value_of(number) * count
-			5:
-				return -table.value_of(number) * count
-
-		return int(_first_seen.get(number, 0))
-
-	order.sort_custom(func(a, b):
-		var empty_a: bool = inventory.numbers[a] == 0
-		var empty_b: bool = inventory.numbers[b] == 0
-
-		if empty_a != empty_b:
-			return empty_b
-
-		if empty_a:
-			return a < b
-
-		var ka: Variant = key.call(a)
-		var kb: Variant = key.call(b)
-		return a < b if ka == kb else ka < kb)
-
-	for position in range(order.size()):
-		_grid.move_child(_buttons[order[position]], position)
-
-
 # Remembers the order item kinds first appeared in the pack (for the unsorted view).
 func _note_acquired() -> void:
 	var present: Dictionary = {}
@@ -4620,197 +4150,8 @@ func _refresh() -> void:
 
 		return
 
-	_arrange_slots()
-
-	if _weight_label != null:
-		_refresh_weight()
-
-	var filter: String = _search.text.strip_edges().to_lower() if _search != null else ""
-
-	# Inventory slots: with a search, only slots that match; otherwise every slot.
-	for i in inventory.SLOTS:
-		var button: Button = _buttons[i]
-		var number: int = inventory.numbers[i]
-		button.text = "" if number == 0 else "%s\nx%s" % [_item_label(number), _count_text(inventory.counts[i])]
-		var bar: ColorRect = button.get_node("Condition")
-		var is_worn: bool = number != 0 and int(table.entry(table.id_of(number)).get("durability", 0)) > 0 and inventory.wear[i] > 0
-		var perishable: bool = number != 0 and table.shelf_units(number) > 0
-		bar.visible = is_worn or perishable
-
-		if perishable:
-			var f: float = table.freshness(number, inventory.wear[i])
-			bar.anchor_right = maxf(f, 0.04)
-			bar.color = Color(0.85, 0.2, 0.15) if f <= 0.25 else (Color(0.9, 0.7, 0.2) if f <= 0.5 else Color(0.35, 0.8, 0.3))
-			bar.anchor_left = 0.0
-			bar.offset_right = -_px(4)
-			button.text += "   %s" % _freshness_word(f)
-		elif is_worn:
-			var c: float = condition(i)
-			bar.anchor_right = maxf(c, 0.04)
-			bar.color = Color(0.85, 0.2, 0.15) if c <= 0.0 else Color(1.0 - c, 0.2 + 0.7 * c, 0.15)
-			bar.anchor_left = 0.0
-			bar.offset_right = -_px(4)
-			button.text += "   BROKEN" if is_broken(i) else "   %d%%" % int(c * 100.0)
-		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
-		# The hotbar (slots 0 to 9) is an inventory spot of its own, shown on the hotbar strip: the backpack grid lists only the other slots, so an item
-		# on the hotbar leaves no second marker in the backpack (Dave, 7 Nov 2026).
-		button.visible = i >= HeldItem.HOTBAR_SLOTS and (filter == "" or (number != 0 and _matches(table.name_of(number), filter)))
-		button.tooltip_text = _tooltip(number, inventory.counts[i], inventory.wear[i])
-
-		if number != 0 and container_cap(i) > 0:
-			button.text += "   %s" % _litres(inventory.wear[i])
-
-	# Recipes: makeable first, then the rest, each alphabetical.
-	_hover_recipe = 0
-
-	for child in _recipe_list.get_children():
-		child.queue_free()
-
-	var can: Array = []
-	var cannot: Array = []
-
-	for tab_name in _category_buttons:
-		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
-
-	for number in recipes.numbers():
-		var r: Dictionary = recipes.recipe(number)
-
-		if (not r["known"] and not _free_craft()) or not _recipe_shown(r):
-			continue
-
-		(can if _can_craft(number) and _station_ok(r) else cannot).append(r)
-
-	# One alphabetical list, case-insensitive by display name (Dave 24 Oct); the green and grey colours say what can be made now.
-	var by_name: Callable = func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0
-	var shown_recipes: Array = can + cannot
-	shown_recipes.sort_custom(by_name)
-	can.sort_custom(by_name)
-	cannot.sort_custom(by_name)
-
-	if _selected_recipe == 0 or recipes.recipe(_selected_recipe).is_empty():
-		_selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
-
-	for r in shown_recipes:
-		var makeable: bool = _can_craft(r["number"]) and _station_ok(r)
-		var entry: Button = Button.new()
-		entry.text = str(r["name"]) + (("   (needs %s)" % _station_label(r)) if not _station_ok(r) else "")
-		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		entry.custom_minimum_size = Vector2(0.0, _px(64))
-		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		entry.modulate = Color(0.55, 1.0, 0.55) if makeable else Color(0.55, 0.55, 0.55, 0.6)
-		entry.flat = r["number"] != _selected_recipe
-		_style(entry, BODY_PX)
-		entry.pressed.connect(_select_recipe.bind(r["number"]))
-		entry.mouse_entered.connect(func(): _hover_recipe = int(r["number"]))
-		entry.mouse_exited.connect(func(): _hover_recipe = 0 if _hover_recipe == int(r["number"]) else _hover_recipe)
-		_recipe_list.add_child(entry)
-
-	_add_admin_builds()
-	_refresh_detail()
-
-
-# The Admin heading at the bottom of the list (Dave 2026-10-22): the building pieces to test plus the other placeables, free and unlocked. Click one to get it; put it in a quick key
-# and it is the usual placement blueprint (left click places one). Shown while the admin check is off (local play) .
-func _add_admin_builds() -> void:
-	if AdminScript.check_enabled():
-		return
-
-	var head: Label = Label.new()
-	head.text = "Admin"
-	_style(head, BODY_PX)
-	head.modulate = Color(1.0, 0.8, 0.4)
-	_recipe_list.add_child(head)
-
-	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit", "oven_kit"]
-	admin_ids.sort_custom(func(a, b): return table.name_of(table.number_of(str(a))).naturalnocasecmp_to(table.name_of(table.number_of(str(b)))) < 0)
-
-	for id in admin_ids:
-		var number: int = table.number_of(id)
-
-		if number == 0 or bool(table.entry(str(id)).get("retired", false)):   # a retired kit cannot be placed (Dave 5 Nov 2026: the admin Woven chest did nothing): the hammer's blueprints build those
-			continue
-
-		var entry: Button = Button.new()
-		entry.text = table.name_of(number)
-		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		entry.custom_minimum_size = Vector2(0.0, _px(64))
-		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		entry.modulate = Color(1.0, 0.85, 0.5)
-		_style(entry, BODY_PX)
-		entry.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, 1, Vector3.ZERO))
-		_recipe_list.add_child(entry)
-
-
-# The chosen recipe: what it needs (have / need), how many, and the Craft button.
-func _refresh_detail() -> void:
-	for child in _detail.get_children():
-		child.queue_free()
-
-	_quantity = null
-	var r: Dictionary = recipes.recipe(_selected_recipe)
-
-	if r.is_empty():
-		return
-
-	var heading: Label = Label.new()
-	heading.text = str(r["name"])
-	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_style(heading, BODY_PX)
-	_detail.add_child(heading)
-
-	if str(r.get("station", "")) != "":
-		var where: Label = Label.new()
-		where.text = ("Made at a %s (you are near one)" if _station_ok(r) else "Needs a %s within reach") % _station_label(r)
-		where.modulate = Color(0.55, 1.0, 0.55) if _station_ok(r) else Color(1.0, 0.8, 0.4)
-		_style(where, BODY_PX)
-		_detail.add_child(where)
-
-	var parts: Dictionary = _parts_plan(_selected_recipe)
-
-	if bool(parts["ok"]):
-		var made: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], table.name_of(m[0]).to_lower()])
-		var auto_line: Label = Label.new()
-		auto_line.text = "Makes %s first" % " and ".join(made)
-		auto_line.modulate = Color(0.55, 1.0, 0.55)
-		_style(auto_line, BODY_PX)
-		_detail.add_child(auto_line)
-	elif int(parts["ambiguous"]) != 0:
-		var choose_line: Label = Label.new()
-		choose_line.text = str(parts["msg"])
-		choose_line.modulate = Color(1.0, 0.8, 0.4)
-		_style(choose_line, BODY_PX)
-		_detail.add_child(choose_line)
-
-	for need in r["needs"] + r["keeps"]:
-		var kept: bool = r["keeps"].has(need)
-		var have: int = inventory.count_of(need[0]) if kept else inventory.count_fill(need[0]) + (nearby_logs() if int(need[0]) == table.number_of("log") else 0)
-		var line: Label = Label.new()
-		line.text = "%s   %d / %d%s" % [_item_label(need[0]), have, need[1], "  (kept)" if kept else ""]
-		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)
-		_style(line, BODY_PX)
-		_detail.add_child(line)
-
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", _px(12))
-	_detail.add_child(row)
-	var times: Label = Label.new()
-	times.text = "How many:"
-	_style(times, BODY_PX)
-	row.add_child(times)
-	_quantity = SpinBox.new()
-	_quantity.min_value = 1
-	_quantity.max_value = 20
-	_quantity.value = _qty
-	_quantity.value_changed.connect(func(v): _qty = int(v))
-	_quantity.get_line_edit().add_theme_font_size_override("font_size", _px(BODY_PX))
-	row.add_child(_quantity)
-	var make: Button = Button.new()
-	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
-	make.disabled = not (_can_craft(_selected_recipe) and _station_ok(r))
-	make.custom_minimum_size = Vector2(_px(240), _px(64))
-	_style(make, BODY_PX)
-	make.pressed.connect(_craft_selected)
-	row.add_child(make)
+	_pack_part.refresh()
+	_recipe_part.refresh()
 
 
 # Headless check (--items): give, drop, pick up, and print what the server says.
@@ -5145,7 +4486,7 @@ func run_text_test(client) -> void:
 
 		for mode in [1, 2, 3, 4, 5, 0]:
 			sort_index = mode
-			_arrange_slots()
+			_pack_part.arrange_slots()
 
 	_audit_text()
 	toggle_character()
@@ -5588,7 +4929,7 @@ func run_eat_test(client) -> void:
 
 	for mode in [1, 2, 3, 4, 5, 0]:
 		sort_index = mode
-		_arrange_slots()
+		_pack_part.arrange_slots()
 		var names: Array = []
 
 		for position in range(4):
@@ -5603,7 +4944,7 @@ func run_eat_test(client) -> void:
 	await get_tree().create_timer(1.0).timeout
 	var fibre_before: int = inventory.count_of(fibre)
 	_selected_recipe = 1
-	_craft_selected()
+	_recipe_part.craft_selected()
 	await get_tree().create_timer(1.0).timeout
 	var shown: int = _queue_box.get_child_count() - 1 if _queue_box.visible else 0
 	print("Queue test: entries %d, fibre %d -> %d, buttons shown %d, head \"%s\"" % [craft_entries.size(), fibre_before, inventory.count_of(fibre), shown, _queue_head_button.text if _queue_head_button != null else ""])
