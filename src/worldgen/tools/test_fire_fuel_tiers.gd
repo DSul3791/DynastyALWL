@@ -155,11 +155,25 @@ func _init() -> void:
 		for n in range(200):
 			f.tick(10.0)
 
-			if f._items.has(id) and int(f._items[id]["fire"]["state"]) == 8:
+			if f._items.has(id) and int(f._items[id]["fire"]["state"]) in [8, ItemsScript.FIRE_STATE_COALS]:
 				break
 
+		# Six sticks burn 12 minutes, past coals.coal_bed_s (10 min), so the flames leave coals (state 76), then warm ash (77), then cold ash
+		# (8; docs/design/fire_coals_design.md). Their real-time stages are run down here by hand rather than ticked through for 14 hours.
+		var coal_state: int = int(f._items[id]["fire"]["state"]) if f._items.has(id) else -1
+		check(coal_state == ItemsScript.FIRE_STATE_COALS, "round %d: burnt out to coals (state %d)" % [round, coal_state])
+		var seen: Array = [coal_state]
+
+		for stage in range(2):
+			if not f._items.has(id) or not int(f._items[id]["fire"]["state"]) in [ItemsScript.FIRE_STATE_COALS, ItemsScript.FIRE_STATE_ASH]:
+				break
+
+			f._items[id]["left"] = 1.0
+			f.tick(10.0)
+			seen.append(int(f._items[id]["fire"]["state"]) if f._items.has(id) else -1)
+
 		var left_state: int = int(f._items[id]["fire"]["state"]) if f._items.has(id) else -1
-		check(left_state == 8, "round %d: burnt out (state %d)" % [round, left_state])
+		check(left_state == 8 and seen.has(ItemsScript.FIRE_STATE_ASH), "round %d: coals, then warm ash, then cold (states %s)" % [round, str(seen)])
 
 		if left_state != 8:
 			break

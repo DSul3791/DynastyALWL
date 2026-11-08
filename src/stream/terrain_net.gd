@@ -35,7 +35,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 94   # 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 95   # 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)

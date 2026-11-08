@@ -53,7 +53,7 @@
     - **Yosemite National Park sound survey** (Merced River plan, Appendix F, 1999), in dBA:
       - Vernal Fall mist trail: 75.5. Atop Vernal Fall: 65.5. Atop Nevada Fall: 60.5.
       - Granite cascades at the river edge: 53.5 to 56.
-      - River with minor rapids, about 30 m away: 44.
+      - Beside the South Fork with "a few minor rapids and cascades" (distance from the river not given): 44. About 30 m off the river with "distant river rapids": 35.5.
       - About 60 m from the river: 40.5. A campground about 210 m from the river: 40.
       - Lake shore with no sounds: 30.5 (near the meter's floor).
     - **Quietest natural nights** (2005-06 medians): 18 to 26 dB at alpine, subalpine and conifer sites, against 28 to 29 dB by day.
@@ -148,7 +148,7 @@ Level by where you stand, in dBA (judged from the Yosemite readings):
 | At a big fall's foot in the spray | 70 to 80 |
 | At the lip of a big fall | 60 to 65 |
 | At the edge of rapids or cascades | 53 to 58 |
-| 30 m from a river with small rapids | about 44 |
+| 30 m from a river with small rapids | about 35 to 44 (use 40) |
 | 60 to 200 m away | 40, then fading into the bed |
 | A calm lake or a still pool | under 30, and silent |
 
