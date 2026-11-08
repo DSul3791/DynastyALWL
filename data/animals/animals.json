@@ -4100,7 +4100,14 @@
 		"ahead_every_s": 2.5,
 		"ahead_feed_x": 1.4,
 		"mist_sight": 0.6,
-		"mist_spook": 0.3
+		"mist_spook": 0.3,
+		"step2_note": "Step 2 (animals_in_weather_design.md 6 and 7): in rain (rain_from) deer and stock stand out hunch_share of their grazing spells (wire state 20); deer in rain or a gale and half the stock in rain move home to tree cover within cover_m (deer in a gale with no trees: lower ground), and walk back cover_return_s real seconds (one game hour) after it passes; in a gale stock face downwind and drift at drift_mps.",
+		"rain_from": 0.4,
+		"gale_from": 0.6,
+		"hunch_share": 0.6,
+		"cover_m": 100.0,
+		"cover_return_s": 150.0,
+		"drift_mps": 0.05
 	},
 	"senses": {
 		"far_factor": 1.5,

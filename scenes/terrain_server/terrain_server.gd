@@ -296,6 +296,7 @@ func _ready() -> void:
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at
+	items.cave_mean_c = func(pos): return WeatherScript.mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))) if _in_cave(pos) else NAN   # cave air: the year's mean (#664)
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
 	items.register_roofs()
@@ -1327,13 +1328,29 @@ func _cover_at(point: Vector3) -> float:
 				_cover_warming[chunk] = true
 				WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
 
-	if flora.roofed(point):
-		return 2.0   # under a built roof: also shelter from the wind
+	if flora.roofed(point) or _in_cave(point):
+		return 2.0   # under a built roof or in a cave: also shelter from the wind
 
 	return 1.0 if flora.covered(point) else 0.0
 
 
 var _cover_warming: Dictionary = {}   # chunk -> true while a worker thread makes it for the cover index
+
+
+const CAVE_ROOF_M := 2.0   # ground at least this far over a player's feet for a spot in a cave to count as inside (not the open mouth)
+
+
+# Whether a point is inside a cave with rock over it (tile_terrain_data.in_cave; Jamie's caves page, #664). A tile not loaded yet: no.
+func _in_cave(point: Vector3) -> bool:
+	if not generator.tile_cached(point.x, point.z):
+		return false
+
+	var tile_data = generator.get_tile(generator.tile_of(point.x, point.z))
+
+	if tile_data == null or tile_data.placeholder or tile_data.caves.is_empty():
+		return false
+
+	return tile_data.in_cave(Vector3(generator.wrap_x(point.x), point.y, generator.wrap_x(point.z)), CAVE_ROOF_M)
 
 
 # Whether the cover index knows the crowns round a point: its flora chunk and the eight round it are made. Missing ones are started

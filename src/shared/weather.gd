@@ -75,6 +75,11 @@ static func river_dry(weather_state: Dictionary) -> float:
 	return heat * (1.0 - clampf(maxf(float(weather_state.get("rain", 0.0)) * 2.0, float(weather_state.get("storm", 0.0))), 0.0, 1.0))
 
 
+# The year's mean air temperature (C) at sea level for a zone group: what still cave air sits at (less the lapse with height; Jamie #664).
+static func mean_c(group: String) -> float:
+	return float(ZONES.get(group, ZONES["temperate"])["temp"])
+
+
 # Air temperature (C) from the season (no day/night swing, no weather): zone mean and seasonal swing,
 # cooler with altitude. The same number Weather.state reports as temp_c.
 static func temp_at(game_s: float, group: String, altitude_m: float = 0.0) -> float:
