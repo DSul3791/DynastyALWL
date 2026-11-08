@@ -309,9 +309,65 @@ func _stand_high_ground() -> void:
 		if not changed:
 			break
 
+	var smoothing: float = float(standing.get("raise_smoothing_m", 0.0)) / cell_m
+
+	if smoothing <= 0.0:
+		for index in range(count):
+			if open[index] == 1 and envelope[index] > heights[index]:
+				heights[index] = envelope[index]
+
+		return
+
+	# Raised by the shortfall smoothed over raise_smoothing_m, not up to the cones themselves: lifting every low cell to the
+	# envelope filled the landform's own valleys and left planar cone faces, on which the landscape model cut straight,
+	# parallel gullies (the east flank of the starter summit in the ws580e and ws580f zooms). The smoothed lift keeps the
+	# massif's mass where the cones want it and leaves the ridges and valleys under it. Ground is still only raised.
+	var shortfall: PackedFloat64Array = PackedFloat64Array()
+	shortfall.resize(count)
+	var c_lo: int = size_x
+	var c_hi: int = -1
+	var r_lo: int = size_z
+	var r_hi: int = -1
+
 	for index in range(count):
 		if open[index] == 1 and envelope[index] > heights[index]:
-			heights[index] = envelope[index]
+			shortfall[index] = envelope[index] - heights[index]
+			c_lo = mini(c_lo, index % size_x)
+			c_hi = maxi(c_hi, index % size_x)
+			r_lo = mini(r_lo, floori(float(index) / float(size_x)))
+			r_hi = maxi(r_hi, floori(float(index) / float(size_x)))
+
+	if c_hi < 0:
+		return
+
+	var reach: int = int(ceil(3.0 * smoothing))
+	c_lo = maxi(c_lo - reach, 0)
+	c_hi = mini(c_hi + reach, size_x - 1)
+	r_lo = maxi(r_lo - reach, 0)
+	r_hi = mini(r_hi + reach, size_z - 1)
+	var width: int = c_hi - c_lo + 1
+	var height: int = r_hi - r_lo + 1
+	var box: PackedFloat64Array = PackedFloat64Array()
+	box.resize(width * height)
+
+	for row in range(height):
+		for column in range(width):
+			box[row * width + column] = shortfall[(r_lo + row) * size_x + c_lo + column]
+
+	var weights: PackedFloat64Array = PackedFloat64Array()
+	weights.resize(2 * reach + 1)
+
+	for k in range(-reach, reach + 1):
+		weights[k + reach] = exp(-0.5 * float(k * k) / (smoothing * smoothing))
+
+	box = _blur_rect_axis(_blur_rect_axis(box, width, height, weights, reach, true), width, height, weights, reach, false)
+
+	for row in range(height):
+		for column in range(width):
+			var index: int = (r_lo + row) * size_x + c_lo + column
+
+			if open[index] == 1 and box[row * width + column] > 0.0:
+				heights[index] += float(box[row * width + column])
 
 
 # Pass 2: a summit top round each summit, gentle near the summit and steepening smoothly to the flank slope, with spurs (see
@@ -1287,12 +1343,68 @@ func _spine_distance(center_column: int, center_row: int, radius: int, smoothing
 	for at in range(size * size):
 		spine[at] = minf(to_sea[at], float(total[at] / share[at])) if land[at] > 0.0 else 0.0
 
+	# Each crest keeps its own height. Rounding takes the most off where the ridge is narrowest: in ws580f the second massif's
+	# crest fell from 1,018 m to 839 m, below the spire's start, and chalk came out at its top. So the rounded spine is scaled
+	# back up by the ratio of the two fields' soft maxima over the same window (a power mean of power spine_soft_max_power):
+	# about 1 on the flanks, where the rounding changes nothing, and about the crest's own loss on the crest. Both soft
+	# maxima are blurs of continuous fields, so the ratio has no crease, and the crest stays round.
+	var power: float = float(rules.get("spine_soft_max_power", 0.0))
+
+	if power <= 0.0:
+		return spine
+
+	var top: float = 1.0
+
+	for at in range(size * size):
+		top = maxf(top, on_land[at])
+
+	var soft_sea: PackedFloat64Array = PackedFloat64Array()
+	var soft_spine: PackedFloat64Array = PackedFloat64Array()
+	soft_sea.resize(size * size)
+	soft_spine.resize(size * size)
+
+	for at in range(size * size):
+		soft_sea[at] = pow(on_land[at] / top, power) if land[at] > 0.0 else 0.0
+		soft_spine[at] = pow(float(spine[at]) / top, power) if land[at] > 0.0 else 0.0
+
+	soft_sea = _blur_axis(_blur_axis(soft_sea, size, weights, reach, true), size, weights, reach, false)
+	soft_spine = _blur_axis(_blur_axis(soft_spine, size, weights, reach, true), size, weights, reach, false)
+
+	for at in range(size * size):
+		if land[at] > 0.0 and soft_spine[at] > 0.0:
+			spine[at] = float(spine[at]) * pow(soft_sea[at] / soft_spine[at], 1.0 / power)
+
 	return spine
 
 
 # sketch_rules spine_smoothing_m, in cells (_spine_distance).
 func _spine_smoothing_cells() -> float:
 	return float(rules.get("spine_smoothing_m", 0.0)) / cell_m
+
+
+# One pass of a normalised blur along rows (along_rows) or columns of a width x height rectangle, clamped at its edge.
+static func _blur_rect_axis(field: PackedFloat64Array, width: int, height: int, weights: PackedFloat64Array, reach: int, along_rows: bool) -> PackedFloat64Array:
+	var out: PackedFloat64Array = PackedFloat64Array()
+	out.resize(width * height)
+
+	for row in range(height):
+		for column in range(width):
+			var total: float = 0.0
+			var weight_sum: float = 0.0
+
+			for k in range(-reach, reach + 1):
+				var c: int = column + k if along_rows else column
+				var r: int = row if along_rows else row + k
+
+				if c < 0 or c >= width or r < 0 or r >= height:
+					continue
+
+				total += weights[k + reach] * field[r * width + c]
+				weight_sum += weights[k + reach]
+
+			out[row * width + column] = total / weight_sum
+
+	return out
 
 
 # One pass of a normalised blur along rows (along_rows) or columns, clamped at the square's edge.
