@@ -28,6 +28,7 @@ Each doc has these sections:
 | Topic | Doc | Last checked | Owner of the system |
 |---|---|---|---|
 | Creature models (bought rigged animals: install, check, clips, sizes) | [creature-models.md](creature-models.md) | 2026-11-07 | MikeW |
+| Torch and campfire light in fog, rain and snow (reach, veil, halos, lit rain and snow, light over snow) | [firelight-in-weather.md](firelight-in-weather.md) | 2026-11-08 | Kathleen |
 | Water in Godot (rivers, brooks, lakes, falls, flow, precision) | [water.md](water.md) | 2026-11-06 | Sonny |
 | Water clarity after rain (turbidity recovery, settling times, peat colour) | [water-clarity-after-rain.md](water-clarity-after-rain.md) | 2026-11-08 | Kathleen, Sonny |
 | Foam and white water below falls and rapids | [foam-falls-rapids.md](foam-falls-rapids.md) | 2026-11-08 | Kathleen, Sonny |
