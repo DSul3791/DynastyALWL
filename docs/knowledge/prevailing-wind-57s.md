@@ -84,7 +84,7 @@
   - With our mapping (m/s = 20 × wind^1.3), that is wind 0.41 for a Hebrides-like coast and 0.55 for Macquarie.
   - For our starter, a mean wind of about 0.4 to 0.45 is a fair middle.
 - **Gales:** about 76 days a year at Macquarie. A Hebrides-like island has fewer, perhaps 30 to 50 (judged).
-- **Windy season:** the mirrored Hebrides winter, so **June to August**, with the equinoxes close behind (judged). Calmest: December to February.
+- **Windy season:** **local winter** on the game calendar (the Hebrides' windiest season is its winter), with the equinoxes close behind (judged). Calmest: local summer.
 
 ## Never-see checks
 
