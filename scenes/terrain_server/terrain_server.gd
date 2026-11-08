@@ -551,6 +551,12 @@ func _ready() -> void:
 	animals.goblins.stealable = func(centre, r): return items.stealable_near(centre, r)   # goblins steal one small unlit thing at a time and pile it in their den
 	animals.goblins.take_one = func(id): return items.take_one(id)
 	animals.goblins.hoard_drop = func(number, count, pos, life_s): return items.drop_in_world(number, count, pos, 0, life_s)
+	animals.goblins.gift_drop = func(number, count, pos, by): return items.drop_in_world(number, count, pos, 0, 0.0, NAN, NAN, by)
+	animals.goblins.item_number = func(id): return items.table.number_of(id)
+	animals.goblins.peer_key = func(peer): return items.key_of(peer)
+	animals.goblins.trust.game_seconds = func(): return game_clock.seconds
+	animals.goblins.trust.store_dir = store_dir
+	animals.goblins.trust.load_records()   # goblin_trust.json: friendship per band and character
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_in_world(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
@@ -2727,6 +2733,9 @@ func _exit_tree() -> void:
 
 	if flora != null:
 		flora.save_removed(true)
+
+	if animals != null and animals.goblins != null:
+		animals.goblins.trust.save()   # goblin friendship (goblin_trust.json)
 
 	_queue_mutex.lock()
 	_stopping = true

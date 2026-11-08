@@ -45,6 +45,26 @@ func survey(zone: String, spirit: float, day_from: float) -> Dictionary:
 	return {"wet": float(wet) / float(total), "storm": storm, "night_wet": float(night_wet) / float(maxi(night_total, 1)), "sun": sun / float(total)}
 
 
+# Valley fog at dawn over 60 days centred on a year phase, for three seeds (180 dawns): the mist one hour after sunrise each
+# day ("foggy" counts mist above 0.2, "sum" adds it up).
+func mist_dawns(zone: String, phase: float) -> Dictionary:
+	var foggy: int = 0
+	var total: float = 0.0
+	var centre_day: float = floorf(phase * 365.0)
+
+	for seed_value in [777, 778, 779]:
+		for d in range(60):
+			var day: float = centre_day - 30.0 + float(d)
+			var hour: float = Weather.sunrise_hour(fposmod(day, 365.0)) + 1.0
+			var mist: float = float(Weather.state(seed_value, (day * 24.0 + hour) * 3600.0, zone)["mist"])
+			total += mist
+
+			if mist > 0.2:
+				foggy += 1
+
+	return {"foggy": foggy, "sum": total}
+
+
 func _init() -> void:
 	var a: Dictionary = Weather.state(777, 123456.0, "temperate")
 	var b: Dictionary = Weather.state(777, 123456.0, "temperate")
@@ -143,6 +163,50 @@ func _init() -> void:
 	check(high["night_wet"] > 0.05, "high spirit gets night rain (%.2f)" % high["night_wet"])
 	# Rivers: dry weather is the start flow, steady rain x1.6, a big storm the whole x2.
 	check(is_equal_approx(Weather.river_push({"rain": 0.0, "storm": 0.0}), 0.0) and is_equal_approx(Weather.river_push({"rain": 1.0, "storm": 0.0}), 0.6) and is_equal_approx(Weather.river_push({"rain": 1.0, "storm": 1.0}), 1.0), "river push: dry 0, heavy rain 0.6, storm 1")
+	# Valley fog (docs/design/valley_fog.md): mist 0..1 with a top only when present, none in rain or snow, none from noon to
+	# 21:00, some on autumn dawns, far more in autumn than in spring and in the temperate zone than the desert.
+	var mist_bad: int = 0
+	var mist_afternoon: int = 0
+	var mist_wet: int = 0
+	var mist_top_bad: int = 0
+
+	for h in range(24 * 120):
+		var t: float = float(h) * 3600.0 + 180.0 * 86400.0
+		var w: Dictionary = Weather.state(777, t, "temperate")
+		var mist: float = float(w["mist"])
+		var top: float = float(w["mist_top_m"])
+
+		if mist < 0.0 or mist > 1.0 or not is_finite(mist):
+			mist_bad += 1
+
+		if mist > 0.0 and (top < Weather.MIST_TOP_MIN_M * 0.5 - 0.01 or top > Weather.MIST_TOP_MAX_M + 0.01):
+			mist_top_bad += 1
+
+		if mist == 0.0 and top != 0.0:
+			mist_top_bad += 1
+
+		var hour: float = Weather.hour_of(t)
+
+		if hour >= 12.0 and hour < 21.0 and mist > 0.0:
+			mist_afternoon += 1
+
+		if float(w["rain"]) + float(w["snow"]) > 0.1 and mist > 0.0:
+			mist_wet += 1
+
+	check(mist_bad == 0, "mist stays within 0..1 (%d bad)" % mist_bad)
+	check(mist_top_bad == 0, "mist top only with mist, between half the lowest top and the highest (%d bad)" % mist_top_bad)
+	check(mist_afternoon == 0, "no valley fog from noon to 21:00 (%d hours)" % mist_afternoon)
+	check(mist_wet == 0, "no valley fog while rain or snow falls (%d hours)" % mist_wet)
+	var autumn_dawns: Dictionary = mist_dawns("temperate", 0.625)
+	var spring_dawns: Dictionary = mist_dawns("temperate", 0.125)
+	var desert_dawns: Dictionary = mist_dawns("desert", 0.625)
+	check(autumn_dawns["foggy"] >= 5, "some autumn dawns are foggy (%d of 180)" % autumn_dawns["foggy"])
+	check(autumn_dawns["sum"] > 2.0 * spring_dawns["sum"], "autumn mornings mistier than spring (%.2f vs %.2f)" % [autumn_dawns["sum"], spring_dawns["sum"]])
+	check(autumn_dawns["sum"] > 2.0 * desert_dawns["sum"], "temperate mornings mistier than the desert (%.2f vs %.2f)" % [autumn_dawns["sum"], desert_dawns["sum"]])
+	var sunrise_summer: float = Weather.sunrise_hour(0.25 * 365.0)
+	var sunrise_winter: float = Weather.sunrise_hour(0.75 * 365.0)
+	check(sunrise_summer > 3.0 and sunrise_summer < 4.5 and sunrise_winter > 7.5 and sunrise_winter < 8.7, "sunrise at 52 N: midsummer %.2f, midwinter %.2f" % [sunrise_summer, sunrise_winter])
+	print("weather: mist autumn %s spring %s desert %s" % [str(autumn_dawns), str(spring_dawns), str(desert_dawns)])
 	print("weather: desert %s temperate %s" % [str(desert), str(temperate)])
 	print("weather: high %s neutral %s low %s" % [str(high), str(neutral), str(low)])
 	print("weather: %d failures" % failures)

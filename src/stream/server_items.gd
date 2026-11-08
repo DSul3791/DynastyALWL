@@ -871,7 +871,7 @@ func take(peer: int, number: int, count: int) -> bool:
 const LOG_MESH_RADIUS_M := 0.25   # the drawn species log's mean radius (inventory_view _mesh_for: 0.28 and 0.22 at its ends)
 
 
-func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN, girth: float = NAN) -> bool:
+func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN, girth: float = NAN, by: String = "") -> bool:
 	if count <= 0 or number <= 0:
 		return false
 
@@ -899,6 +899,10 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				var added: int = mini(count, room)
 				near["count"] = int(near["count"]) + added
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
+
+				if by != "":
+					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
+
 				_dirty = true
 				count -= added
 
@@ -930,6 +934,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if not is_nan(rot_y):
 		_items[_next_id]["rot_y"] = rot_y
 
+	if by != "":
+		_items[_next_id]["by"] = by   # who dropped it (goblin gifts; kept while the server runs, not saved)
+
 	if not is_nan(girth):
 		_items[_next_id]["girth"] = clampf(girth, 0.25, 2.5)
 
@@ -940,7 +947,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	_dirty = true
 
 	if count > first:
-		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y, girth)   # over the cap: the rest starts a second pile beside it
+		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y, girth, by)   # over the cap: the rest starts a second pile beside it
 
 	return true
 
@@ -1896,7 +1903,7 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var amount: int = mini(count, inv.counts[slot])
 
-	if not drop_in_world(number, amount, spot, inv.wear[slot]):
+	if not drop_in_world(number, amount, spot, inv.wear[slot], 0.0, NAN, NAN, key_of(peer)):
 		_say(peer, "Too many dropped things already lie within a few steps. Pick some up or move a little way off.")
 		return
 
@@ -8079,7 +8086,7 @@ func take_loose(id: int) -> Array:
 
 
 # Goblins steal (docs/design/goblin_stealing_design.md, Dave 8 Nov 2026): loose small things lying on the ground within r of a point,
-# [[world id, position], ...]. Not structures, fires, trees, boulders, natural scatter or the showroom; not a shoulder carry (logs); not a
+# [[world id, position, dropped by (character key or ""), item kind], ...]. Not structures, fires, trees, boulders, natural scatter or the showroom; not a shoulder carry (logs); not a
 # structure, placeable or container item. Whatever is in a chest or a pack is safe. Light and den piles are the goblin's own checks.
 const STEAL_NEVER_KINDS := ["structure", "placeable", "container"]
 
@@ -8101,7 +8108,7 @@ func stealable_near(centre: Vector3, r: float) -> Array:
 		if row.is_empty() or row.has("carry") or STEAL_NEVER_KINDS.has(str(row.get("kind", ""))):
 			continue
 
-		out.append([id, it["pos"]])
+		out.append([id, it["pos"], str(it.get("by", "")), str(row.get("kind", ""))])
 
 	return out
 
@@ -10228,7 +10235,7 @@ func take_nest(peer: int, inv) -> bool:
 	rng.seed = hash(id) ^ day ^ 0x1b873593
 	give(peer, table.number_of(str(row.get("item", "egg"))), roll_amount(peer, rng, int(count[0]), int(count[1])))
 
-	if row.has("extra") and rng.randf() < float(row.get("extra_chance", 1.0)):
+	if row.has("extra") and roll_chance(peer, rng, float(row.get("extra_chance", 1.0))):   # luck nudges the extra find too (job 77)
 		give(peer, table.number_of(str(row["extra"][0])), int(row["extra"][1]))
 
 	_nest_taken[id] = day
