@@ -317,7 +317,8 @@
 				"depth_m": [
 					0.0,
 					30.0
-				]
+				],
+				"tail_hz": 0.25
 			},
 			"expect_bones": [
 				"spine chain 6-10",
@@ -343,7 +344,15 @@
 					"roughness": 0.35
 				}
 			],
-			"notes": "SEA_MAMMALS.md: far out at sea, seen from the coast. The swim block plays swim in water; sea (flag sea_life) adds the blow spout at the surface. No eye shine."
+			"notes": "SEA_MAMMALS.md: far out at sea, seen from the coast. The swim block plays swim in water; sea (flag sea_life) adds the blow spout at the surface. No eye shine.",
+			"posed_swim": true,
+			"swim_axis": "x",
+			"swim_swing_deg": 8,
+			"spine_bones": [
+				"<spine 1>",
+				"<...>",
+				"<flukes>"
+			]
 		},
 		"dolphin": {
 			"scene": "res://assets/animals/dolphin/<file>.fbx",
@@ -373,7 +382,8 @@
 					8,
 					20
 				],
-				"spout_m": 0.6
+				"spout_m": 0.6,
+				"tail_hz": 1.6
 			},
 			"expect_bones": [
 				"spine chain 5-8",
@@ -396,7 +406,15 @@
 					"roughness": 0.25
 				}
 			],
-			"notes": "SEA_MAMMALS.md: a pod is one record (flock); swimming fast it porpoises on the hop arc (hop.run). No eye shine."
+			"notes": "SEA_MAMMALS.md: a pod is one record (flock); swimming fast it porpoises on the hop arc (hop.run). No eye shine.",
+			"posed_swim": true,
+			"swim_axis": "x",
+			"swim_swing_deg": 14,
+			"spine_bones": [
+				"<spine 1>",
+				"<...>",
+				"<flukes>"
+			]
 		}
 	}
 }
