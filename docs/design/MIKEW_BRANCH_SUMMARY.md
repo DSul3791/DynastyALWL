@@ -22,6 +22,31 @@ its PC check. The PC run sheet is PC_SESSION_MIKEW.md (about 92 minutes, the cor
 | 12 | Hunting feedback | a struck animal tosses its head or stumbles by where it was hit, drags a hind leg after a hip hit, limps past half health, and falls along the slope instead of vanishing | `hunt_feedback` | no | m45 to m47 |
 | 13 | Posed birds | Meshy birds and bats flap, glide, fold and flare from their own wing bones, no clips needed | `bird_rig` | eagle, raven, owl, bat | m49 |
 
+## The PR branches, cut and pushed (8 Nov 2026; PRs not opened until Dave's PC gate)
+Each branch is the stack up to its head; its PR's base is the branch above it, so each diff holds one family. The full branch
+`claude/mikew-eye-placement` stays as the one Dino tests; its tree is the same as the last branch here. From PR 8 on the branches are
+a copy of the full branch's commits with the old herd groups server commit left out (it is #666), so no client PR carries server code.
+PR 1 (#596) is `claude/mikew-eyeshine`; PR 2, the wet look, is `claude/mikew-wet-look` off main, outside this stack; PR 7 is #666.
+
+| PR | Branch | Base | Head | Strips |
+|---|---|---|---|---|
+| 3 | `claude/mikew-pr03-always-on` | claude/mikew-eyeshine (#596) | 6c9522c85847707eb84fe954420dedad2c0f92dc | m1 to m10 |
+| 4 | `claude/mikew-pr04-footfall` | `claude/mikew-pr03` | d2f0a14aa4f34a52b8d5d3479275f5797993ab92 | m11 to m14 |
+| 5 | `claude/mikew-pr05-predators-flight` | `claude/mikew-pr04` | 5924e90fc201bc71cbd0c67b5ab58d8712070cbc | m15 to m18 |
+| 6 | `claude/mikew-pr06-coats-young-water-idles` | `claude/mikew-pr05` | cd4331724b906c203d48a4d2bade83be49ee8322 | m19 to m27 |
+| 8 | `claude/mikew-pr08-flight2-foe-wiring` | `claude/mikew-pr06` | ff10094f56413f27a44f1546ab47c62496c947f9 | m28 to m34 |
+| 9 | `claude/mikew-pr09-young2-models-voices-eyes` | `claude/mikew-pr08` | ced330b3fe5ef723be2bcc4814afcba00f65696e | m35 to m37 |
+| 10 | `claude/mikew-pr10-animal-sign` | `claude/mikew-pr09` | 14891ada6009b6aae7a0cfbffc432a6016165dfc | m38 to m40 |
+| 11 | `claude/mikew-pr11-weather-looks` | `claude/mikew-pr10` | 1fda5278dc1252f581396e968dfbc55f78ccd9d0 | m41 to m44 |
+| 12 | `claude/mikew-pr12-hunt-feedback` | `claude/mikew-pr11` | c2679173440e92f9c4f77088723d7b4db51837d7 | m45 to m47 |
+| 12b | `claude/mikew-pr13-cost-review` | `claude/mikew-pr12` | e812a7228da9e52e0b6030b79b6e05d92d4240fd | gate with --life-layer-off |
+| 12c | `claude/mikew-pr14-airc-tracks-cover-shots` | `claude/mikew-pr13` | 9b3fc47a64c398ab4754cfe36ee292c0d44341f0 | m38, m39, m48 |
+| 13 | `claude/mikew-pr15-posed-birds` | `claude/mikew-pr14` | 03f6e041a0356fda00164353453eb6dae501cecb | m49 |
+
+12b and 12c hold the cross-cutting passes that came after PR 12 in time (the cost pass and kill switch, the self review, then Weather.air_c,
+Jamie's track numbers, state 20 in cover, the hunt readers and Dino's shot list); they cannot be folded back into earlier families
+without rewriting history.
+
 ## Which need models you must bring
 Only parts of 8 and 9: the raven (roll), bat (swarm), whale and dolphin (spout), and the eagle and owl rows. Their code is ready and
 waits; NEW_MODEL_IMPORT.md is the 10-minute import per model. Everything else uses the 50 animals already in the game.
