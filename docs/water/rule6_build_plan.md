@@ -12,7 +12,7 @@ Real horns form where three or more cirques cut back into one peak. The cirques 
 
 ## The measured numbers this uses
 
-These come from Jamie's cirque page, #654 (head 434412f7), as relayed on 8 Nov.
+These come from Jamie's cirque page, #654 (head 128076b2), as relayed on 8 Nov.
 
 - **Long-term headwall retreat.** 0.1 to 1.3 mm/yr: Ben Ohau 0.44, Canadian Rockies 1.2 to 1.3, Kråkenes 0.1. The bursts of 2 to 10 mm/yr just after the ice goes are not long-term.
 - **While a glacier is active.** 0.5 to 1.0 mm/yr, with 0.7 in the middle. Lochnagar granite is about 1 mm/yr while active, and needs about 400 kyr of active ice over many cycles.
@@ -80,27 +80,31 @@ New keys in `params.json` `glacial`:
 ```json
 "history": [
   {"era": "41 kyr world, 2.6 to 1.0 Ma", "cycles": 39, "period_years": 41000, "active_years": 16400,
-   "interglacial_years": 4800, "ela_offset_m": 100},
+   "interglacial_years": 4800, "ela_offset_m": 150},
   {"era": "100 kyr world, since about 1.0 Ma", "cycles": 10, "period_years": 100000, "active_years": 40000,
    "interglacial_years": 11700, "ela_offset_m": 0}
 ],
-"aspect_ela_m": 100,
+"aspect_ela_m": 75,
 "aspect_smoothing_m": 240,
 "aspect_full_slope_deg": 30,
-"snapshot_after_cycles": [1, 10, 20, 39, 44, 49]
+"snapshot_after_cycles": [1, 3, 10, 20, 39, 44, 49]
 ```
 
 Where the values come from:
 
 - **100 kyr world.** 10 cycles (#654: 7 to 12 since 1 Ma), with 40 kyr of active ice each (#654). Its interglacial is today's climate for the Holocene's 11,700 years, so the last cycle ends today, as the old post-glacial era did.
 - **41 kyr world.** 39 cycles, from the length of the era (2.6 to 1.0 Ma is about 1.6 Myr, over 41 kyr each).
-- **Judged, for Jamie to source.** These are flagged in `_note`:
-  - the 41 kyr active share, kept at the 100 kyr world's 40%;
-  - its interglacial length, scaled from the Holocene by period;
-  - its snowline 100 m higher (the early glacials held less ice).
-- **Aspect settings, judged.** These are checked against Jamie's 1.5 to 2 times NE/SW retreat ratio, and the measured ratio is reported rather than tuned in. Jamie is to source the snowline or cirque-floor height difference between north-east and south-west faces.
-  - `aspect_ela_m`: half the snowline difference between north-east and south-west faces.
-  - `aspect_smoothing_m`: the aspect is that of a valley head, not of one cell.
+- **The 41 kyr world's other values** (#654 lessons 7 and 8, head 128076b2):
+  - **Active share: 40%.** Judged range 35 to 50%. Early cycles were symmetric, with smaller ice volumes (Lisiecki and Raymo 2007). For most of Quaternary time conditions were intermediate, with a mountain snowline about 500 m below today's, and cirques follow those average conditions (Porter 1989). Norway had mountain glaciers for about 46% of the last 2.6 Myr, the high-latitude top.
+  - **Interglacial: 4.8 kyr**, scaled from the Holocene by period. Judged range 4 to 8 kyr. Interglacials before the transition held less CO2, so they took no longer a share than today's.
+  - **Snowline: 150 m higher** than in the 100 kyr world. Judged range +100 to +200 m. The glacials were mild, but cirque glaciers follow the average conditions, not the peaks.
+- **Aspect.** The snowline lies 113 to 220 m lower on north-facing than south-facing sides:
+  - Făgăraş: 113 m;
+  - Kamchatka cirques: 163 m, and its modern glaciers 190 m;
+  - south-west British Columbia: 194 and 220 m (Evans 2006).
+  These are via Barr and Spagnolo 2015 (#654). A difference of 150 m gives `aspect_ela_m` 75, which is half of it.
+  - `aspect_smoothing_m` is judged: the aspect is that of a valley head, not of one cell.
+  - The measured NE/SW retreat ratio (1.5 to 2) and floor difference (NE cirque floors 100 to 200 m below SW ones) are checks reported after the run, not tuned in.
 - **What the history adds up to.** Total active ice is 39 × 16.4 + 10 × 40, or about 1.04 Myr. At 0.5 to 1.0 mm/yr that is 0.5 to 1.0 km of headwall retreat, which is the Arran-to-Matterhorn range.
 - **Backward compatible.** With no `history` and `aspect_ela_m` 0, glacial.py runs exactly as today: one stage of `years`, then `post_glacial_years`. Old manifests reproduce.
 
@@ -166,14 +170,20 @@ ws580f's cold stage ran at about 6.5 s a step on the starter window.
 - 100 kyr world: 10 cycles × (20 + 6) = 260 steps.
 - Total: 650 steps, about 70 minutes. B1 is unchanged (about 20 to 25 minutes).
 
-The six snapshots hold only the ground and that cycle's ice. The cycle shapes in the manifest show the retreat after every cycle without a picture.
+The seven snapshots hold only the ground and that cycle's ice. The cycle shapes in the manifest show the retreat after every cycle without a picture.
 
 ## Change 3: the peak checks
 
-This goes on R2 (#537) as a new `tools/watershed/peaks.py`, used by `inputs.py` (the landform), `evolve.py` (each snapshot) and `glacial.py` (each cycle and the end).
+This goes on R2b (#556) as a new `tools/watershed/peaks.py`, which reads the run's saved files, so it changes no other stage:
+
+- `python tools/watershed/peaks.py landform INPUTS_DIR [BASELINE_INPUTS_DIR]` checks lines 1 to 3 on `inputs.npz`;
+- `python tools/watershed/peaks.py glacial INPUTS_DIR GLACIAL_DIR` checks lines 4 to 10 on `glacial.npz`, with the cycles from the manifest or the snapshots;
+- `glacial.py` calls its `shapes()` after every cycle once change 2 is built.
+
+Its settings are in `params.json` `peaks`. Its unit tests, `test_peaks.py`, use small synthetic peaks.
 
 - **`summits(landform, sea, dx, min_m)`.** The landform's peaks, as evolve.py already finds them: the highest point within 1 km. Only those at least 300 m above the stadial snowline count (487 + 300 = 787 m on the starter island), because lower tops hold no cirque glacier. On the starter island that is the 1,438 m summit and the 1,018 m second massif.
-- **`axes(landform, top)`.** The valley-head bearings: the minima of the landform along the ring at 0.35 of the tent's reach, sampled every 2 degrees.
+- **`axes(landform, tops)`.** The valley-head bearings, read from the landform itself: the heads on whichever ring (300 to 1,000 m) shows the most, nearest first. If no ring shows a head, the minima of the 500 m ring are used.
 - **`shapes(ground, landform, sea, dx, tops, axes)`.** For each summit, on a 2.5 km window round it:
   - `top_m`, and `top_change_m` against the landform (the highest ground within 200 m, as evolve.py measures);
   - `heads`: on rings at 300, 500, 700 and 1,000 m, the ring minima at least 50 m below the highest ring ground on either side before the next minimum, by bearing and depth;
@@ -202,7 +212,7 @@ These lines are judged as written. Failing lines are relayed word for word, with
 6. `slope_300m_deg` is steeper than on the landform.
 7. `plateau_m` is under 300 m.
 8. Headwall retreat lies within the measured long-term 0.1 to 1.3 mm/yr of active ice. 0.5 to 1.0 is the middle; outside that is noted, not failed.
-9. North-east headwalls retreat 1.5 to 2 times faster than south-west ones (noted with the measured ratio; fails only if under 1.2 or over 3).
+9. North-east headwalls retreat 1.5 to 2 times faster than south-west ones (noted with the measured ratio; fails only if under 1.2 or over 3). North-east cirque floors lie 100 to 200 m below south-west ones (noted).
 10. Cirques get most of their depth early: the rate after cycle 3 is at most a fifth of that in the first three cycles.
 
 **Glacial zooms (Dino, at 54800 71424 and 66960 79296, from the final ground and the cycle 20 and 39 snapshots):**
