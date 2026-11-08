@@ -42,6 +42,7 @@ var outdoors: bool = false              # --sound-outdoors
 var air: Dictionary = {"wind": 0.0, "toward": Vector2.ZERO, "gust": 0.0, "night": 0.0, "calm": 0.0, "fog": 0.0, "temp_c": 10.0, "forest": 0.0}
 var air_shadowed: int = 0               # voices 3 dB or more down for the wind at the last scan (HUD)
 var air_carried: int = 0                # voices 1 dB or more up at the last scan
+var air_masked: int = 0                 # small voices hidden by rain or a gale at the last scan
 var _air_targets: Dictionary = {}       # player instance id -> target dB
 var _head: Vector3 = Vector3.INF
 
@@ -111,9 +112,16 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 	_air_targets.clear()
 	air_shadowed = 0
 	air_carried = 0
+	air_masked = 0
 	_head = Vector3.INF if flying else head
 	air["forest"] = forest
 	air["gust"] = float(_stage.gust)
+
+	if _stage.weather != null:                    # step 2: masking and fresh snow, from the weather sounds' own eased levels
+		air["rain"] = float(_stage.weather.rain)
+		air["leaves"] = float(_stage.weather.covered)
+		air["snow_fresh"] = float(_stage.weather.snow_fresh)
+		air["ground_snow"] = float(_stage.weather.ground_snow)
 
 	for node in get_tree().get_nodes_in_group("world_sounds"):
 		var player: AudioStreamPlayer3D = node as AudioStreamPlayer3D
@@ -144,10 +152,14 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 			var effect: Vector2 = OutdoorAir.total(head, player.global_position, own_unit, air)
 			var open_air: float = 1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure))   # in a cave the open air has no say
 			effect = Vector2(effect.x * open_air, lerpf(1.0, effect.y, open_air))
+
+			if bool(player.get_meta("air_line", false)):   # a river reach (water_sounds.gd): a line, not a point (3.7)
+				effect.x += OutdoorAir.line_db(distance, own_unit)
 			_air_targets[player.get_instance_id()] = effect.x
 			air_cut = effect.y
 			air_shadowed += 1 if effect.x <= -3.0 else 0
 			air_carried += 1 if effect.x >= 1.0 else 0
+			air_masked += 1 if OutdoorAir.mask_db(distance, minf(OutdoorAir.rain_mask_m(float(air.get("rain", 0.0)), float(air.get("leaves", 0.0))), OutdoorAir.gale_mask_m(float(air["wind"]))), own_unit) <= -6.0 else 0
 
 		cutoff *= air_cut
 
@@ -196,4 +208,9 @@ func _first_look(player: AudioStreamPlayer3D) -> void:
 	if not is_instance_valid(player) or _head == Vector3.INF or not _moves(player) or player.has_meta("air_unit"):
 		return
 
-	_set_air_db(player, OutdoorAir.total(_head, player.global_position, player.unit_size, air).x * (1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure))))
+	var db: float = OutdoorAir.total(_head, player.global_position, player.unit_size, air).x * (1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure)))
+
+	if bool(player.get_meta("air_line", false)):
+		db += OutdoorAir.line_db(_head.distance_to(player.global_position), player.unit_size)
+
+	_set_air_db(player, db)
