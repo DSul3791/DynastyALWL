@@ -3,7 +3,8 @@
 Usage (on Dave's PC):
   python tools/watershed/plots.py ground OUT_DIR      # redraws OUT_DIR/evolve.png from OUT_DIR/ground.npz (stage B1)
   python tools/watershed/plots.py glacial OUT_DIR     # redraws OUT_DIR/glacial.png from OUT_DIR/glacial.npz (stage B2)
-  python tools/watershed/plots.py zoom OUT_DIR X Z [SIZE_M]   # OUT_DIR/zoom_X_Z.png: a SIZE_M square (default 6 km) at 16 m"""
+  python tools/watershed/plots.py zoom OUT_DIR X Z [SIZE_M]   # OUT_DIR/zoom_X_Z.png: a SIZE_M square (default 6 km) at 16 m,
+                                                             # from OUT_DIR/ground.npz, or glacial.npz when there is none"""
 import sys
 import numpy as np
 
@@ -114,11 +115,13 @@ def zoom_picture(npz_path, png_path, x_m, z_m, size_m=6000.0):
     ci = int(round((x_m - ox) / dx)); cj = int(round((z_m - oz) / dx))
     i0, i1 = max(ci - half, 0), min(ci + half, n); j0, j1 = max(cj - half, 0), min(cj + half, n)
     win = (slice(j0, j1), slice(i0, i1))
-    g = d['ground'].astype(np.float64)[win]; s0 = d['start'].astype(np.float64)[win]; land = ~d['sea'].astype(bool)[win]
+    # A river-era run (ground.npz) is drawn beside its landform; a glacial run (glacial.npz) beside the river-era ground the ice met.
+    before, before_title = ('start', 'landform (start)') if 'start' in d.files else ('b1_ground', 'river-era ground (before the ice)')
+    g = d['ground'].astype(np.float64)[win]; s0 = d[before].astype(np.float64)[win]; land = ~d['sea'].astype(bool)[win]
     ls = LightSource(315, 40)
     fig, ax = plt.subplots(1, 3, figsize=(30, 10.5))
     ext = (ox + i0 * dx, ox + i1 * dx, oz + j1 * dx, oz + j0 * dx)
-    for a, z, t in ((ax[0], s0, 'landform (start)'), (ax[1], g, 'ground, rivers 5 ha and more')):
+    for a, z, t in ((ax[0], s0, before_title), (ax[1], g, 'ground, rivers 5 ha and more')):
         a.imshow(np.where(land, ls.hillshade(np.where(land, z, 0.0), vert_exag=2, dx=dx, dy=dx), np.nan), cmap='gray', vmin=0, vmax=1,
                  extent=ext)
         a.set_title(f'{t}, max {z[land].max():.0f} m' if land.any() else t)
@@ -135,9 +138,12 @@ def zoom_picture(npz_path, png_path, x_m, z_m, size_m=6000.0):
 
 if __name__ == '__main__':
     if len(sys.argv) >= 5 and sys.argv[1] == 'zoom':
-        # python plots.py zoom RUN_DIR X Z [SIZE_M]: writes RUN_DIR/zoom_<x>_<z>.png
+        # python plots.py zoom RUN_DIR X Z [SIZE_M]: writes RUN_DIR/zoom_<x>_<z>.png, from RUN_DIR/ground.npz (evolve.py) or,
+        # when there is none, RUN_DIR/glacial.npz (glacial.py)
+        import os
         x_, z_ = float(sys.argv[3]), float(sys.argv[4])
-        zoom_picture(f'{sys.argv[2]}/ground.npz', f'{sys.argv[2]}/zoom_{x_:.0f}_{z_:.0f}.png', x_, z_,
+        npz = f'{sys.argv[2]}/ground.npz' if os.path.exists(f'{sys.argv[2]}/ground.npz') else f'{sys.argv[2]}/glacial.npz'
+        zoom_picture(npz, f'{sys.argv[2]}/zoom_{x_:.0f}_{z_:.0f}.png', x_, z_,
                      float(sys.argv[5]) if len(sys.argv) > 5 else 6000.0)
     elif len(sys.argv) == 3 and sys.argv[1] == 'ground':
         ground_picture(f'{sys.argv[2]}/ground.npz', f'{sys.argv[2]}/evolve.png')
