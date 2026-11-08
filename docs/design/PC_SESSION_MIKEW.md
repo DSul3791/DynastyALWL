@@ -1,6 +1,6 @@
 # PC session run sheet: the animal life layer (MikeW, 8 Nov 2026)
 
-For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 92 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 56 motion strips about 47 (Godot starts about 25 s per line; m44 takes 2 minutes), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m56 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
+For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 92 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 57 motion strips about 48 (Godot starts about 25 s per line; m44 takes 2 minutes), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m57 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
 
 ```bash
 cd /c/GodotProjects/DynastyALWL_gate
@@ -38,8 +38,8 @@ grep -E "^==|^role|NO CLIP|flat" $O/still.log
 ```
 Proves: dog sit (18) and lie (19), alligator swim, black bear warn under the jaw-pop pose, rabbit and kangaroo hop clips. Pass: no `NO CLIP` for sit, lie or swim.
 
-## 4. Moving frames (about 47 min: 56 lines, about 45 s each)
-One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m56 are the newer flags and follow in the same sitting.
+## 4. Moving frames (about 48 min: 57 lines, about 45 s each)
+One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m57 are the newer flags and follow in the same sitting.
 ```bash
 M="timeout 300 $GE --path . --script res://tools/creature_motion.gd --"
 $M --kinds=dog --state=0 --out=$O/motion > $O/m1.log 2>&1   # m1 [none] look: dog tail and chest. PASS: tail swings between frames, chest rises. FAIL: anything else, or SCRIPT ERROR in the log
@@ -98,6 +98,7 @@ $M --kinds=deer,horse --state=3 --wx=breeze --windlooks --frames=4 --every=1 --c
 $M --kinds=deer --state=0 --count=3 --hour=7 --wx=cold --cave=5.5 --frames=4 --every=1 --cam=6 --out=$O/motion_cave_air > $O/m54.log 2>&1   # m54 [cave_air] look: the muzzles. PASS: no steam puffs (the cave's 5.5 C wins over the sky's -12; compare m42, which steams). FAIL: steam, or SCRIPT ERROR in the log
 $M --kinds=deer --state=0 --bank --drink --sign=mud --frames=8 --every=1.5 --cam=5 --out=$O/motion_drink2 > $O/m55.log 2>&1; $M --kinds=crow --state=0 --water=0.05 --wlife --drink --frames=8 --every=0.5 --cam=3 --out=$O/motion_bathe >> $O/m55.log 2>&1   # m55 [drink_looks] look: the deer's head and the ground; the crow. PASS: the deer's head comes up in at least one frame and a trampled patch lies at its feet; the crow beats its wings with splashes. FAIL: no lift, no patch, no bathe, or SCRIPT ERROR in the log
 $M --kinds=deer,wolf --state=0 --speed=1.2 --water=0.01 --wlife --ice --season=winter --frames=10 --every=0.25 --cam=6 --out=$O/motion_ice > $O/m56.log 2>&1; $M --kinds=deer --state=0 --season=winter --wx=snowbed --ice --frames=3 --every=40 --cam=5 --out=$O/motion_snow_still >> $O/m56.log 2>&1   # m56 [ice_looks] look: the deer and the wolf on the ice; the still deer in snow. PASS: the deer lurches sideways in some frames and the wolf never does; the still deer whitens frame by frame. FAIL: either slips the same, no whitening, or SCRIPT ERROR in the log
+$M --kinds=deer,dog,crow --state=0 --thunder=2 --frames=8 --every=0.2 --cam=6 --out=$O/motion_thunder > $O/m57.log 2>&1   # m57 [storm_looks] look: the frames after 2 s. PASS: the crow hops up flapping, the deer jolts, the dog drops low and stays low for a few seconds. FAIL: no reaction, or SCRIPT ERROR in the log
 grep -h "saved\|SCRIPT ERROR" $O/m*.log
 ```
 
@@ -176,3 +177,4 @@ its last commit and lists the earlier PR as its base. No history is rewritten.
 18. **Life layer O, cave air:** `cave_air` (the cave's year-mean air under rock for every weather look, steam by it, coat drying rates from warmth.json; m54).
 19. **Life layer P, drinking:** `drink_looks` (sips with the head lifted to look round, a churned bank at used spots, birds bathing; m55).
 20. **Life layer Q, ice and snow:** `ice_looks` (careful steps and slips on ice, snow on still backs melting by the air, deeper snow prints; m56).
+21. **Life layer R, thunder:** `storm_looks` (birds startle, herds flinch and bunch with ears flat, dogs cower, storm wind tails to it; m57).

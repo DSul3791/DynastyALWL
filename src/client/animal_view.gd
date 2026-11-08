@@ -62,6 +62,10 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var storm_looks: bool = false     # thunder: birds startle up, herds flinch and bunch, dogs cower, ears flat; storm wind turns tails to it (ANIMAL_WEATHER_LOOKS.md storm section; off until the PC check)
+var thunder_count: Callable       # () -> how many thunders the sound stage has played (weather_sounds.thunders_played): a change is a clap heard now
+var _thunders_seen: int = -1
+var _startle_until: float = -1.0  # _t until which the herds stand bunched after a clap
 var ice_looks: bool = false       # animals on ice and in snow: careful steps and slips on ice, snow on still backs melting by the air, deeper snow prints (ANIMAL_WEATHER_LOOKS.md ice section; off until the PC check)
 var drink_looks: bool = false     # drinking: sips with the head lifted to look between, a churned bank at used spots, birds bathing in shallows (ANIMAL_DRINK.md; off until the PC check)
 var cave_air: bool = false        # animals underground take the cave's air (the year mean at the height), steam by it, coats dry by it (ANIMAL_WEATHER_LOOKS.md cave section; off until the PC check)
@@ -545,7 +549,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (ice_looks or drink_looks or cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (storm_looks or ice_looks or drink_looks or cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -553,6 +557,14 @@ func _process_body(delta: float) -> void:
 	if not _prints.is_empty() and _print_fade_t <= 0.0:
 		_print_fade_t = 0.25      # four times a second: a 10-minute fade does not need every frame
 		_fade_prints()
+
+	if storm_looks and thunder_count.is_valid():
+		var heard: int = int(thunder_count.call())
+
+		if _thunders_seen >= 0 and heard != _thunders_seen:
+			_thunder_clap()
+
+		_thunders_seen = heard
 
 	if weather_looks and weather_now.is_valid():
 		var rain_now: float = float((_wx_state() as Dictionary).get("rain", 0.0))
@@ -646,6 +658,9 @@ func _process_body(delta: float) -> void:
 
 			if ice_looks:
 				_ice_look(node, b, state, model_speed, delta)
+
+			if storm_looks:
+				_storm_look(node, b, state, model_speed, delta)
 
 			if hunt_feedback and (b.has("react") or float(b.get("damage", 0.0)) > 0.0):
 				_hunt_motion(node, b, model_speed, delta)
@@ -1894,7 +1909,7 @@ func _ear_motion(node: Node3D, state: int) -> void:
 			var side: float = (-frame.x.normalized()).dot(to.normalized())      # the model faces -Z, so its left is -X
 			turn = clampf(side * (1.5 if state == 3 else 1.0), -1.0, 1.0)
 
-	var flat: float = 1.0 if state == 10 or state == 11 or state == 16 or (stalk_fx and state == 7) else 0.7 if state == HUNCH else clampf((_wind() - 0.5) * 0.8, 0.0, 0.4)      # threat flat; a strong wind lays them back a little
+	var flat: float = 1.0 if state == 10 or state == 11 or state == 16 or (stalk_fx and state == 7) or (storm_looks and _t < _startle_until) else 0.7 if state == HUNCH else clampf((_wind() - 0.5) * 0.8, 0.0, 0.4)      # threat flat; a strong wind lays them back a little
 	fix.ear_turn = lerpf(float(fix.ear_turn), turn, 0.08)
 	fix.ear_flat = lerpf(float(fix.ear_flat), flat, 0.15)
 
@@ -3681,6 +3696,9 @@ func _refresh_frame() -> void:
 	var cam: Camera3D = _cam()
 	_f_herd_space = HERD_SPACE_M * (0.6 if weather_looks and _air(cam.global_position if cam != null else Vector3.ZERO, _f_wx) < HUDDLE_C else 1.0)
 
+	if storm_looks and _t < _startle_until:
+		_f_herd_space *= 0.6      # bunched after a clap of thunder
+
 	if fog_looks and _fog_visibility() < THICK_FOG_M:
 		_f_herd_space *= 0.5      # herds keep closer when they cannot see each other: spread halved (ANIMAL_FOG.md, Jamie #716)
 
@@ -3708,7 +3726,7 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air", "drink_looks", "ice_looks"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air", "drink_looks", "ice_looks", "storm_looks"]
 
 func _all_flags_off() -> void:
 	cover_still = false
@@ -3719,6 +3737,7 @@ func _all_flags_off() -> void:
 	cave_air = false
 	drink_looks = false
 	ice_looks = false
+	storm_looks = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -4199,6 +4218,74 @@ func _ice_look(node: Node3D, b: Dictionary, _state: int, speed: float, delta: fl
 		if t >= 0.5:
 			b.erase("slip_t")
 			rig.rotation.z = 0.0
+
+
+# Thunder (ANIMAL_WEATHER_LOOKS.md storm section). The sound stage's thunder counter (Kathleen; with her real thunder delay, #692,
+# it counts when the clap is heard) changing is a clap heard now. Every drawn animal within THUNDER_NEAR_M of the camera starts:
+# birds startle up (a burst of their flap clip and a hop), the others flinch (a jolt); herds stand bunched for 3 to 8 s
+# (`_herd_space`) with their ears flat; a dog cowers, low to the ground, for the same while. Each starts a moment apart (its id phase).
+const THUNDER_NEAR_M := 200.0
+
+func _thunder_clap() -> void:
+	var cam: Camera3D = _cam()
+	_startle_until = _t + randf_range(3.0, 8.0)      # luck-exempt: how long the herds stay bunched (client look)
+
+	for id in _bodies:
+		var b: Dictionary = _bodies[id]
+
+		if cam != null and (b["node"] as Node3D).global_position.distance_to(cam.global_position) > THUNDER_NEAR_M:
+			continue
+
+		b["startle_t"] = -0.05 * float(b.get("phase", 0.0))      # a short wait first, so they do not all jump in one frame
+		b["cower_until"] = _startle_until if str(b.get("kind", "")) == "dog" else -1.0
+
+
+func _storm_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var rig: Node3D = LifeUtil.rig(node)
+
+	# Storm wind: tail to the wind, head down, as wind_looks does (reused when wind_looks itself is off).
+	if not wind_looks and float(_wx_state().get("storm", 0.0)) >= 0.5:
+		_wind_look(node, b, state, speed, delta)
+
+	if rig == null:
+		return
+
+	if b.has("startle_t"):
+		b["startle_t"] = float(b["startle_t"]) + delta
+		var t: float = float(b["startle_t"])
+		var row: Dictionary = node.get_meta("model_row", {})
+
+		if t >= 0.0 and t < delta * 1.5 and row.has("flight") and node.has_meta("player"):
+			var player: AnimationPlayer = node.get_meta("player")
+			var flap: String = _clip_full(player, row, str((row["flight"] as Dictionary).get("flap", "")))
+
+			if flap != "":
+				player.play(flap, 0.05)
+				player.speed_scale = 1.6
+				b["air_once"] = 0.9      # the flight block lets the startle play out
+
+		if t >= 0.0:
+			var k: float = sin(PI * clampf(t / 0.4, 0.0, 1.0))
+
+			if row.has("flight"):
+				rig.position.y = 0.25 * k      # a startled hop up
+			else:
+				rig.rotation.z = 0.12 * k      # a flinch
+				rig.position.y = -0.04 * k
+
+		if t >= 0.4:
+			b.erase("startle_t")
+			rig.rotation.z = 0.0
+			rig.position.y = 0.0
+
+	if _t < float(b.get("cower_until", -1.0)):
+		var down: float = clampf((float(b["cower_until"]) - _t) / 0.5, 0.0, 1.0)      # eased up again at the end
+		rig.position.y = -0.12 * down      # a dog cowering, low to the ground
+		rig.rotation.x = 0.1 * down
+	elif b.has("cower_until") and float(b["cower_until"]) > 0.0:
+		b["cower_until"] = -1.0
+		rig.rotation.x = 0.0
+		rig.position.y = 0.0
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

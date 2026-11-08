@@ -84,6 +84,22 @@ uses, now passed in the animal conditions) and `Weather.air_c` (through `_air`).
 Check: run sheet m56 (a deer and a wolf walking on frozen water: the deer slips, the wolf does not; a deer standing still in snow
 whitening) and DINO_SHOTS.md.
 
+## Thunder and storm (flag `storm_looks`, pr23; Kathleen #691 and #692, Jamie #639)
+Reads only the sound stage's thunder counter (`weather_sounds.thunders_played`; with Kathleen's real thunder delay, #692, it counts
+when the clap is heard, not when the lightning flashes) and the weather's wind and storm.
+- **A clap:** every drawn animal within 200 m of the camera starts, a moment apart by its id: birds startle up (a burst of the flap
+  clip at 1.6 times and a 25 cm hop), the others flinch (a jolt sideways and down over 0.4 s).
+- **Herds bunch** for 3 to 8 s after it (on-screen spacing at 0.6) with their **ears flat**.
+- **A dog cowers** for the same while, low to the ground (the Rig 12 cm down and pitched); staying by the player is the companion's own
+  movement (Steve's dog step), not this layer.
+- **Storm wind:** at storm 0.5 or more, tails to the wind and heads down, by `_wind_look` (wind_looks' code, run by storm_looks when
+  wind_looks is off).
+- Jamie #639: before storms birds feed more, cattle drift with a storm, horses use shelter; the flight from perches on a clap is
+  judged (birds flush from a sudden loud noise); a server flush (state 15) on thunder would be Steve's.
+
+Check: run sheet m57 (deer, a dog and a crow, a clap 2 s in: the crow hops up flapping, the deer flinches, the dog cowers) and
+DINO_SHOTS.md.
+
 ## Check
 Run sheet m41 (deer and horse in a gale: rumps turned to the wind), m42 (deer herd at -12 C: closer, heads low, steam at the
 muzzles), m43 (dog and wolf as the rain stops: a shiver and drops), m44 (deer lying in falling snow: whiter coat).
