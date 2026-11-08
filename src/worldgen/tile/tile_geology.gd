@@ -26,6 +26,7 @@ extends RefCounted
 # local id that never change; placer deposits are found per tile from the
 # rivers and belong to the tile they lie in.
 
+const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
 const WrapNoiseScript := preload("res://src/worldgen/tile/wrap_noise.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
@@ -1196,6 +1197,7 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 		# Walk downhill to a river, then down the river.
 		var at: int = outcrop
 		var points: Array = []
+		var path: Array = []   # [x, z, bed, flow] per recorded point, for the traps
 		var on_river: bool = false
 		var steps: int = 0
 		var river_steps: int = 0
@@ -1214,6 +1216,7 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 			if on_river:
 				if river_steps % record_every == 0:
 					points.append([snappedf(x0 + float(i) * spacing_m, 0.1), snappedf(z0 + float(j) * spacing_m, 0.1)])
+					path.append([x0 + float(i) * spacing_m, z0 + float(j) * spacing_m, heights[at], flow[at]])
 
 				river_steps += 1
 
@@ -1248,6 +1251,23 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 			continue
 
 		used_rivers[str(points[0])] = true
+		var traps_rules: Dictionary = ore_rules.get("placer_traps", {})
+
+		# Stage E M1 step 3 (stage_e_readers_design.md 6d): with placer_traps on, the grains lie only where the water slows (a slope
+		# break, a bend, a confluence), one short placer at each. Off until the R6 rebake, so today's tiles keep theirs.
+		if bool(traps_rules.get("on", false)):
+			for trap in WaterRecordScript.placer_traps(path, traps_rules):
+				var k: int = clampi(int(trap[0]), 1, points.size() - 2)
+				local += 1
+				var t_thick: float = rng.randf_range(float(ore_rules["placer_thickness_m"][0]), float(ore_rules["placer_thickness_m"][1]))
+				var t_len: float = float(2 * record_every) * spacing_m
+				placers.append({"id": "%d,%d#%d" % [tile.x, tile.y, local], "home_tile": [tile.x, tile.y], "local_id": local, "resource": resource,
+					"shape": "placer", "feature": ore["id"], "points": points.slice(k - 1, k + 2), "trap": str(trap[1]), "width_m": 4.0,
+					"thickness_m": snappedf(t_thick, 0.1), "grade": snappedf(float(ore["grade"]) * float(traps_rules.get("grade_x", 0.8)), 0.01),
+					"tonnes": int(t_len * 4.0 * t_thick * 1.8)})
+
+			continue
+
 		local += 1
 		var width: float = 4.0
 		var thickness: float = rng.randf_range(float(ore_rules["placer_thickness_m"][0]), float(ore_rules["placer_thickness_m"][1]))
