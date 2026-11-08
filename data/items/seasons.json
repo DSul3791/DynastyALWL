@@ -2733,6 +2733,13 @@
 			],
 			"months": "all year",
 			"note": "year round"
+		},
+		"alligator": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
 		}
 	},
 	"season_hints": {
