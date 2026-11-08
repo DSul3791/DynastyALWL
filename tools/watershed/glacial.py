@@ -12,7 +12,7 @@ see report), in seconds. The same report is in the manifest's summary under 'whe
 The model is the glacial stream-power law of Hergarten (2021, Earth Surface Dynamics 9:937), benchmarked against the
 process-based ice model iSOSIA by Liebl et al. (2023, Geoscientific Model Development 16:1315). Each cold-stage step:
   1. the ice surface is the ground plus the ice thickness of the previous step; it is routed with its hollows filled (his
-     section 4: the flow must follow the ice surface, not the bed);
+     section 4: the flow must follow the ice surface, not the bed), by the same D8-LTD as B1 (evolve.route);
   2. mass balance (his eq. 23): the share of each cell's precipitation that becomes ice rises linearly from 0 at the snowline
      (equilibrium-line altitude, H_e) to 1 at H_f; below the snowline it is negative (melt), at the same rate per metre;
   3. ice flux A_i as an equivalent catchment area at the reference precipitation (eqs. 17, 20, 21), accumulated down the ice
@@ -43,7 +43,6 @@ import numba as nb
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
-import lem      # noqa: E402
 import rock     # noqa: E402
 import runoff   # noqa: E402
 import evolve   # noqa: E402  (the B1 solver, creep, river step, hollows)
@@ -194,7 +193,7 @@ def main():
     track = []
     for s in range(steps):
         surf = h + ice
-        filled, rec, order = lem.route(surf, sea, n)
+        filled, rec, order = evolve.route(surf, sea, n, dx, evolve.flow_memory(E))
         frac = np.minimum((surf - He) / (Hf - He), 1.0)
         p_ice = rain_mm * frac                         # mm/yr of ice made (negative: melted)
         Ai, A = _ice_flux(order, rec, sea, cell * p_ice / p0, cell * rain_mm / p0, N)
@@ -262,7 +261,7 @@ def main():
     print(f'post-glacial {psteps} steps done, t {time.time() - t0:.0f} s', flush=True)
 
     # ---- outputs ----
-    filled, rec, order = lem.route(h, sea, n)
+    filled, rec, order = evolve.route(h, sea, n, dx, evolve.flow_memory(E))
     rid = rock.rock_ids(g, h)
     wb = runoff.budget(rain_mm, rid, bfi, W)
     Q = evolve._discharge(order, rec, sea, wb['quick'] / q_ref, cell, N)

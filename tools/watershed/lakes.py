@@ -23,7 +23,7 @@ lake table), lakes.png and lakes_manifest.json.
 4. Every lake gets its cause: cirque (an ice-scoured floor near or above the snowline), glacial rock basin (an ice-scoured floor
    lower down), moraine or till dam, fan or delta dam. The table keeps level, area, volume, depth, inflow, losses, outflow,
    the spill point and where the outflow goes.
-5. Basins: every cell's outlet to the sea, routed through the lakes (C1).
+5. Basins: every cell's outlet to the sea, routed through the lakes (C1), by the same D8-LTD flow paths as B1 (evolve.route).
 """
 import sys, os, json, time
 import numpy as np
@@ -32,7 +32,6 @@ import numba as nb
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
-import lem      # noqa: E402
 import rock     # noqa: E402
 import runoff   # noqa: E402
 import evolve   # noqa: E402
@@ -344,7 +343,7 @@ def main():
     bfi = runoff.bfi_by_rock_id(g['names'], W['bfi_by_rock'])
 
     # 1. leftovers: hollows with no cause are filled to the spill surface (with the flood's slope to the outlet).
-    filled, rec, order_f = lem.route(h, sea, n)
+    filled, rec, order_f = evolve.route(h, sea, n, dx, evolve.flow_memory(E))
     pit = filled - h
     leftover = land & (pit > 0.0) & ~((cause_b2 >= 0) & (cause_b2 <= 2))
     lab0, deep0, size0, _ = evolve._hollows(np.where(leftover, pit, 0.0), rec, sea, n, 0.1)
@@ -423,7 +422,7 @@ def main():
                           closed_reason=None if full[d] else 'evaporation and floor seepage equal the inflow below the spill'))
 
     # 5. basins: each cell's outlet to the sea, routed through the lakes
-    filled2, rec2, order2 = lem.route(h, sea, n)
+    filled2, rec2, order2 = evolve.route(h, sea, n, dx, evolve.flow_memory(E))
     basin = _basins(order2, rec2, sea, N)
     bid, barea = np.unique(basin[land & (basin >= 0)], return_counts=True)
     rank = np.argsort(-barea)
