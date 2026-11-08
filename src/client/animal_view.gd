@@ -4183,10 +4183,7 @@ func _ice_look(node: Node3D, b: Dictionary, _state: int, speed: float, delta: fl
 	if not bool(b.get("on_ice", false)) or speed < 0.2:
 		return
 
-	var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
-
-	if player != null and player.speed_scale > 0.0:
-		player.speed_scale *= 0.75      # short, careful steps
+	b["speed_x"] = float(b.get("speed_x", 1.0)) * 0.75      # short, careful steps (applied after the clip)
 
 	if str(b.get("kind", "")) in SURE_ON_ICE:
 		return
