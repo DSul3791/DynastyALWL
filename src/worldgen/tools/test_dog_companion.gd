@@ -183,19 +183,21 @@ func _init() -> void:
 	s["pos"] = Vector3(20.0, GROUND, 0.0)
 	step_n(a, s, 40)
 	check(flat(s["pos"], infos[0]["pos"]) <= 5.0, "it comes to heel beside its owner's torch (%.1f m)" % flat(s["pos"], infos[0]["pos"]))
+	step_n(a, s, 40)
+	check(int(s["state"]) == 19, "at heel for 10 s it lies down (state %d)" % int(s["state"]))
 	a._fire_cache = []
 
 	# 7. Barking: at bond 0.1 a bear 30 m from its owner is not barked at; at 0.3 it is, once.
 	var bear: int = a.spawn("bear", 30.0, 0.0)
 	s["pos"] = Vector3(-2.0, GROUND, 0.0)
 	step_n(a, s, 1)
-	check(int(s["state"]) != a.ALERT, "no bark at bond 0.1 (state %d)" % int(s["state"]))
+	check(int(s["state"]) != 10, "no bark at bond 0.1 (state %d)" % int(s["state"]))
 	r["bond"] = 0.3
 	step_n(a, s, 1)
-	check(int(s["state"]) == a.ALERT and s.get("barked", {}).has(bear), "at bond 0.3 it barks at a bear 30 m from its owner")
+	check(int(s["state"]) == 10 and s.get("barked", {}).has(bear), "at bond 0.3 it barks (state 10, the threat call) at a bear 30 m from its owner")
 	s["pos"] = Vector3(-10.0, GROUND, 0.0)
 	step_n(a, s, 1)
-	check(int(s["state"]) != a.ALERT, "one bark per bear, not every step")
+	check(int(s["state"]) != 10, "one bark per bear, not every step")
 	a.animals.erase(bear)
 
 	# 8. Its owner's blow does nothing; another player's hurts it.

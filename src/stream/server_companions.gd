@@ -4,7 +4,7 @@ extends RefCounted
 # near the starter town for each player who has no dog; food that player leaves near it, eaten once they have backed off, is trust (once a
 # game day); at trust_to_follow it follows them and becomes their companion: a saved record (companions.json, field_journal_design.md 5) with a
 # name and a bond. The bond grows with fed days near its owner and falls with unfed days out with them; at 0 the dog leaves. From bond 0.3
-# it barks when a bear, a wolf or goblins come near its owner. An heir inherits companions at inherit_bond_share of their bond (inherit(),
+# it barks when a bear, a wolf or goblins come near its owner. Its states follow MikeW's clips (DOG_COMPANION_CLIPS.md): bark 10, sit 18, lie 19. An heir inherits companions at inherit_bond_share of their bond (inherit(),
 # for the heir flow when it exists). A species takes part through a "companion" block in animals.json.
 
 const Steering := preload("res://src/shared/steering.gd")
@@ -19,6 +19,10 @@ const NEAR_M := 15.0               # within this of its owner the day counts as 
 const WATCH_M := 30.0              # a stray watches a player this near
 const OWN_TORCH_M := 1.5           # a "fire" this near the owner is the owner's own torch: a companion does not keep off it
 const BARK_AGAIN_S := 20.0         # one bark per threat this often (real seconds)
+const BARK := 10                   # the bark: the threat call carries the sound (docs/design/DOG_COMPANION_CLIPS.md, MikeW)
+const SIT := 18                    # sit / stay (step 2: commands)
+const LIE := 19                    # lie down and rest: at heel this long, it lies down
+const LIE_AFTER_S := 8.0
 
 var host                           # ServerAnimals
 var peer_key: Callable             # (peer) -> character key (server_items.key_of)
@@ -391,8 +395,11 @@ func _step_companion(a: Dictionary, dt: float) -> void:
 	var follow_m: float = float(c.get("follow_m", 3.0))
 
 	if d <= follow_m + 1.0:
-		a["state"] = host.GRAZE
+		a["idle_s"] = float(a.get("idle_s", 0.0)) + dt
+		a["state"] = LIE if float(a["idle_s"]) >= LIE_AFTER_S else host.GRAZE   # at heel a while, it lies down
 		return
+
+	a["idle_s"] = 0.0
 
 	# Close up behind the owner, but never into a fire's keep-off radius (the animal rule; the owner's own torch is not one): it waits at the light's edge.
 	var goal: Vector3 = o + Vector3(a["pos"].x - o.x, 0.0, a["pos"].z - o.z).normalized() * follow_m
@@ -420,7 +427,7 @@ func _step_companion(a: Dictionary, dt: float) -> void:
 		a["state"] = host.GRAZE
 
 
-# A bear, a wolf or a goblin within warn_m of the owner: it turns to it and barks (ALERT, the animal call), once a threat every BARK_AGAIN_S.
+# A bear, a wolf or a goblin within warn_m of the owner: it turns to it and barks (state BARK, the threat call), once a threat every BARK_AGAIN_S.
 func _bark(a: Dictionary, c: Dictionary, o: Vector3) -> bool:
 	var kinds: Array = c.get("warn_kinds", ["bear", "black_bear", "wolf", "goblin"])
 	var barked: Dictionary = a.get("barked", {})
@@ -440,7 +447,8 @@ func _bark(a: Dictionary, c: Dictionary, o: Vector3) -> bool:
 
 		barked[id] = now_ms
 		a["barked"] = barked
-		a["state"] = host.ALERT
+		a["idle_s"] = 0.0
+		a["state"] = BARK
 		a["heading"] = atan2(other["pos"].z - a["pos"].z, other["pos"].x - a["pos"].x)
 		return true
 
