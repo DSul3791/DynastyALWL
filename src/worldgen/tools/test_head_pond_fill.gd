@@ -3,7 +3,9 @@ extends SceneTree
 # Head pond fill (build 623 bug: the spring landed in a lower basin beside the head pond, so the
 # real pond stayed dry while the basin filled and spilled). On a dry start every spring must sit
 # in a pond that then fills: after SIM_SECONDS of simulated time the water at each spring stands
-# at least FILL_SHARE of the way from the ground to the baked pond level.
+# at least FILL_SHARE of the way from the ground to the baked pond level. A river (class 3) cell is a
+# pond only where the ground holds that water inside the painted pond (_holds). The test reads the
+# baked tile and starts dry, so it does not depend on the settled .water file.
 #   godot --headless --path . --script res://src/worldgen/tools/test_head_pond_fill.gd [-- --tile=3,4]
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
@@ -19,8 +21,7 @@ const MIN_POND_DEPTH_M := 1.5    # drainage-mode head ponds are carved 2 to 8 m 
 const MIN_SPRING_M3S := 0.2      # a trickle under this cannot fill a bowl in three hours: not tested
 const LAKE_VOLUME_M3 := 100000.0 # a bigger bowl is a lake: its spring cannot fill it, so it only has to stand 1 m deep
 const LAKE_NEED_M := 1.0
-const BOWL_RING_M := [40.0, 80.0, 120.0]
-const BOWL_SLACK_M := 1.5        # a river head has ground falling away beside it; a bowl has none lower than its bed by more than this
+const HOLD_CELLS := 60000        # a pond's own water fills no more cells than this before the hold check gives up and tests it
 const KNOWN_FAILURES := {1394078: "a real cell Sonny fixes on his lake branch with a re-bake",
 	3144147: "a 75,000 m3 valley pond at 4.59 m3/s: 2.31 of 2.64 m after 3 h, its water spreads flat over the valley floor (the probe finds no leak, more water stored within 200 m than delivered); unchanged by the backwater paint, so it fills slowly, not wrongly (2 Nov 2026)"}
 const MAX_POND_DEPTH_M := 8.5    # deeper than that is a lake or the sea, not a head pond
@@ -87,24 +88,60 @@ func _pond_volume(data, k: int, surface: float) -> float:
 	return total
 
 
-# The lowest ground 40 to 120 m round the sample: a bowl has none lower than its bed (within BOWL_SLACK_M), a river head sits on a slope with ground falling away.
-func _ring_min(data, k: int) -> float:
+# The depth the test asks the water to stand at the spring after SIM_SECONDS: FILL_SHARE of the pond, or less when the spring cannot bring that much water;
+# a lake only has to stand LAKE_NEED_M deep.
+func _need(depth: float, flow: float, volume: float) -> float:
+	# A pond is a 2 to 8 m bowl fed by 0.1 to 2 m3/s: it cannot fill faster than its spring brings the water. A bowl fills deepest first, so the volume share
+	# the spring can deliver is a floor for the depth share.
+	var deliverable: float = flow * SIM_SECONDS / maxf(volume, 1.0)
+	var need: float = minf(FILL_SHARE, deliverable) * depth
+
+	if volume > LAKE_VOLUME_M3:
+		# A lake: the spring cannot fill it, it only has to stand a metre deep, or as deep as its water can make it (2 Nov 2026: a 0.3 m3/s spring brings 3240 m3
+		# in three hours, which cannot stand a metre deep in a 220,000 m3 bowl).
+		need = minf(LAKE_NEED_M, maxf(need, 0.05))
+
+	return need
+
+
+# True when the ground holds water up to `level` at sample k inside the painted pond: every cell joined to k (4 neighbours) with ground below that level
+# is baked water at the pond's own level. Water standing that high anywhere else runs out of the pond there. 8 Nov 2026 (Sonny): this replaces the ring
+# test (no ground lower than the bed by 1.5 m within 40 to 120 m), which took a gentle river for a bowl: spring 1495538 sits in a river trench whose
+# painted level stands 7 m above its bed while the trench falls only 0.4 m in 50 m and runs on under river cells painted 3 to 4 m lower. On the
+# 8 Nov tile 3,4 bake, 406 of the 408 river cells the ring test took for bowls held a median 16% of their painted depth before their water ran out.
+func _holds(data, k: int, level: float, surface: float) -> bool:
 	var side: int = data.samples
-	var column: int = k % side
-	@warning_ignore("integer_division")
-	var row: int = k / side
-	var lowest: float = INF
+	var seen: Dictionary = {k: true}
+	var queue: Array = [k]
 
-	for radius in BOWL_RING_M:
-		for step in 16:
-			var a: float = float(step) * TAU / 16.0
-			var c: int = column + int(round(cos(a) * radius / data.spacing_m))
-			var r: int = row + int(round(sin(a) * radius / data.spacing_m))
+	while not queue.is_empty():
+		var at: int = queue.pop_back()
+		var mark: float = data.water_surface[at]
 
-			if c >= 0 and c < side and r >= 0 and r < side:
-				lowest = minf(lowest, data.heights[r * side + c])
+		if data.water_class[at] < 2 or is_nan(mark) or absf(mark - surface) >= 0.5:
+			return false
 
-	return lowest
+		if seen.size() > HOLD_CELLS:
+			return true
+
+		var column: int = at % side
+		@warning_ignore("integer_division")
+		var row: int = at / side
+
+		for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var c: int = column + step.x
+			var r: int = row + step.y
+
+			if c < 0 or r < 0 or c >= side or r >= side:
+				continue
+
+			var q: int = r * side + c
+
+			if not seen.has(q) and data.heights[q] < level:
+				seen[q] = true
+				queue.append(q)
+
+	return true
 
 
 # The known failure within KNOWN_REACH_CELLS of sample k, or -1.
@@ -162,11 +199,15 @@ func _init() -> void:
 		if float(spring[1]) < MIN_SPRING_M3S:
 			continue
 
-		# A class 2 cell is a pond or lake; a class 3 (river) cell only counts when it lies in a bowl, not on a steep river head.
-		if data.water_class[k] == 3 and _ring_min(data, k) < data.heights[k] - BOWL_SLACK_M:
+		var depth: float = surface - data.heights[k]
+		var volume: float = _pond_volume(data, k, surface)
+
+		# A class 2 cell is a pond or lake; a class 3 (river) cell only counts when the ground holds its water as deep as the test asks, inside its
+		# painted pond. A river cell painted above ground that lets the water run on is a river, not a pond.
+		if data.water_class[k] == 3 and not _holds(data, k, data.heights[k] + _need(depth, float(spring[1]), volume), surface):
 			continue
 
-		spots.append([k, surface - data.heights[k], float(spring[1]), _pond_volume(data, k, surface)])
+		spots.append([k, depth, float(spring[1]), volume])
 
 	_check(not spots.is_empty(), "tile %s has springs inside ponds (%d)" % [tile, spots.size()])
 
@@ -211,17 +252,8 @@ func _init() -> void:
 					wet = sim.depth_at(q)
 					wet_at = q
 
-		# A pond is a 2 to 8 m bowl fed by 0.1 to 2 m3/s: it cannot fill faster than its spring brings the water. A bowl fills deepest first, so the volume share
-		# the spring can deliver is a floor for the depth share.
 		var volume: float = float(spot[3])
-		var deliverable: float = float(spot[2]) * SIM_SECONDS / maxf(volume, 1.0)
-		var share: float = minf(FILL_SHARE, deliverable)
-		var need: float = share * float(spot[1])
-
-		if volume > LAKE_VOLUME_M3:
-			# A lake: the spring cannot fill it, it only has to stand a metre deep, or as deep as its water can make it (2 Nov 2026: a 0.3 m3/s spring brings 3240 m3
-			# in three hours, which cannot stand a metre deep in a 220,000 m3 bowl).
-			need = minf(LAKE_NEED_M, maxf(need, 0.05))
+		var need: float = _need(float(spot[1]), float(spot[2]), volume)
 
 		var line: String = "spring at sample %d (%.2f m3/s, pond %.0f m3): pond %.1f m deep, filled to %.2f m (at sample %d) after %d s, needs %.2f m" % [k, spot[2], volume, spot[1], wet, wet_at, int(SIM_SECONDS), need]
 
