@@ -1821,6 +1821,11 @@ func _next(now: int) -> void:
 
 	var shot: Dictionary = shots[_index]
 	client.flying = true
+
+	# The rig flies the body to each spot, and the cave rays are skipped while flying (admin look-around), so every cave shot was lit and heard as open air
+	# (HUD "open", Dino's cave pictures 8 Nov 2026). The pictures measure the rock as a walking player would.
+	if client.sound != null and client.sound.cave != null:
+		client.sound.cave.measure_flying = true
 	_placed = false
 	_landed = false
 	_land_failed = false
