@@ -31,7 +31,8 @@ its PC check. The PC run sheet is PC_SESSION_MIKEW.md (about 92 minutes, the cor
 | 21 | Thunder | a clap makes birds start up, herds flinch and bunch, dogs cower; storm wind turns tails to it | `storm_looks` | no | m57 |
 
 ## The PR branches, cut and pushed (8 Nov 2026; PRs not opened until Dave's PC gate)
-Each branch is the stack up to its head; its PR's base is the branch above it, so each diff holds one family. The full branch
+Each branch is the stack up to its head (heads after the bug-pass fix was carried down to pr12 and pr22 and merged forward through the
+stack, 8 Nov 2026); its PR's base is the branch above it, so each diff holds one family. The full branch
 `claude/mikew-eye-placement` stays as the one Dino tests; its tree is the same as the last branch here. From PR 8 on the branches are
 a copy of the full branch's commits with the old herd groups server commit left out (it is #666), so no client PR carries server code.
 PR 1 (#596) is `claude/mikew-eyeshine`; PR 2, the wet look, is `claude/mikew-wet-look` off main, outside this stack; PR 7 is #666.
@@ -46,18 +47,18 @@ PR 1 (#596) is `claude/mikew-eyeshine`; PR 2, the wet look, is `claude/mikew-wet
 | 9 | `claude/mikew-pr09-young2-models-voices-eyes` | `claude/mikew-pr08` | ced330b3fe5ef723be2bcc4814afcba00f65696e | m35 to m37 |
 | 10 | `claude/mikew-pr10-animal-sign` | `claude/mikew-pr09` | 14891ada6009b6aae7a0cfbffc432a6016165dfc | m38 to m40 |
 | 11 | `claude/mikew-pr11-weather-looks` | `claude/mikew-pr10` | 1fda5278dc1252f581396e968dfbc55f78ccd9d0 | m41 to m44 |
-| 12 | `claude/mikew-pr12-hunt-feedback` | `claude/mikew-pr11` | c2679173440e92f9c4f77088723d7b4db51837d7 | m45 to m47 |
-| 12b | `claude/mikew-pr13-cost-review` | `claude/mikew-pr12` | e812a7228da9e52e0b6030b79b6e05d92d4240fd | gate with --life-layer-off |
-| 12c | `claude/mikew-pr14-airc-tracks-cover-shots` | `claude/mikew-pr13` | 9b3fc47a64c398ab4754cfe36ee292c0d44341f0 | m38, m39, m48 |
-| 13 | `claude/mikew-pr15-posed-birds` | `claude/mikew-pr14` | 03f6e041a0356fda00164353453eb6dae501cecb | m49 |
-| 14 | `claude/mikew-pr16-posed-swimmers` | `claude/mikew-pr15-posed-birds` | 5338fc064e9e6b0c81aa84682875f66a3c754f3b (the full branch's tree then, less this table row) | m50 |
-| 15 | `claude/mikew-pr17-wind-direction` | `claude/mikew-pr16-posed-swimmers` | 50e53f97616f4c7e5e1dee574f39a7b01a97a546 | m51 |
-| 16 | `claude/mikew-pr18-fog` | `claude/mikew-pr17-wind-direction` | 8791d5acee454b6d93b41172bb1541866ea061cb | m52 |
-| 17 | `claude/mikew-pr19-prevailing-wind` | `claude/mikew-pr18-fog` | 530f895bf34816058fbc18f2fde33e1aa07546ce | m53 |
-| 18 | `claude/mikew-pr20-cave-air` | `claude/mikew-pr19-prevailing-wind` | 1511831b5105f3b530a39fb620314b7369509082 | m54 |
-| 19 | `claude/mikew-pr21-drinking` | `claude/mikew-pr20-cave-air` | a2568bbe5177e252378bf25659b5d54a5933d2fb | m55 |
-| 20 | `claude/mikew-pr22-ice-snow` | `claude/mikew-pr21-drinking` | 14b1e28e4b22321b81733b172c51785be5308226 | m56 |
-| 21 | `claude/mikew-pr23-thunder` | `claude/mikew-pr22-ice-snow` | (cut from this commit; its head is reported in the thread) | m57 |
+| 12 | `claude/mikew-pr12-hunt-feedback` | `claude/mikew-pr11` | 0c63bab8c55eb6a29abf9b0c25a91ce3361e9026 | m45 to m47 |
+| 12b | `claude/mikew-pr13-cost-review` | `claude/mikew-pr12` | 5c95483129ceae77b6ae964c538f8b03ca6f356b | gate with --life-layer-off |
+| 12c | `claude/mikew-pr14-airc-tracks-cover-shots` | `claude/mikew-pr13` | c368ed5d4232993de4bb92313b6413ef332eb9ed | m38, m39, m48 |
+| 13 | `claude/mikew-pr15-posed-birds` | `claude/mikew-pr14` | 4d6b61fecdb37cf7a044ec170db39c3b4f5488f8 | m49 |
+| 14 | `claude/mikew-pr16-posed-swimmers` | `claude/mikew-pr15-posed-birds` | 22abdb669fe312da285ed38216090a893f23c7cc | m50 |
+| 15 | `claude/mikew-pr17-wind-direction` | `claude/mikew-pr16-posed-swimmers` | 70bcf43b0ca26ab4e900c7d116a342be6888371b | m51 |
+| 16 | `claude/mikew-pr18-fog` | `claude/mikew-pr17-wind-direction` | b4491af6181b1d729c49c4803e520ffc9c061fa8 | m52 |
+| 17 | `claude/mikew-pr19-prevailing-wind` | `claude/mikew-pr18-fog` | 608c1129a29ea0b050457dfff926d66ec60d8967 | m53 |
+| 18 | `claude/mikew-pr20-cave-air` | `claude/mikew-pr19-prevailing-wind` | 7908d37dc6d164fa86b4ac761452e8fc5bcd0fef | m54 |
+| 19 | `claude/mikew-pr21-drinking` | `claude/mikew-pr20-cave-air` | 06cd13f23908912e2755ba71bfaf84e8838b78ae | m55 |
+| 20 | `claude/mikew-pr22-ice-snow` | `claude/mikew-pr21-drinking` | 0e4c89b1a2ee98e075f2d1b8a089de74059b7eff | m56 |
+| 21 | `claude/mikew-pr23-thunder` | `claude/mikew-pr22-ice-snow` | f0935a74cd0b739bb368efdf8389d706c006ff94 | m57 |
 
 12b and 12c hold the cross-cutting passes that came after PR 12 in time (the cost pass and kill switch, the self review, then Weather.air_c,
 Jamie's track numbers, state 20 in cover, the hunt readers and Dino's shot list); they cannot be folded back into earlier families
