@@ -2,7 +2,7 @@
 
 **Owner:** Steve, for the drink path (`_drink_water` and `water_near` in `src/stream/server_items.gd`, and the terrain server's `water_near`).
 **Research:** Sonny, `docs/water/springs_and_drinking_water.md` (on the R5 branch until it merges).
-**Status:** design only. The code waits until the R stack merges (R2 to R6 and the reader on #630), because it reads record fields that only exist there.
+**Status:** build step 1 (section 7) is in code behind `thirst.sources.enabled` (off): `src/shared/drink_rules.gd`, the `water_source` callable in `server_items`, and `test_drinking_water.gd`. Step 2, the baked rows, waits until the R stack merges (R2 to R6 and the reader on #630), because it reads record fields that only exist there.
 **Decided:** coordinator, 8 Nov 2026. Dave may revert.
 
 ## 1. What happens today (read from the code on main, 8 Nov, not tested)
@@ -18,7 +18,7 @@
 
 ## 2. What the player will notice
 
-- **Springs are always a drink:** summer, winter, drought and frost. Their water comes out at about the year's mean plus 1 °C (6.5 °C at cave 8002), so it never freezes.
+- **Springs are always a drink:** summer, winter, drought and frost. Their water comes out at the year's mean at their height (5.5 °C at #8002; Jamie, `springs-and-brooks-in-winter.md` #739), so they never freeze.
 - **Brooks follow their regime:**
   - a perennial brook runs all year;
   - an intermittent brook is dry in high summer unless it has rained in the last day;
@@ -46,7 +46,15 @@ A new server callable, `water_source(pos, reach_m) -> Dictionary`, is filled by 
 - **Order:** the cleanest source within reach wins: spring, then river, lake, brook, wet ground. This is Sonny's physical order. Salt never wins over fresh water within reach.
 - **Ice:**
   - a spring is never frozen;
-  - a brook is frozen at a point `x` m below its spring when the air is under 0 °C and `x` is past Sonny's open length `x₀ = λ ln((T_water − T_air)/(0 − T_air))`, with λ = ρcQ / (hW) and h = 20 W/m²K;
+  - a brook is frozen at a point `x` m below its spring only when all three hold:
+    - the air is under 0 °C;
+    - `x` is past the open length;
+    - the ice rule there (`_on_ice`, a bearing sheet) also says ice. This is from Kathleen #729 and the coordinator, 8 Nov: the hole is asked for only where the look shows a sheet, and on the starter island the ice never bears.
+  - **The open length** is Jamie's game rule (#739, a fit to Sonny's heat-loss sums within about 30%):
+    - 440 m × √(flow in L/s) in calm air at −5 °C;
+    - × 1.8 at −2 °C, × 0.6 at −10 °C and × 0.4 at −15 °C, straight between;
+    - halved in a breeze (wind 0.3 or more, judged).
+    - A 2 L/s spring on the starter island's worst night (about −7.5 °C) keeps 230 to 460 m open.
   - a brook with no spring upstream, or still water, follows the existing ice rule (`_on_ice`, #616).
   - Frozen water asks for `_hole_near` within reach, the fishing hole. Otherwise the player sees `say_frozen` ("The water is frozen. Break a hole in the ice first.").
 - **The sim still counts.** Where the live sim has wet a cell that the record calls dry (a flood, a fresh puddle after rain), it is a `puddle` drink. This keeps today's rain puddles drinkable, and it comes last in the order.
@@ -55,7 +63,8 @@ A new server callable, `water_source(pos, reach_m) -> Dictionary`, is filled by 
 ## 4. Data (`vitals.json` `thirst.sources`)
 
 ```
-"sources": {"enabled": false, "rain_memory_h": 24, "flash_memory_h": 6, "night_h_w_m2k": 20.0,
+"sources": {"enabled": false, "rain_memory_h": 24, "flash_memory_h": 6,
+            "open_m": 440.0, "cold_x": [[-2, 1.8], [-5, 1.0], [-10, 0.6], [-15, 0.4]], "breeze_wind": 0.3, "breeze_x": 0.5,
             "say_salt": "Salt water. It would only make you thirstier.",
             "say_frozen": "The water is frozen. Break a hole in the ice first.",
             "say_dry": "The bed is dry."}
@@ -78,7 +87,10 @@ New `test_drinking_water.gd`, with a stub record:
 - **Brook by regime:**
   - a regime 2 brook is dry in summer, wet in summer within a day of rain, and wet in autumn;
   - a regime 3 gully is wet only within 6 h of rain.
-- **Brook below a spring:** in summer it is a drink above the row where `q_base_dry_m3_s` is 0 and dry below it. On a −4 °C night (Sonny's worked example, about 810 m) it is open at 500 m and frozen at 1000 m.
+- **Brook below a spring:**
+  - in summer it is a drink above the row where `q_base_dry_m3_s` is 0, and dry below it;
+  - on a calm −4 °C night (Sonny's worked spring, 2 L/s: about 790 m by Jamie's rule, 810 m by Sonny's sum) it is open at 500 m and frozen at 1000 m where the ice bears;
+  - in a breeze the open length is halved.
 - **Frozen water:** with no hole the player gets the frozen line; with a hole they drink.
 - **Salt:** the sea and an estuary are refused with the salt line, and a lake 2 m off still wins.
 - **Flag off:** today's drink.
