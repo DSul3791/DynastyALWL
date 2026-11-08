@@ -3519,7 +3519,7 @@ func _refresh_frame() -> void:
 	_f_frame = f
 	_f_cond = conditions_now.call() if conditions_now.is_valid() else {}
 	_f_wx = weather_now.call() if weather_now.is_valid() else {}
-	_f_night = night_light.call() if night_light.is_valid() else {}
+	_f_night = night_light.call() if night_light.is_valid() and eye_shine else {}      # only eye shine v2 reads it: no Dictionary a frame with it off
 	_f_torch = torch_light.call() if torch_light.is_valid() else []
 	_f_wind = float(wind_now.call()) if wind_now.is_valid() else 0.0
 	_f_herd_space = HERD_SPACE_M * (0.6 if weather_looks and float(_f_wx.get("temp_c", 10.0)) < HUDDLE_C else 1.0)
