@@ -8,7 +8,7 @@ Three separate PRs, each behind its own switch, which stays off until Dino's pic
 | Part | Switch | Base |
 |---|---|---|
 | A. Sway by wind | `--tree-wind` | this note |
-| B. Bare broadleaves in winter | `--bare-winter` | this note |
+| B. Bare broadleaves in winter | always on (Dave, 8 Nov) | this note |
 | C. Snow that holds and sheds | `--tree-snow` | #607 (snow on branches) |
 
 ## 1. What is wrong today (read from the code on main)
@@ -59,7 +59,7 @@ Wind drag goes with the square of the speed, so the sway is scaled by
 - **One setter:** `FloraView.set_wind(wind_ms, heading)` writes them to every flora material once a second. `weather_look.gd` calls it with the eased world wind, so forced shot weather counts.
 - **Switch off:** the uniforms keep their defaults (k = 1, flutter 1, no lean), and the shaders take the old two-sine path. Today's look is kept exactly.
 
-## 3. Part B: bare broadleaves in winter (`--bare-winter`)
+## 3. Part B: bare broadleaves in winter (always on since Dave's 8 Nov ruling)
 
 - **Which species:** with the switch, the temperate deciduous broadleaves are rebuilt per season like the fruit trees, so winter draws their bare build. Those are oak, beech, birch, alder, willow, maple, sweet chestnut, walnut and the witness tree.
 - **Which stay leafy:** evergreen broadleaves keep their leaves. Those are tropical hardwood, mangrove, acacia, olive, orange, lemon, mango, fig, pomegranate and the fantasy evergreens.

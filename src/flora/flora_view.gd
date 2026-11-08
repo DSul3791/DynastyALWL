@@ -1714,15 +1714,14 @@ func is_stripped(chunk: Vector2i, id: int) -> bool:
 	return (stripped.get(chunk, {}) as Dictionary).has(id)
 
 
-# Bare broadleaves in winter (--bare-winter, docs/design/trees_weather_design.md part B, never-see 2): the temperate deciduous
+# Bare broadleaves in winter (docs/design/trees_weather_design.md part B, never-see 2; always, since Dave's 8 Nov ruling): the temperate deciduous
 # broadleaves are built per season like the fruit trees, so winter draws their bare build (tree_builder season == "winter").
 # Evergreen broadleaves (tropical hardwood, mangrove, acacia, olive, orange, lemon, mango, fig, pomegranate, the fantasy evergreens) keep their leaves.
-static var bare_winter_on: bool = AppConfig.has_flag("bare-winter")
 const DECIDUOUS: Array[String] = ["oak", "beech", "birch", "alder", "willow", "maple", "sweet_chestnut", "walnut", "witness_tree"]
 var _leaf_only: Dictionary = {}        # species name -> true: seasonal only for their leaves (DECIDUOUS), never picked bare, so no stripped build
 
 
-# The species names built per season: the fruit bearers, the flora.json "seasonal" rows and, with the switch, the deciduous broadleaves.
+# The species names built per season: the fruit bearers, the flora.json "seasonal" rows and, with `bare_winter`, the deciduous broadleaves.
 static func seasonal_names(berry_names: Array, entries: Array, bare_winter: bool) -> Dictionary:
 	var out: Dictionary = {}
 
@@ -1744,7 +1743,7 @@ static func seasonal_names(berry_names: Array, entries: Array, bare_winter: bool
 # The berry bush species (names from drops.json "berry_yield"), set once by the client.
 func set_fruiting(names: Array) -> void:
 	var picked: Dictionary = seasonal_names(names, _setup_entries, false)
-	fruiting = seasonal_names(names, _setup_entries, bare_winter_on)
+	fruiting = seasonal_names(names, _setup_entries, true)
 	_leaf_only = {}
 
 	for plant_name in fruiting:
@@ -1858,9 +1857,9 @@ func set_season(now_season: String) -> void:
 
 
 # A bare winter broadleaf has no bare impostor card (the cards are captured in leaf), so past the impostor distance it draws its
-# bare far model instead (--bare-winter only).
+# bare far model instead.
 func _leafless_now(species_id: int) -> bool:
-	return bare_winter_on and season == "winter" and _leaf_only.has(str(_slugs.get(species_id, "")))
+	return season == "winter" and _leaf_only.has(str(_slugs.get(species_id, "")))
 
 
 func _start_seasonal() -> void:
