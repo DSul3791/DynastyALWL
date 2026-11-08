@@ -353,7 +353,44 @@ var sea_murk: float = 0.0
 var _liquid_rain: float = 0.0   # what the liquid water sheets were last told (liquid_surface.gd, rain rings)
 
 
+# --water-look (docs/design/water_look_after_rain.md 1 and 4): the cloud after rain follows the rivers' push with a lag, then clears on a
+# half-life (running water as the clear reach class until the record gives one per reach; still water slower, at half the strength);
+# the foam supply follows the season and the cloud. Game hours: one is 150 real seconds.
+const LOOK_PUSH_LAG_S := 1.5 * 150.0
+const LOOK_RUN_RISE_S := 0.5 * 150.0
+const LOOK_RUN_HALF_S := 12.0 * 150.0
+const LOOK_STILL_RISE_S := 3.0 * 150.0
+const LOOK_STILL_HALF_S := 18.0 * 150.0
+const LOOK_FOAM_SEASON := {"spring": 0.6, "summer": 0.6, "autumn": 1.0, "winter": 0.4}
+var water_look: bool = OS.get_cmdline_user_args().has("--water-look")
+var turbid: Vector2 = Vector2.ZERO      # with --water-look: the cloud in running and in still water (for checks)
+var _look_push: float = 0.0
+var _look_next_msec: int = 0
+
+
+func _update_water_look(delta: float, storm: float, rain: float) -> void:
+	var push: float = WeatherRules.river_push({"rain": rain, "storm": storm})
+	_look_push += (push - _look_push) * (1.0 - exp(-delta / LOOK_PUSH_LAG_S))
+	var run: float = turbid.x
+	run = run + (_look_push - run) * (1.0 - exp(-delta / LOOK_RUN_RISE_S)) if _look_push > run else run * pow(0.5, delta / LOOK_RUN_HALF_S)
+	var still_want: float = 0.5 * run
+	var still: float = turbid.y
+	still = still + (still_want - still) * (1.0 - exp(-delta / LOOK_STILL_RISE_S)) if still_want > still else still * pow(0.5, delta / LOOK_STILL_HALF_S)
+	turbid = Vector2(run, still)
+	var now: int = Time.get_ticks_msec()
+
+	if now < _look_next_msec or _client.flora == null:
+		return
+
+	_look_next_msec = now + 2000            # new sheets pick it up within 2 s
+	var season: float = float(LOOK_FOAM_SEASON.get(str(_client.weather.get("season", "summer")), 0.6))
+	_client.flora.set_water_look(true, turbid, season * (1.0 + 0.6 * clampf(run * 1.6, 0.0, 1.0)))
+
+
 func _update_water_murk(delta: float, storm: float, rain: float) -> void:
+	if water_look:
+		_update_water_look(delta, storm, rain)
+
 	var want: float = clampf(storm + 0.25 * rain, 0.0, 1.0)
 	var land: float = move_toward(land_murk, want, delta / (LAND_MURK_RISE_S if want > land_murk else LAND_MURK_CLEAR_S))
 	var sea: float = move_toward(sea_murk, want, delta / (SEA_MURK_RISE_S if want > sea_murk else SEA_MURK_CLEAR_S))

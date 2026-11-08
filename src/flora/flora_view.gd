@@ -726,7 +726,28 @@ var _liquid_flow_mud: float = 0.0
 # The liquid sheets take one mud amount: the high flow's brown, or the storm's, whichever is more.
 func _tell_liquid_mud() -> void:
 	if is_inside_tree():
-		get_tree().call_group("liquid_sheet", "set_mud", maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
+		# With --water-look the cloud after rain comes from its own clearing curve (set_water_look), so the storm murk's brown is left out here.
+		get_tree().call_group("liquid_sheet", "set_mud", _liquid_flow_mud if water_look else maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
+
+
+# --water-look (docs/design/water_look_after_rain.md, weather_look.gd): the cloud after rain in running and still water and the foam supply,
+# for the grid look and the liquid sheets.
+var water_look: bool = false
+
+
+func set_water_look(on: bool, turbid: Vector2, foam_supply: float) -> void:
+	var was: bool = water_look
+	water_look = on
+
+	if _water_material != null:
+		_water_material.set_shader_parameter("look_v2", 1.0 if on else 0.0)
+		_water_material.set_shader_parameter("turbid", turbid)
+
+	if is_inside_tree():
+		get_tree().call_group("liquid_sheet", "set_look", on, turbid, foam_supply)
+
+	if was != on:
+		_tell_liquid_mud()
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
