@@ -4,7 +4,7 @@ extends Node
 # started with --shots. Each shot: fly to a point, face a direction, freeze the game clock at an hour,
 # optionally force the weather, wait for the ground and flora to stream in, save the 3D view as a PNG.
 #
-#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist)
+#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist, seafog)
 #   an 8th number (m/s) shows the third-person body walking at that speed, seen from the side (e.g. 4 = walk, 8 = run)
 #   agl is metres above the ground at x,z (a NEGATIVE y is an absolute height in metres instead): the runner first goes to 400 m above sea level there, waits until the
 #   ground under it has loaded, then drops to the ground height plus agl
@@ -146,6 +146,7 @@ const RAIN := {"rain": 0.65, "snow": 0.0, "storm": 0.0, "cloud": 0.8, "sun": 0.0
 const SNOW := {"rain": 0.0, "snow": 0.6, "storm": 0.0, "cloud": 0.8, "sun": 0.0, "wind": 0.1, "wind_dir": 1.0, "temp_c": -3.0}
 const CLEAR := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.15, "sun": 1.0, "wind": 0.1, "wind_dir": 1.0, "temp_c": 14.0}
 const MIST := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.05, "sun": 1.0, "wind": 0.15, "wind_dir": 1.0, "temp_c": 6.0, "mist": 1.0, "mist_top_m": 90.0}   # valley fog, top 90 m (docs/design/valley_fog.md)
+const SEAFOG := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.1, "sun": 1.0, "wind": 0.35, "wind_dir": 1.0, "temp_c": 11.0, "sea_fog": 1.0, "sea_fog_land": 1.0, "sea_fog_top_m": 120.0}   # sea fog, top 120 m, over the land too (docs/design/fog_pools_and_sea_fog.md)
 
 
 func setup(owner_client, args: Array) -> void:
@@ -299,6 +300,7 @@ func _process(delta: float) -> void:
 			"snow": client.weather = SNOW.duplicate()
 			"clear": client.weather = CLEAR.duplicate()
 			"mist": client.weather = MIST.duplicate()
+			"seafog": client.weather = SEAFOG.duplicate()
 
 		client.body.velocity = Vector3.ZERO
 
@@ -632,11 +634,13 @@ func _process(delta: float) -> void:
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
 
 	# Ground guard (warning only): the voxel ground reading is flaky while a spot is still loading (31.0, then 15.0, then 63.0 at one spot in a test), so the camera is never moved
-	# for it; but a camera far below the reading, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
-	var guard_ground: float = _ground(p.x, p.z)
+	# for it; but a camera inside solid ground, no floor under it, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
+	# The floor is read from just above the camera, not from 1500 m: from the sky the ray stops on the hilltop over a cave and every cave shot warned (Sonny, 8 Nov 2026).
+	var guard_ground: float = _ground(p.x, p.z, p.y + GUARD_ABOVE_M)
+	var in_rock: bool = _solid_at(p)
 
-	if is_nan(guard_ground) or p.y < guard_ground - 3.0 or guard_ground <= -30.0:
-		print("shot runner: WARNING ground not loaded at (%.1f, %.1f): ground reading %.1f, camera y %.1f; the picture may be from under the world, raise --shot-settle (75 s worked)" % [p.x, p.z, guard_ground, p.y])
+	if is_nan(guard_ground) or in_rock or p.y < guard_ground - 3.0 or guard_ground <= -30.0:
+		print("shot runner: WARNING ground not loaded at (%.1f, %.1f): floor reading %.1f, camera y %.1f%s; the picture may be from under the world, raise --shot-settle (75 s worked)" % [p.x, p.z, guard_ground, p.y, ", the camera is inside solid ground" if in_rock else ""])
 	var falls: Array = client.flora.fall_list()
 	falls.sort_custom(func(a, b): return (a["base"] as Vector3).distance_to(p) < (b["base"] as Vector3).distance_to(p))
 
@@ -1702,11 +1706,22 @@ func _print_body_height() -> void:
 	print("shot runner: body height: stance %d clip %s, feet level %.2f, collision ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
 
 
-func _ground(x: float, z: float) -> float:
+# from_y: where the ray starts going down (the sky by default; the ground guard starts just above the camera, so in a cave it finds the floor).
+func _ground(x: float, z: float, from_y: float = 1500.0) -> float:
 	var tool = client.terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
-	var hit = tool.raycast(Vector3(x, 1500.0, z), Vector3.DOWN, 2000.0)
+	var hit = tool.raycast(Vector3(x, from_y, z), Vector3.DOWN, from_y + 500.0)
 	return float(hit.position.y) if hit != null else NAN
+
+
+const GUARD_ABOVE_M := 1.0
+
+
+# True when the voxel at p is solid (SDF below zero): the camera is inside the ground.
+func _solid_at(p: Vector3) -> bool:
+	var tool = client.terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+	return float(tool.get_voxel_f(Vector3i(floori(p.x), floori(p.y), floori(p.z)))) < 0.0
 
 
 # --shot-frametime: set the quality, wait 10 s after connecting (the first frames build the world), then collect every frame time for frametime_s seconds
