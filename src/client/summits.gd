@@ -18,6 +18,7 @@ var list: Array = []                   # [Vector3(x, height, z)], highest first;
 var ready: bool = false
 var _task: int = -1
 var _found: Array = []
+var _took_ms: int = 0
 var _tile: Vector2i = Vector2i(1 << 30, 0)
 
 
@@ -37,6 +38,7 @@ func update(at: Vector3) -> void:
 			_task = -1
 			list = _found
 			ready = true
+			print("Summits: %d found round tile %s in %d ms, highest %.0f m" % [list.size(), str(_tile), _took_ms, list[0].y if not list.is_empty() else 0.0])
 
 		return
 
@@ -48,7 +50,12 @@ func update(at: Vector3) -> void:
 	_tile = tile
 	var dir: String = tiles_dir
 	var size: float = tile_size_m
-	_task = WorkerThreadPool.add_task(func() -> void: _found = search(dir, tile, size), false, "summits")
+	var job: Callable = func() -> void:
+		var start: int = Time.get_ticks_msec()
+		_found = search(dir, tile, size)
+		_took_ms = Time.get_ticks_msec() - start
+
+	_task = WorkerThreadPool.add_task(job, false, "summits")
 
 
 # Waits for a search still running (the client is closing).
