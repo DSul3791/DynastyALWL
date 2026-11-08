@@ -43,6 +43,7 @@ var _prints: Array = []           # [Decal, born msec, life s]
 var _print_tex: Dictionary = {}   # sign group -> ImageTexture
 var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
 var slope_tilt: bool = false
+var season_coats: bool = false    # the coat's colour follows the season (COAT_SHADER.md; off until the PC check)
 var stalk_fx: bool = false        # predators crouch and creep when stalking and pounce on the attack (STALK_POUNCE.md; off until the PC check)
 var wind_now: Callable            # () -> wind 0..1 (Jamie's #637: 20 x wind^1.3 m/s); ears lie back and tails swing above about 0.5
 var foot_ik: bool = false         # feet reach uneven ground (FOOTFALL.md step 4; off until the PC check)
@@ -489,6 +490,9 @@ func _process_body(delta: float) -> void:
 
 			_flap_bob(node, b, state)
 
+			if season_coats and (node.get_meta("model_row", {}) as Dictionary).has("season_tint"):
+				_coat_season(node, b, delta)
+
 			if slope_tilt:
 				_slope_pitch(node, b, before, delta)
 
@@ -611,6 +615,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.set_meta("model", true)
 	root.set_meta("model_row", row)
+	root.set_meta("meshes", meshes)
 
 	if own_young:
 		root.set_meta("young_model", true)
@@ -913,6 +918,11 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 						mi.set_surface_override_material(surface, mat)
+
+						if not (name_text.findn("eye") >= 0 and name_text.findn("lid") < 0):
+							var coat_mats: Array = mi.get_meta("coat_mats", [])
+							coat_mats.append(mat)
+							mi.set_meta("coat_mats", coat_mats)
 
 						# The eye surfaces (a material or texture named for the eye, not a lid or lash) carry the eye shine (_eye_shine).
 						if name_text.findn("eye") >= 0 and name_text.findn("lid") < 0 and name_text.findn("lash") < 0 and float(row.get("shine", 0.0)) > 0.0:
@@ -2086,6 +2096,28 @@ func _flap_bob(node: Node3D, b: Dictionary, state: int) -> void:
 		rig.position.y = float(flight["bob_m"]) * sin(TAU * float(flight.get("beat_hz", 4.0)) * float(b.get("air_t", 0.0)))
 	elif absf(rig.position.y) > 0.0005 and b.get("hop") == null and float(b.get("pounce_t", -1.0)) < 0.0:      # not while hopping or pouncing
 		rig.position.y = 0.0
+
+
+# The coat's colour by the season (COAT_SHADER.md section 3): the row's season_tint {spring, summer, autumn, winter: colour} multiplies
+# the coat textures, eased over a few seconds when the season changes (a real moult takes weeks; the client's season is the moult's
+# middle). Checked once a second. Eyes keep their own colour.
+func _coat_season(node: Node3D, b: Dictionary, delta: float) -> void:
+	b["coat_t"] = float(b.get("coat_t", 0.0)) - delta
+
+	if float(b["coat_t"]) > 0.0 and b.has("coat_now"):
+		return
+
+	b["coat_t"] = 1.0
+	var row: Dictionary = node.get_meta("model_row", {})
+	var season: String = str((conditions_now.call() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
+	var want: Color = Color.html(str((row["season_tint"] as Dictionary).get(season, "#ffffff")))
+	var now: Color = b.get("coat_now", want)
+	now = now.lerp(want, 0.3)
+	b["coat_now"] = now
+
+	for mi in node.get_meta("meshes", []):
+		for mat in (mi as MeshInstance3D).get_meta("coat_mats", []):
+			(mat as StandardMaterial3D).albedo_color = now
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

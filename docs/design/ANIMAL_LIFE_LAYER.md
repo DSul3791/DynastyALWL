@@ -25,6 +25,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Slope pitch | the body pitches with the slope | none | `slope_tilt` (**off**) | FOOTFALL.md |
 | Stalk and pounce | crouch, creep, freeze when prey looks up; pounce arc | `stalk`, `pounce` | `stalk_fx` (**off**) | STALK_POUNCE.md |
 | Wind | ears back and tails swing above about 0.5 | none | needs `wind_now` (on) | STALK_POUNCE.md (wind note) |
+| Seasonal coat colour | coat tint by season (deer, elk, moose, wolf, fox, rabbit) | `season_tint` | `season_coats` (**off**) | COAT_SHADER.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |
 
