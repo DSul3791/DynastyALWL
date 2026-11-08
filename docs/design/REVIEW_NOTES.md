@@ -56,3 +56,17 @@ Checked how the animal looks read the weather against Kathleen's client code:
   becomes the one sampler for both, and `fog_now` reads only that.
 - The animal side reads each source once a frame (`_refresh_frame`), so there is one cache per frame on this side whatever the source.
 
+## pr18 to pr21 (fog, prevailing wind, cave air, drinking), read the same way (8 Nov 2026)
+- **Flags:** `fog_looks`, `cave_air`, `drink_looks` are new, all false, in `LIFE_FLAGS` and the kill switch; pr19 reuses `wind_looks`
+  (and `coat_ruffle` for feathers). `--life=` turns any of them on by name.
+- **Samplers:** fog through `fog_now` (the scene fog density until Kathleen's `visibility_m`), cave air through `cave_c_at` (one rock
+  ray per 2 m cell, cached 5 s), drinking through the existing `water_level`; all read once a frame or cached, none in a per-pair loop.
+- **Duplicates:** none new. The cave's deep air uses the shared climate numbers; it becomes a call to Steve's `cave_climate.gd` when
+  #715 merges (one formula). The trample patch reuses the sign pool and its generated shapes.
+- **Magic numbers:** named at their sections (`FOG_M`, `THICK_FOG_M`, `FOG_SHINE_M`, `PREVAILING_TO`, `RUMP_WIND`, `RUMP_RAIN`,
+  `GRAZE_WIND`); the drink and bathe timings are short ranges described in the function comment.
+- **Static tools:** merge_check clear, doc links 0 dead, luck ok; `check_warnings.sh --changed` still only the two older
+  terrain_client.gd lines that are not this branch's.
+- **Left:** the fog sampler unification (above), the cave mouth blend (needs Steve's `cave_mouths` on the client), the fire list
+  for drying (`fire_near` unset), and every server request in ANIMAL_FOG.md and ANIMAL_DRINK.md.
+

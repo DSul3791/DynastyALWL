@@ -62,6 +62,7 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var drink_looks: bool = false     # drinking: sips with the head lifted to look between, a churned bank at used spots, birds bathing in shallows (ANIMAL_DRINK.md; off until the PC check)
 var cave_air: bool = false        # animals underground take the cave's air (the year mean at the height), steam by it, coats dry by it (ANIMAL_WEATHER_LOOKS.md cave section; off until the PC check)
 var cave_c_at: Callable           # (position) -> the cave air C there, or NAN under open sky (terrain_client: rock overhead, Weather year mean)
 var fire_near: Callable           # (position) -> true within a fire's warmth (for drying); unset: none
@@ -543,7 +544,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (drink_looks or cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -638,6 +639,9 @@ func _process_body(delta: float) -> void:
 
 			if cave_air:
 				_dry_rate(node, b, delta)
+
+			if drink_looks:
+				_drink_look(node, b, state, model_speed, delta)
 
 			if hunt_feedback and (b.has("react") or float(b.get("damage", 0.0)) > 0.0):
 				_hunt_motion(node, b, model_speed, delta)
@@ -3346,11 +3350,11 @@ func _sign_texture(what: String) -> ImageTexture:
 					if r <= 1.0:
 						img.set_pixel(x, y, Color(1, 1, 1, 1.0 - r * 0.6))
 
-	var blobs: int = 18 if what == "browse" else (7 if what == "droppings" else 0)
+	var blobs: int = 18 if what == "browse" else (7 if what == "droppings" else (26 if what == "trample" else 0))
 
 	for n in blobs:
 		var c: Vector2 = Vector2(dice.randf_range(14.0, 50.0), dice.randf_range(14.0, 50.0))
-		var rad: float = dice.randf_range(1.5, 3.0) if what == "browse" else dice.randf_range(3.0, 4.5)
+		var rad: float = dice.randf_range(1.5, 3.0) if what == "browse" else (dice.randf_range(4.0, 7.0) if what == "trample" else dice.randf_range(3.0, 4.5))
 
 		for y in range(int(c.y - rad), int(c.y + rad) + 1):
 			for x in range(int(c.x - rad), int(c.x + rad) + 1):
@@ -3690,7 +3694,7 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air", "drink_looks"]
 
 func _all_flags_off() -> void:
 	cover_still = false
@@ -3699,6 +3703,7 @@ func _all_flags_off() -> void:
 	wind_looks = false
 	fog_looks = false
 	cave_air = false
+	drink_looks = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -4088,6 +4093,50 @@ func _cave_c(at: Vector3) -> float:
 		_cave_cache[cell] = float(cave_c_at.call(at))
 
 	return float(_cave_cache[cell])
+
+# Drinking (docs/design/ANIMAL_DRINK.md). Built on water_life's drinking (b["drink_at"]: grazing with water just ahead of the muzzle;
+# the existing water_level, no new sampler). A drinker takes sips and lifts its head to look round between them, every 6 to 14 s
+# for 1.5 to 3 s (the look bones' glance, toward the camera); the first time it drinks at a spot it churns the bank there (a
+# trampled patch in the animal-sign pool, three game days, with animal_sign on). A bird with a flight row standing in shallow water
+# (under 30 percent of its height) bathes: a burst of its flap clip with small splashes, every 4 to 9 s.
+func _drink_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var row: Dictionary = node.get_meta("model_row", {})
+
+	if b.get("drink_at") != null and state == 0 and speed < 0.3:
+		b["sip_t"] = float(b.get("sip_t", randf_range(6.0, 14.0))) - delta      # luck-exempt: when it next lifts its head (client look)
+
+		if float(b["sip_t"]) <= 0.0:
+			b["sip_t"] = randf_range(6.0, 14.0)      # luck-exempt: as above
+			b["look_left"] = randf_range(1.5, 3.0)      # luck-exempt: how long it looks round
+
+		var spot: Vector3 = b["drink_at"]
+
+		if animal_sign and (b.get("bank_at", Vector3.INF) as Vector3).distance_to(spot) > 3.0:
+			b["bank_at"] = spot
+			var length: float = float(row.get("length_m", 1.0)) * maxf(node.scale.x, 0.3)
+			_sign_decal(_sign_texture("trample"), node.global_position, maxf(length * 0.7, 0.5), randf() * TAU, "mud", 3.0 * GAME_DAY_S)      # luck-exempt: the patch's turn
+
+	if row.has("flight") and state == 0 and water_level.is_valid() and node.is_inside_tree():
+		var level: float = float(water_level.call(node.global_position.x, node.global_position.z))
+		var depth: float = level - node.global_position.y if not is_nan(level) else 0.0
+		var h: float = float(row.get("height_m", float(row.get("length_m", 0.5)) * 0.55)) * maxf(node.scale.y, 0.05)
+
+		if depth > 0.005 and depth < 0.3 * maxf(h, 0.05):      # standing in the shallows
+			b["bathe_t"] = float(b.get("bathe_t", randf_range(1.0, 4.0))) - delta      # luck-exempt: the first bathe
+
+			if float(b["bathe_t"]) <= 0.0:
+				b["bathe_t"] = randf_range(4.0, 9.0)      # luck-exempt: the next bathe
+				var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
+				var flap: String = _clip_full(player, row, str((row["flight"] as Dictionary).get("flap", ""))) if player != null else ""
+
+				if flap != "":
+					player.play(flap, 0.1)
+					player.speed_scale = 2.0
+					b["air_once"] = 0.8      # the flight block lets the burst play out
+
+				for k in 3:
+					_splash(node.global_position + Vector3(randf_range(-0.1, 0.1), 0.0, randf_range(-0.1, 0.1)), false, 2.0)      # luck-exempt: where the drops fly
+
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
