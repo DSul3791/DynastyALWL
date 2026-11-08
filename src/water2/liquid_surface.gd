@@ -429,12 +429,12 @@ void fragment() {
 			float r = ice_holes[i].z;
 			float d = distance(world, ice_holes[i].xy) * (1.0 + 0.12 * (noise(world * 9.0) - 0.5));
 			float skin = smoothstep(5.0 / 6.0, 1.0, ice_holes[i].w);
-			hole_open = max(hole_open, (1.0 - smoothstep(0.9 * r, r, d)) * (1.0 - skin) * step(0.5, ice_here));
+			hole_open = max(hole_open, (1.0 - smoothstep(0.9 * r, r, d)) * (1.0 - skin) * step(0.002, ice_here));   // a fishing hole, or skim broken by a wader (ice_walk_feel.md)
 			chips = max(chips, smoothstep(r, 1.05 * r, d) * (1.0 - smoothstep(1.3 * r, 1.6 * r, d)) * step(0.35, noise(world * 14.0))
 				+ (1.0 - smoothstep(1.6 * r, 2.2 * r, d)) * step(1.6 * r, d) * step(0.78, noise(world * 11.0 + 5.1)));
 		}
 
-		chips *= step(0.5, ice_here);
+		chips *= step(0.125, ice_here);   // skim leaves no chips, only open water
 		sheet *= 1.0 - hole_open;
 		float cm = ice_here * 20.0;
 		float grey = smoothstep(2.0, 3.0, cm);              // black skim to grey film at 2.5 cm

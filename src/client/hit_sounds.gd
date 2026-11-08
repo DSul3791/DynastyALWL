@@ -61,6 +61,7 @@ func hit(tool: String, material: String, at: Vector3, strength: float = 1.0) -> 
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = 8.0
 	player.max_distance = MAX_DISTANCE_M
+	player.set_meta("air_sharp", true)          # --sound-outdoors: a blow can echo off a cliff (sound_occlusion.gd)
 	add_child(player)
 	player.add_to_group("world_sounds")
 	player.global_position = at

@@ -104,7 +104,7 @@ Where the values come from:
   - Kamchatka cirques: 163 m, and its modern glaciers 190 m;
   - south-west British Columbia: 194 and 220 m (Evans 2006).
   These are via Barr and Spagnolo 2015 (#654). A difference of 150 m gives `aspect_ela_m` 75, which is half of it.
-  - These sides are northern-hemisphere ones. The shady side faces the pole, and the lee of the westerlies adds drifted snow on the east, so the shady lee quarter is north-east north of the equator and south-east south of it. `shady_bearing_deg` is its middle: 45 in the north, 135 in the south. The starter island is at 57° S (design A4, one sky), so it takes 135.
+  - These sides are northern-hemisphere ones. The shady side faces the pole, and the lee of the westerlies adds drifted snow on the east, so the shady lee quarter is north-east north of the equator and south-east south of it. `shady_bearing_deg` is its middle: 45 in the north, 135 in the south. The bearing follows the island's latitude from its tile row (params `world`, `tools/watershed/world.py`; design A4, one sky). The starter island is at 34.3° S, so it takes 135.
   - `aspect_smoothing_m` is judged: the aspect is that of a valley head, not of one cell.
   - The measured shady/sunny retreat ratio (1.5 to 2) and floor difference (shady cirque floors 100 to 200 m below sunny ones) are checks reported after the run, not tuned in.
 - **What the history adds up to.** Total active ice is 39 × 16.4 + 10 × 40, or about 1.04 Myr. At 0.5 to 1.0 mm/yr that is 0.5 to 1.0 km of headwall retreat, which is the Arran-to-Matterhorn range.
@@ -195,7 +195,7 @@ Its settings are in `params.json` `peaks`. Its unit tests, `test_peaks.py`, use 
   - `headwalls`: along each valley-head axis, these values:
     - the distance from the top to the first point steeper than 40 degrees (the headwall's upper edge);
     - the cirque's depth (that edge's height less the lowest ground on the axis within 600 m beyond it);
-    - the facing (the shady quarter round `glacial.shady_bearing_deg`, the sunny quarter opposite, or other).
+    - the facing (the shady quarter round the island's shady bearing (from its latitude, params `world`), the sunny quarter opposite, or other).
   - `retreat`: from the cycles, each headwall's retreat in metres per cycle and in mm per active year, from the cycle it first stands. Also the shady/sunny ratio of the mean rates, and the cirque depth after the first three cycles against its later growth.
 
 ## Sign-off lines for the run (ws580h, after ws580g)

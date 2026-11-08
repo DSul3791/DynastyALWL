@@ -118,6 +118,7 @@ func _play(sound_name: String, at: Vector3, db: float) -> void:
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = 8.0
 	player.max_distance = MAX_DISTANCE_M + 40.0
+	player.set_meta("air_sharp", true)          # --sound-outdoors: a pick on stone can echo off a cliff
 	add_child(player)
 	player.add_to_group("world_sounds")
 	player.global_position = at
