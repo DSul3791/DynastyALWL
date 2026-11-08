@@ -200,9 +200,11 @@ def main():
         water = water + np.maximum(-p_ice, 0.0) * (Ai > 0.0)   # melt reaches the rivers only where there is ice to melt
         Qw = evolve._discharge(order, rec, sea, water / q_ref, cell, N)
         share = evolve._channel_share(Qw, surf, rec, order, sea, n, dx, c_ch, theta)
-        ery = ery_fn(h)
+        ery = ery_fn(h)                                # the top layer, cover where there is any: creep moves it
+        ery_rock, ery_cov, cov = ery_fn.parts(h)       # ice and water strip the loose cover first, then cut the rock (evolve._solve)
         Qwi = np.where(Qw > 0.0, Qw, cell)
-        kq = Kg * ery * Aeff ** m + E['K'] * ery * share * Qwi ** m
+        kq = Kg * ery_rock * Aeff ** m + E['K'] * ery_rock * share * Qwi ** m
+        kq_c = Kg * ery_cov * Aeff ** m + E['K'] * ery_cov * share * Qwi ** m
         Qd = Qwi + tau * Aeff
         thick = np.where(Aeff > 0.0, delta * w0 * (Aeff / a0) ** alpha, 0.0)
         thick[sea == 1] = 0.0
@@ -213,8 +215,8 @@ def main():
         # post-glacial era lets the oversteepened walls fail, as paraglacial rock slope failures do).
         sc = np.where(thick > 0.0, 0.0, evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h), deposit))
         # The incision threshold is for flowing water on bedrock; ice cuts whatever its flux (none under the ice).
-        kc = np.where(thick > 0.0, 0.0, E['K'] * ery * share * evolve.bedrock_threshold(E, deposit))
-        flux = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, kc, E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc)
+        kc = np.where(thick > 0.0, 0.0, E['K'] * ery_rock * share * evolve.bedrock_threshold(E))
+        flux = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cov.copy(), E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc)
         h0 = h.copy()
         h = x - thick
         h[land] = np.maximum(h[land], 0.05)
