@@ -177,6 +177,8 @@ static func visibility_of_density(density: float) -> float:
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const WindCueScript := preload("res://src/client/wind_cue.gd")
+const FireWeather := preload("res://src/client/fire_weather.gd")
+var _fire_light_next_msec: int = 0
 var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
 
 func setup(client) -> void:
@@ -638,6 +640,11 @@ func _update_ground(rain: float, snow: float) -> void:
 
 	if _client.grass != null:
 		_client.grass.visible = lying < 0.5      # snow buries the grass
+
+	# Firelight in fog and snow (--firelight-weather, firelight_weather_design.md): reach and halo of every fire light, once a second.
+	if FireWeather.on and Time.get_ticks_msec() >= _fire_light_next_msec:
+		_fire_light_next_msec = Time.get_ticks_msec() + 1000
+		FireWeather.update(get_tree(), float(_s["mist"]) * mist_inside, snow, lying, 1.0 - day.night)
 
 
 func _update_particles(rain: float, snow: float, wind: float) -> void:
