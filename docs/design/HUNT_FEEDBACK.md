@@ -49,11 +49,12 @@ window.
   health 0 to 1 by tenths. With a health field the animal is `wounded` below 0.5 (the server's number wins over the hunter's own
   count); a row with none is unhurt, so the limp stops.
 - **The hit event:** `on_hit_event(id, zone)`, zone as an index into `HIT_ZONES` (body, head, chest, hip, leg) or its name. Its
-  protocol number is the constant `HIT_EVENT_PROTOCOL` in animal_view.gd (0 until Steve's PR names it). terrain_client connects it
+  protocol number is the constant `HIT_EVENT_PROTOCOL` in animal_view.gd (96, Steve's #705). terrain_client connects it
   only when the network has the signal `animal_hit_received(id, zone)`, so nothing changes until his PR adds it. From the first event
   on, the hunter's own guess from the hit number is not used.
-- If his PR orders the zones differently or names the signal otherwise, the change is the constant, the `HIT_ZONES` list and the one
-  connect line.
+- Steve's #705 matches: protocol 96, `animal_hit_received(id, zone)` with zone 0 body, 1 head, 2 chest, 3 hip, 4 leg; health is the last
+  number after the first five fields, the dog foe stays a Vector3 at field 6. His second signal `animal_hit_point_received(id, zone, at)`
+  is not used (the zone is enough to choose the reaction).
 
 ## What a hunter can read
 A head toss or stumble says the shot struck; a dragging hind end says a hip hit, a slow follow; a limp says the animal is past half

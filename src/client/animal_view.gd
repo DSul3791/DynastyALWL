@@ -65,7 +65,7 @@ var posed_flight_all: bool = false   # tools only: pose every bird's flight from
 var bird_rig: bool = false        # birds and bats posed from their skeletons: wingbeat, glide hold, perch fold, landing flare (BIRD_FLIGHT.md part 3; off until a Meshy bird arrives)
 var cover_still: bool = false     # state 20 in cover (Steve #701): hunched and still, the idle slowed, breathing slow, the wet look held (COVER_STILL in ANIMAL_WEATHER_LOOKS.md; off until the PC check)
 var air_override: float = NAN     # --life-air=C (pictures and tools only): this air temperature everywhere, for the steam and cold looks
-const HIT_EVENT_PROTOCOL := 0     # Steve's hit event (zone and animal id to players within 60 m): set to his protocol number when his PR lands (HUNT_FEEDBACK.md)
+const HIT_EVENT_PROTOCOL := 96    # Steve's hit event (#705): zone and animal id to players within 60 m (HUNT_FEEDBACK.md)
 const HIT_ZONES := ["body", "head", "chest", "hip", "leg"]   # the hit event's zone byte, in this order (agreed spec; change with Steve's PR if it differs)
 var _hit_events_seen: bool = false   # once the server's hit events arrive, the hunter's own guess from the hit number is not used   # hit reactions by body zone, wounded gait, a death fall on the slope (HUNT_FEEDBACK.md; off until the PC check)
 var _health: Variant = null       # species -> health from data/animals/animals.json (the client's own count of the damage it saw)
