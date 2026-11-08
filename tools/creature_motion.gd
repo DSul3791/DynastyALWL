@@ -16,7 +16,7 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 
 
 func _init() -> void:
-	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "shine": false, "moon": false, "sign": "", "wx": "", "hit": "", "kill": false, "cover": false, "birdrig": false, "posed": false, "swimrig": false, "wind": 0.0}
+	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "shine": false, "moon": false, "sign": "", "wx": "", "hit": "", "kill": false, "windlooks": false, "cover": false, "birdrig": false, "posed": false, "swimrig": false, "wind": 0.0}
 
 	for a in OS.get_cmdline_user_args():
 		var key: String = a.trim_prefix("--").get_slice("=", 0)
@@ -110,7 +110,8 @@ func _strip(kind: String, opts: Dictionary) -> void:
 	view.ground_height = func(x: float, _z: float) -> float: return 0.15 if x > 0.3 else 0.0      # --ik: a 15 cm step under the right-hand feet
 	view.conditions_now = func() -> Dictionary: return {"hour": float(opts["hour"]), "season": str(opts["season"]), "storm_ahead": 1.0 if bool(opts["storm"]) else 0.0, "ground_snow": 1.0 if str(opts["sign"]) == "snow" else 0.0}
 	view.animal_sign = str(opts["sign"]) != ""
-	view.weather_looks = str(opts["wx"]) != ""
+	view.weather_looks = str(opts["wx"]) != "" and not bool(opts["windlooks"])
+	view.wind_looks = bool(opts["windlooks"])
 	view.cover_still = bool(opts["cover"])
 	view.bird_rig = bool(opts["birdrig"])
 	view.swim_rig = bool(opts["swimrig"])
@@ -118,8 +119,8 @@ func _strip(kind: String, opts: Dictionary) -> void:
 	var wx_start: int = Time.get_ticks_msec()
 	view.weather_now = func() -> Dictionary:      # --wx: gale from +X, cold -12 C, rain that stops after 2 s, snow falling
 		var w: String = str(opts["wx"])
-		return {"wind": 0.9 if w == "gale" else 0.1, "wind_dir": 0.0, "temp_c": -12.0 if w == "cold" or w == "snowbed" else 10.0,
-			"rain": (0.8 if Time.get_ticks_msec() - wx_start < 2000 else 0.0) if w == "stoprain" else 0.0, "snow": 0.8 if w == "snowbed" else 0.0}
+		return {"wind": 0.9 if w == "gale" else (0.5 if w == "windrain" else (0.3 if w == "breeze" else 0.1)), "wind_dir": 0.0, "temp_c": -12.0 if w == "cold" or w == "snowbed" else 10.0,
+			"rain": (0.8 if Time.get_ticks_msec() - wx_start < 2000 else 0.0) if w == "stoprain" else (0.6 if w == "windrain" else 0.0), "snow": 0.8 if w == "snowbed" else 0.0}
 	view.soil_at = func(_p: Vector3) -> String: return str(opts["sign"]) if str(opts["sign"]) != "snow" else "grass"
 
 	if water_d > 0.0:
