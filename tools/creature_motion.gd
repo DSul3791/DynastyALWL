@@ -23,7 +23,14 @@ func _init() -> void:
 		var val: String = a.get_slice("=", 1) if a.contains("=") else "true"
 
 		if opts.has(key):
-			opts[key] = val if opts[key] is String else (val == "true" if opts[key] is bool else (int(val) if opts[key] is int else float(val)))
+			if opts[key] is String:
+				opts[key] = val
+			elif opts[key] is bool:
+				opts[key] = val == "true"
+			elif opts[key] is int:
+				opts[key] = int(val)
+			else:
+				opts[key] = float(val)
 
 	DirAccess.make_dir_recursive_absolute(str(opts["out"]))
 
