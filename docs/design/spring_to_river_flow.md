@@ -33,7 +33,7 @@ So a reach's dry-month flow is the sum of its own springs' dry months, not one i
 1. **Twelve routed passes.**
    - For each twelfth, R5 builds the sources above and routes them with that twelfth's losses (`_flow`, as for mean, wet and dry today).
    - It routes them a second time with the groundwater alone, for the base flow.
-   - Each pass is one walk of the routing tree, as long as today's mean pass, so the step adds 24 walks.
+   - Each twelfth takes three walks of the routing tree, as the seasons do: the flow before bed losses (which sets the wetted width), the flow after losses, and the groundwater alone. Each store band adds one walk a twelfth. Each walk is as long as today's mean pass, and only the reach ends are kept, so memory stays as it is.
 2. **Per reach in `network.json`:**
    - `q_month_m3_s`: the 12 flows at the reach's lowest point, after losses;
    - `q_base_month_m3_s`: the groundwater part alone, after losses;
@@ -44,7 +44,8 @@ So a reach's dry-month flow is the sum of its own springs' dry months, not one i
 4. **Params:** `network.season.store_bands` {per_decade 2, min_days 0.1, max_days 36525}.
 5. **The summary reports, without judging:**
    - the reaches whose driest twelfth runs under 1 L/s of base flow while their dry quarter is over it;
-   - each rock's share of reach flow from springs in the driest twelfth.
+   - on reaches with 80% of their land on one rock, that rock's median base flow index and median base flow share in the driest twelfth;
+   - checks 1 to 3 of section 5, as the largest differences.
 
 ## 3. What the game reads (R7)
 
