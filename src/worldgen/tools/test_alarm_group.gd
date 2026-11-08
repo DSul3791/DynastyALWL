@@ -31,7 +31,7 @@ func _init() -> void:
 	var c: Dictionary = a.animals[crow]
 	var p: Vector3 = Vector3(1.0, 10.0, 0.0)
 	a._step(c, 0.1, 1.0, p, 1.0, p)
-	check(int(c["state"]) == a.FLEE, "the crow bolts from a player 1 m off (state %d)" % int(c["state"]))
+	check(int(c["state"]) == 15, "the crow takes off from a player 1 m off (state %d; it flies since bird_flight_server_design.md)" % int(c["state"]))
 	check(float(a.animals[near_bird]["alarm"]) >= 0.0, "the pheasant 5 m from it is alarmed")
 	check(float(a.animals[far_bird]["alarm"]) < 0.0, "a pheasant 30 m off is not")
 	check(float(a.animals[hen]["alarm"]) < 0.0, "a farm chicken beside it is not (no alarm group)")
