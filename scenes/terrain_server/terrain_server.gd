@@ -296,7 +296,7 @@ func _ready() -> void:
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at
-	items.cave_mean_c = func(pos): return WeatherScript.mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))) if _in_cave(pos) else NAN   # cave air: the year's mean (#664)
+	items.cave_mean_c = func(pos): return WeatherScript.year_mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), pos.y) if _in_cave(pos) else NAN   # cave air: the island's year mean at that height (#664)
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
 	items.register_roofs()

@@ -85,6 +85,7 @@ var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
 var _fire_cache: Array = []       # [Vector3 fire, keep-off metres] this tick (fires, fire_radius)
 var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
 var _noise_from: Array = []       # player positions at the last sample
+var _player_vel: Array = []       # per player (the _noise_from order): ground velocity (x, z) over the last noise sample, m/s
 var _noisy: Array = []            # per player (player_positions order): how much farther they are sensed for rustling undergrowth (1.0 none)
 
 
@@ -133,6 +134,8 @@ func spawn(sp: String, x: float, z: float) -> int:
 
 	if def.has("flock") and not bool(def["flock"].get("on_land", false)) and water_level.is_valid():
 		y = float(water_level.call(x, z))   # a flock sits on the surface (a land flock, such as gulls on a beach, stands on the ground)
+	elif swims(def):
+		y = swim_height(def, x, z)   # a swimmer put down in water rides the surface
 
 	if is_nan(y):
 		return 0
@@ -274,7 +277,14 @@ func _step_young(a: Dictionary, dt: float) -> void:
 		return
 
 	var speed: float = float(def.get("flee_mps", 7.5)) if running else float(def.get("walk_mps", 1.5)) * (2.0 if far > 6.0 else 1.0)
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"], crossing)
+	var ground_for: Callable = ground_height
+	var blocked_for: Callable = blocked
+
+	if swims(def):      # a young swimmer (a moose calf) follows its mother into the water
+		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
+		blocked_for = Callable()
+
+	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -1097,7 +1107,18 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.
 		a["burst"] += dt
 		speed = float(def.get("flee_mps", 7.5)) * (1.0 if a["burst"] <= float(def.get("burst_s", 3.0)) else float(def.get("trot_share", 0.5)))
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"], crossing)
+	var ground_for: Callable = ground_height
+	var blocked_for: Callable = blocked
+
+	if swims(def):
+		# A swimmer goes into deep water (nothing blocks it) and rides the surface there; in water it moves at swim_mps.
+		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
+		blocked_for = Callable()
+
+		if in_water(def, a["pos"]):
+			speed = float(def["water"].get("swim_mps", speed)) * (1.0 if a["state"] == FLEE else 0.4)      # cruising slowly, bolting at full speed
+
+	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -1495,6 +1516,31 @@ func biome_weight(def: Dictionary, x: float, z: float) -> float:
 	return float((def["biomes"] as Dictionary).get(str(biome_at.call(x, z)), 0.0))
 
 
+# Swimmers (a row's "water": {"swim": true, ...}; docs/design/ALLIGATOR_SWIMMING.md, Dave 8 Nov 2026): they cross and stay in water
+# no other animal enters, riding the surface surface_sink_m low, and live on the bank within bank_m of fresh water.
+func swims(def: Dictionary) -> bool:
+	return def.get("water", null) is Dictionary and bool(def["water"].get("swim", false))
+
+
+# Whether a spot is water a swimmer is in (a water surface there).
+func in_water(_def: Dictionary, pos: Vector3) -> bool:
+	return water_level.is_valid() and not is_nan(float(water_level.call(pos.x, pos.z)))
+
+
+# The height a swimmer stands at: on water its surface less surface_sink_m, on land the ground.
+func swim_height(def: Dictionary, x: float, z: float) -> float:
+	var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+
+	var ground: float = float(ground_height.call(x, z)) if ground_height.is_valid() else NAN
+
+	if not is_nan(level):
+		# It sinks to surface_sink_m only where the water is that deep, so wading in from the bank is a smooth slope.
+		var depth: float = level - ground if not is_nan(ground) else 99.0
+		return level - minf(float(def["water"].get("surface_sink_m", 0.25)), maxf(depth, 0.0))
+
+	return ground if not is_nan(ground) else 0.0
+
+
 # Optional habitat keys from the guiding document (docs/design/GUIDING_DOCUMENT.md section 5, 7 Nov 2026) are accepted in a
 # row's "habitat" and not used yet, so data can be written ahead of the terrain that answers them (R6): altitude_m [min, max],
 # slope_deg [min, max], rock, water_kind, cave, canopy, sea_depth_m [min, max], sky, lair, season. A row with them spawns and
@@ -1513,6 +1559,20 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 			return -1.0   # ducks keep to rivers and lakes, not the open sea
 
 		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
+
+	if swims(def):
+		# A swimmer lives in fresh water and on the bank within water.bank_m of it (the alligator, Dave 8 Nov 2026).
+		var level_here: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+
+		if biome_at.is_valid() and str(biome_at.call(x, z)) == "ocean":
+			return -1.0
+
+		if not is_nan(level_here):
+			return 2.0 if not bool(def["water"].get("lives_on_land", false)) else 1.0
+
+		# lives_on_land (moose, goose): water is open to it, but on land its own habitat rules apply as before.
+		if not bool(def["water"].get("lives_on_land", false)):
+			return 1.0 if _fresh_near(x, z, float(def["water"].get("bank_m", 6.0))) else -1.0
 
 	if hab.is_empty() or not ground_height.is_valid():
 		return 1.0
@@ -1672,14 +1732,21 @@ func _sample_noise(players: Array, delta: float) -> void:
 	var stances: Array = player_stances.call() if player_stances.is_valid() else []
 	var stalk: Array = player_stalk.call() if player_stalk.is_valid() else []
 	var fresh: Array = []
+	var vel: Array = []
 
 	for pi in players.size():
 		var noise: float = 1.0
+		var moved: Vector2 = Vector2.ZERO
+
+		if players.size() == _noise_from.size():
+			var was0: Vector3 = _noise_from[pi]
+			moved = Vector2(players[pi].x - was0.x, players[pi].z - was0.z) / _noise_acc
+
+		vel.append(moved)
 
 		if players.size() == _noise_from.size() and undergrowth.is_valid():
-			var was: Vector3 = _noise_from[pi]
 			var p: Vector3 = players[pi]
-			var speed: float = Vector2(p.x - was.x, p.z - was.z).length() / _noise_acc
+			var speed: float = moved.length()
 
 			if speed >= float(sen.get("brush_moving_ms", 0.5)) and bool(undergrowth.call(p)):
 				var extra: float = float(sen.get("brush_noise_per_ms", 0.04)) * minf(speed, 12.0)
@@ -1693,8 +1760,25 @@ func _sample_noise(players: Array, delta: float) -> void:
 		fresh.append(noise)
 
 	_noisy = fresh
+	_player_vel = vel
 	_noise_from = players.duplicate()
 	_noise_acc = 0.0
+
+
+# The ground velocity (x, z, m/s) of the player standing nearest a point, from the last noise sample (Vector2.ZERO when unknown): big game
+# reads it during a warning, because a player who runs away is chased (docs/design/bear_threat_design.md).
+func player_velocity_at(p: Vector3) -> Vector2:
+	var best: Vector2 = Vector2.ZERO
+	var best_d: float = INF
+
+	for pi in mini(_noise_from.size(), _player_vel.size()):
+		var d: float = Vector2(_noise_from[pi].x - p.x, _noise_from[pi].z - p.z).length()
+
+		if d < best_d:
+			best_d = d
+			best = _player_vel[pi]
+
+	return best if best_d <= float(cfg.get("senses", {}).get("velocity_match_m", 4.0)) else Vector2.ZERO
 
 
 # How much farther or nearer a player seems to an animal: downwind of the player it smells them from farther off, upwind it does

@@ -170,7 +170,7 @@ var send_chest: Callable        # (peer, world id, bytes) a chest's contents to 
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
 var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof or in a cave (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
-var cave_mean_c: Callable      # (position) -> the year's mean air temperature at sea level (C) when the position is inside a cave, NAN outside one (unset: never in a cave)
+var cave_mean_c: Callable      # (position) -> the cave air (C): the island's year mean at the position's height when it is inside a cave, NAN outside one (unset: never in a cave)
 
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
@@ -8877,35 +8877,6 @@ func _sync_sick(peer: int, force: bool) -> void:
 
 # --- Warmth (job 92; data/items/warmth.json) ---
 
-# The warmth the body is heading for here and now: 100 on a mild day, less as the cold stress grows.
-# The day and night swing around the weather's seasonal temperature (Tyler; server side only). The daily low comes shortly after
-# sunrise, the high mid-afternoon: a sine rise between them, an exponential fall after, centred so the day averages the seasonal
-# number. Cloud, rain or snow and wind shrink it, altitude grows it a little. The swing size is warmth.json daily_swing_c by season
-# (temperate values; the weather state carries no zone yet, so other zones borrow them).
-func daily_offset(weather: Dictionary, altitude_m: float = 0.0) -> float:
-	var swing_by: Dictionary = _warmth_cfg.get("daily_swing_c", {})
-
-	if swing_by.is_empty() or not game_seconds.is_valid():
-		return 0.0
-
-	var swing: float = float(swing_by.get(str(weather.get("season", "spring")), 9.0))
-	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
-	swing *= (1.0 - 0.5 * float(weather.get("cloud", 0.0))) * (1.0 - 0.6 * minf(precip * 2.0, 1.0)) * (1.0 - 0.3 * float(weather.get("wind", 0.0)))
-	swing *= 1.0 + 0.05 * maxf(altitude_m, 0.0) / 300.0
-	var low_h: float = float(_warmth_cfg.get("daily_low_hour", 6.5))
-	var high_h: float = float(_warmth_cfg.get("daily_high_hour", 15.0))
-	var hour: float = fposmod(float(game_seconds.call()), 86400.0) / 3600.0
-	var shape: float
-
-	if hour >= low_h and hour <= high_h:
-		shape = 0.5 * (1.0 - cos(PI * (hour - low_h) / (high_h - low_h)))
-	else:
-		var since: float = hour - high_h if hour > high_h else hour + 24.0 - high_h
-		shape = exp(-3.0 * since / (24.0 - (high_h - low_h)))
-
-	return swing * (shape - 0.38)
-
-
 # The positions of the burning fires. Inside one _vitals_tick they are listed once for all players (the soak test found warmth
 # scanning every world record per player); anywhere else the scan is live.
 func _lit_fires() -> Array:
@@ -8962,20 +8933,23 @@ func _lit_rows() -> Array:
 	return found
 
 
+# The warmth the body is heading for here and now: 100 on a mild day, less as the cold stress grows.
 func warmth_target(peer: int) -> float:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
 	var cave_c: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
-	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) + daily_offset(weather, pos.y) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
+	# The weather's temp_c already carries the day and night swing (one temperature, docs/design/one_temperature.md); the server's weather is
+	# at sea level, so the height is taken off here.
+	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
 	var roofed: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 1.5
 	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if roofed else 1.0)
 
-	# In a cave (Jamie's caves page, #664): the air sits at the year's mean for its height, with no day and night swing and no rain cooling,
-	# and no wind reaches in.
+	# In a cave (Jamie's caves page, #664): the air sits at the island's year mean for its height (cave_mean_c, Climate.year_mean_c), with no
+	# day and night swing and no rain cooling, and no wind reaches in.
 	if not is_nan(cave_c):
-		air = cave_c - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
+		air = cave_c
 		wind = 0.0
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))
@@ -9014,7 +8988,7 @@ func warmth_target(peer: int) -> float:
 		var water_c: float = maxf(float(cfg.get("water_base_c", 6.0)) + float(cfg.get("water_follow", 0.5)) * (sea_air - float(cfg.get("water_base_c", 6.0))), 1.0)
 
 		if bool(_cave_pool.get(peer, false)):
-			water_c = float(cfg.get("cave_pool_c", 2.0))   # a spring cave pool is icy whatever the weather (BUG-008)
+			water_c = cave_c if not is_nan(cave_c) else float(cfg.get("cave_pool_c", 2.0))   # a cave pool is at the cave air's year mean (Jamie #664, CONTRADICTIONS.md), not the weather (BUG-008)
 		stress = maxf(float(cfg.get("water_comfort_c", 26.0)) - water_c, 0.0) * float(cfg.get("water_gain", 5.0)) / maxf(float(cfg.get("gain", 3.0)), 0.01)
 
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
@@ -10271,7 +10245,7 @@ func take_nest(peer: int, inv) -> bool:
 	rng.seed = hash(id) ^ day ^ 0x1b873593
 	give(peer, table.number_of(str(row.get("item", "egg"))), roll_amount(peer, rng, int(count[0]), int(count[1])))
 
-	if row.has("extra") and rng.randf() < float(row.get("extra_chance", 1.0)):
+	if row.has("extra") and roll_chance(peer, rng, float(row.get("extra_chance", 1.0))):   # luck nudges the extra find too (job 77)
 		give(peer, table.number_of(str(row["extra"][0])), int(row["extra"][1]))
 
 	_nest_taken[id] = day
