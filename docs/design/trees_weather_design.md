@@ -92,9 +92,31 @@ A crown snow memory of its own, beside the ground's, one value per crown kind:
 
 ## 6. Pictures (Dino, switch on and off)
 
-- **A:** a broadleaf stand at the spawn edge, 30 m off, side on. Three short clips or frame pairs 1 s apart:
-  - `clear` (calm): still;
-  - `rain` (wind 0.3, 4.2 m/s): leaves moving, trunks still;
-  - `storm` (wind 0.8, 15 m/s): crowns swinging and leaning downwind.
-- **B:** the same stand on game day 320 (winter, live weather, or `clear`): bare branches. Then day 100: full crowns.
-- **C:** a spruce and an oak on day 320 after snow (`snow`), then the same spot after a thaw (`clear` at 5 °C for 3 game hours, using the store clock): the conifer clear, the ground still white.
+The shot format is `src/debug/shot_runner.gd`: `name:x,agl,z,yaw_deg,pitch_deg,hour[,weather]`. Yaw 90 faces west (-X). One camera for all parts, near the spawn (53296, 68080):
+
+- **Camera:** x 53326, z 68056, 4 m above the ground, yaw 90 (looking west toward the spawn), pitch -3, hour 12.
+- **If no broadleaf stands 20 to 40 m ahead in the first frame:** run `flora_near.gd -- --at=53296,68080 --species=oak,beech,birch,alder` and put the camera 30 m east of the nearest stand, same height, yaw and pitch. Send me the numbers used.
+- **Far check (B only):** x 53726, z 68056, 40 m up, yaw 90, pitch -4: the same stand from 400 m, where the far images are drawn.
+
+### A. Sway by wind (`--tree-wind`, then the same run without it)
+
+Two shots of each weather, back to back, so the pair shows the motion:
+
+`--shots="wind_clear_1:53326,4,68056,90,-3,12,clear;wind_clear_2:53326,4,68056,90,-3,12,clear;wind_rain_1:53326,4,68056,90,-3,12,rain;wind_rain_2:53326,4,68056,90,-3,12,rain;wind_storm_1:53326,4,68056,90,-3,12,storm;wind_storm_2:53326,4,68056,90,-3,12,storm"`
+
+- `clear` (calm): the two frames match.
+- `rain` (wind 0.3, 4.2 m/s): leaves moved, trunks still.
+- `storm` (wind 0.8, 15 m/s): crowns swung, leaning downwind.
+
+### B. Bare broadleaves in winter (`--bare-winter --flora-day=320`, then `--flora-day=100`, then both again without the switch)
+
+`--shots="bare_near:53326,4,68056,90,-3,12,clear;bare_far:53726,40,68056,90,-4,12,clear"`
+
+- Day 320 with the switch: bare branches near and far. Day 100: full crowns.
+
+### C. Snow that holds and sheds (`--tree-snow --flora-day=320 --shot-settle=460 --shot-admin`, then without the switch)
+
+`--shots="snow_on:53326,4,68056,90,-3,12,snow;snow_after:53326,4,68056,90,-3,12,clear"`
+
+- `snow_on`: a spruce and an oak in frame, snow on the conifer crown, a thin line on the oak's branches.
+- `snow_after` (460 s is about 3 game hours): with the air above 0 °C (F3 line) the conifer is clear. In frost it still holds snow. The crowns are never whiter than the ground.
