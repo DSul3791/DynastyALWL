@@ -142,6 +142,16 @@ func _server() -> void:
 	rows_here = []
 	check(_drinks(items, v), "no source rows: today's water test stands")
 
+	# The season is the place's own (Weather.season_at, half a year off across the equator with --one-sky): the calendar says winter, but at
+	# the player it is summer, so an intermittent brook long without rain is dry there.
+	season[0] = "winter"
+	items._last_rain_s = -INF
+	items.season_at = func(_pos): return "summer"
+	rows_here = [{"kind": "brook", "regime": 2}]
+	check(not _drinks(items, v), "the drink reads the season at the player, not the calendar's")
+	items.season_at = Callable()
+	check(_drinks(items, v), "without season_at the calendar's season stands (winter: the brook runs)")
+
 
 func _drinks(items, v: Dictionary) -> bool:
 	v["wet"] = 500.0

@@ -445,6 +445,7 @@ func _ready() -> void:
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()
+	items.season_at = func(pos): return WeatherScript.season_at(game_clock.seconds, pos.z, float(settings.tile_size_m), settings.equator_tile_row)   # a place's own season (drinking water by source)
 	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()
 	items.rock_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
