@@ -66,7 +66,7 @@ Checked how the animal looks read the weather against Kathleen's client code:
   ray per 2 m cell, cached 5 s), drinking through the existing `water_level`; all read once a frame or cached, none in a per-pair loop.
 - **Duplicates:** none new. The cave's deep air uses the shared climate numbers; it becomes a call to Steve's `cave_climate.gd` when
   #715 merges (one formula). The trample patch reuses the sign pool and its generated shapes.
-- **Magic numbers:** named at their sections (`FOG_M`, `THICK_FOG_M`, `FOG_SHINE_M`, `PREVAILING_TO`, `RUMP_WIND`, `RUMP_RAIN`,
+- **Magic numbers:** named at their sections (`FOG_M`, `THICK_FOG_M`, `FOG_SHINE_M`, `RUMP_WIND`, `RUMP_RAIN`,
   `GRAZE_WIND`); the drink and bathe timings are short ranges described in the function comment.
 - **Static tools:** merge_check clear, doc links 0 dead, luck ok; `check_warnings.sh --changed` still only the two older
   terrain_client.gd lines that are not this branch's.
@@ -106,4 +106,17 @@ twice, divisions by zero, and reads of server fields not on main.
   exist; the health share and the dog foe are read from a row's extra fields by type, so a row without them is unchanged; the
   DRINK state 21 and HUNCH 20 are states, harmless when not sent. Nothing reads a field that main does not send without a guard.
 - **Left:** as before (two older terrain_client warnings, the herd look's n x n at 5 Hz, `fire_near`, the cave mouth blend).
+
+## Latitude (8 Nov 2026: the island is a 21 by 21 grid with the equator in the middle)
+Every look checked for an assumed hemisphere, sun side, season name or month.
+- **Fixed:** the wind direction's fallback was a constant (a westerly in pr17, the 57 S WNW mean in pr19). Now there is none: with no
+  `wind_dir` in the client's weather there is no wind turn, ruffle direction or breath drift (pr17, merged forward; pr25's body steam
+  guarded too). The in-game weather always carries `wind_dir`, which Kathleen's prevailing wind (and #711's latitude) will set per row.
+- **Already from the client's values:** season names (coat tint, young ages, the fly swish, prints in snow) come from the client's
+  conditions, which take the season from the game clock and, with #711, the row's latitude; air temperature (breath, cave, ice, snow
+  melt) is `Weather.air_c` at the animal; the moon and night are the client's day cycle. None of them is a constant here.
+- **Not mine:** the day cycle's `LATITUDE_DEG` (Kathleen's sky) and the season by row (#711) are upstream; when they change, the looks
+  follow without a change here.
+- **Docs:** ANIMAL_WIND.md and ANIMAL_FOG.md now speak of the local seasons and the prevailing wind of the island's row; Jamie's 57 S
+  pages are the knowledge for the starter's latitude.
 

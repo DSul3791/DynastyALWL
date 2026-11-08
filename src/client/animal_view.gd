@@ -4498,7 +4498,7 @@ func _body_steam(node: Node3D, air: float) -> void:
 	mesh.material = LifeUtil.see_through(Color(0.95, 0.96, 1.0, clampf((BODY_STEAM_C - air) / 25.0, 0.06, 0.2)), true)
 	wisps.mesh = mesh
 
-	if wind_looks:
+	if wind_looks and not is_nan(_wind_to()):
 		var to: float = _wind_to()
 		wisps.gravity += Vector3(cos(to), 0.0, sin(to)) * float(_wx_state().get("wind", 0.0))
 
