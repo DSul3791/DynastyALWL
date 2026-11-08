@@ -30,6 +30,7 @@ Each doc has these sections:
 | Creature models (bought rigged animals: install, check, clips, sizes) | [creature-models.md](creature-models.md) | 2026-11-07 | MikeW |
 | Torch and campfire light in fog, rain and snow (reach, veil, halos, lit rain and snow, light over snow) | [firelight-in-weather.md](firelight-in-weather.md) | 2026-11-08 | Kathleen |
 | Water in Godot (rivers, brooks, lakes, falls, flow, precision) | [water.md](water.md) | 2026-11-06 | Sonny |
+| Sea and shore (tides, waves by fetch, surf zone by beach slope, swash, wrack line, salt spray, shore ice) | [sea-and-shore.md](sea-and-shore.md) | 2026-11-08 | Sonny, Kathleen (look) |
 | Water clarity after rain (turbidity recovery, settling times, peat colour) | [water-clarity-after-rain.md](water-clarity-after-rain.md) | 2026-11-08 | Kathleen, Sonny |
 | Foam and white water below falls and rapids | [foam-falls-rapids.md](foam-falls-rapids.md) | 2026-11-08 | Kathleen, Sonny |
 | Caves (placement, shape, darkness, life) | [caves.md](caves.md) | 2026-11-06 | Sonny, Kathleen and Kathreen (look) |
