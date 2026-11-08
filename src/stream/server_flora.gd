@@ -198,12 +198,24 @@ func chunk_made(chunk: Vector2i) -> bool:
 func _fill_cover(home: Vector2i, items: Dictionary) -> void:
 	CoverScript.add_chunk(cover, home, items, func(species_id: int) -> Array:
 		var item: Dictionary = placer.species_by_id(species_id)
-		return [] if item.is_empty() else [int(item["kind"]), float(item["crown"]), float(item["height_ref"])])
+		return [] if item.is_empty() else [int(item["kind"]), float(item["crown"]), float(item["height_ref"]), CoverScript.is_deciduous(str(item.get("name", "")))])
 	_cover_order.erase(home)
 	_cover_order.append(home)
 
 	while _cover_order.size() > COVER_CHUNKS:
 		cover.remove_chunk(_cover_order.pop_front())
+
+
+# The game season, for bare winter broadleaves (Cover.leafless_for; docs/design/cover_by_season_design.md). Cheap to call every tick.
+func set_season(season: String) -> void:
+	var bare: bool = CoverScript.leafless_for(season)
+
+	if bare == cover.leafless:
+		return
+
+	_mutex.lock()
+	cover.leafless = bare
+	_mutex.unlock()
 
 
 # Whether a spot is under a tree's canopy (Cover.at on the server's index).

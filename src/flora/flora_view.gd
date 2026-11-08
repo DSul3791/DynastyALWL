@@ -1220,7 +1220,7 @@ var _ease: Dictionary = {}            # chunk -> {"old", "new", "step", "next_ms
 # Species facts for the cover query: [kind, crown_m, reference height], empty when unknown.
 func _cover_info(species_id: int) -> Array:
 	var info: Dictionary = _species.get(species_id, {})
-	return [] if info.is_empty() else [int(info["kind"]), float(info.get("crown", 0.0)), float(info["height"])]
+	return [] if info.is_empty() else [int(info["kind"]), float(info.get("crown", 0.0)), float(info["height"]), CoverScript.is_deciduous(str(_slugs.get(species_id, "")))]
 
 
 # Redraws only a held chunk's water (the simulated water moved). Owner (2026-10-20): the water
@@ -1811,6 +1811,11 @@ func set_season(now_season: String) -> void:
 
 	season = now_season
 	_start_seasonal()
+
+	# Bare winter broadleaves shelter nothing (--bare-winter, docs/design/cover_by_season_design.md): the cover index and the canopy map follow.
+	if cover.leafless != CoverScript.leafless_for(season):
+		cover.leafless = CoverScript.leafless_for(season)
+		canopy_version += 1
 
 	# Hardwood leaf colour follows the season (green in spring and summer, colour in autumn, dead leaves in winter): every drawn chunk redraws once.
 	if had_season or season_override != "":

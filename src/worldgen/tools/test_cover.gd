@@ -73,6 +73,35 @@ func _init() -> void:
 	roof_index.remove_roof(disc)
 	check(roof_index.roof_count() == 0, "roofs gone")
 
+	# Bare broadleaves in winter (docs/design/cover_by_season_design.md): with --bare-winter an oak (species 5) shelters nothing in winter, a
+	# spruce (species 6) still does; the oak covers in summer and without the switch; its crown depth (litter) stays; felling keeps step.
+	var season_info: Callable = func(species_id: int) -> Array: return [0, 10.0, 20.0, species_id == 5] if species_id in [5, 6] else []
+	var wood: Dictionary = {"ids": PackedInt32Array([(5 << 16) | 1, (6 << 16) | 2, (5 << 16) | 3]),
+		"positions": PackedVector3Array([Vector3(600.0, 50.0, 600.0), Vector3(640.0, 50.0, 600.0), Vector3(680.0, 50.0, 600.0)]),
+		"heights": PackedFloat32Array([20.0, 20.0, 20.0]), "yaws": PackedFloat32Array([0.0, 0.0, 0.0])}
+	Cover.add_chunk(index, Vector2i(4, 4), wood, season_info)
+	var oak_spot: Vector3 = Vector3(602.0, 52.0, 600.0)
+	var spruce_spot: Vector3 = Vector3(642.0, 52.0, 600.0)
+	var keep_switch: bool = Cover.bare_winter_on
+	Cover.bare_winter_on = true
+	check(Cover.is_deciduous("oak") and not Cover.is_deciduous("spruce"), "oak is deciduous, spruce is not")
+	index.leafless = Cover.leafless_for("summer")
+	check(Cover.at(oak_spot, index) == 1.0 and Cover.at(spruce_spot, index) == 1.0, "in summer the oak and the spruce both shelter")
+	var depth_summer: float = index.crown_depth(oak_spot)
+	index.leafless = Cover.leafless_for("winter")
+	check(index.leafless and Cover.at(oak_spot, index) == 0.0, "in winter the bare oak shelters nothing")
+	check(Cover.at(spruce_spot, index) == 1.0, "and the spruce still does")
+	check(is_equal_approx(index.crown_depth(oak_spot), depth_summer) and depth_summer > 0.0, "the bare oak keeps its crown depth (litter stays)")
+	check(index.discs_near(640.0, 600.0, 50.0).size() == 1, "the rain mask leaves the bare oaks out (%d discs)" % index.discs_near(640.0, 600.0, 50.0).size())
+	index.remove_item(Vector2i(4, 4), (6 << 16) | 2)
+	check(Cover.at(spruce_spot, index) == 0.0 and Cover.at(Vector3(682.0, 52.0, 600.0), index) == 0.0, "felling the spruce keeps the bare flags in step (the other oak still bare)")
+	index.leafless = false
+	check(Cover.at(Vector3(682.0, 52.0, 600.0), index) == 1.0, "and that oak shelters again in spring")
+	Cover.bare_winter_on = false
+	check(not Cover.leafless_for("winter"), "without --bare-winter no season is leafless")
+	Cover.bare_winter_on = keep_switch
+	index.remove_chunk(Vector2i(4, 4))
+
 	# Cost: 25k trees in a chunk-sized spread, 10k queries.
 	var many: Array = []
 

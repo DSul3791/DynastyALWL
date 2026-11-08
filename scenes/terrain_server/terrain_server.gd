@@ -1184,6 +1184,9 @@ func _update_weather() -> void:
 	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): its rivers are the ones swelled
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
+
+	if flora != null:
+		flora.set_season(str(weather["season"]))   # bare winter broadleaves shelter nothing (--bare-winter; docs/design/cover_by_season_design.md): the row's own season (Weather.season_at, --one-sky)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:
