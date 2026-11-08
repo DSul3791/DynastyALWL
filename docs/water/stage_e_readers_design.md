@@ -222,6 +222,39 @@ The M0 check is a headless test (`test_water_record.gd`). It writes a small reco
 
 **Rules bakes are unchanged:** today's bake writes only classes 0 to 3, so `land_view` returns the same array and `apply_wet_land` changes nothing. A rules tile is byte-identical before and after.
 
+## 6d. Placers where the water slows (M1 step 3, 8 Nov)
+
+**Today:** `tile_geology.gd` `_find_placers` walks from an ore outcrop down to a river, then lays one long placer along the river below it, the same grade all the way.
+
+**The real rule:** heavy grains settle where the water slows. That happens at:
+- the inside of a bend;
+- a break in slope, where a steep reach meets a gentle one;
+- a confluence, where a tributary joins and the flow spreads;
+- the plunge pool at the foot of a fall.
+(USGS placer model and prospecting guides, section 8.)
+
+**The finder:** `WaterRecord.placer_traps(path, rules)` takes the river walked downstream, one row per recorded step, as [x, z, bed height, flow]. It returns the steps that are traps, in order. The kinds, checked in this order at each step:
+
+| Kind | Test | Rule key, default |
+|---|---|---|
+| `confluence` | the flow grows by this factor in one step | `confluence_x` 1.4 |
+| `slope_break` | the bed's fall below is under 1/ratio of the fall above (and the fall above is over 0.002) | `slope_ratio` 2 |
+| `bend` | the course turns by this much or more | `bend_deg` 35 |
+
+- Never two traps within `min_gap` steps (2), and at most `max_traps` (4) per river.
+- If nothing qualifies, it returns the gentlest step as kind `slow`, so every source still gets one placer.
+- The foot of a fall comes at M2, when the reader reads the record's falls list. A drop in today's rules heights is not a fall.
+
+**The bake:** with `ores.placer_traps.on` true, each trap gets one short placer:
+- 3 points, the trap step and one either side;
+- the grade is the ore's grade × `grade_x` (0.8);
+- the tonnage is for a length of 2 × `record_every` steps;
+- each placer names its `trap` kind.
+
+The old single long placer is not written then.
+
+**Off until R6:** the flag is absent from `tile_rules.json`, so it reads as off and rules tiles stay byte-identical. It turns on with R6's single TERRAIN_VERSION bump, when the path comes from the record's reaches (bed height and discharge) and not from the rules flow grid.
+
 ## 7. Questions (to the coordinator, not to Sonny)
 
 - **Q1, for Dave: goblin dens.** Sonny agrees with the recommendation below. Under Dave's 6 Nov QA rule (go with the recommendation), M1 builds it, and Dave can still overrule it. Dave's 7 Nov rule puts goblins in "any spring tunnel". With the rebuild, spring caves become rare, which follows his watershed document. I recommend letting goblin dens use dry side branches of any cave (karst, lava tube or spring cave). Goblins then stay common enough on the starter island, and the caves stay natural.
