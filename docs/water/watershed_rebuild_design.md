@@ -245,6 +245,13 @@ Tiles are cut from it by world position, so seams agree by construction.
 - each reach carries wet-season, mean and dry-season flow, bed material and its downstream reach id. Karst sinks are listed with the id of the cave spring they feed;
 - ids are deterministic from the seed and params: stable within one record version, never kept across rebakes.
 
+*Cold-air pools for valley fog (Jamie's spec, `docs/design/fog_pools_and_sea_fog.md` part A, #608; folded in 8 Nov):* on clear calm nights cold air drains downhill and fills low ground to its spill point like water (Clements, Whiteman and Horel 2003, Peter Sinks), so fog belongs in enclosed low ground at any height. The record carries it from the same terrain the water uses:
+- *Closed pools* from R3's depression tree, run on the ground with lake surfaces as floors (the air lies on the water, so a full lake pools no air above it; a pond below its spill, a seasonal pond or a dry closed basin does). Kept at 10 m deep and 0.25 km² or more; each has `pool_id`, `spill_m`, `floor_m`, `area_m2`, its outline at `spill_m` and its cause.
+- *Valley pools* along the R5 reaches: behind each narrows (valley floor width 20 m above the bed under half the width upstream) the cold air backs up to a level surface, the narrows' bed plus `valley_pool_share` (0.3) of the valley depth. Here the valley depth is the lower rim above the bed at the narrows, so no surface stands above the lower side of its valley (the air would spill over it) or above the next pool upstream's spill. Each stretch from one narrows up to where the bed rises through its surface is one flat sheet, listed in `network.json` with its reach id.
+- *`fog_pool` raster*: depth below the cold-air surface, clamped at 150 m and scaled to a byte, on the 64 m groundwater grid.
+- *Checks*: every pool has a floor (its deepest 10 m lies on ground under 15 degrees: a pool does not hang on a slope, though its sheet may meet steep walls); no surface above its spill or its valley's lower rim; every pool has a named cause.
+- The 0.3, the 10 m and 0.25 km² minimum, the 150 m cap and the client's 60 m full-night depth are judged, not sourced, and are checked on Dino's pictures. The client draws one sheet per pool at min(spill, floor + 60 m × mist).
+
 ### Stage E: readers
 - **Tile bake** (`tile_baker.gd`): heights and water come from the record. The rule channels and all eight repair passes are switched off and archived (section 6).
 - **Runtime ground**: brooks narrower than a cell are drawn from the reach polylines at voxel scale (their real width and depth), not as 8 m trenches.
