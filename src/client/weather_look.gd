@@ -47,6 +47,21 @@ const AMBIENT_DAY_WARM := Color(0.62, 0.56, 0.44)
 const DAY_SKY_SHARE := 0.75              # share of the day's ambient from the sky (1 before: all sky)
 const AMBIENT_FLOOR := 0.32             # ambient light never drops below this, so a storm night is not pure black
 const AMBIENT_STORM := 0.4               # ambient light left in a full storm (1 clear)
+# Night light (docs/design/art_weather_light.md 6.2 and 12, decided 8 Nov 2026). Never pitch black outdoors, a decided rule:
+# in the open the ambient light never drops below OUTDOOR_FLOOR, whatever the moon, the weather, the tree crowns or a held
+# torch do to it; only rock (caves and tunnels, `under_rock`) takes the light to nothing (#447).
+const OUTDOOR_FLOOR := 0.18
+# Under tree crowns at night the moon and the sky are blocked, so the forest is darker than the open by about half
+# (the share of the crowns over the ground around the camera, from the canopy map, eased so walking between trees does not flicker).
+const CANOPY_NIGHT_DIM := 0.45
+const CANOPY_SAMPLE_M := 6.0             # the crowns are counted at the camera and at eight points this far round it
+const CANOPY_EASE_S := 3.0
+# A held torch or lantern at night: the eyes adapt to the flame, so the night beyond its light looks darker and eyes shine out of it.
+# The design asks for a small exposure drop; it is done as a drop of the moon and sky light instead (the same picture
+# beyond the flame), because the exposure would also dim the torch's own pool of light, which must stay as it is.
+const TORCH_NIGHT_DIM := 0.15
+const TORCH_ADAPT_S := 1.5               # the eyes take to the flame quickly
+const TORCH_UNADAPT_S := 5.0             # and get used to the dark again slowly when it goes out
 const CAVE_LIGHT_DARK := 0.0             # share of the sun and sky light left deep in a cave or tunnel, setting "Dark": none, pitch black without a torch or fire (Dave 5 Nov 2026)
 const CAVE_LIGHT_NORMAL := 0.12          # the same, setting "Normal"
 const CAVE_GO_DARK_S := 1.0              # the light fades out over this long on going in, and back over CAVE_COME_OUT_S
@@ -142,6 +157,8 @@ var _day_next_msec: int = 0
 var _sky_next_msec: int = 0
 var _cave_factor: float = 1.0           # share of the sun and sky light let in under rock, eased (1 open air)
 var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
+var canopy_night: float = 0.0           # 0 open .. 1 under closed crowns, at night only, eased (CANOPY_NIGHT_DIM)
+var torch_adapt: float = 0.0            # 0 .. 1: the eyes adapted to a held flame at night, eased (TORCH_NIGHT_DIM)
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
@@ -380,7 +397,7 @@ func _process_body(delta: float) -> void:
 
 	if LookSettings.DAY_CYCLE and now_msec >= _day_next_msec and _client.get("game_clock") != null:
 		_day_next_msec = now_msec + DAY_STEP_MSEC
-		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year())
+		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year(), float(_client.game_clock.seconds) / 86400.0)
 
 		if _client._sun != null:
 			_client._sun.basis = day.light_basis
@@ -406,7 +423,7 @@ func _process_body(delta: float) -> void:
 			sky_material.set_shader_parameter("sky_horizon_color", day.sky_horizon)
 			sky_material.set_shader_parameter("ground_horizon_color", day.ground_horizon)
 			sky_material.set_shader_parameter("cloud_shadow_color", day.cloud_shadow)
-			sky_material.set_shader_parameter("night", day.night)
+			sky_material.set_shader_parameter("night", day.stars)   # the stars: brighter on a moonless night (day_cycle.gd)
 
 	if sky_material != null:
 		sky_material.set_shader_parameter("coverage", lerpf(0.62, 0.30, cloud_cover))
@@ -421,6 +438,13 @@ func _process_body(delta: float) -> void:
 	_cave_factor = move_toward(_cave_factor, cave_target, delta / (CAVE_GO_DARK_S if cave_target < _cave_factor else CAVE_COME_OUT_S))
 	var under_rock: float = _cave_factor
 	var sun_amount: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
+	# The night light (art_weather_light.md 6.2): crowns overhead and a flame in the hand each take a share of the moon and sky
+	# light, at night only. They are eased, and capped below by OUTDOOR_FLOOR further down.
+	var eye: Vector3 = _client.camera.global_position
+	canopy_night = move_toward(canopy_night, canopy_density(eye.x, eye.z) * day.night, delta / CANOPY_EASE_S)
+	var torch_target: float = day.night if held_flame() else 0.0
+	torch_adapt = move_toward(torch_adapt, torch_target, delta / (TORCH_ADAPT_S if torch_target > torch_adapt else TORCH_UNADAPT_S))
+	var night_keep: float = (1.0 - CANOPY_NIGHT_DIM * canopy_night) * (1.0 - TORCH_NIGHT_DIM * torch_adapt)
 
 	if _client._sun != null:
 		var shadows_wanted: bool = under_rock >= CAVE_SHADOW_OFF and float(_client.QUALITY_SHADOW_M[_client.quality]) > 0.0
@@ -428,16 +452,22 @@ func _process_body(delta: float) -> void:
 		if shadows_wanted != _client._sun.shadow_enabled:
 			_client._sun.shadow_enabled = shadows_wanted
 
-		_client._sun.light_energy = (LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) * day.light_factor + flash_level * 1.2) * under_rock
+		# The moon is shadowed by the crowns themselves (tree shadows), so only the eyes' adaptation to a flame takes from it.
+		var moon_keep: float = 1.0 - TORCH_NIGHT_DIM * torch_adapt
+		_client._sun.light_energy = (LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) * day.light_factor * moon_keep + flash_level * 1.2) * under_rock
 
-	environment.ambient_light_energy = under_rock * (maxf(lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor, lerpf(AMBIENT_FLOOR, AMBIENT_STORM_FLOOR, _dark)) + flash_level * 2.0)
+	var open_air: float = maxf(lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor, lerpf(AMBIENT_FLOOR, AMBIENT_STORM_FLOOR, _dark))
+	# Never pitch black outdoors: the crowns and the flame never take the ambient below OUTDOOR_FLOOR. The same share is taken
+	# from the sky's part of the ambient below, so the two parts stay in step.
+	var keep: float = clampf(maxf(night_keep, OUTDOOR_FLOOR / maxf(open_air, 0.001)), 0.0, 1.0)
+	environment.ambient_light_energy = under_rock * (open_air * keep + flash_level * 2.0)
 	# The sky's own light is near black on a dark night or a storm night, so a cold moonlit blue is mixed in
 	# (ambient colour counts where the sky contribution is below 1): trees and ground stay readable, never pure black.
 	var dim: float = clampf(maxf(day.night, _dark * 0.6), 0.0, 1.0)
 	# Under rock the sky's share goes too (Dave 4 Nov 2026: "its day time and its light in the tunnels even at the very back"). The engine scales only the ambient
 	# colour by ambient_light_energy; the sky's share of the ambient (and the sky reflections) keep the full sky, so by day three quarters of the open-air ambient
 	# still reached the back of a tunnel. The sky's share now fades with the light, and the sky reflections (bright on damp rock and cave pools) go off under rock.
-	sky_under_rock(environment, lerpf(DAY_SKY_SHARE, 0.3, dim), under_rock)   # night 0.3 as before
+	sky_under_rock(environment, lerpf(DAY_SKY_SHARE, 0.3, dim) * keep, under_rock)   # night 0.3 as before, less under crowns or by a flame
 	environment.ambient_light_color = AMBIENT_DAY_WARM.lerp(AMBIENT_NIGHT_COLOR, dim)
 	# The whole picture goes dimmer and greyer with the weather.
 	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
@@ -695,6 +725,26 @@ static func _ribbon(vertices: PackedVector3Array, indices: PackedInt32Array, poi
 		var first: int = vertices.size()
 		vertices.append_array([a - side, a + side, b + side, b - side])
 		indices.append_array([first, first + 1, first + 2, first, first + 2, first + 3])
+
+
+# How much of the ground around a point is under crowns (or roofs), 0 open .. 1 closed: the canopy map at the point and at
+# eight points CANOPY_SAMPLE_M round it, averaged, so one crown overhead in a meadow counts for little and a forest for all.
+func canopy_density(x: float, z: float) -> float:
+	if canopy == null:
+		return 0.0
+
+	var total: float = canopy.cover_at(x, z)
+
+	for i in 8:
+		var a: float = TAU * float(i) / 8.0
+		total += canopy.cover_at(x + cos(a) * CANOPY_SAMPLE_M, z + sin(a) * CANOPY_SAMPLE_M)
+
+	return total / 9.0
+
+
+# True while a burning torch or lantern is held in either hand (the flame sounds already track it, held_item.gd).
+func held_flame() -> bool:
+	return _client.sound != null and _client.sound.flame != null and str(_client.sound.flame.held) != ""
 
 
 # The shared cover query (canopy only so far): 0 in the open, 1 under a tree's crown; for sound,

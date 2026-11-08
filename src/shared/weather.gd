@@ -114,6 +114,34 @@ static func temp_at(game_s: float, group: String, altitude_m: float = 0.0) -> fl
 	return float(zone["temp"]) + float(zone["swing"]) * cos(TAU * (year_phase(game_s) - 0.375)) - maxf(altitude_m, 0.0) * 0.0065
 
 
+# The day's swing of the air (docs/design/still_water_ice.md): the full range from the coldest hour to the warmest, per zone
+# (judged, near the UK's 7 to 9 C on land; deserts wider, polar air narrower), shrunk to DAY_RANGE_WINTER of it in midwinter.
+const DAY_RANGE_C := {"desert": 14.0, "transition": 10.0, "temperate": 8.0, "arctic": 5.0}
+const DAY_RANGE_WINTER := 0.6
+const DAY_COLDEST_HOUR := 5.0             # just before dawn (Met Office: the coolest air comes just before dawn)
+const DAY_WARMEST_HOUR := 15.0            # mid afternoon
+
+
+# Air temperature (C) with the day and night swing on top of temp_at: coldest at DAY_COLDEST_HOUR, warmest at
+# DAY_WARMEST_HOUR, a smooth rise by day and a slower fall through the night; the day's mean is temp_at. No weather (clouds
+# would narrow the swing; not yet). Used by the ice on still water (ice.gd); Weather.state's temp_c stays temp_at for now.
+static func air_c(game_s: float, group: String, altitude_m: float = 0.0) -> float:
+	var summer: float = 0.5 + 0.5 * cos(TAU * (year_phase(game_s) - 0.375))
+	var swing: float = 0.5 * float(DAY_RANGE_C.get(group, DAY_RANGE_C["temperate"])) * lerpf(DAY_RANGE_WINTER, 1.0, summer)
+	return temp_at(game_s, group, altitude_m) + swing * day_shape(hour_of(game_s))
+
+
+# -1 at the coldest hour, +1 at the warmest, between them a half cosine each way (rising over 10 hours, falling over 14).
+static func day_shape(hour: float) -> float:
+	var rise_h: float = DAY_WARMEST_HOUR - DAY_COLDEST_HOUR
+	var since: float = fposmod(hour - DAY_COLDEST_HOUR, 24.0)
+
+	if since < rise_h:
+		return -cos(PI * since / rise_h)
+
+	return cos(PI * (since - rise_h) / (24.0 - rise_h))
+
+
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "wind_dir" (radians), "temp_c", "season"}.
 # wind_dir is the way the wind blows TOWARD, as an angle in the ground plane: direction = (cos, sin) on (x, z). It turns slowly
 # (a new heading about every 20 game hours) and swings further in a storm; same on server and client, nothing saved.
