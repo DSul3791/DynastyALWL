@@ -5,7 +5,8 @@ extends SceneTree
 # down their burrows that often; hunters hunt more in wind; a storm or heavy snowfall beds animals down; a storm 12 to 24 game hours
 # ahead makes feeders busier and skips their daytime rest; deer wander into a light wind; mist cuts sight and spook range; weather.on
 # false turns it all off. Step 2: in rain deer and stock stand out about 60% of their grazing spells (state 20 on the wire); deer, and half the
-# stock, move home under trees and back an hour after; in a gale stock face downwind and drift, deer go to cover or lower ground.
+# stock, move home under trees and back an hour after; in a gale stock face downwind and drift, deer go to cover or lower ground. Step 3:
+# wolves slow in snowfall, deer go to conifers in the cold, stock to shade in midday heat.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animals_weather.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -198,6 +199,39 @@ func _init() -> void:
 	check(a._weather_wander(d2, deer) and d2["home"].x > 90.0, "a deer in a gale with no trees goes down to lower ground (home x %.0f)" % d2["home"].x)
 	a.ground_height = func(_x, _z): return 10.0
 	a._wind_s = 0.0
+	a._read_weather({"wind": 0.0}, 0.1)
+
+	# Step 3 (design 9). 13. Wolves in a snowfall walk and trot 0.6 as fast and prowl half as far; not in light snow.
+	check(near(a.wolves._snow_x("speed_x"), 1.0), "no snow: wolves at their usual pace")
+	a._read_weather({"wind": 0.0, "snow": 0.4}, 0.1)
+	check(near(a.wolves._snow_x("speed_x"), 0.6) and near(a.wolves._snow_x("roam_x"), 0.5), "in snow 0.4 wolves move 0.6 as fast and roam 0.5 as far")
+	a._read_weather({"wind": 0.0, "snow": 0.2}, 0.1)
+	check(near(a.wolves._snow_x("speed_x"), 1.0), "light snow 0.2 does not slow them")
+
+	# 14. Deer in the cold go to conifer crowns: trees beyond x 40, but only those beyond x 70 are a boreal forest.
+	a.canopy = func(p): return p.x > 40.0
+	a.biome_at = func(x, _z): return "boreal_forest" if x > 70.0 else "temperate_forest"
+	a._read_weather({"wind": 0.0, "temp_c": -8.0}, 0.1)
+	var d3: Dictionary = a.animals[a.spawn("deer", 0.0, 400.0)]
+	check(a._cold(d3), "-8 C at 10 m is cold for a deer")
+	check(a._weather_wander(d3, deer) and d3["home"].x > 70.0, "in the cold a deer heads for the conifers, not the nearer broadleaf trees (home x %.0f)" % d3["home"].x)
+	var c4: Dictionary = a.animals[a.spawn("cow", 0.0, 500.0)]
+	check(not a._weather_wander(c4, cow) or not c4.has("dry_home"), "the cold does not move stock")
+	a._read_weather({"wind": 0.0, "temp_c": 2.0}, 0.1)
+	check(not a._cold(d3), "2 C is not cold")
+
+	# 15. Stock in midday heat go to the shade; not in the morning, not when it is mild.
+	a._read_weather({"wind": 0.0, "temp_c": 28.0}, 0.1)
+	hour = 9.0
+	var c5: Dictionary = a.animals[a.spawn("cow", 0.0, 600.0)]
+	check(not a._hot(c5), "at 9 in the morning a hot day is not yet midday heat")
+	hour = 13.0
+	check(a._hot(c5) and a._weather_wander(c5, cow) and c5["home"].x > 40.0 and c5.has("dry_home"), "at 1 pm a cow goes to the shade (home x %.0f)" % c5["home"].x)
+	a._read_weather({"wind": 0.0, "temp_c": 18.0}, 0.1)
+	check(not a._hot(c5), "18 C is not heat")
+	hour = 12.0
+	a.canopy = Callable()
+	a.biome_at = Callable()
 	a._read_weather({"wind": 0.0}, 0.1)
 
 	# 8. weather.on false: all off.

@@ -4238,7 +4238,16 @@
 		"hunch_share": 0.6,
 		"cover_m": 100.0,
 		"cover_return_s": 150.0,
-		"drift_mps": 0.05
+		"drift_mps": 0.05,
+		"step3_note": "Step 3 (design 9): wolves in wolf_snow_from snow or more walk and trot wolf_snow.speed_x as fast and prowl wolf_snow.roam_x as far (the chase is unchanged); deer below cold_c air (seasonal temp_c less lapse_c_per_m) or in snow_cold_from snowfall move home to tree crowns in conifer_biomes, else lower ground; stock in hot_c air between heat_hours go to shade. All return cover_return_s after it passes.",
+		"wolf_snow_from": 0.3,
+		"wolf_snow": {"speed_x": 0.6, "roam_x": 0.5},
+		"lapse_c_per_m": 0.0065,
+		"cold_c": -5.0,
+		"snow_cold_from": 0.3,
+		"conifer_biomes": ["boreal_forest", "mixed_forest"],
+		"hot_c": 22.0,
+		"heat_hours": [11.0, 16.0]
 	},
 	"senses": {
 		"far_factor": 1.5,
