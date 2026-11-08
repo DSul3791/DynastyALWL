@@ -1341,7 +1341,10 @@ func _welcome_body(info: Dictionary) -> void:
 			sound.creatures.call_at(kind, at, str(voice.get("mood", "alert"))))      # the creature sound files, rate limited by the voice budget
 	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
 		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
-	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void: animal_view.note_hit(at, amount))      # the amount drives the wounded gait (hunt_feedback)
+	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void: animal_view.note_hit(at, amount))
+
+	if net.has_signal("animal_hit_received"):      # Steve's hit event (zone and animal id to players within 60 m), once his protocol bump lands
+		net.connect("animal_hit_received", func(id: int, zone: Variant) -> void: animal_view.on_hit_event(id, zone))      # the amount drives the wounded gait (hunt_feedback)
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))

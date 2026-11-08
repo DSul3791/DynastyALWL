@@ -60,7 +60,12 @@ var _f_night: Dictionary = {}
 var _f_torch: Array = []
 var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
-var hunt_feedback: bool = false   # hit reactions by body zone, wounded gait, a death fall on the slope (HUNT_FEEDBACK.md; off until the PC check)
+var hunt_feedback: bool = false
+var cover_still: bool = false     # state 20 in cover (Steve #701): hunched and still, the idle slowed, breathing slow, the wet look held (COVER_STILL in ANIMAL_WEATHER_LOOKS.md; off until the PC check)
+var air_override: float = NAN     # --life-air=C (pictures and tools only): this air temperature everywhere, for the steam and cold looks
+const HIT_EVENT_PROTOCOL := 0     # Steve's hit event (zone and animal id to players within 60 m): set to his protocol number when his PR lands (HUNT_FEEDBACK.md)
+const HIT_ZONES := ["body", "head", "chest", "hip", "leg"]   # the hit event's zone byte, in this order (agreed spec; change with Steve's PR if it differs)
+var _hit_events_seen: bool = false   # once the server's hit events arrive, the hunter's own guess from the hit number is not used   # hit reactions by body zone, wounded gait, a death fall on the slope (HUNT_FEEDBACK.md; off until the PC check)
 var _health: Variant = null       # species -> health from data/animals/animals.json (the client's own count of the damage it saw)
 var weather_looks: bool = false   # shake-off after rain, tail to the wind, cold huddle, steam breath, snow on backs (ANIMAL_WEATHER_LOOKS.md; off until the PC check)
 var air_at: Callable             # (position) -> air temperature C there: Weather.air_c by height and hour (#620, the one temperature); else weather temp_c
@@ -361,7 +366,7 @@ func note_hit(at: Vector3, amount: int = 0) -> void:
 	_hits = _hits.filter(func(h): return now - int(h[1]) <= FELL_WINDOW_MS)
 	_hits.append([at, now])
 
-	if hunt_feedback:
+	if hunt_feedback and not _hit_events_seen:
 		_hit_reaction(at, amount)
 
 
@@ -419,10 +424,23 @@ func on_rows(rows: Array) -> void:
 
 		# The foe a warning or charging animal faces (Steve #659: rows in states 10 to 12 with a dog as foe carry the dog's position as a sixth
 		# field): the head turns to it instead of the camera (look_at_foe, LIFE_LAYER_WIRING.md).
-		if row.size() > 5 and row[5] is Vector3:
-			_bodies[id]["foe"] = row[5]
-		else:
-			_bodies[id].erase("foe")
+		_bodies[id].erase("foe")
+		var health: float = -1.0
+
+		# Fields after the five are read by type, so their order does not matter: a Vector3 is the foe (Steve #659), a number is the
+		# animal's health 0 to 1 by tenths, sent only while it is hurt (Steve's hunt fields, HUNT_FEEDBACK.md); none means unhurt.
+		for extra in row.slice(5):
+			if extra is Vector3:
+				_bodies[id]["foe"] = extra
+			elif extra is float or extra is int:
+				health = clampf(float(extra), 0.0, 1.0)
+
+		if health >= 0.0:
+			_bodies[id]["health"] = health
+			_bodies[id]["wounded"] = health < 0.5      # the server's own count wins over the hunter's
+		elif _bodies[id].has("health"):
+			_bodies[id].erase("health")
+			_bodies[id]["wounded"] = false
 
 	var now: int = Time.get_ticks_msec()
 
@@ -512,7 +530,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -640,6 +658,11 @@ func _process_body(delta: float) -> void:
 					_animate_model(bird, b, state, model_speed, delta)
 			else:
 				_animate_model(node, b, state, model_speed, delta)
+
+				if cover_still and state == HUNCH:
+					_cover_still(node, b)
+				elif b.has("wet_hold"):
+					b.erase("wet_hold")
 			_emit_steps(b, node, state, model_speed)
 			continue
 
@@ -3589,7 +3612,12 @@ func _torch() -> Array:
 
 
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
+const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
+	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still"]
+
 func _all_flags_off() -> void:
+	cover_still = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -3614,6 +3642,14 @@ func _all_flags_off() -> void:
 
 
 func _enter_tree() -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--life="):      # --life=eye_shine,animal_sign: turn those flags on (pictures, DINO_SHOTS.md)
+			for flag in arg.trim_prefix("--life=").split(",", false):
+				if flag in LIFE_FLAGS:
+					set(flag, true)
+		elif arg.begins_with("--life-air="):
+			air_override = float(arg.trim_prefix("--life-air="))
+
 	if OS.get_cmdline_user_args().has("--life-layer-off"):
 		life_layer_all_off = true
 		_all_flags_off()
@@ -3626,7 +3662,46 @@ func _cam() -> Camera3D:
 # The air temperature at a place (ANIMAL_WEATHER_LOOKS.md, agreed with Steve): the shared Weather.air_c by height and hour through
 # the client's air_at, the same function the server calls; without it (tools) the weather state's temp_c. No lapse of our own.
 func _air(at: Vector3, wx: Dictionary) -> float:
+	if not is_nan(air_override):
+		return air_override
+
 	return float(air_at.call(at)) if air_at.is_valid() else float(wx.get("temp_c", 10.0))
+
+# Steve's hit event (HUNT_FEEDBACK.md, protocol HIT_EVENT_PROTOCOL): the animal id and the zone (an index into HIT_ZONES, or its
+# name), sent to every player within 60 m. terrain_client connects it when the network has the signal; from the first one on, the
+# hunter's own guess from the hit number is not used, so nobody sees a reaction twice.
+func on_hit_event(id: int, zone: Variant) -> void:
+	_hit_events_seen = true
+
+	if not hunt_feedback or not _bodies.has(id):
+		return
+
+	var zone_name: String = HIT_ZONES[clampi(int(zone), 0, HIT_ZONES.size() - 1)] if (zone is int or zone is float) else str(zone)
+	var b: Dictionary = _bodies[id]
+	b["react"] = zone_name
+	b["react_t"] = 0.0
+
+	if zone_name == "hip":
+		b["hip_hit"] = true
+
+
+# State 20 in cover (Steve #646 section 11, #701): a deer or stock animal standing in its cover for the whole rain, gale or cold. It
+# is the hunch (head low, ears back, tail still) and more: the idle clip at half speed so it stands still, breathing slow, no glances,
+# and the wet look held (it does not dry while it stands out the weather). It is silent (voices.json names no call for 20) and its
+# eyes shine only in a light, as always.
+func _cover_still(node: Node3D, b: Dictionary) -> void:
+	var player: AnimationPlayer = node.get_meta("player", null) as AnimationPlayer if node.has_meta("player") else null
+
+	if player != null and player.speed_scale > 0.0:
+		player.speed_scale = minf(player.speed_scale, 0.5)
+
+	if node.has_meta("breath"):
+		var fix = node.get_meta("breath")      # bone_offsets.gd (untyped: its own properties)
+		fix.breath_rate = float(fix.breath_rate) * 0.8
+
+	b["look_left"] = 0.0
+	b["wet_hold"] = true      # the wet look (claude/mikew-wet-look) keeps its wet amount while this is set
+
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:

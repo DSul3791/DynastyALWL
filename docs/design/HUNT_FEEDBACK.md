@@ -44,6 +44,17 @@ to every player within 60 m**. When it lands, `hunt_feedback` reads the health f
 hunter's own count, and takes the zone from the event instead of working it out from the hit point. Request 3 waits for the snow
 window.
 
+## The client readers, ready for Steve's PR
+- **Health on the row:** `on_rows` reads every field after the first five by type: a Vector3 is the foe (#659), a number is the
+  health 0 to 1 by tenths. With a health field the animal is `wounded` below 0.5 (the server's number wins over the hunter's own
+  count); a row with none is unhurt, so the limp stops.
+- **The hit event:** `on_hit_event(id, zone)`, zone as an index into `HIT_ZONES` (body, head, chest, hip, leg) or its name. Its
+  protocol number is the constant `HIT_EVENT_PROTOCOL` in animal_view.gd (0 until Steve's PR names it). terrain_client connects it
+  only when the network has the signal `animal_hit_received(id, zone)`, so nothing changes until his PR adds it. From the first event
+  on, the hunter's own guess from the hit number is not used.
+- If his PR orders the zones differently or names the signal otherwise, the change is the constant, the `HIT_ZONES` list and the one
+  connect line.
+
 ## What a hunter can read
 A head toss or stumble says the shot struck; a dragging hind end says a hip hit, a slow follow; a limp says the animal is past half
 its strength; the blood trail leads to where it fell, lying along the slope.

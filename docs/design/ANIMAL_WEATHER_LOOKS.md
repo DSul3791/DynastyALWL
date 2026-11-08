@@ -29,6 +29,16 @@ note adds the looks that the server does not send, behind `weather_looks` (off),
    `Weather.air_c(game_clock.seconds, weather_group, y)` at the animal's height; the steam breath, the cold huddle and the herd spacing
    all read it through `_air`. The client has no lapse of its own; the motion tool, with no world, falls back to its `temp_c`.
 
+## State 20 in cover (flag `cover_still`, Steve #646 section 11, code #701)
+The server now sends 20 for a deer or stock animal standing in its cover (within 8 m of the cover home it moved to, or under tree
+crowns) for as long as the rain, gale or cold lasts. The client draws 20 as the hunch already; with `cover_still` it is also still:
+- the idle clip at half speed, breathing at 0.8 of its rate, no glances at the player;
+- silent: voices.json names no call for 20;
+- eyes shine only in a light (the eye shine rules are unchanged);
+- the wet look held: `wet_hold` is set while it stands in cover, so the wet look (claude/mikew-wet-look) keeps its wet amount
+  instead of drying; cleared as soon as it leaves 20.
+Check: run sheet m48 (deer and horse in state 20 with `--cover`: heads low, barely moving between frames).
+
 ## Check
 Run sheet m41 (deer and horse in a gale: rumps turned to the wind), m42 (deer herd at -12 C: closer, heads low, steam at the
 muzzles), m43 (dog and wolf as the rain stops: a shiver and drops), m44 (deer lying in falling snow: whiter coat).
