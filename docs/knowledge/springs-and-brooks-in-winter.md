@@ -40,13 +40,13 @@
    - Where spring water rises into a pond or under a lake's ice, it melts the ice from below. That leaves an open hole or a ring of thin ice (the Alaska abstract: "dangerously thin ice").
    - **Judged:** count ice as half as thick within about 10 to 30 m of a spring mouth or an inflow. That is the same halving rule as `animals-on-ice-and-snow.md` (#736); the 10 to 30 m reach is new here.
 
-4. **On the starter island, the low ground hardly freezes at all, and its brooks never do.**
+4. **On the starter island, spring water never freezes, and the ice that forms is thin.**
    - **Our sums** at the grid's warmth (#717 rows 19 and 20: about 34° S, 14.4 °C a year at sea level). They keep `climate.gd`'s ±5 °C season, 8 °C day range, 6.5 °C per km and ±4 °C cold spells:
      - the midwinter mean at sea level is about 9.4 °C. At spring #8002 (533 m) it is about 5.9 °C;
      - at #8002 the coldest dawn, in a cold spell, is about −2 °C (5.9 − 4 for the night − 4 for the spell), and it is above freezing again by mid-morning;
-     - so brooks below about 800 m never freeze, and ponds there get at most a dawn skim of a few millimetres (`animals-on-ice-and-snow.md`, #736);
-     - the lesson 2 table matters only high up: above about 800 m, a brook can ice at its edges in a midwinter cold spell, and above about 1,200 m, tarns can freeze over.
-   - The earlier version of this page used the old 9 °C climate (−7.5 °C dawns, 2.8 cm of pond ice). That no longer holds.
+     - so in the plain air a spring-fed brook never freezes. The spring's water is about 10.9 °C, and the air is below 0 °C for only a few hours on the coldest dawns;
+     - **ice is different:** it reads the starter's `snow_bias_c` of −6 °C (`OVERNIGHT_DECISIONS_8NOV.md` row 21, #717). So for ice the island behaves like about 8.4 °C at sea level, close to the old 9 °C. Ponds get the old skim of at most 2.8 cm at the spawn pond and 5.6 cm by #8002 (#731, `animals-on-ice-and-snow.md` #736). Slow brooks with no spring can ice at their edges in a cold spell;
+     - the reach just below a spring stays open in every case, because its water is warm.
 
 ## Judged numbers for Steve, Sonny and Kathleen
 
@@ -66,7 +66,7 @@
 
 ### Ice holes and fishing (#719, #737)
 
-- **A person can stand on ice** from about 10 cm of clear ice (`animals-on-ice-and-snow.md`, #736). On the starter, only high tarns above about 1,200 m reach that in a cold winter, so ice fishing is a high-mountain thing there. The low ponds never bear a person.
+- **A person can stand on ice** from about 10 cm of clear ice (`animals-on-ice-and-snow.md`, #736). On the starter, no low pond reaches that (2.8 to 5.6 cm at most, with the −6 °C ice bias, #717 row 21), so no fishing hole can be cut there. That is the coordinator's #731 decision. High tarns may freeze thicker (judged).
 - **Near a spring inflow** the ice is half as thick, so the place where the fish gather in winter (the warmer spring water) is the most dangerous ice.
 - **An open patch at an inflow** is the natural "hole" on a frozen pond. Water birds sit at it, and a person could fish from the bank there without walking on ice (judged).
 
@@ -90,12 +90,12 @@
 - a pond frozen solid right up to a spring inflow;
 - a spring-fed brook iced over within a few metres of its source;
 - a frozen brook whose fast riffles freeze before its slow pools;
-- people walking or fishing on ice on the starter's low ground.
+- people walking or fishing on starter pond ice.
 
 ## How ours works today (read from the PR titles and notes, 8 Nov, not tested)
 
 - #719 (design): drinking water comes from the record. Springs work always, brooks by season, ice needs a hole, and there is no salt. #720 is step 1 of the code (flag off).
-- #731: the frozen water look on the liquid sheets (`--frozen-water`). Its note gives the starter ponds at most 2.8 cm (spawn pond) and 5.6 cm (#8002), for the old 9 °C climate. At the grid's 14.4 °C the low ponds get almost none (#736).
+- #731: the frozen water look on the liquid sheets (`--frozen-water`). The starter ponds get at most 2.8 cm of ice (spawn pond) and 5.6 cm (#8002), so they show a dark skim only. Those figures hold with the −6 °C ice bias (#717 row 21).
 - #734: herds drink at dawn and dusk, and wolves wait there (flag off).
 - #737: animals on ice, ice holes sent to the client (protocol 97), and a thaw moat hook.
 - No spring-temperature or open-length rule was read in code for this page.
