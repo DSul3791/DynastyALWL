@@ -78,7 +78,7 @@ The only creatures that get a fantasy budget are the **goblins**, and the **mamm
 | 24 | Mink | Pack | 0 | No exaggeration | Near black, white chin; low and long (#584 gait) |
 | 25 | Raccoon | Pack | L | Mask and tail rings crisp | Hunched back; fur cards need clean alpha |
 | 26 | Rat | Pack | 0 | No exaggeration | Scaly bare tail, never furry |
-| 27 | Crow | Pack | 0 | Blue-black gloss only (5.3) | Size check: a carrion crow is ~0.45 m bill to tail, the row says `length_m` 0.25 (10.4) |
+| 27 | Crow | Pack | 0 | Blue-black gloss only (5.3) | Drawn about 0.48 m bill to tail, true to a carrion crow (`length_m` 0.25 is the bone length, MikeW) |
 | 28 | Pheasant | Pack | L | Cock copper and green gloss, long tail | Hen dull brown |
 | 29 | Goose | Pack | 0 | No exaggeration | Greylag grey-brown; orange bill |
 | 30 | Cow | Pack | 0 | No exaggeration | Farm, never wild |
@@ -400,7 +400,7 @@ They look **looked after but working**. They are clean, but with honest dirt on 
    - a shake clip (7.1);
    - antler and horn size per animal from its id (2).
 3. **[Proposal: MikeW / Steve]** Hit location for limps and the low head (8.3.3).
-4. **[Check: MikeW]** The crow's `length_m` is 0.25. A real carrion crow is about 0.45 m from bill to tail, so 0.25 may be the body without the tail, or too small. Check it against the side scale strip.
+4. **Checked (MikeW):** the crow's `length_m` 0.25 is the bone length; the drawn crow is about 0.48 m bill to tail, which is right.
 5. **[Check: MikeW]** Species with no `Eye` material still need a highlight on the eye (5.5.1).
 
 ## 11. Pictures to collect (Dave's PC, after the gate queue; not before)
