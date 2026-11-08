@@ -88,6 +88,11 @@ static func mean_c(climate: Dictionary, year_phase: float, altitude_m: float = 0
 	return float(climate["sea_level_mean_c"]) + seasonal - float(climate["lapse_c_per_km"]) * maxf(altitude_m, 0.0) / 1000.0
 
 
+# The year's mean air (C) at `altitude_m`: no season and no day and night swing. Still cave air sits at it (Jamie's caves page, #664).
+static func year_mean_c(climate: Dictionary, altitude_m: float = 0.0) -> float:
+	return float(climate["sea_level_mean_c"]) - float(climate["lapse_c_per_km"]) * maxf(altitude_m, 0.0) / 1000.0
+
+
 # The air (C) at `altitude_m` at this hour: the day's mean plus half the day's range times day_shape.
 static func air_c(climate: Dictionary, year_phase: float, hour: float, altitude_m: float = 0.0) -> float:
 	return mean_c(climate, year_phase, altitude_m) + 0.5 * float(climate["daily_range_c"]) * day_shape(hour)

@@ -1030,6 +1030,44 @@ func in_cave_opening(x: float, z: float) -> bool:
 	return false
 
 
+# Whether a point (feet, world x and z wrapped onto this tile's frame) is inside a cave with rock over it: within `margin` m of one of the
+# carved passages or chambers (the shapes as carved at full detail) and at least `roof_m` under the ground over it, so the open part of a mouth
+# is not inside (Jamie's caves page, #664: a cave is full cover from rain and wind, and its air sits at the year's mean temperature).
+func in_cave(p: Vector3, roof_m: float = 2.0, margin: float = 1.0) -> bool:
+	if caves.is_empty() or height_at(p.x, p.z) - p.y < roof_m:
+		return false
+
+	for cave in caves:
+		if not (cave["aabb"] as AABB).grow(margin).has_point(p):
+			continue
+
+		for capsule in cave["capsules"]:
+			if not (capsule["aabb"] as AABB).grow(margin).has_point(p):
+				continue
+
+			var squash: float = float(capsule["rw"]) / maxf(float(capsule["rh"]), 0.1)   # as _carve_caves: the passage is an ellipse in section
+			var a: Vector3 = capsule["a"]
+			var b: Vector3 = capsule["b"]
+			var q: Vector3 = Vector3(p.x, p.y * squash, p.z)
+			a.y *= squash
+			b.y *= squash
+
+			if q.distance_to(Geometry3D.get_closest_point_to_segment(q, a, b)) - float(capsule["rw"]) < margin:
+				return true
+
+		for chamber in cave["chambers"]:
+			if not (chamber["aabb"] as AABB).grow(margin).has_point(p):
+				continue
+
+			var c: Vector3 = chamber["center"]
+			var squash_c: float = float(chamber["r"]) / maxf(float(chamber["rh"]), 0.1)
+
+			if Vector3(p.x - c.x, (p.y - c.y) * squash_c, p.z - c.z).length() - float(chamber["r"]) < margin:
+				return true
+
+	return false
+
+
 # Whether a point is in a spring cave pool (Dave 4 Nov, BUG-008: those pools are icy).
 func in_cave_pool(p: Vector3, margin: float = 1.0) -> bool:
 	return not is_nan(cave_pool_surface(p, margin))

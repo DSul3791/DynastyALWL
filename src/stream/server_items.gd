@@ -174,7 +174,8 @@ var water_source: Callable       # (position, reach in metres) -> Array of Drink
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
-var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
+var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof or in a cave (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
+var cave_mean_c: Callable      # (position) -> the cave air (C): the island's year mean at the position's height when it is inside a cave, NAN outside one (unset: never in a cave)
 
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
@@ -9439,11 +9440,18 @@ func warmth_target(peer: int) -> float:
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var cave_c: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
 	# The weather's temp_c already carries the day and night swing (one temperature, docs/design/one_temperature.md); the server's weather is
 	# at sea level, so the height is taken off here.
 	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
 	var roofed: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 1.5
 	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if roofed else 1.0)
+
+	# In a cave (Jamie's caves page, #664): the air sits at the island's year mean for its height (cave_mean_c, Climate.year_mean_c), with no
+	# day and night swing and no rain cooling, and no wind reaches in.
+	if not is_nan(cave_c):
+		air = cave_c
+		wind = 0.0
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))
 
@@ -9487,7 +9495,7 @@ func warmth_target(peer: int) -> float:
 		var water_c: float = maxf(float(cfg.get("water_base_c", 6.0)) + float(cfg.get("water_follow", 0.5)) * (sea_air - float(cfg.get("water_base_c", 6.0))), 1.0)
 
 		if bool(_cave_pool.get(peer, false)):
-			water_c = float(cfg.get("cave_pool_c", 2.0))   # a spring cave pool is icy whatever the weather (BUG-008)
+			water_c = cave_c if not is_nan(cave_c) else float(cfg.get("cave_pool_c", 2.0))   # a cave pool is at the cave air's year mean (Jamie #664, CONTRADICTIONS.md), not the weather (BUG-008)
 		stress = maxf(float(cfg.get("water_comfort_c", 26.0)) - water_c, 0.0) * float(cfg.get("water_gain", 5.0)) / maxf(float(cfg.get("gain", 3.0)), 0.01)
 
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
@@ -9530,7 +9538,8 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 
 
 # Rain or snow on an uncovered player soaks them toward the rain's strength (soak_per_h), swimming soaks them through; out of it they dry only in shelter:
-# slowly under a tree or roof (dry_cover_per_h), fast within reach of a lit fire (dry_fire_per_h); in the open they stay wet.
+# slowly under a tree or roof (dry_cover_per_h), fast within reach of a lit fire (dry_fire_per_h); in the open they stay wet, and in a cave
+# (cover from the rain, but air near saturated) only a fire dries them.
 func _update_soak(peer: int, game_s: float) -> void:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
@@ -9538,6 +9547,7 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 	var soak: float = float(_soak.get(peer, 0.0))
+	var in_cave: bool = cave_mean_c.is_valid() and not is_nan(float(cave_mean_c.call(pos)))
 	var hours: float = game_s / 3600.0
 
 	var by_fire: bool = false
@@ -9556,8 +9566,8 @@ func _update_soak(peer: int, game_s: float) -> void:
 		soak = minf(soak + float(cfg.get("soak_per_h", 4.0)) * hours, maxf(soak, minf(precip * 2.0, 1.0)))
 	elif by_fire:
 		soak = maxf(soak - float(cfg.get("dry_fire_per_h", 6.0)) * hours, 0.0)
-	elif covered:
-		soak = maxf(soak - float(cfg.get("dry_cover_per_h", 1.0)) * hours, 0.0)
+	elif covered and not in_cave:
+		soak = maxf(soak - float(cfg.get("dry_cover_per_h", 1.0)) * hours, 0.0)   # cave air is 98 to 100% wet: only a fire dries you there (#664)
 
 	_soak[peer] = soak
 

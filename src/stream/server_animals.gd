@@ -21,6 +21,7 @@ const ALERT := 3
 const WARN := 10                # big game standing its ground (head down), then 11 charge, 12 recover (server_big_game.gd)
 const SNEAK := 13               # a thief creeping up on food, 14 running off with it (server_thieves.gd)
 const HIDDEN := 5               # in its burrow: never sent, never hunted
+const HUNCH := 20               # wire only: a grazer standing out the rain, still, head low (animals_in_weather_design.md 6; GRAZE on the server)
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
 var cfg: Dictionary = {}
@@ -1011,6 +1012,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			return
 
 		a["timer"] -= dt
+		_weather_graze(a, def, dt)
 
 		if a["herd"] != 0 and float(def.get("herd_pull_m", 0.0)) > 0.0:
 			var centre: Vector3 = _herd_centre(a["herd"])
@@ -1023,6 +1025,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			return
 
 		if a["timer"] <= 0.0 and _wind_goes_down(a, def):
+			return
+
+		if a["timer"] <= 0.0 and _weather_wander(a, def):
 			return
 
 		if a["timer"] <= 0.0:
@@ -1610,7 +1615,7 @@ func rows_near(point: Vector3) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), a["state"]]
+			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), HUNCH if a["state"] == GRAZE and bool(a.get("hunch", false)) else a["state"]]
 
 			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
 				row.append(animals[int(a["foe_dog"])]["pos"])
@@ -1639,6 +1644,7 @@ func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 	a["state"] = FLEE
 	a["burst"] = 0.0
 	a["alert"] = 0.0
+	a.erase("hunch")
 	a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
 	_to_burrow(a, away, def)
 
@@ -2033,3 +2039,126 @@ func barking_dogs_near(point: Vector3, radius: float) -> Array:
 			out.append([p, int(dog[0])])
 
 	return out
+
+
+# --- animals in weather, step 2: rain cover, the hunch, gales (animals_in_weather_design.md 6 and 7) ---
+
+func _raining() -> bool:
+	return _wx_on() and float(_wx.get("rain", 0.0)) >= float(_wx_rules().get("rain_from", 0.4))
+
+
+func _gale() -> bool:
+	return _wx_on() and (float(_wx.get("wind", 0.0)) >= float(_wx_rules().get("gale_from", 0.6)) or float(_wx.get("storm", 0.0)) >= float(_wx_rules().get("storm_from", 0.5)))
+
+
+# Whether this animal looks for cover now: deer always in rain or a gale, stock in rain half of them (by id: the same half every time).
+# With herd groups on (MikeW's HERD_GROUPS.md, #663), only the herd's leader (its first living member) picks the cover; the rest keep their
+# places round it and so come along.
+func _seeks_cover(a: Dictionary, def: Dictionary) -> bool:
+	var role: String = str(def.get("weather", ""))
+
+	if int(a.get("herd", 0)) != 0 and bool((cfg.get("groups", {}) as Dictionary).get("enabled", false)):
+		for id in _herds.get(a["herd"], []):
+			if animals.has(id):
+				if int(id) != int(a["id"]):
+					return false
+
+				break
+
+	if role == "deer":
+		return _raining() or _gale()
+
+	return role == "stock" and _raining() and int(a["id"]) % 2 == 0
+
+
+# Every grazing step: stock in a gale face downwind (rumps to the wind); one game hour (cover_return_s real seconds) after the weather that
+# sent it to cover has passed, an animal walks back to its old home.
+func _weather_graze(a: Dictionary, def: Dictionary, dt: float) -> void:
+	if not _wx_on() or str(def.get("weather", "")) == "":
+		return
+
+	if str(def.get("weather", "")) == "stock" and _gale() and _wind_s > 0.0:
+		a["heading"] = _wind_dir.angle()
+
+	if a.has("dry_home"):
+		if _seeks_cover(a, def):
+			a["dry_s"] = 0.0
+		else:
+			a["dry_s"] = float(a.get("dry_s", 0.0)) + dt
+
+			if float(a["dry_s"]) >= float(_wx_rules().get("cover_return_s", 150.0)):
+				a["home"] = a["dry_home"]
+				a.erase("dry_home")
+				a.erase("dry_s")
+
+	if a.has("hunch") and not _raining():
+		a.erase("hunch")
+
+
+# When a grazing spell ends in bad weather. True when the weather chose what it does next:
+#   rain: deer and stock spend hunch_share of their spells standing still (HUNCH on the wire) instead of moving on (lesson 1: -62% feeding);
+#   rain or a gale: an animal that seeks cover moves its home to the nearest spot under tree crowns within cover_m (deer in a gale with no
+#     trees: the lowest ground), once a spell of weather;
+#   a gale: stock drift downwind at drift_mps, rumps to the wind (lesson 7).
+func _weather_wander(a: Dictionary, def: Dictionary) -> bool:
+	var role: String = str(def.get("weather", ""))
+
+	if not _wx_on() or not role in ["deer", "stock"]:
+		return false
+
+	var r: Dictionary = _wx_rules()
+
+	if _seeks_cover(a, def) and not a.has("dry_home"):
+		var cover: Vector3 = _cover_near(a, role == "deer" and _gale())
+
+		if cover != Vector3.INF:
+			a["dry_home"] = a["home"]
+			a["dry_s"] = 0.0
+			a["home"] = cover
+			a["target"] = cover
+			a["state"] = HOP
+			a.erase("hunch")
+			return true
+
+	if role == "stock" and _gale() and _wind_s > 0.0:
+		a["timer"] = _graze_time(def)
+		a["target"] = a["pos"] + Vector3(_wind_dir.x, 0.0, _wind_dir.y) * float(r.get("drift_mps", 0.05)) * float(a["timer"])
+		a["home"] = a["target"]
+		a["state"] = HOP
+		a.erase("hunch")
+		return true
+
+	if _raining():
+		a["hunch"] = rng.randf() < float(r.get("hunch_share", 0.6))   # luck-exempt: whether a wet grazer stands this spell out
+
+		if bool(a["hunch"]):
+			a["timer"] = _graze_time(def)
+			return true
+
+	return false
+
+
+# The nearest spot under tree crowns in 8 directions at 25, 50, 75 and 100 m (cover_m); with `or_low`, the lowest of those spots when none
+# is under trees. Vector3.INF for none.
+func _cover_near(a: Dictionary, or_low: bool) -> Vector3:
+	var reach: float = float(_wx_rules().get("cover_m", 100.0))
+	var low: Vector3 = Vector3.INF
+
+	for ring in 4:
+		var d: float = reach * float(ring + 1) / 4.0
+
+		for k in 8:
+			var dir: Vector2 = Vector2.from_angle(TAU * float(k) / 8.0)
+			var p: Vector3 = Vector3(a["pos"].x + dir.x * d, 0.0, a["pos"].z + dir.y * d)
+			p.y = float(ground_height.call(p.x, p.z)) if ground_height.is_valid() else a["pos"].y
+
+			if blocked.is_valid() and bool(blocked.call(p.x, p.z)):
+				continue
+
+			if canopy.is_valid() and bool(canopy.call(p)):
+				return p
+
+			if or_low and p.y < a["pos"].y - 1.0 and (low == Vector3.INF or p.y < low.y):
+				low = p
+
+	return low

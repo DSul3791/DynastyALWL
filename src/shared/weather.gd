@@ -146,6 +146,11 @@ static func day_shape(hour: float) -> float:
 	return Climate.day_shape(hour)
 
 
+# The year's mean air (C) for a zone group at `altitude_m` (Climate.year_mean_c): what still cave air sits at (Jamie #664).
+static func year_mean_c(group: String, altitude_m: float = 0.0) -> float:
+	return Climate.year_mean_c(Climate.of_zone(group), altitude_m)
+
+
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "wind_dir" (radians), "temp_c", "season"}.
 # wind_dir is the way the wind blows TOWARD, as an angle in the ground plane: direction = (cos, sin) on (x, z). It turns slowly
 # (a new heading about every 20 game hours) and swings further in a storm; same on server and client, nothing saved.
