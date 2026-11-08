@@ -11,6 +11,7 @@ extends RefCounted
 # - Forest (3.3): 10 dB per 100 m of trees around the listener, at most 18 dB.
 # - Cold and fog (3.5): frost eats the far high end about twice as fast; fog trims it past 100 m. Near sounds stay crisp.
 # - Masking (3.4): rain and a gale hide small sounds past a mask distance (12 dB down over one more of it); big low sounds come through.
+# - Rivers (3.7): river voices fade like a line out to 50 m (line_db; sound_occlusion.gd adds it for voices marked "air_line").
 # - Fresh snow (3.5): far sounds 4 dB down and duller on fresh snow; the freshness lasts about 2 game days, faster gone in a thaw or rain.
 
 const NEAR_M := 50.0                    # closer than this the wind changes nothing
@@ -51,6 +52,7 @@ const SNOW_FRESH_H := 48.0              # fresh snow ages to settled over this m
 const SNOW_THAW_FASTER := 3.0           # above 0 C or in rain
 const SNOW_FAR_DB := -4.0
 const SNOW_CUT := 0.3
+const LINE_REACH_M := 150.0             # a river reach's length until R7's record gives each its own (judged)
 const MAX_DB := 6.0                     # the sum is held inside these
 const MIN_DB := -30.0
 
@@ -165,6 +167,15 @@ static func snow_fresh_step(fresh: float, hours: float, snowing: bool, temp_c: f
 static func snow_effect(distance: float, fresh: float, ground_snow: float) -> Vector2:
 	var on: float = clampf(fresh, 0.0, 1.0) * clampf(ground_snow, 0.0, 1.0)
 	return Vector2(SNOW_FAR_DB * on * smoothstep(50.0, 100.0, distance), 1.0 - SNOW_CUT * on * smoothstep(50.0, 100.0, distance))
+
+
+# Rivers as a line (3.7): a long reach fades 3 dB a doubling, not 6, out to a third of its length, then as a point. Added to an
+# inverse-distance voice of size `unit` (which falls 6 dB a doubling), so 10 log10(d / unit) up to that knee. Outside the +6 dB hold.
+static func line_db(distance: float, unit: float, reach_m: float = LINE_REACH_M) -> float:
+	if unit <= 0.0 or distance <= unit:
+		return 0.0
+
+	return 10.0 * log(minf(distance, reach_m / 3.0) / unit) / log(10.0)
 
 
 # Everything for one voice. `air`: {"wind", "toward" (Vector2), "gust", "night", "calm", "fog", "temp_c", "forest"}, and from step 2
