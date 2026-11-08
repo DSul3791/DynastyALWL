@@ -465,6 +465,9 @@ func _process_body(delta: float) -> void:
 
 			_hop_arc(node, b, model_speed, delta)
 
+			if bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)):
+				_herd_look(node, b, state, model_speed, delta)
+
 			if node.has_meta("poses"):
 				var posed = node.get_meta("poses")      # bone_offsets.gd: a pose for a state the file has no clip for
 
@@ -1618,10 +1621,19 @@ func _look_motion(node: Node3D, b: Dictionary, state: int, delta: float) -> void
 				var hold: Array = spec.get("hold_s", [2.0, 4.0])
 				b["look_left"] = randf_range(float(hold[0]), float(hold[1]))      # luck-exempt: how long a deer stares (client look)
 				b["next_glance_m"] = dist - 5.0
+				_herd_glance(node, b)
 
 			want = 1.0 if float(b.get("look_left", 0.0)) > 0.0 else 0.0
 		else:
 			b["next_glance_m"] = range_m      # out of range or busy: the next approach starts a fresh glance
+
+	# A herd mate looked up: this one follows a moment later (_herd_glance).
+	if float(b.get("glance_at", -1.0)) >= 0.0 and _t >= float(b["glance_at"]):
+		b["glance_at"] = -1.0
+
+		if state == 0 and float(b.get("look_left", 0.0)) <= 0.0:
+			b["look_left"] = randf_range(1.5, 3.0)      # luck-exempt: how long a herd mate stares (client look)
+			want = 1.0
 
 	if bool(b.get("asleep", false)):
 		want = 0.0      # asleep: no glances (the ears still turn)
@@ -1667,6 +1679,71 @@ func _asleep_now(kind: String) -> bool:
 	var hour: float = float((conditions_now.call() as Dictionary).get("hour", 12.0))
 	var period: String = "day" if hour >= 8.0 and hour < 18.0 else ("dusk" if (hour >= 5.0 and hour < 8.0) or (hour >= 18.0 and hour < 21.0) else "night")
 	return float((def["active"] as Dictionary).get(period, 1.0)) <= float((cfg.get("rest", {}) as Dictionary).get("below", 0.1))
+
+
+# Herds on the client (docs/design/HERD_CLIENT.md), from what the server already sends: grazing herd mates (rows with "herd": true)
+# within 12 m turn a little toward the herd's mean facing and are drawn at least 2 m apart (a visual nudge of the body inside its
+# node, never the position the server sent); one lifting its head makes the others look within 2 s (_herd_glance).
+const HERD_M := 12.0
+const HERD_SPACE_M := 2.0
+
+func _herd_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null:
+		return
+
+	var kind: String = str(b.get("kind", ""))
+	var sum: Vector2 = Vector2.ZERO
+	var push: Vector3 = Vector3.ZERO
+	var mates: int = 0
+
+	if state == 0 and speed < 0.3:
+		for other_id in _bodies:
+			var o: Dictionary = _bodies[other_id]
+
+			if o == b or str(o.get("kind", "")) != kind:
+				continue
+
+			var on: Node3D = o["node"]
+			var gap: Vector3 = node.position - on.position
+			gap.y = 0.0
+			var d: float = gap.length()
+
+			if d > HERD_M:
+				continue
+
+			mates += 1
+			sum += Vector2(cos(on.rotation.y), sin(on.rotation.y))
+
+			if d < HERD_SPACE_M and d > 0.01:
+				push += gap.normalized() * (HERD_SPACE_M - d) * 0.5
+
+	var bias: float = 0.0
+
+	if mates > 0 and sum.length() > 0.01:
+		bias = clampf(angle_difference(node.rotation.y, sum.angle()), -0.35, 0.35)      # at most 20 degrees toward the herd's facing
+
+	b["herd_bias"] = lerpf(float(b.get("herd_bias", 0.0)), bias, clampf(delta * 0.5, 0.0, 1.0))
+	rig.rotation.y = float(b["herd_bias"])      # on the rig, not the node: the node's facing follows the server every frame
+	var want: Vector3 = node.global_transform.basis.inverse() * push.limit_length(1.0)
+	rig.position.x = lerpf(rig.position.x, want.x, clampf(delta, 0.0, 1.0))
+	rig.position.z = lerpf(rig.position.z, want.z, clampf(delta, 0.0, 1.0))
+
+
+# One herd member looked up: grazing mates of its kind within HERD_M follow 0.3 to 2 s later.
+func _herd_glance(node: Node3D, b: Dictionary) -> void:
+	if not bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)):
+		return
+
+	for other_id in _bodies:
+		var o: Dictionary = _bodies[other_id]
+
+		if o == b or str(o.get("kind", "")) != str(b.get("kind", "")) or float(o.get("look_left", 0.0)) > 0.0:
+			continue
+
+		if (o["node"] as Node3D).position.distance_to(node.position) <= HERD_M and float(o.get("glance_at", -1.0)) < 0.0:
+			o["glance_at"] = _t + randf_range(0.3, 2.0)      # luck-exempt: when a herd mate looks up (client look)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
