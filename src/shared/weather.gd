@@ -43,6 +43,19 @@ const MIST_CLEAR_FRONT := 0.4              # a clear night (front noise at or be
 const MIST_CLOUDY_FRONT := 0.6             # none from here (cloud cover stops the ground cooling)
 const MIST_TOP_MIN_M := 30.0               # the top of a full layer lies between these, a new height each night
 const MIST_TOP_MAX_M := 140.0
+# Sea fog (advection fog, haar; docs/design/fog_pools_and_sea_fog.md part B): mild moist air over a colder sea, carried in by a
+# light onshore wind, most in late spring and early summer while the land warms and the sea stays cold, none in a calm or a gale.
+# `sea_fog` is its strength over the sea, `sea_fog_land` how far it lies over the land (thinned by the afternoon's heating, back
+# in the evening), `sea_fog_top_m` its top above sea level (0 when there is none).
+const SEA_FOG_BY_ZONE := {"desert": 0.6, "transition": 0.8, "temperate": 1.0, "arctic": 0.8}
+const SEA_FOG_PEAK_PHASE := 0.2            # late spring
+const SEA_FOG_WIND_FROM := 0.2             # none in a calm (wind 0.15 is dead calm) ...
+const SEA_FOG_WIND_FULL := 0.3             # ... full in a light breeze ...
+const SEA_FOG_WIND_EASE := 0.55            # ... thinning from here ...
+const SEA_FOG_WIND_GONE := 0.7             # ... and blown away by this
+const SEA_FOG_LAND_AFTERNOON := 0.35       # share left over the land in the warmest hours
+const SEA_FOG_TOP_MIN_M := 60.0
+const SEA_FOG_TOP_MAX_M := 200.0
 # The sun path of day_cycle.gd (LATITUDE_DEG, AXIAL_TILT_DEG): the burn-off follows the real sunrise. Keep the two the same.
 const SUN_LATITUDE_DEG := 52.0
 const SUN_TILT_DEG := 23.44
@@ -157,6 +170,8 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	var cloud: float = clampf(maxf(precip, front * wet * 1.2), 0.0, 1.0)
 	var wind: float = clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0)
 	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit)
+	var sea_fog: float = _sea_fog(seed_value, game_s, group, phase, wind, front, precip)
+	var sea_fog_land: float = sea_fog * _land_keeps_sea_fog(phase, hour)
 
 	return {
 		"rain": 0.0 if snowing else precip,
@@ -170,6 +185,9 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 		"season": season_of(game_s),
 		"mist": mist,
 		"mist_top_m": mist_top_m(seed_value, game_s, mist),
+		"sea_fog": sea_fog,
+		"sea_fog_land": sea_fog_land,
+		"sea_fog_top_m": sea_fog_top_m(seed_value, game_s, sea_fog),
 	}
 
 
@@ -200,6 +218,35 @@ static func _mist(seed_value: int, game_s: float, group: String, phase: float, h
 	var zone: float = float(MIST_BY_ZONE.get(group, MIST_BY_ZONE["temperate"]))
 	var spirit_gain: float = 1.0 + 0.5 * maxf(spirit, 0.0)                   # high spirit: clear mornings with valley mist
 	return clampf(timing * calm * clear * dry * autumn * night * zone * spirit_gain, 0.0, 1.0)
+
+
+# Sea fog strength over the sea, 0..1 (see the SEA_FOG_ constants). None while rain or snow falls or under thick cloud.
+static func _sea_fog(seed_value: int, game_s: float, group: String, phase: float, wind: float, front: float, precip: float) -> float:
+	var season: float = 0.5 + 0.5 * cos(TAU * (phase - SEA_FOG_PEAK_PHASE))
+	var breeze: float = smoothstep(SEA_FOG_WIND_FROM, SEA_FOG_WIND_FULL, wind) * (1.0 - smoothstep(SEA_FOG_WIND_EASE, SEA_FOG_WIND_GONE, wind))
+	var dry: float = 1.0 - smoothstep(0.02, 0.1, precip)
+	var not_overcast: float = 1.0 - smoothstep(MIST_CLEAR_FRONT, MIST_CLOUDY_FRONT, front)
+	var day: float = smoothstep(0.45, 0.85, _noise(seed_value, 8, game_s / GameClockScript.SECONDS_PER_DAY))
+	var zone: float = float(SEA_FOG_BY_ZONE.get(group, SEA_FOG_BY_ZONE["temperate"]))
+	return clampf(season * breeze * dry * not_overcast * day * zone, 0.0, 1.0)
+
+
+# Share of the sea fog that lies over the land: all of it at night and in the early morning, SEA_FOG_LAND_AFTERNOON in the
+# afternoon (the warm land burns it back toward the coast; it comes in again in the evening).
+static func _land_keeps_sea_fog(phase: float, hour: float) -> float:
+	var sunrise: float = sunrise_hour(phase * float(GameClockScript.DAYS_PER_YEAR))
+	var heating: float = smoothstep(sunrise + 2.0, sunrise + 5.0, hour) * (1.0 - smoothstep(17.0, 20.0, hour))
+	return lerpf(1.0, SEA_FOG_LAND_AFTERNOON, heating)
+
+
+# Top of the sea fog above sea level (m): a new height each day between SEA_FOG_TOP_MIN_M and SEA_FOG_TOP_MAX_M, lower while it
+# is thin. 0 when there is none.
+static func sea_fog_top_m(seed_value: int, game_s: float, sea_fog: float) -> float:
+	if sea_fog <= 0.0:
+		return 0.0
+
+	var full: float = lerpf(SEA_FOG_TOP_MIN_M, SEA_FOG_TOP_MAX_M, _noise(seed_value, 9, game_s / GameClockScript.SECONDS_PER_DAY))
+	return full * (0.6 + 0.4 * sea_fog)
 
 
 # Top of the fog layer above sea level (m): a new height each night between MIST_TOP_MIN_M and MIST_TOP_MAX_M, lower while
