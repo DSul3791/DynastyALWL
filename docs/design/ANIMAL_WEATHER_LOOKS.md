@@ -76,10 +76,15 @@ uses, now passed in the animal conditions) and `Weather.air_c` (through `_air`).
   shakes it away as before.
 - **Snow prints deeper and longer-lived:** with `animal_sign`, prints in snow are up to 40 percent bigger in deep lying snow and
   darker; they last until melt, new snow or drifting (as before), and a thaw (air above 2 C for two game hours) softens them away.
-- **Sources:** Jamie's snow page (#632, `snow-on-slopes.md`) is about drift, scour and melt by aspect and has nothing on animals on
-  ice; the snow-print facts are her tracks page (#696: good prints from about 1 cm of fresh snow, drifting fills them, a sunny day
-  blurs and grows them). The ice behaviour (deer and boar wary and slipping, wolves and foxes sure-footed) is **judged**, not sourced;
-  a knowledge line from Jamie would let it be checked.
+- **Sources:** Jamie's animals-on-ice page (#736, `docs/knowledge/animals-on-ice-and-snow.md`): deer on bare ice fall and stay down
+  splayed on all fours, about one fall per three running strides, and are fine on snow-covered ice; wolves run on ice as a road; snow
+  builds on a standing animal's back over 15 to 30 game minutes; water birds stand at the ice edge by open water; the starter's ice
+  carries only birds, hares, foxes and perhaps a wolf or a roe deer. Snow prints from her tracks page (#696).
+- **Changed for #736:** no slips on snowy ice (lying snow over 0.3); a still animal starts gathering snow after 5 s and is white in about
+  60 real seconds (15 to 30 game minutes); the splayed fall on bare ice while running is the pose library's (pr24, POSE_LIBRARY.md),
+  so this PR keeps the slips and the fall comes with the library.
+- **For Steve (#736):** water birds standing on the ice edge by open water; what the starter ice carries (birds, hares, foxes, a
+  wolf or roe deer at most) as a server rule for who walks out on it.
 
 Check: run sheet m56 (a deer and a wolf walking on frozen water: the deer slips, the wolf does not; a deer standing still in snow
 whitening) and DINO_SHOTS.md.

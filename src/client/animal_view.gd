@@ -3453,10 +3453,11 @@ func _weather_look(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 	var lying: bool = state == 19 or bool(b.get("asleep", false))
 	var snowing: float = float(wx.get("snow", 0.0))
 	b["still_t"] = float(b.get("still_t", 0.0)) + delta if speed < 0.1 else 0.0
-	var holds_snow: bool = lying or (ice_looks and float(b["still_t"]) > 30.0)      # ice_looks: a still animal gathers snow too
+	var holds_snow: bool = lying or (ice_looks and float(b["still_t"]) > 5.0)      # ice_looks: a still animal gathers snow too
 
 	if holds_snow and snowing > 0.2:
-		b["snow_back"] = minf(1.0, float(b.get("snow_back", 0.0)) + delta / 120.0 * snowing)
+		# Lying: over about 2 real minutes. Standing still (ice_looks): over 15 to 30 game minutes, about 60 real seconds (Jamie #736).
+		b["snow_back"] = minf(1.0, float(b.get("snow_back", 0.0)) + delta / (120.0 if lying else 60.0) * snowing)
 	elif holds_snow and ice_looks and float(b.get("snow_back", 0.0)) > 0.0 and air > 0.0:
 		b["snow_back"] = maxf(0.0, float(b["snow_back"]) - delta * air / 600.0)      # it melts on the back above 0 C, faster the warmer (Weather.air_c)
 	elif not holds_snow and float(b.get("snow_back", 0.0)) > 0.0:
@@ -4184,6 +4185,9 @@ func _ice_look(node: Node3D, b: Dictionary, _state: int, speed: float, delta: fl
 		return
 
 	b["speed_x"] = float(b.get("speed_x", 1.0)) * 0.75      # short, careful steps (applied after the clip)
+
+	if str(b.get("kind", "")) in SURE_ON_ICE or float(_cond().get("ground_snow", 0.0)) > 0.3:
+		return      # sure-footed kinds, and anyone on snowy ice (Jamie #736: deer are fine on snow-covered ice)
 
 	if str(b.get("kind", "")) in SURE_ON_ICE:
 		return
