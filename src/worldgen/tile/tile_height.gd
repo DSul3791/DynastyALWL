@@ -79,7 +79,7 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 		var u: float = (x0 + float(i) * spacing_m - _elevation.origin_x) / cell - 0.5
 		var base: int = int(floor(u))
 		column_base[i] = base
-		_cubic_weights(u - float(base), column_weights, i * 4)
+		_frame_weights(u - float(base), column_weights, i * 4)
 
 	# Source rows needed, with the horizontal pass done once per source row.
 	var first_row: int = int(floor((z0 - _elevation.origin_z) / cell - 0.5)) - 1
@@ -109,7 +109,7 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 	for j in range(samples):
 		var v: float = (z0 + float(j) * spacing_m - _elevation.origin_z) / cell - 0.5
 		var base_row: int = int(floor(v))
-		_cubic_weights(v - float(base_row), weights, 0)
+		_frame_weights(v - float(base_row), weights, 0)
 		var line_0: PackedFloat32Array = horizontal[base_row - 1 - first_row]
 		var line_1: PackedFloat32Array = horizontal[base_row - first_row]
 		var line_2: PackedFloat32Array = horizontal[base_row + 1 - first_row]
@@ -319,6 +319,30 @@ func _smooth_height(x: float, z: float) -> float:
 	return value
 
 
+# The landform for the watershed model (landform_only) is drawn from the 160 m world map with a cubic B-spline, which
+# smooths, and not with the Catmull-Rom cubic, which passes through every map cell: passing through, it drew the map's cell
+# grid into the landform as stripes and blocks a cell or two wide (zoom pictures of run 8a38328c, 8 Nov 2026), and the
+# landscape model's rivers followed them as ruler lines. The world map is a sample of the massif-scale shape; a smoothing
+# spline keeps that shape and leaves out what is only the grid. It takes a little off a lone summit cell (about a sixth of
+# its rise over its neighbours on each axis); the summit tent (_add_summits) is added after and keeps its full height.
+# The game's own tiles keep the Catmull-Rom cubic until the watershed rebuild replaces them.
+func _frame_weights(t: float, out: PackedFloat32Array, offset: int) -> void:
+	if landform_only:
+		_bspline_weights(t, out, offset)
+	else:
+		_cubic_weights(t, out, offset)
+
+
+static func _bspline_weights(t: float, out: PackedFloat32Array, offset: int) -> void:
+	var t2: float = t * t
+	var t3: float = t2 * t
+	var u: float = 1.0 - t
+	out[offset] = u * u * u / 6.0
+	out[offset + 1] = (3.0 * t3 - 6.0 * t2 + 4.0) / 6.0
+	out[offset + 2] = (-3.0 * t3 + 3.0 * t2 + 3.0 * t + 1.0) / 6.0
+	out[offset + 3] = t3 / 6.0
+
+
 static func _cubic_weights(t: float, out: PackedFloat32Array, offset: int) -> void:
 	var t2: float = t * t
 	var t3: float = t2 * t
@@ -436,8 +460,10 @@ func _island_texture_rows() -> PackedFloat32Array:
 # A real peak on every summit of the world map: a tent that adds `spire_share` of the summit height at
 # the top and fades to nothing `radius_factor` x that far out, with an exponent above 1 so the point is sharp
 # and the foot blends into the mountain. A function of world position only, so tiles agree on shared edges.
-# Along the summit's spurs (WorldElevation.spur_dirs, the same ones the world map's summit top uses) the tent reaches
+# Along the summit's spurs (WorldElevation.spur_weight_at, the same ones the world map's summit top uses) the tent reaches
 # `spur_reach` farther, so it is gentler there and the spurs run on as ridges between steeper faces, not a round point.
+# The spurs curve and widen as they fall, and start `spur_apex_share` of the reach out from the point, so the top is not
+# drawn as a star of straight rays (zoom pictures of run 8a38328c).
 func _add_summits() -> void:
 	if not _rules.has("summit") or _elevation.summits.is_empty():
 		return
@@ -448,6 +474,7 @@ func _add_summits() -> void:
 	var power: float = float(rules["power"])
 	var cap: float = float(rules["max_m"])
 	var spur_reach: float = float(rules.get("spur_reach", 0.0))
+	var apex_share: float = float(rules.get("spur_apex_share", 0.0))
 	var x0: float = float(origin_sx) * spacing_m
 	var z0: float = float(origin_sz) * spacing_m
 	var last: int = samples - 1
@@ -460,7 +487,8 @@ func _add_summits() -> void:
 		if rise <= 0.0 or reach <= 0.0:
 			continue
 
-		var dirs: PackedFloat32Array = _elevation.spur_dirs(summit) if spur_reach > 0.0 else PackedFloat32Array()
+		var spurs: bool = spur_reach > 0.0 and not _elevation.spur_dirs(summit).is_empty()
+		var inner: float = apex_share * reach
 		var east: float = (float(summit[0]) - x0) / spacing_m
 		var north: float = (float(summit[1]) - z0) / spacing_m
 		var span: float = reach * (1.0 + spur_reach) / spacing_m
@@ -478,8 +506,8 @@ func _add_summits() -> void:
 				if distance >= reach * (1.0 + spur_reach):
 					continue
 
-				if not dirs.is_empty():
-					here = reach * (1.0 + spur_reach * _elevation.spur_weight(dirs, offset.angle()))
+				if spurs:
+					here = reach * (1.0 + spur_reach * _elevation.spur_weight_at(summit, offset * spacing_m, inner))
 
 				if distance < here:
 					heights[j * samples + i] += rise * pow(1.0 - distance / here, power)

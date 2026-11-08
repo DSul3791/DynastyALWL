@@ -839,7 +839,7 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 	# Not one disc: a single round body wears out as a round dome in a circular cliff ring (run c793c47c, 8 Nov), which no
 	# real batholith does; they are clusters of plutons with lobed outlines (the Cuillin's gabbro and granite centres, the
 	# Mourne granites G1 to G5). So each summit gets a core under the summit and up to `lobes.max` lobes, each an ellipse
-	# stretched along one of the summit's spurs (WorldElevation.spur_dirs), so the granite runs out under the ridges and its
+	# stretched along one of the summit's spurs (WorldElevation.spur_crest, where the spur bends), so the granite runs out under the ridges and its
 	# edge, where the cliffs come, is lobed. Cores first, then lobes, so the cores always get one of the 9 ids.
 	var summit_rules: Dictionary = rules.get("summit_pluton", {})
 
@@ -901,9 +901,10 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 					push_warning("tile_geology: no id left for a summit_pluton lobe in cell %d,%d (9 per cell)" % [home.x, home.y])
 					break
 
-				var along: float = dirs[k] + srng.randf_range(-float(lobes["angle_jitter_rad"]), float(lobes["angle_jitter_rad"]))
+				var jitter: float = srng.randf_range(-float(lobes["angle_jitter_rad"]), float(lobes["angle_jitter_rad"]))
 				var ra: float = float(entry[3]) * srng.randf_range(float(lobes["radius_share"][0]), float(lobes["radius_share"][1]))
 				var out: float = float(entry[3]) * srng.randf_range(float(lobes["offset_share"][0]), float(lobes["offset_share"][1]))
+				var along: float = _elevation.spur_crest(entry[0], k, out) + jitter    # the crest's direction where the lobe lies
 				var centre: Vector2 = entry[1] + Vector2(cos(along), sin(along)) * out
 				body.call(entry[0], centre, ra, ra * srng.randf_range(float(lobes["aspect"][0]), float(lobes["aspect"][1])), along, srng)
 

@@ -48,7 +48,9 @@ var _fine_x: PackedByteArray
 var _fine_z: PackedByteArray
 var _master: int = 0
 var _spur_cache: Dictionary = {}   # summit position -> its spur directions (spur_dirs)
-var _spur_width: float = 0.35         # standing.tip_spurs.width_rad (spur_weight)
+var _spur_width: float = 0.35         # standing.tip_spurs.width_rad (spur_weight_at)
+var _spur_widen: float = 0.0          # standing.tip_spurs.widen (spur_weight_at)
+var _bend_cache: Dictionary = {}      # summit position -> how much each spur bends (_spur_bends)
 var _starters: Array = []   # starter mounts (ellipses), so shelf hills away from them can be given more relief
 
 
@@ -58,7 +60,9 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 	rules = sketch_rules
 	_master = settings.master_seed
 	_spur_cache.clear()
+	_bend_cache.clear()
 	_spur_width = float(rules.get("standing", {}).get("tip_spurs", {}).get("width_rad", 0.35))
+	_spur_widen = float(rules.get("standing", {}).get("tip_spurs", {}).get("widen", 0.0))
 	cell_m = cell_override if cell_override > 0.0 else float(rules.get("cell_m", 160))
 	var tile: float = float(settings.tile_size_m)
 	size_x = int(round(float(settings.tiles_x) * tile / cell_m))
@@ -209,77 +213,83 @@ func _standing_open() -> PackedByteArray:
 	return open
 
 
-# Pass 1: two chamfer passes (straight and diagonal steps), so off-axis cones are a little gentler than the limit, never steeper.
+# Pass 1: every open land cell is raised to the highest cone of slope flank_slope hanging from any open cell at or above
+# from_m, with the true straight-line distance. Each cell carries the cell its best cone hangs from (its source) and offers
+# it to its neighbours in a forward and a backward raster sweep, repeated until nothing changes (vector propagation, as in
+# Danielsson's 1980 distance transform; the region each source wins is star-shaped from it, so the sweeps reach it). Until
+# 8 Nov 2026 this was a chamfer of straight and diagonal steps: the cones came out 8-sided, with straight creases along the
+# compass and diagonal lines and a ripple of one cell between them, which the tile cubic drew as stripes and the landscape
+# model's rivers followed as ruler lines (zoom pictures of run 8a38328c). The cones still pass only through open cells, so
+# they go round a crater, not over it; a cell beyond one is measured straight from its source, a little higher than round.
 func _stand_high_ground() -> void:
 	var standing: Dictionary = rules.get("standing", {})
 
 	if standing.is_empty():
 		return
 
-	var straight: float = float(standing["flank_slope"]) * cell_m
-	var diagonal: float = straight * sqrt(2.0)
+	var slope: float = float(standing["flank_slope"])
 	var from_m: float = float(standing["from_m"])
 	var open: PackedByteArray = _standing_open()
+	var count: int = heights.size()
+	var source: PackedInt32Array = PackedInt32Array()
 	var envelope: PackedFloat32Array = PackedFloat32Array()
-	envelope.resize(heights.size())
+	source.resize(count)
+	envelope.resize(count)
 
-	for index in range(heights.size()):
-		envelope[index] = heights[index] if heights[index] >= from_m else -INF
+	for index in range(count):
+		if open[index] == 1 and heights[index] >= from_m:
+			source[index] = index
+			envelope[index] = heights[index]
+		else:
+			source[index] = -1
+			envelope[index] = -INF
 
-	for row in range(size_z):
-		for column in range(size_x):
-			var index: int = row * size_x + column
+	var forward: Array = [Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]
+	var backward: Array = [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1)]
 
-			if open[index] == 0:
-				continue
+	for _round in range(6):
+		var changed: bool = false
 
-			var best: float = envelope[index]
+		for sweep in range(2):
+			var steps: Array = forward if sweep == 0 else backward
 
-			if column > 0 and open[index - 1] == 1:
-				best = maxf(best, envelope[index - 1] - straight)
+			for k in range(size_z):
+				var row: int = k if sweep == 0 else size_z - 1 - k
 
-			if row > 0:
-				var above: int = index - size_x
+				for m in range(size_x):
+					var column: int = m if sweep == 0 else size_x - 1 - m
+					var index: int = row * size_x + column
 
-				if open[above] == 1:
-					best = maxf(best, envelope[above] - straight)
+					if open[index] == 0:
+						continue
 
-				if column > 0 and open[above - 1] == 1:
-					best = maxf(best, envelope[above - 1] - diagonal)
+					for step in steps:
+						var c: int = column + step.x
+						var r: int = row + step.y
 
-				if column < size_x - 1 and open[above + 1] == 1:
-					best = maxf(best, envelope[above + 1] - diagonal)
+						if c < 0 or c >= size_x or r < 0 or r >= size_z:
+							continue
 
-			envelope[index] = best
+						var src: int = source[r * size_x + c]
 
-	for row in range(size_z - 1, -1, -1):
-		for column in range(size_x - 1, -1, -1):
-			var index: int = row * size_x + column
+						if src < 0 or open[r * size_x + c] == 0 or src == source[index]:
+							continue
 
-			if open[index] == 0:
-				continue
+						var dc: float = float(column - src % size_x)
+						var dr: float = float(row) - floorf(float(src) / float(size_x))
+						var cone: float = heights[src] - slope * cell_m * sqrt(dc * dc + dr * dr)
 
-			var best: float = envelope[index]
+						if cone > envelope[index]:
+							envelope[index] = cone
+							source[index] = src
+							changed = true
 
-			if column < size_x - 1 and open[index + 1] == 1:
-				best = maxf(best, envelope[index + 1] - straight)
+		if not changed:
+			break
 
-			if row < size_z - 1:
-				var below: int = index + size_x
-
-				if open[below] == 1:
-					best = maxf(best, envelope[below] - straight)
-
-				if column > 0 and open[below - 1] == 1:
-					best = maxf(best, envelope[below - 1] - diagonal)
-
-				if column < size_x - 1 and open[below + 1] == 1:
-					best = maxf(best, envelope[below + 1] - diagonal)
-
-			envelope[index] = best
-
-			if best > heights[index]:
-				heights[index] = best
+	for index in range(count):
+		if open[index] == 1 and envelope[index] > heights[index]:
+			heights[index] = envelope[index]
 
 
 # Pass 2: a summit top round each summit, gentle near the summit and steepening smoothly to the flank slope, with spurs (see
@@ -306,7 +316,6 @@ func _stand_summits() -> bool:
 		var reach_m: float = reach_share * top
 		var b0: float = float(blend[0]) * reach_m
 		var b1: float = maxf(float(blend[1]) * reach_m, b0 + 1.0)
-		var dirs: PackedFloat32Array = spur_dirs(summit)
 		var outer_m: float = b1 + top / flank                 # past it the top would be below sea level
 		var reach: int = int(ceil(outer_m / cell_m)) + 1
 		var c0: int = int(floor((centre.x - origin_x) / cell_m))
@@ -323,7 +332,7 @@ func _stand_summits() -> bool:
 
 				# The slope at distance d: tip x f (f below 1 on a spur) blending to flank by a smoothstep from b0 to b1. The
 				# drop is its integral: tip f d + (flank - tip f) x (integral of the smoothstep from 0 to d).
-				var f: float = 1.0 - depth * spur_weight(dirs, offset.angle())
+				var f: float = 1.0 - depth * spur_weight_at(summit, offset, 2.0 * cell_m) if depth > 0.0 else 1.0
 				var t: float = clampf((distance - b0) / (b1 - b0), 0.0, 1.0)
 				var ramp: float = (b1 - b0) * (t * t * t - 0.5 * t * t * t * t) + maxf(distance - b1, 0.0)
 				var top_here: float = top - tip * f * distance - (flank - tip * f) * ramp
@@ -360,19 +369,62 @@ func spur_dirs(summit: Array) -> PackedFloat32Array:
 	return dirs
 
 
-# How much of a spur direction `angle` lies on: 1 on a spur's crest line, falling smoothly to 0 at about
-# `tip_spurs.width_rad` x 2 either side (a Gaussian of that width).
-func spur_weight(dirs: PackedFloat32Array, angle: float) -> float:
-	if dirs.is_empty():
+# How far out a summit's spurs bend and widen: the reach of the summit top (standing.tip_reach_share x the summit height,
+# the same as the tile tent's reach), so a spur is shaped alike on a low summit and a high one.
+func spur_scale_m(summit: Array) -> float:
+	return float(rules.get("standing", {}).get("tip_reach_share", 0.64)) * float(summit[2])
+
+
+# How much each spur bends, in radians over one spur_scale_m, from its own seed (so spur_dirs keeps its numbers).
+func _spur_bends(summit: Array) -> PackedFloat32Array:
+	var key: Vector2i = Vector2i(int(round(float(summit[0]))), int(round(float(summit[1]))))
+
+	if _bend_cache.has(key):
+		return _bend_cache[key]
+
+	var bends: PackedFloat32Array = PackedFloat32Array()
+	var limit: float = float(rules.get("standing", {}).get("tip_spurs", {}).get("bend_rad", 0.0))
+	var rng: RandomNumberGenerator = SeedUtil.rng_for(_master, "summit_spur_bends", key.x, key.y)
+
+	for k in range(spur_dirs(summit).size()):
+		bends.append(rng.randf_range(-limit, limit))
+
+	_bend_cache[key] = bends
+	return bends
+
+
+# The direction (radians, as Vector2.angle) of spur k's crest line at distance_m from the summit. Crests are not rays: each
+# bends by its own amount, so a spur curves away from the summit as real ridges do (a crest that runs straight out from a
+# point, on every spur, read as a drawn star in the zoom pictures of run 8a38328c).
+func spur_crest(summit: Array, k: int, distance_m: float) -> float:
+	var dirs: PackedFloat32Array = spur_dirs(summit)
+	var bends: PackedFloat32Array = _spur_bends(summit)
+	return wrapf(dirs[k] + bends[k] * distance_m / spur_scale_m(summit), -PI, PI)
+
+
+# How much of a spur the point at `offset` (metres from the summit) lies on: 1 on a crest line, falling off as a Gaussian of
+# `tip_spurs.width_rad` either side, the width growing by `tip_spurs.widen` per spur_scale_m out (a ridge broadens into its
+# shoulder as it falls). Near the summit the spurs fade in, from nothing at the summit to full at 2 x inner_m: the angle
+# round a point changes faster than any grid can hold near it, and drawn there it made thin rays from the summit. The fade
+# starts at the summit itself, not at inner_m, so a spur's weight never grows faster with distance than its ground falls
+# (a faster fade-in drew a shoulder across each spur). Callers pass what their grid can hold: the tile tent
+# summit.spur_apex_share of its reach.
+func spur_weight_at(summit: Array, offset: Vector2, inner_m: float) -> float:
+	var dirs: PackedFloat32Array = spur_dirs(summit)
+	var distance: float = offset.length()
+
+	if dirs.is_empty() or distance <= 0.0:
 		return 0.0
 
+	var width: float = _spur_width * (1.0 + _spur_widen * distance / spur_scale_m(summit))
+	var angle: float = offset.angle()
 	var best: float = 0.0
 
-	for a in dirs:
-		var d: float = wrapf(angle - a, -PI, PI) / _spur_width
+	for k in range(dirs.size()):
+		var d: float = wrapf(angle - spur_crest(summit, k, distance), -PI, PI) / width
 		best = maxf(best, exp(-d * d))
 
-	return best
+	return best * smoothstep(0.0, 2.0 * inner_m, distance)
 
 
 func _find_summits() -> void:
