@@ -445,6 +445,8 @@ func _ready() -> void:
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.send_chest_info = func(peer, id, keep_out, may_set): net.chest_info.rpc_id(peer, id, keep_out, may_set)
 	items.send_craft_stock = func(peer, numbers, counts): net.craft_stock.rpc_id(peer, numbers, counts)
+	items.send_favourites = func(peer, flags): net.favourites.rpc_id(peer, flags)
+	items.send_bulk_done = func(peer, kind, stacks, containers, ids): net.bulk_done.rpc_id(peer, kind, stacks, containers, ids)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()
 	items.season_at = func(pos): return WeatherScript.season_at(game_clock.seconds, pos.z, float(settings.tile_size_m), settings.equator_tile_row)   # a place's own season (drinking water by source)

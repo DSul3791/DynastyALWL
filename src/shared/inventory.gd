@@ -14,6 +14,7 @@ var usable: int = SLOTS               # slots in use: a small container only fil
 var bag_from: int = 0                 # a player's pack: new items go to slots from here first, the hotbar (0 to 9) only when the bag is full
 var stack_all: bool = false           # a store that stacks every item to the u16 count (a fire's wood store); not saved, the owner sets it each time
 var wear: PackedInt32Array = PackedInt32Array()      # uses spent so far, tools only (stack 1); 0 for anything else
+var fav: PackedInt32Array = PackedInt32Array()       # favourites (inventory step 3, a pack only): the item number a slot was favourited with, 0 none; see is_fav
 
 
 func _init(item_table = null) -> void:
@@ -21,6 +22,7 @@ func _init(item_table = null) -> void:
 	numbers.resize(SLOTS)
 	counts.resize(SLOTS)
 	wear.resize(SLOTS)
+	fav.resize(SLOTS)
 
 
 # Add as many as fit (fills partial stacks first). Returns how many were left over.
@@ -67,6 +69,7 @@ func add(number: int, count: int, item_wear: int = 0) -> int:
 				numbers[i] = number
 				counts[i] = put
 				wear[i] = item_wear
+				fav[i] = 0
 				left -= put
 
 	return left
@@ -110,6 +113,7 @@ func remove(number: int, count: int) -> bool:
 			if counts[i] == 0:
 				numbers[i] = 0
 				wear[i] = 0
+				fav[i] = 0
 
 	return true
 
@@ -173,6 +177,7 @@ func take_from_slot(slot: int, count: int) -> Dictionary:
 	if counts[slot] == 0:
 		numbers[slot] = 0
 		wear[slot] = 0
+		fav[slot] = 0
 
 	return {"number": number, "count": take, "wear": item_wear}
 
@@ -192,18 +197,44 @@ func move(from_slot: int, to_slot: int) -> void:
 		if counts[from_slot] == 0:
 			numbers[from_slot] = 0
 			wear[from_slot] = 0
+			fav[from_slot] = 0
 
 		return
 
 	var n: int = numbers[to_slot]
 	var c: int = counts[to_slot]
 	var w: int = wear[to_slot]
+	var f: int = fav[to_slot]
 	numbers[to_slot] = numbers[from_slot]
 	counts[to_slot] = counts[from_slot]
 	wear[to_slot] = wear[from_slot]
+	fav[to_slot] = fav[from_slot]   # a favourite goes with its stack
 	numbers[from_slot] = n
 	counts[from_slot] = c
 	wear[from_slot] = w
+	fav[from_slot] = f
+
+
+# A favourite stack (inventory step 3): Sort, Store all and Stack to nearby leave it where it is. The flag holds the item number it was set with,
+# so a slot that empties (or gets something else by a direct write) is no longer a favourite.
+func is_fav(slot: int) -> bool:
+	return slot >= 0 and slot < SLOTS and numbers[slot] != 0 and fav[slot] == numbers[slot]
+
+
+func set_fav(slot: int, on: bool) -> void:
+	if slot >= 0 and slot < SLOTS:
+		fav[slot] = numbers[slot] if on else 0
+
+
+# One byte per slot, 1 for a favourite: what the client is sent (protocol 99 favourites).
+func fav_flags() -> PackedByteArray:
+	var out: PackedByteArray = PackedByteArray()
+	out.resize(SLOTS)
+
+	for i in SLOTS:
+		out[i] = 1 if is_fav(i) else 0
+
+	return out
 
 
 func to_bytes() -> PackedByteArray:
@@ -231,13 +262,13 @@ func from_bytes(bytes: PackedByteArray) -> bool:
 	return true
 
 
-# JSON form for the server save file: [[number, count, wear], ...] with empty slots as [0, 0, 0]. Version 1
-# saves had [number, count] only; they load with zero wear.
+# JSON form for the server save file: [[number, count, wear], ...] with empty slots as [0, 0, 0], and a fourth 1 on a favourite
+# (inventory step 3). Version 1 saves had [number, count] only; they load with zero wear.
 func to_json_array() -> Array:
 	var out: Array = []
 
 	for i in SLOTS:
-		out.append([numbers[i], counts[i], wear[i]])
+		out.append([numbers[i], counts[i], wear[i], 1] if is_fav(i) else [numbers[i], counts[i], wear[i]])
 
 	return out
 
@@ -247,3 +278,4 @@ func from_json_array(data: Array) -> void:
 		numbers[i] = int(data[i][0])
 		counts[i] = clampi(int(data[i][1]), 0, 65535)   # a hand-edited or out-of-range count is pulled into the u16 range
 		wear[i] = int(data[i][2]) if data[i].size() > 2 else 0
+		fav[i] = numbers[i] if data[i].size() > 3 and int(data[i][3]) == 1 else 0
