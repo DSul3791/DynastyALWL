@@ -23,6 +23,7 @@ const DigScript := preload("res://src/client/dig_sounds.gd")
 const CaveScript := preload("res://src/client/cave_sounds.gd")
 const SplashScript := preload("res://src/client/rain_splashes.gd")
 const IceScript := preload("res://src/client/ice_sounds.gd")
+const IceFeelScript := preload("res://src/client/ice_feel.gd")   # --ice-feel (docs/design/ice_walk_feel.md)
 const CaveWaterScript := preload("res://src/client/cave_water_sounds.gd")
 const WindHoleScript := preload("res://src/client/wind_structures.gd")
 const HitScript := preload("res://src/client/hit_sounds.gd")
@@ -225,6 +226,8 @@ var emitters                            # Emitters: sounds for server-owned enti
 var creatures                           # CreatureSounds: deer, rabbit, fox, wolf, bear calls (call_at, call_in_zone; wild = natural far calls)
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
+var ice_break_event: String = ""      # --ice-feel: "", "skim", "film" or "plunge" for the last footstep (terrain_client reads it)
+var _wading_ice: bool = false          # the last water step was through skim or film (the next film step is no plunge)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
 var cavewater                          # CaveWaterSounds: the water inside spring caves (stream along the passage, spring pool, more springs = more water)
 var windhole                           # WindStructures: whistle through a lean-to gap, moan at a cave mouth
@@ -1059,7 +1062,24 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		wet.step(body.global_position)
 
 	if surface == "ice":
-		ice.step(feet, gait, boost_db)
+		ice.step(feet, gait, boost_db, body.velocity)
+
+	# --ice-feel (ice_walk_feel.md section 3): wading through skim or film on a pond breaks it; the first such step from the bank or a sheet
+	# is the plunge. terrain_client reads ice_break_event after the step (the patch in the look, the eye jolt, the wading speed).
+	ice_break_event = ""
+
+	if IceFeelScript.on and surface == "water" and weather != null and water.still_near():
+		var band: int = IceFeelScript.band_of(weather.ice_cover)
+
+		if band == IceFeelScript.Band.SKIM or band == IceFeelScript.Band.FILM:
+			var first: bool = not _wading_ice
+			ice.skim_step(feet, band, first)
+			ice_break_event = "plunge" if band == IceFeelScript.Band.FILM and first else IceFeelScript.BAND_NAMES[band]
+			_wading_ice = true
+		else:
+			_wading_ice = false
+	elif surface != "water":
+		_wading_ice = false
 
 	# Wet ground: a puddle splash joins most steps on grass, stone, gravel and sand.
 	if weather != null and weather.ground_wet >= PUDDLE_WET and surface in PUDDLE_SURFACES and _rng.randf() < weather.ground_wet * 0.7:

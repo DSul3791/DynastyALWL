@@ -53,6 +53,7 @@ var outcrop_cells: Dictionary = {}      # rock name -> cells at the bedrock surf
 
 var _settings
 var _rules: Dictionary = {}
+var _summit_tent: Dictionary = {}     # tile_rules summit: the tent tile_height._add_summits puts on every world-map summit
 var _tables
 var _elevation
 var _master: int = 0
@@ -79,6 +80,7 @@ var _kind_field: PackedByteArray
 func setup(settings, rules: Dictionary, tables, elevation, sketch: Dictionary) -> void:
 	_settings = settings
 	_rules = rules["geology"]
+	_summit_tent = rules.get("summit", {})
 	_tables = tables
 	_elevation = elevation
 	_master = settings.master_seed
@@ -397,6 +399,15 @@ func _cell_hints(cx: int, cz: int) -> Array:
 # ==================================================
 # FEATURES AND ORE BODIES
 # ==================================================
+
+# The height the ground's summit reaches over a world-map summit of `top` m: the tile summit tent (tile_height._add_summits)
+# adds spire_share of it, capped so the summit stays under max_m. Rule 3 tests this, the summit the rivers and the ice meet.
+func _ground_summit_m(top: float) -> float:
+	if _summit_tent.is_empty():
+		return top
+
+	return top + minf(float(_summit_tent["spire_share"]) * top, maxf(float(_summit_tent["max_m"]) - top, 0.0))
+
 
 func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Vector2, home: Vector2i, local_cell: int) -> Dictionary:
 	var kind: String = cell["kind"]
@@ -829,6 +840,89 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 	for ore in ores:
 		ore["local_id"] = int(ore["local_id"]) + 50
 		ore["id"] = "%d,%d#%d" % [home.x, home.y, int(ore["local_id"])]
+
+	# Hard rock under the tall peaks (docs/water/watershed_rebuild_design.md, stage A1 rule 3, 8 Nov 2026). Every summit whose
+	# ground stands at or above summit_pluton.min_summit_m stands on a granite intrusion whose roof is above the ground over
+	# the upper massif, as on Arran, the Mournes and the Skye Cuillin, where the hard core stood while the rock round it wore
+	# down. The generator sets the height first, so the consistent world puts the hard rock where the height is; a granite
+	# core holds steep walls, so valleys can deepen toward the peak without wearing the summit down. Volcanic cells keep their
+	# own vents. The summit belongs to the cell whose square holds it; its own seed (from the summit's position) leaves this
+	# cell's other features and ores as they were. It carries no ore of its own yet.
+	# Not one disc: a single round body wears out as a round dome in a circular cliff ring (run c793c47c, 8 Nov), which no
+	# real batholith does; they are clusters of plutons with lobed outlines (the Cuillin's gabbro and granite centres, the
+	# Mourne granites G1 to G5). So each summit gets a core under the summit and up to `lobes.max` lobes, each an ellipse
+	# stretched along one of the summit's spurs (WorldElevation.spur_crest, where the spur bends), so the granite runs out under the ridges and its
+	# edge, where the cliffs come, is lobed. Cores first, then lobes, so the cores always get one of the 9 ids.
+	# The test is on the ground's summit (_ground_summit_m: the world map's summit plus the tile tent on it), not the world
+	# map's own height (ws580g, 8 Nov): the second massif stood 977 m on the ground from about 860 m on the world map, so it
+	# got no granite, and its chalk top lost 41 m to the rivers and about 320 m to the ice; on granite (ws580e) the ice took
+	# nothing from it.
+	var summit_rules: Dictionary = rules.get("summit_pluton", {})
+
+	if not summit_rules.is_empty() and kind != "volcanic":
+		var square: Vector2i = Vector2i(floori(seed_point.x / _cell_m), floori(seed_point.y / _cell_m))
+		var shift: Vector2 = Vector2(float(square.x - int(cell["cell"][0])), float(square.y - int(cell["cell"][1]))) * _cell_m
+		var mine: Array = []        # [summit, its position in this cell's frame, its rng, radius]
+
+		for summit in _elevation.summits:
+			if _ground_summit_m(float(summit[2])) < float(summit_rules["min_summit_m"]):
+				continue
+
+			var at: Vector2 = Vector2(float(summit[0]), float(summit[1])) + shift
+
+			if floori(at.x / _cell_m) != square.x or floori(at.y / _cell_m) != square.y:
+				continue
+
+			var srng: RandomNumberGenerator = SeedUtil.rng_for(_master, "summit_pluton", int(round(float(summit[0]))), int(round(float(summit[1]))))
+			mine.append([summit, at, srng, srng.randf_range(float(summit_rules["radius_m"][0]), float(summit_rules["radius_m"][1]))])
+
+		var used: Array = [0]       # ids used, in an Array because a lambda copies a plain int
+		var body = func(summit: Array, centre: Vector2, ra: float, rb: float, angle: float, srng: RandomNumberGenerator) -> void:
+			var top: float = float(summit[2])
+			var roof: float = top * (1.0 + float(summit_rules["roof_above_summit_share"]))
+			used[0] += 1
+			var local: int = local_cell * 100 + 90 + int(used[0])
+			made_features.append({
+				"id": "%d,%d#%d" % [home.x, home.y, local],
+				"home_tile": [home.x, home.y],
+				"local_id": local,
+				"type": "intrusion",
+				"size": "summit_pluton",
+				"rock": "granite",
+				"center": [snappedf(centre.x, 0.1), snappedf(centre.y, 0.1)],
+				"radius_a_m": snappedf(ra, 0.1),
+				"radius_b_m": snappedf(rb, 0.1),
+				"angle": snappedf(angle, 0.001),
+				"top_y": snappedf(roof, 0.1),
+				"roof_drop_m": snappedf(roof - top * float(summit_rules["edge_share"]), 0.1),
+				"bottom_y": snappedf(roof - srng.randf_range(float(summit_rules["depth_m"][0]), float(summit_rules["depth_m"][1])), 0.1),
+			})
+
+		for entry in mine:
+			var srng: RandomNumberGenerator = entry[2]
+			var ra: float = float(entry[3]) * srng.randf_range(float(summit_rules["core_radius_share"][0]), float(summit_rules["core_radius_share"][1]))
+			body.call(entry[0], entry[1], ra, ra * srng.randf_range(float(summit_rules["aspect"][0]), float(summit_rules["aspect"][1])), srng.randf() * PI, srng)
+
+		var lobes: Dictionary = summit_rules.get("lobes", {})
+
+		for entry in mine:
+			if lobes.is_empty():
+				break
+
+			var srng: RandomNumberGenerator = entry[2]
+			var dirs: PackedFloat32Array = _elevation.spur_dirs(entry[0])
+
+			for k in range(mini(dirs.size(), int(lobes["max"]))):
+				if int(used[0]) >= 9:
+					push_warning("tile_geology: no id left for a summit_pluton lobe in cell %d,%d (9 per cell)" % [home.x, home.y])
+					break
+
+				var jitter: float = srng.randf_range(-float(lobes["angle_jitter_rad"]), float(lobes["angle_jitter_rad"]))
+				var ra: float = float(entry[3]) * srng.randf_range(float(lobes["radius_share"][0]), float(lobes["radius_share"][1]))
+				var out: float = float(entry[3]) * srng.randf_range(float(lobes["offset_share"][0]), float(lobes["offset_share"][1]))
+				var along: float = _elevation.spur_crest(entry[0], k, out) + jitter    # the crest's direction where the lobe lies
+				var centre: Vector2 = entry[1] + Vector2(cos(along), sin(along)) * out
+				body.call(entry[0], centre, ra, ra * srng.randf_range(float(lobes["aspect"][0]), float(lobes["aspect"][1])), along, srng)
 
 	return {"features": made_features, "ores": ores}
 

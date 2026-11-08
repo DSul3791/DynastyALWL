@@ -12,6 +12,10 @@ extends RefCounted
 # - Cold and fog (3.5): frost eats the far high end about twice as fast; fog trims it past 100 m. Near sounds stay crisp.
 # - Masking (3.4): rain and a gale hide small sounds past a mask distance (12 dB down over one more of it); big low sounds come through.
 # - Rivers (3.7): river voices fade like a line out to 50 m (line_db; sound_occlusion.gd adds it for voices marked "air_line").
+# - Breeze (3.8, step 5): a moderate breeze cuts every range about five times (Jamie #683): past 200 m, every source 6 dB down at
+#   wind 0.3 rising to 14 dB at wind 0.5, big low sounds too.
+# - Running water (3.9, step 6): a brook or rapids beside the listener is a loud bed that hides small sounds like rain does
+#   (Jamie #742: within about 20 m of a brook or 40 m of rapids the bed is as loud as a force 4 wind). The water's own voices are left out.
 # - Fresh snow (3.5): far sounds 4 dB down and duller on fresh snow; the freshness lasts about 2 game days, faster gone in a thaw or rain.
 
 const NEAR_M := 50.0                    # closer than this the wind changes nothing
@@ -53,6 +57,24 @@ const SNOW_THAW_FASTER := 3.0           # above 0 C or in rain
 const SNOW_FAR_DB := -4.0
 const SNOW_CUT := 0.3
 const LINE_REACH_M := 150.0             # a river reach's length until R7's record gives each its own (judged)
+const SOUND_MPS := 337.0                # at about 10 C
+const ECHO_MIN_M := 17.0                # a face nearer than this gives no echo heard apart (100 ms), and it must be this tall
+const ECHO_MAX_M := 400.0
+const ECHO_TOP_SLACK_M := 6.0           # the ray 17 m up must hit within this of the first
+const ECHO_STEEP := 0.35                # |normal.y| under this is a face, not a slope
+const ECHO_DROP_DB := [12.0, 22.0]      # below the direct sound at 50 m .. 300 m
+const ECHO_SNOW_DB := -5.0
+const ECHO_REPEAT_DB := -8.0            # each further bounce in a gorge
+const GORGE_M := 60.0
+const ECHO_HZ := 2500.0
+const BREEZE_DB := [-6.0, -14.0]        # step 5: every source past BREEZE_M, at wind 0.3 (4 m/s) .. 0.5 (8 m/s)
+const BREEZE_WIND := [0.15, 0.3, 0.5]     # fades in from 0.15, -6 dB at 0.3, -14 dB from 0.5
+const BREEZE_M := [200.0, 400.0]        # full from 400 m; nothing within 200 m
+const WATER_BED_DBA := [55.0, 62.0]    # step 6: a brook, rapids or a fall, at WATER_BED_AT_M (Jamie #742: brook 55 dBA at 5 m, rapids 56 at 10 m)
+const WATER_BED_AT_M := 5.0
+const CALM_DAY_DBA := 28.0              # the calm day bed every hearing factor is measured against (Jamie #742 lesson 2)
+const WATER_MASK_PER_FACTOR_M := 100.0  # mask distance = this x the hearing factor (judged: puts heavy rain at 4 m and drizzle at 35 m, near 3.4's table)
+const WATER_MASK_MAX_M := 60.0          # a quieter bed than gives this masks nothing (the gale mask's widest)
 const MAX_DB := 6.0                     # the sum is held inside these
 const MIN_DB := -30.0
 
@@ -178,15 +200,87 @@ static func line_db(distance: float, unit: float, reach_m: float = LINE_REACH_M)
 	return 10.0 * log(minf(distance, reach_m / 3.0) / unit) / log(10.0)
 
 
+# Echoes off cliffs (3.6). A face: steep, at least ECHO_MIN_M away and as tall (a second ray that much higher hits within the slack).
+static func is_face(normal: Vector3, range_m: float, top_range_m: float) -> bool:
+	return range_m >= ECHO_MIN_M and range_m <= ECHO_MAX_M and absf(normal.y) < ECHO_STEEP and top_range_m >= 0.0 and absf(top_range_m - range_m) <= ECHO_TOP_SLACK_M
+
+
+static func echo_delay(range_m: float) -> float:
+	return 2.0 * range_m / SOUND_MPS
+
+
+static func echo_drop_db(range_m: float, snow: bool) -> float:
+	return -lerpf(float(ECHO_DROP_DB[0]), float(ECHO_DROP_DB[1]), smoothstep(50.0, 300.0, range_m)) + (ECHO_SNOW_DB if snow else 0.0)
+
+
+# The source mirrored in the face's plane: where the echo seems to come from.
+static func mirror(source: Vector3, on_face: Vector3, normal: Vector3) -> Vector3:
+	var n: Vector3 = normal.normalized()
+	return source - 2.0 * (source - on_face).dot(n) * n
+
+
+# Delays and extra dB of the repeats between two facing walls `width_m` apart (a gorge): two more, each softer.
+static func gorge_repeats(first_delay: float, width_m: float) -> Array:
+	if width_m > GORGE_M or width_m < ECHO_MIN_M:
+		return []
+
+	var step: float = 2.0 * width_m / SOUND_MPS
+	return [[first_delay + step, ECHO_REPEAT_DB], [first_delay + 2.0 * step, 2.0 * ECHO_REPEAT_DB]]
+
+
+# Step 5 (3.8): the breeze's own noise hides far sounds of every size (Jamie #683: a force 4 breeze cuts every range about
+# five times, about 14 dB). Nothing within 200 m.
+static func breeze_db(distance: float, wind: float) -> float:
+	var w: float = clampf(wind, 0.0, 1.0)
+	var amount: float = lerpf(float(BREEZE_DB[0]), float(BREEZE_DB[1]), smoothstep(float(BREEZE_WIND[1]), float(BREEZE_WIND[2]), w))
+	return amount * smoothstep(float(BREEZE_WIND[0]), float(BREEZE_WIND[1]), w) * smoothstep(float(BREEZE_M[0]), float(BREEZE_M[1]), distance)
+
+
+# Step 6 (3.9): the running water's bed (dBA) at the listener, `brook_m` and `rapids_m` metres from the nearest of each (INF none).
+static func water_bed_dba(brook_m: float, rapids_m: float) -> float:
+	var power: float = 0.0
+
+	for pair in [[brook_m, float(WATER_BED_DBA[0])], [rapids_m, float(WATER_BED_DBA[1])]]:
+		var metres: float = float(pair[0])
+
+		if not is_inf(metres):
+			power += pow(10.0, (float(pair[1]) - 20.0 * log(maxf(metres, WATER_BED_AT_M) / WATER_BED_AT_M) / log(10.0)) / 10.0)
+
+	return -INF if power <= 0.0 else 10.0 * log(power) / log(10.0)
+
+
+# Metres past which running water hides small sounds (INF none): 4.5 m beside a brook, about 18 m at 20 m from it,
+# about 16 m at 40 m from rapids, none from about 65 m off a brook.
+static func water_mask_m(brook_m: float, rapids_m: float) -> float:
+	var bed: float = water_bed_dba(brook_m, rapids_m)
+
+	if bed <= CALM_DAY_DBA:
+		return INF
+
+	var metres: float = WATER_MASK_PER_FACTOR_M * pow(10.0, -(bed - CALM_DAY_DBA) / 20.0)
+	return INF if metres > WATER_MASK_MAX_M else metres
+
+
+# The mask distance used: the smallest of rain, gale and (unless the voice is the water's own) running water.
+static func mask_m_of(air: Dictionary, own_water: bool = false) -> float:
+	var metres: float = minf(rain_mask_m(float(air.get("rain", 0.0)), float(air.get("leaves", 0.0))), gale_mask_m(float(air.get("wind", 0.0))))
+
+	if not own_water:
+		metres = minf(metres, water_mask_m(float(air.get("brook_m", INF)), float(air.get("rapids_m", INF))))
+
+	return metres
+
+
 # Everything for one voice. `air`: {"wind", "toward" (Vector2), "gust", "night", "calm", "fog", "temp_c", "forest"}, and from step 2
-# "rain", "leaves" (under crowns 0..1), "snow_fresh", "ground_snow" (missing keys: none of it).
-static func total(listener: Vector3, source: Vector3, unit: float, air: Dictionary) -> Vector2:
+# "rain", "leaves" (under crowns 0..1), "snow_fresh", "ground_snow", and from step 6 "brook_m", "rapids_m" (missing keys: none of it).
+# `own_water`: the voice is running water itself (water_sounds.gd marks them "air_water"), which its own bed does not hide.
+static func total(listener: Vector3, source: Vector3, unit: float, air: Dictionary, own_water: bool = false) -> Vector2:
 	var to: Vector3 = listener - source
 	var distance: float = to.length()
 	var w: Vector2 = wind_effect(Vector2(to.x, to.z), distance, float(air.get("wind", 0.0)), air.get("toward", Vector2.ZERO), float(air.get("gust", 0.0)))
 	var n: Vector2 = night_effect(distance, float(air.get("night", 0.0)), float(air.get("calm", 0.0)), float(air.get("fog", 0.0)), unit)
 	var snow: Vector2 = snow_effect(distance, float(air.get("snow_fresh", 0.0)), float(air.get("ground_snow", 0.0)))
-	var mask_m: float = minf(rain_mask_m(float(air.get("rain", 0.0)), float(air.get("leaves", 0.0))), gale_mask_m(float(air.get("wind", 0.0))))
-	var db: float = w.x + n.x + snow.x + forest_db(distance, float(air.get("forest", 0.0))) + mask_db(distance, mask_m, unit)
+	var mask_m: float = mask_m_of(air, own_water)
+	var db: float = w.x + n.x + snow.x + forest_db(distance, float(air.get("forest", 0.0))) + mask_db(distance, mask_m, unit) + breeze_db(distance, float(air.get("wind", 0.0)))
 	var cut: float = w.y * n.y * snow.y * air_cutoff(distance, float(air.get("temp_c", 10.0)), float(air.get("fog", 0.0)))
 	return Vector2(clampf(db, MIN_DB, MAX_DB), cut)
