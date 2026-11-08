@@ -17,8 +17,8 @@ All files are under `<world>/record/`. Every point in `network.json` is `[x, y, 
 | regime | `regime` (u1) | 1 perennial: runs all year, August too. 2 intermittent: dry in the dry season. 3 ephemeral: only during and just after rain. It comes from the 16 m network cell, so it marks a strip 16 m wide round a brook; the polyline says where the water is. |
 | flow | `discharge` (u2, log-coded mean m³/s) | By the manifest's `fields` row: 10^(code / `codes_per_decade` − 4); 0 is no flow. The reader's `decode` does this. |
 | water table | `table_depth` (u1, 0.25 m steps) | R4's regional table, a yearly mean. 0 means the table is at the ground: a seep or wet ground. 255 means 63.75 m or deeper. The reader takes the shallower of this and the soil's perched winter table (Jamie's wetness classes, #657). |
-| nearest water | `fresh_m` (u2, m) | Distance to a lake or to regime 1 water. Springs are not in it yet (addition 2). |
-| springs | `network.json` `springs` | One row per spring: `pos`, `m3_s` (mean flow), `rock` and `feeds_reach`. The reader's `springs_in(rect)` finds them. |
+| nearest water | `fresh_m` (u2, m) | Distance to a lake or to regime 1 water, and with the spring store (addition 2) to a spring that still runs in the dry season. |
+| springs | `network.json` `springs` | One row per spring: `pos`, `m3_s` (mean flow), `rock` and `feeds_reach`, and with the spring store `q_base_dry_m3_s`, `tau_days`, `karst_share` and `stores` ([spring_store_build_plan.md](spring_store_build_plan.md) section 4). The reader's `springs_in(rect)` finds them. |
 | brooks | `network.json` `reaches` | Each reach's `polyline` rows follow `point_fields`: x, bed y, z, bankfull width and depth, then `q_mean_m3_s`, `q_wet_m3_s`, `q_dry_m3_s` and `q_base_dry_m3_s`, all after bed losses. `down` is the next reach the water enters (−1 for none). |
 | season shares | `manifest.json` `summary.seasons` | R5's island shares of the mean flow by season. `base_dry` is the dry quarter's baseflow over the year's mean. |
 | climate | `climate.json` | `by_island.<island id>`, else `default` (the reader's `climate(island)`): `sea_level_mean_c`, `seasonal_swing_c`, `daily_range_c`, `lapse_c_per_km`. |
@@ -35,7 +35,7 @@ Water quality is Steve's call for the sickness table. The physical order, cleane
 
 ## A dry August
 
-**The spring itself.** A spring's August flow is `m3_s` × `summary.seasons.base_dry` until per-spring stores exist (addition 1). The brook below can still read regime 2 when the spring does not stop. R4 calls a reach perennial only when its dry baseflow reaches 1 L/s (`perennial_baseflow_m3_s`), so a 0.6 L/s trickle at the spring is a dry-season drink while its brook dries below.
+**The spring itself.** A spring's August flow is its row's `q_base_dry_m3_s` once the spring store is in (addition 1); before that it is `m3_s` × `summary.seasons.base_dry`. The brook below can still read regime 2 when the spring does not stop. R4 calls a reach perennial only when its dry baseflow reaches 1 L/s (`perennial_baseflow_m3_s`), so a 0.6 L/s trickle at the spring is a dry-season drink while its brook dries below.
 
 **How far its brook runs.** Walk the spring's `feeds_reach` polyline downstream, then on through each `down`. In a rain-free August the water ends at the first row whose `q_base_dry_m3_s` reaches 0, where the bed losses (above the table, on gravel or karst) have taken it. Don't use `q_dry_m3_s` for this: it is the dry quarter's mean, with that quarter's average rain in it, so it shows more water than a drought leaves.
 
