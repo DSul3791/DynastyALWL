@@ -53,6 +53,16 @@ const SNOW_THAW_FASTER := 3.0           # above 0 C or in rain
 const SNOW_FAR_DB := -4.0
 const SNOW_CUT := 0.3
 const LINE_REACH_M := 150.0             # a river reach's length until R7's record gives each its own (judged)
+const SOUND_MPS := 337.0                # at about 10 C
+const ECHO_MIN_M := 17.0                # a face nearer than this gives no echo heard apart (100 ms), and it must be this tall
+const ECHO_MAX_M := 400.0
+const ECHO_TOP_SLACK_M := 6.0           # the ray 17 m up must hit within this of the first
+const ECHO_STEEP := 0.35                # |normal.y| under this is a face, not a slope
+const ECHO_DROP_DB := [12.0, 22.0]      # below the direct sound at 50 m .. 300 m
+const ECHO_SNOW_DB := -5.0
+const ECHO_REPEAT_DB := -8.0            # each further bounce in a gorge
+const GORGE_M := 60.0
+const ECHO_HZ := 2500.0
 const MAX_DB := 6.0                     # the sum is held inside these
 const MIN_DB := -30.0
 
@@ -176,6 +186,34 @@ static func line_db(distance: float, unit: float, reach_m: float = LINE_REACH_M)
 		return 0.0
 
 	return 10.0 * log(minf(distance, reach_m / 3.0) / unit) / log(10.0)
+
+
+# Echoes off cliffs (3.6). A face: steep, at least ECHO_MIN_M away and as tall (a second ray that much higher hits within the slack).
+static func is_face(normal: Vector3, range_m: float, top_range_m: float) -> bool:
+	return range_m >= ECHO_MIN_M and range_m <= ECHO_MAX_M and absf(normal.y) < ECHO_STEEP and top_range_m >= 0.0 and absf(top_range_m - range_m) <= ECHO_TOP_SLACK_M
+
+
+static func echo_delay(range_m: float) -> float:
+	return 2.0 * range_m / SOUND_MPS
+
+
+static func echo_drop_db(range_m: float, snow: bool) -> float:
+	return -lerpf(float(ECHO_DROP_DB[0]), float(ECHO_DROP_DB[1]), smoothstep(50.0, 300.0, range_m)) + (ECHO_SNOW_DB if snow else 0.0)
+
+
+# The source mirrored in the face's plane: where the echo seems to come from.
+static func mirror(source: Vector3, on_face: Vector3, normal: Vector3) -> Vector3:
+	var n: Vector3 = normal.normalized()
+	return source - 2.0 * (source - on_face).dot(n) * n
+
+
+# Delays and extra dB of the repeats between two facing walls `width_m` apart (a gorge): two more, each softer.
+static func gorge_repeats(first_delay: float, width_m: float) -> Array:
+	if width_m > GORGE_M or width_m < ECHO_MIN_M:
+		return []
+
+	var step: float = 2.0 * width_m / SOUND_MPS
+	return [[first_delay + step, ECHO_REPEAT_DB], [first_delay + 2.0 * step, 2.0 * ECHO_REPEAT_DB]]
 
 
 # Everything for one voice. `air`: {"wind", "toward" (Vector2), "gust", "night", "calm", "fog", "temp_c", "forest"}, and from step 2
