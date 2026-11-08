@@ -73,9 +73,11 @@ func _init() -> void:
 
 	_check_step2()
 	_check_step3()
+	_check_step4()
 
 	var source: String = FileAccess.get_file_as_string("res://src/client/sound_occlusion.gd")
-	_check(source.contains("has(\"--sound-outdoors\")") and not source.contains("player.volume_db"), "behind --sound-outdoors, and the scan never writes volume_db")
+	var writes_volume: bool = source.contains("player.volume_db =") or source.contains("player.volume_db +=") or source.contains("player.volume_db -=")
+	_check(source.contains("has(\"--sound-outdoors\")") and not writes_volume, "behind --sound-outdoors, and the scan never writes volume_db (the echo only reads it)")
 
 	print("test_outdoor_air: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
@@ -112,3 +114,25 @@ func _check_step3() -> void:
 	_check(drop >= 12.0, "a river never sounds the same at 10 m and 200 m (%.1f dB apart)" % drop)
 	var water: String = FileAccess.get_file_as_string("res://src/client/water_sounds.gd")
 	_check(water.contains("set_meta(\"air_line\", candidate[\"kind\"] == \"river\")"), "river voices are marked as a line; brooks, ponds and falls are not")
+
+
+# Step 4 (3.6): echoes off cliffs.
+func _check_step4() -> void:
+	var wall: Vector3 = Vector3(-1.0, 0.0, 0.0)            # a face looking back toward -x
+	_check(OutdoorAir.is_face(wall, 30.0, 31.0), "a steep face 30 m off and 17 m tall echoes")
+	_check(not OutdoorAir.is_face(Vector3(-0.6, 0.8, 0.0), 30.0, 31.0), "a grass slope does not")
+	_check(not OutdoorAir.is_face(wall, 12.0, 12.0), "nor a wall too close to be heard apart")
+	_check(not OutdoorAir.is_face(wall, 30.0, 60.0) and not OutdoorAir.is_face(wall, 30.0, -1.0), "nor a face under 17 m tall (the ray above goes past)")
+	_check(absf(OutdoorAir.echo_delay(30.0) - 0.178) < 0.005 and absf(OutdoorAir.echo_delay(300.0) - 1.78) < 0.02, "a gorge 30 m wide answers in about 0.18 s, a cliff across a lake 300 m away in about 1.8 s")
+	_check(is_equal_approx(OutdoorAir.echo_drop_db(50.0, false), -12.0) and is_equal_approx(OutdoorAir.echo_drop_db(300.0, false), -22.0) and is_equal_approx(OutdoorAir.echo_drop_db(50.0, true), -17.0), "12 dB under the direct sound at 50 m, 22 at 300 m, 5 more off snow")
+	var image: Vector3 = OutdoorAir.mirror(Vector3(0.0, 2.0, 0.0), Vector3(30.0, 0.0, 0.0), wall)
+	_check(image.is_equal_approx(Vector3(60.0, 2.0, 0.0)), "the echo comes from the source's mirror image in the face")
+	_check(OutdoorAir.gorge_repeats(0.2, 40.0).size() == 2 and OutdoorAir.gorge_repeats(0.2, 200.0).is_empty(), "two facing walls close together repeat it twice; a wide valley does not")
+	var occlusion: String = FileAccess.get_file_as_string("res://src/client/sound_occlusion.gd")
+	_check(occlusion.contains("_tool.raycast(from, direction") and occlusion.contains("ECHO_RAYS := [0,"), "faces are found with terrain rays only (trees never echo), none on Low")
+	var marked: int = 0
+
+	for path in ["res://src/client/hit_sounds.gd", "res://src/client/dig_sounds.gd", "res://src/client/spear_sounds.gd", "res://src/client/tree_sounds.gd"]:
+		marked += 1 if FileAccess.get_file_as_string(path).contains("set_meta(\"air_sharp\"") else 0
+
+	_check(marked == 4, "blows, picks, spear strikes and tree crashes are the sharp sounds that echo")
