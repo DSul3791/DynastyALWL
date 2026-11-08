@@ -16,7 +16,7 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 
 
 func _init() -> void:
-	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "wind": 0.0}
+	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "shine": false, "moon": false, "wind": 0.0}
 
 	for a in OS.get_cmdline_user_args():
 		var key: String = a.trim_prefix("--").get_slice("=", 0)
@@ -112,6 +112,10 @@ func _strip(kind: String, opts: Dictionary) -> void:
 	var cam: Camera3D = Camera3D.new()
 	cam.fov = 50.0
 	vp.add_child(cam)
+	view.eye_shine = bool(opts["shine"])
+
+	if bool(opts["shine"]):
+		view.night_light = func() -> Dictionary: return {"night": 1.0, "moon": 1.0 if bool(opts["moon"]) else 0.0, "moon_to": (cam.global_position - Vector3(0.0, 0.6, 0.0)).normalized()}
 	vp.add_child(view)
 	var torch: OmniLight3D = null
 

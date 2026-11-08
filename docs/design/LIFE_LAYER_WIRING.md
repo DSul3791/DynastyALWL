@@ -39,6 +39,8 @@ Weather step 2 (#667): moving under trees in rain, stock facing downwind in a ga
 | Foe position (the dog a warning, charging or recovering animal faces; sixth row field, Vector3) | #659 (head 4e619847): states 10 to 12 with a dog as foe | `on_rows` keeps row[5] as `foe` (dropped when absent); `_look_motion` turns the head to it in states 10, 11, 12 and 16 | `look_at_foe` | m34 (the tool sends a foe 4 m to the side) |
 | Raven roll event | #653 step 2 (wire format to come) | `play_roll(id, turns)`, `_bank` (pairs queued) | `flight_bank` | m28 (the tool sends a roll every 2 s) |
 | State change to a voiced state | every state row above | `_voice` with voices.json, `voiced` signal, terrain_client plays a mood or a slot | `voice_fx` | in game only (no sound in the motion tool) |
+| Night level, moon phase and direction | client day cycle (weather_look.day: night, moon_light, light_basis) | `night_light` from terrain_client; `_eye_shine_night`, `_retro`; far-off dots from `_add_eyes` | `eye_shine` | m36, m37 |
+| Held torch | held_item.gd `held_light` (main) | `torch_light`: eye shine (#596 torch-only when `eye_shine` is off) | none; `eye_shine` for v2 | m8, m36 |
 | Weather wind (0..1) | shared weather (main) | `wind_now` from terrain_client: ears, tails, coat ruffle | `coat_ruffle` for the coat | m17, m21 |
 | Ground wet, season, hour | weather sounds, ambient conditions (main) | `conditions_now`: sleep, prints, puddle splashes, coat season | per look | m6, m12, m19, m20 |
 | Water level | flora.water_level_at (main) | `water_level`: swim clips, wet look, water life | `water_life` | m7, m24, m25 |

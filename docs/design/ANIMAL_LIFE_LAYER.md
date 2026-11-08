@@ -40,6 +40,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Bat colony | boils in flight, hangs head down at the roost | `swarm`, `roost_flip` | `swarm_fx` (**off**) | SEA_MAMMALS.md, BAT_RIG.md |
 | Whales and dolphins | blow spout at the surface; dolphins porpoise on the hop arc | `sea`, `hop` | `sea_life` (**off**) | SEA_MAMMALS.md |
 | Voices | calls by state per species (alarm, alert, warn, charge, young), silent where stealthy | voices.json | `voice_fx` (**off**) | ANIMAL_VOICES.md |
+| Eye shine v2 | torch and moon by the retroreflection angle, 60 degree facing, far-off eye dots | `shine_color`, `shine` | `eye_shine` (**off**) | EYE_SHINE.md |
 | Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |
