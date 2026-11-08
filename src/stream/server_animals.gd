@@ -10,6 +10,8 @@ const WolvesScript := preload("res://src/stream/server_wolves.gd")
 const BigGameScript := preload("res://src/stream/server_big_game.gd")
 const ThievesScript := preload("res://src/stream/server_thieves.gd")
 const FlocksScript := preload("res://src/stream/server_flocks.gd")
+const GoblinsScript := preload("res://src/stream/server_goblins.gd")
+const CompanionsScript := preload("res://src/stream/server_companions.gd")
 
 const GRAZE := 0
 const HOP := 1
@@ -40,13 +42,18 @@ var ticks_run: int = 0
 var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
 var flocks = null                  # bird flocks on water (server_flocks.gd)
 var water_level: Callable          # (x, z) -> water surface height, NAN on dry land (flocks float on it)
+var fresh_water_m: Callable        # (x, z) -> distance (m) to perennial fresh water from the baked tile (Stage E), NAN when the tile has none
 var thieves = null                 # opportunists (fox; server_thieves.gd): smell loose food, creep up, take it and run
 var drop_loot: Callable            # (item number, count, position) when a thief is killed carrying food
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
-var lair_guarded: Callable            # (x, z) -> bool: true when a patrol or buildings hold the area round a lair, so no new group comes (not wired yet: there is no such query; Dave 7 Nov 2026)
+var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burning placed fire lies within radius of a lair's mouth (lair.guard_m), so no new group comes (Dave 8 Nov 2026, decision 13)
 var _lair_state: Dictionary = {}   # mouth "x,z" -> {"made": a group has been made here, "empty_since": seconds when it was found empty, -1 while a group is there}
+var lair_path: Callable              # (mouth x, z) -> PackedVector3Array: the cave floor path from that den mouth to the den (tile goblin_den_paths), empty when none
+var berry_bushes: Callable           # (Vector3, radius) -> PackedVector3Array: standing berry plants near a point, from flora chunks already made (goblins forage at them)
+var goblins = null                   # den life (server_goblins.gd): species with a "den_life" row sleep in the cave by day, watch fires and forage at night
+var companions = null                # companions (server_companions.gd): the stray a player befriends with food, then their dog (Dave 8 Nov 2026, decisions 5 and 6)
 var lair_mouths: Callable             # (x, z) -> PackedVector2Array: the cave mouths (world x, z) of the tile there; species with a "lair" row spawn their groups at them (goblins, Dave 7 Nov 2026)
 var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
 var traits: bool = true            # temperaments and young (Dave 6 Nov 2026); seeded tests that predate them turn this off, so every animal is born "defensive" with no young
@@ -68,6 +75,7 @@ var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
 var _fire_cache: Array = []       # [Vector3 fire, keep-off metres] this tick (fires, fire_radius)
 var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
 var _noise_from: Array = []       # player positions at the last sample
+var _player_vel: Array = []       # per player (the _noise_from order): ground velocity (x, z) over the last noise sample, m/s
 var _noisy: Array = []            # per player (player_positions order): how much farther they are sensed for rustling undergrowth (1.0 none)
 
 
@@ -92,6 +100,11 @@ func setup() -> void:
 	thieves.host = self
 	flocks = FlocksScript.new()
 	flocks.host = self
+	goblins = GoblinsScript.new()
+	goblins.host = self
+	goblins.trust.cfg = species_def("goblin").get("ally", {})
+	companions = CompanionsScript.new()
+	companions.host = self
 
 
 func species_def(sp: String) -> Dictionary:
@@ -109,6 +122,8 @@ func spawn(sp: String, x: float, z: float) -> int:
 
 	if def.has("flock") and not bool(def["flock"].get("on_land", false)) and water_level.is_valid():
 		y = float(water_level.call(x, z))   # a flock sits on the surface (a land flock, such as gulls on a beach, stands on the ground)
+	elif swims(def):
+		y = swim_height(def, x, z)   # a swimmer put down in water rides the surface
 
 	if is_nan(y):
 		return 0
@@ -250,7 +265,14 @@ func _step_young(a: Dictionary, dt: float) -> void:
 		return
 
 	var speed: float = float(def.get("flee_mps", 7.5)) if running else float(def.get("walk_mps", 1.5)) * (2.0 if far > 6.0 else 1.0)
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"], crossing)
+	var ground_for: Callable = ground_height
+	var blocked_for: Callable = blocked
+
+	if swims(def):      # a young swimmer (a moose calf) follows its mother into the water
+		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
+		blocked_for = Callable()
+
+	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -440,6 +462,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 	var a: Dictionary = animals[id]
 
+	if companions != null and companions.owned_by(a, source_peer):
+		return false   # its owner's blow does nothing to their own companion
+
 	# A flock is one record: a hit that lands kills one bird (its carcass lies where it floats), the rest take off.
 	if species_def(a["sp"]).has("flock"):
 		a["birds"] = int(a.get("birds", 8)) - 1
@@ -456,8 +481,20 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 	a["hp"] -= amount
 
+	if goblins != null and a.has("lair"):
+		goblins.harm(a, source_peer)   # friendship: the band's trust in that player is gone, and it is wary of them
+
 	if a["hp"] <= 0.0:
 		animals.erase(id)
+
+		if companions != null and companions.handles(a):
+			companions.died(a)   # a companion's record keeps its death; a stray's player can win another
+
+		if a.has("orphan") and wolves != null:
+			wolves.orphan_gone(a)   # one orphan fewer at its den
+
+		if a.has("pup_of") and wolves != null:
+			wolves.pup_hurt(a, source_peer)   # a pup killed: its pack comes at once
 
 		if a.has("loot") and drop_loot.is_valid():
 			drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])
@@ -473,6 +510,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	if a.has("loot") and drop_loot.is_valid():
 		drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])   # a hurt thief drops what it stole and runs
 		a.erase("loot")
+
+	if a.has("pup_of") and wolves != null:
+		wolves.pup_hurt(a, source_peer)   # its pack comes at once
 
 	a["wound"] = true
 	a["hurt_by"] = source_peer
@@ -596,6 +636,9 @@ func snare(id: int) -> bool:
 
 	var a: Dictionary = animals[id]
 
+	if a.has("companion_id") or a.has("pup_of") or a.has("orphan"):
+		return false   # a companion or a pup at a den steps over snares
+
 	if species_def(str(a["sp"])).has("flock"):
 		a["birds"] = int(a.get("birds", 8)) - 1
 
@@ -711,12 +754,14 @@ func tick(delta: float) -> void:
 			gone.append(id)
 			continue
 
+		var kept: bool = a.has("companion_id")   # a companion stays with its owner: never frozen, never sent off for the hour (server_companions)
+
 		# An animal whose hours are over (a songbird at night, a boar at noon: its activity chance is at most off_hours_chance) leaves once no player is close to it.
-		if near_d > float(cfg.get("off_hours_despawn_m", 80.0)) and hour_now.is_valid() and activity_chance(species_def(str(a["sp"]))) <= float(cfg.get("off_hours_chance", 0.05)):
+		if not kept and near_d > float(cfg.get("off_hours_despawn_m", 80.0)) and hour_now.is_valid() and activity_chance(species_def(str(a["sp"]))) <= float(cfg.get("off_hours_chance", 0.05)):
 			gone.append(id)
 			continue
 
-		if near_d > active_r:
+		if near_d > active_r and not kept:
 			a["acc"] = 0.0
 			continue   # frozen: nothing runs until a player comes within active_radius_m
 
@@ -733,19 +778,31 @@ func tick(delta: float) -> void:
 		a["acc"] = 0.0
 		_step(a, dt, near_d, near_p, seen_d, seen_p)
 
-		if trails != null and int(a.get("state", 0)) != HIDDEN:
+		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)):
 			trails.note(id, str(a["sp"]), a["pos"])
 
 	for id in gone:
 		if trails != null:
 			trails.forget(id)
 
+		if companions != null and companions.handles(animals[id]):
+			companions.forget(animals[id])   # its record stays; a live one is made again beside its owner
+
+		if animals[id].has("loot") and goblins != null and species_def(str(animals[id]["sp"])).has("den_life"):
+			goblins.stash(animals[id])   # a goblin dropped with no player near is taken to have got home: its loot goes on the den pile
+
 		if animals[id].has("pack") and wolves != null and wolves.packs.has(animals[id]["pack"]):
 			wolves.packs[animals[id]["pack"]]["ids"].erase(id)
 
 		animals.erase(id)
 
-	if wolves != null and not wolves.packs.is_empty() or (wolves != null and bool(wolves.cfgw().get("natural", false))):
+	if goblins != null:
+		goblins.trust.tick(delta)
+
+	if companions != null:
+		companions.tick(delta)
+
+	if wolves != null and (not wolves.packs.is_empty() or not wolves.dens.is_empty() or bool(wolves.cfgw().get("natural", false))):
 		wolves.tick(delta)
 
 	_spawn_acc += delta
@@ -809,6 +866,22 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		thieves.step(a, dt)
 		return
 
+	if a.has("pup_of") and wolves != null:
+		wolves.step_pup(a, dt)   # a wolf pup at its pack's den: plays, hides from a standing player (wolf_packs_and_pups_design.md)
+		return
+
+	if companions != null and companions.handles(a):
+		companions.step(a, dt)   # a stray near the town, an orphan pup, or a player's companion: its own step (no wild fear, defence or bleeding)
+		return
+
+	# Den life (goblins): in the cave it moves only along the cave path, warnings included; at night on the surface it may watch a fire or forage.
+	if def.has("den_life") and goblins != null:
+		if bool(a.get("in_cave", false)) and bleed(a, dt):
+			return
+
+		if goblins.step(a, dt, seen_d, seen_p):
+			return
+
 	if def.has("defend"):
 		big_game.cool_down(a, dt)
 
@@ -816,20 +889,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			big_game.step(a, dt)
 			return
 
-	# A wounded animal bleeds: it runs, rests and finally dies where it stands, at the end of its trail.
-	if a.get("wound", false):
-		a["hp"] -= float(cfg.get("blood", {}).get("bleed_hp_per_s", 0.0)) * dt
-
-		if a["hp"] <= 0.0:
-			animals.erase(a["id"])
-
-			if a.has("pack") and wolves != null:
-				wolves.on_death(int(a["id"]), a["pack"])
-
-			if died.is_valid():
-				died.call(a["sp"], a["pos"], a.get("hurt_by", -1))
-
-			return
+	if bleed(a, dt):
+		return
 
 	if a["state"] == HIDDEN:
 		a["timer"] -= dt
@@ -967,7 +1028,18 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.
 		a["burst"] += dt
 		speed = float(def.get("flee_mps", 7.5)) * (1.0 if a["burst"] <= float(def.get("burst_s", 3.0)) else float(def.get("trot_share", 0.5)))
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"], crossing)
+	var ground_for: Callable = ground_height
+	var blocked_for: Callable = blocked
+
+	if swims(def):
+		# A swimmer goes into deep water (nothing blocks it) and rides the surface there; in water it moves at swim_mps.
+		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
+		blocked_for = Callable()
+
+		if in_water(def, a["pos"]):
+			speed = float(def["water"].get("swim_mps", speed)) * (1.0 if a["state"] == FLEE else 0.4)      # cruising slowly, bolting at full speed
+
+	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -1009,6 +1081,30 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		a["timer"] = _graze_time(def)
 
 
+# A wounded animal bleeds: it runs, rests and finally dies where it stands, at the end of its trail. True when it died.
+func bleed(a: Dictionary, dt: float) -> bool:
+	if not a.get("wound", false):
+		return false
+
+	a["hp"] -= float(cfg.get("blood", {}).get("bleed_hp_per_s", 0.0)) * dt
+
+	if a["hp"] > 0.0:
+		return false
+
+	animals.erase(a["id"])
+
+	if a.has("loot") and drop_loot.is_valid():
+		drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])   # what it carried falls where it died
+
+	if a.has("pack") and wolves != null:
+		wolves.on_death(int(a["id"]), a["pack"])
+
+	if died.is_valid():
+		died.call(a["sp"], a["pos"], a.get("hurt_by", -1))
+
+	return true
+
+
 # The fire whose keep-off radius covers a point (a burning fire or a torch bearer this tick), or Vector3.INF.
 func _fire_guard(p: Vector3) -> Vector3:
 	for f in _fire_cache:
@@ -1026,7 +1122,10 @@ func _in_den(a: Dictionary, def: Dictionary, at: Vector3 = Vector3.INF) -> bool:
 		return false
 
 	var p: Vector3 = a["pos"] if at == Vector3.INF else at
-	return Vector2(p.x - a["den"].x, p.z - a["den"].z).length() <= float(def["den"].get("den_m", 15.0))
+	var den_m: float = float(def["den"].get("den_m", 15.0))
+
+	# The vertical check matters only where the den is far above or below (a goblin den inside a cave): a player on the hill over it is not in it.
+	return Vector2(p.x - a["den"].x, p.z - a["den"].z).length() <= den_m and absf(p.y - a["den"].y) <= den_m
 
 
 # How close a player may come before this animal feels threatened and attacks: defend.threat_m, den.threat_m at its den.
@@ -1045,7 +1144,7 @@ func _threat_m(a: Dictionary, def: Dictionary) -> float:
 # a few metres off), else somewhere in its range to forage. Sleeping is its rest hours (active, rest.graze_x).
 func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
 	var den_cfg: Dictionary = def["den"]
-	var den: Vector3 = a["den"]
+	var den: Vector3 = a.get("den_out", a["den"])   # a cave-den goblin out at night ranges round the mouth it came out of
 	var range_m: float = float(den_cfg.get("range_m", 80.0))
 
 	if water_level.is_valid() and rng.randf() < float(den_cfg.get("fish_share", 0.5)):   # luck-exempt: whether a bear goes fishing next
@@ -1191,9 +1290,10 @@ func _top_up(players: Array, only: int) -> void:
 
 # Lair species (goblins, Dave 7 Nov 2026): a group of lair.group[0]..group[1] lives at a cave mouth near a player, beside a river (caves are
 # only at river starts), and never in a cave that already has a bear in or near it (lair.avoid within lair.avoid_m). They are made whatever the
-# hour: by day they bed down at the mouth (their "active" row, resting()), at night they range round it (den.range_m). Each mouth holds one
-# group at a time. The group is a herd, so when one bolts the others follow. Underground dens need the cave floor height on the server, which
-# it does not have yet, so the den is the mouth.
+# hour: by day they sleep in the den, at night they range round the mouth (den.range_m). Each mouth holds one group at a time: the group's
+# goblins carry the mouth's key ("lair"), so a group 100 m inside still holds its cave. The group is a herd, so when one bolts the others follow.
+# With a den_life row and a cave path (lair_path; docs/design/goblin_den_life_design.md) the den is the den node in the cave and a group made by
+# day is made there; without a path (a tile baked before it, or a cave whose den is not joined to the mouth) the den is the mouth, as before.
 func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> void:
 	if not lair_mouths.is_valid():
 		return
@@ -1216,7 +1316,9 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 		var has_group: bool = false
 
 		for gid in animals:
-			has_group = has_group or (animals[gid]["sp"] == sp and Vector2(animals[gid]["pos"].x - m.x, animals[gid]["pos"].z - m.y).length() <= float(lair.get("claim_m", 40.0)))
+			has_group = has_group or (animals[gid]["sp"] == sp and (str(animals[gid].get("lair", "")) == key or Vector2(animals[gid]["pos"].x - m.x, animals[gid]["pos"].z - m.y).length() <= float(lair.get("claim_m", 40.0))))
+
+		taken = has_group
 
 		# Respawn (Dave 7 Nov 2026: a killed group "eventually" comes back, depending on patrols or buildings): a mouth that had a group and found it
 		# gone waits lair.respawn_s before it makes another, and not at all while lair_guarded says a patrol or buildings hold the area.
@@ -1226,12 +1328,16 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 			if float(state["empty_since"]) < 0.0:
 				state["empty_since"] = now_s
 
-			taken = now_s - float(state["empty_since"]) < float(lair.get("respawn_s", 1800.0)) or (lair_guarded.is_valid() and bool(lair_guarded.call(m.x, m.y)))
+			taken = now_s - float(state["empty_since"]) < float(lair.get("respawn_s", 1800.0)) or (lair_guarded.is_valid() and bool(lair_guarded.call(m.x, m.y, float(lair.get("guard_m", 100.0)))))
 
 		_lair_state[key] = state
+		var path: PackedVector3Array = lair_path.call(m.x, m.y) if lair_path.is_valid() and def.has("den_life") and not taken else PackedVector3Array()
 
 		for q in players:
 			taken = taken or Vector2(q.x - m.x, q.z - m.y).length() < never
+
+			# A group made by day is made asleep in the den: never in front of a player who has walked in that far.
+			taken = taken or (path.size() >= 2 and resting(def) and (q as Vector3).distance_to(path[path.size() - 1]) < never)
 
 		for id in animals:
 			var other: Dictionary = animals[id]
@@ -1256,10 +1362,19 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 
 			if id != 0:
 				animals[id]["herd"] = hid
+				animals[id]["lair"] = key
 				den_at = animals[id]["pos"] if den_at == Vector3.INF else den_at   # one shared den: the first goblin's spot
 				animals[id]["den"] = den_at
 				animals[id]["home"] = den_at
 				_herds[hid].append(id)
+
+				if path.size() >= 2:
+					animals[id]["cave_path"] = path
+					animals[id]["den"] = path[path.size() - 1]   # the den in the cave; at night they range round the mouth (den_out)
+					animals[id]["den_out"] = den_at
+
+					if resting(def):
+						goblins.place_in_den(animals[id])   # made by day: asleep in the den
 
 		return   # one new group per top-up
 
@@ -1297,6 +1412,38 @@ func biome_weight(def: Dictionary, x: float, z: float) -> float:
 	return float((def["biomes"] as Dictionary).get(str(biome_at.call(x, z)), 0.0))
 
 
+# Swimmers (a row's "water": {"swim": true, ...}; docs/design/ALLIGATOR_SWIMMING.md, Dave 8 Nov 2026): they cross and stay in water
+# no other animal enters, riding the surface surface_sink_m low, and live on the bank within bank_m of fresh water.
+func swims(def: Dictionary) -> bool:
+	return def.get("water", null) is Dictionary and bool(def["water"].get("swim", false))
+
+
+# Whether a spot is water a swimmer is in (a water surface there).
+func in_water(_def: Dictionary, pos: Vector3) -> bool:
+	return water_level.is_valid() and not is_nan(float(water_level.call(pos.x, pos.z)))
+
+
+# The height a swimmer stands at: on water its surface less surface_sink_m, on land the ground.
+func swim_height(def: Dictionary, x: float, z: float) -> float:
+	var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+
+	var ground: float = float(ground_height.call(x, z)) if ground_height.is_valid() else NAN
+
+	if not is_nan(level):
+		# It sinks to surface_sink_m only where the water is that deep, so wading in from the bank is a smooth slope.
+		var depth: float = level - ground if not is_nan(ground) else 99.0
+		return level - minf(float(def["water"].get("surface_sink_m", 0.25)), maxf(depth, 0.0))
+
+	return ground if not is_nan(ground) else 0.0
+
+
+# Optional habitat keys from the guiding document (docs/design/GUIDING_DOCUMENT.md section 5, 7 Nov 2026) are accepted in a
+# row's "habitat" and not used yet, so data can be written ahead of the terrain that answers them (R6): altitude_m [min, max],
+# slope_deg [min, max], rock, water_kind, cave, canopy, sea_depth_m [min, max], sky, lair, season. A row with them spawns and
+# scores exactly as one without (test_habitat_keys.gd).
+const HABITAT_KEYS_LATER := ["altitude_m", "slope_deg", "rock", "water_kind", "cave", "canopy", "sea_depth_m", "sky", "lair", "season"]
+
+
 # How well a spot suits a species: -1 when it cannot live there (too steep, a summit far above the player, at the water's edge),
 # 1 for open ground, 2 under trees for a species that likes forest ("forest": true in its habitat).
 func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> float:
@@ -1308,6 +1455,20 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 			return -1.0   # ducks keep to rivers and lakes, not the open sea
 
 		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
+
+	if swims(def):
+		# A swimmer lives in fresh water and on the bank within water.bank_m of it (the alligator, Dave 8 Nov 2026).
+		var level_here: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+
+		if biome_at.is_valid() and str(biome_at.call(x, z)) == "ocean":
+			return -1.0
+
+		if not is_nan(level_here):
+			return 2.0 if not bool(def["water"].get("lives_on_land", false)) else 1.0
+
+		# lives_on_land (moose, goose): water is open to it, but on land its own habitat rules apply as before.
+		if not bool(def["water"].get("lives_on_land", false)):
+			return 1.0 if _fresh_near(x, z, float(def["water"].get("bank_m", 6.0))) else -1.0
 
 	if hab.is_empty() or not ground_height.is_valid():
 		return 1.0
@@ -1336,7 +1497,7 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 
 	var near: float = float(hab.get("near_fresh_water_m", 0.0))
 
-	if near > 0.0 and water_level.is_valid() and not _water_near(x, z, near, false):
+	if near > 0.0 and not _fresh_near(x, z, near):
 		return -1.0   # a frog lives by a stream, pond or lake, never deep in a dry wood or on a sea shore
 
 	var sea: float = float(hab.get("near_ocean_m", 0.0))
@@ -1352,6 +1513,18 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 
 # Whether water lies within radius of a spot: the spot itself, then eight directions at half and full radius. ocean false: fresh
 # water (a water surface that is not on ocean ground). ocean true: ocean ground.
+# Whether perennial fresh water (a river or lake) is within `radius`. The baked distance (the water as the bake made it, the same for every
+# server run) when the tile has it; otherwise the live water probe, which also sees ditches and puddles and nothing before the sim settles.
+func _fresh_near(x: float, z: float, radius: float) -> bool:
+	if fresh_water_m.is_valid():
+		var d: float = float(fresh_water_m.call(x, z))
+
+		if not is_nan(d):
+			return d <= radius
+
+	return not water_level.is_valid() or _water_near(x, z, radius, false)   # no water source at all (a test without water): no rule, as before
+
+
 func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
 	for ring in [0.0, radius * 0.5, radius]:
 		for i in (1 if ring == 0.0 else 8):
@@ -1439,14 +1612,21 @@ func _sample_noise(players: Array, delta: float) -> void:
 	var stances: Array = player_stances.call() if player_stances.is_valid() else []
 	var stalk: Array = player_stalk.call() if player_stalk.is_valid() else []
 	var fresh: Array = []
+	var vel: Array = []
 
 	for pi in players.size():
 		var noise: float = 1.0
+		var moved: Vector2 = Vector2.ZERO
+
+		if players.size() == _noise_from.size():
+			var was0: Vector3 = _noise_from[pi]
+			moved = Vector2(players[pi].x - was0.x, players[pi].z - was0.z) / _noise_acc
+
+		vel.append(moved)
 
 		if players.size() == _noise_from.size() and undergrowth.is_valid():
-			var was: Vector3 = _noise_from[pi]
 			var p: Vector3 = players[pi]
-			var speed: float = Vector2(p.x - was.x, p.z - was.z).length() / _noise_acc
+			var speed: float = moved.length()
 
 			if speed >= float(sen.get("brush_moving_ms", 0.5)) and bool(undergrowth.call(p)):
 				var extra: float = float(sen.get("brush_noise_per_ms", 0.04)) * minf(speed, 12.0)
@@ -1460,8 +1640,25 @@ func _sample_noise(players: Array, delta: float) -> void:
 		fresh.append(noise)
 
 	_noisy = fresh
+	_player_vel = vel
 	_noise_from = players.duplicate()
 	_noise_acc = 0.0
+
+
+# The ground velocity (x, z, m/s) of the player standing nearest a point, from the last noise sample (Vector2.ZERO when unknown): big game
+# reads it during a warning, because a player who runs away is chased (docs/design/bear_threat_design.md).
+func player_velocity_at(p: Vector3) -> Vector2:
+	var best: Vector2 = Vector2.ZERO
+	var best_d: float = INF
+
+	for pi in mini(_noise_from.size(), _player_vel.size()):
+		var d: float = Vector2(_noise_from[pi].x - p.x, _noise_from[pi].z - p.z).length()
+
+		if d < best_d:
+			best_d = d
+			best = _player_vel[pi]
+
+	return best if best_d <= float(cfg.get("senses", {}).get("velocity_match_m", 4.0)) else Vector2.ZERO
 
 
 # How much farther or nearer a player seems to an animal: downwind of the player it smells them from farther off, upwind it does

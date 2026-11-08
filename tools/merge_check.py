@@ -8,6 +8,12 @@ import json, os, re, subprocess, sys
 
 # What to compare against: the CI sets MERGE_CHECK_BASE to the commit before the push, so a later push cannot make a finished run fail.
 BASE = os.environ.get("MERGE_CHECK_BASE") or "origin/main"
+# Compare from the merge base, not the tip of main (three-dot). A branch made before a later merge to main would otherwise
+# look as if it deleted every file main has gained since (false "deleted without approval", seen on #528 and #553).
+# When BASE is already an ancestor of HEAD the merge base is BASE itself, so a push to main checks exactly as before.
+_mb = subprocess.run(["git", "merge-base", BASE, "HEAD"], capture_output=True, text=True).stdout.strip()
+if _mb:
+    BASE = _mb
 
 problems = []
 
