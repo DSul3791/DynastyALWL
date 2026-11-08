@@ -83,7 +83,7 @@ What this says:
 
 ## Decided / next
 
-Nothing on this page is decided. These are proposals for the coordinator, who answers for Dave.
+Item 4 was decided by the coordinator (answering for Dave) on 8 Nov 2026. The rest are proposals.
 
 1. **Keep `snow_max_c` -8 and `glacier_max_c` -14 for what they are:** permanent snowfields and ice on high peaks. Do not lower them to fake summer patches. Lowering them would put whole snow biomes on hills.
 2. **[Proposal] A baked seasonal snow layer per terrain cell** (Sonny for the bake and format, the weather owner for the live side). Two bytes a cell: the year phase when snow first lies in autumn or winter, and the phase when it melts out. Work it out as in the worked case:
@@ -96,8 +96,8 @@ Nothing on this page is decided. These are proposals for the coordinator, who an
 3. **[Proposal] Per-island climate inputs**, set at the same island-type stage as `summit_m` (D-10): a sea-level mean, a seasonal swing and a precipitation level.
    - Small ocean islands should swing far less than ±14°C. ±5-7°C is realistic for a maritime island.
    - The starter island would need a peak climate like the 9°C ±5.5 row in the worked case for gully snow to last the summer.
-4. **Decision for the coordinator: how to get a cold enough peak above a warm starter town.** Two honest ways, with a recommendation:
-   - **(a) Recommended: a cooler, wetter starter island.** Sea-level mean about 9-10°C instead of 15°C (the weather already uses 10°C), a small swing and high orographic rain. This is real physics, as in Scotland or western Norway. It touches the warmth system (`warmth.json` reads the weather temperature), so Steve should check the night cold still feels fair.
-   - **(b) A per-island `snow_bias_c`** of about -5 to -6°C, used only by the snow layer (the "mountain makes its own cold" fantasy). This is cheaper, but it is a stated fantasy rule that would need to be written into the guiding document. Otherwise it is the kind of disguise D-10 warns against.
-5. **[Open] The two temperature models should become one.** World generation gives the starter 15°C and the weather gives it 10°C. Pick one source and have the other read it.
-6. **[Open] The sun and the hemisphere.** The sun always stands in the south (52°N), while world latitude flips the hemisphere across the equator row. Shade rules (and the cirque bias in `glaciers-mountains.md` (#588)) should follow whatever the sun does. The coordinator should decide whether the sun follows latitude.
+4. **Decided (coordinator, 8 Nov 2026): a cooler, wetter starter island.** The starter island gets a sea-level mean of about 9°C with a seasonal swing of about ±5°C and high orographic rain, so summer snow patches sit at about 80-85% of the summit in lee and shaded gullies. The two options weighed were:
+   - **(a) Chosen: a cooler, wetter starter island.** Sea-level mean about 9-10°C instead of 15°C (the weather already uses 10°C), a small swing and high orographic rain. This is real physics, as in Scotland or western Norway. It touches the warmth system (`warmth.json` reads the weather temperature), so Steve should check the night cold still feels fair.
+   - **(b) Not chosen: a per-island `snow_bias_c`** of about -5 to -6°C, used only by the snow layer (the "mountain makes its own cold" fantasy). This is cheaper, but it is a stated fantasy rule that would need to be written into the guiding document. Otherwise it is the kind of disguise D-10 warns against.
+5. **[Open, with Sonny] The two temperature models should become one.** World generation gives the starter 15°C and the weather gives it 10°C. Pick one source and have the other read it. The coordinator handed this to Sonny with the snow line work (8 Nov).
+6. **[Open] The sun and the hemisphere.** The sun always stands in the south (52°N), while world latitude flips the hemisphere across the equator row. Shade rules (and the cirque bias in `glaciers-mountains.md` (#588)) should follow whatever the sun does. Handed to Sonny with the snow line work (coordinator, 8 Nov).
