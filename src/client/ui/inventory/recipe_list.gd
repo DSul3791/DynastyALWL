@@ -8,6 +8,7 @@ const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
+const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
@@ -106,6 +107,14 @@ func refresh() -> void:
 		entry.modulate = Color(0.55, 1.0, 0.55) if makeable else Color(0.55, 0.55, 0.55, 0.6)
 		entry.flat = r["number"] != view._selected_recipe
 		view._style(entry, view.BODY_PX)
+
+		if InventoryLook.on:
+			# --new-inventory (look doc section 9): a makeable row has the gold bar on its left; the others are dim and say what they still need.
+			InventoryLook.style_recipe_row(entry, makeable, r["number"] == view._selected_recipe, InventoryLook.unit_of(view))
+
+			if not makeable and view._station_ok(r):
+				entry.text += "   " + missing_text(r)
+
 		entry.pressed.connect(_select_recipe.bind(r["number"]))
 
 		if InventoryLook.on:   # --new-inventory: a click on the row crafts (one, shift five, held as many as possible); the old window keeps its Craft button
@@ -268,7 +277,19 @@ func _refresh_detail() -> void:
 		auto_line.text = "Makes %s first" % " and ".join(made)
 		auto_line.modulate = Color(0.55, 1.0, 0.55)
 		view._style(auto_line, view.BODY_PX)
-		_detail.add_child(auto_line)
+
+		if InventoryLook.on:
+			# The helper as a small wooden button (look doc section 9): one press queues the recipe, and the server makes the parts first.
+			var helper: Button = Button.new()
+			helper.text = "Make it  (%s)" % auto_line.text.to_lower()
+			helper.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			view._style(helper, view.BODY_PX - 4)
+			var helper_number: int = view._selected_recipe
+			helper.pressed.connect(func() -> void: view.craft_click(helper_number, false, false))
+			auto_line.free()
+			_detail.add_child(helper)
+		else:
+			_detail.add_child(auto_line)
 	elif int(parts["ambiguous"]) != 0:
 		var choose_line: Label = Label.new()
 		choose_line.text = str(parts["msg"])
@@ -283,6 +304,11 @@ func _refresh_detail() -> void:
 		line.text = "%s   %d / %d%s" % [view._item_label(need[0]), have, need[1], "  (kept)" if kept else ""]
 		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)
 		view._style(line, view.BODY_PX)
+
+		if InventoryLook.on:
+			_detail.add_child(_need_row(line, int(need[0]), int(need[1]), have))
+			continue
+
 		_detail.add_child(line)
 
 	var row: HBoxContainer = HBoxContainer.new()
@@ -306,3 +332,61 @@ func _refresh_detail() -> void:
 	view._style(make, view.BODY_PX)
 	make.pressed.connect(craft_selected)
 	row.add_child(make)
+
+	if InventoryLook.on:
+		# Pin (Morgan's report): the recipe stays on screen as a checklist, window open or shut.
+		var pinned: bool = view._pinned_part.number == view._selected_recipe
+		var pin: Button = Button.new()
+		pin.text = "Unpin" if pinned else "Pin"
+		pin.tooltip_text = "Keep this recipe on screen as a checklist that ticks as you gather"
+		view._style(pin, view.BODY_PX - 4)
+		var pin_number: int = view._selected_recipe
+		pin.pressed.connect(func() -> void:
+			if view._pinned_part.number == pin_number:
+				view._pinned_part.unpin()
+			else:
+				view._pinned_part.pin(pin_number)
+
+			view._refresh())
+		row.add_child(pin)
+
+
+# --new-inventory: what a recipe still needs, for its dim row: "needs twine 2 / 5" (the first short ingredient, and how many more are short).
+func missing_text(r: Dictionary) -> String:
+	var short: Array = []
+
+	for need in r["needs"] + r["keeps"]:
+		var have: int = view.stock_fill(int(need[0]))
+
+		if have < int(need[1]):
+			short.append("%s %d / %d" % [view.table.name_of(int(need[0])).to_lower(), have, int(need[1])])
+
+	if short.is_empty():
+		return ""
+
+	return "needs " + str(short[0]) + (" and %d more" % (short.size() - 1) if short.size() > 1 else "")
+
+
+# --new-inventory: one ingredient line of the chosen recipe: a small slot with the item, the line in red with its count while short (green
+# when met), and the chest mark when some of it comes from your chests in reach rather than the pack.
+func _need_row(line: Label, number: int, need: int, have: int) -> Control:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", view._px(8))
+	var slot = InventoryLook.make_slot(view, -1)
+	slot.set_unit(InventoryLook.unit_of(view) * 0.6)
+	slot.focus_mode = Control.FOCUS_NONE
+	InventoryLook.show_stack(view, slot, number, 1, 0, view.table.name_of(number))
+	slot.set_greyed(have < need)
+	row.add_child(slot)
+	line.modulate = Color.WHITE
+	line.add_theme_color_override("font_color", DynastyTheme.GOOD if have >= need else DynastyTheme.BAD)
+	line.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(line)
+	var in_pack: int = view.inventory.count_fill(number) if view.inventory != null else 0
+
+	if have > in_pack:
+		var mark: Control = InventoryLook.chest_mark(view._px(view.BODY_PX))
+		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(mark)
+
+	return row
