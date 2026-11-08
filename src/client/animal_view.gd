@@ -42,7 +42,9 @@ var prints_fx: bool = false       # footprints in snow and mud that fade (FOOTFA
 var _prints: Array = []           # [Decal, born msec, life s]
 var _print_tex: Dictionary = {}   # sign group -> ImageTexture
 var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
-var slope_tilt: bool = false      # the body pitches with the slope it walks on (off until the PC check)
+var slope_tilt: bool = false
+var foot_ik: bool = false         # feet reach uneven ground (FOOTFALL.md step 4; off until the PC check)
+var ground_height: Callable       # (x, z) -> terrain height or NAN, from the client (foot_ik probes)      # the body pitches with the slope it walks on (off until the PC check)
 var season_now: String = ""      # "spring", "summer", "autumn", "winter" or "" when unknown; the client sets it (tail swish against flies)
 var torch_light: Callable        # () -> [position, range] of the player's held light, or []: eyes facing it shine (_eye_shine)
 var water_level: Callable        # (x, z) -> water surface height or NAN; set by the client: a swimmer below it plays its "swim" clip
@@ -483,6 +485,9 @@ func _process_body(delta: float) -> void:
 			if slope_tilt:
 				_slope_pitch(node, b, before, delta)
 
+			if foot_ik and node.has_meta("feet"):
+				_feet(node, b, delta)
+
 			if bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)):
 				_herd_look(node, b, state, model_speed, delta)
 
@@ -655,7 +660,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_mats", eye_mats)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses"):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet"):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -681,6 +686,11 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 			if row.has("state_poses"):
 				missing.append_array(fix.setup_poses(sks[0], row["state_poses"]))
 				root.set_meta("poses", fix)
+
+			if row.has("feet"):
+				missing.append_array(fix.setup_legs(sks[0], row["feet"]))
+				fix.leg_scale = 1.0 / maxf(_to_ancestor(sks[0], rig).basis.get_scale().x, 0.000001)
+				root.set_meta("feet", fix)
 
 			(sks[0] as Skeleton3D).add_child(fix)
 
@@ -1923,6 +1933,44 @@ func _print_texture(group: String) -> ImageTexture:
 	var tex: ImageTexture = ImageTexture.create_from_image(img)
 	_print_tex[group] = tex
 	return tex
+
+
+# Feet on uneven ground (FOOTFALL.md step 4): four times a second, within 25 m of the camera, the ground under each foot is probed
+# and compared with the ground under the body (which the server already stands on); each foot reaches up or down by the difference
+# (at most 25 cm), eased. Grazers only for now (rows with "feet").
+func _feet(node: Node3D, b: Dictionary, delta: float) -> void:
+	var fix = node.get_meta("feet")      # bone_offsets.gd (untyped: its own properties)
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+
+	if not ground_height.is_valid() or cam == null or cam.global_position.distance_to(node.global_position) > 25.0:
+		for i in fix.leg_drop.size():
+			fix.leg_drop[i] = move_toward(fix.leg_drop[i], 0.0, delta * 0.5)
+		return
+
+	b["feet_t"] = float(b.get("feet_t", 0.0)) - delta
+
+	if float(b["feet_t"]) <= 0.0:
+		b["feet_t"] = 0.25
+		var centre: float = float(ground_height.call(node.global_position.x, node.global_position.z))
+		var sks: Array = node.find_children("*", "Skeleton3D", true, false)
+
+		if sks.is_empty() or is_nan(centre):
+			return
+
+		var sk: Skeleton3D = sks[0]
+		var wants: Array = []
+
+		for chain in fix.legs:
+			var foot: Vector3 = sk.global_transform * sk.get_bone_global_pose(int(chain[2])).origin
+			var under: float = float(ground_height.call(foot.x, foot.z))
+			wants.append(clampf(under - centre, -0.25, 0.25) if not is_nan(under) else 0.0)
+
+		b["feet_want"] = wants
+
+	var w: Array = b.get("feet_want", [])
+
+	for i in mini(w.size(), fix.leg_drop.size()):
+		fix.leg_drop[i] = lerpf(fix.leg_drop[i], float(w[i]), clampf(delta * 6.0, 0.0, 1.0))
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

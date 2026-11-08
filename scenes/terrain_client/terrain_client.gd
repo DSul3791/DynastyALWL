@@ -1319,6 +1319,7 @@ func _welcome_body(info: Dictionary) -> void:
 	_animal_view_node = animal_view
 	animal_view.torch_light = func() -> Array: return held.held_light() if held != null else []      # eye shine in the player's own torchlight
 	animal_view.conditions_now = func() -> Dictionary: return sound.ambient.conditions if sound != null and sound.ambient != null else {}      # the clock and season: sleep, tail swish
+	animal_view.ground_height = func(x: float, z: float) -> float: return _animal_ground(x, z)      # feet on uneven ground (foot_ik)
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
@@ -6390,3 +6391,14 @@ func _flame_wet(delta: float) -> void:
 
 	_flame_asked_msec = Time.get_ticks_msec()
 	net.inventory_action.rpc_id(1, NetScript.ACT_DOUSE, slot, 1 if reason == "rain" else 0, 0, Vector3.ZERO)
+
+
+# The terrain height at (x, z) for animal feet (animal_view.gd _feet): one voxel ray straight down, NAN where nothing is loaded.
+func _animal_ground(x: float, z: float) -> float:
+	if terrain == null:
+		return NAN
+
+	var tool = terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+	var hit = tool.raycast(Vector3(x, 1500.0, z), Vector3.DOWN, 2000.0)
+	return float(hit.position.y) if hit != null else NAN

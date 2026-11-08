@@ -29,6 +29,9 @@ var poses: Dictionary = {}        # state -> [offsets {bone: Quaternion}, waves 
 var pose_state: int = -1          # the state whose pose is laid over the clip (animal_view sets it)
 var pose_weight: float = 0.0
 var _pose_t: float = 0.0
+var legs: Array = []              # [upper, lower, end] bone indices per leg (feet)
+var leg_drop: PackedFloat32Array = PackedFloat32Array()   # per leg: metres the foot moves up (+) or down (-) to reach the ground
+var leg_scale: float = 1.0        # skeleton units per metre (set by animal_view)
 var _t: float = 0.0
 
 
@@ -148,6 +151,28 @@ func setup_poses(sk: Skeleton3D, spec: Dictionary) -> PackedStringArray:
 	return missing
 
 
+# Feet on uneven ground (docs/design/FOOTFALL.md step 4): a row's "feet" [[upper, lower, end], ...], one two-bone chain per leg.
+func setup_legs(sk: Skeleton3D, spec: Array) -> PackedStringArray:
+	var missing: PackedStringArray = PackedStringArray()
+
+	for chain in spec:
+		var ids: Array = []
+
+		for bone_name in chain:
+			var bone: int = sk.find_bone(str(bone_name))
+
+			if bone < 0:
+				missing.append(str(bone_name))
+
+			ids.append(bone)
+
+		if not ids.has(-1):
+			legs.append(ids)
+
+	leg_drop.resize(legs.size())
+	return missing
+
+
 func _process_modification() -> void:
 	var sk: Skeleton3D = get_skeleton()
 
@@ -184,6 +209,10 @@ func _process_modification() -> void:
 
 	if look_bones.size() >= 2 and look_weight > 0.001:
 		_look(sk)
+
+	for i in legs.size():
+		if absf(leg_drop[i]) > 0.002:
+			_reach(sk, legs[i], leg_drop[i])
 
 	if waves.is_empty() or wave_scale <= 0.001:
 		return
@@ -222,3 +251,48 @@ func _look(sk: Skeleton3D) -> void:
 		var p_basis: Basis = sk.get_bone_global_pose(parent).basis if parent >= 0 else Basis.IDENTITY
 		var local_turn: Quaternion = (p_basis.inverse() * Basis(share) * p_basis).get_rotation_quaternion()
 		sk.set_bone_pose_rotation(bone, local_turn * sk.get_bone_pose_rotation(bone))
+
+
+
+# Two-bone reach: move the end of [upper, lower, end] by `drop` metres up or down. The knee bends or straightens so the hip-to-end
+# distance matches (law of cosines, the knee turning in its own bend plane, whichever way reaches closer), then the upper bone turns
+# so the end lies on the line to the target. Rotations about each bone's pivot, put into its local pose through the parent's basis.
+func _reach(sk: Skeleton3D, chain: Array, drop: float) -> void:
+	var a_pos: Vector3 = sk.get_bone_global_pose(int(chain[0])).origin
+	var b_pos: Vector3 = sk.get_bone_global_pose(int(chain[1])).origin
+	var c_pos: Vector3 = sk.get_bone_global_pose(int(chain[2])).origin
+	var up: Vector3 = (sk.global_transform.basis.inverse() * Vector3.UP).normalized()
+	var target: Vector3 = c_pos + up * drop * leg_scale
+	var la: float = a_pos.distance_to(b_pos)
+	var lb: float = b_pos.distance_to(c_pos)
+	var want: float = clampf(a_pos.distance_to(target), absf(la - lb) + 0.001, la + lb - 0.001)
+	var bend: Vector3 = (b_pos - a_pos).cross(c_pos - b_pos)
+
+	if bend.length() < 0.000001 or la < 0.000001 or lb < 0.000001:
+		return
+
+	bend = bend.normalized()
+	var now_knee: float = acos(clampf((la * la + lb * lb - a_pos.distance_squared_to(c_pos)) / (2.0 * la * lb), -1.0, 1.0))
+	var want_knee: float = acos(clampf((la * la + lb * lb - want * want) / (2.0 * la * lb), -1.0, 1.0))
+	var best: float = 0.0
+	var best_gap: float = INF
+
+	for dir in [1.0, -1.0]:
+		var c_try: Vector3 = b_pos + Basis(bend, dir * (want_knee - now_knee)) * (c_pos - b_pos)
+		var gap: float = absf(a_pos.distance_to(c_try) - want)
+
+		if gap < best_gap:
+			best_gap = gap
+			best = dir * (want_knee - now_knee)
+
+	_turn_bone(sk, int(chain[1]), Basis(bend, best))
+	var c_new: Vector3 = sk.get_bone_global_pose(int(chain[2])).origin
+	var aim: Quaternion = Quaternion((c_new - a_pos).normalized(), (target - a_pos).normalized())
+	_turn_bone(sk, int(chain[0]), Basis(aim))
+
+
+func _turn_bone(sk: Skeleton3D, bone: int, turn: Basis) -> void:
+	var parent: int = sk.get_bone_parent(bone)
+	var p_basis: Basis = sk.get_bone_global_pose(parent).basis if parent >= 0 else Basis.IDENTITY
+	var local_turn: Quaternion = (p_basis.inverse() * turn * p_basis).get_rotation_quaternion()
+	sk.set_bone_pose_rotation(bone, local_turn * sk.get_bone_pose_rotation(bone))
