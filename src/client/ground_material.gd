@@ -43,6 +43,7 @@ uniform vec4 puddle_air = vec4(0.0, 0.0, 1.0, 0.0);    // rain 0..1, wind 0..1, 
 uniform vec2 puddle_origin = vec2(0.0); // a corner near the camera, in 60 m steps: the ripples are drawn from it, so they keep their precision far from 0
 uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black;   // worn game trails (grass_view.gd), 4 m texels over 1024 m
 uniform float trail_draw = 0.25;
+uniform vec2 summit_snow = vec2(0.0, 0.82); // summit snow (weather_look.gd, art_weather_light.md 8.2.1): the island's summit height (0 none known), lowest patches as a share of it
 uniform vec3 caustics = vec3(0.0);      // under water (underwater_look.gd): surface height, strength 0..1 (0 off), how deep the lines reach
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -358,6 +359,20 @@ void fragment() {
 	float soak = wet * (1.0 - shelter);
 	color *= 1.0 - 0.35 * soak * (1.0 - snow);
 	float lying = snow * (1.0 - 0.75 * shelter) * smoothstep(0.62, 0.9, world_normal.y) * smoothstep(0.0, 1.0, world_pos.y) * (1.0 - 0.6 * rock_mask);
+	// Summit snow (art_weather_light.md 8.2.1), the look of Sonny's A4 snow window until the baked window exists: patches above a
+	// share of the island's summit that falls with the season, lower on faces that look north (-Z) and on lee faces (a west wind
+	// for now), broad on gentle ground and only in creases and streaks on faces steeper than about 45 degrees. No distance fade:
+	// it is meant to be read from the town.
+	if (summit_snow.x > 1.0 && world_pos.y > summit_snow.x * 0.4) {
+		float rel = world_pos.y / summit_snow.x;
+		float line = summit_snow.y - 0.08 * clamp(-world_normal.z, 0.0, 1.0) - 0.05 * clamp(world_normal.x, 0.0, 1.0);
+		float patches = 0.6 * vnoise(world_pos * 0.017 + 31.0) + 0.4 * vnoise(world_pos * 0.07 + 7.0);
+		float above = smoothstep(0.0, 0.035, rel - line + (patches - 0.5) * 0.12);
+		float gentle = smoothstep(0.66, 0.78, world_normal.y);
+		float streak = smoothstep(0.6, 0.74, vnoise(vec3(world_pos.x * 0.09, world_pos.y * 0.012, world_pos.z * 0.09)));
+		float hold = max(gentle, (1.0 - gentle) * max(streak * 0.8, crease * 0.6));
+		lying = max(lying, above * hold * (1.0 - 0.5 * shelter));
+	}
 	color = mix(color, vec3(0.88, 0.9, 0.94), lying);
 
 	// Puddles (art_weather_light.md 8.1.1): flat ground only, in a fixed pattern of hollows, more of each hollow under water the

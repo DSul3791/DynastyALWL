@@ -172,6 +172,18 @@ var wind_cue                            # WindCue: drifting specks that show the
 const BreathLookScript := preload("res://src/client/breath_look.gd")
 var breath                              # BreathLook: breath puffs in the cold (art_weather_light.md 8.4)
 const PuddlesScript := preload("res://src/client/puddles.gd")
+const SummitsScript := preload("res://src/client/summits.gd")
+const CapCloudScript := preload("res://src/client/cap_cloud.gd")
+const WeatherRules := preload("res://src/shared/weather.gd")
+var summits                             # Summits: the tops near the player from the tiles' coarse heights (cap cloud, summit snow)
+var cap_cloud                           # CapCloud: caps on high summits, only with --cap-cloud (art_weather_light.md 7.1)
+var summit_snow: Vector2 = Vector2.ZERO # what the ground was last told: summit height, lowest share (for checks)
+var _summit_next_msec: int = 0
+var _summits_set: bool = false
+# Summit snow (art_weather_light.md 8.2.1): the lowest patches as a share of the island's summit, at the middle of spring,
+# summer, autumn and winter, eased between them.
+const SUMMIT_SNOW_SHARE := [0.62, 0.82, 0.70, 0.50]
+const SUMMIT_NEAR_M := 10000.0
 var puddles                             # Puddles: levels, ice and splashes for the puddles the ground draws (art_weather_light.md 8.1.1)
 
 func setup(client) -> void:
@@ -191,6 +203,10 @@ func setup(client) -> void:
 	puddles = PuddlesScript.new()
 	add_child(puddles)
 	puddles.setup(client)
+	summits = SummitsScript.new()
+	cap_cloud = CapCloudScript.new()
+	add_child(cap_cloud)
+	cap_cloud.setup(client)
 	_bolt_material = StandardMaterial3D.new()
 	_bolt_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_bolt_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -514,6 +530,7 @@ func _process_body(delta: float) -> void:
 	var heading: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
 	var cave_open: float = clampf((_cave_factor - CAVE_LIGHT_DARK) / maxf(1.0 - CAVE_LIGHT_DARK, 0.001), 0.0, 1.0)
 	puddles.update(delta, rain, float(_s["wind"]), Vector2(cos(heading), sin(heading)), smoothstep(0.6, 0.95, cave_open), _client.terrain.material as ShaderMaterial)
+	_update_summits(delta, heading)
 	_update_particles(rain, snow, float(_s["wind"]))
 	breath.update(delta)
 
@@ -596,6 +613,41 @@ func _update_ground(rain: float, snow: float) -> void:
 	if _client.flora != null and absf(lying - _tree_snow_sent) > 0.01:
 		_tree_snow_sent = lying
 		_client.flora.set_snow(lying)
+
+
+func _exit_tree() -> void:
+	if summits != null:
+		summits.finish()
+
+
+# The summits near the player (found on a worker thread), the summit snow line on the ground, and the cap clouds.
+func _update_summits(delta: float, heading: float) -> void:
+	if _client.world.is_empty():
+		return
+
+	if not _summits_set:
+		_summits_set = true
+		summits.setup(_client.world)
+
+	var eye: Vector3 = _client.camera.global_position
+	summits.update(eye)
+	cap_cloud.update(delta, float(_s["cloud"]), float(_s["rain"]), float(_s["storm"]), float(_s["wind"]), Vector2(cos(heading), sin(heading)), summits)
+	var now: int = Time.get_ticks_msec()
+
+	if now < _summit_next_msec:
+		return
+
+	_summit_next_msec = now + 1000
+	var top: Vector3 = summits.highest_near(eye, SUMMIT_NEAR_M)
+	var phase: float = WeatherRules.year_phase(float(_client.game_clock.seconds)) * 4.0 - 0.5
+	var from: int = posmod(int(floor(phase)), 4)
+	var share: float = lerpf(float(SUMMIT_SNOW_SHARE[from]), float(SUMMIT_SNOW_SHARE[(from + 1) % 4]), smoothstep(0.0, 1.0, phase - floor(phase)))
+	var want: Vector2 = Vector2(top.y, share)
+	var material: ShaderMaterial = _client.terrain.material as ShaderMaterial
+
+	if material != null and (absf(want.x - summit_snow.x) > 1.0 or absf(want.y - summit_snow.y) > 0.002):
+		summit_snow = want
+		material.set_shader_parameter("summit_snow", want)
 
 
 func _update_particles(rain: float, snow: float, wind: float) -> void:
