@@ -50,6 +50,10 @@ var idle_first_s: float = -1.0     # tools only: the first idle comes after this
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
+var weather_looks: bool = false   # shake-off after rain, tail to the wind, cold huddle, steam breath, snow on backs (ANIMAL_WEATHER_LOOKS.md; off until the PC check)
+var weather_now: Callable         # () -> the client's weather state (temp_c, rain, snow, wind, wind_dir ...), the same on every client
+var _wx_last_rain: float = 0.0
+var _wx_shake_due: bool = false
 var animal_sign: bool = false     # tracks on soft ground by stride, droppings, browse and beds that last by Jamie's soak numbers (ANIMAL_SIGN.md; off until the PC check)
 var soil_at: Callable             # (position) -> footstep surface ("mud", "sand", "dirt", "grass", "stone" ...) from the sound stage's soil map
 var _signs: Array = []            # [Decal, born msec, life s, ground] (animal_sign), oldest first
@@ -487,6 +491,11 @@ func _process_body(delta: float) -> void:
 	if not _prints.is_empty():
 		_fade_prints()
 
+	if weather_looks and weather_now.is_valid():
+		var rain_now: float = float((weather_now.call() as Dictionary).get("rain", 0.0))
+		_wx_shake_due = _wx_last_rain >= 0.4 and rain_now < 0.1      # the rain has just stopped: shakers shake (this frame only)
+		_wx_last_rain = rain_now if rain_now >= 0.4 or rain_now < 0.1 else _wx_last_rain
+
 	if animal_sign and not _signs.is_empty():
 		_sign_check_t -= delta
 
@@ -554,6 +563,9 @@ func _process_body(delta: float) -> void:
 			if animal_sign:
 				_sign_rest(node, b, state, model_speed, delta)
 
+			if weather_looks:
+				_weather_look(node, b, state, model_speed, delta)
+
 			if season_coats or coat_dust or coat_ruffle:
 				_coat_tick(node, b, state, delta)
 
@@ -576,6 +588,9 @@ func _process_body(delta: float) -> void:
 
 				if idle_variety and b.has("idle_pose"):
 					pose_key = int(b["idle_pose"])
+
+				if weather_looks and bool(b.get("cold_huddle", false)) and posed.poses.has(HUNCH) and (state == 0 or state == 12):
+					pose_key = HUNCH      # head lowered in the cold (ANIMAL_WEATHER_LOOKS.md)
 
 				if posed.poses.has(pose_key):
 					posed.pose_state = pose_key
@@ -1905,8 +1920,8 @@ func _herd_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 			mates += 1
 			sum += Vector2(cos(on.rotation.y), sin(on.rotation.y))
 
-			if d < HERD_SPACE_M and d > 0.01:
-				push += gap.normalized() * (HERD_SPACE_M - d) * 0.5
+			if d < _herd_space() and d > 0.01:
+				push += gap.normalized() * (_herd_space() - d) * 0.5
 
 	var bias: float = 0.0
 
@@ -1914,7 +1929,7 @@ func _herd_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 		bias = clampf(angle_difference(node.rotation.y, sum.angle()), -0.35, 0.35)      # at most 20 degrees toward the herd's facing
 
 	b["herd_bias"] = lerpf(float(b.get("herd_bias", 0.0)), bias, clampf(delta * 0.5, 0.0, 1.0))
-	rig.rotation.y = float(b["herd_bias"])      # on the rig, not the node: the node's facing follows the server every frame
+	rig.rotation.y = float(b["herd_bias"]) + float(b.get("wind_turn", 0.0))      # on the rig, not the node: the node's facing follows the server every frame (plus the gale turn, weather_looks)
 	if b.has("nurse_left"):
 		return      # a young one nursing is under its mother's flank (_young_follow), not pushed apart
 
@@ -3151,6 +3166,143 @@ func _sign_texture(what: String) -> ImageTexture:
 	var tex: ImageTexture = ImageTexture.create_from_image(img)
 	_print_tex[what] = tex
 	return tex
+
+
+# Animals in weather, the client looks (docs/design/ANIMAL_WEATHER_LOOKS.md). From the client's own weather state (the same on every
+# client) and the animal's state; the server's moves (cover, the gale drift, hunch 20 in rain) arrive as positions and states.
+const SHAKERS := ["dog", "wolf", "fox", "bear", "black_bear"]
+const TAIL_TO_WIND := ["deer", "elk", "horse", "donkey", "cow", "buffalo", "goat", "bighorn", "mountain_goat", "chamois", "wildebeest"]
+const COLD_C := 5.0          # steam breath below this
+const HUDDLE_C := -5.0       # herds stand closer, heads low, below this (Steve's cold_c)
+const GALE := 0.6            # wind at which stock turn tail to it (Steve's gale_from)
+
+func _herd_space() -> float:
+	if not weather_looks or not weather_now.is_valid():
+		return HERD_SPACE_M
+
+	return HERD_SPACE_M * (0.6 if float((weather_now.call() as Dictionary).get("temp_c", 10.0)) < HUDDLE_C else 1.0)
+
+
+func _weather_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var wx: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var kind: String = str(b.get("kind", ""))
+	var rig: Node3D = node.get_node_or_null("Rig")
+	var air: float = float(wx.get("temp_c", 10.0))
+	var standing: bool = speed < 0.3 and (state == 0 or state == 3 or state == 12 or state == HUNCH)
+
+	if rig == null:
+		return
+
+	# 1. Shake-off when the rain stops: a 1 s shiver from head to tail, dying away (each animal a moment apart, by its id phase).
+	if _wx_shake_due and kind in SHAKERS:
+		b["wx_shake"] = -0.15 * float(b.get("phase", 0.0))      # a short wait first
+
+	if b.has("wx_shake"):
+		b["wx_shake"] = float(b["wx_shake"]) + delta
+		var t: float = float(b["wx_shake"])
+
+		if t >= 1.0:
+			b.erase("wx_shake")
+			rig.rotation.z = 0.0
+			b["shed"] = true      # the wet look sheds its wet_shed share on this (claude/mikew-wet-look)
+		elif t >= 0.0:
+			rig.rotation.z = 0.25 * sin(t * 42.0) * (1.0 - t)
+
+			if t < delta * 1.5:
+				_splash(node.global_position + Vector3(0.0, float(_row_of(node).get("length_m", 1.0)) * 0.35, 0.0), false, 4.0)
+
+	# 2. Tail to the wind in a gale: standing grazers turn their rump to it (on the Rig, as the herd facing does), up to 60 degrees.
+	var wind: float = float(wx.get("wind", 0.0))
+
+	if kind in TAIL_TO_WIND and standing and wind >= GALE and wx.has("wind_dir"):
+		var downwind: float = -float(wx["wind_dir"]) - PI * 0.5      # the node turn that faces the way the wind blows
+		var want: float = clampf(angle_difference(node.rotation.y, downwind), -PI / 3.0, PI / 3.0)
+		b["wind_turn"] = lerp_angle(float(b.get("wind_turn", 0.0)), want, clampf(delta * 0.5, 0.0, 1.0))
+		rig.rotation.y = float(b.get("herd_bias", 0.0)) + float(b["wind_turn"])
+	elif absf(float(b.get("wind_turn", 0.0))) > 0.01:
+		b["wind_turn"] = lerp_angle(float(b["wind_turn"]), 0.0, clampf(delta * 0.5, 0.0, 1.0))
+		rig.rotation.y = float(b.get("herd_bias", 0.0)) + float(b["wind_turn"])
+
+	# 3. Cold: herds stand closer (_herd_space) with heads low (the hunch pose while standing, in the posed block).
+	b["cold_huddle"] = air < HUDDLE_C and standing
+
+	# 4. Steam breath below 5 C: a small puff at the muzzle on each breath (the row's breath rate, else 15 a minute), only near the camera.
+	if air < COLD_C:
+		_steam_breath(node, b, air, speed, delta)
+
+	# 5. Snow on the back: lying (19 or asleep) in falling snow it builds over 2 minutes, getting up shakes it off (the coat whitens).
+	var lying: bool = state == 19 or bool(b.get("asleep", false))
+	var snowing: float = float(wx.get("snow", 0.0))
+
+	if lying and snowing > 0.2:
+		b["snow_back"] = minf(1.0, float(b.get("snow_back", 0.0)) + delta / 120.0 * snowing)
+	elif not lying and float(b.get("snow_back", 0.0)) > 0.0:
+		if float(b["snow_back"]) > 0.2 and not b.has("wx_shake"):
+			b["wx_shake"] = 0.0      # it shakes the snow off as it gets up
+			_puff(node.global_position + Vector3(0.0, float(_row_of(node).get("length_m", 1.0)) * 0.3, 0.0), "snow", 6.0)
+
+		b["snow_back"] = 0.0
+
+	if float(b.get("snow_back", 0.0)) > 0.0 or b.has("snow_tint"):
+		var white: float = float(b.get("snow_back", 0.0)) * 0.5
+		b["snow_tint"] = white
+
+		for mi in node.get_meta("meshes", []):
+			for mat in (mi as MeshInstance3D).get_meta("coat_mats", []):
+				var base: Color = b.get("coat_now", Color.WHITE)
+				var c: Color = base.lerp(Color(1.3, 1.3, 1.35), white)
+
+				if mat is ShaderMaterial:
+					(mat as ShaderMaterial).set_shader_parameter("albedo_color", c)
+				else:
+					(mat as StandardMaterial3D).albedo_color = c
+
+		if white <= 0.0:
+			b.erase("snow_tint")
+
+
+func _steam_breath(node: Node3D, b: Dictionary, air: float, speed: float, delta: float) -> void:
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+
+	if cam == null or cam.global_position.distance_to(node.global_position) > 30.0:
+		return
+
+	var row: Dictionary = _row_of(node)
+	var per_min: float = float((row.get("breath", {}) as Dictionary).get("per_min", 15.0)) * (2.5 if speed > 3.0 else 1.0)
+	b["steam_t"] = float(b.get("steam_t", randf() * 2.0)) - delta      # luck-exempt: the first breath (client look)
+
+	if float(b["steam_t"]) > 0.0:
+		return
+
+	b["steam_t"] = 60.0 / maxf(per_min, 4.0)
+	var length: float = float(row.get("length_m", 1.0)) * maxf(node.scale.x, 0.3)
+	var muzzle: Vector3 = node.global_position - node.global_transform.basis.z.normalized() * length * 0.5 + Vector3.UP * length * 0.45
+	var cloud: CPUParticles3D = CPUParticles3D.new()
+	cloud.one_shot = true
+	cloud.emitting = false
+	cloud.amount = 8
+	cloud.lifetime = 1.4
+	cloud.explosiveness = 0.7
+	cloud.direction = -node.global_transform.basis.z.normalized() + Vector3.UP * 0.3
+	cloud.spread = 20.0
+	cloud.initial_velocity_min = 0.2
+	cloud.initial_velocity_max = 0.5
+	cloud.gravity = Vector3(0.0, 0.15, 0.0)
+	cloud.scale_amount_min = length * 0.04
+	cloud.scale_amount_max = length * 0.09
+	var mesh: SphereMesh = SphereMesh.new()
+	mesh.radius = 0.5
+	mesh.height = 1.0
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.95, 0.96, 1.0, clampf((COLD_C - air) / 15.0, 0.12, 0.35))      # thicker the colder it is
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mesh.material = mat
+	cloud.mesh = mesh
+	add_child(cloud)
+	cloud.global_position = muzzle
+	cloud.emitting = true
+	get_tree().create_timer(cloud.lifetime + 0.4).timeout.connect(cloud.queue_free)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

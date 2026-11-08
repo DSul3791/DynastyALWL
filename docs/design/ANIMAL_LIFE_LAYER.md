@@ -42,6 +42,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Voices | calls by state per species (alarm, alert, warn, charge, young), silent where stealthy | voices.json | `voice_fx` (**off**) | ANIMAL_VOICES.md |
 | Eye shine v2 | torch and moon by the retroreflection angle, 60 degree facing, far-off eye dots | `shine_color`, `shine` | `eye_shine` (**off**) | EYE_SHINE.md |
 | Animal sign | tracks on soft ground by stride and gait, browse, droppings, beds; 400-decal pool with soak lifetimes | `stride_m`, animal_sign.json groups | `animal_sign` (**off**) | ANIMAL_SIGN.md |
+| Weather looks | shake-off after rain, tail to the wind, cold huddle, steam breath, snow on backs | none | `weather_looks` (**off**) | ANIMAL_WEATHER_LOOKS.md |
 | Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |

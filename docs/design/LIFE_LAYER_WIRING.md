@@ -45,6 +45,8 @@ Weather step 2 (#667): moving under trees in rain, stock facing downwind in a ga
 | Night level, moon phase and direction | client day cycle (weather_look.day: night, moon_light, light_basis) | `night_light` from terrain_client; `_eye_shine_night`, `_retro`; far-off dots from `_add_eyes` | `eye_shine` | m36, m37 |
 | Held torch | held_item.gd `held_light` (main) | `torch_light`: eye shine (#596 torch-only when `eye_shine` is off) | none; `eye_shine` for v2 | m8, m36 |
 | Weather wind (0..1) | shared weather (main) | `wind_now` from terrain_client: ears, tails, coat ruffle | `coat_ruffle` for the coat | m17, m21 |
+| Weather state (temp_c, rain, snow, wind, wind_dir) | shared weather (main), terrain_client.weather | `weather_now`; `_weather_look` (shake-off, tail to wind, cold huddle), `_steam_breath`, snow on backs, `_herd_space` | `weather_looks` | m41 to m44 |
+| Rain cover, conifers, shade, gale drift (Steve #667, #671) | server positions and headings | none needed: drawn as sent; state 20 in rain as the hunch | none | m26 |
 | Ground wet, season, hour | weather sounds, ambient conditions (main) | `conditions_now`: sleep, prints, puddle splashes, coat season | per look | m6, m12, m19, m20 |
 | Water level | flora.water_level_at (main) | `water_level`: swim clips, wet look, water life | `water_life` | m7, m24, m25 |
 

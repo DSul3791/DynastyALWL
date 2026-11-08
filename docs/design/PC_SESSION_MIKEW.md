@@ -1,6 +1,6 @@
 # PC session run sheet: the animal life layer (MikeW, 8 Nov 2026)
 
-For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 85 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 40 motion strips about 30 (Godot starts about 25 s per line), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m40 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
+For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 90 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 44 motion strips about 34 (Godot starts about 25 s per line; m44 takes 2 minutes), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m44 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
 
 ```bash
 cd /c/GodotProjects/DynastyALWL_gate
@@ -38,8 +38,8 @@ grep -E "^==|^role|NO CLIP|flat" $O/still.log
 ```
 Proves: dog sit (18) and lie (19), alligator swim, black bear warn under the jaw-pop pose, rabbit and kangaroo hop clips. Pass: no `NO CLIP` for sit, lie or swim.
 
-## 4. Moving frames (about 30 min: 40 lines, about 45 s each)
-One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m40 are the newer flags and follow in the same sitting.
+## 4. Moving frames (about 34 min: 44 lines, about 45 s each)
+One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m44 are the newer flags and follow in the same sitting.
 ```bash
 M="timeout 300 $GE --path . --script res://tools/creature_motion.gd --"
 $M --kinds=dog --state=0 --out=$O/motion > $O/m1.log 2>&1   # m1 [none] look: dog tail and chest. PASS: tail swings between frames, chest rises. FAIL: anything else, or SCRIPT ERROR in the log
@@ -82,6 +82,10 @@ $M --kinds=deer,wolf,cat,bear,horse --state=3 --shine --moon --hour=23 --cam=4 -
 $M --kinds=deer,wolf --state=0 --speed=1.5 --sign=mud --frames=4 --every=1 --out=$O/motion_sign_walk > $O/m38.log 2>&1   # m38 [animal_sign] look: the mud. PASS: prints alternate left and right. FAIL: anything else, or SCRIPT ERROR in the log
 $M --kinds=deer,wolf --state=2 --speed=8 --sign=sand --frames=4 --every=0.5 --out=$O/motion_sign_run > $O/m39.log 2>&1   # m39 [animal_sign] look: the sand. PASS: prints in pairs, farther apart than m38. FAIL: anything else, or SCRIPT ERROR in the log
 $M --kinds=deer --state=0 --sign=stone --frames=2 --every=1 --out=$O/motion_sign_hard > $O/m40.log 2>&1   # m40 [animal_sign] look: the stone. PASS: no prints. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,horse --state=0 --wx=gale --frames=3 --every=1 --out=$O/motion_wx_gale > $O/m41.log 2>&1   # m41 [weather_looks] look: rumps. PASS: turned toward downwind (+X) over the frames. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer --state=0 --count=6 --wx=cold --frames=4 --every=1 --out=$O/motion_wx_cold > $O/m42.log 2>&1   # m42 [weather_looks] look: the herd. PASS: closer than m4, heads low, steam puffs at the muzzles. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=dog,wolf --state=0 --wx=stoprain --frames=6 --every=0.3 --out=$O/motion_wx_shake > $O/m43.log 2>&1   # m43 [weather_looks] look: bodies after 2 s. PASS: a 1 s shiver and a spray of drops. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,dog --state=0 --hour=2 --wx=snowbed --frames=3 --every=40 --out=$O/motion_wx_snow > $O/m44.log 2>&1   # m44 [weather_looks] look: coats of the sleeping animals. PASS: whiter frame by frame. FAIL: anything else, or SCRIPT ERROR in the log
 grep -h "saved\|SCRIPT ERROR" $O/m*.log
 ```
 
@@ -150,3 +154,4 @@ its last commit and lists the earlier PR as its base. No history is rewritten.
 8. **Life layer E, flight part 2, backing, wiring:** d16abcf5f, f34903104, aef1d008f and this review's fix commit. m28 to m34.
 9. **Life layer F, after the review:** young size by age and the mother (m35), new-model templates with bat swarm and sea blow, voices by state, and night eye shine v2 (`eye_shine`: torch and moon by the retroreflection angle, far-off eye dots; m36, m37).
 10. **Life layer G, animal sign:** `animal_sign` (tracks on soft ground by stride and gait, droppings, browse and beds, a 400-decal pool with Jamie's soak lifetimes; m38 to m40). Herd groups is #666 on Steve's stack, not in this chain; the old herd groups commit 1528fa6f9 is undone on this branch (consolidation), so no client PR carries server code.
+11. **Life layer H, weather looks:** `weather_looks` (shake-off after rain, tail to the wind in gales, cold huddle with heads low, steam breath below 5 C, snow on backs; m41 to m44).
