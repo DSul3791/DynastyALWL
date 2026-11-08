@@ -111,3 +111,20 @@ Check `lakes.png`, `lakes.json` and the summary for:
 - the filled leftovers shallow (a few decimetres); a deep one marks a cause the model lacks;
 - basins of many sizes, not one per valley of equal size.
 
+## Peak checks (design A1 rule 6)
+
+`tools/watershed/peaks.py` judges whether the tall summits are pyramids rather than domes. It runs sign-off lines 1 to 10 of `docs/water/rule6_build_plan.md` on a run's saved files, in seconds:
+- `python tools/watershed/peaks.py landform INPUTS_DIR [BASELINE_INPUTS_DIR]` checks lines 1 to 3 on the landform:
+  - at least 3 valley heads round each summit within 1 km;
+  - no new closed hollows near the summits;
+  - summit heights unchanged against the baseline run.
+  It writes `peaks_landform.json` and `.md`.
+- `python tools/watershed/peaks.py glacial INPUTS_DIR GLACIAL_DIR` checks lines 4 to 10 after the ice:
+  - the top within 25 m of the landform;
+  - the valley heads kept;
+  - steeper near the top;
+  - no flat cap over 300 m;
+  - the headwall retreat rate, the NE/SW ratio and the early cirque depth, read from the glacial cycles.
+  It writes `peaks_glacial.json` and `.md`.
+
+Each line reads PASS, FAIL or N/A with its numbers. A run of one cold stage has no cycles, so lines 8 to 10 read N/A. Settings are in `params.json` `peaks`. `python tools/watershed/test_peaks.py` runs its unit tests on small synthetic peaks (numpy and scipy only, a few seconds).
