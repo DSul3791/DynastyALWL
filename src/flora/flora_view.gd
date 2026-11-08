@@ -644,7 +644,7 @@ func _capture_impostors(tile: Vector2i) -> void:
 
 		wanted[id] = {"mesh": info["far"][0]}     # the far model, so the two tiers match
 
-	_apply_snow(0.0)     # no snow baked into the images; set back when the capture finishes
+	_apply_snow(0.0, 0.0)     # no snow baked into the images; set back when the capture finishes
 	_impostor_node.start(wanted, tile)
 
 
@@ -653,7 +653,7 @@ func _on_impostors(meshes: Dictionary) -> void:
 	if not meshes.is_empty():
 		_impostors = meshes
 
-	_apply_snow(tree_snow)
+	_apply_snow(tree_snow, tree_snow_broad)
 
 
 func set_water_quality(quality: int) -> void:
@@ -676,28 +676,37 @@ func set_storm_murk(amount: float) -> void:
 # Snow lying on the trees, 0 none .. 1 full (weather_look.gd passes the ground's snow memory, so trees whiten and clear
 # with the ground; art_weather_light.md 8.2.2). The leaf and bark materials and the far tree images take it. While the
 # far images are being captured it is held at 0, so no snow is baked into them (they add their own).
-var tree_snow: float = 0.0
+var tree_snow: float = 0.0          # on the conifer crowns (and every tree with set_snow)
+var tree_snow_broad: float = 0.0    # on the broadleaf crowns and the bark (set_snow_kinds, --tree-snow)
 
 
 func set_snow(level: float) -> void:
-	tree_snow = clampf(level, 0.0, 1.0)
+	set_snow_kinds(level, level)
+
+
+# Snow that holds and sheds (--tree-snow, docs/design/trees_weather_design.md part C): the conifer crowns take one value, the
+# broadleaf crowns and all bark the other. weather_look.gd steps both with the game clock.
+func set_snow_kinds(conifer: float, broadleaf: float) -> void:
+	tree_snow = clampf(conifer, 0.0, 1.0)
+	tree_snow_broad = clampf(broadleaf, 0.0, 1.0)
 
 	if _impostor_node == null or not _impostor_node._running:
-		_apply_snow(tree_snow)
+		_apply_snow(tree_snow, tree_snow_broad)
 
 
-func _apply_snow(level: float) -> void:
+func _apply_snow(conifer: float, broadleaf: float) -> void:
 	for key in _tree_materials:
 		var material: ShaderMaterial = _tree_materials[key] as ShaderMaterial
 
 		if material != null and (material.shader.code == FOLIAGE_SHADER or material.shader.code == BARK_SHADER):
-			material.set_shader_parameter("snow", level)
+			material.set_shader_parameter("snow", conifer if key == "conifer" else broadleaf)
 
 	for id in _impostors:
 		var made: Dictionary = _impostors[id]
 
 		if made.get("material") is ShaderMaterial:
-			(made["material"] as ShaderMaterial).set_shader_parameter("snow", level)
+			var hardwood: bool = bool((_species.get(id, {}) as Dictionary).get("hardwood", true))
+			(made["material"] as ShaderMaterial).set_shader_parameter("snow", broadleaf if hardwood else conifer)
 
 
 # The sky colours of the day cycle for the land water (weather_look.gd).
