@@ -234,6 +234,21 @@
 		"loss": 0.8,
 		"min_chance": 0.2
 	},
+	"coals": {
+		"note": "After the flames (docs/design/fire_coals_design.md, coordinator decision 8 Nov 2026, Dave may revert). A fire that burned coal_bed_s real seconds in all since it was last cold burns out to coals (state 76) for coals_s, then warm ash (77) for ash_s, then cold ash (8); a shorter fire goes straight to cold ash. Wood laid on coals catches by itself after catch_s by its biggest class. Rain of 0.2 or more on uncovered coals turns them to warm ash after rain_s, and the ash goes cold after a further ash_rain_s. Wood plus a tinder item (tinder, tinder_also) lights warm ash with no damp roll and uses the tinder up. Coals warm heat_c within heat_m and do not keep wolves off. All times are real seconds.",
+		"coal_bed_s": 600,
+		"coals_s": 7200,
+		"ash_s": 43200,
+		"catch_s": {
+			"weak": 10,
+			"firewood": 45,
+			"log": 180
+		},
+		"rain_s": 120,
+		"ash_rain_s": 600,
+		"heat_c": 8.0,
+		"heat_m": 1.5
+	},
 	"cooks_into": {
 		"raw_meat": "roast_meat",
 		"salmon": "roast_fish",
