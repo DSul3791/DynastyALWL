@@ -4,9 +4,14 @@ extends Node3D
 # keeps what it needs and answers "is there water under this foot?" with the same hollows, so a step splashes only where a puddle
 # is drawn. A look and a sound only: nothing in the game reads puddles, they are not saved and the server does not know them.
 #
-# - One level per ground layer (0 turf, 1 litter, 2 gravel, 3 mud and clay, 4 sand, 5 rock), 0 dry .. 1 full. It rises while the
-#   rain is above RAIN_FROM, by FILL_PER_H x (rain - RAIN_FROM) per game hour, and drains after it in DRAIN_H game hours by layer
-#   (half as fast in light rain; not at all while frozen). Sand never holds water.
+# - One level per ground layer (0 turf, 1 litter, 2 gravel, 3 mud and clay, 4 sand, 5 rock), plus 6 worn tracks and 7 peat, 0 dry .. 1
+#   full. It rises while the rain is above RAIN_FROM, by FILL_PER_H x (rain - RAIN_FROM) per game hour, and drains after it in game hours
+#   by kind (half as fast in light rain; not at all while frozen). Sand never holds water.
+# - Drain times (Jamie's judged numbers, coordinator 8 Nov 2026): turf about 3 h, litter 2 h, gravel 1 h; tracks and clay 3 game days
+#   in summer and 10 in winter; dips in rock 2 and 6 days; shallow pools on peat never dry. Between summer and winter the time follows
+#   the season (warmest at year phase WARMEST_PHASE, as the climate record). The slow ones keep the shader's puddle work on for days:
+#   if that costs too much on Dave's PC, shorten DRAIN_SUMMER_H / DRAIN_WINTER_H for 3, 5 and 6 first (nothing else reads them).
+#   Levels are not saved, so a player who logs in after the rain sees none until it rains again.
 # - Frozen by the ice rule (src/shared/ice.gd) at ICE_DEPTH_M, so a puddle freezes before a pond and thaws before it; checked every
 #   ICE_EVERY_S. Frozen from ICE_FROM, fully by ICE_FULL.
 # - Faded out under rock (the cave light), so no rain puddles show in a cave.
@@ -24,8 +29,13 @@ const GameClock := preload("res://src/shared/game_clock.gd")
 
 const RAIN_FROM := 0.15
 const FILL_PER_H := 2.5
-const DRAIN_H := [1.5, 2.0, 1.0, 3.0, 0.25, 2.5]      # game hours from full to dry, by layer (sand at once)
-const PRONE := [0.35, 0.25, 0.7, 1.0, 0.0, 0.6]       # how easily water stands, by layer (the shader's table)
+const TRACK := 6                                      # the level for worn trails (any ground but sand)
+const PEAT := 7                                       # the level for peat (soil 6, drawn as litter)
+const PEAT_SOIL := 6
+const DRAIN_SUMMER_H := [3.0, 2.0, 1.0, 72.0, 0.25, 48.0, 72.0, INF]    # game hours from full to dry in high summer (sand at once, peat never)
+const DRAIN_WINTER_H := [3.0, 2.0, 1.0, 240.0, 0.25, 144.0, 240.0, INF] # and in deep winter
+const WARMEST_PHASE := 0.375                          # year phase of the warmest day (climate.json warmest_year_phase); the coldest half a year on
+const PRONE := [0.35, 0.25, 0.7, 1.0, 0.0, 0.6, 0.5, 0.6]   # how easily water stands, by level (the shader's table; 6 is what a trail adds)
 const TRAIL_PRONE := 0.5                              # worn trails are packed hard: this much more on any ground but sand
 const PRONE_MAX := 1.2
 const ICE_DEPTH_M := 0.1
@@ -65,7 +75,7 @@ const WET_MUD_SLOW_H := 48.0                           # below the floor, mud dr
 const WET_STREAK_HOLD_H := 1.0
 
 var _client
-var level: Array = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+var level: Array = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]   # 6 ground layers, worn tracks, peat
 var wet: Array = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]       # with --rain-look: each layer's wetness
 var wet_streak: float = 0.0                           # the run-off streaks on steep rock
 var wet_mean: float = 0.0                             # the mean of the layers, for the haze
@@ -169,9 +179,26 @@ func _load_sizes() -> void:
 
 # Every frame from weather_look.gd: the rain and wind now (eased, test kinds included), the cave light (1 open air .. 0 deep in)
 # and the ground material to tell.
+# 0 in high summer .. 1 in deep winter, for a game time in seconds (day 0 the spring equinox).
+static func winter_share(seconds: float) -> float:
+	var phase: float = fposmod(seconds / GameClock.SECONDS_PER_DAY, float(GameClock.DAYS_PER_YEAR)) / float(GameClock.DAYS_PER_YEAR)
+	return 0.5 - 0.5 * cos(TAU * (phase - WARMEST_PHASE))
+
+
+# Game hours from full to dry for level `k` at that point of the year (INF: never).
+static func drain_hours(k: int, winter: float) -> float:
+	var summer: float = float(DRAIN_SUMMER_H[k])
+
+	if is_inf(summer):
+		return INF
+
+	return lerpf(summer, float(DRAIN_WINTER_H[k]), clampf(winter, 0.0, 1.0))
+
+
 func update(delta: float, rain: float, wind: float, wind_dir: Vector2, cave_open: float, material: ShaderMaterial) -> void:
 	var hours: float = delta * GameClock.RATIO / 3600.0
 	var frozen: bool = ice >= 0.5
+	var winter: float = winter_share(float(_client.game_clock.seconds)) if _client != null and _client.get("game_clock") != null else 0.0
 
 	for k in range(level.size()):
 		if PRONE[k] <= 0.0:
@@ -181,7 +208,7 @@ func update(delta: float, rain: float, wind: float, wind_dir: Vector2, cave_open
 		elif rain > RAIN_FROM:
 			level[k] = minf(float(level[k]) + FILL_PER_H * (rain - RAIN_FROM) * hours, 1.0)
 		elif not frozen:
-			var drain: float = hours / float(DRAIN_H[k]) * (0.5 if rain > 0.02 else 1.0)
+			var drain: float = hours / drain_hours(k, winter) * (0.5 if rain > 0.02 else 1.0)
 			level[k] = maxf(float(level[k]) - drain, 0.0)
 
 	_update_splashes(delta)
@@ -346,12 +373,13 @@ func water_at(x: float, y: float, z: float, material_id: int, up_y: float, shelt
 		return 0.0
 
 	var layer: int = 5 if material_id >= Layout.MATERIAL_ROCK or material_id >= GroundMaterial.SOIL_LAYER.size() else int(GroundMaterial.SOIL_LAYER[material_id])
-	var prone: float = float(PRONE[layer])
+	var own: int = PEAT if material_id == PEAT_SOIL else layer
+	var amount: float = float(level[own]) * _open * float(PRONE[own])
 
 	if layer != 4:
-		prone = minf(prone + TRAIL_PRONE * trail, PRONE_MAX)
+		amount += float(level[TRACK]) * _open * TRAIL_PRONE * trail
 
-	var amount: float = float(level[layer]) * _open * prone
+	amount = minf(amount, PRONE_MAX)
 	amount *= smoothstep(0.951, 0.985, up_y) * (1.0 - shelter) * (1.0 - lying) * smoothstep(1.0, 1.5, y)
 
 	if amount <= 0.001:

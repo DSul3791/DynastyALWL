@@ -36,7 +36,7 @@ uniform vec4 fall_zone[3];              // nearest waterfalls: base x, z, spray 
 uniform vec2 fall_height[3];            // their base and top height; the walls are damp up to the top
 uniform sampler2D canopy : filter_linear, hint_default_black;   // where trees shelter the ground (canopy_map.gd)
 uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);                // its corner x, z and width in metres
-uniform float puddle_level[6];         // puddles (puddles.gd, art_weather_light.md 8.1.1): 0 dry .. 1 full, per ground layer
+uniform float puddle_level[8];         // puddles (puddles.gd, art_weather_light.md 8.1.1): 0 dry .. 1 full, per ground layer, then worn tracks and peat
 uniform float puddle_any = 0.0;         // the highest of them, already faded in caves; 0 skips the puddle work
 uniform float puddle_ice = 0.0;         // 0 open .. 1 frozen (ice.gd at 0.1 m)
 uniform vec4 puddle_air = vec4(0.0, 0.0, 1.0, 0.0);    // rain 0..1, wind 0..1, wind heading x, z (where it blows toward)
@@ -145,15 +145,18 @@ void fragment() {
 	vec3 color = vec3(0.0);
 	float stone = 0.0;
 	float mud = 0.0;
+	float peat = 0.0;
 	for (int n = 0; n < 4; n++) {
 		int index = clamp(int(material_indices[n] + 0.5), 0, 63);
 		color += palette[index] * material_weights[n];
 		stone += (index >= 32 || index == 0) ? material_weights[n] : 0.0;
 		mud += (index == 16) ? material_weights[n] : 0.0;
+		peat += (index == 6) ? material_weights[n] : 0.0;
 	}
 	color /= total;
 	stone /= total;
 	mud /= total;
+	peat /= total;
 
 	// The table colors are display (sRGB) values; convert so they read as
 	// intended, then mute them toward natural earth tones.
@@ -449,10 +452,14 @@ void fragment() {
 	if (puddle_any > 0.001 && dist < 220.0 && world_normal.y > 0.951) {
 		float trail = smoothstep(trail_draw, trail_draw + 0.35, texture(trail_map, world_pos.xz / 1024.0).r);
 		float prone[6] = float[6](0.35, 0.25, 0.7, 1.0, 0.0, 0.6);
-		float amount = 0.0;
+		// Peat (soil 6) is drawn as litter but keeps its own level (its pools never dry); worn trails add their own level on any ground
+		// but sand (tracks dry in days). puddles.gd water_at matches this on unblended ground.
+		float peat_w = min(peat * (1.0 - rock_mask), lw[1]);
+		float amount = peat_w * puddle_level[7] * 0.6 + (1.0 - lw[4]) * puddle_level[6] * 0.5 * trail;
 		for (int k = 0; k < 6; k++) {
-			amount += lw[k] * puddle_level[k] * min(prone[k] + (k == 4 ? 0.0 : 0.5 * trail), 1.2);
+			amount += (k == 1 ? lw[1] - peat_w : lw[k]) * puddle_level[k] * prone[k];
 		}
+		amount = min(amount, 1.2);
 		amount *= smoothstep(0.951, 0.985, world_normal.y) * (1.0 - shelter) * (1.0 - lying) * (1.0 - mud) * smoothstep(1.0, 1.5, world_pos.y);
 		if (amount > 0.001) {
 			float hollow = puddle_hollow(world_pos.xz);

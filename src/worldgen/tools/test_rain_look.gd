@@ -52,6 +52,7 @@ func _init() -> void:
 	_check(WeatherLook.SPLASH_FROM_QUALITY == 2 and WeatherLook.SPLASH_FROM >= 0.5 and WeatherLook.SPLASH_PER_HIT <= 5, "the splash sheet: High and Ultra only, a downpour only, a few droplets a hit")
 	_check_drips()
 	_check(preload("res://src/flora/flora_view.gd").BARK_SHADER.contains("uniform float wet") and preload("res://src/flora/flora_view.gd").BARK_SHADER.contains("wind_face"), "the bark darkens in the rain, more on the windward side")
+	_check_puddle_drying()
 	print("test_rain_look: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
 
@@ -102,3 +103,17 @@ func _check_drips() -> void:
 	_check(grey_15 > 0.4 and grey_15 < 0.6, "15 grey still minutes after the rain the crowns still drip at half (%.2f)" % grey_15)
 	_check(_store_after(2.0, 0.0, 0.0, 0.0, 1.0) == 0.0, "two game hours later they are dry")
 	_check(_store_after(0.25, 0.0, 0.6, 1.0, 1.0) < grey_15 * 0.2, "sun and a breeze shake them dry much sooner")
+
+
+# Puddle drain times (Jamie's judged numbers, coordinator 8 Nov 2026): by kind of ground and season.
+func _check_puddle_drying() -> void:
+	var summer: float = Puddles.winter_share(137.0 * 86400.0)
+	var winter: float = Puddles.winter_share(319.0 * 86400.0)
+	_check(summer < 0.01 and winter > 0.99 and absf(Puddles.winter_share(46.0 * 86400.0) - 0.5) < 0.05, "the season: high summer about day 137, deep winter about day 319 (%.2f, %.2f)" % [summer, winter])
+	_check(is_equal_approx(Puddles.drain_hours(0, 0.0), 3.0) and is_equal_approx(Puddles.drain_hours(1, 1.0), 2.0) and is_equal_approx(Puddles.drain_hours(2, 0.5), 1.0), "turf dries in about 3 h, litter 2 h, gravel 1 h, in any season")
+	_check(is_equal_approx(Puddles.drain_hours(3, summer), 72.0) and absf(Puddles.drain_hours(3, winter) - 240.0) < 0.5, "clay holds its puddles 3 game days in summer, 10 in winter")
+	_check(is_equal_approx(Puddles.drain_hours(Puddles.TRACK, 0.0), 72.0) and is_equal_approx(Puddles.drain_hours(Puddles.TRACK, 1.0), 240.0), "and so do worn tracks")
+	_check(is_equal_approx(Puddles.drain_hours(5, 0.0), 48.0) and is_equal_approx(Puddles.drain_hours(5, 1.0), 144.0), "dips in rock hold 2 days in summer, 6 in winter")
+	_check(is_inf(Puddles.drain_hours(Puddles.PEAT, 0.0)) and is_inf(Puddles.drain_hours(Puddles.PEAT, 1.0)), "shallow pools on peat never dry")
+	_check(Puddles.PRONE.size() == 8 and float(Puddles.PRONE[4]) == 0.0, "sand never holds water")
+	_check(GroundMaterial.SHADER.contains("uniform float puddle_level[8]") and GroundMaterial.SHADER.contains("peat_w"), "the ground shader reads the track and peat levels")
