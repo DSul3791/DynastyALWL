@@ -66,6 +66,20 @@ const CAVE_SHADOW_OFF := 0.05            # no sun shadows below this share of th
 const CAVE_REFLECT_OFF := 0.3            # no sky reflections below this share of the light (the sky is not seen from in there)
 const CAVE_DARK_FROM := 0.1              # rock enclosure (cave_sounds.gd) from which the light starts to fade
 const CAVE_DARK_FULL := 0.6              # and at which it is fully gone
+# --cave-light (docs/design/cave_light_design.md, Jamie's cave page #664): daylight comes from the mouth, not from how enclosed the spot is.
+# cave_sounds.gd measures how much of the view reaches open air (mouth_view) and how many bends lie between (bends). Mouth in view: the
+# light is that share x CAVE_VIEW_GAIN; one bend: moonlight; two: none. The eyes: dark in a second going in, then over CAVE_ADAPT_IN_S a
+# lift of up to CAVE_ADAPT_LIFT where some light exists (never above CAVE_ADAPT_CAP, so black stays black); coming out, the light is back at
+# once and the still dark-adapted eyes see a glare (exposure x 1 + CAVE_GLARE) that settles over CAVE_ADAPT_OUT_S.
+const CAVE_LIGHT_NORMAL_DEEP := 0.015     # with the switch, setting "Normal": a faint dusk deep in (not 12 %)
+const CAVE_VIEW_GAIN := 0.6
+const CAVE_BEND_LIGHT := 0.0005           # one bend: about moonlight
+const CAVE_COME_OUT_FAST_S := 0.4
+const CAVE_ADAPT_IN_S := 90.0
+const CAVE_ADAPT_OUT_S := 2.0
+const CAVE_ADAPT_LIFT := 3.0
+const CAVE_ADAPT_CAP := 0.03
+const CAVE_GLARE := 1.2
 const CAVE_RAIN_FROM := 0.1              # rock enclosure from which falling rain and snow thin out (an overhang lets a little through)
 const CAVE_RAIN_GONE := 0.5              # and at which none falls: in a cave (cave_sounds.gd's "in a cave" mark). Dave's QA list BUG-009, 3 Nov 2026
 const EXPOSURE_CLEAR := 1.1
@@ -137,6 +151,8 @@ var day = DayCycleScript.new()         # sun, moon and sky colours from the game
 var _day_next_msec: int = 0
 var _sky_next_msec: int = 0
 var _cave_factor: float = 1.0           # share of the sun and sky light let in under rock, eased (1 open air)
+var cave_light_on: bool = false         # --cave-light
+var cave_adapt: float = 0.0             # 0 .. 1: the eyes adapted to the dark of a cave (--cave-light)
 var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
 var canopy_night: float = 0.0           # 0 open .. 1 under closed crowns, at night only, eased (CANOPY_NIGHT_DIM)
 var torch_adapt: float = 0.0            # 0 .. 1: the eyes adapted to a held flame at night, eased (TORCH_NIGHT_DIM)
@@ -151,6 +167,7 @@ var wind_cue                            # WindCue: drifting specks that show the
 
 func setup(client) -> void:
 	_client = client
+	cave_light_on = OS.get_cmdline_user_args().has("--cave-light")
 	_rng.seed = 5150
 	canopy = CanopyMapScript.new()
 	_rain = _make_rain()
@@ -410,8 +427,21 @@ func _process_body(delta: float) -> void:
 	var enclosed: float = _client.sound.cave.rock_enclosure if _client.sound != null and _client.sound.cave != null else 0.0
 	var left: float = CAVE_LIGHT_DARK if _client.display.cave_dark else CAVE_LIGHT_NORMAL
 	var cave_target: float = cave_light(enclosed, left)
-	_cave_factor = move_toward(_cave_factor, cave_target, delta / (CAVE_GO_DARK_S if cave_target < _cave_factor else CAVE_COME_OUT_S))
+	var come_out_s: float = CAVE_COME_OUT_S
+	var glare: float = 0.0
+
+	if cave_light_on and _client.sound != null and _client.sound.cave != null:
+		var cave = _client.sound.cave
+		cave_target = cave_light_view(enclosed, float(cave.mouth_view), int(cave.bends), CAVE_LIGHT_DARK if _client.display.cave_dark else CAVE_LIGHT_NORMAL_DEEP)
+		come_out_s = CAVE_COME_OUT_FAST_S
+
+	_cave_factor = move_toward(_cave_factor, cave_target, delta / (CAVE_GO_DARK_S if cave_target < _cave_factor else come_out_s))
 	var under_rock: float = _cave_factor
+
+	if cave_light_on:
+		cave_adapt = move_toward(cave_adapt, 1.0 if _cave_factor < 0.1 else 0.0, delta / (CAVE_ADAPT_IN_S if _cave_factor < 0.1 else CAVE_ADAPT_OUT_S))
+		under_rock = adapted_light(_cave_factor, cave_adapt)
+		glare = CAVE_GLARE * cave_adapt * smoothstep(0.3, 1.0, _cave_factor)
 	var sun_amount: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
 	# The night light (art_weather_light.md 6.2): crowns overhead and a flame in the hand each take a share of the moon and sky
 	# light, at night only. They are eased, and capped below by OUTDOOR_FLOOR further down.
@@ -445,7 +475,7 @@ func _process_body(delta: float) -> void:
 	sky_under_rock(environment, lerpf(DAY_SKY_SHARE, 0.3, dim) * keep, under_rock)   # night 0.3 as before, less under crowns or by a flame
 	environment.ambient_light_color = AMBIENT_DAY_WARM.lerp(AMBIENT_NIGHT_COLOR, dim)
 	# The whole picture goes dimmer and greyer with the weather.
-	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
+	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark) * (1.0 + glare)
 	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark)
 
 	if not _client.underwater:
@@ -506,6 +536,22 @@ static func sky_under_rock(environment: Environment, sky_share: float, under_roc
 static func cave_light(rock_enclosure: float, left: float = CAVE_LIGHT_DARK) -> float:
 	var shut: float = smoothstep(CAVE_DARK_FROM, CAVE_DARK_FULL, rock_enclosure)
 	return lerpf(1.0, left, shut)
+
+
+# --cave-light: the same from the mouth. `view` is the share of the view rays that reach open air, `bends` 0 (mouth in view), 1 or 2
+# (two or more), `deep` the least left (the setting: 0 Dark, CAVE_LIGHT_NORMAL_DEEP Normal).
+static func cave_light_view(rock_enclosure: float, view: float, bends: int, deep: float) -> float:
+	var shut: float = smoothstep(CAVE_DARK_FROM, CAVE_DARK_FULL, rock_enclosure)
+	var lit: float = clampf(view * CAVE_VIEW_GAIN, 0.0, 1.0) if bends <= 0 else (CAVE_BEND_LIGHT if bends == 1 else 0.0)
+	return lerpf(1.0, maxf(lit, deep), shut)
+
+
+# The light as the eyes see it: dark-adapted eyes lift what light there is, up to CAVE_ADAPT_CAP and never more than the open air; none stays none.
+static func adapted_light(light: float, adapt: float) -> float:
+	if light >= CAVE_ADAPT_CAP:
+		return light
+
+	return minf(light * (1.0 + CAVE_ADAPT_LIFT * clampf(adapt, 0.0, 1.0)), CAVE_ADAPT_CAP)
 
 
 # The same grading the sky shader applies, so the fog meets the sky's horizon.
