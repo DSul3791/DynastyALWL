@@ -632,11 +632,13 @@ func _process(delta: float) -> void:
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
 
 	# Ground guard (warning only): the voxel ground reading is flaky while a spot is still loading (31.0, then 15.0, then 63.0 at one spot in a test), so the camera is never moved
-	# for it; but a camera far below the reading, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
-	var guard_ground: float = _ground(p.x, p.z)
+	# for it; but a camera inside solid ground, no floor under it, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
+	# The floor is read from just above the camera, not from 1500 m: from the sky the ray stops on the hilltop over a cave and every cave shot warned (Sonny, 8 Nov 2026).
+	var guard_ground: float = _ground(p.x, p.z, p.y + GUARD_ABOVE_M)
+	var in_rock: bool = _solid_at(p)
 
-	if is_nan(guard_ground) or p.y < guard_ground - 3.0 or guard_ground <= -30.0:
-		print("shot runner: WARNING ground not loaded at (%.1f, %.1f): ground reading %.1f, camera y %.1f; the picture may be from under the world, raise --shot-settle (75 s worked)" % [p.x, p.z, guard_ground, p.y])
+	if is_nan(guard_ground) or in_rock or p.y < guard_ground - 3.0 or guard_ground <= -30.0:
+		print("shot runner: WARNING ground not loaded at (%.1f, %.1f): floor reading %.1f, camera y %.1f%s; the picture may be from under the world, raise --shot-settle (75 s worked)" % [p.x, p.z, guard_ground, p.y, ", the camera is inside solid ground" if in_rock else ""])
 	var falls: Array = client.flora.fall_list()
 	falls.sort_custom(func(a, b): return (a["base"] as Vector3).distance_to(p) < (b["base"] as Vector3).distance_to(p))
 
@@ -1702,11 +1704,22 @@ func _print_body_height() -> void:
 	print("shot runner: body height: stance %d clip %s, feet level %.2f, collision ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
 
 
-func _ground(x: float, z: float) -> float:
+# from_y: where the ray starts going down (the sky by default; the ground guard starts just above the camera, so in a cave it finds the floor).
+func _ground(x: float, z: float, from_y: float = 1500.0) -> float:
 	var tool = client.terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
-	var hit = tool.raycast(Vector3(x, 1500.0, z), Vector3.DOWN, 2000.0)
+	var hit = tool.raycast(Vector3(x, from_y, z), Vector3.DOWN, from_y + 500.0)
 	return float(hit.position.y) if hit != null else NAN
+
+
+const GUARD_ABOVE_M := 1.0
+
+
+# True when the voxel at p is solid (SDF below zero): the camera is inside the ground.
+func _solid_at(p: Vector3) -> bool:
+	var tool = client.terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+	return float(tool.get_voxel_f(Vector3i(floori(p.x), floori(p.y), floori(p.z)))) < 0.0
 
 
 # --shot-frametime: set the quality, wait 10 s after connecting (the first frames build the world), then collect every frame time for frametime_s seconds
