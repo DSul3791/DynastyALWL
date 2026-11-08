@@ -222,12 +222,17 @@ def zoom_picture(npz_path, png_path, x_m, z_m, size_m=6000.0):
 if __name__ == '__main__':
     if len(sys.argv) >= 5 and sys.argv[1] == 'zoom':
         # python plots.py zoom RUN_DIR X Z [SIZE_M]: writes RUN_DIR/zoom_<x>_<z>.png, from RUN_DIR/ground.npz (evolve.py) or,
-        # when there is none, RUN_DIR/glacial.npz (glacial.py)
+        # when there is none, RUN_DIR/glacial.npz (glacial.py). Given a .npz file instead of a folder (a glacial cycle
+        # snapshot, glacial_cycle_NN.npz), it writes zoom_<file name>_<x>_<z>.png beside it.
         import os
         x_, z_ = float(sys.argv[3]), float(sys.argv[4])
-        npz = f'{sys.argv[2]}/ground.npz' if os.path.exists(f'{sys.argv[2]}/ground.npz') else f'{sys.argv[2]}/glacial.npz'
-        zoom_picture(npz, f'{sys.argv[2]}/zoom_{x_:.0f}_{z_:.0f}.png', x_, z_,
-                     float(sys.argv[5]) if len(sys.argv) > 5 else 6000.0)
+        if sys.argv[2].endswith('.npz'):
+            npz = sys.argv[2]
+            png = os.path.join(os.path.dirname(npz), f'zoom_{os.path.basename(npz)[:-4]}_{x_:.0f}_{z_:.0f}.png')
+        else:
+            npz = f'{sys.argv[2]}/ground.npz' if os.path.exists(f'{sys.argv[2]}/ground.npz') else f'{sys.argv[2]}/glacial.npz'
+            png = f'{sys.argv[2]}/zoom_{x_:.0f}_{z_:.0f}.png'
+        zoom_picture(npz, png, x_, z_, float(sys.argv[5]) if len(sys.argv) > 5 else 6000.0)
     elif len(sys.argv) == 3 and sys.argv[1] == 'ground':
         ground_picture(f'{sys.argv[2]}/ground.npz', f'{sys.argv[2]}/evolve.png')
     elif len(sys.argv) == 3 and sys.argv[1] == 'glacial':
