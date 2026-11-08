@@ -2,6 +2,8 @@ extends Node
 
 const AirBands := preload("res://src/client/air_bands.gd")
 const OutdoorAir := preload("res://src/client/outdoor_air.gd")
+const Sound3D := preload("res://src/client/sound_3d.gd")
+const SoundStage := preload("res://src/client/sound_stage.gd")
 
 # Muffling for sounds in the world (client only): a call, a stream or a dig sound behind a hill
 # or far off through dense forest loses its high end, the way it does in real life.
@@ -38,6 +40,13 @@ var _scan_left: float = 0.0
 var _targets: Dictionary = {}           # player instance id -> target cutoff
 
 const AIR_EASE_DB_PER_SEC := 6.0
+const ECHO_RAYS := [0, 4, 8, 8]         # by sound tier (Low none)
+const ECHO_EVERY_MS := 500
+const ECHO_VOICES := 3
+const ECHO_BUS := "Echo"
+var echoes_played: int = 0              # HUD
+var _echo_next_ms: int = 0
+var _echo_live: int = 0
 var outdoors: bool = false              # --sound-outdoors
 var air: Dictionary = {"wind": 0.0, "toward": Vector2.ZERO, "gust": 0.0, "night": 0.0, "calm": 0.0, "fog": 0.0, "temp_c": 10.0, "forest": 0.0}
 var air_shadowed: int = 0               # voices 3 dB or more down for the wind at the last scan (HUD)
@@ -123,6 +132,10 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 		air["snow_fresh"] = float(_stage.weather.snow_fresh)
 		air["ground_snow"] = float(_stage.weather.ground_snow)
 
+	if _stage.water != null:                      # step 6: the running water beside the listener (water_sounds.gd's last scan)
+		air["brook_m"] = float(_stage.water.brook_m)
+		air["rapids_m"] = float(_stage.water.rapids_m)
+
 	for node in get_tree().get_nodes_in_group("world_sounds"):
 		var player: AudioStreamPlayer3D = node as AudioStreamPlayer3D
 
@@ -149,14 +162,18 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 
 		if outdoors and not flying and _moves(player):
 			var own_unit: float = float(player.get_meta("air_unit")) if player.has_meta("air_unit") and is_equal_approx(player.unit_size, float(player.get_meta("air_set", -1.0))) else player.unit_size
-			var effect: Vector2 = OutdoorAir.total(head, player.global_position, own_unit, air)
+			var own_water: bool = bool(player.get_meta("air_water", false))
+			var effect: Vector2 = OutdoorAir.total(head, player.global_position, own_unit, air, own_water)
 			var open_air: float = 1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure))   # in a cave the open air has no say
 			effect = Vector2(effect.x * open_air, lerpf(1.0, effect.y, open_air))
+
+			if bool(player.get_meta("air_line", false)):   # a river reach (water_sounds.gd): a line, not a point (3.7)
+				effect.x += OutdoorAir.line_db(distance, own_unit)
 			_air_targets[player.get_instance_id()] = effect.x
 			air_cut = effect.y
 			air_shadowed += 1 if effect.x <= -3.0 else 0
 			air_carried += 1 if effect.x >= 1.0 else 0
-			air_masked += 1 if OutdoorAir.mask_db(distance, minf(OutdoorAir.rain_mask_m(float(air.get("rain", 0.0)), float(air.get("leaves", 0.0))), OutdoorAir.gale_mask_m(float(air["wind"]))), own_unit) <= -6.0 else 0
+			air_masked += 1 if OutdoorAir.mask_db(distance, OutdoorAir.mask_m_of(air, own_water), own_unit) <= -6.0 else 0
 
 		cutoff *= air_cut
 
@@ -202,7 +219,104 @@ func _on_node_added(node: Node) -> void:
 
 # A new voice starts at its level for the air now (a howl upwind starts low), not 0.5 s later.
 func _first_look(player: AudioStreamPlayer3D) -> void:
+	if is_instance_valid(player) and bool(player.get_meta("air_sharp", false)) and _head != Vector3.INF:
+		_echo(player)
+
 	if not is_instance_valid(player) or _head == Vector3.INF or not _moves(player) or player.has_meta("air_unit"):
 		return
 
-	_set_air_db(player, OutdoorAir.total(_head, player.global_position, player.unit_size, air).x * (1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure))))
+	var db: float = OutdoorAir.total(_head, player.global_position, player.unit_size, air, bool(player.get_meta("air_water", false))).x * (1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure)))
+
+	if bool(player.get_meta("air_line", false)):
+		db += OutdoorAir.line_db(_head.distance_to(player.global_position), player.unit_size)
+
+	_set_air_db(player, db)
+
+
+# Echoes off cliffs (sound_outdoors_design.md 3.6): a sharp sound (meta "air_sharp": a blow, a pick on stone, a spear strike, a tree's
+# crash) looks for a rock face round it with level voxel rays (terrain only, so trees never echo), at most one search every 0.5 s.
+# The nearest face plays the same clip again after the time sound takes there and back, from the source's mirror image in the face,
+# darker (the Echo bus) and 12 to 22 dB under the direct sound; two facing walls close together (a gorge) give two softer repeats.
+func _echo(player: AudioStreamPlayer3D) -> void:
+	var rays: int = int(ECHO_RAYS[clampi(int(_stage.tier), 0, ECHO_RAYS.size() - 1)])
+	var now: int = Time.get_ticks_msec()
+
+	if rays == 0 or now < _echo_next_ms or _echo_live >= ECHO_VOICES or float(_stage.cave.enclosure) > 0.3 or player.stream == null:
+		return
+
+	_echo_next_ms = now + ECHO_EVERY_MS
+	var from: Vector3 = player.global_position + Vector3(0.0, 1.5, 0.0)
+	var faces: Array = []                   # [range, point, normal, direction]
+
+	for k in range(rays):
+		var angle: float = TAU * float(k) / float(rays)
+		var direction: Vector3 = Vector3(cos(angle), 0.0, sin(angle))
+		var hit = _tool.raycast(from, direction, OutdoorAir.ECHO_MAX_M)
+
+		if hit == null or hit.distance < OutdoorAir.ECHO_MIN_M:
+			continue
+
+		var top = _tool.raycast(from + Vector3(0.0, OutdoorAir.ECHO_MIN_M, 0.0), direction, OutdoorAir.ECHO_MAX_M)
+		var side = _tool.raycast(from + Vector3(-direction.z, 0.0, direction.x), direction, OutdoorAir.ECHO_MAX_M)
+
+		if top == null or side == null:
+			continue
+
+		var p0: Vector3 = from + direction * hit.distance
+		var normal: Vector3 = ((from + Vector3(-direction.z, 0.0, direction.x) + direction * side.distance) - p0).cross((from + Vector3(0.0, OutdoorAir.ECHO_MIN_M, 0.0) + direction * top.distance) - p0).normalized()
+
+		if normal.dot(direction) > 0.0:
+			normal = -normal
+
+		if OutdoorAir.is_face(normal, hit.distance, top.distance):
+			faces.append([hit.distance, p0, normal, direction])
+
+	if faces.is_empty():
+		return
+
+	faces.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+	var face: Array = faces[0]
+	var listener: Vector3 = _head
+	var unit: float = float(player.get_meta("air_unit", player.unit_size))
+	var direct_db: float = minf(player.volume_db + 20.0 * log(unit / maxf(listener.distance_to(player.global_position), 0.1)) / log(10.0), player.max_db)
+	var snow: bool = _stage.weather != null and float(_stage.weather.ground_snow) > 0.5
+	var level: float = direct_db + OutdoorAir.echo_drop_db(float(face[0]), snow)
+	var delay: float = OutdoorAir.echo_delay(float(face[0]))
+	var at: Vector3 = OutdoorAir.mirror(player.global_position, face[1], face[2])
+	var plays: Array = [[delay, 0.0]]
+
+	for other in faces:
+		if Vector3(other[3]).dot(face[3]) < -0.9:
+			plays += OutdoorAir.gorge_repeats(delay, float(face[0]) + float(other[0]))
+			break
+
+	for entry in plays:
+		_echo_after(player.stream, player.pitch_scale, at, level + float(entry[1]), float(entry[0]))
+
+
+func _echo_after(stream: AudioStream, pitch: float, at: Vector3, db: float, delay: float) -> void:
+	_echo_live += 1
+	get_tree().create_timer(delay).timeout.connect(func() -> void:
+		if not is_inside_tree() or not _stage.has_room():
+			_echo_live -= 1
+			return
+
+		if AudioServer.get_bus_index(ECHO_BUS) < 0:
+			var index: int = SoundStage._make_bus(ECHO_BUS)
+			AudioServer.set_bus_send(index, "Foley")
+			var lowpass: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
+			lowpass.cutoff_hz = OutdoorAir.ECHO_HZ
+			AudioServer.add_bus_effect(index, lowpass)
+
+		var echo: AudioStreamPlayer3D = Sound3D.make(self, ECHO_BUS, 1.0, 0.0, OPEN_HZ, false, false)
+		echo.global_position = at
+		echo.stream = stream
+		echo.pitch_scale = pitch
+		echo.volume_db = db
+		echo.finished.connect(func() -> void:
+			_echo_live -= 1
+			echo.queue_free()
+		)
+		echo.play()
+		echoes_played += 1
+	)

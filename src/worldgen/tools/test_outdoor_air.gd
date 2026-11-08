@@ -72,9 +72,14 @@ func _init() -> void:
 	player.free()
 
 	_check_step2()
+	_check_step3()
+	_check_step4()
+	_check_step5()
+	_check_step6()
 
 	var source: String = FileAccess.get_file_as_string("res://src/client/sound_occlusion.gd")
-	_check(source.contains("has(\"--sound-outdoors\")") and not source.contains("player.volume_db"), "behind --sound-outdoors, and the scan never writes volume_db")
+	var writes_volume: bool = source.contains("player.volume_db =") or source.contains("player.volume_db +=") or source.contains("player.volume_db -=")
+	_check(source.contains("has(\"--sound-outdoors\")") and not writes_volume, "behind --sound-outdoors, and the scan never writes volume_db (the echo only reads it)")
 
 	print("test_outdoor_air: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
@@ -101,3 +106,67 @@ func _check_step2() -> void:
 	_check(on_snow.x <= -3.0 and on_snow.y < 0.8 and OutdoorAir.snow_effect(20.0, 1.0, 1.0) == Vector2(0.0, 1.0), "fresh snow: far sounds 3 to 6 dB down and duller, near ones not")
 	var source: String = FileAccess.get_file_as_string("res://src/client/weather_sounds.gd")
 	_check(source.contains("0.8 * ground_snow * snow_fresh") and source.contains("0.8 * ground_snow + falling"), "the hush follows fresh snow with the switch, lying snow without")
+
+
+# Step 3 (3.7): rivers as a line.
+func _check_step3() -> void:
+	_check(OutdoorAir.line_db(8.0, 10.0) == 0.0 and absf(OutdoorAir.line_db(20.0, 10.0) - 3.01) < 0.05, "a river reach fades 3 dB a doubling near the bank, not 6")
+	_check(is_equal_approx(OutdoorAir.line_db(400.0, 10.0), OutdoorAir.line_db(50.0, 10.0)), "past a third of the reach it falls like a point again")
+	var drop: float = 20.0 * log(200.0 / 10.0) / log(10.0) - OutdoorAir.line_db(200.0, 10.0)
+	_check(drop >= 12.0, "a river never sounds the same at 10 m and 200 m (%.1f dB apart)" % drop)
+	var water: String = FileAccess.get_file_as_string("res://src/client/water_sounds.gd")
+	_check(water.contains("set_meta(\"air_line\", candidate[\"kind\"] == \"river\")"), "river voices are marked as a line; brooks, ponds and falls are not")
+
+
+# Step 4 (3.6): echoes off cliffs.
+func _check_step4() -> void:
+	var wall: Vector3 = Vector3(-1.0, 0.0, 0.0)            # a face looking back toward -x
+	_check(OutdoorAir.is_face(wall, 30.0, 31.0), "a steep face 30 m off and 17 m tall echoes")
+	_check(not OutdoorAir.is_face(Vector3(-0.6, 0.8, 0.0), 30.0, 31.0), "a grass slope does not")
+	_check(not OutdoorAir.is_face(wall, 12.0, 12.0), "nor a wall too close to be heard apart")
+	_check(not OutdoorAir.is_face(wall, 30.0, 60.0) and not OutdoorAir.is_face(wall, 30.0, -1.0), "nor a face under 17 m tall (the ray above goes past)")
+	_check(absf(OutdoorAir.echo_delay(30.0) - 0.178) < 0.005 and absf(OutdoorAir.echo_delay(300.0) - 1.78) < 0.02, "a gorge 30 m wide answers in about 0.18 s, a cliff across a lake 300 m away in about 1.8 s")
+	_check(is_equal_approx(OutdoorAir.echo_drop_db(50.0, false), -12.0) and is_equal_approx(OutdoorAir.echo_drop_db(300.0, false), -22.0) and is_equal_approx(OutdoorAir.echo_drop_db(50.0, true), -17.0), "12 dB under the direct sound at 50 m, 22 at 300 m, 5 more off snow")
+	var image: Vector3 = OutdoorAir.mirror(Vector3(0.0, 2.0, 0.0), Vector3(30.0, 0.0, 0.0), wall)
+	_check(image.is_equal_approx(Vector3(60.0, 2.0, 0.0)), "the echo comes from the source's mirror image in the face")
+	_check(OutdoorAir.gorge_repeats(0.2, 40.0).size() == 2 and OutdoorAir.gorge_repeats(0.2, 200.0).is_empty(), "two facing walls close together repeat it twice; a wide valley does not")
+	var occlusion: String = FileAccess.get_file_as_string("res://src/client/sound_occlusion.gd")
+	_check(occlusion.contains("_tool.raycast(from, direction") and occlusion.contains("ECHO_RAYS := [0,"), "faces are found with terrain rays only (trees never echo), none on Low")
+	var marked: int = 0
+
+	for path in ["res://src/client/hit_sounds.gd", "res://src/client/dig_sounds.gd", "res://src/client/spear_sounds.gd", "res://src/client/tree_sounds.gd"]:
+		marked += 1 if FileAccess.get_file_as_string(path).contains("set_meta(\"air_sharp\"") else 0
+
+	_check(marked == 4, "blows, picks, spear strikes and tree crashes are the sharp sounds that echo")
+
+
+# Step 5 (3.8): a moderate breeze cuts every range, big sounds too, past 200 m.
+func _check_step5() -> void:
+	_check(OutdoorAir.breeze_db(150.0, 0.8) == 0.0, "nothing within 200 m, whatever the wind")
+	_check(OutdoorAir.breeze_db(800.0, 0.1) == 0.0, "a calm takes nothing")
+	_check(is_equal_approx(OutdoorAir.breeze_db(800.0, 0.3), -6.0), "a light breeze (wind 0.3, 4 m/s): 6 dB off a far sound")
+	_check(is_equal_approx(OutdoorAir.breeze_db(800.0, 0.5), -14.0), "a moderate breeze (wind 0.5): 14 dB, about five times less range (Jamie #683)")
+	var calm_fall: Vector2 = OutdoorAir.total(Vector3.ZERO, Vector3(0.0, 0.0, 800.0), 20.0, {"wind": 0.0})
+	var breezy_fall: Vector2 = OutdoorAir.total(Vector3.ZERO, Vector3(0.0, 0.0, 800.0), 20.0, {"wind": 0.5, "toward": Vector2(1.0, 0.0)})
+	_check(breezy_fall.x <= calm_fall.x - 14.0 + 0.01, "a big fall 800 m off is quieter in a breeze too (%.1f against %.1f dB)" % [breezy_fall.x, calm_fall.x])
+
+
+# Step 6 (3.9): running water beside the listener hides small sounds (Jamie #742).
+func _check_step6() -> void:
+	_check(is_inf(OutdoorAir.water_mask_m(INF, INF)), "no water near: no mask")
+	_check(is_inf(OutdoorAir.water_mask_m(80.0, INF)), "a brook 80 m off masks nothing")
+	var beside: float = OutdoorAir.water_mask_m(5.0, INF)
+	_check(beside > 3.5 and beside < 5.5, "beside a brook small sounds are lost past about 4.5 m (%.1f m), like heavy rain" % beside)
+	var brook_20: float = OutdoorAir.water_mask_m(20.0, INF)
+	var rapids_40: float = OutdoorAir.water_mask_m(INF, 40.0)
+	_check(brook_20 > 14.0 and brook_20 < 22.0, "20 m from a brook: about a force 4 wind, mask about 18 m (%.1f m)" % brook_20)
+	_check(rapids_40 > 13.0 and rapids_40 < 20.0, "40 m from rapids: the same, about 16 m (%.1f m)" % rapids_40)
+	_check(OutdoorAir.water_mask_m(20.0, 40.0) < minf(brook_20, rapids_40), "two beds together are louder than either")
+	var by_brook: Dictionary = {"brook_m": 5.0}
+	var step_db: float = OutdoorAir.total(Vector3.ZERO, Vector3(0.0, 0.0, 20.0), 4.0, by_brook).x
+	_check(step_db <= -11.9, "a footstep 20 m off is lost beside a brook (%.1f dB): a stalker comes in under the water" % step_db)
+	_check(OutdoorAir.total(Vector3.ZERO, Vector3(0.0, 0.0, 20.0), 4.0, {"brook_m": 70.0}).x == 0.0, "the same step 70 m from the brook: nothing")
+	_check(OutdoorAir.total(Vector3.ZERO, Vector3(0.0, 0.0, 20.0), 4.0, by_brook, true).x == 0.0, "the water's own voices are not hidden by their own bed")
+	_check(OutdoorAir.total(Vector3.ZERO, Vector3(0.0, 0.0, 20.0), 20.0, by_brook).x == 0.0, "a big low sound (a bear, a howl) comes through the water")
+	_check(is_equal_approx(OutdoorAir.mask_m_of({"rain": 0.15, "brook_m": 5.0}), beside), "the smaller mask wins: the brook over drizzle")
+	_check(is_equal_approx(OutdoorAir.mask_m_of({"rain": 1.0, "brook_m": 40.0}), 5.0), "... and heavy rain over a brook 40 m off")
