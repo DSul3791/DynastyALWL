@@ -45,6 +45,7 @@ Each doc has these sections:
 | Soils and ground wetness (infiltration by soil, puddle drain times, peat and clay waterlogging, frost heave, mud season) | [soils-ground-wetness.md](soils-ground-wetness.md) | 2026-11-08 | Sonny (record), Kathleen (puddles) |
 | Snow on slopes (wind drift and scour, cornices, melt order by aspect, last patches) | [snow-on-slopes.md](snow-on-slopes.md) | 2026-11-08 | Sonny, Kathleen |
 | The guiding document (G-ids, D-ids, how designs reach the game) | [guiding-document.md](guiding-document.md) | 2026-11-07 | Coordinator |
+| One sky (the starter island at 57° S: noon sun in the north, south and south-east faces shaded, sun times, twilight, where the moon is) | [one-sky.md](one-sky.md) | 2026-11-08 | Sonny (decision), Kathleen (day_cycle.gd) | Sourced: Sonny's decision; times checked with standard solar formulas |
 | Snow lines and mountain climate (snow line, lapse rate, aspect, drift, summer snow patches) | [snow-lines-mountain-climate.md](snow-lines-mountain-climate.md) | 2026-11-08 | Sonny, weather owner, Kathleen (look) |
 | Glaciers and mountains (cirques, horns, arêtes, U-valleys, tarns, slope limits) | [glaciers-mountains.md](glaciers-mountains.md) | 2026-11-08 | Sonny |
 | Rivers and floodplains (meanders, braids, floodplains, levees, terraces, fans, deltas) | [rivers-floodplains.md](rivers-floodplains.md) | 2026-11-08 | Sonny |

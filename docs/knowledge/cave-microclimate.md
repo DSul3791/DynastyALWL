@@ -156,7 +156,7 @@
   - Smoke rides the ceiling out to the mouth, and the den is choking.
   - Judged: a den fire's smoke shows as a thin grey stream at the top of the mouth. A player can read it as "someone lives here".
   - A smarter band keeps its fire in the middle, where the smoke clears overhead (Lazaret).
-- Bears want a small chamber off the main passage, near enough to the mouth to dig in and out, in snow country on a slope facing south-east or south-west.
+- Bears want a small chamber off the main passage, near enough to the mouth to dig in and out, in snow country on a slope where snow lies deep and long, which on the starter island (57° S) is the shaded south to south-east side (judged).
 - Bats, if they come: some hang near a draughty mouth, others are 200 m or more in. They are never on the warm side of a den fire.
 
 ## Never-see checks

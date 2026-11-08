@@ -60,7 +60,7 @@
      - cirques facing SSE are "typically 163 m higher than those facing NNW";
      - modern glacier mid-altitudes are 190 m lower facing 311° (NW) than facing 131° (SE);
      - aspect explains only a small part of the spread, r² = 0.03 (Barr and Spagnolo 2015, Kamchatka).
-   - The best aspect is north to north-east in the northern hemisphere. Shade adds to snow blown over onto the lee of the westerlies (`snow-on-slopes.md`).
+   - The best aspect is north to north-east in the northern hemisphere, and so **south to south-east on our starter island at 57° S** (`one-sky.md`). Shade adds to snow blown over onto the lee of the westerlies (`snow-on-slopes.md`).
 
 ## What this means for the pyramid-peak rule and B2 (our sums and judged)
 
@@ -87,15 +87,15 @@ If B2 is a rate during active cirque glaciation, 1 mm a year in granite is at th
 | 41 kyr world: active cirque ice per cycle | 16.4 kyr (40%) | 35 to 50% (14 to 20 kyr) | **16.4 kyr (40%)**, keep | The cycles were symmetric and mostly in between (lesson 7), so cirques were busy for a large share. Norway's 46% of time with mountain glaciers is the high-latitude top. A mid-latitude island sits a little under it. |
 | 41 kyr world: interglacial (rivers only, cirques empty) | 4.8 kyr | 4 to 8 kyr (10 to 20%) | **4.8 kyr**, keep | Scaling the Holocene's share (about 12% of 100 kyr) is fair. The warm halves of a symmetric cycle are as long as the cold halves, but early interglacials had less CO2 (Wikipedia, MPT), so the time warm enough to empty cirques was not longer. |
 | 41 kyr world: snowline offset | +100 m | +100 to +200 m | **+150 m** | The ice sheets were thinner and the glacials milder (lesson 7). But the cirque-glacier snowline follows average conditions, not the extreme glacial peak. So the offset is smaller than the difference in ice volume suggests. |
-| Snowline difference, NE face against SW face | 200 m (`aspect_ela_m` 100) | 110 to 220 m | **150 m, so `aspect_ela_m` 75** | The sourced range is 113 to 220 m (lesson 8). 150 m is the middle. Sonny's 200 m is near the top, which is the BC Coast Mountains with strong lee snow. A windy maritime island could justify the top. |
+| Snowline difference, best face against worst (SE against NW on the starter at 57° S; NE against SW in the northern hemisphere) | 200 m (`aspect_ela_m` 100) | 110 to 220 m | **150 m, so `aspect_ela_m` 75** | The sourced range is 113 to 220 m (lesson 8). 150 m is the middle. Sonny's 200 m is near the top, which is the BC Coast Mountains with strong lee snow. A windy maritime island could justify the top. |
 
 - **Our sums for the whole history**, at the suggested values:
   - total active ice stays about 1.04 Myr (39 × 16.4 + 10 × 40 kyr);
   - at 0.5 to 1.0 mm a year, that is 0.5 to 1.0 km of headwall retreat, the same as in Sonny's plan;
   - a snowline 150 m higher in the 41 kyr world shrinks the cirques' reach downhill by about 150 m for 39 of the 49 cycles. Cirque floors that sit within 150 m of the 100 kyr snowline then get only the 100 kyr world's 400 kyr.
 - **Check after the run:**
-  - the NE to SW headwall retreat ratio should come out at 1.5 to 2 (the "Where" line below);
-  - NE cirque floors should sit about 100 to 200 m below SW ones.
+  - the SE to NW (best to worst face) headwall retreat ratio should come out at 1.5 to 2 (the "Where" line below);
+  - SE cirque floors should sit about 100 to 200 m below NW ones on the starter (57° S).
 
 ### How far a headwall must retreat to make a horn
 
@@ -123,7 +123,7 @@ A horn forms when three or more headwalls close in until only a pyramid is left.
   - headwall retreat of 20 to 40 m per cycle (0.5 to 1 mm a year × 40 kyr active);
   - summits and plateaux in granite barely lowered (lesson 2: about 0.16 m per 100 kyr).
 - **When a summit becomes a horn:** three or more cirque headwalls within about 200 to 400 m of the summit, measured in plan (judged). Two facing headwalls make an arête.
-- **Where:** horns form where cirques were busiest. On a mid-latitude island that means the north- to east-facing sides (shade and lee snow, `snow-on-slopes.md`), so cirques on those sides should retreat about 1.5 to 2 times faster (judged).
+- **Where:** horns form where cirques were busiest. On a mid-latitude island that means the poleward- to east-facing sides (south to south-east on the starter at 57° S) (shade and lee snow, `snow-on-slopes.md`), so cirques on those sides should retreat about 1.5 to 2 times faster (judged).
 
 ### Never-see checks
 
