@@ -46,6 +46,10 @@ A fresh print is sharp and fades to a fifth of its darkness by the end of its li
 - **Bed:** an animal lying (state 19, or asleep) 30 s leaves a flattened oval of grass its body's size.
 - Each spot is marked once (a 3 m spot); nothing beyond 60 m of the camera.
 
+## At drinking places
+With `drink_looks` on, the first drink at a spot lays a trampled patch at the drinker's feet (ground "mud", three game days):
+the churned bank of a used drinking place (ANIMAL_DRINK.md).
+
 ## The pool
 One pool of Decals, at most 400; the oldest is dropped first when a new one comes; new sign only within 60 m of the camera, so the
 nearest is kept. Checked every 2 s for age and weather.
