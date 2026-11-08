@@ -239,6 +239,33 @@ Decided (section 12, item 7): build it, but it stays off until a picture shows i
 6. **Cost:** at most 32 cards with one material; nothing at all while the switch is off. The summit search reads about 2 million coarse heights once, on a worker thread.
 
 
+### 7.2 Distance haze and aerial perspective (built behind a switch, off until Dino's picture)
+
+Far ridges are how the eye reads distance: each ridge behind the last is paler and bluer. Today one even haze does it the same way in all weather. The real haze changes with the air, and that change is what makes a cold morning feel cold and a summer afternoon feel heavy. The switch is `--haze` (off by default) until Dino's picture.
+
+1. **The real rule:**
+   - Haze is mostly tiny particles that swell with water as the air gets more humid. Warm air carries far more water than cold air.
+   - So cold, dry air is crisp: far ridges are sharp and a clean blue (the sky's own scattering).
+   - Warm, humid air is milky: far land goes pale and whitish, and the blue fades to white.
+   - Rain washes the particles out: in the hour after rain the air is at its clearest (8.1 rule 4). Later, on a warm afternoon, the wet land steams and the haze comes back milky.
+2. **What drives it:**
+   - The air temperature now (`temp_c`, the one temperature from #620).
+   - A humidity guess from the weather: cloud, recent rain (the ground's wetness), the mist value once valley fog lands, and the season.
+   - It is the same for everyone (weather is a pure function), eased over about a minute.
+3. **How much:**
+
+   | Air | Haze thickness | Colour of far land |
+   |---|---|---|
+   | Cold and dry (about 0 °C, clear), e.g. a winter morning | about 0.6 x today's | clean blue, sharp ridges |
+   | Mild, ordinary (about 10 °C, some cloud) | today's (1.0 x) | today's |
+   | Warm and humid (about 20 °C after rain, sun out) | about 1.8 x | pale, milky white-blue |
+   | The hour after rain stops | x 0.6 on top of the above | crisp |
+
+   Rain, snow, storm and the fog test kind keep thickening the haze as built; this rule only sets the clear-air base under them.
+4. **Colour:** the haze takes the sky's horizon colour as now. Dry air pulls it a little toward a deeper blue, and humid air toward a pale grey-white. Humid air also takes less of the sky colour behind it (aerial perspective 0.7 down to 0.5), so humid distance reads white rather than blue.
+5. **Not yet:** the haze is the same at every height. A thicker layer in the lowest kilometre, with clear air over the peaks, waits until the valley fog's height fog has landed (#603), so the two share one height fog.
+6. **Cost:** nothing; it sets a few fog values on the environment that are already set every frame.
+
 ## 8. Rain, snow, wind and storms
 
 ### 8.1 Rain
@@ -339,11 +366,15 @@ Sonny's A4 design (in #537): each island gets one climate record; the R6 record 
    | Spring | 62 percent (old winter snow melting back) |
    | Winter | 50 percent, the treeline (art_mountains rule 4) |
 
-3. **Where inside the window:**
-   - **Faces that look north (-Z)** hold snow about 8 percent of the summit lower than faces that look south (A4 shade rule; art_mountains rule 3).
-   - **Lee faces**, the ones that look downwind of the prevailing wind, hold snow 5 percent lower, because the wind piles it there. The prevailing wind is taken as from the west for now; the island's climate record will give it.
+3. **Where inside the window** (checked against Jamie's snow-on-slopes page, #632: Scottish hills under south-west winds keep the deepest old snow on north to east aspects; lee drifts are 2 to 5 times the mean, windward crests nearly bare; the last patches lie below north-east cliffs at about 84 percent of the summit):
+   - The prevailing wind is taken as from the **south-west** until the island's climate record gives one.
+   - **Faces that look north (-Z)** hold snow 7 percent of the summit lower (shade).
+   - **Lee faces, looking north-east,** hold it 6 percent lower (the wind fills them), so a north-east face gets both.
+   - **Windward faces, looking south-west,** hold it 7 percent higher and keep at most 30 percent of the cover, even in winter (scoured).
+   - **Summer:** only the lee and shaded spots and the creases keep patches; open and windward ground is bare.
    - **Gullies and ledges:** on slopes steeper than about 45° snow holds only in creases and on small flat ledges, so dark cliffs carry white streaks (art_mountains rule 1). Gentle ground takes broad patches.
-   - **Patchy edges:** the lower edge breaks up into patches from two sizes of noise (about 60 m and 15 m), never a straight line. In summer only the best spots hold snow; in winter the patches join.
+   - **Patchy edges:** the lower edge breaks up into patches from two sizes of noise (about 60 m and 15 m), never a straight line.
+   - **Cornices** on lee crest edges (a 1 to 3 m lip above slopes steeper than 35°) need shapes, not paint; they are for the baked window (R7).
 4. **The look:** the same soft blue-white as the rest of the snow (about 0.86, 0.88, 0.92), a little rougher than ice, with no distance fade, because it is meant to be read from the town.
 5. **Not yet:** footsteps on summit patches still sound like rock, and the patches are drawn, not walked through; both wait for the baked window, which the server will also know.
 
