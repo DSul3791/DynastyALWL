@@ -3,8 +3,10 @@
 From Jamie's animals-in-weather page (#639, `docs/knowledge/animals-in-weather.md`) and tracks page (#696), and Steve's server
 weather rules (#651, #667). Client looks behind `wind_looks` (off). The direction is the shared weather's `wind_dir` (the way the
 wind blows toward); Kathleen's prevailing wind (`docs/design/prevailing_wind.md`, a per-group direction in Weather behind `--wind-dir`)
-feeds the same field when it lands, so nothing here changes then. Without a direction from the world, the island's prevailing wind (below). Seasons are the game calendar's (the island is at 57 degrees south): the windy season is the local winter, when
-the rump-to-the-wind stand and the gale turns will be seen most.
+feeds the same field when it lands, so nothing here changes then. The island is a 21 by 21 grid of rows with the equator in the middle,
+so latitude comes from the island's row (Kathleen's #711 carries the latitude function); the client assumes no direction of its own:
+with no `wind_dir` (only the motion tool, which passes one) there is no wind turn at all. Seasons are the local seasons of the island's row: at the starter's latitude the windy
+season is the local winter.
 
 ## What animals do (knowledge)
 - **Rump to the wind in wind and rain.** Stock and deer standing out strong wind with rain turn their backs to it, head down (the
@@ -31,13 +33,13 @@ the rump-to-the-wind stand and the gale turns will be seen most.
 | Birds into the wind | flight rows | the take-off and landing clips | `_into_wind`: the Rig turns up to 90 degrees toward upwind while the clip plays |
 With `wind_looks` on, the gale turn of `weather_looks` steps aside (the same turn, now with the rain rule and the deer's graze).
 
-## The prevailing wind at 57 S (Jamie's #714, `docs/knowledge/prevailing-wind-57s.md`)
+## The prevailing wind of the starter's rows (Jamie's #714, `docs/knowledge/prevailing-wind-57s.md`)
 - The wind comes mostly **from the west and north-west**, mean about 300 to 320 degrees, within 45 degrees of WNW 55 to 65 percent of
   the time; a direction holds 1 to 3 days, then a front turns it (veering W to NW to N ahead of a low, backing sharply to SW as the
   cold front passes). The windy season is the local winter.
-- **The client reads only `terrain_client.weather`'s `wind_dir`** (the shared weather; Kathleen's prevailing wind, which follows
-  this page, will feed that same field). With none (the motion tool without a direction), `PREVAILING_TO` 0.70 rad: blowing toward
-  about 130 degrees, the south-east (from 310 degrees).
+- **The client reads only `terrain_client.weather`'s `wind_dir`**, which carries the island row's own prevailing wind (Kathleen's
+  prevailing_wind.md and #711's latitude); with none there is no wind turn. Jamie's page is the knowledge for the starter's latitude, not
+  a constant in the client.
 - Applied to the looks (flag `wind_looks`, off):
   - **Fur and feather ruffle** follow the real direction; the birds now have `ruffle_cm` too (crow 0.3, pheasant 0.4, goose 0.3,
     duck 0.25, guineafowl 0.3, chicken 0.4; the Meshy eagle 0.5, raven 0.4, owl 0.6), so feathers lift on the windward side with

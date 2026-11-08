@@ -61,7 +61,7 @@ the windward side; breath drifts downwind; birds take off into the wind.
 **PR 18, fog.** In fog, eye shine shows from dusk but only to a third of what you can see; breath blends into the mist; herds keep
 closer together.
 
-**PR 19, prevailing wind.** The wind animals react to comes from the island's west-north-west by default; birds' feathers ruffle; an
+**PR 19, prevailing wind.** The wind animals react to is the weather's own, so it follows each part of the island (west-north-west at the starter); birds' feathers ruffle; an
 alarmed animal turns its nose into the wind to smell what scared it.
 
 **PR 20, cave air.** Deep in a cave an animal's breath does not steam (the cave is 5.5 C whatever the sky); coats stop drying

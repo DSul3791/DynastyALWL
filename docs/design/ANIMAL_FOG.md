@@ -1,8 +1,9 @@
 # Animals in fog, mist and dusk (MikeW, 8 Nov 2026)
 
 From Jamie's fog page (#716, `docs/knowledge`), her sound-outdoors page (lesson 7) and sounds-of-weather page (#683), with
-Kathleen's valley fog (#672) and sea fog (#608). Client looks behind `fog_looks` (off). Seasons are the game calendar's (the island is
-at 57 degrees south): sea fog comes in local spring to early summer, valley fog in local autumn into early winter.
+Kathleen's valley fog (#672) and sea fog (#608). Client looks behind `fog_looks` (off). Seasons are the game calendar's local seasons for the island's row
+(latitude from the row, Kathleen's #711): at the starter's latitude sea fog comes in local spring to early summer, valley fog in local
+autumn into early winter.
 
 ## What fog does (knowledge, Jamie #716)
 - **Visibility V:** mist 1 to 2 km, fog 180 to 1,000 m, thick fog 50 to 180, dense under 50. One sees movement at V, recognises a
