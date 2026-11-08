@@ -16,7 +16,7 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 
 
 func _init() -> void:
-	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "shine": false, "moon": false, "sign": "", "wx": "", "hit": "", "kill": false, "windlooks": false, "fog": 0.0, "cave": "", "drink": false, "ice": false, "thunder": 0.0, "poselib": false, "cover": false, "birdrig": false, "posed": false, "swimrig": false, "wind": 0.0}
+	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "shine": false, "moon": false, "sign": "", "wx": "", "hit": "", "kill": false, "windlooks": false, "fog": 0.0, "cave": "", "drink": false, "ice": false, "thunder": 0.0, "poselib": false, "breath": false, "cover": false, "birdrig": false, "posed": false, "swimrig": false, "wind": 0.0}
 
 	for a in OS.get_cmdline_user_args():
 		var key: String = a.trim_prefix("--").get_slice("=", 0)
@@ -118,6 +118,7 @@ func _strip(kind: String, opts: Dictionary) -> void:
 	view.ice_looks = bool(opts["ice"])
 	view.storm_looks = float(opts["thunder"]) > 0.0
 	view.pose_lib = bool(opts["poselib"])
+	view.breath_looks = bool(opts["breath"])
 	var claps: Array = [0]
 	view.thunder_count = func() -> int: return claps[0]
 

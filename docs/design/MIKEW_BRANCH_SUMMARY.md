@@ -5,7 +5,7 @@ look and sound on screen. None of it changes what the server does; herd groups, 
 #666. Every new look sits behind its own switch, off by default, so merging changes nothing until a switch is turned on after
 its PC check. The PC run sheet is PC_SESSION_MIKEW.md (about 92 minutes, the core in 55).
 
-## The 22 PRs, in merge order
+## The 23 PRs, in merge order
 | # | PR | What you would see | Switches | Needs new models? | PC strips |
 |---|---|---|---|---|---|
 | 1 | Eye shine (#596) | eyes glow in your torchlight | none | no | m8 |
@@ -30,6 +30,7 @@ its PC check. The PC run sheet is PC_SESSION_MIKEW.md (about 92 minutes, the cor
 | 20 | Ice and snow | deer slip on ice while wolves cross it surely, snow gathers on still backs and melts by the air, snow prints deeper | `ice_looks` | no | m56 |
 | 21 | Thunder | a clap makes birds start up, herds flinch and bunch, dogs cower; storm wind turns tails to it | `storm_looks` | no | m57 |
 | 22 | Pose library | models with no clip for sitting, lying, hunching, drinking or sleeping are posed from their own skeletons | `pose_lib` | no | m58 |
+| 23 | Breath and steam | every animal breathes visible puffs in the cold, panting after a chase; wet and hot animals steam | `breath_looks` | no | m60 |
 
 ## The PR branches, cut and pushed (8 Nov 2026; PRs not opened until Dave's PC gate)
 Each branch is the stack up to its head (heads after the bug-pass fix was carried down to pr12 and pr22 and merged forward through the
@@ -61,7 +62,8 @@ PR 1 (#596) is `claude/mikew-eyeshine`; PR 2, the wet look, is `claude/mikew-wet
 | 19 | `claude/mikew-pr21-drinking` | `claude/mikew-pr20-cave-air` | 02bb33881a6bbb67f95df722cf443dccc480eff3 | m55 |
 | 20 | `claude/mikew-pr22-ice-snow` | `claude/mikew-pr21-drinking` | 4036e022d5c39425f32e99605c3629301736cae9 | m56 |
 | 21 | `claude/mikew-pr23-thunder` | `claude/mikew-pr22-ice-snow` | 16167916c71c8324403a315c6b9fd31963998e19 | m57 |
-| 22 | `claude/mikew-pr24-pose-library` | `claude/mikew-pr23-thunder` | (this commit; reported in the thread) | m58 |
+| 22 | `claude/mikew-pr24-pose-library` | `claude/mikew-pr23-thunder` | f35855cdbf9b11061bc0fbf1348b87aa6586cf66 | m58 |
+| 23 | `claude/mikew-pr25-breath` | `claude/mikew-pr24-pose-library` | (this commit; reported in the thread) | m60 |
 
 12b and 12c hold the cross-cutting passes that came after PR 12 in time (the cost pass and kill switch, the self review, then Weather.air_c,
 Jamie's track numbers, state 20 in cover, the hunt readers and Dino's shot list); they cannot be folded back into earlier families

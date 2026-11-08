@@ -78,3 +78,6 @@ seconds, and your dog cowers.
 
 **PR 24, pose library.** An animal whose model has no animation for sitting, lying, sheltering hunched, drinking or sleeping is posed from
 its own skeleton instead: head down to the water when it drinks, legs folded when it lies.
+
+**PR 25, breath and steam.** On a frosty morning every animal's breath shows, slow and soft when it rests, fast and heavy after it has
+run; an animal that has swum or stood out the rain, or just made a kill, steams off its back.
