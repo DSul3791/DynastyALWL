@@ -218,6 +218,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.chest_received.connect(_on_chest)
 	net.chest_info_received.connect(_on_chest_info)
 	net.craft_stock_received.connect(_on_craft_stock)
+	net.favourites_received.connect(_on_favourites)
+	net.bulk_done_received.connect(_on_bulk_done)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
 	net.training_received.connect(func(percent: int):
 		training_today = percent
@@ -2652,6 +2654,40 @@ func _on_chest_info(id: int, keep_out: bool, may_set: bool) -> void:
 func set_keep_out(on: bool) -> void:
 	if chest_mode and chest_may_keep_out and net != null:
 		net.inventory_action.rpc_id(1, Net.ACT_CHEST_KEEP_OUT, chest_id, 1 if on else 0, 0, Vector3.ZERO)
+
+
+# Bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3; the server does the work and answers with bulk_done). Kinds as
+# Net.ACT_BULK: 0 Take all, 1 Store all (both need an open container), 2 Stack to nearby, 3 Sort (the pack and an open chest, by sort_index).
+var last_bulk: Dictionary = {}       # the last bulk_done: kind, stacks, containers, ids (for the toast and the glow)
+var bulk_event: Callable             # (kind, stacks moved, container count, container ids): the look's toast and glow hook in here
+
+
+func bulk(kind: int) -> void:
+	if net == null or kind < 0 or kind > 3 or ((kind == 0 or kind == 1) and not chest_mode):
+		return
+
+	net.inventory_action.rpc_id(1, Net.ACT_BULK, kind, sort_index if kind == 3 else 0, 0, Vector3.ZERO)
+
+
+# Marks a pack slot as a favourite (or not): bulk buttons and Sort leave it where it is. The server answers with favourites.
+func set_favourite(slot: int, on: bool) -> void:
+	if net != null and inventory != null and slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0:
+		net.inventory_action.rpc_id(1, Net.ACT_FAVOURITE, slot, 1 if on else 0, 0, Vector3.ZERO)
+
+
+func _on_favourites(flags: PackedByteArray) -> void:
+	if inventory == null:
+		return
+
+	for i in mini(flags.size(), inventory.SLOTS):
+		inventory.set_fav(i, flags[i] == 1)
+
+
+func _on_bulk_done(kind: int, stacks: int, containers: int, ids: PackedInt32Array) -> void:
+	last_bulk = {"kind": kind, "stacks": stacks, "containers": containers, "ids": ids}
+
+	if bulk_event.is_valid():
+		bulk_event.call(kind, stacks, containers, ids)
 
 
 # Asks the server for the craft stock when the window has just opened or the pack has changed since the last ask.
