@@ -840,6 +840,39 @@ static func _coals() -> ArrayMesh:
 
 
 # The fire ring as inventory_view.gd had it, with the same "Light" child when lit (kept off until the nearest few are chosen).
+# A burnt-out fire's glowing coals (world state 76, docs/design/fire_coals_design.md): the cold ring, the coal bed and a dim red light about 1 m
+# across, no flame. A stand-in until Kathleen's look; `glow` 1 fresh .. 0 at the end dims it. The light is marked "ember" so it is not taken
+# for a fire's light (fire_light_near).
+const COALS_LIGHT_COLOR := Color(1.0, 0.32, 0.12)
+const COALS_LIGHT_M := 1.2
+const COALS_LIGHT_ENERGY := 0.6
+
+
+static func coals_fire(glow: float) -> Node3D:
+	var root: Node3D = fire(false, false, 2)
+	var ring: float = float(FIRE_RING_SCALE[2])
+	var coals: MeshInstance3D = _instance(_coals())
+	coals.scale = Vector3(ring, 1.0, ring)
+	root.add_child(coals)
+	var light: OmniLight3D = OmniLight3D.new()
+	light.name = "Light"
+	light.light_color = COALS_LIGHT_COLOR
+	light.omni_range = COALS_LIGHT_M
+	light.omni_attenuation = LIGHT_FALLOFF
+	light.shadow_enabled = false
+	light.position = Vector3(0.0, 0.25, 0.0)
+	light.visible = false
+	light.set_meta("ember", true)
+	coals_glow(light, glow)
+	root.add_child(light)
+	return root
+
+
+static func coals_glow(light: Light3D, glow: float) -> void:
+	light.light_energy = COALS_LIGHT_ENERGY * (0.3 + 0.7 * clampf(glow, 0.0, 1.0))
+	light.set_meta("base_energy", light.light_energy)
+
+
 static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 	tier = clampi(tier, 1, 3)
 	var root: Node3D = Node3D.new()
