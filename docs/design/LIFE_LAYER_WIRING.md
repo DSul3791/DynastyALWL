@@ -20,6 +20,12 @@ with no client handler or no strip; every gap found is filled below (marked **fi
 | 19 | dog lies | dog companion (#651) | clip role 19, tail wag | none | step 3 still (dog), m1 |
 | 20 | hunch against the weather | #646 | `HUNCH`: idle clip (12, 3) under `state_poses` 20, ears 0.7 flat, tail still | none (server state) | m26 |
 
+Single birds (Steve's #661, bird flight step 1, head 6ab02d10): flying and perched birds send their height in the row's position and
+their heading follows the flight line; flights keep 3 m over the ground. The client needs no change: the node follows the sent
+position in all three axes (nothing snaps a model to the ground except `foot_ik`'s leg reach, and birds have no `feet` rows), a
+perched bird is state 0 at that height, and `_bank` reads the heading's turn rate. Proof: m18, m28, m33 with the tool's flat paths;
+a real flush is first seen in game.
+
 ## Signals
 
 | Signal | Server | Client handler | Flag | Proof |
