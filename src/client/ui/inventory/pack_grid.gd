@@ -201,7 +201,11 @@ func _make_look_slot(index: int) -> Control:
 
 		if view._chest_hover == [false, index]:
 			view._chest_hover = [])
-	slot.drag_data = func() -> Variant: return {"slot": index} if view.inventory.numbers[index] != 0 else null
+	slot.drag_data = func() -> Variant:
+		if view.inventory.numbers[index] == 0:
+			return null
+
+		return {"slot": index}
 	slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
 	slot.on_drop = func(data: Variant) -> void: view.move_slot(int(data["slot"]), index)
 	return slot

@@ -115,7 +115,11 @@ func _build_look() -> void:
 		look.focus_mode = Control.FOCUS_NONE     # the number keys belong to the game, not to a focused slot
 		look.mouse_entered.connect(func(): _items.hotbar_hover = slot)
 		look.mouse_exited.connect(func(): _items.hotbar_hover = -1 if _items.hotbar_hover == slot else _items.hotbar_hover)
-		look.drag_data = func() -> Variant: return {"slot": slot} if _items.inventory.numbers[slot] != 0 else null
+		look.drag_data = func() -> Variant:
+			if _items.inventory.numbers[slot] == 0:
+				return null
+
+			return {"slot": slot}
 		look.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
 		look.on_drop = func(data: Variant) -> void: _items.move_slot(int(data["slot"]), slot)
 		_row.add_child(look)
