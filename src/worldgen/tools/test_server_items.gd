@@ -604,6 +604,15 @@ func _init() -> void:
 
 		f.tick(10.0)
 
+	# A fire that burned past coals.coal_bed_s leaves coals (76), then warm ash (77), then cold ash (8; docs/design/fire_coals_design.md):
+	# those real-time stages (2 h and 12 h) are run down by hand here, then cold ash is cleared after FIRE_OUT_S.
+	for stage in range(2):
+		for k in f._items:
+			if f._items[k].has("fire") and int(f._items[k]["fire"]["state"]) in [ItemsScript.FIRE_STATE_COALS, ItemsScript.FIRE_STATE_ASH]:
+				f._items[k]["left"] = 1.0
+
+		f.tick(10.0)
+
 	for n in range(int(ItemsScript.FIRE_OUT_S / 10.0) + 2):
 		f.tick(10.0)
 
