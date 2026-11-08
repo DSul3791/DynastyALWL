@@ -77,6 +77,7 @@ const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")   # --frozen-water: the liquid sheets' ice look (docs/design/frozen_water_look.md)
+const IceFeelScript := preload("res://src/client/ice_feel.gd")     # --ice-feel: ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
@@ -2280,6 +2281,9 @@ func _update_weather() -> void:
 	# every client and the server agree with no traffic. Recomputed once a game minute.
 	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
 
+	if IceFeelScript.on:
+		ice_now = _update_ice_feel_weather(ice_now, group, now)
+
 	if flora != null:
 		flora.set_ice_cover(ice_now)
 
@@ -2306,6 +2310,136 @@ var _frozen_force: Vector4 = Vector4(-2.0, 0.0, 0.0, 0.0)   # -2: not read yet
 var _frozen_hole: Array = []
 
 
+func _read_frozen_switches() -> void:
+	if _frozen_force.x < -1.5:
+		_frozen_force = FrozenWater.force_of(AppConfig.get_command_line_value("frozen-force", ""))
+		_frozen_hole = FrozenWater.hole_of(AppConfig.get_command_line_value("frozen-hole", ""))
+
+
+# Ice walk feel (docs/design/ice_walk_feel.md, --ice-feel): the band of the ice under the player from the collider's own cover, the footing on a
+# sheet, wading through skim and film, the cold shock and the thaw moat in the walkable collider.
+var _ice_feel_cover: float = 0.0
+var _ice_feel_band: int = 0
+var _ice_thaw: float = 0.0
+var _ice_thaw_next_msec: int = 0
+var _ice_underfoot: bool = false          # this physics frame the body stands on the ice collider (layer 2)
+var _ice_patches: Array = []              # skim and film broken by the player's wading (FrozenWater hole form; client only)
+var _ice_shock: Dictionary = {}           # IceFeel.shock_step state
+var _warmth_cfg_cache: Dictionary = {}
+var _ice_moat_logged: int = -1
+
+
+# Once a second with the weather: the forced cover (--frozen-force) also drives the collider and the sounds; every 5 s the thaw for the moat.
+func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
+	_read_frozen_switches()
+
+	if _frozen_force.x >= 0.0:
+		ice_now = _frozen_force.x
+
+	if now >= _ice_thaw_next_msec:
+		_ice_thaw_next_msec = now + 5000
+
+		if _frozen_force.x >= 0.0:
+			_ice_thaw = _frozen_force.z
+		else:
+			var season: Dictionary = IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
+			_ice_thaw = FrozenWater.thaw_of(float(season["cover"]), float(season["peak"]))
+
+		var moat: int = IceFeelScript.moat_cells(_ice_thaw)
+
+		if flora != null:
+			flora.set_ice_moat(moat)
+
+		if moat != _ice_moat_logged:
+			_ice_moat_logged = moat
+			print("ice feel: moat %d cell%s (thaw %.2f)" % [moat, "" if moat == 1 else "s", _ice_thaw])
+
+	var band: int = IceFeelScript.band_of(ice_now)
+
+	if band != _ice_feel_band:
+		print(IceFeelScript.log_line(band, "band now", "", 1.0, INF))
+
+	_ice_feel_cover = ice_now
+	_ice_feel_band = band
+
+	if sound != null and sound.ice != null:
+		sound.ice.hour = WeatherScript.hour_of(game_clock.seconds)
+
+	return ice_now
+
+
+func _warmth_cfg() -> Dictionary:
+	if _warmth_cfg_cache.is_empty():
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/warmth.json"))
+		_warmth_cfg_cache = parsed if parsed is Dictionary else {"water_base_c": 12.0}
+
+	return _warmth_cfg_cache
+
+
+func _gait() -> int:
+	return 2 if running else (1 if jogging else 0)
+
+
+# The walking velocity on ice: wading through skim or film is slower; on a sheet the top speed drops and the velocity eases toward the input
+# (a slide), snow gives most of the grip back.
+func _ice_feel_velocity(velocity: Vector3, water: Dictionary, delta: float) -> Vector3:
+	_ice_underfoot = false
+
+	if body.is_on_floor():
+		for i in range(body.get_slide_collision_count()):
+			var hit = body.get_slide_collision(i).get_collider()
+
+			if hit is StaticBody3D and (hit.collision_layer & 2) != 0:
+				_ice_underfoot = true
+				break
+
+	var snow: float = sound.weather.ground_snow if sound != null and sound.weather != null else 0.0
+
+	if _ice_underfoot and IceFeelScript.bears(_ice_feel_band):
+		var want: Vector2 = Vector2(velocity.x, velocity.z) * IceFeelScript.pace_mult(_ice_feel_band, _gait(), snow)
+		var now_v: Vector2 = IceFeelScript.grip_step(Vector2(body.velocity.x, body.velocity.z), want, IceFeelScript.grip_rate(_ice_feel_band, snow), delta)
+		velocity.x = now_v.x
+		velocity.z = now_v.y
+	elif not water.is_empty() and body.is_on_floor() and sound != null and sound.water.still_near():
+		var slow: float = IceFeelScript.wade_mult(_ice_feel_band)
+		velocity.x *= slow
+		velocity.z *= slow
+
+	return velocity
+
+
+# The cold shock on going into icy water (swimming, or the soles 0.8 m under): one gasp, one jolt, a minute of slower swimming.
+func _ice_feel_shock(water: Dictionary, delta: float) -> void:
+	var immersion: float = float(water["surface"]) - (body.global_position.y - SoundStageScript.FEET_M) if not water.is_empty() else -1.0
+	var air: float = float(weather.get("temp_c", 10.0))
+	var icy: bool = IceFeelScript.icy(IceFeelScript.water_c(air, _warmth_cfg()), _ice_feel_cover)
+
+	if IceFeelScript.shock_step(_ice_shock, delta, icy and (swimming or immersion > 0.8), immersion > 0.45):
+		feel.strike(1.0 if randf() < 0.5 else -1.0, IceFeelScript.SHOCK_DIP_M / 0.08)
+
+		if sound != null and sound.slots != null:
+			sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
+
+		print(IceFeelScript.log_line(_ice_feel_band, "cold shock, water %.1f C" % IceFeelScript.water_c(air, _warmth_cfg()), "respawn_gasp", IceFeelScript.SHOCK_SWIM, INF))
+
+
+# After a footstep: skim or film broken under the wader leaves a patch in the look; the plunge jolts the eye.
+func _ice_feel_after_step() -> void:
+	if sound == null or sound.ice_break_event == "":
+		return
+
+	var event: String = sound.ice_break_event
+	var feet: Vector3 = body.global_position - Vector3(0.0, SoundStageScript.FEET_M, 0.0)
+	var patch: Dictionary = IceFeelScript.patch_at(_ice_feel_band, feet, game_clock.seconds)
+
+	if not patch.is_empty():
+		_ice_patches = IceFeelScript.add_patch(_ice_patches, patch, game_clock.seconds)
+
+	if event == "plunge":
+		feel.strike(1.0 if randf() < 0.5 else -1.0, IceFeelScript.PLUNGE_DIP_M / 0.08)
+		print(IceFeelScript.log_line(_ice_feel_band, "plunge", sound.ice.last, IceFeelScript.wade_mult(_ice_feel_band), INF))
+
+
 func _update_frozen_water(group: String, now: int) -> void:
 	if now < _frozen_next_msec:
 		return
@@ -2313,9 +2447,7 @@ func _update_frozen_water(group: String, now: int) -> void:
 	_frozen_next_msec = now + 5000
 	var seed_value: int = int(world.get("master_seed", 0))
 
-	if _frozen_force.x < -1.5:
-		_frozen_force = FrozenWater.force_of(AppConfig.get_command_line_value("frozen-force", ""))
-		_frozen_hole = FrozenWater.hole_of(AppConfig.get_command_line_value("frozen-hole", ""))
+	_read_frozen_switches()
 
 	var snow: float = sound.weather.ground_snow if sound != null and sound.weather != null else 0.0
 	var look: Vector4 = _frozen_force if _frozen_force.x >= 0.0 else FrozenWater.look(game_clock.seconds, group, maxf(_anchor.y, 0.0), seed_value, snow)
@@ -2327,7 +2459,7 @@ func _update_frozen_water(group: String, now: int) -> void:
 
 	var air: float = WeatherScript.air_c(game_clock.seconds, group, maxf(_anchor.y, 0.0), seed_value)
 	var springs: PackedVector4Array = FrozenWater.springs_near(pools, _anchor, air, group)
-	var holes: PackedVector4Array = FrozenWater.holes_near(ice_holes + _frozen_hole, _anchor, game_clock.seconds)
+	var holes: PackedVector4Array = FrozenWater.holes_near(ice_holes + _frozen_hole + _ice_patches, _anchor, game_clock.seconds)
 	LiquidSurface.set_ice_all(get_tree(), true, look, springs, holes)
 
 
@@ -4254,6 +4386,10 @@ func _move_player(delta: float) -> void:
 			velocity.y = 0.0
 		elif swimming:
 			velocity = _swim_velocity(velocity, direction, pace, fast > 1.0, strain_cap, float(water["surface"]), delta)
+
+			if IceFeelScript.on:
+				velocity.x *= IceFeelScript.swim_mult(_ice_shock)
+				velocity.z *= IceFeelScript.swim_mult(_ice_shock)
 		else:
 			velocity.y = body.velocity.y - GRAVITY * delta
 
@@ -4262,6 +4398,12 @@ func _move_player(delta: float) -> void:
 				var slow: float = SwimScript.wade_factor(WaterVolume.depth(float(water["surface"]), float(water["ground"])))
 				velocity.x *= slow
 				velocity.z *= slow
+
+			if IceFeelScript.on:
+				velocity = _ice_feel_velocity(velocity, water, delta)
+
+		if IceFeelScript.on and not waiting_for_ground:
+			_ice_feel_shock(water, delta)
 
 		if not swimming and body.is_on_floor() and KeyBindings.held("jump") and strain_cap >= 0.0:
 			velocity.y = 7.0
@@ -4280,7 +4422,10 @@ func _move_player(delta: float) -> void:
 		Probe.stop("p slide", tm)
 
 		if not was_on_floor and body.is_on_floor() and not swimming and not waiting_for_ground:
-			feel.land(fall_speed)
+			var landed: float = feel.land(fall_speed)
+
+			if IceFeelScript.on and landed > 0.0 and IceFeelScript.bears(_ice_feel_band) and _ice_underfoot:
+				feel.strike(0.0, 0.25)   # ice_walk_feel.md section 4: a hard landing on a sheet dips a little more (0.02 m)
 
 		rescue.step()
 
@@ -4478,6 +4623,20 @@ func _under_ice_way_out() -> Vector3:
 	return Vector3.ZERO
 
 
+func _ice_step_scale() -> float:
+	if not IceFeelScript.on or not _ice_underfoot:
+		return 1.0
+
+	return IceFeelScript.step_scale(_ice_feel_band, sound.weather.ground_snow if sound != null and sound.weather != null else 0.0)
+
+
+func _ice_bob_scale() -> float:
+	if not IceFeelScript.on or not _ice_underfoot:
+		return 1.0
+
+	return IceFeelScript.bob_scale(_ice_feel_band, sound.weather.ground_snow if sound != null and sound.weather != null else 0.0)
+
+
 # A very small up-and-down camera bob while walking on the ground. Its speed
 # follows the pace and its height grows only a little, to avoid motion sickness.
 func _update_bob(delta: float) -> void:
@@ -4489,16 +4648,20 @@ func _update_bob(delta: float) -> void:
 	if moving:
 		# One full turn of the phase is one step (a footfall at 0, then at TAU).
 		var before: float = _bob_phase
-		_bob_phase = fposmod(_bob_phase + delta * pace / float(STEP_M[gait]) * TAU, 2.0 * TAU)
+		_bob_phase = fposmod(_bob_phase + delta * pace / (float(STEP_M[gait]) * _ice_step_scale()) * TAU, 2.0 * TAU)
 
 		if floor(before / TAU) != floor(_bob_phase / TAU):
 			sound.footstep(body, gait, 0.0, "left" if _bob_phase < TAU else "right")
 
+			if IceFeelScript.on:
+				_ice_feel_after_step()
+
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
-	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount * feel.intensity
-	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount * feel.intensity
-	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount * feel.intensity
+	var careful: float = _ice_bob_scale()   # --ice-feel: a flatter, careful walk on bare ice
+	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount * feel.intensity * careful
+	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount * feel.intensity * careful
+	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount * feel.intensity * careful
 	drip_view.step(delta)
 	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
 	sound.cave.note_gap(wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
