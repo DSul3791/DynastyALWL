@@ -25,7 +25,6 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
-import lem      # noqa: E402
 import rock     # noqa: E402
 import runoff   # noqa: E402
 import evolve   # noqa: E402
@@ -193,7 +192,7 @@ def main():
     gw = gw.reshape(n, n)
 
     # Baseflow and a first regime along the final routing
-    filled, rec, order = lem.route(h.ravel(), sea.ravel().astype(np.uint8), n)
+    filled, rec, order = evolve.route(h.ravel(), sea.ravel().astype(np.uint8), n, dx, evolve.flow_memory(E))
     base = evolve._discharge(order, rec, sea.ravel().astype(np.uint8), gw.ravel() / cell, cell, N).reshape(n, n)  # m3/s
     share = b2['channel'].astype(np.float64)
     q = r3['quick_area_m2'].astype(np.float64)
