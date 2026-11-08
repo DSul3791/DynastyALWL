@@ -156,6 +156,17 @@ var torch_adapt: float = 0.0            # 0 .. 1: the eyes adapted to a held fla
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
+# One visibility for everyone who needs it (MikeW's animals in fog, the sky, sound; 8 Nov 2026): metres at which a dark object
+# against the sky is just lost, from the fog actually drawn round the eye (rain, snow, storm, weather fog, inside valley fog, under
+# water). Koschmieder with a 5 % threshold: V = 3 / extinction, and Godot's fog_density is the extinction per metre (Jamie #716:
+# recognise at half V, detail at a quarter). Seen from above a valley fog the eye is in clear air, so V is the clear air's.
+var visibility_m: float = VISIBILITY_MAX_M
+const VISIBILITY_MAX_M := 50000.0          # no fog drawn (Esc > Admin clear day): call it 50 km
+
+
+# Visibility (m) for a fog density (extinction per metre): 3 / density, at most VISIBILITY_MAX_M.
+static func visibility_of_density(density: float) -> float:
+	return VISIBILITY_MAX_M if density <= 3.0 / VISIBILITY_MAX_M else 3.0 / density
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
@@ -473,6 +484,7 @@ func _process_body(delta: float) -> void:
 		mist_inside = mist * smoothstep(-MIST_EDGE_M, MIST_EDGE_M, mist_top - _client.camera.global_position.y) * under_rock
 		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"]) + MIST_INSIDE_THICK * mist_inside
 		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0)
+		visibility_m = visibility_of_density(environment.fog_density)
 		# The fog is sky-coloured haze: under rock it must go dark with the light, or a long tunnel glows (pitch black means black).
 		# Valley fog is whiter than the haze: lit by the sky and the sun (white by day, warm at sunrise from the dusk horizon colour,
 		# blue-grey at night from the night horizon), never a flat grey card (art_weather_light.md section 7 rule 2).
@@ -511,6 +523,7 @@ func _underwater_fog(environment: Environment, daylight: float, cover: float) ->
 	mist_inside = 0.0
 	var lit: float = clampf(daylight, 0.0, 1.0) * lerpf(1.0, 0.55, cover)
 	environment.fog_density = UNDER_FOG_DENSITY
+	visibility_m = visibility_of_density(UNDER_FOG_DENSITY)
 	var color: Color = UNDER_NIGHT_COLOR.lerp(UNDER_DAY_COLOR, lit)
 	environment.fog_light_color = color
 	environment.fog_light_energy = 1.0
