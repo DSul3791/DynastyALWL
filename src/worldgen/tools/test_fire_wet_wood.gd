@@ -64,7 +64,10 @@ func _init() -> void:
 	var cfg: Dictionary = table.wet_wood()
 	var stick: int = table.number_of("stick")
 	var beech: int = table.number_of("log_beech")
-	check((cfg.get("wet_h", {}) as Dictionary) == {"weak": 4, "firewood": 36, "log": 168}, "cooking.json wet_wood: sticks 4 h, firewood 36 h, logs 168 h")
+	var wet_h: Dictionary = cfg.get("wet_h", {})
+	# JSON numbers load as floats, and a Dictionary == compares 4.0 and 4 as different, so the hours are compared one by one.
+	check(wet_h.size() == 3 and is_equal_approx(float(wet_h.get("weak", -1.0)), 4.0) and is_equal_approx(float(wet_h.get("firewood", -1.0)), 36.0)
+			and is_equal_approx(float(wet_h.get("log", -1.0)), 168.0), "cooking.json wet_wood: sticks 4 h, firewood 36 h, logs 168 h (%s)" % str(wet_h))
 	check(table.wood_class(stick) == "weak" and table.wood_class(beech) == "log" and table.wood_class(table.number_of("apple")) == "", "the item table knows which items are wood")
 
 	# 1. A loose stick in rain 0.5 is wet for 4 game hours, and out of the rain dries in 4 (600 real s); a log needs 168 game hours.
