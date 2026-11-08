@@ -1413,9 +1413,11 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 			return -1.0
 
 		if not is_nan(level_here):
-			return 2.0
+			return 2.0 if not bool(def["water"].get("lives_on_land", false)) else 1.0
 
-		return 1.0 if _fresh_near(x, z, float(def["water"].get("bank_m", 6.0))) else -1.0
+		# lives_on_land (moose, goose): water is open to it, but on land its own habitat rules apply as before.
+		if not bool(def["water"].get("lives_on_land", false)):
+			return 1.0 if _fresh_near(x, z, float(def["water"].get("bank_m", 6.0))) else -1.0
 
 	if hab.is_empty() or not ground_height.is_valid():
 		return 1.0
