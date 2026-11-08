@@ -6,7 +6,7 @@
 - Steve: the states that make an animal hot or wet (#734, #737).
 
 **Related:**
-- `springs-and-brooks-in-winter.md` (#739): spring water at 5.5 °C.
+- `springs-and-brooks-in-winter.md` (#739): spring water at the year mean (about 10.9 °C at #8002 on the starter).
 - `fog-and-visibility.md` (#716): how far small things are seen in mist.
 - `body-in-weather.md` (#703): wet coats and drying.
 - [cave-microclimate.md](cave-microclimate.md): steam at cave mouths.
@@ -84,25 +84,24 @@
 
 ### Steam over springs and brooks (lesson 3)
 
-- **A spring at 5.5 °C** (cave 8002) steams when the air is below about −8 °C in 70% humidity, or −5 °C in 90%, in calm air.
-- **The brook below** cools toward 0 °C (`springs-and-brooks-in-winter.md`), so it steams less and less downstream. A 0 °C brook needs air below about −14 °C.
-- **The sea:** the starter sea is about 7 to 9 °C in local winter (judged). It needs air below about −5 °C, so it hardly ever smokes on the starter.
-- **On the starter island** (from `climate.gd`): the coldest dawn is about −4 °C at sea level and about −7.5 °C at spring 8002 (533 m), in a cold spell.
-  - So the spring steams only on the coldest, stillest, most humid dawns of a cold spell, and only faintly.
-  - Steam over spring mouths is a colder-world look: the arctic zone, and high springs in the mountains.
-  - This corrects the "steam on cold mornings" line in #739, which now says the same.
+- **A spring at 5.5 °C** (a colder island, or high in the mountains) steams when the air is below about −8 °C in 70% humidity, or −5 °C in 90%, in calm air.
+- **The starter's spring #8002** comes out at about 10.9 °C: the year mean at 533 m, at the grid's warmth of about 14.4 °C at sea level (`OVERNIGHT_DECISIONS_8NOV.md` rows 19 and 20, #717). It steams when the air is below about −3 °C, or about 0 °C in humid, calm air.
+- **The brook below** cools toward the air's temperature (`springs-and-brooks-in-winter.md`, #739), so it steams less and less downstream.
+- **The sea:** at the grid's warmth the starter sea stays about 13 to 15 °C in local winter (judged). It would need air below about 0 °C, which the coast never gets, so the starter sea never smokes.
 
-### On the starter island (our sums from `climate.gd`)
+### On the starter island (our sums, at the grid's warmth)
 
-- **Dawn air:**
-  - at sea level, about 0 °C in midwinter, 5 °C in local spring and autumn, and 10 °C in midsummer;
-  - about 3.5 °C colder at 500 m;
-  - cold spells take another 4 °C off.
+- **Dawn air:** we used the grid's 14.4 °C a year at sea level (#717 row 20) and `climate.gd`'s other settings: ±5 °C season, 8 °C day range, ±4 °C cold spells, 6.5 °C per km.
+  - At sea level a dawn is about 5.4 °C in midwinter, 10.4 °C in local spring and autumn, and 15.4 °C in midsummer.
+  - It is about 3.5 °C colder at 533 m, the height of cave 8002. Cold spells take another 4 °C off.
 - **So:**
-  - a person's breath shows on most dawns from mid local autumn to mid local spring, and on most dawns all year at 500 m and above;
-  - horses, elk and bears show on most winter dawns;
-  - deer and wolves show only on winter dawns in a cold spell, or up high. A deer that has just run shows on any cool morning;
-  - a sweating, hot animal, a hunter after a run, a fresh kill or a gut pile steams on any day colder than about 16 °C. That is most of the year on the starter.
+  - a person's breath shows on most midwinter dawns, and on spring and autumn dawns only high up (above about 500 m) or in a cold spell;
+  - horses, elk and bears show on winter dawns above about 100 m, or anywhere in a cold spell;
+  - deer and wolves at rest show only on midwinter dawns above about 800 m, or above about 200 m in a cold spell. A deer that has just run shows on any cool morning, below about 14 °C;
+  - a sweating, hot animal or a hunter after a run steams on any morning from local autumn to local spring, and through winter days (below about 16 °C);
+  - a fresh kill or a gut pile steams nearly all year, except on summer afternoons (below 20 to 24 °C);
+  - spring #8002 steams faintly on calm, damp dawns in a midwinter cold spell (coldest about −2 °C there). It is clear by mid-morning.
+- An earlier version of this section used the old 9 °C climate, where breath showed on most winter dawns for every animal.
 
 ## Never-see checks
 
@@ -110,7 +109,7 @@
 2. A panting wolf after a chase showing no breath at 5 °C.
 3. A fresh kill not steaming on a frosty morning.
 4. Breath clouds just as thick in a force 5 wind as in calm air.
-5. The 8002 spring steaming on a mild local winter afternoon.
+5. The 8002 spring steaming on a mild local winter afternoon, or the starter sea smoking.
 6. A horse that has just run steaming for an hour.
 
 ## How ours works today (read from the code, 8 Nov, not tested)
@@ -137,8 +136,8 @@
 - Maine Sea Grant, Cold enough yet? The science behind sea smoke: https://seagrant.umaine.edu/resource/cold-enough-yet-the-science-behind-sea-smoke
 - Langman, V. A. (1985), Nasal heat exchange in a northern ungulate, the reindeer, *Respiration Physiology* 59: 279–287: https://bvbvf1.bib-bvb.de/vufind/PrimoRecord/cdi_proquest_miscellaneous_76079924
 - WeatherBeeta, Cool out your hot horse safely this winter: https://www.weatherbeeta.com/blog/cool-out-your-hot-horse-safely-this-winter/
-- Our sums: the mixing thresholds, the steam rule, the per-animal table, the starter dawns.
-- **Judged or from memory:** breath temperatures and volumes, coat temperatures, steam durations, how far puffs are seen, breathing rates, the starter sea temperature.
+- Our sums: the mixing thresholds, the steam rule, the per-animal table, the starter dawns (at the grid's 14.4 °C).
+- **Judged or from memory:** breath temperatures and volumes, coat temperatures, steam durations, how far puffs are seen, breathing rates, the starter sea temperature (13 to 15 °C in local winter).
 
 ## Fetches still to do
 
