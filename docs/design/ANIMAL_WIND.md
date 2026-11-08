@@ -3,8 +3,8 @@
 From Jamie's animals-in-weather page (#639, `docs/knowledge/animals-in-weather.md`) and tracks page (#696), and Steve's server
 weather rules (#651, #667). Client looks behind `wind_looks` (off). The direction is the shared weather's `wind_dir` (the way the
 wind blows toward); Kathleen's prevailing wind (`docs/design/prevailing_wind.md`, a per-group direction in Weather behind `--wind-dir`)
-feeds the same field when it lands, so nothing here changes then. Until a world gives a direction (the motion tool), a westerly:
-blowing toward +X.
+feeds the same field when it lands, so nothing here changes then. The island is a 21 by 21 grid of rows with the equator in the middle, so the client assumes no
+direction of its own: with no `wind_dir` (only the motion tool, which passes one) there is no wind turn at all.
 
 ## What animals do (knowledge)
 - **Rump to the wind in wind and rain.** Stock and deer standing out strong wind with rain turn their backs to it, head down (the
