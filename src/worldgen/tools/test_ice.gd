@@ -60,7 +60,8 @@ func _init() -> void:
 	_check(absf(day_sum / 144.0 - day_mean) < 0.5, "the day's mean air is the day's temperature (%.2f vs %.2f)" % [day_sum / 144.0, day_mean])
 	# Art's rule (Kathleen, #587 ask 3): a pond freezes at the edges on a frosty night and thaws by early afternoon once
 	# the air is above 2 C; a thick winter sheet stays. Every day of a year on the starter island (the temperate zone's
-	# climate, 9 C +-5) at POND_M, where frosty nights come (the coast itself is too mild: docs/design/one_temperature.md).
+	# climate as the ice reads it, Weather.snow_air_c: about 14.2 C +-5 plus snow_bias_c -5.16, the old 9 C) at POND_M, where frosty nights come (the coast
+	# itself is too mild: docs/design/one_temperature.md).
 	var pond_m: float = 300.0
 	var world_seed: int = 777                        # the cold spells come from the world seed (climate.gd)
 	var frosty_mornings: int = 0
@@ -73,13 +74,13 @@ func _init() -> void:
 		var night_low: float = 100.0
 
 		for h in range(8):
-			night_low = minf(night_low, Weather.air_c(base + float(h) * Ice.HOUR_S, "temperate", pond_m, world_seed))
+			night_low = minf(night_low, Weather.snow_air_c(base + float(h) * Ice.HOUR_S, "temperate", pond_m, world_seed))
 
 		if dawn_ice > 0.0:
 			frosty_mornings += 1
 
 		# One frosty night's ice (down to -3 C, not a hard frost): open water the evening before, ice at dawn, 2 C or more at noon.
-		if night_low < 0.0 and night_low >= -3.0 and dawn_ice > 0.0 and Ice.cover(base - 6.0 * Ice.HOUR_S, "temperate", pond_m, 3.0, world_seed) == 0.0 and Weather.air_c(base + 12.0 * Ice.HOUR_S, "temperate", pond_m, world_seed) >= 2.0:
+		if night_low < 0.0 and night_low >= -3.0 and dawn_ice > 0.0 and Ice.cover(base - 6.0 * Ice.HOUR_S, "temperate", pond_m, 3.0, world_seed) == 0.0 and Weather.snow_air_c(base + 12.0 * Ice.HOUR_S, "temperate", pond_m, world_seed) >= 2.0:
 			thaw_days += 1
 
 			if Ice.cover(base + 14.0 * Ice.HOUR_S, "temperate", pond_m, 3.0, world_seed) > 0.0:

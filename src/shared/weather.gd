@@ -142,6 +142,17 @@ static func air_c(game_s: float, group: String, altitude_m: float = 0.0, seed_va
 	return Climate.air_c(climate, year_phase_at(game_s, row, equator_row), hour_of(game_s), altitude_m) + Climate.spell_c(climate, seed_value, game_s)
 
 
+# The air the snow and ice layer reads (C): air_c plus the island's snow_bias_c (climate.gd; OVERNIGHT_DECISIONS_8NOV.md row 21). Ice on
+# still water and whether rain falls as snow use it; everything else reads air_c.
+static func snow_air_c(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0, row: int = STARTER_ROW, equator_row: int = 0) -> float:
+	return air_c(game_s, group, altitude_m, seed_value, row, equator_row) + Climate.snow_bias_c(Climate.of_zone(group))
+
+
+# temp_at for the snow and ice layer: the day's mean plus snow_bias_c.
+static func snow_temp_at(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0) -> float:
+	return temp_at(game_s, group, altitude_m, seed_value) + Climate.snow_bias_c(Climate.of_zone(group))
+
+
 static func day_shape(hour: float) -> float:
 	return Climate.day_shape(hour)
 
@@ -188,7 +199,7 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 		precip = clampf(maxf(precip, longer) * (1.0 + 0.9 * -spirit), 0.0, 1.0) if group != "desert" else precip
 
 	var storm: float = clampf((precip - 0.7) / 0.3, 0.0, 1.0) * (0.5 + 0.5 * -minf(spirit, 0.0)) if precip > 0.7 else 0.0
-	var snowing: bool = temp < 0.5
+	var snowing: bool = temp + Climate.snow_bias_c(Climate.of_zone(group)) < 0.5   # rain or snow: the snow layer's air (snow_bias_c, row 21)
 	var cloud: float = clampf(maxf(precip, front * wet * 1.2), 0.0, 1.0)
 	var wind: float = clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0)
 	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit, latitude_deg)
