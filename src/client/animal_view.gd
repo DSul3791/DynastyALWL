@@ -615,7 +615,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 				# measured against the rest pose, and the next clip for the role is tried; with none, the model keeps its rest pose.
 				var clip_h: float = _clip_height(player, anim, rig)
 
-				if rest_h > 0.0001 and clip_h < rest_h * 0.5:
+				if rest_h > 0.0001 and clip_h < rest_h * float(row.get("flat_share", 0.5)):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
 					_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
 					refused[anim_name] = true
 					continue
