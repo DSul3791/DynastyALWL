@@ -2276,14 +2276,14 @@ func _update_weather() -> void:
 
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
 	# every client and the server agree with no traffic. Recomputed once a game minute.
-	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M)
+	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
 
 	if flora != null:
 		flora.set_ice_cover(ice_now)
 
 	if ocean_ice != null:
 		# The sea never freezes outside the arctic zone (Ice.sea_cover); there, salt water freezes at -1.8 C.
-		ocean_ice.update(_anchor, IceScript.sea_cover(game_clock.seconds, group))
+		ocean_ice.update(_anchor, IceScript.sea_cover(game_clock.seconds, group, int(world.get("master_seed", 0))))
 
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now

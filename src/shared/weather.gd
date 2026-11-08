@@ -76,15 +76,19 @@ static func river_dry(weather_state: Dictionary) -> float:
 	return heat * (1.0 - clampf(maxf(float(weather_state.get("rain", 0.0)) * 2.0, float(weather_state.get("storm", 0.0))), 0.0, 1.0))
 
 
-# The day's mean air temperature (C): the island's climate (climate.gd) for the season, cooler with altitude; no day and night swing.
-static func temp_at(game_s: float, group: String, altitude_m: float = 0.0) -> float:
-	return Climate.mean_c(Climate.of_zone(group), year_phase(game_s), altitude_m)
+# The day's mean air temperature (C): the island's climate (climate.gd) for the season and this spell (from the world seed), cooler with
+# altitude; no day and night swing.
+static func temp_at(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0) -> float:
+	var climate: Dictionary = Climate.of_zone(group)
+	return Climate.mean_c(climate, year_phase(game_s), altitude_m) + Climate.spell_c(climate, seed_value, game_s)
 
 
 # The air temperature (C) at this hour: temp_at plus the day and night swing (Climate.air_c: coldest 05:00, warmest 15:00). The one
-# live temperature (docs/design/one_temperature.md): Weather.state's temp_c is this, less the rain's cooling.
-static func air_c(game_s: float, group: String, altitude_m: float = 0.0) -> float:
-	return Climate.air_c(Climate.of_zone(group), year_phase(game_s), hour_of(game_s), altitude_m)
+# live temperature (docs/design/one_temperature.md): Weather.state's temp_c is this, less the rain's cooling. Pass the world seed:
+# the spells come from it, so the server and every client agree.
+static func air_c(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0) -> float:
+	var climate: Dictionary = Climate.of_zone(group)
+	return Climate.air_c(climate, year_phase(game_s), hour_of(game_s), altitude_m) + Climate.spell_c(climate, seed_value, game_s)
 
 
 static func day_shape(hour: float) -> float:
@@ -97,7 +101,7 @@ static func day_shape(hour: float) -> float:
 static func state(seed_value: int, game_s: float, group: String, altitude_m: float = 0.0, spirit: float = 0.0) -> Dictionary:
 	var zone: Dictionary = ZONES.get(group, ZONES["temperate"])
 	var phase: float = year_phase(game_s)
-	var temp: float = air_c(game_s, group, altitude_m)
+	var temp: float = air_c(game_s, group, altitude_m, seed_value)
 	# Wetter in autumn and winter, a little drier in high summer.
 	var wet: float = float(zone["wet"]) * (1.0 + 0.2 * cos(TAU * (phase - 0.75)))
 	var front: float = _noise(seed_value, 1, game_s / (FRONT_HOURS * 3600.0))
