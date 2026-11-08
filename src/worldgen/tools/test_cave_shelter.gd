@@ -75,6 +75,9 @@ func _init() -> void:
 	weather["temp_c"] = -6.0
 
 	# 2b. A cave pool's water is at the cave air's year mean (Jamie #664, CONTRADICTIONS.md), warmer than the old fixed 2 C fallback.
+	# Both pools are cold enough to pin a bare swimmer's target at 0, so the swimmer wears warm clothes here (insulation 0.6) to see the difference.
+	var keep_insulation: Callable = items.insulation_of
+	items.insulation_of = func(_peer): return 0.6
 	items._swimming[1] = true
 	items.set_cave_pool(1, true)
 	var pool: float = items.warmth_target(1)
@@ -82,6 +85,7 @@ func _init() -> void:
 	items.cave_mean_c = Callable()
 	var old_pool: float = items.warmth_target(1)
 	items.cave_mean_c = keep_cave
+	items.insulation_of = keep_insulation
 	check(pool > old_pool, "a cave pool at the year mean (5.5 C) is less cold than the old 2 C (%.0f against %.0f)" % [pool, old_pool])
 	items._swimming[1] = false
 	items.set_cave_pool(1, false)

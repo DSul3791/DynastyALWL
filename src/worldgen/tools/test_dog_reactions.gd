@@ -121,7 +121,8 @@ func _init() -> void:
 	var rows: Array = d.rows_near(Vector3.ZERO).filter(func(r): return int(r[0]) == int(bear["id"]))
 	check(rows.size() == 1 and (rows[0] as Array).size() == 6 and flat(rows[0][5], d.animals[ddog]["pos"]) < 0.01, "its row carries the dog's position for the client")
 	step(d, bear, 16)
-	check(bear["state"] == 10, "it keeps warning while the dog stays 25 m off (state %d)" % bear["state"])
+	# Still a warning: the huff (WARN, 10) gives way to the jaw-pop (WARN_POP, 16) as the timer runs, and it holds there while the dog stays off.
+	check(bear["state"] == 10 or bear["state"] == 16, "it keeps warning while the dog stays 25 m off (state %d)" % bear["state"])
 	d.animals[ddog]["pos"] = Vector3(9.0, GROUND, 0.0)
 	d._dogs = d._dog_presences()
 	var charged: bool = false
