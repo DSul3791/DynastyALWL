@@ -1,7 +1,7 @@
 extends RefCounted
 
 # The new look of the crafting, inventory and chest window (docs/design/INVENTORY_CRAFTING_LOOK.md sections 3 and 4; Kathleen 8 Nov 2026), steps B and C (section 9: recipe rows, chest marks, the keep-out lock, craft ring, made items flying in, the bulk toast and chest glow, the pinned recipe).
-# On by default since 8 Nov 2026 (Dave: no flags); --old-inventory shows the old window instead. With it on:
+# The only window since Dave's 8 Nov ruling (the old one and its --old-inventory switch are gone):
 #   one window of three columns: recipes on the left, the open chest or station in the middle (only while one is open), the pack on the right;
 #   the window is solid dark walnut with a 2 px gold frame and brass corner plates; each column has a carved name plate in Cinzel;
 #   the pack and chest slots are item_slot.gd (recessed wells, hover glow, parchment tooltips), the hotbar strip uses the same slot;
@@ -20,7 +20,6 @@ const CORNER_PLATE_PX := 22.0                       # brass corner plate size at
 const CARRY_WARN := 0.7                             # carry bar: gold below this share of the limit, amber to CARRY_BAD, red from there
 const CARRY_BAD := 0.8                              # the same steps as CarryRules.bar_color (the free load ends at 0.8 of the limit)
 
-static var on: bool = not OS.get_cmdline_user_args().has("--old-inventory")   # the default (Dave 8 Nov: "please set the flags as default"); --old-inventory brings the old window back to compare
 static var _icons: Dictionary = {}
 
 

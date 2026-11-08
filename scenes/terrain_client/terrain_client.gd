@@ -79,8 +79,8 @@ const ClimateScript := preload("res://src/shared/climate.gd")
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")   # --frozen-water: the liquid sheets' ice look (docs/design/frozen_water_look.md)
-const SpringSteam := preload("res://src/client/spring_steam.gd")   # --ice-feel: steam over spring mouths on frosty mornings (Jamie #739)
-const IceFeelScript := preload("res://src/client/ice_feel.gd")     # --ice-feel: ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
+const SpringSteam := preload("res://src/client/spring_steam.gd")   # steam over spring mouths on frosty mornings (Jamie #739)
+const IceFeelScript := preload("res://src/client/ice_feel.gd")     # ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
@@ -2283,7 +2283,7 @@ func _update_weather() -> void:
 	var tile_m: float = float(world.get("tile_size_m", 15360))
 	var row: int = ClimateScript.row_of_z(_anchor.z, tile_m)
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
-	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # --one-sky: this row's sky
+	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # this row's sky
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0, row, int(world.get("equator_row", 0)))
 
@@ -2294,8 +2294,7 @@ func _update_weather() -> void:
 	# every client and the server agree with no traffic. Recomputed once a game minute.
 	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
 
-	if IceFeelScript.on:
-		ice_now = _update_ice_feel_weather(ice_now, group, now)
+	ice_now = _update_ice_feel_weather(ice_now, group, now)
 
 	if flora != null:
 		flora.set_ice_cover(ice_now)
@@ -2332,7 +2331,7 @@ func _read_frozen_switches() -> void:
 		_frozen_hole = FrozenWater.hole_of(AppConfig.get_command_line_value("frozen-hole", ""))
 
 
-# Ice walk feel (docs/design/ice_walk_feel.md, --ice-feel): the band of the ice under the player from the collider's own cover, the footing on a
+# Ice walk feel (docs/design/ice_walk_feel.md): the band of the ice under the player from the collider's own cover, the footing on a
 # sheet, wading through skim and film, the cold shock and the thaw moat in the walkable collider.
 var _ice_feel_cover: float = 0.0
 var _ice_feel_band: int = 0
@@ -2551,8 +2550,7 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 
 	_cave_streams.show_tile(tile, streams)
 
-	if IceFeelScript.on:
-		_spring_mouths[tile] = SpringSteam.mouths_of(streams)
+	_spring_mouths[tile] = SpringSteam.mouths_of(streams)
 	@warning_ignore("integer_division")
 	print("Terrain client: cave streams for tile %s (%d pieces, %d pools)" % [str(tile), streams.size() / 7, CaveStreams.pools_of(streams).size()])
 
@@ -4439,9 +4437,8 @@ func _move_player(delta: float) -> void:
 		elif swimming:
 			velocity = _swim_velocity(velocity, direction, pace, fast > 1.0, strain_cap, float(water["surface"]), delta)
 
-			if IceFeelScript.on:
-				velocity.x *= IceFeelScript.swim_mult(_ice_shock)
-				velocity.z *= IceFeelScript.swim_mult(_ice_shock)
+			velocity.x *= IceFeelScript.swim_mult(_ice_shock)
+			velocity.z *= IceFeelScript.swim_mult(_ice_shock)
 		else:
 			velocity.y = body.velocity.y - GRAVITY * delta
 
@@ -4451,10 +4448,9 @@ func _move_player(delta: float) -> void:
 				velocity.x *= slow
 				velocity.z *= slow
 
-			if IceFeelScript.on:
-				velocity = _ice_feel_velocity(velocity, water, delta)
+			velocity = _ice_feel_velocity(velocity, water, delta)
 
-		if IceFeelScript.on and not waiting_for_ground:
+		if not waiting_for_ground:
 			_ice_feel_shock(water, delta)
 
 		if not swimming and body.is_on_floor() and KeyBindings.held("jump") and strain_cap >= 0.0:
@@ -4476,7 +4472,7 @@ func _move_player(delta: float) -> void:
 		if not was_on_floor and body.is_on_floor() and not swimming and not waiting_for_ground:
 			var landed: float = feel.land(fall_speed)
 
-			if IceFeelScript.on and landed > 0.0 and IceFeelScript.bears(_ice_feel_band) and _ice_underfoot:
+			if landed > 0.0 and IceFeelScript.bears(_ice_feel_band) and _ice_underfoot:
 				feel.strike(0.0, 0.25)   # ice_walk_feel.md section 4: a hard landing on a sheet dips a little more (0.02 m)
 
 		rescue.step()
@@ -4676,14 +4672,14 @@ func _under_ice_way_out() -> Vector3:
 
 
 func _ice_step_scale() -> float:
-	if not IceFeelScript.on or not _ice_underfoot:
+	if not _ice_underfoot:
 		return 1.0
 
 	return IceFeelScript.step_scale(_ice_feel_band, sound.weather.ground_snow if sound != null and sound.weather != null else 0.0)
 
 
 func _ice_bob_scale() -> float:
-	if not IceFeelScript.on or not _ice_underfoot:
+	if not _ice_underfoot:
 		return 1.0
 
 	return IceFeelScript.bob_scale(_ice_feel_band, sound.weather.ground_snow if sound != null and sound.weather != null else 0.0)
@@ -4705,12 +4701,11 @@ func _update_bob(delta: float) -> void:
 		if floor(before / TAU) != floor(_bob_phase / TAU):
 			sound.footstep(body, gait, 0.0, "left" if _bob_phase < TAU else "right")
 
-			if IceFeelScript.on:
-				_ice_feel_after_step()
+			_ice_feel_after_step()
 
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
-	var careful: float = _ice_bob_scale()   # --ice-feel: a flatter, careful walk on bare ice
+	var careful: float = _ice_bob_scale()   # a flatter, careful walk on bare ice
 	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount * feel.intensity * careful
 	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount * feel.intensity * careful
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount * feel.intensity * careful

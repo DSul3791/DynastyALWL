@@ -12,7 +12,7 @@ extends Node
 # recordings in recorded/ice/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
-const IceFeel := preload("res://src/client/ice_feel.gd")   # --ice-feel: bands by thickness (docs/design/ice_walk_feel.md)
+const IceFeel := preload("res://src/client/ice_feel.gd")   # bands by thickness (docs/design/ice_walk_feel.md)
 const GENERATED_DIR := "res://assets/audio/ice/"
 const RECORDED_DIR := "res://assets/audio/recorded/ice/"
 
@@ -21,9 +21,7 @@ const GROAN_EVERY := [25.0, 70.0]       # seconds between groans at the edge of 
 const GROAN_REACH_M := 60.0
 const GROAN_DB := -16.0
 const CRACK_DB := -8.0
-const CRACK_CHANCE := [0.04, 0.08, 0.14]  # per step at walk, jog, run
-const CRACK_HARD := 0.35                # on a hard landing (boost_db above 0)
-# --ice-feel (ice_walk_feel.md section 3): the zing runs off a crack, the boom comes from a thick sheet, skim and film break under a wader.
+# Ice walk feel (ice_walk_feel.md section 3): the zing runs off a crack, the boom comes from a thick sheet, skim and film break under a wader.
 const ZING_DB := -12.0
 const ZING_REACH_M := 60.0
 const ZING_AWAY_M := [15.0, 40.0]
@@ -75,7 +73,7 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	var square: Dictionary = shore[_rng.randi_range(0, mini(shore.size(), 4) - 1)]
 	var near: float = Vector2(square["at"].x - body.global_position.x, square["at"].z - body.global_position.z).length()
 
-	if IceFeel.on and _rng.randf() < IceFeel.boom_share(IceFeel.band_of(cover), hour):
+	if _rng.randf() < IceFeel.boom_share(IceFeel.band_of(cover), hour):
 		if near <= BOOM_REACH_M and play("ice_boom", square["at"], BOOM_DB + _rng.randf_range(-3.0, 2.0), 6.0, BOOM_REACH_M * 1.5, "Nature"):
 			booms_played += 1
 			print(IceFeel.log_line(IceFeel.band_of(cover), "boom", last, 1.0, INF))
@@ -87,22 +85,19 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 		groans_played += 1
 
 
-# A step on the ice may crack. `gait` 0 walk, 1 jog, 2 run; `boost_db` above 0 is a hard landing. With --ice-feel the chance follows the
+# A step on the ice may crack. `gait` 0 walk, 1 jog, 2 run; `boost_db` above 0 is a hard landing. The chance follows the
 # band (a thin sheet cracks more, a thick one less; a hard landing on a thin sheet always cracks) and a crack may run off as a zing ahead of
 # `toward` (the walking direction; zero: any way).
 func step(feet: Vector3, gait: int, boost_db: float, toward: Vector3 = Vector3.ZERO) -> bool:
-	var chance: float = float(CRACK_CHANCE[clampi(gait, 0, 2)]) + (CRACK_HARD if boost_db > 0.0 else 0.0)
-	var band: int = IceFeel.band_of(_stage.weather.ice_cover) if IceFeel.on else -1
-
-	if IceFeel.on:
-		chance = 1.0 if band == IceFeel.Band.THIN and boost_db > 0.0 else IceFeel.crack_chance(band, gait, boost_db > 0.0)
+	var band: int = IceFeel.band_of(_stage.weather.ice_cover)
+	var chance: float = 1.0 if band == IceFeel.Band.THIN and boost_db > 0.0 else IceFeel.crack_chance(band, gait, boost_db > 0.0)
 
 	if _rng.randf() >= chance or not _stage.has_room():
 		return false
 
 	var cracked: bool = play("ice_crack", feet, CRACK_DB + _rng.randf_range(-3.0, 2.0) + boost_db, 4.0, 40.0, "Foley")
 
-	if cracked and IceFeel.on and _rng.randf() < IceFeel.zing_share(band):
+	if cracked and _rng.randf() < IceFeel.zing_share(band):
 		var way: Vector3 = Vector3(toward.x, 0.0, toward.z)
 		way = way.normalized() if way.length() > 0.1 else Vector3.FORWARD.rotated(Vector3.UP, _rng.randf() * TAU)
 		way = way.rotated(Vector3.UP, _rng.randf_range(-0.6, 0.6))
@@ -115,7 +110,7 @@ func step(feet: Vector3, gait: int, boost_db: float, toward: Vector3 = Vector3.Z
 	return cracked
 
 
-# --ice-feel: a wading step through skim or film (no collider under it). `first` is the step that breaks through from the bank or a sheet.
+# A wading step through skim or film (no collider under it). `first` is the step that breaks through from the bank or a sheet.
 # Returns the sound name played, or "".
 func skim_step(feet: Vector3, band: int, first: bool) -> String:
 	if not _stage.has_room():

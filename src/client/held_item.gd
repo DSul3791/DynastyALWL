@@ -2375,7 +2375,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
 	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
-	FireWeather.register(light)   # --firelight-weather: reach and halo follow fog and snow
+	FireWeather.register(light)   # reach and halo follow fog and snow
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
 	hand_light.name = "HandLight"
 	hand_light.light_color = Color(1.0, 0.6, 0.28)

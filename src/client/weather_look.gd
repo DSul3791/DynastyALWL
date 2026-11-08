@@ -649,8 +649,8 @@ func _update_ground(rain: float, snow: float) -> void:
 	if _client.grass != null:
 		_client.grass.visible = lying < 0.5      # snow buries the grass
 
-	# Firelight in fog and snow (--firelight-weather, firelight_weather_design.md): reach and halo of every fire light, once a second.
-	if FireWeather.on and Time.get_ticks_msec() >= _fire_light_next_msec:
+	# Firelight in fog and snow (firelight_weather_design.md): reach and halo of every fire light, once a second.
+	if Time.get_ticks_msec() >= _fire_light_next_msec:
 		_fire_light_next_msec = Time.get_ticks_msec() + 1000
 		FireWeather.update(get_tree(), float(_s["mist"]) * mist_inside, snow, lying, 1.0 - day.night)
 

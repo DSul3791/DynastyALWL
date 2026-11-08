@@ -1299,7 +1299,7 @@ func set_ice_cover(value: float) -> void:
 		_draw_ice(chunk, entry, entry.get("grid", {}))
 
 
-# --ice-feel (ice_walk_feel.md section 5): the thaw moat in collider cells; the sheets are rebuilt when it changes.
+# Ice walk feel (ice_walk_feel.md section 5): the thaw moat in collider cells; the sheets are rebuilt when it changes.
 var _ice_moat: int = 0
 
 
@@ -1812,7 +1812,7 @@ func set_season(now_season: String) -> void:
 	season = now_season
 	_start_seasonal()
 
-	# Bare winter broadleaves shelter nothing (--bare-winter, docs/design/cover_by_season_design.md): the cover index and the canopy map follow.
+	# Bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md): the cover index and the canopy map follow.
 	if cover.leafless != CoverScript.leafless_for(season):
 		cover.leafless = CoverScript.leafless_for(season)
 		canopy_version += 1

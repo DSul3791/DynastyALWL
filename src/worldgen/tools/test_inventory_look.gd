@@ -1,6 +1,6 @@
 extends SceneTree
 
-# The inventory look, step B (docs/design/INVENTORY_CRAFTING_LOOK.md sections 3 and 4): on by default (--old-inventory for the old one); the window
+# The inventory look, step B (docs/design/INVENTORY_CRAFTING_LOOK.md sections 3 and 4): the only window; the window
 # frame, its corner plates and parchment tooltips; the name plates; the carry bar's colours; slots with no icon yet show the item's name.
 #   godot --headless --path . --script res://src/worldgen/tools/test_inventory_look.gd
 
@@ -44,7 +44,6 @@ func check(ok: bool, what: String) -> void:
 
 
 func _initialize() -> void:
-	check(InventoryLook.on, "the new look is the default (--old-inventory brings the old window back)")
 	_check_window()
 	_check_plate()
 	_check_carry()
