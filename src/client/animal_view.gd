@@ -8,6 +8,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
 const MAX_DRAWN := 30
 const MODELS_PATH := "res://data/animals/models.json"
+const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -582,6 +583,18 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	body.scale *= k
 	body.position.y -= box.position.y * k
 	_model_materials(meshes, row)
+
+	# Bone corrections laid over every clip (bone_offsets.gd: the crow stands up and folds its wings).
+	if row.has("bone_offsets"):
+		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
+
+		if not sks.is_empty():
+			var fix: SkeletonModifier3D = BoneOffsetsScript.new()
+			var missing: PackedStringArray = fix.setup(sks[0], row["bone_offsets"])
+			(sks[0] as Skeleton3D).add_child(fix)
+
+			if not missing.is_empty():
+				_model_note(kind, "bone_offsets: no bone %s" % ", ".join(missing))
 	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
 
 	if not players.is_empty():
