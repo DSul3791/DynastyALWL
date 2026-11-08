@@ -76,7 +76,9 @@
 
 ### The look (#729, #731)
 
-- **A spring mouth in frost:** steam over the water on cold mornings, because the 5.5 °C water is warmer than the air (our sums, the same physics as cave mouth steam on [cave-microclimate.md](cave-microclimate.md)). Frost and ice on the stones and plants beside it, built from that steam (judged).
+- **A spring mouth in frost:** water steams only when the air is about 10 to 15 °C colder than the water (`breath-and-steam-in-cold.md`, #744, our sums tuned to sea smoke). For a 5.5 °C spring that means air below about −8 °C (−5 °C in humid, calm air).
+  - On the starter the coldest dawn at #8002 is about −7.5 °C, so its spring steams only faintly, on the stillest dawns of a cold spell. Steaming springs belong to colder worlds and high mountains.
+  - When it does steam, frost and rime build on the stones and plants beside it (judged).
 - **The open length:** dark open water first; then ice shelves growing out from the banks; then full ice on the slow pools; fast riffles open longest.
 - **Green moss and cress** stay green in the spring run all winter (judged).
 
