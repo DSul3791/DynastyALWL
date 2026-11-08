@@ -57,12 +57,17 @@ func _init() -> void:
 
 	# Springs: Steve's water temperature and Sonny's open length.
 	var tw: float = FrozenWater.spring_c("temperate", SPRING_M)
-	check(absf(tw - 6.5) < 0.1, "spring #8002 water about 6.5 C (%.2f)" % tw)
+	check(absf(tw - 5.5) < 0.1, "spring #8002 water about 5.5 C, the year's mean (Jamie #739) (%.2f)" % tw)
 	var x0: float = FrozenWater.spring_open_m(-4.0, 6.5)
 	check(absf(x0 - 810.0) < 15.0, "Sonny's worked example: open about 810 m on a -4 C night (%.0f)" % x0)
 	check(FrozenWater.spring_open_m(-8.0, 6.5) < x0, "a colder night freezes nearer the spring")
 	check(FrozenWater.spring_open_m(5.0, 6.5) < 2300.0 and FrozenWater.spring_open_m(5.0, 6.5) > 2000.0, "a mild noon: about 2.2 km, not infinity")
 	check(FrozenWater.spring_open_m(-4.0, 0.0) == 0.0, "a spring at freezing keeps nothing open")
+	var calm5: float = FrozenWater.spring_open_m(-5.0, tw)
+	check(absf(FrozenWater.spring_open_m(-2.0, tw) / calm5 - 1.8) < 0.15, "Jamie #739: x1.8 at -2 C")
+	check(absf(FrozenWater.spring_open_m(-10.0, tw) / calm5 - 0.6) < 0.06, "Jamie #739: x0.6 at -10 C")
+	check(absf(FrozenWater.spring_open_m(-15.0, tw) / calm5 - 0.4) < 0.06, "Jamie #739: x0.4 at -15 C")
+	check(is_equal_approx(FrozenWater.spring_open_m(-5.0, tw, 0.6), calm5 * 0.5), "Jamie #739: halved in a breeze")
 	var pools: Array = []
 
 	for k in range(12):
@@ -71,7 +76,7 @@ func _init() -> void:
 	var springs: PackedVector4Array = FrozenWater.springs_near(pools, Vector3(2100.0, 0.0, 0.0), -4.0, "temperate")
 	check(springs.size() == 8, "at most 8 springs (%d)" % springs.size())
 	check(FrozenWater.springs_near(pools, Vector3(20000.0, 0.0, 0.0), -4.0, "temperate").is_empty(), "springs over 5.5 km away are left out")
-	check(springs.size() > 0 and springs[0].x == 2000.0 and absf(springs[0].z - x0) < 20.0, "the nearest spring first, with its open radius")
+	check(springs.size() > 0 and springs[0].x == 2000.0 and is_equal_approx(springs[0].z, FrozenWater.spring_open_m(-4.0, FrozenWater.spring_c("temperate", SPRING_M))), "the nearest spring first, with its open radius")
 
 	# Holes: age over the server's hole_game_h, gone when their time is up, the picture hole never closes.
 	var now: float = at(342, 9.0)
@@ -96,7 +101,7 @@ func _init() -> void:
 
 	for piece in ["uniform float frozen_on = 0.0;", "uniform vec4 ice_springs[8];", "uniform vec4 ice_holes[8];",
 			"1.0 - smoothstep(0.3, 0.5, raw_speed)", "(1.0 - smoothstep(0.5, 0.9, raw_speed))", "smoothstep(2.0, 3.0, cm)",
-			"smoothstep(9.0, 11.0, cm)", "smoothstep(4.0, 6.0, cm)", "smoothstep(5.0 / 6.0, 1.0, ice_holes[i].w)", "1.0 - smoothstep(1.6 * thaw",
+			"smoothstep(9.0, 11.0, cm)", "mix(0.5, 1.0, smoothstep(r, r + 30.0, ds))", "smoothstep(4.0, 6.0, cm)", "smoothstep(5.0 / 6.0, 1.0, ice_holes[i].w)", "1.0 - smoothstep(1.6 * thaw",
 			"* (1.0 - fall)", "(1.0 - 0.85 * ice_sheet)"]:
 		check(code.contains(piece), "shader has: " + piece)
 

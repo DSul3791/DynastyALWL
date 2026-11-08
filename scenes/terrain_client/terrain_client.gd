@@ -2458,7 +2458,7 @@ func _update_frozen_water(group: String, now: int) -> void:
 			pools.append_array(_cave_streams._pools[tile])
 
 	var air: float = WeatherScript.air_c(game_clock.seconds, group, maxf(_anchor.y, 0.0), seed_value)
-	var springs: PackedVector4Array = FrozenWater.springs_near(pools, _anchor, air, group)
+	var springs: PackedVector4Array = FrozenWater.springs_near(pools, _anchor, air, group, float(weather.get("wind", 0.0)))
 	var holes: PackedVector4Array = FrozenWater.holes_near(ice_holes + _frozen_hole + _ice_patches, _anchor, game_clock.seconds)
 	LiquidSurface.set_ice_all(get_tree(), true, look, springs, holes)
 

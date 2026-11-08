@@ -408,8 +408,11 @@ void fragment() {
 		ice_here *= max(slow, border) * (1.0 - fall);
 
 		for (int i = 0; i < ice_spring_count; i++) {
+			// Open within the spring's reach, then the ice at half thickness for 30 m past it (Jamie #739: thin ice within 10 to 30 m of a
+			// spring mouth or inflow) before it reaches its full cover.
 			float r = max(ice_springs[i].z, 1.0);
-			ice_here *= smoothstep(0.8 * r, r, distance(world, ice_springs[i].xy));
+			float ds = distance(world, ice_springs[i].xy);
+			ice_here *= smoothstep(0.95 * r, r, ds) * mix(0.5, 1.0, smoothstep(r, r + 30.0, ds));
 		}
 
 		float thaw = ice_look.z;

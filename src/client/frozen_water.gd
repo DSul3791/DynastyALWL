@@ -12,8 +12,10 @@ static var on: bool = AppConfig.has_flag("frozen-water")
 const OPEN_DEPTH_M := 3.0          # the deep water's cover: today's Ice.cover depth (terrain_client ICE_POND_DEPTH_M)
 const SHORE_DEPTH_M := 1.0         # the shallows' cover: the shallowest depth ice.gd tells apart (2-day water lag, faster growth)
 const THAW_FROM_PEAK := 0.125      # a thaw counts once the last 30 days held at least this cover (2.5 cm)
-const SPRING_ABOVE_MEAN_C := 1.0   # spring water comes out at the year's mean plus this (Steve's #719 design; 6.5 C at #8002)
+const SPRING_ABOVE_MEAN_C := 0.0   # spring water comes out at the year's mean (Jamie #739: 5.5 C at #8002; Steve's #719 said mean + 1)
 const SPRING_LAMBDA_M := 840.0     # one lambda = rho c Q / (h W) for every spring: gives Sonny's worked example, 810 m on a -4 C night at 6.5 C
+                                   # (Jamie #739: about 440 m x sqrt(L/s) at -5 C calm, x1.8 at -2, x0.6 at -10, x0.4 at -15; this log rule gives the same ratios)
+const SPRING_BREEZE := [0.3, 0.5]  # wind (0..1) over which the open length halves (Jamie #739: halve in a breeze; h doubles)
 const SPRING_AIR_FLOOR_C := -0.5   # above this the air counts as this, so the open radius never runs to infinity at noon (about 2.2 km)
 const MAX_SPRINGS := 8             # the shader's arrays
 const MAX_HOLES := 8
@@ -44,17 +46,19 @@ static func spring_c(zone_group: String, altitude_m: float) -> float:
 	return float(climate["sea_level_mean_c"]) - float(climate["lapse_c_per_km"]) * maxf(altitude_m, 0.0) / 1000.0 + SPRING_ABOVE_MEAN_C
 
 
-# How far below a spring its brook stays open (m): Sonny's x0 = lambda ln((Tw - Ta) / (0 - Ta)); 0 for a spring at or below freezing.
-static func spring_open_m(air_c: float, water_c: float) -> float:
+# How far below a spring its brook stays open (m): Sonny's x0 = lambda ln((Tw - Ta) / (0 - Ta)), halved in a breeze (`wind` 0..1, Weather's); 0 for a
+# spring at or below freezing.
+static func spring_open_m(air_c: float, water_c: float, wind: float = 0.0) -> float:
 	if water_c <= 0.0:
 		return 0.0
 
 	var air: float = minf(air_c, SPRING_AIR_FLOOR_C)
-	return SPRING_LAMBDA_M * log((water_c - air) / (0.0 - air))
+	var breeze: float = 1.0 - 0.5 * smoothstep(float(SPRING_BREEZE[0]), float(SPRING_BREEZE[1]), wind)
+	return SPRING_LAMBDA_M * breeze * log((water_c - air) / (0.0 - air))
 
 
 # Up to MAX_SPRINGS Vector4(x, z, open radius m, 0), nearest first, from cave_streams.gd pools ([centre, radius, depth] each).
-static func springs_near(pools: Array, at: Vector3, air_c: float, zone_group: String) -> PackedVector4Array:
+static func springs_near(pools: Array, at: Vector3, air_c: float, zone_group: String, wind: float = 0.0) -> PackedVector4Array:
 	var near: Array = []
 
 	for pool in pools:
@@ -69,7 +73,7 @@ static func springs_near(pools: Array, at: Vector3, air_c: float, zone_group: St
 
 	for entry in near.slice(0, MAX_SPRINGS):
 		var centre: Vector3 = entry[1]
-		out.append(Vector4(centre.x, centre.z, spring_open_m(air_c, spring_c(zone_group, centre.y)), 0.0))
+		out.append(Vector4(centre.x, centre.z, spring_open_m(air_c, spring_c(zone_group, centre.y), wind), 0.0))
 
 	return out
 
