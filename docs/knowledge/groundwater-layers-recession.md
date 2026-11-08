@@ -84,6 +84,13 @@ This page answers Sonny's three asks for section 7 of his plan:
 - The conduits hold little water, so they cannot carry a dry summer. The dry-season flow of a karst spring is nearly all matrix.
 - A karst spring therefore rises within hours to a day after a storm and falls back within a week. Then it tails off slowly for months.
 - **L for the matrix store:** the distance to the conduit, not to the spring. Conduits drain the matrix every few hundred metres (judged).
+- **Matrix hydraulic conductivity K:**
+  - **Sourced (young, porous limestone):** about 14,000 core and cave-wall measurements in the Floridan Aquifer give matrix permeability from 10^−14.6 to 10^−11.4 m², with a mean of about 10^−13 m² (GSA 2006 abstract, Matrix permeability of the unconfined Floridan Aquifer).
+    - **Our sums:** K = k × ρg ÷ μ. At 10 °C that is 1.9 × 10⁻⁸ to 3 × 10⁻⁵ m/s, with a mean of **7.5 × 10⁻⁷ m/s (0.065 m/day)**.
+  - **Old, hard limestone** (telogenetic, like Mammoth Cave and most mountain karst) has far less matrix porosity, and its primary matrix is orders of magnitude tighter (Kuniansky, Taylor and Paillet 2022: "little matrix storage", and matrix values spanning "several orders of magnitude"). A figure of about 10⁻¹¹ m/s for Mammoth Cave's matrix is from memory of Worthington et al. 2000 and not fetched.
+  - **What the τ needs (our sums):** with S_y 0.003 and L 300 m to the conduit, a matrix τ of 3 months to 2 years needs T of 0.15 to 1.2 m²/day. Over 50 m, that is K of 3.5 × 10⁻⁸ to 2.8 × 10⁻⁷ m/s.
+  - So the "matrix" store in a karst spring's recession is really the **fissured rock between conduits**, at about 10⁻⁷ m/s. That sits inside the sourced Floridan range, and far above the tight primary matrix of old limestone.
+  - **Use:** K_matrix = 1 × 10⁻⁷ m/s (0.009 m/day) for R4's karst matrix store (judged from the sums, checked against the Floridan range). Keep the conduits as the separate quick store.
 
 ### (c) Recession times by aquifer type (for check 1)
 
@@ -129,6 +136,8 @@ This page answers Sonny's three asks for section 7 of his plan:
 - Soulsby, C. et al. (1999). Hydrogeochemistry of montane springs and their influence on streams in the Cairngorm mountains, Scotland. *HESS* 3, 409. https://hess.copernicus.org/articles/3/409/1999/hess-3-409-1999.html
 - Olarinoye, T., Gleeson, T. and Hartmann, A. (2022). Karst spring recession and classification. *HESS* 26, 5431. https://hess.copernicus.org/articles/26/5431/2022/hess-26-5431-2022.html
 - Fiorillo, F., Revellino, P. and Ventafridda, G. (2012). Karst aquifer draining during dry periods. *J. Cave and Karst Studies* 74(2), 148. https://legacy.caves.org/pub/journal/PDF/V74/cave-74-02-148.pdf
+- GSA 2006 Annual Meeting abstract, Matrix permeability of the unconfined Floridan Aquifer: matrix k 10^−14.6 to 10^−11.4 m², mean about 10^−13 m². https://studio.m-anage.com/gsa/2006AM/webprogram/Paper115378.html
+- Kuniansky, E., Taylor, C. and Paillet, F. (2022), *Introduction to Karst Aquifers*, The Groundwater Project. https://books.gw-project.org/introduction-to-karst-aquifers/
 - Kovács, A., Perrochet, P., Király, L. and Jeanneret, P. (2005). Spring hydrograph recession and karst aquifer geometry and hydraulics. *J. Hydrology* 303, 152 to 164. https://libra.unine.ch/bitstreams/c1031b11-54b6-4133-b853-2a4ea9348689/download
 - MetricGate, Baseflow index (BFI over 0.9 for chalk and limestone, under 0.3 for clay; the page cites no source). https://metricgate.com/docs/baseflow-index/
 - Our sums: the transmissivity total and the τ tables.
