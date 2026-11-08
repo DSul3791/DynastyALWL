@@ -248,9 +248,9 @@ Pass: antler-moss stag, stone-hide boar of fire islands, ember-wolf, roc, yeti, 
 | Creature | Sign | Warning | Verbs | Counterplay |
 |---|---|---|---|---|
 | Deer | Tracks, rubbed bark, a soft call at dusk | Head up, ears turn, stamp | Hunt, Discover | Downwind, still, a spear from cover |
-| Bear at den | Clawed trees, torn logs, a bone pile | Huff, jaw-pop, stand, then charge | Avoid, Hunt, Study | Stay out of the den ring; fire does not help there |
-| Wolf | Howl, tracks in a line | Growl, low circling | Avoid, Hunt, Tame (pup) | Torch 8 m, fight at a chokepoint |
-| Goblin band | Footprints at the fire's edge, a missing item, glinting eyes | Sudden retreat, a whistle | Avoid, Study, Ally | Stay in light; never corner them |
+| Bear at den | Clawed trees, torn logs, a bone pile | Turns to face you [Existing]; huff, jaw-pop and standing [Proposal]; then charge | Avoid, Hunt, Study | Stay out of the den ring; fire does not help there |
+| Wolf | Howl, tracks in a line | Growl, low circling | Avoid, Hunt, Tame (pup) [Proposal] | Torch 9 m (`torch_light_m` in `animals.json`), fight at a chokepoint |
+| Goblin band | Footprints at the fire's edge, a missing item, glinting eyes | Sudden retreat, a whistle | Avoid, Study, Ally [Proposal] | Stay in light; never corner them |
 | Beaver | Gnawed stumps, a lodge, a new pond | Tail slap | Discover, Harvest, Ally | Break the dam; fish the pond |
 | Bighorn, goat | Scat on ledges, a clatter of stones | Bound upslope | Hunt, Discover | Climb above them |
 | Golden eagle | A wheeling dot, a shadow, white-washed ledges | A scream and a stoop | Avoid, Study, Tame | Keep to cover; a shield; shoot in the dive |
@@ -288,10 +288,10 @@ A skill with tools, not a coin toss: stealth (crouch, downwind), terrain (a rive
 
 ## 9. Discovery: how a player learns the world
 
-### 9.1 The field journal [Proposal G-18]
-**[Existing]** `DESIGN_IDEAS.md` 6.15 has journals ("what a character knows"). Use that one place for creature knowledge, a ladder per species: **Heard of, Sighted, Observed, Tracked, Studied.** Each rung reveals more: range, habits, weak points, drops, safe approach, lore. The whole ladder can be climbed without killing. A journal is inherited by an heir, so a dynasty accumulates a natural history.
+### 9.1 The field journal [Proposal G-18, awaiting Dave]
+**[Existing]** `DESIGN_IDEAS.md` 6.15 has journals ("what a character knows"). Use that one place for creature knowledge, a ladder per species: **Heard of, Sighted, Observed, Tracked, Studied.** Each rung reveals more: range, habits, weak points, drops, safe approach, lore. The whole ladder can be climbed without killing. Family knowledge is inherited by the heir, so a dynasty accumulates a natural history; journal pages are copyable items and are not inherited (D-09).
 
-### 9.2 Rumours on the news rail [Proposal G-19]
+### 9.2 Rumours on the news rail [Proposal G-19, awaiting Dave]
 **[Existing]** News travels with people; the game owns the facts and the language model only speaks (`DESIGN_IDEAS.md` 13.6, principle 3). Creatures and places become rumours on that rail: a hermit, a sailor or a shopkeeper tells you something true about a creature or place the world already contains. This is how the AI helps players find things without a quest marker.
 
 ### 9.3 Signs
@@ -362,11 +362,13 @@ These are recommendations applied now so work is not blocked. Dave can overturn 
 | D-01 | G-16 (five-point test) and G-17 (interaction cards and matrix) are in force now for docs and data. | They cost nothing in code and stop drift. |
 | D-02 | G-03 habitat keys are added as optional schema now; no placement uses a key until a system can answer it. | Data before code; no churn later. |
 | D-03 | Taming (G-09) order: companion and mount first, livestock second, familiar last. | Horses, dogs and wolf pups exist; familiars need quests. |
-| D-04 | The journal (G-18) is inherited by heirs. | It is knowledge, not an item; it is the dynasty's long game. |
+| D-04 | Amended by D-09: family knowledge (G-18) is inherited by the heir; journal pages are copyable items and are not inherited. | Knowledge is the dynasty's long game; pages follow the item rules. |
 | D-05 | G-22 cave behind a fall: parked until the rebuild gives hanging-valley falls, then revisited against the "caves only at river starts" rule. | Do not break a Dave rule for scenery. |
 | D-06 | G-02 hot-row animals come in at Phase 6 with the dune and savanna archetype. | Right world for them; no model cost. |
 | D-07 | Climbing gets a design doc in Phase 5 before any code. | Without it peaks are scenery; with no design it would be a patch. |
 | D-08 | Rings 3 to 6 bands stand as drafted until play says otherwise. | Tuning needs play data. |
+| D-09 | `DESIGN_IDEAS.md` 6.15 wins where it and this document differ on journals and knowledge. D-04 is amended to match: family knowledge is inherited by the heir; journal pages are copyable items and are not inherited. | 6.15 is the earlier, more detailed design. |
+| D-10 | Mountains: Dave wants colossal, epic fantasy peaks, on the starter island too. (1) Relief varies per island and per seed. (2) Island character is set at the landform and seed stage: `sketch_rules.json` gives `summit_m` per island type (starter 1000-1450 m, volcano 1500-2300 m, three-peak 2000-2700 m, giant up to 3400 m). (3) Erosion only carves valleys; it never erodes summits below the landform. (4) Peaks are built within the rock's standing angle, with granite under massif tops. | [Dave] intent; systemic, so the same rules make every island. |
 
 ## 14. The phased plan
 
