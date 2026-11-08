@@ -15,8 +15,8 @@ extends SceneTree
 # --clips also lists every clip in the file (with its length), to pick the clip for each role in a new model row.
 
 const AnimalView := preload("res://src/client/animal_view.gd")
-const ROLE_ORDER := ["rest", "0", "3", "10", "11", "12", "15", "walk", "run"]
-const ROLE_NAMES := {"rest": "rest pose", "0": "graze", "3": "alert", "10": "warn", "11": "charge", "12": "recover", "15": "fly", "walk": "walk", "run": "run"}
+const ROLE_ORDER := ["rest", "0", "3", "10", "11", "12", "15", "18", "19", "walk", "run"]
+const ROLE_NAMES := {"rest": "rest pose", "0": "graze", "3": "alert", "10": "warn", "11": "charge", "12": "recover", "15": "fly", "18": "sit", "19": "lie", "walk": "walk", "run": "run"}
 
 
 var role_clips: PackedStringArray = PackedStringArray()
