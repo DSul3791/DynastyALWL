@@ -2314,7 +2314,7 @@ func drink_spot(from: Vector3, reach: float) -> Array:
 
 			var stand: Vector3 = wet
 
-			for _step in int(ceil(ring_m / 2.0)) + 1:
+			for _hop in int(ceil(ring_m / 2.0)) + 1:
 				stand -= dir * 2.0
 
 				if not _fresh_wet(stand.x, stand.z):
