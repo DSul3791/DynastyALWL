@@ -12,7 +12,7 @@ static var on: bool = AppConfig.has_flag("frozen-water")
 const OPEN_DEPTH_M := 3.0          # the deep water's cover: today's Ice.cover depth (terrain_client ICE_POND_DEPTH_M)
 const SHORE_DEPTH_M := 1.0         # the shallows' cover: the shallowest depth ice.gd tells apart (2-day water lag, faster growth)
 const THAW_FROM_PEAK := 0.125      # a thaw counts once the last 30 days held at least this cover (2.5 cm)
-const SPRING_ABOVE_MEAN_C := 0.0   # spring water comes out at the year's mean (Jamie #739: 5.5 C at #8002; Steve's #719 said mean + 1)
+const SPRING_ABOVE_MEAN_C := 0.0   # spring water comes out at the year's mean (Jamie #739; about 10.7 C at #8002 from the grid row's 14.2 C, #717 row 21)
 const SPRING_LAMBDA_M := 840.0     # one lambda = rho c Q / (h W) for every spring: gives Sonny's worked example, 810 m on a -4 C night at 6.5 C
                                    # (Jamie #739: about 440 m x sqrt(L/s) at -5 C calm, x1.8 at -2, x0.6 at -10, x0.4 at -15; this log rule gives the same ratios)
 const SPRING_BREEZE := [0.3, 0.5]  # wind (0..1) over which the open length halves (Jamie #739: halve in a breeze; h doubles)

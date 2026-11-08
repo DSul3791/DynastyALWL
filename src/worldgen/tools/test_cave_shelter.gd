@@ -67,7 +67,7 @@ func _init() -> void:
 	items.cave_mean_c = func(p): return WeatherScript.year_mean_c("temperate", p.y)
 	var inside: float = items.warmth_target(1)
 	var mean_here: float = WeatherScript.year_mean_c("temperate", cave_spot.y)
-	check(absf(mean_here - 5.5) < 0.1, "the starter island's cave air at 533 m is about 5.5 C (%.1f; Jamie #664: 5.5 to 6.5)" % mean_here)
+	check(absf(mean_here - 10.7) < 0.1, "the starter island's cave air at 533 m is about 10.7 C, the year mean from the grid row (%.1f; #717 row 21)" % mean_here)
 	check(inside > outside + 10.0, "in the cave it is far warmer than out in the storm (%.0f inside, %.0f outside)" % [inside, outside])
 	items._soak[1] = 0.0
 	weather["temp_c"] = 25.0   # a hot afternoon outside changes nothing in the cave
@@ -86,7 +86,7 @@ func _init() -> void:
 	var old_pool: float = items.warmth_target(1)
 	items.cave_mean_c = keep_cave
 	items.insulation_of = keep_insulation
-	check(pool > old_pool, "a cave pool at the year mean (5.5 C) is less cold than the old 2 C (%.0f against %.0f)" % [pool, old_pool])
+	check(pool > old_pool, "a cave pool at the year mean (about 10.7 C) is less cold than the old 2 C (%.0f against %.0f)" % [pool, old_pool])
 	items._swimming[1] = false
 	items.set_cave_pool(1, false)
 
