@@ -43,6 +43,25 @@
    - **Our sums:** that is about 7 to 12 cycles of 100 kyr.
    - **Norway** (Geological Society of Norway, "The making of a land", ch. 15): more than 40 glaciations in all, with "almost 50" smaller ones between 2.6 Ma and 0.9 Ma. Local mountain glaciers were present for about 1.2 Myr in total of the last 2.6 Myr. Sognefjorden was cut to 2,000 m depth over repeated glaciations.
 
+7. **The 41 kyr world was milder and more even than the 100 kyr world. Its cirques spent much of their time with glaciers in them.**
+   - **Symmetric and small:**
+     - early Pleistocene cycles "appear symmetric with smaller ice volumes and a period of 41 kyr" (PAGES Magazine);
+     - before 2.5 Myr, the rates of ice growth and melt were "nearly identical". After that, melt got faster than growth, "eventually creating the pronounced saw-tooth shape of late Pleistocene glacial cycles" (Lisiecki and Raymo 2007);
+     - the 41 kyr cycles had "low-amplitude, thin ice sheets" (Wikipedia, Mid-Pleistocene Transition).
+   - **In between most of the time:**
+     - "For most of Quaternary time, environments were intermediate in character". Under these average conditions, mountain glaciers had a snowline about 500 m below today's (Porter 1989);
+     - Porter names Pacific Northwest cirques as landforms of such average conditions rather than full glacials.
+   - **Mountain glaciers in Norway** were present for about 1.2 Myr in total over 2.6 Myr (lesson 6). That is 46% of the time, across both worlds.
+
+8. **Poleward- and lee-facing cirques sit lower: about 110 to 220 m between the best and worst aspect.**
+   - In the Făgăraş Mountains (Romania), cirques facing NNW are 113 m lower than those facing SSE (Barr and Spagnolo 2015).
+   - In SW British Columbia, predicted north to south cirque floor differences are 194 m in the Bendor Range and 220 m in the Cayoosh Range (Evans 2006, cited by Barr and Spagnolo 2015).
+   - In Kamchatka:
+     - cirques facing SSE are "typically 163 m higher than those facing NNW";
+     - modern glacier mid-altitudes are 190 m lower facing 311° (NW) than facing 131° (SE);
+     - aspect explains only a small part of the spread, r² = 0.03 (Barr and Spagnolo 2015, Kamchatka).
+   - The best aspect is north to north-east in the northern hemisphere. Shade adds to snow blown over onto the lee of the westerlies (`snow-on-slopes.md`).
+
 ## What this means for the pyramid-peak rule and B2 (our sums and judged)
 
 ### Headwall retreat rate (B2)
@@ -60,6 +79,23 @@ If B2 is a rate during active cirque glaciation, 1 mm a year in granite is at th
 
 - **Judged: about 30 to 50 kyr per cycle.** Cirque glaciers live in the build-up and decay phases. Under the full ice sheet, cirques barely grow.
 - **Our sums:** Lochnagar's 400 kyr of active glaciation divided by 30 to 50 kyr per cycle is about 8 to 13 cycles. That fits the 7 to 12 cycles of 100 kyr since the Mid-Pleistocene Transition.
+
+### Rule 6 settings: the 41 kyr world and aspect (judged, for Sonny's `docs/water/rule6_build_plan.md`)
+
+| Setting | Sonny's plan | Judged range | Suggested | Why |
+|---|---|---|---|---|
+| 41 kyr world: active cirque ice per cycle | 16.4 kyr (40%) | 35 to 50% (14 to 20 kyr) | **16.4 kyr (40%)**, keep | The cycles were symmetric and mostly in between (lesson 7), so cirques were busy for a large share. Norway's 46% of time with mountain glaciers is the high-latitude top. A mid-latitude island sits a little under it. |
+| 41 kyr world: interglacial (rivers only, cirques empty) | 4.8 kyr | 4 to 8 kyr (10 to 20%) | **4.8 kyr**, keep | Scaling the Holocene's share (about 12% of 100 kyr) is fair. The warm halves of a symmetric cycle are as long as the cold halves, but early interglacials had less CO2 (Wikipedia, MPT), so the time warm enough to empty cirques was not longer. |
+| 41 kyr world: snowline offset | +100 m | +100 to +200 m | **+150 m** | The ice sheets were thinner and the glacials milder (lesson 7). But the cirque-glacier snowline follows average conditions, not the extreme glacial peak. So the offset is smaller than the difference in ice volume suggests. |
+| Snowline difference, NE face against SW face | 200 m (`aspect_ela_m` 100) | 110 to 220 m | **150 m, so `aspect_ela_m` 75** | The sourced range is 113 to 220 m (lesson 8). 150 m is the middle. Sonny's 200 m is near the top, which is the BC Coast Mountains with strong lee snow. A windy maritime island could justify the top. |
+
+- **Our sums for the whole history**, at the suggested values:
+  - total active ice stays about 1.04 Myr (39 × 16.4 + 10 × 40 kyr);
+  - at 0.5 to 1.0 mm a year, that is 0.5 to 1.0 km of headwall retreat, the same as in Sonny's plan;
+  - a snowline 150 m higher in the 41 kyr world shrinks the cirques' reach downhill by about 150 m for 39 of the 49 cycles. Cirque floors that sit within 150 m of the 100 kyr snowline then get only the 100 kyr world's 400 kyr.
+- **Check after the run:**
+  - the NE to SW headwall retreat ratio should come out at 1.5 to 2 (the "Where" line below);
+  - NE cirque floors should sit about 100 to 200 m below SW ones.
 
 ### How far a headwall must retreat to make a horn
 
@@ -110,3 +146,8 @@ A horn forms when three or more headwalls close in until only a pyramid is left.
 - BGS Earthwise, Quaternary and Recent geology of the Isle of Skye: https://earthwise.bgs.ac.uk/index.php/Quaternary_and_Recent_geology_of_the_Isle_of_Skye
 - Wikipedia, Mid-Pleistocene Transition: https://kiwix.lema.org/wikipedia_en_all_mini_2024-02/A/Mid-Pleistocene_Transition
 - Geological Society of Norway, The making of a land, chapter 15: https://foreninger.uio.no/ngf/boka-engelsk/chapter_15_2korr.pdf
+- PAGES Magazine, Interglacials of the 41 kyr-world and the Middle Pleistocene Transition: https://pastglobalchanges.org/publications/pages-magazines/pages-magazine/137256
+- Lisiecki, L. E. and Raymo, M. E. (2007), Plio-Pleistocene climate evolution: trends and transitions in glacial cycle dynamics: https://lorraine-lisiecki.com/LisieckiRaymo2007.pdf
+- Porter, S. C. (1989), Some geological implications of average Quaternary glacial conditions, Quaternary Research: https://www.cambridge.org/core/journals/quaternary-research/article/some-geological-implications-of-average-quaternary-glacial-conditions/5048813FCD39A87FE2A642564A719EFF
+- Barr, I. D. and Spagnolo, M. (2015), Glacial cirques as palaeoenvironmental indicators: their potential and limitations: https://e-space.mmu.ac.uk/619051/1/Barr%20and%20Spagnolo%20%25282015%2529%20(1).pdf
+- Barr, I. D. and Spagnolo, M. (2015), Understanding controls on cirque floor altitudes: insights from Kamchatka: https://pureadmin.qub.ac.uk/ws/files/16333142/understanding_controls.pdf
