@@ -6314,8 +6314,9 @@ func _raw_hours(item_id: String) -> float:
 func _raw_sickness(peer: int, item_id: String) -> void:
 	var hours: float = _raw_hours(item_id)
 	var odds: Dictionary = _infection_cfg().get("odds", {})
+	var known_harm: bool = str(tried_of(peer).get(item_id, "")) == "harm"     # a known harm costs the full sickness at once (ruling 8 Nov, row 26)
 
-	if hours > 0.0 and odds.has(item_id) and not (not tried_of(peer).has(item_id) and grace_of(peer) > 0.0):
+	if hours > 0.0 and odds.has(item_id) and not known_harm and not (not tried_of(peer).has(item_id) and grace_of(peer) > 0.0):
 		_infect(peer, item_id, hours, float(odds[item_id]))
 	elif hours > 0.0:
 		_harm_bite(peer, item_id, hours, "That should have been cooked. Your stomach turns.")
