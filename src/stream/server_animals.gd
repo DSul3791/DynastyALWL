@@ -11,6 +11,7 @@ const BigGameScript := preload("res://src/stream/server_big_game.gd")
 const ThievesScript := preload("res://src/stream/server_thieves.gd")
 const FlocksScript := preload("res://src/stream/server_flocks.gd")
 const GoblinsScript := preload("res://src/stream/server_goblins.gd")
+const CompanionsScript := preload("res://src/stream/server_companions.gd")
 
 const GRAZE := 0
 const HOP := 1
@@ -52,6 +53,7 @@ var _lair_state: Dictionary = {}   # mouth "x,z" -> {"made": a group has been ma
 var lair_path: Callable              # (mouth x, z) -> PackedVector3Array: the cave floor path from that den mouth to the den (tile goblin_den_paths), empty when none
 var berry_bushes: Callable           # (Vector3, radius) -> PackedVector3Array: standing berry plants near a point, from flora chunks already made (goblins forage at them)
 var goblins = null                   # den life (server_goblins.gd): species with a "den_life" row sleep in the cave by day, watch fires and forage at night
+var companions = null                # companions (server_companions.gd): the stray a player befriends with food, then their dog (Dave 8 Nov 2026, decisions 5 and 6)
 var lair_mouths: Callable             # (x, z) -> PackedVector2Array: the cave mouths (world x, z) of the tile there; species with a "lair" row spawn their groups at them (goblins, Dave 7 Nov 2026)
 var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
 var traits: bool = true            # temperaments and young (Dave 6 Nov 2026); seeded tests that predate them turn this off, so every animal is born "defensive" with no young
@@ -101,6 +103,8 @@ func setup() -> void:
 	goblins = GoblinsScript.new()
 	goblins.host = self
 	goblins.trust.cfg = species_def("goblin").get("ally", {})
+	companions = CompanionsScript.new()
+	companions.host = self
 
 
 func species_def(sp: String) -> Dictionary:
@@ -458,6 +462,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 	var a: Dictionary = animals[id]
 
+	if companions != null and companions.owned_by(a, source_peer):
+		return false   # its owner's blow does nothing to their own companion
+
 	# A flock is one record: a hit that lands kills one bird (its carcass lies where it floats), the rest take off.
 	if species_def(a["sp"]).has("flock"):
 		a["birds"] = int(a.get("birds", 8)) - 1
@@ -479,6 +486,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 	if a["hp"] <= 0.0:
 		animals.erase(id)
+
+		if companions != null and companions.handles(a):
+			companions.died(a)   # a companion's record keeps its death; a stray's player can win another
 
 		if a.has("loot") and drop_loot.is_valid():
 			drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])
@@ -617,6 +627,9 @@ func snare(id: int) -> bool:
 
 	var a: Dictionary = animals[id]
 
+	if a.has("companion_id"):
+		return false   # a companion steps over snares
+
 	if species_def(str(a["sp"])).has("flock"):
 		a["birds"] = int(a.get("birds", 8)) - 1
 
@@ -732,12 +745,14 @@ func tick(delta: float) -> void:
 			gone.append(id)
 			continue
 
+		var kept: bool = a.has("companion_id")   # a companion stays with its owner: never frozen, never sent off for the hour (server_companions)
+
 		# An animal whose hours are over (a songbird at night, a boar at noon: its activity chance is at most off_hours_chance) leaves once no player is close to it.
-		if near_d > float(cfg.get("off_hours_despawn_m", 80.0)) and hour_now.is_valid() and activity_chance(species_def(str(a["sp"]))) <= float(cfg.get("off_hours_chance", 0.05)):
+		if not kept and near_d > float(cfg.get("off_hours_despawn_m", 80.0)) and hour_now.is_valid() and activity_chance(species_def(str(a["sp"]))) <= float(cfg.get("off_hours_chance", 0.05)):
 			gone.append(id)
 			continue
 
-		if near_d > active_r:
+		if near_d > active_r and not kept:
 			a["acc"] = 0.0
 			continue   # frozen: nothing runs until a player comes within active_radius_m
 
@@ -761,6 +776,9 @@ func tick(delta: float) -> void:
 		if trails != null:
 			trails.forget(id)
 
+		if companions != null and companions.handles(animals[id]):
+			companions.forget(animals[id])   # its record stays; a live one is made again beside its owner
+
 		if animals[id].has("loot") and goblins != null and species_def(str(animals[id]["sp"])).has("den_life"):
 			goblins.stash(animals[id])   # a goblin dropped with no player near is taken to have got home: its loot goes on the den pile
 
@@ -771,6 +789,9 @@ func tick(delta: float) -> void:
 
 	if goblins != null:
 		goblins.trust.tick(delta)
+
+	if companions != null:
+		companions.tick(delta)
 
 	if wolves != null and not wolves.packs.is_empty() or (wolves != null and bool(wolves.cfgw().get("natural", false))):
 		wolves.tick(delta)
@@ -834,6 +855,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	if def.has("thief") and thieves.handles(a):
 		thieves.step(a, dt)
+		return
+
+	if companions != null and companions.handles(a):
+		companions.step(a, dt)   # a stray near the town, or a player's dog: its own step (no wild fear, defence or bleeding)
 		return
 
 	# Den life (goblins): in the cave it moves only along the cave path, warnings included; at night on the surface it may watch a fire or forage.

@@ -44,6 +44,7 @@ Where a number still needs a source, the cell names it.
 |---|---|---|---|---|
 | Creature models (bought rigged animals: install, check, clips, sizes) | [creature-models.md](creature-models.md) | 2026-11-07 | MikeW | Own work |
 | Torch and campfire light in fog, rain and snow (reach, veil, halos, lit rain and snow, light over snow) | [firelight-in-weather.md](firelight-in-weather.md) | 2026-11-08 | Kathleen | Mixed: the reach table, fog reach, extra reach over snow and flame colours are judged; moon and snow albedo not checked |
+| Moonlight and starlight (night lux by moon phase and height, starlight, overcast, torch falloff by distance, twilight, colour at night, snow) | [moonlight-starlight.md](moonlight-starlight.md) | 2026-11-08 | Kathleen (night light), MikeW (eye shine) | Mostly sourced: lux values sourced; game falloff judged |
 | Water in Godot (the simulation decides where water is; rivers, brooks, lakes, falls, flow, float precision, what other games do, Sonny's water plan) | [water.md](water.md) | 2026-11-06 | Sonny | Own work; methods sourced |
 | Sea and shore (tides, waves by fetch, surf zone by beach slope, swash, wrack line, salt spray, shore ice) | [sea-and-shore.md](sea-and-shore.md) | 2026-11-08 | Sonny, Kathleen (look) | Mixed: tide range, fetch and swell, wrack width, spray reach and wet-line drying are judged |
 | Water clarity after rain (turbidity recovery, settling times, peat colour) | [water-clarity-after-rain.md](water-clarity-after-rain.md) | 2026-11-08 | Kathleen, Sonny | Mixed: the clearing half-lives, peat colour fade and snowmelt pulse are judged |
@@ -56,6 +57,7 @@ Where a number still needs a source, the cell names it.
 | Torches and fire (torch item, rain douse, relight, the simple fire rule, light count, carry pose) | [torches-fire.md](torches-fire.md) | 2026-11-06 | Sal (thread closed), Kathleen (poses) | Game values |
 | Fire outdoors (wood moisture and drying, rain on fires, embers, wind, smoke drift and plume height, burn rates) | [fire-outdoors.md](fire-outdoors.md) | 2026-11-08 | Kathleen (look), Steve (rules) | Mixed: fuel drying classes, green wood heat and plume rise sourced; rain on fire by size, ember times and the wet-wood rule judged |
 | Wind over terrain (crest speed-up, lee shelter, gaps, night drainage, gusts, how trees, grass, smoke, flags and sound read the wind) | [wind-over-terrain.md](wind-over-terrain.md) | 2026-11-08 | Kathleen (look), MikeW (animals) | Mixed: the wind 0 to 1 to m/s mapping and most look numbers (sway, grass bend, smoke tilt, gust timing) are judged |
+| Trees in weather (crown sway by wind force, branch break, windthrow and wet soils, leaf fall, snow on trees, canopy drip and shelter) | [trees-in-weather.md](trees-in-weather.md) | 2026-11-08 | Kathleen (look, sound), MikeW, Steve (cover) | Mixed: sourced lessons, judged game tables |
 | Warmth and weather (cold, rain, wet, drying, fire heat) | [warmth-weather.md](warmth-weather.md) | 2026-11-06 | Steve | Game values |
 | Soils and ground wetness (infiltration by soil, puddle drain times, peat and clay waterlogging, frost heave, mud season) | [soils-ground-wetness.md](soils-ground-wetness.md) | 2026-11-08 | Sonny (record), Kathleen (puddles) | Mostly sourced: the wetness class for each soil, frost heave size and mud-season walking speed are judged |
 | Snow on slopes (wind drift and scour, cornices, melt order by aspect, last patches) | [snow-on-slopes.md](snow-on-slopes.md) | 2026-11-08 | Sonny, Kathleen | Mixed: the drift factors, cornice size and snow_off delays by aspect are judged |
@@ -66,6 +68,7 @@ Where a number still needs a source, the cell names it.
 | Cirques and horns (headwall retreat rates, granite, how many glacial cycles make a horn, rule 6 settings) | [cirques-and-horns.md](cirques-and-horns.md) | 2026-11-08 | Sonny | Sourced: the rule 6 settings are judged middles of sourced ranges |
 | Upland streams (stream density, bankfull flood ratio, Hey and Thorne widths, waterfalls, wave limit on deltas) | [upland-streams-numbers.md](upland-streams-numbers.md) | 2026-11-08 | Sonny | Mostly sourced: still needs the Hey and Thorne depth equation checked, stream density on permeable rock, and an upland sand yield |
 | Contradictions between pages and with the code, and which to follow | [CONTRADICTIONS.md](CONTRADICTIONS.md) | 2026-11-08 | Jamie | Audit |
+| Specific yield by rock type (granite, basalt, karst and other limestone, sandstone, shale, chalk, till, sand and gravel, peat; for spring stores and Rorabaugh recession) | [specific-yield.md](specific-yield.md) | 2026-11-08 | Sonny (springs, watershed) | Mostly sourced: a few rock types judged |
 
 ### Most wanted sources
 
