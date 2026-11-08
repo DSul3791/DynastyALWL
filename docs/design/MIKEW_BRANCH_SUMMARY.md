@@ -59,8 +59,8 @@ PR 1 (#596) is `claude/mikew-eyeshine`; PR 2, the wet look, is `claude/mikew-wet
 | 17 | `claude/mikew-pr19-prevailing-wind` | `claude/mikew-pr18-fog` | 4f8ec2e69ad49b01ee30e0027288ce56e855bb72 | m53 |
 | 18 | `claude/mikew-pr20-cave-air` | `claude/mikew-pr19-prevailing-wind` | 6d0bd51c5ada81e4f41aff966f684a848addea95 | m54 |
 | 19 | `claude/mikew-pr21-drinking` | `claude/mikew-pr20-cave-air` | 02bb33881a6bbb67f95df722cf443dccc480eff3 | m55 |
-| 20 | `claude/mikew-pr22-ice-snow` | `claude/mikew-pr21-drinking` | 93d9503ceb93eee19e55c3116e8c2e6e04e6025f | m56 |
-| 21 | `claude/mikew-pr23-thunder` | `claude/mikew-pr22-ice-snow` | 1a2560ca9f47b44c5d56e6c2a46c2aaa2de7f26a | m57 |
+| 20 | `claude/mikew-pr22-ice-snow` | `claude/mikew-pr21-drinking` | 4036e022d5c39425f32e99605c3629301736cae9 | m56 |
+| 21 | `claude/mikew-pr23-thunder` | `claude/mikew-pr22-ice-snow` | 16167916c71c8324403a315c6b9fd31963998e19 | m57 |
 | 22 | `claude/mikew-pr24-pose-library` | `claude/mikew-pr23-thunder` | (this commit; reported in the thread) | m58 |
 
 12b and 12c hold the cross-cutting passes that came after PR 12 in time (the cost pass and kill switch, the self review, then Weather.air_c,
