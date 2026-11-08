@@ -4722,7 +4722,7 @@ func run_text_test(client) -> void:
 		for slot in range(mini(_buttons.size(), inventory.SLOTS)):
 			valid = valid and is_instance_valid(_buttons[slot]) and _buttons[slot].get_parent() == _grid
 
-			if inventory.numbers[slot] != 0 and _buttons[slot].text == "":
+			if inventory.numbers[slot] != 0 and _buttons[slot].is_empty():   # an item slot (item_slot.gd) shows its stack, not text
 				filled_ok = false
 
 		await get_tree().process_frame
@@ -4738,7 +4738,7 @@ func run_text_test(client) -> void:
 
 		# Every slot that holds something must show it after each press.
 		for slot in range(inventory.SLOTS):
-			if inventory.numbers[slot] != 0 and valid and _buttons[slot].text == "":
+			if inventory.numbers[slot] != 0 and valid and _buttons[slot].is_empty():
 				filled_ok = false
 
 		for mode in [1, 2, 3, 4, 5, 0]:
