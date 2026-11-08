@@ -23,6 +23,7 @@
 	"server_cap": 150,
 	"species": {
 		"rabbit": {
+			"dog": {"notice_m": 30.0, "flee_m": 20.0, "reaction": "flee"},
 			"number": 1,
 			"weather": "small",
 			"name": "Rabbit",
@@ -74,6 +75,7 @@
 			}
 		},
 		"deer": {
+			"dog": {"notice_m": 60.0, "flee_m": 40.0, "reaction": "flee"},
 			"number": 2,
 			"weather": "deer",
 			"name": "Deer",
@@ -231,6 +233,7 @@
 			}
 		},
 		"moose": {
+			"dog": {"notice_m": 30.0, "flee_m": 20.0, "reaction": "stand", "young_only": true, "attack_m": 12.0},
 			"number": 4,
 			"weather": "deer",
 			"name": "Moose",
@@ -331,6 +334,7 @@
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"fox": {
+			"dog": {"notice_m": 25.0, "flee_m": 15.0, "reaction": "flee"},
 			"number": 5,
 			"weather": "hunter",
 			"name": "Fox",
@@ -561,6 +565,7 @@
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"boar": {
+			"dog": {"notice_m": 25.0, "reaction": "stand", "attack_m": 8.0},
 			"number": 8,
 			"name": "Boar",
 			"target_per_player": 2,
@@ -927,6 +932,7 @@
 			}
 		},
 		"bear": {
+			"dog": {"notice_m": 30.0, "reaction": "stand", "attack_m": 10.0},
 			"number": 14,
 			"weather": "hunter",
 			"name": "Brown bear",
@@ -1082,6 +1088,7 @@
 				"steal_share": 0.4,
 				"steal_reach_m": 150.0,
 				"steal_scare_m": 8.0,
+				"dog_back_m": 20.0, "dog_back_step_m": 5.0, "dog_back_s": [4.0, 8.0], "dog_back_note": "MikeW's DOG_REACTIONS.md (dog_companion_design.md 11): a barking dog within dog_back_m makes a goblin step back dog_back_step_m, face it and hold dog_back_s; two barking dogs make it flee; a silent dog does nothing.",
 				"sneak_mps": 1.0,
 				"carry_mps": 4.5,
 				"steal_again_s": 120.0,
@@ -1345,6 +1352,7 @@
 			"note": "Dave 7 Nov 2026 (add all the animals we have models for), batch 1. A lynx is a shy night hunter of boreal and mixed forest and alpine meadow (FAUNA_BY_BIOME rarity 4): it keeps well away from a player, bites one who corners it. Fox movement numbers, bigger and rarer."
 		},
 		"black_bear": {
+			"dog": {"notice_m": 30.0, "reaction": "stand", "attack_m": 10.0},
 			"number": 18,
 			"weather": "hunter",
 			"name": "Black bear",
@@ -1447,6 +1455,7 @@
 			"note": "Dave 7 Nov 2026, batch 1. A black bear is smaller and shyer than the brown bear and has no den: it wanders forest and berry ground, runs from a player at spook_m, charges only one who gets close or corners it."
 		},
 		"elk": {
+			"dog": {"notice_m": 60.0, "flee_m": 40.0, "reaction": "flee"},
 			"number": 19,
 			"weather": "deer",
 			"name": "Elk",
@@ -1900,6 +1909,7 @@
 			"note": "Dave 7 Nov 2026 (add all the animals we have models for), batch 2. A chamois is a small, quick goat-antelope of alpine meadow and the steep rock above the tree line, in small groups; it bolts uphill at the first sight of a player. Mountain goat numbers, lighter and faster."
 		},
 		"mink": {
+			"dog": {"notice_m": 25.0, "flee_m": 15.0, "reaction": "flee"},
 			"number": 24,
 			"weather": "small",
 			"name": "Mink",
@@ -1975,6 +1985,7 @@
 			"note": "Dave 7 Nov 2026, batch 2. A mink is a small dark hunter of river banks and marsh edges, mostly at dusk and night; it slips away from a player and bites only one who corners it. Fox numbers, much smaller, kept to the water edge; it does not swim or steal in this version."
 		},
 		"raccoon": {
+			"dog": {"notice_m": 25.0, "flee_m": 15.0, "reaction": "flee"},
 			"number": 25,
 			"weather": "small",
 			"name": "Raccoon",
@@ -2264,6 +2275,7 @@
 			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger; it does not fly in this version."
 		},
 		"cow": {
+			"dog": {"notice_m": 30.0, "flee_m": 20.0, "reaction": "stand", "young_only": true, "attack_m": 12.0},
 			"number": 30,
 			"weather": "stock",
 			"name": "Cow",
@@ -2836,6 +2848,7 @@
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). A puma is a big, solitary mountain cat of forest edge, alpine meadow and rock, active at dusk and night; it keeps away from a player but charges one who comes close or corners it. Lynx numbers, bigger and more dangerous; rarity 4."
 		},
 		"pronghorn": {
+			"dog": {"notice_m": 60.0, "flee_m": 40.0, "reaction": "flee"},
 			"number": 37,
 			"weather": "deer",
 			"name": "Pronghorn",
@@ -2937,6 +2950,7 @@
 			"spawn_share": 0.3
 		},
 		"warthog": {
+			"dog": {"notice_m": 25.0, "reaction": "stand", "attack_m": 8.0},
 			"number": 38,
 			"name": "Warthog",
 			"target_per_player": 2,
@@ -4050,6 +4064,12 @@
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). A tiger is the biggest of the cats: solitary, in deep forest and marsh edge, out at dusk and night; it keeps away but attacks one who comes close or corners it. Leopard numbers, much bigger and stronger, forest instead of savanna."
 		}
 	},
+	"dogs": {
+		"note": "A player's companion dog as a presence for wild animals (dog_companion_design.md 11; MikeW, docs/design/DOG_REACTIONS.md): species rows with a dog block react to it; a dog that barked within bark_s is sensed bark_x farther.",
+		"species": ["dog"],
+		"bark_s": 3.0,
+		"bark_x": 2.0
+	},
 	"weather": {
 		"note": "Steve 8 Nov 2026 (docs/design/animals_in_weather_design.md, step 1; research docs/knowledge/animals-in-weather.md, Jamie): weather tilts behaviour by a species row's weather role (deer, stock, small, bird, hunter). Wind: jumpy roles spook and alert up to wind_spook_max times farther by wind_spook_at; small animals lose small_wind_cut of their activity above small_wind_from and small_wind_cut_high above small_wind_high, and go down their burrows that often; hunters hunt hunter_wind_x more; deer and hunters wander into the wind (upwind_share, within upwind_spread_deg) below gale_from. A storm (storm_from) or snowfall (snowfall_from) cuts activity to storm_activity_x and wander to storm_wander_x. A storm in any of ahead_hours (sampled every ahead_every_s real seconds) makes birds, small animals and deer feed ahead_feed_x more and skip their daytime rest. Mist cuts sight by mist_sight and spook by mist_spook.",
 		"on": true,
@@ -4136,6 +4156,7 @@
 	},
 	"wolves": {
 		"natural": false,
+		"dog_prey": true, "dog_bite": 25.0, "dog_bite_s": 1.0, "dog_note": "MikeW's DOG_REACTIONS.md (dog_companion_design.md 11): a pack goes for a player's dog within distract_m before any deer, and bites it dog_bite every dog_bite_s through the damage hook.",
 		"town_keep_m": 1200.0,
 		"pups": {
 			"note": "Dave 8 Nov 2026, decisions 3 and 4 (docs/design/wolf_packs_and_pups_design.md). A natural pack made between day-of-year days[0] and days[1] has count pups at its den (sent as young, hp_x of a wolf's health). They stay within play_m of the den and play by day; a player within hide_m who stands or moves sends them into the den. A player within guard_m of the den while the pack is alive: the pack comes home and warns for warn_s, then rushes one still within rush_m, torch or not (a campfire and a second player still hold it). A killed pack's pups are orphans for orphan_days game days (the den gets no new pack meanwhile); town_keep_m: no pack den this near the town point.",
