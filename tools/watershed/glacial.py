@@ -167,6 +167,8 @@ def main():
     CH = E['channel_head']
     theta = float(CH['slope_exponent'])
     c_ch = float(CH['area_m2_at_ref_slope']) * float(CH['ref_slope']) ** theta
+    a_min = float(CH.get('min_area_m2', 0.0))
+    ones = np.ones(N)
     Sc, sc_rock = evolve.slope_limits(g, E)        # threshold slopes by rock, as in B1
     frame = np.zeros((n, n), bool); frame[0, :] = frame[-1, :] = frame[:, 0] = frame[:, -1] = True
     fixed = (sea == 1) | frame.ravel()
@@ -199,7 +201,7 @@ def main():
         water = np.maximum(rain_mm - et_cold - np.maximum(p_ice, 0.0), 0.0)
         water = water + np.maximum(-p_ice, 0.0) * (Ai > 0.0)   # melt reaches the rivers only where there is ice to melt
         Qw = evolve._discharge(order, rec, sea, water / q_ref, cell, N)
-        share = evolve._channel_share(Qw, surf, rec, order, sea, n, dx, c_ch, theta)
+        share = evolve._channel_share(Qw, evolve._discharge(order, rec, sea, ones, cell, N), surf, rec, order, sea, n, dx, c_ch, theta, a_min)
         ery = ery_fn(h)                                # the top layer, cover where there is any: creep moves it
         ery_rock, ery_cov, cov = ery_fn.parts(h)       # ice and water strip the loose cover first, then cut the rock (evolve._solve)
         Qwi = np.where(Qw > 0.0, Qw, cell)
@@ -245,7 +247,7 @@ def main():
     dtp = float(GL['post_glacial_dt'])
     psteps = max(int(round(float(GL['post_glacial_years']) / dtp)), 1)
     for s in range(psteps):
-        change, flux, _ = evolve.river_step(h, sea, n, dx, dtp, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, sc_rock, deposit,
+        change, flux, _ = evolve.river_step(h, sea, n, dx, dtp, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, a_min, Sc, sc_rock, deposit,
                                          fixed)
         deposit = np.maximum(deposit + change, 0.0)
     print(f'post-glacial {psteps} steps done, t {time.time() - t0:.0f} s', flush=True)
@@ -255,7 +257,7 @@ def main():
     rid = rock.rock_ids(g, h)
     wb = runoff.budget(rain_mm, rid, bfi, W)
     Q = evolve._discharge(order, rec, sea, wb['quick'] / q_ref, cell, N)
-    share = evolve._channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
+    share = evolve._channel_share(Q, evolve._discharge(order, rec, sea, ones, cell, N), h, rec, order, sea, n, dx, c_ch, theta, a_min)
     area = evolve._discharge(order, rec, sea, np.ones(N), cell, N)
     pit = filled - h
     # Hollows with what made them (R3 names the lake causes from these): a floor the ice cut by more than scour_m (a

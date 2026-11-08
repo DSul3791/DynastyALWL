@@ -2,7 +2,8 @@
 
 Usage (on Dave's PC):
   python tools/watershed/plots.py ground OUT_DIR      # redraws OUT_DIR/evolve.png from OUT_DIR/ground.npz (stage B1)
-  python tools/watershed/plots.py glacial OUT_DIR     # redraws OUT_DIR/glacial.png from OUT_DIR/glacial.npz (stage B2)"""
+  python tools/watershed/plots.py glacial OUT_DIR     # redraws OUT_DIR/glacial.png from OUT_DIR/glacial.npz (stage B2)
+  python tools/watershed/plots.py zoom OUT_DIR X Z [SIZE_M]   # OUT_DIR/zoom_X_Z.png: a SIZE_M square (default 6 km) at 16 m"""
 import sys
 import numpy as np
 
@@ -99,8 +100,46 @@ def glacial_picture(npz_path, png_path):
     plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
 
 
+def zoom_picture(npz_path, png_path, x_m, z_m, size_m=6000.0):
+    """A close look at full resolution (one pixel per 16 m cell): a size_m square centred on world x_m, z_m, as a hillshade
+    with the rivers (quick-runoff area 5 ha and more), the landform beside it and the slope. The overview pictures are about
+    100 m a pixel, too coarse to tell branching valleys from straight parallel gullies; this shows which the ground has."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource
+    d = np.load(npz_path)
+    dx = float(d['cell_m']); ox = float(d['origin_x']); oz = float(d['origin_z'])
+    n = d['ground'].shape[0]
+    half = int(round(size_m / dx / 2.0))
+    ci = int(round((x_m - ox) / dx)); cj = int(round((z_m - oz) / dx))
+    i0, i1 = max(ci - half, 0), min(ci + half, n); j0, j1 = max(cj - half, 0), min(cj + half, n)
+    win = (slice(j0, j1), slice(i0, i1))
+    g = d['ground'].astype(np.float64)[win]; s0 = d['start'].astype(np.float64)[win]; land = ~d['sea'].astype(bool)[win]
+    ls = LightSource(315, 40)
+    fig, ax = plt.subplots(1, 3, figsize=(30, 10.5))
+    ext = (ox + i0 * dx, ox + i1 * dx, oz + j1 * dx, oz + j0 * dx)
+    for a, z, t in ((ax[0], s0, 'landform (start)'), (ax[1], g, 'ground, rivers 5 ha and more')):
+        a.imshow(np.where(land, ls.hillshade(np.where(land, z, 0.0), vert_exag=2, dx=dx, dy=dx), np.nan), cmap='gray', vmin=0, vmax=1,
+                 extent=ext)
+        a.set_title(f'{t}, max {z[land].max():.0f} m' if land.any() else t)
+    if 'quick_area_m2' in d.files:
+        q = d['quick_area_m2'].astype(np.float64)[win]
+        riv = np.where(land & (q >= 5e4), np.log10(np.maximum(q, 5e4)), np.nan)
+        ax[1].imshow(riv, cmap='Blues', vmin=4.0, vmax=float(np.nanmax(riv)) if np.isfinite(riv).any() else 8.0, extent=ext)
+    gy, gx = np.gradient(g, dx)
+    im = ax[2].imshow(np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), np.nan), cmap='magma', vmin=0, vmax=50, extent=ext)
+    ax[2].set_title('slope (deg)'); fig.colorbar(im, ax=ax[2], shrink=0.7)
+    fig.suptitle(f'{size_m / 1000:.1f} km round x {x_m:.0f}, z {z_m:.0f} (world metres)')
+    fig.tight_layout(); fig.savefig(png_path, dpi=60); plt.close(fig)
+
+
 if __name__ == '__main__':
-    if len(sys.argv) == 3 and sys.argv[1] == 'ground':
+    if len(sys.argv) >= 5 and sys.argv[1] == 'zoom':
+        # python plots.py zoom RUN_DIR X Z [SIZE_M]: writes RUN_DIR/zoom_<x>_<z>.png
+        x_, z_ = float(sys.argv[3]), float(sys.argv[4])
+        zoom_picture(f'{sys.argv[2]}/ground.npz', f'{sys.argv[2]}/zoom_{x_:.0f}_{z_:.0f}.png', x_, z_,
+                     float(sys.argv[5]) if len(sys.argv) > 5 else 6000.0)
+    elif len(sys.argv) == 3 and sys.argv[1] == 'ground':
         ground_picture(f'{sys.argv[2]}/ground.npz', f'{sys.argv[2]}/evolve.png')
     elif len(sys.argv) == 3 and sys.argv[1] == 'glacial':
         glacial_picture(f'{sys.argv[2]}/glacial.npz', f'{sys.argv[2]}/glacial.png')
