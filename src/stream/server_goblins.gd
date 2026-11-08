@@ -130,6 +130,9 @@ func step(a: Dictionary, dt: float, seen_d: float, seen_p: Vector3) -> bool:
 		a["task"] = ""
 		return false
 
+	if _dog_back_off(a, def, row, dt):
+		return true
+
 	var band: String = str(a.get("lair", ""))
 	var who: String = _who_at(seen_p)
 
@@ -202,6 +205,54 @@ func step(a: Dictionary, dt: float, seen_d: float, seen_p: Vector3) -> bool:
 		_pick_forage(a, def)
 
 	return false
+
+
+# A barking dog (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md): a goblin within dog_back_m backs off dog_back_step_m from it, faces it and
+# holds for dog_back_s before it comes on again; two barking dogs make it flee. A silent dog does nothing, and a goblin already fighting
+# (big game states, handled before this) is not stopped. True while the back-off decides the step.
+func _dog_back_off(a: Dictionary, def: Dictionary, row: Dictionary, dt: float) -> bool:
+	var dogs: Array = host.barking_dogs_near(a["pos"], float(row.get("dog_back_m", 20.0)))
+
+	if dogs.size() >= 2:
+		a["task"] = ""
+		a.erase("dog_hold")
+		host._bolt(a, dogs[0][0], def)
+		return true
+
+	if not dogs.is_empty() and not a.has("dog_hold"):
+		var at: Vector3 = dogs[0][0]
+		var away: Vector2 = Vector2(a["pos"].x - at.x, a["pos"].z - at.z).normalized()
+		a["task"] = ""
+		a["eating"] = false
+		a["dog_hold"] = _span(row, "dog_back_s", [4.0, 8.0])
+		a["dog_at"] = at
+		a["target"] = a["pos"] + Vector3(away.x, 0.0, away.y) * float(row.get("dog_back_step_m", 5.0))
+		a["state"] = host.HOP
+		return false   # the ordinary HOP walks it back
+
+	if not a.has("dog_hold"):
+		return false
+
+	if not dogs.is_empty():
+		a["dog_at"] = dogs[0][0]
+
+	if int(a["state"]) == host.HOP:
+		return false   # still stepping back
+
+	a["dog_hold"] = float(a["dog_hold"]) - dt
+	var seen: Vector3 = a["dog_at"]
+
+	if float(a["dog_hold"]) <= 0.0:
+		a.erase("dog_hold")
+		a.erase("dog_at")
+		a["state"] = host.GRAZE
+		a["timer"] = host._graze_time(def)
+		return true
+
+	a["state"] = host.ALERT   # it faces the dog and waits
+	a["alert"] = 1.0
+	a["heading"] = atan2(seen.z - a["pos"].z, seen.x - a["pos"].x)
+	return true
 
 
 # A small loose thing outside every fire's light, not on a den pile and with no player within steal_scare_m of it: the nearest to the goblin.

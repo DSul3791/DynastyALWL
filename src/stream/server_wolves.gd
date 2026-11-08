@@ -275,8 +275,9 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 	pack["hunger"] = minf(float(pack["hunger"]) + dt / maxf(float(w.get("hunger_full_s", 3600.0)), 1.0), 1.0)
 
 	# Prey draws a pack that is stalking or waiting (never one in the middle of a rush).
-	if pack["phase"] in ["stalk", "wait", "prowl_target"] and pack["phase"] != "feed":
-		var prey: int = _prey_near(c, float(w.get("distract_m", 80.0)))
+	# A player's dog draws a prowling pack too (dog_companion_design.md 11).
+	if pack["phase"] in ["stalk", "wait", "prowl_target", "prowl"] and pack["phase"] != "feed":
+		var prey: int = _prey_near(c, float(w.get("distract_m", 80.0))) if pack["phase"] != "prowl" else _dog_near(c, float(w.get("distract_m", 80.0)))
 
 		if prey != 0:
 			pack["phase"] = "feed"
@@ -307,9 +308,13 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 		m["state"] = ATTACK if pack["phase"] == "rush" or (pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false))) else (STALK if pack["phase"] in ["stalk", "den_guard"] else (int(m["play_kind"]) if float(m.get("play", 0.0)) > 0.0 else (1 if moved else 0)))
 
 
+# A player's dog within reach comes first (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md: wolves go for the dog); otherwise the nearest deer or moose.
 func _prey_near(c: Vector3, r: float) -> int:
-	var best: int = 0
+	var best: int = _dog_near(c, r)
 	var best_d: float = r
+
+	if best != 0:
+		return best
 
 	for id in host.animals:
 		var a: Dictionary = host.animals[id]
@@ -322,6 +327,24 @@ func _prey_near(c: Vector3, r: float) -> int:
 		if d < best_d:
 			best_d = d
 			best = id
+
+	return best
+
+
+# The nearest player's dog within r of c (0 for none, or with wolves.dog_prey off).
+func _dog_near(c: Vector3, r: float) -> int:
+	var best: int = 0
+	var best_d: float = r
+
+	if not bool(cfgw().get("dog_prey", true)):
+		return 0
+
+	for dog in host._dogs:
+		var dd: float = Vector2(dog[1].x - c.x, dog[1].z - c.z).length()
+
+		if dd < best_d:
+			best_d = dd
+			best = int(dog[0])
 
 	return best
 
@@ -621,6 +644,19 @@ func _feed(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 			_walk(m, prey["pos"], float(def.get("sprint_mps", 10.5)), dt, infos)
 
 		if Vector2(members[0]["pos"].x - prey["pos"].x, members[0]["pos"].z - prey["pos"].z).length() <= float(cfgw().get("reach_m", 3.0)):
+			if prey.has("companion_id"):
+				# A dog fights back and is bitten, a bite every dog_bite_s, through the one damage hook (its death is the companion's death).
+				pack["dog_bite_in"] = float(pack.get("dog_bite_in", 0.0)) - dt
+
+				if float(pack["dog_bite_in"]) <= 0.0:
+					pack["dog_bite_in"] = float(cfgw().get("dog_bite_s", 1.0))
+
+					if host.damage(prey_id, float(cfgw().get("dog_bite", 25.0)), -1, "bite") or not host.animals.has(prey_id):
+						pack["hunger"] = 0.0
+						pack["prey"] = 0
+
+				return
+
 			host.animals.erase(prey_id)   # a wolf kill leaves nothing to dress
 			pack["hunger"] = 0.0
 			pack["prey"] = 0

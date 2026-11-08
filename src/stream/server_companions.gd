@@ -521,6 +521,7 @@ func _bark(a: Dictionary, c: Dictionary, o: Vector3) -> bool:
 		a["barked"] = barked
 		a["idle_s"] = 0.0
 		a["state"] = BARK
+		a["bark_ms"] = now_ms   # wild animals hear a barking dog farther, and goblins back off from it (ServerAnimals._dog_presences)
 		a["heading"] = atan2(other["pos"].z - a["pos"].z, other["pos"].x - a["pos"].x)
 		return true
 

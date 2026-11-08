@@ -75,6 +75,7 @@ var _wind_dir: Vector2 = Vector2.ZERO
 var _wx: Dictionary = {}           # this tick's weather (animals_in_weather_design.md 3): rain, snow, storm, wind, mist
 var _storm_ahead: bool = false     # a storm (storm 0.5 or more) 12 to 24 game hours ahead: the falling pressure prey feel (lesson 4)
 var _ahead_acc: float = INF        # real seconds since weather_ahead was last sampled
+var _dogs: Array = []              # this tick's companion dogs as a presence for wild animals: [animal id, position, barking] (dog_companion_design.md 11)
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
 var _fire_cache: Array = []       # [Vector3 fire, keep-off metres] this tick (fires, fire_radius)
 var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
@@ -710,6 +711,7 @@ func tick(delta: float) -> void:
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
 	_read_weather(weather, delta)
+	_dogs = _dog_presences()
 	_sample_noise(players, delta)
 	_fire_cache = []
 
@@ -941,6 +943,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		_bolt(a, fire_at, def)
 		return
 
+	# A player's dog (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md): prey flee it from farther than from a walking player, big game stands to it.
+	if def.has("dog") and _dog_react(a, def, seen_d):   # at its den too: a bear stands to a dog there
+		return
+
 	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
 	# threat_m (a surprise up close, a chase that catches it, a walk into its den) makes it feel threatened, and it attacks: a short warning,
 	# then the dodgeable charge (server_big_game.gd). A player standing in a fire's or a torch's keep-off radius is left alone, except at
@@ -960,15 +966,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		_bolt(a, seen_p, def)
 
 		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
-		if a["herd"] != 0:
-			var span: Array = def.get("alarm_s", [0.2, 0.9])
-
-			for mate_id in _herds.get(a["herd"], []):
-				if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
-					animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
-
-		if def.has("alarm_group"):
-			_alarm_group(a, def)
+		_alarm_herd(a, def)
 
 	var alert_m: float = float(def.get("alert_m", 0.0)) * weather_spook_x(def)
 
@@ -1586,6 +1584,8 @@ func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
+# An animal warning at, charging or recovering from a dog (states 10 to 12 with foe_dog, dog_companion_design.md 11) adds a sixth field:
+# the dog's position, so the client looks at the dog and not the player (MikeW, 8 Nov 2026). Rows without it are unchanged.
 func rows_near(point: Vector3) -> Array:
 	var radius: float = float(cfg.get("send_radius_m", 120.0))
 	var found: Array = []
@@ -1595,7 +1595,12 @@ func rows_near(point: Vector3) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			found.append([d, [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), a["state"]]])
+			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), a["state"]]
+
+			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
+				row.append(animals[int(a["foe_dog"])]["pos"])
+
+			found.append([d, row])
 
 	found.sort_custom(func(l, r): return l[0] < r[0])
 	var rows: Array = []
@@ -1903,3 +1908,109 @@ func _wind_goes_down(a: Dictionary, def: Dictionary) -> bool:
 	a["to_burrow"] = true
 	a["state"] = HOP
 	return true
+
+
+
+# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment; and its alarm group (ground birds).
+func _alarm_herd(a: Dictionary, def: Dictionary) -> void:
+	if a["herd"] != 0:
+		var span: Array = def.get("alarm_s", [0.2, 0.9])
+
+		for mate_id in _herds.get(a["herd"], []):
+			if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
+				animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
+
+	if def.has("alarm_group"):
+		_alarm_group(a, def)
+
+
+# --- the player's dog as a presence (dog_companion_design.md 11; MikeW, docs/design/DOG_REACTIONS.md) ---
+
+# The companion dogs out in the world this tick: [animal id, position, barking (it barked within dogs.bark_s)].
+func _dog_presences() -> Array:
+	var out: Array = []
+	var bark_ms: int = int(float(cfg.get("dogs", {}).get("bark_s", 3.0)) * 1000.0)
+	var now_ms: int = Time.get_ticks_msec()
+
+	for id in animals:
+		var d: Dictionary = animals[id]
+
+		if d.has("companion_id") and str(d["sp"]) in cfg.get("dogs", {}).get("species", ["dog"]) and not bool(d.get("young", false)):
+			out.append([int(id), d["pos"], now_ms - int(d.get("bark_ms", -1000000)) < bark_ms])
+
+	return out
+
+
+# The nearest dog as this animal senses it (the wind's scent and the ground as for a player, never crouched; a barking dog is heard
+# dogs.bark_x farther): [sensed distance, position, dog id, barking], or [] for none within reach.
+func _dog_sensed(a: Dictionary, def: Dictionary, reach: float) -> Array:
+	var best: Array = []
+	var bark_x: float = float(cfg.get("dogs", {}).get("bark_x", 2.0))
+
+	for dog in _dogs:
+		var p: Vector3 = dog[1]
+		var d: float = Vector2(p.x - a["pos"].x, p.z - a["pos"].z).length()
+
+		if d > reach * bark_x or d < 0.01:
+			continue
+
+		var sensed: float = d / (_sense_factor(a, def, p, d, 0) * (bark_x if bool(dog[2]) else 1.0))
+
+		if best.is_empty() or sensed < float(best[0]):
+			best = [sensed, p, int(dog[0]), bool(dog[2])]
+
+	return best
+
+
+# How a wild animal meets a dog, by its species' dog row: "flee" (within flee_m it bolts, alarming its herd; within notice_m it watches),
+# "stand" (within notice_m it warns at the dog, and charges it once the dog comes within attack_m: big_game with the dog as the foe;
+# young_only: only a mother with young stands, otherwise it flees). True when the dog decided this step.
+func _dog_react(a: Dictionary, def: Dictionary, seen_d: float = INF) -> bool:
+	if _dogs.is_empty() or a["state"] == FLEE or a["state"] == HIDDEN or seen_d <= _spook_m(a, def):
+		return false   # a player close enough to spook it comes first
+
+	var row: Dictionary = def["dog"]
+	var notice: float = float(row.get("notice_m", 30.0))
+	var near: Array = _dog_sensed(a, def, notice)
+
+	if near.is_empty() or float(near[0]) > notice:
+		return false
+
+	var at: Vector3 = near[1]
+	var reaction: String = str(row.get("reaction", "flee"))
+
+	if reaction == "stand" and bool(row.get("young_only", false)) and _young_of(a).is_empty():
+		reaction = "flee"
+
+	if reaction == "stand" and big_game != null:
+		if big_game.warn(a, at, float(row.get("warn_s", -1.0)), true):
+			a["foe_dog"] = int(near[2])
+			return true
+
+		return false
+
+	if float(near[0]) <= float(row.get("flee_m", notice * 0.66)):
+		_bolt(a, at, def)
+		_alarm_herd(a, def)
+		return true
+
+	if a["state"] == GRAZE or a["state"] == HOP or a["state"] == ALERT:
+		a["state"] = ALERT   # it watches the dog while it is within notice_m (a player near is still handled by the ALERT rules next step)
+		a["alert"] = maxf(float(a.get("alert", 0.0)), 1.0)
+		a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
+		return true
+
+	return false
+
+
+# The barking dogs within `radius` of a point (goblins back off from them): [[position, dog id], ...].
+func barking_dogs_near(point: Vector3, radius: float) -> Array:
+	var out: Array = []
+
+	for dog in _dogs:
+		var p: Vector3 = dog[1]
+
+		if bool(dog[2]) and Vector2(p.x - point.x, p.z - point.z).length() <= radius:
+			out.append([p, int(dog[0])])
+
+	return out
