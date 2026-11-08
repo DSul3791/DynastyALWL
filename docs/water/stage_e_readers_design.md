@@ -64,7 +64,7 @@ Sonny's reply is in `/mnt/project-files/water/record_schema_reply_to_steve.md`. 
 1. **Layout.**
    - **Rasters:** raw little-endian grids at 8 m, one set per tile, (T+1)² samples with shared edge samples. This is the `export_raw_heights` convention, so neighbouring tiles agree at their edges by construction.
    - **Vectors:** one island-wide `record/network.json`. A reach is never clipped at a tile edge, and the bake loads the file once.
-   - **Manifest:** `record/manifest.json` holds `version` (the record version), the params, the input hashes, the grid origin and the cell size.
+   - **Manifest:** `record/manifest.json` holds `record_version`, the params, the input hashes, the grid origin and the cell size.
    - **Units:** metres and m3/s. Coordinates are world x and z, with y up.
 2. **Water class codes:**
    - 0 none, 1 ocean, 2 lake, 3 perennial river (unchanged, so no runtime reader breaks);
@@ -233,7 +233,7 @@ The M0 check is a headless test (`test_water_record.gd`). It writes a small reco
 - the plunge pool at the foot of a fall.
 (USGS placer model and prospecting guides, section 8.)
 
-**The finder:** `WaterRecord.placer_traps(path, rules)` takes the river walked downstream, one row per recorded step, as [x, z, bed height, flow]. The rows come from the reach `polyline` columns 0, 2, 1 and 5 (each point is [x, y, z, ...] with y the bed height, Sonny's R5 writer, #648). It returns the steps that are traps, in order. The kinds, checked in this order at each step:
+**The finder:** `WaterRecord.placer_traps(path, rules)` takes the river walked downstream, one row per recorded step, as [x, z, bed height, flow]. It returns the steps that are traps, in order. The kinds, checked in this order at each step:
 
 | Kind | Test | Rule key, default |
 |---|---|---|

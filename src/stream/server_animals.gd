@@ -13,6 +13,7 @@ const FlocksScript := preload("res://src/stream/server_flocks.gd")
 const GoblinsScript := preload("res://src/stream/server_goblins.gd")
 const CompanionsScript := preload("res://src/stream/server_companions.gd")
 const FlightScript := preload("res://src/stream/server_flight.gd")
+const WeatherRules := preload("res://src/shared/weather.gd")
 
 const GRAZE := 0
 const HOP := 1
@@ -1893,7 +1894,7 @@ func _wx_on() -> bool:
 func _read_weather(weather: Dictionary, delta: float) -> void:
 	_wx = {"rain": float(weather.get("rain", 0.0)), "snow": float(weather.get("snow", 0.0)), "storm": float(weather.get("storm", 0.0)),
 		"wind": float(weather.get("wind", 0.0)), "mist": float(weather.get("mist", 0.0)), "temp_c": float(weather.get("temp_c", 10.0)),
-		"mist_top_m": float(weather.get("mist_top_m", 0.0)), "visibility_m": float(weather.get("visibility_m", NAN))}
+		"mist_top_m": float(weather.get("mist_top_m", 0.0))}
 	_ahead_acc += delta
 
 	if not _wx_on() or not weather_ahead.is_valid() or _ahead_acc < float(_wx_rules().get("ahead_every_s", 2.5)):
@@ -1969,8 +1970,8 @@ func weather_wander_x(def: Dictionary, sp: String = "") -> float:
 
 
 # --- animals in fog (docs/design/animals_in_fog_server.md; Jamie docs/knowledge/fog-and-visibility.md; MikeW ANIMAL_FOG.md) ---
-# Behind animals.json weather.fog.on. The visibility V at a point (m): the weather's visibility_m inside the valley fog layer when the state
-# carries it (Kathleen), else from mist (V = clear_v^(1 - mist) x fog_v^mist); clear above mist_top_m, eased over top_ease_m across the top.
+# Behind animals.json weather.fog.on. The visibility V at a point is Weather.visibility_m: the rule the client's look draws its fog by
+# (#724), from rain, snow, storm and how deep the point is in the valley fog (mist, mist_top_m), so server and client agree.
 
 func _fog_cfg() -> Dictionary:
 	return _wx_rules().get("fog", {})
@@ -1980,24 +1981,13 @@ func fog_on() -> bool:
 	return _wx_on() and bool(_fog_cfg().get("on", false))
 
 
-# V at a point; Vector3.INF means inside the layer (the valley fog's own V, for rules with no animal position: activity, wander).
+# V at a point (rain and snow thicken it too). Vector3.INF: the valley fog's own V deep inside it, from mist alone, for the rules with no
+# animal position (activity, wander), so heavy rain alone does not make deer keep fog hours.
 func fog_v(pos: Vector3 = Vector3.INF) -> float:
-	var fc: Dictionary = _fog_cfg()
-	var clear_v: float = float(fc.get("clear_v_m", 20000.0))
-	var mist: float = clampf(float(_wx.get("mist", 0.0)), 0.0, 1.0)
-
-	if mist <= 0.0:
-		return clear_v
-
-	var given: float = float(_wx.get("visibility_m", NAN))
-	var inside: float = given if not is_nan(given) and given > 0.0 else pow(clear_v, 1.0 - mist) * pow(float(fc.get("fog_v_m", 120.0)), mist)
-
 	if pos == Vector3.INF:
-		return minf(inside, clear_v)
+		return WeatherRules.visibility_m({"mist": float(_wx.get("mist", 0.0)), "mist_top_m": 0.0}, -1.0e9)
 
-	var ease_m: float = maxf(float(fc.get("top_ease_m", 6.0)), 0.01)
-	var below: float = clampf((float(_wx.get("mist_top_m", 0.0)) + ease_m - pos.y) / (2.0 * ease_m), 0.0, 1.0)   # 1 well inside, 0 well above
-	return minf(exp(lerpf(log(clear_v), log(maxf(inside, 1.0)), below)), clear_v)
+	return WeatherRules.visibility_m(_wx, pos.y)
 
 
 # How much of a player an animal can make out at distance d in visibility v (Jamie lesson 1): all of it to v/4 (detail), none past v/2
@@ -2039,10 +2029,11 @@ func fog_grounded(pos: Vector3) -> bool:
 
 # The ring a shadowing wolf pack keeps (4.3): min(stalk_m, max(V/2, wolf_min_m)) at the player.
 func fog_stalk_m(stalk_m: float, at: Vector3) -> float:
-	if not fog_on():
-		return stalk_m
+	return fog_ring_m(stalk_m, fog_v(at), float(_fog_cfg().get("wolf_min_m", 10.0))) if fog_on() else stalk_m
 
-	return minf(stalk_m, maxf(fog_v(at) * 0.5, float(_fog_cfg().get("wolf_min_m", 10.0))))
+
+static func fog_ring_m(stalk_m: float, v: float, min_m: float) -> float:
+	return minf(stalk_m, maxf(v * 0.5, min_m))
 
 
 # Deer keep their dawn hours longer on a foggy morning (4.5): 08:00 to 08:00 + deer_late_h count as dusk while the fog's V is under deer_v_m.

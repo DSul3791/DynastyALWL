@@ -173,6 +173,24 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	}
 
 
+# Visibility V (m) at a height, from a weather state: the same rule the client's look draws its fog by (weather_look.gd visibility_m,
+# Kathleen #724), so the server (animals in fog, docs/design/animals_in_fog_server.md) and the client agree on one V. Koschmieder with a
+# 5 % threshold: V = 3 / extinction, the extinction the clear haze VIS_HAZE_DENSITY times 1 + 5 rain + 4 snow + 3 storm + VIS_MIST_THICK
+# x how deep the point is in the valley fog (eased over VIS_MIST_EDGE_M across mist_top_m), at most VIS_THICK_MAX times. Clear air about
+# 3.3 km, full valley fog about 220 m, the thickest about 170 m (Jamie #716: recognise at half V, detail at a quarter). No caves or water.
+const VIS_HAZE_DENSITY := 0.0009      # = LookSettings.FOG_DENSITY (client)
+const VIS_MIST_THICK := 14.0          # = WeatherLook.MIST_INSIDE_THICK
+const VIS_MIST_EDGE_M := 6.0          # = WeatherLook.MIST_EDGE_M
+const VIS_THICK_MAX := 20.0           # = the look's cap on the fog multiple
+
+
+static func visibility_m(weather_state: Dictionary, height_m: float) -> float:
+	var mist: float = clampf(float(weather_state.get("mist", 0.0)), 0.0, 1.0)
+	var inside: float = mist * smoothstep(-VIS_MIST_EDGE_M, VIS_MIST_EDGE_M, float(weather_state.get("mist_top_m", 0.0)) - height_m)
+	var thick: float = 1.0 + 5.0 * float(weather_state.get("rain", 0.0)) + 4.0 * float(weather_state.get("snow", 0.0)) + 3.0 * float(weather_state.get("storm", 0.0)) + VIS_MIST_THICK * inside
+	return 3.0 / (VIS_HAZE_DENSITY * minf(thick, VIS_THICK_MAX))
+
+
 # Hour of sunrise (sun centre on the horizon) on a day of the year, for the sun path day_cycle.gd draws.
 static func sunrise_hour(day_of_year: float) -> float:
 	var phi: float = deg_to_rad(SUN_LATITUDE_DEG)
