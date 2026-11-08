@@ -125,9 +125,9 @@ The town is where players spend most of their time, so the mountains are compose
 
 **Collect (Dave's own pictures are best, as with the plants):** a Lofoten or Cuillin ridge from sea level, a cirque with a tarn, a talus fan under a gully, a snow-streaked cliff, a layered ridge series in haze, an alpenglow shot, a treeline edge, a volcano cone with notched rim. With pictures I check the generator's output against them the way I did for plants. I cannot judge terrain from numbers alone.
 
-**Questions for Dave** (one decision each, a recommendation follows):
-1. Should the starter island's peaks carry snow in summer? Recommend **yes, patches and gullies above about 80 percent of the summit**, because it is the single biggest cue for "colossal" and the present climate rule would give none.
-2. Do we want the town to look at one named hero peak? Recommend **yes**, because a landmark players recognise from the town square is worth more than any detail.
-3. Is 15 percent exaggeration the right amount for scale? Recommend **keep 15 percent**, as in `art/Art_Direction.md`, and review once a first mountain exists.
+**Decided by coordinator, Dave may overrule** (Dave asked the coordinator to decide; these were my recommendations):
+1. The starter island's peaks carry snow in summer: **yes, patches and gullies above about 80 percent of the summit**, the biggest cue for "colossal"; the present climate rule would give none.
+2. The town looks at one named hero peak: **yes**, a landmark players recognise from the town square is worth more than any detail.
+3. Exaggeration stays at **15 percent**, as in `art/Art_Direction.md`; review once a first mountain exists.
 
 **Not decided here, for Sonny and weather:** how the snow line is stored (per island height or a seasonal layer), tarn placement by the water rules, which extra ground layers (scree, snow, wet rock, lichen, alpine turf, ice) the terrain material gets, and how the fog and sky are tuned. This document gives the look; they own the how.
