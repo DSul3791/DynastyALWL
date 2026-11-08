@@ -65,7 +65,8 @@ Wind drag goes with the square of the speed, so the sway is scaled by
 - **Which stay leafy:** evergreen broadleaves keep their leaves. Those are tropical hardwood, mangrove, acacia, olive, orange, lemon, mango, fig, pomegranate and the fantasy evergreens.
 - **How:** the list is a const in `flora_view.gd` (`DECIDUOUS`). `set_fruiting` already marks `"seasonal"` rows. The switch adds these names, so `_start_seasonal` builds their winter models on its worker, once per season change.
 - **Leaf tint:** the brown winter tint stays for any broadleaf not in the list, so it is unchanged.
-- **Cost:** about ten more species' models built on the worker at each season change, the same path the fruit trees take today.
+- **Cost:** about ten more species' models built on the worker at each season change, the same path the fruit trees take today. They are never picked, so only the plain build is made (no stripped one).
+- **Far trees:** the impostor cards are captured in leaf, so in winter a deciduous species past the impostor distance draws its bare far model instead of its card. Bare far models are light, but David4's flora budget run should confirm the draw count in winter.
 - **Left for later:** autumn leaf fall within the season (Jamie: most leaves come down in a few days of wet wind from mid-autumn), and young beech and oak keeping dead leaves.
 
 ## 4. Part C: snow that holds and sheds (`--tree-snow`, on #607)
@@ -87,7 +88,7 @@ A crown snow memory of its own, beside the ground's, one value per crown kind:
 ## 5. Never-see checks
 
 1. Trees swaying the same in a calm and a gale. Test: `k(1) = 0`, `k(12) = 1`, `k(25) > 4`.
-2. Full green or full brown crowns on oak, beech or birch in deep winter. Test: with the switch, the deciduous names are seasonal and the evergreens are not.
+2. Full green or full brown crowns on oak, beech or birch in deep winter. Test (`test_bare_winter.gd`): with the switch, the deciduous names are seasonal and the evergreens are not.
 3. Snow on conifers through a thaw day. Test: the crown snow after 3 thaw hours is under 0.1. Snow piled thick on bare twigs: the bare broadleaf cap is 0.35.
 
 ## 6. Pictures (Dino, switch on and off)
