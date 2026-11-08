@@ -57,7 +57,7 @@ Clear air, no moon:
 | Small fire, or oak | 2 to 3 m | 5 m | 10 m | 1 to 2 km |
 | Fat lamp (later) | 1.5 m | 3 m | 5 m | under 1 km |
 
-- **The game's torch `light_m`** (9 on main, Sal's 12 pending) is about right as the reach of the light's falloff ("pale shapes"). The bright core should be about the first quarter of that (judged, lesson 1).
+- **The game's torch `light_m`** (12 on main since 8 Nov) is about right as the reach of the light's falloff ("pale shapes"). The bright core should be about the first quarter of that (judged, lesson 1).
 - **Wood matters:** ash and birch are bright, pine is middling, and oak is dull (lesson 1). That would suit a later firewood choice, but it is not needed now.
 
 ### Fog (lessons 2 to 4)
@@ -107,7 +107,7 @@ The torch's useful reach against the fog's visibility (judged):
 ## How ours works today
 
 From reading the code headers on 8 Nov:
-- **The torch** (`held_item.gd`): an `OmniLight3D` with `omni_range` = the item's `light_m` (9 by default), plus a short hand light (1.6 m) so the hand is not black. Both set `light_volumetric_fog_energy` to 0.
+- **The torch** (`held_item.gd`): an `OmniLight3D` with `omni_range` = the item's `light_m` (12 for the basic torch; 9 is the code's fallback), plus a short hand light (1.6 m) so the hand is not black. Both set `light_volumetric_fog_energy` to 0.
 - **The weather look** (`weather_look.gd`): ordinary fog density and colour follow the day and the weather (`fog_density`, `fog_light_color`, `fog_aerial_perspective`). Volumetric fog was not found in use.
 - **Fire rules** (`flame_rules.gd`): open rain at 0.2 or more douses after a 5 s grace (`torches-fire.md`).
 - **What's missing:** no halo or fog glow around flames, no lit rain streaks, no extra reach over snow, no change by wood. Not checked: the campfire light's own range in `fire_sounds.gd` and the placed fire look.
