@@ -563,6 +563,9 @@ func _ready() -> void:
 	animals.companions.take_item = func(id): return items.take_one(id)
 	animals.companions.store_dir = store_dir
 	animals.companions.load_records()   # companions.json: each companion's name, bond, owner and life story (dog_companion_design.md)
+	animals.wolves.game_seconds = func(): return game_clock.seconds
+	animals.wolves.store_dir = store_dir
+	animals.wolves.load_dens()   # wolf_dens.json: killed packs' dens resting, and their orphans (wolf_packs_and_pups_design.md)
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_in_world(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
@@ -2745,6 +2748,9 @@ func _exit_tree() -> void:
 
 	if animals != null and animals.companions != null:
 		animals.companions.save()   # companions (companions.json)
+
+	if animals != null and animals.wolves != null:
+		animals.wolves.save_dens()   # wolf dens (wolf_dens.json)
 
 	_queue_mutex.lock()
 	_stopping = true
