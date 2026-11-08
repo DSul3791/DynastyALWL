@@ -130,22 +130,51 @@ def _hollows(pit, rec, sea, n, min_depth):
     return lab, deep[:k], size[:k], outlet
 
 
-def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell, sweeps, tol, Sc, psi):
+def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell, sweeps, tol, Sc, psi, ery_cover=None, cover=None):
     """Implicit stream power with deposition (stage B1). h holds h0 on entry and the new heights on exit. Returns the
     sediment flux through each cell (m3/yr, own cell included) from the last sweep. The erosion coefficient of each cell is
-    K e share Q^m, and psi (per cell) the incision threshold on Q^m S, below which the flow does not cut bedrock."""
+    K e share Q^m, and psi (per cell) the incision threshold on Q^m S, below which the flow does not cut bedrock.
+    ery is the bedrock's erodibility. With ery_cover and cover (thickness, m), loose cover lies on the bedrock: it erodes at
+    its own rate with no threshold until it is gone, and the rest of the step cuts bedrock (see _solve)."""
     Qi = np.where(Q > 0.0, Q, cell)
     kq = K * ery * share * Qi ** m
     sc = np.full(h.size, float(Sc)) if np.ndim(Sc) == 0 else np.asarray(Sc, np.float64)
     ps = np.full(h.size, float(psi)) if np.ndim(psi) == 0 else np.asarray(psi, np.float64)
-    return _solve(h, h0, sea, order, rec, n, dx, dt, kq, kq * ps / Qi ** m, G, U, Qi, cell, sweeps, tol, sc)
+    if cover is None:
+        kq_c = kq; cv = np.zeros(h.size)
+    else:
+        kq_c = K * np.asarray(ery_cover, np.float64) * share * Qi ** m; cv = np.asarray(cover, np.float64)
+    return _solve(h, h0, sea, order, rec, n, dx, dt, kq, kq * ps / Qi ** m, kq_c, cv, G, U, Qi, cell, sweeps, tol, sc)
 
 
 @nb.njit(cache=True)
-def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, G, U, Qd, cell, sweeps, tol, Sc):
+def _cell_height(B, A, F, hr, kc):
+    """One cell's implicit height: A x = B - F (x - hr) + kc while the erosion F (x - hr) - kc is positive, A x = B with none."""
+    x = B / A                                    # no erosion
+    if F > 0.0:
+        x1 = (B + F * hr + kc) / (A + F)         # erosion F (x - hr) - kc, while it is positive
+        if F * (x1 - hr) >= kc:
+            x = x1
+        elif F * (x - hr) > kc:                  # between the two: the flow stands exactly at its threshold
+            x = hr + kc / F
+    return x
+
+
+@nb.njit(cache=True)
+def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cell, sweeps, tol, Sc):
     """The implicit erosion-deposition solve. kq: each cell's erosion coefficient (erosion = kq * S - kc, S the slope to the
     receiver, never below 0). kc: each cell's critical erosion rate, kq times the incision threshold on Q^m S (0 for none).
     Qd: each cell's carrying flow for the deposition term (G / Qd times the sediment flux), never zero.
+    kq_c, cover: the erosion coefficient of the loose cover and its thickness (m), 0 for bare rock.
+
+    Cover over rock. Loose cover (soil, scree, sediment) erodes far faster than the rock under it (5 against granite's 0.08),
+    but there is only so much of it. A cell whose cover the step would cut through loses the cover, and the step's remaining
+    erosion is at the rock's rate with the rock's incision threshold: its own cover's volume enters the sediment sum like any
+    other eroded volume, and the rock's erosion is counted over the whole step, not the step less the short time the cover
+    took, which errs by under the cover's thickness times the rock's share of the cover's rate. Until 8 Nov the whole step ran
+    at the top layer's rate, so a few centimetres of cover let granite erode 62 times too fast for 2,500 years, and every
+    slide or creep deposit gave it a new few centimetres: run 2bf3b20f wore its granite summit massif faster than the soft
+    rock around it.
 
     Incision threshold. A channel cuts bedrock only where its flow is strong enough to move the boulders and gravel on its bed,
     so small steep headwater flows and gentle bedrock reaches barely cut (the document: no deep gullies under tiny flows).
@@ -185,14 +214,15 @@ def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, G, U, Qd, cell, sweeps, to
                 F = kq[i] / dist
             hr = h[d] if d >= 0 else h0[i]
             A = (1.0 + c) / dt
-            B = h0[i] * (1.0 + c) / dt + U[i] * (1.0 + c) + G / Qi * up[i]
-            x = B / A                                    # no erosion
-            if F > 0.0:
-                x1 = (B + F * hr + kc[i]) / (A + F)      # erosion F (x - hr) - kc, while it is positive
-                if F * (x1 - hr) >= kc[i]:
-                    x = x1
-                elif F * (x - hr) > kc[i]:               # between the two: the flow stands exactly at its threshold
-                    x = hr + kc[i] / F
+            rest = U[i] * (1.0 + c) + G / Qi * up[i]
+            B = h0[i] * (1.0 + c) / dt + rest
+            if cover[i] > 0.0:
+                Fc = kq_c[i] / dist if d >= 0 else 0.0
+                x = _cell_height(B, A, Fc, hr, 0.0)      # loose cover: its own rate, no threshold
+                if h0[i] - x > cover[i]:                 # cut through it: the cover's volume is gone, the rest at the rock's rate
+                    x = _cell_height(B - cover[i] / dt, A, F, hr, kc[i])
+            else:
+                x = _cell_height(B, A, F, hr, kc[i])
             if d >= 0 and h0[i] < hr and x > hr:         # a hollow fills to its sill, no higher
                 x = hr
             if Sc[i] > 0.0 and d >= 0:
@@ -385,6 +415,7 @@ def main():
     t0 = time.time()
     deposit = np.zeros(n * n)
     land0 = sea == 0
+    rid0 = rock.rock_ids(g, start)                         # the bedrock at the start surface, for the cut by rock
     frame = np.zeros((n, n), bool); frame[0, :] = frame[-1, :] = frame[:, 0] = frame[:, -1] = True
     fixed = (sea == 1) | frame.ravel()                     # creep leaves the sea and the model frame as they are
     track = []                                             # (step, summit, mean land height): is the ground still rising?
@@ -503,7 +534,14 @@ def main():
                        drainage_density_by_rock={g['names'][int(k)]: float(((share > 0.5) & (rid == k) & (sea == 0)).sum() * dx / 1e3
                                                                          / max(((rid == k) & (sea == 0)).sum() * cell / 1e6, 1e-9))
                                                  for k in np.unique(rid[sea == 0])},
-                       max_cut_m=float((start - hh)[land].max()), max_fill_m=float((hh - start)[land].max()))
+                       max_cut_m=float((start - hh)[land].max()), max_fill_m=float((hh - start)[land].max()),
+                       # Hard rock must wear slowest: the cut so far by the rock at the start surface (land only). Run 2bf3b20f
+                       # wore its granite faster than the soft rock around it (the thin-cover fault, _solve); this shows it.
+                       cut_by_start_rock_m={g['names'][int(k)]: dict(
+                           km2=float(((rid0 == k) & land0).sum() * cell / 1e6),
+                           mean=float((start.ravel() - h)[(rid0 == k) & land0].mean()),
+                           p99=float(np.percentile((start.ravel() - h)[(rid0 == k) & land0], 99)))
+                           for k in np.unique(rid0[land0])})
         json.dump(dict(params=P, inputs_sha256={'inputs.npz': sha(f'{inputs_dir}/inputs.npz')}, summary=summary),
                   open(f'{od}/evolve_manifest.json', 'w'), indent=1)
         print(json.dumps(summary, indent=1))
@@ -517,12 +555,14 @@ def main():
         rid_now = rock.rock_ids(g, h)
         quick = runoff.budget(rain_mm, rid_now, bfi, W)['quick'] / q_ref    # the rock at today's surface
         sc = np.where(deposit > 1.0, Sc, sc_rock[rid_now])
-        psi = np.where(deposit > 1.0, 0.0, float(E.get('incision_threshold_m', 0.0)))   # bedrock only
+        psi = float(E.get('incision_threshold_m', 0.0))   # bedrock only: the cover above it has none (_solve)
         Q = _discharge(order, rec, sea, quick, cell, n * n)
         share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
-        ery = ery_fn(h)
+        ery = ery_fn(h)                                   # the top layer, cover where there is any: creep moves it
+        ery_rock, ery_cov, cov = ery_fn.parts(h)          # the rivers cut through the cover, then the rock under it
         h0 = h.copy()
-        flux = _fluvial(h, h0, sea, order, rec, n, dx, E['dt'], E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'], sc, psi)
+        flux = _fluvial(h, h0, sea, order, rec, n, dx, E['dt'], E['K'], E['m'], E['G'], U, ery_rock, Q, share, cell, E['sweeps'], E['tol_m'],
+                        sc, psi, ery_cov, cov)
         h1 = h.copy()
         _diffuse(h, fixed, dx, E['dt'], E['D'], ery)
         by_river += h1 - (h0 + U * E['dt'])
