@@ -3103,7 +3103,27 @@ func _sign_track(kind: String, node: Node3D, b: Dictionary, speed: float) -> voi
 	if ground == "":
 		return
 
-	b["track_at"] = node.global_position
+	# The footfall event comes once per stride_m, which is longer than a walking step: lay every print since the last one, at its own
+	# spacing along the way the animal went (up to four at once), so a walk shows one print per step.
+	var here: Vector3 = node.global_position
+	var count: int = 1
+	var from: Vector3 = here
+
+	if last != Vector3.INF and last.distance_to(here) < SIGN_NEAR_M:
+		count = clampi(int(last.distance_to(here) / maxf(gap, 0.05)), 1, 4)
+		from = last
+
+	var step_dir: Vector3 = (here - from).normalized() if count > 1 else Vector3.ZERO
+
+	for n in count:
+		var at: Vector3 = from + step_dir * gap * float(n + 1) if count > 1 else here
+		_sign_lay(kind, node, b, row, at, running, trotting, ground)
+
+	b["track_at"] = from + step_dir * gap * float(count) if count > 1 else here
+
+
+# One print, or one gait group of prints, at `at` (_sign_track).
+func _sign_lay(kind: String, node: Node3D, b: Dictionary, row: Dictionary, at: Vector3, running: bool, trotting: bool, ground: String) -> void:
 	b["track_side"] = -float(b.get("track_side", 1.0))
 	var size: float = clampf(float(row.get("length_m", 1.0)) * 0.08, 0.04, 0.35) * maxf(node.scale.x, 0.3)
 	var across: Vector3 = node.global_transform.basis.x.normalized()
@@ -3112,17 +3132,17 @@ func _sign_track(kind: String, node: Node3D, b: Dictionary, speed: float) -> voi
 	var tex: ImageTexture = _print_texture(_print_group(kind))
 
 	if running and kind == "rabbit":      # the Y: two small front prints one behind the other, the two big hind prints side by side ahead
-		_sign_decal(tex, node.global_position - ahead * size * 1.6, size * 0.7, node.rotation.y, ground, -1.0, kind)
-		_sign_decal(tex, node.global_position - ahead * size * 0.6, size * 0.7, node.rotation.y, ground, -1.0, kind)
-		_sign_decal(tex, node.global_position + across * width * 0.6 + ahead * size * 0.8, size, node.rotation.y, ground, -1.0, kind)
-		_sign_decal(tex, node.global_position - across * width * 0.6 + ahead * size * 0.8, size, node.rotation.y, ground, -1.0, kind)
+		_sign_decal(tex, at - ahead * size * 1.6, size * 0.7, node.rotation.y, ground, -1.0, kind)
+		_sign_decal(tex, at - ahead * size * 0.6, size * 0.7, node.rotation.y, ground, -1.0, kind)
+		_sign_decal(tex, at + across * width * 0.6 + ahead * size * 0.8, size, node.rotation.y, ground, -1.0, kind)
+		_sign_decal(tex, at - across * width * 0.6 + ahead * size * 0.8, size, node.rotation.y, ground, -1.0, kind)
 	elif running:      # a gallop group of four in a slanting row, then the long gap
 		for k in 4:
 			var f: float = float(k) - 1.5
-			_sign_decal(tex, node.global_position + ahead * size * 1.6 * f + across * width * (0.5 if k % 2 == 0 else -0.5), size, node.rotation.y, ground, -1.0, kind)
+			_sign_decal(tex, at + ahead * size * 1.6 * f + across * width * (0.5 if k % 2 == 0 else -0.5), size, node.rotation.y, ground, -1.0, kind)
 	else:      # walk or trot: alternating single prints, a trotting fox or wolf almost on one line
 		var line: float = 0.25 if trotting and kind in ["fox", "wolf", "dog"] else 1.0
-		_sign_decal(tex, node.global_position + across * width * line * float(b["track_side"]), size, node.rotation.y, ground, -1.0, kind)
+		_sign_decal(tex, at + across * width * line * float(b["track_side"]), size, node.rotation.y, ground, -1.0, kind)
 
 
 # Droppings, browse and beds (ANIMAL_SIGN.md): a grazer that has fed in one spot for 40 s leaves browse there (nibbled stems), once
