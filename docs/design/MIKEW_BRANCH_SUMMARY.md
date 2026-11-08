@@ -51,18 +51,18 @@ PR 1 (#596) is `claude/mikew-eyeshine`; PR 2, the wet look, is `claude/mikew-wet
 | 10 | `claude/mikew-pr10-animal-sign` | `claude/mikew-pr09` | 14891ada6009b6aae7a0cfbffc432a6016165dfc | m38 to m40 |
 | 11 | `claude/mikew-pr11-weather-looks` | `claude/mikew-pr10` | 1fda5278dc1252f581396e968dfbc55f78ccd9d0 | m41 to m44 |
 | 12 | `claude/mikew-pr12-hunt-feedback` | `claude/mikew-pr11` | 0c63bab8c55eb6a29abf9b0c25a91ce3361e9026 | m45 to m47 |
-| 12b | `claude/mikew-pr13-cost-review` | `claude/mikew-pr12` | 5c95483129ceae77b6ae964c538f8b03ca6f356b | gate with --life-layer-off |
-| 12c | `claude/mikew-pr14-airc-tracks-cover-shots` | `claude/mikew-pr13` | c368ed5d4232993de4bb92313b6413ef332eb9ed | m38, m39, m48 |
-| 13 | `claude/mikew-pr15-posed-birds` | `claude/mikew-pr14` | 4d6b61fecdb37cf7a044ec170db39c3b4f5488f8 | m49 |
-| 14 | `claude/mikew-pr16-posed-swimmers` | `claude/mikew-pr15-posed-birds` | 22abdb669fe312da285ed38216090a893f23c7cc | m50 |
-| 15 | `claude/mikew-pr17-wind-direction` | `claude/mikew-pr16-posed-swimmers` | 70bcf43b0ca26ab4e900c7d116a342be6888371b | m51 |
-| 16 | `claude/mikew-pr18-fog` | `claude/mikew-pr17-wind-direction` | 2e95bdb2dd869b521b26dd23ecee484db94eecd0 | m52 |
-| 17 | `claude/mikew-pr19-prevailing-wind` | `claude/mikew-pr18-fog` | 4f8ec2e69ad49b01ee30e0027288ce56e855bb72 | m53 |
-| 18 | `claude/mikew-pr20-cave-air` | `claude/mikew-pr19-prevailing-wind` | 6d0bd51c5ada81e4f41aff966f684a848addea95 | m54 |
-| 19 | `claude/mikew-pr21-drinking` | `claude/mikew-pr20-cave-air` | 02bb33881a6bbb67f95df722cf443dccc480eff3 | m55 |
-| 20 | `claude/mikew-pr22-ice-snow` | `claude/mikew-pr21-drinking` | 4036e022d5c39425f32e99605c3629301736cae9 | m56 |
-| 21 | `claude/mikew-pr23-thunder` | `claude/mikew-pr22-ice-snow` | 16167916c71c8324403a315c6b9fd31963998e19 | m57 |
-| 22 | `claude/mikew-pr24-pose-library` | `claude/mikew-pr23-thunder` | f35855cdbf9b11061bc0fbf1348b87aa6586cf66 | m58 |
+| 12b | `claude/mikew-pr13-cost-review` | `claude/mikew-pr12` | 1a02ee7f1641d2f7b0d5a8b137cd69eb29a3df6b | gate with --life-layer-off |
+| 12c | `claude/mikew-pr14-airc-tracks-cover-shots` | `claude/mikew-pr13` | 89247c9c1854a2876650d8db2eaf38632144f8ae | m38, m39, m48 |
+| 13 | `claude/mikew-pr15-posed-birds` | `claude/mikew-pr14` | b3f2d9f2e7b8c585e00b2a4723dba260f199ccd1 | m49 |
+| 14 | `claude/mikew-pr16-posed-swimmers` | `claude/mikew-pr15-posed-birds` | 844ee18441c7832d3b8f8343d1e45c8c14b9242e | m50 |
+| 15 | `claude/mikew-pr17-wind-direction` | `claude/mikew-pr16-posed-swimmers` | d397abd9d7ac7f6612ec9836e03fcc9b4a96eda0 | m51 |
+| 16 | `claude/mikew-pr18-fog` | `claude/mikew-pr17-wind-direction` | 68dd89c1b154d1aa3cd07bcd44b9db2881e656b9 | m52 |
+| 17 | `claude/mikew-pr19-prevailing-wind` | `claude/mikew-pr18-fog` | 04be535ec4c452eae4f0cbcab9ab4128a29b9c7b | m53 |
+| 18 | `claude/mikew-pr20-cave-air` | `claude/mikew-pr19-prevailing-wind` | fe2f3a2be9b898f7a0d44c6c0952600f717bbfe5 | m54 |
+| 19 | `claude/mikew-pr21-drinking` | `claude/mikew-pr20-cave-air` | 318d6027b4cdb6072aa000822f062421559323b9 | m55 |
+| 20 | `claude/mikew-pr22-ice-snow` | `claude/mikew-pr21-drinking` | e6230c12c2a2dc4af150d1bb04cae9e99f3d00fe | m56 |
+| 21 | `claude/mikew-pr23-thunder` | `claude/mikew-pr22-ice-snow` | ed4a39f1cc286b915c72c0010de284fd5bae0ceb | m57 |
+| 22 | `claude/mikew-pr24-pose-library` | `claude/mikew-pr23-thunder` | 0207aec99abc7a68279b0022b06a0d49690af1c1 | m58 |
 | 23 | `claude/mikew-pr25-breath` | `claude/mikew-pr24-pose-library` | (this commit; reported in the thread) | m60 |
 
 12b and 12c hold the cross-cutting passes that came after PR 12 in time (the cost pass and kill switch, the self review, then Weather.air_c,
@@ -84,3 +84,5 @@ Against main 066f6cc9 and Kathleen's open #647, #670, #674, #676, #680 and #681:
 #671): the only files this branch shared with it were the herd groups server code and data, now removed from this branch; the
 remaining conflicts in those PRs are between Steve's chain and main itself (GOBLINS.md, terrain_server, server_goblins,
 server_items, server_big_game), not this branch.
+
+The PC gate's order, flags and times are in MIKEW_GATE_PLAN.md.

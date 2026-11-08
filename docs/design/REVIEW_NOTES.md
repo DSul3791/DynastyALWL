@@ -90,3 +90,20 @@ duplicates.
 - **Still open (not bugs):** the two older terrain_client.gd warnings that are not this branch's; `fire_near` unwired; the cave mouth
   blend; the herd look's n x n at 5 Hz.
 
+## Hard review before the PC gate (8 Nov 2026)
+Every file touched since pr03, read for: flags leaking when off, per-frame allocations, nodes without a free, signals connected
+twice, divisions by zero, and reads of server fields not on main.
+- **Fixed (on the lowest PR that owns it, merged forward):** the night light was read (a new Dictionary) every frame even with
+  `eye_shine` off (pr13, `_refresh_frame`); the fog was read every frame even with `fog_looks` off (pr18). Both now only with their flag.
+- **Nodes:** every one-shot effect frees itself (`LifeUtil.fire_once`, the rings' tween, the steam and spout timers); the decal pools
+  are capped (prints 200, sign 400) and free the oldest; the ice-hole discs and blood spots are pooled and reused; the eye dots live on
+  the eye; the death fall frees the body after its tween.
+- **Signals:** each is connected once, in terrain_client's setup; the new network ones (`animal_hit_received`, `ice_holes_received`)
+  only when the network has them.
+- **Divisions:** the herd facing divides only with mates; the spine and wing waves use `maxi(n - 1, 1)` and `maxf`; the fog's
+  3 / density only above 0.0001; the pose library divides by `maxf(neck count, 1)`; the bank by `delta` only when it is positive.
+- **Server fields not on main:** main is protocol 95. The hit event (96) and ice holes (97) are connected only when their signals
+  exist; the health share and the dog foe are read from a row's extra fields by type, so a row without them is unchanged; the
+  DRINK state 21 and HUNCH 20 are states, harmless when not sent. Nothing reads a field that main does not send without a guard.
+- **Left:** as before (two older terrain_client warnings, the herd look's n x n at 5 Hz, `fire_near`, the cave mouth blend).
+
