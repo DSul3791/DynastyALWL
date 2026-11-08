@@ -281,12 +281,13 @@ func species_by_id(species_id: int) -> Dictionary:
 # no tree or shrub within CLEAR_SPAWN_M of the spawn point or CLEAR_MARKER_M of any NPC marker, thinning out over the next CLEAR_SOFT_M so the wood
 # comes back gradually. The spawn is src/shared/spawn_point.gd, the markers data/npcs/markers.json (the same files the server reads). Plants stay.
 func _starter_clearings() -> Array:
-	var list: Array = [[SpawnPointScript.OVERRIDE, CLEAR_SPAWN_M, CLEAR_SOFT_M]]
+	var list: Array = [[SpawnPointScript.current(), CLEAR_SPAWN_M, CLEAR_SOFT_M]]
+	var shift: Vector2 = SpawnPointScript.town_shift()   # the shipped markers move with a picked spawn (Stage E 6e)
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/markers.json")) if FileAccess.file_exists("res://data/npcs/markers.json") else null
 
 	if typeof(parsed) == TYPE_DICTIONARY:
 		for marker in (parsed as Dictionary).get("markers", []):
-			list.append([Vector2(float(marker["x"]), float(marker["z"])), CLEAR_MARKER_M, CLEAR_SOFT_M])
+			list.append([Vector2(float(marker["x"]), float(marker["z"])) + shift, CLEAR_MARKER_M, CLEAR_SOFT_M])
 
 	return list
 
@@ -839,7 +840,7 @@ const ORCHARD_TREES := [
 # World positions of the orchard's trees: [index, species name, x, z].
 static func orchard_places() -> Array:
 	var places: Array = []
-	var centre: Vector2 = SpawnPointScript.OVERRIDE + ORCHARD_OFFSET
+	var centre: Vector2 = SpawnPointScript.current() + ORCHARD_OFFSET
 
 	for row in range(ORCHARD_ROWS):
 		for col in range(ORCHARD_COLS):

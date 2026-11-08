@@ -10,8 +10,9 @@ Everything here runs offline on Dave's PC (Dino), never in the cloud. Each stage
 | R2, stage B (landscape evolution) | `evolve.py` | `ground.npz`, `evolve.png`, `evolve_manifest.json` |
 | R2b, stage B2 (glacial history, then post-glacial) | `glacial.py` | `glacial.npz`, `glacial.png`, `glacial_manifest.json` |
 | R3, stage C1 and C2 (basins, lakes by water balance) | `lakes.py` | `lakes.npz`, `lakes.json`, `lakes.png`, `lakes_manifest.json` |
-| R4 to R5, stage C3 to C8 | to come | |
-| R6, stage D (island water record) | to come | |
+| R4, stage C3, C4 and C6 (water table, heads, wetlands) | `groundwater.py` | `groundwater.npz`, `groundwater.png`, `groundwater_manifest.json` |
+| R6, stage D (the island water record) | `record.py` | `record/manifest.json`, `record/climate.json`, `record/network.json`, `record/tiles/X_Z/*` |
+| R5, stage C5, C7 and C8 (streams, flows, sizes, reach types, falls, outlets) | `network.py` | `network.json`, `network.npz`, `network_manifest.json`, `follow_the_water.md`, `network.png` |
 
 ## R1: inputs
 
@@ -113,6 +114,56 @@ Check `lakes.png`, `lakes.json` and the summary for:
 - the filled leftovers shallow (a few decimetres); a deep one marks a cause the model lacks;
 - basins of many sizes, not one per valley of equal size.
 
+## R4: water table, heads and wetlands (stages C3, C4 and C6)
+
+`python tools/watershed/groundwater.py INPUTS_DIR GEOLOGY_DIR B2_DIR R3_DIR OUT_DIR`, where B2_DIR holds `glacial.npz` and R3_DIR holds `lakes.npz`.
+
+- The water table: steady groundwater flow on a 64 m grid from the recharge of the one water budget. Conductivity comes from the rock (Gleeson et al. 2011 classes), with loose cover over it and conduits in cave-forming rock. On tight rock (granite, slate, basalt, shale, coal) the water moves in the soil and the broken top of the rock instead, zones 1 to 3 of Jamie's #713, about 0.7 m²/day. The sea and the lakes hold their levels, and the ground is a ceiling, so groundwater comes out where the table meets it (springs, seeps, gaining reaches).
+- Each spring's own stores (`springstore.py`, `docs/water/spring_store_build_plan.md`): each discharge block's groundwater catchment on the head field gives a diffuse store with Rorabaugh's response time τ = 4 S_y L² / (π² T), with S_y read at the water table; on cave-forming rock a conduit store (5 days) and a matrix store (about 250 days) take the karst share. They are written as `gw_<store>_share` and `gw_<store>_tau_days` (diffuse, conduit, matrix), with `gw_sy`, `gw_flow_path_m` and `gw_catchment_m2`, at the cells where the groundwater comes out (NaN elsewhere); `summary.stores` gives the diffuse τ quartiles by rock.
+- At 16 m: depth to the table, groundwater discharge, baseflow down the routing, and a first regime (perennial, intermittent, ephemeral).
+- Heads labelled by what feeds them: spring, seep or damp hollow, lake outlet, wetland outlet, seasonal rill.
+- Wetlands typed by what wets them: salt marsh, fen (groundwater), marsh and swamp (river or lake), bog (rain).
+
+`python tools/watershed/plots.py groundwater RUN_DIR` redraws `groundwater.png`.
+
+Check `groundwater.png` and the summary for:
+- `balance_m3_s.closure` near 0: recharge comes out at the land surface, into lakes or into the sea;
+- a deep table under ridges and permeable rock, a shallow one in valley floors and on tight rock;
+- perennial channels fed by baseflow; seasonal ones on chalk and in small catchments (chalk dry valleys);
+- most heads seeps and damp hollows, a few springs, and those mostly where permeable rock meets tight rock or at the foot of karst;
+- wetlands only on low ground and gentle slopes (`wetland_on_steep_ground_cells` 0): fens where groundwater comes out, bogs on wet, tight uplands, marsh and swamp along rivers and lakes, salt marsh at the coast;
+- the largest springs (`springs_largest`): the ones on or beside cave-forming rock are the cave-spring candidates for R5;
+- `stores.diffuse_tau_by_rock`: weeks for seeps on thin hillside stores, months to about two years for rock springs on tight rock, longer under chalk and gravel; nothing in hours or millennia.
+
+## R5: the stream network (stages C5, C7 and C8)
+
+`python tools/watershed/network.py INPUTS_DIR GEOLOGY_DIR B2_DIR R3_DIR R4_DIR OUT_DIR`, where the folders are one run's chain (the record's chain check). Nothing in it is random.
+
+- Routing on the final ground with the closed lakes as outlets, so a closed basin's water ends in its lake.
+- Flows by season: quick runoff from the one water budget shaped by the year's rain and evaporation, baseflow from R4's groundwater through each spring's own stores (the island's one 45-day store only for an R4 run written before the stores, and `summary.stores.source` says which); full lakes lose their evaporation and seepage at their exit; beds well above the water table on ground that takes water leak at the streambed's conductivity.
+- Streams: B1's channels whose wet-season flow passes one island threshold, set so the streams run 2.25 km per km2. Perennial where the dry-season baseflow, after losses, keeps them running; the rest seasonal; the other channels are gullies.
+- Size: bankfull at 0.9 QMED (FEH ratios by area and permeability, cut by lakes), width by bank trees (Hey and Thorne), depth 0.24 Q^0.4, narrower and shallower below bankfull.
+- Reach type from the slope over about ten widths; braided, meandering or confined by the numbers; meanders as sine-generated curves.
+- Falls only at a step ten times steeper than the reach above, pinned at a hard bed over softer rock or a hanging valley's lip; anything else steep is a cascade. Staircases of equal falls are listed as defects.
+- Outlets to the sea and into lakes: a delta only where the river's sand beats the waves (Nienhuis), else a tidal creek, estuary, beach-blocked mouth or rocky outlet.
+- Every reach, head, fall and outlet carries the seven answers of the watershed document; `follow_the_water.md` follows contrasting basins from the top of their main stem to the sea.
+- `network.json` keeps the reader's conventions (`src/worldgen/record/water_record.gd`): every point is `[x, y, z]` in world metres, y up (`pos` on heads, confluences, springs and outlets; a fall's `lip` and `foot`); each reach's `polyline` rows follow `point_fields` (x, bed y, z, bankfull width and depth, the mean, wet-season and dry-season flows, and `q_base_dry_m3_s`, the dry-season baseflow alone, which is what runs in a rain-free August); and a reach's `down` is the next reach its water enters, through a full lake to its outlet reach, or -1.
+
+Spring rows in `network.json` carry `q_base_dry_m3_s` (the dry quarter's mean), `tau_days` (the store that gives most of the dry flow), `karst_share`, `sy`, `flow_path_m`, `catchment_km2` and `stores` ([store, share, τ days, dry flow m³/s]); in a rain-free spell each store falls as exp(−t/τ). `summary.stores` reports the island's flow-weighted dry share and the perennial kilometres against the old island store.
+
+`python tools/watershed/test_network.py` runs its unit tests on tiny synthetic grids (seconds; on David4 or Dave's PC); `python tools/watershed/test_springstore.py` runs the spring store's (numpy only, a second or two). `python tools/watershed/plots.py network RUN_DIR` redraws `network.png`, and `python tools/watershed/plots.py zoom_network RUN_DIR X Z [SIZE_M]` draws a full-resolution close look (`zoom_network_X_Z.png`, a 6 km square by default): the streams by regime, lakes, falls and springs sized by their dry flow and coloured by their main store, beside the reach types. Look for: `density_km_per_km2.streams` 2.25 with most of it perennial; `never_see` all 0 or empty; falls few, of varied height, each with a cause; deltas only in lakes and sheltered bays; the `missing` list (snowmelt, faults, cave springs, floodplain drawing, fans, distributaries, bank trees from biomes, losses back into R4).
+
+## R6: the island water record (stage D)
+
+`python tools/watershed/record.py INPUTS_DIR B2_DIR R3_DIR R4_DIR OUT_DIR [--network=R5_DIR]`, where the four folders are one run's chain: each stage's manifest must name the very files given, or the writer stops.
+
+- It refuses a window with land on its frame, so no river or groundwater divide is cut by the edge.
+- The 8 m ground is R3's 16 m ground refined by a separable monotone cubic (it passes through every 16 m height and does not overshoot), plus fine roughness at 16 to 48 m on hillslopes only, continuing the B1 start spectrum. An epsilon-free priority flood then checks for closed cells: where the roughness made one, it is taken out round it, and any closed cell left is counted and listed (`closed_cells_outside_lakes`), never filled.
+- Lakes take their R3 levels on the refined ground, so their shores follow the 8 m ground; the sea is at 0.
+- Per tile (T + 1 samples at 8 m, shared edges, little-endian): `ground` and `water_level` (f4), `water_class`, `discharge` (log-coded u2), `regime`, `table_depth`, `basin`, `fresh_m` (with `--network`, springs whose dry flow is at least `record.fresh_spring_min_m3_s` count as fresh water), `sediment_m`; the manifest lists each field's type and scale. `network.json` and `climate.json` are island-wide.
+- With `--network=R5_DIR` it takes the regime and discharge from the network (the same chain, checked), and copies the island's season shares to `summary.seasons`. Until rivers are carved and drawn and the seasonal ponds, the cold-air pools and the snow window are in, `manifest.json` lists them under `missing` and says `complete: false`, which the bake must refuse.
+
+Look for: `closed_cells_outside_lakes` near 0; `summit_8m` within a metre of `summit_16m`; a lake area close to R3's.
 ## Peak checks (design A1 rule 6)
 
 `tools/watershed/peaks.py` judges whether the tall summits are pyramids rather than domes. It runs sign-off lines 1 to 10 of `docs/water/rule6_build_plan.md` on a run's saved files, in seconds:
