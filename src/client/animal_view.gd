@@ -20,12 +20,13 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose", 30: "cow", 31: "goat", 32: "chicken", 33: "cat", 34: "dog", 35: "buffalo", 36: "puma", 37: "pronghorn", 38: "warthog", 39: "hyena", 40: "wildebeest", 41: "lion", 42: "leopard", 43: "rhino", 44: "elephant", 45: "camel", 46: "guineafowl", 47: "honey_badger", 48: "kangaroo", 49: "mammoth", 50: "tiger"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose", 30: "cow", 31: "goat", 32: "chicken", 33: "cat", 34: "dog", 35: "buffalo", 36: "puma", 37: "pronghorn", 38: "warthog", 39: "hyena", 40: "wildebeest", 41: "lion", 42: "leopard", 43: "rhino", 44: "elephant", 45: "camel", 46: "guineafowl", 47: "honey_badger", 48: "kangaroo", 49: "mammoth", 50: "tiger", 51: "alligator"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
+const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
@@ -34,6 +35,7 @@ var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
 var _mats: Dictionary = {}
 var _t: float = 0.0
+var water_level: Callable        # (x, z) -> water surface height or NAN; set by the client: a swimmer below it plays its "swim" clip
 var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
 var _hits: Array = []            # [at Vector3, msec] of the hits reported in the last FELL_WINDOW_MS (note_hit)
 var _blood: Array = []           # MeshInstance3D pool, one per drop shown
@@ -276,6 +278,10 @@ func _make_species_body(number: int, id: int, young: bool = false) -> Node3D:
 			var tiger: Node3D = _make_fox()      # stand-in until the model files are there
 			tiger.scale = Vector3.ONE * 2.6
 			return tiger
+		51:
+			var alligator: Node3D = _make_seal()      # stand-in until the model files are there
+			alligator.scale = Vector3.ONE * 1.4
+			return alligator
 
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
@@ -490,6 +496,10 @@ func _process_body(delta: float) -> void:
 		var b: Dictionary = _bodies[id]
 		var node: Node3D = b["node"]
 		var state: int = b["state"]
+
+		if state == WARN_POP and not (node.has_meta("player") and (node.get_meta("player").get_meta("roles", {}) as Dictionary).has(str(WARN_POP))):
+			state = 10
+
 		var before: Vector3 = node.position
 		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 or state == 14 or state == 15 else 5.0), 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
@@ -663,6 +673,24 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		# units than the skeleton (the bear lay flat as a legless tube, 7 Nov 2026) is rescaled to it (_fit_clip_units).
 		var roles: Dictionary = {}
 
+		# Hand-made gait clips (gait {role: spec}): a model with no usable clip for a role gets one built from its own bones
+		# (_gait_clip). They are added under the name "gait_<role>" and the row's clips point at it.
+		for gait_role in (row.get("gait", {}) as Dictionary):
+			var gait_name: String = "gait_%s" % str(gait_role)
+
+			if player.has_animation_library("") and not player.has_animation(gait_name):
+				var made: Animation = _gait_clip(player, rig, row["gait"][gait_role], kind)
+
+				if made != null:
+					player.get_animation_library("").add_animation(gait_name, made)
+
+			row = row.duplicate(true)
+
+			if not row.has("clips"):
+				row["clips"] = {}
+
+			(row["clips"] as Dictionary)[str(gait_role)] = gait_name
+
 		# A refused clip (it lays the model flat) does not leave the role empty: the next clip that names the role is tried (the elk's
 		# file has two clips called Walk, one of them shrinking the rig to a hundredth; MikeW, 7 Nov 2026).
 		var rest_h: float = _clip_height(player, null, rig)
@@ -685,7 +713,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 				# are eased back to the first pose so the loop has no jump.
 				var loop_spec: Variant = (row.get("clip_loop", {}) as Dictionary).get(str(key), null)
 
-				if loop_spec is Array and (loop_spec as Array).size() >= 2:
+				if loop_spec is Array and (loop_spec as Array).size() >= 2 and not anim_name.begins_with("gait_"):      # a hand-made gait already loops
 					var loop_name: String = anim_name + "_loop_%s" % str(key)      # imported clips sit in the default library, "armature|clip"
 
 					if player.has_animation_library("") and not player.has_animation(loop_name):
@@ -708,6 +736,15 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 
 				anim.loop_mode = Animation.LOOP_LINEAR
 				_strip_root_drift(player, anim, rig, kind, anim_name)
+
+				# An in-place walk or run (no travel in the clip) gets its speed from its feet: docs/design/FOOT_SLIDING.md.
+				if (str(key) == "walk" or str(key) == "run") and not anim.has_meta("travel_mps") and not anim.has_meta("stride_measured"):
+					anim.set_meta("stride_measured", true)
+					var stride_mps: float = _measure_stride(player, anim, rig)
+
+					if stride_mps >= 0.2 and stride_mps <= 25.0:
+						anim.set_meta("travel_mps", stride_mps)
+						_model_note(kind, "clip %s: feet move %.2f m/s on the ground, played at speed / %.2f" % [anim_name, stride_mps, stride_mps])
 				roles[str(key)] = anim_name
 				break
 
@@ -985,10 +1022,22 @@ func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> floa
 
 # The box of the skeleton's bones in the rig's space in a clip's first frame (or the imported pose with no clip).
 func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
+	var bones: PackedVector3Array = _clip_bones(player, anim, rig, 0.0)
+	var box: AABB = AABB()
+
+	for i in bones.size():
+		box = AABB(bones[i], Vector3.ZERO) if i == 0 else box.expand(bones[i])
+
+	return box
+
+
+# The bones of the skeleton in the rig's space at `time` into a clip (or the imported pose with no clip), from the clip's own tracks
+# and the bone rests: no running player needed.
+func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: float = 0.0) -> PackedVector3Array:
 	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
 
 	if skeletons.is_empty():
-		return AABB()
+		return PackedVector3Array()
 
 	var sk: Skeleton3D = skeletons[0]
 	var local: Array = []
@@ -1018,11 +1067,11 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 			var bone_xf: Transform3D = local[bone]
 
 			if kind == Animation.TYPE_POSITION_3D:
-				bone_xf.origin = anim.position_track_interpolate(t, 0.0)
+				bone_xf.origin = anim.position_track_interpolate(t, time)
 			elif kind == Animation.TYPE_ROTATION_3D:
-				bone_xf.basis = Basis(anim.rotation_track_interpolate(t, 0.0)).scaled(bone_xf.basis.get_scale())
+				bone_xf.basis = Basis(anim.rotation_track_interpolate(t, time)).scaled(bone_xf.basis.get_scale())
 			else:
-				bone_xf.basis = Basis(bone_xf.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, 0.0))
+				bone_xf.basis = Basis(bone_xf.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, time))
 
 			local[bone] = bone_xf
 
@@ -1049,11 +1098,11 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 
 					match anim.track_get_type(t):
 						Animation.TYPE_POSITION_3D:
-							origin = anim.position_track_interpolate(t, 0.0)
+							origin = anim.position_track_interpolate(t, time)
 						Animation.TYPE_ROTATION_3D:
-							turn = anim.rotation_track_interpolate(t, 0.0)
+							turn = anim.rotation_track_interpolate(t, time)
 						Animation.TYPE_SCALE_3D:
-							size = anim.scale_track_interpolate(t, 0.0)
+							size = anim.scale_track_interpolate(t, time)
 
 				xf = Transform3D(Basis(turn) * Basis.from_scale(size), origin)
 
@@ -1063,7 +1112,8 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 
 	var world: Array = []
 	world.resize(sk.get_bone_count())
-	var box: AABB = AABB()
+	var out: PackedVector3Array = PackedVector3Array()
+	out.resize(sk.get_bone_count())
 
 	for i in sk.get_bone_count():
 		var chain: Array = []
@@ -1077,10 +1127,9 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 			var parent: int = sk.get_bone_parent(c)
 			world[c] = (world[parent] as Transform3D) * (local[c] as Transform3D) if parent >= 0 else local[c]
 
-		var at: Vector3 = to_rig * (world[i] as Transform3D).origin
-		box = AABB(at, Vector3.ZERO) if i == 0 else box.expand(at)
+		out[i] = to_rig * (world[i] as Transform3D).origin
 
-	return box
+	return out
 
 
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
@@ -1237,7 +1286,7 @@ func _make_model_flock(number: int, id: int, row: Dictionary) -> Node3D:
 			root.free()
 			return null      # no model file: the code flock is drawn
 
-		bird.position = Vector3(rng.randf_range(-spread, spread), -float(row.get("sink_m", 0.0)), rng.randf_range(-spread, spread))
+		bird.position = Vector3(rng.randf_range(-spread, spread), -_flock_sink(bird, row), rng.randf_range(-spread, spread))
 		bird.rotation.y = rng.randf_range(-0.6, 0.6)
 		rig.add_child(bird)
 		birds.append(bird)
@@ -1294,6 +1343,111 @@ func _track_at(anim: Animation, t: int, kind: int, time: float) -> Variant:
 	return anim.scale_track_interpolate(t, time)
 
 
+# How fast a clip's feet move over the ground while they touch it (docs/design/FOOT_SLIDING.md, MikeW 8 Nov 2026). In an in-place
+# walk the body stays put and a planted foot slides backward at exactly the speed the animal should travel, so: sample the bones 40
+# times over the clip in the rig's space (metres, the model's size scale is in it), take the lowest point the clip reaches as the
+# ground, call a bone planted while it is within 3% of the standing height of that ground, and return the middle horizontal speed
+# of planted bones between neighbouring samples. 0 when nothing is planted long enough to tell.
+func _measure_stride(player: AnimationPlayer, anim: Animation, rig: Node3D) -> float:
+	if anim.length <= 0.0:
+		return 0.0
+
+	var samples: int = 40
+	var frames: Array = []
+	var low: float = INF
+	var high: float = -INF
+
+	for i in samples + 1:
+		var bones: PackedVector3Array = _clip_bones(player, anim, rig, anim.length * float(i) / float(samples))
+		frames.append(bones)
+
+		for p in bones:
+			low = minf(low, p.y)
+			high = maxf(high, p.y)
+
+	if frames.is_empty() or high <= low:
+		return 0.0
+
+	var near_ground: float = low + (high - low) * 0.03
+	var dt: float = anim.length / float(samples)
+	var speeds: Array = []
+
+	for i in samples:
+		var a: PackedVector3Array = frames[i]
+		var b: PackedVector3Array = frames[i + 1]
+
+		for bone in a.size():
+			if a[bone].y <= near_ground and b[bone].y <= near_ground:
+				speeds.append(Vector2(b[bone].x - a[bone].x, b[bone].z - a[bone].z).length() / dt)
+
+	if speeds.size() < 4:
+		return 0.0
+
+	speeds.sort()
+	return float(speeds[int(speeds.size() / 2.0)])
+
+
+# How far a bird of a model flock sits into the surface: "sink_share" of its height in its graze clip (its swim pose: the legs
+# paddle below the body, and about a third of the body rides under the water line), else the fixed "sink_m".
+func _flock_sink(bird: Node3D, row: Dictionary) -> float:
+	if not row.has("sink_share") or not bird.has_meta("player"):
+		return float(row.get("sink_m", 0.0))
+
+	var player: AnimationPlayer = bird.get_meta("player")
+	var clip: String = str((player.get_meta("roles", {}) as Dictionary).get("0", ""))
+	var rig: Node3D = bird.get_node_or_null("Rig")
+
+	if clip == "" or rig == null:
+		return float(row.get("sink_m", 0.0))
+
+	var tall: float = _clip_box(player, player.get_animation(clip), rig).size.y      # in the rig's space: the model's size scale is in it
+	return tall * float(row["sink_share"])
+
+
+# A hand-made walk or run cycle from a model's own bones (MikeW, 8 Nov 2026: the mink's file has no looping walk; this is the
+# fallback if its loop window looks jerky in the game). spec: period_s, and "bones" {bone: [phase 0..1, swing degrees, axis "x"/"y"/"z"]}:
+# each bone turns about its own axis by swing * sin(2 pi (t / period + phase)) over its rest. A four-beat walk puts the legs at
+# phases 0, 0.25, 0.5, 0.75 (left hind, left fore, right hind, right fore); spine, tail and head bones sway at small swings.
+func _gait_clip(player: AnimationPlayer, rig: Node3D, spec: Dictionary, kind: String) -> Animation:
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+	var base: Node = player.get_node_or_null(player.root_node)
+
+	if skeletons.is_empty() or base == null:
+		return null
+
+	var sk: Skeleton3D = skeletons[0]
+	var period: float = float(spec.get("period_s", 0.5))
+	var out: Animation = Animation.new()
+	out.length = period
+	out.loop_mode = Animation.LOOP_LINEAR
+	var sk_path: String = str(base.get_path_to(sk))
+	var steps: int = 16
+	var missing: PackedStringArray = PackedStringArray()
+
+	for bone_name in (spec.get("bones", {}) as Dictionary):
+		var bone: int = sk.find_bone(str(bone_name))
+
+		if bone < 0:
+			missing.append(str(bone_name))
+			continue
+
+		var b: Array = spec["bones"][bone_name]
+		var axis: Vector3 = {"x": Vector3.RIGHT, "y": Vector3.UP, "z": Vector3.BACK}.get(str(b[2]) if b.size() > 2 else "x", Vector3.RIGHT)
+		var rest: Quaternion = sk.get_bone_rest(bone).basis.get_rotation_quaternion()
+		var t: int = out.add_track(Animation.TYPE_ROTATION_3D)
+		out.track_set_path(t, NodePath("%s:%s" % [sk_path, str(bone_name)]))
+
+		for i in steps + 1:
+			var time: float = period * float(i) / float(steps)
+			var angle: float = deg_to_rad(float(b[1])) * sin(TAU * (time / period + float(b[0])))
+			out.track_insert_key(t, time, rest * Quaternion(axis, angle))
+
+	if not missing.is_empty():
+		_model_note(kind, "gait: no bone %s" % ", ".join(missing))
+
+	return out
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -1312,7 +1466,7 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var run_mps: float = float(row.get("run_mps", 7.0))
 	var ref: float = 0.0
 
-	if speed > 0.3 and state != 10 and state != 12:
+	if speed > 0.3 and state != 10 and state != 12 and state != WARN_POP:
 		var running: bool = speed > (walk_mps + run_mps) * 0.5
 		clip = str(clips.get("run" if running else "walk", clip))
 		ref = run_mps if running else walk_mps
@@ -1325,6 +1479,21 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var player: AnimationPlayer = node.get_meta("player")
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = str(state) if roles.has(str(state)) else "0"
+
+	# A swimmer (a row with a "swim" clip, the alligator) in the water plays its swim clip whatever its state, at its swim speed.
+	if roles.has("swim") and water_level.is_valid():
+		var level: float = float(water_level.call(node.global_position.x, node.global_position.z)) if node.is_inside_tree() else NAN
+
+		if not is_nan(level) and node.global_position.y < level - 0.05:
+			role = "swim"
+			ref = float(row.get("swim_mps", 1.5)) if speed > 0.3 else 0.0
+			clip = str(roles.get("swim", ""))
+
+			if clip != "" and player.current_animation != clip:
+				player.play(clip, 0.25)
+
+			player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 0.6
+			return
 
 	if ref > 0.0 and not (state in AIR_STATES and roles.has(str(state))):      # in the air a flock plays its flight clip at any speed
 		role = "run" if ref == run_mps else "walk"
