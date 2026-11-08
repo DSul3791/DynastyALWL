@@ -8,12 +8,12 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
-const LOOK_COLUMNS := 6     # --new-inventory: slots across the pack column
+const LOOK_COLUMNS := 6     # slots across the pack column
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
 var _slot_scroll: ScrollContainer   # holds the slot grid
-var _last_numbers: PackedInt32Array = PackedInt32Array()   # --new-inventory: the pack at the last refresh, to see what just arrived
+var _last_numbers: PackedInt32Array = PackedInt32Array()   # the pack at the last refresh, to see what just arrived
 var _last_counts: PackedInt32Array = PackedInt32Array()
 var _crafted: Dictionary = {}        # item number a queued craft gives -> msec it was last seen in the queue (its arrival flies in)
 const CRAFT_FLY_WINDOW_MS := 30000
@@ -73,19 +73,18 @@ func build() -> Control:
 			view.sort_changed.call(index))
 	right.add_child(view._sort_menu)
 
-	if InventoryLook.on:
-		InventoryLook.plate(right_title, "Pack", view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
-		InventoryLook.style_carry_bar(view._carry_bar, InventoryLook.unit_of(view))
+	InventoryLook.plate(right_title, "Pack", view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
+	InventoryLook.style_carry_bar(view._carry_bar, InventoryLook.unit_of(view))
 
 	_slot_scroll = ScrollContainer.new()
 	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(_slot_scroll)
 	view._grid = GridContainer.new()
-	view._grid.columns = LOOK_COLUMNS if InventoryLook.on else 4
+	view._grid.columns = LOOK_COLUMNS
 	view._grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	view._grid.add_theme_constant_override("h_separation", view._px(4 if InventoryLook.on else 8))
-	view._grid.add_theme_constant_override("v_separation", view._px(4 if InventoryLook.on else 8))
+	view._grid.add_theme_constant_override("h_separation", view._px(4))
+	view._grid.add_theme_constant_override("v_separation", view._px(4))
 	_slot_scroll.add_child(view._grid)
 
 	for i in view.inventory.SLOTS:
@@ -111,32 +110,6 @@ func build() -> Control:
 	return root
 
 
-# One pack slot: a button that keeps slot `index` wherever the sort puts it, with a condition bar along its bottom.
-func _make_slot(index: int) -> Control:
-	if InventoryLook.on:
-		return _make_look_slot(index)
-
-	var button: Button = Button.new()
-	button.custom_minimum_size = Vector2(0.0, view._px(88))
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.clip_text = true
-	view._style(button, view.BODY_PX - 4)
-	button.pressed.connect(_on_slot_pressed.bind(index))
-	button.mouse_entered.connect(func(): view._hover = index)
-	button.mouse_exited.connect(func(): view._hover = -1 if view._hover == index else view._hover)
-	button.set_drag_forwarding(_slot_drag.bind(index), _slot_can_drop.bind(index), _slot_drop.bind(index))
-	var bar: ColorRect = ColorRect.new()          # condition bar along the bottom of a worn tool's slot
-	bar.name = "Condition"
-	bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	bar.offset_top = -view._px(8)
-	bar.offset_left = view._px(4)
-	bar.offset_bottom = -view._px(3)
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.visible = false
-	button.add_child(bar)
-	return button
-
-
 # The slots: arranged by the sort, then each one's text, bars, tooltip and whether the search shows it.
 func refresh() -> void:
 	arrange_slots()
@@ -146,52 +119,18 @@ func refresh() -> void:
 
 	var filter: String = view._search.text.strip_edges().to_lower() if view._search != null else ""
 
-	if InventoryLook.on:
-		_note_crafts()
+	_note_crafts()
 
-		for i in view.inventory.SLOTS:
-			_refresh_look_slot(i, filter)
-
-		_last_numbers = view.inventory.numbers.duplicate()
-		_last_counts = view.inventory.counts.duplicate()
-		return
-
-	# Inventory slots: with a search, only slots that match; otherwise every slot.
 	for i in view.inventory.SLOTS:
-		var button: Button = view._buttons[i]
-		var number: int = view.inventory.numbers[i]
-		button.text = "" if number == 0 else "%s\nx%s" % [view._item_label(number), view._count_text(view.inventory.counts[i])]
-		var bar: ColorRect = button.get_node("Condition")
-		var is_worn: bool = number != 0 and int(view.table.entry(view.table.id_of(number)).get("durability", 0)) > 0 and view.inventory.wear[i] > 0
-		var perishable: bool = number != 0 and view.table.shelf_units(number) > 0
-		bar.visible = is_worn or perishable
+		_refresh_look_slot(i, filter)
 
-		if perishable:
-			var f: float = view.table.freshness(number, view.inventory.wear[i])
-			bar.anchor_right = maxf(f, 0.04)
-			bar.color = Color(0.85, 0.2, 0.15) if f <= 0.25 else (Color(0.9, 0.7, 0.2) if f <= 0.5 else Color(0.35, 0.8, 0.3))
-			bar.anchor_left = 0.0
-			bar.offset_right = -view._px(4)
-			button.text += "   %s" % view._freshness_word(f)
-		elif is_worn:
-			var c: float = view.condition(i)
-			bar.anchor_right = maxf(c, 0.04)
-			bar.color = Color(0.85, 0.2, 0.15) if c <= 0.0 else Color(1.0 - c, 0.2 + 0.7 * c, 0.15)
-			bar.anchor_left = 0.0
-			bar.offset_right = -view._px(4)
-			button.text += "   BROKEN" if view.is_broken(i) else "   %d%%" % int(c * 100.0)
-		button.modulate = Color(1.0, 0.9, 0.5) if i == view._selected else Color.WHITE
-		# Every pack slot is listed: since the pointer hotbar (inventory step 4) slots 1 to 10 are ordinary pack slots and the keys only point at items.
-		button.visible = (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
-		button.tooltip_text = view._tooltip(number, view.inventory.counts[i], view.inventory.wear[i])
-
-		if number != 0 and view.container_cap(i) > 0:
-			button.text += "   %s" % view._litres(view.inventory.wear[i])
+	_last_numbers = view.inventory.numbers.duplicate()
+	_last_counts = view.inventory.counts.duplicate()
 
 
-# --new-inventory: one pack slot as item_slot.gd. Click selects and moves (as the old buttons), shift-click moves the stack into the open
+# One pack slot (item_slot.gd), keeping slot `index` wherever the sort puts it. Click selects and moves, shift-click moves the stack into the open
 # chest or station, double-click uses, right-click opens the slot menu. Dragging works as before, onto another slot or the hotbar strip.
-func _make_look_slot(index: int) -> Control:
+func _make_slot(index: int) -> Control:
 	var slot = InventoryLook.make_slot(view, index)
 	slot.clicked.connect(func(button: int, shift: bool) -> void: _on_look_click(index, button, shift))
 	slot.double_clicked.connect(func() -> void:
@@ -320,26 +259,6 @@ func _note_arrival(i: int, slot, number: int) -> void:
 		InventoryLook.fly_to(view._layer, from, slot, slot.icon, view.table.name_of(number), InventoryLook.unit_of(view))
 	elif not _last_numbers.has(number):
 		slot.flash_new()
-
-
-# Dragging a stack from one slot to another (also onto the hotbar strip on screen).
-func _slot_drag(_at: Vector2, slot: int) -> Variant:
-	if view.inventory.numbers[slot] == 0:
-		return null
-
-	var preview: Label = Label.new()
-	preview.text = view.table.name_of(view.inventory.numbers[slot])
-	preview.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 4))
-	view._buttons[slot].set_drag_preview(preview)
-	return {"slot": slot}
-
-
-func _slot_can_drop(_at: Vector2, data: Variant, _slot: int) -> bool:
-	return typeof(data) == TYPE_DICTIONARY and data.has("slot")
-
-
-func _slot_drop(_at: Vector2, data: Variant, slot: int) -> void:
-	view.move_slot(int(data["slot"]), slot)
 
 
 func _on_slot_pressed(slot: int) -> void:

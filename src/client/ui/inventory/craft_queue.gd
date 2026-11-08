@@ -56,16 +56,15 @@ func rebuild() -> void:
 		if i == 0:
 			view._queue_head_button = button
 
-			if InventoryLook.on:
-				# --new-inventory: a gold ring at the head's left fills as the craft works (look doc section 9).
-				var ring_px: int = view._px(view.BODY_PX)
-				var ring: Control = InventoryLook.craft_ring(view, ring_px)
-				button.add_child(ring)
-				ring.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-				ring.offset_left = -float(ring_px) - view._px(6)
-				ring.offset_right = -view._px(6)
-				ring.offset_top = -float(ring_px) * 0.5
-				ring.offset_bottom = float(ring_px) * 0.5
+			# A gold ring at the head's left fills as the craft works (look doc section 9).
+			var ring_px: int = view._px(view.BODY_PX)
+			var ring: Control = InventoryLook.craft_ring(view, ring_px)
+			button.add_child(ring)
+			ring.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+			ring.offset_left = -float(ring_px) - view._px(6)
+			ring.offset_right = -view._px(6)
+			ring.offset_top = -float(ring_px) * 0.5
+			ring.offset_bottom = float(ring_px) * 0.5
 
 
 func queue_text(index: int) -> String:

@@ -22,20 +22,19 @@ const SHELTER_MIN_SCALE := 0.8
 # disc has radius crown_m (the table's spacing radius), twice the old crown_m / 2, which is about where the drawn leaves end.
 const SHELTER_RADIUS := 2.0
 const RADIUS_CAP := 16.0                  # a crown must reach at most one cell beyond its own (the query looks one cell around)
-# Bare broadleaves in winter (docs/design/cover_by_season_design.md; Jamie #675, Kathleen #687): with --bare-winter, in the game season
-# "winter" these give no rain cover (their crowns are drawn bare). The list matches flora_view's DECIDUOUS (#687). Conifers and the
-# evergreen broadleaves cover all year.
+# Bare broadleaves in winter (docs/design/cover_by_season_design.md; Jamie #675, Kathleen #687): in the game season
+# "winter" these give no rain cover (their crowns are drawn bare; always, since Dave's 8 Nov ruling). The list matches flora_view's
+# DECIDUOUS (#687). Conifers and the evergreen broadleaves cover all year.
 const DECIDUOUS := ["oak", "beech", "birch", "alder", "willow", "maple", "sweet_chestnut", "walnut", "witness_tree"]
-static var bare_winter_on: bool = AppConfig.has_flag("bare-winter")
 
 
 static func is_deciduous(species_name: String) -> bool:
 	return DECIDUOUS.has(species_name)
 
 
-# Whether the deciduous crowns are bare in this game season (always false without --bare-winter). Set an index's `leafless` from this.
+# Whether the deciduous crowns are bare in this game season. Set an index's `leafless` from this.
 static func leafless_for(season: String) -> bool:
-	return bare_winter_on and season == "winter"
+	return season == "winter"
 
 
 # Roof shapes (lean-tos and the like), added by the same code on client and server. A roof

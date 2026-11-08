@@ -142,7 +142,7 @@ func _server() -> void:
 	rows_here = []
 	check(_drinks(items, v), "no source rows: today's water test stands")
 
-	# The season is the place's own (Weather.season_at, half a year off across the equator with --one-sky): the calendar says winter, but at
+	# The season is the place's own (Weather.season_at, half a year off across the equator): the calendar says winter, but at
 	# the player it is summer, so an intermittent brook long without rain is dry there.
 	season[0] = "winter"
 	items._last_rain_s = -INF

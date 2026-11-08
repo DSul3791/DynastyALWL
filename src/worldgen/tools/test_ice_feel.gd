@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Ice walk feel (docs/design/ice_walk_feel.md, --ice-feel): bands, crack tables, footing, the water temperature, the cold shock, broken patches,
+# Ice walk feel (docs/design/ice_walk_feel.md): bands, crack tables, footing, the water temperature, the cold shock, broken patches,
 # the moat cells and the collider's moat.
 #   godot --headless --path . --script res://src/worldgen/tools/test_ice_feel.gd
 
@@ -20,8 +20,6 @@ func check(ok: bool, what: String) -> void:
 
 
 func _init() -> void:
-	check(not IceFeel.on, "the switch is off unless --ice-feel is given")
-
 	# Bands: the edges of section 2.
 	check(IceFeel.band_of(0.0) == IceFeel.Band.OPEN and IceFeel.band_of(0.009) == IceFeel.Band.OPEN, "open water under 0.01")
 	check(IceFeel.band_of(0.01) == IceFeel.Band.SKIM and IceFeel.band_of(0.124) == IceFeel.Band.SKIM, "skim 0.01 to 0.125")

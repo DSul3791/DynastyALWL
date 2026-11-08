@@ -1,6 +1,6 @@
 extends Node3D
 
-# Steam over spring mouths on frosty mornings (docs/design/ice_walk_feel.md section 5b, Jamie #739; --ice-feel, client only). Spring water comes out
+# Steam over spring mouths on frosty mornings (docs/design/ice_walk_feel.md section 5b, Jamie #739; client only). Spring water comes out
 # at the year's mean (5.5 C at #8002) into air below freezing, so a soft steam rises off the brook where it leaves the cave: most on a calm, clear
 # frosty morning, none above 0 C or in a strong wind. Look only: a few wispy puffs per mouth (the waterfall mist's shader, fall_mist.gd), at most
 # MOUTHS mouths near the player, one GPU particle draw each; they dim at night (the liquid_sheet group's daylight).
