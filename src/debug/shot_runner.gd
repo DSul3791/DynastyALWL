@@ -4,7 +4,7 @@ extends Node
 # started with --shots. Each shot: fly to a point, face a direction, freeze the game clock at an hour,
 # optionally force the weather, wait for the ground and flora to stream in, save the 3D view as a PNG.
 #
-#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist)
+#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist, seafog)
 #   an 8th number (m/s) shows the third-person body walking at that speed, seen from the side (e.g. 4 = walk, 8 = run)
 #   agl is metres above the ground at x,z (a NEGATIVE y is an absolute height in metres instead): the runner first goes to 400 m above sea level there, waits until the
 #   ground under it has loaded, then drops to the ground height plus agl
@@ -146,6 +146,7 @@ const RAIN := {"rain": 0.65, "snow": 0.0, "storm": 0.0, "cloud": 0.8, "sun": 0.0
 const SNOW := {"rain": 0.0, "snow": 0.6, "storm": 0.0, "cloud": 0.8, "sun": 0.0, "wind": 0.1, "wind_dir": 1.0, "temp_c": -3.0}
 const CLEAR := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.15, "sun": 1.0, "wind": 0.1, "wind_dir": 1.0, "temp_c": 14.0}
 const MIST := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.05, "sun": 1.0, "wind": 0.15, "wind_dir": 1.0, "temp_c": 6.0, "mist": 1.0, "mist_top_m": 90.0}   # valley fog, top 90 m (docs/design/valley_fog.md)
+const SEAFOG := {"rain": 0.0, "snow": 0.0, "storm": 0.0, "cloud": 0.1, "sun": 1.0, "wind": 0.35, "wind_dir": 1.0, "temp_c": 11.0, "sea_fog": 1.0, "sea_fog_land": 1.0, "sea_fog_top_m": 120.0}   # sea fog, top 120 m, over the land too (docs/design/fog_pools_and_sea_fog.md)
 
 
 func setup(owner_client, args: Array) -> void:
@@ -299,6 +300,7 @@ func _process(delta: float) -> void:
 			"snow": client.weather = SNOW.duplicate()
 			"clear": client.weather = CLEAR.duplicate()
 			"mist": client.weather = MIST.duplicate()
+			"seafog": client.weather = SEAFOG.duplicate()
 
 		client.body.velocity = Vector3.ZERO
 
@@ -310,6 +312,11 @@ func _process(delta: float) -> void:
 
 		if client._avatar != null and float(shots[_index]["walk"]) < 0.0:
 			client._avatar.visible = false
+
+	# A first-person shot (no 8th number, look rig --cam first) stays first person on every frame: no third-person or photo camera, the drawn camera on the eye.
+	# Dino's cave picture (8 Nov 2026) was asked first person yet showed the body standing ahead of the camera.
+	if _index >= 0 and _index < shots.size() and float(shots[_index]["walk"]) < 0.0:
+		_hold_first_person()
 
 	var now: int = Time.get_ticks_msec()
 
@@ -632,11 +639,14 @@ func _process(delta: float) -> void:
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
 
 	# Ground guard (warning only): the voxel ground reading is flaky while a spot is still loading (31.0, then 15.0, then 63.0 at one spot in a test), so the camera is never moved
-	# for it; but a camera far below the reading, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
-	var guard_ground: float = _ground(p.x, p.z)
+	# for it; but a camera inside solid ground, no floor under it, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
+	# The floor is read from just above the camera, not from 1500 m: from the sky the ray stops on the hilltop over a cave and every cave shot warned (Sonny, 8 Nov 2026).
+	var guard_ground: float = _ground(p.x, p.z, p.y + GUARD_ABOVE_M)
+	var in_rock: bool = _solid_at(p)
+	_print_view()
 
-	if is_nan(guard_ground) or p.y < guard_ground - 3.0 or guard_ground <= -30.0:
-		print("shot runner: WARNING ground not loaded at (%.1f, %.1f): ground reading %.1f, camera y %.1f; the picture may be from under the world, raise --shot-settle (75 s worked)" % [p.x, p.z, guard_ground, p.y])
+	if is_nan(guard_ground) or in_rock or p.y < guard_ground - 3.0 or guard_ground <= -30.0:
+		print("shot runner: WARNING ground not loaded at (%.1f, %.1f): floor reading %.1f, camera y %.1f%s; the picture may be from under the world, raise --shot-settle (75 s worked)" % [p.x, p.z, guard_ground, p.y, ", the camera is inside solid ground" if in_rock else ""])
 	var falls: Array = client.flora.fall_list()
 	falls.sort_custom(func(a, b): return (a["base"] as Vector3).distance_to(p) < (b["base"] as Vector3).distance_to(p))
 
@@ -1559,6 +1569,49 @@ func _print_flora_row() -> void:
 	print("shot runner: flora row: chunk %s items %d level %d ground %s visible %s pieces %d instances %d setup_done %s" % [str(here), (entry["items"]["ids"] as PackedInt32Array).size(), int(entry["level"]), str(entry.get("ground")), ("no node" if node == null else str(node.visible)), pieces, instances, str(client.flora._setup_done)])
 
 
+# First person for a first-person shot: the client draws the body whenever its drawn camera stands more than half a metre behind the eye
+# (terrain_client.gd _update_view: third person, or the K photo camera), so both are switched off and the drawn camera is put back on the eye.
+func _hold_first_person() -> void:
+	if client.third_person:
+		client.third_person = false
+
+	if client.photo != null and client.photo.active:
+		client.photo.active = false
+
+	client._view_now = 0.0
+
+	if client.view_cam != null and not client.view_cam.top_level:
+		client.view_cam.position = Vector3.ZERO
+
+	if client._avatar != null:
+		client._avatar.visible = false
+
+
+# Where the picture was really taken from: the drawn camera (view_cam), its distance from the eye, and whether the body was drawn. A first-person shot
+# whose drawn camera is off the eye, or whose body is visible, says so; a drawn camera inside solid ground says so too (the body can stand in open air
+# while a third-person camera behind it is in the rock).
+func _print_view() -> void:
+	if client.view_cam == null or client.camera == null:
+		return
+
+	var eye: Vector3 = client.camera.global_position
+	var drawn: Vector3 = client.view_cam.global_position
+	var body_drawn: bool = client._avatar != null and client._avatar.visible
+	var first: bool = _index >= 0 and _index < shots.size() and float(shots[_index]["walk"]) < 0.0
+	print("shot runner: view: drawn camera at %s, %.2f m from the eye, third person %s, photo %s, body drawn %s" % [str(drawn), eye.distance_to(drawn), str(client.third_person), str(client.photo != null and client.photo.active), str(body_drawn)])
+
+	if first and (eye.distance_to(drawn) > 0.05 or body_drawn):
+		print("shot runner: WARNING first-person shot drawn from %.2f m off the eye%s" % [eye.distance_to(drawn), ", the body is in the picture" if body_drawn else ""])
+
+	if drawn.distance_to(eye) > 0.05 and _solid_at(drawn):
+		print("shot runner: WARNING the drawn camera is inside solid ground at %s" % str(drawn))
+
+	# The cave measure the light reads (weather_look under_rock), on every picture: Dino's cave logs (8 Nov 2026) had no line saying it.
+	if client.sound != null and client.sound.cave != null:
+		var cave = client.sound.cave
+		print("shot runner: cave: enclosure %.2f, rock %.2f, rays while flying %s, shot walk %s" % [cave.enclosure, cave.rock_enclosure, str(cave.measure_flying), str(shots[_index]["walk"]) if _index >= 0 and _index < shots.size() else "-"])
+
+
 # A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
 func _side_view(walk: float) -> void:
 	client.debug_pace = walk
@@ -1702,11 +1755,22 @@ func _print_body_height() -> void:
 	print("shot runner: body height: stance %d clip %s, feet level %.2f, collision ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
 
 
-func _ground(x: float, z: float) -> float:
+# from_y: where the ray starts going down (the sky by default; the ground guard starts just above the camera, so in a cave it finds the floor).
+func _ground(x: float, z: float, from_y: float = 1500.0) -> float:
 	var tool = client.terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
-	var hit = tool.raycast(Vector3(x, 1500.0, z), Vector3.DOWN, 2000.0)
+	var hit = tool.raycast(Vector3(x, from_y, z), Vector3.DOWN, from_y + 500.0)
 	return float(hit.position.y) if hit != null else NAN
+
+
+const GUARD_ABOVE_M := 1.0
+
+
+# True when the voxel at p is solid (SDF below zero): the camera is inside the ground.
+func _solid_at(p: Vector3) -> bool:
+	var tool = client.terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+	return float(tool.get_voxel_f(Vector3i(floori(p.x), floori(p.y), floori(p.z)))) < 0.0
 
 
 # --shot-frametime: set the quality, wait 10 s after connecting (the first frames build the world), then collect every frame time for frametime_s seconds
@@ -1764,6 +1828,11 @@ func _next(now: int) -> void:
 
 	var shot: Dictionary = shots[_index]
 	client.flying = true
+
+	# The rig flies the body to each spot, and the cave rays are skipped while flying (admin look-around), so every cave shot was lit and heard as open air
+	# (HUD "open", Dino's cave pictures 8 Nov 2026). The pictures measure the rock as a walking player would.
+	if client.sound != null and client.sound.cave != null:
+		client.sound.cave.measure_flying = true
 	_placed = false
 	_landed = false
 	_land_failed = false

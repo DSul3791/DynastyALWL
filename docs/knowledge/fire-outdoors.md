@@ -34,7 +34,7 @@
    - Sources: Forest Encyclopedia Network; Northwest Fire Science Consortium.
    - Bark slows it: wood with bark gains and loses moisture at about 2/3 the rate.
    - Rotten wood takes up and gives off water faster.
-   - North-facing slopes and high ground stay wetter (Forest Encyclopedia Network).
+   - North-facing slopes and high ground stay wetter (Forest Encyclopedia Network). That is a northern-hemisphere source: on our starter island at about 34° S, the south-facing slopes stay wetter (`one-sky.md`).
    - Dead fuel under 30% moisture "is essentially considered to be dead and highly flammable" (Northwest Fire Science Consortium).
    - Grass still lights well above that. In a Mediterranean grass study, half of the lighting tries took at 38.5% moisture, and almost none at 55.5% (Dimitrakopoulos et al. 2010).
 
