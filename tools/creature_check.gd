@@ -21,6 +21,8 @@ const ROLE_NAMES := {"rest": "rest pose", "0": "graze", "3": "alert", "10": "war
 
 var role_clips: PackedStringArray = PackedStringArray()
 var head_mode: bool = false
+const ROLE_ORDER := ["rest", "0", "3", "10", "11", "12", "15", "walk", "run", "swim"]
+const ROLE_NAMES := {"rest": "rest pose", "0": "graze", "3": "alert", "10": "warn", "11": "charge", "12": "recover", "15": "fly", "swim": "swim", "walk": "walk", "run": "run"}
 
 
 func _init() -> void:
