@@ -475,3 +475,55 @@ static func apply_wet_land(water_class: PackedByteArray, biome: PackedByteArray,
 			changed += 1
 
 	return changed
+
+
+# --- placer traps (M1 step 3; docs/water/stage_e_readers_design.md 6d) ---
+# Where along a river heavy grains settle: where the water slows. Kinds: "slope_break" (the bed's fall over the next stretch is under
+# 1 / slope_ratio of the one above), "bend" (the course turns by bend_deg or more), "confluence" (the flow grows by confluence_x or more in one
+# step: a tributary joins). The foot of a fall joins them at M2, from the record's falls list. `path` is the river walked
+# downstream, one row per step: [x, z, bed height, flow]. Returns [[step index, kind], ...] in order, at most max_traps, never two within
+# min_gap steps; when nothing qualifies, the gentlest step (where the water is slowest) so a source still gets one placer.
+static func placer_traps(path: Array, rules: Dictionary) -> Array:
+	var out: Array = []
+	var n: int = path.size()
+
+	if n < 3:
+		return out
+
+	var ratio: float = float(rules.get("slope_ratio", 2.0))
+	var bend: float = deg_to_rad(float(rules.get("bend_deg", 35.0)))
+	var conf: float = float(rules.get("confluence_x", 1.4))
+	var gap: int = int(rules.get("min_gap", 2))
+	var most: int = int(rules.get("max_traps", 4))
+	var gentlest: int = 1
+	var gentlest_g: float = INF
+
+	for k in range(1, n - 1):
+		var a: Array = path[k - 1]
+		var b: Array = path[k]
+		var c: Array = path[k + 1]
+		var run_up: float = maxf(Vector2(b[0] - a[0], b[1] - a[1]).length(), 0.01)
+		var run_down: float = maxf(Vector2(c[0] - b[0], c[1] - b[1]).length(), 0.01)
+		var g_up: float = maxf(float(a[2]) - float(b[2]), 0.0) / run_up
+		var g_down: float = maxf(float(b[2]) - float(c[2]), 0.0) / run_down
+		var turn: float = absf(Vector2(b[0] - a[0], b[1] - a[1]).angle_to(Vector2(c[0] - b[0], c[1] - b[1])))
+		var kind: String = ""
+
+		if float(a[3]) > 0.0 and float(b[3]) >= float(a[3]) * conf:
+			kind = "confluence"
+		elif g_up > 0.002 and g_down * ratio <= g_up:
+			kind = "slope_break"
+		elif turn >= bend:
+			kind = "bend"
+
+		if g_down < gentlest_g:
+			gentlest_g = g_down
+			gentlest = k
+
+		if kind != "" and (out.is_empty() or k - int(out.back()[0]) >= gap) and out.size() < most:
+			out.append([k, kind])
+
+	if out.is_empty():
+		out.append([gentlest, "slow"])
+
+	return out
