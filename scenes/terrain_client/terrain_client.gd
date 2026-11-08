@@ -5909,7 +5909,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
 
 	if sound.occlusion.outdoors:
-		text += "; open air: %d shadowed by the wind, %d carried, %d masked by rain or gale; snow fresh %.2f" % [sound.occlusion.air_shadowed, sound.occlusion.air_carried, sound.occlusion.air_masked, sound.weather.snow_fresh]
+		text += "; open air: %d shadowed by the wind, %d carried, %d masked by rain or gale, %d echoes; snow fresh %.2f" % [sound.occlusion.air_shadowed, sound.occlusion.air_carried, sound.occlusion.air_masked, sound.occlusion.echoes_played, sound.weather.snow_fresh]
 
 	text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	text += "\nlast dig sound: %s" % sound.dig.last_dig
