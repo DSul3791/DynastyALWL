@@ -52,7 +52,19 @@ static func sea_cover(game_s: float, zone_group: String, seed_value: int = 0) ->
 	return clampf(_thickness(game_s, zone_group, 0.0, SEA_DEPTH_M, SEA_FREEZE_C, seed_value) / FULL_M, 0.0, 1.0)
 
 
+# The look's season (docs/design/frozen_water_look.md, client only): {"cover", "peak"}, the cover now and the thickest cover over the
+# last LOOKBACK_DAYS. 1 - cover / peak is how far a thaw has gone (the shore moat opens first). The same loop as `cover`, so they always agree.
+static func season(game_s: float, zone_group: String, altitude_m: float = 0.0, depth_m: float = 3.0, seed_value: int = 0) -> Dictionary:
+	var run: Array = _run(game_s, zone_group, altitude_m, depth_m, 0.0, seed_value)
+	return {"cover": clampf(float(run[0]) / FULL_M, 0.0, 1.0), "peak": clampf(float(run[1]) / FULL_M, 0.0, 1.0)}
+
+
 static func _thickness(game_s: float, zone_group: String, altitude_m: float, depth_m: float, freeze_c: float, seed_value: int) -> float:
+	return float(_run(game_s, zone_group, altitude_m, depth_m, freeze_c, seed_value)[0])
+
+
+# [the thickness now, the thickest over the lookback], in metres (an Array, so the floats stay 64-bit and `cover` gives exactly what it gave).
+static func _run(game_s: float, zone_group: String, altitude_m: float, depth_m: float, freeze_c: float, seed_value: int) -> Array:
 	var deep: float = clampf((depth_m - 1.0) / 9.0, 0.0, 1.0)
 	var k: float = FREEZE_K * lerpf(1.4, 0.8, deep)
 	var lag_h: float = 24.0 * lerpf(WATER_LAG_SHALLOW_D, WATER_LAG_DEEP_D, deep)
@@ -60,6 +72,7 @@ static func _thickness(game_s: float, zone_group: String, altitude_m: float, dep
 	var start: float = game_s - float(steps) * HOUR_S
 	var water: float = maxf(Weather.temp_at(start, zone_group, altitude_m, seed_value), freeze_c)
 	var thickness: float = 0.0
+	var peak: float = 0.0
 
 	for n in range(steps + 1):
 		var t: float = start + float(n) * HOUR_S
@@ -80,7 +93,9 @@ static func _thickness(game_s: float, zone_group: String, altitude_m: float, dep
 
 			thickness = maxf(thickness - melt, 0.0)
 
-	return thickness
+		peak = maxf(peak, thickness)
+
+	return [thickness, peak]
 
 
 static func bears(cover_value: float) -> bool:
