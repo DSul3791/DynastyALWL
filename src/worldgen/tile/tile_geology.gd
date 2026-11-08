@@ -829,6 +829,52 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 		ore["local_id"] = int(ore["local_id"]) + 50
 		ore["id"] = "%d,%d#%d" % [home.x, home.y, int(ore["local_id"])]
 
+	# Hard rock under the tall peaks (docs/water/watershed_rebuild_design.md, stage A1 rule 3, 8 Nov 2026). Every summit of
+	# the world map at or above summit_pluton.min_summit_m stands on a granite intrusion whose roof is above the ground over
+	# the upper massif, as on Arran, the Mournes and the Skye Cuillin, where the hard core stood while the rock round it wore
+	# down. The generator sets the height first, so the consistent world puts the hard rock where the height is; a granite
+	# core holds steep walls, so valleys can deepen toward the peak without wearing the summit down. Volcanic cells keep their
+	# own vents. The summit belongs to the cell whose square holds it; its own seed (from the summit's position) leaves this
+	# cell's other features and ores as they were. It carries no ore of its own yet.
+	var summit_rules: Dictionary = rules.get("summit_pluton", {})
+
+	if not summit_rules.is_empty() and kind != "volcanic":
+		var square: Vector2i = Vector2i(floori(seed_point.x / _cell_m), floori(seed_point.y / _cell_m))
+		var shift: Vector2 = Vector2(float(square.x - int(cell["cell"][0])), float(square.y - int(cell["cell"][1]))) * _cell_m
+		var count: int = 0
+
+		for summit in _elevation.summits:
+			var top: float = float(summit[2])
+
+			if top < float(summit_rules["min_summit_m"]):
+				continue
+
+			var at: Vector2 = Vector2(float(summit[0]), float(summit[1])) + shift
+
+			if floori(at.x / _cell_m) != square.x or floori(at.y / _cell_m) != square.y:
+				continue
+
+			var srng: RandomNumberGenerator = SeedUtil.rng_for(_master, "summit_pluton", int(round(float(summit[0]))), int(round(float(summit[1]))))
+			var radius: float = srng.randf_range(float(summit_rules["radius_m"][0]), float(summit_rules["radius_m"][1]))
+			var roof: float = top * (1.0 + float(summit_rules["roof_above_summit_share"]))
+			count += 1
+			var local: int = local_cell * 100 + 90 + count
+			made_features.append({
+				"id": "%d,%d#%d" % [home.x, home.y, local],
+				"home_tile": [home.x, home.y],
+				"local_id": local,
+				"type": "intrusion",
+				"size": "summit_pluton",
+				"rock": "granite",
+				"center": [snappedf(at.x, 0.1), snappedf(at.y, 0.1)],
+				"radius_a_m": snappedf(radius, 0.1),
+				"radius_b_m": snappedf(radius * srng.randf_range(float(summit_rules["aspect"][0]), float(summit_rules["aspect"][1])), 0.1),
+				"angle": snappedf(srng.randf() * PI, 0.001),
+				"top_y": snappedf(roof, 0.1),
+				"roof_drop_m": snappedf(roof - top * float(summit_rules["edge_share"]), 0.1),
+				"bottom_y": snappedf(roof - srng.randf_range(float(summit_rules["depth_m"][0]), float(summit_rules["depth_m"][1])), 0.1),
+			})
+
 	return {"features": made_features, "ores": ores}
 
 

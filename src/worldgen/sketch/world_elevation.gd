@@ -123,7 +123,11 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 			if str(mount["type"]) == "starter" and mount.has("beach_cap_m") and not crater.is_empty():
 				_crater_at_summit(mount, crater, int(ceil(maxf(float(mount["a"]), float(mount["b"])) * 1.6 / cell_m)))
 	_clamp_heights()
+	_stand_high_ground()
 	_find_summits()
+
+	if _stand_summits():
+		_find_summits()
 
 
 # Now and then an island (never a starter) is a giant: `giant_peaks` in sketch_rules.json gives the chance, a size
@@ -168,6 +172,148 @@ func _roll_giants(sketch: Dictionary) -> void:
 # The 160 m map cannot hold a point, and the cubic upsampling rounds off the top, so every island's
 # summit came out as a wide mound. Here every local maximum above `summits.min_peak_m` within
 # `summits.search_m` is listed; tile_height.gd adds the spire to each at 8 m spacing.
+# Peaks that can stand (docs/water/watershed_rebuild_design.md, stage A1, 8 Nov 2026). The spire and the tile summit tent
+# stacked to near 60 degrees at a summit, steeper than any rock stands, so the landscape model cut the starter island's main
+# peak by 145 m in its first step. Two passes raise ground, never lower it, so every summit keeps its height and its base
+# widens:
+# 1. flanks: every land cell is raised to the highest cone of slope `standing.flank_slope` hanging from any cell at or above
+#    `standing.from_m`, h = max(h, h(y) - slope * distance(x, y)), so no high ground is steeper than the softest rock stands;
+# 2. summit tops (after the summits are found): within `standing.tip_reach_share` of each summit's height (the reach of the
+#    tile tent that sharpens it, tile_rules summit radius_factor x spire_share) the ground is raised to a cone of
+#    `standing.tip_slope` from the summit, so the tent's own slope added on top still stands.
+# The cones run over land only (the sea is never filled, so the coast does not move); sea cliffs and low hills are below
+# from_m; carved craters are left as they are and the cones do not cross them.
+func _standing_open() -> PackedByteArray:
+	var open: PackedByteArray = PackedByteArray()      # 1 = land the cones may raise and cross
+	open.resize(heights.size())
+
+	for index in range(heights.size()):
+		open[index] = 1 if heights[index] > 0.0 else 0
+
+	for zone in crater_zones:
+		var reach: int = int(ceil(float(zone[2]) / cell_m)) + 1
+		var c0: int = int(floor((float(zone[0]) - origin_x) / cell_m))
+		var r0: int = int(floor((float(zone[1]) - origin_z) / cell_m))
+
+		for row in range(maxi(r0 - reach, 0), mini(r0 + reach, size_z - 1) + 1):
+			for column in range(maxi(c0 - reach, 0), mini(c0 + reach, size_x - 1) + 1):
+				if cell_center_m(column, row).distance_to(Vector2(float(zone[0]), float(zone[1]))) < float(zone[2]):
+					open[row * size_x + column] = 0
+
+	return open
+
+
+# Pass 1: two chamfer passes (straight and diagonal steps), so off-axis cones are a little gentler than the limit, never steeper.
+func _stand_high_ground() -> void:
+	var standing: Dictionary = rules.get("standing", {})
+
+	if standing.is_empty():
+		return
+
+	var straight: float = float(standing["flank_slope"]) * cell_m
+	var diagonal: float = straight * sqrt(2.0)
+	var from_m: float = float(standing["from_m"])
+	var open: PackedByteArray = _standing_open()
+	var envelope: PackedFloat32Array = PackedFloat32Array()
+	envelope.resize(heights.size())
+
+	for index in range(heights.size()):
+		envelope[index] = heights[index] if heights[index] >= from_m else -INF
+
+	for row in range(size_z):
+		for column in range(size_x):
+			var index: int = row * size_x + column
+
+			if open[index] == 0:
+				continue
+
+			var best: float = envelope[index]
+
+			if column > 0 and open[index - 1] == 1:
+				best = maxf(best, envelope[index - 1] - straight)
+
+			if row > 0:
+				var above: int = index - size_x
+
+				if open[above] == 1:
+					best = maxf(best, envelope[above] - straight)
+
+				if column > 0 and open[above - 1] == 1:
+					best = maxf(best, envelope[above - 1] - diagonal)
+
+				if column < size_x - 1 and open[above + 1] == 1:
+					best = maxf(best, envelope[above + 1] - diagonal)
+
+			envelope[index] = best
+
+	for row in range(size_z - 1, -1, -1):
+		for column in range(size_x - 1, -1, -1):
+			var index: int = row * size_x + column
+
+			if open[index] == 0:
+				continue
+
+			var best: float = envelope[index]
+
+			if column < size_x - 1 and open[index + 1] == 1:
+				best = maxf(best, envelope[index + 1] - straight)
+
+			if row < size_z - 1:
+				var below: int = index + size_x
+
+				if open[below] == 1:
+					best = maxf(best, envelope[below] - straight)
+
+				if column > 0 and open[below - 1] == 1:
+					best = maxf(best, envelope[below - 1] - diagonal)
+
+				if column < size_x - 1 and open[below + 1] == 1:
+					best = maxf(best, envelope[below + 1] - diagonal)
+
+			envelope[index] = best
+
+			if best > heights[index]:
+				heights[index] = best
+
+
+# Pass 2: a gentle cone round each summit top. Returns true when any ground was raised (the summits are then found again;
+# they do not move, because every raised cell stays below its summit).
+func _stand_summits() -> bool:
+	var standing: Dictionary = rules.get("standing", {})
+
+	if standing.is_empty() or summits.is_empty():
+		return false
+
+	var slope: float = float(standing["tip_slope"])
+	var reach_share: float = float(standing["tip_reach_share"])
+	var open: PackedByteArray = _standing_open()
+	var raised: bool = false
+
+	for summit in summits:
+		var centre: Vector2 = Vector2(float(summit[0]), float(summit[1]))
+		var top: float = float(summit[2])
+		var reach_m: float = reach_share * top
+		var reach: int = int(ceil(reach_m / cell_m)) + 1
+		var c0: int = int(floor((centre.x - origin_x) / cell_m))
+		var r0: int = int(floor((centre.y - origin_z) / cell_m))
+
+		for row in range(maxi(r0 - reach, 0), mini(r0 + reach, size_z - 1) + 1):
+			for column in range(maxi(c0 - reach, 0), mini(c0 + reach, size_x - 1) + 1):
+				var index: int = row * size_x + column
+				var distance: float = cell_center_m(column, row).distance_to(centre)
+
+				if open[index] == 0 or distance > reach_m:
+					continue
+
+				var cone: float = top - slope * distance
+
+				if cone > heights[index]:
+					heights[index] = cone
+					raised = true
+
+	return raised
+
+
 func _find_summits() -> void:
 	summits.clear()
 	var settings: Dictionary = rules.get("summits", {})
