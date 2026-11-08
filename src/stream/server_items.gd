@@ -10254,7 +10254,7 @@ func take_nest(peer: int, inv) -> bool:
 	rng.seed = hash(id) ^ day ^ 0x1b873593
 	give(peer, table.number_of(str(row.get("item", "egg"))), roll_amount(peer, rng, int(count[0]), int(count[1])))
 
-	if row.has("extra") and rng.randf() < float(row.get("extra_chance", 1.0)):
+	if row.has("extra") and roll_chance(peer, rng, float(row.get("extra_chance", 1.0))):   # luck nudges the extra find too (job 77)
 		give(peer, table.number_of(str(row["extra"][0])), int(row["extra"][1]))
 
 	_nest_taken[id] = day
