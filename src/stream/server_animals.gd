@@ -1911,7 +1911,7 @@ func _zig(away: Vector2, def: Dictionary) -> Vector3:
 	return Vector3(dir.x, 0.0, dir.y)
 
 
-# Herd groups (docs/design/HERD_GROUPS.md; animals.json "groups", off by default). A herd has one leader, its first living member that
+# Herd groups (docs/design/HERD_GROUPS.md; animals.json "groups", on since Dave's 8 Nov ruling). A herd has one leader, its first living member that
 # is on the ground (a bird flying or perched is passed over). The leader drifts groups.drift_m per graze step on a slow wander, turned
 # by the weather's _upwind_angle (deer and hunters into a light wind, not in a gale, with weather.on); the leader alone keeps any
 # weather cover its home has. Every other member keeps a place round the leader on a spiral (golden angle, spacing x sqrt of its
