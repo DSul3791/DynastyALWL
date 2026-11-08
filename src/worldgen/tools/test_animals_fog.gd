@@ -62,7 +62,7 @@ func _init() -> void:
 	check(near(a.fog_v(Vector3.ZERO), 60.0), "the weather's visibility_m wins inside the layer")
 
 	# Sight share at V 120: full to 30 m, half at 45 m, none past 60 m.
-	check(near(a.fog_sight_share(25.0, 120.0), 1.0) and near(a.fog_sight_share(45.0, 120.0), 0.5) and near(a.fog_sight_share(70.0, 120.0), 0.0), "sight share 1, 0.5, 0 at 25, 45, 70 m in V 120")
+	check(near(AnimalsScript.fog_sight_share(25.0, 120.0), 1.0) and near(AnimalsScript.fog_sight_share(45.0, 120.0), 0.5) and near(AnimalsScript.fog_sight_share(70.0, 120.0), 0.0), "sight share 1, 0.5, 0 at 25, 45, 70 m in V 120")
 
 	# Spook: in V 40 a standing player 25 m off is past the deer's 30 m spook range; in clear air the same player is inside it.
 	var deer_row: Dictionary = {"pos": Vector3.ZERO}
