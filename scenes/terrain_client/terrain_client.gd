@@ -1328,6 +1328,7 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.soil_at = func(p: Vector3) -> String: return str(SoundStageScript.SOIL_SURFACE.get(sound._ground_under(p), "dirt")) if sound != null and sound._tool != null else "dirt"      # animal sign: soft or hard ground
 	animal_view.air_at = func(p: Vector3) -> float: return WeatherScript.air_c(game_clock.seconds, weather_group, p.y)      # the one temperature by height (#620), at the animal
 	animal_view.fog_now = func() -> Dictionary: return {"density": _environment.fog_density if _environment != null and _environment.fog_enabled else 0.0, "mist": float(weather.get("mist", 0.0)), "mist_top_m": float(weather.get("mist_top_m", 0.0))}      # fog looks: the scene fog Kathleen's weather look sets (visibility_m when she exposes it)
+	animal_view.cave_c_at = func(p: Vector3) -> float: return _animal_cave_c(p)      # cave air: the year mean at the height under rock (Steve #715)
 	animal_view.weather_now = func() -> Dictionary: return weather      # weather looks: temp_c, rain, snow, wind, wind_dir (the shared weather state)
 	animal_view.wind_now = func() -> float: return float(sound.weather.wind) if sound != null and sound.weather != null else 0.0      # ears and tails in the wind
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
@@ -6441,3 +6442,20 @@ func _animal_conditions() -> Dictionary:
 			out["storm_ahead"] = float(sound.weather.storm_ahead)
 
 	return out
+
+
+# The cave air at an animal (animal_view.gd cave_air): NAN under open sky; under rock (solid within 30 m straight up) the year mean
+# at that height, the deep cave air of Steve's #715 (cave_mean_c: the zone's sea-level mean less the lapse, no season or day swing).
+# The mouth blend needs the distance to the nearest mouth, which is server tile data (cave_mouths) not on the client yet.
+func _animal_cave_c(p: Vector3) -> float:
+	if terrain == null:
+		return NAN
+
+	var tool = terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+
+	if tool.raycast(p + Vector3(0.0, 1.0, 0.0), Vector3.UP, 30.0) == null:
+		return NAN
+
+	var zone: Dictionary = WeatherScript.Climate.of_zone(weather_group)
+	return float(zone["sea_level_mean_c"]) - float(zone["lapse_c_per_km"]) * maxf(p.y, 0.0) / 1000.0

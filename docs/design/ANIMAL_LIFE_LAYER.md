@@ -48,6 +48,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Posed swimmers | the whale's and dolphin's tail beat, flipper strokes and porpoise pitch from their spines | `posed_swim`, `spine_bones`, `swim_axis`, `swim_swing_deg`, `sea.tail_hz` | `swim_rig` (**off**) | SWIM_RIG.md |
 | Wind direction | rump to wind and rain, deer grazing into the wind, windward fur, breath downwind, birds into wind | none | `wind_looks` (**off**) | ANIMAL_WIND.md |
 | Fog | eye shine sooner and to a third of the visibility, steam into the mist, herds closer in fog | none | `fog_looks` (**off**) | ANIMAL_FOG.md |
+| Cave air | the cave's year-mean air under rock for the weather looks, coat drying rates | warmth.json | `cave_air` (**off**) | ANIMAL_WEATHER_LOOKS.md |
 | Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |

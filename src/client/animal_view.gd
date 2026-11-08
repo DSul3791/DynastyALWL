@@ -62,6 +62,12 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var cave_air: bool = false        # animals underground take the cave's air (the year mean at the height), steam by it, coats dry by it (ANIMAL_WEATHER_LOOKS.md cave section; off until the PC check)
+var cave_c_at: Callable           # (position) -> the cave air C there, or NAN under open sky (terrain_client: rock overhead, Weather year mean)
+var fire_near: Callable           # (position) -> true within a fire's warmth (for drying); unset: none
+var _warmth: Variant = null
+var _cave_cache: Dictionary = {}  # 2 m cell -> cave air (or NAN), cleared every 5 s: one rock ray per cell, not per animal per frame
+var _cave_cache_t: float = 0.0       # data/items/warmth.json drying rates and its cave_climate block (Steve #712, #715)
 var fog_looks: bool = false       # animals in fog, mist and dusk: eye shine sooner, steam into the mist, herds closer in thick fog (ANIMAL_FOG.md; off until the PC check)
 var fog_now: Callable             # () -> {visibility_m, mist 0..1, mist_top_m}: the client's fog, from Kathleen's weather look (ANIMAL_FOG.md names the fields)
 var _f_fog: Dictionary = {}
@@ -537,7 +543,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -629,6 +635,9 @@ func _process_body(delta: float) -> void:
 
 			if wind_looks:
 				_wind_look(node, b, state, model_speed, delta)
+
+			if cave_air:
+				_dry_rate(node, b, delta)
 
 			if hunt_feedback and (b.has("react") or float(b.get("damage", 0.0)) > 0.0):
 				_hunt_motion(node, b, model_speed, delta)
@@ -3681,7 +3690,7 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air"]
 
 func _all_flags_off() -> void:
 	cover_still = false
@@ -3689,6 +3698,7 @@ func _all_flags_off() -> void:
 	swim_rig = false
 	wind_looks = false
 	fog_looks = false
+	cave_air = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -3735,6 +3745,12 @@ func _cam() -> Camera3D:
 func _air(at: Vector3, wx: Dictionary) -> float:
 	if not is_nan(air_override):
 		return air_override
+
+	if cave_air and cave_c_at.is_valid():
+		var under: float = _cave_c(at)
+
+		if not is_nan(under):
+			return under      # underground: the cave's own air, not the sky's (Steve #715: the year mean at the height deep in)
 
 	return float(air_at.call(at)) if air_at.is_valid() else float(wx.get("temp_c", 10.0))
 
@@ -4029,6 +4045,49 @@ func _fog_visibility() -> float:
 	var density: float = float(_f_fog.get("density", 0.0))
 	return 3.0 / density if density > 0.0001 else INF
 
+
+# How fast this animal's wet coat dries, per game hour, for the wet look (claude/mikew-wet-look reads b["dry_per_h"] when both are in):
+# Steve's body-in-weather rates (#712, warmth.json dry_cover_per_h and dry_fire_per_h, the wool model) with his cave rule (#715):
+# by a fire the fire rate; out in the open the cover rate (wind and sun dry a coat at least as fast as shelter); underground, none
+# past dry_mouth_m from a mouth and half the cover rate at a winter mouth. The client cannot tell the distance to a mouth yet (the
+# mouths are server tile data), so underground counts as deep (no drying) until Steve's cave_mouths reach the client.
+func _dry_rate(node: Node3D, b: Dictionary, delta: float) -> void:
+	b["dry_t"] = float(b.get("dry_t", 0.0)) - delta
+
+	if float(b["dry_t"]) > 0.0:
+		return
+
+	b["dry_t"] = 2.0
+
+	if _warmth == null:
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/warmth.json"))
+		_warmth = parsed if parsed is Dictionary else {}
+
+	var w: Dictionary = _warmth
+	var at: Vector3 = node.global_position
+	var underground: bool = cave_c_at.is_valid() and not is_nan(_cave_c(at))
+	var rate: float = float(w.get("dry_cover_per_h", 1.0))
+
+	if fire_near.is_valid() and bool(fire_near.call(at)):
+		rate = float(w.get("dry_fire_per_h", 6.0))
+	elif underground:
+		rate = 0.0 if (w.get("cave_climate", null) is Dictionary) else rate * 0.5      # Steve's cave block: none deep in; without it the flat cave of #667 dries at half
+
+	b["dry_per_h"] = rate
+
+
+# The cave air at a place, through a 2 m cell cache cleared every 5 s (PERF_BUDGET.md: the rock ray is a voxel raycast).
+func _cave_c(at: Vector3) -> float:
+	if _t - _cave_cache_t > 5.0:
+		_cave_cache.clear()
+		_cave_cache_t = _t
+
+	var cell: Vector3i = Vector3i((at / 2.0).floor())
+
+	if not _cave_cache.has(cell):
+		_cave_cache[cell] = float(cave_c_at.call(at))
+
+	return float(_cave_cache[cell])
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
