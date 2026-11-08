@@ -35,7 +35,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 97   # 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 98   # 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -82,6 +82,8 @@ signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
 signal road_marker_reached(at: Vector3)
 signal chest_received(id: int, bytes: PackedByteArray)
+signal chest_info_received(id: int, keep_out: bool, may_set: bool)
+signal craft_stock_received(numbers: PackedInt32Array, counts: PackedInt32Array)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
@@ -189,6 +191,8 @@ const ACT_RESET_EDITS := 40  # admin only: delete every saved dig and fill (coll
 const ACT_DUMP_WATER := 41   # at = the point (admin only): the server writes the live water cells in a 40 m box there to a text file in its store
 const ACT_LAND_TYPES := 46   # at = the point (admin only): the server classifies the land round it from the live water (lake, river, marsh, swamp, bog, floodplain), checks the springs near it and writes land_types_X_Z.txt (water land types, R1)
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
+const ACT_CHEST_KEEP_OUT := 64   # a = container world id, b = 1 keep it out of crafting and blueprint sites, 0 let them use it (the owner only, within chest reach; protocol 98)
+const ACT_CRAFT_STOCK := 65      # ask for craft_stock: what a craft may use besides the pack (sent when the crafting window opens and when the pack changes while it is open; protocol 98)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -672,6 +676,20 @@ func breath(deciseconds: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func chest_contents(id: int, bytes: PackedByteArray) -> void:
 	chest_received.emit(id, bytes)
+
+
+# The open container's "keep out" tick (protocol 98): true when its owner keeps it out of crafting and blueprint sites, and whether this player may
+# change it (their own storage chest). Sent after chest_contents on opening and after ACT_CHEST_KEEP_OUT.
+@rpc("authority", "call_remote", "reliable")
+func chest_info(id: int, keep_out: bool, may_set: bool) -> void:
+	chest_info_received.emit(id, keep_out, may_set)
+
+
+# What a craft may use besides the pack (protocol 98, docs/design/INVENTORY_CRAFTING_REPORT.md step 2): item numbers and counts lying within 3 m and
+# in the player's own containers within 12 m that are not kept out. Sent on ACT_CRAFT_STOCK, after each craft request and after a keep-out change.
+@rpc("authority", "call_remote", "reliable")
+func craft_stock(numbers: PackedInt32Array, counts: PackedInt32Array) -> void:
+	craft_stock_received.emit(numbers, counts)
 
 
 # One item gain for the pickup feed (protocol 60): sent to the player who gained it. source: pickup, harvest, craft, quest.
