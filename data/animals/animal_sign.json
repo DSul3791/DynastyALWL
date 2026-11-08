@@ -775,6 +775,20 @@
 					"hint": "Deep claw marks high on a trunk. A tiger marks its ground."
 				}
 			]
+		},
+		"alligator": {
+			"group": "clawed",
+			"track": "splayed clawed prints and a tail drag",
+			"signs": [
+				{
+					"kind": "slide",
+					"hint": "A flattened mud slide into the water. An alligator basks here."
+				},
+				{
+					"kind": "tracks",
+					"hint": "Splayed clawed prints and a tail drag. An alligator crossed."
+				}
+			]
 		}
 	}
 }
