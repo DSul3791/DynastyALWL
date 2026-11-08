@@ -25,8 +25,10 @@ The steps (R6 method items 1 to 4):
 4. Lakes at their R3 levels on the refined ground (their shores follow the 8 m ground), the sea at 0, wetlands, regime,
    discharge, water table depth, basin, distance to perennial fresh water and loose sediment, each encoded as listed in the
    manifest.
-Rivers drawn as water (class 3, seasonal channels 8) and the snow and fog rasters come with R5 and the A4 snow layer; until
-then the manifest says the record is not complete and the bake must refuse it (Steve's M2 reader checks `complete`).
+With --network (R5's network.py output of this same chain) the regime and discharge come from the network, which knows
+the stream threshold and the losing beds. Rivers carved and drawn as water (class 3, seasonal channels 8), the cold-air pools
+and the snow window come later; until every item is in, the manifest lists what is missing, says the record is not complete,
+and the bake must refuse it (Steve's M2 reader checks `complete`).
 """
 import sys, os, json, time, hashlib, subprocess
 import numpy as np
@@ -272,7 +274,18 @@ def main():
         for dc in (-1, 0, 1):
             sea_near = sea_near | np.roll(np.roll(sea_near, dr, 0), dc, 1)
     ocean = sea_near & (g <= 0.0)
-    regime8 = nearest(r4['regime'].astype(np.int8), g16)
+    # The network (R5), when given, must be of this same run; its regime (which takes the stream threshold and the losing
+    # beds into account) and its flows replace R4's first regime and record.py's own discharge.
+    network_dir = opts.get('network')
+    net = None
+    if network_dir:
+        nman = json.load(open(os.path.join(network_dir, 'network_manifest.json')))
+        bad = [k for k in ('inputs.npz', 'glacial.npz', 'lakes.npz', 'groundwater.npz') if nman['inputs'].get(k) != hashes[k]]
+        if bad:
+            raise SystemExit(f'record: the network was made from other files ({", ".join(bad)}); run network.py on this chain')
+        net = np.load(os.path.join(network_dir, 'network.npz'))
+    regime16 = (net['regime'] if net is not None else r4['regime']).astype(np.int8)
+    regime8 = nearest(regime16, g16)
     wet8 = nearest(r4['wetland'].astype(np.int8), g16)
     lake_wet = np.isfinite(lvl) & (lvl > g)
     summit16, summit8_smooth = float(g16.max()), float(g.max())
@@ -317,8 +330,11 @@ def main():
     wclass[ocean] = OCEAN
     level = np.where(ocean, 0.0, np.where(lake_wet, lvl, np.nan))
     ref_mm = runoff.reference_quick_mm(P['rain']['background_mm_yr'], P['water_budget'])
-    q16 = r3['quick_area_m2'].astype(np.float64) * ref_mm / 1000.0 / SECONDS_PER_YEAR + r4['baseflow_m3_s'].astype(np.float64)
-    discharge = np.nan_to_num(nearest(np.where(r4['regime'] > 0, q16, 0.0), g16))
+    if net is not None:
+        q16 = net['q_mean_m3_s'].astype(np.float64)
+    else:
+        q16 = r3['quick_area_m2'].astype(np.float64) * ref_mm / 1000.0 / SECONDS_PER_YEAR + r4['baseflow_m3_s'].astype(np.float64)
+    discharge = np.nan_to_num(nearest(np.where(regime16 > 0, q16, 0.0), g16))
     table = np.nan_to_num(nearest(r4['depth_to_table_m'].astype(np.float64), g16))
     basin = nearest(r3['basin_id'].astype(np.int64), g16)
     sediment = np.nan_to_num(nearest(b2['sediment_m'].astype(np.float64), g16))
@@ -350,14 +366,17 @@ def main():
             for name, arr, typ, _ in fields:
                 np.ascontiguousarray(arr[r0:r0 + T + 1, c0:c0 + T + 1]).tofile(os.path.join(d, f'{name}.{typ}'))
 
-    network_dir = opts.get('network')
     if network_dir:
         network = json.load(open(os.path.join(network_dir, 'network.json')))
         hashes['network.json'] = sha(os.path.join(network_dir, 'network.json'))
+        hashes['network.npz'] = sha(os.path.join(network_dir, 'network.npz'))
+        missing = [f'R5: {m}' for m in nman.get('missing', [])]
     else:
         network = dict(reaches=[], heads=[], confluences=[], falls=[], springs=[], cave_springs=[], coast_outlets=[], cold_air_pools=[],
                        lakes=lakes)
-    complete = bool(network_dir)
+        missing = ['network reaches, heads, falls, springs, outlets (R5)']
+    missing += ['rivers wider than about 8 m carved and drawn as water (R6 item 3)', 'cold-air pools (stage D)', 'snow window (A4 snow layer)']
+    complete = not missing
     json.dump(network, open(os.path.join(rec_dir, 'network.json'), 'w'), indent=1)
     json.dump(RC['climate'], open(os.path.join(rec_dir, 'climate.json'), 'w'), indent=1)
 
@@ -367,9 +386,7 @@ def main():
                    roughness=dict(rms_slope=rough_rms_slope, removed_cells=roughness_removed_cells),
                    closed_cells_outside_lakes=int(fault_idx.size), closed_cells_highest=fault_list,
                    land_km2=float(land.sum() * SPACING * SPACING / 1e6), lake_km2=float(lake_wet.sum() * SPACING * SPACING / 1e6),
-                   wetland_km2=float((wet8 > 0).sum() * SPACING * SPACING / 1e6),
-                   missing=[] if complete else ['rivers as water (R5)', 'network reaches, heads, falls, springs, outlets (R5)',
-                                                'cold-air pools (R5 reaches)', 'snow window (A4 snow layer)'])
+                   wetland_km2=float((wet8 > 0).sum() * SPACING * SPACING / 1e6), missing=missing)
     manifest = dict(version=VERSION, complete=complete, record_sha=git_sha(), cell_m=SPACING, origin_x=ox, origin_z=oz,
                     tile_samples=T + 1, tiles=P['tiles'], inputs=hashes,
                     stage_manifests={k: (json.load(open(p)).get('inputs', json.load(open(p)).get('inputs_sha256')) if os.path.exists(p) else None) for k, p in
