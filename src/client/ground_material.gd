@@ -44,6 +44,10 @@ uniform vec2 puddle_origin = vec2(0.0); // a corner near the camera, in 60 m ste
 uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black;   // worn game trails (grass_view.gd), 4 m texels over 1024 m
 uniform float trail_draw = 0.25;
 uniform vec2 summit_snow = vec2(0.0, 0.82); // summit snow (weather_look.gd, art_weather_light.md 8.2.1): the island's summit height (0 none known), lowest patches as a share of it
+uniform bool wet_look = false;          // --rain-look (rain_look_design.md 3.4): wetness per layer (puddles.gd) instead of the one wet value
+uniform float wet_layer[6];             // turf, litter, gravel, mud, sand, rock: 0 dry .. 1 soaked
+uniform float wet_streak = 0.0;         // run-off streaks on steep rock, kept an hour longer than the face
+uniform vec2 wet_wind = vec2(1.0, 0.0); // where the wind blows toward (x, z): faces looking into it wet first
 uniform vec3 caustics = vec3(0.0);      // under water (underwater_look.gd): surface height, strength 0..1 (0 off), how deep the lines reach
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -350,14 +354,44 @@ void fragment() {
 
 	// Weather: rain darkens the ground and gives it a sheen, snow whitens level ground above the sea.
 	float shelter = 0.0;
-	if (wet + snow + puddle_any > 0.01) {
+	if (wet + snow + puddle_any > 0.01 || wet_look) {
 		vec2 cuv = (world_pos.xz - canopy_box.xy) / canopy_box.z;
 		if (cuv.x > 0.0 && cuv.x < 1.0 && cuv.y > 0.0 && cuv.y < 1.0) {
 			shelter = texture(canopy, cuv).r;      // under a crown the rain and the snow do not reach the ground
 		}
 	}
 	float soak = wet * (1.0 - shelter);
-	color *= 1.0 - 0.35 * soak * (1.0 - snow);
+	float wet_rough = 0.38;
+	if (!wet_look) {
+		color *= 1.0 - 0.35 * soak * (1.0 - snow);
+	} else {
+		// Lekner and Dorf: light, porous ground darkens most (sand), dense rock least but turns glossy, mud hardly changes. Faces that look up or
+		// into the wind wet first and the underside of an overhang stays dry. Under a crown the ground stays dry, but its edge (the drip line)
+		// takes the drips and is wet. Steep rock carries run-off streaks.
+		float drip_line = smoothstep(0.12, 0.3, shelter) * (1.0 - smoothstep(0.8, 0.95, shelter));
+		float open_sky = max(1.0 - shelter, drip_line);
+		float facing = clamp(0.6 * world_normal.y + 0.4 * dot(world_normal.xz, -wet_wind) + 0.4, 0.0, 1.0) * smoothstep(-0.15, 0.0, world_normal.y);
+		float dark[6] = float[6](0.72, 0.65, 0.70, 0.92, 0.55, 0.78);
+		float rough_to[6] = float[6](0.45, 0.45, 0.30, 0.18, 0.30, 0.22);
+		float keep = 0.0;
+		float rough_sum = 0.0;
+		soak = 0.0;
+		for (int k = 0; k < 6; k++) {
+			float s = clamp(wet_layer[k] * facing * open_sky, 0.0, 1.0);
+			keep += lw[k] * mix(1.0, dark[k], s);
+			soak += lw[k] * s;
+			rough_sum += lw[k] * s * rough_to[k];
+		}
+		wet_rough = soak > 0.001 ? rough_sum / soak : 0.38;
+		if (wet_streak > 0.01 && world_normal.y < 0.64) {
+			float run = smoothstep(0.55, 0.75, vnoise(vec3(world_pos.x * 0.6, world_pos.y * 0.075, world_pos.z * 0.6)));
+			float streaked = run * 0.6 * wet_streak * smoothstep(0.64, 0.5, world_normal.y) * open_sky;
+			keep *= 1.0 - 0.25 * streaked * rock_mask;
+			soak = max(soak, streaked * rock_mask);
+		}
+		color *= mix(keep, 1.0, snow);
+		soak = clamp(soak / 0.7, 0.0, 1.0);    // the roughness mix below scales it by 0.7
+	}
 	float lying = snow * (1.0 - 0.75 * shelter) * smoothstep(0.62, 0.9, world_normal.y) * smoothstep(0.0, 1.0, world_pos.y) * (1.0 - 0.6 * rock_mask);
 	// Summit snow (art_weather_light.md 8.2.1), the look of Sonny's A4 snow window until the baked window exists: patches above a
 	// share of the island's summit that falls with the season, lower on faces that look north (-Z) and on lee faces (a west wind
@@ -442,7 +476,7 @@ void fragment() {
 	// Mud is wet: a little sheen.
 	// Photo roughness near the eye, fading to the flat value with distance (it shimmers when far).
 	float base_rough = has_pbr && rough_w > 0.01 ? mix(0.92, clamp(tex_rough / rough_w, 0.35, 1.0), closeness) : 0.92;
-	ROUGHNESS = mix(mix(base_rough, 0.55, mud), 0.38, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
+	ROUGHNESS = mix(mix(base_rough, 0.55, mud), wet_rough, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
 	ROUGHNESS = mix(ROUGHNESS, 0.18, wet_sand);      // wet sand shines and mirrors the sky
 	ROUGHNESS = mix(ROUGHNESS, 0.3, puddle_rim);
 	ROUGHNESS = mix(ROUGHNESS, mix(0.03, 0.15, puddle_ice), puddle);      // a puddle mirrors the sky; ice a little less

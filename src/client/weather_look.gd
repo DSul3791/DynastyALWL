@@ -640,6 +640,10 @@ func _process_body(delta: float) -> void:
 
 	if not _client.underwater:
 		var ground_wet: float = float(_client.sound.weather.ground_wet) if _client.sound != null and _client.sound.weather != null else 0.0
+
+		if rain_look:
+			ground_wet = puddles.wet_mean      # the ground's own wetness, which dries in game hours (rain_look_design.md 3.4)
+
 		haze.update(delta, float(_client.weather.get("temp_c", 10.0)), float(_s["cloud"]), rain, float(_client.weather.get("mist", 0.0)), ground_wet)
 		# The clear-air base (1, or the haze rule's share with --haze), thickened by rain, snow, storm and fog.
 		var thick: float = haze.density_scale + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
@@ -659,6 +663,11 @@ func _process_body(delta: float) -> void:
 	var heading: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
 	var cave_open: float = clampf((_cave_factor - CAVE_LIGHT_DARK) / maxf(1.0 - CAVE_LIGHT_DARK, 0.001), 0.0, 1.0)
 	puddles.update(delta, rain, float(_s["wind"]), Vector2(cos(heading), sin(heading)), smoothstep(0.6, 0.95, cave_open), _client.terrain.material as ShaderMaterial)
+
+	if rain_look:
+		var sun_now: float = clampf(1.0 - float(_s["cloud"]) * 1.1, 0.0, 1.0) * smoothstep(0.0, 0.2, day.elevation)
+		puddles.update_wet(delta, rain, float(_s["wind"]), sun_now, Vector2(cos(heading), sin(heading)), _client.terrain.material as ShaderMaterial)
+
 	_update_summits(delta, heading)
 	_update_particles(rain, snow, float(_s["wind"]))
 	breath.update(delta)

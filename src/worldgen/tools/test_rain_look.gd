@@ -5,6 +5,7 @@ extends SceneTree
 # and the lit shader is the one built when the switch is on.
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_rain_look.gd
 const WeatherLook := preload("res://src/client/weather_look.gd")
+const Puddles := preload("res://src/client/puddles.gd")
 
 var _fails: int = 0
 
@@ -43,5 +44,33 @@ func _init() -> void:
 	_check(WeatherLook.RAIN_SHADER_LIT.contains("void light()") and not WeatherLook.RAIN_SHADER_LIT.contains("unshaded"), "the switched-on streaks are lit by the scene, not self-lit")
 	_check(WeatherLook.RAIN_SHADER.contains("unshaded"), "without the switch the streaks are as before")
 
+	_check_wet()
 	print("test_rain_look: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
+
+
+# Wet surfaces (rain_look_design.md 3.4): soaked in 3 game minutes of rain, held in light rain, rock dry first and litter last, mud keeping
+# half for hours, faster in sun and wind; the run-off streaks outlast the rock face.
+func _wet_after(hours: float, rain: float, wind: float, sun: float, start: float) -> Array:
+	var w: Array = [start, start, start, start, start, start, start]
+	var steps: int = maxi(int(hours / 0.01), 1)
+
+	for i in range(steps):
+		w = Puddles.wet_step(w.slice(0, 6), float(w[6]), hours / float(steps), rain, wind, sun)
+
+	return w
+
+
+func _check_wet() -> void:
+	var soaked: Array = _wet_after(0.05, 0.6, 0.0, 0.0, 0.0)
+	_check(float(soaked.min()) > 0.99, "3 game minutes of rain soak every layer")
+	_check(float(_wet_after(0.025, 0.6, 0.0, 0.0, 0.0)[0]) < 0.6, "and the first minute and a half only part soaks them")
+	var held: Array = _wet_after(2.0, 0.1, 0.0, 0.0, 1.0)
+	_check(float(held[5]) > 0.99 and float(held[0]) > 0.99, "light rain holds the wetness")
+	var hour: Array = _wet_after(1.0, 0.0, 0.0, 0.0, 1.0)
+	_check(float(hour[5]) < 0.01 and float(hour[0]) > 0.5 and float(hour[1]) > float(hour[0]), "after an hour on a grey still day rock is dry, turf still wet, litter wetter")
+	_check(float(hour[6]) > 0.3, "the run-off streaks on steep rock outlast the face (%.2f)" % float(hour[6]))
+	_check(absf(float(_wet_after(3.0, 0.0, 0.0, 0.0, 1.0)[3]) - Puddles.WET_MUD_FLOOR) < 0.06, "mud keeps about half its wetness for hours")
+	var sunny: Array = _wet_after(0.5, 0.0, 1.0, 1.0, 1.0)
+	_check(float(sunny[2]) < 0.01 and float(_wet_after(0.5, 0.0, 0.0, 0.0, 1.0)[2]) > 0.6, "sun and wind dry gravel in half an hour that a grey still day leaves wet")
+	_check(Puddles.WET_DRY_H[5] < Puddles.WET_DRY_H[2] and Puddles.WET_DRY_H[2] < Puddles.WET_DRY_H[0] and Puddles.WET_DRY_H[0] < Puddles.WET_DRY_H[1], "drying order: rock, gravel, turf, litter")

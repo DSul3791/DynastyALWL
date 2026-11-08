@@ -54,8 +54,22 @@ void fragment() {
 }
 """
 
+# --rain-look (docs/design/rain_look_design.md 3.4): how wet each ground layer is, 0 dry .. 1 soaked. It soaks in over 3 game minutes of
+# rain from RAIN_FROM, holds in light rain, and dries in game hours by layer (rock first, litter last; mud keeps half), twice as fast in full
+# sun and half again in a full wind. Steep rock keeps its run-off streaks an hour longer than its face.
+const WET_SOAK_H := 0.05
+const WET_HOLD_FROM := 0.02
+const WET_DRY_H := [2.5, 3.0, 1.5, 3.0, 2.0, 0.75]      # turf, litter, gravel, mud, sand, rock
+const WET_MUD_FLOOR := 0.5
+const WET_MUD_SLOW_H := 48.0                           # below the floor, mud dries this slowly
+const WET_STREAK_HOLD_H := 1.0
+
 var _client
 var level: Array = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+var wet: Array = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]       # with --rain-look: each layer's wetness
+var wet_streak: float = 0.0                           # the run-off streaks on steep rock
+var wet_mean: float = 0.0                             # the mean of the layers, for the haze
+var _wet_sent: Array = []
 var ice: float = 0.0                  # 0 open .. 1 frozen, for checks
 var shown: float = 0.0                # the highest level as drawn (after the cave fade), for checks
 var splashes: int = 0                 # for checks
@@ -219,6 +233,65 @@ func update(delta: float, rain: float, wind: float, wind_dir: Vector2, cave_open
 
 
 # Once a second from terrain_client.gd _update_weather (the zone group and the player's height); the ice itself every ICE_EVERY_S.
+# One step of the wetness memory: hours of game time, the rain, wind and sun now (all 0..1).
+static func wet_step(wet_now: Array, streak: float, hours: float, rain: float, wind: float, sun: float) -> Array:
+	var out: Array = wet_now.duplicate()
+	var faster: float = (1.0 + clampf(sun, 0.0, 1.0)) * (1.0 + 0.5 * clampf(wind, 0.0, 1.0))
+
+	for k in range(out.size()):
+		var w: float = float(out[k])
+
+		if rain > RAIN_FROM:
+			w = minf(w + hours / WET_SOAK_H, 1.0)
+		elif rain <= WET_HOLD_FROM:
+			var dry_h: float = float(WET_DRY_H[k])
+
+			if k == 3 and w <= WET_MUD_FLOOR:
+				dry_h = WET_MUD_SLOW_H
+
+			var floor_w: float = WET_MUD_FLOOR if k == 3 and w > WET_MUD_FLOOR else 0.0
+			w = maxf(w - hours / dry_h * faster, floor_w)
+
+		out[k] = w
+
+	var streak_dry_h: float = float(WET_DRY_H[5]) + WET_STREAK_HOLD_H
+	var new_streak: float = maxf(float(out[5]), streak - (hours / streak_dry_h * faster if rain <= WET_HOLD_FROM else 0.0))
+	out.append(clampf(new_streak, 0.0, 1.0))
+	return out
+
+
+# Every frame from weather_look.gd with --rain-look: steps the memory and sends it to the ground shader (faded in caves like the puddles).
+func update_wet(delta: float, rain: float, wind: float, sun: float, wind_dir: Vector2, material: ShaderMaterial) -> void:
+	var stepped: Array = wet_step(wet, wet_streak, delta * GameClock.RATIO / 3600.0, rain, wind, sun)
+	wet_streak = float(stepped.pop_back())
+	wet = stepped
+	var total: float = 0.0
+
+	for w in wet:
+		total += float(w)
+
+	wet_mean = total / float(wet.size())
+
+	if material == null:
+		return
+
+	var drawn: PackedFloat32Array = PackedFloat32Array()
+
+	for w in wet:
+		drawn.append(snappedf(float(w) * _open, 0.005))
+
+	drawn.append(snappedf(wet_streak * _open, 0.005))
+	drawn.append(snappedf(wind_dir.x, 0.05))
+	drawn.append(snappedf(wind_dir.y, 0.05))
+
+	if Array(drawn) != _wet_sent:
+		_wet_sent = Array(drawn)
+		material.set_shader_parameter("wet_look", true)
+		material.set_shader_parameter("wet_layer", drawn.slice(0, 6))
+		material.set_shader_parameter("wet_streak", drawn[6])
+		material.set_shader_parameter("wet_wind", Vector2(drawn[7], drawn[8]))
+
+
 func set_ice_from(game_s: float, zone_group: String, altitude_m: float) -> void:
 	var now: int = Time.get_ticks_msec()
 
