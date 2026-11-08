@@ -49,6 +49,7 @@ func box(id: int):
 
 
 func craft_pot() -> void:
+	items._last_queue_act.clear()   # the server paces queue requests (QUEUE_ACT_GAP_MS); each step here is a fresh request
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, Vector3.ZERO)
 
 
