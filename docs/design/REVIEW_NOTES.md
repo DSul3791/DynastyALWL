@@ -73,3 +73,20 @@ Checked how the animal looks read the weather against Kathleen's client code:
 - **Left:** the fog sampler unification (above), the cave mouth blend (needs Steve's `cave_mouths` on the client), the fire list
   for drying (`fire_near` unset), and every server request in ANIMAL_FOG.md and ANIMAL_DRINK.md.
 
+## Bug pass before the PC gate, pr03 to pr23 (static only, 8 Nov 2026)
+Read every life look for null paths with no model, flags really off, per-frame allocations against PERF_BUDGET.md, and sampler
+duplicates.
+- **Fixed: clip-rate changes overwritten.** The ice's careful steps (`_ice_look`) and the wounded limp (`_hunt_motion`) multiplied the
+  clip's `speed_scale` before `_animate_model` set it for the frame, so they had no effect. They now ask through `b["speed_x"]`, which
+  is applied after `_animate_model` (one place, beside the cover-still call). The bathe and thunder startle bursts were already safe:
+  they hold their clip through the flight block's `air_once`.
+- **Fixed: per-frame allocations in always-on paths.** The backing test (`state in [3, 10, 12]`, every model animal every frame) and
+  the row reader (`row.slice(5)`, every row at the network rate) built an Array each time; now a const and an index loop. The wind
+  looks' kind lists are consts too (`GRAZE_INTO_WIND`, `ONE_LINE_TROTTERS`, `BACKING_STATES`).
+- **Fixed: one unused variable** left by the limp fix (a warning).
+- **Checked, no change:** every `get_meta("player")` is guarded by `has_meta("player")` or a default; every Rig goes through
+  `LifeUtil.rig` or `get_node_or_null`; the mother, foe, drink spot and sign positions are tested before use; every new hook is called
+  only under its flag; `_refresh_frame` reads each client source once a frame; the cave ray is cell-cached; the fog reads one value.
+- **Still open (not bugs):** the two older terrain_client.gd warnings that are not this branch's; `fire_near` unwired; the cave mouth
+  blend; the herd look's n x n at 5 Hz.
+
