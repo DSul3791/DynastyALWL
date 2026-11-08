@@ -162,6 +162,7 @@ var send_training: Callable     # (peer, today's training in percent of a fitnes
 var water_depth_at: Callable       # (position) -> metres of water there (optional; unset: depth is not checked)
 var water_kind_at: Callable        # (x, z) -> {"kind": brook | river | lake | pond | sea_shallow | sea_mid | sea_deep | "", "depth"} (server_fish_water.gd; optional)
 var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
+var ice_moat_at: Callable        # (position) -> true in a thaw's shore moat (Kathleen frozen_water_look.md 4, #729): open water there, as off the ice; unset: none
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
@@ -10069,7 +10070,26 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) ->
 
 
 func _on_ice(pos: Vector3) -> bool:
+	if ice_moat_at.is_valid() and bool(ice_moat_at.call(pos)):
+		return false   # the thaw's shore moat is open water: no ice to stand on, a drink without a hole (#729 decision, 8 Nov 2026)
+
 	return ice_cover_at.is_valid() and float(ice_cover_at.call(pos)) >= 0.5 and water_near.is_valid() and bool(water_near.call(pos, 0.0))
+
+
+# The live ice holes within reach of a point, nearest first, at most `count` (protocol 97, Kathleen's frozen_water_look.md 5): [positions,
+# game seconds each stays open until]. The client turns `until` into an age with fishing.json ice.hole_game_h.
+func ice_holes_near(at: Vector3, reach: float = 120.0, count: int = 8) -> Array:
+	var now: float = _now_game_s()
+	var live: Array = _holes.filter(func(h): return float(h["until"]) > now and Vector2(h["pos"].x - at.x, h["pos"].z - at.z).length() <= reach)
+	live.sort_custom(func(p, q): return at.distance_squared_to(p["pos"]) < at.distance_squared_to(q["pos"]))
+	var points: PackedVector3Array = PackedVector3Array()
+	var untils: PackedFloat32Array = PackedFloat32Array()
+
+	for h in live.slice(0, count):
+		points.append(h["pos"])
+		untils.append(float(h["until"]))
+
+	return [points, untils]
 
 
 func _now_game_s() -> float:

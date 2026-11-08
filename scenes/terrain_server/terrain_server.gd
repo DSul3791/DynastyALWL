@@ -102,6 +102,7 @@ var _weather_next_msec: int = 0
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
+var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
 var _swell: float = 0.0
 var _dry: float = 0.0
 var _weather_bucket: int = -1
@@ -500,6 +501,7 @@ func _ready() -> void:
 	animals.wind = func(): return weather
 	animals.weather_ahead = func(hours): return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(4), 0.0, 0.0)   # the starter tile's row, as _update_weather (animals_in_weather_design.md 3)
 	animals.canopy = func(point): return flora.covered(point)
+	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
@@ -966,6 +968,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
 	_nests_sent.erase(peer_id)
+	_holes_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
@@ -2299,6 +2302,13 @@ func _send_npcs(delta: float) -> void:
 		if int(_nests_sent.get(peer, 0)) != nests_sig:
 			_nests_sent[peer] = nests_sig
 			net.nests.rpc_id(peer, nest_rows[0], nest_rows[1])
+
+		var hole_rows: Array = items.ice_holes_near(at)
+		var hole_sig: int = hash([hole_rows[0], hole_rows[1]])
+
+		if int(_holes_sent.get(peer, 0)) != hole_sig:
+			_holes_sent[peer] = hole_sig
+			net.ice_holes.rpc_id(peer, hole_rows[0], hole_rows[1])
 
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.

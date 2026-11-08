@@ -35,7 +35,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 96   # 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md; 95 is #685's fire states). 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 97   # 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md; 95 is #685's fire states). 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -95,6 +95,7 @@ signal animals_received(rows: Array)
 signal blood_received(points: PackedVector3Array)
 signal burrows_received(points: PackedVector3Array)
 signal nests_received(points: PackedVector3Array, kinds: PackedByteArray)
+signal ice_holes_received(points: PackedVector3Array, untils: PackedFloat32Array)
 signal npc_talk_requested(peer_id: int, npc_id: String, choice: int)
 signal npc_say_received(npc_id: String, npc_name: String, text: String, voice_id: String, choices: PackedStringArray, ends: bool)
 signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: String)
@@ -577,6 +578,13 @@ func burrows(points: PackedVector3Array) -> void:
 @rpc("authority", "call_remote", "reliable")
 func nests(points: PackedVector3Array, kinds: PackedByteArray) -> void:
 	nests_received.emit(points, kinds)
+
+
+# Ice fishing holes (protocol 97, Kathleen frozen_water_look.md 5, Steve 8 Nov): up to 8 live holes within 120 m, nearest first, and the
+# game seconds each stays open until (the client's age is from fishing.json ice.hole_game_h), sent when the set changes. For the ice look.
+@rpc("authority", "call_remote", "reliable")
+func ice_holes(points: PackedVector3Array, untils: PackedFloat32Array) -> void:
+	ice_holes_received.emit(points, untils)
 
 
 # Talking (protocol 45): the player asks to talk to an NPC (choice -1) or picks a choice by index; the server answers with the NPC's
