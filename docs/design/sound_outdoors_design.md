@@ -139,6 +139,12 @@ A quiet sound past the mask distance fades out. A loud low one does not.
 - **Night:** the same river carries about twice as far on a calm night (3.2 already does it).
 - **Not here:** the roar over a calm lake. That is R7's to fix by its cause, and this does not touch it.
 
+### 3.8 Breeze loss (step 5, Jamie #683)
+
+- **What:** a moderate breeze cuts every range about five times (about 14 dB): Jamie's force 4 column, where a large fall is heard to 850 m, not 3 km.
+- **Rule:** past 200 m, full from 400 m, every source (big low sounds too) loses `lerp(6, 14, smoothstep(0.3, 0.5, wind))` dB, faded in from wind 0.15. That is -6 dB at wind 0.3 (4 m/s) and -14 dB from wind 0.5 (8 m/s).
+- **With the others:** it adds to the wind direction (3.1) and the gale mask (3.4); the total is still held to -30 dB.
+
 ## 4. Never-hear checks (from Jamie's list, each a test or a listen)
 
 - a far sound as loud upwind as downwind on a windy day (test: `wind_db` gap ≥ 10 dB at wind 0.4, d 400 m);
@@ -163,6 +169,7 @@ Plus our own:
 2. **Masking by rain and gale; fresh-snow hush that ages** (`weather_sounds.gd` `snow_fresh`).
 3. **Rivers as a line** (`water_sounds.gd` sets `air_line` on river and rapids voices, and the scan adds `line_db`).
 4. **Echoes off cliffs:** the `Echo` bus, `air_sharp` on the four modules, the search and the repeats.
+5. **Breeze loss** (3.8): `breeze_db` in `outdoor_air.gd`, added in `total`.
 
 Cost: steps 1 to 3 are a few multiplies per playing world voice every 0.5 s (96 voices at most on High). Step 4 is at most 8 to 12 voxel rays every 0.5 s, and only when a sharp sound played.
 
