@@ -21,6 +21,7 @@ const ALERT := 3
 const WARN := 10                # big game standing its ground (head down), then 11 charge, 12 recover (server_big_game.gd)
 const SNEAK := 13               # a thief creeping up on food, 14 running off with it (server_thieves.gd)
 const HIDDEN := 5               # in its burrow: never sent, never hunted
+const HIT_ZONES := ["", "head", "chest", "hip", "leg"]   # animal_hit zone codes (docs/design/hunt_feedback_server.md 3)
 const HUNCH := 20               # wire only: a grazer standing out the rain, still, head low (animals_in_weather_design.md 6; GRAZE on the server)
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
@@ -41,6 +42,7 @@ var fire_radius: Callable          # (Vector3) -> how far animals keep from that
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var weather_ahead: Callable        # (hours) -> the weather dictionary that many game hours from now (WeatherScript.state; animals_in_weather_design.md 3)
 var died: Callable                 # (species, position, source peer) when an animal is killed
+var send_hit: Callable             # (peer, animal id, zone, at): a hit, for every player within hit_send_m (hunt_feedback_server.md 3)
 var ticks_run: int = 0
 var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
 var flocks = null                  # bird flocks on water (server_flocks.gd)
@@ -479,6 +481,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 		return int(a.get("birds", 0)) <= 0
 
+	if not a.has("hp_max"):
+		a["hp_max"] = float(a["hp"])   # its full health, set aside at the first hit: the row's health share (hunt_feedback_server.md 2)
+
 	a["hp"] -= amount
 
 	if goblins != null and a.has("lair"):
@@ -584,9 +589,53 @@ func target_on_segment(from: Vector3, to: Vector3, radius: float, chest_m: float
 
 		if (from + seg * t).distance_to(centre) <= r and t < best_t:
 			best_t = t
-			best = {"id": int(id), "at": animals[id]["pos"]}
+			best = {"id": int(id), "at": animals[id]["pos"], "point": from + seg * t}
+			best["zone"] = hit_zone(int(id), best["point"])
 
 	return best
+
+
+# Where on the body a hit at `p` landed (hunt_feedback_server.md 3, MikeW's client rule): 1 head, 2 chest, 3 hip, 4 leg, 0 unknown. The body
+# is taken as twice the species' hit radius long.
+func hit_zone(id: int, p: Vector3) -> int:
+	if not animals.has(id):
+		return 0
+
+	var a: Dictionary = animals[id]
+	var length: float = 2.0 * float(species_def(str(a["sp"])).get("hit_radius_m", 0.6))
+	var fwd: Vector2 = Vector2.from_angle(float(a["heading"]))
+	var along: float = clampf(Vector2(p.x - a["pos"].x, p.z - a["pos"].z).dot(fwd) / maxf(length * 0.5, 0.05), -1.0, 1.0)
+	var up: float = (p.y - a["pos"].y) / maxf(length * 0.6, 0.05)
+
+	if up < 0.3:
+		return 4
+
+	if along > 0.55 and up > 0.5:
+		return 1
+
+	return 3 if along < -0.45 else 2
+
+
+# The point of a jab's aim line (from `origin` along `dir`, within `reach`) nearest the animal's chest centre.
+func jab_point(id: int, origin: Vector3, dir: Vector3, reach: float, chest_m: float = 0.5) -> Vector3:
+	if not animals.has(id) or dir.length() < 0.001:
+		return origin
+
+	var centre: Vector3 = animals[id]["pos"] + Vector3(0.0, chest_m, 0.0)
+	var n: Vector3 = dir.normalized()
+	return origin + n * clampf((centre - origin).dot(n), 0.0, reach)
+
+
+# A hit landed on animal `id` (alive or just killed, at `at`): every player within hit_send_m of it is told which animal and where on the body.
+func report_hit(id: int, zone: int, at: Vector3) -> void:
+	if not send_hit.is_valid() or big_game == null or not big_game.player_info.is_valid():
+		return
+
+	var reach: float = float(cfg.get("hit_send_m", 60.0))
+
+	for info in big_game.player_info.call():
+		if (info["pos"] as Vector3).distance_to(at) <= reach:
+			send_hit.call(int(info["peer"]), id, zone, at)
 
 
 # A loud noise: every animal within `radius` of the point that is not already running bolts away from it.
@@ -1559,6 +1608,9 @@ func rows_near(point: Vector3) -> Array:
 
 			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
 				row.append(animals[int(a["foe_dog"])]["pos"])
+
+			if a.has("hp_max") and float(a["hp"]) < float(a["hp_max"]):
+				row.append(maxf(snappedf(float(a["hp"]) / maxf(float(a["hp_max"]), 0.01), 0.1), 0.1))   # hurt: its health share, always the last field and a float
 
 			found.append([d, row])
 

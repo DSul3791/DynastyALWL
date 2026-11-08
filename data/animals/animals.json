@@ -20,6 +20,8 @@
 	"never_within_m": 60.0,
 	"spawn_every_s": 2.0,
 	"per_player_cap": 30,
+	"hit_send_m_note": "A hit (animal id and body zone) is sent to every player within hit_send_m of the animal (docs/design/hunt_feedback_server.md).",
+	"hit_send_m": 60.0,
 	"server_cap": 150,
 	"species": {
 		"rabbit": {
