@@ -4407,6 +4407,9 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 	if int(entry.get("capacity_ml", 0)) > 0:
 		text += "\nHolds %s of %s. Use (E) drinks from it; at the water, E fills it." % [_litres(fill_ml), _litres(int(entry["capacity_ml"]))]
 
+	if table.wood_class(number) != "" and fill_ml > 0:   # wet wood: the slot's wear is its drying left in tenths of a game hour (cooking.json wet_wood)
+		text += "\nWet: dry in about %d game hours, faster by a fire. Wet wood smokes, burns slower and gives less heat." % maxi(int(ceil(float(fill_ml) / 10.0)), 1)
+
 	var kcal: int = VitalsRules.food_value(table.id_of(number), _vitals_cfg)
 	var heal: int = VitalsRules.heal_value(table.id_of(number), _vitals_cfg)
 
