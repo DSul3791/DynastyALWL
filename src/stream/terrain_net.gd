@@ -520,9 +520,9 @@ func hit_number(at: Vector3, amount: int) -> void:
 # (0 body, 1 head, 2 chest, 3 hip, 4 leg; MikeW's animal_view HIT_ZONES order) and the point. The client's hunt_feedback plays the
 # reaction from animal_hit_received(id, zone); animal_hit_point_received also carries the point.
 @rpc("authority", "call_remote", "reliable")
-func animal_hit(id: int, zone: int, at: Vector3) -> void:
-	animal_hit_received.emit(id, zone)
-	animal_hit_point_received.emit(id, zone, at)
+func animal_hit(id: int, body_zone: int, at: Vector3) -> void:
+	animal_hit_received.emit(id, body_zone)
+	animal_hit_point_received.emit(id, body_zone, at)
 
 
 # The character's skills (protocol 37, data/items/skills.json): attributes [strength, memory] (-10..10) and one row
