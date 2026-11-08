@@ -931,7 +931,12 @@
 				"provoked_m": 12.0,
 				"provoked_warn_s": 0.6,
 				"threat_m": 9.0,
-				"threat_warn_s": 0.8
+				"threat_warn_s": 0.8,
+				"huff_share": 0.5,
+				"bluff_share": 0.6,
+				"bluff_stop_m": 4.0,
+				"den_bluff_x": 0.5,
+				"run_trigger_mps": 6.0
 			},
 			"walk_mps": 1.3,
 			"spook_m": 25.0,
@@ -1014,7 +1019,7 @@
 		"goblin": {
 			"number": 16,
 			"name": "Goblin",
-			"note": "Dave 7 Nov 2026 (docs/GOBLINS.md): 2 to 5 goblins live in a river-side cave (a spring cave mouth), never one that has a bear in or near it. They bed down at the mouth by day (active) and come out at night; skittish: they watch from the edge of firelight (alert) and run, but fight if cornered or threatened at their den. Still to build: foraging berries, stealing, fighting bears, sleeping inside the cave (needs the cave floor height on the server). Two models (Skritch, Rukz) are picked per goblin on the client; height 1.1 m +-0.5 m, bell-shaped, from the animal id.",
+			"note": "Dave 7 Nov 2026 (docs/GOBLINS.md): 2 to 5 goblins live in a river-side cave (a spring cave mouth), never one that has a bear in or near it. They bed down at the mouth by day (active) and come out at night; skittish: they watch from the edge of firelight (alert) and run, but fight if cornered or threatened at their den. Den life (docs/design/goblin_den_life_design.md, den_life): by day they sleep in the den inside the cave, walking the cave floor path; at night they come out, creep to the edge of a fire's light to watch (watch_spook_m), or forage at berry bushes without stripping them. Stealing (docs/design/goblin_stealing_design.md): one small unlit loose thing at a time, carried to a pile in the den; a killed goblin drops it; no new band while a burning fire is within lair.guard_m of the mouth. Still to build: fighting bears, friendship. Two models (Skritch, Rukz) are picked per goblin on the client; height 1.1 m +-0.5 m, bell-shaped, from the animal id.",
 			"target_per_player": 0,
 			"health": 25.0,
 			"protective_share": 0.0,
@@ -1029,13 +1034,37 @@
 					"bear"
 				],
 				"avoid_m": 120.0,
-				"respawn_s": 1800.0
+				"respawn_s": 1800.0,
+				"guard_m": 100.0
 			},
 			"den": {
 				"den_m": 12.0,
 				"threat_m": 8.0,
 				"range_m": 70.0,
 				"fish_share": 0.0
+			},
+			"den_life": {
+				"cave_level_m": 6.0,
+				"watch_share": 0.5,
+				"watch_reach_m": 150.0,
+				"watch_gap_m": 2.0,
+				"watch_s": [
+					60.0,
+					180.0
+				],
+				"watch_spook_m": 6.0,
+				"forage_m": 70.0,
+				"forage_s": [
+					20.0,
+					60.0
+				],
+				"steal_share": 0.4,
+				"steal_reach_m": 150.0,
+				"steal_scare_m": 8.0,
+				"sneak_mps": 1.0,
+				"carry_mps": 4.5,
+				"steal_again_s": 120.0,
+				"hoard_life_s": 604800.0
 			},
 			"defend": {
 				"warn_m": 0.0,
@@ -1283,7 +1312,12 @@
 				"provoked_m": 9.0,
 				"provoked_warn_s": 0.6,
 				"threat_m": 6.0,
-				"threat_warn_s": 0.8
+				"threat_warn_s": 0.8,
+				"huff_share": 0.5,
+				"bluff_share": 0.75,
+				"bluff_stop_m": 4.0,
+				"den_bluff_x": 0.5,
+				"run_trigger_mps": 6.0
 			},
 			"walk_mps": 1.3,
 			"spook_m": 32.0,
@@ -4135,7 +4169,7 @@
 	"off_hours_despawn_m": 40.0,
 	"off_hours_chance": 0.05,
 	"temperament": {
-		"note": "Dave 6 Nov 2026: every animal has an inherent temperament. Passive ones hide or run at all costs; neutral ones ignore us; aggressive ones attack; some are friendly, as in the real wild. A species row's 'temperament' gives the share of each kind it is born with (none = all defensive). spook_x scales how close a player may come before it runs (0 = it never runs), threat_x scales its defend.threat_m (0 = never attacks there), attacks false = never attacks unless defending its young, alert false = it does not stop to watch. Seasons and young change these further (species 'seasons', 'young').",
+		"note": "Dave 6 Nov 2026: every animal has an inherent temperament. Passive ones hide or run at all costs; neutral ones ignore us; aggressive ones attack; some are friendly, as in the real wild. A species row's 'temperament' gives the share of each kind it is born with (none = all defensive). spook_x scales how close a player may come before it runs (0 = it never runs), threat_x scales its defend.threat_m (0 = never attacks there), attacks false = never attacks unless defending its young, alert false = it does not stop to watch. bluff_x scales a species' defend.bluff_share (how often a charge is a bluff; docs/design/bear_threat_design.md). Seasons and young change these further (species 'seasons', 'young').",
 		"kinds": {
 			"passive": {
 				"spook_x": 1.0,
@@ -4146,6 +4180,7 @@
 			"defensive": {
 				"spook_x": 1.0,
 				"threat_x": 1.0,
+				"bluff_x": 1.2,
 				"attacks": true,
 				"alert": true
 			},
@@ -4158,6 +4193,7 @@
 			"aggressive": {
 				"spook_x": 0.0,
 				"threat_x": 2.0,
+				"bluff_x": 0.5,
 				"attacks": true,
 				"alert": false
 			},
