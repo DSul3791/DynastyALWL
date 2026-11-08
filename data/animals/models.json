@@ -1,5 +1,5 @@
 {
-	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover. Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window).",
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover. Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md).",
 	"species": {
 		"bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -85,7 +85,9 @@
 						"run": "Run"
 					}
 				}
-			]
+			],
+			"shine_color": "#f09a3c",
+			"shine": 2
 		},
 		"goblin": {
 			"scene": "res://assets/creatures/goblin_skritch/Goblin_Skritch_Ragtooth.glb",
@@ -137,7 +139,9 @@
 						"run": "Running"
 					}
 				}
-			]
+			],
+			"shine_color": "#f0b43c",
+			"shine": 1.5
 		},
 		"deer": {
 			"scene": "res://assets/animals/deer/SK_Deer.fbx",
@@ -336,7 +340,9 @@
 					},
 					"note": "Stag (second rig): body texture alpha is not a cut-out (opaque)"
 				}
-			]
+			],
+			"shine_color": "#e6f5dc",
+			"shine": 3
 		},
 		"moose": {
 			"scene": "res://assets/animals/moose/SK_Moose.fbx",
@@ -365,7 +371,9 @@
 					"albedo": "res://assets/animals/moose/Textures/T_Moose_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Moose"
+			"pack": "WildMesh3D/Realistic Animals/Moose",
+			"shine_color": "#f0b45a",
+			"shine": 2
 		},
 		"boar": {
 			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
@@ -501,7 +509,9 @@
 						"run": "Run"
 					}
 				}
-			]
+			],
+			"shine_color": "#c8dc5a",
+			"shine": 3
 		},
 		"fox": {
 			"scene": "res://assets/animals/fox/SK_Fox.fbx",
@@ -568,7 +578,9 @@
 						"run": "Run"
 					}
 				}
-			]
+			],
+			"shine_color": "#dcf0b4",
+			"shine": 3
 		},
 		"rabbit": {
 			"scene": "res://assets/animals/rabbit/SK_Rabbit.fbx",
@@ -593,7 +605,9 @@
 					"albedo": "res://assets/animals/rabbit/Textures/T_Rabbit.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Rabbit"
+			"pack": "WildMesh3D/Realistic Animals/Rabbit",
+			"shine_color": "#dc3c32",
+			"shine": 0.5
 		},
 		"horse": {
 			"scene": "res://assets/animals/horse/SK_Horse.fbx",
@@ -631,7 +645,9 @@
 					"albedo": "res://assets/animals/horse/Textures/T_Horse_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Horse"
+			"pack": "WildMesh3D/Realistic Animals/Horse",
+			"shine_color": "#5ac8b4",
+			"shine": 2
 		},
 		"donkey": {
 			"scene": "res://assets/animals/donkey/SK_Donkey.fbx",
@@ -732,7 +748,9 @@
 					},
 					"note": "Dark donkey (Realistic Animals/Donkey): its own clips."
 				}
-			]
+			],
+			"shine_color": "#5ac8b4",
+			"shine": 2
 		},
 		"lynx": {
 			"scene": "res://assets/animals/lynx/SK_Lynx.fbx",
@@ -760,7 +778,9 @@
 					"albedo": "res://assets/animals/lynx/Textures/T_Lynx_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Lynx"
+			"pack": "WildMesh3D/Realistic Animals/Lynx",
+			"shine_color": "#b4e05a",
+			"shine": 3
 		},
 		"black_bear": {
 			"scene": "res://assets/animals/black_bear/SK_BlackBear.fbx",
@@ -786,7 +806,9 @@
 					"albedo": "res://assets/animals/black_bear/Textures/T_BlackBear.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/BlackBear"
+			"pack": "WildMesh3D/Realistic Animals/BlackBear",
+			"shine_color": "#f09a3c",
+			"shine": 2
 		},
 		"elk": {
 			"scene": "res://assets/animals/elk/SK_Elk.fbx",
@@ -823,7 +845,9 @@
 					"albedo": "res://assets/animals/elk/Textures/T_Elk_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Elk"
+			"pack": "WildMesh3D/Realistic Animals/Elk",
+			"shine_color": "#e6f5dc",
+			"shine": 3
 		},
 		"bighorn": {
 			"scene": "res://assets/animals/bighorn/SK_BighornSheep.fbx",
@@ -851,7 +875,9 @@
 					"albedo": "res://assets/animals/bighorn/Textures/T_BighornSheep_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/BighornSheep"
+			"pack": "WildMesh3D/Realistic Animals/BighornSheep",
+			"shine_color": "#a0d26e",
+			"shine": 2
 		},
 		"mountain_goat": {
 			"scene": "res://assets/animals/mountain_goat/SK_MountainGoat.fbx",
@@ -879,7 +905,9 @@
 					"albedo": "res://assets/animals/mountain_goat/Textures/T_MountainGoat_Body.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/MountainGoat"
+			"pack": "WildMesh3D/Realistic Animals/MountainGoat",
+			"shine_color": "#a0d26e",
+			"shine": 2
 		},
 		"beaver": {
 			"scene": "res://assets/animals/beaver/SK_Beaver.fbx",
@@ -903,7 +931,9 @@
 					"albedo": "res://assets/animals/beaver/Textures/T_Beaver.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Beaver"
+			"pack": "WildMesh3D/Realistic Animals/Beaver",
+			"shine_color": "#e6643c",
+			"shine": 1
 		},
 		"chamois": {
 			"scene": "res://assets/animals/chamois/SK_ChamoisMale.fbx",
@@ -927,7 +957,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/chamois/Textures/T_ChamoisMale.png"
 				}
-			]
+			],
+			"shine_color": "#a0d26e",
+			"shine": 2
 		},
 		"mink": {
 			"scene": "res://assets/animals/mink/SK_AmericanMink.fbx",
@@ -963,7 +995,9 @@
 					0.483,
 					0.1
 				]
-			}
+			},
+			"shine_color": "#c8dc78",
+			"shine": 1
 		},
 		"raccoon": {
 			"scene": "res://assets/animals/raccoon/SK_Racoon.fbx",
@@ -991,7 +1025,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/raccoon/Textures/T_Racoon_Body.png"
 				}
-			]
+			],
+			"shine_color": "#f0c850",
+			"shine": 3
 		},
 		"rat": {
 			"scene": "res://assets/animals/rat/SK_Rat.fbx",
@@ -1015,7 +1051,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/rat/Textures/T_Rat.png"
 				}
-			]
+			],
+			"shine_color": "#dc3c32",
+			"shine": 0.5
 		},
 		"crow": {
 			"scene": "res://assets/animals/crow/SK_Crow.fbx",
@@ -1153,7 +1191,9 @@
 					}
 				],
 				"note": "WildMesh Calf (Realistic Animals/Calf/SK_Calf.fbx): the cow's young."
-			}
+			},
+			"shine_color": "#64c896",
+			"shine": 2
 		},
 		"goat": {
 			"scene": "res://assets/animals/goat/SK_Goat.fbx",
@@ -1178,7 +1218,9 @@
 					"albedo": "res://assets/animals/goat/Textures/T_Goat.png",
 					"opaque": true
 				}
-			]
+			],
+			"shine_color": "#a0d26e",
+			"shine": 2
 		},
 		"chicken": {
 			"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
@@ -1248,7 +1290,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/cat/Textures/T_Cat.png"
 				}
-			]
+			],
+			"shine_color": "#b4e05a",
+			"shine": 3
 		},
 		"dog": {
 			"scene": "res://assets/animals/dog/SK_Labrador.fbx",
@@ -1296,7 +1340,9 @@
 						"run": "run fwd"
 					}
 				}
-			]
+			],
+			"shine_color": "#c8dc5a",
+			"shine": 3
 		},
 		"buffalo": {
 			"scene": "res://assets/animals/buffalo/SK_Buffalo.fbx",
@@ -1326,7 +1372,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/buffalo/Textures/T_Buffalo_Body.png"
 				}
-			]
+			],
+			"shine_color": "#64c896",
+			"shine": 2
 		},
 		"duck": {
 			"scene": "res://assets/animals/duck/SK_Duck.fbx",
@@ -1387,7 +1435,9 @@
 					"albedo": "res://assets/animals/puma/Textures/T_Puma_Body.png"
 				}
 			],
-			"size_clip": "idle pose"
+			"size_clip": "idle pose",
+			"shine_color": "#b4e05a",
+			"shine": 3
 		},
 		"pronghorn": {
 			"scene": "res://assets/animals/pronghorn/SK_Pronghorn.fbx",
@@ -1419,7 +1469,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/pronghorn/Textures/T_Pronghorn_Body.png"
 				}
-			]
+			],
+			"shine_color": "#a0d26e",
+			"shine": 2
 		},
 		"warthog": {
 			"scene": "res://assets/animals/warthog/SK_Warthog.fbx",
@@ -1482,7 +1534,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/hyena/Textures/T_Hyena.png"
 				}
-			]
+			],
+			"shine_color": "#c8e05a",
+			"shine": 3
 		},
 		"wildebeest": {
 			"scene": "res://assets/animals/wildebeest/SK_Wildebeest.fbx",
@@ -1515,7 +1569,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/wildebeest/Textures/T_Wildebeest_Body.png"
 				}
-			]
+			],
+			"shine_color": "#64c896",
+			"shine": 2
 		},
 		"lion": {
 			"scene": "res://assets/animals/lion/SK_Lion.fbx",
@@ -1614,7 +1670,9 @@
 					"size_clip": "Idle"
 				}
 			],
-			"size_clip": "Idle"
+			"size_clip": "Idle",
+			"shine_color": "#b4e05a",
+			"shine": 3
 		},
 		"leopard": {
 			"scene": "res://assets/animals/leopard/SK_Leopard.fbx",
@@ -1640,7 +1698,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/leopard/Textures/T_Leopard_Body.png"
 				}
-			]
+			],
+			"shine_color": "#b4e05a",
+			"shine": 3
 		},
 		"rhino": {
 			"scene": "res://assets/animals/rhino/SK_Rhinoceros.fbx",
@@ -1666,7 +1726,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/rhino/Textures/T_Rhinoceros.png"
 				}
-			]
+			],
+			"shine_color": "#b4b48c",
+			"shine": 1
 		},
 		"elephant": {
 			"scene": "res://assets/animals/elephant/SK_AfricanElephant.fbx",
@@ -1700,7 +1762,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/elephant/Textures/T_AfricanElephant_Body.png"
 				}
-			]
+			],
+			"shine_color": "#c8d278",
+			"shine": 1
 		},
 		"camel": {
 			"scene": "res://assets/animals/camel/SK_Camel.fbx",
@@ -1729,7 +1793,9 @@
 					"albedo": "res://assets/animals/camel/Textures/T_Camel_Body.png"
 				}
 			],
-			"size_clip": "Idle"
+			"size_clip": "Idle",
+			"shine_color": "#64c8a0",
+			"shine": 2
 		},
 		"guineafowl": {
 			"scene": "res://assets/animals/guineafowl/SK_Guineafowl.fbx",
@@ -1783,7 +1849,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/honey_badger/Textures/T_HoneyBadger.png"
 				}
-			]
+			],
+			"shine_color": "#c8dc78",
+			"shine": 1
 		},
 		"kangaroo": {
 			"scene": "res://assets/animals/kangaroo/SK_Kangaroo.fbx",
@@ -1817,7 +1885,9 @@
 					"albedo": "res://assets/animals/kangaroo/Textures/T_Kangaroo_Body.png"
 				}
 			],
-			"flat_share": 0.25
+			"flat_share": 0.25,
+			"shine_color": "#e6643c",
+			"shine": 1
 		},
 		"mammoth": {
 			"scene": "res://assets/animals/mammoth/SK_Mammoth.fbx",
@@ -1851,7 +1921,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/mammoth/Textures/Mammoth_Body.png"
 				}
-			]
+			],
+			"shine_color": "#c8d278",
+			"shine": 1
 		},
 		"tiger": {
 			"scene": "res://assets/animals/tiger/SK_Tiger.fbx",
@@ -1881,7 +1953,9 @@
 					"match": "",
 					"albedo": "res://assets/animals/tiger/Textures/T_Tiger_Body.png"
 				}
-			]
+			],
+			"shine_color": "#b4e05a",
+			"shine": 3
 		}
 	}
 }

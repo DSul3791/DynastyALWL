@@ -33,6 +33,7 @@ var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
 var _mats: Dictionary = {}
 var _t: float = 0.0
+var torch_light: Callable        # () -> [position, range] of the player's held light, or []: eyes facing it shine (_eye_shine)
 var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
 var _hits: Array = []            # [at Vector3, msec] of the hits reported in the last FELL_WINDOW_MS (note_hit)
 var _blood: Array = []           # MeshInstance3D pool, one per drop shown
@@ -438,6 +439,9 @@ func _process_body(delta: float) -> void:
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
 		if bool(b.get("model", false)):
 			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
+
+			if node.has_meta("eye_mats"):
+				_eye_shine(node)
 			if node.has_meta("flock_birds"):
 				for bird in node.get_meta("flock_birds"):
 					_animate_model(bird, b, state, model_speed, delta)
@@ -540,6 +544,9 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	root.set_meta("model", true)
 	root.set_meta("model_row", row)
 
+	if not eye_mats.is_empty():
+		root.set_meta("eye_mats", eye_mats)
+
 	if own_young:
 		root.set_meta("young_model", true)
 	var rig: Node3D = Node3D.new()
@@ -583,6 +590,10 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	body.scale *= k
 	body.position.y -= box.position.y * k
 	_model_materials(meshes, row)
+	var eye_mats: Array = []
+
+	for m in meshes:
+		eye_mats.append_array((m as MeshInstance3D).get_meta("eye_mats", []))
 
 	# Bone corrections laid over every clip (bone_offsets.gd: the crow stands up and folds its wings).
 	if row.has("bone_offsets"):
@@ -766,6 +777,15 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 						mi.set_surface_override_material(surface, mat)
+
+						# The eye surfaces (a material or texture named for the eye, not a lid or lash) carry the eye shine (_eye_shine).
+						if name_text.findn("eye") >= 0 and name_text.findn("lid") < 0 and name_text.findn("lash") < 0 and float(row.get("shine", 0.0)) > 0.0:
+							mat.emission_enabled = true
+							mat.emission = Color.html(str(row.get("shine_color", "#ffffff")))
+							mat.emission_energy_multiplier = 0.0
+							var eyes: Array = mi.get_meta("eye_mats", [])
+							eyes.append(mat)
+							mi.set_meta("eye_mats", eyes)
 
 					# One line per surface, so a part that takes the wrong texture (a dark band, dark eyes) shows which name it matched.
 					_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] takes %s" % [surface, str(mi.name), name_text.strip_edges(), str(entry.get("albedo", "")).get_file()])
@@ -1235,6 +1255,31 @@ func _track_at(anim: Animation, t: int, kind: int, time: float) -> Variant:
 	if kind == Animation.TYPE_POSITION_3D:
 		return anim.position_track_interpolate(t, time)
 	return anim.scale_track_interpolate(t, time)
+
+
+# Eye shine (docs/design/EYE_SHINE_AND_WET.md, Kathleen's art_animals.md section 6): only the player's own held light makes eyes
+# shine, and only eyes that face it. Strength = the row's shine x the torch light reaching the eye (fading to nothing at twice the
+# torch's range) x a cone on the angle between where the animal looks and the line to the camera (gone past 30 degrees). It is an
+# emission on the eye surface only: no light is cast, and terrain or fur in front hides it like any surface. Animals drop out of the
+# rows when they die, and a carcass is built without these materials, so a dead animal never shines.
+func _eye_shine(node: Node3D) -> void:
+	var mats: Array = node.get_meta("eye_mats")
+	var energy: float = 0.0
+	var light: Array = torch_light.call() if torch_light.is_valid() else []
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+
+	if light.size() >= 2 and cam != null:
+		var row: Dictionary = node.get_meta("model_row", {})
+		var eye: Vector3 = node.global_position + Vector3.UP * float(row.get("length_m", 1.0)) * 0.35
+		var reach: float = float(light[1]) * 2.0
+		var near: float = clampf(1.0 - (light[0] as Vector3).distance_to(eye) / maxf(reach, 0.01), 0.0, 1.0)
+		var facing: Vector3 = -node.global_transform.basis.z.normalized()      # the model faces -Z
+		var to_cam: Vector3 = (cam.global_position - eye).normalized()
+		var cone: float = smoothstep(cos(deg_to_rad(30.0)), 1.0, facing.dot(to_cam))
+		energy = float(row.get("shine", 0.0)) * near * near * cone * 2.0
+
+	for mat in mats:
+		(mat as StandardMaterial3D).emission_energy_multiplier = energy
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
