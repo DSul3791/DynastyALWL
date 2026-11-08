@@ -95,6 +95,11 @@ The wind's scent and the undergrowth noise are untouched, so a downwind player i
 ## 11. The client (MikeW)
 
 - **New state 20 `HUNCH`:** standing still, head low, ears back, tail tucked. Without a clip it falls back to idle.
+- **`HUNCH` in cover (MikeW, ANIMAL_WEATHER_LOOKS.md, 8 Nov 2026):** a `deer` or `stock` animal grazing in its cover is sent as 20 for as long as the rain, a gale or the cold lasts, not only during the 60% hunch spells. In its cover means either of these:
+  - within `cover_stand_m` 8 m of the cover home it moved to (`dry_home` is set);
+  - under tree crowns (`canopy`), which covers herd followers that stay round a leader.
+
+  Midday heat in the shade is not a hunch. The server computes this once per grazing step (`sheltered`), not for each row it sends.
 - **Gale heading:** `stock` in a gale face downwind (their heading is sent as it is today), so no new clip.
 - **`storm_ahead`:** goes in the weather the server already sends, for insect sounds and low swallows.
 - **Bats:** wait for the model and the role rule above.
@@ -104,6 +109,7 @@ The wind's scent and the undergrowth noise are untouched, so a downwind player i
 1. Read `_wx` and `weather_ahead`; roles in data; the numeric tilts: wind jumpiness, small animals and hunters in wind, before a storm, storm bed-down, fog. **Test:** `test_animals_weather`, run against fixed weather dictionaries.
 2. Rain cover search, `HUNCH`, gales (rumps to the wind, drift, deer to woodland).
 3. Wolves in snowfall, deer in cold and snow, stock in shade in heat.
+4. `HUNCH` in cover (section 11). **Test:** `test_animals_weather` section 16.
 
 ## 13. Never-see checks (from the knowledge page)
 
