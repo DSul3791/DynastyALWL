@@ -1,7 +1,8 @@
 """Unit tests for springstore.py (each spring's own store; docs/water/spring_store_build_plan.md section 8): the near-surface
 transmissivity and the specific yield at the water table on tight rock, the groundwater catchments on a block grid, Rorabaugh's
 response time on a strip, karst's two stores, the store response and its tau bins, the drought recession, the params against
-Jamie's #713 recession times, and the springs that count as fresh water. They use small synthetic arrays and the repo's
+Jamie's #713 recession times, and the springs that count as fresh water, and the game's spring sums (flow by month, a drought over the stores, a storm's
+pulse; docs/design/r7_plan.md section 4.1). They use small synthetic arrays and the repo's
 params.json, read no run files, need numpy only, and take a second or two.
 
 Run on David4 or Dave's PC, never in the cloud:
@@ -237,6 +238,82 @@ def test_fresh_spring_sources():
                dict(pos=[ox + 5 * sp, 40.0, oz + 5 * sp], m3_s=1e-3)]
     mask = ss.spring_sources(springs, ox, oz, sp, 20, min_q)
     assert mask.shape == (20, 20) and int(mask.sum()) == 1 and mask[7, 3]
+
+
+
+def test_stores_recharge_and_rain():
+    end, dist, st = _strip(1e-5)
+    assert set(st) == set(ss.FIELDS)
+    assert abs(st['recharge_mm_yr'][0, -1] - 1e-9 * 1000.0 * ss.YEAR_S) < 1e-9 and np.isnan(st['rain_mm_yr'][0, -1])
+    cols = end.shape[1]
+    st2 = ss.stores(end, dist, np.full((1, cols), 1e-5), np.full((1, cols), 0.01), np.full((1, cols), 1e-9), np.zeros((1, cols), bool),
+                    KS, DXC, rain=np.linspace(1000.0, 1700.0, cols)[None, :])
+    assert abs(st2['rain_mm_yr'][0, -1] - 1350.0) < 1e-9 and np.isnan(st2['rain_mm_yr'][0, 0])
+
+
+def test_month_means():
+    shape, wk, dk, t = _year()
+    for tau in (0.0, 5.0, 45.0, 253.0, 36525.0):
+        m = ss.month_means(shape, tau)
+        assert m.shape == (12,) and abs(m.mean() - 1.0) < 1e-12        # the store keeps the water: the twelfths average 1
+    assert np.allclose(ss.month_means(shape, 0.0), shape.reshape(12, 2).mean(axis=1), rtol=0.0, atol=1e-12)
+    assert np.abs(ss.month_means(shape, 36525.0) - 1.0).max() < 0.005
+    fast, slow = ss.month_means(shape, 5.0), ss.month_means(shape, 120.0)
+    assert int(np.argmax(fast)) == 9 and int(np.argmax(slow)) == 11     # the recharge peaks at phase 0.8; 120 days lags it
+    assert np.ptp(slow) < 0.5 * np.ptp(fast)                            # and evens it out
+    try:
+        ss.month_means(np.ones(10), 5.0)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('a year of 10 samples has no equal twelfths')
+
+
+def test_spring_row_months_and_storm_fields():
+    shape, wk, dk, t = _year()
+    bins = ss.tau_bins(P['network']['season']['tau_bins'])
+    nan = np.nan
+    st = dict(diffuse_share=np.array([nan, 0.0]), diffuse_tau_days=np.array([nan, nan]),
+              conduit_share=np.array([nan, 0.55]), conduit_tau_days=np.array([nan, 5.0]),
+              matrix_share=np.array([nan, 0.45]), matrix_tau_days=np.array([nan, 253.0]),
+              sy=np.array([nan, nan]), flow_path_m=np.array([nan, nan]), catchment_m2=np.array([nan, 8.2e5]),
+              recharge_mm_yr=np.array([nan, 900.0]), rain_mm_yr=np.array([nan, 1500.0]))
+    ks = ss.kind_shares(st, shape, wk, dk, bins)
+    row = ss.spring_row(st, ks, 1, 0.002, _r3, shape)
+    qm = np.array(row['q_month_m3_s'])
+    assert qm.size == 12 and abs(qm.mean() / 0.002 - 1.0) < 3e-3     # the twelfths average the mean flow (to 3 figures)
+    conduit, matrix = row['stores']
+    assert conduit[0] == 'conduit' and matrix[0] == 'matrix' and len(conduit[4]) == 12 and len(matrix[4]) == 12
+    assert np.allclose(np.array(conduit[4]) + np.array(matrix[4]), qm, rtol=0.01, atol=0.0)   # each rounded to 3 figures
+    assert np.ptp(matrix[4]) < 0.25 * np.ptp(conduit[4])                # the matrix carries the dry months
+    assert row['recharge_mm_yr'] == 900.0 and row['rain_mm_yr'] == 1500.0 and abs(row['catchment_km2'] - 0.82) < 1e-12
+    assert 'q_month_m3_s' not in ss.spring_row(st, ks, 1, 0.002, _r3)    # no shape, no months
+
+
+def test_drought_stores():
+    t = np.array([0.0, 10.0, 60.0])
+    f = ss.drought_stores([1e-3, 2e-3], [5.0, 250.0], t)
+    assert np.allclose(f, [ss.drought(1e-3, 5.0, x) + ss.drought(2e-3, 250.0, x) for x in t], rtol=1e-12, atol=0.0)
+    assert abs(f[0] - 3e-3) < 1e-15
+    assert ss.drought_stores([1e-3], [5.0], 14.0) < 0.1 * 1e-3          # a karst conduit is gone in two weeks
+    assert ss.drought_stores([2e-3], [250.0], 30.0) > 0.85 * 2e-3       # its matrix holds through a dry month
+
+
+def test_storm_pulse_volume_and_shape():
+    q, R = 2e-3, 900.0
+    storm = 30.0 * 0.9                                                   # 30 mm of rain at a recharge share of 0.9
+    tau = 5.0
+    tt = np.linspace(0.0, 60.0 * tau, 600001)
+    p = ss.storm_pulse(q, 0.55, tau, storm, R, tt)
+    vol = float(((p[1:] + p[:-1]) * 0.5 * np.diff(tt)).sum()) * ss.DAY_S
+    want = q * 0.55 * ss.YEAR_S * storm / R                              # the storm's share of the store's year of outflow
+    assert abs(vol / want - 1.0) < 1e-6
+    assert abs(p[0] / (q * 0.55 * storm / (R / ss.YEAR_DAYS) / tau) - 1.0) < 1e-12 and (np.diff(p) < 0.0).all()
+    # r7_plan section 5: a karst spring a week after the storm runs under twice its usual flow
+    week = q + ss.storm_pulse(q, 0.55, 5.0, storm, R, 7.0) + ss.storm_pulse(q, 0.45, 253.0, storm, R, 7.0)
+    assert q < week < 2.0 * q
+    # and a chalk or gravel spring (one store of months) rises less than 20% on the first day
+    assert ss.storm_pulse(q, 1.0, 120.0, storm, R, 0.0) < 0.2 * q
 
 
 if __name__ == '__main__':

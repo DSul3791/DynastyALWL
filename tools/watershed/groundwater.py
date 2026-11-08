@@ -221,10 +221,12 @@ def main():
     # the table there, and karst's two stores on cave-forming rock. Written at the block's outflow cell.
     sy_cover = np.where(till >= 0.5 * np.maximum(sed, 1e-9), float(SY['fine unconsolidated']), float(SY['coarse unconsolidated']))
     sy16 = springstore.sy_at_depth(depth, dcov, sy_cover, tight, springstore.sy_by_rock_id(g['names'], SY)[rid], NS)
-    syc = _blocks(np.where(land, sy16, 0.0), f, 'mean') / np.maximum(_blocks(land.astype(np.float64), f, 'mean'), 1e-9)
+    landc = np.maximum(_blocks(land.astype(np.float64), f, 'mean'), 1e-9)
+    syc = _blocks(np.where(land, sy16, 0.0), f, 'mean') / landc
+    rainc = _blocks(np.where(land, rain, 0.0), f, 'mean') / landc        # mm/yr, for the game's storm pulse
     karstc = _blocks(cave.astype(np.float64), f, 'mean') >= 0.5
     gw_end, gw_dist = springstore.catchments(H, (dis > 0.0) | fixed, dxc, float(G['own_block_path_share']))
-    stc = springstore.stores(gw_end, gw_dist, Tc, np.nan_to_num(syc), Rc, karstc, KS, dxc)
+    stc = springstore.stores(gw_end, gw_dist, Tc, np.nan_to_num(syc), Rc, karstc, KS, dxc, rain=rainc)
     st16 = {}
     for k, v in stc.items():
         a = np.full(N, np.nan)
