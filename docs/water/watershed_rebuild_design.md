@@ -355,6 +355,15 @@ Every check runs on Dave's PC (Dino or David4), never in the cloud.
 - `tile_pond_level.gd`, `tile_river_mend.gd`, `tile_river_mouth.gd`, `tile_valley_drain.gd`;
 - the spring-cave and head-pond placement in `tile_sites.gd`.
 
+*R8 method (drafted 8 Nov). Nothing is deleted: retired code moves to `proposed_removals/<original path>` with `.removed` added and one REMOVALS.md row each (path, who, date, why, what replaces it), and only Dave's yes deletes it from that folder (`proposed_removals/README.md`).*
+1. **When.** After R6's nine rebaked tiles and R7's walk pass their checks with `water_source` "record": David4's headless gates, Dino's pictures at the standing points, and the follow-the-water basins. Not before, because "rules" is the rollback until then.
+2. **What moves, in three PRs:**
+   - *bake passes* (whole files): `src/worldgen/tile/drainage_channels.gd`, `tile_drainage.gd`, `tile_pond_level.gd`, `tile_river_mend.gd`, `tile_river_mouth.gd`, `tile_valley_drain.gd`, `tile_rolling.gd`, and `src/worldgen/sketch/river_network.gd` where it only guides valleys. `drainage_fill.gd` and `drainage_flow.gd` move only if nothing else reads them (the old hub's `src/water/water_settler.gd` does today, so they wait for the runtime owner's call on `--water-old`). `drainage_natural.gd`'s flow-sized width and depth live on in R5;
+   - *parts of files* (an edit with its REMOVALS row naming the lines' old home): the valley shaping and hill detail in `tile_height.gd`, the spring-cave and head-pond placement in `tile_sites.gd` (Steve's M1 has already moved dens to dry caves), the sketch's `spawn_keep`, and the "rules" branch of `water_source` with the switch itself;
+   - *tools and tests*: `tools/erosion_precarve/meander.py` and the random tarn patches in `lem.py` (its fill and order stay: Stage B uses them), and the tests pinned to the old tiles that Steve's M3 lists, each re-pinned to the record or moved.
+3. **The proof nothing used them:** tiles baked from the record before and after each R8 PR are byte-identical, so R8 needs no TERRAIN_VERSION bump. A difference means something still read the old code, and that PR stops until it is found.
+4. **The list for Dave** (section 7's dependent repairs, done or still open) goes with the last PR, so his removal card shows what replaced each file.
+
 **Held PRs**: #530 (hills before water), #531 (a source at every head) and #532 (natural rivers on) are superseded. #531 conflicts with the document directly. I will close them with a pointer here once Dave accepts this design.
 
 ---
