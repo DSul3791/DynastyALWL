@@ -129,6 +129,9 @@ var _cover_target: float = 0.0
 var _roof_target: float = 0.0
 var forced_roof: bool = false           # --roofed: a roof overhead (headless check)
 var _drip_in: float = 1.0
+var canopy_drip: float = 0.0            # --canopy-drip: the crowns' drip strength 0..1 (weather_look, rain_drips.gd), so drips go on after the rain
+const DRIP_AFTER_DB := 2.0              # after the rain: fewer, heavier drops (Jamie #675: drops over 1.5 mm are drip)
+const DRIP_AFTER_PITCH := 0.9
 var _under: float = 1.0                 # 0 underwater, 1 in the air, smoothed
 
 
@@ -345,7 +348,9 @@ func _ground(delta: float) -> void:
 
 # Under trees in rain: now and then a drop falls from a leaf nearby.
 func _drips(delta: float, body: CharacterBody3D, cover: float) -> void:
-	if rain < 0.15 or cover < 0.5 or not _stage.has_room():
+	var after: bool = rain < 0.15 and canopy_drip > 0.05
+
+	if (rain < 0.15 and not after) or cover < 0.5 or not _stage.has_room():
 		return
 
 	_drip_in -= delta * _ambient.time_scale
@@ -353,7 +358,7 @@ func _drips(delta: float, body: CharacterBody3D, cover: float) -> void:
 	if _drip_in > 0.0:
 		return
 
-	_drip_in = lerpf(DRIP_EVERY[1], DRIP_EVERY[0], clampf(rain, 0.0, 1.0)) * _rng.randf_range(0.6, 1.4) / maxf(cover, 0.3)
+	_drip_in = lerpf(DRIP_EVERY[1], DRIP_EVERY[0], clampf(maxf(rain, 0.8 * canopy_drip), 0.0, 1.0)) * _rng.randf_range(0.6, 1.4) / maxf(cover, 0.3)
 	var list: Array = _variants("rain_drip")
 
 	if list.is_empty():
@@ -362,8 +367,8 @@ func _drips(delta: float, body: CharacterBody3D, cover: float) -> void:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[_rng.randi_range(0, list.size() - 1)]
 	player.bus = "Weather"
-	player.volume_db = DRIP_DB + _rng.randf_range(-4.0, 2.0) + linear_to_db(clampf(cover, 0.3, 1.0))
-	player.pitch_scale = _rng.randf_range(0.85, 1.2)
+	player.volume_db = DRIP_DB + _rng.randf_range(-4.0, 2.0) + linear_to_db(clampf(cover, 0.3, 1.0)) + (DRIP_AFTER_DB if after else 0.0)
+	player.pitch_scale = _rng.randf_range(0.85, 1.2) * (DRIP_AFTER_PITCH if after else 1.0)
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = 3.0
 	player.max_distance = 20.0
