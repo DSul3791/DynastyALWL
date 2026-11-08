@@ -255,6 +255,35 @@ The old single long placer is not written then.
 
 **Off until R6:** the flag is absent from `tile_rules.json`, so it reads as off and rules tiles stay byte-identical. It turns on with R6's single TERRAIN_VERSION bump, when the path comes from the record's reaches (bed height and discharge) and not from the rules flow grid.
 
+## 6e. The spawn picker (M1 step 4, 8 Nov)
+
+**Today:** the spawn is a constant, `src/shared/spawn_point.gd` `OVERRIDE` (x 53296, z 68080), moved by hand on 6 Nov when the rivers moved. The starter tile already writes a `spawn_point` in its `starter` section (the beach by the river mouth), but the server ignores it, because `OVERRIDE` always wins. The NPC markers (`data/npcs/markers.json`) were moved by hand with it.
+
+**The rule (Dave: "move the spawn, do not adjust heights"):** every bake of the starter tile picks the spawn again, by rule. A spot is a candidate only when all of these hold:
+
+| Test | Rule key, default | Why |
+|---|---|---|
+| inside `ring_m`: steepest step, height range, wet cells | `ring_m` 30, `max_slope_deg` 7, `range_m` 1.5, no wet cell | the same gate as `island_checks` (spawn gate) and room for the town markers (within 12 m) |
+| the ground is high enough over the sea | `min_ground_m` 10 | above the beach and storm reach |
+| no water within `dry_m` | `dry_m` 12 | test_spawn_dry: 5 m from any wet cell, with margin |
+| over the nearest water surface by `above_water_m` or more | `above_water_m` 2.5 | not on a floodplain (test_spawn_dry asks 2 m) |
+| a perennial river (catchment `perennial_km2` or more) or a lake within a short walk | `walk_m` [40, 400], `perennial_km2` 2 | drinking water and a landmark, Dave's bear and town rules |
+
+Of the candidates, the one nearest the bay head wins: the river mouth, or the bay centre when the tile has no river. A tie goes to the first in row order, so the pick is stable. It searches within `search_m` (3000) of that point, every 2 samples.
+
+**Where it runs:** `src/worldgen/tile/spawn_picker.gd` `pick(maps, target, rules)`, a static function on plain arrays: heights, water class, water surface and flow. The two distance fields (to any water, carrying that water's surface, and to a perennial river) are chamfer passes over the search window only. `tile_sites.gd` `_make_starter` calls it when `starter.spawn_picker.on` is true, and writes `starter.spawn_picked` = [x, ground + 1, z]. The old beach `spawn_point` stays as it is.
+
+**One reader:** `spawn_point.gd` gets:
+- `use_world(world_dir)`, which reads the starter tile's `spawn_picked` once;
+- `current()`, the picked spawn, or `OVERRIDE` when the tile has none;
+- `town_shift()` = `current() − OVERRIDE`.
+
+The server calls `use_world` before it builds the flora placer. Each reader goes through `current()`: the server spawn, the flora clearing, the orchard and the island checks. The shipped NPC markers move by `town_shift()`, so the town moves with the spawn as one piece. Markers an admin placed in a world save stay where they were put. Clients already get the spawn in the welcome message, and flora is placed on the server only, so the two sides cannot disagree.
+
+**Off until R6:** the flag is absent from `tile_rules.json`, so no tile has `spawn_picked`. `current()` is then `OVERRIDE`, and the shift is zero. Every tile, spawn and marker stays exactly as today. At R6 the flag turns on with the one TERRAIN_VERSION bump, and the picker then reads the record's water level and its wetland and floodplain classes: a wetland cell counts as wet. A small tool, `spawn_pick.gd` (headless, run on the PC), runs the picker on today's baked starter tile and prints where it would put the spawn, against the gate. So the rule can be checked before R6.
+
+**Left for M2:** the starter ground the client ships (`prebuild_blocks.gd`, its fixed corner) has to follow the picked spawn. So do the old debug tools that still name x 53301 z 68427.
+
 ## 7. Questions (to the coordinator, not to Sonny)
 
 - **Q1, for Dave: goblin dens.** Sonny agrees with the recommendation below. Under Dave's 6 Nov QA rule (go with the recommendation), M1 builds it, and Dave can still overrule it. Dave's 7 Nov rule puts goblins in "any spring tunnel". With the rebuild, spring caves become rare, which follows his watershed document. I recommend letting goblin dens use dry side branches of any cave (karst, lava tube or spring cave). Goblins then stay common enough on the starter island, and the caves stay natural.
