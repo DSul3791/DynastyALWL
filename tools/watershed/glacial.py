@@ -334,11 +334,13 @@ def report(npz_path, geology_dir, E):
     Slope three ways. The plain gradient over the grid (the summary's max_slope_deg) also spans the sea floor, so a coast cell
     beside deep water reads as a cliff the walker never meets. With the sea at sea level (0 m) it is the slope at the shore. The
     steepest drop to any one of the 8 neighbours (sea counted at 0 m) is what the threshold-slope cap holds (each cell stands at
-    most its rock's threshold slope above its receiver, the steepest neighbour on the hollow-filled ground). Two cases may pass
-    48 degrees (granite's cap) honestly: a shore cell whose receiver is a diagonal sea cell (up to about 57 degrees to the sea
-    beside it), and a cell beside a closed hollow, whose floor the fill hides from the receiver choice. Anywhere else a drop above
-    48 degrees is a fault to find; the five steepest are listed with their rock, the ice there, and whether they lie on the
-    coast, on the grid's frame or beside a hollow."""
+    most its rock's threshold slope above its receiver, the steepest neighbour on the hollow-filled ground), so the report gives
+    the share of land whose drop passes its own rock's threshold (by the rock of the final ground, 0.5 degrees of slack), and the
+    share over the highest threshold of any rock (granite's 57). Two cases may pass the threshold honestly: a shore cell whose
+    receiver is a diagonal sea cell (the drop to the sea beside it is then up to the threshold's tangent times 1.41: about 57
+    degrees for 48, 65 for 57), and a cell beside a closed hollow, whose floor the fill hides from the receiver choice. Anywhere
+    else it is a fault to find; the five steepest are listed with their rock, the ice there, and whether they lie on the coast,
+    on the grid's frame or beside a hollow. The share over 48 degrees stays for comparison with the runs before granite's 57."""
     d = np.load(npz_path)
     n = d['ground'].shape[0]
     dx = float(d['cell_m'])
@@ -372,6 +374,9 @@ def report(npz_path, geology_dir, E):
             nb_[max(-dr, 0):n - max(dr, 0), max(-dc, 0):n - max(dc, 0)] = hs[max(dr, 0):n - max(-dr, 0), max(dc, 0):n - max(-dc, 0)]
             drop = np.maximum(drop, (hs - nb_) / (dx * (1.4142135623730951 if dr and dc else 1.0)))
     drop = np.where(land, np.degrees(np.arctan(np.maximum(drop, 0.0))), 0.0)
+    _, sc_rock = evolve.slope_limits(g, E)
+    own_deg = np.degrees(np.arctan(sc_rock[rid]))      # each cell's rock threshold (the plain value under unlisted rocks)
+    top_deg = float(np.degrees(np.arctan(sc_rock.max())))
     gy, gx = np.gradient(h, dx)
     s_grid = np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), 0.0)
     gy, gx = np.gradient(hs, dx)
@@ -395,7 +400,7 @@ def report(npz_path, geology_dir, E):
         sel = iced & (rid_b1 == k)
         by_rock[names.get(int(k), str(k))] = dict(km2=round(float(sel.sum() * dx * dx / 1e6), 3), mean=round(float(cut[sel].mean()), 1),
                                                   p90=round(float(np.percentile(cut[sel], 90)), 1), p99=round(float(np.percentile(cut[sel], 99)), 1))
-    shares = lambda s: {str(a): round(float((s[land] > a).mean()), 4) for a in (25, 30, 35, 40, 48)}
+    shares = lambda s: {str(a): round(float((s[land] > a).mean()), 4) for a in (25, 30, 35, 40, 48, 57)}
     return dict(cut_under_ice_m=dict(p50=round(float(np.percentile(cu, 50)), 1), p90=round(float(np.percentile(cu, 90)), 1),
                                      p99=round(float(np.percentile(cu, 99)), 1), max=round(float(cu.max()), 1)) if cu.size else None,
                 cut_under_ice_by_rock_met=by_rock,
@@ -403,6 +408,8 @@ def report(npz_path, geology_dir, E):
                 slope_grid_max_deg=round(float(s_grid.max()), 1), slope_grid_steepest=top(s_grid, 3),
                 slope_shore_max_deg=round(float(s_shore.max()), 1), slope_shore_share_steeper_than_deg=shares(s_shore),
                 neighbour_drop_max_deg=round(float(drop.max()), 1), neighbour_drop_share_over_48_deg=round(float((drop[land] > 48.0).mean()), 5),
+                neighbour_drop_share_over_own_rock_threshold=round(float((drop[land] > own_deg[land] + 0.5).mean()), 5),
+                neighbour_drop_share_over_highest_threshold=dict(deg=round(top_deg, 1), share=round(float((drop[land] > top_deg + 0.5).mean()), 5)),
                 neighbour_drop_steepest=top(drop))
 
 
