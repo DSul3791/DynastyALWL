@@ -5,7 +5,9 @@ extends RefCounted
 # game day); at trust_to_follow it follows them and becomes their companion: a saved record (companions.json, field_journal_design.md 5) with a
 # name and a bond. The bond grows with fed days near its owner and falls with unfed days out with them; at 0 the dog leaves. From bond 0.3
 # it barks when a bear, a wolf or goblins come near its owner. Its states follow MikeW's clips (DOG_COMPANION_CLIPS.md): bark 10, sit 18, lie 19. An heir inherits companions at inherit_bond_share of their bond (inherit(),
-# for the heir flow when it exists). A species takes part through a "companion" block in animals.json.
+# for the heir flow when it exists). A species takes part through a "companion" block in animals.json: source "stray" (the dog) or "orphan"
+# (the wolf: an orphaned pup at its den, wolf_packs_and_pups_design.md 5, fed the same way; it follows as a young companion and grows up
+# over grow_days; keep_off_torch keeps it out of its owner's torch light too).
 
 const Steering := preload("res://src/shared/steering.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -65,7 +67,7 @@ func _species() -> Array:
 
 
 func handles(a: Dictionary) -> bool:
-	return a.has("companion_id") or a.has("stray_for")
+	return a.has("companion_id") or a.has("stray_for") or a.has("orphan")
 
 
 # The online players: [{peer, pos, key, stance}].
@@ -123,6 +125,9 @@ func tick(real_dt: float) -> void:
 		_last_at[p["key"]] = p["pos"]
 
 	for sp in _species():
+		if str(_cfg(sp).get("source", "stray")) != "stray":
+			continue   # orphans are found at their den (server_wolves.gd), not made near the town
+
 		for p in here:
 			if p["key"] != "" and not has_companion(p["key"], sp) and not (stray_of.has(p["key"]) and host.animals.has(stray_of[p["key"]])):
 				_make_stray(sp, _cfg(sp), p)
@@ -137,6 +142,9 @@ func tick(real_dt: float) -> void:
 
 		if r["owner_key"] == "":
 			continue   # it left today
+
+		if bool(r.get("young", false)) and _now() >= float(r.get("grow_until_s", 0.0)):
+			_grow_up(r)
 
 		var owner: Dictionary = _player(r["owner_key"])
 		var aid: int = int(live.get(rid, 0))
@@ -197,7 +205,23 @@ func _make_live(r: Dictionary, owner: Dictionary) -> void:
 	if r.has("temper"):
 		a["temper"] = str(r["temper"])
 
+	if bool(r.get("young", false)):
+		a["num"] = int(a["num"]) + int(host.YOUNG_NUM)   # drawn young until it grows up
+		a["hp"] = float(a["hp"]) * float(_cfg(str(r["species"])).get("young_hp_x", 0.25))
+
 	live[str(r["id"])] = id
+
+
+# Grown: full size and health from now on.
+func _grow_up(r: Dictionary) -> void:
+	r["young"] = false
+	_history(r, "grown", str(r["owner_key"]))
+	var aid: int = int(live.get(str(r["id"]), 0))
+
+	if aid != 0 and host.animals.has(aid):
+		var def: Dictionary = host.species_def(str(r["species"]))
+		host.animals[aid]["num"] = int(def.get("number", 0))
+		host.animals[aid]["hp"] = float(def.get("health", 5.0)) * (host.level_x(host.animals[aid], "hp") if host.animals[aid].has("level") else 1.0)
 
 
 # The day's bond, once per game day, for the last day it was out: a fed day near the owner grows it; an unfed day out with them shrinks it.
@@ -243,8 +267,46 @@ func _history(r: Dictionary, event: String, key: String) -> void:
 func step(a: Dictionary, dt: float) -> void:
 	if a.has("companion_id"):
 		_step_companion(a, dt)
+	elif a.has("orphan"):
+		_step_orphan(a, dt)
 	else:
 		_step_stray(a, dt)
+
+
+# An orphan pup at its den: food a player left within smell_m, eaten once they are trust_gap_m off, is that player's trust (once a game day,
+# kept in the den's record); at trust_to_follow it follows them. Otherwise it is a pup: it plays and hides (server_wolves.step_pup).
+func _step_orphan(a: Dictionary, dt: float) -> void:
+	var c: Dictionary = _cfg(str(a["sp"]))
+	var rec: Dictionary = host.wolves.orphan_of(a)
+
+	for p in _players():
+		if p["key"] == "" or has_companion(p["key"], str(a["sp"])):
+			continue
+
+		var ate: String = _eat_from(a, p["key"], p["pos"], float(c.get("smell_m", 10.0)), dt)
+
+		if ate == "going":
+			return
+
+		if ate == "ate":
+			if not rec.has("trust"):
+				rec["trust"] = {}
+
+			var row: Dictionary = rec["trust"].get(p["key"], {"trust": 0.0, "day": -1})
+
+			if int(row["day"]) != _today():
+				row["trust"] = float(row["trust"]) + 1.0   # one meal a game day counts
+				row["day"] = _today()
+				rec["trust"][p["key"]] = row
+				host.wolves._dens_dirty = true
+
+			if float(row["trust"]) >= float(c.get("trust_to_follow", 3)):
+				host.wolves.orphan_gone(a)
+				_adopt(a, p["key"], c)
+
+			return
+
+	host.wolves.step_pup(a, dt)
 
 
 # Food `key` left within r of the animal: [world id, position, ...] rows whose item id is in this species' food list.
@@ -352,10 +414,18 @@ func _adopt(a: Dictionary, key: String, c: Dictionary) -> void:
 	var r: Dictionary = {"id": rid, "species": str(a["sp"]), "name": str(names[host.rng.randi_range(0, names.size() - 1)]), "born_s": _now(),   # luck-exempt: its name
 		"level": int(a.get("level", 1)), "temper": str(a.get("temper", "")), "bond": float(c.get("bond_start", 0.1)), "owner_key": key, "home": null,
 		"fed_day": _today(), "near_s": 0.0, "near_day": _today(), "dead": false, "history": []}
+
+	if str(c.get("source", "stray")) == "orphan":
+		r["young"] = true   # a pup: it grows up over grow_days
+		r["grow_until_s"] = _now() + float(c.get("grow_days", 20.0)) * DAY_S
+
 	records[rid] = r
 	_history(r, "tamed", key)
-	strays.erase(key)
-	stray_of.erase(key)
+
+	if a.has("stray_for"):
+		strays.erase(key)   # the stray's trust is spent (an orphan's trust lives in its den's record)
+		stray_of.erase(key)
+
 	a.erase("stray_for")
 	a["companion_id"] = rid
 	live[rid] = int(a["id"])
@@ -404,11 +474,13 @@ func _step_companion(a: Dictionary, dt: float) -> void:
 	# Close up behind the owner, but never into a fire's keep-off radius (the animal rule; the owner's own torch is not one): it waits at the light's edge.
 	var goal: Vector3 = o + Vector3(a["pos"].x - o.x, 0.0, a["pos"].z - o.z).normalized() * follow_m
 
+	var shy_of_torch: bool = bool(c.get("keep_off_torch", false))   # a wolf keeps out of its owner's torch light too
+
 	for f in host._fire_cache:
 		var at: Vector3 = f[0]
 		var radius: float = float(f[1])
 
-		if Vector2(at.x - o.x, at.z - o.z).length() <= OWN_TORCH_M or Vector2(at.x - goal.x, at.z - goal.z).length() > radius:
+		if (not shy_of_torch and Vector2(at.x - o.x, at.z - o.z).length() <= OWN_TORCH_M) or Vector2(at.x - goal.x, at.z - goal.z).length() > radius:
 			continue
 
 		var out: Vector2 = Vector2(a["pos"].x - at.x, a["pos"].z - at.z).normalized()
@@ -436,7 +508,7 @@ func _bark(a: Dictionary, c: Dictionary, o: Vector3) -> bool:
 	for id in host.animals:
 		var other: Dictionary = host.animals[id]
 
-		if not kinds.has(str(other["sp"])) or int(other.get("state", 0)) == host.HIDDEN or bool(other.get("in_cave", false)):
+		if not kinds.has(str(other["sp"])) or other.has("companion_id") or int(other.get("state", 0)) == host.HIDDEN or bool(other.get("in_cave", false)):
 			continue
 
 		if Vector2(other["pos"].x - o.x, other["pos"].z - o.z).length() > float(c.get("warn_m", 40.0)):
