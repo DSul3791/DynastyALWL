@@ -16,7 +16,7 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 
 
 func _init() -> void:
-	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "shine": false, "moon": false, "sign": "", "wx": "", "wind": 0.0}
+	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "shine": false, "moon": false, "sign": "", "wx": "", "hit": "", "kill": false, "wind": 0.0}
 
 	for a in OS.get_cmdline_user_args():
 		var key: String = a.trim_prefix("--").get_slice("=", 0)
@@ -157,6 +157,14 @@ func _strip(kind: String, opts: Dictionary) -> void:
 		for i in int(opts["young"]):      # --young: young ones (species + 100) 1.5 m behind and beside the first animal
 			var at: Vector3 = Vector3(-2.5 + (1.2 if i % 2 == 0 else -1.2), 0.0, speed * t - 1.5 - float(i / 2.0))
 			rows.append([2000 + i, int(number) + AnimalView.YOUNG_NUM, at, PI * 0.5, int(opts["state"])])
+
+		if str(opts["hit"]) != "" and t >= 2.0 and t < 2.0 + step:      # --hit: one hit on the first animal at that zone, damage 60% of a deer
+			view.hunt_feedback = true
+			var hz: Dictionary = {"head": Vector3(0.0, 0.9, 0.9), "chest": Vector3(0.0, 0.7, 0.3), "hip": Vector3(0.0, 0.7, -0.8), "leg": Vector3(0.0, 0.15, 0.0)}      # the animal faces +Z
+			view.note_hit(rows[0][2] + hz.get(str(opts["hit"]), Vector3(0.0, 0.7, 0.0)), 12)
+
+		if bool(opts["kill"]) and t >= 3.0:      # --kill: the hit animal leaves the rows, so it falls
+			rows.remove_at(0)
 
 		view.on_rows(rows)
 

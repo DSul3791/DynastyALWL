@@ -18,13 +18,14 @@ note adds the looks that the server does not send, behind `weather_looks` (off),
 | Wet coat | swimmers and everything out in rain | rain | the wet look (claude/mikew-wet-look, WET_LINE_SHADER.md) darkens coats by its `wet_dark`; the shake-off here sheds part of it once both branches are merged |
 | Shelter pose | deer and stock in cover | server state 20 | the hunch (POSED_STATES.md, state 20): the standing idle under a head-low pose, ears back, tail still |
 
-## Requests to Steve (no new wire fields are used yet)
-1. **Hunch in shelter:** send state 20 while a deer or stock animal stands in its rain or cold cover (under crowns, a conifer stand or
-   a cave), not only for the rain hunch spells, so the shelter reads as sheltering. Nothing else changes on the wire.
-2. **Lying snow:** when Sonny's baked snow window (A4) lands, the server's "falling snow stands in for lying snow" can switch; the
-   client already reads `ground_snow` from the weather sounds for prints and could take a server value the same way.
-3. **Cold air by height:** the client uses the shared weather's `temp_c` with no height or night swing, the same limit Steve notes for
-   the server; a shared `air_c(position)` would let both use one number.
+## Requests to Steve, and his answers (8 Nov 2026)
+1. **Hunch in shelter:** accepted. The server will send state 20 while an animal is at its dry home inside the cover radius during
+   rain, a gale or cold, after his fire steps. The client already draws 20 as the hunch; nothing to change here.
+2. **Lying snow:** waits for Sonny's baked snow window (A4). Until then the server's falling snow stands in, and the client reads
+   `ground_snow` from the weather sounds.
+3. **One temperature by height:** accepted on a condition: it is `Weather.air_c` from #620. Once #620 merges the server calls it, and
+   the client's `weather_now` should call the same function (`Weather.air_c(game_s, group, altitude)` at the animal) instead of the
+   flat `temp_c`. No second shared function before then; until #620 lands the client keeps `temp_c`.
 
 ## Check
 Run sheet m41 (deer and horse in a gale: rumps turned to the wind), m42 (deer herd at -12 C: closer, heads low, steam at the

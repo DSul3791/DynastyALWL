@@ -3,9 +3,9 @@
 Branch `claude/mikew-eye-placement` (plus #596 eye shine and the wet-look branch). Everything here is client side: how the animals
 look and sound on screen. None of it changes what the server does; herd groups, the one server piece, went to Steve's stack as
 #666. Every new look sits behind its own switch, off by default, so merging changes nothing until a switch is turned on after
-its PC check. The PC run sheet is PC_SESSION_MIKEW.md (about 90 minutes, the core in 55).
+its PC check. The PC run sheet is PC_SESSION_MIKEW.md (about 92 minutes, the core in 55).
 
-## The 11 PRs, in merge order
+## The 12 PRs, in merge order
 | # | PR | What you would see | Switches | Needs new models? | PC strips |
 |---|---|---|---|---|---|
 | 1 | Eye shine (#596) | eyes glow in your torchlight | none | no | m8 |
@@ -19,6 +19,7 @@ its PC check. The PC run sheet is PC_SESSION_MIKEW.md (about 90 minutes, the cor
 | 9 | Young, new models, voices, night eyes | young grow and nurse, the six Meshy rows and import checklist, bat swarm and whale spout, calls by state, eye shine by torch and moon | `young_follow`, `swarm_fx`, `sea_life`, `voice_fx`, `eye_shine` | bat, whale, dolphin, eagle, raven, owl for their parts | m35 to m37 |
 | 10 | Animal sign | tracks on soft ground by stride, droppings, browse, beds | `animal_sign` | no | m38 to m40 |
 | 11 | Weather looks | dogs and wolves shake off after rain, grazers turn their tails to a gale, herds huddle in the cold with heads low, steam breath below 5 C, snow on sleeping backs | `weather_looks` | no | m41 to m44 |
+| 12 | Hunting feedback | a struck animal tosses its head or stumbles by where it was hit, drags a hind leg after a hip hit, limps past half health, and falls along the slope instead of vanishing | `hunt_feedback` | no | m45 to m47 |
 
 ## Which need models you must bring
 Only parts of 8 and 9: the raven (roll), bat (swarm), whale and dolphin (spout), and the eagle and owl rows. Their code is ready and
