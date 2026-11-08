@@ -49,6 +49,7 @@ var idle_first_s: float = -1.0     # tools only: the first idle comes after this
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
+var young_follow: bool = false    # young look to their mother and nurse at her flank now and then (YOUNG_ANIMALS.md part 2; off until the PC check)
 var young_gait: bool = false      # young drawn at their species' size, quick short steps, wobbly when newborn (YOUNG_ANIMALS.md; off until the PC check)
 var coat_dust: bool = false       # coats dusty after a roll, washed by water and rain (COAT_SHADER.md section 4; off until the PC check)
 var coat_ruffle: bool = false     # coats ruffle in the wind, a vertex shader on the coat (COAT_SHADER.md section 1; off until the PC check)
@@ -367,7 +368,7 @@ func on_rows(rows: Array) -> void:
 			node.position = row[2]
 
 			if young and not node.has_meta("young_model"):
-				node.scale = Vector3.ONE * (_young_scale(int(row[1])) if young_gait else YOUNG_SCALE)
+				node.scale = Vector3.ONE * (_young_scale(int(row[1]), {"age_hash": (id * 2654435761) % 1000}) if young_gait else YOUNG_SCALE)
 
 			add_child(node)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "young": young, "age_hash": (id * 2654435761) % 1000}
@@ -518,6 +519,9 @@ func _process_body(delta: float) -> void:
 
 			if young_gait and bool(b.get("young", false)):
 				_young_wobble(node, b, state, model_speed)
+
+			if young_follow and bool(b.get("young", false)):
+				_young_follow(node, b, state, model_speed, delta)
 
 			if season_coats or coat_dust or coat_ruffle:
 				_coat_tick(node, b, state, delta)
@@ -1754,6 +1758,11 @@ func _look_motion(node: Node3D, b: Dictionary, state: int, delta: float) -> void
 			b["look_left"] = randf_range(1.5, 3.0)      # luck-exempt: how long a herd mate stares (client look)
 			want = 1.0
 
+	# A young one with its mother near looks to her now and then, and up at her flank while nursing (_young_follow).
+	if young_follow and b.has("mother_at") and want < 0.5 and state == 0:
+		fix.look_target = b["mother_at"]
+		want = 1.0 if b.has("nurse_left") else (0.7 if float(b.get("mother_look", 0.0)) > 0.0 else 0.0)
+
 	if bool(b.get("asleep", false)):
 		want = 0.0      # asleep: no glances (the ears still turn)
 
@@ -1845,6 +1854,9 @@ func _herd_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 
 	b["herd_bias"] = lerpf(float(b.get("herd_bias", 0.0)), bias, clampf(delta * 0.5, 0.0, 1.0))
 	rig.rotation.y = float(b["herd_bias"])      # on the rig, not the node: the node's facing follows the server every frame
+	if b.has("nurse_left"):
+		return      # a young one nursing is under its mother's flank (_young_follow), not pushed apart
+
 	var want: Vector3 = node.global_transform.basis.inverse() * push.limit_length(1.0)
 	rig.position.x = lerpf(rig.position.x, want.x, clampf(delta, 0.0, 1.0))
 	rig.position.z = lerpf(rig.position.z, want.z, clampf(delta, 0.0, 1.0))
@@ -2151,7 +2163,7 @@ func _flap_bob(node: Node3D, b: Dictionary, state: int) -> void:
 		return
 
 	if state in AIR_STATES:
-		rig.position.y = float(flight["bob_m"]) * sin(TAU * float(flight.get("beat_hz", 4.0)) * float(b.get("air_t", 0.0)))
+		rig.position.y = float(flight["bob_m"]) * sin(TAU * float(flight.get("beat_hz", 4.0)) * float(b.get("air_t", _t)))
 	elif absf(rig.position.y) > 0.0005 and b.get("hop") == null and float(b.get("pounce_t", -1.0)) < 0.0:      # not while hopping or pouncing
 		rig.position.y = 0.0
 
@@ -2263,9 +2275,21 @@ func _ruffle_material(mat: StandardMaterial3D) -> ShaderMaterial:
 
 # Young animals (docs/design/YOUNG_ANIMALS.md). The row's young_look {scale, wobble_days} sets how big the young are drawn (default
 # YOUNG_SCALE) and how many days they stay unsteady (default 10).
-func _young_scale(number: int) -> float:
+# Size by age (YOUNG_ANIMALS.md part 2): born at young_look.scale, growing on a straight line to grown_scale at grown_days (180), so
+# a spring fawn is smaller than the same fawn in late summer. Without grown_scale the young keep their birth size.
+func _young_scale(number: int, b: Dictionary = {}) -> float:
 	var row: Variant = _models.get(KIND_OF_SPECIES.get(number, ""), null) if _models is Dictionary else null
-	return float((row as Dictionary).get("young_look", {}).get("scale", YOUNG_SCALE)) if row is Dictionary else YOUNG_SCALE
+
+	if not (row is Dictionary):
+		return YOUNG_SCALE
+
+	var look: Dictionary = (row as Dictionary).get("young_look", {})
+	var born: float = float(look.get("scale", YOUNG_SCALE))
+
+	if not look.has("grown_scale"):
+		return born
+
+	return lerpf(born, float(look["grown_scale"]), clampf(_young_age(b) / float(look.get("grown_days", 180.0)), 0.0, 1.0))
 
 
 # How old a young one looks, in days. The server keeps no birthdays (animals are not saved), so the client gives each young one a
@@ -2619,6 +2643,75 @@ func play_roll(id: int, turns: float = 1.0) -> void:
 
 	b["roll_t"] = 0.0
 	b["roll_turns"] = turns
+
+
+# Young and their mother on the client (docs/design/YOUNG_ANIMALS.md part 2). The server keeps a young one at its place beside its
+# mother (_step_young, follow_m) but sends no link between them, so every 2 s the client takes the nearest grown animal of its kind
+# within 8 m as the mother. Grazing beside her (state 0, still, within 3 m): it looks to her for 1.5 to 3 s every 6 to 15 s (look
+# bones, where the row has them); every 40 to 120 s it nurses for 6 to 12 s: it moves in under her flank (the Rig, at most 1 m, as the
+# herd spacing does) with its head turned up to her belly. Moving or a new state ends it.
+func _young_follow(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	b["mother_t"] = float(b.get("mother_t", 0.0)) - delta
+
+	if float(b["mother_t"]) <= 0.0:
+		b["mother_t"] = 2.0
+		b.erase("mother_node")
+		var best: float = 8.0
+
+		for other_id in _bodies:
+			var o: Dictionary = _bodies[other_id]
+
+			if o == b or bool(o.get("young", false)) or str(o.get("kind", "")) != str(b.get("kind", "")):
+				continue
+
+			var d: float = (o["node"] as Node3D).position.distance_to(node.position)
+
+			if d < best:
+				best = d
+				b["mother_node"] = o["node"]
+
+	var rig: Node3D = node.get_node_or_null("Rig")
+	var mother: Node3D = b.get("mother_node") as Node3D if is_instance_valid(b.get("mother_node")) else null
+
+	if mother == null or rig == null or not node.is_inside_tree():
+		b.erase("mother_at")
+		b.erase("nurse_left")
+		return
+
+	var row: Dictionary = mother.get_meta("model_row", {})
+	var h: float = float(row.get("height_m", float(row.get("length_m", 1.0)) * 0.55))
+	var calm: bool = state == 0 and speed < 0.3 and mother.global_position.distance_to(node.global_position) < 3.0
+	b["mother_at"] = mother.global_position + Vector3(0.0, h * 0.85, 0.0)      # her head
+	b["mother_look"] = maxf(0.0, float(b.get("mother_look", 0.0)) - delta)
+	b["mother_glance"] = float(b.get("mother_glance", randf_range(6.0, 15.0))) - delta      # luck-exempt: the first glance (client look)
+
+	if calm and float(b["mother_glance"]) <= 0.0:
+		b["mother_glance"] = randf_range(6.0, 15.0)      # luck-exempt: the next glance
+		b["mother_look"] = randf_range(1.5, 3.0)      # luck-exempt: how long
+
+	b["nurse_wait"] = float(b.get("nurse_wait", idle_first_s if idle_first_s >= 0.0 else randf_range(40.0, 120.0))) - delta      # luck-exempt: the first nursing (client look)
+
+	if not calm:
+		b.erase("nurse_left")
+	elif not b.has("nurse_left") and float(b["nurse_wait"]) <= 0.0:
+		b["nurse_wait"] = randf_range(40.0, 120.0)      # luck-exempt: the next nursing
+		b["nurse_left"] = randf_range(6.0, 12.0)      # luck-exempt: how long
+
+	if b.has("nurse_left"):
+		b["nurse_left"] = float(b["nurse_left"]) - delta
+		var flank: Vector3 = mother.global_position + mother.global_transform.basis.x.normalized() * h * 0.25
+		b["mother_at"] = mother.global_position + Vector3(0.0, h * 0.5, 0.0)      # her belly
+		var want: Vector3 = node.global_transform.basis.inverse() * (flank - node.global_position)
+		want.y = 0.0
+		want = want.limit_length(1.0 / maxf(node.scale.x, 0.1))
+		rig.position.x = lerpf(rig.position.x, want.x, clampf(delta, 0.0, 1.0))
+		rig.position.z = lerpf(rig.position.z, want.z, clampf(delta, 0.0, 1.0))
+
+		if float(b["nurse_left"]) <= 0.0:
+			b.erase("nurse_left")
+	elif absf(rig.position.x) + absf(rig.position.z) > 0.01 and not bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)):
+		rig.position.x = lerpf(rig.position.x, 0.0, clampf(delta, 0.0, 1.0))      # back to its own place (herd rows ease it themselves)
+		rig.position.z = lerpf(rig.position.z, 0.0, clampf(delta, 0.0, 1.0))
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
