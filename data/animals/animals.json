@@ -1053,6 +1053,38 @@
 				"steal_again_s": 120.0,
 				"hoard_life_s": 604800.0
 			},
+			"ally": {
+				"note": "Friendship, step 1 (docs/design/goblin_friendship_step1_design.md, Dave 8 Nov 2026): trust per band and character, +1 per game night a band takes a thing the player dropped; steps by trust; forgets 1 per forget_days game days without a gift; a hit resets it and makes the band wary for wary_days. Return gifts are left by a goblin that watched at a fire beside a Known player, once a game day.",
+				"steps": {
+					"tolerated": 3,
+					"known": 7,
+					"trusted": 15
+				},
+				"forget_days": 7.0,
+				"wary_days": 5.0,
+				"return_gifts": [
+					{
+						"item": "dried_berries",
+						"weight": 4,
+						"count": 3
+					},
+					{
+						"item": "flint",
+						"weight": 2,
+						"count": 1
+					},
+					{
+						"item": "feather",
+						"weight": 2,
+						"count": 2
+					},
+					{
+						"item": "bone",
+						"weight": 1,
+						"count": 1
+					}
+				]
+			},
 			"defend": {
 				"warn_m": 0.0,
 				"warn_s": 0.6,

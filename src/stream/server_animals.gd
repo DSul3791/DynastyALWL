@@ -99,6 +99,7 @@ func setup() -> void:
 	flocks.host = self
 	goblins = GoblinsScript.new()
 	goblins.host = self
+	goblins.trust.cfg = species_def("goblin").get("ally", {})
 
 
 func species_def(sp: String) -> Dictionary:
@@ -463,6 +464,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 	a["hp"] -= amount
 
+	if goblins != null and a.has("lair"):
+		goblins.harm(a, source_peer)   # friendship: the band's trust in that player is gone, and it is wary of them
+
 	if a["hp"] <= 0.0:
 		animals.erase(id)
 
@@ -754,6 +758,9 @@ func tick(delta: float) -> void:
 			wolves.packs[animals[id]["pack"]]["ids"].erase(id)
 
 		animals.erase(id)
+
+	if goblins != null:
+		goblins.trust.tick(delta)
 
 	if wolves != null and not wolves.packs.is_empty() or (wolves != null and bool(wolves.cfgw().get("natural", false))):
 		wolves.tick(delta)
