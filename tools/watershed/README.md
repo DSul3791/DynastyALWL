@@ -78,7 +78,7 @@ One cold stage (`params.json` `glacial`) with the glacial stream-power model of 
 - frozen ground, so all runoff is quick;
 - then 11,700 years of today's rivers and creep.
 
-`python tools/watershed/plots.py glacial RUN_DIR` redraws `glacial.png`.
+`python tools/watershed/plots.py glacial RUN_DIR` redraws `glacial.png`. `python tools/watershed/glacial.py report GEOLOGY_DIR RUN_DIR` reads a saved run in seconds and writes `glacial_report.json`: where the ice cut most and into what rock, and where the ground is steepest (the same report is in the manifest's summary under `where`).
 
 Check `glacial.png` and the summary for:
 - ice on the high ground only, thickest in the big valley heads, with tongues down the main valleys (`ice_max_km2`, `ice_thickest_m`, `lowest_ice_m`);
@@ -86,7 +86,8 @@ Check `glacial.png` and the summary for:
 - tributary valleys hanging above the troughs they join;
 - hollows with a cause (`hollows.by_cause`): ice-scoured floors high up (cirques) and in troughs (rock basins), and glacial deposit sills near where the ice ended (moraine dams). Many hollows with no cause would mean a numerical leftover, not a lake;
 - till under the ice's reach and outwash beyond it;
-- trough floors cut 100 to 300 m below the river-era valley floors (`glacial_cut_max_m`), not thousands. If the cut is far off, `years` is the setting to change first.
+- trough floors cut 100 to 300 m below the river-era valley floors (`where.cut_under_ice_m`, p90 and p99), not thousands. The single deepest cell (`glacial_cut_max_m`, listed in `where.deepest_cut`) can be a truncated spur or a cirque cut back into a steep flank, and may be twice that. If the cut is far off, `years` is the setting to change first;
+- no cliffs the slope cap should have stopped: `where.neighbour_drop_steepest` above 48 degrees (granite's cap) away from the coast and from hollows is a fault. The summary's `max_slope_deg` is the plain gradient, which also spans the sea floor, so a shore cell beside deep water reads as a cliff; `where.slope_shore_max_deg` counts the sea at sea level.
 
 ## R3: basins and lakes (stage C1 and C2)
 
