@@ -39,6 +39,30 @@ crowns) for as long as the rain, gale or cold lasts. The client draws 20 as the 
   instead of drying; cleared as soon as it leaves 20.
 Check: run sheet m48 (deer and horse in state 20 with `--cover`: heads low, barely moving between frames).
 
+## The cave climate and the body in weather (flag `cave_air`, pr20; Jamie #709, Steve #715 and #712)
+- **The air underground** is the cave's, not the sky's: deep in, the year mean at the height (Steve's `cave_mean_c`, 5.5 C at cave
+  8002), with no season and no day or night swing. `_air` (every weather look's temperature) takes it when `cave_air` is on and the
+  animal is under rock: terrain_client's `cave_c_at` casts one ray up (solid within 30 m), and gives the zone's sea-level year mean
+  less the lapse at that height (the same climate numbers `Weather.air_c` uses). A 2 m cell cache keeps it to one ray per cell every
+  5 s.
+- **The entrance blend** (Steve's `lerp(outside, deep, smoothstep(near_m, reach_m, depth_m))`, bands by season and which way the cave
+  runs) needs the distance to the nearest mouth, which is server tile data (`cave_mouths`, #715). Until it reaches the client an animal
+  under rock counts as deep in. When #715 merges, `cave_c_at` calls his shared `src/shared/cave_climate.gd` instead of the year-mean
+  line, so there is one formula, not two; the `warmth.json cave_climate` block's bands and `day_swing_kept` then apply on the client
+  as on the server.
+- **Steam breath follows the local air:** underground at 5.5 C a deer breathes no steam (the threshold is 5 C), though the sky outside
+  is -12; at a winter mouth, once the blend comes, it steams again.
+- **Bats and cave animals** take the same air: a bat colony's roost is underground by Steve's design (BAT_RIG.md), so its air is the
+  cave's; nothing they draw depends on it yet beyond the steam rule.
+- **Wet coats dry by where they are** (`_dry_rate`, every 2 s, `b["dry_per_h"]` for the wet look to read): by a fire
+  `warmth.json dry_fire_per_h`, in the open `dry_cover_per_h`; underground none deep in under Steve's cave block (half the cover rate
+  only at a winter mouth, which needs the mouth distance), or half the cover rate in the flat cave without the block. The rates are
+  Steve's wool model; the wet look branch scales its fade by them once both are in. Fires come through an optional `fire_near`
+  callable (unset: no fire), to be wired to the client's fire list with the wet look.
+- Reads only `Weather.air_c` (through `air_at`), the shared climate numbers and `warmth.json` (its rates and `cave_climate` block).
+
+Check: run sheet m54 (a deer at -12 C outside but under rock at 5.5 C: no steam, against m42's steaming herd) and DINO_SHOTS.md.
+
 ## Check
 Run sheet m41 (deer and horse in a gale: rumps turned to the wind), m42 (deer herd at -12 C: closer, heads low, steam at the
 muzzles), m43 (dog and wolf as the rain stops: a shiver and drops), m44 (deer lying in falling snow: whiter coat).
