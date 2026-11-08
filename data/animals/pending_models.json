@@ -73,7 +73,8 @@
 				"r_up": "<right upper wing>",
 				"r_fore": "<right fore wing>",
 				"r_hand": "<right hand>"
-			}
+			},
+			"ruffle_cm": 0.5
 		},
 		"raven": {
 			"scene": "res://assets/animals/raven/<file>.fbx",
@@ -149,7 +150,8 @@
 				"r_up": "<right upper wing>",
 				"r_fore": "<right fore wing>",
 				"r_hand": "<right hand>"
-			}
+			},
+			"ruffle_cm": 0.4
 		},
 		"owl": {
 			"scene": "res://assets/animals/owl/<file>.fbx",
@@ -221,7 +223,8 @@
 				"r_up": "<right upper wing>",
 				"r_fore": "<right fore wing>",
 				"r_hand": "<right hand>"
-			}
+			},
+			"ruffle_cm": 0.6
 		},
 		"bat": {
 			"scene": "res://assets/animals/bat/<file>.fbx",

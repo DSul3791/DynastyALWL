@@ -1,6 +1,6 @@
 # PC session run sheet: the animal life layer (MikeW, 8 Nov 2026)
 
-For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 92 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 52 motion strips about 41 (Godot starts about 25 s per line; m44 takes 2 minutes), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m52 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
+For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 92 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 53 motion strips about 42 (Godot starts about 25 s per line; m44 takes 2 minutes), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m53 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
 
 ```bash
 cd /c/GodotProjects/DynastyALWL_gate
@@ -38,8 +38,8 @@ grep -E "^==|^role|NO CLIP|flat" $O/still.log
 ```
 Proves: dog sit (18) and lie (19), alligator swim, black bear warn under the jaw-pop pose, rabbit and kangaroo hop clips. Pass: no `NO CLIP` for sit, lie or swim.
 
-## 4. Moving frames (about 41 min: 52 lines, about 45 s each)
-One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m52 are the newer flags and follow in the same sitting.
+## 4. Moving frames (about 42 min: 53 lines, about 45 s each)
+One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m53 are the newer flags and follow in the same sitting.
 ```bash
 M="timeout 300 $GE --path . --script res://tools/creature_motion.gd --"
 $M --kinds=dog --state=0 --out=$O/motion > $O/m1.log 2>&1   # m1 [none] look: dog tail and chest. PASS: tail swings between frames, chest rises. FAIL: anything else, or SCRIPT ERROR in the log
@@ -94,6 +94,7 @@ $M --kinds=crow --state=15 --birdrig --posed --frames=8 --every=0.06 --cam=3 --o
 $M --kinds=alligator --state=1 --speed=1 --water=1 --swimrig --posed --cam=6 --frames=8 --every=0.15 --out=$O/motion_posed_swim > $O/m50.log 2>&1   # m50 [swim_rig] look: the alligator's body and tail. PASS: a wave runs from the shoulders to the tail tip, growing toward the tail, and `posed swim: spine` lists the chain in m50.log. FAIL: a stiff body, a bend at one bone only, or `no spine chain found`
 $M --kinds=deer,horse --state=0 --wx=windrain --windlooks --frames=4 --every=1 --cam=6 --out=$O/motion_wind_rump > $O/m51.log 2>&1   # m51 [wind_looks] look: which way the bodies face. PASS: both turn their rumps toward +X, toward the camera (the downwind side), over the frames, heads low. FAIL: no turn, a turn into the wind, or SCRIPT ERROR in the log
 $M --kinds=deer,wolf --state=3 --count=4 --torch --shine --hour=19.5 --fog=120 --cam=15 --frames=3 --every=0.5 --out=$O/motion_fog > $O/m52.log 2>&1   # m52 [fog_looks] look: the eyes and the herd at dusk in 120 m fog. PASS: two points of eye shine though it is only dusk, the animals closer together than in m4, the far ones paler with the fog. FAIL: no shine, or SCRIPT ERROR in the log
+$M --kinds=deer,horse --state=3 --wx=breeze --windlooks --frames=4 --every=1 --cam=6 --out=$O/motion_wind_alert > $O/m53.log 2>&1   # m53 [wind_looks] look: which way the alert animals face. PASS: both turn toward -X, away from the camera (upwind), up to 45 degrees. FAIL: no turn, a turn toward the camera, or SCRIPT ERROR in the log
 grep -h "saved\|SCRIPT ERROR" $O/m*.log
 ```
 
@@ -168,3 +169,4 @@ its last commit and lists the earlier PR as its base. No history is rewritten.
 14. **Life layer K, posed swimmers:** `swim_rig` (the whale's and dolphin's tail beat, flipper strokes and porpoise pitch from their spines; m50 with the alligator as a stand-in).
 15. **Life layer L, wind direction:** `wind_looks` (rump to wind and rain, deer grazing into the wind, windward fur, breath downwind, birds into the wind; m51).
 16. **Life layer M, fog:** `fog_looks` (eye shine sooner and to a third of the visibility, steam into the mist, herds closer; m52).
+17. **Life layer N, prevailing wind:** `wind_looks` with Jamie's 57 S wind (from WNW without a direction, feather ruffle, alert animals facing into the wind; m53).

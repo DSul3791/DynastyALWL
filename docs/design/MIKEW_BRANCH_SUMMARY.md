@@ -5,7 +5,7 @@ look and sound on screen. None of it changes what the server does; herd groups, 
 #666. Every new look sits behind its own switch, off by default, so merging changes nothing until a switch is turned on after
 its PC check. The PC run sheet is PC_SESSION_MIKEW.md (about 92 minutes, the core in 55).
 
-## The 16 PRs, in merge order
+## The 17 PRs, in merge order
 | # | PR | What you would see | Switches | Needs new models? | PC strips |
 |---|---|---|---|---|---|
 | 1 | Eye shine (#596) | eyes glow in your torchlight | none | no | m8 |
@@ -24,6 +24,7 @@ its PC check. The PC run sheet is PC_SESSION_MIKEW.md (about 92 minutes, the cor
 | 14 | Posed swimmers | the Meshy whale and dolphin swim from their own spines: tail beat, flippers, porpoising | `swim_rig` | whale, dolphin | m50 |
 | 15 | Wind direction | stock and deer turn their rumps to wind and rain, deer graze into a breeze, fur lifts on the windward side, breath drifts downwind, birds take off into the wind | `wind_looks` | no | m51 |
 | 16 | Fog | eye shine from dusk in fog, breath merging into mist, herds closer when they cannot see | `fog_looks` | no | m52 |
+| 17 | Prevailing wind | the island's WNW wind by default, feathers ruffling, alert animals facing into the wind | `wind_looks` (with `coat_ruffle` for feathers) | no | m53 |
 
 ## The PR branches, cut and pushed (8 Nov 2026; PRs not opened until Dave's PC gate)
 Each branch is the stack up to its head; its PR's base is the branch above it, so each diff holds one family. The full branch
