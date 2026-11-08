@@ -180,7 +180,6 @@ def main():
     to_sea = float(net[seac].sum())
 
     # Back to 16 m
-    nc = H.shape[0]
     rr, cc = np.meshgrid(np.arange(n), np.arange(n), indexing='ij')
     Hf = map_coordinates(H, [(rr + 0.5) / f - 0.5, (cc + 0.5) / f - 0.5], order=1, mode='nearest')
     table = np.where(land, np.minimum(Hf, h), 0.0)
