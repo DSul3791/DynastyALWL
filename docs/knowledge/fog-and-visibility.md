@@ -32,11 +32,12 @@
    - **It deepens just after sunrise** (judged, common observation): the first sun stirs the layer, and for half an hour to an hour the fog can thicken and rise before it thins.
    - **Season:** most common in autumn and early winter, when nights are long and the ground is still wet (`weather.gd` notes autumn).
    - **At 57° S the winter sun is weak.** The midwinter noon sun is only 9.6° high (`one-sky.md`, #706). So in midwinter a valley fog can last all day in a deep valley (judged). Burn-off also follows sunrise, which is 08:39 at midwinter.
-     - `weather.gd` still draws its sunrise for 52° N (`SUN_LATITUDE_DEG` 52.0). So its burn-off hour is wrong for our island, and its seasons fall in the wrong half of the year.
+     - On main, `weather.gd` draws its sunrise for 52° N (`SUN_LATITUDE_DEG` 52.0). Kathleen's #711 fixes this behind `--one-sky`: `Weather.sunrise_hour` then reads the island's latitude, so the burn-off follows 57° S.
+     - The fog season needs no change: the game calendar's autumn is the island's own local autumn.
 
 3. **Sea fog comes in on light onshore winds when warm, damp air crosses a cold sea. It lasts day and night and drifts inland.**
    - This is advection fog. On the east coast of Scotland it is the haar, which comes in spring and early summer, when the sea is coldest against the air (Met Office, from memory; to be fetched).
-   - **Mirrored for us** (judged): spring and early summer is **October to January**. The warm, damp air comes from the north in the southern hemisphere, so look for sea fog on a light N to NW wind over a cold sea.
+   - **For us** (judged): the same season, **local spring and early summer** on the game calendar. The warm, damp air comes from the north in the southern hemisphere, so look for sea fog on a light N to NW wind over a cold sea.
    - **How it behaves** (judged):
      - day or night, it does not need clear skies;
      - it lies on the sea and the shore and drifts 1 to 5 km inland up low ground;
@@ -109,11 +110,11 @@
   - mist on the slopes just above the top (`mist_top_m` 30 to 140 m);
   - clear above, with the fog sea seen from the hills (#672).
 - **Burn-off:** 1 to 3 hours after sunrise in spring and autumn. In midwinter in a deep valley it may not burn off at all (judged).
-- **Season:** autumn into early winter, March to June for us (judged, mirrored).
+- **Season:** local autumn into early winter, on the game calendar (judged).
 
 ### Sea fog (#608)
 
-- **When:** October to January (judged, the mirrored haar season), on a light N to NW onshore wind, wind 0.15 to 0.45. Lifts to low cloud at about 0.5.
+- **When:** local spring and early summer on the game calendar (judged, the haar season), on a light N to NW onshore wind, wind 0.15 to 0.45. Lifts to low cloud at about 0.5.
 - **Visibility:** 50 to 500 m on the shore (judged).
 - **Reach:** the sea and the coast, drifting 1 to 5 km up low ground. Burns back to the coast on a sunny afternoon and returns at evening.
 - **Days:** it can last 1 to 3 days in a calm (judged).
@@ -165,7 +166,7 @@
   - `mist` (0..1) and `mist_top_m` (30 to 140 m), gathering from 22:00 (`MIST_FROM_HOUR`) over 4 hours;
   - burning off 1 to 3 hours after sunrise, only in calm (`MIST_CALM_WIND` 0.3, none from 0.5) and clear weather;
   - `MIST_BY_ZONE` temperate 1.0.
-  - **Finding:** `SUN_LATITUDE_DEG` is 52.0, so the sunrise and seasons it uses are for 52° N, not our 57° S (`one-sky.md`, #706).
+  - `SUN_LATITUDE_DEG` is 52.0 on main. #711 (open) makes the burn-off read the island's latitude (57° S) behind `--one-sky`.
 - **`weather_look.gd`:** has a "fog" look preset with `mist` 1.0 and `mist_top_m` 90. Its thickness grows by 12 × fog on top of rain and snow.
 - **Sea fog** is Kathleen's #608 (open), and fog from above is #672 (open). Neither was read for this page.
 - **Animals:** no fog rule found in `server_animals.gd` in this pass (not searched in depth).
