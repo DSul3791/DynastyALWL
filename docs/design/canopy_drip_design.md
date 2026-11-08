@@ -46,14 +46,14 @@ One switch, `--canopy-drip`, on top of `--rain-look`. It stays off until Dino's 
 
 ## 4. Pictures and listen
 
-Run with `--rain-look --canopy-drip --shot-settle=60`, then with `--rain-look` only. The camera is under the broadleaf stand of the trees note (#682):
+Run with `--rain-look --canopy-drip --shot-settle=20`, then with `--rain-look` only (the default `--shot-wait` loads the world first). The camera is under the broadleaf stand of the trees note (#682):
 
 - **Camera:** x 53296, z 68056, 2 m above the ground, yaw 90, pitch 10 (looking west, slightly up into the crowns), hour 12.
 - If no crown is overhead in the first frame, run `flora_near.gd -- --at=53296,68080 --species=oak,beech,birch,spruce` and stand 2 m inside the edge of the nearest stand. Send me the numbers.
 
 `--shots="drip_rain:53296,2,68056,90,10,12,rain;drip_after_1:53296,2,68056,90,10,12,clear;drip_after_2:53296,2,68056,90,10,12,clear;drip_after_3:53296,2,68056,90,10,12,clear"`
 
-- Shots are 60 s apart, which is 24 game minutes each.
-- With the switch, `drip_after_1` still drips, `drip_after_2` is thinner (under a broadleaf) and `drip_after_3` is dry.
-- Without the switch, all three after-rain shots are nearly the same as #656.
+- Shots are 20 s apart, which is 8 game minutes each. The rig freezes the clock, but the drips run on real seconds, and the noon sun of `clear` (about 0.8) empties the crowns about 2.2 times faster than a grey day.
+- With the switch, `drip_after_1` (8 game minutes) still drips, `drip_after_2` (16) is thinner (a broadleaf nearly done) and `drip_after_3` (24) is dry or nearly.
+- Without the switch (#656 alone), the drips fade more slowly and evenly: about 0.47, 0.22 and 0.1 of full.
 - **Listen (Dave, `--sound-log=1`):** drips are heard under the trees for a while after switching to `clear`, thinning out, and none in the open field.
