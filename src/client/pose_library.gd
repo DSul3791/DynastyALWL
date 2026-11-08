@@ -17,10 +17,14 @@ const POSES := {
 	"lie": {"neck": 6.0, "head": -2.0, "front": -60.0, "hind": 60.0, "blend_s": 1.0},
 	"sit": {"neck": -6.0, "spine": -10.0, "hind": 55.0, "blend_s": 0.8},
 	"groom": {"neck": 10.0, "neck_yaw": 25.0, "head_yaw": 15.0, "head": 8.0, "blend_s": 0.5},
+	# A deer down on bare ice (Jamie #736): splayed on all fours, legs sliding out sideways, neck stretched forward. "splay" is the
+	# sideways swing of each leg's upper bone about z (left legs out to the left, right to the right).
+	"splay": {"neck": -4.0, "head": 6.0, "splay": 35.0, "front": -10.0, "hind": 10.0, "blend_s": 0.15},
 }
 
 # Steve's states and the client's sleep key -> pose name.
 const STATE_POSES := {"3": "alert", "18": "sit", "19": "lie", "20": "hunch", "21": "drink", "-1": "sleep"}
+const ICE_FALL_KEY := -40      # the splayed fall on bare ice (a client key, not a server state), for rows with legs (the deer family)
 
 # The clip role the row would use for each pose's state (a row with that clip keeps its clip).
 const CLIP_ROLE := {"3": "3", "18": "18", "19": "19", "20": "20", "21": "21", "-1": "sleep"}
@@ -91,15 +95,25 @@ static func build(pose_name: String, p: Dictionary, row: Dictionary) -> Dictiona
 		if spec.has("spine"):
 			put.call(b, sgn * float(spec["spine"]), axis)
 
-	for leg in p["front"]:
+	for k in p["front"].size():
+		var leg: Array = p["front"][k]
+
 		if spec.has("front"):
 			put.call(leg[0], sgn * float(spec["front"]), axis)
 			put.call(leg[1], -sgn * float(spec["front"]) * 1.2, axis)
 
-	for leg in p["hind"]:
+		if spec.has("splay"):
+			put.call(leg[0], float(spec["splay"]) * (1.0 if k % 2 == 0 else -1.0), 2)      # feet rows go left, right
+
+	for k in p["hind"].size():
+		var leg: Array = p["hind"][k]
+
 		if spec.has("hind"):
 			put.call(leg[0], sgn * float(spec["hind"]), axis)
 			put.call(leg[1], -sgn * float(spec["hind"]) * 1.2, axis)
+
+		if spec.has("splay"):
+			put.call(leg[0], float(spec["splay"]) * (1.0 if k % 2 == 0 else -1.0), 2)
 
 	return {"bones": bones} if not bones.is_empty() else {}
 

@@ -693,6 +693,9 @@ func _process_body(delta: float) -> void:
 				if idle_variety and b.has("idle_pose"):
 					pose_key = int(b["idle_pose"])
 
+				if pose_lib and b.has("fallen_t") and posed.poses.has(PoseLib.ICE_FALL_KEY):
+					pose_key = PoseLib.ICE_FALL_KEY      # down on the ice, splayed (Jamie #736)
+
 				if pose_lib and b.get("drink_at") != null and (state == 0 or state == DRINK) and posed.poses.has(DRINK):
 					pose_key = DRINK      # drinking at the water's edge: the library's drink pose (Steve's state 21, #734)
 
@@ -937,6 +940,13 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 					if not built.is_empty():
 						lib_poses[key] = built
 						fix.pose_blend[int(key)] = PoseLib.blend_s(PoseLib.STATE_POSES[key])
+
+				if ice_looks and not (lib_parts["front"] as Array).is_empty():
+					var splay: Dictionary = PoseLib.build("splay", lib_parts, row)
+
+					if not splay.is_empty():
+						lib_poses[str(PoseLib.ICE_FALL_KEY)] = splay
+						fix.pose_blend[PoseLib.ICE_FALL_KEY] = PoseLib.blend_s("splay")
 
 				if not lib_poses.is_empty():
 					missing.append_array(fix.setup_poses(sks[0], lib_poses))
@@ -4252,7 +4262,32 @@ func _ice_look(node: Node3D, b: Dictionary, _state: int, speed: float, delta: fl
 	if str(b.get("kind", "")) in SURE_ON_ICE or float(_cond().get("ground_snow", 0.0)) > 0.3:
 		return      # sure-footed kinds, and anyone on snowy ice (Jamie #736: deer are fine on snow-covered ice)
 
-	if str(b.get("kind", "")) in SURE_ON_ICE:
+	# Running on bare ice, a deer falls (Jamie #736: about once in three running strides) and stays down splayed for 2 to 4 s, with the
+	# pose library on (the splay pose); without it, the slips below.
+	var row: Dictionary = node.get_meta("model_row", {})
+	var running: bool = speed > maxf(float(row.get("walk_mps", 1.5)) * 2.4, 3.5)
+	var stride: int = int(floor(float(b.get("gait", 0.0))))
+
+	if pose_lib and running and not b.has("fallen_t") and stride != int(b.get("ice_stride", stride)) and randf() < 1.0 / 3.0:      # luck-exempt: a fall (client look)
+		b["fallen_t"] = randf_range(2.0, 4.0)      # luck-exempt: how long it stays down
+
+	b["ice_stride"] = stride
+
+	if b.has("fallen_t"):
+		b["fallen_t"] = float(b["fallen_t"]) - delta
+		b["speed_x"] = 0.0      # down: the legs still
+		var body: Node3D = LifeUtil.rig(node)
+		var h: float = float(row.get("height_m", float(row.get("length_m", 1.0)) * 0.55))
+
+		if body != null:
+			body.position.y = lerpf(body.position.y, -0.35 * h if float(b["fallen_t"]) > 0.3 else 0.0, clampf(delta * 8.0, 0.0, 1.0))      # the body down on the ice
+
+		if float(b["fallen_t"]) <= 0.0:
+			b.erase("fallen_t")
+
+			if body != null:
+				body.position.y = 0.0
+
 		return
 
 	var rig: Node3D = LifeUtil.rig(node)

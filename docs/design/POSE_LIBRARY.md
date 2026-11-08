@@ -16,6 +16,7 @@ library's pose (the row's own clip or pose always wins).
 | 21 | DRINK (Steve #734: deer and stock at fresh water at dawn and dusk, 1 to 3 minutes facing it) | drink |
 | -1 | sleep (the client's own sleep key, POSED_STATES.md) | sleep |
 | (idle) | groom | groom (for the idle table) |
+| -40 | (client) the fall on bare ice | splay: Jamie #736, a deer down on all fours, legs out; rows with legs, with `ice_looks` |
 
 ## The poses (degrees about the row's `pose_axis`, default x, times `pose_sign`; blend time to reach them)
 | Pose | Neck (shared) | Head | Spine (each) | Front legs (upper, lower x -1.2) | Hind legs | Turn | Blend s |
@@ -27,6 +28,7 @@ library's pose (the row's own clip or pose always wins).
 | lie | +6 | -2 | | -60 | +60 | | 1.0 |
 | sit | -6 | | -10 | | +55 | | 0.8 |
 | groom | +10 | +8 | | | | neck +25, head +15 about y | 0.5 |
+| splay (the fall on bare ice, client key -40) | -4 | +6 | | -10, and each upper bone 35 out sideways about z | +10, and 35 out sideways | | 0.15 |
 The neck angle is shared out along the neck bones (twice the angle over their count each), so a long neck bends smoothly.
 
 ## Rig families and their parts
@@ -51,6 +53,11 @@ cow) is corrected per row with `pose_axis` and `pose_sign`, as the Dino strip sh
   Steve's state 21) takes the drink pose; the blend time is the library's.
 - Logged per model: `pose library: [keys]`.
 
+## The fall on bare ice (with `ice_looks`, Jamie #736)
+A deer (any kind not sure-footed on ice) running on bare ice falls about once in three running strides and stays down splayed for 2 to
+4 s: the splay pose, the body lowered 35 percent of its height, the legs still; then it gets up. On snowy ice, never. Without the pose
+library, pr22's slips only.
+
 ## Check
 Run sheet m58 (deer, horse and cow in states 20, 21 and 19 with `--poselib`: heads low for 20 and 21, legs folded for 19 where the
-row has feet) and DINO_SHOTS.md.
+row has feet), m59 (a deer running on bare ice with `--poselib --ice`: down splayed in some frames) and DINO_SHOTS.md.
