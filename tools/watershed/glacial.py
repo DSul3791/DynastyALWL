@@ -5,6 +5,9 @@ valleys, and it can be rerun with other ice settings without rerunning B1.
 Usage (on Dave's PC, never in the cloud):
   python tools/watershed/glacial.py INPUTS_DIR GEOLOGY_DIR B1_DIR OUT_DIR [params.json]
 B1_DIR holds evolve.py's ground.npz. Writes OUT_DIR/glacial.npz, glacial.png and glacial_manifest.json.
+  python tools/watershed/glacial.py report GEOLOGY_DIR OUT_DIR [params.json]
+reads a saved OUT_DIR/glacial.npz and writes OUT_DIR/glacial_report.json (where the ice cut most, where the ground is steepest;
+see report), in seconds. The same report is in the manifest's summary under 'where'.
 
 The model is the glacial stream-power law of Hergarten (2021, Earth Surface Dynamics 9:937), benchmarked against the
 process-based ice model iSOSIA by Liebl et al. (2023, Geoscientific Model Development 16:1315). Each cold-stage step:
@@ -310,11 +313,92 @@ def main():
                    hollows=hollows, max_slope_deg=float(slope[landg].max()),
                    share_of_land_steeper_than_deg={str(a): float((slope[landg] > a).mean()) for a in (25, 30, 35, 40)},
                    track_every_5=[t for t in track if t[0] % 5 == 0])
+    summary['where'] = report(f'{out_dir}/glacial.npz', geology_dir, E)
     json.dump(dict(params=P, inputs={'inputs.npz': evolve.sha(f'{inputs_dir}/inputs.npz'), 'ground.npz': evolve.sha(f'{b1_dir}/ground.npz')},
                    summary=summary), open(f'{out_dir}/glacial_manifest.json', 'w'), indent=1)
     print(json.dumps(summary, indent=1))
     import plots
     plots.glacial_picture(f'{out_dir}/glacial.npz', f'{out_dir}/glacial.png')
+
+
+def report(npz_path, geology_dir, E):
+    """Where the cold stage cut most and where the ground is steepest, read from a saved glacial.npz in seconds, so a run can be
+    judged without rerunning it (python glacial.py report GEOLOGY_DIR OUT_DIR).
+    Cut: under the largest ice extent, its spread (p50, p90, p99), by the rock the ice met (the river-era surface), and the five
+    deepest cells with their rock, heights and ice.
+    Slope three ways. The plain gradient over the grid (the summary's max_slope_deg) also spans the sea floor, so a coast cell
+    beside deep water reads as a cliff the walker never meets. With the sea at sea level (0 m) it is the slope at the shore. The
+    steepest drop to any one of the 8 neighbours (sea counted at 0 m) is what the threshold-slope cap holds (each cell stands at
+    most its rock's threshold slope above its receiver, the steepest neighbour on the hollow-filled ground). Two cases may pass
+    48 degrees (granite's cap) honestly: a shore cell whose receiver is a diagonal sea cell (up to about 57 degrees to the sea
+    beside it), and a cell beside a closed hollow, whose floor the fill hides from the receiver choice. Anywhere else a drop above
+    48 degrees is a fault to find; the five steepest are listed with their rock, the ice there, and whether they lie on the
+    coast, on the grid's frame or beside a hollow."""
+    d = np.load(npz_path)
+    n = d['ground'].shape[0]
+    dx = float(d['cell_m'])
+    ox, oz = float(d['origin_x']), float(d['origin_z'])
+    sea = d['sea'].astype(bool)
+    land = ~sea
+    h = d['ground'].astype(np.float64)
+    b1 = d['b1_ground'].astype(np.float64)
+    cold = d['cold_ground'].astype(np.float64)
+    cut = d['glacial_cut_m'].astype(np.float64)
+    ice = d['ice_max_m'].astype(np.float64)
+    g = rock.load(geology_dir, E['cover_m'], E['cover_erodibility'])
+    names = g['names']
+    rid_b1 = rock.rock_ids(g, b1).reshape(n, n)
+    rid = rock.rock_ids(g, h).reshape(n, n)
+    coast = _coast(sea.ravel().astype(np.uint8), n).reshape(n, n)
+    frame = np.zeros((n, n), bool)
+    frame[0, :] = frame[-1, :] = frame[:, 0] = frame[:, -1] = True
+    hollow = d['pit_m'].astype(np.float64) > 0.1
+    near_hollow = hollow.copy()
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            near_hollow |= np.roll(np.roll(hollow, dr, 0), dc, 1)
+    hs = np.where(land, h, 0.0)
+    drop = np.zeros((n, n))                            # steepest drop to a neighbour, as a tangent
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            if dr == 0 and dc == 0:
+                continue
+            nb_ = np.full((n, n), np.inf)              # off the grid: no neighbour
+            nb_[max(-dr, 0):n - max(dr, 0), max(-dc, 0):n - max(dc, 0)] = hs[max(dr, 0):n - max(-dr, 0), max(dc, 0):n - max(-dc, 0)]
+            drop = np.maximum(drop, (hs - nb_) / (dx * (1.4142135623730951 if dr and dc else 1.0)))
+    drop = np.where(land, np.degrees(np.arctan(np.maximum(drop, 0.0))), 0.0)
+    gy, gx = np.gradient(h, dx)
+    s_grid = np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), 0.0)
+    gy, gx = np.gradient(hs, dx)
+    s_shore = np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), 0.0)
+
+    def cell(k, r=None):
+        j, i = divmod(int(k), n)
+        out = dict(x=ox + i * dx, z=oz + j * dx, rock=names.get(int((r if r is not None else rid)[j, i]), '?'), ground_m=round(float(h[j, i]), 1),
+                   b1_m=round(float(b1[j, i]), 1), cold_m=round(float(cold[j, i]), 1), ice_max_m=round(float(ice[j, i]), 1),
+                   cut_m=round(float(cut[j, i]), 1), coast=bool(coast[j, i]), frame=bool(frame[j, i]), beside_hollow=bool(near_hollow[j, i]))
+        lo = [float(hs[j + a, i + b]) for a in (-1, 0, 1) for b in (-1, 0, 1) if 0 <= j + a < n and 0 <= i + b < n and (a or b)]
+        out['lowest_neighbour_m'] = round(min(lo), 1)
+        return out
+
+    def top(a, k=5, r=None):
+        return [dict(cell(q, r), value=round(float(a.ravel()[q]), 2)) for q in np.argsort(-a.ravel())[:k]]
+    iced = (ice > 0.0) & land
+    cu = cut[iced]
+    by_rock = {}
+    for k in np.unique(rid_b1[iced]):
+        sel = iced & (rid_b1 == k)
+        by_rock[names.get(int(k), str(k))] = dict(km2=round(float(sel.sum() * dx * dx / 1e6), 3), mean=round(float(cut[sel].mean()), 1),
+                                                  p90=round(float(np.percentile(cut[sel], 90)), 1), p99=round(float(np.percentile(cut[sel], 99)), 1))
+    shares = lambda s: {str(a): round(float((s[land] > a).mean()), 4) for a in (25, 30, 35, 40, 48)}
+    return dict(cut_under_ice_m=dict(p50=round(float(np.percentile(cu, 50)), 1), p90=round(float(np.percentile(cu, 90)), 1),
+                                     p99=round(float(np.percentile(cu, 99)), 1), max=round(float(cu.max()), 1)) if cu.size else None,
+                cut_under_ice_by_rock_met=by_rock,
+                deepest_cut=top(np.where(land, cut, -np.inf), r=rid_b1),
+                slope_grid_max_deg=round(float(s_grid.max()), 1), slope_grid_steepest=top(s_grid, 3),
+                slope_shore_max_deg=round(float(s_shore.max()), 1), slope_shore_share_steeper_than_deg=shares(s_shore),
+                neighbour_drop_max_deg=round(float(drop.max()), 1), neighbour_drop_share_over_48_deg=round(float((drop[land] > 48.0).mean()), 5),
+                neighbour_drop_steepest=top(drop))
 
 
 def _coast(sea, n):
@@ -328,4 +412,11 @@ def _coast(sea, n):
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) >= 4 and sys.argv[1] == 'report':
+        # python glacial.py report GEOLOGY_DIR OUT_DIR [params.json]: reads OUT_DIR/glacial.npz, writes OUT_DIR/glacial_report.json
+        P_ = json.load(open(sys.argv[4] if len(sys.argv) > 4 else os.path.join(HERE, 'params.json')))
+        rep = report(f'{sys.argv[3]}/glacial.npz', sys.argv[2], P_['evolve'])
+        json.dump(rep, open(f'{sys.argv[3]}/glacial_report.json', 'w'), indent=1)
+        print(json.dumps(rep, indent=1))
+    else:
+        main()
