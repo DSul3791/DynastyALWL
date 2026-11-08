@@ -103,12 +103,48 @@ The air temperature shown in the inventory and character screens, and in the deb
 - Desert, transition and arctic seasonal means and swings.
 - The worldgen tile climate: its own numbers stay until the record's readers (R6).
 
+## Cold and warm spells (stacked follow-up, coordinator's call 8 Nov)
+
+**Why.** Without spells the starter coast never froze. Its coldest hour sat at about 0 °C, while the real Fort William gets air frosts in most winters.
+
+**The rule** (`Climate.spell_c`), with Sonny's field names:
+- **Air** = mean + seasonal + spell + daily − lapse × h.
+- **The spell** = `spell_amplitude_c` × (2 × mix − 1), where mix = 0.6 × noise(day / longest) + 0.4 × noise(day / shortest).
+  - `spell_days` = [shortest, longest] = [3, 6].
+  - Both are smooth value noise from the world seed in the island's own stream (`spell_stream`, ours).
+  - This is a bounded random walk that relaxes back to the season, so a spell lasts about 3 to 6 days.
+- **Long-run record.** The record and the baked snow window use the climate **without** spells (the long-run average); the live air adds them.
+- **The same everywhere.** Server and clients agree: the server's pond ice for fishing, the client's ice and the weather all pass the world seed.
+- `spell_amplitude_c` per island (judged):
+
+  | Island | spell_amplitude_c |
+  |---|---|
+  | starter | ±4 °C (coordinator and Sonny) |
+  | desert | ±3 |
+  | transition | ±3 |
+  | arctic | ±3 (kept low so the arctic pond's yearly melt still has no sudden jump) |
+  | small ocean island, later | about ±2 |
+
+**What it gives** (sums from an exact Python copy of the noise; seeds 0, 777 and 12345):
+- **Air frosts:** 25 to 60 nights a year at sea level on the starter. The real Fort William figure was not checked today.
+- **Spell range:** about −3.8 to +3.8 °C. The largest change in one day is about 2 °C.
+- **Ice, seed 777:**
+  - the coast's ponds get ice on about 40 mornings a year;
+  - ponds at 300 m on about 84;
+  - a frosty night's ice (down to −3 °C) at 300 m is still gone by 14:00 on days that reach 2 °C at noon;
+  - after a hard frost below −3 °C, ice can last into the afternoon.
+- **Snow** can now fall at sea level on cold-spell nights in winter, and summers have warm spells up to about 22 °C at 15:00.
+
+**Checks:**
+- `test_weather`: spells stay within ±`spell_amplitude_c` and do swing; they change by under 2.5 °C a day; they follow the seed; and the coast gets 10 to 120 air-frost nights a year.
+- `test_ice`: uses world seed 777. The coast gets some icy mornings, but fewer than at 300 m.
+
 ## Follow-ups for others
 
 - **Kathleen (#605).** `breath_look.gd` adds its own copy of `daily_offset`. Once this merges it should read `temp_c` alone, or the breath counts the swing twice.
 - **Steve.** Check the night cold against the new numbers: the starter's coldest sea-level hour is now about 0 °C. Steve was asked to check night cold fairness when the climate record lands.
 - **Sonny.** The record's `climate.json` replaces `Climate.DEFAULTS` field for field. A reader that finds the island by position, not by zone, comes with R6.
-- **Later, not decided.** Weather in the swing (narrower under cloud), and cold spells over a few days. Without cold spells the starter coast never freezes, while the real Fort William gets air frosts in most winters.
+- **Later, not decided.** Weather in the swing (narrower under cloud). Cold spells: done, see the section above.
 
 ## Checks
 
