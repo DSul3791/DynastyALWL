@@ -44,7 +44,8 @@
    | Beside granite cascades | 53.5 to 56 |
    | About 200 ft (60 m) from the river, narrow canyon | 40.5 |
    | About 700 ft (210 m) from the river | 40 |
-   | About 100 ft (30 m) from minor rapids | 35.5 |
+   | About 100 ft (30 m) off the river, "distant river rapids" | 35.5 |
+   | Beside the South Fork, "a few minor rapids and cascades" (distance not given) | 44 |
    | Quarter mile off the river, river still heard | 41.5 |
 
 6. **Thunder: 3 seconds a kilometre, and rarely heard past 15 to 20 km.**
