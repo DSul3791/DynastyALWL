@@ -41,6 +41,8 @@ const THUNDER_MAX_DELAY_SEC := 4.0       # the light-to-sound wait is shortened 
 const THUNDER_DELAY_SCALE := 0.5         # of the real travel time, then capped
 # Distant thunder is dulled by the air and by cover: air_bands.gd puts it on a low-passed child of Weather (one filter per band).
 const AirBands := preload("res://src/client/air_bands.gd")
+const OutdoorAir := preload("res://src/client/outdoor_air.gd")
+const GameClock := preload("res://src/shared/game_clock.gd")
 const SPEED_OF_SOUND := 343.0
 
 # kind: rain (0 to 1), wind (0 to 1), hush (0 to 1, quiets the nature layer), thunder (0 or 1),
@@ -98,6 +100,8 @@ var drips_played: int = 0
 var temp_c: float = 10.0
 var ice_cover: float = 0.0              # 0 open water .. 1 still water frozen over (ice_sounds.gd)
 var roofed: float = 0.0                 # 0 no roof overhead, 1 under a roof (lean-to and the like; smoothed): its rain is the roof patter, not leaves
+var snow_fresh: float = 0.0             # --sound-outdoors: 1 snow just fell .. 0 settled (outdoor_air.gd); the hush follows it, not the snow lying
+var outdoors: bool = false
 var covered: float = 0.0                # 0 open, 1 under a canopy (smoothed); the ground there stays dry
 var last_thunder: String = ""
 var world_wind: float = 0.35            # the world's wind (0.15 calm to 1 storm), smoothed: sets the wind sound
@@ -126,6 +130,7 @@ func setup(stage, ambient) -> void:
 	_stage = stage
 	_ambient = ambient
 	_rng.randomize()
+	outdoors = OS.get_cmdline_user_args().has("--sound-outdoors")
 	SoundStage._make_bus("Weather")
 
 	for arg in OS.get_cmdline_user_args():
@@ -323,6 +328,12 @@ func _ground(delta: float) -> void:
 
 	# ice_cover is set by the client from Ice.cover (src/shared/ice.gd), the same number the walkable ice uses.
 	var falling: float = 0.2 if kind == "snow" or kind == "blizzard" else 0.0
+
+	if outdoors:          # sound_outdoors_design.md 3.5: fresh snow hushes for about two game days, not for as long as it lies
+		snow_fresh = OutdoorAir.snow_fresh_step(snow_fresh, delta * GameClock.RATIO / 3600.0, falling > 0.0, temp_c, rain >= 0.1)
+		snow_hush = move_toward(snow_hush, minf(0.8 * ground_snow * snow_fresh + falling, 1.0), delta / HUSH_EASE_SEC)
+		return
+
 	snow_hush = move_toward(snow_hush, minf(0.8 * ground_snow + falling, 1.0), delta / HUSH_EASE_SEC)
 
 
