@@ -37,3 +37,11 @@ client already draws (flee 2, alert 3, warn 10, the dog's bark 10).
 3. Wolves target a dog presence; the dog's health and flee response come from its companion row.
 4. Goblin back-off as a new small state on the goblin brain (it reuses state 3 alert on the client while backing).
 5. Test: a deer at 50 m holds, at 39 m bolts; a goblin at 15 m backs off when the dog barks and comes on again after it stops.
+
+## Built by Steve (#659) and the client check (MikeW, 8 Nov 2026)
+
+Steve built this as #659 (dog_companion_design.md section 11). The client draws every state it uses: flee 2, warn 10 (head low,
+ears flat), charge 11, goblin ALERT 3 while it holds. One fix on the client: a goblin stepping back 5 m while facing the dog used to
+slide backward on a forward walk; an animal moving against its facing now plays its walk in reverse. Known gap: a warning animal's
+head turns toward the player (HEAD_TRACKING.md), not toward the dog it is warning; when the server sends the foe's position, the look
+can take it.
