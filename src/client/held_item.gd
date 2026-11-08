@@ -10,6 +10,7 @@ extends Node
 const FeelKicks := preload("res://src/client/feel_kicks.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
+const FireWeather := preload("res://src/client/fire_weather.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -2360,6 +2361,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
 	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
+	FireWeather.register(light)   # --firelight-weather: reach and halo follow fog and snow
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
 	hand_light.name = "HandLight"
 	hand_light.light_color = Color(1.0, 0.6, 0.28)

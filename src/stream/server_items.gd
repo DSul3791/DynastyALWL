@@ -17,7 +17,10 @@ const LuckScript := preload("res://src/shared/luck.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const FloraLayout := preload("res://src/worldgen/runtime/flora_layout.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const CaveClimate := preload("res://src/shared/cave_climate.gd")
+const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const SwimRules := preload("res://src/shared/swim.gd")
+const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 1
@@ -104,6 +107,8 @@ const POT_ATTACH_M := 2.0                # a campfire pot snaps onto a small fir
 const POT_ON_FIRE_M := 0.3               # a pot and a fire this close are one: the pot hangs over that fire (nothing is stored; position is the link)
 const FIRE_STATE_SURVIVAL := 40         # lit fire states by tier (1 stays the campfire; cooking.json fire_tiers)
 const FIRE_STATE_BONFIRE := 41
+const FIRE_STATE_COALS := StructureLookScript.FIRE_COALS   # 76: after the flames, coals glowing (cooking.json coals; docs/design/fire_coals_design.md)...
+const FIRE_STATE_ASH := StructureLookScript.FIRE_ASH       # 77: ...then warm ash, then cold ash (8)
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
 const FIRE_MIN_GAP_M := 2.0               # fallbacks: structures.json "campfire" decides
 const FIRES_PER_CHUNK := 8
@@ -161,15 +166,20 @@ var send_training: Callable     # (peer, today's training in percent of a fitnes
 var water_depth_at: Callable       # (position) -> metres of water there (optional; unset: depth is not checked)
 var water_kind_at: Callable        # (x, z) -> {"kind": brook | river | lake | pond | sea_shallow | sea_mid | sea_deep | "", "depth"} (server_fish_water.gd; optional)
 var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
+var ice_moat_at: Callable        # (position) -> true in a thaw's shore moat (Kathleen frozen_water_look.md 4, #729): open water there, as off the ice; unset: none
+var spring_ice_x: Callable       # (position) -> the ice's share by springs (Jamie #739): 0 on the open brook below a spring, 0.5 near a spring mouth or inflow, else 1; unset: 1
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
+var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
-var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
+var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof or in a cave (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
+var cave_mean_c: Callable      # (position) -> the cave air (C): the island's year mean at the position's height when it is inside a cave, NAN outside one (unset: never in a cave)
+var cave_air: Callable         # (position) -> {"deep_c", "depth_m", "kind", "day_part_c"} inside a cave, {} outside: the mouth blend (docs/design/cave_climate_design.md)
 
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
@@ -273,6 +283,8 @@ var send_warmth: Callable           # (peer, warmth percent 0..100)
 var _warmth_sent: Dictionary = {}
 var _cold_level: Dictionary = {}    # peer -> 0 fine, 1 cold, 2 freezing (the message that was last shown)
 var _spoil_in: float = 0.0          # real seconds since the last spoilage step
+var _wood_in: float = 0.0           # real seconds since the last wet-wood step (_wood_tick)
+var _wood_acc: float = 0.0          # unspent fraction of a drying unit (a tenth of a game hour)
 var _spoil_acc: Dictionary = {}     # place class -> unspent fraction of an age unit
 var respawn_point: Vector3 = Vector3.ZERO   # where a dead character comes back; set by the server scene
 var send_died: Callable             # (peer, cause String, respawn point Vector3)
@@ -306,6 +318,7 @@ var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
 var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the water
+var _last_rain_s: float = -INF      # game seconds when it last rained (thirst.sources: intermittent brooks run for a day after rain)
 var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
@@ -1026,7 +1039,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_SLEEP:
 		_sleep(peer, a)
 	elif kind == Net.ACT_LIGHT:
-		var was_laid: bool = _items.has(a) and _items[a].has("fire") and int(_items[a]["fire"]["state"]) == 9
+		var was_laid: bool = _items.has(a) and _items[a].has("fire") and int(_items[a]["fire"]["state"]) in [9, FIRE_STATE_ASH]
 		_light(peer, inv, a)
 
 		if was_laid and _items.has(a) and _items[a].has("fire") and fire_is_lit(int(_items[a]["fire"]["state"])):
@@ -1210,19 +1223,12 @@ func tick(delta: float) -> void:
 		_remains_tick(spent)
 		_slow_mark("remains", t0)
 		_spoil_tick(spent)
+		_wood_tick(spent)
 		_slow_mark("spoil", t0)
 		_traps.tick(spent)
 		_slow_mark("learn-fish-remains-spoil-traps", t0)
 
-		for id in _items.keys():
-			if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
-				continue
-
-			_items[id]["left"] -= spent
-
-			if _items[id]["left"] <= 0.0:
-				_items.erase(id)
-				_dirty = true
+		_expire_items(spent)
 
 	_sync_in -= delta
 
@@ -1333,6 +1339,8 @@ func save() -> void:
 			row.append([float(burnt.get("log", 0.0)), float(burnt.get("firewood", 0.0)), float(burnt.get("weak", 0.0))])   # burned seconds not yet taken out of the store
 			var counted: Dictionary = it["fire"].get("counted", {})
 			row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
+			row.append(float(it["fire"].get("lit_s", 0.0)))   # seconds burned since it was last cold (a coal bed at coals.coal_bed_s)
+			row.append(int(it["fire"].get("damp", 0)))   # the wettest wood in it, drying left in tenths of a game hour (cooking.json wet_wood)
 
 		items.append(row)
 
@@ -1647,7 +1655,7 @@ func _tool_for(item_id: String) -> String:
 
 # The factor for an action's PACE (cooldowns and craft time): the skill factor times the Rested buff's action_speed_mult (comfort.json rested.tiers; 1.0 without the buff).
 func _pace_factor(peer: int, action_name: String) -> float:
-	return skill_factor(peer, action_name) * float(rested_tier(peer).get("action_speed_mult", 1.0))
+	return skill_factor(peer, action_name) * float(rested_tier(peer).get("action_speed_mult", 1.0)) / cold_pace(peer)
 
 
 # What a skill does to an action (data/items/skills.json): 1.0 until the skill system exists. Never below 0.25 or above 4.
@@ -3320,7 +3328,8 @@ func _showroom_retry(delta: float) -> void:
 
 # Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
 func _fires(delta: float) -> void:
-	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+	var rain_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+	var raining: bool = rain_v >= RAIN_PUTS_OUT
 	_refresh_pots()
 
 	for id in _items.keys():
@@ -3335,9 +3344,29 @@ func _fires(delta: float) -> void:
 			_tend_fire(id, it, fire, delta)
 
 		if not fire_is_lit(int(fire["state"])):
+			_fire_embers(it, fire, delta, raining)
 			continue
 
-		_fire_burn(fire, delta)
+		# Wet wood in it (fire design 5): a tier lower in heat and light while it is wet, back up once it has dried.
+		var damp: bool = _fire_damp(fire)
+
+		if damp != bool(fire.get("damp_on", false)):
+			fire["damp_on"] = damp
+			fire["state"] = _fire_best_state(fire)
+			_lit_valid = false
+
+		# A large fire on a coal bed burns on through rain of any strength, uncovered (fire design 4): faster in heavy rain, and smoking.
+		# Wet wood burns wet_burn_x as long.
+		var rain_proof: bool = _fire_rain_proof(fire)
+		var in_rain: bool = raining and not bool(fire["covered"])
+		var heavy: bool = rain_proof and in_rain and rain_v >= float(_coals_cfg().get("rain_burn_from", 0.6))
+		var pace: float = (float(_coals_cfg().get("rain_burn_x", 1.25)) if heavy else 1.0) / (maxf(float(table.wet_wood().get("wet_burn_x", 1.5)), 0.1) if damp else 1.0)
+		_fire_burn(fire, delta * pace)
+		fire["lit_s"] = float(fire.get("lit_s", 0.0)) + delta   # the coal bed builds while it burns
+		var smoke: int = 1 if (rain_proof and in_rain) or damp else 0
+
+		if smoke != int(fire.get("smoke", 0)):
+			fire["smoke"] = smoke   # the row is sent again (fire design 5: thick smoke while it burns wet)
 
 		if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_trim_store(fire, _chests[int(fire["uid"])]):
 			_push_box(id, _chests[int(fire["uid"])])   # burned wood leaves the store; whoever has it open sees it go
@@ -3349,8 +3378,7 @@ func _fires(delta: float) -> void:
 			fire["covered"] = cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5
 
 		if fire["burn_left"] <= 0.0:
-			fire["state"] = 8
-			it["left"] = FIRE_OUT_S
+			_fire_burnt_out(it, fire)
 			_dirty = true
 
 			fire.erase("burnt")
@@ -3358,16 +3386,405 @@ func _fires(delta: float) -> void:
 
 			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
 				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
-		elif raining and not fire["covered"]:
+		elif raining and not fire["covered"] and not _fire_rain_proof(fire):
 			var grace: float = float(fire.get("rain_grace", 0.0)) - delta   # lit a moment ago in the rain: it burns until the grace is up
 
 			if grace > 0.0:
 				fire["rain_grace"] = grace
 			else:
 				fire.erase("rain_grace")
+				fire.erase("lit_s")   # rained out: the coals are drowned too
+				fire.erase("smoke")
+				_wet_fire_wood(fire)   # and the wood left in it is wet
 				fire["state"] = 9
 				it["left"] = FIRE_LAID_S
 				_dirty = true
+
+
+# Item lifetimes run down; an item whose time is up goes, except coals and warm ash, which run on to their next stage (_fire_expire).
+func _expire_items(spent: float) -> void:
+	for id in _items.keys():
+		if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
+			continue
+
+		_items[id]["left"] -= spent
+
+		if _items[id]["left"] <= 0.0:
+			if not _fire_expire(_items[id]):
+				_items.erase(id)
+
+			_dirty = true
+
+
+# A fire's world row extra: its burn time, smoke 1 while a large fire burns on in the rain, and, for coals and warm ash, glow (1 fresh .. 0 at
+# the end of that stage).
+func _fire_extra(it: Dictionary) -> Dictionary:
+	var extra: Dictionary = {"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)}
+	var state: int = int(it["fire"]["state"])
+
+	if int(it["fire"].get("smoke", 0)) > 0 and fire_is_lit(state):
+		extra["smoke"] = int(it["fire"]["smoke"])
+
+	if state == FIRE_STATE_COALS or state == FIRE_STATE_ASH:
+		extra["glow"] = snappedf(_fire_glow(it), 0.01)
+
+	return extra
+
+
+func _fire_glow(it: Dictionary) -> float:
+	var state: int = int(it["fire"]["state"])
+
+	if state != FIRE_STATE_COALS and state != FIRE_STATE_ASH:
+		return 0.0
+
+	var total: float = float(_coals_cfg().get("coals_s" if state == FIRE_STATE_COALS else "ash_s", 7200.0 if state == FIRE_STATE_COALS else 43200.0))
+	return clampf(float(it["left"]) / maxf(total, 1.0), 0.0, 1.0)
+
+
+# After the flames (docs/design/fire_coals_design.md 3, coordinator decision 8 Nov 2026, Dave may revert): a fire that burned coals.coal_bed_s since
+# it was last cold leaves coals; a shorter one is cold ash at once, as before.
+func _coals_cfg() -> Dictionary:
+	return _cooking.get("coals", {})
+
+
+func _fire_burnt_out(it: Dictionary, fire: Dictionary) -> void:
+	var cfg: Dictionary = _coals_cfg()
+	_lit_valid = false
+	fire.erase("rain_grace")
+	fire.erase("smoke")
+
+	if not cfg.is_empty() and float(fire.get("lit_s", 0.0)) >= float(cfg.get("coal_bed_s", 600.0)):
+		fire["state"] = FIRE_STATE_COALS
+		it["left"] = float(cfg.get("coals_s", 7200.0))
+		fire.erase("wet_s")
+		return
+
+	_fire_cold(it, fire)
+
+
+# --- Wet wood (docs/design/fire_coals_design.md 5, step 3; coordinator decision 8 Nov 2026, Dave may revert; cooking.json wet_wood) ---
+# A wood item's slot wear is its drying left in tenths of a game hour. A fire keeps "damp", the wettest wood in it: its store's wettest wood, or
+# for a fire with no store the wettest piece laid on, drying with it.
+
+func _fire_damp(fire: Dictionary) -> bool:
+	return int(fire.get("damp", 0)) > 0
+
+
+# The slot of this item with the most drying left (the wettest piece goes on the fire first), or -1.
+func _wettest_slot(inv, number: int) -> int:
+	var best: int = -1
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] == number and inv.counts[slot] > 0 and (best < 0 or inv.wear[slot] > inv.wear[best]):
+			best = slot
+
+	return best
+
+
+# The fire's kindling is all wet: its weak wood (or, with none, all its wood) is wet and no dry tinder is in it.
+func _fire_wet_kindling(fire: Dictionary) -> bool:
+	var box = _chests.get(int(fire.get("uid", 0))) if bool(fire.get("synced", false)) else null
+
+	if box == null:
+		return _fire_damp(fire)
+
+	var tinder: Array = [str(_cooking.get("tinder", "plant_fibre"))] + (_cooking.get("tinder_also", []) as Array)
+	var weak_seen: bool = false
+	var weak_dry: bool = false
+	var any_dry: bool = false
+
+	for slot in range(box.usable):
+		var number: int = box.numbers[slot]
+
+		if number == 0:
+			continue
+
+		if tinder.has(table.id_of(number)) and int(box.wear[slot]) == 0:
+			return false   # dry tinder catches whatever the rest is
+
+		var cls: String = table.wood_class(number)
+
+		if cls == "":
+			continue
+
+		any_dry = any_dry or int(box.wear[slot]) == 0
+
+		if cls == "weak":
+			weak_seen = true
+			weak_dry = weak_dry or int(box.wear[slot]) == 0
+
+	return not weak_dry if weak_seen else (_fire_damp(fire) and not any_dry)
+
+
+# A store fire's damp: the most drying left of the wood in its store.
+func _fire_store_damp(fire: Dictionary, box) -> void:
+	var damp: int = 0
+
+	for slot in range(box.usable):
+		if box.numbers[slot] != 0 and table.wood_class(box.numbers[slot]) != "":
+			damp = maxi(damp, int(box.wear[slot]))
+
+	fire["damp"] = damp
+
+
+# Every wood slot of an inventory wetted to its class's full wet time; true when anything changed.
+func _wet_inventory(inv) -> bool:
+	var changed: bool = false
+
+	for slot in range(inv.SLOTS):
+		var full: int = table.wet_units(inv.numbers[slot]) if inv.numbers[slot] != 0 else 0
+
+		if full > int(inv.wear[slot]):
+			inv.wear[slot] = full
+			changed = true
+
+	return changed
+
+
+# Every wood slot of an inventory dried by `units`; true when anything changed.
+func _dry_inventory(inv, units: int) -> bool:
+	var changed: bool = false
+
+	if units <= 0:
+		return false
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] != 0 and int(inv.wear[slot]) > 0 and table.wood_class(inv.numbers[slot]) != "":
+			inv.wear[slot] = maxi(int(inv.wear[slot]) - units, 0)
+			changed = true
+
+	return changed
+
+
+# The rain on an unlit fire (or one it just put out): its wood is wet.
+func _wet_fire_wood(fire: Dictionary) -> void:
+	var box = _chests.get(int(fire.get("uid", 0))) if bool(fire.get("synced", false)) else null
+
+	if box != null:
+		if _wet_inventory(box):
+			_fire_store_damp(fire, box)
+			_dirty = true
+
+		return
+
+	if float(fire.get("burn_left", 0.0)) <= 0.0:
+		return
+
+	var wood: Dictionary = _fire_wood(fire)
+	var full: int = 0
+
+	for cls in ["log", "firewood", "weak"]:
+		if float(wood.get(cls, 0.0)) > 0.0:
+			full = maxi(full, int(round(float((table.wet_wood().get("wet_h", {}) as Dictionary).get(cls, 0.0)) * 10.0)))
+
+	if full > int(fire.get("damp", 0)):
+		fire["damp"] = full
+		_dirty = true
+
+
+# Every tick_s: rain wets loose wood lying uncovered and the wood of unlit uncovered fires; everywhere else wood dries, in a lit fire's store or
+# within its heat reach fire_dry_x as fast. Packs and chests keep wood dry.
+func _wood_tick(spent: float) -> void:
+	var cfg: Dictionary = table.wet_wood()
+
+	if cfg.is_empty():
+		return
+
+	_wood_in += spent
+
+	if _wood_in < float(cfg.get("tick_s", 15.0)):
+		return
+
+	_wood_acc += _wood_in * GAME_RATE / 360.0   # tenths of a game hour
+	_wood_in = 0.0
+	var units: int = int(_wood_acc)
+	_wood_acc -= float(units)
+	var fire_x: int = maxi(int(round(float(cfg.get("fire_dry_x", 6.0)))), 1)
+	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= float(cfg.get("rain_from", 0.2))
+	var peer_of_key: Dictionary = {}
+
+	for peer in _peer_key:
+		peer_of_key[_peer_key[peer]] = peer
+
+	for key in _inventories:
+		var peer: int = int(peer_of_key.get(key, 0))
+		var before: Array = _snapshot(_inventories[key]) if peer != 0 else []
+
+		if _dry_inventory(_inventories[key], units):
+			_dirty = true
+
+			if peer != 0:
+				_send_changes(peer, _inventories[key], before)
+
+	var fire_box: Dictionary = {}
+
+	for id in _items:
+		if _items[id].has("fire") and _items[id]["fire"].has("uid"):
+			fire_box[int(_items[id]["fire"]["uid"])] = id
+
+	for uid in _chests:
+		if not fire_box.has(uid) and _dry_inventory(_chests[uid], units):
+			_dirty = true
+
+	var heat: Array = []
+	var tiers: Dictionary = _cooking.get("fire_tiers", {})
+
+	for row in _lit_rows():
+		heat.append([row[0], float((tiers.get(_fire_class_of_state(int(row[1])), {}) as Dictionary).get("heat_radius_m", 4.0))])
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("fire"):
+			_wood_tick_fire(id, it, units, fire_x, raining)
+			continue
+
+		if it.has("struct") or it.has("tree") or it.has("boulder") or it.has("scatter") or table.wood_class(int(it["number"])) == "":
+			continue
+
+		var full: int = table.wet_units(int(it["number"]))
+
+		if raining and not (cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5):
+			if int(it.get("wear", 0)) < full:
+				it["wear"] = full
+				_dirty = true
+		elif int(it.get("wear", 0)) > 0:
+			var x: int = 1
+
+			for h in heat:
+				if (h[0] as Vector3).distance_to(it["pos"]) <= float(h[1]):
+					x = fire_x
+					break
+
+			it["wear"] = maxi(int(it["wear"]) - units * x, 0)
+			_dirty = true
+
+
+func _wood_tick_fire(id: int, it: Dictionary, units: int, fire_x: int, raining: bool) -> void:
+	var fire: Dictionary = it["fire"]
+	var lit: bool = fire_is_lit(int(fire["state"]))
+	var box = _chests.get(int(fire.get("uid", 0))) if bool(fire.get("synced", false)) else null
+	var tracked: bool = lit or int(fire["state"]) == FIRE_STATE_COALS or int(fire["state"]) == FIRE_STATE_ASH   # these keep fire["covered"] fresh (_fires)
+	var covered: bool = bool(fire.get("covered", false)) if tracked else (cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5)
+
+	if raining and not covered and not lit:
+		_wet_fire_wood(fire)
+		return
+
+	var x: int = fire_x if lit else 1
+
+	if box != null:
+		if _dry_inventory(box, units * x):
+			_fire_store_damp(fire, box)
+			_push_box(id, box)
+			_dirty = true
+	elif int(fire.get("damp", 0)) > 0:
+		fire["damp"] = maxi(int(fire["damp"]) - units * x, 0)
+		_dirty = true
+
+
+# A large fire (state 41) with a coal bed (coals.coal_bed_s burned since it was last cold) is not put out by rain (fire design 4, coordinator
+# decision 8 Nov 2026). Small and medium fires, and a large one lit a moment ago, go out as before; once a large fire's logs are gone it is
+# medium again and the rain takes it.
+func _fire_rain_proof(fire: Dictionary) -> bool:
+	var large: bool = int(fire["state"]) == FIRE_STATE_BONFIRE or (fire_is_lit(int(fire["state"])) and _fire_damp(fire) and _fire_best_state(fire, false) == FIRE_STATE_BONFIRE)   # a log fire held a tier down by wet wood is still a log fire
+	return large and not _coals_cfg().is_empty() and float(fire.get("lit_s", 0.0)) >= float(_coals_cfg().get("coal_bed_s", 600.0))
+
+
+# Coals run out (or are rained out) to warm ash.
+func _fire_to_ash(it: Dictionary, fire: Dictionary) -> void:
+	fire["state"] = FIRE_STATE_ASH
+	it["left"] = float(_coals_cfg().get("ash_s", 43200.0))
+
+	for key in ["lit_s", "wet_s", "catch"]:   # the coal bed is spent: warm ash lit again needs coal_bed_s more burning to leave coals
+		fire.erase(key)
+	_lit_valid = false
+	_dirty = true
+
+
+# The fire is cold: cold ash (8) for FIRE_OUT_S, or a laid fire (9) when wood is in it.
+func _fire_cold(it: Dictionary, fire: Dictionary) -> void:
+	for key in ["lit_s", "wet_s", "catch"]:
+		fire.erase(key)
+
+	if float(fire.get("burn_left", 0.0)) > 0.0:
+		fire["state"] = 9
+		it["left"] = FIRE_LAID_S
+	else:
+		fire["state"] = 8
+		it["left"] = FIRE_OUT_S
+
+	_lit_valid = false
+	_dirty = true
+
+
+# The item expiry loop found a fire's time run out: coals go on to warm ash, warm ash to cold. False for anything else (it is then removed).
+func _fire_expire(it: Dictionary) -> bool:
+	if not it.has("fire"):
+		return false
+
+	var state: int = int(it["fire"]["state"])
+
+	if state == FIRE_STATE_COALS:
+		_fire_to_ash(it, it["fire"])
+		return true
+
+	if state == FIRE_STATE_ASH:
+		_fire_cold(it, it["fire"])
+		return true
+
+	return false
+
+
+# Coals and warm ash between ticks: rain of RAIN_PUTS_OUT or more on them uncovered turns coals to ash after coals.rain_s and ash cold after a further
+# ash_rain_s; out of that rain, wood laid on coals catches by itself after coals.catch_s (by its biggest wood) and the fire is back at its size.
+func _fire_embers(it: Dictionary, fire: Dictionary, delta: float, raining: bool) -> void:
+	var state: int = int(fire["state"])
+
+	if state != FIRE_STATE_COALS and state != FIRE_STATE_ASH:
+		return
+
+	var cfg: Dictionary = _coals_cfg()
+	fire["recheck"] = float(fire.get("recheck", 0.0)) - delta
+
+	if float(fire["recheck"]) <= 0.0:
+		fire["recheck"] = COVER_RECHECK_S
+		fire["covered"] = cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5
+
+	if raining and not bool(fire.get("covered", false)):
+		fire["wet_s"] = float(fire.get("wet_s", 0.0)) + delta
+		fire.erase("catch")
+
+		if state == FIRE_STATE_COALS and float(fire["wet_s"]) >= float(cfg.get("rain_s", 120.0)):
+			_fire_to_ash(it, fire)
+		elif state == FIRE_STATE_ASH and float(fire["wet_s"]) >= float(cfg.get("ash_rain_s", 600.0)):
+			_fire_cold(it, fire)
+
+		return
+
+	if state != FIRE_STATE_COALS or float(fire.get("burn_left", 0.0)) <= 0.0:
+		return
+
+	fire["catch"] = float(fire.get("catch", 0.0)) + delta
+
+	if float(fire["catch"]) >= _fire_catch_s(fire):
+		fire.erase("catch")
+		fire["state"] = _fire_best_state(fire)
+		it["left"] = 1.0e9
+		_lit_valid = false
+		_dirty = true
+
+
+# How long wood laid on coals takes to catch: the time for the biggest wood class in the fire (coals.catch_s).
+func _fire_catch_s(fire: Dictionary) -> float:
+	var wood: Dictionary = _fire_wood(fire)
+	var times: Dictionary = _coals_cfg().get("catch_s", {})
+
+	for cls in ["log", "firewood", "weak"]:
+		if float(wood.get(cls, 0.0)) > 0.0:
+			return float(times.get(cls, 45.0))
+
+	return float(times.get("weak", 10.0))
 
 
 # E on a burning fire puts it out (Dave 2 Nov 2026). It goes back to a laid fire with its wood kept, the same as when rain puts it out, so it can be lit again.
@@ -3383,6 +3800,7 @@ func _put_out_fire(peer: int, id: int) -> void:
 		return
 
 	fire["state"] = 9
+	fire.erase("lit_s")   # put out: the coals are put out too
 	it["left"] = FIRE_LAID_S
 	_dirty = true
 
@@ -3548,12 +3966,14 @@ func _sync_world_items() -> void:
 
 				if it.has("fire"):
 					signature += 13 * int(it["fire"].get("fed", 0))      # wood laid on a fire is sent again (its burn time for the inspection label)
+					signature += 17 * int(floor(_fire_glow(it) * 10.0))   # coals and warm ash are sent again each tenth of their time (the client dims them)
+					signature += 19 * int(it["fire"].get("smoke", 0))   # a fire that starts or stops smoking is sent again
 
 				if it.has("tree"):
 					signature += int(round(float(it["tree"].get("length", 0.0)) * 20.0)) * 7      # a trunk that got shorter (a log was cut off) is sent again
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else ({"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)} if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") else {}))))])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") else {}))))])
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
 					known[id] = signature
@@ -3789,6 +4209,12 @@ func _load_world_items() -> void:
 					counted[["log", "firewood", "weak"][k]] = maxi(int(row[14][k]), 0)
 
 				entry["fire"]["counted"] = counted
+
+			if row.size() > 15 and (typeof(row[15]) == TYPE_FLOAT or typeof(row[15]) == TYPE_INT) and float(row[15]) > 0.0:
+				entry["fire"]["lit_s"] = float(row[15])
+
+			if row.size() > 16 and (typeof(row[16]) == TYPE_FLOAT or typeof(row[16]) == TYPE_INT) and int(row[16]) > 0:
+				entry["fire"]["damp"] = int(row[16])
 
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
@@ -5498,20 +5924,26 @@ func _fire_class_pieces(cls: String, seconds: float, laid: int = -1) -> int:
 
 
 # The lit state the wood now in the fire supports: the biggest class with at least min_pieces, else the survival fire.
-func _fire_best_state(fire: Dictionary) -> int:
+func _fire_best_state(fire: Dictionary, wet_counts: bool = true) -> int:
 	var wood: Dictionary = _fire_wood(fire)
 	var need: int = int(_cooking.get("min_pieces", 3))
+	var best: int = FIRE_STATE_SURVIVAL
 
 	for cls in ["log", "firewood"]:
 		var laid: int = int((fire.get("pieces", {}) as Dictionary).get(cls, -1))
 
 		if _fire_class_pieces(cls, float(wood[cls]), laid) >= need:
 			if cls == "log" and bool(fire.get("pot", false)):
-				return int(_cooking["fire_tiers"]["firewood"]["state"])   # a campfire pot hangs over this fire: it never grows past the firewood stage
+				best = int(_cooking["fire_tiers"]["firewood"]["state"])   # a campfire pot hangs over this fire: it never grows past the firewood stage
+			else:
+				best = int(_cooking["fire_tiers"][cls]["state"])
 
-			return int(_cooking["fire_tiers"][cls]["state"])
+			break
 
-	return FIRE_STATE_SURVIVAL
+	if wet_counts and _fire_damp(fire):   # wet wood in it (fire design 5): the heat and light of one tier lower until it is dry
+		return FIRE_STATE_SURVIVAL if best == 1 else (1 if best == FIRE_STATE_BONFIRE else best)
+
+	return best
 
 
 # The lit state after the wood in a burning fire changed (a piece put in, its store closed). Dave 2 Nov 2026: three pieces lift the fire a tier and
@@ -5612,7 +6044,10 @@ func _fire_wood_class(wood_id: String) -> String:
 
 
 # One piece of wood onto the fire: its seconds go to its class (never past the stored-fuel cap) and a lit fire may step up a tier.
-func _fire_add(fire: Dictionary, wood_id: String) -> void:
+func _fire_add(fire: Dictionary, wood_id: String, wet: int = 0) -> void:
+	if wet > 0:
+		fire["damp"] = maxi(int(fire.get("damp", 0)), wet)   # a wet piece: the fire holds wet wood until it has dried (_wood_tick)
+
 	var wood: Dictionary = _fire_wood(fire)
 	var cls: String = str((_cooking.get("fuel_class", {}) as Dictionary).get(wood_id, "weak"))
 	var seconds: float = float((_cooking.get("fuel", {}) as Dictionary).get(wood_id, 900.0)) / GAME_RATE
@@ -5679,20 +6114,23 @@ func _fuel(peer: int, inv, id: int) -> void:
 				refused_log = true   # a pot hangs over this fire: no logs, the fire would be too big for it
 				continue
 
+			var slot: int = _wettest_slot(inv, number)
+			var wet: int = int(inv.wear[slot]) if slot >= 0 else 0
+
 			if bool(fire.get("synced", false)) and _chests.has(int(fire.get("uid", 0))):
-				if _chests[int(fire["uid"])].add(number, 1) > 0:   # the store is what burns: the piece goes into it; a full store keeps it in the pack
+				if _chests[int(fire["uid"])].add(number, 1, wet) > 0:   # the store is what burns: the piece goes into it; a full store keeps it in the pack
 					_say(peer, "The fire's store is full.")
 					return
 
-				inv.remove(number, 1)
+				inv.take_from_slot(slot, 1)
 				_fire_apply_store(fire, _chests[int(fire["uid"])])
 				fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again (the inspection label's burn time)
 
 				if fire_is_lit(int(fire["state"])):
 					fire["state"] = _fire_restate(fire)
 			else:
-				inv.remove(number, 1)
-				_fire_add(fire, wood)
+				inv.take_from_slot(slot, 1)
+				_fire_add(fire, wood, wet)
 
 			# Wood laid in an unlit fire only loads it; Press E to light comes next (ACT_LIGHT).
 			if int(fire["state"]) == 8:
@@ -5709,14 +6147,25 @@ func _fuel(peer: int, inv, id: int) -> void:
 
 # Lighting a loaded fire (Dave 5 Nov 2026, simplified): any wood in the fire is enough, E lights it, and no starter (plant fibre, tinder, kindling)
 # is needed or used up. Every kind of wood goes in: sticks, kindling, tinder, firewood, blocks, logs. An open fire will not take while it rains.
-func _light(peer: int, _inv, id: int) -> void:
+func _light(peer: int, inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
 
-	if fire.is_empty() or int(fire["state"]) != 9:
+	if fire.is_empty() or (int(fire["state"]) != 9 and int(fire["state"]) != FIRE_STATE_ASH):
 		return
 
 	if float(fire["burn_left"]) <= 0.0:
 		_say(peer, "Put sticks or wood on the fire first (F), then light it.")
+		return
+
+	# Warm ash (docs/design/fire_coals_design.md 3): wood and a tinder item light it at once, with no damp roll, and the tinder is used up.
+	# Without tinder it lights like a cold laid fire.
+	if int(fire["state"]) == FIRE_STATE_ASH and _use_tinder(fire, inv):
+		fire["state"] = _fire_best_state(fire)
+		fire.erase("wet_s")
+		_items[id]["left"] = 1.0e9
+		_lit_valid = false
+		_dirty = true
+		_say(peer, "The tinder catches on the warm ash.")
 		return
 
 	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
@@ -5728,14 +6177,52 @@ func _light(peer: int, _inv, id: int) -> void:
 	if raining and not bool(fire["covered"]):
 		fire["rain_grace"] = RAIN_LIGHT_GRACE_S
 		_say(peer, "It catches, but the rain will put it out in a moment. Move it under cover.")
-	# A drizzle makes lighting a gamble (cooking.json rain_light_chance).
-	elif rain_now_v > 0.02 and not bool(fire["covered"]) and not roll_chance(peer, _rain_rng, maxf(1.0 - rain_now_v / maxf(float(rain_cfg.get("puts_out", 0.2)), 0.01) * float(rain_cfg.get("loss", 0.8)), float(rain_cfg.get("min_chance", 0.2)))):
-		_say(peer, "The wood will not catch in the damp. Try again.")
-		return
+	else:
+		# A drizzle makes lighting a gamble (cooking.json rain_light_chance); kindling that is all wet halves the chance (wet_wood.light_x) unless
+		# there is dry tinder in the fire (fire design 5).
+		var chance: float = 1.0
+		var wet_kindling: bool = _fire_wet_kindling(fire)
+
+		if rain_now_v > 0.02 and not bool(fire["covered"]):
+			chance = maxf(1.0 - rain_now_v / maxf(float(rain_cfg.get("puts_out", 0.2)), 0.01) * float(rain_cfg.get("loss", 0.8)), float(rain_cfg.get("min_chance", 0.2)))
+
+		if wet_kindling:
+			chance *= float(table.wet_wood().get("light_x", 0.5))
+
+		if chance < 1.0 and not roll_chance(peer, _rain_rng, chance):
+			_say(peer, "The wet wood will not catch. Try again, or put dry tinder in." if wet_kindling else "The wood will not catch in the damp. Try again.")
+			return
 
 	fire["state"] = _fire_best_state(fire)
+	fire.erase("wet_s")
 	_items[id]["left"] = 1.0e9
+	_lit_valid = false
 	_dirty = true
+
+
+# One tinder item (cooking.json tinder and tinder_also) taken for lighting warm ash: from the fire's store first, else from the pack. False when there is none.
+func _use_tinder(fire: Dictionary, inv) -> bool:
+	var kinds: Array = [str(_cooking.get("tinder", "plant_fibre"))] + (_cooking.get("tinder_also", []) as Array)
+	var box = _chests.get(int(fire.get("uid", 0))) if bool(fire.get("synced", false)) else null
+
+	for kind in kinds:
+		var number: int = table.number_of(str(kind))
+
+		if number <= 0:
+			continue
+
+		if box != null:
+			for slot in range(box.usable):
+				if box.numbers[slot] == number and box.counts[slot] > 0:
+					box.take_from_slot(slot, 1)
+					_fire_apply_store(fire, box)
+					return true
+
+		if inv != null and inv.has(number, 1):
+			inv.remove(number, 1)
+			return true
+
+	return false
 
 
 # Roasting at a lit fire: one raw forage item (cookable_suffixes in cooking.json) becomes Campfire Stew.
@@ -5789,11 +6276,63 @@ func _raw_hours(item_id: String) -> float:
 
 func _raw_sickness(peer: int, item_id: String) -> void:
 	var hours: float = _raw_hours(item_id)
+	var odds: Dictionary = _infection_cfg().get("odds", {})
 
-	if hours > 0.0:
+	if hours > 0.0 and odds.has(item_id) and not (not tried_of(peer).has(item_id) and grace_of(peer) > 0.0):
+		_infect(peer, item_id, hours, float(odds[item_id]))
+	elif hours > 0.0:
 		_harm_bite(peer, item_id, hours, "That should have been cooked. Your stomach turns.")
 	else:
 		_learn_food(peer, item_id, "ok")
+
+
+# Late, uncertain sickness from raw animal food (docs/design/body_in_weather_design.md 5; sickness.json infection when its flag is on, else empty).
+func _infection_cfg() -> Dictionary:
+	var inf: Variant = _sick_cfg.get("infection", {})
+	return inf if typeof(inf) == TYPE_DICTIONARY and bool(inf.get("enabled", false)) else {}
+
+
+# One roll at the bite (luck helps you escape it); on a hit the sickness waits onset_h game hours in the vitals' sick_due. A miss teaches nothing:
+# the food stays unknown until it makes you sick.
+func _infect(peer: int, item_id: String, hours: float, p: float) -> void:
+	var v: Dictionary = vitals_of(peer)
+
+	if v.is_empty() or roll_chance(peer, _fate_rng, 1.0 - clampf(p, 0.0, 1.0)):
+		return
+
+	var onset: Array = _infection_cfg().get("onset_h", [24, 72])
+	var minutes: int = roll_amount(peer, _fate_rng, int(float(onset[0]) * 60.0), int(float(onset[onset.size() - 1]) * 60.0))   # lucky: later
+
+	if typeof(v.get("sick_due", null)) != TYPE_ARRAY:
+		v["sick_due"] = []
+
+	v["sick_due"].append([float(minutes) * 60.0, hours, item_id, float(minutes) * 60.0])
+	_dirty = true
+
+
+# Pending sicknesses count down in game seconds while the player is online; one that starts names what was eaten and is learned as harm.
+func _sick_due_tick(peer: int, v: Dictionary, game_s: float) -> void:
+	if typeof(v.get("sick_due", null)) != TYPE_ARRAY or (v["sick_due"] as Array).is_empty():
+		return
+
+	var keep: Array = []
+
+	for due in v["sick_due"]:
+		var left: float = float(due[0]) - game_s
+
+		if left > 0.0:
+			keep.append([left, due[1], due[2], due[3]])
+			continue
+
+		var item_id: String = str(due[2])
+		var days: int = maxi(int(round(float(due[3]) / 86400.0)), 1)
+		var when: String = "yesterday" if days == 1 else "%d days ago" % days
+		var food: String = table.name_of(table.number_of(item_id)).to_lower() if table != null else item_id
+		_say(peer, str(_sick_cfg.get("infection", {}).get("say_onset", "Your stomach turns. It was the %s %s.")) % [food, when])
+		_learn_food(peer, item_id, "harm")
+		make_sick(peer, float(due[1]), false)   # the onset line above says it
+
+	v["sick_due"] = keep
 
 
 # --- Eat-once learning (EARLY_GAME_PRINCIPLES 5, data/items/eat_memory.json) ---
@@ -7026,6 +7565,7 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 	var fuel: Dictionary = _cooking.get("fuel", {})
 	var seconds: Dictionary = {"log": 0.0, "firewood": 0.0, "weak": 0.0}
 	var pieces: Dictionary = {"log": 0, "firewood": 0, "weak": 0}
+	var damp: int = 0
 
 	for slot in range(box.usable):
 		var number: int = box.numbers[slot]
@@ -7045,6 +7585,7 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 
 		seconds[cls] = float(seconds[cls]) + float(box.counts[slot]) * float(fuel[wood_id]) / GAME_RATE
 		pieces[cls] = int(pieces[cls]) + int(box.counts[slot])
+		damp = maxi(damp, int(box.wear[slot]) if table.wood_class(number) != "" else 0)
 
 	var wood: Dictionary = _fire_wood(fire)
 	var laid: Dictionary = {}
@@ -7067,6 +7608,7 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 
 	fire["pieces"] = laid
 	fire["burnt"] = burnt
+	fire["damp"] = damp   # the wettest wood in the store (fire design 5)
 	_fire_sum(fire)
 
 
@@ -7161,8 +7703,7 @@ func _sync_fire_from_box(peer: int, id: int) -> void:
 
 	if float(fire["burn_left"]) <= 0.0:
 		if fire_is_lit(state):
-			fire["state"] = 8
-			it["left"] = FIRE_OUT_S
+			_fire_burnt_out(it, fire)   # the last wood taken out of a burning fire: what is left is its coals (or cold ash)
 		elif state == 9:
 			fire["state"] = 8
 			it["left"] = FIRE_OUT_S
@@ -7462,7 +8003,10 @@ func effort_of(peer: int) -> float:
 	# Shivering is work (data/items/warmth.json shiver_effort), more the colder.
 	if not _warmth_cfg.is_empty():
 		var cold_at: float = float(_warmth_cfg.get("cold_at", 40.0))
-		level += float(_warmth_cfg.get("shiver_effort", 0.15)) * maxf(cold_at - float(vitals_of(peer).get("warmth", 100.0)), 0.0) / maxf(cold_at, 1.0)
+		var warmth: float = float(vitals_of(peer).get("warmth", 100.0))
+
+		if warmth >= float(_body_cfg().get("shiver_stop_at", -1.0)):   # the body stops shivering deep in the cold (docs/design/body_in_weather_design.md 4)
+			level += float(_warmth_cfg.get("shiver_effort", 0.15)) * maxf(cold_at - warmth, 0.0) / maxf(cold_at, 1.0)
 
 	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
@@ -8552,6 +9096,9 @@ func _vitals_tick(spent: float) -> void:
 	_lit_valid = false
 	_in_vitals = true
 
+	if weather_now.is_valid() and float((weather_now.call() as Dictionary).get("rain", 0.0)) > 0.05:
+		_last_rain_s = _now_game_s()
+
 	for peer in _peer_key:
 		var v: Dictionary = _vitals.get(_peer_key[peer], {})
 
@@ -8579,6 +9126,7 @@ func _vitals_tick(spent: float) -> void:
 		v["wet"] = maxf(float(v["wet"]) - dry_per_day * game_s / 86400.0 * drain_mult, 0.0)
 
 		_warmth_tick(peer, v, spent, game_s)
+		_sick_due_tick(peer, v, game_s)
 		_sick_tick(peer, v, spent, game_s)
 
 		if float(v["fed"]) > 0.0 and float(v["wet"]) > 0.0 and float(v.get("warmth", 100.0)) >= float(_warmth_cfg.get("cold_at", 40.0)):
@@ -8613,13 +9161,13 @@ func _vitals_tick(spent: float) -> void:
 # --- Sickness (Dave 2026-10-21; data/items/sickness.json) ---
 # `sick` in the vitals is the game seconds of sickness left (0 = well).
 
-func make_sick(peer: int, hours: float = -1.0) -> void:
+func make_sick(peer: int, hours: float = -1.0, say_start: bool = true) -> void:
 	var v: Dictionary = vitals_of(peer)
 
 	if v.is_empty() or _sick_cfg.is_empty():
 		return
 
-	if float(v.get("sick", 0.0)) <= 0.0:
+	if say_start and float(v.get("sick", 0.0)) <= 0.0:
 		_say(peer, str(_sick_cfg.get("say_start", "You feel sick.")))
 
 	v["sick"] = maxf(float(v.get("sick", 0.0)), (hours if hours > 0.0 else float(_sick_cfg.get("duration_h", 24.0))) * 3600.0)
@@ -8918,12 +9466,15 @@ func _lit_rows() -> Array:
 		return _lit_cache_rows
 
 	var found: Array = []
+	_coal_cache_rows = []
 
 	for id in _items:
 		var it: Dictionary = _items[id]
 
 		if it.has("fire") and fire_is_lit(int(it["fire"]["state"])):
 			found.append([it["pos"], int(it["fire"]["state"])])
+		elif it.has("fire") and int(it["fire"]["state"]) == FIRE_STATE_COALS:
+			_coal_cache_rows.append(it["pos"])
 
 	if _in_vitals:
 		_lit_cache_rows = found
@@ -8932,17 +9483,36 @@ func _lit_rows() -> Array:
 	return found
 
 
+# The positions of glowing coals (state 76): they warm coals.heat_c within coals.heat_m and keep nothing off. The same scan as _lit_rows.
+var _coal_cache_rows: Array = []
+
+
+func _coal_rows() -> Array:
+	if not (_in_vitals and _lit_valid):
+		_lit_rows()
+
+	return _coal_cache_rows
+
+
 # The warmth the body is heading for here and now: 100 on a mild day, less as the cold stress grows.
 func warmth_target(peer: int) -> float:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var cave_c: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
 	# The weather's temp_c already carries the day and night swing (one temperature, docs/design/one_temperature.md); the server's weather is
 	# at sea level, so the height is taken off here.
 	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
 	var roofed: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 1.5
 	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if roofed else 1.0)
+
+	# In a cave (Jamie's caves page, #664): the air sits at the island's year mean for its height (cave_mean_c, Climate.year_mean_c), with no
+	# day and night swing and no rain cooling, and no wind reaches in.
+	if not is_nan(cave_c):
+		var mouth_air: Dictionary = _cave_mouth_air(pos, air)   # in from the mouth the outside air still reaches, with a small draught (#709)
+		wind = float(mouth_air.get("wind", 0.0))
+		air = float(mouth_air.get("air_c", cave_c))
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))
 
@@ -8955,6 +9525,12 @@ func warmth_target(peer: int) -> float:
 
 		if (row[0] as Vector3).distance_to(pos) <= reach:
 			heat = maxf(heat, float(tier_row.get("heat_c", cfg.get("fire_c", 20.0))))
+
+	var coals: Dictionary = _coals_cfg()
+
+	for at in _coal_rows():
+		if (at as Vector3).distance_to(pos) <= float(coals.get("heat_m", 1.5)):
+			heat = maxf(heat, float(coals.get("heat_c", 8.0)))
 
 	feels += heat
 
@@ -8969,10 +9545,17 @@ func warmth_target(peer: int) -> float:
 	# how soaked the player is (_update_soak), not only the rain falling this moment. A peer the tick has not seen yet uses the rain falling now.
 	var soak: float = float(_soak[peer]) if _soak.has(peer) else (minf(precip * 2.0, 1.0) if precip > 0.05 and not covered else 0.0)
 
+	var body: Dictionary = _body_cfg()
+
 	if soak > 0.0:
-		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak
+		# Wet plus wind is what kills (docs/design/body_in_weather_design.md 3): the wind pumps through wet cloth.
+		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak + float(body.get("wet_wind_gain", 0.0)) * soak * wind
 
 	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
+
+	if not body.is_empty():
+		# Soaked in a gale, clothes keep a tenth of their insulation (Pugh, Four Inns 1964: "nearly nothing").
+		insulation *= 1.0 - float(body.get("wet_strip", 0.9)) * soak * minf(wind / maxf(float(body.get("wet_strip_wind", 0.6)), 0.01), 1.0)
 
 	if bool(_swimming.get(peer, false)):
 		# In the water the cold follows the WATER's temperature, not the air's (Tyler): a lagged, damped copy of the air at sea level.
@@ -8980,7 +9563,7 @@ func warmth_target(peer: int) -> float:
 		var water_c: float = maxf(float(cfg.get("water_base_c", 6.0)) + float(cfg.get("water_follow", 0.5)) * (sea_air - float(cfg.get("water_base_c", 6.0))), 1.0)
 
 		if bool(_cave_pool.get(peer, false)):
-			water_c = float(cfg.get("cave_pool_c", 2.0))   # a spring cave pool is icy whatever the weather (BUG-008)
+			water_c = cave_c if not is_nan(cave_c) else float(cfg.get("cave_pool_c", 2.0))   # a cave pool is at the cave air's year mean (Jamie #664, CONTRADICTIONS.md), not the weather (BUG-008)
 		stress = maxf(float(cfg.get("water_comfort_c", 26.0)) - water_c, 0.0) * float(cfg.get("water_gain", 5.0)) / maxf(float(cfg.get("gain", 3.0)), 0.01)
 
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
@@ -9002,12 +9585,19 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 
 	if w < hurt_at:
 		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
-		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0, 1.0)
+		var severe_mult: float = float(_body_cfg().get("severe_hurt_mult", 2.0)) if cold_stage(peer) == 3 else 1.0   # severe cold (docs/design/body_in_weather_design.md 4)
+		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, 1.0)
 
-	# Messages with two levels each way, so a player on the edge is not nagged.
+	# Messages with two levels each way, so a player on the edge is not nagged; with body_703 on, a third for severe cold.
 	var level: int = int(_cold_level.get(peer, 0))
+	var body: Dictionary = _body_cfg()
 
-	if level < 2 and w < hurt_at:
+	if not body.is_empty() and level < 3 and w < float(body.get("severe_at", 8.0)):
+		_cold_level[peer] = 3
+		_say(peer, str(body.get("say_severe", "You have stopped shivering. Get to a fire, now.")))
+	elif level == 3 and w >= float(body.get("severe_clear", 14.0)):
+		_cold_level[peer] = 2
+	elif level < 2 and w < hurt_at:
 		_cold_level[peer] = 2
 		_say(peer, str(cfg.get("say_freezing", "You are freezing")))
 	elif level == 0 and w < float(cfg.get("cold_at", 40.0)):
@@ -9022,8 +9612,66 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	_sync_warmth(peer, false)
 
 
+# The air in a cave at this point (docs/design/cave_climate_design.md; Jamie #709, coordinator 8 Nov 2026): {"air_c", "wind" (0..1, the mouth's
+# draught), "dry_share"} blended in from the mouth by warmth.json cave_climate; without cave_climate (or the cave_air callable) the flat cave of #667: the year
+# mean, no wind, no drying. outside_c is the day's air at the point as warmth_target works it out.
+func _cave_mouth_air(pos: Vector3, outside_c: float) -> Dictionary:
+	var deep: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
+	var at: Dictionary = cave_air.call(pos) if cave_air.is_valid() else {}
+	var cfg: Dictionary = _warmth_cfg.get("cave_climate", {})
+
+	if is_nan(deep) or at.is_empty() or cfg.is_empty():
+		return {"air_c": deep, "wind": 0.0, "dry_share": 0.0}
+
+	var depth: float = float(at.get("depth_m", INF))
+	return {"air_c": CaveClimate.air_c(cfg, outside_c, float(at.get("day_part_c", 0.0)), deep, depth, int(at.get("kind", CaveClimate.LEVEL))),
+		"wind": CaveClimate.wind_of_ms(CaveClimate.draught_ms(cfg, outside_c, deep, depth)), "dry_share": CaveClimate.dry_share(cfg, outside_c, deep, depth)}
+
+
+# The body in weather (docs/design/body_in_weather_design.md; Jamie #703, coordinator 8 Nov 2026): warmth.json body_703 when its flag is on, else empty,
+# and every reader falls back to today's numbers.
+func _body_cfg() -> Dictionary:
+	var body: Variant = _warmth_cfg.get("body_703", {})
+	return body if typeof(body) == TYPE_DICTIONARY and bool(body.get("enabled", false)) else {}
+
+
+# The cold stage on the warmth bar: 0 fine, 1 mild (under cold_at), 2 moderate (under hurt_at), 3 severe (under body_703 severe_at, flag on only).
+func cold_stage(peer: int) -> int:
+	if _warmth_cfg.is_empty():
+		return 0
+
+	var w: float = float(vitals_of(peer).get("warmth", 100.0))
+	var body: Dictionary = _body_cfg()
+
+	if not body.is_empty() and w < float(body.get("severe_at", 8.0)):
+		return 3
+
+	if w < float(_warmth_cfg.get("hurt_at", 20.0)):
+		return 2
+
+	return 1 if w < float(_warmth_cfg.get("cold_at", 40.0)) else 0
+
+
+# How many times as long an action takes in the cold (body_703 moderate_pace and severe_pace; 1 with the flag off). Nothing is refused, so a
+# freezing player can still light a fire, only slowly.
+func cold_pace(peer: int) -> float:
+	var body: Dictionary = _body_cfg()
+
+	if body.is_empty():
+		return 1.0
+
+	match cold_stage(peer):
+		3:
+			return maxf(float(body.get("severe_pace", 2.5)), 1.0)
+		2:
+			return maxf(float(body.get("moderate_pace", 1.5)), 1.0)
+
+	return 1.0
+
+
 # Rain or snow on an uncovered player soaks them toward the rain's strength (soak_per_h), swimming soaks them through; out of it they dry only in shelter:
-# slowly under a tree or roof (dry_cover_per_h), fast within reach of a lit fire (dry_fire_per_h); in the open they stay wet.
+# slowly under a tree or roof (dry_cover_per_h), fast within reach of a lit fire (dry_fire_per_h); in the open they stay wet, and in a cave
+# (cover from the rain, but air near saturated) only a fire dries them.
 func _update_soak(peer: int, game_s: float) -> void:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
@@ -9031,6 +9679,7 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 	var soak: float = float(_soak.get(peer, 0.0))
+	var in_cave: bool = cave_mean_c.is_valid() and not is_nan(float(cave_mean_c.call(pos)))
 	var hours: float = game_s / 3600.0
 
 	var by_fire: bool = false
@@ -9047,10 +9696,15 @@ func _update_soak(peer: int, game_s: float) -> void:
 		soak = 1.0   # in the water: soaked through
 	elif precip > 0.05 and not covered:
 		soak = minf(soak + float(cfg.get("soak_per_h", 4.0)) * hours, maxf(soak, minf(precip * 2.0, 1.0)))
-	elif by_fire:
-		soak = maxf(soak - float(cfg.get("dry_fire_per_h", 6.0)) * hours, 0.0)
-	elif covered:
-		soak = maxf(soak - float(cfg.get("dry_cover_per_h", 1.0)) * hours, 0.0)
+	elif by_fire:   # body_703 on: wool by a fire dries in hours, not minutes (docs/design/body_in_weather_design.md 2)
+		soak = maxf(soak - float(_body_cfg().get("dry_fire_per_h", cfg.get("dry_fire_per_h", 6.0))) * hours, 0.0)
+	elif covered and not in_cave:
+		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * hours, 0.0)
+	elif in_cave:
+		# Cave air past the mouth is 98 to 100% wet: only a fire dries you there (#664); a winter mouth's dry incoming air dries at half (#709).
+		var outside: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
+		var share: float = float(_cave_mouth_air(pos, outside).get("dry_share", 0.0))
+		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * share * hours, 0.0)
 
 	_soak[peer] = soak
 
@@ -9924,7 +10578,27 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) ->
 
 
 func _on_ice(pos: Vector3) -> bool:
-	return ice_cover_at.is_valid() and float(ice_cover_at.call(pos)) >= 0.5 and water_near.is_valid() and bool(water_near.call(pos, 0.0))
+	if ice_moat_at.is_valid() and bool(ice_moat_at.call(pos)):
+		return false   # the thaw's shore moat is open water: no ice to stand on, a drink without a hole (#729 decision, 8 Nov 2026)
+
+	var by_spring: float = clampf(float(spring_ice_x.call(pos)), 0.0, 1.0) if spring_ice_x.is_valid() else 1.0   # half ice near a spring (#739)
+	return ice_cover_at.is_valid() and float(ice_cover_at.call(pos)) * by_spring >= 0.5 and water_near.is_valid() and bool(water_near.call(pos, 0.0))
+
+
+# The live ice holes within reach of a point, nearest first, at most `count` (protocol 97, Kathleen's frozen_water_look.md 5): [positions,
+# game seconds each stays open until]. The client turns `until` into an age with fishing.json ice.hole_game_h.
+func ice_holes_near(at: Vector3, reach: float = 120.0, count: int = 8) -> Array:
+	var now: float = _now_game_s()
+	var live: Array = _holes.filter(func(h): return float(h["until"]) > now and Vector2(h["pos"].x - at.x, h["pos"].z - at.z).length() <= reach)
+	live.sort_custom(func(p, q): return at.distance_squared_to(p["pos"]) < at.distance_squared_to(q["pos"]))
+	var points: PackedVector3Array = PackedVector3Array()
+	var untils: PackedFloat32Array = PackedFloat32Array()
+
+	for h in live.slice(0, count):
+		points.append(h["pos"])
+		untils.append(float(h["until"]))
+
+	return [points, untils]
 
 
 func _now_game_s() -> float:
@@ -12633,6 +13307,9 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		_reject(peer, 0)
 		return
 
+	if not _drink_source_ok(peer, thirst):
+		return
+
 	# A water container in hand with room is filled instead (job 89); a full one lets you drink from the water as before.
 	if inv != null and slot >= 0 and slot < inv.SLOTS and inv.numbers[slot] != 0:
 		var room: int = _container_cap(inv.numbers[slot]) - inv.wear[slot]
@@ -12656,6 +13333,40 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 	_sync_vitals(peer, true)
 
 
+# With thirst.sources on and the scene's water_source set (docs/design/drinking_water_design.md): salt water is refused, a dry bed is refused,
+# and frozen water needs an ice hole within reach (the fishing hole). Off, or with no source rows, the drink goes on as before.
+func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
+	var cfg: Dictionary = thirst.get("sources", {})
+
+	if not bool(cfg.get("enabled", false)) or not water_source.is_valid():
+		return true
+
+	var pos: Vector3 = _peer_pos[peer]
+	var rows: Array = water_source.call(pos, float(thirst.get("reach_m", 3.0)))
+
+	if rows.is_empty():
+		return true   # the record knows nothing here (an older world): today's water test stands
+
+	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var ctx: Dictionary = {"season": _season(), "rain_h_ago": (_now_game_s() - _last_rain_s) / 3600.0, "raining": float(weather.get("rain", 0.0)) > 0.05,
+		"air_c": float(weather.get("temp_c", 10.0)) - maxf(pos.y, 0.0) * float(_warmth_cfg.get("lapse_c_per_m", 0.0065)), "wind": float(weather.get("wind", 0.0))}
+	var found: Dictionary = DrinkRules.pick(cfg, rows, ctx)
+
+	if str(found.get("refused", "")) == "salt":
+		_say(peer, str(cfg.get("say_salt", "Salt water. It would only make you thirstier.")))
+		return false
+
+	if str(found.get("refused", "")) == "dry":
+		_say(peer, str(cfg.get("say_dry", "The bed is dry.")))
+		return false
+
+	if bool(found.get("frozen", false)) and not _hole_near(pos):
+		_say(peer, str(cfg.get("say_frozen", "The water is frozen. Break a hole in the ice first.")))
+		return false
+
+	return true
+
+
 func _save_vitals() -> void:
 	_write_atomic("vitals.json", {"version": 1, "players": _vitals})
 
@@ -12670,3 +13381,6 @@ func _load_vitals() -> void:
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
 		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0), "warmth": clampf(float(row.get("warmth", 100.0)), 0.0, 100.0), "sick": maxf(float(row.get("sick", 0.0)), 0.0), "limp": maxf(float(row.get("limp", 0.0)), 0.0)}
+
+		if typeof(row.get("sick_due", null)) == TYPE_ARRAY and not (row["sick_due"] as Array).is_empty():
+			_vitals[str(key)]["sick_due"] = row["sick_due"]   # pending sickness from raw food (docs/design/body_in_weather_design.md 5)

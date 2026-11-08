@@ -66,6 +66,7 @@ const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
+const ThunderScript := preload("res://src/shared/thunder.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const LandTypeScript := preload("res://src/water/land_type.gd")
@@ -102,6 +103,7 @@ var _weather_next_msec: int = 0
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
+var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
 var _swell: float = 0.0
 var _dry: float = 0.0
 var _weather_bucket: int = -1
@@ -250,6 +252,7 @@ func _ready() -> void:
 		return
 
 	_start_tunnels()
+	SpawnPointScript.use_world(world_dir)   # the starter tile's picked spawn (Stage E 6e), read before the flora placer clears round it
 	var placer = PlacerScript.new()
 	placer.setup(generator, tables, rules)
 	flora = FloraStoreScript.new()
@@ -296,6 +299,8 @@ func _ready() -> void:
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at
+	items.cave_air = func(pos): return _cave_air(pos)   # depth in from the mouth and the day swing, for the cave air blend (docs/design/cave_climate_design.md)
+	items.cave_mean_c = func(pos): return WeatherScript.year_mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), pos.y) if _in_cave(pos) else NAN   # cave air: the island's year mean at that height (#664)
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
 	items.register_roofs()
@@ -496,7 +501,12 @@ func _ready() -> void:
 	animals.player_positions = npcs.player_positions
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
+	animals.weather_ahead = func(hours): return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(4), 0.0, 0.0)   # the starter tile's row, as _update_weather (animals_in_weather_design.md 3)
 	animals.canopy = func(point): return flora.covered(point)
+	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
+	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
+	animals.game_seconds = func(): return game_clock.seconds
+	animals.thunder_between = func(t0, t1, centre, reach): return ThunderScript.strikes(int(settings.master_seed), t0, t1, weather, centre, reach)   # the shared strikes (birds_and_thunder_server.md)
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
@@ -563,12 +573,17 @@ func _ready() -> void:
 	animals.companions.take_item = func(id): return items.take_one(id)
 	animals.companions.store_dir = store_dir
 	animals.companions.load_records()   # companions.json: each companion's name, bond, owner and life story (dog_companion_design.md)
+	animals.wolves.game_seconds = func(): return game_clock.seconds
+	animals.wolves.store_dir = store_dir
+	animals.wolves.load_dens()   # wolf_dens.json: killed packs' dens resting, and their orphans (wolf_packs_and_pups_design.md)
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_in_world(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer): items.make_carcass(sp, pos, peer)
+	@warning_ignore("confusable_local_declaration")
+	animals.send_hit = func(peer, id, zone, at): net.animal_hit.rpc_id(peer, id, zone, at)
 	items.hit_animal_path = func(shooter, from, to, amount) -> Dictionary:
 		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5)
 
@@ -576,6 +591,7 @@ func _ready() -> void:
 			return {}
 
 		animals.damage(int(found["id"]), amount, shooter, "arrow")
+		animals.report_hit(int(found["id"]), int(found.get("zone", 0)), found.get("point", found["at"]))   # every player near sees which animal and where (hunt_feedback_server.md)
 		return found
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
 	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
@@ -586,7 +602,15 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
 		var target: int = animals.target_along(origin, dir, reach)
-		return target != 0 and (animals.damage(target, amount, peer, "spear") or true)
+
+		if target == 0:
+			return false
+
+		var point: Vector3 = animals.jab_point(target, origin, dir, reach)
+		var zone: int = animals.hit_zone(target, point)
+		animals.damage(target, amount, peer, "spear")
+		animals.report_hit(target, zone, point)
+		return true
 	dialogue = DialogueScript.new()
 	dialogue.items = items
 	dialogue.npcs = npcs
@@ -739,20 +763,10 @@ func _ready() -> void:
 const SPAWN_OVERRIDE := SpawnPointScript.OVERRIDE   # the one source (src/shared/spawn_point.gd), shared with the flora placer's starter clearing
 
 
+# The spawn: the starter tile's spawn picked by rule (starter.spawn_picked), or SPAWN_OVERRIDE when the tile has none (spawn_point.gd).
 func _spawn_point(world_dir: String) -> Vector3:
-	var path: String = world_dir + "/tiles/tile_3_4.tile"
-	var point: Vector3 = Vector3(3.5, 0.0, 4.5) * float(settings.tile_size_m)
-	var head: Dictionary = TileFileScript.read_header(path)
-
-	if SPAWN_OVERRIDE != Vector2.ZERO:
-		point = Vector3(SPAWN_OVERRIDE.x, 0.0, SPAWN_OVERRIDE.y)
-	elif head["ok"]:
-		var starter: Dictionary = TileFileScript.read_list(path, head["table"], "starter")
-
-		if starter["ok"] and typeof(starter["value"]) == TYPE_DICTIONARY and starter["value"].has("spawn_point"):
-			var s: Array = starter["value"]["spawn_point"]
-			point = Vector3(float(s[0]), 0.0, float(s[2]))
-
+	var at: Vector2 = SpawnPointScript.use_world(world_dir)
+	var point: Vector3 = Vector3(at.x, 0.0, at.y)
 	point.y = maxf(generator.surface_height(point.x, point.z), 0.0) + 2.0
 	return point
 
@@ -949,6 +963,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
 	_nests_sent.erase(peer_id)
+	_holes_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
@@ -1165,12 +1180,12 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
-	var row: int = 4
+	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): its rivers are the ones swelled
 	var game_s: float = game_clock.seconds
-	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0)
+	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 
 	if flora != null:
-		flora.set_season(game_clock.season())   # bare winter broadleaves shelter nothing (--bare-winter; docs/design/cover_by_season_design.md)
+		flora.set_season(str(weather["season"]))   # bare winter broadleaves shelter nothing (--bare-winter; docs/design/cover_by_season_design.md): the row's own season (Weather.season_at, --one-sky)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:
@@ -1326,13 +1341,41 @@ func _cover_at(point: Vector3) -> float:
 				_cover_warming[chunk] = true
 				WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
 
-	if flora.roofed(point):
-		return 2.0   # under a built roof: also shelter from the wind
+	if flora.roofed(point) or _in_cave(point):
+		return 2.0   # under a built roof or in a cave: also shelter from the wind
 
 	return 1.0 if flora.covered(point) else 0.0
 
 
 var _cover_warming: Dictionary = {}   # chunk -> true while a worker thread makes it for the cover index
+
+
+const CAVE_ROOF_M := 2.0   # ground at least this far over a player's feet for a spot in a cave to count as inside (not the open mouth)
+
+
+# Whether a point is inside a cave with rock over it (tile_terrain_data.in_cave; Jamie's caves page, #664). A tile not loaded yet: no.
+func _in_cave(point: Vector3) -> bool:
+	if generator == null or not generator.tile_cached(point.x, point.z):   # no generator yet (a test that sets only the flora store)
+		return false
+
+	var tile_data = generator.get_tile(generator.tile_of(point.x, point.z))
+
+	if tile_data == null or tile_data.placeholder or tile_data.caves.is_empty():
+		return false
+
+	return tile_data.in_cave(Vector3(generator.wrap_x(point.x), point.y, generator.wrap_x(point.z)), CAVE_ROOF_M)
+
+
+# Inside a cave: {"deep_c" (the year mean at the height), "depth_m" (straight distance to the nearest mouth), "kind" (CaveAir), "day_part_c"
+# (the day and night part of the outside air now)}; {} outside one. server_items blends its own outside air to deep_c with these.
+func _cave_air(point: Vector3) -> Dictionary:
+	if not _in_cave(point):
+		return {}
+
+	var group: String = settings.get_zone_group_for_row(int(floor(point.z / float(settings.tile_size_m))))
+	var tile_data = generator.get_tile(generator.tile_of(point.x, point.z))
+	var mouth: Array = tile_data.nearest_cave_mouth(Vector3(generator.wrap_x(point.x), point.y, generator.wrap_x(point.z)))
+	return {"deep_c": WeatherScript.year_mean_c(group, point.y), "depth_m": float(mouth[0]), "kind": int(mouth[1]), "day_part_c": WeatherScript.day_part_c(game_clock.seconds, group)}
 
 
 # Whether the cover index knows the crowns round a point: its flora chunk and the eight round it are made. Missing ones are started
@@ -2258,6 +2301,13 @@ func _send_npcs(delta: float) -> void:
 			_nests_sent[peer] = nests_sig
 			net.nests.rpc_id(peer, nest_rows[0], nest_rows[1])
 
+		var hole_rows: Array = items.ice_holes_near(at)
+		var hole_sig: int = hash([hole_rows[0], hole_rows[1]])
+
+		if int(_holes_sent.get(peer, 0)) != hole_sig:
+			_holes_sent[peer] = hole_sig
+			net.ice_holes.rpc_id(peer, hole_rows[0], hole_rows[1])
+
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.
 func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void:
@@ -2748,6 +2798,9 @@ func _exit_tree() -> void:
 
 	if animals != null and animals.companions != null:
 		animals.companions.save()   # companions (companions.json)
+
+	if animals != null and animals.wolves != null:
+		animals.wolves.save_dens()   # wolf dens (wolf_dens.json)
 
 	_queue_mutex.lock()
 	_stopping = true

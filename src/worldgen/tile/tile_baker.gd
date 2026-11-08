@@ -307,7 +307,10 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 		fresh_points.append_array(guide["points"])
 
 	climate.use_world_fresh_water(fresh_points)
-	climate.build(water.heights, water.water_class, origin_sx, origin_sz)
+	# Wetlands and dry-season beds (record classes, Stage E M1 step 2) are ground to the climate and the land types; their own biome and
+	# soil are laid on after (water_record.gd). With the rules' classes 0 to 3 this is the same array, so a rules bake is unchanged.
+	var land_class: PackedByteArray = WaterRecordScript.land_view(water.water_class, tables)
+	climate.build(water.heights, land_class, origin_sx, origin_sz)
 	timings["climate"] = Time.get_ticks_msec() - clock
 
 	# Land types: shore marsh, treeline and the evergreen belt over the climate biomes (no tree stands at a lake any more).
@@ -317,8 +320,12 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	for name in ["marsh", "alpine_meadow", "bare_rock", "mixed_forest", "boreal_forest", "temperate_grassland", "temperate_forest", "heath"]:
 		land_ids[name] = tables.id_of("biomes", name)
 
-	var land_counts: Dictionary = TileLandTypesScript.apply(climate.biome, water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, tile_rules.get("land_types", {}), land_ids)
-	var field_cells: int = TileLandTypesScript.farmland(climate.biome, climate.fertility, water.heights, water.water_class, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules.get("land_types", {}), land_ids)
+	var land_counts: Dictionary = TileLandTypesScript.apply(climate.biome, water.heights, land_class, water.water_surface, n, frame_height.spacing_m, tile_rules.get("land_types", {}), land_ids)
+	var field_cells: int = TileLandTypesScript.farmland(climate.biome, climate.fertility, water.heights, land_class, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules.get("land_types", {}), land_ids)
+	var wet_land_cells: int = WaterRecordScript.apply_wet_land(water.water_class, climate.biome, climate.soil, tables)
+
+	if wet_land_cells > 0:
+		print("  wet land (tile %s): %d wetland and dry-bed cells given their own biome and soil" % [str(tile), wet_land_cells])
 	timings["land_types"] = Time.get_ticks_msec() - clock
 	print("  land types (tile %s): %d marsh/shore cells, %d alpine meadow, %d mixed-forest belt, %d boreal belt, %d field cells (%d ms)" % [str(tile), land_counts["marsh"], land_counts["alpine"], land_counts["belt"], land_counts["boreal"], field_cells, timings["land_types"]])
 
@@ -372,7 +379,7 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	sites.setup(settings, tile_rules, tables)
 	sites.far_from_sea = inland
 	sites.cave_heads = cave_heads
-	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow)
+	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow, water.water_surface)
 	timings["sites"] = Time.get_ticks_msec() - clock
 
 	return {

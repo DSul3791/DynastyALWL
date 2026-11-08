@@ -98,6 +98,8 @@ var test_shore: Array = []              # --lake: stand-in still-water squares [
 var last_lap: String = ""
 var lap_scale: float = 1.0              # --lake shortens the wait between laps
 var test_wind: float = -1.0             # --lake forces the wind strength laps look at
+var brook_m: float = INF                # metres to the nearest brook or river square heard at the last choice (sound_occlusion step 6), INF none
+var rapids_m: float = INF               # ... to the nearest rapids (a drop of FALL_DROP_M or more) or fall
 var lake_silenced: int = 0              # flowing squares dropped near a lake at the last choice (HUD, check)
 var _slots: Array = []                  # {player, kind, target, fade}
 var _streams: Dictionary = {}
@@ -129,6 +131,7 @@ func setup(flora, terrain: VoxelLodTerrain = null) -> void:
 		player.unit_size = 10.0
 		player.max_distance = 140.0
 		player.attenuation_filter_cutoff_hz = 9000.0
+		player.set_meta("air_water", true)              # --sound-outdoors step 6: the water's own bed does not hide it
 		add_child(player)
 		player.add_to_group("world_sounds")
 		_slots.append({"player": player, "kind": "", "target": Vector3.ZERO, "fade": -80.0})
@@ -141,6 +144,7 @@ func setup(flora, terrain: VoxelLodTerrain = null) -> void:
 	_base.unit_size = 6.0
 	_base.max_distance = BASE_REACH_M * 1.5
 	_base.attenuation_filter_cutoff_hz = 12000.0
+	_base.set_meta("air_water", true)
 	add_child(_base)
 	_base.add_to_group("world_sounds")
 
@@ -256,6 +260,7 @@ func _laps(delta: float, here: Vector3, underwater: bool) -> void:
 	player.max_distance = LAP_REACH_M * 1.5
 	player.attenuation_filter_cutoff_hz = 6000.0
 	player.set_meta("lap", true)
+	player.set_meta("air_water", true)
 	add_child(player)
 	player.add_to_group("world_sounds")
 	player.global_position = square["at"] + Vector3(_rng.randf_range(-3.0, 3.0), 0.0, _rng.randf_range(-3.0, 3.0))
@@ -492,11 +497,29 @@ func _choose() -> void:
 			chosen.append(candidate)
 
 	_pick_base(candidates)
+	_note_beds(allowed, candidates)
 
 	for candidate in chosen:
 		candidate["depth"] = _depth_at(candidate["at"]) if candidate["kind"] != "fall" else -1.0
 
 	_assign(chosen, _origin)
+
+
+# The nearest running water for the masking bed (--sound-outdoors step 6): flowing squares that may play (not those quiet
+# beside a lake), the steep ones and the falls as rapids. Distances are from the scan's origin.
+func _note_beds(flowing: Array, candidates: Array) -> void:
+	brook_m = INF
+	rapids_m = INF
+
+	for candidate in flowing:
+		if float(candidate["drop"]) >= FALL_DROP_M:
+			rapids_m = minf(rapids_m, float(candidate["distance"]))
+		else:
+			brook_m = minf(brook_m, float(candidate["distance"]))
+
+	for candidate in candidates:
+		if candidate["kind"] == "fall":
+			rapids_m = minf(rapids_m, float(candidate["distance"]))
 
 
 # The waterfalls the water chunks carry (flora.fall_list(): top, base, pool, flow, width in world coordinates):
@@ -640,6 +663,8 @@ func _assign(chosen: Array, origin: Vector3) -> void:
 			player.set_meta("air_kind", "fall")                    # sound_occlusion.gd moves it to a dull band bus by distance and cover
 		elif player.has_meta("air_kind"):
 			player.remove_meta("air_kind")
+
+		player.set_meta("air_line", candidate["kind"] == "river")      # --sound-outdoors: a river reach fades like a line (sound_occlusion.gd)
 		player.global_position = candidate["at"]
 		player.volume_db = -80.0
 		slot["kind"] = candidate["kind"]

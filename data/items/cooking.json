@@ -234,6 +234,38 @@
 		"loss": 0.8,
 		"min_chance": 0.2
 	},
+	"coals": {
+		"note": "After the flames (docs/design/fire_coals_design.md, coordinator decision 8 Nov 2026, Dave may revert). A fire that burned coal_bed_s real seconds in all since it was last cold burns out to coals (state 76) for coals_s, then warm ash (77) for ash_s, then cold ash (8); a shorter fire goes straight to cold ash. Wood laid on coals catches by itself after catch_s by its biggest class. Rain of 0.2 or more on uncovered coals turns them to warm ash after rain_s, and the ash goes cold after a further ash_rain_s. Wood plus a tinder item (tinder, tinder_also) lights warm ash with no damp roll and uses the tinder up. Coals warm heat_c within heat_m and do not keep wolves off. All times are real seconds.",
+		"coal_bed_s": 600,
+		"coals_s": 7200,
+		"ash_s": 43200,
+		"catch_s": {
+			"weak": 10,
+			"firewood": 45,
+			"log": 180
+		},
+		"rain_s": 120,
+		"ash_rain_s": 600,
+		"heat_c": 8.0,
+		"heat_m": 1.5,
+		"rain_note": "Step 2: a large fire (state 41) with a coal bed is not put out by rain of any strength; while the rain is rain_burn_from or more it burns rain_burn_x faster, and in any rain it sends smoke 1 on its row. Small and medium fires go out in rain as before.",
+		"rain_burn_from": 0.6,
+		"rain_burn_x": 1.25
+	},
+	"wet_wood": {
+		"note": "Wet wood (docs/design/fire_coals_design.md 5, step 3; coordinator decision 8 Nov 2026, Dave may revert). A wood item's slot wear is its drying left in tenths of a game hour (0 = dry). Rain of rain_from or more wets loose wood lying uncovered and the wood of an unlit uncovered fire up to its class's wet_h; a pack and a chest keep wood dry. Wood dries 1 game hour per game hour out of the rain, fire_dry_x times as fast in a lit fire's store or within its heat reach. Fresh-cut wood is dry. A lit fire holding wet wood burns wet_burn_x as long, a tier lower in heat and light, and smokes; a laid fire whose kindling is all wet lights at light_x of the usual chance unless dry tinder is in it. Stacks join only within wet_merge_h of drying left and keep the wetter. Checked every tick_s real seconds.",
+		"wet_h": {
+			"weak": 4,
+			"firewood": 36,
+			"log": 168
+		},
+		"rain_from": 0.2,
+		"fire_dry_x": 6.0,
+		"wet_burn_x": 1.5,
+		"light_x": 0.5,
+		"wet_merge_h": 2.0,
+		"tick_s": 15.0
+	},
 	"cooks_into": {
 		"raw_meat": "roast_meat",
 		"salmon": "roast_fish",

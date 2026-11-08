@@ -4,8 +4,9 @@ extends RefCounted
 # `update(hour, day_of_year, days)` from the shared game clock (a game day is one real hour). weather_look.gd applies the
 # numbers (it already owns the sun, ambient light, fog and sky uniforms and multiplies them by the weather).
 #
-# The sun path is the real one for LATITUDE_DEG: it rises in the east, stands in the south at noon (north is -Z) and sets
-# in the west; the noon sun is high in summer and low in winter, so days are long in summer and short in winter. The moon
+# The sun path is the real one for LATITUDE_DEG (with --one-sky the island's own latitude, below): it rises in the east, stands in
+# the south at noon (north is -Z; in the north at 57 S) and sets in the west; the noon sun is high in summer and low in winter, so
+# days are long in summer and short in winter. The moon
 # is always opposite the sun and lights the ground with one cold, dim directional light whose strength follows the moon's
 # phase (below). There is one light
 # (and one shadow map) in the game, so at night the same light is the moon; both are faded to nothing while the sun
@@ -20,6 +21,16 @@ extends RefCounted
 
 const LATITUDE_DEG := 52.0
 const AXIAL_TILT_DEG := 23.44
+const Climate := preload("res://src/shared/climate.gd")
+
+# --one-sky (docs/design/one_sky_design.md; Sonny's A4 "One sky", 8 Nov 2026): the sky at the latitude of the player's tile row on the
+# 21 x 21 world grid (Climate.latitude_of_row: the equator row 0, south negative; the starter row 4 is 57 S with the placeholder
+# spread), instead of the fixed LATITUDE_DEG. The game calendar is the starter island's: day 0 its spring equinox, so the sun's
+# declination is calendar_sign() x 23.44 sin(2 pi phase) (-1 for the southern starter) and midsummer stays at phase 0.25. At 57 S the noon sun stands
+# due north (-Z) and shadows point south (+Z). With --moon-phase the moon sits 360 x phase east of the sun along the ecliptic, so a
+# full moon rides low in midsummer and high in midwinter. Off: 52 N with the noon sun in the south, as before (Dave may veto the flip).
+static var one_sky_on: bool = AppConfig.has_flag("one-sky")
+static var sky_row_latitude: float = NAN         # the player's tile row's latitude, set by terrain_client; NAN: the starter row's
 
 const SUN_WHITE := Color(1.0, 0.92, 0.80)       # the daytime colour (look_settings SUN_COLOR)
 const SUN_GOLD := Color(1.0, 0.66, 0.36)        # low sun
@@ -29,6 +40,12 @@ const MOON_ENERGY := 0.22                       # share of the daytime sun light
 const AMBIENT_NIGHT := 0.24                     # share of the daytime ambient light left at night
 const SYNODIC_DAYS := 29.53                     # new moon to new moon, in game days
 const MOON_FULL_DAY := 100.0                    # a full moon on this game day (a new world starts on day 100, game_clock START_SECONDS)
+# --moon-phase (Jamie's moonlight page #679, Kathleen 8 Nov 2026): the moonlight follows the standard phase formula (Allen: a quarter moon
+# gives 8 to 9 % of a full moon's light, not 35 %), and the moon stands where its phase puts it: the sun's place turned back by phase x 360
+# degrees on the same path. A new moon is up with the sun, a first quarter sets about midnight, a full moon is up all night, a last
+# quarter rises about midnight; no moonlight while the moon is below the horizon.
+static var moon_phase_on: bool = OS.get_cmdline_user_args().has("--moon-phase")
+var moon_elevation: float = -1.0                # sin of the moon's height (with --moon-phase; otherwise opposite the sun)
 const MOON_FALLOFF := 1.5                       # moonlight against the lit share of the disc: a half moon gives about a third of a full moon's light
 const STARS_DARK := 1.35                        # the stars on a moonless night, against a full moon's (1, as before): a bright moon washes out the faint ones
 
@@ -55,22 +72,29 @@ var cloud_shadow: Color = DAY[3]
 # `days`: game days since the world began (game_clock seconds / SECONDS_PER_DAY), for the moon's phase; below 0 keeps a full moon.
 func update(hour: float, day_of_year: int, days: float = -1.0) -> void:
 	moon_phase = moon_phase_at(days) if days >= 0.0 else 0.5
-	moon_light = moon_light_at(moon_phase)
+	moon_light = moon_light_phase(moon_phase) if moon_phase_on else moon_light_at(moon_phase)
 
-	var phi: float = deg_to_rad(LATITUDE_DEG)
-	# Day 0 is the first day of spring (equinox): the sun's declination is zero, peaks in summer.
-	var delta: float = deg_to_rad(AXIAL_TILT_DEG) * sin(TAU * (float(day_of_year) + hour / 24.0) / 365.0)
+	var phi: float = deg_to_rad(sky_latitude_deg())
+	# Day 0 is the first day of spring (equinox): the sun's declination is zero, then follows the summer (sun_declination).
+	var year_phase: float = (float(day_of_year) + hour / 24.0) / 365.0
+	var delta: float = sun_declination(year_phase)
 	var h: float = deg_to_rad((hour - 12.0) * 15.0)
-	var up: float = sin(phi) * sin(delta) + cos(phi) * cos(delta) * cos(h)
-	var east: float = -cos(delta) * sin(h)
-	var north: float = sin(delta) * cos(phi) - cos(delta) * sin(phi) * cos(h)
-	var sun_to: Vector3 = Vector3(east, up, -north).normalized()    # from the ground toward the sun
+	var sun_to: Vector3 = sky_direction(phi, delta, h)    # from the ground toward the sun
+	var up: float = sun_to.y
 	elevation = up
 
 	var sun_up: float = smoothstep(-0.06, 0.02, up)
 	var moon_up: float = smoothstep(-0.08, -0.02, -up) * smoothstep(0.0, 0.12, -up)
 	var by_day: bool = up > -0.07
 	var toward: Vector3 = sun_to if by_day else -sun_to
+	moon_elevation = -up
+
+	if moon_phase_on:
+		var moon_to: Vector3 = moon_on_ecliptic(phi, year_phase, h, moon_phase) if one_sky_on else moon_direction(phi, delta, h, moon_phase)
+		moon_elevation = moon_to.y
+		moon_light *= smoothstep(0.0, 0.12, moon_to.y)        # none below the horizon; it brightens as it climbs
+		moon_up = smoothstep(-0.08, -0.02, -up)               # while the sun is down
+		toward = sun_to if by_day else (moon_to if moon_to.y > 0.0 else -sun_to)
 	light_basis = Basis.looking_at(-toward, Vector3.UP if absf(toward.y) < 0.99 else Vector3.RIGHT)
 
 	if by_day:
@@ -92,6 +116,62 @@ func update(hour: float, day_of_year: int, days: float = -1.0) -> void:
 	sky_horizon = _mix(1, day_w, dusk_w, night_w)
 	ground_horizon = _mix(2, day_w, dusk_w, night_w)
 	cloud_shadow = _mix(3, day_w, dusk_w, night_w)
+
+
+# --moon-phase: the moonlight by phase (Allen's formula; Jamie's two-line drop-in), 1 at full, about 0.09 at a quarter, 0 at new.
+static func moon_light_phase(phase: float) -> float:
+	var alpha: float = absf(fposmod(phase, 1.0) - 0.5) * 360.0       # phase angle in degrees, 0 at full .. 180 at new
+	return pow(10.0, -0.4 * (0.026 * alpha + 4.0e-9 * pow(alpha, 4.0)))
+
+
+# --moon-phase: from the ground toward the moon, on the sun's path (same declination, a simplification) with its hour angle turned
+# back by phase x 360 degrees. `phi` latitude, `delta` the sun's declination, `h` the sun's hour angle, all radians.
+static func moon_direction(phi: float, delta: float, h: float, phase: float) -> Vector3:
+	var hm: float = h - TAU * phase
+	var up: float = sin(phi) * sin(delta) + cos(phi) * cos(delta) * cos(hm)
+	var east: float = -cos(delta) * sin(hm)
+	var north: float = sin(delta) * cos(phi) - cos(delta) * sin(phi) * cos(hm)
+	return Vector3(east, up, -north).normalized()
+
+
+# The sky's latitude in degrees, south negative: with --one-sky the player's tile row's (the starter row's until terrain_client
+# sets it), else LATITUDE_DEG.
+static func sky_latitude_deg() -> float:
+	if not one_sky_on:
+		return LATITUDE_DEG
+
+	return Climate.latitude_of_row(Climate.STARTER_ROW) if is_nan(sky_row_latitude) else sky_row_latitude
+
+
+# The sun's declination (radians) at a year phase: zero at the spring equinox (phase 0), and at phase 0.25 the summer's: -23.44 degrees
+# for the starter island's southern summer with --one-sky (the sign of its row's hemisphere), +23.44 for the old northern sky.
+static func sun_declination(year_phase: float) -> float:
+	return (Climate.calendar_sign() if one_sky_on else 1.0) * deg_to_rad(AXIAL_TILT_DEG) * sin(TAU * year_phase)
+
+
+# From the ground toward a body in the sky (unit vector, north is -Z): latitude `phi`, declination `delta`, hour angle `h`, radians.
+static func sky_direction(phi: float, delta: float, h: float) -> Vector3:
+	var up: float = sin(phi) * sin(delta) + cos(phi) * cos(delta) * cos(h)
+	var east: float = -cos(delta) * sin(h)
+	var north: float = sin(delta) * cos(phi) - cos(delta) * sin(phi) * cos(h)
+	return Vector3(east, up, -north)
+
+
+# --one-sky and --moon-phase: the moon 360 x phase east of the sun along the ecliptic (its 5 degree orbit tilt left out; Sonny's A4).
+# The sun's ecliptic longitude is 2 pi x year phase + pi (so its declination is sun_declination's), the moon's that plus 2 pi x moon
+# phase; the moon's declination is 23.44 sin(longitude) and its hour angle the sun's less the difference in right ascension.
+# `phi` latitude and `h` the sun's hour angle, radians.
+static func moon_on_ecliptic(phi: float, year_phase: float, h: float, phase: float) -> Vector3:
+	var tilt: float = deg_to_rad(AXIAL_TILT_DEG)
+	var sun_lon: float = TAU * year_phase + (PI if Climate.calendar_sign() < 0.0 else 0.0)   # the calendar's spring is the south's (autumn point) or the north's
+	var moon_lon: float = sun_lon + TAU * phase
+	var moon_delta: float = tilt * sin(moon_lon)
+	var moon_h: float = h - (_right_ascension(moon_lon, tilt) - _right_ascension(sun_lon, tilt))
+	return sky_direction(phi, moon_delta, moon_h)
+
+
+static func _right_ascension(longitude: float, tilt: float) -> float:
+	return atan2(cos(tilt) * sin(longitude), cos(longitude))
 
 
 # The moon's phase on a game day: 0 new, 0.5 full (on MOON_FULL_DAY and every SYNODIC_DAYS after it), 1 new again.

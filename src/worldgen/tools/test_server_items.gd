@@ -526,8 +526,17 @@ func _init() -> void:
 	f.tick(10.0)
 	check(f._items[open_id]["fire"]["state"] == 9, "then the rain puts it out again (loaded, unlit)")
 	rain[0] = 0.0
-	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
-	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == fibre_held, "it lights once the rain stops, and no starter is used up")
+	# The rain wetted the sticks left in it (wet wood, fire design 5), so with no dry tinder in the fire each try lights about half the time
+	# (wet_wood.light_x). The draw is seeded so the test always runs the same way, and it tries a few times, as a player would.
+	check(int(f._items[open_id]["fire"].get("damp", 0)) > 0, "the rain has wetted the wood left in the fire")
+	f._rain_rng.seed = 694
+	var relight_tries: int = 0
+
+	while relight_tries < 12 and not ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])):
+		f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
+		relight_tries += 1
+
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == fibre_held, "it lights once the rain stops (wet kindling: %d tries), and no starter is used up" % relight_tries)
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
 	check(f.inventory_of(1).count_of(f.table.number_of("stick")) == 1, "a lit fire takes another stick")
 	# A campfire cooks only meat (Dave 31 Oct 2026): berries, nuts and roots do nothing on it (they are pot and hearth recipes).
@@ -601,6 +610,15 @@ func _init() -> void:
 	for n in range(200):
 		if not f._items.has(open_id) or not ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])):
 			break
+
+		f.tick(10.0)
+
+	# A fire that burned past coals.coal_bed_s leaves coals (76), then warm ash (77), then cold ash (8; docs/design/fire_coals_design.md):
+	# those real-time stages (2 h and 12 h) are run down by hand here, then cold ash is cleared after FIRE_OUT_S.
+	for stage in range(2):
+		for k in f._items:
+			if f._items[k].has("fire") and int(f._items[k]["fire"]["state"]) in [ItemsScript.FIRE_STATE_COALS, ItemsScript.FIRE_STATE_ASH]:
+				f._items[k]["left"] = 1.0
 
 		f.tick(10.0)
 

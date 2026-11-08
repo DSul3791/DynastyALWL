@@ -12,6 +12,8 @@ const ThievesScript := preload("res://src/stream/server_thieves.gd")
 const FlocksScript := preload("res://src/stream/server_flocks.gd")
 const GoblinsScript := preload("res://src/stream/server_goblins.gd")
 const CompanionsScript := preload("res://src/stream/server_companions.gd")
+const FlightScript := preload("res://src/stream/server_flight.gd")
+const WeatherRules := preload("res://src/shared/weather.gd")
 
 const GRAZE := 0
 const HOP := 1
@@ -20,12 +22,23 @@ const ALERT := 3
 const WARN := 10                # big game standing its ground (head down), then 11 charge, 12 recover (server_big_game.gd)
 const SNEAK := 13               # a thief creeping up on food, 14 running off with it (server_thieves.gd)
 const HIDDEN := 5               # in its burrow: never sent, never hunted
+const HIT_ZONES := ["body", "head", "chest", "hip", "leg"]   # animal_hit zone codes, the order of MikeW's animal_view HIT_ZONES (docs/design/hunt_feedback_server.md 3)
+const HUNCH := 20               # wire only: a grazer standing out the rain, still, head low (animals_in_weather_design.md 6; GRAZE on the server)
+const DRINK := 21               # wire only: a deer or stock animal at its drinking place, head down at the water (animals_at_water_server.md; GRAZE on the server)
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
 var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
 var ground_height: Callable        # (x, z) -> height
 var blocked: Callable              # (x, z) -> bool (deep water)
+var ice_cover_at: Callable         # (Vector3) -> Ice.cover there (0 open .. 1 a 20 cm sheet; 0.5, 10 cm, bears a person); set by the server scene
+var _ice_cache: Dictionary = {}    # animals on ice: Vector2i(1 km band of z, 5 m of height) -> [Ice.cover, msec worked out]
+var ice_moat_at: Callable          # (Vector3) -> true in a thaw's shore moat (frozen_water_look.md 4, #729): open water though the sheet bears; unset: none
+var spring_ice_x: Callable         # (Vector3) -> the ice's share by springs (Jamie #739): 0 on the open brook below a spring, 0.5 within 10 to 30 m of a spring mouth or inflow, else 1; unset: 1 (wired with #719 step 2's spring rows)
+var thunder_between: Callable      # (t0, t1 game seconds, centre, reach m) -> Thunder.strikes there (src/shared/thunder.gd); set by the server scene
+var game_seconds: Callable         # () -> the game clock's seconds (thunder)
+var _thunder_t: float = NAN        # game second the thunder was last looked at
+var _claps: Array = []             # thunder on its way: [strike point, real msec of the flash, ids already flushed]
 var walls: Callable                # (x0, z0, x1, z1, margin) -> bool, a wall or heavy station on that step (server_items.structure_blocks_step)
 var crossing: Callable             # Steering's `cross`: every walker of this module stops at walls
 var player_positions: Callable     # () -> Array of Vector3
@@ -37,7 +50,9 @@ var player_stalk: Callable         # () -> Array of hunting skill factors (skill
 var fires: Callable                # () -> Array of Vector3, burning fires and torch bearers (server_items._lit_fires; wolves read the same list)
 var fire_radius: Callable          # (Vector3) -> how far animals keep from that fire (server_items.fire_protect_m: a campfire's tier, 8 m for a torch)
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
+var weather_ahead: Callable        # (hours) -> the weather dictionary that many game hours from now (WeatherScript.state; animals_in_weather_design.md 3)
 var died: Callable                 # (species, position, source peer) when an animal is killed
+var send_hit: Callable             # (peer, animal id, zone, at): a hit, for every player within hit_send_m (hunt_feedback_server.md 3)
 var ticks_run: int = 0
 var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
 var flocks = null                  # bird flocks on water (server_flocks.gd)
@@ -48,11 +63,13 @@ var drop_loot: Callable            # (item number, count, position) when a thief
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
+var air_at: Callable               # (Vector3) -> Weather.air_c at that point: its zone's air at that height, this hour (docs/design/one_temperature.md); unset: temp_c less the lapse
 var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burning placed fire lies within radius of a lair's mouth (lair.guard_m), so no new group comes (Dave 8 Nov 2026, decision 13)
 var _lair_state: Dictionary = {}   # mouth "x,z" -> {"made": a group has been made here, "empty_since": seconds when it was found empty, -1 while a group is there}
 var lair_path: Callable              # (mouth x, z) -> PackedVector3Array: the cave floor path from that den mouth to the den (tile goblin_den_paths), empty when none
 var berry_bushes: Callable           # (Vector3, radius) -> PackedVector3Array: standing berry plants near a point, from flora chunks already made (goblins forage at them)
 var goblins = null                   # den life (server_goblins.gd): species with a "den_life" row sleep in the cave by day, watch fires and forage at night
+var flight = null                    # single birds in flight (server_flight.gd, bird_flight_server_design.md): species with a "flight" row fly when they bolt
 var companions = null                # companions (server_companions.gd): the stray a player befriends with food, then their dog (Dave 8 Nov 2026, decisions 5 and 6)
 var lair_mouths: Callable             # (x, z) -> PackedVector2Array: the cave mouths (world x, z) of the tile there; species with a "lair" row spawn their groups at them (goblins, Dave 7 Nov 2026)
 var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
@@ -71,6 +88,11 @@ var _top_idx: int = 0
 var _next_herd: int = 1
 var _wind_s: float = 0.0
 var _wind_dir: Vector2 = Vector2.ZERO
+var _wx: Dictionary = {}           # this tick's weather (animals_in_weather_design.md 3): rain, snow, storm, wind, mist
+var _water_spots: Dictionary = {}  # animals at water: Vector2i 50 m cell of the asker and reach -> [[stand spot, water point] or [], msec found]
+var _storm_ahead: bool = false     # a storm (storm 0.5 or more) 12 to 24 game hours ahead: the falling pressure prey feel (lesson 4)
+var _ahead_acc: float = INF        # real seconds since weather_ahead was last sampled
+var _dogs: Array = []              # this tick's companion dogs as a presence for wild animals: [animal id, position, barking] (dog_companion_design.md 11)
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
 var _fire_cache: Array = []       # [Vector3 fire, keep-off metres] this tick (fires, fire_radius)
 var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
@@ -103,6 +125,8 @@ func setup() -> void:
 	goblins = GoblinsScript.new()
 	goblins.host = self
 	goblins.trust.cfg = species_def("goblin").get("ally", {})
+	flight = FlightScript.new()
+	flight.host = self
 	companions = CompanionsScript.new()
 	companions.host = self
 
@@ -267,6 +291,11 @@ func _step_young(a: Dictionary, dt: float) -> void:
 	var speed: float = float(def.get("flee_mps", 7.5)) if running else float(def.get("walk_mps", 1.5)) * (2.0 if far > 6.0 else 1.0)
 	var ground_for: Callable = ground_height
 	var blocked_for: Callable = blocked
+
+	if ice_on():
+		var moves: Array = ice_moves(def, str(a["sp"]))
+		ground_for = moves[0]
+		blocked_for = moves[1]
 
 	if swims(def):      # a young swimmer (a moose calf) follows its mother into the water
 		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
@@ -479,6 +508,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 		return int(a.get("birds", 0)) <= 0
 
+	if not a.has("hp_max"):
+		a["hp_max"] = float(a["hp"])   # its full health, set aside at the first hit: the row's health share (hunt_feedback_server.md 2)
+
 	a["hp"] -= amount
 
 	if goblins != null and a.has("lair"):
@@ -489,6 +521,12 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 		if companions != null and companions.handles(a):
 			companions.died(a)   # a companion's record keeps its death; a stray's player can win another
+
+		if a.has("orphan") and wolves != null:
+			wolves.orphan_gone(a)   # one orphan fewer at its den
+
+		if a.has("pup_of") and wolves != null:
+			wolves.pup_hurt(a, source_peer)   # a pup killed: its pack comes at once
 
 		if a.has("loot") and drop_loot.is_valid():
 			drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])
@@ -504,6 +542,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	if a.has("loot") and drop_loot.is_valid():
 		drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])   # a hurt thief drops what it stole and runs
 		a.erase("loot")
+
+	if a.has("pup_of") and wolves != null:
+		wolves.pup_hurt(a, source_peer)   # its pack comes at once
 
 	a["wound"] = true
 	a["hurt_by"] = source_peer
@@ -575,9 +616,53 @@ func target_on_segment(from: Vector3, to: Vector3, radius: float, chest_m: float
 
 		if (from + seg * t).distance_to(centre) <= r and t < best_t:
 			best_t = t
-			best = {"id": int(id), "at": animals[id]["pos"]}
+			best = {"id": int(id), "at": animals[id]["pos"], "point": from + seg * t}
+			best["zone"] = hit_zone(int(id), best["point"])
 
 	return best
+
+
+# Where on the body a hit at `p` landed (hunt_feedback_server.md 3, MikeW's client rule): 1 head, 2 chest, 3 hip, 4 leg, 0 unknown. The body
+# is taken as twice the species' hit radius long.
+func hit_zone(id: int, p: Vector3) -> int:
+	if not animals.has(id):
+		return 0
+
+	var a: Dictionary = animals[id]
+	var length: float = 2.0 * float(species_def(str(a["sp"])).get("hit_radius_m", 0.6))
+	var fwd: Vector2 = Vector2.from_angle(float(a["heading"]))
+	var along: float = clampf(Vector2(p.x - a["pos"].x, p.z - a["pos"].z).dot(fwd) / maxf(length * 0.5, 0.05), -1.0, 1.0)
+	var up: float = (p.y - a["pos"].y) / maxf(length * 0.6, 0.05)
+
+	if up < 0.3:
+		return 4
+
+	if along > 0.55 and up > 0.5:
+		return 1
+
+	return 3 if along < -0.45 else 2
+
+
+# The point of a jab's aim line (from `origin` along `dir`, within `reach`) nearest the animal's chest centre.
+func jab_point(id: int, origin: Vector3, dir: Vector3, reach: float, chest_m: float = 0.5) -> Vector3:
+	if not animals.has(id) or dir.length() < 0.001:
+		return origin
+
+	var centre: Vector3 = animals[id]["pos"] + Vector3(0.0, chest_m, 0.0)
+	var n: Vector3 = dir.normalized()
+	return origin + n * clampf((centre - origin).dot(n), 0.0, reach)
+
+
+# A hit landed on animal `id` (alive or just killed, at `at`): every player within hit_send_m of it is told which animal and where on the body.
+func report_hit(id: int, zone: int, at: Vector3) -> void:
+	if not send_hit.is_valid() or big_game == null or not big_game.player_info.is_valid():
+		return
+
+	var reach: float = float(cfg.get("hit_send_m", 60.0))
+
+	for info in big_game.player_info.call():
+		if (info["pos"] as Vector3).distance_to(at) <= reach:
+			send_hit.call(int(info["peer"]), id, zone, at)
 
 
 # A loud noise: every animal within `radius` of the point that is not already running bolts away from it.
@@ -627,8 +712,8 @@ func snare(id: int) -> bool:
 
 	var a: Dictionary = animals[id]
 
-	if a.has("companion_id"):
-		return false   # a companion steps over snares
+	if a.has("companion_id") or a.has("pup_of") or a.has("orphan"):
+		return false   # a companion or a pup at a den steps over snares
 
 	if species_def(str(a["sp"])).has("flock"):
 		a["birds"] = int(a.get("birds", 8)) - 1
@@ -696,6 +781,9 @@ func tick(delta: float) -> void:
 	var weather: Dictionary = wind.call() if wind.is_valid() else {}
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
+	_read_weather(weather, delta)
+	_thunder_tick(players)
+	_dogs = _dog_presences()
 	_sample_noise(players, delta)
 	_fire_cache = []
 
@@ -769,7 +857,7 @@ func tick(delta: float) -> void:
 		a["acc"] = 0.0
 		_step(a, dt, near_d, near_p, seen_d, seen_p)
 
-		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)):
+		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
 			trails.note(id, str(a["sp"]), a["pos"])
 
 	for id in gone:
@@ -793,7 +881,7 @@ func tick(delta: float) -> void:
 	if companions != null:
 		companions.tick(delta)
 
-	if wolves != null and not wolves.packs.is_empty() or (wolves != null and bool(wolves.cfgw().get("natural", false))):
+	if wolves != null and (not wolves.packs.is_empty() or not wolves.dens.is_empty() or bool(wolves.cfgw().get("natural", false))):
 		wolves.tick(delta)
 
 	_spawn_acc += delta
@@ -808,7 +896,8 @@ func tick(delta: float) -> void:
 # How close a player may come before this animal runs: the species' spook_m, scaled by a horse's own tame value (a flighty one
 # runs from far off, a friendly one lets you close).
 func _spook_m(a: Dictionary, def: Dictionary) -> float:
-	var base: float = float(def.get("spook_m", 14.0)) * (float(cfg.get("rest", {}).get("spook_share", 0.6)) if resting(def) else 1.0)
+	var spook: float = float(def["flight"].get("flush_m", def.get("spook_m", 14.0))) if str(def.get("flight", {}).get("kind", "")) == "flush" else float(def.get("spook_m", 14.0))   # a flusher sits tight
+	var base: float = spook * (float(cfg.get("rest", {}).get("spook_share", 0.6)) if resting(def) else 1.0)
 
 	if def.has("tame") and a.has("tame"):
 		var scale: Array = def["tame"].get("spook_scale", [1.0, 1.0])
@@ -820,7 +909,7 @@ func _spook_m(a: Dictionary, def: Dictionary) -> float:
 		base = run_at
 
 	# Temperament, season and young: a neutral or aggressive animal does not run (0), a mother with young runs sooner.
-	base *= float(_temper_row(a).get("spook_x", 1.0)) * float(_season_row(def).get("spook_x", 1.0))
+	base *= float(_temper_row(a).get("spook_x", 1.0)) * float(_season_row(def).get("spook_x", 1.0)) * weather_spook_x(def)
 
 	if def.has("young") and not _young_of(a).is_empty():
 		base *= float(def["young"].get("spook_x", 1.4))
@@ -853,12 +942,20 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		flocks.step(a, dt, seen_d, seen_p)
 		return
 
+	if flight != null and flight.handles(a):
+		flight.step(a, dt, seen_d, seen_p)   # in the air, or sitting on a perch (bird_flight_server_design.md)
+		return
+
 	if def.has("thief") and thieves.handles(a):
 		thieves.step(a, dt)
 		return
 
+	if a.has("pup_of") and wolves != null:
+		wolves.step_pup(a, dt)   # a wolf pup at its pack's den: plays, hides from a standing player (wolf_packs_and_pups_design.md)
+		return
+
 	if companions != null and companions.handles(a):
-		companions.step(a, dt)   # a stray near the town, or a player's dog: its own step (no wild fear, defence or bleeding)
+		companions.step(a, dt)   # a stray near the town, an orphan pup, or a player's companion: its own step (no wild fear, defence or bleeding)
 		return
 
 	# Den life (goblins): in the cave it moves only along the cave path, warnings included; at night on the surface it may watch a fire or forage.
@@ -905,6 +1002,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			a["alarm"] = -1.0
 			_bolt(a, near_p, def)
 
+			if a.has("fly"):
+				return   # alarmed into the air
+
 	# A player who has come between a mother and her young (near one of them) is attacked at once, torch or not.
 	if def.has("defend") and def.has("young") and seen_p != Vector3.INF:
 		for kid in _young_of(a):
@@ -921,6 +1021,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	if fire_at != Vector3.INF and a["state"] != FLEE:
 		_bolt(a, fire_at, def)
+		return
+
+	# A player's dog (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md): prey flee it from farther than from a walking player, big game stands to it.
+	if def.has("dog") and _dog_react(a, def, seen_d):   # at its den too: a bear stands to a dog there
 		return
 
 	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
@@ -942,14 +1046,12 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		_bolt(a, seen_p, def)
 
 		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
-		if a["herd"] != 0:
-			var span: Array = def.get("alarm_s", [0.2, 0.9])
+		_alarm_herd(a, def)
 
-			for mate_id in _herds.get(a["herd"], []):
-				if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
-					animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
+	if a.has("fly"):
+		return   # it took off: the flight moves it from the next step (server_flight.gd)
 
-	var alert_m: float = float(def.get("alert_m", 0.0))
+	var alert_m: float = float(def.get("alert_m", 0.0)) * weather_spook_x(def)
 
 	if a["state"] == ALERT:
 		a["alert"] -= dt
@@ -977,21 +1079,43 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			return
 
 		a["timer"] -= dt
+		_weather_graze(a, def, dt)
 
 		if a["herd"] != 0 and float(def.get("herd_pull_m", 0.0)) > 0.0:
 			var centre: Vector3 = _herd_centre(a["herd"])
 
-			if centre != Vector3.INF and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)):
+			if centre != Vector3.INF and not a.has("drink_home") and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)) * fog_herd_x(def):
 				a["home"] = a["home"].lerp(centre, 0.5)
 
 		if a["timer"] <= 0.0 and resting(def):
 			a["timer"] = _graze_time(def) * float(cfg.get("rest", {}).get("graze_x", 3.0))   # out of its hours it beds down: stays put, longer
 			return
 
+		if a["timer"] <= 0.0 and _wind_goes_down(a, def):
+			return
+
+		if a["timer"] <= 0.0 and _weather_wander(a, def):
+			return
+
+		if a["timer"] <= 0.0 and _drink_wander(a, def):
+			return
+
 		if a["timer"] <= 0.0:
-			var wander: float = float(def.get("wander_m", 6.0))
+			var wander: float = float(def.get("wander_m", 6.0)) * weather_wander_x(def, str(a["sp"]))
 			var angle: float = rng.randf() * TAU   # luck-exempt: where a grazing animal hops next
+			angle = _upwind_angle(def, angle)
 			a["target"] = a["home"] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
+
+			if fog_edge_wanted(def):
+				for _try in int(_fog_cfg().get("edge_tries", 3)) - 1:
+					if fog_edge_ok(a["target"]):
+						break
+
+					var again: float = _upwind_angle(def, rng.randf() * TAU)   # luck-exempt: another try along the wood edge in fog
+					a["target"] = a["home"] + Vector3(cos(again), 0.0, sin(again)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
+
+			if a["herd"] != 0 and _groups_on():
+				a["target"] = _group_target(a, def)   # herd groups: the leader drifts, the rest keep their place round it
 
 			if a.has("den"):
 				a["target"] = _den_target(a, def)
@@ -1018,6 +1142,11 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	var ground_for: Callable = ground_height
 	var blocked_for: Callable = blocked
 
+	if ice_on():   # animals on ice (animals_on_ice_server.md): deer and boar keep off it, wolves cross a sheet that bears
+		var moves: Array = ice_moves(def, str(a["sp"]))
+		ground_for = moves[0]
+		blocked_for = moves[1]
+
 	if swims(def):
 		# A swimmer goes into deep water (nothing blocks it) and rides the surface there; in water it moves at swim_mps.
 		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
@@ -1035,7 +1164,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if a.get("wound", false) and a["pos"].distance_to(a["last_drop"]) >= float(cfg.get("blood", {}).get("every_m", 2.5)):
 			_drop_blood(a)
 
-	if a["state"] == FLEE and a["to_burrow"] and (r["arrived"] or not r["moved"]):
+	if (a["state"] == FLEE or a["state"] == HOP) and a["to_burrow"] and (r["arrived"] or not r["moved"]):
 		a["to_burrow"] = false
 
 		if r["arrived"]:
@@ -1090,6 +1219,27 @@ func bleed(a: Dictionary, dt: float) -> bool:
 		died.call(a["sp"], a["pos"], a.get("hurt_by", -1))
 
 	return true
+
+
+# Alarm groups (ANIMAL_SPEC.md, 8 Nov 2026): a bolting animal flushes every animal of its alarm_group within alarm_group_m, of any species or
+# herd, each after its own alarm_s moment (a crow taking off sends the pheasants and grouse beside it up too).
+func _alarm_group(a: Dictionary, def: Dictionary) -> void:
+	var group: String = str(def["alarm_group"])
+	var reach: float = float(def.get("alarm_group_m", 15.0))
+
+	for id in animals:
+		var o: Dictionary = animals[id]
+
+		if id == a["id"] or int(o["state"]) == FLEE or int(o["state"]) == HIDDEN or float(o["alarm"]) >= 0.0:
+			continue
+
+		var odef: Dictionary = species_def(str(o["sp"]))
+
+		if str(odef.get("alarm_group", "")) != group or Vector2(o["pos"].x - a["pos"].x, o["pos"].z - a["pos"].z).length() > reach:
+			continue
+
+		var span: Array = odef.get("alarm_s", [0.2, 0.9])
+		o["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a neighbouring bird reacts
 
 
 # The fire whose keep-off radius covers a point (a burning fire or a torch bearer this tick), or Vector3.INF.
@@ -1256,6 +1406,15 @@ func _top_up(players: Array, only: int) -> void:
 			if best < 0.0:
 				continue
 
+			if def.has("flock") and not bool(def["flock"].get("on_land", false)) and ice_on():
+				var edge: Vector2 = ice_edge_spot(x, z, sp)   # on a frozen pond the flock stands on the ice at the open water's edge, or is not there
+
+				if edge.x == INF:
+					continue
+
+				x = edge.x
+				z = edge.y
+
 			var herd: Array = def.get("herd", [])
 
 			if herd.is_empty():
@@ -1380,14 +1539,18 @@ static func period_of(hour: float) -> String:
 # The chance (0..1) that a top-up may spawn this species now: the row's "active" value for the current period, 1 without a clock or a row.
 func activity_chance(def: Dictionary) -> float:
 	if not def.has("active") or not hour_now.is_valid():
-		return 1.0
+		return clampf(weather_activity_x(def), 0.0, 1.0)
 
-	return clampf(float((def["active"] as Dictionary).get(period_of(float(hour_now.call())), 1.0)), 0.0, 1.0)
+	return clampf(float((def["active"] as Dictionary).get(fog_period(def, float(hour_now.call())), 1.0)) * weather_activity_x(def), 0.0, 1.0)
 
 
 # Resting (MikeW 2026-11-02, Dave's behaviour list): outside its active hours (its "active" chance for the period at or under rest.below)
 # an animal beds down where it is: it does not wander, and a player gets closer (rest.spook_share of spook_m) before it wakes and runs.
+# Before a storm (animals_in_weather_design.md 8) feeding animals skip their daytime rest.
 func resting(def: Dictionary) -> bool:
+	if _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_of(float(hour_now.call())) == "day":
+		return false
+
 	return def.has("active") and hour_now.is_valid() and activity_chance(def) <= float(cfg.get("rest", {}).get("below", 0.1))
 
 
@@ -1536,6 +1699,8 @@ func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
+# An animal warning at, charging or recovering from a dog (states 10 to 12 with foe_dog, dog_companion_design.md 11) adds a sixth field:
+# the dog's position, so the client looks at the dog and not the player (MikeW, 8 Nov 2026). Rows without it are unchanged.
 func rows_near(point: Vector3) -> Array:
 	var radius: float = float(cfg.get("send_radius_m", 120.0))
 	var found: Array = []
@@ -1545,7 +1710,15 @@ func rows_near(point: Vector3) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			found.append([d, [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), a["state"]]])
+			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), DRINK if a["state"] == GRAZE and bool(a.get("drinking", false)) else (HUNCH if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))) else a["state"])]
+
+			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
+				row.append(animals[int(a["foe_dog"])]["pos"])
+
+			if a.has("hp_max") and float(a["hp"]) < float(a["hp_max"]):
+				row.append(maxf(snappedf(float(a["hp"]) / maxf(float(a["hp_max"]), 0.01), 0.1), 0.1))   # hurt: its health share, always the last field and a float
+
+			found.append([d, row])
 
 	found.sort_custom(func(l, r): return l[0] < r[0])
 	var rows: Array = []
@@ -1557,14 +1730,28 @@ func rows_near(point: Vector3) -> Array:
 
 
 func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
+	if def.has("flight") and flight != null:
+		flight.take_off(a, from)   # a bird with a flight row flies instead of running (bird_flight_server_design.md)
+		return
+
 	var away: Vector2 = Vector2(a["pos"].x - from.x, a["pos"].z - from.z).normalized()
 
 	if away == Vector2.ZERO:
 		away = Vector2.from_angle(a["heading"])
 
+	# Herd groups (HERD_GROUPS.md): the herd scatters, each member breaking up to groups.scatter_deg either side of straight away.
+	if a["herd"] != 0 and _groups_on():
+		var slot: int = (_herds.get(a["herd"], []) as Array).find(a["id"])
+
+		if slot > 0:
+			var side: float = 1.0 if slot % 2 == 1 else -1.0
+			away = away.rotated(side * deg_to_rad(float(cfg["groups"].get("scatter_deg", 25.0))) * minf(ceilf(float(slot) / 2.0) / 2.0, 1.0))
+
 	a["state"] = FLEE
 	a["burst"] = 0.0
 	a["alert"] = 0.0
+	a.erase("hunch")
+	a.erase("sheltered")
 	a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
 	_to_burrow(a, away, def)
 
@@ -1663,7 +1850,7 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 	if _wind_s > 0.0 and d > 0.01:
 		var to_animal: Vector2 = Vector2(a["pos"].x - p.x, a["pos"].z - p.z) / d
-		f = maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)
+		f *= maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)   # times the bed's, never in place of it
 
 	if stance == 1:
 		f *= float(sen.get("crouch_factor", 0.6))
@@ -1682,8 +1869,15 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 
 # How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under
-# tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees).
+# tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees). Mist cuts it (animals_in_weather_design.md 10).
 func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
+	if fog_on():
+		return _sight_clear(a, def, p, d, low) * fog_sight_share(d, fog_v(a["pos"]))   # animals_in_fog_server.md 4.1
+
+	return _sight_clear(a, def, p, d, low) * (1.0 - float(_wx_rules().get("mist_sight", 0.6)) * float(_wx.get("mist", 0.0)) if _wx_on() else 1.0)
+
+
+func _sight_clear(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
 	if not ground_height.is_valid():
 		return 1.0
 
@@ -1717,6 +1911,69 @@ func _zig(away: Vector2, def: Dictionary) -> Vector3:
 	return Vector3(dir.x, 0.0, dir.y)
 
 
+# Herd groups (docs/design/HERD_GROUPS.md; animals.json "groups", off by default). A herd has one leader, its first living member that
+# is on the ground (a bird flying or perched is passed over). The leader drifts groups.drift_m per graze step on a slow wander, turned
+# by the weather's _upwind_angle (deer and hunters into a light wind, not in a gale, with weather.on); the leader alone keeps any
+# weather cover its home has. Every other member keeps a place round the leader on a spiral (golden angle, spacing x sqrt of its
+# place), so the herd grazes and moves as one. With weather.on, spacing shrinks in rain and wind (animals_in_weather_design.md: herds
+# bunch): x (1 - rain_bunch x rain - wind_bunch x wind), not below min_bunch. On alarm the herd scatters (_bolt) and, once safe,
+# each member's next graze step takes it back to its place: the herd regroups where it stopped.
+func _groups_on() -> bool:
+	return bool((cfg.get("groups", {}) as Dictionary).get("enabled", false))
+
+
+# Whether a herd member (not the leader) is far from the herd with groups on: more than three times its spacing plus 4 m from the
+# leader. A scattered herd regroups before it stands a rain spell out.
+func _group_strayed(a: Dictionary, def: Dictionary) -> bool:
+	if a["herd"] == 0 or not _groups_on():
+		return false
+
+	var lead_id: int = _group_leader(a["herd"])
+
+	if lead_id == 0 or lead_id == int(a["id"]):
+		return false
+
+	var spacing: float = float(def.get("group_spacing_m", (cfg["groups"] as Dictionary).get("spacing_m", 3.0)))
+	return Vector2(a["pos"].x - animals[lead_id]["pos"].x, a["pos"].z - animals[lead_id]["pos"].z).length() > spacing * 3.0 + 4.0
+
+
+func _group_leader(hid: int) -> int:
+	for id in _herds.get(hid, []):
+		if animals.has(id) and not animals[id].has("fly") and not bool(animals[id].get("perched", false)):
+			return int(id)
+
+	return 0
+
+
+func _group_target(a: Dictionary, def: Dictionary) -> Vector3:
+	var g: Dictionary = cfg["groups"]
+	var lead_id: int = _group_leader(a["herd"])
+
+	if lead_id == 0:
+		return a["target"]
+
+	var bunch: float = 1.0
+
+	if _wx_on():
+		var wet: float = maxf(float(_wx.get("rain", 0.0)), float(_wx.get("snow", 0.0)))
+		bunch = clampf(1.0 - float(g.get("rain_bunch", 0.35)) * wet - float(g.get("wind_bunch", 0.25)) * float(_wx.get("wind", 0.0)), float(g.get("min_bunch", 0.5)), 1.0)
+
+	var spacing: float = float(def.get("group_spacing_m", g.get("spacing_m", 3.0))) * bunch
+
+	if lead_id == int(a["id"]):
+		var dir: float = float(a.get("drift_dir", rng.randf() * TAU)) + rng.randf_range(-0.6, 0.6)   # luck-exempt: a slow wander
+		dir = _upwind_angle(def, dir)
+		a["drift_dir"] = dir
+		a["home"] = a["home"] + Vector3(cos(dir), 0.0, sin(dir)) * float(g.get("drift_m", 2.0))
+		return a["home"] + Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0))   # luck-exempt: where the leader stops
+
+	var lead: Dictionary = animals[lead_id]
+	var slot: int = maxi((_herds.get(a["herd"], []) as Array).find(a["id"]), 1)
+	var angle: float = float(slot) * 2.39996 + float(lead.get("drift_dir", 0.0))
+	a["home"] = lead["pos"] + Vector3(cos(angle), 0.0, sin(angle)) * spacing * sqrt(float(slot))
+	return a["home"] + Vector3(rng.randf_range(-0.5, 0.5), 0.0, rng.randf_range(-0.5, 0.5))   # luck-exempt: a little either way
+
+
 func _herd_centre(hid: int) -> Vector3:
 	var sum: Vector3 = Vector3.ZERO
 	var n: int = 0
@@ -1727,3 +1984,834 @@ func _herd_centre(hid: int) -> Vector3:
 			n += 1
 
 	return sum / float(n) if n > 0 else Vector3.INF
+
+
+# --- animals in weather, step 1 (docs/design/animals_in_weather_design.md; research docs/knowledge/animals-in-weather.md, Jamie) ---
+# Weather tilts what an animal does through multipliers on rows that already exist; a species row's "weather" role picks which. Calm, dry
+# weather (or a row with no role, or weather.on false) is exactly the behaviour without this.
+
+func _wx_rules() -> Dictionary:
+	return cfg.get("weather", {})
+
+
+func _wx_on() -> bool:
+	return bool(_wx_rules().get("on", false))
+
+
+# This tick's weather, and every weather.ahead_every_s real seconds a look 12 to 24 game hours ahead for a storm.
+func _read_weather(weather: Dictionary, delta: float) -> void:
+	_wx = {"rain": float(weather.get("rain", 0.0)), "snow": float(weather.get("snow", 0.0)), "storm": float(weather.get("storm", 0.0)),
+		"wind": float(weather.get("wind", 0.0)), "mist": float(weather.get("mist", 0.0)), "temp_c": float(weather.get("temp_c", 10.0)),
+		"mist_top_m": float(weather.get("mist_top_m", 0.0))}
+	_ahead_acc += delta
+
+	if not _wx_on() or not weather_ahead.is_valid() or _ahead_acc < float(_wx_rules().get("ahead_every_s", 2.5)):
+		return
+
+	_ahead_acc = 0.0
+	_storm_ahead = false
+
+	for hours in _wx_rules().get("ahead_hours", [12, 15, 18, 21, 24]):
+		var later: Dictionary = weather_ahead.call(float(hours))
+
+		if float(later.get("storm", 0.0)) >= float(_wx_rules().get("storm_from", 0.5)):
+			_storm_ahead = true
+			return
+
+
+# True in a storm or a heavy snowfall: most animals bed down (lesson 5).
+func _wx_stormy() -> bool:
+	var r: Dictionary = _wx_rules()
+	return float(_wx.get("storm", 0.0)) >= float(r.get("storm_from", 0.5)) or float(_wx.get("snow", 0.0)) >= float(r.get("snowfall_from", 0.5))
+
+
+# Spook and alert distances: prey are jumpier in wind (lesson 3: vigilance about doubles), x1.2 at wind 0.3, x1.4 at 0.6; mist shortens them.
+func weather_spook_x(def: Dictionary) -> float:
+	if not _wx_on():
+		return 1.0
+
+	var r: Dictionary = _wx_rules()
+	var x: float = 1.0
+
+	if str(def.get("weather", "")) in r.get("jumpy_roles", ["deer", "stock", "small", "bird"]):
+		x *= lerpf(1.0, float(r.get("wind_spook_max", 1.4)), clampf(float(_wx.get("wind", 0.0)) / float(r.get("wind_spook_at", 0.6)), 0.0, 1.0))
+
+	if fog_on():
+		return x   # in fog the sight share does it (animals_in_fog_server.md 4.2): an unseen player is sensed by hearing and smell only
+
+	return x * (1.0 - float(r.get("mist_spook", 0.3)) * float(_wx.get("mist", 0.0)))
+
+
+# The activity chance (spawns, rest): small animals stay in in wind, hunters hunt more in wind, a storm beds most animals down, and
+# feeding animals are busier before a storm.
+func weather_activity_x(def: Dictionary) -> float:
+	var role: String = str(def.get("weather", ""))
+
+	if not _wx_on() or role == "":
+		return 1.0
+
+	var r: Dictionary = _wx_rules()
+	var w: float = float(_wx.get("wind", 0.0))
+	var x: float = 1.0
+
+	if role == "small":
+		x *= 1.0 - (float(r.get("small_wind_cut_high", 0.65)) if w > float(r.get("small_wind_high", 0.35)) else (float(r.get("small_wind_cut", 0.25)) if w > float(r.get("small_wind_from", 0.25)) else 0.0))
+	elif role == "hunter" and w > float(r.get("small_wind_from", 0.25)):
+		x *= float(r.get("hunter_wind_x", 1.25))
+
+	if _wx_stormy():
+		x *= float(r.get("storm_activity_x", 0.3))
+	elif _storm_ahead and role in ["bird", "small", "deer"]:
+		x *= float(r.get("ahead_feed_x", 1.4))
+
+	return x
+
+
+# How far an animal wanders: a storm or a heavy snowfall keeps them close (lesson 5).
+func weather_wander_x(def: Dictionary, sp: String = "") -> float:
+	var x: float = fog_wander_x(def, sp)
+
+	if not _wx_on() or str(def.get("weather", "")) == "" or not _wx_stormy():
+		return x
+
+	return minf(x, float(_wx_rules().get("storm_wander_x", 0.3)))
+
+
+# --- animals in fog (docs/design/animals_in_fog_server.md; Jamie docs/knowledge/fog-and-visibility.md; MikeW ANIMAL_FOG.md) ---
+# Behind animals.json weather.fog.on. The visibility V at a point is Weather.visibility_m: the rule the client's look draws its fog by
+# (#724), from rain, snow, storm and how deep the point is in the valley fog (mist, mist_top_m), so server and client agree.
+
+func _fog_cfg() -> Dictionary:
+	return _wx_rules().get("fog", {})
+
+
+func fog_on() -> bool:
+	return _wx_on() and bool(_fog_cfg().get("on", false))
+
+
+# V at a point (rain and snow thicken it too). Vector3.INF: the valley fog's own V deep inside it, from mist alone, for the rules with no
+# animal position (activity, wander), so heavy rain alone does not make deer keep fog hours.
+func fog_v(pos: Vector3 = Vector3.INF) -> float:
+	if pos == Vector3.INF:
+		return WeatherRules.visibility_m({"mist": float(_wx.get("mist", 0.0)), "mist_top_m": 0.0}, -1.0e9)
+
+	return WeatherRules.visibility_m(_wx, pos.y)
+
+
+# How much of a player an animal can make out at distance d in visibility v (Jamie lesson 1): all of it to v/4 (detail), none past v/2
+# (it can no longer tell a person from a stump), straight between.
+static func fog_sight_share(d: float, v: float) -> float:
+	return clampf((v * 0.5 - d) / maxf(v * 0.25, 0.01), 0.0, 1.0)
+
+
+# Wander in fog (4.4 and 4.6): birds sit it out under sit_below_m, herds stay close under deer_v_m.
+func fog_wander_x(def: Dictionary, sp: String = "") -> float:
+	if not fog_on():
+		return 1.0
+
+	var fc: Dictionary = _fog_cfg()
+	var role: String = str(def.get("weather", ""))
+	var v: float = fog_v()
+
+	if (role == "bird" or sp in fc.get("sit_species", ["goose", "duck", "seabird"])) and v < float(fc.get("sit_below_m", 180.0)):
+		return float(fc.get("bird_wander_x", 0.15))
+
+	if role in ["stock", "deer"] and v < float(fc.get("deer_v_m", 1000.0)):
+		return float(fc.get("herd_x", 0.5))
+
+	return 1.0
+
+
+# A herd's pull to its centre in fog (4.6): stock and deer keep half their clear-day distance.
+func fog_herd_x(def: Dictionary) -> float:
+	if not fog_on() or not str(def.get("weather", "")) in ["stock", "deer"] or fog_v() >= float(_fog_cfg().get("deer_v_m", 1000.0)):
+		return 1.0
+
+	return float(_fog_cfg().get("herd_x", 0.5))
+
+
+# A perched bird sits out thick fog (4.4); server_flight asks this before it comes down.
+func fog_grounded(pos: Vector3) -> bool:
+	return fog_on() and fog_v(pos) < float(_fog_cfg().get("sit_below_m", 180.0))
+
+
+# The ring a shadowing wolf pack keeps (4.3): min(stalk_m, max(V/2, wolf_min_m)) at the player.
+func fog_stalk_m(stalk_m: float, at: Vector3) -> float:
+	return fog_ring_m(stalk_m, fog_v(at), float(_fog_cfg().get("wolf_min_m", 10.0))) if fog_on() else stalk_m
+
+
+static func fog_ring_m(stalk_m: float, v: float, min_m: float) -> float:
+	return minf(stalk_m, maxf(v * 0.5, min_m))
+
+
+# Deer keep their dawn hours longer on a foggy morning (4.5): 08:00 to 08:00 + deer_late_h count as dusk while the fog's V is under deer_v_m.
+func fog_period(def: Dictionary, hour: float) -> String:
+	var period: String = period_of(hour)
+
+	if period != "day" or not fog_on() or str(def.get("weather", "")) != "deer" or fog_v() >= float(_fog_cfg().get("deer_v_m", 1000.0)):
+		return period
+
+	return "dusk" if hour >= 8.0 and hour < 8.0 + float(_fog_cfg().get("deer_late_h", 1.5)) else period
+
+
+# A deer's grazing hop in fog keeps to the wood edge (4.5): open ground with tree crowns within edge_m in one of four directions.
+func fog_edge_ok(target: Vector3) -> bool:
+	if not canopy.is_valid() or bool(canopy.call(target)):
+		return false
+
+	var m: float = float(_fog_cfg().get("edge_m", 15.0))
+
+	for off in [Vector3(m, 0.0, 0.0), Vector3(-m, 0.0, 0.0), Vector3(0.0, 0.0, m), Vector3(0.0, 0.0, -m)]:
+		if bool(canopy.call(target + off)):
+			return true
+
+	return false
+
+
+func fog_edge_wanted(def: Dictionary) -> bool:
+	return fog_on() and canopy.is_valid() and str(def.get("weather", "")) == "deer" and fog_v() < float(_fog_cfg().get("deer_v_m", 1000.0))
+
+
+# Deer and hunters graze and travel facing into a light or moderate wind (lesson 2): most wander targets lie within upwind_spread of upwind.
+func _upwind_angle(def: Dictionary, angle: float) -> float:
+	var r: Dictionary = _wx_rules()
+
+	if not _wx_on() or not str(def.get("weather", "")) in ["deer", "hunter"] or _wind_s <= 0.0 or _wind_s >= float(r.get("gale_from", 0.6)):
+		return angle
+
+	if rng.randf() >= float(r.get("upwind_share", 0.7)):   # luck-exempt: whether this hop goes into the wind
+		return angle
+
+	var spread: float = deg_to_rad(float(r.get("upwind_spread_deg", 40.0)))
+	return _wind_dir.angle() + PI + rng.randf_range(-spread, spread)   # luck-exempt: as above
+
+
+# A small animal in wind goes down its burrow when its grazing spell ends, with the chance its activity was cut by (lesson 3).
+func _wind_goes_down(a: Dictionary, def: Dictionary) -> bool:
+	if not _wx_on() or str(def.get("weather", "")) != "small" or a.get("burrow", Vector3.INF) == Vector3.INF:
+		return false
+
+	var r: Dictionary = _wx_rules()
+	var w: float = float(_wx.get("wind", 0.0))
+	var cut: float = float(r.get("small_wind_cut_high", 0.65)) if w > float(r.get("small_wind_high", 0.35)) else (float(r.get("small_wind_cut", 0.25)) if w > float(r.get("small_wind_from", 0.25)) else 0.0)
+
+	if cut <= 0.0 or rng.randf() >= cut:   # luck-exempt: whether a rabbit stays in out of the wind
+		return false
+
+	var to_b: Vector2 = Vector2(a["burrow"].x - a["pos"].x, a["burrow"].z - a["pos"].z)
+
+	if to_b.length() > float(def.get("burrow_m", 0.0)) * 2.0:
+		return false
+
+	a["target"] = a["burrow"]
+	a["to_burrow"] = true
+	a["state"] = HOP
+	return true
+
+
+
+# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment; and its alarm group (ground birds).
+func _alarm_herd(a: Dictionary, def: Dictionary) -> void:
+	if a["herd"] != 0:
+		var span: Array = def.get("alarm_s", [0.2, 0.9])
+
+		for mate_id in _herds.get(a["herd"], []):
+			if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
+				animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
+
+	if def.has("alarm_group"):
+		_alarm_group(a, def)
+
+
+# --- the player's dog as a presence (dog_companion_design.md 11; MikeW, docs/design/DOG_REACTIONS.md) ---
+
+# The companion dogs out in the world this tick: [animal id, position, barking (it barked within dogs.bark_s)].
+func _dog_presences() -> Array:
+	var out: Array = []
+	var bark_ms: int = int(float(cfg.get("dogs", {}).get("bark_s", 3.0)) * 1000.0)
+	var now_ms: int = Time.get_ticks_msec()
+
+	for id in animals:
+		var d: Dictionary = animals[id]
+
+		if d.has("companion_id") and str(d["sp"]) in cfg.get("dogs", {}).get("species", ["dog"]) and not bool(d.get("young", false)):
+			out.append([int(id), d["pos"], now_ms - int(d.get("bark_ms", -1000000)) < bark_ms])
+
+	return out
+
+
+# The nearest dog as this animal senses it (the wind's scent and the ground as for a player, never crouched; a barking dog is heard
+# dogs.bark_x farther): [sensed distance, position, dog id, barking], or [] for none within reach.
+func _dog_sensed(a: Dictionary, def: Dictionary, reach: float) -> Array:
+	var best: Array = []
+	var bark_x: float = float(cfg.get("dogs", {}).get("bark_x", 2.0))
+
+	for dog in _dogs:
+		var p: Vector3 = dog[1]
+		var d: float = Vector2(p.x - a["pos"].x, p.z - a["pos"].z).length()
+
+		if d > reach * bark_x or d < 0.01:
+			continue
+
+		var sensed: float = d / (_sense_factor(a, def, p, d, 0) * (bark_x if bool(dog[2]) else 1.0))
+
+		if best.is_empty() or sensed < float(best[0]):
+			best = [sensed, p, int(dog[0]), bool(dog[2])]
+
+	return best
+
+
+# How a wild animal meets a dog, by its species' dog row: "flee" (within flee_m it bolts, alarming its herd; within notice_m it watches),
+# "stand" (within notice_m it warns at the dog, and charges it once the dog comes within attack_m: big_game with the dog as the foe;
+# young_only: only a mother with young stands, otherwise it flees). True when the dog decided this step.
+func _dog_react(a: Dictionary, def: Dictionary, seen_d: float = INF) -> bool:
+	if _dogs.is_empty() or a["state"] == FLEE or a["state"] == HIDDEN or seen_d <= _spook_m(a, def):
+		return false   # a player close enough to spook it comes first
+
+	var row: Dictionary = def["dog"]
+	var notice: float = float(row.get("notice_m", 30.0))
+	var near: Array = _dog_sensed(a, def, notice)
+
+	if near.is_empty() or float(near[0]) > notice:
+		return false
+
+	var at: Vector3 = near[1]
+	var reaction: String = str(row.get("reaction", "flee"))
+
+	if reaction == "stand" and bool(row.get("young_only", false)) and _young_of(a).is_empty():
+		reaction = "flee"
+
+	if reaction == "stand" and big_game != null:
+		if big_game.warn(a, at, float(row.get("warn_s", -1.0)), true):
+			a["foe_dog"] = int(near[2])
+			return true
+
+		return false
+
+	if float(near[0]) <= float(row.get("flee_m", notice * 0.66)):
+		_bolt(a, at, def)
+		_alarm_herd(a, def)
+		return true
+
+	if a["state"] == GRAZE or a["state"] == HOP or a["state"] == ALERT:
+		a["state"] = ALERT   # it watches the dog while it is within notice_m (a player near is still handled by the ALERT rules next step)
+		a["alert"] = maxf(float(a.get("alert", 0.0)), 1.0)
+		a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
+		return true
+
+	return false
+
+
+# The barking dogs within `radius` of a point (goblins back off from them): [[position, dog id], ...].
+func barking_dogs_near(point: Vector3, radius: float) -> Array:
+	var out: Array = []
+
+	for dog in _dogs:
+		var p: Vector3 = dog[1]
+
+		if bool(dog[2]) and Vector2(p.x - point.x, p.z - point.z).length() <= radius:
+			out.append([p, int(dog[0])])
+
+	return out
+
+
+# --- animals in weather, step 2: rain cover, the hunch, gales (animals_in_weather_design.md 6 and 7) ---
+
+func _raining() -> bool:
+	return _wx_on() and float(_wx.get("rain", 0.0)) >= float(_wx_rules().get("rain_from", 0.4))
+
+
+func _gale() -> bool:
+	return _wx_on() and (float(_wx.get("wind", 0.0)) >= float(_wx_rules().get("gale_from", 0.6)) or float(_wx.get("storm", 0.0)) >= float(_wx_rules().get("storm_from", 0.5)))
+
+
+# Whether this animal looks for cover now: deer always in rain or a gale, and in the cold (to conifers); stock in rain half of them (by id:
+# the same half every time), and all of them in midday heat (to shade).
+# With herd groups on (MikeW's HERD_GROUPS.md, #663), only the herd's leader (its first living member) picks the cover; the rest keep their
+# places round it and so come along.
+func _seeks_cover(a: Dictionary, def: Dictionary) -> bool:
+	var role: String = str(def.get("weather", ""))
+
+	if int(a.get("herd", 0)) != 0 and bool((cfg.get("groups", {}) as Dictionary).get("enabled", false)):
+		for id in _herds.get(a["herd"], []):
+			if animals.has(id):
+				if int(id) != int(a["id"]):
+					return false
+
+				break
+
+	if role == "deer":
+		return _raining() or _gale() or _cold(a)
+
+	return role == "stock" and ((_raining() and int(a["id"]) % 2 == 0) or _hot(a))
+
+
+# The air at an animal (step 3): the weather's seasonal temperature less the lapse with its height (no day and night swing on the server
+# side of animals yet).
+func _air_c(a: Dictionary) -> float:
+	if air_at.is_valid():   # the one temperature (#620): the zone's own air at the animal's height, less the rain's cooling as in Weather.state
+		return float(air_at.call(a["pos"])) - WeatherRules.RAIN_COOL_C * float(_wx.get("rain", 0.0))
+
+	return float(_wx.get("temp_c", 10.0)) - maxf(a["pos"].y, 0.0) * float(_wx_rules().get("lapse_c_per_m", 0.0065))
+
+
+# Cold for deer (design 9, lesson 2): air below cold_c (-5 C), or snow falling at snow_cold_from or more (lying snow has no server model yet:
+# Sonny's A4 baked snow window will give it).
+func _cold(a: Dictionary) -> bool:
+	return _wx_on() and (_air_c(a) < float(_wx_rules().get("cold_c", -5.0)) or float(_wx.get("snow", 0.0)) >= float(_wx_rules().get("snow_cold_from", 0.3)))
+
+
+# Midday heat for stock (design 9, lesson 8): air above hot_c (22 C) between heat_hours (11 to 16).
+func _hot(a: Dictionary) -> bool:
+	if not _wx_on() or _air_c(a) <= float(_wx_rules().get("hot_c", 22.0)) or not hour_now.is_valid():
+		return false
+
+	var hours: Array = _wx_rules().get("heat_hours", [11.0, 16.0])
+	var h: float = float(hour_now.call())
+	return h >= float(hours[0]) and h < float(hours[1])
+
+
+# Every grazing step: stock in a gale face downwind (rumps to the wind); one game hour (cover_return_s real seconds) after the weather that
+# sent it to cover has passed, an animal walks back to its old home.
+func _weather_graze(a: Dictionary, def: Dictionary, dt: float) -> void:
+	if not _wx_on() or str(def.get("weather", "")) == "":
+		return
+
+	if str(def.get("weather", "")) == "stock" and _gale() and _wind_s > 0.0:
+		a["heading"] = _wind_dir.angle()
+
+	if a.has("dry_home"):
+		if _seeks_cover(a, def):
+			a["dry_s"] = 0.0
+		else:
+			a["dry_s"] = float(a.get("dry_s", 0.0)) + dt
+
+			if float(a["dry_s"]) >= float(_wx_rules().get("cover_return_s", 150.0)):
+				a["home"] = a["dry_home"]
+				a.erase("dry_home")
+				a.erase("dry_s")
+
+	if a.has("hunch") and not _raining():
+		a.erase("hunch")
+
+	# HUNCH in cover (design 11, MikeW's ANIMAL_WEATHER_LOOKS.md): a deer or stock animal grazing in its cover stands hunched for as long as the
+	# rain, a gale or the cold lasts: within cover_stand_m of the cover home it moved to, or under tree crowns (a herd follower round its
+	# leader). Midday heat in the shade is not a hunch.
+	var role: String = str(def.get("weather", ""))
+	var foul: bool = role in ["deer", "stock"] and (_raining() or _gale() or _cold(a))
+	var stand_m: float = float(_wx_rules().get("cover_stand_m", 8.0))
+	var at_cover: bool = a.has("dry_home") and Vector2(a["pos"].x - a["home"].x, a["pos"].z - a["home"].z).length() <= stand_m
+
+	if foul and (at_cover or (canopy.is_valid() and bool(canopy.call(a["pos"])))):
+		a["sheltered"] = true
+	else:
+		a.erase("sheltered")
+
+
+# When a grazing spell ends in bad weather. True when the weather chose what it does next:
+#   rain: deer and stock spend hunch_share of their spells standing still (HUNCH on the wire) instead of moving on (lesson 1: -62% feeding);
+#   rain or a gale: an animal that seeks cover moves its home to the nearest spot under tree crowns within cover_m (deer in a gale with no
+#     trees: the lowest ground), once a spell of weather;
+#   a gale: stock drift downwind at drift_mps, rumps to the wind (lesson 7).
+func _weather_wander(a: Dictionary, def: Dictionary) -> bool:
+	var role: String = str(def.get("weather", ""))
+
+	if not _wx_on() or not role in ["deer", "stock"]:
+		return false
+
+	var r: Dictionary = _wx_rules()
+
+	if _seeks_cover(a, def) and not a.has("dry_home"):
+		var cold: bool = role == "deer" and _cold(a) and not _raining() and not _gale()
+		var cover: Vector3 = _cover_near(a, role == "deer" and (_gale() or cold), cold)
+
+		if cover != Vector3.INF:
+			a["dry_home"] = a["home"]
+			a["dry_s"] = 0.0
+			a["home"] = cover
+			a["target"] = cover
+			a["state"] = HOP
+			a.erase("hunch")
+			return true
+
+	if role == "stock" and _gale() and _wind_s > 0.0:
+		a["timer"] = _graze_time(def)
+		a["target"] = a["pos"] + Vector3(_wind_dir.x, 0.0, _wind_dir.y) * float(r.get("drift_mps", 0.05)) * float(a["timer"])
+		a["home"] = a["target"]
+		a["state"] = HOP
+		a.erase("hunch")
+		return true
+
+	if _raining() and not _group_strayed(a, def):   # a herd member far from its place goes back to the herd first, rain or not (HERD_GROUPS.md)
+		a["hunch"] = rng.randf() < float(r.get("hunch_share", 0.6))   # luck-exempt: whether a wet grazer stands this spell out
+
+		if bool(a["hunch"]):
+			a["timer"] = _graze_time(def)
+			return true
+
+	return false
+
+
+# The nearest spot under tree crowns in 8 directions at 25, 50, 75 and 100 m (cover_m); with `conifer`, only crowns in a conifer biome
+# (weather.conifer_biomes); with `or_low`, the lowest of those spots when none is under trees. Vector3.INF for none.
+func _cover_near(a: Dictionary, or_low: bool, conifer: bool = false) -> Vector3:
+	var conifers: Array = _wx_rules().get("conifer_biomes", ["boreal_forest", "mixed_forest"])
+	var reach: float = float(_wx_rules().get("cover_m", 100.0))
+	var low: Vector3 = Vector3.INF
+
+	for ring in 4:
+		var d: float = reach * float(ring + 1) / 4.0
+
+		for k in 8:
+			var dir: Vector2 = Vector2.from_angle(TAU * float(k) / 8.0)
+			var p: Vector3 = Vector3(a["pos"].x + dir.x * d, 0.0, a["pos"].z + dir.y * d)
+			p.y = float(ground_height.call(p.x, p.z)) if ground_height.is_valid() else a["pos"].y
+
+			if blocked.is_valid() and bool(blocked.call(p.x, p.z)):
+				continue
+
+			if canopy.is_valid() and bool(canopy.call(p)) and (not conifer or (biome_at.is_valid() and str(biome_at.call(p.x, p.z)) in conifers)):
+				return p
+
+			if or_low and p.y < a["pos"].y - 1.0 and (low == Vector3.INF or p.y < low.y):
+				low = p
+
+	return low
+
+
+# --- animals at water (docs/design/animals_at_water_server.md; MikeW ANIMAL_DRINK.md; Steve's drinking_water_design.md, #719) ---
+# Behind animals.json drink.on. At dawn and dusk (the "dusk" period) a deer or stock animal walks, with the chance drink.chance once a
+# twilight, to the nearest fresh water's edge within reach_m of its home, stands there stand_s drinking (DRINK on the wire, GRAZE here),
+# then goes home. A wolf pack prowls at the water nearest its home at those hours, where the prey must come.
+
+func _drink_cfg() -> Dictionary:
+	return cfg.get("drink", {})
+
+
+func drink_on() -> bool:
+	return bool(_drink_cfg().get("on", false)) and water_level.is_valid()
+
+
+func _twilight() -> bool:
+	return hour_now.is_valid() and period_of(float(hour_now.call())) == "dusk"
+
+
+# Fresh open water at a spot: a water surface over ground above the sea (salt water is never a drink, #719).
+func _fresh_wet(x: float, z: float) -> bool:
+	var level: float = float(water_level.call(x, z))
+
+	if is_nan(level) or not ground_height.is_valid():
+		return false
+
+	var ground: float = float(ground_height.call(x, z))
+	return not is_nan(ground) and ground > 0.0 and level > ground + float(_drink_cfg().get("wet_m", 0.05))
+
+
+# The nearest fresh water's edge from `from` within `reach` m: rings ring_m apart in `bearings` directions, the first wet sample on the
+# nearest ring, then stepped back toward `from` 2 m at a time (up to a ring) to dry ground. [stand spot, water point], or [] for none. Kept per 50 m
+# cell for cache_s real seconds (one search serves a herd).
+func drink_spot(from: Vector3, reach: float) -> Array:
+	var dc: Dictionary = _drink_cfg()
+	var key: Vector3i = Vector3i(floori(from.x / 50.0), floori(from.z / 50.0), floori(reach))
+	var now: int = Time.get_ticks_msec()
+
+	if _water_spots.has(key) and now - int(_water_spots[key][1]) < int(float(dc.get("cache_s", 600.0)) * 1000.0):
+		return _water_spots[key][0]
+
+	var found: Array = []
+	var ring_m: float = maxf(float(dc.get("ring_m", 25.0)), 5.0)
+	var bearings: int = maxi(int(dc.get("bearings", 8)), 4)
+
+	for ring in range(1, int(reach / ring_m) + 1):
+		for b in bearings:
+			var ang: float = TAU * float(b) / float(bearings)
+			var dir: Vector3 = Vector3(cos(ang), 0.0, sin(ang))
+			var wet: Vector3 = from + dir * ring_m * float(ring)
+
+			if not _fresh_wet(wet.x, wet.z):
+				continue
+
+			var stand: Vector3 = wet
+
+			for _hop in int(ceil(ring_m / 2.0)) + 1:
+				stand -= dir * 2.0
+
+				if not _fresh_wet(stand.x, stand.z):
+					stand.y = float(ground_height.call(stand.x, stand.z))
+					found = [stand, wet]
+					break
+
+			if not found.is_empty():
+				break
+
+		if not found.is_empty():
+			break
+
+	_water_spots[key] = [found, now]
+	return found
+
+
+func _drink_done(a: Dictionary) -> void:
+	a["home"] = a["drink_home"]
+
+	for key in ["drink_home", "drink_at", "drink_to", "drinking", "drink_legs"]:
+		a.erase(key)
+
+
+# A grazing spell has ended: start, continue or end a walk to water (true when it set the next target or stand).
+func _drink_wander(a: Dictionary, def: Dictionary) -> bool:
+	var dc: Dictionary = _drink_cfg()
+
+	if not drink_on() or not str(def.get("weather", "")) in dc.get("roles", ["deer", "stock"]) or a.has("companion_id"):
+		return false
+
+	if not _twilight():
+		a.erase("drank")
+
+		if a.has("drink_home"):
+			_drink_done(a)
+
+		return false
+
+	if a.has("drink_home"):
+		var spot: Vector3 = a["drink_at"]
+
+		if bool(a.get("drinking", false)) or int(a.get("drink_legs", 0)) >= int(dc.get("max_legs", 12)):
+			_drink_done(a)   # drunk its fill, or it cannot get there: home
+			return false
+
+		if Vector2(a["pos"].x - spot.x, a["pos"].z - spot.z).length() <= float(dc.get("near_m", 4.0)):
+			var to: Vector3 = a["drink_to"]
+			var stand: Array = dc.get("stand_s", [60.0, 180.0])
+			a["drinking"] = true
+			a["state"] = GRAZE
+			a["target"] = a["pos"]
+			a["heading"] = atan2(to.z - a["pos"].z, to.x - a["pos"].x)
+			a["timer"] = rng.randf_range(float(stand[0]), float(stand[1]))   # luck-exempt: how long an animal stands at the water
+			return true
+
+		a["drink_legs"] = int(a.get("drink_legs", 0)) + 1
+		a["target"] = spot
+		a["state"] = HOP
+		return true
+
+	if a.has("drank"):
+		return false
+
+	a["drank"] = true
+
+	if rng.randf() >= float(dc.get("chance", 0.7)):   # luck-exempt: whether an animal goes to water this twilight
+		return false
+
+	var found: Array = drink_spot(a["home"], float(dc.get("reach_m", 300.0)))
+
+	if found.is_empty():
+		return false
+
+	var jitter: Vector3 = Vector3(rng.randf_range(-2.0, 2.0), 0.0, rng.randf_range(-2.0, 2.0))   # luck-exempt: where along the bank each one stands
+	a["drink_home"] = a["home"]
+	a["drink_at"] = found[0] + jitter
+	a["drink_to"] = found[1]
+	a["home"] = a["drink_at"]
+	a["target"] = a["drink_at"]
+	a["state"] = HOP
+	a.erase("hunch")
+	return true
+
+
+# Where a prowling wolf pack wanders: at dawn and dusk, wait_m back from the water nearest its home within wolf_water_m (the prey's drinking
+# place); otherwise its home. Vector3.INF when there is no such water or the rule is off.
+func wolf_wait_point(home: Vector3) -> Vector3:
+	if not drink_on() or not _twilight():
+		return Vector3.INF
+
+	var dc: Dictionary = _drink_cfg()
+	var found: Array = drink_spot(home, float(dc.get("wolf_water_m", 500.0)))
+
+	if found.is_empty():
+		return Vector3.INF
+
+	var stand: Vector3 = found[0]
+	var back: Vector3 = Vector3(stand.x - found[1].x, 0.0, stand.z - found[1].z).normalized()
+	var at: Vector3 = stand + back * float(dc.get("wolf_back_m", 15.0))
+	at.y = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else stand.y
+	return at
+
+# --- animals on ice (docs/design/animals_on_ice_server.md; MikeW ANIMAL_WEATHER_LOOKS.md ice; Kathleen frozen_water_look.md #729) ---
+# Behind animals.json ice.on. The ice is the server's Ice.cover (3 m pond depth, as server_items._on_ice), open in a thaw's shore moat.
+
+func _ice_cfg() -> Dictionary:
+	return cfg.get("ice", {})
+
+
+func ice_on() -> bool:
+	return bool(_ice_cfg().get("on", false)) and ice_cover_at.is_valid() and water_level.is_valid()
+
+
+# The ice cover on the water at (x, z): 0 on dry land, on open water and in a thaw moat.
+func ice_at(x: float, z: float) -> float:
+	var level: float = float(water_level.call(x, z))
+
+	if is_nan(level):
+		return 0.0
+
+	var at: Vector3 = Vector3(x, level, z)
+
+	if ice_moat_at.is_valid() and bool(ice_moat_at.call(at)):
+		return 0.0
+
+	# Ice.cover runs an hourly loop over weeks, so it is kept per 1 km band of z (the zone rows are tiles) and 5 m of height for cache_s.
+	var key: Vector2i = Vector2i(floori(z / 1000.0), roundi(level / 5.0))
+	var now: int = Time.get_ticks_msec()
+
+	if not _ice_cache.has(key) or now - int(_ice_cache[key][1]) > int(float(_ice_cfg().get("cache_s", 60.0)) * 1000.0):
+		_ice_cache[key] = [float(ice_cover_at.call(at)), now]
+
+	# By a spring (Jamie #739): its brook stays open for its open length, and the ice is half as thick near a mouth or an inflow, so the
+	# open water below springs is where animals and water birds gather in a freeze.
+	return float(_ice_cache[key][0]) * (clampf(float(spring_ice_x.call(at)), 0.0, 1.0) if spring_ice_x.is_valid() else 1.0)
+
+
+# Whether ice at (x, z) holds an animal of `mass` kg for sure (Jamie #736, from the Minnesota DNR table): mass <= sure_k (0.9) x h^2, with
+# h the thickness in cm (cover x 20). Animals keep off doubtful ice (judged), so the chance band up to 3.5 h^2 is not used here.
+func ice_holds(x: float, z: float, mass: float) -> bool:
+	var h_cm: float = ice_at(x, z) * 20.0
+	return h_cm > 0.0 and mass <= float(_ice_cfg().get("sure_k", 0.9)) * h_cm * h_cm
+
+
+# An animal's mass for the ice (ice.mass_kg, Jamie #736's table), or NAN for a species the table leaves out (it keeps the plain rules).
+func ice_mass(sp: String) -> float:
+	var masses: Dictionary = _ice_cfg().get("mass_kg", {})
+	return float(masses[sp]) if masses.has(sp) else NAN
+
+
+# [ground, blocked] callables for a walker this tick: a skirting animal (deer role, skirt_species: deer fall on bare ice, Jamie #736) is
+# also blocked by any ice it could see (skirt_cover, skim and up), even over shallows it would wade; any other animal with a mass in
+# ice.mass_kg walks on ice that holds it for sure, at the water's surface, and only open deep water blocks it; the rest keep the plain rules.
+func ice_moves(def: Dictionary, sp: String) -> Array:
+	var ic: Dictionary = _ice_cfg()
+	var base_blocked: Callable = blocked
+	var base_ground: Callable = ground_height
+	var me = self
+
+	if str(def.get("weather", "")) == "deer" or sp in ic.get("skirt_species", ["boar", "warthog"]):
+		var skirt: float = float(ic.get("skirt_cover", 0.1))
+		return [base_ground, func(x: float, z: float) -> bool: return (base_blocked.is_valid() and bool(base_blocked.call(x, z))) or me.ice_at(x, z) >= skirt]
+
+	var mass: float = ice_mass(sp)
+
+	if not is_nan(mass):
+		return [ice_ground(base_ground, mass), ice_blocked(base_blocked, mass)]
+
+	return [base_ground, base_blocked]
+
+
+# A walker's ground on ice: the water's surface where the ice holds `mass` for sure, else the ground.
+func ice_ground(base_ground: Callable, mass: float) -> Callable:
+	var me = self
+	var ground: Callable = func(x: float, z: float) -> float:
+		if me.ice_holds(x, z, mass):
+			return float(me.water_level.call(x, z))
+
+		return float(base_ground.call(x, z)) if base_ground.is_valid() else 0.0
+
+	return ground
+
+
+# A walker's block on ice: deep water only where the ice does not hold `mass` for sure.
+func ice_blocked(base_blocked: Callable, mass: float) -> Callable:
+	var me = self
+	return func(x: float, z: float) -> bool: return base_blocked.is_valid() and bool(base_blocked.call(x, z)) and not me.ice_holds(x, z, mass)
+
+
+# Where a water flock settles at (x, z) (Jamie #736: water birds stand at the ice edge by open water and leave a pond frozen over): there when
+# the ice would not hold one of them for sure (open water or a skim it swims through); on ice that holds it, the nearest such water within
+# edge_search_m (8 bearings, 4 m steps), the flock standing edge_back_m back from it on the ice; Vector2(INF, INF) when the pond is shut.
+func ice_edge_spot(x: float, z: float, sp: String) -> Vector2:
+	var ic: Dictionary = _ice_cfg()
+	var mass: float = ice_mass(sp)
+
+	if is_nan(mass):
+		mass = float(ic.get("flock_mass_kg", 1.2))
+
+	if not ice_holds(x, z, mass):
+		return Vector2(x, z)
+
+	var back: float = float(ic.get("edge_back_m", 2.0))
+
+	for step in range(1, int(float(ic.get("edge_search_m", 40.0)) / 4.0) + 1):
+		for b in 8:
+			var dir: Vector2 = Vector2.from_angle(TAU * float(b) / 8.0)
+			var p: Vector2 = Vector2(x, z) + dir * 4.0 * float(step)
+
+			if not is_nan(float(water_level.call(p.x, p.y))) and not ice_holds(p.x, p.y, mass):
+				return p - dir * back
+
+	return Vector2(INF, INF)
+
+
+# --- birds and thunder (docs/design/birds_and_thunder_server.md; MikeW's ask) ---
+# Behind animals.json thunder.on. Strikes come from the shared Thunder schedule (seed, game time, storm), so a client that plays its
+# thunder from the same schedule hears the clap the birds flush at. When the sound reaches a bird within flush_m of the strike (sound_mps),
+# a flying-kind bird (a flight row) or a water flock takes off away from it: state 15 on the wire.
+
+func _thunder_cfg() -> Dictionary:
+	return cfg.get("thunder", {})
+
+
+func _thunder_tick(players: Array) -> void:
+	var tc: Dictionary = _thunder_cfg()
+
+	if not bool(tc.get("on", false)) or not thunder_between.is_valid() or not game_seconds.is_valid():
+		return
+
+	var now_g: float = float(game_seconds.call())
+	var now_ms: int = Time.get_ticks_msec()
+	var flush_m: float = float(tc.get("flush_m", 800.0))
+
+	if not is_nan(_thunder_t) and now_g > _thunder_t:
+		var seen: Dictionary = {}
+
+		for p in players:
+			for s in thunder_between.call(_thunder_t, now_g, p, flush_m + float(cfg.get("active_radius_m", 200.0))):
+				var key: String = "%d,%d,%d" % [int(s[0].x), int(s[0].z), int(s[1])]
+
+				if not seen.has(key):
+					seen[key] = true
+					_claps.append([s[0], now_ms, {}])
+
+	_thunder_t = now_g
+	var kept: Array = []
+	var sound_mps: float = float(tc.get("sound_mps", 343.0))
+
+	for clap in _claps:
+		var heard_m: float = sound_mps * float(now_ms - int(clap[1])) / 1000.0
+		var at: Vector3 = clap[0]
+
+		for id in animals:
+			var a: Dictionary = animals[id]
+
+			if clap[2].has(id) or int(a["state"]) == 15 or int(a["state"]) == 17:
+				continue
+
+			var d: float = Vector2(a["pos"].x - at.x, a["pos"].z - at.z).length()
+
+			if d > flush_m or d > heard_m:
+				continue
+
+			clap[2][id] = true
+
+			if flight != null and species_def(str(a["sp"])).has("flight"):
+				if a.has("fly"):
+					continue
+
+				a.erase("perched")
+				flight.take_off(a, Vector3(at.x, a["pos"].y, at.z))
+			elif flocks != null and flocks.handles(a):
+				flocks.take_off(a, Vector3(at.x, a["pos"].y, at.z))
+
+		if heard_m <= flush_m:
+			kept.append(clap)
+
+	_claps = kept
+

@@ -18,7 +18,9 @@
 - **Kept for bare trees:** a bare tree keeps its crown depth (`crown_depth`), so leaf litter and the bare ground under it stay. `crowns_in`, which grass uses for litter and closure, also keeps bare trees.
 - **Not kept for bare trees:** `covers` and `discs_near` skip them in winter. `discs_near` draws the rain and ground-wetness mask, so the wet ground and the warmth rules agree.
 - **The switch is Kathleen's `--bare-winter` flag**, read by `cover.gd` on both client and server, so the shelter only changes when the crowns are drawn bare. With it off, nothing changes.
-- **Day threshold:** the same as her look, the game season "winter" from the game clock (`GameClock.season()` on the server, `flora_view.season` on the client, which also follows `--flora-day` for the shot runner).
+- **Day threshold:** the same as her look, the game season "winter".
+  - On the server it is the weather row's own season (`Weather.state`'s `season`, which follows `Weather.season_at` for the row with `--one-sky`, half a year off across the equator; Kathleen #711). On the starter row that is the calendar's season.
+  - On the client it is `flora_view.season`, which also follows `--flora-day` for the shot runner. Today terrain_client sets it from the calendar, which is the same on the starter row; when the client's crowns follow the row (Kathleen's look), the cover follows with them.
 
 ### Why yes or no, and not Jamie's shares
 

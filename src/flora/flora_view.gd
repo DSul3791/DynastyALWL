@@ -1299,6 +1299,24 @@ func set_ice_cover(value: float) -> void:
 		_draw_ice(chunk, entry, entry.get("grid", {}))
 
 
+# --ice-feel (ice_walk_feel.md section 5): the thaw moat in collider cells; the sheets are rebuilt when it changes.
+var _ice_moat: int = 0
+
+
+func set_ice_moat(moat: int) -> void:
+	if moat == _ice_moat:
+		return
+
+	_ice_moat = moat
+
+	if not _ice_bears:
+		return
+
+	for chunk in _chunks:
+		var entry: Dictionary = _chunks[chunk]
+		_draw_ice(chunk, entry, entry.get("grid", {}))
+
+
 func _draw_ice(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	var old: StaticBody3D = entry.get("ice")
 
@@ -1309,7 +1327,7 @@ func _draw_ice(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	if not _ice_bears or int(water.get("wet", 0)) == 0:
 		return
 
-	var triangles: PackedVector3Array = WaterGridScript.ice_triangles(water)
+	var triangles: PackedVector3Array = WaterGridScript.ice_triangles(water, _ice_moat)
 
 	if triangles.is_empty():
 		return

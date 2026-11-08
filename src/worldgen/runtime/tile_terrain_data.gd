@@ -17,6 +17,7 @@ extends RefCounted
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
+const CaveClimate := preload("res://src/shared/cave_climate.gd")
 const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
 const RIVER_CLASS := 3
 const RIVER_FILM_M := 0.05   # a painted river cell thinner than WetMeters is still drawn, this deep (riffles between pools)
@@ -96,6 +97,7 @@ const CAVE_BOULDER_EVERY_M := 9.0   # one boulder per this many metres of passag
 const CAVE_STONE_PER_M2 := 0.12     # stones per square metre of chamber floor
 const CAVE_BOULDER_PER_M2 := 0.02
 var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 box]: ground opened by a cave mouth (entrance node to its first node): no flora there
+var cave_mouths: Array = []           # [Vector3 entrance node, int CaveClimate kind (1 rises, 0 level, -1 drops)]: where cave air is measured from (docs/design/cave_climate_design.md)
 const CAVE_POOL_M := 0.4            # a spring cave pool's surface: this far above the bottom of its chamber as the chamber is carved
 const CAVE_WATER_CELL_M := 16.0     # near_cave_water's index cell (build_cave_water_cells)
 const CAVE_POOL_DEPTH_M := 20.0     # Dave's QA list BUG-008 (answer 4 Nov 2026): the pool goes 20 m down below that, in a natural shape; the chamber stays
@@ -669,6 +671,7 @@ func _load_caves(list: Array) -> void:
 	cave_streams = PackedFloat32Array()
 	cave_pool_shapes = PackedFloat32Array()
 	cave_openings = []
+	cave_mouths = []
 	cave_dens = PackedVector3Array()
 	goblin_dens = PackedVector3Array()
 	goblin_den_mouths = PackedVector2Array()
@@ -695,6 +698,18 @@ func _load_caves(list: Array) -> void:
 		if str(cave.get("cave_kind", "")) == "spring_cave" and not nodes.is_empty():
 			spring_mouths.append(Vector2(float(nodes[0][0]), float(nodes[0][2])))
 		for entrance in cave.get("entrances", []):
+			var entrance_node: Array = nodes[int(entrance)]
+			var mouth: Vector3 = Vector3(float(entrance_node[0]), float(entrance_node[1]), float(entrance_node[2]))
+			var mouth_kind: int = CaveClimate.LEVEL
+
+			for segment in cave["segments"]:
+				if int(segment[0]) == int(entrance) or int(segment[1]) == int(entrance):
+					var inner_node: Array = nodes[int(segment[1]) if int(segment[0]) == int(entrance) else int(segment[0])]
+					mouth_kind = CaveClimate.kind_of(mouth, Vector3(float(inner_node[0]), float(inner_node[1]), float(inner_node[2])))
+					break
+
+			cave_mouths.append([mouth, mouth_kind])
+
 			for segment in cave["segments"]:
 				if int(segment[0]) == int(entrance) or int(segment[1]) == int(entrance):
 					var na: Array = nodes[int(segment[0])]
@@ -1016,6 +1031,19 @@ static func spring_basin(cave_id: String, node: Array, chamber: Dictionary) -> D
 	return {"surface_y": surface_y, "open_r": open_r, "shapes": shapes}
 
 
+# The nearest cave mouth to a point (world x and z wrapped onto this tile's frame): [straight distance m, CaveClimate kind], or [INF, 0] with none.
+func nearest_cave_mouth(point: Vector3) -> Array:
+	var best: Array = [INF, CaveClimate.LEVEL]
+
+	for mouth in cave_mouths:
+		var d: float = (mouth[0] as Vector3).distance_to(point)
+
+		if d < float(best[0]):
+			best = [d, int(mouth[1])]
+
+	return best
+
+
 # Whether a point is in ground a cave mouth opened (flora keeps out: the plants stand on the tile heights, which do not know the cave).
 func in_cave_opening(x: float, z: float) -> bool:
 	var p: Vector2 = Vector2(x, z)
@@ -1026,6 +1054,44 @@ func in_cave_opening(x: float, z: float) -> bool:
 
 		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, opening[0], opening[1])) < float(opening[2]):
 			return true
+
+	return false
+
+
+# Whether a point (feet, world x and z wrapped onto this tile's frame) is inside a cave with rock over it: within `margin` m of one of the
+# carved passages or chambers (the shapes as carved at full detail) and at least `roof_m` under the ground over it, so the open part of a mouth
+# is not inside (Jamie's caves page, #664: a cave is full cover from rain and wind, and its air sits at the year's mean temperature).
+func in_cave(p: Vector3, roof_m: float = 2.0, margin: float = 1.0) -> bool:
+	if caves.is_empty() or height_at(p.x, p.z) - p.y < roof_m:
+		return false
+
+	for cave in caves:
+		if not (cave["aabb"] as AABB).grow(margin).has_point(p):
+			continue
+
+		for capsule in cave["capsules"]:
+			if not (capsule["aabb"] as AABB).grow(margin).has_point(p):
+				continue
+
+			var squash: float = float(capsule["rw"]) / maxf(float(capsule["rh"]), 0.1)   # as _carve_caves: the passage is an ellipse in section
+			var a: Vector3 = capsule["a"]
+			var b: Vector3 = capsule["b"]
+			var q: Vector3 = Vector3(p.x, p.y * squash, p.z)
+			a.y *= squash
+			b.y *= squash
+
+			if q.distance_to(Geometry3D.get_closest_point_to_segment(q, a, b)) - float(capsule["rw"]) < margin:
+				return true
+
+		for chamber in cave["chambers"]:
+			if not (chamber["aabb"] as AABB).grow(margin).has_point(p):
+				continue
+
+			var c: Vector3 = chamber["center"]
+			var squash_c: float = float(chamber["r"]) / maxf(float(chamber["rh"]), 0.1)
+
+			if Vector3(p.x - c.x, (p.y - c.y) * squash_c, p.z - c.z).length() - float(chamber["r"]) < margin:
+				return true
 
 	return false
 

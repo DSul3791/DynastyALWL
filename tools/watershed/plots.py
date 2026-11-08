@@ -1,0 +1,349 @@
+"""Pictures of the watershed stages, drawn from their saved outputs so they can be redrawn in seconds without rerunning a stage.
+
+Usage (on Dave's PC):
+  python tools/watershed/plots.py ground OUT_DIR      # redraws OUT_DIR/evolve.png from OUT_DIR/ground.npz (stage B1)
+  python tools/watershed/plots.py glacial OUT_DIR     # redraws OUT_DIR/glacial.png from OUT_DIR/glacial.npz (stage B2)
+  python tools/watershed/plots.py lakes OUT_DIR       # redraws OUT_DIR/lakes.png from lakes.npz and lakes.json (stage C1, C2)
+  python tools/watershed/plots.py groundwater OUT_DIR # redraws OUT_DIR/groundwater.png (stages C3, C4, C6)
+  python tools/watershed/plots.py network OUT_DIR     # redraws OUT_DIR/network.png from network.npz and network.json (R5)
+  python tools/watershed/plots.py zoom OUT_DIR X Z [SIZE_M]   # OUT_DIR/zoom_X_Z.png: a SIZE_M square (default 6 km) at 16 m,
+                                                             # from OUT_DIR/ground.npz, or glacial.npz when there is none"""
+import sys
+import numpy as np
+
+
+def ground_picture(npz_path, png_path):
+    """Six panels, so the result can be judged by eye:
+    landform and final ground on ONE height scale (so a rise or a cut shows as a colour change, not a rescale);
+    height change (red rose, blue cut): where erosion has not reached, the change is close to the full uplift;
+    rivers (quick-runoff area of 5 ha or more, darker as it grows) and closed hollows (red) on a grey hillshade;
+    sediment thickness; slope (texture: evenly corrugated ground would show here)."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource
+    d = np.load(npz_path)
+    g = d['ground'].astype(np.float64); s0 = d['start'].astype(np.float64); sea = d['sea'].astype(bool)
+    dx = float(d['cell_m']); land = ~sea
+    ls = LightSource(315, 40)
+    top = float(max(g[land].max(), s0[land].max()))
+    shade = ls.hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    fig, ax = plt.subplots(2, 3, figsize=(24, 16))
+    for a, z, t in ((ax[0, 0], s0, 'landform (start)'), (ax[0, 1], g, 'final ground (same height scale)')):
+        rgb = ls.shade(np.where(land, z, -top * 0.02), cmap=plt.cm.terrain, vert_exag=3, blend_mode='soft', dx=dx, dy=dx,
+                       vmin=-top * 0.02, vmax=top)
+        a.imshow(rgb); a.set_title(f'{t}, max {z[land].max():.0f} m')
+    ch = np.where(land, g - s0, np.nan)
+    lim = float(np.nanpercentile(np.abs(ch), 99.5)) or 1.0
+    im = ax[0, 2].imshow(ch, cmap='RdBu_r', vmin=-lim, vmax=lim); ax[0, 2].set_title('height change (m): red rose, blue cut')
+    fig.colorbar(im, ax=ax[0, 2], shrink=0.6)
+    ax[1, 0].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    if 'quick_area_m2' in d.files:
+        q = d['quick_area_m2'].astype(np.float64)
+        riv = np.where(land & (q >= 5e4), np.log10(np.maximum(q, 5e4)), np.nan)
+        ax[1, 0].imshow(riv, cmap='Blues', vmin=4.0, vmax=float(np.nanmax(riv)) if np.isfinite(riv).any() else 8.0)
+    if 'pit_m' in d.files:
+        pit = d['pit_m'].astype(np.float64)
+        ax[1, 0].imshow(np.where(land & (pit > 0.1), 1.0, np.nan), cmap='autumn', vmin=0, vmax=1)
+    ax[1, 0].set_title('rivers: quick-runoff area 5 ha and more (darker = more water); closed hollows 0.1 m deep and more in red')
+    ax[1, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    im = ax[1, 1].imshow(np.where(land & (d['sediment_m'] > 0.05), d['sediment_m'], np.nan), cmap='YlOrBr', vmin=0, vmax=10, alpha=0.85)
+    ax[1, 1].set_title('sediment (m): floodplains, fans, deltas'); fig.colorbar(im, ax=ax[1, 1], shrink=0.6)
+    gy, gx = np.gradient(g, dx)
+    im = ax[1, 2].imshow(np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), np.nan), cmap='magma', vmin=0, vmax=45)
+    ax[1, 2].set_title('slope (deg)'); fig.colorbar(im, ax=ax[1, 2], shrink=0.6)
+    for a in ax.ravel():
+        a.axis('off')
+    plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
+
+
+def glacial_picture(npz_path, png_path):
+    """Six panels for the glacial history:
+    the river-era ground with the largest ice extent over it (blue, darker = thicker);
+    the final ground on the same height scale;
+    what the ice and its meltwater cut (blue) and laid down (red) over the cold stage;
+    till and moraine (under or at the ice, brown) and outwash (beyond it, yellow);
+    closed hollows by what made them: ice-scoured floor (blue), glacial deposit sill (orange), other sediment sill (yellow),
+    none of these (red: R3 fills them);
+    slope."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource, ListedColormap
+    d = np.load(npz_path)
+    g = d['ground'].astype(np.float64); b1 = d['b1_ground'].astype(np.float64); sea = d['sea'].astype(bool)
+    dx = float(d['cell_m']); land = ~sea
+    ls = LightSource(315, 40)
+    top = float(max(g[land].max(), b1[land].max()))
+    shade_b1 = ls.hillshade(np.where(land, b1, 0.0), vert_exag=3, dx=dx, dy=dx)
+    shade = ls.hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    fig, ax = plt.subplots(2, 3, figsize=(24, 16))
+    ice = d['ice_max_m'].astype(np.float64)
+    ax[0, 0].imshow(np.where(land, shade_b1, np.nan), cmap='gray', vmin=0, vmax=1)
+    im = ax[0, 0].imshow(np.where(land & (ice > 0), ice, np.nan), cmap='Blues', vmin=0, vmax=max(float(ice.max()), 1.0), alpha=0.8)
+    ax[0, 0].set_title(f'river-era ground, largest ice extent (m thick), {(land & (ice > 0)).sum() * dx * dx / 1e6:.1f} km2')
+    fig.colorbar(im, ax=ax[0, 0], shrink=0.6)
+    rgb = ls.shade(np.where(land, g, -top * 0.02), cmap=plt.cm.terrain, vert_exag=3, blend_mode='soft', dx=dx, dy=dx, vmin=-top * 0.02, vmax=top)
+    ax[0, 1].imshow(rgb); ax[0, 1].set_title(f'final ground (same height scale as B1), max {g[land].max():.0f} m')
+    cut = np.where(land, -d['glacial_cut_m'].astype(np.float64), np.nan)
+    lim = float(np.nanpercentile(np.abs(cut), 99.5)) or 1.0
+    im = ax[0, 2].imshow(cut, cmap='RdBu_r', vmin=-lim, vmax=lim); ax[0, 2].set_title('cold stage: cut (blue) and laid down (red), m')
+    fig.colorbar(im, ax=ax[0, 2], shrink=0.6)
+    ax[1, 0].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    ax[1, 0].imshow(np.where(land & (d['outwash_m'] > 0.2), d['outwash_m'], np.nan), cmap='YlOrBr', vmin=0, vmax=20, alpha=0.5)
+    im = ax[1, 0].imshow(np.where(land & (d['till_m'] > 0.2), d['till_m'], np.nan), cmap='copper_r', vmin=0, vmax=30, alpha=0.85)
+    ax[1, 0].set_title('till and moraine (brown, m), outwash (yellow)'); fig.colorbar(im, ax=ax[1, 0], shrink=0.6)
+    hc = d['hollow_cause'].astype(np.float64)          # per hollow, as in the summary: 0 ice-scoured floor, 1 glacial deposit
+    cls = np.where(land & (hc >= 0), hc, np.nan)        # sill, 2 other sediment sill, 3 none; -1 no hollow
+    ax[1, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    ax[1, 1].imshow(cls, cmap=ListedColormap(['#1f5fbf', '#f08c00', '#f2d024', '#d62728']), vmin=-0.5, vmax=3.5)
+    ax[1, 1].set_title('hollows: ice-scoured (blue), glacial sill (orange), other sediment (yellow), none (red)')
+    gy, gx = np.gradient(g, dx)
+    im = ax[1, 2].imshow(np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), np.nan), cmap='magma', vmin=0, vmax=45)
+    ax[1, 2].set_title('slope (deg)'); fig.colorbar(im, ax=ax[1, 2], shrink=0.6)
+    for a in ax.ravel():
+        a.axis('off')
+    plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
+
+
+def lakes_picture(npz_path, json_path, png_path):
+    """Three panels: basins (each sea outlet's catchment in its own pale colour) with the rivers; lakes coloured by cause
+    on a hillshade, closed lakes ringed; and the leftover hollows that were filled (no cause), so a missing cause shows."""
+    import json
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource, ListedColormap
+    d = np.load(npz_path)
+    lakes = json.load(open(json_path))
+    g = d['ground'].astype(np.float64); sea = d['sea'].astype(bool); dx = float(d['cell_m']); land = ~sea
+    ox, oz = float(d['origin_x']), float(d['origin_z'])
+    shade = LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    fig, ax = plt.subplots(1, 3, figsize=(30, 11))
+    b = d['basin_id'].astype(np.int64)
+    rng = np.random.default_rng(7)
+    pal = rng.uniform(0.55, 0.95, (max(int(b.max()) + 1, 1), 3))
+    rgb = np.where((land & (b >= 0))[..., None], pal[np.maximum(b, 0)], 1.0) * (0.6 + 0.4 * shade[..., None])
+    ax[0].imshow(np.clip(rgb, 0, 1))
+    q = d['quick_area_m2'].astype(np.float64)
+    ax[0].imshow(np.where(land & (q >= 5e4), np.log10(np.maximum(q, 5e4)), np.nan), cmap='Blues', vmin=4.0, vmax=max(float(np.log10(q.max() + 1)), 5.0))
+    ax[0].set_title(f'basins (one colour per sea outlet) and rivers; {int((np.bincount(b[land & (b >= 0)]) * dx * dx > 1e6).sum())} basins over 1 km2')
+    causes = ['cirque', 'glacial rock basin', 'moraine or till dam', 'fan or delta dam', 'unexplained']
+    cols = ['#1f5fbf', '#17becf', '#8c564b', '#f2b400', '#d62728']
+    cmap = {c: i for i, c in enumerate(causes)}
+    lid = d['lake_id'].astype(np.int64)
+    code = np.full(g.shape, np.nan)
+    for lk in lakes:
+        code[lid == lk['id']] = cmap.get(lk['cause'], 4)
+    ax[1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    ax[1].imshow(code, cmap=ListedColormap(cols), vmin=-0.5, vmax=4.5)
+    for lk in lakes:
+        if not lk['full']:
+            ax[1].plot((lk['deepest_x'] - ox) / dx, (lk['deepest_z'] - oz) / dx, 'o', mfc='none', mec='red', ms=14, mew=2)
+    ax[1].set_title('lakes: cirque (blue), rock basin (cyan), moraine or till dam (brown), fan or delta dam (gold), '
+                    'unexplained (red); closed lakes ringed red', fontsize=10)
+    lf = d['leftover_filled_m'].astype(np.float64)
+    ax[2].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    im = ax[2].imshow(np.where(land & (lf > 0.05), lf, np.nan), cmap='Reds', vmin=0, vmax=max(float(lf.max()), 0.5))
+    ax[2].set_title('hollows with no cause, filled (m)'); fig.colorbar(im, ax=ax[2], shrink=0.6)
+    for a in ax:
+        a.axis('off')
+    plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
+
+
+def groundwater_picture(npz_path, png_path):
+    """Four panels: depth to the water table; groundwater coming out (log, springs and seeps); the channels by regime
+    (perennial dark blue, intermittent light blue, ephemeral grey) with the heads by kind; and the wetlands by type."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource, ListedColormap
+    d = np.load(npz_path)
+    g = d['ground'].astype(np.float64); sea = d['sea'].astype(bool); dx = float(d['cell_m']); land = ~sea
+    shade = LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    fig, ax = plt.subplots(2, 2, figsize=(22, 22))
+    im = ax[0, 0].imshow(np.where(land, d['depth_to_table_m'], np.nan), cmap='viridis_r', vmin=0, vmax=30)
+    ax[0, 0].set_title('depth to the water table (m)'); fig.colorbar(im, ax=ax[0, 0], shrink=0.6)
+    q = d['gw_discharge_m3_s'].astype(np.float64)
+    ax[0, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    im = ax[0, 1].imshow(np.where(land & (q > 0), np.log10(np.maximum(q, 1e-6)), np.nan), cmap='plasma', vmin=-5, vmax=-1)
+    ax[0, 1].set_title('groundwater coming out, log10 m3/s (springs bright)'); fig.colorbar(im, ax=ax[0, 1], shrink=0.6)
+    reg = d['regime'].astype(np.float64)
+    ax[1, 0].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    ax[1, 0].imshow(np.where(reg > 0, reg, np.nan), cmap=ListedColormap(['#08306b', '#6baed6', '#9e9e9e']), vmin=0.5, vmax=3.5)
+    hk = d['head_kind'].astype(np.int64)
+    cols = ['#d62728', '#2ca02c', '#1f77b4', '#9467bd', '#ff7f0e']
+    for k, c in enumerate(cols):
+        rr, cc = np.nonzero(hk == k)
+        ax[1, 0].plot(cc, rr, '.', color=c, ms=3)
+    ax[1, 0].set_title('channels: perennial, intermittent, ephemeral; heads: spring red, seep green, lake outlet blue, '
+                       'wetland outlet purple, seasonal rill orange', fontsize=10)
+    w = d['wetland'].astype(np.float64)
+    ax[1, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    code = np.select([w == 4, w == 5, w == 6, w == 7, w == 10], [0, 1, 2, 3, 4], np.nan)
+    ax[1, 1].imshow(code, cmap=ListedColormap(['#9acd32', '#2e8b57', '#20b2aa', '#8b4513', '#da70d6']), vmin=-0.5, vmax=4.5)
+    ax[1, 1].imshow(np.where(d['lake'], 1.0, np.nan), cmap='Blues', vmin=0, vmax=1)
+    ax[1, 1].set_title('wetlands: marsh (yellow-green), swamp (green), fen (teal), bog (brown), salt marsh (orchid); lakes blue', fontsize=10)
+    for a in ax.ravel():
+        a.axis('off')
+    plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
+
+
+def network_picture(npz_path, json_path, png_path):
+    """Four panels of the stream network (R5): reach types (cascade red, step-pool orange, plane-bed yellow, pool-riffle
+    green, dune-ripple blue) with the falls (white triangles); perennial (dark blue) and seasonal (light blue) streams with
+    the losing beds (red); bankfull width (log); pattern (confined grey, meandering green, braided orange) with the outlets
+    (delta magenta, estuary cyan, tidal creek teal, beach-blocked yellow, rocky white, Gilbert delta black)."""
+    import json
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource, ListedColormap
+    from scipy.ndimage import maximum_filter
+    d = np.load(npz_path)
+    net = json.load(open(json_path))
+    g = d['ground'].astype(np.float64); sea = d['sea'].astype(bool); dx = float(d['cell_m']); land = ~sea
+    ox, oz = float(d['origin_x']), float(d['origin_z'])
+    shade = LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    thick = lambda a: maximum_filter(a, size=3)                  # one 16 m cell is under a pixel at this size
+    fig, ax = plt.subplots(2, 2, figsize=(22, 22))
+    for a in ax.ravel():
+        a.imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+        a.imshow(np.where(d['lake'], 1.0, np.nan), cmap='Blues', vmin=0, vmax=1.5)
+    rt = thick(d['reach_type'].astype(np.int64))
+    ax[0, 0].imshow(np.where(rt > 0, rt, np.nan), cmap=ListedColormap(['#d62728', '#ff7f0e', '#e6c619', '#2ca02c', '#1f77b4']), vmin=0.5, vmax=5.5)
+    for f in net['falls']:
+        ax[0, 0].plot((f['lip'][0] - ox) / dx, (f['lip'][2] - oz) / dx, '^', color='white', mec='black', ms=7)
+    ax[0, 0].set_title(f"reach types; falls ({len(net['falls'])}) as white triangles", fontsize=11)
+    st = thick(d['stream'].astype(np.int64))
+    ax[0, 1].imshow(np.select([st == 3, st == 8], [0.0, 1.0], np.nan), cmap=ListedColormap(['#08306b', '#6baed6']), vmin=-0.5, vmax=1.5)
+    ax[0, 1].imshow(np.where(thick(d['losing'].astype(np.int64)) > 0, 1.0, np.nan), cmap=ListedColormap(['#d62728']), vmin=0, vmax=1, alpha=0.6)
+    ax[0, 1].set_title('perennial (dark blue) and seasonal (light blue) streams; losing beds red', fontsize=11)
+    w = thick(d['width_m'].astype(np.float64))
+    im = ax[1, 0].imshow(np.where(w > 0, np.log10(np.maximum(w, 0.1)), np.nan), cmap='viridis', vmin=-0.5, vmax=1.7)
+    ax[1, 0].set_title('bankfull width, log10 m', fontsize=11); fig.colorbar(im, ax=ax[1, 0], shrink=0.6)
+    pt = thick(d['pattern'].astype(np.int64))
+    ax[1, 1].imshow(np.where(pt > 0, pt, np.nan), cmap=ListedColormap(['#7f7f7f', '#2ca02c', '#ff7f0e']), vmin=0.5, vmax=3.5)
+    colours = {'delta': 'magenta', 'estuary': 'cyan', 'tidal creek': 'teal', 'beach-blocked mouth': 'yellow', 'rocky outlet': 'white',
+               'Gilbert delta': 'black', 'lake inflow': 'none'}
+    for o in net['coast_outlets'] + net['lake_inflows']:
+        c = colours.get(o['kind'], 'white')
+        if c != 'none':
+            ax[1, 1].plot((o['pos'][0] - ox) / dx, (o['pos'][2] - oz) / dx, 'o', color=c, mec='black', ms=6)
+    ax[1, 1].set_title('pattern: confined grey, meandering green, braided orange; outlets by kind', fontsize=11)
+    for a in ax.ravel():
+        a.axis('off')
+    plt.tight_layout(); plt.savefig(png_path, dpi=60); plt.close(fig)
+
+
+def zoom_picture(npz_path, png_path, x_m, z_m, size_m=6000.0):
+    """A close look at full resolution (one pixel per 16 m cell): a size_m square centred on world x_m, z_m, as a hillshade
+    with the rivers (quick-runoff area 5 ha and more), the landform beside it and the slope. The overview pictures are about
+    100 m a pixel, too coarse to tell branching valleys from straight parallel gullies; this shows which the ground has."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource
+    d = np.load(npz_path)
+    dx = float(d['cell_m']); ox = float(d['origin_x']); oz = float(d['origin_z'])
+    n = d['ground'].shape[0]
+    half = int(round(size_m / dx / 2.0))
+    ci = int(round((x_m - ox) / dx)); cj = int(round((z_m - oz) / dx))
+    i0, i1 = max(ci - half, 0), min(ci + half, n); j0, j1 = max(cj - half, 0), min(cj + half, n)
+    win = (slice(j0, j1), slice(i0, i1))
+    # A river-era run (ground.npz) is drawn beside its landform; a glacial run (glacial.npz) beside the river-era ground the ice met.
+    before, before_title = ('start', 'landform (start)') if 'start' in d.files else ('b1_ground', 'river-era ground (before the ice)')
+    g = d['ground'].astype(np.float64)[win]; s0 = d[before].astype(np.float64)[win]; land = ~d['sea'].astype(bool)[win]
+    ls = LightSource(315, 40)
+    fig, ax = plt.subplots(1, 3, figsize=(30, 10.5))
+    ext = (ox + i0 * dx, ox + i1 * dx, oz + j1 * dx, oz + j0 * dx)
+    for a, z, t in ((ax[0], s0, before_title), (ax[1], g, 'ground, rivers 5 ha and more')):
+        a.imshow(np.where(land, ls.hillshade(np.where(land, z, 0.0), vert_exag=2, dx=dx, dy=dx), np.nan), cmap='gray', vmin=0, vmax=1,
+                 extent=ext)
+        a.set_title(f'{t}, max {z[land].max():.0f} m' if land.any() else t)
+    if 'quick_area_m2' in d.files:
+        q = d['quick_area_m2'].astype(np.float64)[win]
+        riv = np.where(land & (q >= 5e4), np.log10(np.maximum(q, 5e4)), np.nan)
+        ax[1].imshow(riv, cmap='Blues', vmin=4.0, vmax=float(np.nanmax(riv)) if np.isfinite(riv).any() else 8.0, extent=ext)
+    gy, gx = np.gradient(g, dx)
+    im = ax[2].imshow(np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), np.nan), cmap='magma', vmin=0, vmax=50, extent=ext)
+    ax[2].set_title('slope (deg)'); fig.colorbar(im, ax=ax[2], shrink=0.7)
+    fig.suptitle(f'{size_m / 1000:.1f} km round x {x_m:.0f}, z {z_m:.0f} (world metres)')
+    fig.tight_layout(); fig.savefig(png_path, dpi=60); plt.close(fig)
+
+
+
+def zoom_network_picture(net_dir, png_path, x_m, z_m, size_m=6000.0):
+    """A close look at R5's stream network at full resolution (one pixel per 16 m cell): a size_m square centred on world
+    x_m, z_m, from net_dir's network.npz and network.json. Left: the streams by regime (perennial dark blue, intermittent
+    mid blue, ephemeral pale blue), the lakes, the falls (white triangles) and the springs, as circles sized by their dry
+    flow and coloured by the store that gives most of it (diffuse green, conduit red, matrix purple; grey for a run without
+    stores). Right: the reach types, coloured as in network.png. For the ws580i zooms (docs/design/r7_plan.md section 3)."""
+    import json
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource, ListedColormap
+    d = np.load(f'{net_dir}/network.npz')
+    net = json.load(open(f'{net_dir}/network.json'))
+    dx = float(d['cell_m']); ox = float(d['origin_x']); oz = float(d['origin_z'])
+    n = d['ground'].shape[0]
+    half = int(round(size_m / dx / 2.0))
+    ci = int(round((x_m - ox) / dx)); cj = int(round((z_m - oz) / dx))
+    i0, i1 = max(ci - half, 0), min(ci + half, n); j0, j1 = max(cj - half, 0), min(cj + half, n)
+    win = (slice(j0, j1), slice(i0, i1))
+    g = d['ground'].astype(np.float64)[win]; land = ~d['sea'].astype(bool)[win]; lake = d['lake'].astype(bool)[win]
+    ext = (ox + i0 * dx, ox + i1 * dx, oz + j1 * dx, oz + j0 * dx)
+    shade = np.where(land, LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=2, dx=dx, dy=dx), np.nan)
+    fig, ax = plt.subplots(1, 2, figsize=(22, 11))
+    for a in ax:
+        a.imshow(shade, cmap='gray', vmin=0, vmax=1, extent=ext)
+        a.imshow(np.where(lake, 1.0, np.nan), cmap='Blues', vmin=0, vmax=1.5, extent=ext)
+    reg = d['regime'].astype(np.int64)[win]
+    ax[0].imshow(np.where(reg > 0, reg, np.nan), cmap=ListedColormap(['#08306b', '#4292c6', '#c6dbef']), vmin=0.5, vmax=3.5, extent=ext)
+    rt = d['reach_type'].astype(np.int64)[win]
+    ax[1].imshow(np.where(rt > 0, rt, np.nan), cmap=ListedColormap(['#d62728', '#ff7f0e', '#e6c619', '#2ca02c', '#1f77b4']), vmin=0.5, vmax=5.5, extent=ext)
+
+    def inside(p):
+        return ext[0] <= p[0] <= ext[1] and ext[3] <= p[2] <= ext[2]
+    falls = [f for f in net['falls'] if inside(f['lip'])]
+    for a in ax:
+        for f in falls:
+            a.plot(f['lip'][0], f['lip'][2], '^', color='white', mec='black', ms=8)
+    colour = dict(diffuse='#2ca02c', conduit='#d62728', matrix='#9467bd')
+    springs = [s for s in net['springs'] if inside(s['pos'])]
+    for s in springs:
+        q = float(s.get('q_base_dry_m3_s') or 0.0)
+        main = max(s['stores'], key=lambda r: r[3])[0] if s.get('stores') else None
+        ax[0].plot(s['pos'][0], s['pos'][2], 'o', color=colour.get(main, '#7f7f7f'), mec='black',
+                   ms=4.0 + 3.0 * max(np.log10(max(q, 1e-6)) + 6.0, 0.0))
+    top = f', ground max {g[land].max():.0f} m' if land.any() else ''
+    ax[0].set_title(f'streams by regime (perennial, intermittent, ephemeral: dark to pale blue); {len(falls)} falls; {len(springs)} springs '
+                    f'by main store (diffuse green, conduit red, matrix purple), size by dry flow{top}', fontsize=10)
+    ax[1].set_title('reach types: cascade red, step-pool orange, plane-bed yellow, pool-riffle green, dune-ripple blue', fontsize=10)
+    fig.suptitle(f'R5 network at {x_m:.0f}, {z_m:.0f} ({size_m / 1000.0:.1f} km square)')
+    fig.tight_layout(); fig.savefig(png_path, dpi=80); plt.close(fig)
+
+if __name__ == '__main__':
+    if len(sys.argv) >= 5 and sys.argv[1] == 'zoom':
+        # python plots.py zoom RUN_DIR X Z [SIZE_M]: writes RUN_DIR/zoom_<x>_<z>.png, from RUN_DIR/ground.npz (evolve.py) or,
+        # when there is none, RUN_DIR/glacial.npz (glacial.py). Given a .npz file instead of a folder (a glacial cycle
+        # snapshot, glacial_cycle_NN.npz), it writes zoom_<file name>_<x>_<z>.png beside it.
+        import os
+        x_, z_ = float(sys.argv[3]), float(sys.argv[4])
+        if sys.argv[2].endswith('.npz'):
+            npz = sys.argv[2]
+            png = os.path.join(os.path.dirname(npz), f'zoom_{os.path.basename(npz)[:-4]}_{x_:.0f}_{z_:.0f}.png')
+        else:
+            npz = f'{sys.argv[2]}/ground.npz' if os.path.exists(f'{sys.argv[2]}/ground.npz') else f'{sys.argv[2]}/glacial.npz'
+            png = f'{sys.argv[2]}/zoom_{x_:.0f}_{z_:.0f}.png'
+        zoom_picture(npz, png, x_, z_, float(sys.argv[5]) if len(sys.argv) > 5 else 6000.0)
+    elif len(sys.argv) >= 5 and sys.argv[1] == 'zoom_network':
+        # python plots.py zoom_network R5_DIR X Z [SIZE_M]: writes R5_DIR/zoom_network_<x>_<z>.png from network.npz and network.json.
+        x_, z_ = float(sys.argv[3]), float(sys.argv[4])
+        zoom_network_picture(sys.argv[2], f'{sys.argv[2]}/zoom_network_{x_:.0f}_{z_:.0f}.png', x_, z_, float(sys.argv[5]) if len(sys.argv) > 5 else 6000.0)
+    elif len(sys.argv) == 3 and sys.argv[1] == 'ground':
+        ground_picture(f'{sys.argv[2]}/ground.npz', f'{sys.argv[2]}/evolve.png')
+    elif len(sys.argv) == 3 and sys.argv[1] == 'glacial':
+        glacial_picture(f'{sys.argv[2]}/glacial.npz', f'{sys.argv[2]}/glacial.png')
+    elif len(sys.argv) == 3 and sys.argv[1] == 'groundwater':
+        groundwater_picture(f'{sys.argv[2]}/groundwater.npz', f'{sys.argv[2]}/groundwater.png')
+    elif len(sys.argv) == 3 and sys.argv[1] == 'network':
+        network_picture(f'{sys.argv[2]}/network.npz', f'{sys.argv[2]}/network.json', f'{sys.argv[2]}/network.png')
+    elif len(sys.argv) == 3 and sys.argv[1] == 'lakes':
+        lakes_picture(f'{sys.argv[2]}/lakes.npz', f'{sys.argv[2]}/lakes.json', f'{sys.argv[2]}/lakes.png')
+    else:
+        raise SystemExit(__doc__)
