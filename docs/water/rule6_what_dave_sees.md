@@ -27,7 +27,7 @@ The two `peaks` commands print lines 1 to 10 and save them as `peaks_landform.md
 | 6 | The ground near the top (within 300 m) is steeper than before: the top got sharper, not rounder. |
 | 7 | There is no flat cap over 300 m across: no dome or plateau on top. |
 | 8 | The bowls ate back into the peak at the speed real ones do, 0.1 to 1.3 mm for each year a glacier sat in them. |
-| 9 | The shady, snow-loaded north-east bowls cut back 1.5 to 2 times faster than the south-west ones, as on real mountains. |
+| 9 | The shady, snow-loaded bowls cut back 1.5 to 2 times faster than the sunny ones, as on real mountains. The starter island is south of the equator, so its shady bowls face south-east and its sunny ones north-west. |
 | 10 | The bowls got most of their depth early, then mostly cut backward. Later deepening is at least 5 times slower. |
 | 11 | Dino's zooms show bowls at the hollows, knife-edge ridges (arêtes) between them, and a pyramid top. |
 | 12 | There is no ring cliff round a top, no star of straight rays, and no even band of wall. |
@@ -47,7 +47,7 @@ Only lines 8 and 9 have a setting that may fix them, and only after Sonny has re
   - Retreat rises roughly in step with this number. The new value is 2.0 × 0.7 ÷ the median the line printed, where 0.7 mm/yr is the middle of real rates under active glaciers.
   - Change it by no more than double or half in one run, because the link is not exactly straight.
 - **Line 9 ratio under 1.2 or over 3.**
-  - Setting: `glacial.aspect_ela_m`, now 75. That is half the 150 m by which the snowline sits lower on north-east faces.
+  - Setting: `glacial.aspect_ela_m`, now 75. That is half the 150 m by which the snowline sits lower on the shady faces (south-east here).
   - Under 1.2: raise it toward 110, the top of the measured range (a 220 m difference, in British Columbia).
   - Over 3: lower it toward 56, the bottom (113 m, in the Făgăraş).
   - Never go outside 56 to 110. If that range cannot fix it, the model is missing something, such as wind-blown snow or shade, and Sonny adds it.
