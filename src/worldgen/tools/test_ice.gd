@@ -54,39 +54,47 @@ func _init() -> void:
 	var autumn_day: float = 3.0 * year + 270.0 * Ice.DAY_S
 
 	for m in range(24 * 6):
-		day_sum += Weather.air_c(autumn_day + float(m) * 600.0, "temperate")
+		day_sum += Weather.air_c(autumn_day + float(m) * 600.0, "temperate", 0.0, 777)
 
-	_check(absf(day_sum / 144.0 - Weather.temp_at(autumn_day + 0.5 * Ice.DAY_S, "temperate")) < 0.5, "the day's mean air is the season's temperature (%.2f vs %.2f)" % [day_sum / 144.0, Weather.temp_at(autumn_day + 0.5 * Ice.DAY_S, "temperate")])
+	var day_mean: float = Weather.temp_at(autumn_day + 0.5 * Ice.DAY_S, "temperate", 0.0, 777)
+	_check(absf(day_sum / 144.0 - day_mean) < 0.5, "the day's mean air is the day's temperature (%.2f vs %.2f)" % [day_sum / 144.0, day_mean])
 	# Art's rule (Kathleen, #587 ask 3): a pond freezes at the edges on a frosty night and thaws by early afternoon once
 	# the air is above 2 C; a thick winter sheet stays. Every day of a year on the starter island (the temperate zone's
 	# climate, 9 C +-5) at POND_M, where frosty nights come (the coast itself is too mild: docs/design/one_temperature.md).
 	var pond_m: float = 300.0
+	var world_seed: int = 777                        # the cold spells come from the world seed (climate.gd)
 	var frosty_mornings: int = 0
 	var thaw_days: int = 0
 	var thaw_left: int = 0
 
 	for d in range(365):
 		var base: float = 3.0 * year + float(d) * Ice.DAY_S
-		var dawn_ice: float = Ice.cover(base + 7.0 * Ice.HOUR_S, "temperate", pond_m)
+		var dawn_ice: float = Ice.cover(base + 7.0 * Ice.HOUR_S, "temperate", pond_m, 3.0, world_seed)
 		var night_low: float = 100.0
 
 		for h in range(8):
-			night_low = minf(night_low, Weather.air_c(base + float(h) * Ice.HOUR_S, "temperate", pond_m))
+			night_low = minf(night_low, Weather.air_c(base + float(h) * Ice.HOUR_S, "temperate", pond_m, world_seed))
 
 		if dawn_ice > 0.0:
 			frosty_mornings += 1
 
-		# One night's ice: open water the evening before, ice at dawn, 2 C or more at noon.
-		if night_low < 0.0 and dawn_ice > 0.0 and Ice.cover(base - 6.0 * Ice.HOUR_S, "temperate", pond_m) == 0.0 and Weather.air_c(base + 12.0 * Ice.HOUR_S, "temperate", pond_m) >= 2.0:
+		# One frosty night's ice (down to -3 C, not a hard frost): open water the evening before, ice at dawn, 2 C or more at noon.
+		if night_low < 0.0 and night_low >= -3.0 and dawn_ice > 0.0 and Ice.cover(base - 6.0 * Ice.HOUR_S, "temperate", pond_m, 3.0, world_seed) == 0.0 and Weather.air_c(base + 12.0 * Ice.HOUR_S, "temperate", pond_m, world_seed) >= 2.0:
 			thaw_days += 1
 
-			if Ice.cover(base + 14.0 * Ice.HOUR_S, "temperate", pond_m) > 0.0:
+			if Ice.cover(base + 14.0 * Ice.HOUR_S, "temperate", pond_m, 3.0, world_seed) > 0.0:
 				thaw_left += 1
 
 	_check(frosty_mornings >= 20, "starter ponds at %.0f m have ice on frosty mornings (%d mornings a year)" % [pond_m, frosty_mornings])
 	_check(thaw_days >= 5 and thaw_left == 0, "one frosty night's ice is gone by 14:00 when the air reaches 2 C at noon (%d days, %d left)" % [thaw_days, thaw_left])
-	_check(Ice.cover(3.0 * year + 0.875 * year, "temperate", 0.0) == 0.0, "the starter's coast is too mild for pond ice even in midwinter")
-	_check(Ice.bears(Ice.cover(3.0 * year + 320.0 * Ice.DAY_S + 12.0 * Ice.HOUR_S, "temperate", 1400.0)), "a summit tarn still bears at midday in deep winter")
+	var coast_mornings: int = 0
+
+	for d in range(365):
+		if Ice.cover(3.0 * year + float(d) * Ice.DAY_S + 7.0 * Ice.HOUR_S, "temperate", 0.0, 3.0, world_seed) > 0.0:
+			coast_mornings += 1
+
+	_check(coast_mornings >= 5 and coast_mornings < frosty_mornings, "cold spells give the coast's ponds some icy mornings, fewer than at %.0f m (%d against %d)" % [pond_m, coast_mornings, frosty_mornings])
+	_check(Ice.bears(Ice.cover(3.0 * year + 320.0 * Ice.DAY_S + 12.0 * Ice.HOUR_S, "temperate", 1400.0, 3.0, world_seed)), "a summit tarn still bears at midday in deep winter")
 	# The water must cool first: a deep lake freezes later in autumn than a shallow pond.
 	var first_pond: int = -1
 	var first_lake: int = -1
@@ -94,10 +102,10 @@ func _init() -> void:
 	for d in range(200, 365):
 		var morning: float = 3.0 * year + float(d) * Ice.DAY_S + 7.0 * Ice.HOUR_S
 
-		if first_pond < 0 and Ice.cover(morning, "temperate", pond_m, 1.0) > 0.0:
+		if first_pond < 0 and Ice.cover(morning, "temperate", pond_m, 1.0, world_seed) > 0.0:
 			first_pond = d
 
-		if first_lake < 0 and Ice.cover(morning, "temperate", pond_m, 10.0) > 0.0:
+		if first_lake < 0 and Ice.cover(morning, "temperate", pond_m, 10.0, world_seed) > 0.0:
 			first_lake = d
 
 	_check(first_pond > 0 and first_lake > first_pond, "a deep lake freezes later than a shallow pond (first ice on day %d and %d)" % [first_pond, first_lake])
