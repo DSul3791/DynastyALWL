@@ -161,6 +161,48 @@ func _init() -> void:
 	var sunrise_winter: float = Weather.sunrise_hour(0.75 * 365.0)
 	check(sunrise_summer > 3.0 and sunrise_summer < 4.5 and sunrise_winter > 7.5 and sunrise_winter < 8.7, "sunrise at 52 N: midsummer %.2f, midwinter %.2f" % [sunrise_summer, sunrise_winter])
 	print("weather: mist autumn %s spring %s desert %s" % [str(autumn_dawns), str(spring_dawns), str(desert_dawns)])
+	# Sea fog (docs/design/fog_pools_and_sea_fog.md part B): 0..1, none in a calm or in rain or snow, never more over the land than over
+	# the sea, a top only with it, and far more in late spring than in mid autumn.
+	var sea_bad: int = 0
+	var sea_calm: int = 0
+	var sea_wet: int = 0
+	var sea_top_bad: int = 0
+	var spring_sea: float = 0.0
+	var autumn_sea: float = 0.0
+
+	for seed_value in [777, 778, 779]:
+		for h in range(24 * 365):
+			var t: float = float(h) * 3600.0
+			var w: Dictionary = Weather.state(seed_value, t, "temperate")
+			var sea: float = float(w["sea_fog"])
+			var land: float = float(w["sea_fog_land"])
+			var top: float = float(w["sea_fog_top_m"])
+
+			if sea < 0.0 or sea > 1.0 or land < 0.0 or land > sea + 1.0e-6 or not is_finite(sea):
+				sea_bad += 1
+
+			if sea > 0.0 and float(w["wind"]) <= Weather.SEA_FOG_WIND_FROM:
+				sea_calm += 1
+
+			if sea > 0.0 and float(w["rain"]) + float(w["snow"]) > 0.1:
+				sea_wet += 1
+
+			if (sea > 0.0 and (top < Weather.SEA_FOG_TOP_MIN_M * 0.6 - 0.01 or top > Weather.SEA_FOG_TOP_MAX_M + 0.01)) or (sea == 0.0 and top != 0.0):
+				sea_top_bad += 1
+
+			var phase: float = Weather.year_phase(t)
+
+			if phase >= 0.1 and phase < 0.3:
+				spring_sea += sea
+			elif phase >= 0.55 and phase < 0.75:
+				autumn_sea += sea
+
+	check(sea_bad == 0, "sea fog within 0..1 and never more over the land than over the sea (%d bad)" % sea_bad)
+	check(sea_calm == 0, "no sea fog in a calm (%d hours)" % sea_calm)
+	check(sea_wet == 0, "no sea fog while rain or snow falls (%d hours)" % sea_wet)
+	check(sea_top_bad == 0, "sea fog top only with sea fog, within its range (%d bad)" % sea_top_bad)
+	check(spring_sea > 0.0 and spring_sea > 3.0 * autumn_sea, "late spring has far more sea fog than mid autumn (%.1f vs %.1f)" % [spring_sea, autumn_sea])
+	print("weather: sea fog spring %.1f autumn %.1f" % [spring_sea, autumn_sea])
 	print("weather: desert %s temperate %s" % [str(desert), str(temperate)])
 	print("weather: high %s neutral %s low %s" % [str(high), str(neutral), str(low)])
 	print("weather: %d failures" % failures)
