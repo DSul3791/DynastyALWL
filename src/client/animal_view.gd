@@ -13,6 +13,7 @@ const GRAZE := 0
 const HOP := 1
 const FLEE := 2
 
+signal voiced(kind: String, call: Dictionary, at: Vector3)    # voice_fx: a call by state from data/animals/voices.json (ANIMAL_VOICES.md); {mood} or {slot, db, unit, reach}
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
 signal footfall(kind: String, at: Vector3, ground: String, speed: float)   # the same landing with the ground it lands on (dust, mud, snow, water) and the speed: puffs, tracks, ground-aware hoof sounds (docs/design/FOOTFALL.md)
@@ -49,6 +50,9 @@ var idle_first_s: float = -1.0     # tools only: the first idle comes after this
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
+var voice_fx: bool = false        # animals call by state from data/animals/voices.json; terrain_client then skips the old state_changed calls (ANIMAL_VOICES.md; off until the PC check)
+var _voices: Variant = null       # voices.json, loaded on first use
+var _voice_times: Array = []      # msec of the calls this last second (voices.json per_second)
 var swarm_fx: bool = false        # bat colonies boil in flight and hang head down at the roost (BAT_RIG.md, NEW_MODEL_IMPORT.md; off until the model and PC check)
 var sea_life: bool = false        # whales and dolphins blow at the surface (SEA_MAMMALS.md; off until the models and PC check)
 var young_follow: bool = false    # young look to their mother and nurse at her flank now and then (YOUNG_ANIMALS.md part 2; off until the PC check)
@@ -377,6 +381,9 @@ func on_rows(rows: Array) -> void:
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
+
+		if voice_fx and int(row[4]) != int(_bodies[id]["state"]) and KIND_OF_SPECIES.has(int(row[1])):
+			_voice(_bodies[id], str(KIND_OF_SPECIES[int(row[1])]), int(row[4]), row[2])
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
@@ -2803,6 +2810,42 @@ func _sea_blow(node: Node3D, b: Dictionary, delta: float) -> void:
 	spout.global_position = Vector3(node.global_position.x, level + 0.1, node.global_position.z)
 	spout.emitting = true
 	get_tree().create_timer(spout.lifetime + 0.5).timeout.connect(spout.queue_free)
+
+
+# A call by state (docs/design/ANIMAL_VOICES.md): the species' states map in voices.json names a call for the new state; a young one
+# fleeing uses its "young" call. One call per animal every cooldown_s, at most per_second calls in all; "silent" plays nothing.
+func _voice(b: Dictionary, kind: String, state: int, at: Vector3) -> void:
+	if _voices == null:
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/voices.json"))
+		_voices = parsed if parsed is Dictionary else {}
+
+	var row: Dictionary = ((_voices as Dictionary).get("species", {}) as Dictionary).get(kind, {})
+
+	if row.is_empty():
+		return
+
+	var calls: Dictionary = row.get("calls", {})
+	var call_name: String = str((row.get("states", {}) as Dictionary).get(str(state), ""))
+
+	if bool(b.get("young", false)) and state == FLEE and calls.has("young"):
+		call_name = "young"
+
+	if call_name == "" or call_name == "silent" or not calls.has(call_name):
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < int(b.get("voice_at", 0)):
+		return
+
+	_voice_times = _voice_times.filter(func(t): return now - int(t) < 1000)
+
+	if _voice_times.size() >= int((_voices as Dictionary).get("per_second", 6)):
+		return
+
+	_voice_times.append(now)
+	b["voice_at"] = now + int(float((_voices as Dictionary).get("cooldown_s", 4.0)) * 1000.0)
+	voiced.emit(kind, calls[call_name], at)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
