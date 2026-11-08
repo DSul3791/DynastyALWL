@@ -1006,7 +1006,7 @@
 		"goblin": {
 			"number": 16,
 			"name": "Goblin",
-			"note": "Dave 7 Nov 2026 (docs/GOBLINS.md): 2 to 5 goblins live in a river-side cave (a spring cave mouth), never one that has a bear in or near it. They bed down at the mouth by day (active) and come out at night; skittish: they watch from the edge of firelight (alert) and run, but fight if cornered or threatened at their den. Still to build: foraging berries, stealing, fighting bears, sleeping inside the cave (needs the cave floor height on the server). Two models (Skritch, Rukz) are picked per goblin on the client; height 1.1 m +-0.5 m, bell-shaped, from the animal id.",
+			"note": "Dave 7 Nov 2026 (docs/GOBLINS.md): 2 to 5 goblins live in a river-side cave (a spring cave mouth), never one that has a bear in or near it. They bed down at the mouth by day (active) and come out at night; skittish: they watch from the edge of firelight (alert) and run, but fight if cornered or threatened at their den. Den life (docs/design/goblin_den_life_design.md, den_life): by day they sleep in the den inside the cave, walking the cave floor path; at night they come out, creep to the edge of a fire's light to watch (watch_spook_m), or forage at berry bushes without stripping them. Still to build: stealing, fighting bears. Two models (Skritch, Rukz) are picked per goblin on the client; height 1.1 m +-0.5 m, bell-shaped, from the animal id.",
 			"target_per_player": 0,
 			"health": 25.0,
 			"protective_share": 0.0,
@@ -1028,6 +1028,22 @@
 				"threat_m": 8.0,
 				"range_m": 70.0,
 				"fish_share": 0.0
+			},
+			"den_life": {
+				"cave_level_m": 6.0,
+				"watch_share": 0.5,
+				"watch_reach_m": 150.0,
+				"watch_gap_m": 2.0,
+				"watch_s": [
+					60.0,
+					180.0
+				],
+				"watch_spook_m": 6.0,
+				"forage_m": 70.0,
+				"forage_s": [
+					20.0,
+					60.0
+				]
 			},
 			"defend": {
 				"warn_m": 0.0,
