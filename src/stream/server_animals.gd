@@ -490,6 +490,12 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 		if companions != null and companions.handles(a):
 			companions.died(a)   # a companion's record keeps its death; a stray's player can win another
 
+		if a.has("orphan") and wolves != null:
+			wolves.orphan_gone(a)   # one orphan fewer at its den
+
+		if a.has("pup_of") and wolves != null:
+			wolves.pup_hurt(a, source_peer)   # a pup killed: its pack comes at once
+
 		if a.has("loot") and drop_loot.is_valid():
 			drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])
 
@@ -504,6 +510,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	if a.has("loot") and drop_loot.is_valid():
 		drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])   # a hurt thief drops what it stole and runs
 		a.erase("loot")
+
+	if a.has("pup_of") and wolves != null:
+		wolves.pup_hurt(a, source_peer)   # its pack comes at once
 
 	a["wound"] = true
 	a["hurt_by"] = source_peer
@@ -627,8 +636,8 @@ func snare(id: int) -> bool:
 
 	var a: Dictionary = animals[id]
 
-	if a.has("companion_id"):
-		return false   # a companion steps over snares
+	if a.has("companion_id") or a.has("pup_of") or a.has("orphan"):
+		return false   # a companion or a pup at a den steps over snares
 
 	if species_def(str(a["sp"])).has("flock"):
 		a["birds"] = int(a.get("birds", 8)) - 1
@@ -793,7 +802,7 @@ func tick(delta: float) -> void:
 	if companions != null:
 		companions.tick(delta)
 
-	if wolves != null and not wolves.packs.is_empty() or (wolves != null and bool(wolves.cfgw().get("natural", false))):
+	if wolves != null and (not wolves.packs.is_empty() or not wolves.dens.is_empty() or bool(wolves.cfgw().get("natural", false))):
 		wolves.tick(delta)
 
 	_spawn_acc += delta
@@ -857,8 +866,12 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		thieves.step(a, dt)
 		return
 
+	if a.has("pup_of") and wolves != null:
+		wolves.step_pup(a, dt)   # a wolf pup at its pack's den: plays, hides from a standing player (wolf_packs_and_pups_design.md)
+		return
+
 	if companions != null and companions.handles(a):
-		companions.step(a, dt)   # a stray near the town, or a player's dog: its own step (no wild fear, defence or bleeding)
+		companions.step(a, dt)   # a stray near the town, an orphan pup, or a player's companion: its own step (no wild fear, defence or bleeding)
 		return
 
 	# Den life (goblins): in the cave it moves only along the cave path, warnings included; at night on the surface it may watch a fire or forage.
