@@ -39,31 +39,31 @@ const SEA_ZONES := ["arctic"]    # the only zones whose sea freezes (a cold isla
 
 
 # Ice cover 0..1 on still water at `altitude_m` in `zone_group` at game time `game_s`; `depth_m` is
-# how deep the pond is (shallow water cools and freezes faster than a deep lake).
-static func cover(game_s: float, zone_group: String, altitude_m: float = 0.0, depth_m: float = 3.0) -> float:
-	return clampf(_thickness(game_s, zone_group, altitude_m, depth_m, 0.0) / FULL_M, 0.0, 1.0)
+# how deep the pond is (shallow water cools and freezes faster than a deep lake). Pass the world seed: the cold spells come from it.
+static func cover(game_s: float, zone_group: String, altitude_m: float = 0.0, depth_m: float = 3.0, seed_value: int = 0) -> float:
+	return clampf(_thickness(game_s, zone_group, altitude_m, depth_m, 0.0, seed_value) / FULL_M, 0.0, 1.0)
 
 
 # Ice cover 0..1 on the sea: always 0 outside SEA_ZONES.
-static func sea_cover(game_s: float, zone_group: String) -> float:
+static func sea_cover(game_s: float, zone_group: String, seed_value: int = 0) -> float:
 	if not SEA_ZONES.has(zone_group):
 		return 0.0
 
-	return clampf(_thickness(game_s, zone_group, 0.0, SEA_DEPTH_M, SEA_FREEZE_C) / FULL_M, 0.0, 1.0)
+	return clampf(_thickness(game_s, zone_group, 0.0, SEA_DEPTH_M, SEA_FREEZE_C, seed_value) / FULL_M, 0.0, 1.0)
 
 
-static func _thickness(game_s: float, zone_group: String, altitude_m: float, depth_m: float, freeze_c: float) -> float:
+static func _thickness(game_s: float, zone_group: String, altitude_m: float, depth_m: float, freeze_c: float, seed_value: int) -> float:
 	var deep: float = clampf((depth_m - 1.0) / 9.0, 0.0, 1.0)
 	var k: float = FREEZE_K * lerpf(1.4, 0.8, deep)
 	var lag_h: float = 24.0 * lerpf(WATER_LAG_SHALLOW_D, WATER_LAG_DEEP_D, deep)
 	var steps: int = LOOKBACK_DAYS * 24
 	var start: float = game_s - float(steps) * HOUR_S
-	var water: float = maxf(Weather.temp_at(start, zone_group, altitude_m), freeze_c)
+	var water: float = maxf(Weather.temp_at(start, zone_group, altitude_m, seed_value), freeze_c)
 	var thickness: float = 0.0
 
 	for n in range(steps + 1):
 		var t: float = start + float(n) * HOUR_S
-		var air: float = Weather.air_c(t, zone_group, altitude_m)
+		var air: float = Weather.air_c(t, zone_group, altitude_m, seed_value)
 
 		if thickness <= 0.0:
 			water = maxf(water + (air - water) / lag_h, freeze_c)
