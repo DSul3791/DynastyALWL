@@ -41,6 +41,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
 sys.path.insert(0, HERE)
 import runoff    # noqa: E402
 import springstore   # noqa: E402
+import world   # noqa: E402
 
 T = 1920          # samples per tile edge (8 m), as inputs.py
 SPACING = 8.0
@@ -386,10 +387,20 @@ def main():
                 'cold-air pools (stage D)', 'snow window (A4 snow layer)']
     complete = not missing
     json.dump(network, open(os.path.join(rec_dir, 'network.json'), 'w'), indent=1)
-    json.dump(RC['climate'], open(os.path.join(rec_dir, 'climate.json'), 'w'), indent=1)
+    # One sky (design A4): the island's latitude from its tile row on the world grid (world.py), never a fixed number, and
+    # its sea-level annual mean from the world's temperature curve there, unless params set one.
+    sky = world.sky(P, oz, float(g16.shape[0]) * dx16)
+    climate = json.loads(json.dumps(RC['climate']))
+    d = dict(climate['default'], latitude_deg=sky['latitude_deg'])
+    if 'sea_level_mean_c' not in d:          # from the world's curve at that latitude (coordinator 8 Nov, #717 row 21)
+        if sky['world_curve_sea_level_c'] is None:
+            raise SystemExit('record: params give no sea_level_mean_c and world.json has no temperature curve')
+        d['sea_level_mean_c'] = sky['world_curve_sea_level_c']
+    climate['default'] = d
+    json.dump(climate, open(os.path.join(rec_dir, 'climate.json'), 'w'), indent=1)
 
     land = g > 0.0
-    summary = dict(seconds=round(time.time() - t0, 1), grid_8m=m, tiles=P['tiles'],
+    summary = dict(seconds=round(time.time() - t0, 1), grid_8m=m, tiles=P['tiles'], sky=dict(sky, sea_level_mean_c=climate['default']['sea_level_mean_c'], snow_bias_c=climate['default'].get('snow_bias_c')),
                    summit_16m=summit16, summit_8m=float(g.max()), summit_8m_before_roughness=summit8_smooth,
                    roughness=dict(rms_slope=rough_rms_slope, removed_cells=roughness_removed_cells),
                    closed_cells_outside_lakes=int(fault_idx.size), closed_cells_highest=fault_list,
