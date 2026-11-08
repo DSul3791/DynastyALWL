@@ -876,7 +876,7 @@ func take(peer: int, number: int, count: int) -> bool:
 const LOG_MESH_RADIUS_M := 0.25   # the drawn species log's mean radius (inventory_view _mesh_for: 0.28 and 0.22 at its ends)
 
 
-func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN, girth: float = NAN) -> bool:
+func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN, girth: float = NAN, by: String = "") -> bool:
 	if count <= 0 or number <= 0:
 		return false
 
@@ -904,6 +904,10 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				var added: int = mini(count, room)
 				near["count"] = int(near["count"]) + added
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
+
+				if by != "":
+					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
+
 				_dirty = true
 				count -= added
 
@@ -935,6 +939,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if not is_nan(rot_y):
 		_items[_next_id]["rot_y"] = rot_y
 
+	if by != "":
+		_items[_next_id]["by"] = by   # who dropped it (goblin gifts; kept while the server runs, not saved)
+
 	if not is_nan(girth):
 		_items[_next_id]["girth"] = clampf(girth, 0.25, 2.5)
 
@@ -945,7 +952,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	_dirty = true
 
 	if count > first:
-		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y, girth)   # over the cap: the rest starts a second pile beside it
+		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y, girth, by)   # over the cap: the rest starts a second pile beside it
 
 	return true
 
@@ -1896,7 +1903,7 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var amount: int = mini(count, inv.counts[slot])
 
-	if not drop_in_world(number, amount, spot, inv.wear[slot]):
+	if not drop_in_world(number, amount, spot, inv.wear[slot], 0.0, NAN, NAN, key_of(peer)):
 		_say(peer, "Too many dropped things already lie within a few steps. Pick some up or move a little way off.")
 		return
 
@@ -8560,7 +8567,7 @@ func take_loose(id: int) -> Array:
 
 
 # Goblins steal (docs/design/goblin_stealing_design.md, Dave 8 Nov 2026): loose small things lying on the ground within r of a point,
-# [[world id, position], ...]. Not structures, fires, trees, boulders, natural scatter or the showroom; not a shoulder carry (logs); not a
+# [[world id, position, dropped by (character key or ""), item kind], ...]. Not structures, fires, trees, boulders, natural scatter or the showroom; not a shoulder carry (logs); not a
 # structure, placeable or container item. Whatever is in a chest or a pack is safe. Light and den piles are the goblin's own checks.
 const STEAL_NEVER_KINDS := ["structure", "placeable", "container"]
 
@@ -8582,7 +8589,7 @@ func stealable_near(centre: Vector3, r: float) -> Array:
 		if row.is_empty() or row.has("carry") or STEAL_NEVER_KINDS.has(str(row.get("kind", ""))):
 			continue
 
-		out.append([id, it["pos"]])
+		out.append([id, it["pos"], str(it.get("by", "")), str(row.get("kind", ""))])
 
 	return out
 
@@ -9350,35 +9357,6 @@ func _sync_sick(peer: int, force: bool) -> void:
 
 # --- Warmth (job 92; data/items/warmth.json) ---
 
-# The warmth the body is heading for here and now: 100 on a mild day, less as the cold stress grows.
-# The day and night swing around the weather's seasonal temperature (Tyler; server side only). The daily low comes shortly after
-# sunrise, the high mid-afternoon: a sine rise between them, an exponential fall after, centred so the day averages the seasonal
-# number. Cloud, rain or snow and wind shrink it, altitude grows it a little. The swing size is warmth.json daily_swing_c by season
-# (temperate values; the weather state carries no zone yet, so other zones borrow them).
-func daily_offset(weather: Dictionary, altitude_m: float = 0.0) -> float:
-	var swing_by: Dictionary = _warmth_cfg.get("daily_swing_c", {})
-
-	if swing_by.is_empty() or not game_seconds.is_valid():
-		return 0.0
-
-	var swing: float = float(swing_by.get(str(weather.get("season", "spring")), 9.0))
-	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
-	swing *= (1.0 - 0.5 * float(weather.get("cloud", 0.0))) * (1.0 - 0.6 * minf(precip * 2.0, 1.0)) * (1.0 - 0.3 * float(weather.get("wind", 0.0)))
-	swing *= 1.0 + 0.05 * maxf(altitude_m, 0.0) / 300.0
-	var low_h: float = float(_warmth_cfg.get("daily_low_hour", 6.5))
-	var high_h: float = float(_warmth_cfg.get("daily_high_hour", 15.0))
-	var hour: float = fposmod(float(game_seconds.call()), 86400.0) / 3600.0
-	var shape: float
-
-	if hour >= low_h and hour <= high_h:
-		shape = 0.5 * (1.0 - cos(PI * (hour - low_h) / (high_h - low_h)))
-	else:
-		var since: float = hour - high_h if hour > high_h else hour + 24.0 - high_h
-		shape = exp(-3.0 * since / (24.0 - (high_h - low_h)))
-
-	return swing * (shape - 0.38)
-
-
 # The positions of the burning fires. Inside one _vitals_tick they are listed once for all players (the soak test found warmth
 # scanning every world record per player); anywhere else the scan is live.
 func _lit_fires() -> Array:
@@ -9449,12 +9427,15 @@ func _coal_rows() -> Array:
 	return _coal_cache_rows
 
 
+# The warmth the body is heading for here and now: 100 on a mild day, less as the cold stress grows.
 func warmth_target(peer: int) -> float:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
-	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) + daily_offset(weather, pos.y) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
+	# The weather's temp_c already carries the day and night swing (one temperature, docs/design/one_temperature.md); the server's weather is
+	# at sea level, so the height is taken off here.
+	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
 	var roofed: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 1.5
 	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if roofed else 1.0)
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
