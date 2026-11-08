@@ -47,6 +47,8 @@ var _warp_z: PackedByteArray
 var _fine_x: PackedByteArray
 var _fine_z: PackedByteArray
 var _master: int = 0
+var _spur_cache: Dictionary = {}   # summit position -> its spur directions (spur_dirs)
+var _spur_width: float = 0.35         # standing.tip_spurs.width_rad (spur_weight)
 var _starters: Array = []   # starter mounts (ellipses), so shelf hills away from them can be given more relief
 
 
@@ -55,6 +57,8 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 	settings = world_settings
 	rules = sketch_rules
 	_master = settings.master_seed
+	_spur_cache.clear()
+	_spur_width = float(rules.get("standing", {}).get("tip_spurs", {}).get("width_rad", 0.35))
 	cell_m = cell_override if cell_override > 0.0 else float(rules.get("cell_m", 160))
 	var tile: float = float(settings.tile_size_m)
 	size_x = int(round(float(settings.tiles_x) * tile / cell_m))
@@ -178,9 +182,11 @@ func _roll_giants(sketch: Dictionary) -> void:
 # widens:
 # 1. flanks: every land cell is raised to the highest cone of slope `standing.flank_slope` hanging from any cell at or above
 #    `standing.from_m`, h = max(h, h(y) - slope * distance(x, y)), so no high ground is steeper than the softest rock stands;
-# 2. summit tops (after the summits are found): within `standing.tip_reach_share` of each summit's height (the reach of the
-#    tile tent that sharpens it, tile_rules summit radius_factor x spire_share) the ground is raised to a cone of
-#    `standing.tip_slope` from the summit, so the tent's own slope added on top still stands.
+# 2. summit tops (after the summits are found): round each summit the ground is raised to a top of `standing.tip_slope`
+#    near the summit (within the reach of the tile tent that sharpens it, `standing.tip_reach_share` x the summit height),
+#    steepening smoothly to flank_slope (between `tip_spurs.blend` x the reach, so no ring marks where the top ends), so the
+#    tent's own slope added on top still stands. The top is not round: in a few directions (`tip_spurs`, see spur_dirs) it
+#    is gentler and runs out as a spur, with steeper faces between, as real peaks are cut into faces and ridges.
 # The cones run over land only (the sea is never filled, so the coast does not move); sea cliffs and low hills are below
 # from_m; carved craters are left as they are and the cones do not cross them.
 func _standing_open() -> PackedByteArray:
@@ -276,16 +282,21 @@ func _stand_high_ground() -> void:
 				heights[index] = best
 
 
-# Pass 2: a gentle cone round each summit top. Returns true when any ground was raised (the summits are then found again;
-# they do not move, because every raised cell stays below its summit).
+# Pass 2: a summit top round each summit, gentle near the summit and steepening smoothly to the flank slope, with spurs (see
+# the notes above _standing_open). Returns true when any ground was raised (the summits are then found again; they do not
+# move, because every raised cell stays below its summit).
 func _stand_summits() -> bool:
 	var standing: Dictionary = rules.get("standing", {})
 
 	if standing.is_empty() or summits.is_empty():
 		return false
 
-	var slope: float = float(standing["tip_slope"])
+	var tip: float = float(standing["tip_slope"])
+	var flank: float = float(standing["flank_slope"])
 	var reach_share: float = float(standing["tip_reach_share"])
+	var spurs: Dictionary = standing.get("tip_spurs", {})
+	var depth: float = float(spurs.get("depth", 0.0))
+	var blend: Array = spurs.get("blend", [1.0, 1.0])
 	var open: PackedByteArray = _standing_open()
 	var raised: bool = false
 
@@ -293,25 +304,75 @@ func _stand_summits() -> bool:
 		var centre: Vector2 = Vector2(float(summit[0]), float(summit[1]))
 		var top: float = float(summit[2])
 		var reach_m: float = reach_share * top
-		var reach: int = int(ceil(reach_m / cell_m)) + 1
+		var b0: float = float(blend[0]) * reach_m
+		var b1: float = maxf(float(blend[1]) * reach_m, b0 + 1.0)
+		var dirs: PackedFloat32Array = spur_dirs(summit)
+		var outer_m: float = b1 + top / flank                 # past it the top would be below sea level
+		var reach: int = int(ceil(outer_m / cell_m)) + 1
 		var c0: int = int(floor((centre.x - origin_x) / cell_m))
 		var r0: int = int(floor((centre.y - origin_z) / cell_m))
 
 		for row in range(maxi(r0 - reach, 0), mini(r0 + reach, size_z - 1) + 1):
 			for column in range(maxi(c0 - reach, 0), mini(c0 + reach, size_x - 1) + 1):
 				var index: int = row * size_x + column
-				var distance: float = cell_center_m(column, row).distance_to(centre)
+				var offset: Vector2 = cell_center_m(column, row) - centre
+				var distance: float = offset.length()
 
-				if open[index] == 0 or distance > reach_m:
+				if open[index] == 0 or distance > outer_m:
 					continue
 
-				var cone: float = top - slope * distance
+				# The slope at distance d: tip x f (f below 1 on a spur) blending to flank by a smoothstep from b0 to b1. The
+				# drop is its integral: tip f d + (flank - tip f) x (integral of the smoothstep from 0 to d).
+				var f: float = 1.0 - depth * spur_weight(dirs, offset.angle())
+				var t: float = clampf((distance - b0) / (b1 - b0), 0.0, 1.0)
+				var ramp: float = (b1 - b0) * (t * t * t - 0.5 * t * t * t * t) + maxf(distance - b1, 0.0)
+				var top_here: float = top - tip * f * distance - (flank - tip * f) * ramp
 
-				if cone > heights[index]:
-					heights[index] = cone
+				if top_here > heights[index]:
+					heights[index] = top_here
 					raised = true
 
 	return raised
+
+
+# The directions (radians, as Vector2.angle of the offset from the summit) in which a summit's top runs out as a spur.
+# `standing.tip_spurs.count` of them, spread round the summit with a random turn and some jitter, from the summit's own
+# position and the world seed, so the sketch, the tile tent (tile_height._add_summits) and the granite under the summit
+# (tile_geology, summit_pluton lobes) all use the same spurs. Empty when tip_spurs is not set.
+func spur_dirs(summit: Array) -> PackedFloat32Array:
+	var key: Vector2i = Vector2i(int(round(float(summit[0]))), int(round(float(summit[1]))))
+
+	if _spur_cache.has(key):
+		return _spur_cache[key]
+
+	var dirs: PackedFloat32Array = PackedFloat32Array()
+	var spurs: Dictionary = rules.get("standing", {}).get("tip_spurs", {})
+
+	if not spurs.is_empty():
+		var rng: RandomNumberGenerator = SeedUtil.rng_for(_master, "summit_spurs", key.x, key.y)
+		var count: int = rng.randi_range(int(spurs["count"][0]), int(spurs["count"][1]))
+		var turn: float = rng.randf() * TAU
+
+		for k in range(count):
+			dirs.append(wrapf(turn + TAU * (float(k) + rng.randf_range(-0.2, 0.2)) / float(count), -PI, PI))
+
+	_spur_cache[key] = dirs
+	return dirs
+
+
+# How much of a spur direction `angle` lies on: 1 on a spur's crest line, falling smoothly to 0 at about
+# `tip_spurs.width_rad` x 2 either side (a Gaussian of that width).
+func spur_weight(dirs: PackedFloat32Array, angle: float) -> float:
+	if dirs.is_empty():
+		return 0.0
+
+	var best: float = 0.0
+
+	for a in dirs:
+		var d: float = wrapf(angle - a, -PI, PI) / _spur_width
+		best = maxf(best, exp(-d * d))
+
+	return best
 
 
 func _find_summits() -> void:

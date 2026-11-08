@@ -436,6 +436,8 @@ func _island_texture_rows() -> PackedFloat32Array:
 # A real peak on every summit of the world map: a tent that adds `spire_share` of the summit height at
 # the top and fades to nothing `radius_factor` x that far out, with an exponent above 1 so the point is sharp
 # and the foot blends into the mountain. A function of world position only, so tiles agree on shared edges.
+# Along the summit's spurs (WorldElevation.spur_dirs, the same ones the world map's summit top uses) the tent reaches
+# `spur_reach` farther, so it is gentler there and the spurs run on as ridges between steeper faces, not a round point.
 func _add_summits() -> void:
 	if not _rules.has("summit") or _elevation.summits.is_empty():
 		return
@@ -445,6 +447,7 @@ func _add_summits() -> void:
 	var factor: float = float(rules["radius_factor"])
 	var power: float = float(rules["power"])
 	var cap: float = float(rules["max_m"])
+	var spur_reach: float = float(rules.get("spur_reach", 0.0))
 	var x0: float = float(origin_sx) * spacing_m
 	var z0: float = float(origin_sz) * spacing_m
 	var last: int = samples - 1
@@ -457,9 +460,10 @@ func _add_summits() -> void:
 		if rise <= 0.0 or reach <= 0.0:
 			continue
 
+		var dirs: PackedFloat32Array = _elevation.spur_dirs(summit) if spur_reach > 0.0 else PackedFloat32Array()
 		var east: float = (float(summit[0]) - x0) / spacing_m
 		var north: float = (float(summit[1]) - z0) / spacing_m
-		var span: float = reach / spacing_m
+		var span: float = reach * (1.0 + spur_reach) / spacing_m
 		var i0: int = maxi(int(floor(east - span)), 0)
 		var i1: int = mini(int(ceil(east + span)), last)
 		var j0: int = maxi(int(floor(north - span)), 0)
@@ -467,10 +471,18 @@ func _add_summits() -> void:
 
 		for j in range(j0, j1 + 1):
 			for i in range(i0, i1 + 1):
-				var distance: float = Vector2(float(i) - east, float(j) - north).length() * spacing_m
+				var offset: Vector2 = Vector2(float(i) - east, float(j) - north)
+				var distance: float = offset.length() * spacing_m
+				var here: float = reach
 
-				if distance < reach:
-					heights[j * samples + i] += rise * pow(1.0 - distance / reach, power)
+				if distance >= reach * (1.0 + spur_reach):
+					continue
+
+				if not dirs.is_empty():
+					here = reach * (1.0 + spur_reach * _elevation.spur_weight(dirs, offset.angle()))
+
+				if distance < here:
+					heights[j * samples + i] += rise * pow(1.0 - distance / here, power)
 
 
 func height_at(i: int, j: int) -> float:
