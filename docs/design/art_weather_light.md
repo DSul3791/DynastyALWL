@@ -217,7 +217,27 @@ Today there is one even haze. That is right for clear air, but **mist is what ma
    - Starter summits (1000 to 1450 m) stay below it.
    - The bigger islands go higher: volcano 1500 to 2300 m, three-peak 2000 to 2700 m, giant up to 3400 m (art_mountains, D-10). The higher ones **reach or rise through the cloud layer**.
    - The sky draws its clouds behind the terrain, so a peak can never be **in** the cloud.
-   - **[Check, then Proposal]** On a giant island, look at a summit above 2 km. If the clouds cannot wrap it, add cap-cloud cards (item 3 in the table) at the cloud level around high summits, and let the cloud layer thin near the peak. "Above the clouds" is a great picture if it is drawn honestly.
+   - **[Check, then Proposal]** On a giant island, look at a summit above 2 km. If the clouds cannot wrap it, add cap-cloud cards (item 3 in the table) at the cloud level around high summits, and let the cloud layer thin near the peak. "Above the clouds" is a great picture if it is drawn honestly. The rules for building it are in 7.1.
+
+### 7.1 Cap cloud on high summits (built behind a switch, off until Dino's check picture)
+
+Decided (section 12, item 7): build it, but it stays off until a picture shows it works. The switch is `--cap-cloud` (off by default); `--cap-cloud=METRES` sets the lowest summit that takes one (default 2000 m, the cloud layer), so the check can be made on the starter hero peak (about 1430 m) with `--cap-cloud=1200`.
+
+1. **The real rule:** a cap cloud forms when moist air is pushed up over a summit and cools to its condensation level. It sits on the top and streams downwind as a banner. The air blows through it, but the cloud stays put and keeps re-forming, so it does not drift away with the wind.
+2. **Where:** the summits near the player that reach the switch height. They are found on the player's machine from the baked tiles' coarse height map (32 m), at most 4 caps, the nearest first.
+3. **When:**
+   - Moist air: cloud cover above about 0.3, fully from 0.6, or any rain.
+   - Some wind: from 0.1, fully from 0.35. In a storm the summit is wrapped whatever the wind.
+   - In clear, dry air there is no cap. It comes and goes slowly (about a minute), never in a blink.
+4. **The look:**
+   - A soft lens sitting from just below the top to about 120 m above it, about 250 m across, with a banner of thinner puffs trailing downwind (`wind_dir`) for 300 to 1000 m (longer in stronger wind).
+   - Made of 8 big soft camera-facing puffs per cap, each with its own slowly turning detail.
+   - Lit by the sun and the sky like the cloud layer: a white, sunlit top, a grey underside, gold at sunrise and sunset, dark blue-grey at night with only the moon on it. It never glows.
+   - The puffs fade softly where they meet the rock, so no hard line shows where the cloud cuts the mountain, and they fade out near the eye, so walking up into one never shows a flat card.
+   - The distance haze covers them like any far thing.
+5. **Not yet:** the cloud layer does not thin near the peak (the sky cannot know where peaks are). Standing inside the cap does not yet thicken the fog around the player. Both are for after the check.
+6. **Cost:** at most 32 cards with one material; nothing at all while the switch is off. The summit search reads about 2 million coarse heights once, on a worker thread.
+
 
 ## 8. Rain, snow, wind and storms
 
@@ -225,7 +245,7 @@ Today there is one even haze. That is right for clear air, but **mist is what ma
 
 1. **What is built works:** rain only from cloud, overcast and dimming, wet glossy ground, dry under crowns, and murky storm water. Keep all of it.
 2. **What to add, in order:**
-   - **Puddles** in hollows on paths and flat ground, with ripple rings (the water rules in `art_water.md`).
+   - **Puddles** in hollows on paths and flat ground, with ripple rings (the water rules in `art_water.md`). **Decided (section 12)**, the rules are in 8.1.1.
    - **Wet rock and bark** darker and shinier, the same as the ground.
    - **Drips from leaves** for a minute after the rain stops.
    - Rain streaks **lit by any light near them**: rain sparkling in the firelight is a strong, true look.
@@ -234,6 +254,57 @@ Today there is one even haze. That is right for clear air, but **mist is what ma
    - the air is clearer (less haze for an hour);
    - sun breaks in shafts through gaps in the cloud;
    - a rainbow if the geometry allows (section 4).
+
+### 8.1.1 Puddles
+
+Puddles are the cheapest strong sign that it has rained, and a track that shines with standing water after a storm reads at once. They are a look and a sound only: nothing in the game reads them, they are not saved and the server does not know them.
+
+1. **Where they form:**
+   - Only on flat ground: full below about 10° of slope, gone by about 18°. Water does not stand on a hillside.
+   - In hollows. The hollows are a fixed pattern on the ground (two sizes of noise, about 3.6 m and 1.1 m), so a puddle is 0.5 to 3 m across, irregular, and always in the same place. The voxel ground is 1 m, too coarse to hold the real dips, so the pattern stands in for them.
+   - The ground decides how easily water stands:
+
+     | Ground (shader layer) | Proneness | Why |
+     |---|---|---|
+     | Mud and clay | 1.0 | water cannot sink in |
+     | Worn trails (the game trail map) | + 0.5 on top of the ground | trampled earth is packed hard; tracks are where puddles are |
+     | Gravel and stony soil | 0.7 | packed, but drains quickly |
+     | Flat bare rock | 0.6 | shallow pools in dips of the stone |
+     | Turf (silt, loam, alluvium) | 0.35 | grass roots drink it |
+     | Litter (humus, peat) | 0.25 | spongy |
+     | Sand and beach | 0 | it sinks in at once |
+
+   - None under closed crowns (the canopy map, the same shelter that keeps the ground dry), none on lying snow, none within 1 m of sea level, none in caves (they fade out with the cave light when the player is under rock).
+   - Drawn to about 120 m, gone by 220 m.
+2. **Filling:**
+   - Each ground type keeps its own level from 0 dry to 1 full.
+   - It rises while rain is above 0.15, by 2.5 x (rain - 0.15) per game hour. Steady rain (0.65) fills it in about 50 game minutes (2 real minutes); a storm in about 25.
+   - The level sets how much of the hollow pattern is water: a little rain fills only the deepest hollows on the most prone ground; a full level joins them into broad sheets along a muddy track, while turf shows only a few.
+3. **Draining after the rain** (game hours; one game hour is 2.5 real minutes):
+
+   | Ground | Dry again in |
+   |---|---|
+   | Gravel | 1 h |
+   | Turf | 1.5 h |
+   | Litter | 2 h |
+   | Flat rock | 2.5 h (it only dries in the air) |
+   | Mud and clay | 3 h |
+
+   Light rain below 0.15 halves the draining. A frozen puddle does not drain until it thaws.
+4. **Freezing:** puddles follow the ice rule (`src/shared/ice.gd`, the same number the ponds use) with a 0.1 m depth, so they freeze before the ponds and thaw before them. They look frozen from 2 cm of ice and fully from 5 cm: pale grey-white, glossy, with faint white cracks and trapped bubbles, and no ripples. A frozen puddle does not splash (a thin-ice crunch is a later sound job).
+5. **The look:**
+   - Clear water over mud: the ground under it darkens to a brown-black, and the surface is a mirror (roughness about 0.03, flat), so it shows the sky and the sun. At night it reflects only the night sky, dimly, and a torch's own light: it never glows.
+   - A damp darker rim of about 10 cm around each puddle.
+   - **Rain rings:** drops land on a jittered 0.3 m grid, each ring grows to about 12 cm and fades in about 0.6 s, more of them the harder it rains.
+   - **Wind ruffle:** fine ripples drifting downwind (`wind_dir`) from wind 0.2 up, stronger with wind. In calm air the puddle is a still mirror.
+   - Ripples are drawn within 40 m; beyond, a plain mirror.
+6. **Steps splash:**
+   - The splash sound (`step_water`) now plays only when the foot is in a drawn puddle, not by chance while the ground is wet. The wet squelch on soaked ground stays as it is.
+   - A small visible splash with it: a ring on the water and a few drops thrown 0.2 to 0.4 m up, gone in half a second, bigger at a run. Lit by the scene like the breath puffs.
+   - Animals within 25 m splash the same way when a foot lands in a puddle (a bigger splash for a big animal).
+   - At most 12 splashes at once from one pool.
+7. **Cost:** a few uniforms on the ground material; the puddle work runs only on flat ground within 220 m while any level is above 0, and the ripples only within 40 m. The ice is checked every 10 s.
+8. **Limits:** the hollows are a pattern, not the true small dips of the ground; a cave floor seen from outside its mouth can show a puddle; puddles do not feed the water simulation or give drink.
 
 ### 8.2 Snow
 
@@ -247,7 +318,30 @@ Today there is one even haze. That is right for clear air, but **mist is what ma
      - Rocks and roofs are still open.
    - **Steep faces stay dark**: snow does not hold above about 50°. This gives mountains their black-and-white striping (art_mountains).
    - **Footprints and trails** in snow, a later gameplay look.
-3. **The snow line:** the climate rule (snow below -8 °C, lapse 6.5 °C per km) gives no snow on a 1450 m starter summit. Summer snow patches above about 80 percent of the summit are decided in art_mountains section 10, and the per-island snow line is on Sonny's list after the chain.
+3. **The snow line:** the climate rule (snow below -8 °C, lapse 6.5 °C per km) gives no snow on a 1450 m starter summit. Summer snow patches above about 80 percent of the summit are decided in art_mountains section 10, and the per-island snow line is on Sonny's list after the chain. The look until then is in 8.2.1.
+
+### 8.2.1 Summit snow (the look of Sonny's A4 snow window)
+
+Sonny's A4 design (in #537): each island gets one climate record; the R6 record bakes a snow window per cell (the summer patches at 80 to 85 percent of the summit, in lee and shaded gullies, with more shade on faces that look north, -Z), and R7 reads it. That bake does not exist yet. Until it does, the ground draws the same picture from a rule, so the peaks look right now and the change later is only where the numbers come from.
+
+1. **The island's summit:** the highest summit within about 10 km of the player, from the same coarse height search as the cap cloud (7.1). It needs no switch. Until it is found, no summit snow is drawn.
+2. **How low the patches reach, as a share of that summit:**
+
+   | Season | Lowest patches |
+   |---|---|
+   | Summer | 82 percent (the A4 window, 80 to 85) |
+   | Autumn | 70 percent |
+   | Spring | 62 percent (old winter snow melting back) |
+   | Winter | 50 percent, the treeline (art_mountains rule 4) |
+
+3. **Where inside the window:**
+   - **Faces that look north (-Z)** hold snow about 8 percent of the summit lower than faces that look south (A4 shade rule; art_mountains rule 3).
+   - **Lee faces**, the ones that look downwind of the prevailing wind, hold snow 5 percent lower, because the wind piles it there. The prevailing wind is taken as from the west for now; the island's climate record will give it.
+   - **Gullies and ledges:** on slopes steeper than about 45° snow holds only in creases and on small flat ledges, so dark cliffs carry white streaks (art_mountains rule 1). Gentle ground takes broad patches.
+   - **Patchy edges:** the lower edge breaks up into patches from two sizes of noise (about 60 m and 15 m), never a straight line. In summer only the best spots hold snow; in winter the patches join.
+4. **The look:** the same soft blue-white as the rest of the snow (about 0.86, 0.88, 0.92), a little rougher than ice, with no distance fade, because it is meant to be read from the town.
+5. **Not yet:** footsteps on summit patches still sound like rock, and the patches are drawn, not walked through; both wait for the baked window, which the server will also know.
+
 4. **Snow at night** brightens the land (6.2). Flakes caught in torchlight glow warm near the flame.
 5. **Blizzard:** white-out, the far land gone, wind-driven snow at an angle. The most dangerous, most beautiful weather.
 
@@ -312,6 +406,7 @@ ART_DIRECTION 9 already rules that sky, light, fog and rain read three inputs: z
 9. Wind directions that disagree (rain one way, smoke another).
 10. Flicker that strobes.
 11. A rainbow in the wrong place relative to the sun.
+12. A puddle on a slope, a glowing puddle at night, or a splash where no water is drawn.
 
 ## 11. Pictures to collect (Dave's PC, after the gate queue; not before)
 
@@ -334,8 +429,8 @@ ART_DIRECTION 9 already rules that sky, light, fog and rain read three inputs: z
 4. **A small exposure drop while a torch is held (6.2.3): yes.** Owner: Kathleen. It is built as a 15 percent drop of the moon and sky light rather than of the exposure, because exposure would also dim the torch's own pool of light; the picture beyond the flame is the same.
 5. **A held torch shadow from Medium up (6.4): only after a GPU check on Dave's PC.** Dino does the check when the PC frees up, not now.
 6. **Height fog and a `mist` value in the weather state, valley fog first (7): yes.** Owner: Jamie, after his rivers doc.
-7. **Cap cloud cards for summits above the cloud layer (7.3): only after a check picture from Dino.**
-8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Kathleen owns lower colour at night and breath (#605), then snow on branches and rainbows, each on one branch. Puddles' owner is still to be named.
+7. **Cap cloud cards for summits above the cloud layer (7.3): only after a check picture from Dino.** Kathleen builds it behind the `--cap-cloud` switch, off by default (7.1), so that Dino's picture decides.
+8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Kathleen owns lower colour at night and breath (#605), then snow on branches and rainbows, each on one branch. Puddles: Kathleen, rules in 8.1.1, code stacked on the snow and rainbow branch.
 9. Still open: the rest of the rain additions in 8.1.2, the Milky Way (5.4) and the arctic aurora (9).
 
 Kathleen's night-light code is one branch, in this order: moon phases, the never-pitch-black rule, canopy darkening, the torch exposure drop (#601: a 29.53-day moon with a full moon on day 100, `OUTDOOR_FLOOR` 0.18, crowns take up to 45 percent at night, a held flame 15 percent). This document stays the source of truth.
