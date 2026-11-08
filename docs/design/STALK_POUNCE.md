@@ -1,4 +1,4 @@
-# Stalk and pounce posture for predators (MikeW, 8 Nov 2026; design)
+# Stalk and pounce posture for predators (MikeW, 8 Nov 2026; built behind the stalk_fx flag: wolf, fox, raccoon, lynx)
 
 The server already sends what a predator is doing: wolves `STALK` (6) while the pack closes in and `ATTACK` (7) on the rush (`server_wolves.gd`); a thief (fox, raccoon) `SNEAK` and `CARRY` (`server_thieves.gd`); big game `WARN` (10) and `CHARGE` (11). On the client every one of these plays the walk or run clip by speed, so a stalking wolf trots upright and a sneaking fox walks like any fox.
 
@@ -17,5 +17,5 @@ The server already sends what a predator is doing: wolves `STALK` (6) while the 
 ## Check
 `creature_motion --kinds=wolf --state=6 --speed=1` (stalk), `--kinds=fox --state=13`, and a pounce strip (`--state=7` with a target 3 m ahead); then a live hunt picture.
 
-## Wind (Jamie's #637), for the same layer later
+## Wind (Jamie's #637; built: ears and tails)
 Wind m/s = 20 × wind^1.3 (0.15 a breeze, 0.5 small trees sway, 0.9 a gale), gusts about 1.5× the mean. Above about 0.5: ears laid back a little (the ears layer, a wind term) and the tail swinging with the gusts (the tail layer, a wind term); a fur ruffle needs the coat shader and comes with the wet line.

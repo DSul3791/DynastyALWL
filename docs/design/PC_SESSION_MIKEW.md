@@ -56,9 +56,12 @@ $M --kinds=horse,deer --state=2 --speed=8 --fx --every=0.1 --out=$O/motion_fx > 
 $M --kinds=deer,wolf --state=0 --speed=1.5 --season=winter --prints --frames=4 --every=1 --out=$O/motion_prints > $O/m12.log 2>&1   # prints in snow (hoof and paw)
 $M --kinds=deer,horse,cow --state=0 --ik --cam=4 --out=$O/motion_ik > $O/m13.log 2>&1   # feet reach a 15 cm step on one side
 $M --kinds=deer --state=2 --speed=6 --water=0.3 --fx --every=0.1 --out=$O/motion_splash > $O/m14.log 2>&1   # splashes wading
+$M --kinds=wolf --state=6 --speed=1 --stalk --out=$O/motion_stalk > $O/m15.log 2>&1   # wolf stalk crouch, slow steps
+$M --kinds=fox,lynx --state=7 --speed=4 --stalk --every=0.1 --out=$O/motion_pounce > $O/m16.log 2>&1   # pounce arc
+$M --kinds=horse,dog --state=0 --wind=0.9 --out=$O/motion_wind > $O/m17.log 2>&1   # ears back and tails swinging in a gale
 grep -h "saved\|SCRIPT" $O/m*.log
 ```
-Pass, per strip, by eye: the tail or ears move between frames; sleeping animals lie (deer, dog) or stand head-low (horse) and `asleep true` in the log; the deer herd faces roughly one way and `look_left` above 0 on more than one frame as the camera nears; the beaver and moose show `wet` near 1; eyes glow in the night strip (deer pale green, wolf yellow-green); the rabbit and kangaroo rise and land; the black bear's head is low with the jaw open; brown puffs at the running hooves; a line of hoof and paw prints behind the deer and wolf on snow, fading only slowly; the deer's, horse's and cow's right-hand feet stand 15 cm higher than the left without the body tipping; droplets at the wading deer's feet.
+Pass, per strip, by eye: the tail or ears move between frames; sleeping animals lie (deer, dog) or stand head-low (horse) and `asleep true` in the log; the deer herd faces roughly one way and `look_left` above 0 on more than one frame as the camera nears; the beaver and moose show `wet` near 1; eyes glow in the night strip (deer pale green, wolf yellow-green); the rabbit and kangaroo rise and land; the black bear's head is low with the jaw open; brown puffs at the running hooves; a line of hoof and paw prints behind the deer and wolf on snow, fading only slowly; the deer's, horse's and cow's right-hand feet stand 15 cm higher than the left without the body tipping; droplets at the wading deer's feet; the stalking wolf low with its head level and tail still; the fox and lynx leave the ground in the pounce strip; the horse's and dog's tails swing and ears lie a little back in the gale.
 
 ## 5. Gates (15 min, in order)
 ```bash

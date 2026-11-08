@@ -23,6 +23,8 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Puffs and splashes | dust, mud, snow puffs; droplets in water and puddles | none | `footfall_fx` (**off**) | FOOTFALL.md |
 | Prints | fading hoof, paw, claw and bird prints in snow and mud | none (sign group) | `prints_fx` (**off**) | FOOTFALL.md |
 | Slope pitch | the body pitches with the slope | none | `slope_tilt` (**off**) | FOOTFALL.md |
+| Stalk and pounce | crouch, creep, freeze when prey looks up; pounce arc | `stalk`, `pounce` | `stalk_fx` (**off**) | STALK_POUNCE.md |
+| Wind | ears back and tails swing above about 0.5 | none | needs `wind_now` (on) | STALK_POUNCE.md (wind note) |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |
 
 **Already in main before the layer:** root-motion strip, flat-clip guard and fallback, skinned bounds, size by clip pose, flock models, young models, swimming, foot-speed measurement (#538 to #591).

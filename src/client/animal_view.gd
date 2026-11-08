@@ -43,6 +43,8 @@ var _prints: Array = []           # [Decal, born msec, life s]
 var _print_tex: Dictionary = {}   # sign group -> ImageTexture
 var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
 var slope_tilt: bool = false
+var stalk_fx: bool = false        # predators crouch and creep when stalking and pounce on the attack (STALK_POUNCE.md; off until the PC check)
+var wind_now: Callable            # () -> wind 0..1 (Jamie's #637: 20 x wind^1.3 m/s); ears lie back and tails swing above about 0.5
 var foot_ik: bool = false         # feet reach uneven ground (FOOTFALL.md step 4; off until the PC check)
 var ground_height: Callable       # (x, z) -> terrain height or NAN, from the client (foot_ik probes)      # the body pitches with the slope it walks on (off until the PC check)
 var season_now: String = ""      # "spring", "summer", "autumn", "winter" or "" when unknown; the client sets it (tail swish against flies)
@@ -482,6 +484,9 @@ func _process_body(delta: float) -> void:
 
 			_hop_arc(node, b, model_speed, delta)
 
+			if float(b.get("pounce_t", -1.0)) >= 0.0:
+				_pounce(node, b, delta)
+
 			if slope_tilt:
 				_slope_pitch(node, b, before, delta)
 
@@ -495,6 +500,9 @@ func _process_body(delta: float) -> void:
 				var posed = node.get_meta("poses")      # bone_offsets.gd: a pose for a state the file has no clip for
 
 				var pose_key: int = -1 if bool(b.get("asleep", false)) and posed.poses.has(-1) else state      # -1: the sleep pose (horses doze standing)
+
+				if not stalk_fx and _stalking(node, state):
+					pose_key = -2      # the stalk crouch is off until the PC check
 
 				if posed.poses.has(pose_key):
 					posed.pose_state = pose_key
@@ -660,7 +668,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_mats", eye_mats)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet"):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk"):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -685,6 +693,15 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 
 			if row.has("state_poses"):
 				missing.append_array(fix.setup_poses(sks[0], row["state_poses"]))
+				root.set_meta("poses", fix)
+
+			if row.has("stalk") and (row["stalk"] as Dictionary).has("pose"):
+				var stalk_poses: Dictionary = {}
+
+				for st in row["stalk"].get("states", []):
+					stalk_poses[str(st)] = row["stalk"]["pose"]
+
+				missing.append_array(fix.setup_poses(sks[0], stalk_poses))
 				root.set_meta("poses", fix)
 
 			if row.has("feet"):
@@ -1591,6 +1608,10 @@ func _tail_motion(node: Node3D, state: int, speed: float) -> void:
 			var season: String = str((conditions_now.call() as Dictionary).get("season", "")) if conditions_now.is_valid() else season_now
 			want = (1.0 if speed < 0.3 else 0.3) * (1.0 if season == "" or season == "summer" or season == "spring" else 0.0)
 
+	if stalk_fx and _stalking(node, state):
+		want = 0.0      # a stalker's tail is low and still
+
+	want = maxf(want, _wind() - 0.4)      # gusts above about 0.5 swing every tail a little (Jamie's #637)
 	var fix = node.get_meta("tail")      # bone_offsets.gd (untyped: its own property)
 	fix.wave_scale = lerpf(float(fix.wave_scale), want, 0.05)
 
@@ -1611,7 +1632,7 @@ func _ear_motion(node: Node3D, state: int) -> void:
 			var side: float = (-frame.x.normalized()).dot(to.normalized())      # the model faces -Z, so its left is -X
 			turn = clampf(side * (1.5 if state == 3 else 1.0), -1.0, 1.0)
 
-	var flat: float = 1.0 if state == 10 or state == 11 or state == 16 else 0.0
+	var flat: float = 1.0 if state == 10 or state == 11 or state == 16 or (stalk_fx and state == 7) else clampf((_wind() - 0.5) * 0.8, 0.0, 0.4)      # threat flat; a strong wind lays them back a little
 	fix.ear_turn = lerpf(float(fix.ear_turn), turn, 0.08)
 	fix.ear_flat = lerpf(float(fix.ear_flat), flat, 0.15)
 
@@ -2009,6 +2030,44 @@ func _splash(at: Vector3, deep: bool, speed: float) -> void:
 	get_tree().create_timer(drops.lifetime + 0.3).timeout.connect(drops.queue_free)
 
 
+# Whether this animal is in one of its row's stalk states (wolves 6, the thief's sneak 13).
+func _stalking(node: Node3D, state: int) -> bool:
+	var row: Dictionary = node.get_meta("model_row", {})
+	return row.has("stalk") and (row["stalk"].get("states", []) as Array).has(state)
+
+
+# A grazer within 25 m with its head up toward the player: the stalker freezes (STALK_POUNCE.md step 3).
+func _prey_looking(node: Node3D) -> bool:
+	for id in _bodies:
+		var o: Dictionary = _bodies[id]
+
+		if float(o.get("look_left", 0.0)) > 0.0 and (o["node"] as Node3D).position.distance_to(node.position) < 25.0:
+			return true
+
+	return false
+
+
+# The pounce arc: a 0.2 s crouch back, then a leap of the row's arc_m height over 0.5 s, then down.
+func _pounce(node: Node3D, b: Dictionary, delta: float) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+	var spec: Dictionary = (node.get_meta("model_row", {}) as Dictionary).get("pounce", {})
+	b["pounce_t"] = float(b["pounce_t"]) + delta
+	var t: float = float(b["pounce_t"])
+
+	if rig == null or t > 0.7:
+		b["pounce_t"] = -1.0
+		return
+
+	if t < 0.2:
+		rig.position.y = -0.08 * sin(PI * t / 0.2)
+	else:
+		rig.position.y = float(spec.get("arc_m", 0.6)) * sin(PI * (t - 0.2) / 0.5)
+
+
+func _wind() -> float:
+	return float(wind_now.call()) if wind_now.is_valid() else 0.0
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -2096,6 +2155,39 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		ref = float(player.get_animation(clip).get_meta("travel_mps", ref))      # the speed the clip's feet were made for (_strip_root_drift)
 
 	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
+
+	# Stalking (STALK_POUNCE.md): the walk at the row's slower rate, a stalk clip if the file has one, and a freeze for 1 to 3 s
+	# when a grazer near it looks up. On the attack a pounce clip plays once and _pounce lifts the body on an arc.
+	if stalk_fx and _stalking(node, state):
+		var stalk: Dictionary = row["stalk"]
+
+		if stalk.has("clip"):
+			var creep: String = _clip_full(player, row, str(stalk["clip"]))
+
+			if creep != "" and player.current_animation != creep:
+				player.play(creep, 0.3)
+
+		player.speed_scale *= float(stalk.get("rate", 0.5))
+
+		if float(b.get("freeze", 0.0)) <= 0.0 and float(b.get("freeze_cool", 0.0)) <= 0.0 and _prey_looking(node):
+			var span: Array = stalk.get("freeze_s", [1.0, 3.0])
+			b["freeze"] = randf_range(float(span[0]), float(span[1]))      # luck-exempt: how long a stalker holds still (client look)
+			b["freeze_cool"] = float(b["freeze"]) + 3.0
+
+		b["freeze"] = maxf(0.0, float(b.get("freeze", 0.0)) - delta)
+		b["freeze_cool"] = maxf(0.0, float(b.get("freeze_cool", 0.0)) - delta)
+
+		if float(b["freeze"]) > 0.0:
+			player.speed_scale = 0.0
+
+	if stalk_fx and row.has("pounce") and state == 7 and int(b.get("last_state", -1)) != 7:
+		b["pounce_t"] = 0.0
+		var leap: String = _clip_full(player, row, str(row["pounce"].get("clip", "")))
+
+		if leap != "":
+			player.play(leap, 0.1)
+
+	b["last_state"] = state
 
 	# A hopping animal (docs/design/HOP_ARC.md, row "hop" {walk|run: {bound_m, arc_m}}) bounds on an arc instead of skating on a
 	# sped-up hop: one hop clip cycle per bound, the bound lengthening above the clip's own rate (_hop_arc lifts the body).

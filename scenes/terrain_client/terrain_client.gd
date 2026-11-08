@@ -1323,6 +1323,7 @@ func _welcome_body(info: Dictionary) -> void:
 		if animal_view.footfall_fx and (ground == "water" or ground == "puddle"):
 			sound.slots.play("step_water", at, body.global_position))      # an animal splashing through water or a puddle
 	animal_view.ground_height = func(x: float, z: float) -> float: return _animal_ground(x, z)      # feet on uneven ground (foot_ik)
+	animal_view.wind_now = func() -> float: return float(sound.weather.wind) if sound != null and sound.weather != null else 0.0      # ears and tails in the wind
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
