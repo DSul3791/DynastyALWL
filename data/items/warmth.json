@@ -45,5 +45,16 @@
 		"moderate_pace": 1.5,
 		"severe_pace": 2.5,
 		"say_severe": "You have stopped shivering. Get to a fire, now."
+	},
+	"cave_climate": {
+		"note": "Cave air by depth and season (docs/design/cave_climate_design.md; Jamie #709 underground-climate.md, coordinator 8 Nov 2026, Dave may revert). Deep in, the year mean at the height (cave_mean_c, 5.5 C at cave 8002). In from the mouth: lerp(outside air with day_swing_kept of its day swing, deep, smoothstep(near_m, reach_m, depth_m)), the band by which way the cave runs from the mouth (rises, drops or level) and the season (summer = outside warmer than the cave); depth_m is the straight distance to the nearest mouth. Inside draught_m a draught of draught_per_c m/s for each degree between outside and cave, at most draught_max_ms; none past. Drying under cover: none past dry_mouth_m; at the mouth winter_dry_share of dry_cover_per_h when the outside is winter_dry_c or more colder than the cave, else none. Remove this block for the flat cave of #667.",
+		"bands": {"rises_summer": [10.0, 60.0], "rises_winter": [5.0, 20.0], "drops_winter": [10.0, 60.0], "drops_summer": [5.0, 20.0], "level": [10.0, 40.0]},
+		"day_swing_kept": 0.5,
+		"draught_m": 10.0,
+		"draught_per_c": 0.06,
+		"draught_max_ms": 0.6,
+		"dry_mouth_m": 20.0,
+		"winter_dry_c": 3.0,
+		"winter_dry_share": 0.5
 	}
 }

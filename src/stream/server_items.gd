@@ -17,6 +17,7 @@ const LuckScript := preload("res://src/shared/luck.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const FloraLayout := preload("res://src/worldgen/runtime/flora_layout.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const CaveClimate := preload("res://src/shared/cave_climate.gd")
 const SwimRules := preload("res://src/shared/swim.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
@@ -171,6 +172,7 @@ var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the s
 var roof_remove: Callable       # (key)
 var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof or in a cave (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
 var cave_mean_c: Callable      # (position) -> the cave air (C): the island's year mean at the position's height when it is inside a cave, NAN outside one (unset: never in a cave)
+var cave_air: Callable         # (position) -> {"deep_c", "depth_m", "kind", "day_part_c"} inside a cave, {} outside: the mouth blend (docs/design/cave_climate_design.md)
 
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
@@ -9005,8 +9007,9 @@ func warmth_target(peer: int) -> float:
 	# In a cave (Jamie's caves page, #664): the air sits at the island's year mean for its height (cave_mean_c, Climate.year_mean_c), with no
 	# day and night swing and no rain cooling, and no wind reaches in.
 	if not is_nan(cave_c):
-		air = cave_c
-		wind = 0.0
+		var mouth_air: Dictionary = _cave_mouth_air(pos, air)   # in from the mouth the outside air still reaches, with a small draught (#709)
+		wind = float(mouth_air.get("wind", 0.0))
+		air = float(mouth_air.get("air_c", cave_c))
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))
 
@@ -9100,6 +9103,22 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	_sync_warmth(peer, false)
 
 
+# The air in a cave at this point (docs/design/cave_climate_design.md; Jamie #709, coordinator 8 Nov 2026): {"air_c", "wind" (0..1, the mouth's
+# draught), "dry_share"} blended in from the mouth by warmth.json cave_climate; without cave_climate (or the cave_air callable) the flat cave of #667: the year
+# mean, no wind, no drying. outside_c is the day's air at the point as warmth_target works it out.
+func _cave_mouth_air(pos: Vector3, outside_c: float) -> Dictionary:
+	var deep: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
+	var at: Dictionary = cave_air.call(pos) if cave_air.is_valid() else {}
+	var cfg: Dictionary = _warmth_cfg.get("cave_climate", {})
+
+	if is_nan(deep) or at.is_empty() or cfg.is_empty():
+		return {"air_c": deep, "wind": 0.0, "dry_share": 0.0}
+
+	var depth: float = float(at.get("depth_m", INF))
+	return {"air_c": CaveClimate.air_c(cfg, outside_c, float(at.get("day_part_c", 0.0)), deep, depth, int(at.get("kind", CaveClimate.LEVEL))),
+		"wind": CaveClimate.wind_of_ms(CaveClimate.draught_ms(cfg, outside_c, deep, depth)), "dry_share": CaveClimate.dry_share(cfg, outside_c, deep, depth)}
+
+
 # The body in weather (docs/design/body_in_weather_design.md; Jamie #703, coordinator 8 Nov 2026): warmth.json body_703 when its flag is on, else empty,
 # and every reader falls back to today's numbers.
 func _body_cfg() -> Dictionary:
@@ -9171,7 +9190,12 @@ func _update_soak(peer: int, game_s: float) -> void:
 	elif by_fire:   # body_703 on: wool by a fire dries in hours, not minutes (docs/design/body_in_weather_design.md 2)
 		soak = maxf(soak - float(_body_cfg().get("dry_fire_per_h", cfg.get("dry_fire_per_h", 6.0))) * hours, 0.0)
 	elif covered and not in_cave:
-		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * hours, 0.0)   # cave air is 98 to 100% wet: only a fire dries you there (#664)
+		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * hours, 0.0)
+	elif in_cave:
+		# Cave air past the mouth is 98 to 100% wet: only a fire dries you there (#664); a winter mouth's dry incoming air dries at half (#709).
+		var outside: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
+		var share: float = float(_cave_mouth_air(pos, outside).get("dry_share", 0.0))
+		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * share * hours, 0.0)
 
 	_soak[peer] = soak
 
