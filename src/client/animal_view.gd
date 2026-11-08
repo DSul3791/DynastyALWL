@@ -617,6 +617,24 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		# units than the skeleton (the bear lay flat as a legless tube, 7 Nov 2026) is rescaled to it (_fit_clip_units).
 		var roles: Dictionary = {}
 
+		# Hand-made gait clips (gait {role: spec}): a model with no usable clip for a role gets one built from its own bones
+		# (_gait_clip). They are added under the name "gait_<role>" and the row's clips point at it.
+		for gait_role in (row.get("gait", {}) as Dictionary):
+			var gait_name: String = "gait_%s" % str(gait_role)
+
+			if player.has_animation_library("") and not player.has_animation(gait_name):
+				var made: Animation = _gait_clip(player, rig, row["gait"][gait_role], kind)
+
+				if made != null:
+					player.get_animation_library("").add_animation(gait_name, made)
+
+			row = row.duplicate(true)
+
+			if not row.has("clips"):
+				row["clips"] = {}
+
+			(row["clips"] as Dictionary)[str(gait_role)] = gait_name
+
 		# A refused clip (it lays the model flat) does not leave the role empty: the next clip that names the role is tried (the elk's
 		# file has two clips called Walk, one of them shrinking the rig to a hundredth; MikeW, 7 Nov 2026).
 		var rest_h: float = _clip_height(player, null, rig)
@@ -662,6 +680,15 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 
 				anim.loop_mode = Animation.LOOP_LINEAR
 				_strip_root_drift(player, anim, rig, kind, anim_name)
+
+				# An in-place walk or run (no travel in the clip) gets its speed from its feet: docs/design/FOOT_SLIDING.md.
+				if (str(key) == "walk" or str(key) == "run") and not anim.has_meta("travel_mps") and not anim.has_meta("stride_measured"):
+					anim.set_meta("stride_measured", true)
+					var stride_mps: float = _measure_stride(player, anim, rig)
+
+					if stride_mps >= 0.2 and stride_mps <= 25.0:
+						anim.set_meta("travel_mps", stride_mps)
+						_model_note(kind, "clip %s: feet move %.2f m/s on the ground, played at speed / %.2f" % [anim_name, stride_mps, stride_mps])
 				roles[str(key)] = anim_name
 				break
 
@@ -948,10 +975,22 @@ func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> floa
 
 # The box of the skeleton's bones in the rig's space in a clip's first frame (or the imported pose with no clip).
 func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
+	var bones: PackedVector3Array = _clip_bones(player, anim, rig, 0.0)
+	var box: AABB = AABB()
+
+	for i in bones.size():
+		box = AABB(bones[i], Vector3.ZERO) if i == 0 else box.expand(bones[i])
+
+	return box
+
+
+# The bones of the skeleton in the rig's space at `time` into a clip (or the imported pose with no clip), from the clip's own tracks
+# and the bone rests: no running player needed.
+func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: float = 0.0) -> PackedVector3Array:
 	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
 
 	if skeletons.is_empty():
-		return AABB()
+		return PackedVector3Array()
 
 	var sk: Skeleton3D = skeletons[0]
 	var local: Array = []
@@ -981,11 +1020,11 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 			var bone_xf: Transform3D = local[bone]
 
 			if kind == Animation.TYPE_POSITION_3D:
-				bone_xf.origin = anim.position_track_interpolate(t, 0.0)
+				bone_xf.origin = anim.position_track_interpolate(t, time)
 			elif kind == Animation.TYPE_ROTATION_3D:
-				bone_xf.basis = Basis(anim.rotation_track_interpolate(t, 0.0)).scaled(bone_xf.basis.get_scale())
+				bone_xf.basis = Basis(anim.rotation_track_interpolate(t, time)).scaled(bone_xf.basis.get_scale())
 			else:
-				bone_xf.basis = Basis(bone_xf.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, 0.0))
+				bone_xf.basis = Basis(bone_xf.basis.get_rotation_quaternion()).scaled(anim.scale_track_interpolate(t, time))
 
 			local[bone] = bone_xf
 
@@ -1012,11 +1051,11 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 
 					match anim.track_get_type(t):
 						Animation.TYPE_POSITION_3D:
-							origin = anim.position_track_interpolate(t, 0.0)
+							origin = anim.position_track_interpolate(t, time)
 						Animation.TYPE_ROTATION_3D:
-							turn = anim.rotation_track_interpolate(t, 0.0)
+							turn = anim.rotation_track_interpolate(t, time)
 						Animation.TYPE_SCALE_3D:
-							size = anim.scale_track_interpolate(t, 0.0)
+							size = anim.scale_track_interpolate(t, time)
 
 				xf = Transform3D(Basis(turn) * Basis.from_scale(size), origin)
 
@@ -1026,7 +1065,8 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 
 	var world: Array = []
 	world.resize(sk.get_bone_count())
-	var box: AABB = AABB()
+	var out: PackedVector3Array = PackedVector3Array()
+	out.resize(sk.get_bone_count())
 
 	for i in sk.get_bone_count():
 		var chain: Array = []
@@ -1040,10 +1080,9 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 			var parent: int = sk.get_bone_parent(c)
 			world[c] = (world[parent] as Transform3D) * (local[c] as Transform3D) if parent >= 0 else local[c]
 
-		var at: Vector3 = to_rig * (world[i] as Transform3D).origin
-		box = AABB(at, Vector3.ZERO) if i == 0 else box.expand(at)
+		out[i] = to_rig * (world[i] as Transform3D).origin
 
-	return box
+	return out
 
 
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
@@ -1200,7 +1239,7 @@ func _make_model_flock(number: int, id: int, row: Dictionary) -> Node3D:
 			root.free()
 			return null      # no model file: the code flock is drawn
 
-		bird.position = Vector3(rng.randf_range(-spread, spread), -float(row.get("sink_m", 0.0)), rng.randf_range(-spread, spread))
+		bird.position = Vector3(rng.randf_range(-spread, spread), -_flock_sink(bird, row), rng.randf_range(-spread, spread))
 		bird.rotation.y = rng.randf_range(-0.6, 0.6)
 		rig.add_child(bird)
 		birds.append(bird)
@@ -1280,6 +1319,111 @@ func _eye_shine(node: Node3D) -> void:
 
 	for mat in mats:
 		(mat as StandardMaterial3D).emission_energy_multiplier = energy
+
+
+# How fast a clip's feet move over the ground while they touch it (docs/design/FOOT_SLIDING.md, MikeW 8 Nov 2026). In an in-place
+# walk the body stays put and a planted foot slides backward at exactly the speed the animal should travel, so: sample the bones 40
+# times over the clip in the rig's space (metres, the model's size scale is in it), take the lowest point the clip reaches as the
+# ground, call a bone planted while it is within 3% of the standing height of that ground, and return the middle horizontal speed
+# of planted bones between neighbouring samples. 0 when nothing is planted long enough to tell.
+func _measure_stride(player: AnimationPlayer, anim: Animation, rig: Node3D) -> float:
+	if anim.length <= 0.0:
+		return 0.0
+
+	var samples: int = 40
+	var frames: Array = []
+	var low: float = INF
+	var high: float = -INF
+
+	for i in samples + 1:
+		var bones: PackedVector3Array = _clip_bones(player, anim, rig, anim.length * float(i) / float(samples))
+		frames.append(bones)
+
+		for p in bones:
+			low = minf(low, p.y)
+			high = maxf(high, p.y)
+
+	if frames.is_empty() or high <= low:
+		return 0.0
+
+	var near_ground: float = low + (high - low) * 0.03
+	var dt: float = anim.length / float(samples)
+	var speeds: Array = []
+
+	for i in samples:
+		var a: PackedVector3Array = frames[i]
+		var b: PackedVector3Array = frames[i + 1]
+
+		for bone in a.size():
+			if a[bone].y <= near_ground and b[bone].y <= near_ground:
+				speeds.append(Vector2(b[bone].x - a[bone].x, b[bone].z - a[bone].z).length() / dt)
+
+	if speeds.size() < 4:
+		return 0.0
+
+	speeds.sort()
+	return float(speeds[int(speeds.size() / 2.0)])
+
+
+# How far a bird of a model flock sits into the surface: "sink_share" of its height in its graze clip (its swim pose: the legs
+# paddle below the body, and about a third of the body rides under the water line), else the fixed "sink_m".
+func _flock_sink(bird: Node3D, row: Dictionary) -> float:
+	if not row.has("sink_share") or not bird.has_meta("player"):
+		return float(row.get("sink_m", 0.0))
+
+	var player: AnimationPlayer = bird.get_meta("player")
+	var clip: String = str((player.get_meta("roles", {}) as Dictionary).get("0", ""))
+	var rig: Node3D = bird.get_node_or_null("Rig")
+
+	if clip == "" or rig == null:
+		return float(row.get("sink_m", 0.0))
+
+	var tall: float = _clip_box(player, player.get_animation(clip), rig).size.y      # in the rig's space: the model's size scale is in it
+	return tall * float(row["sink_share"])
+
+
+# A hand-made walk or run cycle from a model's own bones (MikeW, 8 Nov 2026: the mink's file has no looping walk; this is the
+# fallback if its loop window looks jerky in the game). spec: period_s, and "bones" {bone: [phase 0..1, swing degrees, axis "x"/"y"/"z"]}:
+# each bone turns about its own axis by swing * sin(2 pi (t / period + phase)) over its rest. A four-beat walk puts the legs at
+# phases 0, 0.25, 0.5, 0.75 (left hind, left fore, right hind, right fore); spine, tail and head bones sway at small swings.
+func _gait_clip(player: AnimationPlayer, rig: Node3D, spec: Dictionary, kind: String) -> Animation:
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+	var base: Node = player.get_node_or_null(player.root_node)
+
+	if skeletons.is_empty() or base == null:
+		return null
+
+	var sk: Skeleton3D = skeletons[0]
+	var period: float = float(spec.get("period_s", 0.5))
+	var out: Animation = Animation.new()
+	out.length = period
+	out.loop_mode = Animation.LOOP_LINEAR
+	var sk_path: String = str(base.get_path_to(sk))
+	var steps: int = 16
+	var missing: PackedStringArray = PackedStringArray()
+
+	for bone_name in (spec.get("bones", {}) as Dictionary):
+		var bone: int = sk.find_bone(str(bone_name))
+
+		if bone < 0:
+			missing.append(str(bone_name))
+			continue
+
+		var b: Array = spec["bones"][bone_name]
+		var axis: Vector3 = {"x": Vector3.RIGHT, "y": Vector3.UP, "z": Vector3.BACK}.get(str(b[2]) if b.size() > 2 else "x", Vector3.RIGHT)
+		var rest: Quaternion = sk.get_bone_rest(bone).basis.get_rotation_quaternion()
+		var t: int = out.add_track(Animation.TYPE_ROTATION_3D)
+		out.track_set_path(t, NodePath("%s:%s" % [sk_path, str(bone_name)]))
+
+		for i in steps + 1:
+			var time: float = period * float(i) / float(steps)
+			var angle: float = deg_to_rad(float(b[1])) * sin(TAU * (time / period + float(b[0])))
+			out.track_insert_key(t, time, rest * Quaternion(axis, angle))
+
+	if not missing.is_empty():
+		_model_note(kind, "gait: no bone %s" % ", ".join(missing))
+
+	return out
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
