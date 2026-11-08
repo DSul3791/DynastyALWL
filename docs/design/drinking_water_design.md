@@ -46,7 +46,7 @@ A new server callable, `water_source(pos, reach_m) -> Dictionary`, is filled by 
 - **Order:** the cleanest source within reach wins: spring, then river, lake, brook, wet ground. This is Sonny's physical order. Salt never wins over fresh water within reach.
 - **Ice:**
   - a spring is never frozen;
-  - a brook is frozen at a point `x` m below its spring when the air is under 0 °C and `x` is past Sonny's open length `x₀ = λ ln((T_water − T_air)/(0 − T_air))`, with λ = ρcQ / (hW) and h = 20 W/m²K;
+  - a brook is frozen at a point `x` m below its spring when the air is under 0 °C, `x` is past Sonny's open length `x₀ = λ ln((T_water − T_air)/(0 − T_air))`, with λ = ρcQ / (hW) and h = 20 W/m²K, and the ice rule there (`_on_ice`, a bearing sheet) also says ice. Kathleen #729 and the coordinator, 8 Nov: the hole is asked for only where the look shows a sheet, and on the starter island the ice never bears;
   - a brook with no spring upstream, or still water, follows the existing ice rule (`_on_ice`, #616).
   - Frozen water asks for `_hole_near` within reach, the fishing hole. Otherwise the player sees `say_frozen` ("The water is frozen. Break a hole in the ice first.").
 - **The sim still counts.** Where the live sim has wet a cell that the record calls dry (a flood, a fresh puddle after rain), it is a `puddle` drink. This keeps today's rain puddles drinkable, and it comes last in the order.

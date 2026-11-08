@@ -65,12 +65,16 @@ func _rules() -> void:
 
 	# Sonny's worked example: Q 0.002 m3/s, W 0.5 m, spring 6.5 C, -4 C night, h 20: lambda 838 m, x0 about 810 m.
 	var near: Dictionary = {"kind": "brook", "regime": 1, "below_spring_m": 500.0, "q_m3_s": 0.002, "width_m": 0.5, "spring_c": 6.5}
+	near["iced"] = true
 	var far: Dictionary = near.duplicate()
 	far["below_spring_m"] = 1000.0
+	var far_thin: Dictionary = far.duplicate()
+	far_thin["iced"] = false
 	var x0: float = DrinkRules.open_length_m(near, -4.0, 20.0)
 	check(absf(x0 - 810.0) < 15.0, "open length on a -4 C night is about 810 m (%.0f m)" % x0)
 	check(not bool(DrinkRules.pick(CFG, [near], ctx("winter", INF, -4.0)).get("frozen", true)), "the brook is open 500 m below its spring")
 	check(bool(DrinkRules.pick(CFG, [far], ctx("winter", INF, -4.0)).get("frozen", false)), "the brook is frozen 1000 m below its spring")
+	check(not bool(DrinkRules.pick(CFG, [far_thin], ctx("winter", INF, -4.0)).get("frozen", true)), "past the open length but with no bearing ice there (_on_ice false): open, no hole asked")
 	check(not bool(DrinkRules.pick(CFG, [far], ctx("winter", INF, 2.0)).get("frozen", true)), "above 0 C nothing freezes")
 
 	# Still water follows the ice rule at the spot.

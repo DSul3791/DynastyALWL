@@ -91,8 +91,9 @@ static func water_c(row: Dictionary, ctx: Dictionary) -> float:
 	return maxf(air, 0.0)
 
 
-# Frozen over: a spring never; a brook below a spring past its open length on a frosty night (Sonny: x0 = lambda ln((Tw - Ta)/(0 - Ta)));
-# any other water by the ice rule at that spot (row "iced").
+# Frozen over: a spring never; a brook below a spring past its open length on a frosty night (Sonny: x0 = lambda ln((Tw - Ta)/(0 - Ta)))
+# and only where the ice rule at that spot also says ice (row "iced", _on_ice: Kathleen #729, coordinator 8 Nov), so a hole is asked for
+# only where the look shows a sheet; any other water by the ice rule at that spot.
 static func frozen(cfg: Dictionary, row: Dictionary, ctx: Dictionary) -> bool:
 	var kind: String = str(row.get("kind", ""))
 
@@ -105,7 +106,7 @@ static func frozen(cfg: Dictionary, row: Dictionary, ctx: Dictionary) -> bool:
 		if air >= 0.0:
 			return false
 
-		return float(row["below_spring_m"]) > open_length_m(row, air, float(cfg.get("night_h_w_m2k", 20.0)))
+		return bool(row.get("iced", false)) and float(row["below_spring_m"]) > open_length_m(row, air, float(cfg.get("night_h_w_m2k", 20.0)))
 
 	return bool(row.get("iced", false))
 
