@@ -130,6 +130,15 @@ def test_seasons():
     assert s['evap_dry'] > s['evap_wet']
 
 
+def test_main_keeps_the_stores_name():
+    """main() reads the spring stores as `st` when it writes the spring rows, long after it builds the reaches, so nothing in
+    between may reuse the name (a stretch dict once did, which would have stopped the spring rows on the PC)."""
+    import ast
+    tree = ast.parse(open(nw.__file__).read())
+    main = next(f for f in tree.body if isinstance(f, ast.FunctionDef) and f.name == 'main')
+    stores = [x.lineno for x in ast.walk(main) if isinstance(x, ast.Name) and x.id == 'st' and isinstance(x.ctx, ast.Store)]
+    assert len(stores) == 2, stores        # the stores from groundwater.npz, or None for an R4 run without them
+
 if __name__ == '__main__':
     tests = [v for k, v in sorted(globals().items()) if k.startswith('test_') and callable(v)]
     for t in tests:
