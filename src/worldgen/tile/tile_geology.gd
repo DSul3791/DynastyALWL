@@ -52,6 +52,7 @@ var outcrop_cells: Dictionary = {}      # rock name -> cells at the bedrock surf
 
 var _settings
 var _rules: Dictionary = {}
+var _summit_tent: Dictionary = {}     # tile_rules summit: the tent tile_height._add_summits puts on every world-map summit
 var _tables
 var _elevation
 var _master: int = 0
@@ -78,6 +79,7 @@ var _kind_field: PackedByteArray
 func setup(settings, rules: Dictionary, tables, elevation, sketch: Dictionary) -> void:
 	_settings = settings
 	_rules = rules["geology"]
+	_summit_tent = rules.get("summit", {})
 	_tables = tables
 	_elevation = elevation
 	_master = settings.master_seed
@@ -396,6 +398,15 @@ func _cell_hints(cx: int, cz: int) -> Array:
 # ==================================================
 # FEATURES AND ORE BODIES
 # ==================================================
+
+# The height the ground's summit reaches over a world-map summit of `top` m: the tile summit tent (tile_height._add_summits)
+# adds spire_share of it, capped so the summit stays under max_m. Rule 3 tests this, the summit the rivers and the ice meet.
+func _ground_summit_m(top: float) -> float:
+	if _summit_tent.is_empty():
+		return top
+
+	return top + minf(float(_summit_tent["spire_share"]) * top, maxf(float(_summit_tent["max_m"]) - top, 0.0))
+
 
 func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Vector2, home: Vector2i, local_cell: int) -> Dictionary:
 	var kind: String = cell["kind"]
@@ -829,8 +840,8 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 		ore["local_id"] = int(ore["local_id"]) + 50
 		ore["id"] = "%d,%d#%d" % [home.x, home.y, int(ore["local_id"])]
 
-	# Hard rock under the tall peaks (docs/water/watershed_rebuild_design.md, stage A1 rule 3, 8 Nov 2026). Every summit of
-	# the world map at or above summit_pluton.min_summit_m stands on a granite intrusion whose roof is above the ground over
+	# Hard rock under the tall peaks (docs/water/watershed_rebuild_design.md, stage A1 rule 3, 8 Nov 2026). Every summit whose
+	# ground stands at or above summit_pluton.min_summit_m stands on a granite intrusion whose roof is above the ground over
 	# the upper massif, as on Arran, the Mournes and the Skye Cuillin, where the hard core stood while the rock round it wore
 	# down. The generator sets the height first, so the consistent world puts the hard rock where the height is; a granite
 	# core holds steep walls, so valleys can deepen toward the peak without wearing the summit down. Volcanic cells keep their
@@ -841,6 +852,10 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 	# Mourne granites G1 to G5). So each summit gets a core under the summit and up to `lobes.max` lobes, each an ellipse
 	# stretched along one of the summit's spurs (WorldElevation.spur_crest, where the spur bends), so the granite runs out under the ridges and its
 	# edge, where the cliffs come, is lobed. Cores first, then lobes, so the cores always get one of the 9 ids.
+	# The test is on the ground's summit (_ground_summit_m: the world map's summit plus the tile tent on it), not the world
+	# map's own height (ws580g, 8 Nov): the second massif stood 977 m on the ground from about 860 m on the world map, so it
+	# got no granite, and its chalk top lost 41 m to the rivers and about 320 m to the ice; on granite (ws580e) the ice took
+	# nothing from it.
 	var summit_rules: Dictionary = rules.get("summit_pluton", {})
 
 	if not summit_rules.is_empty() and kind != "volcanic":
@@ -849,7 +864,7 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 		var mine: Array = []        # [summit, its position in this cell's frame, its rng, radius]
 
 		for summit in _elevation.summits:
-			if float(summit[2]) < float(summit_rules["min_summit_m"]):
+			if _ground_summit_m(float(summit[2])) < float(summit_rules["min_summit_m"]):
 				continue
 
 			var at: Vector2 = Vector2(float(summit[0]), float(summit[1])) + shift
