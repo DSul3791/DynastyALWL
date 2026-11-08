@@ -6,7 +6,7 @@
 	"retry_note": "test_flora_walk_cost (Steve, 5 Nov 2026): it already runs in the serial lane, yet on Dave's PC it failed under load in every gate on 4 Nov (#348, #366, #370, #375: one apply_built of 417 ms) and passed alone each time. A retry runs it once more after every lane, on a quiet machine, so a real freeze (it fails both runs) still fails the gate; the 100 ms bar is unchanged. test_slot_sounds (Steve, 5 Nov 2026): SlotSounds cooldowns run on the wall clock (Time.get_ticks_msec), so a loaded machine that stalls between two plays lets the second one through; it failed in gates (#247, #359, #364, #366: 24 s) and passed alone. It stays a fast test for selection (not timing, which would run it less often) but runs in the serial lane (serial_extra), with one retry.",
 	"serial_extra": ["test_slot_sounds"],
 	"serial_note": "The serial lane = the timing tests plus every test the scan finds writing a fixed file outside user:// (listed under `serial` by --print-lanes). Each parallel job also gets its own data dir, so user:// folders never collide.",
-	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_tile_lakes"],
+	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_tile_lakes", "test_bake_from_record"],
 	"release": ["test_head_pond_fill", "test_water_soak", "test_tile_lakes"],
 	"slow_triggers": ["src/worldgen/**", "src/water/**", "data/water/**", "data/water_settle.json", "data/water_flow.json", "addons/**", "worlds/**"],
 	"slow_mode": "closure",

@@ -239,6 +239,13 @@
 		"closed_tolerance_m": 0.05,
 		"fresh_spring_min_m3_s": 1e-5,
 		"lake_shore_passes": 2,
+		"rivers": {
+			"_note": "R6 item 3 (record.py carve_rivers, Sonny 8 Nov 2026): rivers with a bankfull width over carve_min_width_m (the design's about 8 m: one 8 m sample) are carved along their R5 polylines at R5's bankfull width and depth and drawn at R5's mean-flow depth; narrower brooks are left to R7. Banks stand at an angle by the bed material (index = network.py BEDS: none, boulders, cobbles, gravel, sand, silt, peat), and the cut carries on up at that angle for bank_extra_m above the bank top where the valley side rises beside the channel. A reach that sinks or leaves its channel tapers to no cut over its last end_taper_points 16 m points. Judged, not sourced: the bank angles (near the angle of repose of the loose material, steeper for coarse beds and cohesive peat), bank_extra_m and end_taper_points.",
+			"carve_min_width_m": 8.0,
+			"bank_angle_deg_by_bed": [35.0, 45.0, 40.0, 35.0, 30.0, 25.0, 30.0],
+			"bank_extra_m": 10.0,
+			"end_taper_points": 3
+		},
 		"roughness": {"on": true, "shortest_m": 16.0, "longest_m": 48.0, "fade_m": 24.0, "seed_offset": 1},
 		"encoding": {"discharge_codes_per_decade": 6553.5, "table_depth_step_m": 0.25, "sediment_step_m": 0.01},
 		"climate": {

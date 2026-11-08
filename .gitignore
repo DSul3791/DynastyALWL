@@ -17,6 +17,8 @@ mono_crash.*.json
 
 # Baked tile files (large, rebuilt by the generator)
 worlds/*/tiles/*
+# The island water record (tools/watershed/record.py, about 90 MB a tile) is a bake input made on Dave's PC; the tiles baked from it are tracked.
+worlds/*/record/
 # Except the starter tile, so every session has it without rebaking (about 9 MB;
 # each rebake adds that much to the history, so commit it only after real changes).
 !worlds/base_world/tiles/tile_3_4.tile
