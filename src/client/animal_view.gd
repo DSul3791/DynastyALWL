@@ -38,6 +38,10 @@ var _t: float = 0.0
 var conditions_now: Callable     # () -> {"hour": float, "season": String} from the client's ambient clock: the asleep test, tail swish
 var _species_cfg: Variant = null  # data/animals/animals.json (the server's species file: active hours and the rest rule)
 var footfall_fx: bool = false     # docs/design/FOOTFALL.md: dust, mud and snow puffs at running footfalls (off until the PC check)
+var prints_fx: bool = false       # footprints in snow and mud that fade (FOOTFALL.md step 5; off until the PC check)
+var _prints: Array = []           # [Decal, born msec, life s]
+var _print_tex: Dictionary = {}   # sign group -> ImageTexture
+var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
 var slope_tilt: bool = false      # the body pitches with the slope it walks on (off until the PC check)
 var season_now: String = ""      # "spring", "summer", "autumn", "winter" or "" when unknown; the client sets it (tail swish against flies)
 var torch_light: Callable        # () -> [position, range] of the player's held light, or []: eyes facing it shine (_eye_shine)
@@ -441,6 +445,9 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_t += delta
+
+	if not _prints.is_empty():
+		_fade_prints()
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
@@ -1827,6 +1834,97 @@ func _slope_pitch(node: Node3D, b: Dictionary, before: Vector3, delta: float) ->
 	rig.rotation.x = lerp_angle(rig.rotation.x, atan(float(b.get("slope", 0.0))), clampf(delta * 4.0, 0.0, 1.0))      # nose up going uphill (the model faces -Z)
 
 
+# Footprints in snow and mud (docs/design/FOOTFALL.md step 5): a small decal where a foot lands, its shape from the species' sign
+# group in animal_sign.json (two cloven ovals for hoofed, a pad and four toes for pawed, the same with claw points for clawed, three
+# thin toes for birds), turned to the heading, fading over 10 minutes in mud and 20 in snow. At most 200 near the player; the
+# oldest go first. These are the prints the tracking skill reads in its hints.
+const PRINT_CAP := 200
+
+func _print_at(kind: String, node: Node3D, ground: String) -> void:
+	if not is_inside_tree():
+		return
+
+	var group: String = _print_group(kind)
+	var tex: ImageTexture = _print_texture(group)
+	var decal: Decal = Decal.new()
+	decal.texture_albedo = tex
+	var big: float = clampf(float((node.get_meta("model_row", {}) as Dictionary).get("length_m", 1.0)) * 0.08, 0.04, 0.35)
+	decal.size = Vector3(big, 0.3, big)
+	decal.modulate = Color(0.35, 0.28, 0.2, 0.85) if ground == "mud" else Color(0.75, 0.8, 0.9, 0.8)
+	add_child(decal)
+	decal.global_position = node.global_position + Vector3(0.0, 0.1, 0.0)
+	decal.rotation.y = node.rotation.y
+	_prints.append([decal, Time.get_ticks_msec(), 600.0 if ground == "mud" else 1200.0])
+
+	while _prints.size() > PRINT_CAP:
+		(_prints.pop_front()[0] as Decal).queue_free()
+
+
+func _fade_prints() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	for i in range(_prints.size() - 1, -1, -1):
+		var p: Array = _prints[i]
+		var age: float = float(now - int(p[1])) / 1000.0
+
+		if age >= float(p[2]):
+			(p[0] as Decal).queue_free()
+			_prints.remove_at(i)
+		else:
+			var decal: Decal = p[0]
+			decal.modulate.a = 0.85 * (1.0 - age / float(p[2]))
+
+
+func _print_group(kind: String) -> String:
+	if _sign_group == null:
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animal_sign.json"))
+		var out: Dictionary = {}
+
+		if parsed is Dictionary:
+			for k in ((parsed as Dictionary).get("species", {}) as Dictionary):
+				out[k] = str(parsed["species"][k].get("group", "hoofed"))
+
+		_sign_group = out
+
+	return str((_sign_group as Dictionary).get("songbirds" if kind == "songbird" else kind, "hoofed"))
+
+
+# A 64 px print drawn once per group: white shapes on clear, the decal's modulate gives the ground's colour.
+func _print_texture(group: String) -> ImageTexture:
+	if _print_tex.has(group):
+		return _print_tex[group]
+
+	var img: Image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var blobs: Array = []      # [centre Vector2, radius x, radius y]
+
+	match group:
+		"hoofed":
+			blobs = [[Vector2(24, 32), 7.0, 15.0], [Vector2(40, 32), 7.0, 15.0]]
+		"pawed", "clawed":
+			blobs = [[Vector2(32, 40), 11.0, 9.0], [Vector2(20, 24), 4.0, 5.0], [Vector2(28, 19), 4.0, 5.0], [Vector2(36, 19), 4.0, 5.0], [Vector2(44, 24), 4.0, 5.0]]
+
+			if group == "clawed":
+				blobs += [[Vector2(20, 16), 1.5, 2.5], [Vector2(28, 11), 1.5, 2.5], [Vector2(36, 11), 1.5, 2.5], [Vector2(44, 16), 1.5, 2.5]]
+		_:
+			blobs = [[Vector2(32, 34), 1.8, 14.0], [Vector2(24, 26), 1.8, 10.0], [Vector2(40, 26), 1.8, 10.0], [Vector2(32, 46), 1.8, 6.0]]
+
+	for y in 64:
+		for x in 64:
+			for blob in blobs:
+				var c: Vector2 = blob[0]
+				var dx: float = (float(x) - c.x) / float(blob[1])
+				var dy: float = (float(y) - c.y) / float(blob[2])
+
+				if dx * dx + dy * dy <= 1.0:
+					img.set_pixel(x, y, Color(1, 1, 1, 1))
+					break
+
+	var tex: ImageTexture = ImageTexture.create_from_image(img)
+	_print_tex[group] = tex
+	return tex
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -1950,6 +2048,9 @@ func _emit_steps(b: Dictionary, node: Node3D, state: int, speed: float) -> void:
 
 		if footfall_fx and speed > 2.0 and ground != "water":
 			_puff(node.global_position, ground, speed)
+
+		if prints_fx and (ground == "snow" or ground == "mud"):
+			_print_at(kind, node, ground)
 
 	b["step_count"] = count
 
