@@ -53,6 +53,8 @@ uniform float backlight = 0.4;      // 0.3 to 0.4 (Kathleen 3 Nov, Art_Direction
 // custom alpha (how strongly this tree glows; young ones weakly). Black for
 // every other species. Faint by day, plain at night.
 uniform vec3 glow : source_color = vec3(0.0);
+// Snow lying on the crown (art_weather_light.md 8.2.2), 0 none .. 1 full: the ground's snow memory (weather_look.gd, set_snow).
+uniform float snow = 0.0;
 varying vec3 tint;
 varying float glow_amount;
 varying vec3 view_normal;
@@ -84,7 +86,11 @@ void fragment() {
 	vec2 cell = floor(UV * 7.0);
 	float speck = 0.88 + 0.24 * fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
 	ALBEDO = t.rgb * COLOR.rgb * tint * under * speck;
-	BACKLIGHT = ALBEDO * backlight;
+	// Snow only on the upward-facing clusters, in patches that join up as more falls; the undersides stay dark.
+	float patch_ = fract(sin(dot(floor(UV * 4.0) + cell * 0.13, vec2(39.346, 11.135))) * 43758.5453);
+	float snowed = snow * smoothstep(0.15, 0.75, crown_up) * smoothstep(0.45, 0.75, patch_ + 0.45 * snow);
+	ALBEDO = mix(ALBEDO, vec3(0.86, 0.88, 0.92), snowed * 0.9);
+	BACKLIGHT = ALBEDO * backlight * (1.0 - snowed);
 	ROUGHNESS = 1.0;
 	EMISSION = glow * glow_amount * (0.6 + 0.4 * t.r);
 }
@@ -99,13 +105,16 @@ uniform vec3 tint = vec3(1.0);              // a felled trunk or stump (inventor
 uniform vec2 uv_scale = vec2(1.0);
 uniform vec3 lift = vec3(1.0);                   // a felled trunk, log or stump is lit by the sky only from above and read half as bright as a standing trunk in the real game: it sets a lift here
 uniform float foot_offset = 0.0;            // metres from the model origin up to the trunk foot (a felled trunk's mesh is centred)
+uniform float snow = 0.0;                   // snow lying on the upper side of branches (art_weather_light.md 8.2.2), set by set_snow
 varying float base_h;
 varying float north_face;
+varying float up_face;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	base_h = VERTEX.y + foot_offset;
 	north_face = -normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).z;   // north is -z
+	up_face = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
 	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
 	VERTEX.x += gust * bend;
@@ -125,6 +134,9 @@ void fragment() {
 	// Moss on the north side of the trunk (ART_DIRECTION.md section 32), thinning up the trunk.
 	float north_moss = smoothstep(0.3, 0.9, north_face) * (1.0 - smoothstep(1.5, 5.0, base_h)) * (0.4 + 0.6 * (1.0 - t.a));
 	c = mix(c, c * vec3(0.5, 0.72, 0.3), north_moss * 0.55);
+	// Snow on the upper side of branches (and on top of a fallen log); an upright trunk faces sideways and stays dark.
+	float snowed = snow * smoothstep(0.35, 0.8, up_face) * smoothstep(0.4, 0.7, t.a + 0.3 * snow);
+	c = mix(c, vec3(0.86, 0.88, 0.92), snowed * 0.9);
 	ALBEDO = c;
 	ROUGHNESS = 1.0;
 }
@@ -632,6 +644,7 @@ func _capture_impostors(tile: Vector2i) -> void:
 
 		wanted[id] = {"mesh": info["far"][0]}     # the far model, so the two tiers match
 
+	_apply_snow(0.0)     # no snow baked into the images; set back when the capture finishes
 	_impostor_node.start(wanted, tile)
 
 
@@ -639,6 +652,8 @@ func _capture_impostors(tile: Vector2i) -> void:
 func _on_impostors(meshes: Dictionary) -> void:
 	if not meshes.is_empty():
 		_impostors = meshes
+
+	_apply_snow(tree_snow)
 
 
 func set_water_quality(quality: int) -> void:
@@ -656,6 +671,33 @@ func set_storm_murk(amount: float) -> void:
 
 	_liquid_storm = amount
 	_tell_liquid_mud()
+
+
+# Snow lying on the trees, 0 none .. 1 full (weather_look.gd passes the ground's snow memory, so trees whiten and clear
+# with the ground; art_weather_light.md 8.2.2). The leaf and bark materials and the far tree images take it. While the
+# far images are being captured it is held at 0, so no snow is baked into them (they add their own).
+var tree_snow: float = 0.0
+
+
+func set_snow(level: float) -> void:
+	tree_snow = clampf(level, 0.0, 1.0)
+
+	if _impostor_node == null or not _impostor_node._running:
+		_apply_snow(tree_snow)
+
+
+func _apply_snow(level: float) -> void:
+	for key in _tree_materials:
+		var material: ShaderMaterial = _tree_materials[key] as ShaderMaterial
+
+		if material != null and (material.shader.code == FOLIAGE_SHADER or material.shader.code == BARK_SHADER):
+			material.set_shader_parameter("snow", level)
+
+	for id in _impostors:
+		var made: Dictionary = _impostors[id]
+
+		if made.get("material") is ShaderMaterial:
+			(made["material"] as ShaderMaterial).set_shader_parameter("snow", level)
 
 
 # The sky colours of the day cycle for the land water (weather_look.gd).

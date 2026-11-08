@@ -68,6 +68,11 @@ const FLAME_COLOUR_BACK := 0.8           # share of the lost colour a flame give
 const FIRE_COLOUR_NEAR_M := 6.0          # a lit fire this close gives it all back
 const FIRE_COLOUR_FAR_M := 14.0          # and none from this far (the biggest fire's light)
 const FLAME_COLOUR_S := 1.5              # seconds to ease the colour in or out
+# Rainbows on passing showers (art_weather_light.md 4): the sun up and under 42 degrees, rain within the last RAINBOW_HOLD_S,
+# the sun breaking through (cloud cover clearing), not a storm. The bow itself is drawn by the sky shader (sky_clouds.gd).
+const RAINBOW_HOLD_S := 90.0             # the rain is remembered this long (falling off evenly) after it stops
+const RAINBOW_EASE_S := 4.0
+const RAINBOW_SIN_MAX := 0.669           # sin 42 degrees: a higher sun puts the whole bow below the horizon
 const CAVE_LIGHT_DARK := 0.0             # share of the sun and sky light left deep in a cave or tunnel, setting "Dark": none, pitch black without a torch or fire (Dave 5 Nov 2026)
 const CAVE_LIGHT_NORMAL := 0.12          # the same, setting "Normal"
 const CAVE_GO_DARK_S := 1.0              # the light fades out over this long on going in, and back over CAVE_COME_OUT_S
@@ -152,6 +157,10 @@ var canopy_night: float = 0.0           # 0 open .. 1 under closed crowns, at ni
 var torch_adapt: float = 0.0            # 0 .. 1: the eyes adapted to a held flame at night, eased (TORCH_NIGHT_DIM)
 var flame_colour: float = 0.0           # 0 .. 1: how much a flame in the hand or a fire close by gives the colour back, eased
 var night_colour: float = 1.0           # share of the colour left by the night, after a flame's share (1 by day), for checks
+var rainbow: float = 0.0                # 0 .. 1 the bow's strength now, eased (for checks)
+var _rain_memory: float = 0.0           # the recent rain, falling off over RAINBOW_HOLD_S
+var _rainbow_sent: float = -1.0
+var _tree_snow_sent: float = -1.0
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
@@ -417,7 +426,18 @@ func _process_body(delta: float) -> void:
 			sky_material.set_shader_parameter("cloud_shadow_color", day.cloud_shadow)
 			sky_material.set_shader_parameter("night", day.stars)   # the stars: brighter on a moonless night (day_cycle.gd)
 
+	# A rainbow as a shower passes: recent rain, the sun low and breaking through the clearing cloud.
+	_rain_memory = maxf(rain, _rain_memory - delta / RAINBOW_HOLD_S)
+	var sun_through: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
+	var sun_low: float = smoothstep(0.0, 0.05, day.elevation) * (1.0 - smoothstep(RAINBOW_SIN_MAX - 0.07, RAINBOW_SIN_MAX, day.elevation))
+	var bow_target: float = 0.0 if clear_day else smoothstep(0.03, 0.25, _rain_memory) * smoothstep(0.15, 0.6, sun_through) * sun_low * (1.0 - storm)
+	rainbow = move_toward(rainbow, bow_target, delta / RAINBOW_EASE_S)
+
 	if sky_material != null:
+		if absf(rainbow - _rainbow_sent) > 0.004:
+			_rainbow_sent = rainbow
+			sky_material.set_shader_parameter("rainbow", rainbow)
+
 		sky_material.set_shader_parameter("coverage", lerpf(0.62, 0.30, cloud_cover))
 		sky_material.set_shader_parameter("gloom", gloom)
 		sky_material.set_shader_parameter("flash", flash_level)
@@ -563,6 +583,11 @@ func _update_ground(rain: float, snow: float) -> void:
 
 	if _client.grass != null:
 		_client.grass.visible = lying < 0.5      # snow buries the grass
+
+	# Snow on the branches and crowns follows the same memory (art_weather_light.md 8.2.2), sent only when it changes.
+	if _client.flora != null and absf(lying - _tree_snow_sent) > 0.01:
+		_tree_snow_sent = lying
+		_client.flora.set_snow(lying)
 
 
 func _update_particles(rain: float, snow: float, wind: float) -> void:
