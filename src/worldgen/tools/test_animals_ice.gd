@@ -71,10 +71,10 @@ func _init() -> void:
 	# A thaw moat is open water.
 	cover[0] = 0.6
 	a._ice_cache.clear()
-	moat_from_x[0] = 190.0
+	moat_from_x[0] = 188.0   # off the 4 m search grid: the edge at 190 is the first open step
 	check(bool(a.ice_moves(wolf, "wolf")[1].call(200.0, 0.0)), "the thaw moat stops a wolf as open water does")
 
-	# A water flock on a frozen pond stands at the edge of the open water (here the moat east of x 190), or does not settle.
+	# A water flock on a frozen pond stands at the edge of the open water (here the moat east of x 188), or does not settle.
 	var spot: Vector2 = a.ice_edge_spot(150.0, 0.0, "duck")
 	check(spot.x > 185.0 and spot.x < 195.0, "a flock on the ice stands at the open water's edge (x %.0f)" % spot.x)
 	moat_from_x[0] = INF
