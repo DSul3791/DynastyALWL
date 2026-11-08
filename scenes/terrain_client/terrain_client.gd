@@ -77,6 +77,7 @@ const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")   # --frozen-water: the liquid sheets' ice look (docs/design/frozen_water_look.md)
+const SpringSteam := preload("res://src/client/spring_steam.gd")   # --ice-feel: steam over spring mouths on frosty mornings (Jamie #739)
 const IceFeelScript := preload("res://src/client/ice_feel.gd")     # --ice-feel: ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
@@ -2327,6 +2328,9 @@ var _ice_patches: Array = []              # skim and film broken by the player's
 var _ice_shock: Dictionary = {}           # IceFeel.shock_step state
 var _warmth_cfg_cache: Dictionary = {}
 var _ice_moat_logged: int = -1
+var _spring_mouths: Dictionary = {}       # tile -> PackedVector3Array, where spring cave brooks leave their caves
+var _spring_steam = null                  # SpringSteam, made on the first frosty update with a mouth known
+var _steam_logged: bool = false
 
 
 # Once a second with the weather: the forced cover (--frozen-force) also drives the collider and the sounds; every 5 s the thaw for the moat.
@@ -2365,7 +2369,38 @@ func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
 	if sound != null and sound.ice != null:
 		sound.ice.hour = WeatherScript.hour_of(game_clock.seconds)
 
+	_update_spring_steam()
 	return ice_now
+
+
+func _update_spring_steam() -> void:
+	if _spring_mouths.is_empty():
+		return
+
+	var mouths: PackedVector3Array = PackedVector3Array()
+
+	for tile in _spring_mouths:
+		mouths.append_array(_spring_mouths[tile])
+
+	var air: float = float(weather.get("temp_c", 10.0))
+	var hour: float = WeatherScript.hour_of(game_clock.seconds)
+	var wind: float = float(weather.get("wind", 0.0))
+
+	if _spring_steam == null:
+		if SpringSteam.strength_of(air, hour, wind) <= 0.02:
+			return
+
+		_spring_steam = SpringSteam.new()
+		_spring_steam.name = "SpringSteam"
+		_spring_steam.setup(quality)
+		add_child(_spring_steam)
+
+	_spring_steam.update(mouths, body.global_position, air, hour, wind, float(weather.get("wind_dir", 0.0)))
+	var steaming: bool = _spring_steam.strength > 0.02
+
+	if steaming != _steam_logged:
+		_steam_logged = steaming
+		print("ice feel: spring steam %s (strength %.2f, air %.1f C, %d mouths known)" % ["on" if steaming else "off", _spring_steam.strength, air, mouths.size()])
 
 
 func _warmth_cfg() -> Dictionary:
@@ -2500,6 +2535,9 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 		add_child(_cave_streams)
 
 	_cave_streams.show_tile(tile, streams)
+
+	if IceFeelScript.on:
+		_spring_mouths[tile] = SpringSteam.mouths_of(streams)
 	@warning_ignore("integer_division")
 	print("Terrain client: cave streams for tile %s (%d pieces, %d pools)" % [str(tile), streams.size() / 7, CaveStreams.pools_of(streams).size()])
 

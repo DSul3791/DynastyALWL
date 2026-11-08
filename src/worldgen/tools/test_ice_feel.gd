@@ -8,6 +8,7 @@ const IceFeel := preload("res://src/client/ice_feel.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")
 const WaterGrid := preload("res://src/worldgen/runtime/water_grid.gd")
 const IceSounds := preload("res://src/client/ice_sounds.gd")
+const SpringSteam := preload("res://src/client/spring_steam.gd")
 
 var failures: int = 0
 
@@ -107,6 +108,14 @@ func _init() -> void:
 	var quads: Array = [roundi(sheet.size() / 6.0), roundi(moat1.size() / 6.0), roundi(moat2.size() / 6.0)]
 	print("ice feel: pond sheet %d quads, moat 1: %d, moat 2: %d" % quads)
 	check(quads == [81, 49, 25], "the moat drops the shore ring (81, 49, 25 quads)")
+
+	# Steam over spring mouths (Jamie #739): frosty mornings, calm air; the mouth is where the brook leaves the cave.
+	check(is_equal_approx(SpringSteam.strength_of(-8.0, 7.0, 0.1), 1.0), "full steam on a -8 C calm morning")
+	check(is_equal_approx(SpringSteam.strength_of(-8.0, 13.0, 0.1), SpringSteam.OTHER_HOURS), "less at midday")
+	check(SpringSteam.strength_of(1.0, 7.0, 0.1) == 0.0 and SpringSteam.strength_of(-8.0, 7.0, 0.7) == 0.0, "none above 0 C or in a strong wind")
+	var pieces: PackedFloat32Array = PackedFloat32Array([0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 2.0,   10.0, 0.0, 0.0, 20.0, -1.0, 0.0, 2.5,   0.0, 0.0, 0.0, 0.5, 0.0, 0.0, -3.0])
+	var mouths: PackedVector3Array = SpringSteam.mouths_of(pieces)
+	check(mouths.size() == 1 and mouths[0] == Vector3(20.0, -1.0, 0.0), "the mouth is the end no piece carries on from (%s)" % str(mouths))
 
 	var line: String = IceFeel.log_line(IceFeel.Band.FILM, "plunge", "ice_plunge_0", 0.7, INF)
 	check(line == "ice feel: band film, plunge (ice_plunge_0), pace x0.70, grip instant", "the log line Dino reads")
