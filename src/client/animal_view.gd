@@ -8,6 +8,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
 const MAX_DRAWN := 30
 const MODELS_PATH := "res://data/animals/models.json"
+const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -582,6 +583,18 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	body.scale *= k
 	body.position.y -= box.position.y * k
 	_model_materials(meshes, row)
+
+	# Bone corrections laid over every clip (bone_offsets.gd: the crow stands up and folds its wings).
+	if row.has("bone_offsets"):
+		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
+
+		if not sks.is_empty():
+			var fix: SkeletonModifier3D = BoneOffsetsScript.new()
+			var missing: PackedStringArray = fix.setup(sks[0], row["bone_offsets"])
+			(sks[0] as Skeleton3D).add_child(fix)
+
+			if not missing.is_empty():
+				_model_note(kind, "bone_offsets: no bone %s" % ", ".join(missing))
 	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
 
 	if not players.is_empty():
@@ -609,6 +622,22 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 					break
 
 				var anim: Animation = player.get_animation(anim_name)
+
+				# clip_loop {role: [t0, t1, blend_s]}: a file with no looping clip for a role (the mink has only start clips) loops a
+				# window of another one; tools/find_loop.gd finds the window whose ends are most alike, and the last blend_s seconds
+				# are eased back to the first pose so the loop has no jump.
+				var loop_spec: Variant = (row.get("clip_loop", {}) as Dictionary).get(str(key), null)
+
+				if loop_spec is Array and (loop_spec as Array).size() >= 2:
+					var loop_name: String = anim_name + "_loop_%s" % str(key)      # imported clips sit in the default library, "armature|clip"
+
+					if player.has_animation_library("") and not player.has_animation(loop_name):
+						player.get_animation_library("").add_animation(loop_name, _loop_copy(anim, float(loop_spec[0]), float(loop_spec[1]), float(loop_spec[2]) if (loop_spec as Array).size() > 2 else 0.1))
+
+					anim_name = loop_name
+					anim = player.get_animation(anim_name)
+					_model_note(kind, "role %s loops %s from %.3f to %.3f s" % [str(key), anim_name, float(loop_spec[0]), float(loop_spec[1])])
+
 				_fit_clip_units(player, anim, kind, anim_name)
 
 				# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
@@ -1159,6 +1188,53 @@ func _make_model_flock(number: int, id: int, row: Dictionary) -> Node3D:
 	root.set_meta("model", true)
 	root.set_meta("flock_birds", birds)
 	return root
+
+
+# A looping copy of a clip's window [t0, t1], resampled 30 times a second, with the last `blend` seconds eased back to the
+# window's first pose so the end meets the start (clip_loop above). Position, rotation and scale tracks only.
+func _loop_copy(src: Animation, t0: float, t1: float, blend: float) -> Animation:
+	var out: Animation = Animation.new()
+	out.length = t1 - t0
+	out.loop_mode = Animation.LOOP_LINEAR
+	var step: float = 1.0 / 30.0
+
+	for t in src.get_track_count():
+		var kind: int = src.track_get_type(t)
+
+		if kind != Animation.TYPE_POSITION_3D and kind != Animation.TYPE_ROTATION_3D and kind != Animation.TYPE_SCALE_3D:
+			continue
+
+		var nt: int = out.add_track(kind)
+		out.track_set_path(nt, src.track_get_path(t))
+		var first: Variant = _track_at(src, t, kind, t0)
+		var time: float = t0
+
+		while true:
+			var v: Variant = _track_at(src, t, kind, time)
+			var w: float = clampf((time - (t1 - blend)) / maxf(blend, 0.001), 0.0, 1.0)
+			w = w * w * (3.0 - 2.0 * w)
+
+			if kind == Animation.TYPE_ROTATION_3D:
+				v = (v as Quaternion).slerp(first as Quaternion, w)
+			else:
+				v = (v as Vector3).lerp(first as Vector3, w)
+
+			out.track_insert_key(nt, time - t0, v)
+
+			if time >= t1:
+				break
+
+			time = minf(time + step, t1)
+
+	return out
+
+
+func _track_at(anim: Animation, t: int, kind: int, time: float) -> Variant:
+	if kind == Animation.TYPE_ROTATION_3D:
+		return anim.rotation_track_interpolate(t, time)
+	if kind == Animation.TYPE_POSITION_3D:
+		return anim.position_track_interpolate(t, time)
+	return anim.scale_track_interpolate(t, time)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
