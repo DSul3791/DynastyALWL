@@ -113,7 +113,11 @@ The year's look follows `weather.gd`'s season phase:
 2. **The moon is a soft silver-blue light.**
    - It casts real but soft shadows.
    - Under it, colour almost vanishes: the world reads in blue-grey values. This is true to life, because the eye loses colour vision in moonlight.
-   - **[Proposal]** Lower the saturation further by night (about 0.4 to 0.5 under a clear full moon), and lower it more on dark nights.
+   - **Decided (section 12):** lower the colour further by night.
+     - About half the colour is left under a clear full moon, and about 0.4 on a moonless night. This sits on top of the weather's own storm greying.
+     - **Firelight keeps its colour.** The eye sees colour again in the light of a flame, and warm against cold is the night's palette (6.3). So a burning torch or lantern in the hand, or a lit fire within about 6 m (fading out by 14 m), gives back most of the lost colour, about 80 percent, eased over a second or two.
+     - **Under rock** there is no moonlight to grey, so caves keep full colour in torchlight.
+     - The whole picture shares one saturation, so this is a compromise: with a flame, the dark beyond is a little more colourful than it should be. It is too dark there to notice.
 3. **[Proposal: moon phases]**
    - Today the moon is always full, which makes every night equally bright.
    - Give the moon its real cycle of about 29.5 days. Its light scales from full (as now) to almost nothing at new moon.
@@ -236,10 +240,22 @@ Today there is one even haze. That is right for clear air, but **mist is what ma
 
 ### 8.4 Cold
 
-**[Proposal]**
-- **Breath shows** below about 5 °C, as a small puff from players and animals, and from goblins.
-- Cheap cards, one every breath cycle, only within about 15 m.
-- It is the single best cue that a morning is cold, and it ties to the warmth system.
+**Decided (section 12): breath shows in the cold.** It is the single best cue that a morning is cold, and it ties to the warmth system.
+
+1. **When:**
+   - It starts at 5 °C air and is fully visible by -5 °C.
+   - The air is the weather's temperature at the player's height plus the warmth system's day and night swing (`warmth.json` `daily_swing_c`): the coldest is just after dawn and the warmest mid-afternoon. So breath shows on cold mornings before it shows at noon.
+2. **Who:**
+   - the player: a faint cloud just below and ahead of the view in first person, from the head in third person;
+   - the nearest animals and goblins within about 15 m, at most 8, from the head bone (or the code body's head);
+   - other players later, once their avatars can be reached the same way.
+3. **Look:**
+   - A soft, round, pale grey puff on a camera-facing card.
+   - It grows from about 0.15 m to 0.5 m, rises a little, drifts with the wind and fades in about 1.5 s.
+   - **It is lit by the scene, never glowing**, so at night it shows only in torch or firelight. That is true, and it makes a firelit camp in winter beautiful.
+   - One puff per breath: every 3 to 4.5 s for a person, every 4 to 6 s for big animals, with a small random lag so a herd does not breathe in step.
+   - None under water.
+4. **Cost:** a pool of at most 32 small cards with one shared material and nothing else; nothing at all above 5 °C.
 
 ### 8.5 Storms and lightning
 
@@ -301,7 +317,7 @@ ART_DIRECTION 9 already rules that sky, light, fog and rain read three inputs: z
 5. **A held torch shadow from Medium up (6.4): only after a GPU check on Dave's PC.** Dino does the check when the PC frees up, not now.
 6. **Height fog and a `mist` value in the weather state, valley fog first (7): yes.** Owner: Jamie, after his rivers doc.
 7. **Cap cloud cards for summits above the cloud layer (7.3): only after a check picture from Dino.**
-8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Owners still to be named.
+8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Kathleen owns lower colour at night and breath, on one branch, in that order. The other owners are still to be named.
 9. Still open: the rest of the rain additions in 8.1.2, the Milky Way (5.4) and the arctic aurora (9).
 
 Kathleen's night-light code is one branch, in this order: moon phases, the never-pitch-black rule, canopy darkening, the torch exposure drop (#601: a 29.53-day moon with a full moon on day 100, `OUTDOOR_FLOOR` 0.18, crowns take up to 45 percent at night, a held flame 15 percent). This document stays the source of truth.
