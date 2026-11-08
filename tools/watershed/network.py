@@ -721,17 +721,17 @@ def main():
         stretches = []
         for a_, run_ in enumerate(runs):
             b_ = runs[a_ + 1][0] if a_ + 1 < len(runs) else len(cells)
-            st = dict(start=run_[0], end=b_ - 1, type=run_[1], pattern=run_[2], regime=run_[3], bed=run_[4])
+            sd = dict(start=run_[0], end=b_ - 1, type=run_[1], pattern=run_[2], regime=run_[3], bed=run_[4])
             if run_[2] == 'meandering':
                 seg = c[run_[0]:b_]
                 coh = bool(np.mean((till[seg] >= 0.5 * np.maximum(sed[seg], 1e-9)) & (sed[seg] > 0.0) | peat_cell[seg]) > 0.5)
                 loose = bool(np.mean(outwash[seg] >= float(NW['loose_cover_m'])) > 0.5)
-                st['meander'] = meander(float(Wbf[seg].mean()), MW, MT, coh, loose)
+                sd['meander'] = meander(float(Wbf[seg].mean()), MW, MT, coh, loose)
                 if bool(np.mean(sed[seg] >= float(NW['loose_cover_m'])) > 0.5):
-                    st['floodplain'] = dict(plain_above_bed_m=round(float(Dbf[seg].mean()), 2),
+                    sd['floodplain'] = dict(plain_above_bed_m=round(float(Dbf[seg].mean()), 2),
                                             levee_height_m=round(float(NW['levee_height_depths']) * float(Dbf[seg].mean()), 2),
                                             levee_width_m=round(float(Wbf[seg].mean()), 1), valley_floor_m=round(float(floor[seg].mean()), 1))
-            stretches.append(st)
+            stretches.append(sd)
         # One row per 16 m cell, in point_fields order: [x, bed_y, z] first, the reader's point convention (water_record.gd).
         polyline = [[round(where(ci)[0], 1), round(float(h[ci]), 2), round(where(ci)[1], 1), round(float(Wbf[ci]), 2),
                      round(float(Dbf[ci]), 3), r3(Q['mean'][ci]), r3(Q['wet'][ci]), r3(Q['dry'][ci]), r3(base_dry[ci])] for ci in cells]
