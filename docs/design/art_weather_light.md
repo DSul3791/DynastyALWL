@@ -103,7 +103,20 @@ The year's look follows `weather.gd`'s season phase:
 - They appear only with the sun behind the viewer and rain in front.
 - They need the sun below 42° and real rain or waterfall spray.
 - A rainbow is an arc of fixed angle, centred on the point opposite the sun, at 42° from it.
-- **[Proposal]** A rainbow on spring and summer showers, when the sun is low and the rain front is passing. Also a small bow in waterfall spray (`fall_mist.gd`) when the sun is behind the player. A painted arc on the sky is cheap, but it must follow the true geometry or it reads as fake.
+- **Decided (section 12): rainbows on passing showers**, drawn in the sky with the true geometry.
+  - **When:**
+    - the sun is up and lower than 42°;
+    - rain has fallen within about the last real minute;
+    - the sun is breaking through: cloud cover is clearing, so the moment comes as a shower passes, not in a steady downpour;
+    - it is not a storm.
+    - Snow gives none.
+  - **Where:** on the sky opposite the sun.
+    - The primary bow runs from violet inside, at 40.6° from the point opposite the sun, to red outside, at 42.4°.
+    - A fainter secondary bow, about 40 percent as bright, has its colours reversed and runs from 50.4° to 53.4°.
+    - The sky inside the primary is a little brighter, and the band between the two bows (Alexander's dark band) is a little darker.
+    - The land in front hides the foot of the bow, as it does in life.
+  - **Look:** soft-edged bands of pure spectral colour, faint and never neon, added to the sky. It is dimmed by gloom, eases in and out over a few seconds, and is never in the sky's lighting cubemap.
+  - **Later:** the small bow in waterfall spray (`fall_mist.gd`) is still open.
 
 ## 5. Sun and moon light
 
@@ -226,7 +239,12 @@ Today there is one even haze. That is right for clear air, but **mist is what ma
 
 1. **What is built:** falling flakes, white flat ground, buried grass, none under trees.
 2. **What to add:**
-   - **Snow on the tops of conifer branches and on rocks and roofs**, not only flat ground.
+   - **Snow on the tops of conifer branches and on rocks and roofs**, not only flat ground. **Branches and crowns are decided (section 12)**:
+     - It follows the ground's own snow memory (`ground_snow`: it settles in snowfall and melts slowly), so trees whiten and clear together with the ground.
+     - It lies only on the upward-facing parts of a crown (the tops of needle and leaf clusters, bare twigs in winter) and on the upper side of branches, with a patchy edge. The undersides and the trunk stay dark, which is what makes a snowy forest read.
+     - Far tree images take the same white on the upper half of their crowns.
+     - Snow is a soft, slightly blue-white (about 0.86, 0.88, 0.92), never pure white.
+     - Rocks and roofs are still open.
    - **Steep faces stay dark**: snow does not hold above about 50°. This gives mountains their black-and-white striping (art_mountains).
    - **Footprints and trails** in snow, a later gameplay look.
 3. **The snow line:** the climate rule (snow below -8 °C, lapse 6.5 °C per km) gives no snow on a 1450 m starter summit. Summer snow patches above about 80 percent of the summit are decided in art_mountains section 10, and the per-island snow line is on Sonny's list after the chain.
@@ -317,7 +335,7 @@ ART_DIRECTION 9 already rules that sky, light, fog and rain read three inputs: z
 5. **A held torch shadow from Medium up (6.4): only after a GPU check on Dave's PC.** Dino does the check when the PC frees up, not now.
 6. **Height fog and a `mist` value in the weather state, valley fog first (7): yes.** Owner: Jamie, after his rivers doc.
 7. **Cap cloud cards for summits above the cloud layer (7.3): only after a check picture from Dino.**
-8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Kathleen owns lower colour at night and breath, on one branch, in that order. The other owners are still to be named.
+8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Kathleen owns lower colour at night and breath (#605), then snow on branches and rainbows, each on one branch. Puddles' owner is still to be named.
 9. Still open: the rest of the rain additions in 8.1.2, the Milky Way (5.4) and the arctic aurora (9).
 
 Kathleen's night-light code is one branch, in this order: moon phases, the never-pitch-black rule, canopy darkening, the torch exposure drop (#601: a 29.53-day moon with a full moon on day 100, `OUTDOOR_FLOOR` 0.18, crowns take up to 45 percent at night, a held flame 15 percent). This document stays the source of truth.
