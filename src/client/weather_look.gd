@@ -161,6 +161,11 @@ func setup(client) -> void:
 		client.sound.weather.lightning.connect(_on_lightning)
 
 
+# The fog look now, 0 clear .. 1 thick, eased (sound_occlusion.gd: --sound-outdoors trims far high notes in fog).
+func fog_now() -> float:
+	return float(_s.get("fog", 0.0))
+
+
 func set_quality(quality: int) -> void:
 	_quality = clampi(quality, 0, RAIN_AMOUNT.size() - 1)
 	_rain.amount = int(RAIN_AMOUNT[_quality])
