@@ -7,6 +7,7 @@ extends SceneTree
 const WeatherLook := preload("res://src/client/weather_look.gd")
 const Puddles := preload("res://src/client/puddles.gd")
 const GroundMaterial := preload("res://src/client/ground_material.gd")
+const RainDrips := preload("res://src/client/rain_drips.gd")
 
 var _fails: int = 0
 
@@ -49,6 +50,7 @@ func _init() -> void:
 	# Splashes (3.2): flecks in the ground shader by material, the sheet only from High quality and only in a downpour.
 	_check(GroundMaterial.SHADER.contains("float rain_crowns(") and GroundMaterial.SHADER.contains("uniform float splash_rain"), "the ground shader draws splash crowns from splash_rain")
 	_check(WeatherLook.SPLASH_FROM_QUALITY == 2 and WeatherLook.SPLASH_FROM >= 0.5 and WeatherLook.SPLASH_PER_HIT <= 5, "the splash sheet: High and Ultra only, a downpour only, a few droplets a hit")
+	_check_drips()
 	print("test_rain_look: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
 
@@ -78,3 +80,24 @@ func _check_wet() -> void:
 	var sunny: Array = _wet_after(0.5, 0.0, 1.0, 1.0, 1.0)
 	_check(float(sunny[2]) < 0.01 and float(_wet_after(0.5, 0.0, 0.0, 0.0, 1.0)[2]) > 0.6, "sun and wind dry gravel in half an hour that a grey still day leaves wet")
 	_check(Puddles.WET_DRY_H[5] < Puddles.WET_DRY_H[2] and Puddles.WET_DRY_H[2] < Puddles.WET_DRY_H[0] and Puddles.WET_DRY_H[0] < Puddles.WET_DRY_H[1], "drying order: rock, gravel, turf, litter")
+
+
+# Drips (3.3): the crowns fill in about 10 game minutes of rain, light rain keeps them, and after the rain they empty on a half-life: still
+# dripping after 15 grey minutes, done within an hour, and much sooner in sun and wind.
+func _store_after(hours: float, rain: float, wind: float, sun: float, start: float) -> float:
+	var store: float = start
+	var steps: int = maxi(int(hours / 0.005), 1)
+
+	for i in range(steps):
+		store = RainDrips.store_step(store, hours / float(steps), rain, wind, sun)
+
+	return store
+
+
+func _check_drips() -> void:
+	_check(_store_after(10.0 / 60.0, 0.6, 0.0, 0.0, 0.0) > 0.99 and _store_after(5.0 / 60.0, 0.6, 0.0, 0.0, 0.0) < 0.6, "10 game minutes of rain fill the crowns, 5 only half")
+	_check(_store_after(1.0, 0.1, 0.0, 0.0, 1.0) > 0.99, "light rain keeps them full")
+	var grey_15: float = _store_after(0.25, 0.0, 0.0, 0.0, 1.0)
+	_check(grey_15 > 0.4 and grey_15 < 0.6, "15 grey still minutes after the rain the crowns still drip at half (%.2f)" % grey_15)
+	_check(_store_after(2.0, 0.0, 0.0, 0.0, 1.0) == 0.0, "two game hours later they are dry")
+	_check(_store_after(0.25, 0.0, 0.6, 1.0, 1.0) < grey_15 * 0.2, "sun and a breeze shake them dry much sooner")

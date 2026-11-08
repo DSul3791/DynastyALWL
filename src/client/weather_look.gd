@@ -175,6 +175,8 @@ var _splash: GPUParticles3D
 var _splash_field: GPUParticlesCollisionHeightField3D
 var _splash_material: StandardMaterial3D
 var _splash_sent: float = -1.0
+const RainDripsScript := preload("res://src/client/rain_drips.gd")
+var drips                                # RainDrips with --rain-look: crowns and eaves dripping during and after rain (rain_look_design.md 3.3)
 var rain_fall_ms: float = 0.0            # with --rain-look: the streaks' fall and drift now, for checks
 var rain_drift_ms: Vector2 = Vector2.ZERO
 
@@ -276,6 +278,14 @@ func setup(client) -> void:
 
 	if rain_look:
 		_make_splash()
+		var drip_material: ShaderMaterial = ShaderMaterial.new()
+		var drip_shader: Shader = Shader.new()
+		drip_shader.code = RAIN_SHADER_LIT      # lit like the streaks; no canopy map, so nothing hides them under the crowns they fall from
+		drip_material.shader = drip_shader
+		drip_material.set_shader_parameter("streak", Color(0.78, 0.84, 0.95, 0.32))
+		drips = RainDripsScript.new()
+		drips.setup(self, drip_material)
+		drips.set_quality(_quality)
 	wind_cue = WindCueScript.new()
 	add_child(wind_cue)
 	wind_cue.setup()
@@ -311,6 +321,9 @@ func setup(client) -> void:
 func set_quality(quality: int) -> void:
 	_quality = clampi(quality, 0, RAIN_AMOUNT.size() - 1)
 	_rain.amount = int(RAIN_AMOUNT[_quality])
+
+	if drips != null:
+		drips.set_quality(_quality)
 
 	if _splash != null:
 		# Changing these rebuilds the particle shader, so they follow the quality setting only, never the weather.
@@ -900,6 +913,8 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	if rain_look:
 		_update_rain_look(eye, hard, float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0)
 		_update_splash(rain if _rain.emitting else 0.0, open_sky)
+		var sun_now: float = clampf(1.0 - float(_s["cloud"]) * 1.1, 0.0, 1.0) * smoothstep(0.0, 0.2, day.elevation)
+		drips.update(get_process_delta_time(), rain, wind, sun_now, eye, canopy, Callable(_client, "_ground_below"), under or sheltered)
 	elif _rain.emitting:
 		(_rain.process_material as ParticleProcessMaterial).direction = Vector3(tilt, -1.0, tilt * 0.4).normalized()
 
