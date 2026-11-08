@@ -35,7 +35,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 95   # 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 96   # 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -105,6 +105,8 @@ signal comfort_received(level: int, rested_level: int, rested_minutes: int, tip:
 signal died_received(cause: String, spawn: Vector3)
 signal final_death_received(cause: String)
 signal hit_number_received(at: Vector3, amount: int)
+signal animal_hit_received(id: int, zone: int)   # MikeW's hunt_feedback connects (id, zone)
+signal animal_hit_point_received(id: int, zone: int, at: Vector3)   # the same hit with its point, for later blood marks
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal training_received(percent: int)
 signal reject_received(reason: int)
@@ -512,6 +514,15 @@ func final_death(cause: String) -> void:
 @rpc("authority", "call_remote", "reliable")
 func hit_number(at: Vector3, amount: int) -> void:
 	hit_number_received.emit(at, amount)
+
+
+# A hit on an animal, for every player within 60 m of it (protocol 96, docs/design/hunt_feedback_server.md): which animal, the body zone
+# (0 body, 1 head, 2 chest, 3 hip, 4 leg; MikeW's animal_view HIT_ZONES order) and the point. The client's hunt_feedback plays the
+# reaction from animal_hit_received(id, zone); animal_hit_point_received also carries the point.
+@rpc("authority", "call_remote", "reliable")
+func animal_hit(id: int, body_zone: int, at: Vector3) -> void:
+	animal_hit_received.emit(id, body_zone)
+	animal_hit_point_received.emit(id, body_zone, at)
 
 
 # The character's skills (protocol 37, data/items/skills.json): attributes [strength, memory] (-10..10) and one row
