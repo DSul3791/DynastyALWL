@@ -1326,6 +1326,14 @@ func _welcome_body(info: Dictionary) -> void:
 	net.hit_number_received.connect(func(at: Vector3, _amount: int) -> void: animal_view.note_hit(at))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
+
+	# MikeW's footfall hook (docs/design/FOOTFALL.md), once the animal view has it: a landing in mud, snow, water or a puddle adds that ground's
+	# hoof or paw layer on top of the species step (slot_sounds.gd footfall). Connected by name, so a build without the signal is unchanged.
+	if animal_view.has_signal("footfall"):
+		animal_view.connect("footfall", func(kind: String, at: Vector3, ground: String, speed: float) -> void:
+			sound.slots.footfall(kind, at, ground, speed, body.global_position)
+		)
+
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
