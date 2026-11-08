@@ -79,7 +79,7 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 		var u: float = (x0 + float(i) * spacing_m - _elevation.origin_x) / cell - 0.5
 		var base: int = int(floor(u))
 		column_base[i] = base
-		_cubic_weights(u - float(base), column_weights, i * 4)
+		_frame_weights(u - float(base), column_weights, i * 4)
 
 	# Source rows needed, with the horizontal pass done once per source row.
 	var first_row: int = int(floor((z0 - _elevation.origin_z) / cell - 0.5)) - 1
@@ -109,7 +109,7 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 	for j in range(samples):
 		var v: float = (z0 + float(j) * spacing_m - _elevation.origin_z) / cell - 0.5
 		var base_row: int = int(floor(v))
-		_cubic_weights(v - float(base_row), weights, 0)
+		_frame_weights(v - float(base_row), weights, 0)
 		var line_0: PackedFloat32Array = horizontal[base_row - 1 - first_row]
 		var line_1: PackedFloat32Array = horizontal[base_row - first_row]
 		var line_2: PackedFloat32Array = horizontal[base_row + 1 - first_row]
@@ -319,6 +319,30 @@ func _smooth_height(x: float, z: float) -> float:
 	return value
 
 
+# The landform for the watershed model (landform_only) is drawn from the 160 m world map with a cubic B-spline, which
+# smooths, and not with the Catmull-Rom cubic, which passes through every map cell: passing through, it drew the map's cell
+# grid into the landform as stripes and blocks a cell or two wide (zoom pictures of run 8a38328c, 8 Nov 2026), and the
+# landscape model's rivers followed them as ruler lines. The world map is a sample of the massif-scale shape; a smoothing
+# spline keeps that shape and leaves out what is only the grid. It takes a little off a lone summit cell (about a sixth of
+# its rise over its neighbours on each axis); the summit tent (_add_summits) is added after and keeps its full height.
+# The game's own tiles keep the Catmull-Rom cubic until the watershed rebuild replaces them.
+func _frame_weights(t: float, out: PackedFloat32Array, offset: int) -> void:
+	if landform_only:
+		_bspline_weights(t, out, offset)
+	else:
+		_cubic_weights(t, out, offset)
+
+
+static func _bspline_weights(t: float, out: PackedFloat32Array, offset: int) -> void:
+	var t2: float = t * t
+	var t3: float = t2 * t
+	var u: float = 1.0 - t
+	out[offset] = u * u * u / 6.0
+	out[offset + 1] = (3.0 * t3 - 6.0 * t2 + 4.0) / 6.0
+	out[offset + 2] = (-3.0 * t3 + 3.0 * t2 + 3.0 * t + 1.0) / 6.0
+	out[offset + 3] = t3 / 6.0
+
+
 static func _cubic_weights(t: float, out: PackedFloat32Array, offset: int) -> void:
 	var t2: float = t * t
 	var t3: float = t2 * t
@@ -434,8 +458,20 @@ func _island_texture_rows() -> PackedFloat32Array:
 
 
 # A real peak on every summit of the world map: a tent that adds `spire_share` of the summit height at
-# the top and fades to nothing `radius_factor` x that far out, with an exponent above 1 so the point is sharp
-# and the foot blends into the mountain. A function of world position only, so tiles agree on shared edges.
+# the top and fades to nothing `radius_factor` x that far out, as (1 - d / reach)^power. A function of world position only,
+# so tiles agree on shared edges. Power 2 (since 8 Nov 2026; it was 1.3): the tent's slope then falls to nothing at its foot
+# at a steady rate, so its edge leaves no mark; below 2 the slope drops to nothing in a last few metres, which drew a ring
+# round every summit in the zoom pictures of run 4edbc722.
+# Along the summit's spurs (WorldElevation.spur_weight_at, the same ones the world map's summit top uses) the tent reaches
+# `spur_reach` farther, so it is gentler there and the spurs run on as ridges between steeper faces. Near the point every
+# direction lies on the spurs, so the top is round and the spurs part from it as they fall (no star of thin rays).
+# Valley heads, in the watershed model's landform only (landform_only; design A1 rule 6, docs/water/rule6_build_plan.md,
+# change 1): between the spurs the tent is hollowed by head_depth_share x its rise at its deepest, head_peak_share of its
+# reach from the top, and by nothing at the top and at its foot, as (1 - spur weight) x sin^2(pi u) with u = (d / reach)^k
+# and k set so that u = 0.5 at the deepest point. So 3 to 5 valley heads converge on the top, where water gathers and snow
+# drifts and where the rivers and then the ice start cutting (cirques form in such pre-glacial valley heads, Benn and Evans
+# 2010). The top, the spur crests and the massif's edge keep their heights (D-10). A summit with no spurs gets no heads
+# (they would make a ring moat). The live game's ground is unchanged.
 func _add_summits() -> void:
 	if not _rules.has("summit") or _elevation.summits.is_empty():
 		return
@@ -445,6 +481,9 @@ func _add_summits() -> void:
 	var factor: float = float(rules["radius_factor"])
 	var power: float = float(rules["power"])
 	var cap: float = float(rules["max_m"])
+	var spur_reach: float = float(rules.get("spur_reach", 0.0))
+	var head_share: float = float(rules.get("head_depth_share", 0.0)) if landform_only else 0.0
+	var head_shape: float = log(0.5) / log(float(rules.get("head_peak_share", 0.35)))
 	var x0: float = float(origin_sx) * spacing_m
 	var z0: float = float(origin_sz) * spacing_m
 	var last: int = samples - 1
@@ -457,9 +496,11 @@ func _add_summits() -> void:
 		if rise <= 0.0 or reach <= 0.0:
 			continue
 
+		var spurs: bool = spur_reach > 0.0 and not _elevation.spur_dirs(summit).is_empty()
+		var heads: bool = spurs and head_share > 0.0
 		var east: float = (float(summit[0]) - x0) / spacing_m
 		var north: float = (float(summit[1]) - z0) / spacing_m
-		var span: float = reach / spacing_m
+		var span: float = reach * (1.0 + spur_reach) / spacing_m
 		var i0: int = maxi(int(floor(east - span)), 0)
 		var i1: int = mini(int(ceil(east + span)), last)
 		var j0: int = maxi(int(floor(north - span)), 0)
@@ -467,10 +508,22 @@ func _add_summits() -> void:
 
 		for j in range(j0, j1 + 1):
 			for i in range(i0, i1 + 1):
-				var distance: float = Vector2(float(i) - east, float(j) - north).length() * spacing_m
+				var offset: Vector2 = Vector2(float(i) - east, float(j) - north)
+				var distance: float = offset.length() * spacing_m
 
-				if distance < reach:
-					heights[j * samples + i] += rise * pow(1.0 - distance / reach, power)
+				if distance >= reach * (1.0 + spur_reach):
+					continue
+
+				var w: float = _elevation.spur_weight_at(summit, offset * spacing_m) if spurs else 0.0
+				var here: float = reach * (1.0 + spur_reach * w)
+				var k: int = j * samples + i
+
+				if distance < here:
+					heights[k] += rise * pow(1.0 - distance / here, power)
+
+				if heads and distance < reach:
+					var u: float = pow(distance / reach, head_shape)     # 0.5 where distance = head_peak_share x reach
+					heights[k] -= head_share * rise * (1.0 - w) * pow(sin(PI * u), 2.0)
 
 
 func height_at(i: int, j: int) -> float:
