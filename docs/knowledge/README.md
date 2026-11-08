@@ -72,6 +72,8 @@ Where a number still needs a source, the cell names it.
 | Springs and brooks in winter (springs do not freeze, how far the brook below stays open, thin ice by spring mouths, what drinking and fishing should assume) | [springs-and-brooks-in-winter.md](springs-and-brooks-in-winter.md) | 2026-11-08 | Steve (drinking, animals at water), Sonny (springs), Kathleen (ice look) | Mixed: sourced spring temperatures and year-round flow; open-water lengths are our sums with a judged heat loss |
 | Contradictions between pages and with the code, and which to follow | [CONTRADICTIONS.md](CONTRADICTIONS.md) | 2026-11-08 | Jamie | Audit |
 | Specific yield by rock type (granite, basalt, karst and other limestone, sandstone, shale, chalk, till, sand and gravel, peat; for spring stores and Rorabaugh recession) | [specific-yield.md](specific-yield.md) | 2026-11-08 | Sonny (springs, watershed) | Mostly sourced: a few rock types judged |
+| The player's body in weather (heat loss wet and dry in wool and linen, drying times, hypothermia stages and how fast they come, wind chill table, shelter and fire, food and water sickness odds and onsets) | [body-in-weather.md](body-in-weather.md) | 2026-11-08 | Steve | Mixed: hypothermia stages, wind chill, wet-walk results and illness onsets sourced; clothing multipliers, drying times and sickness odds judged |
+| One sky (the starter island at about 34° S, from the 21 by 21 grid: noon sun in the north, south and south-east faces shaded, sun times, twilight, where the moon is) | [one-sky.md](one-sky.md) | 2026-11-08 | Sonny (decision), Kathleen (day_cycle.gd) | Sourced: Sonny's decision; times checked with standard solar formulas |
 
 ### Most wanted sources
 
