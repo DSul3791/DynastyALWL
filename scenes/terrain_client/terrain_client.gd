@@ -3744,7 +3744,7 @@ func _update_view(delta: float) -> void:
 	if _avatar == null:
 		# Dave's PC log 4 Nov 2026: the first call waited for the body file still loading on a loader thread ("update view" 404 ms at the join).
 		# The body is made once the file is in; until then (a second or two, while the ground loads) there is no third-person body to draw.
-		if MyCharacter.dynasty_body_on() and ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		if ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 			return
 
 		_avatar = _make_avatar()
@@ -3882,8 +3882,7 @@ func _dress_avatar() -> void:
 
 
 func _make_avatar() -> Node3D:
-	# Dave's own body (1 Nov 2026) is the default; `--oldbody` or Esc > Settings > Gameplay > "Old body (next Play)" brings back the body worn before it (the generated body of
-	# src/client/character/, or the old ragdoll with `--old-body`).
+	# Dave's own body (1 Nov 2026) is the only player body; the generated body of src/client/character/ stands in when his glb is not imported.
 	var avatar: Node3D = MyCharacter.make_avatar()     # Dave's body, or the previous one when his glb is not imported (my_character.gd)
 	avatar.visible = false
 	return avatar
@@ -4887,10 +4886,9 @@ func _process(delta: float) -> void:
 	_frame_ms.append(delta * 1000.0)
 	Probe.frame(delta)
 
-	if MyCharacter.dynasty_body_on():
-		var tq_arms: int = Probe.start()
-		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here
-		Probe.stop("arms prebuild", tq_arms)
+	var tq_arms: int = Probe.start()
+	DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here
+	Probe.stop("arms prebuild", tq_arms)
 
 	if compass != null and camera != null:
 		compass.heading = CompassScript.heading_of(camera)
