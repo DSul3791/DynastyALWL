@@ -71,8 +71,33 @@ func _init() -> void:
 	_check(absf(player.unit_size - 9.0 * db_to_linear(-6.0)) < 0.001, "a module's new unit_size becomes the voice's own")
 	player.free()
 
+	_check_step2()
+
 	var source: String = FileAccess.get_file_as_string("res://src/client/sound_occlusion.gd")
 	_check(source.contains("has(\"--sound-outdoors\")") and not source.contains("player.volume_db"), "behind --sound-outdoors, and the scan never writes volume_db")
 
 	print("test_outdoor_air: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
+
+
+# Step 2 (3.4, 3.5): masking by rain and gale, and fresh snow that ages.
+func _check_step2() -> void:
+	_check(is_inf(OutdoorAir.rain_mask_m(0.05)) and is_equal_approx(OutdoorAir.rain_mask_m(0.15), 30.0) and is_equal_approx(OutdoorAir.rain_mask_m(0.4), 15.0) and is_equal_approx(OutdoorAir.rain_mask_m(0.7), 8.0) and is_equal_approx(OutdoorAir.rain_mask_m(1.0), 5.0), "rain hides small sounds past 30, 15, 8, 5 m (Jamie's table), not in a dry spell")
+	_check(OutdoorAir.rain_mask_m(0.4, 1.0) < OutdoorAir.rain_mask_m(0.4, 0.0), "under crowns the rain on leaves hides them sooner")
+	_check(OutdoorAir.mask_db(30.0, OutdoorAir.rain_mask_m(0.7), 4.0) <= -12.0, "a rustle 30 m off is lost in heavy rain")
+	_check(OutdoorAir.mask_db(30.0, OutdoorAir.rain_mask_m(0.7), 15.0) == 0.0, "a bear's growl is not")
+	_check(OutdoorAir.mask_db(5.0, OutdoorAir.rain_mask_m(0.7), 4.0) == 0.0, "nor a step close by")
+	_check(is_inf(OutdoorAir.gale_mask_m(0.4)) and OutdoorAir.mask_db(40.0, OutdoorAir.gale_mask_m(1.0), 4.0) < -6.0, "a snapped twig 40 m off is lost in a gale, not in a breeze")
+	var fresh: float = 1.0
+
+	for hour in range(72):
+		fresh = OutdoorAir.snow_fresh_step(fresh, 1.0, false, -5.0, false)
+
+	_check(fresh == 0.0, "three frosty days after it fell the snow no longer hushes")
+	_check(OutdoorAir.snow_fresh_step(1.0, 24.0, false, -5.0, false) > 0.4, "a day after, it still does, by half")
+	_check(OutdoorAir.snow_fresh_step(1.0, 16.0, false, 3.0, false) == 0.0, "a thaw ends it in under a day")
+	_check(OutdoorAir.snow_fresh_step(0.2, 1.0, true, -5.0, false) == 1.0, "new snow makes it fresh again")
+	var on_snow: Vector2 = OutdoorAir.snow_effect(200.0, 1.0, 1.0)
+	_check(on_snow.x <= -3.0 and on_snow.y < 0.8 and OutdoorAir.snow_effect(20.0, 1.0, 1.0) == Vector2(0.0, 1.0), "fresh snow: far sounds 3 to 6 dB down and duller, near ones not")
+	var source: String = FileAccess.get_file_as_string("res://src/client/weather_sounds.gd")
+	_check(source.contains("0.8 * ground_snow * snow_fresh") and source.contains("0.8 * ground_snow + falling"), "the hush follows fresh snow with the switch, lying snow without")
