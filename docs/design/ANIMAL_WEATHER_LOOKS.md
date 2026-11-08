@@ -63,6 +63,27 @@ Check: run sheet m48 (deer and horse in state 20 with `--cover`: heads low, bare
 
 Check: run sheet m54 (a deer at -12 C outside but under rock at 5.5 C: no steam, against m42's steaming herd) and DINO_SHOTS.md.
 
+## On ice and in snow (flag `ice_looks`, pr22; paired with Kathleen's frozen water look)
+Reads only the existing `water_level`, the weather's lying snow (`ground_snow`) and ice (`ice_cover`, the same number the walkable ice
+uses, now passed in the animal conditions) and `Weather.air_c` (through `_air`).
+- **On ice:** an animal at the water's surface (within 0.15 m of the level) where still water is frozen (ice_cover over 0.5) steps
+  carefully, its clip at three quarters. Deer, elk, boar and stock, who avoid open ice, slip now and then: a sideways lurch of 10
+  degrees that rights itself in half a second, every 2 to 6 s. Wolves, foxes, lynx, dogs, bears and birds cross surely.
+- **Where they go is the server's** (requests to Steve): deer and boar skirt frozen ponds rather than cross; wolves cross the ice
+  (and use it as a road); ground birds and ducks stand on the ice at the edge of open water.
+- **Snow on the back while still:** with `weather_looks`, an animal standing still for 30 s in falling snow gathers it too, not only
+  one lying down; when the snow stops it melts on the back above 0 C, faster the warmer (the air at the animal, `_air`); moving off
+  shakes it away as before.
+- **Snow prints deeper and longer-lived:** with `animal_sign`, prints in snow are up to 40 percent bigger in deep lying snow and
+  darker; they last until melt, new snow or drifting (as before), and a thaw (air above 2 C for two game hours) softens them away.
+- **Sources:** Jamie's snow page (#632, `snow-on-slopes.md`) is about drift, scour and melt by aspect and has nothing on animals on
+  ice; the snow-print facts are her tracks page (#696: good prints from about 1 cm of fresh snow, drifting fills them, a sunny day
+  blurs and grows them). The ice behaviour (deer and boar wary and slipping, wolves and foxes sure-footed) is **judged**, not sourced;
+  a knowledge line from Jamie would let it be checked.
+
+Check: run sheet m56 (a deer and a wolf walking on frozen water: the deer slips, the wolf does not; a deer standing still in snow
+whitening) and DINO_SHOTS.md.
+
 ## Check
 Run sheet m41 (deer and horse in a gale: rumps turned to the wind), m42 (deer herd at -12 C: closer, heads low, steam at the
 muzzles), m43 (dog and wolf as the rain stops: a shiver and drops), m44 (deer lying in falling snow: whiter coat).

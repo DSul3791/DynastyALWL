@@ -6435,6 +6435,7 @@ func _animal_conditions() -> Dictionary:
 	if sound != null and sound.weather != null:
 		out["ground_wet"] = float(sound.weather.ground_wet)
 		out["ground_snow"] = float(sound.weather.ground_snow)      # animal sign: prints in lying snow
+		out["ice_cover"] = float(sound.weather.ice_cover)          # ice looks: still water frozen over (the walkable ice's own number)
 		out["rain"] = float(sound.weather.rain)                    # animal sign: rain washes sand prints
 		out["snowing"] = str(sound.weather.kind).contains("snow")  # animal sign: new snow covers prints
 
