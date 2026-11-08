@@ -32,6 +32,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Water | drinking rings at the bank, swimming low and paddling, shake-off | `water_swim`, `swim_depth_x` | `water_life` (**off**) | ANIMALS_AND_WATER.md |
 | Hunch (state 20) | head low, ears back, tail still against the weather; storm_ahead stops the fly swish | `state_poses` "20" | none (server state) | ANIMALS_AND_WATER.md, Steve #646 |
 | Idle variety | scratch, shake, stretch after lying, groom, lick, roll, paw, look round, from a weighted table | `idles` | `idle_variety` (**off**) | IDLE_VARIETY.md |
+| Herd groups (server) | one leader drifts (into the wind for deer, with a storm for cattle), the rest keep places, closer in rain and wind; fan out on alarm, regroup once safe | `group_drift`, `group_spacing_m` | animals.json `groups.enabled` (**off**) | HERD_GROUPS.md |
 | Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |

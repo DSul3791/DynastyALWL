@@ -69,6 +69,7 @@ var _top_idx: int = 0
 var _next_herd: int = 1
 var _wind_s: float = 0.0
 var _wind_dir: Vector2 = Vector2.ZERO
+var _weather: Dictionary = {}       # this tick's weather (rain, wind, storm ...): herd groups bunch in it (HERD_GROUPS.md)
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
 var _fire_cache: Array = []       # [Vector3 fire, keep-off metres] this tick (fires, fire_radius)
 var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
@@ -679,6 +680,7 @@ func tick(delta: float) -> void:
 	var weather: Dictionary = wind.call() if wind.is_valid() else {}
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
+	_weather = weather
 	_sample_noise(players, delta)
 	_fire_cache = []
 
@@ -960,6 +962,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			var wander: float = float(def.get("wander_m", 6.0))
 			var angle: float = rng.randf() * TAU   # luck-exempt: where a grazing animal hops next
 			a["target"] = a["home"] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
+
+			if a["herd"] != 0 and _groups_on():
+				a["target"] = _group_target(a, def)   # herd groups: the leader drifts, the rest keep their place round it
 
 			if a.has("den"):
 				a["target"] = _den_target(a, def)
@@ -1530,6 +1535,14 @@ func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 	if away == Vector2.ZERO:
 		away = Vector2.from_angle(a["heading"])
 
+	# Herd groups (HERD_GROUPS.md): the herd scatters, each member breaking up to groups.scatter_deg either side of straight away.
+	if a["herd"] != 0 and _groups_on():
+		var slot: int = (_herds.get(a["herd"], []) as Array).find(a["id"])
+
+		if slot > 0:
+			var side: float = 1.0 if slot % 2 == 1 else -1.0
+			away = away.rotated(side * deg_to_rad(float(cfg["groups"].get("scatter_deg", 25.0))) * minf(ceilf(float(slot) / 2.0) / 2.0, 1.0))
+
 	a["state"] = FLEE
 	a["burst"] = 0.0
 	a["alert"] = 0.0
@@ -1683,6 +1696,57 @@ func _zig(away: Vector2, def: Dictionary) -> Vector3:
 	var turn: float = deg_to_rad(float(def.get("zig_deg", 0.0))) * rng.randf_range(-1.0, 1.0)   # luck-exempt: which way a fleeing animal jinks
 	var dir: Vector2 = away.rotated(turn)
 	return Vector3(dir.x, 0.0, dir.y)
+
+
+# Herd groups (docs/design/HERD_GROUPS.md; animals.json "groups", off by default). A herd has one leader, its first living member.
+# The leader drifts as it grazes (group_drift: into the wind for deer, with a storm for cattle, else a slow wander), groups.drift_m
+# per graze step; every other member keeps a place round the leader on a spiral (golden angle, spacing x sqrt of its place), so the
+# herd grazes and moves as one. Spacing shrinks in rain and wind (Jamie's #639: herds bunch and shelter): x (1 - rain_bunch x rain
+# - wind_bunch x wind), not below min_bunch. On alarm the herd scatters (_bolt) and, once safe, each member's next graze step takes it
+# back to its place: the herd regroups where it stopped.
+func _groups_on() -> bool:
+	return bool((cfg.get("groups", {}) as Dictionary).get("enabled", false))
+
+
+func _group_leader(hid: int) -> int:
+	for id in _herds.get(hid, []):
+		if animals.has(id):
+			return int(id)
+
+	return 0
+
+
+func _group_target(a: Dictionary, def: Dictionary) -> Vector3:
+	var g: Dictionary = cfg["groups"]
+	var lead_id: int = _group_leader(a["herd"])
+
+	if lead_id == 0:
+		return a["target"]
+
+	var rain: float = maxf(float(_weather.get("rain", 0.0)), float(_weather.get("snow", 0.0)))
+	var bunch: float = clampf(1.0 - float(g.get("rain_bunch", 0.35)) * rain - float(g.get("wind_bunch", 0.25)) * _wind_s, float(g.get("min_bunch", 0.5)), 1.0)
+	var spacing: float = float(def.get("group_spacing_m", g.get("spacing_m", 3.0))) * bunch
+
+	if lead_id == int(a["id"]):
+		var dir: float = float(a.get("drift_dir", rng.randf() * TAU))   # luck-exempt: the way a herd first drifts
+
+		match str(def.get("group_drift", "free")):
+			"into_wind":      # red deer graze moving into the wind (Jamie's #639)
+				dir = _wind_dir.angle() + PI if _wind_s > 0.1 else dir + rng.randf_range(-0.6, 0.6)   # luck-exempt: a slow wander
+			"with_storm":     # cattle drift with a storm
+				dir = _wind_dir.angle() if float(_weather.get("storm", 0.0)) > 0.5 else dir + rng.randf_range(-0.6, 0.6)   # luck-exempt: as above
+			_:
+				dir += rng.randf_range(-0.6, 0.6)   # luck-exempt: as above
+
+		a["drift_dir"] = dir
+		a["home"] = a["home"] + Vector3(cos(dir), 0.0, sin(dir)) * float(g.get("drift_m", 2.0))
+		return a["home"] + Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0))   # luck-exempt: where the leader stops
+
+	var lead: Dictionary = animals[lead_id]
+	var slot: int = maxi((_herds.get(a["herd"], []) as Array).find(a["id"]), 1)
+	var angle: float = float(slot) * 2.39996 + float(lead.get("drift_dir", 0.0))
+	a["home"] = lead["pos"] + Vector3(cos(angle), 0.0, sin(angle)) * spacing * sqrt(float(slot))
+	return a["home"] + Vector3(rng.randf_range(-0.5, 0.5), 0.0, rng.randf_range(-0.5, 0.5))   # luck-exempt: a little either way
 
 
 func _herd_centre(hid: int) -> Vector3:
