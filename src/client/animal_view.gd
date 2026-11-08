@@ -61,6 +61,8 @@ var _f_torch: Array = []
 var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
+var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var bird_rig: bool = false        # birds and bats posed from their skeletons: wingbeat, glide hold, perch fold, landing flare (BIRD_FLIGHT.md part 3; off until a Meshy bird arrives)
 var cover_still: bool = false     # state 20 in cover (Steve #701): hunched and still, the idle slowed, breathing slow, the wet look held (COVER_STILL in ANIMAL_WEATHER_LOOKS.md; off until the PC check)
 var air_override: float = NAN     # --life-air=C (pictures and tools only): this air temperature everywhere, for the steam and cold looks
 const HIT_EVENT_PROTOCOL := 0     # Steve's hit event (zone and animal id to players within 60 m): set to his protocol number when his PR lands (HUNT_FEEDBACK.md)
@@ -530,7 +532,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -642,6 +644,12 @@ func _process_body(delta: float) -> void:
 
 				if idle_variety and b.has("idle_pose"):
 					pose_key = int(b["idle_pose"])
+
+				if bird_rig and float(b.get("flare_t", 0.0)) > 0.0 and posed.poses.has(-20):
+					b["flare_t"] = float(b["flare_t"]) - delta
+					pose_key = -20      # wings up and forward, tail fanned: the landing flare
+				elif bird_rig and state == 0 and posed.poses.has(18) and not posed.poses.has(0):
+					pose_key = 18      # a posed bird at rest holds its perch fold
 
 				if weather_looks and bool(b.get("cold_huddle", false)) and posed.poses.has(HUNCH) and (state == 0 or state == 12):
 					pose_key = HUNCH      # head lowered in the cold (ANIMAL_WEATHER_LOOKS.md)
@@ -822,7 +830,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_dots", inst.get_meta("eye_dots"))      # the far-off glints (eye_shine)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or (row.has("idles") and idle_variety):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or (row.has("idles") and idle_variety) or (bird_rig and _posed_flight(row)):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -848,6 +856,14 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 			if row.has("state_poses"):
 				missing.append_array(fix.setup_poses(sks[0], row["state_poses"]))
 				root.set_meta("poses", fix)
+
+			# A bird or bat posed from its own wing bones (BIRD_FLIGHT.md part 3): flap 15, glide 17, perch 18 and 0, landing flare -20.
+			if bird_rig and _posed_flight(row):
+				var wing_poses: Dictionary = _wing_poses(sks[0], row, kind)
+
+				if not wing_poses.is_empty():
+					missing.append_array(fix.setup_poses(sks[0], wing_poses))
+					root.set_meta("poses", fix)
 
 			# Posed idles (IDLE_VARIETY.md): entry i of the row's idles with a "pose" is pose key -10 - i.
 			if row.has("idles") and idle_variety:
@@ -3614,10 +3630,11 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig"]
 
 func _all_flags_off() -> void:
 	cover_still = false
+	bird_rig = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -3701,6 +3718,104 @@ func _cover_still(node: Node3D, b: Dictionary) -> void:
 
 	b["look_left"] = 0.0
 	b["wet_hold"] = true      # the wet look (claude/mikew-wet-look) keeps its wet amount while this is set
+
+
+# Birds posed from their skeletons (docs/design/BIRD_FLIGHT.md part 3). A row is posed when it asks for it ("posed_flight": true) or
+# when its flight row names no flap clip, so a Meshy bird with a good skeleton and no clips still flies.
+func _posed_flight(row: Dictionary) -> bool:
+	if not row.has("flight"):
+		return false
+
+	var flap: String = str((row["flight"] as Dictionary).get("flap", ""))
+	return posed_flight_all or bool(row.get("posed_flight", false)) or flap == "" or flap.begins_with("<")
+
+
+# The wing bones by name (MODEL_QUIRKS.md pattern: any naming, the row's "wing_bones" wins): for each side the upper, fore and hand
+# bones, found by the first bone whose lower-case name holds a side word and a part word. Then the poses:
+#   15 flap: the three bones beating at flight.beat_hz (the fore and hand a little behind), up and down about the row's wing_axis
+#   17 glide: the wings held out level (glide_deg), the hands a little swept back
+#   18 perch: folded against the body (fold_deg)
+#   -20 landing flare: the wings up and forward, held
+# Mirrored left and right. A tail bone, if found, fans a little in the flare. Missing bones are logged, and a bird with no wing
+# bones found keeps its clips (or its flap bob) only.
+const WING_SIDES := {"l": ["left", "_l", ".l", "l_", "lft"], "r": ["right", "_r", ".r", "r_", "rgt"]}
+const WING_PARTS := {"up": ["upperarm", "humerus", "wing1", "wing_01", "shoulder", "arm"], "fore": ["forearm", "lowerarm", "ulna", "wing2", "wing_02", "elbow"], "hand": ["hand", "wrist", "wing3", "wing_03", "finger", "tip"]}
+
+func _wing_poses(sk: Skeleton3D, row: Dictionary, kind: String) -> Dictionary:
+	var named: Dictionary = row.get("wing_bones", {})
+	var found: Dictionary = {}
+
+	for side in WING_SIDES:
+		for part in WING_PARTS:
+			var key: String = side + "_" + part
+
+			if named.has(key) and sk.find_bone(str(named[key])) >= 0:
+				found[key] = str(named[key])
+				continue
+
+			for i in sk.get_bone_count():
+				var bone_name: String = sk.get_bone_name(i).to_lower()
+				var side_hit: bool = false
+
+				for w in WING_SIDES[side]:
+					if bone_name.contains(w):
+						side_hit = true
+
+				var part_hit: bool = false
+
+				for w in WING_PARTS[part]:
+					if bone_name.contains(w):
+						part_hit = true
+
+				if side_hit and part_hit and not found.values().has(sk.get_bone_name(i)) and not (part == "up" and (bone_name.contains("fore") or bone_name.contains("lower"))):
+					found[key] = sk.get_bone_name(i)
+					break
+
+	if not found.has("l_up") or not found.has("r_up"):
+		_model_note(kind, "posed flight: no wing bones found (the row's wing_bones can name them); flight clips or the flap bob only")
+		return {}
+
+	_model_note(kind, "posed flight: wing bones %s" % str(found))
+	var flight: Dictionary = row["flight"]
+	var axis: String = str(row.get("wing_axis", "z"))
+	var beat: float = maxf(float(flight.get("beat_hz", 4.0)), 0.5)
+	var swing: float = float(row.get("wing_swing_deg", 45.0))
+	var glide: float = float(row.get("glide_deg", 10.0))
+	var fold: float = float(row.get("fold_deg", 60.0))
+	var idx: int = {"x": 0, "y": 1, "z": 2}.get(axis, 2)
+
+	var hold := func(deg: float) -> Array:
+		var v: Array = [0.0, 0.0, 0.0]
+		v[idx] = deg
+		return v
+
+	var flap_waves: Dictionary = {}
+	var glide_bones: Dictionary = {}
+	var fold_bones: Dictionary = {}
+	var flare_bones: Dictionary = {}
+
+	for side in ["l", "r"]:
+		var sgn: float = 1.0 if side == "l" else -1.0
+
+		for part in ["up", "fore", "hand"]:
+			var key: String = side + "_" + part
+
+			if not found.has(key):
+				continue
+
+			var share: float = {"up": 1.0, "fore": 0.6, "hand": 0.4}[part]
+			var lag: float = {"up": 0.0, "fore": 0.12, "hand": 0.22}[part]
+			flap_waves[found[key]] = [lag, sgn * swing * share, axis]
+			glide_bones[found[key]] = hold.call(sgn * (glide if part == "up" else -glide * 0.5))
+			fold_bones[found[key]] = hold.call(-sgn * fold * share)
+			flare_bones[found[key]] = hold.call(sgn * swing * 0.9 * share)
+
+	var poses: Dictionary = {
+		"15": {"waves": flap_waves, "period_s": 1.0 / beat},
+		"17": {"bones": glide_bones},
+		"18": {"bones": fold_bones},
+		"-20": {"bones": flare_bones}}
+	return poses
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
@@ -3828,6 +3943,9 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 				fb["air_once"] = player.get_animation(lift).length
 
 		elif was_air and not air:
+			if bird_rig and _posed_flight(row):
+				b["flare_t"] = 0.6      # the posed landing flare (pose -20) for 0.6 s
+
 			var flare: String = _clip_full(player, row, str(flight.get("land", "")))
 
 			if flare != "":
