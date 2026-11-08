@@ -43,6 +43,7 @@ var _prints: Array = []           # [Decal, born msec, life s]
 var _print_tex: Dictionary = {}   # sign group -> ImageTexture
 var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
 var slope_tilt: bool = false
+var look_at_foe: bool = false     # a warning animal looks at the foe the server names, not the camera (LIFE_LAYER_WIRING.md; off until the PC check)
 var flight_bank: bool = false     # birds bank into turns and ravens roll on the server's roll event (BIRD_FLIGHT.md part 2; off until the PC check)
 var idle_first_s: float = -1.0     # tools only: the first idle comes after this many seconds (-1: 8 to 25 s)
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
@@ -377,6 +378,13 @@ func on_rows(rows: Array) -> void:
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
 		_bodies[id]["state"] = int(row[4])
+
+		# The foe a warning or charging animal faces (Steve #659: rows in states 10 to 12 with a dog as foe carry the dog's position as a sixth
+		# field): the head turns to it instead of the camera (look_at_foe, LIFE_LAYER_WIRING.md).
+		if row.size() > 5 and row[5] is Vector3:
+			_bodies[id]["foe"] = row[5]
+		else:
+			_bodies[id].erase("foe")
 
 	var now: int = Time.get_ticks_msec()
 
@@ -1731,6 +1739,10 @@ func _look_motion(node: Node3D, b: Dictionary, state: int, delta: float) -> void
 			want = 1.0 if float(b.get("look_left", 0.0)) > 0.0 else 0.0
 		else:
 			b["next_glance_m"] = range_m      # out of range or busy: the next approach starts a fresh glance
+
+	if look_at_foe and b.has("foe") and (state == 10 or state == 11 or state == 12 or state == WARN_POP):
+		fix.look_target = (b["foe"] as Vector3) + Vector3(0.0, 0.4, 0.0)      # the dog (or player) it is warning, not the camera
+		want = 1.0
 
 	# A herd mate looked up: this one follows a moment later (_herd_glance).
 	if float(b.get("glance_at", -1.0)) >= 0.0 and _t >= float(b["glance_at"]):

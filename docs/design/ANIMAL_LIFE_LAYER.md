@@ -34,6 +34,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Idle variety | scratch, shake, stretch after lying, groom, lick, roll, paw, look round, from a weighted table | `idles` | `idle_variety` (**off**) | IDLE_VARIETY.md |
 | Herd groups (server) | one leader drifts (into the wind for deer, with a storm for cattle), the rest keep places, closer in rain and wind; fan out on alarm, regroup once safe | `group_drift`, `group_spacing_m` | animals.json `groups.enabled` (**off**) | HERD_GROUPS.md |
 | Bird flight part 2 | state 17 glide, bank into turns, raven roll event (Steve #653) | `flight` | `flight_bank` (**off**) | BIRD_FLIGHT.md part 2 |
+| Look at the foe | a warning animal looks at the dog it warns (row field 6, Steve #659) | none | `look_at_foe` (**off**) | LIFE_LAYER_WIRING.md |
 | Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |
@@ -41,3 +42,5 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 **Already in main before the layer:** root-motion strip, flat-clip guard and fallback, skinned bounds, size by clip pose, flock models, young models, swimming, foot-speed measurement (#538 to #591).
 
 **Order a new species goes through:** model row (clips, size) → creature check → the layer keys it needs (most species: `tail_motion`, `ear_motion`, `breath`, `look`, `herd` where it fits, `clips.sleep`).
+
+Every server state and signal the layer reads, with its handler, flag and proof strip: LIFE_LAYER_WIRING.md.
