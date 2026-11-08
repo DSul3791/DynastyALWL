@@ -121,6 +121,30 @@ The base flow index is not a separate check here, because R4's recharge split al
 
 **Still asked of Jamie:** a sourced karst matrix K, and stream density on chalk and karst.
 
+## 8. Test plan (unit tests; nothing run in the cloud)
+
+The pure functions go in a new module, `tools/watershed/springstore.py`, which R4, R5 and R6 call. Its unit tests are in `tools/watershed/test_springstore.py`. They need numpy and scipy only, use small synthetic arrays and the repo's `params.json`, and read no run files. David4 or Dave's PC runs them, as for `test_network.py` and `test_peaks.py`.
+
+| test | checks | fixture |
+|---|---|---|
+| `test_tight_rock_transmissivity` | One granite cell with no cover has T = soil 1 m × 0.3 + zone 1 2 m × 0.1 + zone 2 13 m × 0.01 + zone 3 85 m × 0.001 = 0.715 m²/day. Under 3 m of coarse cover the soil zone is gone and the cover's K × 3 m is added. A sandstone cell keeps Gleeson's K × (50 m − cover). | `params.json` `groundwater`; three cells |
+| `test_sy_at_the_table` | On tight rock, S_y at a table depth of 0.5, 2, 10, 50 and 150 m is the soil's, then zones 1, 2 and 3, and zone 3 below the stack. Under 3 m of coarse cover a table at 1 m reads 0.22. On sandstone it is the cover's, then the rock's #686 value. | the same cells, five depths |
+| `test_catchments_on_a_plane` | H falls east on a 6 × 6 block grid, and the east column discharges. Each block ends at the east block of its row, at a distance of (columns to go) × the block size + half a block. | synthetic H |
+| `test_catchments_on_a_mound` | H peaks in the middle and every edge block discharges. Every block ends at an edge, none is left out, and each block's end is downhill of it. | synthetic H |
+| `test_rorabaugh_strip` | On a strip of uniform T and S_y, τ = 4 S_y L² / (π² T), with L twice the mean distance. Two halves of T₁ and T₂ in series give the harmonic mean. | one row of blocks |
+| `test_karst_two_stores` | An all-karst catchment has shares of 0.55 (conduit, 5 days) and 0.45 (matrix, Rorabaugh with S_y 0.003, L 300 m and the matrix T), and no diffuse store. A catchment with half its recharge on karst has shares 0.5, 0.275 and 0.225. | synthetic catchments with a karst mask |
+| `test_store_response_limits` | The response keeps the year's mean at 1 for every τ, so mean flows cannot change (section 6, check 3). τ near 0 returns the recharge shape's quarter means. τ of 100 years gives wet and dry within 0.5% of 1. τ of 45 days matches the old island store in `network.seasons` on the same shape. | a cosine recharge shape, 24 samples |
+| `test_bins_interpolate` | The shares from 48 log-spaced τ bins are within 0.5% of the exact response at 200 random τ between 0.1 days and 100 years. | random τ, fixed seed |
+| `test_drought_recession` | q(t) = q_base_dry × exp(−t/τ) falls to 1/e after τ days and is never negative. | scalars |
+| `test_params_give_713_times` | The params give #713's table (c): tight rock at L 50 m within 2 weeks to 3 months and at L 200 m within 6 months to 2 years; a karst matrix within 3 months to 2 years; a conduit at 2 to 10 days. Nothing reads hours or millennia. | `params.json` only |
+| `test_fresh_spring_sources` | Two spring rows: one with `q_base_dry_m3_s` 2e-5 marks its nearest 8 m sample as fresh water; one with 5e-6 marks nothing; one outside the window is ignored. | a 20 × 20 sample grid |
+
+What the tests do not cover, for the run on Dave's PC to judge (section 6):
+- the island's dry share against the old 45-day store;
+- the kilometres of perennial stream;
+- the springs that change regime;
+- the never-see lists on real ground.
+
 ## Cost and what does not change
 
 R4 gains one D8 pass on the 64 m grid. R5 gains 48 small FFTs. Each takes seconds.
