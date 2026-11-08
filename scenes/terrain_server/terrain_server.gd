@@ -250,6 +250,7 @@ func _ready() -> void:
 		return
 
 	_start_tunnels()
+	SpawnPointScript.use_world(world_dir)   # the starter tile's picked spawn (Stage E 6e), read before the flora placer clears round it
 	var placer = PlacerScript.new()
 	placer.setup(generator, tables, rules)
 	flora = FloraStoreScript.new()
@@ -743,20 +744,10 @@ func _ready() -> void:
 const SPAWN_OVERRIDE := SpawnPointScript.OVERRIDE   # the one source (src/shared/spawn_point.gd), shared with the flora placer's starter clearing
 
 
+# The spawn: the starter tile's spawn picked by rule (starter.spawn_picked), or SPAWN_OVERRIDE when the tile has none (spawn_point.gd).
 func _spawn_point(world_dir: String) -> Vector3:
-	var path: String = world_dir + "/tiles/tile_3_4.tile"
-	var point: Vector3 = Vector3(3.5, 0.0, 4.5) * float(settings.tile_size_m)
-	var head: Dictionary = TileFileScript.read_header(path)
-
-	if SPAWN_OVERRIDE != Vector2.ZERO:
-		point = Vector3(SPAWN_OVERRIDE.x, 0.0, SPAWN_OVERRIDE.y)
-	elif head["ok"]:
-		var starter: Dictionary = TileFileScript.read_list(path, head["table"], "starter")
-
-		if starter["ok"] and typeof(starter["value"]) == TYPE_DICTIONARY and starter["value"].has("spawn_point"):
-			var s: Array = starter["value"]["spawn_point"]
-			point = Vector3(float(s[0]), 0.0, float(s[2]))
-
+	var at: Vector2 = SpawnPointScript.use_world(world_dir)
+	var point: Vector3 = Vector3(at.x, 0.0, at.y)
 	point.y = maxf(generator.surface_height(point.x, point.z), 0.0) + 2.0
 	return point
 
@@ -1169,9 +1160,9 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
-	var row: int = 4
+	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): its rivers are the ones swelled
 	var game_s: float = game_clock.seconds
-	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0)
+	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:

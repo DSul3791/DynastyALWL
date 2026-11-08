@@ -54,6 +54,14 @@ uniform vec4 fine_holes[8];         // world x, z, size x, size z
 uniform int fine_count = 0;
 uniform float fine_sheet = 0.0;     // 1: this is a fine sheet; its edge fades in over fine_blend instead of the live window's band
 uniform float debug_sheet = 0.0;   // Ctrl+Shift+F8 or --water-debug: live window magenta, a 2 m chunk sheet yellow, an 8 m one orange, dark lines on the texel borders, darker where the sheet is steep, red seen from behind, cyan where fall white water is on
+// Frozen water (docs/design/frozen_water_look.md, Kathleen 8 Nov 2026; --frozen-water, client): src/client/frozen_water.gd works the numbers out, set_ice_all
+// hands them to every sheet. Off (frozen_on 0) the sheet draws no ice, as before.
+uniform float frozen_on = 0.0;
+uniform vec4 ice_look = vec4(0.0);  // open (Ice.cover at 3 m), shore (at 1 m), thaw 0..1 (the shore moat first), snow 0..1 (lying snow)
+uniform vec4 ice_springs[8];        // x, z, open radius m (Sonny's x0): a spring's brook stays open within it
+uniform int ice_spring_count = 0;
+uniform vec4 ice_holes[8];          // x, z, radius m, age 0..1 (a skin grows back over the last sixth)
+uniform int ice_hole_count = 0;
 
 varying vec2 tex_uv;
 varying float depth_v;
@@ -386,13 +394,87 @@ void fragment() {
 	float running = 0.75 * smoothstep(0.5, 2.0, speed) * smoothstep(0.05, 0.4, depth);
 	ALPHA = clamp(max(max(0.35 + 0.6 * thick, running), max(foam, fall * 0.85)), 0.0, 1.0) * shore * edge * contact;
 
+	// Frozen water (docs/design/frozen_water_look.md). Where: the shallows first (shore cover under 0.3 m, the deep cover from 2 m); a sheet only on water
+	// under 0.5 m/s (USACE), border ice along the bank up to 0.9 m/s, open water above and on falls; none within a spring's open length. Look: black
+	// skim under 2.5 cm (cover 0.125), grey film to 10 cm, a grey-white solid sheet from 10 cm (bears: you need a hole); snow on 5 cm or more, slush
+	// on thinner; in a thaw the shore moat opens first and the sheet greys. Flat and still: no ripples, foam or rain rings on ice.
+	float ice_sheet = 0.0;
+
+	if (frozen_on > 0.5 && max(ice_look.x, ice_look.y) > 0.001) {
+		float shallow = 1.0 - smoothstep(0.3, 2.0, depth);
+		float ice_here = mix(ice_look.x, max(ice_look.x, ice_look.y), shallow);
+		float slow = 1.0 - smoothstep(0.3, 0.5, raw_speed);
+		float border = (1.0 - smoothstep(0.5, 0.9, raw_speed)) * (1.0 - smoothstep(0.15, 0.15 + 1.5 * ice_here, depth));
+		ice_here *= max(slow, border) * (1.0 - fall);
+
+		for (int i = 0; i < ice_spring_count; i++) {
+			// Open within the spring's reach, then the ice at half thickness for 30 m past it (Jamie #739: thin ice within 10 to 30 m of a
+			// spring mouth or inflow) before it reaches its full cover.
+			float r = max(ice_springs[i].z, 1.0);
+			float ds = distance(world, ice_springs[i].xy);
+			ice_here *= smoothstep(0.95 * r, r, ds) * mix(0.5, 1.0, smoothstep(r, r + 30.0, ds));
+		}
+
+		float thaw = ice_look.z;
+		float moat = thaw > 0.02 ? 1.0 - smoothstep(1.6 * thaw, 1.6 * thaw + 0.3, depth) : 0.0;
+		float ice_patch = noise(world / 7.0 + 3.7);
+		float grown = ice_here * 1.25 + shallow * 0.5 * (1.0 - thaw) - ice_patch * 0.5 - 0.05;
+		float sheet = smoothstep(0.0, 0.25, grown) * step(0.002, ice_here) * (1.0 - moat);
+
+		// Holes: open dark water inside, a ragged rim of white chips, loose chips round it; a black skin grows back over the last sixth of its life.
+		float hole_open = 0.0;
+		float chips = 0.0;
+
+		for (int i = 0; i < ice_hole_count; i++) {
+			float r = ice_holes[i].z;
+			float d = distance(world, ice_holes[i].xy) * (1.0 + 0.12 * (noise(world * 9.0) - 0.5));
+			float skin = smoothstep(5.0 / 6.0, 1.0, ice_holes[i].w);
+			hole_open = max(hole_open, (1.0 - smoothstep(0.9 * r, r, d)) * (1.0 - skin) * step(0.002, ice_here));   // a fishing hole, or skim broken by a wader (ice_walk_feel.md)
+			chips = max(chips, smoothstep(r, 1.05 * r, d) * (1.0 - smoothstep(1.3 * r, 1.6 * r, d)) * step(0.35, noise(world * 14.0))
+				+ (1.0 - smoothstep(1.6 * r, 2.2 * r, d)) * step(1.6 * r, d) * step(0.78, noise(world * 11.0 + 5.1)));
+		}
+
+		chips *= step(0.125, ice_here);   // skim leaves no chips, only open water
+		sheet *= 1.0 - hole_open;
+		float cm = ice_here * 20.0;
+		float grey = smoothstep(2.0, 3.0, cm);              // black skim to grey film at 2.5 cm
+		float solid = smoothstep(9.0, 11.0, cm);            // grey film to the solid sheet at 10 cm
+		float cr1 = 1.0 - smoothstep(0.0, 0.03, abs(noise(world / 3.1) - 0.5));
+		float cr2 = 1.0 - smoothstep(0.0, 0.05, abs(noise(world / 1.1 + 9.0) - 0.5));
+		float cracks = clamp(cr1 + 0.5 * cr2 * grey, 0.0, 1.0);
+		vec3 black = water * 0.45 + sky_color * 0.08;
+		vec3 ice_col = mix(black, vec3(0.58, 0.64, 0.68) * mix(0.9, 1.08, noise(world / 1.7)), grey);
+		ice_col = mix(ice_col, vec3(0.80, 0.85, 0.88), solid);
+		ice_col = mix(ice_col, mix(vec3(0.86, 0.90, 0.93), vec3(0.42, 0.47, 0.50), solid), cracks * 0.6);   // white cracks in clear ice, darker in white
+		float rim = (1.0 - smoothstep(0.02, 0.15, depth)) * (1.0 - grey) * (1.0 - thaw);   // frost crystals where the skim meets the bank
+		ice_col = mix(ice_col, vec3(0.88, 0.91, 0.94), rim * 0.8);
+		ice_col = mix(ice_col, vec3(0.42, 0.46, 0.48), 0.7 * thaw * grey);                   // rotten, wet grey
+		// Snow lies on 5 cm or more, in drifts across the wind; on thinner ice it turns to grey slush.
+		float drift = noise(vec2(world.x * 0.18, world.y * 0.45) + 1.3);
+		float snow = smoothstep(0.35, 0.6, ice_look.w + 0.45 * drift - 0.3) * smoothstep(4.0, 6.0, cm);
+		float slush = smoothstep(0.2, 0.5, ice_look.w) * (1.0 - smoothstep(4.0, 6.0, cm)) * smoothstep(0.45, 0.6, drift);
+		ice_col = mix(ice_col, vec3(0.55, 0.58, 0.60), slush * 0.8);
+		ice_col = mix(ice_col, vec3(0.92, 0.94, 0.96), snow);
+		ice_col = mix(ice_col, vec3(0.90, 0.92, 0.94), chips);
+		float lit = mix(0.55, 1.0, daylight);
+		float glint = (1.0 - snow) * (1.0 - grey * 0.6) * fresnel;
+		ALBEDO = mix(ALBEDO, mix(ice_col * lit, sky_color, glint * 0.5), sheet);
+		ALBEDO = mix(ALBEDO, ALBEDO * 0.5, hole_open);
+		EMISSION = mix(EMISSION, vec3(0.0), max(sheet, hole_open));
+		ROUGHNESS = mix(ROUGHNESS, mix(mix(0.06, 0.35, solid), 0.9, max(snow, chips)) * mix(1.0, 0.4, thaw), sheet);
+		SPECULAR = mix(SPECULAR, mix(0.8, 0.3, max(snow, solid)), sheet);
+		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz, max(sheet, hole_open) * 0.95));
+		ALPHA = max(ALPHA, max(sheet * mix(0.6, 0.98, max(grey * 0.6 + solid * 0.4, max(snow, rim))), chips) * shore * edge);
+		ice_sheet = sheet;
+	}
+
 	// From under the water (Dave 2 Nov 2026: "being under the water looking up looks fake"): the surface is a mirror of the dark water
 	// below, except a round window overhead (Snell's window, about 49 degrees from the vertical) where the sky shows, bent and shaken by
 	// the ripples, with a bright ring at its rim. The fog (the water itself) dims it with distance.
 	if (!FRONT_FACING) {
 		vec3 ray = normalize(mat3(INV_VIEW_MATRIX) * VERTEX);
 		float c = clamp(dot(ray, n_world), 0.0, 1.0);
-		float window = smoothstep(0.62, 0.70, c);
+		float window = smoothstep(0.62, 0.70, c) * (1.0 - 0.85 * ice_sheet);   // under a sheet of ice the sky hardly shows
 		float rim = exp(-pow((c - 0.67) / 0.035, 2.0));
 		vec3 overhead = sky_color * mix(0.8, 1.3, smoothstep(0.7, 1.0, c)) * (0.85 + 2.5 * length(n_world.xz));
 		vec3 below_col = mix(deep_color * 0.5, overhead, window) + vec3(0.85, 0.95, 1.0) * rim * 0.3;
@@ -436,6 +518,13 @@ static var _shader: Shader = null
 
 static var debug_on: int = -1   # -1: not read yet (then --water-debug on the command line turns it on)
 
+# Frozen water (docs/design/frozen_water_look.md; --frozen-water): the numbers every sheet draws its ice from, kept here so a sheet made later starts
+# with them (no flash of open water on a frozen pond while it waits for the next update).
+static var _ice_on: bool = false
+static var _ice_look: Vector4 = Vector4.ZERO
+static var _ice_springs: PackedVector4Array = PackedVector4Array()
+static var _ice_holes: PackedVector4Array = PackedVector4Array()
+
 var _material: ShaderMaterial = null
 var _cells: Vector2i = Vector2i.ZERO
 var _step_m: float = SHEET_STEP_M
@@ -455,6 +544,7 @@ func _init() -> void:
 		debug_on = 1 if AppConfig.has_flag("water-debug") else 0
 
 	_material.set_shader_parameter("debug_sheet", float(debug_on))
+	_apply_ice()
 	visible = false
 
 
@@ -726,3 +816,35 @@ func set_rain(value: float) -> void:
 
 func set_daylight(value: float) -> void:
 	_material.set_shader_parameter("daylight", value)
+
+
+# Frozen water for every liquid sheet (terrain_client._update_frozen_water): `look` is FrozenWater.look's (open, shore, thaw, snow), `springs` and
+# `holes` FrozenWater's lists (8 each at most). on false: no ice drawn.
+static func set_ice_all(tree: SceneTree, on: bool, look: Vector4, springs: PackedVector4Array, holes: PackedVector4Array) -> void:
+	_ice_on = on
+	_ice_look = look
+	_ice_springs = springs
+	_ice_holes = holes
+
+	if tree != null:
+		for sheet in tree.get_nodes_in_group("liquid_sheet"):
+			if sheet.has_method("_apply_ice"):
+				sheet._apply_ice()
+
+
+func _apply_ice() -> void:
+	_material.set_shader_parameter("frozen_on", 1.0 if _ice_on else 0.0)
+	_material.set_shader_parameter("ice_look", _ice_look)
+	_material.set_shader_parameter("ice_springs", _padded(_ice_springs))
+	_material.set_shader_parameter("ice_spring_count", mini(_ice_springs.size(), 8))
+	_material.set_shader_parameter("ice_holes", _padded(_ice_holes))
+	_material.set_shader_parameter("ice_hole_count", mini(_ice_holes.size(), 8))
+
+
+static func _padded(list: PackedVector4Array) -> PackedVector4Array:
+	var out: PackedVector4Array = list.slice(0, 8)
+
+	while out.size() < 8:
+		out.append(Vector4.ZERO)
+
+	return out
