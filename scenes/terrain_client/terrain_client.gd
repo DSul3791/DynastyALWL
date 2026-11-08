@@ -2283,8 +2283,8 @@ func _update_weather() -> void:
 		flora.set_ice_cover(ice_now)
 
 	if ocean_ice != null:
-		# Salt water freezes harder to start: the sea only shows floes once the ice is well on.
-		ocean_ice.update(_anchor, maxf(IceScript.cover(game_clock.seconds, group, 0.0, 12.0) * 1.0 - 0.05, 0.0))
+		# The sea never freezes outside the arctic zone (Ice.sea_cover); there, salt water freezes at -1.8 C.
+		ocean_ice.update(_anchor, IceScript.sea_cover(game_clock.seconds, group))
 
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
