@@ -1,0 +1,81 @@
+{
+	"note": "Model rows prepared for models not yet made (Dave's Meshy list, docs/design/MISSING_MODELS_BRIEF.md). Not read by the game: when a model arrives, its row moves into models.json with the clip names from its file (creature_check --clips) and a species spec goes through tools/add_species.py.",
+	"species": {
+		"golden_eagle": {
+			"scene": "res://assets/animals/golden_eagle/<file>.fbx",
+			"length_m": 0.85,
+			"yaw_deg": 180,
+			"size_clip": "<perch idle>",
+			"clips": {
+				"0": "<perch idle>",
+				"3": "<alert>",
+				"walk": "<hop>",
+				"11": "<strike>",
+				"15": "<flap>"
+			},
+			"flight": {
+				"takeoff": "<takeoff>",
+				"flap": "<flap>",
+				"glide": "<glide>",
+				"flap_s": 1.5,
+				"glide_s": 6.0,
+				"beat_hz": 2.0,
+				"land": "<land>"
+			},
+			"notes": "soars in wide circles over open ground (server flight soar_m 120); no eye shine"
+		},
+		"raven": {
+			"scene": "res://assets/animals/raven/<file>.fbx",
+			"length_m": 0.62,
+			"yaw_deg": 180,
+			"clips": {
+				"0": "<stand idle>",
+				"3": "<look about>",
+				"walk": "<walk>",
+				"run": "<hop>",
+				"15": "<flap>"
+			},
+			"flight": {
+				"takeoff": "<takeoff>",
+				"flap": "<flap>",
+				"glide": "<glide>",
+				"flap_s": 2.0,
+				"glide_s": 2.0,
+				"beat_hz": 3.5,
+				"bob_m": 0.02,
+				"land": "<land>"
+			},
+			"notes": "follows players at a distance, lands at carcasses; croak clip for its call"
+		},
+		"owl": {
+			"scene": "res://assets/animals/owl/<file>.fbx",
+			"length_m": 0.4,
+			"yaw_deg": 180,
+			"clips": {
+				"0": "<perch idle>",
+				"3": "<head turn>",
+				"15": "<flap>",
+				"11": "<pounce>"
+			},
+			"flight": {
+				"takeoff": "<takeoff>",
+				"flap": "<flap>",
+				"glide": "<glide>",
+				"flap_s": 1.0,
+				"glide_s": 2.5,
+				"beat_hz": 2.5,
+				"land": "<land>"
+			},
+			"look": {
+				"bones": [
+					"<neck>",
+					"<head>"
+				],
+				"max_deg": 120,
+				"mode": "track",
+				"range_m": 25
+			},
+			"notes": "night only, silent flight; turns its head far (look max 120)"
+		}
+	}
+}

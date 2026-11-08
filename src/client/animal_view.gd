@@ -487,6 +487,8 @@ func _process_body(delta: float) -> void:
 			if float(b.get("pounce_t", -1.0)) >= 0.0:
 				_pounce(node, b, delta)
 
+			_flap_bob(node, b, state)
+
 			if slope_tilt:
 				_slope_pitch(node, b, before, delta)
 
@@ -2068,6 +2070,24 @@ func _wind() -> float:
 	return float(wind_now.call()) if wind_now.is_valid() else 0.0
 
 
+# The small up-and-down of a small bird's body with each wingbeat (row flight.bob_m, at beat_hz), only while flapping in the air.
+func _flap_bob(node: Node3D, b: Dictionary, state: int) -> void:
+	var flight: Dictionary = (node.get_meta("model_row", {}) as Dictionary).get("flight", {})
+
+	if flight.is_empty() or float(flight.get("bob_m", 0.0)) <= 0.0:
+		return
+
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null:
+		return
+
+	if state in AIR_STATES:
+		rig.position.y = float(flight["bob_m"]) * sin(TAU * float(flight.get("beat_hz", 4.0)) * float(b.get("air_t", 0.0)))
+	elif absf(rig.position.y) > 0.0005 and not b.has("hop"):
+		rig.position.y = 0.0
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -2147,6 +2167,51 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		ref = 0.0
 
 	clip = str(roles.get(role, roles.get("0", "")))
+
+	# Birds in flight (docs/design/BIRD_FLIGHT.md, row "flight"): a take-off clip once as the bird leaves the ground, then flapping
+	# and gliding in turns (flap_s, glide_s) at the species' wingbeat, a small bob with each beat for small birds, and a landing
+	# flare once as it comes down; the bird's own state 15 still drives when it is in the air.
+	var flight: Dictionary = row.get("flight", {})
+
+	if not flight.is_empty():
+		var air: bool = state in AIR_STATES
+		var was_air: bool = bool(b.get("was_air", false))
+		b["was_air"] = air
+
+		if air and not was_air:
+			b["air_t"] = 0.0
+			var lift: String = _clip_full(player, row, str(flight.get("takeoff", "")))
+
+			if lift != "":
+				player.play(lift, 0.1)
+				b["air_once"] = player.get_animation(lift).length
+
+		elif was_air and not air:
+			var flare: String = _clip_full(player, row, str(flight.get("land", "")))
+
+			if flare != "":
+				player.play(flare, 0.1)
+				b["air_once"] = player.get_animation(flare).length
+
+		b["air_once"] = maxf(0.0, float(b.get("air_once", 0.0)) - delta)
+
+		if float(b["air_once"]) > 0.0:
+			return      # a take-off or landing plays to its end
+
+		if air:
+			b["air_t"] = float(b.get("air_t", 0.0)) + delta
+			var flap_s: float = float(flight.get("flap_s", 99.0))
+			var glide_s: float = float(flight.get("glide_s", 0.0))
+			var gliding: bool = glide_s > 0.0 and fposmod(float(b["air_t"]), flap_s + glide_s) > flap_s
+			var air_clip: String = _clip_full(player, row, str(flight.get("glide" if gliding else "flap", "")))
+
+			if air_clip != "":
+				if player.current_animation != air_clip:
+					player.play(air_clip, 0.3)
+
+				var beat: float = float(flight.get("beat_hz", 0.0))
+				player.speed_scale = 1.0 if beat <= 0.0 or gliding else clampf(beat * player.get_animation(air_clip).length, 0.5, 3.0)
+				return
 
 	if clip != "" and player.current_animation != clip:
 		player.play(clip, 0.25)
