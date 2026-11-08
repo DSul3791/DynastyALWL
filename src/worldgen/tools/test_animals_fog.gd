@@ -62,7 +62,7 @@ func _init() -> void:
 	check(a.fog_v() >= 3333.0, "heavy rain alone does not set off the fog rules")
 
 	# Sight share at V 120: full to 30 m, half at 45 m, none past 60 m.
-	check(near(a.fog_sight_share(25.0, 120.0), 1.0) and near(a.fog_sight_share(45.0, 120.0), 0.5) and near(a.fog_sight_share(70.0, 120.0), 0.0), "sight share 1, 0.5, 0 at 25, 45, 70 m in V 120")
+	check(near(AnimalsScript.fog_sight_share(25.0, 120.0), 1.0) and near(AnimalsScript.fog_sight_share(45.0, 120.0), 0.5) and near(AnimalsScript.fog_sight_share(70.0, 120.0), 0.0), "sight share 1, 0.5, 0 at 25, 45, 70 m in V 120")
 
 	# Sensing: in full valley fog a standing player 100 m off seems about 200 m off; in clear air 100 m.
 	var deer_row: Dictionary = {"pos": Vector3.ZERO}
@@ -75,8 +75,8 @@ func _init() -> void:
 	check(near(a.weather_spook_x(deer), 1.0), "flag on: no flat mist cut on the spook range")
 
 	# Wolves: the ring.
-	check(near(a.fog_ring_m(25.0, 3333.0, 10.0), 25.0) and near(a.fog_ring_m(25.0, 222.0, 10.0), 25.0), "the pack shadows at 25 m in clear air and in full valley fog")
-	check(near(a.fog_ring_m(25.0, 30.0, 10.0), 15.0) and near(a.fog_ring_m(25.0, 8.0, 10.0), 10.0), "15 m at V 30, never under 10 m")
+	check(near(AnimalsScript.fog_ring_m(25.0, 3333.0, 10.0), 25.0) and near(AnimalsScript.fog_ring_m(25.0, 222.0, 10.0), 25.0), "the pack shadows at 25 m in clear air and in full valley fog")
+	check(near(AnimalsScript.fog_ring_m(25.0, 30.0, 10.0), 15.0) and near(AnimalsScript.fog_ring_m(25.0, 8.0, 10.0), 10.0), "15 m at V 30, never under 10 m")
 	a._read_weather({"wind": 0.0, "mist": 0.0}, 0.1)
 	check(near(a.fog_stalk_m(25.0, Vector3.ZERO), 25.0), "clear air through the server: 25 m")
 
