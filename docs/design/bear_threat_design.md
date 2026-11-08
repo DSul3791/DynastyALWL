@@ -1,6 +1,6 @@
 # Bear threat: stand, huff, jaw-pop, bluff, charge (design)
 
-Steve, 8 Nov 2026. This is guiding document section 7.1, card "Bear at den", which #550 correction 4 made a **Proposal**. It is a design only: per law 1, there is **no code until Dave reacts**. It covers both bears: the brown bear (species 14) and the black bear (species 18).
+Steve, 8 Nov 2026. This is guiding document section 7.1, card "Bear at den", which #550 correction 4 made a **Proposal**. **Dave agreed to it on 8 Nov 2026** ("I agree to all recommendations", section 9), so it may now be built. The coordinator's build order puts it first after goblin den life. It covers both bears: the brown bear (species 14) and the black bear (species 18).
 
 ## 1. Today [Existing]
 
@@ -86,8 +86,17 @@ Black bear: a higher `bluff_share` (0.75). Black bears bluff more and rarely pre
 
 ## 8. Depends on
 
-- **Dave's reaction** to this design.
+- ~~Dave's reaction to this design~~: given 8 Nov 2026 (section 9).
 - **MikeW:** the clip mapping for state 13.
 - **Jason:** the huff and jaw-pop sounds.
 
 It needs no rebake and no water or terrain work.
+
+## 9. Decided by Dave (8 Nov 2026)
+
+Dave answered the coordinator's questions with "I agree to all recommendations". For this design that means:
+
+| # | question | decided |
+|---|---|---|
+| 1 | Should a bear warn in steps before it charges (stand up curious, huff, jaw-pop, charge, some charges stopping short as a bluff)? | **Yes**, the ladder in section 3 |
+| 2 | If a player runs while the bear is warning, does it skip the rest and charge for real? | **Yes** (`run_trigger_mps`): it teaches backing away slowly |

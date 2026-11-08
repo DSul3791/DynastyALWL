@@ -1,6 +1,6 @@
 # Wolf pup taming: the first Companion bond (design)
 
-Steve, 8 Nov 2026. This is guiding document section 7.1 (wolf card "Tame (pup)") and section 8.2 (G-09 taming, the Companion bond). #550 correction 3 made it a **Proposal**. Taming order D-03 puts the companion first. It is a design only: per law 1, there is **no code until Dave reacts**.
+Steve, 8 Nov 2026. This is guiding document section 7.1 (wolf card "Tame (pup)") and section 8.2 (G-09 taming, the Companion bond). #550 correction 3 made it a **Proposal**. Taming order D-03 puts the companion first. **Dave agreed to it on 8 Nov 2026** ("I agree to all recommendations", section 10), so it may now be built, after the dog companion (section 6).
 
 ## 1. Today [Existing]
 
@@ -73,7 +73,7 @@ The game keeps that shape: **only a pup, only an orphan, and only by days of car
 
 Build the companion system on the **dog** first (species 34, models in batch 3). A stray dog follows a player who feeds it, which needs no pack, no den and no orphan rule. That proves `companions.json`, follow, stay and come, warn and inheritance. Wolf pups then reuse it and add only the den, orphan and wildness rules.
 
-Wolf pups also need **wild packs switched on** (`natural: true`), which is Dave's call. Until then, wolf pups are admin-spawn only.
+Wolf pups also need **wild packs switched on** (`natural: true`). **Dave said yes (8 Nov 2026)**, once the pack and pup work is built and checked on the PC. Until then, wolf pups are admin-spawn only.
 
 ## 7. How we know it works
 
@@ -94,11 +94,21 @@ Wolf pups also need **wild packs switched on** (`natural: true`), which is Dave'
 
 ## 9. Depends on
 
-- **Dave's reaction:**
-  - this design;
-  - wild packs on or off;
-  - "orphans only" (the humane rule).
+- ~~Dave's reaction~~: given 8 Nov 2026 (section 10): this design, wild packs on, and orphans only.
 - **MikeW:** a wolf pup model, either the wolf scaled with young proportions or a pup from the pack, plus clips.
 - **Jason:** pup whines and a growl.
 
 The dog companion is the first build, per section 6. Hunt and guard wait for animal-versus-animal fighting.
+
+## 10. Decided by Dave (8 Nov 2026)
+
+Dave answered the coordinator's questions with "I agree to all recommendations". For this design that means:
+
+| # | question | decided |
+|---|---|---|
+| 3 | Can players raise a wolf pup as a companion? | **Yes, orphans only**: a pup whose pack is gone, fed over several game days (section 3) |
+| 4 | Should wild wolf packs be on in the world? | **Yes**, once the pack and pup work is built and checked on the PC |
+| 5 | Build the companion system on the dog first, then reuse it for pups? | **Yes**, the dog first (section 6) |
+| 6 | Does an heir inherit a companion? | **Yes, at 70 % of the bond** |
+
+Build order (coordinator, 8 Nov 2026): the dog companion (5, 6) comes after the bear ladder and the goblin work; wild packs and the orphan pup (4, 3) come last.

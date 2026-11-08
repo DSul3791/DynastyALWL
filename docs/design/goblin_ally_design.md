@@ -1,6 +1,6 @@
 # Goblin Ally: earning a band's trust (design)
 
-Steve, 8 Nov 2026. This is guiding document section 7.1, the goblin band card's "Ally". #550 correction 2 made it a **Proposal**, because Dave's `docs/GOBLINS.md` describes skittish night thieves only. It is a design only: per law 1, there is **no code until Dave reacts**. **Nothing in it changes what goblins are.** They stay skittish thieves who keep out of light. Ally changes only how one band treats one player.
+Steve, 8 Nov 2026. This is guiding document section 7.1, the goblin band card's "Ally". #550 correction 2 made it a **Proposal**, because Dave's `docs/GOBLINS.md` describes skittish night thieves only. **Dave agreed to it on 8 Nov 2026** ("I agree to all recommendations", section 9), so it may now be built, after stealing. **Nothing in it changes what goblins are.** They stay skittish thieves who keep out of light. Ally changes only how one band treats one player.
 
 ## 1. Today [Existing]
 
@@ -14,7 +14,7 @@ Steve, 8 Nov 2026. This is guiding document section 7.1, the goblin band card's 
   - Keeps out of fire, torch and lamp light.
   - Fights only when cornered or threatened at its den (`defend`: den ring 12 m, threat 8 m, 8 damage).
 - **Not built:** stealing, berry foraging, sneaking to the edge of firelight on purpose, a goblin whistle or footstep sound, a goblin sign row.
-  - Dave has not decided how much they steal, where stolen things go, or whether they drop them when killed (GOBLINS.md).
+  - Dave decided how much they steal, where stolen things go and whether they drop them when killed on 8 Nov 2026 (section 9).
 
 ## 2. The idea [Proposal]
 
@@ -58,7 +58,7 @@ It is the same **approach, offer, wait, bond** shape as taming (G-09), but the t
 
 ## 5. Systems touched
 
-1. **Stealing (not built).** It is the base this stands on. Dave's open questions (how much, where it goes, whether it drops on death) need his answer first, through the coordinator.
+1. **Stealing (not built).** It is the base this stands on. Dave answered its questions on 8 Nov 2026 (section 9); it gets its own design note before code.
 2. **`server_animals.gd` goblin behaviour:**
    - "watch openly" at Tolerated;
    - gift pick-up while unseen;
@@ -92,11 +92,25 @@ It is the same **approach, offer, wait, bond** shape as taming (G-09), but the t
 
 ## 8. Depends on
 
-1. **Dave's reaction:**
-   - this design;
-   - whether goblins may ever become friendly at all, since GOBLINS.md only describes them as thieves.
-2. **The stealing system**, with Dave's answers on how much goblins steal, where stolen things go, and whether they drop them on death.
+1. ~~Dave's reaction~~: given 8 Nov 2026 (section 9). Goblins may become friendly, slowly.
+2. **The stealing system**, built to Dave's answers in section 9.
 3. **Jason:** goblin whistles.
 4. **Kathleen:** the return-gift item art.
 
 It needs no rebake and no water or terrain work.
+
+## 9. Decided by Dave (8 Nov 2026)
+
+Dave answered the coordinator's questions with "I agree to all recommendations". For goblins that means:
+
+| # | question | decided |
+|---|---|---|
+| 7 | Can goblins ever turn friendly to a player? | **Yes, slowly.** Gifts left outside the firelight over many nights make that band stop stealing from that player, leave small gifts back, and whistle when a bear or wolves come near. They never enter light or follow anyone |
+| 8 | How much do goblins steal? | **One small item at a time**, only from what no fire, torch or lamp lights |
+| 9 | Where do stolen things go? | **Into a pile in their den**, where a player can find them and take them back |
+| 10 | Does a killed goblin drop what it stole? | **Yes**, what it is carrying |
+| 11 | Is each goblin's height roll saved? | **No.** It comes from the animal id, so it is always the same |
+| 12 | Do foraging goblins strip berry bushes? | **No, for now.** They eat without changing the bush |
+| 13 | What stops a killed group coming back? | **A lit building or a player camp with a fire within 100 m of the cave mouth** (`lair_guarded`) |
+
+Build order (coordinator, 8 Nov 2026): den life first, then stealing and the den pile (8, 9, 10, 13), then this design (7).
