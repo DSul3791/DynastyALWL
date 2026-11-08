@@ -35,6 +35,7 @@ var _clear_day_switch
 var _fullscreen_switch
 var _voice_switch
 var _damage_switch
+var _motion_switch
 var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
@@ -173,6 +174,7 @@ func refresh() -> void:
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
 		_damage_switch.set_on(_c.display.damage_numbers)
+		_motion_switch.set_on(DisplaySettingsScript.reduce_motion)
 		_hints_switch.set_on(_c.items == null or _c.items.inner_settings.hints)
 		_dialogue_switch.set_on(_c.items == null or _c.items.inner_settings.dialogue)
 		_clear_day_switch.set_on(_c.weather_look.clear_day)
@@ -355,6 +357,10 @@ func _build_gameplay() -> void:
 	_slider(gameplay, "Camera motion", float(_c.feel.intensity), func(value: float): _c.feel.set_intensity(value), 1.5)
 	_damage_switch = _switch_row(gameplay, "Damage numbers", func(on: bool):
 		_c.display.damage_numbers = on
+		_c._save_display())
+	# The inventory's small animations (look doc section 11): on, they become instant changes.
+	_motion_switch = _switch_row(gameplay, "Reduce motion", func(on: bool):
+		DisplaySettingsScript.reduce_motion = on
 		_c._save_display())
 	_temp_button = _button(gameplay, "", func():
 		DisplaySettingsScript.fahrenheit = not DisplaySettingsScript.fahrenheit
