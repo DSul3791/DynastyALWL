@@ -50,6 +50,10 @@ var idle_first_s: float = -1.0     # tools only: the first idle comes after this
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
+var animal_sign: bool = false     # tracks on soft ground by stride, droppings, browse and beds that last by Jamie's soak numbers (ANIMAL_SIGN.md; off until the PC check)
+var soil_at: Callable             # (position) -> footstep surface ("mud", "sand", "dirt", "grass", "stone" ...) from the sound stage's soil map
+var _signs: Array = []            # [Decal, born msec, life s, ground] (animal_sign), oldest first
+var _sign_check_t: float = 0.0
 var eye_shine: bool = false       # night eye shine v2: torch or moon near the viewer's eye line, a dot per eye that reads far off (EYE_SHINE.md; off until the PC check)
 var night_light: Callable         # () -> {night 0..1, moon 0..1, moon_to Vector3}: from the client's day cycle (eye_shine)
 var voice_fx: bool = false        # animals call by state from data/animals/voices.json; terrain_client then skips the old state_changed calls (ANIMAL_VOICES.md; off until the PC check)
@@ -483,6 +487,13 @@ func _process_body(delta: float) -> void:
 	if not _prints.is_empty():
 		_fade_prints()
 
+	if animal_sign and not _signs.is_empty():
+		_sign_check_t -= delta
+
+		if _sign_check_t <= 0.0:
+			_sign_check_t = 2.0
+			_fade_signs()
+
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
 		var node: Node3D = b["node"]
@@ -539,6 +550,9 @@ func _process_body(delta: float) -> void:
 
 			if sea_life and _row_of(node).has("sea"):
 				_sea_blow(node, b, delta)
+
+			if animal_sign:
+				_sign_rest(node, b, state, model_speed, delta)
 
 			if season_coats or coat_dust or coat_ruffle:
 				_coat_tick(node, b, state, delta)
@@ -2933,6 +2947,212 @@ func _retro(to_light: Vector3, to_cam: Vector3) -> float:
 	return clampf(1.0 - angle / 12.0, 0.0, 1.0)
 
 
+# Animal sign (docs/design/ANIMAL_SIGN.md). One pool of ground decals for tracks, droppings, browse and beds: at most SIGN_CAP, the
+# oldest dropped first, and none placed beyond SIGN_NEAR_M of the camera. A track is laid only on soft ground: mud, sand, snow, or
+# turf and dirt wet from rain; none on stone, gravel, leaf litter or dry turf. How long each lasts is Jamie's soak numbers in game days
+# (a game day is one real hour): wet clay and turf 3 days in summer, 10 in winter (5 between); snow until it melts or new snow falls;
+# sand until rain or a strong wind. Walking, prints alternate left and right a stride apart; running, they fall in groups of two
+# (front and hind) a longer stride apart, so a tracker can tell the gait.
+const SIGN_CAP := 400
+const SIGN_NEAR_M := 60.0
+const GAME_DAY_S := 3600.0
+const SOFT_DRY := ["mud", "sand", "snow"]
+const SOFT_WET := ["dirt", "grass", "grass_tall", "path", "bushes"]
+
+func _sign_ground(node: Node3D) -> String:
+	var cond: Dictionary = conditions_now.call() if conditions_now.is_valid() else {}
+	var soil: String = str(soil_at.call(node.global_position)) if soil_at.is_valid() else "dirt"
+
+	if water_level.is_valid():
+		var level: float = float(water_level.call(node.global_position.x, node.global_position.z))
+
+		if not is_nan(level) and node.global_position.y < level:
+			return ""      # under water: nothing stays
+
+	if float(cond.get("ground_snow", 0.0)) > 0.3 and soil != "stone":
+		return "snow"
+
+	if soil in SOFT_DRY:
+		return soil
+
+	if soil in SOFT_WET and float(cond.get("ground_wet", 0.0)) >= 0.3:
+		return "clay" if soil == "dirt" or soil == "path" else "turf"
+
+	return ""
+
+
+func _sign_life(ground: String) -> float:
+	var season: String = str((conditions_now.call() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
+
+	match ground:
+		"snow":
+			return 10.0 * GAME_DAY_S      # until melt or new fall (_fade_signs); ten days at most
+		"sand":
+			return 3.0 * GAME_DAY_S       # until rain or wind (_fade_signs)
+		_:
+			return GAME_DAY_S * (3.0 if season == "summer" else (10.0 if season == "winter" else 5.0))
+
+
+func _sign_track(kind: String, node: Node3D, b: Dictionary, speed: float) -> void:
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+
+	if cam == null or cam.global_position.distance_to(node.global_position) > SIGN_NEAR_M:
+		return
+
+	var row: Dictionary = node.get_meta("model_row", {})
+	var run_mps: float = float(row.get("run_mps", 8.0))
+	var running: bool = speed > maxf(float(row.get("walk_mps", 1.5)) * 1.6, 2.5)
+	var gap: float = float(row.get("stride_m", 1.0)) * (1.0 + 1.2 * clampf(speed / maxf(run_mps, 0.1), 0.0, 1.0))
+	var last: Vector3 = b.get("track_at", Vector3.INF)
+
+	if last != Vector3.INF and last.distance_to(node.global_position) < gap:
+		return
+
+	var ground: String = _sign_ground(node)
+
+	if ground == "":
+		return
+
+	b["track_at"] = node.global_position
+	b["track_side"] = -float(b.get("track_side", 1.0))
+	var size: float = clampf(float(row.get("length_m", 1.0)) * 0.08, 0.04, 0.35) * maxf(node.scale.x, 0.3)
+	var across: Vector3 = node.global_transform.basis.x.normalized()
+	var ahead: Vector3 = -node.global_transform.basis.z.normalized()
+	var width: float = float(row.get("length_m", 1.0)) * 0.1 * maxf(node.scale.x, 0.3)
+	var tex: ImageTexture = _print_texture(_print_group(kind))
+
+	if running:      # a group of two: hind foot landing just ahead of where the front foot was
+		_sign_decal(tex, node.global_position + across * width * 0.5 + ahead * size, size, node.rotation.y, ground)
+		_sign_decal(tex, node.global_position - across * width * 0.5 - ahead * size, size, node.rotation.y, ground)
+	else:
+		_sign_decal(tex, node.global_position + across * width * float(b["track_side"]), size, node.rotation.y, ground)
+
+
+# Droppings, browse and beds (ANIMAL_SIGN.md): a grazer that has fed in one spot for 40 s leaves browse there (nibbled stems), once
+# in a while droppings (one in four feeding spots); an animal lying (state 19, or asleep) for 30 s leaves a flattened bed the size of
+# its body. Placed only on ground that is not water, near the camera.
+func _sign_rest(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var lying: bool = state == 19 or bool(b.get("asleep", false))
+	var feeding: bool = state == 0 and speed < 0.3 and not lying
+
+	if not (lying or feeding):
+		b.erase("rest_t")
+		return
+
+	b["rest_t"] = float(b.get("rest_t", 0.0)) + delta
+	var at: Vector3 = node.global_position
+	var spot: Vector3 = b.get("sign_spot", Vector3.INF)
+
+	if spot != Vector3.INF and spot.distance_to(at) < 3.0:
+		return      # this spot is already marked
+
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+
+	if cam == null or cam.global_position.distance_to(at) > SIGN_NEAR_M:
+		return
+
+	var row: Dictionary = node.get_meta("model_row", {})
+	var length: float = float(row.get("length_m", 1.0)) * maxf(node.scale.x, 0.3)
+
+	if lying and float(b["rest_t"]) > 30.0:
+		b["sign_spot"] = at
+		_sign_decal(_sign_texture("bed"), at, length * 0.8, node.rotation.y, "bed", GAME_DAY_S)
+	elif feeding and float(b["rest_t"]) > 40.0:
+		b["sign_spot"] = at
+		var ahead: Vector3 = -node.global_transform.basis.z.normalized()
+		_sign_decal(_sign_texture("browse"), at + ahead * length * 0.45, maxf(length * 0.35, 0.3), randf() * TAU, "browse", 7.0 * GAME_DAY_S)      # luck-exempt: the browse patch's turn (client look)
+
+		if randf() < 0.25:      # luck-exempt: whether it left droppings here (client look)
+			_sign_decal(_sign_texture("droppings"), at - ahead * length * 0.4, clampf(length * 0.12, 0.08, 0.4), randf() * TAU, "droppings", 5.0 * GAME_DAY_S)      # luck-exempt: as above
+
+
+func _sign_decal(tex: Texture2D, at: Vector3, size: float, turn: float, ground: String, life: float = -1.0) -> void:
+	if not is_inside_tree():
+		return
+
+	var decal: Decal = Decal.new()
+	decal.texture_albedo = tex
+	decal.size = Vector3(size, 0.4, size)
+	decal.modulate = {"snow": Color(0.72, 0.78, 0.9, 0.85), "sand": Color(0.55, 0.47, 0.35, 0.7), "mud": Color(0.3, 0.23, 0.16, 0.85),
+		"clay": Color(0.36, 0.27, 0.18, 0.8), "turf": Color(0.28, 0.3, 0.18, 0.6), "bed": Color(0.45, 0.48, 0.3, 0.45),
+		"browse": Color(0.5, 0.55, 0.3, 0.6), "droppings": Color(0.2, 0.15, 0.1, 0.95)}.get(ground, Color(0.3, 0.25, 0.2, 0.8))
+	add_child(decal)
+	decal.global_position = at + Vector3(0.0, 0.15, 0.0)
+	decal.rotation.y = turn
+	decal.set_meta("alpha", decal.modulate.a)
+	_signs.append([decal, Time.get_ticks_msec(), life if life > 0.0 else _sign_life(ground), ground])
+
+	while _signs.size() > SIGN_CAP:
+		(_signs.pop_front()[0] as Decal).queue_free()
+
+
+# Every 2 s: each sign fades with its age; rain over 0.5 washes sand prints, falling snow covers snow prints, and thawed ground
+# (lying snow under 0.2) melts them; a strong wind (0.6) blurs sand.
+func _fade_signs() -> void:
+	var cond: Dictionary = conditions_now.call() if conditions_now.is_valid() else {}
+	var rain: float = float(cond.get("rain", 0.0))
+	var snowing: bool = bool(cond.get("snowing", false))
+	var thawed: bool = float(cond.get("ground_snow", 1.0)) < 0.2
+	var now: int = Time.get_ticks_msec()
+
+	for i in range(_signs.size() - 1, -1, -1):
+		var sg: Array = _signs[i]
+		var decal: Decal = sg[0]
+		var age: float = float(now - int(sg[1])) / 1000.0
+		var ground: String = sg[3]
+		var gone: bool = age >= float(sg[2])
+
+		if ground == "sand" and (rain > 0.5 or _wind() > 0.6):
+			gone = true
+		elif ground == "snow" and (snowing or thawed):
+			gone = true
+
+		if gone or not is_instance_valid(decal):
+			if is_instance_valid(decal):
+				decal.queue_free()
+
+			_signs.remove_at(i)
+		else:
+			decal.modulate.a = float(decal.get_meta("alpha", 0.8)) * (1.0 - 0.8 * age / float(sg[2]))      # a fresh print is sharp, an old one faint
+
+
+# Plain generated shapes for the rest sign (no art files): a flattened oval for a bed, flecks for browse, a cluster of pellets.
+func _sign_texture(what: String) -> ImageTexture:
+	if _print_tex.has(what):
+		return _print_tex[what]
+
+	var img: Image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var dice: RandomNumberGenerator = RandomNumberGenerator.new()
+	dice.seed = hash(what)
+
+	for y in 64:
+		for x in 64:
+			var dx: float = (float(x) - 32.0) / 30.0
+			var dy: float = (float(y) - 32.0) / 18.0
+
+			match what:
+				"bed":
+					var r: float = dx * dx + dy * dy
+					if r <= 1.0:
+						img.set_pixel(x, y, Color(1, 1, 1, 1.0 - r * 0.6))
+
+	var blobs: int = 18 if what == "browse" else (7 if what == "droppings" else 0)
+
+	for n in blobs:
+		var c: Vector2 = Vector2(dice.randf_range(14.0, 50.0), dice.randf_range(14.0, 50.0))
+		var rad: float = dice.randf_range(1.5, 3.0) if what == "browse" else dice.randf_range(3.0, 4.5)
+
+		for y in range(int(c.y - rad), int(c.y + rad) + 1):
+			for x in range(int(c.x - rad), int(c.x + rad) + 1):
+				if x >= 0 and x < 64 and y >= 0 and y < 64 and Vector2(x, y).distance_to(c) <= rad:
+					img.set_pixel(x, y, Color(1, 1, 1, 1))
+
+	var tex: ImageTexture = ImageTexture.create_from_image(img)
+	_print_tex[what] = tex
+	return tex
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -3181,8 +3401,11 @@ func _emit_steps(b: Dictionary, node: Node3D, state: int, speed: float) -> void:
 		if footfall_fx and (ground == "water" or ground == "puddle") and speed > 0.4:
 			_splash(node.global_position, ground == "water", speed)
 
-		if prints_fx and (ground == "snow" or ground == "mud"):
+		if prints_fx and not animal_sign and (ground == "snow" or ground == "mud"):
 			_print_at(kind, node, ground)
+
+		if animal_sign:
+			_sign_track(kind, node, b, speed)
 
 	b["step_count"] = count
 

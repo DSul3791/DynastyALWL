@@ -1324,6 +1324,7 @@ func _welcome_body(info: Dictionary) -> void:
 			sound.slots.play("step_water", at, body.global_position))      # an animal splashing through water or a puddle
 	animal_view.ground_height = func(x: float, z: float) -> float: return _animal_ground(x, z)      # feet on uneven ground (foot_ik)
 	animal_view.night_light = func() -> Dictionary: return {"night": float(weather_look.day.night), "moon": float(weather_look.day.night) * float(weather_look.day.moon_light), "moon_to": (weather_look.day.light_basis as Basis).z} if weather_look != null else {}      # eye shine by moonlight
+	animal_view.soil_at = func(p: Vector3) -> String: return str(SoundStageScript.SOIL_SURFACE.get(sound._ground_under(p), "dirt")) if sound != null and sound._tool != null else "dirt"      # animal sign: soft or hard ground
 	animal_view.wind_now = func() -> float: return float(sound.weather.wind) if sound != null and sound.weather != null else 0.0      # ears and tails in the wind
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	net.animals_received.connect(animal_view.on_rows)
@@ -6424,6 +6425,9 @@ func _animal_conditions() -> Dictionary:
 
 	if sound != null and sound.weather != null:
 		out["ground_wet"] = float(sound.weather.ground_wet)
+		out["ground_snow"] = float(sound.weather.ground_snow)      # animal sign: prints in lying snow
+		out["rain"] = float(sound.weather.rain)                    # animal sign: rain washes sand prints
+		out["snowing"] = str(sound.weather.kind).contains("snow")  # animal sign: new snow covers prints
 
 		if "storm_ahead" in sound.weather:      # Steve's #646: a storm on its way (0..1); quietens the animals' fly swish
 			out["storm_ahead"] = float(sound.weather.storm_ahead)
