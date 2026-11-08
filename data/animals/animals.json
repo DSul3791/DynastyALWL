@@ -4298,6 +4298,7 @@
 			"damage_per_level": 0.04
 		}
 	},
+	"thunder": {"on": false, "note": "Steve 8 Nov 2026 (docs/design/birds_and_thunder_server.md; MikeW). Off by default, and keep it off until the client plays its thunder from the shared schedule (src/shared/thunder.gd; Kathleen's weather_sounds.gd), or the birds flush at claps nobody hears. A bird with a flight row or a water flock within flush_m of a strike takes off away from it when the sound arrives (sound_mps): state 15.", "flush_m": 800.0, "sound_mps": 343.0},
 	"wolves": {
 		"natural": false,
 		"dog_prey": true, "dog_bite": 25.0, "dog_bite_s": 1.0, "dog_note": "MikeW's DOG_REACTIONS.md (dog_companion_design.md 11): a pack goes for a player's dog within distract_m before any deer, and bites it dog_bite every dog_bite_s through the damage hook.",

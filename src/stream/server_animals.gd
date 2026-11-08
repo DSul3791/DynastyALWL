@@ -29,6 +29,10 @@ var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
 var ground_height: Callable        # (x, z) -> height
 var blocked: Callable              # (x, z) -> bool (deep water)
+var thunder_between: Callable      # (t0, t1 game seconds, centre, reach m) -> Thunder.strikes there (src/shared/thunder.gd); set by the server scene
+var game_seconds: Callable         # () -> the game clock's seconds (thunder)
+var _thunder_t: float = NAN        # game second the thunder was last looked at
+var _claps: Array = []             # thunder on its way: [strike point, real msec of the flash, ids already flushed]
 var walls: Callable                # (x0, z0, x1, z1, margin) -> bool, a wall or heavy station on that step (server_items.structure_blocks_step)
 var crossing: Callable             # Steering's `cross`: every walker of this module stops at walls
 var player_positions: Callable     # () -> Array of Vector3
@@ -765,6 +769,7 @@ func tick(delta: float) -> void:
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
 	_read_weather(weather, delta)
+	_thunder_tick(players)
 	_dogs = _dog_presences()
 	_sample_noise(players, delta)
 	_fire_cache = []
@@ -2253,3 +2258,70 @@ func _cover_near(a: Dictionary, or_low: bool, conifer: bool = false) -> Vector3:
 				low = p
 
 	return low
+
+
+# --- birds and thunder (docs/design/birds_and_thunder_server.md; MikeW's ask) ---
+# Behind animals.json thunder.on. Strikes come from the shared Thunder schedule (seed, game time, storm), so a client that plays its
+# thunder from the same schedule hears the clap the birds flush at. When the sound reaches a bird within flush_m of the strike (sound_mps),
+# a flying-kind bird (a flight row) or a water flock takes off away from it: state 15 on the wire.
+
+func _thunder_cfg() -> Dictionary:
+	return cfg.get("thunder", {})
+
+
+func _thunder_tick(players: Array) -> void:
+	var tc: Dictionary = _thunder_cfg()
+
+	if not bool(tc.get("on", false)) or not thunder_between.is_valid() or not game_seconds.is_valid():
+		return
+
+	var now_g: float = float(game_seconds.call())
+	var now_ms: int = Time.get_ticks_msec()
+	var flush_m: float = float(tc.get("flush_m", 800.0))
+
+	if not is_nan(_thunder_t) and now_g > _thunder_t:
+		var seen: Dictionary = {}
+
+		for p in players:
+			for s in thunder_between.call(_thunder_t, now_g, p, flush_m + float(cfg.get("active_radius_m", 200.0))):
+				var key: String = "%d,%d,%d" % [int(s[0].x), int(s[0].z), int(s[1])]
+
+				if not seen.has(key):
+					seen[key] = true
+					_claps.append([s[0], now_ms, {}])
+
+	_thunder_t = now_g
+	var kept: Array = []
+	var sound_mps: float = float(tc.get("sound_mps", 343.0))
+
+	for clap in _claps:
+		var heard_m: float = sound_mps * float(now_ms - int(clap[1])) / 1000.0
+		var at: Vector3 = clap[0]
+
+		for id in animals:
+			var a: Dictionary = animals[id]
+
+			if clap[2].has(id) or int(a["state"]) == 15 or int(a["state"]) == 17:
+				continue
+
+			var d: float = Vector2(a["pos"].x - at.x, a["pos"].z - at.z).length()
+
+			if d > flush_m or d > heard_m:
+				continue
+
+			clap[2][id] = true
+
+			if flight != null and species_def(str(a["sp"])).has("flight"):
+				if a.has("fly"):
+					continue
+
+				a.erase("perched")
+				flight.take_off(a, Vector3(at.x, a["pos"].y, at.z))
+			elif flocks != null and flocks.handles(a):
+				flocks.take_off(a, Vector3(at.x, a["pos"].y, at.z))
+
+		if heard_m <= flush_m:
+			kept.append(clap)
+
+	_claps = kept
+
