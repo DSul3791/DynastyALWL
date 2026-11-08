@@ -11,9 +11,11 @@ python tools\watershed\peaks.py landform <new>\inputs <ws580g>\inputs
 python tools\watershed\peaks.py glacial <new>\inputs <new>\glacial
 python tools\watershed\plots.py zoom <new>\glacial 54800 71424
 python tools\watershed\plots.py zoom <new>\glacial 66960 79296
+python tools\watershed\plots.py zoom <new>\glacial\glacial_cycle_20.npz 54800 71424
+python tools\watershed\plots.py zoom <new>\glacial\glacial_cycle_39.npz 54800 71424
 ```
 
-The two `peaks` commands print lines 1 to 10 and save them as `peaks_landform.md` and `peaks_glacial.md` beside the data. The two zoom pictures are lines 11 and 12.
+The two `peaks` commands print lines 1 to 10 and save them as `peaks_landform.md` and `peaks_glacial.md` beside the data. The zoom pictures are lines 11 and 12; the two from the cycle snapshots show the peak part way, after 20 cycles and at the end of the 41 kyr world.
 
 ## 2. The 12 lines, and what PASS looks like
 
