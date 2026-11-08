@@ -157,3 +157,15 @@ The model's valleys round the horn are cut at 1.25 mm a year, about 7 times the 
 **Probe N** is probe L with the stage's river K back at 4e-6, and Hergarten's glacial_K_ratio of 2, so the ice's K stays at 8e-6. Its params are `/mnt/project-files/water/ws580i_probe_params_N.json`. glacial.py now reports `lowering_mm_yr` over land, and above 300, 600 and 900 m, to set beside the 10Be rates.
 
 **Decision.** If N's main summit loses at most a fifth of L's (49 m), the valleys' river K is the cause. The fix is a real-year river K for the glacial stage, set from the measured basin rates the way the ice's K was set from cirque rates, and not tied to B1's quick-run K. If N's loss falls only in proportion to K (about 80 m), K is the lever but not by itself enough. Its lowering rates then say what river K the measured rates call for, and that goes into the design note before any full run.
+
+## Probe N result and the choice (8 Nov 22:55; `manifest_N.json`)
+
+N's main summit lost 229.6 m over the 240 kyr (1,382.0 to 1,152.4 m), against L's 247 m and M's 293 m. Line 4 still fails: −288.8 m from the 1,441.3 m landform. The second summit lost 226.0 m. Neither the 49 m case nor the 80 m case: **the river K is not the main cause.** Lowering in N, in mm a year: land 0.028, above 300 m 0.32, above 600 m 0.59, above 900 m 0.93.
+
+What the cycles show (`summary.cycles`, the main summit's heads):
+
+- The top is a horn standing at granite's threshold (57 degrees) above valley heads 300 to 700 m out. Every cycle it falls by the same metres as the head floors 300 m out (for example cycle 25: heads 850 to 810 m, top 1,311.9 to 1,271.0 m).
+- The fall comes in cold cycles (124 m) and in cycles with the snowline near the top or an interglacial (105 m) alike. In M (creep off) it is smooth; with creep it comes in steps of 10 to 40 m.
+- Each probe changed one process: the snowline history (L), creep (M), river K (N). Each moved the 240 kyr loss by 60 m or less, and every probe kept the horn falling at about 1 mm a year once it formed.
+
+So no erosion setting inside the measured ranges keeps the summit. A horn falls with its valleys, and in the real world peaks stand where rock uplift keeps pace with that (Mitchell and Montgomery 2006). **Chosen (coordinator, 8 Nov 23:00): rock uplift, option 1 of `rock_uplift_note.md`, at 0.19 mm a year at the highest summit** (the 499 m ws580i lost over its 2.599 Myr). A taller pre-glacial landform was the other path; it moves the same problem upstream. The run plan is in that note.

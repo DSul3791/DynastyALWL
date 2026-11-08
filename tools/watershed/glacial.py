@@ -208,6 +208,14 @@ def main():
     land = sea == 0
     # The uplift B1 used (zero when B1 dissects the landform as it stands, uplift_share 0); the inputs' A2 uplift for older runs.
     U = (b1['uplift'] if 'uplift' in b1.files else data['uplift']).astype(np.float64).ravel()
+    # Rock uplift through the glacial history (docs/water/rock_uplift_note.md, chosen 8 Nov): glacial.rock_uplift_mm_yr at the
+    # landform's highest summit, in proportion to the landform's height elsewhere, so it is zero at the sea and the coast stays
+    # where the landform put it. 0 (the default) reproduces older runs.
+    U0 = float(GL.get('rock_uplift_mm_yr', 0.0)) / 1000.0
+    if U0 > 0.0:
+        lf0 = np.maximum(data['landform'].astype(np.float64).ravel(), 0.0)
+        U = U + np.where(land, U0 * lf0 / max(float(lf0.max()), 1.0), 0.0)
+        print(f'glacial: rock uplift {U0 * 1000.0:.3f} mm/yr at the highest landform summit ({lf0.max():.0f} m)', flush=True)
     rain_mm = data['rain'].astype(np.float64).ravel()
     p0 = float(P['rain']['background_mm_yr'])
     q_ref = runoff.reference_quick_mm(p0, W)
@@ -463,6 +471,7 @@ def main():
     summary['lowering_mm_yr'] = {name: float(low[land & m].mean()) if (land & m).any() else None
                                  for name, m in (('land', g0 > -1e9), ('above_300m', g0 > 300.0), ('above_600m', g0 > 600.0),
                                                  ('above_900m', g0 > 900.0))}
+    summary['rock_uplift'] = dict(mm_yr_at_highest_summit=U0 * 1000.0, max_m_over_run=float(U.max()) * total_years)
     summary['where'] = report(f'{out_dir}/glacial.npz', geology_dir, E)
     man = dict(params=P, inputs={'inputs.npz': evolve.sha(f'{inputs_dir}/inputs.npz'), 'ground.npz': evolve.sha(f'{b1_dir}/ground.npz')},
                summary=summary)

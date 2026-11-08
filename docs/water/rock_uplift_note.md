@@ -1,6 +1,6 @@
-# Rock uplift through the glacial history (design note, no code)
+# Rock uplift through the glacial history (design note)
 
-**On hold (8 Nov, 21:15).** ws580i lost 499 m, not about 145 m, and most of it in the 100 kyr world. The likelier cause is the glacial history's snowline: all active ice at the stadial line, against the LR04 record (see `glacial_summit_fix.md`, probe L). This note applies only if probe L shows the history is not the cause.
+**Chosen (coordinator, 8 Nov 23:00): option 1, at 0.19 mm a year.** Probes L, M and N (`glacial_summit_fix.md`) ruled out the snowline history, creep and the river K as the cause. The main summit is a horn at its rock's threshold slope and falls with its valleys at about 1 mm a year once its plateau is gone. ws580i lost 499 m over its 2.599 Myr, so the uplift at the highest summit is 499 / 2.599 = 0.19 mm a year. The run plan is at the end of this note. The figures below for the loss (about 145 m) came before ws580i measured it and are kept as the first estimate.
 
 Sonny, 8 Nov 2026. This follows `docs/water/glacial_summit_fix.md`. Rule 6 line 4 (each checked summit within 25 m of its landform after the ice; D-10) fails even at measured erosion rates. Probe E, with glacial K set from measured cirque floor rates, still loses about 2.6 m a cycle at the main summit. Over the whole history that comes to about 145 m from the 1,441 m landform. The ws580i run measures it for every checked summit.
 
@@ -21,3 +21,11 @@ Left out: the island's own rebound as the ice and rivers unload it. It is real (
 ## Recommendation
 
 Option 1. It keeps D-10 as Dave set it, the peaks at their landform height, with a process most measured coasts show, at a rate at the slow end of what is measured. The cost is one extra glacial run per island at bake time, to read U0. Code is small and comes after agreement. `glacial.py` already applies an uplift field through the cold phases and the idle years (`h += U × idle`). It needs a `glacial.uplift_m_yr` setting, the landform-shaped field, and the first-run read-out. Rule 6 line 4 then reads: the highest summit within 25 m by construction, the other checked summits judged as they fall.
+
+## Run plan (8 Nov 23:00)
+
+- **Code:** `glacial.rock_uplift_mm_yr` in `tools/watershed/glacial.py`. U(x) = U0 × landform height ÷ highest landform height on land, and 0 at the sea. It acts in the cold phases, the interglacials and the idle years, like the field B1 used. The default is 0, so older runs reproduce. The summary reports it under `rock_uplift`.
+- **Run (Dino, Dave's PC, about 70 minutes):** ws580i's full run with one change: `glacial.rock_uplift_mm_yr` 0.19. Params: `/mnt/project-files/water/ws580u_glacial_params.json`. Same inputs, geology and B1 ground as ws580i, no `--start`.
+- **Pass:** rule 6 lines 4 to 10. Line 4 needs the main summit within 25 m of 1,441.3 m.
+- **If line 4 misses by more than 25 m:** one second run with U0 raised or lowered by the miss over the history (U0 + (1,441.3 − end) ÷ 2,599 mm a year). Higher ground carries more ice, so the first run can fall short. After the second run the rate stays and is noted, even if it is still out, and goes to the coordinator.
+- **Honest label:** 0.19 mm a year is a fitted rate. It is above the passive-margin mean (0.13) and below the active-margin mean (0.36) of Pedoja et al. (2011). The other summits land where the physics puts them and are judged as they fall.
