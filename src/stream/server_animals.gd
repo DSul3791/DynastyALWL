@@ -962,6 +962,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 				if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
 					animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
 
+		if def.has("alarm_group"):
+			_alarm_group(a, def)
+
 	var alert_m: float = float(def.get("alert_m", 0.0))
 
 	if a["state"] == ALERT:
@@ -1103,6 +1106,27 @@ func bleed(a: Dictionary, dt: float) -> bool:
 		died.call(a["sp"], a["pos"], a.get("hurt_by", -1))
 
 	return true
+
+
+# Alarm groups (ANIMAL_SPEC.md, 8 Nov 2026): a bolting animal flushes every animal of its alarm_group within alarm_group_m, of any species or
+# herd, each after its own alarm_s moment (a crow taking off sends the pheasants and grouse beside it up too).
+func _alarm_group(a: Dictionary, def: Dictionary) -> void:
+	var group: String = str(def["alarm_group"])
+	var reach: float = float(def.get("alarm_group_m", 15.0))
+
+	for id in animals:
+		var o: Dictionary = animals[id]
+
+		if id == a["id"] or int(o["state"]) == FLEE or int(o["state"]) == HIDDEN or float(o["alarm"]) >= 0.0:
+			continue
+
+		var odef: Dictionary = species_def(str(o["sp"]))
+
+		if str(odef.get("alarm_group", "")) != group or Vector2(o["pos"].x - a["pos"].x, o["pos"].z - a["pos"].z).length() > reach:
+			continue
+
+		var span: Array = odef.get("alarm_s", [0.2, 0.9])
+		o["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a neighbouring bird reacts
 
 
 # The fire whose keep-off radius covers a point (a burning fire or a torch bearer this tick), or Vector3.INF.

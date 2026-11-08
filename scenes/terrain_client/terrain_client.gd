@@ -75,6 +75,8 @@ const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
+const ClimateScript := preload("res://src/shared/climate.gd")
+const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
@@ -2275,10 +2277,11 @@ func _update_weather() -> void:
 
 	_weather_next_msec = now + 1000
 	var tile_m: float = float(world.get("tile_size_m", 15360))
-	var row: int = int(floor(_anchor.z / tile_m))
+	var row: int = ClimateScript.row_of_z(_anchor.z, tile_m)
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
+	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # --one-sky: this row's sky
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
-	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0)
+	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0, row, int(world.get("equator_row", 0)))
 
 	if items != null:
 		items.air_c = float(weather["temp_c"])
@@ -2299,6 +2302,9 @@ func _update_weather() -> void:
 
 	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
+
+	if sound != null and sound.occlusion != null and sound.occlusion.outdoors:     # --sound-outdoors (sound_outdoors_design.md)
+		sound.occlusion.set_air(weather, weather_look.day.elevation if weather_look != null else 0.5, game_clock.hour(), weather_look.fog_now() if weather_look != null else 0.0)
 
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
@@ -5912,6 +5918,10 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nswim sounds: %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last]
 	text += "\ntown sounds: %d loops, %d bell strikes" % [sound.town.loops_playing, sound.town.bells_rung]
 	text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
+
+	if sound.occlusion.outdoors:
+		text += "; open air: %d shadowed by the wind, %d carried, %d masked by rain or gale; snow fresh %.2f" % [sound.occlusion.air_shadowed, sound.occlusion.air_carried, sound.occlusion.air_masked, sound.weather.snow_fresh]
+
 	text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	text += "\nlast dig sound: %s" % sound.dig.last_dig
 	text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if sound_tests.weather_at >= 0 else "the world weather above")
