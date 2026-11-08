@@ -112,6 +112,10 @@ func _once(sound_name: String, at: Vector3, db: float, strength: float) -> bool:
 	var pick: int = _rng.randi_range(0, list.size() - 1)
 	var player: AudioStreamPlayer3D = _make_player(list[pick], db + linear_to_db(clampf(0.3 + 0.7 * strength, 0.05, 1.0)) + _rng.randf_range(-1.0, 1.0), 8.0)
 	player.global_position = at
+
+	if sound_name.begins_with("spear_hit"):
+		player.set_meta("air_sharp", true)      # --sound-outdoors: a strike can echo off a cliff
+
 	player.finished.connect(player.queue_free)
 	player.play()
 	_count(sound_name)

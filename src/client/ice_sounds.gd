@@ -12,6 +12,7 @@ extends Node
 # recordings in recorded/ice/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
+const IceFeel := preload("res://src/client/ice_feel.gd")   # --ice-feel: bands by thickness (docs/design/ice_walk_feel.md)
 const GENERATED_DIR := "res://assets/audio/ice/"
 const RECORDED_DIR := "res://assets/audio/recorded/ice/"
 
@@ -22,11 +23,24 @@ const GROAN_DB := -16.0
 const CRACK_DB := -8.0
 const CRACK_CHANCE := [0.04, 0.08, 0.14]  # per step at walk, jog, run
 const CRACK_HARD := 0.35                # on a hard landing (boost_db above 0)
+# --ice-feel (ice_walk_feel.md section 3): the zing runs off a crack, the boom comes from a thick sheet, skim and film break under a wader.
+const ZING_DB := -12.0
+const ZING_REACH_M := 60.0
+const ZING_AWAY_M := [15.0, 40.0]
+const BOOM_DB := -14.0
+const BOOM_REACH_M := 200.0
+const SKIM_DB := -14.0
+const FILM_DB := -10.0
+const PLUNGE_DB := -6.0
 
 var cracks_played: int = 0
 var groans_played: int = 0
 var last: String = ""
 var groan_scale: float = 1.0            # --ice-test shortens the wait
+var zings_played: int = 0
+var booms_played: int = 0
+var breaks_played: int = 0
+var hour: float = 12.0                  # the game hour (terrain_client sets it with the weather): booms come at dawn and dusk
 
 var _stage                              # SoundStage (budget, weather, water)
 var _streams: Dictionary = {}
@@ -61,19 +75,64 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	var square: Dictionary = shore[_rng.randi_range(0, mini(shore.size(), 4) - 1)]
 	var near: float = Vector2(square["at"].x - body.global_position.x, square["at"].z - body.global_position.z).length()
 
+	if IceFeel.on and _rng.randf() < IceFeel.boom_share(IceFeel.band_of(cover), hour):
+		if near <= BOOM_REACH_M and play("ice_boom", square["at"], BOOM_DB + _rng.randf_range(-3.0, 2.0), 6.0, BOOM_REACH_M * 1.5, "Nature"):
+			booms_played += 1
+			print(IceFeel.log_line(IceFeel.band_of(cover), "boom", last, 1.0, INF))
+
+		return
+
 	if near <= GROAN_REACH_M:
 		play("ice_groan", square["at"], GROAN_DB + _rng.randf_range(-3.0, 2.0), 3.0, GROAN_REACH_M * 1.5, "Nature")
 		groans_played += 1
 
 
-# A step on the ice may crack. `gait` 0 walk, 1 jog, 2 run; `boost_db` above 0 is a hard landing.
-func step(feet: Vector3, gait: int, boost_db: float) -> bool:
+# A step on the ice may crack. `gait` 0 walk, 1 jog, 2 run; `boost_db` above 0 is a hard landing. With --ice-feel the chance follows the
+# band (a thin sheet cracks more, a thick one less; a hard landing on a thin sheet always cracks) and a crack may run off as a zing ahead of
+# `toward` (the walking direction; zero: any way).
+func step(feet: Vector3, gait: int, boost_db: float, toward: Vector3 = Vector3.ZERO) -> bool:
 	var chance: float = float(CRACK_CHANCE[clampi(gait, 0, 2)]) + (CRACK_HARD if boost_db > 0.0 else 0.0)
+	var band: int = IceFeel.band_of(_stage.weather.ice_cover) if IceFeel.on else -1
+
+	if IceFeel.on:
+		chance = 1.0 if band == IceFeel.Band.THIN and boost_db > 0.0 else IceFeel.crack_chance(band, gait, boost_db > 0.0)
 
 	if _rng.randf() >= chance or not _stage.has_room():
 		return false
 
-	return play("ice_crack", feet, CRACK_DB + _rng.randf_range(-3.0, 2.0) + boost_db, 4.0, 40.0, "Foley")
+	var cracked: bool = play("ice_crack", feet, CRACK_DB + _rng.randf_range(-3.0, 2.0) + boost_db, 4.0, 40.0, "Foley")
+
+	if cracked and IceFeel.on and _rng.randf() < IceFeel.zing_share(band):
+		var way: Vector3 = Vector3(toward.x, 0.0, toward.z)
+		way = way.normalized() if way.length() > 0.1 else Vector3.FORWARD.rotated(Vector3.UP, _rng.randf() * TAU)
+		way = way.rotated(Vector3.UP, _rng.randf_range(-0.6, 0.6))
+		var at: Vector3 = feet + way * _rng.randf_range(float(ZING_AWAY_M[0]), float(ZING_AWAY_M[1]))
+
+		if play("ice_zing", at, ZING_DB + _rng.randf_range(-3.0, 2.0), 8.0, ZING_REACH_M, "Nature"):
+			zings_played += 1
+			print(IceFeel.log_line(band, "zing", last, 1.0, INF))
+
+	return cracked
+
+
+# --ice-feel: a wading step through skim or film (no collider under it). `first` is the step that breaks through from the bank or a sheet.
+# Returns the sound name played, or "".
+func skim_step(feet: Vector3, band: int, first: bool) -> String:
+	if not _stage.has_room():
+		return ""
+
+	var sound_name: String = "ice_plunge" if band == IceFeel.Band.FILM and first else ("ice_film" if band == IceFeel.Band.FILM else "ice_skim")
+
+	if band != IceFeel.Band.SKIM and band != IceFeel.Band.FILM:
+		return ""
+
+	var db: float = PLUNGE_DB if sound_name == "ice_plunge" else (FILM_DB if band == IceFeel.Band.FILM else SKIM_DB)
+
+	if play(sound_name, feet, db + _rng.randf_range(-2.0, 1.5), 3.0, 30.0, "Foley"):
+		breaks_played += 1
+		return sound_name
+
+	return ""
 
 
 func play(sound_name: String, at: Vector3, db: float, unit: float, reach: float, bus: String) -> bool:

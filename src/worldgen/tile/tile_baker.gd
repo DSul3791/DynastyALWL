@@ -379,7 +379,7 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	sites.setup(settings, tile_rules, tables)
 	sites.far_from_sea = inland
 	sites.cave_heads = cave_heads
-	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow)
+	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow, water.water_surface)
 	timings["sites"] = Time.get_ticks_msec() - clock
 
 	return {
