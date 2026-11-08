@@ -1066,7 +1066,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if a["herd"] != 0 and float(def.get("herd_pull_m", 0.0)) > 0.0:
 			var centre: Vector3 = _herd_centre(a["herd"])
 
-			if centre != Vector3.INF and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)):
+			if centre != Vector3.INF and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)) * fog_herd_x(def):
 				a["home"] = a["home"].lerp(centre, 0.5)
 
 		if a["timer"] <= 0.0 and resting(def):
@@ -1080,10 +1080,18 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			return
 
 		if a["timer"] <= 0.0:
-			var wander: float = float(def.get("wander_m", 6.0)) * weather_wander_x(def)
+			var wander: float = float(def.get("wander_m", 6.0)) * weather_wander_x(def, str(a["sp"]))
 			var angle: float = rng.randf() * TAU   # luck-exempt: where a grazing animal hops next
 			angle = _upwind_angle(def, angle)
 			a["target"] = a["home"] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
+
+			if fog_edge_wanted(def):
+				for _try in int(_fog_cfg().get("edge_tries", 3)) - 1:
+					if fog_edge_ok(a["target"]):
+						break
+
+					var again: float = _upwind_angle(def, rng.randf() * TAU)   # luck-exempt: another try along the wood edge in fog
+					a["target"] = a["home"] + Vector3(cos(again), 0.0, sin(again)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
 
 			if a["herd"] != 0 and _groups_on():
 				a["target"] = _group_target(a, def)   # herd groups: the leader drifts, the rest keep their place round it
@@ -1498,7 +1506,7 @@ func activity_chance(def: Dictionary) -> float:
 	if not def.has("active") or not hour_now.is_valid():
 		return clampf(weather_activity_x(def), 0.0, 1.0)
 
-	return clampf(float((def["active"] as Dictionary).get(period_of(float(hour_now.call())), 1.0)) * weather_activity_x(def), 0.0, 1.0)
+	return clampf(float((def["active"] as Dictionary).get(fog_period(def, float(hour_now.call())), 1.0)) * weather_activity_x(def), 0.0, 1.0)
 
 
 # Resting (MikeW 2026-11-02, Dave's behaviour list): outside its active hours (its "active" chance for the period at or under rest.below)
@@ -1828,6 +1836,9 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 # How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under
 # tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees). Mist cuts it (animals_in_weather_design.md 10).
 func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
+	if fog_on():
+		return _sight_clear(a, def, p, d, low) * fog_sight_share(d, fog_v(a["pos"]))   # animals_in_fog_server.md 4.1
+
 	return _sight_clear(a, def, p, d, low) * (1.0 - float(_wx_rules().get("mist_sight", 0.6)) * float(_wx.get("mist", 0.0)) if _wx_on() else 1.0)
 
 
@@ -1955,7 +1966,8 @@ func _wx_on() -> bool:
 # This tick's weather, and every weather.ahead_every_s real seconds a look 12 to 24 game hours ahead for a storm.
 func _read_weather(weather: Dictionary, delta: float) -> void:
 	_wx = {"rain": float(weather.get("rain", 0.0)), "snow": float(weather.get("snow", 0.0)), "storm": float(weather.get("storm", 0.0)),
-		"wind": float(weather.get("wind", 0.0)), "mist": float(weather.get("mist", 0.0)), "temp_c": float(weather.get("temp_c", 10.0))}
+		"wind": float(weather.get("wind", 0.0)), "mist": float(weather.get("mist", 0.0)), "temp_c": float(weather.get("temp_c", 10.0)),
+		"mist_top_m": float(weather.get("mist_top_m", 0.0)), "visibility_m": float(weather.get("visibility_m", NAN))}
 	_ahead_acc += delta
 
 	if not _wx_on() or not weather_ahead.is_valid() or _ahead_acc < float(_wx_rules().get("ahead_every_s", 2.5)):
@@ -1989,6 +2001,9 @@ func weather_spook_x(def: Dictionary) -> float:
 	if str(def.get("weather", "")) in r.get("jumpy_roles", ["deer", "stock", "small", "bird"]):
 		x *= lerpf(1.0, float(r.get("wind_spook_max", 1.4)), clampf(float(_wx.get("wind", 0.0)) / float(r.get("wind_spook_at", 0.6)), 0.0, 1.0))
 
+	if fog_on():
+		return x   # in fog the sight share does it (animals_in_fog_server.md 4.2): an unseen player is sensed by hearing and smell only
+
 	return x * (1.0 - float(r.get("mist_spook", 0.3)) * float(_wx.get("mist", 0.0)))
 
 
@@ -2018,11 +2033,118 @@ func weather_activity_x(def: Dictionary) -> float:
 
 
 # How far an animal wanders: a storm or a heavy snowfall keeps them close (lesson 5).
-func weather_wander_x(def: Dictionary) -> float:
+func weather_wander_x(def: Dictionary, sp: String = "") -> float:
+	var x: float = fog_wander_x(def, sp)
+
 	if not _wx_on() or str(def.get("weather", "")) == "" or not _wx_stormy():
+		return x
+
+	return minf(x, float(_wx_rules().get("storm_wander_x", 0.3)))
+
+
+# --- animals in fog (docs/design/animals_in_fog_server.md; Jamie docs/knowledge/fog-and-visibility.md; MikeW ANIMAL_FOG.md) ---
+# Behind animals.json weather.fog.on. The visibility V at a point (m): the weather's visibility_m inside the valley fog layer when the state
+# carries it (Kathleen), else from mist (V = clear_v^(1 - mist) x fog_v^mist); clear above mist_top_m, eased over top_ease_m across the top.
+
+func _fog_cfg() -> Dictionary:
+	return _wx_rules().get("fog", {})
+
+
+func fog_on() -> bool:
+	return _wx_on() and bool(_fog_cfg().get("on", false))
+
+
+# V at a point; Vector3.INF means inside the layer (the valley fog's own V, for rules with no animal position: activity, wander).
+func fog_v(pos: Vector3 = Vector3.INF) -> float:
+	var fc: Dictionary = _fog_cfg()
+	var clear_v: float = float(fc.get("clear_v_m", 20000.0))
+	var mist: float = clampf(float(_wx.get("mist", 0.0)), 0.0, 1.0)
+
+	if mist <= 0.0:
+		return clear_v
+
+	var given: float = float(_wx.get("visibility_m", NAN))
+	var inside: float = given if not is_nan(given) and given > 0.0 else pow(clear_v, 1.0 - mist) * pow(float(fc.get("fog_v_m", 120.0)), mist)
+
+	if pos == Vector3.INF:
+		return minf(inside, clear_v)
+
+	var ease_m: float = maxf(float(fc.get("top_ease_m", 6.0)), 0.01)
+	var below: float = clampf((float(_wx.get("mist_top_m", 0.0)) + ease_m - pos.y) / (2.0 * ease_m), 0.0, 1.0)   # 1 well inside, 0 well above
+	return minf(exp(lerpf(log(clear_v), log(maxf(inside, 1.0)), below)), clear_v)
+
+
+# How much of a player an animal can make out at distance d in visibility v (Jamie lesson 1): all of it to v/4 (detail), none past v/2
+# (it can no longer tell a person from a stump), straight between.
+static func fog_sight_share(d: float, v: float) -> float:
+	return clampf((v * 0.5 - d) / maxf(v * 0.25, 0.01), 0.0, 1.0)
+
+
+# Wander in fog (4.4 and 4.6): birds sit it out under sit_below_m, herds stay close under deer_v_m.
+func fog_wander_x(def: Dictionary, sp: String = "") -> float:
+	if not fog_on():
 		return 1.0
 
-	return float(_wx_rules().get("storm_wander_x", 0.3))
+	var fc: Dictionary = _fog_cfg()
+	var role: String = str(def.get("weather", ""))
+	var v: float = fog_v()
+
+	if (role == "bird" or sp in fc.get("sit_species", ["goose", "duck", "seabird"])) and v < float(fc.get("sit_below_m", 180.0)):
+		return float(fc.get("bird_wander_x", 0.15))
+
+	if role in ["stock", "deer"] and v < float(fc.get("deer_v_m", 1000.0)):
+		return float(fc.get("herd_x", 0.5))
+
+	return 1.0
+
+
+# A herd's pull to its centre in fog (4.6): stock and deer keep half their clear-day distance.
+func fog_herd_x(def: Dictionary) -> float:
+	if not fog_on() or not str(def.get("weather", "")) in ["stock", "deer"] or fog_v() >= float(_fog_cfg().get("deer_v_m", 1000.0)):
+		return 1.0
+
+	return float(_fog_cfg().get("herd_x", 0.5))
+
+
+# A perched bird sits out thick fog (4.4); server_flight asks this before it comes down.
+func fog_grounded(pos: Vector3) -> bool:
+	return fog_on() and fog_v(pos) < float(_fog_cfg().get("sit_below_m", 180.0))
+
+
+# The ring a shadowing wolf pack keeps (4.3): min(stalk_m, max(V/2, wolf_min_m)) at the player.
+func fog_stalk_m(stalk_m: float, at: Vector3) -> float:
+	if not fog_on():
+		return stalk_m
+
+	return minf(stalk_m, maxf(fog_v(at) * 0.5, float(_fog_cfg().get("wolf_min_m", 10.0))))
+
+
+# Deer keep their dawn hours longer on a foggy morning (4.5): 08:00 to 08:00 + deer_late_h count as dusk while the fog's V is under deer_v_m.
+func fog_period(def: Dictionary, hour: float) -> String:
+	var period: String = period_of(hour)
+
+	if period != "day" or not fog_on() or str(def.get("weather", "")) != "deer" or fog_v() >= float(_fog_cfg().get("deer_v_m", 1000.0)):
+		return period
+
+	return "dusk" if hour >= 8.0 and hour < 8.0 + float(_fog_cfg().get("deer_late_h", 1.5)) else period
+
+
+# A deer's grazing hop in fog keeps to the wood edge (4.5): open ground with tree crowns within edge_m in one of four directions.
+func fog_edge_ok(target: Vector3) -> bool:
+	if not canopy.is_valid() or bool(canopy.call(target)):
+		return false
+
+	var m: float = float(_fog_cfg().get("edge_m", 15.0))
+
+	for off in [Vector3(m, 0.0, 0.0), Vector3(-m, 0.0, 0.0), Vector3(0.0, 0.0, m), Vector3(0.0, 0.0, -m)]:
+		if bool(canopy.call(target + off)):
+			return true
+
+	return false
+
+
+func fog_edge_wanted(def: Dictionary) -> bool:
+	return fog_on() and canopy.is_valid() and str(def.get("weather", "")) == "deer" and fog_v() < float(_fog_cfg().get("deer_v_m", 1000.0))
 
 
 # Deer and hunters graze and travel facing into a light or moderate wind (lesson 2): most wander targets lie within upwind_spread of upwind.
