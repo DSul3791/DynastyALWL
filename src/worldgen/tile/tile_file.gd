@@ -39,6 +39,7 @@ extends RefCounted
 # back as floats: cast with int() where an integer is meant.
 
 const SeedUtilRef := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const WaterRecordRef := preload("res://src/worldgen/record/water_record.gd")
 
 const MAGIC := "WTIL"
 const FORMAT_VERSION := 1
@@ -251,6 +252,9 @@ static func pack_tile(settings, tile: Vector2i, plan_cell: Dictionary, water, cl
 	sections.append(_map("soil", "uint8", samples, climate.soil))
 	sections.append(_map("fertility", "uint8", samples, climate.fertility))
 	sections.append(_map("moisture", "uint8", samples, climate.moisture))
+
+	if "fresh_m" in water and water.fresh_m.size() == samples * samples:   # Stage E: distance to perennial fresh water (water_record.gd), 2 m steps
+		sections.append(_map("fresh_m", "uint8", samples, WaterRecordRef.encode_fresh(water.fresh_m)))
 	sections.append(_map("province", "uint8", samples, geology.province))
 	sections.append(_map("cover", "uint8", samples, geology.cover))
 	sections.append(_map("layer_offset", "int16", samples, encode_layer_offset(geology.layer_offset)))
