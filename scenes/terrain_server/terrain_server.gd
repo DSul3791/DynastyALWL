@@ -326,7 +326,7 @@ func _ready() -> void:
 	items.send_body = func(peer, bpm, eta, phase): net.body.rpc_id(peer, bpm, eta, phase)
 	@warning_ignore("confusable_local_declaration")
 	items.send_limp = func(peer, percent): net.limp.rpc_id(peer, percent)
-	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0)
+	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0, int(settings.master_seed))
 	@warning_ignore("confusable_local_declaration")
 	items.send_worn = func(peer, numbers): net.worn.rpc_id(peer, numbers)
 	@warning_ignore("confusable_local_declaration")
