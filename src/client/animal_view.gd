@@ -34,6 +34,7 @@ var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
 var _mats: Dictionary = {}
 var _t: float = 0.0
+var season_now: String = ""      # "spring", "summer", "autumn", "winter" or "" when unknown; the client sets it (tail swish against flies)
 var torch_light: Callable        # () -> [position, range] of the player's held light, or []: eyes facing it shine (_eye_shine)
 var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
 var _hits: Array = []            # [at Vector3, msec] of the hits reported in the last FELL_WINDOW_MS (note_hit)
@@ -447,6 +448,9 @@ func _process_body(delta: float) -> void:
 
 			if node.has_meta("eye_mats"):
 				_eye_shine(node)
+
+			if node.has_meta("tail"):
+				_tail_motion(node, state, model_speed)
 			if node.has_meta("flock_birds"):
 				for bird in node.get_meta("flock_birds"):
 					_animate_model(bird, b, state, model_speed, delta)
@@ -606,17 +610,22 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	if not eye_mats.is_empty():
 		root.set_meta("eye_mats", eye_mats)
 
-	# Bone corrections laid over every clip (bone_offsets.gd: the crow stands up and folds its wings).
-	if row.has("bone_offsets"):
+	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
+	if row.has("bone_offsets") or row.has("tail_motion"):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
 			var fix: SkeletonModifier3D = BoneOffsetsScript.new()
-			var missing: PackedStringArray = fix.setup(sks[0], row["bone_offsets"])
+			var missing: PackedStringArray = fix.setup(sks[0], row.get("bone_offsets", {}))
+
+			if row.has("tail_motion"):
+				missing.append_array(fix.setup_waves(sks[0], row["tail_motion"]))
+				root.set_meta("tail", fix)
+
 			(sks[0] as Skeleton3D).add_child(fix)
 
 			if not missing.is_empty():
-				_model_note(kind, "bone_offsets: no bone %s" % ", ".join(missing))
+				_model_note(kind, "bone_offsets / tail_motion: no bone %s" % ", ".join(missing))
 	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
 
 	if not players.is_empty():
@@ -1493,6 +1502,26 @@ func _add_eyes(inst: Node, row: Dictionary, size_k: float, kind: String) -> Arra
 
 	_model_note(kind, "eyes: %d placed" % mats.size())
 	return mats
+
+
+# How much a tail moves (docs/design/TAIL_MOTION.md): the row's tail_motion "when" says in which states and seasons; resting
+# states swing fully, moving ones a little, a flick only when alert. Eased so it starts and stops softly.
+func _tail_motion(node: Node3D, state: int, speed: float) -> void:
+	var row: Dictionary = node.get_meta("model_row", {})
+	var spec: Dictionary = row.get("tail_motion", {})
+	var when: String = str(spec.get("when", "rest"))
+	var want: float = 0.0
+
+	match when:
+		"rest":      # a dog's wag: standing, sitting or lying by its owner
+			want = 1.0 if (state == 0 or state == 12 or state == 18 or state == 19) and speed < 0.3 else 0.2
+		"alert":     # a cat's flick: when it watches something
+			want = 1.0 if state == 3 or state == 6 else 0.15
+		"flies":     # a horse's or cow's swish against flies: grazing in the warm months
+			want = (1.0 if speed < 0.3 else 0.3) * (1.0 if season_now == "" or season_now == "summer" or season_now == "spring" else 0.0)
+
+	var fix = node.get_meta("tail")      # bone_offsets.gd (untyped: its own property)
+	fix.wave_scale = lerpf(float(fix.wave_scale), want, 0.05)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

@@ -1,5 +1,5 @@
 {
-	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md).",
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md). tail_motion (optional): {period_s, when rest|alert|flies, bones {bone: [phase, swing degrees, axis]}} swings tail bones over every clip: a dog's wag at rest, a cat's flick when alert, a swish against flies in the warm months (docs/design/TAIL_MOTION.md).",
 	"species": {
 		"bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -648,7 +648,38 @@
 			],
 			"pack": "WildMesh3D/Realistic Animals/Horse",
 			"shine": 2,
-			"shine_color": "#5ac8b4"
+			"shine_color": "#5ac8b4",
+			"tail_motion": {
+				"period_s": 1.6,
+				"when": "flies",
+				"bones": {
+					"tail_01": [
+						0.0,
+						6,
+						"y"
+					],
+					"tail_02": [
+						0.06,
+						9,
+						"y"
+					],
+					"tail_03": [
+						0.12,
+						12,
+						"y"
+					],
+					"tail_04": [
+						0.18,
+						15,
+						"y"
+					],
+					"tail_05": [
+						0.24,
+						18,
+						"y"
+					]
+				}
+			}
 		},
 		"donkey": {
 			"scene": "res://assets/animals/donkey/SK_Donkey.fbx",
@@ -751,7 +782,33 @@
 				}
 			],
 			"shine": 2,
-			"shine_color": "#5ac8b4"
+			"shine_color": "#5ac8b4",
+			"tail_motion": {
+				"period_s": 1.5,
+				"when": "flies",
+				"bones": {
+					"Tail_01": [
+						0.0,
+						6,
+						"y"
+					],
+					"Tail_02": [
+						0.06,
+						10,
+						"y"
+					],
+					"Tail_03": [
+						0.12,
+						14,
+						"y"
+					],
+					"Tail_04": [
+						0.18,
+						18,
+						"y"
+					]
+				}
+			}
 		},
 		"lynx": {
 			"scene": "res://assets/animals/lynx/SK_Lynx.fbx",
@@ -781,7 +838,33 @@
 			],
 			"pack": "WildMesh3D/Realistic Animals/Lynx",
 			"shine": 3,
-			"shine_color": "#b4e05a"
+			"shine_color": "#b4e05a",
+			"tail_motion": {
+				"period_s": 0.9,
+				"when": "alert",
+				"bones": {
+					"Tail01": [
+						0.0,
+						4,
+						"y"
+					],
+					"Tail02": [
+						0.12,
+						8,
+						"y"
+					],
+					"Tail03": [
+						0.24,
+						12,
+						"y"
+					],
+					"Tail04": [
+						0.36,
+						16,
+						"y"
+					]
+				}
+			}
 		},
 		"black_bear": {
 			"scene": "res://assets/animals/black_bear/SK_BlackBear.fbx",
@@ -1311,7 +1394,33 @@
 				"note": "WildMesh Calf (Realistic Animals/Calf/SK_Calf.fbx): the cow's young."
 			},
 			"shine": 2,
-			"shine_color": "#64c896"
+			"shine_color": "#64c896",
+			"tail_motion": {
+				"period_s": 1.8,
+				"when": "flies",
+				"bones": {
+					"Tail1": [
+						0.0,
+						6,
+						"y"
+					],
+					"Tail2": [
+						0.06,
+						10,
+						"y"
+					],
+					"Tail3": [
+						0.12,
+						14,
+						"y"
+					],
+					"Tail4": [
+						0.18,
+						18,
+						"y"
+					]
+				}
+			}
 		},
 		"goat": {
 			"scene": "res://assets/animals/goat/SK_Goat.fbx",
@@ -1410,7 +1519,43 @@
 				}
 			],
 			"shine": 3,
-			"shine_color": "#b4e05a"
+			"shine_color": "#b4e05a",
+			"tail_motion": {
+				"period_s": 1.1,
+				"when": "alert",
+				"bones": {
+					"RigTail1": [
+						0.0,
+						3,
+						"y"
+					],
+					"RigTail2": [
+						0.1,
+						6,
+						"y"
+					],
+					"RigTail3": [
+						0.2,
+						9,
+						"y"
+					],
+					"RigTail4": [
+						0.30000000000000004,
+						12,
+						"y"
+					],
+					"RigTail5": [
+						0.4,
+						14,
+						"y"
+					],
+					"RigTail6": [
+						0.5,
+						16,
+						"y"
+					]
+				}
+			}
 		},
 		"dog": {
 			"scene": "res://assets/animals/dog/SK_Labrador.fbx",
@@ -1486,7 +1631,38 @@
 				}
 			],
 			"shine": 3,
-			"shine_color": "#c8dc5a"
+			"shine_color": "#c8dc5a",
+			"tail_motion": {
+				"period_s": 0.4,
+				"when": "rest",
+				"bones": {
+					"Tail01": [
+						0.0,
+						12,
+						"y"
+					],
+					"Tail02": [
+						0.08,
+						14,
+						"y"
+					],
+					"Tail03": [
+						0.16,
+						16,
+						"y"
+					],
+					"Tail04": [
+						0.24,
+						18,
+						"y"
+					],
+					"Tail05": [
+						0.32,
+						20,
+						"y"
+					]
+				}
+			}
 		},
 		"buffalo": {
 			"scene": "res://assets/animals/buffalo/SK_Buffalo.fbx",
@@ -1518,7 +1694,33 @@
 				}
 			],
 			"shine": 2,
-			"shine_color": "#64c896"
+			"shine_color": "#64c896",
+			"tail_motion": {
+				"period_s": 1.8,
+				"when": "flies",
+				"bones": {
+					"Tail1": [
+						0.0,
+						6,
+						"y"
+					],
+					"Tail2": [
+						0.06,
+						10,
+						"y"
+					],
+					"Tail3": [
+						0.12,
+						14,
+						"y"
+					],
+					"Tail4": [
+						0.18,
+						18,
+						"y"
+					]
+				}
+			}
 		},
 		"duck": {
 			"scene": "res://assets/animals/duck/SK_Duck.fbx",
@@ -1716,7 +1918,33 @@
 				}
 			],
 			"shine": 2,
-			"shine_color": "#64c896"
+			"shine_color": "#64c896",
+			"tail_motion": {
+				"period_s": 1.8,
+				"when": "flies",
+				"bones": {
+					"Tail1": [
+						0.0,
+						6,
+						"y"
+					],
+					"Tail2": [
+						0.06,
+						10,
+						"y"
+					],
+					"Tail3": [
+						0.12,
+						14,
+						"y"
+					],
+					"Tail4": [
+						0.18,
+						18,
+						"y"
+					]
+				}
+			}
 		},
 		"lion": {
 			"scene": "res://assets/animals/lion/SK_Lion.fbx",
