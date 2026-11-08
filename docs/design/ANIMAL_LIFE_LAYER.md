@@ -33,7 +33,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Water | drinking rings at the bank, swimming low and paddling, shake-off | `water_swim`, `swim_depth_x` | `water_life` (**off**) | ANIMALS_AND_WATER.md |
 | Hunch (state 20) | head low, ears back, tail still against the weather; storm_ahead stops the fly swish | `state_poses` "20" | none (server state) | ANIMALS_AND_WATER.md, Steve #646 |
 | Idle variety | scratch, shake, stretch after lying, groom, lick, roll, paw, look round, from a weighted table | `idles` | `idle_variety` (**off**) | IDLE_VARIETY.md |
-| Herd groups (server) | one leader drifts (into the wind for deer, with a storm for cattle), the rest keep places, closer in rain and wind; fan out on alarm, regroup once safe | `group_drift`, `group_spacing_m` | animals.json `groups.enabled` (**off**) | HERD_GROUPS.md |
+| Herd groups (server) | one leader drifts (Steve's upwind rule), the rest keep places, closer in rain and wind; fan out on alarm, regroup once safe | `group_spacing_m` | animals.json `groups.enabled` (**off**) | #666 on Steve's stack (its HERD_GROUPS.md); not on this branch |
 | Bird flight part 2 | state 17 glide, bank into turns, raven roll event (Steve #653) | `flight` | `flight_bank` (**off**) | BIRD_FLIGHT.md part 2 |
 | Look at the foe | a warning animal looks at the dog it warns (row field 6, Steve #659) | none | `look_at_foe` (**off**) | LIFE_LAYER_WIRING.md |
 | New models (Meshy) | row templates for eagle, raven, owl, bat, whale, dolphin; 10-minute import checklist | pending_models.json | none | NEW_MODEL_IMPORT.md |
