@@ -51,6 +51,7 @@ func _init() -> void:
 	_check(GroundMaterial.SHADER.contains("float rain_crowns(") and GroundMaterial.SHADER.contains("uniform float splash_rain"), "the ground shader draws splash crowns from splash_rain")
 	_check(WeatherLook.SPLASH_FROM_QUALITY == 2 and WeatherLook.SPLASH_FROM >= 0.5 and WeatherLook.SPLASH_PER_HIT <= 5, "the splash sheet: High and Ultra only, a downpour only, a few droplets a hit")
 	_check_drips()
+	_check(preload("res://src/flora/flora_view.gd").BARK_SHADER.contains("uniform float wet") and preload("res://src/flora/flora_view.gd").BARK_SHADER.contains("wind_face"), "the bark darkens in the rain, more on the windward side")
 	print("test_rain_look: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
 

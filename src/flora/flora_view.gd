@@ -106,15 +106,19 @@ uniform vec2 uv_scale = vec2(1.0);
 uniform vec3 lift = vec3(1.0);                   // a felled trunk, log or stump is lit by the sky only from above and read half as bright as a standing trunk in the real game: it sets a lift here
 uniform float foot_offset = 0.0;            // metres from the model origin up to the trunk foot (a felled trunk's mesh is centred)
 uniform float snow = 0.0;                   // snow lying on the upper side of branches (art_weather_light.md 8.2.2), set by set_snow
+uniform float wet = 0.0;                    // --rain-look (rain_look_design.md 3.4 item 5): rain on the bark, set by set_wet
+uniform vec2 wet_wind = vec2(1.0, 0.0);     // where the wind blows toward (x, z): the side facing into it is wetter
 varying float base_h;
 varying float north_face;
 varying float up_face;
+varying float wind_face;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	base_h = VERTEX.y + foot_offset;
 	north_face = -normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).z;   // north is -z
 	up_face = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
+	wind_face = dot(normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).xz, -wet_wind);
 	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
 	VERTEX.x += gust * bend;
@@ -137,6 +141,11 @@ void fragment() {
 	// Snow on the upper side of branches (and on top of a fallen log); an upright trunk faces sideways and stays dark.
 	float snowed = snow * smoothstep(0.35, 0.8, up_face) * smoothstep(0.4, 0.7, t.a + 0.3 * snow);
 	c = mix(c, vec3(0.86, 0.88, 0.92), snowed * 0.9);
+	// Rain on the bark: darker on the side facing the wind and darkest in the furrows, where the stemflow runs down the trunk.
+	if (wet > 0.01) {
+		float soaked = wet * (0.55 + 0.45 * smoothstep(-0.3, 0.6, wind_face)) * (1.0 - snowed);
+		c *= 1.0 - soaked * (0.22 + 0.16 * (1.0 - t.a));
+	}
 	ALBEDO = c;
 	ROUGHNESS = 1.0;
 }
@@ -698,6 +707,16 @@ func _apply_snow(level: float) -> void:
 
 		if made.get("material") is ShaderMaterial:
 			(made["material"] as ShaderMaterial).set_shader_parameter("snow", level)
+
+
+# --rain-look: how wet the bark is (0 dry .. 1 soaked) and where the wind blows toward, for every bark material (rain_look_design.md 3.4 item 5).
+func set_wet(level: float, wind_toward: Vector2) -> void:
+	for key in _tree_materials:
+		var material: ShaderMaterial = _tree_materials[key] as ShaderMaterial
+
+		if material != null and material.shader.code == BARK_SHADER:
+			material.set_shader_parameter("wet", clampf(level, 0.0, 1.0))
+			material.set_shader_parameter("wet_wind", wind_toward)
 
 
 # The sky colours of the day cycle for the land water (weather_look.gd).

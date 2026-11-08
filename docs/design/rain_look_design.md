@@ -130,9 +130,10 @@ Game time runs at RATIO 24, so one game hour is 150 real seconds. Every time bel
    - The canopy map still keeps the ground dry under crowns, but the drip line (map 0.25-0.9) gets the drip wetting instead, so a ring of dark ground shows under each crown's edge after rain. This is the most telling real detail.
 4. **Wet streaks on steep rock:** faces steeper than 50° show vertical dark streaks where water runs down. They use a noise stretched 1:8 along the slope, like the summit snow streaks, at 60% of the face's wetness. They stay for a game hour after the face is otherwise dry.
 5. **Bark and buildings:**
-   - The bark shader takes the same per-layer rock value as a stand-in: colour × 0.75 and slightly glossy. It is darker on the windward side of the trunk and in stemflow lines.
-   - Plank walls and thatch take colour × 0.8 on the windward side.
-   - These are step 5 of the build.
+   - The bark shader takes the same per-layer rock value as a stand-in: colour × 0.62 to 0.78, darker on the windward side of the trunk and in the furrows where stemflow runs. Built in step 5.
+   - The bark stays matte for now. Its shader has specular switched off, and turning specular on would change the dry look too, so gloss waits for a look pass with Dino's pictures.
+   - Plank walls and thatch should take colour × 0.8 on the windward side, but **not yet**. Each building material is one shared material for the inside and the outside of a piece, so a wet wall would also darken indoors. It needs an outside-only test in a shader (open sky over the face) first, which goes to the building look work.
+   - Loose stones and rock piles share one material with the stones in houses and caves, so they wait for the same reason.
 
 ## 4. Never see
 
@@ -151,7 +152,7 @@ Game time runs at RATIO 24, so one game hour is 150 real seconds. Every time bel
 2. **Wet surfaces:** the per-layer memory, darkening and gloss table, face rule, drip-line ring and steep streaks. These are in `puddles.gd` and `ground_material.gd`, and the haze switches to the new memory.
 3. **Splash flecks** in the ground shader, then the heightfield splash sheet at quality ≥ 2.
 4. **Crown and roof drips:** a new `rain_drips.gd`, with the canopy map read on the CPU at a stride of 2 m for spawn spots.
-5. **Bark and buildings wet.**
+5. **Bark wet** (buildings and loose stones wait for an outside-only shader test, see 3.4 item 5).
 6. **Sounds** for the drip slots, after recordings.
 
 **Cost:**

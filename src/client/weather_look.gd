@@ -175,6 +175,8 @@ var _splash: GPUParticles3D
 var _splash_field: GPUParticlesCollisionHeightField3D
 var _splash_material: StandardMaterial3D
 var _splash_sent: float = -1.0
+var _bark_wet_sent: float = -1.0
+var _bark_wind_sent: Vector2 = Vector2.INF
 const RainDripsScript := preload("res://src/client/rain_drips.gd")
 var drips                                # RainDrips with --rain-look: crowns and eaves dripping during and after rain (rain_look_design.md 3.3)
 var rain_fall_ms: float = 0.0            # with --rain-look: the streaks' fall and drift now, for checks
@@ -765,6 +767,14 @@ func _process_body(delta: float) -> void:
 	if rain_look:
 		var sun_now: float = clampf(1.0 - float(_s["cloud"]) * 1.1, 0.0, 1.0) * smoothstep(0.0, 0.2, day.elevation)
 		puddles.update_wet(delta, rain, float(_s["wind"]), sun_now, Vector2(cos(heading), sin(heading)), _client.terrain.material as ShaderMaterial)
+		# The bark takes the rock's wetness (a hard surface that sheds water) and the wind's side; sent only when it changes.
+		var bark_wet: float = snappedf(float(puddles.wet[5]), 0.02)
+		var bark_wind: Vector2 = Vector2(cos(heading), sin(heading)).snapped(Vector2(0.1, 0.1))
+
+		if _client.flora != null and (bark_wet != _bark_wet_sent or bark_wind != _bark_wind_sent):
+			_bark_wet_sent = bark_wet
+			_bark_wind_sent = bark_wind
+			_client.flora.set_wet(bark_wet, bark_wind)
 
 	_update_summits(delta, heading)
 	_update_particles(rain, snow, float(_s["wind"]))
