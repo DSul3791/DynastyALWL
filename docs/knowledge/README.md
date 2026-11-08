@@ -29,6 +29,8 @@ Each doc has these sections:
 |---|---|---|---|
 | Creature models (bought rigged animals: install, check, clips, sizes) | [creature-models.md](creature-models.md) | 2026-11-07 | MikeW |
 | Water in Godot (rivers, brooks, lakes, falls, flow, precision) | [water.md](water.md) | 2026-11-06 | Sonny |
+| Water clarity after rain (turbidity recovery, settling times, peat colour) | [water-clarity-after-rain.md](water-clarity-after-rain.md) | 2026-11-08 | Kathleen, Sonny |
+| Foam and white water below falls and rapids | [foam-falls-rapids.md](foam-falls-rapids.md) | 2026-11-08 | Kathleen, Sonny |
 | Caves (placement, shape, darkness, life) | [caves.md](caves.md) | 2026-11-06 | Sonny, Kathleen and Kathreen (look) |
 | Animal behaviour (senses, ranges, temperaments, seasons, young) | [animal-behaviour.md](animal-behaviour.md) | 2026-11-06 | MikeW |
 | Torches and fire | [torches-fire.md](torches-fire.md) | 2026-11-06 | Sal, Kathleen (poses) |
