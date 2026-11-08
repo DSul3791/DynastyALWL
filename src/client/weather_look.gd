@@ -10,6 +10,8 @@ extends Node
 #  - the sky shader: cloud cover (`coverage`), `gloom` (clouds and sky turn dark grey) and
 #    `flash` (lightning lights the clouds);
 #  - the sun and the sky's ambient light, and the fog (thicker and greyer in rain and snow);
+#  - valley fog from the weather's `mist` and `mist_top_m`: Godot's height fog below the layer's top, seen from above as
+#    white low ground; from inside it, thick distance fog that hides the sky (docs/design/valley_fog.md);
 #  - the ground shader: `wet` (darker, glossier) and `snow` (level ground turns white),
 #    read from the sound stage's ground memory so footsteps and looks agree; grass is
 #    buried when snow lies;
@@ -81,6 +83,15 @@ const BOLT_FROM := 1                     # first quality level that draws the bo
 const TURBULENCE_FROM := 1               # snow drifts sideways from here up
 const BOX_M := 24.0                      # half width of the box the precipitation falls through
 const FLASH_S := 0.9
+# Valley fog (docs/design/valley_fog.md): the weather's `mist` (0..1) and `mist_top_m` (its top above sea level).
+const MIST_HEIGHT_DENSITY := 0.08        # per metre below the top at full mist: 5 m down about a third white, 30 m down nearly solid
+const MIST_EDGE_M := 6.0                 # the camera goes from above the fog to inside it over this much height either side of the top
+const MIST_INSIDE_THICK := 14.0          # inside the layer: the clear-air haze times this more (95% white at about 220 m; fog means under 1 km)
+const MIST_WHITE := Color(0.9, 0.9, 0.9)
+const MIST_WHITEN := 0.55                # how far the fog colour moves from the horizon colour toward white by day
+const MIST_SKY_HIDE := 0.9               # share of the sky the fog hides when you stand deep inside it
+const MIST_OWN_COLOR := 0.8              # the fog keeps its own colour instead of taking the sky's (aerial perspective) by this much
+const MIST_SUN_SCATTER := 0.25           # glow toward the low sun through the fog
 
 # Rain streaks: a streak over a canopy is not drawn (the map is canopy_map.gd).
 const RAIN_SHADER := """
@@ -110,18 +121,20 @@ void fragment() {
 
 # What the sound stage's weather test kinds look like.
 const TEST := {
-	"clear": {"cloud": 0.15, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0},
-	"drizzle": {"cloud": 0.5, "rain": 0.3, "snow": 0.0, "storm": 0.0, "wind": 0.15, "fog": 0.0},
-	"rain": {"cloud": 0.8, "rain": 0.65, "snow": 0.0, "storm": 0.0, "wind": 0.3, "fog": 0.0},
-	"storm": {"cloud": 1.0, "rain": 1.0, "snow": 0.0, "storm": 1.0, "wind": 0.8, "fog": 0.0},
-	"snow": {"cloud": 0.8, "rain": 0.0, "snow": 0.6, "storm": 0.0, "wind": 0.1, "fog": 0.0},
-	"blizzard": {"cloud": 1.0, "rain": 0.0, "snow": 1.0, "storm": 0.7, "wind": 1.0, "fog": 0.0},
-	"fog": {"cloud": 0.5, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.0, "fog": 1.0},
+	"clear": {"cloud": 0.15, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0, "mist": 0.0},
+	"drizzle": {"cloud": 0.5, "rain": 0.3, "snow": 0.0, "storm": 0.0, "wind": 0.15, "fog": 0.0, "mist": 0.0},
+	"rain": {"cloud": 0.8, "rain": 0.65, "snow": 0.0, "storm": 0.0, "wind": 0.3, "fog": 0.0, "mist": 0.0},
+	"storm": {"cloud": 1.0, "rain": 1.0, "snow": 0.0, "storm": 1.0, "wind": 0.8, "fog": 0.0, "mist": 0.0},
+	"snow": {"cloud": 0.8, "rain": 0.0, "snow": 0.6, "storm": 0.0, "wind": 0.1, "fog": 0.0, "mist": 0.0},
+	"blizzard": {"cloud": 1.0, "rain": 0.0, "snow": 1.0, "storm": 0.7, "wind": 1.0, "fog": 0.0, "mist": 0.0},
+	# The fog test is valley fog now (a layer with a top, docs/design/valley_fog.md), not an even haze: thick inside it, clear above it.
+	"fog": {"cloud": 0.1, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.0, "fog": 0.0, "mist": 1.0, "mist_top_m": 90.0},
 }
 
 var _client
 var _quality: int = 2
-var _s: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0}
+var _s: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0, "mist": 0.0, "mist_top_m": 0.0}
+var mist_inside: float = 0.0             # 0 above or out of the valley fog .. 1 the camera is deep inside it (for the HUD and tests)
 var canopy                              # CanopyMap: where trees shelter the ground
 var _rain: GPUParticles3D
 var _rain_material: ShaderMaterial
@@ -274,7 +287,7 @@ func _make_snow() -> GPUParticles3D:
 
 # The look the weather asks for: the sound stage's test kind when one is selected, else the world.
 func _target() -> Dictionary:
-	var out: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0}
+	var out: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0, "mist": 0.0, "mist_top_m": 0.0}
 
 	if clear_day:
 		return out
@@ -285,7 +298,7 @@ func _target() -> Dictionary:
 	var world: Dictionary = _client.weather
 
 	if not world.is_empty():
-		for key in ["cloud", "rain", "snow", "storm", "wind"]:
+		for key in ["cloud", "rain", "snow", "storm", "wind", "mist", "mist_top_m"]:
 			out[key] = float(world.get(key, 0.0))
 
 	return out
@@ -338,7 +351,13 @@ func _process_body(delta: float) -> void:
 	var target: Dictionary = _target()
 
 	for key in _s:
-		_s[key] = float(target.get(key, 0.0)) if clear_day else move_toward(float(_s[key]), float(target.get(key, 0.0)), delta / EASE_S)
+		if key == "mist_top_m":
+			# A height in metres, not a 0..1 level: it follows the weather directly (the world's value changes smoothly), and it stays
+			# where it was while the fog eases out, so a fading layer thins in place instead of dropping to sea level.
+			if float(target.get("mist", 0.0)) > 0.0 or clear_day:
+				_s[key] = float(target.get(key, 0.0))
+		else:
+			_s[key] = float(target.get(key, 0.0)) if clear_day else move_toward(float(_s[key]), float(target.get(key, 0.0)), delta / EASE_S)
 
 	# Rain and snow only ever fall from clouds.
 	var rain: float = float(_s["rain"])
@@ -449,14 +468,26 @@ func _process_body(delta: float) -> void:
 	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark)
 
 	if not _client.underwater:
-		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
+		var mist: float = 0.0 if clear_day else float(_s["mist"])
+		var mist_top: float = float(_s["mist_top_m"])
+		mist_inside = mist * smoothstep(-MIST_EDGE_M, MIST_EDGE_M, mist_top - _client.camera.global_position.y) * under_rock
+		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"]) + MIST_INSIDE_THICK * mist_inside
 		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0)
 		# The fog is sky-coloured haze: under rock it must go dark with the light, or a long tunnel glows (pitch black means black).
+		# Valley fog is whiter than the haze: lit by the sky and the sun (white by day, warm at sunrise from the dusk horizon colour,
+		# blue-grey at night from the night horizon), never a flat grey card (art_weather_light.md section 7 rule 2).
 		var fog_tint: Color = _graded(day.sky_horizon, gloom)
+		fog_tint = fog_tint.lerp(fog_tint.lerp(MIST_WHITE, MIST_WHITEN * (1.0 - day.night)), mist)
 		environment.fog_light_color = Color(fog_tint.r * under_rock, fog_tint.g * under_rock, fog_tint.b * under_rock, fog_tint.a)
-		environment.fog_sky_affect = 0.0
-		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL * under_rock
-		environment.fog_height_density = 0.0
+		# Inside the fog the sky is hidden too; above it the sky stays clear.
+		environment.fog_sky_affect = MIST_SKY_HIDE * mist_inside
+		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL * under_rock * (1.0 - MIST_OWN_COLOR * mist)
+		environment.fog_sun_scatter = MIST_SUN_SCATTER * mist * (1.0 - day.night)
+		# Fog has a top (rule 1): Godot's height fog thickens below fog_height and is nothing above it. Seen from above, the low
+		# ground fills white with a soft top. Inside the layer the height fog steps aside (it would whiten the ground at your feet
+		# as much as the far valley) and the distance fog above carries it. Under rock it goes, like the light.
+		environment.fog_height = mist_top
+		environment.fog_height_density = MIST_HEIGHT_DENSITY * mist * (1.0 - mist_inside) * under_rock
 	else:
 		_underwater_fog(environment, 1.0 - day.night, cloud_cover)
 
@@ -476,6 +507,8 @@ const UNDER_NIGHT_COLOR := Color(0.01, 0.03, 0.05)
 
 
 func _underwater_fog(environment: Environment, daylight: float, cover: float) -> void:
+	environment.fog_sun_scatter = 0.0
+	mist_inside = 0.0
 	var lit: float = clampf(daylight, 0.0, 1.0) * lerpf(1.0, 0.55, cover)
 	environment.fog_density = UNDER_FOG_DENSITY
 	var color: Color = UNDER_NIGHT_COLOR.lerp(UNDER_DAY_COLOR, lit)
