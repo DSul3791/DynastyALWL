@@ -15,6 +15,7 @@ const FLEE := 2
 
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
+signal footfall(kind: String, at: Vector3, ground: String, speed: float)   # the same landing with the ground it lands on (dust, mud, snow, water) and the speed: puffs, tracks, ground-aware hoof sounds (docs/design/FOOTFALL.md)
 signal fell(kind: String, at: Vector3, small: bool)            # an animal went down from a hit: it vanished right after a hit landed on it (sounds listen)
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
@@ -36,6 +37,8 @@ var _mats: Dictionary = {}
 var _t: float = 0.0
 var conditions_now: Callable     # () -> {"hour": float, "season": String} from the client's ambient clock: the asleep test, tail swish
 var _species_cfg: Variant = null  # data/animals/animals.json (the server's species file: active hours and the rest rule)
+var footfall_fx: bool = false     # docs/design/FOOTFALL.md: dust, mud and snow puffs at running footfalls (off until the PC check)
+var slope_tilt: bool = false      # the body pitches with the slope it walks on (off until the PC check)
 var season_now: String = ""      # "spring", "summer", "autumn", "winter" or "" when unknown; the client sets it (tail swish against flies)
 var torch_light: Callable        # () -> [position, range] of the player's held light, or []: eyes facing it shine (_eye_shine)
 var water_level: Callable        # (x, z) -> water surface height or NAN; set by the client: a swimmer below it plays its "swim" clip
@@ -469,6 +472,9 @@ func _process_body(delta: float) -> void:
 				_look_motion(node, b, state, delta)
 
 			_hop_arc(node, b, model_speed, delta)
+
+			if slope_tilt:
+				_slope_pitch(node, b, before, delta)
 
 			if bool((node.get_meta("model_row", {}) as Dictionary).get("herd", false)):
 				_herd_look(node, b, state, model_speed, delta)
@@ -1751,6 +1757,76 @@ func _herd_glance(node: Node3D, b: Dictionary) -> void:
 			o["glance_at"] = _t + randf_range(0.3, 2.0)      # luck-exempt: when a herd mate looks up (client look)
 
 
+# What a foot lands on (docs/design/FOOTFALL.md): water where the client's water level is above the animal's feet, snow in winter,
+# mud while the animal is wet or just out of water, dust otherwise. The flora's ground kinds can refine this later.
+func _ground_kind(node: Node3D, b: Dictionary) -> String:
+	if water_level.is_valid():
+		var level: float = float(water_level.call(node.global_position.x, node.global_position.z))
+
+		if not is_nan(level) and node.global_position.y < level:
+			return "water"
+
+	var season: String = str((conditions_now.call() as Dictionary).get("season", "")) if conditions_now.is_valid() else season_now
+
+	if season == "winter":
+		return "snow"
+
+	if float(b.get("wet", 0.0)) > 0.3:
+		return "mud"
+
+	return "dust"
+
+
+# A small one-shot puff where a running foot lands: brown dust, dark mud flecks, or white snow. Short-lived, a few particles.
+func _puff(at: Vector3, ground: String, speed: float) -> void:
+	if not is_inside_tree():
+		return
+
+	var puff: CPUParticles3D = CPUParticles3D.new()
+	puff.one_shot = true
+	puff.emitting = false
+	puff.amount = 6 if speed < 6.0 else 10
+	puff.lifetime = 0.6 if ground != "snow" else 0.9
+	puff.explosiveness = 1.0
+	puff.direction = Vector3.UP
+	puff.spread = 70.0
+	puff.initial_velocity_min = 0.4
+	puff.initial_velocity_max = 1.2
+	puff.gravity = Vector3(0.0, -2.0, 0.0)
+	puff.scale_amount_min = 0.05
+	puff.scale_amount_max = 0.12
+	var mesh: QuadMesh = QuadMesh.new()
+	mesh.size = Vector2(0.12, 0.12)
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = {"dust": Color(0.55, 0.47, 0.36, 0.5), "mud": Color(0.25, 0.19, 0.12, 0.7), "snow": Color(0.95, 0.96, 1.0, 0.7)}.get(ground, Color(0.55, 0.47, 0.36, 0.5))
+	mesh.material = mat
+	puff.mesh = mesh
+	add_child(puff)
+	puff.global_position = at + Vector3(0.0, 0.05, 0.0)
+	puff.emitting = true
+	get_tree().create_timer(puff.lifetime + 0.3).timeout.connect(puff.queue_free)
+
+
+# Slope planting, simple form (docs/design/FOOTFALL.md): the body pitches with the ground it walks on, learnt from its own movement
+# (the server puts it on the ground, so its rise over its run is the slope), held while it stands, at most 20 degrees. Feet stay
+# on the ground at both ends of a long body; full foot IK is the later step.
+func _slope_pitch(node: Node3D, b: Dictionary, before: Vector3, delta: float) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null:
+		return
+
+	var run: float = Vector2(node.position.x - before.x, node.position.z - before.z).length()
+
+	if run > 0.02:
+		b["slope"] = lerpf(float(b.get("slope", 0.0)), clampf((node.position.y - before.y) / run, -0.36, 0.36), clampf(delta * 3.0, 0.0, 1.0))
+
+	rig.rotation.x = lerp_angle(rig.rotation.x, atan(float(b.get("slope", 0.0))), clampf(delta * 4.0, 0.0, 1.0))      # nose up going uphill (the model faces -Z)
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -1869,6 +1945,11 @@ func _emit_steps(b: Dictionary, node: Node3D, state: int, speed: float) -> void:
 
 	if int(b["step_count"]) >= 0 and count != int(b["step_count"]):
 		stepped.emit(kind, node.global_position)
+		var ground: String = _ground_kind(node, b)
+		footfall.emit(kind, node.global_position, ground, speed)
+
+		if footfall_fx and speed > 2.0 and ground != "water":
+			_puff(node.global_position, ground, speed)
 
 	b["step_count"] = count
 
