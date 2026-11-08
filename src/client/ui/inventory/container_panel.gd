@@ -11,14 +11,14 @@ const LOOK_COLUMNS := 6
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
-var _keep_out: CheckBox   # --new-inventory: the open container's "keep out" tick
+var _keep_out: CheckBox   # the open container's "keep out" tick
 
 
 func _init(owner_view) -> void:
 	view = owner_view
 
 
-# The container screen, built once and kept (set_text_scale drops it to rebuild at a new size).
+# The container column, built once and kept (set_text_scale drops it to rebuild at a new size).
 func build() -> void:
 	if view._chest_panel == null:
 		view._chest_buttons.clear()
@@ -28,80 +28,8 @@ func build() -> void:
 	if view._chest_panel != null:
 		return
 
-	if InventoryLook.on:
-		_build_look()
-		return
-
-	view._chest_panel = PanelContainer.new()
-	root = view._chest_panel
-	view._chest_panel.theme = view._tooltip_theme()
-	view._chest_panel.anchor_left = 0.125
-	view._chest_panel.anchor_right = 0.875
-	view._chest_panel.anchor_top = 0.1
-	view._chest_panel.anchor_bottom = 0.9
-	var columns: HBoxContainer = HBoxContainer.new()
-	columns.add_theme_constant_override("separation", view._px(24))
-	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var chest_outer: VBoxContainer = VBoxContainer.new()
-	chest_outer.add_theme_constant_override("separation", view._px(10))
-	view._chest_panel.add_child(chest_outer)
-	chest_outer.add_child(columns)
-
-	for side in ["Woven chest  (click a stack to take it)", "Your pack  (click a stack to put it in)"]:
-		var box: VBoxContainer = VBoxContainer.new()
-		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		columns.add_child(box)
-		var title: Label = Label.new()
-		title.text = side
-		view._style(title, view.TITLE_PX)
-		box.add_child(title)
-		view._chest_titles.append(title)
-		var scroll: ScrollContainer = ScrollContainer.new()
-		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		box.add_child(scroll)
-		var grid: GridContainer = GridContainer.new()
-		grid.columns = 4
-		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		grid.add_theme_constant_override("h_separation", view._px(8))
-		grid.add_theme_constant_override("v_separation", view._px(8))
-		scroll.add_child(grid)
-		var chest_side: bool = view._chest_buttons.is_empty()
-
-		for i in view.inventory.SLOTS:
-			var slot: Control = _make_slot(chest_side, i)
-			grid.add_child(slot)
-			(view._chest_buttons if chest_side else view._pack_buttons).append(slot)
-
-	var transfer: Button = Button.new()
-	transfer.text = "Transfer (T)"
-	transfer.tooltip_text = "Move the last stack you pointed at between your pack and the container (clicking a stack does the same)"
-	view._style(transfer, view.BODY_PX)
-	transfer.pressed.connect(func():
-		if view._chest_last.size() == 2:
-			on_slot(bool(view._chest_last[0]), int(view._chest_last[1])))
-	transfer.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	chest_outer.add_child(transfer)
-	view._layer.add_child(view._chest_panel)
-
-
-# One slot button: the container's (`chest_side`) or the pack's, at button `index`; a click moves its stack across.
-func _make_slot(chest_side: bool, index: int) -> Control:
-	var button: Button = Button.new()
-	button.custom_minimum_size = Vector2(0.0, view._px(88))
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.clip_text = true
-	view._style(button, view.BODY_PX - 4)
-	button.pressed.connect(on_slot.bind(chest_side, index))
-	button.mouse_entered.connect(func():
-		view._chest_hover = [chest_side, index]
-		view._chest_last = [chest_side, index])
-	button.mouse_exited.connect(func(): view._chest_hover = [] if view._chest_hover == [chest_side, index] else view._chest_hover)
-	return button
-
-
-# --new-inventory: the middle column of the one window (look doc section 3): the container's name plate, its slots, and under them the four
-# bulk buttons in fixed places. The pack is the window's own pack column, so this side shows no second pack.
-func _build_look() -> void:
+	# The middle column of the one window (look doc section 3): the container's name plate, its slots, and under them the four bulk
+	# buttons in fixed places. The pack is the window's own pack column, so this side shows no second pack.
 	var unit: float = InventoryLook.unit_of(view)
 	view._chest_panel = PanelContainer.new()
 	root = view._chest_panel
@@ -236,24 +164,7 @@ func refresh() -> void:
 	var capacity: int = int(view.table.entry(view.table.id_of(int(view._world.get(view.chest_id, {}).get("number", 0)))).get("slots", view.inventory.SLOTS))
 	var fire: bool = is_fire()
 
-	if InventoryLook.on:
-		_refresh_look(capacity, fire)
-		return
-	view._pack_view = pack_view_slots(fire)
-
-	if view._chest_titles.size() == 2:
-		view._chest_titles[0].text = "Fire  (click a stack to take it)" if fire else "Woven chest  (click a stack to take it)"
-		view._chest_titles[1].text = "Your pack: wood and food, A to Z  (click to put it in)" if fire else "Your pack  (click a stack to put it in)"
-
-	for i in view.inventory.SLOTS:
-		view._chest_buttons[i].visible = i < capacity
-		var number: int = view.chest_inv.numbers[i]
-		view._chest_buttons[i].text = "" if number == 0 else "%s\nx%s" % [view.table.name_of(number), view._count_text(view.chest_inv.counts[i])]
-		view._chest_buttons[i].tooltip_text = view._tooltip(number, view.chest_inv.counts[i], view.chest_inv.wear[i])
-		var slot: int = pack_slot(i)
-		number = view.inventory.numbers[slot] if slot >= 0 else 0
-		view._pack_buttons[i].text = "" if number == 0 else "%s\nx%s" % [view.table.name_of(number), view._count_text(view.inventory.counts[slot])]
-		view._pack_buttons[i].tooltip_text = "" if number == 0 else view._tooltip(number, view.inventory.counts[slot], view.inventory.wear[slot])
+	_refresh_look(capacity, fire)
 
 
 func _refresh_look(capacity: int, fire: bool) -> void:

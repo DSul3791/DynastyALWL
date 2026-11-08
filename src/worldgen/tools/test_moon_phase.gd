@@ -1,6 +1,7 @@
 extends SceneTree
 
-# --moon-phase (Jamie's moonlight page #679): moonlight by the standard phase formula, and the moon placed by its phase.
+# Moon phases (Jamie's moonlight page #679): moonlight by the standard phase formula, and the moon placed by its phase on the ecliptic,
+# at the starter island's latitude (34.3 S) on the calendar's spring equinox.
 # Run: godot --headless --script res://src/worldgen/tools/test_moon_phase.gd
 
 const DayCycle := preload("res://src/client/day_cycle.gd")
@@ -16,9 +17,9 @@ func _check(ok: bool, what: String) -> void:
 
 
 func _moon_up_at(phase: float, hour: float) -> float:
-	var phi: float = deg_to_rad(DayCycle.LATITUDE_DEG)
+	var phi: float = deg_to_rad(DayCycle.sky_latitude_deg())
 	var h: float = deg_to_rad((hour - 12.0) * 15.0)
-	return DayCycle.moon_direction(phi, 0.0, h, phase).y          # an equinox day
+	return DayCycle.moon_on_ecliptic(phi, 0.0, h, phase).y          # an equinox day
 
 
 func _init() -> void:
@@ -35,14 +36,10 @@ func _init() -> void:
 	_check(_moon_up_at(0.75, 22.0) < 0.0 and _moon_up_at(0.75, 4.0) > 0.3, "last quarter: not up in the evening, up before dawn")
 	_check(_moon_up_at(0.0, 0.0) < -0.5, "new moon: down at midnight, with the sun")
 
-	DayCycle.moon_phase_on = true
 	var cycle = DayCycle.new()
 	cycle.update(2.0, 0, 100.0 - 0.25 * 29.53)    # a first quarter, 2 in the morning on an equinox
 	_check(cycle.moon_elevation < 0.0 and cycle.moon_light == 0.0 and cycle.light_factor == 0.0, "after a first quarter sets, no moonlight")
 	cycle.update(0.0, 0, 100.0)                   # full moon, midnight
 	_check(cycle.moon_light > 0.9 and cycle.light_factor > 0.15, "full moon at midnight lights the ground")
-	DayCycle.moon_phase_on = false
-	cycle.update(2.0, 0, 100.0 - 0.25 * 29.53)
-	_check(cycle.moon_light > 0.3, "without the switch the moon stays opposite the sun, as before")
 	print("test_moon_phase: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
