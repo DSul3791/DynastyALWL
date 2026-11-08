@@ -1,4 +1,4 @@
-# Head tracking: animals that look at the player (MikeW, 8 Nov 2026)
+# Head tracking: animals that look at the player (MikeW, 8 Nov 2026; built on the eye-placement branch)
 
 Reuses the bone layer (`bone_offsets.gd`) that already does the crow's posture, tails, ears and breathing.
 
@@ -19,3 +19,5 @@ Grazer rows: `"look": {"bones": [...], "yaw_max_deg": 60, "pitch_max_deg": 40, "
 
 ## Check
 A short series of frames with the camera moving round a grazing deer and a stalking wolf (the creature check gains a `--orbit` option), then Kathleen's look in the live game.
+
+**Built:** the turn is axis-free (the line from the neck base to the head is turned onto the line to the target, clamped, shared equally over the bones), so no per-rig axes are needed. Rows: glance for deer, moose, elk, wildebeest, bighorn, mountain goat, chamois, pronghorn, cow, goat; track for wolf, fox, hyena, lynx, puma, lion, leopard, tiger, both bears. Horse, donkey and camel have unusual neck bone names; later.

@@ -457,6 +457,9 @@ func _process_body(delta: float) -> void:
 
 			if node.has_meta("breath"):
 				_breath_motion(node, b, state, model_speed, delta)
+
+			if node.has_meta("look"):
+				_look_motion(node, b, state, delta)
 			if node.has_meta("flock_birds"):
 				for bird in node.get_meta("flock_birds"):
 					_animate_model(bird, b, state, model_speed, delta)
@@ -617,7 +620,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_mats", eye_mats)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath"):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look"):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -635,6 +638,10 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 			if row.has("breath"):
 				missing.append_array(fix.setup_breath(sks[0], row["breath"]))
 				root.set_meta("breath", fix)
+
+			if row.has("look"):
+				missing.append_array(fix.setup_look(sks[0], row["look"]))
+				root.set_meta("look", fix)
 
 			(sks[0] as Skeleton3D).add_child(fix)
 
@@ -1570,6 +1577,35 @@ func _breath_motion(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	b["puffed"] = maxf(0.0, float(b.get("puffed", 0.0)) - delta)
 	fix.breath_rate = 1.0 + float(b["puffed"]) / 20.0
 	fix.breath_on = lerpf(float(fix.breath_on), 1.0 if speed < 1.0 else 0.0, 0.1)
+
+
+# Head tracking (docs/design/HEAD_TRACKING.md). "glance" (grazers): grazing, a player within range_m makes the animal look for 2 to
+# 4 s, again for every 5 m closer. "track" (predators): alert, stalking or warning, it keeps looking. The clip plays underneath.
+func _look_motion(node: Node3D, b: Dictionary, state: int, delta: float) -> void:
+	var fix = node.get_meta("look")      # bone_offsets.gd (untyped: its own properties)
+	var spec: Dictionary = (node.get_meta("model_row", {}) as Dictionary).get("look", {})
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var want: float = 0.0
+
+	if cam != null:
+		var dist: float = cam.global_position.distance_to(node.global_position)
+		var range_m: float = float(spec.get("range_m", 30.0))
+		fix.look_target = cam.global_position
+
+		if str(spec.get("mode", "glance")) == "track":
+			want = 1.0 if (state == 3 or state == 6 or state == 10) and dist < range_m * 1.5 else 0.0
+		elif state == 0 and dist < range_m:
+			if dist < float(b.get("next_glance_m", range_m)):
+				var hold: Array = spec.get("hold_s", [2.0, 4.0])
+				b["look_left"] = randf_range(float(hold[0]), float(hold[1]))      # luck-exempt: how long a deer stares (client look)
+				b["next_glance_m"] = dist - 5.0
+
+			want = 1.0 if float(b.get("look_left", 0.0)) > 0.0 else 0.0
+		else:
+			b["next_glance_m"] = range_m      # out of range or busy: the next approach starts a fresh glance
+
+	b["look_left"] = maxf(0.0, float(b.get("look_left", 0.0)) - delta)
+	fix.look_weight = move_toward(float(fix.look_weight), want, delta / 0.3)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

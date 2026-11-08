@@ -21,6 +21,10 @@ var breath_per_min: float = 15.0
 var breath_rate: float = 1.0      # animal_view: 2 just after a run, settling to 1
 var breath_on: float = 0.0        # animal_view: 0 while moving fast, 1 at rest
 var _breath_phase: float = 0.0
+var look_bones: PackedInt32Array = PackedInt32Array()   # neck to head (look): they share the turn toward the target
+var look_max: float = 1.2         # radians the whole neck may turn
+var look_target: Vector3 = Vector3.ZERO      # world position looked at (animal_view: the camera)
+var look_weight: float = 0.0      # 0 the clip's own head to 1 looking at the target
 var _t: float = 0.0
 
 
@@ -88,6 +92,22 @@ func setup_breath(sk: Skeleton3D, spec: Dictionary) -> PackedStringArray:
 	return PackedStringArray() if breath_bone >= 0 else PackedStringArray([str(spec.get("bone", ""))])
 
 
+# Head tracking (docs/design/HEAD_TRACKING.md): a row's "look" {bones [neck ... head], max_deg}.
+func setup_look(sk: Skeleton3D, spec: Dictionary) -> PackedStringArray:
+	var missing: PackedStringArray = PackedStringArray()
+	look_max = deg_to_rad(float(spec.get("max_deg", 70.0)))
+
+	for bone_name in spec.get("bones", []):
+		var bone: int = sk.find_bone(str(bone_name))
+
+		if bone < 0:
+			missing.append(str(bone_name))
+		else:
+			look_bones.append(bone)
+
+	return missing
+
+
 func _process_modification() -> void:
 	var sk: Skeleton3D = get_skeleton()
 
@@ -109,6 +129,9 @@ func _process_modification() -> void:
 		var q: Quaternion = Quaternion(ear_axes[0] as Vector3, swivel) * Quaternion(ear_axes[1] as Vector3, -flat * float(e[1]))
 		sk.set_bone_pose_rotation(int(e[0]), sk.get_bone_pose_rotation(int(e[0])) * q)
 
+	if look_bones.size() >= 2 and look_weight > 0.001:
+		_look(sk)
+
 	if waves.is_empty() or wave_scale <= 0.001:
 		return
 
@@ -117,3 +140,32 @@ func _process_modification() -> void:
 	for w in waves:
 		var angle: float = float(w[2]) * wave_scale * sin(TAU * (_t / float(w[4]) + float(w[3])))
 		sk.set_bone_pose_rotation(int(w[0]), sk.get_bone_pose_rotation(int(w[0])) * Quaternion(w[1] as Vector3, angle))
+
+
+
+# Turn the neck and head so the head points at look_target. Axis-free: the turn is the one that carries the line from the neck base
+# to the head onto the line from the neck base to the target, clamped to look_max and scaled by look_weight, and each bone takes an
+# equal share about its own pivot, so the neck curves instead of the head snapping round.
+func _look(sk: Skeleton3D) -> void:
+	var target: Vector3 = sk.global_transform.affine_inverse() * look_target
+	var base: Vector3 = sk.get_bone_global_pose(look_bones[0]).origin
+	var head: Vector3 = sk.get_bone_global_pose(look_bones[look_bones.size() - 1]).origin
+	var now_dir: Vector3 = head - base
+	var want_dir: Vector3 = target - base
+
+	if now_dir.length() < 0.0001 or want_dir.length() < 0.0001:
+		return
+
+	var turn: Quaternion = Quaternion(now_dir.normalized(), want_dir.normalized())
+	var angle: float = turn.get_angle()
+
+	if angle > look_max:
+		turn = Quaternion.IDENTITY.slerp(turn, look_max / angle)
+
+	var share: Quaternion = Quaternion.IDENTITY.slerp(turn, look_weight / float(look_bones.size()))
+
+	for bone in look_bones:
+		var parent: int = sk.get_bone_parent(bone)
+		var p_basis: Basis = sk.get_bone_global_pose(parent).basis if parent >= 0 else Basis.IDENTITY
+		var local_turn: Quaternion = (p_basis.inverse() * Basis(share) * p_basis).get_rotation_quaternion()
+		sk.set_bone_pose_rotation(bone, local_turn * sk.get_bone_pose_rotation(bone))
