@@ -1524,6 +1524,8 @@ func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
+# An animal warning at, charging or recovering from a dog (states 10 to 12 with foe_dog, dog_companion_design.md 11) adds a sixth field:
+# the dog's position, so the client looks at the dog and not the player (MikeW, 8 Nov 2026). Rows without it are unchanged.
 func rows_near(point: Vector3) -> Array:
 	var radius: float = float(cfg.get("send_radius_m", 120.0))
 	var found: Array = []
@@ -1533,7 +1535,12 @@ func rows_near(point: Vector3) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			found.append([d, [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), a["state"]]])
+			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), a["state"]]
+
+			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
+				row.append(animals[int(a["foe_dog"])]["pos"])
+
+			found.append([d, row])
 
 	found.sort_custom(func(l, r): return l[0] < r[0])
 	var rows: Array = []

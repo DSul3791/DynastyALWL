@@ -118,6 +118,8 @@ func _init() -> void:
 	var dog_hp: float = float(d.animals[ddog]["hp"])
 	step(d, bear, 1)
 	check(bear["state"] == 10 and int(bear.get("foe_dog", 0)) == ddog, "a bear warns at a dog 25 m off (state %d)" % bear["state"])
+	var rows: Array = d.rows_near(Vector3.ZERO).filter(func(r): return int(r[0]) == int(bear["id"]))
+	check(rows.size() == 1 and (rows[0] as Array).size() == 6 and flat(rows[0][5], d.animals[ddog]["pos"]) < 0.01, "its row carries the dog's position for the client")
 	step(d, bear, 16)
 	check(bear["state"] == 10, "it keeps warning while the dog stays 25 m off (state %d)" % bear["state"])
 	d.animals[ddog]["pos"] = Vector3(9.0, GROUND, 0.0)
