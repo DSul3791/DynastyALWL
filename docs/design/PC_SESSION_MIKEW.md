@@ -1,6 +1,6 @@
 # PC session run sheet: the animal life layer (MikeW, 8 Nov 2026)
 
-For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 92 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 59 motion strips about 50 (Godot starts about 25 s per line; m44 takes 2 minutes), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m59 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
+For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 92 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 60 motion strips about 52 (Godot starts about 25 s per line; m44 takes 2 minutes), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m60 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
 
 ```bash
 cd /c/GodotProjects/DynastyALWL_gate
@@ -38,8 +38,8 @@ grep -E "^==|^role|NO CLIP|flat" $O/still.log
 ```
 Proves: dog sit (18) and lie (19), alligator swim, black bear warn under the jaw-pop pose, rabbit and kangaroo hop clips. Pass: no `NO CLIP` for sit, lie or swim.
 
-## 4. Moving frames (about 50 min: 59 lines, about 45 s each)
-One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m59 are the newer flags and follow in the same sitting.
+## 4. Moving frames (about 52 min: 60 lines, about 45 s each)
+One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m60 are the newer flags and follow in the same sitting.
 ```bash
 M="timeout 300 $GE --path . --script res://tools/creature_motion.gd --"
 $M --kinds=dog --state=0 --out=$O/motion > $O/m1.log 2>&1   # m1 [none] look: dog tail and chest. PASS: tail swings between frames, chest rises. FAIL: anything else, or SCRIPT ERROR in the log
@@ -101,6 +101,7 @@ $M --kinds=deer,wolf --state=0 --speed=1.2 --water=0.01 --wlife --ice --season=w
 $M --kinds=deer,dog,crow --state=0 --thunder=2 --frames=8 --every=0.2 --cam=6 --out=$O/motion_thunder > $O/m57.log 2>&1   # m57 [storm_looks] look: the frames after 2 s. PASS: the crow hops up flapping, the deer jolts, the dog drops low and stays low for a few seconds. FAIL: no reaction, or SCRIPT ERROR in the log
 $M --kinds=deer,horse,cow --state=21 --poselib --frames=2 --cam=6 --out=$O/motion_pose_drink > $O/m58.log 2>&1; $M --kinds=deer,horse,cow --state=19 --poselib --frames=2 --cam=6 --out=$O/motion_pose_lie >> $O/m58.log 2>&1   # m58 [pose_lib] look: heads in 21, legs in 19. PASS: in 21 the heads are down toward the ground; in 19 the deer's, horse's and cow's legs fold (the cow may bend the wrong way: then its row needs pose_axis); `pose library:` lines in m58.log. FAIL: no change from the graze clip, or SCRIPT ERROR in the log
 $M --kinds=deer --state=2 --speed=7 --water=0.01 --wlife --ice --poselib --season=winter --frames=12 --every=0.3 --cam=8 --out=$O/motion_ice_fall > $O/m59.log 2>&1   # m59 [pose_lib, ice_looks] look: the running deer. PASS: down on the ice splayed on all fours in some frames, up again in others. FAIL: never down, down without the legs out, or SCRIPT ERROR in the log
+$M --kinds=deer --state=0 --count=3 --hour=7 --wx=cold --breath --frames=4 --every=1.5 --cam=6 --out=$O/motion_breath_rest > $O/m60.log 2>&1; $M --kinds=deer --state=2 --speed=7 --hour=7 --wx=cold --breath --frames=6 --every=0.5 --cam=8 --out=$O/motion_breath_pant >> $O/m60.log 2>&1; $M --kinds=deer --state=1 --speed=1 --water=0.6 --wlife --hour=7 --wx=cold --breath --frames=4 --every=1 --cam=6 --out=$O/motion_body_steam >> $O/m60.log 2>&1   # m60 [breath_looks] look: the muzzles and backs. PASS: slow puffs at rest, quick puffs running, wisps rising off the back of the deer in the water. FAIL: no puffs, or SCRIPT ERROR in the log
 grep -h "saved\|SCRIPT ERROR" $O/m*.log
 ```
 
@@ -181,3 +182,4 @@ its last commit and lists the earlier PR as its base. No history is rewritten.
 20. **Life layer Q, ice and snow:** `ice_looks` (careful steps and slips on ice, snow on still backs melting by the air, deeper snow prints; m56).
 21. **Life layer R, thunder:** `storm_looks` (birds startle, herds flinch and bunch with ears flat, dogs cower, storm wind tails to it; m57).
 22. **Life layer S, pose library:** `pose_lib` (alert, sit, lie, hunch, drink and sleep posed from the rig's own bones where a model has no clip, Steve's state numbers; m58).
+23. **Life layer T, breath and steam:** `breath_looks` (breath puffs for every animal below 5 C by state, panting after a chase, steam off wet or hot bodies; m60).

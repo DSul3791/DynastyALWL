@@ -63,6 +63,9 @@ camera and focus move along +Z with the animals. Pictures are 480 by 480 px, one
 | Pose library: lying (19) | 12:00 | clear | deer, horse, cow | `$M --kinds=deer,horse,cow --state=19 --poselib --cam=6 --frames=2 --out=$O/pose_lie` | legs folded under the body (a wrong-way bend on the cow means its row needs `pose_axis`) |
 | Pose library: hunch (20) | 12:00 | clear | goat, elk | `$M --kinds=goat,elk --state=20 --poselib --cam=6 --frames=2 --out=$O/pose_hunch` | heads low on rigs with no hunch pose of their own |
 | A deer down on the ice | 12:00, winter | bare ice at the surface (`--water=0.01 --wlife --ice`) | deer, running | `$M --kinds=deer --state=2 --speed=7 --water=0.01 --wlife --ice --poselib --season=winter --cam=8 --frames=12 --every=0.3 --out=$O/ice_fall` | down splayed on all fours in some frames (Jamie #736); camera (8, 1.8, 0), yaw 90, pitch -8.5 |
+| Breath at rest and panting | 07:00 | -12 C (`--wx=cold`) | deer (3 at rest), then one running | `$M --kinds=deer --state=0 --count=3 --hour=7 --wx=cold --breath --cam=6 --frames=4 --every=1.5 --out=$O/breath_rest` and `$M --kinds=deer --state=2 --speed=7 --hour=7 --wx=cold --breath --cam=8 --frames=6 --every=0.5 --out=$O/breath_pant` | slow puffs at rest, quick ones running; camera (6 or 8, 1.8, 0), yaw 90, pitch -11.3 or -8.5 |
+| Steam off a wet body | 07:00 | -12 C, 0.6 m of water | deer swimming | `$M --kinds=deer --state=1 --speed=1 --water=0.6 --wlife --hour=7 --wx=cold --breath --cam=6 --frames=4 --every=1 --out=$O/body_steam` | thin wisps rising off the back; camera (6, 1.8, 0), pitch -11.3 |
+| The open brook below the cave 8002 spring, live | 07:00 on a frosty morning | the world's own | deer at the water (Steve #734), water birds at the edge (#737) | `--shots="spring_brook:56520,1.7,72400,180,-14,7" --life=breath_looks,drink_looks,water_life,wind_looks` (x 56520, 1.7 m up, z 72400 just below the mouth at 72360, yaw 180 facing south downstream, pitch -14, hour 7) | breath puffs over the drinkers, the spring's own steam (Kathleen); needs the live animals |
 
 All of them are also in the run sheet (m19 to m48); these are the ones to keep as reference pictures. Send the strips to MikeW;
 nothing else is needed from the sitting for them.
@@ -179,5 +182,8 @@ has no strip: it is the gate run with and without `--life-layer-off`. The refere
 **pr24 pose library**
 - m58 [pose_lib] heads in 21, legs in 19: in 21 the heads are down toward the ground; in 19 the legs fold (the cow may need `pose_axis`).
 - m59 [pose_lib, ice_looks] the running deer on bare ice: down splayed on all fours in some frames, up again in others.
+
+**pr25 breath and steam**
+- m60 [breath_looks] the muzzles and backs: slow puffs at rest, quick puffs running, wisps rising off the back of the deer in the water.
 
 Then step 5 (the gates) and step 6 (the PRs, opened in the summary page's order).

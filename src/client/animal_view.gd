@@ -63,6 +63,7 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var breath_looks: bool = false    # breath puffs for every animal below 5 C by what it is doing, and steam off a wet or hot body (ANIMAL_BREATH.md; off until the PC check)
 var pose_lib: bool = false        # the pose library fills states the model has no clip or pose for: alert, sit, lie, hunch, drink, sleep (POSE_LIBRARY.md; off until the PC check)
 var storm_looks: bool = false     # thunder: birds startle up, herds flinch and bunch, dogs cower, ears flat; storm wind turns tails to it (ANIMAL_WEATHER_LOOKS.md storm section; off until the PC check)
 var thunder_count: Callable       # () -> how many thunders the sound stage has played (weather_sounds.thunders_played): a change is a clap heard now
@@ -555,7 +556,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (pose_lib or storm_looks or ice_looks or drink_looks or cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (breath_looks or pose_lib or storm_looks or ice_looks or drink_looks or cave_air or fog_looks or wind_looks or swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -667,6 +668,9 @@ func _process_body(delta: float) -> void:
 
 			if storm_looks:
 				_storm_look(node, b, state, model_speed, delta)
+
+			if breath_looks:
+				_breath_look(node, b, state, model_speed, delta)
 
 			if hunt_feedback and (b.has("react") or float(b.get("damage", 0.0)) > 0.0):
 				_hunt_motion(node, b, model_speed, delta)
@@ -3550,6 +3554,10 @@ func _steam_breath(node: Node3D, b: Dictionary, air: float, speed: float, delta:
 
 	var row: Dictionary = _row_of(node)
 	var per_min: float = float((row.get("breath", {}) as Dictionary).get("per_min", 15.0)) * (2.5 if speed > 3.0 else 1.0)
+
+	if breath_looks:      # ANIMAL_BREATH.md: slower at rest, panting for 20 s after a chase or a charge
+		var at_rest: bool = speed < 0.3 and (int(b.get("state", 0)) in REST_STATES or bool(b.get("asleep", false)))
+		per_min *= 3.0 if _t < float(b.get("pant_until", -1.0)) else (0.7 if at_rest else 1.0)
 	b["steam_t"] = float(b.get("steam_t", randf() * 2.0)) - delta      # luck-exempt: the first breath (client look)
 
 	if float(b["steam_t"]) > 0.0:
@@ -3777,7 +3785,7 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air", "drink_looks", "ice_looks", "storm_looks", "pose_lib"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig", "wind_looks", "fog_looks", "cave_air", "drink_looks", "ice_looks", "storm_looks", "pose_lib", "breath_looks"]
 
 func _all_flags_off() -> void:
 	cover_still = false
@@ -3790,6 +3798,7 @@ func _all_flags_off() -> void:
 	ice_looks = false
 	storm_looks = false
 	pose_lib = false
+	breath_looks = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -4403,6 +4412,75 @@ func on_ice_holes(points: PackedVector3Array, _untils: PackedFloat32Array) -> vo
 
 		if i < points.size():
 			disc.global_position = points[i] + Vector3(0.0, 0.015, 0.0)
+
+# Breath and steam (docs/design/ANIMAL_BREATH.md). The air is `_air` (Weather.air_c at the animal, the cave's under rock); the drift is
+# the wind's (wind_looks). Every model animal breathes a visible puff below 5 C (the steam breath of the weather looks, run here
+# when weather_looks is off), its rate by what it is doing: slower at rest, faster moving, panting for 20 s after it fled, charged or
+# attacked (states 2, 11, 7). And a wet or hot body steams below 8 C: soft wisps rising off the back for a minute after it swam or
+# stood in rain hunched (20), and after a chase or a kill.
+const BODY_STEAM_C := 8.0
+const PANT_STATES := [2, 7, 11]
+const REST_STATES := [0, 12, 19, 20, 21]      # graze, recover, lie, hunch, drink: a slow breath
+
+func _breath_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	if state in PANT_STATES:
+		b["pant_until"] = _t + 20.0
+		b["hot_until"] = _t + 60.0
+
+	var depth: float = float(b.get("depth", 0.0))      # water_life's probe, when it is on
+	var wx: Dictionary = _wx_state()
+
+	if depth > 0.3 or (state == HUNCH and float(wx.get("rain", 0.0)) > 0.3):
+		b["hot_until"] = _t + 60.0      # wet: the coat steams as it dries
+
+	var air: float = _air(node.global_position, wx)
+
+	if not weather_looks and air < COLD_C:
+		_steam_breath(node, b, air, speed, delta)
+
+	if air < BODY_STEAM_C and _t < float(b.get("hot_until", -1.0)):
+		b["wisp_t"] = float(b.get("wisp_t", 0.0)) - delta
+
+		if float(b["wisp_t"]) <= 0.0:
+			b["wisp_t"] = randf_range(0.6, 1.2)      # luck-exempt: when the next wisp rises (client look)
+			_body_steam(node, air)
+
+
+func _body_steam(node: Node3D, air: float) -> void:
+	var cam: Camera3D = _cam()
+
+	if cam == null or cam.global_position.distance_to(node.global_position) > STEAM_NEAR_M:
+		return
+
+	var row: Dictionary = _row_of(node)
+	var length: float = float(row.get("length_m", 1.0)) * maxf(node.scale.x, 0.3)
+	var wisps: CPUParticles3D = CPUParticles3D.new()
+	wisps.one_shot = true
+	wisps.emitting = false
+	wisps.amount = 6
+	wisps.lifetime = 2.2
+	wisps.explosiveness = 0.3
+	wisps.direction = Vector3.UP
+	wisps.spread = 15.0
+	wisps.initial_velocity_min = 0.1
+	wisps.initial_velocity_max = 0.25
+	wisps.gravity = Vector3(0.0, 0.08, 0.0)
+	wisps.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	wisps.emission_box_extents = Vector3(length * 0.15, 0.02, length * 0.3)
+	wisps.scale_amount_min = length * 0.06
+	wisps.scale_amount_max = length * 0.12
+	var mesh: SphereMesh = SphereMesh.new()
+	mesh.radius = 0.5
+	mesh.height = 1.0
+	mesh.material = LifeUtil.see_through(Color(0.95, 0.96, 1.0, clampf((BODY_STEAM_C - air) / 25.0, 0.06, 0.2)), true)
+	wisps.mesh = mesh
+
+	if wind_looks:
+		var to: float = _wind_to()
+		wisps.gravity += Vector3(cos(to), 0.0, sin(to)) * float(_wx_state().get("wind", 0.0))
+
+	LifeUtil.fire_once(self, wisps, node.global_position + Vector3.UP * float(row.get("height_m", length * 0.55)) * maxf(node.scale.y, 0.3), 0.4)
+
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
