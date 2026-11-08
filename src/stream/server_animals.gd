@@ -69,6 +69,7 @@ var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
 var _fire_cache: Array = []       # [Vector3 fire, keep-off metres] this tick (fires, fire_radius)
 var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sample_noise)
 var _noise_from: Array = []       # player positions at the last sample
+var _player_vel: Array = []       # per player (the _noise_from order): ground velocity (x, z) over the last noise sample, m/s
 var _noisy: Array = []            # per player (player_positions order): how much farther they are sensed for rustling undergrowth (1.0 none)
 
 
@@ -1459,14 +1460,21 @@ func _sample_noise(players: Array, delta: float) -> void:
 	var stances: Array = player_stances.call() if player_stances.is_valid() else []
 	var stalk: Array = player_stalk.call() if player_stalk.is_valid() else []
 	var fresh: Array = []
+	var vel: Array = []
 
 	for pi in players.size():
 		var noise: float = 1.0
+		var moved: Vector2 = Vector2.ZERO
+
+		if players.size() == _noise_from.size():
+			var was0: Vector3 = _noise_from[pi]
+			moved = Vector2(players[pi].x - was0.x, players[pi].z - was0.z) / _noise_acc
+
+		vel.append(moved)
 
 		if players.size() == _noise_from.size() and undergrowth.is_valid():
-			var was: Vector3 = _noise_from[pi]
 			var p: Vector3 = players[pi]
-			var speed: float = Vector2(p.x - was.x, p.z - was.z).length() / _noise_acc
+			var speed: float = moved.length()
 
 			if speed >= float(sen.get("brush_moving_ms", 0.5)) and bool(undergrowth.call(p)):
 				var extra: float = float(sen.get("brush_noise_per_ms", 0.04)) * minf(speed, 12.0)
@@ -1480,8 +1488,25 @@ func _sample_noise(players: Array, delta: float) -> void:
 		fresh.append(noise)
 
 	_noisy = fresh
+	_player_vel = vel
 	_noise_from = players.duplicate()
 	_noise_acc = 0.0
+
+
+# The ground velocity (x, z, m/s) of the player standing nearest a point, from the last noise sample (Vector2.ZERO when unknown): big game
+# reads it during a warning, because a player who runs away is chased (docs/design/bear_threat_design.md).
+func player_velocity_at(p: Vector3) -> Vector2:
+	var best: Vector2 = Vector2.ZERO
+	var best_d: float = INF
+
+	for pi in mini(_noise_from.size(), _player_vel.size()):
+		var d: float = Vector2(_noise_from[pi].x - p.x, _noise_from[pi].z - p.z).length()
+
+		if d < best_d:
+			best_d = d
+			best = _player_vel[pi]
+
+	return best if best_d <= float(cfg.get("senses", {}).get("velocity_match_m", 4.0)) else Vector2.ZERO
 
 
 # How much farther or nearer a player seems to an animal: downwind of the player it smells them from farther off, upwind it does
