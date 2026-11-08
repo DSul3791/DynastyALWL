@@ -1105,7 +1105,7 @@ func _welcome_body(info: Dictionary) -> void:
 		PieceLook.use_terrain_only_decals()
 
 	terrain.generate_collisions = true
-	terrain.collision_lod_count = 4
+	terrain.collision_lod_count = Layout.COLLISION_LODS   # caves are carved at every one of these levels (terrain_generator.gd cave_carve_lods)
 	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
 	# player first, but makes no collision until every coarser level is loaded too, so the
 	# player had no ground to stand on for most of a minute (owner, 2026-10-20).
