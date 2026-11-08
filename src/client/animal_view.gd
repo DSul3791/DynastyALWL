@@ -597,6 +597,12 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 	for m in meshes:
 		eye_mats.append_array((m as MeshInstance3D).get_meta("eye_mats", []))
 
+	# A model whose eyes are only painted on its body texture gets two small glossy eyes on its eye bones (eye_bones [left, right])
+	# or at eye_offset [x, y, z] (metres at the drawn size, x mirrored for the right eye) from its head bone (head_bone): they carry the
+	# highlight every living eye has and the torchlight eye shine (docs/design/POSE_FIXES_PICTURES.md section 2).
+	if eye_mats.is_empty() and (row.has("eye_bones") or row.has("eye_offset")):
+		eye_mats = _add_eyes(inst, row, k, kind)
+
 	if not eye_mats.is_empty():
 		root.set_meta("eye_mats", eye_mats)
 
@@ -1429,6 +1435,64 @@ func _gait_clip(player: AnimationPlayer, rig: Node3D, spec: Dictionary, kind: St
 		_model_note(kind, "gait: no bone %s" % ", ".join(missing))
 
 	return out
+
+
+# Two glossy eye spheres fixed to the skeleton (see _make_model). `size_k` is the model's size scale (file units to metres), so
+# eye_offset and eye_radius_m are in metres at the drawn size. Returns their materials for the eye shine.
+func _add_eyes(inst: Node, row: Dictionary, size_k: float, kind: String) -> Array:
+	var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
+
+	if sks.is_empty():
+		return []
+
+	var sk: Skeleton3D = sks[0]
+	var parent: Node = inst.get_parent()
+	size_k = _to_ancestor(sk, parent).basis.get_scale().x if parent != null else size_k      # skeleton units to metres (file scale, armature scale, the model's size)
+	var mats: Array = []
+	var radius: float = float(row.get("eye_radius_m", float(row.get("length_m", 1.0)) * 0.012))
+	var places: Array = []      # [bone name, offset Vector3 in metres]
+
+	if row.has("eye_bones"):
+		for bone_name in row["eye_bones"]:
+			places.append([str(bone_name), Vector3.ZERO])
+	else:
+		var off: Array = row["eye_offset"]
+		var head: String = str(row.get("head_bone", "Head"))
+		places.append([head, Vector3(float(off[0]), float(off[1]), float(off[2]))])
+		places.append([head, Vector3(-float(off[0]), float(off[1]), float(off[2]))])
+
+	for place in places:
+		if sk.find_bone(str(place[0])) < 0:
+			_model_note(kind, "eyes: no bone %s" % str(place[0]))
+			continue
+
+		var at: BoneAttachment3D = BoneAttachment3D.new()
+		at.bone_name = str(place[0])
+		sk.add_child(at)
+		var eye: MeshInstance3D = MeshInstance3D.new()
+		var ball: SphereMesh = SphereMesh.new()
+		ball.radius = radius / maxf(size_k, 0.0001)      # in the skeleton's units
+		ball.height = ball.radius * 2.0
+		ball.radial_segments = 12
+		ball.rings = 6
+		eye.mesh = ball
+		eye.position = (place[1] as Vector3) / maxf(size_k, 0.0001)
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		mat.albedo_color = Color.html(str(row.get("eye_color", "#1c140e")))
+		mat.roughness = 0.08
+		mat.metallic_specular = 0.8
+
+		if float(row.get("shine", 0.0)) > 0.0:
+			mat.emission_enabled = true
+			mat.emission = Color.html(str(row.get("shine_color", "#ffffff")))
+			mat.emission_energy_multiplier = 0.0
+
+		eye.material_override = mat
+		at.add_child(eye)
+		mats.append(mat)
+
+	_model_note(kind, "eyes: %d placed" % mats.size())
+	return mats
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

@@ -10,11 +10,17 @@ extends SceneTree
 #   godot --path . --script res://tools/creature_check.gd -- --kinds=bear,deer --out=E:/Software/godotDev/creature_check [--px=360] [--clips]
 # --young builds the young animal (its young_model when the row has one).
 # --id=N builds the animal with that id (a species with variants picks its look by id: --id=1 is the second look).
+# --roles=clipA,clipB draws those clips (by name) instead of the row's roles: to compare candidate poses.
+# --head draws a close-up of each head, front and three-quarter, with the head and eye bones marked and named: for eye_bones / eye_offset.
 # --clips also lists every clip in the file (with its length), to pick the clip for each role in a new model row.
 
 const AnimalView := preload("res://src/client/animal_view.gd")
 const ROLE_ORDER := ["rest", "0", "3", "10", "11", "12", "15", "walk", "run"]
 const ROLE_NAMES := {"rest": "rest pose", "0": "graze", "3": "alert", "10": "warn", "11": "charge", "12": "recover", "15": "fly", "walk": "walk", "run": "run"}
+
+
+var role_clips: PackedStringArray = PackedStringArray()
+var head_mode: bool = false
 
 
 func _init() -> void:
@@ -36,6 +42,10 @@ func _init() -> void:
 			young = true
 		elif a == "--clips":
 			list_clips = true
+		elif a.begins_with("--roles="):
+			role_clips = a.trim_prefix("--roles=").split(",", false)
+		elif a == "--head":
+			head_mode = true
 		elif a.begins_with("--px="):
 			px = int(a.trim_prefix("--px="))
 
@@ -106,6 +116,16 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 		if r != "rest" and ((row.get("clips", {}) as Dictionary).has(r) or roles.has(r)):
 			wanted.append(r)
 
+	if not role_clips.is_empty():
+		wanted = ["rest"]
+
+		for c in role_clips:
+			wanted.append("clip:" + c)
+
+	if head_mode:
+		probe.free()
+		return await _head_sheet(view, kind, number, row, out, px, look_id, lines)
+
 	probe.free()
 
 	if row.has("flock_of"):
@@ -134,6 +154,9 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 		if model.has_meta("player"):
 			var player: AnimationPlayer = model.get_meta("player")
 			var clip: String = str((player.get_meta("roles", {}) as Dictionary).get(role, ""))
+
+			if role.begins_with("clip:"):
+				clip = view._clip_full(player, row, role.trim_prefix("clip:"))
 
 			if role == "rest":
 				player.stop()
@@ -234,3 +257,83 @@ func _stage(cols: int, cell: float, px: int) -> SubViewport:
 	vp.add_child(cam)
 	root.add_child(vp)
 	return vp
+
+
+# Head close-ups (--head): the model in its rest pose, two cameras on the head bone (front and three-quarter), every bone whose
+# name says head or eye marked with a small red ball and its name, so eye_bones or an eye_offset can be read off the picture.
+func _head_sheet(view: Node3D, kind: String, number: int, row: Dictionary, out: String, px: int, look_id: int, lines: PackedStringArray) -> PackedStringArray:
+	var model: Node3D = view._make_model(number, look_id)
+	var sks: Array = model.find_children("*", "Skeleton3D", true, false)
+
+	if sks.is_empty():
+		lines.append("head: no skeleton")
+		model.free()
+		return lines
+
+	var sk: Skeleton3D = sks[0]
+	var vp: SubViewport = _stage(2, 1.0, px)
+	vp.add_child(model)
+	await process_frame
+	var head_pos: Vector3 = model.global_position
+	var marks: PackedStringArray = PackedStringArray()
+
+	for i in sk.get_bone_count():
+		var bone_name: String = sk.get_bone_name(i)
+		var low: String = bone_name.to_lower()
+
+		if not (low.contains("head") or low.contains("eye")):
+			continue
+
+		var at: Vector3 = sk.global_transform * sk.get_bone_global_pose(i).origin
+		var ball: MeshInstance3D = MeshInstance3D.new()
+		var sphere: SphereMesh = SphereMesh.new()
+		sphere.radius = 0.006
+		sphere.height = 0.012
+		ball.mesh = sphere
+		var red: StandardMaterial3D = StandardMaterial3D.new()
+		red.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		red.albedo_color = Color(1.0, 0.1, 0.1)
+		red.no_depth_test = true
+		ball.material_override = red
+		vp.add_child(ball)
+		ball.global_position = at
+		var tag: Label3D = Label3D.new()
+		tag.text = bone_name
+		tag.font_size = 24
+		tag.pixel_size = 0.0004
+		tag.no_depth_test = true
+		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		vp.add_child(tag)
+		tag.global_position = at + Vector3(0.0, 0.015, 0.0)
+		marks.append("%s at %s" % [bone_name, str(at.snapped(Vector3.ONE * 0.001))])
+
+		if low.contains("head") and not low.contains("end"):
+			head_pos = at
+
+	for cam_old in vp.find_children("*", "Camera3D", true, false):
+		cam_old.queue_free()
+
+	lines.append("head bones: " + "; ".join(marks))
+	var shots: Array = [["front", Vector3(0.0, 0.0, -1.0)], ["three_quarter", Vector3(0.7, 0.2, -0.7).normalized()]]
+	var span: float = float(row.get("length_m", 1.0)) * 0.25 + 0.15
+
+	for shot in shots:
+		var cam: Camera3D = Camera3D.new()
+		cam.fov = 30.0
+		vp.add_child(cam)
+		cam.global_position = head_pos + (shot[1] as Vector3) * span * 2.0
+		cam.look_at(head_pos, Vector3.UP)
+		cam.current = true
+		vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+		for i in 3:
+			await process_frame
+
+		var path: String = "%s/head_%s_%s.png" % [out, kind, shot[0]]
+		vp.get_texture().get_image().save_png(path)
+		lines.append("picture " + path)
+		cam.queue_free()
+		await process_frame
+
+	vp.queue_free()
+	return lines
