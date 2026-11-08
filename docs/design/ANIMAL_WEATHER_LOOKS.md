@@ -25,7 +25,9 @@ note adds the looks that the server does not send, behind `weather_looks` (off),
    `ground_snow` from the weather sounds.
 3. **One temperature by height:** accepted on a condition: it is `Weather.air_c` from #620. Once #620 merges the server calls it, and
    the client's `weather_now` should call the same function (`Weather.air_c(game_s, group, altitude)` at the animal) instead of the
-   flat `temp_c`. No second shared function before then; until #620 lands the client keeps `temp_c`.
+   flat `temp_c`. No second shared function before then. **Done (8 Nov 2026, #620 merged):** `air_at` in terrain_client calls
+   `Weather.air_c(game_clock.seconds, weather_group, y)` at the animal's height; the steam breath, the cold huddle and the herd spacing
+   all read it through `_air`. The client has no lapse of its own; the motion tool, with no world, falls back to its `temp_c`.
 
 ## Check
 Run sheet m41 (deer and horse in a gale: rumps turned to the wind), m42 (deer herd at -12 C: closer, heads low, steam at the
