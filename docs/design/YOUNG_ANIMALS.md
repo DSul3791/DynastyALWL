@@ -33,3 +33,40 @@ already works and is not changed here. This note is the client look, behind the 
 
 Run sheet m23: deer, horse and cow with two young each at age 3 days, walking. Pass: the young are smaller than their mother,
 take quicker steps with no sliding, and sway.
+
+## Part 2: size by age, and the mother (8 Nov 2026)
+
+### Size by age (flag `young_gait`)
+
+- `young_look` now has `scale` (at birth), `grown_scale` (at `grown_days`, 180) and `wobble_days`. The drawn size runs on a straight
+  line between them by the young one's age (`_young_age`: 0 to 40 days in spring, 60 and more later in the year), set when it is
+  first drawn. A fawn seen in late summer is visibly bigger than one seen in April.
+- Checked across every species with young in animals.json (22). Each now has a row, from birth length over adult length:
+
+| Species | Birth | 180 days | Species | Birth | 180 days |
+|---|---|---|---|---|---|
+| deer | 0.45 | 0.70 | buffalo | 0.40 | 0.62 |
+| moose | 0.40 | 0.65 | pronghorn | 0.42 | 0.70 |
+| horse | 0.55 | 0.75 | warthog | 0.25 | 0.55 |
+| boar | 0.25 | 0.55 | wildebeest | 0.45 | 0.70 |
+| bear, black bear | 0.25 | 0.45 | rhino | 0.35 | 0.50 |
+| donkey | 0.50 | 0.72 | elephant | 0.32 | 0.42 |
+| elk | 0.42 | 0.68 | camel | 0.50 | 0.68 |
+| bighorn, mountain goat, chamois | 0.40 | 0.65 | kangaroo (joey out of the pouch) | 0.30 | 0.55 |
+| cow (own calf model: keeps its own size) | 0.45 | 0.65 | mammoth | 0.32 | 0.42 |
+| goat | 0.40 | 0.65 | | | |
+
+- Before this, nine species with young had no row and drew every young one at 0.5 (bighorn, mountain goat, chamois, pronghorn,
+  warthog, wildebeest, rhino, kangaroo, mammoth); a warthog piglet at half its mother was too big, a wildebeest calf about right.
+
+### Following the mother (flag `young_follow`)
+
+- The server already keeps each young one at its place beside its mother (`_step_young`, `follow_m` 3 m, 4 for bears) and runs it
+  when she runs. It sends no link, so the client takes the nearest grown animal of its kind within 8 m as the mother (every 2 s).
+- Grazing beside her (still, within 3 m), the young one looks to her head for 1.5 to 3 s every 6 to 15 s, through its look bones.
+- Every 40 to 120 s it nurses for 6 to 12 s: it moves in under her flank (the Rig, at most 1 m, as the herd spacing does, which
+  stands aside while it nurses) with its head up to her belly. Moving or any other state ends it.
+- For Steve, later: play runs (fawns and foals sprinting short loops round the mother) would be a server state; not in this layer.
+
+Check: run sheet m35 (deer and horse with two young each at 20 days, `--follow`: the young turn to the mother, then one goes in
+under her flank).
