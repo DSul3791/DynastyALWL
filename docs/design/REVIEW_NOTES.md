@@ -50,7 +50,10 @@ Checked how the animal looks read the weather against Kathleen's client code:
 - **Air temperature:** both call the shared `Weather.air_c` (#620); the animals through terrain_client's `air_at`. One function, no copy.
 - **Wind direction:** both read the same `terrain_client.weather` dictionary (`wind_dir`), which `wind_cue.gd` also reads; Kathleen's
   prevailing wind will feed that one field. One source.
-- **Fog:** the animals read the scene Environment's `fog_density` that her weather look sets, and the shared state's `mist`; her sky
+- **Fog (updated):** Kathleen's #724 (head d733a6e5) adds `weather_look.visibility_m` (3 / the drawn fog density round the eye:
+  rain, snow, storm, fog, valley fog, under water; 50 km when clear). terrain_client's `_animal_fog` now reads it whenever the
+  weather look has it and falls back to the density otherwise, so the switch happens by itself when #724 merges; the fallback line
+  can go after that. Before: the animals read the scene Environment's `fog_density` that her weather look sets, and the shared state's `mist`; her sky
   and sound code read her own smoothed `_s` values in weather_look.gd. Two readings of one thing: the animals' visibility is a
   guess from the density. **After the gate:** a `visibility_m` exposed by the weather look (asked of Kathleen in ANIMAL_FOG.md)
   becomes the one sampler for both, and `fog_now` reads only that.
