@@ -31,6 +31,11 @@ fawn's bleat 80 m. Jamie's sound-outdoors rules (#642) and Kathleen's outdoor ho
 time: farther at night and downwind, nearer and duller in forest, rain and snow, high calls lost first. The calls only give the
 honest source numbers; nothing here bends them.
 
+## How far a howl carries (Jamie's hearing page #742)
+A wolf's howl carries 6 to 10 km. The wolf's contact call is a creature_sounds mood (`wolf_howl`), whose reach is that file's
+`KINDS.wolf.reach` (950 m today, Kathleen and Jason's file); the outdoor rules (#662) then shape it. **For Kathleen and Jason:** a
+howl's reach of 6 to 10 km (low and narrow-band, so it survives the distance cut) would match the page; nothing here changes it.
+
 ## What is on Dave's PC and what is missing
 Read from `assets/audio/creatures` (generated), `assets/audio/recorded/creatures` (recorded, wins) and the filled slots in
 `data/sound/*_slots.json`. "missing" plays nothing until a file is added.
