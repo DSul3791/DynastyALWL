@@ -112,4 +112,6 @@ So the uplift note's question falls away if this is the cause: the ice was too l
 
 Probe L starts from ws580i's `glacial_cycle_39.npz` (the end of the 41 kyr world). It runs the last 240 kyr of the LR04 history: MIS 7 to today, two full 100 kyr cycles with the LGM and MIS 6, 43 entries and 226 kyr of ice. Params are `/mnt/project-files/water/ws580i_probe_params_L.json`, ws580i's settings plus that history.
 
+The first try (8 Nov 21:30) crashed on a river phase of zero years, a division by its dt in evolve._solve. glacial.py now skips a phase of no years, and a cold phase starts from the last cold phase's ice when no interglacial came between. Without that, every LR04 entry would start bare, while histories with an interglacial in every cycle run exactly as before.
+
 **Decision.** The baseline is ws580i's cycles 40 and 41, where the main summit lost 65.3 m (1,383.4 to 1,318.1 m). If L's main summit loses at most a fifth of that (13 m), the full LR04 history run from B1 is worth its time, about 2 hours: 1,243 cold steps against ws580i's 520. Rule 6's lines 4 to 12 are then judged as written. If L loses more, the history is not the main cause, and the uplift note's options come back.

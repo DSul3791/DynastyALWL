@@ -265,18 +265,23 @@ def main():
                                          period_years=float(GL['years']) + float(GL['post_glacial_years']))]
     total_years = sum(int(e['cycles']) * float(e['period_years']) for e in history)
     bound = float(b1_ground.max()) + float(U.max()) * total_years + 100.0
-    st = dict(h=h, deposit=deposit, ice_max=np.zeros(N), flux_max=np.zeros(N), ice_cycle_max=np.zeros(N), ice_cut=np.zeros(N),
+    st = dict(h=h, deposit=deposit, ice_max=np.zeros(N), flux_max=np.zeros(N), ice_cycle_max=np.zeros(N), ice_cut=np.zeros(N), ice_carry=np.zeros(N),
               flux=np.zeros(N), steps=0, psteps=0)
     t0 = time.time()
     track = []
 
     def _cold_phase(years, ela_local, k):
-        """One cold phase of `years`, from no ice: the old cold stage's step, with the snowline ela_local (per cell)."""
+        """One cold phase of `years`: the old cold stage's step, with the snowline ela_local (per cell). It starts from no ice
+        after an interglacial, or from the last cold phase's ice when none came between (an LR04 history, lr04_history.py,
+        cuts one glaciation into several phases at different snowlines). A phase of no years does nothing (8 Nov 2026: probe L
+        crashed on a zero-year river phase, a division by its dt in evolve._solve)."""
+        st['ice_cycle_max'] = np.zeros(N)
+        if years <= 0.0:
+            return
         steps = max(int(round(years / float(GL['dt']))), 1)
         dt = years / steps
         h, deposit = st['h'], st['deposit']
-        ice = np.zeros(N)                              # thickness from the last step
-        st['ice_cycle_max'] = np.zeros(N)
+        ice = st['ice_carry']                          # thickness from the last step
         for s in range(steps):
             surf = h + ice
             filled, rec, order = evolve.route(surf, sea, n, dx, evolve.flow_memory(E))
@@ -325,6 +330,7 @@ def main():
             ery_fn.update(change)
             st['ice_cut'] -= change                    # the ice's own cut: the net lowering in the cold phases, uplift aside
             ice = thick
+            st['ice_carry'] = thick
             st['ice_max'] = np.maximum(st['ice_max'], thick)
             st['ice_cycle_max'] = np.maximum(st['ice_cycle_max'], thick)
             st['flux_max'] = np.maximum(st['flux_max'], Ai)
@@ -339,7 +345,11 @@ def main():
         st['h'], st['deposit'] = h, deposit
 
     def _river_phase(years):
-        """An interglacial of `years`: today's rivers and creep (evolve.river_step), as the old post-glacial era."""
+        """An interglacial of `years`: today's rivers and creep (evolve.river_step), as the old post-glacial era. The ice is
+        gone after it. A phase of no years does nothing."""
+        if years <= 0.0:
+            return
+        st['ice_carry'] = np.zeros(N)
         steps = max(int(round(years / float(GL['post_glacial_dt']))), 1)
         dtp = years / steps
         for s in range(steps):
