@@ -51,6 +51,7 @@ Everything that makes a drawn animal look alive on top of its clips, all client 
 | Cave air | the cave's year-mean air under rock for the weather looks, coat drying rates | warmth.json | `cave_air` (**off**) | ANIMAL_WEATHER_LOOKS.md |
 | Drinking | sips with the head lifted to look round, a churned bank, birds bathing | none | `drink_looks` (**off**) | ANIMAL_DRINK.md |
 | Ice and snow | careful steps and slips on ice, snow on still backs melting by the air, deeper snow prints | none | `ice_looks` (**off**) | ANIMAL_WEATHER_LOOKS.md |
+| Thunder | birds startle up, herds flinch and bunch with ears flat, dogs cower; storm wind tails to it | none | `storm_looks` (**off**) | ANIMAL_WEATHER_LOOKS.md |
 | Dog reactions | server plan for Steve: deer flee a dog at 40 m, goblins back off a barking dog | none | server | DOG_REACTIONS.md |
 | Bird flight | take-off, flap and glide in turns at the wingbeat, bob, landing flare | `flight` | none (on) | BIRD_FLIGHT.md |
 | Foot reach | each foot reaches the ground under it | `feet` | `foot_ik` (**off**), needs `ground_height` | FOOTFALL.md |

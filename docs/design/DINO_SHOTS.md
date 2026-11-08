@@ -57,6 +57,8 @@ camera and focus move along +Z with the animals. Pictures are 480 by 480 px, one
 | On the ice | 12:00, winter | frozen water at the surface (`--water=0.01 --wlife --ice`) | deer, wolf, walking | `$M --kinds=deer,wolf --state=0 --speed=1.2 --water=0.01 --wlife --ice --season=winter --cam=6 --frames=10 --every=0.25 --out=$O/ice_walk` | the deer slipping sideways now and then, the wolf steady; camera (6, 1.8, 0), yaw 90, pitch -11.3 |
 | Snow on a still back | 02:00, winter | snow falling (`--wx=snowbed`) | deer, standing | `$M --kinds=deer --state=0 --season=winter --wx=snowbed --ice --cam=5 --frames=3 --every=40 --out=$O/ice_snowback` | the coat whiter frame by frame over 2 minutes; camera (5, 1.8, 0), pitch -13.5 |
 | The basin pond frozen, live | 10:00 on a frosty winter day | the world's own (the pond frozen: Kathleen's frozen water look) | whatever crosses or skirts it | `--shots="pond_ice:63584,3,80060,0,-15,10" --life=ice_looks,weather_looks,animal_sign` (x 63584, 3 m above the ground, z 80060 on the pond's south side, yaw 0 facing north (-Z) toward the centre at z 80024, pitch -15, hour 10) | tracks on the snow at the edge, a wolf on the ice, deer going round; needs live animals and a winter world |
+| A clap of thunder | 12:00 | a clap 2 s in (`--thunder=2`) | deer, dog, crow | `$M --kinds=deer,dog,crow --state=0 --thunder=2 --cam=6 --frames=8 --every=0.2 --out=$O/thunder` | the crow hopping up flapping, the deer jolting, the dog low; camera (6, 1.8, 0), yaw 90, pitch -11.3 |
+| Storm wind | 12:00 | storm wind 0.9 toward +X (`--wx=gale`) | deer, horse | `$M --kinds=deer,horse --state=0 --wx=gale --windlooks --cam=6 --frames=4 --every=1 --out=$O/storm_wind` | rumps toward +X (toward the camera), heads low; camera (6, 1.8, 0), pitch -11.3 |
 
 All of them are also in the run sheet (m19 to m48); these are the ones to keep as reference pictures. Send the strips to MikeW;
 nothing else is needed from the sitting for them.
@@ -69,3 +71,105 @@ fog spot) has deer in the forest edge in the morning.
 
 The tool's world has no coast: its water is a flat sheet over the ground plane, so these are the posed bodies only. A live coast
 picture of whales or dolphins waits for Steve's sea species (SEA_MAMMALS.md); until then there is nothing to point a camera at.
+
+## MikeW's PC slot in one go (pr03 to pr23)
+
+The run sheet (PC_SESSION_MIKEW.md) step 4 runs every strip in this order; each line here is what Dino should see. pr13 (the cost pass)
+has no strip: it is the gate run with and without `--life-layer-off`. The reference pictures above are the subset to keep.
+
+**pr03 always-on looks**
+- m1 [none] dog tail and chest: tail swings between frames, chest rises.
+- m2 [none] cat and lynx tails and ears: tail tip flicks, ears turn.
+- m3 [none] tails: tails swish against flies.
+- m4 [none] the six deer as the camera nears: they face roughly one way; one looks up, then the rest (`look_left` above 0 in m4.log).
+- m5 [none] wolf head and ears: head follows the camera, ears forward.
+- m6 [none] sleeping animals: deer and dog lie, horse dozes head low; `asleep true` in m6.log.
+- m7 [none] swimmers: swim clip plays in the water.
+- m8 [none] eyes in torchlight (#596 shine): deer pale green, wolf yellow-green.
+- m9 [none] hops: body rises and lands each bound.
+- m10 [none] black bear head: head low, jaw open (jaw-pop).
+
+**pr04 footfall and feet**
+- m11 [footfall_fx] feet: brown puffs at the running hooves.
+- m12 [prints_fx] snow behind them: a line of hoof and paw prints.
+- m13 [foot_ik] right-hand feet: stand 15 cm higher than the left, body not tipped.
+- m14 [footfall_fx] feet in water: droplets at each step.
+
+**pr05 predators and flight**
+- m15 [stalk_fx] the wolf: low, head level, tail still, slow steps.
+- m16 [stalk_fx] fox and lynx: leave the ground in an arc.
+- m17 [none (wind)] tails and ears: tails swing, ears lie back a little.
+- m18 [none] birds: take off, then flap and glide in turns.
+
+**pr06 coats, young, water, idles**
+- m19 [season_coats] coat colour: compare with m20.
+- m20 [season_coats] coat colour: winter deer greyer, winter fox and wolf paler than here.
+- m21 [coat_ruffle] fur: fur moves between frames; no shader error in m21.log.
+- m22 [coat_dust] coats while rolling: turn dusty.
+- m23 [young_gait] the young: smaller, quick short steps, sway side to side.
+- m24 [water_life] swimmers: ride low, only back and head above water, legs paddle.
+- m25 [water_life] the muzzle: head down, rings on the water.
+- m26 [none (state 20)] heads: held low, ears back.
+- m27 [idle_variety] each animal: starts one idle (scratch, groom, shake, paw); no `idle clip ... not in the file` in m27.log.
+
+**pr08 flight part 2, foe, wiring**
+- m28 [flight_bank] birds turning: lean into the turn; the crow rolls once.
+- m29 [none (storm_ahead)] tails: still (compare m3).
+- m30 [stalk_fx] fox and raccoon: creep low.
+- m31 [none] heads and ears: bear and boar head low, ears flat; dog barking clip.
+- m32 [none] the charge: run clip at speed.
+- m33 [none (state 17)] wings: held out in a glide.
+- m34 [look_at_foe] heads: turned to their left, not to the camera.
+
+**pr09 young part 2, voices, eye shine**
+- m35 [young_follow] the young: turn to the mother; one moves in under her flank.
+- m36 [eye_shine] eyes at 15 m: two points of the species' colour per animal.
+- m37 [eye_shine] eyes by full moon: faint points close in.
+
+**pr10 animal sign**
+- m38 [animal_sign] the mud: prints alternate left and right, one per step (about 0.7 m for the deer).
+- m39 [animal_sign] the sand: groups of four prints with long gaps (the rabbit: a Y).
+- m40 [animal_sign] the stone: no prints.
+
+**pr11 weather looks**
+- m41 [weather_looks] rumps: turned toward downwind (+X) over the frames.
+- m42 [weather_looks] the herd: closer than m4, heads low, steam puffs at the muzzles.
+- m43 [weather_looks] bodies after 2 s: a 1 s shiver and a spray of drops.
+- m44 [weather_looks] coats of the sleeping animals: whiter frame by frame.
+
+**pr12 hunting feedback**
+- m45 [hunt_feedback] the deer after 2 s: a jolt, then the hind end low and swinging each stride.
+- m46 [hunt_feedback] the first animal at 2 s: its head and front toss up and back.
+- m47 [hunt_feedback] the deer after 3 s: it goes down onto its side and lies still, not vanishing.
+
+**pr14 cover still (and the track fixes in m38, m39)**
+- m48 [cover_still] both animals: heads low, ears back, barely moving between frames.
+
+**pr15 posed birds**
+- m49 [bird_rig] the crow's wings: both wings beat up and down together between frames, mirrored, and `posed flight: wing bones` names six bones in m49.log.
+
+**pr16 posed swimmers**
+- m50 [swim_rig] the alligator's body and tail: a wave runs from the shoulders to the tail tip, growing toward the tail, and `posed swim: spine` lists the chain in m50.log.
+
+**pr17 wind direction**
+- m51 [wind_looks] which way the bodies face: both turn their rumps toward +X, toward the camera (the downwind side), over the frames, heads low.
+
+**pr18 fog**
+- m52 [fog_looks] the eyes and the herd at dusk in 120 m fog: two points of eye shine though it is only dusk, the animals closer together than in m4, the far ones paler with the fog.
+
+**pr19 prevailing wind**
+- m53 [wind_looks] which way the alert animals face: both turn toward -X, away from the camera (upwind), up to 45 degrees.
+
+**pr20 cave air**
+- m54 [cave_air] the muzzles: no steam puffs (the cave's 5.5 C wins over the sky's -12; compare m42, which steams).
+
+**pr21 drinking**
+- m55 [drink_looks] the deer's head and the ground; the crow: the deer's head comes up in at least one frame and a trampled patch lies at its feet; the crow beats its wings with splashes.
+
+**pr22 ice and snow**
+- m56 [ice_looks] the deer and the wolf on the ice; the still deer in snow: the deer lurches sideways in some frames and the wolf never does; the still deer whitens frame by frame.
+
+**pr23 thunder**
+- m57 [storm_looks] the frames after 2 s: the crow hops up flapping, the deer jolts, the dog drops low and stays low for a few seconds.
+
+Then step 5 (the gates) and step 6 (the PRs, opened in the summary page's order).

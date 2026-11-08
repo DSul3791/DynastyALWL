@@ -1329,6 +1329,7 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.air_at = func(p: Vector3) -> float: return WeatherScript.air_c(game_clock.seconds, weather_group, p.y)      # the one temperature by height (#620), at the animal
 	animal_view.fog_now = func() -> Dictionary: return _animal_fog()      # fog looks: Kathleen's visibility_m (#724) when the weather look has it, else the scene fog density
 	animal_view.cave_c_at = func(p: Vector3) -> float: return _animal_cave_c(p)      # cave air: the year mean at the height under rock (Steve #715)
+	animal_view.thunder_count = func() -> int: return int(sound.weather.thunders_played) if sound != null and sound.weather != null else 0      # storm looks: a new thunder is a clap heard now
 	animal_view.weather_now = func() -> Dictionary: return weather      # weather looks: temp_c, rain, snow, wind, wind_dir (the shared weather state)
 	animal_view.wind_now = func() -> float: return float(sound.weather.wind) if sound != null and sound.weather != null else 0.0      # ears and tails in the wind
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
