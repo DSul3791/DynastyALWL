@@ -100,9 +100,20 @@ def ring_heads(v, bearings, drop_m):
     return heads
 
 
-def facing(bearing):
-    b = float(bearing) % 360.0
-    return 'NE' if b <= 90.0 else ('SW' if 180.0 <= b <= 270.0 else 'other')
+def facing(bearing, shady_deg=45.0):
+    """'shady' within 45 degrees of the shady lee bearing (glacial.shady_bearing_deg: 45 NE north of the equator, 135 SE south
+    of it), 'sunny' within 45 degrees of the opposite bearing, else 'other'."""
+    d = (float(bearing) - float(shady_deg)) % 360.0
+    return 'shady' if d <= 45.0 or d >= 315.0 else ('sunny' if 135.0 <= d <= 225.0 else 'other')
+
+
+def _compass(bearing):
+    return ('N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW')[int(((float(bearing) % 360.0) + 22.5) // 45.0) % 8]
+
+
+def _checks(P):
+    """The peaks settings, with the island's shady lee bearing from glacial (one source, design A4 one sky)."""
+    return dict(P['peaks'], shady_bearing_deg=float(P.get('glacial', {}).get('shady_bearing_deg', 45.0)))
 
 
 def _slope_deg(h, dx):
@@ -136,7 +147,7 @@ def headwalls(h, slope, r0, c0, bearings, dx, Q):
         t = np.radians(b)
         rows, cols = r0 - r * np.cos(t) / dx, c0 + r * np.sin(t) / dx
         hp, sp = _sample(h, rows, cols), _sample(slope, rows, cols)
-        item = dict(bearing_deg=float(b), facing=facing(b), headwall_m=None, depth_m=None, floor_m=None)
+        item = dict(bearing_deg=float(b), facing=facing(b, Q.get('shady_bearing_deg', 45.0)), headwall_m=None, depth_m=None, floor_m=None)
         steep = np.flatnonzero(sp > float(Q['headwall_deg']))
         if steep.size:
             k = int(steep[0])
@@ -246,7 +257,7 @@ def _hollows_near(h, sea, dx, tops, P):
     sys.path.insert(0, HERE)
     sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
     import evolve     # noqa: E402  (the B1 routing)
-    Q = P['peaks']
+    Q = _checks(P)
     n = h.shape[0]
     filled, _, _ = evolve.route(h.astype(np.float64).ravel(), sea.ravel().astype(np.uint8), n, dx, evolve.flow_memory(P['evolve']))
     pit = (filled.reshape(n, n) - h > float(Q['hollow_min_depth_m'])) & ~sea
@@ -264,7 +275,7 @@ def _load_inputs(d):
 
 
 def check_landform(inputs_dir, baseline_dir, P):
-    Q = P['peaks']
+    Q = _checks(P)
     h, sea, dx, ox, oz = _load_inputs(inputs_dir)
     tops = summits(h, sea, dx, snowline(P) + float(Q['above_snowline_m']), float(Q['summit_window_m']))
     ax = axes(h, sea, dx, tops, Q)
@@ -315,7 +326,7 @@ def _history_years(P):
 
 
 def check_glacial(inputs_dir, glacial_dir, P):
-    Q = P['peaks']
+    Q = _checks(P)
     lf, sea, dx, ox, oz = _load_inputs(inputs_dir)
     g = np.load(f'{glacial_dir}/glacial.npz')
     if g['ground'].shape != lf.shape:
@@ -376,20 +387,22 @@ def check_glacial(inputs_dir, glacial_dir, P):
         lines.append(_line(8, lo <= med <= hi, f'median headwall retreat {med:.2f} mm per active ice year over {len(rates)} heads '
                                                f'(measured {lo} to {hi}){note}; each: ' +
                            ', '.join(f"{hd['facing']} {hd['bearing_deg']:.0f}: {hd['rate_mm_yr']:.2f}" for hd in heads if hd['rate_mm_yr'] is not None)))
-    ne = [hd['rate_mm_yr'] for hd in heads if hd['rate_mm_yr'] is not None and hd['facing'] == 'NE']
-    sw = [hd['rate_mm_yr'] for hd in heads if hd['rate_mm_yr'] is not None and hd['facing'] == 'SW']
+    sb = float(Q.get('shady_bearing_deg', 45.0))
+    names = f"shady {_compass(sb)}, sunny {_compass(sb + 180.0)}"
+    ne = [hd['rate_mm_yr'] for hd in heads if hd['rate_mm_yr'] is not None and hd['facing'] == 'shady']
+    sw = [hd['rate_mm_yr'] for hd in heads if hd['rate_mm_yr'] is not None and hd['facing'] == 'sunny']
     if not ne or not sw:
-        lines.append(_line(9, None, f'{len(ne)} north-east and {len(sw)} south-west heads with a rate; need one of each'))
+        lines.append(_line(9, None, f'{len(ne)} shady and {len(sw)} sunny heads with a rate ({names}); need one of each'))
     else:
         rne, rsw = float(np.mean(ne)), float(np.mean(sw))
         ratio = rne / rsw if rsw > 0.0 else float('inf')
-        flo, fhi = Q['ne_sw_fail_outside']
-        nlo, nhi = Q['ne_sw_ratio']
-        fne = [hd['floor_m'] for hd in heads if hd['facing'] == 'NE' and hd['floor_m'] is not None]
-        fsw = [hd['floor_m'] for hd in heads if hd['facing'] == 'SW' and hd['floor_m'] is not None]
-        floors = f'; NE cirque floors {np.mean(fsw) - np.mean(fne):.0f} m below SW ones (measured 100 to 200, noted)' if fne and fsw else ''
+        flo, fhi = Q['shady_sunny_fail_outside']
+        nlo, nhi = Q['shady_sunny_ratio']
+        fne = [hd['floor_m'] for hd in heads if hd['facing'] == 'shady' and hd['floor_m'] is not None]
+        fsw = [hd['floor_m'] for hd in heads if hd['facing'] == 'sunny' and hd['floor_m'] is not None]
+        floors = f'; shady cirque floors {np.mean(fsw) - np.mean(fne):.0f} m below sunny ones (measured 100 to 200, noted)' if fne and fsw else ''
         note = '' if nlo <= ratio <= nhi else f' (outside the measured {nlo} to {nhi}, noted)'
-        lines.append(_line(9, flo <= ratio <= fhi, f'NE/SW retreat ratio {ratio:.2f}{note}: NE {rne:.2f}, SW {rsw:.2f} mm/yr{floors}'))
+        lines.append(_line(9, flo <= ratio <= fhi, f'shady/sunny retreat ratio {ratio:.2f} ({names}){note}: shady {rne:.2f}, sunny {rsw:.2f} mm/yr{floors}'))
     pairs = [(hd['depth_rate_early_mm_yr'], hd['depth_rate_late_mm_yr']) for hd in heads if hd['depth_rate_early_mm_yr'] is not None]
     if not pairs:
         lines.append(_line(10, None, f'no cirque stood by cycle {Q["early_cycles"]} and again later (cycles: {source})'))
