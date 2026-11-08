@@ -36,6 +36,19 @@ uniform vec4 fall_zone[3];              // nearest waterfalls: base x, z, spray 
 uniform vec2 fall_height[3];            // their base and top height; the walls are damp up to the top
 uniform sampler2D canopy : filter_linear, hint_default_black;   // where trees shelter the ground (canopy_map.gd)
 uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);                // its corner x, z and width in metres
+uniform float puddle_level[8];         // puddles (puddles.gd, art_weather_light.md 8.1.1): 0 dry .. 1 full, per ground layer, then worn tracks and peat
+uniform float puddle_any = 0.0;         // the highest of them, already faded in caves; 0 skips the puddle work
+uniform float puddle_ice = 0.0;         // 0 open .. 1 frozen (ice.gd at 0.1 m)
+uniform vec4 puddle_air = vec4(0.0, 0.0, 1.0, 0.0);    // rain 0..1, wind 0..1, wind heading x, z (where it blows toward)
+uniform vec2 puddle_origin = vec2(0.0); // a corner near the camera, in 60 m steps: the ripples are drawn from it, so they keep their precision far from 0
+uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black;   // worn game trails (grass_view.gd), 4 m texels over 1024 m
+uniform float trail_draw = 0.25;
+uniform vec2 summit_snow = vec2(0.0, 0.82); // summit snow (weather_look.gd, art_weather_light.md 8.2.1): the island's summit height (0 none known), lowest patches as a share of it
+uniform bool wet_look = false;          // --rain-look (rain_look_design.md 3.4): wetness per layer (puddles.gd) instead of the one wet value
+uniform float wet_layer[6];             // turf, litter, gravel, mud, sand, rock: 0 dry .. 1 soaked
+uniform float wet_streak = 0.0;         // run-off streaks on steep rock, kept an hour longer than the face
+uniform vec2 wet_wind = vec2(1.0, 0.0); // where the wind blows toward (x, z): faces looking into it wet first
+uniform float splash_rain = 0.0;        // --rain-look (rain_look_design.md 3.2): how hard it rains on open ground now; 0 skips the splash flecks
 uniform vec3 caustics = vec3(0.0);      // under water (underwater_look.gd): surface height, strength 0..1 (0 off), how deep the lines reach
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -70,20 +83,80 @@ float vnoise(vec3 x) {
 		f.z);
 }
 
+// Puddles: an exact integer hash, so puddles.gd draws the same hollows on the CPU (the splash under a foot).
+float puddle_hash(ivec2 c) {
+	uint h = uint(c.x) * 374761393u + uint(c.y) * 668265263u;
+	h = (h ^ (h >> 13u)) * 1274126177u;
+	h = h ^ (h >> 16u);
+	return float(h & 16777215u) / 16777215.0;
+}
+
+float puddle_noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	ivec2 c = ivec2(i);
+	return mix(mix(puddle_hash(c), puddle_hash(c + ivec2(1, 0)), f.x), mix(puddle_hash(c + ivec2(0, 1)), puddle_hash(c + ivec2(1, 1)), f.x), f.y);
+}
+
+// 0 .. 1: higher is a deeper hollow. Two sizes, about 3.6 m and 1.1 m.
+float puddle_hollow(vec2 xz) {
+	return 0.65 * puddle_noise(xz * 0.28) + 0.35 * puddle_noise(xz * 0.9 + vec2(4.0));
+}
+
+// One layer of rain rings on a jittered 0.3 m grid: the slope of the water surface (x, z) at `q` (metres from puddle_origin).
+vec2 rain_rings(vec2 q, float rain, float t, int salt) {
+	vec2 cell = floor(q / 0.3);
+	ivec2 c = ivec2(cell) + ivec2(salt * 7, salt * 13);
+	float offset = puddle_hash(c + ivec2(41, 11));
+	float cycle = floor(t / 0.6 + offset);
+	float phase = fract(t / 0.6 + offset);
+	if (puddle_hash(c + ivec2(int(cycle) * 7, 3)) > rain) {
+		return vec2(0.0);
+	}
+	vec2 centre = (cell + vec2(0.35) + 0.3 * vec2(puddle_hash(c + ivec2(17, 3)), puddle_hash(c + ivec2(5, 29)))) * 0.3;
+	vec2 away = q - centre;
+	float d = length(away);
+	float off_ring = d - phase * 0.11;
+	float bump = exp(-off_ring * off_ring / 0.00012) * (1.0 - phase);
+	return away / max(d, 0.001) * bump * sin(off_ring * 160.0) * 0.6;
+}
+
+// A splash crown where a drop lands on hard ground (rain_look_design.md 3.2): a 0.25 m grid of cells, each landing at its own phase in a
+// 0.5 s cycle and showing for 0.12 s (a pale dot that opens into a ring about 3 cm across); more cells land the harder it rains.
+float rain_crowns(vec2 q, float rain, float t, int salt) {
+	vec2 cell = floor(q / 0.25);
+	ivec2 c = ivec2(cell) + ivec2(salt * 11, salt * 5);
+	float offset = puddle_hash(c + ivec2(23, 7));
+	float cycle = floor(t / 0.5 + offset);
+	float phase = fract(t / 0.5 + offset) / 0.24;
+	if (phase > 1.0 || puddle_hash(c + ivec2(int(cycle) * 5, 9)) > rain) {
+		return 0.0;
+	}
+	vec2 centre = (cell + vec2(0.3) + 0.4 * vec2(puddle_hash(c + ivec2(13, 2)), puddle_hash(c + ivec2(3, 31)))) * 0.25;
+	float d = length(q - centre);
+	float ring = 1.0 - smoothstep(0.004, 0.012, abs(d - 0.03 * phase));
+	float drop = 1.0 - smoothstep(0.008, 0.02, d + 0.02 * phase);
+	return max(ring, drop) * (1.0 - phase);
+}
+
 void fragment() {
 	float total = max(dot(material_weights, vec4(1.0)), 0.0001);
 	vec3 color = vec3(0.0);
 	float stone = 0.0;
 	float mud = 0.0;
+	float peat = 0.0;
 	for (int n = 0; n < 4; n++) {
 		int index = clamp(int(material_indices[n] + 0.5), 0, 63);
 		color += palette[index] * material_weights[n];
 		stone += (index >= 32 || index == 0) ? material_weights[n] : 0.0;
 		mud += (index == 16) ? material_weights[n] : 0.0;
+		peat += (index == 6) ? material_weights[n] : 0.0;
 	}
 	color /= total;
 	stone /= total;
 	mud /= total;
+	peat /= total;
 
 	// The table colors are display (sRGB) values; convert so they read as
 	// intended, then mute them toward natural earth tones.
@@ -303,22 +376,148 @@ void fragment() {
 
 	// Weather: rain darkens the ground and gives it a sheen, snow whitens level ground above the sea.
 	float shelter = 0.0;
-	if (wet + snow > 0.01) {
+	if (wet + snow + puddle_any > 0.01 || wet_look) {
 		vec2 cuv = (world_pos.xz - canopy_box.xy) / canopy_box.z;
 		if (cuv.x > 0.0 && cuv.x < 1.0 && cuv.y > 0.0 && cuv.y < 1.0) {
 			shelter = texture(canopy, cuv).r;      // under a crown the rain and the snow do not reach the ground
 		}
 	}
 	float soak = wet * (1.0 - shelter);
-	color *= 1.0 - 0.35 * soak * (1.0 - snow);
+	float wet_rough = 0.38;
+	if (!wet_look) {
+		color *= 1.0 - 0.35 * soak * (1.0 - snow);
+	} else {
+		// Lekner and Dorf: light, porous ground darkens most (sand), dense rock least but turns glossy, mud hardly changes. Faces that look up or
+		// into the wind wet first and the underside of an overhang stays dry. Under a crown the ground stays dry, but its edge (the drip line)
+		// takes the drips and is wet. Steep rock carries run-off streaks.
+		float drip_line = smoothstep(0.12, 0.3, shelter) * (1.0 - smoothstep(0.8, 0.95, shelter));
+		float open_sky = max(1.0 - shelter, drip_line);
+		float facing = clamp(0.6 * world_normal.y + 0.4 * dot(world_normal.xz, -wet_wind) + 0.4, 0.0, 1.0) * smoothstep(-0.15, 0.0, world_normal.y);
+		float dark[6] = float[6](0.72, 0.65, 0.70, 0.92, 0.55, 0.78);
+		float rough_to[6] = float[6](0.45, 0.45, 0.30, 0.18, 0.30, 0.22);
+		float keep = 0.0;
+		float rough_sum = 0.0;
+		soak = 0.0;
+		for (int k = 0; k < 6; k++) {
+			float s = clamp(wet_layer[k] * facing * open_sky, 0.0, 1.0);
+			keep += lw[k] * mix(1.0, dark[k], s);
+			soak += lw[k] * s;
+			rough_sum += lw[k] * s * rough_to[k];
+		}
+		wet_rough = soak > 0.001 ? rough_sum / soak : 0.38;
+		if (wet_streak > 0.01 && world_normal.y < 0.64) {
+			float run = smoothstep(0.55, 0.75, vnoise(vec3(world_pos.x * 0.6, world_pos.y * 0.075, world_pos.z * 0.6)));
+			float streaked = run * 0.6 * wet_streak * smoothstep(0.64, 0.5, world_normal.y) * open_sky;
+			keep *= 1.0 - 0.25 * streaked * rock_mask;
+			soak = max(soak, streaked * rock_mask);
+		}
+		color *= mix(keep, 1.0, snow);
+		soak = clamp(soak / 0.7, 0.0, 1.0);    // the roughness mix below scales it by 0.7
+	}
 	float lying = snow * (1.0 - 0.75 * shelter) * smoothstep(0.62, 0.9, world_normal.y) * smoothstep(0.0, 1.0, world_pos.y) * (1.0 - 0.6 * rock_mask);
+	// Summit snow (art_weather_light.md 8.2.1), the look of Sonny's A4 snow window until the baked window exists: patches above a
+	// share of the island's summit that falls with the season, lower on faces that look north (-Z) and on lee faces (a west wind
+	// for now), broad on gentle ground and only in creases and streaks on faces steeper than about 45 degrees. No distance fade:
+	// it is meant to be read from the town.
+	if (summit_snow.x > 1.0 && world_pos.y > summit_snow.x * 0.4) {
+		// Jamie's snow-on-slopes page (#632): under a south-west prevailing wind the deepest old snow lies on north to east aspects, lee slopes
+		// fill (2 to 5 times the mean) and windward ones are scoured nearly bare; the last summer patches lie only where lee and shade meet.
+		// -Z is north: north-east is (+x, -z). The island's climate record will give the wind; south-west stands in for now.
+		float rel = world_pos.y / summit_snow.x;
+		vec2 flat_n = world_normal.xz / max(length(world_normal.xz), 0.001) * min(length(world_normal.xz) * 3.0, 1.0);
+		float north = clamp(-flat_n.y, 0.0, 1.0);
+		float lee = dot(flat_n, vec2(0.7071, -0.7071));          // +1 facing north-east (downwind), -1 facing south-west (into the wind)
+		float line = summit_snow.y - 0.07 * north - 0.06 * max(lee, 0.0) + 0.07 * max(-lee, 0.0);
+		float patches = 0.6 * vnoise(world_pos * 0.017 + 31.0) + 0.4 * vnoise(world_pos * 0.07 + 7.0);
+		float above = smoothstep(0.0, 0.035, rel - line + (patches - 0.5) * 0.12);
+		float gentle = smoothstep(0.66, 0.78, world_normal.y);
+		float streak = smoothstep(0.6, 0.74, vnoise(vec3(world_pos.x * 0.09, world_pos.y * 0.012, world_pos.z * 0.09)));
+		float hold = max(gentle, (1.0 - gentle) * max(streak * 0.8, crease * 0.6));
+		// In summer (a high line) only the lee and shaded spots keep their patches; open and windward ground is bare.
+		float summer = smoothstep(0.72, 0.8, summit_snow.y);
+		hold *= mix(1.0, smoothstep(0.25, 0.65, 0.5 * north + 0.5 * max(lee, 0.0) + 0.3 * crease), summer);
+		// Windward faces stay scoured nearly bare even in winter (0 to 0.3 of the mean).
+		hold *= 1.0 - 0.7 * smoothstep(0.3, 0.8, -lee);
+		lying = max(lying, above * hold * (1.0 - 0.5 * shelter));
+	}
 	color = mix(color, vec3(0.88, 0.9, 0.94), lying);
+
+	// Puddles (art_weather_light.md 8.1.1): flat ground only, in a fixed pattern of hollows, more of each hollow under water the
+	// fuller the ground's level and the more easily water stands on it. A mirror of the sky over dark mud, a damp rim, rain rings
+	// and a wind ruffle; frozen, pale and glossy with no ripples. Not on river and lake beds (the mud soil), not under crowns, not
+	// on snow or by the sea. puddles.gd keeps the levels and reads the same hollows under a foot.
+	float puddle = 0.0;
+	float puddle_rim = 0.0;
+	vec2 ripple = vec2(0.0);
+	if (puddle_any > 0.001 && dist < 220.0 && world_normal.y > 0.951) {
+		float trail = smoothstep(trail_draw, trail_draw + 0.35, texture(trail_map, world_pos.xz / 1024.0).r);
+		float prone[6] = float[6](0.35, 0.25, 0.7, 1.0, 0.0, 0.6);
+		// Peat (soil 6) is drawn as litter but keeps its own level (its pools never dry); worn trails add their own level on any ground
+		// but sand (tracks dry in days). puddles.gd water_at matches this on unblended ground.
+		float peat_w = min(peat * (1.0 - rock_mask), lw[1]);
+		float amount = peat_w * puddle_level[7] * 0.6 + (1.0 - lw[4]) * puddle_level[6] * 0.5 * trail;
+		for (int k = 0; k < 6; k++) {
+			amount += (k == 1 ? lw[1] - peat_w : lw[k]) * puddle_level[k] * prone[k];
+		}
+		amount = min(amount, 1.2);
+		amount *= smoothstep(0.951, 0.985, world_normal.y) * (1.0 - shelter) * (1.0 - lying) * (1.0 - mud) * smoothstep(1.0, 1.5, world_pos.y);
+		if (amount > 0.001) {
+			float hollow = puddle_hollow(world_pos.xz);
+			float level_at = 1.02 - 0.54 * amount;
+			float fade = 1.0 - smoothstep(120.0, 220.0, dist);
+			puddle = smoothstep(level_at, level_at + 0.035, hollow) * fade;
+			puddle_rim = smoothstep(level_at - 0.05, level_at, hollow) * (1.0 - puddle) * fade;
+			if (puddle > 0.01 && puddle_ice < 0.99 && dist < 40.0) {
+				vec2 q = world_pos.xz - puddle_origin;
+				float near = 1.0 - smoothstep(25.0, 40.0, dist);
+				float rain_now = puddle_air.x;
+				if (rain_now > 0.05) {
+					ripple += rain_rings(q, rain_now, TIME, 0) + rain_rings(q + vec2(0.15), rain_now * 0.8, TIME + 0.3, 1);
+				}
+				float wind = smoothstep(0.2, 0.8, puddle_air.y);
+				if (wind > 0.01) {
+					vec2 drift = q * 5.0 - puddle_air.zw * TIME * 0.9;
+					float e = 0.05;
+					float w0 = puddle_noise(drift) + 0.5 * puddle_noise(drift * 2.3 + vec2(9.0));
+					float wx = puddle_noise(drift + vec2(e, 0.0)) + 0.5 * puddle_noise((drift + vec2(e, 0.0)) * 2.3 + vec2(9.0));
+					float wz = puddle_noise(drift + vec2(0.0, e)) + 0.5 * puddle_noise((drift + vec2(0.0, e)) * 2.3 + vec2(9.0));
+					ripple += vec2(wx - w0, wz - w0) / e * 0.05 * wind;
+				}
+				ripple *= near * (1.0 - puddle_ice);
+			}
+		}
+	}
+	if (puddle + puddle_rim > 0.001) {
+		color *= 1.0 - 0.3 * puddle_rim;                                       // the damp edge
+		vec3 water = color * 0.3 + vec3(0.012, 0.010, 0.007);                    // clear water over mud: dark, the sky does the rest
+		vec3 ice_look = mix(color * 0.5, vec3(0.6, 0.64, 0.68), 0.55);
+		float crack = 1.0 - smoothstep(0.0, 0.025, abs(puddle_noise((world_pos.xz - puddle_origin) * 3.0) - 0.5));
+		float bubble = smoothstep(0.82, 0.86, puddle_noise((world_pos.xz - puddle_origin) * 9.0 + vec2(3.0)));
+		ice_look = mix(ice_look, vec3(0.82, 0.85, 0.88), max(crack * 0.5, bubble * 0.35));
+		color = mix(color, mix(water, ice_look, puddle_ice), puddle);
+		vec3 surface = normalize(vec3(-ripple.x, 1.0, -ripple.y));
+		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(surface, 0.0)).xyz, puddle));
+	}
+	// Splash crowns on hard open ground in rain (rain_look_design.md 3.2): strong on rock, less on gravel, sand and mud (a dull dark plop on
+	// mud), almost none in turf and litter, none in puddles (they have rings), under crowns or on lying snow; drawn within 20 m.
+	if (splash_rain > 0.3 && dist < 20.0 && puddle < 0.5) {
+		float hard_ground = lw[5] * 1.0 + lw[2] * 0.7 + lw[4] * 0.35 + lw[3] * 0.3 + lw[0] * 0.1 + lw[1] * 0.05;
+		float where = hard_ground * (1.0 - shelter) * (1.0 - lying) * (1.0 - smoothstep(12.0, 20.0, dist)) * smoothstep(-0.2, 0.3, world_normal.y);
+		if (where > 0.01) {
+			vec2 q = world_pos.xz - puddle_origin;
+			float amount = smoothstep(0.3, 1.0, splash_rain);
+			float crown = max(rain_crowns(q, amount, TIME, 0), rain_crowns(q + vec2(0.11, 0.07), amount * 0.8, TIME + 0.21, 1)) * where;
+			color = mix(color, mix(vec3(0.80, 0.83, 0.86), color * 0.6, lw[3]), crown * 0.8);
+		}
+	}
 	ALBEDO = color;
 	// Mud is wet: a little sheen.
 	// Photo roughness near the eye, fading to the flat value with distance (it shimmers when far).
 	float base_rough = has_pbr && rough_w > 0.01 ? mix(0.92, clamp(tex_rough / rough_w, 0.35, 1.0), closeness) : 0.92;
-	ROUGHNESS = mix(mix(base_rough, 0.55, mud), 0.38, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
+	ROUGHNESS = mix(mix(base_rough, 0.55, mud), wet_rough, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
 	ROUGHNESS = mix(ROUGHNESS, 0.18, wet_sand);      // wet sand shines and mirrors the sky
+	ROUGHNESS = mix(ROUGHNESS, 0.3, puddle_rim);
+	ROUGHNESS = mix(ROUGHNESS, mix(0.03, 0.15, puddle_ice), puddle);      // a puddle mirrors the sky; ice a little less
 
 	// Caustics while the player is under water: the ripples overhead focus the sun into a moving net of bright lines on the bed,
 	// strongest in shallow water facing up, gone with depth, with distance and at night (the sun's own light carries them).

@@ -124,6 +124,7 @@ var gait_db: Array = GAIT_DB.duplicate()
 var gait_pitch: Array = GAIT_PITCH.duplicate()
 var surface_gait_db: Dictionary = {}     # surface -> [walk, jog, run] extra dB
 var puddle_db: float = PUDDLE_DB
+var puddles                             # Puddles (puddles.gd), set by the client: where the feet splash; null keeps the old chance
 var step_levels_source: String = "built-in"
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
 # Dave 24 Oct: with Nature at 0 and Wind at the top he heard no wind at all (the two base loops sit at about -49 to -35 dB).
@@ -1081,8 +1082,16 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	elif surface != "water":
 		_wading_ice = false
 
-	# Wet ground: a puddle splash joins most steps on grass, stone, gravel and sand.
-	if weather != null and weather.ground_wet >= PUDDLE_WET and surface in PUDDLE_SURFACES and _rng.randf() < weather.ground_wet * 0.7:
+	# Puddles (art_weather_light.md 8.1.1): the splash plays when the foot lands in a puddle the ground draws (puddles.gd reads the
+	# same hollows and shows the splash). Without it (tests), a splash joins most steps on wet firm ground by chance, as before.
+	var splash: bool = false
+
+	if puddles != null:
+		splash = depth <= DAMP_M and built == "" and surface != "snow" and puddles.foot_in(feet, soil, body.get_floor_normal().y if body.is_on_floor() else 1.0, gait)
+	elif weather != null and weather.ground_wet >= PUDDLE_WET and surface in PUDDLE_SURFACES and _rng.randf() < weather.ground_wet * 0.7:
+		splash = true
+
+	if splash:
 		puddles_played += 1
 		_play("step_water", puddle_db + float(gait_db[gait]) - float(gait_db[0]) + _rng.randf_range(-2.0, 1.0), _rng.randf_range(0.95, 1.15) * float(gait_pitch[gait]), foot)
 

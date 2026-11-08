@@ -1177,6 +1177,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	sound.puddles = weather_look.puddles          # steps splash where a puddle is drawn (puddles.gd)
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
 	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
 		if sound_log_arg.begins_with("--sound-log="):
@@ -1327,7 +1328,10 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
 	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
-		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
+		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position)      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
+		if weather_look != null and weather_look.puddles != null and weather_look.puddles.shown > 0.001:
+			weather_look.puddles.animal_step(kind, at, sound._ground_under(at))      # a foot in a puddle splashes (puddles.gd)
+	)
 	net.hit_number_received.connect(func(at: Vector3, _amount: int) -> void: animal_view.note_hit(at))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
@@ -2309,6 +2313,9 @@ func _update_weather() -> void:
 
 	if FrozenWater.on:
 		_update_frozen_water(group, now)
+
+	if weather_look != null and weather_look.puddles != null:
+		weather_look.puddles.set_ice_from(game_clock.seconds, group, _anchor.y)      # puddles freeze by the same rule, shallow (every 10 s)
 
 	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)

@@ -43,6 +43,9 @@ uniform float daylight = 1.0;
 uniform float mud = 0.0;            // 0..1: brown runoff after storms or at high flow (flora_view.gd, as the grid look)
 uniform vec3 mud_color : source_color = vec3(0.30, 0.24, 0.15);
 uniform float rain = 0.0;           // 0..1 (weather_look.gd): raindrop rings on the surface
+uniform float look_v2 = 0.0;        // 1 with --water-look (docs/design/water_look_after_rain.md): clarity after rain, white water by Froude number, foam lines
+uniform vec2 turbid = vec2(0.0);    // with look_v2: the cloud after rain in running and in still water, 0 clear .. 1 (weather_look.gd)
+uniform float foam_supply = 0.6;    // with look_v2: how much foam the river makes (season, recent rain)
 uniform float contact_m = 0.35;     // the sheet fades in over this much water along the view ray where it meets the ground (no hard line on a bank)
 uniform float chunk_lift = 0.25;    // chunk sheets only: running water is drawn this much higher (see vertex)
 uniform float thin_lift = 0.3;      // live window only: thin water is drawn this much higher (see vertex)
@@ -341,13 +344,21 @@ void fragment() {
 	float contact = smoothstep(0.0, contact_m, through);
 
 	// Colour by depth, a sky reflection by angle.
-	float thick = 1.0 - exp(-min(through, depth * 3.0 + 0.2) / clear_m);
-	vec3 water = mix(mix(shallow_color, deep_color, thick), mud_color * (1.0 - 0.4 * thick), mud * 0.8);
+	// With --water-look the cloud after rain clears on its own curve, running water faster than still (water_look_after_rain.md 1).
+	float mud_here = look_v2 > 0.5 ? max(mud, mix(turbid.y, turbid.x, smoothstep(0.1, 0.5, speed))) : mud;
+	float thick = 1.0 - exp(-min(through, depth * 3.0 + 0.2) / (clear_m * (1.0 - 0.6 * look_v2 * mud_here)));
+	vec3 water = mix(mix(shallow_color, deep_color, thick), mud_color * (1.0 - 0.4 * thick), mud_here * 0.8);
 	float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 4.0);
 
 	// Foam where it runs fast and shallow (rapids, the lip and foot of a fall), streaked along the flow.
 	float streak = mix(noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p0 * 2.5), noise(mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p1 * 2.5), mixk);
 	float rough = clamp((speed - 0.9) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);   // BUG-010: white from 0.9 m/s (was 1.2)
+	// With --water-look, white water needs a jump: the Froude number, not the speed alone (water_look_after_rain.md 3): waves with little white below
+	// about 1.7, white crests from 2, a full roller from 4.5. A deep fast river stays dark and smooth.
+	float froude = speed / sqrt(9.81 * max(depth, 0.02));
+	if (look_v2 > 0.5) {
+		rough = smoothstep(1.5, 4.5, froude);
+	}
 	// In streaks over about half the surface, not all of it (Tyler 6 Nov 2026: once the noise worked at the world's coordinates, a fast shallow brook
 	// came out white all over, "like snow"; the broken old noise had hidden how strong this was).
 	float foam = smoothstep(0.6, 0.9, streak + rough * 0.15) * rough * 0.7;
@@ -366,6 +377,17 @@ void fragment() {
 		min(ex0.a, ex1.a) > 0.0005 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
 		min(ez0.a, ez1.a) > 0.0005 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
 	float drop = length(grad);
+	// Foam lines (with --water-look, water_look_after_rain.md 4): flecks riding the flow that gather on the seam between fast and slow water, where the
+	// speed changes most from cell to cell, white where fresh and tan where old in slow water; more in autumn and after rain. None on still water.
+	float foam_line = 0.0;
+	float foam_age = 0.0;
+	if (look_v2 > 0.5 && speed > 0.05) {
+		float shear = (abs(length(ex1.gb) - length(ex0.gb)) + abs(length(ez1.gb) - length(ez0.gb))) / (2.0 * cell_m);
+		float seam = smoothstep(0.06, 0.25, shear) * smoothstep(0.08, 0.3, speed) * (1.0 - smoothstep(1.5, 3.0, speed));
+		float fleck = mix(noise(p0 * 4.0 + 11.0), noise(p1 * 4.0 + 11.0), mixk) * 0.7 + mix(noise(p0 * 9.0 + 3.0), noise(p1 * 9.0 + 3.0), mixk) * 0.3;
+		foam_line = seam * smoothstep(0.58, 0.78, fleck) * foam_supply * 0.65;
+		foam_age = 1.0 - smoothstep(0.3, 1.5, speed);
+	}
 	float fall = smoothstep(0.55, 1.1, drop);   // from about 30 degrees (was 20: with the noise fixed, a steep brook at x 54101 z 69709 read as snow, Tyler 6 Nov 2026)
 
 	if (fall > 0.01) {
@@ -385,8 +407,13 @@ void fragment() {
 	// A thin fast sheet (a fall face) is not a shore: it shows at full strength from a few millimetres.
 	float shore = max(smoothstep(0.0, edge_m, depth), smoothstep(0.6, 2.0, raw_speed) * smoothstep(0.0005, 0.004, depth));
 
-	ALBEDO = mix(mix(water, sky_color, fresnel * 0.6), foam_color, foam);
-	EMISSION = foam_color * foam * 0.15 * daylight;
+	vec3 foam_tint = foam_color;
+	if (foam_line > foam) {
+		foam_tint = mix(foam_color, vec3(0.78, 0.70, 0.55), foam_age);
+		foam = foam_line;
+	}
+	ALBEDO = mix(mix(water, sky_color, fresnel * 0.6), foam_tint, foam);
+	EMISSION = foam_tint * foam * 0.15 * daylight;
 	ROUGHNESS = 0.06 + 0.35 * foam;
 	SPECULAR = 0.5;
 	// Dave's QA list BUG-010 (3 Nov 2026): river and fall water read almost invisible. Running water is stirred up and catches the light, so it
@@ -812,6 +839,13 @@ func set_mud(value: float) -> void:
 
 func set_rain(value: float) -> void:
 	_material.set_shader_parameter("rain", value)
+
+
+# --water-look (docs/design/water_look_after_rain.md): on or off, the cloud after rain in running and still water, the foam supply.
+func set_look(on: bool, turbid: Vector2, foam_supply: float) -> void:
+	_material.set_shader_parameter("look_v2", 1.0 if on else 0.0)
+	_material.set_shader_parameter("turbid", turbid)
+	_material.set_shader_parameter("foam_supply", foam_supply)
 
 
 func set_daylight(value: float) -> void:
