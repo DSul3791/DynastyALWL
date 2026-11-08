@@ -2903,17 +2903,21 @@ func _eye_shine_night(node: Node3D) -> void:
 		var light: Array = torch_light.call() if torch_light.is_valid() else []
 		var lit: float = 0.0
 
+		# How far the shine reads (Jamie's moonlight-and-starlight page, #679): 10 to 20 m on a moonless night, about 5 m under a full
+		# moon, where the brighter ground takes the contrast away. A torch gives 3.5 lux at 1 m and 0.035 at 10 m, the full moon 0.25 lux
+		# overhead: inside that range the torch's glint is full, the moon's a tenth of it.
+		var moon: float = float(sky.get("moon", 0.0))
+		var reads_m: float = lerpf(20.0, 5.0, clampf(moon, 0.0, 1.0))
+		var fade: float = 1.0 - smoothstep(reads_m * 0.75, reads_m * 1.25, dist)
+
 		if light.size() >= 2:
-			var to_light: Vector3 = (light[0] as Vector3) - eye
-			var reach: float = float(light[1]) * 6.0      # a torch's glint reads far past the light it throws on the ground
-			var fall: float = clampf(1.0 - to_light.length() / maxf(reach, 0.01), 0.0, 1.0)
-			lit += fall * fall * _retro(to_light.normalized(), to_cam)
+			lit += _retro(((light[0] as Vector3) - eye).normalized(), to_cam)
 
 		if sky.has("moon_to"):
-			lit += 0.5 * float(sky.get("moon", 0.0)) * _retro((sky["moon_to"] as Vector3).normalized(), to_cam)
+			lit += 0.1 * moon * _retro((sky["moon_to"] as Vector3).normalized(), to_cam)
 
-		energy = float(row.get("shine", 0.0)) * minf(lit, 1.0) * face * smoothstep(0.15, 0.4, night) * 2.0
-		var dot_a: float = clampf(energy / 3.0, 0.0, 1.0) * smoothstep(8.0, 15.0, dist)
+		energy = float(row.get("shine", 0.0)) * minf(lit, 1.0) * face * fade * smoothstep(0.15, 0.4, night) * 2.0
+		var dot_a: float = clampf(energy / 3.0, 0.0, 1.0) * smoothstep(6.0, 10.0, dist)
 
 		for dot in node.get_meta("eye_dots", []):
 			(dot as MeshInstance3D).visible = dot_a > 0.01
