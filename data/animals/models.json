@@ -1,5 +1,5 @@
 {
-	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md). tail_motion (optional): {period_s, when rest|alert|flies, bones {bone: [phase, swing degrees, axis]}} swings tail bones over every clip: a dog's wag at rest, a cat's flick when alert, a swish against flies in the warm months (docs/design/TAIL_MOTION.md). ear_motion (optional): {left, right, swivel_axis, flatten_axis, swivel_deg, flatten_deg} turns the ears toward a player within 20 m and lays them back when the animal warns or charges (docs/design/EAR_AND_BREATH.md).",
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md). tail_motion (optional): {period_s, when rest|alert|flies, bones {bone: [phase, swing degrees, axis]}} swings tail bones over every clip: a dog's wag at rest, a cat's flick when alert, a swish against flies in the warm months (docs/design/TAIL_MOTION.md). ear_motion (optional): {left, right, swivel_axis, flatten_axis, swivel_deg, flatten_deg} turns the ears toward a player within 20 m and lays them back when the animal warns or charges (docs/design/EAR_AND_BREATH.md). breath (optional): {bone, per_min, swell, long_axis} swells the chest bone at the species' resting breath rate, faster after a run (docs/design/EAR_AND_BREATH.md).",
 	"species": {
 		"bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -88,7 +88,13 @@
 				}
 			],
 			"shine": 2,
-			"shine_color": "#f09a3c"
+			"shine_color": "#f09a3c",
+			"breath": {
+				"bone": "RigChest",
+				"per_min": 8,
+				"swell": 0.03,
+				"long_axis": "y"
+			}
 		},
 		"goblin": {
 			"scene": "res://assets/creatures/goblin_skritch/Goblin_Skritch_Ragtooth.glb",
@@ -351,6 +357,12 @@
 				"flatten_axis": "x",
 				"swivel_deg": 40,
 				"flatten_deg": 50
+			},
+			"breath": {
+				"bone": "Chest",
+				"per_min": 24,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"moose": {
@@ -390,6 +402,12 @@
 				"flatten_axis": "x",
 				"swivel_deg": 40,
 				"flatten_deg": 50
+			},
+			"breath": {
+				"bone": "Chest",
+				"per_min": 18,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"boar": {
@@ -467,7 +485,13 @@
 						"run": "RunFast_F"
 					}
 				}
-			]
+			],
+			"breath": {
+				"bone": "Spine2",
+				"per_min": 20,
+				"swell": 0.03,
+				"long_axis": "y"
+			}
 		},
 		"wolf": {
 			"scene": "res://assets/animals/wolf/SK_Wolf.fbx",
@@ -536,6 +560,12 @@
 				"flatten_axis": "x",
 				"swivel_deg": 40,
 				"flatten_deg": 50
+			},
+			"breath": {
+				"bone": "Chest",
+				"per_min": 20,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"fox": {
@@ -613,6 +643,12 @@
 				"flatten_axis": "x",
 				"swivel_deg": 40,
 				"flatten_deg": 50
+			},
+			"breath": {
+				"bone": "Chest",
+				"per_min": 24,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"rabbit": {
@@ -640,7 +676,13 @@
 			],
 			"pack": "WildMesh3D/Realistic Animals/Rabbit",
 			"shine": 0.5,
-			"shine_color": "#dc3c32"
+			"shine_color": "#dc3c32",
+			"breath": {
+				"bone": "Chest",
+				"per_min": 45,
+				"swell": 0.04,
+				"long_axis": "y"
+			}
 		},
 		"horse": {
 			"scene": "res://assets/animals/horse/SK_Horse.fbx",
@@ -719,6 +761,12 @@
 				"flatten_axis": "x",
 				"swivel_deg": 50,
 				"flatten_deg": 60
+			},
+			"breath": {
+				"bone": "spine_01",
+				"per_min": 12,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"donkey": {
@@ -856,6 +904,12 @@
 				"flatten_axis": "x",
 				"swivel_deg": 50,
 				"flatten_deg": 60
+			},
+			"breath": {
+				"bone": "spine_01",
+				"per_min": 12,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"lynx": {
@@ -912,6 +966,12 @@
 						"y"
 					]
 				}
+			},
+			"breath": {
+				"bone": "Spine2",
+				"per_min": 22,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"black_bear": {
@@ -940,7 +1000,13 @@
 			],
 			"pack": "WildMesh3D/Realistic Animals/BlackBear",
 			"shine": 2,
-			"shine_color": "#f09a3c"
+			"shine_color": "#f09a3c",
+			"breath": {
+				"bone": "Chest",
+				"per_min": 8,
+				"swell": 0.03,
+				"long_axis": "y"
+			}
 		},
 		"elk": {
 			"scene": "res://assets/animals/elk/SK_Elk.fbx",
@@ -987,6 +1053,12 @@
 				"flatten_axis": "x",
 				"swivel_deg": 40,
 				"flatten_deg": 50
+			},
+			"breath": {
+				"bone": "RigChest",
+				"per_min": 20,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"bighorn": {
@@ -1476,6 +1548,12 @@
 						"y"
 					]
 				}
+			},
+			"breath": {
+				"bone": "Bip001-Spine2",
+				"per_min": 24,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"goat": {
@@ -1503,7 +1581,13 @@
 				}
 			],
 			"shine": 2,
-			"shine_color": "#a0d26e"
+			"shine_color": "#a0d26e",
+			"breath": {
+				"bone": "Spine_02",
+				"per_min": 22,
+				"swell": 0.03,
+				"long_axis": "y"
+			}
 		},
 		"chicken": {
 			"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
@@ -1619,6 +1703,12 @@
 				"flatten_axis": "x",
 				"swivel_deg": 45,
 				"flatten_deg": 60
+			},
+			"breath": {
+				"bone": "RigChest",
+				"per_min": 24,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"dog": {
@@ -1734,6 +1824,12 @@
 				"flatten_axis": "x",
 				"swivel_deg": 25,
 				"flatten_deg": 30
+			},
+			"breath": {
+				"bone": "Spine2",
+				"per_min": 20,
+				"swell": 0.03,
+				"long_axis": "y"
 			}
 		},
 		"buffalo": {
@@ -2117,7 +2213,13 @@
 			],
 			"size_clip": "Idle",
 			"shine": 3,
-			"shine_color": "#b4e05a"
+			"shine_color": "#b4e05a",
+			"breath": {
+				"bone": "Spine2",
+				"per_min": 14,
+				"swell": 0.03,
+				"long_axis": "y"
+			}
 		},
 		"leopard": {
 			"scene": "res://assets/animals/leopard/SK_Leopard.fbx",
@@ -2400,7 +2502,13 @@
 				}
 			],
 			"shine": 3,
-			"shine_color": "#b4e05a"
+			"shine_color": "#b4e05a",
+			"breath": {
+				"bone": "RigChest",
+				"per_min": 14,
+				"swell": 0.03,
+				"long_axis": "y"
+			}
 		}
 	}
 }

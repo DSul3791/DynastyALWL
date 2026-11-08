@@ -454,6 +454,9 @@ func _process_body(delta: float) -> void:
 
 			if node.has_meta("ears"):
 				_ear_motion(node, state)
+
+			if node.has_meta("breath"):
+				_breath_motion(node, b, state, model_speed, delta)
 			if node.has_meta("flock_birds"):
 				for bird in node.get_meta("flock_birds"):
 					_animate_model(bird, b, state, model_speed, delta)
@@ -614,7 +617,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_mats", eye_mats)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion"):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath"):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -628,6 +631,10 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 			if row.has("ear_motion"):
 				missing.append_array(fix.setup_ears(sks[0], row["ear_motion"]))
 				root.set_meta("ears", fix)
+
+			if row.has("breath"):
+				missing.append_array(fix.setup_breath(sks[0], row["breath"]))
+				root.set_meta("breath", fix)
 
 			(sks[0] as Skeleton3D).add_child(fix)
 
@@ -1550,6 +1557,19 @@ func _ear_motion(node: Node3D, state: int) -> void:
 	var flat: float = 1.0 if state == 10 or state == 11 or state == 16 else 0.0
 	fix.ear_turn = lerpf(float(fix.ear_turn), turn, 0.08)
 	fix.ear_flat = lerpf(float(fix.ear_flat), flat, 0.15)
+
+
+# Breathing (docs/design/EAR_AND_BREATH.md section 2): at rest the chest swells at the row's rate; for 20 s after a flee or charge it
+# breathes twice as fast and deep, settling back; while moving fast the gait hides it.
+func _breath_motion(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var fix = node.get_meta("breath")      # bone_offsets.gd (untyped: its own properties)
+
+	if state == FLEE or state == 11 or speed > 3.0:
+		b["puffed"] = 20.0
+
+	b["puffed"] = maxf(0.0, float(b.get("puffed", 0.0)) - delta)
+	fix.breath_rate = 1.0 + float(b["puffed"]) / 20.0
+	fix.breath_on = lerpf(float(fix.breath_on), 1.0 if speed < 1.0 else 0.0, 0.1)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

@@ -14,6 +14,13 @@ var ear_axes: Array = [Vector3.UP, Vector3.RIGHT]      # swivel axis, flatten ax
 var ear_max: Vector2 = Vector2(0.7, 0.9)              # largest swivel and flatten, radians
 var ear_turn: float = 0.0         # -1 .. 1: both ears turned toward a sound on the animal's left (+) or right (-)
 var ear_flat: float = 0.0         # 0 up .. 1 laid back (threatened)
+var breath_bone: int = -1         # the chest or spine bone that swells (breath)
+var breath_axes: Vector3 = Vector3(1.0, 0.0, 1.0)      # which of the bone's axes swell (not the one along the spine)
+var breath_swell: float = 0.03
+var breath_per_min: float = 15.0
+var breath_rate: float = 1.0      # animal_view: 2 just after a run, settling to 1
+var breath_on: float = 0.0        # animal_view: 0 while moving fast, 1 at rest
+var _breath_phase: float = 0.0
 var _t: float = 0.0
 
 
@@ -71,6 +78,16 @@ func setup_ears(sk: Skeleton3D, spec: Dictionary) -> PackedStringArray:
 	return missing
 
 
+# Breathing (docs/design/EAR_AND_BREATH.md section 2): a row's "breath" {bone, per_min, swell, long_axis}.
+func setup_breath(sk: Skeleton3D, spec: Dictionary) -> PackedStringArray:
+	breath_bone = sk.find_bone(str(spec.get("bone", "")))
+	breath_per_min = float(spec.get("per_min", 15.0))
+	breath_swell = float(spec.get("swell", 0.03))
+	var long_axis: String = str(spec.get("long_axis", "y"))
+	breath_axes = Vector3(0.0 if long_axis == "x" else 1.0, 0.0 if long_axis == "y" else 1.0, 0.0 if long_axis == "z" else 1.0)
+	return PackedStringArray() if breath_bone >= 0 else PackedStringArray([str(spec.get("bone", ""))])
+
+
 func _process_modification() -> void:
 	var sk: Skeleton3D = get_skeleton()
 
@@ -79,6 +96,12 @@ func _process_modification() -> void:
 
 	for bone in offsets:
 		sk.set_bone_pose_rotation(bone, sk.get_bone_pose_rotation(bone) * (offsets[bone] as Quaternion))
+
+	if breath_bone >= 0 and breath_on > 0.001:
+		_breath_phase = fmod(_breath_phase + get_process_delta_time() * breath_per_min * breath_rate / 60.0, 1.0)
+		var swell: float = 1.0 + breath_swell * breath_on * breath_rate * (0.5 - 0.5 * cos(TAU * _breath_phase))
+		var grow: Vector3 = Vector3.ONE + breath_axes * (swell - 1.0)
+		sk.set_bone_pose_scale(breath_bone, sk.get_bone_pose_scale(breath_bone) * grow)
 
 	for e in ears:
 		var swivel: float = ear_max.x * ear_turn * float(e[1])
