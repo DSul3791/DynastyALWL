@@ -67,6 +67,7 @@ var thunder_count: Callable       # () -> how many thunders the sound stage has 
 var _thunders_seen: int = -1
 var _startle_until: float = -1.0  # _t until which the herds stand bunched after a clap
 var ice_looks: bool = false       # animals on ice and in snow: careful steps and slips on ice, snow on still backs melting by the air, deeper snow prints (ANIMAL_WEATHER_LOOKS.md ice section; off until the PC check)
+var _ice_holes: Array = []        # the dark open-water discs of the live ice fishing holes (Steve #737, protocol 97)
 var drink_looks: bool = false     # drinking: sips with the head lifted to look between, a churned bank at used spots, birds bathing in shallows (ANIMAL_DRINK.md; off until the PC check)
 var cave_air: bool = false        # animals underground take the cave's air (the year mean at the height), steam by it, coats dry by it (ANIMAL_WEATHER_LOOKS.md cave section; off until the PC check)
 var cave_c_at: Callable           # (position) -> the cave air C there, or NAN under open sky (terrain_client: rock overhead, Weather year mean)
@@ -4190,7 +4191,7 @@ func _drink_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: f
 # is frozen (the weather's ice_cover, the same number the walkable ice uses) steps carefully, the clip slowed to three quarters; deer,
 # elk, boar and stock, who avoid open ice, slip now and then (a sideways lurch that rights itself); wolves and foxes cross it surely.
 # Where they go is the server's (deer and boar skirting frozen ponds, wolves crossing: requests to Steve).
-const SURE_ON_ICE := ["wolf", "fox", "lynx", "dog", "bear", "black_bear", "crow", "duck", "goose", "pheasant", "guineafowl", "chicken"]
+const SURE_ON_ICE := ["wolf", "fox", "lynx", "dog", "bear", "black_bear", "crow", "duck", "goose", "pheasant", "guineafowl", "chicken", "rabbit"]      # Steve #737: foxes and hares go on the starter's skim ice; deer and boar never step on ice
 
 func _ice_look(node: Node3D, b: Dictionary, _state: int, speed: float, delta: float) -> void:
 	b["ice_t"] = float(b.get("ice_t", 0.0)) - delta
@@ -4301,6 +4302,33 @@ func _storm_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: f
 		rig.rotation.x = 0.0
 		rig.position.y = 0.0
 
+
+# The live ice fishing holes near the player (Steve #737, protocol 97: up to 8 within 120 m, each with the game time it closes): a dark
+# disc of open water at each, 0.6 m across, drawn while the list has it (the list is resent whole, so the discs follow it). For the
+# animal looks: a hole is open water where water birds stand at the edge. Kathleen's frozen water look may draw them itself instead.
+func on_ice_holes(points: PackedVector3Array, _untils: PackedFloat32Array) -> void:
+	if not ice_looks or not is_inside_tree():
+		return
+
+	while _ice_holes.size() < points.size():
+		var disc: MeshInstance3D = MeshInstance3D.new()
+		var mesh: CylinderMesh = CylinderMesh.new()
+		mesh.top_radius = 0.3
+		mesh.bottom_radius = 0.3
+		mesh.height = 0.02
+		mesh.radial_segments = 16
+		mesh.material = LifeUtil.see_through(Color(0.05, 0.08, 0.1, 0.9))
+		disc.mesh = mesh
+		disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(disc)
+		_ice_holes.append(disc)
+
+	for i in _ice_holes.size():
+		var disc: MeshInstance3D = _ice_holes[i]
+		disc.visible = i < points.size()
+
+		if i < points.size():
+			disc.global_position = points[i] + Vector3(0.0, 0.015, 0.0)
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
