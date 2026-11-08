@@ -30,6 +30,7 @@ sys.path.insert(0, HERE)
 import rock      # noqa: E402
 import evolve    # noqa: E402
 import record    # noqa: E402
+import springstore   # noqa: E402
 
 YEAR_S = 3.15576e7
 VERSION = 1
@@ -289,8 +290,9 @@ def seasons(rain, et, land, SN, warmest_phase):
     rain_wettest_year_phase, evaporation at the warmest phase of the island's climate). The water left over, never below 0,
     runs off quickly within days, so a cell's quick runoff in a season is its share of the year's leftover water. The
     groundwater evens it out: the island's recharge through one linear store (recession time baseflow_recession_days) gives
-    the baseflow's season shares. The wet season is the quarter of the year centred on the rain peak, the dry season the
-    quarter opposite."""
+    the island's baseflow season shares, used only for an R4 run written before each spring's own stores; with them, main()
+    puts the recharge shape (_shape, _wk, _dk, returned for it) through each spring's stores (springstore.py). The wet season
+    is the quarter of the year centred on the rain peak, the dry season the quarter opposite."""
     S = int(SN['samples'])
     t = (np.arange(S) + 0.5) / S
     phw = float(SN['rain_wettest_year_phase'])
@@ -318,12 +320,25 @@ def seasons(rain, et, land, SN, warmest_phase):
     f_wet = np.where(tot > 0.0, wet / np.maximum(tot, 1e-12), 1.0)
     f_dry = np.where(tot > 0.0, dry / np.maximum(tot, 1e-12), 1.0)
     shape = shape / max(float(shape.mean()), 1e-12)
-    tau = float(SN['baseflow_recession_days']) / 365.25
-    F = np.fft.rfft(shape)
-    harm = np.arange(F.size)
-    resp = np.fft.irfft(F / (1.0 + 2j * np.pi * harm * tau), n=S)
-    return dict(quick_wet=f_wet, quick_dry=f_dry, base_wet=float(resp[wk].mean()), base_dry=float(resp[dk].mean()),
-                evap_wet=float(es[wk].mean()), evap_dry=float(es[dk].mean()))
+    base_wet, base_dry = springstore.quarter_shares(shape, wk, dk, float(SN['baseflow_recession_days']))
+    return dict(quick_wet=f_wet, quick_dry=f_dry, base_wet=base_wet, base_dry=base_dry,
+                evap_wet=float(es[wk].mean()), evap_dry=float(es[dk].mean()), _shape=shape, _wk=wk, _dk=dk)
+
+
+def _stores_summary(source, gw, base_wet, base_dry, sea_sn, island_days, springs, perennial_km, perennial_km_island, perennial_q):
+    """The manifest's report on the springs' own stores (spring_store_build_plan.md section 6, item 4): which store was used,
+    the island's flow-weighted wet and dry shares against the old island store, the perennial kilometres both ways, and the
+    springs whose own dry flow passes the perennial threshold both ways. Reported, not judged."""
+    q = float(gw.sum())
+    dry_q = [s['q_base_dry_m3_s'] for s in springs]
+    return dict(source=source,
+                flow_weighted=dict(wet=r3(float((gw * base_wet).sum()) / max(q, 1e-30)), dry=r3(float((gw * base_dry).sum()) / max(q, 1e-30))),
+                island_store=dict(days=island_days, wet=r3(sea_sn['base_wet']), dry=r3(sea_sn['base_dry'])),
+                perennial_km=dict(own_stores=perennial_km, island_store=perennial_km_island),
+                springs_over_perennial=dict(own_stores=sum(1 for v in dry_q if v >= perennial_q),
+                                            island_store=sum(1 for s in springs if s['m3_s'] * sea_sn['base_dry'] >= perennial_q)),
+                springs_by_main_store={k: sum(1 for s in springs if s.get('stores') and max(s['stores'], key=lambda r: r[3])[0] == k)
+                                       for k in springstore.STORE_KINDS})
 
 
 def meander_table():
@@ -447,8 +462,24 @@ def main():
     et = np.nan_to_num(b2['et_mm'].astype(np.float64).ravel())
     sea_sn = seasons(rain, et, land, SN, float(climate['warmest_year_phase']))
     q_cell = np.where(land, quick_mm, 0.0) / 1000.0 / YEAR_S * cell
-    src = dict(mean=q_cell + gw, wet=q_cell * sea_sn['quick_wet'] + gw * sea_sn['base_wet'],
-               dry=q_cell * sea_sn['quick_dry'] + gw * sea_sn['base_dry'])
+    # Each spring's own stores (R4's gw_* fields; springstore.py, docs/water/spring_store_build_plan.md sections 3 and 7):
+    # the groundwater's wet and dry shares at a cell are its stores' shares through their own response times. An R4 run
+    # written before the stores falls back to the island's one store, and the manifest says which was used.
+    if all(f'gw_{k}' in g4.files for k in springstore.FIELDS):
+        st = {k: g4[f'gw_{k}'].astype(np.float64).ravel() for k in springstore.FIELDS}
+        ks = springstore.kind_shares(st, sea_sn['_shape'], sea_sn['_wk'], sea_sn['_dk'], springstore.tau_bins(SN['tau_bins']))
+        base_wet, base_dry_share = springstore.cell_shares(st, ks)
+        lacking = int(((gw > 0.0) & ~np.isfinite(base_dry_share)).sum())
+        if lacking:
+            raise SystemExit(f'network: {lacking} cells put groundwater out but have no stores in groundwater.npz (R4 and its stores disagree)')
+        base_wet, base_dry_share = np.nan_to_num(base_wet, nan=1.0), np.nan_to_num(base_dry_share, nan=1.0)
+        store_source = 'each spring (groundwater.npz stores)'
+    else:
+        st = ks = None
+        base_wet, base_dry_share = np.full(N, sea_sn['base_wet']), np.full(N, sea_sn['base_dry'])
+        store_source = f"the island's one store of {SN['baseflow_recession_days']:g} days (an R4 run without stores)"
+    src = dict(mean=q_cell + gw, wet=q_cell * sea_sn['quick_wet'] + gw * base_wet,
+               dry=q_cell * sea_sn['quick_dry'] + gw * base_dry_share)
     exits = {}
     leaves = lake & ~closed & ((rec < 0) | (lake_id[to] != lake_id))
     for i in np.flatnonzero(leaves):
@@ -504,7 +535,8 @@ def main():
         cap = rate * at_flow(Q0[s], Wbf, float(S3['at_station_width_exponent'])) * step + lake_cap[s]
         Q[s], lost[s] = _flow(order, rec, outlet, src[s], cap)
     cap_dry = rate * at_flow(Q0['dry'], Wbf, float(S3['at_station_width_exponent'])) * step + lake_cap['dry']
-    base_dry, _ = _flow(order, rec, outlet, gw * sea_sn['base_dry'], cap_dry)
+    base_dry, _ = _flow(order, rec, outlet, gw * base_dry_share, cap_dry)
+    base_dry_island, _ = _flow(order, rec, outlet, gw * sea_sn['base_dry'], cap_dry) if st is not None else (base_dry, None)
 
     # 1. Which channels are streams: wet-season flow over one island threshold, set so the streams run
     # stream_density_km_per_km2 (Plynlimon's perennial network, #612).
@@ -819,8 +851,13 @@ def main():
     springs = []
     for i in np.flatnonzero(gw >= float(G['spring_m3_s'])):
         x, z = where(i)
-        springs.append(dict(pos=[x, round(float(h[i]), 2), z], m3_s=r3(gw[i]), rock=names.get(int(rid[i]), str(int(rid[i]))),
-                            feeds_reach=int(near_reach[i]) if near_reach[i] >= 0 else None))
+        row = dict(pos=[x, round(float(h[i]), 2), z], m3_s=r3(gw[i]), rock=names.get(int(rid[i]), str(int(rid[i]))),
+                   feeds_reach=int(near_reach[i]) if near_reach[i] >= 0 else None)
+        if st is not None:
+            row.update(springstore.spring_row(st, ks, int(i), float(gw[i]), r3))
+        else:
+            row['q_base_dry_m3_s'] = r3(gw[i] * sea_sn['base_dry'])
+        springs.append(row)
 
     # Destinations and the seven answers (principle 8)
     def destination(k, seen=None):
@@ -995,7 +1032,9 @@ def main():
                    lake_losses_m3_s=r3(lost['mean'][list(exits.values())].sum() if exits else 0.0),
                    lost_to_the_bed_m3_s=r3(lost['mean'][losing].sum()))
     summary = dict(seconds=round(time.time() - t0, 1), land_km2=round(land_km2, 1), stream_threshold_wet_m3_s=r3(q_vis),
-                   seasons={k: (r3(float(np.mean(v[land]))) if isinstance(v, np.ndarray) else r3(v)) for k, v in sea_sn.items()},
+                   seasons={k: (r3(float(np.mean(v[land]))) if isinstance(v, np.ndarray) else r3(v)) for k, v in sea_sn.items() if not k.startswith('_')},
+                   stores=_stores_summary(store_source, gw, base_wet, base_dry_share, sea_sn, float(SN['baseflow_recession_days']), springs, km(perennial),
+                                          km(vis & (base_dry_island >= float(G['perennial_baseflow_m3_s']))), float(G['perennial_baseflow_m3_s'])),
                    density_km_per_km2=dict(streams=round(km(vis) / land_km2, 2), perennial=round(km(perennial) / land_km2, 2),
                                            intermittent=round(km(vis & ~perennial) / land_km2, 2), all_channels=round(km(channel) / land_km2, 2)),
                    r4_perennial_now_gullies_km=km(channel & ~vis & (r4reg == 1)),

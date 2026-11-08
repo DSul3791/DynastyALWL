@@ -23,8 +23,8 @@ The steps (R6 method items 1 to 4):
    priority flood: where roughness made a closed cell outside a lake, the roughness is taken out round it; any closed cell
    left is a fault, counted and listed, never filled silently.
 4. Lakes at their R3 levels on the refined ground (their shores follow the 8 m ground), the sea at 0, wetlands, regime,
-   discharge, water table depth, basin, distance to perennial fresh water and loose sediment, each encoded as listed in the
-   manifest.
+   discharge, water table depth, basin, distance to perennial fresh water (with R5, springs that run in the dry season
+   count) and loose sediment, each encoded as listed in the manifest.
 With --network (R5's network.py output of this same chain) the regime and discharge come from the network, which knows
 the stream threshold and the losing beds. Rivers carved and drawn as water (class 3, seasonal channels 8), the cold-air pools
 and the snow window come later; until every item is in, the manifest lists what is missing, says the record is not complete,
@@ -40,6 +40,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
 sys.path.insert(0, HERE)
 import runoff    # noqa: E402
+import springstore   # noqa: E402
 
 T = 1920          # samples per tile edge (8 m), as inputs.py
 SPACING = 8.0
@@ -284,6 +285,7 @@ def main():
         if bad:
             raise SystemExit(f'record: the network was made from other files ({", ".join(bad)}); run network.py on this chain')
         net = np.load(os.path.join(network_dir, 'network.npz'))
+        network = json.load(open(os.path.join(network_dir, 'network.json')))
     regime16 = (net['regime'] if net is not None else r4['regime']).astype(np.int8)
     regime8 = nearest(regime16, g16)
     wet8 = nearest(r4['wetland'].astype(np.int8), g16)
@@ -339,6 +341,10 @@ def main():
     basin = nearest(r3['basin_id'].astype(np.int64), g16)
     sediment = np.nan_to_num(nearest(b2['sediment_m'].astype(np.float64), g16))
     fresh_src = lake_wet | (regime8 == 1)
+    if network_dir:
+        # Springs that still run in the dry quarter are fresh water too (spring_store_build_plan.md section 5), at the 8 m
+        # sample nearest each.
+        fresh_src = fresh_src | springstore.spring_sources(network['springs'], ox, oz, SPACING, m, float(RC['fresh_spring_min_m3_s']))
     fresh = distance_transform_edt(~fresh_src) * SPACING if fresh_src.any() else np.full((m, m), 65535.0)
 
     E = RC['encoding']
@@ -352,7 +358,7 @@ def main():
         ('table_depth', np.clip(np.round(np.maximum(table, 0.0) / float(E['table_depth_step_m'])), 0, 255).astype(np.uint8), 'u1',
          dict(units='m', scale=float(E['table_depth_step_m']), note=f"R4's regional table, a yearly mean; 0 = at the ground; 255 = {255 * float(E['table_depth_step_m'])} m or deeper")),
         ('basin', basin.astype('<i4'), 'i4', dict(nodata=-1)),
-        ('fresh_m', np.clip(np.round(fresh), 0, 65535).astype('<u2'), 'u2', dict(units='m', scale=1.0, note='to a lake or regime 1 (perennial) water')),
+        ('fresh_m', np.clip(np.round(fresh), 0, 65535).astype('<u2'), 'u2', dict(units='m', scale=1.0, note='to a lake, regime 1 (perennial) water or a spring that runs in the dry season')),
         ('sediment_m', np.clip(np.round(np.maximum(sediment, 0.0) / float(E['sediment_step_m'])), 0, 65535).astype('<u2'), 'u2', dict(units='m', scale=float(E['sediment_step_m']))),
     ]
 
@@ -368,7 +374,6 @@ def main():
                 np.ascontiguousarray(arr[r0:r0 + T + 1, c0:c0 + T + 1]).tofile(os.path.join(d, f'{name}.{typ}'))
 
     if network_dir:
-        network = json.load(open(os.path.join(network_dir, 'network.json')))
         hashes['network.json'] = sha(os.path.join(network_dir, 'network.json'))
         hashes['network.npz'] = sha(os.path.join(network_dir, 'network.npz'))
         missing = [f'R5: {m}' for m in nman.get('missing', [])]
