@@ -25,6 +25,10 @@ var look_bones: PackedInt32Array = PackedInt32Array()   # neck to head (look): t
 var look_max: float = 1.2         # radians the whole neck may turn
 var look_target: Vector3 = Vector3.ZERO      # world position looked at (animal_view: the camera)
 var look_weight: float = 0.0      # 0 the clip's own head to 1 looking at the target
+var poses: Dictionary = {}        # state -> [offsets {bone: Quaternion}, waves [[bone, axis, swing, phase, period]]] (state_poses)
+var pose_state: int = -1          # the state whose pose is laid over the clip (animal_view sets it)
+var pose_weight: float = 0.0
+var _pose_t: float = 0.0
 var _t: float = 0.0
 
 
@@ -108,6 +112,42 @@ func setup_look(sk: Skeleton3D, spec: Dictionary) -> PackedStringArray:
 	return missing
 
 
+# Posed states (docs/design/POSED_STATES.md): a row's "state_poses" {state: {bones {bone: [x, y, z] degrees}, waves {bone: [phase,
+# swing degrees, axis]}, period_s}}: a pose built from bones for a state whose clip the file lacks (the black bear's jaw-pop).
+func setup_poses(sk: Skeleton3D, spec: Dictionary) -> PackedStringArray:
+	var missing: PackedStringArray = PackedStringArray()
+	var axes: Dictionary = {"x": Vector3.RIGHT, "y": Vector3.UP, "z": Vector3.BACK}
+
+	for st in spec:
+		var p: Dictionary = spec[st]
+		var offs: Dictionary = {}
+		var wv: Array = []
+
+		for bone_name in (p.get("bones", {}) as Dictionary):
+			var bone: int = sk.find_bone(str(bone_name))
+
+			if bone < 0:
+				missing.append(str(bone_name))
+				continue
+
+			var d: Array = p["bones"][bone_name]
+			offs[bone] = Vector3(deg_to_rad(float(d[0])), deg_to_rad(float(d[1])), deg_to_rad(float(d[2])))
+
+		for bone_name in (p.get("waves", {}) as Dictionary):
+			var bone: int = sk.find_bone(str(bone_name))
+
+			if bone < 0:
+				missing.append(str(bone_name))
+				continue
+
+			var w: Array = p["waves"][bone_name]
+			wv.append([bone, axes.get(str(w[2]) if w.size() > 2 else "x", Vector3.RIGHT), deg_to_rad(float(w[1])), float(w[0]), float(p.get("period_s", 0.5))])
+
+		poses[int(st)] = [offs, wv]
+
+	return missing
+
+
 func _process_modification() -> void:
 	var sk: Skeleton3D = get_skeleton()
 
@@ -128,6 +168,19 @@ func _process_modification() -> void:
 		var flat: float = ear_max.y * ear_flat
 		var q: Quaternion = Quaternion(ear_axes[0] as Vector3, swivel) * Quaternion(ear_axes[1] as Vector3, -flat * float(e[1]))
 		sk.set_bone_pose_rotation(int(e[0]), sk.get_bone_pose_rotation(int(e[0])) * q)
+
+	if poses.has(pose_state) and pose_weight > 0.001:
+		var pose: Array = poses[pose_state]
+
+		for bone in (pose[0] as Dictionary):
+			var e: Vector3 = (pose[0][bone] as Vector3) * pose_weight
+			sk.set_bone_pose_rotation(int(bone), sk.get_bone_pose_rotation(int(bone)) * Quaternion.from_euler(e))
+
+		for w in pose[1]:
+			var angle: float = float(w[2]) * pose_weight * sin(TAU * (_pose_t / float(w[4]) + float(w[3])))
+			sk.set_bone_pose_rotation(int(w[0]), sk.get_bone_pose_rotation(int(w[0])) * Quaternion(w[1] as Vector3, angle))
+
+		_pose_t += get_process_delta_time()
 
 	if look_bones.size() >= 2 and look_weight > 0.001:
 		_look(sk)

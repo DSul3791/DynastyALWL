@@ -460,6 +460,14 @@ func _process_body(delta: float) -> void:
 
 			if node.has_meta("look"):
 				_look_motion(node, b, state, delta)
+
+			if node.has_meta("poses"):
+				var posed = node.get_meta("poses")      # bone_offsets.gd: a pose for a state the file has no clip for
+
+				if posed.poses.has(state):
+					posed.pose_state = state
+
+				posed.pose_weight = move_toward(float(posed.pose_weight), 1.0 if posed.poses.has(state) else 0.0, delta / 0.25)
 			if node.has_meta("flock_birds"):
 				for bird in node.get_meta("flock_birds"):
 					_animate_model(bird, b, state, model_speed, delta)
@@ -620,7 +628,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_mats", eye_mats)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look"):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses"):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -642,6 +650,10 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 			if row.has("look"):
 				missing.append_array(fix.setup_look(sks[0], row["look"]))
 				root.set_meta("look", fix)
+
+			if row.has("state_poses"):
+				missing.append_array(fix.setup_poses(sks[0], row["state_poses"]))
+				root.set_meta("poses", fix)
 
 			(sks[0] as Skeleton3D).add_child(fix)
 
