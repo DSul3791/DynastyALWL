@@ -25,6 +25,7 @@ const FELL_M := 3.0                      # how near the hit (the hit is placed a
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
+const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
@@ -433,6 +434,10 @@ func _process_body(delta: float) -> void:
 		var b: Dictionary = _bodies[id]
 		var node: Node3D = b["node"]
 		var state: int = b["state"]
+
+		if state == WARN_POP and not (node.has_meta("player") and (node.get_meta("player").get_meta("roles", {}) as Dictionary).has(str(WARN_POP))):
+			state = 10
+
 		var before: Vector3 = node.position
 		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 or state == 14 or state == 15 else 5.0), 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
@@ -1399,7 +1404,7 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var run_mps: float = float(row.get("run_mps", 7.0))
 	var ref: float = 0.0
 
-	if speed > 0.3 and state != 10 and state != 12:
+	if speed > 0.3 and state != 10 and state != 12 and state != WARN_POP:
 		var running: bool = speed > (walk_mps + run_mps) * 0.5
 		clip = str(clips.get("run" if running else "walk", clip))
 		ref = run_mps if running else walk_mps
