@@ -2652,7 +2652,8 @@
 			"track": {
 				"walk_m": 0.1,
 				"run_m": 0.1
-			}
+			},
+			"ruffle_cm": 0.3
 		},
 		"pheasant": {
 			"scene": "res://assets/animals/pheasant/SK_Pheasant.fbx",
@@ -2690,7 +2691,8 @@
 			"track": {
 				"walk_m": 0.12,
 				"run_m": 0.12
-			}
+			},
+			"ruffle_cm": 0.4
 		},
 		"goose": {
 			"scene": "res://assets/animals/goose/SK_Goose.fbx",
@@ -2725,7 +2727,8 @@
 				"glide_s": 1.5,
 				"beat_hz": 3.0,
 				"land": "Landing_Touch"
-			}
+			},
+			"ruffle_cm": 0.3
 		},
 		"cow": {
 			"scene": "res://assets/animals/cow/SK_Cow.fbx",
@@ -2985,7 +2988,8 @@
 						"run": "Run"
 					}
 				}
-			]
+			],
+			"ruffle_cm": 0.4
 		},
 		"cat": {
 			"scene": "res://assets/animals/cat/SK_Cat.fbx",
@@ -3359,7 +3363,8 @@
 				"beat_hz": 5.0,
 				"bob_m": 0.03,
 				"land": "Landing_Touch"
-			}
+			},
+			"ruffle_cm": 0.25
 		},
 		"puma": {
 			"scene": "res://assets/animals/puma/SK_Puma.fbx",
@@ -4097,7 +4102,8 @@
 				"beat_hz": 8.0,
 				"bob_m": 0.04,
 				"land": "Landing_Touch"
-			}
+			},
+			"ruffle_cm": 0.3
 		},
 		"honey_badger": {
 			"scene": "res://assets/animals/honey_badger/SK_HoneyBadger.fbx",

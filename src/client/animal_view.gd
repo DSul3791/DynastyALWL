@@ -3961,15 +3961,16 @@ func _porpoise_pitch(node: Node3D, b: Dictionary) -> void:
 
 
 # Animals and the wind's direction (docs/design/ANIMAL_WIND.md). The way the wind blows toward: the shared weather's wind_dir, which
-# becomes Kathleen's per-group prevailing wind (prevailing_wind.md) once it lands, else a westerly (blowing toward +X, the east).
-const WESTERLY_TO := 0.0
+# becomes Kathleen's per-group prevailing wind (prevailing_wind.md) once it lands, else the prevailing wind at 57 S: from about 310
+# degrees (WNW to NW, Jamie's prevailing-wind page, #714), so blowing toward about 130 degrees, the south-east: +X east, +Z south.
+const PREVAILING_TO := 0.70
 const RUMP_WIND := 0.45      # with rain over RUMP_RAIN, stock and deer stand rump to the wind from here (Jamie #639); a gale alone does it too
 const RUMP_RAIN := 0.3
 const GRAZE_WIND := [0.15, 0.6]   # deer graze moving into a light or moderate wind (Jamie #639; Steve's _upwind_angle on the server)
 
 func _wind_to() -> float:
 	var wx: Dictionary = _wx_state()
-	return float(wx["wind_dir"]) if wx.has("wind_dir") else WESTERLY_TO
+	return float(wx["wind_dir"]) if wx.has("wind_dir") else PREVAILING_TO
 
 
 func _wind_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
@@ -3990,6 +3991,8 @@ func _wind_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 	if kind in TAIL_TO_WIND and standing and (wind >= GALE or (wind >= RUMP_WIND and rain >= RUMP_RAIN)):
 		want = clampf(angle_difference(node.rotation.y, downwind), -PI / 3.0, PI / 3.0)      # rump to the wind
 		b["wind_hunch"] = rain >= RUMP_RAIN      # and the head down in the rain
+	elif state == 3 and (kind in TAIL_TO_WIND or kind in ["deer", "elk", "moose"]) and wind >= float(GRAZE_WIND[0]):
+		want = clampf(angle_difference(node.rotation.y, downwind + PI), -PI / 4.0, PI / 4.0)      # alert: face into the wind, to scent what alarmed it
 	elif kind in ["deer", "elk", "moose"] and state == 0 and wind >= float(GRAZE_WIND[0]) and wind < float(GRAZE_WIND[1]):
 		want = clampf(angle_difference(node.rotation.y, downwind + PI), -PI / 4.0, PI / 4.0)      # grazing into the wind, nose to the scent
 
