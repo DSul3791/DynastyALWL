@@ -95,6 +95,11 @@ The changes below apply only while the player stands on bearing ice (the collide
   - `moat` = 2 cells from 0.5.
 
   The collider is rebuilt when the moat changes. Steve's server `_on_ice` takes the same rule on its side.
+- **Steam over a spring mouth (Jamie #739).** Spring water leaves the cave at the year's mean, about 5.5 °C at #8002, so on a frost morning it smokes where it meets the air.
+  - `spring_steam.gd` puts a low wispy puff (the `FallMist` shader) over the nearest 2 brook mouths within 400 m. A mouth is the lower end of a cave stream piece that no other piece carries on from.
+  - Strength = frost x hour x wind. Frost runs from none at 0 °C to full at -8 °C. The hours 04:00 to 10:00 get full steam and the rest 0.4, because the coldest air sits over the warm water at dawn.
+  - The steam thins from wind 0.3 and is gone by 0.6, the same breeze that halves the open reach in the look (#729).
+  - It is drawn only with `--frozen-water`, and has no sound and no effect on play.
 
 ## 6. Code
 
