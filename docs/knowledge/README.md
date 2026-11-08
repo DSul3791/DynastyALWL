@@ -52,3 +52,4 @@ Each doc has these sections:
 | Rivers and floodplains (meanders, braids, floodplains, levees, terraces, fans, deltas) | [rivers-floodplains.md](rivers-floodplains.md) | 2026-11-08 | Sonny |
 | Cirques and horns (headwall retreat rates, granite, how many glacial cycles make a horn) | [cirques-and-horns.md](cirques-and-horns.md) | 2026-11-08 | Sonny |
 | Upland streams (stream density, bankfull flood ratio, Hey and Thorne widths, waterfalls, wave limit on deltas) | [upland-streams-numbers.md](upland-streams-numbers.md) | 2026-11-08 | Sonny |
+| Groundwater layers and recession (the near-surface zone on hard rock, karst conduit and matrix stores, how fast springs fall by rock, base flow index) | [groundwater-layers-recession.md](groundwater-layers-recession.md) | 2026-11-08 | Sonny | Mixed: sourced layers and karst recessions, with our sums and judged times |
