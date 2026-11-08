@@ -354,7 +354,7 @@
 				"run": "RunFast_F",
 				"swim": "WalkSlow_F"
 			},
-			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget). Swim clip (8 Nov 2026): its file has no swim clip: the slow walk, mostly under water.",
+			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget). Swim clip (8 Nov 2026): its file has no swim clip: the slow walk, mostly under water. gait_fallback swim: a hand-made paddling walk with the neck and head lifted out of the water; rename to gait to use it instead of the slow walk (axes a first guess until a creature check).",
 			"length_m": 3.0,
 			"materials": [
 				{
@@ -367,7 +367,79 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Moose",
-			"swim_mps": 1.0
+			"swim_mps": 1.0,
+			"gait_fallback": {
+				"swim": {
+					"period_s": 1.4,
+					"bones": {
+						"LegFL1": [
+							0.25,
+							30,
+							"x"
+						],
+						"LegFR1": [
+							0.75,
+							30,
+							"x"
+						],
+						"LegBL1": [
+							0.0,
+							26,
+							"x"
+						],
+						"LegBR1": [
+							0.5,
+							26,
+							"x"
+						],
+						"LegFL2": [
+							0.35,
+							25,
+							"x"
+						],
+						"LegFR2": [
+							0.85,
+							25,
+							"x"
+						],
+						"LegBL2": [
+							0.1,
+							22,
+							"x"
+						],
+						"LegBR2": [
+							0.6,
+							22,
+							"x"
+						],
+						"Neck1": [
+							0.0,
+							-12,
+							"x"
+						],
+						"Neck2": [
+							0.0,
+							-8,
+							"x"
+						],
+						"Head": [
+							0.0,
+							-10,
+							"x"
+						],
+						"Spine1": [
+							0.0,
+							2,
+							"x"
+						],
+						"Tail1": [
+							0.0,
+							3,
+							"y"
+						]
+					}
+				}
+			}
 		},
 		"boar": {
 			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
@@ -898,7 +970,7 @@
 				"run": "Run_F_IP",
 				"swim": "Walk_F_IP"
 			},
-			"note": "WildMesh Beaver (Realistic Animals/Beaver/SK_Beaver.fbx). 20 clips; units are centimetres. No graze clip: Idle_2 stands in. Swim clip (8 Nov 2026): its file has no swim clip: the forward walk paddles.",
+			"note": "WildMesh Beaver (Realistic Animals/Beaver/SK_Beaver.fbx). 20 clips; units are centimetres. No graze clip: Idle_2 stands in. Swim clip (8 Nov 2026): its file has no swim clip: the forward walk paddles. gait_fallback swim: a hand-made swim (hind feet paddling in turn, front legs held still, tail sculling side to side, head up); rename to gait to use it instead of the walk (axes a first guess until a creature check).",
 			"length_m": 0.8,
 			"materials": [
 				{
@@ -907,7 +979,89 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Beaver",
-			"swim_mps": 1.2
+			"swim_mps": 1.2,
+			"gait_fallback": {
+				"swim": {
+					"period_s": 0.9,
+					"bones": {
+						"thigh_L": [
+							0.0,
+							35,
+							"x"
+						],
+						"thigh_R": [
+							0.5,
+							35,
+							"x"
+						],
+						"shin_L": [
+							0.1,
+							25,
+							"x"
+						],
+						"shin_R": [
+							0.6,
+							25,
+							"x"
+						],
+						"foot_L": [
+							0.2,
+							30,
+							"x"
+						],
+						"foot_R": [
+							0.7,
+							30,
+							"x"
+						],
+						"front_thigh_L": [
+							0.0,
+							5,
+							"x"
+						],
+						"front_thigh_R": [
+							0.0,
+							5,
+							"x"
+						],
+						"Tail_1": [
+							0.25,
+							10,
+							"y"
+						],
+						"Tail_2": [
+							0.35,
+							14,
+							"y"
+						],
+						"Tail_3": [
+							0.45,
+							18,
+							"y"
+						],
+						"Tail_4": [
+							0.55,
+							20,
+							"y"
+						],
+						"spine_006": [
+							0.0,
+							3,
+							"y"
+						],
+						"Neck": [
+							0.5,
+							-4,
+							"x"
+						],
+						"Head": [
+							0.5,
+							-3,
+							"x"
+						]
+					}
+				}
+			}
 		},
 		"chamois": {
 			"scene": "res://assets/animals/chamois/SK_ChamoisMale.fbx",
