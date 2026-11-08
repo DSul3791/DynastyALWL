@@ -52,7 +52,11 @@ def test_ring_heads_tilted_and_flat():
 
 
 def test_facing():
-    assert pk.facing(45) == 'NE' and pk.facing(360) == 'NE' and pk.facing(225) == 'SW' and pk.facing(135) == 'other'
+    assert pk.facing(45) == 'shady' and pk.facing(360) == 'shady' and pk.facing(225) == 'sunny' and pk.facing(135) == 'other'
+    # south of the equator (the starter island, 57 S) the shady lee quarter is round the south-east
+    assert pk.facing(135, 135.0) == 'shady' and pk.facing(170, 135.0) == 'shady' and pk.facing(315, 135.0) == 'sunny' and pk.facing(45, 135.0) == 'other'
+    assert pk._compass(135.0) == 'SE' and pk._compass(315.0) == 'NW' and pk._compass(359.0) == 'N'
+    assert pk._checks(P)['shady_bearing_deg'] == float(P['glacial']['shady_bearing_deg'])
 
 
 def test_plateau_dome_and_pyramid():
@@ -90,14 +94,14 @@ def test_summits_axes_and_shapes_on_a_star_peak():
 
 def test_retreat_rates_and_depth_slowdown():
     def shape(headwall, depth):
-        return [dict(x=0.0, z=0.0, headwalls=[dict(bearing_deg=45.0, facing='NE', headwall_m=headwall, depth_m=depth,
+        return [dict(x=0.0, z=0.0, headwalls=[dict(bearing_deg=45.0, facing='shady', headwall_m=headwall, depth_m=depth,
                                                     floor_m=None if depth is None else 700.0)])]
     series = [(0, 0.0, shape(None, None)), (1, 40000.0, shape(400.0, 150.0)), (3, 120000.0, shape(380.0, 180.0)),
               (10, 400000.0, shape(200.0, 200.0))]
     hd = pk.retreat(series, Q)[0]['heads'][0]
     assert abs(hd['rate_mm_yr'] - 1000.0 * 200.0 / 360000.0) < 1e-9
     assert abs(hd['depth_rate_early_mm_yr'] - 1.5) < 1e-9 and abs(hd['depth_rate_late_mm_yr'] - 1000.0 * 20.0 / 280000.0) < 1e-9
-    assert hd['facing'] == 'NE' and hd['floor_m'] == 700.0
+    assert hd['facing'] == 'shady' and hd['floor_m'] == 700.0
 
 
 def test_snowline_and_history_years():
