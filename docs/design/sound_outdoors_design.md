@@ -98,7 +98,7 @@ A quiet sound past the mask distance fades out. A loud low one does not.
   - set to 1 while snow falls (state `snow` > 0.1);
   - then down by 1 per 48 game hours;
   - 3 times as fast above 0 °C or in rain (the snow crusts or turns wet).
-- **The hush** becomes `snow_hush = max(falling, 0.8 x ground_snow x snow_fresh)`. Today's bus cuts (-3 / -4 dB) and the wind high cut keep their numbers, they just end.
+- **The hush** becomes `snow_hush = 0.8 x ground_snow x snow_fresh`, plus 0.2 while snow falls as today. Today's bus cuts (-3 / -4 dB) and the wind high cut keep their numbers, they just end.
 - **Far sounds on fresh snow:** -4 dB x snow_fresh x ground_snow x smoothstep(50, 100, d), and cutoff x (1 - 0.3 x snow_fresh x ground_snow).
 - **Cold air:** `cold = smoothstep(10, -5, temp_c)`.
   - Cutoff x lerp(1, 0.55, cold x smoothstep(100, 500, d)). In frost a far fall or fire is darker, and near sounds are untouched, so a snapped twig close by stays crisp.

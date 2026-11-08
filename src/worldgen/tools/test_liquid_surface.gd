@@ -1,7 +1,7 @@
 extends SceneTree
 
 # The liquid sheet's chunk image (Sonny, 2 Nov 2026; written without being run).
-#   godot --headless --path . --script res://src/water2/test_liquid_surface.gd
+#   godot --headless --path . --script res://src/worldgen/tools/test_liquid_surface.gd
 
 const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
