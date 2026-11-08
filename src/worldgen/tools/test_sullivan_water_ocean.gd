@@ -113,6 +113,8 @@ func _init() -> void:
 
 	_check(listed, "the shader's four waves are ocean_waves.gd WAVES")
 	_check(code.contains("sea_phase[i].x") and code.contains("p - sea_origin"), "the shader draws the swell from sea_origin and sea_phase")
+	# Fog (docs/design/fog_pools_and_sea_fog.md): the water writes its own fog, and the sea plane takes the sea fog layer, not the land's.
+	_check(code.contains("FOG = vec4(fog_rgb, fog_amount)") and code.contains("sea > 0.5 ? sea_fog_height_density : fog_height_density"), "the water writes its own fog and the sea plane uses the sea fog layer")
 
 	# Second step: heights, and the clock folded into the phases (no TIME rollover). Three days in, 54 km out, the 32-bit height and slope
 	# with the folded phases match the exact 64-bit ones.

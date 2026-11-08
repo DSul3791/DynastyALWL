@@ -1326,6 +1326,14 @@ func _welcome_body(info: Dictionary) -> void:
 	net.hit_number_received.connect(func(at: Vector3, _amount: int) -> void: animal_view.note_hit(at))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
+
+	# MikeW's footfall hook (docs/design/FOOTFALL.md), once the animal view has it: a landing in mud, snow, water or a puddle adds that ground's
+	# hoof or paw layer on top of the species step (slot_sounds.gd footfall). Connected by name, so a build without the signal is unchanged.
+	if animal_view.has_signal("footfall"):
+		animal_view.connect("footfall", func(kind: String, at: Vector3, ground: String, speed: float) -> void:
+			sound.slots.footfall(kind, at, ground, speed, body.global_position)
+		)
+
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
@@ -2277,20 +2285,23 @@ func _update_weather() -> void:
 
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
 	# every client and the server agree with no traffic. Recomputed once a game minute.
-	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M)
+	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
 
 	if flora != null:
 		flora.set_ice_cover(ice_now)
 
 	if ocean_ice != null:
 		# The sea never freezes outside the arctic zone (Ice.sea_cover); there, salt water freezes at -1.8 C.
-		ocean_ice.update(_anchor, IceScript.sea_cover(game_clock.seconds, group))
+		ocean_ice.update(_anchor, IceScript.sea_cover(game_clock.seconds, group, int(world.get("master_seed", 0))))
 
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
 
 	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
+
+	if sound != null and sound.occlusion != null and sound.occlusion.outdoors:     # --sound-outdoors (sound_outdoors_design.md)
+		sound.occlusion.set_air(weather, weather_look.day.elevation if weather_look != null else 0.5, game_clock.hour(), weather_look.fog_now() if weather_look != null else 0.0)
 
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
@@ -5904,6 +5915,10 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nswim sounds: %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last]
 	text += "\ntown sounds: %d loops, %d bell strikes" % [sound.town.loops_playing, sound.town.bells_rung]
 	text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
+
+	if sound.occlusion.outdoors:
+		text += "; open air: %d shadowed by the wind, %d carried" % [sound.occlusion.air_shadowed, sound.occlusion.air_carried]
+
 	text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	text += "\nlast dig sound: %s" % sound.dig.last_dig
 	text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if sound_tests.weather_at >= 0 else "the world weather above")
