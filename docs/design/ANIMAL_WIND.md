@@ -4,7 +4,7 @@ From Jamie's animals-in-weather page (#639, `docs/knowledge/animals-in-weather.m
 weather rules (#651, #667). Client looks behind `wind_looks` (off). The direction is the shared weather's `wind_dir` (the way the
 wind blows toward); Kathleen's prevailing wind (`docs/design/prevailing_wind.md`, a per-group direction in Weather behind `--wind-dir`)
 feeds the same field when it lands, so nothing here changes then. The island is a 21 by 21 grid of rows with the equator in the middle,
-so latitude comes from the island's row (Kathleen's #711 carries the latitude function); the client assumes no direction of its own:
+so latitude comes from the island's grid row (starter about 34° S; Kathleen's #711 carries the latitude function); the client assumes no direction of its own:
 with no `wind_dir` (only the motion tool, which passes one) there is no wind turn at all. Seasons are the local seasons of the island's row: at the starter's latitude the windy
 season is the local winter.
 
@@ -33,7 +33,7 @@ season is the local winter.
 | Birds into the wind | flight rows | the take-off and landing clips | `_into_wind`: the Rig turns up to 90 degrees toward upwind while the clip plays |
 With `wind_looks` on, the gale turn of `weather_looks` steps aside (the same turn, now with the rain rule and the deer's graze).
 
-## The prevailing wind of the starter's rows (Jamie's #714, `docs/knowledge/prevailing-wind-57s.md`)
+## The prevailing wind of the starter's rows (Jamie's #714, `docs/knowledge/prevailing-wind-57s.md`; latitude from the island's grid row, starter about 34° S, and Jamie is correcting the page)
 - The wind comes mostly **from the west and north-west**, mean about 300 to 320 degrees, within 45 degrees of WNW 55 to 65 percent of
   the time; a direction holds 1 to 3 days, then a front turns it (veering W to NW to N ahead of a low, backing sharply to SW as the
   cold front passes). The windy season is the local winter.
