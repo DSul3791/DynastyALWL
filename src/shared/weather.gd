@@ -27,6 +27,25 @@ const ZONES := {
 # Rain takes the edge off the air: up to this many degrees colder at full rain (Dave 3 Nov 2026: rain should cool things).
 const RAIN_COOL_C := 4.0
 
+# Valley fog (radiation fog; docs/design/valley_fog.md, art_weather_light.md section 7, coordinator decision 6 of 8 Nov 2026).
+# It forms on calm, clear nights in low ground, is thickest at dawn and burns off 1 to 3 hours after sunrise; most common in
+# autumn. `mist` (0..1) is the strength of the fog layer and `mist_top_m` the height of its top above sea level (0 when there
+# is none). Neither depends on the altitude passed in: the layer is one for the whole zone row, the same for everyone.
+const MIST_BY_ZONE := {"desert": 0.1, "transition": 0.45, "temperate": 1.0, "arctic": 0.5}
+const MIST_FROM_HOUR := 22.0               # the fog starts to gather from here (it is full four hours later)
+const MIST_GATHER_H := 4.0
+const MIST_BURN_FROM_H := 1.0              # hours after sunrise when it starts to burn off
+const MIST_BURN_TO_H := 3.0                # and when it is gone
+const MIST_CALM_WIND := 0.3                # full fog at or below this wind (0.15 is dead calm, 1 a storm)
+const MIST_WINDY := 0.5                    # none at or above this
+const MIST_CLEAR_FRONT := 0.4              # a clear night (front noise at or below this: no cloud building)
+const MIST_CLOUDY_FRONT := 0.6             # none from here (cloud cover stops the ground cooling)
+const MIST_TOP_MIN_M := 30.0               # the top of a full layer lies between these, a new height each night
+const MIST_TOP_MAX_M := 140.0
+# The sun path of day_cycle.gd (LATITUDE_DEG, AXIAL_TILT_DEG): the burn-off follows the real sunrise. Keep the two the same.
+const SUN_LATITUDE_DEG := 52.0
+const SUN_TILT_DEG := 23.44
+
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
 	var days: float = float(GameClockScript.DAYS_PER_YEAR)
@@ -82,6 +101,34 @@ static func temp_at(game_s: float, group: String, altitude_m: float = 0.0) -> fl
 	return float(zone["temp"]) + float(zone["swing"]) * cos(TAU * (year_phase(game_s) - 0.375)) - maxf(altitude_m, 0.0) * 0.0065
 
 
+# The day's swing of the air (docs/design/still_water_ice.md): the full range from the coldest hour to the warmest, per zone
+# (judged, near the UK's 7 to 9 C on land; deserts wider, polar air narrower), shrunk to DAY_RANGE_WINTER of it in midwinter.
+const DAY_RANGE_C := {"desert": 14.0, "transition": 10.0, "temperate": 8.0, "arctic": 5.0}
+const DAY_RANGE_WINTER := 0.6
+const DAY_COLDEST_HOUR := 5.0             # just before dawn (Met Office: the coolest air comes just before dawn)
+const DAY_WARMEST_HOUR := 15.0            # mid afternoon
+
+
+# Air temperature (C) with the day and night swing on top of temp_at: coldest at DAY_COLDEST_HOUR, warmest at
+# DAY_WARMEST_HOUR, a smooth rise by day and a slower fall through the night; the day's mean is temp_at. No weather (clouds
+# would narrow the swing; not yet). Used by the ice on still water (ice.gd); Weather.state's temp_c stays temp_at for now.
+static func air_c(game_s: float, group: String, altitude_m: float = 0.0) -> float:
+	var summer: float = 0.5 + 0.5 * cos(TAU * (year_phase(game_s) - 0.375))
+	var swing: float = 0.5 * float(DAY_RANGE_C.get(group, DAY_RANGE_C["temperate"])) * lerpf(DAY_RANGE_WINTER, 1.0, summer)
+	return temp_at(game_s, group, altitude_m) + swing * day_shape(hour_of(game_s))
+
+
+# -1 at the coldest hour, +1 at the warmest, between them a half cosine each way (rising over 10 hours, falling over 14).
+static func day_shape(hour: float) -> float:
+	var rise_h: float = DAY_WARMEST_HOUR - DAY_COLDEST_HOUR
+	var since: float = fposmod(hour - DAY_COLDEST_HOUR, 24.0)
+
+	if since < rise_h:
+		return -cos(PI * since / rise_h)
+
+	return cos(PI * (since - rise_h) / (24.0 - rise_h))
+
+
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "wind_dir" (radians), "temp_c", "season"}.
 # wind_dir is the way the wind blows TOWARD, as an angle in the ground plane: direction = (cos, sin) on (x, z). It turns slowly
 # (a new heading about every 20 game hours) and swings further in a storm; same on server and client, nothing saved.
@@ -113,6 +160,8 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	var storm: float = clampf((precip - 0.7) / 0.3, 0.0, 1.0) * (0.5 + 0.5 * -minf(spirit, 0.0)) if precip > 0.7 else 0.0
 	var snowing: bool = temp < 0.5
 	var cloud: float = clampf(maxf(precip, front * wet * 1.2), 0.0, 1.0)
+	var wind: float = clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0)
+	var mist: float = _mist(seed_value, game_s, group, phase, hour, wind, front, precip, spirit)
 
 	return {
 		"rain": 0.0 if snowing else precip,
@@ -120,11 +169,52 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 		"storm": storm,
 		"cloud": cloud,
 		"sun": clampf(1.0 - cloud * 1.1, 0.0, 1.0),
-		"wind": clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0),
+		"wind": wind,
 		"wind_dir": TAU * _noise(seed_value, 4, game_s / (20.0 * 3600.0)) + 0.8 * storm * (_noise(seed_value, 5, game_s / (2.0 * 3600.0)) - 0.5),
 		"temp_c": temp - RAIN_COOL_C * (0.0 if snowing else precip),
 		"season": season_of(game_s),
+		"mist": mist,
+		"mist_top_m": mist_top_m(seed_value, game_s, mist),
 	}
+
+
+# Hour of sunrise (sun centre on the horizon) on a day of the year, for the sun path day_cycle.gd draws.
+static func sunrise_hour(day_of_year: float) -> float:
+	var phi: float = deg_to_rad(SUN_LATITUDE_DEG)
+	var delta: float = deg_to_rad(SUN_TILT_DEG) * sin(TAU * day_of_year / float(GameClockScript.DAYS_PER_YEAR))
+	var half_day_h: float = rad_to_deg(acos(clampf(-tan(phi) * tan(delta), -1.0, 1.0))) / 15.0
+	return 12.0 - half_day_h
+
+
+# Valley fog strength, 0..1 (see the MIST_ constants): calm, clear nights in a humid zone, gathering from 22:00, thickest at
+# dawn, burnt off 1 to 3 hours after sunrise, strongest in autumn, a different night each time. None while rain or snow falls.
+static func _mist(seed_value: int, game_s: float, group: String, phase: float, hour: float, wind: float, front: float, precip: float, spirit: float) -> float:
+	var since: float = fposmod(hour - MIST_FROM_HOUR, 24.0)                  # hours since the fog started to gather
+	var day_of_year: float = phase * float(GameClockScript.DAYS_PER_YEAR)
+	var sunrise_since: float = fposmod(sunrise_hour(day_of_year) - MIST_FROM_HOUR, 24.0)
+	var timing: float = smoothstep(0.0, MIST_GATHER_H, since) * (1.0 - smoothstep(sunrise_since + MIST_BURN_FROM_H, sunrise_since + MIST_BURN_TO_H, since))
+
+	if timing <= 0.0:
+		return 0.0
+
+	var calm: float = 1.0 - smoothstep(MIST_CALM_WIND, MIST_WINDY, wind)
+	var clear: float = 1.0 - smoothstep(MIST_CLEAR_FRONT, MIST_CLOUDY_FRONT, front)
+	var dry: float = 1.0 - smoothstep(0.02, 0.1, precip)
+	var autumn: float = 0.55 + 0.45 * cos(TAU * (phase - 0.625))              # 1 in mid autumn, 0.1 in mid spring
+	var night: float = smoothstep(0.25, 0.75, _noise(seed_value, 6, game_s / GameClockScript.SECONDS_PER_DAY))   # some nights none
+	var zone: float = float(MIST_BY_ZONE.get(group, MIST_BY_ZONE["temperate"]))
+	var spirit_gain: float = 1.0 + 0.5 * maxf(spirit, 0.0)                   # high spirit: clear mornings with valley mist
+	return clampf(timing * calm * clear * dry * autumn * night * zone * spirit_gain, 0.0, 1.0)
+
+
+# Top of the fog layer above sea level (m): a new height each night between MIST_TOP_MIN_M and MIST_TOP_MAX_M, lower while
+# the layer is thin (it sinks as it burns off). 0 when there is no fog.
+static func mist_top_m(seed_value: int, game_s: float, mist: float) -> float:
+	if mist <= 0.0:
+		return 0.0
+
+	var full: float = lerpf(MIST_TOP_MIN_M, MIST_TOP_MAX_M, _noise(seed_value, 7, game_s / GameClockScript.SECONDS_PER_DAY))
+	return full * (0.5 + 0.5 * mist)
 
 
 # Smooth value noise in 0..1 along one axis, per (seed, stream).
