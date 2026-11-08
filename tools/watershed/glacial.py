@@ -148,7 +148,8 @@ def main():
         raise SystemExit('glacial: the B1 ground and the inputs are on different grids')
     sea = b1['sea'].ravel().astype(np.uint8)
     land = sea == 0
-    U = data['uplift'].astype(np.float64).ravel()
+    # The uplift B1 used (zero when B1 dissects the landform as it stands, uplift_share 0); the inputs' A2 uplift for older runs.
+    U = (b1['uplift'] if 'uplift' in b1.files else data['uplift']).astype(np.float64).ravel()
     rain_mm = data['rain'].astype(np.float64).ravel()
     p0 = float(P['rain']['background_mm_yr'])
     q_ref = runoff.reference_quick_mm(p0, W)
@@ -166,7 +167,7 @@ def main():
     CH = E['channel_head']
     theta = float(CH['slope_exponent'])
     c_ch = float(CH['area_m2_at_ref_slope']) * float(CH['ref_slope']) ** theta
-    Sc = float(np.tan(np.radians(E['threshold_slope_deg']))) if E.get('threshold_slope_deg', 0.0) > 0.0 else 0.0
+    Sc, sc_rock = evolve.slope_limits(g, E)        # threshold slopes by rock, as in B1
     frame = np.zeros((n, n), bool); frame[0, :] = frame[-1, :] = frame[:, 0] = frame[:, -1] = True
     fixed = (sea == 1) | frame.ravel()
 
@@ -210,7 +211,7 @@ def main():
         # The slope limit is for ground, not ice: none on ice cells (a glacier's front is steep ice, not a hillslope), while
         # ice-free walls are measured against the ice surface beside them (the ice holds them up; after it melts, the
         # post-glacial era lets the oversteepened walls fail, as paraglacial rock slope failures do).
-        sc = np.where(thick > 0.0, 0.0, Sc)
+        sc = np.where(thick > 0.0, 0.0, evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h), deposit))
         flux = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc)
         h0 = h.copy()
         h = x - thick
@@ -240,7 +241,8 @@ def main():
     dtp = float(GL['post_glacial_dt'])
     psteps = max(int(round(float(GL['post_glacial_years']) / dtp)), 1)
     for s in range(psteps):
-        change, flux = evolve.river_step(h, sea, n, dx, dtp, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, fixed)
+        change, flux = evolve.river_step(h, sea, n, dx, dtp, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, sc_rock, deposit,
+                                         fixed)
         deposit = np.maximum(deposit + change, 0.0)
     print(f'post-glacial {psteps} steps done, t {time.time() - t0:.0f} s', flush=True)
 
