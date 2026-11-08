@@ -221,7 +221,9 @@ def main():
         # on the smooth flanks each one-cell flow line was cut on its own (the swath spreads a glacier's flux only over the
         # cells that drain into it, and parallel lines do not), leaving slots with walls up to 87 degrees and 300 m high,
         # more than the 11,700 post-glacial years could bring down. A rock wall fails past its threshold whether or not ice
-        # lies beside it; the debris joins the ice's load (rockfall onto glaciers).
+        # lies beside it; the debris joins the ice's load (rockfall onto glaciers). The limit holds against every neighbour,
+        # not only the receiver (evolve._slope_ceiling): with the receiver alone, run a3ffca14 still left 86-degree walls,
+        # lowered one cell a step.
         sc = evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h), deposit)
         # The incision threshold is for flowing water on bedrock; ice cuts whatever its flux (none under the ice).
         kc = np.where(thick > 0.0, 0.0, E['K'] * ery_rock * share * evolve.bedrock_threshold(E))
