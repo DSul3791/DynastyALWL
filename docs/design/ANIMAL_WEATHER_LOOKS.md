@@ -83,8 +83,11 @@ uses, now passed in the animal conditions) and `Weather.air_c` (through `_air`).
 - **Changed for #736:** no slips on snowy ice (lying snow over 0.3); a still animal starts gathering snow after 5 s and is white in about
   60 real seconds (15 to 30 game minutes); the splayed fall on bare ice while running is the pose library's (pr24, POSE_LIBRARY.md),
   so this PR keeps the slips and the fall comes with the library.
-- **For Steve (#736):** water birds standing on the ice edge by open water; what the starter ice carries (birds, hares, foxes, a
-  wolf or roe deer at most) as a server rule for who walks out on it.
+- **Steve's answer (#737):** deer and boar never step on ice; foxes and hares do on the starter's skim; water flocks stand at the
+  open-water edge; and the client gets `ice_holes(points, untils)` (protocol 97: up to 8 live fishing holes within 120 m and when each
+  closes). With `ice_looks` the client draws each as a dark 0.6 m disc of open water (`on_ice_holes`, connected when the network has the
+  signal; Kathleen's frozen water look may take it over). The slips and falls stay for any animal the server puts on ice; the rabbit is
+  now sure-footed with the fox.
 
 Check: run sheet m56 (a deer and a wolf walking on frozen water: the deer slips, the wolf does not; a deer standing still in snow
 whitening) and DINO_SHOTS.md.
