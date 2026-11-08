@@ -1,5 +1,7 @@
 # Ice on still water: frosty nights, midday thaw, a sea that does not freeze
 
+> **Update (stacked follow-up):** the air's numbers now come from the island climate and are the one live temperature: see `docs/design/one_temperature.md`. The day range there has no midwinter shrink, the temperate zone is the starter island (9 °C ±5), and `temp_c` now carries the swing. The ice rules below are unchanged; the sums in this note are for the old 10 °C ±14 climate.
+
 Jamie, 8 Nov 2026. This builds Kathleen's ask 3 in `docs/design/art_water.md` (#587, section 8 item 5 and the winter row of section 10), which stays the source of truth for the look. It changes the ice model of `docs/mirror/tech/ICE_DESIGN.md` (approved 21 Oct). Dave's rules from that note still hold: pond and lake ice always bears once it is walkable, and you never drop through as it melts.
 
 **Kathleen's rule:** ponds and lake edges freeze below 0 °C overnight, thaw by midday above 2 °C, and the sea never freezes. Art also wants ice to form "from the shore inwards in winter, thin and clear at first, white-frosted later".

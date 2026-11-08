@@ -12,16 +12,17 @@ extends RefCounted
 # Static helpers only; thread safe.
 
 const GameClockScript := preload("res://src/shared/game_clock.gd")   # the one time source; callers pass its `seconds`
+const Climate := preload("res://src/shared/climate.gd")             # the island climate and the one air temperature
 const FRONT_HOURS := 12.0                  # game hours between weather fronts (the noise grid step)
 const NIGHT_FROM := 21.0
 const NIGHT_TO := 5.0
 
-# Per zone group: how wet, the mean temperature (C) and the seasonal swing (C).
+# Per zone group: how wet. The temperatures come from the island climate (climate.gd).
 const ZONES := {
-	"desert": {"wet": 0.04, "temp": 28.0, "swing": 8.0},
-	"transition": {"wet": 0.17, "temp": 19.0, "swing": 11.0},
-	"temperate": {"wet": 0.27, "temp": 10.0, "swing": 14.0},
-	"arctic": {"wet": 0.22, "temp": -9.0, "swing": 14.0},
+	"desert": {"wet": 0.04},
+	"transition": {"wet": 0.17},
+	"temperate": {"wet": 0.27},
+	"arctic": {"wet": 0.22},
 }
 
 # Rain takes the edge off the air: up to this many degrees colder at full rain (Dave 3 Nov 2026: rain should cool things).
@@ -75,39 +76,19 @@ static func river_dry(weather_state: Dictionary) -> float:
 	return heat * (1.0 - clampf(maxf(float(weather_state.get("rain", 0.0)) * 2.0, float(weather_state.get("storm", 0.0))), 0.0, 1.0))
 
 
-# Air temperature (C) from the season (no day/night swing, no weather): zone mean and seasonal swing,
-# cooler with altitude. The same number Weather.state reports as temp_c.
+# The day's mean air temperature (C): the island's climate (climate.gd) for the season, cooler with altitude; no day and night swing.
 static func temp_at(game_s: float, group: String, altitude_m: float = 0.0) -> float:
-	var zone: Dictionary = ZONES.get(group, ZONES["temperate"])
-	return float(zone["temp"]) + float(zone["swing"]) * cos(TAU * (year_phase(game_s) - 0.375)) - maxf(altitude_m, 0.0) * 0.0065
+	return Climate.mean_c(Climate.of_zone(group), year_phase(game_s), altitude_m)
 
 
-# The day's swing of the air (docs/design/still_water_ice.md): the full range from the coldest hour to the warmest, per zone
-# (judged, near the UK's 7 to 9 C on land; deserts wider, polar air narrower), shrunk to DAY_RANGE_WINTER of it in midwinter.
-const DAY_RANGE_C := {"desert": 14.0, "transition": 10.0, "temperate": 8.0, "arctic": 5.0}
-const DAY_RANGE_WINTER := 0.6
-const DAY_COLDEST_HOUR := 5.0             # just before dawn (Met Office: the coolest air comes just before dawn)
-const DAY_WARMEST_HOUR := 15.0            # mid afternoon
-
-
-# Air temperature (C) with the day and night swing on top of temp_at: coldest at DAY_COLDEST_HOUR, warmest at
-# DAY_WARMEST_HOUR, a smooth rise by day and a slower fall through the night; the day's mean is temp_at. No weather (clouds
-# would narrow the swing; not yet). Used by the ice on still water (ice.gd); Weather.state's temp_c stays temp_at for now.
+# The air temperature (C) at this hour: temp_at plus the day and night swing (Climate.air_c: coldest 05:00, warmest 15:00). The one
+# live temperature (docs/design/one_temperature.md): Weather.state's temp_c is this, less the rain's cooling.
 static func air_c(game_s: float, group: String, altitude_m: float = 0.0) -> float:
-	var summer: float = 0.5 + 0.5 * cos(TAU * (year_phase(game_s) - 0.375))
-	var swing: float = 0.5 * float(DAY_RANGE_C.get(group, DAY_RANGE_C["temperate"])) * lerpf(DAY_RANGE_WINTER, 1.0, summer)
-	return temp_at(game_s, group, altitude_m) + swing * day_shape(hour_of(game_s))
+	return Climate.air_c(Climate.of_zone(group), year_phase(game_s), hour_of(game_s), altitude_m)
 
 
-# -1 at the coldest hour, +1 at the warmest, between them a half cosine each way (rising over 10 hours, falling over 14).
 static func day_shape(hour: float) -> float:
-	var rise_h: float = DAY_WARMEST_HOUR - DAY_COLDEST_HOUR
-	var since: float = fposmod(hour - DAY_COLDEST_HOUR, 24.0)
-
-	if since < rise_h:
-		return -cos(PI * since / rise_h)
-
-	return cos(PI * (since - rise_h) / (24.0 - rise_h))
+	return Climate.day_shape(hour)
 
 
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "wind_dir" (radians), "temp_c", "season"}.
@@ -116,7 +97,7 @@ static func day_shape(hour: float) -> float:
 static func state(seed_value: int, game_s: float, group: String, altitude_m: float = 0.0, spirit: float = 0.0) -> Dictionary:
 	var zone: Dictionary = ZONES.get(group, ZONES["temperate"])
 	var phase: float = year_phase(game_s)
-	var temp: float = temp_at(game_s, group, altitude_m)
+	var temp: float = air_c(game_s, group, altitude_m)
 	# Wetter in autumn and winter, a little drier in high summer.
 	var wet: float = float(zone["wet"]) * (1.0 + 0.2 * cos(TAU * (phase - 0.75)))
 	var front: float = _noise(seed_value, 1, game_s / (FRONT_HOURS * 3600.0))

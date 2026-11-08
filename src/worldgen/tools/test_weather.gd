@@ -84,7 +84,26 @@ func _init() -> void:
 	# Seasons: summer warmer than winter, winter is phase 0.
 	var cold: float = float(Weather.state(1, 0.875 * 365.0 * 86400.0, "temperate")["temp_c"])
 	var warm: float = float(Weather.state(1, 0.375 * 365.0 * 86400.0, "temperate")["temp_c"])
-	check(warm > cold + 15.0, "summer %.1f warmer than winter %.1f" % [warm, cold])
+	check(warm > cold + 6.0, "summer %.1f warmer than winter %.1f" % [warm, cold])
+	# One temperature (docs/design/one_temperature.md): temp_c is the island air with its day and night swing, less the rain's cooling;
+	# the starter island (the temperate zone) is 9 C +-5 at sea level, coldest at 05:00 and warmest at 15:00.
+	var starter_bad: int = 0
+
+	for h in range(24 * 365):
+		var t: float = float(h) * 3600.0
+		var w: Dictionary = Weather.state(777, t, "temperate")
+		var air: float = Weather.air_c(t, "temperate")
+
+		if float(w["temp_c"]) > air + 0.001 or float(w["temp_c"]) < air - Weather.RAIN_COOL_C - 0.001:
+			starter_bad += 1
+
+	check(starter_bad == 0, "temp_c is the island air less the rain's cooling (%d bad hours)" % starter_bad)
+	var midwinter: float = 0.875 * 365.0 * 86400.0
+	check(absf(Weather.temp_at(midwinter, "temperate") - 4.0) < 0.01 and absf(Weather.temp_at(0.375 * 365.0 * 86400.0, "temperate") - 14.0) < 0.01, "the starter's sea-level mean runs from 4 C in midwinter to 14 C in high summer")
+	var dawn: float = Weather.air_c(floorf(midwinter / 86400.0) * 86400.0 + 5.0 * 3600.0, "temperate")
+	var afternoon: float = Weather.air_c(floorf(midwinter / 86400.0) * 86400.0 + 15.0 * 3600.0, "temperate")
+	check(absf(afternoon - dawn - 8.0) < 0.1, "the day's range is 8 C from 05:00 to 15:00 (%.1f to %.1f)" % [dawn, afternoon])
+	check(absf(Weather.temp_at(midwinter, "temperate", 1000.0) - (Weather.temp_at(midwinter, "temperate") - 6.5)) < 0.01, "6.5 C colder per km of height")
 	check(Weather.season_of(0.0) == "spring" and Weather.season_of(0.375 * 365.0 * 86400.0) == "summer" and Weather.season_of(0.875 * 365.0 * 86400.0) == "winter", "season names")
 
 	# Town spirit.
