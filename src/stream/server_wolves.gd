@@ -432,11 +432,15 @@ func _prowl(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 		if playing:
 			return
 
-	# Wander the home area.
+	# Wander the home area; at dawn and dusk, near the water the prey drink at (animals_at_water_server.md).
+	var water: Vector3 = host.wolf_wait_point(pack["home"])
+	var centre: Vector3 = pack["home"] if water == Vector3.INF else water
+	var roam: float = float(w.get("prowl_m", 40.0)) * _snow_x("roam_x") if water == Vector3.INF else float(host._drink_cfg().get("wolf_ring_m", 12.0))
+
 	for m in members:
 		if pack["timer"] <= 0.0 or m["pos"].distance_to(m["target"]) < 1.0:
 			var angle: float = host.rng.randf() * TAU   # luck-exempt: where a wolf prowls
-			m["target"] = pack["home"] + Vector3(cos(angle), 0.0, sin(angle)) * host.rng.randf_range(2.0, float(w.get("prowl_m", 40.0)) * _snow_x("roam_x"))   # luck-exempt: as above
+			m["target"] = centre + Vector3(cos(angle), 0.0, sin(angle)) * host.rng.randf_range(2.0, roam)   # luck-exempt: as above
 
 		_walk(m, m["target"], float(def.get("walk_mps", 2.0)) * _snow_x("speed_x"), dt, infos)
 
