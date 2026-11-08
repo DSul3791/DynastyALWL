@@ -29,5 +29,21 @@
 	"water_comfort_c": 26.0,
 	"water_gain": 5.0,
 	"tau_water_h": 0.7,
-	"cave_pool_c": 2.0
+	"cave_pool_c": 2.0,
+	"body_703": {
+		"enabled": false,
+		"note": "The body in weather (docs/design/body_in_weather_design.md; Jamie #703 body-in-weather.md, coordinator 8 Nov 2026, Dave may revert). Off by default: with enabled false every number above stands. On: wool dries 0.4 soak an hour by a fire and 0.1 under cover; wet plus wind multiplies the cold stress by 1 + (rain_mult - 1) x soak + wet_wind_gain x soak x wind and strips insulation by wet_strip x soak x min(wind / wet_strip_wind, 1); cold stages on the warmth bar: mild under cold_at, moderate under hurt_at (actions moderate_pace times as long), severe under severe_at (severe_pace, the health drain x severe_hurt_mult, still never below 1); shivering stops under shiver_stop_at.",
+		"dry_fire_per_h": 0.4,
+		"dry_cover_per_h": 0.1,
+		"wet_wind_gain": 1.5,
+		"wet_strip": 0.9,
+		"wet_strip_wind": 0.6,
+		"shiver_stop_at": 10.0,
+		"severe_at": 8.0,
+		"severe_clear": 14.0,
+		"severe_hurt_mult": 2.0,
+		"moderate_pace": 1.5,
+		"severe_pace": 2.5,
+		"say_severe": "You have stopped shivering. Get to a fire, now."
+	}
 }
