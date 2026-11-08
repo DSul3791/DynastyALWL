@@ -12,7 +12,7 @@ extends RefCounted
 # record's shape; the live weather does not read it yet (its wetness stays per zone). The other zones keep the weather's old zone
 # numbers in the same fields until their islands have records.
 const DEFAULTS := {
-	"starter": {"sea_level_mean_c": 9.0, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 2000.0},
+	"starter": {"sea_level_mean_c": 9.0, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 2000.0, "latitude_deg": -57.0},
 	"desert": {"sea_level_mean_c": 28.0, "seasonal_swing_c": 8.0, "warmest_year_phase": 0.375, "daily_range_c": 14.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 150.0},
 	"transition": {"sea_level_mean_c": 19.0, "seasonal_swing_c": 11.0, "warmest_year_phase": 0.375, "daily_range_c": 10.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 700.0},
 	"arctic": {"sea_level_mean_c": -9.0, "seasonal_swing_c": 14.0, "warmest_year_phase": 0.375, "daily_range_c": 5.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 400.0},
@@ -23,6 +23,12 @@ const ISLAND_OF_ZONE := {"temperate": "starter", "desert": "desert", "transition
 
 const DAY_COLDEST_HOUR := 5.0             # just before dawn (Met Office: the coolest air comes just before dawn)
 const DAY_WARMEST_HOUR := 15.0            # mid afternoon
+
+
+# The island's signed latitude in degrees, south negative (Sonny's A4 "One sky": the starter island -57, the Hebrides' climate south of
+# the equator row). An island whose record has none yet takes the starter's. Read by the sun and moon with --one-sky.
+static func latitude_deg(climate: Dictionary) -> float:
+	return float(climate.get("latitude_deg", DEFAULTS["starter"]["latitude_deg"]))
 
 
 static func of_zone(group: String) -> Dictionary:

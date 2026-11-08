@@ -46,6 +46,9 @@ const MIST_TOP_MAX_M := 140.0
 # The sun path of day_cycle.gd (LATITUDE_DEG, AXIAL_TILT_DEG): the burn-off follows the real sunrise. Keep the two the same.
 const SUN_LATITUDE_DEG := 52.0
 const SUN_TILT_DEG := 23.44
+# --one-sky (docs/design/one_sky_design.md): the island's climate-record latitude (starter 57 S) and the starter calendar's declination,
+# -23.44 sin(2 pi phase), as day_cycle.gd draws them. Off: 52 N as before.
+static var one_sky_on: bool = AppConfig.has_flag("one-sky")
 
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
@@ -159,10 +162,11 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 	}
 
 
-# Hour of sunrise (sun centre on the horizon) on a day of the year, for the sun path day_cycle.gd draws.
-static func sunrise_hour(day_of_year: float) -> float:
-	var phi: float = deg_to_rad(SUN_LATITUDE_DEG)
-	var delta: float = deg_to_rad(SUN_TILT_DEG) * sin(TAU * day_of_year / float(GameClockScript.DAYS_PER_YEAR))
+# Hour of sunrise (sun centre on the horizon) on a day of the year, for the sun path day_cycle.gd draws (`group`: the weather zone,
+# whose island's latitude --one-sky reads).
+static func sunrise_hour(day_of_year: float, group: String = "temperate") -> float:
+	var phi: float = deg_to_rad(Climate.latitude_deg(Climate.of_zone(group)) if one_sky_on else SUN_LATITUDE_DEG)
+	var delta: float = (-1.0 if one_sky_on else 1.0) * deg_to_rad(SUN_TILT_DEG) * sin(TAU * day_of_year / float(GameClockScript.DAYS_PER_YEAR))
 	var half_day_h: float = rad_to_deg(acos(clampf(-tan(phi) * tan(delta), -1.0, 1.0))) / 15.0
 	return 12.0 - half_day_h
 
@@ -172,7 +176,7 @@ static func sunrise_hour(day_of_year: float) -> float:
 static func _mist(seed_value: int, game_s: float, group: String, phase: float, hour: float, wind: float, front: float, precip: float, spirit: float) -> float:
 	var since: float = fposmod(hour - MIST_FROM_HOUR, 24.0)                  # hours since the fog started to gather
 	var day_of_year: float = phase * float(GameClockScript.DAYS_PER_YEAR)
-	var sunrise_since: float = fposmod(sunrise_hour(day_of_year) - MIST_FROM_HOUR, 24.0)
+	var sunrise_since: float = fposmod(sunrise_hour(day_of_year, group) - MIST_FROM_HOUR, 24.0)
 	var timing: float = smoothstep(0.0, MIST_GATHER_H, since) * (1.0 - smoothstep(sunrise_since + MIST_BURN_FROM_H, sunrise_since + MIST_BURN_TO_H, since))
 
 	if timing <= 0.0:
