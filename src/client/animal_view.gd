@@ -34,6 +34,8 @@ var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
 var _mats: Dictionary = {}
 var _t: float = 0.0
+var conditions_now: Callable     # () -> {"hour": float, "season": String} from the client's ambient clock: the asleep test, tail swish
+var _species_cfg: Variant = null  # data/animals/animals.json (the server's species file: active hours and the rest rule)
 var season_now: String = ""      # "spring", "summer", "autumn", "winter" or "" when unknown; the client sets it (tail swish against flies)
 var torch_light: Callable        # () -> [position, range] of the player's held light, or []: eyes facing it shine (_eye_shine)
 var _blood_points: PackedVector3Array = PackedVector3Array()   # the trail last sent (on_blood), for near_blood
@@ -466,10 +468,12 @@ func _process_body(delta: float) -> void:
 			if node.has_meta("poses"):
 				var posed = node.get_meta("poses")      # bone_offsets.gd: a pose for a state the file has no clip for
 
-				if posed.poses.has(state):
-					posed.pose_state = state
+				var pose_key: int = -1 if bool(b.get("asleep", false)) and posed.poses.has(-1) else state      # -1: the sleep pose (horses doze standing)
 
-				posed.pose_weight = move_toward(float(posed.pose_weight), 1.0 if posed.poses.has(state) else 0.0, delta / 0.25)
+				if posed.poses.has(pose_key):
+					posed.pose_state = pose_key
+
+				posed.pose_weight = move_toward(float(posed.pose_weight), 1.0 if posed.poses.has(pose_key) else 0.0, delta / (0.25 if pose_key != -1 else 1.5))
 			if node.has_meta("flock_birds"):
 				for bird in node.get_meta("flock_birds"):
 					_animate_model(bird, b, state, model_speed, delta)
@@ -728,7 +732,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 				# measured against the rest pose, and the next clip for the role is tried; with none, the model keeps its rest pose.
 				var clip_h: float = _clip_height(player, anim, rig)
 
-				if rest_h > 0.0001 and clip_h < rest_h * float(row.get("flat_share", 0.5)):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
+				if rest_h > 0.0001 and clip_h < rest_h * float(row.get("flat_share", 0.5)) and str(key) != "sleep":      # a sleeping animal lies low on purpose      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
 					_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
 					refused[anim_name] = true
 					continue
@@ -1553,7 +1557,8 @@ func _tail_motion(node: Node3D, state: int, speed: float) -> void:
 		"alert":     # a cat's flick: when it watches something
 			want = 1.0 if state == 3 or state == 6 else 0.15
 		"flies":     # a horse's or cow's swish against flies: grazing in the warm months
-			want = (1.0 if speed < 0.3 else 0.3) * (1.0 if season_now == "" or season_now == "summer" or season_now == "spring" else 0.0)
+			var season: String = str((conditions_now.call() as Dictionary).get("season", "")) if conditions_now.is_valid() else season_now
+			want = (1.0 if speed < 0.3 else 0.3) * (1.0 if season == "" or season == "summer" or season == "spring" else 0.0)
 
 	var fix = node.get_meta("tail")      # bone_offsets.gd (untyped: its own property)
 	fix.wave_scale = lerpf(float(fix.wave_scale), want, 0.05)
@@ -1589,7 +1594,7 @@ func _breath_motion(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		b["puffed"] = 20.0
 
 	b["puffed"] = maxf(0.0, float(b.get("puffed", 0.0)) - delta)
-	fix.breath_rate = 1.0 + float(b["puffed"]) / 20.0
+	fix.breath_rate = (1.0 + float(b["puffed"]) / 20.0) * (0.5 if bool(b.get("asleep", false)) else 1.0)      # asleep: half the rate
 	fix.breath_on = lerpf(float(fix.breath_on), 1.0 if speed < 1.0 else 0.0, 0.1)
 
 
@@ -1618,6 +1623,9 @@ func _look_motion(node: Node3D, b: Dictionary, state: int, delta: float) -> void
 		else:
 			b["next_glance_m"] = range_m      # out of range or busy: the next approach starts a fresh glance
 
+	if bool(b.get("asleep", false)):
+		want = 0.0      # asleep: no glances (the ears still turn)
+
 	b["look_left"] = maxf(0.0, float(b.get("look_left", 0.0)) - delta)
 	fix.look_weight = move_toward(float(fix.look_weight), want, delta / 0.3)
 
@@ -1637,6 +1645,28 @@ func _hop_arc(node: Node3D, b: Dictionary, speed: float, delta: float) -> void:
 		rig.position.y = float(hop[1]) * sin(PI * fposmod(float(b["hop_phase"]), 1.0))
 	elif absf(rig.position.y) > 0.0005:
 		rig.position.y = move_toward(rig.position.y, 0.0, delta * 0.5)
+
+
+# The server's rest rule on the client (server_animals.gd resting): the species' activity for this period of the day at or under
+# rest.below. Needs the client clock (conditions_now); without it nobody sleeps.
+func _asleep_now(kind: String) -> bool:
+	if kind == "" or not conditions_now.is_valid():
+		return false
+
+	if _species_cfg == null:
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
+		_species_cfg = parsed if parsed is Dictionary else {}
+
+	var cfg: Dictionary = _species_cfg
+	var key: String = "songbirds" if kind == "songbird" else kind
+	var def: Dictionary = (cfg.get("species", {}) as Dictionary).get(key, {})
+
+	if not def.has("active"):
+		return false
+
+	var hour: float = float((conditions_now.call() as Dictionary).get("hour", 12.0))
+	var period: String = "day" if hour >= 8.0 and hour < 18.0 else ("dusk" if (hour >= 5.0 and hour < 8.0) or (hour >= 18.0 and hour < 21.0) else "night")
+	return float((def["active"] as Dictionary).get(period, 1.0)) <= float((cfg.get("rest", {}) as Dictionary).get("below", 0.1))
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
@@ -1670,6 +1700,33 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var player: AnimationPlayer = node.get_meta("player")
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = str(state) if roles.has(str(state)) else "0"
+
+	# Asleep (docs/design/ANIMAL_SLEEP.md): the server beds an animal down outside its active hours but sends it as grazing; the client
+	# applies the same rule from the species file and its clock and plays the row's sleep clip (or holds its sleep pose). The server's
+	# alert or flee wakes it; a get-up clip plays first when the row names one.
+	var was_asleep: bool = bool(b.get("asleep", false))
+	b["asleep"] = state == 0 and speed < 0.3 and _asleep_now(str(b.get("kind", "")))
+
+	if bool(b["asleep"]) and roles.has("sleep"):
+		var sleep_clip: String = str(roles["sleep"])
+
+		if player.current_animation != sleep_clip:
+			player.play(sleep_clip, 0.6)
+
+		player.speed_scale = 1.0
+		return
+
+	if was_asleep and not bool(b["asleep"]) and row.has("wake_clip"):
+		var wake: String = _clip_full(player, row, str(row["wake_clip"]))
+
+		if wake != "":
+			player.play(wake, 0.2)
+			player.speed_scale = 1.5
+			b["waking"] = player.get_animation(wake).length / 1.5
+
+	if float(b.get("waking", 0.0)) > 0.0:
+		b["waking"] = float(b["waking"]) - delta
+		return
 
 	if ref > 0.0 and not (state in AIR_STATES and roles.has(str(state))):      # in the air a flock plays its flight clip at any speed
 		role = "run" if ref == run_mps else "walk"

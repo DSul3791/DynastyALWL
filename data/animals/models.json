@@ -1,5 +1,5 @@
 {
-	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md). tail_motion (optional): {period_s, when rest|alert|flies, bones {bone: [phase, swing degrees, axis]}} swings tail bones over every clip: a dog's wag at rest, a cat's flick when alert, a swish against flies in the warm months (docs/design/TAIL_MOTION.md). ear_motion (optional): {left, right, swivel_axis, flatten_axis, swivel_deg, flatten_deg} turns the ears toward a player within 20 m and lays them back when the animal warns or charges (docs/design/EAR_AND_BREATH.md). breath (optional): {bone, per_min, swell, long_axis} swells the chest bone at the species' resting breath rate, faster after a run (docs/design/EAR_AND_BREATH.md). look (optional): {bones [neck ... head], max_deg, mode glance|track, range_m, hold_s} turns the head toward the player over the clip (docs/design/HEAD_TRACKING.md). state_poses (optional): {state: {bones {bone: [x, y, z] degrees}, waves {bone: [phase, swing, axis]}, period_s}} lays a bone-built pose over the clip for a state the file has no clip for (docs/design/POSED_STATES.md). hop (optional): {walk|run: {bound_m, arc_m}} a hopping animal bounds on an arc, one hop clip per bound (docs/design/HOP_ARC.md).",
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. shine_color and shine (0 to 3, optional): eye shine in the player's held torchlight on the model's eye surfaces (docs/design/EYE_SHINE_AND_WET.md). tail_motion (optional): {period_s, when rest|alert|flies, bones {bone: [phase, swing degrees, axis]}} swings tail bones over every clip: a dog's wag at rest, a cat's flick when alert, a swish against flies in the warm months (docs/design/TAIL_MOTION.md). ear_motion (optional): {left, right, swivel_axis, flatten_axis, swivel_deg, flatten_deg} turns the ears toward a player within 20 m and lays them back when the animal warns or charges (docs/design/EAR_AND_BREATH.md). breath (optional): {bone, per_min, swell, long_axis} swells the chest bone at the species' resting breath rate, faster after a run (docs/design/EAR_AND_BREATH.md). look (optional): {bones [neck ... head], max_deg, mode glance|track, range_m, hold_s} turns the head toward the player over the clip (docs/design/HEAD_TRACKING.md). state_poses (optional): {state: {bones {bone: [x, y, z] degrees}, waves {bone: [phase, swing, axis]}, period_s}} lays a bone-built pose over the clip for a state the file has no clip for (docs/design/POSED_STATES.md). hop (optional): {walk|run: {bound_m, arc_m}} a hopping animal bounds on an arc, one hop clip per bound (docs/design/HOP_ARC.md). clips.sleep and wake_clip (optional): the clip played while the animal is bedded down (the server's rest rule, worked out on the client) and the get-up clip played as it wakes; state_poses -1 is a sleep pose for a file with no lying clip (docs/design/ANIMAL_SLEEP.md).",
 	"species": {
 		"bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -18,7 +18,8 @@
 				"12": "Idle_Breathing_01",
 				"walk": "Walk",
 				"run": "Run",
-				"16": "Attack_IdleAngry_01_Low"
+				"16": "Attack_IdleAngry_01_Low",
+				"sleep": "Lying_Breathing_01"
 			},
 			"note": "WildMesh BrownBear (Realistic Animals/BrownBear/SK_Bear.fbx, textures in its Textures folder): 7508 triangles, 35 bones, 81 clips; faces +Z, so yaw 180. Alert stands up on its hind legs; warn is the angry breathing stance; charge sprints. Jaw-pop (state 16, Steve #600): Attack_IdleAngry_01_Low, a low angry swat. The black bear's file has no such clip: it falls back to its warning pose.",
 			"length_m": 2.0,
@@ -64,7 +65,8 @@
 						"11": "Sprint",
 						"12": "Idle_Breathing_01",
 						"walk": "Walk",
-						"run": "Run"
+						"run": "Run",
+						"sleep": "Lying_Breathing_01"
 					}
 				},
 				{
@@ -104,7 +106,8 @@
 				"max_deg": 60,
 				"mode": "track",
 				"range_m": 30
-			}
+			},
+			"wake_clip": "Lying_to_Idle"
 		},
 		"goblin": {
 			"scene": "res://assets/creatures/goblin_skritch/Goblin_Skritch_Ragtooth.glb",
@@ -172,7 +175,8 @@
 				"3": "Idle_Breathing",
 				"12": "Idle",
 				"walk": "WalkMedium_F",
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "LyingBreathing"
 			},
 			"note": "WildMesh Deer (Realistic Animals/Deer/SK_Deer.fbx, textures in its Textures folder). 113 clips. Alert stands breathing, head up. Seven looks picked by id (variants): four stags (deer, buck, red deer, second-rig stag) and three hinds (doe, doe second rig, hind), each with its own clips. Checked 7 Nov 2026.",
 			"length_m": 2.0,
@@ -205,7 +209,8 @@
 						"3": "Idle_Breathing",
 						"12": "Idle",
 						"walk": "WalkMedium_F",
-						"run": "RunFast_F"
+						"run": "RunFast_F",
+						"sleep": "LyingBreathing"
 					}
 				},
 				{
@@ -403,7 +408,8 @@
 				"10": "Idle_Breathing",
 				"12": "Idle",
 				"walk": "WalkMedium_F",
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "LyingBreathing"
 			},
 			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget).",
 			"length_m": 3.0,
@@ -463,7 +469,8 @@
 				"10": "idle_bark_01",
 				"12": "Idle",
 				"walk": "walk_fwd_01",
-				"run": "run_fwd_01"
+				"run": "run_fwd_01",
+				"sleep": "wild_boar_idle_rest_pos_3ace7a3"
 			},
 			"note": "WildMesh WildBoar (Realistic Animals/WildBoar/SK_WildBoar.fbx, textures in its Textures folder). 84 clips. Warn barks.",
 			"length_m": 1.7,
@@ -497,7 +504,8 @@
 						"10": "idle_bark_01",
 						"12": "Idle",
 						"walk": "walk_fwd_01",
-						"run": "run_fwd_01"
+						"run": "run_fwd_01",
+						"sleep": "wild_boar_idle_rest_pos_3ace7a3"
 					}
 				},
 				{
@@ -545,7 +553,8 @@
 				"3": "Idle_Breathing",
 				"12": "Idle_Breathing",
 				"walk": "WalkMedium_F",
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "LyingBreathing"
 			},
 			"note": "WildMesh Wolf (Realistic Animals/Wolf/SK_Wolf.fbx, textures in its Textures folder). 70 clips. Idle is a howl, so alert and recover stand in Idle_Breathing (creature check, 7 Nov 2026).",
 			"length_m": 2.0,
@@ -570,7 +579,8 @@
 						"3": "Idle_Breathing",
 						"12": "Idle_Breathing",
 						"walk": "WalkMedium_F",
-						"run": "RunFast_F"
+						"run": "RunFast_F",
+						"sleep": "LyingBreathing"
 					}
 				},
 				{
@@ -839,6 +849,42 @@
 				"per_min": 12,
 				"swell": 0.03,
 				"long_axis": "y"
+			},
+			"state_poses": {
+				"-1": {
+					"bones": {
+						"neck_03": [
+							12,
+							0,
+							0
+						],
+						"neck_04": [
+							10,
+							0,
+							0
+						],
+						"head": [
+							10,
+							0,
+							0
+						]
+					}
+				}
+			},
+			"look": {
+				"bones": [
+					"neck_02",
+					"neck_03",
+					"neck_04",
+					"head"
+				],
+				"max_deg": 60,
+				"mode": "glance",
+				"range_m": 30,
+				"hold_s": [
+					2,
+					4
+				]
 			}
 		},
 		"donkey": {
@@ -982,6 +1028,42 @@
 				"per_min": 12,
 				"swell": 0.03,
 				"long_axis": "y"
+			},
+			"state_poses": {
+				"-1": {
+					"bones": {
+						"neck_03": [
+							12,
+							0,
+							0
+						],
+						"neck_04": [
+							10,
+							0,
+							0
+						],
+						"head": [
+							10,
+							0,
+							0
+						]
+					}
+				}
+			},
+			"look": {
+				"bones": [
+					"neck_02",
+					"neck_03",
+					"neck_04",
+					"head"
+				],
+				"max_deg": 60,
+				"mode": "glance",
+				"range_m": 30,
+				"hold_s": [
+					2,
+					4
+				]
 			}
 		},
 		"lynx": {
@@ -1071,7 +1153,8 @@
 				"11": "RunFast_F",
 				"12": "Idle",
 				"walk": "WalkMedium_F",
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "LyingBreathing"
 			},
 			"note": "WildMesh BlackBear (Realistic Animals/BlackBear/SK_BlackBear.fbx). 136 clips; units are centimetres (rescaled by length_m). Jaw-pop (state 16, Steve #600): its file has no clip, so state_poses builds one over its warning clip: head and neck low, jaw open and popping, a forepaw stamping (axes a first guess until a check).",
 			"length_m": 1.7,
@@ -1168,7 +1251,8 @@
 				"10": "Idle_Breathing_01",
 				"12": "Idle_Breathing_01",
 				"walk": "Walk_2",
-				"run": "Run"
+				"run": "Run",
+				"sleep": "Lying_Breathing_01"
 			},
 			"note": "WildMesh Elk (Realistic Animals/Elk/SK_Elk.fbx). 58 clips; antler surface is called Chifre. Body texture may be 4096: set its import size limit to 2048 like the moose. Clips checked with tools/creature_check.gd (7 Nov 2026): Idle grazes head down; Food_Eating_01_Wolf lays it flat; the file has two clips called Walk, one static and one shrinking the rig to a hundredth, so the walk is Walk_2.",
 			"length_m": 2.4,
@@ -1221,7 +1305,8 @@
 					2,
 					4
 				]
-			}
+			},
+			"wake_clip": "Lying_to_Idle"
 		},
 		"bighorn": {
 			"scene": "res://assets/animals/bighorn/SK_BighornSheep.fbx",
@@ -1235,7 +1320,8 @@
 				"3": "Idle",
 				"12": "Idle",
 				"walk": "WalkMedium_F",
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "LyingBreathing"
 			},
 			"note": "WildMesh Bighorn Sheep (Realistic Animals/BighornSheep/SK_BighornSheep.fbx). 114 clips; units are centimetres. Idle_Breathing lies down, so alert and recover stand in Idle (creature check, 7 Nov 2026).",
 			"length_m": 1.6,
@@ -1280,7 +1366,8 @@
 				"3": "Idle_Breathing",
 				"12": "Idle_Breathing",
 				"walk": "WalkMedium_F",
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "Lying_Breathing"
 			},
 			"note": "WildMesh Mountain Goat (Realistic Animals/MountainGoat/SK_MountainGoat.fbx). 116 clips; units are centimetres. Horn surface is called MountainGoat_Antle.",
 			"length_m": 1.4,
@@ -1352,7 +1439,8 @@
 				"3": "Alert",
 				"12": "Idle_2",
 				"walk": "Walk",
-				"run": "Run"
+				"run": "Run",
+				"sleep": "Sleeping"
 			},
 			"note": "WildMesh Chamois male (Realistic Animals/ChamoisMale/SK_ChamoisMale.fbx). Checked 7 Nov 2026: Idle_3 grazes head down, Alert stands head up; clips are in place.",
 			"length_m": 1.25,
@@ -1378,7 +1466,8 @@
 					2,
 					4
 				]
-			}
+			},
+			"wake_clip": "SleepingToStand"
 		},
 		"mink": {
 			"scene": "res://assets/animals/mink/SK_AmericanMink.fbx",
@@ -1393,7 +1482,8 @@
 				"3": "idle_alerted_look_01",
 				"12": "idle",
 				"walk": "starttrot_fwd_01",
-				"run": "startsprint_fwd_01"
+				"run": "startsprint_fwd_01",
+				"sleep": "rest_idle_01"
 			},
 			"note": "WildMesh American Mink (Realistic Animals/AmericanMink/SK_AmericanMink.fbx). Checked 7 Nov 2026: the file has no looping walk or run, only start clips; starttrot_fwd_01 and startsprint_fwd_01 loop as walk and run. Alert stands up on its hind legs. clip_loop (8 Nov 2026, Dave: give it a walk): its walk loops starttrot_fwd_01 from 0.133 to 0.600 s and its run startsprint_fwd_01 from 0.183 to 0.483 s, the windows tools/find_loop.gd found with the closest ends (7 and 12 degrees per bone), eased together over the last 0.12 and 0.1 s. gait_fallback: a hand-made walk (four-beat) and run (bound) from its own bones, kept ready; rename it to gait to use it in place of the clip_loop walk and run (the axes are a first guess until a creature check).",
 			"length_m": 0.6,
@@ -1548,7 +1638,8 @@
 				"3": "idle 3",
 				"12": "rest idle",
 				"walk": "trot fwd",
-				"run": "sprint fwd"
+				"run": "sprint fwd",
+				"sleep": "rest idle"
 			},
 			"note": "WildMesh Raccoon (Realistic Animals/Racoon/SK_Racoon.fbx).",
 			"length_m": 0.75,
@@ -1578,7 +1669,8 @@
 				"3": "NeutralStand01",
 				"12": "NeutralStand00",
 				"walk": "Walk",
-				"run": "Run"
+				"run": "Run",
+				"sleep": "Lying00"
 			},
 			"note": "WildMesh Rat (Realistic Animals/Rat/SK_Rat.fbx).",
 			"length_m": 0.4,
@@ -1589,7 +1681,8 @@
 				}
 			],
 			"shine": 0.5,
-			"shine_color": "#dc3c32"
+			"shine_color": "#dc3c32",
+			"wake_clip": "LyingToStand"
 		},
 		"crow": {
 			"scene": "res://assets/animals/crow/SK_Crow.fbx",
@@ -1699,7 +1792,8 @@
 				"3": "Alert",
 				"12": "NeutralStand",
 				"walk": "Walk_100",
-				"run": "Run_600"
+				"run": "Run_600",
+				"sleep": "Lying"
 			},
 			"note": "WildMesh Cow (Realistic Animals/Cow/SK_Cow.fbx).",
 			"length_m": 2.4,
@@ -1776,7 +1870,8 @@
 					2,
 					4
 				]
-			}
+			},
+			"wake_clip": "LyingToStand"
 		},
 		"goat": {
 			"scene": "res://assets/animals/goat/SK_Goat.fbx",
@@ -1791,7 +1886,8 @@
 				"3": "idle",
 				"12": "idle",
 				"walk": "walk",
-				"run": "run"
+				"run": "run",
+				"sleep": "sleep"
 			},
 			"note": "WildMesh Goat (Realistic Animals/Goat/SK_Goat.fbx). T_Goat.png's alpha is nearly all zero (not a cut-out): its material entry is opaque, or the goat is invisible.",
 			"length_m": 1.3,
@@ -1824,7 +1920,8 @@
 					2,
 					4
 				]
-			}
+			},
+			"wake_clip": "wake up"
 		},
 		"chicken": {
 			"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
@@ -1839,7 +1936,8 @@
 				"3": "Idle2",
 				"12": "Idle",
 				"walk": "Walk",
-				"run": "Run"
+				"run": "Run",
+				"sleep": "IdleLay"
 			},
 			"note": "WildMesh Chicken (Realistic Animals/Chicken/SK_Chicken.fbx).",
 			"length_m": 0.45,
@@ -1885,7 +1983,8 @@
 				"3": "Idle02",
 				"12": "Idle_2",
 				"walk": "Walk",
-				"run": "Run"
+				"run": "Run",
+				"sleep": "Sit"
 			},
 			"note": "WildMesh Cat (Realistic Animals/Cat/SK_Cat.fbx).",
 			"length_m": 0.7,
@@ -1964,7 +2063,8 @@
 				"walk": "walk_fwd_01",
 				"run": "run_fwd_01",
 				"18": "idle_sit_one_off_step_01",
-				"19": "idle_lay_one_off_01"
+				"19": "idle_lay_one_off_01",
+				"sleep": "interact_bed_sleep_exist_01"
 			},
 			"note": "WildMesh Dog (Realistic Animals/Labrador/SK_Labrador.fbx). Companion states (docs/design/DOG_COMPANION_CLIPS.md, Steve #606): 10 barks, 18 sits, 19 lies down; the bloodhound holds the end of its sit and lie transitions as loops.",
 			"length_m": 1.1,
@@ -1985,7 +2085,8 @@
 						"walk": "walk_fwd_01",
 						"run": "run_fwd_01",
 						"18": "idle_sit_one_off_step_01",
-						"19": "idle_lay_one_off_01"
+						"19": "idle_lay_one_off_01",
+						"sleep": "interact_bed_sleep_exist_01"
 					}
 				},
 				{
@@ -2067,7 +2168,8 @@
 				"per_min": 20,
 				"swell": 0.03,
 				"long_axis": "y"
-			}
+			},
+			"wake_clip": "idle_lay_to_idle_01"
 		},
 		"buffalo": {
 			"scene": "res://assets/animals/buffalo/SK_Buffalo.fbx",
@@ -2084,7 +2186,8 @@
 				"11": "RunFast_F",
 				"12": "Idle",
 				"walk": "WalkMedium_F",
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "LyingBreathing"
 			},
 			"note": "WildMesh Wild ox (Realistic Animals/Buffalo/SK_Buffalo.fbx).",
 			"length_m": 3.0,
@@ -2173,7 +2276,8 @@
 				"11": "sprint_fwd",
 				"12": "idle pose",
 				"walk": "walk_fwd",
-				"run": "run_fwd"
+				"run": "run_fwd",
+				"sleep": "idle_rest_grooming"
 			},
 			"note": "WildMesh Puma (Realistic Animals/Puma/SK_Puma.fbx). Imported crouched: sized by its standing 'idle pose' (size_clip); length_m 2.0 is nose to tail tip. Checked 7 Nov 2026.",
 			"length_m": 2.0,
@@ -2215,7 +2319,8 @@
 				"3": "Idle_Breathing_01",
 				"12": "Idle_Breathing_01",
 				"walk": "Walk_2",
-				"run": "Run"
+				"run": "Run",
+				"sleep": "Lying_Breathing_01"
 			},
 			"note": "WildMesh Pronghorn (Realistic Animals/Pronghorn/SK_Pronghorn.fbx). Same rig as the elk: Idle grazes head down, the real walk is Walk_2. Checked 7 Nov 2026.",
 			"length_m": 1.45,
@@ -2249,7 +2354,8 @@
 					2,
 					4
 				]
-			}
+			},
+			"wake_clip": "Lying_to_Idle"
 		},
 		"warthog": {
 			"scene": "res://assets/animals/warthog/SK_Warthog.fbx",
@@ -2269,7 +2375,8 @@
 					"WalkMedium_F",
 					"GrazingWalkMedium_F"
 				],
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "Lying_Breathing"
 			},
 			"note": "WildMesh Warthog (Realistic Animals/Warthog/SK_Warthog.fbx). Imported mid-run: sized by its Idle (size_clip). GrazingOnSpotA2IdleThreat drops onto its haunches, so warn stands in Idle_Breathing. Checked 7 Nov 2026.",
 			"length_m": 1.4,
@@ -2303,7 +2410,8 @@
 					"WalkMedium_F",
 					"GrazingWalkMedium_F"
 				],
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "LyingBreathing"
 			},
 			"note": "WildMesh Hyena (Realistic Animals/Hyena/SK_Hyena.fbx). Laughs when it warns. Checked 7 Nov 2026.",
 			"length_m": 1.5,
@@ -2345,7 +2453,8 @@
 					"WalkMedium_F",
 					"GrazingWalkMedium_F"
 				],
-				"run": "RunFast_F"
+				"run": "RunFast_F",
+				"sleep": "Lying"
 			},
 			"note": "WildMesh Wildebeest (Realistic Animals/Wildebeest/SK_Wildebeest.fbx). Checked 7 Nov 2026.",
 			"length_m": 2.3,
@@ -2421,7 +2530,8 @@
 				],
 				"12": "idle_smell_01",
 				"walk": "walk_fwd_01",
-				"run": "run_fwd_01"
+				"run": "run_fwd_01",
+				"sleep": "idle_rest_grooming_01"
 			},
 			"note": "WildMesh Lion (Realistic Animals/Lion/SK_Lion.fbx); lionesses are the second and third looks. The lion and the second lioness share a rig imported crouched (size_clip Idle); the first lioness has the WildMesh grazing rig. Roars when it warns. Checked 7 Nov 2026.",
 			"length_m": 2.8,
@@ -2448,7 +2558,8 @@
 						],
 						"12": "idle_smell_01",
 						"walk": "walk_fwd_01",
-						"run": "run_fwd_01"
+						"run": "run_fwd_01",
+						"sleep": "idle_rest_grooming_01"
 					}
 				},
 				{
@@ -2536,7 +2647,8 @@
 				"11": "Sprint-IP",
 				"12": "Idle",
 				"walk": "Walk-IP",
-				"run": "Run-IP"
+				"run": "Run-IP",
+				"sleep": "Lying_00"
 			},
 			"note": "WildMesh Leopard (Realistic Animals/Leopard/SK_Leopard.fbx). Checked 7 Nov 2026.",
 			"length_m": 2.0,
@@ -2558,7 +2670,8 @@
 				"max_deg": 70,
 				"mode": "track",
 				"range_m": 30
-			}
+			},
+			"wake_clip": "Trans_Lying_To_Stand-IP"
 		},
 		"rhino": {
 			"scene": "res://assets/animals/rhino/SK_Rhinoceros.fbx",
@@ -2575,7 +2688,8 @@
 				"11": "Run-IP",
 				"12": "Idle_2",
 				"walk": "Walk-IP",
-				"run": "Run-IP"
+				"run": "Run-IP",
+				"sleep": "Lying_01"
 			},
 			"note": "WildMesh Rhinoceros (Realistic Animals/Rhinoceros/SK_Rhinoceros.fbx). Checked 7 Nov 2026.",
 			"length_m": 3.6,
@@ -2586,7 +2700,8 @@
 				}
 			],
 			"shine": 1,
-			"shine_color": "#b4b48c"
+			"shine_color": "#b4b48c",
+			"wake_clip": "Trans_Lying_To_Stand-IP"
 		},
 		"elephant": {
 			"scene": "res://assets/animals/elephant/SK_AfricanElephant.fbx",
@@ -2603,7 +2718,8 @@
 				"11": "Sprint-IP",
 				"12": "Stand_00-IP",
 				"walk": "Walk-IP",
-				"run": "Run-IP"
+				"run": "Run-IP",
+				"sleep": "Lying_00"
 			},
 			"note": "WildMesh African Elephant (Realistic Animals/AfricanElephant/SK_AfricanElephant.fbx). Checked 7 Nov 2026.",
 			"length_m": 6.0,
@@ -2622,7 +2738,8 @@
 				}
 			],
 			"shine": 1,
-			"shine_color": "#c8d278"
+			"shine_color": "#c8d278",
+			"wake_clip": "Trans_Lying_To_Stand-IP"
 		},
 		"camel": {
 			"scene": "res://assets/animals/camel/SK_Camel.fbx",
@@ -2653,7 +2770,22 @@
 			],
 			"size_clip": "Idle",
 			"shine": 2,
-			"shine_color": "#64c8a0"
+			"shine_color": "#64c8a0",
+			"look": {
+				"bones": [
+					"Camel_1humpM2015_Neck_01SHJnt",
+					"Camel_1humpM2015_Neck_02SHJnt",
+					"Camel_1humpM2015_Neck_TopSHJnt",
+					"Camel_1humpM2015_Head_TopSHJnt"
+				],
+				"max_deg": 70,
+				"mode": "glance",
+				"range_m": 30,
+				"hold_s": [
+					2,
+					4
+				]
+			}
 		},
 		"guineafowl": {
 			"scene": "res://assets/animals/guineafowl/SK_Guineafowl.fbx",
@@ -2729,7 +2861,8 @@
 					"walk_fwd_01",
 					"trot_fwd_01"
 				],
-				"run": "sprint_fwd_01"
+				"run": "sprint_fwd_01",
+				"sleep": "rest_idle_01"
 			},
 			"note": "WildMesh Kangaroo (Realistic Animals/Kangaroo/SK_Kangaroo.fbx). Checked 7 Nov 2026. Grazes head down in idle_eat: it bends to a third of its standing height, so flat_share 0.25 lets the flat-clip guard keep it (8 Nov 2026, Dino's strips).",
 			"length_m": 1.8,
@@ -2808,7 +2941,8 @@
 				"11": "Sprint-IP",
 				"12": "Idle",
 				"walk": "Walk-IP",
-				"run": "Run-IP"
+				"run": "Run-IP",
+				"sleep": "Lying_00"
 			},
 			"note": "WildMesh Tiger (Realistic Animals/Tiger/SK_Tiger.fbx). Same rig as the leopard. Checked 7 Nov 2026.",
 			"length_m": 3.0,
@@ -2840,7 +2974,8 @@
 				"max_deg": 70,
 				"mode": "track",
 				"range_m": 30
-			}
+			},
+			"wake_clip": "Trans_Lying_To_Stand-IP"
 		}
 	}
 }

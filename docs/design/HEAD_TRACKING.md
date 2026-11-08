@@ -20,4 +20,9 @@ Grazer rows: `"look": {"bones": [...], "yaw_max_deg": 60, "pitch_max_deg": 40, "
 ## Check
 A short series of frames with the camera moving round a grazing deer and a stalking wolf (the creature check gains a `--orbit` option), then Kathleen's look in the live game.
 
-**Built:** the turn is axis-free (the line from the neck base to the head is turned onto the line to the target, clamped, shared equally over the bones), so no per-rig axes are needed. Rows: glance for deer, moose, elk, wildebeest, bighorn, mountain goat, chamois, pronghorn, cow, goat; track for wolf, fox, hyena, lynx, puma, lion, leopard, tiger, both bears. Horse, donkey and camel have unusual neck bone names; later.
+**Built:** the turn is axis-free (the line from the neck base to the head is turned onto the line to the target, clamped, shared equally over the bones), so no per-rig axes are needed. Rows: glance for deer, moose, elk, wildebeest, bighorn, mountain goat, chamois, pronghorn, cow, goat; track for wolf, fox, hyena, lynx, puma, lion, leopard, tiger, both bears. 
+## Horse, donkey and camel
+Their rigs carry many helper bones (`dyn_new_neck_*`, `*_middleslider_*`, `*_correctiveRoot`, the horse's mane and bounce chains) beside the real neck chain. Turning a helper bone does nothing visible or fights the rig's own correction, so the look and sleep poses use the **real chain only**:
+- horse and donkey: `neck_02`, `neck_03`, `neck_04`, `head` (the chain runs `neck_01` to `neck_05`; the base stays still so the shoulders do not twist);
+- camel: `Camel_1humpM2015_Neck_01SHJnt`, `_Neck_02SHJnt`, `_Neck_TopSHJnt`, `_Head_TopSHJnt` (the long neck takes most of the turn, so `max_deg` 70).
+All three glance like the other grazers. The horse and donkey also doze standing (sleep pose `-1`: neck and head lowered on the same chain).

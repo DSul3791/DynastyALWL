@@ -1,4 +1,4 @@
-# Animals asleep: bedded down, not frozen grazing (MikeW, 8 Nov 2026; client side, design only)
+# Animals asleep: bedded down, not frozen grazing (MikeW, 8 Nov 2026; client side, built on the eye-placement branch)
 
 ## What the server already does
 Outside its active hours (its row's `active` chance for the day, dusk or night period at or under `rest.below`, 0.1) an animal **beds down** (`server_animals.gd` `resting`): it stops wandering, stays put far longer, and wakes at `rest.spook_share` (0.6) of its spook distance: a sleeping deer lets you closer than an awake one. The wire still says state 0 (graze), so the client draws it grazing: a deer "grazing" all night in one spot.
@@ -27,3 +27,5 @@ Steve's den life (goblin_den_life_design.md and the bear's den) keeps its own ru
 
 ## Check
 A creature check `--role=sleep` strip, and one night picture of a deer herd and a wolf pack bedded down (Kathleen's section 11 night shots).
+
+**Built:** sleep clips for 30 species read from the model files (lying or resting loops), get-up clips for 12; horse and donkey doze standing (pose); the asleep test, half-rate breathing, no head glances while asleep, and a lying clip is never refused as flat.
