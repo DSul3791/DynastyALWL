@@ -201,6 +201,27 @@ The M0 check is a headless test (`test_water_record.gd`). It writes a small reco
 - `downstream`;
 - the refusals: an incomplete record, an unknown version, a wrong length.
 
+## 6c. Water classes: one code space (M1 step 2, 8 Nov)
+
+**The clash:** `data/tables/water_classes.json` is append-only. It already holds 4 marsh and 5 estuary. The record's codes put swamp at 5 and run on to 10 salt marsh. Nothing bakes estuary today, but the rule forbids reusing its id.
+
+**The fix, with no change asked of Sonny:**
+- The table keeps the game's ids, which tile files, flora and land types use. New rows are 6 swamp, 7 fen, 8 bog, 9 seasonal channel, 10 seasonal pond and 11 salt marsh.
+- Each row carries `record_code`, the code the record writes.
+- `water_record.gd` maps record codes to table ids when it reads `water_class`. A code the table lacks reads as 255, and the bake reports it.
+
+**What each class means to the land:** a row with `land: true` is ground to the climate and the land types. That covers the wetlands and the dry-season beds.
+- The bake hands them a `land_view` of the classes, with those cells as 0.
+- After the land types, `apply_wet_land` lays on the row's `biome` and `soil`:
+  - marsh, swamp and salt marsh: marsh biome on mud;
+  - fen and bog: marsh biome on peat;
+  - a seasonal channel: its climate biome on gravel;
+  - a seasonal pond: its climate biome on silt.
+- MikeW's own wetland biome rows replace "marsh" per row when they exist.
+- The native climate loop (`GenCore.classify_climate`) needs no change, because it never sees a land class.
+
+**Rules bakes are unchanged:** today's bake writes only classes 0 to 3, so `land_view` returns the same array and `apply_wet_land` changes nothing. A rules tile is byte-identical before and after.
+
 ## 7. Questions (to the coordinator, not to Sonny)
 
 - **Q1, for Dave: goblin dens.** Sonny agrees with the recommendation below. Under Dave's 6 Nov QA rule (go with the recommendation), M1 builds it, and Dave can still overrule it. Dave's 7 Nov rule puts goblins in "any spring tunnel". With the rebuild, spring caves become rare, which follows his watershed document. I recommend letting goblin dens use dry side branches of any cave (karst, lava tube or spring cave). Goblins then stay common enough on the starter island, and the caves stay natural.
