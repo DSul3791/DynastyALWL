@@ -156,7 +156,7 @@ var ground_material: Callable   # (x, z) -> the surface material's name there ("
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
-var season_at: Callable         # (position) -> the season there (Weather.season_at: half a year off across the equator with --one-sky); unset: season_now
+var season_at: Callable         # (position) -> the season there (Weather.season_at: half a year off across the equator); unset: season_now
 var skill_level: Callable         # (peer, skill id) -> level factor around 1.0; unset until the skill system exists, then every factor is 1.0
 var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)

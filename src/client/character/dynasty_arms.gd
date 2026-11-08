@@ -5,7 +5,7 @@ extends "res://src/client/ragdoll_body.gd"
 # The arms are rigid, so each is turned here into ONE skinned mesh on the matching bones of the old arms rig (ragdoll_body.gd with arms_only; 2 Nov 2026: it was three separate cut pieces, which showed ragged cut edges, gaps and seams when the elbow bent):
 # the rig, its ten animations (idle, swing_fp, jab, throw, use ...), its hand mounts and the way held_item.gd and arms_view.gd place it are all unchanged, so the held tool, the swing's impact frame
 # and the jab, throw and use keyframes behave as before; only the drawn arm is Dave's. The elbow and the wrist bend smoothly (the skin weights blend over a band around each joint); the hand is one piece, so the
-# fingers do not move. Default with the Dynasty body; `--oldbody` (or the Old body setting) keeps the old tube arms (held_item.gd).
+# fingers do not move. Always the first-person arms since 8 Nov 2026 (the old-body switches are gone); without the parts glb they fall back to the tube arms of the base rig.
 
 const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")

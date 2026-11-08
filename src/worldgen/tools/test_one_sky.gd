@@ -1,6 +1,6 @@
 extends SceneTree
 
-# --one-sky (docs/design/one_sky_design.md, Sonny's A4 "One sky", Jamie's #706): the starter island's sun and moon at 57 S.
+# One sky (docs/design/one_sky_design.md, Sonny's A4 "One sky", Jamie's #706): the starter island's sun and moon at 57 S.
 # Run: godot --headless --script res://src/worldgen/tools/test_one_sky.gd
 
 const DayCycle := preload("res://src/client/day_cycle.gd")
@@ -64,7 +64,6 @@ static func _hm(hour: float) -> String:
 
 
 func _init() -> void:
-	DayCycle.one_sky_on = true
 	DayCycle.sky_row_latitude = -57.0             # Sonny's table below is for 57 S, whatever the grid's spread per row
 	_check(is_equal_approx(DayCycle.sky_latitude_deg(), -57.0), "the sky follows the row's latitude, here 57 S (%.1f)" % DayCycle.sky_latitude_deg())
 	_check_grid_rows()
@@ -119,8 +118,6 @@ func _init() -> void:
 	_check(slope_normal.dot(late) <= 0.0, "a 30 degree slope facing south gets no direct sun at noon (%.3f)" % slope_normal.dot(late))
 
 	# The weather's sunrise (sun centre on the horizon, for the fog burn-off) agrees with the day cycle's.
-	Weather.one_sky_on = true
-
 	for day in [91.0, 0.0, 274.0]:
 		var phase: float = day / 365.0
 		var weather_rise: float = Weather.sunrise_hour(day, DayCycle.sky_latitude_deg())
@@ -140,7 +137,6 @@ func _init() -> void:
 		_check(absf(weather_rise - cycle_rise) * 60.0 <= 2.0, "day %d: the weather's sunrise %s matches the sky's %s" % [int(day), _hm(weather_rise), _hm(cycle_rise)])
 
 	# The day cycle itself: the light comes from the north at noon and the moonlight from the moon's place.
-	DayCycle.moon_phase_on = true
 	var cycle = DayCycle.new()
 	cycle.update(12.0, 91, 91.0)
 	var toward: Vector3 = cycle.light_basis * Vector3(0.0, 0.0, 1.0)      # the light shines along -Z of its basis, so +Z points at the sun
@@ -148,20 +144,12 @@ func _init() -> void:
 	cycle.update(0.0, 100, 100.0)
 	_check(cycle.moon_elevation > 0.1 and cycle.moon_elevation < 0.25, "day 100 midnight: the full moon low (sin %.2f)" % cycle.moon_elevation)
 
-	# Switch off: today's 52 N sky.
-	DayCycle.one_sky_on = false
-	Weather.one_sky_on = false
-	var old_noon: Vector3 = _sun(0.25, 12.0)
-	_check(absf(_altitude(old_noon) - 61.4) <= 0.2 and old_noon.z > 0.0, "switch off: midsummer noon %.1f degrees due south, as before" % _altitude(old_noon))
-	DayCycle.moon_phase_on = false
-
 	print("test_one_sky: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
 
 
 # Latitude from the world grid (Dave, 8 Nov): the centre row is the equator, rows south of it (larger numbers, +Z) are negative.
 func _check_grid_rows() -> void:
-	Weather.one_sky_on = true
 	_check(Climate.latitude_of_row(0) == 0.0, "the equator row is at 0 degrees")
 	_check(Climate.latitude_of_row(Climate.STARTER_ROW) < 0.0 and is_equal_approx(Climate.latitude_of_row(Climate.STARTER_ROW), -Climate.DEG_PER_ROW * float(Climate.STARTER_ROW)), "the starter row is south: %.1f" % Climate.latitude_of_row(Climate.STARTER_ROW))
 	_check(is_equal_approx(Climate.latitude_of_row(-4), -Climate.latitude_of_row(4)), "row -4 is the same latitude north (%.1f)" % Climate.latitude_of_row(-4))

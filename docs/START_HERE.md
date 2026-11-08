@@ -51,7 +51,7 @@ GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe tools/run_tests.sh -
 Tests live in `src/worldgen/tools/` and `src/water2/`. Latest full-run result: `docs/TYLER_NEXT_TASKS.md` (Tyler's final report); the Phase 2 order is `docs/handoff/PHASE2_RUNBOOK.md`.
 
 ## Run the game
-From the project folder with the voxel build: `godot --path . -- --role=play` (play is the default role in `scenes/launcher.gd`; starts a server and joins it; pressing Play in the editor does the same). Water: the new Dynasty water (`src/water2`) is the default since 1 Nov; `--water-old` (the exact spelling in code; or Esc > Settings > Gameplay > Old water) runs the old one. The new body (Dave's `Dynasty_Base_Male.glb`) is the default too; `--oldbody` (or Esc > Settings > Gameplay > Old body) brings back the generated one (`docs/DYNASTY_BODY.md`). In game: K = photo camera, `/` = inspection mode (`CONTROLS.md`). Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md`.
+From the project folder with the voxel build: `godot --path . -- --role=play` (play is the default role in `scenes/launcher.gd`; starts a server and joins it; pressing Play in the editor does the same). Water: the new Dynasty water (`src/water2`) is the default since 1 Nov; `--water-old` (the exact spelling in code; or Esc > Settings > Gameplay > Old water) runs the old one. The body is Dave's `Dynasty_Base_Male.glb`, the only one since 8 Nov (the old-body switches are gone; `docs/DYNASTY_BODY.md`). In game: K = photo camera, `/` = inspection mode (`CONTROLS.md`). Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md`.
 
 ## Where everything is (for a new thread of Dave's)
 | I want | Go to |

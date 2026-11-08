@@ -1,69 +1,25 @@
 extends RefCounted
 
-# The character this player wears (30 Oct 2026): the generated body is the default body, and the active character of character_store.gd decides which one.
-# `--old-body` brings the old ragdoll back. The pages are scenes/character_select (first page of the launcher's "play" role) and scenes/creator_proto.
+# The character this player wears (30 Oct 2026): Dave's Dynasty body (the generated body when its glb is not imported), shaped by the active character of character_store.gd.
+# Since 8 Nov 2026 (Dave: "lets turn them all on and get rid of that code") there is no old body to go back to. The pages are scenes/character_select (first page of the launcher's "play" role) and scenes/creator_proto.
 
 const Store := preload("res://src/client/character/character_store.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
-const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
 const LEGACY_PATH := "user://my_character.code"       # the single saved code of the first creator; still worn when no character has been made yet
 
 
-const SETTINGS_PATH := "user://input_settings.cfg"
 
-
-# Dave's own body (assets/character/Humanoid/Dynasty_Base_Male.glb, src/client/character/dynasty_body.gd) is the player's body since 1 Nov 2026. `--oldbody` on the client, or the
-# "Old body" switch in Esc > Settings > Gameplay (the next Play), brings back the body worn before it (the generated body; `--old-body` as below still gives the ragdoll).
-static func dynasty_body_on(path: String = SETTINGS_PATH) -> bool:
-	return not old_body(path)
-
-
-# Read once per run for the game's own settings file and kept: the client asks every frame (terrain_client's arms prebuild), and opening the settings file each time was about
-# 100 file reads a second on the main thread (Steve, strace of a lag run, 4 Nov 2026). set_old_body forgets it, so the switch still applies on the next Play.
-static var _old_body_known: int = -1     # -1 not read yet, else 0 or 1
-
-
-static func old_body(path: String = SETTINGS_PATH) -> bool:
-	if OS.get_cmdline_user_args().has("--oldbody"):
-		return true
-
-	if path == SETTINGS_PATH and _old_body_known >= 0:
-		return _old_body_known == 1
-
-	var file: ConfigFile = ConfigFile.new()
-	var on: bool = file.load(path) == OK and bool(file.get_value("character", "old_body", false))
-
-	if path == SETTINGS_PATH:
-		_old_body_known = 1 if on else 0
-
-	return on
-
-
-static func set_old_body(on: bool, path: String = SETTINGS_PATH) -> void:
-	var file: ConfigFile = ConfigFile.new()
-	file.load(path)
-	file.set_value("character", "old_body", on)
-	file.save(path)
-
-	if path == SETTINGS_PATH:
-		_old_body_known = -1
-
-
-# The body the player wears this run: Dave's Dynasty body when it is wanted and usable, else the generated body, else the old ragdoll (`--old-body`). A Dynasty glb that is not imported
+# The body the player wears this run: Dave's Dynasty body (assets/character/Humanoid/Dynasty_Base_Male.glb, dynasty_body.gd, since 1 Nov 2026). A Dynasty glb that is not imported
 # (a fresh checkout before `godot --import`) falls back to the generated body, so there is always a body with an AnimationPlayer.
 static func make_avatar() -> Node3D:
-	if dynasty_body_on() and DynastyBodyScript.available():
+	if DynastyBodyScript.available():
 		var body: Node3D = DynastyBodyScript.new()
 		body.set_proportions(genome())      # the creator's sliders shape Dave's body too (dynasty_proportions.gd)
 		return body
 
-	return GeneratedBodyScript.new(genome()) if generated_body_on() else RagdollScript.new()
-
-
-static func generated_body_on() -> bool:
-	return not OS.get_cmdline_user_args().has("--old-body")
+	return GeneratedBodyScript.new(genome())
 
 
 # The active character's genome, or an empty Dictionary when there is none (the body then falls back to the average one).

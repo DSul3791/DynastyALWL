@@ -1,5 +1,7 @@
 # Prevailing wind on the starter island (about 34° S): direction by season, fronts, coast and inland, sea breezes
 
+> **Superseded for tuning by [prevailing-wind-34s.md](prevailing-wind-34s.md)** (rose by game month, front stages, gusts, sourced monthly speeds). This page stays for its links and its coast and sea-breeze sections.
+
 **Last checked:** 2026-11-08 (Jamie; a short web pass, with much of it judged. Rewritten for 34° S after the grid fix: the starter island is at 33.7° S at the spawn, not 57° S, `one-sky.md` and `OVERNIGHT_DECISIONS_8NOV.md` row 19, #717. The file name still says 57s so links do not break). **Owners:**
 - Kathleen: the prevailing wind design note.
 - Weather: `src/shared/weather.gd` `wind_dir`.

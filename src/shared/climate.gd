@@ -42,7 +42,7 @@ const DAY_WARMEST_HOUR := 15.0            # mid afternoon
 
 # Latitude comes from the world grid (Dave, 8 Nov): 21 x 21 tiles, the centre row (world.json `equator_tile_row`) is the equator.
 # North is -Z, so a row with a larger number than the equator's lies south, and its latitude is negative. Read by the sun and moon
-# (and the fog's sunrise) with --one-sky.
+# (and the fog's sunrise).
 # world_settings.gd latitude_for_z runs from 0 at the equator row's centre to 1 at the poles (the wrap seam half the world away), so
 # latitude in degrees is that x 90 (Jamie, 8 Nov), and one row is 90 / 10.5 = 8.57 degrees: the starter row 4's centre is 34.3 S.
 const TILES_Z := 21                       # worlds/base_world/world.json tiles_z
