@@ -16,7 +16,10 @@
 		"power": 1.0,
 		"coast_floor": 0.05,
 		"calibration_offset_m": 100.0,
-		"calibration_clip": [0.33, 3.0],
+		"calibration_clip": [
+			0.33,
+			3.0
+		],
 		"_calibration_note": "Sonny 7 Nov, after run c3b1b846 (35 degree slope limit): the summit fell to 835 m (landform 1,459 m) while the mean land rose to 190 m (landform 155 m). The massif centres were cut about 400 m and their flanks rose, because the uplift is flat-topped (clipped at ref_height_m) and broad, and the eroded island's heights follow drainage distance, not the landform's peaks. One scalar cannot fix both, so evolve.py --calibrate=PREV_RUN_DIR scales the uplift by (landform + offset) / (previous result + offset), both smoothed at smooth_m (massif scale only; no hill-scale pattern). Relief scales with U at steady state, so one pass should bring both the summit and the mean near the landform. The summary's massif_scale_height_mismatch_m says how close it is."
 	},
 	"rain": {
@@ -63,8 +66,16 @@
 	},
 	"evolve": {
 		"_note": "Stage B (evolve.py). K, m and D follow the earlier pre-carve runs (tools/erosion_precarve real_run: K 4e-6, m 0.5, D 0.05 m2/yr). G is the dimensionless deposition coefficient (about 1: deposition matters, floodplains and fans form). channel_head: where channels begin (slope-area rule, below). Not yet tuned on our island: R2's first run sets them. start_roughness_m: uncorrelated starting roughness (fixed by world position) so channels branch instead of running in parallel lines; erosion removes it. years and dt (Sonny 7 Nov, after Dino's stable 1 Myr run): in 1 Myr the summit still rose 0.8 m/kyr, almost the full uplift (0.96), because the erosion had not yet climbed to the tops (a knickpoint moves at about K Q^m, a few m/kyr in small catchments). 4 Myr in 250 steps of 16 kyr costs the same run time; the implicit fluvial step is stable at any dt and creep takes its own sub-steps. The summary's last_tenth_* numbers say whether steady state was reached. Relief at steady state scales with U/K, so uplift.base_m_per_yr is then calibrated once so the final summit matches the landform's. K and D x3 (Sonny 7 Nov, after the 4 Myr run 58ecf498): the summit reached 3,521 m and was still rising 0.35 m/kyr (mean land 155 to 541 m), so uplift outran erosion. Steady-state relief scales with U/K and the time to reach it with 1/K, so raising K three times lowers the relief about three times and brings steady state three times sooner. D rises with K so D/K, which sets valley spacing (Perron et al. 2009), is unchanged. Creep is now implicit, so a larger D costs no sub-steps.",
-		"years": 4000000.0,
-		"dt": 16000.0,
+		"years": 2000000.0,
+		"dt": 5000.0,
+		"uplift_share": 0.0,
+		"snapshot_years": [
+			250000.0,
+			500000.0,
+			1000000.0,
+			1500000.0
+		],
+		"_dissection_note": "Sonny 8 Nov, after run 506dadff: the massif-scale calibration matched (mean mismatch 9 m, 5th to 95th percentile -54 to +48 m), yet the summit was 894 m against the landform's 1,459 m and the massif centres were cut about 400 m. A steady state keeps the landform only at the smoothing scale: with threshold slopes and the valley spacing set by D/K, no ridge stands more than a couple of hundred metres above its valleys, so a peaked massif becomes an evenly dissected one. Islands like this one (Arran, Skye, the Highlands) are not in steady state: they are uplifted older surfaces that rivers and then ice are still cutting into, with summit plateaus between deep glens. So B1 now dissects the landform as it stands: uplift_share 0 (the landform is the land as uplifted), and the run length is chosen from snapshots (snapshot_years, each written to OUT_DIR/t<kyr>k with its own summary and picture) by the checks: summits near the landform's, the main valleys reaching into the massif cores, and the drainage and slope figures. Knickpoints climb at about K A^m (tens of km per Myr for 10 km2 catchments at this K), so 0.25 to 2 Myr spans young to deeply dissected. dt 5,000 years so every snapshot falls on a step (400 steps, about 25 minutes at the earlier runs' speed). The by-rock threshold (threshold_slope_deg_by_rock) lets hard-rock peaks stand as steep walls instead of being cut back to 35 degrees.",
 		"K": 1.2e-05,
 		"m": 0.5,
 		"D": 0.15,
@@ -76,6 +87,20 @@
 		"start_roughness_m": 0.5,
 		"threshold_slope_deg": 35.0,
 		"_threshold_note": "Threshold hillslopes (Sonny 7 Nov, after run 624bd23c grew a south-east ridge more than 1,000 m above its landform with 40 to 45 degree flanks, still rising 0.2 m/kyr). Linear creep has no slope limit, so where uplift beats the rivers a ridge steepens without end. Real hillslopes fail by landslides past a threshold angle and keep a mean angle near it whatever the erosion rate: Burbank et al. 1996 (Nature 379:505) found steep hillslope angles essentially independent of erosion rate; Montgomery 2001 (Am. J. Sci. 301:432) reads the same limit from slope distributions. The angle lies between the angle of repose of loose debris (about 33 degrees) and the steeper limit soil-mantled slopes hold (Roering et al. 1999, Water Resources Research 35:853, fit a critical slope of 1.25, about 51 degrees, in the Oregon Coast Range). 35 degrees (tangent 0.70) is taken as the mean over a 16 m cell; crags and rock steps steeper than that inside a cell are fine detail for later stages. The run's slope shares check it. A by-rock value (hard rock holds steeper walls: Schmidt and Montgomery 1995, Science 270:617) is the next refinement, with sources, in R2b, where glacial cirque walls and trough sides need it. 0 turns the limit off.",
+		"threshold_slope_deg_by_rock": {
+			"granite": 48.0,
+			"basalt": 48.0,
+			"slate": 44.0,
+			"marble": 44.0,
+			"limestone": 42.0,
+			"sandstone": 40.0,
+			"tuff": 38.0,
+			"shale": 35.0,
+			"coal": 35.0,
+			"chalk": 35.0,
+			"sediment": 35.0
+		},
+		"_threshold_by_rock_note": "Sonny 8 Nov, after Dave asked for tall, epic, fantasy-scale peaks (8 Nov 01:19). Hard rock holds steeper walls than soft rock: relief is limited by rock mass strength (Schmidt and Montgomery 1995, Science 270:617), and real hard-rock mountain walls (gabbro and basalt in the Skye Cuillin, rhyolite and andesite in Glen Coe) stand well above 35 degrees over tens of metres. These values are the art goal's light fantasy exaggeration within that real range: granite and basalt 48, slate and marble 44, limestone 42, sandstone 40, tuff 38; shale, coal, chalk and loose sediment keep 35 (threshold_slope_deg, also used under loose cover over 1 m). Not from a measured table: judged on the maps.",
 		"channel_head": {
 			"_note": "A channel begins where Q * S^slope_exponent passes area_m2_at_ref_slope * ref_slope^slope_exponent (Q the quick-runoff-weighted area, S the slope to the receiver) and then runs on downstream at any slope. Montgomery and Dietrich (1988): the source area of a channel head falls as slope rises (about as S^-2) and is larger in drier ground. 2 ha at a slope of 0.15 means about 0.3 ha at 0.4 and 4.5 ha at 0.1. Not yet tuned on our island.",
 			"area_m2_at_ref_slope": 20000.0,

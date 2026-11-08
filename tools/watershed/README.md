@@ -36,7 +36,7 @@ The run starts from the landform and uses:
 - stream power with deposition, solved implicitly;
 - the quick runoff of the one water budget (`runoff.py`: rain minus evaporation, times the rock's quick share), so chalk, limestone and dry slopes cut less;
 - channels that begin by the slope-area rule (steeper hollows need less water) and then run on downstream;
-- threshold hillslopes: no slope steeper than `threshold_slope_deg` above its receiver; landslide debris joins the sediment;
+- threshold hillslopes: no slope steeper than the threshold above its receiver, set by rock (`threshold_slope_deg_by_rock`: hard rock holds steeper walls) and `threshold_slope_deg` under loose cover; landslide debris joins the sediment;
 - soil creep.
 
 It writes:
@@ -47,7 +47,9 @@ It writes:
 - the sediment thickness (floodplains, fans, deltas);
 - a picture and a manifest.
 
-To calibrate the uplift from a finished run, add `--calibrate=PREV_RUN_DIR`: the uplift is scaled by the landform over that run's ground, both smoothed at `uplift.smooth_m`, so the massifs end at the landform's heights. The summary then reports `uplift_calibration` and `massif_scale_height_mismatch_m` (near 0 is right).
+With `uplift_share` 0 (the default since 8 Nov) the run dissects the landform as it stands, with no uplift, and writes a snapshot at each of `snapshot_years` to `OUT_DIR/t<kyr>k` (each with its own ground.npz, summary and picture), so the run length can be chosen from one run. The final ground is in OUT_DIR itself.
+
+To calibrate the uplift from a finished run (only for runs with uplift), add `--calibrate=PREV_RUN_DIR`: the uplift is scaled by the landform over that run's ground, both smoothed at `uplift.smooth_m`, so the massifs end at the landform's heights. The summary then reports `uplift_calibration` and `massif_scale_height_mismatch_m` (near 0 is right).
 
 `python tools/watershed/plots.py ground RUN_DIR` redraws `evolve.png` from a saved run in seconds. RUN_DIR is the run's output folder, the one holding `ground.npz`.
 
@@ -56,5 +58,5 @@ Check `evolve.png` and the summary for:
 - sediment on the valley floors and at the coast;
 - few closed hollows: a long river era fills them, and lakes come from named causes in R2b and R3, not from leftovers. The summary's `hollows` says whether each is held by a sediment sill (a fan or floodplain laid across a valley, a real cause) or by rock, and lists the ten deepest in world metres; the picture marks them red;
 - no slopes above the threshold angle (`max_slope_deg`, `share_of_land_steeper_than_deg`), and `share_of_land_near_threshold` small: a large share would mean the uplift is too fast for the rock, so landslides, not rivers, set the form;
-- a summit and relief close to the landform's, and `last_tenth_summit_change_m_per_kyr` near zero (steady state); if the summit is still rising at about the uplift rate, the run is too short;
+- a summit near the landform's and tall peaks kept: `land_height_percentiles_m` close to `landform_height_percentiles_m` at 99 and 99.9, and `local_relief_2km_on_high_ground_m` above the landform's (valleys cut deep between the peaks); with uplift, `last_tenth_summit_change_m_per_kyr` near zero (steady state);
 - fewer channels (lower drainage density in the summary) on chalk and on the dry lee slopes than on the wet west flanks.
