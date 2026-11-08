@@ -1,0 +1,608 @@
+{
+	"note": "Animal voices by server state (docs/design/ANIMAL_VOICES.md, MikeW 8 Nov 2026). Read by animal_view.gd with voice_fx on: when a species' state changes to one in its states map, the named call plays. A call is a mood of src/client/creature_sounds.gd (its own files) or a sound slot (data/sound/*_slots.json); a slot with no file is skipped silently, so a missing sound costs nothing. 'silent' plays nothing on purpose. State 20 (hunch) and 17 (glide) are silent unless named. db, unit and reach are the source loudness and carry for slot calls; the outdoor rules (Jamie #642, Kathleen #662) scale them at play time.",
+	"cooldown_s": 4.0,
+	"per_second": 6,
+	"species": {
+		"deer": {
+			"states": {
+				"2": "alarm",
+				"3": "alert"
+			},
+			"calls": {
+				"alarm": {
+					"mood": "alert"
+				},
+				"alert": {
+					"mood": "alert"
+				},
+				"contact": {
+					"mood": "idle"
+				},
+				"rut": {
+					"slot": "deer_roar",
+					"db": -4,
+					"unit": 30,
+					"reach": 600
+				},
+				"young": {
+					"slot": "deer_fawn_bleat",
+					"db": -14,
+					"unit": 6,
+					"reach": 80
+				}
+			},
+			"note": "red deer: a bark-snort on alarm, stags roar in the autumn rut, fawns bleat"
+		},
+		"elk": {
+			"states": {
+				"2": "alarm",
+				"3": "alert",
+				"10": "warn",
+				"11": "charge",
+				"16": "warn"
+			},
+			"calls": {
+				"alarm": {
+					"slot": "elk_bark",
+					"db": -8,
+					"unit": 14,
+					"reach": 250
+				},
+				"alert": {
+					"slot": "elk_bark",
+					"db": -10,
+					"unit": 12,
+					"reach": 200
+				},
+				"warn": {
+					"slot": "elk_grunt",
+					"db": -8,
+					"unit": 10,
+					"reach": 150
+				},
+				"charge": {
+					"slot": "elk_grunt",
+					"db": -6,
+					"unit": 10,
+					"reach": 150
+				},
+				"rut": {
+					"slot": "elk_bugle",
+					"db": -2,
+					"unit": 40,
+					"reach": 900
+				},
+				"young": {
+					"slot": "elk_calf_mew",
+					"db": -14,
+					"unit": 6,
+					"reach": 80
+				}
+			}
+		},
+		"moose": {
+			"states": {
+				"2": "alarm",
+				"3": "alert",
+				"10": "warn",
+				"11": "charge",
+				"16": "warn"
+			},
+			"calls": {
+				"alarm": {
+					"mood": "alert"
+				},
+				"alert": {
+					"mood": "alert"
+				},
+				"warn": {
+					"mood": "threat"
+				},
+				"charge": {
+					"mood": "threat"
+				},
+				"rut": {
+					"mood": "threat"
+				},
+				"young": {
+					"slot": "moose_calf_bawl",
+					"db": -12,
+					"unit": 8,
+					"reach": 120
+				}
+			}
+		},
+		"horse": {
+			"states": {
+				"2": "alarm",
+				"3": "alert",
+				"10": "warn",
+				"11": "charge"
+			},
+			"calls": {
+				"alarm": {
+					"mood": "threat"
+				},
+				"alert": {
+					"mood": "alert"
+				},
+				"warn": {
+					"mood": "alert"
+				},
+				"charge": {
+					"mood": "threat"
+				},
+				"contact": {
+					"mood": "threat"
+				},
+				"young": {
+					"slot": "foal_nicker",
+					"db": -14,
+					"unit": 6,
+					"reach": 60
+				}
+			},
+			"note": "a snort on alert, a whinny to call the herd or in alarm"
+		},
+		"donkey": {
+			"states": {
+				"2": "alarm",
+				"3": "alert",
+				"10": "warn"
+			},
+			"calls": {
+				"alarm": {
+					"slot": "donkey_bray",
+					"db": -2,
+					"unit": 30,
+					"reach": 700
+				},
+				"alert": {
+					"slot": "donkey_snort",
+					"db": -10,
+					"unit": 8,
+					"reach": 120
+				},
+				"warn": {
+					"slot": "donkey_bray",
+					"db": -2,
+					"unit": 30,
+					"reach": 700
+				}
+			}
+		},
+		"cow": {
+			"states": {
+				"2": "alarm",
+				"10": "warn",
+				"11": "charge"
+			},
+			"calls": {
+				"alarm": {
+					"slot": "cow_moo",
+					"db": -6,
+					"unit": 20,
+					"reach": 500
+				},
+				"warn": {
+					"slot": "cow_bellow",
+					"db": -4,
+					"unit": 20,
+					"reach": 500
+				},
+				"charge": {
+					"slot": "cow_bellow",
+					"db": -4,
+					"unit": 20,
+					"reach": 500
+				},
+				"young": {
+					"slot": "calf_bawl",
+					"db": -10,
+					"unit": 10,
+					"reach": 200
+				}
+			}
+		},
+		"boar": {
+			"states": {
+				"2": "alarm",
+				"3": "alert",
+				"10": "warn",
+				"11": "charge",
+				"16": "warn"
+			},
+			"calls": {
+				"alarm": {
+					"slot": "boar_grunt_alarm",
+					"db": -6,
+					"unit": 10,
+					"reach": 180
+				},
+				"alert": {
+					"slot": "boar_grunt",
+					"db": -10,
+					"unit": 8,
+					"reach": 120
+				},
+				"warn": {
+					"slot": "boar_squeal",
+					"db": -4,
+					"unit": 14,
+					"reach": 250
+				},
+				"charge": {
+					"slot": "boar_squeal",
+					"db": -2,
+					"unit": 14,
+					"reach": 250
+				},
+				"young": {
+					"slot": "piglet_squeak",
+					"db": -14,
+					"unit": 5,
+					"reach": 60
+				}
+			}
+		},
+		"bear": {
+			"states": {
+				"3": "alert",
+				"10": "warn",
+				"16": "warn",
+				"11": "charge"
+			},
+			"calls": {
+				"alert": {
+					"mood": "alert"
+				},
+				"warn": {
+					"mood": "alert"
+				},
+				"charge": {
+					"mood": "threat"
+				},
+				"young": {
+					"slot": "bear_cub_bawl",
+					"db": -12,
+					"unit": 6,
+					"reach": 90
+				}
+			},
+			"note": "a jaw-pop and huff on warn (16), a roar only on the charge"
+		},
+		"black_bear": {
+			"states": {
+				"3": "alert",
+				"10": "warn",
+				"16": "warn",
+				"11": "charge"
+			},
+			"calls": {
+				"alert": {
+					"mood": "alert"
+				},
+				"warn": {
+					"mood": "alert"
+				},
+				"charge": {
+					"mood": "threat"
+				},
+				"young": {
+					"slot": "bear_cub_bawl",
+					"db": -12,
+					"unit": 6,
+					"reach": 90
+				}
+			}
+		},
+		"wolf": {
+			"states": {
+				"3": "alert",
+				"6": "silent",
+				"7": "attack",
+				"10": "warn"
+			},
+			"calls": {
+				"alert": {
+					"mood": "alert"
+				},
+				"warn": {
+					"mood": "alert"
+				},
+				"attack": {
+					"mood": "threat"
+				},
+				"contact": {
+					"mood": "idle"
+				}
+			},
+			"note": "silent while stalking (6); the howl is the contact call, at night"
+		},
+		"fox": {
+			"states": {
+				"2": "alarm",
+				"3": "alert"
+			},
+			"calls": {
+				"alarm": {
+					"mood": "threat"
+				},
+				"alert": {
+					"mood": "alert"
+				},
+				"contact": {
+					"mood": "idle"
+				},
+				"rut": {
+					"mood": "threat"
+				}
+			},
+			"note": "the winter scream is the rut call"
+		},
+		"rabbit": {
+			"states": {
+				"2": "alarm",
+				"3": "alert"
+			},
+			"calls": {
+				"alarm": {
+					"mood": "alert"
+				},
+				"alert": {
+					"mood": "alert"
+				},
+				"hurt": {
+					"mood": "threat"
+				}
+			},
+			"note": "a foot thump on alarm, a squeal only when caught"
+		},
+		"dog": {
+			"states": {
+				"10": "warn",
+				"3": "alert"
+			},
+			"calls": {
+				"warn": {
+					"slot": "dog_bark",
+					"db": -4,
+					"unit": 14,
+					"reach": 300
+				},
+				"alert": {
+					"slot": "dog_woof",
+					"db": -8,
+					"unit": 10,
+					"reach": 150
+				},
+				"contact": {
+					"slot": "dog_whine",
+					"db": -14,
+					"unit": 4,
+					"reach": 40
+				}
+			},
+			"note": "the companion's bark (state 10) is the dog presence's bark for Steve's #659"
+		},
+		"goat": {
+			"states": {
+				"2": "alarm",
+				"10": "warn"
+			},
+			"calls": {
+				"alarm": {
+					"slot": "goat_bleat",
+					"db": -8,
+					"unit": 10,
+					"reach": 200
+				},
+				"warn": {
+					"slot": "goat_snort",
+					"db": -10,
+					"unit": 8,
+					"reach": 120
+				},
+				"young": {
+					"slot": "kid_bleat",
+					"db": -12,
+					"unit": 6,
+					"reach": 100
+				}
+			}
+		},
+		"bighorn": {
+			"states": {
+				"2": "alarm",
+				"3": "alert"
+			},
+			"calls": {
+				"alarm": {
+					"slot": "sheep_snort",
+					"db": -10,
+					"unit": 8,
+					"reach": 150
+				},
+				"alert": {
+					"slot": "sheep_snort",
+					"db": -12,
+					"unit": 8,
+					"reach": 120
+				},
+				"rut": {
+					"slot": "horn_clash",
+					"db": -2,
+					"unit": 30,
+					"reach": 800
+				},
+				"young": {
+					"slot": "lamb_bleat",
+					"db": -12,
+					"unit": 6,
+					"reach": 100
+				}
+			}
+		},
+		"crow": {
+			"states": {
+				"2": "flush",
+				"15": "flush",
+				"3": "alert"
+			},
+			"calls": {
+				"flush": {
+					"mood": "alert"
+				},
+				"alert": {
+					"mood": "alert"
+				},
+				"contact": {
+					"slot": "crow_caw",
+					"db": -8,
+					"unit": 14,
+					"reach": 300
+				}
+			},
+			"note": "the crow alarm runs through the ground-bird alarm group (#636)"
+		},
+		"pheasant": {
+			"states": {
+				"2": "flush",
+				"15": "flush"
+			},
+			"calls": {
+				"flush": {
+					"slot": "pheasant_flush_cackle",
+					"db": -4,
+					"unit": 16,
+					"reach": 350
+				},
+				"contact": {
+					"slot": "pheasant_crow",
+					"db": -6,
+					"unit": 16,
+					"reach": 350
+				}
+			},
+			"note": "the cock's whirring cackle as it bursts up (#661 flush)"
+		},
+		"duck": {
+			"states": {
+				"2": "flush",
+				"15": "flush"
+			},
+			"calls": {
+				"flush": {
+					"mood": "alert"
+				},
+				"contact": {
+					"mood": "idle"
+				}
+			}
+		},
+		"goose": {
+			"states": {
+				"2": "flush",
+				"15": "flush",
+				"10": "warn"
+			},
+			"calls": {
+				"flush": {
+					"slot": "goose_honk",
+					"db": -4,
+					"unit": 16,
+					"reach": 500
+				},
+				"warn": {
+					"slot": "goose_hiss",
+					"db": -10,
+					"unit": 6,
+					"reach": 60
+				},
+				"contact": {
+					"slot": "goose_honk",
+					"db": -6,
+					"unit": 16,
+					"reach": 500
+				}
+			}
+		},
+		"owl": {
+			"states": {},
+			"calls": {
+				"contact": {
+					"slot": "owl_hoot",
+					"db": -8,
+					"unit": 20,
+					"reach": 500
+				}
+			},
+			"note": "night birds slot owl_hoot exists; the owl model is still on the Meshy list"
+		},
+		"raven": {
+			"states": {
+				"15": "flight",
+				"3": "alert"
+			},
+			"calls": {
+				"flight": {
+					"slot": "raven_croak",
+					"db": -6,
+					"unit": 20,
+					"reach": 500
+				},
+				"alert": {
+					"slot": "raven_knock",
+					"db": -10,
+					"unit": 10,
+					"reach": 200
+				}
+			},
+			"note": "a croak now and then in flight; Meshy model pending"
+		},
+		"golden_eagle": {
+			"states": {
+				"15": "flight",
+				"17": "flight"
+			},
+			"calls": {
+				"flight": {
+					"slot": "eagle_chirp",
+					"db": -10,
+					"unit": 12,
+					"reach": 300
+				}
+			},
+			"note": "a thin high whistle, rare; Meshy model pending"
+		},
+		"goblin": {
+			"states": {
+				"3": "alert",
+				"10": "warn",
+				"11": "charge",
+				"13": "silent"
+			},
+			"calls": {
+				"alert": {
+					"slot": "goblin_hiss",
+					"db": -10,
+					"unit": 8,
+					"reach": 80
+				},
+				"warn": {
+					"slot": "goblin_snarl",
+					"db": -6,
+					"unit": 10,
+					"reach": 150
+				},
+				"charge": {
+					"slot": "goblin_shriek",
+					"db": -2,
+					"unit": 16,
+					"reach": 300
+				}
+			},
+			"note": "silent when sneaking (13); backs off from a barking dog (#659) in alert"
+		}
+	}
+}
