@@ -67,7 +67,7 @@ With the switch off, every number above stays at today's 52° N values: midsumme
 - **The moon:**
   - the midsummer full moon's highest point is 9.6° (±0.5°), in the north;
   - the midwinter full moon is above 50°;
-  - a first-quarter moon is up at 18:00 at either equinox and has set by 03:00 (about 02:30 in spring, when it rides high, and 21:30 in autumn).
+  - a first-quarter moon is up at 18:00 at either equinox and has set by 03:30 (about 03:10 in spring, when it rides high, and 21:25 in autumn).
 - **Phase 0.9:** noon 19.5° (±0.5°), and a 30° slope facing +Z gets no direct sun (its normal dotted with the sun direction is at most 0).
 - **Switch off:** midsummer noon is 61.4° due south, as today.
 - **`Weather.sunrise_hour(day, "temperate")`** with the switch on matches the day cycle's own horizon crossing within 2 minutes.
