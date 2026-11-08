@@ -1185,9 +1185,9 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
-	var row: int = 4
+	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): its rivers are the ones swelled
 	var game_s: float = game_clock.seconds
-	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0)
+	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:
@@ -1357,7 +1357,7 @@ const CAVE_ROOF_M := 2.0   # ground at least this far over a player's feet for a
 
 # Whether a point is inside a cave with rock over it (tile_terrain_data.in_cave; Jamie's caves page, #664). A tile not loaded yet: no.
 func _in_cave(point: Vector3) -> bool:
-	if not generator.tile_cached(point.x, point.z):
+	if generator == null or not generator.tile_cached(point.x, point.z):   # no generator yet (a test that sets only the flora store)
 		return false
 
 	var tile_data = generator.get_tile(generator.tile_of(point.x, point.z))
