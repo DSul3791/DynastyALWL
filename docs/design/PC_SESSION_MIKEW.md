@@ -52,9 +52,10 @@ $M --kinds=beaver,moose --state=0 --water=0.6 --speed=1 --out=$O/motion > $O/m7.
 $M --kinds=deer,wolf --state=0 --torch --hour=23 --cam=8 --out=$O/motion_night > $O/m8.log 2>&1   # eye shine in torchlight
 $M --kinds=rabbit,kangaroo --state=0 --speed=3 --out=$O/motion > $O/m9.log 2>&1   # hop arc
 $M --kinds=black_bear --state=16 --out=$O/motion > $O/m10.log 2>&1                # jaw-pop pose
+$M --kinds=horse,deer --state=2 --speed=8 --fx --every=0.1 --out=$O/motion_fx > $O/m11.log 2>&1   # dust puffs at running footfalls
 grep -h "saved\|SCRIPT" $O/m*.log
 ```
-Pass, per strip, by eye: the tail or ears move between frames; sleeping animals lie (deer, dog) or stand head-low (horse) and `asleep true` in the log; the deer herd faces roughly one way and `look_left` above 0 on more than one frame as the camera nears; the beaver and moose show `wet` near 1; eyes glow in the night strip (deer pale green, wolf yellow-green); the rabbit and kangaroo rise and land; the black bear's head is low with the jaw open.
+Pass, per strip, by eye: the tail or ears move between frames; sleeping animals lie (deer, dog) or stand head-low (horse) and `asleep true` in the log; the deer herd faces roughly one way and `look_left` above 0 on more than one frame as the camera nears; the beaver and moose show `wet` near 1; eyes glow in the night strip (deer pale green, wolf yellow-green); the rabbit and kangaroo rise and land; the black bear's head is low with the jaw open; brown puffs at the running hooves.
 
 ## 5. Gates (15 min, in order)
 ```bash
