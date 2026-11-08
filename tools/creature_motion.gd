@@ -16,7 +16,7 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 
 
 func _init() -> void:
-	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "shine": false, "moon": false, "sign": "", "wx": "", "hit": "", "kill": false, "cover": false, "birdrig": false, "posed": false, "wind": 0.0}
+	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "follow": false, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "shine": false, "moon": false, "sign": "", "wx": "", "hit": "", "kill": false, "cover": false, "birdrig": false, "posed": false, "swimrig": false, "wind": 0.0}
 
 	for a in OS.get_cmdline_user_args():
 		var key: String = a.trim_prefix("--").get_slice("=", 0)
@@ -113,6 +113,7 @@ func _strip(kind: String, opts: Dictionary) -> void:
 	view.weather_looks = str(opts["wx"]) != ""
 	view.cover_still = bool(opts["cover"])
 	view.bird_rig = bool(opts["birdrig"])
+	view.swim_rig = bool(opts["swimrig"])
 	view.posed_flight_all = bool(opts["posed"])
 	var wx_start: int = Time.get_ticks_msec()
 	view.weather_now = func() -> Dictionary:      # --wx: gale from +X, cold -12 C, rain that stops after 2 s, snow falling

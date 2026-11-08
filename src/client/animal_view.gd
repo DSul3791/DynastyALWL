@@ -62,6 +62,7 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
+var swim_rig: bool = false        # whales and dolphins posed from their spines: tail beat, flipper strokes, porpoise pitch (SWIM_RIG.md; off until a Meshy whale or dolphin arrives)
 var bird_rig: bool = false        # birds and bats posed from their skeletons: wingbeat, glide hold, perch fold, landing flare (BIRD_FLIGHT.md part 3; off until a Meshy bird arrives)
 var cover_still: bool = false     # state 20 in cover (Steve #701): hunched and still, the idle slowed, breathing slow, the wet look held (COVER_STILL in ANIMAL_WEATHER_LOOKS.md; off until the PC check)
 var air_override: float = NAN     # --life-air=C (pictures and tools only): this air temperature everywhere, for the steam and cold looks
@@ -532,7 +533,7 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 
-	if life_layer_all_off and (bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
+	if life_layer_all_off and (swim_rig or bird_rig or cover_still or footfall_fx or prints_fx or slope_tilt or foot_ik or stalk_fx or season_coats or coat_dust or coat_ruffle or young_gait or young_follow or water_life or idle_variety or flight_bank or look_at_foe or swarm_fx or sea_life or voice_fx or eye_shine or animal_sign or weather_looks or hunt_feedback):
 		_all_flags_off()
 
 	_print_fade_t -= delta
@@ -615,6 +616,9 @@ func _process_body(delta: float) -> void:
 
 			if animal_sign:
 				_sign_rest(node, b, state, model_speed, delta)
+
+			if swim_rig and b.get("hop") != null and _row_of(node).has("sea"):
+				_porpoise_pitch(node, b)
 
 			if weather_looks:
 				_weather_look(node, b, state, model_speed, delta)
@@ -830,7 +834,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_dots", inst.get_meta("eye_dots"))      # the far-off glints (eye_shine)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or (row.has("idles") and idle_variety) or (bird_rig and _posed_flight(row)):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or (row.has("idles") and idle_variety) or (bird_rig and _posed_flight(row)) or (swim_rig and _posed_swim(row)):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -856,6 +860,14 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 			if row.has("state_poses"):
 				missing.append_array(fix.setup_poses(sks[0], row["state_poses"]))
 				root.set_meta("poses", fix)
+
+			# A whale or dolphin posed from its own spine (SWIM_RIG.md): the tail beat in states 0, 1, 2.
+			if swim_rig and _posed_swim(row):
+				var swim_poses: Dictionary = _swim_poses(sks[0], row, kind)
+
+				if not swim_poses.is_empty():
+					missing.append_array(fix.setup_poses(sks[0], swim_poses))
+					root.set_meta("poses", fix)
 
 			# A bird or bat posed from its own wing bones (BIRD_FLIGHT.md part 3): flap 15, glide 17, perch 18 and 0, landing flare -20.
 			if bird_rig and _posed_flight(row):
@@ -3630,11 +3642,12 @@ func _torch() -> Array:
 # The kill switch (PERF_BUDGET.md): every life-layer flag off at once; set by --life-layer-off on the command line or by the gate.
 const LIFE_FLAGS := ["footfall_fx", "prints_fx", "slope_tilt", "foot_ik", "stalk_fx", "season_coats", "coat_dust", "coat_ruffle",
 	"young_gait", "young_follow", "water_life", "idle_variety", "flight_bank", "look_at_foe", "swarm_fx", "sea_life", "voice_fx",
-	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig"]
+	"eye_shine", "animal_sign", "weather_looks", "hunt_feedback", "cover_still", "bird_rig", "swim_rig"]
 
 func _all_flags_off() -> void:
 	cover_still = false
 	bird_rig = false
+	swim_rig = false
 	footfall_fx = false
 	prints_fx = false
 	slope_tilt = false
@@ -3816,6 +3829,94 @@ func _wing_poses(sk: Skeleton3D, row: Dictionary, kind: String) -> Dictionary:
 		"18": {"bones": fold_bones},
 		"-20": {"bones": flare_bones}}
 	return poses
+
+
+# Whales and dolphins posed from their spines (docs/design/SWIM_RIG.md). A row is posed when it asks ("posed_swim": true) or names no
+# swim clip, so a Meshy model with a good skeleton swims with no clips.
+func _posed_swim(row: Dictionary) -> bool:
+	if posed_flight_all and (row.get("clips", {}) as Dictionary).has("swim"):
+		return true      # tools only (--posed): any swimmer with a swim clip, as a stand-in until a Meshy whale or dolphin arrives
+
+	if not row.has("sea"):
+		return false
+
+	var swim: String = str((row.get("clips", {}) as Dictionary).get("swim", ""))
+	return bool(row.get("posed_swim", false)) or swim == "" or swim.begins_with("<")
+
+
+# The spine chain by name (the row's "spine_bones" list wins): every bone whose lower-case name holds spine, back, chest, tail, caudal
+# or fluke, in skeleton order (parents before children), and the flippers (flipper, pectoral, fin, or arm and hand on a humanoid rig).
+# The poses (bone_offsets.gd state poses, all up and down about the row's swim_axis, default x: whales and dolphins beat their flukes
+# vertically, not side to side like a fish):
+#   0 idle at the surface: a slow, small wave (a third of the swing at half the beat)
+#   1 travelling: the wave runs from the chest to the flukes, each bone later and wider than the one before, at sea.tail_hz
+#   2 fast: the same at 1.6 times the beat and 1.3 times the swing
+# The flippers stroke a little against the beat. No spine bones found: a log note, and the clips (or the swim block) only.
+const SPINE_WORDS := ["spine", "back", "chest", "tail", "caudal", "fluke"]
+const FLIPPER_WORDS := ["flipper", "pectoral", "fin"]
+
+func _swim_poses(sk: Skeleton3D, row: Dictionary, kind: String) -> Dictionary:
+	var chain: Array = []
+
+	for bone_name in row.get("spine_bones", []):
+		if sk.find_bone(str(bone_name)) >= 0:
+			chain.append(str(bone_name))
+
+	if chain.is_empty():
+		for i in sk.get_bone_count():
+			var low: String = sk.get_bone_name(i).to_lower()
+
+			for w in SPINE_WORDS:
+				if low.contains(w):
+					chain.append(sk.get_bone_name(i))
+					break
+
+	var flippers: Array = []
+
+	for i in sk.get_bone_count():
+		var low: String = sk.get_bone_name(i).to_lower()
+
+		for w in FLIPPER_WORDS:
+			if low.contains(w) and not chain.has(sk.get_bone_name(i)):
+				flippers.append(sk.get_bone_name(i))
+				break
+
+	if chain.size() < 2:
+		_model_note(kind, "posed swim: no spine chain found (the row's spine_bones can name it); swim clip or the swim block only")
+		return {}
+
+	_model_note(kind, "posed swim: spine %s, flippers %s" % [str(chain), str(flippers)])
+	var sea: Dictionary = row.get("sea", {})
+	var axis: String = str(row.get("swim_axis", "x"))
+	var hz: float = maxf(float(sea.get("tail_hz", 0.5)), 0.05)
+	var swing: float = float(row.get("swim_swing_deg", 12.0))
+	var n: int = chain.size()
+	var poses: Dictionary = {}
+
+	for spec in [["0", 0.33, 0.5], ["1", 1.0, 1.0], ["2", 1.3, 1.6]]:
+		var waves: Dictionary = {}
+
+		for i in n:
+			var along: float = float(i) / float(maxi(n - 1, 1))      # 0 at the chest, 1 at the flukes
+			waves[chain[i]] = [along * 0.35, swing * float(spec[1]) * (0.25 + 0.75 * along), axis]
+
+		for f in flippers:
+			waves[f] = [0.5, swing * 0.4 * float(spec[1]), "z"]
+
+		poses[spec[0]] = {"waves": waves, "period_s": 1.0 / (hz * float(spec[2]))}
+
+	return poses
+
+
+# A dolphin porpoising (the hop arc, sea rows): the body pitches nose-up as it rises and nose-down as it falls, along the arc.
+func _porpoise_pitch(node: Node3D, b: Dictionary) -> void:
+	var rig: Node3D = LifeUtil.rig(node)
+
+	if rig == null:
+		return
+
+	var phase: float = fposmod(float(b.get("hop_phase", 0.0)), 1.0)
+	rig.rotation.x = -0.6 * cos(PI * phase) if rig.position.y > 0.02 else lerpf(rig.rotation.x, 0.0, 0.2)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

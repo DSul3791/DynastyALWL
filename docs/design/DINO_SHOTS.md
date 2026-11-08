@@ -35,6 +35,10 @@ camera and focus move along +Z with the animals. Pictures are 480 by 480 px, one
 | Posed wings, gliding (stand-in) | 12:00 | clear | crow | `$M --kinds=crow --state=17 --birdrig --posed --cam=3 --frames=2 --out=$O/wings_glide` | wings held out level, hands swept back; camera (3, 1.8, 0), pitch -21.8 |
 | Posed wings, perched (stand-in) | 12:00 | clear | crow | `$M --kinds=crow --state=0 --birdrig --posed --cam=3 --frames=2 --out=$O/wings_perch` | wings folded to the body |
 | Posed wings, the Meshy birds | 12:00 | clear | golden_eagle, raven, owl, bat (once Dave's models and rows are in) | `$M --kinds=raven --state=15 --birdrig --cam=4 --frames=8 --every=0.07 --out=$O/wings_raven` (the same for each) | the same three checks per bird; a wrong axis or sign shows at once (row `wing_axis`, `wing_swing_deg`); camera (4, 1.8, 0), pitch -16.7 |
+| Posed swim, stand-in | 12:00 | 1 m of water over the tool's ground plane (the coast stand-in) | alligator, posed from its spine | `$M --kinds=alligator --state=1 --speed=1 --water=1 --swimrig --posed --cam=6 --frames=8 --every=0.15 --out=$O/swim_standin` | the wave growing from shoulders to tail tip; camera (6, 1.8, 0), pitch -11.3 |
+| Posed whale, cruising | 12:00 | 4 m of water | whale (once Dave's model and row are in) | `$M --kinds=whale --state=1 --speed=2 --water=4 --swimrig --cam=30 --frames=8 --every=0.5 --out=$O/swim_whale` | the flukes rising and falling once every 4 s, the chest nearly still; camera (30, 1.8, 0), pitch -2.3 |
+| Posed dolphin, hurrying | 12:00 | 3 m of water | dolphin | `$M --kinds=dolphin --state=2 --speed=6 --water=3 --swimrig --cam=12 --frames=8 --every=0.08 --out=$O/swim_dolphin` | about 2.5 beats a second, the wave growing to the flukes, the flippers stroking; camera (12, 1.8, 0), pitch -5.7 |
+| Dolphin porpoising | 12:00 | 3 m of water | dolphin | `$M --kinds=dolphin --state=2 --speed=8 --water=3 --swimrig --cam=15 --frames=8 --every=0.15 --out=$O/swim_porpoise` | the body leaving the water in low arcs, nose up rising, nose down falling; camera (15, 1.8, 0), pitch -4.6 |
 
 All of them are also in the run sheet (m19 to m48); these are the ones to keep as reference pictures. Send the strips to MikeW;
 nothing else is needed from the sitting for them.
@@ -44,3 +48,6 @@ The flags can be turned on for a normal session from the command line: `--life=e
 (any of the flag names in LIFE_LAYER_WIRING.md), and `--life-air=-12` forces the air cold for the steam and the cold huddle. A
 live picture needs a wild animal in view, so it is a walk, not a set-up shot: the starter valley at about x 53296, z 68080 (Steve's
 fog spot) has deer in the forest edge in the morning.
+
+The tool's world has no coast: its water is a flat sheet over the ground plane, so these are the posed bodies only. A live coast
+picture of whales or dolphins waits for Steve's sea species (SEA_MAMMALS.md); until then there is nothing to point a camera at.
