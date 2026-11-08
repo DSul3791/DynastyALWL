@@ -1,10 +1,11 @@
 extends SceneTree
 
 # Bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3; decisions in docs/design/OVERNIGHT_DECISIONS_8NOV.md row 23, 8 Nov 2026).
-# Take all fills the pack up to its space and the carry limit. Store all empties the pack past the hotbar into the open container (a fire takes only
+# Take all fills the pack up to its space and the carry limit. Store all empties the pack into the open container (a fire takes only
 # wood and food, a chest only up to its kilograms). Stack to nearby needs no open container: it adds to the player's own chests within 12 m that
-# already hold the item, keep out or not. Sort reorders the pack (and an open chest) by the chosen key, empty slots last. Favourites and pack slots
-# 1 to 10 never move. A favourite rides with its stack and is saved. Each button answers with bulk_done (stacks moved, containers, their ids).
+# already hold the item, keep out or not. Sort reorders the pack (and an open chest) by the chosen key, empty slots last. Favourites never move;
+# since the pointer hotbar (step 4, row 24) pack slots 1 to 10 are ordinary slots. A favourite rides with its stack and is saved. Each button
+# answers with bulk_done (stacks moved, containers, their ids).
 #   godot --headless --path . --script res://src/worldgen/tools/test_bulk_ops.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -199,9 +200,9 @@ func _init() -> void:
 	check(done.is_empty(), "Store all with no container open does nothing")
 	open(store_chest)
 	bulk(1)
-	check(total(box(store_chest), clay) == 4 and total(box(store_chest), stone) == 2 and total(box(store_chest), fibre) == 0 and total(box(store_chest), stick) == 0, "Store all moves clay and stone, not the favourite fibre nor the hotbar sticks")
-	check(pack().numbers[0] == stick and pack().counts[0] == 5 and pack().numbers[11] == fibre and pack().counts[11] == 3, "the hotbar slot and the favourite stay put")
-	check(done.size() == 5 and int(done[1]) == 1 and int(done[2]) == 2 and int(done[3]) == 1 and ids_of_done() == [store_chest], "bulk_done: Store all, 2 stacks, 1 container, its id (got %s)" % str(done))
+	check(total(box(store_chest), clay) == 4 and total(box(store_chest), stone) == 2 and total(box(store_chest), stick) == 5 and total(box(store_chest), fibre) == 0, "Store all moves clay, stone and the sticks in slot 1, not the favourite fibre")
+	check(pack().numbers[0] == 0 and pack().numbers[11] == fibre and pack().counts[11] == 3, "the favourite stays put; slot 1 is an ordinary pack slot since the pointer hotbar")
+	check(done.size() == 5 and int(done[1]) == 1 and int(done[2]) == 3 and int(done[3]) == 1 and ids_of_done() == [store_chest], "bulk_done: Store all, 3 stacks, 1 container, its id (got %s)" % str(done))
 
 	# A chest takes only its kilograms (structures.json chest max_kg 40): a lighter stack still goes in after a heavy one is cut short.
 	reset()
@@ -258,16 +259,16 @@ func _init() -> void:
 	put(14, clay, 2)
 	pack().set_fav(14, true)
 	bulk(2)
-	check(total(box(with_clay), clay) == 6 and total(box(kept_out), stone) == 5, "clay joins your clay chest 6 m away, stone your keep-out chest 10 m away")
+	check(total(box(with_clay), clay) == 9 and total(box(kept_out), stone) == 5, "clay (slots 2 and 11) joins your clay chest 6 m away, stone your keep-out chest 10 m away")
 	check(total(box(strangers), clay) == 1 and total(box(too_far), fibre) == 1, "a stranger's chest and one 14 m away get nothing")
-	check(pack().counts[1] == 3 and pack().counts[14] == 2 and pack().numbers[12] == fibre and pack().numbers[13] == flint, "the hotbar clay, the favourite clay, the fibre and the flint (no chest holds it) stay")
+	check(pack().numbers[1] == 0 and pack().counts[14] == 2 and pack().numbers[12] == fibre and pack().numbers[13] == flint, "the favourite clay, the fibre and the flint (no chest holds it) stay")
 	var nearby_ids: Array = ids_of_done()
 	nearby_ids.sort()
 	var want_ids: Array = [with_clay, kept_out]
 	want_ids.sort()
-	check(done.size() == 5 and int(done[1]) == 2 and int(done[2]) == 2 and int(done[3]) == 2 and nearby_ids == want_ids, "bulk_done: Stack to nearby, 2 stacks into 2 chests, their ids (got %s)" % str(done))
+	check(done.size() == 5 and int(done[1]) == 2 and int(done[2]) == 3 and int(done[3]) == 2 and nearby_ids == want_ids, "bulk_done: Stack to nearby, 3 stacks into 2 chests, their ids (got %s)" % str(done))
 
-	# 5. Sort: the pack past the hotbar by the key, favourites fixed, empty slots last; an open chest too.
+	# 5. Sort: the whole pack by the key, favourites fixed, empty slots last; an open chest too.
 	reset()
 	put(0, stone, 1)
 	put(10, stone, 3)
@@ -286,13 +287,13 @@ func _init() -> void:
 	open(sort_chest)
 	var by_name: Callable = func(inv, i: int) -> Variant: return items.table.name_of(inv.numbers[i]).to_lower()
 	bulk(3, 1)
-	check(pack().numbers[0] == stone and pack().counts[0] == 1 and pack().numbers[11] == flint and pack().is_fav(11), "Sort leaves the hotbar and the favourite where they are")
-	check(in_order(pack(), 10, pack().SLOTS, true, by_name) and total(pack(), stone) == 4 and total(pack(), clay) == 2 and total(pack(), fibre) == 5 and total(pack(), stick) == 2, "Sort by name: the rest in name order, empties last, nothing lost")
+	check(pack().numbers[11] == flint and pack().is_fav(11) and pack().numbers[0] == clay, "Sort leaves the favourite where it is and starts from slot 1 (clay first by name)")
+	check(in_order(pack(), 0, pack().SLOTS, true, by_name) and total(pack(), stone) == 4 and total(pack(), clay) == 2 and total(pack(), fibre) == 5 and total(pack(), stick) == 2, "Sort by name: the rest in name order, empties last, nothing lost")
 	check(in_order(box(sort_chest), 0, box(sort_chest).usable, false, by_name) and box(sort_chest).numbers[2] != 0 and box(sort_chest).numbers[3] == 0, "the open chest is sorted too, its stacks first")
 	check(done.size() == 5 and int(done[1]) == 3 and ids_of_done() == [sort_chest], "bulk_done: Sort, with the chest's id")
 	var heavy_first: Callable = func(inv, i: int) -> Variant: return -CarryRules.weight_of(items.table.id_of(inv.numbers[i]), items._carry_cfg) * float(inv.counts[i])
 	bulk(3, 3)
-	check(in_order(pack(), 10, pack().SLOTS, true, heavy_first) and pack().numbers[11] == flint, "Sort by weight, heaviest first, round the favourite")
+	check(in_order(pack(), 0, pack().SLOTS, true, heavy_first) and pack().numbers[11] == flint, "Sort by weight, heaviest first, round the favourite")
 
 	print("bulk ops: %s" % ("all passed" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)

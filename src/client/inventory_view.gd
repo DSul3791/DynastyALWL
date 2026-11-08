@@ -165,7 +165,7 @@ var reject_event: Callable = Callable()   # ("far" | "no_tool" | "full_pack" | "
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
 var _strain_note: Label
 var _eat_item: String = ""
-var equip_requested: Callable = Callable()   # (slot) -> hold that tool, or put it away (the client wires it to the held item)
+var equip_requested: Callable = Callable()   # (hotbar key) -> hold what that key points at, or put it away (the client wires it to the held item)
 var held_slot_now: Callable = Callable()     # () -> the pack slot in hand, or -1 for empty hands
 var hotbar_strip                              # HotbarStrip, set by the client
 var heart_bpm: Callable = Callable()   # () -> the heart rate now (the heartbeat sound's), set by the client
@@ -220,6 +220,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.craft_stock_received.connect(_on_craft_stock)
 	net.favourites_received.connect(_on_favourites)
 	net.bulk_done_received.connect(_on_bulk_done)
+	net.hotbar_received.connect(_on_hotbar)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
 	net.training_received.connect(func(percent: int):
 		training_today = percent
@@ -1216,10 +1217,10 @@ func is_broken(slot: int) -> bool:
 	return inventory.numbers[slot] != 0 and int(table.entry(table.id_of(inventory.numbers[slot])).get("durability", 0)) > 0 and condition(slot) <= 0.0
 
 
-# Is a tool of this class on the hotbar (slots 1 to 9 and 0), the way the server checks it?
+# Is a tool of this class on the hotbar (a key points at it), the way the server checks it?
 func has_tool_class(tool_class: String) -> bool:
-	for slot in range(10):
-		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class and not is_broken(slot):
+	for slot in range(inventory.SLOTS):
+		if inventory.on_hotbar(slot) and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class and not is_broken(slot):
 			return true
 
 	return false
@@ -1849,7 +1850,7 @@ func container_cap(slot: int) -> int:
 	return int(table.entry(table.id_of(inventory.numbers[slot])).get("capacity_ml", 0))
 
 
-# The hotbar slot of the container in hand, or -1.
+# The pack slot of the container in hand, or -1.
 func held_container_slot() -> int:
 	var slot: int = int(held_slot_now.call()) if held_slot_now.is_valid() else -1
 	return slot if container_cap(slot) > 0 else -1
@@ -1887,32 +1888,32 @@ func equippable_slot(slot: int) -> bool:
 	return entry.has("tool_class") or entry.has("weapon_class") or str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container", "blueprint"]
 
 
-# Hold a tool: from the hotbar slots straight away; from the rest of the pack it first moves into the first free hotbar slot
-# (never replacing anything: a full hotbar says so), so a slot key can pick it up again.
+# Hold a tool: an item a key already points at is held by that key; any other first goes on the first empty key (inventory step 4: keys
+# hold items, the stack stays where it is in the pack). With every key taken it replaces the key in hand (or key 0), so using a tool from
+# deep in a full pack always works (moderator, 31 Oct 2026).
 func equip_with_move(slot: int) -> void:
-	var target: int = slot
+	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
+		return
 
-	if slot >= 10:
-		target = -1
+	var number: int = inventory.numbers[slot]
+	var key: int = inventory.hotbar.find(number)
 
-		for candidate in range(10):
-			if inventory.numbers[candidate] == 0:
-				target = candidate
-				break
+	if key < 0:
+		key = inventory.hotbar.find(0)
 
-		if target < 0:
-			# A full hotbar: the tool swaps places with what the hand holds (or the last slot), so using a tool from deep in a full pack always works (moderator, 31 Oct 2026).
-			var in_hand: int = int(held_slot_now.call()) if held_slot_now.is_valid() else -1
-			target = in_hand if in_hand >= 0 and in_hand < 10 else 9
-			_on_notice("Hotbar full: swapped with slot %d." % (target + 1))
+		if key < 0:
+			var in_hand: int = int(held_key_now.call()) if held_key_now.is_valid() else -1
+			key = in_hand if in_hand >= 0 else HeldItem.HOTBAR_SLOTS - 1
+			_on_notice("Hotbar full: key %s now holds it." % ("0" if key == 9 else str(key + 1)))
 
-		move_slot(slot, target)
+		var resting: bool = held_key_now.is_valid() and int(held_key_now.call()) == key
+		set_key(key, number)
 
-		# The hand may already rest on that (empty) slot: then the moved tool is simply in hand, not toggled away.
-		if held_slot_now.is_valid() and int(held_slot_now.call()) == target:
+		# The hand may already rest on that key: then the tool is simply in hand, not toggled away.
+		if resting:
 			return
 
-	equip_requested.call(target)
+	equip_requested.call(key)
 
 
 # Move a stack to another pack slot (dragging, or Use on a tool).
@@ -1924,20 +1925,83 @@ func move_slot(from_slot: int, to_slot: int) -> void:
 	_selected = -1
 
 
-# E over a hotbar slot (inventory open) puts it back in the first free pack slot after the hotbar.
+# E over a hotbar key (inventory open) takes the item off that key; the stack stays in the pack (inventory step 4).
 var hotbar_hover: int = -1
+var held_key_now: Callable = Callable()      # () -> the hotbar key the right hand holds (0 to 9), -1 for empty hands; set by the client
 
 
-func hotbar_to_pack(slot: int) -> void:
-	if slot < 0 or slot >= 10 or inventory.numbers[slot] == 0:
+func hotbar_to_pack(key: int) -> void:
+	if key_number(key) != 0:
+		set_key(key, 0)
+
+
+# The pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): each key holds an item number (the server's hotbar rpc, protocol 100).
+func key_number(key: int) -> int:
+	return inventory.hotbar[key] if inventory != null and key >= 0 and key < inventory.hotbar.size() else 0
+
+
+# The pack slot a key points at (an unbroken stack of its item first, then pack order), -1 for none.
+func key_slot(key: int) -> int:
+	return inventory.key_slot(key) if inventory != null else -1
+
+
+# The key whose pointer lands on this pack slot, -1 for none: the gold key number on the pack slot (look doc, "Hotbar link").
+func linked_key(slot: int) -> int:
+	return inventory.key_of_slot(slot) if inventory != null else -1
+
+
+# Puts an item on a key (0 clears it). The client shows it at once; the server answers with the keys (one key per item).
+func set_key(key: int, number: int) -> void:
+	if inventory == null or key < 0 or key >= inventory.hotbar.size() or number < 0:
 		return
 
-	for candidate in range(10, inventory.SLOTS):
-		if inventory.numbers[candidate] == 0:
-			move_slot(slot, candidate)
-			return
+	if number > 0 and inventory.hotbar.find(number) >= 0:
+		inventory.hotbar[inventory.hotbar.find(number)] = 0
 
-	_on_notice("Your inventory is full. Make room first.")
+	inventory.hotbar[key] = number
+	refresh_hotbar()
+
+	if net != null:
+		net.inventory_action.rpc_id(1, Net.ACT_HOTBAR_SET, key, number, 0, Vector3.ZERO)
+
+
+# A pack stack dropped on a key puts its item there.
+func set_key_to_slot(key: int, slot: int) -> void:
+	if slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0:
+		set_key(key, inventory.numbers[slot])
+
+
+# One key dragged onto another: they swap items.
+func swap_keys(from_key: int, to_key: int) -> void:
+	if from_key == to_key:
+		return
+
+	var moving: int = key_number(from_key)
+	var other: int = key_number(to_key)
+
+	if moving == 0:
+		return
+
+	set_key(to_key, moving)   # takes it off from_key (one key per item)
+
+	if other != 0:
+		set_key(from_key, other)
+
+
+func _on_hotbar(keys: PackedInt32Array) -> void:
+	if inventory == null:
+		return
+
+	inventory.hotbar = PackedInt32Array()
+	inventory.hotbar.resize(inventory.HOTBAR_KEYS)
+
+	for k in mini(keys.size(), inventory.HOTBAR_KEYS):
+		inventory.hotbar[k] = keys[k]
+
+	refresh_hotbar()
+
+	if open:
+		_refresh()
 
 
 func refresh_hotbar() -> void:
@@ -1945,8 +2009,17 @@ func refresh_hotbar() -> void:
 		hotbar_strip.refresh()
 
 
-func hotbar_tip(slot: int) -> String:
-	return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]) + ("\nKeys: Use (E) moves it into the inventory" if open else "") if inventory.numbers[slot] != 0 else "Drag an item here from the inventory. Key %s holds it." % ("0" if slot == 9 else str(slot + 1))
+func hotbar_tip(key: int) -> String:
+	var slot: int = key_slot(key)
+	var key_name: String = "0" if key == 9 else str(key + 1)
+
+	if slot >= 0:
+		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]) + ("\nKeys: Use (E) takes it off the hotbar" if open else "")
+
+	if key_number(key) != 0:
+		return "%s: none in your pack. The next one you get comes back to key %s." % [table.name_of(key_number(key)), key_name]
+
+	return "Drag an item here from the inventory. Key %s holds it." % key_name
 
 
 # Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
@@ -2604,6 +2677,47 @@ func _free_craft() -> bool:
 
 func _can_craft(number: int) -> bool:
 	return _free_craft() or _stock_can_make(number) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
+
+
+# Craft clicks (docs/design/INVENTORY_CRAFTING_REPORT.md step 4; decisions row 24): a click makes one, shift-click five (fewer when the stock
+# makes fewer), a hold (recipe_list CRAFT_HOLD_MS) as many as the stock allows, up to the queue's 20. Each is one queue request, so the server's
+# pacing never refuses part of it. With nothing makeable the click does what it did before (the server says what is missing or makes the parts first).
+const CRAFT_SHIFT_COUNT := 5
+const CRAFT_MOST := 20          # the server's CRAFT_QUEUE_MAX_COUNT and the count box's top
+
+
+# How many times recipe `number` can be made from the pack and the stock in reach now (0 when not at all, at most CRAFT_MOST).
+func max_makeable(number: int) -> int:
+	var r: Dictionary = recipes.recipe(number)
+
+	if r.is_empty() or not _station_ok(r):
+		return 0
+
+	if _free_craft():
+		return CRAFT_MOST
+
+	var most: int = CRAFT_MOST
+
+	for need in r["needs"]:
+		most = mini(most, floori(float(stock_fill(int(need[0]))) / float(maxi(int(need[1]), 1))))
+
+	for keep in r["keeps"]:
+		if stock_fill(int(keep[0])) < int(keep[1]):
+			return 0
+
+	return maxi(most, 0)
+
+
+func craft_click(number: int, shift: bool, held: bool) -> void:
+	_start_craft(number, click_count(max_makeable(number), shift, held))
+
+
+# How many one click asks for, `most` being how many the stock makes: 1, shift 5 (or fewer), held all of them; 1 when none (as before).
+static func click_count(most: int, shift: bool, held: bool) -> int:
+	if most <= 0:
+		return 1
+
+	return most if held else (mini(CRAFT_SHIFT_COUNT, most) if shift else 1)
 
 
 # --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd): a craft may use the pack, loose stacks within 3 m
@@ -5084,14 +5198,14 @@ func run_eat_test(client) -> void:
 	_on_world_items([], PackedInt32Array([987654]))
 	print("Boulder test: gone when the server drops it %s" % str(not _boulders.has(987654)))
 
-	# Tools: Use holds a tool, again puts it away; a tool deep in the pack moves onto the hotbar first.
+	# Tools: Use holds a tool, again puts it away; a tool deep in the pack goes on a key first and stays where it lies (inventory step 4).
 	var axe: int = table.number_of("stone_axe")
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, axe, 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var axe_slot: int = inventory.numbers.find(axe)
 
 	if int(held_slot_now.call()) == axe_slot:
-		equip_requested.call(axe_slot)   # the saved hotbar slot can be this one: start with empty hands
+		equip_requested.call(int(held_key_now.call()))   # the saved hotbar key can point at it: start with empty hands
 
 	eat_slot(axe_slot)
 	await get_tree().create_timer(0.5).timeout
@@ -5107,8 +5221,9 @@ func run_eat_test(client) -> void:
 	eat_slot(20)
 	await get_tree().create_timer(1.0).timeout
 	var moved_to: int = held_slot_now.call()
-	equip_requested.call(moved_to)   # empty hands again
-	print("Hotbar test: axe parked in slot 20, Use moved it to slot %d and holds it (%s), on hotbar %s" % [moved_to, str(moved_to >= 0 and inventory.numbers[moved_to] == axe), str(moved_to >= 0 and moved_to < 10)])
+	var on_key: bool = moved_to >= 0 and inventory.on_hotbar(moved_to)
+	equip_requested.call(int(held_key_now.call()))   # empty hands again
+	print("Hotbar test: axe parked in slot 20, Use holds it where it lies, slot %d (%s), on hotbar %s" % [moved_to, str(moved_to >= 0 and inventory.numbers[moved_to] == axe), str(on_key)])
 
 	# Every tool and weapon in the table can be held from the hotbar, with a model, and does something on left click.
 	var tool_ids: Array = []
@@ -5130,13 +5245,9 @@ func run_eat_test(client) -> void:
 				break
 
 		var tool_slot: int = inventory.numbers.find(table.number_of(id))
-
-		if tool_slot >= 10:
-			move_slot(tool_slot, 9)
-			await get_tree().create_timer(0.6).timeout
-			tool_slot = 9
-
-		client.held.select(tool_slot)
+		set_key(9, table.number_of(id))   # key 0 points at it, wherever it lies (inventory step 4)
+		await get_tree().create_timer(0.3).timeout
+		client.held.select(9)
 		await get_tree().create_timer(0.3).timeout
 		held_ok += 1 if client.held.held_id() == id else 0
 		modelled += 1 if client.held._model != null else 0

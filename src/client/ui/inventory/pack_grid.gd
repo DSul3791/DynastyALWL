@@ -4,7 +4,6 @@ extends RefCounted
 # the weight, purse and carry bar, the sort menu, the slot grid and the Split / Drop / Use / Repair row.
 # The pack (view.inventory) and the slot actions the quick keys share (_split_selected, _drop_selected, _repair_selected, eat_slot) stay on the view.
 
-const HeldItem := preload("res://src/client/held_item.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
@@ -172,9 +171,8 @@ func refresh() -> void:
 			bar.offset_right = -view._px(4)
 			button.text += "   BROKEN" if view.is_broken(i) else "   %d%%" % int(c * 100.0)
 		button.modulate = Color(1.0, 0.9, 0.5) if i == view._selected else Color.WHITE
-		# The hotbar (slots 0 to 9) is an inventory spot of its own, shown on the hotbar strip: the backpack grid lists only the other slots, so an item
-		# on the hotbar leaves no second marker in the backpack (Dave, 7 Nov 2026).
-		button.visible = i >= HeldItem.HOTBAR_SLOTS and (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
+		# Every pack slot is listed: since the pointer hotbar (inventory step 4) slots 1 to 10 are ordinary pack slots and the keys only point at items.
+		button.visible = (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
 		button.tooltip_text = view._tooltip(number, view.inventory.counts[i], view.inventory.wear[i])
 
 		if number != 0 and view.container_cap(i) > 0:
@@ -280,7 +278,7 @@ func _refresh_look_slot(i: int, filter: String) -> void:
 
 	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], tip)
 	slot.set_marked(ItemSlot.MARK_GOLD if i == view._selected else 0)
-	slot.visible = i >= HeldItem.HOTBAR_SLOTS and (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
+	slot.visible = (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
 
 
 # Dragging a stack from one slot to another (also onto the hotbar strip on screen).

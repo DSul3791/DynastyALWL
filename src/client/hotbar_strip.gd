@@ -1,9 +1,9 @@
 extends RefCounted
 
-# The hotbar on screen (Dave 2026-10-21): the first ten pack slots, keys 1 to 9 and 0, along the bottom of the screen. The
-# held one is lit. Pressing its key holds it (a tool is drawn in the hand), pressing it again puts it away. Items are put
-# in a slot by dragging them there from the inventory (or from another slot); the slots belong to the character because
-# they are simply the first ten slots of the pack the server keeps.
+# The hotbar on screen (Dave 2026-10-21): keys 1 to 9 and 0 along the bottom of the screen. The held one is lit. Pressing its
+# key holds it (a tool is drawn in the hand), pressing it again puts it away. Since inventory step 4 a key holds an item, not a
+# pack slot (the server keeps the keys with the character): it shows the stack of that item in the pack, wherever it lies, and
+# dims when none is left. Dragging an item here from the inventory puts it on that key; dragging one key onto another swaps them.
 
 const SLOTS := 10
 const HOTBAR_LABELS := ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
@@ -81,16 +81,20 @@ func refresh() -> void:
 		_build()
 		return
 
-	for slot in range(SLOTS):
-		var cell: Dictionary = _cells[slot]
-		var number: int = _items.inventory.numbers[slot]
-		var off_here: bool = _held != null and _held.off_holding and _held.off_slot == slot
-		var held_here: bool = (_held != null and _held.holding and _held.held_slot == slot) or off_here
+	for key in range(SLOTS):
+		var cell: Dictionary = _cells[key]
+		var slot: int = _items.key_slot(key)
+		var number: int = _items.inventory.numbers[slot] if slot >= 0 else _items.key_number(key)
+		var count: int = _items.inventory.counts[slot] if slot >= 0 else 0
+		var dimmed: bool = slot < 0 and number != 0   # the key keeps its item while none is in the pack
+		var off_here: bool = _held != null and _held.off_holding and _held.off_key == key
+		var held_here: bool = (_held != null and _held.holding and _held.held_key == key) or off_here
 
 		if cell.has("look"):
 			var look = cell["look"]
-			InventoryLook.show_stack(_items, look, number, _items.inventory.counts[slot], _items.inventory.wear[slot], _items.hotbar_tip(slot))
+			InventoryLook.show_stack(_items, look, number, count, _items.inventory.wear[slot] if slot >= 0 else 0, _items.hotbar_tip(key))
 			look.set_marked((ItemSlot.MARK_CREAM if off_here else ItemSlot.MARK_GOLD) if held_here else 0)
+			look.modulate = Color(1.0, 1.0, 1.0, 0.45) if dimmed else Color.WHITE
 			continue
 		var style: StyleBoxFlat = StyleBoxFlat.new()
 		style.bg_color = Color(0.1, 0.1, 0.12, 0.8) if not held_here else Color(0.28, 0.22, 0.08, 0.92)
@@ -100,10 +104,9 @@ func refresh() -> void:
 		style.set_content_margin_all(_items.text_px(4))
 		cell["panel"].add_theme_stylebox_override("panel", style)
 		cell["name"].text = _items.table.name_of(number) if number != 0 else ""
-		var count: int = _items.inventory.counts[slot]
 		cell["count"].text = "x%d" % count if number != 0 and count > 1 else ""
-		cell["panel"].modulate = Color(1.0, 0.6, 0.6) if number != 0 and _items.is_broken(slot) else Color.WHITE
-		cell["panel"].tooltip_text = _items.hotbar_tip(slot)
+		cell["panel"].modulate = Color(1.0, 1.0, 1.0, 0.45) if dimmed else (Color(1.0, 0.6, 0.6) if slot >= 0 and _items.is_broken(slot) else Color.WHITE)
+		cell["panel"].tooltip_text = _items.hotbar_tip(key)
 
 
 # --new-inventory: ten item slots, each with its key at the top-left; the held one has the bright gold edge (the off hand cream).
@@ -116,30 +119,34 @@ func _build_look() -> void:
 		look.mouse_entered.connect(func(): _items.hotbar_hover = slot)
 		look.mouse_exited.connect(func(): _items.hotbar_hover = -1 if _items.hotbar_hover == slot else _items.hotbar_hover)
 		look.drag_data = func() -> Variant:
-			if _items.inventory.numbers[slot] == 0:
+			if _items.key_number(slot) == 0:
 				return null
 
-			return {"slot": slot}
-		look.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
-		look.on_drop = func(data: Variant) -> void: _items.move_slot(int(data["slot"]), slot)
+			return {"key": slot}
+		look.can_drop = func(data: Variant) -> bool: return _can_drop(Vector2.ZERO, data, slot)
+		look.on_drop = func(data: Variant) -> void: _drop(Vector2.ZERO, data, slot)
 		_row.add_child(look)
 		_cells.append({"look": look})
 
 
-func _drag(_at: Vector2, slot: int) -> Variant:
-	if _items.inventory.numbers[slot] == 0:
+func _drag(_at: Vector2, key: int) -> Variant:
+	if _items.key_number(key) == 0:
 		return null
 
 	var preview: Label = Label.new()
-	preview.text = _items.table.name_of(_items.inventory.numbers[slot])
+	preview.text = _items.table.name_of(_items.key_number(key))
 	preview.add_theme_font_size_override("font_size", _items.text_px(24))
-	_cells[slot]["panel"].set_drag_preview(preview)
-	return {"slot": slot}
+	_cells[key]["panel"].set_drag_preview(preview)
+	return {"key": key}
 
 
-func _can_drop(_at: Vector2, data: Variant, _slot: int) -> bool:
-	return typeof(data) == TYPE_DICTIONARY and data.has("slot")
+# A pack stack ({"slot"}) or another key ({"key"}) may be dropped on a key.
+func _can_drop(_at: Vector2, data: Variant, _key: int) -> bool:
+	return typeof(data) == TYPE_DICTIONARY and (data.has("slot") or data.has("key"))
 
 
-func _drop(_at: Vector2, data: Variant, slot: int) -> void:
-	_items.move_slot(int(data["slot"]), slot)
+func _drop(_at: Vector2, data: Variant, key: int) -> void:
+	if data.has("key"):
+		_items.swap_keys(int(data["key"]), key)
+	else:
+		_items.set_key_to_slot(key, int(data["slot"]))

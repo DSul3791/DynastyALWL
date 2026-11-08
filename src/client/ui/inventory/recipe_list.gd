@@ -16,6 +16,8 @@ var _category_buttons: Dictionary = {}   # category name -> its tab button
 var _detail: VBoxContainer                # the chosen recipe: its needs, the quantity box and Craft
 var _quantity: SpinBox                    # the How many box (null while no recipe is shown)
 var _qty: int = 1                         # the last quantity chosen, kept between refreshes
+const CRAFT_HOLD_MS := 400                 # a press this long on a recipe row is a hold: make as many as the stock allows (decisions row 24)
+var _press_msec: int = 0                  # when the recipe row was pressed
 
 
 func _init(owner_view) -> void:
@@ -105,6 +107,11 @@ func refresh() -> void:
 		entry.flat = r["number"] != view._selected_recipe
 		view._style(entry, view.BODY_PX)
 		entry.pressed.connect(_select_recipe.bind(r["number"]))
+
+		if InventoryLook.on:   # --new-inventory: a click on the row crafts (one, shift five, held as many as possible); the old window keeps its Craft button
+			entry.button_down.connect(func(): _press_msec = Time.get_ticks_msec())
+			entry.button_up.connect(func(): view.craft_click(int(r["number"]), Input.is_key_pressed(KEY_SHIFT), Time.get_ticks_msec() - _press_msec >= CRAFT_HOLD_MS))
+
 		entry.mouse_entered.connect(func(): view._hover_recipe = int(r["number"]))
 		entry.mouse_exited.connect(func(): view._hover_recipe = 0 if view._hover_recipe == int(r["number"]) else view._hover_recipe)
 		view._recipe_list.add_child(entry)

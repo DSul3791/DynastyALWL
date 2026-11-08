@@ -11,10 +11,12 @@ var table
 var numbers: PackedInt32Array = PackedInt32Array()
 var counts: PackedInt32Array = PackedInt32Array()
 var usable: int = SLOTS               # slots in use: a small container only fills its first few
-var bag_from: int = 0                 # a player's pack: new items go to slots from here first, the hotbar (0 to 9) only when the bag is full
+var bag_from: int = 0                 # new items go to slots from here first, then from slot 0 (the pack fills from slot 0 since the pointer hotbar, inventory step 4)
 var stack_all: bool = false           # a store that stacks every item to the u16 count (a fire's wood store); not saved, the owner sets it each time
 var wear: PackedInt32Array = PackedInt32Array()      # uses spent so far, tools only (stack 1); 0 for anything else
 var fav: PackedInt32Array = PackedInt32Array()       # favourites (inventory step 3, a pack only): the item number a slot was favourited with, 0 none; see is_fav
+const HOTBAR_KEYS := 10
+var hotbar: PackedInt32Array = PackedInt32Array()    # the pointer hotbar (inventory step 4, a pack only): keys 1 to 9 and 0 each hold an item number, 0 none; see key_slot
 
 
 func _init(item_table = null) -> void:
@@ -23,6 +25,7 @@ func _init(item_table = null) -> void:
 	counts.resize(SLOTS)
 	wear.resize(SLOTS)
 	fav.resize(SLOTS)
+	hotbar.resize(HOTBAR_KEYS)
 
 
 # Add as many as fit (fills partial stacks first). Returns how many were left over.
@@ -224,6 +227,44 @@ func is_fav(slot: int) -> bool:
 func set_fav(slot: int, on: bool) -> void:
 	if slot >= 0 and slot < SLOTS:
 		fav[slot] = numbers[slot] if on else 0
+
+
+# The pointer hotbar (inventory step 4): a key holds an item number, not a slot, so sorting and moving never change it. The key points at the pack
+# slot holding that item, an unbroken one first, then the first in pack order; -1 when the key is empty or none is in the pack (the key keeps its
+# item, dimmed, and the next one picked up comes back to it).
+func key_slot(key: int) -> int:
+	if key < 0 or key >= hotbar.size() or hotbar[key] == 0:
+		return -1
+
+	var first: int = -1
+	var number: int = hotbar[key]
+	var durability: int = int(table.entry(table.id_of(number)).get("durability", 0)) if table != null else 0
+
+	for slot in SLOTS:
+		if numbers[slot] != number:
+			continue
+
+		if durability <= 0 or wear[slot] < durability:
+			return slot
+
+		if first < 0:
+			first = slot
+
+	return first
+
+
+# Whether a hotbar key points at the item in this slot (the server's "on the hotbar" for tools: an axe to chop, a hammer to build).
+func on_hotbar(slot: int) -> bool:
+	return slot >= 0 and slot < SLOTS and numbers[slot] != 0 and hotbar.has(numbers[slot])
+
+
+# The key whose pointer lands on this pack slot (the gold key number on the pack slot), or -1.
+func key_of_slot(slot: int) -> int:
+	if slot < 0 or slot >= SLOTS or numbers[slot] == 0:
+		return -1
+
+	var key: int = hotbar.find(numbers[slot])
+	return key if key >= 0 and key_slot(key) == slot else -1
 
 
 # One byte per slot, 1 for a favourite: what the client is sent (protocol 99 favourites).
