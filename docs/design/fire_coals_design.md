@@ -23,16 +23,16 @@ Coals and ash run in real time, like the burn times. A log fire that burned 3 re
 
 ## 3. Coals and warm ash (step 1)
 
-Two new world-item states are appended after 41, so old clients and saves read nothing wrong:
+Two new world-item states, 76 and 77, are the first free numbers after `structures.json` (42 to 75 are building pieces), so old clients and saves read nothing wrong:
 
 | State | Name | Lasts | Light (client) | Warmth | Wolves |
 |---|---|---|---|---|---|
-| 42 | coals | `coals_s` 7200 real s | dim red, about 1 m, no flame, a thin wisp | `coals_heat_c` 8 °C within `coals_heat_m` 1.5 m | not protected: `fire_is_lit` stays false |
-| 43 | warm ash | `ash_s` 43200 real s | none, a faint wisp for the first hour | none | no |
+| 76 | coals | `coals_s` 7200 real s | dim red, about 1 m, no flame, a thin wisp | `coals_heat_c` 8 °C within `coals_heat_m` 1.5 m | not protected: `fire_is_lit` stays false |
+| 77 | warm ash | `ash_s` 43200 real s | none, a faint wisp for the first hour | none | no |
 | 8 | cold ash | `FIRE_OUT_S` 300 s, as today | none | none | no |
 
 - **Burning out:**
-  - When `burn_left` reaches 0, a fire with a coal bed becomes 42. A coal bed is `coal_bed_s`, 600 real s (10 minutes), of burning in total since it was last cold.
+  - When `burn_left` reaches 0, a fire with a coal bed becomes 76. A coal bed is `coal_bed_s`, 600 real s (10 minutes), of burning in total since it was last cold.
   - A fire with no coal bed becomes cold ash (8), as today. A handful of sticks lit and gone in two minutes leaves no coals.
 - **Wood laid on coals** (F, as on any fire) catches by itself, with no E needed. It takes `catch_s` (weak 10 s, firewood 45 s, log 180 s; ×2 when wet). The fire goes to its tier as lit by E, so the fire is back.
   - Light rain does not stop wood catching on coals. Rain of 0.2 or more on uncovered coals puts them out:
@@ -44,12 +44,12 @@ Two new world-item states are appended after 41, so old clients and saves read n
   - Lighting needs no starter today, so warm ash matters mostly in damp weather (a sure light) and as a sign that someone was there recently (Jamie's lesson 4).
 - **The world item:**
   - Coals and ash keep the fire's store (`uid`) and its position.
-  - Pick-up (hold E) works on 42 and 43 as on 8, and nothing burns the player.
-  - `left` counts down as now. 42 becomes 43 when it runs out, and 43 becomes 8.
+  - Pick-up (hold E) works on 76 and 77 as on 8, and nothing burns the player.
+  - `left` counts down as now. 76 becomes 77 when it runs out, and 77 becomes 8.
 - **Wire:**
   - The fire row gains one field, `glow` 0..1. That is how far through its coals or warm-ash time the fire is, so the client can dim it.
   - Protocol bump. An old client drawing an unknown state draws nothing, which is safe.
-  - Kathleen draws 42 and 43.
+  - Kathleen draws 76 and 77.
 
 ## 4. Rain on a big fire (step 2)
 
@@ -84,7 +84,7 @@ Two new world-item states are appended after 41, so old clients and saves read n
 
 Each step is a separate PR off main.
 
-1. **Coals and warm ash.** States 42 and 43, `coal_bed_s`, `catch_s`, tinder on warm ash, the `glow` field, the protocol bump, and `cooking.json` keys.
+1. **Coals and warm ash.** States 76 and 77, `coal_bed_s`, `catch_s`, tinder on warm ash, the `glow` field, the protocol bump, and `cooking.json` keys.
    **Test `test_fire_coals`:**
    - a 10-minute fire burns out to coals, then after `coals_s` to warm ash, then after `ash_s` to cold ash, then is gone;
    - a 2-minute stick fire goes straight to cold ash;
@@ -93,7 +93,7 @@ Each step is a separate PR off main.
    - rain on uncovered coals turns them to ash, and then the ash goes cold;
    - coals warm within 1.5 m and not at 3 m;
    - wolves are not held off by coals;
-   - a save and load keeps 42 and 43 with their time left.
+   - a save and load keeps 76 and 77 with their time left.
 2. **Rain on a big fire.** **Test:**
    - a log fire with a coal bed stays lit through 30 real minutes of rain 0.9 and burns ×1.25;
    - a log fire lit 1 minute ago (no coal bed) goes out;
