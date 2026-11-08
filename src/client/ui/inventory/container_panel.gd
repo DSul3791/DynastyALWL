@@ -7,11 +7,11 @@ extends RefCounted
 const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
-const HeldItem := preload("res://src/client/held_item.gd")
 const LOOK_COLUMNS := 6
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
+var _keep_out: CheckBox   # --new-inventory: the open container's "keep out" tick
 
 
 func _init(owner_view) -> void:
@@ -147,21 +147,27 @@ func _build_look() -> void:
 	box.add_child(bulk)
 
 	for spec in [["Take all", "Take every stack from the container into your pack", take_all],
-			["Store all", "Put every pack stack the container takes into it (the hotbar and favourites stay)", store_all],
-			["Stack to nearby", "Coming: fills stacks already in your own chests nearby", Callable()],
-			["Sort", "Sort your pack by name", sort_pack]]:
+			["Store all", "Put every pack stack the container takes into it (the hotbar's items and favourites stay)", store_all],
+			["Stack to nearby", "Add to stacks your own chests nearby already hold", stack_nearby],
+			["Sort", "Sort your pack and this container in the pack's order", sort_pack]]:
 		var button: Button = Button.new()
 		button.text = spec[0]
 		button.tooltip_text = spec[1]
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		view._style(button, view.BODY_PX - 6)
-
-		if (spec[2] as Callable).is_valid():
-			button.pressed.connect(spec[2])
-		else:
-			button.disabled = true      # STUB(step 2-4): stack to nearby own chests needs Steve's server action (Morgan's call 1)
-
+		button.pressed.connect(spec[2])
 		bulk.add_child(button)
+
+	# The "keep out" tick (Morgan's call 1): only the owner may change it; crafting and blueprint sites leave a kept-out container alone.
+	_keep_out = CheckBox.new()
+	_keep_out.text = "Keep out of crafting"
+	_keep_out.tooltip_text = "Crafting nearby and building sites will not take from this container"
+	view._style(_keep_out, view.BODY_PX - 6)
+	_keep_out.toggled.connect(func(on: bool) -> void:
+		if on != view.chest_keep_out:
+			view.set_keep_out(on))
+	box.add_child(_keep_out)
+	box.move_child(_keep_out, 1)
 
 	view._columns.add_child(view._chest_panel)      # between the recipes and the pack; hidden, it takes no room
 	view._columns.move_child(view._chest_panel, 1)
@@ -184,52 +190,23 @@ func put_from_pack(slot: int) -> bool:
 	return true
 
 
-# Take all: every stack in the container, one take each (the server refuses what the pack cannot hold).
-# STUB(step 2-4): one server action for the whole lot would be cheaper; this sends one per stack.
+# The four bulk buttons go to the server in one action each (inventory step 3, protocol 99; Net.ACT_BULK kinds 0 to 3). It skips the hotbar's
+# items and favourites, and a fire takes only what it burns or cooks. Its bulk_done answer brings the toast and the chest glow (InventoryView.bulk_event).
 func take_all() -> void:
-	if not view.chest_mode or view.chest_inv == null:
-		return
-
-	for i in view.inventory.SLOTS:
-		if view.chest_inv.numbers[i] != 0:
-			view.net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, i, view.chest_id, view.chest_inv.counts[i], Vector3.ZERO)
-
-	if view.chest_event.is_valid() and view._world.has(view.chest_id):
-		view.chest_event.call("take", view._world[view.chest_id]["pos"])
+	view.bulk(0)
 
 
-# Store all: every pack stack off the hotbar that the container takes. STUB(step 2-4): favourites are not saved yet, so none is skipped.
 func store_all() -> void:
-	if not view.chest_mode:
-		return
-
-	var sent: bool = false
-	var fire: bool = is_fire()
-
-	for i in range(HeldItem.HOTBAR_SLOTS, view.inventory.SLOTS):
-		var number: int = view.inventory.numbers[i]
-
-		if number == 0 or (fire and not fire_takes(view.table.id_of(number))):
-			continue
-
-		view.net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, i, view.chest_id, view.inventory.counts[i], Vector3.ZERO)
-		sent = true
-
-	if sent and view.chest_event.is_valid() and view._world.has(view.chest_id):
-		view.chest_event.call("put", view._world[view.chest_id]["pos"])
+	view.bulk(1)
 
 
-# Sort: the pack by name (the pack's own sort menu keeps the other orders).
+func stack_nearby() -> void:
+	view.bulk(2)
+
+
+# Sort: the pack and the open chest, in the pack's chosen order (the sort menu above the pack).
 func sort_pack() -> void:
-	view.sort_index = 1
-
-	if view._sort_menu != null:
-		view._sort_menu.select(1)
-
-	view._pack_part.arrange_slots()
-
-	if view.sort_changed.is_valid():
-		view.sort_changed.call(1)
+	view.bulk(3)
 
 
 func on_slot(chest_side: bool, slot: int) -> void:
@@ -284,7 +261,26 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 	var container_name: String = view.table.name_of(int(view._world.get(view.chest_id, {}).get("number", 0)))
 
 	if view._chest_titles.size() >= 1:
-		InventoryLook.plate(view._chest_titles[0], "Fire" if fire else (container_name if container_name != "" else "Chest"), view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
+		var plate: Label = view._chest_titles[0]
+		InventoryLook.plate(plate, "Fire" if fire else (container_name if container_name != "" else "Chest"), view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
+		var lock: Control = plate.get_node_or_null("Lock")
+
+		if view.chest_keep_out and lock == null:
+			var side: int = view._px(view.TITLE_PX - 10)
+			lock = InventoryLook.lock_mark(side)
+			lock.tooltip_text = "Kept out: crafting leaves this container alone"
+			plate.add_child(lock)
+			lock.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+			lock.offset_left = -float(side) - view._px(10)
+			lock.offset_right = -view._px(10)
+			lock.offset_top = -float(side) * 0.5
+			lock.offset_bottom = float(side) * 0.5
+		elif not view.chest_keep_out and lock != null:
+			lock.queue_free()
+
+	if is_instance_valid(_keep_out):
+		_keep_out.visible = view.chest_may_keep_out and not fire
+		_keep_out.set_pressed_no_signal(view.chest_keep_out)
 
 	for i in view.inventory.SLOTS:
 		var slot = view._chest_buttons[i]
