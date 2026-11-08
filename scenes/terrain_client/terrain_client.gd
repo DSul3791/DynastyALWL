@@ -1346,6 +1346,9 @@ func _welcome_body(info: Dictionary) -> void:
 		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
 	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void: animal_view.note_hit(at, amount))
 
+	if net.has_signal("ice_holes_received"):      # Steve's #737 (protocol 97): the live ice fishing holes, drawn with ice_looks
+		net.connect("ice_holes_received", func(points: PackedVector3Array, untils: PackedFloat32Array) -> void: animal_view.on_ice_holes(points, untils))
+
 	if net.has_signal("animal_hit_received"):      # Steve's hit event (zone and animal id to players within 60 m), once his protocol bump lands
 		net.connect("animal_hit_received", func(id: int, zone: Variant) -> void: animal_view.on_hit_event(id, zone))      # the amount drives the wounded gait (hunt_feedback)
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
