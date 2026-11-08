@@ -1,6 +1,6 @@
 # Cave light: from the mouth, the eyes, and drips along cracks
 
-**Owner:** Kathleen. **Status:** design and code together (small fix), 8 Nov 2026. **Behind:** `--cave-light` (off until Dino's pictures).
+**Owner:** Kathleen. **Status:** design and code together (small fix), 8 Nov 2026. **Behind:** nothing; always on since Dave's 8 Nov ruling (was `--cave-light`).
 **Reads:** Jamie's research page `docs/knowledge/cave-microclimate.md` (#664): lessons 5 to 7, "Daylight reach", "Drips" and the never-see list.
 
 ## 1. What is wrong today
