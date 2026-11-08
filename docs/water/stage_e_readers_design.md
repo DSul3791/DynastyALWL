@@ -143,11 +143,11 @@ At runtime, `tile_terrain_data.gd` gains:
 
 M0 and M1 can be built before R6 because they use today's data. Nothing waits on Sonny except M2.
 
-## 6b. The R6 files and the reader (proposed 8 Nov, for Sonny's agreement)
+## 6b. The R6 files and the reader (8 Nov, matched to Sonny's writer #622)
 
-Sonny's field list is firm (#537, Stage D "Record layout" and R6 item 4). This section fixes the byte formats the reader codes against, so `record.py` and `water_record.gd` agree on day one. **Sonny owns the schema:** each item below is a proposal until he agrees, through the coordinator.
+Sonny's field list is firm (#537, Stage D "Record layout" and R6 item 4), and his writer `tools/watershed/record.py` (#622) fixes the bytes. **Sonny owns the schema.** The reader follows the writer, and it reads each raster's coding from the manifest's field table instead of hard-coding it, so a new field or a changed scale needs no reader change.
 
-### Files
+### Files (as #622 writes them)
 
 All files are under `<world>/record/`:
 - `manifest.json`
@@ -155,67 +155,51 @@ All files are under `<world>/record/`:
 - `climate.json`
 - `tiles/<tx>_<tz>/<name>.<type>`
 
-A raster is raw, row-major (rows run along +z, the `export_raw_heights` convention), with **interleaved little-endian** words and (T / cell + 1)² samples with shared edges. At 8 m a starter tile (T = 15,360 m) is 1,921 × 1,921 samples. `<type>` is `u8` or `u16`.
+A raster is raw, row-major (row = z, column = x, the `export_raw_heights` convention), little-endian, with `tile_samples`² samples (T + 1 at 8 m: 1,921 for a starter tile) and shared edge samples. `<type>` is `f4`, `u1`, `u2` or `i4`.
 
-| raster | grid | type | coding |
-|---|---|---|---|
-| `ground` | 8 m | u16 | **the tile file's own height coding:** raw × 0.125 m − 4,000 m (`tile_file.gd` `HEIGHT_STEP_M`, `HEIGHT_BASE_M`, since TERRAIN_VERSION 43; 0.1 m steps would top out at 6,553 m and would need recoding at every bake) |
-| `water_level` | 8 m | u16 | the same; raw 0 = no water (`decode_water_surface`) |
-| `water_class` | 8 m | u8 | 0 to 10, as agreed |
-| `discharge` | 8 m | u16 | log-coded: q = 0.001 × (10^(raw / 8192) − 1) m³/s, so 0 is dry and the top is about 10^5 m³/s; steps are about 0.03 % |
-| `regime` | 8 m | u8 | 0 none, 1 perennial, 2 intermittent, 3 ephemeral |
-| `table_depth` | 8 m | u8 | 0.25 m steps; 255 = 63.75 m or deeper |
-| `basin` | 8 m | u16 | basin id; 0 = sea, or draining off the window |
-| `fresh_m` | 8 m | u8 | 2 m steps, 255 = 510 m or more (`water_record.gd` `FRESH_STEP_M`, already in the tile files) |
-| `sediment_m` | 8 m | u8 | 0.1 m steps, up to 25.4 m |
-| `snow_on`, `snow_off` | 16 m | u8 | year phase 0 to 255. The window runs from `on` to `off`; equal = none; `on` 0 and `off` 255 = all year |
-| `fog_pool` | 64 m | u8 | depth below the cold-air surface × 255 / 150 m |
+| raster | type | coding (manifest `fields`) |
+|---|---|---|
+| `ground` | f4 | metres |
+| `water_level` | f4 | metres; NaN = no water |
+| `water_class` | u1 | 0 to 10, as agreed |
+| `discharge` | u2 | log10(m³/s) = code / `codes_per_decade` − 4; 0 = none |
+| `regime` | u1 | 0 none, 1 perennial, 2 intermittent, 3 ephemeral |
+| `table_depth` | u1 | × `scale` m |
+| `basin` | i4 | basin id; −1 = none |
+| `fresh_m` | u2 | × `scale` (1 m) |
+| `sediment_m` | u2 | × `scale` m |
+| `snow_on`, `snow_off` (A4, later) | u1 | year phase 0 to 255. The window runs from `on` to `off`; equal = none; `on` 0 and `off` 255 = all year |
+| `fog_pool` (later) | u1 | depth below the cold-air surface |
 
-**`manifest.json`:**
-```
-{record_version, origin [x, z], cell_m 8, tile_m 15360, tiles [[tx, tz], ...],
- window [x0, z0, x1, z1], stages {name: sha}, inputs {name: sha256}, codings {raster: text above}}
-```
-The reader refuses a record whose `record_version` it does not know, and any raster whose byte length is wrong for its grid. Sonny's hash check against the world stays in the bake's setup.
+**`manifest.json`:** `{version, complete, record_sha, cell_m, origin_x, origin_z, tile_samples, tiles [x0, z0, x1, z1], inputs, stage_manifests, fields [{name, type, file, scale?, nodata?, codes_per_decade?, units?}], params, summary}`.
+- **The bake refuses a record with `complete` false.** Until R5, #622 writes no rivers, and says so.
+- It also refuses a `version` it does not know, and any raster whose byte length is wrong for its type and `tile_samples`.
+- Tools and tests may open an incomplete record on purpose (`allow_incomplete`).
 
-**`network.json`:**
-```
-{reaches: [{id, polyline [[x, y, z], ...], q_wet, q_mean, q_dry, width_m, depth_m, type, regime, bed, down}],
- heads: [{id, pos, kind, reach}],
- confluences: [{id, pos, reaches [...]}],
- falls: [{id, lip [x, y, z], height_m, kind, rock, cause, reach}],
- lakes: [{id, cause, level_m, spill [x, y, z], outlet}],
- springs: [{id, pos, q, kind}]   # kind: spring or seep
- cave_springs: [{id, mouth [x, y, z], q, rock, catchment_m2, sinks [ids]}],
- karst_sinks: [{id, pos, feeds}],
- coast_outlets: [{id, pos, reach}],
- pools: [{id, kind, spill_m, floor_m, area_m2, outline [[x, z], ...], cause, reach}]}
-```
-- Every feature may also carry `plausibility {…}` (the seven answers) and `look {sediment, peat, turbulence}`.
-- `down` and `outlet` are reach ids, or −1 for the sea.
+**`network.json`:** `{reaches, heads, confluences, falls, springs, cave_springs, coast_outlets, cold_air_pools, lakes}`. #622 writes the lakes alone until R5. The reader queries every list the same way: a feature is "in" a rect when one of its points lies in the rect. A point is `pos`, `mouth`, `lip` or `spill` as [x, y, z], any `<name>_x` and `<name>_z` pair (R3's lakes give `deepest_x` and `spill_x`), or any point of its `polyline` or `outline`. Nothing is clipped.
 
-**`climate.json`:** `{islands: {<island id>: {sea_level_mean_c, seasonal_swing_c, warmest_year_phase, daily_range_c, lapse_c_per_km, rain_mm_yr}}}`, as Sonny's A4 list.
+**`climate.json`:** `{default, by_island: {<island id>: …}}`. Each entry is `{sea_level_mean_c, seasonal_swing_c, warmest_year_phase, daily_range_c, lapse_c_per_km, rain_mm_yr}` (A4), and `climate(island)` falls back to `default`. The live air formula stays Jamie's `Weather.air_c` (#616 and #620); the reader hands these numbers over and never works out a second air formula.
 
 ### The reader (`src/worldgen/record/water_record.gd`)
 
 An instance opens one world's record, keeps the network and climate in memory, and reads rasters per tile on demand (one tile's 8 m set is about 30 MB, so at most the nine tiles of a bake frame are held):
 
-- `open(record_dir) -> String`: reads the manifest, network and climate. Returns an error text, or empty when it loaded;
+- `open(record_dir, allow_incomplete = false) -> String`: reads the manifest, network and climate. Returns an error text, or empty when it loaded;
 - `has_tile(tx, tz) -> bool`;
-- `raster(tx, tz, name) -> PackedFloat32Array`: decoded to metres, m³/s and codes, cached per tile. `bytes(tx, tz, name)` gives the raw u8 rasters undecoded;
+- `raster(tx, tz, name) -> PackedFloat32Array`: decoded by the field table to metres, m³/s and codes, with no-data as NaN, cached per tile;
 - `frame(tile, margin, name) -> PackedFloat32Array`: the tile's raster with `margin` samples taken from its eight neighbours, the bake frame the baker works on. A sample beyond a missing neighbour repeats the nearest edge sample, and the bake reports it;
 - `reaches_in(rect)`, `falls_in(rect)`, `lakes_in(rect)`, `cave_springs_in(rect)`, `springs_in(rect)`, `pools_in(rect)`: features whose position (or any polyline point) lies in the rect, never clipped;
 - `reach(id)`, and `downstream(id) -> Array` (the ids to the sea, for the follow-the-water checks);
-- `climate(island) -> Dictionary`, and `air_c(island, height_m, year_phase, hour)`: the one air formula of Stage D, so that the live weather, warmth, the snow window and the biomes all call the same code;
+- `climate(island) -> Dictionary` (the live temperature is `Weather.air_c`, one formula);
 - the static helpers already there (`fresh_distance`, `encode_fresh`, `decode_fresh`) stay, for tiles baked with `water_source` "rules".
 
-The M0 check is a headless test that writes a small record (two tiles of 3 × 3 samples, a network with a reach across their seam, a climate), opens it, and checks:
-- the decodings;
+The M0 check is a headless test (`test_water_record.gd`). It writes a small record in #622's format (two tiles of 3 × 3 samples, a network with a reach across their seam, a climate), opens it, and checks:
+- the decodings (f4 with NaN, the log discharge, scales, i4 no-data);
 - the seam samples;
 - the frame margin from the neighbour;
 - a reach found from both tiles with one id;
-- the version refusal and the wrong-length refusal;
-- the air formula against hand-worked values.
+- `downstream`;
+- the refusals: an incomplete record, an unknown version, a wrong length.
 
 ## 7. Questions (to the coordinator, not to Sonny)
 
