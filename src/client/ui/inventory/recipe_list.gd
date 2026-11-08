@@ -265,7 +265,7 @@ func _refresh_detail() -> void:
 
 	for need in r["needs"] + r["keeps"]:
 		var kept: bool = r["keeps"].has(need)
-		var have: int = view.inventory.count_of(need[0]) if kept else view.inventory.count_fill(need[0]) + (view.nearby_logs() if int(need[0]) == view.table.number_of("log") else 0)
+		var have: int = view.stock_fill(need[0])   # the pack, loose stacks within 3 m and own containers within 12 m (craft_stock)
 		var line: Label = Label.new()
 		line.text = "%s   %d / %d%s" % [view._item_label(need[0]), have, need[1], "  (kept)" if kept else ""]
 		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)

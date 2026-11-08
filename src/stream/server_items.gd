@@ -87,6 +87,7 @@ const SkillWeb := preload("res://src/shared/skill_web.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
+const CraftStock := preload("res://src/shared/craft_stock.gd")   # what a craft may draw on: the pack, ground within 3 m, own containers within 12 m
 const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
@@ -176,6 +177,8 @@ var nests_near: Callable         # (position, reach in metres) -> Array of {id: 
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
+var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
+var send_craft_stock: Callable  # (peer, numbers PackedInt32Array, counts PackedInt32Array): what a craft may use besides the pack (protocol 98)
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
 var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof or in a cave (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
@@ -1056,6 +1059,10 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_CHEST_CLOSE:
 		_sync_fire_from_box(peer, int(_chest_viewer.get(peer, 0)))
 		_chest_viewer.erase(peer)
+	elif kind == Net.ACT_CHEST_KEEP_OUT:
+		_set_keep_out(peer, a, b == 1)
+	elif kind == Net.ACT_CRAFT_STOCK:
+		_send_stock(peer)
 	elif kind == Net.ACT_LITTER:
 		_pick_litter(peer, inv, at)
 	elif kind == Net.ACT_DIG:
@@ -1318,7 +1325,7 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else ""])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0])
 			continue
 
 		var row: Array = [int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
@@ -4143,6 +4150,12 @@ func _load_world_items() -> void:
 				entry["struct"]["cave"] = row.size() > 13 and bool(row[13])
 				entry["struct"]["coins"] = maxi(int(row[14]), 0) if row.size() > 14 else 0
 
+			if row.size() > 11 and entry["struct"].has("uid") and str(row[9]) != "remains" and str(row[11]) != "":
+				entry["struct"]["owner"] = str(row[11])   # a container's owner (crafting stock); one saved before owners belongs to its first opener
+
+			if row.size() > 16 and int(row[16]) == 1:
+				entry["struct"]["keep_out"] = true   # the owner keeps it out of crafting and blueprint sites
+
 			if row.size() > 15 and str(row[15]) != "":
 				var saved_site: Variant = JSON.parse_string(str(row[15]))
 
@@ -6865,6 +6878,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	if int(def.get("slots", 0)) > 0:
 		entry["struct"]["uid"] = _next_uid
+		entry["struct"]["owner"] = str(_peer_key.get(peer, ""))   # crafting draws only on the owner's containers (CraftStock.owner_ok)
 		_chests[_next_uid] = InventoryScript.new(table)
 		_next_uid += 1
 
@@ -7101,9 +7115,9 @@ func _boxes_near(peer: int) -> Array:
 
 # --- Blueprint sites (Dave 5 Nov 2026) ---
 # A hammer click without the materials sets down a site instead: the real piece, drawn blue and see-through, that can be walked through. E on it deposits
-# what the builder has (pack, loose stock beside them and containers within SITE_REACH_M); when every material is in, it becomes the real piece. The site
-# is the piece's own entry with struct["site"] = {"bp": blueprint number, "have": {item id: count}}; taking a site down gives back what was put in.
-const SITE_REACH_M := 30.0
+# what the builder has (pack, loose stock beside them and their own containers within CraftStock.CRAFT_REACH_M, the crafting rule: _craft_boxes);
+# when every material is in, it becomes the real piece. The site is the piece's own entry with struct["site"] = {"bp": blueprint number,
+# "have": {item id: count}}; taking a site down gives back what was put in.
 
 
 func _site_of(it: Dictionary) -> Dictionary:
@@ -7124,25 +7138,6 @@ func _site_needs(site: Dictionary) -> Array:
 	return out
 
 
-# Containers within `radius` of the player: [[item id, inventory], ...].
-func _boxes_within(peer: int, radius: float) -> Array:
-	var out: Array = []
-
-	if not _peer_pos.has(peer):
-		return out
-
-	for sid in _items:
-		var s: Dictionary = _items[sid]
-
-		if not s.has("struct") or not s["struct"].has("uid") or not _chests.has(int(s["struct"]["uid"])) or int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", 0)) <= 0:
-			continue
-
-		if (s["pos"] as Vector3).distance_to(_peer_pos[peer]) <= radius:
-			out.append([sid, _chests[int(s["struct"]["uid"])]])
-
-	return out
-
-
 # What a site's list shows one player: [[item id, still needed, on hand], ...], "on hand" being the pack, loose stock beside them and containers within reach.
 func _site_view(peer: int, it: Dictionary) -> Array:
 	var out: Array = []
@@ -7151,7 +7146,7 @@ func _site_view(peer: int, it: Dictionary) -> Array:
 	if inv == null or not _peer_pos.has(peer):
 		return out
 
-	var boxes: Array = _boxes_within(peer, SITE_REACH_M)
+	var boxes: Array = _craft_boxes(peer)
 
 	for need in _site_needs(_site_of(it)):
 		var number: int = table.number_of(str(need[0]))
@@ -7177,7 +7172,7 @@ func _deposit_site(peer: int, inv, id: int) -> void:
 		_say(peer, "Too far to deposit materials there.")
 		return
 
-	var boxes: Array = _boxes_within(peer, SITE_REACH_M)
+	var boxes: Array = _craft_boxes(peer)
 	var have: Dictionary = site["have"]
 	var moved: int = 0
 
@@ -7813,6 +7808,11 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 	if kind == Net.ACT_CHEST_OPEN:
 		_chest_viewer[peer] = id
+		var opened: Dictionary = _items.get(id, {})
+
+		if _is_storage(opened) and str(opened["struct"].get("owner", "")) == "" and str(_peer_key.get(peer, "")) != "":
+			opened["struct"]["owner"] = str(_peer_key[peer])   # a container from before owners belongs to the first player who opens it (8 Nov 2026)
+			_dirty = true
 
 	# A fire with no count yet (loaded, or older than the count) is counted now, before anything is put in: wood put in later is not counted, so
 	# burned time can never take it (Tyler's run of #85: the trim's own fallback counted the newly put log, and the old burn time ate it).
@@ -7882,6 +7882,9 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 	if send_chest.is_valid():
 		send_chest.call(peer, id, chest.to_bytes())
+
+	if kind == Net.ACT_CHEST_OPEN:
+		_send_chest_info(peer, id)   # after the contents, so the client knows which container it is about
 
 	if kind == Net.ACT_CHEST_TAKE and str(_items.get(id, {}).get("struct", {}).get("kind", "")) == "remains":
 		_sync_remains(peer, false)
@@ -12313,6 +12316,215 @@ func _learn_tick() -> void:
 				_try_learn(peer, inv, r)
 
 
+# --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd) ---
+# A craft draws on the pack, then loose stacks lying within CraftStock.LOOSE_STOCK_M, then the player's own storage containers within
+# CraftStock.CRAFT_REACH_M, nearest first, skipping any ticked "keep out". Never a stranger's chest, and never a fire's store (fires are fuel).
+# A container gets its owner when it is placed; one saved before that belongs to the first player who opens it.
+
+# A storage container: a placed chest with slots, not a fire's store and not a take-only container (remains).
+func _is_storage(it: Dictionary) -> bool:
+	if it.has("fire") or not it.has("struct") or not it["struct"].has("uid") or not _chests.has(int(it["struct"]["uid"])) or it["struct"].has("site"):
+		return false
+
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+	return int(def.get("slots", 0)) > 0 and not bool(def.get("take_only", false))
+
+
+# The containers a craft or a blueprint site may use: [[world id, inventory, distance], ...], nearest first.
+func _craft_boxes(peer: int) -> Array:
+	return _stock_of(peer)["boxes"]
+
+
+# A loose item that counts as ground stock: not scatter, trees, fires, structures or boulders (the same as building's ground stock).
+func _is_loose(it: Dictionary) -> bool:
+	return not (it.has("scatter") or it.has("tree") or it.has("fire") or it.has("struct") or it.has("boulder")) and int(it.get("number", 0)) > 0
+
+
+# One pass over the world items for one craft request: {"boxes": [[world id, inventory, distance], ...] nearest first (_craft_boxes),
+# "near": [[world id, distance], ...] the loose items within CraftStock.LOOSE_STOCK_M, nearest first}. The stock functions below take it.
+func _stock_of(peer: int) -> Dictionary:
+	var boxes: Array = []
+	var near: Array = []
+
+	if not _peer_pos.has(peer):
+		return {"boxes": boxes, "near": near}
+
+	var key: String = str(_peer_key.get(peer, ""))
+
+	for sid in _items:
+		var s: Dictionary = _items[sid]
+
+		if _is_loose(s):
+			var near_d: float = (s["pos"] as Vector3).distance_to(_peer_pos[peer])
+
+			if near_d <= CraftStock.LOOSE_STOCK_M:
+				near.append([sid, near_d])
+		elif _is_storage(s):
+			var box_d: float = (s["pos"] as Vector3).distance_to(_peer_pos[peer])
+
+			if CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, box_d):
+				boxes.append([sid, _chests[int(s["struct"]["uid"])], box_d])
+
+	boxes.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
+	near.sort_custom(func(a, b): return float(a[1]) < float(b[1]))
+	return {"boxes": boxes, "near": near}
+
+
+# Loose stacks of an ingredient (or any member of its group: a `log` need takes any log) near the player: [[world id, count], ...], nearest first.
+func _craft_ground(stock: Dictionary, number: int, inv) -> Array:
+	var out: Array = []
+
+	if number <= 0 or inv == null:
+		return out
+
+	var fills: PackedInt32Array = inv.fills_of(number)
+
+	for row in stock.get("near", []):
+		var it: Dictionary = _items.get(int(row[0]), {})
+
+		if not it.is_empty() and fills.has(int(it.get("number", 0))):
+			out.append([int(row[0]), int(it["count"])])
+
+	return out
+
+
+# How much of an ingredient the craft stock holds: the pack, the ground near the player and their containers (`stock` from _stock_of).
+func _stock_have(inv, number: int, stock: Dictionary) -> int:
+	if inv == null:
+		return 0
+
+	var total: int = inv.count_fill(number)
+
+	for row in _craft_ground(stock, number, inv):
+		total += int(row[1])
+
+	for box in stock.get("boxes", []):
+		total += box[1].count_fill(number)
+
+	return total
+
+
+# Takes up to `want` of an ingredient: the pack first, then the ground near the player, then the containers nearest first. Returns how many it took.
+func _stock_take(inv, number: int, want: int, stock: Dictionary) -> int:
+	if inv == null or want <= 0:
+		return 0
+
+	var boxes: Array = stock.get("boxes", [])
+	var ground: Array = _craft_ground(stock, number, inv)
+	var have: Array = [inv.count_fill(number)]
+
+	for row in ground:
+		have.append(int(row[1]))
+
+	for box in boxes:
+		have.append(box[1].count_fill(number))
+
+	var plan: Array = CraftStock.take_plan(want, have)
+	var took: int = 0
+
+	if int(plan[0]) > 0 and inv.remove_fill(number, int(plan[0])):
+		took += int(plan[0])
+
+	for i in ground.size():
+		var share: int = int(plan[1 + i])
+		var it: Dictionary = _items.get(int(ground[i][0]), {})
+
+		if share <= 0 or it.is_empty():
+			continue
+
+		if int(it["count"]) > share:
+			it["count"] = int(it["count"]) - share
+		else:
+			_items.erase(int(ground[i][0]))
+
+		took += share
+		_dirty = true
+
+	for i in boxes.size():
+		var share: int = int(plan[1 + ground.size() + i])
+
+		if share > 0 and boxes[i][1].remove_fill(number, share):
+			took += share
+			_push_box(int(boxes[i][0]), boxes[i][1])   # whoever has that chest open sees it go
+			_dirty = true
+
+	return took
+
+
+# Does the craft stock hold everything `times` crafts of a recipe need (kept tools once)?
+func _stock_covers(inv, recipe: Dictionary, times: int, stock: Dictionary) -> bool:
+	for need in recipe["needs"]:
+		if _stock_have(inv, int(need[0]), stock) < int(need[1]) * clampi(times, 1, CRAFT_QUEUE_MAX_COUNT):
+			return false
+
+	for keep in recipe["keeps"]:
+		if _stock_have(inv, int(keep[0]), stock) < int(keep[1]):
+			return false
+
+	return true
+
+
+# What a craft may use besides the pack, sent to the player (protocol 98) when their crafting window opens (ACT_CRAFT_STOCK), after each craft
+# request and after a "keep out" change: item number -> count, the ground near them and their containers in reach. The client adds the pack.
+func _send_stock(peer: int) -> void:
+	if not send_craft_stock.is_valid() or not _peer_pos.has(peer):
+		return
+
+	var counts: Dictionary = {}
+	var stock: Dictionary = _stock_of(peer)
+
+	for row in stock["near"]:
+		var it: Dictionary = _items[int(row[0])]
+		counts[int(it["number"])] = int(counts.get(int(it["number"]), 0)) + int(it["count"])
+
+	for box in stock["boxes"]:
+		for slot in box[1].SLOTS:
+			if int(box[1].numbers[slot]) != 0:
+				counts[int(box[1].numbers[slot])] = int(counts.get(int(box[1].numbers[slot]), 0)) + int(box[1].counts[slot])
+
+	var numbers: PackedInt32Array = PackedInt32Array()
+	var amounts: PackedInt32Array = PackedInt32Array()
+
+	for number in counts:
+		numbers.append(int(number))
+		amounts.append(int(counts[number]))
+
+	send_craft_stock.call(peer, numbers, amounts)
+
+
+# The open container's "keep out" tick to the player, and whether they may change it (their own storage container).
+func _send_chest_info(peer: int, id: int) -> void:
+	if not send_chest_info.is_valid():
+		return
+
+	var it: Dictionary = _items.get(id, {})
+	var storage: bool = not it.is_empty() and _is_storage(it)
+	var mine: bool = storage and CraftStock.owner_ok(str(it["struct"].get("owner", "")), str(_peer_key.get(peer, "")))
+	send_chest_info.call(peer, id, storage and bool(it["struct"].get("keep_out", false)), mine)
+
+
+# ACT_CHEST_KEEP_OUT: the owner ticks (b = 1) or clears (b = 0) "keep out" on one of their containers within reach; crafting and blueprint
+# sites then leave it alone. Saved with the container (world_items.json row index 16).
+func _set_keep_out(peer: int, id: int, on: bool) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not _is_storage(it) or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
+		return
+
+	if not CraftStock.owner_ok(str(it["struct"].get("owner", "")), str(_peer_key.get(peer, ""))):
+		_say(peer, "Only the owner can change that.")
+		return
+
+	if on:
+		it["struct"]["keep_out"] = true
+	else:
+		it["struct"].erase("keep_out")
+
+	_dirty = true
+	_send_chest_info(peer, id)
+	_send_stock(peer)
+
+
 func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
@@ -12338,12 +12550,14 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 		return
 
 	_pull_nearby_logs(peer, inv, _log_need(recipe["needs"], clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)))   # shoulder and ground logs count (F-16)
+	var stock: Dictionary = _stock_of(peer)   # the ground near the player and their own containers in reach count too (step 2): pack first, then the ground, then the nearest
 
-	# Short of a part the pack could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct).
-	if not _pack_covers(inv, recipe, count):
-		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count)
+	# Short of a part the stock could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct).
+	if not _stock_covers(inv, recipe, count, stock):
+		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count, stock)
 
 		if outcome == 1:
+			_send_stock(peer)
 			return
 
 	var entries: Array = queue["entries"]
@@ -12356,11 +12570,11 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	var taken: int = 0
 
 	for n in range(clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)):
-		if not recipes.can_make(recipe_number, inv):
+		if not _stock_covers(inv, recipe, 1, stock):
 			break
 
 		for need in recipe["needs"]:
-			inv.remove_fill(need[0], need[1])
+			_stock_take(inv, int(need[0]), int(need[1]), stock)
 
 		taken += 1
 
@@ -12378,6 +12592,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 
 	_dirty = true
 	_sync_craft_queue(peer)
+	_send_stock(peer)
 
 
 # Does the pack hold everything `times` crafts of a recipe need (kept tools once)?
@@ -12395,9 +12610,12 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 
 # Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
 # was told why, -1 when there is nothing to add (the plain craft goes on, or fails the old way).
-func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int) -> int:
+func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}) -> int:
+	if stock.is_empty():
+		stock = _stock_of(peer)
+
 	var ctx: Dictionary = {
-		"have": func(item: int) -> int: return inv.count_fill(item),
+		"have": func(item: int) -> int: return _stock_have(inv, item, stock),
 		"station_ok": func(r: Dictionary) -> bool: return str(r.get("station", "")) == "" or station_near(peer, str(r["station"]), int(r.get("station_level", 1))),
 		"known": func(r: Dictionary) -> bool: return recipe_known_for(peer, r),
 		"free": false,
@@ -12435,7 +12653,7 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 	for step in steps:
 		for need in step["take"]:
-			inv.remove_fill(need[0], int(need[1]) * int(step["count"]))
+			_stock_take(inv, int(need[0]), int(need[1]) * int(step["count"]), stock)
 
 		entries.append([int(step["recipe"]), int(step["count"]), (step["take"] as Array).duplicate(true), (step["deferred"] as Array).duplicate(true), chain])
 

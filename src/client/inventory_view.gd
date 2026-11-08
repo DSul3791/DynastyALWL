@@ -81,6 +81,10 @@ var chest_event: Callable              # ("open" | "close" | "put" | "take", pos
 var chest_mode: bool = false           # the panel on screen is a chest, not the pack and recipes
 var chest_inv                          # contents of the open chest (Inventory), from the server
 var chest_id: int = 0
+var chest_keep_out: bool = false        # the open container is ticked "keep out" (protocol 98 chest_info): crafting and blueprint sites leave it alone
+var chest_may_keep_out: bool = false    # and this player owns it, so the tick may be changed (set_keep_out)
+var reach_stock: Dictionary = {}        # item number -> count a craft may use besides the pack: loose stacks within 3 m and own containers within 12 m (craft_stock)
+var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
 var _chest_panel: PanelContainer
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
@@ -210,6 +214,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.world_items_received.connect(func(...args): _timed("_queue_world_items", _queue_world_items, args))
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
+	net.chest_info_received.connect(_on_chest_info)
+	net.craft_stock_received.connect(_on_craft_stock)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
 	net.training_received.connect(func(percent: int):
 		training_today = percent
@@ -374,6 +380,7 @@ func toggle() -> void:
 
 	if open:
 		_build_panel()
+		_stock_sign = 0   # the window opens: ask for the craft stock again
 		_refresh()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif _panel != null:
@@ -2586,7 +2593,71 @@ func _free_craft() -> bool:
 
 
 func _can_craft(number: int) -> bool:
-	return _free_craft() or recipes.can_make(number, inventory) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
+	return _free_craft() or _stock_can_make(number) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
+
+
+# --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd): a craft may use the pack, loose stacks within 3 m
+# and the player's own containers within 12 m that are not kept out. The server sends what lies outside the pack (craft_stock, protocol 98).
+
+# How much of an ingredient a craft may use: the pack plus the stock in reach (any member of a group fills a group need, as in the pack).
+func stock_fill(number: int) -> int:
+	var total: int = inventory.count_fill(number) if inventory != null else 0
+
+	for member in (inventory.fills_of(number) if inventory != null else PackedInt32Array([number])):
+		total += int(reach_stock.get(int(member), 0))
+
+	return total
+
+
+# Recipe `number` is covered by the pack and the stock in reach (the station is checked on its own, as before).
+func _stock_can_make(number: int) -> bool:
+	var r: Dictionary = recipes.recipe(number)
+
+	if r.is_empty():
+		return false
+
+	for need in r["needs"] + r["keeps"]:
+		if stock_fill(int(need[0])) < int(need[1]):
+			return false
+
+	return true
+
+
+func _on_craft_stock(numbers: PackedInt32Array, counts: PackedInt32Array) -> void:
+	reach_stock.clear()
+
+	for i in mini(numbers.size(), counts.size()):
+		reach_stock[int(numbers[i])] = int(reach_stock.get(int(numbers[i]), 0)) + int(counts[i])
+
+	_queue_refresh()
+
+
+func _on_chest_info(id: int, keep_out: bool, may_set: bool) -> void:
+	if id != chest_id:
+		return
+
+	chest_keep_out = keep_out
+	chest_may_keep_out = may_set
+
+
+# The open container's "keep out" tick (the owner only; the server checks and answers with chest_info).
+func set_keep_out(on: bool) -> void:
+	if chest_mode and chest_may_keep_out and net != null:
+		net.inventory_action.rpc_id(1, Net.ACT_CHEST_KEEP_OUT, chest_id, 1 if on else 0, 0, Vector3.ZERO)
+
+
+# Asks the server for the craft stock when the window has just opened or the pack has changed since the last ask.
+func _ask_stock() -> void:
+	if net == null or inventory == null:
+		return
+
+	var pack_sign: int = hash([inventory.numbers, inventory.counts])
+
+	if pack_sign == _stock_sign:
+		return
+
+	_stock_sign = pack_sign
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_STOCK, 0, 0, 0, Vector3.ZERO)
 
 
 # The log on the shoulder plus log items lying within 3 m of the player (the server uses them for a craft that needs logs: server_items.gd _pull_nearby_logs).
@@ -2639,9 +2710,9 @@ func _parts_plan(number: int) -> Dictionary:
 
 	var plan: Dictionary = {"ok": false, "steps": [], "made": [], "ambiguous": 0, "msg": ""}
 
-	if not recipes.can_make(number, inventory):
+	if not _stock_can_make(number):
 		var ctx: Dictionary = {
-			"have": func(item: int) -> int: return inventory.count_fill(item),
+			"have": func(item: int) -> int: return stock_fill(item),
 			"station_ok": func(r: Dictionary) -> bool: return _station_ok(r),
 			"free": false,
 		}
@@ -4144,6 +4215,7 @@ func _refresh() -> void:
 
 		return
 
+	_ask_stock()
 	_pack_part.refresh()
 	_recipe_part.refresh()
 
