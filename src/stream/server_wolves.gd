@@ -11,11 +11,15 @@ extends RefCounted
 # Pure server code; the animals module calls tick() once per server tick and owns the records.
 
 const Steering := preload("res://src/shared/steering.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")
 
 const STALK := 6      # wire states (animal rows): 0 graze, 1 hop, 6 stalk or circle, 7 attack
 const ATTACK := 7
 const ROLL := 8       # idle: rolling in the grass
 const PLAY := 9       # idle: playing like dogs
+const DAY_S := 86400.0
+const GAME_PER_REAL := 24.0   # game seconds per real second (game_clock.gd RATIO)
+const DENS_FILE := "wolf_dens.json"
 
 var host                          # the animals module (animals, cfg, rng, ground_height, blocked, species_def, spawn, damage)
 var take_meat: Callable           # (peer) -> int: takes every piece of meat out of the pack, returns how many
@@ -26,6 +30,12 @@ var notice: Callable              # (peer, text)
 var fire_radius: Callable         # (fire position) -> metres wolves keep from that fire (its tier's protect_m); invalid = animals.json fire_light_m
 var is_day: Callable              # () -> bool, play only by day (invalid = always)
 var events: Array = []            # sounds for the client/Mandy: {kind "growl"|"howl", pos}, newest last, capped
+var game_seconds: Callable        # () -> game seconds (game_clock.seconds); pups' season and orphans' days
+var store_dir: String = ""        # "" = dens not saved (tests)
+var dens: Dictionary = {}         # saved per den (docs/design/wolf_packs_and_pups_design.md): den key -> {"rest_until_s", "orphan": {den [x,y,z], pups, since_s, trust}}
+var _peer_speed: Dictionary = {}  # peer -> m/s over the last tick (pups hide from a moving player)
+var _peer_last: Dictionary = {}
+var _dens_dirty: bool = false
 
 var packs: Dictionary = {}        # id -> {id, ids Array, phase, timer, target peer, home, maimed Dictionary, hurt, prey, point, bite Dictionary}
 var cells: Dictionary = {}        # natural pack cells: "cx,cz" -> {pack id or 0, dead_until msec}
@@ -40,11 +50,12 @@ func cfgw() -> Dictionary:
 	return host.cfg.get("wolves", {})
 
 
+# Pack wolves only: pups and companion wolves are not counted against max_wolves.
 func wolf_count() -> int:
 	var n: int = 0
 
 	for id in host.animals:
-		n += 1 if host.animals[id]["sp"] == "wolf" else 0
+		n += 1 if host.animals[id]["sp"] == "wolf" and host.animals[id].has("pack") else 0
 
 	return n
 
@@ -55,7 +66,7 @@ func spawn_pack(x: float, z: float) -> int:
 	var count: int = host.rng.randi_range(int(size[0]), int(size[1]))   # luck-exempt: how many wolves in a pack
 	var pid: int = _next_pack
 	_next_pack += 1
-	var pack: Dictionary = {"id": pid, "ids": [], "phase": "prowl", "timer": 0.0, "target": -1, "home": Vector3(x, 0.0, z), "maimed": {}, "hurt": false, "prey": 0, "den": Vector3(x, 0.0, z), "joined": false, "point": Vector3.INF, "bite": {}, "ignore": {}, "angle": 0.0, "sprint": 0.0, "stalk_s": 0.0, "hunger": float(cfgw().get("hunger_start", 0.4)), "for_meat": false, "meat_hits": 0}
+	var pack: Dictionary = {"id": pid, "ids": [], "pups": [], "key": "%d,%d" % [int(x), int(z)], "phase": "prowl", "timer": 0.0, "target": -1, "home": Vector3(x, 0.0, z), "maimed": {}, "hurt": false, "prey": 0, "den": Vector3(x, 0.0, z), "joined": false, "point": Vector3.INF, "bite": {}, "ignore": {}, "angle": 0.0, "sprint": 0.0, "stalk_s": 0.0, "hunger": float(cfgw().get("hunger_start", 0.4)), "for_meat": false, "meat_hits": 0}
 
 	for k in count:
 		var angle: float = TAU * float(k) / float(count)
@@ -88,6 +99,7 @@ func on_death(id: int, pack_id: int) -> void:
 				cells[key]["pack"] = 0
 				cells[key]["dead_until"] = _clock + float(cfgw().get("respawn_s", 7200.0))
 
+		_orphan(pack)
 		packs.erase(pack_id)
 
 
@@ -104,6 +116,13 @@ func tick(delta: float) -> void:
 	if _fire_age >= 1.0:
 		_fire_cache = fires.call() if fires.is_valid() else []
 		_fire_age = 0.0
+
+	for info in infos:
+		var was: Vector3 = _peer_last.get(info["peer"], info["pos"])
+		_peer_speed[info["peer"]] = Vector2(info["pos"].x - was.x, info["pos"].z - was.z).length() / maxf(delta, 0.001)
+		_peer_last[info["peer"]] = info["pos"]
+
+	_tend_orphans(infos, delta)
 
 	if bool(cfgw().get("natural", false)):
 		_natural_acc += delta
@@ -266,7 +285,12 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 			pack["target"] = -1
 			pack["maimed"] = {}
 
+	if pack["phase"] in ["prowl", "stalk", "wait", "prowl_target"]:
+		_guard_check(pack, infos)
+
 	match pack["phase"]:
+		"den_guard":
+			_den_guard(pack, members, c, dt, infos)
 		"prowl":
 			_prowl(pack, members, c, dt, infos)
 		"stalk":
@@ -280,7 +304,7 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 
 	for m in members:
 		var moved: bool = bool(m.get("moving", false))
-		m["state"] = ATTACK if pack["phase"] == "rush" else (STALK if pack["phase"] in ["stalk"] else (int(m["play_kind"]) if float(m.get("play", 0.0)) > 0.0 else (1 if moved else 0)))
+		m["state"] = ATTACK if pack["phase"] == "rush" or (pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false))) else (STALK if pack["phase"] in ["stalk", "den_guard"] else (int(m["play_kind"]) if float(m.get("play", 0.0)) > 0.0 else (1 if moved else 0)))
 
 
 func _prey_near(c: Vector3, r: float) -> int:
@@ -647,6 +671,12 @@ func _natural(infos: Array) -> void:
 				if Vector2(home.x - float(ex[0]), home.y - float(ex[1])).length() < float(ex[2]):
 					continue
 
+				if near_town(home.x, home.y):
+					continue   # wolves den away from the town (wolf_packs_and_pups_design.md 3)
+
+				if _den_resting(key):
+					continue   # a killed pack's den: its orphans live there, or it rests for respawn_s (saved across restarts)
+
 				var d: float = Vector2(home.x - p.x, home.y - p.z).length()
 
 				if d > active or d < float(host.cfg.get("spawn_min_m", 150.0)) * 0.9:
@@ -659,4 +689,409 @@ func _natural(infos: Array) -> void:
 
 				var pid: int = spawn_pack(home.x, home.y)
 				cells[key] = {"pack": pid, "dead_until": 0.0}
+
+				if pid != 0:
+					packs[pid]["key"] = key
+					make_pups(pid)
+
 				return
+
+
+# --- pups and orphans (docs/design/wolf_packs_and_pups_design.md, Dave 8 Nov 2026 decisions 3 and 4) ---
+
+# Whether a den at (x, z) would be within town_keep_m of the town point: no natural pack lives there (dens lie far from villages:
+# Białowieża, Can. J. Zool. 2003).
+func near_town(x: float, z: float) -> bool:
+	return host.starter.x != INF and Vector2(x - host.starter.x, z - host.starter.y).length() < float(cfgw().get("town_keep_m", 1200.0))
+
+
+func _now_s() -> float:
+	return float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+
+func pup_cfg() -> Dictionary:
+	return cfgw().get("pups", {})
+
+
+# Late spring to about 3 months on (pups.days, day of the year): pups are at the den.
+func pup_season() -> bool:
+	var days: Array = pup_cfg().get("days", [60, 150])
+	var doy: int = int(floorf(_now_s() / DAY_S)) % 365
+	return doy >= int(days[0]) and doy <= int(days[1])
+
+
+# The pack's pups at its den: natural packs in pup season (forced: tests and admin). Returns how many the pack has.
+func make_pups(pid: int, forced: bool = false) -> int:
+	if not packs.has(pid) or (not forced and not pup_season()):
+		return 0
+
+	var pack: Dictionary = packs[pid]
+	var span: Array = pup_cfg().get("count", [2, 5])
+	var n: int = host.rng.randi_range(int(span[0]), int(span[1]))   # luck-exempt: how many pups in a litter
+
+	for k in n:
+		var id: int = _spawn_pup(pack["den"], k)
+
+		if id != 0:
+			host.animals[id]["pup_of"] = pid
+			pack["pups"].append(id)
+
+	return (pack["pups"] as Array).size()
+
+
+func _spawn_pup(den: Vector3, k: int) -> int:
+	var ang: float = TAU * float(k) / 5.0
+	var id: int = host.spawn("wolf", den.x + cos(ang) * 2.0, den.z + sin(ang) * 2.0)
+
+	if id == 0:
+		return 0
+
+	var a: Dictionary = host.animals[id]
+	a["num"] = int(a["num"]) + int(host.YOUNG_NUM)   # sent as young: the client draws it small
+	a["hp"] = float(a["hp"]) * float(pup_cfg().get("hp_x", 0.25))
+	a["den_at"] = Vector3(den.x, a["pos"].y, den.z)
+	a["young"] = true
+	return id
+
+
+func _live_pups(pack: Dictionary) -> Array:
+	var out: Array = []
+
+	for id in pack.get("pups", []):
+		if host.animals.has(id) and host.animals[id].has("pup_of"):
+			out.append(id)
+
+	return out
+
+
+func _flat(p: Vector3, q: Vector3) -> float:
+	return Vector2(p.x - q.x, p.z - q.z).length()
+
+
+# A pup (wild or orphan): it keeps within play_m of the den and plays there by day; a player within hide_m who stands or moves sends it
+# into the den (HIDDEN: not sent, not hunted); a crouched, still player it lets be.
+func step_pup(a: Dictionary, dt: float) -> void:
+	var pc: Dictionary = pup_cfg()
+	var den: Vector3 = a.get("den_at", a["home"])
+	var scared: bool = false
+
+	for info in (player_info.call() if player_info.is_valid() else []):
+		if _flat(info["pos"], den) <= float(pc.get("hide_m", 25.0)) and (int(info.get("stance", 0)) == 0 or float(_peer_speed.get(info["peer"], 0.0)) > 0.3):
+			scared = true
+
+	if scared:
+		a["state"] = host.HIDDEN
+		a["pos"] = den
+		a["timer"] = 5.0
+		a["playing"] = false
+		return
+
+	a["timer"] = float(a["timer"]) - dt
+
+	if int(a["state"]) == host.HIDDEN and float(a["timer"]) > 0.0:
+		return   # it waits a little before it comes out again
+
+	if float(a["timer"]) <= 0.0:
+		var ang: float = host.rng.randf() * TAU   # luck-exempt: where a pup potters
+		a["target"] = den + Vector3(cos(ang), 0.0, sin(ang)) * host.rng.randf_range(0.5, float(pc.get("play_m", 8.0)))   # luck-exempt: as above
+		a["timer"] = host.rng.randf_range(4.0, 10.0)   # luck-exempt: how long until it moves on
+		a["playing"] = (not is_day.is_valid() or bool(is_day.call())) and host.rng.randf() < 0.4   # luck-exempt: whether it plays
+
+	if bool(a.get("playing", false)):
+		a["state"] = PLAY
+		return
+
+	var r: Dictionary = Steering.step(a["pos"], a["target"], 1.0, dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
+
+	if r["moved"]:
+		a["pos"] = r["pos"]
+		a["heading"] = r["heading"]
+
+	a["state"] = host.HOP if r["moved"] else host.GRAZE
+
+
+# A player near the den while the pups are there: the pack comes home and warns (den_guard).
+func _guard_check(pack: Dictionary, infos: Array) -> void:
+	if _live_pups(pack).is_empty():
+		return
+
+	for info in infos:
+		if _flat(info["pos"], pack["den"]) <= float(pup_cfg().get("guard_m", 40.0)):
+			pack["phase"] = "den_guard"
+			pack["target"] = int(info["peer"])
+			pack["timer"] = float(pup_cfg().get("warn_s", 3.0))
+			pack["guard_rush"] = false
+			_event("growl", pack["den"])
+			_say_to(int(info["peer"]), str(pup_cfg().get("say_warn", "Wolves snarl at you from near their den.")))
+			return
+
+
+# A pup hurt: its pack comes at the one who did it at once.
+func pup_hurt(a: Dictionary, peer: int) -> void:
+	var pack: Dictionary = packs.get(int(a.get("pup_of", 0)), {})
+
+	if pack.is_empty() or peer < 0:
+		return
+
+	pack["phase"] = "den_guard"
+	pack["target"] = peer
+	pack["timer"] = 0.0
+	pack["guard_rush"] = true
+	pack["sprint"] = 0.0
+	pack["bite"] = {}
+	_event("growl", pack["den"])
+
+
+# Placed fires only: a torch bearer's own light does not hold a pack at its den (the torch rule is lifted there; a campfire still holds).
+func fire_lit(x: float, z: float, infos: Array) -> bool:
+	for f in _fire_cache:
+		var bearer: bool = false
+
+		for info in infos:
+			bearer = bearer or (bool(info.get("torch", false)) and _flat(info["pos"], f) <= 1.5)
+
+		if not bearer and Vector2(f.x - x, f.z - z).length() < _fire_m(f):
+			return true
+
+	return false
+
+
+func _walk_den(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) -> void:
+	var host_blocked: Callable = host.blocked
+	var me = self
+	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.fire_lit(x, z, infos)
+	var r: Dictionary = Steering.step(m["pos"], goal, speed, dt, host.ground_height, shy, 0.5, m["heading"], host.crossing)
+	m["moving"] = bool(r["moved"])
+
+	if r["moved"]:
+		m["pos"] = r["pos"]
+		m["heading"] = r["heading"]
+
+
+# The den guard: the pack stands between the den and the player for warn_s (circling, growling); a player who backs out past guard_m
+# ends it; one still within rush_m after the warning is rushed, torch or not. A campfire by the player and a second player still hold it.
+func _den_guard(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array) -> void:
+	var w: Dictionary = cfgw()
+	var pc: Dictionary = pup_cfg()
+	var def: Dictionary = host.species_def("wolf")
+	var target: int = int(pack["target"])
+	var info: Dictionary = _info_of(infos, target)
+	var den: Vector3 = pack["den"]
+
+	if info.is_empty() or _live_pups(pack).is_empty():
+		_end_guard(pack)
+		return
+
+	var p: Vector3 = info["pos"]
+	var d: float = _flat(p, den)
+
+	if d > float(pc.get("guard_m", 40.0)) + 5.0:
+		_end_guard(pack)   # backed off: it is over
+		return
+
+	var others: int = 0
+
+	for o in infos:
+		if int(o["peer"]) != target and _flat(o["pos"], p) <= float(w.get("group_m", 10.0)):
+			others += 1
+
+	var low: bool = false
+
+	for m in members:
+		low = low or float(m["hp"]) < float(def.get("health", 30.0)) * float(w.get("flee_hp_share", 0.4))
+
+	var held: bool = fire_lit(p.x, p.z, infos)
+
+	if others > 0 or low:
+		pack["guard_rush"] = false
+		_retreat(pack, members, c, p, float(w.get("hurt_retreat_s", 45.0)), false)
+		return
+
+	if not bool(pack.get("guard_rush", false)):
+		var toward: Vector2 = Vector2(p.x - den.x, p.z - den.z).normalized()
+		var side: Vector2 = Vector2(-toward.y, toward.x)
+
+		for k in members.size():
+			var spot: Vector2 = Vector2(den.x, den.z) + toward * minf(d * 0.5, 10.0) + side * (float(k) - float(members.size() - 1) * 0.5) * 2.5
+			var m: Dictionary = members[k]
+
+			if _flat(m["pos"], Vector3(spot.x, 0.0, spot.y)) > 1.0:
+				_walk_den(m, Vector3(spot.x, m["pos"].y, spot.y), float(def.get("sprint_mps", 10.5)), dt, infos)
+			else:
+				m["moving"] = false
+				m["heading"] = atan2(p.z - m["pos"].z, p.x - m["pos"].x)
+
+		if float(pack["timer"]) <= 0.0 and d <= float(pc.get("rush_m", 25.0)) and not held:
+			pack["guard_rush"] = true
+			pack["sprint"] = 0.0
+			pack["bite"] = {}
+			_say_to(target, str(w.get("say_rush", "The wolves are coming for you!")))
+			_event("growl", c)
+
+		return
+
+	if held or d > float(pc.get("rush_m", 25.0)) + 10.0:
+		pack["guard_rush"] = false   # beside a campfire, or well back: it goes back to warning
+		pack["timer"] = float(pc.get("warn_s", 3.0))
+		return
+
+	pack["sprint"] = float(pack.get("sprint", 0.0)) + dt
+	var speed: float = float(def.get("sprint_mps", 10.5)) if float(pack["sprint"]) <= float(def.get("sprint_s", 5.0)) else float(def.get("chase_mps", 7.0))
+
+	for m in members:
+		_walk_den(m, p, speed, dt, infos)
+		var id: int = int(m["id"])
+		pack["bite"][id] = float(pack["bite"].get(id, 0.0)) - dt
+
+		if _flat(m["pos"], p) <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
+			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
+			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves"))
+
+			if result == "maimed" or result == "dead":
+				if result == "maimed":
+					pack["maimed"][target] = true
+
+				pack["guard_rush"] = false
+				_retreat(pack, members, c, p, float(w.get("hurt_retreat_s", 45.0)), false)
+				return
+
+
+func _end_guard(pack: Dictionary) -> void:
+	pack["phase"] = "prowl"
+	pack["target"] = -1
+	pack["guard_rush"] = false
+	pack["timer"] = 0.0
+
+
+# The last adult of a pack died: its pups at the den are orphans (decision 3: only a killed pack leaves orphans). The den stays empty of
+# packs while they live; with no pups it rests for respawn_s. Both are saved.
+func _orphan(pack: Dictionary) -> void:
+	var key: String = str(pack.get("key", ""))
+	var pups: Array = _live_pups(pack)
+
+	if pups.is_empty():
+		dens[key] = {"rest_until_s": _now_s() + float(cfgw().get("respawn_s", 7200.0)) * GAME_PER_REAL}
+		_dens_dirty = true
+		return
+
+	var den: Vector3 = host.animals[pups[0]].get("den_at", pack["den"])
+	dens[key] = {"rest_until_s": 0.0, "orphan": {"den": [den.x, den.y, den.z], "pups": pups.size(), "since_s": _now_s(), "trust": {}}}
+
+	for id in pups:
+		host.animals[id].erase("pup_of")
+		host.animals[id]["orphan"] = key
+
+	_dens_dirty = true
+
+
+func orphan_of(a: Dictionary) -> Dictionary:
+	return dens.get(str(a.get("orphan", "")), {}).get("orphan", {})
+
+
+func _den_resting(key: String) -> bool:
+	var rec: Dictionary = dens.get(key, {})
+
+	if rec.is_empty():
+		return false
+
+	if rec.has("orphan"):
+		var o: Dictionary = rec["orphan"]
+
+		if _now_s() < float(o["since_s"]) + float(cfgw().get("orphan_days", 5.0)) * DAY_S and int(o["pups"]) > 0:
+			return true
+
+		_end_orphans(key)
+		return true
+
+	return _now_s() < float(rec.get("rest_until_s", 0.0))
+
+
+# The orphans of a den are gone (all taken or lost, or orphan_days passed): the den rests for respawn_s.
+func _end_orphans(key: String) -> void:
+	for id in host.animals.keys():
+		if str(host.animals[id].get("orphan", "")) == key:
+			host.animals.erase(id)
+
+	dens[key] = {"rest_until_s": _now_s() + float(cfgw().get("respawn_s", 7200.0)) * GAME_PER_REAL}
+	_dens_dirty = true
+
+
+# One orphan fewer: tamed (taken) or killed (lost).
+func orphan_gone(a: Dictionary) -> void:
+	var key: String = str(a.get("orphan", ""))
+	var o: Dictionary = orphan_of(a)
+	a.erase("orphan")
+
+	if o.is_empty():
+		return
+
+	o["pups"] = int(o["pups"]) - 1
+	_dens_dirty = true
+
+	if int(o["pups"]) <= 0:
+		_end_orphans(key)
+
+
+var _orphan_acc: float = 99.0
+
+
+# Once a second: orphans past orphan_days are gone; a player near an orphans' den finds them there (made again from the record); dirty dens
+# are saved.
+func _tend_orphans(infos: Array, delta: float) -> void:
+	_orphan_acc += delta
+
+	if _orphan_acc < 1.0:
+		return
+
+	_orphan_acc = 0.0
+	var active: float = float(host.cfg.get("active_radius_m", 200.0))
+
+	for key in dens.keys():
+		if not dens.has(key) or not dens[key].has("orphan"):
+			continue
+
+		var o: Dictionary = dens[key]["orphan"]
+
+		if _now_s() >= float(o["since_s"]) + float(cfgw().get("orphan_days", 5.0)) * DAY_S:
+			_end_orphans(key)
+			continue
+
+		var den: Vector3 = Vector3(float(o["den"][0]), float(o["den"][1]), float(o["den"][2]))
+		var near: bool = false
+
+		for info in infos:
+			near = near or _flat(info["pos"], den) <= active
+
+		if not near:
+			continue
+
+		var live: int = 0
+
+		for id in host.animals:
+			live += 1 if str(host.animals[id].get("orphan", "")) == key else 0
+
+		for k in range(live, int(o["pups"])):
+			var id: int = _spawn_pup(den, k)
+
+			if id != 0:
+				host.animals[id]["orphan"] = key
+
+	if _dens_dirty:
+		save_dens()
+
+
+func save_dens() -> void:
+	_dens_dirty = false
+
+	if store_dir != "":
+		ItemsScript._write_file(store_dir + "/" + DENS_FILE, JSON.stringify({"version": 1, "dens": dens}, "\t"))
+
+
+func load_dens() -> void:
+	if store_dir == "" or not FileAccess.file_exists(store_dir + "/" + DENS_FILE):
+		return
+
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(store_dir + "/" + DENS_FILE))
+
+	if typeof(parsed) == TYPE_DICTIONARY:
+		dens = parsed.get("dens", {})
