@@ -83,6 +83,8 @@
 		"m": 0.5,
 		"D": 0.005,
 		"G": 1.0,
+		"incision_threshold_m": 30.0,
+		"_incision_threshold_note": "Sonny 8 Nov, after run d9f89615 (measured creep): creep moved 1 to 6 m near the peaks, rivers and slides 63 to 768 m, and every landform peak lost over 100 m by 0.15 Myr, while valleys cut up to 338 m in the first 25 kyr. A channel cuts bedrock only where its flow can move the boulders and gravel on its bed, so erosion is K e (Q^m S - incision_threshold_m), never below 0, on bedrock (none on loose sediment over 1 m). With m 0.5 and Q close to the drainage area, Q^m S is the channel steepness index: in the San Gabriel Mountains catchment erosion rises from 35 m/Myr at the lowest steepness to 1,100 m/Myr, non-linearly, which a threshold incision model explains (DiBiase et al. 2010, EPSL 289:134; DiBiase and Whipple 2011, JGR 116:F04036, critical shear stress 45 Pa for 90 mm gravel). 30 m is a judged value near the low end of their steepness range (to check on the maps): a 1 ha hollow at slope 0.3 does not cut, a 1 km2 valley at 0.1 cuts at 70% of the full rate, a 10 km2 valley at 0.05 at 80%. This is the document's 'no deep gullies under tiny flows'.",
 		"sweeps": 4,
 		"tol_m": 0.01,
 		"cover_m": 4.0,

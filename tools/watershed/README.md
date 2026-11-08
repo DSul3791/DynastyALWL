@@ -36,6 +36,7 @@ The run starts from the landform and uses:
 - stream power with deposition, solved implicitly;
 - the quick runoff of the one water budget (`runoff.py`: rain minus evaporation, times the rock's quick share), so chalk, limestone and dry slopes cut less;
 - channels that begin by the slope-area rule (steeper hollows need less water) and then run on downstream;
+- an incision threshold: bedrock channels cut only where Q^m S passes `incision_threshold_m` (none on loose sediment);
 - threshold hillslopes: no slope steeper than the threshold above its receiver, set by rock (`threshold_slope_deg_by_rock`: hard rock holds steeper walls) and `threshold_slope_deg` under loose cover; landslide debris joins the sediment;
 - soil creep.
 
