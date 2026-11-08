@@ -8078,6 +8078,59 @@ func take_loose(id: int) -> Array:
 	return out
 
 
+# Goblins steal (docs/design/goblin_stealing_design.md, Dave 8 Nov 2026): loose small things lying on the ground within r of a point,
+# [[world id, position], ...]. Not structures, fires, trees, boulders, natural scatter or the showroom; not a shoulder carry (logs); not a
+# structure, placeable or container item. Whatever is in a chest or a pack is safe. Light and den piles are the goblin's own checks.
+const STEAL_NEVER_KINDS := ["structure", "placeable", "container"]
+
+
+func stealable_near(centre: Vector3, r: float) -> Array:
+	var out: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder") or it.has("scatter") or it.has("showroom") or int(it["count"]) <= 0:
+			continue
+
+		if Vector2(it["pos"].x - centre.x, it["pos"].z - centre.z).length() > r:
+			continue
+
+		var row: Dictionary = table.entry(table.id_of(int(it["number"])))
+
+		if row.is_empty() or row.has("carry") or STEAL_NEVER_KINDS.has(str(row.get("kind", ""))):
+			continue
+
+		out.append([id, it["pos"]])
+
+	return out
+
+
+# A goblin takes one piece of a loose stack: [item number, 1], or [] when it is no longer there. The rest of the stack stays.
+func take_one(id: int) -> Array:
+	if not _items.has(id) or int(_items[id]["count"]) <= 0:
+		return []
+
+	var it: Dictionary = _items[id]
+	it["count"] = int(it["count"]) - 1
+
+	if int(it["count"]) <= 0:
+		_items.erase(id)
+
+	_dirty = true
+	return [int(it["number"]), 1]
+
+
+# Whether a burning placed fire (a campfire, a hearth, a forge: not a torch bearer) lies within r of a point (flat distance). A goblin
+# band does not come back to a cave while one burns this near its mouth (Dave 8 Nov 2026, decision 13).
+func lit_fire_near(point: Vector3, r: float) -> bool:
+	for row in _lit_rows():
+		if Vector2(row[0].x - point.x, row[0].z - point.z).length() <= r:
+			return true
+
+	return false
+
+
 # Wolves steal: every raw and roast meat leaves the pack. Returns how many pieces went.
 func take_all_meat(peer: int) -> int:
 	var total: int = 0

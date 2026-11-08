@@ -516,6 +516,19 @@ func _ready() -> void:
 	animals.lair_mouths = func(x, z):   # the mouths of the spring caves with a goblin den in the tile the player stands in (already loaded, so no wait); goblin groups come out of them
 		var lair_tile = generator.get_tile(generator.tile_of(x, z))
 		return PackedVector2Array() if lair_tile.placeholder else lair_tile.goblin_den_mouths
+	animals.lair_path = func(x, z):   # the cave floor path from a goblin den's mouth (x, z) to the den (tile goblin_den_paths); empty when none is known
+		var path_tile = generator.get_tile(generator.tile_of(x, z))
+
+		if path_tile.placeholder:
+			return PackedVector3Array()
+
+		for k in mini(path_tile.goblin_den_mouths.size(), path_tile.goblin_den_paths.size()):
+			if path_tile.goblin_den_mouths[k].distance_to(Vector2(x, z)) <= 1.0:
+				return path_tile.goblin_den_paths[k]
+
+		return PackedVector3Array()
+	animals.berry_bushes = _berries_near_cached   # goblins forage at night (docs/design/goblin_den_life_design.md 2.3)
+	animals.lair_guarded = func(x, z, radius): return items.lit_fire_near(Vector3(x, 0.0, z), radius)   # a burning placed fire near a lair's mouth keeps a killed band from coming back
 	animals.setup()
 	trails = TrailsScript.new()
 	trails.game_seconds = func(): return game_clock.seconds
@@ -535,6 +548,9 @@ func _ready() -> void:
 	animals.big_game.player_info = func(): return items.wolf_info()
 	animals.thieves.loose_food = func(centre, r): return items.loose_food_near(centre, r)
 	animals.thieves.take_food = func(id): return items.take_loose(id)
+	animals.goblins.stealable = func(centre, r): return items.stealable_near(centre, r)   # goblins steal one small unlit thing at a time and pile it in their den
+	animals.goblins.take_one = func(id): return items.take_one(id)
+	animals.goblins.hoard_drop = func(number, count, pos, life_s): return items.drop_in_world(number, count, pos, 0, life_s)
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_in_world(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
@@ -1404,6 +1420,74 @@ func _trees_near(point: Vector3, radius: float) -> Array:
 
 				if Vector2(trees["positions"][n].x - point.x, trees["positions"][n].z - point.z).length() <= radius:
 					found.append([chunk, trees["ids"][n]])
+
+	return found
+
+
+# Standing berry plants (the species with a drops.json "berry_yield" row) within `radius` of a point, from chunks whose items are already made
+# only (server_flora items_cached), like _trees_near_cached: each chunk's berry plants are listed once and kept; removed plants are left out at
+# each look. Goblins forage at them at night (docs/design/goblin_den_life_design.md 2.3); a look is once per goblin per idle, not per tick.
+const BERRY_LISTS_KEPT := 100
+var _berry_lists: Dictionary = {}    # chunk Vector2i -> Array of [id, position]
+var _berry_ids: Dictionary = {}      # placer species id -> true, berry plants only (built once)
+
+
+func _berries_near_cached(point: Vector3, radius: float) -> PackedVector3Array:
+	var size: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+	var reach: int = maxi(int(ceil(radius / size)), 1)
+	var found: PackedVector3Array = PackedVector3Array()
+
+	if _berry_ids.is_empty():
+		var berries: Dictionary = items._drops.get("berry_yield", {})
+
+		for id in flora.placer._by_id:
+			if berries.has(str(flora.placer._by_id[id]["name"])):
+				_berry_ids[id] = true
+
+	for dz in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var corner: Vector2 = Vector2(float(home.x + dx) * size, float(home.y + dz) * size)
+			var near_x: float = clampf(point.x, corner.x, corner.x + size)
+			var near_z: float = clampf(point.z, corner.y, corner.y + size)
+
+			if Vector2(near_x - point.x, near_z - point.z).length() > radius:
+				continue
+
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+
+			if not _berry_lists.has(chunk):
+				var plants: Dictionary = flora.items_cached(chunk)
+
+				if plants.is_empty():
+					continue
+
+				var listed: Array = []
+				var ids: PackedInt32Array = plants["ids"]
+				var positions: PackedVector3Array = plants["positions"]
+
+				for n in range(ids.size()):
+					if _berry_ids.has(ids[n] >> 16):
+						listed.append([ids[n], positions[n]])
+
+				while _berry_lists.size() >= BERRY_LISTS_KEPT:
+					_berry_lists.erase(_berry_lists.keys()[0])
+
+				_berry_lists[chunk] = listed
+
+			var gone: Array = []
+			var gone_read: bool = false
+
+			for plant in _berry_lists[chunk]:
+				if Vector2(plant[1].x - point.x, plant[1].z - point.z).length() > radius:
+					continue
+
+				if not gone_read:
+					gone = flora.removed_in(chunk)
+					gone_read = true
+
+				if not gone.has(plant[0]):
+					found.append(plant[1])
 
 	return found
 
