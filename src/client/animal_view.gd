@@ -451,6 +451,9 @@ func _process_body(delta: float) -> void:
 
 			if node.has_meta("tail"):
 				_tail_motion(node, state, model_speed)
+
+			if node.has_meta("ears"):
+				_ear_motion(node, state)
 			if node.has_meta("flock_birds"):
 				for bird in node.get_meta("flock_birds"):
 					_animate_model(bird, b, state, model_speed, delta)
@@ -611,7 +614,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		root.set_meta("eye_mats", eye_mats)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
-	if row.has("bone_offsets") or row.has("tail_motion"):
+	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion"):
 		var sks: Array = inst.find_children("*", "Skeleton3D", true, false)
 
 		if not sks.is_empty():
@@ -621,6 +624,10 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 			if row.has("tail_motion"):
 				missing.append_array(fix.setup_waves(sks[0], row["tail_motion"]))
 				root.set_meta("tail", fix)
+
+			if row.has("ear_motion"):
+				missing.append_array(fix.setup_ears(sks[0], row["ear_motion"]))
+				root.set_meta("ears", fix)
 
 			(sks[0] as Skeleton3D).add_child(fix)
 
@@ -1522,6 +1529,27 @@ func _tail_motion(node: Node3D, state: int, speed: float) -> void:
 
 	var fix = node.get_meta("tail")      # bone_offsets.gd (untyped: its own property)
 	fix.wave_scale = lerpf(float(fix.wave_scale), want, 0.05)
+
+
+# Ears (docs/design/EAR_AND_BREATH.md): they turn toward the player when the player is within 20 m (the nearest sound the client
+# knows of: the camera), harder when the animal is alert, and lie back flat when it warns or charges. Eased so they move like ears.
+func _ear_motion(node: Node3D, state: int) -> void:
+	var fix = node.get_meta("ears")      # bone_offsets.gd (untyped: its own properties)
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var turn: float = 0.0
+
+	if cam != null:
+		var to: Vector3 = cam.global_position - node.global_position
+		to.y = 0.0
+
+		if to.length() < 20.0 and to.length() > 0.01:
+			var basis: Basis = node.global_transform.basis
+			var side: float = (-basis.x.normalized()).dot(to.normalized())      # the model faces -Z, so its left is -X
+			turn = clampf(side * (1.5 if state == 3 else 1.0), -1.0, 1.0)
+
+	var flat: float = 1.0 if state == 10 or state == 11 or state == 16 else 0.0
+	fix.ear_turn = lerpf(float(fix.ear_turn), turn, 0.08)
+	fix.ear_flat = lerpf(float(fix.ear_flat), flat, 0.15)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
