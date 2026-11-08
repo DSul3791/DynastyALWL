@@ -4400,7 +4400,7 @@ func _refresh() -> void:
 
 	# Lag fix (Sal, 2 Nov 2026): with the window shut (or the chest screen up instead) nobody sees the slot buttons or the recipe list, and rebuilding
 	# them cost 55 to 87 ms on every pickup. The window rebuilds in toggle() when it opens; only the weight HUD is kept current.
-	if not open or (chest_mode and not InventoryLook.on):
+	if not open or (chest_mode and not InventoryLook.on) or _recipe_list == null:   # nothing built yet: nothing to redraw
 		if _weight_label != null:
 			_refresh_weight()
 
