@@ -18,6 +18,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const FloraLayout := preload("res://src/worldgen/runtime/flora_layout.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const SwimRules := preload("res://src/shared/swim.gd")
+const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 1
@@ -104,6 +105,8 @@ const POT_ATTACH_M := 2.0                # a campfire pot snaps onto a small fir
 const POT_ON_FIRE_M := 0.3               # a pot and a fire this close are one: the pot hangs over that fire (nothing is stored; position is the link)
 const FIRE_STATE_SURVIVAL := 40         # lit fire states by tier (1 stays the campfire; cooking.json fire_tiers)
 const FIRE_STATE_BONFIRE := 41
+const FIRE_STATE_COALS := StructureLookScript.FIRE_COALS   # 76: after the flames, coals glowing (cooking.json coals; docs/design/fire_coals_design.md)...
+const FIRE_STATE_ASH := StructureLookScript.FIRE_ASH       # 77: ...then warm ash, then cold ash (8)
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
 const FIRE_MIN_GAP_M := 2.0               # fallbacks: structures.json "campfire" decides
 const FIRES_PER_CHUNK := 8
@@ -1019,7 +1022,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_SLEEP:
 		_sleep(peer, a)
 	elif kind == Net.ACT_LIGHT:
-		var was_laid: bool = _items.has(a) and _items[a].has("fire") and int(_items[a]["fire"]["state"]) == 9
+		var was_laid: bool = _items.has(a) and _items[a].has("fire") and int(_items[a]["fire"]["state"]) in [9, FIRE_STATE_ASH]
 		_light(peer, inv, a)
 
 		if was_laid and _items.has(a) and _items[a].has("fire") and fire_is_lit(int(_items[a]["fire"]["state"])):
@@ -1207,15 +1210,7 @@ func tick(delta: float) -> void:
 		_traps.tick(spent)
 		_slow_mark("learn-fish-remains-spoil-traps", t0)
 
-		for id in _items.keys():
-			if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
-				continue
-
-			_items[id]["left"] -= spent
-
-			if _items[id]["left"] <= 0.0:
-				_items.erase(id)
-				_dirty = true
+		_expire_items(spent)
 
 	_sync_in -= delta
 
@@ -1326,6 +1321,7 @@ func save() -> void:
 			row.append([float(burnt.get("log", 0.0)), float(burnt.get("firewood", 0.0)), float(burnt.get("weak", 0.0))])   # burned seconds not yet taken out of the store
 			var counted: Dictionary = it["fire"].get("counted", {})
 			row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
+			row.append(float(it["fire"].get("lit_s", 0.0)))   # seconds burned since it was last cold (a coal bed at coals.coal_bed_s)
 
 		items.append(row)
 
@@ -3328,9 +3324,11 @@ func _fires(delta: float) -> void:
 			_tend_fire(id, it, fire, delta)
 
 		if not fire_is_lit(int(fire["state"])):
+			_fire_embers(it, fire, delta, raining)
 			continue
 
 		_fire_burn(fire, delta)
+		fire["lit_s"] = float(fire.get("lit_s", 0.0)) + delta   # the coal bed builds while it burns
 
 		if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_trim_store(fire, _chests[int(fire["uid"])]):
 			_push_box(id, _chests[int(fire["uid"])])   # burned wood leaves the store; whoever has it open sees it go
@@ -3342,8 +3340,7 @@ func _fires(delta: float) -> void:
 			fire["covered"] = cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5
 
 		if fire["burn_left"] <= 0.0:
-			fire["state"] = 8
-			it["left"] = FIRE_OUT_S
+			_fire_burnt_out(it, fire)
 			_dirty = true
 
 			fire.erase("burnt")
@@ -3358,9 +3355,162 @@ func _fires(delta: float) -> void:
 				fire["rain_grace"] = grace
 			else:
 				fire.erase("rain_grace")
+				fire.erase("lit_s")   # rained out: the coals are drowned too
 				fire["state"] = 9
 				it["left"] = FIRE_LAID_S
 				_dirty = true
+
+
+# Item lifetimes run down; an item whose time is up goes, except coals and warm ash, which run on to their next stage (_fire_expire).
+func _expire_items(spent: float) -> void:
+	for id in _items.keys():
+		if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
+			continue
+
+		_items[id]["left"] -= spent
+
+		if _items[id]["left"] <= 0.0:
+			if not _fire_expire(_items[id]):
+				_items.erase(id)
+
+			_dirty = true
+
+
+# A fire's world row extra: its burn time and, for coals and warm ash, glow (1 fresh .. 0 at the end of that stage).
+func _fire_extra(it: Dictionary) -> Dictionary:
+	var extra: Dictionary = {"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)}
+	var state: int = int(it["fire"]["state"])
+
+	if state == FIRE_STATE_COALS or state == FIRE_STATE_ASH:
+		extra["glow"] = snappedf(_fire_glow(it), 0.01)
+
+	return extra
+
+
+func _fire_glow(it: Dictionary) -> float:
+	var state: int = int(it["fire"]["state"])
+
+	if state != FIRE_STATE_COALS and state != FIRE_STATE_ASH:
+		return 0.0
+
+	var total: float = float(_coals_cfg().get("coals_s" if state == FIRE_STATE_COALS else "ash_s", 7200.0 if state == FIRE_STATE_COALS else 43200.0))
+	return clampf(float(it["left"]) / maxf(total, 1.0), 0.0, 1.0)
+
+
+# After the flames (docs/design/fire_coals_design.md 3, coordinator decision 8 Nov 2026, Dave may revert): a fire that burned coals.coal_bed_s since
+# it was last cold leaves coals; a shorter one is cold ash at once, as before.
+func _coals_cfg() -> Dictionary:
+	return _cooking.get("coals", {})
+
+
+func _fire_burnt_out(it: Dictionary, fire: Dictionary) -> void:
+	var cfg: Dictionary = _coals_cfg()
+	_lit_valid = false
+	fire.erase("rain_grace")
+
+	if not cfg.is_empty() and float(fire.get("lit_s", 0.0)) >= float(cfg.get("coal_bed_s", 600.0)):
+		fire["state"] = FIRE_STATE_COALS
+		it["left"] = float(cfg.get("coals_s", 7200.0))
+		fire.erase("wet_s")
+		return
+
+	_fire_cold(it, fire)
+
+
+# Coals run out (or are rained out) to warm ash.
+func _fire_to_ash(it: Dictionary, fire: Dictionary) -> void:
+	fire["state"] = FIRE_STATE_ASH
+	it["left"] = float(_coals_cfg().get("ash_s", 43200.0))
+
+	for key in ["lit_s", "wet_s", "catch"]:   # the coal bed is spent: warm ash lit again needs coal_bed_s more burning to leave coals
+		fire.erase(key)
+	_lit_valid = false
+	_dirty = true
+
+
+# The fire is cold: cold ash (8) for FIRE_OUT_S, or a laid fire (9) when wood is in it.
+func _fire_cold(it: Dictionary, fire: Dictionary) -> void:
+	for key in ["lit_s", "wet_s", "catch"]:
+		fire.erase(key)
+
+	if float(fire.get("burn_left", 0.0)) > 0.0:
+		fire["state"] = 9
+		it["left"] = FIRE_LAID_S
+	else:
+		fire["state"] = 8
+		it["left"] = FIRE_OUT_S
+
+	_lit_valid = false
+	_dirty = true
+
+
+# The item expiry loop found a fire's time run out: coals go on to warm ash, warm ash to cold. False for anything else (it is then removed).
+func _fire_expire(it: Dictionary) -> bool:
+	if not it.has("fire"):
+		return false
+
+	var state: int = int(it["fire"]["state"])
+
+	if state == FIRE_STATE_COALS:
+		_fire_to_ash(it, it["fire"])
+		return true
+
+	if state == FIRE_STATE_ASH:
+		_fire_cold(it, it["fire"])
+		return true
+
+	return false
+
+
+# Coals and warm ash between ticks: rain of RAIN_PUTS_OUT or more on them uncovered turns coals to ash after coals.rain_s and ash cold after a further
+# ash_rain_s; out of that rain, wood laid on coals catches by itself after coals.catch_s (by its biggest wood) and the fire is back at its size.
+func _fire_embers(it: Dictionary, fire: Dictionary, delta: float, raining: bool) -> void:
+	var state: int = int(fire["state"])
+
+	if state != FIRE_STATE_COALS and state != FIRE_STATE_ASH:
+		return
+
+	var cfg: Dictionary = _coals_cfg()
+	fire["recheck"] = float(fire.get("recheck", 0.0)) - delta
+
+	if float(fire["recheck"]) <= 0.0:
+		fire["recheck"] = COVER_RECHECK_S
+		fire["covered"] = cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5
+
+	if raining and not bool(fire.get("covered", false)):
+		fire["wet_s"] = float(fire.get("wet_s", 0.0)) + delta
+		fire.erase("catch")
+
+		if state == FIRE_STATE_COALS and float(fire["wet_s"]) >= float(cfg.get("rain_s", 120.0)):
+			_fire_to_ash(it, fire)
+		elif state == FIRE_STATE_ASH and float(fire["wet_s"]) >= float(cfg.get("ash_rain_s", 600.0)):
+			_fire_cold(it, fire)
+
+		return
+
+	if state != FIRE_STATE_COALS or float(fire.get("burn_left", 0.0)) <= 0.0:
+		return
+
+	fire["catch"] = float(fire.get("catch", 0.0)) + delta
+
+	if float(fire["catch"]) >= _fire_catch_s(fire):
+		fire.erase("catch")
+		fire["state"] = _fire_best_state(fire)
+		it["left"] = 1.0e9
+		_lit_valid = false
+		_dirty = true
+
+
+# How long wood laid on coals takes to catch: the time for the biggest wood class in the fire (coals.catch_s).
+func _fire_catch_s(fire: Dictionary) -> float:
+	var wood: Dictionary = _fire_wood(fire)
+	var times: Dictionary = _coals_cfg().get("catch_s", {})
+
+	for cls in ["log", "firewood", "weak"]:
+		if float(wood.get(cls, 0.0)) > 0.0:
+			return float(times.get(cls, 45.0))
+
+	return float(times.get("weak", 10.0))
 
 
 # E on a burning fire puts it out (Dave 2 Nov 2026). It goes back to a laid fire with its wood kept, the same as when rain puts it out, so it can be lit again.
@@ -3376,6 +3526,7 @@ func _put_out_fire(peer: int, id: int) -> void:
 		return
 
 	fire["state"] = 9
+	fire.erase("lit_s")   # put out: the coals are put out too
 	it["left"] = FIRE_LAID_S
 	_dirty = true
 
@@ -3541,12 +3692,13 @@ func _sync_world_items() -> void:
 
 				if it.has("fire"):
 					signature += 13 * int(it["fire"].get("fed", 0))      # wood laid on a fire is sent again (its burn time for the inspection label)
+					signature += 17 * int(floor(_fire_glow(it) * 10.0))   # coals and warm ash are sent again each tenth of their time (the client dims them)
 
 				if it.has("tree"):
 					signature += int(round(float(it["tree"].get("length", 0.0)) * 20.0)) * 7      # a trunk that got shorter (a log was cut off) is sent again
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else ({"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)} if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") else {}))))])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") else {}))))])
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
 					known[id] = signature
@@ -3782,6 +3934,9 @@ func _load_world_items() -> void:
 					counted[["log", "firewood", "weak"][k]] = maxi(int(row[14][k]), 0)
 
 				entry["fire"]["counted"] = counted
+
+			if row.size() > 15 and (typeof(row[15]) == TYPE_FLOAT or typeof(row[15]) == TYPE_INT) and float(row[15]) > 0.0:
+				entry["fire"]["lit_s"] = float(row[15])
 
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
@@ -5702,14 +5857,25 @@ func _fuel(peer: int, inv, id: int) -> void:
 
 # Lighting a loaded fire (Dave 5 Nov 2026, simplified): any wood in the fire is enough, E lights it, and no starter (plant fibre, tinder, kindling)
 # is needed or used up. Every kind of wood goes in: sticks, kindling, tinder, firewood, blocks, logs. An open fire will not take while it rains.
-func _light(peer: int, _inv, id: int) -> void:
+func _light(peer: int, inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
 
-	if fire.is_empty() or int(fire["state"]) != 9:
+	if fire.is_empty() or (int(fire["state"]) != 9 and int(fire["state"]) != FIRE_STATE_ASH):
 		return
 
 	if float(fire["burn_left"]) <= 0.0:
 		_say(peer, "Put sticks or wood on the fire first (F), then light it.")
+		return
+
+	# Warm ash (docs/design/fire_coals_design.md 3): wood and a tinder item light it at once, with no damp roll, and the tinder is used up.
+	# Without tinder it lights like a cold laid fire.
+	if int(fire["state"]) == FIRE_STATE_ASH and _use_tinder(fire, inv):
+		fire["state"] = _fire_best_state(fire)
+		fire.erase("wet_s")
+		_items[id]["left"] = 1.0e9
+		_lit_valid = false
+		_dirty = true
+		_say(peer, "The tinder catches on the warm ash.")
 		return
 
 	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
@@ -5727,8 +5893,35 @@ func _light(peer: int, _inv, id: int) -> void:
 		return
 
 	fire["state"] = _fire_best_state(fire)
+	fire.erase("wet_s")
 	_items[id]["left"] = 1.0e9
+	_lit_valid = false
 	_dirty = true
+
+
+# One tinder item (cooking.json tinder and tinder_also) taken for lighting warm ash: from the fire's store first, else from the pack. False when there is none.
+func _use_tinder(fire: Dictionary, inv) -> bool:
+	var kinds: Array = [str(_cooking.get("tinder", "plant_fibre"))] + (_cooking.get("tinder_also", []) as Array)
+	var box = _chests.get(int(fire.get("uid", 0))) if bool(fire.get("synced", false)) else null
+
+	for kind in kinds:
+		var number: int = table.number_of(str(kind))
+
+		if number <= 0:
+			continue
+
+		if box != null:
+			for slot in range(box.usable):
+				if box.numbers[slot] == number and box.counts[slot] > 0:
+					box.take_from_slot(slot, 1)
+					_fire_apply_store(fire, box)
+					return true
+
+		if inv != null and inv.has(number, 1):
+			inv.remove(number, 1)
+			return true
+
+	return false
 
 
 # Roasting at a lit fire: one raw forage item (cookable_suffixes in cooking.json) becomes Campfire Stew.
@@ -7154,8 +7347,7 @@ func _sync_fire_from_box(peer: int, id: int) -> void:
 
 	if float(fire["burn_left"]) <= 0.0:
 		if fire_is_lit(state):
-			fire["state"] = 8
-			it["left"] = FIRE_OUT_S
+			_fire_burnt_out(it, fire)   # the last wood taken out of a burning fire: what is left is its coals (or cold ash)
 		elif state == 9:
 			fire["state"] = 8
 			it["left"] = FIRE_OUT_S
@@ -8940,18 +9132,32 @@ func _lit_rows() -> Array:
 		return _lit_cache_rows
 
 	var found: Array = []
+	_coal_cache_rows = []
 
 	for id in _items:
 		var it: Dictionary = _items[id]
 
 		if it.has("fire") and fire_is_lit(int(it["fire"]["state"])):
 			found.append([it["pos"], int(it["fire"]["state"])])
+		elif it.has("fire") and int(it["fire"]["state"]) == FIRE_STATE_COALS:
+			_coal_cache_rows.append(it["pos"])
 
 	if _in_vitals:
 		_lit_cache_rows = found
 		_lit_valid = true
 
 	return found
+
+
+# The positions of glowing coals (state 76): they warm coals.heat_c within coals.heat_m and keep nothing off. The same scan as _lit_rows.
+var _coal_cache_rows: Array = []
+
+
+func _coal_rows() -> Array:
+	if not (_in_vitals and _lit_valid):
+		_lit_rows()
+
+	return _coal_cache_rows
 
 
 func warmth_target(peer: int) -> float:
@@ -8974,6 +9180,12 @@ func warmth_target(peer: int) -> float:
 
 		if (row[0] as Vector3).distance_to(pos) <= reach:
 			heat = maxf(heat, float(tier_row.get("heat_c", cfg.get("fire_c", 20.0))))
+
+	var coals: Dictionary = _coals_cfg()
+
+	for at in _coal_rows():
+		if (at as Vector3).distance_to(pos) <= float(coals.get("heat_m", 1.5)):
+			heat = maxf(heat, float(coals.get("heat_c", 8.0)))
 
 	feels += heat
 

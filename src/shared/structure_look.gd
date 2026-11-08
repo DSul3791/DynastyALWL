@@ -1,9 +1,12 @@
 extends RefCounted
 # What each world-item state looks, sounds and clears like (Sal_Crafts, 2026-10-22), read from data/items/structures.json so a new piece is data plus
-# its model function, not edits in four files. States 1, 8 and 9 are the campfire (lit, cold, loaded); 12 is old remains. States are never renumbered.
+# its model function, not edits in four files. States 1, 8 and 9 are the campfire (lit, cold, loaded), 40 and 41 its other lit sizes, 76 and 77 its coals and warm ash; 12 is old remains. States are never renumbered.
 
 const PATH := "res://data/items/structures.json"
-const CAMPFIRE_STATES := [1, 8, 9, 40, 41]
+const FIRE_COALS := 76      # a burnt-out fire's coals glowing, then...
+const FIRE_ASH := 77        # ...its warm ash (docs/design/fire_coals_design.md; the first free states after the building pieces, 42 to 75)
+const CAMPFIRE_STATES := [1, 8, 9, 40, 41, FIRE_COALS, FIRE_ASH]
+const UNLIT_FIRE_STATES := [8, 9, FIRE_COALS, FIRE_ASH]   # the campfire model with no flames: cold ash, laid, coals, warm ash
 
 static var _table: Dictionary = {}
 
@@ -73,3 +76,8 @@ static func step_surface(state: int) -> String:
 		return str(FLOOR_BY_MATERIAL.get(str(row.get("material", "")), ""))
 
 	return ""
+
+
+# A fire that is not burning: cold ash (8), laid (9), coals (76) or warm ash (77).
+static func is_unlit_fire(state: int) -> bool:
+	return UNLIT_FIRE_STATES.has(state)
