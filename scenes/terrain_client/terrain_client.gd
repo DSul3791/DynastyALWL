@@ -474,7 +474,7 @@ var fall_growth                       # FallGrowth: ferns around the foot of the
 var items                             # InventoryView: inventory panel (I), pick-up (E)
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the left of the screen
-var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items into the first ten slots
+var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items onto a key (keys hold items: inventory step 4)
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
@@ -1466,6 +1466,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held.held_light_budget = func(): return quality >= 1
 	items.equip_requested = func(slot): held.equip_toggle(slot)
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1
+	items.held_key_now = func(): return held.held_key if held.holding else -1
 	hotbar_strip = HotbarStripScript.new()
 	hotbar_strip.setup(items, layer, held)
 	items.hotbar_strip = hotbar_strip

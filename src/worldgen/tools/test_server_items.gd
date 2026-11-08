@@ -2335,11 +2335,7 @@ func _init() -> void:
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
 	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 2, "no saw, no craft: the log stays")
-	var hs_inv = hs.inventory_of(1)
-	var bag_was: int = hs_inv.bag_from
-	hs_inv.bag_from = 0   # the saw goes on the hotbar, as an admin give would
-	hs_inv.add(hs.table.number_of("hand_saw"), 1)
-	hs_inv.bag_from = bag_was
+	hs.give(1, hs.table.number_of("hand_saw"), 1)   # a tool new in the pack goes on the first empty hotbar key (inventory step 4)
 	var saw_slot: int = hs.inventory_of(1).numbers.find(hs.table.number_of("hand_saw"))
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
@@ -2348,7 +2344,7 @@ func _init() -> void:
 		hs._craft_tick(0.25)
 
 	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 2 lumber")
-	check(saw_slot >= 0 and saw_slot < 10 and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
+	check(saw_slot >= 0 and hs.inventory_of(1).on_hotbar(saw_slot) and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
 
 	for rid in ["wooden_hammer", "stone_hammer"]:
 		var rec: Dictionary = {}

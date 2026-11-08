@@ -180,6 +180,7 @@ var send_chest: Callable        # (peer, world id, bytes) a chest's contents to 
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
 var send_craft_stock: Callable  # (peer, numbers PackedInt32Array, counts PackedInt32Array): what a craft may use besides the pack (protocol 98)
 var send_favourites: Callable   # (peer, flags PackedByteArray): one byte per pack slot, 1 for a favourite (protocol 99)
+var send_hotbar: Callable      # (peer, keys PackedInt32Array): the ten hotbar keys' item numbers (protocol 100)
 var send_bulk_done: Callable    # (peer, kind, stacks moved, container count, container ids PackedInt32Array): a bulk button's result for the toast (protocol 99)
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
@@ -486,7 +487,6 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 	if not _inventories.has(key):
 		_inventories[key] = InventoryScript.new(table)
-		_inventories[key].bag_from = 10
 		_dirty = true
 
 	_known[peer] = {}
@@ -500,6 +500,8 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	if not _characters.has(key):
 		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
 		_dirty = true
+
+	_join_hotbar(peer, key)
 
 	if str(_characters[key].get("shoulder", "")) != "":   # before 1 Nov 2026 the large log was kept apart from the pack: it moves into the pack (kept aside while the pack is full)
 		var legacy: int = table.number_of(str(_characters[key]["shoulder"]))
@@ -1072,6 +1074,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			inv.set_fav(a, b == 1)
 	elif kind == Net.ACT_BULK:
 		_bulk(peer, inv, a, b)
+	elif kind == Net.ACT_HOTBAR_SET:
+		_set_hotkey(peer, inv, a, b)
 	elif kind == Net.ACT_LITTER:
 		_pick_litter(peer, inv, at)
 	elif kind == Net.ACT_DIG:
@@ -4032,6 +4036,8 @@ func _send_changes(peer: int, inv, before: Array) -> void:
 	if before.size() > 3 and inv.fav_flags() != before[3]:
 		_send_favs(peer, inv)   # after the slots, so the client marks the stacks where they now are
 
+	_hotbar_autofill(peer, inv, before[0])
+
 	_sync_shoulder_if_changed(peer)
 
 
@@ -4089,7 +4095,6 @@ func _load_inventories() -> void:
 	for key in parsed["inventories"]:
 		var inv = InventoryScript.new(table)
 		inv.from_json_array(parsed["inventories"][key])
-		inv.bag_from = 10
 		_strip_dead_kits(inv)
 		_inventories[key] = inv
 
@@ -4606,13 +4611,13 @@ func _boulder_ore(spot: Vector3, key: int) -> String:
 	return name if (cfg.get("items", {}) as Dictionary).has(name) else ""
 
 
-# The blows a stone takes from the best tool on the hotbar (items.json material, boulders.json tools), as [slot, blows], or [].
+# The blows a stone takes from the best tool a hotbar key points at (items.json material, boulders.json tools), as [slot, blows], or [].
 func _boulder_tool(inv) -> Array:
 	var best: Array = []
 	var tools: Dictionary = _boulder_cfg.get("tools", {})
 
-	for slot in range(10):
-		if inv.numbers[slot] == 0 or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	for slot in range(inv.SLOTS):
+		if not inv.on_hotbar(slot) or _is_broken(inv.numbers[slot], inv.wear[slot]):
 			continue
 
 		var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
@@ -4987,10 +4992,10 @@ func _has_tool(inv, tool_class: String) -> bool:
 	return _tool_slot(inv, tool_class) >= 0
 
 
-# The hotbar slot (the first ten pack slots, keys 1 to 9 and 0) of a usable (not broken) tool of this class, or -1.
+# The pack slot of a usable (not broken) tool of this class that a hotbar key points at (inventory step 4: keys hold items, not slots), or -1.
 func _tool_slot(inv, tool_class: String) -> int:
-	for slot in range(10):
-		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class and not _is_broken(inv.numbers[slot], inv.wear[slot]):
+	for slot in range(inv.SLOTS):
+		if inv.on_hotbar(slot) and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class and not _is_broken(inv.numbers[slot], inv.wear[slot]):
 			return slot
 
 	return -1
@@ -7977,7 +7982,7 @@ func _become_new_player(peer: int) -> void:
 		return
 
 	_inventories[key] = InventoryScript.new(table)
-	_inventories[key].bag_from = 10
+	_store_hotbar(peer, _inventories[key])   # a new player starts with empty keys
 	_characters[key]["worn"] = _clean_worn([])
 	_characters[key]["new_player"] = true
 	_characters[key]["tried"] = {}
@@ -12545,15 +12550,98 @@ func _set_keep_out(peer: int, id: int, on: bool) -> void:
 	_send_stock(peer)
 
 
+# --- Pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4; decisions in docs/design/OVERNIGHT_DECISIONS_8NOV.md row 24) ---
+# Keys 1 to 9 and 0 hold item numbers (Inventory.hotbar), saved as the character's "hotbar"; sorting and moving never change them. A tool or weapon
+# that newly enters the pack goes on the first empty key unless a key already holds that item. ACT_HOTBAR_SET puts any item on a key by hand.
+
+# Whether an item goes on a free key by itself when it comes into the pack: tools and weapons (torch included), not food, clothing or materials.
+func _autofills(number: int) -> bool:
+	return number > 0 and str(table.entry(table.id_of(number)).get("kind", "")) in ["tool", "weapon"]
+
+
+# The keys at the join. A character saved before the pointer hotbar has no "hotbar": its keys are the items in its old slots 1 to 10, once.
+func _join_hotbar(peer: int, key: String) -> void:
+	var inv = _inventories[key]
+	var saved: Variant = _characters[key].get("hotbar", null)
+	inv.hotbar = PackedInt32Array()
+	inv.hotbar.resize(inv.HOTBAR_KEYS)
+
+	if saved is Array:
+		for k in mini((saved as Array).size(), inv.HOTBAR_KEYS):
+			var number: int = int(saved[k])
+			inv.hotbar[k] = number if number > 0 and table.id_of(number) != "" and not inv.hotbar.has(number) else 0
+	else:
+		for k in inv.HOTBAR_KEYS:
+			var number: int = inv.numbers[k]
+
+			if number != 0 and not inv.hotbar.has(number):
+				inv.hotbar[k] = number
+
+	_store_hotbar(peer, inv)
+
+
+# Saves the keys with the character and tells the player (hotbar, protocol 100).
+func _store_hotbar(peer: int, inv) -> void:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if key != "" and _characters.has(key):
+		_characters[key]["hotbar"] = Array(inv.hotbar)
+		_dirty = true
+
+	if send_hotbar.is_valid():
+		send_hotbar.call(peer, inv.hotbar)
+
+
+# ACT_HOTBAR_SET: key a (0 to 9) holds item number b, 0 clears it. One key per item: putting it on a key takes it off any other.
+func _set_hotkey(peer: int, inv, key: int, number: int) -> void:
+	if key < 0 or key >= inv.HOTBAR_KEYS or number < 0 or (number > 0 and table.id_of(number) == ""):
+		return
+
+	if number > 0:
+		var was: int = inv.hotbar.find(number)
+
+		if was >= 0:
+			inv.hotbar[was] = 0
+
+	inv.hotbar[key] = number
+	_store_hotbar(peer, inv)
+
+
+# A tool or weapon newly in the pack (picked up, crafted, taken from a chest) goes on the first empty key, unless a key already holds that item
+# (its dimmed key lights again). `before` is the pack's item numbers before the change.
+func _hotbar_autofill(peer: int, inv, before: PackedInt32Array) -> void:
+	if inv.hotbar.size() != inv.HOTBAR_KEYS:
+		return
+
+	var changed: bool = false
+
+	for slot in inv.SLOTS:
+		var number: int = inv.numbers[slot]
+
+		if number == 0 or before.has(number) or inv.hotbar.has(number) or not _autofills(number):
+			continue
+
+		var empty_key: int = inv.hotbar.find(0)
+
+		if empty_key < 0:
+			break
+
+		inv.hotbar[empty_key] = number
+		changed = true
+
+	if changed:
+		_store_hotbar(peer, inv)
+
+
 # --- Bulk buttons (docs/design/INVENTORY_CRAFTING_REPORT.md step 3; decisions in docs/design/OVERNIGHT_DECISIONS_8NOV.md row 23) ---
 # ACT_BULK a = kind: Take all and Store all work on the open container; Stack to nearby needs none (the player's own storage chests within
 # CraftStock.CRAFT_REACH_M that already hold the item; keep out does not block stacking in); Sort reorders the pack (and an open storage chest)
-# by the client's sort key b. Favourites and pack slots 1 to 10 (the hotbar) are never moved. The player is told what happened (bulk_done).
+# by the client's sort key b. Favourites are never moved (pack slots 1 to 10 were fixed too until the pointer hotbar, step 4). The player is told what happened (bulk_done).
 const BULK_TAKE_ALL := 0
 const BULK_STORE_ALL := 1
 const BULK_STACK_NEARBY := 2
 const BULK_SORT := 3
-const BULK_FIXED_SLOTS := 10   # pack slots 1 to 10 are the hotbar: no bulk button moves them (until step 4's pointer hotbar)
+const BULK_FIXED_SLOTS := 0    # since the pointer hotbar (step 4, row 24) every pack slot is ordinary: only favourites stay where they are
 
 
 func _bulk(peer: int, inv, kind: int, sort_key: int) -> void:
@@ -12608,7 +12696,7 @@ func _bulk_take_all(peer: int, inv, id: int, box) -> int:
 	return moved
 
 
-# Store all: every pack stack past the hotbar, not a favourite and not the log on the shoulder, into the open container (the rules of one put:
+# Store all: every pack stack that is not a favourite and not the log on the shoulder, into the open container (the rules of one put:
 # a fire takes only wood and food, a take-only container nothing, a heavy one up to its max_kg). Returns the stacks moved.
 func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 	var it: Dictionary = _items.get(id, {})
@@ -12649,7 +12737,7 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 	return clampi(int(floor((max_kg - CarryRules.carried_kg(box, table, _carry_cfg)) / each + 0.0001)), 0, amount)
 
 
-# Stack to nearby: each pack stack past the hotbar (not a favourite, not the shoulder log) goes into the player's own storage chests within
+# Stack to nearby: each pack stack (not a favourite, not the shoulder log) goes into the player's own storage chests within
 # CraftStock.CRAFT_REACH_M that already hold that item, nearest first; keep out does not block stacking in. Returns [stacks moved, chest ids].
 func _bulk_stack_nearby(peer: int, inv) -> Array:
 	var boxes: Array = []
@@ -13743,6 +13831,9 @@ func _load_characters() -> void:
 			"hints_seen": parsed["players"][key].get("hints_seen", {}) if typeof(parsed["players"][key].get("hints_seen", {})) == TYPE_DICTIONARY else {},   # events and crafts counted for the goals
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
+
+		if typeof(parsed["players"][key].get("hotbar", null)) == TYPE_ARRAY:   # the pointer hotbar's keys (step 4); a record without them is migrated once at the join
+			_characters[str(key)]["hotbar"] = parsed["players"][key]["hotbar"]
 
 		if bool(parsed["players"][key].get("dead", false)):   # real death (death.json real_death): a dead character stays dead across a restart
 			_characters[str(key)]["dead"] = true

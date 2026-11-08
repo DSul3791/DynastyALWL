@@ -153,7 +153,7 @@ CLIENTS = [
         ("a strike finds it and a ray hits it", r"found by a strike true, solid to a ray true", None, None),
         ("and it goes when the server drops it", r"gone when the server drops it true", None, None),
         ("Use again puts it away", r"Use again, hand slot " + NUM, -1, -1),
-        ("a tool deep in the pack moves to the hotbar and is held", r"Use moved it to slot \d+ and holds it \((true)\), on hotbar true", None, None),
+        ("a tool deep in the pack goes on a key, stays where it lies and is held", r"Use holds it where it lies, slot 20 \((true)\), on hotbar true", None, None),
     ]),
 ]
 
