@@ -63,6 +63,7 @@ var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false   # hit reactions by body zone, wounded gait, a death fall on the slope (HUNT_FEEDBACK.md; off until the PC check)
 var _health: Variant = null       # species -> health from data/animals/animals.json (the client's own count of the damage it saw)
 var weather_looks: bool = false   # shake-off after rain, tail to the wind, cold huddle, steam breath, snow on backs (ANIMAL_WEATHER_LOOKS.md; off until the PC check)
+var air_at: Callable             # (position) -> air temperature C there: Weather.air_c by height and hour (#620, the one temperature); else weather temp_c
 var weather_now: Callable         # () -> the client's weather state (temp_c, rain, snow, wind, wind_dir ...), the same on every client
 var _wx_last_rain: float = 0.0
 var _wx_shake_due: bool = false
@@ -3246,7 +3247,7 @@ func _weather_look(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 	var wx: Dictionary = _wx_state() if weather_now.is_valid() else {}
 	var kind: String = str(b.get("kind", ""))
 	var rig: Node3D = LifeUtil.rig(node)
-	var air: float = float(wx.get("temp_c", 10.0))
+	var air: float = _air(node.global_position, wx)
 	var standing: bool = speed < 0.3 and (state == 0 or state == 3 or state == 12 or state == HUNCH)
 
 	if rig == null:
@@ -3514,7 +3515,8 @@ func _refresh_frame() -> void:
 	_f_night = night_light.call() if night_light.is_valid() else {}
 	_f_torch = torch_light.call() if torch_light.is_valid() else []
 	_f_wind = float(wind_now.call()) if wind_now.is_valid() else 0.0
-	_f_herd_space = HERD_SPACE_M * (0.6 if weather_looks and float(_f_wx.get("temp_c", 10.0)) < HUDDLE_C else 1.0)
+	var cam: Camera3D = _cam()
+	_f_herd_space = HERD_SPACE_M * (0.6 if weather_looks and _air(cam.global_position if cam != null else Vector3.ZERO, _f_wx) < HUDDLE_C else 1.0)
 
 
 func _cond() -> Dictionary:
@@ -3571,6 +3573,11 @@ func _enter_tree() -> void:
 # The camera the life layer measures distances and angles from, or null outside the tree.
 func _cam() -> Camera3D:
 	return get_viewport().get_camera_3d() if is_inside_tree() else null
+
+# The air temperature at a place (ANIMAL_WEATHER_LOOKS.md, agreed with Steve): the shared Weather.air_c by height and hour through
+# the client's air_at, the same function the server calls; without it (tools) the weather state's temp_c. No lapse of our own.
+func _air(at: Vector3, wx: Dictionary) -> float:
+	return float(air_at.call(at)) if air_at.is_valid() else float(wx.get("temp_c", 10.0))
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
