@@ -6,7 +6,8 @@ extends SceneTree
 # ahead makes feeders busier and skips their daytime rest; deer wander into a light wind; mist cuts sight and spook range; weather.on
 # false turns it all off. Step 2: in rain deer and stock stand out about 60% of their grazing spells (state 20 on the wire); deer, and half the
 # stock, move home under trees and back an hour after; in a gale stock face downwind and drift, deer go to cover or lower ground. Step 3:
-# wolves slow in snowfall, deer go to conifers in the cold, stock to shade in midday heat.
+# wolves slow in snowfall, deer go to conifers in the cold, stock to shade in midday heat. Step 4: an animal grazing in its rain, gale or cold
+# cover is sent hunched for as long as the weather lasts.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animals_weather.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -34,6 +35,12 @@ func make():
 	a.traits = false
 	a.rng.seed = 11
 	return a
+
+
+# The state an animal is sent with to a player beside it.
+func row_state(a, x: Dictionary) -> int:
+	var rows: Array = a.rows_near(x["pos"]).filter(func(r): return int(r[0]) == int(x["id"]))
+	return int(rows[0][4]) if rows.size() == 1 else -1
 
 
 func near(x: float, y: float) -> bool:
@@ -232,6 +239,43 @@ func _init() -> void:
 	hour = 12.0
 	a.canopy = Callable()
 	a.biome_at = Callable()
+	a._read_weather({"wind": 0.0}, 0.1)
+
+	# 16. HUNCH in cover (design 11, MikeW): a deer grazing under crowns in the rain is sent hunched, and not once it is dry; a rabbit under
+	# crowns is not; a cow at its cover home in a gale is; a cow in midday shade is not.
+	a.canopy = func(p): return p.x > 40.0
+	a._read_weather({"wind": 0.1, "rain": 0.8}, 0.1)
+	var d6: Dictionary = a.animals[a.spawn("deer", 60.0, 700.0)]
+	d6["state"] = AnimalsScript.GRAZE
+	d6.erase("hunch")
+	a._weather_graze(d6, deer, 0.1)
+	check(row_state(a, d6) == AnimalsScript.HUNCH, "a deer grazing under crowns in the rain is sent hunched (state %d)" % row_state(a, d6))
+	a._read_weather({"wind": 0.1}, 0.1)
+	a._weather_graze(d6, deer, 0.1)
+	check(row_state(a, d6) == AnimalsScript.GRAZE, "once the rain stops it is not (state %d)" % row_state(a, d6))
+	a._read_weather({"wind": 0.1, "rain": 0.8}, 0.1)
+	var r6: Dictionary = a.animals[a.spawn("rabbit", 60.0, 720.0)]
+	r6["state"] = AnimalsScript.GRAZE
+	a._weather_graze(r6, rabbit, 0.1)
+	check(row_state(a, r6) != AnimalsScript.HUNCH, "a rabbit under crowns in the rain is not sent hunched")
+	a.canopy = Callable()
+	a._read_weather({"wind": 0.7}, 0.1)
+	a._wind_s = 0.1
+	var c6: Dictionary = a.animals[a.spawn("cow", 0.0, 800.0)]
+	c6["state"] = AnimalsScript.GRAZE
+	c6["dry_home"] = c6["home"]
+	c6["home"] = c6["pos"]
+	a._weather_graze(c6, cow, 0.1)
+	check(row_state(a, c6) == AnimalsScript.HUNCH, "a cow at its cover home in a gale is sent hunched (state %d)" % row_state(a, c6))
+	a._read_weather({"wind": 0.0, "temp_c": 28.0}, 0.1)
+	hour = 13.0
+	var c7: Dictionary = a.animals[a.spawn("cow", 0.0, 900.0)]
+	c7["state"] = AnimalsScript.GRAZE
+	c7["dry_home"] = c7["home"]
+	c7["home"] = c7["pos"]
+	a._weather_graze(c7, cow, 0.1)
+	check(row_state(a, c7) == AnimalsScript.GRAZE, "a cow in the shade at midday is not (state %d)" % row_state(a, c7))
+	hour = 12.0
 	a._read_weather({"wind": 0.0}, 0.1)
 
 	# 8. weather.on false: all off.

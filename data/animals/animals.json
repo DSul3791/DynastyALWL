@@ -4238,6 +4238,8 @@
 		"hunch_share": 0.6,
 		"cover_m": 100.0,
 		"cover_return_s": 150.0,
+		"cover_stand_note": "Design 11 (MikeW, ANIMAL_WEATHER_LOOKS.md): a deer or stock animal grazing within cover_stand_m of the cover home it moved to, or under tree crowns, is sent hunched (state 20) for as long as the rain, a gale or the cold lasts. Midday heat in the shade is not a hunch.",
+		"cover_stand_m": 8.0,
 		"drift_mps": 0.05,
 		"step3_note": "Step 3 (design 9): wolves in wolf_snow_from snow or more walk and trot wolf_snow.speed_x as fast and prowl wolf_snow.roam_x as far (the chase is unchanged); deer below cold_c air (seasonal temp_c less lapse_c_per_m) or in snow_cold_from snowfall move home to tree crowns in conifer_biomes, else lower ground; stock in hot_c air between heat_hours go to shade. All return cover_return_s after it passes.",
 		"wolf_snow_from": 0.3,
