@@ -78,7 +78,8 @@ func _init() -> void:
 	_check_step6()
 
 	var source: String = FileAccess.get_file_as_string("res://src/client/sound_occlusion.gd")
-	_check(source.contains("has(\"--sound-outdoors\")") and not source.contains("player.volume_db"), "behind --sound-outdoors, and the scan never writes volume_db")
+	var writes_volume: bool = source.contains("player.volume_db =") or source.contains("player.volume_db +=") or source.contains("player.volume_db -=")
+	_check(source.contains("has(\"--sound-outdoors\")") and not writes_volume, "behind --sound-outdoors, and the scan never writes volume_db (the echo only reads it)")
 
 	print("test_outdoor_air: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
