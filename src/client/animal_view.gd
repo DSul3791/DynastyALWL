@@ -2430,7 +2430,9 @@ func _coat_tick(node: Node3D, b: Dictionary, state: int, delta: float) -> void:
 
 				if wind_looks:
 					var to: float = _wind_to()
-					(mat as ShaderMaterial).set_shader_parameter("wind_dir", Vector3(cos(to), 0.0, sin(to)))
+
+					if not is_nan(to):
+						(mat as ShaderMaterial).set_shader_parameter("wind_dir", Vector3(cos(to), 0.0, sin(to)))
 					(mat as ShaderMaterial).set_shader_parameter("windward_share", 0.6)
 			else:
 				(mat as StandardMaterial3D).albedo_color = colour
@@ -3500,7 +3502,9 @@ func _steam_breath(node: Node3D, b: Dictionary, air: float, speed: float, delta:
 
 	if wind_looks:      # the breath drifts downwind (ANIMAL_WIND.md)
 		var to: float = _wind_to()
-		cloud.gravity += Vector3(cos(to), 0.0, sin(to)) * 1.5 * float(_wx_state().get("wind", 0.0))
+
+		if not is_nan(to):
+			cloud.gravity += Vector3(cos(to), 0.0, sin(to)) * 1.5 * float(_wx_state().get("wind", 0.0))
 	cloud.scale_amount_min = length * 0.04
 	cloud.scale_amount_max = length * 0.09
 	var mesh: SphereMesh = SphereMesh.new()
@@ -3990,16 +3994,16 @@ func _porpoise_pitch(node: Node3D, b: Dictionary) -> void:
 
 
 # Animals and the wind's direction (docs/design/ANIMAL_WIND.md). The way the wind blows toward: the shared weather's wind_dir, which
-# becomes Kathleen's per-group prevailing wind (prevailing_wind.md) once it lands, else the prevailing wind at 57 S: from about 310
-# degrees (WNW to NW, Jamie's prevailing-wind page, #714), so blowing toward about 130 degrees, the south-east: +X east, +Z south.
-const PREVAILING_TO := 0.70
+# becomes Kathleen's per-group prevailing wind (prevailing_wind.md) once it lands. The island is a grid of rows with the equator in
+# the middle, so no direction is assumed: with no wind_dir in the weather (the tool without one) there is no wind turn (NAN).
+# Jamie's prevailing-wind page (#714) is the knowledge for the starter rows; the weather carries it, not a constant here.
 const RUMP_WIND := 0.45      # with rain over RUMP_RAIN, stock and deer stand rump to the wind from here (Jamie #639); a gale alone does it too
 const RUMP_RAIN := 0.3
 const GRAZE_WIND := [0.15, 0.6]   # deer graze moving into a light or moderate wind (Jamie #639; Steve's _upwind_angle on the server)
 
 func _wind_to() -> float:
 	var wx: Dictionary = _wx_state()
-	return float(wx["wind_dir"]) if wx.has("wind_dir") else PREVAILING_TO
+	return float(wx["wind_dir"]) if wx.has("wind_dir") else NAN
 
 
 func _wind_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
@@ -4013,6 +4017,9 @@ func _wind_look(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 	var rain: float = maxf(float(wx.get("rain", 0.0)), float(wx.get("snow", 0.0)))
 	var kind: String = str(b.get("kind", ""))
 	var standing: bool = speed < 0.3 and (state == 0 or state == 3 or state == 12 or state == HUNCH)
+	if is_nan(_wind_to()):
+		return      # no direction known: no turn to the wind
+
 	var downwind: float = -_wind_to() - PI * 0.5      # the node turn that faces the way the wind blows
 	var want: float = 0.0
 	b["wind_hunch"] = false
@@ -4036,6 +4043,9 @@ func _into_wind(node: Node3D, delta: float) -> void:
 	var rig: Node3D = LifeUtil.rig(node)
 
 	if rig == null or float(_wx_state().get("wind", 0.0)) < 0.1:
+		return
+
+	if is_nan(_wind_to()):
 		return
 
 	var upwind: float = -_wind_to() - PI * 0.5 + PI
