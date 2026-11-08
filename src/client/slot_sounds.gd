@@ -101,13 +101,13 @@ const SIGN_PATH := "res://data/animals/animal_sign.json"
 var _sign_groups: Dictionary = {}         # species -> sign group, read on the first footfall
 
 
-static func footfall_slot(sign_group: String, ground: String) -> String:
+static func footfall_slot(group: String, ground: String) -> String:
 	var layer: String = str(FOOTFALL_GROUNDS.get(ground, ""))
 
 	if layer == "":
 		return ""
 
-	return ("hoof_" if sign_group == "hoofed" else "paw_") + layer
+	return ("hoof_" if group == "hoofed" else "paw_") + layer
 
 
 # 0.1 (a rat walking) to 1.0 (a horse at a run): the size from the species step's peak_db (-12 a horse, -26 a rat), the speed in m/s.
