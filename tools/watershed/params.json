@@ -191,8 +191,8 @@
 		"roughness": {"on": true, "shortest_m": 16.0, "longest_m": 48.0, "fade_m": 24.0, "seed_offset": 1},
 		"encoding": {"discharge_codes_per_decade": 6553.5, "table_depth_step_m": 0.25, "sediment_step_m": 0.01},
 		"climate": {
-			"_note": "Design A4: one climate per island; the air at a place is sea_level_mean_c + seasonal_swing_c cos(2 pi (phase - warmest_year_phase)) + the daily term (daily_range_c / 2, coldest 05:00, warmest 15:00) - lapse_c_per_km x height / 1000. Starter values from the coordinator's snow decision (8 Nov 2026: about 9 C, swing about 5 C); daily_range_c 8 is Jamie's live cycle (#616) until a sourced maritime value replaces it; rain_mm_yr is the background rain of params rain. Islands without their own entry take default.",
-			"default": {"sea_level_mean_c": 9.0, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 1100.0},
+			"_note": "Design A4: one climate per island; the air at a place is sea_level_mean_c + seasonal_swing_c cos(2 pi (phase - warmest_year_phase)) + the daily term (daily_range_c / 2, coldest 05:00, warmest 15:00) - lapse_c_per_km x height / 1000. Starter values from the coordinator's snow decision (8 Nov 2026: about 9 C, swing about 5 C); daily_range_c 8 is Jamie's live cycle (#616) until a sourced maritime value replaces it; rain_mm_yr is the background rain of params rain. spell_amplitude_c and spell_days are the live multi-day warm and cold spells (a random walk of about +/- spell_amplitude_c that relaxes back to the season over spell_days, Jamie's #620, starter values); the record and the baked snow window use the climate without spells, the client adds them live. Islands without their own entry take default.",
+			"default": {"sea_level_mean_c": 9.0, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 1100.0, "spell_amplitude_c": 4.0, "spell_days": [3, 6]},
 			"by_island": {}
 		}
 	}
