@@ -1426,9 +1426,11 @@
 				"10": "idle_bark_04_warning",
 				"12": "Idle",
 				"walk": "walk_fwd_01",
-				"run": "run_fwd_01"
+				"run": "run_fwd_01",
+				"18": "idle_sit_one_off_step_01",
+				"19": "idle_lay_one_off_01"
 			},
-			"note": "WildMesh Dog (Realistic Animals/Labrador/SK_Labrador.fbx).",
+			"note": "WildMesh Dog (Realistic Animals/Labrador/SK_Labrador.fbx). Companion states (docs/design/DOG_COMPANION_CLIPS.md, Steve #606): 10 barks, 18 sits, 19 lies down; the bloodhound holds the end of its sit and lie transitions as loops.",
 			"length_m": 1.1,
 			"materials": [
 				{
@@ -1438,7 +1440,17 @@
 			],
 			"variants": [
 				{
-					"scene": "res://assets/animals/dog/SK_Labrador.fbx"
+					"scene": "res://assets/animals/dog/SK_Labrador.fbx",
+					"clips": {
+						"0": "idle_sniff_01",
+						"3": "Idle",
+						"10": "idle_bark_04_warning",
+						"12": "Idle",
+						"walk": "walk_fwd_01",
+						"run": "run_fwd_01",
+						"18": "idle_sit_one_off_step_01",
+						"19": "idle_lay_one_off_01"
+					}
 				},
 				{
 					"scene": "res://assets/animals/bloodhound/SK_Bloodhund.fbx",
@@ -1455,7 +1467,21 @@
 						"10": "Idle",
 						"12": "Idle",
 						"walk": "walk fwd",
-						"run": "run fwd"
+						"run": "run fwd",
+						"18": "idle to idle sit",
+						"19": "idle to idle lay"
+					},
+					"clip_loop": {
+						"18": [
+							3.3,
+							3.7,
+							0.1
+						],
+						"19": [
+							3.3,
+							3.7,
+							0.1
+						]
 					}
 				}
 			],
