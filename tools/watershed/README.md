@@ -90,3 +90,21 @@ Check `glacial.png` and the summary for:
 - trough floors cut 100 to 300 m below the river-era valley floors (`where.cut_under_ice_m`, p90 and p99), not thousands. The single deepest cell (`glacial_cut_max_m`, listed in `where.deepest_cut`) can be a truncated spur or a cirque cut back into a steep flank, and may be twice that. If the cut is far off, `years` is the setting to change first;
 - no cliffs the slope cap should have stopped: `where.neighbour_drop_steepest` above 48 degrees (granite's cap) away from the coast and from hollows is a fault. The summary's `max_slope_deg` is the plain gradient, which also spans the sea floor, so a shore cell beside deep water reads as a cliff; `where.slope_shore_max_deg` counts the sea at sea level.
 
+
+## Peak checks (design A1 rule 6)
+
+`tools/watershed/peaks.py` judges whether the tall summits are pyramids rather than domes. It runs sign-off lines 1 to 10 of `docs/water/rule6_build_plan.md` on a run's saved files, in seconds:
+- `python tools/watershed/peaks.py landform INPUTS_DIR [BASELINE_INPUTS_DIR]` checks lines 1 to 3 on the landform:
+  - at least 3 valley heads round each summit within 1 km;
+  - no new closed hollows near the summits;
+  - summit heights unchanged against the baseline run.
+  It writes `peaks_landform.json` and `.md`.
+- `python tools/watershed/peaks.py glacial INPUTS_DIR GLACIAL_DIR` checks lines 4 to 10 after the ice:
+  - the top within 25 m of the landform;
+  - the valley heads kept;
+  - steeper near the top;
+  - no flat cap over 300 m;
+  - the headwall retreat rate, the NE/SW ratio and the early cirque depth, read from the glacial cycles.
+  It writes `peaks_glacial.json` and `.md`.
+
+Each line reads PASS, FAIL or N/A with its numbers. A run of one cold stage has no cycles, so lines 8 to 10 read N/A. Settings are in `params.json` `peaks`. `python tools/watershed/test_peaks.py` runs its unit tests on small synthetic peaks (numpy and scipy only, a few seconds).
