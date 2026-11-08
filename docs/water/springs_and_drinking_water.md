@@ -69,6 +69,8 @@ This is a spring at the cave mouth, 56520 / 72360, at 533 m. Say R4 gives it 2 L
 
 ## Additions it needs (Sonny, after ws580g; record field list unchanged)
 
+The build plan for additions 1 and 2, with the method, the specific yields and the checks, is [spring_store_build_plan.md](spring_store_build_plan.md).
+
 1. **Per-spring dry flow.** R5 gives each spring its own store, with response time τ = 4 S_y L² / (π² T) (Rorabaugh 1960):
    - T from R4's transmissivity at the spring;
    - L the length of its groundwater flow path, up R4's head field to the divide;
