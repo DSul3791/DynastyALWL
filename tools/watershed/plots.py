@@ -208,7 +208,7 @@ def network_picture(npz_path, json_path, png_path):
     rt = thick(d['reach_type'].astype(np.int64))
     ax[0, 0].imshow(np.where(rt > 0, rt, np.nan), cmap=ListedColormap(['#d62728', '#ff7f0e', '#e6c619', '#2ca02c', '#1f77b4']), vmin=0.5, vmax=5.5)
     for f in net['falls']:
-        ax[0, 0].plot((f['x'] - ox) / dx, (f['z'] - oz) / dx, '^', color='white', mec='black', ms=7)
+        ax[0, 0].plot((f['lip'][0] - ox) / dx, (f['lip'][2] - oz) / dx, '^', color='white', mec='black', ms=7)
     ax[0, 0].set_title(f"reach types; falls ({len(net['falls'])}) as white triangles", fontsize=11)
     st = thick(d['stream'].astype(np.int64))
     ax[0, 1].imshow(np.select([st == 3, st == 8], [0.0, 1.0], np.nan), cmap=ListedColormap(['#08306b', '#6baed6']), vmin=-0.5, vmax=1.5)
@@ -224,7 +224,7 @@ def network_picture(npz_path, json_path, png_path):
     for o in net['coast_outlets'] + net['lake_inflows']:
         c = colours.get(o['kind'], 'white')
         if c != 'none':
-            ax[1, 1].plot((o['x'] - ox) / dx, (o['z'] - oz) / dx, 'o', color=c, mec='black', ms=6)
+            ax[1, 1].plot((o['pos'][0] - ox) / dx, (o['pos'][2] - oz) / dx, 'o', color=c, mec='black', ms=6)
     ax[1, 1].set_title('pattern: confined grey, meandering green, braided orange; outlets by kind', fontsize=11)
     for a in ax.ravel():
         a.axis('off')

@@ -700,19 +700,21 @@ def main():
                                             levee_height_m=round(float(NW['levee_height_depths']) * float(Dbf[seg].mean()), 2),
                                             levee_width_m=round(float(Wbf[seg].mean()), 1), valley_floor_m=round(float(floor[seg].mean()), 1))
             stretches.append(st)
-        points = [[round(where(ci)[0], 1), round(where(ci)[1], 1), round(float(h[ci]), 2), round(float(Wbf[ci]), 2),
-                   round(float(Dbf[ci]), 3), r3(Q['mean'][ci]), r3(Q['wet'][ci]), r3(Q['dry'][ci])] for ci in cells]
+        # One row per 16 m cell, in point_fields order: [x, bed_y, z] first, the reader's point convention (water_record.gd).
+        polyline = [[round(where(ci)[0], 1), round(float(h[ci]), 2), round(where(ci)[1], 1), round(float(Wbf[ci]), 2),
+                     round(float(Dbf[ci]), 3), r3(Q['mean'][ci]), r3(Q['wet'][ci]), r3(Q['dry'][ci]), r3(base_dry[ci])] for ci in cells]
         length = float(step[c].sum())
-        reaches.append(dict(id=k, downstream=down, ends=end, lake=lk, order=int(so[last]), basin=int(basin_id[last]),
+        reaches.append(dict(id=k, down=-1 if down is None else down, ends=end, lake=lk, order=int(so[last]), basin=int(basin_id[last]),
                             length_m=round(length, 1), drop_m=round(float(h[cells[0]] - h[last]), 2),
                             area_km2=r3(A[last] / 1e6), q_m3_s=dict(mean=r3(Q['mean'][last]), wet=r3(Q['wet'][last]), dry=r3(Q['dry'][last]),
+                                                                     base_dry=r3(base_dry[last]),
                                                                      qmed=r3(qmed[last]), bankfull=r3(qbf[last])),
                             width_m=dict(top=round(float(Wbf[cells[0]]), 2), bottom=round(float(Wbf[last]), 2)),
                             depth_m=dict(top=round(float(Dbf[cells[0]]), 3), bottom=round(float(Dbf[last]), 3)),
                             banks=BANKS[int(np.bincount(bank[c], minlength=4).argmax())],
                             groundwater_share=round(float(bfi_c[last]), 2), peat_share=round(float(peat_acc[last]), 3),
                             sediment_flux_m3_yr=r3(sed_acc[last]), lost_m3_s=r3(lost['mean'][c].sum()),
-                            losing=bool(lost['mean'][c].sum() > 0.0), stretches=stretches, points=points))
+                            losing=bool(lost['mean'][c].sum() > 0.0), stretches=stretches, polyline=polyline))
     reach_end_cell = [p[-1] for p in pts]
 
     # Heads and confluences
@@ -726,7 +728,7 @@ def main():
             ins = sorted({int(reach_of[d]) for d in dn if vis[d]})
             ar = sorted([float(A[d]) for d in dn if vis[d]])
             x, z = where(s)
-            confluences.append(dict(x=x, z=z, reaches_in=ins, reach_out=k, tributary_area_ratio=round(ar[-2] / max(ar[-1], 1.0), 3)))
+            confluences.append(dict(pos=[x, round(float(h[s]), 2), z], reaches_in=ins, reach_out=k, tributary_area_ratio=round(ar[-2] / max(ar[-1], 1.0), 3)))
             continue
         lk_d = [int(lake_id[d]) for d in dn if lake[d]]
         if lk_d:
@@ -741,7 +743,7 @@ def main():
         else:
             kind = 'gathered from seasonal rills'
         x, z = where(s)
-        heads.append(dict(reach=k, x=x, z=z, y=round(float(h[s]), 2), kind=kind, lake=lk_d[0] if lk_d else None,
+        heads.append(dict(reach=k, pos=[x, round(float(h[s]), 2), z], kind=kind, lake=lk_d[0] if lk_d else None,
                           area_km2=r3(A[s] / 1e6), q_wet_m3_s=r3(Q['wet'][s]), groundwater_m3_s=r3(gw2[s])))
     # A full lake's outlet reach may start below a short dry gap (its exit cell's receiver is not yet a stream).
     for L, i in exits.items():
@@ -752,6 +754,11 @@ def main():
             j = int(rec[j])
         if j >= 0 and not outlet[j] and vis[j]:
             lake_outlet_reach[L] = int(reach_of[j])
+    # A reach into a full lake goes on through the lake's outlet reach, so the reader's `down` walk (water_record.gd downstream())
+    # follows the water to the sea; -1 is the sea, a closed lake or a sink.
+    for r in reaches:
+        if r['ends'] == 'lake' and by_id.get(r['lake'], {}).get('full') and lake_outlet_reach.get(r['lake']) not in (None, r['id']):
+            r['down'] = int(lake_outlet_reach[r['lake']])
 
     # 11. Outlets: to the sea and into lakes, with deltas where the sand supply beats the waves (Nienhuis et al. 2015).
     C = NW['coast']
@@ -773,7 +780,7 @@ def main():
         sand = float(sed_acc[m]) * float(C['rock_density_kg_m3']) * float(C['sand_share']) / YEAR_S
         R = sand / max(q_wave, 1e-12)
         s_mouth = max(float(slope[m]), 1e-4)
-        o = dict(reach=k, x=where(m)[0], z=where(m)[1], into=rc_['ends'], lake=rc_['lake'], area_km2=rc_['area_km2'],
+        o = dict(reach=k, pos=[where(m)[0], round(float(h[m]), 2), where(m)[1]], into=rc_['ends'], lake=rc_['lake'], area_km2=rc_['area_km2'],
                  q_mean_m3_s=rc_['q_m3_s']['mean'], fetch_m=None if opened else round(fetch), open_ocean=bool(opened),
                  wave_height_m=round(Hs, 2), wave_period_s=round(Tp, 2), sand_kg_s=r3(sand), waves_kg_s=r3(q_wave), R=r3(R))
         if R > 1.0:
@@ -812,7 +819,7 @@ def main():
     springs = []
     for i in np.flatnonzero(gw >= float(G['spring_m3_s'])):
         x, z = where(i)
-        springs.append(dict(x=x, z=z, y=round(float(h[i]), 2), m3_s=r3(gw[i]), rock=names.get(int(rid[i]), str(int(rid[i]))),
+        springs.append(dict(pos=[x, round(float(h[i]), 2), z], m3_s=r3(gw[i]), rock=names.get(int(rid[i]), str(int(rid[i]))),
                             feeds_reach=int(near_reach[i]) if near_reach[i] >= 0 else None))
 
     # Destinations and the seven answers (principle 8)
@@ -824,7 +831,7 @@ def main():
             r = reaches[k]
             path.append(k)
             if r['ends'] == 'reach':
-                k = r['downstream']
+                k = r['down']
             elif r['ends'] == 'lake':
                 lk = by_id.get(r['lake'])
                 nxt = lake_outlet_reach.get(r['lake'])
@@ -834,9 +841,9 @@ def main():
                     return path, f"ends in closed lake {r['lake']} ({lk['cause'] if lk else 'unknown'}), where evaporation and seepage take its water"
             elif r['ends'] == 'sea':
                 o = outlet_of.get(k)
-                return path, f"reaches the sea at {r['points'][-1][0]:.0f}, {r['points'][-1][1]:.0f} as a {o['kind'] if o else 'mouth'}"
+                return path, f"reaches the sea at {r['polyline'][-1][0]:.0f}, {r['polyline'][-1][2]:.0f} as a {o['kind'] if o else 'mouth'}"
             else:
-                return path, f"{r['ends']} at {r['points'][-1][0]:.0f}, {r['points'][-1][1]:.0f} (water lost to the bed)"
+                return path, f"{r['ends']} at {r['polyline'][-1][0]:.0f}, {r['polyline'][-1][2]:.0f} (water lost to the bed)"
         return path, 'a loop in the reach list (a defect)'
 
     for r in reaches:
@@ -871,7 +878,9 @@ def main():
                         'storm_normal_drought': f"bankfull {f['q_bankfull_m3_s']}, mean {f['q_mean_m3_s']} m3/s",
                         'evidence': 'a plunge pool and a gorge cut back below it' if f['form'] == 'plunge' else 'stepped rock and spray',
                         'connection': destination(k)[1] if k >= 0 else 'not on a reach (a defect)'}
-        del f['lip'], f['foot']
+        del f['lip'], f['foot']                                     # the 16 m cell indices; the record gives points
+        f['lip'] = [f.pop('x'), f.pop('lip_y'), f.pop('z')]
+        f['foot'] = [f.pop('foot_x'), f.pop('foot_y'), f.pop('foot_z')]
     for hd in heads:
         hd['answers'] = {'supply': f"{hd['area_km2']} km2 above it" + (f", {hd['groundwater_m3_s']} m3/s from the ground" if hd['groundwater_m3_s'] else ''),
                          'why_here': f"{hd['kind']}: the wet-season flow passes the stream threshold here",
@@ -974,9 +983,9 @@ def main():
         open_coast_deltas_under_500km2=sum(1 for o in sea_deltas if o['area_km2'] < 500.0 and (o['open_ocean'] or (o['fetch_m'] or 0) > 5000)),
         meanders_on_steep_reaches_km=km(meandering & (slope > RT['plane_bed'])),
         floodplains_on_steep_brooks_km=km(meandering & (slope > RT['plane_bed']) & (Wbf < 3.0)),
-        streams_that_sink=[dict(reach=r['id'], x=r['points'][-1][0], z=r['points'][-1][1], rock=names.get(int(rid[reach_end_cell[r['id']]]), '?'))
+        streams_that_sink=[dict(reach=r['id'], x=r['polyline'][-1][0], z=r['polyline'][-1][2], rock=names.get(int(rid[reach_end_cell[r['id']]]), '?'))
                            for r in reaches if r['ends'] in ('sinks', 'leaves its channel')][:30],
-        large_flow_from_small_area=[dict(x=hd['x'], z=hd['z'], area_km2=hd['area_km2'], q_wet_m3_s=hd['q_wet_m3_s']) for hd in heads
+        large_flow_from_small_area=[dict(x=hd['pos'][0], z=hd['pos'][2], area_km2=hd['area_km2'], q_wet_m3_s=hd['q_wet_m3_s']) for hd in heads
                                     if hd['area_km2'] < 0.05 and hd['q_wet_m3_s'] > 0.05][:20])
     by_type = {TYPES[t]: km(vis & (rtype == t)) for t in range(1, len(TYPES))}
     by_pattern = {PATTERNS[t]: km(vis & (pattern == t)) for t in range(1, len(PATTERNS))}
@@ -1005,7 +1014,10 @@ def main():
                'water lost to the bed not yet returned to the groundwater solve (R4)']
 
     network = dict(version=VERSION, cell_m=dx, origin_x=ox, origin_z=oz,
-                   point_fields=['x', 'z', 'bed_y', 'bankfull_width_m', 'bankfull_depth_m', 'q_mean_m3_s', 'q_wet_m3_s', 'q_dry_m3_s'],
+                   points=('every point is [x, y, z] in world metres, y up (pos, lip, foot); each reach polyline row is point_fields; '
+                           'down is the next reach the water enters, through a full lake, -1 for none'),
+                   point_fields=['x', 'bed_y', 'z', 'bankfull_width_m', 'bankfull_depth_m', 'q_mean_m3_s', 'q_wet_m3_s', 'q_dry_m3_s',
+                                 'q_base_dry_m3_s'],
                    reaches=reaches, heads=heads, confluences=confluences, falls=falls, springs=springs, cave_springs=[],
                    coast_outlets=[o for o in outlets if o['into'] == 'sea'], lake_inflows=[o for o in outlets if o['into'] == 'lake'],
                    lakes=lake_rows, cold_air_pools=[])
@@ -1013,7 +1025,7 @@ def main():
     R = lambda a, t=np.float32: np.asarray(a).reshape(n, n).astype(t)
     np.savez_compressed(f'{out_dir}/network.npz', stream=R(stream, np.uint8), reach_id=R(reach_of, np.int32), regime=R(regime, np.uint8),
                         q_mean_m3_s=R(np.where(land, Q['mean'], 0.0)), q_wet_m3_s=R(np.where(land, Q['wet'], 0.0)),
-                        q_dry_m3_s=R(np.where(land, Q['dry'], 0.0)), q_bankfull_m3_s=R(np.where(land, qbf, 0.0)),
+                        q_dry_m3_s=R(np.where(land, Q['dry'], 0.0)), q_base_dry_m3_s=R(np.where(land, base_dry, 0.0)), q_bankfull_m3_s=R(np.where(land, qbf, 0.0)),
                         width_m=R(np.where(vis, Wbf, 0.0)), depth_m=R(np.where(vis, Dbf, 0.0)),
                         width_mean_m=R(np.where(vis, at_flow(Q['mean'], Wbf, float(S3['at_station_width_exponent'])), 0.0)),
                         depth_mean_m=R(np.where(vis, at_flow(Q['mean'], Dbf, float(S3['at_station_depth_exponent'])), 0.0)),

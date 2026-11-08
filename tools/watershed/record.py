@@ -347,12 +347,13 @@ def main():
         ('ground', g.astype('<f4'), 'f4', dict(units='m')),
         ('water_level', level.astype('<f4'), 'f4', dict(units='m', nodata='NaN')),
         ('water_class', wclass, 'u1', dict(codes='0 none, 1 ocean, 2 lake, 3 river, 4 marsh, 5 swamp, 6 fen, 7 bog, 8 seasonal channel, 9 seasonal pond, 10 salt marsh')),
-        ('discharge', enc_q(discharge), 'u2', dict(log10_m3_s='code / codes_per_decade - 4', codes_per_decade=float(E['discharge_codes_per_decade']), nodata=0)),
+        ('discharge', enc_q(discharge), 'u2', dict(units='m3/s', log10_m3_s='code / codes_per_decade - 4', codes_per_decade=float(E['discharge_codes_per_decade']), nodata=0)),
         ('regime', regime8.astype(np.uint8), 'u1', dict(codes='0 none, 1 perennial, 2 intermittent, 3 ephemeral')),
-        ('table_depth', np.clip(np.round(np.maximum(table, 0.0) / float(E['table_depth_step_m'])), 0, 255).astype(np.uint8), 'u1', dict(scale=float(E['table_depth_step_m']))),
+        ('table_depth', np.clip(np.round(np.maximum(table, 0.0) / float(E['table_depth_step_m'])), 0, 255).astype(np.uint8), 'u1',
+         dict(units='m', scale=float(E['table_depth_step_m']), note=f"R4's regional table, a yearly mean; 0 = at the ground; 255 = {255 * float(E['table_depth_step_m'])} m or deeper")),
         ('basin', basin.astype('<i4'), 'i4', dict(nodata=-1)),
-        ('fresh_m', np.clip(np.round(fresh), 0, 65535).astype('<u2'), 'u2', dict(scale=1.0)),
-        ('sediment_m', np.clip(np.round(np.maximum(sediment, 0.0) / float(E['sediment_step_m'])), 0, 65535).astype('<u2'), 'u2', dict(scale=float(E['sediment_step_m']))),
+        ('fresh_m', np.clip(np.round(fresh), 0, 65535).astype('<u2'), 'u2', dict(units='m', scale=1.0, note='to a lake or regime 1 (perennial) water')),
+        ('sediment_m', np.clip(np.round(np.maximum(sediment, 0.0) / float(E['sediment_step_m'])), 0, 65535).astype('<u2'), 'u2', dict(units='m', scale=float(E['sediment_step_m']))),
     ]
 
     x0, z0, x1, z1 = P['tiles']
@@ -375,7 +376,9 @@ def main():
         network = dict(reaches=[], heads=[], confluences=[], falls=[], springs=[], cave_springs=[], coast_outlets=[], cold_air_pools=[],
                        lakes=lakes)
         missing = ['network reaches, heads, falls, springs, outlets (R5)']
-    missing += ['rivers wider than about 8 m carved and drawn as water (R6 item 3)', 'cold-air pools (stage D)', 'snow window (A4 snow layer)']
+    missing += ['rivers wider than about 8 m carved and drawn as water (R6 item 3)',
+                'seasonal ponds (class 9): closed hollows that hold water only in the wet season, from R3 levels by season',
+                'cold-air pools (stage D)', 'snow window (A4 snow layer)']
     complete = not missing
     json.dump(network, open(os.path.join(rec_dir, 'network.json'), 'w'), indent=1)
     json.dump(RC['climate'], open(os.path.join(rec_dir, 'climate.json'), 'w'), indent=1)
@@ -386,7 +389,10 @@ def main():
                    roughness=dict(rms_slope=rough_rms_slope, removed_cells=roughness_removed_cells),
                    closed_cells_outside_lakes=int(fault_idx.size), closed_cells_highest=fault_list,
                    land_km2=float(land.sum() * SPACING * SPACING / 1e6), lake_km2=float(lake_wet.sum() * SPACING * SPACING / 1e6),
-                   wetland_km2=float((wet8 > 0).sum() * SPACING * SPACING / 1e6), missing=missing)
+                   wetland_km2=float((wet8 > 0).sum() * SPACING * SPACING / 1e6), missing=missing,
+                   # R5's island season shares (quick and base flow in the wet and dry quarters over their means), for the readers'
+                   # dry-season and drought answers (docs/water/springs_and_drinking_water.md)
+                   seasons=nman['summary'].get('seasons') if network_dir else None)
     manifest = dict(version=VERSION, complete=complete, record_sha=git_sha(), cell_m=SPACING, origin_x=ox, origin_z=oz,
                     tile_samples=T + 1, tiles=P['tiles'], inputs=hashes,
                     stage_manifests={k: (json.load(open(p)).get('inputs', json.load(open(p)).get('inputs_sha256')) if os.path.exists(p) else None) for k, p in
