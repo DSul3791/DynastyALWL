@@ -41,3 +41,4 @@ These are waiting for you. Nothing here was decided.
 8. **#648 R5:** your yes to merge Sonny's river network writer.
 9. **Hemisphere:** keep the island at 57° S with the sun in the north (`--one-sky` on), or veto it and stay at 52° N.
 10. **Water sickness:** whether some water should make you sick (it would need clean and dirty water, which your rule now says do not exist).
+11. **How thick fog should be:** at its thickest, valley fog in the look lets you see about 167 m. That sits inside the real thick-fog band (50 to 180 m). At that thickness, wolves get no extra cover and deer still see 30 m. If you want fog to bite harder, there is one knob: Kathleen's `MIST_INSIDE_THICK` (14 today), with Steve's `Weather.VIS_MIST_THICK` set to match (#724, #730).
