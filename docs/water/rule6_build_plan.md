@@ -197,7 +197,7 @@ Its settings are in `params.json` `peaks`. Its unit tests, `test_peaks.py`, use 
 
 ## Sign-off lines for the run (ws580h, after ws580g)
 
-These lines are judged as written. Failing lines are relayed word for word, with no reruns on changed settings.
+These lines are judged as written. Failing lines are relayed word for word, with no reruns on changed settings. The plain-language version for Dave, with the commands to type and what each line means for the peaks, is [rule6_what_dave_sees.md](rule6_what_dave_sees.md).
 
 **Landform (inputs.py summary `peaks`):**
 1. Every checked summit has at least 3 valley heads within 1 km, each at least 50 m below the ridges either side.
