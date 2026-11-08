@@ -1651,7 +1651,7 @@ func _tool_for(item_id: String) -> String:
 
 # The factor for an action's PACE (cooldowns and craft time): the skill factor times the Rested buff's action_speed_mult (comfort.json rested.tiers; 1.0 without the buff).
 func _pace_factor(peer: int, action_name: String) -> float:
-	return skill_factor(peer, action_name) * float(rested_tier(peer).get("action_speed_mult", 1.0))
+	return skill_factor(peer, action_name) * float(rested_tier(peer).get("action_speed_mult", 1.0)) / cold_pace(peer)
 
 
 # What a skill does to an action (data/items/skills.json): 1.0 until the skill system exists. Never below 0.25 or above 4.
@@ -6272,11 +6272,63 @@ func _raw_hours(item_id: String) -> float:
 
 func _raw_sickness(peer: int, item_id: String) -> void:
 	var hours: float = _raw_hours(item_id)
+	var odds: Dictionary = _infection_cfg().get("odds", {})
 
-	if hours > 0.0:
+	if hours > 0.0 and odds.has(item_id) and not (not tried_of(peer).has(item_id) and grace_of(peer) > 0.0):
+		_infect(peer, item_id, hours, float(odds[item_id]))
+	elif hours > 0.0:
 		_harm_bite(peer, item_id, hours, "That should have been cooked. Your stomach turns.")
 	else:
 		_learn_food(peer, item_id, "ok")
+
+
+# Late, uncertain sickness from raw animal food (docs/design/body_in_weather_design.md 5; sickness.json infection when its flag is on, else empty).
+func _infection_cfg() -> Dictionary:
+	var inf: Variant = _sick_cfg.get("infection", {})
+	return inf if typeof(inf) == TYPE_DICTIONARY and bool(inf.get("enabled", false)) else {}
+
+
+# One roll at the bite (luck helps you escape it); on a hit the sickness waits onset_h game hours in the vitals' sick_due. A miss teaches nothing:
+# the food stays unknown until it makes you sick.
+func _infect(peer: int, item_id: String, hours: float, p: float) -> void:
+	var v: Dictionary = vitals_of(peer)
+
+	if v.is_empty() or roll_chance(peer, _fate_rng, 1.0 - clampf(p, 0.0, 1.0)):
+		return
+
+	var onset: Array = _infection_cfg().get("onset_h", [24, 72])
+	var minutes: int = roll_amount(peer, _fate_rng, int(float(onset[0]) * 60.0), int(float(onset[onset.size() - 1]) * 60.0))   # lucky: later
+
+	if typeof(v.get("sick_due", null)) != TYPE_ARRAY:
+		v["sick_due"] = []
+
+	v["sick_due"].append([float(minutes) * 60.0, hours, item_id, float(minutes) * 60.0])
+	_dirty = true
+
+
+# Pending sicknesses count down in game seconds while the player is online; one that starts names what was eaten and is learned as harm.
+func _sick_due_tick(peer: int, v: Dictionary, game_s: float) -> void:
+	if typeof(v.get("sick_due", null)) != TYPE_ARRAY or (v["sick_due"] as Array).is_empty():
+		return
+
+	var keep: Array = []
+
+	for due in v["sick_due"]:
+		var left: float = float(due[0]) - game_s
+
+		if left > 0.0:
+			keep.append([left, due[1], due[2], due[3]])
+			continue
+
+		var item_id: String = str(due[2])
+		var days: int = maxi(int(round(float(due[3]) / 86400.0)), 1)
+		var when: String = "yesterday" if days == 1 else "%d days ago" % days
+		var food: String = table.name_of(table.number_of(item_id)).to_lower() if table != null else item_id
+		_say(peer, str(_sick_cfg.get("infection", {}).get("say_onset", "Your stomach turns. It was the %s %s.")) % [food, when])
+		_learn_food(peer, item_id, "harm")
+		make_sick(peer, float(due[1]), false)   # the onset line above says it
+
+	v["sick_due"] = keep
 
 
 # --- Eat-once learning (EARLY_GAME_PRINCIPLES 5, data/items/eat_memory.json) ---
@@ -7947,7 +7999,10 @@ func effort_of(peer: int) -> float:
 	# Shivering is work (data/items/warmth.json shiver_effort), more the colder.
 	if not _warmth_cfg.is_empty():
 		var cold_at: float = float(_warmth_cfg.get("cold_at", 40.0))
-		level += float(_warmth_cfg.get("shiver_effort", 0.15)) * maxf(cold_at - float(vitals_of(peer).get("warmth", 100.0)), 0.0) / maxf(cold_at, 1.0)
+		var warmth: float = float(vitals_of(peer).get("warmth", 100.0))
+
+		if warmth >= float(_body_cfg().get("shiver_stop_at", -1.0)):   # the body stops shivering deep in the cold (docs/design/body_in_weather_design.md 4)
+			level += float(_warmth_cfg.get("shiver_effort", 0.15)) * maxf(cold_at - warmth, 0.0) / maxf(cold_at, 1.0)
 
 	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
@@ -9067,6 +9122,7 @@ func _vitals_tick(spent: float) -> void:
 		v["wet"] = maxf(float(v["wet"]) - dry_per_day * game_s / 86400.0 * drain_mult, 0.0)
 
 		_warmth_tick(peer, v, spent, game_s)
+		_sick_due_tick(peer, v, game_s)
 		_sick_tick(peer, v, spent, game_s)
 
 		if float(v["fed"]) > 0.0 and float(v["wet"]) > 0.0 and float(v.get("warmth", 100.0)) >= float(_warmth_cfg.get("cold_at", 40.0)):
@@ -9101,13 +9157,13 @@ func _vitals_tick(spent: float) -> void:
 # --- Sickness (Dave 2026-10-21; data/items/sickness.json) ---
 # `sick` in the vitals is the game seconds of sickness left (0 = well).
 
-func make_sick(peer: int, hours: float = -1.0) -> void:
+func make_sick(peer: int, hours: float = -1.0, say_start: bool = true) -> void:
 	var v: Dictionary = vitals_of(peer)
 
 	if v.is_empty() or _sick_cfg.is_empty():
 		return
 
-	if float(v.get("sick", 0.0)) <= 0.0:
+	if say_start and float(v.get("sick", 0.0)) <= 0.0:
 		_say(peer, str(_sick_cfg.get("say_start", "You feel sick.")))
 
 	v["sick"] = maxf(float(v.get("sick", 0.0)), (hours if hours > 0.0 else float(_sick_cfg.get("duration_h", 24.0))) * 3600.0)
@@ -9484,10 +9540,17 @@ func warmth_target(peer: int) -> float:
 	# how soaked the player is (_update_soak), not only the rain falling this moment. A peer the tick has not seen yet uses the rain falling now.
 	var soak: float = float(_soak[peer]) if _soak.has(peer) else (minf(precip * 2.0, 1.0) if precip > 0.05 and not covered else 0.0)
 
+	var body: Dictionary = _body_cfg()
+
 	if soak > 0.0:
-		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak
+		# Wet plus wind is what kills (docs/design/body_in_weather_design.md 3): the wind pumps through wet cloth.
+		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak + float(body.get("wet_wind_gain", 0.0)) * soak * wind
 
 	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
+
+	if not body.is_empty():
+		# Soaked in a gale, clothes keep a tenth of their insulation (Pugh, Four Inns 1964: "nearly nothing").
+		insulation *= 1.0 - float(body.get("wet_strip", 0.9)) * soak * minf(wind / maxf(float(body.get("wet_strip_wind", 0.6)), 0.01), 1.0)
 
 	if bool(_swimming.get(peer, false)):
 		# In the water the cold follows the WATER's temperature, not the air's (Tyler): a lagged, damped copy of the air at sea level.
@@ -9517,12 +9580,19 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 
 	if w < hurt_at:
 		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
-		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0, 1.0)
+		var severe_mult: float = float(_body_cfg().get("severe_hurt_mult", 2.0)) if cold_stage(peer) == 3 else 1.0   # severe cold (docs/design/body_in_weather_design.md 4)
+		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, 1.0)
 
-	# Messages with two levels each way, so a player on the edge is not nagged.
+	# Messages with two levels each way, so a player on the edge is not nagged; with body_703 on, a third for severe cold.
 	var level: int = int(_cold_level.get(peer, 0))
+	var body: Dictionary = _body_cfg()
 
-	if level < 2 and w < hurt_at:
+	if not body.is_empty() and level < 3 and w < float(body.get("severe_at", 8.0)):
+		_cold_level[peer] = 3
+		_say(peer, str(body.get("say_severe", "You have stopped shivering. Get to a fire, now.")))
+	elif level == 3 and w >= float(body.get("severe_clear", 14.0)):
+		_cold_level[peer] = 2
+	elif level < 2 and w < hurt_at:
 		_cold_level[peer] = 2
 		_say(peer, str(cfg.get("say_freezing", "You are freezing")))
 	elif level == 0 and w < float(cfg.get("cold_at", 40.0)):
@@ -9535,6 +9605,47 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 		_say(peer, str(cfg.get("say_warm", "You feel warm again")))
 
 	_sync_warmth(peer, false)
+
+
+# The body in weather (docs/design/body_in_weather_design.md; Jamie #703, coordinator 8 Nov 2026): warmth.json body_703 when its flag is on, else empty,
+# and every reader falls back to today's numbers.
+func _body_cfg() -> Dictionary:
+	var body: Variant = _warmth_cfg.get("body_703", {})
+	return body if typeof(body) == TYPE_DICTIONARY and bool(body.get("enabled", false)) else {}
+
+
+# The cold stage on the warmth bar: 0 fine, 1 mild (under cold_at), 2 moderate (under hurt_at), 3 severe (under body_703 severe_at, flag on only).
+func cold_stage(peer: int) -> int:
+	if _warmth_cfg.is_empty():
+		return 0
+
+	var w: float = float(vitals_of(peer).get("warmth", 100.0))
+	var body: Dictionary = _body_cfg()
+
+	if not body.is_empty() and w < float(body.get("severe_at", 8.0)):
+		return 3
+
+	if w < float(_warmth_cfg.get("hurt_at", 20.0)):
+		return 2
+
+	return 1 if w < float(_warmth_cfg.get("cold_at", 40.0)) else 0
+
+
+# How many times as long an action takes in the cold (body_703 moderate_pace and severe_pace; 1 with the flag off). Nothing is refused, so a
+# freezing player can still light a fire, only slowly.
+func cold_pace(peer: int) -> float:
+	var body: Dictionary = _body_cfg()
+
+	if body.is_empty():
+		return 1.0
+
+	match cold_stage(peer):
+		3:
+			return maxf(float(body.get("severe_pace", 2.5)), 1.0)
+		2:
+			return maxf(float(body.get("moderate_pace", 1.5)), 1.0)
+
+	return 1.0
 
 
 # Rain or snow on an uncovered player soaks them toward the rain's strength (soak_per_h), swimming soaks them through; out of it they dry only in shelter:
@@ -9564,10 +9675,10 @@ func _update_soak(peer: int, game_s: float) -> void:
 		soak = 1.0   # in the water: soaked through
 	elif precip > 0.05 and not covered:
 		soak = minf(soak + float(cfg.get("soak_per_h", 4.0)) * hours, maxf(soak, minf(precip * 2.0, 1.0)))
-	elif by_fire:
-		soak = maxf(soak - float(cfg.get("dry_fire_per_h", 6.0)) * hours, 0.0)
+	elif by_fire:   # body_703 on: wool by a fire dries in hours, not minutes (docs/design/body_in_weather_design.md 2)
+		soak = maxf(soak - float(_body_cfg().get("dry_fire_per_h", cfg.get("dry_fire_per_h", 6.0))) * hours, 0.0)
 	elif covered and not in_cave:
-		soak = maxf(soak - float(cfg.get("dry_cover_per_h", 1.0)) * hours, 0.0)   # cave air is 98 to 100% wet: only a fire dries you there (#664)
+		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * hours, 0.0)   # cave air is 98 to 100% wet: only a fire dries you there (#664)
 
 	_soak[peer] = soak
 
@@ -13224,3 +13335,6 @@ func _load_vitals() -> void:
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
 		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0), "warmth": clampf(float(row.get("warmth", 100.0)), 0.0, 100.0), "sick": maxf(float(row.get("sick", 0.0)), 0.0), "limp": maxf(float(row.get("limp", 0.0)), 0.0)}
+
+		if typeof(row.get("sick_due", null)) == TYPE_ARRAY and not (row["sick_due"] as Array).is_empty():
+			_vitals[str(key)]["sick_due"] = row["sick_due"]   # pending sickness from raw food (docs/design/body_in_weather_design.md 5)
