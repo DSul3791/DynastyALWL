@@ -8,11 +8,11 @@
 		"margin_samples": 400
 	},
 	"summit": {
-		"note": "A real peak on every summit of the world map (WorldElevation.summits): adds spire_share of the summit height as a tent that reaches radius_factor x that far, sharp for power above 1; capped at max_m. See GENERATOR_NOTES.md. 8 Nov 2026 (peaks that can stand, docs/water/watershed_rebuild_design.md A1): radius_factor 3.2 to 4.0 and power 1.7 to 1.3, so the tip slope (power / radius_factor) is 0.33 instead of 0.53; with the sketch's standing cones (sketch_rules standing.slope 0.32) the summit stays under 35 degrees, which any rock holds. spur_reach: along the summit's spurs (sketch_rules standing.tip_spurs) the tent reaches that much farther (gentler), so the spurs run on as ridges and the point is not round. spur_apex_share: the spurs fade in from the point to 2 x this share of the reach (WorldElevation.spur_weight_at), so the top is not drawn as a star of thin rays (run 8a38328c zooms).",
+		"note": "A real peak on every summit of the world map (WorldElevation.summits): adds spire_share of the summit height as a tent that reaches radius_factor x that far, sharp for power above 1; capped at max_m. See GENERATOR_NOTES.md. 8 Nov 2026 (peaks that can stand, docs/water/watershed_rebuild_design.md A1): radius_factor 3.2 to 4.0 and power 1.7 to 1.3, so the tip slope (power / radius_factor) is 0.33 instead of 0.53; with the sketch's standing cones (sketch_rules standing.slope 0.32) the summit stays under 35 degrees, which any rock holds. spur_reach: along the summit's spurs (sketch_rules standing.tip_spurs) the tent reaches that much farther (gentler), so the spurs run on as ridges and the point is not round. power 2 (8 Nov 2026, was 1.3): the tent's slope then runs out to nothing at its foot at a steady rate; below 2 it drops to nothing in the last few metres and drew a ring round every summit (run 4edbc722 zooms). Near the point every direction lies on the spurs (WorldElevation.spur_weight_at measures across a spur in metres), so the tip slope is power / (radius_factor x (1 + spur_reach)), about 0.31, and the top is round, not a star of thin rays.",
 		"spire_share": 0.16,
-		"spur_reach": 0.6, "spur_apex_share": 0.08,
+		"spur_reach": 0.6,
 		"radius_factor": 4.0,
-		"power": 1.3,
+		"power": 2.0,
 		"max_m": 3950
 	},
 	"rolling": {

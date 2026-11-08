@@ -48,7 +48,7 @@ var _fine_x: PackedByteArray
 var _fine_z: PackedByteArray
 var _master: int = 0
 var _spur_cache: Dictionary = {}   # summit position -> its spur directions (spur_dirs)
-var _spur_width: float = 0.35         # standing.tip_spurs.width_rad (spur_weight_at)
+var _spur_width: float = 0.15         # standing.tip_spurs.width_share (spur_weight_at)
 var _spur_widen: float = 0.0          # standing.tip_spurs.widen (spur_weight_at)
 var _bend_cache: Dictionary = {}      # summit position -> how much each spur bends (_spur_bends)
 var _starters: Array = []   # starter mounts (ellipses), so shelf hills away from them can be given more relief
@@ -61,7 +61,7 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 	_master = settings.master_seed
 	_spur_cache.clear()
 	_bend_cache.clear()
-	_spur_width = float(rules.get("standing", {}).get("tip_spurs", {}).get("width_rad", 0.35))
+	_spur_width = float(rules.get("standing", {}).get("tip_spurs", {}).get("width_share", 0.15))
 	_spur_widen = float(rules.get("standing", {}).get("tip_spurs", {}).get("widen", 0.0))
 	cell_m = cell_override if cell_override > 0.0 else float(rules.get("cell_m", 160))
 	var tile: float = float(settings.tile_size_m)
@@ -332,7 +332,7 @@ func _stand_summits() -> bool:
 
 				# The slope at distance d: tip x f (f below 1 on a spur) blending to flank by a smoothstep from b0 to b1. The
 				# drop is its integral: tip f d + (flank - tip f) x (integral of the smoothstep from 0 to d).
-				var f: float = 1.0 - depth * spur_weight_at(summit, offset, 2.0 * cell_m) if depth > 0.0 else 1.0
+				var f: float = 1.0 - depth * spur_weight_at(summit, offset) if depth > 0.0 else 1.0
 				var t: float = clampf((distance - b0) / (b1 - b0), 0.0, 1.0)
 				var ramp: float = (b1 - b0) * (t * t * t - 0.5 * t * t * t * t) + maxf(distance - b1, 0.0)
 				var top_here: float = top - tip * f * distance - (flank - tip * f) * ramp
@@ -403,28 +403,30 @@ func spur_crest(summit: Array, k: int, distance_m: float) -> float:
 
 
 # How much of a spur the point at `offset` (metres from the summit) lies on: 1 on a crest line, falling off as a Gaussian of
-# `tip_spurs.width_rad` either side, the width growing by `tip_spurs.widen` per spur_scale_m out (a ridge broadens into its
-# shoulder as it falls). Near the summit the spurs fade in, from nothing at the summit to full at 2 x inner_m: the angle
-# round a point changes faster than any grid can hold near it, and drawn there it made thin rays from the summit. The fade
-# starts at the summit itself, not at inner_m, so a spur's weight never grows faster with distance than its ground falls
-# (a faster fade-in drew a shoulder across each spur). Callers pass what their grid can hold: the tile tent
-# summit.spur_apex_share of its reach.
-func spur_weight_at(summit: Array, offset: Vector2, inner_m: float) -> float:
+# the distance across from the crest, whose width is tip_spurs.width_share of spur_scale_m at the summit and grows by
+# tip_spurs.widen metres for each metre out (a ridge broadens into its shoulder as it falls). The width is a distance, not an
+# angle: near the summit every point lies within it of every crest, so the top is round and the spurs part from it as they
+# fall, as the ridges of a real peak do. Until 8 Nov 2026 the width was an angle, so a spur was a wedge with its point at the
+# summit; even faded in near the point it drew every summit as a star of thin rays (zoom pictures of runs 8a38328c and
+# 4edbc722). Along a crest the weight is 1 all the way out, so it never grows faster than the ground falls.
+func spur_weight_at(summit: Array, offset: Vector2) -> float:
 	var dirs: PackedFloat32Array = spur_dirs(summit)
-	var distance: float = offset.length()
 
-	if dirs.is_empty() or distance <= 0.0:
+	if dirs.is_empty():
 		return 0.0
 
-	var width: float = _spur_width * (1.0 + _spur_widen * distance / spur_scale_m(summit))
+	var distance: float = offset.length()
+	var width: float = maxf(_spur_width * spur_scale_m(summit) + _spur_widen * distance, 1.0)
 	var angle: float = offset.angle()
 	var best: float = 0.0
 
 	for k in range(dirs.size()):
-		var d: float = wrapf(angle - spur_crest(summit, k, distance), -PI, PI) / width
-		best = maxf(best, exp(-d * d))
+		var turn: float = absf(wrapf(angle - spur_crest(summit, k, distance), -PI, PI))
+		var across: float = distance * sin(turn) if turn < 0.5 * PI else distance
+		var u: float = across / width
+		best = maxf(best, exp(-u * u))
 
-	return best * smoothstep(0.0, 2.0 * inner_m, distance)
+	return best
 
 
 func _find_summits() -> void:
@@ -881,47 +883,7 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 	var size: int = radius * 2 + 1
 	var center_column: int = int(floor((float(mount["x"]) - origin_x) / cell_m))
 	var center_row: int = int(floor((float(mount["z"]) - origin_z) / cell_m))
-	var distance_cells: PackedFloat32Array = PackedFloat32Array()
-	distance_cells.resize(size * size)
-
-	for row in range(size):
-		for column in range(size):
-			var h: float = heights[index_of(center_column - radius + column, center_row - radius + row)]
-			distance_cells[row * size + column] = 0.0 if h <= 0.0 else 1.0e9
-
-	# Two-pass chamfer distance (cells) from the nearest sea cell.
-	var diagonal: float = 1.4142
-	for row in range(size):
-		for column in range(size):
-			var at: int = row * size + column
-			var best: float = distance_cells[at]
-
-			if column > 0:
-				best = minf(best, distance_cells[at - 1] + 1.0)
-			if row > 0:
-				best = minf(best, distance_cells[at - size] + 1.0)
-				if column > 0:
-					best = minf(best, distance_cells[at - size - 1] + diagonal)
-				if column < size - 1:
-					best = minf(best, distance_cells[at - size + 1] + diagonal)
-
-			distance_cells[at] = best
-
-	for row in range(size - 1, -1, -1):
-		for column in range(size - 1, -1, -1):
-			var at: int = row * size + column
-			var best: float = distance_cells[at]
-
-			if column < size - 1:
-				best = minf(best, distance_cells[at + 1] + 1.0)
-			if row < size - 1:
-				best = minf(best, distance_cells[at + size] + 1.0)
-				if column < size - 1:
-					best = minf(best, distance_cells[at + size + 1] + diagonal)
-				if column > 0:
-					best = minf(best, distance_cells[at + size - 1] + diagonal)
-
-			distance_cells[at] = best
+	var distance_cells: PackedFloat32Array = _sea_distance(center_column, center_row, radius)
 
 	var rotation: float = deg_to_rad(float(mount["rot"]))
 	var cos_r: float = cos(rotation)
@@ -1245,52 +1207,99 @@ func _crater_at_summit(mount: Dictionary, crater: Dictionary, radius: int) -> vo
 	_carve_crater(best_at, crater_radius, float(crater.get("depth_m", 180.0)), rim, crater_rules, bool(crater.get("lava", false)), true)
 
 
-# Chamfer distance (in cells) from the nearest sea cell, over the square of `radius` cells round a centre cell.
+# Straight-line (Euclidean) distance, in cells, from the nearest sea cell, over the square of `radius` cells round a centre
+# cell; 1e9 where the square holds no sea. The island's height bands, foothills and coast profile all follow it, so its
+# ridge (the line midway between two coasts) is the island's spine. Until 8 Nov 2026 it was a two-pass chamfer of straight
+# and diagonal steps, whose distance is eight-sided: the spine came out in ruler-straight stretches along the compass and
+# the diagonals (a straight crest running due west from the starter island's summit, zoom pictures of run 4edbc722).
 func _sea_distance(center_column: int, center_row: int, radius: int) -> PackedFloat32Array:
 	var size: int = radius * 2 + 1
-	var distance_cells: PackedFloat32Array = PackedFloat32Array()
-	distance_cells.resize(size * size)
+	var far: float = 1.0e12
+	var squared: PackedFloat64Array = PackedFloat64Array()
+	squared.resize(size * size)
 
 	for row in range(size):
 		for column in range(size):
 			var h: float = heights[index_of(center_column - radius + column, center_row - radius + row)]
-			distance_cells[row * size + column] = 0.0 if h <= 0.0 else 1.0e9
+			squared[row * size + column] = 0.0 if h <= 0.0 else far
 
-	var diagonal: float = 1.4142
+	var line: PackedFloat64Array = PackedFloat64Array()
+	line.resize(size)
+
+	for column in range(size):
+		for row in range(size):
+			line[row] = squared[row * size + column]
+
+		line = _squared_distance_1d(line, far)
+
+		for row in range(size):
+			squared[row * size + column] = line[row]
 
 	for row in range(size):
 		for column in range(size):
-			var at: int = row * size + column
-			var best: float = distance_cells[at]
+			line[column] = squared[row * size + column]
 
-			if column > 0:
-				best = minf(best, distance_cells[at - 1] + 1.0)
-			if row > 0:
-				best = minf(best, distance_cells[at - size] + 1.0)
-				if column > 0:
-					best = minf(best, distance_cells[at - size - 1] + diagonal)
-				if column < size - 1:
-					best = minf(best, distance_cells[at - size + 1] + diagonal)
+		line = _squared_distance_1d(line, far)
 
-			distance_cells[at] = best
+		for column in range(size):
+			squared[row * size + column] = line[column]
 
-	for row in range(size - 1, -1, -1):
-		for column in range(size - 1, -1, -1):
-			var at: int = row * size + column
-			var best: float = distance_cells[at]
+	var distance_cells: PackedFloat32Array = PackedFloat32Array()
+	distance_cells.resize(size * size)
 
-			if column < size - 1:
-				best = minf(best, distance_cells[at + 1] + 1.0)
-			if row < size - 1:
-				best = minf(best, distance_cells[at + size] + 1.0)
-				if column < size - 1:
-					best = minf(best, distance_cells[at + size + 1] + diagonal)
-				if column > 0:
-					best = minf(best, distance_cells[at + size - 1] + diagonal)
-
-			distance_cells[at] = best
+	for at in range(size * size):
+		distance_cells[at] = sqrt(squared[at]) if squared[at] < far else 1.0e9
 
 	return distance_cells
+
+
+# One line of the exact squared distance transform (Felzenszwalb and Huttenlocher 2012, Theory of Computing 8:415): each
+# entry becomes the least of f[p] + (q - p)^2 over the line, from the lower envelope of the parabolas rooted at the finite
+# entries. Entries at `far` or above are not sites; a line with none stays at `far`.
+static func _squared_distance_1d(f: PackedFloat64Array, far: float) -> PackedFloat64Array:
+	var n: int = f.size()
+	var out: PackedFloat64Array = PackedFloat64Array()
+	out.resize(n)
+	var roots: PackedInt32Array = PackedInt32Array()
+	roots.resize(n)
+	var bounds: PackedFloat64Array = PackedFloat64Array()
+	bounds.resize(n + 1)
+	var k: int = -1
+
+	for q in range(n):
+		if f[q] >= far:
+			continue
+
+		var s: float = -INF
+
+		while k >= 0:
+			var p: int = roots[k]
+			s = ((f[q] + float(q * q)) - (f[p] + float(p * p))) / float(2 * (q - p))
+
+			if s > bounds[k]:
+				break
+
+			k -= 1
+
+		k += 1
+		roots[k] = q
+		bounds[k] = s if k > 0 else -INF
+		bounds[k + 1] = INF
+
+	if k < 0:
+		out.fill(far)
+		return out
+
+	var j: int = 0
+
+	for q in range(n):
+		while bounds[j + 1] < float(q):
+			j += 1
+
+		var d: float = float(q - roots[j])
+		out[q] = d * d + f[roots[j]]
+
+	return out
 
 
 # facing: how much this point lies on the island's beach side (+1) or

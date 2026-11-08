@@ -458,12 +458,13 @@ func _island_texture_rows() -> PackedFloat32Array:
 
 
 # A real peak on every summit of the world map: a tent that adds `spire_share` of the summit height at
-# the top and fades to nothing `radius_factor` x that far out, with an exponent above 1 so the point is sharp
-# and the foot blends into the mountain. A function of world position only, so tiles agree on shared edges.
+# the top and fades to nothing `radius_factor` x that far out, as (1 - d / reach)^power. A function of world position only,
+# so tiles agree on shared edges. Power 2 (since 8 Nov 2026; it was 1.3): the tent's slope then falls to nothing at its foot
+# at a steady rate, so its edge leaves no mark; below 2 the slope drops to nothing in a last few metres, which drew a ring
+# round every summit in the zoom pictures of run 4edbc722.
 # Along the summit's spurs (WorldElevation.spur_weight_at, the same ones the world map's summit top uses) the tent reaches
-# `spur_reach` farther, so it is gentler there and the spurs run on as ridges between steeper faces, not a round point.
-# The spurs curve and widen as they fall, and start `spur_apex_share` of the reach out from the point, so the top is not
-# drawn as a star of straight rays (zoom pictures of run 8a38328c).
+# `spur_reach` farther, so it is gentler there and the spurs run on as ridges between steeper faces. Near the point every
+# direction lies on the spurs, so the top is round and the spurs part from it as they fall (no star of thin rays).
 func _add_summits() -> void:
 	if not _rules.has("summit") or _elevation.summits.is_empty():
 		return
@@ -474,7 +475,6 @@ func _add_summits() -> void:
 	var power: float = float(rules["power"])
 	var cap: float = float(rules["max_m"])
 	var spur_reach: float = float(rules.get("spur_reach", 0.0))
-	var apex_share: float = float(rules.get("spur_apex_share", 0.0))
 	var x0: float = float(origin_sx) * spacing_m
 	var z0: float = float(origin_sz) * spacing_m
 	var last: int = samples - 1
@@ -488,7 +488,6 @@ func _add_summits() -> void:
 			continue
 
 		var spurs: bool = spur_reach > 0.0 and not _elevation.spur_dirs(summit).is_empty()
-		var inner: float = apex_share * reach
 		var east: float = (float(summit[0]) - x0) / spacing_m
 		var north: float = (float(summit[1]) - z0) / spacing_m
 		var span: float = reach * (1.0 + spur_reach) / spacing_m
@@ -507,7 +506,7 @@ func _add_summits() -> void:
 					continue
 
 				if spurs:
-					here = reach * (1.0 + spur_reach * _elevation.spur_weight_at(summit, offset * spacing_m, inner))
+					here = reach * (1.0 + spur_reach * _elevation.spur_weight_at(summit, offset * spacing_m))
 
 				if distance < here:
 					heights[j * samples + i] += rise * pow(1.0 - distance / here, power)
