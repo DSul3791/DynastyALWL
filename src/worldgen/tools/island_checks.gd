@@ -1536,7 +1536,7 @@ func _spawn_of(world_dir: String) -> Vector2:
 	if typeof(rules) == TYPE_DICTIONARY and (rules as Dictionary).has("spawn_pad"):
 		return Vector2(float(rules["spawn_pad"]["x"]), float(rules["spawn_pad"]["z"]))
 
-	return SpawnPointScript.OVERRIDE   # no spawn pad any more (6 Nov 2026): the one spawn point
+	return SpawnPointScript.use_world(world_dir)   # no spawn pad any more (6 Nov 2026): the picked spawn (Stage E 6e) or the one spawn point
 
 
 func _spawn_check(settings, world_dir: String, directory: String, tile_limits: Dictionary) -> void:
@@ -1613,7 +1613,7 @@ func _marker_checks(settings, directory: String, tile_limits: Dictionary) -> voi
 	var bad: int = 0
 
 	for marker in markers:
-		var at: Vector2 = Vector2(float(marker.get("x", 0.0)), float(marker.get("z", 0.0)))
+		var at: Vector2 = Vector2(float(marker.get("x", 0.0)), float(marker.get("z", 0.0))) + SpawnPointScript.town_shift()
 		var tile: Vector2i = Vector2i(int(floor(at.x / float(settings.tile_size_m))), int(floor(at.y / float(settings.tile_size_m))))
 
 		if not tiles.has(tile):

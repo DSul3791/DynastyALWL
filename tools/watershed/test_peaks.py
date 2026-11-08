@@ -53,10 +53,14 @@ def test_ring_heads_tilted_and_flat():
 
 def test_facing():
     assert pk.facing(45) == 'shady' and pk.facing(360) == 'shady' and pk.facing(225) == 'sunny' and pk.facing(135) == 'other'
-    # south of the equator (the starter island, 57 S) the shady lee quarter is round the south-east
+    # south of the equator (the starter island, 34.3 S, from its tile row) the shady lee quarter is round the south-east
     assert pk.facing(135, 135.0) == 'shady' and pk.facing(170, 135.0) == 'shady' and pk.facing(315, 135.0) == 'sunny' and pk.facing(45, 135.0) == 'other'
     assert pk._compass(135.0) == 'SE' and pk._compass(315.0) == 'NW' and pk._compass(359.0) == 'N'
-    assert pk._checks(P)['shady_bearing_deg'] == float(P['glacial']['shady_bearing_deg'])
+    assert 'shady_bearing_deg' not in pk._checks(P)                      # no sky given: no bearing
+    q = pk._checks(P, dict(latitude_deg=-34.3, shady_bearing_deg=135.0))
+    assert q['shady_bearing_deg'] == 135.0 and q['latitude_deg'] == -34.3
+    assert pk.island_sky(P, 3 * 15360.0, 2881, 16.0)['shady_bearing_deg'] == float(P['world']['shady_bearing_south_deg'])
+    assert pk.island_sky(P, -5 * 15360.0, 2881, 16.0)['shady_bearing_deg'] == float(P['world']['shady_bearing_north_deg'])
 
 
 def test_plateau_dome_and_pyramid():

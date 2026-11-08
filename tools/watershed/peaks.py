@@ -101,8 +101,8 @@ def ring_heads(v, bearings, drop_m):
 
 
 def facing(bearing, shady_deg=45.0):
-    """'shady' within 45 degrees of the shady lee bearing (glacial.shady_bearing_deg: 45 NE north of the equator, 135 SE south
-    of it), 'sunny' within 45 degrees of the opposite bearing, else 'other'."""
+    """'shady' within 45 degrees of the shady lee bearing (the island's, from its latitude, world.py: 45 NE north of the
+    equator, 135 SE south of it), 'sunny' within 45 degrees of the opposite bearing, else 'other'."""
     d = (float(bearing) - float(shady_deg)) % 360.0
     return 'shady' if d <= 45.0 or d >= 315.0 else ('sunny' if 135.0 <= d <= 225.0 else 'other')
 
@@ -111,9 +111,20 @@ def _compass(bearing):
     return ('N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW')[int(((float(bearing) % 360.0) + 22.5) // 45.0) % 8]
 
 
-def _checks(P):
-    """The peaks settings, with the island's shady lee bearing from glacial (one source, design A4 one sky)."""
-    return dict(P['peaks'], shady_bearing_deg=float(P.get('glacial', {}).get('shady_bearing_deg', 45.0)))
+def _checks(P, sky=None):
+    """The peaks settings, with the island's latitude and shady lee bearing when its sky is given (world.sky, from its tile
+    row on the world grid: one source, design A4 one sky). Without a sky only the checks that need no bearing may use them."""
+    Q = dict(P['peaks'])
+    if sky is not None:
+        Q.update(latitude_deg=float(sky['latitude_deg']), shady_bearing_deg=float(sky['shady_bearing_deg']))
+    return Q
+
+
+def island_sky(P, origin_z, n, dx):
+    """The island's sky from its grid: origin_z and n cells of dx (world.sky)."""
+    sys.path.insert(0, HERE)
+    import world      # noqa: E402
+    return world.sky(P, origin_z, n * dx)
 
 
 def _slope_deg(h, dx):
@@ -275,8 +286,8 @@ def _load_inputs(d):
 
 
 def check_landform(inputs_dir, baseline_dir, P):
-    Q = _checks(P)
     h, sea, dx, ox, oz = _load_inputs(inputs_dir)
+    Q = _checks(P, island_sky(P, oz, h.shape[0], dx))
     tops = summits(h, sea, dx, snowline(P) + float(Q['above_snowline_m']), float(Q['summit_window_m']))
     ax = axes(h, sea, dx, tops, Q)
     now = shapes(h, h, sea, dx, ox, oz, tops, ax, Q)
@@ -326,8 +337,8 @@ def _history_years(P):
 
 
 def check_glacial(inputs_dir, glacial_dir, P):
-    Q = _checks(P)
     lf, sea, dx, ox, oz = _load_inputs(inputs_dir)
+    Q = _checks(P, island_sky(P, oz, lf.shape[0], dx))
     g = np.load(f'{glacial_dir}/glacial.npz')
     if g['ground'].shape != lf.shape:
         raise SystemExit('peaks: glacial.npz and inputs.npz are on different grids')
@@ -388,7 +399,8 @@ def check_glacial(inputs_dir, glacial_dir, P):
                                                f'(measured {lo} to {hi}){note}; each: ' +
                            ', '.join(f"{hd['facing']} {hd['bearing_deg']:.0f}: {hd['rate_mm_yr']:.2f}" for hd in heads if hd['rate_mm_yr'] is not None)))
     sb = float(Q.get('shady_bearing_deg', 45.0))
-    names = f"shady {_compass(sb)}, sunny {_compass(sb + 180.0)}"
+    lat = Q.get('latitude_deg')
+    names = f"shady {_compass(sb)}, sunny {_compass(sb + 180.0)}" + ('' if lat is None else f" at {abs(lat):.1f} {'N' if lat >= 0 else 'S'}")
     ne = [hd['rate_mm_yr'] for hd in heads if hd['rate_mm_yr'] is not None and hd['facing'] == 'shady']
     sw = [hd['rate_mm_yr'] for hd in heads if hd['rate_mm_yr'] is not None and hd['facing'] == 'sunny']
     if not ne or not sw:
