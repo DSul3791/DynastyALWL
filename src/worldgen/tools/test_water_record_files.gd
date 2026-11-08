@@ -8,6 +8,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_water_record_files.gd
 
 const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
+const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 
 const DIR := "user://test_water_record_files/record"
 const S := 3          # samples per tile edge
@@ -56,7 +57,7 @@ func write_record(version: int, complete: bool) -> void:
 		write_raster(tx, "discharge", "u2", func(gx, _gz): return 0 if gx == 0 else roundi((log(2.0) / log(10.0) + 4.0) * 6553.5))
 		write_raster(tx, "basin", "i4", func(gx, _gz): return -1 if gx == 0 else 7)
 		write_raster(tx, "table_depth", "u1", func(_gx, _gz): return 8)
-		write_raster(tx, "water_class", "u1", func(_gx, _gz): return 3, S * S - 1 if tx == 1 else S * S)   # tile 1's is one byte short
+		write_raster(tx, "water_class", "u1", func(gx, _gz): return 5 if gx == 1 else 3, S * S - 1 if tx == 1 else S * S)   # record code 5 (swamp); tile 1's is one byte short
 
 	write_json(DIR + "/manifest.json", {"version": version, "complete": complete, "cell_m": CELL, "origin_x": 0.0, "origin_z": 0.0, "tile_samples": S, "tiles": [0, 0, 1, 0],
 		"fields": [{"name": "ground", "type": "f4", "file": "ground.f4", "units": "m"}, {"name": "water_level", "type": "f4", "file": "water_level.f4", "nodata": "NaN"},
@@ -97,6 +98,8 @@ func _init() -> void:
 	var b: PackedFloat32Array = rec.raster(0, 0, "basin")
 	check(is_nan(at(b, 0, 0)) and at(b, 1, 0) == 7.0, "i4 basin: -1 is no-data")
 	check(is_equal_approx(at(rec.raster(0, 0, "table_depth"), 1, 1), 2.0), "u1 table depth x scale 0.25")
+	var wc: PackedFloat32Array = rec.raster(0, 0, "water_class")
+	check(at(wc, 0, 0) == 3.0 and at(wc, 1, 0) == 6.0, "record class codes map to the table's ids (river 3 stays 3, swamp code 5 is id 6): %s" % str(wc))
 	check(rec.raster(1, 0, "water_class").is_empty() and rec.error_of != "", "a raster of the wrong length is refused (%s)" % rec.error_of)
 	check(rec.raster(5, 0, "ground").is_empty(), "a tile outside the record has nothing")
 
@@ -116,6 +119,22 @@ func _init() -> void:
 
 	# 5. Climate: an island's row, else the default.
 	check(float(rec.climate("far")["sea_level_mean_c"]) == 4.0 and float(rec.climate("starter")["sea_level_mean_c"]) == 9.0, "climate by island, falling back to the default")
+
+	# 6. Water classes for the climate and land types (M1 step 2): rules classes pass through unchanged; a wetland is ground to them, then
+	#    takes its own biome and soil.
+	var tables = TableSetScript.new()
+	tables.load_directory()
+	var rules_classes: PackedByteArray = PackedByteArray([0, 1, 2, 3, 3, 0])
+	check(WaterRecordScript.land_view(rules_classes, tables) == rules_classes, "the rules' classes 0 to 3 pass through unchanged")
+	var swamp: int = tables.id_of("water_classes", "swamp")
+	var bog: int = tables.id_of("water_classes", "bog")
+	var with_wet: PackedByteArray = PackedByteArray([0, 3, swamp, bog, 1, 9])
+	var land: PackedByteArray = WaterRecordScript.land_view(with_wet, tables)
+	check(land[1] == 3 and land[2] == 0 and land[3] == 0 and land[4] == 1 and land[5] == 0, "wetlands and dry beds are ground to the climate (%s)" % str(land))
+	var biome: PackedByteArray = PackedByteArray([7, 7, 7, 7, 0, 7])
+	var soil: PackedByteArray = PackedByteArray([5, 5, 5, 5, 1, 5])
+	var changed: int = WaterRecordScript.apply_wet_land(with_wet, biome, soil, tables)
+	check(changed == 3 and biome[2] == tables.id_of("biomes", "marsh") and soil[3] == tables.id_of("soils", "peat") and biome[0] == 7 and biome[5] == 7 and soil[5] == tables.id_of("soils", "gravel"), "a swamp and a bog take marsh and their soils; a seasonal channel keeps its biome (%s, %s)" % [str(biome), str(soil)])
 
 	print("test_water_record_files: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
