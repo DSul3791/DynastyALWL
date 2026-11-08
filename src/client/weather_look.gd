@@ -10,6 +10,8 @@ extends Node
 #  - the sky shader: cloud cover (`coverage`), `gloom` (clouds and sky turn dark grey) and
 #    `flash` (lightning lights the clouds);
 #  - the sun and the sky's ambient light, and the fog (thicker and greyer in rain and snow);
+#  - valley fog from the weather's `mist` and `mist_top_m`: Godot's height fog below the layer's top, seen from above as
+#    white low ground; from inside it, thick distance fog that hides the sky (docs/design/valley_fog.md);
 #  - the ground shader: `wet` (darker, glossier) and `snow` (level ground turns white),
 #    read from the sound stage's ground memory so footsteps and looks agree; grass is
 #    buried when snow lies;
@@ -43,6 +45,21 @@ const AMBIENT_DAY_WARM := Color(0.62, 0.56, 0.44)
 const DAY_SKY_SHARE := 0.75              # share of the day's ambient from the sky (1 before: all sky)
 const AMBIENT_FLOOR := 0.32             # ambient light never drops below this, so a storm night is not pure black
 const AMBIENT_STORM := 0.4               # ambient light left in a full storm (1 clear)
+# Night light (docs/design/art_weather_light.md 6.2 and 12, decided 8 Nov 2026). Never pitch black outdoors, a decided rule:
+# in the open the ambient light never drops below OUTDOOR_FLOOR, whatever the moon, the weather, the tree crowns or a held
+# torch do to it; only rock (caves and tunnels, `under_rock`) takes the light to nothing (#447).
+const OUTDOOR_FLOOR := 0.18
+# Under tree crowns at night the moon and the sky are blocked, so the forest is darker than the open by about half
+# (the share of the crowns over the ground around the camera, from the canopy map, eased so walking between trees does not flicker).
+const CANOPY_NIGHT_DIM := 0.45
+const CANOPY_SAMPLE_M := 6.0             # the crowns are counted at the camera and at eight points this far round it
+const CANOPY_EASE_S := 3.0
+# A held torch or lantern at night: the eyes adapt to the flame, so the night beyond its light looks darker and eyes shine out of it.
+# The design asks for a small exposure drop; it is done as a drop of the moon and sky light instead (the same picture
+# beyond the flame), because the exposure would also dim the torch's own pool of light, which must stay as it is.
+const TORCH_NIGHT_DIM := 0.15
+const TORCH_ADAPT_S := 1.5               # the eyes take to the flame quickly
+const TORCH_UNADAPT_S := 5.0             # and get used to the dark again slowly when it goes out
 const CAVE_LIGHT_DARK := 0.0             # share of the sun and sky light left deep in a cave or tunnel, setting "Dark": none, pitch black without a torch or fire (Dave 5 Nov 2026)
 const CAVE_LIGHT_NORMAL := 0.12          # the same, setting "Normal"
 const CAVE_GO_DARK_S := 1.0              # the light fades out over this long on going in, and back over CAVE_COME_OUT_S
@@ -66,6 +83,15 @@ const BOLT_FROM := 1                     # first quality level that draws the bo
 const TURBULENCE_FROM := 1               # snow drifts sideways from here up
 const BOX_M := 24.0                      # half width of the box the precipitation falls through
 const FLASH_S := 0.9
+# Valley fog (docs/design/valley_fog.md): the weather's `mist` (0..1) and `mist_top_m` (its top above sea level).
+const MIST_HEIGHT_DENSITY := 0.08        # per metre below the top at full mist: 5 m down about a third white, 30 m down nearly solid
+const MIST_EDGE_M := 6.0                 # the camera goes from above the fog to inside it over this much height either side of the top
+const MIST_INSIDE_THICK := 14.0          # inside the layer: the clear-air haze times this more (95% white at about 220 m; fog means under 1 km)
+const MIST_WHITE := Color(0.9, 0.9, 0.9)
+const MIST_WHITEN := 0.55                # how far the fog colour moves from the horizon colour toward white by day
+const MIST_SKY_HIDE := 0.9               # share of the sky the fog hides when you stand deep inside it
+const MIST_OWN_COLOR := 0.8              # the fog keeps its own colour instead of taking the sky's (aerial perspective) by this much
+const MIST_SUN_SCATTER := 0.25           # glow toward the low sun through the fog
 
 # Rain streaks: a streak over a canopy is not drawn (the map is canopy_map.gd).
 const RAIN_SHADER := """
@@ -95,18 +121,20 @@ void fragment() {
 
 # What the sound stage's weather test kinds look like.
 const TEST := {
-	"clear": {"cloud": 0.15, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0},
-	"drizzle": {"cloud": 0.5, "rain": 0.3, "snow": 0.0, "storm": 0.0, "wind": 0.15, "fog": 0.0},
-	"rain": {"cloud": 0.8, "rain": 0.65, "snow": 0.0, "storm": 0.0, "wind": 0.3, "fog": 0.0},
-	"storm": {"cloud": 1.0, "rain": 1.0, "snow": 0.0, "storm": 1.0, "wind": 0.8, "fog": 0.0},
-	"snow": {"cloud": 0.8, "rain": 0.0, "snow": 0.6, "storm": 0.0, "wind": 0.1, "fog": 0.0},
-	"blizzard": {"cloud": 1.0, "rain": 0.0, "snow": 1.0, "storm": 0.7, "wind": 1.0, "fog": 0.0},
-	"fog": {"cloud": 0.5, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.0, "fog": 1.0},
+	"clear": {"cloud": 0.15, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0, "mist": 0.0},
+	"drizzle": {"cloud": 0.5, "rain": 0.3, "snow": 0.0, "storm": 0.0, "wind": 0.15, "fog": 0.0, "mist": 0.0},
+	"rain": {"cloud": 0.8, "rain": 0.65, "snow": 0.0, "storm": 0.0, "wind": 0.3, "fog": 0.0, "mist": 0.0},
+	"storm": {"cloud": 1.0, "rain": 1.0, "snow": 0.0, "storm": 1.0, "wind": 0.8, "fog": 0.0, "mist": 0.0},
+	"snow": {"cloud": 0.8, "rain": 0.0, "snow": 0.6, "storm": 0.0, "wind": 0.1, "fog": 0.0, "mist": 0.0},
+	"blizzard": {"cloud": 1.0, "rain": 0.0, "snow": 1.0, "storm": 0.7, "wind": 1.0, "fog": 0.0, "mist": 0.0},
+	# The fog test is valley fog now (a layer with a top, docs/design/valley_fog.md), not an even haze: thick inside it, clear above it.
+	"fog": {"cloud": 0.1, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.0, "fog": 0.0, "mist": 1.0, "mist_top_m": 90.0},
 }
 
 var _client
 var _quality: int = 2
-var _s: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0}
+var _s: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0, "mist": 0.0, "mist_top_m": 0.0}
+var mist_inside: float = 0.0             # 0 above or out of the valley fog .. 1 the camera is deep inside it (for the HUD and tests)
 var canopy                              # CanopyMap: where trees shelter the ground
 var _rain: GPUParticles3D
 var _rain_material: ShaderMaterial
@@ -123,6 +151,8 @@ var _day_next_msec: int = 0
 var _sky_next_msec: int = 0
 var _cave_factor: float = 1.0           # share of the sun and sky light let in under rock, eased (1 open air)
 var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
+var canopy_night: float = 0.0           # 0 open .. 1 under closed crowns, at night only, eased (CANOPY_NIGHT_DIM)
+var torch_adapt: float = 0.0            # 0 .. 1: the eyes adapted to a held flame at night, eased (TORCH_NIGHT_DIM)
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
@@ -257,7 +287,7 @@ func _make_snow() -> GPUParticles3D:
 
 # The look the weather asks for: the sound stage's test kind when one is selected, else the world.
 func _target() -> Dictionary:
-	var out: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0}
+	var out: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0, "mist": 0.0, "mist_top_m": 0.0}
 
 	if clear_day:
 		return out
@@ -268,7 +298,7 @@ func _target() -> Dictionary:
 	var world: Dictionary = _client.weather
 
 	if not world.is_empty():
-		for key in ["cloud", "rain", "snow", "storm", "wind"]:
+		for key in ["cloud", "rain", "snow", "storm", "wind", "mist", "mist_top_m"]:
 			out[key] = float(world.get(key, 0.0))
 
 	return out
@@ -321,7 +351,13 @@ func _process_body(delta: float) -> void:
 	var target: Dictionary = _target()
 
 	for key in _s:
-		_s[key] = float(target.get(key, 0.0)) if clear_day else move_toward(float(_s[key]), float(target.get(key, 0.0)), delta / EASE_S)
+		if key == "mist_top_m":
+			# A height in metres, not a 0..1 level: it follows the weather directly (the world's value changes smoothly), and it stays
+			# where it was while the fog eases out, so a fading layer thins in place instead of dropping to sea level.
+			if float(target.get("mist", 0.0)) > 0.0 or clear_day:
+				_s[key] = float(target.get(key, 0.0))
+		else:
+			_s[key] = float(target.get(key, 0.0)) if clear_day else move_toward(float(_s[key]), float(target.get(key, 0.0)), delta / EASE_S)
 
 	# Rain and snow only ever fall from clouds.
 	var rain: float = float(_s["rain"])
@@ -355,7 +391,7 @@ func _process_body(delta: float) -> void:
 
 	if LookSettings.DAY_CYCLE and now_msec >= _day_next_msec and _client.get("game_clock") != null:
 		_day_next_msec = now_msec + DAY_STEP_MSEC
-		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year())
+		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year(), float(_client.game_clock.seconds) / 86400.0)
 
 		if _client._sun != null:
 			_client._sun.basis = day.light_basis
@@ -381,7 +417,7 @@ func _process_body(delta: float) -> void:
 			sky_material.set_shader_parameter("sky_horizon_color", day.sky_horizon)
 			sky_material.set_shader_parameter("ground_horizon_color", day.ground_horizon)
 			sky_material.set_shader_parameter("cloud_shadow_color", day.cloud_shadow)
-			sky_material.set_shader_parameter("night", day.night)
+			sky_material.set_shader_parameter("night", day.stars)   # the stars: brighter on a moonless night (day_cycle.gd)
 
 	if sky_material != null:
 		sky_material.set_shader_parameter("coverage", lerpf(0.62, 0.30, cloud_cover))
@@ -396,6 +432,13 @@ func _process_body(delta: float) -> void:
 	_cave_factor = move_toward(_cave_factor, cave_target, delta / (CAVE_GO_DARK_S if cave_target < _cave_factor else CAVE_COME_OUT_S))
 	var under_rock: float = _cave_factor
 	var sun_amount: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
+	# The night light (art_weather_light.md 6.2): crowns overhead and a flame in the hand each take a share of the moon and sky
+	# light, at night only. They are eased, and capped below by OUTDOOR_FLOOR further down.
+	var eye: Vector3 = _client.camera.global_position
+	canopy_night = move_toward(canopy_night, canopy_density(eye.x, eye.z) * day.night, delta / CANOPY_EASE_S)
+	var torch_target: float = day.night if held_flame() else 0.0
+	torch_adapt = move_toward(torch_adapt, torch_target, delta / (TORCH_ADAPT_S if torch_target > torch_adapt else TORCH_UNADAPT_S))
+	var night_keep: float = (1.0 - CANOPY_NIGHT_DIM * canopy_night) * (1.0 - TORCH_NIGHT_DIM * torch_adapt)
 
 	if _client._sun != null:
 		var shadows_wanted: bool = under_rock >= CAVE_SHADOW_OFF and float(_client.QUALITY_SHADOW_M[_client.quality]) > 0.0
@@ -403,30 +446,48 @@ func _process_body(delta: float) -> void:
 		if shadows_wanted != _client._sun.shadow_enabled:
 			_client._sun.shadow_enabled = shadows_wanted
 
-		_client._sun.light_energy = (LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) * day.light_factor + flash_level * 1.2) * under_rock
+		# The moon is shadowed by the crowns themselves (tree shadows), so only the eyes' adaptation to a flame takes from it.
+		var moon_keep: float = 1.0 - TORCH_NIGHT_DIM * torch_adapt
+		_client._sun.light_energy = (LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) * day.light_factor * moon_keep + flash_level * 1.2) * under_rock
 
-	environment.ambient_light_energy = under_rock * (maxf(lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor, lerpf(AMBIENT_FLOOR, AMBIENT_STORM_FLOOR, _dark)) + flash_level * 2.0)
+	var open_air: float = maxf(lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor, lerpf(AMBIENT_FLOOR, AMBIENT_STORM_FLOOR, _dark))
+	# Never pitch black outdoors: the crowns and the flame never take the ambient below OUTDOOR_FLOOR. The same share is taken
+	# from the sky's part of the ambient below, so the two parts stay in step.
+	var keep: float = clampf(maxf(night_keep, OUTDOOR_FLOOR / maxf(open_air, 0.001)), 0.0, 1.0)
+	environment.ambient_light_energy = under_rock * (open_air * keep + flash_level * 2.0)
 	# The sky's own light is near black on a dark night or a storm night, so a cold moonlit blue is mixed in
 	# (ambient colour counts where the sky contribution is below 1): trees and ground stay readable, never pure black.
 	var dim: float = clampf(maxf(day.night, _dark * 0.6), 0.0, 1.0)
 	# Under rock the sky's share goes too (Dave 4 Nov 2026: "its day time and its light in the tunnels even at the very back"). The engine scales only the ambient
 	# colour by ambient_light_energy; the sky's share of the ambient (and the sky reflections) keep the full sky, so by day three quarters of the open-air ambient
 	# still reached the back of a tunnel. The sky's share now fades with the light, and the sky reflections (bright on damp rock and cave pools) go off under rock.
-	sky_under_rock(environment, lerpf(DAY_SKY_SHARE, 0.3, dim), under_rock)   # night 0.3 as before
+	sky_under_rock(environment, lerpf(DAY_SKY_SHARE, 0.3, dim) * keep, under_rock)   # night 0.3 as before, less under crowns or by a flame
 	environment.ambient_light_color = AMBIENT_DAY_WARM.lerp(AMBIENT_NIGHT_COLOR, dim)
 	# The whole picture goes dimmer and greyer with the weather.
 	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
 	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark)
 
 	if not _client.underwater:
-		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
+		var mist: float = 0.0 if clear_day else float(_s["mist"])
+		var mist_top: float = float(_s["mist_top_m"])
+		mist_inside = mist * smoothstep(-MIST_EDGE_M, MIST_EDGE_M, mist_top - _client.camera.global_position.y) * under_rock
+		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"]) + MIST_INSIDE_THICK * mist_inside
 		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0)
 		# The fog is sky-coloured haze: under rock it must go dark with the light, or a long tunnel glows (pitch black means black).
+		# Valley fog is whiter than the haze: lit by the sky and the sun (white by day, warm at sunrise from the dusk horizon colour,
+		# blue-grey at night from the night horizon), never a flat grey card (art_weather_light.md section 7 rule 2).
 		var fog_tint: Color = _graded(day.sky_horizon, gloom)
+		fog_tint = fog_tint.lerp(fog_tint.lerp(MIST_WHITE, MIST_WHITEN * (1.0 - day.night)), mist)
 		environment.fog_light_color = Color(fog_tint.r * under_rock, fog_tint.g * under_rock, fog_tint.b * under_rock, fog_tint.a)
-		environment.fog_sky_affect = 0.0
-		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL * under_rock
-		environment.fog_height_density = 0.0
+		# Inside the fog the sky is hidden too; above it the sky stays clear.
+		environment.fog_sky_affect = MIST_SKY_HIDE * mist_inside
+		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL * under_rock * (1.0 - MIST_OWN_COLOR * mist)
+		environment.fog_sun_scatter = MIST_SUN_SCATTER * mist * (1.0 - day.night)
+		# Fog has a top (rule 1): Godot's height fog thickens below fog_height and is nothing above it. Seen from above, the low
+		# ground fills white with a soft top. Inside the layer the height fog steps aside (it would whiten the ground at your feet
+		# as much as the far valley) and the distance fog above carries it. Under rock it goes, like the light.
+		environment.fog_height = mist_top
+		environment.fog_height_density = MIST_HEIGHT_DENSITY * mist * (1.0 - mist_inside) * under_rock
 	else:
 		_underwater_fog(environment, 1.0 - day.night, cloud_cover)
 
@@ -446,6 +507,8 @@ const UNDER_NIGHT_COLOR := Color(0.01, 0.03, 0.05)
 
 
 func _underwater_fog(environment: Environment, daylight: float, cover: float) -> void:
+	environment.fog_sun_scatter = 0.0
+	mist_inside = 0.0
 	var lit: float = clampf(daylight, 0.0, 1.0) * lerpf(1.0, 0.55, cover)
 	environment.fog_density = UNDER_FOG_DENSITY
 	var color: Color = UNDER_NIGHT_COLOR.lerp(UNDER_DAY_COLOR, lit)
@@ -614,6 +677,26 @@ static func _ribbon(vertices: PackedVector3Array, indices: PackedInt32Array, poi
 		var first: int = vertices.size()
 		vertices.append_array([a - side, a + side, b + side, b - side])
 		indices.append_array([first, first + 1, first + 2, first, first + 2, first + 3])
+
+
+# How much of the ground around a point is under crowns (or roofs), 0 open .. 1 closed: the canopy map at the point and at
+# eight points CANOPY_SAMPLE_M round it, averaged, so one crown overhead in a meadow counts for little and a forest for all.
+func canopy_density(x: float, z: float) -> float:
+	if canopy == null:
+		return 0.0
+
+	var total: float = canopy.cover_at(x, z)
+
+	for i in 8:
+		var a: float = TAU * float(i) / 8.0
+		total += canopy.cover_at(x + cos(a) * CANOPY_SAMPLE_M, z + sin(a) * CANOPY_SAMPLE_M)
+
+	return total / 9.0
+
+
+# True while a burning torch or lantern is held in either hand (the flame sounds already track it, held_item.gd).
+func held_flame() -> bool:
+	return _client.sound != null and _client.sound.flame != null and str(_client.sound.flame.held) != ""
 
 
 # The shared cover query (canopy only so far): 0 in the open, 1 under a tree's crown; for sound,
