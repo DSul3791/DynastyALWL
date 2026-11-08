@@ -110,6 +110,8 @@ func spawn(sp: String, x: float, z: float) -> int:
 
 	if def.has("flock") and not bool(def["flock"].get("on_land", false)) and water_level.is_valid():
 		y = float(water_level.call(x, z))   # a flock sits on the surface (a land flock, such as gulls on a beach, stands on the ground)
+	elif swims(def):
+		y = swim_height(def, x, z)   # a swimmer put down in water rides the surface
 
 	if is_nan(y):
 		return 0
@@ -968,7 +970,18 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.
 		a["burst"] += dt
 		speed = float(def.get("flee_mps", 7.5)) * (1.0 if a["burst"] <= float(def.get("burst_s", 3.0)) else float(def.get("trot_share", 0.5)))
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"], crossing)
+	var ground_for: Callable = ground_height
+	var blocked_for: Callable = blocked
+
+	if swims(def):
+		# A swimmer goes into deep water (nothing blocks it) and rides the surface there; in water it moves at swim_mps.
+		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
+		blocked_for = Callable()
+
+		if in_water(def, a["pos"]):
+			speed = float(def["water"].get("swim_mps", speed)) * (1.0 if a["state"] == FLEE else 0.4)      # cruising slowly, bolting at full speed
+
+	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -1298,6 +1311,31 @@ func biome_weight(def: Dictionary, x: float, z: float) -> float:
 	return float((def["biomes"] as Dictionary).get(str(biome_at.call(x, z)), 0.0))
 
 
+# Swimmers (a row's "water": {"swim": true, ...}; docs/design/ALLIGATOR_SWIMMING.md, Dave 8 Nov 2026): they cross and stay in water
+# no other animal enters, riding the surface surface_sink_m low, and live on the bank within bank_m of fresh water.
+func swims(def: Dictionary) -> bool:
+	return def.get("water", null) is Dictionary and bool(def["water"].get("swim", false))
+
+
+# Whether a spot is water a swimmer is in (a water surface there).
+func in_water(_def: Dictionary, pos: Vector3) -> bool:
+	return water_level.is_valid() and not is_nan(float(water_level.call(pos.x, pos.z)))
+
+
+# The height a swimmer stands at: on water its surface less surface_sink_m, on land the ground.
+func swim_height(def: Dictionary, x: float, z: float) -> float:
+	var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+
+	var ground: float = float(ground_height.call(x, z)) if ground_height.is_valid() else NAN
+
+	if not is_nan(level):
+		# It sinks to surface_sink_m only where the water is that deep, so wading in from the bank is a smooth slope.
+		var depth: float = level - ground if not is_nan(ground) else 99.0
+		return level - minf(float(def["water"].get("surface_sink_m", 0.25)), maxf(depth, 0.0))
+
+	return ground if not is_nan(ground) else 0.0
+
+
 # Optional habitat keys from the guiding document (docs/design/GUIDING_DOCUMENT.md section 5, 7 Nov 2026) are accepted in a
 # row's "habitat" and not used yet, so data can be written ahead of the terrain that answers them (R6): altitude_m [min, max],
 # slope_deg [min, max], rock, water_kind, cave, canopy, sea_depth_m [min, max], sky, lair, season. A row with them spawns and
@@ -1316,6 +1354,18 @@ func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> flo
 			return -1.0   # ducks keep to rivers and lakes, not the open sea
 
 		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
+
+	if swims(def):
+		# A swimmer lives in fresh water and on the bank within water.bank_m of it (the alligator, Dave 8 Nov 2026).
+		var level_here: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+
+		if biome_at.is_valid() and str(biome_at.call(x, z)) == "ocean":
+			return -1.0
+
+		if not is_nan(level_here):
+			return 2.0
+
+		return 1.0 if _fresh_near(x, z, float(def["water"].get("bank_m", 6.0))) else -1.0
 
 	if hab.is_empty() or not ground_height.is_valid():
 		return 1.0

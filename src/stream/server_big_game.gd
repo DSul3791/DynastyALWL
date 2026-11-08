@@ -97,7 +97,15 @@ func step(a: Dictionary, dt: float) -> void:
 			a["dir"] = float(a["dir"]) + turn
 
 		var goal: Vector3 = a["pos"] + Vector3(cos(float(a["dir"])), 0.0, sin(float(a["dir"]))) * step_m * 2.0
-		var r: Dictionary = Steering.step(a["pos"], goal, speed, dt, host.ground_height, host.blocked, 0.05, float(a["dir"]), host.crossing)
+		var species: Dictionary = host.species_def(str(a["sp"]))
+		var ground_for: Callable = host.ground_height
+		var blocked_for: Callable = host.blocked
+
+		if host.swims(species):      # a swimmer (the alligator) charges through water and out onto the bank
+			ground_for = func(x: float, z: float) -> float: return host.swim_height(species, x, z)
+			blocked_for = Callable()
+
+		var r: Dictionary = Steering.step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), host.crossing)
 		a["heading"] = float(a["dir"])
 
 		if r["moved"]:
