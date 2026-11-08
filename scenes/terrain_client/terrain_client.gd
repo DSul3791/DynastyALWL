@@ -512,8 +512,8 @@ var _in_generation: int = 0           # raised when the plants are dropped (a ba
 var under_cover: float = 0.0          # 1 under a tree's canopy, else 0 (Cover.at at the player, once a second)
 var weather: Dictionary = {}          # the weather here and now (WeatherScript.state): the same on every client, no network traffic; rendering and sounds read it
 var _weather_next_msec: int = 0
-var world_wind_dir: float = 0.0       # the world's wind heading before the ground here bends it (Weather.state; = weather's with --wind-dir off)
-var wind_here: Dictionary = {}        # --wind-dir: what the ground round the viewer does to the wind (Weather.local_wind's `here`), every 2 s
+var world_wind_dir: float = 0.0       # the world's wind heading before the ground here bends it (Weather.state)
+var wind_here: Dictionary = {}        # what the ground round the viewer does to the wind (Weather.local_wind's `here`), every 2 s
 var _wind_here_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
@@ -6142,8 +6142,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	if not weather.is_empty():
 		text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C, %s" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"], "under cover" if under_cover > 0.0 else "open"]
 
-		if WeatherScript.wind_dir_on:
-			text += "\n" + wind_line(weather)
+		text += "\n" + wind_line(weather)
 
 	var win: Vector2i = get_window().size
 	@warning_ignore("static_called_on_instance")
@@ -6514,9 +6513,9 @@ func _rock_over(p: Vector3, surface: float) -> bool:
 
 
 # The wind where the viewer stands (docs/design/prevailing_wind.md section 3): Weather.local_wind on `state` with the ground measured
-# round the viewer. --wind-dir only; off, `state` as it is. The shot runner calls it on its forced weather too.
+# round the viewer. The shot runner calls it on its forced weather too.
 func wind_onto(state: Dictionary) -> Dictionary:
-	if not WeatherScript.wind_dir_on or body == null or not body.is_inside_tree():
+	if body == null or not body.is_inside_tree():
 		return state
 
 	_measure_wind_here(float(state.get("wind_dir", 0.0)))
@@ -6600,7 +6599,7 @@ func _ground_column(x: float, z: float, near_y: float) -> float:
 	return float(hit["position"].y) if not hit.is_empty() else NAN
 
 
-# One line on the wind here, for F3 and the shot runner's log (--wind-dir).
+# One line on the wind here, for F3 and the shot runner's log.
 func wind_line(state: Dictionary) -> String:
 	var down: Vector2 = wind_here.get("downhill", Vector2.ZERO)
 	return "wind: from %03d deg (world from %03d), %.1f m/s, gust x%.2f | slope %.2f downhill toward %03d, slope breeze %+.1f m/s | sea upwind %.2f, sea breeze %+.1f m/s | lee %.2f, canopy %.1f" % [

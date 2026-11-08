@@ -1,8 +1,8 @@
 extends SceneTree
 
-# Prevailing wind checks (docs/design/prevailing_wind.md): the switch-off heading is unchanged, the starter island's rose follows
-# Jamie's #714, the wind veers ahead of a front and backs after it (57 S), the heading never jumps, and the local wind (coast,
-# lee, canopy, slope and sea breezes) does what the design note says.
+# Prevailing wind checks (docs/design/prevailing_wind.md): the starter island's months follow Jamie's 34 S rose (#773: a summer
+# south-easter, winter westerlies, a mixed spring), the wind veers ahead of a front and backs after it, the heading never jumps,
+# and the local wind (coast, lee, canopy, gusts, slope and sea breezes) does what the design note says.
 #   godot --headless --path . --script res://src/worldgen/tools/test_wind_dir.gd
 
 const Weather := preload("res://src/shared/weather.gd")
@@ -19,36 +19,17 @@ func check(ok: bool, what: String) -> void:
 
 
 func _init() -> void:
-	_switch_off()
-	Weather.wind_dir_on = true
 	_bearings()
-	_rose(WORLD_SEED)
-	_rose(777)
+	_months(WORLD_SEED)
+	_months(777)
 	_smooth()
 	_fronts()
 	_front_days()
 	_local()
 	_slope_hours()
 	_sea_breeze()
-	Weather.wind_dir_on = false
 	print("test_wind_dir: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
-
-
-# Off: wind_dir is exactly the old heading, and local_wind hands the state back untouched.
-func _switch_off() -> void:
-	Weather.wind_dir_on = false
-	var worst: float = 0.0
-
-	for h in range(0, 24 * 30):
-		var t: float = float(h) * 3600.0 + 1234.0
-		var w: Dictionary = Weather.state(WORLD_SEED, t, "temperate")
-		var old: float = TAU * Weather._noise(WORLD_SEED, 4, t / (20.0 * 3600.0)) + 0.8 * float(w["storm"]) * (Weather._noise(WORLD_SEED, 5, t / (2.0 * 3600.0)) - 0.5)
-		worst = maxf(worst, absf(float(w["wind_dir"]) - old))
-
-	check(worst < 1e-6, "switch off: wind_dir unchanged (worst %.2e rad)" % worst)
-	var w0: Dictionary = Weather.state(WORLD_SEED, 5000.0, "temperate")
-	check(Weather.local_wind(w0, {"grade": 0.3, "downhill": Vector2(1, 0), "sea_upwind": 1.0, "lee": 1.0}, 5000.0) == w0, "switch off: local_wind returns the state as it is")
 
 
 # Bearings: from W the wind blows toward east, +x (heading 0); Jamie's #714 form atan2(cos B, -sin B) agrees for every bearing.
@@ -66,31 +47,42 @@ func _bearings() -> void:
 	check(worst < 1e-4, "bearing and heading agree with Jamie's form and each other (worst %.2e rad)" % worst)
 
 
-# The year's rose on the starter island, hourly (Jamie #714: W and NW 52 %, mean 300 to 320, constancy 0.5 to 0.7, 55 to 65 %
-# within 45 degrees of WNW). The model gives about 55 %, mean 293, constancy 0.55; the bands leave room either side.
-func _rose(seed_value: int) -> void:
+# The starter island's months, hourly over three game years (34 S page section 1; the numbers a Python copy gave are in weather.gd):
+# local summer blows from the south-east side, local winter from the west, and Spring 1 is mixed.
+func _months(seed_value: int) -> void:
+	var summer: Dictionary = _month_rose(seed_value, [3, 4])
+	var winter: Dictionary = _month_rose(seed_value, [9, 10])
+	var spring: Dictionary = _month_rose(seed_value, [0])
+	var s: Array = summer["share"]
+	var w: Array = winter["share"]
+	print("seed %d: Summer 1-2 from %.0f (E %.0f SE %.0f S %.0f W %.0f NW %.0f %%), Winter 1-2 from %.0f (SW %.0f W %.0f NW %.0f E %.0f SE %.0f %%), Spring 1 constancy %.2f" % [seed_value, summer["mean"], 100.0 * s[2], 100.0 * s[3], 100.0 * s[4], 100.0 * s[6], 100.0 * s[7], winter["mean"], 100.0 * w[5], 100.0 * w[6], 100.0 * w[7], 100.0 * w[2], 100.0 * w[3], spring["steady"]])
+	check(summer["mean"] > 125.0 and summer["mean"] < 170.0, "seed %d: local summer blows from the south-east (from %.0f; the page 141)" % [seed_value, summer["mean"]])
+	check(s[2] + s[3] + s[4] >= 0.6 and s[6] + s[7] <= 0.25, "seed %d: a summer south-easter, not a westerly" % seed_value)
+	check(winter["mean"] > 255.0 and winter["mean"] < 295.0, "seed %d: local winter blows from the west (from %.0f; the page 279)" % [seed_value, winter["mean"]])
+	check(w[5] + w[6] + w[7] >= 0.55 and w[2] + w[3] <= 0.15, "seed %d: winter westerlies, not a south-easter" % seed_value)
+	check(spring["steady"] < 0.4, "seed %d: Spring 1 is mixed (constancy %.2f; the page 0.28)" % [seed_value, spring["steady"]])
+
+
+# The sector shares (N, NE .. NW), the vector mean bearing and the constancy over the given game months (0 = Spring 1) of three years.
+func _month_rose(seed_value: int, months: Array) -> Dictionary:
 	var sectors: Array = [0, 0, 0, 0, 0, 0, 0, 0]
 	var sum: Vector2 = Vector2.ZERO
-	var near_wnw: int = 0
-	var n: int = 365 * 24
+	var n: int = 0
 
-	for h in range(n):
-		var bearing: float = Weather.prevailing_from_deg(seed_value, float(h) * 3600.0, "temperate")
-		sectors[int(fposmod(bearing + 22.5, 360.0) / 45.0) % 8] += 1
-		sum += Vector2(sin(deg_to_rad(bearing)), cos(deg_to_rad(bearing)))
-		near_wnw += 1 if absf(angle_difference(deg_to_rad(bearing), deg_to_rad(300.0))) <= deg_to_rad(45.0) else 0
+	for year in range(3):
+		for month in months:
+			for h in range(int(float(month) * 365.0 / 12.0 * 24.0), int(float(month + 1) * 365.0 / 12.0 * 24.0)):
+				var bearing: float = Weather.prevailing_from_deg(seed_value, float(year * 365 * 24 + h) * 3600.0, "temperate")
+				sectors[int(fposmod(bearing + 22.5, 360.0) / 45.0) % 8] += 1
+				sum += Vector2(sin(deg_to_rad(bearing)), cos(deg_to_rad(bearing)))
+				n += 1
 
-	var share: Callable = func(i: int) -> float: return float(sectors[i]) / float(n)
-	var mean: float = fposmod(rad_to_deg(atan2(sum.x, sum.y)), 360.0)
-	var steady: float = sum.length() / float(n)
-	var within: float = float(near_wnw) / float(n)
-	print("rose seed %d: N %.0f NE %.0f E %.0f SE %.0f S %.0f SW %.0f W %.0f NW %.0f %%, mean from %.0f, constancy %.2f, %.0f %% within 45 of WNW" % [seed_value, 100.0 * share.call(0), 100.0 * share.call(1), 100.0 * share.call(2), 100.0 * share.call(3), 100.0 * share.call(4), 100.0 * share.call(5), 100.0 * share.call(6), 100.0 * share.call(7), mean, steady, 100.0 * within])
-	check(share.call(6) + share.call(7) > 0.45, "seed %d: W and NW over 45 %% of the year" % seed_value)
-	check(share.call(1) + share.call(2) + share.call(3) < 0.15, "seed %d: the east side (NE, E, SE) under 15 %%" % seed_value)
-	check(share.call(2) + share.call(3) > 0.02, "seed %d: some easterly or south-easterly spells (blocked)" % seed_value)
-	check(mean > 280.0 and mean < 320.0, "seed %d: mean from %.0f, between 280 and 320" % [seed_value, mean])
-	check(steady > 0.45 and steady < 0.7, "seed %d: constancy %.2f, 0.45 to 0.7" % [seed_value, steady])
-	check(within > 0.5 and within < 0.7, "seed %d: %.2f of the time within 45 degrees of WNW" % [seed_value, within])
+	var share: Array = []
+
+	for count in sectors:
+		share.append(float(count) / float(n))
+
+	return {"share": share, "mean": fposmod(rad_to_deg(atan2(sum.x, sum.y)), 360.0), "steady": sum.length() / float(n)}
 
 
 # The heading never jumps: no wrap from 2 pi to 0, under 60 degrees in 10 game minutes even through a front's sharp back (about 40).
@@ -129,25 +121,25 @@ func _fronts() -> void:
 	var back: float = going[0] / maxf(float(going[1]), 1.0)
 	print("fronts: as rain comes on the wind has turned %+.0f degrees on average (%d hours); as it eases %+.0f (%d hours)" % [veer, coming[1], back, going[1]])
 	check(coming[1] > 50 and going[1] > 50, "fronts: enough wet spells in a year")
-	check(veer > 10.0, "fronts: veered (clockwise) as the rain comes on, 57 S")
+	check(veer > 10.0, "fronts: veered (clockwise) as the rain comes on, the southern rule")
 	check(back < -20.0, "fronts: backed (anticlockwise) as it eases")
 
 
-# The front of the pictures (prevailing_wind.md section 6), base world, days 107 and 108: rain from about 21:00 on a veered WNW
-# wind; the back to SSW with the wind's peak about 05:00 to 07:00. A Python copy of the noise gave these numbers.
+# A winter front on the base world (a Python copy of weather.gd gave these): day 281 21:00 in the westerlies the wind has veered
+# right round to the north-north-east (from about 34); by day 282 04:00 the cold front has passed and it has backed to the
+# west-south-west (about 248), the squall at its peak.
 func _front_days() -> void:
 	var day: float = 86400.0
-	var before: Dictionary = Weather.state(WORLD_SEED, 107.0 * day + 22.0 * 3600.0, "temperate")
-	var before_from: float = Weather.prevailing_from_deg(WORLD_SEED, 107.0 * day + 22.0 * 3600.0, "temperate")
-	var after: Dictionary = Weather.state(WORLD_SEED, 108.0 * day + 7.0 * 3600.0, "temperate")
-	var after_from: float = Weather.prevailing_from_deg(WORLD_SEED, 108.0 * day + 7.0 * 3600.0, "temperate")
-	var noon_109: float = Weather.prevailing_from_deg(WORLD_SEED, 109.0 * day + 12.0 * 3600.0, "temperate")
-	print("day 107 22:00 from %.0f rain %.2f; day 108 07:00 from %.0f rain %.2f wind %.2f; day 109 12:00 from %.0f" % [before_from, float(before["rain"]), after_from, float(after["rain"]), float(after["wind"]), noon_109])
-	check(float(before["rain"]) > 0.2 and before_from > 285.0 and before_from < 312.0, "day 107 22:00: raining on a veered WNW wind (from %.0f, about 298)" % before_from)
-	check(Weather.front_turn_deg(WORLD_SEED, 107.0 * day + 22.0 * 3600.0, "temperate") > 20.0, "day 107 22:00: veered")
-	check(after_from > 180.0 and after_from < 215.0, "day 108 07:00: backed to SSW (from %.0f, about 194)" % after_from)
-	check(float(after["rain"]) > 0.2 and float(after["wind"]) > 0.5, "day 108 07:00: still raining, and windier")
-	check(noon_109 > 270.0 and noon_109 < 295.0, "day 109 12:00: from the west-north-west (%.0f, about 283)" % noon_109)
+	var ahead: float = 281.0 * day + 21.0 * 3600.0
+	var behind: float = 282.0 * day + 4.0 * 3600.0
+	var ahead_from: float = Weather.prevailing_from_deg(WORLD_SEED, ahead, "temperate")
+	var behind_from: float = Weather.prevailing_from_deg(WORLD_SEED, behind, "temperate")
+	print("day 281 21:00 from %.0f, turn %+.0f; day 282 04:00 from %.0f, turn %+.0f, squall %.2f" % [ahead_from, Weather.front_turn_deg(WORLD_SEED, ahead, "temperate"), behind_from, Weather.front_turn_deg(WORLD_SEED, behind, "temperate"), Weather.front_squall(WORLD_SEED, behind, "temperate")])
+	check(Weather.westerly_spell(WORLD_SEED, ahead, "temperate") == 1.0 and Weather.westerly_spell(WORLD_SEED, behind, "temperate") == 1.0, "days 281 and 282: a westerly spell")
+	check(Weather.front_turn_deg(WORLD_SEED, ahead, "temperate") > 50.0 and (ahead_from > 15.0 and ahead_from < 50.0), "day 281 21:00: veered to the north-north-east ahead of the front (from %.0f, about 34)" % ahead_from)
+	check(Weather.front_turn_deg(WORLD_SEED, behind, "temperate") < -75.0 and behind_from > 230.0 and behind_from < 265.0, "day 282 04:00: backed to the west-south-west behind it (from %.0f, about 248)" % behind_from)
+	check(Weather.front_squall(WORLD_SEED, behind, "temperate") > 0.85, "and the squall is at its peak")
+	check(float(Weather.state(WORLD_SEED, behind, "temperate")["wind_squall"]) == Weather.front_squall(WORLD_SEED, behind, "temperate"), "the state carries the squall")
 
 
 # Coast, lee and canopy, on a breezy noon (no slope or sea breeze: the world's wind is over 6 m/s).
@@ -161,6 +153,9 @@ func _local() -> void:
 	var trees: Dictionary = Weather.local_wind(w, {"canopy": 1.0}, t)
 	check(absf(float(coast["wind_mps"]) - base) < 0.01 and absf(float(inland["wind_mps"]) - 0.85 * base) < 0.01, "coast keeps the wind, inland 0.85 of it")
 	check(float(coast["wind_gust"]) < float(inland["wind_gust"]), "the coast is steadier (gust x%.2f against x%.2f)" % [float(coast["wind_gust"]), float(inland["wind_gust"])])
+	check(is_equal_approx(float(coast["wind_gust"]), 1.4) and is_equal_approx(float(inland["wind_gust"]), 1.7) and is_equal_approx(float(trees["wind_gust"]), 2.5), "gust factors: open sea 1.4, inland 1.7, under trees 2.5 (34 S page section 4)")
+	var squall: Dictionary = Weather.local_wind({"wind": 1.0, "wind_dir": 0.3, "cloud": 0.9, "sun": 0.1, "wind_squall": 1.0}, {"sea_upwind": 1.0}, t)
+	check(is_equal_approx(float(squall["wind_gust"]), 2.0) and float(squall["wind_gust_mps"]) > 39.0 and float(squall["wind"]) <= 1.0, "a squall over a 20 m/s gale: gusts x2.0, 40 m/s in m/s, the mean still capped at 1")
 	check(absf(float(lee["wind_mps"]) - 0.35 * 0.85 * base) < 0.01, "a crest's lee keeps 0.35")
 	check(absf(float(trees["wind_mps"]) - 0.2 * 0.85 * base) < 0.01, "under the canopy 0.2")
 	check(absf(float(inland["wind_dir"]) - 0.3) < 1e-4 and float(inland["wind_base_dir"]) == 0.3, "no breeze: the heading is the world's")

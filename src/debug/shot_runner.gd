@@ -26,7 +26,6 @@ extends Node
 const Net := preload("res://src/stream/terrain_net.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 const ItemCam := preload("res://src/debug/item_cam.gd")
-const WeatherMath := preload("res://src/shared/weather.gd")
 
 var client = null
 var shots: Array = []
@@ -303,10 +302,10 @@ func _process(delta: float) -> void:
 			"mist": client.weather = MIST.duplicate()
 			"seafog": client.weather = SEAFOG.duplicate()
 
-		# --wind-dir (docs/design/prevailing_wind.md): a forced weather keeps its rain and cloud but takes the world's wind heading
-		# for that hour, then the ground here bends it, as in play. Off, the presets keep their fixed heading. Any other weather
-		# name ("live") keeps the world's weather, already bent by the client.
-		if WeatherMath.wind_dir_on and _weather in ["storm", "rain", "snow", "clear", "mist"]:
+		# Prevailing wind (docs/design/prevailing_wind.md): a forced weather keeps its rain and cloud but takes the world's wind heading
+		# for that hour, then the ground here bends it, as in play. Any other weather name ("live") keeps the world's weather, already
+		# bent by the client.
+		if _weather in ["storm", "rain", "snow", "clear", "mist"]:
 			client.weather["wind_dir"] = client.world_wind_dir
 			client.weather = client.wind_onto(client.weather)
 
@@ -646,8 +645,7 @@ func _process(delta: float) -> void:
 
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
 
-	if WeatherMath.wind_dir_on:
-		print("shot runner: " + client.wind_line(client.weather))
+	print("shot runner: " + client.wind_line(client.weather))
 
 	# Ground guard (warning only): the voxel ground reading is flaky while a spot is still loading (31.0, then 15.0, then 63.0 at one spot in a test), so the camera is never moved
 	# for it; but a camera inside solid ground, no floor under it, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
