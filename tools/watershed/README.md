@@ -7,7 +7,7 @@ Everything here runs offline on Dave's PC (Dino), never in the cloud. Each stage
 | step | script | writes |
 |---|---|---|
 | R1, stage A (inputs) | `inputs.py` | `inputs.npz`, `inputs.png`, `inputs_manifest.json` |
-| R2, stage B (landscape evolution) | to come | |
+| R2, stage B (landscape evolution) | `evolve.py` | `ground.npz`, `evolve.png`, `evolve_manifest.json` |
 | R3 to R5, stage C (hydrology) | to come | |
 | R6, stage D (island water record) | to come | |
 
@@ -26,3 +26,43 @@ Check `inputs.png` against these:
 - the uplift is highest under the mountains, zero at sea, and smooth: no blobs or other pattern at hill scale;
 - the rain is heavier on windward slopes, with a rain shadow behind the high ground, and its peak is near the calibration peak in params.json (about 4,100 mm/yr), not several times it;
 - the rock map shows the provinces, with soluble rock (limestone, marble, chalk) outlined.
+
+## R2: landscape evolution (the final ground)
+
+`python tools/watershed/evolve.py INPUTS_DIR GEOLOGY_DIR OUT_DIR`, where INPUTS_DIR is R1's output and GEOLOGY_DIR is the same 16 m geology export.
+
+The run starts from the landform and uses:
+- the uplift (stage A2), the rock (A3) and the rain (A4);
+- stream power with deposition, solved implicitly;
+- the quick runoff of the one water budget (`runoff.py`: rain minus evaporation, times the rock's quick share), so chalk, limestone and dry slopes cut less;
+- channels that begin by the slope-area rule (steeper and wetter hollows need less water; `channel_head`, from measured source areas, with at least `min_area_m2` of drainage) and then run on downstream;
+- loose cover over the rock: a river cuts through the cover at the cover's rate and the rest of the step at the rock's rate, so a thin cover never lets hard rock wear like soft;
+- an incision threshold: bedrock channels cut only where Q^m S passes `incision_threshold_m` (none in loose cover);
+- threshold hillslopes: no cell stands steeper than its threshold above its receiver or any other ground (the limit is a true round cone within each rock, carried from cell to cell each step, so a wall beside a slot comes down along its whole height and faces are not cut into eight-sided facets), set by rock (`threshold_slope_deg_by_rock`: hard rock holds steeper walls) and `threshold_slope_deg` under loose cover; landslide debris joins the sediment;
+- flow paths that follow the true downhill direction (`flow_paths`, D8-LTD): one receiver per cell, chosen between the two neighbours beside the steepest facet so the path's sideways drift stays small, so smooth faces are not combed along the compass;
+- a rough start (`start_roughness`): the landform plus roughness with the spectrum of real ground (mean slope 0.1, 48 m to 1.5 km), so flow lines find each other and valleys branch instead of combing the flanks in parallel lines; the summary's `start_roughness` gives its size;
+- soil creep.
+
+It writes:
+- the final ground;
+- quick-runoff area, drainage area, receivers and the channel map;
+- the water budget fields (evaporation, quick runoff, recharge) for R3 and R4;
+- the hollows left (pit depth);
+- the sediment thickness (floodplains, fans, deltas);
+- a picture and a manifest.
+
+With `uplift_share` 0 (the default since 8 Nov) the run dissects the landform as it stands, with no uplift, and writes a snapshot at each of `snapshot_years` to `OUT_DIR/t<kyr>k` (each with its own ground.npz, summary and picture), so the run length can be chosen from one run. The final ground is in OUT_DIR itself.
+
+To calibrate the uplift from a finished run (only for runs with uplift), add `--calibrate=PREV_RUN_DIR`: the uplift is scaled by the landform over that run's ground, both smoothed at `uplift.smooth_m`, so the massifs end at the landform's heights. The summary then reports `uplift_calibration` and `massif_scale_height_mismatch_m` (near 0 is right).
+
+`python tools/watershed/plots.py ground RUN_DIR` redraws `evolve.png` from a saved run in seconds. RUN_DIR is the run's output folder, the one holding `ground.npz`. `python tools/watershed/plots.py zoom RUN_DIR X Z [SIZE_M]` draws a close look at full resolution (`zoom_X_Z.png`, a 6 km square by default, world metres), to tell branching valleys from straight parallel gullies.
+
+Check `evolve.png` and the summary for:
+- branching valleys everywhere, with hills between them;
+- sediment on the valley floors and at the coast;
+- few closed hollows: a long river era fills them, and lakes come from named causes in R2b and R3, not from leftovers. The summary's `hollows` says whether each is held by a sediment sill (a fan or floodplain laid across a valley, a real cause) or by rock, and lists the ten deepest in world metres; the picture marks them red;
+- a drainage density near measured ones (`drainage_density_km_per_km2`; Tennessee Valley, at 760 mm of rain, is 7.3 km/km²), higher on wet steep ground and low on chalk, and no rock where nearly every cell is a channel;
+- hard rock wearing least: in `cut_by_start_rock_m`, granite and basalt show the smallest mean and 99th-percentile cut, and soft rock (shale, chalk, tuff) the largest;
+- no slopes above the threshold angle (`max_slope_deg`, `share_of_land_steeper_than_deg`), and `share_of_land_near_threshold` small: a large share would mean the uplift is too fast for the rock, so landslides, not rivers, set the form;
+- a summit near the landform's and tall peaks kept: `land_height_percentiles_m` close to `landform_height_percentiles_m` at 99 and 99.9, and `local_relief_2km_on_high_ground_m` above the landform's (valleys cut deep between the peaks); with uplift, `last_tenth_summit_change_m_per_kyr` near zero (steady state);
+- fewer channels (lower drainage density in the summary) on chalk and on the dry lee slopes than on the wet west flanks.

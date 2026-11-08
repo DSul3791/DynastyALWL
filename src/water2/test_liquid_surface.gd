@@ -68,7 +68,8 @@ func _check_blend_band() -> void:
 		var a: String = _shader_part(LiquidSurface.SHADER, part)
 		_check(a != "" and a == _shader_part(WaterMaterial.SHADER, part), "%s...) is the same text in liquid_surface.gd and water_material.gd" % part)
 
-	for line in ["uniform float blend_m = 24.0;", "uniform float blend_wander_m = 12.0;"]:
+	# The band's width and wander are uniforms in both shaders and must be the same numbers (#465 widened it to 64 and 24 in liquid_surface.gd only).
+	for line in ["uniform float blend_m = 64.0;", "uniform float blend_wander_m = 24.0;"]:
 		_check(LiquidSurface.SHADER.contains(line) and WaterMaterial.SHADER.contains(line), "both shaders: " + line)
 
 	_check(not LiquidSurface.SHADER.contains("< hole.z - hole_inset"), "a chunk sheet no longer stops on a straight line one cell into the window")
