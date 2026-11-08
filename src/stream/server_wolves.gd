@@ -361,10 +361,11 @@ func _snow_x(key: String) -> float:
 
 
 func _walk(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) -> bool:
-	var host_blocked: Callable = host.blocked
+	var host_blocked: Callable = host.ice_blocked(host.blocked, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.blocked   # ice that holds a wolf is ground (animals_on_ice_server.md)
+	var ground: Callable = host.ice_ground(host.ground_height, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.ground_height
 	var me = self
 	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.lit(x, z, infos)
-	var r: Dictionary = Steering.step(m["pos"], goal, speed, dt, host.ground_height, shy, 0.5, m["heading"], host.crossing)
+	var r: Dictionary = Steering.step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
 
 	if r["moved"]:
@@ -908,10 +909,11 @@ func fire_lit(x: float, z: float, infos: Array) -> bool:
 
 
 func _walk_den(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) -> void:
-	var host_blocked: Callable = host.blocked
+	var host_blocked: Callable = host.ice_blocked(host.blocked, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.blocked
+	var ground: Callable = host.ice_ground(host.ground_height, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.ground_height
 	var me = self
 	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.fire_lit(x, z, infos)
-	var r: Dictionary = Steering.step(m["pos"], goal, speed, dt, host.ground_height, shy, 0.5, m["heading"], host.crossing)
+	var r: Dictionary = Steering.step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
 
 	if r["moved"]:

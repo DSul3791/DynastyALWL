@@ -31,6 +31,10 @@ var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
 var ground_height: Callable        # (x, z) -> height
 var blocked: Callable              # (x, z) -> bool (deep water)
+var ice_cover_at: Callable         # (Vector3) -> Ice.cover there (0 open .. 1 a 20 cm sheet; 0.5, 10 cm, bears a person); set by the server scene
+var _ice_cache: Dictionary = {}    # animals on ice: Vector2i(1 km band of z, 5 m of height) -> [Ice.cover, msec worked out]
+var ice_moat_at: Callable          # (Vector3) -> true in a thaw's shore moat (frozen_water_look.md 4, #729): open water though the sheet bears; unset: none
+var spring_ice_x: Callable         # (Vector3) -> the ice's share by springs (Jamie #739): 0 on the open brook below a spring, 0.5 within 10 to 30 m of a spring mouth or inflow, else 1; unset: 1 (wired with #719 step 2's spring rows)
 var walls: Callable                # (x0, z0, x1, z1, margin) -> bool, a wall or heavy station on that step (server_items.structure_blocks_step)
 var crossing: Callable             # Steering's `cross`: every walker of this module stops at walls
 var player_positions: Callable     # () -> Array of Vector3
@@ -283,6 +287,11 @@ func _step_young(a: Dictionary, dt: float) -> void:
 	var speed: float = float(def.get("flee_mps", 7.5)) if running else float(def.get("walk_mps", 1.5)) * (2.0 if far > 6.0 else 1.0)
 	var ground_for: Callable = ground_height
 	var blocked_for: Callable = blocked
+
+	if ice_on():
+		var moves: Array = ice_moves(def, str(a["sp"]))
+		ground_for = moves[0]
+		blocked_for = moves[1]
 
 	if swims(def):      # a young swimmer (a moose calf) follows its mother into the water
 		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
@@ -1120,6 +1129,11 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	var ground_for: Callable = ground_height
 	var blocked_for: Callable = blocked
 
+	if ice_on():   # animals on ice (animals_on_ice_server.md): deer and boar keep off it, wolves cross a sheet that bears
+		var moves: Array = ice_moves(def, str(a["sp"]))
+		ground_for = moves[0]
+		blocked_for = moves[1]
+
 	if swims(def):
 		# A swimmer goes into deep water (nothing blocks it) and rides the surface there; in water it moves at swim_mps.
 		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
@@ -1378,6 +1392,15 @@ func _top_up(players: Array, only: int) -> void:
 
 			if best < 0.0:
 				continue
+
+			if def.has("flock") and not bool(def["flock"].get("on_land", false)) and ice_on():
+				var edge: Vector2 = ice_edge_spot(x, z, sp)   # on a frozen pond the flock stands on the ice at the open water's edge, or is not there
+
+				if edge.x == INF:
+					continue
+
+				x = edge.x
+				z = edge.y
 
 			var herd: Array = def.get("herd", [])
 
@@ -2497,3 +2520,114 @@ func wolf_wait_point(home: Vector3) -> Vector3:
 	at.y = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else stand.y
 	return at
 
+# --- animals on ice (docs/design/animals_on_ice_server.md; MikeW ANIMAL_WEATHER_LOOKS.md ice; Kathleen frozen_water_look.md #729) ---
+# Behind animals.json ice.on. The ice is the server's Ice.cover (3 m pond depth, as server_items._on_ice), open in a thaw's shore moat.
+
+func _ice_cfg() -> Dictionary:
+	return cfg.get("ice", {})
+
+
+func ice_on() -> bool:
+	return bool(_ice_cfg().get("on", false)) and ice_cover_at.is_valid() and water_level.is_valid()
+
+
+# The ice cover on the water at (x, z): 0 on dry land, on open water and in a thaw moat.
+func ice_at(x: float, z: float) -> float:
+	var level: float = float(water_level.call(x, z))
+
+	if is_nan(level):
+		return 0.0
+
+	var at: Vector3 = Vector3(x, level, z)
+
+	if ice_moat_at.is_valid() and bool(ice_moat_at.call(at)):
+		return 0.0
+
+	# Ice.cover runs an hourly loop over weeks, so it is kept per 1 km band of z (the zone rows are tiles) and 5 m of height for cache_s.
+	var key: Vector2i = Vector2i(floori(z / 1000.0), roundi(level / 5.0))
+	var now: int = Time.get_ticks_msec()
+
+	if not _ice_cache.has(key) or now - int(_ice_cache[key][1]) > int(float(_ice_cfg().get("cache_s", 60.0)) * 1000.0):
+		_ice_cache[key] = [float(ice_cover_at.call(at)), now]
+
+	# By a spring (Jamie #739): its brook stays open for its open length, and the ice is half as thick near a mouth or an inflow, so the
+	# open water below springs is where animals and water birds gather in a freeze.
+	return float(_ice_cache[key][0]) * (clampf(float(spring_ice_x.call(at)), 0.0, 1.0) if spring_ice_x.is_valid() else 1.0)
+
+
+# Whether ice at (x, z) holds an animal of `mass` kg for sure (Jamie #736, from the Minnesota DNR table): mass <= sure_k (0.9) x h^2, with
+# h the thickness in cm (cover x 20). Animals keep off doubtful ice (judged), so the chance band up to 3.5 h^2 is not used here.
+func ice_holds(x: float, z: float, mass: float) -> bool:
+	var h_cm: float = ice_at(x, z) * 20.0
+	return h_cm > 0.0 and mass <= float(_ice_cfg().get("sure_k", 0.9)) * h_cm * h_cm
+
+
+# An animal's mass for the ice (ice.mass_kg, Jamie #736's table), or NAN for a species the table leaves out (it keeps the plain rules).
+func ice_mass(sp: String) -> float:
+	var masses: Dictionary = _ice_cfg().get("mass_kg", {})
+	return float(masses[sp]) if masses.has(sp) else NAN
+
+
+# [ground, blocked] callables for a walker this tick: a skirting animal (deer role, skirt_species: deer fall on bare ice, Jamie #736) is
+# also blocked by any ice it could see (skirt_cover, skim and up), even over shallows it would wade; any other animal with a mass in
+# ice.mass_kg walks on ice that holds it for sure, at the water's surface, and only open deep water blocks it; the rest keep the plain rules.
+func ice_moves(def: Dictionary, sp: String) -> Array:
+	var ic: Dictionary = _ice_cfg()
+	var base_blocked: Callable = blocked
+	var base_ground: Callable = ground_height
+	var me = self
+
+	if str(def.get("weather", "")) == "deer" or sp in ic.get("skirt_species", ["boar", "warthog"]):
+		var skirt: float = float(ic.get("skirt_cover", 0.1))
+		return [base_ground, func(x: float, z: float) -> bool: return (base_blocked.is_valid() and bool(base_blocked.call(x, z))) or me.ice_at(x, z) >= skirt]
+
+	var mass: float = ice_mass(sp)
+
+	if not is_nan(mass):
+		return [ice_ground(base_ground, mass), ice_blocked(base_blocked, mass)]
+
+	return [base_ground, base_blocked]
+
+
+# A walker's ground on ice: the water's surface where the ice holds `mass` for sure, else the ground.
+func ice_ground(base_ground: Callable, mass: float) -> Callable:
+	var me = self
+	var ground: Callable = func(x: float, z: float) -> float:
+		if me.ice_holds(x, z, mass):
+			return float(me.water_level.call(x, z))
+
+		return float(base_ground.call(x, z)) if base_ground.is_valid() else 0.0
+
+	return ground
+
+
+# A walker's block on ice: deep water only where the ice does not hold `mass` for sure.
+func ice_blocked(base_blocked: Callable, mass: float) -> Callable:
+	var me = self
+	return func(x: float, z: float) -> bool: return base_blocked.is_valid() and bool(base_blocked.call(x, z)) and not me.ice_holds(x, z, mass)
+
+
+# Where a water flock settles at (x, z) (Jamie #736: water birds stand at the ice edge by open water and leave a pond frozen over): there when
+# the ice would not hold one of them for sure (open water or a skim it swims through); on ice that holds it, the nearest such water within
+# edge_search_m (8 bearings, 4 m steps), the flock standing edge_back_m back from it on the ice; Vector2(INF, INF) when the pond is shut.
+func ice_edge_spot(x: float, z: float, sp: String) -> Vector2:
+	var ic: Dictionary = _ice_cfg()
+	var mass: float = ice_mass(sp)
+
+	if is_nan(mass):
+		mass = float(ic.get("flock_mass_kg", 1.2))
+
+	if not ice_holds(x, z, mass):
+		return Vector2(x, z)
+
+	var back: float = float(ic.get("edge_back_m", 2.0))
+
+	for step in range(1, int(float(ic.get("edge_search_m", 40.0)) / 4.0) + 1):
+		for b in 8:
+			var dir: Vector2 = Vector2.from_angle(TAU * float(b) / 8.0)
+			var p: Vector2 = Vector2(x, z) + dir * 4.0 * float(step)
+
+			if not is_nan(float(water_level.call(p.x, p.y))) and not ice_holds(p.x, p.y, mass):
+				return p - dir * back
+
+	return Vector2(INF, INF)
