@@ -133,7 +133,8 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell,
     sediment flux through each cell (m3/yr, own cell included) from the last sweep. The erosion coefficient of each cell is
     K e share Q^m; the glacial stage (glacial.py) adds the ice's own term and solves with the same _solve."""
     Qi = np.where(Q > 0.0, Q, cell)
-    return _solve(h, h0, sea, order, rec, n, dx, dt, K * ery * share * Qi ** m, G, U, Qi, cell, sweeps, tol, np.full(h.size, Sc))
+    sc = np.full(h.size, float(Sc)) if np.ndim(Sc) == 0 else np.asarray(Sc, np.float64)
+    return _solve(h, h0, sea, order, rec, n, dx, dt, K * ery * share * Qi ** m, G, U, Qi, cell, sweeps, tol, sc)
 
 
 @nb.njit(cache=True)
@@ -267,18 +268,39 @@ def _diffuse(h, fixed, dx, dt, D, ery):
     h[land] = np.maximum(hc[land], 0.05)
 
 
-def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, fixed):
+def slope_limits(g, E):
+    """The threshold slopes (tangents): Sc, the plain threshold_slope_deg (loose cover, and any rock not listed), and one per
+    rock id from threshold_slope_deg_by_rock. Hard rock holds steeper walls than soft rock or loose cover (Schmidt and
+    Montgomery 1995, Science 270:617). Sc 0 turns the limit off everywhere."""
+    Sc = float(np.tan(np.radians(E['threshold_slope_deg']))) if E.get('threshold_slope_deg', 0.0) > 0.0 else 0.0
+    by = E.get('threshold_slope_deg_by_rock', {})
+    sc_rock = np.full(max(g['names']) + 1, Sc)
+    for k_, nm in g['names'].items():
+        if nm in by and Sc > 0.0:
+            sc_rock[k_] = float(np.tan(np.radians(by[nm])))
+    return Sc, sc_rock
+
+
+def cell_limits(Sc, sc_rock, rid, deposit):
+    """Each cell's threshold slope: its rock's, or the loose-cover value where more than 1 m of sediment lies on the rock."""
+    return np.where(deposit > 1.0, Sc, sc_rock[rid])
+
+
+def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, sc_rock, deposit, fixed):
     """One step of the river era (B1; also the post-glacial era in glacial.py): route, discharge from the quick runoff of the
-    rock at today's surface, channel heads, the implicit erosion-deposition solve, then creep. h is updated in place.
-    Returns the height change apart from uplift (negative eroded, positive laid down) and the sediment flux."""
+    rock at today's surface, channel heads, the implicit erosion-deposition solve (slope limit by rock, see slope_limits),
+    then creep. h is updated in place. Returns the height change apart from uplift (negative eroded, positive laid down)
+    and the sediment flux."""
     cell = dx * dx
     filled, rec, order = lem.route(h, sea, n)
-    quick = runoff.budget(rain_mm, rock.rock_ids(g, h), bfi, W)['quick'] / q_ref    # the rock at today's surface
+    rid = rock.rock_ids(g, h)
+    quick = runoff.budget(rain_mm, rid, bfi, W)['quick'] / q_ref    # the rock at today's surface
+    sc = cell_limits(Sc, sc_rock, rid, deposit)
     Q = _discharge(order, rec, sea, quick, cell, n * n)
     share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
     ery = ery_fn(h)
     h0 = h.copy()
-    flux = _fluvial(h, h0, sea, order, rec, n, dx, dt, E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'], Sc)
+    flux = _fluvial(h, h0, sea, order, rec, n, dx, dt, E['K'], E['m'], E['G'], U, ery, Q, share, cell, E['sweeps'], E['tol_m'], sc)
     _diffuse(h, fixed, dx, dt, E['D'], ery)
     change = h - (h0 + U * dt)
     ery_fn.update(change)
@@ -334,6 +356,9 @@ def main():
                      factor_land_min=float(factor[sea == 0].min()), factor_land_mean=float(factor[sea == 0].mean()),
                      factor_land_max=float(factor[sea == 0].max()), uplift_max_m_per_kyr=float(U.max()) * 1e3)
         print(f'calibrated uplift from {opts["calibrate"]}: factor {calib["factor_land_min"]:.2f} to {calib["factor_land_max"]:.2f}', flush=True)
+    # uplift_share: how much of the A2 uplift still acts during the run. 0 = the landform is the land as uplifted, and the run
+    # is its dissection by rivers and slopes (see the params note).
+    U = U * float(E.get('uplift_share', 1.0))
     rain_mm = data['rain'].astype(np.float64).ravel()
     W = P['water_budget']
     q_ref = runoff.reference_quick_mm(P['rain']['background_mm_yr'], W)
@@ -357,7 +382,7 @@ def main():
     CH = E['channel_head']
     theta = float(CH['slope_exponent'])
     c_ch = float(CH['area_m2_at_ref_slope']) * float(CH['ref_slope']) ** theta
-    Sc = float(np.tan(np.radians(E['threshold_slope_deg']))) if E.get('threshold_slope_deg', 0.0) > 0.0 else 0.0
+    Sc, sc_rock = slope_limits(g, E)
     steps = int(round(E['years'] / E['dt']))
     t0 = time.time()
     deposit = np.zeros(n * n)
@@ -365,8 +390,109 @@ def main():
     frame = np.zeros((n, n), bool); frame[0, :] = frame[-1, :] = frame[:, 0] = frame[:, -1] = True
     fixed = (sea == 1) | frame.ravel()                     # creep leaves the sea and the model frame as they are
     track = []                                             # (step, summit, mean land height): is the ground still rising?
+    def write(od, years_done):
+        """All outputs for the ground as it stands: ground.npz, the summary (evolve_manifest.json) and evolve.png."""
+        os.makedirs(od, exist_ok=True)
+        filled, rec, order = lem.route(h, sea, n)
+        rid = rock.rock_ids(g, h)
+        wb = runoff.budget(rain_mm, rid, bfi, W)
+        Q = _discharge(order, rec, sea, wb['quick'] / q_ref, cell, n * n)
+        share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
+        area = _discharge(order, rec, sea, np.ones(n * n), cell, n * n)
+        hh = h.reshape(n, n)
+        np.savez_compressed(f'{od}/ground.npz', ground=hh.astype(np.float32), start=start.astype(np.float32),
+                            quick_area_m2=Q.reshape(n, n).astype(np.float32), area_m2=area.reshape(n, n).astype(np.float32),
+                            channel=share.reshape(n, n).astype(np.float32), rock=rid.reshape(n, n).astype(np.int16),
+                            et_mm=wb['et'].reshape(n, n).astype(np.float32), quick_mm=wb['quick'].reshape(n, n).astype(np.float32),
+                            recharge_mm=wb['recharge'].reshape(n, n).astype(np.float32),
+                            receiver=rec.reshape(n, n).astype(np.int32), pit_m=(filled - h).reshape(n, n).astype(np.float32),
+                            sediment_m=deposit.reshape(n, n).astype(np.float32), sea=sea.reshape(n, n).astype(bool),
+                            sediment_flux_m3_yr=flux.reshape(n, n).astype(np.float32), uplift=U.reshape(n, n).astype(np.float32),
+                            cell_m=dx, origin_x=float(data['origin_x']), origin_z=float(data['origin_z']))
+        land = sea.reshape(n, n) == 0
+        gy, gx = np.gradient(hh, dx)
+        slope = np.degrees(np.arctan(np.hypot(gx, gy)))
+        pits = (filled - h).reshape(n, n)
+        # Hollows (R3 gives each a cause or fills it): is the sill that holds each one sediment (a fan, floodplain or delta laid
+        # across the valley, a real cause) or rock? 0.1 m and deeper, so the 1 mm-per-cell slope the fill puts on flats is not
+        # counted as a hollow. The ten deepest are listed in world metres so they can be looked at.
+        pr = pits.ravel()
+        lab, deep, size, outlet = _hollows(pr, rec, sea, n, 0.1)
+        chmax = np.zeros(deep.size)
+        inside = lab >= 0
+        np.maximum.at(chmax, lab[inside], share[inside])
+        sill_sed = np.where(outlet >= 0, deposit[np.maximum(outlet, 0)], 0.0)
+
+        def _group(sel):
+            return dict(count=int(sel.sum()), km2=float(size[sel].sum() * cell / 1e6),
+                        deepest_m=float(pr[deep[sel]].max()) if sel.any() else 0.0)
+        ox, oz = float(data['origin_x']), float(data['origin_z'])
+        hollows = dict(min_depth_m=0.1, all=_group(np.ones(deep.size, bool)),
+                       sill_on_sediment_over_1m=_group(sill_sed > 1.0), sill_on_rock_or_thin_cover=_group(sill_sed <= 1.0),
+                       on_a_channel=_group(chmax > 0.5), off_channels=_group(chmax <= 0.5),
+                       deepest_ten=[dict(x=ox + float(deep[q] % n) * dx, z=oz + float(deep[q] // n) * dx, depth_m=float(pr[deep[q]]),
+                                         km2=float(size[q] * cell / 1e6), sill_sediment_m=float(sill_sed[q]),
+                                         floor_sediment_m=float(deposit[deep[q]]), on_a_channel=bool(chmax[q] > 0.5))
+                                    for q in np.argsort(-pr[deep])[:10]])
+        # Threshold check: the share of land within 10% of the threshold slope above its receiver (where landslides set the form).
+        # 10%, not exactly at it, because creep runs after the cap each step and rounds the capped slopes a little.
+        hr_ = np.where(rec >= 0, h[np.maximum(rec, 0)], h)
+        hr_ = np.where((rec >= 0) & (sea[np.maximum(rec, 0)] == 1), np.maximum(hr_, 0.0), hr_)
+        step_ = np.abs(rec - np.arange(n * n))
+        dist_ = np.where((step_ == 1) | (step_ == n), dx, dx * np.sqrt(2.0))
+        s_rec = np.where(rec >= 0, (h - hr_) / dist_, 0.0).reshape(n, n)
+        # Steady state check: how fast the summit and the mean land height still change over the last tenth of the run. Near zero
+        # means uplift and erosion balance (a mature landscape); a rise near the uplift rate means erosion never reached the tops.
+        k = max(len(track) // 10, 1)
+        span_kyr = k * E['dt'] / 1e3
+        from scipy.ndimage import gaussian_filter
+        sm = P['uplift']['smooth_m'] / dx
+        mismatch = (gaussian_filter(np.maximum(hh, 0.0), sm) - gaussian_filter(np.maximum(start, 0.0), sm))[land]
+        # Are the peaks kept and the valleys cut? Land height percentiles against the landform's, and the local relief (highest
+        # minus lowest ground within 2 km) over the high ground (landform above 600 m): deep glens between tall peaks raise it.
+        from scipy.ndimage import maximum_filter, minimum_filter
+        win = int(round(2000.0 / dx)) | 1
+        pct = (50, 90, 99, 99.9)
+
+        def _relief(z):
+            r = (maximum_filter(z, win) - minimum_filter(z, win))[land & (start > 600.0)]
+            return dict(p50=float(np.percentile(r, 50)), p90=float(np.percentile(r, 90))) if r.size else {}
+        summary = dict(seconds=time.time() - t0, steps=len(track), years=years_done, summit_m=float(hh.max()), landform_summit_m=float(start.max()),
+                       uplift_calibration=calib,
+                       massif_scale_height_mismatch_m=dict(mean=float(mismatch.mean()), p5=float(np.percentile(mismatch, 5)),
+                                                           p95=float(np.percentile(mismatch, 95))),
+                       last_tenth_summit_change_m_per_kyr=(track[-1][1] - track[-1 - k][1]) / span_kyr if len(track) > k else None,
+                       last_tenth_mean_land_change_m_per_kyr=(track[-1][2] - track[-1 - k][2]) / span_kyr if len(track) > k else None,
+                       uplift_max_m_per_kyr=float(U.max()) * 1e3, mean_land_m=float(hh[land].mean()), landform_mean_land_m=float(start[land].mean()),
+                       land_height_percentiles_m={str(q): float(np.percentile(hh[land], q)) for q in pct},
+                       landform_height_percentiles_m={str(q): float(np.percentile(start[land], q)) for q in pct},
+                       local_relief_2km_on_high_ground_m=_relief(hh), landform_local_relief_2km_on_high_ground_m=_relief(start),
+                       land_km2=float(land.sum() * cell / 1e6),
+                       median_slope_deg=float(np.median(slope[land])), share_under_10deg_below_250m=float((slope[land & (hh < 250)] < 10).mean()),
+                       closed_hollow_cells=int((pits[land] > 0.01).sum()), deepest_hollow_m=float(pits[land].max()), hollows=hollows,
+                       threshold_slope_deg=float(E.get('threshold_slope_deg', 0.0)),
+                       share_of_land_near_threshold=float((s_rec[land] >= 0.9 * cell_limits(Sc, sc_rock, rid, deposit).reshape(n, n)[land]).mean()) if Sc > 0.0 else 0.0,
+                       threshold_slope_deg_by_rock=E.get('threshold_slope_deg_by_rock', {}),
+                       share_of_land_steeper_than_deg={str(a): float((slope[land] > a).mean()) for a in (25, 30, 35, 40)},
+                       max_slope_deg=float(slope[land].max()),
+                       sediment_km2_over_1m=float((deposit.reshape(n, n)[land] > 1.0).sum() * cell / 1e6),
+                       reference_quick_mm_yr=q_ref,
+                       water_mm_yr={k: float(wb[k].reshape(n, n)[land].mean()) for k in ('et', 'runoff', 'quick', 'recharge')},
+                       drainage_density_km_per_km2=float((share.reshape(n, n)[land] > 0.5).sum() * dx / 1e3 / (land.sum() * cell / 1e6)),
+                       drainage_density_by_rock={g['names'][int(k)]: float(((share > 0.5) & (rid == k) & (sea == 0)).sum() * dx / 1e3
+                                                                         / max(((rid == k) & (sea == 0)).sum() * cell / 1e6, 1e-9))
+                                                 for k in np.unique(rid[sea == 0])},
+                       max_cut_m=float((start - hh)[land].max()), max_fill_m=float((hh - start)[land].max()))
+        json.dump(dict(params=P, inputs_sha256={'inputs.npz': sha(f'{inputs_dir}/inputs.npz')}, summary=summary),
+                  open(f'{od}/evolve_manifest.json', 'w'), indent=1)
+        print(json.dumps(summary, indent=1))
+
+        import plots
+        plots.ground_picture(f'{od}/ground.npz', f'{od}/evolve.png')
+
+    snaps = {int(round(y / E['dt'])): y for y in E.get('snapshot_years', [])}
     for s in range(steps):
-        change, flux = river_step(h, sea, n, dx, E['dt'], E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, fixed)
+        change, flux = river_step(h, sea, n, dx, E['dt'], E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, sc_rock, deposit, fixed)
         deposit = np.maximum(deposit + change, 0.0)          # sediment lying on bedrock: grows where it lands, wears where it erodes
         track.append((s, float(h.max()), float(h[land0].mean())))
         if s % 25 == 0:
@@ -375,89 +501,9 @@ def main():
         bound = float(start.max()) + float(U.max()) * E['years'] + 100.0
         if not np.isfinite(h).all() or h.max() > bound:
             raise SystemExit(f'evolve: unstable at step {s}: max height {h.max():.3g} m is above the physical bound {bound:.0f} m')
-    filled, rec, order = lem.route(h, sea, n)
-    rid = rock.rock_ids(g, h)
-    wb = runoff.budget(rain_mm, rid, bfi, W)
-    Q = _discharge(order, rec, sea, wb['quick'] / q_ref, cell, n * n)
-    share = _channel_share(Q, h, rec, order, sea, n, dx, c_ch, theta)
-    area = _discharge(order, rec, sea, np.ones(n * n), cell, n * n)
-    hh = h.reshape(n, n)
-    np.savez_compressed(f'{out_dir}/ground.npz', ground=hh.astype(np.float32), start=start.astype(np.float32),
-                        quick_area_m2=Q.reshape(n, n).astype(np.float32), area_m2=area.reshape(n, n).astype(np.float32),
-                        channel=share.reshape(n, n).astype(np.float32), rock=rid.reshape(n, n).astype(np.int16),
-                        et_mm=wb['et'].reshape(n, n).astype(np.float32), quick_mm=wb['quick'].reshape(n, n).astype(np.float32),
-                        recharge_mm=wb['recharge'].reshape(n, n).astype(np.float32),
-                        receiver=rec.reshape(n, n).astype(np.int32), pit_m=(filled - h).reshape(n, n).astype(np.float32),
-                        sediment_m=deposit.reshape(n, n).astype(np.float32), sea=sea.reshape(n, n).astype(bool),
-                        sediment_flux_m3_yr=flux.reshape(n, n).astype(np.float32), uplift=U.reshape(n, n).astype(np.float32),
-                        cell_m=dx, origin_x=float(data['origin_x']), origin_z=float(data['origin_z']))
-    land = sea.reshape(n, n) == 0
-    gy, gx = np.gradient(hh, dx)
-    slope = np.degrees(np.arctan(np.hypot(gx, gy)))
-    pits = (filled - h).reshape(n, n)
-    # Hollows (R3 gives each a cause or fills it): is the sill that holds each one sediment (a fan, floodplain or delta laid
-    # across the valley, a real cause) or rock? 0.1 m and deeper, so the 1 mm-per-cell slope the fill puts on flats is not
-    # counted as a hollow. The ten deepest are listed in world metres so they can be looked at.
-    pr = pits.ravel()
-    lab, deep, size, outlet = _hollows(pr, rec, sea, n, 0.1)
-    chmax = np.zeros(deep.size)
-    inside = lab >= 0
-    np.maximum.at(chmax, lab[inside], share[inside])
-    sill_sed = np.where(outlet >= 0, deposit[np.maximum(outlet, 0)], 0.0)
-
-    def _group(sel):
-        return dict(count=int(sel.sum()), km2=float(size[sel].sum() * cell / 1e6),
-                    deepest_m=float(pr[deep[sel]].max()) if sel.any() else 0.0)
-    ox, oz = float(data['origin_x']), float(data['origin_z'])
-    hollows = dict(min_depth_m=0.1, all=_group(np.ones(deep.size, bool)),
-                   sill_on_sediment_over_1m=_group(sill_sed > 1.0), sill_on_rock_or_thin_cover=_group(sill_sed <= 1.0),
-                   on_a_channel=_group(chmax > 0.5), off_channels=_group(chmax <= 0.5),
-                   deepest_ten=[dict(x=ox + float(deep[q] % n) * dx, z=oz + float(deep[q] // n) * dx, depth_m=float(pr[deep[q]]),
-                                     km2=float(size[q] * cell / 1e6), sill_sediment_m=float(sill_sed[q]),
-                                     floor_sediment_m=float(deposit[deep[q]]), on_a_channel=bool(chmax[q] > 0.5))
-                                for q in np.argsort(-pr[deep])[:10]])
-    # Threshold check: the share of land within 10% of the threshold slope above its receiver (where landslides set the form).
-    # 10%, not exactly at it, because creep runs after the cap each step and rounds the capped slopes a little.
-    hr_ = np.where(rec >= 0, h[np.maximum(rec, 0)], h)
-    hr_ = np.where((rec >= 0) & (sea[np.maximum(rec, 0)] == 1), np.maximum(hr_, 0.0), hr_)
-    step_ = np.abs(rec - np.arange(n * n))
-    dist_ = np.where((step_ == 1) | (step_ == n), dx, dx * np.sqrt(2.0))
-    s_rec = np.where(rec >= 0, (h - hr_) / dist_, 0.0).reshape(n, n)
-    # Steady state check: how fast the summit and the mean land height still change over the last tenth of the run. Near zero
-    # means uplift and erosion balance (a mature landscape); a rise near the uplift rate means erosion never reached the tops.
-    k = max(len(track) // 10, 1)
-    span_kyr = k * E['dt'] / 1e3
-    from scipy.ndimage import gaussian_filter
-    sm = P['uplift']['smooth_m'] / dx
-    mismatch = (gaussian_filter(np.maximum(hh, 0.0), sm) - gaussian_filter(np.maximum(start, 0.0), sm))[land]
-    summary = dict(seconds=time.time() - t0, steps=steps, summit_m=float(hh.max()), landform_summit_m=float(start.max()),
-                   uplift_calibration=calib,
-                   massif_scale_height_mismatch_m=dict(mean=float(mismatch.mean()), p5=float(np.percentile(mismatch, 5)),
-                                                       p95=float(np.percentile(mismatch, 95))),
-                   last_tenth_summit_change_m_per_kyr=(track[-1][1] - track[-1 - k][1]) / span_kyr if len(track) > k else None,
-                   last_tenth_mean_land_change_m_per_kyr=(track[-1][2] - track[-1 - k][2]) / span_kyr if len(track) > k else None,
-                   uplift_max_m_per_kyr=float(U.max()) * 1e3, mean_land_m=float(hh[land].mean()), landform_mean_land_m=float(start[land].mean()),
-                   land_km2=float(land.sum() * cell / 1e6),
-                   median_slope_deg=float(np.median(slope[land])), share_under_10deg_below_250m=float((slope[land & (hh < 250)] < 10).mean()),
-                   closed_hollow_cells=int((pits[land] > 0.01).sum()), deepest_hollow_m=float(pits[land].max()), hollows=hollows,
-                   threshold_slope_deg=float(E.get('threshold_slope_deg', 0.0)),
-                   share_of_land_near_threshold=float((s_rec[land] >= 0.9 * Sc).mean()) if Sc > 0.0 else 0.0,
-                   share_of_land_steeper_than_deg={str(a): float((slope[land] > a).mean()) for a in (25, 30, 35, 40)},
-                   max_slope_deg=float(slope[land].max()),
-                   sediment_km2_over_1m=float((deposit.reshape(n, n)[land] > 1.0).sum() * cell / 1e6),
-                   reference_quick_mm_yr=q_ref,
-                   water_mm_yr={k: float(wb[k].reshape(n, n)[land].mean()) for k in ('et', 'runoff', 'quick', 'recharge')},
-                   drainage_density_km_per_km2=float((share.reshape(n, n)[land] > 0.5).sum() * dx / 1e3 / (land.sum() * cell / 1e6)),
-                   drainage_density_by_rock={g['names'][int(k)]: float(((share > 0.5) & (rid == k) & (sea == 0)).sum() * dx / 1e3
-                                                                     / max(((rid == k) & (sea == 0)).sum() * cell / 1e6, 1e-9))
-                                             for k in np.unique(rid[sea == 0])},
-                   max_cut_m=float((start - hh)[land].max()), max_fill_m=float((hh - start)[land].max()))
-    json.dump(dict(params=P, inputs_sha256={'inputs.npz': sha(f'{inputs_dir}/inputs.npz')}, summary=summary),
-              open(f'{out_dir}/evolve_manifest.json', 'w'), indent=1)
-    print(json.dumps(summary, indent=1))
-
-    import plots
-    plots.ground_picture(f'{out_dir}/ground.npz', f'{out_dir}/evolve.png')
+        if s + 1 in snaps and s + 1 < steps:              # the ground part way through, for choosing the run length
+            write(f'{out_dir}/t{int(round(snaps[s + 1] / 1e3))}k', (s + 1) * E['dt'])
+    write(out_dir, E['years'])
 
 if __name__ == '__main__':
     main()
