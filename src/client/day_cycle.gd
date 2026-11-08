@@ -29,6 +29,12 @@ const MOON_ENERGY := 0.22                       # share of the daytime sun light
 const AMBIENT_NIGHT := 0.24                     # share of the daytime ambient light left at night
 const SYNODIC_DAYS := 29.53                     # new moon to new moon, in game days
 const MOON_FULL_DAY := 100.0                    # a full moon on this game day (a new world starts on day 100, game_clock START_SECONDS)
+# --moon-phase (Jamie's moonlight page #679, Kathleen 8 Nov 2026): the moonlight follows the standard phase formula (Allen: a quarter moon
+# gives 8 to 9 % of a full moon's light, not 35 %), and the moon stands where its phase puts it: the sun's place turned back by phase x 360
+# degrees on the same path. A new moon is up with the sun, a first quarter sets about midnight, a full moon is up all night, a last
+# quarter rises about midnight; no moonlight while the moon is below the horizon.
+static var moon_phase_on: bool = OS.get_cmdline_user_args().has("--moon-phase")
+var moon_elevation: float = -1.0                # sin of the moon's height (with --moon-phase; otherwise opposite the sun)
 const MOON_FALLOFF := 1.5                       # moonlight against the lit share of the disc: a half moon gives about a third of a full moon's light
 const STARS_DARK := 1.35                        # the stars on a moonless night, against a full moon's (1, as before): a bright moon washes out the faint ones
 
@@ -55,7 +61,7 @@ var cloud_shadow: Color = DAY[3]
 # `days`: game days since the world began (game_clock seconds / SECONDS_PER_DAY), for the moon's phase; below 0 keeps a full moon.
 func update(hour: float, day_of_year: int, days: float = -1.0) -> void:
 	moon_phase = moon_phase_at(days) if days >= 0.0 else 0.5
-	moon_light = moon_light_at(moon_phase)
+	moon_light = moon_light_phase(moon_phase) if moon_phase_on else moon_light_at(moon_phase)
 
 	var phi: float = deg_to_rad(LATITUDE_DEG)
 	# Day 0 is the first day of spring (equinox): the sun's declination is zero, peaks in summer.
@@ -71,6 +77,14 @@ func update(hour: float, day_of_year: int, days: float = -1.0) -> void:
 	var moon_up: float = smoothstep(-0.08, -0.02, -up) * smoothstep(0.0, 0.12, -up)
 	var by_day: bool = up > -0.07
 	var toward: Vector3 = sun_to if by_day else -sun_to
+	moon_elevation = -up
+
+	if moon_phase_on:
+		var moon_to: Vector3 = moon_direction(phi, delta, h, moon_phase)
+		moon_elevation = moon_to.y
+		moon_light *= smoothstep(0.0, 0.12, moon_to.y)        # none below the horizon; it brightens as it climbs
+		moon_up = smoothstep(-0.08, -0.02, -up)               # while the sun is down
+		toward = sun_to if by_day else (moon_to if moon_to.y > 0.0 else -sun_to)
 	light_basis = Basis.looking_at(-toward, Vector3.UP if absf(toward.y) < 0.99 else Vector3.RIGHT)
 
 	if by_day:
@@ -92,6 +106,22 @@ func update(hour: float, day_of_year: int, days: float = -1.0) -> void:
 	sky_horizon = _mix(1, day_w, dusk_w, night_w)
 	ground_horizon = _mix(2, day_w, dusk_w, night_w)
 	cloud_shadow = _mix(3, day_w, dusk_w, night_w)
+
+
+# --moon-phase: the moonlight by phase (Allen's formula; Jamie's two-line drop-in), 1 at full, about 0.09 at a quarter, 0 at new.
+static func moon_light_phase(phase: float) -> float:
+	var alpha: float = absf(fposmod(phase, 1.0) - 0.5) * 360.0       # phase angle in degrees, 0 at full .. 180 at new
+	return pow(10.0, -0.4 * (0.026 * alpha + 4.0e-9 * pow(alpha, 4.0)))
+
+
+# --moon-phase: from the ground toward the moon, on the sun's path (same declination, a simplification) with its hour angle turned
+# back by phase x 360 degrees. `phi` latitude, `delta` the sun's declination, `h` the sun's hour angle, all radians.
+static func moon_direction(phi: float, delta: float, h: float, phase: float) -> Vector3:
+	var hm: float = h - TAU * phase
+	var up: float = sin(phi) * sin(delta) + cos(phi) * cos(delta) * cos(hm)
+	var east: float = -cos(delta) * sin(hm)
+	var north: float = sin(delta) * cos(phi) - cos(delta) * sin(phi) * cos(hm)
+	return Vector3(east, up, -north).normalized()
 
 
 # The moon's phase on a game day: 0 new, 0.5 full (on MOON_FULL_DAY and every SYNODIC_DAYS after it), 1 new again.
