@@ -17,6 +17,7 @@ const LuckScript := preload("res://src/shared/luck.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const FloraLayout := preload("res://src/worldgen/runtime/flora_layout.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -169,6 +170,7 @@ var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
+var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
@@ -309,6 +311,7 @@ var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
 var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the water
+var _last_rain_s: float = -INF      # game seconds when it last rained (thirst.sources: intermittent brooks run for a day after rain)
 var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
@@ -8767,6 +8770,9 @@ func _vitals_tick(spent: float) -> void:
 	_lit_valid = false
 	_in_vitals = true
 
+	if weather_now.is_valid() and float((weather_now.call() as Dictionary).get("rain", 0.0)) > 0.05:
+		_last_rain_s = _now_game_s()
+
 	for peer in _peer_key:
 		var v: Dictionary = _vitals.get(_peer_key[peer], {})
 
@@ -12868,6 +12874,9 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		_reject(peer, 0)
 		return
 
+	if not _drink_source_ok(peer, thirst):
+		return
+
 	# A water container in hand with room is filled instead (job 89); a full one lets you drink from the water as before.
 	if inv != null and slot >= 0 and slot < inv.SLOTS and inv.numbers[slot] != 0:
 		var room: int = _container_cap(inv.numbers[slot]) - inv.wear[slot]
@@ -12889,6 +12898,40 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 	_last_drink[peer] = now
 	v["wet"] = minf(float(v["wet"]) + float(thirst.get("drink_ml", 300)), cap)
 	_sync_vitals(peer, true)
+
+
+# With thirst.sources on and the scene's water_source set (docs/design/drinking_water_design.md): salt water is refused, a dry bed is refused,
+# and frozen water needs an ice hole within reach (the fishing hole). Off, or with no source rows, the drink goes on as before.
+func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
+	var cfg: Dictionary = thirst.get("sources", {})
+
+	if not bool(cfg.get("enabled", false)) or not water_source.is_valid():
+		return true
+
+	var pos: Vector3 = _peer_pos[peer]
+	var rows: Array = water_source.call(pos, float(thirst.get("reach_m", 3.0)))
+
+	if rows.is_empty():
+		return true   # the record knows nothing here (an older world): today's water test stands
+
+	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var ctx: Dictionary = {"season": _season(), "rain_h_ago": (_now_game_s() - _last_rain_s) / 3600.0, "raining": float(weather.get("rain", 0.0)) > 0.05,
+		"air_c": float(weather.get("temp_c", 10.0)) - maxf(pos.y, 0.0) * float(_warmth_cfg.get("lapse_c_per_m", 0.0065)), "wind": float(weather.get("wind", 0.0))}
+	var found: Dictionary = DrinkRules.pick(cfg, rows, ctx)
+
+	if str(found.get("refused", "")) == "salt":
+		_say(peer, str(cfg.get("say_salt", "Salt water. It would only make you thirstier.")))
+		return false
+
+	if str(found.get("refused", "")) == "dry":
+		_say(peer, str(cfg.get("say_dry", "The bed is dry.")))
+		return false
+
+	if bool(found.get("frozen", false)) and not _hole_near(pos):
+		_say(peer, str(cfg.get("say_frozen", "The water is frozen. Break a hole in the ice first.")))
+		return false
+
+	return true
 
 
 func _save_vitals() -> void:

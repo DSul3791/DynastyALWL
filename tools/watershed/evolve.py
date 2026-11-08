@@ -240,7 +240,8 @@ def _fluvial(h, h0, sea, order, rec, n, dx, dt, K, m, G, U, ery, Q, share, cell,
     sediment flux through each cell (m3/yr, own cell included) from the last sweep. The erosion coefficient of each cell is
     K e share Q^m, and psi (per cell) the incision threshold on Q^m S, below which the flow does not cut bedrock.
     ery is the bedrock's erodibility. With ery_cover and cover (thickness, m), loose cover lies on the bedrock: it erodes at
-    its own rate with no threshold until it is gone, and the rest of the step cuts bedrock (see _solve)."""
+    its own rate with no threshold until it is gone, and the rest of the step cuts bedrock (see _solve). The glacial
+    stage (glacial.py) adds the ice's own term and solves with the same _solve."""
     Qi = np.where(Q > 0.0, Q, cell)
     kq = K * ery * share * Qi ** m
     sc = np.full(h.size, float(Sc)) if np.ndim(Sc) == 0 else np.asarray(Sc, np.float64)
@@ -497,6 +498,61 @@ def _diffuse(h, fixed, dx, dt, D, ery):
     h[land] = np.maximum(hc[land], 0.05)
 
 
+def slope_limits(g, E):
+    """The threshold slopes (tangents): Sc, the plain threshold_slope_deg (loose cover, and any rock not listed), and one per
+    rock id from threshold_slope_deg_by_rock. Hard rock holds steeper walls than soft rock or loose cover (Schmidt and
+    Montgomery 1995, Science 270:617). Sc 0 turns the limit off everywhere."""
+    Sc = float(np.tan(np.radians(E['threshold_slope_deg']))) if E.get('threshold_slope_deg', 0.0) > 0.0 else 0.0
+    by = E.get('threshold_slope_deg_by_rock', {})
+    sc_rock = np.full(max(g['names']) + 1, Sc)
+    for k_, nm in g['names'].items():
+        if nm in by and Sc > 0.0:
+            sc_rock[k_] = float(np.tan(np.radians(by[nm])))
+    return Sc, sc_rock
+
+
+def cell_limits(Sc, sc_rock, rid, deposit):
+    """Each cell's threshold slope: its rock's, or the loose-cover value where more than 1 m of sediment lies on the rock."""
+    return np.where(deposit > 1.0, Sc, sc_rock[rid])
+
+
+def bedrock_threshold(E):
+    """The incision threshold on Q^m S for bedrock. Loose cover above the rock has none: the solve strips the cover at its own
+    rate first (_solve, cover over rock)."""
+    return float(E.get('incision_threshold_m', 0.0))
+
+
+def flow_memory(E):
+    """D8-LTD's drift memory (evolve.flow_paths.drift_memory, see route)."""
+    return float(E.get('flow_paths', {}).get('drift_memory', 1.0))
+
+
+def river_step(h, sea, n, dx, dt, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, a_min, Sc, sc_rock, deposit, fixed):
+    """One step of the river era (B1; also the post-glacial era in glacial.py): route, discharge from the quick runoff of the
+    rock at today's surface, channel heads, the implicit erosion-deposition solve (slope limit by rock, see slope_limits),
+    then creep. h is updated in place. Returns the height change apart from uplift (negative eroded, positive laid down),
+    the sediment flux, and the part of the change that is creep."""
+    cell = dx * dx
+    filled, rec, order = route(h, sea, n, dx, flow_memory(E))
+    rid = rock.rock_ids(g, h)
+    quick = runoff.budget(rain_mm, rid, bfi, W)['quick'] / q_ref    # the rock at today's surface
+    sc = cell_limits(Sc, sc_rock, rid, deposit)
+    psi = bedrock_threshold(E)
+    Q = _discharge(order, rec, sea, quick, cell, n * n)
+    area = _discharge(order, rec, sea, np.ones(n * n), cell, n * n)
+    share = _channel_share(Q, area, h, rec, order, sea, n, dx, c_ch, theta, a_min)
+    ery = ery_fn(h)                                   # the top layer, cover where there is any: creep moves it
+    ery_rock, ery_cov, cov = ery_fn.parts(h)          # the rivers cut through the cover, then the rock under it
+    h0 = h.copy()
+    flux = _fluvial(h, h0, sea, order, rec, n, dx, dt, E['K'], E['m'], E['G'], U, ery_rock, Q, share, cell, E['sweeps'], E['tol_m'], sc, psi,
+                    ery_cov, cov)
+    h1 = h.copy()
+    _diffuse(h, fixed, dx, dt, E['D'], ery)
+    change = h - (h0 + U * dt)
+    ery_fn.update(change)
+    return change, flux, h - h1
+
+
 def calibrated_uplift(U, start, prev_dir, sea, dx, P):
     """Uplift calibrated from a previous run (stage A2's one free choice, design B1). The real uplift of the island is
     unknown; the landform says how high its massifs should stand. At steady state the height of the ground scales with the
@@ -604,19 +660,12 @@ def main():
     bfi = runoff.bfi_by_rock_id(g['names'], W['bfi_by_rock'])
     ery_fn = rock.make_fn(g, start, sea, dx)
     CH = E['channel_head']
-    lam = float(E.get('flow_paths', {}).get('drift_memory', 1.0))      # D8-LTD (route)
+    lam = flow_memory(E)                                   # D8-LTD (route)
     theta = float(CH['slope_exponent'])
     c_ch = float(CH['area_m2_at_ref_slope']) * float(CH['ref_slope']) ** theta
     a_min = float(CH.get('min_area_m2', 0.0))
     ones = np.ones(n * n)
-    Sc = float(np.tan(np.radians(E['threshold_slope_deg']))) if E.get('threshold_slope_deg', 0.0) > 0.0 else 0.0
-    # Hard rock holds steeper walls than soft rock or loose cover (Schmidt and Montgomery 1995): the threshold by rock, with
-    # the plain threshold_slope_deg for loose sediment over 1 m and for any rock not listed.
-    by = E.get('threshold_slope_deg_by_rock', {})
-    sc_rock = np.full(max(g['names']) + 1, Sc)
-    for k_, nm in g['names'].items():
-        if nm in by and Sc > 0.0:
-            sc_rock[k_] = float(np.tan(np.radians(by[nm])))
+    Sc, sc_rock = slope_limits(g, E)
     steps = int(round(E['years'] / E['dt']))
     t0 = time.time()
     deposit = np.zeros(n * n)
@@ -730,7 +779,7 @@ def main():
                        median_slope_deg=float(np.median(slope[land])), share_under_10deg_below_250m=float((slope[land & (hh < 250)] < 10).mean()),
                        closed_hollow_cells=int((pits[land] > 0.01).sum()), deepest_hollow_m=float(pits[land].max()), hollows=hollows,
                        threshold_slope_deg=float(E.get('threshold_slope_deg', 0.0)),
-                       share_of_land_near_threshold=float((s_rec[land] >= 0.9 * np.where(deposit > 1.0, Sc, sc_rock[rid]).reshape(n, n)[land]).mean()) if Sc > 0.0 else 0.0,
+                       share_of_land_near_threshold=float((s_rec[land] >= 0.9 * cell_limits(Sc, sc_rock, rid, deposit).reshape(n, n)[land]).mean()) if Sc > 0.0 else 0.0,
                        threshold_slope_deg_by_rock=E.get('threshold_slope_deg_by_rock', {}),
                        share_of_land_steeper_than_deg={str(a): float((slope[land] > a).mean()) for a in (25, 30, 35, 40)},
                        max_slope_deg=float(slope[land].max()),
@@ -758,26 +807,11 @@ def main():
 
     snaps = {int(round(y / E['dt'])): y for y in E.get('snapshot_years', [])}
     for s in range(steps):
-        filled, rec, order = route(h, sea, n, dx, lam)
-        rid_now = rock.rock_ids(g, h)
-        quick = runoff.budget(rain_mm, rid_now, bfi, W)['quick'] / q_ref    # the rock at today's surface
-        sc = np.where(deposit > 1.0, Sc, sc_rock[rid_now])
-        psi = float(E.get('incision_threshold_m', 0.0))   # bedrock only: the cover above it has none (_solve)
-        Q = _discharge(order, rec, sea, quick, cell, n * n)
-        area = _discharge(order, rec, sea, ones, cell, n * n)
-        share = _channel_share(Q, area, h, rec, order, sea, n, dx, c_ch, theta, a_min)
-        ery = ery_fn(h)                                   # the top layer, cover where there is any: creep moves it
-        ery_rock, ery_cov, cov = ery_fn.parts(h)          # the rivers cut through the cover, then the rock under it
-        h0 = h.copy()
-        flux = _fluvial(h, h0, sea, order, rec, n, dx, E['dt'], E['K'], E['m'], E['G'], U, ery_rock, Q, share, cell, E['sweeps'], E['tol_m'],
-                        sc, psi, ery_cov, cov)
-        h1 = h.copy()
-        _diffuse(h, fixed, dx, E['dt'], E['D'], ery)
-        by_river += h1 - (h0 + U * E['dt'])
-        by_creep += h - h1
-        change = h - (h0 + U * E['dt'])
+        change, flux, creep = river_step(h, sea, n, dx, E['dt'], E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, a_min, Sc, sc_rock,
+                                         deposit, fixed)
+        by_river += change - creep
+        by_creep += creep
         deposit = np.maximum(deposit + change, 0.0)          # sediment lying on bedrock: grows where it lands, wears where it erodes
-        ery_fn.update(change)
         track.append((s, float(h.max()), float(h[land0].mean())))
         if s % 25 == 0:
             print(f'step {s}/{steps} t {time.time() - t0:.0f} s, max h {h.max():.0f} m, mean land {track[-1][2]:.0f} m', flush=True)

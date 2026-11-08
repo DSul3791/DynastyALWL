@@ -72,6 +72,7 @@ func _init() -> void:
 	player.free()
 
 	_check_step2()
+	_check_step3()
 
 	var source: String = FileAccess.get_file_as_string("res://src/client/sound_occlusion.gd")
 	_check(source.contains("has(\"--sound-outdoors\")") and not source.contains("player.volume_db"), "behind --sound-outdoors, and the scan never writes volume_db")
@@ -101,3 +102,13 @@ func _check_step2() -> void:
 	_check(on_snow.x <= -3.0 and on_snow.y < 0.8 and OutdoorAir.snow_effect(20.0, 1.0, 1.0) == Vector2(0.0, 1.0), "fresh snow: far sounds 3 to 6 dB down and duller, near ones not")
 	var source: String = FileAccess.get_file_as_string("res://src/client/weather_sounds.gd")
 	_check(source.contains("0.8 * ground_snow * snow_fresh") and source.contains("0.8 * ground_snow + falling"), "the hush follows fresh snow with the switch, lying snow without")
+
+
+# Step 3 (3.7): rivers as a line.
+func _check_step3() -> void:
+	_check(OutdoorAir.line_db(8.0, 10.0) == 0.0 and absf(OutdoorAir.line_db(20.0, 10.0) - 3.01) < 0.05, "a river reach fades 3 dB a doubling near the bank, not 6")
+	_check(is_equal_approx(OutdoorAir.line_db(400.0, 10.0), OutdoorAir.line_db(50.0, 10.0)), "past a third of the reach it falls like a point again")
+	var drop: float = 20.0 * log(200.0 / 10.0) / log(10.0) - OutdoorAir.line_db(200.0, 10.0)
+	_check(drop >= 12.0, "a river never sounds the same at 10 m and 200 m (%.1f dB apart)" % drop)
+	var water: String = FileAccess.get_file_as_string("res://src/client/water_sounds.gd")
+	_check(water.contains("set_meta(\"air_line\", candidate[\"kind\"] == \"river\")"), "river voices are marked as a line; brooks, ponds and falls are not")

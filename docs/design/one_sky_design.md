@@ -1,4 +1,4 @@
-# One sky: the sun and moon of the starter island at 57° S
+# One sky: the sun and moon by the world grid's row (the starter island about 34° S)
 
 **Owner:** Kathleen. **Status:** design, 8 Nov 2026.
 **Reads:**
@@ -14,12 +14,17 @@ Today `day_cycle.gd` (`LATITUDE_DEG`) and `weather.gd` (`SUN_LATITUDE_DEG`) both
 - its 9 °C ±5 °C climate is that of the Hebrides and Skye;
 - `world_settings.gd` `latitude_for_z` puts the starter rows south of the equator row.
 
-The climate record now carries `latitude_deg`, signed with south negative (starter -57). With `--one-sky`:
+With `--one-sky`:
 
-- **Latitude.** The sun and moon read `latitude_deg` from the island's climate record.
-  - `climate.gd` `DEFAULTS["starter"]` gets `latitude_deg: -57.0`, and `Climate.latitude_deg(climate)` reads it.
-  - An island without one takes the starter's until its record has one. Their warmest phase, 0.375, is the southern calendar too.
-- **The calendar is the starter island's.** Day 0 is its spring equinox. The sun's declination is δ = -23.44° × sin(2π × year phase), so midsummer is phase 0.25 (game day 91) and midwinter 0.75 (day 274). That is the same season order the game has today, so the seasons, the temperature and the flora do not move. Only the sun's path changes.
+- **Latitude comes from the world grid (Dave, 8 Nov).** The world is 21 x 21 tiles and the centre row is the equator (`world.json` `equator_tile_row`, 0). Latitude is never fixed per island:
+  - one function, `Climate.latitude_of_row(row, equator_row)`: tile row in, signed latitude out, `-(row - equator_row) x DEG_PER_ROW`, held to ±90°;
+  - north is -Z, so a row numbered above the equator's lies south and its latitude is negative. The hemisphere follows from the sign;
+  - `DEG_PER_ROW` is a named constant: `world_settings.gd` `latitude_for_z` x 90 (Jamie, 8 Nov), 0 at the equator row's centre and 90° at the poles half the world away, so 90 / 10.5 = **8.57° per row**. The starter (tile 3, 4) is row 4, whose centre is **34.3° S**. The noon sun still stands north and shade still falls south and south-east. Days run about 14.3 h at midsummer and 9.7 h at midwinter (sun centre), noon 79°, 56° and 32° at midsummer, equinox and midwinter;
+  - `terrain_client.gd` works out the player's tile row once a second (as it already does for the weather zone) and hands its latitude to `day_cycle.gd` (`sky_row_latitude`) and to `Weather.state` (the fog's sunrise). Before the first fix, and on the server, the starter row's latitude is used (`Climate.STARTER_ROW`, 4);
+  - so a player on a northern starter (row -4) gets the northern sky at the same latitude;
+  - **seasons by row:** `Climate.local_year_phase(year_phase, row, equator_row)` gives a row's own year phase, half a year on across the equator from the starter's hemisphere, for the server's season reads by place.
+  - The check numbers in section 2 were worked for 57° S. They still test the sun maths (the test pins the latitude to -57 for them), and section 1's 34.3° numbers are the starter's.
+- **The calendar is the starter island's.** Day 0 is its spring equinox. The sun's declination is δ = s × 23.44° × sin(2π × year phase), where s = `Climate.calendar_sign()` is the sign of the starter row's latitude (-1, south). So δ = -23.44° × sin(2π × year phase), so midsummer is phase 0.25 (game day 91) and midwinter 0.75 (day 274). That is the same season order the game has today, so the seasons, the temperature and the flora do not move. Only the sun's path changes.
 - **The sun's position** is the standard one, with the signed latitude φ and the hour angle h = 15° × (hour - 12):
   - sin(altitude) = sin φ sin δ + cos φ cos δ cos h;
   - east = -cos δ sin h;
@@ -33,9 +38,11 @@ The climate record now carries `latitude_deg`, signed with south negative (start
   - Its hour angle is the sun's minus the difference in right ascension, where α = atan2(cos ε sin λ, cos λ).
 
   A full moon therefore stands opposite the sun in declination too. It rides high in midwinter and low in midsummer, which the sun's own declination, used by `--moon-phase` (#681), cannot do. The moon's place only matters with `--moon-phase` on; without it, the moonlight stays opposite the sun, as today.
-- **`weather.gd`** `sunrise_hour(day, group)` uses the same latitude and declination, so the valley fog still burns off 1 to 3 hours after the real sunrise.
+- **`weather.gd`** `sunrise_hour(day, latitude_deg)` uses the same latitude and declination, so the valley fog still burns off 1 to 3 hours after the real sunrise.
 
 This stacks on #681 (moon phase), whose `moon_direction` it extends.
+
+**Open, for whoever owns the climate:** the warmest phase (0.375) is the same for every zone, so a northern row's temperatures still follow the southern calendar while its sun follows its own hemisphere. The sky here is right for each row; the temperature calendar of a northern row is not this change.
 
 ## 2. Check numbers (local solar time, sun centre)
 

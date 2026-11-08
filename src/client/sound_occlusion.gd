@@ -152,6 +152,9 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 			var effect: Vector2 = OutdoorAir.total(head, player.global_position, own_unit, air)
 			var open_air: float = 1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure))   # in a cave the open air has no say
 			effect = Vector2(effect.x * open_air, lerpf(1.0, effect.y, open_air))
+
+			if bool(player.get_meta("air_line", false)):   # a river reach (water_sounds.gd): a line, not a point (3.7)
+				effect.x += OutdoorAir.line_db(distance, own_unit)
 			_air_targets[player.get_instance_id()] = effect.x
 			air_cut = effect.y
 			air_shadowed += 1 if effect.x <= -3.0 else 0
@@ -205,4 +208,9 @@ func _first_look(player: AudioStreamPlayer3D) -> void:
 	if not is_instance_valid(player) or _head == Vector3.INF or not _moves(player) or player.has_meta("air_unit"):
 		return
 
-	_set_air_db(player, OutdoorAir.total(_head, player.global_position, player.unit_size, air).x * (1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure))))
+	var db: float = OutdoorAir.total(_head, player.global_position, player.unit_size, air).x * (1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure)))
+
+	if bool(player.get_meta("air_line", false)):
+		db += OutdoorAir.line_db(_head.distance_to(player.global_position), player.unit_size)
+
+	_set_air_db(player, db)
