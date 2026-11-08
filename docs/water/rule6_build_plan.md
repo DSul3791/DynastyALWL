@@ -87,6 +87,7 @@ New keys in `params.json` `glacial`:
 "aspect_ela_m": 75,
 "aspect_smoothing_m": 240,
 "aspect_full_slope_deg": 30,
+"shady_bearing_deg": 135,
 "snapshot_after_cycles": [1, 3, 10, 20, 39, 44, 49]
 ```
 
@@ -103,8 +104,9 @@ Where the values come from:
   - Kamchatka cirques: 163 m, and its modern glaciers 190 m;
   - south-west British Columbia: 194 and 220 m (Evans 2006).
   These are via Barr and Spagnolo 2015 (#654). A difference of 150 m gives `aspect_ela_m` 75, which is half of it.
+  - These sides are northern-hemisphere ones. The shady side faces the pole, and the lee of the westerlies adds drifted snow on the east, so the shady lee quarter is north-east north of the equator and south-east south of it. `shady_bearing_deg` is its middle: 45 in the north, 135 in the south. The starter island is at 57° S (design A4, one sky), so it takes 135.
   - `aspect_smoothing_m` is judged: the aspect is that of a valley head, not of one cell.
-  - The measured NE/SW retreat ratio (1.5 to 2) and floor difference (NE cirque floors 100 to 200 m below SW ones) are checks reported after the run, not tuned in.
+  - The measured shady/sunny retreat ratio (1.5 to 2) and floor difference (shady cirque floors 100 to 200 m below sunny ones) are checks reported after the run, not tuned in.
 - **What the history adds up to.** Total active ice is 39 × 16.4 + 10 × 40, or about 1.04 Myr. At 0.5 to 1.0 mm/yr that is 0.5 to 1.0 km of headwall retreat, which is the Arran-to-Matterhorn range.
 - **Backward compatible.** With no `history` and `aspect_ela_m` 0, glacial.py runs exactly as today: one stage of `years`, then `post_glacial_years`. Old manifests reproduce.
 
@@ -145,9 +147,10 @@ def _aspect_shift(h, GL, n, dx):
     sm = gaussian_filter(h.reshape(n, n), float(GL['aspect_smoothing_m']) / dx)
     gz, gx = np.gradient(sm, dx)                          # rows run +z (south), columns +x (east); north is -z
     g = np.maximum(np.hypot(gx, gz), 1e-9)
-    ne = (-gx / g + gz / g) / np.sqrt(2.0)                # +1 where the slope faces north-east, -1 south-west
+    b = np.radians(float(GL['shady_bearing_deg']))       # 45 north of the equator (NE), 135 south of it (SE)
+    shady = (-gx * np.sin(b) + gz * np.cos(b)) / g        # +1 where the slope faces the shady lee quarter, -1 the sunny one
     steep = np.clip(np.degrees(np.arctan(g)) / float(GL['aspect_full_slope_deg']), 0.0, 1.0)
-    return (a * ne * steep).ravel()                       # metres the snowline lies lower there
+    return (a * shady * steep).ravel()                       # metres the snowline lies lower there
 ```
 
    In `_cold_phase` the mass balance becomes `frac = np.minimum((surf - ela_local) / (Hf - He), 1.0)`. The gradient `full_ice_above_ela_m` is unchanged.
@@ -192,8 +195,8 @@ Its settings are in `params.json` `peaks`. Its unit tests, `test_peaks.py`, use 
   - `headwalls`: along each valley-head axis, these values:
     - the distance from the top to the first point steeper than 40 degrees (the headwall's upper edge);
     - the cirque's depth (that edge's height less the lowest ground on the axis within 600 m beyond it);
-    - the facing (NE quadrant, SW quadrant or other).
-  - `retreat`: from the cycles, each headwall's retreat in metres per cycle and in mm per active year, from the cycle it first stands. Also the NE/SW ratio of the mean rates, and the cirque depth after the first three cycles against its later growth.
+    - the facing (the shady quarter round `glacial.shady_bearing_deg`, the sunny quarter opposite, or other).
+  - `retreat`: from the cycles, each headwall's retreat in metres per cycle and in mm per active year, from the cycle it first stands. Also the shady/sunny ratio of the mean rates, and the cirque depth after the first three cycles against its later growth.
 
 ## Sign-off lines for the run (ws580h, after ws580g)
 
@@ -212,7 +215,7 @@ These lines are judged as written. Failing lines are relayed word for word, with
 6. `slope_300m_deg` is steeper than on the landform.
 7. `plateau_m` is under 300 m.
 8. Headwall retreat lies within the measured long-term 0.1 to 1.3 mm/yr of active ice. 0.5 to 1.0 is the middle; outside that is noted, not failed.
-9. North-east headwalls retreat 1.5 to 2 times faster than south-west ones (noted with the measured ratio; fails only if under 1.2 or over 3). North-east cirque floors lie 100 to 200 m below south-west ones (noted).
+9. Headwalls in the shady quarter (south-east on the starter island) retreat 1.5 to 2 times faster than those in the sunny quarter (north-west) (noted with the measured ratio; fails only if under 1.2 or over 3). Shady cirque floors lie 100 to 200 m below sunny ones (noted).
 10. Cirques get most of their depth early: the rate after cycle 3 is at most a fifth of that in the first three cycles.
 
 **Glacial zooms (Dino, at 54800 71424 and 66960 79296, from the final ground and the cycle 20 and 39 snapshots):**

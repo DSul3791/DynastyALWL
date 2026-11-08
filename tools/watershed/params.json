@@ -132,7 +132,9 @@
 		"dt": 2000.0,
 		"post_glacial_years": 11700.0,
 		"post_glacial_dt": 1950.0,
-		"scour_m": 10.0
+		"scour_m": 10.0,
+		"_shady_note": "shady_bearing_deg: the middle of the shady lee quarter (facing the pole, in the lee of the westerlies), where the snowline sits lowest and cirques are busiest: 45 (NE) north of the equator, 135 (SE) south of it. The starter island is at 57 S (design A4, one sky). Read by peaks.py now and by rule 6's aspect term when it is built (docs/water/rule6_build_plan.md).",
+		"shady_bearing_deg": 135.0
 	},
 	"lakes": {
 		"_note": "Stage C1 and C2 (lakes.py, step R3). open_water_factor: lake evaporation over grass PET. Penman (1948) found grass loses about 0.6 (winter) to 0.8 (summer) of open-water evaporation, 0.7 at the equinoxes, so open water is about PET / 0.7. Seepage through a lake floor (mm/yr over the lake's area) is a stand-in until R4's groundwater solve gives each lake its exchange from the head: on cave-forming limestone and marble a floor leaks through open passages (swallow holes), so it is large; on other soluble rock (chalk) moderate; elsewhere lake floors seal with fine sediment and it is 0. None of the three is from a source yet. cirque_floor_below_ela_m: an ice-scoured hollow whose floor lies above (snowline minus this) counts as a cirque; cirque floors sit near the snowline (they are used to reconstruct it), lower ice-scoured hollows are rock basins in the troughs. Not from a source yet.",
@@ -222,7 +224,7 @@
 		}
 	},
 	"peaks": {
-		"_note": "The peak checks of design A1 rule 6 (peaks.py; sign-off lines 1 to 10 of docs/water/rule6_build_plan.md). Checked summits: the landform's peaks (highest within summit_window_m) at least above_snowline_m above the stadial snowline, since lower tops hold no cirque glacier. Valley heads: on rings_m round the top, lows at least head_drop_m below the ridges either side; heads_needed of them within heads_within_m. top_search_m: a top may move a cell or two as its faces wear (as evolve.py). Flat cap: ground within plateau_within_m of the top, under plateau_max_deg, joined to it; limit plateau_max_m. Headwall: the first point steeper than headwall_deg walking out from the top along a valley head, its cirque floor the lowest ground within floor_beyond_m beyond it. Measured values (Jamie's cirque page #654): long-term headwall retreat 0.1 to 1.3 mm/yr, 0.5 to 1.0 while a glacier is active; north-east sides 1.5 to 2 times faster; most of a cirque's depth in its first cycle, then about 10 times slower (depth_slowdown 5 leaves room). Judged: the ring radii, head_drop_m 50, headwall_deg 40, the plateau thresholds, met_at_top_m and the fail limits of the NE/SW ratio.",
+		"_note": "The peak checks of design A1 rule 6 (peaks.py; sign-off lines 1 to 10 of docs/water/rule6_build_plan.md). Checked summits: the landform's peaks (highest within summit_window_m) at least above_snowline_m above the stadial snowline, since lower tops hold no cirque glacier. Valley heads: on rings_m round the top, lows at least head_drop_m below the ridges either side; heads_needed of them within heads_within_m. top_search_m: a top may move a cell or two as its faces wear (as evolve.py). Flat cap: ground within plateau_within_m of the top, under plateau_max_deg, joined to it; limit plateau_max_m. Headwall: the first point steeper than headwall_deg walking out from the top along a valley head, its cirque floor the lowest ground within floor_beyond_m beyond it. Measured values (Jamie's cirque page #654): long-term headwall retreat 0.1 to 1.3 mm/yr, 0.5 to 1.0 while a glacier is active; shady lee sides 1.5 to 2 times faster than sunny ones (north-east north of the equator, south-east south of it: glacial.shady_bearing_deg); most of a cirque's depth in its first cycle, then about 10 times slower (depth_slowdown 5 leaves room). Judged: the ring radii, head_drop_m 50, headwall_deg 40, the plateau thresholds, met_at_top_m and the fail limits of the shady/sunny ratio.",
 		"above_snowline_m": 300.0,
 		"summit_window_m": 1000.0,
 		"window_m": 2500.0,
@@ -246,8 +248,8 @@
 		"hollow_min_depth_m": 0.1,
 		"retreat_mm_yr": [0.1, 1.3],
 		"retreat_middle_mm_yr": [0.5, 1.0],
-		"ne_sw_ratio": [1.5, 2.0],
-		"ne_sw_fail_outside": [1.2, 3.0],
+		"shady_sunny_ratio": [1.5, 2.0],
+		"shady_sunny_fail_outside": [1.2, 3.0],
 		"early_cycles": 3,
 		"depth_slowdown": 5.0
 	}
