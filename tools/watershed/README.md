@@ -53,7 +53,7 @@ With `uplift_share` 0 (the default since 8 Nov) the run dissects the landform as
 
 To calibrate the uplift from a finished run (only for runs with uplift), add `--calibrate=PREV_RUN_DIR`: the uplift is scaled by the landform over that run's ground, both smoothed at `uplift.smooth_m`, so the massifs end at the landform's heights. The summary then reports `uplift_calibration` and `massif_scale_height_mismatch_m` (near 0 is right).
 
-`python tools/watershed/plots.py ground RUN_DIR` redraws `evolve.png` from a saved run in seconds. RUN_DIR is the run's output folder, the one holding `ground.npz`.
+`python tools/watershed/plots.py ground RUN_DIR` redraws `evolve.png` from a saved run in seconds. RUN_DIR is the run's output folder, the one holding `ground.npz`. `python tools/watershed/plots.py zoom RUN_DIR X Z [SIZE_M]` draws a close look at full resolution (`zoom_X_Z.png`, a 6 km square by default, world metres), to tell branching valleys from straight parallel gullies.
 
 Check `evolve.png` and the summary for:
 - branching valleys everywhere, with hills between them;
