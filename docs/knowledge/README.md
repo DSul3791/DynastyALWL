@@ -35,3 +35,4 @@ Each doc has these sections:
 | Warmth and weather (cold, rain, wet, drying, fire heat) | [warmth-weather.md](warmth-weather.md) | 2026-11-06 | Steve |
 | The guiding document (G-ids, D-ids, how designs reach the game) | [guiding-document.md](guiding-document.md) | 2026-11-07 | Coordinator |
 | Snow lines and mountain climate (snow line, lapse rate, aspect, drift, summer snow patches) | [snow-lines-mountain-climate.md](snow-lines-mountain-climate.md) | 2026-11-08 | Sonny, weather owner, Kathleen (look) |
+| Rivers and floodplains (meanders, braids, floodplains, levees, terraces, fans, deltas) | [rivers-floodplains.md](rivers-floodplains.md) | 2026-11-08 | Sonny |
