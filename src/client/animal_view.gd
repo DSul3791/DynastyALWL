@@ -606,6 +606,24 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 		# units than the skeleton (the bear lay flat as a legless tube, 7 Nov 2026) is rescaled to it (_fit_clip_units).
 		var roles: Dictionary = {}
 
+		# Hand-made gait clips (gait {role: spec}): a model with no usable clip for a role gets one built from its own bones
+		# (_gait_clip). They are added under the name "gait_<role>" and the row's clips point at it.
+		for gait_role in (row.get("gait", {}) as Dictionary):
+			var gait_name: String = "gait_%s" % str(gait_role)
+
+			if player.has_animation_library("") and not player.has_animation(gait_name):
+				var made: Animation = _gait_clip(player, rig, row["gait"][gait_role], kind)
+
+				if made != null:
+					player.get_animation_library("").add_animation(gait_name, made)
+
+			row = row.duplicate(true)
+
+			if not row.has("clips"):
+				row["clips"] = {}
+
+			(row["clips"] as Dictionary)[str(gait_role)] = gait_name
+
 		# A refused clip (it lays the model flat) does not leave the role empty: the next clip that names the role is tried (the elk's
 		# file has two clips called Walk, one of them shrinking the rig to a hundredth; MikeW, 7 Nov 2026).
 		var rest_h: float = _clip_height(player, null, rig)
@@ -1180,7 +1198,7 @@ func _make_model_flock(number: int, id: int, row: Dictionary) -> Node3D:
 			root.free()
 			return null      # no model file: the code flock is drawn
 
-		bird.position = Vector3(rng.randf_range(-spread, spread), -float(row.get("sink_m", 0.0)), rng.randf_range(-spread, spread))
+		bird.position = Vector3(rng.randf_range(-spread, spread), -_flock_sink(bird, row), rng.randf_range(-spread, spread))
 		bird.rotation.y = rng.randf_range(-0.6, 0.6)
 		rig.add_child(bird)
 		birds.append(bird)
@@ -1235,6 +1253,67 @@ func _track_at(anim: Animation, t: int, kind: int, time: float) -> Variant:
 	if kind == Animation.TYPE_POSITION_3D:
 		return anim.position_track_interpolate(t, time)
 	return anim.scale_track_interpolate(t, time)
+
+
+# How far a bird of a model flock sits into the surface: "sink_share" of its height in its graze clip (its swim pose: the legs
+# paddle below the body, and about a third of the body rides under the water line), else the fixed "sink_m".
+func _flock_sink(bird: Node3D, row: Dictionary) -> float:
+	if not row.has("sink_share") or not bird.has_meta("player"):
+		return float(row.get("sink_m", 0.0))
+
+	var player: AnimationPlayer = bird.get_meta("player")
+	var clip: String = str((player.get_meta("roles", {}) as Dictionary).get("0", ""))
+	var rig: Node3D = bird.get_node_or_null("Rig")
+
+	if clip == "" or rig == null:
+		return float(row.get("sink_m", 0.0))
+
+	var tall: float = _clip_box(player, player.get_animation(clip), rig).size.y      # in the rig's space: the model's size scale is in it
+	return tall * float(row["sink_share"])
+
+
+# A hand-made walk or run cycle from a model's own bones (MikeW, 8 Nov 2026: the mink's file has no looping walk; this is the
+# fallback if its loop window looks jerky in the game). spec: period_s, and "bones" {bone: [phase 0..1, swing degrees, axis "x"/"y"/"z"]}:
+# each bone turns about its own axis by swing * sin(2 pi (t / period + phase)) over its rest. A four-beat walk puts the legs at
+# phases 0, 0.25, 0.5, 0.75 (left hind, left fore, right hind, right fore); spine, tail and head bones sway at small swings.
+func _gait_clip(player: AnimationPlayer, rig: Node3D, spec: Dictionary, kind: String) -> Animation:
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+	var base: Node = player.get_node_or_null(player.root_node)
+
+	if skeletons.is_empty() or base == null:
+		return null
+
+	var sk: Skeleton3D = skeletons[0]
+	var period: float = float(spec.get("period_s", 0.5))
+	var out: Animation = Animation.new()
+	out.length = period
+	out.loop_mode = Animation.LOOP_LINEAR
+	var sk_path: String = str(base.get_path_to(sk))
+	var steps: int = 16
+	var missing: PackedStringArray = PackedStringArray()
+
+	for bone_name in (spec.get("bones", {}) as Dictionary):
+		var bone: int = sk.find_bone(str(bone_name))
+
+		if bone < 0:
+			missing.append(str(bone_name))
+			continue
+
+		var b: Array = spec["bones"][bone_name]
+		var axis: Vector3 = {"x": Vector3.RIGHT, "y": Vector3.UP, "z": Vector3.BACK}.get(str(b[2]) if b.size() > 2 else "x", Vector3.RIGHT)
+		var rest: Quaternion = sk.get_bone_rest(bone).basis.get_rotation_quaternion()
+		var t: int = out.add_track(Animation.TYPE_ROTATION_3D)
+		out.track_set_path(t, NodePath("%s:%s" % [sk_path, str(bone_name)]))
+
+		for i in steps + 1:
+			var time: float = period * float(i) / float(steps)
+			var angle: float = deg_to_rad(float(b[1])) * sin(TAU * (time / period + float(b[0])))
+			out.track_insert_key(t, time, rest * Quaternion(axis, angle))
+
+	if not missing.is_empty():
+		_model_note(kind, "gait: no bone %s" % ", ".join(missing))
+
+	return out
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.
