@@ -98,3 +98,16 @@ The wolf pup later gets its own `companion` block with `only_young` and `only_or
 - A companion keeps out of fires like every animal.
 - Hunting cannot target your own companion: a spear hit on it does nothing, and other players' hits are a player-versus-player question for Dave.
 - Animal caps count a companion as one of its owner's animals.
+
+## 10. Step 1 as built (notes for the gate and for step 2)
+
+These settle small points the sections above left open. The coordinator chose the stray (8 Nov 2026).
+- **Smell, not 4 m:** the stray backs off to 12 m, so food "within 4 m of it" would rarely happen. It goes to food its player left within `stray.smell_m` (15 m), once that player is `trust_gap_m` (6 m) from the food. A player crouched and still (moving under 0.3 m/s) is kept off at only `stray.still_share` (0.4) of `keep_m`, and the stray edges toward them.
+- **Whose food:** the `by` mark (#604) says who dropped it. A stray eats only its own player's food; a dog eats only its owner's. `server_items.stealable_near` rows now carry the item id as a fifth field.
+- **Food list:** raw and roast meat, trout, salmon, and roast, smoked and salted fish. The game has no `raw_fish` or `cooked_fish` items.
+- **The bark** is the ALERT state (3). Its sound mood is "alert", not "threat". The dog has no `creature_sounds.gd` entry yet, so a bark sound is a later sound job. It barks at most once per threat every 20 s, and never at an animal hidden or in a cave.
+- **Fires:** a fire within 1.5 m of the owner is the owner's own torch, and the dog comes to heel beside it. Any other fire's keep-off ring it waits outside.
+- **Bond time** `bond_near_s` is real seconds within 15 m of the owner (10 real minutes, a sixth of a game day).
+- **Never frozen:** a companion is never frozen by distance or sent off for its off hours. When its owner logs off it leaves the world, and it is made again beside them when they return. It steps over snares.
+- **Hits:** a hit from its owner does nothing. Other players' hits hurt it like any animal's, pending Dave's player-versus-player rules. A killed companion's record is kept, with a "died" event.
+- **At bond 0** the record is kept with no owner and a "lost" event, and that player can befriend a new stray.

@@ -2517,6 +2517,23 @@
 			"note": "Batch 3 (farm). A cat keeps to farms and town, hunts rats at dusk and keeps its distance from a player. Not spawned in the wild (target_per_player 0): the model, server row and carcass are ready for the farm and town system, which places them (Dave 7 Nov 2026: add all the animals we have models for; farm design to come)."
 		},
 		"dog": {
+			"companion": {
+				"note": "Dave 8 Nov 2026, decisions 5 and 6 (docs/design/dog_companion_design.md, server_companions.gd). One wary stray per player without a dog turns up by day within stray.ring_m of the starter town point; it keeps stray.keep_m off (still_share of that from a crouched, still player) and watches a player within 30 m. Food from food that its player dropped within stray.smell_m is eaten once that player is trust_gap_m from it: +1 trust, once a game day. At trust_to_follow it follows that player and is their companion (companions.json), with a name from names and bond bond_start. A game day near its owner for bond_near_s (real seconds) on which it was fed adds bond_per_day; an unfed day out with its owner takes bond_hungry; at 0 it leaves. From warn_bond it barks (ALERT) when one of warn_kinds is within warn_m of its owner. It follows at follow_m. An heir inherits it at inherit_bond_share of its bond.",
+				"stray": {"per_player": 1, "ring_m": [60.0, 150.0], "keep_m": 12.0, "still_share": 0.4, "smell_m": 15.0, "day_only": true},
+				"food": ["raw_meat", "roast_meat", "trout", "salmon", "roast_fish", "smoked_fish", "salted_fish"],
+				"trust_gap_m": 6.0,
+				"trust_to_follow": 3,
+				"bond_start": 0.1,
+				"bond_per_day": 0.05,
+				"bond_hungry": 0.05,
+				"bond_near_s": 600.0,
+				"follow_m": 3.0,
+				"warn_bond": 0.3,
+				"warn_m": 40.0,
+				"warn_kinds": ["bear", "black_bear", "wolf", "goblin"],
+				"inherit_bond_share": 0.7,
+				"names": ["Bran", "Skye", "Rook", "Tess", "Moss", "Fen", "Juno", "Pike"]
+			},
 			"number": 34,
 			"name": "Dog",
 			"target_per_player": 0,
