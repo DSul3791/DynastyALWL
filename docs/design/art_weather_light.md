@@ -271,26 +271,31 @@ Puddles are the cheapest strong sign that it has rained, and a track that shines
      | Gravel and stony soil | 0.7 | packed, but drains quickly |
      | Flat bare rock | 0.6 | shallow pools in dips of the stone |
      | Turf (silt, loam, alluvium) | 0.35 | grass roots drink it |
-     | Litter (humus, peat) | 0.25 | spongy |
+     | Litter (humus) | 0.25 | spongy |
+     | Peat (drawn as litter) | 0.6 | wet to the top; shallow pools stand in it |
      | Sand and beach | 0 | it sinks in at once |
 
    - None under closed crowns (the canopy map, the same shelter that keeps the ground dry), none on lying snow, none within 1 m of sea level, none in caves (they fade out with the cave light when the player is under rock).
    - Drawn to about 120 m, gone by 220 m.
 2. **Filling:**
    - Each ground type keeps its own level from 0 dry to 1 full.
-   - It rises while rain is above 0.15, by 2.5 x (rain - 0.15) per game hour. Steady rain (0.65) fills it in about 50 game minutes (2 real minutes); a storm in about 25.
+   - It rises only while the rain falls faster than that ground soaks it in (Sonny's and Jamie's soak-in rates, #657: gravel 40, sand 20, loam 7.6, silt 5.1, clay 1.5 mm/h; worn tracks as clay, peat 1, rock dips 0). Rain 0..1 is 50 x rain^2.5 mm/h (judged from the Met Office bands: drizzle 0.15 is 0.4 mm/h, the forced "rain" 0.65 is 17, a downpour 50).
+   - The level rises by the excess x 3 (a hollow gathers the run-off of about three times its own area) / 30 mm (a full hollow) per game hour.
+   - So drizzle fills only dips in rock and clay tracks, steady rain turf as well, and only a downpour loose gravel. Sand never holds water.
    - The level sets how much of the hollow pattern is water: a little rain fills only the deepest hollows on the most prone ground; a full level joins them into broad sheets along a muddy track, while turf shows only a few.
-3. **Draining after the rain** (game hours; one game hour is 2.5 real minutes):
+3. **Draining after the rain** (game time; one game hour is 2.5 real minutes). These are the decided soils times (Jamie's judged numbers, coordinator 8 Nov 2026, `docs/knowledge/soils-ground-wetness.md` #657), as `src/client/puddles.gd` uses them (#660):
 
-   | Ground | Dry again in |
-   |---|---|
-   | Gravel | 1 h |
-   | Turf | 1.5 h |
-   | Litter | 2 h |
-   | Flat rock | 2.5 h (it only dries in the air) |
-   | Mud and clay | 3 h |
+   | Ground | Dry again in, high summer | Deep winter |
+   |---|---|---|
+   | Gravel | 1 h | 1 h |
+   | Litter | 2 h | 2 h |
+   | Turf | 3 h | 3 h |
+   | Mud and clay, and worn tracks | 3 days | 10 days |
+   | Dips in flat rock (they only dry in the air) | 2 days | 6 days |
+   | Peat | never (shallow pools stay) | never |
+   | Sand | at once | at once |
 
-   Light rain below 0.15 halves the draining. A frozen puddle does not drain until it thaws.
+   Between summer and winter the time follows the season (warmest at year phase 0.375, as the climate record). Rain still falling halves the draining. A frozen puddle does not drain until it thaws.
 4. **Freezing:** puddles follow the ice rule (`src/shared/ice.gd`, the same number the ponds use) with a 0.1 m depth, so they freeze before the ponds and thaw before them. They look frozen from 2 cm of ice and fully from 5 cm: pale grey-white, glossy, with faint white cracks and trapped bubbles, and no ripples. A frozen puddle does not splash (a thin-ice crunch is a later sound job).
 5. **The look:**
    - Clear water over mud: the ground under it darkens to a brown-black, and the surface is a mirror (roughness about 0.03, flat), so it shows the sky and the sun. At night it reflects only the night sky, dimly, and a torch's own light: it never glows.
