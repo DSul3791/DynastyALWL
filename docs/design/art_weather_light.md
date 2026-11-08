@@ -245,7 +245,7 @@ Decided (section 12, item 7): build it, but it stays off until a picture shows i
 
 1. **What is built works:** rain only from cloud, overcast and dimming, wet glossy ground, dry under crowns, and murky storm water. Keep all of it.
 2. **What to add, in order:**
-   - **Puddles** in hollows on paths and flat ground, with ripple rings (the water rules in `art_water.md`).
+   - **Puddles** in hollows on paths and flat ground, with ripple rings (the water rules in `art_water.md`). **Decided (section 12)**, the rules are in 8.1.1.
    - **Wet rock and bark** darker and shinier, the same as the ground.
    - **Drips from leaves** for a minute after the rain stops.
    - Rain streaks **lit by any light near them**: rain sparkling in the firelight is a strong, true look.
@@ -254,6 +254,57 @@ Decided (section 12, item 7): build it, but it stays off until a picture shows i
    - the air is clearer (less haze for an hour);
    - sun breaks in shafts through gaps in the cloud;
    - a rainbow if the geometry allows (section 4).
+
+### 8.1.1 Puddles
+
+Puddles are the cheapest strong sign that it has rained, and a track that shines with standing water after a storm reads at once. They are a look and a sound only: nothing in the game reads them, they are not saved and the server does not know them.
+
+1. **Where they form:**
+   - Only on flat ground: full below about 10° of slope, gone by about 18°. Water does not stand on a hillside.
+   - In hollows. The hollows are a fixed pattern on the ground (two sizes of noise, about 3.6 m and 1.1 m), so a puddle is 0.5 to 3 m across, irregular, and always in the same place. The voxel ground is 1 m, too coarse to hold the real dips, so the pattern stands in for them.
+   - The ground decides how easily water stands:
+
+     | Ground (shader layer) | Proneness | Why |
+     |---|---|---|
+     | Mud and clay | 1.0 | water cannot sink in |
+     | Worn trails (the game trail map) | + 0.5 on top of the ground | trampled earth is packed hard; tracks are where puddles are |
+     | Gravel and stony soil | 0.7 | packed, but drains quickly |
+     | Flat bare rock | 0.6 | shallow pools in dips of the stone |
+     | Turf (silt, loam, alluvium) | 0.35 | grass roots drink it |
+     | Litter (humus, peat) | 0.25 | spongy |
+     | Sand and beach | 0 | it sinks in at once |
+
+   - None under closed crowns (the canopy map, the same shelter that keeps the ground dry), none on lying snow, none within 1 m of sea level, none in caves (they fade out with the cave light when the player is under rock).
+   - Drawn to about 120 m, gone by 220 m.
+2. **Filling:**
+   - Each ground type keeps its own level from 0 dry to 1 full.
+   - It rises while rain is above 0.15, by 2.5 x (rain - 0.15) per game hour. Steady rain (0.65) fills it in about 50 game minutes (2 real minutes); a storm in about 25.
+   - The level sets how much of the hollow pattern is water: a little rain fills only the deepest hollows on the most prone ground; a full level joins them into broad sheets along a muddy track, while turf shows only a few.
+3. **Draining after the rain** (game hours; one game hour is 2.5 real minutes):
+
+   | Ground | Dry again in |
+   |---|---|
+   | Gravel | 1 h |
+   | Turf | 1.5 h |
+   | Litter | 2 h |
+   | Flat rock | 2.5 h (it only dries in the air) |
+   | Mud and clay | 3 h |
+
+   Light rain below 0.15 halves the draining. A frozen puddle does not drain until it thaws.
+4. **Freezing:** puddles follow the ice rule (`src/shared/ice.gd`, the same number the ponds use) with a 0.1 m depth, so they freeze before the ponds and thaw before them. They look frozen from 2 cm of ice and fully from 5 cm: pale grey-white, glossy, with faint white cracks and trapped bubbles, and no ripples. A frozen puddle does not splash (a thin-ice crunch is a later sound job).
+5. **The look:**
+   - Clear water over mud: the ground under it darkens to a brown-black, and the surface is a mirror (roughness about 0.03, flat), so it shows the sky and the sun. At night it reflects only the night sky, dimly, and a torch's own light: it never glows.
+   - A damp darker rim of about 10 cm around each puddle.
+   - **Rain rings:** drops land on a jittered 0.3 m grid, each ring grows to about 12 cm and fades in about 0.6 s, more of them the harder it rains.
+   - **Wind ruffle:** fine ripples drifting downwind (`wind_dir`) from wind 0.2 up, stronger with wind. In calm air the puddle is a still mirror.
+   - Ripples are drawn within 40 m; beyond, a plain mirror.
+6. **Steps splash:**
+   - The splash sound (`step_water`) now plays only when the foot is in a drawn puddle, not by chance while the ground is wet. The wet squelch on soaked ground stays as it is.
+   - A small visible splash with it: a ring on the water and a few drops thrown 0.2 to 0.4 m up, gone in half a second, bigger at a run. Lit by the scene like the breath puffs.
+   - Animals within 25 m splash the same way when a foot lands in a puddle (a bigger splash for a big animal).
+   - At most 12 splashes at once from one pool.
+7. **Cost:** a few uniforms on the ground material; the puddle work runs only on flat ground within 220 m while any level is above 0, and the ripples only within 40 m. The ice is checked every 10 s.
+8. **Limits:** the hollows are a pattern, not the true small dips of the ground; a cave floor seen from outside its mouth can show a puddle; puddles do not feed the water simulation or give drink.
 
 ### 8.2 Snow
 
@@ -355,6 +406,7 @@ ART_DIRECTION 9 already rules that sky, light, fog and rain read three inputs: z
 9. Wind directions that disagree (rain one way, smoke another).
 10. Flicker that strobes.
 11. A rainbow in the wrong place relative to the sun.
+12. A puddle on a slope, a glowing puddle at night, or a splash where no water is drawn.
 
 ## 11. Pictures to collect (Dave's PC, after the gate queue; not before)
 
@@ -378,7 +430,7 @@ ART_DIRECTION 9 already rules that sky, light, fog and rain read three inputs: z
 5. **A held torch shadow from Medium up (6.4): only after a GPU check on Dave's PC.** Dino does the check when the PC frees up, not now.
 6. **Height fog and a `mist` value in the weather state, valley fog first (7): yes.** Owner: Jamie, after his rivers doc.
 7. **Cap cloud cards for summits above the cloud layer (7.3): only after a check picture from Dino.** Kathleen builds it behind the `--cap-cloud` switch, off by default (7.1), so that Dino's picture decides.
-8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Kathleen owns lower colour at night and breath (#605), then snow on branches and rainbows, each on one branch. Puddles' owner is still to be named.
+8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Kathleen owns lower colour at night and breath (#605), then snow on branches and rainbows, each on one branch. Puddles: Kathleen, rules in 8.1.1, code stacked on the snow and rainbow branch.
 9. Still open: the rest of the rain additions in 8.1.2, the Milky Way (5.4) and the arctic aurora (9).
 
 Kathleen's night-light code is one branch, in this order: moon phases, the never-pitch-black rule, canopy darkening, the torch exposure drop (#601: a 29.53-day moon with a full moon on day 100, `OUTDOOR_FLOOR` 0.18, crowns take up to 45 percent at night, a held flame 15 percent). This document stays the source of truth.
