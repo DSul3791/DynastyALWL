@@ -71,6 +71,8 @@ var animal_sign: bool = false     # tracks on soft ground by stride, droppings, 
 var soil_at: Callable             # (position) -> footstep surface ("mud", "sand", "dirt", "grass", "stone" ...) from the sound stage's soil map
 var _signs: Array = []            # [Decal, born msec, life s, ground] (animal_sign), oldest first
 var _sign_check_t: float = 0.0
+var _sign_rain_s: float = 0.0     # seconds of real rain (0.4 or more) in a row: a game hour washes mud prints
+var _sign_drift_s: float = 0.0    # seconds of wind over 0.35 in a row: two game hours drift snow into snow prints
 var eye_shine: bool = false       # night eye shine v2: torch or moon near the viewer's eye line, a dot per eye that reads far off (EYE_SHINE.md; off until the PC check)
 var night_light: Callable         # () -> {night 0..1, moon 0..1, moon_to Vector3}: from the client's day cycle (eye_shine)
 var voice_fx: bool = false        # animals call by state from data/animals/voices.json; terrain_client then skips the old state_changed calls (ANIMAL_VOICES.md; off until the PC check)
@@ -3057,16 +3059,22 @@ func _sign_ground(node: Node3D) -> String:
 	return ""
 
 
-func _sign_life(ground: String) -> float:
-	var season: String = str((_cond() as Dictionary).get("season", "summer")) if conditions_now.is_valid() else "summer"
+# How long a print lasts at most (Jamie's tracks page, docs/knowledge/animal-tracks-sign.md, #696): mud and wet clay until the next
+# real rain (_fade_signs), ten days at most; bent turf half a day, a heavy animal's hoof holes in soaked turf two and a half days;
+# snow until melt, new snow or drifting wind, ten days at most; sand until rain or wind, three days at most.
+const HEAVY_KINDS := ["moose", "horse", "donkey", "cow", "buffalo", "elk", "bear", "black_bear", "camel", "elephant", "rhino", "mammoth"]
+const GAME_HOUR_S := GAME_DAY_S / 24.0
 
+func _sign_life(ground: String, kind: String = "") -> float:
 	match ground:
 		"snow":
-			return 10.0 * GAME_DAY_S      # until melt or new fall (_fade_signs); ten days at most
+			return 10.0 * GAME_DAY_S
 		"sand":
-			return 3.0 * GAME_DAY_S       # until rain or wind (_fade_signs)
+			return 3.0 * GAME_DAY_S
+		"turf":
+			return GAME_DAY_S * (2.5 if kind in HEAVY_KINDS else 0.5)
 		_:
-			return GAME_DAY_S * (3.0 if season == "summer" else (10.0 if season == "winter" else 5.0))
+			return 10.0 * GAME_DAY_S      # mud and clay: the next real rain ends them (_fade_signs)
 
 
 func _sign_track(kind: String, node: Node3D, b: Dictionary, speed: float) -> void:
@@ -3075,10 +3083,16 @@ func _sign_track(kind: String, node: Node3D, b: Dictionary, speed: float) -> voi
 	if cam == null or cam.global_position.distance_to(node.global_position) > SIGN_NEAR_M:
 		return
 
+	# Spacing by gait (Jamie's tracks page, #696): a walk lays one print per step (the row's track.walk_m, about half the full stride),
+	# a trot 1.45 steps apart in a straighter line, a run a group (four prints, or a rabbit's Y) every track.run_m.
 	var row: Dictionary = node.get_meta("model_row", {})
-	var run_mps: float = float(row.get("run_mps", 8.0))
-	var running: bool = speed > maxf(float(row.get("walk_mps", 1.5)) * 1.6, 2.5)
-	var gap: float = float(row.get("stride_m", 1.0)) * (1.0 + 1.2 * clampf(speed / maxf(run_mps, 0.1), 0.0, 1.0))
+	var track: Dictionary = row.get("track", {})
+	var walk_m: float = float(track.get("walk_m", float(row.get("stride_m", 1.0)) * 0.5)) * maxf(node.scale.x, 0.3)
+	var run_m: float = float(track.get("run_m", walk_m * 5.0)) * maxf(node.scale.x, 0.3)
+	var walk_mps: float = float(row.get("walk_mps", 1.5))
+	var running: bool = speed > maxf(walk_mps * 2.4, 3.5)
+	var trotting: bool = not running and speed > walk_mps * 1.4
+	var gap: float = run_m if running else (walk_m * 1.45 if trotting else walk_m)
 	var last: Vector3 = b.get("track_at", Vector3.INF)
 
 	if last != Vector3.INF and last.distance_to(node.global_position) < gap:
@@ -3097,11 +3111,18 @@ func _sign_track(kind: String, node: Node3D, b: Dictionary, speed: float) -> voi
 	var width: float = float(row.get("length_m", 1.0)) * 0.1 * maxf(node.scale.x, 0.3)
 	var tex: ImageTexture = _print_texture(_print_group(kind))
 
-	if running:      # a group of two: hind foot landing just ahead of where the front foot was
-		_sign_decal(tex, node.global_position + across * width * 0.5 + ahead * size, size, node.rotation.y, ground)
-		_sign_decal(tex, node.global_position - across * width * 0.5 - ahead * size, size, node.rotation.y, ground)
-	else:
-		_sign_decal(tex, node.global_position + across * width * float(b["track_side"]), size, node.rotation.y, ground)
+	if running and kind == "rabbit":      # the Y: two small front prints one behind the other, the two big hind prints side by side ahead
+		_sign_decal(tex, node.global_position - ahead * size * 1.6, size * 0.7, node.rotation.y, ground, -1.0, kind)
+		_sign_decal(tex, node.global_position - ahead * size * 0.6, size * 0.7, node.rotation.y, ground, -1.0, kind)
+		_sign_decal(tex, node.global_position + across * width * 0.6 + ahead * size * 0.8, size, node.rotation.y, ground, -1.0, kind)
+		_sign_decal(tex, node.global_position - across * width * 0.6 + ahead * size * 0.8, size, node.rotation.y, ground, -1.0, kind)
+	elif running:      # a gallop group of four in a slanting row, then the long gap
+		for k in 4:
+			var f: float = float(k) - 1.5
+			_sign_decal(tex, node.global_position + ahead * size * 1.6 * f + across * width * (0.5 if k % 2 == 0 else -0.5), size, node.rotation.y, ground, -1.0, kind)
+	else:      # walk or trot: alternating single prints, a trotting fox or wolf almost on one line
+		var line: float = 0.25 if trotting and kind in ["fox", "wolf", "dog"] else 1.0
+		_sign_decal(tex, node.global_position + across * width * line * float(b["track_side"]), size, node.rotation.y, ground, -1.0, kind)
 
 
 # Droppings, browse and beds (ANIMAL_SIGN.md): a grazer that has fed in one spot for 40 s leaves browse there (nibbled stems), once
@@ -3142,7 +3163,7 @@ func _sign_rest(node: Node3D, b: Dictionary, state: int, speed: float, delta: fl
 			_sign_decal(_sign_texture("droppings"), at - ahead * length * 0.4, clampf(length * 0.12, 0.08, 0.4), randf() * TAU, "droppings", 5.0 * GAME_DAY_S)      # luck-exempt: as above
 
 
-func _sign_decal(tex: Texture2D, at: Vector3, size: float, turn: float, ground: String, life: float = -1.0) -> void:
+func _sign_decal(tex: Texture2D, at: Vector3, size: float, turn: float, ground: String, life: float = -1.0, kind: String = "") -> void:
 	if not is_inside_tree():
 		return
 
@@ -3156,7 +3177,7 @@ func _sign_decal(tex: Texture2D, at: Vector3, size: float, turn: float, ground: 
 	decal.global_position = at + Vector3(0.0, 0.15, 0.0)
 	decal.rotation.y = turn
 	decal.set_meta("alpha", decal.modulate.a)
-	_signs.append([decal, Time.get_ticks_msec(), life if life > 0.0 else _sign_life(ground), ground])
+	_signs.append([decal, Time.get_ticks_msec(), life if life > 0.0 else _sign_life(ground, kind), ground])
 
 	while _signs.size() > SIGN_CAP:
 		(_signs.pop_front()[0] as Decal).queue_free()
@@ -3170,6 +3191,12 @@ func _fade_signs() -> void:
 	var snowing: bool = bool(cond.get("snowing", false))
 	var thawed: bool = float(cond.get("ground_snow", 1.0)) < 0.2
 	var now: int = Time.get_ticks_msec()
+	# Real rain (0.4 or more for a game hour) softens mud and clay prints away; a wind over 0.35 for two game hours drifts snow into
+	# snow prints (Jamie's tracks page). Counted in this check's 2 s steps.
+	_sign_rain_s = _sign_rain_s + 2.0 if rain >= 0.4 else 0.0
+	_sign_drift_s = _sign_drift_s + 2.0 if _wind() > 0.35 else 0.0
+	var washed: bool = _sign_rain_s >= GAME_HOUR_S
+	var drifted: bool = _sign_drift_s >= 2.0 * GAME_HOUR_S
 
 	for i in range(_signs.size() - 1, -1, -1):
 		var sg: Array = _signs[i]
@@ -3180,7 +3207,9 @@ func _fade_signs() -> void:
 
 		if ground == "sand" and (rain > 0.5 or _wind() > 0.6):
 			gone = true
-		elif ground == "snow" and (snowing or thawed):
+		elif ground == "snow" and (snowing or thawed or drifted):
+			gone = true
+		elif (ground == "mud" or ground == "clay") and washed:
 			gone = true
 
 		if gone or not is_instance_valid(decal):

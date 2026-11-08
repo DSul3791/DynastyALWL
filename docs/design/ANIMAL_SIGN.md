@@ -16,21 +16,29 @@ The ground under the foot is the sound stage's soil map (`soil_at`: the footstep
 | stone, gravel, leaf litter, dry dirt or turf | none |
 | under water | none |
 
-## How long it lasts (Jamie's soak numbers, game days; a game day is one real hour)
-- Wet clay and turf: 3 days in summer, 10 in winter, 5 in spring and autumn.
-- Snow: until it melts (lying snow below 0.2) or new snow falls; 10 days at most.
-- Sand: until rain (over 0.5) or a strong wind (0.6); 3 days at most.
-- Browse 7 days, droppings 5, a bed 1.
+## How long it lasts (game days; a game day is one real hour)
+From Jamie's tracks page (`docs/knowledge/animal-tracks-sign.md`, #696), replacing the first soak-time values:
+- **Mud and wet clay:** until the next real rain (rain 0.4 or more for a game hour), ten days at most. A print in drying mud outlasts
+  the wet ground; rain is what erases it.
+- **Turf:** half a day for bent grass; two and a half days for the deep hoof holes of a heavy animal (moose, horse, donkey, cow,
+  buffalo, elk, bears, camel, elephant, rhino, mammoth).
+- **Snow:** until it melts (lying snow below 0.2), new snow falls, or the wind stays above 0.35 for two game hours (drifting fills
+  them); ten days at most.
+- **Sand:** until rain over 0.5 or a wind of 0.6, three days at most.
+- Browse 7 days, droppings 5, a bed 1 (Jamie: right as they are).
 A fresh print is sharp and fades to a fifth of its darkness by the end of its life.
 
-## Stride by species and speed
-- One print is laid per footfall event (`footfall(kind, at, ground, speed)`, the same signal Kathleen's #647 sounds use), but only
-  when the animal has gone a stride since the last: the row's `stride_m` x (1 + 1.2 x speed / run speed). A deer at a walk lays a
-  print every metre or so, at a full run every 2 m.
-- **Walking:** single prints alternating left and right, a body's width apart.
-- **Running:** prints in pairs, front and hind foot side by side, at the longer stride, so a run reads differently from a walk.
-- Shape by the species' sign group (animal_sign.json): two cloven ovals for hoofed, pad and four toes for pawed, the same with
-  claw points for clawed, three thin toes for birds. Size by the animal's length (young smaller). All shapes are generated in code.
+## Spacing by gait (Jamie's tracks page)
+- `models.json` `stride_m` sits near the full stride (two steps), so one print per `stride_m` showed half the prints at a walk. Each
+  species now has `track` {`walk_m`, `run_m`} from her table: deer 0.7 and 3.5 m, moose 1.3 and 4.5, boar 0.5 and 2, bear 0.6 and 3,
+  black bear 0.5 and 2.5, wolf 0.7 and 3, fox 0.3 and 0.8, lynx 0.5 and 2, rabbit 0.3 and 1, horse 0.8 and 4, cow 0.7 and 2, goat 0.4
+  and 1.5, dog 0.5 and 2, crow 0.1, pheasant 0.12. Without a row: half the `stride_m`, and five times that for a run.
+- **Walk:** one print per step, alternating left and right a body's width apart (deer, wolves, foxes, cats and horses put the hind
+  foot in the front print, so one print per step).
+- **Trot** (above 1.4 times the walk speed): single prints 1.45 steps apart; a fox, wolf or dog almost on one line.
+- **Run** (above 2.4 times the walk speed): a group of four prints in a slanting row, then the long gap; a **rabbit** leaves the Y
+  (two small front prints one behind the other, the two big hind prints side by side ahead).
+- Shape by the species' sign group (animal_sign.json); size by the animal's length (young smaller). All shapes are generated in code.
 
 ## Rest and feeding sign
 - **Browse:** a grazer that has fed 40 s in one spot leaves nibbled flecks ahead of it.
@@ -46,9 +54,9 @@ nearest is kept. Checked every 2 s for age and weather.
 - **Species:** the shape (group) and size; species-level reading needs tracking 65 (animal_sign.json).
 - **Direction:** prints point the way the animal faced.
 - **Age:** how faint a print is against its ground's life; with snow and sand, whether it predates the last snowfall or rain.
-- **Walking or running:** single alternating prints against pairs at a longer stride.
+- **Walking, trotting or running:** single alternating prints a step apart, a straighter line a little farther apart, or groups of four (a rabbit's Y) with long gaps.
 - **Where it rested and fed:** a bed, browse and droppings at one spot.
 The hint text when the player looks at sign is the existing animal_sign.json `signs` list (a later UI step).
 
 ## Check
-Run sheet m38 (deer and wolf walking on mud: alternating prints), m39 (running on sand: pairs farther apart), m40 (on stone: none).
+Run sheet m38 (deer and wolf walking on mud: alternating prints a step apart), m39 (deer, wolf and rabbit running on sand: groups of four, the rabbit's Y, long gaps), m40 (on stone: none).
