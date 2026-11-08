@@ -92,6 +92,54 @@ func group_of(slot: String) -> String:
 	return str(_slots.get(slot, {}).get("group", ""))
 
 
+# Ground-aware animal steps (MikeW's footfall hook, docs/design/FOOTFALL.md): a landing in mud, snow or water (a puddle counts as water)
+# adds that ground's layer on top of the species' own step: hoof_* for the hoofed sign group (data/animals/animal_sign.json), paw_* for
+# every other foot. Dust adds nothing (the species step is the dry sound). Louder for a heavier animal (read from its step slot's
+# peak_db) and at a run.
+const FOOTFALL_GROUNDS := {"mud": "mud", "snow": "snow", "water": "water", "puddle": "water"}
+const SIGN_PATH := "res://data/animals/animal_sign.json"
+var _sign_groups: Dictionary = {}         # species -> sign group, read on the first footfall
+
+
+static func footfall_slot(group: String, ground: String) -> String:
+	var layer: String = str(FOOTFALL_GROUNDS.get(ground, ""))
+
+	if layer == "":
+		return ""
+
+	return ("hoof_" if group == "hoofed" else "paw_") + layer
+
+
+# 0.1 (a rat walking) to 1.0 (a horse at a run): the size from the species step's peak_db (-12 a horse, -26 a rat), the speed in m/s.
+static func footfall_strength(step_peak_db: float, speed: float) -> float:
+	var size: float = clampf((step_peak_db + 28.0) / 16.0, 0.1, 1.0)
+	return size * lerpf(0.55, 1.0, smoothstep(0.3, 6.0, speed))
+
+
+func sign_group(kind: String) -> String:
+	if _sign_groups.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SIGN_PATH)) if FileAccess.file_exists(SIGN_PATH) else null
+		_sign_groups["_read"] = ""
+
+		if parsed is Dictionary and parsed.get("species") is Dictionary:
+			for species in parsed["species"]:
+				_sign_groups[species] = str(parsed["species"][species].get("group", ""))
+
+	return str(_sign_groups.get(kind.trim_prefix("young_"), ""))
+
+
+func footfall(kind: String, at: Vector3, ground: String, speed: float, listener: Vector3 = Vector3.INF) -> bool:
+	var slot: String = footfall_slot(sign_group(kind), ground)
+
+	if slot == "":
+		return false
+
+	var species: String = kind.trim_prefix("young_")
+	var step_slot: String = "rabbit_hop" if species == "rabbit" else species + "_step"
+	var peak: float = float(_slots.get(step_slot, {}).get("peak_db", -16.0))
+	return play(slot, at, listener, footfall_strength(peak, speed))
+
+
 # Which clip would be next for a slot, without playing: never the same index twice in a row (a pure function of the count, for the tests).
 static func pick_index(count: int, last_index: int, draw: int) -> int:
 	if count <= 1:

@@ -1036,6 +1036,815 @@
 			],
 			"hunt_difficulty": 1.8,
 			"blows": 3
+		},
+		"chamois": {
+			"size_kg": 35.0,
+			"parts": [
+				[
+					"raw_meat",
+					4,
+					6
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					3,
+					4
+				],
+				[
+					"sinew",
+					1,
+					2
+				],
+				[
+					"animal_fat",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 2.2,
+			"blows": 3
+		},
+		"mink": {
+			"size_kg": 1.2,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.8,
+			"blows": 1
+		},
+		"raccoon": {
+			"size_kg": 7.0,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					2
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					2
+				],
+				[
+					"animal_fat",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.4,
+			"blows": 2
+		},
+		"rat": {
+			"size_kg": 0.3,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.2,
+			"blows": 1
+		},
+		"crow": {
+			"size_kg": 0.5,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"feather",
+					2,
+					5
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.5,
+			"blows": 1
+		},
+		"cow": {
+			"size_kg": 500.0,
+			"parts": [
+				[
+					"raw_meat",
+					16,
+					22
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					8,
+					12
+				],
+				[
+					"sinew",
+					4,
+					6
+				],
+				[
+					"animal_fat",
+					4,
+					7
+				]
+			],
+			"hunt_difficulty": 1.0,
+			"blows": 8
+		},
+		"goat": {
+			"size_kg": 45.0,
+			"parts": [
+				[
+					"raw_meat",
+					4,
+					7
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					1,
+					2
+				],
+				[
+					"animal_fat",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 1.0,
+			"blows": 3
+		},
+		"chicken": {
+			"size_kg": 2.0,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					2
+				],
+				[
+					"feather",
+					3,
+					6
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.0,
+			"blows": 1
+		},
+		"cat": {
+			"size_kg": 4.0,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.6,
+			"blows": 2
+		},
+		"dog": {
+			"size_kg": 28.0,
+			"parts": [
+				[
+					"raw_meat",
+					3,
+					5
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					2,
+					4
+				],
+				[
+					"sinew",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 1.5,
+			"blows": 3
+		},
+		"buffalo": {
+			"size_kg": 700.0,
+			"parts": [
+				[
+					"raw_meat",
+					20,
+					28
+				],
+				[
+					"hide",
+					3,
+					4
+				],
+				[
+					"bone",
+					10,
+					14
+				],
+				[
+					"sinew",
+					6,
+					9
+				],
+				[
+					"animal_fat",
+					6,
+					10
+				],
+				[
+					"antler",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 2.8,
+			"blows": 8
+		},
+		"puma": {
+			"size_kg": 60.0,
+			"parts": [
+				[
+					"raw_meat",
+					5,
+					8
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					2,
+					3
+				],
+				[
+					"claw",
+					2,
+					4
+				]
+			],
+			"hunt_difficulty": 2.8,
+			"blows": 4
+		},
+		"pronghorn": {
+			"size_kg": 50.0,
+			"parts": [
+				[
+					"raw_meat",
+					5,
+					7
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					2,
+					3
+				],
+				[
+					"animal_fat",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 2.4,
+			"blows": 3
+		},
+		"warthog": {
+			"size_kg": 75.0,
+			"parts": [
+				[
+					"raw_meat",
+					7,
+					10
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					4,
+					6
+				],
+				[
+					"sinew",
+					2,
+					3
+				],
+				[
+					"animal_fat",
+					2,
+					3
+				],
+				[
+					"tusk",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 2.2,
+			"blows": 4
+		},
+		"hyena": {
+			"size_kg": 55.0,
+			"parts": [
+				[
+					"raw_meat",
+					4,
+					7
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					2,
+					3
+				],
+				[
+					"claw",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 2.4,
+			"blows": 3
+		},
+		"wildebeest": {
+			"size_kg": 220.0,
+			"parts": [
+				[
+					"raw_meat",
+					12,
+					17
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					6,
+					9
+				],
+				[
+					"sinew",
+					3,
+					5
+				],
+				[
+					"animal_fat",
+					2,
+					4
+				],
+				[
+					"antler",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 2.0,
+			"blows": 6
+		},
+		"lion": {
+			"size_kg": 180.0,
+			"parts": [
+				[
+					"raw_meat",
+					10,
+					15
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					5,
+					8
+				],
+				[
+					"sinew",
+					3,
+					5
+				],
+				[
+					"claw",
+					3,
+					5
+				]
+			],
+			"hunt_difficulty": 3.2,
+			"blows": 6
+		},
+		"leopard": {
+			"size_kg": 60.0,
+			"parts": [
+				[
+					"raw_meat",
+					5,
+					8
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					2,
+					3
+				],
+				[
+					"claw",
+					2,
+					4
+				]
+			],
+			"hunt_difficulty": 3.0,
+			"blows": 4
+		},
+		"rhino": {
+			"size_kg": 1500.0,
+			"parts": [
+				[
+					"raw_meat",
+					26,
+					34
+				],
+				[
+					"hide",
+					4,
+					6
+				],
+				[
+					"bone",
+					14,
+					18
+				],
+				[
+					"sinew",
+					8,
+					11
+				],
+				[
+					"animal_fat",
+					8,
+					12
+				],
+				[
+					"antler",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 3.6,
+			"blows": 8
+		},
+		"elephant": {
+			"size_kg": 4000.0,
+			"parts": [
+				[
+					"raw_meat",
+					40,
+					55
+				],
+				[
+					"hide",
+					6,
+					9
+				],
+				[
+					"bone",
+					20,
+					28
+				],
+				[
+					"sinew",
+					12,
+					16
+				],
+				[
+					"animal_fat",
+					15,
+					22
+				],
+				[
+					"tusk",
+					2,
+					2
+				]
+			],
+			"hunt_difficulty": 4.0,
+			"blows": 8
+		},
+		"camel": {
+			"size_kg": 500.0,
+			"parts": [
+				[
+					"raw_meat",
+					16,
+					22
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					8,
+					12
+				],
+				[
+					"sinew",
+					4,
+					6
+				],
+				[
+					"animal_fat",
+					6,
+					9
+				]
+			],
+			"hunt_difficulty": 1.6,
+			"blows": 8
+		},
+		"guineafowl": {
+			"size_kg": 1.4,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					2
+				],
+				[
+					"feather",
+					4,
+					8
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.6,
+			"blows": 1
+		},
+		"honey_badger": {
+			"size_kg": 11.0,
+			"parts": [
+				[
+					"raw_meat",
+					2,
+					3
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					2
+				],
+				[
+					"claw",
+					2,
+					4
+				]
+			],
+			"hunt_difficulty": 2.4,
+			"blows": 2
+		},
+		"kangaroo": {
+			"size_kg": 60.0,
+			"parts": [
+				[
+					"raw_meat",
+					5,
+					8
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					2,
+					3
+				]
+			],
+			"hunt_difficulty": 2.0,
+			"blows": 4
+		},
+		"mammoth": {
+			"size_kg": 6000.0,
+			"parts": [
+				[
+					"raw_meat",
+					45,
+					60
+				],
+				[
+					"hide",
+					7,
+					10
+				],
+				[
+					"bone",
+					22,
+					30
+				],
+				[
+					"sinew",
+					12,
+					16
+				],
+				[
+					"animal_fat",
+					20,
+					28
+				],
+				[
+					"tusk",
+					2,
+					2
+				]
+			],
+			"hunt_difficulty": 4.2,
+			"blows": 8
+		},
+		"tiger": {
+			"size_kg": 220.0,
+			"parts": [
+				[
+					"raw_meat",
+					12,
+					17
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					6,
+					9
+				],
+				[
+					"sinew",
+					3,
+					5
+				],
+				[
+					"claw",
+					3,
+					5
+				]
+			],
+			"hunt_difficulty": 3.6,
+			"blows": 6
+		},
+		"alligator": {
+			"size_kg": 250.0,
+			"parts": [
+				[
+					"raw_meat",
+					10,
+					15
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					6,
+					9
+				],
+				[
+					"sinew",
+					3,
+					5
+				],
+				[
+					"claw",
+					2,
+					4
+				]
+			],
+			"hunt_difficulty": 3.4,
+			"blows": 6
 		}
 	},
 	"species_note": "Per-species `blows` (Sal, 2026-10-31) = knife blows to dress the body, by size: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8. The server currently reads the single top-level `blows` (4) for every species; reading the per-species value is a small code change (server_items.gd make_carcass / _process_carcass). All species use tool_class knife."
