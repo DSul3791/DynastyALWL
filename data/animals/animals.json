@@ -1019,7 +1019,7 @@
 		"goblin": {
 			"number": 16,
 			"name": "Goblin",
-			"note": "Dave 7 Nov 2026 (docs/GOBLINS.md): 2 to 5 goblins live in a river-side cave (a spring cave mouth), never one that has a bear in or near it. They bed down at the mouth by day (active) and come out at night; skittish: they watch from the edge of firelight (alert) and run, but fight if cornered or threatened at their den. Den life (docs/design/goblin_den_life_design.md, den_life): by day they sleep in the den inside the cave, walking the cave floor path; at night they come out, creep to the edge of a fire's light to watch (watch_spook_m), or forage at berry bushes without stripping them. Still to build: stealing, fighting bears. Two models (Skritch, Rukz) are picked per goblin on the client; height 1.1 m +-0.5 m, bell-shaped, from the animal id.",
+			"note": "Dave 7 Nov 2026 (docs/GOBLINS.md): 2 to 5 goblins live in a river-side cave (a spring cave mouth), never one that has a bear in or near it. They bed down at the mouth by day (active) and come out at night; skittish: they watch from the edge of firelight (alert) and run, but fight if cornered or threatened at their den. Den life (docs/design/goblin_den_life_design.md, den_life): by day they sleep in the den inside the cave, walking the cave floor path; at night they come out, creep to the edge of a fire's light to watch (watch_spook_m), or forage at berry bushes without stripping them. Stealing (docs/design/goblin_stealing_design.md): one small unlit loose thing at a time, carried to a pile in the den; a killed goblin drops it; no new band while a burning fire is within lair.guard_m of the mouth. Still to build: fighting bears, friendship. Two models (Skritch, Rukz) are picked per goblin on the client; height 1.1 m +-0.5 m, bell-shaped, from the animal id.",
 			"target_per_player": 0,
 			"health": 25.0,
 			"protective_share": 0.0,
@@ -1034,7 +1034,8 @@
 					"bear"
 				],
 				"avoid_m": 120.0,
-				"respawn_s": 1800.0
+				"respawn_s": 1800.0,
+				"guard_m": 100.0
 			},
 			"den": {
 				"den_m": 12.0,
@@ -1056,7 +1057,14 @@
 				"forage_s": [
 					20.0,
 					60.0
-				]
+				],
+				"steal_share": 0.4,
+				"steal_reach_m": 150.0,
+				"steal_scare_m": 8.0,
+				"sneak_mps": 1.0,
+				"carry_mps": 4.5,
+				"steal_again_s": 120.0,
+				"hoard_life_s": 604800.0
 			},
 			"defend": {
 				"warn_m": 0.0,
