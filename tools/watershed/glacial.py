@@ -35,6 +35,17 @@ England and Wales, p. 176). Evaporation uses the cold-stage PET.
 Then the post-glacial era: about 11,700 years of today's rivers and creep (evolve.river_step), too short to fill the new
 rock basins, as in nature. Every closed hollow left is listed with what made it (ice-scoured floor, a sill of glacial
 deposits, or neither) for R3, which gives each lake its cause.
+
+The glacial history (design A1 rule 6, docs/water/rule6_build_plan.md, 8 Nov 2026). With glacial.history set, the one cold
+stage becomes cycles, era by era (the 41 kyr world from 2.6 Ma, then the 100 kyr world since about 1 Ma): each cycle is a
+cold phase of active_years with the snowline ela_offset_m higher than glacial.ela_m, then an interglacial of
+interglacial_years of today's rivers (the last one is the Holocene, so the run ends today); the rest of the period passes
+with uplift only (full-glacial ice sheets are not modelled; cirques do not grow under them). The snowline lies aspect_ela_m
+lower on steep ground facing the shady lee quarter (shady_bearing_deg) and as much higher facing the sunny one. After every
+cycle the peak shapes (peaks.shapes) go into the manifest's summary.cycles, and the rule 6 checks (peaks.check_glacial,
+lines 4 to 10) into summary.peaks; snapshot_after_cycles saves glacial_cycle_NN.npz. ice_cut_m is the ice's own cut (the
+cold phases only), which the hollow causes and the report use; glacial_cut_m also holds the interglacial rivers' work.
+With no history the run is the one cold stage and post-glacial era above.
 """
 import sys, os, json, time
 import numpy as np
@@ -136,6 +147,24 @@ def _swath(Ai, ptr, don, order, n, dx, w0, a0, alpha):
     return out
 
 
+def _aspect_shift(h, GL, n, dx):
+    """Metres the snowline lies lower on each cell (design A1 rule 6): aspect_ela_m on steep ground facing the shady lee
+    quarter (glacial.shady_bearing_deg: 45, NE, north of the equator; 135, SE, south of it), as much higher facing the
+    sunny one, scaled by the slope up to aspect_full_slope_deg. The aspect is that of the ground smoothed over
+    aspect_smoothing_m: a valley head's, not one cell's. 0 everywhere when aspect_ela_m is 0 or missing."""
+    a = float(GL.get('aspect_ela_m', 0.0))
+    if a == 0.0:
+        return 0.0
+    from scipy.ndimage import gaussian_filter
+    sm = gaussian_filter(h.reshape(n, n), float(GL['aspect_smoothing_m']) / dx)
+    gz, gx = np.gradient(sm, dx)                       # rows run +z (south), columns +x (east); north is -z
+    g = np.maximum(np.hypot(gx, gz), 1e-9)
+    b = np.radians(float(GL['shady_bearing_deg']))
+    shady = (-gx * np.sin(b) + gz * np.cos(b)) / g     # +1 where the slope faces the shady lee quarter, -1 the sunny one
+    steep = np.clip(np.degrees(np.arctan(g)) / float(GL['aspect_full_slope_deg']), 0.0, 1.0)
+    return (a * shady * steep).ravel()
+
+
 def main():
     inputs_dir, geology_dir, b1_dir, out_dir = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
     P = json.load(open(sys.argv[5] if len(sys.argv) > 5 else os.path.join(HERE, 'params.json')))
@@ -176,7 +205,11 @@ def main():
     frame = np.zeros((n, n), bool); frame[0, :] = frame[-1, :] = frame[:, 0] = frame[:, -1] = True
     fixed = (sea == 1) | frame.ravel()
 
-    # ---- the cold stage ----
+    # ---- the glacial history (design A1 rule 6, docs/water/rule6_build_plan.md change 2) ----
+    # Cycles of a cold phase (the cirque glaciers at work) and an interglacial (today's rivers and creep), era by era:
+    # glacial.history, the 41 kyr world and then the 100 kyr world. With no history it is one cold stage of glacial.years
+    # and the post-glacial era, as before. The rest of each cycle (full-glacial ice-sheet cover and frozen dry time) passes
+    # with uplift only: cirques do not grow under ice sheets, and that ice is not modelled.
     He, Hf = float(GL['ela_m']), float(GL['ela_m']) + float(GL['full_ice_above_ela_m'])
     Kg = float(GL['glacial_K_ratio']) * float(E['K'])
     m = float(E['m'])
@@ -184,81 +217,128 @@ def main():
     delta, eps, tau = float(GL['thickness_to_width']), float(GL['swath_eps']), float(GL['ice_carry_ratio'])
     Wc = dict(W, pet_mm_yr=float(GL['cold_pet_mm_yr']))
     et_cold = runoff.evaporation(rain_mm, Wc['pet_mm_yr'], Wc['fu_omega'])
-    dt = float(GL['dt'])
-    steps = int(round(float(GL['years']) / dt))
-    ice = np.zeros(N)                                  # thickness from the last step
-    ice_max = np.zeros(N)
-    flux_max = np.zeros(N)
+    history = GL.get('history') or [dict(era='one cold stage', cycles=1, active_years=float(GL['years']),
+                                         interglacial_years=float(GL['post_glacial_years']), ela_offset_m=0.0,
+                                         period_years=float(GL['years']) + float(GL['post_glacial_years']))]
+    total_years = sum(int(e['cycles']) * float(e['period_years']) for e in history)
+    bound = float(b1_ground.max()) + float(U.max()) * total_years + 100.0
+    st = dict(h=h, deposit=deposit, ice_max=np.zeros(N), flux_max=np.zeros(N), ice_cycle_max=np.zeros(N), ice_cut=np.zeros(N),
+              flux=np.zeros(N), steps=0, psteps=0)
     t0 = time.time()
     track = []
-    for s in range(steps):
-        surf = h + ice
-        filled, rec, order = evolve.route(surf, sea, n, dx, evolve.flow_memory(E))
-        frac = np.minimum((surf - He) / (Hf - He), 1.0)
-        p_ice = rain_mm * frac                         # mm/yr of ice made (negative: melted)
-        Ai, A = _ice_flux(order, rec, sea, cell * p_ice / p0, cell * rain_mm / p0, N)
-        ptr, don = _donors(rec, order, N)
-        Asw = _swath(Ai, ptr, don, order, n, dx, w0, a0, alpha)
-        Aeff = np.where(Asw > 0.0, np.maximum(A, cell) ** eps * Asw ** (1.0 - eps), 0.0)
-        # Water: the rain that does not become ice, plus melt, less the cold-stage evaporation; all of it quick (frozen ground).
-        water = np.maximum(rain_mm - et_cold - np.maximum(p_ice, 0.0), 0.0)
-        water = water + np.maximum(-p_ice, 0.0) * (Ai > 0.0)   # melt reaches the rivers only where there is ice to melt
-        Qw = evolve._discharge(order, rec, sea, water / q_ref, cell, N)
-        share = evolve._channel_share(Qw, evolve._discharge(order, rec, sea, ones, cell, N), surf, rec, order, sea, n, dx, c_ch, theta, a_min)
-        ery = ery_fn(h)                                # the top layer, cover where there is any: creep moves it
-        ery_rock, ery_cov, cov = ery_fn.parts(h)       # ice and water strip the loose cover first, then cut the rock (evolve._solve)
-        Qwi = np.where(Qw > 0.0, Qw, cell)
-        kq = Kg * ery_rock * Aeff ** m + E['K'] * ery_rock * share * Qwi ** m
-        kq_c = Kg * ery_cov * Aeff ** m + E['K'] * ery_cov * share * Qwi ** m
-        Qd = Qwi + tau * Aeff
-        thick = np.where(Aeff > 0.0, delta * w0 * (Aeff / a0) ** alpha, 0.0)
-        thick[sea == 1] = 0.0
-        x = h + thick                                  # solve on the ice surface (his section 4: add h, erode, subtract h)
-        x0 = x.copy()
-        # The slope limit is for the ground, under the ice too, measured ground to ground (lift = the ice thickness, so a
-        # glacier's steep front or surface is not capped, only the rock under it). Run 7b0dfbff had no limit under the ice:
-        # on the smooth flanks each one-cell flow line was cut on its own (the swath spreads a glacier's flux only over the
-        # cells that drain into it, and parallel lines do not), leaving slots with walls up to 87 degrees and 300 m high,
-        # more than the 11,700 post-glacial years could bring down. A rock wall fails past its threshold whether or not ice
-        # lies beside it; the debris joins the ice's load (rockfall onto glaciers). The limit holds against every neighbour,
-        # not only the receiver (evolve._slope_ceiling): with the receiver alone, run a3ffca14 still left 86-degree walls,
-        # lowered one cell a step.
-        sc = evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h), deposit)
-        # The incision threshold is for flowing water on bedrock; ice cuts whatever its flux (none under the ice).
-        kc = np.where(thick > 0.0, 0.0, E['K'] * ery_rock * share * evolve.bedrock_threshold(E))
-        flux = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cov.copy(), E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc, thick)
-        h0 = h.copy()
-        h = x - thick
-        h[land] = np.maximum(h[land], 0.05)
-        evolve._diffuse(h, fixed | (thick > 0.0), dx, dt, E['D'], ery)
-        change = h - (h0 + U * dt)
-        deposit = np.maximum(deposit + change, 0.0)
-        ery_fn.update(change)
-        ice = thick
-        ice_max = np.maximum(ice_max, thick)
-        flux_max = np.maximum(flux_max, Ai)
-        track.append((s, float((thick[land] > 0.0).sum() * cell / 1e6), float(thick.max()), float(h.max())))
-        if s % 5 == 0:
-            print(f'cold step {s}/{steps} t {time.time() - t0:.0f} s, ice {track[-1][1]:.1f} km2, thickest {track[-1][2]:.0f} m, '
-                  f'max ground {track[-1][3]:.0f} m', flush=True)
-        bound = float(b1_ground.max()) + float(U.max()) * float(GL['years']) + 100.0
-        if not np.isfinite(h).all() or h.max() > bound:
-            raise SystemExit(f'glacial: unstable at cold step {s}: max ground {h.max():.3g} m is above the bound {bound:.0f} m')
-    cold_ground = h.copy()
-    cold_deposit = deposit.copy()
-    glacial_cut = b1_ground + U * float(GL['years']) - cold_ground     # rock and soil the cold stage removed (uplift aside)
+
+    def _cold_phase(years, ela_local, k):
+        """One cold phase of `years`, from no ice: the old cold stage's step, with the snowline ela_local (per cell)."""
+        steps = max(int(round(years / float(GL['dt']))), 1)
+        dt = years / steps
+        h, deposit = st['h'], st['deposit']
+        ice = np.zeros(N)                              # thickness from the last step
+        st['ice_cycle_max'] = np.zeros(N)
+        for s in range(steps):
+            surf = h + ice
+            filled, rec, order = evolve.route(surf, sea, n, dx, evolve.flow_memory(E))
+            frac = np.minimum((surf - ela_local) / (Hf - He), 1.0)
+            p_ice = rain_mm * frac                     # mm/yr of ice made (negative: melted)
+            Ai, A = _ice_flux(order, rec, sea, cell * p_ice / p0, cell * rain_mm / p0, N)
+            ptr, don = _donors(rec, order, N)
+            Asw = _swath(Ai, ptr, don, order, n, dx, w0, a0, alpha)
+            Aeff = np.where(Asw > 0.0, np.maximum(A, cell) ** eps * Asw ** (1.0 - eps), 0.0)
+            # Water: the rain that does not become ice, plus melt, less the cold-stage evaporation; all of it quick (frozen ground).
+            water = np.maximum(rain_mm - et_cold - np.maximum(p_ice, 0.0), 0.0)
+            water = water + np.maximum(-p_ice, 0.0) * (Ai > 0.0)   # melt reaches the rivers only where there is ice to melt
+            Qw = evolve._discharge(order, rec, sea, water / q_ref, cell, N)
+            share = evolve._channel_share(Qw, evolve._discharge(order, rec, sea, ones, cell, N), surf, rec, order, sea, n, dx, c_ch, theta, a_min)
+            ery = ery_fn(h)                            # the top layer, cover where there is any: creep moves it
+            ery_rock, ery_cov, cov = ery_fn.parts(h)   # ice and water strip the loose cover first, then cut the rock (evolve._solve)
+            Qwi = np.where(Qw > 0.0, Qw, cell)
+            kq = Kg * ery_rock * Aeff ** m + E['K'] * ery_rock * share * Qwi ** m
+            kq_c = Kg * ery_cov * Aeff ** m + E['K'] * ery_cov * share * Qwi ** m
+            Qd = Qwi + tau * Aeff
+            thick = np.where(Aeff > 0.0, delta * w0 * (Aeff / a0) ** alpha, 0.0)
+            thick[sea == 1] = 0.0
+            x = h + thick                              # solve on the ice surface (his section 4: add h, erode, subtract h)
+            x0 = x.copy()
+            # The slope limit is for the ground, under the ice too, measured ground to ground (lift = the ice thickness, so a
+            # glacier's steep front or surface is not capped, only the rock under it). Run 7b0dfbff had no limit under the
+            # ice: on the smooth flanks each one-cell flow line was cut on its own (the swath spreads a glacier's flux only
+            # over the cells that drain into it, and parallel lines do not), leaving slots with walls up to 87 degrees and
+            # 300 m high, more than the 11,700 post-glacial years could bring down. A rock wall fails past its threshold
+            # whether or not ice lies beside it; the debris joins the ice's load (rockfall onto glaciers). The limit holds
+            # against every neighbour, not only the receiver (evolve._slope_ceiling): with the receiver alone, run a3ffca14
+            # still left 86-degree walls, lowered one cell a step.
+            sc = evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h), deposit)
+            # The incision threshold is for flowing water on bedrock; ice cuts whatever its flux (none under the ice).
+            kc = np.where(thick > 0.0, 0.0, E['K'] * ery_rock * share * evolve.bedrock_threshold(E))
+            st['flux'] = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cov.copy(), E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc, thick)
+            h0 = h.copy()
+            h = x - thick
+            h[land] = np.maximum(h[land], 0.05)
+            evolve._diffuse(h, fixed | (thick > 0.0), dx, dt, E['D'], ery)
+            change = h - (h0 + U * dt)
+            deposit = np.maximum(deposit + change, 0.0)
+            ery_fn.update(change)
+            st['ice_cut'] -= change                    # the ice's own cut: the net lowering in the cold phases, uplift aside
+            ice = thick
+            st['ice_max'] = np.maximum(st['ice_max'], thick)
+            st['ice_cycle_max'] = np.maximum(st['ice_cycle_max'], thick)
+            st['flux_max'] = np.maximum(st['flux_max'], Ai)
+            q = st['steps']
+            st['steps'] += 1
+            track.append((q, float((thick[land] > 0.0).sum() * cell / 1e6), float(thick.max()), float(h.max())))
+            if q % 5 == 0:
+                print(f'cycle {k} cold step {s}/{steps} (all {q}) t {time.time() - t0:.0f} s, ice {track[-1][1]:.1f} km2, '
+                      f'thickest {track[-1][2]:.0f} m, max ground {track[-1][3]:.0f} m', flush=True)
+            if not np.isfinite(h).all() or h.max() > bound:
+                raise SystemExit(f'glacial: unstable in cycle {k} at cold step {s}: max ground {h.max():.3g} m is above the bound {bound:.0f} m')
+        st['h'], st['deposit'] = h, deposit
+
+    def _river_phase(years):
+        """An interglacial of `years`: today's rivers and creep (evolve.river_step), as the old post-glacial era."""
+        steps = max(int(round(years / float(GL['post_glacial_dt']))), 1)
+        dtp = years / steps
+        for s in range(steps):
+            change, st['flux'], _ = evolve.river_step(st['h'], sea, n, dx, dtp, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, a_min, Sc,
+                                                     sc_rock, st['deposit'], fixed)
+            st['deposit'] = np.maximum(st['deposit'] + change, 0.0)
+        st['psteps'] += steps
+
+    # The peak shapes after every cycle (peaks.py, the rule 6 checks), on the landform's own peaks and valley-head bearings.
+    import peaks
+    Q = peaks._checks(P)
+    lf, sea2, _, lox, loz = peaks._load_inputs(inputs_dir)
+    tops = peaks.summits(lf, sea2, dx, peaks.snowline(P) + float(Q['above_snowline_m']), float(Q['summit_window_m']))
+    axes = peaks.axes(lf, sea2, dx, tops, Q)
+    snap_at = set(int(c) for c in GL.get('snapshot_after_cycles', []))
+    R = lambda a, t=np.float32: a.reshape(n, n).astype(t)
+    cycles = []
+    k = 0
+    last_interglacial = 0.0
+    for e, era in enumerate(history):
+        for c in range(int(era['cycles'])):
+            k += 1
+            idle = float(era['period_years']) - float(era['active_years']) - float(era['interglacial_years'])
+            st['h'] = st['h'] + U * idle               # the rest of the cycle: uplift only (ice-sheet cover not modelled)
+            ela_local = He + float(era['ela_offset_m']) - _aspect_shift(st['h'], GL, n, dx)
+            _cold_phase(float(era['active_years']), ela_local, k)
+            if e == len(history) - 1 and c == int(era['cycles']) - 1:
+                cold_ground, cold_deposit = st['h'].copy(), st['deposit'].copy()
+                last_interglacial = float(era['interglacial_years'])
+            _river_phase(float(era['interglacial_years']))
+            cycles.append(dict(cycle=k, era=str(era['era']), shape=peaks.shapes(st['h'].reshape(n, n), lf, sea2, dx, lox, loz, tops, axes, Q)))
+            if k in snap_at:
+                np.savez_compressed(f'{out_dir}/glacial_cycle_{k:02d}.npz', ground=R(st['h']), ice_max_m=R(st['ice_cycle_max']),
+                                    b1_ground=R(b1_ground), sea=R(sea, bool), cell_m=dx, origin_x=float(b1['origin_x']),
+                                    origin_z=float(b1['origin_z']))     # plots.py zoom draws it beside the river-era ground
+            print(f'cycle {k} ({era["era"]}) done, t {time.time() - t0:.0f} s, max ground {st["h"].max():.0f} m', flush=True)
+    h, deposit, flux, ice_max, flux_max = st['h'], st['deposit'], st['flux'], st['ice_max'], st['flux_max']
+    steps, psteps = st['steps'], st['psteps']
+    # Rock and soil the glacial history removed up to the end of the last cold phase (uplift aside): the ice and the
+    # interglacial rivers between. ice_cut is the ice's own share (the cold phases only).
+    glacial_cut = b1_ground + U * (total_years - last_interglacial) - cold_ground
     laid = np.maximum(cold_deposit - b1['sediment_m'].astype(np.float64).ravel(), 0.0)
     till = np.where(ice_max > 0.0, laid, 0.0)          # laid under or at the ice: till and moraine
     outwash = np.where(ice_max > 0.0, 0.0, laid)       # laid beyond it: outwash and other cold-stage fill
-
-    # ---- the post-glacial era: today's climate ----
-    dtp = float(GL['post_glacial_dt'])
-    psteps = max(int(round(float(GL['post_glacial_years']) / dtp)), 1)
-    for s in range(psteps):
-        change, flux, _ = evolve.river_step(h, sea, n, dx, dtp, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, a_min, Sc, sc_rock, deposit,
-                                         fixed)
-        deposit = np.maximum(deposit + change, 0.0)
-    print(f'post-glacial {psteps} steps done, t {time.time() - t0:.0f} s', flush=True)
+    print(f'glacial history done: {k} cycles, {steps} cold and {psteps} interglacial steps, t {time.time() - t0:.0f} s', flush=True)
 
     # ---- outputs ----
     filled, rec, order = evolve.route(h, sea, n, dx, evolve.flow_memory(E))
@@ -274,7 +354,7 @@ def main():
     lab, deep, size, outlet = evolve._hollows(pit, rec, sea, n, 0.1)
     scour_m = float(GL['scour_m'])
     o = np.maximum(outlet, 0)
-    floor_cut = glacial_cut[deep] if deep.size else np.zeros(0)
+    floor_cut = st['ice_cut'][deep] if deep.size else np.zeros(0)       # the ice's own cut (the interglacial rivers aside)
     sill_glacial = np.where(outlet >= 0, till[o] + outwash[o], 0.0)
     sill_sed = np.where(outlet >= 0, deposit[o], 0.0)
     kind = np.where(floor_cut > scour_m, 'ice-scoured floor',
@@ -282,9 +362,8 @@ def main():
     causes = ('ice-scoured floor', 'glacial deposit sill', 'other sediment sill', 'none')
     code = np.array([causes.index(str(k)) for k in kind], np.int64)
     hollow_cause = np.where(lab >= 0, code[np.maximum(lab, 0)] if code.size else -1, -1)   # -1 where there is no hollow
-    R = lambda a, t=np.float32: a.reshape(n, n).astype(t)
     np.savez_compressed(f'{out_dir}/glacial.npz', ground=R(h), b1_ground=R(b1_ground), cold_ground=R(cold_ground),
-                        ice_max_m=R(ice_max), ice_flux_max_m2=R(flux_max), glacial_cut_m=R(glacial_cut),
+                        ice_max_m=R(ice_max), ice_flux_max_m2=R(flux_max), glacial_cut_m=R(glacial_cut), ice_cut_m=R(st['ice_cut']),
                         till_m=R(till), outwash_m=R(outwash), sediment_m=R(deposit),
                         quick_area_m2=R(Q), area_m2=R(area), channel=R(share), rock=R(rid, np.int16),
                         et_mm=R(wb['et']), quick_mm=R(wb['quick']), recharge_mm=R(wb['recharge']),
@@ -317,11 +396,19 @@ def main():
                    summit_m=float(hh[landg].max()), b1_summit_m=float(b1_ground.max()), mean_land_m=float(hh[landg].mean()),
                    hollows=hollows, max_slope_deg=float(slope[landg].max()),
                    share_of_land_steeper_than_deg={str(a): float((slope[landg] > a).mean()) for a in (25, 30, 35, 40)},
-                   track_every_5=[t for t in track if t[0] % 5 == 0])
+                   track_every_5=[t for t in track if t[0] % 5 == 0],
+                   history=history, years=total_years,
+                   active_ice_years=sum(int(e['cycles']) * float(e['active_years']) for e in history),
+                   ice_cut_max_m=float(st['ice_cut'][land].max()), cycles=cycles)
     summary['where'] = report(f'{out_dir}/glacial.npz', geology_dir, E)
-    json.dump(dict(params=P, inputs={'inputs.npz': evolve.sha(f'{inputs_dir}/inputs.npz'), 'ground.npz': evolve.sha(f'{b1_dir}/ground.npz')},
-                   summary=summary), open(f'{out_dir}/glacial_manifest.json', 'w'), indent=1)
-    print(json.dumps(summary, indent=1))
+    man = dict(params=P, inputs={'inputs.npz': evolve.sha(f'{inputs_dir}/inputs.npz'), 'ground.npz': evolve.sha(f'{b1_dir}/ground.npz')},
+               summary=summary)
+    json.dump(man, open(f'{out_dir}/glacial_manifest.json', 'w'), indent=1)
+    # The rule 6 checks, lines 4 to 10 (peaks.py glacial), read back from the files just written; the manifest is
+    # written again with them. peaks.py glacial INPUTS_DIR OUT_DIR gives the same lines with the full detail.
+    summary['peaks'] = peaks.check_glacial(inputs_dir, out_dir, P)['lines']
+    json.dump(man, open(f'{out_dir}/glacial_manifest.json', 'w'), indent=1)
+    print(json.dumps({k_: v for k_, v in summary.items() if k_ != 'cycles'}, indent=1))
     import plots
     plots.glacial_picture(f'{out_dir}/glacial.npz', f'{out_dir}/glacial.png')
 
@@ -350,7 +437,7 @@ def report(npz_path, geology_dir, E):
     h = d['ground'].astype(np.float64)
     b1 = d['b1_ground'].astype(np.float64)
     cold = d['cold_ground'].astype(np.float64)
-    cut = d['glacial_cut_m'].astype(np.float64)
+    cut = (d['ice_cut_m'] if 'ice_cut_m' in d.files else d['glacial_cut_m']).astype(np.float64)   # the ice's own cut (older runs: the cold stage's)
     ice = d['ice_max_m'].astype(np.float64)
     g = rock.load(geology_dir, E['cover_m'], E['cover_erodibility'])
     names = g['names']
