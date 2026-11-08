@@ -253,7 +253,14 @@ func _step_young(a: Dictionary, dt: float) -> void:
 		return
 
 	var speed: float = float(def.get("flee_mps", 7.5)) if running else float(def.get("walk_mps", 1.5)) * (2.0 if far > 6.0 else 1.0)
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"], crossing)
+	var ground_for: Callable = ground_height
+	var blocked_for: Callable = blocked
+
+	if swims(def):      # a young swimmer (a moose calf) follows its mother into the water
+		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
+		blocked_for = Callable()
+
+	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
