@@ -35,8 +35,12 @@ All of this is per pixel on the liquid sheet. Every sheet draws it: the live win
    - From 0.3 to 0.5 m/s the sheet thins out: no full sheet forms above 0.5 m/s. That is the USACE rule that sheet ice forms where the flow is under 0.5 m/s (source 1).
    - From 0.5 to 0.9 m/s only **border ice** forms: a shore band where the water is shallower than 0.15 m plus up to 1.5 m more as the cover grows. River ice starts as border ice in the slower water along the banks (source 2).
    - From 0.9 m/s the water stays open: riffles, rapids and fall faces (`fall`), where the water is turbulent.
-3. **Springs keep their water open.** A spring comes out at the year's mean plus 1 °C (6.5 °C at #8002, Steve's design) and never freezes. Its brook stays open for Sonny's open length `x0 = λ ln((Tw − Ta)/(0 − Ta))`.
+3. **Springs keep their water open.** A spring comes out at the year's mean, 5.5 °C at #8002 (Jamie's springs-in-winter page, #739; Steve's design had mean plus 1 °C), and never freezes. Its brook stays open for Sonny's open length `x0 = λ ln((Tw − Ta)/(0 − Ta))`.
    - The client has no brook rows, so it uses one λ for every spring: λ = 840 m, the value that gives Sonny's worked example (810 m on a -4 °C night, Tw 6.5 °C).
+   - Jamie (#739) puts the open stretch at about 440 m x √(L/s) at -5 °C in calm air, x1.8 at -2 °C, x0.6 at -10 °C and x0.4 at -15 °C. The log rule gives the same ratios (1.78, 0.59, 0.42).
+   - The open length halves in a breeze (Jamie #739), from wind 0.3 to 0.5.
+   - Past the open reach, the ice comes in at half thickness for 30 m before it reaches full cover. Jamie (#739) gives thin ice within 10 to 30 m of a spring mouth or inflow.
+   - Steam over the spring mouth on frosty mornings is part of the ice walk feel work (`ice_walk_feel.md`).
    - The client takes `x0` as a radius round each spring pool it knows (the cave stream packets, `cave_streams._pools`, up to 8 nearest). Ice fades in between 0.8 x0 and x0.
    - Above -0.5 °C the air counts as -0.5, which gives about 2.2 km, so the radius never jumps to infinity at noon.
    - A brook winds, so the open stretch along it is a little shorter than the radius. Steve's baked `below_spring_m` rows (his step 2) can replace the radius later.
@@ -104,7 +108,7 @@ mkday 342; PERSIST_STORE=$DAYS/d342 art/playthrough/rig.sh --name fw_pond_dawn -
 | fw_pond_noon | the same, 12:00 | Thaw (about 0.66): open dark water round the shore, skim left only in the middle, in lobes, greyer | Ice at the bank with open water in the middle (the wrong order) |
 | fw_pond_late | the same, 15:00 | Open water, no ice | Any ice |
 
-**B. Spring #8002, day 343, ON.** The mouth is at 56520, 72360 (floor 533.2) and the passage runs west, so the brook leaves eastward. At 09:00 the air is -2.3 °C and a 3 m pond up here would hold 0.28 (5.6 cm). The spring's open length is 840 x ln(8.8 / 2.3) ≈ 1,130 m.
+**B. Spring #8002, day 343, ON.** The mouth is at 56520, 72360 (floor 533.2) and the passage runs west, so the brook leaves eastward. At 09:00 the air is -2.3 °C and a 3 m pond up here would hold 0.28 (5.6 cm). The spring's open length in calm air is 840 x ln(7.8 / 2.3) ≈ 1,030 m, and half that in a breeze.
 ```
 mkday 343; PERSIST_STORE=$DAYS/d343 art/playthrough/rig.sh --name fw_spring_mouth --client-arg --frozen-water \
   --at 56545,72360 --agl 1.7 --yaw 90 --pitch -5 --hour 9 --weather live --walk -1 --wait 60 --settle 20 \
@@ -113,8 +117,8 @@ mkday 343; PERSIST_STORE=$DAYS/d343 art/playthrough/rig.sh --name fw_spring_mout
 
 | Picture | Camera | Must show | Never |
 |---|---|---|---|
-| fw_spring_mouth | 56545, 1.7 m, 72360, yaw 90 (west, at the mouth), pitch -5, 09:00 | The brook out of the mouth open, dark and moving; frost on the ground if the frost look is on main | Ice on the brook or the pool within about 1 km of the spring |
-| fw_spring_down | 56525, 1.7 m, 72360, yaw -90 (east, downstream), pitch -8, 09:00 | The brook open as far as it shows. Any still water past about 1.1 km may carry grey film. | A frozen reach right below the mouth |
+| fw_spring_mouth | 56545, 1.7 m, 72360, yaw 90 (west, at the mouth), pitch -5, 09:00 | The brook out of the mouth open, dark and moving; frost on the ground if the frost look is on main | Ice on the brook within about 500 m of the mouth (the spring pool is about 230 m inside, and the open reach is measured from it) |
+| fw_spring_down | 56525, 1.7 m, 72360, yaw -90 (east, downstream), pitch -8, 09:00 | The brook open as far as it shows. Still water more than about 800 m past the mouth (less in a breeze) may carry grey film. | A frozen reach right below the mouth |
 
 If no water shows in either picture, send me the F3 page and a top view (`--pitch -60 --agl 40`) and I place the camera on the brook.
 
