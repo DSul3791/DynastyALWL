@@ -297,11 +297,11 @@ ART_DIRECTION 9 already rules that sky, light, fog and rain read three inputs: z
 1. **Moon phases (5.3): yes.** Owner: Kathleen.
 2. **"Never pitch black outdoors" (6.2.1): a decided rule.** Owner: Kathleen. Caves stay pitch black.
 3. **A darker night under crowns using the canopy map (6.2): yes.** Owner: Kathleen. The brighter night with snow is still open.
-4. **A small exposure drop while a torch is held (6.2.3): yes.** Owner: Kathleen.
+4. **A small exposure drop while a torch is held (6.2.3): yes.** Owner: Kathleen. It is built as a 15 percent drop of the moon and sky light rather than of the exposure, because exposure would also dim the torch's own pool of light; the picture beyond the flame is the same.
 5. **A held torch shadow from Medium up (6.4): only after a GPU check on Dave's PC.** Dino does the check when the PC frees up, not now.
 6. **Height fog and a `mist` value in the weather state, valley fog first (7): yes.** Owner: Jamie, after his rivers doc.
 7. **Cap cloud cards for summits above the cloud layer (7.3): only after a check picture from Dino.**
 8. **Breath in the cold (8.4), rainbows (4), snow on branches (8.2.2), lower colour at night (5.2) and puddles (8.1.2): yes.** Owners still to be named.
 9. Still open: the rest of the rain additions in 8.1.2, the Milky Way (5.4) and the arctic aurora (9).
 
-Kathleen's night-light code is one branch, in this order: moon phases, the never-pitch-black rule, canopy darkening, the torch exposure drop. This document stays the source of truth.
+Kathleen's night-light code is one branch, in this order: moon phases, the never-pitch-black rule, canopy darkening, the torch exposure drop (#601: a 29.53-day moon with a full moon on day 100, `OUTDOOR_FLOOR` 0.18, crowns take up to 45 percent at night, a held flame 15 percent). This document stays the source of truth.
