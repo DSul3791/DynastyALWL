@@ -29,6 +29,7 @@ Each doc has these sections:
 |---|---|---|---|
 | Creature models (bought rigged animals: install, check, clips, sizes) | [creature-models.md](creature-models.md) | 2026-11-07 | MikeW |
 | Torch and campfire light in fog, rain and snow (reach, veil, halos, lit rain and snow, light over snow) | [firelight-in-weather.md](firelight-in-weather.md) | 2026-11-08 | Kathleen |
+| Moonlight and starlight (night lux by moon phase and height, starlight, overcast, torch falloff by distance, twilight, colour at night, snow) | [moonlight-starlight.md](moonlight-starlight.md) | 2026-11-08 | Kathleen (night light), MikeW (eye shine) |
 | Water in Godot (rivers, brooks, lakes, falls, flow, precision) | [water.md](water.md) | 2026-11-06 | Sonny |
 | Sea and shore (tides, waves by fetch, surf zone by beach slope, swash, wrack line, salt spray, shore ice) | [sea-and-shore.md](sea-and-shore.md) | 2026-11-08 | Sonny, Kathleen (look) |
 | Water clarity after rain (turbidity recovery, settling times, peat colour) | [water-clarity-after-rain.md](water-clarity-after-rain.md) | 2026-11-08 | Kathleen, Sonny |
@@ -36,11 +37,14 @@ Each doc has these sections:
 | Caves (placement, shape, darkness, life) | [caves.md](caves.md) | 2026-11-06 | Sonny, Kathleen and Kathreen (look) |
 | Cave microclimate (deep-cave temperature, damp, air at the mouth, daylight reach, eyes, drips, dens and smoke) | [cave-microclimate.md](cave-microclimate.md) | 2026-11-08 | Kathleen (light, sound), Steve (dens, warmth), MikeW |
 | Sound outdoors (distance, air loss, wind shadow and carry, night carry, rain masking, snow and fog, forest, echoes, rivers) | [sound-outdoors.md](sound-outdoors.md) | 2026-11-08 | Kathleen (sound stage), Jason (audio) |
+| Sounds of weather and water (rain by surface and rate, wind by Beaufort in grass, trees and rock, how far water, surf and fire carry, thunder delay and range) | [weather-water-sounds.md](weather-water-sounds.md) | 2026-11-08 | Kathleen (sound stack), Steve (fire sounds) |
 | Animal behaviour (senses, ranges, temperaments, seasons, young) | [animal-behaviour.md](animal-behaviour.md) | 2026-11-06 | MikeW |
 | Animals in weather (rain, wind, storms, snow, cold, heat: shelter, facing the wind, feeding before storms) | [animals-in-weather.md](animals-in-weather.md) | 2026-11-08 | MikeW, Steve |
+| Animal tracks and sign (print size and shape by species, walk, trot and gallop patterns, how long prints last by ground, droppings, browse height, beds) | [animal-tracks-sign.md](animal-tracks-sign.md) | 2026-11-08 | MikeW | Mixed: field-guide figures from memory, not rechecked; lifetimes and print spacing judged |
 | Torches and fire | [torches-fire.md](torches-fire.md) | 2026-11-06 | Sal, Kathleen (poses) |
 | Fire outdoors (wood moisture and drying, rain on fires, embers, wind, smoke drift and plume height, burn rates) | [fire-outdoors.md](fire-outdoors.md) | 2026-11-08 | Kathleen (look), Steve (rules) |
 | Wind over terrain (crest speed-up, lee shelter, gaps, night drainage, gusts, how trees, grass, smoke, flags and sound read the wind) | [wind-over-terrain.md](wind-over-terrain.md) | 2026-11-08 | Kathleen (look), MikeW (animals) |
+| Trees in weather (crown sway by wind force, branch break, windthrow and wet soils, leaf fall, snow on trees, canopy drip and shelter) | [trees-in-weather.md](trees-in-weather.md) | 2026-11-08 | Kathleen (look, sound), MikeW, Steve (cover) |
 | Warmth and weather (cold, rain, wet, drying, fire heat) | [warmth-weather.md](warmth-weather.md) | 2026-11-06 | Steve |
 | Soils and ground wetness (infiltration by soil, puddle drain times, peat and clay waterlogging, frost heave, mud season) | [soils-ground-wetness.md](soils-ground-wetness.md) | 2026-11-08 | Sonny (record), Kathleen (puddles) |
 | Snow on slopes (wind drift and scour, cornices, melt order by aspect, last patches) | [snow-on-slopes.md](snow-on-slopes.md) | 2026-11-08 | Sonny, Kathleen |
@@ -50,3 +54,4 @@ Each doc has these sections:
 | Rivers and floodplains (meanders, braids, floodplains, levees, terraces, fans, deltas) | [rivers-floodplains.md](rivers-floodplains.md) | 2026-11-08 | Sonny |
 | Cirques and horns (headwall retreat rates, granite, how many glacial cycles make a horn) | [cirques-and-horns.md](cirques-and-horns.md) | 2026-11-08 | Sonny |
 | Upland streams (stream density, bankfull flood ratio, Hey and Thorne widths, waterfalls, wave limit on deltas) | [upland-streams-numbers.md](upland-streams-numbers.md) | 2026-11-08 | Sonny |
+| Specific yield by rock type (granite, basalt, karst and other limestone, sandstone, shale, chalk, till, sand and gravel, peat; for spring stores and Rorabaugh recession) | [specific-yield.md](specific-yield.md) | 2026-11-08 | Sonny (springs, watershed) |

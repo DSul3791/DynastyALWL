@@ -8086,7 +8086,7 @@ func take_loose(id: int) -> Array:
 
 
 # Goblins steal (docs/design/goblin_stealing_design.md, Dave 8 Nov 2026): loose small things lying on the ground within r of a point,
-# [[world id, position, dropped by (character key or ""), item kind], ...]. Not structures, fires, trees, boulders, natural scatter or the showroom; not a shoulder carry (logs); not a
+# [[world id, position, dropped by (character key or ""), item kind, item id], ...]. Not structures, fires, trees, boulders, natural scatter or the showroom; not a shoulder carry (logs); not a
 # structure, placeable or container item. Whatever is in a chest or a pack is safe. Light and den piles are the goblin's own checks.
 const STEAL_NEVER_KINDS := ["structure", "placeable", "container"]
 
@@ -8108,7 +8108,7 @@ func stealable_near(centre: Vector3, r: float) -> Array:
 		if row.is_empty() or row.has("carry") or STEAL_NEVER_KINDS.has(str(row.get("kind", ""))):
 			continue
 
-		out.append([id, it["pos"], str(it.get("by", "")), str(row.get("kind", ""))])
+		out.append([id, it["pos"], str(it.get("by", "")), str(row.get("kind", "")), table.id_of(int(it["number"]))])
 
 	return out
 
