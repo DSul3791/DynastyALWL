@@ -266,6 +266,57 @@ def zoom_picture(npz_path, png_path, x_m, z_m, size_m=6000.0):
     fig.tight_layout(); fig.savefig(png_path, dpi=60); plt.close(fig)
 
 
+
+def zoom_network_picture(net_dir, png_path, x_m, z_m, size_m=6000.0):
+    """A close look at R5's stream network at full resolution (one pixel per 16 m cell): a size_m square centred on world
+    x_m, z_m, from net_dir's network.npz and network.json. Left: the streams by regime (perennial dark blue, intermittent
+    mid blue, ephemeral pale blue), the lakes, the falls (white triangles) and the springs, as circles sized by their dry
+    flow and coloured by the store that gives most of it (diffuse green, conduit red, matrix purple; grey for a run without
+    stores). Right: the reach types, coloured as in network.png. For the ws580i zooms (docs/design/r7_plan.md section 3)."""
+    import json
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LightSource, ListedColormap
+    d = np.load(f'{net_dir}/network.npz')
+    net = json.load(open(f'{net_dir}/network.json'))
+    dx = float(d['cell_m']); ox = float(d['origin_x']); oz = float(d['origin_z'])
+    n = d['ground'].shape[0]
+    half = int(round(size_m / dx / 2.0))
+    ci = int(round((x_m - ox) / dx)); cj = int(round((z_m - oz) / dx))
+    i0, i1 = max(ci - half, 0), min(ci + half, n); j0, j1 = max(cj - half, 0), min(cj + half, n)
+    win = (slice(j0, j1), slice(i0, i1))
+    g = d['ground'].astype(np.float64)[win]; land = ~d['sea'].astype(bool)[win]; lake = d['lake'].astype(bool)[win]
+    ext = (ox + i0 * dx, ox + i1 * dx, oz + j1 * dx, oz + j0 * dx)
+    shade = np.where(land, LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=2, dx=dx, dy=dx), np.nan)
+    fig, ax = plt.subplots(1, 2, figsize=(22, 11))
+    for a in ax:
+        a.imshow(shade, cmap='gray', vmin=0, vmax=1, extent=ext)
+        a.imshow(np.where(lake, 1.0, np.nan), cmap='Blues', vmin=0, vmax=1.5, extent=ext)
+    reg = d['regime'].astype(np.int64)[win]
+    ax[0].imshow(np.where(reg > 0, reg, np.nan), cmap=ListedColormap(['#08306b', '#4292c6', '#c6dbef']), vmin=0.5, vmax=3.5, extent=ext)
+    rt = d['reach_type'].astype(np.int64)[win]
+    ax[1].imshow(np.where(rt > 0, rt, np.nan), cmap=ListedColormap(['#d62728', '#ff7f0e', '#e6c619', '#2ca02c', '#1f77b4']), vmin=0.5, vmax=5.5, extent=ext)
+
+    def inside(p):
+        return ext[0] <= p[0] <= ext[1] and ext[3] <= p[2] <= ext[2]
+    falls = [f for f in net['falls'] if inside(f['lip'])]
+    for a in ax:
+        for f in falls:
+            a.plot(f['lip'][0], f['lip'][2], '^', color='white', mec='black', ms=8)
+    colour = dict(diffuse='#2ca02c', conduit='#d62728', matrix='#9467bd')
+    springs = [s for s in net['springs'] if inside(s['pos'])]
+    for s in springs:
+        q = float(s.get('q_base_dry_m3_s') or 0.0)
+        main = max(s['stores'], key=lambda r: r[3])[0] if s.get('stores') else None
+        ax[0].plot(s['pos'][0], s['pos'][2], 'o', color=colour.get(main, '#7f7f7f'), mec='black',
+                   ms=4.0 + 3.0 * max(np.log10(max(q, 1e-6)) + 6.0, 0.0))
+    top = f', ground max {g[land].max():.0f} m' if land.any() else ''
+    ax[0].set_title(f'streams by regime (perennial, intermittent, ephemeral: dark to pale blue); {len(falls)} falls; {len(springs)} springs '
+                    f'by main store (diffuse green, conduit red, matrix purple), size by dry flow{top}', fontsize=10)
+    ax[1].set_title('reach types: cascade red, step-pool orange, plane-bed yellow, pool-riffle green, dune-ripple blue', fontsize=10)
+    fig.suptitle(f'R5 network at {x_m:.0f}, {z_m:.0f} ({size_m / 1000.0:.1f} km square)')
+    fig.tight_layout(); fig.savefig(png_path, dpi=80); plt.close(fig)
+
 if __name__ == '__main__':
     if len(sys.argv) >= 5 and sys.argv[1] == 'zoom':
         # python plots.py zoom RUN_DIR X Z [SIZE_M]: writes RUN_DIR/zoom_<x>_<z>.png, from RUN_DIR/ground.npz (evolve.py) or,
@@ -280,6 +331,10 @@ if __name__ == '__main__':
             npz = f'{sys.argv[2]}/ground.npz' if os.path.exists(f'{sys.argv[2]}/ground.npz') else f'{sys.argv[2]}/glacial.npz'
             png = f'{sys.argv[2]}/zoom_{x_:.0f}_{z_:.0f}.png'
         zoom_picture(npz, png, x_, z_, float(sys.argv[5]) if len(sys.argv) > 5 else 6000.0)
+    elif len(sys.argv) >= 5 and sys.argv[1] == 'zoom_network':
+        # python plots.py zoom_network R5_DIR X Z [SIZE_M]: writes R5_DIR/zoom_network_<x>_<z>.png from network.npz and network.json.
+        x_, z_ = float(sys.argv[3]), float(sys.argv[4])
+        zoom_network_picture(sys.argv[2], f'{sys.argv[2]}/zoom_network_{x_:.0f}_{z_:.0f}.png', x_, z_, float(sys.argv[5]) if len(sys.argv) > 5 else 6000.0)
     elif len(sys.argv) == 3 and sys.argv[1] == 'ground':
         ground_picture(f'{sys.argv[2]}/ground.npz', f'{sys.argv[2]}/evolve.png')
     elif len(sys.argv) == 3 and sys.argv[1] == 'glacial':

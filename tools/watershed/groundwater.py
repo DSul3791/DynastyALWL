@@ -16,6 +16,10 @@ The method is the design's R4 method (section 3, stage C):
   3. conductivity by rock class from Gleeson et al. (2011), loose cover from Stage B over it, and a karst factor on
      cave-forming rock (conduits);
   4. recharge from the one water budget (A5).
+On tight rock (groundwater.near_surface.rocks) the transmissivity is the soil and the near-surface zones of the broken top
+of the rock, not a uniform 50 m (Jamie's #713; docs/water/spring_store_build_plan.md section 7). Each discharge block then
+gets its own stores from its groundwater catchment on the head field (springstore.py): a diffuse store with Rorabaugh's
+response time, and on cave-forming rock a conduit store and a matrix store; R5 reads them for the season shares.
 Then at 16 m: depth to the table, discharge, baseflow down the routing and a first regime; heads labelled by supply; wetlands
 typed by what wets them. Nothing is placed by chance.
 """
@@ -28,6 +32,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'erosion_precarve'))
 import rock     # noqa: E402
 import runoff   # noqa: E402
 import evolve   # noqa: E402
+import springstore   # noqa: E402
 
 YEAR_S = 3.15576e7
 HEAD_KINDS = ('spring', 'seep or damp hollow', 'lake outlet', 'wetland outlet', 'seasonal rill')
@@ -123,6 +128,24 @@ def solve_table(z, T, R, fixed_h, fixed, dx, iters):
         out.reshape(nc, nc)
 
 
+def _store_summary(st16, gw, rid, names):
+    """The stores at the discharge cells, for the manifest: the diffuse store's tau quartiles (days) by the rock at the
+    outflow cell, the karst share, and the island's flow-weighted shares of the three stores."""
+    at = np.isfinite(st16['diffuse_share']) & (gw > 0.0)
+    q = gw[at]
+    out = dict(cells=int(at.sum()), flow_weighted_share={k: float((st16[f'{k}_share'][at] * q).sum() / max(q.sum(), 1e-30))
+                                                         for k in springstore.STORE_KINDS})
+    tau = st16['diffuse_tau_days']
+    by = {}
+    for k in np.unique(rid[at]):
+        sel = at & (rid == k) & np.isfinite(tau) & (st16['diffuse_share'] > 0.0)
+        if sel.any():
+            by[names.get(int(k), str(int(k)))] = dict(cells=int(sel.sum()), tau_days_p25_p50_p75=[round(float(v), 1) for v in np.percentile(tau[sel], [25, 50, 75])])
+    out['diffuse_tau_by_rock'] = by
+    out['matrix_tau_days'] = float(np.nanmax(st16['matrix_tau_days'])) if np.isfinite(st16['matrix_tau_days']).any() else None
+    return out
+
+
 def main():
     from scipy.ndimage import distance_transform_edt, uniform_filter, map_coordinates
     inputs_dir, geology_dir, b2_dir, r3_dir, out_dir = sys.argv[1:6]
@@ -160,6 +183,10 @@ def main():
     b = float(G['thickness_m'])
     dcov = np.minimum(sed, b)
     T16 = Kc * dcov + Krock * (b - dcov)
+    # Tight rock: the flow is in the broken top (GSI zones 1 to 3 under the soil and head, #713), about 0.7 m2/day.
+    NS, SY, KS = G['near_surface'], G['specific_yield'], G['karst_stores']
+    tight = springstore.tight_rock_mask(rid, g['names'], NS) & land
+    T16 = np.where(tight, springstore.near_surface_T(dcov, Kc, NS), T16)
     T16 = np.where(np.isfinite(T16) & (T16 > 0.0), T16, float(np.nanmedian(T16[land])))   # under the sea the rock does not matter
 
     # The 64 m grid
@@ -189,6 +216,20 @@ def main():
     ok = (low >= 0) & (dis.ravel() > 0.0)
     np.add.at(gw, low[ok], dis.ravel()[ok])
     gw = gw.reshape(n, n)
+
+    # Each discharge block's stores (springstore.stores): its groundwater catchment on the head field, the specific yield at
+    # the table there, and karst's two stores on cave-forming rock. Written at the block's outflow cell.
+    sy_cover = np.where(till >= 0.5 * np.maximum(sed, 1e-9), float(SY['fine unconsolidated']), float(SY['coarse unconsolidated']))
+    sy16 = springstore.sy_at_depth(depth, dcov, sy_cover, tight, springstore.sy_by_rock_id(g['names'], SY)[rid], NS)
+    syc = _blocks(np.where(land, sy16, 0.0), f, 'mean') / np.maximum(_blocks(land.astype(np.float64), f, 'mean'), 1e-9)
+    karstc = _blocks(cave.astype(np.float64), f, 'mean') >= 0.5
+    gw_end, gw_dist = springstore.catchments(H, (dis > 0.0) | fixed, dxc, float(G['own_block_path_share']))
+    stc = springstore.stores(gw_end, gw_dist, Tc, np.nan_to_num(syc), Rc, karstc, KS, dxc)
+    st16 = {}
+    for k, v in stc.items():
+        a = np.full(N, np.nan)
+        a[low[ok]] = v.ravel()[ok]
+        st16[k] = a.reshape(n, n)
 
     # Baseflow and a first regime along the final routing
     filled, rec, order = evolve.route(h.ravel(), sea.ravel().astype(np.uint8), n, dx, evolve.flow_memory(E))
@@ -251,7 +292,8 @@ def main():
     np.savez_compressed(f'{out_dir}/groundwater.npz', water_table_m=R(table), depth_to_table_m=R(depth), gw_discharge_m3_s=R(gw),
                         baseflow_m3_s=R(base), regime=R(regime, np.int8), head_kind=R(kind, np.int8), wetland=R(wet, np.int8),
                         transmissivity_m2_s=R(T16), ground=R(h), sea=R(sea, bool), lake=R(lake, bool), cell_m=dx,
-                        origin_x=ox, origin_z=oz, head_64m=H.astype(np.float32), seepage_64m=seep)
+                        origin_x=ox, origin_z=oz, head_64m=H.astype(np.float32), seepage_64m=seep,
+                        **{f'gw_{k}': R(v) for k, v in st16.items()})
     km = lambda m: float(m.sum() * cell / 1e6)
     summary = dict(seconds=time.time() - t0, seepage_iterations=iters,
                    balance_m3_s=dict(recharge=rech_total, to_land_surface=to_land, to_lakes=to_lakes, to_sea=to_sea,
@@ -262,7 +304,7 @@ def main():
                    heads={HEAD_KINDS[k]: int((kind == k).sum()) for k in range(len(HEAD_KINDS))},
                    wetland_km2={k: km(wet == v) for k, v in WET_CODES.items()},
                    wetland_on_steep_ground_cells=int(((wet > 0) & (wet != WET_CODES['salt_marsh']) & (slope > G['wetland_slope_deg'])).sum()),
-                   springs_largest=springs[:15])
+                   springs_largest=springs[:15], stores=_store_summary(st16, gw, rid, g['names']))
     json.dump(dict(params=P, inputs={'inputs.npz': evolve.sha(f'{inputs_dir}/inputs.npz'), 'lakes.npz': evolve.sha(f'{r3_dir}/lakes.npz'),
                                      'glacial.npz': evolve.sha(f'{b2_dir}/glacial.npz')}, summary=summary),
               open(f'{out_dir}/groundwater_manifest.json', 'w'), indent=1)
