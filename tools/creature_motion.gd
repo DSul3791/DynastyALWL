@@ -16,7 +16,7 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 
 
 func _init() -> void:
-	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "wind": 0.0}
+	var opts: Dictionary = {"kinds": "deer", "out": "user://creature_motion", "state": 0, "speed": 0.0, "count": 1, "hour": 12.0, "season": "summer", "frames": 6, "every": 0.25, "cam": 6.0, "approach": false, "water": -1.0, "torch": false, "fx": false, "tilt": false, "prints": false, "ik": false, "stalk": false, "coats": false, "dust": false, "ruffle": false, "young": 0, "age": -1.0, "wlife": false, "bank": false, "idles": false, "turn": 0.0, "roll": false, "storm": false, "foe": false, "wind": 0.0}
 
 	for a in OS.get_cmdline_user_args():
 		var key: String = a.trim_prefix("--").get_slice("=", 0)
@@ -96,10 +96,11 @@ func _strip(kind: String, opts: Dictionary) -> void:
 	view.water_life = bool(opts["wlife"]) or bool(opts["bank"])
 	view.idle_variety = bool(opts["idles"])
 	view.flight_bank = float(opts["turn"]) != 0.0 or bool(opts["roll"])
+	view.look_at_foe = bool(opts["foe"])
 	view.idle_first_s = 1.0 if bool(opts["idles"]) else -1.0
 	view.wind_now = func() -> float: return float(opts["wind"])
 	view.ground_height = func(x: float, _z: float) -> float: return 0.15 if x > 0.3 else 0.0      # --ik: a 15 cm step under the right-hand feet
-	view.conditions_now = func() -> Dictionary: return {"hour": float(opts["hour"]), "season": str(opts["season"])}
+	view.conditions_now = func() -> Dictionary: return {"hour": float(opts["hour"]), "season": str(opts["season"]), "storm_ahead": 1.0 if bool(opts["storm"]) else 0.0}
 
 	if water_d > 0.0:
 		view.water_level = func(_x: float, _z: float) -> float: return water_d
@@ -135,7 +136,10 @@ func _strip(kind: String, opts: Dictionary) -> void:
 
 		for i in count:
 			var at: Vector3 = Vector3(float(i % 3) * 2.5 - 2.5, max(water_d - 0.25, 0.0) if water_d > 0.0 and not bool(opts["wlife"]) else 0.0, float(int(i / 3.0)) * 2.5 + speed * t)
-			rows.append([1000 + i, int(number), at, PI * 0.5 + float(opts["turn"]) * t, int(opts["state"])])      # heading pi/2: the animal walks toward +Z (--turn: turning)
+			rows.append([1000 + i, int(number), at, PI * 0.5 + float(opts["turn"]) * t, int(opts["state"])])
+
+			if bool(opts["foe"]):      # --foe: the server's foe position, 4 m to the animal's left (a dog it warns)
+				rows[-1].append(at + Vector3(4.0, 0.0, 1.0))      # heading pi/2: the animal walks toward +Z (--turn: turning)
 
 		for i in int(opts["young"]):      # --young: young ones (species + 100) 1.5 m behind and beside the first animal
 			var at: Vector3 = Vector3(-2.5 + (1.2 if i % 2 == 0 else -1.2), 0.0, speed * t - 1.5 - float(i / 2.0))

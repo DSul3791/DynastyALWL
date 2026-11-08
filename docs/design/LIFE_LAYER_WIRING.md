@@ -1,0 +1,40 @@
+# Life layer wiring: every server state and signal the client listens for
+
+One row per server state or signal the animal life layer reads. Client code is `src/client/animal_view.gd` unless named;
+strips are the lines in PC_SESSION_MIKEW.md step 4 (m1 to m34) or the named test. Written 8 Nov 2026 (MikeW). A gap is a signal
+with no client handler or no strip; every gap found is filled below (marked **filled**).
+
+## Server states (the row's state field)
+
+| State | Meaning | Server | Client handler | Flag | Proof |
+|---|---|---|---|---|---|
+| 6 | wolf stalk | server_wolves.gd (main) | `_stalking`, stalk block in `_animate_model`, `_tail_motion`, `_look_motion` (track) | `stalk_fx` | m15 |
+| 7 | wolf or fox attack | server_wolves.gd (main) | pounce block in `_animate_model`, `_pounce`, ears flat in `_ear_motion` | `stalk_fx` | m16 |
+| 10 | warn (big game; the dog's bark) | server_big_game.gd (main); dog reactions #659 | clip role 10, ears flat, `_look_motion` (track), rig pitch for code bodies | none | m31 (**filled**: had no strip) |
+| 11 | charge | server_big_game.gd (main); #659 charge hits the dog | clip role 11 (else run), ears flat, fast position follow | none | m32 (**filled**: had no strip) |
+| 13 | sneak (thief, goblin) | server_thieves.gd, server_goblins.gd (main) | stalk block for rows with 13 in `stalk.states` (fox, raccoon, lynx) | `stalk_fx` | m30 (**filled**: had no strip) |
+| 15 | in the air, flapping | server_flocks.gd (main); single birds #653 | flight block in `_animate_model` (take-off once, flap), `_flap_bob`, `_bank` | none; bank `flight_bank` | m18, m28 |
+| 16 | jaw-pop warning | server_big_game.gd WARN_POP (main) | clip role 16 (else 10), `state_poses` 16 (black bear), ears flat | none | m10 |
+| 17 | gliding | #653 (design; server_flight.gd to come) | `AIR_STATES`, flight block glide clip, `seen_glide` | none | m33 (**filled**: had no strip) |
+| 18 | dog sits | dog companion (#651) | clip role 18, tail wag in `_tail_motion` | none | step 3 still (dog), m1 |
+| 19 | dog lies | dog companion (#651) | clip role 19, tail wag | none | step 3 still (dog), m1 |
+| 20 | hunch against the weather | #646 | `HUNCH`: idle clip (12, 3) under `state_poses` 20, ears 0.7 flat, tail still | none (server state) | m26 |
+
+## Signals
+
+| Signal | Server | Client handler | Flag | Proof |
+|---|---|---|---|---|
+| `footfall(kind, at, ground, speed)` | client signal; sound stage connects it by name (Kathleen #647) | `_emit_steps`, `_ground_kind`, `_puff`, `_splash`, `_print_at` | `footfall_fx`, `prints_fx` (looks); the signal itself always | m11, m12, m14 |
+| Alarm groups (`alarm_group`, ground birds across species) | #636 | none needed: each bird arrives as flee (2) and is drawn fleeing; the herd glance (`_herd_glance`) is the client's look-up-together | none | Steve's test_alarm_group; m4 for the glance |
+| `storm_ahead` (0..1) | #646 shared weather | `terrain_client._animal_conditions` reads it when the weather has it; `_tail_motion` stops the fly swish above 0.5 | none | m29 (**filled**: had no strip) |
+| Herd leader and followers | herd groups, `groups.enabled` (this branch) | none needed: positions come from the server; the client herd look (`_herd_look`) sits on top | `groups.enabled` (server, off) | test_herd_groups.gd (run sheet, after m27) |
+| Foe position (the dog a warning, charging or recovering animal faces; sixth row field, Vector3) | #659 (head 4e619847): states 10 to 12 with a dog as foe | `on_rows` keeps row[5] as `foe` (dropped when absent); `_look_motion` turns the head to it in states 10, 11, 12 and 16 | `look_at_foe` | m34 (the tool sends a foe 4 m to the side) |
+| Raven roll event | #653 step 2 (wire format to come) | `play_roll(id, turns)`, `_bank` (pairs queued) | `flight_bank` | m28 (the tool sends a roll every 2 s) |
+| Weather wind (0..1) | shared weather (main) | `wind_now` from terrain_client: ears, tails, coat ruffle | `coat_ruffle` for the coat | m17, m21 |
+| Ground wet, season, hour | weather sounds, ambient conditions (main) | `conditions_now`: sleep, prints, puddle splashes, coat season | per look | m6, m12, m19, m20 |
+| Water level | flora.water_level_at (main) | `water_level`: swim clips, wet look, water life | `water_life` | m7, m24, m25 |
+
+## Still open (not gaps in the client)
+
+- The foe field is on the wire in #659; the roll event still needs Steve's wire change. Both client sides wait behind their flags.
+- An armed owner making goblins flee waits for the server to know what a player holds (#659 note).
