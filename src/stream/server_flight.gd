@@ -145,7 +145,7 @@ func step(a: Dictionary, dt: float, seen_d: float, seen_p: Vector3) -> void:
 	a["timer"] = float(a["timer"]) - dt
 	a["state"] = 0
 
-	if float(a["timer"]) > 0.0 or seen_d <= float(def.get("safe_m", 35.0)) or _stormy():
+	if float(a["timer"]) > 0.0 or seen_d <= float(def.get("safe_m", 35.0)) or _stormy() or host.fog_grounded(a["pos"]):   # sits out thick fog (animals_in_fog_server.md 4.4)
 		return
 
 	var angle: float = host.rng.randf() * TAU   # luck-exempt: where a crow comes down
