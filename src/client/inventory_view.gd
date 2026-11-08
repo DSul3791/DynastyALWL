@@ -4657,7 +4657,9 @@ func run_quickkey_test(_client) -> void:
 		if inventory.count_of(stone) > 0 and inventory.count_of(roast) > 0:
 			break
 
+	print("Quick key test: pack ready after the give, stone %d, roast %d" % [inventory.count_of(stone), inventory.count_of(roast)])
 	toggle()
+	print("Quick key test: window open %s, %d slots" % [str(open), _buttons.size()])
 	var slot: int = inventory.numbers.find(stone)
 	var before: int = inventory.count_of(stone)
 	_hover = slot
