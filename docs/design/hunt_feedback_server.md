@@ -24,7 +24,7 @@ These are the server half of MikeW's client hunting feedback (`HUNT_FEEDBACK.md`
 ## 3. The hit event (request 2)
 
 - **New message `animal_hit(id, zone, at)`**, sent to every player within `hit_send_m` 60 m of the animal, the hunter included. `hit_number` stays as it is, sent to the hunter only.
-- **The zone is the server's own.** The point is where the arrow or spear path comes closest to the animal's chest centre: the closest point of the arrow's segment, or of the jab's aim line within reach. Zones are 1 head, 2 chest, 3 hip, 4 leg (0 unknown).
+- **The zone is the server's own.** The point is where the arrow or spear path comes closest to the animal's chest centre: the closest point of the arrow's segment, or of the jab's aim line within reach. Zones are 0 body (unknown), 1 head, 2 chest, 3 hip, 4 leg, the order of MikeW's `animal_view.HIT_ZONES`.
 - **The zone uses MikeW's client rule**, with the body length taken as twice the species' hit radius (`hit_radius_m`, 0.6 m when unset):
   - `along` is the forward offset from the feet, as a share of half the length;
   - `up` is the height over the feet, as a share of 0.6 of the length;
@@ -35,7 +35,7 @@ These are the server half of MikeW's client hunting feedback (`HUNT_FEEDBACK.md`
 ## 4. Wire
 
 - Protocol 96. #685 takes 95 for the fire states; whichever merges second keeps its number above the other's.
-- New RPC `animal_hit(id: int, zone: int, at: Vector3)`, authority to client, reliable.
+- New RPC `animal_hit(id: int, zone: int, at: Vector3)`, authority to client, reliable. It emits `animal_hit_received(id, zone)`, the signal MikeW's terrain_client connects with a two-argument callable, and `animal_hit_point_received(id, zone, at)` for later uses of the point. His `HIT_EVENT_PROTOCOL` becomes 96.
 - New key `animals.json` `hit_send_m` 60.
 
 ## 5. Tests

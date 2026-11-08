@@ -105,7 +105,8 @@ signal comfort_received(level: int, rested_level: int, rested_minutes: int, tip:
 signal died_received(cause: String, spawn: Vector3)
 signal final_death_received(cause: String)
 signal hit_number_received(at: Vector3, amount: int)
-signal animal_hit_received(id: int, zone: int, at: Vector3)
+signal animal_hit_received(id: int, zone: int)   # MikeW's hunt_feedback connects (id, zone)
+signal animal_hit_point_received(id: int, zone: int, at: Vector3)   # the same hit with its point, for later blood marks
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal training_received(percent: int)
 signal reject_received(reason: int)
@@ -516,10 +517,12 @@ func hit_number(at: Vector3, amount: int) -> void:
 
 
 # A hit on an animal, for every player within 60 m of it (protocol 96, docs/design/hunt_feedback_server.md): which animal, the body zone
-# (1 head, 2 chest, 3 hip, 4 leg, 0 unknown) and the point. The client's hunt_feedback plays the reaction from it.
+# (0 body, 1 head, 2 chest, 3 hip, 4 leg; MikeW's animal_view HIT_ZONES order) and the point. The client's hunt_feedback plays the
+# reaction from animal_hit_received(id, zone); animal_hit_point_received also carries the point.
 @rpc("authority", "call_remote", "reliable")
 func animal_hit(id: int, zone: int, at: Vector3) -> void:
-	animal_hit_received.emit(id, zone, at)
+	animal_hit_received.emit(id, zone)
+	animal_hit_point_received.emit(id, zone, at)
 
 
 # The character's skills (protocol 37, data/items/skills.json): attributes [strength, memory] (-10..10) and one row

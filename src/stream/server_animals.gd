@@ -21,7 +21,7 @@ const ALERT := 3
 const WARN := 10                # big game standing its ground (head down), then 11 charge, 12 recover (server_big_game.gd)
 const SNEAK := 13               # a thief creeping up on food, 14 running off with it (server_thieves.gd)
 const HIDDEN := 5               # in its burrow: never sent, never hunted
-const HIT_ZONES := ["", "head", "chest", "hip", "leg"]   # animal_hit zone codes (docs/design/hunt_feedback_server.md 3)
+const HIT_ZONES := ["body", "head", "chest", "hip", "leg"]   # animal_hit zone codes, the order of MikeW's animal_view HIT_ZONES (docs/design/hunt_feedback_server.md 3)
 const HUNCH := 20               # wire only: a grazer standing out the rain, still, head low (animals_in_weather_design.md 6; GRAZE on the server)
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
