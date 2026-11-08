@@ -132,6 +132,10 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 		air["snow_fresh"] = float(_stage.weather.snow_fresh)
 		air["ground_snow"] = float(_stage.weather.ground_snow)
 
+	if _stage.water != null:                      # step 6: the running water beside the listener (water_sounds.gd's last scan)
+		air["brook_m"] = float(_stage.water.brook_m)
+		air["rapids_m"] = float(_stage.water.rapids_m)
+
 	for node in get_tree().get_nodes_in_group("world_sounds"):
 		var player: AudioStreamPlayer3D = node as AudioStreamPlayer3D
 
@@ -158,7 +162,8 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 
 		if outdoors and not flying and _moves(player):
 			var own_unit: float = float(player.get_meta("air_unit")) if player.has_meta("air_unit") and is_equal_approx(player.unit_size, float(player.get_meta("air_set", -1.0))) else player.unit_size
-			var effect: Vector2 = OutdoorAir.total(head, player.global_position, own_unit, air)
+			var own_water: bool = bool(player.get_meta("air_water", false))
+			var effect: Vector2 = OutdoorAir.total(head, player.global_position, own_unit, air, own_water)
 			var open_air: float = 1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure))   # in a cave the open air has no say
 			effect = Vector2(effect.x * open_air, lerpf(1.0, effect.y, open_air))
 
@@ -168,7 +173,7 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 			air_cut = effect.y
 			air_shadowed += 1 if effect.x <= -3.0 else 0
 			air_carried += 1 if effect.x >= 1.0 else 0
-			air_masked += 1 if OutdoorAir.mask_db(distance, minf(OutdoorAir.rain_mask_m(float(air.get("rain", 0.0)), float(air.get("leaves", 0.0))), OutdoorAir.gale_mask_m(float(air["wind"]))), own_unit) <= -6.0 else 0
+			air_masked += 1 if OutdoorAir.mask_db(distance, OutdoorAir.mask_m_of(air, own_water), own_unit) <= -6.0 else 0
 
 		cutoff *= air_cut
 
@@ -220,7 +225,7 @@ func _first_look(player: AudioStreamPlayer3D) -> void:
 	if not is_instance_valid(player) or _head == Vector3.INF or not _moves(player) or player.has_meta("air_unit"):
 		return
 
-	var db: float = OutdoorAir.total(_head, player.global_position, player.unit_size, air).x * (1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure)))
+	var db: float = OutdoorAir.total(_head, player.global_position, player.unit_size, air, bool(player.get_meta("air_water", false))).x * (1.0 - smoothstep(0.3, 0.7, float(_stage.cave.enclosure)))
 
 	if bool(player.get_meta("air_line", false)):
 		db += OutdoorAir.line_db(_head.distance_to(player.global_position), player.unit_size)
