@@ -4,7 +4,7 @@
 - Sonny: R4 groundwater (`groundwater.py`), R5 network, and the spring store plan (`docs/water/spring_store_build_plan.md`, on the R6 branch).
 - Steve: drinkable springs in the game (reader).
 
-**Related:** `specific-yield.md` (#686, which gives S_y), [upland-streams-numbers.md](upland-streams-numbers.md) (stream density), [soils-ground-wetness.md](soils-ground-wetness.md), [caves.md](caves.md).
+**Related:** [specific-yield.md](specific-yield.md) (which gives S_y), [upland-streams-numbers.md](upland-streams-numbers.md) (stream density), [soils-ground-wetness.md](soils-ground-wetness.md), [caves.md](caves.md).
 
 This page answers Sonny's three asks for section 7 of his plan:
 1. how thick, and how permeable, the near-surface layer is in glaciated hard-rock uplands;
@@ -34,7 +34,7 @@ This page answers Sonny's three asks for section 7 of his plan:
      - The infiltration delay i (how much of the recharge is slowed) was 0.20 to 0.65 at all three springs.
    - **Big karst massif springs in a dry summer** (Picentini Mountains, Italy, 2000 to 2009): one recession coefficient a year, from 0.0004 to 0.0065 per day (Fiorillo, Revellino and Ventafridda 2012, *J. Cave and Karst Studies* 74(2)). That is a time constant of 150 days to 7 years. These are very large springs; Caposele is one of Italy's biggest.
    - Kovács et al. 2005 work examples with 0.005 and 0.05 per day for the base recession. They note "the equivalent storage of the conduits is much smaller than the storativity of the matrix".
-   - `specific-yield.md` (#686): S_y under 0.001 for conduits, 0.001 for fractures and 0.003 for the matrix (ORNL 1994).
+   - [specific-yield.md](specific-yield.md): S_y under 0.001 for conduits, 0.001 for fractures and 0.003 for the matrix (ORNL 1994).
 
 4. **The flow path L matters as much as the rock, and permeable rock has few streams.**
    - Rorabaugh's τ goes with L². On hard rock, perennial streams run at about 2 to 2.5 km per km² ([upland-streams-numbers.md](upland-streams-numbers.md)). A strip between streams then has L = 1 ÷ (2 × density), about 200 to 250 m.
