@@ -241,7 +241,7 @@ def main():
     dtp = float(GL['post_glacial_dt'])
     psteps = max(int(round(float(GL['post_glacial_years']) / dtp)), 1)
     for s in range(psteps):
-        change, flux = evolve.river_step(h, sea, n, dx, dtp, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, sc_rock, deposit,
+        change, flux, _ = evolve.river_step(h, sea, n, dx, dtp, E, U, rain_mm, g, bfi, W, q_ref, ery_fn, c_ch, theta, Sc, sc_rock, deposit,
                                          fixed)
         deposit = np.maximum(deposit + change, 0.0)
     print(f'post-glacial {psteps} steps done, t {time.time() - t0:.0f} s', flush=True)
