@@ -79,7 +79,8 @@ static func springs_near(pools: Array, at: Vector3, air_c: float, zone_group: St
 
 
 # Up to MAX_HOLES Vector4(x, z, radius m, age 0..1), nearest first. `holes` is a list of {"pos": Vector3, "until": game seconds} (the server's
-# _holes, once Steve sends them) or {"pos", "forever": true} (the picture switch); a hole whose time is up is left out.
+# _holes, once Steve sends them) or {"pos", "forever": true} (the picture switch); a hole whose time is up is left out. Optional "radius" and "life_h"
+# (skim broken by a wader, ice_feel.gd) replace HOLE_RADIUS_M and HOLE_GAME_H.
 static func holes_near(holes: Array, at: Vector3, now_s: float) -> PackedVector4Array:
 	var near: Array = []
 
@@ -93,12 +94,12 @@ static func holes_near(holes: Array, at: Vector3, now_s: float) -> PackedVector4
 			if left_s <= 0.0:
 				continue
 
-			age = clampf(1.0 - left_s / (HOLE_GAME_H * 3600.0), 0.0, 1.0)
+			age = clampf(1.0 - left_s / (float(hole.get("life_h", HOLE_GAME_H)) * 3600.0), 0.0, 1.0)
 
 		var d: float = Vector2(pos.x - at.x, pos.z - at.z).length()
 
 		if d <= NEAR_M:
-			near.append([d, Vector4(pos.x, pos.z, HOLE_RADIUS_M, age)])
+			near.append([d, Vector4(pos.x, pos.z, float(hole.get("radius", HOLE_RADIUS_M)), age)])
 
 	near.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
 	var out: PackedVector4Array = PackedVector4Array()

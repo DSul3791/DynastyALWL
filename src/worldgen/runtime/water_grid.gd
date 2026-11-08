@@ -1371,7 +1371,9 @@ const ICE_REACH := 2             # the sheet reaches this far from the body, so 
 # above) at the water level: the quads whose four points are wet, flat and slow and that lie within
 # ICE_REACH of the body of a pond or lake. Rivers are narrower than ICE_CORE * 2 + 1 cells and
 # never freeze. Walkable ice for the client (a collider only; the sheet is drawn by the water).
-static func ice_triangles(grid: Dictionary) -> PackedVector3Array:
+# `moat` (ice_walk_feel.md section 5, --ice-feel): in a thaw the shore goes first, so quads with a corner within `moat` cells of a dry point
+# are left out (the open moat refuses a walk). 0 gives exactly the old sheet.
+static func ice_triangles(grid: Dictionary, moat: int = 0) -> PackedVector3Array:
 	var triangles: PackedVector3Array = PackedVector3Array()
 	var count: int = int(grid.get("count", 0))
 
@@ -1379,6 +1381,23 @@ static func ice_triangles(grid: Dictionary) -> PackedVector3Array:
 		return triangles
 
 	var levels: PackedFloat32Array = grid["levels"]
+	var dry_near: PackedByteArray = PackedByteArray()
+
+	if moat > 0:
+		dry_near.resize(count * count)
+
+		for j in range(count):
+			for i in range(count):
+				if not is_nan(levels[j * count + i]):
+					continue
+
+				for dj in range(-moat, moat + 1):
+					for di in range(-moat, moat + 1):
+						var ii: int = i + di
+						var jj: int = j + dj
+
+						if ii >= 0 and jj >= 0 and ii < count and jj < count:
+							dry_near[jj * count + ii] = 1
 	var vel: PackedFloat32Array = grid.get("vel", PackedFloat32Array())
 	var spacing: float = float(grid["spacing"])
 	var calm: PackedByteArray = PackedByteArray()
@@ -1423,6 +1442,9 @@ static func ice_triangles(grid: Dictionary) -> PackedVector3Array:
 			var d: int = c + 1
 
 			if calm[a] == 0 or calm[b] == 0 or calm[c] == 0 or calm[d] == 0:
+				continue
+
+			if moat > 0 and (dry_near[a] == 1 or dry_near[b] == 1 or dry_near[c] == 1 or dry_near[d] == 1):
 				continue
 
 			var top: float = maxf(maxf(levels[a], levels[b]), maxf(levels[c], levels[d]))

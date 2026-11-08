@@ -49,6 +49,14 @@ func _nearest(pos: Vector3) -> Dictionary:
 	return best
 
 
+# What this animal is warning at or charging: the dog it stood to (foe_dog, while that dog lives), else the nearest player.
+func _foe(a: Dictionary) -> Dictionary:
+	if a.has("foe_dog") and host.animals.has(int(a["foe_dog"])):
+		return {"pos": host.animals[int(a["foe_dog"])]["pos"], "dog": int(a["foe_dog"])}
+
+	return _nearest(a["pos"])
+
+
 # Start a warning at a player (or a short one when provoked). Returns true when the animal took it. Its temperament decides
 # whether it attacks at all (host.may_attack: never the young, passive or friendly ones unless forced, as a mother for her young).
 func warn(a: Dictionary, at: Vector3, warn_s: float = -1.0, forced: bool = false) -> bool:
@@ -84,7 +92,7 @@ func _bluffs(a: Dictionary, def: Dictionary) -> bool:
 # One step of WARN, CHARGE or RECOVER (called from ServerAnimals._step instead of the ordinary behaviour).
 func step(a: Dictionary, dt: float) -> void:
 	var def: Dictionary = host.species_def(a["sp"]).get("defend", {})
-	var near: Dictionary = _nearest(a["pos"])
+	var near: Dictionary = _foe(a)
 	var state: int = int(a["state"])
 
 	if state == WARN or state == WARN_POP:
@@ -112,6 +120,11 @@ func step(a: Dictionary, dt: float) -> void:
 
 		if state == WARN and a["timer"] > 0.0 and a["timer"] <= float(a.get("huff_s", 0.0)):
 			a["state"] = WARN_POP   # the huff is over: the jaw-pop and swat, the last warning
+
+		# A dog: it keeps warning until the dog comes within the species' dog.attack_m (dog_companion_design.md 11).
+		if near.has("dog") and a["timer"] <= 0.0 and d > float(host.species_def(a["sp"]).get("dog", {}).get("attack_m", 10.0)):
+			a["timer"] = 0.5
+			return
 
 		if a["timer"] <= 0.0:
 			a["state"] = CHARGE
@@ -158,6 +171,14 @@ func step(a: Dictionary, dt: float) -> void:
 
 			return
 
+		# A charge at a dog: the dog is hit when it is within hit_m (a player in the way is still hit below).
+		if not bool(a["hit"]) and near.has("dog") and host.animals.has(int(near["dog"])):
+			var dog_at: Vector3 = host.animals[int(near["dog"])]["pos"]
+
+			if Vector2(dog_at.x - a["pos"].x, dog_at.z - a["pos"].z).length() <= float(def.get("hit_m", 2.2)):
+				a["hit"] = true
+				host.damage(int(near["dog"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), -1, "charge")
+
 		if not bool(a["hit"]):
 			for info in (player_info.call() if player_info.is_valid() else []):
 				var p: Vector3 = info["pos"]
@@ -181,6 +202,7 @@ func step(a: Dictionary, dt: float) -> void:
 
 
 func _calm(a: Dictionary, def: Dictionary) -> void:
+	a.erase("foe_dog")
 	a["state"] = host.GRAZE
 	a["timer"] = host._graze_time(host.species_def(a["sp"]))
 	a["alert"] = 0.0
