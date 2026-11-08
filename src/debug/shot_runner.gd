@@ -1604,6 +1604,11 @@ func _print_view() -> void:
 	if drawn.distance_to(eye) > 0.05 and _solid_at(drawn):
 		print("shot runner: WARNING the drawn camera is inside solid ground at %s" % str(drawn))
 
+	# The cave measure the light reads (weather_look under_rock), on every picture: Dino's cave logs (8 Nov 2026) had no line saying it.
+	if client.sound != null and client.sound.cave != null:
+		var cave = client.sound.cave
+		print("shot runner: cave: enclosure %.2f, rock %.2f, rays while flying %s, shot walk %s" % [cave.enclosure, cave.rock_enclosure, str(cave.measure_flying), str(shots[_index]["walk"]) if _index >= 0 and _index < shots.size() else "-"])
+
 
 # A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
 func _side_view(walk: float) -> void:
