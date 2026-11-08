@@ -1168,6 +1168,9 @@ func _update_weather() -> void:
 	var row: int = 4
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0)
+
+	if flora != null:
+		flora.set_season(game_clock.season())   # bare winter broadleaves shelter nothing (--bare-winter; docs/design/cover_by_season_design.md)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:
