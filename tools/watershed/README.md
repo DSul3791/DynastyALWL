@@ -9,7 +9,8 @@ Everything here runs offline on Dave's PC (Dino), never in the cloud. Each stage
 | R1, stage A (inputs) | `inputs.py` | `inputs.npz`, `inputs.png`, `inputs_manifest.json` |
 | R2, stage B (landscape evolution) | `evolve.py` | `ground.npz`, `evolve.png`, `evolve_manifest.json` |
 | R2b, stage B2 (glacial history, then post-glacial) | `glacial.py` | `glacial.npz`, `glacial.png`, `glacial_manifest.json` |
-| R3 to R5, stage C (hydrology) | to come | |
+| R3, stage C1 and C2 (basins, lakes by water balance) | `lakes.py` | `lakes.npz`, `lakes.json`, `lakes.png`, `lakes_manifest.json` |
+| R4 to R5, stage C3 to C8 | to come | |
 | R6, stage D (island water record) | to come | |
 
 ## R1: inputs
@@ -91,6 +92,26 @@ Check `glacial.png` and the summary for:
 - till under the ice's reach and outwash beyond it;
 - for one cold stage, trough floors cut 100 to 300 m below the river-era valley floors (`where.cut_under_ice_m`, p90 and p99, the ice's own cut), not thousands; the whole history cuts deeper. The single deepest cell (`glacial_cut_max_m`, listed in `where.deepest_cut`) can be a truncated spur or a cirque cut back into a steep flank, and may be twice that. If the cut is far off, `years` is the setting to change first;
 - no cliffs the slope cap should have stopped: `where.neighbour_drop_steepest` above 48 degrees (granite's cap) away from the coast and from hollows is a fault. The summary's `max_slope_deg` is the plain gradient, which also spans the sea floor, so a shore cell beside deep water reads as a cliff; `where.slope_shore_max_deg` counts the sea at sea level.
+
+## R3: basins and lakes (stage C1 and C2)
+
+`python tools/watershed/lakes.py INPUTS_DIR GEOLOGY_DIR B2_DIR OUT_DIR`, where B2_DIR is the R2b output folder (the one holding `glacial.npz`).
+
+1. Hollows with no cause are filled: they are numerical leftovers, not lakes. The deepest are listed so a missing cause shows.
+2. The depression tree (Barnes et al. 2020): each hollow, which hollows merge at which saddle, and where each spills.
+3. Fill, spill and merge (Barnes et al. 2021): each hollow gets its catchment's runoff from the one water budget (karst recharge leaves through the caves) and loses open-water evaporation and floor seepage. Full ones spill over their lowest saddle into the next hollow or down to the sea; the rest stand at their balance level as closed lakes, each with its reason.
+4. Each lake's cause: cirque, glacial rock basin, moraine or till dam, fan or delta dam.
+5. Basins: every cell's outlet to the sea.
+
+`python tools/watershed/plots.py lakes RUN_DIR` redraws `lakes.png`.
+
+Check `lakes.png`, `lakes.json` and the summary for:
+- every lake with a cause (`unexplained_lakes` 0);
+- tarns in cirques high up, rock-basin lakes in the troughs, moraine-dammed lakes where the ice ended;
+- closed lakes rare, each on leaky rock or with a tiny catchment (`closed_lakes`); in this wet climate almost every lake should spill;
+- each outflow going on to the sea or a lower lake (`spills_to`), and `overflow_lost_m3_s` 0;
+- the filled leftovers shallow (a few decimetres); a deep one marks a cause the model lacks;
+- basins of many sizes, not one per valley of equal size.
 
 ## Peak checks (design A1 rule 6)
 
