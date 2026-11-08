@@ -106,8 +106,9 @@ func set_fires(fires: Array) -> void:
 # The campfires the Items thread keeps (inventory_view `_world`: rows with state 0 item, 1 lit fire,
 # 2 burnt-out fire): call about once a second. Size is a fixed middle value until fires have a burn
 # time; a fire is "open" when the cover query says the sky reaches it.
-# Item world row states that are fires: 1 lit, 2 burnt out (old saves), 8 empty (ashes), 9 loaded but unlit.
-const FIRE_STATES := [1, 2, 8, 9, 40, 41]   # 40 survival fire and 41 bonfire are lit too (cooking.json fire_tiers)
+# Item world row states that are fires: 1 lit, 2 burnt out (old saves), 8 empty (ashes), 9 loaded but unlit, 76 coals and 77 warm ash
+# (docs/design/fire_coals_design.md).
+const FIRE_STATES := [1, 2, 8, 9, 40, 41, 76, 77]   # 40 survival fire and 41 bonfire are lit too (cooking.json fire_tiers)
 const BURNT_OUT_DB := -10.0
 const BURNT_OUT_PITCH := 0.7
 const FUEL_HEARD_M := 25.0
@@ -134,7 +135,7 @@ func sync_world(world: Dictionary, cover_at: Callable = Callable()) -> void:
 		if int(_world_states.get(id, 9)) == 8 and int(row["state"]) == 9 and _here.distance_to(at) < FUEL_HEARD_M \
 				and Time.get_ticks_msec() - _last_fuel_msec > FUEL_DEDUP_MSEC:
 			fuel(at)
-		fires.append({"id": id, "at": at, "size": FIRE_SIZE * (0.6 if int(row["state"]) == 40 else (1.5 if int(row["state"]) == 41 else 1.0)), "lit": int(row["state"]) in [1, 40, 41], "ashes": int(row["state"]) == 8,
+		fires.append({"id": id, "at": at, "size": FIRE_SIZE * (0.6 if int(row["state"]) == 40 else (1.5 if int(row["state"]) == 41 else 1.0)), "lit": int(row["state"]) in [1, 40, 41], "ashes": int(row["state"]) in [8, 76],
 			"open": not (cover_at.is_valid() and bool(cover_at.call(at)))})
 
 	_world_states = states
@@ -151,7 +152,7 @@ func put_out(at: Vector3) -> void:
 	out_played += 1
 
 
-# A fire that burnt down to ashes on its own (row state 8): the put-out clip, low and soft, so it reads as embers settling.
+# A fire that burnt down on its own (row state 8 ashes, or 76 coals): the put-out clip, low and soft, so it reads as embers settling.
 func burnt_out(at: Vector3) -> void:
 	_one_shot("fire_out", at, BURNT_OUT_DB, BURNT_OUT_PITCH)
 
