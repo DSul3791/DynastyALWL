@@ -349,6 +349,17 @@ func _dog_near(c: Vector3, r: float) -> int:
 	return best
 
 
+# Wolves in a snowfall (animals_in_weather_design.md 9, lesson 5): in animals.json weather.wolf_snow_from (0.3) snow or more the pack walks
+# and trots wolf_snow.speed_x (0.6) as fast and prowls wolf_snow.roam_x (0.5) as far; the chase is unchanged. 1 otherwise.
+func _snow_x(key: String) -> float:
+	var r: Dictionary = host._wx_rules()
+
+	if not host._wx_on() or float(host._wx.get("snow", 0.0)) < float(r.get("wolf_snow_from", 0.3)):
+		return 1.0
+
+	return float((r.get("wolf_snow", {}) as Dictionary).get(key, 0.6 if key == "speed_x" else 0.5))
+
+
 func _walk(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) -> bool:
 	var host_blocked: Callable = host.blocked
 	var me = self
@@ -425,9 +436,9 @@ func _prowl(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 	for m in members:
 		if pack["timer"] <= 0.0 or m["pos"].distance_to(m["target"]) < 1.0:
 			var angle: float = host.rng.randf() * TAU   # luck-exempt: where a wolf prowls
-			m["target"] = pack["home"] + Vector3(cos(angle), 0.0, sin(angle)) * host.rng.randf_range(2.0, float(w.get("prowl_m", 40.0)))   # luck-exempt: as above
+			m["target"] = pack["home"] + Vector3(cos(angle), 0.0, sin(angle)) * host.rng.randf_range(2.0, float(w.get("prowl_m", 40.0)) * _snow_x("roam_x"))   # luck-exempt: as above
 
-		_walk(m, m["target"], float(def.get("walk_mps", 2.0)), dt, infos)
+		_walk(m, m["target"], float(def.get("walk_mps", 2.0)) * _snow_x("speed_x"), dt, infos)
 
 	if pack["timer"] <= 0.0:
 		pack["timer"] = host.rng.randf_range(8.0, 20.0)   # luck-exempt: how long between prowl legs
@@ -464,7 +475,7 @@ func _stalk(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 		for k in members.size():
 			var ang: float = pack["angle"] + TAU * float(k) / float(members.size())
 			var goal: Vector3 = fire + Vector3(cos(ang), 0.0, sin(ang)) * ring
-			_walk(members[k], goal, float(def.get("trot_mps", 5.0)), dt, infos)
+			_walk(members[k], goal, float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)
 
 		return   # while someone sits in firelight the pack never attacks
 
@@ -476,7 +487,7 @@ func _stalk(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 		var d: float = Vector2(m["pos"].x - goal2.x, m["pos"].z - goal2.z).length()
 
 		if d > 2.0:
-			_walk(m, goal2, float(def.get("trot_mps", 5.0)), dt, infos)
+			_walk(m, goal2, float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)
 		else:
 			m["moving"] = false
 			m["heading"] = atan2(p.z - m["pos"].z, p.x - m["pos"].x)
@@ -609,7 +620,7 @@ func _wait(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		var spot: Vector3 = pack["point"] + Vector3(cos(float(k)), 0.0, sin(float(k))) * 5.0
 
 		if Vector2(m["pos"].x - spot.x, m["pos"].z - spot.z).length() > 3.0:
-			_walk(m, spot, float(def.get("trot_mps", 5.0)), dt, infos)
+			_walk(m, spot, float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)
 		else:
 			m["moving"] = false
 

@@ -1744,7 +1744,7 @@ func _wx_on() -> bool:
 # This tick's weather, and every weather.ahead_every_s real seconds a look 12 to 24 game hours ahead for a storm.
 func _read_weather(weather: Dictionary, delta: float) -> void:
 	_wx = {"rain": float(weather.get("rain", 0.0)), "snow": float(weather.get("snow", 0.0)), "storm": float(weather.get("storm", 0.0)),
-		"wind": float(weather.get("wind", 0.0)), "mist": float(weather.get("mist", 0.0))}
+		"wind": float(weather.get("wind", 0.0)), "mist": float(weather.get("mist", 0.0)), "temp_c": float(weather.get("temp_c", 10.0))}
 	_ahead_acc += delta
 
 	if not _wx_on() or not weather_ahead.is_valid() or _ahead_acc < float(_wx_rules().get("ahead_every_s", 2.5)):
@@ -1967,7 +1967,8 @@ func _gale() -> bool:
 	return _wx_on() and (float(_wx.get("wind", 0.0)) >= float(_wx_rules().get("gale_from", 0.6)) or float(_wx.get("storm", 0.0)) >= float(_wx_rules().get("storm_from", 0.5)))
 
 
-# Whether this animal looks for cover now: deer always in rain or a gale, stock in rain half of them (by id: the same half every time).
+# Whether this animal looks for cover now: deer always in rain or a gale, and in the cold (to conifers); stock in rain half of them (by id:
+# the same half every time), and all of them in midday heat (to shade).
 # With herd groups on (MikeW's HERD_GROUPS.md, #663), only the herd's leader (its first living member) picks the cover; the rest keep their
 # places round it and so come along.
 func _seeks_cover(a: Dictionary, def: Dictionary) -> bool:
@@ -1982,9 +1983,31 @@ func _seeks_cover(a: Dictionary, def: Dictionary) -> bool:
 				break
 
 	if role == "deer":
-		return _raining() or _gale()
+		return _raining() or _gale() or _cold(a)
 
-	return role == "stock" and _raining() and int(a["id"]) % 2 == 0
+	return role == "stock" and ((_raining() and int(a["id"]) % 2 == 0) or _hot(a))
+
+
+# The air at an animal (step 3): the weather's seasonal temperature less the lapse with its height (no day and night swing on the server
+# side of animals yet).
+func _air_c(a: Dictionary) -> float:
+	return float(_wx.get("temp_c", 10.0)) - maxf(a["pos"].y, 0.0) * float(_wx_rules().get("lapse_c_per_m", 0.0065))
+
+
+# Cold for deer (design 9, lesson 2): air below cold_c (-5 C), or snow falling at snow_cold_from or more (lying snow has no server model yet:
+# Sonny's A4 baked snow window will give it).
+func _cold(a: Dictionary) -> bool:
+	return _wx_on() and (_air_c(a) < float(_wx_rules().get("cold_c", -5.0)) or float(_wx.get("snow", 0.0)) >= float(_wx_rules().get("snow_cold_from", 0.3)))
+
+
+# Midday heat for stock (design 9, lesson 8): air above hot_c (22 C) between heat_hours (11 to 16).
+func _hot(a: Dictionary) -> bool:
+	if not _wx_on() or _air_c(a) <= float(_wx_rules().get("hot_c", 22.0)) or not hour_now.is_valid():
+		return false
+
+	var hours: Array = _wx_rules().get("heat_hours", [11.0, 16.0])
+	var h: float = float(hour_now.call())
+	return h >= float(hours[0]) and h < float(hours[1])
 
 
 # Every grazing step: stock in a gale face downwind (rumps to the wind); one game hour (cover_return_s real seconds) after the weather that
@@ -2025,7 +2048,8 @@ func _weather_wander(a: Dictionary, def: Dictionary) -> bool:
 	var r: Dictionary = _wx_rules()
 
 	if _seeks_cover(a, def) and not a.has("dry_home"):
-		var cover: Vector3 = _cover_near(a, role == "deer" and _gale())
+		var cold: bool = role == "deer" and _cold(a) and not _raining() and not _gale()
+		var cover: Vector3 = _cover_near(a, role == "deer" and (_gale() or cold), cold)
 
 		if cover != Vector3.INF:
 			a["dry_home"] = a["home"]
@@ -2054,9 +2078,10 @@ func _weather_wander(a: Dictionary, def: Dictionary) -> bool:
 	return false
 
 
-# The nearest spot under tree crowns in 8 directions at 25, 50, 75 and 100 m (cover_m); with `or_low`, the lowest of those spots when none
-# is under trees. Vector3.INF for none.
-func _cover_near(a: Dictionary, or_low: bool) -> Vector3:
+# The nearest spot under tree crowns in 8 directions at 25, 50, 75 and 100 m (cover_m); with `conifer`, only crowns in a conifer biome
+# (weather.conifer_biomes); with `or_low`, the lowest of those spots when none is under trees. Vector3.INF for none.
+func _cover_near(a: Dictionary, or_low: bool, conifer: bool = false) -> Vector3:
+	var conifers: Array = _wx_rules().get("conifer_biomes", ["boreal_forest", "mixed_forest"])
 	var reach: float = float(_wx_rules().get("cover_m", 100.0))
 	var low: Vector3 = Vector3.INF
 
@@ -2071,7 +2096,7 @@ func _cover_near(a: Dictionary, or_low: bool) -> Vector3:
 			if blocked.is_valid() and bool(blocked.call(p.x, p.z)):
 				continue
 
-			if canopy.is_valid() and bool(canopy.call(p)):
+			if canopy.is_valid() and bool(canopy.call(p)) and (not conifer or (biome_at.is_valid() and str(biome_at.call(p.x, p.z)) in conifers)):
 				return p
 
 			if or_low and p.y < a["pos"].y - 1.0 and (low == Vector3.INF or p.y < low.y):
