@@ -6,6 +6,7 @@ extends SceneTree
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_rain_look.gd
 const WeatherLook := preload("res://src/client/weather_look.gd")
 const Puddles := preload("res://src/client/puddles.gd")
+const GroundMaterial := preload("res://src/client/ground_material.gd")
 
 var _fails: int = 0
 
@@ -45,6 +46,9 @@ func _init() -> void:
 	_check(WeatherLook.RAIN_SHADER.contains("unshaded"), "without the switch the streaks are as before")
 
 	_check_wet()
+	# Splashes (3.2): flecks in the ground shader by material, the sheet only from High quality and only in a downpour.
+	_check(GroundMaterial.SHADER.contains("float rain_crowns(") and GroundMaterial.SHADER.contains("uniform float splash_rain"), "the ground shader draws splash crowns from splash_rain")
+	_check(WeatherLook.SPLASH_FROM_QUALITY == 2 and WeatherLook.SPLASH_FROM >= 0.5 and WeatherLook.SPLASH_PER_HIT <= 5, "the splash sheet: High and Ultra only, a downpour only, a few droplets a hit")
 	print("test_rain_look: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)
 

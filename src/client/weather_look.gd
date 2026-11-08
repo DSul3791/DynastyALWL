@@ -164,6 +164,17 @@ const RAIN_LOOK_MAX_SLANT_DEG := 65.0
 const RAIN_LOOK_GUST := 0.5              # gusts add up to this share of the mean wind (Jamie #637: gusts about 1.5 x the mean)
 const MESH_STREAK_M := 0.6               # the streak mesh's own length (_make_rain)
 var rain_look: bool = OS.get_cmdline_user_args().has("--rain-look")
+# The splash sheet (rain_look_design.md 3.2, quality High and Ultra): the streaks stop on a heightfield of the ground around the eye and each
+# hit throws a few droplets up a hand high; drawn only in a downpour. Grass cards hide it on turf, as real grass swallows the splashes.
+const SPLASH_FROM_QUALITY := 2
+const SPLASH_PER_HIT := 4
+const SPLASH_AMOUNT := 2000
+const SPLASH_FROM := 0.5                 # rain strength from which the sheet shows
+const SPLASH_FIELD_M := 64.0
+var _splash: GPUParticles3D
+var _splash_field: GPUParticlesCollisionHeightField3D
+var _splash_material: StandardMaterial3D
+var _splash_sent: float = -1.0
 var rain_fall_ms: float = 0.0            # with --rain-look: the streaks' fall and drift now, for checks
 var rain_drift_ms: Vector2 = Vector2.ZERO
 
@@ -262,6 +273,9 @@ func setup(client) -> void:
 	_snow = _make_snow()
 	add_child(_rain)
 	add_child(_snow)
+
+	if rain_look:
+		_make_splash()
 	wind_cue = WindCueScript.new()
 	add_child(wind_cue)
 	wind_cue.setup()
@@ -297,6 +311,14 @@ func setup(client) -> void:
 func set_quality(quality: int) -> void:
 	_quality = clampi(quality, 0, RAIN_AMOUNT.size() - 1)
 	_rain.amount = int(RAIN_AMOUNT[_quality])
+
+	if _splash != null:
+		# Changing these rebuilds the particle shader, so they follow the quality setting only, never the weather.
+		var sheet: bool = _quality >= SPLASH_FROM_QUALITY
+		var process: ParticleProcessMaterial = _rain.process_material as ParticleProcessMaterial
+		process.collision_mode = ParticleProcessMaterial.COLLISION_HIDE_ON_CONTACT if sheet else ParticleProcessMaterial.COLLISION_DISABLED
+		process.sub_emitter_mode = ParticleProcessMaterial.SUB_EMITTER_AT_COLLISION if sheet else ParticleProcessMaterial.SUB_EMITTER_DISABLED
+		_splash_field.visible = sheet
 	_snow.amount = int(SNOW_AMOUNT[_quality])
 	(_snow.process_material as ParticleProcessMaterial).turbulence_enabled = _quality >= TURBULENCE_FROM
 
@@ -363,6 +385,69 @@ func _update_rain_look(eye: Vector3, hard: float, heading: float) -> void:
 	process.initial_velocity_min = speed * (1.0 - RAIN_LOOK_SPREAD)
 	process.initial_velocity_max = speed * (1.0 + RAIN_LOOK_SPREAD)
 	_rain_material.set_shader_parameter("size_scale", Vector2(lerpf(0.55, 1.7, hard), speed * RAIN_LOOK_STREAK_S / MESH_STREAK_M))
+
+
+func _make_splash() -> void:
+	_splash = GPUParticles3D.new()
+	_splash.name = "RainSplash"
+	_splash.amount = SPLASH_AMOUNT
+	_splash.lifetime = 0.25
+	_splash.local_coords = false
+	_splash.visibility_aabb = AABB(Vector3(-40.0, -40.0, -40.0), Vector3(80.0, 80.0, 80.0))
+	_splash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_splash.visible = false
+	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	process.direction = Vector3(0.0, 1.0, 0.0)
+	process.spread = 55.0
+	process.initial_velocity_min = 0.5
+	process.initial_velocity_max = 1.5
+	process.gravity = Vector3(0.0, -9.8, 0.0)
+	process.scale_min = 0.6
+	process.scale_max = 1.2
+	_splash.process_material = process
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2(0.012, 0.012)
+	var drop: StandardMaterial3D = StandardMaterial3D.new()
+	drop.albedo_color = Color(0.80, 0.84, 0.90, 0.45)
+	drop.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	drop.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	drop.roughness = 1.0
+	drop.specular_mode = BaseMaterial3D.SPECULAR_DISABLED    # lit by the scene like the streaks, never self-lit
+	quad.material = drop
+	_splash_material = drop
+	_splash.draw_pass_1 = quad
+	add_child(_splash)
+	_splash_field = GPUParticlesCollisionHeightField3D.new()
+	_splash_field.size = Vector3(SPLASH_FIELD_M, 60.0, SPLASH_FIELD_M)
+	_splash_field.resolution = GPUParticlesCollisionHeightField3D.RESOLUTION_256
+	_splash_field.update_mode = GPUParticlesCollisionHeightField3D.UPDATE_MODE_WHEN_MOVED
+	_splash_field.follow_camera_enabled = true
+	add_child(_splash_field)
+	_rain.collision_base_size = 0.02
+	_rain.sub_emitter = _rain.get_path_to(_splash)
+	var rain_process: ParticleProcessMaterial = _rain.process_material as ParticleProcessMaterial
+	rain_process.sub_emitter_amount_at_collision = SPLASH_PER_HIT
+	rain_process.collision_bounce = 0.0
+	set_quality(_quality)
+
+
+# The splash flecks on the ground and the splash sheet's strength: how hard it rains on open ground now (none in a cave).
+func _update_splash(rain: float, open_sky: float) -> void:
+	var on_ground: float = snappedf(rain * open_sky, 0.02)
+	var material: ShaderMaterial = _client.terrain.material as ShaderMaterial
+
+	if material != null and on_ground != _splash_sent:
+		_splash_sent = on_ground
+		material.set_shader_parameter("splash_rain", on_ground)
+
+	if _splash != null:
+		_splash.visible = _quality >= SPLASH_FROM_QUALITY and on_ground >= SPLASH_FROM and _rain.visible
+		var tint: Color = _splash_material.albedo_color
+		var alpha: float = lerpf(0.2, 0.45, smoothstep(SPLASH_FROM, 1.0, on_ground))
+
+		if absf(tint.a - alpha) > 0.01:
+			tint.a = alpha
+			_splash_material.albedo_color = tint
 
 
 func _make_snow() -> GPUParticles3D:
@@ -814,6 +899,7 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 
 	if rain_look:
 		_update_rain_look(eye, hard, float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0)
+		_update_splash(rain if _rain.emitting else 0.0, open_sky)
 	elif _rain.emitting:
 		(_rain.process_material as ParticleProcessMaterial).direction = Vector3(tilt, -1.0, tilt * 0.4).normalized()
 

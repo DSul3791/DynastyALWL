@@ -48,6 +48,7 @@ uniform bool wet_look = false;          // --rain-look (rain_look_design.md 3.4)
 uniform float wet_layer[6];             // turf, litter, gravel, mud, sand, rock: 0 dry .. 1 soaked
 uniform float wet_streak = 0.0;         // run-off streaks on steep rock, kept an hour longer than the face
 uniform vec2 wet_wind = vec2(1.0, 0.0); // where the wind blows toward (x, z): faces looking into it wet first
+uniform float splash_rain = 0.0;        // --rain-look (rain_look_design.md 3.2): how hard it rains on open ground now; 0 skips the splash flecks
 uniform vec3 caustics = vec3(0.0);      // under water (underwater_look.gd): surface height, strength 0..1 (0 off), how deep the lines reach
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -119,6 +120,24 @@ vec2 rain_rings(vec2 q, float rain, float t, int salt) {
 	float off_ring = d - phase * 0.11;
 	float bump = exp(-off_ring * off_ring / 0.00012) * (1.0 - phase);
 	return away / max(d, 0.001) * bump * sin(off_ring * 160.0) * 0.6;
+}
+
+// A splash crown where a drop lands on hard ground (rain_look_design.md 3.2): a 0.25 m grid of cells, each landing at its own phase in a
+// 0.5 s cycle and showing for 0.12 s (a pale dot that opens into a ring about 3 cm across); more cells land the harder it rains.
+float rain_crowns(vec2 q, float rain, float t, int salt) {
+	vec2 cell = floor(q / 0.25);
+	ivec2 c = ivec2(cell) + ivec2(salt * 11, salt * 5);
+	float offset = puddle_hash(c + ivec2(23, 7));
+	float cycle = floor(t / 0.5 + offset);
+	float phase = fract(t / 0.5 + offset) / 0.24;
+	if (phase > 1.0 || puddle_hash(c + ivec2(int(cycle) * 5, 9)) > rain) {
+		return 0.0;
+	}
+	vec2 centre = (cell + vec2(0.3) + 0.4 * vec2(puddle_hash(c + ivec2(13, 2)), puddle_hash(c + ivec2(3, 31)))) * 0.25;
+	float d = length(q - centre);
+	float ring = 1.0 - smoothstep(0.004, 0.012, abs(d - 0.03 * phase));
+	float drop = 1.0 - smoothstep(0.008, 0.02, d + 0.02 * phase);
+	return max(ring, drop) * (1.0 - phase);
 }
 
 void fragment() {
@@ -471,6 +490,18 @@ void fragment() {
 		color = mix(color, mix(water, ice_look, puddle_ice), puddle);
 		vec3 surface = normalize(vec3(-ripple.x, 1.0, -ripple.y));
 		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(surface, 0.0)).xyz, puddle));
+	}
+	// Splash crowns on hard open ground in rain (rain_look_design.md 3.2): strong on rock, less on gravel, sand and mud (a dull dark plop on
+	// mud), almost none in turf and litter, none in puddles (they have rings), under crowns or on lying snow; drawn within 20 m.
+	if (splash_rain > 0.3 && dist < 20.0 && puddle < 0.5) {
+		float hard_ground = lw[5] * 1.0 + lw[2] * 0.7 + lw[4] * 0.35 + lw[3] * 0.3 + lw[0] * 0.1 + lw[1] * 0.05;
+		float where = hard_ground * (1.0 - shelter) * (1.0 - lying) * (1.0 - smoothstep(12.0, 20.0, dist)) * smoothstep(-0.2, 0.3, world_normal.y);
+		if (where > 0.01) {
+			vec2 q = world_pos.xz - puddle_origin;
+			float amount = smoothstep(0.3, 1.0, splash_rain);
+			float crown = max(rain_crowns(q, amount, TIME, 0), rain_crowns(q + vec2(0.11, 0.07), amount * 0.8, TIME + 0.21, 1)) * where;
+			color = mix(color, mix(vec3(0.80, 0.83, 0.86), color * 0.6, lw[3]), crown * 0.8);
+		}
 	}
 	ALBEDO = color;
 	// Mud is wet: a little sheen.
