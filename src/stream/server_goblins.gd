@@ -8,10 +8,19 @@ extends RefCounted
 # In the cave a goblin moves only along its path (no surface steering: the ground height there is the hill above). It reacts only to players on
 # its own level (den_life.cave_level_m vertically from the path), drives deeper from one who comes inside spook_m, and gives a player inside its
 # threat range a short warning and then a lunge along the path: backing off during the warning avoids it, the big-game contract.
+#
+# Stealing (docs/design/goblin_stealing_design.md, Dave 8 Nov 2026): at night a goblin may creep (SNEAK) to one small loose thing outside every
+# fire's light, take one piece, run home with it (CARRY) and lay it on the den pile, where a player can find it and take it back.
+
+const SNEAK := 13              # the thief's states (server_thieves.gd): the client's creep and carry poses
+const CARRY := 14
 
 const Steering := preload("res://src/shared/steering.gd")
 
 var host                       # ServerAnimals
+var stealable: Callable        # (centre Vector3, radius) -> Array of [world id, position]: loose small things on the ground (server_items.stealable_near)
+var take_one: Callable         # (world id) -> [item number, 1], or [] when it is gone (server_items.take_one)
+var hoard_drop: Callable       # (item number, count, position, lifetime s) -> bool: lays a piece on a den pile (server_items.drop_in_world)
 
 
 # Length (m) of a cave path, mouth to den.
@@ -104,9 +113,22 @@ func step(a: Dictionary, dt: float, seen_d: float, seen_p: Vector3) -> bool:
 		_step_cave(a, def, dt)
 		return true
 
+	var row: Dictionary = _cfg(def)
+	a["steal_wait"] = float(a.get("steal_wait", 0.0)) - dt
+
 	if host.big_game.handles(a) or int(a["state"]) == host.FLEE:
 		a["task"] = ""
 		return false
+
+	# Carrying loot (after a fright, or picked up again): home with it.
+	if a.has("loot") and str(a.get("task", "")) != "carry":
+		a["task"] = "carry"
+
+	if str(a.get("task", "")) == "carry":
+		return _step_carry(a, def, dt)
+
+	if str(a.get("task", "")) == "steal":
+		return _step_steal(a, def, dt)
 
 	var path: PackedVector3Array = a.get("cave_path", PackedVector3Array())
 
@@ -143,14 +165,162 @@ func step(a: Dictionary, dt: float, seen_d: float, seen_p: Vector3) -> bool:
 
 		return false
 
-	# At night, as an ordinary idle runs out, it may pick something to do: watch a fire, else forage.
+	# At night, as an ordinary idle runs out, it may pick something to do: steal, else watch a fire, else forage.
 	if int(a["state"]) == host.GRAZE and float(a["timer"]) - dt <= 0.0 and not host.resting(def):
+		if float(a["steal_wait"]) <= 0.0 and host.rng.randf() < float(row.get("steal_share", 0.0)) and _pick_steal(a, def):   # luck-exempt: whether a goblin goes stealing
+			return true
+
 		if _pick_watch(a, def):
 			return true
 
 		_pick_forage(a, def)
 
 	return false
+
+
+# A small loose thing outside every fire's light, not on a den pile and with no player within steal_scare_m of it: the nearest to the goblin.
+func _pick_steal(a: Dictionary, def: Dictionary) -> bool:
+	if not stealable.is_valid():
+		return false
+
+	var row: Dictionary = _cfg(def)
+	var best: Array = []
+	var best_d: float = INF
+
+	for found in stealable.call(_home(a), float(row.get("steal_reach_m", 150.0))):
+		var at: Vector3 = found[1]
+		var d: float = Vector2(at.x - a["pos"].x, at.z - a["pos"].z).length()
+
+		if d < best_d and _may_take(at, def):
+			best_d = d
+			best = found
+
+	if best.is_empty():
+		return false
+
+	a["task"] = "steal"
+	a["prize"] = int(best[0])
+	a["prize_at"] = best[1]
+	a["state"] = SNEAK
+	return true
+
+
+# Whether a goblin may take the thing at `at` now: unlit, not on a goblin den's pile, no player near it.
+func _may_take(at: Vector3, def: Dictionary) -> bool:
+	if host._fire_guard(at) != Vector3.INF or _scared(at, def):
+		return false
+
+	var den_m: float = float(def.get("den", {}).get("den_m", 12.0))
+
+	for id in host.animals:
+		var other: Dictionary = host.animals[id]
+
+		if other.has("cave_path") and (other["den"] as Vector3).distance_to(at) <= den_m:
+			return false
+
+	return true
+
+
+func _scared(at: Vector3, def: Dictionary) -> bool:
+	var scare_m: float = float(_cfg(def).get("steal_scare_m", 8.0))
+
+	for p in (host.player_positions.call() if host.player_positions.is_valid() else []):
+		if Vector2(p.x - at.x, p.z - at.z).length() < scare_m:
+			return true
+
+	return false
+
+
+func _give_up(a: Dictionary, def: Dictionary) -> bool:
+	a["task"] = ""
+	a["state"] = host.GRAZE
+	a["timer"] = host._graze_time(def)
+	return true
+
+
+# SNEAK: creep to the thing and take one piece; a player near the goblin or the thing, the light reaching it, or the thing gone, and it gives up.
+func _step_steal(a: Dictionary, def: Dictionary, dt: float) -> bool:
+	var row: Dictionary = _cfg(def)
+	var prize_at: Vector3 = a["prize_at"]
+	var there: bool = false
+
+	for found in (stealable.call(prize_at, 2.0) if stealable.is_valid() else []):
+		there = there or int(found[0]) == int(a["prize"])
+
+	if not there or host.resting(def) or _scared(a["pos"], def) or host._fire_guard(prize_at) != Vector3.INF or _scared(prize_at, def):
+		return _give_up(a, def)
+
+	var lit: Vector3 = host._fire_guard(a["pos"])
+
+	if lit != Vector3.INF:
+		a["task"] = ""
+		host._bolt(a, lit, def)
+		return true
+
+	var r: Dictionary = Steering.step(a["pos"], prize_at, float(row.get("sneak_mps", 1.0)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.crossing)
+
+	if r["moved"]:
+		a["pos"] = r["pos"]
+		a["heading"] = r["heading"]
+
+	if not r["arrived"]:
+		return _give_up(a, def) if not r["moved"] else true
+
+	var taken: Array = take_one.call(int(a["prize"])) if take_one.is_valid() else []
+
+	if taken.is_empty():
+		return _give_up(a, def)
+
+	a["loot"] = taken
+	a["task"] = "carry"
+	a["state"] = CARRY
+	return true
+
+
+# CARRY: run home to the mouth with the piece and go in (the cave step lays it on the den pile). Without a cave path it lays it at the mouth.
+func _step_carry(a: Dictionary, def: Dictionary, dt: float) -> bool:
+	var path: PackedVector3Array = a.get("cave_path", PackedVector3Array())
+	var mouth: Vector3 = _home(a)
+	var lit: Vector3 = host._fire_guard(a["pos"])
+
+	if lit != Vector3.INF:
+		host._bolt(a, lit, def)   # it keeps the loot and heads home again after
+		return true
+
+	a["state"] = CARRY
+	var r: Dictionary = Steering.step(a["pos"], mouth, float(_cfg(def).get("carry_mps", 4.5)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.crossing)
+
+	if r["moved"]:
+		a["pos"] = r["pos"]
+		a["heading"] = r["heading"]
+
+	if not r["arrived"] and r["moved"]:
+		return true
+
+	if path.size() >= 2:
+		a["pos"] = path[0]
+		enter_den(a)   # the cave step takes it to the den and lays the loot down
+	else:
+		stash(a)
+		_give_up(a, def)
+
+	return true
+
+
+# Lay a goblin's loot on its den pile (the den floor; the mouth for a band without a cave path).
+func stash(a: Dictionary) -> void:
+	if not a.has("loot"):
+		return
+
+	var def: Dictionary = host.species_def(a["sp"])
+	var path: PackedVector3Array = a.get("cave_path", PackedVector3Array())
+	var pile: Vector3 = path[path.size() - 1] if path.size() >= 2 else a.get("den", a["pos"])
+
+	if hoard_drop.is_valid():
+		hoard_drop.call(int(a["loot"][0]), int(a["loot"][1]), pile, float(_cfg(def).get("hoard_life_s", 604800.0)))
+
+	a.erase("loot")
+	a["steal_wait"] = float(_cfg(def).get("steal_again_s", 120.0))
 
 
 # Where a goblin ranges round at night: the mouth it came out of.
@@ -404,6 +574,16 @@ func _step_cave(a: Dictionary, def: Dictionary, dt: float) -> void:
 			a["state"] = host.ALERT
 			a["heading"] = atan2(near["pos"].z - a["pos"].z, near["pos"].x - a["pos"].x)
 			return
+
+	# Home with loot: down to the den, where it goes on the pile.
+	if a.has("loot"):
+		if _walk(a, length, float(def.get("walk_mps", 1.2)), dt):
+			stash(a)
+			a["state"] = host.GRAZE
+		else:
+			a["state"] = host.HOP
+
+		return
 
 	if host.resting(def):
 		# By day: to its sleeping spot in the den, then it lies there.

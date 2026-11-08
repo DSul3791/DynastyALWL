@@ -528,6 +528,7 @@ func _ready() -> void:
 
 		return PackedVector3Array()
 	animals.berry_bushes = _berries_near_cached   # goblins forage at night (docs/design/goblin_den_life_design.md 2.3)
+	animals.lair_guarded = func(x, z, radius): return items.lit_fire_near(Vector3(x, 0.0, z), radius)   # a burning placed fire near a lair's mouth keeps a killed band from coming back
 	animals.setup()
 	trails = TrailsScript.new()
 	trails.game_seconds = func(): return game_clock.seconds
@@ -547,6 +548,9 @@ func _ready() -> void:
 	animals.big_game.player_info = func(): return items.wolf_info()
 	animals.thieves.loose_food = func(centre, r): return items.loose_food_near(centre, r)
 	animals.thieves.take_food = func(id): return items.take_loose(id)
+	animals.goblins.stealable = func(centre, r): return items.stealable_near(centre, r)   # goblins steal one small unlit thing at a time and pile it in their den
+	animals.goblins.take_one = func(id): return items.take_one(id)
+	animals.goblins.hoard_drop = func(number, count, pos, life_s): return items.drop_in_world(number, count, pos, 0, life_s)
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_in_world(number, count, pos)
 	@warning_ignore("confusable_local_declaration")

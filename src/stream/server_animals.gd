@@ -47,7 +47,7 @@ var drop_loot: Callable            # (item number, count, position) when a thief
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
-var lair_guarded: Callable            # (x, z) -> bool: true when a patrol or buildings hold the area round a lair, so no new group comes (not wired yet: there is no such query; Dave 7 Nov 2026)
+var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burning placed fire lies within radius of a lair's mouth (lair.guard_m), so no new group comes (Dave 8 Nov 2026, decision 13)
 var _lair_state: Dictionary = {}   # mouth "x,z" -> {"made": a group has been made here, "empty_since": seconds when it was found empty, -1 while a group is there}
 var lair_path: Callable              # (mouth x, z) -> PackedVector3Array: the cave floor path from that den mouth to the den (tile goblin_den_paths), empty when none
 var berry_bushes: Callable           # (Vector3, radius) -> PackedVector3Array: standing berry plants near a point, from flora chunks already made (goblins forage at them)
@@ -747,6 +747,9 @@ func tick(delta: float) -> void:
 		if trails != null:
 			trails.forget(id)
 
+		if animals[id].has("loot") and goblins != null and species_def(str(animals[id]["sp"])).has("den_life"):
+			goblins.stash(animals[id])   # a goblin dropped with no player near is taken to have got home: its loot goes on the den pile
+
 		if animals[id].has("pack") and wolves != null and wolves.packs.has(animals[id]["pack"]):
 			wolves.packs[animals[id]["pack"]]["ids"].erase(id)
 
@@ -1024,6 +1027,9 @@ func bleed(a: Dictionary, dt: float) -> bool:
 
 	animals.erase(a["id"])
 
+	if a.has("loot") and drop_loot.is_valid():
+		drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])   # what it carried falls where it died
+
 	if a.has("pack") and wolves != null:
 		wolves.on_death(int(a["id"]), a["pack"])
 
@@ -1256,7 +1262,7 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 			if float(state["empty_since"]) < 0.0:
 				state["empty_since"] = now_s
 
-			taken = now_s - float(state["empty_since"]) < float(lair.get("respawn_s", 1800.0)) or (lair_guarded.is_valid() and bool(lair_guarded.call(m.x, m.y)))
+			taken = now_s - float(state["empty_since"]) < float(lair.get("respawn_s", 1800.0)) or (lair_guarded.is_valid() and bool(lair_guarded.call(m.x, m.y, float(lair.get("guard_m", 100.0)))))
 
 		_lair_state[key] = state
 		var path: PackedVector3Array = lair_path.call(m.x, m.y) if lair_path.is_valid() and def.has("den_life") and not taken else PackedVector3Array()
