@@ -252,6 +252,20 @@
 		"rain_burn_from": 0.6,
 		"rain_burn_x": 1.25
 	},
+	"wet_wood": {
+		"note": "Wet wood (docs/design/fire_coals_design.md 5, step 3; coordinator decision 8 Nov 2026, Dave may revert). A wood item's slot wear is its drying left in tenths of a game hour (0 = dry). Rain of rain_from or more wets loose wood lying uncovered and the wood of an unlit uncovered fire up to its class's wet_h; a pack and a chest keep wood dry. Wood dries 1 game hour per game hour out of the rain, fire_dry_x times as fast in a lit fire's store or within its heat reach. Fresh-cut wood is dry. A lit fire holding wet wood burns wet_burn_x as long, a tier lower in heat and light, and smokes; a laid fire whose kindling is all wet lights at light_x of the usual chance unless dry tinder is in it. Stacks join only within wet_merge_h of drying left and keep the wetter. Checked every tick_s real seconds.",
+		"wet_h": {
+			"weak": 4,
+			"firewood": 36,
+			"log": 168
+		},
+		"rain_from": 0.2,
+		"fire_dry_x": 6.0,
+		"wet_burn_x": 1.5,
+		"light_x": 0.5,
+		"wet_merge_h": 2.0,
+		"tick_s": 15.0
+	},
 	"cooks_into": {
 		"raw_meat": "roast_meat",
 		"salmon": "roast_fish",

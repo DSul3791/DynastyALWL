@@ -119,6 +119,51 @@ func spoilage() -> Dictionary:
 	return _spoil
 
 
+# Wet wood (docs/design/fire_coals_design.md 5, cooking.json fuel_class and wet_wood): the wood class of an item (log, firewood, weak), "" for
+# anything that is not wood. A wood slot's wear is its drying left in tenths of a game hour (0 = dry).
+var _wood_loaded: bool = false
+var _wood_class: Dictionary = {}    # item number -> wood class
+var _wet_wood: Dictionary = {}
+
+
+func _load_wood() -> void:
+	_wood_loaded = true
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+
+	var classes: Dictionary = parsed.get("fuel_class", {})
+
+	for id in classes:
+		var number: int = number_of(str(id))
+
+		if number > 0:
+			_wood_class[number] = str(classes[id])
+
+	_wet_wood = parsed.get("wet_wood", {})
+
+
+func wood_class(number: int) -> String:
+	if not _wood_loaded:
+		_load_wood()
+
+	return str(_wood_class.get(number, ""))
+
+
+func wet_wood() -> Dictionary:
+	if not _wood_loaded:
+		_load_wood()
+
+	return _wet_wood
+
+
+# The drying left a fully wetted piece of this wood gets (wet_wood.wet_h of its class), in wear units; 0 for anything else.
+func wet_units(number: int) -> int:
+	var cls: String = wood_class(number)
+	return 0 if cls == "" else int(round(float((wet_wood().get("wet_h", {}) as Dictionary).get(cls, 0.0)) * 10.0))
+
+
 var _shelf_cache: Dictionary = {}   # item number -> shelf life in units (the spoilage tick asks for every slot of every pack)
 
 
