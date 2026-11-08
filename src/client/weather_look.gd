@@ -177,6 +177,8 @@ static func visibility_of_density(density: float) -> float:
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const WindCueScript := preload("res://src/client/wind_cue.gd")
+const FireWeather := preload("res://src/client/fire_weather.gd")
+var _fire_light_next_msec: int = 0
 var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
 
 func setup(client) -> void:
@@ -206,6 +208,11 @@ func setup(client) -> void:
 
 	if client.sound != null and client.sound.weather != null:
 		client.sound.weather.lightning.connect(_on_lightning)
+
+
+# The fog look now, 0 clear .. 1 thick, eased (sound_occlusion.gd: --sound-outdoors trims far high notes in fog).
+func fog_now() -> float:
+	return float(_s.get("fog", 0.0))
 
 
 func set_quality(quality: int) -> void:
@@ -633,6 +640,11 @@ func _update_ground(rain: float, snow: float) -> void:
 
 	if _client.grass != null:
 		_client.grass.visible = lying < 0.5      # snow buries the grass
+
+	# Firelight in fog and snow (--firelight-weather, firelight_weather_design.md): reach and halo of every fire light, once a second.
+	if FireWeather.on and Time.get_ticks_msec() >= _fire_light_next_msec:
+		_fire_light_next_msec = Time.get_ticks_msec() + 1000
+		FireWeather.update(get_tree(), float(_s["mist"]) * mist_inside, snow, lying, 1.0 - day.night)
 
 
 func _update_particles(rain: float, snow: float, wind: float) -> void:
