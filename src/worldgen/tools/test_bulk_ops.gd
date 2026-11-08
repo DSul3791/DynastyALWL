@@ -170,7 +170,7 @@ func _init() -> void:
 	check(split_slot >= 0 and pack().is_fav(split_slot) and pack().is_fav(20), "a split stack keeps the favourite on both halves (new slot %d)" % split_slot)
 	var copy = InventoryScript.new(items.table)
 	copy.from_json_array(pack().to_json_array())
-	check(copy.is_fav(15) and copy.is_fav(20) and not copy.is_fav(0), "favourites are saved and loaded with the pack")
+	check(copy.is_fav(15) and copy.is_fav(20) and copy.is_fav(split_slot) and not copy.is_fav(1), "favourites are saved and loaded with the pack")
 	var old_row: Array = [[clay, 4, 0]]
 	var old = InventoryScript.new(items.table)
 	old_row.resize(InventoryScript.SLOTS)
