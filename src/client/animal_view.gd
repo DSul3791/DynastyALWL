@@ -62,8 +62,8 @@ var _f_wind: float = 0.0
 var _f_herd_space: float = 2.0
 var hunt_feedback: bool = false
 var posed_flight_all: bool = false   # tools only: pose every bird's flight from its bones, clips or not (a stand-in until a Meshy bird arrives)
-var ice_looks: bool = false
-var _ice_holes: Array = []        # the dark open-water discs of the live ice fishing holes (Steve #737, protocol 97)       # animals on ice and in snow: careful steps and slips on ice, snow on still backs melting by the air, deeper snow prints (ANIMAL_WEATHER_LOOKS.md ice section; off until the PC check)
+var ice_looks: bool = false       # animals on ice and in snow: careful steps and slips on ice, snow on still backs melting by the air, deeper snow prints (ANIMAL_WEATHER_LOOKS.md ice section; off until the PC check)
+var _ice_holes: Array = []        # the dark open-water discs of the live ice fishing holes (Steve #737, protocol 97)
 var drink_looks: bool = false     # drinking: sips with the head lifted to look between, a churned bank at used spots, birds bathing in shallows (ANIMAL_DRINK.md; off until the PC check)
 var cave_air: bool = false        # animals underground take the cave's air (the year mean at the height), steam by it, coats dry by it (ANIMAL_WEATHER_LOOKS.md cave section; off until the PC check)
 var cave_c_at: Callable           # (position) -> the cave air C there, or NAN under open sky (terrain_client: rock overhead, Weather year mean)
