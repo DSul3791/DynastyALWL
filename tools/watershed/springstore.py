@@ -4,7 +4,10 @@
   the groundwater catchments on R4's own head field, and each discharge block's stores: a diffuse store with Rorabaugh's
   response time tau = 4 S_y L^2 / (pi^2 T), and on cave-forming rock a conduit store and a matrix store in parallel.
 - R5 (network.py): the wet- and dry-quarter shares of each store's outflow, from the island's recharge shape through a
-  linear store of its own tau (one FFT per tau bin), so a reach's dry flow is the sum of its own springs' shares.
+  linear store of its own tau (one FFT per tau bin), so a reach's dry flow is the sum of its own springs' shares; each
+  spring row's flow in each twelfth of the year, and the catchment's recharge and rain for the game's storm pulse.
+- The game (docs/design/r7_plan.md section 4.1): drought_stores and storm_pulse are the reference sums its live springs
+  follow.
 - R6 (record.py): the springs that still run in the dry quarter, as fresh-water sources for fresh_m.
 
 Numbers and sources are in params.json groundwater.near_surface, groundwater.specific_yield and groundwater.karst_stores
@@ -15,6 +18,7 @@ import numpy as np
 
 DAY_S = 86400.0
 YEAR_DAYS = 365.25
+YEAR_S = YEAR_DAYS * DAY_S
 
 
 # ---------------------------------------------------------------------------------------------------------------------------
@@ -120,7 +124,7 @@ def rorabaugh_tau_days(sy, L, T):
     return 4.0 * np.asarray(sy, float) * np.asarray(L, float) ** 2 / (np.pi ** 2 * np.asarray(T, float)) / DAY_S
 
 
-def stores(end, dist, T, sy, recharge, karst, KS, dx):
+def stores(end, dist, T, sy, recharge, karst, KS, dx, rain=None):
     """The stores of every discharge block, from its groundwater catchment (blocks with end == it).
     The diffuse store: the catchment's blocks off cave-forming rock, recharge-weighted for the flow distance and S_y, and
     the harmonic mean for T (flow in series); L is twice the mean distance (a strip with even recharge has a mean of L/2).
@@ -129,7 +133,8 @@ def stores(end, dist, T, sy, recharge, karst, KS, dx):
     matrix T = matrix_k_m_s x matrix_thickness_m).
     Returns a dict of block arrays (NaN where a block is not an end of anything): share and tau_days of the diffuse,
     conduit and matrix stores, the diffuse store's sy and flow_path_m (L), and catchment_m2, the whole groundwater
-    catchment (karst blocks included)."""
+    catchment (karst blocks included), with that catchment's mean recharge_mm_yr and (from rain, mm/yr per block, when
+    given) rain_mm_yr, which the game's storm pulse reads (docs/design/r7_plan.md section 4.1)."""
     shp = end.shape
     e = end.ravel()
     ok = e >= 0
@@ -159,12 +164,18 @@ def stores(end, dist, T, sy, recharge, karst, KS, dx):
     out = dict(diffuse_share=np.where(has, 1.0 - karst_share, nan), diffuse_tau_days=np.where(has, tau_d, nan),
                conduit_share=np.where(has, c * karst_share, nan), conduit_tau_days=np.where(has, float(KS['conduit_tau_days']), nan),
                matrix_share=np.where(has, (1.0 - c) * karst_share, nan), matrix_tau_days=np.where(has, tau_m, nan),
-               sy=np.where(has, sy_d, nan), flow_path_m=np.where(has, L, nan), catchment_m2=np.where(has, cnt * dx * dx, nan))
+               sy=np.where(has, sy_d, nan), flow_path_m=np.where(has, L, nan), catchment_m2=np.where(has, cnt * dx * dx, nan),
+               recharge_mm_yr=np.where(has, tot / np.maximum(cnt, 1.0) * 1000.0 * YEAR_S, nan))
+    if rain is None:
+        out['rain_mm_yr'] = nan
+    else:
+        rr = np.bincount(ee[ok], weights=np.asarray(rain, float).ravel()[ok], minlength=N)
+        out['rain_mm_yr'] = np.where(has, rr / np.maximum(cnt, 1.0), nan)
     return {k: v.reshape(shp) for k, v in out.items()}
 
 
 STORE_KINDS = ('diffuse', 'conduit', 'matrix')
-FIELDS = tuple(f'{k}_{v}' for k in STORE_KINDS for v in ('share', 'tau_days')) + ('sy', 'flow_path_m', 'catchment_m2')
+FIELDS = tuple(f'{k}_{v}' for k in STORE_KINDS for v in ('share', 'tau_days')) + ('sy', 'flow_path_m', 'catchment_m2', 'recharge_mm_yr', 'rain_mm_yr')
 # R4 writes each as groundwater.npz gw_<field> at its discharge cells (NaN elsewhere); R5 reads them back.
 
 
@@ -185,6 +196,17 @@ def quarter_shares(shape, wk, dk, tau_days):
     """(wet, dry): the store's mean outflow in the wet and the dry quarter over its year's mean."""
     r = store_response(shape, tau_days)
     return float(r[wk].mean()), float(r[dk].mean())
+
+
+def month_means(shape, tau_days):
+    """The store's outflow over its year's mean in each twelfth of the climate year, from phase 0 (the phase that
+    record.climate's warmest_year_phase counts from): the mean of the response's samples that fall in each twelfth. The
+    year's samples must be a multiple of 12, so every twelfth holds the same number and the twelve values average to 1."""
+    r = store_response(shape, tau_days)
+    S = r.size
+    if S % 12:
+        raise ValueError(f'springstore.month_means: {S} samples a year is not a multiple of 12')
+    return r.reshape(12, S // 12).mean(axis=1)
 
 
 def tau_bins(BN):
@@ -230,30 +252,59 @@ def cell_shares(st, ks):
     return np.where(any_, wet, np.nan), np.where(any_, dry, np.nan)
 
 
-def spring_row(st, ks, i, q, rnd):
+def spring_row(st, ks, i, q, rnd, shape=None):
     """The store keys of the spring row at flat cell i with mean outflow q (m3/s), rounded by rnd:
-    - stores: [kind, share of the recharge, tau_days, its dry-quarter flow m3/s] for each store with a share;
+    - stores: [kind, share of the recharge, tau_days, its dry-quarter flow m3/s] for each store with a share, and with the
+      year's recharge shape given, a fifth item: that store's mean flow in each twelfth of the year (12 values, m3/s);
     - q_base_dry_m3_s: their dry flows summed, the dry quarter's mean;
+    - q_month_m3_s (with the shape): the stores' twelfths summed, the flow the game puts in through the year;
     - tau_days: the tau of the store that gives most of the dry flow (the matrix on karst), for a one-store drought reader;
-      the exact drought is the sum of each store's dry flow times exp(-t / its tau);
-    - karst_share, the diffuse store's sy and flow_path_m (L), and catchment_km2, the whole groundwater catchment."""
+      the exact drought is the sum of each store's flow at the spell's start times exp(-t / its tau) (drought_stores);
+    - karst_share, the diffuse store's sy and flow_path_m (L), and catchment_km2, the whole groundwater catchment;
+    - recharge_mm_yr and rain_mm_yr, the catchment's means, which size the game's storm pulse (storm_pulse)."""
     rows = []
     for kind in STORE_KINDS:
         s = float(st[f'{kind}_share'][i])
         if np.isfinite(s) and s > 0.0:
-            rows.append([kind, round(s, 3), rnd(float(st[f'{kind}_tau_days'][i])), q * s * float(ks[kind][1][i])])
+            tau = float(st[f'{kind}_tau_days'][i])
+            rows.append([kind, round(s, 3), rnd(tau), q * s * float(ks[kind][1][i]),
+                         None if shape is None else q * s * month_means(shape, tau)])
     out = dict(q_base_dry_m3_s=rnd(sum(r[3] for r in rows)), tau_days=max(rows, key=lambda r: r[3])[2] if rows else None,
                karst_share=round(1.0 - float(np.nan_to_num(st['diffuse_share'][i])), 3) if rows else None)
-    for k, scale, name in (('sy', 1.0, 'sy'), ('flow_path_m', 1.0, 'flow_path_m'), ('catchment_m2', 1e-6, 'catchment_km2')):
-        v = float(st[k][i])
+    if shape is not None and rows:
+        out['q_month_m3_s'] = [rnd(v) for v in np.sum([r[4] for r in rows], axis=0)]
+    for k, scale, name in (('sy', 1.0, 'sy'), ('flow_path_m', 1.0, 'flow_path_m'), ('catchment_m2', 1e-6, 'catchment_km2'),
+                           ('recharge_mm_yr', 1.0, 'recharge_mm_yr'), ('rain_mm_yr', 1.0, 'rain_mm_yr')):
+        v = float(st[k][i]) if k in st else np.nan
         out[name] = rnd(v * scale) if np.isfinite(v) else None
-    out['stores'] = [[r[0], r[1], r[2], rnd(r[3])] for r in rows]
+    out['stores'] = [[r[0], r[1], r[2], rnd(r[3])] + ([] if r[4] is None else [[rnd(v) for v in r[4]]]) for r in rows]
     return out
 
 
 def drought(q_base_dry, tau_days, t_days):
     """Flow t_days into a rain-free spell from a store giving q_base_dry at its start: q exp(-t / tau)."""
     return np.maximum(np.asarray(q_base_dry, float), 0.0) * np.exp(-np.asarray(t_days, float) / np.asarray(tau_days, float))
+
+
+def drought_stores(q_start, tau_days, t_days):
+    """A spring's flow t_days into a rain-free spell: each store falls on its own from its flow at the spell's start,
+    sum over the stores of q_start_k exp(-t / tau_k) (q_start and tau_days: one value per store)."""
+    q = np.maximum(np.asarray(q_start, float), 0.0)
+    tau = np.asarray(tau_days, float)
+    t = np.asarray(t_days, float)
+    return (q[:, None] * np.exp(-t.reshape(1, -1) / tau[:, None])).sum(axis=0).reshape(t.shape)
+
+
+def storm_pulse(q_mean, share, tau_days, storm_recharge_mm, recharge_mm_yr, t_days):
+    """The extra outflow (m3/s) of one store t_days after a storm, on top of its usual flow: the storm's recharge as a
+    share of the year's, times the store's year of outflow, released at the store's own tau:
+    q_mean share (storm_recharge / mean daily recharge) / tau exp(-t / tau). Its volume is q_mean share YEAR_S
+    storm_recharge / recharge_mm_yr, so the year's mean is unchanged when the storm is part of the year's rain. The
+    storm's recharge is its rain times recharge_mm_yr / rain_mm_yr (the spring row's catchment means)."""
+    daily = float(recharge_mm_yr) / YEAR_DAYS
+    tau = float(tau_days)
+    t = np.asarray(t_days, float)
+    return float(q_mean) * float(share) * (float(storm_recharge_mm) / daily) / tau * np.exp(-t / tau)
 
 
 # ---------------------------------------------------------------------------------------------------------------------------

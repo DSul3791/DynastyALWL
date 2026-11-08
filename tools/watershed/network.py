@@ -854,7 +854,7 @@ def main():
         row = dict(pos=[x, round(float(h[i]), 2), z], m3_s=r3(gw[i]), rock=names.get(int(rid[i]), str(int(rid[i]))),
                    feeds_reach=int(near_reach[i]) if near_reach[i] >= 0 else None)
         if st is not None:
-            row.update(springstore.spring_row(st, ks, int(i), float(gw[i]), r3))
+            row.update(springstore.spring_row(st, ks, int(i), float(gw[i]), r3, sea_sn['_shape']))
         else:
             row['q_base_dry_m3_s'] = r3(gw[i] * sea_sn['base_dry'])
         springs.append(row)
