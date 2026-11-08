@@ -121,7 +121,7 @@ func update(delta: float) -> void:
 
 
 # One source's breathing: count down to its next breath, then send a puff out of the mouth.
-func _breathe(key: String, delta: float, every: Vector2, mouth: Vector3, ahead: Vector3, scale: float, alpha: float) -> void:
+func _breathe(key: String, delta: float, every: Vector2, mouth: Vector3, ahead: Vector3, size_k: float, alpha: float) -> void:
 	if not _next_s.has(key):
 		_next_s[key] = _rng.randf_range(0.0, every.y)     # a new source starts at a random point of its breath
 
@@ -137,7 +137,7 @@ func _breathe(key: String, delta: float, every: Vector2, mouth: Vector3, ahead: 
 
 	var card: MeshInstance3D = _free.pop_back()
 	card.visible = true
-	_puffs.append({"node": card, "age": 0.0, "at": mouth, "vel": ahead * OUT_MPS + Vector3(0.0, RISE_MPS, 0.0), "scale": scale, "alpha": alpha})
+	_puffs.append({"node": card, "age": 0.0, "at": mouth, "vel": ahead * OUT_MPS + Vector3(0.0, RISE_MPS, 0.0), "scale": size_k, "alpha": alpha})
 
 
 func _age_puffs(delta: float, weather: Dictionary) -> void:
