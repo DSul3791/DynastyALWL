@@ -50,6 +50,8 @@ var idle_first_s: float = -1.0     # tools only: the first idle comes after this
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
 var young_age_days: float = -1.0  # tools only: every young one this many days old (-1: each its own age from its id)
+var eye_shine: bool = false       # night eye shine v2: torch or moon near the viewer's eye line, a dot per eye that reads far off (EYE_SHINE.md; off until the PC check)
+var night_light: Callable         # () -> {night 0..1, moon 0..1, moon_to Vector3}: from the client's day cycle (eye_shine)
 var voice_fx: bool = false        # animals call by state from data/animals/voices.json; terrain_client then skips the old state_changed calls (ANIMAL_VOICES.md; off until the PC check)
 var _voices: Variant = null       # voices.json, loaded on first use
 var _voice_times: Array = []      # msec of the calls this last second (voices.json per_second)
@@ -502,7 +504,10 @@ func _process_body(delta: float) -> void:
 			b["backing"] = state in [3, 10, 12] and model_speed > 0.3 and moved.normalized().dot(Vector2(facing.x, facing.z).normalized()) < -0.3
 
 			if node.has_meta("eye_mats"):
-				_eye_shine(node)
+				if eye_shine:
+					_eye_shine_night(node)
+				else:
+					_eye_shine(node)
 
 			if node.has_meta("tail"):
 				_tail_motion(node, state, model_speed)
@@ -724,6 +729,9 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 
 	if not eye_mats.is_empty():
 		root.set_meta("eye_mats", eye_mats)
+
+	if inst.has_meta("eye_dots"):
+		root.set_meta("eye_dots", inst.get_meta("eye_dots"))      # the far-off glints (eye_shine)
 
 	# Bone corrections and tail motion laid over every clip (bone_offsets.gd: the crow stands up and folds its wings; a dog wags).
 	if row.has("bone_offsets") or row.has("tail_motion") or row.has("ear_motion") or row.has("breath") or row.has("look") or row.has("state_poses") or row.has("feet") or row.has("stalk") or (row.has("idles") and idle_variety):
@@ -1665,6 +1673,30 @@ func _add_eyes(inst: Node, row: Dictionary, size_k: float, kind: String) -> Arra
 		eye.material_override = mat
 		at.add_child(eye)
 		mats.append(mat)
+
+		# The far-off glint (EYE_SHINE.md): a small additive point the same size on screen at any distance, so two eyes read in the
+		# dark well beyond where the body can be seen. Only with eye_shine, and only for species that shine.
+		if eye_shine and float(row.get("shine", 0.0)) > 0.0:
+			var dot: MeshInstance3D = MeshInstance3D.new()
+			var quad: QuadMesh = QuadMesh.new()
+			quad.size = Vector2(0.006, 0.006)
+			dot.mesh = quad
+			var glow: StandardMaterial3D = StandardMaterial3D.new()
+			glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			glow.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+			glow.fixed_size = true
+			glow.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+			glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			glow.albedo_color = Color.html(str(row.get("shine_color", "#ffffff")))
+			glow.albedo_color.a = 0.0
+			dot.material_override = glow
+			dot.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			dot.visible = false
+			eye.add_child(dot)
+			dot.set_meta("glow", glow)
+			var dots: Array = inst.get_meta("eye_dots", [])
+			dots.append(dot)
+			inst.set_meta("eye_dots", dots)
 
 	_model_note(kind, "eyes: %d placed" % mats.size())
 	return mats
@@ -2846,6 +2878,55 @@ func _voice(b: Dictionary, kind: String, state: int, at: Vector3) -> void:
 	_voice_times.append(now)
 	b["voice_at"] = now + int(float((_voices as Dictionary).get("cooldown_s", 4.0)) * 1000.0)
 	voiced.emit(kind, calls[call_name], at)
+
+
+# Night eye shine (docs/design/EYE_SHINE.md). The tapetum sends light back toward where it came from, so the viewer sees it only when
+# the light is close to their own line of sight: a torch in their hand, or the moon behind them. For each light the glow is
+#   strength x (1 - angle / 12 degrees) between eye-to-light and eye-to-viewer   (a torch at the viewer is about 1 degree off at 30 m)
+#   x facing: the animal's head within 60 degrees of the viewer (full inside 30)
+#   x the light: torch by its reach (inverse square), moon by night x moon phase
+# and nothing in daylight (night below 0.15). The eye material glows by it, and the far-off dots (_add_eyes) show above 8 m.
+func _eye_shine_night(node: Node3D) -> void:
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var row: Dictionary = node.get_meta("model_row", {})
+	var energy: float = 0.0
+	var sky: Dictionary = night_light.call() if night_light.is_valid() else {}
+	var night: float = float(sky.get("night", 1.0 if not night_light.is_valid() else 0.0))
+
+	if cam != null and night > 0.15:
+		var eye: Vector3 = node.global_position + Vector3.UP * float(row.get("length_m", 1.0)) * 0.35
+		var to_cam: Vector3 = cam.global_position - eye
+		var dist: float = to_cam.length()
+		to_cam = to_cam.normalized()
+		var facing: Vector3 = -node.global_transform.basis.z.normalized()
+		var face: float = smoothstep(cos(deg_to_rad(60.0)), cos(deg_to_rad(30.0)), facing.dot(to_cam))
+		var light: Array = torch_light.call() if torch_light.is_valid() else []
+		var lit: float = 0.0
+
+		if light.size() >= 2:
+			var to_light: Vector3 = (light[0] as Vector3) - eye
+			var reach: float = float(light[1]) * 6.0      # a torch's glint reads far past the light it throws on the ground
+			var fall: float = clampf(1.0 - to_light.length() / maxf(reach, 0.01), 0.0, 1.0)
+			lit += fall * fall * _retro(to_light.normalized(), to_cam)
+
+		if sky.has("moon_to"):
+			lit += 0.5 * float(sky.get("moon", 0.0)) * _retro((sky["moon_to"] as Vector3).normalized(), to_cam)
+
+		energy = float(row.get("shine", 0.0)) * minf(lit, 1.0) * face * smoothstep(0.15, 0.4, night) * 2.0
+		var dot_a: float = clampf(energy / 3.0, 0.0, 1.0) * smoothstep(8.0, 15.0, dist)
+
+		for dot in node.get_meta("eye_dots", []):
+			(dot as MeshInstance3D).visible = dot_a > 0.01
+			((dot as MeshInstance3D).get_meta("glow") as StandardMaterial3D).albedo_color.a = dot_a
+
+	for mat in node.get_meta("eye_mats"):
+		(mat as StandardMaterial3D).emission_energy_multiplier = energy
+
+
+# How much a retroreflector returns toward the viewer: full when the light comes from the viewer's direction, nothing past 12 degrees.
+func _retro(to_light: Vector3, to_cam: Vector3) -> float:
+	var angle: float = rad_to_deg(acos(clampf(to_light.dot(to_cam), -1.0, 1.0)))
+	return clampf(1.0 - angle / 12.0, 0.0, 1.0)
 
 
 # One line per kind and message in the game log, so a model that is not drawn says why.

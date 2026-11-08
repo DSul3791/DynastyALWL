@@ -172,8 +172,8 @@
 				"takeoff": "(once)",
 				"land": "(once)"
 			},
-			"shine_color": "#ffd27a",
-			"shine": 2.0,
+			"shine_color": "#e0583c",
+			"shine": 1.5,
 			"eye_bones": [
 				"<left eye bone>",
 				"<right eye bone>"
