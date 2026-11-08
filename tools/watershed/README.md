@@ -144,7 +144,7 @@ Check `groundwater.png` and the summary for:
 - Outlets to the sea and into lakes: a delta only where the river's sand beats the waves (Nienhuis), else a tidal creek, estuary, beach-blocked mouth or rocky outlet.
 - Every reach, head, fall and outlet carries the seven answers of the watershed document; `follow_the_water.md` follows contrasting basins from the top of their main stem to the sea.
 
-`python tools/watershed/plots.py network RUN_DIR` redraws `network.png`. Look for: `density_km_per_km2.streams` 2.25 with most of it perennial; `never_see` all 0 or empty; falls few, of varied height, each with a cause; deltas only in lakes and sheltered bays; the `missing` list (snowmelt, faults, cave springs, floodplain drawing, fans, distributaries, bank trees from biomes, losses back into R4).
+`python tools/watershed/test_network.py` runs its unit tests on tiny synthetic grids (seconds; on David4 or Dave's PC). `python tools/watershed/plots.py network RUN_DIR` redraws `network.png`. Look for: `density_km_per_km2.streams` 2.25 with most of it perennial; `never_see` all 0 or empty; falls few, of varied height, each with a cause; deltas only in lakes and sheltered bays; the `missing` list (snowmelt, faults, cave springs, floodplain drawing, fans, distributaries, bank trees from biomes, losses back into R4).
 
 ## R6: the island water record (stage D)
 

@@ -349,8 +349,10 @@ def meander(width, M, T, banks_cohesive, banks_loose):
     lam = per * width
     amp = float(M['amplitude_coefficient']) * width ** float(M['amplitude_exponent'])
     want = amp / lam
-    ok = T['radius_over_lambda'] >= float(M['min_bend_radius_widths']) * width / lam
-    k_max = int(np.flatnonzero(ok).max()) if ok.any() else 0
+    # The bend radius over the wavelength falls with omega up to about 1.25 rad and rises again toward the loops (omega J0
+    # peaks there), so the limit is the first omega whose bend is too tight, not the last that is wide enough.
+    tight = np.flatnonzero(T['radius_over_lambda'] < float(M['min_bend_radius_widths']) * width / lam)
+    k_max = max(int(tight[0]) - 1, 0) if tight.size else T['omega'].size - 1
     k = int(np.searchsorted(T['amp_over_lambda'], want))
     k = min(k, k_max, T['omega'].size - 1)
     return dict(wavelength_m=round(lam, 1), amplitude_m=round(float(T['amp_over_lambda'][k] * lam), 1),
