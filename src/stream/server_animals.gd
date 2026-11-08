@@ -1616,7 +1616,7 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 	if _wind_s > 0.0 and d > 0.01:
 		var to_animal: Vector2 = Vector2(a["pos"].x - p.x, a["pos"].z - p.z) / d
-		f = maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)
+		f *= maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)   # times the bed's, never in place of it
 
 	if stance == 1:
 		f *= float(sen.get("crouch_factor", 0.6))
