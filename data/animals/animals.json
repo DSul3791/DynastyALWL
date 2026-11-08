@@ -171,9 +171,7 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card).",
-			"group_drift": "into_wind",
-			"group_spacing_m": 3.0
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"wolf": {
 			"number": 3,
@@ -541,9 +539,7 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card).",
-			"group_drift": "free",
-			"group_spacing_m": 3.5
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"boar": {
 			"number": 8,
@@ -639,9 +635,7 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card).",
-			"group_drift": "free",
-			"group_spacing_m": 2.0
+			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
 		"songbirds": {
 			"number": 9,
@@ -790,9 +784,7 @@
 				1,
 				4
 			],
-			"herd_pull_m": 4.0,
-			"group_drift": "free",
-			"group_spacing_m": 1.2
+			"herd_pull_m": 4.0
 		},
 		"seal": {
 			"number": 12,
@@ -1222,9 +1214,7 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note_temperament": "Dave 7 Nov 2026: donkeys added (MikeW, first values copied from the horse, calmer and slower).",
-			"group_drift": "free",
-			"group_spacing_m": 3.0
+			"note_temperament": "Dave 7 Nov 2026: donkeys added (MikeW, first values copied from the horse, calmer and slower)."
 		},
 		"lynx": {
 			"number": 17,
@@ -1506,9 +1496,7 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note": "Dave 7 Nov 2026, batch 1. An elk is a herd animal of open mixed forest and meadow edge, taller and fleeter than a moose, a bull strikes one who corners it. Deer herd habits with moose size.",
-			"group_drift": "into_wind",
-			"group_spacing_m": 4.0
+			"note": "Dave 7 Nov 2026, batch 1. An elk is a herd animal of open mixed forest and meadow edge, taller and fleeter than a moose, a bull strikes one who corners it. Deer herd habits with moose size."
 		},
 		"bighorn": {
 			"number": 20,
@@ -2113,9 +2101,7 @@
 				5
 			],
 			"herd_pull_m": 4.0,
-			"note": "Dave 7 Nov 2026, batch 2. Crows walk and peck on open ground, field edges and the shore in small groups by day and flush when a player comes close. Grouse numbers; it does not fly in this version, it runs and flaps.",
-			"group_drift": "free",
-			"group_spacing_m": 1.5
+			"note": "Dave 7 Nov 2026, batch 2. Crows walk and peck on open ground, field edges and the shore in small groups by day and flush when a player comes close. Grouse numbers; it does not fly in this version, it runs and flaps."
 		},
 		"pheasant": {
 			"number": 28,
@@ -2165,9 +2151,7 @@
 				2
 			],
 			"herd_pull_m": 4.0,
-			"note": "Dave 7 Nov 2026, batch 2. A pheasant picks through grassland, heath and forest edges, alone or in twos, and runs or bursts away when a player comes near (FAUNA_BY_BIOME rarity 2). Grouse numbers; it does not fly in this version.",
-			"group_drift": "free",
-			"group_spacing_m": 1.5
+			"note": "Dave 7 Nov 2026, batch 2. A pheasant picks through grassland, heath and forest edges, alone or in twos, and runs or bursts away when a player comes near (FAUNA_BY_BIOME rarity 2). Grouse numbers; it does not fly in this version."
 		},
 		"goose": {
 			"number": 29,
@@ -2313,9 +2297,7 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note": "Batch 3 (farm). A cow grazes in a herd, plods away from a player and kicks one who corners it. Not spawned in the wild (target_per_player 0): the model, server row and carcass are ready for the farm and town system, which places them (Dave 7 Nov 2026: add all the animals we have models for; farm design to come).",
-			"group_drift": "with_storm",
-			"group_spacing_m": 3.0
+			"note": "Batch 3 (farm). A cow grazes in a herd, plods away from a player and kicks one who corners it. Not spawned in the wild (target_per_player 0): the model, server row and carcass are ready for the farm and town system, which places them (Dave 7 Nov 2026: add all the animals we have models for; farm design to come)."
 		},
 		"goat": {
 			"number": 31,
@@ -2702,9 +2684,7 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note": "Batch 3. A wild ox (the pack's buffalo model) grazes open grassland in small herds, stands its ground and charges one who comes close (protective). FAUNA_BY_BIOME has no wild cattle yet: grassland, rarity like the moose.",
-			"group_drift": "with_storm",
-			"group_spacing_m": 3.5
+			"note": "Batch 3. A wild ox (the pack's buffalo model) grazes open grassland in small herds, stands its ground and charges one who comes close (protective). FAUNA_BY_BIOME has no wild cattle yet: grassland, rarity like the moose."
 		},
 		"puma": {
 			"number": 36,
@@ -2971,9 +2951,7 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). A warthog grazes savanna and open grassland in small family groups by day, trots off with its tail up and fights with its tusks when cornered. Boar numbers, lighter, open ground.",
-			"group_drift": "free",
-			"group_spacing_m": 2.0
+			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). A warthog grazes savanna and open grassland in small family groups by day, trots off with its tail up and fights with its tusks when cornered. Boar numbers, lighter, open ground."
 		},
 		"hyena": {
 			"number": 39,
@@ -3143,9 +3121,7 @@
 				"warn_s": 0.6,
 				"hp_x": 0.3
 			},
-			"spawn_share": 0.35,
-			"group_drift": "with_storm",
-			"group_spacing_m": 3.0
+			"spawn_share": 0.35
 		},
 		"lion": {
 			"number": 41,
@@ -3634,9 +3610,7 @@
 				5,
 				12
 			],
-			"herd_pull_m": 4.0,
-			"group_drift": "free",
-			"group_spacing_m": 1.0
+			"herd_pull_m": 4.0
 		},
 		"honey_badger": {
 			"number": 47,
@@ -4232,15 +4206,5 @@
 				"stop_m": 5.0
 			}
 		}
-	},
-	"groups": {
-		"enabled": false,
-		"spacing_m": 3.0,
-		"drift_m": 2.0,
-		"scatter_deg": 25.0,
-		"rain_bunch": 0.35,
-		"wind_bunch": 0.25,
-		"min_bunch": 0.5,
-		"note": "Herd groups (docs/design/HERD_GROUPS.md, MikeW 8 Nov 2026): off until the PC check. One leader per herd drifts drift_m a graze step; the rest keep a spiral place round it at spacing_m (species group_spacing_m), closer in rain and wind; on alarm they scatter up to scatter_deg either side and regroup at their places once safe. Species group_drift: into_wind (deer), with_storm (cattle), free."
 	}
 }

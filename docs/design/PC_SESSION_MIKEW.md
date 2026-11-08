@@ -1,6 +1,6 @@
 # PC session run sheet: the animal life layer (MikeW, 8 Nov 2026)
 
-For whoever runs it on Dave's PC (MikeW or Dino), word for word. About 65 minutes in one sitting (Godot starts about 30 s per strip line; 34 lines). m1 to m18 and the gates are the core hour; m19 to m34 are the newer flags and can follow in the same sitting. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
+For whoever runs it on Dave's PC (MikeW or Dino), word for word. **About 85 minutes in one sitting**, counted honestly: import 3, head sheets 6, lynx 2, stills 3, the 40 motion strips about 30 (Godot starts about 25 s per line), looking at the pictures about 10, the three gates about 25, PRs 5. The core hour is steps 0 to 3, m1 to m18 and the gates (about 55 minutes); m19 to m40 can follow in the same sitting or the next. Every command runs from `C:/GodotProjects/DynastyALWL_gate` in Git Bash. `GE` is the editor; `O` is the picture folder.
 
 ```bash
 cd /c/GodotProjects/DynastyALWL_gate
@@ -18,7 +18,7 @@ git checkout -q -- assets/character assets/trees 2>/dev/null; rm -f src/sullivan
 ```
 Pass: the install prints no `MISSING` and `import attempt 1: exit 0` (or attempt 2).
 
-## 1. Head sheets for eye placement (5 min)
+## 1. Head sheets for eye placement (6 min)
 ```bash
 timeout 600 "$GE" --path . --script res://tools/creature_check.gd -- --head --out=$O/head --kinds=deer,moose,wolf,fox,rabbit,boar,lynx,black_bear,bighorn,mountain_goat,beaver,chamois,mink,raccoon,rat,cow,goat,cat,dog,buffalo,puma,pronghorn,warthog,hyena,wildebeest,lion,leopard,rhino,camel,honey_badger,mammoth,bear > $O/head.log 2>&1
 grep -E "^head bones|FAIL" $O/head.log | head -40
@@ -38,56 +38,54 @@ grep -E "^==|^role|NO CLIP|flat" $O/still.log
 ```
 Proves: dog sit (18) and lie (19), alligator swim, black bear warn under the jaw-pop pose, rabbit and kangaroo hop clips. Pass: no `NO CLIP` for sit, lie or swim.
 
-## 4. Moving frames (27 min)
-Each line makes one strip (6 frames unless it says). If time runs short, m1 to m18 come first: they prove what is already merged-ready; m19 to m27 are the newer flags.
+## 4. Moving frames (about 30 min: 40 lines, about 45 s each)
+One line per strip: the flag it proves (the strip turns it on by itself), the command, what to look at in `$O/<out>/motion_<kind>_<state>.png`, and pass or fail. m1 to m18 come first (the always-on looks and the older flags); m19 to m40 are the newer flags and follow in the same sitting.
 ```bash
 M="timeout 300 $GE --path . --script res://tools/creature_motion.gd --"
-$M --kinds=dog --state=0 --out=$O/motion > $O/m1.log 2>&1                         # tail wag at rest, breathing
-$M --kinds=cat,lynx --state=3 --out=$O/motion > $O/m2.log 2>&1                    # tail flick when alert, ears
-$M --kinds=horse,cow --state=0 --season=summer --out=$O/motion > $O/m3.log 2>&1   # fly swish
-$M --kinds=deer --state=0 --count=6 --approach --out=$O/motion > $O/m4.log 2>&1   # herd facing, one looks up then the rest
-$M --kinds=wolf --state=3 --approach --out=$O/motion > $O/m5.log 2>&1             # predator head tracking, ears
-$M --kinds=deer,dog,horse --state=0 --hour=2 --out=$O/motion_sleep > $O/m6.log 2>&1  # asleep at night (deer lie, horse dozes)
-$M --kinds=beaver,moose --state=0 --water=0.6 --speed=1 --out=$O/motion > $O/m7.log 2>&1  # swim clip and the wet look
-$M --kinds=deer,wolf --state=0 --torch --hour=23 --cam=8 --out=$O/motion_night > $O/m8.log 2>&1   # eye shine in torchlight
-$M --kinds=rabbit,kangaroo --state=0 --speed=3 --out=$O/motion > $O/m9.log 2>&1   # hop arc
-$M --kinds=black_bear --state=16 --out=$O/motion > $O/m10.log 2>&1                # jaw-pop pose
-$M --kinds=horse,deer --state=2 --speed=8 --fx --every=0.1 --out=$O/motion_fx > $O/m11.log 2>&1   # dust puffs at running footfalls
-$M --kinds=deer,wolf --state=0 --speed=1.5 --season=winter --prints --frames=4 --every=1 --out=$O/motion_prints > $O/m12.log 2>&1   # prints in snow (hoof and paw)
-$M --kinds=deer,horse,cow --state=0 --ik --cam=4 --out=$O/motion_ik > $O/m13.log 2>&1   # feet reach a 15 cm step on one side
-$M --kinds=deer --state=2 --speed=6 --water=0.3 --fx --every=0.1 --out=$O/motion_splash > $O/m14.log 2>&1   # splashes wading
-$M --kinds=wolf --state=6 --speed=1 --stalk --out=$O/motion_stalk > $O/m15.log 2>&1   # wolf stalk crouch, slow steps
-$M --kinds=fox,lynx --state=7 --speed=4 --stalk --every=0.1 --out=$O/motion_pounce > $O/m16.log 2>&1   # pounce arc
-$M --kinds=horse,dog --state=0 --wind=0.9 --out=$O/motion_wind > $O/m17.log 2>&1   # ears back and tails swinging in a gale
-$M --kinds=goose,pheasant,duck --state=15 --frames=8 --every=0.3 --out=$O/motion_flight > $O/m18.log 2>&1   # take-off, flap and glide
-$M --kinds=deer,fox,wolf --state=0 --season=winter --coats --frames=2 --out=$O/motion_coat_winter > $O/m19.log 2>&1   # winter coats (compare with the next)
-$M --kinds=deer,fox,wolf --state=0 --season=summer --coats --frames=2 --out=$O/motion_coat_summer > $O/m20.log 2>&1   # summer coats
-$M --kinds=fox,wolf,bear --state=0 --wind=1 --ruffle --frames=6 --every=0.15 --out=$O/motion_ruffle > $O/m21.log 2>&1   # fur moving in a full wind
-$M --kinds=horse,dog --state=8 --dust --frames=4 --every=1 --out=$O/motion_dust > $O/m22.log 2>&1   # coat dusting while rolling
-$M --kinds=deer,horse,cow --state=0 --speed=1.5 --young=2 --age=3 --season=spring --every=0.15 --out=$O/motion_young > $O/m23.log 2>&1   # newborns: small, quick steps, swaying
-$M --kinds=deer,dog --state=2 --speed=1 --wlife --water=1.2 --every=0.15 --out=$O/motion_swim > $O/m24.log 2>&1   # swimming low, legs paddling
-$M --kinds=deer,horse --state=0 --bank --frames=4 --every=0.5 --out=$O/motion_drink > $O/m25.log 2>&1   # drinking at the bank, rings
-$M --kinds=deer,horse,wolf --state=20 --frames=2 --out=$O/motion_hunch > $O/m26.log 2>&1   # hunch: head low, ears back
-$M --kinds=dog,lion,horse,boar --state=0 --idles --frames=8 --every=0.5 --out=$O/motion_idles > $O/m27.log 2>&1   # idle variety: a scratch, groom, shake or paw
-$M --kinds=crow,pheasant --state=15 --speed=6 --turn=0.8 --roll --frames=8 --every=0.25 --out=$O/motion_bank > $O/m28.log 2>&1   # banking into a turn, a roll
-$M --kinds=horse,cow --state=0 --season=summer --storm --out=$O/motion_storm > $O/m29.log 2>&1   # storm_ahead: no fly swish (compare m3)
-$M --kinds=fox,raccoon --state=13 --speed=1 --stalk --out=$O/motion_sneak > $O/m30.log 2>&1   # sneak (13): low creep
-$M --kinds=bear,boar,dog --state=10 --frames=3 --out=$O/motion_warn > $O/m31.log 2>&1   # warn (10): head low, ears flat; the dog barks
-$M --kinds=bear,moose --state=11 --speed=8 --every=0.1 --out=$O/motion_charge > $O/m32.log 2>&1   # charge (11)
-$M --kinds=pheasant,goose --state=17 --frames=3 --out=$O/motion_glide > $O/m33.log 2>&1   # glide (17): wings held out
-$M --kinds=bear,horse --state=10 --foe --frames=3 --out=$O/motion_foe > $O/m34.log 2>&1   # foe position: head turned to the side, not the camera
-$M --kinds=deer,horse --state=0 --young=2 --age=20 --season=spring --follow --frames=6 --every=1 --out=$O/motion_mother > $O/m35.log 2>&1   # young look to the mother and nurse
-$M --kinds=deer,wolf,cat,bear,horse --state=3 --torch --shine --hour=23 --cam=15 --frames=2 --out=$O/motion_shine > $O/m36.log 2>&1   # eye shine v2: two coloured points per animal at 15 m (moonless)
-$M --kinds=deer,wolf,cat,bear,horse --state=3 --shine --moon --hour=23 --cam=4 --frames=2 --out=$O/motion_moon > $O/m37.log 2>&1   # by full moon behind the camera: faint, close in
-$M --kinds=deer,wolf --state=0 --speed=1.5 --sign=mud --frames=4 --every=1 --out=$O/motion_sign_walk > $O/m38.log 2>&1   # animal sign: walking prints alternate left and right
-$M --kinds=deer,wolf --state=2 --speed=8 --sign=sand --frames=4 --every=0.5 --out=$O/motion_sign_run > $O/m39.log 2>&1   # running: prints in pairs, farther apart
-$M --kinds=deer --state=0 --sign=stone --frames=2 --every=1 --out=$O/motion_sign_hard > $O/m40.log 2>&1   # stone: no prints
-timeout 120 $GE --headless --path . --script res://src/worldgen/tools/test_herd_groups.gd > $O/herd_groups.log 2>&1; grep -E "^FAIL|failures" $O/herd_groups.log   # server herd groups (seconds): 0 failures
-grep -h "saved\|SCRIPT" $O/m*.log
+$M --kinds=dog --state=0 --out=$O/motion > $O/m1.log 2>&1   # m1 [none] look: dog tail and chest. PASS: tail swings between frames, chest rises. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=cat,lynx --state=3 --out=$O/motion > $O/m2.log 2>&1   # m2 [none] look: cat and lynx tails and ears. PASS: tail tip flicks, ears turn. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=horse,cow --state=0 --season=summer --out=$O/motion > $O/m3.log 2>&1   # m3 [none] look: tails. PASS: tails swish against flies. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer --state=0 --count=6 --approach --out=$O/motion > $O/m4.log 2>&1   # m4 [none] look: the six deer as the camera nears. PASS: they face roughly one way; one looks up, then the rest (`look_left` above 0 in m4.log). FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=wolf --state=3 --approach --out=$O/motion > $O/m5.log 2>&1   # m5 [none] look: wolf head and ears. PASS: head follows the camera, ears forward. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,dog,horse --state=0 --hour=2 --out=$O/motion_sleep > $O/m6.log 2>&1   # m6 [none] look: sleeping animals. PASS: deer and dog lie, horse dozes head low; `asleep true` in m6.log. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=beaver,moose --state=0 --water=0.6 --speed=1 --out=$O/motion > $O/m7.log 2>&1   # m7 [none] look: swimmers. PASS: swim clip plays in the water. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,wolf --state=0 --torch --hour=23 --cam=8 --out=$O/motion_night > $O/m8.log 2>&1   # m8 [none] look: eyes in torchlight (#596 shine). PASS: deer pale green, wolf yellow-green. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=rabbit,kangaroo --state=0 --speed=3 --out=$O/motion > $O/m9.log 2>&1   # m9 [none] look: hops. PASS: body rises and lands each bound. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=black_bear --state=16 --out=$O/motion > $O/m10.log 2>&1   # m10 [none] look: black bear head. PASS: head low, jaw open (jaw-pop). FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=horse,deer --state=2 --speed=8 --fx --every=0.1 --out=$O/motion_fx > $O/m11.log 2>&1   # m11 [footfall_fx] look: feet. PASS: brown puffs at the running hooves. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,wolf --state=0 --speed=1.5 --season=winter --prints --frames=4 --every=1 --out=$O/motion_prints > $O/m12.log 2>&1   # m12 [prints_fx] look: snow behind them. PASS: a line of hoof and paw prints. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,horse,cow --state=0 --ik --cam=4 --out=$O/motion_ik > $O/m13.log 2>&1   # m13 [foot_ik] look: right-hand feet. PASS: stand 15 cm higher than the left, body not tipped. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer --state=2 --speed=6 --water=0.3 --fx --every=0.1 --out=$O/motion_splash > $O/m14.log 2>&1   # m14 [footfall_fx] look: feet in water. PASS: droplets at each step. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=wolf --state=6 --speed=1 --stalk --out=$O/motion_stalk > $O/m15.log 2>&1   # m15 [stalk_fx] look: the wolf. PASS: low, head level, tail still, slow steps. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=fox,lynx --state=7 --speed=4 --stalk --every=0.1 --out=$O/motion_pounce > $O/m16.log 2>&1   # m16 [stalk_fx] look: fox and lynx. PASS: leave the ground in an arc. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=horse,dog --state=0 --wind=0.9 --out=$O/motion_wind > $O/m17.log 2>&1   # m17 [none (wind)] look: tails and ears. PASS: tails swing, ears lie back a little. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=goose,pheasant,duck --state=15 --frames=8 --every=0.3 --out=$O/motion_flight > $O/m18.log 2>&1   # m18 [none] look: birds. PASS: take off, then flap and glide in turns. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,fox,wolf --state=0 --season=winter --coats --frames=2 --out=$O/motion_coat_winter > $O/m19.log 2>&1   # m19 [season_coats] look: coat colour. PASS: compare with m20. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,fox,wolf --state=0 --season=summer --coats --frames=2 --out=$O/motion_coat_summer > $O/m20.log 2>&1   # m20 [season_coats] look: coat colour. PASS: winter deer greyer, winter fox and wolf paler than here. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=fox,wolf,bear --state=0 --wind=1 --ruffle --frames=6 --every=0.15 --out=$O/motion_ruffle > $O/m21.log 2>&1   # m21 [coat_ruffle] look: fur. PASS: fur moves between frames; no shader error in m21.log. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=horse,dog --state=8 --dust --frames=4 --every=1 --out=$O/motion_dust > $O/m22.log 2>&1   # m22 [coat_dust] look: coats while rolling. PASS: turn dusty. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,horse,cow --state=0 --speed=1.5 --young=2 --age=3 --season=spring --every=0.15 --out=$O/motion_young > $O/m23.log 2>&1   # m23 [young_gait] look: the young. PASS: smaller, quick short steps, sway side to side. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,dog --state=2 --speed=1 --wlife --water=1.2 --every=0.15 --out=$O/motion_swim > $O/m24.log 2>&1   # m24 [water_life] look: swimmers. PASS: ride low, only back and head above water, legs paddle. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,horse --state=0 --bank --frames=4 --every=0.5 --out=$O/motion_drink > $O/m25.log 2>&1   # m25 [water_life] look: the muzzle. PASS: head down, rings on the water. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,horse,wolf --state=20 --frames=2 --out=$O/motion_hunch > $O/m26.log 2>&1   # m26 [none (state 20)] look: heads. PASS: held low, ears back. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=dog,lion,horse,boar --state=0 --idles --frames=8 --every=0.5 --out=$O/motion_idles > $O/m27.log 2>&1   # m27 [idle_variety] look: each animal. PASS: starts one idle (scratch, groom, shake, paw); no `idle clip ... not in the file` in m27.log. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=crow,pheasant --state=15 --speed=6 --turn=0.8 --roll --frames=8 --every=0.25 --out=$O/motion_bank > $O/m28.log 2>&1   # m28 [flight_bank] look: birds turning. PASS: lean into the turn; the crow rolls once. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=horse,cow --state=0 --season=summer --storm --out=$O/motion_storm > $O/m29.log 2>&1   # m29 [none (storm_ahead)] look: tails. PASS: still (compare m3). FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=fox,raccoon --state=13 --speed=1 --stalk --out=$O/motion_sneak > $O/m30.log 2>&1   # m30 [stalk_fx] look: fox and raccoon. PASS: creep low. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=bear,boar,dog --state=10 --frames=3 --out=$O/motion_warn > $O/m31.log 2>&1   # m31 [none] look: heads and ears. PASS: bear and boar head low, ears flat; dog barking clip. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=bear,moose --state=11 --speed=8 --every=0.1 --out=$O/motion_charge > $O/m32.log 2>&1   # m32 [none] look: the charge. PASS: run clip at speed. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=pheasant,goose --state=17 --frames=3 --out=$O/motion_glide > $O/m33.log 2>&1   # m33 [none (state 17)] look: wings. PASS: held out in a glide. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=bear,horse --state=10 --foe --frames=3 --out=$O/motion_foe > $O/m34.log 2>&1   # m34 [look_at_foe] look: heads. PASS: turned to their left, not to the camera. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,horse --state=0 --young=2 --age=20 --season=spring --follow --frames=6 --every=1 --out=$O/motion_mother > $O/m35.log 2>&1   # m35 [young_follow] look: the young. PASS: turn to the mother; one moves in under her flank. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,wolf,cat,bear,horse --state=3 --torch --shine --hour=23 --cam=15 --frames=2 --out=$O/motion_shine > $O/m36.log 2>&1   # m36 [eye_shine] look: eyes at 15 m. PASS: two points of the species' colour per animal. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,wolf,cat,bear,horse --state=3 --shine --moon --hour=23 --cam=4 --frames=2 --out=$O/motion_moon > $O/m37.log 2>&1   # m37 [eye_shine] look: eyes by full moon. PASS: faint points close in. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,wolf --state=0 --speed=1.5 --sign=mud --frames=4 --every=1 --out=$O/motion_sign_walk > $O/m38.log 2>&1   # m38 [animal_sign] look: the mud. PASS: prints alternate left and right. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer,wolf --state=2 --speed=8 --sign=sand --frames=4 --every=0.5 --out=$O/motion_sign_run > $O/m39.log 2>&1   # m39 [animal_sign] look: the sand. PASS: prints in pairs, farther apart than m38. FAIL: anything else, or SCRIPT ERROR in the log
+$M --kinds=deer --state=0 --sign=stone --frames=2 --every=1 --out=$O/motion_sign_hard > $O/m40.log 2>&1   # m40 [animal_sign] look: the stone. PASS: no prints. FAIL: anything else, or SCRIPT ERROR in the log
+grep -h "saved\|SCRIPT ERROR" $O/m*.log
 ```
-Pass, per strip, by eye: the tail or ears move between frames; sleeping animals lie (deer, dog) or stand head-low (horse) and `asleep true` in the log; the deer herd faces roughly one way and `look_left` above 0 on more than one frame as the camera nears; the beaver and moose show `wet` near 1; eyes glow in the night strip (deer pale green, wolf yellow-green); the rabbit and kangaroo rise and land; the black bear's head is low with the jaw open; brown puffs at the running hooves; a line of hoof and paw prints behind the deer and wolf on snow, fading only slowly; the deer's, horse's and cow's right-hand feet stand 15 cm higher than the left without the body tipping; droplets at the wading deer's feet; the stalking wolf low with its head level and tail still; the fox and lynx leave the ground in the pounce strip; the horse's and dog's tails swing and ears lie a little back in the gale; the goose and pheasant take off, then flap and glide in turns; the winter deer is greyer and the winter fox and wolf paler than in summer; the fox's and bear's fur moves between ruffle frames (no shader error in m21.log); the rolling horse turns dusty; the fawn, foal and calf keep pace with short quick steps and sway side to side; the swimming deer and dog ride low with only back and head above the water; rings at the drinking muzzles; the hunched deer, horse and wolf hold their heads low; in the idles strip each animal starts one idle (dog scratch or shake, lion grooming, horse shake, look round or pawing, boar head shake) and no `idle clip ... not in the file` in m27.log; the crow and pheasant lean into the turn and the crow rolls once in the bank strip; the storm horse and cow hold their tails still; the sneaking fox and raccoon creep low; the warning bear and boar drop their heads with ears flat and the dog barks; the charging bear and moose run; the gliding pheasant and goose hold their wings out; in the foe strip the bear and horse look to their left, not at the camera; in the mother strip the fawn and foal turn their heads to her and one moves in under her flank; in the shine strip each animal shows two points of its colour at 15 m (deer green-white, wolf yellow-green, cat green, bear orange, horse blue-green), fainter by moonlight; on mud the walking deer and wolf leave prints alternating left and right, on sand the running ones leave pairs farther apart, and on stone none. Every row of LIFE_LAYER_WIRING.md names its strip.
 
-## 5. Gates (15 min, in order)
+## 5. Gates (about 25 min, in order)
 ```bash
 for b in eyeshine wet-look eye-placement; do
   h=$(git rev-parse origin/claude/mikew-$b)
@@ -99,7 +97,7 @@ Pass: `CHECKS: pass` for each. On a `CONFLICT`, main has moved: merge `origin/ma
 ## 6. PRs (5 min), in this order, only after their gate passed
 1. Eye shine (`claude/mikew-eyeshine`, already open as #596: `gh pr ready 596`).
 2. Wet look (`claude/mikew-wet-look`, new PR).
-3. Animal life layer (`claude/mikew-eye-placement`: eye placement, dog clips, tails, ears, breathing, head tracking, posed states, hop, sleep, herds, footfall, stalk, flight, coats, young, water, hunch, idle variety; new PR; every new look behind its own flag, off).
+3. Animal life layer (`claude/mikew-eye-placement`), as the stacked PRs 3 to 10 in "PR split" below; every new look behind its own flag, off. MIKEW_BRANCH_SUMMARY.md is the one-page view.
 
 Send each head to the coordinator after the push prints it.
 
@@ -130,9 +128,7 @@ goes through bone_offsets `setup_*`, which reports missing bones and skips them;
 `get_meta(..., default)`; coat materials are typed checked (ShaderMaterial or StandardMaterial3D); the per-frame work with flags off is
 the flag tests themselves plus the backing test (one dot product per model animal).
 
-**Server files touched (separate PR, Steve to review):** `src/stream/server_animals.gd` (herd groups, behind `groups.enabled`: one weather
-copy per tick, two guarded call sites), `data/animals/animals.json` (the groups block, `group_drift` and `group_spacing_m` on 13 herd
-species), `src/worldgen/tools/test_herd_groups.gd`. The server code is untouched with the flag off apart from `_weather = weather`.
+**Server files:** none on this branch any more. Herd groups moved to #666 on Steve's stack with his review fixes, and its server code, data, test and HERD_GROUPS.md were removed from this branch (consolidation, 8 Nov 2026), so this branch is client only.
 
 **Known open:** the raven roll event's wire format (Steve); Mandy-style clips for horses' pawing are posed guesses (front-leg waves) until
 the strip shows them; the ruffle shader's first compile is on the PC (m21).
@@ -150,8 +146,7 @@ its last commit and lists the earlier PR as its base. No history is rewritten.
 5. **Life layer C, predators and birds:** a7165110c to 5924e90fc (stalk and pounce behind `stalk_fx`, wind ears and tails, flight part 1
    on). m15 to m18.
 6. **Life layer D, coats, young, water, idles (flags):** 1a5373d83, f9af2f2f1, 308ff3a9f, cd4331724. m19 to m27.
-7. **Herd groups (server, flag off):** 1528fa6f9 cherry-picked onto main as its own PR (it touches only the server files above and three
-   docs), so Steve can review it apart from the client chain. test_herd_groups.gd in the gate.
+7. **Herd groups (server, flag off):** #666 on Steve's stack, gated by David4 with Steve's PRs; not part of this chain.
 8. **Life layer E, flight part 2, backing, wiring:** d16abcf5f, f34903104, aef1d008f and this review's fix commit. m28 to m34.
 9. **Life layer F, after the review:** young size by age and the mother (m35), new-model templates with bat swarm and sea blow, voices by state, and night eye shine v2 (`eye_shine`: torch and moon by the retroreflection angle, far-off eye dots; m36, m37).
-10. **Life layer G, animal sign:** `animal_sign` (tracks on soft ground by stride and gait, droppings, browse and beds, a 400-decal pool with Jamie's soak lifetimes; m38 to m40). Herd groups is #666 on Steve's stack, not in this chain; the old herd groups commit 1528fa6f9 on this branch is superseded by it and stays out of the client PRs.
+10. **Life layer G, animal sign:** `animal_sign` (tracks on soft ground by stride and gait, droppings, browse and beds, a 400-decal pool with Jamie's soak lifetimes; m38 to m40). Herd groups is #666 on Steve's stack, not in this chain; the old herd groups commit 1528fa6f9 is undone on this branch (consolidation), so no client PR carries server code.
