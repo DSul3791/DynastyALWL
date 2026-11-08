@@ -13,6 +13,9 @@ at 57 degrees south): sea fog comes in local spring to early summer, valley fog 
   songbirds sit low and quiet; gulls and waders sit on the water or the shore; raptors and ravens perch; bats fly as usual with fewer
   passes; wolves close in unseen to half V; the spook range shrinks to hearing and smell.
 - **Eye shine** shows to about a third of V, with the torch held low.
+- **More from the fog page (#716):** sea fog lifts at wind 0.32 on the shared mapping, not 0.5 (Kathleen's sea fog rule, #608, not the
+  animal looks). Airborne scent needs a light wind: in dead-calm fog it carries poorly, though trail scent (on the ground) is still
+  about 1.25 times. Birds avoid flying into fog.
 - **Sound:** fog does not make sound carry; the droplets take the high notes, low sounds carry best; it feels quiet because it
   comes with calm air (sound-outdoors lesson 7). Kathleen's outdoor rules (#662) already cut the high end in fog for every sound.
 
@@ -35,9 +38,10 @@ use one number.
 
 ## Requests to Steve (server, from Jamie's judged behaviour)
 1. An animal's sight in fog: the smaller of its clear range and half V (the senses' sight distance), with hearing unchanged.
+   Airborne scent: weaker in calm fog (wind under a light breeze), trail scent about 1.25 times (#716).
 2. Wolves close in unseen to half V; the spook range of prey falls to their hearing and smell ranges.
 3. In fog, songbirds, raptors and ravens perch (state 0 at their perch), gulls and waders sit; deer feed later into the morning near
-   the wood edge.
+   the wood edge. Birds do not take off into fog (no state 15 into a fog bank); the client needs nothing for it.
 The server needs the same V at the animal; Kathleen's fog rule is in the shared weather, so `visibility_m` from Weather (not only
 the client look) would serve both.
 
