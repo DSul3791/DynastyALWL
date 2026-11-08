@@ -6,6 +6,9 @@ extends RefCounted
 
 const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
+const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
+const HeldItem := preload("res://src/client/held_item.gd")
+const LOOK_COLUMNS := 6
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
@@ -23,6 +26,10 @@ func build() -> void:
 		view._chest_titles.clear()
 
 	if view._chest_panel != null:
+		return
+
+	if InventoryLook.on:
+		_build_look()
 		return
 
 	view._chest_panel = PanelContainer.new()
@@ -92,6 +99,139 @@ func _make_slot(chest_side: bool, index: int) -> Control:
 	return button
 
 
+# --new-inventory: the middle column of the one window (look doc section 3): the container's name plate, its slots, and under them the four
+# bulk buttons in fixed places. The pack is the window's own pack column, so this side shows no second pack.
+func _build_look() -> void:
+	var unit: float = InventoryLook.unit_of(view)
+	view._chest_panel = PanelContainer.new()
+	root = view._chest_panel
+	view._chest_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	view._chest_panel.size_flags_stretch_ratio = 0.9
+	view._chest_panel.add_theme_stylebox_override("panel", InventoryLook.board_style(view._px(10)))
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", view._px(8))
+	view._chest_panel.add_child(box)
+	var title: Label = Label.new()
+	InventoryLook.plate(title, "Chest", view._px(view.TITLE_PX - 6), unit)
+	box.add_child(title)
+	view._chest_titles.append(title)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	var grid: GridContainer = GridContainer.new()
+	grid.columns = LOOK_COLUMNS
+	grid.add_theme_constant_override("h_separation", view._px(4))
+	grid.add_theme_constant_override("v_separation", view._px(4))
+	scroll.add_child(grid)
+
+	for i in view.inventory.SLOTS:
+		var slot = InventoryLook.make_slot(view, i)
+		slot.clicked.connect(func(button: int, _shift: bool) -> void:
+			if button == MOUSE_BUTTON_LEFT:
+				on_slot(true, i))
+		slot.mouse_entered.connect(func() -> void:
+			view._chest_hover = [true, i]
+			view._chest_last = [true, i])
+		slot.mouse_exited.connect(func() -> void: view._chest_hover = [] if view._chest_hover == [true, i] else view._chest_hover)
+		# Dragging a pack stack onto the container puts it in; dragging out of the container is not wired (a click or shift-click takes it).
+		slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
+		slot.on_drop = func(data: Variant) -> void:
+			if not put_from_pack(int(data["slot"])):
+				slot.flash_refused()
+		grid.add_child(slot)
+		view._chest_buttons.append(slot)
+
+	var bulk: HBoxContainer = HBoxContainer.new()
+	bulk.add_theme_constant_override("separation", view._px(8))
+	box.add_child(bulk)
+
+	for spec in [["Take all", "Take every stack from the container into your pack", take_all],
+			["Store all", "Put every pack stack the container takes into it (the hotbar and favourites stay)", store_all],
+			["Stack to nearby", "Coming: fills stacks already in your own chests nearby", Callable()],
+			["Sort", "Sort your pack by name", sort_pack]]:
+		var button: Button = Button.new()
+		button.text = spec[0]
+		button.tooltip_text = spec[1]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		view._style(button, view.BODY_PX - 6)
+
+		if (spec[2] as Callable).is_valid():
+			button.pressed.connect(spec[2])
+		else:
+			button.disabled = true      # STUB(step 2-4): stack to nearby own chests needs Steve's server action (Morgan's call 1)
+
+		bulk.add_child(button)
+
+	view._columns.add_child(view._chest_panel)      # between the recipes and the pack; hidden, it takes no room
+	view._columns.move_child(view._chest_panel, 1)
+
+
+# Puts a pack stack (real slot `slot`) into the open container. False when nothing was sent: no container, an empty slot, or a fire that
+# does not take it (the same rule as the server's, so the slot can flash at once).
+func put_from_pack(slot: int) -> bool:
+	if not view.chest_mode or slot < 0 or slot >= view.inventory.SLOTS or view.inventory.numbers[slot] == 0:
+		return false
+
+	if is_fire() and not fire_takes(view.table.id_of(view.inventory.numbers[slot])):
+		return false
+
+	view.net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, slot, view.chest_id, view.inventory.counts[slot], Vector3.ZERO)
+
+	if view.chest_event.is_valid() and view._world.has(view.chest_id):
+		view.chest_event.call("put", view._world[view.chest_id]["pos"])
+
+	return true
+
+
+# Take all: every stack in the container, one take each (the server refuses what the pack cannot hold).
+# STUB(step 2-4): one server action for the whole lot would be cheaper; this sends one per stack.
+func take_all() -> void:
+	if not view.chest_mode or view.chest_inv == null:
+		return
+
+	for i in view.inventory.SLOTS:
+		if view.chest_inv.numbers[i] != 0:
+			view.net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, i, view.chest_id, view.chest_inv.counts[i], Vector3.ZERO)
+
+	if view.chest_event.is_valid() and view._world.has(view.chest_id):
+		view.chest_event.call("take", view._world[view.chest_id]["pos"])
+
+
+# Store all: every pack stack off the hotbar that the container takes. STUB(step 2-4): favourites are not saved yet, so none is skipped.
+func store_all() -> void:
+	if not view.chest_mode:
+		return
+
+	var sent: bool = false
+	var fire: bool = is_fire()
+
+	for i in range(HeldItem.HOTBAR_SLOTS, view.inventory.SLOTS):
+		var number: int = view.inventory.numbers[i]
+
+		if number == 0 or (fire and not fire_takes(view.table.id_of(number))):
+			continue
+
+		view.net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, i, view.chest_id, view.inventory.counts[i], Vector3.ZERO)
+		sent = true
+
+	if sent and view.chest_event.is_valid() and view._world.has(view.chest_id):
+		view.chest_event.call("put", view._world[view.chest_id]["pos"])
+
+
+# Sort: the pack by name (the pack's own sort menu keeps the other orders).
+func sort_pack() -> void:
+	view.sort_index = 1
+
+	if view._sort_menu != null:
+		view._sort_menu.select(1)
+
+	view._pack_part.arrange_slots()
+
+	if view.sort_changed.is_valid():
+		view.sort_changed.call(1)
+
+
 func on_slot(chest_side: bool, slot: int) -> void:
 	if not chest_side:
 		slot = pack_slot(slot)
@@ -118,6 +258,10 @@ func refresh() -> void:
 
 	var capacity: int = int(view.table.entry(view.table.id_of(int(view._world.get(view.chest_id, {}).get("number", 0)))).get("slots", view.inventory.SLOTS))
 	var fire: bool = is_fire()
+
+	if InventoryLook.on:
+		_refresh_look(capacity, fire)
+		return
 	view._pack_view = pack_view_slots(fire)
 
 	if view._chest_titles.size() == 2:
@@ -133,6 +277,21 @@ func refresh() -> void:
 		number = view.inventory.numbers[slot] if slot >= 0 else 0
 		view._pack_buttons[i].text = "" if number == 0 else "%s\nx%s" % [view.table.name_of(number), view._count_text(view.inventory.counts[slot])]
 		view._pack_buttons[i].tooltip_text = "" if number == 0 else view._tooltip(number, view.inventory.counts[slot], view.inventory.wear[slot])
+
+
+func _refresh_look(capacity: int, fire: bool) -> void:
+	view._pack_view = range(view.inventory.SLOTS)     # the pack column shows every slot in place, so a pack button is its own slot
+	var container_name: String = view.table.name_of(int(view._world.get(view.chest_id, {}).get("number", 0)))
+
+	if view._chest_titles.size() >= 1:
+		InventoryLook.plate(view._chest_titles[0], "Fire" if fire else (container_name if container_name != "" else "Chest"), view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
+
+	for i in view.inventory.SLOTS:
+		var slot = view._chest_buttons[i]
+		slot.visible = i < capacity
+		var number: int = view.chest_inv.numbers[i]
+		var tip: String = view._tooltip(number, view.chest_inv.counts[i], view.chest_inv.wear[i]) if number != 0 else ""
+		InventoryLook.show_stack(view, slot, number, view.chest_inv.counts[i], view.chest_inv.wear[i], tip)
 
 
 # True when the open container is a fire (lit or out); its store takes only wood and food (Dave, 4 Nov 2026).

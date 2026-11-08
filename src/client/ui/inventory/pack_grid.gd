@@ -7,6 +7,9 @@ extends RefCounted
 const HeldItem := preload("res://src/client/held_item.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
+const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
+const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
+const LOOK_COLUMNS := 6     # --new-inventory: slots across the pack column
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
@@ -64,15 +67,20 @@ func build() -> Control:
 		if view.sort_changed.is_valid():
 			view.sort_changed.call(index))
 	right.add_child(view._sort_menu)
+
+	if InventoryLook.on:
+		InventoryLook.plate(right_title, "Pack", view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
+		InventoryLook.style_carry_bar(view._carry_bar, InventoryLook.unit_of(view))
+
 	_slot_scroll = ScrollContainer.new()
 	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(_slot_scroll)
 	view._grid = GridContainer.new()
-	view._grid.columns = 4
+	view._grid.columns = LOOK_COLUMNS if InventoryLook.on else 4
 	view._grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	view._grid.add_theme_constant_override("h_separation", view._px(8))
-	view._grid.add_theme_constant_override("v_separation", view._px(8))
+	view._grid.add_theme_constant_override("h_separation", view._px(4 if InventoryLook.on else 8))
+	view._grid.add_theme_constant_override("v_separation", view._px(4 if InventoryLook.on else 8))
 	_slot_scroll.add_child(view._grid)
 
 	for i in view.inventory.SLOTS:
@@ -100,6 +108,9 @@ func build() -> Control:
 
 # One pack slot: a button that keeps slot `index` wherever the sort puts it, with a condition bar along its bottom.
 func _make_slot(index: int) -> Control:
+	if InventoryLook.on:
+		return _make_look_slot(index)
+
 	var button: Button = Button.new()
 	button.custom_minimum_size = Vector2(0.0, view._px(88))
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -129,6 +140,12 @@ func refresh() -> void:
 		view._refresh_weight()
 
 	var filter: String = view._search.text.strip_edges().to_lower() if view._search != null else ""
+
+	if InventoryLook.on:
+		for i in view.inventory.SLOTS:
+			_refresh_look_slot(i, filter)
+
+		return
 
 	# Inventory slots: with a search, only slots that match; otherwise every slot.
 	for i in view.inventory.SLOTS:
@@ -162,6 +179,108 @@ func refresh() -> void:
 
 		if number != 0 and view.container_cap(i) > 0:
 			button.text += "   %s" % view._litres(view.inventory.wear[i])
+
+
+# --new-inventory: one pack slot as item_slot.gd. Click selects and moves (as the old buttons), shift-click moves the stack into the open
+# chest or station, double-click uses, right-click opens the slot menu. Dragging works as before, onto another slot or the hotbar strip.
+func _make_look_slot(index: int) -> Control:
+	var slot = InventoryLook.make_slot(view, index)
+	slot.clicked.connect(func(button: int, shift: bool) -> void: _on_look_click(index, button, shift))
+	slot.double_clicked.connect(func() -> void:
+		view._selected = -1        # the first click of the two selected it; using it ends the selection
+		view.eat_slot(index)
+		view._refresh())
+	slot.mouse_entered.connect(func() -> void:
+		view._hover = index
+
+		if view.chest_mode:
+			view._chest_hover = [false, index]
+			view._chest_last = [false, index])
+	slot.mouse_exited.connect(func() -> void:
+		view._hover = -1 if view._hover == index else view._hover
+
+		if view._chest_hover == [false, index]:
+			view._chest_hover = [])
+	slot.drag_data = func() -> Variant:
+		if view.inventory.numbers[index] == 0:
+			return null
+
+		return {"slot": index}
+	slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
+	slot.on_drop = func(data: Variant) -> void: view.move_slot(int(data["slot"]), index)
+	return slot
+
+
+func _on_look_click(index: int, button: int, shift: bool) -> void:
+	if button == MOUSE_BUTTON_RIGHT:
+		_slot_menu(index)
+		return
+
+	if button != MOUSE_BUTTON_LEFT:
+		return
+
+	if shift:
+		if view.chest_mode:
+			if not view._container_part.put_from_pack(index):
+				view._buttons[index].flash_refused()
+		else:
+			# STUB(step 2-4): with no chest open, shift-click will move the stack to the nearest own chest once Steve's server hook lands.
+			view._buttons[index].flash_refused()
+
+		return
+
+	_on_slot_pressed(index)
+
+
+# Right-click on a pack slot: the same actions as the row of buttons and the quick keys, for that slot.
+func _slot_menu(index: int) -> void:
+	if view.inventory.numbers[index] == 0:
+		return
+
+	var menu: PopupMenu = PopupMenu.new()
+	menu.theme = view._panel.theme if view._panel != null else null
+	menu.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 4))
+	menu.add_item("Use (E)", 0)
+	menu.add_item("Split (S)", 1)
+	menu.add_item("Drop (D)", 2)
+	menu.add_item("Drop one (Shift+D)", 3)
+	menu.add_item("Repair (R)", 4)
+	menu.add_item("Favourite (coming)", 5)       # STUB(step 2-4): favourites need Steve's saved flag; Sort and the bulk buttons will skip them
+	menu.set_item_disabled(5, true)
+
+	if view.chest_mode:
+		menu.add_item("Move to the container (Shift+click)", 6)
+
+	menu.id_pressed.connect(func(id: int) -> void:
+		view._selected = index
+
+		match id:
+			0: view.eat_slot(index)
+			1: view._split_selected()
+			2: view._drop_selected(true)
+			3: view._drop_selected(false)
+			4: view._repair_selected()
+			6: view._container_part.put_from_pack(index)
+
+		view._refresh())
+	menu.close_requested.connect(menu.queue_free)
+	menu.popup_hide.connect(menu.queue_free)
+	view._layer.add_child(menu)
+	menu.position = Vector2i(view._layer.get_viewport().get_mouse_position())
+	menu.popup()
+
+
+func _refresh_look_slot(i: int, filter: String) -> void:
+	var slot = view._buttons[i]
+	var number: int = view.inventory.numbers[i]
+	var tip: String = view._tooltip(number, view.inventory.counts[i], view.inventory.wear[i]) if number != 0 else ""
+
+	if number != 0 and view.container_cap(i) > 0:
+		tip += "\n%s" % view._litres(view.inventory.wear[i])
+
+	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], tip)
+	slot.set_marked(ItemSlot.MARK_GOLD if i == view._selected else 0)
+	slot.visible = i >= HeldItem.HOTBAR_SLOTS and (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
 
 
 # Dragging a stack from one slot to another (also onto the hotbar strip on screen).

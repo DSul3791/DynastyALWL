@@ -52,6 +52,7 @@ const RecipeListScript := preload("res://src/client/ui/inventory/recipe_list.gd"
 const PackGridScript := preload("res://src/client/ui/inventory/pack_grid.gd")
 const ContainerPanelScript := preload("res://src/client/ui/inventory/container_panel.gd")
 const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd")
+const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # --new-inventory: the new look (step B)
 var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
 var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store beside the pack
@@ -66,6 +67,7 @@ func _init() -> void:
 
 
 var _panel: PanelContainer
+var _columns: HBoxContainer            # the window's columns; with --new-inventory the open container sits between recipes and pack
 var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
@@ -1686,7 +1688,7 @@ func _refresh_weight() -> void:
 	if _carry_bar != null and not _carry_cfg.is_empty():
 		var fraction: float = CarryRules.bar_fraction(carried_kg(), carry_body_kg(), _carry_cfg)
 		_carry_bar.value = fraction * 100.0
-		_carry_bar.get_theme_stylebox("fill").bg_color = CarryRules.bar_color(fraction)
+		_carry_bar.get_theme_stylebox("fill").bg_color = InventoryLook.carry_color(fraction) if InventoryLook.on else CarryRules.bar_color(fraction)
 
 
 func _load_text() -> String:
@@ -1993,9 +1995,12 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 		chest_mode = true
 		open = true
 		_build_panel()
-		_panel.visible = false
+		_panel.visible = InventoryLook.on      # the new look: one window, the container in its middle column
 		_container_part.build()
 		_chest_panel.visible = true
+
+		if InventoryLook.on:
+			_refresh()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 		if chest_event.is_valid() and _world.has(id):
@@ -2015,6 +2020,9 @@ func _close_chest() -> void:
 
 	if _chest_panel != null:
 		_chest_panel.visible = false
+
+	if InventoryLook.on and _panel != null:
+		_panel.visible = false
 
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -3848,11 +3856,15 @@ func _build_panel() -> void:
 	_panel.anchor_top = 0.04
 	_panel.anchor_bottom = 0.89   # leaves the whole hotbar visible underneath (Dave)
 	_panel.clip_contents = true   # the window keeps its size whatever the text size; contents scroll or wrap
-	var back: StyleBoxFlat = StyleBoxFlat.new()
-	back.bg_color = Color(0.07, 0.07, 0.08, 0.93)
-	back.set_corner_radius_all(10)
-	back.set_content_margin_all(_px(18))
-	_panel.add_theme_stylebox_override("panel", back)
+	if InventoryLook.on:
+		InventoryLook.style_window(_panel, _px(18))
+	else:
+		var back: StyleBoxFlat = StyleBoxFlat.new()
+		back.bg_color = Color(0.07, 0.07, 0.08, 0.93)
+		back.set_corner_radius_all(10)
+		back.set_content_margin_all(_px(18))
+		_panel.add_theme_stylebox_override("panel", back)
+
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", _px(10))
 	_panel.add_child(box)
@@ -3864,6 +3876,10 @@ func _build_panel() -> void:
 	title.size_flags_stretch_ratio = 1.4
 	title.clip_text = true
 	_style(title, TITLE_PX)
+
+	if InventoryLook.on:
+		InventoryLook.plate(title, "Crafting and inventory", _px(TITLE_PX), InventoryLook.unit_of(self))
+
 	top.add_child(title)
 
 	# Text size buttons (Dave 2026-10-20); terrain_client keeps and saves the choice.
@@ -3890,6 +3906,7 @@ func _build_panel() -> void:
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", _px(24))
 	box.add_child(columns)
+	_columns = columns
 
 	# Left: recipes and the crafting queue. Right: the pack. Each part builds its own column (src/client/ui/inventory/).
 	_queue_part.build()
@@ -4138,7 +4155,7 @@ func _refresh() -> void:
 
 	# Lag fix (Sal, 2 Nov 2026): with the window shut (or the chest screen up instead) nobody sees the slot buttons or the recipe list, and rebuilding
 	# them cost 55 to 87 ms on every pickup. The window rebuilds in toggle() when it opens; only the weight HUD is kept current.
-	if not open or chest_mode:
+	if not open or (chest_mode and not InventoryLook.on):
 		if _weight_label != null:
 			_refresh_weight()
 
