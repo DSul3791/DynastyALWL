@@ -64,6 +64,7 @@ What the animal view already does for every model (do not rebuild): size from th
 | Kangaroo | 48 | done | waiting | Savanna and grassland mobs |
 | Mammoth | 49 | done | waiting | Tundra herds (tundra islands come later) |
 | Tiger | 50 | done | waiting | Deep forest and marsh edge, dusk and night |
+| Alligator | 51 | done in code, check pending | waiting | Swims (water row key); attacks swimmers and at the bank |
 
 New species are added with `python tools/add_species.py <spec.json>` (specs for batch 2 in E:/Software/godotDev/specs on the PC); `--clips` on the creature check lists a file's clips.
 
