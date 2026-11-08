@@ -27,7 +27,7 @@ const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "d
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
-const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
+const AIR_STATES := [15, 17]                  # in the air (15 flapping, 17 gliding: Steve's #653): its own clip, never walk or run
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
@@ -43,6 +43,7 @@ var _prints: Array = []           # [Decal, born msec, life s]
 var _print_tex: Dictionary = {}   # sign group -> ImageTexture
 var _sign_group: Variant = null   # kind -> hoofed / pawed / clawed / bird (data/animals/animal_sign.json)
 var slope_tilt: bool = false
+var flight_bank: bool = false     # birds bank into turns and ravens roll on the server's roll event (BIRD_FLIGHT.md part 2; off until the PC check)
 var idle_first_s: float = -1.0     # tools only: the first idle comes after this many seconds (-1: 8 to 25 s)
 var idle_variety: bool = false    # grooming and idle variety from a weighted table per species (IDLE_VARIETY.md; off until the PC check)
 var water_life: bool = false      # drinking at the bank, swimming low with paddling legs, shaking off (ANIMALS_AND_WATER.md; off until the PC check)
@@ -497,6 +498,9 @@ func _process_body(delta: float) -> void:
 				_pounce(node, b, delta)
 
 			_flap_bob(node, b, state)
+
+			if flight_bank and not (state in AIR_STATES) and b.has("bank"):
+				_bank_level(node, b, delta)
 
 			if young_gait and bool(b.get("young", false)):
 				_young_wobble(node, b, state, model_speed)
@@ -2537,6 +2541,68 @@ func _idle_act(node: Node3D, b: Dictionary, row: Dictionary, delta: float) -> vo
 					b["dust_col"] = DUST_COLOURS.get(_ground_kind(node, b), DUST_COLOURS["dust"])
 
 
+# Banking (BIRD_FLIGHT.md part 2): a bird in the air leans into its turn, the bank worked out from how fast its heading turns (the
+# server sends no bank), up to 45 degrees, eased; a roll event (the raven's play, Steve's #653) adds a half or full roll over 1 s.
+# Uses the Rig's roll, which no other look turns while a bird flies.
+func _bank(node: Node3D, b: Dictionary, delta: float) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null or delta <= 0.0:
+		return
+
+	var heading: float = float(b.get("heading", 0.0))
+	var turn: float = angle_difference(float(b.get("bank_heading", heading)), heading) / delta      # radians a second
+	b["bank_heading"] = heading
+	b["bank"] = lerpf(float(b.get("bank", 0.0)), clampf(turn * 0.6, -PI * 0.25, PI * 0.25), clampf(delta * 3.0, 0.0, 1.0))
+	var roll: float = 0.0
+
+	if b.has("roll_t"):
+		b["roll_t"] = float(b["roll_t"]) + delta
+		var t: float = clampf(float(b["roll_t"]), 0.0, 1.0)
+		roll = float(b.get("roll_turns", 1.0)) * TAU * (t * t * (3.0 - 2.0 * t))      # eased in and out
+
+		if float(b["roll_t"]) >= 1.0:
+			b.erase("roll_t")
+			roll = 0.0
+
+			if b.has("roll_next"):      # the pair's second roll
+				b["roll_t"] = 0.0
+				b["roll_turns"] = float(b["roll_next"])
+				b.erase("roll_next")
+
+	rig.rotation.z = float(b["bank"]) + roll
+
+
+# Back level once the bird is down.
+func _bank_level(node: Node3D, b: Dictionary, delta: float) -> void:
+	var rig: Node3D = node.get_node_or_null("Rig")
+	b["bank"] = lerpf(float(b["bank"]), 0.0, clampf(delta * 4.0, 0.0, 1.0))
+
+	if rig != null:
+		rig.rotation.z = float(b["bank"])
+
+	if absf(float(b["bank"])) < 0.002:
+		b.erase("bank")
+		b.erase("bank_heading")
+
+
+# The server's one-shot roll event for a bird (Steve's #653, ravens at play: about once a minute in ridge lift, often in pairs).
+# turns: 0.5 a half roll, 1.0 a full roll. Called by the client's protocol handler when the event arrives (wire format: Steve's
+# server_flight step 2); a second event within the first's second queues behind it.
+func play_roll(id: int, turns: float = 1.0) -> void:
+	if not flight_bank or not _bodies.has(id):
+		return
+
+	var b: Dictionary = _bodies[id]
+
+	if b.has("roll_t"):
+		b["roll_next"] = turns
+		return
+
+	b["roll_t"] = 0.0
+	b["roll_turns"] = turns
+
+
 # One line per kind and message in the game log, so a model that is not drawn says why.
 func _model_note(kind: String, text: String) -> void:
 	var key: String = kind + text
@@ -2667,7 +2733,15 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 			b["air_t"] = float(b.get("air_t", 0.0)) + delta
 			var flap_s: float = float(flight.get("flap_s", 99.0))
 			var glide_s: float = float(flight.get("glide_s", 0.0))
-			var gliding: bool = glide_s > 0.0 and fposmod(float(b["air_t"]), flap_s + glide_s) > flap_s
+			# State 17 is the server's glide (Steve's #653: the pheasant's locked-wing glide into cover, the eagle's glide between
+			# thermals). Once a bird has been sent 17, its 15 means flapping; a flock that never sends 17 keeps the timed turns.
+			if state == 17:
+				b["seen_glide"] = true
+
+			var gliding: bool = state == 17 or (not b.has("seen_glide") and glide_s > 0.0 and fposmod(float(b["air_t"]), flap_s + glide_s) > flap_s)
+
+			if flight_bank:
+				_bank(node, b, delta)
 			var air_clip: String = _clip_full(player, row, str(flight.get("glide" if gliding else "flap", "")))
 
 			if air_clip != "":
