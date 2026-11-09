@@ -9,7 +9,7 @@ It builds on `wolf_pup_taming_design.md` (#586) and reuses the dog companion sys
 ## 1. Today [Existing]
 
 - `server_wolves.gd` runs packs of 3 to 5. They prowl, stalk, rush, wait and feed, keep out of fire and torch light, and steal meat.
-- **Natural packs** (`wolves.natural`, false today):
+- **Natural packs** (`wolves.natural` was false until 9 Nov; the switch is now gone and they are always on):
   - one home per 2 km cell, placed by a hash of the cell, so the same spot every time;
   - made when a player is within `active_radius_m` of it;
   - gone again with distance, like every animal;
@@ -34,7 +34,7 @@ What the game takes from this:
 2. **Same den every time:** a pack's den is its cell's hashed home, as today. A player who finds a den finds it again.
 3. **The cap counts pack wolves only** (`a.has("pack")`). Pups and companion wolves don't count toward `max_wolves`.
 4. **Saved dens:** a new `wolf_dens.json` keeps each cell's killed time and its orphans, in game seconds, so a restart no longer brings a killed pack straight back.
-5. **The switch:** the code PR keeps `natural: false`. After Dino's PC check (a pack prowling and stalking, a torch keeping it off, a den with pups, 0 shader errors), a one-line data PR turns it on.
+5. **The switch (removed 9 Nov 2026):** the code PR kept `natural: false`. Under Dave's 8 Nov rule (no flags, features ship on), the switch PR deletes `natural` instead of setting it true, so wild packs are always on. Tests that make their own packs set `cell_share` to 0. Dino's PC check (a pack prowling and stalking, a torch keeping it off, a den with pups, 0 shader errors; `/mnt/project-files/wolves_wild_check_job.md`) runs on that PR's head before it merges.
 
 ## 4. Pups at the den
 
@@ -109,15 +109,15 @@ The client needs nothing new: young drawing, play (9) and the threat call (10) a
   - 3 game days of meals make an orphan follow as a young companion, and it grows up after 20 game days;
   - a companion wolf keeps outside its owner's torch light;
   - the dens file survives a save and a load.
-- `test_wolves` and `test_dog_companion` still pass, with `natural` still false.
+- `test_wolves`, `test_wolf_pups` and `test_dog_reactions` still pass. They set `cell_share` 0 where a check makes its own pack.
 - **On the PC (Dino):**
-  - with `natural` on in a local edit, a pack at its den with pups, and the den warning;
+  - at the switch PR's head, a pack at its den with pups, and the den warning;
   - 0 shader errors;
   - then the switch PR.
 
 ## 9. Must not break
 
-- `natural: false` until the switch PR.
+- No wild pack on main before Dino's PC check of the switch PR.
 - Wild wolves' fire and torch keep-off everywhere except the torch at their own den.
 - Meat stealing and the two-player retreat.
 - The dog companion (#613).

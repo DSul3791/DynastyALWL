@@ -30,6 +30,7 @@ func make():
 	a.traits = false
 	a.rng.seed = 7
 	a.big_game.player_info = func(): return players
+	a.cfg["wolves"]["cell_share"] = 0.0   # no wild packs here (they are always on): each check makes its own pack
 	a.wolves.player_info = func(): return players
 	a.wolves.fires = func(): return []
 	a.wolves.notice = func(_p, _t): pass

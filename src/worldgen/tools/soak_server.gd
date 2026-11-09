@@ -92,7 +92,6 @@ func _init() -> void:
 	animals.wolves.fires = func(): return items._lit_fires()
 	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause)
 	animals.wolves.notice = func(peer, text): items._say(peer, text)
-	animals.cfg["wolves"]["natural"] = true
 	animals.cfg["wolves"]["exclude"] = [0.0, 0.0, 0.0]
 	animals.cfg["wolves"]["cell_m"] = 600.0   # dense: the worst case for the brain
 	var npcs = NpcsScript.new()
