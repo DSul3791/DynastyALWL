@@ -64,6 +64,25 @@ func _init() -> void:
 	check(not a._drink_wander(d, deer) and not d.has("drink_home") and d["home"].x < 1.0, "then it goes home")
 	check(not a._drink_wander(d, deer), "once a twilight")
 
+	# Each one stands along the bank, never in the water (Dino 9 Nov 2026: animals stood on the water).
+	var all_dry: bool = true
+	var spread: float = 0.0
+
+	for _n in 40:
+		d.erase("drank")
+		a._drink_wander(d, deer)
+		all_dry = all_dry and d["drink_at"].x <= 100.0 and absf(d["drink_at"].x - found[0].x) < 0.01
+		spread = maxf(spread, absf(d["drink_at"].z - found[0].z))
+		a._drink_done(d)
+
+	check(all_dry, "every drinker stands on the dry bank, spread along it, not toward the water")
+	check(spread > 0.5 and spread <= 2.0, "drinkers spread up to 2 m along the bank (%.2f m)" % spread)
+
+	# The drink clip is a word in the clip name, never a part of one ("eat" in Idle_Breathing or Cue_Bleat).
+	check(AnimalViewScript.names_word("Eating_RootMotion", "eat") and AnimalViewScript.names_word("Idle_Eating", "eat") and AnimalViewScript.names_word("GrazingOnSpotA_1", "graz"), "eat and graz match at a word start")
+	check(not AnimalViewScript.names_word("Idle_Breathing", "eat") and not AnimalViewScript.names_word("Cue_Bleat", "eat") and not AnimalViewScript.names_word("Sitting_Breathing", "eat"), "eat does not match inside Breathing or Bleat")
+	check(AnimalViewScript.names_word("G0_Walk", "walk") and AnimalViewScript.names_word("WalkMedium_F", "walkmedium") and AnimalViewScript.names_word("SlowRun", "run") and not AnimalViewScript.names_word("Prune", "run"), "walk and run still match their clips")
+
 	# Noon: no.
 	hour = 12.0
 	check(not a._drink_wander(d, deer), "at noon it does not go to water")
