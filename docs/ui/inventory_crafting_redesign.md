@@ -279,7 +279,7 @@ Everything goes in `assets/ui/inventory/`. Sizes are canvas px at 1920 x 1080; *
 | 25 | Selected-row bar | `row_bar.png` | 4 x 40, 9-slice top and bottom 4 | Brass | #F0CF82 to #7A5826 top to bottom | Left edge of the selected recipe row |
 | 26 | Durability bar | drawn in code | 4 px tall | | #8FA35A / #C9A054 / #BF2E24 on #0A0604 | Bottom of a slot |
 | 27 | Missing-icon tile | `icon_missing.png` | 80 x 80 (scales) | Hatched | Hatching #3A2C1F every 10 px, dashed rim #8C6933 (6 on, 5 off) 6 px in, a "?" in Cinzel Bold 30 #8C6933 | Shown in place of any item icon that does not exist yet, so a gap is obvious and never mistaken for an item |
-| 28 | Item icons | `assets/ui/items/<item_id>.png` | 128 x 128 | Painted over the icon bake (look doc section 6), to the rules in 6.7 | No background; 2 px soft shadow added in the slot, not painted | Every item. First: log, stick, stone (none yet), then the 94 in NEEDS_PAINTING.txt, then the look-alike sets in 6.7 |
+| 28 | Item icons | `assets/ui/item_icons/<item_id>.png` (see `docs/ui/item_icons.md`) | 128 x 128 | Painted over the icon bake (look doc section 6), to the rules in 6.7 | No background; 2 px soft shadow added in the slot, not painted | Every item. First: log, stick, stone (none yet), then the 94 in NEEDS_PAINTING.txt, then the look-alike sets in 6.7 |
 | 29 | Character light rig | in the character SubViewport | | | Key light warm white from the top left; rim #FFD68C from behind right; the ground shadow and the backlight pool are drawn in code (6.6) | Set on the existing character view |
 
 Fonts are not art assets; they are in `assets/ui/fonts` (Cinzel Regular and Bold, EB Garamond Regular and SemiBold).
