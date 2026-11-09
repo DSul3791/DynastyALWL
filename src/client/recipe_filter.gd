@@ -4,7 +4,7 @@ extends RefCounted
 # every word typed (any case) is found in its own name or the name of what it makes. Ingredients and tools are not searched (Dave 5 Nov: a word that is not in
 # the name must not list the recipe; 1 Nov's search by ingredient is dropped). The same box serves the inventory's Make list and every crafting table or station.
 
-const CATEGORIES := ["Tools", "Weapons", "Shelter and building", "Workshops and stations", "Fire and cooking", "Food and drink", "Medicine", "Clothing", "Containers and furniture", "Materials"]
+const CATEGORIES := ["Tools", "Weapons", "Armour", "Shelter and building", "Workshops and stations", "Fire and cooking", "Food and drink", "Medicine", "Clothing", "Containers and furniture", "Materials"]
 
 
 static func shown(recipe: Dictionary, category: String, typed: String, table = null) -> bool:

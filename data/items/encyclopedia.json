@@ -177,7 +177,7 @@
 			],
 			"used_for": [
 				"Used in Forager's stew",
-				"Used in Roast Roots"
+				"Used in Roast roots"
 			],
 			"obtainable_now": true
 		},
@@ -398,7 +398,7 @@
 				"Harvested from date palm"
 			],
 			"used_for": [
-				"Used in Energy bar"
+				"Used in Nut cake"
 			],
 			"obtainable_now": true
 		},
@@ -714,7 +714,7 @@
 				"Harvested from hazel"
 			],
 			"used_for": [
-				"Used in Energy bar",
+				"Used in Nut cake",
 				"Used in Hazelnut butter",
 				"Used in Honey loaf",
 				"Used in Nut paste",
@@ -1070,7 +1070,7 @@
 			"obtainable_now": true
 		},
 		"pine_tar": {
-			"name": "Pine tar",
+			"name": "Pine pitch",
 			"kind": "material",
 			"description": "Thick black tar boiled from pine. Seals roofs and soaks wood against rot.",
 			"how_to_get": [
@@ -1250,7 +1250,7 @@
 			],
 			"used_for": [
 				"Used in Garlic meat",
-				"Used in Roast Beast",
+				"Used in Roast beast",
 				"Used in Rosemary joint"
 			],
 			"obtainable_now": true
@@ -1566,7 +1566,7 @@
 				"Used in Beet roast",
 				"Used in Herb fish",
 				"Used in Herb omelette",
-				"Used in Roast Beast"
+				"Used in Roast beast"
 			],
 			"obtainable_now": true
 		},
@@ -1732,7 +1732,7 @@
 				"Used in Fish stew",
 				"Used in Hearty pottage",
 				"Used in Hunter's stew",
-				"Used in Roast Roots"
+				"Used in Roast roots"
 			],
 			"obtainable_now": true
 		},
@@ -1759,7 +1759,7 @@
 				"Used in Hunter's stew",
 				"Used in Mushroom skewer",
 				"Used in Mussel stew",
-				"Used in Roast Beast",
+				"Used in Roast beast",
 				"Used in Rosemary joint"
 			],
 			"obtainable_now": true
@@ -1853,7 +1853,7 @@
 				"Picked from yarrow"
 			],
 			"used_for": [
-				"Used in Energy bar"
+				"Used in Nut cake"
 			],
 			"obtainable_now": true
 		},
@@ -1868,7 +1868,7 @@
 				"Used in Campfire",
 				"Used in Cobblestone",
 				"Used in Foundation",
-				"Used in Quern",
+				"Used in Hand mill",
 				"Used in Rock pile",
 				"Used in Fishing net",
 				"Used in Stone arrow",
@@ -1889,11 +1889,11 @@
 				"Picked from old stump"
 			],
 			"used_for": [
-				"Used in Basic torch",
+				"Used in Torch",
 				"Used in Bone arrow",
 				"Used in Bronze mace",
 				"Used in Bronze sword",
-				"Used in Camp bench",
+				"Used in Workbench",
 				"Used in Campfire",
 				"Used in Campfire pot",
 				"Used in Fibre arrow"
@@ -1913,7 +1913,7 @@
 				"Picked from tanglewort"
 			],
 			"used_for": [
-				"Used in Basic torch",
+				"Used in Torch",
 				"Used in Candle",
 				"Used in Compost",
 				"Used in Fibre arrow",
@@ -1933,13 +1933,13 @@
 			],
 			"used_for": [
 				"Used in Chopping block",
-				"Used in Log workbench",
+				"Used in Sturdy workbench",
 				"Used in Lumber",
 				"Used in Lumber by hand",
 				"Used in Rough plank",
-				"Used in Rough planks",
+				"Used in Hand-split lumber",
 				"Used in Timber prop",
-				"Used to build Medium Forge"
+				"Used to build Blacksmith's forge"
 			],
 			"obtainable_now": true
 		},
@@ -1954,9 +1954,9 @@
 			],
 			"used_for": [
 				"Used in Bucket",
-				"Used in Camp bench",
+				"Used in Workbench",
 				"Used in Campfire pot",
-				"Used in Doorway",
+				"Used in Wooden doorway",
 				"Used in Fibre sandals",
 				"Used in Fishing rod",
 				"Used in Ceiling section",
@@ -2021,7 +2021,7 @@
 			"obtainable_now": true
 		},
 		"torch": {
-			"name": "Basic torch",
+			"name": "Torch",
 			"kind": "tool",
 			"description": "A stick wrapped in fibre. Lights your way after dark.",
 			"how_to_get": [
@@ -2031,7 +2031,7 @@
 			"obtainable_now": true
 		},
 		"torch_doused": {
-			"name": "Basic torch",
+			"name": "Torch (out)",
 			"kind": "tool",
 			"description": "A stick wrapped in fibre. Lights your way after dark.",
 			"how_to_get": [
@@ -2068,7 +2068,7 @@
 			"obtainable_now": true
 		},
 		"roast_forage": {
-			"name": "Campfire Stew",
+			"name": "Roasted forage",
 			"kind": "food",
 			"description": "A bowl of chunky vegetable soup, simmered over a fire.",
 			"how_to_get": [],
@@ -2137,7 +2137,7 @@
 			"kind": "placeable",
 			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"how_to_get": [
-				"Build with a hammer (press R): 30 Stick, 200 Leaves, 10 Twine"
+				"Build with a hammer (press R): 20 Stick, 60 Leaves, 6 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2151,7 +2151,7 @@
 			"obtainable_now": false
 		},
 		"chest_kit": {
-			"name": "Woven chest",
+			"name": "Wicker chest",
 			"kind": "placeable",
 			"description": "Woven sticks and twine. A chest to store things in.",
 			"how_to_get": [
@@ -2161,7 +2161,7 @@
 			"obtainable_now": true
 		},
 		"chest": {
-			"name": "Woven chest",
+			"name": "Wicker chest",
 			"kind": "structure",
 			"description": "A woven chest for storing things.",
 			"how_to_get": [],
@@ -2216,17 +2216,17 @@
 			"used_for": [
 				"Used in Bronze-rimmed shield",
 				"Used in Bucket",
-				"Used in Doorway",
+				"Used in Wooden doorway",
 				"Used in Fine board",
 				"Used in Ceiling section",
 				"Used in Iron-banded shield",
 				"Used in Ladder",
-				"Used in Plank chest"
+				"Used in Wooden chest"
 			],
 			"obtainable_now": true
 		},
 		"plank_chest_kit": {
-			"name": "Plank chest",
+			"name": "Wooden chest",
 			"kind": "placeable",
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
 			"how_to_get": [
@@ -2237,7 +2237,7 @@
 			"status": "planned"
 		},
 		"plank_chest": {
-			"name": "Plank chest",
+			"name": "Wooden chest",
 			"kind": "structure",
 			"description": "A plank chest for storing more things.",
 			"how_to_get": [],
@@ -2329,8 +2329,8 @@
 				"Used in Clay pot",
 				"Used in Foundation",
 				"Used in Mortar",
-				"Used to build Basic Forge",
-				"Used to build Basic Oven",
+				"Used to build Stone forge",
+				"Used to build Brick oven",
 				"Used to build Clay hearth"
 			],
 			"obtainable_now": true
@@ -2497,7 +2497,7 @@
 			"obtainable_now": true
 		},
 		"energy_bar": {
-			"name": "Energy bar",
+			"name": "Nut cake",
 			"kind": "food",
 			"description": "Nuts, dried fruit and herbs pressed into a cake. Quick energy that wears on your fitness.",
 			"how_to_get": [
@@ -2680,14 +2680,14 @@
 				"Used in Garlic meat",
 				"Used in Hunter's stew",
 				"Used in Jerky",
-				"Used in Roast Beast",
+				"Used in Roast beast",
 				"Used in Rosemary joint",
 				"Used in Venison pie"
 			],
 			"obtainable_now": true
 		},
 		"roast_meat": {
-			"name": "Roast Meat",
+			"name": "Roast meat",
 			"kind": "food",
 			"description": "Meat roasted over a fire. Filling, and it keeps a couple of days.",
 			"how_to_get": [],
@@ -2759,7 +2759,7 @@
 			"obtainable_now": true
 		},
 		"workbench_kit": {
-			"name": "Camp bench",
+			"name": "Workbench",
 			"kind": "placeable",
 			"description": "Lashed sticks and a flat top. Set it down and it counts as a workbench, for better tools.",
 			"how_to_get": [
@@ -2769,7 +2769,7 @@
 			"obtainable_now": true
 		},
 		"workbench": {
-			"name": "Camp bench",
+			"name": "Workbench",
 			"kind": "structure",
 			"description": "A camp bench. It counts as a workbench: stand near it to make the things that need one.",
 			"how_to_get": [],
@@ -2838,7 +2838,7 @@
 			"obtainable_now": true
 		},
 		"roast_fish": {
-			"name": "Roast Fish",
+			"name": "Roast fish",
 			"kind": "food",
 			"description": "Fish cooked over a fire. Filling, and keeps a day or two.",
 			"how_to_get": [],
@@ -2916,7 +2916,7 @@
 			"obtainable_now": false
 		},
 		"log_workbench_kit": {
-			"name": "Log workbench",
+			"name": "Sturdy workbench",
 			"kind": "placeable",
 			"description": "A heavy log bench with its own rack and vice, ready to set down.",
 			"how_to_get": [
@@ -2926,7 +2926,7 @@
 			"obtainable_now": true
 		},
 		"log_workbench": {
-			"name": "Log workbench",
+			"name": "Sturdy workbench",
 			"kind": "structure",
 			"description": "A log workbench with its own rack and vice. Stand near it to make the things that need a work table.",
 			"how_to_get": [],
@@ -2934,7 +2934,7 @@
 			"obtainable_now": false
 		},
 		"stone_forge_kit": {
-			"name": "Basic Forge",
+			"name": "Stone forge",
 			"kind": "placeable",
 			"description": "A clay and rough stone dome forge under a log roof, ready to raise.",
 			"how_to_get": [
@@ -2944,7 +2944,7 @@
 			"obtainable_now": false
 		},
 		"stone_forge": {
-			"name": "Basic Forge",
+			"name": "Stone forge",
 			"kind": "structure",
 			"description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.",
 			"how_to_get": [],
@@ -2952,7 +2952,7 @@
 			"obtainable_now": false
 		},
 		"blacksmithy_kit": {
-			"name": "Medium Forge",
+			"name": "Blacksmith's forge",
 			"kind": "placeable",
 			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
 			"how_to_get": [
@@ -2962,7 +2962,7 @@
 			"obtainable_now": false
 		},
 		"blacksmithy": {
-			"name": "Medium Forge",
+			"name": "Blacksmith's forge",
 			"kind": "structure",
 			"description": "A dressed stone forge with a stepped hood and iron straps.",
 			"how_to_get": [],
@@ -3296,7 +3296,7 @@
 			"obtainable_now": true
 		},
 		"roast_roots": {
-			"name": "Roast Roots",
+			"name": "Roast roots",
 			"kind": "food",
 			"description": "Roots baked in the embers. Plain and filling.",
 			"how_to_get": [
@@ -3437,7 +3437,7 @@
 			"obtainable_now": true
 		},
 		"feast_roast": {
-			"name": "Roast Beast",
+			"name": "Roast beast",
 			"kind": "food",
 			"description": "Spiced, fat-basted roast. The best meal a campfire makes.",
 			"how_to_get": [
@@ -3447,7 +3447,7 @@
 			"obtainable_now": true
 		},
 		"wall_section_kit": {
-			"name": "Wall section",
+			"name": "Wooden wall",
 			"kind": "placeable",
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"how_to_get": [
@@ -3457,7 +3457,7 @@
 			"obtainable_now": true
 		},
 		"wall_section": {
-			"name": "Wall section",
+			"name": "Wooden wall",
 			"kind": "structure",
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"how_to_get": [],
@@ -3483,7 +3483,7 @@
 			"obtainable_now": false
 		},
 		"roof_section_kit": {
-			"name": "Roof section",
+			"name": "Wooden roof",
 			"kind": "placeable",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"how_to_get": [
@@ -3493,7 +3493,7 @@
 			"obtainable_now": true
 		},
 		"roof_section": {
-			"name": "Roof section",
+			"name": "Wooden roof",
 			"kind": "structure",
 			"description": "A plank roof on four posts, to set over walls and ceilings.",
 			"how_to_get": [],
@@ -3519,7 +3519,7 @@
 			"obtainable_now": false
 		},
 		"doorway_section_kit": {
-			"name": "Doorway",
+			"name": "Wooden doorway",
 			"kind": "placeable",
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"how_to_get": [
@@ -3529,7 +3529,7 @@
 			"obtainable_now": true
 		},
 		"doorway_section": {
-			"name": "Doorway",
+			"name": "Wooden doorway",
 			"kind": "structure",
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"how_to_get": [],
@@ -3537,7 +3537,7 @@
 			"obtainable_now": false
 		},
 		"window_section_kit": {
-			"name": "Window wall",
+			"name": "Wooden window",
 			"kind": "placeable",
 			"description": "A plank wall with an opening at chest height to see through.",
 			"how_to_get": [
@@ -3547,7 +3547,7 @@
 			"obtainable_now": true
 		},
 		"window_section": {
-			"name": "Window wall",
+			"name": "Wooden window",
 			"kind": "structure",
 			"description": "A plank wall with an opening at chest height to see through.",
 			"how_to_get": [],
@@ -3595,7 +3595,7 @@
 			"kind": "material",
 			"description": "A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar.",
 			"how_to_get": [
-				"Craft at a workbench: 25 Stone"
+				"Craft at a workbench: 8 Stone"
 			],
 			"used_for": [
 				"Planned masonry: stone walls and floors with mortar (no blueprint uses it yet)."
@@ -3610,9 +3610,9 @@
 				"Craft at a campfire: 2 Clay"
 			],
 			"used_for": [
-				"Used to build Basic Oven",
+				"Used to build Brick oven",
 				"Used to build Clay hearth",
-				"Built into the Clay hearth and the Basic Oven (hammer blueprints); planned for brick walls and chimneys."
+				"Built into the Clay hearth and the Brick oven (hammer blueprints); planned for brick walls and chimneys."
 			],
 			"obtainable_now": true
 		},
@@ -3767,7 +3767,7 @@
 			"kind": "material",
 			"description": "Thick black tar, boiled down. Seals a flat roof and soaks logs against rot.",
 			"how_to_get": [
-				"Craft at a campfire: 5 Pine tar"
+				"Craft at a campfire: 5 Pine pitch"
 			],
 			"used_for": [
 				"Planned: seals a flat roof and soaks logs against rot. Needs pine tar from a felled pine."
@@ -3836,7 +3836,7 @@
 			"obtainable_now": false
 		},
 		"saw_blade": {
-			"name": "Saw blades",
+			"name": "Saw blade",
 			"kind": "material",
 			"description": "A pair of iron saw blades for a sawmill frame.",
 			"how_to_get": [
@@ -3867,7 +3867,7 @@
 			"kind": "placeable",
 			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
 			"how_to_get": [
-				"Build with a hammer (press R): 40 Lumber, 100 Nails, 1 Saw blades, 1 Water wheel near a workbench"
+				"Build with a hammer (press R): 40 Lumber, 100 Nails, 1 Saw blade, 1 Water wheel near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -3934,7 +3934,7 @@
 			"kind": "tool",
 			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 lumber by hand, slower than a mill.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Saw blades, 2 Stick, 2 Twine"
+				"Craft at a workbench: 1 Saw blade, 2 Stick, 2 Twine"
 			],
 			"used_for": [
 				"Used in Lumber by hand"
@@ -3969,7 +3969,7 @@
 			"kind": "placeable",
 			"description": "Bundled thatch on a frame of sticks. Set it up to close in a shelter.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Twine, 50 Thatch, 15 Stick near a workbench"
+				"Build with a hammer (press R): 3 Twine, 20 Thatch, 6 Stick"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4113,7 +4113,7 @@
 			"obtainable_now": true
 		},
 		"oven": {
-			"name": "Basic Oven",
+			"name": "Brick oven",
 			"kind": "structure",
 			"description": "A brick oven with a door. Bakes what a clay hearth cooks, and bread and joints besides.",
 			"how_to_get": [],
@@ -4121,7 +4121,7 @@
 			"obtainable_now": false
 		},
 		"oven_kit": {
-			"name": "Basic Oven",
+			"name": "Brick oven",
 			"kind": "placeable",
 			"description": "A brick oven, built with a hammer next to a clay hearth.",
 			"how_to_get": [
@@ -4215,7 +4215,7 @@
 			"status": "planned"
 		},
 		"processed_hide": {
-			"name": "Processed hide",
+			"name": "Scraped hide",
 			"kind": "material",
 			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
 			"how_to_get": [
@@ -4232,7 +4232,7 @@
 			"kind": "material",
 			"description": "Tanned hide: tough and supple.",
 			"how_to_get": [
-				"Craft at a campfire pot: 1 Processed hide, 2 Tannin bark, 1 Water"
+				"Craft at a campfire pot: 1 Scraped hide, 2 Tannin bark, 1 Water"
 			],
 			"used_for": [
 				"Used in Fine leather",
@@ -4378,7 +4378,7 @@
 				"Craft at a workbench: 1 Flint, 1 Stick, 1 Twine"
 			],
 			"used_for": [
-				"Used in Processed hide"
+				"Used in Scraped hide"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4910,7 +4910,7 @@
 			"status": "planned"
 		},
 		"quern": {
-			"name": "Quern",
+			"name": "Hand mill",
 			"kind": "tool",
 			"description": "Two flat stones for grinding grain by hand. Slow but steady.",
 			"how_to_get": [
@@ -5029,7 +5029,7 @@
 				"Craft: 2 Stone, 1 Stick"
 			],
 			"used_for": [
-				"Used in Rough planks"
+				"Used in Hand-split lumber"
 			],
 			"obtainable_now": true
 		},
@@ -5120,7 +5120,7 @@
 			"status": "planned"
 		},
 		"roast_shellfish": {
-			"name": "Steamed Shellfish",
+			"name": "Steamed shellfish",
 			"kind": "food",
 			"description": "Shellfish steamed open on hot coals. Salty and sweet.",
 			"how_to_get": [],
@@ -5138,7 +5138,7 @@
 			"status": "planned"
 		},
 		"roast_seal": {
-			"name": "Seal Steak",
+			"name": "Seal steak",
 			"kind": "food",
 			"description": "Seal meat roasted over a fire. Rich and fatty.",
 			"how_to_get": [],
@@ -5775,7 +5775,7 @@
 			"obtainable_now": true
 		},
 		"fibre_cloth": {
-			"name": "Fibre cloth",
+			"name": "Woven cloth",
 			"kind": "material",
 			"description": "Plant fibre woven flat on a frame. Covers a bed, and wraps a canopy.",
 			"how_to_get": [
@@ -6616,7 +6616,7 @@
 			"obtainable_now": true
 		},
 		"torch_sconce": {
-			"name": "Torch on the wall",
+			"name": "Wedged torch",
 			"kind": "structure",
 			"description": "A torch wedged on a wall. Hold E to take it back.",
 			"how_to_get": [
@@ -6730,7 +6730,7 @@
 			"kind": "placeable",
 			"description": "A rough bed topped with feathers and a wool blanket.",
 			"how_to_get": [
-				"Build with a hammer (press R): 10 Thatch, 20 Feather, 10 Down, 2 Fibre cloth near a workbench"
+				"Build with a hammer (press R): 10 Thatch, 20 Feather, 10 Down, 2 Woven cloth near a workbench"
 			],
 			"used_for": [
 				"Used in Canopy bed"
@@ -6742,7 +6742,7 @@
 			"kind": "placeable",
 			"description": "A feather bed under a timber canopy with linen curtains.",
 			"how_to_get": [
-				"Build with a hammer (press R): 30 Feather, 8 Lumber, 4 Fibre cloth near a workbench"
+				"Build with a hammer (press R): 30 Feather, 8 Lumber, 4 Woven cloth near a workbench"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -6758,7 +6758,7 @@
 			"obtainable_now": true
 		},
 		"chandelier_kit": {
-			"name": "Candle chandelier",
+			"name": "Chandelier",
 			"kind": "placeable",
 			"description": "A wooden hoop hung from a beam, with six candles. Light them first.",
 			"how_to_get": [

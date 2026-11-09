@@ -122,7 +122,7 @@
 		},
 		"torch": {
 			"number": 7,
-			"name": "Basic torch",
+			"name": "Torch",
 			"category": "Tools",
 			"needs": [
 				[
@@ -280,15 +280,15 @@
 			"needs": [
 				[
 					"stick",
-					30
+					20
 				],
 				[
 					"leaves",
-					200
+					60
 				],
 				[
 					"twine",
-					10
+					6
 				]
 			],
 			"gives": [
@@ -652,7 +652,7 @@
 		},
 		"energy_bar": {
 			"number": 31,
-			"name": "Energy bar",
+			"name": "Nut cake",
 			"category": "Food and drink",
 			"needs": [
 				[
@@ -958,7 +958,7 @@
 		},
 		"rough_bed_kit": {
 			"number": 162,
-			"name": "Rough bed",
+			"name": "Rough bed (thatch)",
 			"category": "Containers and furniture",
 			"needs": [
 				[
@@ -1037,15 +1037,15 @@
 			"needs": [
 				[
 					"twine",
-					8
+					3
 				],
 				[
 					"thatch",
-					50
+					20
 				],
 				[
 					"stick",
-					15
+					6
 				]
 			],
 			"gives": [
@@ -1053,8 +1053,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"station": "workbench",
-			"known": true,
+						"known": true,
 			"retired": true
 		},
 		"thatch_roof_kit": {
@@ -2322,7 +2321,7 @@
 		},
 		"cook_roast_roots": {
 			"number": 104,
-			"name": "Roast Roots",
+			"name": "Roast roots",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -2682,7 +2681,7 @@
 		},
 		"cook_feast_roast": {
 			"number": 118,
-			"name": "Roast Beast",
+			"name": "Roast beast",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -2905,7 +2904,7 @@
 			"needs": [
 				[
 					"stone",
-					25
+					8
 				]
 			],
 			"gives": [
@@ -3425,7 +3424,7 @@
 		},
 		"saw_blade": {
 			"number": 152,
-			"name": "Saw blades",
+			"name": "Saw blade",
 			"category": "Materials",
 			"needs": [["iron_ingot", 2]],
 			"gives": ["saw_blade", 1],
@@ -3618,7 +3617,7 @@
 		"wooden_bow": {
 			"number": 170,
 			"name": "Wooden bow",
-			"category": "Tools",
+			"category": "Weapons",
 			"needs": [
 				["stick", 2],
 				["twine", 3]
@@ -3761,7 +3760,7 @@
 			"known": true
 		},
 		"kindling": {"number": 178, "name": "Kindling", "category": "Fire and cooking", "needs": [["stick", 1]], "gives": ["kindling", 3], "craft_s": 2.0, "known": true},
-		"processed_hide": {"number": 179, "name": "Processed hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 8.0, "known": true},
+		"processed_hide": {"number": 179, "name": "Scraped hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 8.0, "known": true},
 		"hide_scraper": {"number": 180, "name": "Hide scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"obsidian_knife": {"number": 182, "name": "Obsidian knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
@@ -4066,7 +4065,7 @@
 		"candle": {
 			"number": 200,
 			"name": "Candle",
-			"category": "Tools",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"animal_fat",
@@ -4087,7 +4086,7 @@
 		"wicker_shield": {
 			"number": 201,
 			"name": "Wicker shield",
-			"category": "Tools",
+			"category": "Armour",
 			"needs": [
 				[
 					"stick",
@@ -4108,7 +4107,7 @@
 		"stone_mace": {
 			"number": 202,
 			"name": "Stone mace",
-			"category": "Tools",
+			"category": "Weapons",
 			"needs": [
 				[
 					"stone",
@@ -4133,7 +4132,7 @@
 		"plank_shield": {
 			"number": 203,
 			"name": "Plank shield",
-			"category": "Tools",
+			"category": "Armour",
 			"needs": [
 				[
 					"lumber",
@@ -4159,7 +4158,7 @@
 		"bronze_sword": {
 			"number": 204,
 			"name": "Bronze sword",
-			"category": "Tools",
+			"category": "Weapons",
 			"needs": [
 				[
 					"bronze_ingot",
@@ -4183,7 +4182,7 @@
 		"bronze_mace": {
 			"number": 205,
 			"name": "Bronze mace",
-			"category": "Tools",
+			"category": "Weapons",
 			"needs": [
 				[
 					"bronze_ingot",
@@ -4207,7 +4206,7 @@
 		"bronze_shield": {
 			"number": 206,
 			"name": "Bronze-rimmed shield",
-			"category": "Tools",
+			"category": "Armour",
 			"needs": [
 				[
 					"lumber",
@@ -4231,7 +4230,7 @@
 		"iron_sword": {
 			"number": 207,
 			"name": "Iron sword",
-			"category": "Tools",
+			"category": "Weapons",
 			"needs": [
 				[
 					"iron_ingot",
@@ -4255,7 +4254,7 @@
 		"iron_mace": {
 			"number": 208,
 			"name": "Iron mace",
-			"category": "Tools",
+			"category": "Weapons",
 			"needs": [
 				[
 					"iron_ingot",
@@ -4279,7 +4278,7 @@
 		"iron_shield": {
 			"number": 209,
 			"name": "Iron-banded shield",
-			"category": "Tools",
+			"category": "Armour",
 			"needs": [
 				[
 					"lumber",
@@ -4303,7 +4302,7 @@
 		"steel_sword": {
 			"number": 210,
 			"name": "Steel sword",
-			"category": "Tools",
+			"category": "Weapons",
 			"needs": [
 				[
 					"steel_ingot",
@@ -4327,7 +4326,7 @@
 		"steel_mace": {
 			"number": 211,
 			"name": "Steel mace",
-			"category": "Tools",
+			"category": "Weapons",
 			"needs": [
 				[
 					"steel_ingot",
@@ -4351,7 +4350,7 @@
 		"steel_shield": {
 			"number": 212,
 			"name": "Steel kite shield",
-			"category": "Tools",
+			"category": "Armour",
 			"needs": [
 				[
 					"lumber",
@@ -4396,7 +4395,7 @@
 		"leather_jerkin": {
 			"number": 214,
 			"name": "Leather jerkin",
-			"category": "Clothing",
+			"category": "Armour",
 			"needs": [
 				[
 					"leather",
@@ -4418,7 +4417,7 @@
 		"bronze_helm": {
 			"number": 215,
 			"name": "Bronze helm",
-			"category": "Clothing",
+			"category": "Armour",
 			"needs": [
 				[
 					"bronze_ingot",
@@ -4438,7 +4437,7 @@
 		"gambeson": {
 			"number": 216,
 			"name": "Gambeson",
-			"category": "Clothing",
+			"category": "Armour",
 			"needs": [
 				[
 					"twine",
@@ -4464,7 +4463,7 @@
 		"iron_helm": {
 			"number": 217,
 			"name": "Iron helm",
-			"category": "Clothing",
+			"category": "Armour",
 			"needs": [
 				[
 					"iron_ingot",
@@ -4484,7 +4483,7 @@
 		"mail_shirt": {
 			"number": 218,
 			"name": "Mail shirt",
-			"category": "Clothing",
+			"category": "Armour",
 			"needs": [
 				[
 					"rivets",
@@ -4508,7 +4507,7 @@
 		"steel_helm": {
 			"number": 219,
 			"name": "Steel helm",
-			"category": "Clothing",
+			"category": "Armour",
 			"needs": [
 				[
 					"steel_ingot",
@@ -4536,7 +4535,7 @@
 		"plate_cuirass": {
 			"number": 220,
 			"name": "Plate cuirass",
-			"category": "Clothing",
+			"category": "Armour",
 			"needs": [
 				[
 					"steel_ingot",
@@ -4563,7 +4562,7 @@
 		},
 		"quern": {
 			"number": 221,
-			"name": "Quern",
+			"name": "Hand mill",
 			"category": "Tools",
 			"needs": [
 				[
@@ -4796,7 +4795,7 @@
 		},
 		"lumber_wedge": {
 			"number": 230,
-			"name": "Rough planks",
+			"name": "Hand-split lumber",
 			"category": "Materials",
 			"needs": [
 				[
@@ -4820,7 +4819,7 @@
 		},
 		"rough_bed_bedding": {
 			"number": 231,
-			"name": "Rough bed",
+			"name": "Rough bed (bedding)",
 			"category": "Containers and furniture",
 			"needs": [
 				[
@@ -4845,7 +4844,7 @@
 		},
 		"wooden_hammer_soft": {
 			"number": 232,
-			"name": "Wooden hammer",
+			"name": "Wooden hammer (softwood)",
 			"category": "Tools",
 			"needs": [
 				[
@@ -4870,7 +4869,7 @@
 		},
 		"rough_bed_straw": {
 			"number": 233,
-			"name": "Rough bed",
+			"name": "Rough bed (straw)",
 			"category": "Containers and furniture",
 			"needs": [
 				[
@@ -5142,7 +5141,7 @@
 		},
 		"fibre_cloth": {
 			"number": 334,
-			"name": "Fibre cloth",
+			"name": "Woven cloth",
 			"category": "Materials",
 			"needs": [
 				["plant_fibre", 8]
@@ -5888,7 +5887,7 @@
 		"tallow_candle": {
 			"number": 277,
 			"name": "Tallow candle",
-			"category": "Tools",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"tallow",
@@ -6524,7 +6523,7 @@
 		},
 		"stew_raspberries": {
 			"number": 306,
-			"name": "Stewed berries",
+			"name": "Stewed raspberries",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6546,7 +6545,7 @@
 		},
 		"stew_blueberries": {
 			"number": 307,
-			"name": "Stewed berries",
+			"name": "Stewed blueberries",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6568,7 +6567,7 @@
 		},
 		"stew_blackberries": {
 			"number": 308,
-			"name": "Stewed berries",
+			"name": "Stewed blackberries",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6590,7 +6589,7 @@
 		},
 		"stew_strawberries": {
 			"number": 309,
-			"name": "Stewed berries",
+			"name": "Stewed strawberries",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6634,7 +6633,7 @@
 		},
 		"roast_hazelnuts": {
 			"number": 311,
-			"name": "Campfire Stew",
+			"name": "Roasted hazelnuts",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6652,7 +6651,7 @@
 		},
 		"roast_chestnuts": {
 			"number": 312,
-			"name": "Campfire Stew",
+			"name": "Roasted chestnuts",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6670,7 +6669,7 @@
 		},
 		"roast_walnuts": {
 			"number": 313,
-			"name": "Campfire Stew",
+			"name": "Roasted walnuts",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6688,7 +6687,7 @@
 		},
 		"roast_beechnuts": {
 			"number": 314,
-			"name": "Campfire Stew",
+			"name": "Roasted beechnuts",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6706,7 +6705,7 @@
 		},
 		"roast_morels": {
 			"number": 315,
-			"name": "Campfire Stew",
+			"name": "Roasted morels",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6724,7 +6723,7 @@
 		},
 		"roast_bananas": {
 			"number": 316,
-			"name": "Campfire Stew",
+			"name": "Roasted bananas",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6742,7 +6741,7 @@
 		},
 		"roast_fiddleheads": {
 			"number": 317,
-			"name": "Campfire Stew",
+			"name": "Roasted fiddleheads",
 			"category": "Fire and cooking",
 			"needs": [
 				[
@@ -6760,7 +6759,7 @@
 		},
 		"roast_wild_pears": {
 			"number": 318,
-			"name": "Campfire Stew",
+			"name": "Roasted pears",
 			"category": "Fire and cooking",
 			"needs": [
 				[

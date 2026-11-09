@@ -86,7 +86,7 @@
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Hold your wooden hammer, press R and pick Lean-to: 30 sticks, 200 leaves, 10 twine.",
+			"text": "Hold your wooden hammer, press R and pick Lean-to: 20 sticks, 60 leaves, 6 twine.",
 			"goal": "shelter"
 		},
 		{
@@ -109,7 +109,7 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Camp bench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 4 stones. It is your workbench, for better tools.",
+			"text": "A Workbench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 4 stones. It is for better tools.",
 			"goal": "workbench"
 		},
 		{
@@ -144,7 +144,7 @@
 		{
 			"id": "night",
 			"trigger": "dusk",
-			"text": "Night is dark. Craft a Basic torch: a stick and 2 fibre."
+			"text": "Night is dark. Craft a Torch: a stick and 2 fibre."
 		},
 		{
 			"id": "fruit_pick",

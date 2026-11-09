@@ -9,7 +9,7 @@
 		"gravel": "Dug gravel. Dig and fill the ground with it; planned for paths and cobble floors.",
 		"rotten_food": "Spoiled food: rot it down into compost (2 rotten food make 1 compost).",
 		"cut_stone_block": "Planned masonry: stone walls and floors with mortar (no blueprint uses it yet).",
-		"brick": "Built into the Clay hearth and the Basic Oven (hammer blueprints); planned for brick walls and chimneys.",
+		"brick": "Built into the Clay hearth and the Brick oven (hammer blueprints); planned for brick walls and chimneys.",
 		"mortar": "Planned: binds stone blocks and bricks in masonry (no blueprint uses it yet).",
 		"rough_plank": "Rough boards from a log; the ladder blueprint uses them (fine board and shingles at a sawmill are planned).",
 		"fine_board": "Planned: furniture and fine floors at a woodworking table.",
