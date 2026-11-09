@@ -24,7 +24,7 @@
 |---|---|---|
 | apple_early | yes | 600, 0.2, [8, 14], 6.0, 0.6, [0.5, 0.9] |
 | apple_summer | yes | 600, 0.2, [8, 14], 6.0, 0.6, [0.5, 0.9] |
-| pear_summer | yes | 700, 0.15, [10, 14], 7.0, 0.6, [0.5, 0.9] (was [8, 12] and 0.5: about 3 trees, too few) |
+| pear_summer | yes | 600, 0.2, [10, 14], 7.0, 0.6, [0.5, 0.9] (was 700, 0.15, [8, 12], 0.5: about 3 trees a grove and half the tries, so no grove in the test window twice running), and it grows in mixed forest too (`mixed_forest` 1.5 per hectare, like the apples and the cherry) |
 | sour_cherry | yes | 600, 0.2, [6, 12], 5.0, 0.6, [0.4, 0.9] |
 | apple_autumn, apple_keeping, apple_cooking, pear_autumn, pear_winter, plum, damson | no, scattered as today | — |
 | quince, medlar | no, and made `rarity: "rare"` (today "uncommon"), since they are 0.2 to 0.3 per hectare already | — |
