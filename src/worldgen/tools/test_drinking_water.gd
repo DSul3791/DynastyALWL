@@ -60,6 +60,14 @@ func _rules() -> void:
 	check(str(winter_pick.get("kind", "")) == "spring" and not bool(winter_pick.get("frozen", true)), "a ground spring is open on a -10 C night")
 	var dry_head: Array = DrinkRules.ground_spring_rows(heads, Vector3(30.0, 52.0, 11.0), 3.0, mean_at)
 	check(str(DrinkRules.pick(CFG, dry_head, ctx("summer", INF, 18.0)).get("refused", "")) == "dry", "a ground spring with no flow is dry in August")
+	# With its own dry flow (Sonny #834, the 4th field): a head that flows but whose store runs out in the dry quarter is dry in August, and runs in autumn.
+	var stored: Array = [[Vector3(50.0, 40.0, 10.0), 0.003, "bushes", 0.0], [Vector3(70.0, 40.0, 10.0), 0.003, "bushes", 0.0012]]
+	var spent: Array = DrinkRules.ground_spring_rows(stored, Vector3(50.0, 40.0, 11.0), 3.0, mean_at)
+	var lasting: Array = DrinkRules.ground_spring_rows(stored, Vector3(70.0, 40.0, 11.0), 3.0, mean_at)
+	check(spent.size() == 1 and is_zero_approx(float(spent[0]["dry_m3_s"])), "a ground spring's dry flow is its own, not the head's flow (%s)" % str(spent))
+	check(str(DrinkRules.pick(CFG, spent, ctx("summer", INF, 18.0)).get("refused", "")) == "dry", "a flowing head with no dry-quarter flow is dry in August")
+	check(str(DrinkRules.pick(CFG, spent, ctx("autumn", INF, 12.0)).get("kind", "")) == "spring", "and a drink in autumn")
+	check(str(DrinkRules.pick(CFG, lasting, ctx("summer", INF, 18.0)).get("kind", "")) == "spring", "a head with 1.2 L/s of dry flow is a drink in August")
 
 	# Brook regime 2: dry in summer, wet in summer within a day of rain, wet in autumn.
 	var brook2: Dictionary = {"kind": "brook", "regime": 2}
