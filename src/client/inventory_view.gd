@@ -3796,7 +3796,9 @@ func _build_bars_row() -> VBoxContainer:
 	# The You column's stats (redesign 4.2 and 6.4): six rows, each an engraved glyph, the name, a warm bar in a recessed track and the
 	# value right-aligned. The names are the game's own (Exertion and Energy); the fills are the warm set the HUD bars share.
 	var row: VBoxContainer = VBoxContainer.new()
-	row.add_theme_constant_override("separation", _px(12))
+	# A fixed 6 px between the rows: the rows themselves grow with the text, so the six still fit the 820 px You column at text
+	# step 1.2 (with the gap scaled too it was 837 px, texttest 9 Nov).
+	row.add_theme_constant_override("separation", 6)
 	_panel_bars.clear()
 	_panel_values.clear()
 
