@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paint the icons the bake has no model for: building sections, logs by species, furniture, beds and storage (inventory redesign step 5; Kathleen, 9 Nov 2026).
+"""Paint the icons the bake has no model for: building sections, logs, furniture, stations, fires and lights (inventory redesign step 5; Kathleen, 9 Nov 2026).
 
 The same rig as tools/paint_basic_icons.py (look doc section 6.7): low-poly flat-shaded facets, a warm key light from the top left,
 a soft fill and a gold rim, three-quarter view, no background, 128 x 128 with the object filling about 80 %, drawn at 4x.
@@ -60,8 +60,13 @@ def render(faces, model, colour_jitter=0.0, seed=0):
 
         light = FILL + (1.0 - FILL) * max(0.0, float(np.dot(normal, KEY)))
         rim = 0.18 * max(0.0, float(np.dot(normal, np.array([0.6, 0.3, -0.75]))))
-        base = np.array(colour, dtype=float) / 255.0 * (1.0 + rng.uniform(-colour_jitter, colour_jitter))
-        rgb = np.clip(base * light * KEY_COLOUR + rim * np.array([1.0, 0.84, 0.55]), 0.0, 1.0)
+        base = np.array(colour[:3], dtype=float) / 255.0 * (1.0 + rng.uniform(-colour_jitter, colour_jitter))
+
+        if len(colour) == 4:   # a glowing face (coals, a flame): its own colour, not lit
+            rgb = np.clip(base, 0.0, 1.0)
+        else:
+            rgb = np.clip(base * light * KEY_COLOUR + rim * np.array([1.0, 0.84, 0.55]), 0.0, 1.0)
+
         placed.append((np.array([VIEW @ p for p in world]), rgb))
 
     allpts = np.concatenate([v for v, _ in placed])
@@ -144,7 +149,7 @@ def moved(faces, turn=None, shift=(0.0, 0.0, 0.0)):
 
 
 def shade(colour, k):
-    return tuple(int(max(0, min(255, c * k))) for c in colour)
+    return tuple(int(max(0, min(255, c * k))) for c in colour[:3]) + tuple(colour[3:])
 
 
 def log_x(length, radius, y, z, seed, x=0.0):
@@ -776,6 +781,445 @@ def flower_pot():
 FURNITURE_VIEW = rot_y(math.radians(-25.0))
 
 
+# ---------------------------------------------------------------- stations, fires, lights and the rest
+COAL = (236, 112, 40, 1)        # a fourth value marks a glowing face (not lit by the rig)
+EMBER = (196, 64, 30, 1)
+FLAME = (255, 196, 80, 1)
+FLAME_CORE = (255, 236, 160, 1)
+BLACK_IRON = (46, 44, 46)
+GOLD = (212, 170, 76)
+GEM = (190, 30, 40, 1)
+SOIL = (104, 76, 54)
+SOIL_DARK = (78, 56, 40)
+CORD = (200, 180, 140)
+WATER = (84, 130, 156)
+CLOTH = (112, 98, 78)
+LEATHER = (124, 82, 50)
+
+
+def coals(x, y, z, w, d):
+    rng = np.random.default_rng(int(abs(x * 100 + z * 10 + w * 7)))
+    faces = box((x, y, z), (w, 0.06, d), EMBER)
+
+    for _ in range(7):
+        faces += box((x + rng.uniform(-w / 3, w / 3), y + 0.05, z + rng.uniform(-d / 3, d / 3)), (w / 4, 0.08, d / 4), COAL)
+
+    return faces
+
+
+def flame(x, y, z, size):
+    faces = box((x, y + size * 0.35, z), (size * 0.7, size * 0.7, size * 0.7), FLAME)
+    faces += box((x, y + size * 0.85, z), (size * 0.38, size * 0.5, size * 0.38), FLAME)
+    faces += box((x, y + size * 0.3, z + size * 0.2), (size * 0.36, size * 0.4, size * 0.36), FLAME_CORE)
+    return faces
+
+
+def stones_ring(r, n, y=0.08, size=0.2, seed=0):
+    rng = np.random.default_rng(seed)
+    faces = []
+
+    for i in range(n):
+        a = i * 2 * math.pi / n
+        faces += moved(box((0.0, 0.0, 0.0), (size * 1.3, size, size), shade(STONE, rng.uniform(0.85, 1.1))), rot_y(-a), shift=(r * math.cos(a), y, r * math.sin(a)))
+
+    return faces
+
+
+def stone_forge():
+    """Basic forge: a rough stone and clay hearth under a log lean-to, coals glowing."""
+    rng = np.random.default_rng(170)
+    faces = box((0.0, 0.35, 0.0), (1.2, 0.7, 0.9), CLAY)
+
+    for i in range(10):
+        faces += box((rng.uniform(-0.6, 0.6), rng.uniform(0.1, 0.65), 0.46), (0.24, 0.18, 0.06), shade(STONE, rng.uniform(0.8, 1.1)))
+
+    faces += coals(0.0, 0.72, 0.0, 0.8, 0.55)
+
+    for sx in (-1, 1):
+        faces += box((sx * 0.8, 0.8, -0.55), (0.1, 1.6, 0.1), BARK)
+
+    roof = rot_x(math.radians(28.0))         # the log lean-to over it
+
+    for i in range(6):
+        faces += moved(moved(prism(0.07, 1.9, 6, BARK, LOG_END, seed=171 + i), shift=(0.0, 0.0, -0.4 + i * 0.16)), roof, shift=(0.0, 1.6, -0.4))
+
+    return faces
+
+
+def stepped_forge():
+    """Medium forge: a dressed stone block, a stepped hood over the fire and iron straps."""
+    faces = box((0.0, 0.4, 0.0), (1.3, 0.8, 1.0), shade(STONE, 1.05))
+    faces += box((0.0, 0.62, 0.48), (0.7, 0.3, 0.08), (40, 32, 28))
+    faces += coals(0.0, 0.62, 0.52, 0.6, 0.04)
+    faces += coals(0.0, 0.82, 0.0, 0.9, 0.6)
+
+    for i, (w, h) in enumerate(((1.2, 0.3), (0.9, 0.3), (0.6, 0.3), (0.35, 0.5))):
+        faces += box((0.0, 1.05 + i * 0.3 + h / 2 - 0.15, -0.15), (w, h, 0.6 - 0.08 * i), shade(STONE, 0.95 - 0.04 * i))
+
+    for x in (-0.45, 0.45):
+        faces += box((x, 0.4, 0.0), (0.07, 0.82, 1.02), IRON)
+
+    return faces
+
+
+def large_forge():
+    """Large forge: a brick firebox with a glowing arch, a riveted iron frame and a chimney."""
+    faces = box((0.0, 0.6, 0.0), (1.6, 1.2, 1.1), BRICK)
+    faces += box((0.0, 0.5, 0.54), (0.8, 0.6, 0.06), (40, 30, 26))
+    faces += box((0.0, 0.83, 0.54), (0.56, 0.12, 0.06), (40, 30, 26))
+    faces += coals(0.0, 0.32, 0.56, 0.7, 0.04)
+    faces += box((0.0, 0.5, 0.575), (0.5, 0.3, 0.02), FLAME)
+    faces += box((0.0, 1.6, -0.2), (0.6, 0.8, 0.5), BRICK_DARK)
+
+    for x in (-0.8, 0.8):
+        faces += box((x, 0.6, 0.0), (0.1, 1.24, 1.14), BLACK_IRON)
+
+    for y in (0.08, 1.18):
+        faces += box((0.0, y, 0.0), (1.64, 0.1, 1.14), BLACK_IRON)
+
+    for x in np.linspace(-0.7, 0.7, 6):
+        faces += box((x, 1.18, 0.575), (0.05, 0.05, 0.02), STEEL)
+
+    return faces
+
+
+def master_forge():
+    """Master forge: black iron with gold trim and red gems, always glowing."""
+    faces = box((0.0, 0.55, 0.0), (1.5, 1.1, 1.0), BLACK_IRON)
+    faces += box((0.0, 0.55, 0.51), (0.8, 0.55, 0.04), (255, 140, 50, 1))
+    faces += box((0.0, 0.55, 0.53), (0.5, 0.3, 0.02), FLAME_CORE)
+
+    for y in (0.06, 1.08):
+        faces += box((0.0, y, 0.0), (1.56, 0.08, 1.06), GOLD)
+
+    for x in (-0.77, 0.77):
+        faces += box((x, 0.57, 0.0), (0.06, 1.1, 1.06), GOLD)
+
+    for x in (-0.55, 0.55):
+        faces += box((x, 0.85, 0.52), (0.14, 0.14, 0.06), GEM)
+
+    faces += box((0.0, 1.35, -0.1), (1.0, 0.5, 0.7), BLACK_IRON)
+    faces += box((0.0, 1.62, -0.1), (1.06, 0.06, 0.76), GOLD)
+    faces += box((0.0, 1.38, 0.26), (0.18, 0.18, 0.04), GEM)
+    return faces
+
+
+def oven():
+    """A brick oven: a stepped dome, an iron door and a short flue."""
+    faces = box((0.0, 0.3, 0.0), (1.4, 0.6, 1.3), BRICK_DARK)
+
+    for i, (w, h) in enumerate(((1.3, 0.3), (1.1, 0.25), (0.8, 0.2), (0.45, 0.15))):
+        faces += box((0.0, 0.6 + sum(hh for _, hh in ((1.3, 0.3), (1.1, 0.25), (0.8, 0.2), (0.45, 0.15))[:i]) + h / 2, 0.0), (w, h, w * 0.95), shade(BRICK, 1.0 - 0.04 * i))
+
+    faces += box((0.0, 0.78, 0.6), (0.5, 0.36, 0.06), IRON)
+    faces += box((0.18, 0.78, 0.64), (0.06, 0.06, 0.04), STEEL)
+    faces += box((0.35, 1.5, -0.3), (0.2, 0.4, 0.2), BRICK_DARK)
+    return faces
+
+
+def clay_hearth():
+    """A clay hearth ring with a fire and a spit on two forked sticks."""
+    faces = upright(0.7, 0.3, 10, CLAY, shade(CLAY, 0.8), seed=180)
+    faces += coals(0.0, 0.31, 0.0, 0.8, 0.8)
+    faces += flame(0.0, 0.32, 0.0, 0.5)
+
+    for sx in (-1, 1):
+        faces += box((sx * 0.85, 0.55, 0.0), (0.07, 1.1, 0.07), BARK)
+        faces += moved(box((0.0, 0.0, 0.0), (0.06, 0.25, 0.06), BARK), rot_z(sx * 0.5), shift=(sx * 0.9, 1.15, 0.0))
+
+    faces += box((0.0, 1.08, 0.0), (1.9, 0.05, 0.05), PLANK)
+    faces += moved(prism(0.13, 0.5, 8, (150, 70, 50), (190, 110, 80), seed=181), shift=(0.0, 0.98, 0.0))
+    return faces
+
+
+def fireplace():
+    """A brick hearth with a chimney stack and a fire in the opening."""
+    faces = box((0.0, 0.55, 0.0), (1.4, 1.1, 0.7), BRICK)
+    faces += box((0.0, 0.45, 0.34), (0.8, 0.7, 0.06), (36, 28, 24))
+    faces += coals(0.0, 0.16, 0.38, 0.6, 0.06)
+    faces += flame(0.0, 0.18, 0.38, 0.4)
+    faces += box((0.0, 1.14, 0.08), (1.6, 0.1, 0.86), STONE)
+    faces += box((0.0, 1.75, -0.05), (0.7, 1.2, 0.55), BRICK_DARK)
+    return faces
+
+
+def campfire_pot():
+    """A pot on a tripod over a small fire in a ring of stones."""
+    faces = stones_ring(0.62, 9, seed=185)
+    faces += coals(0.0, 0.05, 0.0, 0.7, 0.7)
+    faces += flame(0.0, 0.08, 0.0, 0.42)
+
+    for a in (90.0, 210.0, 330.0):
+        r = math.radians(a)
+        foot = np.array([0.8 * math.cos(r), 0.0, 0.8 * math.sin(r)])
+        top = np.array([0.0, 1.6, 0.0])
+        mid = (foot + top) / 2.0
+        d = top - foot
+        length = float(np.linalg.norm(d))
+        yaw = math.atan2(-d[2], d[0])
+        pitch = math.asin(d[1] / length)
+        faces += moved(prism(0.04, length, 6, BARK, LOG_END, seed=186), rot_y(yaw) @ rot_z(pitch), shift=tuple(mid))
+
+    faces += box((0.0, 1.2, 0.0), (0.02, 0.6, 0.02), IRON)
+    faces += upright(0.32, 0.4, 8, IRON, (60, 58, 58), y=0.62, taper=0.85, seed=187)
+    return faces
+
+
+def chandelier():
+    """A hanging hoop of candles on three chains."""
+    faces = []
+    n, r = 12, 0.8
+
+    for i in range(n):
+        a, b = i * 2 * math.pi / n, (i + 1) * 2 * math.pi / n
+        mid = ((math.cos(a) + math.cos(b)) * r / 2, 0.0, (math.sin(a) + math.sin(b)) * r / 2)
+        faces += moved(box((0.0, 0.0, 0.0), (2 * r * math.sin(math.pi / n) + 0.02, 0.08, 0.08), BLACK_IRON), rot_y(-(a + b) / 2 + math.pi / 2), shift=mid)
+
+    for i in range(6):
+        a = i * 2 * math.pi / 6
+        x, z = r * math.cos(a), r * math.sin(a)
+        faces += box((x, 0.18, z), (0.1, 0.28, 0.1), LINEN)
+        faces += box((x, 0.38, z), (0.07, 0.12, 0.07), FLAME)
+
+    for i in range(3):
+        a = i * 2 * math.pi / 3 + 0.5
+        top = np.array([0.0, 1.5, 0.0])
+        foot = np.array([r * math.cos(a), 0.0, r * math.sin(a)])
+        for t in np.linspace(0.08, 0.92, 7):
+            faces += box(tuple(foot + (top - foot) * t), (0.04, 0.09, 0.04), IRON)
+
+    faces += box((0.0, 1.55, 0.0), (0.14, 0.1, 0.14), BLACK_IRON)
+    return faces
+
+
+def torch(length=1.3):
+    faces = moved(prism(0.05, length, 6, PLANK_DARK, LOG_END, seed=190), rot_z(math.pi / 2), shift=(0.0, length / 2, 0.0))
+    faces += upright(0.09, 0.22, 6, CLOTH, (60, 50, 40), y=length - 0.2, seed=191)
+    faces += flame(0.0, length, 0.0, 0.32)
+    return faces
+
+
+def standing_torch():
+    faces = torch(1.6)
+    faces += box((0.0, 0.03, 0.0), (0.5, 0.06, 0.5), SOIL)
+    return faces
+
+
+def torch_sconce():
+    """A torch wedged on a wall: a board on the wall, the torch leaning out of a crack in it."""
+    faces = box((0.0, 0.6, -0.1), (0.9, 1.4, 0.12), PLANK)
+    faces += moved(torch(1.0), rot_x(math.radians(28.0)), shift=(0.0, 0.2, 0.0))
+    return faces
+
+
+def wall_torch():
+    """A torch in an iron bracket on a stone plate."""
+    faces = box((0.0, 0.6, -0.12), (0.6, 1.2, 0.1), STONE)
+    faces += box((0.0, 0.55, 0.0), (0.12, 0.08, 0.26), BLACK_IRON)
+    faces += box((0.0, 0.62, 0.12), (0.2, 0.06, 0.2), BLACK_IRON)
+    faces += moved(torch(0.9), rot_x(math.radians(18.0)), shift=(0.0, 0.25, 0.1))
+    return faces
+
+
+def camp_bench():
+    """A camp bench: split logs on two stumps."""
+    faces = []
+
+    for sx in (-1, 1):
+        faces += upright(0.24, 0.7, 8, BARK, LOG_END, x=sx * 0.7, seed=195 + sx)
+
+    for z in (-0.18, 0.18):
+        faces += box((0.0, 0.76, z), (2.0, 0.12, 0.34), shade(LOG_END, 0.92))
+        faces += moved(prism(0.17, 2.0, 8, BARK, LOG_END, seed=197), shift=(0.0, 0.68, z))
+
+    return faces
+
+
+def log_workbench():
+    """A log workbench with its own tool rack and a vice on the end."""
+    faces = camp_bench()
+    faces += box((-0.5, 1.4, -0.4), (0.08, 1.2, 0.08), BARK)
+    faces += box((0.5, 1.4, -0.4), (0.08, 1.2, 0.08), BARK)
+    faces += box((0.0, 1.8, -0.4), (1.1, 0.08, 0.08), BARK)
+    faces += box((-0.25, 1.5, -0.36), (0.22, 0.14, 0.04), STEEL)
+    faces += box((0.25, 1.45, -0.36), (0.08, 0.5, 0.04), PLANK)
+    faces += vice_faces(shift=(0.95, 0.82, 0.0), scale=0.6)
+    return faces
+
+
+def woodworking_table():
+    """A plank table with a board on it, a plane and a bench stop."""
+    faces = table()
+    faces += box((0.1, 1.0, 0.0), (1.2, 0.06, 0.4), shade(PLANK, 1.12))
+    faces += box((-0.2, 1.1, 0.0), (0.4, 0.12, 0.14), PLANK_DARK)
+    faces += box((-0.2, 1.18, 0.0), (0.06, 0.1, 0.06), PLANK_DARK)
+    faces += box((-0.8, 1.02, -0.3), (0.06, 0.1, 0.06), IRON)
+    return faces
+
+
+def vice_faces(shift=(0.0, 0.0, 0.0), scale=1.0):
+    k = scale
+    faces = box((0.0, 0.0, -0.16 * k), (0.5 * k, 0.6 * k, 0.16 * k), PLANK_DARK)
+    faces += box((0.0, 0.0, 0.16 * k), (0.5 * k, 0.6 * k, 0.16 * k), PLANK)
+    faces += moved(prism(0.05 * k, 0.9 * k, 6, PLANK_DARK, LOG_END, seed=199), rot_y(math.pi / 2), shift=(0.0, -0.1 * k, 0.1 * k))
+    faces += box((0.0, -0.1 * k, 0.58 * k), (0.5 * k, 0.05 * k, 0.05 * k), PLANK_DARK)
+    return moved(faces, shift=shift)
+
+
+def vice():
+    faces = vice_faces(shift=(0.0, 0.9, 0.0))
+    faces += box((0.0, 0.42, 0.0), (0.4, 0.84, 0.5), BARK)
+    return faces
+
+
+def saw_mill():
+    """A water-driven sawmill: a wheel in its race, the frame and a log on the carriage under the blade."""
+    faces = []
+    n, r = 12, 0.75
+    hub = np.array([-1.0, 0.85, 0.0])
+
+    for i in range(n):              # the wheel, in the y-z plane: rim, spokes and paddles
+        a = i * 2 * math.pi / n
+        b = a + 2 * math.pi / n
+        radial = np.array([0.0, math.cos(a), math.sin(a)])
+        mid = np.array([0.0, (math.cos(a) + math.cos(b)) / 2, (math.sin(a) + math.sin(b)) / 2]) * r
+        faces += moved(box((0.0, 0.0, 0.0), (0.12, 0.07, 2 * r * math.sin(math.pi / n) + 0.04), PLANK_DARK), rot_x(-(a + b) / 2), shift=tuple(hub + mid))
+        faces += moved(box((0.0, 0.0, 0.0), (0.05, r, 0.05), PLANK_DARK), rot_x(-a), shift=tuple(hub + radial * r / 2))
+        faces += moved(box((0.0, 0.0, 0.0), (0.3, 0.24, 0.04), PLANK), rot_x(-a), shift=tuple(hub + radial * (r + 0.1)))
+
+    faces += moved(prism(0.08, 0.6, 6, PLANK_DARK, LOG_END, seed=200), shift=(-0.8, 0.85, 0.0))
+    faces += box((-1.0, 0.06, 0.0), (0.5, 0.12, 1.8), WATER)
+    faces += box((0.4, 0.5, 0.0), (1.8, 0.1, 0.8), PLANK_DARK)
+    faces += legs(1.8, 0.8, 0.5, 0.12, PLANK_DARK)
+    faces += moved(prism(0.2, 1.6, 8, BARK, LOG_END, ring=LOG_RING, seed=201), shift=(0.4, 0.75, 0.0))
+
+    for sx in (-1, 1):
+        faces += box((0.4 + sx * 0.0, 1.2, sx * 0.4), (0.12, 1.4, 0.12), PLANK)
+
+    faces += box((0.4, 1.85, 0.0), (0.16, 0.12, 0.92), PLANK)
+    faces += box((0.4, 1.3, 0.0), (0.04, 0.9, 0.3), STEEL)
+    return faces
+
+
+def timber_prop():
+    faces = upright(0.18, 1.6, 8, BARK, LOG_END, seed=205)
+    faces += box((0.0, 1.66, 0.0), (0.8, 0.14, 0.4), PLANK)
+    faces += box((0.0, -0.02, 0.0), (0.5, 0.06, 0.5), SOIL)
+    return faces
+
+
+def timber_set():
+    faces = []
+
+    for sx in (-1, 1):
+        faces += moved(upright(0.14, 1.6, 8, BARK, LOG_END, seed=206 + sx), rot_z(sx * -0.08), shift=(sx * 0.6, 0.0, 0.0))
+
+    faces += moved(prism(0.16, 1.7, 8, BARK, LOG_END, ring=LOG_RING, seed=208), shift=(0.0, 1.72, 0.0))
+    return faces
+
+
+def lean_to():
+    """A ridge pole on two forks, sticks and boughs leaned from it to the ground."""
+    faces = []
+
+    for sx in (-1, 1):
+        faces += box((sx * 0.9, 0.6, -0.5), (0.08, 1.2, 0.08), BARK)
+        faces += moved(box((0.0, 0.0, 0.0), (0.06, 0.25, 0.06), BARK), rot_z(sx * 0.5), shift=(sx * 0.95, 1.25, -0.5))
+
+    faces += moved(prism(0.06, 2.1, 6, BARK, LOG_END, seed=210), shift=(0.0, 1.18, -0.5))
+    slope = rot_x(math.radians(50.0))         # from the ridge (z -0.5, 1.18 m up) down to the ground at z 0.5
+
+    for i in range(11):
+        x = -0.95 + i * 0.19
+        faces += moved(moved(prism(0.05, 1.6, 6, BARK, LOG_END, seed=211 + i), rot_y(math.pi / 2)), slope, shift=(x, 0.59, 0.0))
+
+    for i in range(6):
+        x = -0.8 + i * 0.32
+        faces += moved(box((0.0, 0.07, 0.0), (0.3, 0.05, 1.3), shade(LEAF, 0.8 + 0.06 * (i % 3))), slope, shift=(x, 0.6, 0.02))
+
+    return faces
+
+
+def snare_trap():
+    """A snare: a bent sapling held by a trigger peg, a cord loop over the ground."""
+    faces = box((0.0, 0.02, 0.0), (1.4, 0.04, 1.0), SOIL)
+    bend = 0.0
+
+    for i in range(8):
+        t = i / 7.0
+        x = -0.6 + t * 1.0
+        y = 0.04 + 1.3 * math.sin(t * math.pi * 0.5) * (1.0 - 0.35 * t)
+        nxt = (-0.6 + (t + 1 / 7) * 1.0, 0.04 + 1.3 * math.sin((t + 1 / 7) * math.pi * 0.5) * (1.0 - 0.35 * (t + 1 / 7)))
+        ang = math.atan2(nxt[1] - y, nxt[0] - x)
+        bend = ang
+        faces += moved(box((0.0, 0.0, 0.0), (0.18, 0.05, 0.05), BARK), rot_z(ang), shift=(x, y, -0.3))
+
+    faces += box((0.4, 0.15, -0.3), (0.05, 0.3, 0.05), PLANK)
+    faces += box((0.4, 0.55, -0.3), (0.01, 0.8, 0.01), CORD)
+
+    for i in range(12):
+        a = i * 2 * math.pi / 12
+        faces += box((0.4 + 0.25 * math.cos(a), 0.08, 0.15 + 0.25 * math.sin(a)), (0.08, 0.025, 0.025), CORD)
+
+    return faces
+
+
+def tilled_bed():
+    faces = box((0.0, 0.03, 0.0), (1.4, 0.06, 1.4), SOIL_DARK)
+
+    for i in range(5):
+        faces += moved(prism(0.1, 1.3, 5, SOIL, SOIL_DARK, seed=215 + i), shift=(0.0, 0.08, -0.56 + i * 0.28))
+
+    return faces
+
+
+def path_patch():
+    rng = np.random.default_rng(220)
+    faces = box((0.0, 0.03, 0.0), (1.4, 0.06, 1.4), (150, 124, 92))
+
+    for i in range(14):
+        faces += box((rng.uniform(-0.6, 0.6), 0.07, rng.uniform(-0.6, 0.6)), (rng.uniform(0.06, 0.14), 0.04, rng.uniform(0.06, 0.12)), shade(STONE, rng.uniform(0.8, 1.1)))
+
+    for sx in (-1, 1):
+        faces += box((sx * 0.72, 0.06, 0.0), (0.12, 0.08, 1.4), shade(LEAF, 0.85))
+
+    return faces
+
+
+def carcass():
+    """A fresh deer carcass lying on its side: the body, a pale belly, the neck and head with an ear, four legs out."""
+    hide, belly, dark = (156, 106, 66), (214, 190, 156), (60, 44, 36)
+    faces = moved(prism(0.34, 1.3, 9, hide, shade(hide, 0.9), seed=225), shift=(0.0, 0.34, 0.0))
+    faces += box((0.0, 0.2, 0.22), (1.0, 0.16, 0.12), belly)
+    neck = rot_z(math.radians(28.0))
+    faces += moved(prism(0.14, 0.6, 7, hide, hide, seed=226), neck, shift=(0.82, 0.5, 0.0))
+    faces += box((1.12, 0.66, 0.0), (0.42, 0.2, 0.2), hide)
+    faces += box((1.36, 0.62, 0.0), (0.1, 0.12, 0.14), dark)
+    faces += moved(box((0.0, 0.0, 0.0), (0.06, 0.2, 0.1), hide), rot_z(-0.4), shift=(1.0, 0.82, 0.0))
+
+    for x in (-0.48, -0.32, 0.36, 0.52):
+        faces += box((x, 0.12, 0.62), (0.08, 0.08, 0.7), hide)
+        faces += box((x, 0.12, 0.98), (0.09, 0.09, 0.08), dark)
+
+    faces += box((-0.7, 0.42, 0.0), (0.1, 0.12, 0.12), belly)
+    return faces
+
+
+def remains():
+    """A fallen traveller's things: a cloak on the ground, the pack and a staff."""
+    faces = box((0.0, 0.06, 0.0), (1.4, 0.12, 0.9), CLOTH)
+    faces += box((0.2, 0.18, 0.1), (0.8, 0.14, 0.5), shade(CLOTH, 0.85))
+    faces += box((-0.25, 0.4, -0.05), (0.55, 0.6, 0.35), LEATHER)
+    faces += box((-0.25, 0.75, -0.05), (0.57, 0.12, 0.37), shade(LEATHER, 1.1))
+    faces += moved(prism(0.12, 0.6, 8, (140, 46, 40), (170, 70, 60), seed=230), shift=(-0.25, 0.86, -0.05))
+    faces += box((-0.25, 0.4, 0.14), (0.08, 0.5, 0.02), shade(LEATHER, 0.7))
+    faces += moved(prism(0.035, 1.8, 6, PLANK_DARK, LOG_END, seed=231), rot_y(math.radians(25.0)), shift=(0.1, 0.05, 0.5))
+    return faces
+
+
+STATION_VIEW = rot_y(math.radians(-25.0))
+
+
 # ---------------------------------------------------------------- the table: item id -> (faces, model turn)
 def _pieces():
     return {
@@ -817,6 +1261,31 @@ def _pieces():
         "wool_rug": (lambda: rug({0: WOOL_RED, 1: WOOL_CREAM, 2: (60, 82, 120)}, [0, 1, 0, 2, 0, 1, 0], fringe=WOOL_CREAM), rot_y(math.radians(-10.0)) @ rot_x(math.radians(20.0))),
         "antler_mount": (antler_mount, rot_y(math.radians(28.0))),
         "flower_pot": (flower_pot, FURNITURE_VIEW),
+        "stone_forge": (stone_forge, STATION_VIEW),
+        "blacksmithy": (stepped_forge, STATION_VIEW),
+        "large_forge": (large_forge, STATION_VIEW),
+        "master_forge": (master_forge, STATION_VIEW),
+        "oven": (oven, STATION_VIEW),
+        "clay_hearth": (clay_hearth, STATION_VIEW),
+        "fireplace": (fireplace, STATION_VIEW),
+        "campfire_pot": (campfire_pot, STATION_VIEW),
+        "chandelier": (chandelier, rot_x(math.radians(-6.0))),
+        "standing_torch": (standing_torch, STATION_VIEW),
+        "torch_sconce": (torch_sconce, rot_y(math.radians(20.0))),
+        "wall_torch": (wall_torch, rot_y(math.radians(20.0))),
+        "workbench": (camp_bench, STATION_VIEW),
+        "log_workbench": (log_workbench, STATION_VIEW),
+        "woodworking_table": (woodworking_table, STATION_VIEW),
+        "vice": (vice, rot_y(math.radians(-40.0))),
+        "saw_mill": (saw_mill, rot_y(math.radians(-50.0))),
+        "timber_prop": (timber_prop, STATION_VIEW),
+        "timber_set": (timber_set, STATION_VIEW),
+        "lean_to": (lean_to, rot_y(math.radians(-30.0))),
+        "snare_trap": (snare_trap, STATION_VIEW),
+        "tilled_bed": (tilled_bed, SLAB_VIEW),
+        "path_patch": (path_patch, SLAB_VIEW),
+        "carcass": (carcass, rot_y(math.radians(-20.0))),
+        "remains": (remains, rot_y(math.radians(-20.0))),
         "driftwood": (driftwood, rot_y(math.radians(-120.0)) @ rot_z(math.radians(16.0))),
     }
 
