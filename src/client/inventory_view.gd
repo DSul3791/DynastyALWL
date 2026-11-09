@@ -3727,6 +3727,7 @@ func _dress_natural(node: MeshInstance3D, id: String, rng: RandomNumberGenerator
 # sit at the top; the rest are greyed out below, each group alphabetical. About 3/4 of the screen,
 # with text sized for a 55 inch 4K TV at 1080p: sizes scale with the window height (1080 = 1.0).
 const BODY_PX := 30
+const FONT_FLOOR_PX := 16                # no text under 16 px on the 1920 x 1080 canvas (_px)
 const TITLE_PX := 40
 
 var _search: LineEdit
@@ -3787,7 +3788,12 @@ func text_px(size: int) -> int:
 
 
 func _px(size: int) -> int:
-	return int(round(float(size) * text_scale * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
+	var canvas: float = maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)
+	var scaled: int = int(round(float(size) * text_scale * canvas))
+
+	# A size of 16 or more is a font (or a box sized to one): it never goes under the 16 px floor of the 1920 x 1080 canvas, at any
+	# text step (Dave's readability rule; the texttest audit reads it). Gaps and borders, under 16, scale freely.
+	return maxi(scaled, int(round(FONT_FLOOR_PX * canvas))) if size >= FONT_FLOOR_PX else scaled
 
 
 # A plain tooltip (a button's or a tick's) looks like the art kit's card: the raised plate, Garamond 18 in cream (audit, job 82:
@@ -4840,7 +4846,10 @@ func run_text_test(client) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stick"), 0, 3, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 
+	var step: int = 0
+
 	for direction in [-1, -1, -1, 1, 1, 1, 1, -1, -1, -1, 1]:
+		step += 1
 		text_step.call(direction)
 
 		# Right after the press (before any frame passes): the list must hold only the new, shown buttons.
@@ -4859,6 +4868,7 @@ func run_text_test(client) -> void:
 		sizes[snappedf(_panel.size.x, 1.0) * 10000 + snappedf(_panel.size.y, 1.0)] = text_scale
 		var need: Vector2 = _panel.get_combined_minimum_size()
 		fits = fits and need.x <= _panel.size.x + 1.0 and need.y <= _panel.size.y + 1.0 and _frame.columns_fit()
+		print("Text step %d: scale %.2f, window %dx%d needs %dx%d; columns: %s" % [step, text_scale, _panel.size.x, _panel.size.y, need.x, need.y, _frame.fit_report()])
 
 		for button in _buttons:
 			valid = valid and is_instance_valid(button)
