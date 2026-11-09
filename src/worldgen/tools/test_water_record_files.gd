@@ -73,6 +73,37 @@ func at(values: PackedFloat32Array, i: int, j: int, n: int = S) -> float:
 	return values[j * n + i]
 
 
+# The frame one sample at a time (water_record.gd frame before 9 Nov 2026), to check the row slices against.
+func frame_by_sample(rec, tile: Vector2i, margin: int, name: String) -> Array:
+	var n: int = S + 2 * margin
+	var step: int = S - 1
+	var own: PackedFloat32Array = rec.raster(tile.x, tile.y, name)
+	var out: PackedFloat32Array = PackedFloat32Array()
+	out.resize(n * n)
+	var gaps: int = 0
+
+	for j in n:
+		var gj: int = j - margin
+		var dtz: int = -1 if gj < 0 else (1 if gj > step else 0)
+
+		for i in n:
+			var gi: int = i - margin
+			var dtx: int = -1 if gi < 0 else (1 if gi > step else 0)
+			var vals: PackedFloat32Array = rec.raster(tile.x + dtx, tile.y + dtz, name) if margin > 0 else own
+			var li: int = gi - dtx * step
+			var lj: int = gj - dtz * step
+
+			if vals.is_empty():
+				vals = own
+				li = clampi(gi, 0, step)
+				lj = clampi(gj, 0, step)
+				gaps += 1
+
+			out[j * n + i] = vals[clampi(lj, 0, step) * S + clampi(li, 0, step)]
+
+	return [out, gaps]
+
+
 func _init() -> void:
 	# 1. Refusals: an incomplete record (unless asked), an unknown version.
 	write_record(1, false)
@@ -108,6 +139,23 @@ func _init() -> void:
 	var n: int = S + 2
 	check(fr.size() == n * n and is_equal_approx(at(fr, 4, 2, n), 31.0), "the frame's margin comes from the neighbour (%.1f)" % at(fr, 4, 2, n))
 	check(is_equal_approx(at(fr, 0, 2, n), 1.0) and rec.frame_gaps > 0, "beyond a missing neighbour the edge repeats, and the gaps are counted (%d)" % rec.frame_gaps)
+
+	# 3b. The frame is copied as row slices (docs/water/generation_cost_audit.md, "The bake"): the same samples and gap count as the
+	#     sample-at-a-time rule, for margins under, at and past a tile's width, from each tile.
+	for margin in [0, 1, 2, 3, 5]:
+		for tx in 2:
+			var got: Array = rec.frame_and_gaps(Vector2i(tx, 0), margin, "ground")
+			var want: Array = frame_by_sample(rec, Vector2i(tx, 0), margin, "ground")
+			check(got[0] == want[0] and got[1] == want[1], "the frame of tile %d with margin %d is the sample rule's (%d gaps, want %d)" % [tx, margin, got[1], want[1]])
+
+	# 3c. Prepared for threads: the rasters are decoded once and read with nothing written; a raster that cannot be read keeps its reason.
+	var prepared = WaterRecordScript.new()
+	prepared.open(DIR)
+	prepared.prepare([Vector2i(0, 0)], ["ground", "water_class"])
+	check(prepared.is_prepared() and prepared.raster(0, 0, "ground") == g0 and prepared.raster(1, 0, "ground") == g1, "a prepared record holds the tile's and its neighbour's rasters")
+	check(prepared.field_problem(0, 0, "ground") == "" and prepared.field_problem(1, 0, "water_class").contains("bytes"), "a prepared record keeps why a raster is missing (%s)" % prepared.field_problem(1, 0, "water_class"))
+	check(prepared.raster(0, 0, "basin").is_empty() and prepared.error_of == "" and prepared.field_problem(0, 0, "basin") != "", "a raster not prepared is empty and nothing is written")
+	check(prepared.frame_and_gaps(Vector2i(0, 0), 1, "ground")[0] == fr, "a prepared record gives the same frame")
 
 	# 4. The network: one reach across the seam, found from both tiles; downstream to the sea; lakes by their _x/_z points.
 	var left: Array = rec.reaches_in(Rect2(0.0, 0.0, 16.0, 16.0))

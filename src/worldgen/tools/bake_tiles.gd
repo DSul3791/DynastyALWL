@@ -10,7 +10,9 @@ extends SceneTree
 #   --out=DIR         folder for the files (default <world>/tiles)
 #   --no-cache        do the whole setup instead of reusing <world>/setup_cache (same tile bytes either way)
 #   --threads=N       bake N tiles at the same time (default 1; each tile is baked whole on one thread, so the
-#                     files are byte-identical to a one-thread bake)
+#                     files are byte-identical to a one-thread bake). Tiles go in batches of N: before each batch the
+#                     water record rasters its tiles read are decoded once (tile_baker.gd prepare_record), and the
+#                     threads then read them with no lock. Dave (9 Nov 2026): nine threads for every bake on his PC.
 #
 # Needs plan/world_sketch.json and plan/tile_plan.json.
 
@@ -64,14 +66,15 @@ func _run(world_dir: String, out_dir: String, tiles: Array, lock_path: String, t
 	var baker = TileBakerScript.new()
 	baker.use_cache = use_cache
 	var started: int = Time.get_ticks_msec()
-	var problem: String = baker.setup(world_dir)
+	var problem: String = baker.setup(world_dir, 0.0, tiles)
 
 	if problem != "":
 		push_error(problem)
 		return 1
 
-	print("Setup (world elevation, wet air, river network, tables) in %d ms; %d river cells in %d chains" % [
-		Time.get_ticks_msec() - started, baker.river_network.river_cells, baker.river_network.chains.size()
+	print("Setup (world elevation, wet air, river network, tables, record) in %d ms; %d river cells in %d chains%s" % [
+		Time.get_ticks_msec() - started, baker.river_network.river_cells, baker.river_network.chains.size(),
+		"" if baker.rule_rivers else " (no rule river network: every tile is baked from the water record)"
 	])
 
 	if threads > 1 and tiles.size() > 1:
@@ -94,35 +97,44 @@ func _run(world_dir: String, out_dir: String, tiles: Array, lock_path: String, t
 	return 0
 
 
-# Tiles do not depend on each other, so up to `threads` of them bake at once. Results are
-# printed in tile order whatever order they finish in.
+# Tiles do not depend on each other, so up to `threads` of them bake at once, a batch of `threads` tiles at a time: the batch's water
+# record rasters are decoded once before its threads start (prepare_record), so the memory held is one batch's. Results are printed in
+# tile order whatever order they finish in.
 func _run_threads(baker, out_dir: String, tiles: Array, lock_path: String, threads: int) -> int:
 	var results: Array = []
 	results.resize(tiles.size())
-	var next: Array = [0]
 	var mutex: Mutex = Mutex.new()
 	var started: int = Time.get_ticks_msec()
-	var workers: Array = []
 
-	for worker in range(mini(threads, tiles.size())):
-		var thread: Thread = Thread.new()
-		thread.start(_worker.bind(baker, out_dir, tiles, results, next, mutex))
-		workers.append(thread)
+	for first in range(0, tiles.size(), threads):
+		var last: int = mini(first + threads, tiles.size())
+		var clock: int = Time.get_ticks_msec()
+		baker.prepare_record(tiles.slice(first, last))
 
-	while true:
-		OS.delay_msec(2000)
-		_touch(lock_path)
-		var alive: bool = false
+		if baker.record != null:
+			print("Water record rasters for tiles %d to %d of %d decoded in %d ms" % [first + 1, last, tiles.size(), Time.get_ticks_msec() - clock])
+		var next: Array = [first]
+		var workers: Array = []
+
+		for worker in range(last - first):
+			var thread: Thread = Thread.new()
+			thread.start(_worker.bind(baker, out_dir, tiles, results, next, last, mutex))
+			workers.append(thread)
+
+		while true:
+			OS.delay_msec(2000)
+			_touch(lock_path)
+			var alive: bool = false
+
+			for thread in workers:
+				if thread.is_alive():
+					alive = true
+
+			if not alive:
+				break
 
 		for thread in workers:
-			if thread.is_alive():
-				alive = true
-
-		if not alive:
-			break
-
-	for thread in workers:
-		thread.wait_to_finish()
+			thread.wait_to_finish()
 
 	var code: int = 0
 
@@ -140,14 +152,14 @@ func _run_threads(baker, out_dir: String, tiles: Array, lock_path: String, threa
 	return code
 
 
-func _worker(baker, out_dir: String, tiles: Array, results: Array, next: Array, mutex: Mutex) -> void:
+func _worker(baker, out_dir: String, tiles: Array, results: Array, next: Array, last: int, mutex: Mutex) -> void:
 	while true:
 		mutex.lock()
 		var index: int = next[0]
 		next[0] = index + 1
 		mutex.unlock()
 
-		if index >= tiles.size():
+		if index >= last:
 			return
 
 		results[index] = baker.bake_to_file(tiles[index], out_dir)
