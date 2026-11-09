@@ -21,6 +21,7 @@ uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
 uniform float crown_v = 0.7;         // image row (0 top, 1 bottom) where the leaves start; below it is trunk, not tinted
 uniform float light_scale = 0.66;     // matches the quad's brightness to the far model's
 uniform float backlight = 0.3;
+uniform float snow = 0.0;            // snow on the crown's upper half (flora_view.gd set_snow, art_weather_light.md 8.2.2)
 varying vec3 tint;
 
 void vertex() {
@@ -36,7 +37,11 @@ void fragment() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	float low = crown * smoothstep(crown_v - 0.45, crown_v, UV.y);   // the crown's lower part sits in its own shade
 	ALBEDO = t.rgb * mix(vec3(1.0), tint, crown) * light_scale * (1.0 - 0.25 * low);
-	BACKLIGHT = ALBEDO * backlight * crown;
+	float upper = crown * (1.0 - smoothstep(crown_v * 0.35, crown_v * 0.8, UV.y));
+	float patch_ = fract(sin(dot(floor(UV * vec2(18.0, 26.0)), vec2(39.346, 11.135))) * 43758.5453);
+	float snowed = snow * upper * smoothstep(0.45, 0.75, patch_ + 0.45 * snow);
+	ALBEDO = mix(ALBEDO, vec3(0.86, 0.88, 0.92) * light_scale, snowed * 0.85);
+	BACKLIGHT = ALBEDO * backlight * crown * (1.0 - snowed);
 	ROUGHNESS = 1.0;
 }
 """

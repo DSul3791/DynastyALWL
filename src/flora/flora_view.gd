@@ -45,6 +45,11 @@ shader_type spatial;
 render_mode cull_disabled, diffuse_burley, specular_disabled;
 uniform sampler2D leaves : source_color, filter_linear_mipmap, repeat_disable;
 uniform float sway = 0.012;
+// Sway by wind (FloraView.set_wind): until its first call the old two sines.
+uniform bool wind_on = false;
+uniform float wind_k = 1.0;        // sway scale from the wind speed, k(u) = smoothstep(1.5, 3, u) * (u / 12)^2
+uniform float wind_flutter = 1.0;  // leaf flutter scale, 0.1 + 0.9 * smoothstep(2, 8, u)
+uniform vec2 wind_to = vec2(0.0);  // where the wind blows toward (x, z), unit length
 uniform float flutter = 0.06;
 // Leaves are not opaque: about 40% of the sunlight comes through, so a crown
 // glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
@@ -53,6 +58,8 @@ uniform float backlight = 0.4;      // 0.3 to 0.4 (Kathleen 3 Nov, Art_Direction
 // custom alpha (how strongly this tree glows; young ones weakly). Black for
 // every other species. Faint by day, plain at night.
 uniform vec3 glow : source_color = vec3(0.0);
+// Snow lying on the crown (art_weather_light.md 8.2.2), 0 none .. 1 full: the ground's snow memory (weather_look.gd, set_snow).
+uniform float snow = 0.0;
 varying vec3 tint;
 varying float glow_amount;
 varying vec3 view_normal;
@@ -60,12 +67,20 @@ varying float crown_up;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
-	VERTEX.x += gust * bend;
-	VERTEX.z += gust * bend * 0.6;
+	if (wind_on) {
+		// Sway by wind (docs/design/trees_weather_design.md part A): one 0.26 Hz sway under a slow gust swell, about a crown bent downwind by half the sway.
+		float swell = 0.6 + 0.4 * sin(TIME * 0.38 + wp.x * 0.013 + wp.z * 0.017);
+		float swing = swell * sin(TIME * 1.63 + wp.x * 0.05 + wp.z * 0.04);
+		vec2 push = wind_to * (0.5 + swing) + vec2(-wind_to.y, wind_to.x) * 0.25 * swing;
+		VERTEX.xz += push * bend * wind_k;
+	} else {
+		float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+		VERTEX.x += gust * bend;
+		VERTEX.z += gust * bend * 0.6;
+	}
 	crown_up = normalize(MODEL_NORMAL_MATRIX * NORMAL).y;
-	VERTEX += vec3(sin(TIME * 3.7 + wp.x * 1.7 + VERTEX.y), 0.0, cos(TIME * 3.1 + wp.z * 1.3 + VERTEX.y)) * flutter * COLOR.a;
+	VERTEX += vec3(sin(TIME * 3.7 + wp.x * 1.7 + VERTEX.y), 0.0, cos(TIME * 3.1 + wp.z * 1.3 + VERTEX.y)) * flutter * wind_flutter * COLOR.a;
 	tint = INSTANCE_CUSTOM.rgb;
 	glow_amount = INSTANCE_CUSTOM.a;
 	view_normal = normalize((MODELVIEW_NORMAL_MATRIX * NORMAL));
@@ -84,7 +99,11 @@ void fragment() {
 	vec2 cell = floor(UV * 7.0);
 	float speck = 0.88 + 0.24 * fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
 	ALBEDO = t.rgb * COLOR.rgb * tint * under * speck;
-	BACKLIGHT = ALBEDO * backlight;
+	// Snow only on the upward-facing clusters, in patches that join up as more falls; the undersides stay dark.
+	float patch_ = fract(sin(dot(floor(UV * 4.0) + cell * 0.13, vec2(39.346, 11.135))) * 43758.5453);
+	float snowed = snow * smoothstep(0.15, 0.75, crown_up) * smoothstep(0.45, 0.75, patch_ + 0.45 * snow);
+	ALBEDO = mix(ALBEDO, vec3(0.86, 0.88, 0.92), snowed * 0.9);
+	BACKLIGHT = ALBEDO * backlight * (1.0 - snowed);
 	ROUGHNESS = 1.0;
 	EMISSION = glow * glow_amount * (0.6 + 0.4 * t.r);
 }
@@ -95,21 +114,37 @@ shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform sampler2D bark : source_color, filter_linear_mipmap, repeat_enable;
 uniform float sway = 0.004;
+// Sway by wind (FloraView.set_wind): until its first call the old two sines.
+uniform bool wind_on = false;
+uniform float wind_k = 1.0;        // sway scale from the wind speed, k(u) = smoothstep(1.5, 3, u) * (u / 12)^2
+uniform float wind_flutter = 1.0;  // leaf flutter scale, 0.1 + 0.9 * smoothstep(2, 8, u)
+uniform vec2 wind_to = vec2(0.0);  // where the wind blows toward (x, z), unit length
 uniform vec3 tint = vec3(1.0);              // a felled trunk or stump (inventory_view) sets the species bark tint here; standing trees take it from the vertex colour
 uniform vec2 uv_scale = vec2(1.0);
 uniform vec3 lift = vec3(1.0);                   // a felled trunk, log or stump is lit by the sky only from above and read half as bright as a standing trunk in the real game: it sets a lift here
 uniform float foot_offset = 0.0;            // metres from the model origin up to the trunk foot (a felled trunk's mesh is centred)
+uniform float snow = 0.0;                   // snow lying on the upper side of branches (art_weather_light.md 8.2.2), set by set_snow
 varying float base_h;
 varying float north_face;
+varying float up_face;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	base_h = VERTEX.y + foot_offset;
 	north_face = -normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).z;   // north is -z
-	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	up_face = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
 	float bend = max(VERTEX.y, 0.0) * sway;
-	VERTEX.x += gust * bend;
-	VERTEX.z += gust * bend * 0.6;
+	if (wind_on) {
+		// Sway by wind (docs/design/trees_weather_design.md part A): one 0.26 Hz sway under a slow gust swell, about a crown bent downwind by half the sway.
+		float swell = 0.6 + 0.4 * sin(TIME * 0.38 + wp.x * 0.013 + wp.z * 0.017);
+		float swing = swell * sin(TIME * 1.63 + wp.x * 0.05 + wp.z * 0.04);
+		vec2 push = wind_to * (0.5 + swing) + vec2(-wind_to.y, wind_to.x) * 0.25 * swing;
+		VERTEX.xz += push * bend * wind_k;
+	} else {
+		float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+		VERTEX.x += gust * bend;
+		VERTEX.z += gust * bend * 0.6;
+	}
 }
 
 void fragment() {
@@ -125,6 +160,9 @@ void fragment() {
 	// Moss on the north side of the trunk (ART_DIRECTION.md section 32), thinning up the trunk.
 	float north_moss = smoothstep(0.3, 0.9, north_face) * (1.0 - smoothstep(1.5, 5.0, base_h)) * (0.4 + 0.6 * (1.0 - t.a));
 	c = mix(c, c * vec3(0.5, 0.72, 0.3), north_moss * 0.55);
+	// Snow on the upper side of branches (and on top of a fallen log); an upright trunk faces sideways and stays dark.
+	float snowed = snow * smoothstep(0.35, 0.8, up_face) * smoothstep(0.4, 0.7, t.a + 0.3 * snow);
+	c = mix(c, vec3(0.86, 0.88, 0.92), snowed * 0.9);
 	ALBEDO = c;
 	ROUGHNESS = 1.0;
 }
@@ -136,13 +174,26 @@ const PETAL_SHADER := """
 shader_type spatial;
 render_mode diffuse_burley, specular_disabled, cull_disabled;
 uniform float sway = 0.004;
+// Sway by wind (FloraView.set_wind): until its first call the old two sines.
+uniform bool wind_on = false;
+uniform float wind_k = 1.0;        // sway scale from the wind speed, k(u) = smoothstep(1.5, 3, u) * (u / 12)^2
+uniform float wind_flutter = 1.0;  // leaf flutter scale, 0.1 + 0.9 * smoothstep(2, 8, u)
+uniform vec2 wind_to = vec2(0.0);  // where the wind blows toward (x, z), unit length
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
-	VERTEX.x += gust * bend;
-	VERTEX.z += gust * bend * 0.6;
+	if (wind_on) {
+		// Sway by wind (docs/design/trees_weather_design.md part A): one 0.26 Hz sway under a slow gust swell, about a crown bent downwind by half the sway.
+		float swell = 0.6 + 0.4 * sin(TIME * 0.38 + wp.x * 0.013 + wp.z * 0.017);
+		float swing = swell * sin(TIME * 1.63 + wp.x * 0.05 + wp.z * 0.04);
+		vec2 push = wind_to * (0.5 + swing) + vec2(-wind_to.y, wind_to.x) * 0.25 * swing;
+		VERTEX.xz += push * bend * wind_k;
+	} else {
+		float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+		VERTEX.x += gust * bend;
+		VERTEX.z += gust * bend * 0.6;
+	}
 }
 
 void fragment() {
@@ -160,14 +211,27 @@ const FRUIT_SHADER := """
 shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform float sway = 0.004;
+// Sway by wind (FloraView.set_wind): until its first call the old two sines.
+uniform bool wind_on = false;
+uniform float wind_k = 1.0;        // sway scale from the wind speed, k(u) = smoothstep(1.5, 3, u) * (u / 12)^2
+uniform float wind_flutter = 1.0;  // leaf flutter scale, 0.1 + 0.9 * smoothstep(2, 8, u)
+uniform vec2 wind_to = vec2(0.0);  // where the wind blows toward (x, z), unit length
 varying float picked;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
-	VERTEX.x += gust * bend;
-	VERTEX.z += gust * bend * 0.6;
+	if (wind_on) {
+		// Sway by wind (docs/design/trees_weather_design.md part A): one 0.26 Hz sway under a slow gust swell, about a crown bent downwind by half the sway.
+		float swell = 0.6 + 0.4 * sin(TIME * 0.38 + wp.x * 0.013 + wp.z * 0.017);
+		float swing = swell * sin(TIME * 1.63 + wp.x * 0.05 + wp.z * 0.04);
+		vec2 push = wind_to * (0.5 + swing) + vec2(-wind_to.y, wind_to.x) * 0.25 * swing;
+		VERTEX.xz += push * bend * wind_k;
+	} else {
+		float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+		VERTEX.x += gust * bend;
+		VERTEX.z += gust * bend * 0.6;
+	}
 	picked = INSTANCE_CUSTOM.a;
 }
 
@@ -188,6 +252,11 @@ const GREENS_SHADER := """
 shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform float sway = 0.006;
+// Sway by wind (FloraView.set_wind): until its first call the old two sines.
+uniform bool wind_on = false;
+uniform float wind_k = 1.0;        // sway scale from the wind speed, k(u) = smoothstep(1.5, 3, u) * (u / 12)^2
+uniform float wind_flutter = 1.0;  // leaf flutter scale, 0.1 + 0.9 * smoothstep(2, 8, u)
+uniform vec2 wind_to = vec2(0.0);  // where the wind blows toward (x, z), unit length
 uniform float gain = 0.72;   // 0.85 until 5 Nov 2026: in the PC meadow noon shot (spawn meadow, sun 1.0) the tall reeds read near white and the tufts a shade brighter than the meadow grass round them
 varying vec3 lp;
 
@@ -208,10 +277,18 @@ float vnoise(vec3 p) {
 void vertex() {
 	lp = VERTEX;
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
-	VERTEX.x += gust * bend;
-	VERTEX.z += gust * bend * 0.6;
+	if (wind_on) {
+		// Sway by wind (docs/design/trees_weather_design.md part A): one 0.26 Hz sway under a slow gust swell, about a crown bent downwind by half the sway.
+		float swell = 0.6 + 0.4 * sin(TIME * 0.38 + wp.x * 0.013 + wp.z * 0.017);
+		float swing = swell * sin(TIME * 1.63 + wp.x * 0.05 + wp.z * 0.04);
+		vec2 push = wind_to * (0.5 + swing) + vec2(-wind_to.y, wind_to.x) * 0.25 * swing;
+		VERTEX.xz += push * bend * wind_k;
+	} else {
+		float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+		VERTEX.x += gust * bend;
+		VERTEX.z += gust * bend * 0.6;
+	}
 }
 
 void fragment() {
@@ -231,13 +308,26 @@ const BERRY_SHADER := """
 shader_type spatial;
 render_mode diffuse_burley;
 uniform float sway = 0.004;
+// Sway by wind (FloraView.set_wind): until its first call the old two sines.
+uniform bool wind_on = false;
+uniform float wind_k = 1.0;        // sway scale from the wind speed, k(u) = smoothstep(1.5, 3, u) * (u / 12)^2
+uniform float wind_flutter = 1.0;  // leaf flutter scale, 0.1 + 0.9 * smoothstep(2, 8, u)
+uniform vec2 wind_to = vec2(0.0);  // where the wind blows toward (x, z), unit length
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
-	VERTEX.x += gust * bend;
-	VERTEX.z += gust * bend * 0.6;
+	if (wind_on) {
+		// Sway by wind (docs/design/trees_weather_design.md part A): one 0.26 Hz sway under a slow gust swell, about a crown bent downwind by half the sway.
+		float swell = 0.6 + 0.4 * sin(TIME * 0.38 + wp.x * 0.013 + wp.z * 0.017);
+		float swing = swell * sin(TIME * 1.63 + wp.x * 0.05 + wp.z * 0.04);
+		vec2 push = wind_to * (0.5 + swing) + vec2(-wind_to.y, wind_to.x) * 0.25 * swing;
+		VERTEX.xz += push * bend * wind_k;
+	} else {
+		float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+		VERTEX.x += gust * bend;
+		VERTEX.z += gust * bend * 0.6;
+	}
 }
 
 void fragment() {
@@ -335,13 +425,26 @@ const CHROME_SHADER := """
 shader_type spatial;
 render_mode diffuse_burley;
 uniform float sway = 0.004;
+// Sway by wind (FloraView.set_wind): until its first call the old two sines.
+uniform bool wind_on = false;
+uniform float wind_k = 1.0;        // sway scale from the wind speed, k(u) = smoothstep(1.5, 3, u) * (u / 12)^2
+uniform float wind_flutter = 1.0;  // leaf flutter scale, 0.1 + 0.9 * smoothstep(2, 8, u)
+uniform vec2 wind_to = vec2(0.0);  // where the wind blows toward (x, z), unit length
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
-	VERTEX.x += gust * bend;
-	VERTEX.z += gust * bend * 0.6;
+	if (wind_on) {
+		// Sway by wind (docs/design/trees_weather_design.md part A): one 0.26 Hz sway under a slow gust swell, about a crown bent downwind by half the sway.
+		float swell = 0.6 + 0.4 * sin(TIME * 0.38 + wp.x * 0.013 + wp.z * 0.017);
+		float swing = swell * sin(TIME * 1.63 + wp.x * 0.05 + wp.z * 0.04);
+		vec2 push = wind_to * (0.5 + swing) + vec2(-wind_to.y, wind_to.x) * 0.25 * swing;
+		VERTEX.xz += push * bend * wind_k;
+	} else {
+		float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+		VERTEX.x += gust * bend;
+		VERTEX.z += gust * bend * 0.6;
+	}
 }
 
 float hash2(vec2 p) {
@@ -569,6 +672,40 @@ func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void
 	sheet.visible = not water_hidden
 
 
+# Sway by wind (docs/design/trees_weather_design.md part A; always on since Dave's 8 Nov ruling). Until set_wind first runs, every flora shader
+# keeps the old two fixed sines.
+const WIND_K_MAX := 7.0
+
+
+# Sway scale from the world wind in m/s: drag goes with the square of the speed, still under about 2 m/s, 1 at 12 m/s.
+static func wind_k(wind_ms: float) -> float:
+	return minf(smoothstep(1.5, 3.0, wind_ms) * pow(wind_ms / 12.0, 2.0), WIND_K_MAX)
+
+
+# Leaf flutter scale: near still in a calm, full from about 8 m/s.
+static func wind_flutter(wind_ms: float) -> float:
+	return 0.1 + 0.9 * smoothstep(2.0, 8.0, wind_ms)
+
+
+# Every swaying flora material gets the same wind, so crowns never come off their trunks. heading is where the wind blows toward
+# (Weather wind_dir: (cos, sin) on x, z). Called once a second by weather_look.gd.
+func set_wind(wind_ms: float, heading: float) -> void:
+	var k: float = wind_k(wind_ms)
+	var flutter_scale: float = wind_flutter(wind_ms)
+	var to: Vector2 = Vector2(cos(heading), sin(heading))
+
+	for key in _tree_materials:
+		var material: ShaderMaterial = _tree_materials[key] as ShaderMaterial
+
+		if material == null or material.shader == null or not material.shader.code.contains("uniform bool wind_on"):
+			continue
+
+		material.set_shader_parameter("wind_on", true)
+		material.set_shader_parameter("wind_k", k)
+		material.set_shader_parameter("wind_flutter", flutter_scale)
+		material.set_shader_parameter("wind_to", to)
+
+
 # Ctrl+Shift+F7 hides every river and lake drawing (debug: does an odd patch on the water stay, then it is ground).
 var water_hidden: bool = false
 
@@ -632,6 +769,7 @@ func _capture_impostors(tile: Vector2i) -> void:
 
 		wanted[id] = {"mesh": info["far"][0]}     # the far model, so the two tiers match
 
+	_apply_snow(0.0, 0.0)     # no snow baked into the images; set back when the capture finishes
 	_impostor_node.start(wanted, tile)
 
 
@@ -639,6 +777,8 @@ func _capture_impostors(tile: Vector2i) -> void:
 func _on_impostors(meshes: Dictionary) -> void:
 	if not meshes.is_empty():
 		_impostors = meshes
+
+	_apply_snow(tree_snow, tree_snow_broad)
 
 
 func set_water_quality(quality: int) -> void:
@@ -656,6 +796,42 @@ func set_storm_murk(amount: float) -> void:
 
 	_liquid_storm = amount
 	_tell_liquid_mud()
+
+
+# Snow lying on the trees, 0 none .. 1 full (weather_look.gd passes the ground's snow memory, so trees whiten and clear
+# with the ground; art_weather_light.md 8.2.2). The leaf and bark materials and the far tree images take it. While the
+# far images are being captured it is held at 0, so no snow is baked into them (they add their own).
+var tree_snow: float = 0.0          # on the conifer crowns (and every tree with set_snow)
+var tree_snow_broad: float = 0.0    # on the broadleaf crowns and the bark (set_snow_kinds)
+
+
+func set_snow(level: float) -> void:
+	set_snow_kinds(level, level)
+
+
+# Snow that holds and sheds (docs/design/trees_weather_design.md part C): the conifer crowns take one value, the
+# broadleaf crowns and all bark the other. weather_look.gd steps both with the game clock.
+func set_snow_kinds(conifer: float, broadleaf: float) -> void:
+	tree_snow = clampf(conifer, 0.0, 1.0)
+	tree_snow_broad = clampf(broadleaf, 0.0, 1.0)
+
+	if _impostor_node == null or not _impostor_node._running:
+		_apply_snow(tree_snow, tree_snow_broad)
+
+
+func _apply_snow(conifer: float, broadleaf: float) -> void:
+	for key in _tree_materials:
+		var material: ShaderMaterial = _tree_materials[key] as ShaderMaterial
+
+		if material != null and (material.shader.code == FOLIAGE_SHADER or material.shader.code == BARK_SHADER):
+			material.set_shader_parameter("snow", conifer if key == "conifer" else broadleaf)
+
+	for id in _impostors:
+		var made: Dictionary = _impostors[id]
+
+		if made.get("material") is ShaderMaterial:
+			var hardwood: bool = bool((_species.get(id, {}) as Dictionary).get("hardwood", true))
+			(made["material"] as ShaderMaterial).set_shader_parameter("snow", broadleaf if hardwood else conifer)
 
 
 # The sky colours of the day cycle for the land water (weather_look.gd).

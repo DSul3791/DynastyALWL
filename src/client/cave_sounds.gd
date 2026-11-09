@@ -50,6 +50,20 @@ var air: Dictionary = {}                # data/sound/cave_air.json
 var forced_depth: float = -1.0          # --cave-depth=M
 var forced_wet: float = -1.0            # --cave-wet=0..1
 
+# Cave light (docs/design/cave_light_design.md): how much of the view reaches open air and the bends between, for the light
+# (weather_look.gd), and drips that fall in rows along cracks, from the same spots every visit.
+const VIEW_SEC := 0.5
+const VIEW_M := 80.0
+const VIEW_RINGS := [0.0, 0.17, 0.5]    # sin of the ray rings' elevations (level, 10 and 30 degrees up)
+const BEND_M := 60.0
+const BEND_FROM := 2                    # the farthest this many rock hits look on round the next bend
+const SKY_M := 30.0                     # a surface with no rock this far above it is under open sky
+const CRACK_CELL_M := 16.0              # two cracks per cell this size
+const CRACK_SPOT_M := 1.8               # drip spots along a crack
+var mouth_view: float = 1.0             # 0 .. 1: share of the view rays that reach open air (1 in the open)
+var bends: int = 0                      # 0 mouth in view, 1 one bend, 2 two or more
+var _view_left: float = 0.0
+
 var _stage                              # SoundStage (tier, voice room)
 var _tier: int = 2
 var _target: float = 0.0
@@ -133,6 +147,17 @@ func update(delta: float, body: CharacterBody3D, flying: bool = false) -> void:
 		else:
 			_target = _measure(body)
 
+	_view_left -= delta
+
+	if _view_left <= 0.0:
+		_view_left = VIEW_SEC
+
+		if forced >= 0.0 or flying or _target < 0.05:
+			mouth_view = 1.0 if forced < 0.5 else 0.0
+			bends = 0 if forced < 0.5 else 2
+		else:
+			_measure_view(body)
+
 	enclosure = move_toward(enclosure, maxf(_target, interior_floor), EASE_PER_SEC * delta)
 	rock_enclosure = move_toward(rock_enclosure, _target, EASE_PER_SEC * delta)
 	_step_depth(body.global_position)
@@ -168,6 +193,86 @@ func _measure(body: CharacterBody3D) -> float:
 			near += 1.0 - hit / WALL_M
 
 	return clampf(ceiling * (0.35 + 0.65 * near / float(rays) * 1.6), 0.0, 1.0)
+
+
+# Cave light: rays out from the eyes in rings; a ray sees daylight when it leaves the rock within VIEW_M or ends on a surface under open
+# sky. None does: the farthest rock hits look round the next bend the same way (one bend if one sees daylight, else two or more).
+func _measure_view(body: CharacterBody3D) -> void:
+	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
+	var head: Vector3 = body.global_position + Vector3(0.0, HEAD_M, 0.0)
+	var around: int = int(_stage.preset["cave_rays"])      # 4 on Low, 8 above: 12 or 24 view rays, at most about 100 with the sky and bend looks
+	var lit: int = 0
+	var total: int = 0
+	var hits: Array = []                # [distance, point]
+
+	for ring in VIEW_RINGS:
+		var up: float = float(ring)
+		var flat: float = sqrt(1.0 - up * up)
+
+		for k in range(around):
+			var angle: float = TAU * (float(k) + 0.5 * float(up > 0.0)) / float(around)
+			var direction: Vector3 = Vector3(cos(angle) * flat, up, sin(angle) * flat)
+			var hit: float = _rock_hit(space, body, head, direction, VIEW_M)
+			total += 1
+
+			if hit < 0.0 or _under_sky(space, body, head + direction * (hit - 0.5)):
+				lit += 1
+			elif hit > 2.0:
+				hits.append([hit, head + direction * (hit - 1.0)])
+
+	mouth_view = float(lit) / float(maxi(total, 1))
+
+	if lit > 0:
+		bends = 0
+		return
+
+	hits.sort_custom(func(a, b): return float(a[0]) > float(b[0]))
+	bends = 2
+
+	for n in range(mini(BEND_FROM, hits.size())):
+		var from: Vector3 = hits[n][1]
+
+		for k in range(around):
+			var angle: float = TAU * float(k) / float(around)
+			var direction: Vector3 = Vector3(cos(angle), 0.0, sin(angle))
+			var hit: float = _rock_hit(space, body, from, direction, BEND_M)
+
+			if hit < 0.0 or _under_sky(space, body, from + direction * (hit - 0.5)):
+				bends = 1
+				return
+
+
+func _under_sky(space: PhysicsDirectSpaceState3D, body: CharacterBody3D, at: Vector3) -> bool:
+	return _rock_hit(space, body, at, Vector3.UP, SKY_M) < 0.0
+
+
+# Drip spots near `around` (3 to 12 m off on the ground plan): points every CRACK_SPOT_M along two cracks per CRACK_CELL_M cell, each
+# crack's place and heading from a hash of its cell, so the drips come in rows and the same spots drip every visit.
+static func crack_spots(around: Vector3) -> Array:
+	var spots: Array = []
+	var cx: int = int(floor(around.x / CRACK_CELL_M))
+	var cz: int = int(floor(around.z / CRACK_CELL_M))
+
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			for crack in range(2):
+				var salt: Vector3 = Vector3(float(cx + dx), float(cz + dz), float(crack))
+				var start: Vector2 = Vector2((float(cx + dx) + _hash(salt, 1.0)) * CRACK_CELL_M, (float(cz + dz) + _hash(salt, 2.0)) * CRACK_CELL_M)
+				var heading: float = _hash(salt, 3.0) * PI
+				var along: Vector2 = Vector2(cos(heading), sin(heading))
+
+				for i in range(-5, 6):
+					var spot: Vector2 = start + along * (float(i) * CRACK_SPOT_M)
+					var off: float = spot.distance_to(Vector2(around.x, around.z))
+
+					if off >= 3.0 and off <= 12.0:
+						spots.append(Vector3(spot.x, around.y, spot.y))
+
+	return spots
+
+
+static func _hash(salt: Vector3, n: float) -> float:
+	return fposmod(sin(salt.dot(Vector3(127.1, 311.7, 74.7)) + n * 17.3) * 43758.5453, 1.0)
 
 
 # Colliders that are not rock: plants and trees (species_ids) and things the player placed (a lean-to roof, building pieces, a forge; BUG-027: a lean-to
@@ -327,6 +432,15 @@ func _drip(delta: float, body: CharacterBody3D) -> void:
 
 	var angle: float = _rng.randf() * TAU
 	var distance: float = _rng.randf_range(3.0, 12.0)
+	var at: Vector3 = body.global_position + Vector3(cos(angle) * distance, _rng.randf_range(-1.0, 1.0), sin(angle) * distance)
+
+	var spots: Array = crack_spots(body.global_position)
+
+	if spots.is_empty():
+		return
+
+	at = spots[_rng.randi_range(0, spots.size() - 1)] + Vector3(0.0, 1.5, 0.0)
+
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[_rng.randi_range(0, list.size() - 1)]
 	player.bus = "Foley"           # the air buses fade with depth; the drips must stay (and Foley has the cave reverb)
@@ -336,7 +450,7 @@ func _drip(delta: float, body: CharacterBody3D) -> void:
 	player.unit_size = 5.0
 	player.max_distance = 60.0
 	add_child(player)
-	player.global_position = body.global_position + Vector3(cos(angle) * distance, _rng.randf_range(-1.0, 1.0), sin(angle) * distance)
+	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
 	drips_played += 1
