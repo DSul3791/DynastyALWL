@@ -39,14 +39,14 @@ Cuts A1 and A2 keep every number. The check for both: Dino runs glacial on ws580
 | cut | changes the result? | saving (estimate from the measured times) |
 |---|---|---|
 | A1. `rock_ids`, and the cover lookups `fn` and `parts`, on nine threads (`prange`; each cell is its own sum). Evolve (B1) uses them too and gains as well | no: the same per-cell arithmetic in a different order of cells | `rock_ids` 0.95 s to about 0.12 s on all 650 steps (about 540 s), `fn` and `parts` about 0.27 s a step (about 175 s): about 12 min |
-| A2. The numpy sums of a cold step on nine threads in one numba kernel. `Aeff ** m` and `Qwi ** m` are each computed twice today (for `kq` and for `kq_c`), and once is enough | no for the shared powers. Numba's and numpy's `pow` may differ in the last bit, which the check would show | that part's share of the 3.06 s × about 8/9. It is sized by the split profile below |
+| A2. The numpy lines of a cold step in five numba kernels on nine threads, over every cell, in numpy's order of operations (`fastmath` off). The powers stay numpy's `**`, taken only on the cells that keep them (the swath: the old `np.where` threw them away elsewhere), and `Aeff ** m`, `Qwi ** m` once each instead of twice. The step's constant arrays are made once a run | no: the same arithmetic cell by cell, and the same `**` | measured: the numpy lines were 1.15 s of a 5.4 s cold step (split profile); about 8.5 min over 512 cold steps (estimate) |
 | B. 4,000-year cold steps in the 41-kyr cycles (the audit's cut b) | yes | about 25% of what is left (156 fewer steps). It needs a probe judged by `compare_runs.py`, the stable lakes and rivers included, and runs only if A1 and A2 leave glacial over about 25 min |
 
-**Next measurement (Dino, about 2 min; `water/glacial_split_profile_job.md`):** the same cycle, with each numba kernel wrapped in a plain Python function so the profile lists it on its own (`water/glacial_split_profile.py`; the arithmetic is unchanged). It splits the 3.06 s into the in-order kernels and the numpy sums. It also shows whether one in-order kernel (most likely `_solve`) is the big one; that would get its own note.
+**The split profile (Dino, 9 Nov, main 8545d12f; `glacial_split_profile_ws580v.txt`).** Each cold step of 5.4 s: `_solve` 1.49 s, the numpy lines 1.15 s, the rock lookups 1.24 s (A1), the route 0.83 s (`_ltd_receivers` 0.47 s, `lem.route` 0.36 s), the other kernels and creep about 0.7 s. `_solve` runs in every step, cold and river, so it is about 16 min of the 61; whether it gets a cut of its own (A3, before B) waits on `water/glacial_solve_split_job.md` (how much of it is the slope ceiling). The compression (zlib) is the output saves, once a run, not once a step.
 
-**A1 can be coded now.** It is sized by measured calls, and the check needs no other cut.
+**A1 is merged (#840).** Dino's one cycle came out array-equal to main's, in 47 s against 55 s profiled.
 
-**What it could give (estimate):** glacial from 61 min to about 49 min with A1. A2 is sized after the split profile. A chain that sets `NUMBA_NUM_THREADS=9` for glacial too (Dave's nine-thread rule; today only evolve sets it) runs A1 and A2 on the nine threads.
+**What it could give (estimate):** glacial from 61 min to about 49 min with A1 (Dino's full run measures it) and about 40 min with A2. Nine tiles end to end are about 20 to 24 min plus glacial, so about an hour at 40 min: A3 or B is still needed for Dave's rule (d). Every stage of the chain now runs with `NUMBA_NUM_THREADS=9` (#840).
 
 ## What stays
 
