@@ -341,10 +341,6 @@ func reaches_in(rect: Rect2) -> Array:
 	return features_in("reaches", rect)
 
 
-func heads_in(rect: Rect2) -> Array:
-	return features_in("heads", rect)
-
-
 func falls_in(rect: Rect2) -> Array:
 	return features_in("falls", rect)
 
