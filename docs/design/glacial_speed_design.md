@@ -53,7 +53,7 @@ Cuts A1 and A2 keep every number. The check for both: Dino runs glacial on ws580
 | A2 (#845, 6d5f2a1a) | 42 s | 2,487 s, 41 min 27 s (wall 42 min 7 s) | 402 s less than A1; 1,177 s less than before (32%) |
 | A3 (#853, a722c016) | 43 s, of which about 8 s compiling (both changed files recompile on a first run); about 32.7 s a cycle warm, against A2's 38 s | 2,076 s, 34 min 36 s (wall 35 min 16 s) | 411 s less than A2; 1,588 s less than before (43%) |
 
-**Where that leaves it.** Glacial has gone from 61 min to 34 min 36 s, measured. Nine tiles end to end are about 20 to 24 min plus glacial, so about 55 to 59 min with A3 (estimate). B is still needed for Dave's rule (d). Every stage of the chain now runs with `NUMBA_NUM_THREADS=9` (#840).
+**Where that leaves it.** Glacial has gone from 61 min to 34 min 36 s, measured. Nine tiles end to end, from the measured parts, are about 68 min with A3. Glacial is the biggest part. The chain is about 56 min 30 s, and the bake, settle and rebake check about 11 min 30 s (`water/chain_stages_speed_note.md`). An earlier line here gave 55 to 59 min, which counted the chain alone. The pictures (#855, about 82 s, measured) and the route (cut R, #864, about 5 min, estimate) come off that. Cut B failed its probe (below). So Dave's rule (d) is not met yet. Every stage of the chain now runs with `NUMBA_NUM_THREADS=9` (#840).
 
 ## What stays
 
@@ -93,7 +93,7 @@ That is about 0.65 s × 650 calls, about 7 min a glacial. Evolve gains too.
 2. the full glacial on ws580v against ws580v's own outputs;
 3. one evolve run against ws580v's evolve output.
 
-**After A3 (measured 34 min 36 s):** nine tiles take about 55 to 59 min (estimate). B (4,000-year cold steps, about 8 min less at A3's 3.2 s a step; estimate) is then still needed for Dave's rule (d). B changes the result, so its probe (`water/glacial_b_probe_job.md`) runs only after A3 is measured, and is judged by `compare_runs.py` against ws580v.
+**After A3 (measured 34 min 36 s):** nine tiles take about 68 min, from the measured parts. B (4,000-year cold steps, about 8 min less at A3's 3.2 s a step; estimate) was the next cut for Dave's rule (d). B changes the result, so its probe (`water/glacial_b_probe_job.md`) runs only after A3 is measured, and is judged by `compare_runs.py` against ws580v.
 
 ## Cut R: the route, exact (glacial and evolve; designed 9 Nov, `water/route_cut_design.md`; coordinator approved)
 
@@ -118,3 +118,24 @@ That is about 0.65 s × 650 calls, about 7 min a glacial. Evolve gains too.
 - Dino's three full-run checks (one cycle, the full glacial and evolve, every file array-equal) and the route split job wait for the next chain run. Until then, the times below are estimates.
 
 **Estimate** (R1 and R2, not measured): about 0.38 s a call, so about 4 min off glacial (3 min with B) and 1.3 min off evolve.
+
+## Cut B probe: FAIL (Dino, 9 Nov; branch `sonny-glacial-b-probe` 57041bfb; `compare_glacial_b.txt`)
+
+The 41 kyr cycles ran with 4,000-year cold steps: 356 cold steps instead of 512. Glacial took **t 1,632 s against A3's 2,076 s**, so 444 s (7 min 24 s) less.
+
+It was judged by `compare_runs.py`: ws580v as the base, ws580u as the reference spread, times 1.25.
+- **Verdict: FAIL.** The "same places" test failed.
+  - Lake area lost: 179% of the limit (the probe kept 16 of the base's 96 lakes, 6% of 0.460 km2; the reference kept 14, 58%).
+  - Stable lake area lost: 472% of the limit.
+- **Near misses:** lake km2 at 110% of the limit, and rivers that end nowhere at 107%.
+- **Passes:**
+  - summit within 69 m: 1,326.3 m against 1,393.0 m base and 1,338.1 m reference, 97% of the limit;
+  - R5 reach km: 2%;
+  - ground p95: 96%;
+  - river km moved: 83%;
+  - stable river km moved: 67%.
+- **One lake causes the failure.** Stable lake 124 (at 57,507, 73,372) is a glacial rock basin of 0.2504 km2, and only 18% of it is wet in the probe. That is 0.2504 of the 0.2511 km2 of stable lake area lost, and over half of the base's 0.460 km2 of lake. Lake km2 comes out at 0.359 against 0.460 base and 0.404 reference.
+
+**What follows.** Longer cold steps change what the ice carves. With fewer, larger steps, the one big rock basin comes out mostly dry. The comparison does not say whether its floor is shallower or its sill is lower. That is the "same lakes in the same places" rule failing, not a near miss, so B as probed does not go in. The rivers held, which says the cut is close.
+
+A variant could keep 8 cold steps in the cycles that make the deepest scour, or set the step by the ice volume. That is a new design and a new probe, and it waits for Dave's test play (no new jobs from 9 Nov). The probe branch stays as it is.
