@@ -3,7 +3,7 @@ extends SceneTree
 # Ice for animals and the ice look's server asks (docs/design/animals_on_ice_server.md section 6; MikeW ANIMAL_WEATHER_LOOKS.md; Kathleen
 # frozen_water_look.md #729; Jamie #736): deer and boar never step on ice, others walk on ice that holds their mass for sure, a water flock stands at the open water's
 # edge on a frozen pond, a thaw moat is open water (for animals and for the players' _on_ice), and the live ice holes go to the client
-# (protocol 97) nearest first. With animals.json ice.on false the animals keep today's rules.
+# (protocol 97) nearest first. Always on (the animals.json ice.on switch is gone, 9 Nov 2026).
 #   godot --headless --path . --script res://src/worldgen/tools/test_animals_ice.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -38,8 +38,7 @@ func _init() -> void:
 	var wolf: Dictionary = a.species_def("wolf")
 	var ic: Dictionary = a._ice_cfg()
 
-	check(not bool(ic.get("on", true)) and not a.ice_on(), "ice for animals ships off")
-	ic["on"] = true
+	check(not ic.has("on") and a.ice_on(), "ice for animals is always on (no switch)")
 
 	# Deer and boar skirt the ice, even the shallows they would wade.
 	cover[0] = 0.14   # the starter pond's skim, 2.8 cm
