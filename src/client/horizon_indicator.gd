@@ -6,8 +6,8 @@ extends Control
 # to "no bars on the main screen", like the server link bars.
 
 const DEGREES := 45                       # the ruler runs from -DEGREES to +DEGREES
-const PX_PER_DEGREE := 4.0
-const SIDE := 40.0                        # the ruler stands this far right of the aim point
+const PX_PER_DEGREE := 3.0
+const SIDE := 28.0                        # the ruler stands this far right of the aim point
 const CHECK_SEC := 0.25
 const PIT_M := 1.5                      # ground this much above the eyes all around: in a pit
 const PIT_RING_M := 3.0
@@ -32,9 +32,9 @@ func setup(camera: Camera3D, in_water: Callable) -> void:
 	_camera = camera
 	_in_water = in_water
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	size = Vector2(160.0, float(DEGREES) * 2.0 * PX_PER_DEGREE + 40.0)
+	size = Vector2(110.0, float(DEGREES) * 2.0 * PX_PER_DEGREE + 28.0)
 	set_anchors_preset(Control.PRESET_CENTER)
-	offset_left = -size.x * 0.5 + SIDE + 40.0
+	offset_left = -size.x * 0.5 + SIDE + 28.0
 	offset_right = offset_left + size.x
 	offset_top = -size.y * 0.5
 	offset_bottom = offset_top + size.y
@@ -117,7 +117,7 @@ func _draw() -> void:
 	var font: Font = ThemeDB.fallback_font
 
 	if not _active:   # only the reminder is up
-		draw_string(font, Vector2(0.0, middle.y), KeyBindings.localize(HINT_TEXT), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, MARK)
+		draw_string(font, Vector2(0.0, middle.y), KeyBindings.localize(HINT_TEXT), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, MARK)
 		return
 	# Dave (build 619): a mark every 10 degrees and one more at the 45 end; no line down the middle.
 	for degrees in [-45, -40, -30, -20, -10, 0, 10, 20, 30, 40, 45]:

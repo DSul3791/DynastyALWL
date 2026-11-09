@@ -12,7 +12,7 @@ const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const KeyBindingsPage := preload("res://src/client/key_bindings_page.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 
-const BUTTON_W := 420.0
+const BUTTON_W := 300.0
 
 var display = DisplaySettingsScript.new()
 @warning_ignore("unused_private_class_variable")
@@ -48,7 +48,7 @@ func _ready() -> void:
 
 	panel.add_child(margin)
 	_column = VBoxContainer.new()
-	_column.add_theme_constant_override("separation", 12)
+	_column.add_theme_constant_override("separation", 8)
 	margin.add_child(_column)
 	var title: Label = Label.new()
 	title.text = "Settings"
@@ -70,7 +70,7 @@ func _ready() -> void:
 	var more: Label = Label.new()
 	more.text = "Sound, quality and the rest: Esc > Settings in the game."
 	more.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	more.add_theme_font_size_override("font_size", 22)
+	more.add_theme_font_size_override("font_size", 18)
 	more.add_theme_color_override("font_color", DynastyTheme.CREAM_DIM)
 	page.add_child(more)
 	_note = Label.new()
@@ -140,7 +140,7 @@ func _apply(what: String) -> void:
 
 func _page(page_name: String) -> VBoxContainer:
 	var page: VBoxContainer = VBoxContainer.new()
-	page.add_theme_constant_override("separation", 10)
+	page.add_theme_constant_override("separation", 7)
 	page.visible = false
 	_column.add_child(page)
 	_pages[page_name] = page
@@ -158,8 +158,8 @@ func _heading(parent: VBoxContainer, text: String) -> void:
 func _button(parent: VBoxContainer, text: String, action: Callable) -> Button:
 	var button: Button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(BUTTON_W, 52.0)
-	button.add_theme_font_size_override("font_size", 26)
+	button.custom_minimum_size = Vector2(BUTTON_W, 48.0)
+	button.add_theme_font_size_override("font_size", 20)
 	button.pressed.connect(action)
 	parent.add_child(button)
 	return button
@@ -167,10 +167,10 @@ func _button(parent: VBoxContainer, text: String, action: Callable) -> Button:
 
 func _switch_row(parent: VBoxContainer, text: String, changed: Callable):
 	var row: HBoxContainer = HBoxContainer.new()
-	row.custom_minimum_size = Vector2(BUTTON_W, 52.0)
+	row.custom_minimum_size = Vector2(BUTTON_W, 48.0)
 	var label: Label = Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 26)
+	label.add_theme_font_size_override("font_size", 20)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(label)
