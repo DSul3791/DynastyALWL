@@ -49,6 +49,7 @@ All the painters share the rig in `paint_basic_icons.py`:
 - **A set shares one layout**: every crop seed is a pile of its seed with the crop beside it.
 
 - **Glowing faces.** A colour with a fourth value of 1 is drawn unlit. Coals, embers, flames and gems use this.
+- **Too dark for the slot.** An id in a painter's `LIFT` list is brightened after the render by `lift_dark` (`paint_basic_icons.py`): a plain gain until its lit body averages 82 of 255, so the hue stays (walnut stays brown). The 9 Nov style review put 11 there: three dark log species, the vice, the tilled bed, and six dark roots and flowers. The list is in `inventory/icons_style_review.md` in the shared files.
 - **The turn.** Each `PIECES` entry is `(builder, turn)`. The turn picks the side shown: walls show their face, slabs their top, roofs both slopes, and logs their cut ends toward the light.
 
 `paint_plant_icons.py` gives each herb, flower and root its own form, in the item's `looks.json` colour so the icon matches the plant in the world:
