@@ -1,6 +1,6 @@
 extends RefCounted
 
-# The hotbar on screen (Dave 2026-10-21): keys 1 to 9 and 0 along the bottom of the screen. The held one is lit. Pressing its
+# The hotbar on screen (Dave 2026-10-21): keys 1 to 9 and 0 in one strip across the bottom of the screen. The held one is lit. Pressing its
 # key holds it (a tool is drawn in the hand), pressing it again puts it away. Since inventory step 4 a key holds an item, not a
 # pack slot (the server keeps the keys with the character): it shows the stack of that item in the pack, wherever it lies, and
 # dims when none is left. Dragging an item here from the inventory puts it on that key; dragging one key onto another swaps them.
@@ -8,6 +8,10 @@ extends RefCounted
 const SLOTS := 10
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the same slot as the pack (look doc section 3)
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
+const ArtKit := preload("res://src/client/ui/art_kit.gd")
+# One control in and out of the inventory window (redesign section 9, v4): ten 76 px wells 10 apart at x 535 to 1385, y 964 to 1040
+# on the 1920 x 1080 canvas, on the stitched leather tray with brass end plates (art kit row 11a). Opening the window does not move it.
+const SLOT_UNIT := float(ArtKit.HOT) / ItemSlot.SLOT_PX
 
 var _items                              # InventoryView
 var _held                               # HeldItem
@@ -21,9 +25,10 @@ func setup(items, layer: CanvasLayer, held) -> void:
 	_held = held
 	_row = HBoxContainer.new()
 	_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_row.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_row.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_row.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_row.position = ArtKit.HOTBAR_STRIP.position
+	_row.size = ArtKit.HOTBAR_STRIP.size
+	# The tray is drawn by the row itself, 16 px out all round, so it stays under the slots wherever the row sits in the layer.
+	_row.draw.connect(func() -> void: ArtKit.draw_hotbar_tray(_row, Rect2(ArtKit.HOTBAR_TRAY.position - ArtKit.HOTBAR_STRIP.position, ArtKit.HOTBAR_TRAY.size)))
 	layer.add_child(_row)
 	_build()
 
@@ -34,8 +39,7 @@ func _build() -> void:
 
 	_cells.clear()
 	_built_scale = _items.text_scale
-	_row.add_theme_constant_override("separation", _items.text_px(6))
-	_row.offset_bottom = -_items.text_px(14)
+	_row.add_theme_constant_override("separation", ArtKit.HOT_GAP)   # fixed canvas px at every text size: the strip never moves
 
 	_build_look()
 	refresh()
@@ -66,6 +70,7 @@ func refresh() -> void:
 func _build_look() -> void:
 	for slot in range(SLOTS):
 		var look = InventoryLook.make_slot(_items, slot)
+		look.set_unit(SLOT_UNIT)
 		look.set_key_number(slot)
 		look.mouse_filter = Control.MOUSE_FILTER_PASS
 		look.focus_mode = Control.FOCUS_NONE     # the number keys belong to the game, not to a focused slot
