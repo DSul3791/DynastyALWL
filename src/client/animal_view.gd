@@ -752,7 +752,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 
 		player.set_meta("roles", roles)
 		_model_note(kind, "clips by role %s" % str(roles))
-		_model_note(kind, "role 21 plays %s" % (str(roles["21"]) if roles.has("21") else "none (the drink falls back to role 0)"))
+		_model_note(kind, "role 21 plays %s" % (str(roles["21"]) if roles.has("21") else "none (the drink falls back to role 0); the file's clips: %s" % _clip_names(player)))
 
 	_model_note(kind, "drawn from %s: %d meshes, %.2f m long (file size %.2f, scale x%.4f)" % [str(row["scene"]), meshes.size(), longest * k, longest, k])
 	return root
@@ -924,7 +924,8 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused:
 
 	for word in _ROLE_WORDS.get(role, []):
 		for full in player.get_animation_list():
-			var bare: String = str(full).get_slice("|", str(full).count("|")).to_lower().replace(" ", "_")      # "idle to walk fwd" reads as idle_to_walk_fwd
+			var cased: String = str(full).get_slice("|", str(full).count("|")).replace(" ", "_")      # "idle to walk fwd" reads as idle_to_walk_fwd
+			var bare: String = cased.to_lower()
 
 			if bare.contains("dead") or bare.contains("death") or bare.contains("hit_") or bare.contains("interact") or bare.contains("attack") or bare.begins_with("start") or bare.ends_with("end") or bare.contains("stop"):
 				continue      # the raccoon's "dead run" is not its run, nor the second wolf's "Attack_Run"
@@ -932,10 +933,42 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused:
 			if refused.has(str(full)):
 				continue
 
-			if bare.contains(str(word)) and not bare.contains("_to_") and not bare.contains("2") and not bare.ends_with("l") and not bare.ends_with("r") and not bare.contains("wound") and not bare.contains("injur") and not bare.contains("lying"):
+			if names_word(cased, str(word)) and not bare.contains("_to_") and not bare.contains("2") and not bare.ends_with("l") and not bare.ends_with("r") and not bare.contains("wound") and not bare.contains("injur") and not bare.contains("lying"):
 				return str(full)
 
 	return ""
+
+
+# The bare clip names of a model file, for a log line (a role with no clip is then set by name in models.json).
+static func _clip_names(player: AnimationPlayer) -> String:
+	var names: PackedStringArray = PackedStringArray()
+
+	for full in player.get_animation_list():
+		names.append(str(full).get_slice("|", str(full).count("|")))
+
+	return ", ".join(names)
+
+
+# Whether `word` (lower case) starts a word of a clip name: at the start, after a non-letter, or at a lower-to-upper case step (GrazingOnSpot,
+# Idle_Eating, G0_Walk); never inside a word. Dino 9 Nov 2026: "eat" inside Idle_Breathing and Cue_Bleat gave the deer, moose, elk, pronghorn,
+# bighorn and wildebeest a head-up clip for the drink, and the buffalo Sitting_Breathing.
+static func names_word(name_text: String, word: String) -> bool:
+	var lower: String = name_text.to_lower()
+	var at: int = lower.find(word)
+
+	while at >= 0:
+		if at == 0:
+			return true
+
+		var before: String = name_text[at - 1]
+		var first: String = name_text[at]
+
+		if before.to_lower() == before.to_upper() or (before == before.to_lower() and first != first.to_lower()):   # no case: not a letter
+			return true
+
+		at = lower.find(word, at + 1)
+
+	return false
 
 
 # A skinned mesh draws right when every bind agrees with its bone's rest: rest * bind maps the mesh into the skeleton the
