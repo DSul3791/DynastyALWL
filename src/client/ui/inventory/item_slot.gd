@@ -23,13 +23,14 @@ extends Control
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const DisplaySettings := preload("res://src/client/display_settings.gd")
 const ParchmentTooltip := preload("res://src/client/ui/inventory/parchment_tooltip.gd")
+const ArtKit := preload("res://src/client/ui/art_kit.gd")
 
 const SLOT_PX := 64.0            # at unit 1
 const ICON_PX := 52.0            # the icon inside it (48 to 56)
 const CORNER_PX := 4.0
 const GLOW_PX := 6.0
 const WEAR_PX := 3.0
-const COUNT_PX := 14
+const COUNT_PX := 15            # 24 px in a 100 px pack slot
 const KEY_PX := 12
 const SEAL_PX := 10.0
 const EASE_S := 0.08
@@ -264,47 +265,23 @@ func _make_custom_tooltip(for_text: String) -> Object:
 # ---- drawing ----
 
 func _draw() -> void:
+	# The redesign's recessed well (art_kit.gd, brief rows 8 to 10): the selected or held slot has the gold rim and inner glow,
+	# the slot under the pointer the warm glow round it; the off hand a cream rim; a refused drop flashes red; a press darkens it.
 	var r: Rect2 = Rect2(Vector2.ZERO, size)
-	var corner: int = roundi(CORNER_PX * unit)
-	var lit: float = hover * HOVER_LIFT
-	var fill: Color = DynastyTheme.SLOT_BG.lerp(DynastyTheme.WOOD_LIT, lit)
+	ArtKit.draw_well(self, r, marked == MARK_GOLD, hover > 0.5)
 
-	if marked != 0:
-		fill = fill.lerp(DynastyTheme.WOOD_LIT, 0.5)
+	if hover > 0.0 and hover <= 0.5:                 # the glow easing in or out
+		draw_rect(r.grow(2.0), Color(ArtKit.HOVER_GLOW, ArtKit.HOVER_GLOW.a * hover), false, 2.0)
+
+	if marked == MARK_CREAM:
+		draw_rect(r.grow(-1.0), ArtKit.CREAM, false, 2.0)
 
 	if _pressed:
-		fill = DynastyTheme.WOOD_PRESSED
+		draw_rect(r, Color(0.0, 0.0, 0.0, 0.25))
 
 	if refused > 0.0:
-		fill = fill.lerp(DynastyTheme.BAD, refused * 0.6)
-
-	var back: StyleBoxFlat = StyleBoxFlat.new()
-	back.bg_color = fill
-	back.border_color = DynastyTheme.GOLD_DIM.lerp(DynastyTheme.GOLD_BRIGHT, hover)
-	back.set_border_width_all(maxi(1, roundi(unit)))
-	back.set_corner_radius_all(corner)
-
-	if hover > 0.0:
-		back.shadow_color = Color(DynastyTheme.GLOW, DynastyTheme.GLOW.a * hover)
-		back.shadow_size = roundi(GLOW_PX * unit)
-
-	if marked != 0:
-		back.border_color = DynastyTheme.GOLD_BRIGHT if marked == MARK_GOLD else DynastyTheme.CREAM
-		back.set_border_width_all(maxi(2, roundi(2.0 * unit)))
-
-	if refused > 0.0:
-		back.border_color = back.border_color.lerp(DynastyTheme.BAD, refused)
-
-	draw_style_box(back, r)
-	# Carved in: a dark edge along the top and left, a light one along the bottom and right, inside the gold border.
-	var inset: float = maxf(1.0, roundi(unit)) + 1.0
-	var line: float = maxf(1.0, roundi(unit))
-	var dark: Color = Color(0.0, 0.0, 0.0, 0.55)
-	var light: Color = Color(DynastyTheme.WOOD_LIT, 0.5)
-	draw_rect(Rect2(inset, inset, size.x - inset * 2.0, line), dark)
-	draw_rect(Rect2(inset, inset, line, size.y - inset * 2.0), dark)
-	draw_rect(Rect2(inset, size.y - inset - line, size.x - inset * 2.0, line), light)
-	draw_rect(Rect2(size.x - inset - line, inset, line, size.y - inset * 2.0), light)
+		draw_rect(r, Color(ArtKit.BAD, 0.45 * refused))
+		draw_rect(r.grow(-1.0), Color(ArtKit.BAD, refused), false, 2.0)
 
 
 # Above the icon: shimmer, wear bar, count, seal, key numbers.
@@ -321,8 +298,8 @@ func _draw_over() -> void:
 	if wear < 1.0:
 		var h: float = maxf(2.0, WEAR_PX * unit)
 		var pad: float = 4.0 * unit
-		_over.draw_rect(Rect2(pad, s.y - pad - h, s.x - pad * 2.0, h), Color(0.0, 0.0, 0.0, 0.6))
-		_over.draw_rect(Rect2(pad, s.y - pad - h, (s.x - pad * 2.0) * wear, h), DynastyTheme.wear_color(wear))
+		_over.draw_rect(Rect2(pad, s.y - pad - h, s.x - pad * 2.0, h), ArtKit.OUTLINE)
+		_over.draw_rect(Rect2(pad, s.y - pad - h, (s.x - pad * 2.0) * wear, h), ArtKit.wear_colour(wear))
 
 	var cinzel: Font = DynastyTheme.heading_font()
 	var garamond: Font = DynastyTheme.text_font()
@@ -333,13 +310,15 @@ func _draw_over() -> void:
 		var top: float = s.y * 0.5 - float(cpx) * 0.6
 		_over.draw_multiline_string(garamond, Vector2(pad_x, top), caption, HORIZONTAL_ALIGNMENT_CENTER, s.x - pad_x * 2.0, cpx, 2, DynastyTheme.CREAM)
 
-	if count > 1 and cinzel != null:
-		var px: int = maxi(8, roundi(COUNT_PX * unit))
+	if count > 1:
+		# The stack count, bottom right: EB Garamond SemiBold (24 px in a 100 px slot) with a dark outline; up 4 px over a wear bar.
+		var counts: Font = ArtKit.font("garamond_semibold")
+		var px: int = maxi(10, roundi(COUNT_PX * unit))
 		var text: String = str(count)
-		var w: float = cinzel.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
-		var at: Vector2 = Vector2(s.x - w - 5.0 * unit, s.y - 6.0 * unit)
-		_over.draw_string_outline(cinzel, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, maxi(2, roundi(2.0 * unit)), Color(0.0, 0.0, 0.0, 0.85))
-		_over.draw_string(cinzel, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, DynastyTheme.CREAM)
+		var w: float = counts.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+		var at: Vector2 = Vector2(s.x - w - 5.0 * unit, s.y - (9.0 if wear < 1.0 else 5.0) * unit)
+		_over.draw_string_outline(counts, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, maxi(2, roundi(2.0 * unit)), ArtKit.OUTLINE)
+		_over.draw_string(counts, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, ArtKit.CREAM)
 
 	if key_number >= 0:
 		_draw_key(Vector2(3.0, 2.0) * unit, DynastyTheme.CREAM_DIM)

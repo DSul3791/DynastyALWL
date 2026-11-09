@@ -9,10 +9,16 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 const LOOK_COLUMNS := 6     # slots across the pack column
+const InfoStrip := preload("res://src/client/ui/inventory/info_strip.gd")
+const ArtKit := preload("res://src/client/ui/art_kit.gd")
+const VitalsRules := preload("res://src/shared/vitals_rules.gd")
+# Pack slots are 100 canvas px with 10 px gaps at every text size (redesign 4.1): 6 across fill the 650 px column exactly.
+const SLOT_UNIT := float(ArtKit.SLOT) / ItemSlot.SLOT_PX
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
 var _slot_scroll: ScrollContainer   # holds the slot grid
+var info: InfoStrip                 # the item under the pointer, or the selected one (redesign 4.1)
 var _last_numbers: PackedInt32Array = PackedInt32Array()   # the pack at the last refresh, to see what just arrived
 var _last_counts: PackedInt32Array = PackedInt32Array()
 var _crafted: Dictionary = {}        # item number a queued craft gives -> msec it was last seen in the queue (its arrival flies in)
@@ -75,12 +81,13 @@ func build() -> Control:
 	_slot_scroll = ScrollContainer.new()
 	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_slot_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER   # the wheel scrolls; a bar would push the 650 px grid out
 	right.add_child(_slot_scroll)
 	view._grid = GridContainer.new()
 	view._grid.columns = LOOK_COLUMNS
 	view._grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	view._grid.add_theme_constant_override("h_separation", view._px(4))
-	view._grid.add_theme_constant_override("v_separation", view._px(4))
+	view._grid.add_theme_constant_override("h_separation", ArtKit.SLOT_GAP)
+	view._grid.add_theme_constant_override("v_separation", ArtKit.SLOT_GAP)
 	_slot_scroll.add_child(view._grid)
 
 	for i in view.inventory.SLOTS:
@@ -88,6 +95,8 @@ func build() -> Control:
 		view._grid.add_child(slot)
 		view._buttons.append(slot)
 
+	info = InfoStrip.new()
+	right.add_child(info)
 	var row: HFlowContainer = HFlowContainer.new()   # wraps onto a second line when the text is large
 	row.add_theme_constant_override("h_separation", view._px(12))
 	row.add_theme_constant_override("v_separation", view._px(6))
@@ -98,7 +107,12 @@ func build() -> Control:
 		var action: Button = Button.new()
 		action.text = spec[0]
 		action.tooltip_text = spec[1]
-		view._style(action, view.BODY_PX)
+		view._style(action, view.BODY_PX - 10)
+		# Key hints, not boxed buttons (redesign 4.1): plain text on the panel, gold under the pointer; still clickable.
+		action.flat = true
+		action.add_theme_color_override("font_color", ArtKit.CREAM)
+		action.add_theme_color_override("font_hover_color", ArtKit.HEADING)
+		action.add_theme_color_override("font_pressed_color", ArtKit.HEADING)
 		action.pressed.connect(spec[2])
 		row.add_child(action)
 
@@ -122,12 +136,55 @@ func refresh() -> void:
 
 	_last_numbers = view.inventory.numbers.duplicate()
 	_last_counts = view.inventory.counts.duplicate()
+	show_info()
+
+
+# The info strip: the slot under the pointer, else the selected slot, else a dim hint.
+func show_info() -> void:
+	if info == null or not is_instance_valid(info):
+		return
+
+	var slot: int = view._hover if view._hover >= 0 else view._selected
+
+	if slot < 0 or slot >= view.inventory.SLOTS or view.inventory.numbers[slot] == 0:
+		info.clear()
+		return
+
+	var number: int = view.inventory.numbers[slot]
+	var item_id: String = view.table.id_of(number)
+	var entry: Dictionary = view.table.entry(item_id)
+	var item_facts: Array = []
+	var count: int = view.inventory.counts[slot]
+
+	if count > 1:
+		item_facts.append(["Count", str(count)])
+
+	if not view._carry_cfg.is_empty():
+		var each_kg: float = CarryRules.weight_of(item_id, view._carry_cfg)
+		item_facts.append(["Weight", ("%.0f g" % (each_kg * 1000.0)) if each_kg < 0.1 else ("%.2f kg" % each_kg)])
+
+	if view.container_cap(slot) > 0:
+		item_facts.append(["Holds", view._litres(int(entry.get("capacity_ml", 0)))])
+		item_facts.append(["Filled", view._litres(view.inventory.wear[slot])])
+	elif int(entry.get("durability", 0)) > 0:
+		item_facts.append(["Condition", "%d %%" % int(round(100.0 * clampf(1.0 - float(view.inventory.wear[slot]) / float(entry["durability"]), 0.0, 1.0)))])
+
+	var kcal: int = VitalsRules.food_value(item_id, view._vitals_cfg)
+
+	if kcal > 0:
+		item_facts.append(["Food", "%d kcal" % kcal])
+
+	if view.table.shelf_units(number) > 0:
+		item_facts.append(["Fresh", "%d %%" % int(view.table.freshness(number, view.inventory.wear[slot]) * 100.0)])
+
+	info.show_item(InventoryLook.icon_for(item_id), view._item_label(number), str(entry.get("description", "")), item_facts)
 
 
 # One pack slot (item_slot.gd), keeping slot `index` wherever the sort puts it. Click selects and moves, shift-click moves the stack into the open
 # chest or station, double-click uses, right-click opens the slot menu. Dragging works as before, onto another slot or the hotbar strip.
 func _make_slot(index: int) -> Control:
 	var slot = InventoryLook.make_slot(view, index)
+	slot.set_unit(SLOT_UNIT)
 	slot.clicked.connect(func(button: int, shift: bool) -> void: _on_look_click(index, button, shift))
 	slot.double_clicked.connect(func() -> void:
 		view._selected = -1        # the first click of the two selected it; using it ends the selection
@@ -135,12 +192,14 @@ func _make_slot(index: int) -> Control:
 		view._refresh())
 	slot.mouse_entered.connect(func() -> void:
 		view._hover = index
+		show_info()
 
 		if view.chest_mode:
 			view._chest_hover = [false, index]
 			view._chest_last = [false, index])
 	slot.mouse_exited.connect(func() -> void:
 		view._hover = -1 if view._hover == index else view._hover
+		show_info()
 
 		if view._chest_hover == [false, index]:
 			view._chest_hover = [])
