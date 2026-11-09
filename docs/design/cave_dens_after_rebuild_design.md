@@ -90,3 +90,5 @@ So on the starter island, goblin dens come from the record's spring caves alone.
 | 2,5 | 0 | — |
 
 So the floor can reach 2,3, 3,3, 4,3 and 3,5. Tiles 4,4, 2,4 and 2,5 have no head that the cave rules allow, so they get no cave and no goblin den. The coordinator accepted that under the restated bar on 9 Nov 2026.
+
+**Later (no code now):** each head's cave roll could be drawn from a hash of the head instead of the rng that the cave builder also uses. Today a change to how a cave is built moves every roll after it on the tile. The [1, 1] branches took 3,4 from 21 caves to 15 at the same share. With a per-head hash, which springs are caves would stay put through cave-rule changes. That needs its own rebake.
