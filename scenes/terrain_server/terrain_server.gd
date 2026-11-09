@@ -887,11 +887,10 @@ func _start_water() -> void:
 		return
 
 	# The rivers and lakes start FULL, from the baked settled water of each tile (water/tile_X_Z.water), so a player never waits for the springs: changed 30 Oct 2026 after the
-	# play-test (a dry start needed 6 simulated hours before the rivers ran and left broken patches meanwhile; Owner's old choice of 2026-10-18). --dry-water brings the dry start back
-	# (the springs fill the land, the real water paths show), --settled-water is still accepted. The hub runs the starter tile and the neighbours its rivers cross into.
-	var dry_start: bool = OS.get_cmdline_user_args().has("--dry-water") and not OS.get_cmdline_user_args().has("--settled-water")
+	# play-test (a dry start needed 6 simulated hours before the rivers ran and left broken patches meanwhile; Owner's old choice of 2026-10-18). The --dry-water and
+	# --settled-water switches are gone (9 Nov 2026, no flags). The hub runs the starter tile and the neighbours its rivers cross into.
 	water_live = WaterHubScript.new() if OS.get_cmdline_user_args().has("--water-old") else WaterHub2Script.new()
-	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, dry_start)
+	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, false)
 
 	if water_live.has_method("set_store"):
 		water_live.set_store(store)   # Sullivan dig windows read the server's ground (src/sullivan_water/live/dig_windows.gd)
