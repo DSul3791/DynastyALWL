@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paint the icons the bake has no model for: building sections, logs by species and driftwood (inventory redesign step 5; Kathleen, 9 Nov 2026).
+"""Paint the icons the bake has no model for: building sections, logs by species, furniture, beds and storage (inventory redesign step 5; Kathleen, 9 Nov 2026).
 
 The same rig as tools/paint_basic_icons.py (look doc section 6.7): low-poly flat-shaded facets, a warm key light from the top left,
 a soft fill and a gold rim, three-quarter view, no background, 128 x 128 with the object filling about 80 %, drawn at 4x.
@@ -530,6 +530,252 @@ def driftwood():
 LOG_VIEW = rot_y(math.radians(-120.0))
 
 
+# ---------------------------------------------------------------- furniture, beds and storage
+LINEN = (232, 224, 204)
+BLANKET = (150, 62, 48)
+WOOL_RED = (168, 64, 50)
+WOOL_CREAM = (226, 210, 176)
+HIDE = (150, 112, 74)
+FUR = (122, 92, 64)
+IRON = (74, 72, 72)
+STEEL = (150, 150, 156)
+LEAF = (88, 132, 64)
+PETAL = (214, 92, 84)
+POT = (178, 96, 60)
+ANTLER = (222, 204, 170)
+
+
+def upright(radius, height, sides, colour, top, x=0.0, y=0.0, z=0.0, taper=1.0, seed=0):
+    """A vertical prism standing on (x, y, z): its foot at y, its top at y + height."""
+    return moved(prism(radius, height, sides, colour, top, taper=taper, seed=seed), rot_z(math.pi / 2), shift=(x, y + height / 2, z))
+
+
+def legs(w, d, h, size, colour, inset=0.06):
+    faces = []
+
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            faces += box((sx * (w / 2 - inset), h / 2, sz * (d / 2 - inset)), (size, h, size), colour)
+
+    return faces
+
+
+def stool():
+    faces = upright(0.42, 0.1, 8, PLANK, shade(PLANK, 1.08), y=0.62, seed=120)
+
+    for a in (90.0, 210.0, 330.0):
+        r = math.radians(a)
+        faces += moved(box((0.0, 0.0, 0.0), (0.08, 0.7, 0.08), PLANK_DARK), rot_x(math.radians(8.0) * math.sin(r)) @ rot_z(math.radians(8.0) * math.cos(r)), shift=(0.28 * math.cos(r), 0.33, 0.28 * math.sin(r)))
+
+    return faces
+
+
+def chair():
+    faces = box((0.0, 0.62, 0.0), (0.8, 0.08, 0.76), PLANK)
+    faces += legs(0.8, 0.76, 0.6, 0.08, PLANK_DARK)
+
+    for sx in (-1, 1):
+        faces += box((sx * 0.34, 1.05, -0.34), (0.08, 0.9, 0.08), PLANK_DARK)
+
+    for y in (0.95, 1.22, 1.44):
+        faces += box((0.0, y, -0.34), (0.68, 0.1, 0.05), PLANK)
+
+    return faces
+
+
+def bench():
+    faces = box((0.0, 0.66, 0.0), (2.0, 0.1, 0.5), PLANK)
+
+    for sx in (-1, 1):
+        faces += box((sx * 0.75, 0.32, 0.0), (0.1, 0.62, 0.42), PLANK_DARK)
+        faces += box((sx * 0.75, 0.06, 0.0), (0.16, 0.1, 0.5), PLANK_DARK)
+
+    faces += box((0.0, 0.28, 0.0), (1.5, 0.08, 0.06), PLANK_DARK)
+    return faces
+
+
+def table():
+    faces = box((0.0, 0.92, 0.0), (1.8, 0.1, 1.0), PLANK)
+
+    for i in range(5):
+        faces += box((0.0, 0.975, -0.4 + i * 0.2), (1.8, 0.012, 0.012), PLANK_DARK)
+
+    faces += legs(1.8, 1.0, 0.88, 0.1, PLANK_DARK, inset=0.12)
+    faces += box((0.0, 0.8, 0.0), (1.4, 0.1, 0.06), PLANK_DARK)
+    return faces
+
+
+def log_seat():
+    faces = moved(prism(0.3, 1.8, 9, BARK, LOG_END, ring=LOG_RING, seed=121), shift=(0.0, 0.3, 0.0))
+    faces += box((0.0, 0.57, 0.0), (1.7, 0.06, 0.36), shade(LOG_END, 0.95))     # the adzed seat
+    return faces
+
+
+def bed(frame, mattress, blanket, posts=0.0, canopy=None, logs=False, low=False):
+    """A frame (or logs), a mattress, a pillow and a blanket over the foot; posts and a canopy for the canopy bed."""
+    faces = []
+    w, l, h = 1.2, 2.0, (0.12 if low else 0.36)
+
+    if logs:
+        for sx in (-1, 1):
+            faces += moved(prism(0.13, l + 0.15, 8, BARK, LOG_END, ring=LOG_RING, seed=125 + sx), rot_y(math.pi / 2), shift=(sx * (w / 2 - 0.08), 0.13, 0.0))
+    elif not low:
+        faces += box((0.0, 0.22, 0.0), (w, 0.16, l), frame)
+        faces += legs(w, l, 0.18, 0.1, shade(frame, 0.85))
+        faces += box((0.0, 0.5, -l / 2 + 0.05), (w, 0.7, 0.1), frame)        # headboard
+
+    top = h + 0.14
+    faces += box((0.0, h + 0.07, 0.03), (w - 0.1, 0.16, l - 0.12), mattress)
+    faces += box((0.0, top + 0.06, -l / 2 + 0.3), (w - 0.3, 0.12, 0.34), LINEN)
+    faces += box((0.0, top + 0.02, 0.38), (w - 0.04, 0.06, l * 0.6), blanket)
+
+    if posts:
+        for sx in (-1, 1):
+            for sz in (-1, 1):
+                faces += box((sx * (w / 2 - 0.04), posts / 2, sz * (l / 2 - 0.04)), (0.08, posts, 0.08), frame)
+
+    if canopy is not None:
+        faces += box((0.0, posts, 0.0), (w + 0.04, 0.06, l + 0.04), canopy)
+        faces += box((0.0, posts - 0.2, l / 2 - 0.03), (w, 0.36, 0.03), canopy)
+
+    return faces
+
+
+def straw_bed():
+    """A mattress of straw on the ground: a low heaped bed, loose tufts round its edge and a hide over half of it."""
+    rng = np.random.default_rng(130)
+    faces = box((0.0, 0.1, 0.0), (1.1, 0.2, 1.9), STRAW)
+    faces += box((0.0, 0.24, -0.1), (0.9, 0.1, 1.6), shade(STRAW, 1.06))
+
+    for i in range(22):
+        a = i * 2 * math.pi / 22
+        x, z = 0.6 * math.cos(a), 1.0 * math.sin(a)
+        faces += moved(box((0.0, 0.0, 0.0), (0.32, 0.07, 0.07), STRAW_DARK if i % 2 else STRAW), rot_y(-a + rng.uniform(-0.4, 0.4)), shift=(x, 0.05 + rng.uniform(0.0, 0.06), z))
+
+    faces += box((0.0, 0.31, 0.45), (1.0, 0.05, 0.85), shade(HIDE, 1.05))
+    faces += box((0.0, 0.33, -0.65), (0.6, 0.1, 0.3), LINEN)
+    return faces
+
+
+def woven_chest():
+    faces = []
+    n = 9
+
+    for i in range(n):
+        x = -0.6 + (i + 0.5) * 1.2 / n
+        faces += box((x, 0.32, 0.0), (1.2 / n - 0.01, 0.62, 0.82), STRAW if i % 2 else STRAW_DARK)
+
+    for y in (0.14, 0.34, 0.54):
+        faces += box((0.0, y, 0.0), (1.24, 0.05, 0.86), WATTLE)
+
+    faces += box((0.0, 0.68, 0.0), (1.28, 0.1, 0.9), STRAW_DARK)
+    faces += box((0.0, 0.75, 0.0), (0.3, 0.05, 0.12), WATTLE)
+    return faces
+
+
+def plank_chest():
+    faces = box((0.0, 0.32, 0.0), (1.2, 0.62, 0.8), PLANK)
+
+    for y in (0.16, 0.32, 0.48):
+        faces += box((0.0, y, 0.0), (1.21, 0.012, 0.81), PLANK_DARK)
+
+    faces += box((0.0, 0.7, 0.0), (1.26, 0.14, 0.86), shade(PLANK, 1.06))
+
+    for x in (-0.42, 0.42):
+        faces += box((x, 0.42, 0.0), (0.08, 0.86, 0.9), IRON)
+
+    faces += box((0.0, 0.58, 0.44), (0.14, 0.18, 0.04), IRON)
+    return faces
+
+
+def tool_rack():
+    faces = []
+
+    for sx in (-1, 1):
+        faces += box((sx * 0.8, 0.7, 0.0), (0.1, 1.4, 0.1), PLANK_DARK)
+        faces += box((sx * 0.8, 0.04, 0.0), (0.12, 0.08, 0.5), PLANK_DARK)
+
+    faces += box((0.0, 1.3, 0.0), (1.7, 0.1, 0.1), PLANK)
+    faces += box((0.0, 0.5, 0.0), (1.7, 0.08, 0.08), PLANK)
+
+    for i, x in enumerate((-0.5, 0.0, 0.5)):
+        faces += box((x, 0.82, 0.08), (0.06, 0.95, 0.06), PLANK)      # handle
+        head = [(0.34, 0.2), (0.16, 0.36), (0.42, 0.14)][i]       # an axe, a spade, a hoe
+        faces += box((x + (head[0] / 2 - 0.03 if i != 1 else 0.0), 0.36, 0.08), (head[0], head[1], 0.06), STEEL)
+
+    return faces
+
+
+def rug(colours, stripes, fringe=None, hide=False, seed=0):
+    if hide:
+        rng = np.random.default_rng(seed)
+        faces = []
+        outline = [(math.cos(a) * (1.0 + 0.18 * math.cos(4 * a)) * 1.1, math.sin(a) * (1.0 + 0.18 * math.cos(4 * a)) * 0.75) for a in np.linspace(0, 2 * math.pi, 16, endpoint=False)]
+
+        for i, (x, z) in enumerate(outline):
+            nx, nz = outline[(i + 1) % len(outline)]
+            c = shade(HIDE, rng.uniform(0.9, 1.06))
+            faces.append(([np.array([0.0, 0.05, 0.0]), np.array([nx, 0.05, nz]), np.array([x, 0.05, z])], c))
+            faces.append(([np.array([x, 0.0, z]), np.array([nx, 0.0, nz]), np.array([nx, 0.05, nz]), np.array([x, 0.05, z])], shade(FUR, 0.9)))
+
+        return [(_outward(pts, np.array([0.0, -1.0, 0.0])), c) for pts, c in faces]
+
+    faces = []
+    n = len(stripes)
+
+    for i, k in enumerate(stripes):
+        faces += box((0.0, 0.03, -0.75 + (i + 0.5) * 1.5 / n), (2.2, 0.05, 1.5 / n), colours[k])
+
+    if fringe:
+        for x in np.linspace(-1.05, 1.05, 14):
+            for side in (-1, 1):
+                faces += box((x, 0.02, side * 0.8), (0.04, 0.02, 0.12), fringe)
+
+    return faces
+
+
+def antler_mount():
+    """A pair of antlers on a round wooden plaque, hung flat on the wall (seen from the front)."""
+    faces = moved(prism(0.5, 0.12, 10, PLANK_DARK, PLANK, seed=140), rot_y(math.pi / 2))
+
+    for sx in (-1, 1):
+        root = np.array([sx * 0.12, 0.12, 0.12])
+        beam = rot_z(math.radians(90.0 - sx * 38.0))        # up and out
+        tip = root + beam @ np.array([1.0, 0.0, 0.0])
+        faces += moved(prism(0.06, 1.0, 6, ANTLER, ANTLER, taper=0.45, seed=141), beam, shift=tuple(root + beam @ np.array([0.5, 0.0, 0.0])))
+
+        for t in (0.35, 0.7):
+            start = root + beam @ np.array([t, 0.0, 0.0])
+            tine = rot_z(math.radians(90.0 - sx * 14.0))
+            faces += moved(prism(0.04, 0.38, 6, ANTLER, ANTLER, taper=0.4, seed=142), tine, shift=tuple(start + tine @ np.array([0.19, 0.0, 0.0])))
+
+        faces += box(tuple(tip), (0.07, 0.07, 0.07), ANTLER)
+
+    return faces
+
+
+def flower_pot():
+    faces = upright(0.3, 0.5, 8, POT, shade(POT, 0.7), taper=1.3, seed=150)
+    faces += upright(0.4, 0.08, 8, shade(POT, 1.08), (70, 50, 36), y=0.46, seed=151)
+    rng = np.random.default_rng(152)
+
+    for i in range(7):
+        a = i * 2 * math.pi / 7
+        lean = 18.0 + 14.0 * (i % 2)
+        stem = rot_y(a) @ rot_z(math.radians(90.0 - lean))
+        base = np.array([0.0, 0.54, 0.0])
+        length = 0.75 + 0.15 * (i % 3)
+        faces += moved(prism(0.03, length, 5, LEAF, LEAF, seed=153 + i), stem, shift=tuple(base + stem @ np.array([length / 2, 0.0, 0.0])))
+        faces += box(tuple(base + stem @ np.array([length, 0.0, 0.0])), (0.2, 0.16, 0.2), PETAL if i % 2 == 0 else (236, 200, 90))
+        leaf_at = base + stem @ np.array([length * 0.4, 0.0, 0.0])
+        faces += moved(box((0.1, 0.0, 0.0), (0.22, 0.03, 0.1), shade(LEAF, rng.uniform(0.9, 1.15))), rot_y(a), shift=tuple(leaf_at))
+
+    return faces
+
+
+FURNITURE_VIEW = rot_y(math.radians(-25.0))
+
+
 # ---------------------------------------------------------------- the table: item id -> (faces, model turn)
 def _pieces():
     return {
@@ -555,6 +801,22 @@ def _pieces():
         "stairs_wood": (stairs, rot_y(math.radians(-50.0))),
         "ladder": (ladder, LADDER_VIEW),
         **{name: ((lambda n=name: log_stack(n)), LOG_VIEW) for name in SPECIES},
+        "stool": (stool, FURNITURE_VIEW),
+        "chair": (chair, rot_y(math.radians(-40.0))),
+        "bench": (bench, FURNITURE_VIEW),
+        "table": (table, FURNITURE_VIEW),
+        "log_seat": (log_seat, FURNITURE_VIEW),
+        "rough_bed": (lambda: bed(BARK, shade(HIDE, 1.05), FUR, logs=True), rot_y(math.radians(-55.0))),
+        "straw_bed": (straw_bed, rot_y(math.radians(-55.0)) @ rot_x(math.radians(22.0))),
+        "feather_bed": (lambda: bed(PLANK, LINEN, BLANKET), rot_y(math.radians(-55.0))),
+        "canopy_bed": (lambda: bed(PLANK_DARK, LINEN, (60, 82, 120), posts=1.9, canopy=(150, 62, 48)), rot_y(math.radians(-55.0))),
+        "chest": (woven_chest, FURNITURE_VIEW),
+        "plank_chest": (plank_chest, FURNITURE_VIEW),
+        "tool_rack": (tool_rack, rot_y(math.radians(-20.0))),
+        "hide_rug": (lambda: rug(None, None, hide=True, seed=160), rot_y(math.radians(-10.0)) @ rot_x(math.radians(20.0))),
+        "wool_rug": (lambda: rug({0: WOOL_RED, 1: WOOL_CREAM, 2: (60, 82, 120)}, [0, 1, 0, 2, 0, 1, 0], fringe=WOOL_CREAM), rot_y(math.radians(-10.0)) @ rot_x(math.radians(20.0))),
+        "antler_mount": (antler_mount, rot_y(math.radians(28.0))),
+        "flower_pot": (flower_pot, FURNITURE_VIEW),
         "driftwood": (driftwood, rot_y(math.radians(-120.0)) @ rot_z(math.radians(16.0))),
     }
 
