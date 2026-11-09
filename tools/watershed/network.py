@@ -221,6 +221,12 @@ def _floor_width(cells, h, rec, sea, rise, max_m, ahead, n, dx):
     return out
 
 
+def patch5(a, n):
+    """Each cell's sum over the 5 x 5 patch round it, nothing counted off the window: a head's groundwater (spring_m3_s makes
+    it a spring) and, of gw x the dry share, that head's own dry-quarter base flow."""
+    return (uniform_filter(a.reshape(n, n), size=5, mode='constant') * 25.0).ravel()
+
+
 def below_springs(cells, q, rec, step, stream, stop):
     """The spring that keeps each stream cell open longest in frost (drinking water step 2b, docs/design/drinking_water_step2b_design.md).
     DrinkRules freezes a brook below a spring past open_m x sqrt(L/s) x cold x breeze, and cold and breeze are the same for every
@@ -899,7 +905,8 @@ def main():
                                  [names.get(x, str(x)) for x in rock_ids], rock_area)
 
     # Heads and confluences
-    gw2 = (uniform_filter(gw.reshape(n, n), size=5, mode='constant') * 25.0).ravel()
+    gw2 = patch5(gw, n)
+    gw2_dry = patch5(gw * base_dry_share, n)    # the same patch's dry-quarter base flow, each cell through its own stores
     wet_near = (maximum_filter((wetland > 0).reshape(n, n), size=3) > 0).ravel()
     heads, confluences, lake_outlet_reach = [], [], {}
     for k, s in enumerate(starts):
@@ -925,7 +932,8 @@ def main():
             kind = 'gathered from seasonal rills'
         x, z = where(s)
         heads.append(dict(reach=k, pos=[x, round(float(h[s]), 2), z], kind=kind, lake=lk_d[0] if lk_d else None,
-                          area_km2=r3(A[s] / 1e6), q_wet_m3_s=r3(Q['wet'][s]), groundwater_m3_s=r3(gw2[s])))
+                          area_km2=r3(A[s] / 1e6), q_wet_m3_s=r3(Q['wet'][s]), groundwater_m3_s=r3(gw2[s]),
+                          q_base_dry_m3_s=r3(gw2_dry[s])))
     # A full lake's outlet reach may start below a short dry gap (its exit cell's receiver is not yet a stream).
     for L, i in exits.items():
         if L in lake_outlet_reach:
@@ -1203,7 +1211,8 @@ def main():
                               steep_steps_without_a_cause=unpinned),
                    outlets={kk: sum(1 for o in outlets if o['kind'] == kk) for kk in sorted({o['kind'] for o in outlets})},
                    largest_river=max(([r['q_m3_s']['mean'], r['area_km2'], r['width_m']['bottom']] for r in reaches if r['ends'] == 'sea'), default=None),
-                   springs=len(springs), below_springs=dict(spring_heads=int(sp_cells.size), stream_km=km(sp_on)), balance=balance)
+                   springs=len(springs), below_springs=dict(spring_heads=int(sp_cells.size), stream_km=km(sp_on),
+                                                                   dry_under_perennial=int((gw2_dry[sp_cells] < float(G['perennial_baseflow_m3_s'])).sum())), balance=balance)
     missing = ['snowmelt in the wet and dry seasons (A4 snow layer)', 'faults (not in the geology export), so no fault-pinned falls',
                'cave springs, karst sinks and LOD 2 passage sizes (item 10)', 'floodplain raster, levees and oxbows drawn (item 6)',
                'fan checks and terraces (item 9)', 'distributaries in deltas (item 11)', 'bank trees from the biome map (judged from the treeline)',
