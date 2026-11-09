@@ -4647,7 +4647,9 @@ func run_quickkey_test(_client) -> void:
 		if inventory.count_of(stone) > 0 and inventory.count_of(roast) > 0:
 			break
 
+	print("Quick key test: pack ready after the give, stone %d, roast %d" % [inventory.count_of(stone), inventory.count_of(roast)])
 	toggle()
+	print("Quick key test: window open %s, %d slots" % [str(open), _buttons.size()])
 	var slot: int = inventory.numbers.find(stone)
 	var before: int = inventory.count_of(stone)
 	_hover = slot
@@ -4712,7 +4714,7 @@ func run_text_test(client) -> void:
 		for slot in range(mini(_buttons.size(), inventory.SLOTS)):
 			valid = valid and is_instance_valid(_buttons[slot]) and _buttons[slot].get_parent() == _grid
 
-			if inventory.numbers[slot] != 0 and _buttons[slot].text == "":
+			if inventory.numbers[slot] != 0 and _buttons[slot].is_empty():   # an item slot (item_slot.gd) shows its stack, not text
 				filled_ok = false
 
 		await get_tree().process_frame
@@ -4728,7 +4730,7 @@ func run_text_test(client) -> void:
 
 		# Every slot that holds something must show it after each press.
 		for slot in range(inventory.SLOTS):
-			if inventory.numbers[slot] != 0 and valid and _buttons[slot].text == "":
+			if inventory.numbers[slot] != 0 and valid and _buttons[slot].is_empty():
 				filled_ok = false
 
 		for mode in [1, 2, 3, 4, 5, 0]:

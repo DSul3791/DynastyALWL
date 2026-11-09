@@ -90,7 +90,7 @@ func _init() -> void:
 
 	# Drying: a winter mouth dries at half the cover rate; deep in, or a summer mouth, not at all.
 	weather = {"temp_c": -5.0, "wind": 0.7, "rain": 0.0, "snow": 0.0}
-	var rate: float = float(items._warmth_cfg.get("dry_cover_per_h", 1.0))
+	var rate: float = float(items._body_cfg().get("dry_cover_per_h", items._warmth_cfg.get("dry_cover_per_h", 1.0)))   # body_703's slower wool drying when on
 	depth = 8.0
 	items._soak[1] = 1.0
 	items._update_soak(1, 3600.0 * 0.5)

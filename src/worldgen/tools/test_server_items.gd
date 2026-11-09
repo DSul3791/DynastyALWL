@@ -579,7 +579,9 @@ func _init() -> void:
 
 	check(float(f.vitals_of(1)["warmth"]) >= 59.0, "a hot meal lifts warmth")
 
-	# Meat: raw meat cooks into roast meat and eating it raw makes you sick (Tyler: cook me).
+	# Meat: raw meat cooks into roast meat and eating it raw makes you sick (Tyler: cook me). This checks the sickness at once, so the late
+	# infection (sickness.json infection, on since 8 Nov; its own checks are in test_body_weather) is turned off for it.
+	f._sick_cfg["infection"]["enabled"] = false
 	var meat_n: int = f.table.number_of("raw_meat")
 	f.action(1, Net.ACT_ADMIN_GIVE, meat_n, 0, 2, Vector3.ZERO)
 	f._last_cook.clear()
@@ -595,6 +597,7 @@ func _init() -> void:
 			break
 
 	check(float(f.vitals_of(1).get("sick", 0.0)) > 0.0, "raw meat makes you sick")
+	f._sick_cfg["infection"]["enabled"] = true
 	f.report_position(1, Vector3(40.0, 10.0, 0.0))
 	f._last_cook.clear()
 	roast_before = f.inventory_of(1).count_of(f.table.number_of("roast_meat"))
