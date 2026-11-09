@@ -22,7 +22,9 @@ XARGS=$(grep -E "^$NAME " "$(dirname "$0")/test_args.txt" 2>/dev/null | head -1 
 # TEST_QUIET=1 (run_tests.sh's retries) takes every slot, so nothing else heavy runs beside it.
 . "$(dirname "$0")/godot_slot.sh"; if [ -n "$TEST_QUIET" ]; then slot_acquire_all; else slot_acquire; fi; trap slot_release EXIT
 START=$(date +%s%N); case "$START" in *N*) START=$(( $(date +%s) * 1000000000 ));; esac
-timeout "$LIMIT" "$GODOT" --headless --path . --log-file "$OUT/$NAME.godot.log" --script "res://src/worldgen/tools/$NAME.gd" $XARGS > "$OUT/$NAME.out" 2>&1 &
+# The test folders, in tools/tests_for_diff.py's TEST_DIRS order.
+SCRIPT="src/worldgen/tools/$NAME.gd"; [ -f "$SCRIPT" ] || SCRIPT="src/water2/$NAME.gd"
+timeout "$LIMIT" "$GODOT" --headless --path . --log-file "$OUT/$NAME.godot.log" --script "res://$SCRIPT" $XARGS > "$OUT/$NAME.out" 2>&1 &
 GP=$!; DEAD=""
 while kill -0 $GP 2>/dev/null; do
 	sleep 0.5
