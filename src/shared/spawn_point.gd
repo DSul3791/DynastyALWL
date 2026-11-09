@@ -1,10 +1,10 @@
 extends RefCounted
 
-# The starter spawn point (x, z in world metres) in one place: the server's spawn (terrain_server.gd _spawn_point), the flora placer's clearing
-# and orchard round it (flora_placer.gd), the NPC town (server_npcs.gd markers) and the island checks all read it from here.
+# The starter spawn point (x, z in world metres) in one place: the server's spawn (terrain_server.gd _spawn_point) and the island checks read it here.
 # Stage E M1 step 4 (docs/water/stage_e_readers_design.md 6e): when the starter tile carries a spawn picked by rule at bake time
-# (starter.spawn_picked, tile_sites.gd _pick_spawn), that is the spawn, and the shipped NPC markers move with it as one piece (town_shift).
-# With none, OVERRIDE stays the spawn and nothing moves. The picker is off until the R6 rebake, so today current() is OVERRIDE.
+# (starter.spawn_picked, tile_sites.gd _pick_spawn, always on since 9 Nov 2026), that is the spawn; a tile baked without one keeps OVERRIDE.
+# Nothing is placed or decided from the spawn (Dave 9 Nov 2026: "nothing is ever based on where spawn is"): no flora clearing or orchard
+# round it, and the NPC town stands where data/npcs/markers.json puts it, whatever the spawn.
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 
@@ -46,11 +46,49 @@ static func current() -> Vector2:
 	return _current
 
 
-# How far the town moved with a picked spawn: the shipped NPC markers (data/npcs/markers.json, placed round OVERRIDE) move by this.
-static func town_shift() -> Vector2:
-	return _current - OVERRIDE
-
-
 # For tests and tools: set the spawn directly (OVERRIDE undoes it).
 static func set_current(at: Vector2) -> void:
 	_current = at
+
+
+# The spawn clear of trees and shrubs (docs/design/no_spawn_placement_design.md 2): flora is placed at run time and the bake's picker cannot
+# see it, so the server moves the spawn off a trunk at start. `at` stays when no trunk stands within clear_m; else the first point, ring by
+# ring (ring_m apart out to search_m, ring_points each), with no trunk within clear_m, dry (wet_at false), over the sea (ground above 0) and
+# within max_rise_m of the ground at `at`. None clear: `at` stays. trunks: the trees' and shrubs' ground points (x, z); grass and flowers do
+# not block. ground_at(x, z) -> metres, wet_at(x, z) -> bool. The numbers are judged.
+static func clear_of(at: Vector2, trunks: PackedVector2Array, ground_at: Callable, wet_at: Callable, rules: Dictionary = {}) -> Vector2:
+	var clear_m: float = float(rules.get("clear_m", 2.0))
+
+	if _trunk_free(at, trunks, clear_m):
+		return at
+
+	var ring_m: float = maxf(float(rules.get("ring_m", 1.0)), 0.1)
+	var search_m: float = float(rules.get("search_m", 30.0))
+	var points: int = maxi(int(rules.get("ring_points", 16)), 1)
+	var max_rise: float = float(rules.get("max_rise_m", 0.5))
+	var base: float = float(ground_at.call(at.x, at.y))
+	var r: float = ring_m
+
+	while r <= search_m + 0.001:
+		for n in range(points):
+			var p: Vector2 = at + Vector2.from_angle(TAU * float(n) / float(points)) * r
+
+			if not _trunk_free(p, trunks, clear_m) or bool(wet_at.call(p.x, p.y)):
+				continue
+
+			var ground: float = float(ground_at.call(p.x, p.y))
+
+			if not is_nan(ground) and ground > 0.0 and absf(ground - base) <= max_rise:
+				return p
+
+		r += ring_m
+
+	return at
+
+
+static func _trunk_free(p: Vector2, trunks: PackedVector2Array, clear_m: float) -> bool:
+	for t in trunks:
+		if p.distance_to(t) < clear_m:
+			return false
+
+	return true

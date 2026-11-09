@@ -29,7 +29,7 @@ Branch `claude/flora-density-v2` (merged into DailyDev by the moderator in steps
 Biome weights and hour chances per species (`biomes`, `active`), near spawns 60-120 m (`near_share`), exclusion circle on the real spawn, `model: false` rows are never spawned, off-hours animals leave when no player is within 40 m.
 
 ## Tools and tests (all headless: `godot --headless --path . --script res://src/worldgen/tools/NAME.gd`)
-Tools: `flora_density.gd` + `tools/flora_density_report.py` (counts per km2 by biome), `flora_near.gd` (nearest plant from a spot: first-hour table), `flora_water.gd`, `flora_diag.gd`, `flora_tris.gd` (triangles per model), `orchard_site.gd`; `tools/world_alive.sh` (Tyler's per-biome table).
+Tools: `flora_density.gd` + `tools/flora_density_report.py` (counts per km2 by biome), `flora_near.gd` (nearest plant from a spot: first-hour table), `flora_water.gd`, `flora_diag.gd`, `flora_tris.gd` (triangles per model) (`orchard_site.gd` went to proposed_removals on 9 Nov: no orchard by the spawn); `tools/world_alive.sh` (Tyler's per-biome table).
 Tests: `test_flora_density` (placement, thickets, orchard, seasons, future guard, colliders), `test_fruit_tree`, `test_animal_spawn_wiring`, `test_ambient_critters`, plus the standard flora and animal lists (`test_flora_close`, `test_flora_budget`, `test_server_items`, `test_spawn_dry`, `test_first_hour`, `test_wolves`, `test_animals`...).
 Pictures and numbers: `E:/Software/godotDev/DynastyALWL_Evidence/flora_density5` to `flora_density8` (before/after spawn, meadow, coast, orchard, tall grass).
 

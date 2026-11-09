@@ -55,7 +55,6 @@ const KINDS := ["tree", "shrub", "plant"]
 const OCCUPANCY_CELL := 12.0   # also the widest gap kept between two trees
 const SHRUB_DENSITY := 3.0   # shrubs three times the table figures: ground cover under the woods (owner, 2026-10-18)
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
-const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 
 var generator
 var chunk_m: float = 256.0
@@ -73,7 +72,7 @@ var _stand_seed: int = 0
 var _patch_seed: int = 0
 var _beach_id: int = -1                 # biome ids for the sand / dirt edge rules (see _edge_m)
 var _ocean_id: int = -1
-var _clearings: Array = []              # [Vector2 centre, core radius, soft edge] where no tree or shrub stands: the spawn point and every NPC marker (starter clearing)
+var _clearings: Array = []              # [Vector2 centre, core radius, soft edge] where no tree or shrub stands: every NPC marker
 
 
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
@@ -277,17 +276,17 @@ func species_by_id(species_id: int) -> Dictionary:
 	return _by_id.get(species_id, {})
 
 
-# The starter clearing (a new player must not wake up inside a thicket, NPC markers must not stand in a flora collider; Sonny's test_spawn_dry):
-# no tree or shrub within CLEAR_SPAWN_M of the spawn point or CLEAR_MARKER_M of any NPC marker, thinning out over the next CLEAR_SOFT_M so the wood
-# comes back gradually. The spawn is src/shared/spawn_point.gd, the markers data/npcs/markers.json (the same files the server reads). Plants stay.
+# The marker clearings (NPC markers must not stand in a flora collider): no tree or shrub within CLEAR_MARKER_M of any NPC marker, thinning out
+# over the next CLEAR_SOFT_M so the wood comes back gradually. The markers are data/npcs/markers.json (the file the server reads). Plants stay.
+# Nothing is cleared or planted from the spawn (Dave 9 Nov 2026: "nothing is ever based on where spawn is"; watershed_rebuild_design.md,
+# R6 as built): the spawn clearing and the starter orchard by it are gone.
 func _starter_clearings() -> Array:
-	var list: Array = [[SpawnPointScript.current(), CLEAR_SPAWN_M, CLEAR_SOFT_M]]
-	var shift: Vector2 = SpawnPointScript.town_shift()   # the shipped markers move with a picked spawn (Stage E 6e)
+	var list: Array = []
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/markers.json")) if FileAccess.file_exists("res://data/npcs/markers.json") else null
 
 	if typeof(parsed) == TYPE_DICTIONARY:
 		for marker in (parsed as Dictionary).get("markers", []):
-			list.append([Vector2(float(marker["x"]), float(marker["z"])) + shift, CLEAR_MARKER_M, CLEAR_SOFT_M])
+			list.append([Vector2(float(marker["x"]), float(marker["z"])), CLEAR_MARKER_M, CLEAR_SOFT_M])
 
 	return list
 
@@ -556,8 +555,6 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			if item["montane"]:
 				_montane_cells(item, data, chunk, origin, species_id, rng, found, stand_used)
 
-	_orchard_items(origin, data, found)
-
 	# Landmark trees first, then grown trees, young trees, shrubs and plants;
 	# within a tier by species and cell, so the result never changes.
 	found.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and (a[1] < b[1] or (a[1] == b[1] and a[2] < b[2]))))
@@ -651,9 +648,7 @@ const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
 const PATCH_MAX_PLANTS := 48   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
 const LOG_COLLIDER_MIN_M := 4.0   # fallen logs this long or longer get a capsule collider (near the player only)
-const ORCHARD_MAX_SLOPE := 0.2     # the starter orchard stands on ground gentler than this (rise over run)
-const CLEAR_SPAWN_M := 10.0         # no tree or shrub this close to the spawn point
-const CLEAR_MARKER_M := 6.0         # ... or this close to an NPC marker
+const CLEAR_MARKER_M := 6.0         # no tree or shrub this close to an NPC marker
 const CLEAR_SOFT_M := 5.0           # and the wood thins back in over this much more
 const SHRUB_TRUNK_GAP := 1.0   # a shrub tucks in under a tree, but not against its trunk
 
@@ -820,69 +815,6 @@ func _shore_ok(item: Dictionary, data, k: int, x: float, z: float) -> bool:
 				return true
 
 	return false
-
-
-# The starter orchard (Dave 2026-10-31: fruit to pick near the spawn): ORCHARD_COLS x ORCHARD_ROWS fruit trees in rows ORCHARD_OFFSET metres from the spawn point (the shared
-# spawn_point.gd), early and summer varieties on the near rows so something is in season at the start of the world. Planted on dry gentle ground (orchard_ground_ok), item numbers
-# ORCHARD_BASE + n (the species id is part of the item id, and no wild stand or patch of these species exists), stable from the table and the spawn point alone; they claim their ground
-# first (the landmark tier), so the wild wood makes room for the rows.
-const ORCHARD_OFFSET := Vector2(60.0, 45.0)
-const ORCHARD_COLS := 4
-const ORCHARD_ROWS := 3
-const ORCHARD_BASE := 65500
-const ORCHARD_TREES := [
-	"apple_early", "apple_summer", "apple_early", "apple_summer",
-	"pear_summer", "sour_cherry", "pear_summer", "sour_cherry",
-	"apple_autumn", "apple_cooking", "apple_keeping", "plum",
-]
-
-
-# World positions of the orchard's trees: [index, species name, x, z].
-static func orchard_places() -> Array:
-	var places: Array = []
-	var centre: Vector2 = SpawnPointScript.current() + ORCHARD_OFFSET
-
-	for row in range(ORCHARD_ROWS):
-		for col in range(ORCHARD_COLS):
-			var n: int = row * ORCHARD_COLS + col
-			places.append([n, ORCHARD_TREES[n], centre.x + (float(col) - 0.5 * float(ORCHARD_COLS - 1)) * 7.0, centre.y + (float(row) - 0.5 * float(ORCHARD_ROWS - 1)) * 8.0])
-
-	return places
-
-
-# Adds the orchard trees that stand in this chunk to `found`.
-func _orchard_items(origin: Vector2, data, found: Array) -> void:
-	for place in orchard_places():
-		var x: float = place[2]
-		var z: float = place[3]
-
-		if x < origin.x or z < origin.y or x >= origin.x + chunk_m or z >= origin.y + chunk_m:
-			continue
-
-		var item: Dictionary = {}
-
-		for sp in species:
-			if sp["name"] == place[1]:
-				item = sp
-
-		if item.is_empty():
-			continue
-
-		var k: int = data.nearest(x, z)
-
-		if not orchard_ground_ok(item, data, k, x, z):
-			continue
-
-		var height: float = lerpf(float(item["height_min"]), float(item["height_max"]), 0.45 + 0.4 * rng_pick(x, z, int(item["id"])))
-		found.append([TIER_FIRST, int(item["id"]), ORCHARD_BASE + int(place[0]), x, generator.surface_height(x, z), z, height, rng_pick(x + 3.0, z + 5.0, int(item["id"])) * TAU, 0.0])
-
-
-# Ground for the starter orchard: dry and gentle ground away from water. Moisture and altitude are not asked (an orchard is planted where it is dry and flat, the wild rules do not apply).
-func orchard_ground_ok(item: Dictionary, data, k: int, x: float, z: float) -> bool:
-	if int(data.water_class[k]) > 1 or _near_water(data, x, z) or _slope_at(data, x, z) > ORCHARD_MAX_SLOPE:
-		return false
-
-	return not is_nan(generator.surface_height(x, z)) and generator.surface_height(x, z) > SEA_LEVEL_M + WET_FOOT_M * 4.0
 
 
 # Ground slope (rise over run) from the tile's height map, over 4 m.
