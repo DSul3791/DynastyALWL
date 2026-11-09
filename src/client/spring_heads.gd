@@ -27,6 +27,7 @@ const RUNNEL_MAX_M := 9.0               # and at most this far, however far the 
 const RUNNEL_FALLBACK_M := 4.0          # straight downhill when no brook cell is near
 const BROOK_LOOK_M := 16.0              # brook cells this near the head say which way the water goes
 const SLOPE_PROBE_M := 3.0              # without brook cells: the lowest of 8 ground points this far out is downhill
+const GLINT_ENERGY := 0.12             # the runnel's moving highlight (0.35 read as a white strip from 20 m, Dino's shots 9 Nov 2026)
 const ICE_M := 1.8                      # the frozen far end of the runnel
 const PEBBLES := 6
 const BUILD_M := 70.0                   # a head is built when the player comes this near
@@ -116,7 +117,7 @@ func update(delta: float, at: Vector3) -> void:
 		var ice: Decal = entry[1]
 
 		if runnel.global_position.distance_to(at) <= SHIMMER_M:   # the glint wanders a little, so the runnel reads as running water
-			runnel.emission_energy = (0.35 + 0.25 * sin(_clock * 2.6 + float(entry[2]))) * (1.0 - frost) * daylight
+			runnel.emission_energy = GLINT_ENERGY * (1.0 + 0.6 * sin(_clock * 2.6 + float(entry[2]))) * (1.0 - frost) * daylight
 
 		ice.modulate.a = frost
 
@@ -196,10 +197,15 @@ func _build_near(at: Vector3) -> void:
 
 		var way: Array = runnel_from_cells(head, _cells, _cell_m)
 
-		if (way[0] as Vector2) == Vector2.ZERO:
+		var from_cells: bool = (way[0] as Vector2) != Vector2.ZERO
+
+		if not from_cells:
 			way = [_downhill(space, head, ground, at.y), RUNNEL_FALLBACK_M]
 
 		_props[head_key] = _build(space, Vector3(head.x, ground, head.y), way[0], float(way[1]), at.y, head_key)
+		# One line a head (a handful within BUILD_M), so a rig run can show the patch was placed.
+		print("spring heads: built at %.0f, %.1f, %.0f, runnel %.1f m toward %.2f, %.2f (%s)" % [head.x, ground, head.y, float(way[1]), (way[0] as Vector2).x,
+			(way[0] as Vector2).y, "brook cells" if from_cells else "downhill"])
 
 
 # The lowest of 8 ground points SLOPE_PROBE_M out; +z when the ground is flat or unknown.
@@ -233,10 +239,17 @@ func _build(space: PhysicsDirectSpaceState3D, head: Vector3, way: Vector2, lengt
 	root.global_position = head
 	var yaw: float = atan2(way.x, way.y)   # local +z follows the water
 	var turn: Basis = Basis(Vector3.UP, yaw)
+	# Both decals lie along the slope (tilted down the water's way), so a steep head keeps its whole patch: a level 4 m box lost the downhill
+	# half of it on a 40 degree slope (Dino's 20 m shot, 9 Nov 2026).
+	var centre: Vector2 = Vector2(head.x, head.z) + way * PATCH_SHIFT_M
+	var up_y: float = _ground_y(space, centre - way * PATCH_L_M * 0.5, near_y)
+	var down_y: float = _ground_y(space, centre + way * PATCH_L_M * 0.5, near_y)
+	up_y = head.y if is_nan(up_y) else up_y
+	down_y = up_y if is_nan(down_y) else down_y
 	var patch: Decal = _decal(Vector3(PATCH_W_M, 4.0, PATCH_L_M), _patch_texture, _patch_orm)
 	root.add_child(patch)
-	patch.basis = turn
-	patch.position = Vector3(way.x, 0.0, way.y) * PATCH_SHIFT_M
+	patch.basis = turn * Basis(Vector3.RIGHT, atan2(up_y - down_y, PATCH_L_M))
+	patch.global_position = Vector3(centre.x, (up_y + down_y) * 0.5, centre.y)
 	var start: Vector2 = Vector2(head.x, head.z) + way * CLUMP_EDGE_M
 	var end: Vector2 = start + way * length
 	var mid: Vector2 = (start + end) * 0.5
@@ -244,16 +257,15 @@ func _build(space: PhysicsDirectSpaceState3D, head: Vector3, way: Vector2, lengt
 	var end_y: float = _ground_y(space, end, near_y)
 	mid_y = head.y if is_nan(mid_y) else mid_y
 	end_y = mid_y if is_nan(end_y) else end_y
-	var drop: float = absf(head.y - end_y)
-	var runnel: Decal = _decal(Vector3(RUNNEL_W_M, maxf(3.0, drop * 1.4 + 1.0), length + CLUMP_EDGE_M), _runnel_texture, _runnel_orm)
+	var runnel: Decal = _decal(Vector3(RUNNEL_W_M, 3.0, length + CLUMP_EDGE_M), _runnel_texture, _runnel_orm)
 	runnel.texture_emission = _runnel_glint
-	runnel.emission_energy = 0.35 * (1.0 - frost) * daylight
+	runnel.emission_energy = GLINT_ENERGY * (1.0 - frost) * daylight
 	root.add_child(runnel)
-	runnel.basis = turn
+	runnel.basis = turn * Basis(Vector3.RIGHT, atan2(head.y - end_y, length + CLUMP_EDGE_M))
 	runnel.global_position = Vector3((head.x + end.x) * 0.5, (head.y + end_y) * 0.5, (head.z + end.y) * 0.5)
-	var ice: Decal = _decal(Vector3(RUNNEL_W_M * 1.6, 3.0, ICE_M), _ice_texture, null)
+	var ice: Decal = _decal(Vector3(RUNNEL_W_M, 3.0, ICE_M), _ice_texture, null)
 	root.add_child(ice)
-	ice.basis = turn
+	ice.basis = runnel.basis
 	ice.global_position = Vector3(end.x - way.x * ICE_M * 0.5, end_y, end.y - way.y * ICE_M * 0.5)
 	ice.modulate.a = frost
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -274,8 +286,8 @@ func _build(space: PhysicsDirectSpaceState3D, head: Vector3, way: Vector2, lengt
 		stone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		stone.visibility_range_end = FADE_BEGIN_M
 		root.add_child(stone)
-		var size: float = rng.randf_range(0.06, 0.13)
-		stone.basis = Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3(size * 1.3, size * 0.6, size))
+		var size: float = rng.randf_range(0.05, 0.11)
+		stone.basis = Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3(size * 1.4, size * 0.45, size))
 		stone.global_position = Vector3(spot.x, y + size * 0.15, spot.y)
 
 	_runnels[head_key] = [runnel, ice, rng.randf() * TAU]
@@ -308,14 +320,14 @@ static func _textures() -> void:
 	_patch_orm = ImageTexture.create_from_image(_flat_orm(32, 0.25))
 	_runnel_texture = ImageTexture.create_from_image(runnel_image(false))
 	_runnel_glint = ImageTexture.create_from_image(runnel_image(true))
-	_runnel_orm = ImageTexture.create_from_image(_flat_orm(16, 0.08))
+	_runnel_orm = ImageTexture.create_from_image(_flat_orm(16, 0.18))   # 0.08 mirrored the sky into a white strip
 	_ice_texture = ImageTexture.create_from_image(ice_image())
 	_pebble_mesh = SphereMesh.new()
 	_pebble_mesh.radial_segments = 7
 	_pebble_mesh.rings = 4
 	_pebble_material = StandardMaterial3D.new()
-	_pebble_material.albedo_color = Color(0.2, 0.19, 0.17)
-	_pebble_material.roughness = 0.18   # wet stone shines
+	_pebble_material.albedo_color = Color(0.33, 0.3, 0.26)   # wet grey-brown stone (0.2 read as black holes on pale ground)
+	_pebble_material.roughness = 0.3    # wet stone shines
 
 
 # The wet patch, 4 x 6 m on 96 x 144 px: dark wet soil, blotched, with a ragged moss rim, fading out at the edge. Static, so a check can look.
@@ -361,19 +373,20 @@ static func runnel_image(glint: bool) -> Image:
 			var wander: float = 0.12 * sin(along * 19.0) + 0.08 * n   # the line wanders a little, not a ruler stroke
 			var across: float = absf(u - wander)
 			var ends: float = smoothstep(0.0, 0.06, along) * (1.0 - smoothstep(0.85, 1.0, along))
-			var bright: float = (1.0 - smoothstep(0.08, 0.28, across)) * (0.6 + 0.4 * (n * 0.5 + 0.5))
+			var bright: float = (1.0 - smoothstep(0.05, 0.18, across)) * (0.6 + 0.4 * (n * 0.5 + 0.5))
 
 			if glint:
 				image.set_pixel(x, y, Color(0.75 * bright, 0.85 * bright, 0.95 * bright, 1.0))
 			else:
-				var c: Color = Color(0.08, 0.075, 0.065).lerp(Color(0.42, 0.48, 0.52), bright)
+				var c: Color = Color(0.07, 0.065, 0.055).lerp(Color(0.2, 0.23, 0.25), bright)   # wet dark water, not a pale stripe
 				image.set_pixel(x, y, Color(c.r, c.g, c.b, 0.9 * (1.0 - smoothstep(0.3, 0.6, across)) * ends))
 
 	image.generate_mipmaps()
 	return image
 
 
-# The frozen end: pale ice, soft at both ends.
+# The frozen end: a pale, half-clear line of ice as narrow as the water, soft at its sides and both ends (the first build's full-width
+# block read as a white square from 20 m, Dino's v2 frost shot, 9 Nov 2026).
 static func ice_image() -> Image:
 	var image: Image = Image.create(16, 32, false, Image.FORMAT_RGBA8)
 
@@ -381,8 +394,8 @@ static func ice_image() -> Image:
 		for x in 16:
 			var u: float = absf((float(x) + 0.5) / 16.0 * 2.0 - 1.0)
 			var along: float = (float(y) + 0.5) / 32.0
-			var a: float = (1.0 - smoothstep(0.5, 1.0, u)) * smoothstep(0.0, 0.25, along) * (1.0 - smoothstep(0.75, 1.0, along))
-			image.set_pixel(x, y, Color(0.84, 0.91, 0.96, 0.85 * a))
+			var a: float = (1.0 - smoothstep(0.2, 0.6, u)) * smoothstep(0.0, 0.35, along) * (1.0 - smoothstep(0.65, 1.0, along))
+			image.set_pixel(x, y, Color(0.74, 0.81, 0.86, 0.7 * a))
 
 	image.generate_mipmaps()
 	return image

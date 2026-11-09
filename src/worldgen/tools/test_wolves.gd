@@ -39,6 +39,7 @@ func make():
 		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
 
 	a.cfg["senses"] = {}
+	a.cfg["wolves"]["cell_share"] = 0.0   # no wild packs here (they are always on): each check makes its own; section 9 sets 1.0
 	var w = a.wolves
 	w.player_info = func(): return players
 	w.fires = func(): return fires_at
@@ -210,12 +211,13 @@ func _init() -> void:
 
 	check(states.has(8) and states.has(9), "a calm pack rolls and plays (states %s)" % str(states.keys()))
 
-	# 9. Natural packs: off by default; on, a pack appears at a hashed home once, not inside the exclusion zone.
+	# 9. Natural packs: always on (no switch); a cell share of 0 makes none; at 1, a pack appears at a hashed home once.
 	a = make()
 	players = [player(1, 1000.0, 1000.0)]
+	check(not a.cfg["wolves"].has("natural"), "no natural switch: wild packs are always on")
 	run(a, 20.0)
-	check(a.wolves.wolf_count() == 0, "natural packs are off by default")
-	a.cfg["wolves"]["natural"] = true
+	check(a.wolves.wolf_count() == 0, "a cell share of 0 makes no wild pack")
+	a.cfg["wolves"]["cell_share"] = 1.0
 	a.cfg["wolves"]["exclude"] = [0.0, 0.0, 0.0]
 	run(a, 20.0)
 	var count1: int = a.wolves.wolf_count()
@@ -227,7 +229,6 @@ func _init() -> void:
 
 	for round in 2:
 		a = make()
-		a.cfg["wolves"]["natural"] = true
 		a.cfg["wolves"]["cell_m"] = 300.0
 		a.cfg["wolves"]["cell_share"] = 1.0
 		var hh: int = hash("3,3" + str(a.cfg["wolves"].get("seed", 7)))

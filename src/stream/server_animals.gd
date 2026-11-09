@@ -883,7 +883,7 @@ func tick(delta: float) -> void:
 	if companions != null:
 		companions.tick(delta)
 
-	if wolves != null and (not wolves.packs.is_empty() or not wolves.dens.is_empty() or bool(wolves.cfgw().get("natural", false))):
+	if wolves != null:   # wild packs are always on, so the wolves always tick (they place packs round the players)
 		wolves.tick(delta)
 
 	_spawn_acc += delta
@@ -2616,9 +2616,19 @@ func _drink_wander(a: Dictionary, def: Dictionary) -> bool:
 	if found.is_empty():
 		return false
 
-	var jitter: Vector3 = Vector3(rng.randf_range(-2.0, 2.0), 0.0, rng.randf_range(-2.0, 2.0))   # luck-exempt: where along the bank each one stands
+	# Spread along the bank, across the line to the water, and never into it (a jitter toward the water stood some in it).
+	var to_water: Vector3 = found[1] - found[0]
+	to_water.y = 0.0
+	var along: Vector3 = Vector3(-to_water.z, 0.0, to_water.x).normalized() if to_water.length() > 0.01 else Vector3.RIGHT
+	var stand_at: Vector3 = found[0] + along * rng.randf_range(-2.0, 2.0)   # luck-exempt: where along the bank each one stands
+
+	if _fresh_wet(stand_at.x, stand_at.z):
+		stand_at = found[0]
+	else:
+		stand_at.y = float(ground_height.call(stand_at.x, stand_at.z))
+
 	a["drink_home"] = a["home"]
-	a["drink_at"] = found[0] + jitter
+	a["drink_at"] = stand_at
 	a["drink_to"] = found[1]
 	a["home"] = a["drink_at"]
 	a["target"] = a["drink_at"]

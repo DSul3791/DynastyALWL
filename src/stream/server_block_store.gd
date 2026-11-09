@@ -298,7 +298,8 @@ func revisions() -> Dictionary:
 
 # The full block (nothing hidden) into `buffer`: the ground as generated (or kept from an older edit), with
 # every logged dig that reaches it cut again on top, so a re-bake keeps the holes.
-func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
+# `trace`, when given, gets the name of the path the block came from (block_bytes names it when a block is zeroed).
+func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) -> void:
 	if lod == 0:
 		# A busy block has a settled copy with its first `upto` edits in it: replay only the rest (the same ground as replaying
 		# them all, ground_settle.gd).
@@ -306,9 +307,13 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 
 		if upto >= 0:
 			ops.apply_range(buffer, block, upto, 1 << 30)
+			_path(trace, "the settled copy plus edits")
 			return
 
-	_load_base(buffer, block, lod)
+	_load_base(buffer, block, lod, trace)
+
+	if lod == 0 and ops.seq_end(block) > 0:
+		_path(trace, "plus edits")
 
 	if lod == 0:
 		ops.apply(buffer, block)
@@ -317,6 +322,29 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 # The block as generated, before any dig or fill (the tunnel watch tells man-made spaces from natural caves with it).
 func load_natural(buffer: VoxelBuffer, block: Vector3i) -> void:
 	_load_base(buffer, block, 0)
+
+
+# A copy of a block buffer, for saving one that is still used after the save. Voxel Tools 1.7 (VoxelStreamCache::save_voxel_block): saving a block
+# that is still in the SQLite stream's memory cache (not yet flushed) moves the buffer's channels into the cache and leaves the caller's buffer all
+# zero, every channel (Channel.data and defval share a union, so data = nullptr reads as 0). At the join rush two workers build the same block (a
+# request and the idle pre-build); the second save emptied the buffer it then served: the ZEROED BLOCK lines of 9 Nov (zeroed_block_note.md).
+# The client's block cache has the same trap (client_block_cache.save_block).
+static func copy_of(buffer: VoxelBuffer) -> VoxelBuffer:
+	var size: Vector3i = buffer.get_size()
+	var copy: VoxelBuffer = VoxelBuffer.new()
+	copy.create(size.x, size.y, size.z)
+
+	for channel in range(VoxelBuffer.MAX_CHANNELS):
+		copy.set_channel_depth(channel, buffer.get_channel_depth(channel))
+		copy.copy_channel_from(buffer, channel)
+
+	return copy
+
+
+# Adds the name of a load path to a trace (an Array, or null when nobody asked).
+static func _path(trace, what: String) -> void:
+	if trace != null:
+		trace.append(what)
 
 
 # Real ground is never a whole block of distance exactly 0 (a buffer nobody filled reads that way): 27 spread voxels, 20 at zero.
@@ -343,10 +371,11 @@ func _load_edit(buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 	return result
 
 
-func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
+func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) -> void:
 	if _load_edit(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		if not looks_zeroed(buffer):
 			_count("edit")
+			_path(trace, "the saved edits")
 			return
 
 		_count("zeroed_edit")
@@ -359,6 +388,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 		# fails is dropped and made again below.
 		if _is_sane(buffer, block, lod) and not looks_zeroed(buffer):
 			_count("cache")
+			_path(trace, "the generated-ground cache")
 			return
 
 		if looks_zeroed(buffer):
@@ -381,14 +411,18 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 		_time("sanity check", t2 - t1)
 
 	if sane:
-		cache.save_voxel_block(buffer, block, lod)
+		cache.save_voxel_block(copy_of(buffer), block, lod)   # a copy: the buffer is served next (copy_of)
+		_path(trace, "generated")
 		if _timing_on:
 			_time("save to sqlite", Time.get_ticks_usec() - t2)
 	elif generator.failed_tiles == failed_before:
 		generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
+		_path(trace, "generated twice (the first build failed the check)")
 
-		if _is_sane(buffer, block, lod):
-			cache.save_voxel_block(buffer, block, lod)
+		if _is_sane(buffer, block, lod) and not looks_zeroed(buffer):   # a zeroed build is never stored (zeroed_block_note.md)
+			cache.save_voxel_block(copy_of(buffer), block, lod)
+	else:
+		_path(trace, "generated from a stand-in tile")
 
 	_count("generated")
 
@@ -410,7 +444,7 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 	var failed_before: int = generator.failed_tiles
 	generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
 
-	if generator.failed_tiles == failed_before and _is_sane(buffer, block, lod):
+	if generator.failed_tiles == failed_before and _is_sane(buffer, block, lod) and not looks_zeroed(buffer):   # never store a zeroed block
 		cache.save_voxel_block(buffer, block, lod)
 
 	_count("generated")
@@ -487,11 +521,56 @@ func _cell_text(buffer: VoxelBuffer, local: Vector3i) -> String:
 	]
 
 
+# The zeroed block's heights as the generator reads them, and whether building it once more now still gives a zeroed block (a race at the
+# join rush, or the same answer every time). Only for a zeroed block, so it costs nothing otherwise.
+func _explain_zeroed(block: Vector3i, lod: int) -> void:
+	var origin: Vector3i = block * (BLOCK_SIZE << lod)
+	var again: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
+	generator.generate(again, origin, lod)
+	var why: String = _heights_text(origin, lod) if generator.has_method("get_tile") else "a generator without tiles"
+	print("server: ZEROED BLOCK %s LOD %d: %s; built again now: %s" % [str(block), lod, why, "zeroed again" if looks_zeroed(again) else "good ground (SDF %.3f at the middle)" % again.get_voxel_f(BLOCK_SIZE >> 1, BLOCK_SIZE >> 1, BLOCK_SIZE >> 1, Layout.CHANNEL_SDF)])
+
+
+# The heights over a block's columns as the generator reads them (tile height plus detail, generator.surface_height): min, max and NaNs,
+# the block's y range, the branch generate() would take, and the tiles under it. Kept here, not in the generator, so the generated ground
+# and its setup cache are untouched.
+func _heights_text(origin: Vector3i, lod: int) -> String:
+	var sf: float = float(1 << lod)
+	var oy: float = float(origin.y)
+	var h_min: float = INF
+	var h_max: float = -INF
+	var nans: int = 0
+	var tiles: Dictionary = {}
+
+	for k in range(BLOCK_SIZE):
+		for i in range(BLOCK_SIZE):
+			var x: float = float(origin.x) + float(i) * sf
+			var z: float = float(origin.z) + float(k) * sf
+			var coord: Vector2i = generator.tile_of(x, z)
+
+			if not tiles.has(coord):
+				var data = generator.get_tile(coord)
+				tiles[coord] = "%s%s samples %d" % [str(coord), " placeholder" if data.placeholder else "", int(data.samples)]
+
+			var h: float = float(generator.surface_height(x, z, lod))
+
+			if is_nan(h):
+				nans += 1
+			else:
+				h_min = minf(h_min, h)
+				h_max = maxf(h_max, h)
+
+	var band: float = float(generator._band) * sf
+	return "heights %.2f to %.2f (%d NaN of %d), block y %.0f to %.0f, %s; tiles %s" % [h_min, h_max, nans, BLOCK_SIZE * BLOCK_SIZE, oy,
+		oy + float(BLOCK_SIZE - 1) * sf, "all air" if oy > h_max + band else "columns", ", ".join(PackedStringArray(tiles.values()))]
+
+
 # The block as it is sent to clients: buried ore hidden, compressed.
 func block_bytes(block: Vector3i, lod: int) -> PackedByteArray:
 	var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 	var failed_before: int = generator.failed_tiles
-	load_block(buffer, block, lod)
+	var trace: Array = []
+	load_block(buffer, block, lod, trace)
 
 	# Built from a stand-in tile (its file would not load just now, for instance during a bake): not ready. An empty
 	# answer makes the client drop the block, not cache it, and ask again.
@@ -500,7 +579,12 @@ func block_bytes(block: Vector3i, lod: int) -> PackedByteArray:
 		return PackedByteArray()
 
 	if looks_zeroed(buffer):
-		print("server: ZEROED BLOCK %s LOD %d after generating; serving it anyway (failed tile loads %d)" % [str(block), lod, generator.failed_tiles])
+		# Served as it is: the client refuses a zeroed block and asks again (network_voxel_stream._store). The line names the path it came
+		# from, so the cause can be found (docs: /mnt/project-files/design_notes/zeroed_block_note.md).
+		print("server: ZEROED BLOCK %s LOD %d from %s; SDF %s, %.4f at the middle; failed tile loads %d; serving it anyway" % [str(block), lod,
+			" ".join(PackedStringArray(trace)) if not trace.is_empty() else "an unknown path", "all one value" if buffer.is_uniform(Layout.CHANNEL_SDF) else "mixed",
+			buffer.get_voxel_f(BLOCK_SIZE >> 1, BLOCK_SIZE >> 1, BLOCK_SIZE >> 1, Layout.CHANNEL_SDF), generator.failed_tiles])
+		_explain_zeroed(block, lod)
 
 	hide_buried_ore(buffer, hide_ore_depth_m * float(1 << lod))
 	var t0: int = Time.get_ticks_usec()
