@@ -862,7 +862,7 @@ func _ready() -> void:
 		_telemetry.event("client start build %d, port %d" % [BUILD, port])
 
 	# Started by the "play" launcher, whose server may still be loading.
-	if AppConfig.get_command_line_value("role", "") == "play" and _wait_until_msec == 0:
+	if waits_for_server(AppConfig.get_command_line_value("role", "")) and _wait_until_msec == 0:
 		_wait_until_msec = Time.get_ticks_msec() + 120000
 	multiplayer.server_disconnected.connect(_on_server_lost)
 	multiplayer.connected_to_server.connect(func():
@@ -1012,6 +1012,14 @@ func _show_lost_notice(reason: String) -> void:
 	add_child(_lost_layer)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().paused = true
+
+
+# Whether the client keeps trying for 120 s while its server comes up. The "play" launcher starts the server beside it, and so does a plain
+# editor run (F5 / F6), which has no role at all: launcher.gd defaults it to play. Dave's F6 test play on 9 Nov 2026 failed with
+# "connection failed" because the server took 21.7 s to listen on its first start after a pull (the ground and the flora layout rebuilt)
+# and the client, with no role, gave up on its first try. "terrain_client" (joining a server by address) still fails at once.
+static func waits_for_server(role: String) -> bool:
+	return role == "play" or role == ""
 
 
 # While a --wait is running, a server not up yet is tried again.
