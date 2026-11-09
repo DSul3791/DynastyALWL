@@ -1593,7 +1593,7 @@ func _spawn_check(settings, world_dir: String, directory: String, tile_limits: D
 
 
 # Caves and goblin dens per baked tile (docs/design/cave_dens_after_rebuild_design.md section 3): spring caves, how many have a dry side branch,
-# other caves with passages, and the goblin dens by the game's own rule (TileTerrainData.goblin_den_node). Reports only: the bar is judged.
+# other caves with passages, and the goblin dens by the game's own rule (TileTerrainData.goblin_den_nodes). Reports only: the bar is judged.
 func _cave_den_rows(directory: String, tiles: Array) -> void:
 	var total_springs: int = 0
 	var total_dry: int = 0
@@ -1615,6 +1615,9 @@ func _cave_den_rows(directory: String, tiles: Array) -> void:
 		var others: int = 0
 		var dens: int = 0
 
+		for node in TileDataScript.goblin_den_nodes(caves):
+			dens += 1 if int(node) >= 0 else 0
+
 		for cave in caves:
 			var kind: String = str(cave.get("cave_kind", ""))
 
@@ -1624,12 +1627,10 @@ func _cave_den_rows(directory: String, tiles: Array) -> void:
 			elif TileDataScript.GOBLIN_DEN_CAVES.has(kind):
 				others += 1
 
-			dens += 1 if TileDataScript.goblin_den_node(cave) >= 0 else 0
-
 		total_springs += springs
 		total_dry += dry
 		total_dens += dens
-		_row("caves tile (%d,%d)" % [tile.x, tile.y], "%d spring caves, %d with a dry branch, %d other caves with passages, %d goblin dens (%d percent of dry caves)"
+		_row("caves tile (%d,%d)" % [tile.x, tile.y], "%d spring caves, %d with a dry branch, %d other caves with passages, %d goblin dens (the first dry spring cave, then %d percent of dry caves)"
 				% [springs, dry, others, dens, TileDataScript.GOBLIN_DEN_PERCENT], "judged", "INFO")
 
 	_row("caves, all baked tiles", "%d spring caves, %d with a dry branch, %d goblin dens" % [total_springs, total_dry, total_dens], "judged", "INFO")
