@@ -34,6 +34,7 @@ var x0: float = 0.0                # world position of sample (0, 0)
 var z0: float = 0.0
 var placeholder: bool = false      # no file: open ocean
 var placeholder_depth_m: float = -200.0
+var ground_springs: Array = []        # ground springs of a tile from the water record (sites "springs", design R6 as built): [Vector3 head, float m3_s, String cover] in the tile's order; flora_placer hides each with cover "bushes" under a clump of low shrubs
 
 var heights: PackedFloat32Array = PackedFloat32Array()
 # Settled simulated water level per sample (NAN dry); empty when the tile has no
@@ -164,6 +165,7 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	_load_bodies(lists["features"], rules)
 	_load_ores(lists["ore_bodies"], resource_ids, rock_ids)
 	_load_caves(lists["sites"].get("caves", []))
+	_load_springs(lists["sites"].get("springs", []))
 	_carve_beds(rules.get("runtime_terrain", {}).get("sim_water", {}))
 	_load_sim_water(path)
 	return ""
@@ -665,6 +667,18 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 				continue
 
 		ores.append(entry)
+
+
+# The tile's ground springs ({pos [x, y, z], m3_s, cover}, tile_sites._make_record_springs), in the file's order: the order gives each spring's
+# cover its item numbers (flora_placer SPRING_BASE), so it never changes. A tile baked by the rules has none.
+func _load_springs(list: Array) -> void:
+	ground_springs = []
+
+	for spring in list:
+		var pos: Array = spring.get("pos", [])
+
+		if pos.size() == 3:
+			ground_springs.append([Vector3(float(pos[0]), float(pos[1]), float(pos[2])), float(spring.get("m3_s", 0.0)), str(spring.get("cover", ""))])
 
 
 # The node of a cave's goblin den, or -1 for none (Dave 7 Nov 2026): a dry spot deep in an inland cave, in GOBLIN_DEN_PERCENT of them, picked by the
