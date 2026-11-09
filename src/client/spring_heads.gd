@@ -263,7 +263,7 @@ func _build(space: PhysicsDirectSpaceState3D, head: Vector3, way: Vector2, lengt
 	root.add_child(runnel)
 	runnel.basis = turn * Basis(Vector3.RIGHT, atan2(head.y - end_y, length + CLUMP_EDGE_M))
 	runnel.global_position = Vector3((head.x + end.x) * 0.5, (head.y + end_y) * 0.5, (head.z + end.y) * 0.5)
-	var ice: Decal = _decal(Vector3(RUNNEL_W_M * 1.6, 3.0, ICE_M), _ice_texture, null)
+	var ice: Decal = _decal(Vector3(RUNNEL_W_M, 3.0, ICE_M), _ice_texture, null)
 	root.add_child(ice)
 	ice.basis = runnel.basis
 	ice.global_position = Vector3(end.x - way.x * ICE_M * 0.5, end_y, end.y - way.y * ICE_M * 0.5)
@@ -385,7 +385,8 @@ static func runnel_image(glint: bool) -> Image:
 	return image
 
 
-# The frozen end: pale ice, soft at both ends.
+# The frozen end: a pale, half-clear line of ice as narrow as the water, soft at its sides and both ends (the first build's full-width
+# block read as a white square from 20 m, Dino's v2 frost shot, 9 Nov 2026).
 static func ice_image() -> Image:
 	var image: Image = Image.create(16, 32, false, Image.FORMAT_RGBA8)
 
@@ -393,8 +394,8 @@ static func ice_image() -> Image:
 		for x in 16:
 			var u: float = absf((float(x) + 0.5) / 16.0 * 2.0 - 1.0)
 			var along: float = (float(y) + 0.5) / 32.0
-			var a: float = (1.0 - smoothstep(0.5, 1.0, u)) * smoothstep(0.0, 0.25, along) * (1.0 - smoothstep(0.75, 1.0, along))
-			image.set_pixel(x, y, Color(0.84, 0.91, 0.96, 0.85 * a))
+			var a: float = (1.0 - smoothstep(0.2, 0.6, u)) * smoothstep(0.0, 0.35, along) * (1.0 - smoothstep(0.65, 1.0, along))
+			image.set_pixel(x, y, Color(0.74, 0.81, 0.86, 0.7 * a))
 
 	image.generate_mipmaps()
 	return image
