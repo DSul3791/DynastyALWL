@@ -34,7 +34,7 @@
 - **Flora layout version** rises by one when this ships (plants move).
 - **Check:** in `test_flora_density`, at least one grove of each of the four species on the starter tile, each with 4 or more trees within its radius. Plus a hint check: `near_orchard` (four fruit trees within 25 m, `hints.json`) fires inside a grove.
 
-## 2. A spawn clear of trees and shrubs (approved, PR after #803)
+## 2. A spawn clear of trees and shrubs (merged, #805)
 
 - **The problem:** flora is placed at run time on the server and never baked. The spawn picker runs at bake time and cannot see it. Since #803 removed the spawn clearing, a new player can wake inside a shrub or a tree.
 - **The rule:**
@@ -71,11 +71,13 @@
 
 **Recommendation:** (a) now, and (b) later as part of the world danger map, when there is more than one island.
 
+**Decided (coordinator, 9 Nov 2026):** (a). `animals.starter` and `island_level.town` are deleted, and the big-game circle comment goes with them.
+
 **Check:** `test_animal_spawn_wiring`'s island level lines read the town point from the markers. A test should show that moving the markers moves the levels, while moving the spawn leaves them alone.
 
 ## 4. Order
 
 1. This note (coordinator reads).
 2. The section 2 PR (approved).
-3. Section 3 (a) and the circle comment, if the coordinator picks (a).
+3. Section 3 (a) and the circle comment (decided: (a)).
 4. Section 1's stands, if approved: data only in `flora.json` plus the test, and the flora layout version bump.
