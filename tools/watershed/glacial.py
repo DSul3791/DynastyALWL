@@ -391,7 +391,7 @@ def main():
     t0 = time.time()
     track = []
 
-    def _cold_phase(years, ela_local, k):
+    def _cold_phase(years, ela_local, k, step_years):
         """One cold phase of `years`: the old cold stage's step, with the snowline ela_local (per cell). It starts from no ice
         after an interglacial, or from the last cold phase's ice when none came between (an LR04 history, lr04_history.py,
         cuts one glaciation into several phases at different snowlines). A phase of no years does nothing (8 Nov 2026: probe L
@@ -399,7 +399,7 @@ def main():
         st['ice_cycle_max'] = np.zeros(N)
         if years <= 0.0:
             return
-        steps = max(int(round(years / float(GL['dt']))), 1)
+        steps = max(int(round(years / step_years)), 1)
         dt = years / steps
         h, deposit = st['h'], st['deposit']
         ice = st['ice_carry']                          # thickness from the last step
@@ -496,7 +496,8 @@ def main():
             idle = float(era['period_years']) - float(era['active_years']) - float(era['interglacial_years'])
             st['h'] = st['h'] + U * idle               # the rest of the cycle: uplift only (ice-sheet cover not modelled)
             ela_local = He + float(era['ela_offset_m']) - _aspect_shift(st['h'], GL, n, dx)
-            _cold_phase(float(era['active_years']), ela_local, k)
+            # An era may set its own cold step (cold_step_years; probe B, docs/design/glacial_speed_design.md): else glacial.dt.
+            _cold_phase(float(era['active_years']), ela_local, k, float(era.get('cold_step_years', GL['dt'])))
             if e == len(history) - 1 and c == int(era['cycles']) - 1:
                 cold_ground, cold_deposit = st['h'].copy(), st['deposit'].copy()
                 last_interglacial = float(era['interglacial_years'])
