@@ -31,9 +31,11 @@ func _init() -> void:
 	_check(FloraView.wind_k(clear_ms) == 0.0, "clear (wind 0.1, %.1f m/s): still" % clear_ms)
 	_check(FloraView.wind_k(storm_ms) > 1.0, "storm (wind 0.8, %.1f m/s): k %.2f" % [storm_ms, FloraView.wind_k(storm_ms)])
 
-	# Every swaying shader has the wind uniforms, and the old two-sine path is still there for the switch off.
+	# Every swaying shader has the wind uniforms, and the old two-sine sway is kept until set_wind first runs.
+	var constants: Dictionary = (load("res://src/flora/flora_view.gd") as Script).get_script_constant_map()   # a preloaded class name cannot call it directly
+
 	for shader_name in ["FOLIAGE_SHADER", "BARK_SHADER", "PETAL_SHADER", "FRUIT_SHADER", "GREENS_SHADER", "BERRY_SHADER", "CHROME_SHADER"]:
-		var code: String = str(FloraView.get_script_constant_map().get(shader_name, ""))
+		var code: String = str(constants.get(shader_name, ""))
 		_check(code.contains("uniform bool wind_on") and code.contains("wind_k") and code.contains("wind_to"), "%s has the wind uniforms" % shader_name)
 		_check(code.contains("sin(TIME * 0.9"), "%s keeps the old sway until set_wind first runs" % shader_name)
 
