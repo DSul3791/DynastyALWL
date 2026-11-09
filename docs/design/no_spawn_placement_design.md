@@ -24,12 +24,13 @@
 |---|---|---|
 | apple_early | yes | 600, 0.2, [8, 14], 6.0, 0.6, [0.5, 0.9] |
 | apple_summer | yes | 600, 0.2, [8, 14], 6.0, 0.6, [0.5, 0.9] |
-| pear_summer | yes | 700, 0.15, [8, 12], 7.0, 0.5, [0.5, 0.9] |
+| pear_summer | yes | 700, 0.15, [10, 14], 7.0, 0.6, [0.5, 0.9] (was [8, 12] and 0.5: about 3 trees, too few) |
 | sour_cherry | yes | 600, 0.2, [6, 12], 5.0, 0.6, [0.4, 0.9] |
 | apple_autumn, apple_keeping, apple_cooking, pear_autumn, pear_winter, plum, damson | no, scattered as today | — |
 | quince, medlar | no, and made `rarity: "rare"` (today "uncommon"), since they are 0.2 to 0.3 per hectare already | — |
 
 - **Where:** only where the species already grows. The stand rule places a grove only in a biome with that species' `per_hectare` above 0, and only on ground its moisture, slope and altitude rules accept. So groves stand in temperate forest and grassland, and never on the beach or the hills.
+- **Placed first (David4 gate on #807, 9 Nov 2026):** the four species carry `place_first`, so their trees claim their ground before the forest round them. Without it, three of the four had no grove of 4 trees in the test window: in temperate forest at 150 trees per hectare the trees placed earlier (lower species ids) took the grove's ground.
 - **Size:** a grove of radius 8 to 14 m with trees 6 m apart and 60 % fill holds about 4 to 10 trees, close to the old orchard's 12. These numbers are judged.
 - **How many:** one try every 600 m with a 20 % chance is about 0.55 per km² per species where the biome fits, so about 2 groves per km² over the four species on temperate ground. On the 15.36 km starter tile, with roughly half of it temperate, that is on the order of 200 groves. Dino's flora density run is the check. If that is too many, `chance` comes down.
 - **No spawn anywhere:** the grove cells are hashed from the world seed and the chunk, like every stand. Nothing reads the spawn.
