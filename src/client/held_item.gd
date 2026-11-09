@@ -8,6 +8,9 @@ extends Node
 # the normal stance. The weapon is drawn as a simple first-person model until real art exists.
 
 const FeelKicks := preload("res://src/client/feel_kicks.gd")
+const ArtKit := preload("res://src/client/ui/art_kit.gd")
+# The held-item label sits 8 px over the hotbar tray (redesign section 9: the tray top is at y 948 of the 1080 canvas).
+const LABEL_ABOVE := 1080.0 - ArtKit.HOTBAR_TRAY.position.y + 8.0
 const Net := preload("res://src/stream/terrain_net.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
@@ -190,7 +193,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	_label.offset_bottom = -84.0
+	_label.offset_bottom = -LABEL_ABOVE
 	_label.add_theme_font_size_override("font_size", 20)
 	_label.add_theme_constant_override("outline_size", 4)
 	_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
@@ -1129,7 +1132,7 @@ func _process_body(delta: float) -> void:
 		_label.text = _caption()    # built ten times a second, not every frame (it reads the item table and builds strings)
 
 	if _inv != null:
-		_label.offset_bottom = -float(_inv.text_px(78 + 14 + 8))    # above the hotbar at any text size (Dave, build 617: they overlapped)
+		_label.offset_bottom = -LABEL_ABOVE    # above the hotbar tray, which keeps its place at any text size (Dave, build 617: they overlapped)
 	_place_arms(delta)
 
 	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing():

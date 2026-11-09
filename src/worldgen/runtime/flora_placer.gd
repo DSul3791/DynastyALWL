@@ -55,6 +55,12 @@ const KINDS := ["tree", "shrub", "plant"]
 const OCCUPANCY_CELL := 12.0   # also the widest gap kept between two trees
 const SHRUB_DENSITY := 3.0   # shrubs three times the table figures: ground cover under the woods (owner, 2026-10-18)
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const SPRING_BASE := 40960           # spring cover item numbers (_spring_cover): SPRING_BASE + spring x SPRING_MAX_PLANTS + plant, below STAND_BASE
+const SPRING_MAX_PLANTS := 16
+const SPRING_MAX_COUNT := 512        # springs per tile with room for their numbers: (STAND_BASE - SPRING_BASE) / SPRING_MAX_PLANTS
+const GOLDEN_ANGLE := 2.399963       # radians: the sunflower spiral of a spring clump
+const OCEAN_CLASS := 1
+const LAKE_CLASS := 2
 
 var generator
 var chunk_m: float = 256.0
@@ -73,6 +79,8 @@ var _patch_seed: int = 0
 var _beach_id: int = -1                 # biome ids for the sand / dirt edge rules (see _edge_m)
 var _ocean_id: int = -1
 var _clearings: Array = []              # [Vector2 centre, core radius, soft edge] where no tree or shrub stands: every NPC marker
+var _cover: Dictionary = {}             # the spring cover rules (tile_rules runtime_flora.spring_cover, see _spring_cover); "species" holds the species Dictionaries in order
+var _spring_seed: int = 0
 
 
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
@@ -91,6 +99,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	_grove_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_groves")
 	_stand_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_stands")
 	_patch_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_patches")
+	_spring_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_springs")
 	_clearings = _starter_clearings()
 	var biome_ids: Dictionary = {}
 	var water_ids: Dictionary = {}
@@ -266,6 +275,8 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 
 	for list in _by_biome:
 		list.sort_custom(func(a, b): return a["id"] < b["id"])
+
+	_cover = _cover_rules(rules.get("spring_cover", {}))
 
 
 func species_of(id: int) -> Dictionary:
@@ -555,6 +566,9 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			if item["montane"]:
 				_montane_cells(item, data, chunk, origin, species_id, rng, found, stand_used)
 
+	if not trees_only:
+		_spring_cover(origin, data, found)
+
 	# Landmark trees first, then grown trees, young trees, shrubs and plants;
 	# within a tier by species and cell, so the result never changes.
 	found.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and (a[1] < b[1] or (a[1] == b[1] and a[2] < b[2]))))
@@ -815,6 +829,107 @@ func _shore_ok(item: Dictionary, data, k: int, x: float, z: float) -> bool:
 				return true
 
 	return false
+
+
+# Spring cover (Dave 9 Nov 2026: "use low shrubs that block the view of the ground in clumps over the spring head so its hidden. let the water just run out
+# from under the bush"; design R6 as built, "The spring cover"). Every ground spring of the tile (TileTerrainData.ground_springs, cover "bushes") gets
+# one clump of a low shrub: the first species of the rules' list that grows in the head's biome, else the list's first (every spring is hidden).
+# The plants lie on a sunflower spiral from beside the head (the first within 0.6 m) out to the clump's radius, so they are spread evenly, 0.8 m and more apart, and the
+# crowns close; their heights come from the low end of the species' range. The clump is never thinned: no moisture, soil, slope or near-water
+# rule, since the water runs out from under it. Only open lake or sea and a cave mouth drop a plant. It claims its ground first
+# (the landmark tier), so other shrubs keep off it. Item numbers: SPRING_BASE + the spring's place in the tile's list x SPRING_MAX_PLANTS + the
+# plant's number (SPRING_BASE, SPRING_MAX_PLANTS at the top). Cover species are patch species, which never use the main grid's numbers (below STAND_BASE), so no number is used twice.
+
+
+# The cover rules with their species looked up; a listed species that is missing or has no patch is left out with an error.
+func _cover_rules(rules: Dictionary) -> Dictionary:
+	if rules.is_empty():
+		return {}
+
+	var out: Dictionary = {
+		"species": [],
+		"count": _range_of(rules.get("count", [12, 16])),
+		"radius_m": _range_of(rules.get("radius_m", [2.0, 2.8])),
+		"low_share": clampf(float(rules.get("height_low_share", 0.33)), 0.0, 1.0),
+		"jitter_m": float(rules.get("jitter_m", 0.08)),
+		"spacing_m": maxf(float(rules.get("spacing_m", 0.6)), PLANT_MIN_GAP),
+	}
+
+	for name in rules.get("species", []):
+		var found: Dictionary = {}
+
+		for item in species:
+			if item["name"] == str(name):
+				found = item
+
+		if found.is_empty() or not found.has("patch") or found["kind"] != KIND_SHRUB:
+			push_error("flora_placer: spring cover species %s is not a patch shrub in the flora table, left out" % str(name))
+			continue
+
+		out["species"].append(found)
+
+	if int(out["count"].y) > SPRING_MAX_PLANTS:
+		push_error("flora_placer: spring cover count %d is over SPRING_MAX_PLANTS %d; capped" % [int(out["count"].y), SPRING_MAX_PLANTS])
+		out["count"] = Vector2(float(out["count"].x), float(SPRING_MAX_PLANTS))
+
+	return out if not out["species"].is_empty() else {}
+
+
+# Adds the plants of the spring clumps that stand in this chunk to `found`.
+func _spring_cover(origin: Vector2, data, found: Array) -> void:
+	if _cover.is_empty() or data.ground_springs.is_empty():
+		return
+
+	var reach: float = float(_cover["radius_m"].y) + float(_cover["jitter_m"])
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+	for index in range(mini(data.ground_springs.size(), SPRING_MAX_COUNT)):
+		var spring: Array = data.ground_springs[index]
+		var head: Vector3 = spring[0]
+
+		if str(spring[2]) != "bushes" or head.x + reach < origin.x or head.x - reach >= origin.x + chunk_m or head.z + reach < origin.y or head.z - reach >= origin.y + chunk_m:
+			continue
+
+		var item: Dictionary = _cover["species"][0]
+		var biome_here: int = data.biome[data.nearest(head.x, head.z)]
+
+		for candidate in _cover["species"]:
+			if candidate["per_biome"][biome_here] > 0.0:
+				item = candidate
+				break
+
+		var hx: int = int(round(head.x * 10.0))
+		var hz: int = int(round(head.z * 10.0))
+		rng.seed = _mix(_spring_seed, hx, hz, int(item["id"]))
+		var plants: int = int(round(lerpf(float(_cover["count"].x), float(_cover["count"].y), rng.randf())))
+		var radius: float = lerpf(float(_cover["radius_m"].x), float(_cover["radius_m"].y), rng.randf())
+		var turn: float = rng.randf() * TAU
+		var low_top: float = lerpf(float(item["height_min"]), float(item["height_max"]), float(_cover["low_share"]))
+
+		for n in range(plants):
+			rng.seed = _mix(_spring_seed, hx + 7919 * (n + 1), hz, int(item["id"]))
+			# The sunflower spiral with the half-step start (Vogel 1979): the least gap between two plants is 0.77 m for 12 to 16 plants
+			# in 2.0 to 2.8 m (0.63 m after the jitter), over the 0.5 m spacing. Starting at the head itself (n / plants) put the first two plants radius / sqrt(plants) apart, under the
+			# clump's spacing for a small dense clump, and the second was dropped (#802 gate: 78 of 81 sampled plants kept).
+			var distance: float = radius * sqrt((float(n) + 0.5) / float(plants))
+			var angle: float = turn + GOLDEN_ANGLE * float(n)
+			var jitter: float = float(_cover["jitter_m"]) if n > 0 else 0.0
+			var x: float = head.x + cos(angle) * distance + (rng.randf() * 2.0 - 1.0) * jitter
+			var z: float = head.z + sin(angle) * distance + (rng.randf() * 2.0 - 1.0) * jitter
+
+			if x < origin.x or z < origin.y or x >= origin.x + chunk_m or z >= origin.y + chunk_m:
+				continue
+
+			var k: int = data.nearest(x, z)
+
+			if data.water_class[k] == OCEAN_CLASS or data.water_class[k] == LAKE_CLASS:
+				continue
+
+			if not data.cave_openings.is_empty() and data.in_cave_opening(x, z):
+				continue
+
+			var height: float = lerpf(float(item["height_min"]), low_top, rng.randf())
+			found.append([TIER_FIRST, int(item["id"]), SPRING_BASE + index * SPRING_MAX_PLANTS + n, x, generator.surface_height(x, z), z, height, rng.randf() * TAU, float(_cover["spacing_m"])])
 
 
 # Ground slope (rise over run) from the tile's height map, over 4 m.

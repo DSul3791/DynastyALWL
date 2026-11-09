@@ -4,6 +4,7 @@ extends RefCounted
 # exertion, a beating heart, hunger, thirst), then the attributes (luck now, more later) and the skills (none built yet).
 # The only other bars in the game are in the inventory. The heart beats at the real rate the heartbeat sound uses.
 
+const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const HEART_REST_BPM := 60.0
 const BODY_PX := 30
 const TITLE_PX := 40
@@ -157,7 +158,8 @@ func _build() -> void:
 	bars.add_theme_constant_override("separation", _px(12))
 	body.add_child(bars)
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Temperature", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
+	# The warm stat set the inventory's You column uses (redesign 6.4, decided 9 Nov 2026): the same six names, the same fills.
+	for spec in [["Health", ArtKit.STAT_FILL["Health"]], ["Exertion", ArtKit.STAT_FILL["Exertion"]], ["Energy", ArtKit.STAT_FILL["Energy"]], ["Temperature", ArtKit.STAT_FILL["Temperature"]], ["Food", ArtKit.STAT_FILL["Food"]], ["Water", ArtKit.STAT_FILL["Water"]]]:
 		var row: HBoxContainer = HBoxContainer.new()
 		row.add_theme_constant_override("separation", _px(14))
 		var name_label: Label = _label(spec[0], BODY_PX)

@@ -78,7 +78,7 @@ Performance on weak machines is a separate job: a world render scale option for 
 | Gear, left | 756 | 92 | 96 | 464 | Head, Body, Legs, Feet: 4 slots of 96, evenly spaced |
 | Figure | 862 | 82 | 196 | 478 | The live 3D character wearing what is equipped and holding what is in the hands (the mockup shows the linen shirt, hide boots, the backpack's straps and the stone axe in hand); see 6.6. Caption under it, dim 18: "Live character, as equipped" |
 | Gear, right | 1068 | 92 | 96 | 464 | Hands, Back, Right hand, Left hand |
-| Stats | 756 | 614 | 408 | 276 | An ornament rule above, then six rows 46 apart: a 26 px engraved glyph, the name (18), a 10 px bar from x 888 to 1076, the value right-aligned (SemiBold 18, outlined) |
+| Stats | 756 | 614 | 408 | 276 | An ornament rule above, then six rows, a fixed 6 px apart (each row grows with the text, so the column still fits its 820 px at the largest text step, 1.2; texttest 9 Nov): a 26 px engraved glyph, the name (18), a 10 px bar from x 888 to 1076, the value right-aligned (SemiBold 18, outlined) |
 
 The 8 gear slots are the 6 wear slots in `items.json` (head, body, legs, feet, hands, back) plus the two hands. There is no belt slot in the game, so none is drawn. An empty gear slot shows an engraved silhouette of what goes there (helmet, tunic, trousers, boot, glove, pack, a hand axe, a shield) and no word.
 
@@ -112,9 +112,9 @@ The 10 categories are the ones in `recipes.json`: Tools, Weapons, Shelter and bu
 | Part | x | y | w | h | Detail |
 |---|---|---|---|---|---|
 | Title plate | 1254 | 30 | text + 60 | 46 | The container's name engraved; on the right two raised tabs of 118 x 36: **Chest** and **Craft** (Craft still works with the chest open) |
-| Bar | 1226 | 100 | 650 | 44 | "Keep out of crafting" tick box; **Take all** and **Store all** as key hints (keys proposed: **T** and **G**, changeable in Key bindings) |
+| Bar | 1226 | 100 | 650 | 44 | "Keep out of crafting" tick box; **Take all** and **Store all** as key hints (keys **A** and **G**, changeable in Key bindings; T was proposed for Take all but is the transfer key) |
 | Chest grid | 1226 | 158 | 650 | 540 | The same 100 px wells, 6 across, 10 gaps; it scrolls for big containers |
-| Tools | 1226 | 716 | 650 | 32 | Key hints: **F** Sort both, **Q** Stack into my chests (proposed keys) |
+| Tools | 1226 | 716 | 650 | 32 | Key hints: **F** Sort both, **Q** Stack into my chests |
 
 Shift-click or drag moves a stack between the pack and the chest. Ctrl-click moves one.
 
@@ -290,7 +290,7 @@ The hotbar is one control, shown the same way with the window open or closed: te
 
 ## 10. What this replaces
 
-`inventory_view.gd` window building, `ui/inventory/item_slot.gd` (64 px slot at unit 1), `pack_grid.gd`, `recipe_list.gd`, `container_panel.gd`, `craft_queue.gd`, `pinned_recipe.gd`, `parchment_tooltip.gd` (replaced by the info strip) and `inventory_look.gd`. #780's shrink-to-fit is not needed once the window is laid out at fixed canvas sizes, so it is removed by this work.
+`inventory_view.gd` window building, `ui/inventory/item_slot.gd` (64 px slot at unit 1), `pack_grid.gd`, `recipe_list.gd`, `container_panel.gd`, `craft_queue.gd`, `pinned_recipe.gd`, `parchment_tooltip.gd` (replaced by `ArtKit.card` and the info strip; moved to `proposed_removals/` by #797) and `inventory_look.gd`. #780's shrink-to-fit is not needed once the window is laid out at fixed canvas sizes; #780 was closed unmerged on 9 Nov, so none of it landed.
 
 ## 11. Open points for Dave
 
@@ -302,11 +302,11 @@ The hotbar is one control, shown the same way with the window open or closed: te
 
 **The canvas.** The canvas has been 2880 x 1620 since the first commit, in `project.godot` (`viewport_width` and `viewport_height`) and in `display_settings.gd` (`BASE`). It returns to **1920 x 1080** in this work; content scale mode `viewport` and aspect `keep` stay as they are, and the window override stays 1920 x 1080. Every existing UI scene then has its sizes rechecked at that canvas (section 13), because every fixed number in them was drawn at two-thirds size until now.
 
-Steps, each its own PR through the gate:
+Steps, each its own PR through the gate. Status 9 Nov 09:15 UTC: steps 1 to 4 are merged (#785 canvas, #787 art kit, #789 frame, #790 pack, #791 craft card, #793 You column, #796 chest tabs, #797 cleanup, #798 chest keys, #794 hotbar strip); step 5 has the painted log, stick and stone (#795) and the icon importer (#800), with the baked icons to follow.
 
 1. **Canvas to 1920 x 1080** plus the section 13 fixes for the menus and the HUD, so nothing gets worse on the day the canvas changes. The six HUD bars move to the warm colours and glyphs of 6.4 in the same pass.
 2. **The art kit** (section 8) as placeholders drawn in code first (the colours and sizes above), so the layout lands without waiting for the art; the painted PNGs drop in later with no code change.
-3. **The new window:** the three columns, the pack and chest grids, the You column, the craft card, the info strip, search and sort. Removes the old window building and #780's fit.
+3. **The new window:** the three columns, the pack and chest grids, the You column, the craft card, the info strip, search and sort. Removes the old window building (#780's fit never landed).
 4. **The hotbar strip**, one control used both in the world and under the open window (section 9), in the new slot art, with the pickup feed and held-item label moved up to clear it.
 5. **The painted art** as Kathleen's art jobs finish (art brief rows 1 to 27), then the icons (row 28).
 

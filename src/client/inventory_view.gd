@@ -33,7 +33,6 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
-const PICKUP_M := 3.0
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
@@ -59,7 +58,7 @@ const YouColumnScript := preload("res://src/client/ui/inventory/you_column.gd") 
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
-var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store beside the pack
+var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store, in the Craft column under its Chest tab
 var _queue_part: CraftQueueScript              # the crafting queue under the recipe list
 var _pinned_part: PinnedRecipeScript           # the pinned recipe's checklist card
 
@@ -677,20 +676,6 @@ func _doused_torch_slot() -> int:
 	return -1
 
 
-# The nearest burning fire within a few steps (a doused torch pressed on the hotbar lights at it), or 0.
-func lit_fire_in_reach() -> int:
-	var here: Vector3 = _player_position.call()
-	var best: int = 0
-	var best_d: float = 3.0
-
-	for id in _world:
-		if _world[id]["state"] in [1, 40, 41] and here.distance_to(_world[id]["pos"]) <= best_d:
-			best = id
-			best_d = here.distance_to(_world[id]["pos"])
-
-	return best
-
-
 func _probe_fire() -> Dictionary:
 	var id: int = _nearest_fire()
 
@@ -1106,26 +1091,12 @@ func _nearest_fire() -> int:
 	return _aimed_or_nearest(ids, here)
 
 
-func cook_nearest() -> void:
-	var fire: int = _nearest_fire()
-
-	if fire != 0:
-		net.inventory_action.rpc_id(1, Net.ACT_COOK, fire, 0, 0, Vector3.ZERO)
-
-
 func pick_up_fire() -> void:
 	var fire: int = _nearest_fire()
 
 	if fire != 0:
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, fire, 0, 0, Vector3.ZERO)
-
-
-func fuel_nearest() -> void:
-	var fire: int = _nearest_fire()
-
-	if fire != 0:
-		net.inventory_action.rpc_id(1, Net.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
 
 
 # [id, number, count] of the closest item within reach, or [0, 0, 0].
@@ -3636,7 +3607,6 @@ const PICKUP_SIZE_MULT := 3.0   # Dave, 2026-10-21: three times the earlier size
 const STONE_SCALE := Vector2(0.85, 1.1)
 const STICK_SIZE_SHARE := 0.75   # Dave 2026-10-21: sticks about 75 percent of that, lying on the ground
 const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT * STICK_SIZE_SHARE
-const STICK_TINT := Color(0.42, 0.29, 0.17)   # bark brown, multiplied into the mesh colours
 const STONE_LIFT_M := 0.01
 const PICKUP_BRIGHT := 0.9   # was 1.3 while the vertex colours were not used (flat white); with them on, 1.3 drew chalk-white stones in full sun
 const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
@@ -4298,9 +4268,13 @@ func screen_open() -> bool:
 	return open or chest_mode or character_open() or dialogue_open
 
 
+const CHEST_KEYS := [["take_all", 0], ["store_all", 1], ["stack_nearby", 2], ["sort_both", 3]]    # action id, Net.ACT_BULK kind
+
+
 # Quick keys while the screen is open: E use (eat or apply), D drop (Shift+D one), S split, R repair, T transfer
-# between the pack and an open container. They act on the slot under the mouse, else the selected slot. True when the key
-# was one of them (the caller then skips its other bindings). Outside this screen E is the interact key.
+# between the pack and an open container. They act on the slot under the mouse, else the selected slot. With a container open
+# A takes all, G stores all, F sorts both and Q stacks into my chests. True when the key was one of them (the caller then skips
+# its other bindings). Outside this screen E is the interact key.
 func quick_key(event: InputEventKey) -> bool:
 	if dialogue_open and dialogue_key.is_valid():
 		return bool(dialogue_key.call(event))
@@ -4347,6 +4321,13 @@ func quick_key(event: InputEventKey) -> bool:
 			_container_part.on_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
 
 		return true
+
+	# A container open: Take all, Store all, Sort both, Stack into my chests (redesign 4.4), the same as the key hints in its column.
+	if chest_mode:
+		for spec in CHEST_KEYS:
+			if KeyBindings.matches(event, str(spec[0])):
+				bulk(int(spec[1]))
+				return true
 
 	return false
 
@@ -4408,11 +4389,6 @@ func _item_label(number: int) -> String:
 		return knowledge.reveal("i%d" % number, item_name, int(entry.get("familiarity", 100)), "horticulture", entry.get("look_alikes", []))
 
 	return item_name
-
-
-# A slot count: whole up to 9,999, then thousands with one decimal (12.3k).
-func _count_text(n: int) -> String:
-	return str(n) if n < 10000 else "%.1fk" % (float(n) / 1000.0)
 
 
 func _freshness_word(f: float) -> String:
@@ -5441,8 +5417,12 @@ func run_eat_test(client) -> void:
 		await get_tree().create_timer(0.3).timeout
 		client.held.select(9)
 		await get_tree().create_timer(0.3).timeout
-		var held_here: bool = client.held.held_id() == id or client.held.off_id() == id   # a torch or shield goes in the left hand (items.json "offhand", 7 Nov 2026)
-		var drawn: bool = client.held._off_model != null if client.held.off_id() == id else client.held._model != null
+		# A torch or shield goes in the left hand (items.json "offhand", 7 Nov 2026). A doused torch lights again when its key is pressed
+		# (held_item.gd _relight_on_press), so in hand it is its "relit_item", the burning torch.
+		var as_held: Array = [id, str(table.entry(id).get("relit_item", id))]
+		var in_left: bool = as_held.has(client.held.off_id())
+		var held_here: bool = client.held.held_id() == id or in_left
+		var drawn: bool = client.held._off_model != null if in_left else client.held._model != null
 		held_ok += 1 if held_here else 0
 		modelled += 1 if drawn else 0
 

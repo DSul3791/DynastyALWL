@@ -53,6 +53,8 @@ func _init() -> void:
 
 	check(Bindings.conflict("open", KEY_E, false, false) == "interact", "F -> E clashes with interact")
 	check(Bindings.conflict("use_item", KEY_E, false, false) == "", "E in the inventory screen does not clash with E in the world")
+	check(Bindings.matches(_key(KEY_A), "take_all") and Bindings.matches(_key(KEY_G), "store_all") and Bindings.matches(_key(KEY_F), "sort_both") and Bindings.matches(_key(KEY_Q), "stack_nearby"), "a container's four bulk keys: A, G, F, Q")
+	check(Bindings.conflict("take_all", KEY_T, false, false) == "transfer_item", "Take all cannot share T with transfer")
 	check(Bindings.conflict("open", KEY_E, true, false) == "", "Ctrl+E is its own binding")
 
 	check(Bindings.set_binding("interact", KEY_F, false, false) == "", "interact rebinds to F")
