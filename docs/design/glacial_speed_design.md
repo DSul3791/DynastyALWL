@@ -53,3 +53,35 @@ Cuts A1 and A2 keep every number. The check for both: Dino runs glacial on ws580
 - The 16 m grid, the 49 cycles and the physics.
 - The outputs, on the same window grid, so lakes.py, groundwater.py, network.py and record.py read what they read today.
 - No runs in the cloud. The profile, the comparisons and any probe run on Dave's PC.
+
+## Cut A3: the implicit solve (sized from the solve split; coordinator approved 9 Nov)
+
+**Measured (Dino, 9 Nov, #840 2d0b2bd7, one cycle; `glacial_solve_split_ws580v.txt`).** `evolve._solve` takes 1.44 to 1.59 s a call, 15.06 s for 10. Its slope ceiling (`_slope_ceiling`, raster sweeps in 6 to 8 passes) is 0.57 to 0.73 s of that, 6.37 s in all (42%). The rest (58%) is the solve's sweeps, up to 4, with their sediment bookkeeping. `_solve` runs in all 650 steps (cold and river) and in evolve (B1).
+
+**Three parts. All of them are exact: every cell's arithmetic stays as it is, and so does the order of the cells within each river tree.**
+- **A3a. The sweeps run on nine threads, one river basin at a time.**
+  - In a sweep, a cell reads only its own values, its receiver's new height and the sediment from upstream of it. The sediment sum adds only within its own tree. So two basins never read or write each other's cells.
+  - Each basin is the tree that drains to one outlet, the first cell whose receiver is the sea or none. Its cells keep their relative order from the route's `order`. So each sum adds the same numbers in the same order, and every height comes out bit for bit as before.
+  - Each step, the basins are packed into nine buckets, largest first, each into the lightest bucket (ties by cell index). Each thread runs one bucket. The result does not depend on the scheduling, or on how many threads there are.
+  - The largest bucket sets the speedup. Glacial logs its share of the land once a run (`solve buckets:`).
+  - If a receiver ever came after its donor in `order`, or lay off it, the step runs in one thread as before. The route never makes such a receiver, but the check keeps the cut exact if one appears.
+- **A3b. The sediment bookkeeping is done on land cells only.**
+  - Each sweep made three passes over all 8.3 M cells: new zeros, a copy and the upstream loop. 83% of those cells are sea, where every value stays 0.
+  - The arrays are now made once a call. Each bucket writes only its own cells.
+- **A3c. The slope ceiling loops over a land index in the same raster order.**
+  - It loops over the cells it does not skip (not sea, threshold above 0), forwards and then backwards, as before. Before, it looked at all 8.3 M cells in every sweep of every pass.
+  - Its passes stay one thread. A different sweep order could settle on a different set of sources, so that would not be exact.
+
+**Estimate.** About 1.5 s down to about 0.85 s a call:
+- A3a: the sweeps' 0.7 s falls to about 0.2 s, if no bucket holds more than a quarter of the land;
+- A3b: about −0.15 s;
+- A3c: about −0.05 s.
+
+That is about 0.65 s × 650 calls, about 7 min a glacial. Evolve gains too.
+
+**The check.** David4 runs `tools/watershed/test_evolve.py` (new: the new `_solve` and `_slope_ceiling` against verbatim copies of the old ones, on routed random islands with cover, ice lift, sea receivers and a forced one-thread case, at 1 and 9 threads), plus `test_glacial.py` and `test_rock.py`. Dino then runs three checks, and every array of every file must be equal:
+1. one cycle against the profile's one cycle on main;
+2. the full glacial on ws580v against ws580v's own outputs;
+3. one evolve run against ws580v's evolve output.
+
+**After A3 (estimate):** glacial is about 36 min, and nine tiles take about 56 to 60 min. B (4,000-year cold steps, about 10 min less) is then still needed for Dave's rule (d). B changes the result, so its probe (`water/glacial_b_probe_job.md`) runs only after A3 is measured, and is judged by `compare_runs.py` against ws580v.
