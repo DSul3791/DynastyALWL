@@ -183,7 +183,7 @@ func _build_recipe_filter() -> Control:
 	for state in ["normal", "focus", "read_only"]:
 		view._recipe_search.add_theme_stylebox_override(state, bare)
 	view._style(view._recipe_search, view.BODY_PX - 12)
-	view._recipe_search.text_changed.connect(func(_text): view._refresh())
+	view._recipe_search.text_changed.connect(func(_typed: String): view._refresh())
 	row.add_child(view._recipe_search)
 	holder.add_child(field)
 	return holder
