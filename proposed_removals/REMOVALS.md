@@ -47,3 +47,8 @@ Also removed inside live files (git history keeps them): 23 functions nothing ca
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | src/worldgen/tools/test_drainage_flow.gd (+ .uid) | Sonny, coordinator's call | 7 Nov | checks the old rule-carved channel shape ("outer bank at least 1.3x the inner bank depth"); the only red test on the #524 nine-tile rebake; planned for archive in TYLER_TEST_SYSTEM_REVIEW.md once natural rivers are on | test_drainage_small (shared fill and flow invariants) and test_drainage_natural (P2 natural rivers) |
+
+## Inventory redesign cleanup, 9 Nov 2026 (Kathleen, branch claude/kathleen-inventory-cleanup, #797)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/client/ui/inventory/parchment_tooltip.gd | Kathleen, coordinator approved the cleanup plan (Dave delegated approval while asleep) | 9 Nov | the redesign (docs/ui/inventory_crafting_redesign.md section 10) replaces the parchment card; nothing loads it any more | ArtKit.card in src/client/ui/art_kit.gd (item tooltips, pinned recipe, bulk toast) and the pack's info strip |
