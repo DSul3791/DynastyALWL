@@ -85,10 +85,14 @@ func build() -> void:
 		slot.clicked.connect(func(button: int, _shift: bool) -> void:
 			if button == MOUSE_BUTTON_LEFT:
 				on_slot(true, i))
+		# The info strip under the pack reads the chest well under the pointer too (redesign 4.1: one place to read about an item).
 		slot.mouse_entered.connect(func() -> void:
 			view._chest_hover = [true, i]
-			view._chest_last = [true, i])
-		slot.mouse_exited.connect(func() -> void: view._chest_hover = [] if view._chest_hover == [true, i] else view._chest_hover)
+			view._chest_last = [true, i]
+			view._pack_part.show_info())
+		slot.mouse_exited.connect(func() -> void:
+			view._chest_hover = [] if view._chest_hover == [true, i] else view._chest_hover
+			view._pack_part.show_info())
 		# Dragging a pack stack onto the container puts it in; dragging out of the container is not wired (a click or shift-click takes it).
 		slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
 		slot.on_drop = func(data: Variant) -> void:

@@ -139,22 +139,28 @@ func refresh() -> void:
 	show_info()
 
 
-# The info strip: the slot under the pointer, else the selected slot, else a dim hint.
+# The info strip: the pack or chest well under the pointer, else the selected pack slot, else a dim hint.
 func show_info() -> void:
 	if info == null or not is_instance_valid(info):
 		return
 
+	var store = view.inventory
 	var slot: int = view._hover if view._hover >= 0 else view._selected
 
-	if slot < 0 or slot >= view.inventory.SLOTS or view.inventory.numbers[slot] == 0:
+	if view.chest_mode and view._chest_hover.size() == 2 and bool(view._chest_hover[0]):
+		store = view.chest_inv
+		slot = int(view._chest_hover[1])
+
+	if store == null or slot < 0 or slot >= store.numbers.size() or store.numbers[slot] == 0:
 		info.clear()
 		return
 
-	var number: int = view.inventory.numbers[slot]
+	var number: int = store.numbers[slot]
 	var item_id: String = view.table.id_of(number)
 	var entry: Dictionary = view.table.entry(item_id)
 	var item_facts: Array = []
-	var count: int = view.inventory.counts[slot]
+	var count: int = store.counts[slot]
+	var wear: int = store.wear[slot]
 
 	if count > 1:
 		item_facts.append(["Count", str(count)])
@@ -163,11 +169,11 @@ func show_info() -> void:
 		var each_kg: float = CarryRules.weight_of(item_id, view._carry_cfg)
 		item_facts.append(["Weight", ("%.0f g" % (each_kg * 1000.0)) if each_kg < 0.1 else ("%.2f kg" % each_kg)])
 
-	if view.container_cap(slot) > 0:
+	if int(entry.get("capacity_ml", 0)) > 0:
 		item_facts.append(["Holds", view._litres(int(entry.get("capacity_ml", 0)))])
-		item_facts.append(["Filled", view._litres(view.inventory.wear[slot])])
+		item_facts.append(["Filled", view._litres(wear)])
 	elif int(entry.get("durability", 0)) > 0:
-		item_facts.append(["Condition", "%d %%" % int(round(100.0 * clampf(1.0 - float(view.inventory.wear[slot]) / float(entry["durability"]), 0.0, 1.0)))])
+		item_facts.append(["Condition", "%d %%" % int(round(100.0 * clampf(1.0 - float(wear) / float(entry["durability"]), 0.0, 1.0)))])
 
 	var kcal: int = VitalsRules.food_value(item_id, view._vitals_cfg)
 
@@ -175,7 +181,7 @@ func show_info() -> void:
 		item_facts.append(["Food", "%d kcal" % kcal])
 
 	if view.table.shelf_units(number) > 0:
-		item_facts.append(["Fresh", "%d %%" % int(view.table.freshness(number, view.inventory.wear[slot]) * 100.0)])
+		item_facts.append(["Fresh", "%d %%" % int(view.table.freshness(number, wear) * 100.0)])
 
 	info.show_item(InventoryLook.icon_for(item_id), view._item_label(number), str(entry.get("description", "")), item_facts)
 
