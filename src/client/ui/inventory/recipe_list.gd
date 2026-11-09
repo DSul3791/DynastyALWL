@@ -31,14 +31,8 @@ func build(queue_root: Control) -> Control:
 	var left: VBoxContainer = VBoxContainer.new()
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.size_flags_stretch_ratio = 1.0
-	var left_title: Label = Label.new()
-	left_title.text = "Make"
-	view._style(left_title, view.TITLE_PX - 6)
-
-	# STUB(step 2-4): with a station open the plate will name it and show its emblem (InventoryLook.plate's station), once Steve's station context lands.
-	InventoryLook.plate(left_title, "Make", view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
-
-	left.add_child(left_title)
+	# The column's name is the frame's brass "CRAFT" plate (inventory_frame.gd).
+	# STUB(step 2-4): with a station open the plate will name it, once Steve's station context lands.
 	left.add_child(_build_recipe_filter())
 	var list_scroll: ScrollContainer = ScrollContainer.new()
 	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
