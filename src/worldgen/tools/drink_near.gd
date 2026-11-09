@@ -108,7 +108,7 @@ func _find_spots(generator, settings, tiles: Array, cfg: Dictionary) -> Dictiona
 				spots["spring head"] = spring[0]
 
 		if not data.has_drink():
-			print("tile %d,%d: no drink sections (baked before step 2b?)" % [tile.x, tile.y])
+			print("tile %d,%d: no channel samples (a tile with no streams, such as open sea, or one baked before step 2b)" % [tile.x, tile.y])
 			continue
 
 		var mean_c: Callable = _mean_c(settings, data.z0)
