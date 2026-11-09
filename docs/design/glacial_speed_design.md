@@ -111,10 +111,10 @@ That is about 0.65 s × 650 calls, about 7 min a glacial. Evolve gains too.
 - **R2. No receivers that are thrown away.** `evolve.route` throws `lem.route`'s D8 receivers away. The flood moves verbatim into `lem.fill_order`. `lem.route` calls it and then runs its D8 loop as before, so `meander.py` and `precarve.py` get the same three arrays. `evolve.route` calls `fill_order` alone.
 - **R3. A four-way heap in the flood.** It goes in only if the split job measures at least 0.05 s a call. `(value, index)` is a strict total order, so any correct queue pops the same sequence.
 
-**Exact.** Every array comes out bit for bit as before. R1 does each cell's arithmetic on another thread, with the order-dependent half unchanged. R2 is the same code moved. Before any code, `water/route_split_profile_job.md` checked the split kernels on ws580v's ground, array-equal, and timed them.
+**Exact.** Every array comes out bit for bit as before. R1 does each cell's arithmetic on another thread, with the order-dependent half unchanged. R2 is the same code moved. The split kernels were also written into `water/route_split_profile_job.md` (array-equal on ws580v's ground, and each part timed). That job was dropped on 9 Nov, when Dave stopped new jobs to merge and test play, so R1 and R2 go in on `test_evolve.py` alone.
 
 **The check.**
 - David4 runs `test_evolve.py`. It has new cases against verbatim copies of the old `_ltd_receivers` and `lem.route`, at 1 and 9 threads, with three drift memories. David4 also runs `test_glacial.py` and `test_rock.py`.
-- Dino then runs the A3 job's three checks: one cycle, the full glacial and evolve, every file array-equal.
+- Dino's three full-run checks (one cycle, the full glacial and evolve, every file array-equal) and the route split job wait for the next chain run. Until then, the times below are estimates.
 
-**Estimate** (R1 and R2): about 0.38 s a call, so about 4 min off glacial (3 min with B) and 1.3 min off evolve.
+**Estimate** (R1 and R2, not measured): about 0.38 s a call, so about 4 min off glacial (3 min with B) and 1.3 min off evolve.
