@@ -310,7 +310,7 @@ func setup(client) -> void:
 	drip_material.set_shader_parameter("streak", Color(0.78, 0.84, 0.95, 0.32))
 	drips = RainDripsScript.new()
 	drips.setup(self, drip_material)
-		drips.set_quality(_quality)
+	drips.set_quality(_quality)
 	wind_cue = WindCueScript.new()
 	add_child(wind_cue)
 	wind_cue.setup()
