@@ -41,6 +41,7 @@ The coordinator asked for this after #810. Settle + refilm stays in the bake unt
   - a depth under 12.5 cm is raised to 13 cm by both;
   - a depth of 13 cm or more is left alone by both.
 - Dino's cmp settles it.
+- *Found by that cmp (9 Nov):* refilm also re-saved the file it had loaded. `WaterStore` keeps cells over 4 mm, so a cell of 4 to 5 mm is stored as 0 cm, loads as 0, and drops out on the re-save. A folded settle kept those 0 cm entries: its files were larger, but they load to the same water. The settle now leaves out depths that round to 0 cm, as the re-save did.
 
 **Why cut 3 needs proof.** The 7,200 minimum dates from 23 Oct: "600 left the river middle dry (still filling); 7200 is settled". That was on the old rule bake with other springs. With today's springs at 1,000 times the record's flow, the rivers fill faster, so fewer ticks may be enough. The bar is the one PR C used, applied to the short run against the full settle (`compare_seed_settle.py`):
 - every lake within 10 cm;
@@ -67,6 +68,17 @@ On main (the ws580v tiles and water are there since #799), in three scratch copi
 - Step 1 must repeat main's bytes. If it does, cut 2 can be byte-checked.
 - If step 2 passes, `min_ticks` goes to 3,600. If step 3 also passes, it goes to 1,800.
 - With cuts 1 to 3, the nine-tile settle falls from 363 s to perhaps 2 to 3 min, and a full world's settle to well under an hour.
+
+## Measured, and what was done (9 Nov)
+
+Dino ran the measurement on main e0b05747 (`settle_speed_job.md`; the files are at the shared folder's top level).
+- **Step 1, today's settle:** 6 min 13 s for the nine at once, and refilm 8 s. All nine files came out byte for byte the same as main's, so the settle repeats itself.
+  - Each tile stops on its own: 3,4 after 14,400 ticks, 2,3, 3,3, 4,3 and 4,5 after 8,400, and 2,4, 2,5, 3,5 and 4,4 after 7,800, all on "stored water steady". 3,4 is the long pole.
+- **Steps 2 and 3, fewer ticks:** both fail the bar. At 3,600 ticks (1 min 56 s) the volume is +16.7%, 40 of 107 lakes move more than 10 cm, and 82.7% of river cells are within 10 cm. At 1,800 ticks (1 min 21 s) it is +41.7%, with 65 lakes moved and 58.6%. **Cut 3 is off:** `stop.min_ticks` stays at 7,200.
+- **Cut 1, the queue:** `tools/settle_tiles.sh --tiles="3,4 ..."` settles the tiles nine at a time as a queue, in the order given, wettest first. On the starter's nine it is the same as nine at once. It gains on more than nine tiles.
+- **Cut 2, refilm in the settle:** `data/water_settle.json` film is v13, with `min_seen_m` 0 and `min_km2` 0, and `refilm_water.gd` goes to `proposed_removals/`. The first cmp (`settle_fold_job.md`) found seven files larger than main's. They held the 0 cm entries that refilm's re-save dropped (above), so the settle now leaves those out too. The cmp runs again at the new head.
+- **Cut 4** stays unneeded for now. On nine tiles 3,4 sets the time, and on a full world the queue keeps the nine threads busy.
+- **The bookkeeping gap.** 3,4's settle reports 2,097,873 m³ "unaccounted" of 19,005,075 m³ supplied (11%). The likely cause: a spring pours over a 5 × 5 patch, and a patch square off the tile or on the sea gets nothing (`WaterCore.step`), while the settle counts the full flow as supplied. The settle now prints that part on its "settle done" line. The water does not change, because the stop rule still reads the full supply. If the printed part does not close the gap, the next suspect is the depth clamp at 0 in the step.
 
 ## What stays
 

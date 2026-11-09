@@ -102,9 +102,17 @@ func _init() -> void:
 	tile_c.resize(25)
 	tile_a[4 * 5 + 1] = 0.8      # A's south row (row 4), column 1
 	check(WaterSettler.stitch_edge(tile_a, tile_c, 5, 1) == 1 and is_equal_approx(tile_c[1], 0.8), "stitch south: last row of A is the first row of C")
-	# Thin film option: off by default, on raises only river cells with enough drainage and a film between min_seen and depth_m.
+	# Thin film option: on raises only river cells with enough drainage and a film between min_seen and depth_m (checked with the v8 to v12 limits).
 	var film_cfg: Dictionary = rules.get("film", {})
 	check(bool(film_cfg.get("enabled", false)), "the film option is on in the rules file (v8)")
+	check(float(film_cfg.get("min_seen_m", -1.0)) == 0.0 and float(film_cfg.get("min_km2", -1.0)) == 0.0, "v13: the film covers every painted river cell (refilm_water.gd --film folded into the settle)")
+	var every: PackedFloat32Array = PackedFloat32Array([0.0, 0.05, 0.002, 0.05, 0.5])
+	var every_on: Dictionary = WaterSettler.film_floor(every, PackedByteArray([3, 3, 3, 2, 3]), PackedFloat32Array([0.0, 1000.0, 1.0, 1000.0, 1000.0]), 8.0, film_cfg)
+	check(int(every_on["cells"]) == 3 and is_equal_approx(every[0], float(film_cfg["depth_m"])) and is_equal_approx(every[2], float(film_cfg["depth_m"])) and is_equal_approx(every[3], 0.05) and is_equal_approx(every[4], 0.5),
+		"v13 film: dry, thin and undrained river cells all get depth_m; lakes and deep cells are left alone")
+	film_cfg = film_cfg.duplicate()
+	film_cfg["min_seen_m"] = 0.005
+	film_cfg["min_km2"] = 0.05
 	var film_depth: PackedFloat32Array = PackedFloat32Array([0.0, 0.05, 0.05, 0.05, 0.002, 0.5])
 	var film_class: PackedByteArray = PackedByteArray([3, 3, 3, 2, 3, 3])
 	var film_flow: PackedFloat32Array = PackedFloat32Array([1000.0, 1000.0, 1.0, 1000.0, 1000.0, 1000.0])
