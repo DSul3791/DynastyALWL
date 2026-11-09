@@ -11,12 +11,15 @@ Output: {"class":"docs|data|code|bake","fast":[...],"timing":[...],"slow":[...],
 Rules (tools/test_lanes.json): docs-only diff = no tests; a test is chosen when the files it loads (followed through preload, load,
 res:// strings, class_name use, directories and path-prefix strings) include a changed path; the always set, the item group, the path
 rules and the extra inputs add to that; a path nobody knows, or a test file the scan cannot read, means ALL fast tests: more, never fewer.
-Fast = every src/worldgen/tools/test_*.gd that is not timing or slow. Diff is `git diff --name-only base head` (two dots: the exact
+Fast = every test_*.gd in the test folders (TEST_DIRS: src/worldgen/tools and src/water2) that is not timing or slow. Diff is `git diff --name-only base head` (two dots: the exact
 tree difference, the gate passes the trial-merge base)."""
 import fnmatch, json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEST_DIR = "src/worldgen/tools"
+# The gate's test folders. A test is named without folder or .gd, so a name must be unique across them (--check-lanes says if not).
+# tools/run_one_test.sh and tools/local_check.sh look in the same folders, in this order. src/water2 joined 9 Nov 2026 (its tests had
+# never been selected).
+TEST_DIRS = ("src/worldgen/tools", "src/water2")
 LANES_PATH = os.path.join(ROOT, "tools", "test_lanes.json")
 SCAN_EXT = (".gd", ".tscn", ".tres", ".json")
 RES = re.compile(r'"res://([^"\\\s]*)"')
@@ -62,13 +65,26 @@ def read(path):
         return None
 
 
+def tests_by_folder():
+    """{folder: [test names]} for every test folder."""
+    out = {}
+    for d in TEST_DIRS:
+        full = os.path.join(ROOT, d)
+        out[d] = sorted(fn[:-3] for fn in os.listdir(full) if fn.startswith("test_") and fn.endswith(".gd"))
+    return out
+
+
 def all_tests():
-    names = []
-    full = os.path.join(ROOT, TEST_DIR)
-    for fn in sorted(os.listdir(full)):
-        if fn.startswith("test_") and fn.endswith(".gd"):
-            names.append(fn[:-3])
-    return names
+    return sorted({n for names in tests_by_folder().values() for n in names})
+
+
+def test_path(name):
+    """The test's file, relative to the root: the first test folder that has it."""
+    for d in TEST_DIRS:
+        rel = f"{d}/{name}.gd"
+        if os.path.isfile(os.path.join(ROOT, rel)):
+            return rel
+    return f"{TEST_DIRS[0]}/{name}.gd"
 
 
 class Scan:
@@ -145,7 +161,7 @@ def lane_sets(lanes, tests):
 def serial_list(lanes, tests):
     out = list(lanes["timing"]) + list(lanes.get("serial_extra", []))
     for t in tests:
-        text = read(f"{TEST_DIR}/{t}.gd") or ""
+        text = read(test_path(t)) or ""
         if writes_fixed_files(text) and t not in out:
             out.append(t)
     return [t for t in out if t in tests]
@@ -217,7 +233,7 @@ def select(paths, lanes, force_all=False, full=False):
     scan = Scan()
     closures = {}
     for t in tests:
-        rel = f"{TEST_DIR}/{t}.gd"
+        rel = test_path(t)
         text = read(rel)
         if text is None:
             add(["@all_fast"], "cannot read " + rel)
@@ -260,7 +276,7 @@ def select(paths, lanes, force_all=False, full=False):
         result["pin"] = True
 
     for p in live:
-        m = re.match(re.escape(TEST_DIR) + r"/(test_\w+)\.gd$", p)
+        m = re.match(r"(?:" + "|".join(re.escape(d) for d in TEST_DIRS) + r")/(test_\w+)\.gd$", p)
         if m and m.group(1) in tests:
             add([m.group(1)], "the test itself changed")
             keep.add(m.group(1))
@@ -297,12 +313,19 @@ def main(argv):
             names |= {n for n in rule["tests"] if n != "@all_fast"}
         missing = sorted(n for n in names if n not in tests)
         for n in missing:
-            print("not a test (no src/worldgen/tools/%s.gd): %s" % (n, n))
-        print("lanes: %d names checked, %d missing" % (len(names), len(missing)))
-        return 1 if missing else 0
+            print("not a test (no %s.gd in %s): %s" % (n, " or ".join(TEST_DIRS), n))
+        seen, twice = {}, []
+        for d, found in tests_by_folder().items():
+            for n in found:
+                if n in seen:
+                    twice.append(n)
+                    print("test name in two folders (%s and %s): %s" % (seen[n], d, n))
+                seen[n] = d
+        print("lanes: %d names checked, %d missing; %d tests in %d folders, %d names twice" % (len(names), len(missing), len(seen), len(TEST_DIRS), len(twice)))
+        return 1 if missing or twice else 0
     if "--explain" in argv:
         t = argv[argv.index("--explain") + 1]
-        files, prefixes = Scan().closure(f"{TEST_DIR}/{t}.gd")
+        files, prefixes = Scan().closure(test_path(t))
         print(json.dumps({"files": sorted(files), "prefixes": sorted(prefixes)}, indent=1))
         return 0
     full = "--full" in argv

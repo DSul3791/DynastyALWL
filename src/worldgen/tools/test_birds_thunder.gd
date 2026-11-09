@@ -2,7 +2,7 @@ extends SceneTree
 
 # Birds and thunder (docs/design/birds_and_thunder_server.md section 5): the shared strike schedule is the same for the same inputs, needs
 # rain 0.5 and a storm, and comes at about the client's rate; a bird within 800 m flies up (state 15) when the clap's sound reaches it,
-# one farther off does not; with animals.json thunder.on false nothing happens.
+# one farther off does not; there is no thunder.on switch, and the first tick only starts the clock.
 #   godot --headless --path . --script res://src/worldgen/tools/test_birds_thunder.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -48,12 +48,9 @@ func _init() -> void:
 	a.animals[900001] = near_crow
 	a.animals[900002] = far_crow
 
-	a._thunder_tick([Vector3.ZERO])
-	game_s[0] += 60.0
-	a._thunder_tick([Vector3.ZERO])
-	check(a._claps.is_empty() and not near_crow.has("fly"), "flag off: no thunder")
-	a._thunder_cfg()["on"] = true
-	a._thunder_tick([Vector3.ZERO])   # the first tick with thunder on only starts its clock (no backlog of strikes from while it was off)
+	check(not a._thunder_cfg().has("on"), "no thunder switch: birds and thunder are always on")
+	a._thunder_tick([Vector3.ZERO])   # the first tick only starts its clock (no backlog of strikes from before the server ran)
+	check(a._claps.is_empty() and not near_crow.has("fly"), "the first tick starts the clock: no strike yet")
 	game_s[0] += 60.0
 	a._thunder_tick([Vector3.ZERO])
 	check(a._claps.size() == 1 and not near_crow.has("fly"), "the flash: the sound has not reached the crow yet")
