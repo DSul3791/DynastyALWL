@@ -106,6 +106,26 @@ Estimate: the record stage falls to a few seconds a tile, and the stages are the
   A cache hit then costs one file load (not timed; estimate under 30 s).
 - **With the lock fix as well** (estimate): nine tiles in about 1 to 2 min when the setup comes from the cache, and about 8 min when the sketch or elevation code has changed.
 
+**As built (9 Nov; Dave: "good make it so. I approve it all.").** The bake fixes above, in one PR:
+- `water_record.gd`:
+  - `prepare` decodes the rasters a batch of tiles reads (each tile and its neighbours inside the record) once, then the record is read only;
+  - `field_problem` and `frame_and_gaps` write nothing, so threads call them at once;
+  - frames are copied as row slices;
+  - plain fields decode in one call (f4) or one short loop, and the water class goes through its code table in the same pass.
+- `tile_baker.gd`:
+  - `_bake_from_record` takes the lock only for a record that was not prepared (a one-thread bake, a test);
+  - `setup` opens the record first and skips the rule river network and its ponds when every tile asked for is in the record;
+  - `setup` prints "Setup parts (ms): …".
+- `bake_tiles.gd` `--threads=N` bakes in batches of N tiles and prepares the record before each, so the rasters held are one batch's (a full world does not hold them all).
+- `setup_cache.gd` keys on:
+  - the sketch and settings folders;
+  - the scripts the setup's builders reach (16 of worldgen's 384 on main), by `res://` path or class name;
+  - the input files;
+  - the `climate`, `water` and `valleys` blocks of `tile_rules.json`;
+  - whether the rule rivers were built.
+
+The tiles must come out byte for byte the same as the ws580v bake. Dino checks this by rebaking the nine tiles on Dave's PC and comparing them.
+
 ## 3. What a run costs: today, and after the cuts
 
 | run | today (measured sums) | after the evolve cut, a, the runner, seeding, the bake fixes (lock and setup cache), and rebake_check left to the gate (estimate) | also b, c, d (estimate) |
@@ -122,7 +142,7 @@ Even today a first full world fits in one night: about 6 h, against Dave's limit
 - **Delete:** evolve's steps after 100 kyr; the snapshots after t100k; settle + refilm for record tiles, once the `.water` file is written from the record.
 - **Merge:** `check_record.py` into `record.py`'s own summary. It lives only in the shared folder and repeats checks that `record.py` already makes (closed cells, frame land, summit). The two Godot exports could share one Godot start and thread their 9 tiles (estimate: 5 min down to about 1).
 - **Redundant checks:**
-  - `rebake_check.sh` runs `test_drainage_fill`, `test_river_surface` and `test_head_pond_fill`, which David4's gate runs again on the PR. It can come out of the bake run.
+  - `rebake_check.sh` runs `test_drainage_fill`, `test_river_surface` and `test_head_pond_fill`, which David4's gate runs again on the PR. It can come out of the bake run. *Done in PR C (9 Nov): the script is in `proposed_removals/`, and `tools/test_lanes.json` lists all three tests for baked tiles and water, so the gate's bake class always runs them.*
   - `test_head_pond_fill` guards rule-bake head ponds, which record tiles no longer have. Its own decision table says to archive it once natural rivers are on.
   - Glacial works out the peak shapes after every cycle. That was for the summit question, which is now closed, so it could run only at the end (its time isn't measured; small, estimate).
 - **Keep:** every chain stage itself. Each makes one of the goals (ground, ice, lakes, groundwater, network, record), and none duplicates another.
@@ -180,13 +200,23 @@ The mountains would be the river era's V valleys, only shorter. The summit would
   - the ground difference on land (mean, 95th percentile, and km² over 20 m and over 50 m).
 
   It also writes three pictures side by side: base, probe, and probe minus base.
-- **Pass:**
+- **Pass lines:**
   - summit within 10 m;
   - lake km² within 20%;
   - reach km within 10%;
   - ground within 20 m over 95% of the land.
 
   These limits are judged; Dave can set them.
+- **The deciding test (Dave, 9 Nov: "we should say if it comes close to tonights land. its a trade of of perfect for speed and what is a reasonable tradeoff"):**
+  - The pass lines stand, but what decides is whether the same lakes and rivers are in the same places.
+  - A near miss on one number passes if the picture is the same. A lost lake or a broken river fails.
+  - `compare_runs.py` prints this as "same places" and gives a verdict:
+    - **Lakes:** each base lake needs a probe lake whose deepest point is within 150 m of its own. A lake under 0.002 km² (two 32 m cells) is listed but not counted as lost, because the coarse grid can't hold it.
+    - **Rivers:** for reaches draining 1 km² or more, a reach is in place when 80% of its points lie within 64 m of a probe reach. 90% of the river km must be in place.
+    - **Broken rivers:** reaches that end nowhere (not at the sea, a lake or another reach). The probe may have no more of these than the base.
+    - **Near miss:** a pass line no more than 1.5 times past its limit.
+    - **Pass:** the same places hold, and at most one pass line is a near miss.
+  - These distances and shares are judged, like the pass lines.
 - **Time on Dino (estimate):**
 
   | step | time |

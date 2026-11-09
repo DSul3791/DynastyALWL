@@ -281,31 +281,15 @@ func _init() -> void:
 
 	print("singles by species ", single_names)
 	print("thicket histogram (clump size, 12 = 12 or more: clumps) %s; %d shrubs in %d clumps" % [str(histogram), points.size(), sizes.size()])
-	_check(points.size() > 100 and float(clumped) / float(points.size()) >= 0.88, "about 90 percent (at least 88) of the shrubs stand in clumps of 4 or more (%.0f percent of %d)" % [100.0 * float(clumped) / float(maxi(points.size(), 1)), points.size()])
+	# Re-pinned 88 -> 87 (Sonny, 9 Nov 2026, the ws580v record tiles, #799; coordinator's call). The floor was set on the rule-baked land of 31 Oct.
+	# On the record tiles this window measured 87.5 to 88.0 percent of 6,771 shrubs (printed "88" at no decimals; the line now prints one).
+	# The cause is the land, not the clump rule: the record's moisture puts more of the window inside the ranges of the
+	# moisture-limited thicket species (wild rose up to 220, blackthorn and hawthorn up to 230), and more of their ground sits on the
+	# range's edge, where a patch loses the plants on the far side (8 m moisture cells beside one out of range: wild rose 5.4 -> 7.9 percent,
+	# blackthorn and hawthorn 4.8 -> 6.1, honeyspindle 7.3 -> 11.0, sunberry 6.8 -> 12.5). Slope (p90 37 -> 26 degrees) and poor soil (32 percent both) did not get worse.
+	_check(points.size() > 100 and float(clumped) / float(points.size()) >= 0.87, "about 90 percent (at least 87) of the shrubs stand in clumps of 4 or more (%.1f percent: %d of %d)" % [100.0 * float(clumped) / float(maxi(points.size(), 1)), clumped, points.size()])
 	_check(float(singles) / float(maxi(points.size(), 1)) <= 0.05, "isolated single shrubs are at most 5 percent (%.1f percent)" % (100.0 * float(singles) / float(maxi(points.size(), 1))))
-	# Starter orchard (Dave 2026-10-31): fruit trees in rows near the spawn, outside the starter clearing, early and summer varieties first.
-	var orchard_trees: Array = []
-	var near_chunk: Vector2i = placer.chunk_of(PlacerScript.orchard_places()[0][2], PlacerScript.orchard_places()[0][3])
-
-	for cj in range(-1, 2):
-		for ci in range(-1, 2):
-			var chunk_items: Dictionary = placer.chunk_items(Vector2i(near_chunk.x + ci, near_chunk.y + cj))
-
-			for n in range(chunk_items["ids"].size()):
-				if (int(chunk_items["ids"][n]) & 0xffff) >= PlacerScript.ORCHARD_BASE and PlacerScript.ORCHARD_TREES.has(str(placer.species_of(chunk_items["ids"][n])["name"])):
-					orchard_trees.append([str(placer.species_of(chunk_items["ids"][n])["name"]), (chunk_items["positions"][n] as Vector3).x, (chunk_items["positions"][n] as Vector3).z])
-
-	var orchard_names: Dictionary = {}
-	var spawn_xz: Vector2 = load("res://src/shared/spawn_point.gd").OVERRIDE
-	var nearest_spawn: float = INF
-
-	for tree in orchard_trees:
-		orchard_names[tree[0]] = true
-		nearest_spawn = minf(nearest_spawn, Vector2(tree[1], tree[2]).distance_to(spawn_xz))
-
-	print("orchard: %d trees, species %s, nearest %.0f m from the spawn" % [orchard_trees.size(), str(orchard_names.keys()), nearest_spawn])
-	_check(orchard_trees.size() >= 8 and orchard_names.has("apple_early") and orchard_names.has("apple_summer"), "the starter orchard has fruit trees including the early and summer apples (%d)" % orchard_trees.size())
-	_check(nearest_spawn >= 20.0 and nearest_spawn <= 150.0, "the orchard stands outside the starter clearing and within 150 m of the spawn (%.0f m)" % nearest_spawn)
+	# The starter orchard by the spawn is gone (9 Nov 2026: nothing is placed from the spawn), and its check with it (proposed_removals/REMOVALS.md).
 
 	# Zero-model guard: rows flagged "future" (fig, olive, pomegranate, mango, orange, lemon: models by Kathleen) are never placed.
 	var future_names: Array = []
@@ -322,6 +306,7 @@ func _init() -> void:
 	# Young conifers come in nurseries or beside a grown tree, never one by one in the middle of a meadow (Dave 2026-10-31).
 	var young: Array = []
 	var grown: Array = []
+	var spawn_xz: Vector2 = load("res://src/shared/spawn_point.gd").OVERRIDE   # only a fixed sample area of the starter tile
 	var spawn_chunk: Vector2i = placer.chunk_of(spawn_xz.x, spawn_xz.y)
 
 	for dz in range(-3, 4):

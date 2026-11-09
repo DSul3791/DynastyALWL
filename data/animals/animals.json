@@ -4319,7 +4319,6 @@
 	"wolves": {
 		"natural": false,
 		"dog_prey": true, "dog_bite": 25.0, "dog_bite_s": 1.0, "dog_note": "MikeW's DOG_REACTIONS.md (dog_companion_design.md 11): a pack goes for a player's dog within distract_m before any deer, and bites it dog_bite every dog_bite_s through the damage hook.",
-		"town_keep_m": 1200.0,
 		"pups": {
 			"note": "Dave 8 Nov 2026, decisions 3 and 4 (docs/design/wolf_packs_and_pups_design.md). A natural pack made between day-of-year days[0] and days[1] has count pups at its den (sent as young, hp_x of a wolf's health). They stay within play_m of the den and play by day; a player within hide_m who stands or moves sends them into the den. A player within guard_m of the den while the pack is alive: the pack comes home and warns for warn_s, then rushes one still within rush_m, torch or not (a campfire and a second player still hold it). A killed pack's pups are orphans for orphan_days game days (the den gets no new pack meanwhile); town_keep_m: no pack den this near the town point.",
 			"days": [60, 150],

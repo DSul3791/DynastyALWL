@@ -5,7 +5,6 @@ extends RefCounted
 # distance. Dialogue (step B) and the unwell fallback (step C) come later; the rows already carry a state the client animates.
 
 const Steering := preload("res://src/shared/steering.gd")
-const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 
 const STAND := 0
 const WALK := 1
@@ -32,10 +31,9 @@ func setup(store_dir: String = "") -> void:
 	_dir = store_dir
 	cfg = _read("res://data/npcs/npcs.json")
 
-	var shift: Vector2 = SpawnPointScript.town_shift()   # the shipped town moves with a spawn picked at bake time (Stage E 6e); admin markers stay put
-
+	# The shipped town stands where markers.json puts it: nothing moves with the spawn (Dave 9 Nov 2026, "nothing is ever based on where spawn is").
 	for row in _read("res://data/npcs/markers.json").get("markers", []):
-		_add_marker(row, shift)
+		_add_marker(row)
 
 	if _dir != "":
 		for row in _read(_dir + "/npc_admin.json").get("markers", []):
@@ -58,13 +56,13 @@ func _read(path: String) -> Dictionary:
 	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
 
-func _add_marker(row: Dictionary, shift: Vector2 = Vector2.ZERO) -> void:
+func _add_marker(row: Dictionary) -> void:
 	var id: String = str(row.get("id", ""))
 
 	if id == "":
 		return
 
-	markers[id] = {"kind": str(row.get("kind", "")), "x": float(row.get("x", 0.0)) + shift.x, "z": float(row.get("z", 0.0)) + shift.y, "slots": maxi(int(row.get("slots", 1)), 1), "yaw": float(row.get("yaw", 0.0)), "users": []}
+	markers[id] = {"kind": str(row.get("kind", "")), "x": float(row.get("x", 0.0)), "z": float(row.get("z", 0.0)), "slots": maxi(int(row.get("slots", 1)), 1), "yaw": float(row.get("yaw", 0.0)), "users": []}
 
 
 func _add_npc(row: Dictionary, home: Vector3) -> void:
