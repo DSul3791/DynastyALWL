@@ -390,6 +390,7 @@ func toggle() -> void:
 		_build_panel()
 		_stock_sign = 0   # the window opens: ask for the craft stock again
 		_refresh()
+		_fit_window()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif _panel != null:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -2084,6 +2085,7 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 		_container_part.build()
 		_chest_panel.visible = true
 		_refresh()
+		_fit_window()             # the container column makes the window wider: measured with it shown
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 		if chest_event.is_valid() and _world.has(id):
@@ -3728,11 +3730,18 @@ var _seen_counter: int = 0
 var _sort_menu: OptionButton
 var text_step: Callable = Callable()   # (direction -1 or 1): the owner changes and saves the text size
 var text_scale: float = 0.85           # crafting and inventory text size (Esc > Settings, saved in display_settings.cfg)
+# The window's fit (Dino's shots, 9 Nov 2026: at Large on a 1280 x 720 window the least size of the window outgrew its anchors and ran off the
+# screen to the right and the bottom, the pack column cut off). When the chosen text size cannot fit this screen, every size in the window
+# shrinks by this one factor until it does, never below FIT_MIN. A new text size starts again at 1.
+var _fit: float = 1.0
+var _fitting: bool = false
+const FIT_MIN := 0.5
 
 
 # Resizes the crafting and inventory screen's text: the panel is rebuilt at the new size.
 func set_text_scale(scale: float) -> void:
 	text_scale = scale
+	_fit = 1.0
 
 	# The chest screen is rebuilt on its next opening at the new size.
 	if _chest_panel != null:
@@ -3751,6 +3760,7 @@ func set_text_scale(scale: float) -> void:
 		if was_open:
 			_build_panel()
 			_refresh()
+			_fit_window()
 
 
 func text_px(size: int) -> int:
@@ -3758,7 +3768,59 @@ func text_px(size: int) -> int:
 
 
 func _px(size: int) -> int:
-	return int(round(float(size) * text_scale * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
+	return int(round(float(size) * text_scale * _fit * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
+
+
+# Shrinks the window's sizes (_fit) until its least size fits the room its anchors give it, then rebuilds it at that size. Called once the
+# window is filled (its least size follows the recipe list, the bars and the open container), so the widest case is measured.
+func _fit_window() -> void:
+	if _panel == null or _fitting or not open:
+		return
+
+	_fitting = true
+
+	for _attempt in range(3):
+		var screen: Vector2 = _layer.get_viewport().get_visible_rect().size
+		var room: Vector2 = screen * Vector2(_panel.anchor_right - _panel.anchor_left, _panel.anchor_bottom - _panel.anchor_top)
+		var need: Vector2 = _panel.get_combined_minimum_size()
+		var shrink: float = minf(room.x / maxf(need.x, 1.0), room.y / maxf(need.y, 1.0))
+
+		if shrink >= 1.0 or _fit <= FIT_MIN:
+			break
+
+		_fit = maxf(_fit * shrink * 0.97, FIT_MIN)   # text does not shrink quite in step with the factor: a little margin
+		_rebuild_window()
+
+	_fitting = false
+
+
+# Builds the window again at the current sizes, keeping what is open (the pack window, and the container column when a container is open).
+func _rebuild_window() -> void:
+	var with_container: bool = chest_mode and _chest_panel != null and _chest_panel.visible
+
+	if _chest_panel != null:
+		_chest_panel.queue_free()
+		_chest_panel = null
+		_chest_buttons.clear()
+		_pack_buttons.clear()
+		_chest_titles.clear()
+
+	if _panel != null:
+		_panel.queue_free()
+		_panel = null
+		_buttons.clear()
+
+	_build_panel()
+	_panel.visible = open
+
+	if with_container:
+		_container_part.build()
+		_chest_panel.visible = true
+
+	_refresh()
+
+	if with_container:
+		_container_part.refresh()
 
 
 # Tooltips pop up in the engine's small default font; the window's theme makes them as large as the body text (audit, job 82).
