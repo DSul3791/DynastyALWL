@@ -28,10 +28,12 @@ ITEMS = os.path.join(ROOT, "data", "items", "items.json")
 GATHERED = os.path.join(ROOT, "data", "items", "gathered.json")   # the gathered materials; item_table.gd loads both files
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paint_item_icons import NAMES as ITEM_NAMES   # noqa: E402
+from paint_plant_icons import NAMES as PLANT_NAMES   # noqa: E402
 from paint_structure_icons import NAMES as STRUCTURE_NAMES   # noqa: E402
 
-# Painted by tools/paint_basic_icons.py, paint_structure_icons.py and paint_item_icons.py: a baked file of the same name never replaces them.
-PAINTED = ("log", "stone") + STRUCTURE_NAMES + ITEM_NAMES
+# Painted by tools/paint_basic_icons.py, paint_structure_icons.py, paint_item_icons.py and paint_plant_icons.py: a baked file of the same name
+# never replaces them.
+PAINTED = ("log", "stone") + STRUCTURE_NAMES + ITEM_NAMES + PLANT_NAMES
 UID_CHARS = "abcdefghijklmnopqrstuvwxy012345678"   # Godot's resource uid alphabet (base 34)
 
 IMPORT = """[remap]
