@@ -714,7 +714,7 @@ func _natural(infos: Array) -> void:
 				if float(rec.get("dead_until", 0.0)) > _clock:
 					continue
 
-				var h: int = hash(key + str(w.get("seed", 7)))
+				var h: int = hash(key + str(w.get("seed", 7)))   # JSON reads the seed as the float 7.0, so the key is "cx,cz7.0"; kept, since changing it moves every den (design_notes/wolf_den_seed_note.md)
 				var home: Vector2 = Vector2((float(cx) + float(absi(h) % 1000) / 1000.0) * cell_m, (float(cz) + float(absi(h / 1000) % 1000) / 1000.0) * cell_m)
 
 				if absi(h / 1000000) % 100 >= int(float(w.get("cell_share", 1.0)) * 100.0):
