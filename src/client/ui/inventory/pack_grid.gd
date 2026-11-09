@@ -23,7 +23,7 @@ func _init(owner_view) -> void:
 	view = owner_view
 
 
-# The right column: the pack's weight, purse and carry bar, the sort menu, the slot grid and the action row.
+# The Pack column (redesign section 4.1): the pack's weight, purse and carry bar, the sort menu, the slot grid and the action row.
 func build() -> Control:
 	view._buttons.clear()   # a rebuilt panel starts with a fresh list; never keep freed buttons
 	_last_numbers = PackedInt32Array()
@@ -33,10 +33,7 @@ func build() -> Control:
 	var right: VBoxContainer = VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.size_flags_stretch_ratio = 1.0
-	var right_title: Label = Label.new()
-	right_title.text = "Inventory"
-	view._style(right_title, view.TITLE_PX - 6)
-	right.add_child(right_title)
+	# The column's name is the frame's brass "PACK" plate (inventory_frame.gd), so the column starts with the weight.
 	view._weight_label = Label.new()
 	view._style(view._weight_label, view.BODY_PX - 6)
 	view._weight_label.text = "Body weight %.1f kg" % view.weight_kg
@@ -73,7 +70,6 @@ func build() -> Control:
 			view.sort_changed.call(index))
 	right.add_child(view._sort_menu)
 
-	InventoryLook.plate(right_title, "Pack", view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
 	InventoryLook.style_carry_bar(view._carry_bar, InventoryLook.unit_of(view))
 
 	_slot_scroll = ScrollContainer.new()

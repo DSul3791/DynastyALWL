@@ -799,12 +799,48 @@ func _ready() -> void:
 const SPAWN_OVERRIDE := SpawnPointScript.OVERRIDE   # the one source (src/shared/spawn_point.gd), shared with the flora placer's starter clearing
 
 
-# The spawn: the starter tile's spawn picked by rule (starter.spawn_picked), or SPAWN_OVERRIDE when the tile has none (spawn_point.gd).
+# The spawn: the starter tile's spawn picked by rule (starter.spawn_picked), or SPAWN_OVERRIDE when the tile has none (spawn_point.gd), moved
+# off any tree or shrub within 2 m to the nearest clear, dry, level spot (spawn_point.gd clear_of; no_spawn_placement_design.md 2).
 func _spawn_point(world_dir: String) -> Vector3:
-	var at: Vector2 = SpawnPointScript.use_world(world_dir)
+	var picked: Vector2 = SpawnPointScript.use_world(world_dir)
+	var at: Vector2 = SpawnPointScript.clear_of(picked, _trunks_near(picked, 32.0), func(x: float, z: float) -> float: return float(generator.surface_height(x, z)),
+		func(x: float, z: float) -> bool: return _baked_wet(x, z))
+
+	if at != picked:
+		print("spawn: moved %.1f m off a tree or shrub, to x %.1f z %.1f" % [at.distance_to(picked), at.x, at.y])
+		SpawnPointScript.set_current(at)
+
 	var point: Vector3 = Vector3(at.x, 0.0, at.y)
 	point.y = maxf(generator.surface_height(point.x, point.z), 0.0) + 2.0
 	return point
+
+
+# The ground points (x, z) of the trees and shrubs within reach of a point, from the server's flora placer (grass and flowers left out).
+func _trunks_near(at: Vector2, reach: float) -> PackedVector2Array:
+	var out: PackedVector2Array = PackedVector2Array()
+
+	if flora == null or flora.placer == null:
+		return out
+
+	var centre: Vector2i = flora.placer.chunk_of(at.x, at.y)
+
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			var held: Dictionary = flora.placer.chunk_items(Vector2i(centre.x + dx, centre.y + dz))
+
+			for n in range(held["ids"].size()):
+				var p: Vector3 = held["positions"][n]
+
+				if Vector2(p.x, p.z).distance_to(at) <= reach and int(flora.placer.species_of(held["ids"][n]).get("kind", PlacerScript.KIND_PLANT)) != PlacerScript.KIND_PLANT:
+					out.append(Vector2(p.x, p.z))
+
+	return out
+
+
+# Whether the baked tile has water (any class but none) at a point.
+func _baked_wet(x: float, z: float) -> bool:
+	var tile_data = generator.get_tile(generator.tile_of(x, z))
+	return not tile_data.placeholder and not tile_data.water_class.is_empty() and int(tile_data.water_class[tile_data.nearest(x, z)]) != 0
 
 
 # The server's state line for user://server_events.log; keeps each peer's last statistics for the "left" line.
