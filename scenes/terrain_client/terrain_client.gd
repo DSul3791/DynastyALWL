@@ -512,6 +512,9 @@ var _in_generation: int = 0           # raised when the plants are dropped (a ba
 var under_cover: float = 0.0          # 1 under a tree's canopy, else 0 (Cover.at at the player, once a second)
 var weather: Dictionary = {}          # the weather here and now (WeatherScript.state): the same on every client, no network traffic; rendering and sounds read it
 var _weather_next_msec: int = 0
+var world_wind_dir: float = 0.0       # the world's wind heading before the ground here bends it (Weather.state)
+var wind_here: Dictionary = {}        # what the ground round the viewer does to the wind (Weather.local_wind's `here`), every 2 s
+var _wind_here_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
@@ -2286,6 +2289,8 @@ func _update_weather() -> void:
 	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # this row's sky
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0, row, int(world.get("equator_row", 0)))
+	world_wind_dir = float(weather["wind_dir"])
+	weather = wind_onto(weather)
 
 	if items != null:
 		items.air_c = float(weather["temp_c"])
@@ -6132,6 +6137,8 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	if not weather.is_empty():
 		text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C, %s" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"], "under cover" if under_cover > 0.0 else "open"]
 
+		text += "\n" + wind_line(weather)
+
 	var win: Vector2i = get_window().size
 	@warning_ignore("static_called_on_instance")
 	text += "\n3D %dx%d 16:9 in window %dx%d (scale %.2f)%s, %s, %s" % [int(display.BASE.x * _render_scale), int(display.BASE.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
@@ -6498,6 +6505,105 @@ func _rock_over(p: Vector3, surface: float) -> bool:
 		return true
 
 	return false
+
+
+# The wind where the viewer stands (docs/design/prevailing_wind.md section 3): Weather.local_wind on `state` with the ground measured
+# round the viewer. The shot runner calls it on its forced weather too.
+func wind_onto(state: Dictionary) -> Dictionary:
+	if body == null or not body.is_inside_tree():
+		return state
+
+	_measure_wind_here(float(state.get("wind_dir", 0.0)))
+	return WeatherScript.local_wind(state, wind_here, game_clock.seconds)
+
+
+const WIND_SLOPE_STEP_M := 20.0                    # the slope: ground heights this far either side of the viewer, east-west and north-south
+const WIND_LEE_AT_M := [30.0, 60.0, 120.0]         # the lee: how steeply the ground rises upwind at these distances
+const WIND_LEE_DEG := [14.0, 22.0]                 # sheltered from a crest rising at 18 degrees or more (wind-over-terrain.md)
+const WIND_SEA_UPWIND_AT_M := [100.0, 250.0, 450.0]   # sea upwind: open water at these distances upwind
+const WIND_SEA_NEAR_M := 300.0                     # the sea or land breeze: open water this far off on eight bearings
+const WIND_SEA_Y_M := 0.25                         # ground at or under this height (sea level 0) is open sea or its floor
+const WIND_HERE_EASE := 0.4                        # each new measure moves the kept one this share of the way (walking does not jerk it)
+
+
+# Measures the ground round the viewer for Weather.local_wind, every 2 s: 19 rays straight down, nothing sent.
+func _measure_wind_here(heading: float) -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now < _wind_here_next_msec and not wind_here.is_empty():
+		return
+
+	_wind_here_next_msec = now + 2000
+	var p: Vector3 = _anchor
+	var h0: float = _ground_column(p.x, p.z, p.y)
+	var east: float = _ground_column(p.x + WIND_SLOPE_STEP_M, p.z, p.y) - _ground_column(p.x - WIND_SLOPE_STEP_M, p.z, p.y)
+	var south: float = _ground_column(p.x, p.z + WIND_SLOPE_STEP_M, p.y) - _ground_column(p.x, p.z - WIND_SLOPE_STEP_M, p.y)
+	var uphill: Vector2 = Vector2(east, south) / (2.0 * WIND_SLOPE_STEP_M)
+	var known_slope: bool = is_finite(uphill.x) and is_finite(uphill.y)
+	var upwind: Vector2 = -Vector2.from_angle(heading)
+	var rise_deg: float = 0.0
+
+	if is_finite(h0):
+		for d in WIND_LEE_AT_M:
+			var h: float = _ground_column(p.x + upwind.x * d, p.z + upwind.y * d, p.y)
+
+			if is_finite(h):
+				rise_deg = maxf(rise_deg, rad_to_deg(atan2(h - h0, d)))
+
+	var sea_hits: int = 0
+	var sea_known: int = 0
+
+	for d in WIND_SEA_UPWIND_AT_M:
+		var h: float = _ground_column(p.x + upwind.x * d, p.z + upwind.y * d, p.y)
+
+		if is_finite(h):
+			sea_known += 1
+			sea_hits += 1 if h <= WIND_SEA_Y_M else 0
+
+	var sea_way: Vector2 = Vector2.ZERO
+
+	for k in range(8):
+		var way: Vector2 = Vector2.from_angle(TAU * float(k) / 8.0)
+		var h: float = _ground_column(p.x + way.x * WIND_SEA_NEAR_M, p.z + way.y * WIND_SEA_NEAR_M, p.y)
+
+		if is_finite(h) and h <= WIND_SEA_Y_M:
+			sea_way += way / 8.0
+
+	var fresh: Dictionary = {
+		"downhill": -uphill.normalized() if known_slope and uphill.length() > 0.001 else Vector2.ZERO,
+		"grade": uphill.length() if known_slope else 0.0,
+		"lee": smoothstep(WIND_LEE_DEG[0], WIND_LEE_DEG[1], rise_deg),
+		"sea_upwind": float(sea_hits) / float(sea_known) if sea_known > 0 else 0.0,
+		"sea_way": sea_way,
+		"canopy": under_cover,
+	}
+
+	if wind_here.is_empty():
+		wind_here = fresh
+		return
+
+	for key in fresh:
+		wind_here[key] = lerp(wind_here[key], fresh[key], WIND_HERE_EASE) if key != "canopy" else fresh[key]
+
+
+# The ground's height under (x, z) near the height `near_y` (NAN where it is not loaded): a ray from 150 m above to 400 m below.
+func _ground_column(x: float, z: float, near_y: float) -> float:
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, near_y + 150.0, z), Vector3(x, near_y - 400.0, z))
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	return float(hit["position"].y) if not hit.is_empty() else NAN
+
+
+# One line on the wind here, for F3 and the shot runner's log.
+func wind_line(state: Dictionary) -> String:
+	var down: Vector2 = wind_here.get("downhill", Vector2.ZERO)
+	return "wind: from %03d deg (world from %03d), %.1f m/s, gust x%.2f | slope %.2f downhill toward %03d, slope breeze %+.1f m/s | sea upwind %.2f, sea breeze %+.1f m/s | lee %.2f, canopy %.1f" % [
+		int(round(WeatherScript.bearing_of_heading(float(state.get("wind_dir", 0.0)) + PI))),
+		int(round(WeatherScript.bearing_of_heading(world_wind_dir + PI))),
+		float(state.get("wind_mps", WeatherScript.wind_mps(float(state.get("wind", 0.0))))), float(state.get("wind_gust", 1.5)),
+		float(wind_here.get("grade", 0.0)), int(round(WeatherScript.bearing_of_heading(down.angle()))) if down.length() > 0.01 else 0,
+		float(state.get("wind_slope_mps", 0.0)), float(wind_here.get("sea_upwind", 0.0)), float(state.get("wind_sea_mps", 0.0)),
+		float(wind_here.get("lee", 0.0)), float(wind_here.get("canopy", 0.0))]
 
 
 func _ground_below(p: Vector3) -> float:

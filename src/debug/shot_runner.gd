@@ -4,7 +4,7 @@ extends Node
 # started with --shots. Each shot: fly to a point, face a direction, freeze the game clock at an hour,
 # optionally force the weather, wait for the ground and flora to stream in, save the 3D view as a PNG.
 #
-#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist, seafog)
+#   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist, seafog; live or any other name keeps the world's weather; empty fields are dropped)
 #   an 8th number (m/s) shows the third-person body walking at that speed, seen from the side (e.g. 4 = walk, 8 = run)
 #   agl is metres above the ground at x,z (a NEGATIVE y is an absolute height in metres instead): the runner first goes to 400 m above sea level there, waits until the
 #   ground under it has loaded, then drops to the ground height plus agl
@@ -301,6 +301,13 @@ func _process(delta: float) -> void:
 			"clear": client.weather = CLEAR.duplicate()
 			"mist": client.weather = MIST.duplicate()
 			"seafog": client.weather = SEAFOG.duplicate()
+
+		# Prevailing wind (docs/design/prevailing_wind.md): a forced weather keeps its rain and cloud but takes the world's wind heading
+		# for that hour, then the ground here bends it, as in play. Any other weather name ("live") keeps the world's weather, already
+		# bent by the client.
+		if _weather in ["storm", "rain", "snow", "clear", "mist"]:
+			client.weather["wind_dir"] = client.world_wind_dir
+			client.weather = client.wind_onto(client.weather)
 
 		client.body.velocity = Vector3.ZERO
 
@@ -637,6 +644,8 @@ func _process(delta: float) -> void:
 			print("shot runner: held model at %s visible %s in tree %s parent %s children %d first aabb %s; body at %s" % [str(hm.global_position), str(hm.visible), str(hm.is_visible_in_tree()), str(hm.get_parent().name), hm.get_child_count(), str(aabb.size), str(client.body.global_position)])
 
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
+
+	print("shot runner: " + client.wind_line(client.weather))
 
 	# Ground guard (warning only): the voxel ground reading is flaky while a spot is still loading (31.0, then 15.0, then 63.0 at one spot in a test), so the camera is never moved
 	# for it; but a camera inside solid ground, no floor under it, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
