@@ -3762,6 +3762,9 @@ func set_text_scale(scale: float) -> void:
 			_refresh()
 			_fit_window()
 
+	if hotbar_strip != null:
+		hotbar_strip.refresh()   # the hotbar is rebuilt at the new size now, not at the next pack change (Dino's shots: it stayed large)
+
 
 func text_px(size: int) -> int:
 	return _px(size)
@@ -3792,6 +3795,9 @@ func _fit_window() -> void:
 		_rebuild_window()
 
 	_fitting = false
+
+	if hotbar_strip != null:
+		hotbar_strip.refresh()   # the same slot size as the window's
 
 
 # Builds the window again at the current sizes, keeping what is open (the pack window, and the container column when a container is open).

@@ -13,7 +13,7 @@ var _items                              # InventoryView
 var _held                               # HeldItem
 var _row: HBoxContainer
 var _cells: Array = []                  # per key: {look} (the item slot)
-var _built_scale: float = -1.0
+var _built_scale: float = -1.0          # the slot size it was built at (the text size and the window's fit, inventory_view.gd)
 
 
 func setup(items, layer: CanvasLayer, held) -> void:
@@ -33,7 +33,7 @@ func _build() -> void:
 		child.queue_free()
 
 	_cells.clear()
-	_built_scale = _items.text_scale
+	_built_scale = float(_items.text_px(1000))
 	_row.add_theme_constant_override("separation", _items.text_px(6))
 	_row.offset_bottom = -_items.text_px(14)
 
@@ -43,7 +43,7 @@ func _build() -> void:
 
 # Redraw from the pack and the held slot (called when the pack, the held slot or the text size changes).
 func refresh() -> void:
-	if _built_scale != _items.text_scale:
+	if _built_scale != float(_items.text_px(1000)):
 		_build()
 		return
 
