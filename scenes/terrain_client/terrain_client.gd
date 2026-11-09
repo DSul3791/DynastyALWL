@@ -977,27 +977,27 @@ func _show_lost_notice(reason: String) -> void:
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 14)
+	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
 	var label: Label = Label.new()
 	label.text = "Connection to the server was lost"
-	label.add_theme_font_size_override("font_size", 40)
+	label.add_theme_font_size_override("font_size", 30)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(label)
 	var note: Label = Label.new()
 	@warning_ignore("integer_division")
 	note.text = "At %s, after %d min in this session.\nReason: %s.\nRetry joins again. If the server has stopped, Quit and press Play." % [Time.get_time_string_from_system(), (Time.get_ticks_msec() - connected_msec) / 60000, reason]
-	note.add_theme_font_size_override("font_size", 24)
+	note.add_theme_font_size_override("font_size", 20)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.custom_minimum_size = Vector2(900.0, 0.0)
+	note.custom_minimum_size = Vector2(640.0, 0.0)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(note)
 
 	for entry in [["Retry", func(): AudioServer.set_bus_mute(0, false); get_tree().paused = false; get_tree().reload_current_scene()], ["Quit", func(): _finish(1)]]:
 		var button: Button = Button.new()
 		button.text = entry[0]
-		button.custom_minimum_size = Vector2(380.0, 52.0)
-		button.add_theme_font_size_override("font_size", 26)
+		button.custom_minimum_size = Vector2(280.0, 48.0)
+		button.add_theme_font_size_override("font_size", 22)
 		button.pressed.connect(entry[1])
 		box.add_child(button)
 
@@ -1223,8 +1223,8 @@ func _welcome_body(info: Dictionary) -> void:
 	link_bars = LinkBarsScript.new()
 	link_bars.setup(func() -> ENetPacketPeer: return (multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1) if multiplayer.multiplayer_peer is ENetMultiplayerPeer else null)
 	link_bars.on_drop = func(text: String) -> void: _telemetry.event(text)
-	link_bars.position = Vector2(16.0, 10.0)
-	link_bars.size = Vector2(120.0, 54.0)
+	link_bars.position = Vector2(12.0, 8.0)
+	link_bars.size = Vector2(80.0, 36.0)
 	layer.add_child(link_bars)
 	_horizon = HorizonScript.new()
 	_horizon.setup(camera, func() -> bool: return swimming or (items != null and items.breath_ds >= 0))
@@ -1244,8 +1244,8 @@ func _welcome_body(info: Dictionary) -> void:
 	_mode_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_mode_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_mode_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_mode_label.add_theme_font_size_override("font_size", 48)
-	_mode_label.add_theme_constant_override("outline_size", 8)
+	_mode_label.add_theme_font_size_override("font_size", 32)
+	_mode_label.add_theme_constant_override("outline_size", 5)
 	_mode_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_mode_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_mode_label)
@@ -1258,13 +1258,13 @@ func _welcome_body(info: Dictionary) -> void:
 	_inspect_label.anchor_bottom = 0.5
 	_inspect_label.offset_left = 0.0
 	_inspect_label.offset_right = 0.0
-	_inspect_label.offset_top = -420.0
-	_inspect_label.offset_bottom = -24.0
+	_inspect_label.offset_top = -280.0
+	_inspect_label.offset_bottom = -16.0
 	_inspect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_inspect_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	_inspect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_inspect_label.add_theme_font_size_override("font_size", 40)
-	_inspect_label.add_theme_constant_override("outline_size", 8)
+	_inspect_label.add_theme_font_size_override("font_size", 28)
+	_inspect_label.add_theme_constant_override("outline_size", 5)
 	_inspect_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_inspect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_inspect_label)
@@ -1272,9 +1272,9 @@ func _welcome_body(info: Dictionary) -> void:
 	_water_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_water_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_water_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	_water_label.offset_top = 150.0
-	_water_label.add_theme_font_size_override("font_size", 36)
-	_water_label.add_theme_constant_override("outline_size", 8)
+	_water_label.offset_top = 100.0
+	_water_label.add_theme_font_size_override("font_size", 24)
+	_water_label.add_theme_constant_override("outline_size", 5)
 	_water_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_water_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_water_label)
@@ -1283,11 +1283,11 @@ func _welcome_body(info: Dictionary) -> void:
 	_breath_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	_breath_label.anchor_top = 0.2
 	_breath_label.anchor_bottom = 0.2
-	_breath_label.offset_top = 52.0
-	_breath_label.offset_bottom = 112.0
+	_breath_label.offset_top = 36.0
+	_breath_label.offset_bottom = 76.0
 	_breath_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_breath_label.add_theme_font_size_override("font_size", 44)
-	_breath_label.add_theme_constant_override("outline_size", 8)
+	_breath_label.add_theme_font_size_override("font_size", 30)
+	_breath_label.add_theme_constant_override("outline_size", 5)
 	_breath_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_breath_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_breath_label.visible = false
@@ -1305,12 +1305,12 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: menu", tq_menu)
 	var tq_views: int = Probe.start()   # the windowed lag run (5 Nov) froze 0.8 to 1.3 s "after welcome: menu", before "welcome: items view": these pieces were not timed
 	hud = Label.new()
-	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
+	hud.position = Vector2(8.0, 48.0)   # below the link bars (top left)
 	hud.visible = display.hud_text
-	hud.add_theme_font_size_override("font_size", 52)
-	hud.add_theme_constant_override("outline_size", 8)
-	hud.add_theme_constant_override("shadow_offset_x", 3)
-	hud.add_theme_constant_override("shadow_offset_y", 3)
+	hud.add_theme_font_size_override("font_size", 34)
+	hud.add_theme_constant_override("outline_size", 5)
+	hud.add_theme_constant_override("shadow_offset_x", 2)
+	hud.add_theme_constant_override("shadow_offset_y", 2)
 	hud.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.6))
 	hud.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	layer.add_child(hud)
@@ -3210,7 +3210,7 @@ func _apply_render_scale() -> void:
 		return
 
 	# Owner (2026-10-20): the 3D picture is always the chosen size, 16:9, whatever shape the
-	# window or the editor's Game tab has (display_settings.gd): a share of the fixed 2880x1620
+	# window or the editor's Game tab has (display_settings.gd): a share of the fixed 1920x1080
 	# canvas, scaled to the window with bars. Taller or smaller than the window is fine.
 	_render_scale = float(display.render_size(quality).x) / float(display.BASE.x)
 	var viewport: Viewport = get_viewport()

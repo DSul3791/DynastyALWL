@@ -77,10 +77,10 @@ static func panel_style() -> StyleBoxFlat:
 	s.set_corner_radius_all(10)
 	s.shadow_color = Color(0.0, 0.0, 0.0, 0.65)
 	s.shadow_size = 28
-	s.content_margin_left = 8.0
-	s.content_margin_right = 8.0
-	s.content_margin_top = 8.0
-	s.content_margin_bottom = 8.0
+	s.content_margin_left = 6.0
+	s.content_margin_right = 6.0
+	s.content_margin_top = 6.0
+	s.content_margin_bottom = 6.0
 	return s
 
 
@@ -102,10 +102,10 @@ static func parchment_style() -> StyleBoxFlat:
 	s.shadow_color = Color(0.0, 0.0, 0.0, 0.45)
 	s.shadow_size = 10
 	s.shadow_offset = Vector2(0.0, 3.0)
-	s.content_margin_left = 12.0
-	s.content_margin_right = 12.0
-	s.content_margin_top = 8.0
-	s.content_margin_bottom = 8.0
+	s.content_margin_left = 8.0
+	s.content_margin_right = 8.0
+	s.content_margin_top = 6.0
+	s.content_margin_bottom = 6.0
 	return s
 
 
@@ -125,10 +125,10 @@ static func _button_style(bg: Color, border: Color, glow: bool) -> StyleBoxFlat:
 	s.border_color = border
 	s.set_border_width_all(2)
 	s.set_corner_radius_all(8)
-	s.content_margin_left = 18.0
-	s.content_margin_right = 18.0
-	s.content_margin_top = 6.0
-	s.content_margin_bottom = 6.0
+	s.content_margin_left = 12.0
+	s.content_margin_right = 12.0
+	s.content_margin_top = 4.0
+	s.content_margin_bottom = 4.0
 
 	if glow:
 		s.shadow_color = GLOW
@@ -144,7 +144,7 @@ static func make() -> Theme:
 	if text != null:
 		t.default_font = text
 
-	t.default_font_size = 26
+	t.default_font_size = 20
 
 	for type_name in ["Label", "RichTextLabel", "LineEdit", "CheckBox"]:
 		t.set_color("font_color", type_name, CREAM)
@@ -178,8 +178,8 @@ static func make() -> Theme:
 	track.border_color = GOLD_DIM
 	track.set_border_width_all(1)
 	track.set_corner_radius_all(6)
-	track.content_margin_top = 6.0
-	track.content_margin_bottom = 6.0
+	track.content_margin_top = 4.0
+	track.content_margin_bottom = 4.0
 	t.set_stylebox("slider", "HSlider", track)
 	var fill: StyleBoxFlat = track.duplicate()
 	fill.bg_color = GOLD.darkened(0.2)
