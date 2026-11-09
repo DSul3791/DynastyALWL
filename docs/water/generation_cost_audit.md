@@ -18,7 +18,8 @@ Today the chain runs once per **window**: one square of tiles around an island g
 | lakes / groundwater / network | 24 s / 26 s / 57 s | per window | 1 |
 | record.py | 53 s | per window | 1 |
 | check_record.py | not timed (seconds) | per window | 1 |
-| bake | 624 s for 9 tiles on 9 threads (each tile's own stages 62–200 s; the rest is the setup and the writing, see section 2) | per tile | 9, but queued on one lock |
+| bake: setup | 418 s (8 Nov) | once per bake run, for the whole world | 1 |
+| bake: tiles | 206 s for 9 tiles on 9 threads | per tile | 9, but queued on one lock |
 | settle + refilm | 338 s for 9 tiles at once | per tile | 9 |
 | rebake_check.sh | 196 s | per bake | 3 tests |
 
@@ -27,7 +28,7 @@ The starter window adds up to about 88 min for the chain plus 19 min for the bak
 **Scaling to 21×21.** The plan has 441 tiles, of which 227 need a file, with 4,398 km² of land on 323 islands (`tile_plan_summary.txt`).
 - **One window for the whole world:** 20,161² = 406 M cells, which is 49× the starter window. Glacial would take about 49 × 61 min ≈ 50 h on one thread, and the memory would be 49× as well. That is not feasible, so the chain must stay per window.
 - **Windows like the starter's:** the starter window holds 362 km² of land and the world has 4,398 km², so about 12 windows' worth. One thread doing them one after another: 12 × 88 min ≈ 18 h. Nine windows at once (the stages are single-threaded, so this is how the nine threads get used): about 18 h / 9 ≈ 2 h of wall time (estimate; the windows vary in size, so they pack unevenly). That needs about nine windows' worth of memory at once. Glacial's memory is not measured; my estimate is a few GB per window.
-- **Per tile:** bake 227 / 9 = 26 rounds × 624 s ≈ 4.5 h. Settle + refilm 26 × 338 s ≈ 2.4 h.
+- **Per tile:** the bake is 418 s of setup once, plus 227 / 9 = 26 rounds × 206 s ≈ 1 h 36 min. Settle + refilm 26 × 338 s ≈ 2.4 h.
 
 ## 2. Where the time goes, and cuts that keep the same goals
 
@@ -88,18 +89,33 @@ The fix keeps the same bytes:
 
 Estimate: the record stage falls to a few seconds a tile, and the stages are then about 30 s a tile on every thread at once.
 
-The bake took 624 s, but its slowest tile's stages add up to about 200 s. The rest is the setup (its own "Setup … in N ms" line) and packing and writing the files, and the next look is those lines. With the setup cached and the lock gone, nine tiles should take about 3 to 4 min (estimate).
+**The bake's setup: 418 of its 624 s, on one thread, before any tile starts.** Dino's log of the 8 Nov bake: "Setup (world elevation, wet air, river network, tables) in 417696 ms" and "9 tiles on 9 threads in 205.8 s".
+- **What it builds** (`tile_baker.gd` `setup`, all GDScript on one thread):
+  - the world elevation for the whole 21×21 world at 160 m (about 2,016² = 4.1 M cells of sketch shaping);
+  - the wet-air field for the whole world;
+  - the rule bake's river network for the whole world, with its meanders and head ponds ("20998 river cells in 4400 chains");
+  - the tables;
+  - the record's `network.json`, which is parsed when the record opens.
+
+  The log prints only the total. A per-part line costs nothing to add, and the fix PR should add it before the split is guessed.
+- **How it scales:** with the world, not the tiles. A bake of 1 tile or 227 pays the same 418 s once. That is two thirds of a 9-tile bake, and 7 min of a 1 h 36 min full-world bake.
+- **Caching:** the cache exists (`setup_cache.gd`, which saves the elevation, wet air and river network), but it is nearly always missed. Its key hashes every script under `src/worldgen/sketch`, `settings`, `tile`, `tables` and `runtime`, plus the whole of `tile_rules.json` and `tile_plan.json`. So a change to `tile_sites.gd` or to a sites rule means a full setup again, and every bake after a code change pays it. Two fixes:
+  1. Key only what the setup reads: the sketch and settings scripts, `river_network.gd`, the wet-air builder, `world.json`, `sketch_rules.json`, `world_sketch.json`, and the `tile_rules` blocks the setup reads, hashed as blocks rather than as the whole file.
+  2. Skip the river network when every tile in the bake is inside the record, since record tiles never read it (`_finish` reads only the wet air, the elevation and the sketch).
+
+  A cache hit then costs one file load (not timed; estimate under 30 s).
+- **With the lock fix as well** (estimate): nine tiles in about 1 to 2 min when the setup comes from the cache, and about 8 min when the sketch or elevation code has changed.
 
 ## 3. What a run costs: today, and after the cuts
 
-| run | today (measured sums) | after the evolve cut, a, the runner, seeding, the bake fix, and rebake_check left to the gate (estimate) | also b, c, d (estimate) |
+| run | today (measured sums) | after the evolve cut, a, the runner, seeding, the bake fixes (lock and setup cache), and rebake_check left to the gate (estimate) | also b, c, d (estimate) |
 |---|---|---|---|
-| tile rules change (springs, caves, sites), 9 tiles | 19 min (if no one starts the chain) | about 4 min (the bake) | the same |
-| water rules change (R3–R6), 9 tiles | 22 min | about 7 min | the same |
-| land changes (tonight), 9 tiles | 1 h 50 min | about 50 min | about 25 min |
-| full world, first time (all windows, 227 tiles) | about 2 h of chains (9 at once) + 4.5 h bake + 2.4 h water ≈ 9 h | about 1 h + 26 rounds × 3.5 min ≈ 1 h 30 min + minutes ≈ 2 h 30 min | about 35 min + 1 h 30 min ≈ 2 h |
+| tile rules change (springs, caves, sites), 9 tiles | 19 min (if no one starts the chain) | about 1 to 2 min (the bake, setup from the cache) | the same |
+| water rules change (R3–R6), 9 tiles | 22 min | about 5 min | the same |
+| land changes (tonight), 9 tiles | 1 h 50 min | about 45 min to 1 h | about 20 to 25 min |
+| full world, first time (all windows, 227 tiles) | about 2 h of chains (9 at once) + 1 h 36 min bake + 2.4 h water ≈ 6 h | about 1 h + 7 min setup + 26 rounds × 35 s ≈ 22 min + minutes ≈ 1 h 25 min | about 35 min + 22 min ≈ 1 h |
 
-With the cuts, a first full world drops from a night to an evening. The everyday case gains the most: one island and a rule change take about 4 min, not 19 (or 2 h when the chain is started by habit).
+Even today a first full world fits in one night: about 6 h, against Dave's limit of 10. With the cuts it takes an evening. The everyday case gains the most: one island and a rule change take about 2 min, not 19 (or 2 h when the chain is started by habit).
 
 ## 4. What could go, merge, or stop being checked
 
@@ -112,7 +128,12 @@ With the cuts, a first full world drops from a night to an evening. The everyday
 - **Keep:** every chain stage itself. Each makes one of the goals (ground, ice, lakes, groundwater, network, record), and none duplicates another.
 
 **My recommendation, in order:**
-1. The bake's record load: decode once, slice the frames, drop the lock. Same bytes, and the 624 s bake should fall to about 3 to 4 min (estimate).
+1. The bake's two fixes:
+   - the record load: decode once, slice the frames, drop the lock;
+   - the setup cache key: what the setup reads, with no river network for record-only bakes;
+   - a per-part setup line in the log.
+
+   The bytes stay the same, and a 9-tile bake should fall from 624 s to about 1 to 2 min (estimate).
 2. The evolve cut and the runner with skip-by-hash. These are small, and they don't change results.
 3. Cropping windows to their islands, and writing `.water` from the record.
 4. The bake's setup and packing time, from the bake log's lines.
@@ -185,7 +206,7 @@ The mountains would be the river era's V valleys, only shorter. The summit would
 | evolve | 4.6 min |
 | glacial at 32 m with the 16 m finish | about 15 to 20 min |
 | water | 3 min |
-| bake | about 4 min |
-| total | about 35 min |
+| bake | about 1 to 8 min (cache hit or miss) |
+| total | about 30 to 40 min |
 
-That is well under the hour (estimate). Without it, the cuts in section 3 give about 50 min. A full world is about 2 to 2 h 30 min either way (section 3), inside the 10 h night.
+That is well under the hour (estimate). Without it, the cuts in section 3 give about 45 min to 1 h. A full world is about 1 to 1.5 h with the cuts, and about 6 h today (section 3). Either fits inside the 10 h night.
