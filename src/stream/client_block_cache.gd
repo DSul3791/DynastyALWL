@@ -180,8 +180,23 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> bool:
 	return found
 
 
+# Saves a copy: the caller's buffer goes on to the mesher. Voxel Tools 1.7 moves the buffer's channels into the stream's memory cache when the block
+# is still there from an earlier save (a block asked for again before the cache flushed), and leaves the buffer all zero: a zeroed block meshed as a
+# box (server_block_store.copy_of has the details).
 func save_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
-	_stream_for(tile_of_block(block, lod)).save_voxel_block(buffer, block, lod)
+	_stream_for(tile_of_block(block, lod)).save_voxel_block(_copy_of(buffer), block, lod)
+
+
+static func _copy_of(buffer: VoxelBuffer) -> VoxelBuffer:
+	var size: Vector3i = buffer.get_size()
+	var copy: VoxelBuffer = VoxelBuffer.new()
+	copy.create(size.x, size.y, size.z)
+
+	for channel in range(VoxelBuffer.MAX_CHANNELS):
+		copy.set_channel_depth(channel, buffer.get_channel_depth(channel))
+		copy.copy_channel_from(buffer, channel)
+
+	return copy
 
 
 # Writes pending blocks to disk. CACHE_SLOW_MS (a test setting) adds that many ms to each flush, to

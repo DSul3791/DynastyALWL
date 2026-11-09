@@ -324,6 +324,23 @@ func load_natural(buffer: VoxelBuffer, block: Vector3i) -> void:
 	_load_base(buffer, block, 0)
 
 
+# A copy of a block buffer, for saving one that is still used after the save. Voxel Tools 1.7 (VoxelStreamCache::save_voxel_block): saving a block
+# that is still in the SQLite stream's memory cache (not yet flushed) moves the buffer's channels into the cache and leaves the caller's buffer all
+# zero, every channel (Channel.data and defval share a union, so data = nullptr reads as 0). At the join rush two workers build the same block (a
+# request and the idle pre-build); the second save emptied the buffer it then served: the ZEROED BLOCK lines of 9 Nov (zeroed_block_note.md).
+# The client's block cache has the same trap (client_block_cache.save_block).
+static func copy_of(buffer: VoxelBuffer) -> VoxelBuffer:
+	var size: Vector3i = buffer.get_size()
+	var copy: VoxelBuffer = VoxelBuffer.new()
+	copy.create(size.x, size.y, size.z)
+
+	for channel in range(VoxelBuffer.MAX_CHANNELS):
+		copy.set_channel_depth(channel, buffer.get_channel_depth(channel))
+		copy.copy_channel_from(buffer, channel)
+
+	return copy
+
+
 # Adds the name of a load path to a trace (an Array, or null when nobody asked).
 static func _path(trace, what: String) -> void:
 	if trace != null:
@@ -394,7 +411,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 		_time("sanity check", t2 - t1)
 
 	if sane:
-		cache.save_voxel_block(buffer, block, lod)
+		cache.save_voxel_block(copy_of(buffer), block, lod)   # a copy: the buffer is served next (copy_of)
 		_path(trace, "generated")
 		if _timing_on:
 			_time("save to sqlite", Time.get_ticks_usec() - t2)
@@ -403,7 +420,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 		_path(trace, "generated twice (the first build failed the check)")
 
 		if _is_sane(buffer, block, lod) and not looks_zeroed(buffer):   # a zeroed build is never stored (zeroed_block_note.md)
-			cache.save_voxel_block(buffer, block, lod)
+			cache.save_voxel_block(copy_of(buffer), block, lod)
 	else:
 		_path(trace, "generated from a stand-in tile")
 
