@@ -63,10 +63,13 @@ func _init() -> void:
 	var tables = TableSetScript.new()
 	errors.append_array(tables.load_directory())
 	var vitals: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/vitals.json"))
-	var cfg: Dictionary = vitals["thirst"]["sources"] if typeof(vitals) == TYPE_DICTIONARY else {}
+	var cfg: Dictionary = {}
+
+	if typeof(vitals) == TYPE_DICTIONARY:
+		cfg = vitals["thirst"]["sources"]
 
 	if not errors.is_empty() or cfg.is_empty():
-		print("drink_near: cannot start: %s" % str(errors if not errors.is_empty() else "no vitals.json thirst.sources"))
+		print("drink_near: cannot start: %s" % (str(errors) if not errors.is_empty() else "no vitals.json thirst.sources"))
 		quit(1)
 		return
 
