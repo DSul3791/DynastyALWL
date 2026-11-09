@@ -1,22 +1,16 @@
 extends RefCounted
 
-# The new look of the crafting, inventory and chest window (docs/design/INVENTORY_CRAFTING_LOOK.md sections 3 and 4; Kathleen 8 Nov 2026), steps B and C (section 9: recipe rows, chest marks, the keep-out lock, craft ring, made items flying in, the bulk toast and chest glow, the pinned recipe).
-# The only window since Dave's 8 Nov ruling (the old one and its --old-inventory switch are gone):
-#   one window of three columns: recipes on the left, the open chest or station in the middle (only while one is open), the pack on the right;
-#   the window is solid dark walnut with a 2 px gold frame and brass corner plates; each column has a carved name plate in Cinzel;
-#   the pack and chest slots are item_slot.gd (recessed wells, hover glow, parchment tooltips), the hotbar strip uses the same slot;
-#   under the chest column, the four bulk buttons in fixed places: Take all, Store all, Stack to nearby, Sort;
-#   the carry bar is gold, turning amber then red as the load nears the limit.
+# Shared helpers of the inventory window (docs/ui/inventory_crafting_redesign.md; the frame, panels, plates, wells and cards are drawn
+# by art_kit.gd): slot icons and stacks, the carry bar's colour, recipe rows, the chest and keep-out marks, the pinned recipe's ticks,
+# the bulk toast and chest glow, made items flying in and the craft ring.
 # Hand rules (Morgan's report): a click selects and moves inside the pack as before; shift-click moves the stack to the other side;
 # double-click uses; right-click opens the slot menu. What is not on the server yet is a marked STUB (see each one).
 
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
+const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 
 const ICON_DIR := "res://assets/ui/item_icons/"     # tools/icon_bake.gd output, committed once Dave has looked at the sheet
-const EMBLEM_DIR := "res://assets/ui/emblems/"      # station emblems for the name plates (hammer and anvil, pot, saw): art to come
-const PLATE_PX := 4                                 # plate corner radius at unit 1
-const CORNER_PLATE_PX := 22.0                       # brass corner plate size at unit 1
 const CARRY_WARN := 0.7                             # carry bar: gold below this share of the limit, amber to CARRY_BAD, red from there
 const CARRY_BAD := 0.8                              # the same steps as CarryRules.bar_color (the free load ends at 0.8 of the limit)
 
@@ -40,114 +34,6 @@ static func icon_for(item_id: String) -> Texture2D:
 	var texture: Texture2D = load(path) as Texture2D if ResourceLoader.exists(path) else null
 	_icons[item_id] = texture
 	return texture
-
-
-# A station's emblem for its plate, or null until the art exists.
-static func emblem_for(station: String) -> Texture2D:
-	var path: String = EMBLEM_DIR + station + ".png"
-	return load(path) as Texture2D if station != "" and ResourceLoader.exists(path) else null
-
-
-# The window: solid walnut, the calmer 2 px gold frame, the menu theme (cream Garamond, wooden buttons), and parchment for every plain
-# tooltip (a slot's own card clears the engine's box in item_slot.tooltip_theme). The panel's own theme (the tooltip text size) is kept on top.
-static func style_window(panel: PanelContainer, margin_px: int) -> void:
-	var frame: StyleBoxFlat = DynastyTheme.frame_style()
-	frame.set_content_margin_all(float(margin_px))
-	panel.add_theme_stylebox_override("panel", frame)
-	var t: Theme = DynastyTheme.make()
-
-	if panel.theme != null:
-		t.merge_with(panel.theme)
-
-	t.set_stylebox("panel", "TooltipPanel", DynastyTheme.parchment_style())
-	t.set_color("font_color", "TooltipLabel", DynastyTheme.INK)
-	var f: Font = DynastyTheme.text_font()
-
-	if f != null:
-		t.set_font("font", "TooltipLabel", f)
-
-	panel.theme = t
-	add_corner_plates(panel, margin_px)
-
-
-# Brass plates on the frame's four corners, like a studded chest (look doc section 4: ornament there and nowhere else).
-static func add_corner_plates(panel: PanelContainer, margin_px: int) -> void:
-	var plates: Control = Control.new()
-	plates.name = "CornerPlates"
-	plates.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plates.draw.connect(func() -> void:
-		var unit: float = maxf(float(margin_px) / 18.0, 0.5)
-		var side: float = CORNER_PLATE_PX * unit
-		var out: float = float(margin_px) - 1.0
-		var r: Rect2 = Rect2(-out, -out, plates.size.x + out * 2.0, plates.size.y + out * 2.0)
-
-		for corner in [r.position, Vector2(r.end.x - side, r.position.y), Vector2(r.position.x, r.end.y - side), r.end - Vector2(side, side)]:
-			var at: Vector2 = corner
-			plates.draw_rect(Rect2(at, Vector2(side, side)), DynastyTheme.GOLD_DIM.darkened(0.25))
-			plates.draw_rect(Rect2(at + Vector2(1.0, 1.0) * unit, Vector2(side, side) - Vector2(2.0, 2.0) * unit), DynastyTheme.GOLD)
-			plates.draw_circle(at + Vector2(side, side) * 0.5, 2.5 * unit, DynastyTheme.GOLD_BRIGHT)
-			plates.draw_circle(at + Vector2(side, side) * 0.5, 1.2 * unit, DynastyTheme.GOLD_DIM.darkened(0.4)))
-	plates.resized.connect(plates.queue_redraw)
-	panel.add_child(plates)
-
-
-# A column's carved name plate: gold Cinzel on a lighter wood board with a thin dim gold edge. The station's emblem, when its art exists,
-# sits before the name.
-static func plate(label: Label, text: String, px: int, unit: float, station: String = "") -> void:
-	label.text = text
-	var f: Font = DynastyTheme.heading_font()
-
-	if f != null:
-		label.add_theme_font_override("font", f)
-
-	label.add_theme_font_size_override("font_size", px)
-	label.add_theme_color_override("font_color", DynastyTheme.HEADING)
-	label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.7))
-	label.add_theme_constant_override("shadow_offset_x", 2)
-	label.add_theme_constant_override("shadow_offset_y", 2)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_stylebox_override("normal", plate_style(unit))
-	var emblem: Texture2D = emblem_for(station)
-
-	for child in label.get_children():
-		if child.name == "Emblem":
-			child.queue_free()
-
-	if emblem != null:
-		var mark: TextureRect = TextureRect.new()
-		mark.name = "Emblem"
-		mark.texture = emblem
-		mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		mark.custom_minimum_size = Vector2(float(px), float(px))
-		mark.size = Vector2(float(px), float(px))
-		mark.position = Vector2(8.0 * unit, 4.0 * unit)
-		label.add_child(mark)
-
-
-static func plate_style(unit: float) -> StyleBoxFlat:
-	var s: StyleBoxFlat = StyleBoxFlat.new()
-	s.bg_color = DynastyTheme.WOOD
-	s.border_color = DynastyTheme.GOLD_DIM
-	s.set_border_width_all(1)
-	s.set_corner_radius_all(roundi(PLATE_PX * unit))
-	s.content_margin_left = 14.0 * unit
-	s.content_margin_right = 14.0 * unit
-	s.content_margin_top = 4.0 * unit
-	s.content_margin_bottom = 4.0 * unit
-	return s
-
-
-# A column's inset board inside the frame: WOOD at about 60 % over the dark walnut, with a 1 px dim gold edge.
-static func board_style(margin_px: int) -> StyleBoxFlat:
-	var s: StyleBoxFlat = StyleBoxFlat.new()
-	s.bg_color = DynastyTheme.WOOD_DARK.lerp(DynastyTheme.WOOD, 0.6)
-	s.border_color = DynastyTheme.GOLD_DIM
-	s.set_border_width_all(1)
-	s.set_corner_radius_all(4)
-	s.set_content_margin_all(float(margin_px))
-	return s
 
 
 # The carry bar's colour: gold while there is room, amber nearing the limit, heraldic red at it.
@@ -213,7 +99,6 @@ static func show_stack(view, slot, number: int, count: int, wear: int, tooltip: 
 # ---- step C: recipe rows and craft feedback (look doc section 9) ----
 
 const DisplaySettings := preload("res://src/client/display_settings.gd")
-const ParchmentTooltip := preload("res://src/client/ui/inventory/parchment_tooltip.gd")
 const TOAST_S := 2.0
 const GLOW_S := 1.0
 const GLOW_ENERGY := 1.6
@@ -278,7 +163,7 @@ static func chest_mark(px: int) -> Control:
 	return mark
 
 
-# A small padlock for the plate of a container ticked "keep out" (crafting leaves it alone).
+# A small padlock beside the tick of a container ticked "keep out" (crafting leaves it alone).
 static func lock_mark(px: int) -> Control:
 	var mark: Control = Control.new()
 	mark.name = "Lock"
@@ -301,16 +186,15 @@ static func tick_mark(px: int, done: bool) -> Control:
 		var w: float = mark.size.x
 
 		if done:
-			mark.draw_polyline(PackedVector2Array([Vector2(w * 0.18, w * 0.52), Vector2(w * 0.42, w * 0.76), Vector2(w * 0.84, w * 0.26)]), DynastyTheme.GOOD, maxf(2.0, w * 0.14), true)
+			mark.draw_polyline(PackedVector2Array([Vector2(w * 0.18, w * 0.52), Vector2(w * 0.42, w * 0.76), Vector2(w * 0.84, w * 0.26)]), ArtKit.WEAR_GOOD, maxf(2.0, w * 0.14), true)
 		else:
-			mark.draw_arc(Vector2(w * 0.5, w * 0.5), w * 0.3, 0.0, TAU, 20, DynastyTheme.INK, maxf(1.0, w * 0.08), true))
+			mark.draw_arc(Vector2(w * 0.5, w * 0.5), w * 0.3, 0.0, TAU, 20, ArtKit.DIM, maxf(1.0, w * 0.08), true))
 	return mark
 
 
-# A short parchment toast at the top of the screen for a bulk button ("12 stacks into 3 chests"), gone after TOAST_S.
-static func toast(layer: CanvasLayer, text: String, unit: float) -> Control:
-	var card = ParchmentTooltip.new()
-	card.set_lines(text, [], unit)
+# A short toast at the top of the screen for a bulk button ("12 stacks into 3 chests"), on the art kit's card, gone after TOAST_S.
+static func toast(layer: CanvasLayer, text: String) -> Control:
+	var card: PanelContainer = ArtKit.card(text)
 	card.name = "BulkToast"
 
 	for old in layer.get_children():
@@ -320,7 +204,7 @@ static func toast(layer: CanvasLayer, text: String, unit: float) -> Control:
 	layer.add_child(card)
 	card.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	card.offset_top = 40.0 * unit
+	card.offset_top = 40.0
 
 	if not card.is_inside_tree():
 		return card

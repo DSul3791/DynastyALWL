@@ -28,7 +28,7 @@ extends RefCounted
 # (with a margin) so a tile never needs its neighbor's caves.
 #
 # Creature dens sit in chambers, dead ends and near entrances. Each den has
-# a tier from 1 (the starter islands: bats, snakes, the odd bear) upward,
+# a tier from 1 (the starter islands: bats and snakes; bears den in the forest, not in caves) upward,
 # from the regional danger and the depth below the entrance. The server
 # decides what lives there.
 

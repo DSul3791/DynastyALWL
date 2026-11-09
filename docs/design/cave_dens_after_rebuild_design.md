@@ -1,0 +1,53 @@
+# Goblin dens and bear dens after the spring-cave retirement (design)
+
+Steve, 9 Nov 2026. This answers the knock-on in `docs/water/watershed_rebuild_design.md` section 7, "Caves and dens". That line says goblin dens and bear caves are placed from spring caves, and that they need a new source now that spring caves are few. This note is design only; there is no code in it.
+
+## 1. What the code does today (read on main 54950227)
+
+**Bears do not use caves.**
+- A bear's den is the place where it spawned: `server_animals.gd` sets `animals[id]["den"] = pos`.
+- It spawns by habitat: in forest, on a slope up to 0.6, within `near_fresh_water_m` 60 m of fresh water (`animals.json` `species.bear.habitat`).
+- It ranges 80 m round that den and goes fishing half the time.
+- No code reads a cave for a bear. The cave `habitat` key is still in `HABITAT_KEYS_LATER`, which means it is not built yet.
+- The section 7 line and the two `count_note` lines in `tile_rules.json` ("Goblins, bears and cave life use the spring caves") are wrong about bears. The retirement removes nothing from them.
+- The one bear item still open is a separate one, Stage E row 49 (`docs/water/stage_e_readers_design.md`): the den should read a baked `fresh_m` distance instead of live sim water. That stays as it is.
+
+**Goblin dens already take any inland cave.**
+- `tile_terrain_data.gd` gives a den to `GOBLIN_DEN_PERCENT` (60 %) of the caves that have a dry spot, picked by the cave's id:
+  - in a spring cave, the end of a dry side branch, never the stream passage;
+  - in a karst cave or a lava tube, a dead end.
+- Goblins come out of `goblin_den_mouths`. No group is made at a mouth with a bear within 120 m (`lair.avoid_m`).
+- The code needs no new source. What matters is how many caves there are.
+
+**What caves a tile baked from the water record has:**
+
+| cave | on the record tiles | den for goblins |
+|---|---|---|
+| spring cave | `record_cave_share` 0.10 of the R5 spring heads, under the usual rules (way inland, a hillside, no lake beside it, spacing, room). ws580v: 28 caves, 21 of them on tile 3,4 | only with a dry side branch. A "small" cave has 0 to 1 branches, so some have none |
+| karst | off, `count` [0, 0] (Dave 7 Nov: "caves only at river starts") | none |
+| sea cave | off, for the same reason | never (the tide) |
+| lava tube | only at a `volcanic_vent` feature, and the starter tiles have none that I know of | none in practice |
+| rock shelter | 4 to 8 per tile | never (there is no passage) |
+
+So on the starter island, goblin dens come from the record's spring caves alone. The number is somewhere between 0 and about 17 over the nine tiles (60 % of 28, less the caves with no dry branch). No one has counted it yet.
+
+## 2. Options
+
+- **(a) Spring caves stay the only source, and the count is measured. Recommended.** This follows Dave's two rules: caves only at river starts, and "a few here and there randomly but not for most springs". It needs no placement change. First, the den count is measured on the ws580v tiles (section 3). Then, only if it is too low, these knobs are turned in this order:
+  1. A record spring cave always gets at least one dry side branch (`spring_cave.sizes.small.branches` [0, 1] to [1, 1]). This is data only and needs a bake class re-bake on Dave's PC. Every spring cave can then hold goblins, and the water does not change.
+  2. `GOBLIN_DEN_PERCENT` 60 to 100: every spring cave with a dry branch holds a den.
+  3. A higher `record_cave_share`. This is last, because it changes the springs (Sonny's call, and Dave's "not for most springs").
+- **(b) Dry karst caves back on, in limestone only.** These are caves with no water. This breaks "caves only at river starts", so it is Dave's call. It is the right answer if the island needs more caves for other reasons (bats, cave climate, ore). It is not the right answer for goblins alone.
+- **(c) Dens with no cave**, such as a hut or a hollow under a rock shelter. That is a new kind of den, and `goblin_den_life_design.md` would need a surface den. It is a bigger design, and nothing asks for it yet.
+
+## 3. The check
+
+- `island_checks` gets one INFO row per baked tile: "caves: N spring caves, M with a dry branch, K goblin dens (60 %)". K is worked out by the same id rule that `tile_terrain_data.gd` uses, so the row and the game agree.
+- It reads the tiles only. It runs on Dave's PC as part of the usual island_checks run, so there is no bake and nothing runs in the cloud.
+- Bar (judged): tile 3,4 has at least 6 goblin dens, about one per 40 km² of land. Each other land tile has at least 1. Below that, (a) step 1 comes first.
+
+## 4. Steps
+
+1. This note. The section 7 line in the watershed design points here.
+2. A small PR with the island_checks row, plus the corrected comments: the `count_note` lines in `tile_rules.json` say spring caves are for goblins and cave life only, and the `lair_mouths` comment in `terrain_server.gd` says "inland caves with a goblin den". David4 gates it, and Dino runs island_checks on the ws580v tiles and posts the row.
+3. Only if the bar fails: (a) step 1, then step 2.

@@ -559,7 +559,7 @@ func _ready() -> void:
 	animals.fresh_water_m = func(x, z):   # baked distance to a river or lake (Stage E, tile fresh_m section); NAN in tiles baked before it
 		var fresh_tile = generator.get_tile(generator.tile_of(x, z))
 		return fresh_tile.fresh_water_m(x, z)
-	animals.lair_mouths = func(x, z):   # the mouths of the spring caves with a goblin den in the tile the player stands in (already loaded, so no wait); goblin groups come out of them
+	animals.lair_mouths = func(x, z):   # the mouths of the inland caves with a goblin den (TileTerrainData.goblin_den_node) in the tile the player stands in (already loaded, so no wait); goblin groups come out of them
 		var lair_tile = generator.get_tile(generator.tile_of(x, z))
 		return PackedVector2Array() if lair_tile.placeholder else lair_tile.goblin_den_mouths
 	animals.lair_path = func(x, z):   # the cave floor path from a goblin den's mouth (x, z) to the den (tile goblin_den_paths); empty when none is known
@@ -676,7 +676,7 @@ func _ready() -> void:
 			dialogue.router.mode = arg.substr(9)   # auto, static, ai or down (pretend the AI is dead: NPCs are unwell)
 
 	spawn = _spawn_point(world_dir)
-	animals.starter = Vector2(spawn.x, spawn.z)   # big game keeps out of its exclusion circle around the real spawn point (read once, from the starter tile)
+	animals.town = npcs.town_point()   # the island level and the stray dogs centre on the starter town's markers, never on the spawn (no_spawn_placement_design.md 3)
 	items.respawn_point = spawn
 	_world_dir = world_dir
 	_start_water()

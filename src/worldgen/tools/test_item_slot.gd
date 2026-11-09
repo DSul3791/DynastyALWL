@@ -7,7 +7,7 @@ extends SceneTree
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const DisplaySettings := preload("res://src/client/display_settings.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
-const ParchmentTooltip := preload("res://src/client/ui/inventory/parchment_tooltip.gd")
+const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const SETTINGS_PATH := "user://test_item_slot_display.cfg"
 
 var failures: int = 0
@@ -63,7 +63,7 @@ func _check_slot() -> void:
 	slot.set_dragging(false)
 	check(ItemSlot.key_text(0) == "1" and ItemSlot.key_text(8) == "9" and ItemSlot.key_text(9) == "0", "hotbar keys read 1 to 9, then 0")
 	var tip: Object = slot._make_custom_tooltip("Flint knife\nCuts hide and rope\nNeeds: twine 2 / 5")
-	check(tip is PanelContainer and (tip as PanelContainer).get_child(0).get_child_count() == 3, "a tooltip is a parchment card with its three lines")
+	check(tip is PanelContainer and (tip as PanelContainer).get_child(0).get_child_count() == 3, "a tooltip is the art kit's card with its three lines")
 	check(slot._make_custom_tooltip("") == null, "no text, no card")
 	check(slot.theme != null and slot.theme.get_stylebox("panel", "TooltipPanel") is StyleBoxEmpty, "the engine's grey tooltip box is cleared")
 	(tip as Node).free()
@@ -71,19 +71,21 @@ func _check_slot() -> void:
 
 
 func _check_card() -> void:
-	var card = ParchmentTooltip.from_text("Oak plank\nBuilding wood\n\nMissing: oak log 0 / 1", 1.0)
+	var card: PanelContainer = ArtKit.card_from_text("Oak plank\nBuilding wood\n\nMissing: oak log 0 / 1")
 	var box: VBoxContainer = card.get_child(0) as VBoxContainer
 	check(box.get_child_count() == 3, "blank lines are dropped")
 	var title: Label = box.get_child(0) as Label
+	var body: Label = box.get_child(1) as Label
 	var need: Label = box.get_child(2) as Label
-	check(title.text == "Oak plank" and title.get_theme_color("font_color") == DynastyTheme.INK, "the first line is the name, in ink")
-	check(need.get_theme_color("font_color") == DynastyTheme.BAD and need.text.contains("0 / 1"), "a missing line is red and also shows the count")
-	card.add_need("Twine", 2, 5, "the oak chest")
-	var added: Label = box.get_child(3) as Label
-	check(added.text == "Twine 2 / 5  (more in the oak chest)", "a need names the count and the chest that holds more")
-	check(card.px(ParchmentTooltip.BODY_PX) >= ParchmentTooltip.MIN_PX, "body text is never under 14 px")
-	card.set_lines("Small", ["text"], 0.7)
-	check(card.px(ParchmentTooltip.BODY_PX) == ParchmentTooltip.MIN_PX, "at the smallest text size the body stays at 14 px")
+	check(title.text == "Oak plank" and title.get_theme_color("font_color") == ArtKit.HEADING, "the first line is the name, in gold")
+	check(body.get_theme_color("font_color") == ArtKit.CREAM, "the body is cream")
+	check(need.get_theme_color("font_color") == ArtKit.BAD and need.text.contains("0 / 1"), "a missing line is red and also shows the count")
+	ArtKit.card_line(card, "Short: twine 2 / 5")
+	check((box.get_child(3) as Label).get_theme_color("font_color") == ArtKit.BAD, "a short line is red too")
+
+	for i in box.get_child_count():
+		check((box.get_child(i) as Label).get_theme_font_size("font_size") >= 18, "card line %d is 18 px or more" % i)
+
 	card.free()
 
 

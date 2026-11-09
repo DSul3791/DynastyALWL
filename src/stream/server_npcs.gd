@@ -48,6 +48,22 @@ func setup(store_dir: String = "") -> void:
 				npcs[str(row["id"])]["home"] = Vector3(float(row.get("x", 0.0)), 0.0, float(row.get("z", 0.0)))
 
 
+# The starter town's point: the middle of the shipped NPC markers (data/npcs/markers.json), the centre of the island level and of the stray
+# dogs (docs/design/no_spawn_placement_design.md 3). Admin markers in a world save do not move it. Vector2(INF, INF) with no markers.
+func town_point() -> Vector2:
+	var rows: Array = _read("res://data/npcs/markers.json").get("markers", [])
+
+	if rows.is_empty():
+		return Vector2(INF, INF)
+
+	var sum: Vector2 = Vector2.ZERO
+
+	for row in rows:
+		sum += Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
+
+	return sum / float(rows.size())
+
+
 func _read(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		return {}
