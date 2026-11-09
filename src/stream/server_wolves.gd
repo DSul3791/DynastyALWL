@@ -43,6 +43,7 @@ var _next_pack: int = 1
 var _fire_cache: Array = []
 var _fire_age: float = 99.0
 var _natural_acc: float = 0.0
+var _cell_notes: Dictionary = {}   # "cell|why" -> true: each reason a cell made no pack is logged once per server run (the PC check reads them)
 var _clock: float = 0.0
 
 
@@ -717,26 +718,35 @@ func _natural(infos: Array) -> void:
 				var home: Vector2 = Vector2((float(cx) + float(absi(h) % 1000) / 1000.0) * cell_m, (float(cz) + float(absi(h / 1000) % 1000) / 1000.0) * cell_m)
 
 				if absi(h / 1000000) % 100 >= int(float(w.get("cell_share", 1.0)) * 100.0):
-					continue   # a cell without a pack
+					_cell_note(key, home, "a cell without a pack (cell_share)")
+					continue
 
 				if Vector2(home.x - float(ex[0]), home.y - float(ex[1])).length() < float(ex[2]):
+					_cell_note(key, home, "inside the exclude circle")
 					continue
 
 				if _den_resting(key):
+					_cell_note(key, home, "a killed pack's den, resting")
 					continue   # a killed pack's den: its orphans live there, or it rests for respawn_s (saved across restarts)
 
 				var d: float = Vector2(home.x - p.x, home.y - p.z).length()
+				var near_m: float = float(host.cfg.get("spawn_min_m", 150.0)) * 0.9
 
-				if d > active or d < float(host.cfg.get("spawn_min_m", 150.0)) * 0.9:
+				if d > active or d < near_m:
+					_cell_note(key, home, "no player %.0f to %.0f m from the den" % [near_m, active])
 					continue
 
 				var score: float = host._habitat_score(host.species_def("wolf"), home.x, home.y, p.y)
 
 				if score < 0.0:
+					_cell_note(key, home, "the den spot is not wolf ground (too steep, by water, or too high)")
 					continue
 
 				var pid: int = spawn_pack(home.x, home.y)
 				cells[key] = {"pack": pid, "dead_until": 0.0}
+
+				if pid == 0:
+					_cell_note(key, home, "the pack could not be placed")
 
 				if pid != 0:
 					packs[pid]["key"] = key
@@ -744,6 +754,17 @@ func _natural(infos: Array) -> void:
 					print("wolves: a wild pack at its den %.0f,%.0f (cell %s), %d wolves, %d pups" % [home.x, home.y, key, _members(packs[pid]).size(), pups])
 
 				return
+
+
+# Logs once per server run, per cell and reason, why a cell near a player made no pack (with its den), so a check on the PC can find a den.
+func _cell_note(key: String, home: Vector2, why: String) -> void:
+	var note_key: String = key + "|" + why
+
+	if _cell_notes.has(note_key):
+		return
+
+	_cell_notes[note_key] = true
+	print("wolves: cell %s den %.0f,%.0f: no pack yet, %s" % [key, home.x, home.y, why])
 
 
 # --- pups and orphans (docs/design/wolf_packs_and_pups_design.md, Dave 8 Nov 2026 decisions 3 and 4) ---
