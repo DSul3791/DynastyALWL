@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Inventory and crafting redesign mockup, version 3 (docs/ui/inventory_crafting_redesign.md; Kathleen, 9 Nov 2026).
+# Inventory and crafting redesign mockup, version 4 (docs/ui/inventory_crafting_redesign.md; Kathleen, 9 Nov 2026).
 # Draws the measured layout on the 1920 x 1080 design canvas (Dave, 9 Nov 2026) from the numbers below and nothing else, so the
 # picture and the doc cannot drift apart. Every coordinate is a 1920 x 1080 canvas px; the picture is drawn at twice that and
 # scaled down, so edges are smooth.
 #
 #   python3 docs/ui/mockup/inventory_redesign_mockup.py --out DIR [--icons item_icon_sheet.png] [--measured]
 #
-# Writes DIR/inventory_redesign_1920_v3.png (pack, you, craft by hand). --measured also writes a copy with every box outlined.
+# Writes DIR/inventory_redesign_1920_v4.png (pack, you, craft by hand, the hotbar strip). --measured also writes a copy with every box outlined.
 # --icons: the icon bake sheet (tools/icon_bake.gd --sheet; NEEDS_PAINTING.txt beside it); its icons stand in for the painted ones.
 
 import argparse
@@ -67,41 +67,42 @@ T_COUNT = ("EBGaramond-SemiBold.ttf", 24)
 # ---- layout (canvas px; doc section 4) ----
 MARGIN, GUTTER, FRAME, AIR = 24, 22, 14, 6
 SLOT, SLOT_GAP = 100, 10
-HOT, HOT_GAP = 60, 5
-PACK = (24, 24, 714, 1056)
-YOU = (736, 24, 1184, 1056)
-CRAFT = (1206, 24, 1896, 1056)
+HOT, HOT_GAP = 76, 10            # the hotbar strip: one control, the same place with the window open or closed (Dave, 9 Nov 04:35)
+HOTBAR_STRIP = (535, 964, 1385, 1040)   # 10 x 76 + 9 x 10 = 850, centred; 16 px above the 24 px bottom margin
+HOTBAR_TRAY = (519, 948, 1401, 1056)    # the leather tray, 16 px round the slots
+PACK = (24, 24, 714, 932)               # the panels end 16 px above the tray
+YOU = (736, 24, 1184, 932)
+CRAFT = (1206, 24, 1896, 932)
 
 L = {
     "pack.plate": (72, 30, 0, 76),          # width follows the title
     "pack.search": (414, 48, 646, 84),
     "pack.sort": (656, 48, 694, 84),
     "pack.weight": (44, 98, 694, 122),
-    "pack.hotbar": (47, 136, 692, 196),
-    "pack.grid": (44, 214, 694, 754),
-    "pack.info": (44, 784, 694, 1036),
-    "pack.keys": (44, 1000, 694, 1032),
+    "pack.grid": (44, 136, 694, 786),       # 6 x 6 slots of 100, 10 apart
+    "pack.info": (44, 800, 694, 876),
+    "pack.keys": (44, 882, 694, 908),
     "you.plate": (960, 30, 0, 76),          # centred
-    "you.gear_left": (756, 96, 852, 630),
-    "you.figure": (862, 86, 1058, 636),
-    "you.gear_right": (1068, 96, 1164, 630),
-    "you.stats": (756, 690, 1164, 1002),
+    "you.gear_left": (756, 92, 852, 556),
+    "you.figure": (862, 82, 1058, 560),
+    "you.gear_right": (1068, 92, 1164, 556),
+    "you.stats": (756, 614, 1164, 890),
     "craft.plate": (1254, 30, 0, 76),
     "craft.tabs": (1226, 100, 1274, 688),
     "craft.search": (1282, 100, 1478, 136),
-    "craft.list": (1282, 146, 1478, 1036),
-    "craft.card": (1490, 100, 1876, 1036),
-    "craft.icon": (1504, 114, 1616, 226),
-    "craft.name": (1630, 118, 1864, 226),
-    "craft.desc": (1504, 244, 1864, 292),
-    "craft.stats": (1504, 306, 1864, 410),
-    "craft.needs": (1504, 430, 1864, 600),
-    "craft.qty": (1504, 618, 1864, 662),
-    "craft.short": (1504, 676, 1864, 700),
-    "craft.made_at": (1504, 716, 1864, 776),
-    "craft.used_in": (1504, 790, 1864, 850),
-    "craft.queue": (1504, 876, 1864, 932),
-    "craft.button": (1504, 958, 1864, 1022),
+    "craft.list": (1282, 146, 1478, 912),
+    "craft.card": (1490, 100, 1876, 912),
+    "craft.icon": (1504, 112, 1600, 208),
+    "craft.name": (1616, 114, 1864, 208),
+    "craft.desc": (1504, 222, 1864, 266),
+    "craft.stats": (1504, 278, 1864, 374),
+    "craft.needs": (1504, 388, 1864, 556),
+    "craft.qty": (1504, 570, 1864, 612),
+    "craft.short": (1504, 620, 1864, 644),
+    "craft.made_at": (1504, 656, 1864, 704),
+    "craft.used_in": (1504, 714, 1864, 762),
+    "craft.queue": (1504, 784, 1864, 832),
+    "craft.button": (1504, 848, 1864, 906),
 }
 
 
@@ -603,7 +604,7 @@ def grid_boxes(area, cols, rows, size, gap):
 # ======================================================================================================== sample contents
 PACK_ITEMS = [("rough_plank", 24, None), ("flint", 12, None), ("plant_fibre", 70, None), ("clay", 24, None), ("twine", 9, None), ("leaves", 20, None),
               ("bone", 4, None), ("raw_meat", 2, None), ("potato", 6, None), ("hide", 3, None), ("rope", 2, None), ("bandage", 5, None),
-              ("bucket", 1, 0.8), ("clay_jug", 1, None), ("stone_knife", 1, 0.45), ("herbal_tea", 2, None)] + [None] * 14
+              ("bucket", 1, 0.8), ("clay_jug", 1, None), ("stone_knife", 1, 0.45), ("herbal_tea", 2, None)] + [None] * 20
 HOTBAR = [("stone_axe", 0.9), ("stone_pickaxe", 0.7), ("wooden_spear", 0.25), ("torch", None), ("wooden_spade", None), None,
           ("campfire_kit", None), ("roast_fish", None), None, None]
 TABS = ["all", "axe", "spear", "house", "anvil", "flame", "bowl", "leaf", "tunic", "chest", "planks"]
@@ -634,17 +635,7 @@ def draw_pack(cv):
     cv.text((wb[0] + 2, cy), "Carrying", T_BODY, rgba(DIM), "lm")
     cv.text((wb[0] + 72, cy), "38.4 of 52 kg", T_BODY_SB, rgba(CREAM), "lm")
     bar(cv, (wb[0] + 200, cy - 4, wb[2], cy + 4), 38.4 / 52.0, BRASS)
-    hb = L["pack.hotbar"]
-    raised(cv, (hb[0] - 6, hb[1] - 6, hb[2] + 6, hb[3] + 6), 6)
-    for k, box in enumerate(grid_boxes(hb, 10, 1, HOT, HOT_GAP)):
-        it = HOTBAR[k]
-        well(cv, box, 4, selected=(k == 0))
-        if it:
-            draw_icon(cv, it[0], box)
-            if it[1] is not None:
-                wear_bar(cv, box, it[1])
-        cv.text((box[0] + 5, box[1] + 2), str((k + 1) % 10), T_KEY, rgba(HEADING), "la", stroke=1)
-    for n, box in enumerate(grid_boxes(L["pack.grid"], 6, 5, SLOT, SLOT_GAP)):
+    for n, box in enumerate(grid_boxes(L["pack.grid"], 6, 6, SLOT, SLOT_GAP)):
         it = PACK_ITEMS[n]
         well(cv, box, 4, hover=(n == SELECTED_SLOT))
         if it:
@@ -653,32 +644,44 @@ def draw_pack(cv):
                 wear_bar(cv, box, it[2])
             number(cv, (box[2] - 7, box[3] - 8 - (6 if it[2] is not None else 0)), str(it[1]))
     info = L["pack.info"]
-    ornament_rule(cv, info[0] + 8, info[2] - 8, info[1] - 12)
-    ibox = (info[0], info[1] + 4, info[0] + SLOT, info[1] + 4 + SLOT)
+    ornament_rule(cv, info[0] + 8, info[2] - 8, info[1] - 8)
+    ibox = (info[0], info[1] + 2, info[0] + 72, info[1] + 74)
     well(cv, ibox, 4)
     draw_icon(cv, "bucket", ibox)
-    tx = info[0] + 120
-    cv.text((tx, info[1] + 4), "Bucket", T_NAME, rgba(HEADING))
-    cv.text((tx, info[1] + 48), "A wooden bucket bound with cord.", T_BODY, rgba(CREAM))
-    cv.text((tx, info[1] + 72), "Holds eight litres of water.", T_BODY, rgba(CREAM))
+    tx = info[0] + 88
+    cv.text((tx, info[1] - 2), "Bucket", T_NAME, rgba(HEADING))
+    cv.text((tx, info[1] + 34), "A wooden bucket bound with cord. Holds eight litres.", T_BODY, rgba(CREAM))
     x = tx
     for lab, val in [("Empty", ""), ("Holds", "8 L"), ("Wear", "80 %")]:
-        cv.text((x, info[1] + 104), lab, T_BODY, rgba(DIM))
+        cv.text((x, info[1] + 56), lab, T_BODY, rgba(DIM))
         x += cv.text_width(lab, T_BODY) + 6
         if val:
-            cv.text((x, info[1] + 104), val, T_BODY_SB, rgba(CREAM))
+            cv.text((x, info[1] + 56), val, T_BODY_SB, rgba(CREAM))
             x += cv.text_width(val, T_BODY_SB)
         x += 26
     # the actions as key hints on the item strip, not boxed buttons
     k = L["pack.keys"]
     x = k[0] + 4
     for key, lab, ok in [("E", "Use", True), ("D", "Drop", True), ("S", "Split", False), ("R", "Repair", True), ("1–0", "Put on hotbar", True)]:
-        x += keycap(cv, x, k[1] + 2, key) + 8
-        cv.text((x, k[1] + 15), lab, T_BODY, rgba(CREAM if ok else DISABLED), "lm")
+        x += keycap(cv, x, k[1], key) + 8
+        cv.text((x, k[1] + 13), lab, T_BODY, rgba(CREAM if ok else DISABLED), "lm")
         x += cv.text_width(lab, T_BODY) + 24
 
 
 def figure(cv, box):
+    # drawn at its design size (196 x 550) on a clear sheet, then scaled to the box's height and centred in it
+    k = (box[3] - box[1]) / 550.0
+    sheet = Canvas()
+    sheet.img = Image.new("RGBA", sheet.img.size, (0, 0, 0, 0))
+    figure_design(sheet, (140, 40, 336, 590))
+    part = sheet.img.crop(sbox((0, 0, 476, 640)))
+    part = part.resize((max(1, int(part.width * k)), max(1, int(part.height * k))), Image.LANCZOS)
+    cx = (box[0] + box[2]) / 2
+    cv.paste(part, (cx - 238 * k, box[1] - 40 * k))
+    cv.text((cx, box[3] + 14), "Live character, as equipped", T_BODY, rgba(DIM), "mm")
+
+
+def figure_design(cv, box):
     # stands in for the live 3D character: key light top left, rim light, ground shadow, warm pool of light behind
     x0, y0, x1, y1 = box
     cx = (x0 + x1) / 2
@@ -746,7 +749,6 @@ def figure(cv, box):
     if "stone_axe" in ICONS:
         axe = ICONS["stone_axe"].resize((sc(112), sc(112)), Image.LANCZOS).rotate(70, resample=Image.BICUBIC)
         cv.paste(axe, (x0 + 100, y0 + 176))
-    cv.text((cx, y1 + 14), "Live character, as equipped", T_BODY, rgba(DIM), "mm")
 
 
 def draw_you(cv):
@@ -770,7 +772,7 @@ def draw_you(cv):
     vals = [("Health", "heart", 0.92, "92"), ("Exertion", "bolt", 0.18, "18 %"), ("Energy", "moon", 0.74, "74"),
             ("Temperature", "flame", 0.66, "36.8 °C"), ("Food", "bread", 0.81, "81 %"), ("Water", "drop", 0.58, "58 %")]
     for i, (nm, gl, v, label) in enumerate(vals):
-        y = st[1] + i * 52
+        y = st[1] + i * 46
         cv.paste(glyph(gl, 26, ENGRAVE), (st[0] + 2, y + 6))
         cv.text((st[0] + 40, y + 19), nm, T_BODY, rgba(CREAM), "lm")
         bar(cv, (st[0] + 150, y + 14, st[2] - 88, y + 24), v, STAT_FILL[nm])
@@ -816,14 +818,14 @@ def draw_craft(cv):
     draw_icon(cv, "stone_axe", ib)
     nm = L["craft.name"]
     cv.text((nm[0], nm[1]), "Stone axe", T_NAME, rgba(HEADING))
-    cv.text((nm[0], nm[1] + 44), "Tools", T_BODY, rgba(DIM))
-    cv.text((nm[0], nm[1] + 68), "By hand  ·  10 s", T_BODY, rgba(DIM))
+    cv.text((nm[0], nm[1] + 40), "Tools", T_BODY, rgba(DIM))
+    cv.text((nm[0], nm[1] + 62), "By hand  ·  10 s", T_BODY, rgba(DIM))
     de = L["craft.desc"]
     cv.text((de[0], de[1]), "A stone bound to a handle. Fells trees,", T_BODY, rgba(CREAM))
     cv.text((de[0], de[1] + 24), "breaks rock and works wood.", T_BODY, rgba(CREAM))
     stt = L["craft.stats"]
     for i, (lab, val) in enumerate([("Chop", "1.0"), ("Dig", "1.0"), ("Lasts", "900 uses"), ("Mends with", "stick, twine")]):
-        yy = stt[1] + i * 26
+        yy = stt[1] + i * 24
         cv.text((stt[0], yy), lab, T_BODY, rgba(DIM))
         number(cv, (stt[2], yy), val, T_BODY_SB, CREAM, "ra")
         cv.line([(stt[0] + cv.text_width(lab, T_BODY) + 8, yy + 15), (stt[2] - cv.text_width(val, T_BODY_SB) - 8, yy + 15)], rgba((70, 54, 38)), 1)
@@ -857,18 +859,18 @@ def draw_craft(cv):
         hw = cv.text_width(head, T_HEAD)
         cv.line([(bx[0] + hw + 12, bx[1] + 14), (bx[2], bx[1] + 14)], rgba(GOLD_LINE, 170), 1)
     ma = L["craft.made_at"]
-    cv.paste(glyph("glove", 22, ENGRAVE), (ma[0], ma[1] + 34))
-    cv.text((ma[0] + 30, ma[1] + 45), "By hand, anywhere", T_BODY, rgba(CREAM), "lm")
+    cv.paste(glyph("glove", 22, ENGRAVE), (ma[0], ma[1] + 26))
+    cv.text((ma[0] + 30, ma[1] + 37), "By hand, anywhere", T_BODY, rgba(CREAM), "lm")
     ui = L["craft.used_in"]
     x = ui[0]
     for i, name in enumerate(["Log seat", "Small wooden blocks"]):
-        cv.text((x, ui[1] + 45), name, T_BODY_SB, rgba(HEADING), "lm")
+        cv.text((x, ui[1] + 37), name, T_BODY_SB, rgba(HEADING), "lm")
         w = cv.text_width(name, T_BODY_SB)
-        cv.line([(x, ui[1] + 55), (x + w, ui[1] + 55)], rgba(GOLD_LINE), 1)
+        cv.line([(x, ui[1] + 47), (x + w, ui[1] + 47)], rgba(GOLD_LINE), 1)
         x += w
-        cv.text((x + 7, ui[1] + 45), "·", T_BODY, rgba(DIM), "lm")
+        cv.text((x + 7, ui[1] + 37), "·", T_BODY, rgba(DIM), "lm")
         x += 20
-    cv.text((x, ui[1] + 45), "+1 more", T_BODY, rgba(DIM), "lm")
+    cv.text((x, ui[1] + 37), "+1 more", T_BODY, rgba(DIM), "lm")
     qu = L["craft.queue"]
     ornament_rule(cv, qu[0] + 4, qu[2] - 4, qu[1] - 16)
     cv.text((qu[0], (qu[1] + qu[3]) / 2), "Making", T_BODY, rgba(DIM), "lm")
@@ -896,6 +898,39 @@ def draw_craft(cv):
     cv.d.arc(sbox(ring), -90, 140, fill=rgba(INK), width=sc(4))
 
 
+def draw_hotbar(cv):
+    # one strip across the bottom, under all three columns, exactly where the in-game hotbar sits, so it does not move
+    # when the window opens or closes: a stitched leather tray with brass end plates, ten wells of 76, key numbers top left
+    t = HOTBAR_TRAY
+    cv.layer(lambda d: d.rounded_rectangle(sbox((t[0], t[1] + 6, t[2], t[3] + 6)), sc(10), fill=(0, 0, 0, 180)), blur=10)
+    fill_textured(cv, t, texture(sc(t[2] - t[0]), sc(t[3] - t[1]), LEATHER, 14, 0, 41), 10)
+    cv.rect(t, 10, outline=rgba(LEATHER_DARK), width=2)
+    cv.line([(t[0] + 10, t[1] + 2.5), (t[2] - 10, t[1] + 2.5)], rgba((96, 64, 40)), 1)
+    for y in (t[1] + 6, t[3] - 6):
+        k = t[0] + 26
+        while k < t[2] - 30:
+            cv.line([(k, y + 1), (k + 5, y + 1)], (0, 0, 0, 150), 1.5)
+            cv.line([(k, y), (k + 5, y)], rgba(STITCH), 1.5)
+            k += 9
+    for ex in (t[0] - 2, t[2] - 14):
+        w, h = sc(16), sc(t[3] - t[1] - 16)
+        plate = brass_fill(w, h, diagonal=False)
+        plate.putalpha(round_mask(w, h, sc(3)))
+        cv.paste(plate, (ex, t[1] + 8))
+        cv.rect((ex, t[1] + 8, ex + 16, t[3] - 8), 3, outline=rgba(BRASS_DARK), width=1)
+        for ry in (t[1] + 22, t[3] - 22):
+            cv.d.ellipse(sbox((ex + 4.5, ry - 3.5, ex + 11.5, ry + 3.5)), fill=rgba(BRASS_DARK))
+            cv.d.ellipse(sbox((ex + 5.5, ry - 2.5, ex + 9.5, ry + 1.5)), fill=rgba(BRASS_HI))
+    for k, box in enumerate(grid_boxes(HOTBAR_STRIP, 10, 1, HOT, HOT_GAP)):
+        it = HOTBAR[k]
+        well(cv, box, 4, selected=(k == 0))
+        if it:
+            draw_icon(cv, it[0], box)
+            if it[1] is not None:
+                wear_bar(cv, box, it[1])
+        cv.text((box[0] + 6, box[1] + 3), str((k + 1) % 10), ("EBGaramond-SemiBold.ttf", 18), rgba(HEADING), "la", stroke=1)
+
+
 def measured(img):
     d = ImageDraw.Draw(img)
     f = ImageFont.truetype(os.path.join(FONTS, "EBGaramond-SemiBold.ttf"), 18)
@@ -920,12 +955,13 @@ def main():
     draw_pack(cv)
     draw_you(cv)
     draw_craft(cv)
+    draw_hotbar(cv)
     out = cv.img.resize((W, H), Image.LANCZOS).convert("RGB")
-    out.save(os.path.join(a.out, "inventory_redesign_1920_v3.png"), optimize=True)
+    out.save(os.path.join(a.out, "inventory_redesign_1920_v4.png"), optimize=True)
     if a.measured:
         m = out.copy()
         measured(m)
-        m.save(os.path.join(a.out, "inventory_redesign_1920_v3_measured.png"), optimize=True)
+        m.save(os.path.join(a.out, "inventory_redesign_1920_v4_measured.png"), optimize=True)
 
 
 if __name__ == "__main__":
