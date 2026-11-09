@@ -112,9 +112,9 @@ The 10 categories are the ones in `recipes.json`: Tools, Weapons, Shelter and bu
 | Part | x | y | w | h | Detail |
 |---|---|---|---|---|---|
 | Title plate | 1254 | 30 | text + 60 | 46 | The container's name engraved; on the right two raised tabs of 118 x 36: **Chest** and **Craft** (Craft still works with the chest open) |
-| Bar | 1226 | 100 | 650 | 44 | "Keep out of crafting" tick box; **Take all** and **Store all** as key hints (keys proposed: **T** and **G**, changeable in Key bindings) |
+| Bar | 1226 | 100 | 650 | 44 | "Keep out of crafting" tick box; **Take all** and **Store all** as key hints (keys **A** and **G**, changeable in Key bindings; T was proposed for Take all but is the transfer key) |
 | Chest grid | 1226 | 158 | 650 | 540 | The same 100 px wells, 6 across, 10 gaps; it scrolls for big containers |
-| Tools | 1226 | 716 | 650 | 32 | Key hints: **F** Sort both, **Q** Stack into my chests (proposed keys) |
+| Tools | 1226 | 716 | 650 | 32 | Key hints: **F** Sort both, **Q** Stack into my chests |
 
 Shift-click or drag moves a stack between the pack and the chest. Ctrl-click moves one.
 
