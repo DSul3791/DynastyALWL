@@ -3,11 +3,13 @@ extends SceneTree
 # Item icon bake (docs/design/INVENTORY_CRAFTING_LOOK.md section 6; Kathleen 8 Nov 2026). Runs on Dave's PC only, never in the cloud:
 # it needs the real renderer, so not --headless.
 #   godot --path . --script res://tools/icon_bake.gd -- --out=C:/temp/item_icons --sheet=C:/temp/item_icon_sheet.png [--items=stone,flint] [--px=128]
+#       [--source=items|gathered|all]   which item files to bake (default all; --items wins over it)
 #
-# Every item in data/items/items.json that has a look (src/client/basic_look.gd mesh_for) is drawn alone in one fixed light rig and saved
-# as <out>/<item id>.png: 128 px, transparent, a three-quarter view from above, one warm key light from the top left (the same for every
-# icon), a thin cool rim light from behind so dark things (iron, charcoal) part from the wood, a low warm ambient (shadows warm brown,
-# never grey), and a 2 px dark outline round the silhouette. Drawn at twice the size and scaled down, for clean edges.
+# Every item in data/items/items.json and data/items/gathered.json (the gathered materials item_table.gd also loads) that has a look
+# (src/client/basic_look.gd mesh_for) is drawn alone in one fixed light rig and saved as <out>/<item id>.png:
+# 128 px, transparent, a three-quarter view from above, one warm key light from the top left (the same for every icon), a thin cool
+# rim light from behind so dark things (iron, charcoal) part from the wood, a low warm ambient (shadows warm brown, never grey), and a
+# 2 px dark outline round the silhouette. Drawn at twice the size and scaled down, for clean edges.
 # Items with no look, or only the grey placeholder chunk, are listed in <out>/NEEDS_PAINTING.txt for Dave (painted to the same rig later).
 # --sheet also saves one picture of every icon on the inventory's slot colour, each beside its 32 px black silhouette (the silhouette
 # test: every icon must read as a solid shape at 32 px), for Dave to look at in one go.
@@ -16,6 +18,7 @@ extends SceneTree
 const BasicLook := preload("res://src/client/basic_look.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ITEMS_PATH := "res://data/items/items.json"
+const GATHERED_PATH := "res://data/items/gathered.json"
 
 const YAW_DEG := 35.0                 # three-quarter view
 const PITCH_DEG := -30.0              # from above
@@ -39,6 +42,7 @@ func _initialize() -> void:
 	var sheet: String = ""
 	var px: int = 128
 	var only: PackedStringArray = PackedStringArray()
+	var source: String = "all"
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
@@ -49,6 +53,8 @@ func _initialize() -> void:
 			px = maxi(16, int(a.trim_prefix("--px=")))
 		elif a.begins_with("--items="):
 			only = a.trim_prefix("--items=").split(",", false)
+		elif a.begins_with("--source="):
+			source = a.trim_prefix("--source=")
 
 	if DisplayServer.get_name() == "headless":
 		push_error("icon_bake: needs the renderer; run it without --headless (on Dave's PC)")
@@ -56,7 +62,7 @@ func _initialize() -> void:
 		return
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out))
-	var ids: Array = _item_ids(only)
+	var ids: Array = _item_ids(only, source)
 	var vp: SubViewport = _rig(px * 2)
 	root.add_child(vp)
 	var holder: MeshInstance3D = MeshInstance3D.new()
@@ -100,17 +106,21 @@ func _initialize() -> void:
 	quit(0)
 
 
-func _item_ids(only: PackedStringArray) -> Array:
+func _item_ids(only: PackedStringArray, source: String) -> Array:
 	if not only.is_empty():
 		return Array(only)
 
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ITEMS_PATH))
+	var ids: Array = []
 
-	if typeof(parsed) != TYPE_DICTIONARY or not (parsed.get("items") is Dictionary):
-		push_error("icon_bake: cannot read " + ITEMS_PATH)
-		return []
+	for path: String in ([ITEMS_PATH] if source == "items" else ([GATHERED_PATH] if source == "gathered" else [ITEMS_PATH, GATHERED_PATH])):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
-	var ids: Array = (parsed["items"] as Dictionary).keys()
+		if typeof(parsed) != TYPE_DICTIONARY or not (parsed.get("items") is Dictionary):
+			push_error("icon_bake: cannot read " + path)
+			continue
+
+		ids.append_array((parsed["items"] as Dictionary).keys())
+
 	ids.sort()
 	return ids
 
