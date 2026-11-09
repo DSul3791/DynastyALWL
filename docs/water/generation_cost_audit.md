@@ -31,7 +31,7 @@ The starter window adds up to about 88 min for the chain plus 19 min for the bak
 - **One window for the whole world:** 20,161² = 406 M cells, which is 49× the starter window. Glacial would take about 49 × 61 min ≈ 50 h on one thread, and the memory would be 49× as well. That is not feasible, so the chain must stay per window.
 - **Windows like the starter's:** the starter window holds 362 km² of land and the world has 4,398 km², so about 12 windows' worth. One thread doing them one after another: 12 × 88 min ≈ 18 h. Nine windows at once (the stages are single-threaded, so this is how the nine threads get used): about 18 h / 9 ≈ 2 h of wall time (estimate; the windows vary in size, so they pack unevenly). That needs about nine windows' worth of memory at once. Glacial's memory is not measured; my estimate is a few GB per window.
 - **Per tile:** the bake is 418 s of setup once, plus 227 / 9 = 26 rounds × 206 s ≈ 1 h 36 min. Settle + refilm 26 × 338 s ≈ 2.4 h.
-  - After the bake fixes: 269 s of setup once, plus 26 rounds × 57 s ≈ 25 min (estimate from the starter's measured round). With a queue of nine instead of rounds, the settle is at most about 1 h 20 min (estimate, [settle_speed_design.md](../design/settle_speed_design.md)). Measured on 9 Nov, each tile stops on its own: 3,4 after 14,400 ticks and the other eight after 7,800 or 8,400. So 3,4 sets the nine-tile time (6 min 13 s), and tiles with less water settle faster.
+  - After the bake fixes: 269 s of setup once, plus 26 rounds × 57 s ≈ 25 min (estimate from the starter's measured round). With the queue of nine (`tools/settle_tiles.sh`), the settle is about 35 to 40 min (estimate from the nine measured tiles, [settle_speed_design.md](../design/settle_speed_design.md): they took 1,000 s between them, and about 51 s of each is a fixed cost; 227 × 51 s plus the rest × 12.1 for the land, over nine workers). Measured on 9 Nov, each tile stops on its own: 3,4 after 14,400 ticks and the other eight after 7,800 or 8,400. So 3,4 sets the nine-tile time (6 min 13 s), and tiles with less water settle faster.
 
 ## 2. Where the time goes, and cuts that keep the same goals
 
@@ -161,9 +161,9 @@ The tiles must come out byte for byte the same as the ws580v bake. Dino checks t
 | tile rules change (springs, caves, sites), 9 tiles | 19 min (if no one starts the chain) | 59 s for the bake, setup from the cache (measured); 6 min more when the tile's water changes and it is settled again | the same |
 | water rules change (R3–R6), 9 tiles | 22 min | about 10 min: lakes to record 2.5 min, the bake 1 min, the settle 6 min | the same |
 | land changes (tonight), 9 tiles | 1 h 50 min | about 50 min to 1 h 5 min | about 30 to 40 min |
-| full world, first time (all windows, 227 tiles) | about 2 h of chains (9 at once) + 1 h 36 min bake + 2.4 h water ≈ 6 h | about 1 h + 4.5 min setup + 26 rounds × 57 s ≈ 25 min + at most about 1 h 20 min of settle ≈ 2 h 50 min | about 45 min + 30 min + at most about 1 h 20 min ≈ 2 h 35 min |
+| full world, first time (all windows, 227 tiles) | about 2 h of chains (9 at once) + 1 h 36 min bake + 2.4 h water ≈ 6 h | about 1 h + 4.5 min setup + 26 rounds × 57 s ≈ 25 min + about 40 min of settle ≈ 2 h 10 min | about 45 min + 30 min + about 40 min ≈ 1 h 55 min |
 
-Even today a first full world fits in one night: about 6 h, against Dave's limit of 10. With the cuts it takes about 2 h 50 min, and the settle is the biggest part of that until R7 lets the water be seeded from the record (section 2). The everyday case gains the most: one island and a rule change take about a minute, not 19 (or 2 h when the chain is started by habit).
+Even today a first full world fits in one night: about 6 h, against Dave's limit of 10. With the cuts it takes about 2 h 10 min, and the chains are the biggest part of that, then the settle until R7 lets the water be seeded from the record (section 2). The everyday case gains the most: one island and a rule change take about a minute, not 19 (or 2 h when the chain is started by habit).
 
 ## 4. What could go, merge, or stop being checked
 
@@ -298,4 +298,4 @@ So glacial stays at 16 m. The one-pass carve would replace the modelled shapes t
 | settle (refilm inside it) | 6 min 13 s (measured on ws580v, 9 Nov) |
 | total | about 50 min to 1 h 5 min with a; about 30 to 40 min with a, b and d (estimates) |
 
-With a alone that is about the hour, not well under it, so b and d are what reach Dave's target (estimate). A full world is about 2 h 35 min to 2 h 50 min with the cuts and the settle queue, and about 6 h today (section 3). Either fits inside the 10 h night.
+With a alone that is about the hour, not well under it, so b and d are what reach Dave's target (estimate). A full world is about 1 h 55 min to 2 h 10 min with the cuts and the settle queue, and about 6 h today (section 3). Either fits inside the 10 h night.
