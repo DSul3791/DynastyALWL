@@ -4647,7 +4647,9 @@ func run_quickkey_test(_client) -> void:
 		if inventory.count_of(stone) > 0 and inventory.count_of(roast) > 0:
 			break
 
+	print("Quick key test: pack ready after the give, stone %d, roast %d" % [inventory.count_of(stone), inventory.count_of(roast)])
 	toggle()
+	print("Quick key test: window open %s, %d slots" % [str(open), _buttons.size()])
 	var slot: int = inventory.numbers.find(stone)
 	var before: int = inventory.count_of(stone)
 	_hover = slot
@@ -4712,7 +4714,7 @@ func run_text_test(client) -> void:
 		for slot in range(mini(_buttons.size(), inventory.SLOTS)):
 			valid = valid and is_instance_valid(_buttons[slot]) and _buttons[slot].get_parent() == _grid
 
-			if inventory.numbers[slot] != 0 and _buttons[slot].text == "":
+			if inventory.numbers[slot] != 0 and _buttons[slot].is_empty():   # an item slot (item_slot.gd) shows its stack, not text
 				filled_ok = false
 
 		await get_tree().process_frame
@@ -4728,7 +4730,7 @@ func run_text_test(client) -> void:
 
 		# Every slot that holds something must show it after each press.
 		for slot in range(inventory.SLOTS):
-			if inventory.numbers[slot] != 0 and valid and _buttons[slot].text == "":
+			if inventory.numbers[slot] != 0 and valid and _buttons[slot].is_empty():
 				filled_ok = false
 
 		for mode in [1, 2, 3, 4, 5, 0]:
@@ -4793,7 +4795,8 @@ func _audit_text() -> void:
 
 
 # Headless check (--plantpick): pick several plants (kind 2, flowers and herbs) and see whether each one is gone
-# from the client's flora afterwards.
+# from the client's flora afterwards. A harvest plant (drops.json harvest_yield or berry_yield, such as yarrow) is picked by design when it
+# stands bare until its next season (the server's _stripped, the client's flora.is_stripped), so it counts as picked, not as still standing.
 func run_plant_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	var spots: Array = []
@@ -4831,17 +4834,20 @@ func run_plant_test(client) -> void:
 		client.harvest._pick(client.harvest._candidates(2.5).filter(func(c): return int(c["id"]) == int(spot[2]))[0])
 		tried += 1
 		var still: bool = true
+		var bare: bool = false
 
 		# A cold server answers late (its item step can stall for seconds): wait up to 8 s for the plant to leave the flora.
 		for wait in range(16):
 			await get_tree().create_timer(0.5).timeout
 			var held_now: Dictionary = client.flora._chunks.get(spot[3], {}).get("items", {})
 			still = held_now.has("ids") and held_now["ids"].find(spot[2]) >= 0
+			bare = still and client.flora.is_stripped(spot[3], int(spot[2]))
 
-			if not still:
+			if not still or bare:
 				break
 
-		print("Plant test: %s %s" % [client.harvest._flora_by_id.get(int(spot[2]) >> 16, {}).get("name", "?"), "STILL THERE" if still else "gone"])
+		print("Plant test: %s %s" % [client.harvest._flora_by_id.get(int(spot[2]) >> 16, {}).get("name", "?"), "bare until next season" if bare else ("STILL THERE" if still else "gone")])
+		still = still and not bare
 		gone += 0 if still else 1
 
 	print("Plant test: tried %d, gone %d, still standing %d, skipped (nothing pickable) %d" % [tried, gone, tried - gone, skipped])
