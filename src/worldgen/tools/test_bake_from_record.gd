@@ -4,7 +4,8 @@ extends SceneTree
 # the record. A made-up record of tile 3,4 alone (1,921 samples a side, as record.py writes) holds a slope with a sea strip, a round lake,
 # a straight river and a marsh square. The bake must take the ground, the water level, the water class (record codes through the table's
 # record_code), the drainage (km2 to 8 m cells) and the distance to fresh water from it, sample for sample, and pack a tile file. It must
-# refuse a water code the table lacks and a missing field, and an export bake (raw_only) must still read the world function.
+# refuse a water code the table lacks and a missing field, and an export bake (raw_only) must still read the world function. It places no
+# rule spring cave (the design retires them).
 #   godot --headless --path . --script res://src/worldgen/tools/test_bake_from_record.gd
 
 const TileBakerScript := preload("res://src/worldgen/tile/tile_baker.gd")
@@ -163,6 +164,14 @@ func _init() -> void:
 		check(bad_surface == 0, "water surface is the record's level, a marsh at its ground (%d differ)" % bad_surface)
 		check(bad_flow == 0, "flow is the drainage area in 8 m cells (%d differ)" % bad_flow)
 		check(bad_fresh == 0, "distance to fresh water is the record's (%d differ)" % bad_fresh)
+		# The design retires rule-placed spring caves (section 6): a tile from the record places none.
+		var spring_caves: int = 0
+
+		for cave in result["sites"].caves:
+			if str(cave.get("cave_kind", "")) == "spring_cave":
+				spring_caves += 1
+
+		check(not result["sites"].spring_caves and spring_caves == 0, "a tile from the record places no spring cave (%d)" % spring_caves)
 		var packed: Dictionary = TileFileScript.pack_tile(baker.settings, TILE, baker.plan_cell(TILE), water, result["climate"], result["geology"], result["sites"], baker.river_start_cells())
 		check(not packed.is_empty(), "the tile packs into a tile file")
 

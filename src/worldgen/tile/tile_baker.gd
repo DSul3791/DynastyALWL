@@ -430,12 +430,13 @@ func _bake_from_record(tile: Vector2i, n: int, core: int, origin_sx: int, origin
 			fresh_points.append(Vector2(float(point[0]), float(point[2])))
 
 	var ground: PackedFloat32Array = crop(water.heights, n, core)
-	return _finish(tile, water, Vector2i(origin_sx, origin_sz), spacing_m, fresh_points, {"raw_heights": ground, "eroded_heights": ground}, timings)
+	return _finish(tile, water, Vector2i(origin_sx, origin_sz), spacing_m, fresh_points, {"raw_heights": ground, "eroded_heights": ground, "record": true}, timings)
 
 
 # Climate, land types, geology and sites on the finished ground and water, then everything cropped to the tile: the same for a tile
 # baked by the passes above and one baked from the water record. fresh_points: river line points in world metres for the climate's
-# distance to fresh water (the same in every frame that holds them). before: the tile's raw_heights and eroded_heights for the result.
+# distance to fresh water (the same in every frame that holds them). before: the tile's raw_heights and eroded_heights for the result, and
+# record: true for a tile baked from the water record.
 func _finish(tile: Vector2i, water, origin: Vector2i, spacing_m: float, fresh_points: PackedVector2Array, before: Dictionary, timings: Dictionary) -> Dictionary:
 	var n: int = water.samples
 	var core: int = n - 2 * margin
@@ -520,6 +521,8 @@ func _finish(tile: Vector2i, water, origin: Vector2i, spacing_m: float, fresh_po
 	sites.setup(settings, tile_rules, tables)
 	sites.far_from_sea = inland
 	sites.cave_heads = cave_heads
+	# No rule-placed spring caves on a tile from the water record (the design retires them, section 6; cave springs come from R5's C7 list).
+	sites.spring_caves = not bool(before.get("record", false))
 	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow, water.water_surface)
 	timings["sites"] = Time.get_ticks_msec() - clock
 

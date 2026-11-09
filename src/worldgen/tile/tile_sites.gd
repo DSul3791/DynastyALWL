@@ -72,6 +72,9 @@ var _local: int = 0
 var _keep_clear: Array = []      # [center Vector2, radius] where no entrance may open
 var cave_heads: PackedByteArray = PackedByteArray()     # 1 where the drainage chose a spring cave as a river's source (tile_water.cave_heads); empty: the old head search alone
 var far_from_sea: PackedByteArray = PackedByteArray()   # 1 where the sea is at least spring_cave.min_sea_m away (inland_mask, from the frame); empty: no such rule
+# false for a tile baked from the water record: the watershed design retires rule-placed spring caves (docs/water/watershed_rebuild_design.md
+# section 6, Dave 9 Nov). Cave springs come only from soluble or fractured rock, from R5's C7 list, once it exists.
+var spring_caves: bool = true
 var _ore_by_id: Dictionary = {}
 var ore_report: Dictionary = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
 
@@ -121,7 +124,9 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 
 	# Spring caves first: water comes first (Dave 3 Nov 2026), and the other caves keep away from their mouths.
 	var rng: RandomNumberGenerator = SeedUtil.rng_for(_master, "sites_spring", tile.x, tile.y)
-	_make_spring_caves(rng)
+
+	if spring_caves:
+		_make_spring_caves(rng)
 	rng = SeedUtil.rng_for(_master, "sites_karst", tile.x, tile.y)
 	_make_karst(rng)
 	rng = SeedUtil.rng_for(_master, "sites_lava", tile.x, tile.y)
