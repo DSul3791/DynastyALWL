@@ -47,8 +47,6 @@ var _world_ponds: Array = []          # head ponds from the world river network 
 var ponds_moved: int = 0              # of those, ponds moved up off a steep head onto flat ground
 var heads_straightened: int = 0       # steep river heads re-routed straight down the slope
 var pond_cut_max_m: float = 0.0       # deepest cut a head pond made into the ground
-var _route_clock: int = 0
-var _source_surface_m: float = 0.0
 
 var _settings
 var _rules: Dictionary = {}
