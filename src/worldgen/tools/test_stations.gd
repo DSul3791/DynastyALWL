@@ -81,7 +81,8 @@ func _init() -> void:
 	# The vice kit is retired (Dave 25 Oct): the log workbench carries its own vice, so only the tool rack is an add-on now.
 	check(not items.station_near(1, "workbench", 3), "a camp bench with a rack stays level 2")
 
-	# The four tiers (Dave 2026-10-21): camp bench 1, log workbench 2, stone forge 3 and a forge, blacksmithy 4 and a better forge.
+	# The tiers: workbench 1, sturdy (log) workbench 2; the forges are forges 1 to 4 and no longer count as workbench levels (items review stage 1, 9 Nov 2026;
+	# was Dave 2026-10-21: stone forge workbench 3, blacksmithy and up workbench 4). Bench level 3 and 4 now come from the rack and vice add-ons.
 	var dir2: String = "user://test_stations_tiers"
 	DirAccess.make_dir_recursive_absolute(dir2)
 
@@ -100,7 +101,7 @@ func _init() -> void:
 	tiers.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var spots: Array = [Vector3(3.0, 10.0, 0.0), Vector3(200.0, 10.0, 0.0), Vector3(400.0, 10.0, 0.0), Vector3(600.0, 10.0, 0.0), Vector3(800.0, 10.0, 0.0)]
 	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]
-	var want: Array = [[2, 0], [3, 1], [4, 2], [4, 3], [4, 4]]
+	var want: Array = [[2, 0], [0, 1], [0, 2], [0, 3], [0, 4]]
 
 	for n in 5:
 		var kit_number: int = tiers.table.number_of(kits[n])
@@ -109,7 +110,7 @@ func _init() -> void:
 		tiers.action(1, Net.ACT_ADMIN_GIVE, kit_number, 0, 1, Vector3.ZERO)
 		tiers.place_item(1, kit_number, spots[n], 0)
 		
-		check(tiers.station_near(1, "workbench", int(want[n][0])), "%s gives workbench %d" % [kits[n], int(want[n][0])])
+		check(int(want[n][0]) == 0 or tiers.station_near(1, "workbench", int(want[n][0])), "%s gives workbench %d" % [kits[n], int(want[n][0])])
 		check(not tiers.station_near(1, "workbench", int(want[n][0]) + 1), "%s gives no more than %d" % [kits[n], int(want[n][0])])
 		check(tiers.station_near(1, "forge", int(want[n][1])) or int(want[n][1]) == 0, "%s forge %d" % [kits[n], int(want[n][1])])
 		check(int(want[n][1]) == 0 or not tiers.station_near(1, "forge", int(want[n][1]) + 1), "%s forge capped" % kits[n])

@@ -4,7 +4,7 @@
 		{
 			"id": "torch_night",
 			"title": "Light the night",
-			"hint": "Craft a Basic torch from a stick and 2 fibre, and carry it after dark.",
+			"hint": "Craft a Torch from a stick and 2 fibre, and carry it after dark.",
 			"after": [
 				"fire"
 			],

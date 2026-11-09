@@ -165,7 +165,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Hold your wooden hammer, press R and pick Lean-to: 30 sticks, 200 leaves and 10 twine. Build it with the open side towards you.",
+			"hint": "Hold your wooden hammer, press R and pick Lean-to: 20 sticks, 60 leaves and 6 twine. Build it with the open side towards you.",
 			"after": [
 				"fire",
 				"hammer"
@@ -197,8 +197,8 @@
 		},
 		{
 			"id": "workbench",
-			"title": "Build a Camp bench",
-			"hint": "Hold your hammer, press R and pick Camp bench: 16 sticks, 6 twine and 4 stones. It unlocks better tools.",
+			"title": "Build a Workbench",
+			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 4 stones. It unlocks better tools.",
 			"after": [
 				"hammer"
 			],

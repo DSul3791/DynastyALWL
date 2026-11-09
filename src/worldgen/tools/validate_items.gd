@@ -16,7 +16,7 @@ const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firew
 
 const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
-const DAVE_NAMES := ["Roast Beast", "Roast Meat", "Roast Fish", "Roast Roots"]   # names Dave chose himself (2026-10-22): they read like a verb and are the real name
+const DAVE_NAMES := ["Roast beast", "Roast meat", "Roast fish", "Roast roots"]   # names Dave chose himself (2026-10-22): they read like a verb and are the real name
 
 const RECIPE_CATEGORIES := RecipeFilter.CATEGORIES
 var errors: int = 0

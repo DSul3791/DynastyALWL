@@ -693,6 +693,7 @@
 		},
 		"fibre": {
 			"number": 1050,
+			"retired": true,
 			"future": true,
 			"name": "Fibre",
 			"kind": "material",
@@ -841,6 +842,7 @@
 		},
 		"greens": {
 			"number": 1061,
+			"retired": true,
 			"future": true,
 			"name": "Greens",
 			"kind": "material",
@@ -891,6 +893,7 @@
 		},
 		"hard_wood": {
 			"number": 1065,
+			"retired": true,
 			"future": true,
 			"name": "Hard wood",
 			"kind": "material",
@@ -908,6 +911,7 @@
 		},
 		"hardwood": {
 			"number": 1066,
+			"retired": true,
 			"future": true,
 			"name": "Hardwood",
 			"kind": "material",
@@ -1423,7 +1427,7 @@
 		},
 		"pine_tar": {
 			"number": 1104,
-			"name": "Pine tar",
+			"name": "Pine pitch",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
@@ -2096,6 +2100,7 @@
 		},
 		"timber": {
 			"number": 1152,
+			"retired": true,
 			"future": true,
 			"name": "Timber",
 			"kind": "material",
@@ -2399,6 +2404,7 @@
 		},
 		"wood": {
 			"number": 1174,
+			"retired": true,
 			"future": true,
 			"name": "Wood",
 			"kind": "material",
