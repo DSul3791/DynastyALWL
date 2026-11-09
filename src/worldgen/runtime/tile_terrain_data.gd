@@ -579,6 +579,12 @@ func has_drink() -> bool:
 	return not _drink_k.is_empty()
 
 
+# The regime (1 to 3) of the record channel at sample k, 0 off the channels or with no drink sections.
+func drink_regime_at(k: int) -> int:
+	var index: int = _drink_k.bsearch(k)
+	return int(_drink_regime[index]) if index < _drink_k.size() and _drink_k[index] == k else 0
+
+
 # The channel samples' indices, in order (empty: no drink sections), for checks that look for a brook of each kind (drink_near.gd).
 func drink_samples() -> PackedInt32Array:
 	return _drink_k

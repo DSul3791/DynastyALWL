@@ -23,6 +23,8 @@ extends Node
 #   server -> client  zone             the biome id under the player (ambience slots): at login, after a teleport or respawn, and when it changes
 #   server -> client  flora_fruit      fruit trees of a chunk: pieces taken from each this season (the prompt shows what is left)
 #   server -> client  flora_stripped   plants of a chunk that are bare this season (berries picked): sent with a flora chunk and when one is picked
+#   server -> client  drink_points     the record's drink points in a flora chunk (DrinkRules.chunk_points: brook cells, spring heads), sent with
+#                                      the chunk when it has any, for the E-to-drink prompt where the settled water shows nothing
 #   server -> client  cave_streams     a tile's spring cave streams and pools (TileTerrainData.cave_streams), once per tile with the first water asked there
 #   server -> client  cave_dens        a tile's cave dens (floor points), with its cave streams
 #   server -> client  cave_dressing    a tile's cave bone piles and stalagmites/stalactites, with its cave dens (protocol 93)
@@ -35,7 +37,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 100  # 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 101  # 101 (9 Nov 2026): drink_points (the record's brook cells and spring heads in a flora chunk, for the E-to-drink prompt; docs/design/drink_prompt_design.md). 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -50,6 +52,7 @@ signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
 signal flora_stripped_received(chunk: Vector2i, ids: PackedInt32Array)
+signal drink_points_received(chunk: Vector2i, cell_m: float, cells: PackedInt32Array, springs: PackedFloat32Array)
 signal flora_fruit_received(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array)
 signal zone_received(biome_id: int)
 signal vent_received(at: Vector3)
@@ -264,6 +267,11 @@ func flora_cut(chunk: Vector2i, id: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
 	flora_stripped_received.emit(chunk, ids)
+
+
+@rpc("authority", "call_remote", "reliable")
+func drink_points(chunk: Vector2i, cell_m: float, cells: PackedInt32Array, springs: PackedFloat32Array) -> void:
+	drink_points_received.emit(chunk, cell_m, cells, springs)
 
 
 # Fruit trees: how many pieces were taken from each of these trees this season (sent with a flora chunk and after every pick).
