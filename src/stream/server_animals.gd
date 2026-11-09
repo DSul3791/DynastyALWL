@@ -1871,12 +1871,9 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 
 # How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under
-# tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees). Mist cuts it (animals_in_weather_design.md 10).
+# tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees). Fog cuts it by distance (animals_in_fog_server.md 4.1).
 func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
-	if fog_on():
-		return _sight_clear(a, def, p, d, low) * fog_sight_share(d, fog_v(a["pos"]))   # animals_in_fog_server.md 4.1
-
-	return _sight_clear(a, def, p, d, low) * (1.0 - float(_wx_rules().get("mist_sight", 0.6)) * float(_wx.get("mist", 0.0)) if _wx_on() else 1.0)
+	return _sight_clear(a, def, p, d, low) * (fog_sight_share(d, fog_v(a["pos"])) if fog_on() else 1.0)
 
 
 func _sight_clear(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
@@ -2050,10 +2047,7 @@ func weather_spook_x(def: Dictionary) -> float:
 	if str(def.get("weather", "")) in r.get("jumpy_roles", ["deer", "stock", "small", "bird"]):
 		x *= lerpf(1.0, float(r.get("wind_spook_max", 1.4)), clampf(float(_wx.get("wind", 0.0)) / float(r.get("wind_spook_at", 0.6)), 0.0, 1.0))
 
-	if fog_on():
-		return x   # in fog the sight share does it (animals_in_fog_server.md 4.2): an unseen player is sensed by hearing and smell only
-
-	return x * (1.0 - float(r.get("mist_spook", 0.3)) * float(_wx.get("mist", 0.0)))
+	return x   # in fog the sight share does it (animals_in_fog_server.md 4.2): an unseen player is sensed by hearing and smell only
 
 
 # The activity chance (spawns, rest): small animals stay in in wind, hunters hunt more in wind, a storm beds most animals down, and
@@ -2100,7 +2094,7 @@ func _fog_cfg() -> Dictionary:
 
 
 func fog_on() -> bool:
-	return _wx_on() and bool(_fog_cfg().get("on", false))
+	return _wx_on()
 
 
 # V at a point (rain and snow thicken it too). Vector3.INF: the valley fog's own V deep inside it, from mist alone, for the rules with no
@@ -2503,7 +2497,7 @@ func _drink_cfg() -> Dictionary:
 
 
 func drink_on() -> bool:
-	return bool(_drink_cfg().get("on", false)) and water_level.is_valid()
+	return water_level.is_valid()
 
 
 func _twilight() -> bool:
@@ -2659,7 +2653,7 @@ func _ice_cfg() -> Dictionary:
 
 
 func ice_on() -> bool:
-	return bool(_ice_cfg().get("on", false)) and ice_cover_at.is_valid() and water_level.is_valid()
+	return ice_cover_at.is_valid() and water_level.is_valid()
 
 
 # The ice cover on the water at (x, z): 0 on dry land, on open water and in a thaw moat.

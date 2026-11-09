@@ -3,7 +3,7 @@
 **Owner:** Steve, for `src/stream/server_animals.gd`, `server_wolves.gd` and `server_flight.gd`.
 **Asked by:** MikeW, `docs/design/ANIMAL_FOG.md` (his branch `claude/mikew-eye-placement`), section "Requests to Steve". The client half (eye shine, steam, herd spacing on screen) is his.
 **Research:** Jamie, `docs/knowledge/fog-and-visibility.md` (#716), lessons 1, 4 and 5 and the Animals table.
-**Status:** design and code behind `animals.json` `weather.fog.on` (off). Static checks only; tests run on Dave's PC.
+**Status:** built and always on with the weather rules since 9 Nov 2026. Dave's no-flags rule removed the `weather.fog.on` switch, and with it the old flat `mist_sight` and `mist_spook` cuts. Static checks only; tests run on Dave's PC.
 **The knob:** how thick the look draws the valley fog. Kathleen's full valley fog is 95% white at about 220 m. Jamie gives 50 to 180 m in a valley floor at its height. A thicker look (a larger `MIST_INSIDE_THICK`, mirrored by `Weather.VIS_MIST_THICK`) makes the spook and wolf rules bite.
 **Decided:** coordinator, 8 Nov 2026, from MikeW's requests. Dave may revert.
 
@@ -16,7 +16,7 @@
 - So a deer on a hill above the fog is as blind as one in it. A deer 10 m away in dense fog sees no better than one 300 m away.
 - Wolves shadow a player at `stalk_m` 25 m in every weather. Crows sit on a perch only for `perch_s` (and stay up in a storm). Deer keep their clear-day hours.
 
-## 2. What the player will notice (flag on)
+## 2. What the player will notice
 
 - **In fog you can get closer.** A deer cannot tell you from a stump past half the visibility. In full valley fog (V about 220 m) it knows you by eye only inside about 110 m, and sees you clearly inside 55 m. Past that it has only hearing and smell (`senses.blind_factor` 0.35), so a player 100 m off seems about 200 m off. That cuts the far alerts and the long-range noticing. A deer's 30 m spook range lies inside the 55 m it still sees clearly, so the spook itself is unchanged in the game's fog today. It shrinks to hearing and smell only where V drops under about 120 m, and the look's thickest is about 170 m.
 - **On the hill above the fog sea**, animals see as on a clear day.
@@ -46,7 +46,7 @@
 
 ## 4. The rules
 
-All of these sit behind `weather.fog.on`. With it on, the old flat `mist_sight` and `mist_spook` cuts are not used, so fog is not counted twice.
+All of these replace the old flat `mist_sight` and `mist_spook` cuts, which were deleted on 9 Nov 2026, so fog is never counted twice.
 
 1. **Sight** (Jamie lesson 1: recognise at ½ V, detail at ¼ V). The sight share from the line-of-sight test is multiplied by a fog share:
    - 1 out to V/4;
@@ -89,7 +89,7 @@ New `test_animals_fog.gd`, with stub weather and ground:
   - mist 1 with rain 1 gives the cap, 167 m.
 - **Sight:** at V 120, the fog share is 1 at 25 m, 0.5 at 45 m and 0 at 70 m.
 - **Sight in full valley fog:** a player 100 m off is sensed at about 200 m; in clear air at 100 m.
-- **Flag off:** the old `mist_sight` cut is used and `_fog_v` is not.
+- **No switch:** the test checks that the fog rules are on, with no `on` key (9 Nov 2026).
 - **Wolves:** the ring is 25 m in clear air and in full valley fog, 15 m at V 30, and never under 10 m.
 - **Birds:** a perched crow in full valley fog does not come down after its timer, and in clear air it does.
 - **Deer:** at 09:00 in fog a deer's activity period is "dusk", and in clear air it is "day".

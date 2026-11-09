@@ -1064,7 +1064,12 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 			continue
 
 		var point: Vector2 = _point_of(index)
-		ground_springs.append({"pos": [snappedf(point.x, 0.1), snappedf(_heights[index], 0.1), snappedf(point.y, 0.1)], "m3_s": snappedf(float(head["m3_s"]), 0.0001), "cover": "bushes"})
+		var spring: Dictionary = {"pos": [snappedf(point.x, 0.1), snappedf(_heights[index], 0.1), snappedf(point.y, 0.1)], "m3_s": snappedf(float(head["m3_s"]), 0.0001), "cover": "bushes"}
+
+		if head.has("dry_m3_s"):   # the head's own dry-quarter base flow (Sonny #834), for the drink (DrinkRules.ground_spring_rows)
+			spring["dry_m3_s"] = snappedf(float(head["dry_m3_s"]), 0.0001)
+
+		ground_springs.append(spring)
 
 	print("  springs from the record, tile %d,%d: %d spring heads, %d tried as caves (share %.2f), %d spring caves (%d from the floor), %d ground springs"
 		% [_tile.x, _tile.y, heads.size(), tried, share, made, floor_made, ground_springs.size()])

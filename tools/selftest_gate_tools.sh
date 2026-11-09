@@ -22,6 +22,8 @@ sel src/worldgen/tile/tile_drainage.gd | field "'test_head_pond_fill' not in d['
 sel worlds/base_world/tiles/tile_3_4.tile | field "'test_head_pond_fill' in d['slow'] and 'test_water_soak' in d['slow']" | grep -q True; ok $? "baked tile data selects the big release tests"
 "$PY" tools/tests_for_diff.py --paths src/worldgen/tile/tile_drainage.gd --full | field "len(d['slow'])==len(json.load(open('tools/test_lanes.json'))['slow']) and len(d['fast'])>60" | grep -q True; ok $? "--full selects the whole slow lane and every fast test"
 sel tools/run_tests.sh | field "d['class']=='tools' and len(d['fast'])==0 and 'selftest' in d['checks']" | grep -q True; ok $? "a gate tool edit selects the lane check and selftest, no game tests"
+sel src/water2/water_field.gd | field "'test_water_field' in d['fast'] and 'test_water_flow_texture' in d['fast']" | grep -q True; ok $? "src/water2 code selects the src/water2 tests that load it"
+sel src/water2/test_water_window.gd | field "'test_water_window' in d['fast']" | grep -q True; ok $? "a changed src/water2 test selects itself"
 
 cat > "$T/fakegodot" <<'F'
 #!/bin/bash

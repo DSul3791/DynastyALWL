@@ -18,7 +18,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from paint_basic_icons import KEY, VIEW, rot_z   # noqa: E402  (the shared rig)
+from paint_basic_icons import KEY, VIEW, lift_dark, rot_z   # noqa: E402  (the shared rig)
 from paint_item_icons import CORD, blob, rod   # noqa: E402
 from paint_structure_icons import moved, render, shade   # noqa: E402
 
@@ -805,6 +805,8 @@ def _plants():
 
 PIECES = _plants()
 NAMES = tuple(PIECES)
+# Too dark to read on the slot at 57 px (the 9 Nov style review, inventory/icons_style_review.md): brightened by lift_dark after the render.
+LIFT = ("comfrey_roots", "mournbloom_petals", "nightcrown_blooms", "burdock_roots", "wolfsbane_roots", "gloomthistle_heads")
 
 
 def main():
@@ -820,7 +822,8 @@ def main():
             continue
 
         path = os.path.join(args.out, name + ".png")
-        render(build(), FACE, colour_jitter=0.03, seed=len(name)).save(path)
+        icon = render(build(), FACE, colour_jitter=0.03, seed=len(name))
+        (lift_dark(icon) if name in LIFT else icon).save(path)
         print("painted", path)
 
 
