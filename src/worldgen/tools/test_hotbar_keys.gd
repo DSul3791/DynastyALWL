@@ -12,6 +12,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const InventoryView := preload("res://src/client/inventory_view.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const InventoryScript := preload("res://src/shared/inventory.gd")
 
 var failures: int = 0
 var items
@@ -182,6 +183,23 @@ func _init() -> void:
 	check(pot_recipe > 0 and queued.size() == 1 and int(queued[0][1]) == 5, "shift-click's five pots go in one queue request (%s)" % str(queued))
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, Vector3.ZERO)
 	check(int(items.craft_queue_of(1)[0][1]) == 5 and items.craft_queue_of(1).size() == 1, "a second request straight after is paced away: why each click is one request")
+
+	# 9. A torch and the same torch put out are one item to a key (items.json doused_item / relit_item): rain turns the slot into the doused torch while
+	# the key keeps the burning torch's number, and pressing the key must still find it to light it again (the eat run's torch_doused, 9 Nov 2026).
+	var torch: int = items.table.number_of("torch")
+	var doused: int = items.table.number_of("torch_doused")
+	var bag = InventoryScript.new(items.table)
+	bag.numbers[4] = torch
+	bag.counts[4] = 1
+	bag.hotbar[2] = torch
+	check(torch > 0 and doused > 0 and bag.key_slot(2) == 4 and bag.key_of_slot(4) == 2, "the burning torch is on key 3")
+	bag.numbers[4] = doused
+	check(bag.key_slot(2) == 4 and bag.key_of_slot(4) == 2, "put out by the rain, it is still key 3's (slot %d)" % bag.key_slot(2))
+	bag.hotbar[2] = doused
+	bag.numbers[4] = torch
+	check(bag.key_slot(2) == 4 and bag.key_of_slot(4) == 2, "a key given the doused torch finds it lit again")
+	bag.numbers[4] = stone
+	check(bag.key_slot(2) == -1 and bag.key_of_slot(4) == -1, "no torch at all: the key points nowhere")
 
 	print("hotbar keys: %s" % ("all passed" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)
