@@ -12,7 +12,7 @@ extends HBoxContainer
 # replaces that symbol. `StatusIcons.house_texture()` is the white house; `StatusIcons.glyph(...)`
 # can draw simple white shapes for placeholders.
 
-const SIZE := 88.0
+const SIZE := 60.0
 const CHECK_SEC := 0.25
 const MAX_ICONS := 8             # more than this is refused (a warning is printed)
 const GHOST := 0.55               # opacity of the symbols that are not the brain
@@ -25,7 +25,7 @@ var _since: float = 0.0
 func _init() -> void:
 	alignment = BoxContainer.ALIGNMENT_CENTER
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_theme_constant_override("separation", 14)
+	add_theme_constant_override("separation", 10)
 	set_anchors_preset(Control.PRESET_TOP_WIDE)
 	anchor_top = 0.2
 	anchor_bottom = 0.2
