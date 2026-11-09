@@ -322,7 +322,7 @@ These change the build, not the mockup. Each one goes into step 3 (the new windo
    - The labels and the direction of the Stamina bar change; the server values do not. Warmth keeps its name (the character screen says "Temperature"; both become "Warmth").
    - The HUD bars get the same names in step 1.
 3. **Full name on the brass plate.** The plate shows the character's whole name ("Aldwin of the Ford"), letter-spaced 2 instead of 3 if it is long. The plate grows to the text + 60, up to the panel's inside width (408). A longer name drops to Cinzel Bold 30, then 26. The separate "of the Ford" line goes, and the gear columns move up 14 px.
-4. **The tenth hotbar key is shown as 0,** because 0 is the key you press. Settings > Key bindings already lists it as 0. The first time the window opens, the key hints add "**1–0** put on hotbar" while pointing at an item.
+4. **The tenth hotbar key is shown as 0,** because 0 is the key you press. The digit keys 1 to 9 and 0 are fixed to the hotbar and cannot be rebound (`key_bindings.gd` `refusal`). The first time the window opens, the key hints add "**1–0** put on hotbar" while pointing at an item.
 5. **The centre column is the live character model wearing what is equipped.** It uses the character screen's SubViewport, re-dressed when a gear slot changes, with the light rig in 6.6. It is never a flat silhouette. The mockup's figure is a stand-in only.
 
 ## 13. Audit: screens with sizes fixed for the 2880 x 1620 canvas
