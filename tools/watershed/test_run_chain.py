@@ -1,7 +1,7 @@
 """Unit tests for run_chain.py (the chain runner that skips unchanged stages; docs/water/generation_cost_audit.md section 4): an
 .npz is hashed by its arrays, each stage's code and params blocks, and a small stage in a temporary folder that runs once, is skipped,
-and runs again when what it reads, its params block or its output changes (but not for a text note). They run one tiny Python
-command, read no run files, need numpy only, and take a few seconds.
+and runs again when what it reads, its params block or its output changes (but not for a text note); a file rewritten
+inside one clock tick is hashed again. They run one tiny Python command, read no run files, need numpy only, and take a few seconds.
 
 Run on David4 or Dave's PC, never in the cloud:
   python tools/watershed/test_run_chain.py        (or: python -m pytest tools/watershed/test_run_chain.py)
@@ -31,6 +31,21 @@ def test_npz_hashed_by_arrays():
         np.savez_compressed(f'{d}/three.npz', a=a + 1.0, b=b)
         assert rc.file_sha(f'{d}/one.npz') == rc.file_sha(f'{d}/two.npz'), 'the same arrays, saved another way, hash the same'
         assert rc.file_sha(f'{d}/one.npz') != rc.file_sha(f'{d}/three.npz'), 'a changed array changes the hash'
+
+
+def test_a_file_rewritten_inside_one_clock_tick_is_hashed_again():
+    """A file rewritten with the same size inside the file system's clock tick keeps its mtime; the hash kept by path, size
+    and mtime must not hand back the old content's hash (David4, 9 Nov 2026: the restored in.txt below came back as changed
+    on three runs). os.utime puts the old mtime back, which is what a same-tick rewrite looks like."""
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, 'f.txt')
+        open(p, 'w').write('21')
+        st = os.stat(p)
+        first = rc.file_sha(p)
+        open(p, 'w').write('22')
+        os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))
+        assert os.stat(p).st_mtime_ns == st.st_mtime_ns and os.stat(p).st_size == st.st_size
+        assert rc.file_sha(p) != first, 'new content, same size and mtime: hashed again'
 
 
 def test_code_and_params_of_the_stages():

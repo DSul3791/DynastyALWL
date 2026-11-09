@@ -41,13 +41,19 @@ SPACING = 8.0                                 # the game's sample spacing (input
 GODOT_INPUTS = ['src/worldgen', 'data/tables', 'worlds/base_world/world.json', 'worlds/base_world/plan', 'worlds/base_world/erosion_delta_v2.bin']
 
 _hash_cache = {}
+RACY_NS = 2_000_000_000     # a file changed this recently is hashed again every time (see file_sha)
 
 
 def file_sha(path):
-    """The content hash of one file: an .npz by its arrays (name, dtype, shape, bytes), anything else by its bytes."""
+    """The content hash of one file: an .npz by its arrays (name, dtype, shape, bytes), anything else by its bytes.
+    Hashes are kept by path, size and mtime, except for a file changed in the last RACY_NS: a file system stamps mtime from a
+    coarse clock (a few ms on ext4), so a file rewritten with the same size inside one tick keeps its mtime, and the kept hash
+    would be the old content's (David4, 9 Nov 2026: test_run_chain's restored in.txt came back as changed). Git's index has
+    the same rule for racily clean files."""
     st = os.stat(path)
     key = (os.path.abspath(path), st.st_size, st.st_mtime_ns)
-    if key in _hash_cache:
+    racy = time.time_ns() - st.st_mtime_ns < RACY_NS
+    if not racy and key in _hash_cache:
         return _hash_cache[key]
     h = hashlib.sha256()
     try:
@@ -63,8 +69,9 @@ def file_sha(path):
         with open(path, 'rb') as f:
             for block in iter(lambda: f.read(1 << 22), b''):
                 h.update(block)
-    _hash_cache[key] = h.hexdigest()
-    return _hash_cache[key]
+    if not racy:
+        _hash_cache[key] = h.hexdigest()
+    return h.hexdigest()
 
 
 def tree_sha(paths):
