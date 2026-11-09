@@ -76,7 +76,6 @@ var _river_start_cells: float = 0.0   # drainage cells where a river starts (wat
 var _geology
 var _limestone: int = -1
 var _local: int = 0
-var _keep_clear: Array = []      # [center Vector2, radius] where no entrance may open
 var cave_heads: PackedByteArray = PackedByteArray()     # 1 where the drainage chose a spring cave as a river's source (tile_water.cave_heads); empty: the old head search alone
 var far_from_sea: PackedByteArray = PackedByteArray()   # 1 where the sea is at least spring_cave.min_sea_m away (inland_mask, from the frame); empty: no such rule
 var _ore_by_id: Dictionary = {}
@@ -117,7 +116,6 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 	ore_report = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
 	harbor = {}
 	starter = {}
-	_keep_clear = []
 	_ore_by_id = {}
 
 	for ore in geology.ore_bodies:
@@ -216,7 +214,7 @@ func _make_karst(rng: RandomNumberGenerator) -> void:
 
 		var point: Vector2 = _point_of(index)
 
-		if _too_close(point, placed, float(rules["min_spacing_m"])) or _kept_clear(point):
+		if _too_close(point, placed, float(rules["min_spacing_m"])):
 			continue
 
 		var cave: Dictionary = _karst_cave(index, rng)
@@ -652,7 +650,7 @@ func _make_sea_caves(rng: RandomNumberGenerator) -> void:
 		var index: int = candidate[0]
 		var point: Vector2 = _point_of(index)
 
-		if _too_close(point, placed, float(rules["min_spacing_m"])) or _kept_clear(point):
+		if _too_close(point, placed, float(rules["min_spacing_m"])):
 			continue
 
 		var direction: Vector2 = candidate[1]
@@ -717,7 +715,7 @@ func _make_shelters(rng: RandomNumberGenerator) -> void:
 
 		var point: Vector2 = _point_of(index)
 
-		if _too_close(point, placed, float(rules["min_spacing_m"])) or _kept_clear(point):
+		if _too_close(point, placed, float(rules["min_spacing_m"])):
 			continue
 
 		var heading: float = _uphill_angle(index)
@@ -982,7 +980,7 @@ func _make_spring_caves(rng: RandomNumberGenerator) -> void:
 
 		var point: Vector2 = _point_of(index)
 
-		if _too_close(point, placed, float(_spring_rule("min_spacing_m"))) or _kept_clear(point):
+		if _too_close(point, placed, float(_spring_rule("min_spacing_m"))):
 			continue
 
 		var cave: Dictionary = _spring_cave(index, rng)
@@ -1018,7 +1016,7 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 		tried += 1 if roll < share else 0
 
 		if roll < share and made < int(_spring_rule("max_count")) and _record_cave_ok(index) \
-				and not _too_close(point, placed, float(_spring_rule("min_spacing_m"))) and not _kept_clear(point):
+				and not _too_close(point, placed, float(_spring_rule("min_spacing_m"))):
 			var cave: Dictionary = _spring_cave(index, rng)
 
 			if not cave.is_empty():
@@ -1646,43 +1644,12 @@ func _make_starter(info: Dictionary, river_mouth: Vector2) -> void:
 
 	var spawn: Vector2 = _point_of(best)
 
-	# Town block: the flattest dry ground a short walk inland from the spawn.
-	var town: int = -1
-	var town_score: float = INF
-
-	for j in range(0, _samples, 4):
-		for i in range(0, _samples, 4):
-			var index: int = j * _samples + i
-			var h: float = _heights[index]
-			var distance: float = _point_of(index).distance_to(spawn)
-
-			if _water[index] != 0 or h < float(rules["town_height_m"][0]) or h > float(rules["town_height_m"][1]) \
-					or distance < float(rules["town_search_m"][0]) or distance > float(rules["town_search_m"][1]):
-				continue
-
-			var roughness: float = 0.0
-
-			for dz in range(-4, 5, 2):
-				for dx in range(-4, 5, 2):
-					var n: int = clampi(j + dz, 0, _samples - 1) * _samples + clampi(i + dx, 0, _samples - 1)
-					roughness = maxf(roughness, absf(_heights[n] - h))
-
-			var score: float = roughness + distance * 0.004
-
-			if score < town_score:
-				town_score = score
-				town = index
-
 	starter = {
 		"spawn_point": [snappedf(spawn.x, 0.1), snappedf(_heights[best] + 1.0, 0.1), snappedf(spawn.y, 0.1)],
 	}
 
-	if town >= 0:
-		var block: Vector2 = _point_of(town)
-		starter["town_block"] = [snappedf(block.x, 0.1), snappedf(_heights[town], 0.1), snappedf(block.y, 0.1)]
-		_keep_clear.append([block, float(_rules["town_clear_m"])])
-
-	_keep_clear.append([spawn, float(_rules["town_clear_m"])])
+	# Nothing else is placed from the spawn: it is temporary (Dave 9 Nov 2026, "nothing is ever based on where spawn is"). The town block a
+	# short walk inland and the 600 m round the spawn and town where no cave could open are gone (watershed_rebuild_design.md, R6 as built).
 	_pick_spawn(target)
 
 
@@ -1703,7 +1670,6 @@ func _pick_spawn(target: Vector2) -> void:
 		return
 
 	starter["spawn_picked"] = [snappedf(float(picked["x"]), 0.1), snappedf(float(picked["ground"]) + 1.0, 0.1), snappedf(float(picked["z"]), 0.1)]
-	_keep_clear.append([Vector2(float(picked["x"]), float(picked["z"])), float(_rules["town_clear_m"])])
 
 
 # ==================================================
@@ -1761,14 +1727,6 @@ func _too_close(point: Vector2, placed: Array, spacing: float) -> bool:
 		var entrance: Array = cave["nodes"][int(cave["entrances"][0])]
 
 		if point.distance_to(Vector2(float(entrance[0]), float(entrance[2]))) < 120.0:
-			return true
-
-	return false
-
-
-func _kept_clear(point: Vector2) -> bool:
-	for area in _keep_clear:
-		if point.distance_to(area[0]) < float(area[1]):
 			return true
 
 	return false

@@ -1421,7 +1421,6 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 	var bad_tiers: int = 0
 	var exposed: int = 0
 	var unknown_ore: int = 0
-	var near_town: int = 0
 	var segment_types: Array = ["passage", "squeeze", "shaft", "water", "ledge"]
 	var ore_ids: Dictionary = {}
 	var ids: Dictionary = {}
@@ -1433,12 +1432,6 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 
 	for feature in geology.features:
 		ids[feature["id"]] = true
-
-	var keep_clear: Array = []
-
-	for key in ["spawn_point", "town_block"]:
-		if sites.starter.has(key):
-			keep_clear.append(Vector2(float(sites.starter[key][0]), float(sites.starter[key][2])))
 
 	for cave in sites.caves:
 		if ids.has(cave["id"]):
@@ -1460,10 +1453,6 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 				continue
 
 			if cave["entrances"].has(n):
-				for spot in keep_clear:
-					if p.distance_to(spot) < float(rules["town_clear_m"]):
-						near_town += 1
-
 				continue
 
 			var index: int = int(round((p.y - origin.y) / spacing)) * samples + int(round((p.x - origin.x) / spacing))
@@ -1494,7 +1483,6 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 	_check(bad_tiers == 0, "starter tile dens are low tier (1 or 2)")
 	print("  caves %d, exposing ore %d, unknown ore %d, ore steering %s" % [sites.caves.size(), exposed, unknown_ore, str(sites.ore_report)])
 	_check(unknown_ore == 0, "caves expose only known ore bodies (%d exposed)" % exposed)
-	_check(near_town == 0, "no cave opens near the starter spawn or town block")
 	_check(duplicate_ids == 0, "site ids do not clash with geology ids")
 
 	# Spring caves (Dave 3 Nov 2026): the mouth on the brook head, every spring in a chamber at the back and higher than the mouth, so the stream runs out.
@@ -1540,8 +1528,7 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 
 	print("  spring caves %d" % spring_caves)
 	_check(spring_bad == 0, "spring caves open on a brook head with springs at the back, above the mouth (%d of %d wrong)" % [spring_bad, spring_caves])
-	_check(sites.starter.has("spawn_point") and sites.starter.has("town_block") and not sites.harbor.is_empty(),
-		"the starter tile has a spawn point, town block and harbor")
+	_check(sites.starter.has("spawn_point") and not sites.harbor.is_empty(), "the starter tile has a spawn point and harbor")
 
 	var lair_ok: bool = true
 	var cave_ids: Dictionary = {}
