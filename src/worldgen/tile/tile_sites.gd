@@ -72,6 +72,9 @@ var _local: int = 0
 var _keep_clear: Array = []      # [center Vector2, radius] where no entrance may open
 var cave_heads: PackedByteArray = PackedByteArray()     # 1 where the drainage chose a spring cave as a river's source (tile_water.cave_heads); empty: the old head search alone
 var far_from_sea: PackedByteArray = PackedByteArray()   # 1 where the sea is at least spring_cave.min_sea_m away (inland_mask, from the frame); empty: no such rule
+# A tile baked from the water record: cave_heads marks R5's spring heads themselves, and each is a candidate head whether or not a river is drawn
+# there (the drawn brooks start at 2.5 m wide, below their source; design R6 as built, "Brooks and caves"). The other head rules still apply.
+var heads_are_sources: bool = false
 var _ore_by_id: Dictionary = {}
 var ore_report: Dictionary = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
 
@@ -793,7 +796,10 @@ func _brook_heads() -> Array:
 		for i in range(margin, _samples - margin):
 			var index: int = j * _samples + i
 
-			if _water[index] != RIVER or _heights[index] < 2.0:
+			if heads_are_sources:
+				if cave_heads.is_empty() or cave_heads[index] != 1 or _water[index] == OCEAN or _water[index] == LAKE or _heights[index] < 2.0:
+					continue
+			elif _water[index] != RIVER or _heights[index] < 2.0:
 				continue
 
 			# Way inland only (Dave 6 Nov 2026: "its important they only show up way inland wherever the river starts"): the 96 caves of the terrain 59
@@ -807,7 +813,8 @@ func _brook_heads() -> Array:
 			# there shouldnt be a cave here"). This search found its own heads in the finished water map, so a pond's rim or a lake's shore that looked
 			# like a brook head got a cave even though its source was the pond. The drainage's own choice (drainage_channels.gd cave_head) is the rule;
 			# the checks below still apply, within CAVE_HEAD_NEAR_CELLS of it (the later passes can move the river's top cell a little).
-			if bool(_rules.get("spring_cave", {}).get("need_cave_head", true)) and not cave_heads.is_empty() and not _near_cave_head(i, j):
+			if not heads_are_sources and bool(_rules.get("spring_cave", {}).get("need_cave_head", true)) and not cave_heads.is_empty() \
+					and not _near_cave_head(i, j):
 				continue
 
 			for dj in range(-3, 4):

@@ -30,8 +30,8 @@ def _reach(rid, cells, ends, down=-1, lake=None, bed_y=None):
     return dict(id=rid, down=down, ends=ends, lake=lake, area_km2=5.0, polyline=pl)
 
 
-def _carve(network, net, g, sea16=None):
-    segs, _ = rc.carve_rivers(network, net, 0.0, 0.0, M, {}, CV, sea16)
+def _carve(network, net, g, sea16=None, cv=CV):
+    segs, _ = rc.carve_rivers(network, net, 0.0, 0.0, M, {}, cv, sea16)
     cut = np.full(M * M, np.inf, np.float32)
     best_r = np.full(M * M, np.inf, np.float32)
     best_s = np.full(M * M, -1, np.int64)
@@ -92,6 +92,21 @@ def test_narrow_brook_is_left_to_r7():
     segs, g2, code, level = _carve(dict(reaches=[_reach(0, [(c, 10) for c in range(18, 0, -1)], 'sea')]), _net(width=6.0), g)
     assert segs.shape[0] == 0
     assert np.all(g2 == g) and not code.any()
+
+
+def test_a_brook_from_2_5_m_is_drawn_one_sample_wide():
+    """With the 9 Nov threshold (2.5 m), a 3 m brook is carved a bankfull depth under the valley floor and drawn as one continuous line of
+    8 m samples, its neighbours left dry and uncut."""
+    g = np.full((M, M), 10.0)
+    g[:, 0:2] = -2.0
+    cv = dict(CV, carve_min_width_m=2.5)
+    _, g2, code, level = _carve(dict(reaches=[_reach(0, [(c, 10) for c in range(18, 0, -1)], 'sea')]), _net(width=3.0, depth=0.4, depth_mean=0.2), g,
+                                cv=cv)
+    assert np.all(code[20, 4:36] == rc.RIVER), 'the brook is continuous'
+    assert not code[19, 4:36].any() and not code[21, 4:36].any(), 'one sample wide'
+    bank = np.minimum.accumulate(np.array([10.0 - 0.1 * k for k in range(18)]))
+    assert abs(g2[20, 18] - (bank[9] - 0.4)) < 1e-4, g2[20, 18]
+    assert np.all(g2[24, 4:36] == 10.0)
 
 
 def test_seasonal_reach_is_class_8():

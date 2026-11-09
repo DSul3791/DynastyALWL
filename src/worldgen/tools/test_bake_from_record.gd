@@ -4,7 +4,8 @@ extends SceneTree
 # the record. A made-up record of tile 3,4 alone (1,921 samples a side, as record.py writes) holds a slope with a sea strip, a round lake,
 # a straight river and a marsh square. The bake must take the ground, the water level, the water class (record codes through the table's
 # record_code), the drainage (km2 to 8 m cells) and the distance to fresh water from it, sample for sample, and pack a tile file. It must
-# refuse a water code the table lacks and a missing field, and an export bake (raw_only) must still read the world function.
+# refuse a water code the table lacks and a missing field, and an export bake (raw_only) must still read the world function. R5's spring heads
+# (and no other kind of head) are marked for spring caves.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bake_from_record.gd
 
 const TileBakerScript := preload("res://src/worldgen/tile/tile_baker.gd")
@@ -14,6 +15,7 @@ const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const DIR := "user://test_bake_from_record/record"
 const TILE := Vector2i(3, 4)
 const S := 1921
+const HEAD := Vector2i(500, 700)   # the spring head, in samples inside the tile
 
 var failures: int = 0
 
@@ -108,7 +110,10 @@ func write_record() -> void:
 			{"name": "fresh_m", "type": "f4", "file": "fresh_m.f4", "units": "m"}],
 		"summary": {"missing": [], "later": ["snow window"]}})
 	write_json(DIR + "/network.json", {"reaches": [{"id": 0, "down": -1, "ends": "sea", "area_km2": 50.0,
-		"polyline": [[x0 + 1900.0 * 8.0, 39.0, z], [x0 + 100.0 * 8.0, 39.0, z]]}], "lakes": [], "falls": [], "cold_air_pools": []})
+		"polyline": [[x0 + 1900.0 * 8.0, 39.0, z], [x0 + 100.0 * 8.0, 39.0, z]]}], "lakes": [], "falls": [], "cold_air_pools": [],
+		# R5 channel heads: one fed by groundwater (a spring cave candidate) and one that is not (design R6 as built, "Brooks and caves").
+		"heads": [{"reach": 0, "kind": "spring", "pos": [x0 + HEAD.x * 8.0, 50.0, float(TILE.y) * 15360.0 + HEAD.y * 8.0]},
+			{"reach": 0, "kind": "seep or damp hollow", "pos": [x0 + (HEAD.x + 100) * 8.0, 50.0, float(TILE.y) * 15360.0 + HEAD.y * 8.0]}]})
 	write_json(DIR + "/climate.json", {"default": {}, "by_island": {}})
 
 
@@ -163,6 +168,11 @@ func _init() -> void:
 		check(bad_surface == 0, "water surface is the record's level, a marsh at its ground (%d differ)" % bad_surface)
 		check(bad_flow == 0, "flow is the drainage area in 8 m cells (%d differ)" % bad_flow)
 		check(bad_fresh == 0, "distance to fresh water is the record's (%d differ)" % bad_fresh)
+		# Only the spring head is marked for a spring cave, at its own sample of the frame.
+		var frame_n: int = S + 2 * baker.margin
+		var heads: PackedByteArray = water.cave_heads
+		check(heads.size() == frame_n * frame_n and heads.count(1) == 1 and heads[(HEAD.y + baker.margin) * frame_n + HEAD.x + baker.margin] == 1,
+			"the record's spring head, and only it, is marked for a spring cave (%d marked)" % heads.count(1))
 		var packed: Dictionary = TileFileScript.pack_tile(baker.settings, TILE, baker.plan_cell(TILE), water, result["climate"], result["geology"], result["sites"], baker.river_start_cells())
 		check(not packed.is_empty(), "the tile packs into a tile file")
 
