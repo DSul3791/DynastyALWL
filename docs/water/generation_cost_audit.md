@@ -71,6 +71,7 @@ It would also replace the hand-written job sheets.
   - every land tile gets new bodies of water.
 - **The cause is the live water's springs, not the record.** Each head pours 3 m³/s per km² of catchment, and the sides add 1 m³/s per km² (`data/water_settle.json`). Both are multiplied by the server's start key of 10 (`WaterLive.DEFAULT_RATE`), which comes to about 30 to 40 m³/s per km². The record's mean flow is at most 0.035 m³/s per km², which is all of the 1,100 mm of rain a year (the chain's `climate.rain_mm_yr`) running off, so the springs pour about 1,000 times as much. The live water stands above the record's levels everywhere: every difference is settled above seeded.
 - **So the settle stays.** A seeded file would rise after a fresh server start until the server saved its own. The settle's 363 s per nine tiles stays in every bake that changes the water. Matching the springs to the record's flows is R7 items 1 and 2 (watershed design), and seeding comes back then.
+- **A faster settle in the meantime:** [settle_speed_design.md](../design/settle_speed_design.md). It covers a queue of nine instead of rounds, refilm folded into the settle, and fewer ticks if a measurement shows they are enough.
 
 **The bake: nine threads that queue for one lock (the biggest cheap win).**
 
