@@ -73,9 +73,12 @@ func _init() -> void:
 
 
 var _panel: PanelContainer
-var _columns: BoxContainer             # the You column; an open container shows there in place of the stats (container_panel.gd)
 var _frame: InventoryFrameScript       # the window's frame: backdrop, the three panels and their title plates (inventory_frame.gd)
-var _you_box: VBoxContainer            # the You column's gear, live character and stats, hidden while a container is open
+var _you_box: VBoxContainer            # the You column's gear, live character and stats
+var _craft_root: Control               # the Craft column's recipes and card (recipe_list.gd); an open container shows in its place (4.4)
+var _craft_tabs: Array = []            # the Chest and Craft tabs on the Craft panel's title row, shown while a container is open
+var _text_buttons: Array = []          # Text - and Text + on the same row, hidden while the tabs are there
+var chest_tab: bool = true             # with a container open: true shows the container, false the recipes (Craft still works with it open)
 var _you_part: YouColumnScript         # the gear wells and the live character (you_column.gd)
 var _panel_values: Dictionary = {}     # stat name -> its value label in the You column
 var _grid: GridContainer
@@ -97,7 +100,7 @@ var chest_keep_out: bool = false        # the open container is ticked "keep out
 var chest_may_keep_out: bool = false    # and this player owns it, so the tick may be changed (set_keep_out)
 var reach_stock: Dictionary = {}        # item number -> count a craft may use besides the pack: loose stacks within 3 m and own containers within 12 m (craft_stock)
 var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
-var _chest_panel: PanelContainer
+var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
 var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
@@ -106,7 +109,6 @@ var _boulder_rock: ShaderMaterial
 var _chest_buttons: Array = []
 var _pack_buttons: Array = []
 var _pack_view: Array = []             # the chest screen's pack side: button index -> real pack slot (a fire shows only what it takes, A to Z)
-var _chest_titles: Array = []          # the chest screen's two column titles [container, pack]
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
 var _drink_msec: int = 0
 var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
@@ -405,7 +407,7 @@ func toggle() -> void:
 		_panel.visible = open
 
 	if _you_part != null:
-		_you_part.set_active(open and not chest_mode)
+		_you_part.set_active(open)
 
 
 # Esc in the search box (while it has focus and holds text) empties it instead of closing the menu. True when it did.
@@ -2090,10 +2092,14 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 		chest_mode = true
 		open = true
 		_build_panel()
-		_panel.visible = true      # one window, the container in its middle column
+		_panel.visible = true      # one window, the container in its Craft column (4.4)
+		chest_tab = true
 		_container_part.build()
-		_chest_panel.visible = true
-		_show_container_column(true)
+		_show_tab()
+
+		if _you_part != null:
+			_you_part.set_active(true)
+
 		_refresh()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -2111,11 +2117,10 @@ func _close_chest() -> void:
 
 	chest_mode = false
 	open = false
+	_show_tab()
 
-	if _chest_panel != null:
-		_chest_panel.visible = false
-
-	_show_container_column(false)
+	if _you_part != null:
+		_you_part.set_active(false)
 
 	if _panel != null:
 		_panel.visible = false
@@ -3747,13 +3752,12 @@ var text_scale: float = 0.85           # crafting and inventory text size (Esc >
 func set_text_scale(scale: float) -> void:
 	text_scale = scale
 
-	# The chest screen is rebuilt on its next opening at the new size.
+	# The window is rebuilt at the new size, an open container's column with it.
 	if _chest_panel != null:
 		_chest_panel.queue_free()
 		_chest_panel = null
 		_chest_buttons.clear()
 		_pack_buttons.clear()
-		_chest_titles.clear()
 
 	if _panel != null:
 		var was_open: bool = open
@@ -3762,11 +3766,20 @@ func set_text_scale(scale: float) -> void:
 		_frame = null
 		_you_box = null
 		_you_part = null
+		_craft_root = null
 		_buttons.clear()
 
 		if was_open:
 			_build_panel()
+
+			if chest_mode:
+				_container_part.build()
+				_show_tab()
+
 			_refresh()
+
+			if _you_part != null:
+				_you_part.set_active(true)
 
 
 func text_px(size: int) -> int:
@@ -4158,7 +4171,14 @@ func _build_panel() -> void:
 	_search.text_changed.connect(func(_text): _refresh())
 	_frame.header.add_child(_search)
 
-	# Text size buttons (Dave 2026-10-20); terrain_client keeps and saves the choice. They sit on the Craft panel's title row.
+	# The Chest and Craft tabs (4.4), shown while a container is open, then the text size buttons (Dave 2026-10-20; terrain_client keeps
+	# and saves the choice). They share the Craft panel's title row.
+	_craft_tabs = [_craft_tab("Chest", true), _craft_tab("Craft", false)]
+	_text_buttons.clear()
+
+	for tab in _craft_tabs:
+		_frame.craft_header.add_child(tab)
+
 	for step in [[-1, "Text -"], [1, "Text +"]]:
 		var size_button: Button = Button.new()
 		size_button.text = step[1]
@@ -4167,10 +4187,11 @@ func _build_panel() -> void:
 			if text_step.is_valid():
 				text_step.call(step[0]))
 		_frame.craft_header.add_child(size_button)
+		_text_buttons.append(size_button)
 
 	_frame.set_title(1, _you_title())
 
-	# You: the gear wells and the live character, an ornament rule, then the six stats. An open container takes this column (container_panel.gd).
+	# You: the gear wells and the live character, an ornament rule, then the six stats.
 	_you_box = VBoxContainer.new()
 	_you_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_you_box.add_theme_constant_override("separation", 12)
@@ -4183,16 +4204,15 @@ func _build_panel() -> void:
 	_you_box.add_child(you_rule)
 	_you_box.add_child(_build_bars_row())
 	_frame.you_column.add_child(_you_box)
-	_columns = _frame.you_column
 
 	# Pack and Craft: each part builds its own column (src/client/ui/inventory/).
 	_queue_part.build()
 	var pack_root: Control = _pack_part.build()
 	pack_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_frame.pack_column.add_child(pack_root)
-	var craft_root: Control = _recipe_part.build(_queue_part.root)
-	craft_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_frame.craft_column.add_child(craft_root)
+	_craft_root = _recipe_part.build(_queue_part.root)
+	_craft_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_frame.craft_column.add_child(_craft_root)
 	_layer.add_child(_panel)
 
 	# The hotbar strip stays on top of the window's backdrop, in its place, so it can be read and dropped on with the window up (section 9).
@@ -4200,16 +4220,51 @@ func _build_panel() -> void:
 		_layer.move_child(hotbar_strip._row, -1)
 
 
-# Shows an open container in the You column in place of the stats, or the stats again.
-func _show_container_column(shown: bool) -> void:
-	if _you_box != null and is_instance_valid(_you_box):
-		_you_box.visible = not shown
+# Chest mode (redesign 4.4): with a container open the Craft column shows it, named on the plate, or the recipes, by the Chest and
+# Craft tabs on the title row. With no container the tabs go and the column is Craft again.
+func _show_tab() -> void:
+	var chest: bool = chest_mode and chest_tab
 
-	if _you_part != null:
-		_you_part.set_active(open and not shown)
+	if _chest_panel != null and is_instance_valid(_chest_panel):
+		_chest_panel.visible = chest
+
+	if _craft_root != null and is_instance_valid(_craft_root):
+		_craft_root.visible = not chest
+
+	if not chest:
+		_chest_hover = []      # a hidden slot sends no mouse_exited
+
+	for i in _craft_tabs.size():
+		var tab: Button = _craft_tabs[i]
+		tab.visible = chest_mode
+		var lit: bool = (i == 0) == chest
+		tab.add_theme_stylebox_override("normal", ArtKit.stylebox_raised(1 if lit else 0))
+		tab.add_theme_color_override("font_color", ArtKit.HEADING if lit else ArtKit.CREAM)
+
+	for button in _text_buttons:
+		(button as Control).visible = not chest_mode
 
 	if _frame != null and is_instance_valid(_frame):
-		_frame.set_title(1, "CHEST" if shown else _you_title())
+		_frame.set_title(2, _container_part.title() if chest else "CRAFT")
+
+
+# A tab on the Craft panel's title row (4.4): a raised plate of 118 x 36, the word in Cinzel; lit when it is the one showing.
+func _craft_tab(text: String, shows_chest: bool) -> Button:
+	var tab: Button = Button.new()
+	tab.text = text
+	tab.custom_minimum_size = Vector2(118.0, 36.0)
+	tab.focus_mode = Control.FOCUS_NONE
+	tab.visible = false
+	tab.add_theme_font_override("font", ArtKit.font("cinzel_bold"))
+	tab.add_theme_font_size_override("font_size", 18)
+	tab.add_theme_color_override("font_hover_color", ArtKit.HEADING)
+	tab.add_theme_stylebox_override("normal", ArtKit.stylebox_raised(0))
+	tab.add_theme_stylebox_override("hover", ArtKit.stylebox_raised(1))
+	tab.add_theme_stylebox_override("pressed", ArtKit.stylebox_raised(2))
+	tab.pressed.connect(func() -> void:
+		chest_tab = shows_chest
+		_show_tab())
+	return tab
 
 
 func _you_title() -> String:
