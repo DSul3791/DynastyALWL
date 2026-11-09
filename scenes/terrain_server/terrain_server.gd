@@ -383,51 +383,10 @@ func _ready() -> void:
 				return true
 
 		return false
-	# The drink's source rows (docs/design/drinking_water_design.md 3, "without the record": today's water, minus salt water), for
-	# vitals.json thirst.sources. From the baked tile, at the same five points as water_near: a spring cave's stream is spring water; ocean
-	# and estuary cells are salt; wet lake and river cells are lakes and rivers; any other cell the live sim has wet is a puddle. No ice field:
-	# server_items puts its own ice rule (_on_ice) on each row. The record's ground springs are spring rows (step 2a); a sample on a record channel
-	# (the tile's drink sections) is a brook by regime in place of a river or a puddle (step 2b, drinking_water_step2b_design.md).
+	# The drink's source rows for vitals.json thirst.sources, from the baked tile (DrinkRules.tile_rows), with the year mean of this climate zone.
 	items.water_source = func(pos, reach) -> Array:
-		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
-		var rows: Array = []
-
-		if tile_data.placeholder or tile_data.water_class.is_empty():
-			return rows
-
-		if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
-			rows.append({"kind": "spring"})
-
 		var group = settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))
-
-		if not tile_data.ground_springs.is_empty():   # the record's ground springs (step 2a): always a drink, at the year mean of their height
-			rows.append_array(DrinkRulesScript.ground_spring_rows(tile_data.ground_springs, pos, reach, func(head: Vector3) -> float: return WeatherScript.year_mean_c(group, head.y)))
-
-		var mean_at: Callable = func(height: float) -> float: return WeatherScript.year_mean_c(group, height)
-
-		var sim: PackedFloat32Array = tile_data.sim_snapshot()
-
-		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
-			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
-			var cls: int = int(tile_data.water_class[k])
-
-			if cls == 1 or cls == 5:
-				rows.append({"kind": "salt"})   # ocean, estuary (data/tables/water_classes.json)
-				continue
-
-			# A record channel (step 2b): a brook by its regime, which runs or lies dry by the season (DrinkRules.runs) whatever the sim shows.
-			var brook: Dictionary = tile_data.drink_row(k, mean_at) if cls != 2 else {}
-
-			if not brook.is_empty():
-				rows.append(brook)
-				continue
-
-			var wet: bool = (not is_nan(sim[k])) if not sim.is_empty() else (cls > 1 and not is_nan(tile_data.water_surface[k]))
-
-			if wet:
-				rows.append({"kind": "lake" if cls == 2 else ("river" if cls == 3 else "puddle")})
-
-		return rows
+		return DrinkRulesScript.tile_rows(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, func(height: float) -> float: return WeatherScript.year_mean_c(group, height))
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
