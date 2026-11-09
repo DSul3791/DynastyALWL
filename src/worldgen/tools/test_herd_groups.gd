@@ -105,7 +105,6 @@ func _init() -> void:
 	var f = make(true)
 	var fog_lead: Dictionary = f.animals[f._herds[77][0]]
 	f.canopy = func(p: Vector3) -> bool: return p.x < -10.0
-	f._fog_cfg()["on"] = true
 	f._fog_cfg()["edge_tries"] = 12
 	f.cfg["groups"]["drift_m"] = 8.0
 	f._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0}, 0.1)

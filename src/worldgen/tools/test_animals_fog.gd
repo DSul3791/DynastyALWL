@@ -3,7 +3,7 @@ extends SceneTree
 # Animals in fog, the server half (docs/design/animals_in_fog_server.md section 7; Jamie docs/knowledge/fog-and-visibility.md; MikeW
 # ANIMAL_FOG.md): the visibility V at a point (Weather.visibility_m, the client look's rule, #724; clear above the layer); sight full to V/4 and gone
 # past V/2, so an unseen player is sensed by hearing and smell only; wolves shadow at half V in dense fog; perched birds sit out thick fog;
-# deer keep their dawn hours later. With animals.json weather.fog.on false the old flat mist cut stands.
+# deer keep their dawn hours later. Always on with the weather rules (the fog.on switch and the old flat mist cut are gone, 9 Nov 2026).
 #   godot --headless --path . --script res://src/worldgen/tools/test_animals_fog.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -42,12 +42,8 @@ func _init() -> void:
 	var deer: Dictionary = a.species_def("deer")
 	var fog: Dictionary = a._wx_rules()["fog"]
 
-	# Flag off: the old flat mist cut.
-	check(not bool(fog.get("on", true)), "weather.fog ships off")
-	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0}, 0.1)
+	check(not fog.has("on") and a.fog_on(), "the fog rules are always on (no switch, no old flat mist cut)")
 	a.ground_height = Callable()
-	check(near(a._sight({"pos": Vector3.ZERO}, deer, Vector3(30.0, 0.0, 0.0), 30.0, false), 0.4), "flag off: thick mist cuts sight to 0.4 at any distance")
-	fog["on"] = true
 
 	# V (Weather.visibility_m, the rule the client's look draws by, #724).
 	a._read_weather({"wind": 0.0, "mist": 0.0}, 0.1)
