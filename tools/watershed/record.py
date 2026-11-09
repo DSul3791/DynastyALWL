@@ -28,7 +28,8 @@ The steps (R6 method items 1 to 4):
    left is a fault, counted and listed, never filled silently.
 4. Lakes at their R3 levels on the refined ground (their shores follow the 8 m ground), the sea at 0, wetlands, regime,
    discharge, water table depth, basin, distance to perennial fresh water (with R5, springs that run in the dry season
-   count) and loose sediment, each encoded as listed in the manifest.
+   count), loose sediment and, with R5, below which spring each stream runs and its width (drinking water), each encoded as
+   listed in the manifest.
 With --network (R5's network.py output of this same chain) the regime and discharge come from the network, which knows
 the stream threshold and the losing beds, and the rivers wider than record.rivers.carve_min_width_m (2.5 m) are carved along R5's polylines and drawn as water
 (class 3 perennial, 8 seasonal channel; carve_rivers), before the roughness and the flood. Without it the manifest lists the
@@ -580,6 +581,20 @@ def main():
         # sample nearest each.
         fresh_src = fresh_src | springstore.spring_sources(network['springs'], ox, oz, SPACING, m, float(RC['fresh_spring_min_m3_s']))
     fresh = distance_transform_edt(~fresh_src) * SPACING if fresh_src.any() else np.full((m, m), 65535.0)
+    # Drinking water step 2b (docs/design/drinking_water_step2b_design.md): below which spring each stream sample runs (network.py
+    # below_springs: the spring with the smallest distance / sqrt(flow), which keeps it open longest in frost) and the stream's width,
+    # for the tile bake's drink sections. None off the streams, below a lake, with no spring above, or without a network.
+    if net is not None:
+        if 'below_spring_m' not in net.files:
+            raise SystemExit('record: the network has no below_spring_m (made by an older network.py); run network.py on this chain')
+        below8 = nearest(net['below_spring_m'].astype(np.float64), g16)
+        spring_q8 = nearest(net['spring_q_m3_s'].astype(np.float64), g16)
+        spring_y8 = nearest(net['spring_y_m'].astype(np.float64), g16)
+        width8 = nearest(net['width_m'].astype(np.float64), g16)
+    else:
+        below8, spring_q8, spring_y8, width8 = np.full((m, m), np.inf), np.zeros((m, m)), np.zeros((m, m)), np.zeros((m, m))
+    stream8 = regime8 > 0
+    fed = stream8 & np.isfinite(below8)
 
     E = RC['encoding']
     enc_q = lambda q: np.where(q >= 1e-4, np.clip(np.round((np.log10(np.maximum(q, 1e-4)) + 4.0) * float(E['discharge_codes_per_decade'])), 1, 65535), 0).astype('<u2')
@@ -595,6 +610,14 @@ def main():
         ('fresh_m', np.clip(np.round(fresh), 0, 65535).astype('<u2'), 'u2', dict(units='m', scale=1.0, note='to a lake, regime 1 (perennial) water or a spring that runs in the dry season')),
         ('area_km2', area8.astype('<f4'), 'f4', dict(units='km2', note="drainage area through the sample, R3's routing on the 16 m ground")),
         ('sediment_m', np.clip(np.round(np.maximum(sediment, 0.0) / float(E['sediment_step_m'])), 0, 65535).astype('<u2'), 'u2', dict(units='m', scale=float(E['sediment_step_m']))),
+        ('below_spring_m', np.where(fed, np.clip(np.round(np.where(fed, below8, 0.0) / 2.0), 0, 65534), 65535).astype('<u2'), 'u2',
+         dict(units='m', scale=2.0, nodata=65535, note='channel distance below the spring that keeps the stream open longest in frost (smallest distance / sqrt(flow)); none off the streams, below a lake or with no spring above')),
+        ('spring_q', np.where(fed, enc_q(spring_q8), 0).astype('<u2'), 'u2', dict(units='m3/s', log10_m3_s='code / codes_per_decade - 4',
+         codes_per_decade=float(E['discharge_codes_per_decade']), nodata=0, note="that spring's flow (its head's groundwater_m3_s)")),
+        ('spring_y', np.where(fed, np.clip(np.round(spring_y8 * 10.0), -32768, 32767), 0).astype('<i2'), 'i2',
+         dict(units='m', scale=0.1, note="that spring's height; 0 where below_spring_m is none")),
+        ('width_m', np.where(stream8, np.clip(np.round(width8 * 10.0), 0, 255), 0).astype(np.uint8), 'u1',
+         dict(units='m', scale=0.1, note="the stream's bankfull width (R5); 255 is 25.5 m or wider; 0 off the streams")),
     ]
 
     x0, z0, x1, z1 = P['tiles']
