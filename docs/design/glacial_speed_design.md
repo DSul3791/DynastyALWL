@@ -94,3 +94,27 @@ That is about 0.65 s × 650 calls, about 7 min a glacial. Evolve gains too.
 3. one evolve run against ws580v's evolve output.
 
 **After A3 (measured 34 min 36 s):** nine tiles take about 55 to 59 min (estimate). B (4,000-year cold steps, about 8 min less at A3's 3.2 s a step; estimate) is then still needed for Dave's rule (d). B changes the result, so its probe (`water/glacial_b_probe_job.md`) runs only after A3 is measured, and is judged by `compare_runs.py` against ws580v.
+
+## Cut R: the route, exact (glacial and evolve; designed 9 Nov, `water/route_cut_design.md`; coordinator approved)
+
+`evolve.route` runs once a step: 650 calls in glacial (494 with B) and 207 in evolve, at 0.83 s a call (split profile: `_ltd_receivers` 0.47 s, `lem.route` 0.36 s). That is about 540 s of glacial and 170 s of evolve.
+
+- **R1. The D8-LTD facets on nine threads.** `_ltd_receivers` does two things for each cell.
+  - It finds the steepest of the eight facets: `k1`, `k2`, and the true direction `fx`, `fy`. This reads only `filled`, so each cell is its own.
+  - It picks `k1` or `k2` by the drift carried down the path, and adds the cell's area to its receiver. This needs the cells above it.
+
+  So the kernel splits in two:
+  - `_ltd_facets`, a `prange` pass over `order` with the old kernel's facet lines verbatim (`fastmath` off);
+  - `_ltd_drift`, the serial pass from the highest cell down, also verbatim.
+
+  Estimate 0.47 s to about 0.12 s a call.
+- **R2. No receivers that are thrown away.** `evolve.route` throws `lem.route`'s D8 receivers away. The flood moves verbatim into `lem.fill_order`. `lem.route` calls it and then runs its D8 loop as before, so `meander.py` and `precarve.py` get the same three arrays. `evolve.route` calls `fill_order` alone.
+- **R3. A four-way heap in the flood.** It goes in only if the split job measures at least 0.05 s a call. `(value, index)` is a strict total order, so any correct queue pops the same sequence.
+
+**Exact.** Every array comes out bit for bit as before. R1 does each cell's arithmetic on another thread, with the order-dependent half unchanged. R2 is the same code moved. The split kernels were also written into `water/route_split_profile_job.md` (array-equal on ws580v's ground, and each part timed). That job was dropped on 9 Nov, when Dave stopped new jobs to merge and test play, so R1 and R2 go in on `test_evolve.py` alone.
+
+**The check.**
+- David4 runs `test_evolve.py`. It has new cases against verbatim copies of the old `_ltd_receivers` and `lem.route`, at 1 and 9 threads, with three drift memories. David4 also runs `test_glacial.py` and `test_rock.py`.
+- Dino's three full-run checks (one cycle, the full glacial and evolve, every file array-equal) and the route split job wait for the next chain run. Until then, the times below are estimates.
+
+**Estimate** (R1 and R2, not measured): about 0.38 s a call, so about 4 min off glacial (3 min with B) and 1.3 min off evolve.

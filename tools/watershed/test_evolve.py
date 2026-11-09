@@ -1,5 +1,6 @@
-"""Glacial cut A3 (docs/design/glacial_speed_design.md): evolve._solve on nine threads by river basin, its bookkeeping on land
-cells only, and _slope_ceiling over a land index must give exactly what the one-thread code gave. The old code is copied
+"""Glacial cuts A3 and R (docs/design/glacial_speed_design.md): evolve._solve on nine threads by river basin, its bookkeeping on
+land cells only, and _slope_ceiling over a land index must give exactly what the one-thread code gave; so must D8-LTD with its
+facets on threads (_ltd_receivers) and the flood without the D8 receivers (lem.fill_order, lem.route, evolve.route). The old code is copied
 below verbatim (bar its docstrings) and both run on small routed islands: cover and bare rock, ice lift, sea receivers,
 hollows, every sweep and an early stop, at one thread and at nine (or as many as there are), and once with an order where a
 receiver comes after its donor, which must fall back to one bucket. Every array must be equal (np.array_equal), not close.
@@ -138,6 +139,161 @@ def _old_solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd,
     return total
 
 
+# Cut R (9 Nov 2026): the one-thread D8-LTD kernel and lem.route as they were on main ba517797, verbatim bar the docstrings.
+@nb.njit
+def _old_ltd_receivers(filled, order, sea, n, dx, lam, facets):
+    N = n * n
+    rec = np.full(N, -1, np.int64)
+    acc = np.ones(N)
+    main = np.zeros(N)
+    drift_in = np.zeros(N)
+    root2 = 1.4142135623730951
+    for q in range(order.size - 1, -1, -1):
+        i = order[q]
+        r = i // n
+        c = i % n
+        e0 = filled[i]
+        smax = 0.0
+        fx = 0.0
+        fy = 0.0
+        k1 = -1
+        k2 = -1
+        for f in range(8):
+            c1 = c + facets[f, 0]; r1 = r + facets[f, 1]; c2 = c + facets[f, 2]; r2 = r + facets[f, 3]
+            if c1 < 0 or c1 >= n or r1 < 0 or r1 >= n or c2 < 0 or c2 >= n or r2 < 0 or r2 >= n:
+                continue
+            e1 = filled[r1 * n + c1]
+            e2 = filled[r2 * n + c2]
+            s1 = (e0 - e1) / dx
+            s2 = (e1 - e2) / dx
+            a = np.arctan2(s2, s1)
+            if a < 0.0:
+                a = 0.0
+                s = s1
+            elif a > 0.25 * np.pi:
+                a = 0.25 * np.pi
+                s = (e0 - e2) / (dx * root2)
+            else:
+                s = np.sqrt(s1 * s1 + s2 * s2)
+            if s > smax:
+                smax = s
+                ux = float(facets[f, 0]); uy = float(facets[f, 1])
+                wx = float(facets[f, 2] - facets[f, 0]); wy = float(facets[f, 3] - facets[f, 1])
+                fx = np.cos(a) * ux + np.sin(a) * wx
+                fy = np.cos(a) * uy + np.sin(a) * wy
+                k1 = r1 * n + c1
+                k2 = r2 * n + c2
+        best = -1
+        drift = 0.0
+        for t in range(2):
+            k = k1 if t == 0 else k2
+            if k < 0 or filled[k] >= e0:
+                continue
+            ox = float(k % n - c) * dx
+            oy = float(k // n - r) * dx
+            d = lam * drift_in[i] + (fx * oy - fy * ox)          # sideways drift of the path if it steps to k
+            if best < 0 or abs(d) < abs(drift):
+                best = k
+                drift = d
+        if best < 0:
+            bd = 0.0
+            for dr in range(-1, 2):
+                for dc in range(-1, 2):
+                    rr = r + dr; cc = c + dc
+                    if (dr == 0 and dc == 0) or rr < 0 or rr >= n or cc < 0 or cc >= n:
+                        continue
+                    j = rr * n + cc
+                    g = (e0 - filled[j]) / (root2 if dr != 0 and dc != 0 else 1.0)
+                    if g > bd:
+                        bd = g
+                        best = j
+            drift = 0.0
+        rec[i] = best
+        if best >= 0:
+            acc[best] += acc[i]
+            if acc[i] > main[best]:
+                main[best] = acc[i]
+                drift_in[best] = drift
+    return rec
+
+
+@nb.njit
+def _old_lem_route(h, sea, n):
+    N = n*n
+    EPS = 1e-3
+    filled = np.empty(N); seen = np.zeros(N, np.uint8)
+    # simple binary heap on (value, idx)
+    hv = np.empty(N+8); hi = np.empty(N+8, np.int64); sz = 0
+    for i in range(N):
+        if sea[i]:
+            filled[i] = min(h[i], 0.0); seen[i] = 1
+    for i in range(N):
+        if sea[i]: continue
+        r = i//n; c = i % n
+        seed = r == 0 or c == 0 or r == n-1 or c == n-1
+        if not seed:
+            for dr in range(-1, 2):
+                for dc in range(-1, 2):
+                    if sea[(r+dr)*n+c+dc]: seed = True
+        if seed:
+            seen[i] = 1; filled[i] = max(h[i], EPS)
+            # push
+            k = sz; sz += 1; hv[k] = filled[i]; hi[k] = i
+            while k > 0:
+                p = (k-1)//2
+                if hv[p] > hv[k] or (hv[p] == hv[k] and hi[p] > hi[k]):
+                    t = hv[p]; hv[p] = hv[k]; hv[k] = t
+                    t2 = hi[p]; hi[p] = hi[k]; hi[k] = t2; k = p
+                else: break
+    order = np.empty(N, np.int64); no = 0
+    while sz > 0:
+        v = hv[0]; i = hi[0]; sz -= 1
+        hv[0] = hv[sz]; hi[0] = hi[sz]
+        k = 0
+        while True:
+            l = 2*k+1; rr = l+1; m = k
+            if l < sz and (hv[l] < hv[m] or (hv[l] == hv[m] and hi[l] < hi[m])): m = l
+            if rr < sz and (hv[rr] < hv[m] or (hv[rr] == hv[m] and hi[rr] < hi[m])): m = rr
+            if m == k: break
+            t = hv[m]; hv[m] = hv[k]; hv[k] = t
+            t2 = hi[m]; hi[m] = hi[k]; hi[k] = t2; k = m
+        if not sea[i]:
+            order[no] = i; no += 1
+        r = i//n; c = i % n
+        for dr in range(-1, 2):
+            for dc in range(-1, 2):
+                if dr == 0 and dc == 0: continue
+                rr2 = r+dr; cc = c+dc
+                if rr2 < 0 or rr2 >= n or cc < 0 or cc >= n: continue
+                j = rr2*n+cc
+                if seen[j]: continue
+                seen[j] = 1
+                filled[j] = max(h[j], v+EPS)
+                k = sz; sz += 1; hv[k] = filled[j]; hi[k] = j
+                while k > 0:
+                    p = (k-1)//2
+                    if hv[p] > hv[k] or (hv[p] == hv[k] and hi[p] > hi[k]):
+                        t = hv[p]; hv[p] = hv[k]; hv[k] = t
+                        t2 = hi[p]; hi[p] = hi[k]; hi[k] = t2; k = p
+                    else: break
+    # pop order is ascending filled value = downstream first
+    rec = np.full(N, -1, np.int64)
+    for q in range(no):
+        i = order[q]; r = i//n; c = i % n
+        best = -1; bd = 0.0
+        for dr in range(-1, 2):
+            for dc in range(-1, 2):
+                if dr == 0 and dc == 0: continue
+                rr2 = r+dr; cc = c+dc
+                if rr2 < 0 or rr2 >= n or cc < 0 or cc >= n: continue
+                j = rr2*n+cc
+                d = filled[i]-filled[j]
+                if dr != 0 and dc != 0: d /= 1.4142
+                if d > bd: bd = d; best = j
+        rec[i] = best
+    return filled, rec, order[:no]
+
+
 def _island(n, seed, bumps=9):
     """A rough island on an n x n grid: a few hills on a dome, the sea where it falls below 0 and round the frame."""
     rng = np.random.default_rng(seed)
@@ -245,6 +401,32 @@ def test_solve_buckets_reports_shares():
     c = _case(48, 11, ice=False)
     bucket, basin, basins = ev.solve_buckets(c['order'], c['rec'], c['sea'], 9)
     assert 0.0 < basin <= bucket <= 1.0 and basins > 9
+
+
+def test_ltd_receivers_match_the_old_kernel_at_every_thread_count():
+    for seed in range(6):
+        h, sea, _ = _island(48, 200 + seed)
+        filled, _, order = _old_lem_route(h, sea, 48)
+        for lam in (0.0, 0.8, 1.0):
+            old = _old_ltd_receivers(filled, order, sea, 48, DX, lam, ev._FACETS)
+            for k in _threads():
+                nb.set_num_threads(k)
+                new = ev._ltd_receivers(filled, order, sea, 48, DX, lam, ev._FACETS)
+                assert np.array_equal(new, old), (seed, lam, k)
+    nb.set_num_threads(nb.config.NUMBA_NUM_THREADS)
+
+
+def test_fill_order_and_both_routes_match_the_old_flood():
+    for seed in range(4):
+        h, sea, _ = _island(44, 300 + seed)
+        f0, r0, o0 = _old_lem_route(h, sea, 44)
+        f1, o1 = ev.lem.fill_order(h, sea, 44)
+        assert np.array_equal(f1, f0) and np.array_equal(o1, o0), seed
+        f2, r2, o2 = ev.lem.route(h, sea, 44)
+        assert np.array_equal(f2, f0) and np.array_equal(r2, r0) and np.array_equal(o2, o0), seed
+        f3, r3, o3 = ev.route(h, sea, 44, DX, 0.8)
+        assert np.array_equal(f3, f0) and np.array_equal(o3, o0), seed
+        assert np.array_equal(r3, _old_ltd_receivers(f0, o0, sea, 44, DX, 0.8, ev._FACETS)), seed
 
 
 if __name__ == '__main__':
