@@ -33,7 +33,6 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KEY_FILE := "user://player_key.txt"
-const PICKUP_M := 3.0
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
@@ -677,20 +676,6 @@ func _doused_torch_slot() -> int:
 	return -1
 
 
-# The nearest burning fire within a few steps (a doused torch pressed on the hotbar lights at it), or 0.
-func lit_fire_in_reach() -> int:
-	var here: Vector3 = _player_position.call()
-	var best: int = 0
-	var best_d: float = 3.0
-
-	for id in _world:
-		if _world[id]["state"] in [1, 40, 41] and here.distance_to(_world[id]["pos"]) <= best_d:
-			best = id
-			best_d = here.distance_to(_world[id]["pos"])
-
-	return best
-
-
 func _probe_fire() -> Dictionary:
 	var id: int = _nearest_fire()
 
@@ -1106,26 +1091,12 @@ func _nearest_fire() -> int:
 	return _aimed_or_nearest(ids, here)
 
 
-func cook_nearest() -> void:
-	var fire: int = _nearest_fire()
-
-	if fire != 0:
-		net.inventory_action.rpc_id(1, Net.ACT_COOK, fire, 0, 0, Vector3.ZERO)
-
-
 func pick_up_fire() -> void:
 	var fire: int = _nearest_fire()
 
 	if fire != 0:
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, fire, 0, 0, Vector3.ZERO)
-
-
-func fuel_nearest() -> void:
-	var fire: int = _nearest_fire()
-
-	if fire != 0:
-		net.inventory_action.rpc_id(1, Net.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
 
 
 # [id, number, count] of the closest item within reach, or [0, 0, 0].
@@ -3636,7 +3607,6 @@ const PICKUP_SIZE_MULT := 3.0   # Dave, 2026-10-21: three times the earlier size
 const STONE_SCALE := Vector2(0.85, 1.1)
 const STICK_SIZE_SHARE := 0.75   # Dave 2026-10-21: sticks about 75 percent of that, lying on the ground
 const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT * STICK_SIZE_SHARE
-const STICK_TINT := Color(0.42, 0.29, 0.17)   # bark brown, multiplied into the mesh colours
 const STONE_LIFT_M := 0.01
 const PICKUP_BRIGHT := 0.9   # was 1.3 while the vertex colours were not used (flat white); with them on, 1.3 drew chalk-white stones in full sun
 const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
@@ -4419,11 +4389,6 @@ func _item_label(number: int) -> String:
 		return knowledge.reveal("i%d" % number, item_name, int(entry.get("familiarity", 100)), "horticulture", entry.get("look_alikes", []))
 
 	return item_name
-
-
-# A slot count: whole up to 9,999, then thousands with one decimal (12.3k).
-func _count_text(n: int) -> String:
-	return str(n) if n < 10000 else "%.1fk" % (float(n) / 1000.0)
 
 
 func _freshness_word(f: float) -> String:
