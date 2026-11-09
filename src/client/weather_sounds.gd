@@ -438,7 +438,8 @@ func _thunder(delta: float, at: Vector3) -> void:
 
 
 # The shared strikes that fell since the last read and are heard at `at`, as [distance m, angle] (the angle from +x toward +z, as strike()
-# takes it). The first read, a clock that stood still or went back, or a gap over THUNDER_CATCH_UP_S only starts the schedule.
+# takes it). The first read, or a jump either way over THUNDER_CATCH_UP_S, only starts the schedule. A clock that stood still or stepped
+# back a little (a resync with the server) waits until it passes the last read again, so no strike is played twice.
 func due_strikes(at: Vector3) -> Array:
 	var due: Array = []
 
@@ -447,8 +448,11 @@ func due_strikes(at: Vector3) -> Array:
 
 	var now_g: float = float(game_seconds.call())
 
-	if is_nan(_thunder_t) or now_g <= _thunder_t or now_g - _thunder_t > THUNDER_CATCH_UP_S:
+	if is_nan(_thunder_t) or absf(now_g - _thunder_t) > THUNDER_CATCH_UP_S:
 		_thunder_t = now_g
+		return due
+
+	if now_g <= _thunder_t:
 		return due
 
 	for found in thunder_between.call(_thunder_t, now_g, at, THUNDER_REAL_MAX_M):

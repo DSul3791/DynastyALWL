@@ -16,7 +16,7 @@ One switch, `--thunder-real`, off until Dave's listen (sound changes wait for hi
 - **Where strikes land** (since 9 Nov 2026): on the shared schedule, `src/shared/thunder.gd` `Thunder.strikes`, the one the server's birds flush at (`birds_and_thunder_server.md`). There is no random roll on the client any more.
   - Every strike within 3 km (`THUNDER_HEARD_ALL_M`) is played: about one every 25 real seconds at storm 1.
   - From 3 to 15 km the schedule has about one strike a real second, far too many to rumble. A fixed share, `THUNDER_FAR_KEEP` 1.5 %, picked by a hash of the strike's place and moment, is played: about one far roll a minute, as before. The hash is the same on every client, so players together hear the same far rolls.
-  - The schedule is read each sound tick for the game seconds since the last read. A gap over 120 game seconds (a login, a clock jump) starts it fresh, with no backlog of claps.
+  - The schedule is read each sound tick for the game seconds since the last read. A jump over 120 game seconds either way (a login, a clock jump) starts it fresh, with no backlog of claps. A small step back (a resync with the server) waits until the clock passes the last read, so no strike plays twice.
   - A forced storm (`--weather=storm`, the Esc sound test) reads the schedule with the forced kind's storm and rain, so it still thunders. Those strikes are only this client's; the birds follow the world's weather.
 - **Level** (dB on the roll, before the bus):
   - out to 5 km, today's ramp: -4 dB, 1 dB lost per 400 m, +3 dB for a crack under 500 m;
