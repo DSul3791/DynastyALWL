@@ -36,6 +36,13 @@ class FakeStore:
 		wear.resize(SLOTS)
 
 
+class FakePack:
+	var shown: int = 0
+
+	func show_info() -> void:
+		shown += 1
+
+
 class FakeView:
 	var table: FakeTable = FakeTable.new()
 	var inventory: FakeStore = FakeStore.new()
@@ -54,6 +61,7 @@ class FakeView:
 	var _chest_last: Array = []
 	var _cooking_cfg: Dictionary = {}
 	var bulks: Array = []
+	var _pack_part: FakePack = FakePack.new()
 	var text_scale: float = 1.0
 
 	func _px(size: int) -> int:
@@ -117,6 +125,7 @@ func _initialize() -> void:
 	check(view._pack_view.size() == FakeStore.SLOTS and view._pack_buttons.is_empty(), "a chest shows every pack slot in place, in the Pack column")
 	first.mouse_entered.emit()
 	check(view._chest_hover == [true, 0] and view._chest_last == [true, 0], "the pointer over a chest well is the chest hover (the transfer key's target)")
+	check(view._pack_part.shown == 1, "and the info strip under the pack is asked to show it")
 	part.fire_takes("stick")
 	check(not view._cooking_cfg.is_empty(), "a fire's rule reads cooking.json once")
 	check(part._keep_out.visible and part._keep_out.button_pressed, "the owner sees the keep out tick, ticked")
