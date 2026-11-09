@@ -13,14 +13,14 @@ Where the inventory's item icons live, which ones are baked and which are painte
 
 ## Baked or painted
 
-All 424 live items have an icon. There are two kinds.
+All 598 live items have an icon: 424 in `items.json` and 174 in `gathered.json`. There are two kinds.
 
 | Kind | Count | Made by | Ran where |
 |---|---|---|---|
-| **Baked** | 323 | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
+| **Baked** | 491 (323 made items, 168 gathered materials) | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
 | **Painted, basic** | 2 (log, stone) | `tools/paint_basic_icons.py` | Anywhere; Python with numpy and Pillow |
 | **Painted, made pieces** | 71 (walls, floors, roofs, stairs, ladder, log species, driftwood, furniture, stations, fires, torches, traps, carcass) | `tools/paint_structure_icons.py` | Anywhere; Python with numpy and Pillow |
-| **Painted, small items** | 28 (spears, arrows, stick, spades, the 14 crop seeds, pies): items the bake drew too thin or too alike to read at 23 px | `tools/paint_item_icons.py` | Anywhere; Python with numpy and Pillow |
+| **Painted, small items** | 34 (spears, arrows, stick, spades, the 14 crop seeds, pies; kindling, tinder, thatch, straw, birch bark, withies): items the bake drew too thin or too alike to read at 23 px, and the common fire and shelter materials | `tools/paint_item_icons.py` | Anywhere; Python with numpy and Pillow |
 
 **The painted list is the code.** It is `("log", "stone")` plus `NAMES` in `tools/paint_structure_icons.py` and in `tools/paint_item_icons.py`, each the keys of that file's `PIECES` dict. The importer reads that same list as `PAINTED`, so there is no second copy to keep in step. To print it:
 
@@ -88,13 +88,20 @@ python3 tools/import_item_icons.py C:/temp/item_icons
 
 `data/items/gathered.json` holds 174 gathered materials: kindling, tinder, thatch, straw, bark, berries, herbs and the rest. Until 9 Nov the bake and the importer read only `items.json`, so none of them had an icon, and the "424 of 424" count left them out.
 
-Now both tools read `gathered.json` too. The importer counts 598 live items, and 174 of them are still missing an icon.
-- All 174 have a look in `looks.json`, so the bake draws them on Dave's PC. The steps are in `gathered_icons_job.md` in the shared files.
-- Then any that don't read at slot size get painted.
-- The table above gets their counts once they are in.
+Now both tools read `gathered.json` too, and all 174 have an icon:
+- 168 come from Dino's bake of 9 Nov. Every one has a look in `looks.json`, and the steps are in `gathered_icons_job.md` in the shared files.
+- 6 are painted: kindling, tinder, thatch, straw, birch bark and withies.
+
+**Known weak spots.** These read as their kind at slot size, but not as themselves, because the bake draws each family with one shape and only the tint differs:
+- about 30 herbs and leaves (the "frond" look);
+- 22 flowers;
+- 12 roots.
+
+They are thin at 23 px, the same problem the seeds had, and they are the next painting batch.
 
 ## Contact sheets
 
 The sheets Dave looked at are in the shared project files, under `inventory/`:
 - `item_icons_in_repo_sheet.png`, the baked set;
 - `icons_batch1_sections.png`, `icons_batch2_logs.png`, `icons_batch3_furniture.png` and `icons_batch4_stations.png`, the painted batches.
+- `gathered_icon_sheet.png` (shared top level), the gathered bake, and `inventory/icons_gathered_painted6.png`, the six painted gathered materials.
