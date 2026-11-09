@@ -69,7 +69,6 @@ func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = fal
 	print("Water: %d river cells, longest river %.0f m, %d lakes, %d pit cells filled" % [
 		water.river_cells, water.longest_river_m, water.lakes.size(), water.filled_cells
 	])
-	print("Starter river path points: %d" % water.starter_path.size())
 
 	for lake in water.lakes:
 		print("  lake %.1f ha, surface %.1f m, depth %.1f m" % [

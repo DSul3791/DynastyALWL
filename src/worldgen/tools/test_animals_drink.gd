@@ -2,10 +2,12 @@ extends SceneTree
 
 # Animals at water, the server half (docs/design/animals_at_water_server.md section 6; MikeW ANIMAL_DRINK.md): at dawn and dusk a deer
 # walks to the nearest fresh water's edge and stands drinking (wire state 21), then goes home; not at noon, not to the sea; a wolf pack
-# prowls by the water at those hours. With animals.json drink.on false nothing changes.
+# prowls by the water at those hours. Always on (the drink.on switch is gone). The client half: a drinking animal lifts its head now and
+# then (animal_view.drink_looking).
 #   godot --headless --path . --script res://src/worldgen/tools/test_animals_drink.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const AnimalViewScript := preload("res://src/client/animal_view.gd")
 
 var failures: int = 0
 var hour: float = 6.0
@@ -46,10 +48,7 @@ func _init() -> void:
 	var d: Dictionary = a.animals[a.spawn("deer", 0.0, 0.0)]
 	d["home"] = Vector3(0.0, 10.0, 0.0)
 
-	# Flag off: nothing.
-	check(not bool(dc.get("on", true)), "drink ships off")
-	check(not a._drink_wander(d, deer), "flag off: a deer does not go to water")
-	dc["on"] = true
+	check(not dc.has("on") and a.drink_on(), "drink is always on (no switch)")
 	dc["chance"] = 1.0
 
 	# The search: the lake edge east of x 100, the stand on dry ground just short of it.
@@ -82,6 +81,25 @@ func _init() -> void:
 	check(wait != Vector3.INF and wait.x > 70.0 and wait.x < 95.0, "at dusk a pack waits back from the prey's water (x %.0f)" % wait.x)
 	hour = 12.0
 	check(a.wolf_wait_point(Vector3(0.0, 10.0, 0.0)) == Vector3.INF, "at noon it prowls its home")
+
+	# The client: a drinking animal's head comes up now and then, for 1.5 to 3 s, at its own moments.
+	var looks: Array = [0, 0]
+	var longest: float = 0.0
+	var run: float = 0.0
+	var apart: bool = false
+
+	for step in range(0, 6000):
+		var t: float = float(step) * 0.1
+		var up1: bool = AnimalViewScript.drink_looking(1, t)
+		looks[0] += 1 if up1 else 0
+		looks[1] += 1 if AnimalViewScript.drink_looking(2, t) else 0
+		apart = apart or up1 != AnimalViewScript.drink_looking(2, t)
+		run = run + 0.1 if up1 else 0.0
+		longest = maxf(longest, run)
+
+	check(looks[0] > 0 and looks[0] < 1500, "a drinking animal looks up now and then (%d of 6000 tenths)" % looks[0])
+	check(longest >= 1.4 and longest <= 3.05, "a look lasts 1.5 to 3 s (longest %.1f s)" % longest)
+	check(apart, "two animals of a herd look up at different moments")
 
 	print("animals at water: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -53,8 +53,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
-const WaterHubScript := preload("res://src/water/water_hub.gd")
-const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the default since 1 Nov 2026; --water-old runs the old hub (src/water) instead
+const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -517,7 +516,7 @@ func _ready() -> void:
 	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
 	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
 	animals.game_seconds = func(): return game_clock.seconds
-	animals.thunder_between = func(t0, t1, centre, reach): return ThunderScript.strikes(int(settings.master_seed), t0, t1, weather, centre, reach)   # the shared strikes (birds_and_thunder_server.md)
+	animals.thunder_between = func(t0, t1, centre, reach): return ThunderScript.strikes(int(settings.master_seed), t0, t1, _weather_at(centre), centre, reach)   # the shared strikes, under that player's own weather (birds_and_thunder_server.md)
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
@@ -887,11 +886,10 @@ func _start_water() -> void:
 		return
 
 	# The rivers and lakes start FULL, from the baked settled water of each tile (water/tile_X_Z.water), so a player never waits for the springs: changed 30 Oct 2026 after the
-	# play-test (a dry start needed 6 simulated hours before the rivers ran and left broken patches meanwhile; Owner's old choice of 2026-10-18). --dry-water brings the dry start back
-	# (the springs fill the land, the real water paths show), --settled-water is still accepted. The hub runs the starter tile and the neighbours its rivers cross into.
-	var dry_start: bool = OS.get_cmdline_user_args().has("--dry-water") and not OS.get_cmdline_user_args().has("--settled-water")
-	water_live = WaterHubScript.new() if OS.get_cmdline_user_args().has("--water-old") else WaterHub2Script.new()
-	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, dry_start)
+	# play-test (a dry start needed 6 simulated hours before the rivers ran and left broken patches meanwhile; Owner's old choice of 2026-10-18). The --dry-water and
+	# --settled-water switches are gone (9 Nov 2026, no flags). The hub runs the starter tile and the neighbours its rivers cross into.
+	water_live = WaterHub2Script.new()
+	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, false)
 
 	if water_live.has_method("set_store"):
 		water_live.set_store(store)   # Sullivan dig windows read the server's ground (src/sullivan_water/live/dig_windows.gd)
@@ -1215,6 +1213,14 @@ func _queue_water(peer_id: int, chunk: Vector2i) -> void:
 
 	if added:
 		_work.post()
+
+
+# The weather over one player, worked out as that player's own client does (terrain_client._update_weather): the zone of the
+# row they stand in and their altitude. The birds flush from the thunder strikes under this weather, so they take off at the
+# claps that player hears, even under a different storm from the starter row's.
+func _weather_at(pos: Vector3) -> Dictionary:
+	var row: int = floori(pos.z / float(settings.tile_size_m))
+	return WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), pos.y, 0.0, row, settings.equator_tile_row)
 
 
 # The weather over the starter tile (zone from its row, season and time from the game clock,

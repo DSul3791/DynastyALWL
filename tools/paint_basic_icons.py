@@ -150,6 +150,39 @@ def render(faces, model, colour_jitter=0.0, seed=0):
     return img.resize((SIZE, SIZE), Image.LANCZOS)
 
 
+def lift_dark(img, target=82.0):
+    """Brighten a painted icon whose lit body averages under `target` (0..255 luminance), so it reads on the dark slot (#2A1F16) beside the
+    baked icons (median 135). A plain gain on all three channels, so the hue and saturation stay: dark walnut stays brown, a dark petal stays
+    violet (a gamma curve greyed them). Highlights clip at white. An icon already as bright as `target` is returned unchanged.
+    Kathleen, 9 Nov 2026 (the 57 px style review)."""
+    a = np.asarray(img.convert("RGBA"), dtype=float)
+    body = a[..., 3] > 128
+
+    if not body.any():
+        return img
+
+    def mean_lum(rgb):
+        return float((rgb[body] @ np.array([0.3, 0.59, 0.11])).mean())
+
+    rgb = a[..., :3]
+
+    if mean_lum(rgb) >= target:
+        return img
+
+    lo, hi = 1.0, 3.0                 # the gain
+
+    for _ in range(24):
+        k = (lo + hi) / 2.0
+
+        if mean_lum(np.clip(rgb * k, 0.0, 255.0)) < target:
+            lo = k
+        else:
+            hi = k
+
+    a[..., :3] = np.clip(rgb * hi, 0.0, 255.0)
+    return Image.fromarray(a.round().astype(np.uint8), "RGBA")
+
+
 def log_icon():
     bark = (122, 88, 56)
     end = (226, 196, 146)

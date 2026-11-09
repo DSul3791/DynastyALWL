@@ -7,8 +7,8 @@
 	"retry_note": "test_flora_walk_cost (Steve, 5 Nov 2026): it already runs in the serial lane, yet on Dave's PC it failed under load in every gate on 4 Nov (#348, #366, #370, #375: one apply_built of 417 ms) and passed alone each time. A retry runs it once more after every lane, on a quiet machine, so a real freeze (it fails both runs) still fails the gate; the 100 ms bar is unchanged. test_slot_sounds (Steve, 5 Nov 2026): SlotSounds cooldowns run on the wall clock (Time.get_ticks_msec), so a loaded machine that stalls between two plays lets the second one through; it failed in gates (#247, #359, #364, #366: 24 s) and passed alone. It stays a fast test for selection (not timing, which would run it less often) but runs in the serial lane (serial_extra), with one retry.",
 	"serial_extra": ["test_slot_sounds"],
 	"serial_note": "The serial lane = the timing tests plus every test the scan finds writing a fixed file outside user:// (listed under `serial` by --print-lanes). Each parallel job also gets its own data dir, so user:// folders never collide.",
-	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_tile_lakes", "test_bake_from_record"],
-	"release": ["test_head_pond_fill", "test_water_soak", "test_tile_lakes"],
+	"slow": ["test_worldgen", "test_head_pond_fill", "test_tile_lakes", "test_bake_from_record"],
+	"release": ["test_head_pond_fill", "test_tile_lakes"],
 	"slow_triggers": ["src/worldgen/**", "src/water/**", "data/water/**", "data/water_settle.json", "data/water_flow.json", "addons/**", "worlds/**"],
 	"slow_mode": "closure",
 	"tooling_globs": ["tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/test_args.txt", "tools/godot_slot.sh", "tools/tests_for_diff.py", "tools/selftest_gate_tools.sh"],
@@ -24,7 +24,7 @@
 		{
 			"why": "drainage and live water code: the small fast tests that replaced the big tile tests",
 			"paths": ["src/worldgen/tile/tile_drainage.gd", "src/worldgen/tile/drainage_*.gd", "src/water/**", "data/water_settle.json", "data/water_flow.json", "data/water/**"],
-			"tests": ["test_drainage_small", "test_water_small", "test_water_hub_small", "test_drainage_natural", "test_drainage_fill"]
+			"tests": ["test_drainage_small", "test_water_store", "test_water_settle_rules", "test_drainage_fill"]
 		},
 		{
 			"why": "Kathleen: looks and pieces",
@@ -62,7 +62,7 @@
 		{
 			"why": "Sonny: baked tiles, water and plan inputs. 9 Nov 2026 (PR C): the three tests the old rebake_check.sh ran after a bake (test_drainage_fill, test_river_surface, test_head_pond_fill) are here for good; the gate's bake class is now the only place they run.",
 			"paths": ["worlds/base_world/tiles/**", "worlds/base_world/water/**", "worlds/base_world/plan/*.json", "data/water_settle.json", "addons/**"],
-			"tests": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_natural", "test_drainage_fill", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_tile_height_format", "test_spawn_dry", "test_water_start_drawn", "test_gen_core", "test_spring_cover"],
+			"tests": ["test_worldgen", "test_head_pond_fill", "test_drainage_fill", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_tile_height_format", "test_spawn_dry", "test_water_start_drawn", "test_gen_core", "test_spring_cover"],
 			"pin": true
 		}
 	],

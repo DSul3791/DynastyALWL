@@ -1,8 +1,8 @@
 extends RefCounted
 
-# Dynasty water stage d: the server's water behind the --water2 flag (Sonny, 31 Oct 2026). Same API as src/water/water_hub.gd (setup, set_centre, set_live, take_updates, data_of, sim_of, stats,
-# step_rate, set_runoff, dig, fill, stop, rate, runoff, busy, centre, data), so terrain_server.gd swaps one constructor and nothing else changes: it still gives each tile's data the levels
-# (`set_sim`), and the existing client draws them with the old shader (the swap boundary). The old system stays the default.
+# Dynasty water stage d: the server's water (Sonny, 31 Oct 2026; the only water since the old hub, src/water/water_hub.gd, was deleted on 9 Nov 2026). The API (setup, set_centre, set_live, take_updates, data_of, sim_of, stats,
+# step_rate, set_runoff, dig, fill, stop, rate, runoff, busy, centre, data) is the one terrain_server.gd calls: it still gives each tile's data the levels
+# (`set_sim`), and the existing client draws them with the old shader (the swap boundary).
 # One tile runs, the first of set_live; every other tile stays as baked. On that tile one WINDOW x WINDOW cell window (the wettest, from water_window.gd) is simulated by water_field.gd; the rest
 # of the tile keeps its baked settled levels. Water that is wet on the window's border is held at its baked level there (rivers come in and leave, lakes stay), the dry border is a wall.
 

@@ -1,7 +1,7 @@
 extends RefCounted
 
-# The server's running water for one tile (DESIGN_IDEAS 6.18). Loads the water, then the
-# WaterHub's single thread ticks it (begin, then tick) while the flow rate is being tuned, and
+# One tile's running water (DESIGN_IDEAS 6.18; the settle and the water tools use it; the old WaterHub that ran it in the
+# server was deleted on 9 Nov 2026). Loads the water, then the caller ticks it (begin, then tick) while the flow rate is being tuned, and
 # a fresh set of drawing levels is handed to the main thread every PUBLISH_TICKS ticks.
 #
 # The flow rate is one number for every spring (a multiplier on the baked rate); the
@@ -53,7 +53,7 @@ var _held: PackedByteArray = PackedByteArray()
 
 # With dry_start the tile begins with no fresh water at all (only the sea): the springs
 # fill the ponds and the rivers run down on their own, so the real water paths show. The
-# tile only runs when the WaterHub (src/water/water_hub.gd) calls begin() and tick().
+# tile only runs when its caller (settle_water.gd, the water tools) calls begin() and tick().
 func setup(tile_coord: Vector2i, tile_data, water_path: String, base_rate: float, tile_generator, dry_start: bool = false) -> void:
 	tile = tile_coord
 	_dry_start = dry_start

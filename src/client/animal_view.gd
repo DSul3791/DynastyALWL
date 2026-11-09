@@ -13,6 +13,8 @@ const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of:
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
+const DRINK := 21                     # server_animals.DRINK: standing at the bank drinking (docs/design/animals_at_water_server.md)
+const DRINK_SLOT_S := 17.0            # drinking, the head comes up once a slot: after 6 to 14 s, for 1.5 to 3 s (so 6 to 24 s between looks)
 
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
@@ -345,7 +347,7 @@ func on_rows(rows: Array) -> void:
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id)}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
@@ -750,6 +752,7 @@ func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
 
 		player.set_meta("roles", roles)
 		_model_note(kind, "clips by role %s" % str(roles))
+		_model_note(kind, "role 21 plays %s" % (str(roles["21"]) if roles.has("21") else "none (the drink falls back to role 0)"))
 
 	_model_note(kind, "drawn from %s: %d meshes, %.2f m long (file size %.2f, scale x%.4f)" % [str(row["scene"]), meshes.size(), longest * k, longest, k])
 	return root
@@ -903,7 +906,7 @@ func _clip_full(player: AnimationPlayer, row: Dictionary, clip_name: String) -> 
 
 # The words that name a role's clip in a file, tried in order when the row's own names are not in it (WildMesh files differ:
 # G0_Walk, WalkMedium_F, walk_fwd_01). Transitions and turns ("Idle_to_Walk", "WalkL") are skipped.
-const _ROLE_WORDS := {"0": ["idle_breathing", "graz", "idle"], "walk": ["walkmedium", "walk"], "run": ["gallop", "runfast", "run", "canter", "trot", "sprint"]}
+const _ROLE_WORDS := {"0": ["idle_breathing", "graz", "idle"], "21": ["drink", "eat", "graz"], "walk": ["walkmedium", "walk"], "run": ["gallop", "runfast", "run", "canter", "trot", "sprint"]}
 
 
 func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused: Dictionary = {}) -> String:
@@ -1457,6 +1460,17 @@ func _model_note(kind: String, text: String) -> void:
 		print("animal model %s: %s" % [kind, text])
 
 
+# Whether a drinking animal has its head up to look round at time t (seconds): once per DRINK_SLOT_S slot, starting 6 to 14 s into it and lasting
+# 1.5 to 3 s, both from a hash of the animal id and the slot, so the animals of a herd look up at different moments.
+static func drink_looking(id: int, t: float) -> bool:
+	var slot: int = floori(t / DRINK_SLOT_S)
+	var h: int = hash([id, slot])
+	var start: float = 6.0 + 8.0 * float(h & 0xffff) / 65535.0
+	var length: float = 1.5 + 1.5 * float((h >> 16) & 0xffff) / 65535.0
+	var into: float = t - float(slot) * DRINK_SLOT_S
+	return into >= start and into < start + length
+
+
 # Plays the clip for the animal's state (a moving animal walks or runs by its real ground speed) and keeps the gait count for footsteps.
 func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
 	var row: Dictionary = node.get_meta("model_row", {})
@@ -1479,6 +1493,10 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var player: AnimationPlayer = node.get_meta("player")
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = str(state) if roles.has(str(state)) else "0"
+
+	# Drinking at the bank (state 21): the head comes up now and then to look round (role 3), then goes down again (docs/design/animals_drink_client_design.md).
+	if state == DRINK and speed <= 0.3 and roles.has("3") and drink_looking(int(b.get("id", 0)), _t):
+		role = "3"
 
 	# A swimmer (a row with a "swim" clip, the alligator) in the water plays its swim clip whatever its state, at its swim speed.
 	if roles.has("swim") and water_level.is_valid():
@@ -2253,6 +2271,8 @@ func _animate_quad(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 
 	if state == 0 and speed < 0.3:
 		head_down = 0.9 + 0.08 * sin(_t * 0.9 + float(b["phase"]))      # grazing
+	elif state == DRINK and speed < 0.3:
+		head_down = -0.35 if drink_looking(int(b.get("id", 0)), _t) else 0.95 + 0.04 * sin(_t * 2.2 + float(b["phase"]))      # drinking, the head up now and then to look round
 	elif state == 3:
 		head_down = -0.35
 	elif state == 10:

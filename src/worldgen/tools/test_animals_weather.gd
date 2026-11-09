@@ -3,7 +3,7 @@ extends SceneTree
 # Animals in weather, step 1 (docs/design/animals_in_weather_design.md; research docs/knowledge/animals-in-weather.md, Jamie): calm dry
 # weather changes nothing; prey spook farther in wind (x1.2 at 0.3, x1.4 at 0.6); rabbits are 25% then 65% less active in wind and go
 # down their burrows that often; hunters hunt more in wind; a storm or heavy snowfall beds animals down; a storm 12 to 24 game hours
-# ahead makes feeders busier and skips their daytime rest; deer wander into a light wind; mist cuts sight and spook range; weather.on
+# ahead makes feeders busier and skips their daytime rest; deer wander into a light wind; fog cuts sight by distance (not spook range); weather.on
 # false turns it all off. Step 2: in rain deer and stock stand out about 60% of their grazing spells (state 20 on the wire); deer, and half the
 # stock, move home under trees and back an hour after; in a gale stock face downwind and drift, deer go to cover or lower ground. Step 3:
 # wolves slow in snowfall, deer go to conifers in the cold, stock to shade in midday heat. Step 4: an animal grazing in its rain, gale or cold
@@ -126,10 +126,10 @@ func _init() -> void:
 	a._read_weather({"wind": 0.2}, 0.1)
 	check(not a._storm_ahead and a.resting(raccoon), "with no storm ahead the raccoon rests again")
 
-	# 7. Mist cuts sight and spook range.
-	a._read_weather({"wind": 0.0, "mist": 1.0}, 0.1)
-	a.ground_height = Callable()   # a clear line: only the mist is in the way
-	check(near(a._sight({"pos": Vector3.ZERO}, deer, Vector3(30.0, 0.0, 0.0), 30.0, false), 0.4) and near(a.weather_spook_x(deer), 0.7), "in thick mist sight is 0.4 and spook range 0.7")
+	# 7. Fog cuts sight by distance (the fog rules, test_animals_fog), not the spook range: in full valley fog (V about 220 m) full at 30 m, none at 150 m.
+	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0}, 0.1)
+	a.ground_height = Callable()   # a clear line: only the fog is in the way
+	check(near(a._sight({"pos": Vector3.ZERO}, deer, Vector3(30.0, 0.0, 0.0), 30.0, false), 1.0) and near(a._sight({"pos": Vector3.ZERO}, deer, Vector3(150.0, 0.0, 0.0), 150.0, false), 0.0) and near(a.weather_spook_x(deer), 1.0), "in valley fog sight is full at 30 m and gone at 150 m; spook range is unchanged")
 
 	# Step 2 (design 6 and 7). 9. Rain with no trees near: deer and stock stand out about 60% of their grazing spells, sent as state 20.
 	a._read_weather({"wind": 0.1, "rain": 0.8}, 0.1)

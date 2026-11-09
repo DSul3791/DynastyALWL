@@ -41,14 +41,12 @@ func _run(world_dir: String, tile: Vector2i) -> int:
 	var water = result["water"]
 	var climate = result["climate"]
 	var side: int = int(water.samples)
-	var spacing: float = float(water.spacing_m)
 	var cls: PackedByteArray = water.water_class
 	print("Tile %s: %d river cells, longest river %.0f m, %d lakes, %d pit cells filled, %d head ponds made (widest %.0f m)" % [
 		str(tile), water.river_cells, water.longest_river_m, water.lakes.size(), water.filled_cells, water.ponds_made, water.largest_pond_m
 	])
 
 	_depth_by_flow(water, cls, side)
-	_starter_river(water, side, spacing)
 	_stranded(water, cls, side)
 	_lakes(water)
 	var land: float = 0.0
@@ -100,34 +98,6 @@ func _depth_by_flow(water, cls: PackedByteArray, side: int) -> void:
 			pow(2.0, float(octave)), pow(2.0, float(octave + 1)), depths.size(), sum / float(depths.size()),
 			float(depths[int(float(depths.size() - 1) * 0.9)]), float(depths[depths.size() - 1])
 		])
-
-
-# The starter river from source to mouth, one line about every 160 m.
-func _starter_river(water, side: int, spacing: float) -> void:
-	var path: PackedVector2Array = water.starter_path
-	print("Starter river path: %d points (%.0f m)" % [path.size(), float(path.size()) * spacing])
-
-	if path.size() == 0:
-		return
-
-	print("  step  bed_m  surface_m  depth_m   flow   class")
-	var every: int = maxi(path.size() / 14, 1)
-
-	for n in range(0, path.size(), every):
-		var p: Vector2 = path[n]
-		var k: int = int(round(p.y)) * side + int(round(p.x))
-
-		if k < 0 or k >= water.heights.size():
-			continue
-
-		var surface: float = float(water.water_surface[k]) if not is_nan(water.water_surface[k]) else NAN
-		print("  %4d %6.1f %8.1f %7.2f %8.1f   %d" % [n, water.heights[k], surface, surface - water.heights[k], water.flow[k], water.water_class[k]])
-
-	var last: Vector2 = path[path.size() - 1]
-	var lk: int = int(round(last.y)) * side + int(round(last.x))
-
-	if lk >= 0 and lk < water.heights.size():
-		print("  the starter river ends at height %.1f m, class %d (1 ocean, 2 lake, 3 river, 0 dry)" % [water.heights[lk], water.water_class[lk]])
 
 
 # River pieces (8-connected) that reach no ocean, lake or tile edge: rivers that end on dry land.

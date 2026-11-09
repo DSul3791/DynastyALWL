@@ -25,7 +25,7 @@ See `GENERATOR_NOTES.md` (how the generator works, why, the measuring method and
 ## The living world (Dave, 29 Oct 2026)
 The generator makes the ORIGINAL world once; those tiles are saved and never edited. Players then change it: dig, dam, flood, fell trees, harvest. Water changes must slowly change the land type, and the SERVER decides.
 
-- **Authority.** The server runs the water (today: `water_hub.gd`, `water_live.gd`) and validates every action. Clients send intents (dig, fill, dam, chop) and receive state; they never report water levels, which would be cheatable and could desync.
+- **Authority.** The server runs the water (today: `src/water2/water_hub2.gd`) and validates every action. Clients send intents (dig, fill, dam, chop) and receive state; they never report water levels, which would be cheatable and could desync.
 - **Layers.** Base world (immutable, from the generator) plus a sparse overlay of player changes (ground edits, water, land-state changes) saved per tile. The overlay can be reset or rewound without touching the base.
 - **Slow variables, not snapshots.** Each cell keeps a few time-averaged values updated on the water publish tick: wetness (moving average of how saturated), flood frequency, deepest water, drought stress. Land type reacts to these, never to one instant.
 - **Ecology tick.** On a slow clock (about once per game day) the server re-runs the SAME classifier the generator uses (`tile_climate.gd` rules) on the updated fields, with hysteresis: a cell flips only after the change has lasted, and drying out takes longer than waterlogging. One rule table means generation and succession always agree.
