@@ -73,7 +73,7 @@ func _init() -> void:
 	horse.hour_now = func(): return 2.0
 	check(horse.activity_chance(horse.species_def("horse")) == 0.0, "a horse never spawns at night")
 	horse.biome_at = func(x, z): return "temperate_grassland"
-	horse.starter = Vector2(100000.0, 100000.0)
+	horse.town = Vector2(100000.0, 100000.0)
 	run(horse, 40.0)
 	check(count(horse, "horse") == 0, "no horse spawns at night (%d)" % count(horse, "horse"))
 	horse.hour_now = func(): return 12.0
@@ -96,16 +96,28 @@ func _init() -> void:
 	# rises with distance from the town point (the real spawn): about 1 to 5 by the town, 5 to 10 half way, 10 to 20 on the far side.
 	var moose = make(players, "moose")
 	moose.cfg["species"]["moose"]["spawn_share"] = 1.0
-	moose.starter = Vector2(0.0, 0.0)
+	moose.town = Vector2(0.0, 0.0)
 	moose.biome_at = func(_x, _z): return "boreal_forest"
 	run(moose, 40.0)
 	check(count(moose, "moose") > 0, "moose live by the starter town too, where the land suits them (%d)" % count(moose, "moose"))
 	var lv = make(players, "rabbit")
-	lv.starter = Vector2(0.0, 0.0)
+	lv.town = Vector2(0.0, 0.0)
 	var il: Dictionary = lv.cfg["island_level"]
 	check(lv.island_level(float(il["town_m"]) * 0.5, 0.0) == 0.0 and lv.island_level(float(il["far_m"]) + 100.0, 0.0) == 1.0, "the island level is 0 by the town and 1 on the far side")
 	var mid: float = lv.island_level((float(il["town_m"]) + float(il["far_m"])) * 0.5, 0.0)
 	check(mid > 0.45 and mid < 0.55, "half way across, the island level is about 0.5 (%.2f)" % mid)
+	# The town point is the middle of the town's NPC markers, never the spawn (no_spawn_placement_design.md 3): no town, level 0 everywhere.
+	var town_npcs = load("res://src/stream/server_npcs.gd").new()
+	var marker_rows: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/markers.json"))["markers"]
+	var marker_sum: Vector2 = Vector2.ZERO
+
+	for row in marker_rows:
+		marker_sum += Vector2(float(row["x"]), float(row["z"]))
+
+	check(town_npcs.town_point().distance_to(marker_sum / float(marker_rows.size())) < 0.01, "the town point is the middle of the NPC markers (%s)" % str(town_npcs.town_point()))
+	check(not lv.cfg["island_level"].has("town"), "no hand-set town point in animals.json")
+	var no_town = make(players, "rabbit")
+	check(no_town.town.x == INF and no_town.island_level(9000.0, 0.0) == 0.0, "with no town point the island level is 0 everywhere")
 	var mid_x: float = (float(il["town_m"]) + float(il["far_m"])) * 0.5
 	check(lv.level_span(0.0, 0.0) == Vector2i(1, 5) and lv.level_span(float(il["far_m"]) + 100.0, 0.0) == Vector2i(10, 20), "levels 1 to 5 by the town, 10 to 20 on the far side (%s, %s)" % [str(lv.level_span(0.0, 0.0)), str(lv.level_span(float(il["far_m"]) + 100.0, 0.0))])
 	var mid_span: Vector2i = lv.level_span(mid_x, 0.0)
@@ -119,7 +131,7 @@ func _init() -> void:
 	check(banded.is_empty() and not lv.cfg["wolves"].has("level"), "no species or wolf pack is kept away from the town by a level band (%s)" % str(banded))
 	var boar_near = make(players, "boar")
 	boar_near.cfg["species"]["boar"]["spawn_share"] = 1.0
-	boar_near.starter = Vector2(0.0, 0.0)
+	boar_near.town = Vector2(0.0, 0.0)
 	boar_near.hour_now = func(): return 23.0
 	boar_near.biome_at = func(_x, _z): return "temperate_forest"
 	run(boar_near, 40.0)
@@ -135,7 +147,7 @@ func _init() -> void:
 		a2.cfg["species"][name]["spawn_share"] = 1.0
 		a2.hour_now = func(): return c[3]
 		a2.biome_at = func(x, z): return "ocean" if c[2] == "beach" and fposmod(x, 80.0) < 20.0 else c[2]   # a beach has the sea beside it
-		a2.starter = Vector2(100000.0, 100000.0)
+		a2.town = Vector2(100000.0, 100000.0)
 		run(a2, 40.0)
 		check(count(a2, name) > 0, "%s spawn in %s at hour %d (%d)" % [name, c[2], int(c[3]), count(a2, name)])
 		var other = make(players, name)
