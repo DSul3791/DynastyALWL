@@ -54,3 +54,46 @@ static func town_shift() -> Vector2:
 # For tests and tools: set the spawn directly (OVERRIDE undoes it).
 static func set_current(at: Vector2) -> void:
 	_current = at
+
+
+# The spawn clear of trees and shrubs (docs/design/no_spawn_placement_design.md 2): flora is placed at run time and the bake's picker cannot
+# see it, so the server moves the spawn off a trunk at start. `at` stays when no trunk stands within clear_m; else the first point, ring by
+# ring (ring_m apart out to search_m, ring_points each), with no trunk within clear_m, dry (wet_at false), over the sea (ground above 0) and
+# within max_rise_m of the ground at `at`. None clear: `at` stays. trunks: the trees' and shrubs' ground points (x, z); grass and flowers do
+# not block. ground_at(x, z) -> metres, wet_at(x, z) -> bool. The numbers are judged.
+static func clear_of(at: Vector2, trunks: PackedVector2Array, ground_at: Callable, wet_at: Callable, rules: Dictionary = {}) -> Vector2:
+	var clear_m: float = float(rules.get("clear_m", 2.0))
+
+	if _trunk_free(at, trunks, clear_m):
+		return at
+
+	var ring_m: float = maxf(float(rules.get("ring_m", 1.0)), 0.1)
+	var search_m: float = float(rules.get("search_m", 30.0))
+	var points: int = maxi(int(rules.get("ring_points", 16)), 1)
+	var max_rise: float = float(rules.get("max_rise_m", 0.5))
+	var base: float = float(ground_at.call(at.x, at.y))
+	var r: float = ring_m
+
+	while r <= search_m + 0.001:
+		for n in range(points):
+			var p: Vector2 = at + Vector2.from_angle(TAU * float(n) / float(points)) * r
+
+			if not _trunk_free(p, trunks, clear_m) or bool(wet_at.call(p.x, p.y)):
+				continue
+
+			var ground: float = float(ground_at.call(p.x, p.y))
+
+			if not is_nan(ground) and ground > 0.0 and absf(ground - base) <= max_rise:
+				return p
+
+		r += ring_m
+
+	return at
+
+
+static func _trunk_free(p: Vector2, trunks: PackedVector2Array, clear_m: float) -> bool:
+	for t in trunks:
+		if p.distance_to(t) < clear_m:
+			return false
+
+	return true
