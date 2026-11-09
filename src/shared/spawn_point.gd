@@ -1,10 +1,10 @@
 extends RefCounted
 
-# The starter spawn point (x, z in world metres) in one place: the server's spawn (terrain_server.gd _spawn_point), the flora placer's clearing
-# and orchard round it (flora_placer.gd), the NPC town (server_npcs.gd markers) and the island checks all read it from here.
+# The starter spawn point (x, z in world metres) in one place: the server's spawn (terrain_server.gd _spawn_point) and the island checks read it here.
 # Stage E M1 step 4 (docs/water/stage_e_readers_design.md 6e): when the starter tile carries a spawn picked by rule at bake time
-# (starter.spawn_picked, tile_sites.gd _pick_spawn), that is the spawn, and the shipped NPC markers move with it as one piece (town_shift).
-# With none, OVERRIDE stays the spawn and nothing moves. The picker is off until the R6 rebake, so today current() is OVERRIDE.
+# (starter.spawn_picked, tile_sites.gd _pick_spawn, always on since 9 Nov 2026), that is the spawn; a tile baked without one keeps OVERRIDE.
+# Nothing is placed or decided from the spawn (Dave 9 Nov 2026: "nothing is ever based on where spawn is"): no flora clearing or orchard
+# round it, and the NPC town stands where data/npcs/markers.json puts it, whatever the spawn.
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 
@@ -44,11 +44,6 @@ static func from_starter(starter: Dictionary) -> Vector2:
 
 static func current() -> Vector2:
 	return _current
-
-
-# How far the town moved with a picked spawn: the shipped NPC markers (data/npcs/markers.json, placed round OVERRIDE) move by this.
-static func town_shift() -> Vector2:
-	return _current - OVERRIDE
 
 
 # For tests and tools: set the spawn directly (OVERRIDE undoes it).
