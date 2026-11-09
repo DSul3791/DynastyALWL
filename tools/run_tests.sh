@@ -2,7 +2,7 @@
 # Run chosen tests in parallel with the retry rules of tools/test_lanes.json (gate fix, 25 Oct 2026; Steve).
 #   tools/run_tests.sh [--jobs N] [--out DIR] [--fast a b ...] [--timing x ...] [--slow z ...] [--serial s ...] [--plan FILE]
 #   --plan FILE   the JSON line tests_for_diff.py printed (fast, timing and slow lanes are read from it)
-#   names are src/worldgen/tools/<name>.gd without .gd; --jobs defaults to $GATE_JOBS or 4
+#   names are test files in src/worldgen/tools or src/water2 (tools/tests_for_diff.py TEST_DIRS) without .gd; --jobs defaults to $GATE_JOBS or 4
 # Lanes: fast and slow tests run N at a time (a test that writes a fixed file, listed `serial` by `tests_for_diff.py --print-lanes`, waits for the
 # serial lane); then the serial lane (timing tests and file writers) runs one at a time. A test on the `retry` list that fails is run ONCE more:
 # passing the second time is logged as a FLAKE (never silent), failing twice is a real failure. Everything else fails at once.
