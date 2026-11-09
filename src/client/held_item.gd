@@ -13,10 +13,8 @@ const BuildingLook := preload("res://src/client/building_look.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
-const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const ArmsView := preload("res://src/client/character/arms_view.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
-const MyCharacter := preload("res://src/client/character/my_character.gd")
 
 const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar key is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
@@ -198,8 +196,8 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_layer.add_child(_label)
-	# Dave's own arms (dynasty_arms.gd) go with his body; `--oldbody` or the "Old body" setting brings back the old tube arms.
-	_arms = DynastyArmsScript.new() if MyCharacter.dynasty_body_on() else RagdollScript.new(true)
+	# Dave's own arms (dynasty_arms.gd) go with his body.
+	_arms = DynastyArmsScript.new()
 	_arms.name = "Arms"
 	_arms.position = ARMS_POS
 	_arms.rotation_degrees.x = ARMS_PITCH_DEG
@@ -2377,7 +2375,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
 	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
-	FireWeather.register(light)   # --firelight-weather: reach and halo follow fog and snow
+	FireWeather.register(light)   # reach and halo follow fog and snow
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
 	hand_light.name = "HandLight"
 	hand_light.light_color = Color(1.0, 0.6, 0.28)

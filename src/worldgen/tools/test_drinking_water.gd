@@ -117,7 +117,8 @@ func _server() -> void:
 	var sources: Dictionary = items._vitals_cfg["thirst"]["sources"]
 
 	# Flag off: the sea row is ignored and today's drink goes on.
-	check(not bool(sources.get("enabled", true)), "thirst.sources ships off")
+	check(bool(sources.get("enabled", false)), "thirst.sources ships on (Dave 8 Nov)")
+	sources["enabled"] = false
 	rows_here = [{"kind": "salt"}]
 	check(_drinks(items, v), "flag off: today's drink, whatever the rows say")
 
@@ -142,7 +143,7 @@ func _server() -> void:
 	rows_here = []
 	check(_drinks(items, v), "no source rows: today's water test stands")
 
-	# The season is the place's own (Weather.season_at, half a year off across the equator with --one-sky): the calendar says winter, but at
+	# The season is the place's own (Weather.season_at, half a year off across the equator): the calendar says winter, but at
 	# the player it is summer, so an intermittent brook long without rain is dry there.
 	season[0] = "winter"
 	items._last_rain_s = -INF

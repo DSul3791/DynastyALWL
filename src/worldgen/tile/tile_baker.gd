@@ -254,7 +254,7 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	timings["rolling"] = Time.get_ticks_msec() - clock
 
 
-	# Pond levels no higher than their spill, after every pass that cuts or raises ground (tile_pond_level.gd).
+	# Pond levels no higher than their spill, after the passes that shape the ground (tile_pond_level.gd); again below, after the mend and the mouths.
 	clock = Time.get_ticks_msec()
 	var pond_levels: Dictionary = TilePondLevelScript.clamp_to_spill(water.heights, water.water_class, water.water_surface, n)
 	timings["pond_levels"] = Time.get_ticks_msec() - clock
@@ -286,6 +286,32 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 			break
 
 	print("  river corners (tile %s): %d cells made river" % [str(tile), corners])
+
+	# Pond levels again, after the mend's and the mouths' cuts (Sonny, 8 Nov 2026). Those passes run after the first clamp and can cut a pond's outlet
+	# below its painted level: on the 84f0e2f5 bake, test_head_pond_fill spring 1889014 sat in a coastal pond painted at 6.0 m beside river ground at
+	# 0.25 m, which the settle could never fill. A pond lowered here can leave a brook short of its water, so the mend and the corners run again, up to
+	# three rounds, until no pond is lowered.
+	clock = Time.get_ticks_msec()
+
+	for round_index in range(3):
+		var again: Dictionary = TilePondLevelScript.clamp_to_spill(water.heights, water.water_class, water.water_surface, n)
+		print("  pond levels after the cuts, round %d (tile %s): %d lowered to their spill, %d cells turned dry" % [round_index + 1, str(tile), again["lowered"], again["dried"]])
+
+		if again["lowered"] == 0:
+			break
+
+		corners += TileRiverMendScript.join_corners(water.heights, water.water_class, water.water_surface, n)
+		var mend_again: Dictionary = TileRiverMendScript.mend(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m)
+		print("  river mend again (tile %s): %d rivers cut off, %d dug through, %d cells made river" % [str(tile), mend_again["pieces"], mend_again["mended"], mend_again["cells"]])
+
+		for pass_index in range(4):
+			var joined_again: int = TileRiverMendScript.join_corners(water.heights, water.water_class, water.water_surface, n)
+			corners += joined_again
+
+			if joined_again == 0:
+				break
+
+	timings["pond_levels"] += Time.get_ticks_msec() - clock
 
 	# The land beside a river slopes up from it, so nothing lies lower than the river and turns to wetland (Dave 6 Nov 2026, tile_valley_drain.gd).
 	clock = Time.get_ticks_msec()

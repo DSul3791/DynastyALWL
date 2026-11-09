@@ -156,7 +156,7 @@ var ground_material: Callable   # (x, z) -> the surface material's name there ("
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
-var season_at: Callable         # (position) -> the season there (Weather.season_at: half a year off across the equator with --one-sky); unset: season_now
+var season_at: Callable         # (position) -> the season there (Weather.season_at: half a year off across the equator); unset: season_now
 var skill_level: Callable         # (peer, skill id) -> level factor around 1.0; unset until the skill system exists, then every factor is 1.0
 var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
@@ -6314,8 +6314,9 @@ func _raw_hours(item_id: String) -> float:
 func _raw_sickness(peer: int, item_id: String) -> void:
 	var hours: float = _raw_hours(item_id)
 	var odds: Dictionary = _infection_cfg().get("odds", {})
+	var known_harm: bool = str(tried_of(peer).get(item_id, "")) == "harm"     # a known harm costs the full sickness at once (ruling 8 Nov, row 26)
 
-	if hours > 0.0 and odds.has(item_id) and not (not tried_of(peer).has(item_id) and grace_of(peer) > 0.0):
+	if hours > 0.0 and odds.has(item_id) and not known_harm and not (not tried_of(peer).has(item_id) and grace_of(peer) > 0.0):
 		_infect(peer, item_id, hours, float(odds[item_id]))
 	elif hours > 0.0:
 		_harm_bite(peer, item_id, hours, "That should have been cooked. Your stomach turns.")

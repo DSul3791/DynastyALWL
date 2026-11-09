@@ -67,8 +67,10 @@ func _init() -> void:
 	var items = make(dir)
 	var fire: Dictionary = {"number": 1, "count": 1, "pos": Vector3(11.0, 0.0, 10.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 1.0e6, "covered": false, "recheck": 0.0}}
 
-	# 1. Flags off: today's drying and today's raw meat.
-	check(not bool(items._warmth_cfg["body_703"]["enabled"]) and not bool(items._sick_cfg["infection"]["enabled"]), "both flags ship off")
+	# 1. Flags off: the old drying and the old raw meat (both ship on since Dave's 8 Nov ruling; turned off here to keep the old path checked).
+	check(bool(items._warmth_cfg["body_703"]["enabled"]) and bool(items._sick_cfg["infection"]["enabled"]), "both ship on")
+	items._warmth_cfg["body_703"]["enabled"] = false
+	items._sick_cfg["infection"]["enabled"] = false
 	items._items[778] = fire
 	check(soak_after(items, 0.1) < 0.5, "flag off: a fire still dries fast (%.2f after 6 game minutes)" % float(items._soak[1]))
 	items._items.erase(778)

@@ -217,7 +217,7 @@ func _init() -> void:
 	check(autumn_dawns["sum"] > 2.0 * desert_dawns["sum"], "temperate mornings mistier than the desert (%.2f vs %.2f)" % [autumn_dawns["sum"], desert_dawns["sum"]])
 	var sunrise_summer: float = Weather.sunrise_hour(0.25 * 365.0)
 	var sunrise_winter: float = Weather.sunrise_hour(0.75 * 365.0)
-	check(sunrise_summer > 3.0 and sunrise_summer < 4.5 and sunrise_winter > 7.5 and sunrise_winter < 8.7, "sunrise at 52 N: midsummer %.2f, midwinter %.2f" % [sunrise_summer, sunrise_winter])
+	check(sunrise_summer > 4.5 and sunrise_summer < 5.2 and sunrise_winter > 6.8 and sunrise_winter < 7.5, "sunrise at the starter row (34.3 S, about 04:51 and 07:09): midsummer %.2f, midwinter %.2f" % [sunrise_summer, sunrise_winter])
 	print("weather: mist autumn %s spring %s desert %s" % [str(autumn_dawns), str(spring_dawns), str(desert_dawns)])
 	# Sea fog (docs/design/fog_pools_and_sea_fog.md part B): 0..1, none in a calm or in rain or snow, never more over the land than over
 	# the sea, a top only with it, and far more in late spring than in mid autumn.

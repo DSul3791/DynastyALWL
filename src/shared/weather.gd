@@ -56,13 +56,10 @@ const SEA_FOG_WIND_GONE := 0.7             # ... and blown away by this
 const SEA_FOG_LAND_AFTERNOON := 0.35       # share left over the land in the warmest hours
 const SEA_FOG_TOP_MIN_M := 60.0
 const SEA_FOG_TOP_MAX_M := 200.0
-# The sun path of day_cycle.gd (LATITUDE_DEG, AXIAL_TILT_DEG): the burn-off follows the real sunrise. Keep the two the same.
-const SUN_LATITUDE_DEG := 52.0
+# The sun path of day_cycle.gd (AXIAL_TILT_DEG): the burn-off follows the real sunrise. Keep the two the same.
 const SUN_TILT_DEG := 23.44
-# --one-sky (docs/design/one_sky_design.md): the latitude of the tile row (Climate.latitude_of_row; the starter row 4 is 57 S with the
-# placeholder spread) and the starter calendar's declination, calendar_sign() x 23.44 sin(2 pi phase), as day_cycle.gd draws them.
-# Off: 52 N as before.
-static var one_sky_on: bool = AppConfig.has_flag("one-sky")
+# One sky (docs/design/one_sky_design.md; the only sky since Dave's 8 Nov ruling): the latitude of the tile row (Climate.latitude_of_row)
+# and the starter calendar's declination, calendar_sign() x 23.44 sin(2 pi phase), as day_cycle.gd draws them.
 
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
@@ -74,14 +71,14 @@ static func season_of(game_s: float) -> String:
 	return GameClockScript.SEASON_NAMES[int(year_phase(game_s) * 4.0) % 4]
 
 
-# --one-sky: the year phase of a tile row (Climate.local_year_phase): half a year on across the equator from the starter island, whose
-# calendar the game clock keeps. Off, or on the starter's side of the equator: year_phase as before. STARTER_ROW is Climate.STARTER_ROW.
+# The year phase of a tile row (Climate.local_year_phase): half a year on across the equator from the starter island, whose
+# calendar the game clock keeps. On the starter's side of the equator: year_phase. STARTER_ROW is Climate.STARTER_ROW.
 const STARTER_ROW := 4
 
 
 static func year_phase_at(game_s: float, row: int = STARTER_ROW, equator_row: int = 0) -> float:
 	var phase: float = year_phase(game_s)
-	return Climate.local_year_phase(phase, row, equator_row) if one_sky_on else phase
+	return Climate.local_year_phase(phase, row, equator_row)
 
 
 # The season name at a world position (z metres; the world's tile_size_m and equator_tile_row), for season reads by place.
@@ -170,7 +167,7 @@ static func year_mean_c(group: String, altitude_m: float = 0.0) -> float:
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "wind_dir" (radians), "temp_c", "season"}.
 # wind_dir is the way the wind blows TOWARD, as an angle in the ground plane: direction = (cos, sin) on (x, z). It turns slowly
 # (a new heading about every 20 game hours) and swings further in a storm; same on server and client, nothing saved.
-# `row`, `equator_row` (--one-sky): the tile row, for its own seasons (half a year off across the equator) and the fog's sunrise at its
+# `row`, `equator_row`: the tile row, for its own seasons (half a year off across the equator) and the fog's sunrise at its
 # latitude. The default is the starter row.
 static func state(seed_value: int, game_s: float, group: String, altitude_m: float = 0.0, spirit: float = 0.0, row: int = STARTER_ROW, equator_row: int = 0) -> Dictionary:
 	var zone: Dictionary = ZONES.get(group, ZONES["temperate"])
@@ -243,11 +240,11 @@ static func visibility_m(weather_state: Dictionary, height_m: float) -> float:
 
 
 # Hour of sunrise (sun centre on the horizon) on a day of the year, for the sun path day_cycle.gd draws (`latitude_deg`: the tile
-# row's, which --one-sky reads; NAN takes the starter row's).
+# row's; NAN takes the starter row's).
 static func sunrise_hour(day_of_year: float, latitude_deg: float = NAN) -> float:
 	var sky_lat: float = Climate.latitude_of_row(Climate.STARTER_ROW) if is_nan(latitude_deg) else latitude_deg
-	var phi: float = deg_to_rad(sky_lat if one_sky_on else SUN_LATITUDE_DEG)
-	var delta: float = (Climate.calendar_sign() if one_sky_on else 1.0) * deg_to_rad(SUN_TILT_DEG) * sin(TAU * day_of_year / float(GameClockScript.DAYS_PER_YEAR))
+	var phi: float = deg_to_rad(sky_lat)
+	var delta: float = Climate.calendar_sign() * deg_to_rad(SUN_TILT_DEG) * sin(TAU * day_of_year / float(GameClockScript.DAYS_PER_YEAR))
 	var half_day_h: float = rad_to_deg(acos(clampf(-tan(phi) * tan(delta), -1.0, 1.0))) / 15.0
 	return 12.0 - half_day_h
 
