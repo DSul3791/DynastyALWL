@@ -130,6 +130,7 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const FlameRules := preload("res://src/shared/flame_rules.gd")
 const HorizonScript := preload("res://src/client/horizon_indicator.gd")
 const CaveDressing := preload("res://src/client/cave_dressing.gd")
+const SpringHeadsScript := preload("res://src/client/spring_heads.gd")
 const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
@@ -1995,6 +1996,7 @@ const DRINK_REACH_M := 3.0   # vitals.json thirst.reach_m, the server's reach fo
 var _drink_chunks: Dictionary = {}   # chunk -> [cell keys (Array of Vector2i), springs PackedFloat32Array x, z], oldest first
 var _drink_cells: Dictionary = {}    # Vector2i world sample (cell_m grid) -> 1 + the brook's regime
 var _drink_cell_m: float = 8.0
+var _spring_heads = null   # SpringHeads: the damp patch, runnel and pebbles at each spring head of the drink points, made on the first that has any
 
 
 func _on_drink_points(chunk: Vector2i, cell_m: float, cells: PackedInt32Array, springs: PackedFloat32Array) -> void:
@@ -2009,6 +2011,14 @@ func _on_drink_points(chunk: Vector2i, cell_m: float, cells: PackedInt32Array, s
 
 	_drink_chunks[chunk] = [keys, springs]
 
+	if _spring_heads == null and not springs.is_empty():
+		_spring_heads = SpringHeadsScript.new()
+		_spring_heads.name = "SpringHeads"
+		add_child(_spring_heads)
+
+	if _spring_heads != null:
+		_spring_heads.set_chunk(chunk, _drink_cell_m, cells, springs)
+
 	while _drink_chunks.size() > DRINK_KEEP_CHUNKS:
 		_forget_drink(_drink_chunks.keys()[0])
 
@@ -2021,6 +2031,27 @@ func _forget_drink(chunk: Vector2i) -> void:
 		_drink_cells.erase(key)
 
 	_drink_chunks.erase(chunk)
+
+	if _spring_heads != null:
+		_spring_heads.drop_chunk(chunk)
+
+
+# The spring heads' damp patches (spring_heads.gd): built as the player comes near, the runnel's far end iced when the puddles are, and the drawn
+# heads handed to the trickle sound (cave_water_sounds.gd).
+func _update_spring_heads(delta: float) -> void:
+	if _spring_heads == null or body == null:
+		return
+
+	if weather_look != null and weather_look.puddles != null:
+		_spring_heads.frost = float(weather_look.puddles.ice)
+
+	if weather_look != null and weather_look.day != null:
+		_spring_heads.daylight = clampf(float(weather_look.day.elevation) * 4.0, 0.0, 1.0)
+
+	_spring_heads.update(delta, body.global_position)
+
+	if sound != null and sound.cavewater != null:
+		sound.cavewater.spring_heads = _spring_heads.heads_built()
 
 
 # "Spring" within DRINK_REACH_M of a ground spring head, "Brook" when one of the five points the server reads (the feet and DRINK_REACH_M each
@@ -3436,6 +3467,9 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 
 	_drink_chunks.clear()
 	_drink_cells.clear()
+
+	if _spring_heads != null:
+		_spring_heads.clear()
 
 	if flora != null:
 		for chunk in flora.held_chunks():
@@ -4915,6 +4949,7 @@ func _process(delta: float) -> void:
 		_tunnel_step()
 
 	_update_pit_shadow()
+	_update_spring_heads(delta)
 
 	_run_ground_watchdog()
 
