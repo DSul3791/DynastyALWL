@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paint the icons the bake has no model for: building sections first (inventory redesign step 5; Kathleen, 9 Nov 2026).
+"""Paint the icons the bake has no model for: building sections, logs by species and driftwood (inventory redesign step 5; Kathleen, 9 Nov 2026).
 
 The same rig as tools/paint_basic_icons.py (look doc section 6.7): low-poly flat-shaded facets, a warm key light from the top left,
 a soft fill and a gold rim, three-quarter view, no background, 128 x 128 with the object filling about 80 %, drawn at 4x.
@@ -484,6 +484,52 @@ def ladder():
 LADDER_VIEW = rot_y(math.radians(25.0)) @ rot_z(math.radians(-14.0))
 
 
+# ---------------------------------------------------------------- logs by species and driftwood (a small stack of three)
+SPECIES = {                    # bark, end grain, ring
+    "log_beech": ((150, 146, 138), (226, 200, 154), (204, 172, 120)),
+    "log_birch": ((228, 224, 212), (234, 214, 172), (210, 184, 136)),
+    "log_maple": ((124, 108, 92), (232, 208, 162), (208, 178, 128)),
+    "log_oak": ((96, 74, 52), (208, 172, 120), (176, 138, 88)),
+    "log_scots_pine": ((172, 98, 58), (234, 206, 152), (206, 170, 110)),
+    "log_spruce": ((106, 92, 76), (238, 216, 172), (214, 186, 136)),
+    "log_tropical_hardwood": ((92, 54, 40), (156, 76, 50), (126, 58, 38)),
+    "log_walnut": ((80, 66, 54), (136, 96, 64), (108, 74, 48)),
+}
+BIRCH_MARK = (52, 48, 44)
+
+
+def species_log(bark, end, ring, length, radius, seed, marks=False):
+    faces = prism(radius, length, 9, bark, end, ring=ring, seed=seed)
+
+    if marks:                  # birch: dark lenticel bands on some of the bark facets
+        faces = [(pts, BIRCH_MARK if i < 9 and i % 3 == 1 else colour) for i, (pts, colour) in enumerate(faces)]
+
+    return faces
+
+
+def log_stack(name):
+    bark, end, ring = SPECIES[name]
+    r = 0.3
+    faces = []
+
+    for i, (x, y, z) in enumerate(((0.0, -r, -r * 1.02), (0.06, -r, r * 1.02), (-0.05, r * 0.72, 0.0))):
+        faces += moved(species_log(bark, end, ring, 2.0 - 0.15 * i, r, seed=100 + i + len(name), marks=name == "log_birch"), shift=(x, y, z))
+
+    return faces
+
+
+def driftwood():
+    """A bleached, barkless branch, bent and tapering, with a snapped side limb."""
+    grey, end = (184, 178, 166), (204, 196, 180)
+    faces = prism(0.36, 2.2, 7, grey, end, bend=0.6, taper=0.55, seed=111)
+    limb = prism(0.16, 0.8, 6, grey, end, taper=0.5, seed=112)
+    faces += moved(limb, rot_z(math.radians(42.0)), shift=(0.35, 0.28, 0.0))
+    return faces
+
+
+LOG_VIEW = rot_y(math.radians(-120.0))
+
+
 # ---------------------------------------------------------------- the table: item id -> (faces, model turn)
 def _pieces():
     return {
@@ -508,6 +554,8 @@ def _pieces():
         "thatch_roof": (thatch_roof, ROOF_VIEW),
         "stairs_wood": (stairs, rot_y(math.radians(-50.0))),
         "ladder": (ladder, LADDER_VIEW),
+        **{name: ((lambda n=name: log_stack(n)), LOG_VIEW) for name in SPECIES},
+        "driftwood": (driftwood, rot_y(math.radians(-120.0)) @ rot_z(math.radians(16.0))),
     }
 
 
