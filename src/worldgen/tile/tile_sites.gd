@@ -48,7 +48,14 @@ const HEAD_CLEAR_CELLS := 5   # a brook head for a spring cave has no river cell
 var caves: Array = []
 var lairs: Array = []
 var harbor: Dictionary = {}
+var springs: Array = []   # ground springs of a tile baked from the water record: {pos [x, y, z], m3_s, cover "bushes"} (Dave 9 Nov 2026)
 var starter: Dictionary = {}
+# false for a tile baked from the water record: the watershed design retires rule-placed spring caves (docs/water/watershed_rebuild_design.md
+# section 6, Dave 9 Nov). Cave springs come only from soluble or fractured rock, from R5's C7 list, once it exists.
+var spring_caves: bool = true
+# The R5 spring heads in this tile, for a tile baked from the record: {index (sample), m3_s (groundwater at the head)}. Each is a ground spring;
+# record_cave_share of them are tried as spring caves (Dave 9 Nov 2026: "a few here and there randomly but not for most springs").
+var record_springs: Array = []
 
 var _settings
 var _rules: Dictionary = {}
@@ -72,9 +79,6 @@ var _local: int = 0
 var _keep_clear: Array = []      # [center Vector2, radius] where no entrance may open
 var cave_heads: PackedByteArray = PackedByteArray()     # 1 where the drainage chose a spring cave as a river's source (tile_water.cave_heads); empty: the old head search alone
 var far_from_sea: PackedByteArray = PackedByteArray()   # 1 where the sea is at least spring_cave.min_sea_m away (inland_mask, from the frame); empty: no such rule
-# false for a tile baked from the water record: the watershed design retires rule-placed spring caves (docs/water/watershed_rebuild_design.md
-# section 6, Dave 9 Nov). Cave springs come only from soluble or fractured rock, from R5's C7 list, once it exists.
-var spring_caves: bool = true
 var _ore_by_id: Dictionary = {}
 var ore_report: Dictionary = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
 
@@ -127,6 +131,8 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 
 	if spring_caves:
 		_make_spring_caves(rng)
+	elif not record_springs.is_empty():
+		_make_record_springs(rng)
 	rng = SeedUtil.rng_for(_master, "sites_karst", tile.x, tile.y)
 	_make_karst(rng)
 	rng = SeedUtil.rng_for(_master, "sites_lava", tile.x, tile.y)
@@ -748,7 +754,7 @@ func _make_shelters(rng: RandomNumberGenerator) -> void:
 # tile 3,4), so the flow cannot pick which brooks get more: chance does. cave["springs"] = [{node, m3_s}]. A main passage shorter than min_length_m
 # (no room under the hill) gives no cave.
 const SPRING_CAVE_DEFAULTS := {
-	"min_slope_deg": 10.0, "hill_rise_m": 0.0, "hill_reach_m": 100.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
+	"record_cave_share": 0.1, "min_slope_deg": 10.0, "hill_rise_m": 0.0, "hill_reach_m": 100.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
 	"width_m": [3.0, 5.0], "height_m": [2.5, 4.0], "min_cover_m": 2.5, "open_cut_m": 64.0, "chamber_radius_m": [4.0, 7.0],
 	"branches": [1, 3], "branch_length_m": [15.0, 40.0], "extra_passage_chance": [0.4, 0.15], "spring_m3_s_per_km2": 0.1, "min_length_m": 60.0,
 	# Dave 4 Nov 2026: mouths match the river, small / medium / large caves, den tunnels climbing to a hollow, bones, stalagmites and stalactites.
@@ -991,6 +997,60 @@ func _make_spring_caves(rng: RandomNumberGenerator) -> void:
 		passages += cave["springs"].size()
 
 	print("  spring caves (Dave 3 Nov): %d brook heads on slopes, %d caves with %d spring passages, %d heads with no room for a cave" % [heads.size(), made, passages, refused])
+
+
+# A tile baked from the water record (design R6 as built, "Brooks and caves"; Dave 9 Nov 2026: "most springs probably come up from a small hole
+# in the ground with some bushes over them to hide it ... a few here and there randomly"): every R5 spring head is a ground spring, and a seeded
+# roll tries record_cave_share of them as spring caves, under the same rules as the rule bake's caves (way inland, a hillside or a hill behind,
+# no lake beside it, spacing, room for the passage). A head that is not a cave stays a ground spring. Biggest springs first, then by place.
+func _make_record_springs(rng: RandomNumberGenerator) -> void:
+	var share: float = float(_spring_rule("record_cave_share"))
+	var heads: Array = record_springs.duplicate()
+	heads.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["m3_s"]) > float(b["m3_s"]) or (float(a["m3_s"]) == float(b["m3_s"]) and int(a["index"]) < int(b["index"])))
+	var placed: Array = []
+	var made: int = 0
+
+	for head in heads:
+		var index: int = int(head["index"])
+		var point: Vector2 = _point_of(index)
+		var roll: float = rng.randf()
+
+		if roll < share and made < int(_spring_rule("max_count")) and _record_cave_ok(index) \
+				and not _too_close(point, placed, float(_spring_rule("min_spacing_m"))) and not _kept_clear(point):
+			var cave: Dictionary = _spring_cave(index, rng)
+
+			if not cave.is_empty():
+				placed.append(point)
+				caves.append(cave)
+				made += 1
+				continue
+
+		springs.append({"pos": [snappedf(point.x, 0.1), snappedf(_heights[index], 0.1), snappedf(point.y, 0.1)], "m3_s": snappedf(float(head["m3_s"]), 0.0001), "cover": "bushes"})
+
+	print("  springs from the record: %d spring heads, %d ground springs, %d spring caves (share %.2f)" % [heads.size(), springs.size(), made, share])
+
+
+# The spring-cave rules for one R5 spring head (as _brook_heads, without its search for heads in the drawn rivers).
+func _record_cave_ok(index: int) -> bool:
+	var margin: int = int(float(_rules["edge_margin_m"]) / _spacing) + 2
+	var i: int = index % _samples
+	var j: int = index / _samples
+
+	if i < margin or j < margin or i >= _samples - margin or j >= _samples - margin:
+		return false
+
+	if _water[index] == OCEAN or _water[index] == LAKE or _heights[index] < 2.0:
+		return false
+
+	if not far_from_sea.is_empty() and far_from_sea[index] == 0:
+		return false
+
+	for dj in range(-3, 4):
+		for di in range(-3, 4):
+			if _water[(j + dj) * _samples + i + di] == LAKE:
+				return false
+
+	return _slope(index) >= tan(deg_to_rad(float(_spring_rule("min_slope_deg")))) or _hill_behind(i, j)
 
 
 # Dave 4 Nov: small, medium and large caves. A size the hill has no room for falls back to the next smaller one.
