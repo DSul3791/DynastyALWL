@@ -2,7 +2,7 @@
 
 **Owner:** Steve, for `src/shared/thunder.gd` and `server_animals.gd`.
 **Asked by:** MikeW: birds flush (state 15) on a thunder clap, server side.
-**Status:** the shared schedule and the server flush are in code, behind `animals.json` `thunder.on` (off). **Keep it off** until the client plays its thunder from the same schedule, or birds will flush at claps nobody hears. Static checks only.
+**Status:** the shared schedule and the server flush are in code, behind `animals.json` `thunder.on` (off). Since 9 Nov 2026 the client plays its thunder from the same schedule (Kathleen, `weather_sounds.gd`, `thunder_delay_design.md` section 2), so the switch can go (Steve). Static checks only.
 **Decided:** coordinator, 8 Nov 2026. Dave may revert.
 
 ## 1. What happens today (read from the code, 8 Nov; not tested)
@@ -22,7 +22,7 @@
   - a bird within `flush_m` 800 m (judged) of the strike flies up away from it when the sound gets there. That is a bird with a flight row (crow, grouse, pheasant, guineafowl) or a water flock (duck, goose).
   - On the wire it is state 15, the existing flying state. A perched crow leaves its perch.
   - **Not in this step:** songbirds without a flight row (they have no flight path).
-- **For the client (Kathleen, when she chooses):** `weather_sounds` can ask `Thunder.strikes` for the last frame's window round the listener, and play `strike(distance, angle)` for each one. The flash, the clap and the birds then line up for everyone. Until then, the server flag stays off.
+- **The client (Kathleen, 9 Nov 2026, done):** `weather_sounds` asks `Thunder.strikes` for the game seconds since its last read, round the listener out to 15 km, and plays `strike(distance, angle)` for every strike within 3 km and a fixed hashed 1.5 % of the farther ones. The flash, the clap and the birds line up for everyone. The random roll is deleted.
 
 ## 3. Data (`animals.json` `thunder`)
 
