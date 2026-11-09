@@ -21,6 +21,7 @@ var view                            # the InventoryView (src/client/inventory_vi
 var root: Control
 var wells: Dictionary = {}          # gear slot name -> its ItemSlot
 var preview: SubViewport
+var holder: SubViewportContainer    # the preview's frame; shown only while the window is open, so the preview renders only then
 var rig: Node3D
 var _dressed_sign: int = 0          # what the rig was last dressed in (a hash of view.worn)
 
@@ -76,15 +77,15 @@ func _gear_column(names: Array) -> Control:
 
 # The live character (6.6): its own small world with a warm key light from the top left and a gold rim light from behind right.
 func _figure() -> Control:
-	var holder: SubViewportContainer = SubViewportContainer.new()
+	holder = SubViewportContainer.new()
 	holder.custom_minimum_size = FIGURE
 	holder.stretch = true
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.visible = false
 	preview = SubViewport.new()
 	preview.own_world_3d = true
 	preview.transparent_bg = true
 	preview.size = Vector2i(FIGURE)
-	preview.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	holder.add_child(preview)
 	var camera: Camera3D = Camera3D.new()
 	camera.position = Vector3(0.0, 0.95, 3.6)
@@ -108,10 +109,11 @@ func _figure() -> Control:
 	return holder
 
 
-# The window opened or shut: the preview renders only while it is open.
+# The window opened or shut: the preview renders only while it is open. The container owns its viewport's update mode (it sets
+# "when visible" or "disabled" as it is shown or hidden), so the preview is turned on and off by showing its container.
 func set_active(on: bool) -> void:
-	if preview != null and is_instance_valid(preview):
-		preview.render_target_update_mode = SubViewport.UPDATE_ALWAYS if on else SubViewport.UPDATE_DISABLED
+	if holder != null and is_instance_valid(holder):
+		holder.visible = on
 
 
 # The gear wells from what is worn and what is in hand; the rig re-dressed when what is worn changed.

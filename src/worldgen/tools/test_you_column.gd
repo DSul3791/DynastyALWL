@@ -70,11 +70,14 @@ func _initialize() -> void:
 	check(not part.wells["right"].is_empty(), "the item in hand shows in the right hand")
 	check(part.wells["left"].is_empty(), "the left hand is empty until the game has an off-hand item")
 	check(part.wells["head"].custom_minimum_size.is_equal_approx(Vector2(96.0, 96.0)), "gear wells are 96 px")
-	check(built.get_combined_minimum_size().x <= ArtKit.YOU.size.x - 2.0 * ArtKit.INSET + 1.0, "gear and figure fit the You column's 408 px")
 	check(part.preview.render_target_update_mode == SubViewport.UPDATE_DISABLED, "the preview does not render while the window is shut")
 	part.set_active(true)
-	check(part.preview.render_target_update_mode == SubViewport.UPDATE_ALWAYS, "it renders while the window is open")
+	await process_frame
+	check(part.preview.render_target_update_mode != SubViewport.UPDATE_DISABLED, "it renders while the window is open")
+	check(built.get_combined_minimum_size().x <= ArtKit.YOU.size.x - 2.0 * ArtKit.INSET + 1.0, "gear and figure fit the You column's 408 px")
 	part.set_active(false)
+	await process_frame
+	check(part.preview.render_target_update_mode == SubViewport.UPDATE_DISABLED, "and stops when it shuts")
 	built.queue_free()
 	await process_frame
 	print("you column: %d failures" % failures)
