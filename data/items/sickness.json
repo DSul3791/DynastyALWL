@@ -15,8 +15,8 @@
 	"say_too_soon": "Your stomach is not ready for more yet.",
 	"say_medicine": "The medicine settles your stomach",
 	"infection": {
-		"enabled": false,
-		"note": "Late, uncertain sickness from raw animal food (docs/design/body_in_weather_design.md 5; Jamie #703, coordinator 8 Nov 2026, Dave may revert). Off by default: raw food in cooking.json raw_sick then sickens at once, as before. On: a food listed in odds rolls once at the bite (luck helps you escape); on a hit the sickness (its raw_sick hours) starts onset_h game hours later, with say_onset naming the food, and the food is learned as harm then. Plant toxins and rotten food are not listed and stay immediate. Raw meat has no species yet, so it takes 1 in 5. Water is not here: Dave's 21 Oct rule above stands until he says otherwise.",
+		"enabled": true,
+		"note": "Late, uncertain sickness from raw animal food (docs/design/body_in_weather_design.md 5; Jamie #703, coordinator 8 Nov 2026, Dave may revert; on since Dave's 8 Nov ruling, OVERNIGHT_DECISIONS row 26). Off: raw food in cooking.json raw_sick then sickens at once, as before. On: a food listed in odds rolls once at the bite (luck helps you escape); on a hit the sickness (its raw_sick hours) starts onset_h game hours later, with say_onset naming the food, and the food is learned as harm then. Plant toxins and rotten food are not listed and stay immediate. Raw meat has no species yet, so it takes 1 in 5. Water is not here: Dave's 21 Oct rule above stands until he says otherwise.",
 		"onset_h": [24, 72],
 		"odds": {"raw_meat": 0.2, "seal_meat": 0.33, "egg": 0.1, "shellfish": 0.1, "crab_meat": 0.1, "salmon": 0.05, "herring": 0.05, "mackerel": 0.05, "smelt": 0.05, "cod": 0.05, "trout": 0.033, "perch": 0.033, "carp": 0.033, "pike": 0.033, "eel": 0.033},
 		"say_onset": "Your stomach turns. It was the %s %s."

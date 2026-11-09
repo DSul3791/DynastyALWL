@@ -117,7 +117,8 @@ func _server() -> void:
 	var sources: Dictionary = items._vitals_cfg["thirst"]["sources"]
 
 	# Flag off: the sea row is ignored and today's drink goes on.
-	check(not bool(sources.get("enabled", true)), "thirst.sources ships off")
+	check(bool(sources.get("enabled", false)), "thirst.sources ships on (Dave 8 Nov)")
+	sources["enabled"] = false
 	rows_here = [{"kind": "salt"}]
 	check(_drinks(items, v), "flag off: today's drink, whatever the rows say")
 
