@@ -292,13 +292,20 @@ def _slope_ceiling(h0, lift, Sc, sea, n, dx):
             val[i] = 0.0
     src = np.arange(N)
     root2 = 1.4142135623730951
+    # The cells the sweeps change (land with a threshold), in raster order, so each sweep visits them in the same order as a
+    # loop over every cell that skips the rest (glacial cut A3c, docs/design/glacial_speed_design.md): the sea is 83% of the cells.
+    idx = np.empty(N, np.int64)
+    m = 0
+    for i in range(N):
+        if sea[i] or Sc[i] <= 0.0:
+            continue
+        idx[m] = i
+        m += 1
     for p in range(64):
         changed = False
         for sweep in range(2):
-            for q in range(N):
-                i = q if sweep == 0 else N - 1 - q
-                if sea[i] or Sc[i] <= 0.0:
-                    continue
+            for t in range(m):
+                i = idx[t] if sweep == 0 else idx[m - 1 - t]
                 r = i // n
                 c = i % n
                 best = val[i]
@@ -334,6 +341,74 @@ def _slope_ceiling(h0, lift, Sc, sea, n, dx):
 
 
 @nb.njit(cache=True)
+def _basin_buckets(order, rec, sea, buckets):
+    """The cells of order, split by river basin into `buckets` lists for _solve's threads (glacial cut A3a,
+    docs/design/glacial_speed_design.md). A basin is the tree that drains to one outlet (a cell whose receiver is the sea or
+    none). The basins go largest first, each into the lightest bucket so far (the first, on a tie), and each bucket keeps its
+    cells in the order they have in order, so a receiver still comes before its donors. Returns (ptr, cells): bucket b is
+    cells[ptr[b]:ptr[b + 1]], and the cell count of the largest basin and the number of basins. When a cell drains to land that
+    is not before it in order (lem.route never does that), it returns one bucket holding order as it is, and 0 basins: _solve
+    then runs in one thread, in order, as before. (The one bucket is made here, not in _solve: a parallel function that remade
+    ptr in a branch was given the first ptr's size, and allocated with a negative size; David4, 9 Nov.)"""
+    N = rec.size
+    root = np.full(N, -1, np.int64)
+    size = np.zeros(N, np.int64)
+    for q in range(order.size):
+        i = order[q]
+        d = rec[i]
+        if d >= 0 and not sea[d]:
+            if root[d] < 0:
+                one = np.zeros(2, np.int64)
+                one[1] = order.size
+                return one, order.copy(), 0, 0
+            root[i] = root[d]
+        else:
+            root[i] = i
+        size[root[i]] += 1
+    count = 0
+    for i in range(N):
+        if size[i] > 0:
+            count += 1
+    roots = np.empty(count, np.int64)
+    k = 0
+    for i in range(N):
+        if size[i] > 0:
+            roots[k] = i
+            k += 1
+    by = np.argsort(-size[roots], kind='mergesort')       # largest first; a tie keeps the lower root first
+    load = np.zeros(buckets, np.int64)
+    which = np.full(N, -1, np.int64)
+    for k in range(count):
+        b = 0
+        for t in range(1, buckets):
+            if load[t] < load[b]:
+                b = t
+        which[roots[by[k]]] = b
+        load[b] += size[roots[by[k]]]
+    ptr = np.zeros(buckets + 1, np.int64)
+    for b in range(buckets):
+        ptr[b + 1] = ptr[b] + load[b]
+    fill = ptr[:buckets].copy()
+    cells = np.empty(order.size, np.int64)
+    for q in range(order.size):
+        i = order[q]
+        b = which[root[i]]
+        cells[fill[b]] = i
+        fill[b] += 1
+    largest = size[roots[by[0]]] if count > 0 else 0
+    return ptr, cells, largest, count
+
+
+def solve_buckets(order, rec, sea, buckets):
+    """How _solve's threads share the land (glacial logs it once a run): the shares of the land cells in the largest bucket
+    and in the largest basin, and the number of basins. (1.0, 1.0, 0) when _solve would run in one bucket."""
+    ptr, _, largest, count = _basin_buckets(order, rec, sea, buckets)
+    if count == 0 or order.size == 0:
+        return 1.0, 1.0, 0
+    return float(np.max(np.diff(ptr))) / order.size, float(largest) / order.size, int(count)
+
+
+@nb.njit(cache=True, parallel=True)
 def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cell, sweeps, tol, Sc, lift):
     """The implicit erosion-deposition solve. kq: each cell's erosion coefficient (erosion = kq * S - kc, S the slope to the
     receiver, never below 0). kc: each cell's critical erosion rate, kq times the incision threshold on Q^m S (0 for none).
@@ -371,67 +446,84 @@ def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cel
     Hollows fill to their spill, no higher. A cell that starts the step below its receiver (in a closed hollow, draining over
     the receiver's sill) can be filled with sediment up to the receiver's height and no further; the rest goes on downstream.
     Without this, run d9f89615 built sediment mounds hundreds of metres high: a filled hollow rose above its sill, its upstream
-    neighbours became a hollow behind it, and the mound climbed the valley."""
+    neighbours became a hollow behind it, and the mound climbed the valley.
+
+    Threads (glacial cut A3a, docs/design/glacial_speed_design.md). A cell reads only its own values, its receiver's new height
+    and the sediment from upstream of it, and the sediment adds up only within its own tree, so the river basins never touch:
+    each thread solves one bucket of basins (_basin_buckets), its cells in the order they have in order. Every sum adds the
+    same numbers in the same order, so the heights and fluxes come out bit for bit as in one thread, for any thread count.
+    The bookkeeping is done on the cells of order only (cut A3b): the sea's values stay 0, as they always were."""
     N = n * n
     ceiling = _slope_ceiling(h0 + U * dt, lift, Sc, sea, n, dx)
-    up = np.zeros(N)
-    total = np.zeros(N)          # sum over strictly upstream cells of (U - dh/dt) * cell, from the previous sweep
+    up = np.zeros(N)             # sediment from strictly upstream cells, (U - dh/dt) * cell summed, from the previous sweep
+    own = np.zeros(N)
+    total = np.zeros(N)
+    ptr, cells, _, _ = _basin_buckets(order, rec, sea, nb.get_num_threads())
+    buckets = ptr.size - 1
+    big = np.zeros(buckets)
     for s in range(sweeps):
+        for b in nb.prange(buckets):
+            bmax = 0.0
+            for q in range(ptr[b], ptr[b + 1]):             # downstream first: a receiver is always solved before its donors
+                i = cells[q]; d = rec[i]
+                if sea[i]:
+                    continue
+                Qi = Qd[i]
+                c = G * cell / Qi                            # the node's own share of the sediment term (its own eroded volume)
+                dist = dx
+                if d >= 0 and abs(d - i) != 1 and abs(d - i) != n:
+                    dist = dx * 1.4142135623730951
+                F = 0.0
+                if d >= 0:
+                    F = kq[i] / dist
+                hr = h[d] if d >= 0 else h0[i]
+                A = (1.0 + c) / dt
+                rest = U[i] * (1.0 + c) + G / Qi * up[i]
+                B = h0[i] * (1.0 + c) / dt + rest
+                if cover[i] > 0.0:
+                    Fc = kq_c[i] / dist if d >= 0 else 0.0
+                    x = _cell_height(B, A, Fc, hr, 0.0)      # loose cover: its own rate, no threshold
+                    if h0[i] - x > cover[i]:                 # cut through it: the cover's volume is gone, the rest at the rock's rate
+                        x = _cell_height(B - cover[i] / dt, A, F, hr, kc[i])
+                else:
+                    x = _cell_height(B, A, F, hr, kc[i])
+                if d >= 0 and h0[i] < hr and x > hr:         # a hollow fills to its sill, no higher
+                    x = hr
+                if Sc[i] > 0.0 and d >= 0:
+                    base = hr - lift[d]                      # the receiver's ground
+                    if sea[d] and base < 0.0:
+                        base = 0.0
+                    if x - lift[i] > base + Sc[i] * dist:
+                        x = base + Sc[i] * dist + lift[i]
+                if x > ceiling[i]:                           # and against every neighbour (_slope_ceiling)
+                    x = ceiling[i]
+                change = abs(x - h[i])
+                if change > bmax:
+                    bmax = change
+                h[i] = x
+            big[b] = bmax
+            # sediment from upstream for the next sweep: accumulate the eroded volume (U - dh/dt) * cell up the tree, then shift by
+            # one node. It is a volume of rock and soil, so it is NOT weighted by rain; the rain enters through Q (the water that
+            # carries it): deposition rate = G * sediment flux / Q (Davy and Lague 2009 in the form of Yuan et al. 2019, with Q the
+            # quick-runoff-weighted area, so G stays dimensionless). Little water carries little sediment: dry ground fills.
+            for q in range(ptr[b], ptr[b + 1]):
+                i = cells[q]
+                own[i] = (U[i] - (h[i] - h0[i]) / dt) * cell
+                total[i] = own[i]
+            for q in range(ptr[b + 1] - 1, ptr[b] - 1, -1):
+                i = cells[q]; d = rec[i]
+                if d >= 0 and not sea[d]:
+                    total[d] += total[i]
+            for q in range(ptr[b], ptr[b + 1]):
+                i = cells[q]
+                u = total[i] - own[i]
+                if u < 0.0:
+                    u = 0.0                              # net erosion upstream brings sediment; it never removes it
+                up[i] = u
         biggest = 0.0
-        for q in range(order.size):                     # downstream first: a receiver is always solved before its donors
-            i = order[q]; d = rec[i]
-            if sea[i]:
-                continue
-            Qi = Qd[i]
-            c = G * cell / Qi                            # the node's own share of the sediment term (its own eroded volume)
-            dist = dx
-            if d >= 0 and abs(d - i) != 1 and abs(d - i) != n:
-                dist = dx * 1.4142135623730951
-            F = 0.0
-            if d >= 0:
-                F = kq[i] / dist
-            hr = h[d] if d >= 0 else h0[i]
-            A = (1.0 + c) / dt
-            rest = U[i] * (1.0 + c) + G / Qi * up[i]
-            B = h0[i] * (1.0 + c) / dt + rest
-            if cover[i] > 0.0:
-                Fc = kq_c[i] / dist if d >= 0 else 0.0
-                x = _cell_height(B, A, Fc, hr, 0.0)      # loose cover: its own rate, no threshold
-                if h0[i] - x > cover[i]:                 # cut through it: the cover's volume is gone, the rest at the rock's rate
-                    x = _cell_height(B - cover[i] / dt, A, F, hr, kc[i])
-            else:
-                x = _cell_height(B, A, F, hr, kc[i])
-            if d >= 0 and h0[i] < hr and x > hr:         # a hollow fills to its sill, no higher
-                x = hr
-            if Sc[i] > 0.0 and d >= 0:
-                base = hr - lift[d]                      # the receiver's ground
-                if sea[d] and base < 0.0:
-                    base = 0.0
-                if x - lift[i] > base + Sc[i] * dist:
-                    x = base + Sc[i] * dist + lift[i]
-            if x > ceiling[i]:                           # and against every neighbour (_slope_ceiling)
-                x = ceiling[i]
-            change = abs(x - h[i])
-            if change > biggest:
-                biggest = change
-            h[i] = x
-        # sediment from upstream for the next sweep: accumulate the eroded volume (U - dh/dt) * cell up the tree, then shift by
-        # one node. It is a volume of rock and soil, so it is NOT weighted by rain; the rain enters through Q (the water that
-        # carries it): deposition rate = G * sediment flux / Q (Davy and Lague 2009 in the form of Yuan et al. 2019, with Q the
-        # quick-runoff-weighted area, so G stays dimensionless). Little water carries little sediment: dry ground fills.
-        own = np.zeros(N)
-        for q in range(order.size):
-            i = order[q]
-            own[i] = (U[i] - (h[i] - h0[i]) / dt) * cell
-        total = own.copy()
-        for q in range(order.size - 1, -1, -1):
-            i = order[q]; d = rec[i]
-            if d >= 0 and not sea[d]:
-                total[d] += total[i]
-        for i in range(N):
-            up[i] = total[i] - own[i]
-            if up[i] < 0.0:
-                up[i] = 0.0                              # net erosion upstream brings sediment; it never removes it
+        for t in range(buckets):
+            if big[t] > biggest:
+                biggest = big[t]
         if biggest < tol:
             break
     return total

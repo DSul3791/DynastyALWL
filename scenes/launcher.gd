@@ -1,7 +1,5 @@
 extends Node
 
-const WaterChoice := preload("res://src/water2/water_choice.gd")
-
 const RUN_NOTE := "user://server_run.json"
 
 
@@ -72,9 +70,6 @@ func _host_and_play() -> void:
 		# The server shares this PC with the game: half the cores (it used all but one, 11 threads on 12 cores, and the game froze for seconds).
 		"--threads=%d" % maxi(OS.get_processor_count() >> 1, 2),
 	])
-
-	if WaterChoice.old_water():
-		arguments.append("--water-old")   # Esc > Settings > Gameplay > Old water (Dynasty water is the default)
 
 	var pid: int = OS.create_process(OS.get_executable_path(), arguments)
 

@@ -2759,8 +2759,8 @@ func ice_edge_spot(x: float, z: float, sp: String) -> Vector2:
 
 
 # --- birds and thunder (docs/design/birds_and_thunder_server.md; MikeW's ask) ---
-# Behind animals.json thunder.on. Strikes come from the shared Thunder schedule (seed, game time, storm), so a client that plays its
-# thunder from the same schedule hears the clap the birds flush at. When the sound reaches a bird within flush_m of the strike (sound_mps),
+# Always on: no switch since 9 Nov, because the client plays the same strikes (#849). Strikes come from the shared Thunder schedule
+# (seed, game time, storm), so the client hears the clap the birds flush at. When the sound reaches a bird within flush_m of the strike (sound_mps),
 # a flying-kind bird (a flight row) or a water flock takes off away from it: state 15 on the wire.
 
 func _thunder_cfg() -> Dictionary:
@@ -2770,7 +2770,7 @@ func _thunder_cfg() -> Dictionary:
 func _thunder_tick(players: Array) -> void:
 	var tc: Dictionary = _thunder_cfg()
 
-	if not bool(tc.get("on", false)) or not thunder_between.is_valid() or not game_seconds.is_valid():
+	if not thunder_between.is_valid() or not game_seconds.is_valid():
 		return
 
 	var now_g: float = float(game_seconds.call())

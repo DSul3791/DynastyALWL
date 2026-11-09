@@ -560,18 +560,7 @@ func _finish(tile: Vector2i, water, origin: Vector2i, spacing_m: float, fresh_po
 
 	# Crop everything to the tile.
 	var ghost_heights: PackedFloat32Array = water.heights
-	var mouth: Vector2 = Vector2(NAN, NAN)
-
-	if water.starter_path.size() > 0:
-		var last: Vector2 = water.starter_path[water.starter_path.size() - 1]
-		mouth = (Vector2(float(origin_sx), float(origin_sz)) + last) * float(settings.map_spacing_m)
-
-	var shifted: PackedVector2Array = PackedVector2Array()
-
-	for point in water.starter_path:
-		shifted.append(point - Vector2(float(margin), float(margin)))
-
-	water.starter_path = shifted
+	var mouth: Vector2 = Vector2(NAN, NAN)   # no designed river mouth: the starter river is gone (Dave 19 Oct turned it off; removed 9 Nov 2026)
 	water.heights = crop(water.heights, n, core)
 	# Where the sea is far enough for a spring cave, worked out on the whole frame before it is cropped (tile_sites.gd inland_mask).
 	var inland: PackedByteArray = crop(TileSitesScript.inland_mask(water.water_class, n, spacing_m, float(tile_rules["sites"].get("spring_cave", {}).get("min_sea_m", 0.0))), n, core)

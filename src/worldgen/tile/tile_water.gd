@@ -47,9 +47,6 @@ var _world_ponds: Array = []          # head ponds from the world river network 
 var ponds_moved: int = 0              # of those, ponds moved up off a steep head onto flat ground
 var heads_straightened: int = 0       # steep river heads re-routed straight down the slope
 var pond_cut_max_m: float = 0.0       # deepest cut a head pond made into the ground
-var _route_clock: int = 0
-var _source_surface_m: float = 0.0
-var starter_path: PackedVector2Array = PackedVector2Array()   # sample coordinates, source to mouth
 
 var _settings
 var _rules: Dictionary = {}
@@ -72,7 +69,7 @@ func setup(settings, rules: Dictionary) -> void:
 # RiverNetwork.guides_in (world meters). With guides, rivers are cut along
 # them, so a river is the same in every tile it passes through. Without
 # (null), rivers come from this tile's own drainage, as before.
-func build(height_map, starter: Dictionary = {}, guides: Variant = null, world_ponds: Array = []) -> void:
+func build(height_map, _starter: Dictionary = {}, guides: Variant = null, world_ponds: Array = []) -> void:   # _starter: the starter tile's bay (the designed starter river that used it is gone, 9 Nov 2026)
 	_world_ponds = world_ponds
 	_legacy_rivers = guides == null
 	samples = height_map.samples
@@ -89,55 +86,21 @@ func build(height_map, starter: Dictionary = {}, guides: Variant = null, world_p
 	lakes = []
 	river_cells = 0
 	filled_cells = 0
-	starter_path = PackedVector2Array()
-	var extra: Dictionary = {}
-	var river_rules: Dictionary = _rules.get("starter_river", {})
 
-	# Pass 1 finds the lakes; the starter river is then cut from the biggest
-	# highland lake to the bay head and the whole thing is run again.
 	if bool(_rules.get("drainage_mode", false)):
 		var summary: Dictionary = TileDrainageScript.apply(self, _rules.get("drainage", {}))
 		print("  water: drainage mode, %d lakes, %d river cells in %d ms" % [summary["lakes"], summary["river_cells"], summary["ms"]])
 		return
 
-	var original: PackedFloat32Array = heights.duplicate()
 	var clock: int = Time.get_ticks_msec()
 	_hydrology({})
 	_log("pass 1 done (%d lakes)" % lakes.size(), clock)
-
-	if bool(river_rules.get("enabled", false)) and not starter.is_empty():
-		var source: int = _pick_source(starter, float(river_rules["source_min_height_m"]))
-		_log("source picked: %d" % source, clock)
-
-		if source >= 0:
-			heights = original.duplicate()
-			extra = _cut_starter_river(source, starter, river_rules)
-			_log("starter river cut (%d path points)" % starter_path.size(), clock)
-
-			if not extra.is_empty():
-				_hydrology(extra)
-				_log("pass 2 done", clock)
-				var probes: PackedStringArray = PackedStringArray()
-
-				@warning_ignore("integer_division")
-				for k in [0, starter_path.size() / 4, starter_path.size() / 2, starter_path.size() * 3 / 4, starter_path.size() - 1]:
-					var point: Vector2 = starter_path[k]
-					var at: int = clampi(int(round(point.y)), 0, samples - 1) * samples + clampi(int(round(point.x)), 0, samples - 1)
-					probes.append("%d:flow %.0f cls %d h %.1f" % [k, flow[at], water_class[at], heights[at]])
-
-				print("  water: starter river probes ", ", ".join(probes))
-			else:
-				heights = original.duplicate()
-				_hydrology({})
 
 	if not _legacy_rivers:
 		var rivers: Array = []
 
 		for guide in guides:
 			rivers.append(_guide_to_samples(guide["points"], guide["areas"], bool(guide.get("source", false))))
-
-		if starter_path.size() > 1:
-			rivers.append(_starter_guide())
 
 		_carve_guides(rivers)
 		print("  water: %d head ponds (%d moved up to flat ground), %d steep heads straightened, widest %.0f m, deepest pond cut %.1f m, largest river bed climb %.2f m" % [ponds_made, ponds_moved, heads_straightened, largest_pond_m, pond_cut_max_m, max_bed_rise_m])
@@ -489,21 +452,6 @@ func _guide_to_samples(points: PackedVector2Array, areas_km2: PackedFloat32Array
 		converted[k] = Vector2(points[k].x / spacing_m - float(_origin_sx), points[k].y / spacing_m - float(_origin_sz))
 
 	return {"points": converted, "areas": areas_km2, "source": source}
-
-
-# The designed starter river as a guide: its path, with the water it carries
-# taken from the drainage of the second pass (never shrinking downstream).
-func _starter_guide() -> Dictionary:
-	var areas: PackedFloat32Array = PackedFloat32Array()
-	var cell_km2: float = spacing_m * spacing_m / 1.0e6
-	var carried: float = 0.0
-
-	for point in starter_path:
-		var at: int = clampi(int(round(point.y)), 0, samples - 1) * samples + clampi(int(round(point.x)), 0, samples - 1)
-		carried = maxf(carried, flow[at])
-		areas.append(carried * cell_km2)
-
-	return {"points": starter_path, "areas": areas}
 
 
 # Cuts every river along its guide. The bed under a point is the lowest
@@ -1886,261 +1834,3 @@ func _stamp(
 				water_class[target] = RIVER
 				water_surface[target] = bed + 0.75 * depth
 
-
-# The surface point of the highland lake nearest the bay head, so the river
-# starts on the bay side of the mountains.
-func _pick_source(starter: Dictionary, min_height: float) -> int:
-	var head: Vector2 = _bay_head_samples(starter)
-	var best: int = -1
-	var best_distance: float = INF
-
-	for lake in lakes:
-		if float(lake["surface_m"]) < min_height:
-			continue
-
-		for member in lake["members"]:
-			var distance: float = Vector2(float(member % samples), float(member / samples)).distance_to(head)
-
-			if distance < best_distance:
-				best_distance = distance
-				best = member
-				_source_surface_m = float(lake["surface_m"])
-
-	return best
-
-
-func _bay_head_samples(starter: Dictionary) -> Vector2:
-	var center: Vector2 = starter["bay_center"]
-	var direction: Vector2 = starter["beach_dir"]
-	var radius: float = float(starter["bay_radius_m"])
-	var head_m: Vector2 = center - direction * radius * 0.95
-	return Vector2(
-		head_m.x / spacing_m - float(_origin_sx),
-		head_m.y / spacing_m - float(_origin_sz)
-	)
-
-
-# Finds the easiest valley route from the source to the bay head, cuts a
-# guide channel along it (bed never rises downstream) and returns the extra
-# water to feed in at the source: {cell index: extra catchment cells}.
-func _cut_starter_river(source: int, starter: Dictionary, river_rules: Dictionary) -> Dictionary:
-	var step: int = maxi(int(round(float(river_rules["route_cell_m"]) / spacing_m)), 1)
-	@warning_ignore("integer_division")
-	var coarse: int = (samples - 1) / step + 1
-	var climb_cost: float = float(river_rules["climb_cost"])
-	var head: Vector2 = _bay_head_samples(starter)
-	var goal: Vector2i = Vector2i(int(round(head.x / float(step))), int(round(head.y / float(step))))
-	goal = Vector2i(clampi(goal.x, 0, coarse - 1), clampi(goal.y, 0, coarse - 1))
-	@warning_ignore("integer_division")
-	var start: Vector2i = Vector2i((source % samples) / step, (source / samples) / step)
-
-	# Walk the nearest land cell to the goal if the head sits in water.
-	var best_goal: Vector2i = goal
-	var best_distance: float = INF
-
-	for dz in range(-8, 9):
-		for dx in range(-8, 9):
-			var probe: Vector2i = goal + Vector2i(dx, dz)
-
-			if probe.x < 0 or probe.y < 0 or probe.x >= coarse or probe.y >= coarse:
-				continue
-
-			if heights[probe.y * step * samples + probe.x * step] > 0.8 and Vector2(dx, dz).length() < best_distance:
-				best_distance = Vector2(dx, dz).length()
-				best_goal = probe
-
-	goal = best_goal
-
-	# Dijkstra on the coarse grid. Climbing costs extra; sea is a wall.
-	var cost: PackedFloat32Array = PackedFloat32Array()
-	cost.resize(coarse * coarse)
-	cost.fill(INF)
-	var came: PackedInt32Array = PackedInt32Array()
-	came.resize(coarse * coarse)
-	came.fill(-1)
-	var heap_keys: PackedFloat32Array = PackedFloat32Array()
-	var heap_nodes: PackedInt32Array = PackedInt32Array()
-	var start_node: int = start.y * coarse + start.x
-	var goal_node: int = goal.y * coarse + goal.x
-	cost[start_node] = 0.0
-	_heap_push(heap_keys, heap_nodes, 0.0, start_node)
-	_route_clock = Time.get_ticks_msec()
-
-	while not heap_nodes.is_empty():
-		var popped: Vector2 = _heap_pop(heap_keys, heap_nodes)
-		var node: int = int(popped.y)
-
-		if popped.x > cost[node]:
-			continue
-
-		if node == goal_node:
-			break
-
-		@warning_ignore("integer_division")
-		var row: int = node / coarse
-		var column: int = node % coarse
-		var here: float = heights[row * step * samples + column * step]
-
-		for dz in range(-1, 2):
-			for dx in range(-1, 2):
-				if dx == 0 and dz == 0:
-					continue
-
-				var nr: int = row + dz
-				var nc: int = column + dx
-
-				if nr < 0 or nc < 0 or nr >= coarse or nc >= coarse:
-					continue
-
-				var there: float = heights[nr * step * samples + nc * step]
-
-				if there <= 0.8:
-					continue
-
-				var length: float = float(step) * spacing_m * (1.4142 if dx != 0 and dz != 0 else 1.0)
-				var climb: float = maxf(there - here, 0.0)
-				var next_cost: float = cost[node] + length * 0.2 + climb * climb_cost
-				var next_node: int = nr * coarse + nc
-
-				if next_cost < cost[next_node]:
-					cost[next_node] = next_cost
-					came[next_node] = node
-					_heap_push(heap_keys, heap_nodes, next_cost, next_node)
-
-	_log("route search finished", _route_clock)
-
-	if came[goal_node] == -1 and goal_node != start_node:
-		return {}
-
-	var coarse_path: PackedVector2Array = PackedVector2Array()
-	var walker: int = goal_node
-
-	while walker != -1:
-		@warning_ignore("integer_division")
-		coarse_path.append(Vector2(float((walker % coarse) * step), float((walker / coarse) * step)))
-		walker = came[walker]
-
-	coarse_path.reverse()
-	var path: PackedVector2Array = _smooth_path(coarse_path, river_rules)
-	# Start exactly at the lake's edge cell so the lake has to spill into the channel.
-	@warning_ignore("integer_division")
-	path.insert(0, Vector2(float(source % samples), float(source / samples)))
-	starter_path = path
-
-	# Guide channel: the bed never rises downstream and stays under the ground.
-	var guide_width: float = float(river_rules["guide_width_m"])
-	var guide_depth: float = float(river_rules["guide_depth_m"])
-	var slope: float = float(_rules["bank_slope"])
-	var mouth: float = float(river_rules["mouth_height_m"])
-	var bed: float = _source_surface_m - guide_depth
-	var ocean: PackedByteArray = PackedByteArray()
-	ocean.resize(samples * samples)
-	var unused: PackedFloat32Array = PackedFloat32Array()
-	unused.resize(samples * samples)
-	var carved: PackedFloat32Array = heights.duplicate()
-
-	for point in path:
-		var column: int = clampi(int(round(point.x)), 0, samples - 1)
-		var row: int = clampi(int(round(point.y)), 0, samples - 1)
-		var index: int = row * samples + column
-		bed = maxf(minf(bed, heights[index] - guide_depth), mouth)
-		_stamp(carved, ocean, index, guide_width, guide_depth, bed, slope, 0.0, unused, false)
-
-	heights = carved
-	var extra_cells: float = float(river_rules["source_flow_km2"]) * 1.0e6 / (spacing_m * spacing_m)
-	return {source: extra_cells}
-
-
-# Chaikin smoothing, then dense 1-sample points with a small meander on
-# flat ground.
-func _smooth_path(coarse_path: PackedVector2Array, river_rules: Dictionary) -> PackedVector2Array:
-	var smooth: PackedVector2Array = coarse_path
-
-	for _round in range(3):
-		var refined: PackedVector2Array = PackedVector2Array()
-		refined.append(smooth[0])
-
-		for k in range(smooth.size() - 1):
-			refined.append(smooth[k] * 0.75 + smooth[k + 1] * 0.25)
-			refined.append(smooth[k] * 0.25 + smooth[k + 1] * 0.75)
-
-		refined.append(smooth[smooth.size() - 1])
-		smooth = refined
-
-	var dense: PackedVector2Array = PackedVector2Array()
-	var travelled: float = 0.0
-	var meander: float = float(river_rules["meander_m"]) / spacing_m
-	var wavelength: float = float(river_rules["meander_wavelength_m"]) / spacing_m
-
-	for k in range(smooth.size() - 1):
-		var from: Vector2 = smooth[k]
-		var to: Vector2 = smooth[k + 1]
-		var length: float = from.distance_to(to)
-		var steps: int = maxi(int(ceil(length)), 1)
-		var side: Vector2 = Vector2(-(to - from).y, (to - from).x).normalized()
-
-		for i in range(steps):
-			var point: Vector2 = from.lerp(to, float(i) / float(steps))
-			var column: int = clampi(int(round(point.x)), 0, samples - 1)
-			var row: int = clampi(int(round(point.y)), 0, samples - 1)
-			var flat: float = 1.0 - smoothstep(10.0, 60.0, heights[row * samples + column])
-			dense.append(point + side * meander * flat * sin(travelled / wavelength * TAU))
-			travelled += length / float(steps)
-
-	dense.append(smooth[smooth.size() - 1])
-	return dense
-
-
-static func _heap_push(keys: PackedFloat32Array, nodes: PackedInt32Array, key: float, node: int) -> void:
-	keys.append(key)
-	nodes.append(node)
-	var child: int = keys.size() - 1
-
-	while child > 0:
-		@warning_ignore("integer_division")
-		var parent: int = (child - 1) / 2
-
-		if keys[parent] <= keys[child]:
-			break
-
-		var key_swap: float = keys[parent]
-		keys[parent] = keys[child]
-		keys[child] = key_swap
-		var node_swap: int = nodes[parent]
-		nodes[parent] = nodes[child]
-		nodes[child] = node_swap
-		child = parent
-
-
-static func _heap_pop(keys: PackedFloat32Array, nodes: PackedInt32Array) -> Vector2:
-	var top: Vector2 = Vector2(keys[0], float(nodes[0]))
-	var last: int = keys.size() - 1
-	keys[0] = keys[last]
-	nodes[0] = nodes[last]
-	keys.resize(last)
-	nodes.resize(last)
-	var parent: int = 0
-
-	while true:
-		var left: int = parent * 2 + 1
-		var right: int = left + 1
-		var smallest: int = parent
-
-		if left < last and keys[left] < keys[smallest]:
-			smallest = left
-
-		if right < last and keys[right] < keys[smallest]:
-			smallest = right
-
-		if smallest == parent:
-			break
-
-		var key_swap: float = keys[parent]
-		keys[parent] = keys[smallest]
-		keys[smallest] = key_swap
-		var node_swap: int = nodes[parent]
-		nodes[parent] = nodes[smallest]
-		nodes[smallest] = node_swap
-		parent = smallest
-
-	return top

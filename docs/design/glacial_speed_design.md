@@ -39,17 +39,58 @@ Cuts A1 and A2 keep every number. The check for both: Dino runs glacial on ws580
 | cut | changes the result? | saving (estimate from the measured times) |
 |---|---|---|
 | A1. `rock_ids`, and the cover lookups `fn` and `parts`, on nine threads (`prange`; each cell is its own sum). Evolve (B1) uses them too and gains as well | no: the same per-cell arithmetic in a different order of cells | `rock_ids` 0.95 s to about 0.12 s on all 650 steps (about 540 s), `fn` and `parts` about 0.27 s a step (about 175 s): about 12 min |
-| A2. The numpy sums of a cold step on nine threads in one numba kernel. `Aeff ** m` and `Qwi ** m` are each computed twice today (for `kq` and for `kq_c`), and once is enough | no for the shared powers. Numba's and numpy's `pow` may differ in the last bit, which the check would show | that part's share of the 3.06 s × about 8/9. It is sized by the split profile below |
+| A2. The numpy lines of a cold step in five numba kernels on nine threads, over every cell, in numpy's order of operations (`fastmath` off). The powers stay numpy's `**`, taken only on the cells that keep them (the swath: the old `np.where` threw them away elsewhere), and `Aeff ** m`, `Qwi ** m` once each instead of twice. The step's constant arrays are made once a run | no: the same arithmetic cell by cell, and the same `**` | measured: the numpy lines were 1.15 s of a 5.4 s cold step (split profile), estimated at about 8.5 min over 512 cold steps; the full run measured 402 s (6.7 min) less than A1 |
 | B. 4,000-year cold steps in the 41-kyr cycles (the audit's cut b) | yes | about 25% of what is left (156 fewer steps). It needs a probe judged by `compare_runs.py`, the stable lakes and rivers included, and runs only if A1 and A2 leave glacial over about 25 min |
 
-**Next measurement (Dino, about 2 min; `water/glacial_split_profile_job.md`):** the same cycle, with each numba kernel wrapped in a plain Python function so the profile lists it on its own (`water/glacial_split_profile.py`; the arithmetic is unchanged). It splits the 3.06 s into the in-order kernels and the numpy sums. It also shows whether one in-order kernel (most likely `_solve`) is the big one; that would get its own note.
+**The split profile (Dino, 9 Nov, main 8545d12f; `glacial_split_profile_ws580v.txt`).** Each cold step of 5.4 s: `_solve` 1.49 s, the numpy lines 1.15 s, the rock lookups 1.24 s (A1), the route 0.83 s (`_ltd_receivers` 0.47 s, `lem.route` 0.36 s), the other kernels and creep about 0.7 s. `_solve` runs in every step, cold and river, so it is about 16 min of the 61; whether it gets a cut of its own (A3, before B) waits on `water/glacial_solve_split_job.md` (how much of it is the slope ceiling). The compression (zlib) is the output saves, once a run, not once a step.
 
-**A1 can be coded now.** It is sized by measured calls, and the check needs no other cut.
+**Measured (Dino, 9 Nov, ws580v's inputs and params, nine threads). Every array of `glacial.npz` and the seven cycle snapshots is equal to ws580v's:**
 
-**What it could give (estimate):** glacial from 61 min to about 49 min with A1. A2 is sized after the split profile. A chain that sets `NUMBA_NUM_THREADS=9` for glacial too (Dave's nine-thread rule; today only evolve sets it) runs A1 and A2 on the nine threads.
+| | one cycle | full glacial (history done) | against before |
+|---|---|---|---|
+| before (ws580v) | 55 s (profiled) | 3,664 s, 61 min 4 s | |
+| A1 (#840, 2d0b2bd7) | 47 s | 2,889 s, 48 min 9 s (wall 48 min 49 s) | 775 s less (21%) |
+| A2 (#845, 6d5f2a1a) | 42 s | 2,487 s, 41 min 27 s (wall 42 min 7 s) | 402 s less than A1; 1,177 s less than before (32%) |
+| A3 (#853, a722c016) | 43 s, of which about 8 s compiling (both changed files recompile on a first run); about 32.7 s a cycle warm, against A2's 38 s | 2,076 s, 34 min 36 s (wall 35 min 16 s) | 411 s less than A2; 1,588 s less than before (43%) |
+
+**Where that leaves it.** Glacial has gone from 61 min to 34 min 36 s, measured. Nine tiles end to end are about 20 to 24 min plus glacial, so about 55 to 59 min with A3 (estimate). B is still needed for Dave's rule (d). Every stage of the chain now runs with `NUMBA_NUM_THREADS=9` (#840).
 
 ## What stays
 
 - The 16 m grid, the 49 cycles and the physics.
 - The outputs, on the same window grid, so lakes.py, groundwater.py, network.py and record.py read what they read today.
 - No runs in the cloud. The profile, the comparisons and any probe run on Dave's PC.
+
+## Cut A3: the implicit solve (sized from the solve split; coordinator approved 9 Nov)
+
+**Measured (Dino, 9 Nov, #840 2d0b2bd7, one cycle; `glacial_solve_split_ws580v.txt`).** `evolve._solve` takes 1.44 to 1.59 s a call, 15.06 s for 10. Its slope ceiling (`_slope_ceiling`, raster sweeps in 6 to 8 passes) is 0.57 to 0.73 s of that, 6.37 s in all (42%). The rest (58%) is the solve's sweeps, up to 4, with their sediment bookkeeping. `_solve` runs in all 650 steps (cold and river) and in evolve (B1).
+
+**Three parts. All of them are exact: every cell's arithmetic stays as it is, and so does the order of the cells within each river tree.**
+- **A3a. The sweeps run on nine threads, one river basin at a time.**
+  - In a sweep, a cell reads only its own values, its receiver's new height and the sediment from upstream of it. The sediment sum adds only within its own tree. So two basins never read or write each other's cells.
+  - Each basin is the tree that drains to one outlet, the first cell whose receiver is the sea or none. Its cells keep their relative order from the route's `order`. So each sum adds the same numbers in the same order, and every height comes out bit for bit as before.
+  - Each step, the basins are packed into nine buckets, largest first, each into the lightest bucket (ties by cell index). Each thread runs one bucket. The result does not depend on the scheduling, or on how many threads there are.
+  - The largest bucket sets the speedup. Glacial logs its share of the land once a run (`solve buckets:`).
+  - If a receiver ever came after its donor in `order`, or lay off it, the step runs in one thread as before. The route never makes such a receiver, but the check keeps the cut exact if one appears.
+- **A3b. The sediment bookkeeping is done on land cells only.**
+  - Each sweep made three passes over all 8.3 M cells: new zeros, a copy and the upstream loop. 83% of those cells are sea, where every value stays 0.
+  - The arrays are now made once a call. Each bucket writes only its own cells.
+- **A3c. The slope ceiling loops over a land index in the same raster order.**
+  - It loops over the cells it does not skip (not sea, threshold above 0), forwards and then backwards, as before. Before, it looked at all 8.3 M cells in every sweep of every pass.
+  - Its passes stay one thread. A different sweep order could settle on a different set of sources, so that would not be exact.
+
+**Measured (Dino, 9 Nov, a722c016):** the full glacial took 2,076 s, 411 s less than A2's 2,487 s. All 8 files are array-equal to ws580v's. The run logged `solve buckets: 9 threads, the largest bucket 11.1% of the land cells, the largest basin 1.8% (21269 basins)`, so the buckets are even. One evolve (B1) run on ws580v's inputs and params gave all 7 ground files (the final ground and its snapshots) array-equal to ws580v's, in 14 min 27 s wall against ws580v's own 1,208 s (20 min 8 s): about 28% faster, A1's threaded rock lookups and A3 together, since ws580v ran before both. The one-cycle check took 43 s against A2's 42 s. That is compile time, not the cut: step 0 came at 17 s against 9 s, and the five warm steps after it took 14 s against 18 s.
+
+**Estimate (before the run).** About 1.5 s down to about 0.85 s a call:
+- A3a: the sweeps' 0.7 s falls to about 0.2 s, if no bucket holds more than a quarter of the land;
+- A3b: about −0.15 s;
+- A3c: about −0.05 s.
+
+That is about 0.65 s × 650 calls, about 7 min a glacial. Evolve gains too.
+
+**The check.** David4 runs `tools/watershed/test_evolve.py` (new: the new `_solve` and `_slope_ceiling` against verbatim copies of the old ones, on routed random islands with cover, ice lift, sea receivers and a forced one-thread case, at 1 and 9 threads), plus `test_glacial.py` and `test_rock.py`. Dino then runs three checks, and every array of every file must be equal:
+1. one cycle against the profile's one cycle on main;
+2. the full glacial on ws580v against ws580v's own outputs;
+3. one evolve run against ws580v's evolve output.
+
+**After A3 (measured 34 min 36 s):** nine tiles take about 55 to 59 min (estimate). B (4,000-year cold steps, about 8 min less at A3's 3.2 s a step; estimate) is then still needed for Dave's rule (d). B changes the result, so its probe (`water/glacial_b_probe_job.md`) runs only after A3 is measured, and is judged by `compare_runs.py` against ws580v.
