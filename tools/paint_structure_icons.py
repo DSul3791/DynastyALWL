@@ -1143,7 +1143,6 @@ def lean_to():
 def snare_trap():
     """A snare: a bent sapling held by a trigger peg, a cord loop over the ground."""
     faces = box((0.0, 0.02, 0.0), (1.4, 0.04, 1.0), SOIL)
-    bend = 0.0
 
     for i in range(8):
         t = i / 7.0
@@ -1151,7 +1150,6 @@ def snare_trap():
         y = 0.04 + 1.3 * math.sin(t * math.pi * 0.5) * (1.0 - 0.35 * t)
         nxt = (-0.6 + (t + 1 / 7) * 1.0, 0.04 + 1.3 * math.sin((t + 1 / 7) * math.pi * 0.5) * (1.0 - 0.35 * (t + 1 / 7)))
         ang = math.atan2(nxt[1] - y, nxt[0] - x)
-        bend = ang
         faces += moved(box((0.0, 0.0, 0.0), (0.18, 0.05, 0.05), BARK), rot_z(ang), shift=(x, y, -0.3))
 
     faces += box((0.4, 0.15, -0.3), (0.05, 0.3, 0.05), PLANK)
