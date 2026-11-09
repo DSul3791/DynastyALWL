@@ -41,8 +41,9 @@ var _landed: bool = false          # the camera stands where the shot wants it (
 var _land_failed: bool = false
 var force_land_fail: bool = false  # --shot-force-land-fail: the wanted height is 50 m off what the body is given, so the landing check must report FAILED (a test of the check)
 var _want_y: float = 0.0
-var _placed_ground: float = NAN     # the ground reading the shot was placed on (relative heights only); re-read once after the settle
-var _ground_rechecked: bool = false
+var _placed_ground: float = NAN     # the ground reading the shot was placed on (relative heights only); re-read after each settle
+var _ground_rechecks: int = 0       # how many times this shot was placed again on a newer ground reading (at most RECHECK_MAX)
+var _ground_steady: bool = false    # the last re-read agreed with the one the shot stands on: no more re-reads for this shot
 var _placed_msec: int = 0
 var _ground_wait_msec: int = 0
 var _moved_msec: int = 0
@@ -459,13 +460,15 @@ func _process(delta: float) -> void:
 
 	# The ground under a shot is read once, when it is placed, and that reading can come from blocks still loading: on a steep face (the #802 spring
 	# at x 54048 z 71413, ground 336.4 on the tile) it gave 383, so the camera stood 48 m up. After the settle the blocks are in: read it again, and
-	# when it moved more than RECHECK_M, place the shot again on the new reading and wait out the landing and settle once more (once per shot).
-	if not _ground_rechecked and not _land_failed and not force_land_fail and not is_nan(_placed_ground):
-		_ground_rechecked = true
+	# when it moved more than RECHECK_M, place the shot again on the new reading and wait out the landing and settle once more.
+	# The reading can step more than once (Dino 9 Nov at that spot: 383, then 343 after the first settle, 335 at the save), so this repeats until
+	# two readings a settle apart agree, at most RECHECK_MAX times.
+	if not _ground_steady and not _land_failed and not force_land_fail and not is_nan(_placed_ground):
 		var settled: float = _ground(shot_pos.x, shot_pos.z)
 
-		if not is_nan(settled) and absf(settled - _placed_ground) > RECHECK_M:
-			print("shot runner: ground under %s moved from %.1f to %.1f after the settle; placing it again" % [shots[_index]["name"], _placed_ground, settled])
+		if not is_nan(settled) and absf(settled - _placed_ground) > RECHECK_M and _ground_rechecks < RECHECK_MAX:
+			_ground_rechecks += 1
+			print("shot runner: ground under %s moved from %.1f to %.1f after the settle; placing it again (%d of at most %d)" % [shots[_index]["name"], _placed_ground, settled, _ground_rechecks, RECHECK_MAX])
 			_placed_ground = settled
 			_want_y = settled + shot_pos.y
 			client.body.global_position = Vector3(shot_pos.x, _want_y, shot_pos.z)
@@ -474,6 +477,8 @@ func _process(delta: float) -> void:
 			_placed_msec = now
 			_moved_msec = now
 			return
+
+		_ground_steady = true
 
 	if dig_steps > 0 and now - client.connected_msec > 12000:
 		if _dig_i < dig_steps:
@@ -1802,6 +1807,7 @@ func _ground(x: float, z: float, from_y: float = 1500.0) -> float:
 
 const GUARD_ABOVE_M := 1.0
 const RECHECK_M := 1.0   # a shot's ground reading that moves more than this after the settle places the shot again
+const RECHECK_MAX := 4   # at most this many re-placements per shot: the reading can step down more than once as finer blocks load (383, 343, 335)
 
 
 # True when the voxel at p is solid (SDF below zero): the camera is inside the ground.
@@ -1874,7 +1880,8 @@ func _next(now: int) -> void:
 	_placed = false
 	_landed = false
 	_land_failed = false
-	_ground_rechecked = false
+	_ground_rechecks = 0
+	_ground_steady = false
 	_placed_ground = NAN
 	_ground_wait_msec = now
 	client.body.global_position = Vector3(shot["pos"].x, 400.0, shot["pos"].z)
