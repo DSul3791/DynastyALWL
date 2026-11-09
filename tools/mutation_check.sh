@@ -4,7 +4,7 @@
 # Makes a detached git worktree of HEAD next to the repo (never touches this checkout), imports once, replaces <from> with <to> in <file>
 # (stops if <from> is not found exactly once), runs the small tests (fast) and the big tests (slow limit) with tools/run_tests.sh, writes
 # one line per test ("name FAIL|PASS seconds") to $MUT_OUT/<name>.txt (default ./mutation_results), then removes the worktree.
-# Test names are src/worldgen/tools/<name>.gd without .gd. Needs Git bash and the godot shim (tools/godot).
+# Test names are test files in src/worldgen/tools or src/water2 without .gd. Needs Git bash and the godot shim (tools/godot).
 NAME="$1"; FILE="$2"; FROM="$3"; TO="$4"; SMALL="$5"; BIG="$6"
 [ -z "$NAME" ] || [ -z "$BIG$SMALL" ] && { echo "usage: mutation_check.sh <name> <file> <from> <to> \"<small tests>\" \"<big tests>\""; exit 2; }
 cd "$(dirname "$0")/.." || exit 2

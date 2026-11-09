@@ -1,7 +1,7 @@
 #!/bin/bash
 # One local gate on Dave's PC, prints only pass/fail and the failing lines (BP-C83, rv-local-first).
 #   tools/local_check.sh                  addons load, item validator, warnings against tools/warning_baseline.txt
-#   tools/local_check.sh test_a test_b    also runs src/worldgen/tools/test_a.gd, test_b.gd (name without .gd)
+#   tools/local_check.sh test_a test_b    also runs test_a.gd, test_b.gd from src/worldgen/tools or src/water2 (name without .gd)
 #   CHANGE_LABEL=RUNTIME tools/local_check.sh   fails if the changes touch heavier paths than the label (BP-T31 secret-bake guard)
 #   (bake changes also print the island check table's FAIL lines; ISLAND_GATE=1 makes them block)
 #   tools/local_check.sh --update-baseline   rewrite tools/warning_baseline.txt from the current warnings (Technical Director only)
@@ -60,7 +60,8 @@ if [ -z "$NEW" ]; then pass "no new warnings against baseline ($(awk '{s+=$1} EN
 rm -f "$CUR"
 
 for t in "$@"; do
-	R=$(timeout 900 godot --headless --path . --script "res://src/worldgen/tools/$t.gd" 2>&1); RC=$?
+	S="src/worldgen/tools/$t.gd"; [ -f "$S" ] || S="src/water2/$t.gd"   # the test folders (tools/tests_for_diff.py TEST_DIRS)
+	R=$(timeout 900 godot --headless --path . --script "res://$S" 2>&1); RC=$?
 	if [ $RC -eq 0 ] && ! echo "$R" | grep -qiE "[1-9][0-9]* fail|^FAIL"; then pass "$t"; else fail "$t (exit $RC)"; echo "$R" | grep -iE "fail" | head -8; fi
 done
 [ $FAIL -eq 0 ] && echo "LOCAL CHECK: PASS" || echo "LOCAL CHECK: FAIL"
