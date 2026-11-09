@@ -1,14 +1,16 @@
 # Inventory and crafting redesign (9 Nov 2026)
 
-Owner: Kathleen (art direction). Asked for by Dave, 9 Nov 2026 03:49 UTC: *"Keep it simple, keep it eloquent and keep it useful … make sure its not crowded and make sure it is easy to use for a human. Also make sure it uses the space on the screen and keeps things big enough to see. Make it better than those games."* References he gave: ARK Survival inventory, Dragonwilds inventory and crafting table, Valheim crafting.
+Owner: Kathleen (art direction). Asked for by Dave, 9 Nov 2026 03:49 UTC: *"Keep it simple, keep it eloquent and keep it useful … make sure its not crowded and make sure it is easy to use for a human. Also make sure it uses the space on the screen and keeps things big enough to see. Make it better than those games."* References he gave: ARK Survival inventory, Dragonwilds inventory and crafting table, Valheim crafting. After the first mockup he asked (04:09 UTC) what it takes to look like a top studio built it. Version 2 is the answer: the same layout, with a production finish (three depth levels, a leather and brass frame, a warm palette, engraved glyphs, letter-spaced titles and a set of motion rules).
 
 Status: **design for Dave's look. No code until the coordinator says go.** #780 (inventory fit) stays as it is until this replaces it.
 
-Mockup: `inventory_redesign_1920.png` (shared files, top level), drawn at 1920 x 1080 by `docs/ui/mockup/inventory_redesign_mockup.py` from the same numbers as this doc. Run it with `--all` to get the chest view and a copy with every box outlined and measured.
+Mockup: `inventory_redesign_1920_v2.png` (shared files, top level), drawn at 1920 x 1080 by `docs/ui/mockup/inventory_redesign_mockup.py` from the same numbers as this doc. The script draws at 3840 x 2160 and scales down so edges are smooth; `--measured` adds a copy with every box outlined. The first version, `inventory_redesign_1920.png`, is kept for comparison.
 
 ```
-python3 docs/ui/mockup/inventory_redesign_mockup.py --out OUT --icons item_icon_sheet.png [--all]
+python3 docs/ui/mockup/inventory_redesign_mockup.py --out OUT --icons item_icon_sheet.png [--measured]
 ```
+
+The figure in the middle column is a painted stand-in for the live 3D character, and the item icons are the 9 Nov bake, standing in until the painted icons exist. Every other pixel is meant as the finished look.
 
 ---
 
@@ -42,64 +44,64 @@ Performance on weak machines is a separate job: a world render scale option for 
 
 | Part | x | y | w | h | Notes |
 |---|---|---|---|---|---|
-| Outer margin | | | | | 32 all round |
-| Gutter between columns | | | | | 24 |
-| **Pack** panel | 32 | 32 | 680 | 1016 | |
-| **You** panel | 736 | 32 | 448 | 1016 | |
-| **Craft / Chest** panel | 1208 | 32 | 680 | 1016 | |
-| Panel frame | | | | | 6 px carved edge + 4 px air = 10 px inside each panel edge |
+| Outer margin | | | | | 24 all round |
+| Gutter between columns | | | | | 22 |
+| **Pack** panel | 24 | 24 | 690 | 1032 | |
+| **You** panel | 736 | 24 | 448 | 1032 | |
+| **Craft / Chest** panel | 1206 | 24 | 690 | 1032 | |
+| Panel frame | | | | | A 14 px leather edge, then 6 px of air, so the inside starts 20 px in |
 
-The coordinator's spec put the pack grid at 680. The panel is 680 at its outside edge, so the grid inside the frame is **660**: 6 slots x 100 + 5 gaps x 12. The slots stay 100 px; only the gap is 12 instead of 16.
+690 + 448 + 690 + 2 x 22 + 2 x 24 = 1920. Inside the 14 px frame the pack grid is 650: 6 slots of 100 and 5 gaps of 10. The slots stay 100 px.
 
-### 4.1 Pack (inside x 42 to 702)
-
-| Part | x | y | w | h | Detail |
-|---|---|---|---|---|---|
-| Title row | 42 | 42 | 660 | 48 | "Pack", Cinzel Bold 30, starts at x 72 to clear the corner cap |
-| Search field | 414 | 48 | 240 | 36 | "Search the pack", filters the grid as you type |
-| Sort button | 666 | 48 | 36 | 36 | Cycles the 6 sorts already in Settings (name, weight up and down, value up and down, unsorted) |
-| Weight line | 42 | 96 | 660 | 24 | "Carrying 38.4 of 52 kg" (EB Garamond 18) and a 6 px gold bar from x 252 |
-| **Hotbar row** | 45 | 134 | 654 | 60 | **10 slots of 60 with 6 px gaps** (keys 1 to 9 and 0), on a tray with a 1 px gold rim |
-| **Pack grid** | 42 | 214 | 660 | 548 | 6 x 5 slots of 100, 12 px gaps (30 slots) |
-| Info strip | 42 | 782 | 660 | 200 | A 100 px slot with the item, the name (Cinzel Bold 30), two lines of description (EB Garamond 20) and one line of facts (18) |
-| Action buttons | 42 | 990 | 660 | 48 | Use (E), Drop (D), Split (S), Repair (R): four buttons of 156 with 12 gaps; a button that does not apply is greyed, never hidden |
-
-**Hotbar: 10 keys, not 8.** The game has 10 hotbar keys (`inventory.gd` `HOTBAR_KEYS`), so 8 slots of 76 would leave keys 9 and 0 nowhere. 10 slots of 60 fill the same width. The key number is Cinzel Bold 18 in the top left corner.
-
-**Slot contents:** the icon at 80 % of the slot (80 px in a 100 px slot), the stack count at the bottom right in EB Garamond SemiBold 24 with a 2 px black outline, and the durability bar 4 px tall along the bottom, 7 px in from each side (green over 60 %, gold over 30 %, red below).
-
-### 4.2 You (inside x 746 to 1174)
+### 4.1 Pack (inside x 44 to 694)
 
 | Part | x | y | w | h | Detail |
 |---|---|---|---|---|---|
-| Title row | 746 | 42 | 428 | 48 | The character's name, Cinzel Bold 30, centred |
-| Gear, left | 746 | 98 | 100 | 500 | Head, Body, Legs, Feet: 4 slots of 100, 33 px apart |
-| Figure | 858 | 98 | 204 | 500 | The character, live (the SubViewport already in the character screen), turning slowly; drag to turn |
-| Gear, right | 1074 | 98 | 100 | 500 | Hands, Back, Right hand, Left hand |
-| Stats | 746 | 630 | 428 | 278 | Six rows, 48 apart: a 24 px coloured orb, the name (20), a 10 px bar, the value right-aligned (20) |
+| Title plate | 72 | 30 | text + 60 | 46 | A brass plate sitting on the top frame, "PACK" engraved (section 6.3) |
+| Search field | 414 | 48 | 232 | 36 | "Search the pack", filters the grid as you type |
+| Sort button | 656 | 48 | 38 | 36 | Cycles the 6 sorts already in Settings |
+| Weight line | 44 | 98 | 650 | 24 | "Carrying" (dim) "38.4 of 52 kg" (cream), then an 8 px brass bar from x 244 |
+| **Hotbar row** | 47 | 136 | 645 | 60 | **10 slots of 60 with 5 px gaps** (keys 1 to 9 and 0), on a raised tray 6 px bigger all round |
+| **Pack grid** | 44 | 214 | 650 | 540 | 6 x 5 slots of 100, 10 px gaps (30 slots) |
+| Info strip | 44 | 784 | 650 | 200 | An ornament rule above it, then a 100 px slot with the item, its name (Cinzel Bold 30), two lines of description and one line of facts ("Holds" dim, "8 L" cream) |
+| Key hints | 44 | 1000 | 650 | 32 | The item's actions as plain text with keycaps: **E** Use, **D** Drop, **S** Split, **R** Repair. A hint that does not apply is greyed, never hidden. No boxed buttons |
 
-The 8 gear slots are the 6 wear slots in `items.json` (head, body, legs, feet, hands, back) plus the two hands. There is no belt slot in the game, so none is drawn. An empty gear slot shows its ghost glyph and its name in dim text.
+**Hotbar: 10 keys, not 8.** The game has 10 hotbar keys (`inventory.gd` `HOTBAR_KEYS`), so 8 slots of 76 would leave keys 9 and 0 nowhere. The key number is Cinzel Bold 18 in the top left corner with a 1 px dark outline.
 
-The six stats are the six bars Dave approved on 21 Oct (Health, Exertion, Energy, Warmth, Food, Water), in their existing colours. They are the only bars. Weight lives in the pack header, not here.
+**Slot contents:** the icon at 80 % (80 px in a 100 px slot) with a 2 px soft drop shadow; the stack count bottom right in EB Garamond SemiBold 24 with a 1 px #0A0604 outline; the durability bar 4 px tall, 7 px in from each side, 6 to 10 px above the bottom (the count moves up 6 px when a bar is shown).
 
-### 4.3 Craft (inside x 1218 to 1878)
+### 4.2 You (inside x 756 to 1164)
 
 | Part | x | y | w | h | Detail |
 |---|---|---|---|---|---|
-| Title row | 1218 | 42 | 660 | 48 | "Craft" (Cinzel Bold 30, from x 1248), station context on the right: "By hand" or "At: Campfire" (20) |
-| Category tabs | 1218 | 98 | 48 | 588 | 11 tabs of 48 x 48, 6 apart: All, then the 10 recipe categories. A glyph each; the name shows as a tooltip-free label in the search field's placeholder ("Search tools") |
-| Recipe search | 1274 | 98 | 196 | 36 | Filters the list |
-| Recipe list | 1274 | 142 | 196 | 896 | Rows of 44, 4 apart (18 rows show; the list scrolls). A 32 px icon, the name (18). Craftable rows have a 4 px gold mark on the left; rows you can't make yet are dimmed to 45 %; rows that need a station show its 22 px badge on the right |
-| Detail card | 1486 | 98 | 392 | 940 | Everything about the selected recipe |
-| · Icon | 1486 | 98 | 128 | 128 | The made item in a 128 px slot |
-| · Name and line | 1630 | 104 | 248 | 122 | Name Cinzel Bold 30; "Tools · by hand · 10 s" (18) |
-| · Description | 1486 | 242 | 392 | 64 | Two lines, EB Garamond 20 (from `items.json`) |
-| · Stats | 1486 | 316 | 392 | 144 | Up to 6 lines of 26 (chop, dig, warmth, food, lasts, mends with) |
-| · Needs | 1486 | 476 | 392 | 164 | Heading "Needs" (Cinzel 22) and a rule; requirement tiles of 80, 12 apart (4 fit a row), each with the item name (18) and **have / need** (18; red only when short). A small chest mark on a tile whose stock is coming from a nearby chest |
-| · Quantity | 1486 | 664 | 392 | 48 | "Make", −, the number, +, "Most" |
-| · Shortfall line | 1486 | 724 | 392 | 24 | Red, only when something is short, saying what will happen ("Short 1 twine: Craft makes it first from fibre.") |
-| · Queue | 1486 | 896 | 392 | 60 | "Making" and up to 5 queued items as 60 px slots; click one to cancel it |
-| · Craft button | 1486 | 974 | 392 | 64 | Cinzel Bold 26, the accent button; press, or hold for the hold ring (40 px ring, 5 px stroke) to make "Most" |
+| Name plate | centred on 960 | 30 | text + 60 | 46 | The character's first name engraved; the rest ("of the Ford") under it in dim 18 |
+| Gear, left | 756 | 110 | 96 | 534 | Head, Body, Legs, Feet: 4 slots of 96, evenly spaced |
+| Figure | 862 | 100 | 196 | 550 | The live 3D character, slightly larger than the slots' column; see 6.6 |
+| Gear, right | 1068 | 110 | 96 | 534 | Hands, Back, Right hand, Left hand |
+| Stats | 756 | 690 | 408 | 312 | An ornament rule above, then six rows 52 apart: a 26 px engraved glyph, the name (18), a 10 px bar from x 888 to 1076, the value right-aligned (SemiBold 18, outlined) |
+
+The 8 gear slots are the 6 wear slots in `items.json` (head, body, legs, feet, hands, back) plus the two hands. There is no belt slot in the game, so none is drawn. An empty gear slot shows an engraved silhouette of what goes there (helmet, tunic, trousers, boot, glove, pack, a hand axe, a shield) and no word.
+
+The six stats are the six bars Dave approved on 21 Oct (Health, Exertion, Energy, Warmth, Food, Water). They are the only bars. Weight lives in the pack header, not here.
+
+### 4.3 Craft (inside x 1226 to 1876)
+
+| Part | x | y | w | h | Detail |
+|---|---|---|---|---|---|
+| Title plate | 1254 | 30 | text + 60 | 46 | "CRAFT" engraved; station context on the right of the title row: "By hand" or "At: Campfire" (SemiBold 18) |
+| Category tabs | 1226 | 100 | 48 | 588 | 11 raised tabs of 48 x 48, 6 apart, each an engraved 28 px glyph: All, then the 10 recipe categories. The selected tab is lit with a bright rim and a gold glyph |
+| Recipe search | 1282 | 100 | 196 | 36 | Filters the list; the placeholder names the tab ("Search tools") |
+| Recipe list | 1282 | 146 | 196 | 890 | Rows of 44, 3 apart, with a faint rule between rows. A 32 px icon and the name (18). Rows you can't make yet are dimmed to 45 %. A recipe that needs a station is 64 tall and has a second grey line: the station's 20 px glyph and "needs Forge". The selected row is lit, its name SemiBold gold, with a 4 px brass bar on its left edge |
+| **Recipe card** | 1490 | 100 | 386 | 936 | A raised card, one step lighter than the panel, with a 1 px top highlight and a 6 px soft shadow |
+| · Icon | 1504 | 114 | 112 | 112 | The made item in a well with the soft gold inner glow |
+| · Name | 1630 | 118 | 234 | 108 | Name Cinzel Bold 30; "Tools" and "By hand · 10 s" in dim 18 |
+| · Description | 1504 | 244 | 360 | 48 | Two lines, 18 (from `items.json`) |
+| · Stats | 1504 | 306 | 360 | 104 | Up to 6 lines of 26: label dim on the left, value cream on the right, a faint leader line between |
+| · Needs | 1504 | 430 | 360 | 170 | "Needs" (Cinzel 22, small caps) and a gold rule; requirement wells of 80, 16 apart (4 fit); the item name under each (18) and **have / need** (SemiBold 18, outlined; red only when short). A 22 px engraved chest glyph in the top right of a well whose stock comes from a nearby chest. An item with no icon yet shows the missing-icon tile (art brief row 27) |
+| · Quantity | 1504 | 618 | 360 | 44 | "Make", −, the number in a well, +, "Most" |
+| · Shortfall line | 1504 | 676 | 360 | 24 | Red, only when something is short, saying what will happen |
+| · Queue | 1504 | 876 | 360 | 56 | An ornament rule above; "Making" and up to 5 queued items as 56 px wells; the first has a 3 px gold progress arc. Click one to cancel it |
+| · Craft button | 1504 | 958 | 360 | 64 | Cast brass with "CRAFT" engraved (Cinzel Bold 26, letter-spaced 4) and a faint warm glow round it when you can make the item; hold for the ring (left end) to make "Most" |
 
 The 10 categories are the ones in `recipes.json`: Tools, Weapons, Shelter and building, Workshops and stations, Fire and cooking, Food and drink, Medicine, Clothing, Containers and furniture, Materials.
 
@@ -107,77 +109,127 @@ The 10 categories are the ones in `recipes.json`: Tools, Weapons, Shelter and bu
 
 | Part | x | y | w | h | Detail |
 |---|---|---|---|---|---|
-| Title row | 1218 | 42 | 660 | 48 | The container's name; on the right two tabs of 118 x 36: **Chest** and **Craft** (Craft still works with the chest open) |
-| Bar | 1218 | 98 | 660 | 48 | "Keep out of crafting" tick box, **Take all** and **Store all** (150 x 48 each) |
-| Chest grid | 1218 | 158 | 660 | 548 | The same 100 px slots, 6 across, 12 gaps; it scrolls for big containers |
-| Tools | 1218 | 722 | 660 | 48 | **Sort both**, **Stack into my chests** |
+| Title plate | 1254 | 30 | text + 60 | 46 | The container's name engraved; on the right two raised tabs of 118 x 36: **Chest** and **Craft** (Craft still works with the chest open) |
+| Bar | 1226 | 100 | 650 | 44 | "Keep out of crafting" tick box; **Take all** and **Store all** as key hints (keys proposed: **T** and **G**, changeable in Key bindings) |
+| Chest grid | 1226 | 158 | 650 | 540 | The same 100 px wells, 6 across, 10 gaps; it scrolls for big containers |
+| Tools | 1226 | 716 | 650 | 32 | Key hints: **F** Sort both, **Q** Stack into my chests (proposed keys) |
 
 Shift-click or drag moves a stack between the pack and the chest. Ctrl-click moves one.
 
 ## 5. Interaction
 
 - **Open and close:** the inventory key opens the window on Craft; Esc or the same key closes it. Opening a chest opens it in chest mode.
-- **While the window is open** the in-world HUD (hotbar strip, compass, debug text) is hidden, because the hotbar is in the window.
-- **Point** at a slot: it lifts (amber glow, 2 px bright rim) and the info strip shows it. Nothing floats.
+- **While the window is open** the in-world HUD (hotbar strip, compass, debug text) is hidden, because the hotbar is in the window. The world behind is darkened by the backdrop (6.1).
+- **Point** at a slot: it brightens and glows (6.5), and the info strip shows it. Nothing floats over the grid.
 - **Click** selects; **drag** moves; **shift-click** sends to the other side (chest, or pack to hotbar); **right-click** splits half; **a number key while pointing** puts that item on that hotbar key.
 - **Search** filters live, and Esc clears the search before it closes the window.
-- **Craft:** pick a tab, pick a row, check the needs, press Craft. Items are taken from the pack, then loose stacks within 3 m, then your own containers within 12 m (that is how it already works; the chest mark shows it).
+- **Craft:** pick a tab, pick a row, check the needs, press Craft. Items are taken from the pack, then loose stacks within 3 m, then your own containers within 12 m (that is how it already works; the chest glyph shows it).
 - **Text size** (Settings) scales the body text only (18 to 24); slots, tiles and buttons keep their size, so the layout never breaks.
-- **Reduce motion** (Settings) makes the glow, lifts and fly-to-slot instant, as now.
+- **Reduce motion** (Settings) makes every motion in 6.5 instant, as now.
 
 ## 6. The look
 
-### 6.1 Material
+### 6.1 Three depth levels
 
-One frame material everywhere: **carved dark walnut with a thin gold inlay line and brass corner caps**, on a solid dark field. No parchment panels, no second frame style. Parchment is kept for written things in the world (notes, books), not for the inventory.
+Everything sits on one of three levels, and each level is one step lighter than the one below. This is what makes a screen read as built rather than drawn.
 
-### 6.2 Colours (hex)
+| Level | What | Colour | Finish |
+|---|---|---|---|
+| 1. Backdrop (darkest) | Behind the panels: the world, darkened | #17150F at 85 % over the world | A soft vignette (edges down to 45 %) and a faint leather grain (±5 levels) |
+| 2. Panel field | The inside of each panel | #231A12 | Faint parchment: soft blotches (±4) and horizontal fibres (±5). A 10 px shadow inside its top edge, where it sits under the leather |
+| 3. Raised | Buttons, tabs, keycaps, the hotbar tray, the recipe card, the selected row | #302419 (lit: #402F1F) with a slight top-to-bottom gradient (+8 at the top) | A 1 px top highlight (#523E29; lit #6E5436), a 1 px dark rim (#140D08), a 6 px soft drop shadow (black 60 %, 3 px down) |
+| Recessed | Slots, fields, bars, the quantity number | #120C08 | An inner shadow 7 px down from the top (black 75 % to 0) and 4 px in from the left (50 % to 0); a 1 px light line along the bottom (#463626) and a fainter one on the right |
 
-| Use | Name | Hex |
-|---|---|---|
-| Panel field | WOOD_DARK | #1F130D |
-| Frame wood, buttons | WOOD | #402617 |
-| Frame highlight, selected tab and row, accent button | WOOD_LIT | #5C361C |
-| Pressed button | WOOD_PRESSED | #2B1A0F |
-| Slot well | SLOT_BG | #140D09 |
-| Slot inner shadow | | #0A0604 |
-| Slot lower lip | | #3A2416 |
-| Gold inlay, rims, rules | GOLD_DIM | #8C6933 |
-| Gold marks, weight bar | GOLD | #DBA84C |
-| Selected and hover rim | GOLD_BRIGHT | #FFD67A |
-| Hover glow | | #FFB34D at 47 % |
-| Hotbar tray | | #2A1A11 |
-| Figure backdrop | | #26180F |
-| **Text: body** | CREAM | #F5E6BD |
-| **Text: titles, names, key numbers** | HEADING | #F2C76B |
-| **Text: shortfall only** | BAD | #BF2E24 |
-| Disabled text (cream dimmed) | | #7A6E5C |
-| Durability good | GOOD | #6BA84C |
-| Bars | Health #D93333, Exertion #F2CC40, Energy #9973E6, Warmth #73CCF2, Food #E68C33, Water #4D99F2 | |
+The backdrop over the world is the one place anything shows through, and only in the margins round the panels. The panels themselves stay solid (Dave, 23 Oct).
 
-At most **three text colours**: cream, heading gold and red. Green is not used for "have enough"; enough is simply cream.
+### 6.2 The frame
+
+- **Aged leather edge, 14 px**, on all three panels: #3A2315 with a coarse grain (±14 levels), a 2 px dark outer line (#160C06), a 1 px light line just inside the top (#604028), and **stitching** 7 px in from the outside: 5 px stitches every 9 px in #B89A68, each with a 1 px dark shadow under it. Corners rounded 12. A 1 px gold line (#8C6933 at 60 %) where the leather meets the field.
+- **Cast brass corner pieces**, 46 x 46, over each corner, 4 px outside the panel: an L of two 15 px arms with a gusset and cut tips, a diagonal brass gradient (#F0CF82 top left to #7A5826 bottom right), a dark rim (#4A3416), a bright top-left edge, a few worn scuffs, and one rivet. A soft shadow under each.
+- **Brass title plate** behind each panel name, 46 tall, 30 px of brass each side of the title, sitting across the top frame (y 30 to 76): a vertical brass gradient, a bright top line, a dark bottom line, a rivet at each end, and the title engraved into it.
+- **Ornament rules** divide sections: a 1 px gold line (#8C6933 at 67 %) with a small open diamond in the middle.
 
 ### 6.3 Type (nothing under 18 px)
 
-| Role | Font | px |
+| Role | Font | px | Colour | Notes |
+|---|---|---|---|---|
+| Panel titles | Cinzel Bold | 34 | #2B1B0B engraved on brass | Letter-spaced 3 px; a 1 px light line under each letter (#FAE2A0 at 60 %) so it reads as cut into the plate |
+| Item names | Cinzel Bold | 30 | #F2C76B | |
+| Craft button | Cinzel Bold | 26 | #2B1B0B engraved | Letter-spaced 4 px |
+| Section heads ("Needs") | Cinzel Regular | 22 | #F2C76B | Small caps (Cinzel's lower case is small caps) |
+| Body, descriptions, rows, labels | EB Garamond Regular | 18 | #F5E6BD | |
+| Secondary (labels, "needs Forge", "Tools") | EB Garamond Regular | 18 | #8A7E68 | |
+| Values, have / need, weight | EB Garamond SemiBold | 18 | #F5E6BD | 1 px #0A0604 outline |
+| Stack counts | EB Garamond SemiBold | 24 | #F5E6BD | 1 px #0A0604 outline |
+| Key numbers and keycaps | Cinzel Bold | 18 | #F2C76B | 1 px outline on slots |
+
+**Every number has a 1 px dark outline (#0A0604)** so it reads over any icon. Text colours: cream for reading, gold for names and titles, dim for secondary, red only for a shortfall or a warning.
+
+### 6.4 Colours (hex)
+
+| Use | Hex |
+|---|---|
+| Backdrop | #17150F |
+| Panel field | #231A12 |
+| Raised / raised lit | #302419 / #402F1F |
+| Raised top highlight | #523E29 |
+| Recessed well / its bottom lip | #120C08 / #463626 |
+| Leather / its outer line / stitching | #3A2315 / #160C06 / #B89A68 |
+| Brass highlight / face / shade / dark | #F0CF82 / #C9A054 / #7A5826 / #4A3416 |
+| Gold line, rules | #8C6933 |
+| Selected and hover rim, glow | #FFD67A |
+| Hover glow round a slot | #FFB34D at 43 % |
+| Text: cream / gold / dim / disabled | #F5E6BD / #F2C76B / #8A7E68 / #6A6050 |
+| Engraved glyphs / empty-gear silhouettes | #C9A869 / #4A3C2E |
+| Engraved text on brass | #2B1B0B |
+| Red (shortfalls and warnings only) | #BF2E24 |
+| Number outline | #0A0604 |
+| Durability: good / worn / nearly broken | #8FA35A / #C9A054 / #BF2E24 |
+
+**The stat bars are all warm**, each only slightly different, and each with an engraved glyph rather than a coloured dot. The fill runs from 25 % lighter at the top to 20 % darker at the bottom, with a faint highlight along the top.
+
+| Stat | Glyph | Fill |
 |---|---|---|
-| Panel titles, item names | Cinzel Bold | 30 |
-| Craft button | Cinzel Bold | 26 |
-| Section heads ("Needs") | Cinzel Regular | 22 |
-| Body, descriptions, stats, button labels | EB Garamond Regular | 20 |
-| Small: facts, list rows, hints, have / need | EB Garamond Regular | 18 |
-| Stack counts | EB Garamond SemiBold, 2 px black outline | 24 (18 in slots under 80 px) |
-| Hotbar key numbers, "All" tab | Cinzel Bold | 18 |
+| Health | heart | #A8452F |
+| Exertion | lightning bolt | #C08F3E |
+| Energy | crescent moon | #9C7B52 |
+| Warmth | flame | #C86F35 |
+| Food | loaf | #A88A44 |
+| Water | drop | #6F8A86 (weathered pewter) |
 
-The fonts are already in `assets/ui/fonts`.
+No purple, cyan or bright yellow anywhere.
 
-### 6.4 Icon rules
+### 6.5 Motion and polish
 
-1. **Shown at 80 px** in pack and chest slots, 48 in hotbar slots, 32 in recipe rows, 64 in requirement tiles, 102 in the detail card. Rendered at 128 and scaled down.
-2. **Thin items lie on the diagonal,** bottom left to top right, filling the square corner to corner, with the head (axe blade, spear point) at the top right. Stroke at least 6 px wide at 128 so it is at least 2 px at 32.
-3. **Tell things apart by shape, not tint.** Each plank species gets its own end grain and bundle shape plus a tint. Spades differ in blade shape (round, square, pointed) and handle. Herbs differ by leaf shape. Seeds differ by seed shape and come in a small cloth pouch. Pies get a crust mark (a fish, a leaf, an apple cut).
-4. **The same light for all:** key light from the top left, a soft 2 px dark outline (#0A0604), no background, no cast shadow.
-5. **Painted, not rendered:** the 446 baked icons are the base; the painted pass adds hand-painted texture to match the look doc (section 6). **log, stick and stone have no icon yet** and are the most common items in the game; they come first.
+| What | Rule |
+|---|---|
+| Hover on a slot, row, tab or button | Brightens 0.1 s ease-out: the fill toward the lit colour, the rim to #FFD67A, and a 4 px warm glow (#FFB34D, 5 px blur) round a slot. 0.1 s back when the pointer leaves |
+| Selected slot | A soft gold inner glow: #FFD67A at 55 % on the rim fading to nothing 8 px in, plus a 1.5 px #FFD67A rim |
+| Press | Raised things drop 1 px and lose their shadow for the press (0.05 s) |
+| Hold ring on Craft | A smooth arc (no steps), 4 px, round caps, filling clockwise from the top over the hold time; it eases out on the last 10 % |
+| Craft ready glow | When you can make the selected recipe, a warm glow round the button (#FFC864 at 35 %, 10 px blur) breathes between 70 and 100 % every 2.4 s |
+| Item arriving | Flies to its slot in 0.18 s, the slot flashes gold once (0.25 s) |
+| Tab change | The list cross-fades in 0.12 s; no sliding |
+| Numbers | Counts and values change instantly (no rolling digits), always with the 1 px outline |
+| Sounds (Kathleen's sound list) | A soft leather tap on hover of a tab, a wooden click on press, a brass chime on craft done |
+
+### 6.6 The character
+
+The middle column shows the **live 3D character** (the SubViewport the character screen already has), framed a little larger than the gear columns:
+- a key light from the top left;
+- a warm rim light from behind on the right (#FFD68C);
+- a soft round ground shadow (black 80 %, 168 x 26 px);
+- a dim warm pool of light behind (#784E2C at 30 %, 40 px blur).
+
+It turns slowly when you drag it, and it wears what is in the gear slots.
+
+### 6.7 Icon rules
+
+1. **One camera for every icon:** the same three-quarter view (30° down, 45° round), key light from the top left, the item filling 80 % of the square, a 2 px soft drop shadow (black 65 %, 1.5 px blur, 2 px right and down), no background.
+2. **Thin items lie on the diagonal,** bottom left to top right, corner to corner, with the head (axe blade, spear point) at the top right. Stroke at least 6 px wide at 128 so it is at least 2 px at 32.
+3. **Tell things apart by shape, not tint.** Each plank species gets its own end grain and bundle shape plus a tint. Spades differ in blade shape (round, square, pointed). Herbs differ by leaf shape. Seeds come in a small cloth pouch with the seed shape on it. Pies get a crust mark (a fish, a leaf, an apple cut).
+4. **Shown at** 80 px in pack and chest slots, 48 in hotbar slots, 32 in recipe rows, 64 in requirement wells, 90 in the recipe card.
+5. **Painted, not rendered:** the 446 baked icons are the base; the painted pass adds hand-painted texture to match the look doc (section 6). **log, stick and stone have no icon yet** and are the most common items in the game; they come first. Until an item has an icon it shows the missing-icon tile, never a blank or a placeholder blob.
 
 ## 7. Why this beats ARK, Dragonwilds and Valheim
 
@@ -191,41 +243,45 @@ The fonts are already in `assets/ui/fonts`.
 
 ## 8. Art brief
 
-Everything below goes in `assets/ui/inventory/`. Sizes are canvas px at 1920 x 1080. 9-slice means the art is cut into a 3 x 3 grid with the given margins so it stretches without stretching the corners (Godot `StyleBoxTexture` or `NinePatchRect`). PNG, sRGB, straight alpha. Paint at 2x and export at the size given.
+Everything goes in `assets/ui/inventory/`. Sizes are canvas px at 1920 x 1080; **paint at 2x and export at the size given**. "9-slice" means the art is cut into a 3 x 3 grid with the given margins so it stretches without stretching the corners (Godot `StyleBoxTexture` or `NinePatchRect`). PNG, sRGB, straight alpha. The mockup script draws every one of these in code from the same numbers, so a painter can match the PNG it renders, and the game can ship with the code-drawn version until the painted one lands.
 
 | # | Asset | File | Size px | Material | Colours (hex) | Description |
 |---|---|---|---|---|---|---|
-| 1 | Panel frame | `frame_panel.png` | 96 x 96, 9-slice margins 16 | Carved dark walnut, 6 px edge with a fine bevel, a 1 px gold inlay line 5 px in | Wood #402617, bevel highlight #5C361C, inlay #8C6933, field #1F130D | The frame of all three panels and the chest panel; corners rounded 8 |
-| 2 | Corner cap | `corner_cap.png` | 32 x 32 | Cast brass, slightly worn, one rivet | #DBA84C face, #8C6933 rim and rivet, #FFD67A highlight top left | Sits over each panel corner, 2 px outside the frame |
-| 3 | Panel shadow | `panel_shadow.png` | 64 x 64, 9-slice margins 24 | Soft drop shadow | #000000 at 63 %, 12 px blur, offset 4 right 10 down | Under each panel so it lifts off the world |
-| 4 | Slot well | `slot.png` | 100 x 100, 9-slice margins 8 | Recessed dark wood well | Fill #140D09, top and left inner shadow #0A0604, bottom and right lip #3A2416, 1 px rim #8C6933 | Pack, chest, gear, hotbar and tile slots; corners 4; one asset for every size |
-| 5 | Slot hover | `slot_hover.png` | 116 x 116, 9-slice margins 16 | Warm glow | #FFB34D at 47 %, 5 px blur, and a 2 px rim #FFD67A | Shown round the slot under the pointer |
-| 6 | Slot selected | `slot_selected.png` | 100 x 100, 9-slice margins 8 | Bright rim only | 2 px #FFD67A | The selected slot and the active hotbar key |
-| 7 | Gear ghosts | `ghost_head.png`, `ghost_body.png`, `ghost_legs.png`, `ghost_feet.png`, `ghost_hands.png`, `ghost_back.png`, `ghost_right.png`, `ghost_left.png` | 56 x 56 each | Flat engraved silhouette | #5A4A3A at 100 % | A helmet, a tunic, trousers, boots, gloves, a pack, a hand holding a tool, a hand holding a shield or torch; shown in empty gear slots above the slot name |
-| 8 | Hotbar tray | `hotbar_tray.png` | 96 x 68, 9-slice margins 8 | Darker wood strip | Fill #2A1A11, 1 px rim #DBA84C | Behind the 10 hotbar slots, inside the pack and on the HUD |
-| 9 | Button | `button.png`, `button_hover.png`, `button_pressed.png`, `button_disabled.png` | 96 x 48, 9-slice margins 10 | Plank with bevelled edge | Normal #402617, hover #5C361C, pressed #2B1A0F, disabled #402617 with text #7A6E5C; rim 1 px #8C6933 | All plain buttons (Use, Drop, Take all, −, +, Most, tabs off) |
-| 10 | Accent button | `button_accent.png`, `button_accent_pressed.png` | 96 x 64, 9-slice margins 12 | Lit plank with a gold rim | #5C361C, rim 2 px #FFD67A; pressed #402617 | The Craft button and the selected Chest / Craft tab |
-| 11 | Hold ring | `hold_ring.png` | 40 x 40 | Gold stroke | #FFD67A, 5 px stroke, round caps | Used by a radial `TextureProgressBar` on the Craft button while held |
-| 12 | Text field | `field.png` | 96 x 36, 9-slice margins 8 | Recessed well | #140D09, rim 1 px #8C6933 | Both search fields |
-| 13 | Search glyph | `glyph_search.png` | 20 x 20 | Line art | #8C6933, 2 px | Magnifier in the search fields |
-| 14 | Sort glyph | `glyph_sort.png` | 24 x 24 | Line art | #DBA84C, 3 px | Three bars, longest at top |
-| 15 | Category tab glyphs | `tab_all.png`, `tab_tools.png`, `tab_weapons.png`, `tab_building.png`, `tab_stations.png`, `tab_fire.png`, `tab_food.png`, `tab_medicine.png`, `tab_clothing.png`, `tab_storage.png`, `tab_materials.png` | 36 x 36 each | Engraved line art with one flat fill | Off: #F5E6BD; selected: #FFD67A | All: four small squares. Tools: an axe. Weapons: a spear. Building: a log wall. Stations: a workbench. Fire: a flame. Food: a bowl with steam. Medicine: a leaf and a drop. Clothing: a tunic. Storage: a chest. Materials: two planks. (The mockup uses item icons as stand-ins) |
-| 16 | Category tab plate | uses #9 and #10 | 48 x 48 | | | Off = button, selected = accent button |
-| 17 | Station badges | `station_workbench.png`, `station_forge.png`, `station_campfire.png`, `station_campfire_pot.png`, `station_clay_hearth.png`, `station_oven.png`, `station_saw_mill.png`, `station_woodworking_table.png` | 22 x 22 each | Line art in a 1 px rounded box | #8C6933 | Small badges on recipe rows that need that station (the mockup uses letters as stand-ins) |
-| 18 | Chest mark | `mark_chest.png` | 20 x 16 | A tiny chest | Body #5C361C, bands and lid line #DBA84C | Top right of a requirement tile whose stock comes from a nearby container |
-| 19 | Stat orbs | `stat_health.png`, `stat_exertion.png`, `stat_energy.png`, `stat_warmth.png`, `stat_food.png`, `stat_water.png` | 24 x 24 each | A coloured enamel disc with a cream engraved symbol | Health #D93333 heart; Exertion #F2CC40 running figure; Energy #9973E6 moon; Warmth #73CCF2 flame; Food #E68C33 bread; Water #4D99F2 drop; symbol #F5E6BD | Left of each stat row |
-| 20 | Bar track and fill | `bar_track.png`, `bar_fill.png` | 32 x 10, 9-slice margins 5 | Rounded groove and a plain fill (tinted in code) | Track #140D09; fill white, tinted by the bar colour | The six stat bars |
-| 21 | Weight bar | uses #20 at 6 px tall | | | Fill #DBA84C, over the limit #BF2E24 | Pack header |
-| 22 | Durability bar | drawn in code | 4 px tall | | #6BA84C over 60 %, #DBA84C over 30 %, #BF2E24 below; track #0A0604 | Bottom of a slot |
-| 23 | Rule | drawn in code | 1 px | | #8C6933 | Section dividers |
-| 24 | Figure backdrop | drawn in code | 204 x 500 | | #26180F, corners 6 | Behind the live character |
-| 25 | Item icons | `assets/ui/items/<item_id>.png` | 128 x 128 | Painted over the icon bake (look doc section 6) | Outline #0A0604 2 px; no background | Every item. First: log, stick, stone (none yet), then the 94 in NEEDS_PAINTING.txt, then the look-alike sets in section 6.4 |
+| 1 | Backdrop grain | `backdrop_grain.png` | 512 x 512, tiling | Fine leather grain | #17150F, ±5 levels | Tiled over the darkened world behind the panels, at 85 %; the vignette is drawn in code |
+| 2 | Panel frame | `frame_leather.png` | 128 x 128, 9-slice margins 20 | Aged dark leather, coarse grain, worn lighter at the edges | Leather #3A2315, outer line #160C06 2 px, top inner light #604028, stitches #B89A68 with #000 shadow, gold line #8C6933 at 60 % at the inner edge | The 14 px edge of every panel, stitching 7 px in (5 px stitch, 4 px gap), corners rounded 12; the centre is transparent |
+| 3 | Panel field | `field_parchment.png` | 512 x 512, tiling | Dark parchment | #231A12, blotches ±4, fibres ±5 | The inside of every panel |
+| 4 | Panel shadow | `panel_shadow.png` | 96 x 96, 9-slice margins 32 | Soft shadow | #000000 at 75 %, 14 px blur, 8 px down | Under each panel |
+| 5 | Brass corner | `corner_brass.png` | 46 x 46 (one; flipped for the other three) | Cast brass, worn | Gradient #F0CF82 to #7A5826 (diagonal), rim #4A3416, scuffs #7A5826, rivet #4A3416 with a #F0CF82 highlight | An L of two 15 px arms with a gusset and cut tips, one rivet in the corner; placed 4 px outside each panel corner |
+| 6 | Title plate | `title_plate.png` | 96 x 46, 9-slice margins 24 left and right | Cast brass | Gradient #F0CF82 to #7A5826 (top to bottom), top line #F0CF82, bottom line #7A5826, rim #4A3416, rivets as #5 | The plate behind each panel title; it stretches to the title width + 60 |
+| 7 | Ornament rule | `rule_ornament.png` | 24 x 12 (the diamond; the line is drawn in code) | Engraved gold | #8C6933 | The diamond in the middle of a section rule |
+| 8 | Recessed well | `well.png` | 100 x 100, 9-slice margins 10 | Recessed dark wood | #120C08, top inner shadow 7 px black 75 % to 0, left 4 px 50 % to 0, bottom lip #463626, right lip #463626 at 43 % | Every slot, field, bar track and the quantity number; corners 4 |
+| 9 | Well selected | `well_selected.png` | 100 x 100, 9-slice margins 10 | Inner gold glow | #FFD67A rim 1.5 px; glow 55 % at the rim to 0 at 8 px in | The selected slot, the active hotbar key, the recipe card icon |
+| 10 | Slot hover glow | `slot_hover.png` | 116 x 116, 9-slice margins 18 | Warm glow | #FFB34D at 43 %, 5 px blur | Round a slot under the pointer (with #9) |
+| 11 | Raised plate | `raised.png`, `raised_lit.png`, `raised_pressed.png` | 96 x 48, 9-slice margins 10 | Smooth dark wood, slight gradient | Normal #382A1D to #302419; lit #483727 to #402F1F; pressed #261B12 flat; top highlight #523E29 (lit #6E5436); rim #140D08 | Buttons, tabs, the hotbar tray, the selected row, keycaps |
+| 12 | Raised shadow | `raised_shadow.png` | 48 x 48, 9-slice margins 16 | Soft shadow | #000000 at 60 %, 6 px blur, 3 px down | Under every raised thing except the selected row |
+| 13 | Recipe card | uses #11 and #12 | 386 x 936 | | | The card is the raised plate at size |
+| 14 | Craft button | `button_brass.png`, `button_brass_pressed.png` | 96 x 64, 9-slice margins 16 | Cast brass | Gradient #F0CF82 to #7A5826 top to bottom, top line #FFECB4, rim #4A3416; pressed 10 % darker, no top line | The Craft button; "CRAFT" engraved in #2B1B0B |
+| 15 | Craft glow | `button_glow.png` | 128 x 96, 9-slice margins 32 | Warm glow | #FFC864 at 35 %, 10 px blur | Round the Craft button when the recipe can be made |
+| 16 | Hold ring | drawn in code | 36 x 36 | | Track #7A5826 4 px; arc #2B1B0B 4 px, round caps | Left end of the Craft button |
+| 17 | Keycap | uses #11 | 26 tall, 26 wide or the text + 14 | | Letter #F2C76B Cinzel Bold 18; a 1.5 px dark line under it | Key hints on the item strip and the chest bar |
+| 18 | Stat glyphs | `stat_health.png`, `stat_exertion.png`, `stat_energy.png`, `stat_warmth.png`, `stat_food.png`, `stat_water.png` | 26 x 26 each | Engraved metal, flat fill | #C9A869 with a 1 px #000 shadow at 70 % below | A heart, a lightning bolt, a crescent moon, a flame, a loaf, a drop |
+| 19 | Bar fill | `bar_fill.png` | 32 x 10, 9-slice margins 5 | Smooth enamel, tinted in code | White to grey gradient (tinted to the stat fill: +25 % at the top, −20 % at the bottom), a 1 px highlight at 27 % along the top | The six stat bars and the weight bar (tinted #C9A054) |
+| 20 | Gear silhouettes | `ghost_head.png`, `ghost_body.png`, `ghost_legs.png`, `ghost_feet.png`, `ghost_hands.png`, `ghost_back.png`, `ghost_right.png`, `ghost_left.png` | 52 x 52 each | Engraved, flat | #4A3C2E with a 1 px #000 shadow below | A helmet, a tunic, trousers, a boot, a glove, a pack, a hand axe, a shield; centred in an empty gear slot, no word |
+| 21 | Category tab glyphs | `tab_all.png`, `tab_tools.png`, `tab_weapons.png`, `tab_building.png`, `tab_stations.png`, `tab_fire.png`, `tab_food.png`, `tab_medicine.png`, `tab_clothing.png`, `tab_storage.png`, `tab_materials.png` | 28 x 28 each | Engraved, flat | Off #F5E6BD, selected #F2C76B, 1 px #000 shadow | All: four squares. Tools: an axe. Weapons: a spear. Building: a house. Stations: an anvil. Fire: a flame. Food: a steaming bowl. Medicine: a leaf. Clothing: a tunic. Storage: a chest. Materials: three planks |
+| 22 | Station glyphs | `station_workbench.png`, `station_forge.png`, `station_campfire.png`, `station_campfire_pot.png`, `station_clay_hearth.png`, `station_oven.png`, `station_saw_mill.png`, `station_woodworking_table.png` | 20 x 20 each | Engraved, flat | #8A7E68 | On the second line of a recipe row that needs a station, before "needs Forge". Workbench: a bench. Forge: an anvil. Campfire: a flame. Pot: a pot over a flame. Hearth: a clay dome. Oven: an arched oven. Saw mill: a saw blade. Woodworking table: a plane |
+| 23 | Chest glyph | `mark_chest.png` | 22 x 22 | Engraved, flat | #C9A869 | Top right of a requirement well whose stock comes from a nearby container |
+| 24 | Search and sort glyphs | `glyph_search.png`, `glyph_sort.png` | 18 x 18, 20 x 20 | Engraved line | #8C6933, #C9A869 | In the search fields and on the sort button |
+| 25 | Selected-row bar | `row_bar.png` | 4 x 40, 9-slice top and bottom 4 | Brass | #F0CF82 to #7A5826 top to bottom | Left edge of the selected recipe row |
+| 26 | Durability bar | drawn in code | 4 px tall | | #8FA35A / #C9A054 / #BF2E24 on #0A0604 | Bottom of a slot |
+| 27 | Missing-icon tile | `icon_missing.png` | 80 x 80 (scales) | Hatched | Hatching #3A2C1F every 10 px, dashed rim #8C6933 (6 on, 5 off) 6 px in, a "?" in Cinzel Bold 30 #8C6933 | Shown in place of any item icon that does not exist yet, so a gap is obvious and never mistaken for an item |
+| 28 | Item icons | `assets/ui/items/<item_id>.png` | 128 x 128 | Painted over the icon bake (look doc section 6), to the rules in 6.7 | No background; 2 px soft shadow added in the slot, not painted | Every item. First: log, stick, stone (none yet), then the 94 in NEEDS_PAINTING.txt, then the look-alike sets in 6.7 |
+| 29 | Character light rig | in the character SubViewport | | | Key light warm white from the top left; rim #FFD68C from behind right; the ground shadow and the backlight pool are drawn in code (6.6) | Set on the existing character view |
 
 Fonts are not art assets; they are in `assets/ui/fonts` (Cinzel Regular and Bold, EB Garamond Regular and SemiBold).
 
 ## 9. HUD hotbar strip (in the world)
 
-The HUD keeps a hotbar strip at the bottom centre when the window is closed. It uses the same tray (#8) and slot art (#4) at **60 px slots with 6 px gaps** (654 x 60), 24 px above the bottom of the canvas, with the key number in Cinzel Bold 18. The pickup feed and the held-item label sit above it.
+The HUD keeps a hotbar strip at the bottom centre when the window is closed. It is the same raised tray (#11) with ten 60 px recessed wells (#8), 5 px apart (645 x 60), 24 px above the bottom of the canvas, key numbers in Cinzel Bold 18 with the outline, the active key in the selected well (#9). The pickup feed and the held-item label sit above it.
 
 ## 10. What this replaces
 
@@ -234,8 +290,9 @@ The HUD keeps a hotbar strip at the bottom centre when the window is closed. It 
 ## 11. Open points for Dave
 
 1. **Hotbar: 10 slots of 60 (all 10 keys) instead of 8 of 76.** Recommended, because the game has 10 keys.
-2. **Solid panels,** as he asked on 23 Oct, rather than 85 % see-through.
-3. **The tooltip goes;** the info strip under the pack replaces it.
+2. **The six bar colours.** Version 2 puts them all in the warm palette (6.4). The HUD bars at the top of the screen use the brighter colours approved on 21 Oct; the HUD should move to the same warm set so the two match. Dave's call.
+3. **Solid panels,** as he asked on 23 Oct; only the margins round them show the darkened world.
+4. **The floating tooltip goes;** the info strip under the pack replaces it.
 
 ## 12. Implementation plan (after Dave's look; no code before the go)
 
@@ -247,7 +304,7 @@ Steps, each its own PR through the gate:
 2. **The art kit** (section 8) as placeholders drawn in code first (the colours and sizes above), so the layout lands without waiting for the art; the painted PNGs drop in later with no code change.
 3. **The new window:** the three columns, the pack and chest grids, the You column, the craft card, the info strip, search and sort. Removes the old window building and #780's fit.
 4. **The HUD hotbar strip** in the new slot art.
-5. **The painted art** as Kathleen's art jobs finish (items 1 to 24), then the icons (item 25).
+5. **The painted art** as Kathleen's art jobs finish (art brief rows 1 to 27), then the icons (row 28).
 
 ## 13. Audit: screens with sizes fixed for the 2880 x 1620 canvas
 
