@@ -62,6 +62,16 @@ const CANOPY_EASE_S := 3.0
 const TORCH_NIGHT_DIM := 0.15
 const TORCH_ADAPT_S := 1.5               # the eyes take to the flame quickly
 const TORCH_UNADAPT_S := 5.0             # and get used to the dark again slowly when it goes out
+# Colour at night (art_weather_light.md 5.2): the eye loses colour in moonlight, so the picture keeps only part of its colour
+# on a clear night, less when the moon is dark, on top of the weather's storm greying. A flame gives the colour back (warm
+# against cold is the night's palette, 6.3): a burning torch or lantern in the hand, or a lit fire close by, returns most of it.
+# Under rock there is no moonlight to grey, so caves keep their colour in torchlight. One saturation for the whole picture.
+const NIGHT_COLOUR_FULL_MOON := 0.5      # share of the colour left on a clear full-moon night
+const NIGHT_COLOUR_DARK := 0.4           # and on a moonless one
+const FLAME_COLOUR_BACK := 0.8           # share of the lost colour a flame gives back
+const FIRE_COLOUR_NEAR_M := 6.0          # a lit fire this close gives it all back
+const FIRE_COLOUR_FAR_M := 14.0          # and none from this far (the biggest fire's light)
+const FLAME_COLOUR_S := 1.5              # seconds to ease the colour in or out
 const CAVE_LIGHT_DARK := 0.0             # share of the sun and sky light left deep in a cave or tunnel, setting "Dark": none, pitch black without a torch or fire (Dave 5 Nov 2026)
 const CAVE_LIGHT_NORMAL := 0.12          # the same, setting "Normal"
 const CAVE_GO_DARK_S := 1.0              # the light fades out over this long on going in, and back over CAVE_COME_OUT_S
@@ -160,6 +170,8 @@ var _cave_factor: float = 1.0           # share of the sun and sky light let in 
 var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
 var canopy_night: float = 0.0           # 0 open .. 1 under closed crowns, at night only, eased (CANOPY_NIGHT_DIM)
 var torch_adapt: float = 0.0            # 0 .. 1: the eyes adapted to a held flame at night, eased (TORCH_NIGHT_DIM)
+var flame_colour: float = 0.0           # 0 .. 1: how much a flame in the hand or a fire close by gives the colour back, eased
+var night_colour: float = 1.0           # share of the colour left by the night, after a flame's share (1 by day), for checks
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
@@ -181,6 +193,8 @@ const WindCueScript := preload("res://src/client/wind_cue.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 var _fire_light_next_msec: int = 0
 var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
+const BreathLookScript := preload("res://src/client/breath_look.gd")
+var breath                              # BreathLook: breath puffs in the cold (art_weather_light.md 8.4)
 
 func setup(client) -> void:
 	_client = client
@@ -193,6 +207,9 @@ func setup(client) -> void:
 	wind_cue = WindCueScript.new()
 	add_child(wind_cue)
 	wind_cue.setup()
+	breath = BreathLookScript.new()
+	add_child(breath)
+	breath.setup(client)
 	_bolt_material = StandardMaterial3D.new()
 	_bolt_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_bolt_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -490,7 +507,13 @@ func _process_body(delta: float) -> void:
 	environment.ambient_light_color = AMBIENT_DAY_WARM.lerp(AMBIENT_NIGHT_COLOR, dim)
 	# The whole picture goes dimmer and greyer with the weather.
 	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
-	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark)
+	var fire_m: float = float(_client.sound.fire.nearest_lit_m) if _client.sound != null and _client.sound.fire != null else INF
+	var flame_target: float = maxf(1.0 if held_flame() else 0.0, 1.0 - smoothstep(FIRE_COLOUR_NEAR_M, FIRE_COLOUR_FAR_M, fire_m))
+	flame_colour = move_toward(flame_colour, flame_target, delta / FLAME_COLOUR_S)
+	var moonlit: float = lerpf(NIGHT_COLOUR_DARK, NIGHT_COLOUR_FULL_MOON, day.moon_light)
+	var grey: float = (1.0 - moonlit) * day.night * under_rock * (1.0 - FLAME_COLOUR_BACK * flame_colour)
+	night_colour = 1.0 - grey
+	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark) * night_colour
 
 	if not _client.underwater:
 		var mist: float = 0.0 if clear_day else float(_s["mist"])
@@ -537,6 +560,7 @@ func _process_body(delta: float) -> void:
 	_rain_material.set_shader_parameter("canopy_box", Vector3(canopy.origin.x, canopy.origin.y, canopy.METRES))
 	_update_ground(rain, snow)
 	_update_particles(rain, snow, float(_s["wind"]))
+	breath.update(delta)
 
 
 # The water shader writes its own fog (FOG), so it is fed the environment's fog each frame: the same distance and height fog,
@@ -649,8 +673,8 @@ func _update_ground(rain: float, snow: float) -> void:
 	if _client.grass != null:
 		_client.grass.visible = lying < 0.5      # snow buries the grass
 
-	# Firelight in fog and snow (--firelight-weather, firelight_weather_design.md): reach and halo of every fire light, once a second.
-	if FireWeather.on and Time.get_ticks_msec() >= _fire_light_next_msec:
+	# Firelight in fog and snow (firelight_weather_design.md): reach and halo of every fire light, once a second.
+	if Time.get_ticks_msec() >= _fire_light_next_msec:
 		_fire_light_next_msec = Time.get_ticks_msec() + 1000
 		FireWeather.update(get_tree(), float(_s["mist"]) * mist_inside, snow, lying, 1.0 - day.night)
 

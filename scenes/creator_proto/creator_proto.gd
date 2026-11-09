@@ -9,7 +9,6 @@ const Logic := preload("res://src/client/character/creator_logic.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const GeneratedBody := preload("res://src/client/character/generated_body.gd")
 const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
-const MyCharacter := preload("res://src/client/character/my_character.gd")
 const Store := preload("res://src/client/character/character_store.gd")
 const Record := preload("res://src/client/character/character_record.gd")
 const Style := preload("res://src/client/character/page_style.gd")
@@ -573,7 +572,7 @@ func _refresh_controls() -> void:
 # once and the sliders reshape it in place (dynasty_proportions.gd), so a slider move shows at once. The skin colour tints it (dynasty_body.gd dress); its clothes are baked into Dave's
 # texture, so the clothes colours and the face sliders do not show on it yet. The width sliders are blend shapes (dynasty_shapes.gd). Without Dave's glb (or with the old body chosen) the generated body is rebuilt as before.
 func _use_dynasty() -> bool:
-	return MyCharacter.dynasty_body_on() and DynastyBody.available()
+	return DynastyBody.available()
 
 
 func _rebuild_body() -> void:

@@ -52,13 +52,13 @@ const RecipeListScript := preload("res://src/client/ui/inventory/recipe_list.gd"
 const PackGridScript := preload("res://src/client/ui/inventory/pack_grid.gd")
 const ContainerPanelScript := preload("res://src/client/ui/inventory/container_panel.gd")
 const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd")
-const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # --new-inventory: the new look (steps B and C)
+const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the window's look (steps B and C)
 const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe.gd")
 var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
 var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store beside the pack
 var _queue_part: CraftQueueScript              # the crafting queue under the recipe list
-var _pinned_part: PinnedRecipeScript           # --new-inventory: the pinned recipe's checklist card
+var _pinned_part: PinnedRecipeScript           # the pinned recipe's checklist card
 
 
 func _init() -> void:
@@ -70,7 +70,7 @@ func _init() -> void:
 
 
 var _panel: PanelContainer
-var _columns: HBoxContainer            # the window's columns; with --new-inventory the open container sits between recipes and pack
+var _columns: HBoxContainer            # the window's columns; the open container sits between recipes and pack
 var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
@@ -1701,7 +1701,7 @@ func _refresh_weight() -> void:
 	if _carry_bar != null and not _carry_cfg.is_empty():
 		var fraction: float = CarryRules.bar_fraction(carried_kg(), carry_body_kg(), _carry_cfg)
 		_carry_bar.value = fraction * 100.0
-		_carry_bar.get_theme_stylebox("fill").bg_color = InventoryLook.carry_color(fraction) if InventoryLook.on else CarryRules.bar_color(fraction)
+		_carry_bar.get_theme_stylebox("fill").bg_color = InventoryLook.carry_color(fraction)
 
 
 func _load_text() -> String:
@@ -2080,12 +2080,10 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 		chest_mode = true
 		open = true
 		_build_panel()
-		_panel.visible = InventoryLook.on      # the new look: one window, the container in its middle column
+		_panel.visible = true      # one window, the container in its middle column
 		_container_part.build()
 		_chest_panel.visible = true
-
-		if InventoryLook.on:
-			_refresh()
+		_refresh()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 		if chest_event.is_valid() and _world.has(id):
@@ -2106,7 +2104,7 @@ func _close_chest() -> void:
 	if _chest_panel != null:
 		_chest_panel.visible = false
 
-	if InventoryLook.on and _panel != null:
+	if _panel != null:
 		_panel.visible = false
 
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -2766,8 +2764,8 @@ func _on_chest_info(id: int, keep_out: bool, may_set: bool) -> void:
 	chest_keep_out = keep_out
 	chest_may_keep_out = may_set
 
-	if InventoryLook.on and chest_mode:
-		_container_part.refresh()   # the new look: the lock on the plate and the tick follow the server's answer
+	if chest_mode:
+		_container_part.refresh()   # the lock on the plate and the tick follow the server's answer
 
 
 # The open container's "keep out" tick (the owner only; the server checks and answers with chest_info).
@@ -2803,7 +2801,7 @@ func _on_favourites(flags: PackedByteArray) -> void:
 		inventory.set_fav(i, flags[i] == 1)
 
 
-# --new-inventory: a bulk button's answer as a parchment toast, and each container that took something glows warm a moment (look doc section 9).
+# A bulk button's answer as a parchment toast, and each container that took something glows warm a moment (look doc section 9).
 func _bulk_look(kind: int, stacks: int, containers: int, ids: PackedInt32Array) -> void:
 	InventoryLook.toast(_layer, InventoryLook.bulk_text(kind, stacks, containers), InventoryLook.unit_of(self))
 	var spots: Array = []
@@ -4095,17 +4093,10 @@ func _build_panel() -> void:
 	_panel.anchor_top = 0.04
 	_panel.anchor_bottom = 0.89   # leaves the whole hotbar visible underneath (Dave)
 	_panel.clip_contents = true   # the window keeps its size whatever the text size; contents scroll or wrap
-	if InventoryLook.on:
-		InventoryLook.style_window(_panel, _px(18))
+	InventoryLook.style_window(_panel, _px(18))
 
-		if not bulk_event.is_valid():
-			bulk_event = _bulk_look
-	else:
-		var back: StyleBoxFlat = StyleBoxFlat.new()
-		back.bg_color = Color(0.07, 0.07, 0.08, 0.93)
-		back.set_corner_radius_all(10)
-		back.set_content_margin_all(_px(18))
-		_panel.add_theme_stylebox_override("panel", back)
+	if not bulk_event.is_valid():
+		bulk_event = _bulk_look
 
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", _px(10))
@@ -4119,8 +4110,7 @@ func _build_panel() -> void:
 	title.clip_text = true
 	_style(title, TITLE_PX)
 
-	if InventoryLook.on:
-		InventoryLook.plate(title, "Crafting and inventory", _px(TITLE_PX), InventoryLook.unit_of(self))
+	InventoryLook.plate(title, "Crafting and inventory", _px(TITLE_PX), InventoryLook.unit_of(self))
 
 	top.add_child(title)
 
@@ -4388,7 +4378,7 @@ func _note_acquired() -> void:
 
 
 func _refresh() -> void:
-	if InventoryLook.on and _pinned_part.number != 0:
+	if _pinned_part.number != 0:
 		_pinned_part.refresh()   # the pinned checklist ticks as you gather, window open or shut
 
 	if _panel == null:
@@ -4400,7 +4390,7 @@ func _refresh() -> void:
 
 	# Lag fix (Sal, 2 Nov 2026): with the window shut (or the chest screen up instead) nobody sees the slot buttons or the recipe list, and rebuilding
 	# them cost 55 to 87 ms on every pickup. The window rebuilds in toggle() when it opens; only the weight HUD is kept current.
-	if not open or (chest_mode and not InventoryLook.on) or _recipe_list == null:   # nothing built yet: nothing to redraw
+	if not open or _recipe_list == null:   # nothing built yet: nothing to redraw
 		if _weight_label != null:
 			_refresh_weight()
 
