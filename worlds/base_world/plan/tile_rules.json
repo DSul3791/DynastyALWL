@@ -1287,6 +1287,15 @@
 		"patch_m": 160,
 		"view_m": {"tree": 450, "shrub": 45, "plant": 60},
 		"near_m": {"tree": 150, "shrub": 45},
-		"collision_m": 160
+		"collision_m": 160,
+		"spring_cover": {
+			"note": "Sonny, 9 Nov 2026 (Dave: \"use low shrubs that block the view of the ground in clumps over the spring head so its hidden. let the water just run out from under the bush.\"; design R6 as built, \"The spring cover\"). Every ground spring of a tile from the water record (sites springs, cover bushes) gets one clump: the first of species that grows in the head's biome, else the first (every spring is hidden); count plants (at most flora_placer SPRING_MAX_PLANTS, 16) on a sunflower spiral from the head out to radius_m, each moved up to jitter_m; heights from the low end of the species' range (the lowest height_low_share of it); spacing_m the least gap between two plants of one clump. Cover species must be patch shrubs (their item numbers sit below the stand numbers). The clump skips the moisture, soil, slope and near-water rules; open lake or sea and cave mouths still drop a plant.",
+			"species": ["bramble", "juniper", "gorse", "dwarf_birch"],
+			"count": [12, 16],
+			"radius_m": [2.0, 2.8],
+			"height_low_share": 0.33,
+			"jitter_m": 0.08,
+			"spacing_m": 0.6
+		}
 	}
 }

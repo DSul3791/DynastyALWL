@@ -130,7 +130,7 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 
 	if spring_caves:
 		_make_spring_caves(rng)
-	elif not record_springs.is_empty():
+	else:   # a tile from the water record: its springs line prints even with no R5 spring heads (0 on tiles 2,4 and 2,5)
 		_make_record_springs(rng)
 	rng = SeedUtil.rng_for(_master, "sites_karst", tile.x, tile.y)
 	_make_karst(rng)
