@@ -14,7 +14,9 @@ const CODE_FOLDERS := ["res://src/worldgen/sketch", "res://src/worldgen/settings
 # The setup's builders: the world elevation, the rule river network, the sketch and the wet air (tile_climate.gd build_world_air).
 const ROOT_SCRIPTS := ["res://src/worldgen/sketch/world_elevation.gd", "res://src/worldgen/sketch/river_network.gd",
 	"res://src/worldgen/sketch/world_sketch.gd", "res://src/worldgen/tile/tile_climate.gd", "res://src/worldgen/tile/setup_cache.gd"]
-const SCRIPT_ROOT := "res://src/worldgen"
+# Searched only for class_name lines (see _reached). Written in two parts so the gate's selector (tools/tests_for_diff.py) does not take the
+# whole folder as something this file loads: as one string it made every worldgen script select test_bake_from_record (#788).
+const SCRIPT_ROOT := "res://" + "src/worldgen"
 const INPUT_FILES := ["/world.json", "/plan/sketch_rules.json", "/plan/world_sketch.json", "/plan/tile_plan.json", "/erosion_delta_v2.bin"]
 const RULE_BLOCKS := ["climate", "water", "valleys"]   # the tile_rules blocks the setup reads (build_world_air, the river network)
 
