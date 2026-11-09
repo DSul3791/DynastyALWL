@@ -37,6 +37,7 @@ const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 const WaterStoreScript := preload("res://src/water/water_store.gd")
 const EdgeCompareScript := preload("res://src/worldgen/tile/edge_compare.gd")
+const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 
 const RAY_STEP_M := 40.0
 const RAY_MAX_M := 20000.0
@@ -1355,6 +1356,8 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 	if _markers:
 		_marker_checks(settings, directory, tile_limits)
 
+	_cave_den_rows(directory, tiles)
+
 	var stitched: Dictionary = _stitch(tiles, directory)
 
 	if not stitched["ok"]:
@@ -1587,6 +1590,49 @@ func _spawn_check(settings, world_dir: String, directory: String, tile_limits: D
 
 	if _spawn_search_m > 0.0:
 		_spawn_candidates(heights, water, n, spacing, origin, spawn, ring, tile_limits)
+
+
+# Caves and goblin dens per baked tile (docs/design/cave_dens_after_rebuild_design.md section 3): spring caves, how many have a dry side branch,
+# other caves with passages, and the goblin dens by the game's own rule (TileTerrainData.goblin_den_node). Reports only: the bar is judged.
+func _cave_den_rows(directory: String, tiles: Array) -> void:
+	var total_springs: int = 0
+	var total_dry: int = 0
+	var total_dens: int = 0
+	var sorted: Array = tiles.duplicate()
+	sorted.sort()
+
+	for tile in sorted:
+		var path: String = "%s/tile_%d_%d.tile" % [directory, tile.x, tile.y]
+		var header: Dictionary = TileFileScript.read_header(path)
+
+		if not header["ok"]:
+			continue
+
+		var sites: Dictionary = TileFileScript.read_list(path, header["table"], "sites")
+		var caves: Array = (sites["value"] as Dictionary).get("caves", []) if sites["ok"] and typeof(sites["value"]) == TYPE_DICTIONARY else []
+		var springs: int = 0
+		var dry: int = 0
+		var others: int = 0
+		var dens: int = 0
+
+		for cave in caves:
+			var kind: String = str(cave.get("cave_kind", ""))
+
+			if kind == "spring_cave":
+				springs += 1
+				dry += 1 if TileDataScript.dry_den_node(cave) >= 0 else 0
+			elif TileDataScript.GOBLIN_DEN_CAVES.has(kind):
+				others += 1
+
+			dens += 1 if TileDataScript.goblin_den_node(cave) >= 0 else 0
+
+		total_springs += springs
+		total_dry += dry
+		total_dens += dens
+		_row("caves tile (%d,%d)" % [tile.x, tile.y], "%d spring caves, %d with a dry branch, %d other caves with passages, %d goblin dens (%d percent of dry caves)"
+				% [springs, dry, others, dens, TileDataScript.GOBLIN_DEN_PERCENT], "judged", "INFO")
+
+	_row("caves, all baked tiles", "%d spring caves, %d with a dry branch, %d goblin dens" % [total_springs, total_dry, total_dens], "judged", "INFO")
 
 
 # NPC markers on the baked ground (Stage E readers, docs/water/stage_e_readers_design.md): a marker must stand dry and on walkable ground. After a
