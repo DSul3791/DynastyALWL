@@ -51,8 +51,9 @@ Cuts A1 and A2 keep every number. The check for both: Dino runs glacial on ws580
 | before (ws580v) | 55 s (profiled) | 3,664 s, 61 min 4 s | |
 | A1 (#840, 2d0b2bd7) | 47 s | 2,889 s, 48 min 9 s (wall 48 min 49 s) | 775 s less (21%) |
 | A2 (#845, 6d5f2a1a) | 42 s | 2,487 s, 41 min 27 s (wall 42 min 7 s) | 402 s less than A1; 1,177 s less than before (32%) |
+| A3 (#853, a722c016) | 43 s, of which about 8 s compiling (both changed files recompile on a first run); about 32.7 s a cycle warm, against A2's 38 s | 2,076 s, 34 min 36 s (wall 35 min 16 s) | 411 s less than A2; 1,588 s less than before (43%) |
 
-**Where that leaves it.** Glacial has gone from 61 min to 41 min 27 s, measured. Nine tiles end to end are about 20 to 24 min plus glacial, so about 62 to 66 min today (estimate). A3 (#853) and B are still needed for Dave's rule (d). Every stage of the chain now runs with `NUMBA_NUM_THREADS=9` (#840).
+**Where that leaves it.** Glacial has gone from 61 min to 34 min 36 s, measured. Nine tiles end to end are about 20 to 24 min plus glacial, so about 55 to 59 min with A3 (estimate). B is still needed for Dave's rule (d). Every stage of the chain now runs with `NUMBA_NUM_THREADS=9` (#840).
 
 ## What stays
 
@@ -78,7 +79,9 @@ Cuts A1 and A2 keep every number. The check for both: Dino runs glacial on ws580
   - It loops over the cells it does not skip (not sea, threshold above 0), forwards and then backwards, as before. Before, it looked at all 8.3 M cells in every sweep of every pass.
   - Its passes stay one thread. A different sweep order could settle on a different set of sources, so that would not be exact.
 
-**Estimate.** About 1.5 s down to about 0.85 s a call:
+**Measured (Dino, 9 Nov, a722c016):** the full glacial took 2,076 s, 411 s less than A2's 2,487 s. All 8 files are array-equal to ws580v's. The run logged `solve buckets: 9 threads, the largest bucket 11.1% of the land cells, the largest basin 1.8% (21269 basins)`, so the buckets are even. One evolve (B1) run on ws580v's inputs and params gave all 7 ground files (the final ground and its snapshots) array-equal to ws580v's, in 14 min 27 s wall against ws580v's own 1,208 s (20 min 8 s): about 28% faster, A1's threaded rock lookups and A3 together, since ws580v ran before both. The one-cycle check took 43 s against A2's 42 s. That is compile time, not the cut: step 0 came at 17 s against 9 s, and the five warm steps after it took 14 s against 18 s.
+
+**Estimate (before the run).** About 1.5 s down to about 0.85 s a call:
 - A3a: the sweeps' 0.7 s falls to about 0.2 s, if no bucket holds more than a quarter of the land;
 - A3b: about −0.15 s;
 - A3c: about −0.05 s.
@@ -90,4 +93,4 @@ That is about 0.65 s × 650 calls, about 7 min a glacial. Evolve gains too.
 2. the full glacial on ws580v against ws580v's own outputs;
 3. one evolve run against ws580v's evolve output.
 
-**After A3 (estimate):** glacial is about 36 min, and nine tiles take about 56 to 60 min. B (4,000-year cold steps, about 10 min less) is then still needed for Dave's rule (d). B changes the result, so its probe (`water/glacial_b_probe_job.md`) runs only after A3 is measured, and is judged by `compare_runs.py` against ws580v.
+**After A3 (measured 34 min 36 s):** nine tiles take about 55 to 59 min (estimate). B (4,000-year cold steps, about 8 min less at A3's 3.2 s a step; estimate) is then still needed for Dave's rule (d). B changes the result, so its probe (`water/glacial_b_probe_job.md`) runs only after A3 is measured, and is judged by `compare_runs.py` against ws580v.
