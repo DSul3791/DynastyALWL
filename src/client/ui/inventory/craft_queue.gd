@@ -40,7 +40,7 @@ func rebuild() -> void:
 	view._queue_box.visible = true
 	var title: Label = Label.new()
 	title.text = "Crafting queue  (press one to cancel it)"
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART      # wraps in the 196 px list column, never widens the Craft column
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART      # wraps in the 226 px list column, never widens the Craft column
 	view._style(title, view.BODY_PX - 4)
 	view._queue_box.add_child(title)
 

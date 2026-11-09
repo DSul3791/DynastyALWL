@@ -12,7 +12,7 @@ const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 const TAB_PX := 48.0                       # the category tabs: a column of 48 px glyph tabs (redesign 4.3)
-const LIST_PX := 196.0                     # the recipe list's width
+const LIST_PX := 226.0                     # the recipe list's width (196 cut about 47 of 338 names at text scale 1.2; 226 cuts about 11, 9 Nov 2026)
 const CARD_ICON_PX := 96.0                 # the made item's well on the recipe card
 const NEED_PX := 80.0                      # a requirement well
 
@@ -124,7 +124,7 @@ func refresh() -> void:
 		var makeable: bool = view._can_craft(r["number"]) and view._station_ok(r)
 		var entry: Button = Button.new()
 		# A row (redesign 4.3): the made item's 32 px icon and its name; a recipe that needs a station you are not at has a second dim line,
-		# "at camp bench" (short: the dim row already says it can't be made here). A line too long for the 196 px list ends in "...".
+		# "at camp bench" (short: the dim row already says it can't be made here). A line too long for the 226 px list ends in "...".
 		entry.text = str(r["name"]) + (("\nat %s" % view._station_label(r)) if not view._station_ok(r) else "")
 		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		entry.clip_text = true

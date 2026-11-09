@@ -90,20 +90,20 @@ The six stats are the six bars Dave approved on 21 Oct (Health, Exertion, Energy
 |---|---|---|---|---|---|
 | Title plate | 1254 | 30 | text + 60 | 46 | "CRAFT" engraved; station context on the right of the title row: "By hand" or "At: Campfire" (SemiBold 18) |
 | Category tabs | 1226 | 100 | 48 | 588 | 11 raised tabs of 48 x 48, 6 apart, each an engraved 28 px glyph: All, then the 10 recipe categories. The selected tab is lit with a bright rim and a gold glyph |
-| Recipe search | 1282 | 100 | 196 | 36 | Filters the list; the placeholder names the tab ("Search tools") |
-| Recipe list | 1282 | 146 | 196 | 766 | Rows of 44, 3 apart, with a faint rule between rows. A 32 px icon and the name (18). Rows you can't make yet are dimmed to 45 %. A recipe that needs a station is 64 tall and has a second grey line: "at basic forge" (shortened from "needs …" after the 1366 x 768 review, 9 Nov). A line too long for the list ends in "…". The selected row is lit, its name SemiBold gold, with a 4 px brass bar on its left edge |
-| **Recipe card** | 1490 | 100 | 386 | 812 | A raised card, one step lighter than the panel, with a 1 px top highlight and a 6 px soft shadow |
-| · Icon | 1504 | 112 | 96 | 96 | The made item in a well with the soft gold inner glow |
-| · Name | 1616 | 114 | 248 | 94 | Name Cinzel Bold 30; "Tools" and "By hand · 10 s" in dim 18 |
-| · Description | 1504 | 222 | 360 | 44 | Two lines, 18 (from `items.json`) |
-| · Stats | 1504 | 278 | 360 | 96 | Up to 4 lines of 24: label dim on the left, value cream on the right, a faint leader line between |
-| · Needs | 1504 | 388 | 360 | 168 | "Needs" (Cinzel 22, small caps) and a gold rule; requirement wells of 80, 16 apart (4 fit); the item name under each (18) and **have / need** (SemiBold 18, outlined; red only when short). A 22 px engraved chest glyph in the top right of a well whose stock comes from a nearby chest. An item with no icon yet shows the missing-icon tile (art brief row 27) |
-| · Quantity | 1504 | 570 | 360 | 42 | "Make", −, the number in a well, +, "Most" |
-| · Shortfall line | 1504 | 620 | 360 | 24 | Red, only when something is short, saying what will happen |
-| · Made at | 1504 | 656 | 360 | 48 | Head "Made at" (Cinzel 22, small caps) with a gold rule; then the station's 22 px engraved glyph and its name: "By hand, anywhere", or "Campfire, within 3 m" (from the recipe's `station` and `station_level`) |
-| · Used in | 1504 | 714 | 360 | 48 | Head "Used in" with a gold rule; then up to 2 recipe names that take this item (as a need, or kept as their tool), SemiBold 18 gold, underlined, clickable to select that recipe, and "+N more" in dim. For the stone axe: Log seat · Small wooden blocks · +1 more. A recipe with no uses leaves this block out and the card shrinks |
-| · Queue | 1504 | 784 | 360 | 48 | An ornament rule above; "Making" and up to 5 queued items as 56 px wells; the first has a 3 px gold progress arc. Click one to cancel it |
-| · Craft button | 1504 | 848 | 360 | 58 | Cast brass with "CRAFT" engraved (Cinzel Bold 26, letter-spaced 4) and a faint warm glow round it when you can make the item; hold for the ring (left end) to make "Most" |
+| Recipe search | 1282 | 100 | 226 | 36 | Filters the list; the placeholder names the tab ("Search tools") |
+| Recipe list | 1282 | 146 | 226 | 766 | Rows of 44, 3 apart, with a faint rule between rows. A 32 px icon and the name (18). Rows you can't make yet are dimmed to 45 %. A recipe that needs a station is 64 tall and has a second grey line: "at basic forge" (shortened from "needs …" after the 1366 x 768 review, 9 Nov). A line too long for the list ends in "…". The list is 226 wide, 30 more than first drawn, so fewer names are cut at text scale 1.2 (9 Nov). The selected row is lit, its name SemiBold gold, with a 4 px brass bar on its left edge |
+| **Recipe card** | 1520 | 100 | 356 | 812 | A raised card, one step lighter than the panel, with a 1 px top highlight and a 6 px soft shadow |
+| · Icon | 1534 | 112 | 96 | 96 | The made item in a well with the soft gold inner glow |
+| · Name | 1646 | 114 | 218 | 94 | Name Cinzel Bold 30; "Tools" and "By hand · 10 s" in dim 18 |
+| · Description | 1534 | 222 | 330 | 44 | Two lines, 18 (from `items.json`) |
+| · Stats | 1534 | 278 | 330 | 96 | Up to 4 lines of 24: label dim on the left, value cream on the right, a faint leader line between |
+| · Needs | 1534 | 388 | 330 | 168 | "Needs" (Cinzel 22, small caps) and a gold rule; requirement wells of 80, 16 apart (3 fit); the item name under each (18) and **have / need** (SemiBold 18, outlined; red only when short). A 22 px engraved chest glyph in the top right of a well whose stock comes from a nearby chest. An item with no icon yet shows the missing-icon tile (art brief row 27) |
+| · Quantity | 1534 | 570 | 330 | 42 | "Make", −, the number in a well, +, "Most" |
+| · Shortfall line | 1534 | 620 | 330 | 24 | Red, only when something is short, saying what will happen |
+| · Made at | 1534 | 656 | 330 | 48 | Head "Made at" (Cinzel 22, small caps) with a gold rule; then the station's 22 px engraved glyph and its name: "By hand, anywhere", or "Campfire, within 3 m" (from the recipe's `station` and `station_level`) |
+| · Used in | 1534 | 714 | 330 | 48 | Head "Used in" with a gold rule; then up to 2 recipe names that take this item (as a need, or kept as their tool), SemiBold 18 gold, underlined, clickable to select that recipe, and "+N more" in dim. For the stone axe: Log seat · Small wooden blocks · +1 more. A recipe with no uses leaves this block out and the card shrinks |
+| · Queue | 1534 | 784 | 330 | 48 | An ornament rule above; "Making" and up to 5 queued items as 56 px wells; the first has a 3 px gold progress arc. Click one to cancel it |
+| · Craft button | 1534 | 848 | 330 | 58 | Cast brass with "CRAFT" engraved (Cinzel Bold 26, letter-spaced 4) and a faint warm glow round it when you can make the item; hold for the ring (left end) to make "Most" |
 
 The 10 categories are the ones in `recipes.json`: Tools, Weapons, Shelter and building, Workshops and stations, Fire and cooking, Food and drink, Medicine, Clothing, Containers and furniture, Materials.
 
