@@ -221,7 +221,6 @@ def _floor_width(cells, h, rec, sea, rise, max_m, ahead, n, dx):
     return out
 
 
-@nb.njit(cache=True)
 def below_springs(cells, q, rec, step, stream, stop):
     """The spring that keeps each stream cell open longest in frost (drinking water step 2b, docs/design/drinking_water_step2b_design.md).
     DrinkRules freezes a brook below a spring past open_m x sqrt(L/s) x cold x breeze, and cold and breeze are the same for every
@@ -243,6 +242,7 @@ def below_springs(cells, q, rec, step, stream, stop):
     return dist, who
 
 
+@nb.njit(cache=True)
 def _strahler(order, rec, outlet, vis):
     """Strahler order of the visible streams."""
     N = rec.size

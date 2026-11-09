@@ -191,10 +191,10 @@ def test_below_springs_takes_the_spring_that_keeps_it_open():
     stream = np.array([False, True, True, True, True, True, True])
     stop = np.array([True, True, False, False, False, False, False])
     dist, who = nw.below_springs(np.array([4, 6]), np.array([0.001, 0.1]), rec, step, stream, stop)
-    assert list(who) == [-1, -1, 1, 1, 0, 1, 0]
-    assert np.isinf(dist[:2]).all() and list(dist[2:]) == [300.0, 200.0, 0.0, 100.0, 0.0]
+    assert [int(w) for w in who] == [-1, -1, 1, 1, 0, 1, 0], list(who)
+    assert np.isinf(dist[:2]).all() and [float(x) for x in dist[2:]] == [300.0, 200.0, 0.0, 100.0, 0.0], list(dist)
     dist, who = nw.below_springs(np.array([4, 6]), np.array([0.001, 0.1]), rec, step, stream & (np.arange(7) != 3), stop)
-    assert list(who) == [-1, -1, -1, -1, 0, 1, 0]   # a stream that stops (cell 3 not a stream) ends the walks there
+    assert [int(w) for w in who] == [-1, -1, -1, -1, 0, 1, 0], list(who)   # a stream that stops (cell 3 not a stream) ends the walks there
 
 if __name__ == '__main__':
     tests = [v for k, v in sorted(globals().items()) if k.startswith('test_') and callable(v)]
