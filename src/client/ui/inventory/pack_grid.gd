@@ -281,12 +281,8 @@ func _slot_menu(index: int) -> void:
 func _refresh_look_slot(i: int, filter: String) -> void:
 	var slot = view._buttons[i]
 	var number: int = view.inventory.numbers[i]
-	var tip: String = view._tooltip(number, view.inventory.counts[i], view.inventory.wear[i]) if number != 0 else ""
-
-	if number != 0 and view.container_cap(i) > 0:
-		tip += "\n%s" % view._litres(view.inventory.wear[i])
-
-	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], tip)
+	# No floating tooltip on a pack well: the info strip under the grid shows the slot under the pointer (redesign 4.1 and 11.3).
+	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], "")
 	slot.set_marked(ItemSlot.MARK_GOLD if i == view._selected else 0)
 	slot.set_favourite(view.inventory.is_fav(i))
 	slot.set_linked_key(view.linked_key(i))

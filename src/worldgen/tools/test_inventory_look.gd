@@ -1,7 +1,7 @@
 extends SceneTree
 
-# The inventory look, step B (docs/design/INVENTORY_CRAFTING_LOOK.md sections 3 and 4): the only window; the window
-# frame, its corner plates and parchment tooltips; the name plates; the carry bar's colours; slots with no icon yet show the item's name.
+# The inventory window's shared helpers (inventory_look.gd; the frame, plates and cards are art_kit.gd's, tested in test_art_kit and
+# test_item_slot): item icons, the carry bar's colours, slots with no icon yet show the item's name, recipe rows and craft feedback.
 #   godot --headless --path . --script res://src/worldgen/tools/test_inventory_look.gd
 
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
@@ -44,8 +44,7 @@ func check(ok: bool, what: String) -> void:
 
 
 func _initialize() -> void:
-	_check_window()
-	_check_plate()
+	_check_icons()
 	_check_carry()
 	_check_slot_extras()
 	_check_step_c()
@@ -53,31 +52,8 @@ func _initialize() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-func _check_window() -> void:
-	var panel: PanelContainer = PanelContainer.new()
-	var old: Theme = Theme.new()
-	old.set_font_size("font_size", "TooltipLabel", 21)
-	panel.theme = old
-	InventoryLook.style_window(panel, 18)
-	var frame: StyleBoxFlat = panel.get_theme_stylebox("panel") as StyleBoxFlat
-	check(frame != null and frame.border_width_top == 2 and frame.bg_color == DynastyTheme.WOOD_DARK and frame.bg_color.a == 1.0, "the window is solid walnut with a 2 px gold frame")
-	check(panel.get_node_or_null("CornerPlates") != null, "brass corner plates on the frame")
-	check(panel.theme.get_font_size("font_size", "TooltipLabel") == 21, "the window's own tooltip text size is kept")
-	var tip: StyleBoxFlat = panel.theme.get_stylebox("panel", "TooltipPanel") as StyleBoxFlat
-	check(tip != null and tip.bg_color == DynastyTheme.PARCHMENT and panel.theme.get_color("font_color", "TooltipLabel") == DynastyTheme.INK, "plain tooltips are ink on parchment")
-	check(panel.theme.get_stylebox("normal", "Button") is StyleBoxFlat, "buttons are the menu's wooden buttons")
-	panel.free()
-
-
-func _check_plate() -> void:
-	var label: Label = Label.new()
-	InventoryLook.plate(label, "Pack", 30, 1.0)
-	var board: StyleBoxFlat = label.get_theme_stylebox("normal") as StyleBoxFlat
-	check(label.text == "Pack" and label.get_theme_color("font_color") == DynastyTheme.HEADING, "a name plate is gold lettering")
-	check(board != null and board.bg_color == DynastyTheme.WOOD and board.border_color == DynastyTheme.GOLD_DIM, "on a wood board with a dim gold edge")
-	check(label.get_node_or_null("Emblem") == null, "no emblem until its art exists")
-	label.free()
-	check(InventoryLook.emblem_for("") == null and InventoryLook.icon_for("") == null, "no station, no item: no picture")
+func _check_icons() -> void:
+	check(InventoryLook.icon_for("") == null, "no item: no picture")
 	check(InventoryLook.icon_for("no_such_item_here") == null, "an item without a baked icon has none (the slot shows its name)")
 
 

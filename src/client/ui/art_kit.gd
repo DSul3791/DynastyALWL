@@ -231,6 +231,66 @@ static func stylebox_raised(state: int = 0) -> StyleBox:
 	return box
 
 
+# A card for reading, not handling: the tooltip of a well outside the pack (the pack's own wells use the info strip, section 4.1) and the
+# pinned recipe. A raised plate, the first line the name in Cinzel gold, the rest in Garamond cream; a line that starts "Needs",
+# "Missing" or "Short" is red (it always carries its count too, so colour is never the only signal). Fixed canvas px, nothing under 18.
+const CARD_MAX_W := 420.0
+const CARD_WARN := ["Needs", "Missing", "Short"]
+
+
+static func card(title: String, lines: Array = []) -> PanelContainer:
+	var plate: PanelContainer = PanelContainer.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var box: StyleBox = stylebox_raised(0).duplicate()
+	box.content_margin_left = 14
+	box.content_margin_right = 14
+	box.content_margin_top = 10
+	box.content_margin_bottom = 10
+	plate.add_theme_stylebox_override("panel", box)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 4)
+	plate.add_child(column)
+
+	if title != "":
+		column.add_child(card_label(title, "cinzel_bold", 22, HEADING))
+
+	for line in lines:
+		card_line(plate, str(line))
+
+	return plate
+
+
+# The engine's tooltip text as a card: the first line is the name.
+static func card_from_text(text: String) -> PanelContainer:
+	var lines: Array = Array(text.split("\n"))
+	var title: String = str(lines.pop_front()) if lines.size() > 0 else ""
+	return card(title, lines)
+
+
+# One more body line on a card (blank lines are dropped); red when it names what is short.
+static func card_line(plate: PanelContainer, text: String) -> void:
+	if text.strip_edges() == "":
+		return
+
+	var warn: bool = false
+
+	for word in CARD_WARN:
+		warn = warn or text.begins_with(str(word))
+
+	plate.get_child(0).add_child(card_label(text, "garamond", 18, BAD if warn else CREAM))
+
+
+static func card_label(text: String, face: String, px: int, colour: Color) -> Label:
+	var label: Label = Label.new()
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2(minf(CARD_MAX_W, maxf(120.0, float(text.length()) * float(px) * 0.5)), 0.0)
+	label.add_theme_font_override("font", font(face))
+	label.add_theme_font_size_override("font_size", px)
+	label.add_theme_color_override("font_color", colour)
+	return label
+
+
 # The cast brass button (row 14).
 static func stylebox_brass(pressed: bool = false) -> StyleBox:
 	var painted: StyleBoxTexture = _nine("button_brass_pressed" if pressed else "button_brass", 16, 16, 16, 16)

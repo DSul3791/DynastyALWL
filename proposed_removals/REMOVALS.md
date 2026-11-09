@@ -65,3 +65,8 @@ Also removed inside live files (git history keeps them):
 - `server_wolves.gd` `near_town` and `animals.json` `wolves.town_keep_m` (the town point was the spawn).
 - `drainage_channels.gd` `_keep_spawn_clear` and `SPAWN_GULLY_*`, `tile_rolling.gd` `_spawn_pad` (rule-bake code that no rule switched on).
 - Checks: `test_flora_density`'s starter orchard check, `test_wolf_pups`'s town keep-out check, `test_spawn_picker`'s town shift checks.
+
+## Inventory redesign cleanup, 9 Nov 2026 (Kathleen, branch claude/kathleen-inventory-cleanup, #797)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/client/ui/inventory/parchment_tooltip.gd | Kathleen, coordinator approved the cleanup plan (Dave delegated approval while asleep) | 9 Nov | the redesign (docs/ui/inventory_crafting_redesign.md section 10) replaces the parchment card; nothing loads it any more | ArtKit.card in src/client/ui/art_kit.gd (item tooltips, pinned recipe, bulk toast) and the pack's info strip |
