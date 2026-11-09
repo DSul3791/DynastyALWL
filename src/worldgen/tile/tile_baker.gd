@@ -31,6 +31,7 @@ const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd"
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 const SetupCacheScript := preload("res://src/worldgen/tile/setup_cache.gd")
+const RECORD_FIELDS := ["ground", "water_level", "water_class", "area_km2", "fresh_m"]   # the rasters _bake_from_record reads
 
 var settings
 var tile_rules: Dictionary = {}
@@ -45,13 +46,19 @@ var erosion_delta                    # whole-island pre-carve (ErosionDelta), or
 var use_cache: bool = false         # bake_tiles.gd sets this (unless --no-cache): reuse the once-per-run setup (setup_cache.gd)
 var margin: int = 80                 # samples built beyond each tile edge, then cropped
 var record = null                    # the island water record (WaterRecord), when world_dir/record holds one; null: none
-var _record_mutex: Mutex = Mutex.new()   # bake_tiles.gd bakes tiles on threads that share this baker; the record's cache is not shared safely
+var rule_rivers: bool = true         # false: setup built no rule river network (every tile asked for is baked from the record)
+# Threads that share this baker read a prepared record (prepare_record) with no lock; an unprepared record's cache is not shared
+# safely, so a bake from it takes this lock.
+var _record_mutex: Mutex = Mutex.new()
 
 
 # Loads everything a bake needs. Returns an empty string when it worked,
-# otherwise the problem.
-func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
+# otherwise the problem. only_tiles (bake_tiles.gd): the tiles this run bakes; when every one is inside the water record, the rule river
+# network and its ponds are not built (only the passes' bake reads them; docs/water/generation_cost_audit.md, "The bake").
+func setup(world_directory: String, elevation_cell_m: float = 0.0, only_tiles: Array = []) -> String:
 	world_dir = world_directory
+	var parts: Array = []   # [name, ms] for the setup's timing line
+	var clock: int = Time.get_ticks_msec()
 	var errors: Array = []
 	settings = WorldSettingsScript.load_from_file(world_dir + "/world.json", errors)
 	var rules: Dictionary = SketchScript.load_rules(world_dir + "/plan/sketch_rules.json", errors)
@@ -69,40 +76,13 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 	elevation = ElevationScript.new()
 	river_network = RiverNetworkScript.new()
 	margin = int(tile_rules["frame"]["margin_samples"])
-	var cache_key: String = SetupCacheScript.key(world_dir, elevation_cell_m) if use_cache else ""
-	var cache_path: String = SetupCacheScript.path_for(world_dir, cache_key) if use_cache else ""
-
-	if use_cache and SetupCacheScript.load_into(cache_path, cache_key, elevation, river_network, world_air, sketch):
-		elevation.settings = settings
-		print("Setup restored from the cache %s" % cache_path.get_file())
-	else:
-		elevation.build(settings, rules, sketch, elevation_cell_m)
-		world_air = TileClimateScript.build_world_air(settings, tile_rules, elevation)
-		river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
-		river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
-		river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
-
-		if use_cache:
-			SetupCacheScript.save(cache_path, cache_key, elevation, river_network, world_air, sketch)
-
-	# BAKE: a pre-carved island (erosion_delta_v2.bin next to world.json) replaces the per-tile erosion below.
-	erosion_delta = ErosionDeltaScript.new()
-
-	if not erosion_delta.load_file(world_dir + "/erosion_delta_v2.bin"):
-		erosion_delta = null
-	else:
-		erosion_delta.crowns = tile_rules.get("precarve", {}).get("summit_crowns", [])
-
-	tables = TableSetScript.new()
-	var table_problems: Array = tables.load_directory()
-
-	if not table_problems.is_empty():
-		return "\n".join(table_problems)
+	parts.append(["rules", Time.get_ticks_msec() - clock])
 
 	# The island water record (watershed rebuild R6, docs/water/watershed_rebuild_design.md R6 item 5): where world_dir/record holds
 	# one, every tile inside its window is baked from it, ground and water, and the passes below are not run there. Tiles outside the
 	# window are baked by the passes. There is no setting: the record's window decides, and git is the way back (the tiles and the
 	# water files are tracked). A record the reader refuses (incomplete, unknown version, bad field table) stops the setup.
+	clock = Time.get_ticks_msec()
 	record = null
 
 	if FileAccess.file_exists(world_dir + "/record/manifest.json"):
@@ -114,13 +94,76 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 
 		print("Water record %s: tiles %s are baked from it" % [str(record.manifest.get("record_sha", "?")).left(8), str(record.tile_rect)])
 
+	parts.append(["record", Time.get_ticks_msec() - clock])
+	rule_rivers = only_tiles.is_empty() or record == null or not only_tiles.all(func(t: Vector2i) -> bool: return record.has_tile(t.x, t.y))
+	clock = Time.get_ticks_msec()
+	var cache_key: String = SetupCacheScript.key(world_dir, elevation_cell_m, rule_rivers) if use_cache else ""
+	var cache_path: String = SetupCacheScript.path_for(world_dir, cache_key) if use_cache else ""
+
+	if use_cache and SetupCacheScript.load_into(cache_path, cache_key, elevation, river_network, world_air, sketch):
+		elevation.settings = settings
+		parts.append(["cache", Time.get_ticks_msec() - clock])
+		print("Setup restored from the cache %s" % cache_path.get_file())
+	else:
+		parts.append(["cache key", Time.get_ticks_msec() - clock])
+		clock = Time.get_ticks_msec()
+		elevation.build(settings, rules, sketch, elevation_cell_m)
+		parts.append(["world elevation", Time.get_ticks_msec() - clock])
+		clock = Time.get_ticks_msec()
+		world_air = TileClimateScript.build_world_air(settings, tile_rules, elevation)
+		parts.append(["wet air", Time.get_ticks_msec() - clock])
+		clock = Time.get_ticks_msec()
+
+		if rule_rivers:
+			river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
+			river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
+			parts.append(["rule rivers", Time.get_ticks_msec() - clock])
+			clock = Time.get_ticks_msec()
+			river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
+			parts.append(["ponds", Time.get_ticks_msec() - clock])
+		else:
+			parts.append(["rule rivers (not built: every tile is from the record)", 0])
+
+		if use_cache:
+			clock = Time.get_ticks_msec()
+			SetupCacheScript.save(cache_path, cache_key, elevation, river_network, world_air, sketch)
+			parts.append(["cache save", Time.get_ticks_msec() - clock])
+
+	# BAKE: a pre-carved island (erosion_delta_v2.bin next to world.json) replaces the per-tile erosion below.
+	clock = Time.get_ticks_msec()
+	erosion_delta = ErosionDeltaScript.new()
+
+	if not erosion_delta.load_file(world_dir + "/erosion_delta_v2.bin"):
+		erosion_delta = null
+	else:
+		erosion_delta.crowns = tile_rules.get("precarve", {}).get("summit_crowns", [])
+
+	parts.append(["erosion delta", Time.get_ticks_msec() - clock])
+	clock = Time.get_ticks_msec()
+	tables = TableSetScript.new()
+	var table_problems: Array = tables.load_directory()
+
+	if not table_problems.is_empty():
+		return "\n".join(table_problems)
+
+	parts.append(["tables", Time.get_ticks_msec() - clock])
+	clock = Time.get_ticks_msec()
 	var plan: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/tile_plan.json"))
 
 	if typeof(plan) == TYPE_DICTIONARY:
 		for entry in plan["cells"]:
 			plan_cells["%d,%d" % [int(entry["x"]), int(entry["z"])]] = entry
 
+	parts.append(["plan", Time.get_ticks_msec() - clock])
+	print("Setup parts (ms): " + ", ".join(parts.map(func(p: Array) -> String: return "%s %d" % [p[0], p[1]])))
 	return ""
+
+
+# Before tiles bake on threads (bake_tiles.gd): the record rasters they read are decoded once and the record is then read only, so
+# the threads read it at once (water_record.gd prepare). Does nothing without a record.
+func prepare_record(tiles: Array) -> void:
+	if record != null:
+		record.prepare(tiles, RECORD_FIELDS)
 
 
 # Drainage (in 8 m cells) at which a stream counts as a river.
@@ -369,27 +412,36 @@ func _bake_from_record(tile: Vector2i, n: int, core: int, origin_sx: int, origin
 	water.setup(settings, tile_rules)
 	water.samples = n
 	water.spacing_m = spacing_m
-	_record_mutex.lock()
+	var locked: bool = not record.is_prepared()   # a prepared record is read only: no lock, so the threads' record stages overlap
+
+	if locked:
+		_record_mutex.lock()
+
 	var missing: String = ""
 
-	for name in ["ground", "water_level", "water_class", "area_km2", "fresh_m"]:
-		if missing == "" and record.raster(tile.x, tile.y, name).is_empty():
-			missing = record.error_of
+	for name in RECORD_FIELDS:
+		if missing == "":
+			missing = record.field_problem(tile.x, tile.y, name)
 
 	if missing != "":
-		_record_mutex.unlock()
+		if locked:
+			_record_mutex.unlock()
+
 		return {"error": "water record: " + missing, "timings": timings}
 
-	water.heights = record.frame(tile, margin, "ground")
-	var gaps: int = record.frame_gaps
-	var level: PackedFloat32Array = record.frame(tile, margin, "water_level")
-	var codes: PackedFloat32Array = record.frame(tile, margin, "water_class")   # already the game's table ids (water_record.gd code_map)
-	var area_km2: PackedFloat32Array = record.frame(tile, margin, "area_km2")
-	water.fresh_m = record.frame(tile, margin, "fresh_m")
+	var ground_frame: Array = record.frame_and_gaps(tile, margin, "ground")
+	water.heights = ground_frame[0]
+	var gaps: int = ground_frame[1]
+	var level: PackedFloat32Array = record.frame_and_gaps(tile, margin, "water_level")[0]
+	var codes: PackedFloat32Array = record.frame_and_gaps(tile, margin, "water_class")[0]   # already the game's table ids (water_record.gd code_map)
+	var area_km2: PackedFloat32Array = record.frame_and_gaps(tile, margin, "area_km2")[0]
+	water.fresh_m = record.frame_and_gaps(tile, margin, "fresh_m")[0]
 	var rect: Rect2 = Rect2(Vector2(float(origin_sx), float(origin_sz)) * spacing_m, Vector2(float(n - 1), float(n - 1)) * spacing_m)
 	var reaches: Array = record.reaches_in(rect)
 	var heads: Array = record.heads_in(rect)
-	_record_mutex.unlock()
+
+	if locked:
+		_record_mutex.unlock()
 
 	water.water_class = PackedByteArray()
 	water.water_class.resize(total)
