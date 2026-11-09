@@ -36,6 +36,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | PageUp / PageDown | While the photo camera (K) is on: raise and lower the camera |
 | Ctrl+R | Admin: put a rabbit on the ground where the crosshair points (up to 40 m away), for testing animals |
 | Ctrl+N | Admin: stand next to the nearest NPC that is drawn (they are sent within 120 m), then press E to talk |
+| Ctrl+L | Admin: spyglass up or down. The wheel zooms 2x to 40x and the mouse slows to match; the animal at the centre dot shows its name, level, health and what it is doing; animals are sent out to 300 m while it is up. Esc also lowers it |
 | 1 to 5 (in a talk panel) | Pick the numbered answer |
 | Ctrl+X | Admin: dig a 2 m hole where the crosshair meets the ground (up to 80 m away). Water flows into holes that open toward it (testing digging against the water) |
 | F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |

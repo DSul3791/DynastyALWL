@@ -1,0 +1,49 @@
+# Spyglass (design, Steve, 9 Nov 2026)
+
+Dave, 17:23 local:
+
+> "a spyglass of sorts. there should be different tiers of spyglasses. a simple one that is simple and fixed. a more complex one made from better materials and is more durable and probably variable focus and lighter, and the top tier that will be made from the finest of materials, rugged, has the best zoom of all and can tell you stuff about animals like their names, levels and health. but for now I need an admin spyglass so I can watch animals from distance"
+
+The admin spyglass is built now. The three player tiers come later, from this page.
+
+## Player tiers (later)
+
+| Tier | Name | Materials (first pass) | Zoom | Focus | Durability, weight | What it tells you |
+|---|---|---|---|---|---|---|
+| 1 | Spyglass | wooden tube, leather strap, 1 glass lens | 3× fixed | fixed: a soft blur closer than 20 m | 200 uses, 0.6 kg | nothing |
+| 2 | Brass spyglass | bronze or copper tube, leather, 2 glass lenses | 2× to 6× on the wheel | variable: sharp at any range | 600 uses, 0.4 kg | nothing |
+| 3 | Fine spyglass | steel tube, tanned leather grip, 3 ground lenses | 2× to 12× on the wheel | variable | 2,000 uses, rugged (no break on a fall), 0.35 kg | the animal at the centre: its name, level and health |
+
+- **Glass.** There is no glass in the game yet. Lenses need glass from sand fired in the kiln/smelter, which is items review stage 2. So tier 1 waits for glass, or uses a polished rock-crystal lens found as a rare drop. Dave to pick.
+- **Use.** Hold the spyglass in hand. Right mouse looks through it, and the wheel zooms on tiers 2 and 3. Looking through it narrows the field of view and slows the mouse by the same factor. A dark round vignette frames the view. Each look costs one use of durability.
+- **Animal range.** Animals are only sent within 120 m of a player, and only exist out to about 300 m. While looking, the tiers raise that: tier 1 to 150 m, tier 2 to 220 m, tier 3 to 300 m.
+- **Tier 3 readout.** It needs the server, as the admin version below does, but without the admin check.
+
+## Admin spyglass (built now)
+
+- **Key.** Ctrl+L, in the Admin and debug group of the key list, so it can be rebound. It needs no item and no icon.
+- **Who.** Admins only, on the existing admin check (`server_admin.gd` `is_admin`). With `check_admin` off, which is local play and the current setting, everyone is an admin. On a public server the server refuses a non-admin, and the client gets nothing extra.
+- **View.**
+  - The wheel zooms 2× to 40×, starting at 4×.
+  - The field of view is 2·atan(tan(37.5°) / zoom), so 75° at 1×.
+  - The mouse slows by the zoom.
+  - Each wheel notch multiplies or divides the zoom by 1.25.
+  - There is a round black vignette with a centre dot.
+  - Esc or Ctrl+L again leaves, and the field of view goes back to normal.
+  - It does not work inside the photo camera.
+- **Animals.**
+  - While an admin looks through it, the server sends the animals within 300 m, the despawn distance (all that exist round you), nearest 60. Normally it is 120 m, nearest 30.
+  - The client draws up to 60.
+  - The animal nearest the centre dot, within 3° divided by the zoom, is "watched".
+  - The watched animal keeps living past the 200 m freeze line and is not sent off for the hour, so it never stands still as a statue.
+- **Readout.** For the watched animal, the server sends its info twice a second (protocol 102, rpc `animal_info`). The panel under the dot shows:
+  - the species name and "young" if it is young;
+  - its level;
+  - health, as current/full;
+  - what it is doing: grazing, moving, fleeing, alert, drinking, warning, charging and so on;
+  - its temperament;
+  - distance in metres;
+  - its herd or pack id.
+- **No flags.** It ships on, gated only by the admin check.
+
+**Later (not in this PR):** the three tiers as items with recipes, the in-hand model and the durability. These reuse the same view code, with the zoom range and readout taken from the item row.

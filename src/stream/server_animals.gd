@@ -29,6 +29,7 @@ const STAGGER := 4              # a quarter of the animals are looked at each ti
 
 var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
+var watched: Dictionary = {}       # id int -> true: watched by an admin through the spyglass (set by the server scene each send pass), kept living
 var ground_height: Callable        # (x, z) -> height
 var blocked: Callable              # (x, z) -> bool (deep water)
 var ice_cover_at: Callable         # (Vector3) -> Ice.cover there (0 open .. 1 a 20 cm sheet; 0.5, 10 cm, bears a person); set by the server scene
@@ -835,7 +836,9 @@ func tick(delta: float) -> void:
 			gone.append(id)
 			continue
 
-		var kept: bool = a.has("companion_id")   # a companion stays with its owner: never frozen, never sent off for the hour (server_companions)
+		# A companion stays with its owner (server_companions), and the animal an admin watches through the spyglass keeps living: never
+		# frozen, never sent off for the hour.
+		var kept: bool = a.has("companion_id") or watched.has(id)
 
 		# An animal whose hours are over (a songbird at night, a boar at noon: its activity chance is at most off_hours_chance) leaves once no player is close to it.
 		if not kept and near_d > float(cfg.get("off_hours_despawn_m", 80.0)) and hour_now.is_valid() and activity_chance(species_def(str(a["sp"]))) <= float(cfg.get("off_hours_chance", 0.05)):
@@ -851,6 +854,9 @@ func tick(delta: float) -> void:
 			continue   # the pack brain moves wolves (tick below)
 
 		var hz: float = float(cfg.get("hz_near", 10.0)) if near_d <= near_m else (float(cfg.get("hz_mid", 3.0)) if near_d <= mid_m else float(cfg.get("hz_far", 0.5)))
+
+		if watched.has(id):
+			hz = maxf(hz, float(cfg.get("hz_mid", 3.0)))   # watched through the spyglass: smooth enough to follow
 
 		if a["acc"] < 1.0 / hz:
 			continue
@@ -1703,8 +1709,9 @@ func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
 # An animal warning at, charging or recovering from a dog (states 10 to 12 with foe_dog, dog_companion_design.md 11) adds a sixth field:
 # the dog's position, so the client looks at the dog and not the player (MikeW, 8 Nov 2026). Rows without it are unchanged.
-func rows_near(point: Vector3) -> Array:
-	var radius: float = float(cfg.get("send_radius_m", 120.0))
+# radius_m and cap above 0 replace send_radius_m and per_player_cap (an admin looking through the spyglass: "spyglass" in animals.json).
+func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
+	var radius: float = radius_m if radius_m > 0.0 else float(cfg.get("send_radius_m", 120.0))
 	var found: Array = []
 
 	for id in animals:
@@ -1712,7 +1719,7 @@ func rows_near(point: Vector3) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), DRINK if a["state"] == GRAZE and bool(a.get("drinking", false)) else (HUNCH if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))) else a["state"])]
+			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), _wire_state(a)]
 
 			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
 				row.append(animals[int(a["foe_dog"])]["pos"])
@@ -1725,10 +1732,40 @@ func rows_near(point: Vector3) -> Array:
 	found.sort_custom(func(l, r): return l[0] < r[0])
 	var rows: Array = []
 
-	for f in found.slice(0, int(cfg.get("per_player_cap", 30))):
+	for f in found.slice(0, cap if cap > 0 else int(cfg.get("per_player_cap", 30))):
 		rows.append(f[1])
 
 	return rows
+
+
+# The state an animal is sent with: GRAZE shows as DRINK at its drinking place, HUNCH standing out the rain.
+func _wire_state(a: Dictionary) -> int:
+	if a["state"] == GRAZE and bool(a.get("drinking", false)):
+		return DRINK
+
+	if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))):
+		return HUNCH
+
+	return int(a["state"])
+
+
+# What the admin spyglass shows of one animal (Dave 9 Nov 2026, docs/design/spyglass_design.md): {} when it is gone or in its burrow.
+func info_of(id: int) -> Dictionary:
+	if not animals.has(id) or animals[id]["state"] == HIDDEN:
+		return {}
+
+	var a: Dictionary = animals[id]
+	var def: Dictionary = species_def(str(a["sp"]))
+	var out: Dictionary = {"name": str(def.get("name", a["sp"])), "young": int(a["num"]) >= YOUNG_NUM, "hp": snappedf(float(a["hp"]), 0.1),
+		"hp_max": snappedf(float(a.get("hp_max", a["hp"])), 0.1), "state": _wire_state(a), "group": int(a.get("pack", a.get("herd", 0))), "pack": a.has("pack")}
+
+	if a.has("level"):
+		out["level"] = int(a["level"])
+
+	if a.has("temper"):
+		out["temper"] = str(a["temper"])
+
+	return out
 
 
 func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:

@@ -7,6 +7,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
 
 const MAX_DRAWN := 30
+const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
@@ -32,6 +33,7 @@ const WARN_POP := 16                          # the threat ladder's jaw-pop rung
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
+var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
@@ -317,6 +319,16 @@ static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
 	return false
 
 
+# [[id, drawn position], ...] of every animal drawn: the admin spyglass picks the one nearest its centre.
+func drawn_positions() -> Array:
+	var out: Array = []
+
+	for id in _bodies:
+		out.append([int(id), (_bodies[id]["node"] as Node3D).global_position])
+
+	return out
+
+
 func on_rows(rows: Array) -> void:
 	var seen: Dictionary = {}
 
@@ -333,7 +345,7 @@ func on_rows(rows: Array) -> void:
 			row[1] = int(row[1]) - YOUNG_NUM
 
 		if not _bodies.has(id):
-			if _bodies.size() >= MAX_DRAWN:
+			if _bodies.size() >= max_drawn:
 				continue
 
 			var node: Node3D = _make_for_species(int(row[1]), id, young)
