@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Paint the three first icons the bake never had: log, stick and stone (inventory redesign step 5; Kathleen, 9 Nov 2026).
+"""Paint the first icons the bake never had: log and stone (inventory redesign step 5; Kathleen, 9 Nov 2026). The stick moved to
+tools/paint_item_icons.py, drawn thicker so it reads at 23 px.
 
 They are drawn to the icon rig's look (docs/ui/inventory_crafting_redesign.md section 6.7, the bake in item_icon_sheet.png):
 low-poly, flat-shaded facets under a warm key light from the top left, a soft fill, three-quarter view, no background,
@@ -157,17 +158,6 @@ def log_icon():
     return render(faces, rot_z(math.radians(30.0)) @ rot_y(math.radians(10.0)), colour_jitter=0.06, seed=3)
 
 
-def stick_icon():
-    wood = (196, 166, 120)
-    end = (232, 210, 166)
-    faces = prism(0.09, 2.4, 7, wood, end, bend=0.06, taper=0.7, seed=5)
-    twig = prism(0.055, 0.8, 6, wood, end, taper=0.6, seed=6)
-    turn = rot_z(math.radians(38.0))
-    shift = np.array([0.35, 0.22, 0.0])
-    faces += [([turn @ p + shift for p in pts], colour) for pts, colour in twig]
-    return render(faces, rot_z(math.radians(36.0)) @ rot_y(math.radians(15.0)), colour_jitter=0.05, seed=5)
-
-
 def stone_icon():
     faces = rock(1.0, (172, 162, 146), seed=11)
     return render(faces, rot_y(math.radians(25.0)) @ rot_x(math.radians(-8.0)), colour_jitter=0.07, seed=11)
@@ -179,7 +169,7 @@ def main():
     args = parser.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
-    for name, painter in (("log", log_icon), ("stick", stick_icon), ("stone", stone_icon)):
+    for name, painter in (("log", log_icon), ("stone", stone_icon)):
         path = os.path.join(args.out, name + ".png")
         painter().save(path)
         print("painted", path)

@@ -123,10 +123,12 @@ func refresh() -> void:
 	for r in shown_recipes:
 		var makeable: bool = view._can_craft(r["number"]) and view._station_ok(r)
 		var entry: Button = Button.new()
-		# A row (redesign 4.3): the made item's 32 px icon and its name; a recipe that needs a station you are not at has a second dim line.
-		entry.text = str(r["name"]) + (("\nneeds %s" % view._station_label(r)) if not view._station_ok(r) else "")
+		# A row (redesign 4.3): the made item's 32 px icon and its name; a recipe that needs a station you are not at has a second dim line,
+		# "at camp bench" (short: the dim row already says it can't be made here). A line too long for the 196 px list ends in "...".
+		entry.text = str(r["name"]) + (("\nat %s" % view._station_label(r)) if not view._station_ok(r) else "")
 		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		entry.clip_text = true
+		entry.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		entry.icon = InventoryLook.icon_for(view.table.id_of(int(r["gives"][0]))) if not (r["gives"] as Array).is_empty() else null
 		entry.expand_icon = false
 		entry.add_theme_constant_override("icon_max_width", 32)
@@ -282,6 +284,7 @@ func _add_admin_builds() -> void:
 		entry.text = view.table.name_of(number)
 		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		entry.clip_text = true
+		entry.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		entry.icon = InventoryLook.icon_for(str(id))
 		entry.expand_icon = false
 		entry.add_theme_constant_override("icon_max_width", 32)
