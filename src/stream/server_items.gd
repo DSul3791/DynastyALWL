@@ -13861,7 +13861,11 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		return
 
 	if not water_near.is_valid() or not bool(water_near.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))):
-		_reject(peer, 0)
+		if _salt_only(peer, thirst):
+			_say(peer, str(thirst["sources"].get("say_salt", "Salt water. It would only make you thirstier.")))   # the sea (design section 2)
+		else:
+			_reject(peer, 0)
+
 		return
 
 	if not _drink_source_ok(peer, thirst):
@@ -13899,10 +13903,19 @@ func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
 		return true
 
 	var pos: Vector3 = _peer_pos[peer]
-	var rows: Array = water_source.call(pos, float(thirst.get("reach_m", 3.0)))
+	var rows: Array = (water_source.call(pos, float(thirst.get("reach_m", 3.0))) as Array).duplicate()
 
 	if rows.is_empty():
 		return true   # the record knows nothing here (an older world): today's water test stands
+
+	var icy: int = -1   # a row without its own ice field takes the server's ice rule at the player (_on_ice, the fishing ice), read once
+
+	for i in range(rows.size()):
+		if not (rows[i] as Dictionary).has("iced"):
+			if icy < 0:
+				icy = 1 if _on_ice(pos) else 0
+
+			rows[i] = (rows[i] as Dictionary).merged({"iced": icy == 1})
 
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var ctx: Dictionary = {"season": str(season_at.call(pos)) if season_at.is_valid() else _season(), "rain_h_ago": (_now_game_s() - _last_rain_s) / 3600.0, "raining": float(weather.get("rain", 0.0)) > 0.05,
@@ -13922,6 +13935,17 @@ func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
 		return false
 
 	return true
+
+
+# With thirst.sources on, no drinking water within reach (water_near) but salt water is: the sea, which the live sim does not hold.
+func _salt_only(peer: int, thirst: Dictionary) -> bool:
+	var cfg: Dictionary = thirst.get("sources", {})
+
+	if not bool(cfg.get("enabled", false)) or not water_source.is_valid():
+		return false
+
+	var rows: Array = water_source.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
+	return rows.any(func(row): return str((row as Dictionary).get("kind", "")) == "salt")
 
 
 func _save_vitals() -> void:
