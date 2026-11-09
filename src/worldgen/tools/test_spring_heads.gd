@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Spring heads, the damp patch (spring_heads.gd; spring_damp_patch_note.md in the shared files): which way the runnel runs and how far from the
+# Spring heads, the damp patch (spring_heads.gd; docs/design/spring_head_damp_patch.md): which way the runnel runs and how far from the
 # record's brook cells, the heads a chunk brings and drops, the textures made in code, and the trickle's nearest head (cave_water_sounds.gd).
 #   godot --headless --path . --script res://src/worldgen/tools/test_spring_heads.gd
 

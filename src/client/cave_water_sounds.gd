@@ -11,7 +11,7 @@ extends Node
 # wetness follow the enclosure) and is the one bus still heard deep inside; the 3D falloff does the rest. Nothing plays when there is no cave water within REACH_M.
 #   sound.cavewater.set_tile(tile, floats)   the list for a tile (replaces that tile's)
 #   sound.cavewater.drop_tile(tile)
-# The ground springs too (Kathleen 9 Nov 2026, spring_damp_patch_note.md): a quiet, thin trickle (the brook loop, quieter and higher) at the
+# The ground springs too (Kathleen 9 Nov 2026, docs/design/spring_head_damp_patch.md): a quiet, thin trickle (the brook loop, quieter and higher) at the
 # nearest spring head within TRICKLE_REACH_M, where the water runs out from under its bushes. spring_heads.gd hands over the heads it has drawn:
 #   sound.cavewater.spring_heads = [Vector3, ...]
 

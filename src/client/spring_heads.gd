@@ -1,6 +1,6 @@
 extends Node3D
 
-# Spring heads: the damp patch (Kathleen, 9 Nov 2026; design note spring_damp_patch_note.md in the shared files, the coordinator took its three
+# Spring heads: the damp patch (Kathleen, 9 Nov 2026; docs/design/spring_head_damp_patch.md, the coordinator took its three
 # choices: a 4 m patch, the runnel to the first brook cell, the trickle sound now). Every ground spring is hidden under a clump of low shrubs
 # (flora_placer.gd _spring_cover, Dave: "let the water just run out from under the bush"), and the settled water on its 8 m grid shows nothing
 # there, so a player saw a bush and a "Spring — Press E to drink" prompt with no sign of water. Each head now gets:
@@ -37,6 +37,7 @@ const SCAN_SEC := 0.5
 const RAY_UP_M := 400.0                 # rays start this far above the player and end as far below
 
 var frost: float = 0.0                  # 0 open .. 1 frozen; the caller sets it from the puddles' ice
+var daylight: float = 1.0               # 0 night .. 1 day; the glint is the sky in the water, so it fades at night (the caller sets it from the sun)
 
 var _chunks: Dictionary = {}            # chunk Vector2i -> Array of head keys (Vector2i, decimetres) in that chunk
 var _cells: Dictionary = {}             # Vector2i world sample (cell_m grid) -> 1 + the brook's regime
@@ -115,7 +116,7 @@ func update(delta: float, at: Vector3) -> void:
 		var ice: Decal = entry[1]
 
 		if runnel.global_position.distance_to(at) <= SHIMMER_M:   # the glint wanders a little, so the runnel reads as running water
-			runnel.emission_energy = (0.35 + 0.25 * sin(_clock * 2.6 + float(entry[2]))) * (1.0 - frost)
+			runnel.emission_energy = (0.35 + 0.25 * sin(_clock * 2.6 + float(entry[2]))) * (1.0 - frost) * daylight
 
 		ice.modulate.a = frost
 
@@ -246,7 +247,7 @@ func _build(space: PhysicsDirectSpaceState3D, head: Vector3, way: Vector2, lengt
 	var drop: float = absf(head.y - end_y)
 	var runnel: Decal = _decal(Vector3(RUNNEL_W_M, maxf(3.0, drop * 1.4 + 1.0), length + CLUMP_EDGE_M), _runnel_texture, _runnel_orm)
 	runnel.texture_emission = _runnel_glint
-	runnel.emission_energy = 0.35
+	runnel.emission_energy = 0.35 * (1.0 - frost) * daylight
 	root.add_child(runnel)
 	runnel.basis = turn
 	runnel.global_position = Vector3((head.x + end.x) * 0.5, (head.y + end_y) * 0.5, (head.z + end.y) * 0.5)
