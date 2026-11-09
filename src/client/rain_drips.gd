@@ -67,7 +67,7 @@ static func drip_strength(mm: float) -> float:
 	return minf(mm / STRENGTH_MM, 1.0)
 
 
-func setup(parent: Node3D, material: Material) -> void:
+func setup(parent: Node, material: Material) -> void:      # weather_look.gd is a plain Node: the drips node keeps world coordinates under it
 	_rng.randomize()
 	_multimesh = MultiMesh.new()
 	_multimesh.transform_format = MultiMesh.TRANSFORM_3D
