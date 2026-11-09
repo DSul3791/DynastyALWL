@@ -661,7 +661,7 @@
 				100,
 				255
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				900
@@ -716,7 +716,7 @@
 				80,
 				255
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				800
@@ -834,7 +834,7 @@
 				60,
 				255
 			],
-			"max_slope_deg": 40,
+			"max_slope_deg": 45,
 			"altitude_m": [
 				1,
 				700
@@ -887,7 +887,7 @@
 				60,
 				255
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 45,
 			"altitude_m": [
 				1,
 				2000
@@ -936,7 +936,7 @@
 				0,
 				140
 			],
-			"max_slope_deg": 30,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				0.5,
 				1500
@@ -988,7 +988,7 @@
 				0,
 				100
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				1500
@@ -1870,7 +1870,7 @@
 				100,
 				255
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				1200
@@ -1990,7 +1990,7 @@
 				110,
 				255
 			],
-			"max_slope_deg": 30,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				700
@@ -2121,7 +2121,7 @@
 				60,
 				220
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				900
@@ -2179,7 +2179,7 @@
 				70,
 				230
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				600
@@ -2241,7 +2241,7 @@
 				70,
 				230
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				700
@@ -2299,7 +2299,7 @@
 				40,
 				220
 			],
-			"max_slope_deg": 30,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				0.5,
 				300
@@ -3250,7 +3250,7 @@
 				20,
 				150
 			],
-			"max_slope_deg": 40,
+			"max_slope_deg": 45,
 			"altitude_m": [
 				1,
 				900
@@ -4788,7 +4788,7 @@
 				0,
 				130
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				1200
@@ -5255,7 +5255,7 @@
 				50,
 				190
 			],
-			"max_slope_deg": 30,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				1200
@@ -5790,7 +5790,7 @@
 				80,
 				210
 			],
-			"max_slope_deg": 30,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				1100
@@ -6032,7 +6032,7 @@
 				80,
 				255
 			],
-			"max_slope_deg": 30,
+			"max_slope_deg": 45,
 			"altitude_m": [
 				1,
 				1800
@@ -6832,7 +6832,7 @@
 				120,
 				255
 			],
-			"max_slope_deg": 35,
+			"max_slope_deg": 40,
 			"altitude_m": [
 				1,
 				900

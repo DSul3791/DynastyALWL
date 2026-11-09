@@ -551,12 +551,13 @@ func _finish(tile: Vector2i, water, origin: Vector2i, spacing_m: float, fresh_po
 
 	var land_counts: Dictionary = TileLandTypesScript.apply(climate.biome, water.heights, land_class, water.water_surface, n, spacing_m, tile_rules.get("land_types", {}), land_ids)
 	var field_cells: int = TileLandTypesScript.farmland(climate.biome, climate.fertility, water.heights, land_class, n, spacing_m, origin_sx, origin_sz, tile_rules.get("land_types", {}), land_ids)
+	var rock_cells: int = TileLandTypesScript.rock_patches(climate.biome, climate.soil, climate.fertility, water.heights, land_class, n, spacing_m, origin_sx, origin_sz, tile_rules.get("land_types", {}), land_ids["bare_rock"], tables.id_of("soils", "bare_rock"))
 	var wet_land_cells: int = WaterRecordScript.apply_wet_land(water.water_class, climate.biome, climate.soil, tables)
 
 	if wet_land_cells > 0:
 		print("  wet land (tile %s): %d wetland and dry-bed cells given their own biome and soil" % [str(tile), wet_land_cells])
 	timings["land_types"] = Time.get_ticks_msec() - clock
-	print("  land types (tile %s): %d marsh/shore cells, %d alpine meadow, %d mixed-forest belt, %d boreal belt, %d field cells (%d ms)" % [str(tile), land_counts["marsh"], land_counts["alpine"], land_counts["belt"], land_counts["boreal"], field_cells, timings["land_types"]])
+	print("  land types (tile %s): %d marsh/shore cells, %d alpine meadow, %d mixed-forest belt, %d boreal belt, %d field cells, %d rock patch cells (%d ms)" % [str(tile), land_counts["marsh"], land_counts["alpine"], land_counts["belt"], land_counts["boreal"], field_cells, rock_cells, timings["land_types"]])
 
 	# Crop everything to the tile.
 	var ghost_heights: PackedFloat32Array = water.heights
