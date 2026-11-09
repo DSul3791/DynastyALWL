@@ -11,6 +11,9 @@ extends Node
 # wetness follow the enclosure) and is the one bus still heard deep inside; the 3D falloff does the rest. Nothing plays when there is no cave water within REACH_M.
 #   sound.cavewater.set_tile(tile, floats)   the list for a tile (replaces that tile's)
 #   sound.cavewater.drop_tile(tile)
+# The ground springs too (Kathleen 9 Nov 2026, spring_damp_patch_note.md): a quiet, thin trickle (the brook loop, quieter and higher) at the
+# nearest spring head within TRICKLE_REACH_M, where the water runs out from under its bushes. spring_heads.gd hands over the heads it has drawn:
+#   sound.cavewater.spring_heads = [Vector3, ...]
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
 const Sound3D := preload("res://src/client/sound_3d.gd")
@@ -27,17 +30,22 @@ const POOL_DB := -17.0
 const FLOW_STEP_DB := 3.0               # per doubling of the springs feeding the passage
 const SAME_CAVE_M := 160.0              # springs this near the stream point feed the same passage
 const INSIDE_CUT_DB := -6.0             # in the open the water is this much quieter than inside the rock
+const TRICKLE_REACH_M := 8.0            # the trickle at a ground spring head: heard only close by, quieter than a brook
+const TRICKLE_UNIT_M := 1.0
+const TRICKLE_DB := -27.0
+const TRICKLE_PITCH := 1.35             # the brook loop played higher sounds thin, a small water
 const SCAN_SEC := 0.25
 const FADE_DB_PER_SEC := 24.0
 
 var streams_heard: int = 0              # loops playing (HUD, checks)
 var springs_near: int = 0               # springs counted for the flow at the last scan
 var last: String = ""
+var spring_heads: Array = []            # Vector3: the ground spring heads drawn now (spring_heads.gd heads_built)
 
 var _stage
 var _tiles: Dictionary = {}             # tile -> PackedFloat32Array
-var _players: Dictionary = {}           # "stream", "river", "pool" -> AudioStreamPlayer3D
-var _target_db: Dictionary = {"stream": -80.0, "river": -80.0, "pool": -80.0}
+var _players: Dictionary = {}           # "stream", "river", "pool", "trickle" -> AudioStreamPlayer3D
+var _target_db: Dictionary = {"stream": -80.0, "river": -80.0, "pool": -80.0, "trickle": -80.0}
 var _scan_left: float = 0.0
 var _streams: Dictionary = {}
 
@@ -49,6 +57,8 @@ func setup(stage) -> void:
 	_players["stream"] = _loop_player(STREAM_UNIT_M, REACH_M)
 	_players["river"] = _loop_player(STREAM_UNIT_M * 1.5, REACH_M)
 	_players["pool"] = _loop_player(POOL_UNIT_M, POOL_REACH_M)
+	_players["trickle"] = _loop_player(TRICKLE_UNIT_M, TRICKLE_REACH_M)
+	_players["trickle"].pitch_scale = TRICKLE_PITCH
 
 
 func set_tile(tile: Vector2i, floats: PackedFloat32Array) -> void:
@@ -138,6 +148,7 @@ func _scan(at: Vector3) -> void:
 	_target_db["stream"] = -80.0
 	_target_db["river"] = -80.0
 	_target_db["pool"] = -80.0
+	_target_db["trickle"] = -80.0
 
 	if float(hit["distance"]) <= REACH_M and not muted:
 		var springs: int = 0
@@ -168,6 +179,27 @@ func _scan(at: Vector3) -> void:
 		_players["pool"].global_position = near_pool
 		_target_db["pool"] = POOL_DB + inside if _attach("pool") else -80.0
 
+	var head: Vector3 = nearest_head(spring_heads, at)
+
+	if head.distance_to(at) <= TRICKLE_REACH_M and not muted:
+		_players["trickle"].global_position = head
+		_target_db["trickle"] = TRICKLE_DB if _attach("trickle") else -80.0
+
+
+# The nearest of the spring heads to `at`, Vector3.INF when there are none. Static, checked on its own.
+static func nearest_head(heads: Array, at: Vector3) -> Vector3:
+	var best: Vector3 = Vector3.INF
+	var best_d: float = INF
+
+	for head in heads:
+		var d: float = (head as Vector3).distance_to(at)
+
+		if d < best_d:
+			best_d = d
+			best = head
+
+	return best
+
 
 func _loop_player(unit: float, reach: float) -> AudioStreamPlayer3D:
 	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", unit, reach)
@@ -182,7 +214,7 @@ func _attach(key: String) -> bool:
 	if player.stream != null:
 		return true
 
-	var name_of: String = {"stream": "water_brook", "river": "water_river", "pool": "water_pond"}[key]
+	var name_of: String = {"stream": "water_brook", "river": "water_river", "pool": "water_pond", "trickle": "water_brook"}[key]
 
 	if not _streams.has(name_of) or _streams[name_of].is_empty():
 		return false
