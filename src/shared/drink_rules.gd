@@ -14,9 +14,10 @@ const ORDER := ["spring", "river", "lake", "brook", "puddle"]   # cleanest first
 const RHO_C := 4.19e6   # J/m3K, water
 
 
-# Spring rows from a tile's ground springs (TileTerrainData.ground_springs: [Vector3 head, m3_s, cover], the record's spring heads baked into the
-# tile at R6) within reach of pos, measured level (docs/design/drinking_water_design.md 7, step 2a: no new bake). Until the baked drink rows give each
-# spring its own dry flow (design 5, Sonny's addition 1), the head's flow stands in for it, so a head the record gave no flow fails in a dry summer.
+# Spring rows from a tile's ground springs (TileTerrainData.ground_springs: [Vector3 head, m3_s, cover, dry_m3_s], the record's spring heads baked
+# into the tile at R6) within reach of pos, measured level (docs/design/drinking_water_design.md 7, step 2a). dry_m3_s is the head's own dry-quarter
+# base flow (design 5, Sonny's addition 1; #834), so a head whose store runs out in the dry quarter fails in a dry summer; a tile baked before it
+# has the head's flow there instead.
 # temp_c is mean_c.call(head): the year mean at the spring's height (Jamie #739), so it never freezes and drinks cool in summer.
 static func ground_spring_rows(springs: Array, pos: Vector3, reach: float, mean_c: Callable) -> Array:
 	var rows: Array = []
@@ -25,7 +26,7 @@ static func ground_spring_rows(springs: Array, pos: Vector3, reach: float, mean_
 		var head: Vector3 = spring[0]
 
 		if Vector2(head.x - pos.x, head.z - pos.z).length() <= reach:
-			rows.append({"kind": "spring", "dry_m3_s": float(spring[1]), "temp_c": float(mean_c.call(head))})
+			rows.append({"kind": "spring", "dry_m3_s": float(spring[3] if spring.size() > 3 else spring[1]), "temp_c": float(mean_c.call(head))})
 
 	return rows
 
