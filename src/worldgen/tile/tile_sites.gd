@@ -1009,6 +1009,7 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 	var placed: Array = []
 	var made: int = 0
 	var tried: int = 0
+	var with_den: int = 0          # caves with a dry den branch (an arm can fail for room, so a cave may have none)
 	var is_cave: Dictionary = {}   # head index -> true once it is a spring cave
 
 	for head in heads:
@@ -1026,13 +1027,14 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 				caves.append(cave)
 				is_cave[index] = true
 				made += 1
+				with_den += 0 if (cave.get("den_nodes", []) as Array).is_empty() else 1
 
 	# The floor (Sonny 9 Nov 2026, docs/design/cave_dens_after_rebuild_design.md section 5): a tile whose roll made fewer than record_cave_min_per_tile
-	# caves tries its other heads in the same order under the same rules, and keeps only a cave with a dry den branch, so the tile gets goblins.
+	# caves with a dry den branch tries its other heads in the same order under the same rules, and keeps only a cave with a dry den branch, so the tile gets goblins.
 	var floor_made: int = 0
 
 	for head in heads:
-		if made >= int(_spring_rule("record_cave_min_per_tile")) or made >= int(_spring_rule("max_count")):
+		if with_den >= int(_spring_rule("record_cave_min_per_tile")) or made >= int(_spring_rule("max_count")):
 			break
 
 		var index: int = int(head["index"])
@@ -1052,6 +1054,7 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 		caves.append(cave)
 		is_cave[index] = true
 		made += 1
+		with_den += 1
 		floor_made += 1
 
 	for head in heads:

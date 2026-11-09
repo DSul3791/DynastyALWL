@@ -65,7 +65,7 @@ So on the starter island, goblin dens come from the record's spring caves alone.
 2. Every record spring cave gets a dry branch: `spring_cave.sizes.small.branches` changes from [0, 1] to [1, 1].
 3. **A floor of one cave per tile** (`spring_cave.record_cave_min_per_tile` 1). When a tile's roll makes no spring cave, `tile_sites.gd` `_make_record_springs` tries its other heads:
    - in the same order (biggest spring first), with the same cave rules and spacing;
-   - it keeps the first cave that has a dry den branch;
+   - it keeps the first cave that has a dry den branch (the floor counts only caves with one, since an arm can fail for room);
    - that head is then a cave and no longer a ground spring, so #802's bushes skip it.
 4. **The tile's first spring cave with a dry branch always holds a goblin den** (`TileTerrainData.goblin_den_nodes`, a runtime rule). The other caves keep the 60 % by id. island_checks counts the dens with the same function.
 5. **TERRAIN_VERSION 73.** The nine tiles are rebaked on Dave's PC. The bake takes about 59 s from the setup cache. The settle doesn't read caves, so Dino compares the `.water` files with cmp.
