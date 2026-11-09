@@ -102,6 +102,10 @@ The game reads baked tiles, not the record, at run time: today only `fresh_m` re
    - `src/shared/drink_rules.gd` holds the pure rule. It takes the source rows near a point, the season, the hours since rain and the air, and gives the kind, temperature and frozen state.
    - `server_items` calls it through a `water_source` callable when the flag is on, with salt refusal and the ice hole.
    - Tests use a stub, so nothing reads a record yet.
+2a. **The record's ground springs (9 Nov 2026, no new bake):** R6 baked every R5 spring head into the tiles as a ground spring (`TileTerrainData.ground_springs`). The terrain server's `water_source` adds a spring row for each one within reach (`DrinkRules.ground_spring_rows`):
+   - its water is the year mean at the spring's height, so it never freezes;
+   - the head's `m3_s` stands in for its dry flow until step 2b gives each spring its own.
+   - The client's E-to-drink prompt still needs visible water. A spring head where the settled water shows is a spring drink; a dry hole under the bushes is not one yet.
 2. **The baked rows (after the R stack merges, a bake on Dave's PC):**
    - `tile_baker` writes a `drink` section per tile: the springs with their flow and temperature, and the reach polylines with regime, width and per-row `q_base_dry`;
    - `tile_terrain_data` reads it;

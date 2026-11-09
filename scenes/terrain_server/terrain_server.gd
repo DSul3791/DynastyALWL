@@ -66,6 +66,7 @@ const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
+const DrinkRulesScript := preload("res://src/shared/drink_rules.gd")
 const ThunderScript := preload("res://src/shared/thunder.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
@@ -385,7 +386,7 @@ func _ready() -> void:
 	# The drink's source rows (docs/design/drinking_water_design.md 3, "without the record": today's water, minus salt water), for
 	# vitals.json thirst.sources. From the baked tile, at the same five points as water_near: a spring cave's stream is spring water; ocean
 	# and estuary cells are salt; wet lake and river cells are lakes and rivers; any other cell the live sim has wet is a puddle. No ice field:
-	# server_items puts its own ice rule (_on_ice) on each row. Springs and brooks by regime need the baked drink rows (build step 2).
+	# server_items puts its own ice rule (_on_ice) on each row. The record's ground springs are spring rows (step 2a); brooks by regime need the baked drink rows (step 2b).
 	items.water_source = func(pos, reach) -> Array:
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 		var rows: Array = []
@@ -395,6 +396,10 @@ func _ready() -> void:
 
 		if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
 			rows.append({"kind": "spring"})
+
+		if not tile_data.ground_springs.is_empty():   # the record's ground springs (step 2a): always a drink, at the year mean of their height
+			var group = settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))
+			rows.append_array(DrinkRulesScript.ground_spring_rows(tile_data.ground_springs, pos, reach, func(head: Vector3) -> float: return WeatherScript.year_mean_c(group, head.y)))
 
 		var sim: PackedFloat32Array = tile_data.sim_snapshot()
 
