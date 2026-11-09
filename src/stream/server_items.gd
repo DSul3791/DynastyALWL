@@ -604,6 +604,7 @@ func peer_left(peer: int) -> void:
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
 	_logout_peers.erase(peer)
 	_admin_mode_off.erase(peer)
+	spyglass.erase(peer)
 	_chest_viewer.erase(peer)
 	_spot_saved_msec.erase(peer)
 	_station_said.erase(peer)
@@ -1156,6 +1157,15 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		if not admin_ok.is_valid() or admin_ok.call(peer):
 			_showroom_seed(peer, a == 1, at)
 
+	elif kind == Net.ACT_SPYGLASS:
+		if a != 1:
+			spyglass.erase(peer)
+		elif not admin_ok.is_valid() or admin_ok.call(peer):
+			spyglass[peer] = maxi(b, 0)
+		else:
+			spyglass[peer] = -1   # refused: the server scene tells the client once (animal_info id -1) and forgets it
+			_say(peer, "The spyglass is for admins.")
+
 	elif kind == Net.ACT_ADMIN_ENERGY:
 		if admin_ok.is_valid() and admin_ok.call(peer):
 			vitals_of(peer)["energy"] = clampf(float(count), 0.0, 100.0)
@@ -1197,6 +1207,7 @@ var land_types: Callable                # set by the server: (x, z) -> String, c
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
+var spyglass: Dictionary = {}          # peer -> the animal id an admin watches through the spyglass (0 none, -1 refused: not an admin); absent when not looking (ACT_SPYGLASS)
 
 
 func tick(delta: float) -> void:

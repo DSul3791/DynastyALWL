@@ -61,6 +61,7 @@ const ACTIONS := [
 	["admin_npc", "Admin: stand by the nearest NPC", "Admin and debug", CONTEXT_WORLD, KEY_N, true, false, false],
 	["admin_rabbit", "Admin: put a rabbit where you aim", "Admin and debug", CONTEXT_WORLD, KEY_R, true, false, false],
 	["admin_dig", "Admin: dig a hole where you aim", "Admin and debug", CONTEXT_WORLD, KEY_X, true, false, false],
+	["admin_spyglass", "Admin: spyglass (toggle; wheel zooms)", "Admin and debug", CONTEXT_WORLD, KEY_L, true, false, false],
 	["jitter_test", "Float jitter test", "Admin and debug", CONTEXT_WORLD, KEY_J, false, false, false],
 	["gpu_probe", "GPU probe", "Admin and debug", CONTEXT_WORLD, KEY_G, true, true, false],
 	# Dave 5 Nov 2026 (every river and lake vanished while flying): fly down (Ctrl) + fly faster (Shift) + forward (W) is Ctrl+Shift+W, which hid all the

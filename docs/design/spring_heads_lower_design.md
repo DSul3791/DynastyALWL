@@ -42,7 +42,7 @@ The network run on Dino gives the real counts. They are printed in the summary a
 - the drink sections;
 - the tile's water class, and with it the settled water. The settler puts its springs at the reach heads.
 
-**Versions.** TERRAIN 75, FloraLayout 29.
+**Versions.** TERRAIN 75, FloraLayout 30 (#870, the growth rule, took 29 when it merged first).
 
 ## 2. Plants grow thicker by water (Dave, 17:42 local), PR 2
 
@@ -58,7 +58,7 @@ W = clamp(1 − d / 6 m, 0, 1).
 |---|---|
 | Plants and shrubs | density × 2 (one extra candidate with chance W next to each normal one, so the boost fades with W) |
 | Grass | thickness × 2 and taller (Kathleen, client grass) |
-| Plant size | up to 25% further up the species' height range |
+| Plant size | up to 25% taller |
 | Moisture filter | wet-ground species qualify by the bank |
 
 At 6 m from the water, everything is normal growth. The same 6 m fade applies to every water: spring heads, brooks, rivers and lakes. It replaces the 12/20/30/60 m reaches of the first draft.
@@ -70,10 +70,18 @@ At 6 m from the water, everything is normal growth. The same 6 m fade applies to
 So several ditches irrigate a farm. Nothing is baked: an 8 m tile sample is wider than the whole 6 m fade, so a baked field could not hold it anyway. The 4 m bank and bed margins stay as they are.
 
 **Kept cheap.**
-- The placer works out W only for candidates near water. A candidate more than 6 m from any water sample is skipped with the existing coarse check.
-- W is worked out when a flora chunk is built.
-- Chunks are already rebuilt when the water changes near them (`water_changed_in`), so a new trench greens up on that rebuild. Nothing runs per frame.
-- Kathleen's grass computes its own 1 m distance per grass cell when a cell is built.
+- The placer works out W once per 2 m cell per chunk.
+- It only does so for chunks with fresh water within reach. Everywhere else nothing changes.
+- Nothing runs per frame.
+
+**Live water and trenches.** Plants follow a new trench the next time that flora chunk is rebuilt, for example after a server restart. That is not instant. Kathleen's grass (#869) reads the live water each time a grass cell is built, so it greens up right away. Crops will read the same W live once farming exists.
+
+As built in #870:
+- a second plant per cell, W of the time, on new item numbers;
+- plants up to 25% taller;
+- the ground reads up to 50/255 wetter for the moisture range;
+- trees unchanged;
+- a bank 3 m or more above the water stays normal (Kathleen's roots factor).
 
 **Spring heads.** A ground spring is water too, so its surroundings get W = 1 at the head without a separate ring. Kathleen's wet-ring species (tall_grass, fern, meadowsweet, angelica, valerian, comfrey, nettle, mint and watercress at the bank) are the species that qualify there through the moisture filter. The core hiding clump stays.
 
@@ -100,7 +108,7 @@ In winter, springs that stay open become the main water, which fits the ice rule
 ## 4. Build and bake
 
 **PR 1: walk-down.**
-- network.py, params.json and test_network.py, with TERRAIN 75 and FloraLayout 29.
+- network.py, params.json and test_network.py, with TERRAIN 75 and FloraLayout 30.
 - Bake class. David4 runs the Python tests, then Dino reruns network, record, the 9 tiles (9 threads) and settle, with the tiles on the branch.
 - About 10 min, estimated from today's stages: network 57 s, record 53 s, bake 132 s, settle about 6 min. Not timed yet.
 
@@ -111,3 +119,57 @@ In winter, springs that stay open become the main water, which fits the ice rule
 **Tests.**
 - PR 1: the head walk-down, the seep fallback, a head in the belt staying, a lake outlet staying, and the belt slope.
 - PR 2: W at 0, 3 and 6 m; a doubled density at the edge; a trench counting as water; `drink_spot` picking a spring.
+
+## 5. Next: one growth rule for the whole island (Dave, 17:50 local), design only
+
+Dave, 17:50 local: "normal rain conditions soak the ground and provide a certain amount of water reserve in the ground. if for some reason its raining alot in an area that provides lots of water but it reduces the amount of sun and most plants need sun. some plants will thrive in the wet dark and some will struggle and rot. but the other way can happen too. too much sun and not enough rain. the ground will have different types of soil as well so rich farming land with tree cover and irrigation will thrive with sun and water but poor soil miight dry out to fast. in the future we also need to have a way for farmers to adjust the soil with machinery and pete, sand, clay etc."
+
+Section 2 is the first input of a single rule. Every plant, the grass and later crops read one growth score from four inputs. Each species compares that score with its own preferences.
+
+| Input | Where it comes from | Exists today |
+|---|---|---|
+| **Water by the plant** | W, from the live distance to the water's edge (section 2) | yes, #870 and #869 |
+| **Water held in the ground** | a reserve per soil sample: rain fills it, sun and wind empty it, and it is capped by the soil's holding capacity (clay and peat hold a lot, sand and gravel little). It is the tile's moisture as the base, plus the weather's recent rain | moisture and weather exist; the reserve is new |
+| **Sun** | the cloud cover from the weather (a long wet spell is dark), plus canopy shade (the placer already knows crowns) | weather cloud exists; shade exists in the placer |
+| **Soil** | the soil id and fertility per sample | yes |
+
+**How a species reads them.** Each flora row gets a water range and a sun range, with a "likes wet and dark" or "likes dry and bright" lean:
+- ferns, moss, mushrooms and meadowsweet thrive in the wet and dark;
+- grain, berries and grass want sun;
+- heather and gorse take dry and poor ground.
+
+Growth is best inside both ranges. It falls off outside them: rot when too wet and dark, drought when too dry and bright. Poor soil narrows the water range, so sand dries out first. Rich soil widens it.
+
+**What it changes.**
+- Density, height and colour: greener when thriving, yellow when in drought, brown and patchy when rotting.
+- For crops: speed and yield.
+- Irrigation is simply W on top of the reserve. A ditch beside a sandy field keeps it in range through a dry spell.
+
+**Soil amendment (future).** A farmer can change a soil sample's id or capacity by working in peat, sand or clay (and later with machinery). That moves the field's ranges. It needs a saved per-sample soil edit, the same kind of store as digs.
+
+**Cost.** The reserve is updated once per game hour per loaded tile, at 8 m samples. Plants read it when their chunk is built, and grass and crops read it live. Nothing runs per frame.
+
+**Order.** First the reserve and sun inputs, read by crops when farming lands. Then the flora placer reads the score in place of today's fixed moisture filter. Soil amendment comes last.
+
+## 6. Weather (future, Dave, 18:08 local), design only
+
+Dave: "I don't believe they should move or travel like in the real world but each zone gets its own weather systems based on there climate zones and latitude."
+
+- **Rule.** Weather does not travel across the map. Each climate zone (its latitude row) makes its own weather: its temperature range, how often storms, light rain or snow come, and the mix between them.
+- **Day and night.** The sun's day and night cycle drives the daily temperature swing.
+- **What exists today.** src/shared/weather.gd already works this way. It is a pure function of the seed, the clock, the zone row and the altitude, and nothing moves across the map. Its "fronts" are spells in time within one zone. climate.gd gives each zone its mean, seasonal swing, daily range (the day and night swing) and rain per year.
+- **Still to decide.** How far the zones differ from one another. Whether neighbouring zones blend at their borders, so that a step from one row to the next is not a cliff. And whether mountains get their own local storms beyond the altitude cooling.
+- **Link to section 5.** Rain fills the ground reserve, and cloud cuts the sun, so the growth score reads the zone's own weather.
+
+**Chosen direction (Dave, 18:13 local).** "neighbors east and west share similar weather patterns ... a server based weather map that sends randomized weather across the map following the sun or the spin of the earth ... each client gets the weather from the server no matter where they are and its interpreted according to what lattitude they are in on the map."
+
+- **One weather field, read by latitude.** There is one random weather field over the whole map. Each place reads it through its latitude row: the temperature, rain or snow, and storm or light rain. Borders are seamless east and west.
+- **How today's code fits.** It already is one field. `Weather.state(seed, clock, zone, altitude, row)` takes no east-west position, and the front noise has no zone in it, so every row sees the same fronts at the same moment. The zone only decides what a front means: a rainstorm in the temperate rows, snow in the arctic rows, nothing much in the desert rows. So a sailor crossing an east-west border today sees no jump.
+- **Who computes it.** The server is the authority (it uses `_weather_at` for thunder, rivers and animals). Each client works out the same answer from the same seed and clock, so no weather is sent over the network.
+- **What changes.** Fronts move along the rows. The noise is read at (clock − x / speed), so a front sweeps the map east or west with the zone's prevailing wind (westerlies in the mid rows, easterly trades near the equator) over hours to a day. That also gives Dave's "following the sun or the spin of the earth".
+- **Cost.** It stays a pure function: one extra input (x) and nothing stored. It stays seamless because the field is continuous in x, and the wrap seam needs the speed to divide the world's width evenly.
+- **Still open.** Blending at north-south zone borders (rows), and local mountain storms.
+- **Recommendation (coordinator, 18:14 local, agreed).** The server owns the weather seed and clock. The server and every client compute the same weather field for the whole world from them, so no weather map is pushed over the network. The field drifts slowly over hours; it does not snap with the sun. Each latitude row reads it as temperature and as rain or snow, and borders are seamless.
+- **Which way it drifts (agreed, 18:14 local).** The drift follows each zone's prevailing wind, which the wind code already has. That keeps the wind and the incoming weather in agreement.
+  - Mid rows, including the starter island at 34° S: weather comes in on the westerlies, so it drifts west to east.
+  - Rows near the equator: the trade winds carry it east to west.

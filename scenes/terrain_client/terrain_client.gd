@@ -3407,6 +3407,7 @@ var _ground_line_msec: int = 0
 const HELP_TEXT := """Move: W A S D   Jog: double-tap W   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly: G or F
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
 K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise and lower it, W A S D walk relative to it, K again to leave)
+Ctrl+L: admin spyglass (wheel zooms 2x to 40x; the animal at the centre dot shows its name, level and health; Ctrl+L or Esc to lower it)
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
 I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
 /: inspection mode   + and -: spring flow (tuning)
@@ -3781,6 +3782,10 @@ var view_cam: Camera3D
 var _view_ball: SphereShape3D          # the camera's ball for the wall sweep (VIEW_BALL_M)
 const PhotoCameraScript := preload("res://src/client/photo_camera.gd")
 var photo = PhotoCameraScript.new()                      # K: the photo camera (src/client/photo_camera.gd), a free orbiting view of the character
+const SpyglassScript := preload("res://src/client/spyglass.gd")
+var spyglass = SpyglassScript.new()                      # Ctrl+L: the admin spyglass (src/client/spyglass.gd), zoom and the watched animal's readout
+var _spyglass_overlay = null
+var _spyglass_sent_ms: int = 0
 var third_person: bool = false:
 	set(value):
 		third_person = value
@@ -3883,7 +3888,7 @@ func _update_view(delta: float) -> void:
 		net.worn_received.connect(func(_numbers: PackedInt32Array) -> void: _dress_avatar())
 		_dress_avatar()
 
-	var want: float = _view_m if third_person else 0.0
+	var want: float = _view_m if third_person and not spyglass.active else 0.0
 	var eye: Vector3 = camera.global_position
 	var aim: Vector3 = camera.global_transform.basis * Vector3(0.0, VIEW_HEIGHT, 1.0)
 
@@ -3908,7 +3913,7 @@ func _update_view(delta: float) -> void:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
 		var want_extra: float = clampf((pace - WALK_SPEED) / (RUN_SPEED - WALK_SPEED), 0.0, 1.0) * FOV_RUN_EXTRA if body.is_on_floor() and not swimming else 0.0
 		_fov_extra = lerpf(_fov_extra, want_extra, clampf(delta * 4.0, 0.0, 1.0))
-		view_cam.fov = FOV_BASE + _fov_extra * feel.intensity
+		view_cam.fov = spyglass.fov(FOV_BASE) if spyglass.active else FOV_BASE + _fov_extra * feel.intensity
 
 	_avatar.visible = _view_now > 0.5
 
@@ -3975,8 +3980,76 @@ func _update_view(delta: float) -> void:
 var _photo_saved: Dictionary = {}
 
 
+# Ctrl+L: the admin spyglass up or down (docs/design/spyglass_design.md). Not from the photo camera. The server is told (ACT_SPYGLASS) so it
+# sends animals out to 300 m and the watched one's readout; a player who is not an admin is refused and the glass comes down.
+func _toggle_spyglass() -> void:
+	if (photo.active or _animal_view_node == null) and not spyglass.active:
+		return
+
+	if _spyglass_overlay == null:
+		var layer: CanvasLayer = CanvasLayer.new()
+		layer.layer = 5
+		add_child(layer)
+		_spyglass_overlay = SpyglassScript.Overlay.new()
+		layer.add_child(_spyglass_overlay)
+		net.animal_info_received.connect(_on_animal_info)
+
+	var on: bool = spyglass.toggle()
+	_spyglass_overlay.visible = on
+	_animal_view_node.set("max_drawn", AnimalViewScript.SPYGLASS_DRAWN if on else AnimalViewScript.MAX_DRAWN)
+	_spyglass_sent_ms = Time.get_ticks_msec()
+	net.inventory_action.rpc_id(1, NetScript.ACT_SPYGLASS, 1 if on else 0, 0, 0, Vector3.ZERO)
+
+
+# The server's readout for the watched animal; id -1: not an admin, the glass comes down.
+func _on_animal_info(id: int, info: Dictionary) -> void:
+	if id == -1 and spyglass.active:
+		_toggle_spyglass()
+	elif spyglass.active and id == spyglass.watched:
+		spyglass.info = info
+
+
+# Each frame while the spyglass is up: watch the animal nearest the centre (the server is told when it changes) and draw its readout.
+func _update_spyglass() -> void:
+	if not spyglass.active or _spyglass_overlay == null:
+		return
+
+	var eye: Vector3 = view_cam.global_position
+	var forward: Vector3 = -view_cam.global_transform.basis.z
+	var drawn: Array = _animal_view_node.call("drawn_positions")
+	var id: int = spyglass.pick(eye, forward, drawn)
+	var now: int = Time.get_ticks_msec()
+
+	if id != spyglass.watched or now - _spyglass_sent_ms > 3000:   # on a change, and every 3 s in case one was lost
+		if id != spyglass.watched:
+			spyglass.info = {}
+
+		spyglass.watched = id
+		_spyglass_sent_ms = now
+		net.inventory_action.rpc_id(1, NetScript.ACT_SPYGLASS, 1, id, 0, Vector3.ZERO)
+
+	var distance_m: float = 0.0
+
+	for row in drawn:
+		if int(row[0]) == id:
+			distance_m = eye.distance_to(row[1])
+
+	var text: String = "%.0fx" % spyglass.zoom
+	var lines: String = SpyglassScript.readout(spyglass.info, distance_m) if id != 0 else ""
+
+	if lines != "":
+		text = lines + "\n" + text
+
+	if text != _spyglass_overlay.text:
+		_spyglass_overlay.text = text
+		_spyglass_overlay.queue_redraw()
+
+
 # K: into the photo view (the normal view is remembered) or back out (all of it restored: heading, pitch, roll, drawn camera and field of view).
 func _toggle_photo() -> void:
+	if spyglass.active:
+		return   # lower the spyglass first (Ctrl+L or Esc)
+
 	if not photo.active:
 		_photo_saved = PhotoCameraScript.snapshot(body, camera, view_cam, pitch)
 		photo.toggle(body.rotation.y)
@@ -4055,6 +4128,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if spyglass.active:
+			_toggle_spyglass()   # Esc lowers the spyglass first
+			return
+
 		if items != null and items.search_escape():
 			return
 
@@ -4086,9 +4163,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		photo.orbit(event.relative.x, event.relative.y)   # the camera swings round the character; the character does not turn
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and photo.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 		photo.zoom(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
+	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and spyglass.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+		spyglass.wheel(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock:
-		body.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
-		pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, -1.5, 1.5)
+		var look: float = MOUSE_SENSITIVITY * (spyglass.mouse_scale() if spyglass.active else 1.0)   # through the spyglass the mouse slows by the zoom
+		body.rotate_y(-event.relative.x * look)
+		pitch = clampf(pitch - event.relative.y * look, -1.5, 1.5)
 		camera.rotation.x = pitch
 
 		if _horizon != null:
@@ -4118,6 +4198,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_go_to_npc()
 		elif KeyBindings.matches(event, "admin_rabbit"):
 			_admin_rabbit()
+		elif KeyBindings.matches(event, "admin_spyglass"):
+			_toggle_spyglass()
 		elif KeyBindings.matches(event, "move_forward"):
 			var now: int = Time.get_ticks_msec()
 
@@ -4989,6 +5071,7 @@ func _process(delta: float) -> void:
 	Probe.stop("step player", tp)
 	tp = Probe.start()
 	_update_view(delta)
+	_update_spyglass()
 	Probe.stop("update view", tp)
 	tp = Probe.start()
 

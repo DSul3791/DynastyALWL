@@ -55,6 +55,7 @@ const KINDS := ["tree", "shrub", "plant"]
 const OCCUPANCY_CELL := 12.0   # also the widest gap kept between two trees
 const SHRUB_DENSITY := 3.0   # shrubs three times the table figures: ground cover under the woods (owner, 2026-10-18)
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const NearWater := preload("res://src/shared/near_water_growth.gd")
 const SPRING_BASE := 40960           # spring cover item numbers (_spring_cover): SPRING_BASE + spring x SPRING_MAX_PLANTS + plant, below STAND_BASE
 const SPRING_MAX_PLANTS := 16
 const SPRING_MAX_COUNT := 512        # springs per tile with room for their numbers: (STAND_BASE - SPRING_BASE) / SPRING_MAX_PLANTS
@@ -72,6 +73,7 @@ var patchiness: float = 0.0
 var _plateau_cache: Dictionary = {}   # 40 m cell -> plateau value (see _plateau)
 var _plateau_mutex: Mutex = Mutex.new()   # chunk_items runs on several server worker threads: an unguarded Dictionary crashed the server (25 Oct, signal 11, "Index p_index = 1 out of bounds")
 var _soil_growth: PackedFloat32Array = PackedFloat32Array()   # soil id -> tree and shrub growth factor
+var _ocean_water: int = 1       # the sea's water class: not water plants grow thicker by (_wet_samples)
 var _patches: FastNoiseLite
 var _grove_seed: int = 0
 var _stand_seed: int = 0
@@ -118,6 +120,8 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 
 	for entry in tables.get_entries("water_classes"):
 		water_ids[str(entry["name"])] = int(entry["id"])
+
+	_ocean_water = int(water_ids.get("ocean", 1))
 
 	_by_biome = []
 	_by_biome.resize(256)
@@ -382,6 +386,10 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			if has_beach:
 				break
 	var edge_cache: Dictionary = {}     # 4 m cell -> edge distance (see _edge_m): a chunk asks about the same ground thousands of times
+	# Plants grow thicker by water (Dave 9 Nov 2026, docs/design/spring_heads_lower_design.md 2): the fresh water samples round the chunk, and W per
+	# WET_CELL_M cell (_wetness). Empty for a chunk with no fresh water within reach: then nothing below changes.
+	var wet: Dictionary = {} if trees_only else _wet_samples(data, origin)
+	var wet_cache: Dictionary = {}
 
 	if has_beach:
 		for item in species:
@@ -418,9 +426,17 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 		if item.has("grove"):
 			patch_sign = 0.0
 		rng.seed = _mix(data.flora_seed, chunk.x, chunk.y, species_id)
+		# By water a plant or shrub cell may grow a second one (W of the time: twice as thick at the edge, as before 6 m out). Its own numbers
+		# (count x count + cell) and its own draws, so the first plant of every cell is the one it always was.
+		var lush: bool = not wet.is_empty() and item["kind"] != KIND_TREE and groves.is_empty() and 2 * count * count <= SPRING_BASE
+		var rng_wet: RandomNumberGenerator = RandomNumberGenerator.new()
+		rng_wet.seed = _mix(data.flora_seed, chunk.x, chunk.y, species_id + WET_SEED)
 
 		for cz in range(count):
 			for cx in range(count):
+				if lush:
+					_wet_extra(item, data, origin, species_id, cell, count, cx, cz, rng_wet, wet, wet_cache, found)
+
 				# Always the same five draws per cell, kept or not.
 				var x: float = origin.x + (float(cx) + rng.randf()) * cell
 				var z: float = origin.y + (float(cz) + rng.randf()) * cell
@@ -461,7 +477,8 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				if roll >= chance:
 					continue
 
-				var y: float = _ground_ok(item, data, k, x, z, in_belt)
+				var w: float = _wetness(data, wet, x, z, wet_cache) if not wet.is_empty() and item["kind"] != KIND_TREE else 0.0
+				var y: float = _ground_ok(item, data, k, x, z, in_belt, w)
 
 				if is_nan(y):
 					continue
@@ -513,6 +530,8 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 					height = lerpf(item["height_min"] * 0.2, item["height_min"] * 0.6, size) if item["kind"] == KIND_TREE else height * 0.7
 				elif item["kind"] == KIND_TREE and item["shape"] == "conifer":
 					height *= lerpf(1.0, 0.4, steep)       # evergreens grow lower toward the slopes
+
+				height *= 1.0 + WET_TALLER * w             # by water a plant or shrub grows taller
 
 				found.append([_tier(item, height), species_id, cz * count + cx, x, y, z, height, yaw, 0.0])
 
@@ -943,8 +962,8 @@ func _fine_slope(x: float, z: float) -> float:
 
 
 # The ground checks every spot must pass; the ground height, or NAN.
-func _ground_ok(item: Dictionary, data, k: int, x: float, z: float, in_belt: bool = false) -> float:
-	var wet: int = data.moisture[k]
+func _ground_ok(item: Dictionary, data, k: int, x: float, z: float, in_belt: bool = false, near_water: float = 0.0) -> float:
+	var wet: int = mini(data.moisture[k] + roundi(WET_MOISTURE * near_water), 255)   # by water the ground is wetter: wet-ground species stand at the bank
 
 	# Belt ground by the sand is dry; the belt species stand there whatever the moisture says.
 	if not in_belt and (wet < item["moisture_min"] or wet > item["moisture_max"]):
@@ -1235,6 +1254,125 @@ func _in_grove(groves: Array, x: float, z: float) -> bool:
 
 # The patch field, about -1 to 1, the same across the wrap seam.
 const WATER_MARGIN_M := 4.0
+const WET_SEED := 7919           # the second plants by water draw from their own stream (species id + this)
+const WET_CELL_M := 2.0          # W is worked out once per cell this size (its centre): a chunk asks about the same bank thousands of times
+const WET_TALLER := 0.25         # by water a plant or shrub is up to this much taller (at the edge, W 1)
+const WET_MOISTURE := 50.0       # and its ground reads this much wetter (of 255) for the moisture range: wet-ground species qualify by the bank
+
+
+# The fresh water samples (Vector2i sample -> its water level) within NearWater.REACH_M plus a sample of a chunk: rivers, lakes, brooks,
+# seasonal channels and ponds, marsh, and the live water (sim_snapshot: settled water and, on the server, a dug trench or pond once it holds
+# water). Not the sea. Empty when there is none: the chunk grows as it always did.
+func _wet_samples(data, origin: Vector2) -> Dictionary:
+	var out: Dictionary = {}
+	var sp: float = data.spacing_m
+	var reach: float = NearWater.REACH_M + sp
+	var sim: PackedFloat32Array = data.sim_snapshot()
+	var ocean: int = _ocean_water
+	var i0: int = maxi(int(floor((origin.x - reach - data.x0) / sp)), 0)
+	var i1: int = mini(int(ceil((origin.x + chunk_m + reach - data.x0) / sp)), data.samples - 1)
+	var j0: int = maxi(int(floor((origin.y - reach - data.z0) / sp)), 0)
+	var j1: int = mini(int(ceil((origin.y + chunk_m + reach - data.z0) / sp)), data.samples - 1)
+
+	for j in range(j0, j1 + 1):
+		for i in range(i0, i1 + 1):
+			var k: int = j * data.samples + i
+			var water: int = data.water_class[k]
+
+			if water == ocean:
+				continue
+
+			var level: float = NAN
+
+			if water > 1 and not is_nan(data.water_surface[k]):
+				level = data.water_surface[k]
+
+			if not sim.is_empty() and not is_nan(sim[k]):
+				level = sim[k] if is_nan(level) else maxf(level, sim[k])
+
+			if not is_nan(level):
+				out[Vector2i(i, j)] = level
+
+	return out
+
+
+# W at a spot (NearWater.growth_near_water): the distance to the nearest fresh water sample's edge (half a sample short of its centre) and the
+# ground's height over that water. Worked out at the centre of its WET_CELL_M cell, once per chunk.
+func _wetness(data, wet: Dictionary, x: float, z: float, cache: Dictionary) -> float:
+	var key: Vector2i = Vector2i(floori(x / WET_CELL_M), floori(z / WET_CELL_M))
+
+	if cache.has(key):
+		return cache[key]
+
+	var cx: float = (float(key.x) + 0.5) * WET_CELL_M
+	var cz: float = (float(key.y) + 0.5) * WET_CELL_M
+	var sp: float = data.spacing_m
+	var ci: int = int(round((cx - data.x0) / sp))
+	var cj: int = int(round((cz - data.z0) / sp))
+	var steps: int = int(ceil((NearWater.REACH_M + sp * 0.5) / sp))
+	var best: float = INF
+	var level: float = NAN
+
+	for dj in range(-steps, steps + 1):
+		for di in range(-steps, steps + 1):
+			var at: Vector2i = Vector2i(ci + di, cj + dj)
+
+			if not wet.has(at):
+				continue
+
+			var d: float = Vector2(cx - (data.x0 + float(at.x) * sp), cz - (data.z0 + float(at.y) * sp)).length()
+
+			if d < best:
+				best = d
+				level = wet[at]
+
+	var w: float = 0.0
+
+	if best < INF:
+		w = NearWater.growth_near_water(maxf(best - sp * 0.5, 0.0), generator.surface_height(cx, cz) - level)
+
+	cache[key] = w
+	return w
+
+
+# The second plant of a cell by water: drawn from its own numbers (five draws, kept or not), kept W of the time where the first would be
+# allowed, with the same ground checks. Never a tree (trees keep their spacing), never a grove.
+func _wet_extra(item: Dictionary, data, origin: Vector2, species_id: int, cell: float, count: int, cx: int, cz: int, rng_wet: RandomNumberGenerator,
+		wet: Dictionary, wet_cache: Dictionary, found: Array) -> void:
+	var x: float = origin.x + (float(cx) + rng_wet.randf()) * cell
+	var z: float = origin.y + (float(cz) + rng_wet.randf()) * cell
+	var roll: float = rng_wet.randf() * float(item["peak"])
+	var size: float = rng_wet.randf()
+	var yaw: float = rng_wet.randf() * TAU
+
+	if x >= origin.x + chunk_m or z >= origin.y + chunk_m:
+		return
+
+	var w: float = _wetness(data, wet, x, z, wet_cache)
+
+	if w <= 0.0:
+		return
+
+	var k: int = data.nearest(x, z)
+	var chance: float = (item["per_biome"] as PackedFloat32Array)[data.biome[k]]
+
+	if item["kind"] != KIND_PLANT:
+		chance *= _soil_growth[data.soil[k]]
+
+	if chance <= 0.0 or roll >= chance * w:
+		return
+
+	var y: float = _ground_ok(item, data, k, x, z, false, w)
+
+	if is_nan(y) or (item.has("shore") and not _shore_ok(item, data, k, x, z)):
+		return
+
+	var height: float = lerpf(item["height_min"], item["height_max"], size) * (1.0 + WET_TALLER * w)
+
+	if _slope_at(data, x, z) > item["max_slope"]:
+		height *= 0.7   # a ledge: stunted, as the first plant
+
+	found.append([_tier(item, height), species_id, count * count + cz * count + cx, x, y, z, height, yaw, 0.0])
 const SEA_LEVEL_M := 0.0
 const WET_FOOT_M := 0.3
 

@@ -508,6 +508,30 @@ func _ready() -> void:
 	animals.water_level = func(x, z):
 		var water_here: Array = _water_at(Vector3(x, 0.0, z))
 		return float(water_here[0]) if not is_nan(water_here[0]) else NAN
+	# The ground springs near a point, for drink_spot (animals go to a spring first: docs/design/spring_heads_lower_design.md 3).
+	animals.springs_near = func(point: Vector3, reach: float) -> PackedVector3Array:
+		var heads: PackedVector3Array = PackedVector3Array()
+		var seen: Dictionary = {}
+
+		for corner in [Vector2(-reach, -reach), Vector2(reach, -reach), Vector2(-reach, reach), Vector2(reach, reach)]:
+			var tile = generator.tile_of(point.x + corner.x, point.z + corner.y)
+
+			if seen.has(tile):
+				continue
+
+			seen[tile] = true
+			var data = generator.get_tile(tile)
+
+			if data == null or data.placeholder:
+				continue
+
+			for spring in data.ground_springs:
+				var head: Vector3 = spring[0]
+
+				if Vector2(head.x - point.x, head.z - point.z).length() <= reach:
+					heads.append(head)
+
+		return heads
 	animals.player_positions = npcs.player_positions
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
@@ -2313,6 +2337,11 @@ func _send_npcs(delta: float) -> void:
 	_npc_send_t = 0.0
 	_send_round += 1
 	var peers: Array = items.peer_ids()
+	animals.watched.clear()
+
+	for watched_id in items.spyglass.values():
+		if int(watched_id) > 0:
+			animals.watched[int(watched_id)] = true   # the animal an admin watches through the spyglass keeps living (server_animals tick)
 
 	# Each player is looked at about four times a second, a fifth of them per pass, so the work never lands on one tick.
 	for n in range(_send_round % 5, peers.size(), 5):
@@ -2334,8 +2363,17 @@ func _send_npcs(delta: float) -> void:
 			_npc_sent_ms[peer] = now_ms
 			net.npcs.rpc_id(peer, rows)
 
-		var beasts: Array = animals.rows_near(at)
+		# The admin spyglass (docs/design/spyglass_design.md): out to the spyglass radius while an admin looks, and the watched animal's readout.
+		var spy: int = int(items.spyglass.get(peer, 0)) if items.spyglass.has(peer) else -2
+		var spy_cfg: Dictionary = animals.cfg.get("spyglass", {})
+		var beasts: Array = animals.rows_near(at, float(spy_cfg.get("send_radius_m", 300.0)), int(spy_cfg.get("cap", 60))) if spy >= 0 else animals.rows_near(at)
 		var sig: String = str(beasts)
+
+		if spy == -1:
+			items.spyglass.erase(peer)
+			net.animal_info.rpc_id(peer, -1, {})
+		elif spy > 0:
+			net.animal_info.rpc_id(peer, spy, animals.info_of(spy))
 
 		if _animal_sent.get(peer, "") != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
 			_animal_sent[peer] = sig
