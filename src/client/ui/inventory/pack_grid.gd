@@ -78,11 +78,16 @@ func build() -> Control:
 
 	InventoryLook.style_carry_bar(view._carry_bar, InventoryLook.unit_of(view))
 
+	# The grid scrolls inside a holder that takes the column's spare height; the scroll itself is cut to whole rows of slots, so a
+	# large text size (its taller header) shows one row fewer instead of half a row (1366 x 768 review, 9 Nov 2026).
+	var holder: Control = Control.new()
+	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(holder)
 	_slot_scroll = ScrollContainer.new()
-	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_slot_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER   # the wheel scrolls; a bar would push the 650 px grid out
-	right.add_child(_slot_scroll)
+	holder.add_child(_slot_scroll)
+	holder.resized.connect(func(): fit_rows(holder.size))
 	view._grid = GridContainer.new()
 	view._grid.columns = LOOK_COLUMNS
 	view._grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -118,6 +123,14 @@ func build() -> Control:
 
 	root = right
 	return root
+
+
+# Sizes the slot scroll to the whole rows that fit in `room` (canvas px), at least one, at the top of its holder.
+func fit_rows(room: Vector2) -> void:
+	var pitch: int = ArtKit.SLOT + ArtKit.SLOT_GAP
+	var rows: int = maxi(1, int(floor((room.y + ArtKit.SLOT_GAP) / float(pitch))))
+	_slot_scroll.position = Vector2.ZERO
+	_slot_scroll.size = Vector2(room.x, float(rows * pitch - ArtKit.SLOT_GAP))
 
 
 # The slots: arranged by the sort, then each one's text, bars, tooltip and whether the search shows it.

@@ -1,7 +1,8 @@
 extends SceneTree
 
 # The pack's info strip, redesign step 3b (docs/ui/inventory_crafting_redesign.md section 4.1): it shows an item's name, one line of
-# description and its facts; a long description is cut to one line; with nothing to show it draws a hint; pack slots are 100 px.
+# description and its facts; a long description is cut to one line; with nothing to show it draws a hint; pack slots are 100 px, and
+# the slot scroll shows whole rows only.
 #   godot --headless --path . --script res://src/worldgen/tools/test_info_strip.gd
 
 const InfoStrip := preload("res://src/client/ui/inventory/info_strip.gd")
@@ -39,6 +40,16 @@ func _initialize() -> void:
 	slot.set_unit(PackGrid.SLOT_UNIT)
 	check(slot.custom_minimum_size.is_equal_approx(Vector2(100.0, 100.0)), "a pack slot is 100 canvas px")
 	check(6.0 * 100.0 + 5.0 * ArtKit.SLOT_GAP == 650.0, "6 slots and 5 gaps fill the 650 px Pack column")
+	var grid: PackGrid = PackGrid.new(null)
+	grid._slot_scroll = ScrollContainer.new()
+	root.add_child(grid._slot_scroll)
+	grid.fit_rows(Vector2(650.0, 560.0))
+	check(grid._slot_scroll.size.y == 540.0, "the slot scroll shows whole rows: 5 in 560 px")
+	grid.fit_rows(Vector2(650.0, 500.0))
+	check(grid._slot_scroll.size.y == 430.0, "and 4, never 4.5, in 500 px (text 1.2's taller header)")
+	grid.fit_rows(Vector2(650.0, 40.0))
+	check(grid._slot_scroll.size.y == 100.0, "and at least one row")
+	grid._slot_scroll.queue_free()
 	root.add_child(slot)
 	slot.set_marked(ItemSlot.MARK_GOLD)
 	await process_frame
