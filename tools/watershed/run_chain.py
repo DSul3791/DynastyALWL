@@ -177,15 +177,15 @@ def stages(chain, run, params_file, godot):
             out += _matching(pattern, d[folder]) if '*' in pattern else [os.path.join(d[folder], pattern)]
         return out
 
-    geology = ('geology', 'geology*')
+    geology = ('geology', 'geology*')            # rock.py's geology.json and rasters (the Godot exports take / paths on Windows too)
     W = lambda s: os.path.join('tools', 'watershed', s)
     return P, [
         dict(name='landform export', out=d['landform'], outputs=['raw_manifest.json'], reads=[], godot=True,
              cmd=[godot, '--headless', '--path', '.', '--script', 'res://src/worldgen/tools/export_raw_heights.gd', '--', '--landform', tiles,
-                  f'--out={d["landform"]}']),
+                  '--out=' + d['landform'].replace(os.sep, '/')]),
         dict(name='geology export', out=d['geology'], outputs=['geology.json'], reads=[], godot=True,
              cmd=[godot, '--headless', '--path', '.', '--script', 'res://src/worldgen/tools/export_geology.gd', '--', geo_step, tiles,
-                  f'--out={d["geology"]}']),
+                  '--out=' + d['geology'].replace(os.sep, '/')]),
         dict(name='inputs', script='inputs.py', out=d['inputs'], outputs=['inputs.npz'],
              reads=lambda: reads(('landform', '*.f32'), ('landform', 'raw_manifest.json'), geology),
              cmd=[py, W('inputs.py'), d['landform'], d['geology'], d['inputs'], params_file]),
