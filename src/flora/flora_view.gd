@@ -1714,17 +1714,41 @@ func is_stripped(chunk: Vector2i, id: int) -> bool:
 	return (stripped.get(chunk, {}) as Dictionary).has(id)
 
 
-# The berry bush species (names from drops.json "berry_yield"), set once by the client.
-func set_fruiting(names: Array) -> void:
-	fruiting = {}
+# Bare broadleaves in winter (docs/design/trees_weather_design.md part B, never-see 2; always, since Dave's 8 Nov ruling): the temperate deciduous
+# broadleaves are built per season like the fruit trees, so winter draws their bare build (tree_builder season == "winter").
+# Evergreen broadleaves (tropical hardwood, mangrove, acacia, olive, orange, lemon, mango, fig, pomegranate, the fantasy evergreens) keep their leaves.
+const DECIDUOUS: Array[String] = ["oak", "beech", "birch", "alder", "willow", "maple", "sweet_chestnut", "walnut", "witness_tree"]
+var _leaf_only: Dictionary = {}        # species name -> true: seasonal only for their leaves (DECIDUOUS), never picked bare, so no stripped build
 
-	for plant_name in names:
-		fruiting[str(plant_name)] = true
+
+# The species names built per season: the fruit bearers, the flora.json "seasonal" rows and, with `bare_winter`, the deciduous broadleaves.
+static func seasonal_names(berry_names: Array, entries: Array, bare_winter: bool) -> Dictionary:
+	var out: Dictionary = {}
+
+	for plant_name in berry_names:
+		out[str(plant_name)] = true
 
 	# Any species whose flora.json row says "seasonal": true is built per season too (its model reads the season name TreeBuilder.build gets).
-	for entry in _setup_entries:
+	for entry in entries:
 		if bool(entry.get("seasonal", false)):
-			fruiting[str(entry["name"])] = true
+			out[str(entry["name"])] = true
+
+	if bare_winter:
+		for tree_name in DECIDUOUS:
+			out[tree_name] = true
+
+	return out
+
+
+# The berry bush species (names from drops.json "berry_yield"), set once by the client.
+func set_fruiting(names: Array) -> void:
+	var picked: Dictionary = seasonal_names(names, _setup_entries, false)
+	fruiting = seasonal_names(names, _setup_entries, true)
+	_leaf_only = {}
+
+	for plant_name in fruiting:
+		if not picked.has(plant_name):
+			_leaf_only[plant_name] = true
 
 	if season != "":
 		_start_seasonal()
@@ -1832,21 +1856,30 @@ func set_season(now_season: String) -> void:
 		_redraw(chunk)
 
 
+# A bare winter broadleaf has no bare impostor card (the cards are captured in leaf), so past the impostor distance it draws its
+# bare far model instead.
+func _leafless_now(species_id: int) -> bool:
+	return season == "winter" and _leaf_only.has(str(_slugs.get(species_id, "")))
+
+
 func _start_seasonal() -> void:
 	if fruiting.is_empty() or season == "" or _setup_entries.is_empty() or _seasonal_task != -1 or _seasonal_for == season:
 		return
 
 	_seasonal_for = season
 	var wanted: Array = _setup_entries.filter(func(entry): return fruiting.has(str(entry["name"])))
-	_seasonal_task = WorkerThreadPool.add_task(_seasonal_models_task.bind(wanted, season, _tree_materials), false, "flora seasonal models")
+	_seasonal_task = WorkerThreadPool.add_task(_seasonal_models_task.bind(wanted, season, _tree_materials, _leaf_only.duplicate()), false, "flora seasonal models")
 
 
 # Worker: each berry bush species' near and far models for one season, ripe and picked bare (Kathleen's build(season, stripped)).
-func _seasonal_models_task(entries: Array, for_season: String, materials: Dictionary) -> void:
+func _seasonal_models_task(entries: Array, for_season: String, materials: Dictionary, leaf_only: Dictionary = {}) -> void:
 	for bare: bool in [false, true]:
 		var models_set: Dictionary = {}
 
 		for entry in entries:
+			if bare and leaf_only.has(str(entry["name"])):
+				continue   # a deciduous broadleaf is never picked bare: its plain-season build is the only one
+
 			var height: Array = entry["height_m"]
 			var reference: float = 0.5 * (float(height[0]) + float(height[1]))
 			var near_meshes: Array = []
@@ -2696,7 +2729,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 				is_near = TIER_FULL_LIT
 
 			if is_near == TIER_IMPOSTOR:
-				if _impostors.has(species_id):
+				if _impostors.has(species_id) and not _leafless_now(species_id):
 					variant = 0
 				else:
 					is_near = TIER_FAR
