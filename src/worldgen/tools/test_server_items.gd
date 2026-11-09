@@ -1362,7 +1362,7 @@ func _init() -> void:
 
 	lt2.roof_remove = func(key): roofs2.clear()
 	lt2.action(1, Net.ACT_PICKUP, shelter, 0, 0, Vector3.ZERO)
-	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("stick")) >= 30, "taking it down gives its materials back (no kit)")
+	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("stick")) >= 20, "taking it down gives its materials back (no kit)")   # the lean-to blueprint costs 20 sticks (items review stage 1; was 30)
 
 	# Storage chest.
 	var cd: String = "user://test_server_items_chest"
