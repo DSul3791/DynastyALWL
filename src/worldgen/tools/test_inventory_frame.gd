@@ -33,6 +33,7 @@ func _initialize() -> void:
 	check(frame.header.position.x > ArtKit.PACK.position.x + 200.0 and frame.header.position.y < 92.0, "the Pack title row (search) sits right of the plate")
 	check(frame.mouse_filter == Control.MOUSE_FILTER_STOP, "the frame takes the clicks the world would get")
 	check(frame.columns_fit(), "empty columns fit")
+	check(frame.fit_report().count("fits") == 3, "and the fit report says so for all three")
 	frame.set_title(1, "ALDWIN OF THE FORD")
 	check(frame.titles[1] == "ALDWIN OF THE FORD", "the You title takes the character's name")
 	var wide: Control = Control.new()
@@ -41,6 +42,8 @@ func _initialize() -> void:
 	await process_frame
 	check(not frame.columns_fit(), "a 900 px wide child does not fit the 650 px Pack column")
 	check(frame.get_combined_minimum_size().x > 1920.0, "the frame then asks for more than the canvas, so the text test sees it")
+	var report: String = frame.fit_report()
+	check(report.begins_with("pack 900x10 in 650x820 OVER (Control 900x10)") and report.contains("you 0x0 in 408x820 fits"), "the fit report names the column and the control that overflows: " + report)
 	wide.queue_free()
 	await process_frame
 	await process_frame
