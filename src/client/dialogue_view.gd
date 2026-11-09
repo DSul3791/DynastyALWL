@@ -2,9 +2,9 @@ extends Node
 
 # Talking to an NPC (protocol 45): "Press E to talk to <name>" through the interaction registry, then a panel at the bottom of the
 # screen with the NPC's name, their line and the choices (click, or keys 1 to 5). Esc or the last line closes it. The line carries
-# a voice_id for text to voice (Mandy hooks that up through voice_line). Fonts are 26 px, readable on a 55 inch 4K at 1080p.
+# a voice_id for text to voice (Mandy hooks that up through voice_line). Fonts are 20 px on the 1920x1080 canvas (26 on the old 2880x1620 one), readable on a 55 inch 4K.
 
-const FONT_PX := 26
+const FONT_PX := 20
 const MAX_CHOICES := 5
 
 var net
@@ -86,13 +86,13 @@ func _build(layer: CanvasLayer) -> void:
 	var box: VBoxContainer = VBoxContainer.new()
 	_panel.add_child(box)
 	_name = Label.new()
-	_name.add_theme_font_size_override("font_size", FONT_PX + 4)
+	_name.add_theme_font_size_override("font_size", FONT_PX + 2)
 	_name.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
 	box.add_child(_name)
 	_text = Label.new()
 	_text.add_theme_font_size_override("font_size", FONT_PX)
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_text.custom_minimum_size = Vector2(700, 0)
+	_text.custom_minimum_size = Vector2(560, 0)
 	box.add_child(_text)
 	_choices = VBoxContainer.new()
 	box.add_child(_choices)
@@ -198,7 +198,7 @@ func close() -> void:
 
 # --- the trade window (Dave 2026-10-21): what the trader sells on the left, what the pack can sell on the right, prices in coins ---
 
-const SHOP_PX := 28
+const SHOP_PX := 20
 
 
 func _build_shop(layer: CanvasLayer) -> void:
@@ -218,7 +218,7 @@ func _build_shop(layer: CanvasLayer) -> void:
 	var head: HBoxContainer = HBoxContainer.new()
 	box.add_child(head)
 	_shop_title_label = Label.new()
-	_shop_title_label.add_theme_font_size_override("font_size", SHOP_PX + 8)
+	_shop_title_label.add_theme_font_size_override("font_size", SHOP_PX + 6)
 	_shop_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(_shop_title_label)
 	_shop_purse = items.make_coin_label(SHOP_PX)
@@ -230,7 +230,7 @@ func _build_shop(layer: CanvasLayer) -> void:
 	head.add_child(close_button)
 	var columns: HBoxContainer = HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 30)
+	columns.add_theme_constant_override("separation", 20)
 	box.add_child(columns)
 
 	for side in 2:
@@ -239,7 +239,7 @@ func _build_shop(layer: CanvasLayer) -> void:
 		columns.add_child(column)
 		var title: Label = Label.new()
 		title.text = "Buy" if side == 0 else "Sell"
-		title.add_theme_font_size_override("font_size", SHOP_PX + 4)
+		title.add_theme_font_size_override("font_size", SHOP_PX + 2)
 		column.add_child(title)
 
 		if side == 1:

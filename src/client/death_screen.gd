@@ -43,18 +43,20 @@ func _build() -> void:
 	var box: VBoxContainer = VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_CENTER)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 28)
+	box.add_theme_constant_override("separation", 18)
 	black.add_child(box)
 	_text = Label.new()
-	_text.add_theme_font_size_override("font_size", 28)
+	_text.add_theme_font_size_override("font_size", 30)
 	_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_text)
 	_button = Button.new()
 	_button.text = "Make a new character"
-	_button.add_theme_font_size_override("font_size", 24)
+	_button.add_theme_font_size_override("font_size", 22)
 	_button.pressed.connect(_new_character)
 	box.add_child(_button)
-	box.position = Vector2(300.0, 260.0)
+	box.grow_horizontal = Control.GROW_DIRECTION_BOTH   # centred on the canvas, whatever its size
+	box.grow_vertical = Control.GROW_DIRECTION_BOTH
+	box.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 
 
 # The dead character leaves this machine's list and the select page opens (it sends a player with no characters to the creator).

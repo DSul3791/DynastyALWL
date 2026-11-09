@@ -21,13 +21,13 @@ func setup(parent: Node) -> void:
 	var centre: CenterContainer = CenterContainer.new()
 	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(centre)
-	_box.add_theme_constant_override("separation", 18)
-	_box.custom_minimum_size = Vector2(980.0, 0.0)
+	_box.add_theme_constant_override("separation", 12)
+	_box.custom_minimum_size = Vector2(680.0, 0.0)
 	centre.add_child(_box)
 	_title.text = "Joining the game"
-	_title.add_theme_font_size_override("font_size", 40)
+	_title.add_theme_font_size_override("font_size", 30)
 	_box.add_child(_title)
-	_body.add_theme_font_size_override("font_size", 26)
+	_body.add_theme_font_size_override("font_size", 20)
 	_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_box.add_child(_body)
 	parent.add_child(layer)
@@ -48,8 +48,8 @@ func fail(title: String, text: String, on_quit: Callable) -> void:
 	_body.text = text
 	var button: Button = Button.new()
 	button.text = "Quit"
-	button.custom_minimum_size = Vector2(300.0, 52.0)
-	button.add_theme_font_size_override("font_size", 26)
+	button.custom_minimum_size = Vector2(220.0, 48.0)
+	button.add_theme_font_size_override("font_size", 22)
 	button.pressed.connect(on_quit)
 	_box.add_child(button)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
