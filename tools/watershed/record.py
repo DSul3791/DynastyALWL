@@ -15,7 +15,11 @@ groundwater.npz (R4) and, once R5 exists, its network.json. Writes OUT_DIR/recor
 The steps (R6 method items 1 to 4):
 1. The chain: each stage's manifest names the hashes of the files it read; they must be the files given here, so the record
    is one run's, never a mix. Any mismatch stops the writer.
-2. The window must end at sea on every side (no land on its frame), so no river or groundwater divide is cut by its edge.
+2. The window should end at sea on every side, so no river or groundwater divide is cut by its edge. The nine starter tiles do
+   not (land crosses three of their corners), and only they exist in the game, so the frame is an outlet as in every stage
+   before (lem.route seeds the flood there, lakes.py counts it with the sea): frame land drains off at its own ground, a reach
+   that runs off the frame keeps its channel to the edge, and the land on the frame is reported by side (window_frame_land)
+   with a sea-framed window listed under summary.later.
 3. The 8 m ground: R3's 16 m ground (the post-glacial ground with leftover hollows filled) refined by a separable monotone
    cubic (PCHIP, Fritsch and Carlson 1980) along x and then z. It passes through every 16 m height and does not overshoot
    along either axis, so summits, ridges and channel beds keep their heights. Then fine roughness at 16 to 48 m on
@@ -26,9 +30,11 @@ The steps (R6 method items 1 to 4):
    discharge, water table depth, basin, distance to perennial fresh water (with R5, springs that run in the dry season
    count) and loose sediment, each encoded as listed in the manifest.
 With --network (R5's network.py output of this same chain) the regime and discharge come from the network, which knows
-the stream threshold and the losing beds. Rivers carved and drawn as water (class 3, seasonal channels 8), the cold-air pools
-and the snow window come later; until every item is in, the manifest lists what is missing, says the record is not complete,
-and the bake must refuse it (Steve's M2 reader checks `complete`).
+the stream threshold and the losing beds, and the rivers wider than about 8 m are carved along R5's polylines and drawn as water
+(class 3 perennial, 8 seasonal channel; carve_rivers), before the roughness and the flood. Without it the manifest lists the
+network as missing, says the record is not complete, and the bake refuses it (water_record.gd checks `complete`). What the
+runtime adds later (brooks under 8 m, cold-air pools, the snow window: R7) and R5's own refinements are listed under
+summary.later and do not stop the bake. area_km2 (drainage area per sample) feeds the tile file's flow section.
 """
 import sys, os, json, time, hashlib, subprocess
 import numpy as np
@@ -80,11 +86,18 @@ def check_chain(inputs_dir, b2_dir, r3_dir, r4_dir):
     return h
 
 
-def check_window(sea):
-    """No land on the window's frame (step 2)."""
-    frame = np.concatenate([sea[0, :], sea[-1, :], sea[:, 0], sea[:, -1]])
-    if not frame.all():
-        raise SystemExit(f'record: {int((~frame).sum())} land cells on the window frame; the window must end at sea on every side')
+def frame_land(sea, ground):
+    """Land on the window's frame by side (step 2): its 16 m cells and the highest of them. Rows run along z, columns along x."""
+    sides = dict(z_min=(sea[0, :], ground[0, :]), z_max=(sea[-1, :], ground[-1, :]), x_min=(sea[:, 0], ground[:, 0]),
+                 x_max=(sea[:, -1], ground[:, -1]))
+    out = {}
+    for k, (s, h) in sides.items():
+        land = ~s
+        out[k] = dict(cells=int(land.sum()), highest_m=round(float(h[land].max()), 1) if land.any() else None)
+    edge = np.zeros(sea.shape, bool)
+    edge[0, :] = edge[-1, :] = edge[:, 0] = edge[:, -1] = True
+    out['cells'] = int((edge & ~sea).sum())
+    return out
 
 
 def refine(a):
@@ -216,8 +229,14 @@ def _fill(h, surface, sink, n):
 
 
 def closed_cells(g, surface, sink, tol):
-    """Land cells the flood raises by more than tol: closed hollows that drain to no sink."""
+    """Land cells the flood raises by more than tol: closed hollows that drain to no sink. Water also leaves at the window's
+    frame (step 2), so a frame sample that is no sink already is one at its own ground."""
     n = g.shape[0]
+    out = np.zeros((n, n), bool)
+    out[0, :] = out[-1, :] = out[:, 0] = out[:, -1] = True
+    out &= ~sink
+    surface = np.where(out, g, surface)
+    sink = sink | out
     filled = _fill(g.ravel().astype(np.float64), np.nan_to_num(surface.ravel().astype(np.float64)), sink.ravel().astype(np.uint8), n)
     return ((filled.reshape(n, n) - g) > tol) & ~sink
 
@@ -239,6 +258,193 @@ def grow_lakes(lake8, lvl, g, passes):
     return lake8, lvl
 
 
+
+@nb.njit(cache=True)
+def _carve(segs, m, ox, oz, dx, cut, best_r, best_s, best_t):
+    """Lowers `cut` (the lowest ground any river asks for at each 8 m sample) and keeps, per sample, the nearest segment and
+    where along it the sample falls. A segment row: x0, z0, x1, z1, then at its two ends the bed, the level, the half-width
+    of the flat bed, the tangent of the bank angle and the bank top, then the class code and the reach of the cut (see
+    carve_rivers). The cross-section is a flat bed with banks at the bed material's angle, carried on up at that angle until
+    it meets the ground."""
+    for s in range(segs.shape[0]):
+        x0 = segs[s, 0]; z0 = segs[s, 1]; x1 = segs[s, 2]; z1 = segs[s, 3]
+        rr = segs[s, 15]
+        ex = x1 - x0
+        ez = z1 - z0
+        L2 = ex * ex + ez * ez
+        c_lo = max(int(np.floor((min(x0, x1) - rr - ox) / dx)), 0)
+        c_hi = min(int(np.ceil((max(x0, x1) + rr - ox) / dx)), m - 1)
+        r_lo = max(int(np.floor((min(z0, z1) - rr - oz) / dx)), 0)
+        r_hi = min(int(np.ceil((max(z0, z1) + rr - oz) / dx)), m - 1)
+        for r in range(r_lo, r_hi + 1):
+            pz = oz + r * dx
+            for c in range(c_lo, c_hi + 1):
+                px = ox + c * dx
+                t = 0.0
+                if L2 > 0.0:
+                    t = ((px - x0) * ex + (pz - z0) * ez) / L2
+                    t = min(max(t, 0.0), 1.0)
+                qx = x0 + t * ex
+                qz = z0 + t * ez
+                d = np.sqrt((px - qx) * (px - qx) + (pz - qz) * (pz - qz))
+                if d > rr:
+                    continue
+                b = segs[s, 4] + t * (segs[s, 5] - segs[s, 4])
+                bh = segs[s, 8] + t * (segs[s, 9] - segs[s, 8])
+                ta = segs[s, 10] + t * (segs[s, 11] - segs[s, 10])
+                v = b + max(0.0, d - bh) * ta
+                k = r * m + c
+                if v < cut[k]:
+                    cut[k] = v
+                if d < best_r[k]:
+                    best_r[k] = d
+                    best_s[k] = s
+                    best_t[k] = t
+
+
+def carve_rivers(network, net, ox, oz, m, lake_levels, CV, sea16=None):
+    """R6 item 3, second step: rivers wider than CV['carve_min_width_m'] carved along their R5 polylines at their bankfull
+    width and depth, with banks at the bed material's angle, and drawn as water at their mean-flow depth: class 3 where the
+    reach is perennial, 8 (seasonal channel) where it is intermittent or ephemeral. Narrower brooks are left to R7, which draws
+    them at voxel scale in the valleys B1 cut.
+
+    Each reach's bank top is its polyline's bed_y (the 16 m ground along the channel, which holds the valley floor), made
+    non-increasing downstream; the bed is that less the bankfull depth, the level the bed plus the mean-flow depth. A reach is
+    joined to what it runs into: the next reach's first point, or one and a half cells on toward the sea or the lake, so no
+    trench ends short of the water. Levels never rise downstream and never sit below what the reach runs into (the sea at 0,
+    the lake at its level, the next reach's level), so a tributary meets its river at the river's level or above. Where a
+    reach sinks or leaves its channel, the cut tapers to nothing over its last CV['end_taper_points'] points. A reach R5 sends
+    to the sea because it runs off the window's frame (its last 16 m cell is land on the frame; sea16 gives the sea) keeps its
+    channel to the edge with no sea floor and no join, since the water leaves there (step 2).
+
+    Returns the segment rows (for _carve) and the class code per segment."""
+    n16 = net['width_m'].shape[0]
+    dx16 = 2.0 * SPACING
+    W16, D16, Dm16 = (net[k].astype(np.float64) for k in ('width_m', 'depth_m', 'depth_mean_m'))
+    bed16, reg16 = net['bed'].astype(np.int64), net['regime'].astype(np.int64)
+    tan_bed = np.tan(np.radians(np.asarray(CV['bank_angle_deg_by_bed'], np.float64)))
+    min_w, extra, taper = float(CV['carve_min_width_m']), float(CV['bank_extra_m']), int(CV['end_taper_points'])
+    by_id = {int(r['id']): r for r in network['reaches']}
+
+    # Downstream first: each reach after the one it runs into.
+    hops = {}
+    for rid in by_id:
+        path, j = [], rid
+        while j in by_id and j not in hops and len(path) <= len(by_id):
+            path.append(j)
+            d = by_id[j]
+            j = int(d['down']) if d['ends'] == 'reach' and int(d['down']) in by_id else None
+        base = hops.get(j, -1) if j is not None else -1
+        for q in reversed(path):
+            base += 1
+            hops[q] = base
+    first = {}      # reach id -> (x, z, bank top, bed, level) at its first point
+    rows, codes = [], []
+    for rid in sorted(by_id, key=lambda q: hops[q]):
+        r = by_id[rid]
+        pl = np.asarray(r['polyline'], np.float64)
+        x, y, z = pl[:, 0], np.minimum.accumulate(pl[:, 1]), pl[:, 2]
+        ci = np.clip(np.round((x - ox) / dx16).astype(np.int64), 0, n16 - 1)
+        cj = np.clip(np.round((z - oz) / dx16).astype(np.int64), 0, n16 - 1)
+        W, D, Dm = W16[cj, ci], D16[cj, ci], Dm16[cj, ci]
+        ta = tan_bed[np.clip(bed16[cj, ci], 0, tan_bed.size - 1)]
+        reg = reg16[cj, ci]
+        D0 = np.where(W > min_w, D, 0.0)
+        D = D0.copy()
+        if r['ends'] in ('sinks', 'leaves its channel') and taper > 0:
+            k = min(taper, D.size)
+            D[-k:] *= np.linspace(1.0, 0.0, k + 1)[1:]
+        b = y - D
+        # The level from the untapered channel, so a reach that sinks keeps its depth upstream and runs out to nothing at its end
+        # (the level is held at least at the bed below), rather than its dry end raising the water behind it.
+        w = (y - D0) + np.minimum(Dm, D0)
+        floor = None
+        on_edge = ci[-1] in (0, n16 - 1) or cj[-1] in (0, n16 - 1)
+        off_frame = r['ends'] == 'sea' and sea16 is not None and on_edge and not bool(sea16[cj[-1], ci[-1]])
+        if r['ends'] == 'sea' and not off_frame:
+            floor = 0.0
+        elif r['ends'] == 'lake' and r.get('lake') is not None and int(r['lake']) in lake_levels:
+            floor = lake_levels[int(r['lake'])]
+        elif r['ends'] == 'reach' and int(r['down']) in first:
+            floor = first[int(r['down'])][4]
+        # The join: the next reach's first point, or 1.5 cells on along the last step toward the sea or the lake.
+        ext = None
+        if r['ends'] == 'reach' and int(r['down']) in first:
+            fx, fz, fy, fb, fw = first[int(r['down'])]
+            ext = (fx, fz, min(y[-1], fy), min(b[-1], fb), fw)
+        elif r['ends'] in ('sea', 'lake') and x.size >= 2 and floor is not None:
+            ux, uz = x[-1] - x[-2], z[-1] - z[-2]
+            ext = (x[-1] + 1.5 * ux, z[-1] + 1.5 * uz, min(y[-1], floor), min(b[-1], floor - D[-1]), floor)
+        if ext is not None:
+            x, z = np.append(x, ext[0]), np.append(z, ext[1])
+            y, b, w = np.append(y, ext[2]), np.append(b, ext[3]), np.append(w, ext[4])
+            W, D, ta, reg = np.append(W, W[-1]), np.append(D, D[-1]), np.append(ta, ta[-1]), np.append(reg, reg[-1])
+        if floor is not None:
+            w = np.maximum(w, floor)
+        w = np.maximum.accumulate(w[::-1])[::-1]          # never rising downstream
+        w = np.maximum(w, b)
+        bh = np.maximum(0.5 * W - D / ta, W / 6.0)
+        rr = bh + (D + extra) / ta
+        first[rid] = (x[0], z[0], y[0], b[0], w[0])
+        for k in range(x.size - 1):
+            if D[k] <= 0.0 and D[k + 1] <= 0.0:
+                continue
+            code = RIVER if reg[k] == 1 else SEASONAL_CHANNEL
+            rows.append([x[k], z[k], x[k + 1], z[k + 1], b[k], b[k + 1], w[k], w[k + 1], bh[k], bh[k + 1], ta[k], ta[k + 1],
+                         y[k], y[k + 1], float(code), max(rr[k], rr[k + 1])])
+            codes.append(code)
+    return np.asarray(rows, np.float64).reshape(-1, 16), np.asarray(codes, np.uint8)
+
+
+def river_water(segs, best_s, best_t, best_r, g, keep):
+    """The river water on the carved ground: a sample is river where its nearest segment's channel holds water over it (within
+    the channel's water width at that point, below the bank top) and `keep` (not sea, not lake). Returns the class code and
+    the level per sample (0 and NaN off the rivers)."""
+    m = g.shape[0]
+    code = np.zeros(m * m, np.uint8)
+    level = np.full(m * m, np.nan)
+    idx = np.flatnonzero(best_s.ravel() >= 0)
+    if idx.size == 0 or segs.shape[0] == 0:
+        return code.reshape(m, m), level.reshape(m, m)
+    S = segs[best_s.ravel()[idx]]
+    t = best_t.ravel()[idx]
+    lerp = lambda a, b_: S[:, a] + t * (S[:, b_] - S[:, a])
+    b, w, bh, ta, top = lerp(4, 5), lerp(6, 7), lerp(8, 9), lerp(10, 11), lerp(12, 13)
+    width = bh + np.maximum(np.minimum(w, top) - b, 0.0) / ta
+    wet = (best_r.ravel()[idx] <= width) & (g.ravel()[idx] < w) & keep.ravel()[idx]
+    code[idx[wet]] = S[wet, 14].astype(np.uint8)
+    level[idx[wet]] = w[wet]
+    return code.reshape(m, m), level.reshape(m, m)
+
+
+@nb.njit(cache=True)
+def _area(rec, cell):
+    """Drainage area through each cell from R3's receivers (-1: none), upstream cells first (Kahn's order)."""
+    N = rec.size
+    indeg = np.zeros(N, np.int64)
+    for i in range(N):
+        if rec[i] >= 0:
+            indeg[rec[i]] += 1
+    area = np.full(N, cell)
+    stack = np.empty(N, np.int64)
+    sz = 0
+    for i in range(N):
+        if indeg[i] == 0:
+            stack[sz] = i
+            sz += 1
+    while sz > 0:
+        sz -= 1
+        i = stack[sz]
+        d = rec[i]
+        if d >= 0:
+            area[d] += area[i]
+            indeg[d] -= 1
+            if indeg[d] == 0:
+                stack[sz] = d
+                sz += 1
+    return area
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     opts = dict(a[2:].split('=', 1) for a in sys.argv[1:] if a.startswith('--') and '=' in a)
@@ -257,7 +463,10 @@ def main():
     ox, oz = float(r3['origin_x']), float(r3['origin_z'])
     g16 = r3['ground'].astype(np.float64)
     sea16 = r3['sea'].astype(bool)
-    check_window(sea16)
+    frame = frame_land(sea16, g16)
+    if frame['cells']:
+        print(f"record: {frame['cells']} land cells on the window frame; water leaves there (step 2): "
+              f"{ {k: v for k, v in frame.items() if k != 'cells'} }", flush=True)
 
     # 3. The 8 m ground.
     g = refine(g16)
@@ -293,18 +502,37 @@ def main():
     lake_wet = np.isfinite(lvl) & (lvl > g)
     summit16, summit8_smooth = float(g16.max()), float(g.max())
 
+    # Rivers wider than about 8 m carved along their R5 polylines and drawn as water (R6 item 3; carve_rivers). They need the
+    # network: without it the record has no rivers and says so (missing), and the bake refuses it.
+    river_code, river_level = np.zeros((m, m), np.uint8), np.full((m, m), np.nan)
+    segs, carved_cells = np.zeros((0, 16)), 0
+    if net is not None:
+        segs, _ = carve_rivers(network, net, ox, oz, m, {int(lk['id']): float(lk['level_m']) for lk in lakes}, RC['rivers'], sea16)
+        cut = np.full(m * m, np.inf, np.float32)
+        best_r = np.full(m * m, np.inf, np.float32)
+        best_s = np.full(m * m, -1, np.int64)
+        best_t = np.zeros(m * m, np.float32)
+        _carve(segs, m, ox, oz, SPACING, cut, best_r, best_s, best_t)
+        keep = ~ocean & ~lake_wet
+        lower = (cut.reshape(m, m) < g) & keep
+        carved_cells = int(lower.sum())
+        g = np.where(lower, cut.reshape(m, m).astype(np.float64), g)
+        del cut, lower
+        river_code, river_level = river_water(segs, best_s.reshape(m, m), best_t.reshape(m, m), best_r.reshape(m, m), g, keep)
+        del best_r, best_s, best_t, keep
+
     Rr = RC['roughness']
     rough_rms_slope = 0.0
     if Rr.get('on', True):
-        near = (regime8 > 0) | lake_wet | (wet8 > 0) | ocean
+        near = (regime8 > 0) | lake_wet | (wet8 > 0) | ocean | (river_code > 0)
         dist = distance_transform_edt(~near) * SPACING
         fade = np.clip(dist / float(Rr['fade_m']), 0.0, 1.0)
         fade = fade * fade * (3.0 - 2.0 * fade)
         z, rough_rms_slope = roughness(g.shape, SPACING, Rr, P['evolve']['start_roughness'], int(P['seed']) + int(Rr.get('seed_offset', 1)))
         rough = z * fade
         del z, dist
-        sink = ocean | lake_wet
-        surface = np.where(ocean, 0.0, lvl)
+        sink = ocean | lake_wet | (river_code > 0)
+        surface = np.where(ocean, 0.0, np.where(lake_wet, lvl, river_level))
         closed_before = closed_cells(g, surface, sink, float(RC['closed_tolerance_m']))
         g_rough = g + rough
         made = closed_cells(g_rough, surface, sink, float(RC['closed_tolerance_m'])) & ~closed_before
@@ -320,8 +548,9 @@ def main():
         roughness_removed_cells = 0
     lake8, lvl = grow_lakes(lake8, lvl, g, 1)    # roughness fades to nothing at a shore, but a shore sample may still dip under
     lake_wet = np.isfinite(lvl) & (lvl > g)
-    sink = ocean | lake_wet
-    faults = closed_cells(g, np.where(ocean, 0.0, lvl), sink, float(RC['closed_tolerance_m']))
+    river_wet = (river_code > 0) & ~lake_wet & ~ocean
+    sink = ocean | lake_wet | river_wet
+    faults = closed_cells(g, np.where(ocean, 0.0, np.where(lake_wet, lvl, river_level)), sink, float(RC['closed_tolerance_m']))
     fault_idx = np.flatnonzero(faults.ravel())
     worst = fault_idx[np.argsort(-g.ravel()[fault_idx])][:20] if fault_idx.size else []
     fault_list = [dict(x=ox + float(i % m) * SPACING, z=oz + float(i // m) * SPACING, ground_m=round(float(g.ravel()[i]), 2)) for i in worst]
@@ -329,9 +558,10 @@ def main():
     # 4. Water on the 8 m ground.
     wclass = np.zeros((m, m), np.uint8)
     wclass[wet8 > 0] = wet8[wet8 > 0].astype(np.uint8)
+    wclass[river_wet] = river_code[river_wet]
     wclass[lake_wet] = LAKE
     wclass[ocean] = OCEAN
-    level = np.where(ocean, 0.0, np.where(lake_wet, lvl, np.nan))
+    level = np.where(ocean, 0.0, np.where(lake_wet, lvl, np.where(river_wet, river_level, np.nan)))
     ref_mm = runoff.reference_quick_mm(P['rain']['background_mm_yr'], P['water_budget'])
     if net is not None:
         q16 = net['q_mean_m3_s'].astype(np.float64)
@@ -341,7 +571,10 @@ def main():
     table = np.nan_to_num(nearest(r4['depth_to_table_m'].astype(np.float64), g16))
     basin = nearest(r3['basin_id'].astype(np.int64), g16)
     sediment = np.nan_to_num(nearest(b2['sediment_m'].astype(np.float64), g16))
-    fresh_src = lake_wet | (regime8 == 1)
+    fresh_src = lake_wet | (regime8 == 1) | (river_wet & (river_code == RIVER))
+    # Drainage area through each sample (R3's routing on the 16 m ground), for the tile file's flow section.
+    area16 = _area(r3['receiver'].astype(np.int64).ravel(), dx16 * dx16).reshape(g16.shape)
+    area8 = nearest(area16, g16) / 1e6
     if network_dir:
         # Springs that still run in the dry quarter are fresh water too (spring_store_build_plan.md section 5), at the 8 m
         # sample nearest each.
@@ -360,6 +593,7 @@ def main():
          dict(units='m', scale=float(E['table_depth_step_m']), note=f"R4's regional table, a yearly mean; 0 = at the ground; 255 = {255 * float(E['table_depth_step_m'])} m or deeper")),
         ('basin', basin.astype('<i4'), 'i4', dict(nodata=-1)),
         ('fresh_m', np.clip(np.round(fresh), 0, 65535).astype('<u2'), 'u2', dict(units='m', scale=1.0, note='to a lake, regime 1 (perennial) water or a spring that runs in the dry season')),
+        ('area_km2', area8.astype('<f4'), 'f4', dict(units='km2', note="drainage area through the sample, R3's routing on the 16 m ground")),
         ('sediment_m', np.clip(np.round(np.maximum(sediment, 0.0) / float(E['sediment_step_m'])), 0, 65535).astype('<u2'), 'u2', dict(units='m', scale=float(E['sediment_step_m']))),
     ]
 
@@ -377,14 +611,20 @@ def main():
     if network_dir:
         hashes['network.json'] = sha(os.path.join(network_dir, 'network.json'))
         hashes['network.npz'] = sha(os.path.join(network_dir, 'network.npz'))
-        missing = [f'R5: {m}' for m in nman.get('missing', [])]
+        missing, later = [], [f'R5: {m}' for m in nman.get('missing', [])]
     else:
         network = dict(reaches=[], heads=[], confluences=[], falls=[], springs=[], cave_springs=[], coast_outlets=[], cold_air_pools=[],
                        lakes=lakes)
-        missing = ['network reaches, heads, falls, springs, outlets (R5)']
-    missing += ['rivers wider than about 8 m carved and drawn as water (R6 item 3)',
-                'seasonal ponds (class 9): closed hollows that hold water only in the wet season, from R3 levels by season',
-                'cold-air pools (stage D)', 'snow window (A4 snow layer)']
+        missing, later = ['network reaches, heads, falls, springs, outlets (R5), and with them the carved rivers (R6 item 3)'], []
+    # complete: every field the tile bake reads is in (ground, water, flow, fresh water). What R7 and later stages add is listed
+    # under later and does not stop the bake: R5's own refinements, seasonal ponds, and the cold-air pools and snow window the
+    # runtime reads (design R7 item 7).
+    later += ['seasonal ponds (class 9): closed hollows that hold water only in the wet season, from R3 levels by season',
+              'brooks narrower than about 8 m (R7 draws them from the reach polylines)',
+              'cold-air pools (stage D; read by R7)', 'snow window (A4 snow layer; read by R7)']
+    if frame['cells']:
+        later.append(f"a window that ends at sea on every side (design R6 item 2): {frame['cells']} 16 m cells of land on the frame, "
+                     'where catchments are cut and water leaves, as in every stage of this run')
     complete = not missing
     json.dump(network, open(os.path.join(rec_dir, 'network.json'), 'w'), indent=1)
     # One sky (design A4): the island's latitude from its tile row on the world grid (world.py), never a fixed number, and
@@ -403,9 +643,12 @@ def main():
     summary = dict(seconds=round(time.time() - t0, 1), grid_8m=m, tiles=P['tiles'], sky=dict(sky, sea_level_mean_c=climate['default']['sea_level_mean_c'], snow_bias_c=climate['default'].get('snow_bias_c')),
                    summit_16m=summit16, summit_8m=float(g.max()), summit_8m_before_roughness=summit8_smooth,
                    roughness=dict(rms_slope=rough_rms_slope, removed_cells=roughness_removed_cells),
-                   closed_cells_outside_lakes=int(fault_idx.size), closed_cells_highest=fault_list,
+                   closed_cells_outside_lakes=int(fault_idx.size), closed_cells_highest=fault_list, window_frame_land=frame,
                    land_km2=float(land.sum() * SPACING * SPACING / 1e6), lake_km2=float(lake_wet.sum() * SPACING * SPACING / 1e6),
-                   wetland_km2=float((wet8 > 0).sum() * SPACING * SPACING / 1e6), missing=missing,
+                   wetland_km2=float((wet8 > 0).sum() * SPACING * SPACING / 1e6), missing=missing, later=later,
+                   rivers=dict(segments=int(segs.shape[0]), carved_cells=int(carved_cells),
+                               river_km2=float((wclass == RIVER).sum() * SPACING * SPACING / 1e6),
+                               seasonal_channel_km2=float((wclass == SEASONAL_CHANNEL).sum() * SPACING * SPACING / 1e6)),
                    # R5's island season shares (quick and base flow in the wet and dry quarters over their means), for the readers'
                    # dry-season and drought answers (docs/water/springs_and_drinking_water.md)
                    seasons=nman['summary'].get('seasons') if network_dir else None)
