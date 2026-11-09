@@ -74,3 +74,19 @@ So on the starter island, goblin dens come from the record's spring caves alone.
 - Every tile with at least one spring cave has 1 den or more.
 - Tile 3,4 has 6 or more.
 - A tile with no cave is INFO, not a failure: once the floor is in, no cave means no head there passed the cave rules. Only dens with no cave, or dry karst, would reach those tiles, and both are off the table.
+
+**The most caves the rules allow per tile** (Dino, the nine ws580v tiles baked with the share at 1.0, `cave_count_ws580v.log`):
+
+| tile | spring heads | caves at share 1.0 |
+|---|---|---|
+| 2,3 | 7 | 3 |
+| 3,3 | 20 | 5 |
+| 4,3 | 19 | 1 |
+| 3,4 | 211 | 96 |
+| 3,5 | 25 | 3 |
+| 4,5 | 68 | 43 |
+| 4,4 | 1 | 0 |
+| 2,4 | 0 | — |
+| 2,5 | 0 | — |
+
+So the floor can reach 2,3, 3,3, 4,3 and 3,5. Tiles 4,4, 2,4 and 2,5 have no head that the cave rules allow, so they get no cave and no goblin den. The coordinator accepted that under the restated bar on 9 Nov 2026.
