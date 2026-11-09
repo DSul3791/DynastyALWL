@@ -325,7 +325,8 @@ def main():
             # whether or not ice lies beside it; the debris joins the ice's load (rockfall onto glaciers). The limit holds
             # against every neighbour, not only the receiver (evolve._slope_ceiling): with the receiver alone, run a3ffca14
             # still left 86-degree walls, lowered one cell a step.
-            sc = evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h), deposit)
+            # The sea's rock is not looked up (rock_ids with sea): _solve and _slope_ceiling read a cell's limit only on land.
+            sc = evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h, sea), deposit)
             # The incision threshold is for flowing water on bedrock; ice cuts whatever its flux (none under the ice).
             kc = np.where(thick > 0.0, 0.0, E['K'] * ery_rock * share * evolve.bedrock_threshold(E))
             st['flux'] = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cov.copy(), E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc, thick)

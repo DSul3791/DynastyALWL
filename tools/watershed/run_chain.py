@@ -18,8 +18,8 @@ that stops part way never looks done. A stage that runs again and writes the sam
 The two Godot exports hash every file under src/worldgen and data/tables, and the world's world.json, plan/ and
 erosion_delta_v2.bin.
 
-Nine threads (Dave, 9 Nov 2026): evolve gets NUMBA_NUM_THREADS=9 and the two exports run side by side. The other stages are one
-thread each. Each stage prints its start and end on the PC clock. check_record.py, the bake, settle, refilm and rebake_check are
+Nine threads (Dave, 9 Nov 2026): every stage gets NUMBA_NUM_THREADS=9 (evolve's creep and the rock lookups in rock.py run on
+numba's threads; the rest of each stage is one thread) and the two exports run side by side. Each stage prints its start and end on the PC clock. check_record.py, the bake, settle, refilm and rebake_check are
 not part of it: the job file runs them after.
 """
 import hashlib
@@ -41,13 +41,19 @@ SPACING = 8.0                                 # the game's sample spacing (input
 GODOT_INPUTS = ['src/worldgen', 'data/tables', 'worlds/base_world/world.json', 'worlds/base_world/plan', 'worlds/base_world/erosion_delta_v2.bin']
 
 _hash_cache = {}
+RACY_NS = 2_000_000_000     # a file changed this recently is hashed again every time (see file_sha)
 
 
 def file_sha(path):
-    """The content hash of one file: an .npz by its arrays (name, dtype, shape, bytes), anything else by its bytes."""
+    """The content hash of one file: an .npz by its arrays (name, dtype, shape, bytes), anything else by its bytes.
+    Hashes are kept by path, size and mtime, except for a file changed in the last RACY_NS: a file system stamps mtime from a
+    coarse clock (a few ms on ext4), so a file rewritten with the same size inside one tick keeps its mtime, and the kept hash
+    would be the old content's (David4, 9 Nov 2026: test_run_chain's restored in.txt came back as changed). Git's index has
+    the same rule for racily clean files."""
     st = os.stat(path)
     key = (os.path.abspath(path), st.st_size, st.st_mtime_ns)
-    if key in _hash_cache:
+    racy = time.time_ns() - st.st_mtime_ns < RACY_NS
+    if not racy and key in _hash_cache:
         return _hash_cache[key]
     h = hashlib.sha256()
     try:
@@ -63,8 +69,9 @@ def file_sha(path):
         with open(path, 'rb') as f:
             for block in iter(lambda: f.read(1 << 22), b''):
                 h.update(block)
-    _hash_cache[key] = h.hexdigest()
-    return _hash_cache[key]
+    if not racy:
+        _hash_cache[key] = h.hexdigest()
+    return h.hexdigest()
 
 
 def tree_sha(paths):
@@ -189,7 +196,7 @@ def stages(chain, run, params_file, godot):
         dict(name='inputs', script='inputs.py', out=d['inputs'], outputs=['inputs.npz'],
              reads=lambda: reads(('landform', '*.f32'), ('landform', 'raw_manifest.json'), geology),
              cmd=[py, W('inputs.py'), d['landform'], d['geology'], d['inputs'], params_file]),
-        dict(name='evolve', script='evolve.py', out=d['b1'], outputs=['ground.npz'], threads=True,
+        dict(name='evolve', script='evolve.py', out=d['b1'], outputs=['ground.npz'],
              reads=lambda: reads(('inputs', 'inputs.npz'), geology),
              cmd=[py, W('evolve.py'), d['inputs'], d['geology'], d['b1'], params_file]),
         dict(name='glacial', script='glacial.py', out=d['b2'], outputs=['glacial.npz'],
@@ -249,9 +256,7 @@ def _start(stage):
     stamp_path = os.path.join(stage['out'], STAMP)
     if os.path.exists(stamp_path):
         os.remove(stamp_path)
-    env = dict(os.environ)
-    if stage.get('threads'):
-        env['NUMBA_NUM_THREADS'] = str(THREADS)
+    env = dict(os.environ, NUMBA_NUM_THREADS=str(THREADS))
     print(f"{stage['name']}: start {_clock()}", flush=True)
     return subprocess.Popen(stage['cmd'], cwd=REPO, env=env), time.time()
 

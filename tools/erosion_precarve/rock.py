@@ -57,9 +57,12 @@ def _rock_at(i, y, prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lro
     return rock
 
 
-@nb.njit(cache=True)
+# The per-cell lookups below run on numba's threads (NUMBA_NUM_THREADS; nine on Dave's PC, tools/watershed/run_chain.py). Each
+# cell is its own lookup and writes only its own slot, so the numbers are the same on any number of threads
+# (docs/design/glacial_speed_design.md cut A1: rock_ids alone was 0.95 s of each 5.47 s glacial step on one thread).
+@nb.njit(cache=True, parallel=True)
 def _ery(h, cover, veg, sea, prov, surf, gran, basa, er, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid, cover_m, cover_ery, out):
-    for i in range(h.size):
+    for i in nb.prange(h.size):
         if sea[i]:
             out[i] = 1.0; continue
         if cover[i] > 0.0:                       # loose cover is not yet washed off
@@ -67,27 +70,32 @@ def _ery(h, cover, veg, sea, prov, surf, gran, basa, er, cycle, repeat, base, ma
         out[i] = er[_rock_at(i, h[i], prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid)]
 
 
-@nb.njit(cache=True)
+@nb.njit(cache=True, parallel=True)
 def _rock_ery(h, sea, prov, surf, gran, basa, er, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid, out):
     # the bedrock's erodibility at each height, under any loose cover
-    for i in range(h.size):
+    for i in nb.prange(h.size):
         if sea[i]:
             out[i] = 1.0; continue
         out[i] = er[_rock_at(i, h[i], prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid)]
 
 
-@nb.njit(cache=True)
-def _rocks(h, prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid, out):
-    for i in range(h.size):
+@nb.njit(cache=True, parallel=True)
+def _rocks(h, skip, prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid, out):
+    for i in nb.prange(h.size):
+        if skip[i]:
+            continue
         out[i] = _rock_at(i, h[i], prov, surf, gran, basa, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid)
 
 
-def rock_ids(g, h):
-    """Bedrock id at the given heights (flat array or grid), ignoring loose cover."""
+def rock_ids(g, h, sea=None):
+    """Bedrock id at the given heights (flat array or grid), ignoring loose cover. With sea given (a mask of the same size),
+    the sea cells are not looked up and get id 0: for a caller that never reads them (glacial.py's cold step, whose slope
+    limits evolve._solve and _slope_ceiling read only on land). The sea is 83% of the glacial window."""
     hh = np.asarray(h, np.float64).ravel()
     out = np.zeros(hh.size, np.int32)
-    _rocks(hh, g['prov'], g['surf'], g['gran'], g['basa'], g['cycle'], g['repeat'], g['base'], g['marble'], g['ptr'], g['lrock'], g['lbot'],
-           g['gid'], g['bid'], g['lid'], g['mid'], out)
+    skip = np.zeros(hh.size, np.bool_) if sea is None else np.asarray(sea, np.bool_).ravel()
+    _rocks(hh, skip, g['prov'], g['surf'], g['gran'], g['basa'], g['cycle'], g['repeat'], g['base'], g['marble'], g['ptr'], g['lrock'],
+           g['lbot'], g['gid'], g['bid'], g['lid'], g['mid'], out)
     return out
 
 
