@@ -2,7 +2,7 @@
 
 **Owner:** Steve, for `src/shared/thunder.gd` and `server_animals.gd`.
 **Asked by:** MikeW: birds flush (state 15) on a thunder clap, server side.
-**Status:** the shared schedule and the server flush are in code and always on. Since 9 Nov 2026 the client plays its thunder from the same schedule (Kathleen, `weather_sounds.gd`, `thunder_delay_design.md` section 2, #849), and the `thunder.on` switch is gone (Steve, the PR after #849).
+**Status:** the shared schedule and the server flush are in code and always on. Since 9 Nov 2026 the client plays its thunder from the same schedule (Kathleen, `weather_sounds.gd`, `thunder_delay_design.md` section 2, #849), and the `thunder.on` switch is gone (Steve, #850). The server reads the strikes under each player's own weather (the zone of their row and their altitude, `terrain_server._weather_at`), as that player's client does, not under the starter row's weather (Kathleen's catch, 9 Nov).
 **Decided:** coordinator, 8 Nov 2026. Dave may revert.
 
 ## 1. What happens today (read from the code, 8 Nov; not tested)
