@@ -17,12 +17,13 @@ All 598 live items have an icon: 424 in `items.json` and 174 in `gathered.json`.
 
 | Kind | Count | Made by | Ran where |
 |---|---|---|---|
-| **Baked** | 491 (323 made items, 168 gathered materials) | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
+| **Baked** | 425 (323 made items, 102 gathered materials) | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
 | **Painted, basic** | 2 (log, stone) | `tools/paint_basic_icons.py` | Anywhere; Python with numpy and Pillow |
 | **Painted, made pieces** | 71 (walls, floors, roofs, stairs, ladder, log species, driftwood, furniture, stations, fires, torches, traps, carcass) | `tools/paint_structure_icons.py` | Anywhere; Python with numpy and Pillow |
 | **Painted, small items** | 34 (spears, arrows, stick, spades, the 14 crop seeds, pies; kindling, tinder, thatch, straw, birch bark, withies): items the bake drew too thin or too alike to read at 23 px, and the common fire and shelter materials | `tools/paint_item_icons.py` | Anywhere; Python with numpy and Pillow |
+| **Painted, plants** | 66 (29 herbs and leaves, 24 flowers, 13 roots and bulbs from `gathered.json`): the bake drew each family with one shape, so they differed only by tint | `tools/paint_plant_icons.py` | Anywhere; Python with numpy and Pillow |
 
-**The painted list is the code.** It is `("log", "stone")` plus `NAMES` in `tools/paint_structure_icons.py` and in `tools/paint_item_icons.py`, each the keys of that file's `PIECES` dict. The importer reads that same list as `PAINTED`, so there is no second copy to keep in step. To print it:
+**The painted list is the code.** It is `("log", "stone")` plus `NAMES` in `tools/paint_structure_icons.py`, `tools/paint_item_icons.py` and `tools/paint_plant_icons.py`, each the keys of that file's `PIECES` dict. The importer reads that same list as `PAINTED`, so there is no second copy to keep in step. To print it:
 
 ```
 python3 -c "import sys; sys.path.insert(0, 'tools'); import import_item_icons as i; print(len(i.PAINTED), i.PAINTED)"
@@ -32,7 +33,7 @@ python3 -c "import sys; sys.path.insert(0, 'tools'); import import_item_icons as
 
 ## The painted rig
 
-All three painters share the rig in `paint_basic_icons.py`:
+All the painters share the rig in `paint_basic_icons.py`:
 
 - low-poly, flat-shaded facets;
 - a warm key light from the top left, a fill of 0.38 and a gold rim;
@@ -50,9 +51,15 @@ All three painters share the rig in `paint_basic_icons.py`:
 - **Glowing faces.** A colour with a fourth value of 1 is drawn unlit. Coals, embers, flames and gems use this.
 - **The turn.** Each `PIECES` entry is `(builder, turn)`. The turn picks the side shown: walls show their face, slabs their top, roofs both slopes, and logs their cut ends toward the light.
 
+`paint_plant_icons.py` gives each herb, flower and root its own form, in the item's `looks.json` colour so the icon matches the plant in the world:
+- **Leaves** grow as the plant does: a bunch, a sprig of pairs (mint, sage), a fern or palm frond, needles on twigs (rosemary), a ribbed rosette (plantain), coils (fiddleheads). A telling detail goes on where it helps: a black berry on belladonna, white flowers on wild garlic.
+- **Flowers** by form: daisy, pompom (dandelion), bells, upturned cups holding water (quenchbell), spikes, a flat umbel (elder), a plume (meadowsweet), tight heads (yarrow), thistle, five-petalled star, lily, loose petals, a seed clock (wispbloom). Dark petals get a paler rim so they show on the slot.
+- **Roots** by form: taproot, a tied bunch, knotted lumps (heartroots), bulbs, a turnip (wolfsbane), cut lengths (comfrey); dandelion and wild carrot keep their leafy tops.
+- **Lit, not edge-on.** Leaves and petals are flat, so the whole plant is tipped halfway from facing the viewer toward the key light (`FACE`). Facing the viewer they caught only the fill light and came out at about 40 % of their colour.
+
 ## How to repaint one
 
-1. Change the builder in `tools/paint_structure_icons.py` or `tools/paint_item_icons.py`, or in `paint_basic_icons.py` for log and stone.
+1. Change the builder in `tools/paint_structure_icons.py`, `tools/paint_item_icons.py` or `tools/paint_plant_icons.py`, or in `paint_basic_icons.py` for log and stone.
 2. Repaint only that icon:
    ```
    python3 tools/paint_structure_icons.py --only stone_forge,oven
@@ -89,15 +96,9 @@ python3 tools/import_item_icons.py C:/temp/item_icons
 `data/items/gathered.json` holds 174 gathered materials: kindling, tinder, thatch, straw, bark, berries, herbs and the rest. Until 9 Nov the bake and the importer read only `items.json`, so none of them had an icon, and the "424 of 424" count left them out.
 
 Now both tools read `gathered.json` too, and all 174 have an icon:
-- 168 come from Dino's bake of 9 Nov. Every one has a look in `looks.json`, and the steps are in `gathered_icons_job.md` in the shared files.
+- 102 come from Dino's bake of 9 Nov. Every one has a look in `looks.json`, and the steps are in `gathered_icons_job.md` in the shared files.
 - 6 are painted: kindling, tinder, thatch, straw, birch bark and withies.
-
-**Known weak spots.** These read as their kind at slot size, but not as themselves, because the bake draws each family with one shape and only the tint differs:
-- about 30 herbs and leaves (the "frond" look);
-- 22 flowers;
-- 12 roots.
-
-They are thin at 23 px, the same problem the seeds had, and they are the next painting batch.
+- 66 are painted plants (`paint_plant_icons.py`, above): the bake drew every herb and leaf as one "frond", every flower as one stem with a daisy and every root as one pale wedge, so they read only as their kind and were thin at 23 px.
 
 ## Contact sheets
 
@@ -105,3 +106,4 @@ The sheets Dave looked at are in the shared project files, under `inventory/`:
 - `item_icons_in_repo_sheet.png`, the baked set;
 - `icons_batch1_sections.png`, `icons_batch2_logs.png`, `icons_batch3_furniture.png` and `icons_batch4_stations.png`, the painted batches.
 - `gathered_icon_sheet.png` (shared top level), the gathered bake, and `inventory/icons_gathered_painted6.png`, the six painted gathered materials.
+- `inventory/icons_plants_before_after.png`, the 66 plants baked and painted at 57 and 23 px on the slot, and `inventory/icons_plants_128.png` at full size.
