@@ -1,13 +1,11 @@
 extends RefCounted
 
-# Frozen water look (docs/design/frozen_water_look.md, Kathleen 8 Nov 2026), behind --frozen-water, client only. Pure functions: the numbers the
+# Frozen water look (docs/design/frozen_water_look.md, Kathleen 8 Nov 2026), always on, client only. Pure functions: the numbers the
 # liquid sheets' ice is drawn from (liquid_surface.gd set_ice_all). The ice rule itself is src/shared/ice.gd, unchanged; the walkable collider and
 # the server keep using Ice.cover at the 3 m pond depth.
 
 const Ice := preload("res://src/shared/ice.gd")
 const Climate := preload("res://src/shared/climate.gd")
-
-static var on: bool = AppConfig.has_flag("frozen-water")
 
 const OPEN_DEPTH_M := 3.0          # the deep water's cover: today's Ice.cover depth (terrain_client ICE_POND_DEPTH_M)
 const SHORE_DEPTH_M := 1.0         # the shallows' cover: the shallowest depth ice.gd tells apart (2-day water lag, faster growth)

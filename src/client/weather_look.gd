@@ -130,21 +130,20 @@ const MIST_SUN_SCATTER := 0.25           # glow toward the low sun through the f
 const SEA_FOG_WHITEN := 0.3              # sea fog is greyer than valley fog (Kathleen: "a grey bank offshore")
 const SEA_LEVEL_EYE_M := 2.0             # a camera this low (swimming, on a beach) is in the sea fog layer too
 
-# Rain streaks: a streak over a canopy is not drawn (the map is canopy_map.gd).
-const RAIN_SHADER := """
+# Rain streaks (docs/design/rain_look_design.md 3.1; a streak over a canopy is not drawn, the map is canopy_map.gd): lit by the scene (sun, moon, sky ambient, a held torch or a fire's light),
+# never self-lit, with forward scatter so rain backlit by a low sun or a flame is the brightest; a dark night shows rain only in the light.
+const RAIN_SHADER_LIT := """
 shader_type spatial;
-render_mode unshaded, cull_disabled, blend_mix;
-uniform vec4 streak : source_color = vec4(0.78, 0.84, 0.95, 0.42);   // alpha is set by the rain's strength (fainter in drizzle)
-uniform vec2 size_scale = vec2(1.0, 1.0);                           // width and length: fine and short in drizzle, thick and long in a storm
+render_mode cull_disabled, blend_mix, specular_disabled;
+uniform vec4 streak : source_color = vec4(0.78, 0.84, 0.95, 0.42);
+uniform vec2 size_scale = vec2(1.0, 1.0);
 uniform sampler2D canopy : filter_linear, hint_default_black;
-uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);   // map corner x, z and its width in metres
+uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);
 
 void vertex() {
 	vec3 o = MODEL_MATRIX[3].xyz;
 	vec2 uv = (o.xz - canopy_box.xy) / canopy_box.z;
 	if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {
-		// A crown is a roof: no streak falls under it, and the edge fades over about a metre so
-		// the rain does not pop as the player steps in and out.
 		VERTEX *= 1.0 - smoothstep(0.2, 0.8, textureLod(canopy, uv, 0.0).r);
 	}
 	VERTEX *= vec3(size_scale.x, size_scale.y, size_scale.x);
@@ -153,8 +152,63 @@ void vertex() {
 void fragment() {
 	ALBEDO = streak.rgb;
 	ALPHA = streak.a;
+	NORMAL = VIEW;          // a drop has no face: it takes the light the same from any side
+	ROUGHNESS = 1.0;
+}
+
+void light() {
+	// Forward scatter: light from behind the drop, toward the eye, comes through brightest.
+	float scatter = pow(max(dot(LIGHT, -VIEW), 0.0), 6.0);
+	DIFFUSE_LIGHT += ATTENUATION * LIGHT_COLOR / PI * (0.35 + 2.5 * scatter);
 }
 """
+const RAIN_LOOK_LIFETIME_S := 2.4        # fixed (a change of lifetime restarts the particles): the slower the fall, the lower the streaks start
+const RAIN_LOOK_BELOW_M := 8.0           # streaks end about this far below the eye
+const RAIN_LOOK_FALL := [2.5, 9.0]       # m/s, drizzle to a downpour (Gunn and Kinzer: no drop falls faster than about 9 m/s)
+const RAIN_LOOK_SPREAD := 0.12           # each streak's speed varies this much
+const RAIN_LOOK_STREAK_S := 0.05         # a streak is as long as the drop falls in this time
+const RAIN_LOOK_MAX_SLANT_DEG := 65.0
+const RAIN_LOOK_GUST := 0.5              # gusts add up to this share of the mean wind (Jamie #637: gusts about 1.5 x the mean)
+const MESH_STREAK_M := 0.6               # the streak mesh's own length (_make_rain)
+# The splash sheet (rain_look_design.md 3.2, quality High and Ultra): the streaks stop on a heightfield of the ground around the eye and each
+# hit throws a few droplets up a hand high; drawn only in a downpour. Grass cards hide it on turf, as real grass swallows the splashes.
+const SPLASH_FROM_QUALITY := 2
+const SPLASH_PER_HIT := 4
+const SPLASH_AMOUNT := 2000
+const SPLASH_FROM := 0.5                 # rain strength from which the sheet shows
+const SPLASH_FIELD_M := 64.0
+var _splash: GPUParticles3D
+var _splash_field: GPUParticlesCollisionHeightField3D
+var _splash_material: StandardMaterial3D
+var _splash_sent: float = -1.0
+var _bark_wet_sent: float = -1.0
+var _bark_wind_sent: Vector2 = Vector2.INF
+const RainDripsScript := preload("res://src/client/rain_drips.gd")
+var drips                                # RainDrips: crowns and eaves dripping during and after rain (rain_look_design.md 3.3)
+var rain_fall_ms: float = 0.0            # the streaks' fall and drift now, for checks
+var rain_drift_ms: Vector2 = Vector2.ZERO
+
+
+# Wind in m/s from the weather's 0..1 (Jamie #637: m/s = 20 x wind^1.3).
+static func wind_ms(wind: float) -> float:
+	return 20.0 * pow(clampf(wind, 0.0, 1.0), 1.3)
+
+
+# How fast the drops fall at a rain strength (drizzle 2.5 m/s, a downpour 9 m/s).
+static func rain_fall(hard: float) -> float:
+	return lerpf(float(RAIN_LOOK_FALL[0]), float(RAIN_LOOK_FALL[1]), smoothstep(0.1, 0.9, hard))
+
+
+# The streaks' sideways drift in m/s: the wind (with its gust share) along the way it blows toward, held to the slant cap.
+static func rain_drift(fall: float, wind: float, heading: float, gust: float) -> Vector2:
+	var speed: float = minf(wind_ms(wind) * (1.0 + RAIN_LOOK_GUST * clampf(gust, 0.0, 1.0)), fall * tan(deg_to_rad(RAIN_LOOK_MAX_SLANT_DEG)))
+	return Vector2(cos(heading), sin(heading)) * speed
+
+
+# A smooth 0..1 gust from the real time: two slow waves (periods 5.3 and 3.1 s), no repeat a player could hear or see.
+static func gust_at(seconds: float) -> float:
+	return clampf(0.5 + 0.25 * sin(seconds * TAU / 5.3) + 0.25 * sin(seconds * TAU / 3.1 + 1.7), 0.0, 1.0)
+
 
 # What the sound stage's weather test kinds look like.
 const TEST := {
@@ -222,6 +276,22 @@ const FloraView := preload("res://src/flora/flora_view.gd")
 var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
 const BreathLookScript := preload("res://src/client/breath_look.gd")
 var breath                              # BreathLook: breath puffs in the cold (art_weather_light.md 8.4)
+const PuddlesScript := preload("res://src/client/puddles.gd")
+const SummitsScript := preload("res://src/client/summits.gd")
+const CapCloudScript := preload("res://src/client/cap_cloud.gd")
+const WeatherRules := preload("res://src/shared/weather.gd")
+const HazeScript := preload("res://src/client/haze.gd")
+var haze = HazeScript.new()             # Haze: the clear-air haze follows temperature and humidity, (art_weather_light.md 7.2)
+var summits                             # Summits: the tops near the player from the tiles' coarse heights (cap cloud, summit snow)
+var cap_cloud                           # CapCloud: caps on high summits, (art_weather_light.md 7.1)
+var summit_snow: Vector2 = Vector2.ZERO # what the ground was last told: summit height, lowest share (for checks)
+var _summit_next_msec: int = 0
+var _summits_set: bool = false
+# Summit snow (art_weather_light.md 8.2.1): the lowest patches as a share of the island's summit, at the middle of spring,
+# summer, autumn and winter, eased between them.
+const SUMMIT_SNOW_SHARE := [0.62, 0.82, 0.70, 0.50]
+const SUMMIT_NEAR_M := 10000.0
+var puddles                             # Puddles: levels, ice and splashes for the puddles the ground draws (art_weather_light.md 8.1.1)
 
 func setup(client) -> void:
 	_client = client
@@ -231,12 +301,29 @@ func setup(client) -> void:
 	_snow = _make_snow()
 	add_child(_rain)
 	add_child(_snow)
+
+	_make_splash()
+	var drip_material: ShaderMaterial = ShaderMaterial.new()
+	var drip_shader: Shader = Shader.new()
+	drip_shader.code = RAIN_SHADER_LIT      # lit like the streaks; no canopy map, so nothing hides them under the crowns they fall from
+	drip_material.shader = drip_shader
+	drip_material.set_shader_parameter("streak", Color(0.78, 0.84, 0.95, 0.32))
+	drips = RainDripsScript.new()
+	drips.setup(self, drip_material)
+	drips.set_quality(_quality)
 	wind_cue = WindCueScript.new()
 	add_child(wind_cue)
 	wind_cue.setup()
 	breath = BreathLookScript.new()
 	add_child(breath)
 	breath.setup(client)
+	puddles = PuddlesScript.new()
+	add_child(puddles)
+	puddles.setup(client)
+	summits = SummitsScript.new()
+	cap_cloud = CapCloudScript.new()
+	add_child(cap_cloud)
+	cap_cloud.setup(client)
 	_bolt_material = StandardMaterial3D.new()
 	_bolt_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_bolt_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -263,6 +350,17 @@ func fog_now() -> float:
 func set_quality(quality: int) -> void:
 	_quality = clampi(quality, 0, RAIN_AMOUNT.size() - 1)
 	_rain.amount = int(RAIN_AMOUNT[_quality])
+
+	if drips != null:
+		drips.set_quality(_quality)
+
+	if _splash != null:
+		# Changing these rebuilds the particle shader, so they follow the quality setting only, never the weather.
+		var sheet: bool = _quality >= SPLASH_FROM_QUALITY
+		var process: ParticleProcessMaterial = _rain.process_material as ParticleProcessMaterial
+		process.collision_mode = ParticleProcessMaterial.COLLISION_HIDE_ON_CONTACT if sheet else ParticleProcessMaterial.COLLISION_DISABLED
+		process.sub_emitter_mode = ParticleProcessMaterial.SUB_EMITTER_AT_COLLISION if sheet else ParticleProcessMaterial.SUB_EMITTER_DISABLED
+		_splash_field.visible = sheet
 	_snow.amount = int(SNOW_AMOUNT[_quality])
 	(_snow.process_material as ParticleProcessMaterial).turbulence_enabled = _quality >= TURBULENCE_FROM
 
@@ -273,7 +371,7 @@ func set_quality(quality: int) -> void:
 func _make_rain() -> GPUParticles3D:
 	var particles: GPUParticles3D = GPUParticles3D.new()
 	particles.amount = int(RAIN_AMOUNT[_quality])
-	particles.lifetime = 1.2
+	particles.lifetime = RAIN_LOOK_LIFETIME_S
 	particles.local_coords = false
 	particles.visibility_aabb = AABB(Vector3(-40.0, -40.0, -40.0), Vector3(80.0, 80.0, 80.0))
 	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -301,7 +399,7 @@ func _make_rain() -> GPUParticles3D:
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	var shader: Shader = Shader.new()
-	shader.code = RAIN_SHADER
+	shader.code = RAIN_SHADER_LIT
 	var material: ShaderMaterial = ShaderMaterial.new()
 	material.shader = shader
 	material.set_shader_parameter("canopy", canopy.texture)
@@ -309,6 +407,89 @@ func _make_rain() -> GPUParticles3D:
 	mesh.surface_set_material(0, material)
 	particles.draw_pass_1 = mesh
 	return particles
+
+
+# Real fall speeds, a slant along the wind's own heading with gusts, streak length from the speed. The lifetime is fixed, so
+# the box starts lower for slow drizzle and higher for a downpour, and upwind by half the drift so the streaks fill the view around the eye.
+func _update_rain_look(eye: Vector3, hard: float, heading: float) -> void:
+	var fall: float = rain_fall(hard)
+	var drift: Vector2 = rain_drift(fall, float(_s["wind"]), heading, gust_at(float(Time.get_ticks_msec()) / 1000.0))
+	rain_fall_ms = fall
+	rain_drift_ms = drift
+	var path: float = fall * RAIN_LOOK_LIFETIME_S
+	var start: float = maxf(path - RAIN_LOOK_BELOW_M, 2.0)
+	_rain.global_position = eye + Vector3(-drift.x * RAIN_LOOK_LIFETIME_S * 0.5, start, -drift.y * RAIN_LOOK_LIFETIME_S * 0.5)
+	var velocity: Vector3 = Vector3(drift.x, -fall, drift.y)
+	var speed: float = velocity.length()
+	var process: ParticleProcessMaterial = _rain.process_material as ParticleProcessMaterial
+	process.direction = velocity / maxf(speed, 0.001)
+	process.spread = 0.6
+	process.initial_velocity_min = speed * (1.0 - RAIN_LOOK_SPREAD)
+	process.initial_velocity_max = speed * (1.0 + RAIN_LOOK_SPREAD)
+	_rain_material.set_shader_parameter("size_scale", Vector2(lerpf(0.55, 1.7, hard), speed * RAIN_LOOK_STREAK_S / MESH_STREAK_M))
+
+
+func _make_splash() -> void:
+	_splash = GPUParticles3D.new()
+	_splash.name = "RainSplash"
+	_splash.amount = SPLASH_AMOUNT
+	_splash.lifetime = 0.25
+	_splash.local_coords = false
+	_splash.visibility_aabb = AABB(Vector3(-40.0, -40.0, -40.0), Vector3(80.0, 80.0, 80.0))
+	_splash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_splash.visible = false
+	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	process.direction = Vector3(0.0, 1.0, 0.0)
+	process.spread = 55.0
+	process.initial_velocity_min = 0.5
+	process.initial_velocity_max = 1.5
+	process.gravity = Vector3(0.0, -9.8, 0.0)
+	process.scale_min = 0.6
+	process.scale_max = 1.2
+	_splash.process_material = process
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2(0.012, 0.012)
+	var drop: StandardMaterial3D = StandardMaterial3D.new()
+	drop.albedo_color = Color(0.80, 0.84, 0.90, 0.45)
+	drop.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	drop.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	drop.roughness = 1.0
+	drop.specular_mode = BaseMaterial3D.SPECULAR_DISABLED    # lit by the scene like the streaks, never self-lit
+	quad.material = drop
+	_splash_material = drop
+	_splash.draw_pass_1 = quad
+	add_child(_splash)
+	_splash_field = GPUParticlesCollisionHeightField3D.new()
+	_splash_field.size = Vector3(SPLASH_FIELD_M, 60.0, SPLASH_FIELD_M)
+	_splash_field.resolution = GPUParticlesCollisionHeightField3D.RESOLUTION_256
+	_splash_field.update_mode = GPUParticlesCollisionHeightField3D.UPDATE_MODE_WHEN_MOVED
+	_splash_field.follow_camera_enabled = true
+	add_child(_splash_field)
+	_rain.collision_base_size = 0.02
+	_rain.sub_emitter = _rain.get_path_to(_splash)
+	var rain_process: ParticleProcessMaterial = _rain.process_material as ParticleProcessMaterial
+	rain_process.sub_emitter_amount_at_collision = SPLASH_PER_HIT
+	rain_process.collision_bounce = 0.0
+	set_quality(_quality)
+
+
+# The splash flecks on the ground and the splash sheet's strength: how hard it rains on open ground now (none in a cave).
+func _update_splash(rain: float, open_sky: float) -> void:
+	var on_ground: float = snappedf(rain * open_sky, 0.02)
+	var material: ShaderMaterial = _client.terrain.material as ShaderMaterial
+
+	if material != null and on_ground != _splash_sent:
+		_splash_sent = on_ground
+		material.set_shader_parameter("splash_rain", on_ground)
+
+	if _splash != null:
+		_splash.visible = _quality >= SPLASH_FROM_QUALITY and on_ground >= SPLASH_FROM and _rain.visible
+		var tint: Color = _splash_material.albedo_color
+		var alpha: float = lerpf(0.2, 0.45, smoothstep(SPLASH_FROM, 1.0, on_ground))
+
+		if absf(tint.a - alpha) > 0.01:
+			tint.a = alpha
+			_splash_material.albedo_color = tint
 
 
 func _make_snow() -> GPUParticles3D:
@@ -385,7 +566,42 @@ var sea_murk: float = 0.0
 var _liquid_rain: float = 0.0   # what the liquid water sheets were last told (liquid_surface.gd, rain rings)
 
 
+# Water after rain (docs/design/water_look_after_rain.md 1 and 4): the cloud after rain follows the rivers' push with a lag, then clears on a
+# half-life (running water as the clear reach class until the record gives one per reach; still water slower, at half the strength);
+# the foam supply follows the season and the cloud. Game hours: one is 150 real seconds.
+const LOOK_PUSH_LAG_S := 1.5 * 150.0
+const LOOK_RUN_RISE_S := 0.5 * 150.0
+const LOOK_RUN_HALF_S := 12.0 * 150.0
+const LOOK_STILL_RISE_S := 3.0 * 150.0
+const LOOK_STILL_HALF_S := 18.0 * 150.0
+const LOOK_FOAM_SEASON := {"spring": 0.6, "summer": 0.6, "autumn": 1.0, "winter": 0.4}
+var turbid: Vector2 = Vector2.ZERO      # the cloud in running and in still water (for checks)
+var _look_push: float = 0.0
+var _look_next_msec: int = 0
+
+
+func _update_water_look(delta: float, storm: float, rain: float) -> void:
+	var push: float = WeatherRules.river_push({"rain": rain, "storm": storm})
+	_look_push += (push - _look_push) * (1.0 - exp(-delta / LOOK_PUSH_LAG_S))
+	var run: float = turbid.x
+	run = run + (_look_push - run) * (1.0 - exp(-delta / LOOK_RUN_RISE_S)) if _look_push > run else run * pow(0.5, delta / LOOK_RUN_HALF_S)
+	var still_want: float = 0.5 * run
+	var still: float = turbid.y
+	still = still + (still_want - still) * (1.0 - exp(-delta / LOOK_STILL_RISE_S)) if still_want > still else still * pow(0.5, delta / LOOK_STILL_HALF_S)
+	turbid = Vector2(run, still)
+	var now: int = Time.get_ticks_msec()
+
+	if now < _look_next_msec or _client.flora == null:
+		return
+
+	_look_next_msec = now + 2000            # new sheets pick it up within 2 s
+	var season: float = float(LOOK_FOAM_SEASON.get(str(_client.weather.get("season", "summer")), 0.6))
+	_client.flora.set_water_look(true, turbid, season * (1.0 + 0.6 * clampf(run * 1.6, 0.0, 1.0)))
+
+
 func _update_water_murk(delta: float, storm: float, rain: float) -> void:
+	_update_water_look(delta, storm, rain)
+
 	var want: float = clampf(storm + 0.25 * rain, 0.0, 1.0)
 	var land: float = move_toward(land_murk, want, delta / (LAND_MURK_RISE_S if want > land_murk else LAND_MURK_CLEAR_S))
 	var sea: float = move_toward(sea_murk, want, delta / (SEA_MURK_RISE_S if want > sea_murk else SEA_MURK_CLEAR_S))
@@ -469,9 +685,9 @@ func _process_body(delta: float) -> void:
 	if now_msec >= _fire_next_msec and _client.get("game_clock") != null:
 		_fire_next_msec = now_msec + 1000
 		var world_weather: Variant = _client.get("weather")
-		var heading: float = float(world_weather.get("wind_dir", 0.0)) if world_weather is Dictionary else 0.0
+		var fire_heading: float = float(world_weather.get("wind_dir", 0.0)) if world_weather is Dictionary else 0.0
 		var wind_now: float = float(_s["wind"])
-		BuildingLook.set_fire_air(fire_wind_ms(wind_now), heading, still_night(day.elevation, _client.game_clock.hour(), cloud_cover, wind_now))
+		BuildingLook.set_fire_air(fire_wind_ms(wind_now), fire_heading, still_night(day.elevation, _client.game_clock.hour(), cloud_cover, wind_now))
 
 	# The sky colours change in coarser steps than the sun: a changed sky shader parameter may make the engine redraw the
 	# sky's lighting cubemap, so it is paid once every few seconds (two game minutes), not every frame. Check the GPU table
@@ -573,7 +789,11 @@ func _process_body(delta: float) -> void:
 	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark) * night_colour
 
 	if not _client.underwater:
+		var ground_wet: float = puddles.wet_mean      # the ground's own wetness, which dries in game hours (rain_look_design.md 3.4)
+
+		haze.update(delta, float(_client.weather.get("temp_c", 10.0)), float(_s["cloud"]), rain, float(_client.weather.get("mist", 0.0)), ground_wet)
 		var mist: float = 0.0 if clear_day else float(_s["mist"])
+		# The clear-air base is the haze rule's share, thickened by rain, snow, storm, fog and the valley fog inside it.
 		var sea_fog: float = 0.0 if clear_day else float(_s["sea_fog"])
 		var sea_land: float = 0.0 if clear_day else float(_s["sea_fog_land"])
 		var sea_top: float = float(_s["sea_fog_top_m"])
@@ -587,19 +807,19 @@ func _process_body(delta: float) -> void:
 		# How foggy the air looks overall, and how much of it is the grey sea fog rather than the white valley fog.
 		var foggy: float = maxf(land, sea_fog)
 		var sea_share: float = maxf(sea_fog, sea_land) / maxf(mist + maxf(sea_fog, sea_land), 0.0001)
-		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"]) + MIST_INSIDE_THICK * mist_inside
+		var thick: float = haze.density_scale + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"]) + MIST_INSIDE_THICK * mist_inside
 		# Above the layer the air is clear (#672): valley fog or a sea fog bank, whichever is the thicker.
 		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0) * above_clear(foggy, mist_inside)
 		visibility_m = visibility_of_density(environment.fog_density)
 		# The fog is sky-coloured haze: under rock it must go dark with the light, or a long tunnel glows (pitch black means black).
 		# Valley fog is whiter than the haze: lit by the sky and the sun (white by day, warm at sunrise from the dusk horizon colour,
 		# blue-grey at night from the night horizon), never a flat grey card (art_weather_light.md section 7 rule 2).
-		var fog_tint: Color = _graded(day.sky_horizon, gloom)
+		var fog_tint: Color = _graded(haze.tint(day.sky_horizon), gloom)
 		fog_tint = fog_tint.lerp(fog_tint.lerp(MIST_WHITE, lerpf(MIST_WHITEN, SEA_FOG_WHITEN, sea_share) * (1.0 - day.night)), foggy)
 		environment.fog_light_color = Color(fog_tint.r * under_rock, fog_tint.g * under_rock, fog_tint.b * under_rock, fog_tint.a)
 		# Inside the fog the sky is hidden too; above it the sky stays clear.
 		environment.fog_sky_affect = MIST_SKY_HIDE * mist_inside
-		environment.fog_aerial_perspective = LookSettings.FOG_AERIAL * under_rock * (1.0 - MIST_OWN_COLOR * foggy)
+		environment.fog_aerial_perspective = haze.aerial(LookSettings.FOG_AERIAL) * under_rock * (1.0 - MIST_OWN_COLOR * foggy)
 		environment.fog_sun_scatter = MIST_SUN_SCATTER * foggy * (1.0 - day.night)
 		# Fog has a top (rule 1): Godot's height fog thickens below fog_height and is nothing above it. Seen from above, the low
 		# ground fills white with a soft top. Inside the layer the height fog steps aside (it would whiten the ground at your feet
@@ -616,6 +836,22 @@ func _process_body(delta: float) -> void:
 	canopy.update(_client.flora, Vector2(_client.camera.global_position.x, _client.camera.global_position.z))
 	_rain_material.set_shader_parameter("canopy_box", Vector3(canopy.origin.x, canopy.origin.y, canopy.METRES))
 	_update_ground(rain, snow)
+	var heading: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
+	var cave_open: float = clampf((_cave_factor - CAVE_LIGHT_DARK) / maxf(1.0 - CAVE_LIGHT_DARK, 0.001), 0.0, 1.0)
+	puddles.update(delta, rain, float(_s["wind"]), Vector2(cos(heading), sin(heading)), smoothstep(0.6, 0.95, cave_open), _client.terrain.material as ShaderMaterial)
+
+	var sun_now: float = clampf(1.0 - float(_s["cloud"]) * 1.1, 0.0, 1.0) * smoothstep(0.0, 0.2, day.elevation)
+	puddles.update_wet(delta, rain, float(_s["wind"]), sun_now, Vector2(cos(heading), sin(heading)), _client.terrain.material as ShaderMaterial)
+	# The bark takes the rock's wetness (a hard surface that sheds water) and the wind's side; sent only when it changes.
+	var bark_wet: float = snappedf(float(puddles.wet[5]), 0.02)
+	var bark_wind: Vector2 = Vector2(cos(heading), sin(heading)).snapped(Vector2(0.1, 0.1))
+
+	if _client.flora != null and (bark_wet != _bark_wet_sent or bark_wind != _bark_wind_sent):
+		_bark_wet_sent = bark_wet
+		_bark_wind_sent = bark_wind
+		_client.flora.set_wet(bark_wet, bark_wind)
+
+	_update_summits(delta, heading)
 	_update_particles(rain, snow, float(_s["wind"]))
 	breath.update(delta)
 	_update_tree_wind()
@@ -679,9 +915,9 @@ static func sky_share(rock_enclosure: float) -> float:
 
 # The sky's part of the light under rock: its share of the ambient (`sky_share` in the open) fades with the square of the cave light `under_rock` (1 open ..
 # CAVE_LIGHT_DARK deep in), so the ambient left is about under_rock like the sun's, and the sky reflections are off below CAVE_REFLECT_OFF.
-static func sky_under_rock(environment: Environment, sky_share: float, under_rock: float) -> void:
-	environment.ambient_light_sky_contribution = sky_share * under_rock * under_rock     # the sky part is not dimmed by the energy: x under_rock twice keeps the total near under_rock
-	var reflect: int = Environment.REFLECTION_SOURCE_SKY if under_rock >= CAVE_REFLECT_OFF else Environment.REFLECTION_SOURCE_DISABLED
+static func sky_under_rock(environment: Environment, sky_part: float, under_rock: float) -> void:
+	environment.ambient_light_sky_contribution = sky_part * under_rock * under_rock     # the sky part is not dimmed by the energy: x under_rock twice keeps the total near under_rock
+	var reflect: Environment.ReflectionSource = Environment.REFLECTION_SOURCE_SKY if under_rock >= CAVE_REFLECT_OFF else Environment.REFLECTION_SOURCE_DISABLED
 
 	if environment.reflected_light_source != reflect:
 		environment.reflected_light_source = reflect
@@ -788,10 +1024,10 @@ var _crown_sent: Vector2 = Vector2(-1.0, -1.0)
 
 # One step of one crown kind's snow: value now, its cap, the ground's snow memory (0..1), the eased falling snow (0..1), air
 # temperature, wind in m/s and the game hours since the last step.
-static func crown_snow_step(value: float, cap: float, ground: float, falling: float, temp_c: float, wind_ms: float, hours: float) -> float:
+static func crown_snow_step(value: float, cap: float, ground: float, falling: float, temp_c: float, wind_mps: float, hours: float) -> float:
 	var top: float = cap * clampf(ground, 0.0, 1.0)
 
-	if wind_ms > CROWN_SHED_WIND_MS or (temp_c > 0.0 and falling <= CROWN_FALLING):
+	if wind_mps > CROWN_SHED_WIND_MS or (temp_c > 0.0 and falling <= CROWN_FALLING):
 		value *= exp(-hours / CROWN_SHED_TAU_H)
 	elif falling > CROWN_FALLING:
 		value = maxf(value, top)
@@ -814,14 +1050,14 @@ func _update_crown_snow(falling: float, ground: float) -> void:
 	var hours: float = 0.0 if _crown_last_msec == 0 else float(now_msec - _crown_last_msec) / 1000.0 * GameClock.RATIO / 3600.0
 	_crown_last_msec = now_msec
 	var temp_c: float = 10.0
-	var wind_ms: float = 20.0 * pow(clampf(float(_s["wind"]), 0.0, 1.0), 1.3)
+	var crown_wind: float = wind_ms(float(_s["wind"]))
 
 	if _client.sound != null and _client.sound.weather != null:
 		temp_c = float(_client.sound.weather.temp_c)
 
 	var broad_cap: float = CROWN_BARE_CAP if str(_client.flora.season) == "winter" else CROWN_CONIFER_CAP
-	crown_snow_conifer = crown_snow_step(crown_snow_conifer, CROWN_CONIFER_CAP, ground, falling, temp_c, wind_ms, hours)
-	crown_snow_broad = crown_snow_step(crown_snow_broad, broad_cap, ground, falling, temp_c, wind_ms, hours)
+	crown_snow_conifer = crown_snow_step(crown_snow_conifer, CROWN_CONIFER_CAP, ground, falling, temp_c, crown_wind, hours)
+	crown_snow_broad = crown_snow_step(crown_snow_broad, broad_cap, ground, falling, temp_c, crown_wind, hours)
 	var now: Vector2 = Vector2(crown_snow_conifer, crown_snow_broad)
 
 	if absf(now.x - _crown_sent.x) > 0.01 or absf(now.y - _crown_sent.y) > 0.01:
@@ -851,6 +1087,41 @@ func _update_tree_wind() -> void:
 	_client.flora.set_wind(tree_wind_ms(float(_s["wind"])), float(world.get("wind_dir", 0.0)))
 
 
+func _exit_tree() -> void:
+	if summits != null:
+		summits.finish()
+
+
+# The summits near the player (found on a worker thread), the summit snow line on the ground, and the cap clouds.
+func _update_summits(delta: float, heading: float) -> void:
+	if _client.world.is_empty():
+		return
+
+	if not _summits_set:
+		_summits_set = true
+		summits.setup(_client.world)
+
+	var eye: Vector3 = _client.camera.global_position
+	summits.update(eye)
+	cap_cloud.update(delta, float(_s["cloud"]), float(_s["rain"]), float(_s["storm"]), float(_s["wind"]), Vector2(cos(heading), sin(heading)), summits)
+	var now: int = Time.get_ticks_msec()
+
+	if now < _summit_next_msec:
+		return
+
+	_summit_next_msec = now + 1000
+	var top: Vector3 = summits.highest_near(eye, SUMMIT_NEAR_M)
+	var phase: float = WeatherRules.year_phase(float(_client.game_clock.seconds)) * 4.0 - 0.5
+	var from: int = posmod(int(floor(phase)), 4)
+	var share: float = lerpf(float(SUMMIT_SNOW_SHARE[from]), float(SUMMIT_SNOW_SHARE[(from + 1) % 4]), smoothstep(0.0, 1.0, phase - floor(phase)))
+	var want: Vector2 = Vector2(top.y, share)
+	var material: ShaderMaterial = _client.terrain.material as ShaderMaterial
+
+	if material != null and (absf(want.x - summit_snow.x) > 1.0 or absf(want.y - summit_snow.y) > 0.002):
+		summit_snow = want
+		material.set_shader_parameter("summit_snow", want)
+
+
 func _update_particles(rain: float, snow: float, wind: float) -> void:
 	var eye: Vector3 = _client.camera.global_position
 	var under: bool = _client.underwater
@@ -875,8 +1146,19 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	_rain_material.set_shader_parameter("streak", Color(0.78, 0.84, 0.95, lerpf(0.10, 0.26, hard)))
 	_snow.amount_ratio = clampf(snow * open_sky, 0.05, 1.0)
 
-	if _rain.emitting:
-		(_rain.process_material as ParticleProcessMaterial).direction = Vector3(tilt, -1.0, tilt * 0.4).normalized()
+	_update_rain_look(eye, hard, float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0)
+	_update_splash(rain if _rain.emitting else 0.0, open_sky)
+	var sun_now: float = clampf(1.0 - float(_s["cloud"]) * 1.1, 0.0, 1.0) * smoothstep(0.0, 0.2, day.elevation)
+	var stands: Dictionary = _client.sound.treewind._density if _client.sound != null and _client.sound.get("treewind") != null else {}
+	var conifer: float = float(stands.get("conifer", 0.0))
+	var broad: float = float(stands.get("broadleaf", 0.0))
+	drips.conifer_share = conifer / (conifer + broad) if conifer + broad > 0.01 else 0.0
+	drips.winter = _client.flora != null and str(_client.flora.season) == "winter"
+
+	drips.update(get_process_delta_time(), rain, wind, sun_now, eye, canopy, Callable(_client, "_ground_below"), under or sheltered)
+
+	if _client.sound != null and _client.sound.weather != null:
+		_client.sound.weather.canopy_drip = drips.store   # the drip sound after the rain (canopy_drip_design.md)
 
 	if _snow.emitting:
 		(_snow.process_material as ParticleProcessMaterial).direction = Vector3(tilt * 0.8, -1.0, tilt * 0.3).normalized()

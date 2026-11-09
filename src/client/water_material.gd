@@ -18,6 +18,8 @@ uniform float rough = 0.0;           // 0 calm, 1 raging (flow rate above x1, se
 uniform float storm = 0.0;           // 0 calm, 1 big storm: darker, dirtier, murkier, a little more foam (weather_look.gd, lagged)
 uniform vec3 storm_color : source_color = vec3(0.13, 0.12, 0.09);
 uniform float mud = 0.0;             // 0 clear, 1 brown flood water (rivers and ponds above x1, set by the client)
+uniform float look_v2 = 1.0;         // 1: water after rain (docs/design/water_look_after_rain.md): the cloud after rain on its own clearing curve
+uniform vec2 turbid = vec2(0.0);     // with look_v2: the cloud in running and in still water, 0 clear .. 1 (weather_look.gd)
 uniform float clarity_m = 1.1;       // water this thick hides about two thirds of what is behind it (clear brook water: the bed shows)
 uniform float edge_alpha = 0.34;     // the thinnest water
 uniform float fastest_m_s = 2.5;     // drawn speed of the steepest running water
@@ -241,7 +243,7 @@ void fragment() {
 	// with no edge or step, and where fresh meets salt a soft band of foam rides the water. The sea itself
 	// sits at 0 m (mouth 1, no band). Storm colour is shared by both, so the storm look matches.
 	float mouth = 1.0 - smoothstep(MOUTH_FROM_M, MOUTH_TO_M, world_pos.y);
-	float mud_here = mud * (1.0 - mouth);
+	float mud_here = (look_v2 > 0.5 ? max(mud, mix(turbid.y, turbid.x, step(0.001, length(flow)))) : mud) * (1.0 - mouth);
 	float mouth_band = 4.0 * mouth * (1.0 - mouth);
 #ifdef SCENE_READS
 	float scene = texture(depth_texture, SCREEN_UV).r;

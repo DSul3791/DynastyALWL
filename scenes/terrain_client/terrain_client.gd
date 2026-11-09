@@ -78,7 +78,7 @@ const WeatherScript := preload("res://src/shared/weather.gd")
 const ClimateScript := preload("res://src/shared/climate.gd")
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
-const FrozenWater := preload("res://src/client/frozen_water.gd")   # --frozen-water: the liquid sheets' ice look (docs/design/frozen_water_look.md)
+const FrozenWater := preload("res://src/client/frozen_water.gd")   # the liquid sheets' ice look (docs/design/frozen_water_look.md)
 const SpringSteam := preload("res://src/client/spring_steam.gd")   # steam over spring mouths on frosty mornings (Jamie #739)
 const IceFeelScript := preload("res://src/client/ice_feel.gd")     # ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
@@ -1180,6 +1180,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	sound.puddles = weather_look.puddles          # steps splash where a puddle is drawn (puddles.gd)
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
 	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
 		if sound_log_arg.begins_with("--sound-log="):
@@ -1330,7 +1331,10 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
 	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
-		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
+		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position)      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
+		if weather_look != null and weather_look.puddles != null and weather_look.puddles.shown > 0.001:
+			weather_look.puddles.animal_step(kind, at, sound._ground_under(at))      # a foot in a puddle splashes (puddles.gd)
+	)
 	net.hit_number_received.connect(func(at: Vector3, _amount: int) -> void: animal_view.note_hit(at))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
@@ -2311,8 +2315,10 @@ func _update_weather() -> void:
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
 
-	if FrozenWater.on:
-		_update_frozen_water(group, now)
+	_update_frozen_water(group, now)
+
+	if weather_look != null and weather_look.puddles != null:
+		weather_look.puddles.set_ice_from(game_clock.seconds, group, _anchor.y)      # puddles freeze by the same rule, shallow (every 10 s)
 
 	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
@@ -2321,7 +2327,7 @@ func _update_weather() -> void:
 		sound.occlusion.set_air(weather, weather_look.day.elevation if weather_look != null else 0.5, game_clock.hour(), weather_look.fog_now() if weather_look != null else 0.0)
 
 
-# Frozen water look (docs/design/frozen_water_look.md, --frozen-water): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
+# Frozen water look (docs/design/frozen_water_look.md): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
 # near the player (their brooks stay open) and the ice holes go to every liquid sheet. --frozen-force=open[,thaw[,snow]] and --frozen-hole=x,z are
 # picture switches (a solid sheet the starter island never grows; a hole before the server sends them).
 var ice_holes: Array = []   # {"pos": Vector3, "until": game seconds}: the server's fishing holes, once it sends them (section 5; Steve)
