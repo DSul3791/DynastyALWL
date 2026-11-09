@@ -11,6 +11,7 @@ extends Node3D
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
+const NearWater := preload("res://src/shared/near_water_growth.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
 const CELL_M := 6.0
 const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
@@ -40,14 +41,11 @@ const LITTER_DEEP_TWIGS := 4.0           # twigs likewise
 const RIM_DROP_M := 0.8                  # ground this much lower beside a blade means a hole edge (see _drop_beside)
 const RIM_CLEAR_M := 0.9                 # no blades this close to the edge of a dug hole (they lean over it)
 const SCENERY_PEBBLES := true            # owner (2026-10-21): pebbles are decoration (not pickable, not harvestable, like a voxel texture); they vanish when the ground under them is dug (ground_changed)
-# Lush growth by water (Dave 9 Nov 2026: plants "grow 100% thicker, and grass grows taller right at the water and its growth deminishes as it
-# gets further from the water until it gets to normal growth at 6 meters away"). `lush` is 1 at the water's edge, easing to 0 at LUSH_M.
-const LUSH_M := 6.0              # normal growth from this far from the water's edge
+# Lush growth by water (Dave 9 Nov 2026, src/shared/near_water_growth.gd): `lush` is 1 at the water's edge, falling to 0 at LUSH_M.
+const LUSH_M := NearWater.REACH_M  # normal growth from this far from the water's edge
 const LUSH_THICK := 1.0          # cards added at the edge, as a share of the normal count (1: twice as thick)
 const LUSH_TALL := 0.5           # blades this much taller at the edge (0.5: half again as tall)
-const LUSH_STEP_M := 1.0         # the water-distance grid round a cell
-const LUSH_ROOTS_M := 1.0        # ground up to this high over the water is fully watered
-const LUSH_DRY_M := 3.0          # and from this high it is not (a cliff or high bank over a river)
+const LUSH_STEP_M := 1.0         # the wet spots round a near cell are looked for this far apart (twice that for far cells)
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
 # Soil ids that carry grass, with how thick (0 to 1).
@@ -1937,14 +1935,9 @@ func _build(cell: Vector2i) -> int:
 	return rays
 
 
-# Lush growth by water: 1 at the water's edge, easing to 0 at LUSH_M from it (Dave 9 Nov 2026), times how well the water reaches the roots:
-# full up to LUSH_ROOTS_M over the water, none from LUSH_DRY_M (a high bank or a cliff over a river stays as it is).
+# Lush growth by water at distance_m from the water's edge, on ground above_m over it (near_water_growth.gd growth_near_water).
 static func lush(distance_m: float, above_m: float) -> float:
-	if is_nan(distance_m) or is_inf(distance_m) or is_nan(above_m):
-		return 0.0
-
-	var reach: float = 1.0 - smoothstep(0.0, LUSH_M, distance_m)
-	return reach * (1.0 - clampf((above_m - LUSH_ROOTS_M) / (LUSH_DRY_M - LUSH_ROOTS_M), 0.0, 1.0))
+	return NearWater.growth_near_water(distance_m, above_m)
 
 
 # Lush growth at a ground point from the wet spots round its cell (x, z, water level triples): the nearest one sets the distance and the level.

@@ -2,10 +2,11 @@ extends SceneTree
 
 # Dave 9 Nov 2026: plants by water "grow 100% thicker, and grass grows taller right at the water and its growth deminishes as it gets further from
 # the water until it gets to normal growth at 6 meters away". The grass finds the water on a 1 m grid round each cell and turns the distance
-# to the nearest wet spot into a lush share (grass_view.gd lush_near and lush): 1 at the edge, 0 from 6 m. This checks both.
+# to the nearest wet spot into a lush share (grass_view.gd lush_near, near_water_growth.gd growth_near_water): 1 at the edge, 0 from 6 m. This checks both.
 #   godot --headless --path . --script res://src/worldgen/tools/test_grass_lush.gd
 
 const GrassView := preload("res://src/client/grass_view.gd")
+const NearWater := preload("res://src/shared/near_water_growth.gd")
 
 var failures: int = 0
 
@@ -29,7 +30,7 @@ func _initialize() -> void:
 		last = here
 
 	check(falls, "it eases off with every metre from the water")
-	check(GrassView.lush(3.0, 0.2) > 0.4 and GrassView.lush(3.0, 0.2) < 0.6, "about half at 3 m")
+	check(is_equal_approx(GrassView.lush(3.0, 0.2), 0.5) and is_equal_approx(NearWater.growth_near_water(1.5), 0.75), "straight down: half at 3 m, three quarters at 1.5 m")
 	check(GrassView.lush(GrassView.LUSH_M, 0.2) == 0.0 and GrassView.lush(9.0, 0.2) == 0.0, "normal growth from 6 m")
 	check(GrassView.lush(INF, 0.2) == 0.0 and GrassView.lush(NAN, 0.2) == 0.0, "no water near: normal growth")
 	# The roots must reach the water: a bank up to 1 m over it is fully watered, a cliff 3 m or more over a river is not.
