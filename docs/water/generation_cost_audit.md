@@ -117,3 +117,75 @@ With the cuts, a first full world drops from a night to an evening. The everyday
 3. Cropping windows to their islands, and writing `.water` from the record.
 4. The bake's setup and packing time, from the bake log's lines.
 5. One probe each for b and c against ws580v before either becomes the rule.
+
+## 5. Could glacial be replaced by cutting the peak by a set share?
+
+Dave, 9 Nov: "if we know the glacial always cuts the peak height off by x percent why dont we just find the height by seed and reduce it x percent instead of all the glacial or does it serve any other purpose."
+
+**The share isn't fixed.** On ws580u the summit rose from 1,446 m after cycle 1 to 1,586 m by cycle 25, then fell to 1,338 m by cycle 49 (the manifest's cycles list). The −7% at the end is what is left of a climb and a fall, both driven by the rock uplift against the ice's cutting. Another island, with its own height, rock and snowline, would end at a different share.
+
+**The summit is the smallest thing glacial does.** These are ws580u's own numbers (`manifest_ws580u_full.json` summary):
+- Ice covered 64 km², 18% of the island's 362 km². Under the ice it cut 294 m on average and up to 1,176 m. That cutting makes the troughs, cirques and horns on every high massif, not only at the top.
+- **Every lake comes from it.** 105 of the 106 hollows, 0.404 of 0.404 km², are ice-scoured floors. `lakes.py` keeps a hollow as a lake only when it has a cause (design A1), so with no glacial the island has no lakes.
+- It lays 6.3 km² of outwash gravel and 1.05 km² of till. These are the aquifers and stream beds of the lower valleys.
+
+**What each later stage reads from `glacial.npz`** (from the code on main):
+
+| stage | reads | for |
+|---|---|---|
+| lakes.py | `ground`, `sea`, `hollow_cause` | the final ground everything after builds on; which hollows may hold a lake |
+| groundwater.py | `till_m`, `sediment_m`, `channel` | aquifer thickness and the springs |
+| network.py | `rock`, `till_m`, `outwash_m`, `sediment_m`, `sediment_flux_m3_yr`, `ice_max_m`, `et_mm`, `quick_mm`, `recharge_mm`, `channel` | bed material, reach types, flows through the year |
+| record.py | `sediment_m` (and the ground, through lakes.npz) | the loose cover on the tiles |
+
+**With no glacial and a summit scale, what goes:**
+- the lakes;
+- the cirques, troughs and horns;
+- the outwash and till under the valleys, and with them the springs and stream beds they make.
+
+The mountains would be the river era's V valleys, only shorter. The summit would come out right and everything else would be wrong.
+
+**The cheapest substitute that keeps the look: the same glacial on a 32 m grid.** The ice works at the scale of troughs hundreds of metres wide, and groundwater already solves at 64 m and rain at 128 m. At 32 m the grid has a quarter of the cells, and each step costs about a quarter or less, so glacial would take about 13 to 15 min instead of 61 (estimate). If the big shapes hold, the next step is a short 16 m finish: the 32 m cut added to the 16 m river ground, then the last interglacial at 16 m to sharpen the channels. That needs code, so it waits for the probe.
+- A one-pass carve, with U-shapes stamped along the ice-flux paths above the snowline, would take seconds. But its shapes are set by hand rather than modelled, so I'd try it only if the 32 m probe fails.
+- Fewer cycles is ruled out by the summit's climb and fall above.
+
+**The probe** (no code; params only; on Dino after the ws580v chain, so nothing slows it): ws580v at 32 m model cells, with `/mnt/project-files/water/ws580v32_probe_params.json` (ws580u's params with `model_step` 4).
+- **Order:** geology export `--step=32` → inputs → evolve to 100 kyr (`--set.evolve.years=100000`) → glacial → lakes → groundwater → network.
+- **Reused:** the landform export comes from ws580v.
+- **Stop:** `record.py` refines a 16 m grid only, so the probe stops at network, and carved cells can't be compared. R5's reach count and length stand in for them.
+- **Compare:** `python /mnt/project-files/water/compare_runs.py` with ws580v's B2, R3 and R5 folders, then the probe's B2, R3 and R5 folders, then an output PNG. It prints, base against probe:
+  - summit, ice km², ice-scoured hollow km², lakes and lake km²;
+  - R5 reaches, km and spring heads;
+  - the ground difference on land (mean, 95th percentile, and km² over 20 m and over 50 m).
+
+  It also writes three pictures side by side: base, probe, and probe minus base.
+- **Pass:**
+  - summit within 10 m;
+  - lake km² within 20%;
+  - reach km within 10%;
+  - ground within 20 m over 95% of the land.
+
+  These limits are judged; Dave can set them.
+- **Time on Dino (estimate):**
+
+  | step | time |
+  |---|---|
+  | geology export at 32 m | about 1 min |
+  | inputs | seconds |
+  | evolve | about 1 min |
+  | glacial | about 13 to 15 min |
+  | the three water stages and the compare | about 1 min |
+  | total | about 20 min |
+
+**Against Dave's targets.** If the probe passes and the 16 m finish holds, nine tiles take, end to end:
+
+| step | time |
+|---|---|
+| exports | 5 min |
+| evolve | 4.6 min |
+| glacial at 32 m with the 16 m finish | about 15 to 20 min |
+| water | 3 min |
+| bake | about 4 min |
+| total | about 35 min |
+
+That is well under the hour (estimate). Without it, the cuts in section 3 give about 50 min. A full world is about 2 to 2 h 30 min either way (section 3), inside the 10 h night.
