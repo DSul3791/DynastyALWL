@@ -307,6 +307,24 @@ Steps, each its own PR through the gate:
 4. **The HUD hotbar strip** in the new slot art.
 5. **The painted art** as Kathleen's art jobs finish (art brief rows 1 to 27), then the icons (row 28).
 
+### 12.1 Implementation notes from the v2 review (9 Nov, 04:23 UTC)
+
+These change the build, not the mockup. Each one goes into step 3 (the new window) unless it says otherwise.
+
+1. **No dead space in the recipe card.** Under the shortfall line (y 676 to 860) add two blocks, each with a Cinzel 22 small-caps head and a gold rule like "Needs":
+   - **Made at**: the station's 20 px glyph and name ("By hand", or "Campfire, within 3 m"), from the recipe's `station` and `station_level`.
+   - **Used in**: up to 3 recipe names that take the made item as a need, from `recipes.json` `needs` ("Lean-to, Bow drill, +4 more"). Clicking a name selects that recipe.
+   - If a recipe has neither, the card ends there and the queue and Craft button move up under it, so the card shrinks rather than showing a gap.
+   - The data has no "unlocks" field today (the skill web in `skill_web.gd` unlocks skills, not recipes). So "Unlocks" is not shown until the data has it.
+2. **Stat names in plain words, all reading "full is good".** The game's six vitals are health, exertion, energy (sleep), warmth, food and water (`character_screen.gd` line 232). "Exertion" next to "Energy" reads as the same thing.
+   - Show **Stamina** = 100 − exertion. It is full when rested and drains as you work; the faint at full exertion is the same rule.
+   - Show **Rest** for energy. It is full when slept, and the exhaustion sleep comes when it runs out.
+   - The labels and the direction of the Stamina bar change; the server values do not. Warmth keeps its name (the character screen says "Temperature"; both become "Warmth").
+   - The HUD bars get the same names in step 1.
+3. **Full name on the brass plate.** The plate shows the character's whole name ("Aldwin of the Ford"), letter-spaced 2 instead of 3 if it is long. The plate grows to the text + 60, up to the panel's inside width (408). A longer name drops to Cinzel Bold 30, then 26. The separate "of the Ford" line goes, and the gear columns move up 14 px.
+4. **The tenth hotbar key is shown as 0,** because 0 is the key you press. Settings > Key bindings already lists it as 0. The first time the window opens, the key hints add "**1–0** put on hotbar" while pointing at an item.
+5. **The centre column is the live character model wearing what is equipped.** It uses the character screen's SubViewport, re-dressed when a gear slot changes, with the light rig in 6.6. It is never a flat silhouette. The mockup's figure is a stand-in only.
+
 ## 13. Audit: screens with sizes fixed for the 2880 x 1620 canvas
 
 Searched on main 295da042 for fixed font sizes, minimum sizes, offsets and positions, and for anything that reads the canvas size. "Today" is how big it shows on a 1920 x 1080 window (two-thirds of the number in the code). "New" is the number to write at the 1920 x 1080 canvas, using the type scale in section 6.3: titles 30, headings 22, body 20, small 18, big announcements 40; buttons at least 44 tall.
