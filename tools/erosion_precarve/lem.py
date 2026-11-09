@@ -3,8 +3,10 @@ import numpy as np, numba as nb, heapq, time, sys
 from scipy.ndimage import gaussian_filter
 
 @nb.njit(cache=True, fastmath=False, parallel=False)
-def route(h, sea, n):
-    """priority-flood fill with epsilon; returns filled, receiver, order (downstream first)."""
+def fill_order(h, sea, n):
+    """priority-flood fill with epsilon; returns filled, order (downstream first). route adds the D8 receivers; evolve.route
+    takes these two alone and finds its own (D8-LTD), so it no longer builds receivers it throws away (cut R2, 9 Nov 2026,
+    docs/design/glacial_speed_design.md). The flood is route's, moved here unchanged."""
     N = n*n
     EPS = 1e-3
     filled = np.empty(N); seen = np.zeros(N, np.uint8)
@@ -63,6 +65,15 @@ def route(h, sea, n):
                         t2 = hi[p]; hi[p] = hi[k]; hi[k] = t2; k = p
                     else: break
     # pop order is ascending filled value = downstream first
+    return filled, order[:no]
+
+
+@nb.njit(cache=True, fastmath=False, parallel=False)
+def route(h, sea, n):
+    """priority-flood fill with epsilon; returns filled, receiver, order (downstream first)."""
+    N = n*n
+    filled, order = fill_order(h, sea, n)
+    no = order.size
     rec = np.full(N, -1, np.int64)
     for q in range(no):
         i = order[q]; r = i//n; c = i % n
@@ -77,7 +88,7 @@ def route(h, sea, n):
                 if dr != 0 and dc != 0: d /= 1.4142
                 if d > bd: bd = d; best = j
         rec[i] = best
-    return filled, rec, order[:no]
+    return filled, rec, order
 
 @nb.njit(cache=True, fastmath=False, parallel=False)
 def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out, dmul, rain):

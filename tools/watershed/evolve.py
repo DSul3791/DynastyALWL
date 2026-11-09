@@ -47,21 +47,19 @@ _FACETS = np.array([[1, 0, 1, -1], [0, -1, 1, -1], [0, -1, -1, -1], [-1, 0, -1, 
                     [-1, 0, -1, 1], [0, 1, -1, 1], [0, 1, 1, 1], [1, 0, 1, 1]], np.int64)
 
 
-@nb.njit(cache=True)
-def _ltd_receivers(filled, order, sea, n, dx, lam, facets):
-    """Each cell's receiver by D8-LTD (Orlandini et al. 2003, Water Resources Research 39(6):1144): the true downhill direction
-    is the steepest of the eight facets round the cell (D-infinity, Tarboton 1997, WRR 33(2):309), which lies between a side
-    neighbour and a corner neighbour; of those two, the cell drains to the one that keeps the flow path's sideways drift from
-    the true direction, carried down the path (times lam per cell), the smaller. Cells are placed from the highest down, so a
-    cell's drift comes from the donor that drains the most ground into it (the main stem). Where neither neighbour of the
-    facet lies lower on the filled surface, the cell drains to the steepest lower neighbour, as lem.route does."""
-    N = n * n
-    rec = np.full(N, -1, np.int64)
-    acc = np.ones(N)
-    main = np.zeros(N)
-    drift_in = np.zeros(N)
+@nb.njit(cache=True, parallel=True)
+def _ltd_facets(filled, order, n, dx, facets):
+    """D8-LTD's first half for every cell of order, on threads (cut R1, 9 Nov 2026, docs/design/glacial_speed_design.md): the
+    steepest of the eight facets round the cell, its two neighbours k1 (side) and k2 (corner), and the true downhill direction
+    (fx, fy). It reads only filled, so each cell is its own; the lines are the one-thread kernel's, unchanged, so every value
+    comes out bit for bit as before. Indexed by position in order."""
+    m = order.size
+    K1 = np.full(m, -1, np.int64)
+    K2 = np.full(m, -1, np.int64)
+    FX = np.zeros(m)
+    FY = np.zeros(m)
     root2 = 1.4142135623730951
-    for q in range(order.size - 1, -1, -1):
+    for q in nb.prange(m):
         i = order[q]
         r = i // n
         c = i % n
@@ -96,6 +94,33 @@ def _ltd_receivers(filled, order, sea, n, dx, lam, facets):
                 fy = np.cos(a) * uy + np.sin(a) * wy
                 k1 = r1 * n + c1
                 k2 = r2 * n + c2
+        K1[q] = k1
+        K2[q] = k2
+        FX[q] = fx
+        FY[q] = fy
+    return K1, K2, FX, FY
+
+
+@nb.njit(cache=True)
+def _ltd_drift(filled, order, n, dx, lam, K1, K2, FX, FY):
+    """D8-LTD's second half, in one thread from the highest cell down, because a cell's drift comes from the cells above it:
+    of the steepest facet's two neighbours, the one that keeps the drift smaller, else the steepest lower neighbour; then the
+    cell's area goes to its receiver. The lines are the one-thread kernel's, unchanged."""
+    N = n * n
+    rec = np.full(N, -1, np.int64)
+    acc = np.ones(N)
+    main = np.zeros(N)
+    drift_in = np.zeros(N)
+    root2 = 1.4142135623730951
+    for q in range(order.size - 1, -1, -1):
+        i = order[q]
+        r = i // n
+        c = i % n
+        e0 = filled[i]
+        fx = FX[q]
+        fy = FY[q]
+        k1 = K1[q]
+        k2 = K2[q]
         best = -1
         drift = 0.0
         for t in range(2):
@@ -130,13 +155,26 @@ def _ltd_receivers(filled, order, sea, n, dx, lam, facets):
     return rec
 
 
+def _ltd_receivers(filled, order, sea, n, dx, lam, facets):
+    """Each cell's receiver by D8-LTD (Orlandini et al. 2003, Water Resources Research 39(6):1144): the true downhill direction
+    is the steepest of the eight facets round the cell (D-infinity, Tarboton 1997, WRR 33(2):309), which lies between a side
+    neighbour and a corner neighbour; of those two, the cell drains to the one that keeps the flow path's sideways drift from
+    the true direction, carried down the path (times lam per cell), the smaller. Cells are placed from the highest down, so a
+    cell's drift comes from the donor that drains the most ground into it (the main stem). Where neither neighbour of the
+    facet lies lower on the filled surface, the cell drains to the steepest lower neighbour, as lem.route does. The facets
+    (independent per cell) run on threads, the drift (in order) in one (cut R1); sea is unused, kept for the callers."""
+    K1, K2, FX, FY = _ltd_facets(filled, order, n, dx, facets)
+    return _ltd_drift(filled, order, n, dx, lam, K1, K2, FX, FY)
+
+
 def route(h, sea, n, dx, lam):
-    """Filled surface, receivers and order (downstream first). The fill and order are lem.route's (priority flood); the
-    receivers are D8-LTD (_ltd_receivers). Plain steepest descent among the eight neighbours sends all the flow on a smooth
-    face along one of eight compass and diagonal directions, so every flank was combed into straight parallel gullies set by
-    the grid, not by the slope (zoom pictures of runs 8a38328c and 4edbc722). D8-LTD keeps one receiver per cell (the implicit
-    solve needs a tree) while the flow paths follow the true downhill direction."""
-    filled, rec, order = lem.route(h, sea, n)
+    """Filled surface, receivers and order (downstream first). The fill and order are lem.route's (priority flood, from
+    lem.fill_order, which skips the D8 receivers this would throw away: cut R2); the receivers are D8-LTD (_ltd_receivers).
+    Plain steepest descent among the eight neighbours sends all the flow on a smooth face along one of eight compass and
+    diagonal directions, so every flank was combed into straight parallel gullies set by the grid, not by the slope (zoom
+    pictures of runs 8a38328c and 4edbc722). D8-LTD keeps one receiver per cell (the implicit solve needs a tree) while the
+    flow paths follow the true downhill direction."""
+    filled, order = lem.fill_order(h, sea, n)
     return filled, _ltd_receivers(filled, order, sea, n, dx, lam, _FACETS), order
 
 
