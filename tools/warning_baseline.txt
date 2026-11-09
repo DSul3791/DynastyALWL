@@ -9,7 +9,6 @@
       8 scenes/terrain_server/terrain_server.gd
       7 src/worldgen/tools/test_animals.gd
       6 src/worldgen/tools/test_items_persistence.gd
-      6 src/worldgen/tools/test_drainage_natural.gd
       6 src/worldgen/tile/tile_geology.gd
       6 src/worldgen/tile/tile_file.gd
       6 src/worldgen/sketch/world_elevation.gd
@@ -40,7 +39,6 @@
       2 tools/proto_worn_view.gd
       2 tools/proto_hands.gd
       2 tools/check_body_generator.gd
-      2 src/worldgen/tools/test_water_small.gd
       2 src/worldgen/tools/test_tunnel_watch.gd
       2 src/worldgen/tools/test_step_up.gd
       2 src/worldgen/tools/test_stairs_climb.gd

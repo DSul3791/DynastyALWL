@@ -53,7 +53,7 @@ The guide says no water integration code is written until this file exists. Ever
 ## 6. Water that exists today (what the guide replaces or keeps)
 
 - **`src/water2`** is the current live water. It uses the local inertial shallow water scheme (Bates 2010) on 8 m cells, with sleeping 16 x 16 blocks. It stores depth in float32 and flux, with no per-face crests and no ledger. `liquid_surface.gd` draws it. The baked rivers come from `src/worldgen/tile/drainage_*.gd` and `tile_valley_drain.gd`.
-- **`src/water`** is the older hub. It is kept behind `--water-old`.
+- **`src/water`** was the older hub. Its hub (`water_hub.gd`) and the `--water-old` switch were deleted on 9 Nov 2026 (proposed_removals). The folder keeps what the bake and water2 still share: `water_live.gd`, `water_sim.gd`, `water_store.gd`, `water_settler.gd`, `hollow_finder.gd`, `land_signature.gd` and `land_type.gd`.
 - The guide's freshwater model differs from both. It stores volume in m³ as float64, has paired faces with crests, scales a cell's outflows together, and keeps a ledger. Per the guide (section 12: "build a separate demonstration scene before integrating"), the new code lives in **`src/sullivan_water/`** next to the old code, and replaces it only once its gates pass.
 
 ## 7. Probes for Dino (Dave's PC)
