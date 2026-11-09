@@ -3774,7 +3774,7 @@ func _px(size: int) -> int:
 	return int(round(float(size) * text_scale * _fit * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
 
 
-# Shrinks the window's sizes (_fit) until its least size fits the room its anchors give it, then rebuilds it at that size. Called once the
+# Shrinks the window's sizes (_fit) until its least width fits the room its anchors give it, then rebuilds it at that size. Called once the
 # window is filled (its least size follows the recipe list, the bars and the open container), so the widest case is measured.
 func _fit_window() -> void:
 	if _panel == null or _fitting or not open:
@@ -3782,11 +3782,12 @@ func _fit_window() -> void:
 
 	_fitting = true
 
+	# Width only: the window ran off the side. Its least height is not read here, because a word-wrapped label that has not been laid
+	# out yet (no width) asks for one line per word, which would shrink every window to the floor (Dino's texttest, 9 Nov: 15 px fonts).
 	for _attempt in range(3):
-		var screen: Vector2 = _layer.get_viewport().get_visible_rect().size
-		var room: Vector2 = screen * Vector2(_panel.anchor_right - _panel.anchor_left, _panel.anchor_bottom - _panel.anchor_top)
-		var need: Vector2 = _panel.get_combined_minimum_size()
-		var shrink: float = minf(room.x / maxf(need.x, 1.0), room.y / maxf(need.y, 1.0))
+		var room: float = _layer.get_viewport().get_visible_rect().size.x * (_panel.anchor_right - _panel.anchor_left)
+		var need: float = _panel.get_combined_minimum_size().x
+		var shrink: float = room / maxf(need, 1.0)
 
 		if shrink >= 1.0 or _fit <= FIT_MIN:
 			break
