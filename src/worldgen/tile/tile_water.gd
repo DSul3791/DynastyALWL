@@ -30,6 +30,7 @@ var water_class: PackedByteArray = PackedByteArray()
 var water_surface: PackedFloat32Array = PackedFloat32Array()
 var flow: PackedFloat32Array = PackedFloat32Array()
 var fresh_m: PackedFloat32Array = PackedFloat32Array()   # distance (m) to perennial fresh water, set by tile_baker on the frame (water_record.gd fresh_distance); empty: not worked out
+var drink: Dictionary = {}   # the record's channel rasters by field name (tile_baker DRINK_FIELDS, water_record.gd encode_drink), set by tile_baker on the frame and cropped; empty: none
 var cave_heads: PackedByteArray = PackedByteArray()   # 1 where the drainage chose a spring cave as a river's source (drainage_channels.gd cave_head); empty: none chosen
 
 # Report after build().

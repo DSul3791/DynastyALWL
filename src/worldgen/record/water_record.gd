@@ -96,12 +96,75 @@ static func decode_fresh(raw: PackedByteArray) -> PackedFloat32Array:
 	return out
 
 
+# The tile file's drink sections (docs/design/drinking_water_step2b_design.md 2): the record's channel rasters, set only where regime is above
+# 0, as raw section bytes. Widths in 0.1 m steps (25.5 m at most); the channel distance below the governing spring in 2 m steps, DRINK_NONE
+# for none; that spring's flow as a log code (code / DRINK_Q_CODES_PER_DECADE - 4 is log10 m3/s, 0 for none, as the record's discharge);
+# its height in 0.1 m steps. The 16-bit sections are two planes, low bytes then high (tile_file.gd "planes2").
+const DRINK_WIDTH_STEP_M := 0.1
+const DRINK_BELOW_STEP_M := 2.0
+const DRINK_NONE := 65535
+const DRINK_Q_CODES_PER_DECADE := 6553.5
+const DRINK_Y_STEP_M := 0.1
+
+
+# {"drink_regime", "drink_width", "drink_below", "drink_spring_q", "drink_spring_y"} -> raw bytes, from the decoded rasters (the record's
+# field names: "regime", "width_m", "below_spring_m", "spring_q" in m3/s, "spring_y" in m). A sample off the channels is all zero (none).
+static func encode_drink(drink: Dictionary) -> Dictionary:
+	var regime: PackedFloat32Array = drink["regime"]
+	var count: int = regime.size()
+	var width: PackedFloat32Array = drink.get("width_m", PackedFloat32Array())
+	var below: PackedFloat32Array = drink.get("below_spring_m", PackedFloat32Array())
+	var q: PackedFloat32Array = drink.get("spring_q", PackedFloat32Array())
+	var y: PackedFloat32Array = drink.get("spring_y", PackedFloat32Array())
+	var regime_out: PackedByteArray = PackedByteArray()
+	var width_out: PackedByteArray = PackedByteArray()
+	var below_out: PackedByteArray = PackedByteArray()
+	var q_out: PackedByteArray = PackedByteArray()
+	var y_out: PackedByteArray = PackedByteArray()
+	regime_out.resize(count)
+	width_out.resize(count)
+	below_out.resize(count * 2)
+	q_out.resize(count * 2)
+	y_out.resize(count * 2)
+	var full: bool = width.size() == count and below.size() == count and q.size() == count and y.size() == count
+
+	for k in count:
+		var r: int = 0 if is_nan(regime[k]) else clampi(roundi(regime[k]), 0, 3)
+
+		if r == 0:
+			continue
+
+		regime_out[k] = r
+		var w: float = width[k] if full else NAN
+		width_out[k] = 0 if not is_finite(w) else clampi(roundi(w / DRINK_WIDTH_STEP_M), 0, 255)
+		var d: float = below[k] if full else NAN
+		var flow: float = q[k] if full else NAN
+		var d_raw: int = DRINK_NONE
+		var q_raw: int = 0
+		var y_raw: int = 0
+
+		# A distance with no flow is no spring: the rule needs both (open_length_m), so either missing is none.
+		if is_finite(d) and is_finite(flow) and flow >= 1.0e-4:
+			d_raw = clampi(roundi(d / DRINK_BELOW_STEP_M), 0, DRINK_NONE - 1)
+			q_raw = clampi(roundi((log(flow) / log(10.0) + 4.0) * DRINK_Q_CODES_PER_DECADE), 1, 65535)
+			y_raw = clampi(roundi((y[k] if is_finite(y[k]) else 0.0) / DRINK_Y_STEP_M), -32768, 32767) & 0xffff
+
+		below_out[k] = d_raw & 255
+		below_out[count + k] = d_raw >> 8
+		q_out[k] = q_raw & 255
+		q_out[count + k] = q_raw >> 8
+		y_out[k] = y_raw & 255
+		y_out[count + k] = y_raw >> 8
+
+	return {"drink_regime": regime_out, "drink_width": width_out, "drink_below": below_out, "drink_spring_q": q_out, "drink_spring_y": y_out}
+
+
 # --- the island water record (R6, Sonny's tools/watershed/record.py; docs/water/stage_e_readers_design.md 6b) ---
 # One instance opens one world's <world>/record/: the manifest (versions, completeness, the field table), network.json (island-wide
 # vectors, never clipped at a seam) and climate.json, and reads the per-tile rasters on demand, decoded by the manifest's field table.
 
 const RECORD_VERSIONS := [1]
-const TYPE_BYTES := {"f4": 4, "u1": 1, "u2": 2, "i4": 4}
+const TYPE_BYTES := {"f4": 4, "u1": 1, "u2": 2, "i2": 2, "i4": 4}
 const KEEP_TILES := 9              # rasters of at most this many tiles stay decoded (a bake frame's tile and its eight neighbours); not when prepared
 const POINT_KEYS := ["pos", "mouth", "lip", "spill"]
 const LINE_KEYS := ["polyline", "outline"]
@@ -301,6 +364,9 @@ static func decode(row: Dictionary, raw: PackedByteArray, count: int, lut: Packe
 			"u2":
 				for k in count:
 					out[k] = float(raw.decode_u16(k * 2))
+			"i2":
+				for k in count:
+					out[k] = float(raw.decode_s16(k * 2))
 			"i4":
 				for k in count:
 					out[k] = float(raw.decode_s32(k * 4))
@@ -321,6 +387,8 @@ static func decode(row: Dictionary, raw: PackedByteArray, count: int, lut: Packe
 				v = float(raw[k])
 			"u2":
 				v = float(raw.decode_u16(k * 2))
+			"i2":
+				v = float(raw.decode_s16(k * 2))
 			_:
 				v = float(raw.decode_s32(k * 4))
 

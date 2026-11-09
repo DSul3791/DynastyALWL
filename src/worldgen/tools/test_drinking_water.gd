@@ -2,13 +2,15 @@ extends SceneTree
 
 # Drinking water by source (docs/design/drinking_water_design.md section 6; Sonny docs/water/springs_and_drinking_water.md): springs always run,
 # brooks by regime and season, a brook below a spring freezes past Sonny's open length, frozen water needs an ice hole, salt water is refused,
-# and with vitals.json thirst.sources off the drink is today's. Stub rows only: nothing reads a record yet (build step 1).
+# and with vitals.json thirst.sources off the drink is today's. Stub rows, and a stub tile's drink sections read back as brook rows (step 2b).
 #   godot --headless --path . --script res://src/worldgen/tools/test_drinking_water.gd
 
 const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
+const TileTerrainDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 
 const CFG := {"rain_memory_h": 24.0, "flash_memory_h": 6.0, "open_m": 440.0, "cold_x": [[-2.0, 1.8], [-5.0, 1.0], [-10.0, 0.6], [-15.0, 0.4]], "breeze_wind": 0.3, "breeze_x": 0.5}
 
@@ -31,6 +33,7 @@ func ctx(season_name: String, rain_h: float, air: float, raining: bool = false) 
 
 func _init() -> void:
 	_rules()
+	_tile_rows()
 	_server()
 	print("drinking water: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
@@ -102,6 +105,34 @@ func _rules() -> void:
 	check(str(DrinkRules.pick(CFG, [{"kind": "salt"}, {"kind": "lake"}], ctx("summer", 1.0, 15.0)).get("kind", "")) == "lake", "a lake 2 m off wins over the sea")
 	check(str(DrinkRules.pick(CFG, [{"kind": "puddle"}, {"kind": "lake"}, spring], ctx("autumn", 1.0, 8.0)).get("kind", "")) == "spring", "the cleanest source within reach wins")
 	check(DrinkRules.pick(CFG, [], ctx("summer", 1.0, 15.0)).is_empty(), "no rows, no answer")
+
+
+# Step 2b on a 3 x 3 stub tile: the drink sections (water_record.gd encode_drink) read back as brook rows (TileTerrainData.drink_row), and
+# the rows behave by regime: a perennial brook runs in a dry August, an intermittent one with no spring is a dry bed.
+func _tile_rows() -> void:
+	var drink: Dictionary = {
+		"regime": PackedFloat32Array([0, 1, 2, 0, 3, 0, 0, 0, 0]),
+		"width_m": PackedFloat32Array([0, 0.8, 2.5, 0, 0.3, 0, 0, 0, 0]),
+		"below_spring_m": PackedFloat32Array([NAN, 120.0, NAN, NAN, NAN, NAN, NAN, NAN, NAN]),
+		"spring_q": PackedFloat32Array([0, 0.002, 0, 0, 0, 0, 0, 0, 0]),
+		"spring_y": PackedFloat32Array([0, 88.4, 0, 0, 0, 0, 0, 0, 0]),
+	}
+	var tile = TileTerrainDataScript.new()
+	tile.samples = 3
+	tile.load_drink_sections(WaterRecordScript.encode_drink(drink))
+	var mean_c: Callable = func(height: float) -> float: return 12.0 - 0.01 * height
+	var brook: Dictionary = tile.drink_row(1, mean_c)
+	check(str(brook.get("kind", "")) == "brook" and int(brook.get("regime", 0)) == 1 and bool(brook.get("dry_ok", false)), "sample 1 is a perennial brook (%s)" % str(brook))
+	check(absf(float(brook.get("below_spring_m", 0.0)) - 120.0) < 0.01 and absf(float(brook.get("q_m3_s", 0.0)) - 0.002) < 1.0e-6, "120 m below a 2 L/s spring (%s)" % str(brook))
+	check(absf(float(brook.get("width_m", 0.0)) - 0.8) < 0.01 and absf(float(brook.get("spring_c", 0.0)) - mean_c.call(88.4)) < 0.001, "0.8 m wide, the spring's water the year mean at 88.4 m (%s)" % str(brook))
+	var bed: Dictionary = tile.drink_row(2, mean_c)
+	check(int(bed.get("regime", 0)) == 2 and is_inf(float(bed.get("below_spring_m", 0.0))) and not bed.has("spring_c"), "sample 2 is an intermittent brook with no spring (%s)" % str(bed))
+	check(int(tile.drink_row(4, mean_c).get("regime", 0)) == 3 and tile.drink_row(0, mean_c).is_empty() and tile.drink_row(8, mean_c).is_empty(), "a gully at 4; no brook off the channels")
+	var august: Dictionary = ctx("summer", 72.0, 24.0)
+	check(DrinkRules.runs(CFG, brook, august) and not DrinkRules.runs(CFG, bed, august), "in a dry August the perennial brook runs and the intermittent bed is dry")
+	var empty = TileTerrainDataScript.new()
+	empty.samples = 3
+	check(empty.drink_row(1, mean_c).is_empty() and not empty.has_drink(), "a tile with no drink sections gives no brook rows")
 
 
 func _server() -> void:

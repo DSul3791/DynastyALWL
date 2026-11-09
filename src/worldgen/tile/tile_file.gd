@@ -255,6 +255,18 @@ static func pack_tile(settings, tile: Vector2i, plan_cell: Dictionary, water, cl
 
 	if "fresh_m" in water and water.fresh_m.size() == samples * samples:   # Stage E: distance to perennial fresh water (water_record.gd), 2 m steps
 		sections.append(_map("fresh_m", "uint8", samples, WaterRecordRef.encode_fresh(water.fresh_m)))
+
+	if "drink" in water and water.drink.get("regime", PackedFloat32Array()).size() == samples * samples:   # drinking water step 2b: the record's channels
+		var drink: Dictionary = WaterRecordRef.encode_drink(water.drink)
+
+		for name in ["drink_regime", "drink_width"]:
+			sections.append(_map(name, "uint8", samples, drink[name]))
+
+		for name in ["drink_below", "drink_spring_q"]:
+			sections.append(_map(name, "uint16", samples, drink[name]))
+
+		sections.append(_map("drink_spring_y", "int16", samples, drink["drink_spring_y"]))
+
 	sections.append(_map("province", "uint8", samples, geology.province))
 	sections.append(_map("cover", "uint8", samples, geology.cover))
 	sections.append(_map("layer_offset", "int16", samples, encode_layer_offset(geology.layer_offset)))
