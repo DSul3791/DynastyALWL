@@ -11,8 +11,8 @@ const GeneratedBody := preload("res://src/client/character/generated_body.gd")
 const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
 
 const CREATOR_SCENE := "res://scenes/creator_proto/creator_proto.tscn"
-const ROW_HEIGHT := 190
-const PICTURE := Vector2i(130, 180)
+const ROW_HEIGHT := 140
+const PICTURE := Vector2i(90, 124)
 
 var selected_id: String = ""
 var auto_creator: bool = true          # tests and picture scripts turn this off to see the empty page
@@ -64,13 +64,13 @@ func _build_ui() -> void:
 	page.add_child(scroll)
 	_rows = VBoxContainer.new()
 	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_rows.add_theme_constant_override("separation", 10)
+	_rows.add_theme_constant_override("separation", 7)
 	scroll.add_child(_rows)
 	var bar: HBoxContainer = HBoxContainer.new()
-	bar.add_theme_constant_override("separation", 12)
+	bar.add_theme_constant_override("separation", 8)
 	page.add_child(bar)
 	_play = Style.big_button("Play", Style.FONT_TITLE, Style.PRIMARY)
-	_play.custom_minimum_size = Vector2(240, 72)
+	_play.custom_minimum_size = Vector2(220, 56)
 	_play.pressed.connect(_press_play)
 	bar.add_child(_play)
 	var new_button: Button = Style.big_button("New character", Style.FONT_BUTTON, Style.ACCENT)
@@ -98,7 +98,7 @@ func _build_ui() -> void:
 	_rename_dialog.min_size = Vector2i(640, 180)
 	_rename_edit = LineEdit.new()
 	_rename_edit.max_length = Record.NAME_MAX
-	_rename_edit.custom_minimum_size = Vector2(0, 48)
+	_rename_edit.custom_minimum_size = Vector2(0, 44)
 	_rename_dialog.add_child(_rename_edit)
 	_rename_dialog.confirmed.connect(_rename_selected)
 	add_child(_rename_dialog)
@@ -148,7 +148,7 @@ func _make_row(one: Dictionary) -> Button:
 			continue
 
 		box = box.duplicate()
-		box.content_margin_left = float(PICTURE.x) + 36.0
+		box.content_margin_left = float(PICTURE.x) + 24.0
 
 		if state == "pressed" or state == "hover_pressed":
 			box.bg_color = Style.PRIMARY.darkened(0.1)
@@ -167,7 +167,7 @@ func _make_row(one: Dictionary) -> Button:
 func _make_labels(one: Dictionary) -> Control:
 	var margin: MarginContainer = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", PICTURE.x + 36)
+	margin.add_theme_constant_override("margin_left", PICTURE.x + 24)
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -193,7 +193,7 @@ func _make_picture(genome: Dictionary) -> Control:
 	var holder: SubViewportContainer = SubViewportContainer.new()
 	holder.stretch = true
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.position = Vector2(14.0, (ROW_HEIGHT - PICTURE.y) / 2.0)
+	holder.position = Vector2(10.0, (ROW_HEIGHT - PICTURE.y) / 2.0)
 	holder.size = Vector2(PICTURE)
 	var view: SubViewport = SubViewport.new()
 	view.own_world_3d = true

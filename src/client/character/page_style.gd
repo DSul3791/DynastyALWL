@@ -2,9 +2,9 @@ extends RefCounted
 
 # The look shared by the character select page and the creator: one theme with big fonts (readable at 1920x1080) and big coloured buttons.
 
-const FONT_BASE := 22          # labels, values, text boxes
-const FONT_SECTION := 28       # section headers and list rows
-const FONT_BUTTON := 24        # the big buttons
+const FONT_BASE := 20          # labels, values, text boxes
+const FONT_SECTION := 22       # section headers and list rows
+const FONT_BUTTON := 22        # the big buttons
 const FONT_TITLE := 30         # page titles and the primary button
 
 const PRIMARY := Color(0.2, 0.55, 0.28)
@@ -27,17 +27,17 @@ static func make_theme() -> Theme:
 		var box: StyleBoxFlat = StyleBoxFlat.new()
 		box.bg_color = Color(0.3, 0.33, 0.4).lightened(0.12 if state == "hover" else 0.0).darkened(0.15 if state == "pressed" else (0.4 if state == "disabled" else 0.0))
 		box.set_corner_radius_all(6)
-		box.content_margin_left = 14.0
-		box.content_margin_right = 14.0
-		box.content_margin_top = 6.0
-		box.content_margin_bottom = 6.0
+		box.content_margin_left = 10.0
+		box.content_margin_right = 10.0
+		box.content_margin_top = 4.0
+		box.content_margin_bottom = 4.0
 		t.set_stylebox(state, "Button", box)
 
 	var grabber: StyleBoxFlat = StyleBoxFlat.new()
 	grabber.bg_color = Color(0.3, 0.32, 0.36)
 	grabber.set_corner_radius_all(6)
-	grabber.content_margin_top = 14.0
-	grabber.content_margin_bottom = 14.0
+	grabber.content_margin_top = 10.0
+	grabber.content_margin_bottom = 10.0
 	t.set_stylebox("slider", "HSlider", grabber)
 	return t
 
@@ -45,7 +45,7 @@ static func make_theme() -> Theme:
 static func big_button(text: String, size: int, tint: Color) -> Button:
 	var b: Button = Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(0, 64)
+	b.custom_minimum_size = Vector2(0, 52)
 	b.add_theme_font_size_override("font_size", size)
 	style_button(b, tint)
 	return b
@@ -56,8 +56,8 @@ static func style_button(b: Button, tint: Color) -> void:
 		var box: StyleBoxFlat = StyleBoxFlat.new()
 		box.bg_color = tint.lightened(0.12) if state == "hover" else (tint.darkened(0.15) if state == "pressed" else (tint.darkened(0.45) if state == "disabled" else tint))
 		box.set_corner_radius_all(8)
-		box.content_margin_left = 18.0
-		box.content_margin_right = 18.0
+		box.content_margin_left = 12.0
+		box.content_margin_right = 12.0
 		b.add_theme_stylebox_override(state, box)
 
 
@@ -73,11 +73,11 @@ static func page(root: Control) -> VBoxContainer:
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 16)
+		margin.add_theme_constant_override("margin_" + side, 12)
 
 	root.add_child(margin)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 10)
+	box.add_theme_constant_override("separation", 7)
 	margin.add_child(box)
 	return box
 
