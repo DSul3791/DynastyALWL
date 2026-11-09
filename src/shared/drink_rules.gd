@@ -31,6 +31,48 @@ static func ground_spring_rows(springs: Array, pos: Vector3, reach: float, mean_
 	return rows
 
 
+# The source rows within reach of pos on one baked tile (TileTerrainData), for vitals.json thirst.sources: the terrain server's water_source
+# and the drink_near check (src/worldgen/tools/drink_near.gd) both call this, so the check reads what the game reads. mean_c(height) is the
+# year mean there (the caller's climate zone). At the same five points as water_near: a spring cave's stream is spring water; the record's
+# ground springs are spring rows (step 2a); ocean and estuary cells are salt; a sample on a record channel (the tile's drink sections) is a
+# brook by regime, which runs or lies dry by the season (runs) whatever the sim shows (step 2b); otherwise wet lake and river cells are lakes
+# and rivers, and any other cell the live sim has wet is a puddle. No ice field: server_items puts its own ice rule (_on_ice) on each row.
+static func tile_rows(tile_data, pos: Vector3, reach: float, mean_c: Callable) -> Array:
+	var rows: Array = []
+
+	if tile_data.placeholder or tile_data.water_class.is_empty():
+		return rows
+
+	if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
+		rows.append({"kind": "spring"})
+
+	if not tile_data.ground_springs.is_empty():
+		rows.append_array(ground_spring_rows(tile_data.ground_springs, pos, reach, func(head: Vector3) -> float: return float(mean_c.call(head.y))))
+
+	var sim: PackedFloat32Array = tile_data.sim_snapshot()
+
+	for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+		var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
+		var cls: int = int(tile_data.water_class[k])
+
+		if cls == 1 or cls == 5:
+			rows.append({"kind": "salt"})   # ocean, estuary (data/tables/water_classes.json)
+			continue
+
+		var brook: Dictionary = tile_data.drink_row(k, mean_c) if cls != 2 else {}
+
+		if not brook.is_empty():
+			rows.append(brook)
+			continue
+
+		var wet: bool = (not is_nan(sim[k])) if not sim.is_empty() else (cls > 1 and not is_nan(tile_data.water_surface[k]))
+
+		if wet:
+			rows.append({"kind": "lake" if cls == 2 else ("river" if cls == 3 else "puddle")})
+
+	return rows
+
+
 # {"kind", "temp_c", "frozen"} for the source to drink from, or {"refused": "salt" | "dry"} when only salt or dry beds are in reach, or {}.
 static func pick(cfg: Dictionary, rows: Array, ctx: Dictionary) -> Dictionary:
 	var best: Dictionary = {}

@@ -25,6 +25,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEST = os.path.join(ROOT, "assets", "ui", "item_icons")
 RES_DIR = "res://assets/ui/item_icons/"
 ITEMS = os.path.join(ROOT, "data", "items", "items.json")
+GATHERED = os.path.join(ROOT, "data", "items", "gathered.json")   # the gathered materials; item_table.gd loads both files
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paint_item_icons import NAMES as ITEM_NAMES   # noqa: E402
 from paint_structure_icons import NAMES as STRUCTURE_NAMES   # noqa: E402
@@ -77,12 +78,16 @@ detect_3d/compress_to=1
 
 
 def item_ids():
-    with open(ITEMS, encoding="utf-8") as f:
-        data = json.load(f)
+    ids = set()
 
-    items = data.get("items", data) if isinstance(data, dict) else data
-    rows = items.items() if isinstance(items, dict) else ((str(i.get("id")), i) for i in items)
-    return sorted(k for k, v in rows if not (isinstance(v, dict) and v.get("retired")))
+    for path in (ITEMS, GATHERED):
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        items = data.get("items", data) if isinstance(data, dict) else data
+        rows = items.items() if isinstance(items, dict) else ((str(i.get("id")), i) for i in items)
+        ids.update(k for k, v in rows if not (isinstance(v, dict) and v.get("retired")))
+    return sorted(ids)
 
 
 def new_uid(name):
@@ -131,7 +136,7 @@ def main():
             if ext.lower() != ".png":
                 continue
             if name not in ids:
-                skipped.append((file, "is not a live item in items.json (retired or unknown)"))
+                skipped.append((file, "is not a live item in items.json or gathered.json (retired or unknown)"))
                 continue
             if name in PAINTED and os.path.isfile(os.path.join(DEST, file)):
                 skipped.append((file, "is painted (tools/paint_*_icons.py); the painted one stays"))

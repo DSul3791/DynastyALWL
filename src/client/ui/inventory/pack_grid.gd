@@ -82,6 +82,8 @@ func build() -> Control:
 	# large text size (its taller header) shows one row fewer instead of half a row (1366 x 768 review, 9 Nov 2026).
 	var holder: Control = Control.new()
 	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Its minimum is the grid's width and one row, so the frame's fit check still sees the 650 px the slots need.
+	holder.custom_minimum_size = Vector2(float(LOOK_COLUMNS * ArtKit.SLOT + (LOOK_COLUMNS - 1) * ArtKit.SLOT_GAP), float(ArtKit.SLOT))
 	right.add_child(holder)
 	_slot_scroll = ScrollContainer.new()
 	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

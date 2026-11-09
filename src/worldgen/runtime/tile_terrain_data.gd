@@ -579,6 +579,11 @@ func has_drink() -> bool:
 	return not _drink_k.is_empty()
 
 
+# The channel samples' indices, in order (empty: no drink sections), for checks that look for a brook of each kind (drink_near.gd).
+func drink_samples() -> PackedInt32Array:
+	return _drink_k
+
+
 func wet_at(x: float, z: float) -> float:
 	if placeholder:
 		return 1.0
