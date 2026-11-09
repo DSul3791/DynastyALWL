@@ -173,7 +173,7 @@ func write_network() -> void:
 	write_json(DIR + "/network.json", {"reaches": [{"id": 0, "down": -1, "ends": "sea", "area_km2": 50.0,
 		"polyline": [[x0 + 1900.0 * 8.0, 39.0, z], [x0 + 100.0 * 8.0, 39.0, z]]}], "lakes": [], "falls": [], "cold_air_pools": [],
 		"heads": [{"reach": 0, "kind": "spring", "pos": [x0 + float(SPRING.x) * 8.0, ground_at(SPRING.x, SPRING.y), z0 + float(SPRING.y) * 8.0],
-				"lake": -1, "area_km2": 0.4, "q_wet_m3_s": 0.01, "groundwater_m3_s": 0.004},
+				"lake": -1, "area_km2": 0.4, "q_wet_m3_s": 0.01, "groundwater_m3_s": 0.004, "q_base_dry_m3_s": 0.0015},
 			{"reach": 0, "kind": "seep or damp hollow", "pos": [x0 + float(SEEP.x) * 8.0, ground_at(SEEP.x, SEEP.y), z0 + float(SEEP.y) * 8.0],
 				"lake": -1, "area_km2": 0.3, "q_wet_m3_s": 0.005, "groundwater_m3_s": 0.001}]})
 	write_json(DIR + "/climate.json", {"default": {}, "by_island": {}})
@@ -296,6 +296,7 @@ func _init() -> void:
 			check(absf(float(pos[0]) - x_want) < 0.2 and absf(float(pos[2]) - z_want) < 0.2 and absf(float(pos[1]) - ground_at(SPRING.x, SPRING.y)) < 0.2,
 				"the ground spring is at the head (%s)" % str(pos))
 			check(str(springs[0]["cover"]) == "bushes" and absf(float(springs[0]["m3_s"]) - 0.004) < 0.0001, "bushes over it, R5's groundwater flow (%s)" % str(springs[0]))
+			check(absf(float(springs[0].get("dry_m3_s", -1.0)) - 0.0015) < 0.0001, "and R5's dry-quarter base flow at the head (%s)" % str(springs[0]))
 
 		var packed: Dictionary = TileFileScript.pack_tile(baker.settings, TILE, baker.plan_cell(TILE), water, result["climate"], result["geology"], result["sites"], baker.river_start_cells())
 		check(not packed.is_empty(), "the tile packs into a tile file")

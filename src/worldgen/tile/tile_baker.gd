@@ -509,7 +509,12 @@ func _bake_from_record(tile: Vector2i, n: int, core: int, origin_sx: int, origin
 
 		# The last row and column belong to the next tile too: a spring there is listed by that tile alone.
 		if i >= 0 and j >= 0 and i < core - 1 and j < core - 1:
-			springs.append({"index": j * core + i, "m3_s": float(head.get("groundwater_m3_s", 0.0))})
+			var spring: Dictionary = {"index": j * core + i, "m3_s": float(head.get("groundwater_m3_s", 0.0))}
+
+			if head.has("q_base_dry_m3_s"):   # its own dry-quarter base flow (Sonny #834); a record from before it has none
+				spring["dry_m3_s"] = float(head["q_base_dry_m3_s"])
+
+			springs.append(spring)
 
 	var ground: PackedFloat32Array = crop(water.heights, n, core)
 	return _finish(tile, water, Vector2i(origin_sx, origin_sz), spacing_m, fresh_points, {"raw_heights": ground, "eroded_heights": ground, "record": true,

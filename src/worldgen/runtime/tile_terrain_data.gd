@@ -34,7 +34,7 @@ var x0: float = 0.0                # world position of sample (0, 0)
 var z0: float = 0.0
 var placeholder: bool = false      # no file: open ocean
 var placeholder_depth_m: float = -200.0
-var ground_springs: Array = []        # ground springs of a tile from the water record (sites "springs", design R6 as built): [Vector3 head, float m3_s, String cover] in the tile's order; flora_placer hides each with cover "bushes" under a clump of low shrubs
+var ground_springs: Array = []        # ground springs of a tile from the water record (sites "springs", design R6 as built): [Vector3 head, float m3_s, String cover, float dry_m3_s (its own dry-quarter base flow, Sonny #834; m3_s on tiles baked before it)] in the tile's order; flora_placer hides each with cover "bushes" under a clump of low shrubs
 
 var heights: PackedFloat32Array = PackedFloat32Array()
 # Settled simulated water level per sample (NAN dry); empty when the tile has no
@@ -803,7 +803,7 @@ func _load_springs(list: Array) -> void:
 		var pos: Array = spring.get("pos", [])
 
 		if pos.size() == 3:
-			ground_springs.append([Vector3(float(pos[0]), float(pos[1]), float(pos[2])), float(spring.get("m3_s", 0.0)), str(spring.get("cover", ""))])
+			ground_springs.append([Vector3(float(pos[0]), float(pos[1]), float(pos[2])), float(spring.get("m3_s", 0.0)), str(spring.get("cover", "")), float(spring.get("dry_m3_s", spring.get("m3_s", 0.0)))])
 
 
 # The node of a cave's goblin den, or -1 for none (Dave 7 Nov 2026): a dry spot deep in an inland cave, in GOBLIN_DEN_PERCENT of them, picked by the
