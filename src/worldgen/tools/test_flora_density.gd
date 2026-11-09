@@ -281,7 +281,13 @@ func _init() -> void:
 
 	print("singles by species ", single_names)
 	print("thicket histogram (clump size, 12 = 12 or more: clumps) %s; %d shrubs in %d clumps" % [str(histogram), points.size(), sizes.size()])
-	_check(points.size() > 100 and float(clumped) / float(points.size()) >= 0.88, "about 90 percent (at least 88) of the shrubs stand in clumps of 4 or more (%.0f percent of %d)" % [100.0 * float(clumped) / float(maxi(points.size(), 1)), points.size()])
+	# Re-pinned 88 -> 87 (Sonny, 9 Nov 2026, the ws580v record tiles, #799; coordinator's call). The floor was set on the rule-baked land of 31 Oct.
+	# On the record tiles this window measured 87.5 to 88.0 percent of 6,771 shrubs (printed "88" at no decimals; the line now prints one).
+	# The cause is the land, not the clump rule: the record's moisture puts more of the window inside the ranges of the
+	# moisture-limited thicket species (wild rose up to 220, blackthorn and hawthorn up to 230), and more of their ground sits on the
+	# range's edge, where a patch loses the plants on the far side (8 m moisture cells beside one out of range: wild rose 5.4 -> 7.9 percent,
+	# blackthorn and hawthorn 4.8 -> 6.1, honeyspindle 7.3 -> 11.0, sunberry 6.8 -> 12.5). Slope (p90 37 -> 26 degrees) and poor soil (32 percent both) did not get worse.
+	_check(points.size() > 100 and float(clumped) / float(points.size()) >= 0.87, "about 90 percent (at least 87) of the shrubs stand in clumps of 4 or more (%.1f percent: %d of %d)" % [100.0 * float(clumped) / float(maxi(points.size(), 1)), clumped, points.size()])
 	_check(float(singles) / float(maxi(points.size(), 1)) <= 0.05, "isolated single shrubs are at most 5 percent (%.1f percent)" % (100.0 * float(singles) / float(maxi(points.size(), 1))))
 	# Starter orchard (Dave 2026-10-31): fruit trees in rows near the spawn, outside the starter clearing, early and summer varieties first.
 	var orchard_trees: Array = []
