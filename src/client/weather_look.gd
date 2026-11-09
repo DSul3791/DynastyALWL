@@ -685,9 +685,9 @@ func _process_body(delta: float) -> void:
 	if now_msec >= _fire_next_msec and _client.get("game_clock") != null:
 		_fire_next_msec = now_msec + 1000
 		var world_weather: Variant = _client.get("weather")
-		var heading: float = float(world_weather.get("wind_dir", 0.0)) if world_weather is Dictionary else 0.0
+		var fire_heading: float = float(world_weather.get("wind_dir", 0.0)) if world_weather is Dictionary else 0.0
 		var wind_now: float = float(_s["wind"])
-		BuildingLook.set_fire_air(fire_wind_ms(wind_now), heading, still_night(day.elevation, _client.game_clock.hour(), cloud_cover, wind_now))
+		BuildingLook.set_fire_air(fire_wind_ms(wind_now), fire_heading, still_night(day.elevation, _client.game_clock.hour(), cloud_cover, wind_now))
 
 	# The sky colours change in coarser steps than the sun: a changed sky shader parameter may make the engine redraw the
 	# sky's lighting cubemap, so it is paid once every few seconds (two game minutes), not every frame. Check the GPU table
@@ -915,9 +915,9 @@ static func sky_share(rock_enclosure: float) -> float:
 
 # The sky's part of the light under rock: its share of the ambient (`sky_share` in the open) fades with the square of the cave light `under_rock` (1 open ..
 # CAVE_LIGHT_DARK deep in), so the ambient left is about under_rock like the sun's, and the sky reflections are off below CAVE_REFLECT_OFF.
-static func sky_under_rock(environment: Environment, sky_share: float, under_rock: float) -> void:
-	environment.ambient_light_sky_contribution = sky_share * under_rock * under_rock     # the sky part is not dimmed by the energy: x under_rock twice keeps the total near under_rock
-	var reflect: int = Environment.REFLECTION_SOURCE_SKY if under_rock >= CAVE_REFLECT_OFF else Environment.REFLECTION_SOURCE_DISABLED
+static func sky_under_rock(environment: Environment, sky_part: float, under_rock: float) -> void:
+	environment.ambient_light_sky_contribution = sky_part * under_rock * under_rock     # the sky part is not dimmed by the energy: x under_rock twice keeps the total near under_rock
+	var reflect: Environment.ReflectionSource = Environment.REFLECTION_SOURCE_SKY if under_rock >= CAVE_REFLECT_OFF else Environment.REFLECTION_SOURCE_DISABLED
 
 	if environment.reflected_light_source != reflect:
 		environment.reflected_light_source = reflect
@@ -1024,10 +1024,10 @@ var _crown_sent: Vector2 = Vector2(-1.0, -1.0)
 
 # One step of one crown kind's snow: value now, its cap, the ground's snow memory (0..1), the eased falling snow (0..1), air
 # temperature, wind in m/s and the game hours since the last step.
-static func crown_snow_step(value: float, cap: float, ground: float, falling: float, temp_c: float, wind_ms: float, hours: float) -> float:
+static func crown_snow_step(value: float, cap: float, ground: float, falling: float, temp_c: float, wind_mps: float, hours: float) -> float:
 	var top: float = cap * clampf(ground, 0.0, 1.0)
 
-	if wind_ms > CROWN_SHED_WIND_MS or (temp_c > 0.0 and falling <= CROWN_FALLING):
+	if wind_mps > CROWN_SHED_WIND_MS or (temp_c > 0.0 and falling <= CROWN_FALLING):
 		value *= exp(-hours / CROWN_SHED_TAU_H)
 	elif falling > CROWN_FALLING:
 		value = maxf(value, top)
@@ -1050,14 +1050,14 @@ func _update_crown_snow(falling: float, ground: float) -> void:
 	var hours: float = 0.0 if _crown_last_msec == 0 else float(now_msec - _crown_last_msec) / 1000.0 * GameClock.RATIO / 3600.0
 	_crown_last_msec = now_msec
 	var temp_c: float = 10.0
-	var wind_ms: float = 20.0 * pow(clampf(float(_s["wind"]), 0.0, 1.0), 1.3)
+	var crown_wind: float = wind_ms(float(_s["wind"]))
 
 	if _client.sound != null and _client.sound.weather != null:
 		temp_c = float(_client.sound.weather.temp_c)
 
 	var broad_cap: float = CROWN_BARE_CAP if str(_client.flora.season) == "winter" else CROWN_CONIFER_CAP
-	crown_snow_conifer = crown_snow_step(crown_snow_conifer, CROWN_CONIFER_CAP, ground, falling, temp_c, wind_ms, hours)
-	crown_snow_broad = crown_snow_step(crown_snow_broad, broad_cap, ground, falling, temp_c, wind_ms, hours)
+	crown_snow_conifer = crown_snow_step(crown_snow_conifer, CROWN_CONIFER_CAP, ground, falling, temp_c, crown_wind, hours)
+	crown_snow_broad = crown_snow_step(crown_snow_broad, broad_cap, ground, falling, temp_c, crown_wind, hours)
 	var now: Vector2 = Vector2(crown_snow_conifer, crown_snow_broad)
 
 	if absf(now.x - _crown_sent.x) > 0.01 or absf(now.y - _crown_sent.y) > 0.01:

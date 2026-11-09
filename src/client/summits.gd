@@ -6,8 +6,6 @@ extends RefCounted
 # A summit is the highest coarse sample of its BLOCK_M block and the blocks round it, at least MIN_M high. Searched again only when the player
 # moves into another tile.
 
-const TileFile := preload("res://src/worldgen/tile/tile_file.gd")
-
 const MIN_M := 300.0                   # lower tops are hills, not summits
 const BLOCK_M := 640.0                 # a summit is the highest point of its block of this size and the eight round it
 const KEEP := 12                       # the highest this many are kept
@@ -89,7 +87,6 @@ static func search(dir: String, centre: Vector2i, size_m: float) -> Array:
 	return found.slice(0, KEEP)
 
 
-@warning_ignore("integer_division")
 static func _tile_summits(dir: String, tile: Vector2i, size_m: float) -> Array:
 	var path: String = "%s/tile_%d_%d.tile" % [dir, tile.x, tile.y]
 
@@ -116,6 +113,7 @@ static func _tile_summits(dir: String, tile: Vector2i, size_m: float) -> Array:
 
 	# One pass: the highest sample in each block of BLOCK_M; a block's top is a summit when no block round it is higher.
 	var b: int = maxi(int(BLOCK_M / spacing), 1)
+	@warning_ignore("integer_division")
 	var blocks: int = (n + b - 1) / b
 	var top_h: PackedFloat32Array = PackedFloat32Array()
 	var top_at: PackedInt32Array = PackedInt32Array()
@@ -124,10 +122,12 @@ static func _tile_summits(dir: String, tile: Vector2i, size_m: float) -> Array:
 	top_at.resize(blocks * blocks)
 
 	for j in range(n):
+		@warning_ignore("integer_division")
 		var row: int = (j / b) * blocks
 
 		for i in range(n):
 			var h: float = heights[j * n + i]
+			@warning_ignore("integer_division")
 			var k: int = row + i / b
 
 			if h > top_h[k]:
@@ -154,6 +154,7 @@ static func _tile_summits(dir: String, tile: Vector2i, size_m: float) -> Array:
 
 			if top:
 				var at: int = top_at[bj * blocks + bi]
+				@warning_ignore("integer_division")
 				out.append(Vector3(x0 + float(at % n) * spacing, h, z0 + float(at / n) * spacing))
 
 	return out
