@@ -1,10 +1,10 @@
 # Inventory and crafting redesign (9 Nov 2026)
 
-Owner: Kathleen (art direction). Asked for by Dave, 9 Nov 2026 03:49 UTC: *"Keep it simple, keep it eloquent and keep it useful … make sure its not crowded and make sure it is easy to use for a human. Also make sure it uses the space on the screen and keeps things big enough to see. Make it better than those games."* References he gave: ARK Survival inventory, Dragonwilds inventory and crafting table, Valheim crafting. After the first mockup he asked (04:09 UTC) what it takes to look like a top studio built it. Version 2 is the answer: the same layout, with a production finish (three depth levels, a leather and brass frame, a warm palette, engraved glyphs, letter-spaced titles and a set of motion rules).
+Owner: Kathleen (art direction). Asked for by Dave, 9 Nov 2026 03:49 UTC: *"Keep it simple, keep it eloquent and keep it useful … make sure its not crowded and make sure it is easy to use for a human. Also make sure it uses the space on the screen and keeps things big enough to see. Make it better than those games."* References he gave: ARK Survival inventory, Dragonwilds inventory and crafting table, Valheim crafting. After the first mockup he asked (04:09 UTC) what it takes to look like a top studio built it. Version 2 is the answer: the same layout, with a production finish (three depth levels, a leather and brass frame, a warm palette, engraved glyphs, letter-spaced titles and a set of motion rules). Version 3 (04:25 UTC) puts Dave's review into the picture itself, because what is not in the mockup does not get built: the recipe card's "Made at" and "Used in", the full name on the plate, the hotbar key hint, and the live character wearing its gear.
 
-Status: **version 2 is the accepted design (coordinator, 9 Nov 04:21 UTC). No code until Dave says go; the first step is then the canvas and resize pass.** #780 (inventory fit) stays as it is until this replaces it.
+Status: **version 3 is the design (v2 accepted by the coordinator 04:21 UTC; v3 adds Dave's 04:25 review). No code until Dave says go; the first step is then the canvas and resize pass.** #780 (inventory fit) stays as it is until this replaces it.
 
-Mockup: `inventory_redesign_1920_v2.png` (shared files, top level), drawn at 1920 x 1080 by `docs/ui/mockup/inventory_redesign_mockup.py` from the same numbers as this doc. The script draws at 3840 x 2160 and scales down so edges are smooth; `--measured` adds a copy with every box outlined. The first version, `inventory_redesign_1920.png`, is kept for comparison.
+Mockup: `inventory_redesign_1920_v3.png` (shared files, top level), drawn at 1920 x 1080 by `docs/ui/mockup/inventory_redesign_mockup.py` from the same numbers as this doc. The script draws at 3840 x 2160 and scales down so edges are smooth; `--measured` adds a copy with every box outlined. The earlier versions, `inventory_redesign_1920.png` and `inventory_redesign_1920_v2.png`, are kept for comparison.
 
 ```
 python3 docs/ui/mockup/inventory_redesign_mockup.py --out OUT --icons item_icon_sheet.png [--measured]
@@ -64,7 +64,7 @@ Performance on weak machines is a separate job: a world render scale option for 
 | **Hotbar row** | 47 | 136 | 645 | 60 | **10 slots of 60 with 5 px gaps** (keys 1 to 9 and 0), on a raised tray 6 px bigger all round |
 | **Pack grid** | 44 | 214 | 650 | 540 | 6 x 5 slots of 100, 10 px gaps (30 slots) |
 | Info strip | 44 | 784 | 650 | 200 | An ornament rule above it, then a 100 px slot with the item, its name (Cinzel Bold 30), two lines of description and one line of facts ("Holds" dim, "8 L" cream) |
-| Key hints | 44 | 1000 | 650 | 32 | The item's actions as plain text with keycaps: **E** Use, **D** Drop, **S** Split, **R** Repair. A hint that does not apply is greyed, never hidden. No boxed buttons |
+| Key hints | 44 | 1000 | 650 | 32 | The item's actions as plain text with keycaps: **E** Use, **D** Drop, **S** Split, **R** Repair, **1–0** Put on hotbar (the tenth key is shown as 0, the key you press; digits use EB Garamond SemiBold on the keycap because Cinzel's 1 reads as I). A hint that does not apply is greyed, never hidden. No boxed buttons |
 
 **Hotbar: 10 keys, not 8.** The game has 10 hotbar keys (`inventory.gd` `HOTBAR_KEYS`), so 8 slots of 76 would leave keys 9 and 0 nowhere. The key number is Cinzel Bold 18 in the top left corner with a 1 px dark outline.
 
@@ -74,15 +74,15 @@ Performance on weak machines is a separate job: a world render scale option for 
 
 | Part | x | y | w | h | Detail |
 |---|---|---|---|---|---|
-| Name plate | centred on 960 | 30 | text + 60 | 46 | The character's first name engraved; the rest ("of the Ford") under it in dim 18 |
-| Gear, left | 756 | 110 | 96 | 534 | Head, Body, Legs, Feet: 4 slots of 96, evenly spaced |
-| Figure | 862 | 100 | 196 | 550 | The live 3D character, slightly larger than the slots' column; see 6.6 |
-| Gear, right | 1068 | 110 | 96 | 534 | Hands, Back, Right hand, Left hand |
+| Name plate | centred on 960 | 30 | text + 60, at most 368 | 46 | The character's full name engraved ("ALDWIN OF THE FORD"). It steps down 34, 30, 26 px and letter-spacing 3 to 2 until it fits; no line under it |
+| Gear, left | 756 | 96 | 96 | 534 | Head, Body, Legs, Feet: 4 slots of 96, evenly spaced |
+| Figure | 862 | 86 | 196 | 550 | The live 3D character wearing what is equipped and holding what is in the hands (the mockup shows the linen shirt, hide boots, the backpack's straps and the stone axe in hand); see 6.6. Caption under it, dim 18: "Live character, as equipped" |
+| Gear, right | 1068 | 96 | 96 | 534 | Hands, Back, Right hand, Left hand |
 | Stats | 756 | 690 | 408 | 312 | An ornament rule above, then six rows 52 apart: a 26 px engraved glyph, the name (18), a 10 px bar from x 888 to 1076, the value right-aligned (SemiBold 18, outlined) |
 
 The 8 gear slots are the 6 wear slots in `items.json` (head, body, legs, feet, hands, back) plus the two hands. There is no belt slot in the game, so none is drawn. An empty gear slot shows an engraved silhouette of what goes there (helmet, tunic, trousers, boot, glove, pack, a hand axe, a shield) and no word.
 
-The six stats are the six bars Dave approved on 21 Oct (Health, Exertion, Energy, Warmth, Food, Water). They are the only bars. Weight lives in the pack header, not here.
+The six stats are the six bars Dave approved on 21 Oct (Health, Exertion, Energy, Temperature, Food, Water), named as the game names them (Dave, 04:25 UTC: "the actual traits are Exertion and Energy"). They are the only bars. Weight lives in the pack header, not here.
 
 ### 4.3 Craft (inside x 1226 to 1876)
 
@@ -100,6 +100,8 @@ The six stats are the six bars Dave approved on 21 Oct (Health, Exertion, Energy
 | · Needs | 1504 | 430 | 360 | 170 | "Needs" (Cinzel 22, small caps) and a gold rule; requirement wells of 80, 16 apart (4 fit); the item name under each (18) and **have / need** (SemiBold 18, outlined; red only when short). A 22 px engraved chest glyph in the top right of a well whose stock comes from a nearby chest. An item with no icon yet shows the missing-icon tile (art brief row 27) |
 | · Quantity | 1504 | 618 | 360 | 44 | "Make", −, the number in a well, +, "Most" |
 | · Shortfall line | 1504 | 676 | 360 | 24 | Red, only when something is short, saying what will happen |
+| · Made at | 1504 | 716 | 360 | 60 | Head "Made at" (Cinzel 22, small caps) with a gold rule; then the station's 22 px engraved glyph and its name: "By hand, anywhere", or "Campfire, within 3 m" (from the recipe's `station` and `station_level`) |
+| · Used in | 1504 | 790 | 360 | 60 | Head "Used in" with a gold rule; then up to 2 recipe names that take this item (as a need, or kept as their tool), SemiBold 18 gold, underlined, clickable to select that recipe, and "+N more" in dim. For the stone axe: Log seat · Small wooden blocks · +1 more. A recipe with no uses leaves this block out and the card shrinks |
 | · Queue | 1504 | 876 | 360 | 56 | An ornament rule above; "Making" and up to 5 queued items as 56 px wells; the first has a 3 px gold progress arc. Click one to cancel it |
 | · Craft button | 1504 | 958 | 360 | 64 | Cast brass with "CRAFT" engraved (Cinzel Bold 26, letter-spaced 4) and a faint warm glow round it when you can make the item; hold for the ring (left end) to make "Most" |
 
@@ -193,7 +195,7 @@ The backdrop over the world is the one place anything shows through, and only in
 | Health | heart | #A8452F |
 | Exertion | lightning bolt | #C08F3E |
 | Energy | crescent moon | #9C7B52 |
-| Warmth | flame | #C86F35 |
+| Temperature | flame | #C86F35 |
 | Food | loaf | #A88A44 |
 | Water | drop | #6F8A86 (weathered pewter) |
 
@@ -307,23 +309,14 @@ Steps, each its own PR through the gate:
 4. **The HUD hotbar strip** in the new slot art.
 5. **The painted art** as Kathleen's art jobs finish (art brief rows 1 to 27), then the icons (row 28).
 
-### 12.1 Implementation notes from the v2 review (9 Nov, 04:23 UTC)
+### 12.1 Notes from Dave's review (9 Nov, 04:25 UTC)
 
-These change the build, not the mockup. Each one goes into step 3 (the new window) unless it says otherwise.
-
-1. **No dead space in the recipe card.** Under the shortfall line (y 676 to 860) add two blocks, each with a Cinzel 22 small-caps head and a gold rule like "Needs":
-   - **Made at**: the station's 20 px glyph and name ("By hand", or "Campfire, within 3 m"), from the recipe's `station` and `station_level`.
-   - **Used in**: up to 3 recipe names that take the made item as a need, from `recipes.json` `needs` ("Lean-to, Bow drill, +4 more"). Clicking a name selects that recipe.
-   - If a recipe has neither, the card ends there and the queue and Craft button move up under it, so the card shrinks rather than showing a gap.
-   - The data has no "unlocks" field today (the skill web in `skill_web.gd` unlocks skills, not recipes). So "Unlocks" is not shown until the data has it.
-2. **Stat names in plain words, all reading "full is good".** The game's six vitals are health, exertion, energy (sleep), warmth, food and water (`character_screen.gd` line 232). "Exertion" next to "Energy" reads as the same thing.
-   - Show **Stamina** = 100 − exertion. It is full when rested and drains as you work; the faint at full exertion is the same rule.
-   - Show **Rest** for energy. It is full when slept, and the exhaustion sleep comes when it runs out.
-   - The labels and the direction of the Stamina bar change; the server values do not. Warmth keeps its name (the character screen says "Temperature"; both become "Warmth").
-   - The HUD bars get the same names in step 1.
-3. **Full name on the brass plate.** The plate shows the character's whole name ("Aldwin of the Ford"), letter-spaced 2 instead of 3 if it is long. The plate grows to the text + 60, up to the panel's inside width (408). A longer name drops to Cinzel Bold 30, then 26. The separate "of the Ford" line goes, and the gear columns move up 14 px.
-4. **The tenth hotbar key is shown as 0,** because 0 is the key you press. The digit keys 1 to 9 and 0 are fixed to the hotbar and cannot be rebound (`key_bindings.gd` `refusal`). The first time the window opens, the key hints add "**1–0** put on hotbar" while pointing at an item.
-5. **The centre column is the live character model wearing what is equipped.** It uses the character screen's SubViewport, re-dressed when a gear slot changes, with the light rig in 6.6. It is never a flat silhouette. The mockup's figure is a stand-in only.
+Dave: *"if we skip putting it in the mockup it won't get fixed later"*. So each note is drawn in the v3 mockup and written into the tables above:
+1. **No dead space in the recipe card:** "Made at" and "Used in" (4.3). The data has no "unlocks" field (the skill web in `skill_web.gd` unlocks skills, not recipes), so "Unlocks" is not shown.
+2. **Stat names stay the game's own:** Exertion and Energy (Dave: "the actual traits are Exertion and Energy, we are making a change in the way gamers see it"), and Temperature as the character screen already says. Only the colours and glyphs change (6.4).
+3. **The full name on the brass plate,** no line under it (4.2).
+4. **The tenth hotbar key is shown as 0,** because 0 is the key you press; the digit keys 1 to 9 and 0 are fixed to the hotbar and cannot be rebound (`key_bindings.gd` `refusal`). The key-hint row says "1–0 Put on hotbar" (4.1).
+5. **The centre column is the live character model wearing what is equipped,** from the character screen's SubViewport, re-dressed when a gear slot changes, with the light rig in 6.6. It is never a flat silhouette; the mockup's figure is a stand-in that shows where the gear goes.
 
 ## 13. Audit: screens with sizes fixed for the 2880 x 1620 canvas
 

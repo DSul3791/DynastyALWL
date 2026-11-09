@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Inventory and crafting redesign mockup, version 2 (docs/ui/inventory_crafting_redesign.md; Kathleen, 9 Nov 2026).
+# Inventory and crafting redesign mockup, version 3 (docs/ui/inventory_crafting_redesign.md; Kathleen, 9 Nov 2026).
 # Draws the measured layout on the 1920 x 1080 design canvas (Dave, 9 Nov 2026) from the numbers below and nothing else, so the
 # picture and the doc cannot drift apart. Every coordinate is a 1920 x 1080 canvas px; the picture is drawn at twice that and
 # scaled down, so edges are smooth.
 #
 #   python3 docs/ui/mockup/inventory_redesign_mockup.py --out DIR [--icons item_icon_sheet.png] [--measured]
 #
-# Writes DIR/inventory_redesign_1920_v2.png (pack, you, craft by hand). --measured also writes a copy with every box outlined.
+# Writes DIR/inventory_redesign_1920_v3.png (pack, you, craft by hand). --measured also writes a copy with every box outlined.
 # --icons: the icon bake sheet (tools/icon_bake.gd --sheet; NEEDS_PAINTING.txt beside it); its icons stand in for the painted ones.
 
 import argparse
@@ -51,7 +51,7 @@ ENGRAVE = (201, 168, 105)        # #C9A869 engraved glyphs
 GHOST = (74, 60, 46)             # #4A3C2E empty gear silhouettes
 OUTLINE = (10, 6, 4)             # #0A0604 outline on every number
 STAT_FILL = {"Health": (168, 69, 47), "Exertion": (192, 143, 62), "Energy": (156, 123, 82),
-             "Warmth": (200, 111, 53), "Food": (168, 138, 68), "Water": (111, 138, 134)}
+             "Temperature": (200, 111, 53), "Food": (168, 138, 68), "Water": (111, 138, 134)}
 WEAR_GOOD = (143, 163, 90)       # #8FA35A
 
 # ---- type (doc section 6.3; nothing under 18) ----
@@ -82,9 +82,9 @@ L = {
     "pack.info": (44, 784, 694, 1036),
     "pack.keys": (44, 1000, 694, 1032),
     "you.plate": (960, 30, 0, 76),          # centred
-    "you.gear_left": (756, 110, 852, 644),
-    "you.figure": (862, 100, 1058, 650),
-    "you.gear_right": (1068, 110, 1164, 644),
+    "you.gear_left": (756, 96, 852, 630),
+    "you.figure": (862, 86, 1058, 636),
+    "you.gear_right": (1068, 96, 1164, 630),
     "you.stats": (756, 690, 1164, 1002),
     "craft.plate": (1254, 30, 0, 76),
     "craft.tabs": (1226, 100, 1274, 688),
@@ -98,6 +98,8 @@ L = {
     "craft.needs": (1504, 430, 1864, 600),
     "craft.qty": (1504, 618, 1864, 662),
     "craft.short": (1504, 676, 1864, 700),
+    "craft.made_at": (1504, 716, 1864, 776),
+    "craft.used_in": (1504, 790, 1864, 850),
     "craft.queue": (1504, 876, 1864, 932),
     "craft.button": (1504, 958, 1864, 1022),
 }
@@ -481,10 +483,16 @@ def panel(cv, box):
         brass_corner(cv, cx, cy, fx, fy)
 
 
-def title_plate(cv, box, s, centred=False):
-    # a cast brass plate behind the panel name: 30 px of brass each side of the letter-spaced title
+def title_plate(cv, box, s, centred=False, room=10000):
+    # a cast brass plate behind the panel name: 30 px of brass each side of the letter-spaced title;
+    # a long name (a character's full name) steps down 34, 30, 26 px and letter-spacing 3 to 2 until it fits the room
     x0, y0, _, y1 = box
-    w = cv.text_width(s, T_PANEL, 3) + 60
+    spec, track = T_PANEL, 3
+    for size, tr in ((34, 3), (30, 2), (26, 2)):
+        spec, track = (T_PANEL[0], size), tr
+        if cv.text_width(s, spec, track) + 60 <= room:
+            break
+    w = cv.text_width(s, spec, track) + 60
     if centred:
         x0 -= w / 2
     x1 = x0 + w
@@ -502,8 +510,8 @@ def title_plate(cv, box, s, centred=False):
         cv.d.ellipse(sbox((rx - 3.5, cy - 3.5, rx + 3.5, cy + 3.5)), fill=rgba(BRASS_DARK))
         cv.d.ellipse(sbox((rx - 2.5, cy - 2.5, rx + 1.5, cy + 1.5)), fill=rgba(BRASS_HI))
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2 + 1
-    cv.text((cx, cy + 1), s, T_PANEL, rgba((250, 226, 160), 150), "mm", track=3)
-    cv.text((cx, cy), s, T_PANEL, rgba(INK), "mm", track=3)
+    cv.text((cx, cy + 1), s, spec, rgba((250, 226, 160), 150), "mm", track=track)
+    cv.text((cx, cy), s, spec, rgba(INK), "mm", track=track)
 
 
 def raised(cv, box, r=5, lit=False, shadow=True):
@@ -541,10 +549,11 @@ def well(cv, box, r=4, selected=False, hover=False):
 
 
 def keycap(cv, x, y, key):
-    w = max(26, cv.text_width(key, T_KEY) + 14)
+    spec = T_KEY if key.isalpha() else ("EBGaramond-SemiBold.ttf", 18)   # Cinzel's 1 reads as I, so digits use EB Garamond
+    w = max(26, cv.text_width(key, spec) + 14)
     raised(cv, (x, y, x + w, y + 26), 4, shadow=False)
     cv.line([(x + 3, y + 26.5), (x + w - 3, y + 26.5)], rgba(OUTLINE), 1.5)
-    cv.text((x + w / 2, y + 13), key, T_KEY, rgba(HEADING), "mm")
+    cv.text((x + w / 2, y + 13), key, spec, rgba(HEADING), "mm")
     return w
 
 
@@ -663,10 +672,10 @@ def draw_pack(cv):
     # the actions as key hints on the item strip, not boxed buttons
     k = L["pack.keys"]
     x = k[0] + 4
-    for key, lab, ok in [("E", "Use", True), ("D", "Drop", True), ("S", "Split", False), ("R", "Repair", True)]:
+    for key, lab, ok in [("E", "Use", True), ("D", "Drop", True), ("S", "Split", False), ("R", "Repair", True), ("1–0", "Put on hotbar", True)]:
         x += keycap(cv, x, k[1] + 2, key) + 8
         cv.text((x, k[1] + 15), lab, T_BODY, rgba(CREAM if ok else DISABLED), "lm")
-        x += cv.text_width(lab, T_BODY) + 28
+        x += cv.text_width(lab, T_BODY) + 24
 
 
 def figure(cv, box):
@@ -709,18 +718,40 @@ def figure(cv, box):
     lit = Image.new("RGBA", m.size, (255, 236, 200, 255))
     lit.putalpha(ImageChops.multiply(shade, m))
     body.putalpha(m)
-    body.alpha_composite(lit)
     rim = ImageChops.subtract(m, ImageChops.offset(m, -sc(3), 0)).filter(ImageFilter.GaussianBlur(S))
     rl = Image.new("RGBA", m.size, (255, 214, 140, 255))
     rl.putalpha(rim.point(lambda v: int(v * 0.85)))
+    # what is equipped shows on the model: the linen shirt, the hide boots, the backpack's straps, the axe in hand
+    def region(y_top, y_bottom, x_left=0, x_right=196):
+        r = Image.new("L", m.size, 0)
+        ImageDraw.Draw(r).rectangle((sc(x_left), sc(y_top), sc(x_right), sc(y_bottom)), fill=255)
+        return ImageChops.multiply(r, m)
+
+    def dress(mask, top, bottom):
+        cloth = gradient(m.width, m.height, top, bottom)
+        cloth.putalpha(mask)
+        body.alpha_composite(cloth)
+
+    shirt = ImageChops.lighter(region(96, 254, 58, 138), region(98, 180, 30, 166))
+    dress(shirt, (186, 164, 120), (112, 96, 70))
+    dress(region(470, 532), (112, 76, 48), (58, 38, 24))
+    sg = ImageDraw.Draw(body)
+    for a, b in (((70, 100), (80, 236)), ((126, 100), (116, 236))):
+        sg.line((sc(a[0]), sc(a[1]), sc(b[0]), sc(b[1])), fill=(74, 46, 26, 255), width=sc(8))
+    sg.line((sc(64), sc(236), sc(132), sc(236)), fill=(74, 46, 26, 255), width=sc(7))
+    body.alpha_composite(lit)
+    body.putalpha(ImageChops.multiply(body.getchannel("A"), m))
     body.alpha_composite(rl)
     cv.paste(body, (x0, y0))
+    if "stone_axe" in ICONS:
+        axe = ICONS["stone_axe"].resize((sc(112), sc(112)), Image.LANCZOS).rotate(70, resample=Image.BICUBIC)
+        cv.paste(axe, (x0 + 100, y0 + 176))
+    cv.text((cx, y1 + 14), "Live character, as equipped", T_BODY, rgba(DIM), "mm")
 
 
 def draw_you(cv):
     panel(cv, YOU)
-    title_plate(cv, L["you.plate"], "ALDWIN", centred=True)
-    cv.text(((YOU[0] + YOU[2]) / 2, 94), "of the Ford", T_BODY, rgba(DIM), "mm")
+    title_plate(cv, L["you.plate"], "ALDWIN OF THE FORD", centred=True, room=YOU[2] - YOU[0] - 2 * (FRAME + AIR) - 40)
     figure(cv, L["you.figure"])
     gs = 96
     step = (L["you.gear_left"][3] - L["you.gear_left"][1] - gs) / 3
@@ -737,12 +768,12 @@ def draw_you(cv):
     st = L["you.stats"]
     ornament_rule(cv, st[0] + 8, st[2] - 8, st[1] - 20)
     vals = [("Health", "heart", 0.92, "92"), ("Exertion", "bolt", 0.18, "18 %"), ("Energy", "moon", 0.74, "74"),
-            ("Warmth", "flame", 0.66, "36.8 °C"), ("Food", "bread", 0.81, "81 %"), ("Water", "drop", 0.58, "58 %")]
+            ("Temperature", "flame", 0.66, "36.8 °C"), ("Food", "bread", 0.81, "81 %"), ("Water", "drop", 0.58, "58 %")]
     for i, (nm, gl, v, label) in enumerate(vals):
         y = st[1] + i * 52
         cv.paste(glyph(gl, 26, ENGRAVE), (st[0] + 2, y + 6))
         cv.text((st[0] + 40, y + 19), nm, T_BODY, rgba(CREAM), "lm")
-        bar(cv, (st[0] + 132, y + 14, st[2] - 88, y + 24), v, STAT_FILL[nm])
+        bar(cv, (st[0] + 150, y + 14, st[2] - 88, y + 24), v, STAT_FILL[nm])
         number(cv, (st[2], y + 19), label, T_BODY_SB, CREAM, "rm")
 
 
@@ -819,6 +850,25 @@ def draw_craft(cv):
     cv.text(((q[0] + 260 + q[2]) / 2, (q[1] + q[3]) / 2), "Most", T_BODY_SB, rgba(CREAM), "mm")
     sh = L["craft.short"]
     cv.text((sh[0], (sh[1] + sh[3]) / 2), "Short 1 twine: Craft makes it first from fibre.", T_BODY, rgba(BAD), "lm")
+    # Made at, and Used in (recipes that take this item; the stone axe is kept as their tool)
+    for key, head in (("craft.made_at", "Made at"), ("craft.used_in", "Used in")):
+        bx = L[key]
+        cv.text((bx[0], bx[1]), head, T_HEAD, rgba(HEADING))
+        hw = cv.text_width(head, T_HEAD)
+        cv.line([(bx[0] + hw + 12, bx[1] + 14), (bx[2], bx[1] + 14)], rgba(GOLD_LINE, 170), 1)
+    ma = L["craft.made_at"]
+    cv.paste(glyph("glove", 22, ENGRAVE), (ma[0], ma[1] + 34))
+    cv.text((ma[0] + 30, ma[1] + 45), "By hand, anywhere", T_BODY, rgba(CREAM), "lm")
+    ui = L["craft.used_in"]
+    x = ui[0]
+    for i, name in enumerate(["Log seat", "Small wooden blocks"]):
+        cv.text((x, ui[1] + 45), name, T_BODY_SB, rgba(HEADING), "lm")
+        w = cv.text_width(name, T_BODY_SB)
+        cv.line([(x, ui[1] + 55), (x + w, ui[1] + 55)], rgba(GOLD_LINE), 1)
+        x += w
+        cv.text((x + 7, ui[1] + 45), "·", T_BODY, rgba(DIM), "lm")
+        x += 20
+    cv.text((x, ui[1] + 45), "+1 more", T_BODY, rgba(DIM), "lm")
     qu = L["craft.queue"]
     ornament_rule(cv, qu[0] + 4, qu[2] - 4, qu[1] - 16)
     cv.text((qu[0], (qu[1] + qu[3]) / 2), "Making", T_BODY, rgba(DIM), "lm")
@@ -871,11 +921,11 @@ def main():
     draw_you(cv)
     draw_craft(cv)
     out = cv.img.resize((W, H), Image.LANCZOS).convert("RGB")
-    out.save(os.path.join(a.out, "inventory_redesign_1920_v2.png"), optimize=True)
+    out.save(os.path.join(a.out, "inventory_redesign_1920_v3.png"), optimize=True)
     if a.measured:
         m = out.copy()
         measured(m)
-        m.save(os.path.join(a.out, "inventory_redesign_1920_v2_measured.png"), optimize=True)
+        m.save(os.path.join(a.out, "inventory_redesign_1920_v3_measured.png"), optimize=True)
 
 
 if __name__ == "__main__":
