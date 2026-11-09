@@ -53,8 +53,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
-const WaterHubScript := preload("res://src/water/water_hub.gd")
-const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the default since 1 Nov 2026; --water-old runs the old hub (src/water) instead
+const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -889,7 +888,7 @@ func _start_water() -> void:
 	# The rivers and lakes start FULL, from the baked settled water of each tile (water/tile_X_Z.water), so a player never waits for the springs: changed 30 Oct 2026 after the
 	# play-test (a dry start needed 6 simulated hours before the rivers ran and left broken patches meanwhile; Owner's old choice of 2026-10-18). The --dry-water and
 	# --settled-water switches are gone (9 Nov 2026, no flags). The hub runs the starter tile and the neighbours its rivers cross into.
-	water_live = WaterHubScript.new() if OS.get_cmdline_user_args().has("--water-old") else WaterHub2Script.new()
+	water_live = WaterHub2Script.new()
 	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, false)
 
 	if water_live.has_method("set_store"):

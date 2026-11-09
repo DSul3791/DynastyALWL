@@ -1,11 +1,10 @@
 extends SceneTree
 
 # Dynasty water stage d: the swap hub on the real starter tile (Sonny, 31 Oct 2026). The window starts from the baked settled water, holds it at the border, and after 3 simulated minutes the published levels
-# still match the baked ones closely outside nothing: the rivers have not vanished or flooded. Also the same API as the old hub, so the server can swap constructors.
+# still match the baked ones closely outside nothing: the rivers have not vanished or flooded. Also the API the server calls is all there.
 #   godot --headless --path . --script res://src/water2/test_water_hub2.gd
 
 const Hub2 := preload("res://src/water2/water_hub2.gd")
-const Hub := preload("res://src/water/water_hub.gd")
 const TileTerrainData := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const TF := preload("res://src/worldgen/tile/tile_file.gd")
 
@@ -22,7 +21,7 @@ func _check(ok: bool, what: String) -> void:
 func _init() -> void:
 	# the API the server calls is all there
 	for method in ["setup", "set_centre", "set_live", "take_updates", "data_of", "sim_of", "stats", "step_rate", "set_runoff", "dig", "fill", "stop"]:
-		_check(Hub2.new().has_method(method) and Hub.new().has_method(method), "both hubs have %s" % method)
+		_check(Hub2.new().has_method(method), "the hub has %s" % method)
 
 	var path: String = "res://worlds/base_world/tiles/tile_3_4.tile"
 	var head: Dictionary = TF.read_header(path)
