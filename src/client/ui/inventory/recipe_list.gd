@@ -225,6 +225,64 @@ func _build_tabs() -> Control:
 	return tabs
 
 
+func _recipe_shown(r: Dictionary) -> bool:
+	return RecipeFilter.shown(r, _recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
+
+
+func _select_recipe(number: int) -> void:
+	view._selected_recipe = number
+	view._refresh()
+
+
+# Queue the chosen recipe `quantity` times. The server takes the ingredients now and makes the crafts in order.
+func craft_selected() -> void:
+	if view._selected_recipe == 0:
+		return
+
+	view._start_craft(view._selected_recipe, chosen_quantity())
+
+
+# The quantity box's number, counting digits typed but not yet confirmed with Enter (BUG-025).
+func chosen_quantity() -> int:
+	if _quantity == null:
+		return 1
+
+	_quantity.apply()
+	return clampi(int(_quantity.value), 1, 20)
+
+
+# The Admin heading at the bottom of the list (Dave 2026-10-22): the building pieces to test plus the other placeables, free and unlocked. Click one to get it; put it in a quick key
+# and it is the usual placement blueprint (left click places one). Shown while the admin check is off (local play) .
+func _add_admin_builds() -> void:
+	if AdminScript.check_enabled():
+		return
+
+	var head: Label = Label.new()
+	head.text = "Admin"
+	view._style(head, view.BODY_PX)
+	head.modulate = Color(1.0, 0.8, 0.4)
+	view._recipe_list.add_child(head)
+
+	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit", "oven_kit"]
+	admin_ids.sort_custom(func(a, b): return view.table.name_of(view.table.number_of(str(a))).naturalnocasecmp_to(view.table.name_of(view.table.number_of(str(b)))) < 0)
+
+	for id in admin_ids:
+		var number: int = view.table.number_of(id)
+
+		if number == 0 or bool(view.table.entry(str(id)).get("retired", false)):   # a retired kit cannot be placed (Dave 5 Nov 2026: the admin Woven chest did nothing): the hammer's blueprints build those
+			continue
+
+		var entry: Button = Button.new()
+		entry.text = view.table.name_of(number)
+		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		entry.custom_minimum_size = Vector2(0.0, view._px(64))
+		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		entry.modulate = Color(1.0, 0.85, 0.5)
+		view._style(entry, view.BODY_PX)
+		entry.pressed.connect(func(): view.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, 1, Vector3.ZERO))
+		view._recipe_list.add_child(entry)
+
+
 # The recipe card (redesign 4.3): the made item in a lit well with its name, kind and time; its description and stats; Needs as
 # wells with have / need; Make (quantity); the shortfall line; Made at; Used in; the queue sits under the list; then the brass Craft button.
 func _refresh_detail() -> void:
