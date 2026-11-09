@@ -33,10 +33,12 @@ def _odd(m, dx):
 
 
 def snowline(P):
-    """The stadial snowline the cirques worked at: glacial.ela_m plus the last era's offset (0 for the 100 kyr world)."""
+    """The stadial snowline the cirques worked at: glacial.ela_m plus the lowest era offset with ice time (0 for rule 6's
+    history, whose 100 kyr world sits at ela_m). 8 Nov 2026: this was the last era's offset, which for an LR04 history
+    (lr04_history.py) is the Holocene's, about 980 m: probe L found no summit above it and checked none."""
     GL = P['glacial']
-    hist = GL.get('history') or [{}]
-    return float(GL['ela_m']) + float(hist[-1].get('ela_offset_m', 0.0))
+    hist = [e for e in (GL.get('history') or []) if float(e.get('active_years', 1.0)) > 0.0] or [{}]
+    return float(GL['ela_m']) + min(float(e.get('ela_offset_m', 0.0)) for e in hist)
 
 
 def summits(landform, sea, dx, min_m, window_m=1000.0):

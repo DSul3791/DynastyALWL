@@ -85,6 +85,8 @@ The glacial history (`params.json` `glacial`), with the glacial stream-power mod
 
 `python tools/watershed/plots.py glacial RUN_DIR` redraws `glacial.png`. `python tools/watershed/glacial.py report GEOLOGY_DIR RUN_DIR` reads a saved run in seconds and writes `glacial_report.json`: where the ice cut most and into what rock, and where the ground is steepest (the same report is in the manifest's summary under `where`).
 
+`python tools/watershed/glacial.py INPUTS_DIR GEOLOGY_DIR B1_DIR OUT_DIR PARAMS.json --start RUN_DIR/glacial_cycle_NN.npz` is a probe: it begins the history from a saved cycle instead of B1's ground and runs the params file's `glacial.history` (a few cycles), to compare settings from the same state (`docs/water/glacial_summit_fix.md`). It is not a record run. `glacial.swath_below_ice_surface` keeps a glacier's swath below its own ice surface, so trough ice is not laid on the walls above it, and `glacial.balance_ratio` sets the melt per metre below the snowline over the gain per metre above it (measured 1.56). Both are off by default. `python tools/watershed/test_glacial.py` runs the swath's unit tests (numpy and numba, a few seconds).
+
 Check `glacial.png` and the summary for:
 - ice on the high ground only, thickest in the big valley heads, with tongues down the main valleys (`ice_max_km2`, `ice_thickest_m`, `lowest_ice_m`);
 - U-shaped troughs where the ice was, and V-shaped valleys left where it was not;
@@ -183,3 +185,5 @@ Look for: `closed_cells_outside_lakes` near 0; `summit_8m` within a metre of `su
   It writes `peaks_glacial.json` and `.md`.
 
 Each line reads PASS, FAIL or N/A with its numbers. A run of one cold stage has no cycles, so lines 8 to 10 read N/A. Settings are in `params.json` `peaks`. `python tools/watershed/test_peaks.py` runs its unit tests on small synthetic peaks (numpy and scipy only, a few seconds).
+
+`lr04_history.py` writes `glacial.history` from the LR04 benthic d18O stack (`data/lr04_stack.csv`, Lisiecki and Raymo 2005). The snowline is scaled between today's line (`glacial.today_ela_m`) and the stadial line (`glacial.ela_m`). It reads a params file and writes another, and runs no model (`docs/water/glacial_summit_fix.md`, probe L).
