@@ -10,11 +10,11 @@ The admin spyglass is built now. The three player tiers come later, from this pa
 
 | Tier | Name | Materials (first pass) | Zoom | Focus | Durability, weight | What it tells you |
 |---|---|---|---|---|---|---|
-| 1 | Spyglass | wooden tube, leather strap, 1 glass lens | 3× fixed | fixed: a soft blur closer than 20 m | 200 uses, 0.6 kg | nothing |
-| 2 | Brass spyglass | bronze or copper tube, leather, 2 glass lenses | 2× to 6× on the wheel | variable: sharp at any range | 600 uses, 0.4 kg | nothing |
-| 3 | Fine spyglass | steel tube, tanned leather grip, 3 ground lenses | 2× to 12× on the wheel | variable | 2,000 uses, rugged (no break on a fall), 0.35 kg | the animal at the centre: its name, level and health |
+| 1 | Spyglass | wooden tube, leather strap, 1 crystal lens | 3× fixed | fixed: a soft blur closer than 20 m | 200 uses, 0.6 kg | nothing |
+| 2 | Brass spyglass | bronze or copper tube, leather, 2 glass lenses (or crystal) | 2× to 6× on the wheel | variable: sharp at any range | 600 uses, 0.4 kg | nothing |
+| 3 | Fine spyglass | steel tube, tanned leather grip, 3 ground glass lenses (or crystal) | 2× to 12× on the wheel | variable | 2,000 uses, rugged (no break on a fall), 0.35 kg | the animal at the centre: its name, level and health |
 
-- **Glass.** There is no glass in the game yet. Lenses need glass from sand fired in the kiln/smelter, which is items review stage 2. So tier 1 waits for glass, or uses a polished rock-crystal lens found as a rare drop. Dave to pick.
+- **Lenses (settled 9 Nov 2026).** Tier 1 uses a lens of polished clear quartz, a "crystal lens". It is a rare find when breaking rock and gravel, so a player can make a spyglass early, with no developer gate. Tiers 2 and 3 use kiln glass once glass arrives (items review stage 2: sand fired in the kiln/smelter). A crystal lens is still allowed in any tier, as an alternative with its own character: a little less zoom and a faint tint, but it never cracks. That follows Dave's "no stupid developer rules".
 - **Use.** Hold the spyglass in hand. Right mouse looks through it, and the wheel zooms on tiers 2 and 3. Looking through it narrows the field of view and slows the mouse by the same factor. A dark round vignette frames the view. Each look costs one use of durability.
 - **Animal range.** Animals are only sent within 120 m of a player, and only exist out to about 300 m. While looking, the tiers raise that: tier 1 to 150 m, tier 2 to 220 m, tier 3 to 300 m.
 - **Tier 3 readout.** It needs the server, as the admin version below does, but without the admin check.
