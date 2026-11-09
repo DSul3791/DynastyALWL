@@ -63,10 +63,10 @@ This is MikeW's rule, with fixed numbers and no flag.
 - `test_animals_drink.gd` without its flag-off check.
 - A new check in it on the client cycle (`drink_looking`): over 60 s the head comes up now and then, each look lasts 1.5 to 3 s, and two ids look up at different moments.
 
-**Dino, in-world:** a dusk run at a lake edge on tile 3,4 using the look rig.
-- Dawn is at 05:00, so the run uses `--hour 6`.
-- It needs a deer and a horse at the bank: a head-down drink with head lifts in between.
-- Send the `role 21 plays` lines for the drinking species.
+**Dino, in-world:** the job note is `/mnt/project-files/animals_drink_check_job.md`.
+- The look rig draws a row of the 14 drinking species with the new `--shot-animal-role=21` option in `shot_runner.gd`. That option also logs which clip each species played.
+- The row stands at a lake edge on tile 3,4.
+- The log's `role 21 plays <clip>` lines show each model's pick, and the pictures show the poses.
 
 ## 5. Later, not in this change
 
