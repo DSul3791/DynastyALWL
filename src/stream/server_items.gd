@@ -13860,7 +13860,11 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 	if now - int(_last_drink.get(peer, -100000)) < int(thirst.get("drink_pace_ms", 900)):
 		return
 
-	if not water_near.is_valid() or not bool(water_near.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))):
+	var shown: bool = water_near.is_valid() and bool(water_near.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0))))
+
+	# The record's water counts too where the settled water does not show it (docs/design/drink_prompt_design.md (a)): a ground spring head, a narrow
+	# brook. The rule below then says whether it runs (_drink_source_ok: "The bed is dry", frozen, salt).
+	if not shown and not _record_water_near(peer, thirst):
 		if _salt_only(peer, thirst):
 			_say(peer, str(thirst["sources"].get("say_salt", "Salt water. It would only make you thirstier.")))   # the sea (design section 2)
 		else:
@@ -13935,6 +13939,18 @@ func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
 		return false
 
 	return true
+
+
+# With thirst.sources on, a spring or brook row of the record's within reach (water_source): water to drink at, or to be told is dry, even where the
+# settled water does not show it (a spring head under its bushes, a brook narrower than an 8 m cell).
+func _record_water_near(peer: int, thirst: Dictionary) -> bool:
+	var cfg: Dictionary = thirst.get("sources", {})
+
+	if not bool(cfg.get("enabled", false)) or not water_source.is_valid():
+		return false
+
+	var rows: Array = water_source.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
+	return rows.any(func(row): return str((row as Dictionary).get("kind", "")) in ["spring", "brook"])
 
 
 # With thirst.sources on, no drinking water within reach (water_near) but salt water is: the sea, which the live sim does not hold.

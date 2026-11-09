@@ -1729,12 +1729,24 @@ func _flora_changed(chunk: Vector2i) -> void:
 		_water_changed_for(peer, chunk, water_bytes)
 		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), water_bytes, true)
 		_send_stripped(peer, chunk)
+		_send_drink_points(peer, chunk)
 
 		if not water_cached:
 			_queue_water(peer, chunk)
 
 
 # The plants of a chunk that are bare this season, for a client that just got the chunk (berry picking keeps the bush standing).
+# The record's drink points in the chunk (DrinkRules.chunk_points), when it has any: the client's E-to-drink prompt at a spring head or a narrow
+# brook the settled water does not show (docs/design/drink_prompt_design.md (a)).
+func _send_drink_points(peer: int, chunk: Vector2i) -> void:
+	var origin: Vector2 = flora.placer.chunk_origin(chunk)
+	var tile_data = generator.get_tile(generator.tile_of(origin.x + 1.0, origin.y + 1.0))
+	var points: Array = DrinkRulesScript.chunk_points(tile_data, origin, flora.placer.chunk_m)
+
+	if not (points[0] as PackedInt32Array).is_empty() or not (points[1] as PackedFloat32Array).is_empty():
+		net.drink_points.rpc_id(peer, chunk, float(tile_data.spacing_m), points[0], points[1])
+
+
 func _send_stripped(peer: int, chunk: Vector2i) -> void:
 	var home: Vector2i = flora.placer.normalize(chunk)
 	var ids: PackedInt32Array = items.stripped_ids("%d,%d" % [home.x, home.y])
@@ -2437,6 +2449,7 @@ func _process(delta: float) -> void:
 			_water_changed_for(entry[0], entry[1], entry[4])
 			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2], entry[4], entry[5])
 			_send_stripped(entry[0], entry[1])
+			_send_drink_points(entry[0], entry[1])
 			_peers[entry[0]]["flora_bytes"] = int(_peers[entry[0]].get("flora_bytes", 0)) + (entry[2] as PackedByteArray).size()
 			continue
 

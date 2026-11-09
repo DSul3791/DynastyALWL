@@ -72,6 +72,47 @@ static func tile_rows(tile_data, pos: Vector3, reach: float, mean_c: Callable) -
 	return rows
 
 
+# The record's drink points in one flora chunk, for the client's E-to-drink prompt where the settled water shows nothing
+# (docs/design/drink_prompt_design.md (a)): [cells, springs]. cells: PackedInt32Array of (gi, gj, kind) triplets, gi and gj the world sample
+# grid (x = gi * spacing_m), kind 1 + the brook's regime, for every channel sample in the chunk that tile_rows makes a brook (not a lake, the
+# sea or an estuary); springs: PackedFloat32Array of (x, z) pairs, the ground spring heads in the chunk. A client finds a brook by the same
+# nearest-sample rule tile_rows uses, and a spring within reach of its head.
+static func chunk_points(tile_data, origin: Vector2, chunk_m: float) -> Array:
+	var cells: PackedInt32Array = PackedInt32Array()
+	var springs: PackedFloat32Array = PackedFloat32Array()
+
+	if tile_data.placeholder or tile_data.water_class.is_empty():
+		return [cells, springs]
+
+	var spacing: float = float(tile_data.spacing_m)
+
+	if tile_data.has_drink():
+		var n: int = int(tile_data.samples)
+		var i0: int = clampi(ceili((origin.x - tile_data.x0) / spacing), 0, n - 1)
+		var i1: int = clampi(ceili((origin.x + chunk_m - tile_data.x0) / spacing) - 1, 0, n - 1)
+		var j0: int = clampi(ceili((origin.y - tile_data.z0) / spacing), 0, n - 1)
+		var j1: int = clampi(ceili((origin.y + chunk_m - tile_data.z0) / spacing) - 1, 0, n - 1)
+		var gi0: int = roundi(tile_data.x0 / spacing)
+		var gj0: int = roundi(tile_data.z0 / spacing)
+
+		for j in range(j0, j1 + 1):
+			for i in range(i0, i1 + 1):
+				var k: int = j * n + i
+				var regime: int = tile_data.drink_regime_at(k)
+				var cls: int = int(tile_data.water_class[k])
+
+				if regime > 0 and cls != 1 and cls != 2 and cls != 5:
+					cells.append_array([gi0 + i, gj0 + j, 1 + regime])
+
+	for spring in tile_data.ground_springs:
+		var head: Vector3 = spring[0]
+
+		if head.x >= origin.x and head.x < origin.x + chunk_m and head.z >= origin.y and head.z < origin.y + chunk_m:
+			springs.append_array([head.x, head.z])
+
+	return [cells, springs]
+
+
 # {"kind", "temp_c", "frozen"} for the source to drink from, or {"refused": "salt" | "dry"} when only salt or dry beds are in reach, or {}.
 static func pick(cfg: Dictionary, rows: Array, ctx: Dictionary) -> Dictionary:
 	var best: Dictionary = {}
