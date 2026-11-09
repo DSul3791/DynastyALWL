@@ -2,7 +2,7 @@
 
 **Owner:** Steve. The design takes over MikeW's client half (`docs/design/ANIMAL_DRINK.md` on `claude/mikew-eye-placement`, behind `drink_looks`). It reuses his sip and look-round rule and drops the flag.
 **Server half:** `docs/design/animals_at_water_server.md` (#734), merged.
-**Status:** design only. It goes to code once the coordinator has read it. It ships on, with no flag and no protocol change.
+**Status:** approved by the coordinator 9 Nov and built in the same PR. It ships on, with no flag and no protocol change.
 
 ## 1. What the game does today (read from main 439a6371)
 
@@ -17,7 +17,7 @@
 ## 2. What the player will notice
 
 - At dawn and dusk (05:00 to 08:00 and 18:00 to 21:00), most deer and stock walk to the nearest fresh water within 300 m. Each stands 1 to 3 minutes at the bank, as the server design already says. Wolves hang about 15 m back.
-- At the bank the animal **drinks with its head down**. Every 6 to 14 s it **lifts its head to look round** for 1.5 to 3 s, then drinks again. Each animal keeps its own timing, so a herd never lifts its heads together.
+- At the bank the animal **drinks with its head down**. Every 6 to 24 s it **lifts its head to look round** for 1.5 to 3 s, then drinks again. Each animal keeps its own timing, so a herd never lifts its heads together.
 - Nothing else changes, and nothing changes at noon.
 
 ## 3. The change
@@ -44,8 +44,8 @@
 
 This is MikeW's rule, with fixed numbers and no flag.
 - In `_animate_model`, while the state is 21 and the animal is standing (speed under 0.3), a per-animal cycle runs from its `phase`.
-  - The cycle is 6 to 14 s of drinking (role `"21"`), then 1.5 to 3 s of looking (role `"3"`, the alert or breathing clip with the head up).
-  - The cycle's lengths come from a hash of the animal id and the cycle number, so they are the same on every client.
+  - Time is cut into 17 s slots (`DRINK_SLOT_S`). In each slot the head comes up once, starting 6 to 14 s in and lasting 1.5 to 3 s (role `"3"`, the alert or breathing clip with the head up). That gives 6 to 24 s of drinking between looks.
+  - The start and length come from a hash of the animal id and the slot number (`animal_view.drink_looking`), so they are the same on every client.
   - The switch between clips uses the same 0.25 s blend as every clip change.
 - **Built bodies:** the four-legged body (`_animate_quad`) gets `state == 21` beside the graze case. `head_down` is 0.9 while drinking and -0.35 while looking, on the same cycle.
   - The wolf body is left alone, because wolves never drink.
@@ -61,7 +61,7 @@ This is MikeW's rule, with fixed numbers and no flag.
 
 **Tests, on Dave's PC through David4:**
 - `test_animals_drink.gd` without its flag-off check.
-- A new check in it: the client cycle. A stub row in state 21 alternates the drinking and looking roles within 20 s, and two ids do not lift at the same moments.
+- A new check in it on the client cycle (`drink_looking`): over 60 s the head comes up now and then, each look lasts 1.5 to 3 s, and two ids look up at different moments.
 
 **Dino, in-world:** a dusk run at a lake edge on tile 3,4 using the look rig.
 - Dawn is at 05:00, so the run uses `--hour 6`.

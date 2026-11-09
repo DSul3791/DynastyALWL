@@ -2503,7 +2503,7 @@ func _drink_cfg() -> Dictionary:
 
 
 func drink_on() -> bool:
-	return bool(_drink_cfg().get("on", false)) and water_level.is_valid()
+	return water_level.is_valid()
 
 
 func _twilight() -> bool:
