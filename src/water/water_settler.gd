@@ -17,7 +17,7 @@ const RULES_PATH := "res://data/water_settle.json"
 const HollowFinder := preload("res://src/water/hollow_finder.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const DrainageFill := preload("res://src/worldgen/tile/drainage_fill.gd")
-const VERSION := 12               # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 13               # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.
@@ -449,7 +449,7 @@ static func _outlet_flow(data, flow: PackedFloat32Array, side: int, i: int, j: i
 	return best
 
 
-# Thin-film option (data/water_settle.json "film", off by default): a painted river cell that carries real drainage and holds a film of settled water
+# Thin-film option (data/water_settle.json "film", on since v8; v13 9 Nov 2026 sets min_seen_m 0 and min_km2 0, every painted river cell): a painted river cell that carries real drainage and holds a film of settled water
 # (min_seen_m up to depth_m) is raised to depth_m, so a river that runs at 0.03 to 0.1 m is drawn as water, not as a dry gap. The added water is
 # counted (volume m3) and printed by the settle tool; it is a look setting, not a flow result. Returns {"cells", "volume_m3"}.
 static func film_floor(depth: PackedFloat32Array, water_class: PackedByteArray, flow: PackedFloat32Array, spacing_m: float, cfg: Dictionary) -> Dictionary:

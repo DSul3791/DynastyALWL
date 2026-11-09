@@ -4,6 +4,9 @@ extends SceneTree
 # (DESIGN_IDEAS 6.18). Starts from the painted rivers and lakes, adds a spring at
 # each river head (moved to flat high ground close by), runs the simulation, writes
 # worlds/base_world/water/tile_X_Z.water and a flood picture.
+# The film floor before the save (data/water_settle.json "film", v13 9 Nov 2026: min_seen_m 0, min_km2 0) gives every painted river cell
+# 13 cm from head to sea, which refilm_water.gd --film used to do to the saved file afterwards (retired: same bytes, one Godot start less).
+# Many tiles at once, wettest first: tools/settle_tiles.sh (docs/design/settle_speed_design.md).
 #
 #   godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=3,4 [--ticks=7200] (fixed length; without it the stop rule in data/water_settle.json decides, 7200 to 21600) [--rate=10] (m3/s per spring) [--world=DIR] (a scratch copy of the world folder, default res://worlds/base_world) [--multiplier=10] (the server's start flow rate, WaterLive.DEFAULT_RATE) [--picture=PATH]
 
@@ -80,11 +83,14 @@ func _init() -> void:
 	var tolerance: float = float(stop.get("volume_change", 0.002))
 	var quiet_needed: int = int(stop.get("quiet_checks", 2))
 	var spring_rate: float = 0.0
+	var landed_rate: float = 0.0   # what the springs' 5 x 5 patches take in: a patch square off the tile or on the sea gets nothing (WaterCore.step)
 
 	for sp in sim.springs:
 		spring_rate += float(sp[1]) * sim.spring_multiplier
+		landed_rate += float(sp[1]) * sim.spring_multiplier * _patch_share(sim, int(sp[0]), side)
 
 	var supplied: float = 0.0
+	var landed: float = 0.0
 	var supplied_at_check: float = 0.0
 	var start_volume: float = sim.total_volume()      # m3 already (WaterSim.total_volume multiplies by the cell area); the painted lakes and rivers the settle starts from are already stored
 	var last_volume: float = start_volume
@@ -96,6 +102,7 @@ func _init() -> void:
 	while true:
 		var moved: float = sim.step()
 		supplied += spring_rate * sim.dt
+		landed += landed_rate * sim.dt
 		t += 1
 
 		if t % 15 == 0:
@@ -126,20 +133,47 @@ func _init() -> void:
 			break
 
 	var stored: float = sim.total_volume()
-	print("settle done after %d ticks (%s): started with %.0f m3, springs supplied %.0f m3, stored now %.0f m3, to sea/edge %.0f m3, dried %.0f m3, unaccounted %.0f m3" % [t, why, start_volume, supplied, stored, sim.sea_m3, sim.evaporated_m3, start_volume + supplied - stored - sim.sea_m3 - sim.evaporated_m3])
+	print("settle done after %d ticks (%s): started with %.0f m3, springs supplied %.0f m3, stored now %.0f m3, to sea/edge %.0f m3, dried %.0f m3, unaccounted %.0f m3 (%.0f m3 of it fell off the tile or on the sea from the springs' patches)" % [t, why, start_volume, supplied, stored, sim.sea_m3, sim.evaporated_m3, start_volume + supplied - stored - sim.sea_m3 - sim.evaporated_m3, supplied - landed])
 
 	var final_depth: PackedFloat32Array = sim.get_depth()
 	var film: Dictionary = WaterSettler.film_floor(final_depth, data.water_class, WaterSettler.flow_of(data, generator), data.spacing_m, WaterSettler.rules().get("film", {}))
 	print("film floor: %d river cells raised, %.0f m3 added (%s)" % [int(film["cells"]), float(film["volume_m3"]), "on" if bool(WaterSettler.rules().get("film", {}).get("enabled", false)) else "off"])
+	# A depth that rounds to 0 cm is left out of the file. WaterStore keeps cells over 4 mm, so a 4 to 5 mm cell would be stored as 0 cm; refilm_water.gd's
+	# re-save of the loaded file left those out, so this keeps the bytes of settle + refilm (9 Nov 2026), and nothing changes on load (a missing cell is 0).
+	var under_cm: int = 0
+
+	for k in range(final_depth.size()):
+		if final_depth[k] > 0.0 and int(round(final_depth[k] * 100.0)) == 0:
+			final_depth[k] = 0.0
+			under_cm += 1
+
 	var out: String = "%s/water/tile_%d_%d.water" % [WORLD_DIR, tile.x, tile.y]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(WORLD_DIR + "/water"))
 	var saved: int = WaterStore.save(out, side, final_depth)
-	print("saved %d wet cells to %s" % [saved, out])
+	print("saved %d wet cells to %s (%d under half a centimetre left out)" % [saved, out, under_cm])
 
 	if picture != "":
 		_draw(sim, side, picture)
 
 	quit(0)
+
+
+# The share of a spring's water its 5 x 5 patch takes in: the squares inside the tile on land, out of 25 (as WaterCore.step pours it).
+static func _patch_share(sim, centre: int, side: int) -> float:
+	var on_land: int = 0
+	var ci: int = centre % side
+	@warning_ignore("integer_division")
+	var cj: int = centre / side
+
+	for dj in range(-2, 3):
+		for di in range(-2, 3):
+			var i: int = ci + di
+			var j: int = cj + dj
+
+			if i >= 0 and i < side and j >= 0 and j < side and sim.ground[j * side + i] > 0.0:
+				on_land += 1
+
+	return float(on_land) / 25.0
 
 
 func _draw(sim, side: int, path: String) -> void:

@@ -95,7 +95,7 @@ func _init() -> void:
 	# The 3 cm goal (Report 17 C) is for the drawn surface (water_grid smoothing); the simulation's own levels on the 8 m grid are
 	# only guarded against getting worse: median spread across a river and its 90th percentile (measured 2026-10-21: 0.19 and 0.73 m; on the build 810 tiles 25 Oct: 0.30 and 0.80 m, so the median limit is 0.32).
 	@warning_ignore("integer_division")
-	# 31 Oct 2026: the saved files carry the film from head to sea (refilm_water.gd --film: every painted channel holds 13 cm, so a headwater reach is a thin sheet that follows its bed, not a dry bed);
+	# 31 Oct 2026: the saved files carry the film from head to sea (the settle's film floor, data/water_settle.json film v13; refilm_water.gd --film until 9 Nov: every painted channel holds 13 cm, so a headwater reach is a thin sheet that follows its bed, not a dry bed);
 	# those cells widen the spread of cross-sections, so the limits are re-pinned from 0.32 and 0.9 to 0.45 and 1.0 (measured with the film: see the printed percentiles).
 	_check(spreads[spreads.size() / 2] <= 0.45 and spreads[spreads.size() * 9 / 10] <= 1.0, "the simulation's cross-sections stay no worse than the baseline (median %.2f m, 90th %.2f m)" % [spreads[spreads.size() / 2], spreads[spreads.size() * 9 / 10]])
 	# 2 Nov 2026: re-pinned 60 -> 70 (baseline 46 -> 62) after the 9-tile rebake (#33, spring feed v10): river carry share rose 50.6 -> 61.7 percent, so about a fifth more river cells hold water and the falls and dams among them are counted too (46 x 61.7 / 50.6 = 56, the rest from the land-type and lake-lip changes).

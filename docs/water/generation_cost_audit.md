@@ -23,7 +23,7 @@ Today the chain runs once per **window**: one square of tiles around an island g
 | settle + refilm | 338 s for 9 tiles at once | per tile | 9 |
 | rebake_check.sh | 196 s | per bake | 3 tests |
 
-Since then (measured 9 Nov, section 2): the bake's setup is 269 s when its cache misses and 0.75 s when it hits, and the nine tiles take 57.3 s. `rebake_check.sh` has left the bake run. Settle + refilm stays (363 s on ws580v).
+Since then (measured 9 Nov, section 2): the bake's setup is 269 s when its cache misses and 0.75 s when it hits, and the nine tiles take 57.3 s. `rebake_check.sh` has left the bake run. Settle + refilm stays (363 s on ws580v). Measured again on 9 Nov, the settle is 6 min 13 s and refilm 8 s, and refilm now runs inside the settle (section 2).
 
 The starter window adds up to about 88 min for the chain plus 19 min for the bake through the check, about 1 h 50 min in all.
 
@@ -31,14 +31,14 @@ The starter window adds up to about 88 min for the chain plus 19 min for the bak
 - **One window for the whole world:** 20,161² = 406 M cells, which is 49× the starter window. Glacial would take about 49 × 61 min ≈ 50 h on one thread, and the memory would be 49× as well. That is not feasible, so the chain must stay per window.
 - **Windows like the starter's:** the starter window holds 362 km² of land and the world has 4,398 km², so about 12 windows' worth. One thread doing them one after another: 12 × 88 min ≈ 18 h. Nine windows at once (the stages are single-threaded, so this is how the nine threads get used): about 18 h / 9 ≈ 2 h of wall time (estimate; the windows vary in size, so they pack unevenly). That needs about nine windows' worth of memory at once. Glacial's memory is not measured; my estimate is a few GB per window.
 - **Per tile:** the bake is 418 s of setup once, plus 227 / 9 = 26 rounds × 206 s ≈ 1 h 36 min. Settle + refilm 26 × 338 s ≈ 2.4 h.
-  - After the bake fixes: 269 s of setup once, plus 26 rounds × 57 s ≈ 25 min (estimate from the starter's measured round). Settle + refilm is up to 26 × 363 s ≈ 2.6 h. The 363 s is the slowest of nine, so tiles with less water should settle faster, but that is not measured.
+  - After the bake fixes: 269 s of setup once, plus 26 rounds × 57 s ≈ 25 min (estimate from the starter's measured round). With a queue of nine instead of rounds, the settle is at most about 1 h 20 min (estimate, [settle_speed_design.md](../design/settle_speed_design.md)). Measured on 9 Nov, each tile stops on its own: 3,4 after 14,400 ticks and the other eight after 7,800 or 8,400. So 3,4 sets the nine-tile time (6 min 13 s), and tiles with less water settle faster.
 
 ## 2. Where the time goes, and cuts that keep the same goals
 
 The goals that must not move are the summit, the lakes, the river network, the springs, and caves or head ponds where the rules put them.
 
 **Evolve: 80% of its run is thrown away.** Evolve runs 500 kyr (200 steps of 2,500 years) and writes snapshots. Glacial starts from the **t100k** snapshot only, which is step 40, reached at 278 s on 580h. The other 160 steps (about 894 s) are never read.
-- **Cut:** run evolve for 100 kyr, at about 4.6 min instead of 19.5. Only the run's own stop check reads the run length, so t100k should come out identical. I'd confirm that once by comparing the hash of `ground.npz`.
+- **Cut:** run evolve for 100 kyr, at about 4.6 min instead of 19.5. Only the run's own stop check reads the run length, so t100k should come out identical. I'd confirm that once by comparing the hash of `ground.npz`. *Measured (#792, 9 Nov): 4 min 53 s at nine threads, and all 18 arrays came out the same.*
 
 **Glacial: 650 full-grid steps at about 5.6 s each.** There are 49 cycles, 39 of the 41-kyr world and 10 of the 100-kyr world: 512 cold steps of 2,000 years plus 138 interglacial river steps. Every step rebuilds everything on all 8.3 M cells:
 - the flow routing (priority-flood fill, D8-LTD receivers, order);
@@ -53,7 +53,7 @@ It is not profiled, but by the code the routing and the solve are most of each s
 |---|---|---|
 | a. Crop each window to its island plus a margin instead of whole tiles (83% of the starter window is sea) | estimate 30–50% of every per-window stage | none to the goals, if the margin holds the coast and the shelf |
 | b. Steps of 4,000 years instead of 2,000 in the 41-kyr cycles (8 → 4 per cycle) | estimate 25% of glacial | the summit and cirques may shift; one probe against ws580v decides |
-| c. 32 m cells for the 39 early cycles, 16 m for the last 10 | estimate 40–45% of glacial | early valleys are coarser; one probe decides |
+| c. 32 m cells for the 39 early cycles, 16 m for the last 10 | estimate 40–45% of glacial | **closed: the 32 m probe failed on 9 Nov (section 5)** |
 | d. Nine threads on the cell-by-cell parts (numba `parallel`); routing and sums stay in order | estimate 1.5–2× per step | none (same arithmetic) |
 
 **Skip what hasn't changed.** Each stage's manifest already holds its input hashes and params. A single runner (`tools/watershed/run_chain.py`) could take one command, give each stage the nine-thread rule, print the clock times, and skip any stage whose inputs, params block and script hash match the last run. Then:
@@ -72,6 +72,11 @@ It would also replace the hand-written job sheets.
 - **The cause is the live water's springs, not the record.** Each head pours 3 m³/s per km² of catchment, and the sides add 1 m³/s per km² (`data/water_settle.json`). Both are multiplied by the server's start key of 10 (`WaterLive.DEFAULT_RATE`), which comes to about 30 to 40 m³/s per km². The record's mean flow is at most 0.035 m³/s per km², which is all of the 1,100 mm of rain a year (the chain's `climate.rain_mm_yr`) running off, so the springs pour about 1,000 times as much. The live water stands above the record's levels everywhere: every difference is settled above seeded.
 - **So the settle stays.** A seeded file would rise after a fresh server start until the server saved its own. The settle's 363 s per nine tiles stays in every bake that changes the water. Matching the springs to the record's flows is R7 items 1 and 2 (watershed design), and seeding comes back then.
 - **A faster settle in the meantime:** [settle_speed_design.md](../design/settle_speed_design.md). It covers a queue of nine instead of rounds, refilm folded into the settle, and fewer ticks if a measurement shows they are enough.
+- **Measured (9 Nov, `settle_speed_job.md` on main e0b05747):**
+  - The settle repeats itself: all nine files came out byte for byte the same as main's.
+  - Fewer ticks fail the bar, so `min_ticks` stays at 7,200. At 3,600 ticks (1 min 56 s) the volume is +16.7%, 40 of 107 lakes move more than 10 cm, and 82.7% of river cells are within 10 cm. At 1,800 ticks (1 min 21 s) it is +41.7%, 65 lakes move, and 58.6%.
+  - Refilm (8 s) now runs inside the settle (`data/water_settle.json` film v13), and `tools/settle_tiles.sh` runs the queue, wettest tile first.
+  - **A gap in the settle's bookkeeping.** On 3,4 the settle reports 2.10 M m³ "unaccounted" out of 19.0 M m³ supplied (11%). The likely cause: a spring pours over a 5 × 5 patch, and a patch square that is off the tile or on the sea gets nothing (`WaterCore.step`), while the settle counts the spring's full flow as supplied. The settle now prints that part of the gap, and the next settle shows whether it closes it (not measured yet).
 
 **The bake: nine threads that queue for one lock (the biggest cheap win).**
 
@@ -151,14 +156,14 @@ The tiles must come out byte for byte the same as the ws580v bake. Dino checks t
 
 ## 3. What a run costs: today, and after the cuts
 
-| run | today (measured sums) | after the evolve cut, a, the runner, the bake fixes (lock and setup cache), and rebake_check left to the gate; the settle stays (estimate, with the bake measured) | also b, c, d (estimate) |
+| run | today (measured sums) | after the evolve cut, a, the runner, the bake fixes (lock and setup cache), and rebake_check left to the gate; the settle stays, in a queue of nine (estimate, with the bake measured) | also b and d (estimate; c failed, section 5) |
 |---|---|---|---|
 | tile rules change (springs, caves, sites), 9 tiles | 19 min (if no one starts the chain) | 59 s for the bake, setup from the cache (measured); 6 min more when the tile's water changes and it is settled again | the same |
 | water rules change (R3–R6), 9 tiles | 22 min | about 10 min: lakes to record 2.5 min, the bake 1 min, the settle 6 min | the same |
-| land changes (tonight), 9 tiles | 1 h 50 min | about 50 min to 1 h 5 min | about 25 to 30 min |
-| full world, first time (all windows, 227 tiles) | about 2 h of chains (9 at once) + 1 h 36 min bake + 2.4 h water ≈ 6 h | about 1 h + 4.5 min setup + 26 rounds × 57 s ≈ 25 min + up to 2.6 h of settle ≈ 4 h | about 35 min + 30 min + up to 2.6 h ≈ 3.7 h |
+| land changes (tonight), 9 tiles | 1 h 50 min | about 50 min to 1 h 5 min | about 30 to 40 min |
+| full world, first time (all windows, 227 tiles) | about 2 h of chains (9 at once) + 1 h 36 min bake + 2.4 h water ≈ 6 h | about 1 h + 4.5 min setup + 26 rounds × 57 s ≈ 25 min + at most about 1 h 20 min of settle ≈ 2 h 50 min | about 45 min + 30 min + at most about 1 h 20 min ≈ 2 h 35 min |
 
-Even today a first full world fits in one night: about 6 h, against Dave's limit of 10. With the cuts it takes about 4 h, and the settle is most of that until R7 lets the water be seeded from the record (section 2). The everyday case gains the most: one island and a rule change take about a minute, not 19 (or 2 h when the chain is started by habit).
+Even today a first full world fits in one night: about 6 h, against Dave's limit of 10. With the cuts it takes about 2 h 50 min, and the settle is the biggest part of that until R7 lets the water be seeded from the record (section 2). The everyday case gains the most: one island and a rule change take about a minute, not 19 (or 2 h when the chain is started by habit).
 
 ## 4. What could go, merge, or stop being checked
 
@@ -273,16 +278,24 @@ The mountains would be the river era's V valleys, only shorter. The summit would
   | the three water stages and the compare | about 1 min |
   | total | about 20 min |
 
-**Against Dave's targets.** If the probe passes and the 16 m finish holds, nine tiles take, end to end:
+**Result (9 Nov): FAIL, and C3 is closed** (coordinator, under Dave's rule e). The run took 22 min 32 s, with glacial at 807 s. Against ws580v:
+- the summit is 1,024.9 m against 1,393.0 m;
+- 3 of 96 lakes are still there, and 22.4 of 109.6 km of rivers are in place;
+- of the 14 lakes and 94.1 km of rivers that ws580u and ws580v agree on, 2 lakes and 18.9 km held;
+- `compare_ws580v32.txt` ends "verdict: FAIL".
+
+So glacial stays at 16 m. The one-pass carve would replace the modelled shapes too, so it would fail rule (e) as well. Glacial's speed now comes from cuts a, b and d (section 2), which keep the 16 m grid.
+
+**Against Dave's targets.** With glacial at 16 m, nine tiles take, end to end:
 
 | step | time |
 |---|---|
 | exports | 5 min |
-| evolve | 4.6 min |
-| glacial at 32 m with the 16 m finish | about 15 to 20 min |
+| evolve | 4 min 53 s (measured, #792) |
+| glacial at 16 m | 61 min today; about 30 to 43 min with a; about 13 to 20 min with a, b and d (estimates) |
 | water (lakes to record) | 2.5 min (measured on ws580v) |
 | bake | 59 s or 5 min 27 s (cache hit or miss, measured) |
-| settle + refilm | 6 min (363 s, measured on ws580v) |
-| total | about 35 to 45 min |
+| settle (refilm inside it) | 6 min 13 s (measured on ws580v, 9 Nov) |
+| total | about 50 min to 1 h 5 min with a; about 30 to 40 min with a, b and d (estimates) |
 
-That is well under the hour (estimate). Without it, the cuts in section 3 give about 50 min to 1 h 5 min. A full world is about 3.7 to 4 h with the cuts while the settle stays, and about 6 h today (section 3). Either fits inside the 10 h night.
+With a alone that is about the hour, not well under it, so b and d are what reach Dave's target (estimate). A full world is about 2 h 35 min to 2 h 50 min with the cuts and the settle queue, and about 6 h today (section 3). Either fits inside the 10 h night.
