@@ -234,6 +234,9 @@ def ground_slope_deg(h, n, dx):
     return uniform_filter(np.degrees(np.arctan(np.hypot(gx, gz))), size=3, mode='nearest').ravel()
 
 
+SPRING_HEADS_DEFAULT = {'belt_slope_deg': 30.0, 'max_walk_m': 800.0}   # params.json network.spring_heads (#868)
+
+
 def lower_spring_heads(vis, rec, outlet, step, gw2, spring_q, belt, lake_fed, max_m):
     """Spring heads down into the green belt (Dave 9 Nov 2026: move them "down along their own flow path until they are within
     the bushes and grass belt"; docs/design/spring_heads_lower_design.md). A stream that starts at a spring (gw2 >= spring_q, no
@@ -685,7 +688,8 @@ def main():
     q_vis = float(Q['wet'][srt[min(k_at, srt.size - 1)]]) if srt.size else np.inf
     vis = channel & (Q['wet'] >= q_vis) & (Q['wet'] > 0.0)
     # Spring heads down into the green belt (spring_heads in params.json): the ground round them no steeper than belt_slope_deg.
-    SH = NW['spring_heads']
+    # A chain's own params file from before #868 has no spring_heads: the defaults below are params.json's values.
+    SH = {**SPRING_HEADS_DEFAULT, **NW.get('spring_heads', {})}
     gw2 = patch5(gw, n)
     gw2_dry = patch5(gw * base_dry_share, n)    # the same patch's dry-quarter base flow, each cell through its own stores
     lake_fed = np.zeros(N, bool)

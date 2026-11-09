@@ -236,6 +236,14 @@ def test_ground_slope_deg_of_a_plane():
     assert np.allclose(s, 45.0), s
 
 
+def test_spring_heads_defaults_match_params():
+    """A chain params file from before #868 has no network.spring_heads: network.py falls back to params.json's values."""
+    import json
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'params.json')) as f:
+        sh = json.load(f)['network']['spring_heads']
+    assert {k: float(sh[k]) for k in nw.SPRING_HEADS_DEFAULT} == nw.SPRING_HEADS_DEFAULT, sh
+
+
 if __name__ == '__main__':
     tests = [v for k, v in sorted(globals().items()) if k.startswith('test_') and callable(v)]
     for t in tests:
