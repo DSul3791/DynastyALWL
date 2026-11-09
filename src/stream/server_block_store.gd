@@ -504,6 +504,50 @@ func _cell_text(buffer: VoxelBuffer, local: Vector3i) -> String:
 	]
 
 
+# The zeroed block's heights as the generator reads them, and whether building it once more now still gives a zeroed block (a race at the
+# join rush, or the same answer every time). Only for a zeroed block, so it costs nothing otherwise.
+func _explain_zeroed(block: Vector3i, lod: int) -> void:
+	var origin: Vector3i = block * (BLOCK_SIZE << lod)
+	var again: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
+	generator.generate(again, origin, lod)
+	var why: String = _heights_text(origin, lod) if generator.has_method("get_tile") else "a generator without tiles"
+	print("server: ZEROED BLOCK %s LOD %d: %s; built again now: %s" % [str(block), lod, why, "zeroed again" if looks_zeroed(again) else "good ground (SDF %.3f at the middle)" % again.get_voxel_f(BLOCK_SIZE >> 1, BLOCK_SIZE >> 1, BLOCK_SIZE >> 1, Layout.CHANNEL_SDF)])
+
+
+# The heights over a block's columns as the generator reads them (tile height plus detail, generator.surface_height): min, max and NaNs,
+# the block's y range, the branch generate() would take, and the tiles under it. Kept here, not in the generator, so the generated ground
+# and its setup cache are untouched.
+func _heights_text(origin: Vector3i, lod: int) -> String:
+	var sf: float = float(1 << lod)
+	var oy: float = float(origin.y)
+	var h_min: float = INF
+	var h_max: float = -INF
+	var nans: int = 0
+	var tiles: Dictionary = {}
+
+	for k in range(BLOCK_SIZE):
+		for i in range(BLOCK_SIZE):
+			var x: float = float(origin.x) + float(i) * sf
+			var z: float = float(origin.z) + float(k) * sf
+			var coord: Vector2i = generator.tile_of(x, z)
+
+			if not tiles.has(coord):
+				var data = generator.get_tile(coord)
+				tiles[coord] = "%s%s samples %d" % [str(coord), " placeholder" if data.placeholder else "", int(data.samples)]
+
+			var h: float = float(generator.surface_height(x, z, lod))
+
+			if is_nan(h):
+				nans += 1
+			else:
+				h_min = minf(h_min, h)
+				h_max = maxf(h_max, h)
+
+	var band: float = float(generator._band) * sf
+	return "heights %.2f to %.2f (%d NaN of %d), block y %.0f to %.0f, %s; tiles %s" % [h_min, h_max, nans, BLOCK_SIZE * BLOCK_SIZE, oy,
+		oy + float(BLOCK_SIZE - 1) * sf, "all air" if oy > h_max + band else "columns", ", ".join(PackedStringArray(tiles.values()))]
+
+
 # The block as it is sent to clients: buried ore hidden, compressed.
 func block_bytes(block: Vector3i, lod: int) -> PackedByteArray:
 	var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
@@ -523,6 +567,7 @@ func block_bytes(block: Vector3i, lod: int) -> PackedByteArray:
 		print("server: ZEROED BLOCK %s LOD %d from %s; SDF %s, %.4f at the middle; failed tile loads %d; serving it anyway" % [str(block), lod,
 			" ".join(PackedStringArray(trace)) if not trace.is_empty() else "an unknown path", "all one value" if buffer.is_uniform(Layout.CHANNEL_SDF) else "mixed",
 			buffer.get_voxel_f(BLOCK_SIZE >> 1, BLOCK_SIZE >> 1, BLOCK_SIZE >> 1, Layout.CHANNEL_SDF), generator.failed_tiles])
+		_explain_zeroed(block, lod)
 
 	hide_buried_ore(buffer, hide_ore_depth_m * float(1 << lod))
 	var t0: int = Time.get_ticks_usec()
