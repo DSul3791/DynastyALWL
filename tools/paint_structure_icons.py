@@ -16,7 +16,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from paint_basic_icons import FILL, KEY, KEY_COLOUR, SIZE, SS, VIEW, prism, rot_x, rot_y, rot_z   # noqa: E402  (the shared rig)
+from paint_basic_icons import FILL, KEY, KEY_COLOUR, SIZE, SS, VIEW, lift_dark, prism, rot_x, rot_y, rot_z   # noqa: E402  (the shared rig)
 from PIL import Image   # noqa: E402
 
 # Material colours (look doc 6.1 warm palette; the bake's wood and stone tones).
@@ -475,18 +475,19 @@ def stairs():
 
 
 def ladder():
+    """Two thick rails and five rungs, short and leaned on the diagonal so it fills the square (a tall thin ladder was a few lines at 57 px)."""
     faces = []
 
     for side in (-1, 1):
-        faces += moved(prism(0.05, 2.4, 6, BARK, LOG_END, seed=90 + side), rot_z(math.radians(90.0)), shift=(side * 0.32, 0.0, 0.0))
+        faces += moved(prism(0.085, 2.0, 6, BARK, LOG_END, seed=90 + side), rot_z(math.radians(90.0)), shift=(side * 0.4, 0.0, 0.0))
 
-    for i in range(6):
-        faces += moved(prism(0.035, 0.72, 6, PLANK, LOG_END, seed=95 + i), shift=(0.0, -0.95 + i * 0.38, 0.0))
+    for i in range(5):
+        faces += moved(prism(0.06, 0.92, 6, PLANK, LOG_END, seed=95 + i), shift=(0.0, -0.76 + i * 0.38, 0.0))
 
     return faces
 
 
-LADDER_VIEW = rot_y(math.radians(25.0)) @ rot_z(math.radians(-14.0))
+LADDER_VIEW = rot_y(math.radians(25.0)) @ rot_z(math.radians(-38.0))
 
 
 # ---------------------------------------------------------------- logs by species and driftwood (a small stack of three)
@@ -992,16 +993,18 @@ def chandelier():
     return faces
 
 
-def torch(length=1.3):
-    faces = moved(prism(0.05, length, 6, PLANK_DARK, LOG_END, seed=190), rot_z(math.pi / 2), shift=(0.0, length / 2, 0.0))
-    faces += upright(0.09, 0.22, 6, CLOTH, (60, 50, 40), y=length - 0.2, seed=191)
-    faces += flame(0.0, length, 0.0, 0.32)
+def torch(length=1.3, radius=0.05, flame_size=0.32):
+    faces = moved(prism(radius, length, 6, PLANK_DARK, LOG_END, seed=190), rot_z(math.pi / 2), shift=(0.0, length / 2, 0.0))
+    faces += upright(radius * 1.8, 0.22, 6, CLOTH, (60, 50, 40), y=length - 0.2, seed=191)
+    faces += flame(0.0, length, 0.0, flame_size)
     return faces
 
 
 def standing_torch():
-    faces = torch(1.6)
-    faces += box((0.0, 0.03, 0.0), (0.5, 0.06, 0.5), SOIL)
+    """A short thick torch on a wide base of earth and stones, so the pole is not a hairline at 57 px."""
+    faces = torch(1.1, radius=0.09, flame_size=0.46)
+    faces += box((0.0, 0.05, 0.0), (0.7, 0.1, 0.7), SOIL)
+    faces += stones_ring(0.3, 6, y=0.12, size=0.14, seed=192)
     return faces
 
 
@@ -1102,19 +1105,21 @@ def saw_mill():
 
 
 def timber_prop():
-    faces = upright(0.18, 1.6, 8, BARK, LOG_END, seed=205)
-    faces += box((0.0, 1.66, 0.0), (0.8, 0.14, 0.4), PLANK)
-    faces += box((0.0, -0.02, 0.0), (0.5, 0.06, 0.5), SOIL)
+    """A stout post under a wide cap board (thicker and shorter than the first paint, which was a stick at 57 px)."""
+    faces = upright(0.26, 1.2, 8, BARK, LOG_END, seed=205)
+    faces += box((0.0, 1.27, 0.0), (1.0, 0.16, 0.5), PLANK)
+    faces += box((0.0, -0.02, 0.0), (0.7, 0.06, 0.7), SOIL)
     return faces
 
 
 def timber_set():
+    """Two posts under a cap log, thick enough to read as a frame at 57 px."""
     faces = []
 
     for sx in (-1, 1):
-        faces += moved(upright(0.14, 1.6, 8, BARK, LOG_END, seed=206 + sx), rot_z(sx * -0.08), shift=(sx * 0.6, 0.0, 0.0))
+        faces += moved(upright(0.21, 1.3, 8, BARK, LOG_END, seed=206 + sx), rot_z(sx * -0.08), shift=(sx * 0.55, 0.0, 0.0))
 
-    faces += moved(prism(0.16, 1.7, 8, BARK, LOG_END, ring=LOG_RING, seed=208), shift=(0.0, 1.72, 0.0))
+    faces += moved(prism(0.22, 1.6, 8, BARK, LOG_END, ring=LOG_RING, seed=208), shift=(0.0, 1.42, 0.0))
     return faces
 
 
@@ -1290,6 +1295,8 @@ def _pieces():
 
 PIECES = _pieces()
 NAMES = tuple(PIECES)
+# Too dark to read on the slot at 57 px (the 9 Nov style review, inventory/icons_style_review.md): brightened by lift_dark after the render.
+LIFT = ("log_tropical_hardwood", "log_walnut", "log_oak", "vice", "tilled_bed")
 
 
 def main():
@@ -1305,7 +1312,8 @@ def main():
             continue
 
         path = os.path.join(args.out, name + ".png")
-        render(build(), turn, colour_jitter=0.04, seed=len(name)).save(path)
+        icon = render(build(), turn, colour_jitter=0.04, seed=len(name))
+        (lift_dark(icon) if name in LIFT else icon).save(path)
         print("painted", path)
 
 
