@@ -294,6 +294,104 @@ def carrot(seed):
     return faces
 
 
+def leaves(base, colour, n=3, length=0.7, width=0.22, spread=0.4, stem=None, seed=0):
+    """A fan of leaves standing up out of a root, on stems when stem is a colour (beet's red stalks)."""
+    faces = []
+    b = np.array(base, dtype=float)
+
+    for k in range(n):
+        dx = spread * (k - (n - 1) / 2.0) / max(1.0, (n - 1) / 2.0)
+        d = np.array([dx, 1.0, 0.1 * (k % 2)])
+        if stem:
+            faces += rod(b, b + d * length * 0.45, 0.03, stem, sides=5, seed=seed + k)
+        faces += leaf(b + d * length * 0.55, d, length * (0.75 if stem else 1.0), width, shade(colour, 1.0 - 0.06 * k))
+    return faces
+
+
+ROOT = np.array([STALK[0], -0.25, STALK[2]])
+
+
+def root_veg(colour, radii, tip_len, leaf_colour=LEAF, top=None, stem=None, seed=0):
+    """A root crop: the root, its thin tail, a coloured shoulder (turnip) and its leaves."""
+    faces = blob(ROOT, radii, colour, seed=seed, seg=8, rings=6)
+    faces += rod(ROOT - np.array([0.0, radii[1] * 0.8, 0.0]), ROOT - np.array([0.0, radii[1] + tip_len, 0.0]), radii[0] * 0.3, colour,
+                 taper=0.1, seed=seed + 1)
+    if top:
+        faces += blob(ROOT + np.array([0.0, radii[1] * 0.45, 0.0]), np.array(radii) * np.array([0.92, 0.6, 0.92]), top, seed=seed + 2,
+                      seg=8, rings=5)
+    faces += leaves(ROOT + np.array([0.0, radii[1] * 0.9, 0.0]), leaf_colour, stem=stem, seed=seed + 3)
+    return faces
+
+
+def cabbage(seed):
+    faces = blob(ROOT + np.array([0.0, 0.1, 0.0]), (0.42, 0.38, 0.42), (132, 172, 96), seed=seed, seg=10, rings=6)
+
+    for k in range(6):                                          # the loose outer leaves cupping the head
+        a = 2.0 * math.pi * k / 6 + 0.4
+        out = np.array([math.cos(a), 0.55, math.sin(a)])
+        faces += leaf(ROOT + np.array([0.0, -0.05, 0.0]) + out * 0.42, out, 0.55, 0.42, shade((92, 136, 96), 1.0 - 0.04 * (k % 3)))
+    return faces
+
+
+def lettuce(seed):
+    faces = []
+
+    for ring, (n, tilt, size) in enumerate(((8, 0.55, 0.62), (6, 0.95, 0.5), (4, 2.0, 0.36))):
+        for k in range(n):
+            a = 2.0 * math.pi * k / n + ring * 0.5
+            d = np.array([math.cos(a), tilt, math.sin(a)])
+            colour = shade((160, 206, 92), 1.0 + 0.05 * ring - 0.04 * (k % 2))
+            faces += leaf(ROOT + np.array([0.0, -0.2 + 0.1 * ring, 0.0]) + d / np.linalg.norm(d) * size * 0.5, d, size, size * 1.1, colour)
+    return faces
+
+
+def onion(seed):
+    faces = blob(ROOT, (0.32, 0.3, 0.32), (206, 146, 72), seed=seed, seg=8, rings=6)
+    faces += rod(ROOT + np.array([0.0, 0.2, 0.0]), ROOT + np.array([0.0, 0.48, 0.0]), 0.08, (196, 138, 70), taper=0.4, seed=seed + 1)
+    for k, dx in enumerate((-0.18, 0.0, 0.2)):                 # green shoots
+        faces += rod(ROOT + np.array([0.0, 0.42, 0.0]), ROOT + np.array([dx, 1.05 - 0.12 * abs(k - 1), 0.0]), 0.035, LEAF, sides=5,
+                     taper=0.4, seed=seed + 2 + k)
+    for k in range(4):                                          # the pale root tuft
+        faces += rod(ROOT - np.array([0.0, 0.26, 0.0]), ROOT + np.array([-0.15 + 0.1 * k, -0.42, 0.0]), 0.015, (226, 212, 180), sides=4,
+                     seed=seed + 6)
+    return faces
+
+
+def pea_pod(seed):
+    pod = (124, 176, 72)
+    faces = moved(blob((0, 0, 0), (0.55, 0.16, 0.12), pod, seed=seed, seg=8, rings=5), turn=rot_z(math.radians(30.0)), shift=tuple(ROOT))
+    for k in range(4):                                          # the peas showing along the split
+        t = -0.36 + 0.24 * k
+        c = ROOT + np.array([t * math.cos(math.radians(30.0)), t * math.sin(math.radians(30.0)) + 0.1, 0.06])
+        faces += blob(c, (0.1, 0.1, 0.1), (164, 210, 96), seed=seed + k, seg=6, rings=4)
+    faces += rod(ROOT + np.array([0.47, 0.27, 0.0]), ROOT + np.array([0.62, 0.55, 0.0]), 0.025, shade(pod, 0.8), sides=5, seed=seed)
+    return faces
+
+
+def potato(seed):
+    skin = (176, 130, 80)
+    faces = blob(ROOT, (0.44, 0.3, 0.32), skin, seed=seed, seg=9, rings=6, rough=0.14)
+    faces += blob(ROOT + np.array([0.3, -0.18, 0.3]), (0.24, 0.18, 0.2), shade(skin, 0.95), seed=seed + 1, seg=7, rings=5, rough=0.14)
+    for k, (x, y) in enumerate(((-0.2, 0.12), (0.1, 0.2), (0.25, 0.02), (-0.05, -0.08))):      # eyes
+        faces += blob(ROOT + np.array([x, y, 0.29]), (0.035, 0.035, 0.02), (110, 76, 46), seed=seed + 3 + k, seg=5, rings=3)
+    return faces
+
+
+VEG = {
+    # id: (seed colour, seed radii, the plant)
+    "beet_seeds": ((150, 108, 70), (0.07, 0.06, 0.07), lambda: root_veg((108, 22, 50), (0.34, 0.32, 0.34), 0.32, (104, 128, 62),
+                                                                             stem=(170, 40, 60), seed=50)),
+    "cabbage_seeds": ((92, 52, 42), (0.04, 0.04, 0.04), lambda: cabbage(51)),
+    "lettuce_seeds": ((196, 190, 166), (0.065, 0.02, 0.025), lambda: lettuce(52)),
+    "onion_seeds": ((48, 42, 40), (0.05, 0.03, 0.035), lambda: onion(53)),
+    "peas_seeds": ((184, 196, 124), (0.07, 0.07, 0.07), lambda: pea_pod(54)),
+    "potato_seeds": ((176, 132, 84), (0.07, 0.055, 0.06), lambda: potato(55)),
+    "radish_seeds": ((142, 98, 62), (0.045, 0.045, 0.045), lambda: root_veg((236, 76, 104), (0.22, 0.22, 0.22), 0.3, top=None, seed=56)),
+    "turnip_seeds": ((124, 72, 52), (0.04, 0.04, 0.04), lambda: root_veg((236, 230, 214), (0.34, 0.3, 0.34), 0.34, top=(150, 62, 124),
+                                                                         seed=57)),
+}
+
+
 GRAINS = {
     # id: (seed colour, grain radii, the plant)
     "barley_seeds": ((222, 196, 128), (0.07, 0.04, 0.045), lambda: ear((228, 202, 122), 0.62, 0.1, 0.5, 40)),
@@ -306,8 +404,8 @@ GRAINS = {
 
 
 def grain_seeds(item):
-    """The pile at the front left, the plant leaning across the icon behind it, drawn large: at 23 px the plant's colour names the grain."""
-    colour, grain, plant = GRAINS[item]
+    """The pile at the front left, the plant leaning across the icon behind it, drawn large: at 23 px the plant's colour names the crop."""
+    colour, grain, plant = {**GRAINS, **VEG}[item]
     lean = 1.25 * rot_z(math.radians(-28.0))
     base = np.array(STALK)
     return seed_pile(colour, grain, seed=len(item)) + [([lean @ (p - base) + base + np.array([-0.15, 0.0, 0.0]) for p in pts], c)
@@ -380,7 +478,7 @@ def _pieces():
         "stone_spade": (lambda: spade("stone"), SPADE_VIEW),
         "iron_spade": (lambda: spade("iron"), SPADE_VIEW),
         "steel_spade": (lambda: spade("steel"), SPADE_VIEW),
-        **{item: ((lambda i=item: grain_seeds(i)), SEED_VIEW) for item in GRAINS},
+        **{item: ((lambda i=item: grain_seeds(i)), SEED_VIEW) for item in (*GRAINS, *VEG)},
         "apple_pie": (apple_pie, PIE_VIEW),
         "fish_pie": (fish_pie, PIE_VIEW),
         "venison_pie": (venison_pie, PIE_VIEW),
