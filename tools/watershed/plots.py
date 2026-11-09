@@ -11,6 +11,47 @@ Usage (on Dave's PC):
 import sys
 import numpy as np
 
+# The full-window pictures draw each layer from a thinned copy (docs/design/chain_pictures_design.md): matplotlib otherwise
+# colour-maps and resamples the whole 16 m grid for every layer, about three times, for panels about 480 to 660 px wide.
+THIN_PX = 700                    # a thinned layer is never under this many pixels a side, so matplotlib still only shrinks it
+
+
+def _thin_factor(shape):
+    """Cells per pixel side for a full-window picture: a whole number, 1 for a grid under 2 * THIN_PX a side."""
+    return max(1, max(shape[0], shape[1]) // THIN_PX)
+
+
+def _thin(a, s, how='mean'):
+    """a (H, W) or (H, W, channels) over s x s blocks. 'mean': the mean of a block's non-NaN cells, for heights, shade,
+    colours and measured fields, so a block with one river or sediment cell still shows it at its own value. 'max' or
+    'min': for codes, the code that should win where two meet. A block with no value stays NaN (shows through), and the
+    part blocks at the right and bottom edges use the cells they have."""
+    if s <= 1:
+        return a
+    a = np.asarray(a)
+    H, W = a.shape[:2]
+    Hp, Wp = -(-H // s) * s, -(-W // s) * s
+    pad = np.full((Hp, Wp) + a.shape[2:], np.nan, np.float32)
+    pad[:H, :W] = a
+    b = pad.reshape((Hp // s, s, Wp // s, s) + a.shape[2:])
+    if how == 'max':
+        return np.fmax.reduce(b, axis=(1, 3))
+    if how == 'min':
+        return np.fmin.reduce(b, axis=(1, 3))
+    n = np.count_nonzero(~np.isnan(b), axis=(1, 3))
+    return np.where(n > 0, np.nansum(b, axis=(1, 3)) / np.maximum(n, 1), np.nan)
+
+
+def _show(ax, a, s, how='mean', **kw):
+    """ax.imshow of a thinned copy of a, laid on the full grid's cell coordinates, so marks plotted in cells stay put.
+    At s == 1 it is ax.imshow(a) as before."""
+    if s <= 1:
+        return ax.imshow(a, **kw)
+    H, W = a.shape[:2]
+    im = ax.imshow(_thin(a, s, how), extent=(-0.5, -(-W // s) * s - 0.5, -(-H // s) * s - 0.5, -0.5), **kw)
+    ax.set_xlim(-0.5, W - 0.5); ax.set_ylim(H - 0.5, -0.5)
+    return im
+
 
 def ground_picture(npz_path, png_path):
     """Six panels, so the result can be judged by eye:
@@ -27,29 +68,30 @@ def ground_picture(npz_path, png_path):
     ls = LightSource(315, 40)
     top = float(max(g[land].max(), s0[land].max()))
     shade = ls.hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    s = _thin_factor(g.shape)
     fig, ax = plt.subplots(2, 3, figsize=(24, 16))
     for a, z, t in ((ax[0, 0], s0, 'landform (start)'), (ax[0, 1], g, 'final ground (same height scale)')):
         rgb = ls.shade(np.where(land, z, -top * 0.02), cmap=plt.cm.terrain, vert_exag=3, blend_mode='soft', dx=dx, dy=dx,
                        vmin=-top * 0.02, vmax=top)
-        a.imshow(rgb); a.set_title(f'{t}, max {z[land].max():.0f} m')
+        _show(a, rgb, s); a.set_title(f'{t}, max {z[land].max():.0f} m')
     ch = np.where(land, g - s0, np.nan)
     lim = float(np.nanpercentile(np.abs(ch), 99.5)) or 1.0
-    im = ax[0, 2].imshow(ch, cmap='RdBu_r', vmin=-lim, vmax=lim); ax[0, 2].set_title('height change (m): red rose, blue cut')
+    im = _show(ax[0, 2], ch, s, cmap='RdBu_r', vmin=-lim, vmax=lim); ax[0, 2].set_title('height change (m): red rose, blue cut')
     fig.colorbar(im, ax=ax[0, 2], shrink=0.6)
-    ax[1, 0].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    _show(ax[1, 0], np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
     if 'quick_area_m2' in d.files:
         q = d['quick_area_m2'].astype(np.float64)
         riv = np.where(land & (q >= 5e4), np.log10(np.maximum(q, 5e4)), np.nan)
-        ax[1, 0].imshow(riv, cmap='Blues', vmin=4.0, vmax=float(np.nanmax(riv)) if np.isfinite(riv).any() else 8.0)
+        _show(ax[1, 0], riv, s, cmap='Blues', vmin=4.0, vmax=float(np.nanmax(riv)) if np.isfinite(riv).any() else 8.0)
     if 'pit_m' in d.files:
         pit = d['pit_m'].astype(np.float64)
-        ax[1, 0].imshow(np.where(land & (pit > 0.1), 1.0, np.nan), cmap='autumn', vmin=0, vmax=1)
+        _show(ax[1, 0], np.where(land & (pit > 0.1), 1.0, np.nan), s, 'max', cmap='autumn', vmin=0, vmax=1)
     ax[1, 0].set_title('rivers: quick-runoff area 5 ha and more (darker = more water); closed hollows 0.1 m deep and more in red')
-    ax[1, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
-    im = ax[1, 1].imshow(np.where(land & (d['sediment_m'] > 0.05), d['sediment_m'], np.nan), cmap='YlOrBr', vmin=0, vmax=10, alpha=0.85)
+    _show(ax[1, 1], np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
+    im = _show(ax[1, 1], np.where(land & (d['sediment_m'] > 0.05), d['sediment_m'], np.nan), s, cmap='YlOrBr', vmin=0, vmax=10, alpha=0.85)
     ax[1, 1].set_title('sediment (m): floodplains, fans, deltas'); fig.colorbar(im, ax=ax[1, 1], shrink=0.6)
     gy, gx = np.gradient(g, dx)
-    im = ax[1, 2].imshow(np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), np.nan), cmap='magma', vmin=0, vmax=45)
+    im = _show(ax[1, 2], np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), np.nan), s, cmap='magma', vmin=0, vmax=45)
     ax[1, 2].set_title('slope (deg)'); fig.colorbar(im, ax=ax[1, 2], shrink=0.6)
     for a in ax.ravel():
         a.axis('off')
@@ -75,29 +117,30 @@ def glacial_picture(npz_path, png_path):
     top = float(max(g[land].max(), b1[land].max()))
     shade_b1 = ls.hillshade(np.where(land, b1, 0.0), vert_exag=3, dx=dx, dy=dx)
     shade = ls.hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    s = _thin_factor(g.shape)
     fig, ax = plt.subplots(2, 3, figsize=(24, 16))
     ice = d['ice_max_m'].astype(np.float64)
-    ax[0, 0].imshow(np.where(land, shade_b1, np.nan), cmap='gray', vmin=0, vmax=1)
-    im = ax[0, 0].imshow(np.where(land & (ice > 0), ice, np.nan), cmap='Blues', vmin=0, vmax=max(float(ice.max()), 1.0), alpha=0.8)
+    _show(ax[0, 0], np.where(land, shade_b1, np.nan), s, cmap='gray', vmin=0, vmax=1)
+    im = _show(ax[0, 0], np.where(land & (ice > 0), ice, np.nan), s, cmap='Blues', vmin=0, vmax=max(float(ice.max()), 1.0), alpha=0.8)
     ax[0, 0].set_title(f'river-era ground, largest ice extent (m thick), {(land & (ice > 0)).sum() * dx * dx / 1e6:.1f} km2')
     fig.colorbar(im, ax=ax[0, 0], shrink=0.6)
     rgb = ls.shade(np.where(land, g, -top * 0.02), cmap=plt.cm.terrain, vert_exag=3, blend_mode='soft', dx=dx, dy=dx, vmin=-top * 0.02, vmax=top)
-    ax[0, 1].imshow(rgb); ax[0, 1].set_title(f'final ground (same height scale as B1), max {g[land].max():.0f} m')
+    _show(ax[0, 1], rgb, s); ax[0, 1].set_title(f'final ground (same height scale as B1), max {g[land].max():.0f} m')
     cut = np.where(land, -d['glacial_cut_m'].astype(np.float64), np.nan)
     lim = float(np.nanpercentile(np.abs(cut), 99.5)) or 1.0
-    im = ax[0, 2].imshow(cut, cmap='RdBu_r', vmin=-lim, vmax=lim); ax[0, 2].set_title('cold stage: cut (blue) and laid down (red), m')
+    im = _show(ax[0, 2], cut, s, cmap='RdBu_r', vmin=-lim, vmax=lim); ax[0, 2].set_title('cold stage: cut (blue) and laid down (red), m')
     fig.colorbar(im, ax=ax[0, 2], shrink=0.6)
-    ax[1, 0].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
-    ax[1, 0].imshow(np.where(land & (d['outwash_m'] > 0.2), d['outwash_m'], np.nan), cmap='YlOrBr', vmin=0, vmax=20, alpha=0.5)
-    im = ax[1, 0].imshow(np.where(land & (d['till_m'] > 0.2), d['till_m'], np.nan), cmap='copper_r', vmin=0, vmax=30, alpha=0.85)
+    _show(ax[1, 0], np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
+    _show(ax[1, 0], np.where(land & (d['outwash_m'] > 0.2), d['outwash_m'], np.nan), s, cmap='YlOrBr', vmin=0, vmax=20, alpha=0.5)
+    im = _show(ax[1, 0], np.where(land & (d['till_m'] > 0.2), d['till_m'], np.nan), s, cmap='copper_r', vmin=0, vmax=30, alpha=0.85)
     ax[1, 0].set_title('till and moraine (brown, m), outwash (yellow)'); fig.colorbar(im, ax=ax[1, 0], shrink=0.6)
     hc = d['hollow_cause'].astype(np.float64)          # per hollow, as in the summary: 0 ice-scoured floor, 1 glacial deposit
     cls = np.where(land & (hc >= 0), hc, np.nan)        # sill, 2 other sediment sill, 3 none; -1 no hollow
-    ax[1, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
-    ax[1, 1].imshow(cls, cmap=ListedColormap(['#1f5fbf', '#f08c00', '#f2d024', '#d62728']), vmin=-0.5, vmax=3.5)
+    _show(ax[1, 1], np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
+    _show(ax[1, 1], cls, s, 'max', cmap=ListedColormap(['#1f5fbf', '#f08c00', '#f2d024', '#d62728']), vmin=-0.5, vmax=3.5)   # "none" wins
     ax[1, 1].set_title('hollows: ice-scoured (blue), glacial sill (orange), other sediment (yellow), none (red)')
     gy, gx = np.gradient(g, dx)
-    im = ax[1, 2].imshow(np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), np.nan), cmap='magma', vmin=0, vmax=45)
+    im = _show(ax[1, 2], np.where(land, np.degrees(np.arctan(np.hypot(gx, gy))), np.nan), s, cmap='magma', vmin=0, vmax=45)
     ax[1, 2].set_title('slope (deg)'); fig.colorbar(im, ax=ax[1, 2], shrink=0.6)
     for a in ax.ravel():
         a.axis('off')
@@ -116,14 +159,16 @@ def lakes_picture(npz_path, json_path, png_path):
     g = d['ground'].astype(np.float64); sea = d['sea'].astype(bool); dx = float(d['cell_m']); land = ~sea
     ox, oz = float(d['origin_x']), float(d['origin_z'])
     shade = LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    s = _thin_factor(g.shape)
     fig, ax = plt.subplots(1, 3, figsize=(30, 11))
     b = d['basin_id'].astype(np.int64)
     rng = np.random.default_rng(7)
     pal = rng.uniform(0.55, 0.95, (max(int(b.max()) + 1, 1), 3))
     rgb = np.where((land & (b >= 0))[..., None], pal[np.maximum(b, 0)], 1.0) * (0.6 + 0.4 * shade[..., None])
-    ax[0].imshow(np.clip(rgb, 0, 1))
+    _show(ax[0], np.clip(rgb, 0, 1), s)
     q = d['quick_area_m2'].astype(np.float64)
-    ax[0].imshow(np.where(land & (q >= 5e4), np.log10(np.maximum(q, 5e4)), np.nan), cmap='Blues', vmin=4.0, vmax=max(float(np.log10(q.max() + 1)), 5.0))
+    _show(ax[0], np.where(land & (q >= 5e4), np.log10(np.maximum(q, 5e4)), np.nan), s, cmap='Blues', vmin=4.0,
+          vmax=max(float(np.log10(q.max() + 1)), 5.0))
     ax[0].set_title(f'basins (one colour per sea outlet) and rivers; {int((np.bincount(b[land & (b >= 0)]) * dx * dx > 1e6).sum())} basins over 1 km2')
     causes = ['cirque', 'glacial rock basin', 'moraine or till dam', 'fan or delta dam', 'unexplained']
     cols = ['#1f5fbf', '#17becf', '#8c564b', '#f2b400', '#d62728']
@@ -132,16 +177,16 @@ def lakes_picture(npz_path, json_path, png_path):
     code = np.full(g.shape, np.nan)
     for lk in lakes:
         code[lid == lk['id']] = cmap.get(lk['cause'], 4)
-    ax[1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
-    ax[1].imshow(code, cmap=ListedColormap(cols), vmin=-0.5, vmax=4.5)
+    _show(ax[1], np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
+    _show(ax[1], code, s, 'max', cmap=ListedColormap(cols), vmin=-0.5, vmax=4.5)          # "unexplained" wins
     for lk in lakes:
         if not lk['full']:
             ax[1].plot((lk['deepest_x'] - ox) / dx, (lk['deepest_z'] - oz) / dx, 'o', mfc='none', mec='red', ms=14, mew=2)
     ax[1].set_title('lakes: cirque (blue), rock basin (cyan), moraine or till dam (brown), fan or delta dam (gold), '
                     'unexplained (red); closed lakes ringed red', fontsize=10)
     lf = d['leftover_filled_m'].astype(np.float64)
-    ax[2].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
-    im = ax[2].imshow(np.where(land & (lf > 0.05), lf, np.nan), cmap='Reds', vmin=0, vmax=max(float(lf.max()), 0.5))
+    _show(ax[2], np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
+    im = _show(ax[2], np.where(land & (lf > 0.05), lf, np.nan), s, cmap='Reds', vmin=0, vmax=max(float(lf.max()), 0.5))
     ax[2].set_title('hollows with no cause, filled (m)'); fig.colorbar(im, ax=ax[2], shrink=0.6)
     for a in ax:
         a.axis('off')
@@ -157,16 +202,18 @@ def groundwater_picture(npz_path, png_path):
     d = np.load(npz_path)
     g = d['ground'].astype(np.float64); sea = d['sea'].astype(bool); dx = float(d['cell_m']); land = ~sea
     shade = LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
+    s = _thin_factor(g.shape)
     fig, ax = plt.subplots(2, 2, figsize=(22, 22))
-    im = ax[0, 0].imshow(np.where(land, d['depth_to_table_m'], np.nan), cmap='viridis_r', vmin=0, vmax=30)
+    im = _show(ax[0, 0], np.where(land, d['depth_to_table_m'], np.nan), s, cmap='viridis_r', vmin=0, vmax=30)
     ax[0, 0].set_title('depth to the water table (m)'); fig.colorbar(im, ax=ax[0, 0], shrink=0.6)
     q = d['gw_discharge_m3_s'].astype(np.float64)
-    ax[0, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
-    im = ax[0, 1].imshow(np.where(land & (q > 0), np.log10(np.maximum(q, 1e-6)), np.nan), cmap='plasma', vmin=-5, vmax=-1)
+    _show(ax[0, 1], np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
+    im = _show(ax[0, 1], np.where(land & (q > 0), np.log10(np.maximum(q, 1e-6)), np.nan), s, cmap='plasma', vmin=-5, vmax=-1)
     ax[0, 1].set_title('groundwater coming out, log10 m3/s (springs bright)'); fig.colorbar(im, ax=ax[0, 1], shrink=0.6)
     reg = d['regime'].astype(np.float64)
-    ax[1, 0].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
-    ax[1, 0].imshow(np.where(reg > 0, reg, np.nan), cmap=ListedColormap(['#08306b', '#6baed6', '#9e9e9e']), vmin=0.5, vmax=3.5)
+    _show(ax[1, 0], np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
+    _show(ax[1, 0], np.where(reg > 0, reg, np.nan), s, 'min', cmap=ListedColormap(['#08306b', '#6baed6', '#9e9e9e']), vmin=0.5,
+          vmax=3.5)                                                                          # perennial wins
     hk = d['head_kind'].astype(np.int64)
     cols = ['#d62728', '#2ca02c', '#1f77b4', '#9467bd', '#ff7f0e']
     for k, c in enumerate(cols):
@@ -175,10 +222,10 @@ def groundwater_picture(npz_path, png_path):
     ax[1, 0].set_title('channels: perennial, intermittent, ephemeral; heads: spring red, seep green, lake outlet blue, '
                        'wetland outlet purple, seasonal rill orange', fontsize=10)
     w = d['wetland'].astype(np.float64)
-    ax[1, 1].imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
+    _show(ax[1, 1], np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
     code = np.select([w == 4, w == 5, w == 6, w == 7, w == 10], [0, 1, 2, 3, 4], np.nan)
-    ax[1, 1].imshow(code, cmap=ListedColormap(['#9acd32', '#2e8b57', '#20b2aa', '#8b4513', '#da70d6']), vmin=-0.5, vmax=4.5)
-    ax[1, 1].imshow(np.where(d['lake'], 1.0, np.nan), cmap='Blues', vmin=0, vmax=1)
+    _show(ax[1, 1], code, s, 'max', cmap=ListedColormap(['#9acd32', '#2e8b57', '#20b2aa', '#8b4513', '#da70d6']), vmin=-0.5, vmax=4.5)
+    _show(ax[1, 1], np.where(d['lake'], 1.0, np.nan), s, 'max', cmap='Blues', vmin=0, vmax=1)
     ax[1, 1].set_title('wetlands: marsh (yellow-green), swamp (green), fen (teal), bog (brown), salt marsh (orchid); lakes blue', fontsize=10)
     for a in ax.ravel():
         a.axis('off')
@@ -200,25 +247,31 @@ def network_picture(npz_path, json_path, png_path):
     g = d['ground'].astype(np.float64); sea = d['sea'].astype(bool); dx = float(d['cell_m']); land = ~sea
     ox, oz = float(d['origin_x']), float(d['origin_z'])
     shade = LightSource(315, 40).hillshade(np.where(land, g, 0.0), vert_exag=3, dx=dx, dy=dx)
-    thick = lambda a: maximum_filter(a, size=3)                  # one 16 m cell is under a pixel at this size
+    s = _thin_factor(g.shape)
+    # One 16 m cell is under a pixel at this size. From a thin factor of 3 the block max already widens a one-cell stream to
+    # a pixel, and the filter as well would draw the streams bolder than before.
+    thick = (lambda a: maximum_filter(a, size=3)) if s < 3 else (lambda a: a)
     fig, ax = plt.subplots(2, 2, figsize=(22, 22))
     for a in ax.ravel():
-        a.imshow(np.where(land, shade, np.nan), cmap='gray', vmin=0, vmax=1)
-        a.imshow(np.where(d['lake'], 1.0, np.nan), cmap='Blues', vmin=0, vmax=1.5)
+        _show(a, np.where(land, shade, np.nan), s, cmap='gray', vmin=0, vmax=1)
+        _show(a, np.where(d['lake'], 1.0, np.nan), s, 'max', cmap='Blues', vmin=0, vmax=1.5)
     rt = thick(d['reach_type'].astype(np.int64))
-    ax[0, 0].imshow(np.where(rt > 0, rt, np.nan), cmap=ListedColormap(['#d62728', '#ff7f0e', '#e6c619', '#2ca02c', '#1f77b4']), vmin=0.5, vmax=5.5)
+    _show(ax[0, 0], np.where(rt > 0, rt, np.nan), s, 'max', cmap=ListedColormap(['#d62728', '#ff7f0e', '#e6c619', '#2ca02c', '#1f77b4']),
+          vmin=0.5, vmax=5.5)
     for f in net['falls']:
         ax[0, 0].plot((f['lip'][0] - ox) / dx, (f['lip'][2] - oz) / dx, '^', color='white', mec='black', ms=7)
     ax[0, 0].set_title(f"reach types; falls ({len(net['falls'])}) as white triangles", fontsize=11)
     st = thick(d['stream'].astype(np.int64))
-    ax[0, 1].imshow(np.select([st == 3, st == 8], [0.0, 1.0], np.nan), cmap=ListedColormap(['#08306b', '#6baed6']), vmin=-0.5, vmax=1.5)
-    ax[0, 1].imshow(np.where(thick(d['losing'].astype(np.int64)) > 0, 1.0, np.nan), cmap=ListedColormap(['#d62728']), vmin=0, vmax=1, alpha=0.6)
+    _show(ax[0, 1], np.select([st == 3, st == 8], [0.0, 1.0], np.nan), s, 'min', cmap=ListedColormap(['#08306b', '#6baed6']), vmin=-0.5,
+          vmax=1.5)                                                                          # perennial wins
+    _show(ax[0, 1], np.where(thick(d['losing'].astype(np.int64)) > 0, 1.0, np.nan), s, 'max', cmap=ListedColormap(['#d62728']), vmin=0,
+          vmax=1, alpha=0.6)
     ax[0, 1].set_title('perennial (dark blue) and seasonal (light blue) streams; losing beds red', fontsize=11)
     w = thick(d['width_m'].astype(np.float64))
-    im = ax[1, 0].imshow(np.where(w > 0, np.log10(np.maximum(w, 0.1)), np.nan), cmap='viridis', vmin=-0.5, vmax=1.7)
+    im = _show(ax[1, 0], np.where(w > 0, np.log10(np.maximum(w, 0.1)), np.nan), s, cmap='viridis', vmin=-0.5, vmax=1.7)
     ax[1, 0].set_title('bankfull width, log10 m', fontsize=11); fig.colorbar(im, ax=ax[1, 0], shrink=0.6)
     pt = thick(d['pattern'].astype(np.int64))
-    ax[1, 1].imshow(np.where(pt > 0, pt, np.nan), cmap=ListedColormap(['#7f7f7f', '#2ca02c', '#ff7f0e']), vmin=0.5, vmax=3.5)
+    _show(ax[1, 1], np.where(pt > 0, pt, np.nan), s, 'max', cmap=ListedColormap(['#7f7f7f', '#2ca02c', '#ff7f0e']), vmin=0.5, vmax=3.5)
     colours = {'delta': 'magenta', 'estuary': 'cyan', 'tidal creek': 'teal', 'beach-blocked mouth': 'yellow', 'rocky outlet': 'white',
                'Gilbert delta': 'black', 'lake inflow': 'none'}
     for o in net['coast_outlets'] + net['lake_inflows']:
