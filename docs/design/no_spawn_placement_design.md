@@ -16,6 +16,8 @@
 - So removing the orchard took away only the 12 planted trees by the spawn. No fruit is gone from the world.
 - What the island lacks is a place where several fruit trees stand together, which is what the orchard gave a new player.
 
+**Decided (coordinator, 9 Nov 2026):** as proposed below, numbers as written.
+
 **Proposal:** a `stand` block (the existing mechanism for birch, alder and hazel; `flora_placer.gd`, data only) on the four summer varieties, so something is in season early in the year:
 
 | species | in a grove | stand (every_m, chance, radius_m, spacing_m, fill, height) |
@@ -78,4 +80,4 @@
 1. This note (coordinator reads).
 2. The section 2 PR (approved).
 3. Section 3 (a) and the circle comment, if the coordinator picks (a).
-4. Section 1's stands, if approved: data only in `flora.json` plus the test, and the flora layout version bump.
+4. Section 1's stands (approved): data only in `flora.json` plus the test, and the flora layout version bump.

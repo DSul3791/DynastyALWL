@@ -387,10 +387,25 @@ func _check_fruit_groves(placer) -> void:
 							break
 
 			if group.size() >= 4:
-				groves[kind_name].append(group.size())
+				# The near_orchard hint (server_items.gd: four or more fruit trees within 25 m of the player): the most of this grove within 25 m of one of its trees.
+				var most: int = 0
 
-	print("fruit groves (4 or more trees) in the window: %s" % str(groves))
+				for g in group:
+					var within: int = 0
+
+					for other in group:
+						if (other as Vector2).distance_to(g) <= 25.0:
+							within += 1
+
+					most = maxi(most, within)
+
+				groves[kind_name].append(most)
+
+	print("fruit groves (4 or more trees; the most within 25 m of one tree) in the window: %s" % str(groves))
+	var drops: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	var fruit: Dictionary = (drops as Dictionary).get("fruit_tree", {}) if typeof(drops) == TYPE_DICTIONARY else {}
 
 	for kind_name in groves:
 		_check(not (groves[kind_name] as Array).is_empty(), "%s grows in at least one wild grove of 4 or more trees (%s)" % [kind_name, str(groves[kind_name])])
+		_check(fruit.has(kind_name) and (groves[kind_name] as Array).any(func(best): return int(best) >= 4), "standing in a %s grove sets off the near_orchard hint (a fruit_tree in drops.json, 4 or more within 25 m)" % kind_name)
 
