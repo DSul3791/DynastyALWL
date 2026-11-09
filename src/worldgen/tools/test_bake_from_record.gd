@@ -4,8 +4,9 @@ extends SceneTree
 # the record. A made-up record of tile 3,4 alone (1,921 samples a side, as record.py writes) holds a slope with a sea strip, a round lake,
 # a straight river and a marsh square. The bake must take the ground, the water level, the water class (record codes through the table's
 # record_code), the drainage (km2 to 8 m cells) and the distance to fresh water from it, sample for sample, and pack a tile file. It must
-# refuse a water code the table lacks and a missing field, and an export bake (raw_only) must still read the world function. R5's spring heads
-# (and no other kind of head) are marked for spring caves.
+# refuse a water code the table lacks and a missing field, and an export bake (raw_only) must still read the world function. It places no
+# rule spring cave (the design retires them): R5's spring head becomes a ground spring with bushes over it, its seep does not, and on this
+# gentle slope (far under spring_cave.min_slope_deg, no hill behind) the head is never tried as a cave (design R6 as built, "Brooks and caves").
 #   godot --headless --path . --script res://src/worldgen/tools/test_bake_from_record.gd
 
 const TileBakerScript := preload("res://src/worldgen/tile/tile_baker.gd")
@@ -15,7 +16,8 @@ const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const DIR := "user://test_bake_from_record/record"
 const TILE := Vector2i(3, 4)
 const S := 1921
-const HEAD := Vector2i(500, 700)   # the spring head, in samples inside the tile
+const SPRING := Vector2i(1500, 800)                  # R5's spring head, on the open slope
+const SEEP := Vector2i(1700, 300)                    # a seep head: no ground spring
 
 var failures: int = 0
 
@@ -109,11 +111,13 @@ func write_record() -> void:
 			{"name": "area_km2", "type": "f4", "file": "area_km2.f4", "units": "km2"},
 			{"name": "fresh_m", "type": "f4", "file": "fresh_m.f4", "units": "m"}],
 		"summary": {"missing": [], "later": ["snow window"]}})
+	var z0: float = float(TILE.y) * 15360.0
 	write_json(DIR + "/network.json", {"reaches": [{"id": 0, "down": -1, "ends": "sea", "area_km2": 50.0,
 		"polyline": [[x0 + 1900.0 * 8.0, 39.0, z], [x0 + 100.0 * 8.0, 39.0, z]]}], "lakes": [], "falls": [], "cold_air_pools": [],
-		# R5 channel heads: one fed by groundwater (a spring cave candidate) and one that is not (design R6 as built, "Brooks and caves").
-		"heads": [{"reach": 0, "kind": "spring", "pos": [x0 + HEAD.x * 8.0, 50.0, float(TILE.y) * 15360.0 + HEAD.y * 8.0]},
-			{"reach": 0, "kind": "seep or damp hollow", "pos": [x0 + (HEAD.x + 100) * 8.0, 50.0, float(TILE.y) * 15360.0 + HEAD.y * 8.0]}]})
+		"heads": [{"reach": 0, "kind": "spring", "pos": [x0 + float(SPRING.x) * 8.0, ground_at(SPRING.x, SPRING.y), z0 + float(SPRING.y) * 8.0],
+				"lake": -1, "area_km2": 0.4, "q_wet_m3_s": 0.01, "groundwater_m3_s": 0.004},
+			{"reach": 0, "kind": "seep or damp hollow", "pos": [x0 + float(SEEP.x) * 8.0, ground_at(SEEP.x, SEEP.y), z0 + float(SEEP.y) * 8.0],
+				"lake": -1, "area_km2": 0.3, "q_wet_m3_s": 0.005, "groundwater_m3_s": 0.001}]})
 	write_json(DIR + "/climate.json", {"default": {}, "by_island": {}})
 
 
@@ -168,11 +172,26 @@ func _init() -> void:
 		check(bad_surface == 0, "water surface is the record's level, a marsh at its ground (%d differ)" % bad_surface)
 		check(bad_flow == 0, "flow is the drainage area in 8 m cells (%d differ)" % bad_flow)
 		check(bad_fresh == 0, "distance to fresh water is the record's (%d differ)" % bad_fresh)
-		# Only the spring head is marked for a spring cave, at its own sample of the frame.
-		var frame_n: int = S + 2 * baker.margin
-		var heads: PackedByteArray = water.cave_heads
-		check(heads.size() == frame_n * frame_n and heads.count(1) == 1 and heads[(HEAD.y + baker.margin) * frame_n + HEAD.x + baker.margin] == 1,
-			"the record's spring head, and only it, is marked for a spring cave (%d marked)" % heads.count(1))
+		# The design retires rule-placed spring caves (section 6): a tile from the record places none.
+		var spring_caves: int = 0
+
+		for cave in result["sites"].caves:
+			if str(cave.get("cave_kind", "")) == "spring_cave":
+				spring_caves += 1
+
+		check(not result["sites"].spring_caves and spring_caves == 0, "a tile from the record places no spring cave on gentle ground (%d)" % spring_caves)
+		# R5's spring head is a ground spring, where the head is, with bushes over it; the seep is not a spring.
+		var springs: Array = result["sites"].ground_springs
+		var x_want: float = float(TILE.x) * 15360.0 + float(SPRING.x) * 8.0
+		var z_want: float = float(TILE.y) * 15360.0 + float(SPRING.y) * 8.0
+		check(springs.size() == 1, "one ground spring from R5's one spring head (%d)" % springs.size())
+
+		if springs.size() == 1:
+			var pos: Array = springs[0]["pos"]
+			check(absf(float(pos[0]) - x_want) < 0.2 and absf(float(pos[2]) - z_want) < 0.2 and absf(float(pos[1]) - ground_at(SPRING.x, SPRING.y)) < 0.2,
+				"the ground spring is at the head (%s)" % str(pos))
+			check(str(springs[0]["cover"]) == "bushes" and absf(float(springs[0]["m3_s"]) - 0.004) < 0.0001, "bushes over it, R5's groundwater flow (%s)" % str(springs[0]))
+
 		var packed: Dictionary = TileFileScript.pack_tile(baker.settings, TILE, baker.plan_cell(TILE), water, result["climate"], result["geology"], result["sites"], baker.river_start_cells())
 		check(not packed.is_empty(), "the tile packs into a tile file")
 

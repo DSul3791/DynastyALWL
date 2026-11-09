@@ -48,7 +48,14 @@ const HEAD_CLEAR_CELLS := 5   # a brook head for a spring cave has no river cell
 var caves: Array = []
 var lairs: Array = []
 var harbor: Dictionary = {}
+var ground_springs: Array = []   # ground springs of a tile baked from the water record: {pos [x, y, z], m3_s, cover "bushes"} (Dave 9 Nov 2026)
 var starter: Dictionary = {}
+# false for a tile baked from the water record: the watershed design retires rule-placed spring caves (docs/water/watershed_rebuild_design.md
+# section 6, Dave 9 Nov). Cave springs come only from soluble or fractured rock, from R5's C7 list, once it exists.
+var spring_caves: bool = true
+# The R5 spring heads in this tile, for a tile baked from the record: {index (sample), m3_s (groundwater at the head)}. Each is a ground spring;
+# record_cave_share of them are tried as spring caves (Dave 9 Nov 2026: "a few here and there randomly but not for most springs").
+var record_springs: Array = []
 
 var _settings
 var _rules: Dictionary = {}
@@ -69,12 +76,8 @@ var _river_start_cells: float = 0.0   # drainage cells where a river starts (wat
 var _geology
 var _limestone: int = -1
 var _local: int = 0
-var _keep_clear: Array = []      # [center Vector2, radius] where no entrance may open
 var cave_heads: PackedByteArray = PackedByteArray()     # 1 where the drainage chose a spring cave as a river's source (tile_water.cave_heads); empty: the old head search alone
 var far_from_sea: PackedByteArray = PackedByteArray()   # 1 where the sea is at least spring_cave.min_sea_m away (inland_mask, from the frame); empty: no such rule
-# A tile baked from the water record: cave_heads marks R5's spring heads themselves, and each is a candidate head whether or not a river is drawn
-# there (the drawn brooks start at 2.5 m wide, below their source; design R6 as built, "Brooks and caves"). The other head rules still apply.
-var heads_are_sources: bool = false
 var _ore_by_id: Dictionary = {}
 var ore_report: Dictionary = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
 
@@ -110,10 +113,10 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 	_local = LOCAL_ID_BASE
 	caves = []
 	lairs = []
+	ground_springs = []
 	ore_report = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
 	harbor = {}
 	starter = {}
-	_keep_clear = []
 	_ore_by_id = {}
 
 	for ore in geology.ore_bodies:
@@ -124,7 +127,11 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 
 	# Spring caves first: water comes first (Dave 3 Nov 2026), and the other caves keep away from their mouths.
 	var rng: RandomNumberGenerator = SeedUtil.rng_for(_master, "sites_spring", tile.x, tile.y)
-	_make_spring_caves(rng)
+
+	if spring_caves:
+		_make_spring_caves(rng)
+	elif not record_springs.is_empty():
+		_make_record_springs(rng)
 	rng = SeedUtil.rng_for(_master, "sites_karst", tile.x, tile.y)
 	_make_karst(rng)
 	rng = SeedUtil.rng_for(_master, "sites_lava", tile.x, tile.y)
@@ -208,7 +215,7 @@ func _make_karst(rng: RandomNumberGenerator) -> void:
 
 		var point: Vector2 = _point_of(index)
 
-		if _too_close(point, placed, float(rules["min_spacing_m"])) or _kept_clear(point):
+		if _too_close(point, placed, float(rules["min_spacing_m"])):
 			continue
 
 		var cave: Dictionary = _karst_cave(index, rng)
@@ -644,7 +651,7 @@ func _make_sea_caves(rng: RandomNumberGenerator) -> void:
 		var index: int = candidate[0]
 		var point: Vector2 = _point_of(index)
 
-		if _too_close(point, placed, float(rules["min_spacing_m"])) or _kept_clear(point):
+		if _too_close(point, placed, float(rules["min_spacing_m"])):
 			continue
 
 		var direction: Vector2 = candidate[1]
@@ -709,7 +716,7 @@ func _make_shelters(rng: RandomNumberGenerator) -> void:
 
 		var point: Vector2 = _point_of(index)
 
-		if _too_close(point, placed, float(rules["min_spacing_m"])) or _kept_clear(point):
+		if _too_close(point, placed, float(rules["min_spacing_m"])):
 			continue
 
 		var heading: float = _uphill_angle(index)
@@ -746,7 +753,7 @@ func _make_shelters(rng: RandomNumberGenerator) -> void:
 # tile 3,4), so the flow cannot pick which brooks get more: chance does. cave["springs"] = [{node, m3_s}]. A main passage shorter than min_length_m
 # (no room under the hill) gives no cave.
 const SPRING_CAVE_DEFAULTS := {
-	"min_slope_deg": 10.0, "hill_rise_m": 0.0, "hill_reach_m": 100.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
+	"record_cave_share": 0.1, "min_slope_deg": 10.0, "hill_rise_m": 0.0, "hill_reach_m": 100.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
 	"width_m": [3.0, 5.0], "height_m": [2.5, 4.0], "min_cover_m": 2.5, "open_cut_m": 64.0, "chamber_radius_m": [4.0, 7.0],
 	"branches": [1, 3], "branch_length_m": [15.0, 40.0], "extra_passage_chance": [0.4, 0.15], "spring_m3_s_per_km2": 0.1, "min_length_m": 60.0,
 	# Dave 4 Nov 2026: mouths match the river, small / medium / large caves, den tunnels climbing to a hollow, bones, stalagmites and stalactites.
@@ -796,10 +803,7 @@ func _brook_heads() -> Array:
 		for i in range(margin, _samples - margin):
 			var index: int = j * _samples + i
 
-			if heads_are_sources:
-				if cave_heads.is_empty() or cave_heads[index] != 1 or _water[index] == OCEAN or _water[index] == LAKE or _heights[index] < 2.0:
-					continue
-			elif _water[index] != RIVER or _heights[index] < 2.0:
+			if _water[index] != RIVER or _heights[index] < 2.0:
 				continue
 
 			# Way inland only (Dave 6 Nov 2026: "its important they only show up way inland wherever the river starts"): the 96 caves of the terrain 59
@@ -813,8 +817,7 @@ func _brook_heads() -> Array:
 			# there shouldnt be a cave here"). This search found its own heads in the finished water map, so a pond's rim or a lake's shore that looked
 			# like a brook head got a cave even though its source was the pond. The drainage's own choice (drainage_channels.gd cave_head) is the rule;
 			# the checks below still apply, within CAVE_HEAD_NEAR_CELLS of it (the later passes can move the river's top cell a little).
-			if not heads_are_sources and bool(_rules.get("spring_cave", {}).get("need_cave_head", true)) and not cave_heads.is_empty() \
-					and not _near_cave_head(i, j):
+			if bool(_rules.get("spring_cave", {}).get("need_cave_head", true)) and not cave_heads.is_empty() and not _near_cave_head(i, j):
 				continue
 
 			for dj in range(-3, 4):
@@ -978,7 +981,7 @@ func _make_spring_caves(rng: RandomNumberGenerator) -> void:
 
 		var point: Vector2 = _point_of(index)
 
-		if _too_close(point, placed, float(_spring_rule("min_spacing_m"))) or _kept_clear(point):
+		if _too_close(point, placed, float(_spring_rule("min_spacing_m"))):
 			continue
 
 		var cave: Dictionary = _spring_cave(index, rng)
@@ -993,6 +996,64 @@ func _make_spring_caves(rng: RandomNumberGenerator) -> void:
 		passages += cave["springs"].size()
 
 	print("  spring caves (Dave 3 Nov): %d brook heads on slopes, %d caves with %d spring passages, %d heads with no room for a cave" % [heads.size(), made, passages, refused])
+
+
+# A tile baked from the water record (design R6 as built, "Brooks and caves"; Dave 9 Nov 2026: "most springs probably come up from a small hole
+# in the ground with some bushes over them to hide it ... a few here and there randomly"): every R5 spring head is a ground spring, and a seeded
+# roll tries record_cave_share of them as spring caves, under the same rules as the rule bake's caves (way inland, a hillside or a hill behind,
+# no lake beside it, spacing, room for the passage). A head that is not a cave stays a ground spring. Biggest springs first, then by place.
+func _make_record_springs(rng: RandomNumberGenerator) -> void:
+	var share: float = float(_spring_rule("record_cave_share"))
+	var heads: Array = record_springs.duplicate()
+	heads.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["m3_s"]) > float(b["m3_s"]) or (float(a["m3_s"]) == float(b["m3_s"]) and int(a["index"]) < int(b["index"])))
+	var placed: Array = []
+	var made: int = 0
+	var tried: int = 0
+
+	for head in heads:
+		var index: int = int(head["index"])
+		var point: Vector2 = _point_of(index)
+		var roll: float = rng.randf()
+		tried += 1 if roll < share else 0
+
+		if roll < share and made < int(_spring_rule("max_count")) and _record_cave_ok(index) \
+				and not _too_close(point, placed, float(_spring_rule("min_spacing_m"))):
+			var cave: Dictionary = _spring_cave(index, rng)
+
+			if not cave.is_empty():
+				placed.append(point)
+				caves.append(cave)
+				made += 1
+				continue
+
+		ground_springs.append({"pos": [snappedf(point.x, 0.1), snappedf(_heights[index], 0.1), snappedf(point.y, 0.1)], "m3_s": snappedf(float(head["m3_s"]), 0.0001), "cover": "bushes"})
+
+	print("  springs from the record, tile %d,%d: %d spring heads, %d tried as caves (share %.2f), %d spring caves, %d ground springs"
+		% [_tile.x, _tile.y, heads.size(), tried, share, made, ground_springs.size()])
+
+
+# The spring-cave rules for one R5 spring head (as _brook_heads, without its search for heads in the drawn rivers).
+func _record_cave_ok(index: int) -> bool:
+	var margin: int = int(float(_rules["edge_margin_m"]) / _spacing) + 2
+	var i: int = index % _samples
+	@warning_ignore("integer_division")
+	var j: int = index / _samples
+
+	if i < margin or j < margin or i >= _samples - margin or j >= _samples - margin:
+		return false
+
+	if _water[index] == OCEAN or _water[index] == LAKE or _heights[index] < 2.0:
+		return false
+
+	if not far_from_sea.is_empty() and far_from_sea[index] == 0:
+		return false
+
+	for dj in range(-3, 4):
+		for di in range(-3, 4):
+			if _water[(j + dj) * _samples + i + di] == LAKE:
+				return false
+
+	return _slope(index) >= tan(deg_to_rad(float(_spring_rule("min_slope_deg")))) or _hill_behind(i, j)
 
 
 # Dave 4 Nov: small, medium and large caves. A size the hill has no room for falls back to the next smaller one.
@@ -1585,43 +1646,12 @@ func _make_starter(info: Dictionary, river_mouth: Vector2) -> void:
 
 	var spawn: Vector2 = _point_of(best)
 
-	# Town block: the flattest dry ground a short walk inland from the spawn.
-	var town: int = -1
-	var town_score: float = INF
-
-	for j in range(0, _samples, 4):
-		for i in range(0, _samples, 4):
-			var index: int = j * _samples + i
-			var h: float = _heights[index]
-			var distance: float = _point_of(index).distance_to(spawn)
-
-			if _water[index] != 0 or h < float(rules["town_height_m"][0]) or h > float(rules["town_height_m"][1]) \
-					or distance < float(rules["town_search_m"][0]) or distance > float(rules["town_search_m"][1]):
-				continue
-
-			var roughness: float = 0.0
-
-			for dz in range(-4, 5, 2):
-				for dx in range(-4, 5, 2):
-					var n: int = clampi(j + dz, 0, _samples - 1) * _samples + clampi(i + dx, 0, _samples - 1)
-					roughness = maxf(roughness, absf(_heights[n] - h))
-
-			var score: float = roughness + distance * 0.004
-
-			if score < town_score:
-				town_score = score
-				town = index
-
 	starter = {
 		"spawn_point": [snappedf(spawn.x, 0.1), snappedf(_heights[best] + 1.0, 0.1), snappedf(spawn.y, 0.1)],
 	}
 
-	if town >= 0:
-		var block: Vector2 = _point_of(town)
-		starter["town_block"] = [snappedf(block.x, 0.1), snappedf(_heights[town], 0.1), snappedf(block.y, 0.1)]
-		_keep_clear.append([block, float(_rules["town_clear_m"])])
-
-	_keep_clear.append([spawn, float(_rules["town_clear_m"])])
+	# Nothing else is placed from the spawn: it is temporary (Dave 9 Nov 2026, "nothing is ever based on where spawn is"). The town block a
+	# short walk inland and the 600 m round the spawn and town where no cave could open are gone (watershed_rebuild_design.md, R6 as built).
 	_pick_spawn(target)
 
 
@@ -1642,7 +1672,6 @@ func _pick_spawn(target: Vector2) -> void:
 		return
 
 	starter["spawn_picked"] = [snappedf(float(picked["x"]), 0.1), snappedf(float(picked["ground"]) + 1.0, 0.1), snappedf(float(picked["z"]), 0.1)]
-	_keep_clear.append([Vector2(float(picked["x"]), float(picked["z"])), float(_rules["town_clear_m"])])
 
 
 # ==================================================
@@ -1700,14 +1729,6 @@ func _too_close(point: Vector2, placed: Array, spacing: float) -> bool:
 		var entrance: Array = cave["nodes"][int(cave["entrances"][0])]
 
 		if point.distance_to(Vector2(float(entrance[0]), float(entrance[2]))) < 120.0:
-			return true
-
-	return false
-
-
-func _kept_clear(point: Vector2) -> bool:
-	for area in _keep_clear:
-		if point.distance_to(area[0]) < float(area[1]):
 			return true
 
 	return false

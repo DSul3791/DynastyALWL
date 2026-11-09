@@ -267,7 +267,13 @@ static func pack_tile(settings, tile: Vector2i, plan_cell: Dictionary, water, cl
 	sections.append(_list("provinces", geology.provinces))
 	sections.append(_list("features", geology.features))
 	sections.append(_list("ore_bodies", geology.ore_bodies))
-	sections.append(_list("sites", {"caves": sites.caves, "lairs": sites.lairs, "harbor": sites.harbor}))
+	var site_lists: Dictionary = {"caves": sites.caves, "lairs": sites.lairs, "harbor": sites.harbor}
+
+	# Ground springs come only from the water record (tile_sites.gd _make_record_springs), so a rule-baked tile's sites stay as they were.
+	if not sites.ground_springs.is_empty():
+		site_lists["springs"] = sites.ground_springs
+
+	sections.append(_list("sites", site_lists))
 
 	if not sites.starter.is_empty():
 		sections.append(_list("starter", sites.starter))
