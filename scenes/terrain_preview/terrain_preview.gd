@@ -208,7 +208,7 @@ func _make_hud() -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
 	add_child(layer)
 	hud = Label.new()
-	hud.position = Vector2(12.0, 12.0)
+	hud.position = Vector2(8.0, 8.0)
 	hud.add_theme_color_override("font_shadow_color", Color.BLACK)
 	layer.add_child(hud)
 
