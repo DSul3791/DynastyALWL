@@ -3,14 +3,54 @@ import numpy as np, numba as nb, heapq, time, sys
 from scipy.ndimage import gaussian_filter
 
 @nb.njit(cache=True, fastmath=False, parallel=False)
+def _push4(hv, hi, sz, v, i):
+    """Push (v, i) on the four-way heap of size sz, moving a hole up; returns the new size."""
+    k = sz
+    while k > 0:
+        p = (k - 1) >> 2
+        if hv[p] > v or (hv[p] == v and hi[p] > i):
+            hv[k] = hv[p]; hi[k] = hi[p]; k = p
+        else:
+            break
+    hv[k] = v; hi[k] = i
+    return sz + 1
+
+
+@nb.njit(cache=True, fastmath=False, parallel=False)
+def _pop4(hv, hi, sz):
+    """Pop the least (value, index) from the four-way heap of size sz, moving a hole down; returns it and the new size."""
+    v0 = hv[0]; i0 = hi[0]
+    sz -= 1
+    v = hv[sz]; i = hi[sz]
+    k = 0
+    while True:
+        c = 4 * k + 1
+        if c >= sz:
+            break
+        m = c
+        e = min(c + 4, sz)
+        for j in range(c + 1, e):
+            if hv[j] < hv[m] or (hv[j] == hv[m] and hi[j] < hi[m]):
+                m = j
+        if hv[m] < v or (hv[m] == v and hi[m] < i):
+            hv[k] = hv[m]; hi[k] = hi[m]; k = m
+        else:
+            break
+    if sz > 0:
+        hv[k] = v; hi[k] = i
+    return v0, i0, sz
+
+
+@nb.njit(cache=True, fastmath=False, parallel=False)
 def fill_order(h, sea, n):
     """priority-flood fill with epsilon; returns filled, order (downstream first). route adds the D8 receivers; evolve.route
     takes these two alone and finds its own (D8-LTD), so it no longer builds receivers it throws away (cut R2, 9 Nov 2026,
-    docs/design/glacial_speed_design.md). The flood is route's, moved here unchanged."""
+    docs/design/glacial_speed_design.md). The queue is a four-way heap with a moving hole (cut R3; it was a binary heap with
+    swaps). (value, index) is a strict total order, so any correct queue pops the same sequence, and filled and order come
+    out exactly as before."""
     N = n*n
     EPS = 1e-3
     filled = np.empty(N); seen = np.zeros(N, np.uint8)
-    # simple binary heap on (value, idx)
     hv = np.empty(N+8); hi = np.empty(N+8, np.int64); sz = 0
     for i in range(N):
         if sea[i]:
@@ -25,26 +65,10 @@ def fill_order(h, sea, n):
                     if sea[(r+dr)*n+c+dc]: seed = True
         if seed:
             seen[i] = 1; filled[i] = max(h[i], EPS)
-            # push
-            k = sz; sz += 1; hv[k] = filled[i]; hi[k] = i
-            while k > 0:
-                p = (k-1)//2
-                if hv[p] > hv[k] or (hv[p] == hv[k] and hi[p] > hi[k]):
-                    t = hv[p]; hv[p] = hv[k]; hv[k] = t
-                    t2 = hi[p]; hi[p] = hi[k]; hi[k] = t2; k = p
-                else: break
+            sz = _push4(hv, hi, sz, filled[i], i)
     order = np.empty(N, np.int64); no = 0
     while sz > 0:
-        v = hv[0]; i = hi[0]; sz -= 1
-        hv[0] = hv[sz]; hi[0] = hi[sz]
-        k = 0
-        while True:
-            l = 2*k+1; rr = l+1; m = k
-            if l < sz and (hv[l] < hv[m] or (hv[l] == hv[m] and hi[l] < hi[m])): m = l
-            if rr < sz and (hv[rr] < hv[m] or (hv[rr] == hv[m] and hi[rr] < hi[m])): m = rr
-            if m == k: break
-            t = hv[m]; hv[m] = hv[k]; hv[k] = t
-            t2 = hi[m]; hi[m] = hi[k]; hi[k] = t2; k = m
+        v, i, sz = _pop4(hv, hi, sz)
         if not sea[i]:
             order[no] = i; no += 1
         r = i//n; c = i % n
@@ -57,13 +81,7 @@ def fill_order(h, sea, n):
                 if seen[j]: continue
                 seen[j] = 1
                 filled[j] = max(h[j], v+EPS)
-                k = sz; sz += 1; hv[k] = filled[j]; hi[k] = j
-                while k > 0:
-                    p = (k-1)//2
-                    if hv[p] > hv[k] or (hv[p] == hv[k] and hi[p] > hi[k]):
-                        t = hv[p]; hv[p] = hv[k]; hv[k] = t
-                        t2 = hi[p]; hi[p] = hi[k]; hi[k] = t2; k = p
-                    else: break
+                sz = _push4(hv, hi, sz, filled[j], j)
     # pop order is ascending filled value = downstream first
     return filled, order[:no]
 
