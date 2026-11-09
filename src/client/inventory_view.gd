@@ -4298,9 +4298,13 @@ func screen_open() -> bool:
 	return open or chest_mode or character_open() or dialogue_open
 
 
+const CHEST_KEYS := [["take_all", 0], ["store_all", 1], ["stack_nearby", 2], ["sort_both", 3]]    # action id, Net.ACT_BULK kind
+
+
 # Quick keys while the screen is open: E use (eat or apply), D drop (Shift+D one), S split, R repair, T transfer
-# between the pack and an open container. They act on the slot under the mouse, else the selected slot. True when the key
-# was one of them (the caller then skips its other bindings). Outside this screen E is the interact key.
+# between the pack and an open container. They act on the slot under the mouse, else the selected slot. With a container open
+# A takes all, G stores all, F sorts both and Q stacks into my chests. True when the key was one of them (the caller then skips
+# its other bindings). Outside this screen E is the interact key.
 func quick_key(event: InputEventKey) -> bool:
 	if dialogue_open and dialogue_key.is_valid():
 		return bool(dialogue_key.call(event))
@@ -4347,6 +4351,13 @@ func quick_key(event: InputEventKey) -> bool:
 			_container_part.on_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
 
 		return true
+
+	# A container open: Take all, Store all, Sort both, Stack into my chests (redesign 4.4), the same as the key hints in its column.
+	if chest_mode:
+		for spec in CHEST_KEYS:
+			if KeyBindings.matches(event, str(spec[0])):
+				bulk(int(spec[1]))
+				return true
 
 	return false
 

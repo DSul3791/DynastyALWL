@@ -681,6 +681,31 @@ func _load_springs(list: Array) -> void:
 			ground_springs.append([Vector3(float(pos[0]), float(pos[1]), float(pos[2])), float(spring.get("m3_s", 0.0)), str(spring.get("cover", ""))])
 
 
+# The node of a cave's goblin den, or -1 for none (Dave 7 Nov 2026): a dry spot deep in an inland cave, in GOBLIN_DEN_PERCENT of them, picked by the
+# cave's id so the server, every client and island_checks agree. A spring cave's den is the end of its last dry side branch, never its stream
+# passage; a karst cave or lava tube's is its last dead end (no stream: all of it is dry). On a tile baked from the water record the spring caves
+# are the only caves with passages (docs/design/cave_dens_after_rebuild_design.md).
+static func goblin_den_node(cave: Dictionary) -> int:
+	var kind: String = str(cave.get("cave_kind", ""))
+
+	if not GOBLIN_DEN_CAVES.has(kind) or (cave.get("nodes", []) as Array).is_empty() or absi(hash(str(cave.get("id", "")))) % 100 >= GOBLIN_DEN_PERCENT:
+		return -1
+
+	return dry_den_node(cave)
+
+
+# The node of a cave's last dry den spot whatever the goblin share: a spring cave's last dry side branch, any other cave's last dead end; -1 for none.
+static func dry_den_node(cave: Dictionary) -> int:
+	var want: String = "branch" if str(cave.get("cave_kind", "")) == "spring_cave" else "dead_end"
+	var found: int = -1
+
+	for den in cave.get("dens", []):
+		if str(den.get("where", "")) == want:
+			found = int(den["node"])
+
+	return found
+
+
 func _load_caves(list: Array) -> void:
 	cave_streams = PackedFloat32Array()
 	cave_pool_shapes = PackedFloat32Array()
@@ -736,34 +761,20 @@ func _load_caves(list: Array) -> void:
 		if str(cave.get("cave_kind", "")) == "spring_cave":
 			_load_cave_stream(cave)
 
-		var branch_den: Vector3 = Vector3.INF
-		var dry_end: Vector3 = Vector3.INF
-		var branch_node: int = -1
-		var dry_node: int = -1
-
 		for den in cave.get("dens", []):
 			var dn: Array = nodes[int(den["node"])]
 			cave_dens.append(Vector3(float(dn[0]), float(dn[1]) - 0.5 * float(dn[4]), float(dn[2])))
 
-			if str(den.get("where", "")) == "branch":
-				branch_den = cave_dens[cave_dens.size() - 1]   # the last dry side branch of a spring cave
-				branch_node = int(den["node"])
-			elif str(den.get("where", "")) == "dead_end":
-				dry_end = cave_dens[cave_dens.size() - 1]      # the last dead end (a karst cave or lava tube has no stream: all of it is dry)
-				dry_node = int(den["node"])
-
-		# A goblin den (Dave 7 Nov 2026): a dry spot deep in an inland cave, in GOBLIN_DEN_PERCENT of them (picked by the cave's id, so the server and
-		# every client agree). A spring cave's den is the end of a dry side branch, never its stream passage; a karst cave or lava tube's is a dead
-		# end. The watershed rebuild makes spring caves rare (cave springs only where rock and catchment allow), so the dry caves keep goblins on the
-		# island (docs/water/stage_e_readers_design.md Q1). Dressed with litter (bones, sticks, thatch) and a small fire as cave_bones kinds 2 and 3.
-		var kind: String = str(cave.get("cave_kind", ""))
-		var goblin_spot: Vector3 = branch_den if kind == "spring_cave" else dry_end
+		# A goblin den (Dave 7 Nov 2026; goblin_den_node below). Dressed with litter (bones, sticks, thatch) and a small fire as cave_bones kinds 2 and 3.
+		var goblin_node: int = goblin_den_node(cave)
 		var mouth_node: int = int(cave["entrances"][0]) if not cave.get("entrances", []).is_empty() else 0
 
-		if goblin_spot != Vector3.INF and GOBLIN_DEN_CAVES.has(kind) and not nodes.is_empty() and absi(hash(str(cave.get("id", "")))) % 100 < GOBLIN_DEN_PERCENT:
+		if goblin_node >= 0:
+			var gn: Array = nodes[goblin_node]
+			var goblin_spot: Vector3 = Vector3(float(gn[0]), float(gn[1]) - 0.5 * float(gn[4]), float(gn[2]))
 			goblin_dens.append(goblin_spot)
 			goblin_den_mouths.append(Vector2(float(nodes[mouth_node][0]), float(nodes[mouth_node][2])))
-			goblin_den_paths.append(cave_floor_path(cave, mouth_node, branch_node if kind == "spring_cave" else dry_node))
+			goblin_den_paths.append(cave_floor_path(cave, mouth_node, goblin_node))
 			cave_bones.append_array(PackedFloat32Array([goblin_spot.x, goblin_spot.y, goblin_spot.z, 3.0, 0.0]))
 
 			for k in GOBLIN_LITTER_PILES:

@@ -9,6 +9,7 @@ const StructureLook := preload("res://src/shared/structure_look.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const LOOK_COLUMNS := 6     # slots across the container: the Craft column's 650 px, the same 100 px wells as the pack (redesign 4.4)
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
@@ -63,8 +64,8 @@ func build() -> void:
 	var gap: Control = Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(gap)
-	bar.add_child(_hint("Take all", "Take every stack from the container into your pack", take_all))
-	bar.add_child(_hint("Store all", "Put every pack stack the container takes into it (the hotbar's items and favourites stay)", store_all))
+	bar.add_child(_hint("Take all", "take_all", "Take every stack from the container into your pack", take_all))
+	bar.add_child(_hint("Store all", "store_all", "Put every pack stack the container takes into it (the hotbar's items and favourites stay)", store_all))
 
 	# The grid: the pack's wells, 6 across with 10 px gaps; a big container scrolls (the wheel; no bar, it would not fit the 650 px).
 	var scroll: ScrollContainer = ScrollContainer.new()
@@ -105,16 +106,16 @@ func build() -> void:
 	tools.custom_minimum_size = Vector2(0.0, 32.0)
 	tools.add_theme_constant_override("separation", 24)
 	box.add_child(tools)
-	tools.add_child(_hint("Sort both", "Sort your pack and this container in the pack's order", sort_pack))
-	tools.add_child(_hint("Stack into my chests", "Add to stacks your own chests nearby already hold", stack_nearby))
+	tools.add_child(_hint("Sort both", "sort_both", "Sort your pack and this container in the pack's order", sort_pack))
+	tools.add_child(_hint("Stack into my chests", "stack_nearby", "Add to stacks your own chests nearby already hold", stack_nearby))
 
 	view._frame.craft_column.add_child(box)     # the Craft column; InventoryView._show_tab shows it or the recipes
 
 
-# A key hint (redesign 4.1 and 4.4): plain text on the panel, gold under the pointer; still clickable.
-func _hint(text: String, tip: String, action: Callable) -> Button:
+# A key hint (redesign 4.1 and 4.4): the words and their key, plain text on the panel, gold under the pointer; still clickable.
+func _hint(text: String, key_action: String, tip: String, action: Callable) -> Button:
 	var button: Button = Button.new()
-	button.text = text
+	button.text = "%s (%s)" % [text, KeyBindings.label(key_action)]
 	button.tooltip_text = tip
 	button.flat = true
 	button.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
