@@ -508,6 +508,30 @@ func _ready() -> void:
 	animals.water_level = func(x, z):
 		var water_here: Array = _water_at(Vector3(x, 0.0, z))
 		return float(water_here[0]) if not is_nan(water_here[0]) else NAN
+	# The ground springs near a point, for drink_spot (animals go to a spring first: docs/design/spring_heads_lower_design.md 3).
+	animals.springs_near = func(point: Vector3, reach: float) -> PackedVector3Array:
+		var heads: PackedVector3Array = PackedVector3Array()
+		var seen: Dictionary = {}
+
+		for corner in [Vector2(-reach, -reach), Vector2(reach, -reach), Vector2(-reach, reach), Vector2(reach, reach)]:
+			var tile = generator.tile_of(point.x + corner.x, point.z + corner.y)
+
+			if seen.has(tile):
+				continue
+
+			seen[tile] = true
+			var data = generator.get_tile(tile)
+
+			if data == null or data.placeholder:
+				continue
+
+			for spring in data.ground_springs:
+				var head: Vector3 = spring[0]
+
+				if Vector2(head.x - point.x, head.z - point.z).length() <= reach:
+					heads.append(head)
+
+		return heads
 	animals.player_positions = npcs.player_positions
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
