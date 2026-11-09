@@ -54,6 +54,7 @@ const ContainerPanelScript := preload("res://src/client/ui/inventory/container_p
 const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the window's look (steps B and C)
 const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe.gd")
+const InventoryFrameScript := preload("res://src/client/ui/inventory/inventory_frame.gd")   # the redesign's three panels (step 3a)
 var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
 var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store beside the pack
@@ -70,7 +71,9 @@ func _init() -> void:
 
 
 var _panel: PanelContainer
-var _columns: HBoxContainer            # the window's columns; the open container sits between recipes and pack
+var _columns: BoxContainer             # the You column; an open container shows there in place of the stats (container_panel.gd)
+var _frame: InventoryFrameScript       # the window's frame: backdrop, the three panels and their title plates (inventory_frame.gd)
+var _you_box: VBoxContainer            # the You column's stats, hidden while a container is open
 var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
@@ -2083,6 +2086,7 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 		_panel.visible = true      # one window, the container in its middle column
 		_container_part.build()
 		_chest_panel.visible = true
+		_show_container_column(true)
 		_refresh()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -2103,6 +2107,8 @@ func _close_chest() -> void:
 
 	if _chest_panel != null:
 		_chest_panel.visible = false
+
+	_show_container_column(false)
 
 	if _panel != null:
 		_panel.visible = false
@@ -3746,6 +3752,8 @@ func set_text_scale(scale: float) -> void:
 		var was_open: bool = open
 		_panel.queue_free()
 		_panel = null
+		_frame = null
+		_you_box = null
 		_buttons.clear()
 
 		if was_open:
@@ -3770,9 +3778,9 @@ func _tooltip_theme() -> Theme:
 
 # Health, exertion, hunger and thirst, side by side at the top of the inventory screen: the only bars in the game (Dave
 # 2026-10-21: no bars on the main screen). Exertion is the strain as a share of the blackout threshold.
-func _build_bars_row() -> HBoxContainer:
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", _px(28))
+func _build_bars_row() -> VBoxContainer:
+	var row: VBoxContainer = VBoxContainer.new()   # the You column's stats, one row each (redesign 4.2)
+	row.add_theme_constant_override("separation", _px(14))
 	_panel_bars.clear()
 
 	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Temperature", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
@@ -3782,6 +3790,7 @@ func _build_bars_row() -> HBoxContainer:
 		var label: Label = Label.new()
 		label.text = spec[0]
 		_style(label, BODY_PX - 6)
+		label.custom_minimum_size = Vector2(_px(150), 0.0)
 		cell.add_child(label)
 		if spec[0] == "Temperature":
 			_temp_label = label
@@ -4086,65 +4095,73 @@ func _build_panel() -> void:
 	if _panel != null:
 		return
 
+	# The redesign's window (docs/ui/inventory_crafting_redesign.md section 4, step 3a): the frame draws the backdrop and three solid
+	# panels at fixed canvas px, Pack, You and Craft, ending at y 932 so the hotbar strip shows underneath. The parts build into its columns.
 	_panel = PanelContainer.new()
 	_panel.theme = _tooltip_theme()
-	_panel.anchor_left = 0.05
-	_panel.anchor_right = 0.95
-	_panel.anchor_top = 0.04
-	_panel.anchor_bottom = 0.89   # leaves the whole hotbar visible underneath (Dave)
-	_panel.clip_contents = true   # the window keeps its size whatever the text size; contents scroll or wrap
-	InventoryLook.style_window(_panel, _px(18))
+	_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_frame = InventoryFrameScript.new()
+	_panel.add_child(_frame)
 
 	if not bulk_event.is_valid():
 		bulk_event = _bulk_look
 
-	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", _px(10))
-	_panel.add_child(box)
-	var top: HBoxContainer = HBoxContainer.new()
-	box.add_child(top)
-	var title: Label = Label.new()
-	title.text = "Crafting and inventory"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.size_flags_stretch_ratio = 1.4
-	title.clip_text = true
-	_style(title, TITLE_PX)
+	_search = LineEdit.new()
+	_search.placeholder_text = "Search the pack"
+	_search.custom_minimum_size = Vector2(232.0, 0.0)
+	_search.clear_button_enabled = true
+	_style(_search, BODY_PX - 12)
+	_search.text_changed.connect(func(_text): _refresh())
+	_frame.header.add_child(_search)
 
-	InventoryLook.plate(title, "Crafting and inventory", _px(TITLE_PX), InventoryLook.unit_of(self))
-
-	top.add_child(title)
-
-	# Text size buttons (Dave 2026-10-20); terrain_client keeps and saves the choice.
+	# Text size buttons (Dave 2026-10-20); terrain_client keeps and saves the choice. They sit on the Craft panel's title row.
 	for step in [[-1, "Text -"], [1, "Text +"]]:
 		var size_button: Button = Button.new()
 		size_button.text = step[1]
-		_style(size_button, BODY_PX - 6)
+		_style(size_button, BODY_PX - 12)
 		size_button.pressed.connect(func():
 			if text_step.is_valid():
 				text_step.call(step[0]))
-		top.add_child(size_button)
+		_frame.craft_header.add_child(size_button)
 
-	_search = LineEdit.new()
-	_search.placeholder_text = "Search items"
-	_search.custom_minimum_size = Vector2(_px(120), 0.0)
-	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_search.size_flags_stretch_ratio = 1.0
-	_search.clear_button_enabled = true
-	_style(_search, BODY_PX)
-	_search.text_changed.connect(func(_text): _refresh())
-	top.add_child(_search)
-	box.add_child(_build_bars_row())
-	var columns: HBoxContainer = HBoxContainer.new()
-	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", _px(24))
-	box.add_child(columns)
-	_columns = columns
+	_frame.set_title(1, _you_title())
 
-	# Left: recipes and the crafting queue. Right: the pack. Each part builds its own column (src/client/ui/inventory/).
+	# You: the six stats (the live character and the gear slots come in step 3d). An open container takes this column (container_panel.gd).
+	_you_box = VBoxContainer.new()
+	_you_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_you_box.alignment = BoxContainer.ALIGNMENT_END
+	_you_box.add_child(_build_bars_row())
+	_frame.you_column.add_child(_you_box)
+	_columns = _frame.you_column
+
+	# Pack and Craft: each part builds its own column (src/client/ui/inventory/).
 	_queue_part.build()
-	columns.add_child(_recipe_part.build(_queue_part.root))
-	columns.add_child(_pack_part.build())
+	var pack_root: Control = _pack_part.build()
+	pack_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_frame.pack_column.add_child(pack_root)
+	var craft_root: Control = _recipe_part.build(_queue_part.root)
+	craft_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_frame.craft_column.add_child(craft_root)
 	_layer.add_child(_panel)
+
+	# The hotbar strip stays on top of the window's backdrop, in its place, so it can be read and dropped on with the window up (section 9).
+	if hotbar_strip != null and hotbar_strip._row != null and is_instance_valid(hotbar_strip._row) and hotbar_strip._row.get_parent() == _layer:
+		_layer.move_child(hotbar_strip._row, -1)
+
+
+# Shows an open container in the You column in place of the stats, or the stats again.
+func _show_container_column(shown: bool) -> void:
+	if _you_box != null and is_instance_valid(_you_box):
+		_you_box.visible = not shown
+
+	if _frame != null and is_instance_valid(_frame):
+		_frame.set_title(1, "CHEST" if shown else _you_title())
+
+
+func _you_title() -> String:
+	var who: String = str(CharacterStore.active().get("name", "")).strip_edges()
+	return who.to_upper() if who != "" else "YOU"
 
 
 # True while the crafting and inventory screen or a chest screen is on screen.
@@ -4723,7 +4740,7 @@ func run_text_test(client) -> void:
 		await get_tree().process_frame
 		sizes[snappedf(_panel.size.x, 1.0) * 10000 + snappedf(_panel.size.y, 1.0)] = text_scale
 		var need: Vector2 = _panel.get_combined_minimum_size()
-		fits = fits and need.x <= _panel.size.x + 1.0 and need.y <= _panel.size.y + 1.0
+		fits = fits and need.x <= _panel.size.x + 1.0 and need.y <= _panel.size.y + 1.0 and _frame.columns_fit()
 
 		for button in _buttons:
 			valid = valid and is_instance_valid(button)

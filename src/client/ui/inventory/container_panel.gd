@@ -7,7 +7,7 @@ extends RefCounted
 const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
-const LOOK_COLUMNS := 6
+const LOOK_COLUMNS := 5     # slots across the container: it shows in the You column (408 px inside), where six do not fit
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
@@ -97,7 +97,8 @@ func build() -> void:
 	box.add_child(_keep_out)
 	box.move_child(_keep_out, 1)
 
-	view._columns.add_child(view._chest_panel)      # between the recipes and the pack; hidden, it takes no room
+	view._chest_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	view._columns.add_child(view._chest_panel)      # the You column, in place of the stats while it is open; hidden, it takes no room
 	view._columns.move_child(view._chest_panel, 1)
 
 
