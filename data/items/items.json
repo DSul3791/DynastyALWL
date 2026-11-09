@@ -180,7 +180,7 @@
 		},
 		"torch_doused": {
 			"number": 542,
-			"name": "Torch (out)",
+			"name": "Torch",
 			"description": "A stick wrapped in fibre. Lights your way after dark.",
 			"kind": "tool",
 			"tool_class": "torch_doused",

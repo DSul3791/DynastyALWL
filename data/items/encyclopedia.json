@@ -2031,7 +2031,7 @@
 			"obtainable_now": true
 		},
 		"torch_doused": {
-			"name": "Torch (out)",
+			"name": "Torch",
 			"kind": "tool",
 			"description": "A stick wrapped in fibre. Lights your way after dark.",
 			"how_to_get": [
