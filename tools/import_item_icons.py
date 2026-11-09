@@ -125,7 +125,7 @@ def main():
             if ext.lower() != ".png":
                 continue
             if name not in ids:
-                skipped.append((file, "is not an item id in items.json"))
+                skipped.append((file, "is not a live item in items.json (retired or unknown)"))
                 continue
             if name in PAINTED and os.path.isfile(os.path.join(DEST, file)):
                 skipped.append((file, "is painted (tools/paint_basic_icons.py); the painted one stays"))
