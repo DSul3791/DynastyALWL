@@ -346,9 +346,10 @@ def _basin_buckets(order, rec, sea, buckets):
     docs/design/glacial_speed_design.md). A basin is the tree that drains to one outlet (a cell whose receiver is the sea or
     none). The basins go largest first, each into the lightest bucket so far (the first, on a tie), and each bucket keeps its
     cells in the order they have in order, so a receiver still comes before its donors. Returns (ptr, cells): bucket b is
-    cells[ptr[b]:ptr[b + 1]], and the cell count of the largest basin and the number of basins. Returns empty arrays when a cell
-    drains to land that is not before it in order (lem.route never does that); _solve then runs in one bucket, in order, as
-    before."""
+    cells[ptr[b]:ptr[b + 1]], and the cell count of the largest basin and the number of basins. When a cell drains to land that
+    is not before it in order (lem.route never does that), it returns one bucket holding order as it is, and 0 basins: _solve
+    then runs in one thread, in order, as before. (The one bucket is made here, not in _solve: a parallel function that remade
+    ptr in a branch was given the first ptr's size, and allocated with a negative size; David4, 9 Nov.)"""
     N = rec.size
     root = np.full(N, -1, np.int64)
     size = np.zeros(N, np.int64)
@@ -357,7 +358,9 @@ def _basin_buckets(order, rec, sea, buckets):
         d = rec[i]
         if d >= 0 and not sea[d]:
             if root[d] < 0:
-                return np.zeros(0, np.int64), np.zeros(0, np.int64), 0, 0
+                one = np.zeros(2, np.int64)
+                one[1] = order.size
+                return one, order.copy(), 0, 0
             root[i] = root[d]
         else:
             root[i] = i
@@ -400,7 +403,7 @@ def solve_buckets(order, rec, sea, buckets):
     """How _solve's threads share the land (glacial logs it once a run): the shares of the land cells in the largest bucket
     and in the largest basin, and the number of basins. (1.0, 1.0, 0) when _solve would run in one bucket."""
     ptr, _, largest, count = _basin_buckets(order, rec, sea, buckets)
-    if ptr.size == 0 or order.size == 0:
+    if count == 0 or order.size == 0:
         return 1.0, 1.0, 0
     return float(np.max(np.diff(ptr))) / order.size, float(largest) / order.size, int(count)
 
@@ -456,10 +459,6 @@ def _solve(h, h0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cover, G, U, Qd, cel
     own = np.zeros(N)
     total = np.zeros(N)
     ptr, cells, _, _ = _basin_buckets(order, rec, sea, nb.get_num_threads())
-    if ptr.size == 0:
-        ptr = np.zeros(2, np.int64)
-        ptr[1] = order.size
-        cells = order.copy()
     buckets = ptr.size - 1
     big = np.zeros(buckets)
     for s in range(sweeps):
