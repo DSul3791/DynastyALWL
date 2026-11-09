@@ -27,6 +27,9 @@ One prop per spring head, made of three parts:
 - **Heads.** The heads come from #837's `drink_points` springs (x, z per chunk). They are already on the client and are already limited to what the server sends.
 - **Direction.** Downhill is toward the nearest record brook cell within 16 m in the same chunk's drink points. If there is none, it is the steepest of 8 ground samples 3 m from the head.
 - **Height.** The prop sits at the ground height at the head. A Decal projects onto whatever is there, so it needs no exact y.
+- **Slope.** The patch and the runnel are tilted to lie along the slope, down the water's way. A level 4 m box lost the downhill half of the patch on a steep head (about 40 degrees at the #802 spot, Dino's 20 m shot, 9 Nov 2026).
+- **Tuned from Dino's shots (9 Nov 2026).** The runnel is a darker wet line with a narrow middle, roughness 0.18 and a glint energy of 0.12, because the first build read as a white strip from 20 m. The pebbles are wet grey-brown (0.33, 0.3, 0.26) and flatter, because the first build read as black holes on pale ground.
+- **Log.** Each head prints one line when it is built: `spring heads: built at x, y, z, runnel L m toward dx, dz (brook cells | downhill)`.
 - **Lifetime.** Props are added when a chunk's drink points arrive and dropped with `_forget_drink`. The 600-chunk cap that bounds the drink cache bounds the props too.
 
 ## Seasons and weather
