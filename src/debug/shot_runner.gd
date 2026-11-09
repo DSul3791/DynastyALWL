@@ -19,6 +19,7 @@ extends Node
 #   --shot-stance=NAME  hold a stance (stand, crouch, sit, lie) so the third-person body shows that pose (use with --cam left, --walk 0)
 #   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
+#   --shot-animal-role=R  the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert), and logs which clip each played
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
@@ -102,6 +103,7 @@ var _spin_next_msec: int = 0
 var _selected: bool = false
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 var animal_names: PackedStringArray = PackedStringArray()   # --shot-animals=bear,deer: one animal of each in a row (_show_animals)
+var animal_role: String = "0"     # --shot-animal-role=R: the row plays that role's clip (21 the drink), falling back to role 0 as the game does
 var _animals_t: int = 0
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
@@ -211,6 +213,8 @@ func setup(owner_client, args: Array) -> void:
 				views = [{"name": "wide", "dist": 9.0, "pitch": -8.0, "above": 1.5}, {"name": "close", "dist": 4.0, "pitch": -10.0, "above": 1.2}]
 		elif argument.begins_with("--shot-animals="):
 			animal_names = argument.trim_prefix("--shot-animals=").split(",", false)
+		elif argument.begins_with("--shot-animal-role="):
+			animal_role = argument.trim_prefix("--shot-animal-role=")
 		elif argument.begins_with("--shot-flora="):
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
@@ -928,12 +932,15 @@ func _show_animals(now: int) -> void:
 
 		if node.has_meta("player"):
 			var player: AnimationPlayer = node.get_meta("player")
-			var clip: String = str((player.get_meta("roles", {}) as Dictionary).get("0", ""))     # the graze role the animal view resolved
+			var roles: Dictionary = player.get_meta("roles", {})
+			var clip: String = str(roles.get(animal_role, roles.get("0", "")))     # the role the animal view resolved (graze unless --shot-animal-role)
 
 			if clip != "" and player.has_animation(clip):
 				player.play(clip)
 
-		drawn.append("%s %s" % [name_text, "model" if node.has_meta("model") else "code"])
+			drawn.append("%s model, role %s plays %s" % [name_text, animal_role if roles.has(animal_role) else "0", clip])
+		else:
+			drawn.append("%s %s" % [name_text, "model" if node.has_meta("model") else "code"])
 		middle += node.position
 		count += 1
 
