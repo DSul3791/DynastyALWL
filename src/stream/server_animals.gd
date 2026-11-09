@@ -883,7 +883,7 @@ func tick(delta: float) -> void:
 	if companions != null:
 		companions.tick(delta)
 
-	if wolves != null and (not wolves.packs.is_empty() or not wolves.dens.is_empty() or bool(wolves.cfgw().get("natural", false))):
+	if wolves != null:   # wild packs are always on, so the wolves always tick (they place packs round the players)
 		wolves.tick(delta)
 
 	_spawn_acc += delta

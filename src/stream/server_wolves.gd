@@ -124,12 +124,11 @@ func tick(delta: float) -> void:
 
 	_tend_orphans(infos, delta)
 
-	if bool(cfgw().get("natural", false)):
-		_natural_acc += delta
+	_natural_acc += delta   # wild packs are always on (Dave 8 Nov, decision 4; no switch since 9 Nov)
 
-		if _natural_acc >= 5.0:
-			_natural_acc = 0.0
-			_natural(infos)
+	if _natural_acc >= 5.0:
+		_natural_acc = 0.0
+		_natural(infos)
 
 	for pid in packs.keys():
 		if packs.has(pid):
@@ -741,7 +740,8 @@ func _natural(infos: Array) -> void:
 
 				if pid != 0:
 					packs[pid]["key"] = key
-					make_pups(pid)
+					var pups: int = make_pups(pid)
+					print("wolves: a wild pack at its den %.0f,%.0f (cell %s), %d wolves, %d pups" % [home.x, home.y, key, _members(packs[pid]).size(), pups])
 
 				return
 

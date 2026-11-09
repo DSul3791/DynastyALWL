@@ -40,6 +40,7 @@ func make():
 	a.rng.seed = 5
 	a.cfg["senses"] = {}
 	a.big_game.player_info = func(): return players
+	a.cfg["wolves"]["cell_share"] = 0.0   # no wild packs here (they are always on): each check makes its own pack
 	var w = a.wolves
 	w.player_info = func(): return players
 	w.fires = func(): return fires_at
