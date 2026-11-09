@@ -32,7 +32,7 @@ Each finished stage leaves `run_chain_stamp.json` in its folder. So:
 - `--plan` prints what would run, and why, and runs nothing.
 - `--godot=PATH` names the Godot binary.
 
-**Threads and times.** Evolve gets `NUMBA_NUM_THREADS=9`, and the two exports run side by side (Dave, 9 Nov 2026: nine threads). Every stage prints its start and end on the PC clock.
+**Threads and times.** Every stage gets `NUMBA_NUM_THREADS=9` (evolve's creep and the rock lookups in `rock.py` run on numba's threads), and the two exports run side by side (Dave, 9 Nov 2026: nine threads). Every stage prints its start and end on the PC clock.
 
 `check_record.py`, the bake, settle, refilm and rebake_check run after it, from the job file. Its unit tests are `python tools/watershed/test_run_chain.py` (David4 or Dave's PC).
 

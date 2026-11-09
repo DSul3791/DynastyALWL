@@ -18,8 +18,8 @@ that stops part way never looks done. A stage that runs again and writes the sam
 The two Godot exports hash every file under src/worldgen and data/tables, and the world's world.json, plan/ and
 erosion_delta_v2.bin.
 
-Nine threads (Dave, 9 Nov 2026): evolve gets NUMBA_NUM_THREADS=9 and the two exports run side by side. The other stages are one
-thread each. Each stage prints its start and end on the PC clock. check_record.py, the bake, settle, refilm and rebake_check are
+Nine threads (Dave, 9 Nov 2026): every stage gets NUMBA_NUM_THREADS=9 (evolve's creep and the rock lookups in rock.py run on
+numba's threads; the rest of each stage is one thread) and the two exports run side by side. Each stage prints its start and end on the PC clock. check_record.py, the bake, settle, refilm and rebake_check are
 not part of it: the job file runs them after.
 """
 import hashlib
@@ -189,7 +189,7 @@ def stages(chain, run, params_file, godot):
         dict(name='inputs', script='inputs.py', out=d['inputs'], outputs=['inputs.npz'],
              reads=lambda: reads(('landform', '*.f32'), ('landform', 'raw_manifest.json'), geology),
              cmd=[py, W('inputs.py'), d['landform'], d['geology'], d['inputs'], params_file]),
-        dict(name='evolve', script='evolve.py', out=d['b1'], outputs=['ground.npz'], threads=True,
+        dict(name='evolve', script='evolve.py', out=d['b1'], outputs=['ground.npz'],
              reads=lambda: reads(('inputs', 'inputs.npz'), geology),
              cmd=[py, W('evolve.py'), d['inputs'], d['geology'], d['b1'], params_file]),
         dict(name='glacial', script='glacial.py', out=d['b2'], outputs=['glacial.npz'],
@@ -249,9 +249,7 @@ def _start(stage):
     stamp_path = os.path.join(stage['out'], STAMP)
     if os.path.exists(stamp_path):
         os.remove(stamp_path)
-    env = dict(os.environ)
-    if stage.get('threads'):
-        env['NUMBA_NUM_THREADS'] = str(THREADS)
+    env = dict(os.environ, NUMBA_NUM_THREADS=str(THREADS))
     print(f"{stage['name']}: start {_clock()}", flush=True)
     return subprocess.Popen(stage['cmd'], cwd=REPO, env=env), time.time()
 
