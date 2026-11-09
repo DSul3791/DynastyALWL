@@ -13,25 +13,26 @@ Where the inventory's item icons live, which ones are baked and which are painte
 
 ## Baked or painted
 
-Once #823 to #825 land, all 424 live items have an icon. There are two kinds.
+All 424 live items have an icon. There are two kinds.
 
 | Kind | Count | Made by | Ran where |
 |---|---|---|---|
-| **Baked** | 350 | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
-| **Painted, basic** | 3 (log, stick, stone) | `tools/paint_basic_icons.py` | Anywhere; Python with numpy and Pillow |
+| **Baked** | 323 | `tools/icon_bake.gd`: the item's real game mesh (`basic_look.gd mesh_for`) in a fixed light rig | Dave's PC only (it needs the real renderer, so it cannot run headless) |
+| **Painted, basic** | 2 (log, stone) | `tools/paint_basic_icons.py` | Anywhere; Python with numpy and Pillow |
 | **Painted, made pieces** | 71 (walls, floors, roofs, stairs, ladder, log species, driftwood, furniture, stations, fires, torches, traps, carcass) | `tools/paint_structure_icons.py` | Anywhere; Python with numpy and Pillow |
+| **Painted, small items** | 28 (spears, arrows, stick, spades, the 14 crop seeds, pies): items the bake drew too thin or too alike to read at 23 px | `tools/paint_item_icons.py` | Anywhere; Python with numpy and Pillow |
 
-**The painted list is the code.** It is `("log", "stick", "stone")` plus `NAMES` in `tools/paint_structure_icons.py`, which is every key of its `PIECES` dict. The importer reads that same list as `PAINTED`, so there is no second copy to keep in step. To print it:
+**The painted list is the code.** It is `("log", "stone")` plus `NAMES` in `tools/paint_structure_icons.py` and in `tools/paint_item_icons.py`, each the keys of that file's `PIECES` dict. The importer reads that same list as `PAINTED`, so there is no second copy to keep in step. To print it:
 
 ```
-python3 -c "import sys; sys.path.insert(0, 'tools'); import paint_structure_icons as p; print(len(p.NAMES), p.NAMES)"
+python3 -c "import sys; sys.path.insert(0, 'tools'); import import_item_icons as i; print(len(i.PAINTED), i.PAINTED)"
 ```
 
 **A painted icon is never replaced by a bake.** When a baked folder is imported, an id in `PAINTED` is skipped if its PNG is already there. Every other live item is baked.
 
 ## The painted rig
 
-Both painters share the rig in `paint_basic_icons.py`:
+All three painters share the rig in `paint_basic_icons.py`:
 
 - low-poly, flat-shaded facets;
 - a warm key light from the top left, a fill of 0.38 and a gold rim;
@@ -41,12 +42,17 @@ Both painters share the rig in `paint_basic_icons.py`:
 
 `paint_structure_icons.py` builds each piece from boxes, log prisms and uprights in its material's colours. It draws them with a z-buffer, so faces that cross still show the right way round.
 
+`paint_item_icons.py` uses the same z-buffer render, with three rules for items that must read at 23 px (the recipe list at 1366 x 768):
+- **Thin things** are drawn thick, on the diagonal, with an oversized head. Arrows are a fan of three, and blades are rolled toward the key light so they don't come out dark.
+- **Each item in a set has its own colour**: spade blades in wood, stone, iron or steel; each crop seed shows its crop.
+- **A set shares one layout**: every crop seed is a pile of its seed with the crop beside it.
+
 - **Glowing faces.** A colour with a fourth value of 1 is drawn unlit. Coals, embers, flames and gems use this.
 - **The turn.** Each `PIECES` entry is `(builder, turn)`. The turn picks the side shown: walls show their face, slabs their top, roofs both slopes, and logs their cut ends toward the light.
 
 ## How to repaint one
 
-1. Change the builder in `tools/paint_structure_icons.py`, or `paint_basic_icons.py` for log, stick and stone.
+1. Change the builder in `tools/paint_structure_icons.py` or `tools/paint_item_icons.py`, or in `paint_basic_icons.py` for log and stone.
 2. Repaint only that icon:
    ```
    python3 tools/paint_structure_icons.py --only stone_forge,oven

@@ -2,7 +2,8 @@
 """Bring item icons into assets/ui/item_icons/ with their Godot .import files (inventory redesign step 5; Kathleen, 9 Nov 2026).
 
 The icon bake (tools/icon_bake.gd) writes one 128 x 128 PNG per item id on Dave's PC; the painted ones come from
-tools/paint_basic_icons.py. This copies a folder of them in, checks each one, and writes the .png.import file Godot would write,
+tools/paint_basic_icons.py, paint_structure_icons.py and paint_item_icons.py (docs/ui/item_icons.md).
+This copies a folder of them in, checks each one, and writes the .png.import file Godot would write,
 so InventoryLook.icon_for finds them (ResourceLoader.exists needs the .import) without an editor import first.
 
     python3 tools/import_item_icons.py SOURCE_DIR        copy SOURCE_DIR/*.png in (painted icons already here are kept)
@@ -25,10 +26,11 @@ DEST = os.path.join(ROOT, "assets", "ui", "item_icons")
 RES_DIR = "res://assets/ui/item_icons/"
 ITEMS = os.path.join(ROOT, "data", "items", "items.json")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paint_item_icons import NAMES as ITEM_NAMES   # noqa: E402
 from paint_structure_icons import NAMES as STRUCTURE_NAMES   # noqa: E402
 
-# Painted by tools/paint_basic_icons.py and tools/paint_structure_icons.py: a baked file of the same name never replaces them.
-PAINTED = ("log", "stick", "stone") + STRUCTURE_NAMES
+# Painted by tools/paint_basic_icons.py, paint_structure_icons.py and paint_item_icons.py: a baked file of the same name never replaces them.
+PAINTED = ("log", "stone") + STRUCTURE_NAMES + ITEM_NAMES
 UID_CHARS = "abcdefghijklmnopqrstuvwxy012345678"   # Godot's resource uid alphabet (base 34)
 
 IMPORT = """[remap]
@@ -132,7 +134,7 @@ def main():
                 skipped.append((file, "is not a live item in items.json (retired or unknown)"))
                 continue
             if name in PAINTED and os.path.isfile(os.path.join(DEST, file)):
-                skipped.append((file, "is painted (tools/paint_basic_icons.py); the painted one stays"))
+                skipped.append((file, "is painted (tools/paint_*_icons.py); the painted one stays"))
                 continue
 
             problem = check(os.path.join(args.source, file))
