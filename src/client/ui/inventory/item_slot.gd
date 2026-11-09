@@ -22,7 +22,6 @@ extends Control
 
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const DisplaySettings := preload("res://src/client/display_settings.gd")
-const ParchmentTooltip := preload("res://src/client/ui/inventory/parchment_tooltip.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 
 const SLOT_PX := 64.0            # at unit 1
@@ -257,9 +256,10 @@ func _notification(what: int) -> void:
 		set_dragging(false)
 
 
-# Item text shows on a parchment card, not the engine's grey box (look doc section 7).
+# Item text shows on the art kit's card, not the engine's grey box (redesign section 6). The pack's wells have no tooltip:
+# the info strip under the pack shows the slot under the pointer (4.1), so nothing covers the slots next to it.
 func _make_custom_tooltip(for_text: String) -> Object:
-	return ParchmentTooltip.from_text(for_text, unit) if for_text != "" else null
+	return ArtKit.card_from_text(for_text) if for_text != "" else null
 
 
 # ---- drawing ----
@@ -425,7 +425,7 @@ func _make_preview() -> Control:
 	return holder
 
 
-# The engine puts a custom tooltip inside its own grey "TooltipPanel" box. An empty one here lets only the parchment card show;
+# The engine puts a custom tooltip inside its own grey "TooltipPanel" box. An empty one here lets only the card show;
 # every other theme item still comes from the window's theme above.
 static func tooltip_theme() -> Theme:
 	if _tip_theme == null:

@@ -2821,7 +2821,7 @@ func _on_favourites(flags: PackedByteArray) -> void:
 
 # A bulk button's answer as a parchment toast, and each container that took something glows warm a moment (look doc section 9).
 func _bulk_look(kind: int, stacks: int, containers: int, ids: PackedInt32Array) -> void:
-	InventoryLook.toast(_layer, InventoryLook.bulk_text(kind, stacks, containers), InventoryLook.unit_of(self))
+	InventoryLook.toast(_layer, InventoryLook.bulk_text(kind, stacks, containers))
 	var spots: Array = []
 
 	for id in ids:
@@ -3790,10 +3790,17 @@ func _px(size: int) -> int:
 	return int(round(float(size) * text_scale * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
 
 
-# Tooltips pop up in the engine's small default font; the window's theme makes them as large as the body text (audit, job 82).
+# A plain tooltip (a button's or a tick's) looks like the art kit's card: the raised plate, Garamond 18 in cream (audit, job 82:
+# never the engine's small grey box). Item wells make their own card (item_slot.gd _make_custom_tooltip).
 func _tooltip_theme() -> Theme:
 	var themed: Theme = Theme.new()
-	themed.set_font_size("font_size", "TooltipLabel", _px(BODY_PX - 6))
+	var plate: StyleBox = ArtKit.stylebox_raised(0).duplicate()
+	plate.content_margin_top = 8
+	plate.content_margin_bottom = 8
+	themed.set_stylebox("panel", "TooltipPanel", plate)
+	themed.set_font("font", "TooltipLabel", ArtKit.font("garamond"))
+	themed.set_font_size("font_size", "TooltipLabel", 18)
+	themed.set_color("font_color", "TooltipLabel", ArtKit.CREAM)
 	return themed
 
 
