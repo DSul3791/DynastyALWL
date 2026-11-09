@@ -24,7 +24,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEST = os.path.join(ROOT, "assets", "ui", "item_icons")
 RES_DIR = "res://assets/ui/item_icons/"
 ITEMS = os.path.join(ROOT, "data", "items", "items.json")
-PAINTED = ("log", "stick", "stone")          # painted by tools/paint_basic_icons.py: a baked file of the same name never replaces them
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paint_structure_icons import NAMES as STRUCTURE_NAMES   # noqa: E402
+
+# Painted by tools/paint_basic_icons.py and tools/paint_structure_icons.py: a baked file of the same name never replaces them.
+PAINTED = ("log", "stick", "stone") + STRUCTURE_NAMES
 UID_CHARS = "abcdefghijklmnopqrstuvwxy012345678"   # Godot's resource uid alphabet (base 34)
 
 IMPORT = """[remap]
