@@ -163,6 +163,115 @@ def _swath(Ai, ptr, don, order, n, dx, w0, a0, alpha, ground, delta, below_surfa
     return out, surf
 
 
+# ---- a cold step's per-cell sums on numba's threads (docs/design/glacial_speed_design.md cut A2, 9 Nov 2026) ----
+# They were numpy lines: about 90 passes over all 8.3 M cells, 1.15 s of each 5.4 s cold step on one thread (Dino's split
+# profile). Each kernel below does one block of those lines, cell by cell, in numpy's own order of operations (fastmath off,
+# so no fused multiply-adds), and np.maximum / np.minimum as numpy defines them (_np_max, _np_min). Every cell writes only its
+# own slot, so the numbers are the same on any number of threads. The powers stay numpy's own `**` (the pow of numba and of
+# numpy may round the last bit differently), taken only on the cells where they are kept (_cold_powers).
+
+@nb.njit(cache=True)
+def _np_max(a, b):
+    """np.maximum(a, b) for one pair: a when a >= b or a is NaN, else b."""
+    return a if (a >= b or a != a) else b
+
+
+@nb.njit(cache=True)
+def _np_min(a, b):
+    """np.minimum(a, b) for one pair: a when a <= b or a is NaN, else b."""
+    return a if (a <= b or a != a) else b
+
+
+@nb.njit(cache=True, parallel=True)
+def _cold_sources(h, ice, ela_local, rain_mm, span, BR, cell, p0, surf, p_ice, ice_src):
+    """surf = h + ice; frac = np.minimum((surf - ela_local) / span, 1.0), times BR where below 0 (melt); p_ice = rain_mm * frac;
+    ice_src = cell * p_ice / p0."""
+    for i in nb.prange(h.size):
+        s = h[i] + ice[i]
+        surf[i] = s
+        f = _np_min((s - ela_local[i]) / span, 1.0)
+        if f < 0.0:
+            f = f * BR
+        p = rain_mm[i] * f
+        p_ice[i] = p
+        ice_src[i] = cell * p / p0
+
+
+@nb.njit(cache=True, parallel=True)
+def _cold_water(rain_less_et, p_ice, Ai, q_ref, out):
+    """water = np.maximum(rain_mm - et_cold - np.maximum(p_ice, 0), 0), plus the melt np.maximum(-p_ice, 0) where there is ice
+    (Ai > 0); out = water / q_ref."""
+    for i in nb.prange(out.size):
+        p = p_ice[i]
+        w = _np_max(rain_less_et[i] - _np_max(p, 0.0), 0.0)
+        w = w + _np_max(-p, 0.0) * (1.0 if Ai[i] > 0.0 else 0.0)
+        out[i] = w / q_ref
+
+
+@nb.njit(cache=True, parallel=True)
+def _cold_coefficients(h, thick, Aeff, am, Qwi, qm, ery_rock, ery_cov, share, Kg, K, tau, thr, kq, kq_c, Qd, kc, x, x0):
+    """kq = Kg * ery_rock * Aeff^m + K * ery_rock * share * Qwi^m, kq_c the same with ery_cov, Qd = Qwi + tau * Aeff,
+    kc = 0 under ice else K * ery_rock * share * thr, and x = x0 = h + thick (the solve's ice surface). am and qm are the
+    powers Aeff^m and Qwi^m (numpy's)."""
+    for i in nb.prange(h.size):
+        er = ery_rock[i]
+        ec = ery_cov[i]
+        sh = share[i]
+        kq[i] = Kg * er * am[i] + K * er * sh * qm[i]
+        kq_c[i] = Kg * ec * am[i] + K * ec * sh * qm[i]
+        Qd[i] = Qwi[i] + tau * Aeff[i]
+        t = thick[i]
+        kc[i] = 0.0 if t > 0.0 else K * er * sh * thr
+        v = h[i] + t
+        x[i] = v
+        x0[i] = v
+
+
+@nb.njit(cache=True, parallel=True)
+def _cold_ground(x, thick, land, out):
+    """out = x - thick, at least 0.05 m on land."""
+    for i in nb.prange(x.size):
+        v = x[i] - thick[i]
+        if land[i]:
+            v = _np_max(v, 0.05)
+        out[i] = v
+
+
+@nb.njit(cache=True, parallel=True)
+def _cold_after(h, h0, U, dt, deposit, ice_cut, thick, Ai, ice_max, cycle_max, flux_max, change, deposit_out, ice_max_out,
+                cycle_max_out, flux_max_out):
+    """change = h - (h0 + U * dt); deposit_out = np.maximum(deposit + change, 0); ice_cut -= change (in place, as before);
+    the three running maxima of the ice thickness and the ice flux into new arrays (as np.maximum made them)."""
+    for i in nb.prange(h.size):
+        c = h[i] - (h0[i] + U[i] * dt)
+        change[i] = c
+        deposit_out[i] = _np_max(deposit[i] + c, 0.0)
+        ice_cut[i] = ice_cut[i] - c
+        ice_max_out[i] = _np_max(ice_max[i], thick[i])
+        cycle_max_out[i] = _np_max(cycle_max[i], thick[i])
+        flux_max_out[i] = _np_max(flux_max[i], Ai[i])
+
+
+def _cold_powers(A, Asw, Qw, cell, eps, m, a0, alpha, delta, w0, N):
+    """The powers of a cold step, numpy's `**` as before, but only on the cells that keep them: Aeff and thick are 0 off the
+    swath (the old np.where threw the powers away there), and Aeff^m is 0 there too for m > 0. Returns Aeff, Aeff^m, Qwi,
+    Qwi^m and thick (before the below-surface rule and the sea)."""
+    ice = np.flatnonzero(Asw > 0.0)
+    Aeff = np.zeros(N)
+    Aeff[ice] = np.maximum(A[ice], cell) ** eps * Asw[ice] ** (1.0 - eps)
+    if m > 0.0:
+        am = np.zeros(N)
+        am[ice] = Aeff[ice] ** m
+    else:
+        am = Aeff ** m
+    Qwi = np.where(Qw > 0.0, Qw, cell)
+    qm = Qwi ** m
+    on = np.flatnonzero(Aeff > 0.0)
+    thick = np.zeros(N)
+    thick[on] = delta * w0 * (Aeff[on] / a0) ** alpha
+    return Aeff, am, Qwi, qm, thick
+
+
 def _aspect_shift(h, GL, n, dx):
     """Metres the snowline lies lower on each cell (design A1 rule 6): aspect_ela_m on steep ground facing the shady lee
     quarter (GL['shady_bearing_deg'], set by main() from the island's latitude, world.py: 45, NE, north of the equator; 135,
@@ -268,6 +377,10 @@ def main():
     below = bool(GL.get('swath_below_ice_surface', False))
     Wc = dict(W, pet_mm_yr=float(GL['cold_pet_mm_yr']))
     et_cold = runoff.evaporation(rain_mm, Wc['pet_mm_yr'], Wc['fu_omega'])
+    rain_src = cell * rain_mm / p0                 # the cold step's constant arrays, made once (cut A2)
+    rain_less_et = rain_mm - et_cold
+    sea_b = sea == 1
+    thr = evolve.bedrock_threshold(E)
     history = GL.get('history') or [dict(era='one cold stage', cycles=1, active_years=float(GL['years']),
                                          interglacial_years=float(GL['post_glacial_years']), ela_offset_m=0.0,
                                          period_years=float(GL['years']) + float(GL['post_glacial_years']))]
@@ -290,33 +403,29 @@ def main():
         dt = years / steps
         h, deposit = st['h'], st['deposit']
         ice = st['ice_carry']                          # thickness from the last step
+        ela = np.full(N, float(ela_local)) if np.ndim(ela_local) == 0 else ela_local   # one snowline when there is no aspect shift
         for s in range(steps):
-            surf = h + ice
+            surf, p_ice, ice_src = np.empty(N), np.empty(N), np.empty(N)
+            _cold_sources(h, ice, ela, rain_mm, Hf - He, BR, cell, p0, surf, p_ice, ice_src)
             filled, rec, order = evolve.route(surf, sea, n, dx, evolve.flow_memory(E))
-            frac = np.minimum((surf - ela_local) / (Hf - He), 1.0)
-            frac = np.where(frac < 0.0, frac * BR, frac)   # melt below the snowline at balance_ratio times the gain above it
-            p_ice = rain_mm * frac                     # mm/yr of ice made (negative: melted)
-            Ai, A = _ice_flux(order, rec, sea, cell * p_ice / p0, cell * rain_mm / p0, N)
+            Ai, A = _ice_flux(order, rec, sea, ice_src, rain_src, N)
             ptr, don = _donors(rec, order, N)
             Asw, ice_top = _swath(Ai, ptr, don, order, n, dx, w0, a0, alpha, h, delta, below)
-            Aeff = np.where(Asw > 0.0, np.maximum(A, cell) ** eps * Asw ** (1.0 - eps), 0.0)
             # Water: the rain that does not become ice, plus melt, less the cold-stage evaporation; all of it quick (frozen ground).
-            water = np.maximum(rain_mm - et_cold - np.maximum(p_ice, 0.0), 0.0)
-            water = water + np.maximum(-p_ice, 0.0) * (Ai > 0.0)   # melt reaches the rivers only where there is ice to melt
-            Qw = evolve._discharge(order, rec, sea, water / q_ref, cell, N)
+            # Melt reaches the rivers only where there is ice to melt.
+            water_q = np.empty(N)
+            _cold_water(rain_less_et, p_ice, Ai, q_ref, water_q)
+            Qw = evolve._discharge(order, rec, sea, water_q, cell, N)
             share = evolve._channel_share(Qw, evolve._discharge(order, rec, sea, ones, cell, N), surf, rec, order, sea, n, dx, c_ch, theta, a_min)
             ery = ery_fn(h)                            # the top layer, cover where there is any: creep moves it
             ery_rock, ery_cov, cov = ery_fn.parts(h)   # ice and water strip the loose cover first, then cut the rock (evolve._solve)
-            Qwi = np.where(Qw > 0.0, Qw, cell)
-            kq = Kg * ery_rock * Aeff ** m + E['K'] * ery_rock * share * Qwi ** m
-            kq_c = Kg * ery_cov * Aeff ** m + E['K'] * ery_cov * share * Qwi ** m
-            Qd = Qwi + tau * Aeff
-            thick = np.where(Aeff > 0.0, delta * w0 * (Aeff / a0) ** alpha, 0.0)
+            Aeff, am, Qwi, qm, thick = _cold_powers(A, Asw, Qw, cell, eps, m, a0, alpha, delta, w0, N)
             if below:                                  # a cell in another cell's swath holds ice only up to that glacier's surface
                 thick = np.where(Asw > Ai, np.minimum(thick, np.maximum(ice_top - h, 0.0)), thick)
-            thick[sea == 1] = 0.0
-            x = h + thick                              # solve on the ice surface (his section 4: add h, erode, subtract h)
-            x0 = x.copy()
+            thick[sea_b] = 0.0
+            # The solve runs on the ice surface x = h + thick (his section 4: add h, erode, subtract h).
+            kq, kq_c, Qd, kc, x, x0 = np.empty(N), np.empty(N), np.empty(N), np.empty(N), np.empty(N), np.empty(N)
+            _cold_coefficients(h, thick, Aeff, am, Qwi, qm, ery_rock, ery_cov, share, Kg, float(E['K']), tau, thr, kq, kq_c, Qd, kc, x, x0)
             # The slope limit is for the ground, under the ice too, measured ground to ground (lift = the ice thickness, so a
             # glacier's steep front or surface is not capped, only the rock under it). Run 7b0dfbff had no limit under the
             # ice: on the smooth flanks each one-cell flow line was cut on its own (the swath spreads a glacier's flux only
@@ -326,23 +435,22 @@ def main():
             # against every neighbour, not only the receiver (evolve._slope_ceiling): with the receiver alone, run a3ffca14
             # still left 86-degree walls, lowered one cell a step.
             # The sea's rock is not looked up (rock_ids with sea): _solve and _slope_ceiling read a cell's limit only on land.
+            # The incision threshold (kc) is for flowing water on bedrock; ice cuts whatever its flux (none under the ice).
             sc = evolve.cell_limits(Sc, sc_rock, rock.rock_ids(g, h, sea), deposit)
-            # The incision threshold is for flowing water on bedrock; ice cuts whatever its flux (none under the ice).
-            kc = np.where(thick > 0.0, 0.0, E['K'] * ery_rock * share * evolve.bedrock_threshold(E))
             st['flux'] = evolve._solve(x, x0, sea, order, rec, n, dx, dt, kq, kc, kq_c, cov.copy(), E['G'], U, Qd, cell, E['sweeps'], E['tol_m'], sc, thick)
             h0 = h.copy()
-            h = x - thick
-            h[land] = np.maximum(h[land], 0.05)
+            h = np.empty(N)
+            _cold_ground(x, thick, land, h)
             evolve._diffuse(h, fixed | (thick > 0.0), dx, dt, E['D'], ery)
-            change = h - (h0 + U * dt)
-            deposit = np.maximum(deposit + change, 0.0)
+            change, deposit_new = np.empty(N), np.empty(N)
+            ice_max_new, cycle_max_new, flux_max_new = np.empty(N), np.empty(N), np.empty(N)
+            _cold_after(h, h0, U, dt, deposit, st['ice_cut'], thick, Ai, st['ice_max'], st['ice_cycle_max'], st['flux_max'], change,
+                        deposit_new, ice_max_new, cycle_max_new, flux_max_new)
+            deposit = deposit_new                      # the ice's own cut (ice_cut): the net lowering in the cold phases, uplift aside
             ery_fn.update(change)
-            st['ice_cut'] -= change                    # the ice's own cut: the net lowering in the cold phases, uplift aside
             ice = thick
             st['ice_carry'] = thick
-            st['ice_max'] = np.maximum(st['ice_max'], thick)
-            st['ice_cycle_max'] = np.maximum(st['ice_cycle_max'], thick)
-            st['flux_max'] = np.maximum(st['flux_max'], Ai)
+            st['ice_max'], st['ice_cycle_max'], st['flux_max'] = ice_max_new, cycle_max_new, flux_max_new
             q = st['steps']
             st['steps'] += 1
             track.append((q, float((thick[land] > 0.0).sum() * cell / 1e6), float(thick.max()), float(h.max())))
