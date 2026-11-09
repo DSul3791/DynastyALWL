@@ -55,6 +55,8 @@ const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd"
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the window's look (steps B and C)
 const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe.gd")
 const InventoryFrameScript := preload("res://src/client/ui/inventory/inventory_frame.gd")   # the redesign's three panels (step 3a)
+const YouColumnScript := preload("res://src/client/ui/inventory/you_column.gd")             # the gear wells and the live character (step 3d)
+const ArtKit := preload("res://src/client/ui/art_kit.gd")
 var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
 var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store beside the pack
@@ -73,7 +75,9 @@ func _init() -> void:
 var _panel: PanelContainer
 var _columns: BoxContainer             # the You column; an open container shows there in place of the stats (container_panel.gd)
 var _frame: InventoryFrameScript       # the window's frame: backdrop, the three panels and their title plates (inventory_frame.gd)
-var _you_box: VBoxContainer            # the You column's stats, hidden while a container is open
+var _you_box: VBoxContainer            # the You column's gear, live character and stats, hidden while a container is open
+var _you_part: YouColumnScript         # the gear wells and the live character (you_column.gd)
+var _panel_values: Dictionary = {}     # stat name -> its value label in the You column
 var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
@@ -399,6 +403,9 @@ func toggle() -> void:
 
 	if _panel != null:
 		_panel.visible = open
+
+	if _you_part != null:
+		_you_part.set_active(open and not chest_mode)
 
 
 # Esc in the search box (while it has focus and holds text) empties it instead of closing the menu. True when it did.
@@ -3755,6 +3762,7 @@ func set_text_scale(scale: float) -> void:
 		_panel = null
 		_frame = null
 		_you_box = null
+		_you_part = null
 		_buttons.clear()
 
 		if was_open:
@@ -3785,41 +3793,77 @@ func _tooltip_theme() -> Theme:
 # Health, exertion, hunger and thirst, side by side at the top of the inventory screen: the only bars in the game (Dave
 # 2026-10-21: no bars on the main screen). Exertion is the strain as a share of the blackout threshold.
 func _build_bars_row() -> VBoxContainer:
-	var row: VBoxContainer = VBoxContainer.new()   # the You column's stats, one row each (redesign 4.2)
-	row.add_theme_constant_override("separation", _px(14))
+	# The You column's stats (redesign 4.2 and 6.4): six rows, each an engraved glyph, the name, a warm bar in a recessed track and the
+	# value right-aligned. The names are the game's own (Exertion and Energy); the fills are the warm set the HUD bars share.
+	var row: VBoxContainer = VBoxContainer.new()
+	# A fixed 6 px between the rows: the rows themselves grow with the text, so the six still fit the 820 px You column at text
+	# step 1.2 (with the gap scaled too it was 837 px, texttest 9 Nov).
+	row.add_theme_constant_override("separation", 6)
 	_panel_bars.clear()
+	_panel_values.clear()
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Temperature", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
+	for stat in ArtKit.STAT_ORDER:
 		var cell: HBoxContainer = HBoxContainer.new()
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		cell.add_theme_constant_override("separation", _px(10))
+		cell.add_theme_constant_override("separation", 10)
+		var glyph: Control = Control.new()
+		glyph.custom_minimum_size = Vector2(26.0, 26.0)
+		glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var glyph_name: String = str(ArtKit.STAT_GLYPH[stat])
+		glyph.draw.connect(func() -> void: ArtKit.draw_glyph(glyph, glyph_name, Rect2(Vector2.ZERO, glyph.size), ArtKit.ENGRAVED, ArtKit.FIELD))
+		cell.add_child(glyph)
 		var label: Label = Label.new()
-		label.text = spec[0]
-		_style(label, BODY_PX - 6)
-		label.custom_minimum_size = Vector2(_px(150), 0.0)
+		label.text = stat
+		label.add_theme_font_override("font", ArtKit.font("garamond"))
+		_style(label, BODY_PX - 12)
+		label.add_theme_color_override("font_color", ArtKit.CREAM)
+		label.custom_minimum_size = Vector2(_px(110), 0.0)
 		cell.add_child(label)
-		if spec[0] == "Temperature":
-			_temp_label = label
 		var bar: ProgressBar = ProgressBar.new()
 		bar.show_percentage = false
 		bar.min_value = 0.0
 		bar.max_value = 100.0
 		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		bar.custom_minimum_size = Vector2(_px(60), _px(22))
+		bar.custom_minimum_size = Vector2(60.0, 10.0)
 		var fill: StyleBoxFlat = StyleBoxFlat.new()
-		fill.bg_color = spec[1]
+		fill.bg_color = ArtKit.STAT_FILL[stat]
+		fill.set_corner_radius_all(5)
+		fill.border_width_top = 1
+		fill.border_color = ArtKit.lighter(ArtKit.STAT_FILL[stat], 0.25)
 		bar.add_theme_stylebox_override("fill", fill)
 		var empty: StyleBoxFlat = StyleBoxFlat.new()
-		empty.bg_color = Color(0.0, 0.0, 0.0, 0.5)
+		empty.bg_color = ArtKit.WELL
+		empty.set_corner_radius_all(5)
+		empty.border_width_bottom = 1
+		empty.border_color = Color(ArtKit.WELL_LIP, 0.55)
 		bar.add_theme_stylebox_override("background", empty)
 		cell.add_child(bar)
+		var value: Label = Label.new()
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		value.custom_minimum_size = Vector2(_px(76), 0.0)
+		value.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
+		_style(value, BODY_PX - 12)
+		value.add_theme_color_override("font_color", ArtKit.CREAM)
+		value.add_theme_color_override("font_outline_color", ArtKit.OUTLINE)
+		value.add_theme_constant_override("outline_size", 2)
+		cell.add_child(value)
+
+		if stat == "Temperature":
+			_temp_label = value      # the body temperature reads here; the air is its tooltip
+		else:
+			var unit: String = " %" if stat in ["Exertion", "Food", "Water"] else ""
+			value.text = "0" + unit
+			bar.value_changed.connect(func(v: float) -> void: value.text = "%d%s" % [int(round(v)), unit])
+
 		row.add_child(cell)
-		_panel_bars[spec[0]] = bar
+		_panel_bars[stat] = bar
+		_panel_values[stat] = value
 
 	_sick_label = Label.new()
-	_sick_label.add_theme_font_size_override("font_size", _px(BODY_PX - 6))
-	_sick_label.add_theme_color_override("font_color", Color(0.6, 0.85, 0.3))
+	_sick_label.add_theme_font_size_override("font_size", _px(BODY_PX - 12))
+	_sick_label.add_theme_color_override("font_color", ArtKit.BAD)
 	row.add_child(_sick_label)
 	_update_panel_bars()
 	return row
@@ -4085,7 +4129,8 @@ func _update_panel_bars() -> void:
 	_panel_bars["Energy"].value = float(energy)
 	_panel_bars["Temperature"].value = float(warmth)
 	if _temp_label != null and is_instance_valid(_temp_label):
-		_temp_label.text = "Body temp " + DisplaySettingsScript.temp_text(float(warmth)) + ("" if is_nan(air_c) else "   Air " + DisplaySettingsScript.air_text(air_c))
+		_temp_label.text = DisplaySettingsScript.temp_text(float(warmth))
+		_temp_label.tooltip_text = "Body temperature" + ("" if is_nan(air_c) else ". Air " + DisplaySettingsScript.air_text(air_c))
 
 	if _sick_label != null and is_instance_valid(_sick_label):
 		_sick_label.text = ("Health: ill, about %d h left" % sick_hours) if sick_hours > 0 else ""
@@ -4133,10 +4178,17 @@ func _build_panel() -> void:
 
 	_frame.set_title(1, _you_title())
 
-	# You: the six stats (the live character and the gear slots come in step 3d). An open container takes this column (container_panel.gd).
+	# You: the gear wells and the live character, an ornament rule, then the six stats. An open container takes this column (container_panel.gd).
 	_you_box = VBoxContainer.new()
 	_you_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_you_box.alignment = BoxContainer.ALIGNMENT_END
+	_you_box.add_theme_constant_override("separation", 12)
+	_you_part = YouColumnScript.new(self)
+	_you_box.add_child(_you_part.build())
+	var you_rule: Control = Control.new()
+	you_rule.custom_minimum_size = Vector2(0.0, 12.0)
+	you_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	you_rule.draw.connect(func() -> void: ArtKit.draw_rule(you_rule, 0.0, you_rule.size.x, 6.0))
+	_you_box.add_child(you_rule)
 	_you_box.add_child(_build_bars_row())
 	_frame.you_column.add_child(_you_box)
 	_columns = _frame.you_column
@@ -4160,6 +4212,9 @@ func _build_panel() -> void:
 func _show_container_column(shown: bool) -> void:
 	if _you_box != null and is_instance_valid(_you_box):
 		_you_box.visible = not shown
+
+	if _you_part != null:
+		_you_part.set_active(open and not shown)
 
 	if _frame != null and is_instance_valid(_frame):
 		_frame.set_title(1, "CHEST" if shown else _you_title())
@@ -4422,6 +4477,9 @@ func _refresh() -> void:
 	_ask_stock()
 	_pack_part.refresh()
 	_recipe_part.refresh()
+
+	if _you_part != null:
+		_you_part.refresh()
 
 
 # Headless check (--items): give, drop, pick up, and print what the server says.
