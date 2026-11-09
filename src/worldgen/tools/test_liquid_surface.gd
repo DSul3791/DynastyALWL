@@ -52,7 +52,9 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-func _shader_part(code: String, start: String) -> String:
+func _shader_part(source: String, start: String) -> String:
+	# A Windows checkout (git's text=auto) gives the shader text CRLF line ends; compare the text, not the line ends.
+	var code: String = source.replace("\r\n", "\n")
 	var at: int = code.find(start)
 
 	if at < 0:

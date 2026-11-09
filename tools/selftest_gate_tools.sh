@@ -20,7 +20,7 @@ sel tools/erosion_precarve/rock.py | field "d['class']=='docs' and len(d['fast']
 sel src/worldgen/tile/tile_drainage.gd | field "len(d['slow'])>0" | grep -q True; ok $? "worldgen runtime code selects the slow tests that load it"
 sel src/worldgen/tile/tile_drainage.gd | field "'test_head_pond_fill' not in d['slow'] and 'test_water_small' in d['fast']" | grep -q True; ok $? "worldgen water code selects the small tests, not the big release tests"
 sel worlds/base_world/tiles/tile_3_4.tile | field "'test_head_pond_fill' in d['slow'] and 'test_water_soak' in d['slow']" | grep -q True; ok $? "baked tile data selects the big release tests"
-"$PY" tools/tests_for_diff.py --paths src/worldgen/tile/tile_drainage.gd --full | field "len(d['slow'])==4 and len(d['fast'])>60" | grep -q True; ok $? "--full selects the whole slow lane and every fast test"
+"$PY" tools/tests_for_diff.py --paths src/worldgen/tile/tile_drainage.gd --full | field "len(d['slow'])==len(json.load(open('tools/test_lanes.json'))['slow']) and len(d['fast'])>60" | grep -q True; ok $? "--full selects the whole slow lane and every fast test"
 sel tools/run_tests.sh | field "d['class']=='tools' and len(d['fast'])==0 and 'selftest' in d['checks']" | grep -q True; ok $? "a gate tool edit selects the lane check and selftest, no game tests"
 
 cat > "$T/fakegodot" <<'F'
