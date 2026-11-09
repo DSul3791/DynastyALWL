@@ -465,6 +465,114 @@ def venison_pie():
 PIE_VIEW = rot_y(math.radians(20.0)) @ rot_x(math.radians(14.0))
 
 
+# ---------------------------------------------------------------- gathered materials the fire and the first shelter use (gathered.json)
+def _bundle(n, length, radius, colours, spread, seed, tie=None, ties=(), fan=0.0):
+    """Rods laid side by side along x in a loose round bundle, optionally tied; fan splays the far ends."""
+    rng = np.random.default_rng(seed)
+    faces = []
+
+    for k in range(n):
+        a, r = rng.uniform(0, 2 * math.pi), spread * math.sqrt(rng.uniform(0, 1))
+        y, z = r * math.sin(a), r * math.cos(a)
+        dx = rng.uniform(-0.08, 0.08) * length
+        end = (length / 2 + dx, y * (1.0 + fan), z * (1.0 + fan))
+        faces += rod((-length / 2 + dx, y, z), end, radius * rng.uniform(0.8, 1.2), colours[k % len(colours)], sides=5, seed=seed + k)
+
+    for x in ties:
+        faces += rod((x - 0.05, 0, 0), (x + 0.05, 0, 0), spread * (1.0 + fan * (x / length + 0.5)) + radius * 0.6, tie, sides=10, seed=seed)
+    return faces
+
+
+def kindling():
+    """Thin split twigs in a little tied bundle: pale split faces and bark."""
+    return _bundle(7, 1.5, 0.095, [(214, 184, 132), (130, 92, 56), (196, 164, 116)], 0.24, seed=80, tie=CORD, ties=(0.0,), fan=0.9)
+
+
+def tinder():
+    """A nest of fine dry grass and shavings that takes a spark."""
+    rng = np.random.default_rng(81)
+    faces = []
+
+    for ring in range(3):
+        r, y = 0.75 - 0.18 * ring, 0.06 * ring
+        for k in range(16):
+            a0 = 2.0 * math.pi * k / 16 + ring * 0.3 + rng.uniform(-0.1, 0.1)
+            a1 = a0 + 0.55
+            colour = [(216, 194, 138), (190, 160, 104), (232, 214, 164)][(k + ring) % 3]
+            faces += rod((r * math.cos(a0), y + rng.uniform(0, 0.08), r * math.sin(a0)), (r * math.cos(a1), y + rng.uniform(0, 0.08), r * math.sin(a1)),
+                         0.035, colour, sides=4, seed=81 + k)
+    faces += blob((0, 0.0, 0), (0.42, 0.1, 0.42), (120, 92, 60), seed=82, seg=8, rings=4)      # the dark hollow
+    for k in range(5):                                          # curled shavings on top
+        a = 2.0 * math.pi * k / 5
+        faces += moved(blob((0, 0, 0), (0.16, 0.05, 0.08), (236, 210, 160), seed=83 + k, seg=6, rings=3),
+                       turn=rot_y(a), shift=(0.35 * math.cos(a), 0.14, 0.35 * math.sin(a)))
+    return faces
+
+
+def thatch():
+    """A tight sheaf of reed tied in two places, cut square at one end and splayed at the other."""
+    return _bundle(26, 2.1, 0.045, [(196, 166, 92), (176, 144, 76), (212, 184, 108)], 0.28, seed=84, tie=CORD, ties=(-0.55, 0.25), fan=0.7)
+
+
+def straw():
+    """A loose heap of pale stalks lying every way."""
+    rng = np.random.default_rng(85)
+    faces = []
+
+    for k in range(34):
+        a = rng.uniform(0, math.pi)
+        c = np.array([rng.normal(0, 0.28), abs(rng.normal(0, 0.12)), rng.normal(0, 0.28)])
+        d = np.array([math.cos(a), rng.uniform(-0.1, 0.25), math.sin(a)]) * rng.uniform(0.7, 1.0)
+        colour = [(232, 212, 142), (214, 190, 116), (240, 224, 164)][k % 3]
+        faces += rod(c - d * 0.6, c + d * 0.6, 0.035, colour, sides=4, seed=85 + k)
+    return faces
+
+
+def birch_bark():
+    """A curled sheet of white bark, dark lenticel bands outside and tan inside."""
+    faces = []
+    outer, inner = (236, 232, 220), (204, 150, 102)
+    n, width = 12, 1.6
+
+    for k in range(n):                                          # a curl: the sheet rolls up from flat to most of a turn
+        t0, t1 = k / n, (k + 1) / n
+        a0, a1 = 1.6 * math.pi * t0, 1.6 * math.pi * t1
+        r0, r1 = 0.55 - 0.25 * t0, 0.55 - 0.25 * t1
+        p = [np.array([-width / 2, r0 * math.cos(a0), r0 * math.sin(a0)]), np.array([width / 2, r0 * math.cos(a0), r0 * math.sin(a0)]),
+             np.array([width / 2, r1 * math.cos(a1), r1 * math.sin(a1)]), np.array([-width / 2, r1 * math.cos(a1), r1 * math.sin(a1)])]
+        out = p if np.dot(np.cross(p[1] - p[0], p[3] - p[0]), (p[0] + p[2]) / 2 * np.array([0, 1, 1])) > 0 else p[::-1]
+        faces.append((out, outer))
+        faces.append((out[::-1], inner))
+
+        if k % 3 == 1:                                          # dark lenticel dashes across the white
+            for x in (-0.45, 0.1, 0.5):
+                mid = (p[0] + p[3]) / 2 + np.array([x + width / 2, 0, 0])
+                nrm = mid * np.array([0, 1, 1])
+                nrm = nrm / np.linalg.norm(nrm)
+                faces += box(tuple(mid + nrm * 0.012), (0.3, 0.02, 0.05), (60, 54, 50))
+    return faces
+
+
+def withies():
+    """A coil of long thin willow shoots, green-brown."""
+    faces = []
+    colours = [(150, 132, 72), (122, 112, 58), (168, 146, 86)]
+
+    for strand in range(5):
+        r = 0.62 + 0.05 * strand
+        pts = []
+        for k in range(29):
+            a = 2.0 * math.pi * 1.3 * k / 28 + strand * 0.7
+            pts.append(np.array([r * math.cos(a), 0.035 * strand + 0.04 * math.sin(a * 2), r * math.sin(a)]))
+        for a, b in zip(pts, pts[1:]):
+            faces += rod(a, b, 0.032, colours[strand % 3], sides=5, seed=90 + strand)
+    return faces
+
+
+LYING = rot_y(math.radians(35.0)) @ rot_z(math.radians(28.0))   # a bundle lying corner to corner, tilted toward the viewer
+HEAP_VIEW = rot_x(math.radians(18.0))
+
+
 def _pieces():
     return {
         "spear": (stone_spear, DIAGONAL),
@@ -482,6 +590,12 @@ def _pieces():
         "apple_pie": (apple_pie, PIE_VIEW),
         "fish_pie": (fish_pie, PIE_VIEW),
         "venison_pie": (venison_pie, PIE_VIEW),
+        "kindling": (kindling, LYING),
+        "tinder": (tinder, HEAP_VIEW),
+        "thatch": (thatch, LYING),
+        "straw": (straw, HEAP_VIEW),
+        "birch_bark": (birch_bark, LYING),
+        "withies": (withies, HEAP_VIEW),
     }
 
 
