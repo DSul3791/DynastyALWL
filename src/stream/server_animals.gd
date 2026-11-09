@@ -30,6 +30,7 @@ const STAGGER := 4              # a quarter of the animals are looked at each ti
 var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
 var ground_height: Callable        # (x, z) -> height
+var springs_near: Callable         # (Vector3, reach m) -> PackedVector3Array: the ground springs (heads) within reach, from the tiles (unset: none)
 var blocked: Callable              # (x, z) -> bool (deep water)
 var ice_cover_at: Callable         # (Vector3) -> Ice.cover there (0 open .. 1 a 20 cm sheet; 0.5, 10 cm, bears a person); set by the server scene
 var _ice_cache: Dictionary = {}    # animals on ice: Vector2i(1 km band of z, 5 m of height) -> [Ice.cover, msec worked out]
@@ -2526,11 +2527,11 @@ func drink_spot(from: Vector3, reach: float) -> Array:
 	if _water_spots.has(key) and now - int(_water_spots[key][1]) < int(float(dc.get("cache_s", 600.0)) * 1000.0):
 		return _water_spots[key][0]
 
-	var found: Array = []
+	var found: Array = _spring_spot(from, reach, dc)   # a spring first (spring_heads_lower_design.md 3): a runnel is too narrow for the rings
 	var ring_m: float = maxf(float(dc.get("ring_m", 25.0)), 5.0)
 	var bearings: int = maxi(int(dc.get("bearings", 8)), 4)
 
-	for ring in range(1, int(reach / ring_m) + 1):
+	for ring in (range(1, int(reach / ring_m) + 1) if found.is_empty() else []):
 		for b in bearings:
 			var ang: float = TAU * float(b) / float(bearings)
 			var dir: Vector3 = Vector3(cos(ang), 0.0, sin(ang))
@@ -2559,10 +2560,36 @@ func drink_spot(from: Vector3, reach: float) -> Array:
 	return found
 
 
+# The nearest ground spring within reach of `from` as [stand spot, the head]: the stand is spring_stand_m out from the head toward `from`,
+# on the dry side. [] when there is none (or no springs are known).
+func _spring_spot(from: Vector3, reach: float, dc: Dictionary) -> Array:
+	if not springs_near.is_valid():
+		return []
+
+	var best: Vector3 = Vector3.INF
+	var best_d: float = INF
+
+	for head in springs_near.call(from, reach):
+		var d: float = Vector2(head.x - from.x, head.z - from.z).length()
+
+		if d <= reach and d < best_d:
+			best_d = d
+			best = head
+
+	if best == Vector3.INF:
+		return []
+
+	var back: Vector3 = Vector3(from.x - best.x, 0.0, from.z - best.z)
+	back = back.normalized() if back.length() > 0.01 else Vector3.RIGHT
+	var stand: Vector3 = best + back * float(dc.get("spring_stand_m", 4.0))
+	stand.y = float(ground_height.call(stand.x, stand.z)) if ground_height.is_valid() else best.y
+	return [stand, best, true]
+
+
 func _drink_done(a: Dictionary) -> void:
 	a["home"] = a["drink_home"]
 
-	for key in ["drink_home", "drink_at", "drink_to", "drinking", "drink_legs"]:
+	for key in ["drink_home", "drink_at", "drink_to", "drinking", "drink_legs", "drink_spring"]:
 		a.erase(key)
 
 
@@ -2596,6 +2623,10 @@ func _drink_wander(a: Dictionary, def: Dictionary) -> bool:
 			a["target"] = a["pos"]
 			a["heading"] = atan2(to.z - a["pos"].z, to.x - a["pos"].x)
 			a["timer"] = rng.randf_range(float(stand[0]), float(stand[1]))   # luck-exempt: how long an animal stands at the water
+
+			if bool(a.get("drink_spring", false)):
+				var graze: Array = dc.get("spring_graze_s", [120.0, 300.0])
+				a["timer"] += rng.randf_range(float(graze[0]), float(graze[1]))   # luck-exempt: the green round a spring holds it to graze a while
 			return true
 
 		a["drink_legs"] = int(a.get("drink_legs", 0)) + 1
@@ -2630,6 +2661,7 @@ func _drink_wander(a: Dictionary, def: Dictionary) -> bool:
 	a["drink_home"] = a["home"]
 	a["drink_at"] = stand_at
 	a["drink_to"] = found[1]
+	a["drink_spring"] = found.size() > 2
 	a["home"] = a["drink_at"]
 	a["target"] = a["drink_at"]
 	a["state"] = HOP
