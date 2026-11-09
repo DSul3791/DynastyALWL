@@ -91,6 +91,26 @@ func _init() -> void:
 		check(path[0].is_equal_approx(Vector3(0, 100, 0)) and path[3].is_equal_approx(Vector3(100, 72, 0)), "the path starts at the mouth floor and ends at the den floor")
 
 	check(TileTerrainData.cave_floor_path(cave, 0, 5).is_empty(), "a node not joined to the mouth gives no path")
+
+	# 1b. Each tile's first spring cave with a dry branch always holds a den (docs/design/cave_dens_after_rebuild_design.md section 5); the rest keep
+	# the 60 percent by id. Find an id the share leaves out, then put that cave first in a tile's list.
+	var left_out: String = ""
+
+	for k in range(200):
+		var probe: Dictionary = {"id": "den_probe_%d" % k, "cave_kind": "spring_cave", "nodes": cave["nodes"], "dens": [{"node": 4, "where": "branch"}]}
+
+		if TileTerrainData.goblin_den_node(probe) < 0:
+			left_out = probe["id"]
+			break
+
+	check(left_out != "", "some spring cave id is left out by the 60 percent share")
+	var first_cave: Dictionary = {"id": left_out, "cave_kind": "spring_cave", "nodes": cave["nodes"], "dens": [{"node": 4, "where": "branch"}]}
+	var wet_cave: Dictionary = {"id": "den_probe_wet", "cave_kind": "spring_cave", "nodes": cave["nodes"], "dens": [{"node": 3, "where": "chamber"}]}
+	var second_cave: Dictionary = first_cave.duplicate()
+	var den_nodes: Array = TileTerrainData.goblin_den_nodes([wet_cave, first_cave, second_cave])
+	check(den_nodes.size() == 3 and int(den_nodes[0]) == -1, "a spring cave with no dry branch has no den")
+	check(den_nodes.size() == 3 and int(den_nodes[1]) == 4, "the tile's first spring cave with a dry branch has its den at the branch end whatever its id")
+	check(den_nodes.size() == 3 and int(den_nodes[2]) == -1, "a later cave the share leaves out has none")
 	check(is_equal_approx(GoblinsScript.path_length(den_path), 20.0 * sqrt(1.0 + 0.0625) + sqrt(1600.0 + 225.0) + sqrt(1600.0 + 64.0)), "path_length adds the legs")
 
 	# 2. By day a new group is made asleep in the den, on the cave floor, not on the hill above.
