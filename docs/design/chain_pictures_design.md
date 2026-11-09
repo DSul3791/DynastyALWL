@@ -36,7 +36,7 @@ In the glacial one-cycle profile (`glacial_split_profile_ws580v.txt`), `glacial_
 
 - Every `.npz`, `.json` and manifest: the pictures only read them.
 - Each stage's own `seconds` count, which stops before its picture.
-- The panels, colours, titles, colour bars and figure sizes.
+- The panels, colours, titles, colour bars and figure sizes. (Thin and sparse layers do now show more plainly: see "Measured".)
 
 ## Expected
 
@@ -51,3 +51,26 @@ These are estimates.
    - evolve, glacial, lakes, groundwater and network;
    - the bar: the same rivers, lakes, hollows and colours; nothing lost.
 3. **No cloud runs.** The cloud ran only static checks.
+
+## Measured (Dino, 9 Nov, branch head b8e3a698; `pictures_thin_ws580v.txt`)
+
+- **The check:** one glacial cycle's `glacial.npz` is all same, and the history is done at t 36 s. The grid is 2,881 cells a side, so the thin factor is 4.
+- **The five pictures, main's code against the branch:**
+
+| picture | main | branch |
+|---|---|---|
+| evolve | 13.1 s | 6.5 s |
+| glacial | 14.4 s | 5.7 s |
+| lakes | 8.9 s | 3.8 s |
+| groundwater | 11.5 s | 3.5 s |
+| network | 19.1 s | 5.1 s |
+| all five | 67.0 s | 24.6 s |
+
+  Over the chain's 11 pictures (evolve draws 7), that is about 82 s off nine tiles.
+- **By eye (Dino on network and lakes, Sonny on evolve, glacial and groundwater):** the same islands, rivers, lakes, hollows, colours and marks; nothing lost. Pixels that differ a lot: 0.4% (glacial) to 1.9% (network).
+- **One difference, from what was designed.**
+  - Main's pictures faded thin and sparse layers almost to nothing. Matplotlib's own shrinking weighs each pixel by how much of it has a value.
+  - The branch draws a block with any value at full strength, so these layers now show plainly. That covers the rivers in evolve and lakes, the channels and springs in groundwater, the small lakes, and the till and sediment washes. On main, groundwater's "coming out" and channel panels were near blank.
+  - The colour where a layer shows is its own value. What reads denser than it is, is how much of a 64 m block the layer covers.
+  - The lakes basin panel looks bluer for the same reason: its rivers now show. The basin colours are the same seeded palette.
+  - Where an exact old look matters, the fix is to weigh each block's opacity by its share of cells with a value. It was not done, because the old look hid what the panels are titled for.
