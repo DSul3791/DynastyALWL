@@ -10,6 +10,7 @@ extends Control
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 
 const TOP := 68.0                                   # a column starts this far below its panel's top, under the title plate
+const CRAFT_PLATE_ROOM := 372.0                     # the Craft plate may hold a container's name (4.4): it steps down clear of the Chest and Craft tabs
 
 var pack_column: VBoxContainer
 var you_column: VBoxContainer
@@ -142,4 +143,4 @@ func _draw() -> void:
 	ArtKit.draw_panel(self, ArtKit.CRAFT)
 	ArtKit.draw_title_plate(self, ArtKit.PACK.position.x + 48.0, 30.0, titles[0])
 	ArtKit.draw_title_plate(self, ArtKit.YOU.get_center().x, 30.0, titles[1], true, ArtKit.YOU.size.x - 80.0)
-	ArtKit.draw_title_plate(self, ArtKit.CRAFT.position.x + 48.0, 30.0, titles[2])
+	ArtKit.draw_title_plate(self, ArtKit.CRAFT.position.x + 48.0, 30.0, titles[2], false, CRAFT_PLATE_ROOM)

@@ -1655,15 +1655,11 @@ func _make_starter(info: Dictionary, river_mouth: Vector2) -> void:
 	_pick_spawn(target)
 
 
-# The spawn picker (Stage E M1 step 4, stage_e_readers_design.md 6e): with starter.spawn_picker.on, the spawn is picked by rule near the bay head
-# and written as starter.spawn_picked = [x, ground + 1, z], which spawn_point.gd reads in place of its hand-set OVERRIDE. Off until the R6
-# rebake, so today's tiles have no spawn_picked and keep their bytes.
+# The spawn picker (Stage E M1 step 4, stage_e_readers_design.md 6e): the spawn is picked by rule near the bay head and written as
+# starter.spawn_picked = [x, ground + 1, z], which spawn_point.gd reads in place of its hand-set OVERRIDE. Always on since 9 Nov 2026 (after
+# R6; Dave's rule, no feature switches): starter.spawn_picker in tile_rules.json only tunes it.
 func _pick_spawn(target: Vector2) -> void:
 	var rules: Dictionary = _rules["starter"].get("spawn_picker", {})
-
-	if not bool(rules.get("on", false)):
-		return
-
 	var picked: Dictionary = SpawnPickerScript.pick({"heights": _heights, "water": _water, "surface": _surface, "flow": _flow, "n": _samples, "spacing": _spacing,
 		"origin": Vector2(_x0, _z0)}, target, rules)
 

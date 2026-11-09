@@ -73,17 +73,14 @@
 	},
 	"evolve": {
 		"_note": "Stage B (evolve.py). K, m and D follow the earlier pre-carve runs (tools/erosion_precarve real_run: K 4e-6, m 0.5, D 0.05 m2/yr). G is the dimensionless deposition coefficient (about 1: deposition matters, floodplains and fans form). channel_head: where channels begin (slope-area rule, below). Not yet tuned on our island: R2's first run sets them. start_roughness: correlated starting roughness so channels branch instead of running in parallel lines (see its own note). years and dt (Sonny 7 Nov, after Dino's stable 1 Myr run): in 1 Myr the summit still rose 0.8 m/kyr, almost the full uplift (0.96), because the erosion had not yet climbed to the tops (a knickpoint moves at about K Q^m, a few m/kyr in small catchments). 4 Myr in 250 steps of 16 kyr costs the same run time; the implicit fluvial step is stable at any dt and creep takes its own sub-steps. The summary's last_tenth_* numbers say whether steady state was reached. Relief at steady state scales with U/K, so uplift.base_m_per_yr is then calibrated once so the final summit matches the landform's. K and D x3 (Sonny 7 Nov, after the 4 Myr run 58ecf498): the summit reached 3,521 m and was still rising 0.35 m/kyr (mean land 155 to 541 m), so uplift outran erosion. Steady-state relief scales with U/K and the time to reach it with 1/K, so raising K three times lowers the relief about three times and brings steady state three times sooner. D rises with K so D/K, which sets valley spacing (Perron et al. 2009), is unchanged. Creep is now implicit, so a larger D costs no sub-steps.",
-		"years": 500000.0,
+		"years": 100000.0,
 		"dt": 2500.0,
 		"uplift_share": 0.0,
 		"snapshot_years": [
 			25000.0,
-			50000.0,
-			100000.0,
-			150000.0,
-			250000.0,
-			350000.0
+			50000.0
 		],
+		"_run_length_note": "Sonny 9 Nov 2026 (docs/water/generation_cost_audit.md, Dave approved the cuts): the run stops at 100 kyr, the ground glacial.py starts from (until now the t100k snapshot of a 500 kyr run; the 400 kyr after it were never read). The ground at 100 kyr is the same either way: only the run's own stop check reads years. A run writes no snapshot at its last step, so glacial.py reads OUT_DIR itself. The early snapshots stay for the dissection checks.",
 		"_dissection_note": "Sonny 8 Nov, after run 506dadff: the massif-scale calibration matched (mean mismatch 9 m, 5th to 95th percentile -54 to +48 m), yet the summit was 894 m against the landform's 1,459 m and the massif centres were cut about 400 m. A steady state keeps the landform only at the smoothing scale: with threshold slopes and the valley spacing set by D/K, no ridge stands more than a couple of hundred metres above its valleys, so a peaked massif becomes an evenly dissected one. Islands like this one (Arran, Skye, the Highlands) are not in steady state: they are uplifted older surfaces that rivers and then ice are still cutting into, with summit plateaus between deep glens. So B1 now dissects the landform as it stands: uplift_share 0 (the landform is the land as uplifted), and the run length is chosen from snapshots (snapshot_years, each written to OUT_DIR/t<kyr>k with its own summary and picture) by the checks: summits near the landform's, the main valleys reaching into the massif cores, and the drainage and slope figures. Knickpoints climb at about K A^m (tens of km per Myr for 10 km2 catchments at this K), so 0.25 to 2 Myr spans young to deeply dissected. dt 2,500 years (since 8 Nov, for the fast early dissection) so every snapshot falls on a step. The by-rock threshold (threshold_slope_deg_by_rock) lets hard-rock peaks stand as steep walls instead of being cut back to 35 degrees.",
 		"_creep_and_peaks_note": "Sonny 8 Nov, after run 11bbbcc9 (dissection, no uplift, D 0.15): the island wore down to a low plain (summit 680 m at 0.25 Myr, 167 m at 2 Myr; drainage density 15 to 0.8 km/km2), and the summit fell 200 m in the first 5 kyr step. D 0.15 m2/yr was set only to keep D/K while K was raised for a quick steady state; it is 30 to 50 times measured soil creep and it rounded the peaks away. Roering, Kirchner and Dietrich (1999, WRR 35(3):853-870, checked 8 Nov) measured 0.0032 +- 0.0009 m2/yr in the Oregon Coast Range (0.0031 to 0.0045 over five basins), with a critical gradient of 1.25 (51 degrees) for soil-mantled slopes, so the by-rock thresholds above sit inside the measured range. Here the valley spacing comes from the channel-head rule, not from D/K, so D goes back to a measured value: 0.005 m2/yr, the top of that range, for a wetter, frost-active climate. Bare hard-rock peaks are not soil-mantled at all, and creep already runs at D * ery^0.3. The dissection front moves fast at this K in soft rock (a knickpoint at K e Q^m: about 60 km/Myr for 10 km2 of tuff or shale, 3 km/Myr of granite), so the run is 0.5 Myr with snapshots from 25 kyr. The summary's landform_peaks (the summit rule: valleys carved, peaks kept at the landform's heights) and height_change_by_process (river and slides against creep, at the peaks and over all land) say which process sets the peaks.",
 		"K": 1.2e-05,
@@ -127,7 +124,7 @@
 		"ela_m": 487.0,
 		"_ela_note": "487 m is the stadial line, not today's (Sonny 8 Nov, with the snow decision; design A4). Stadial July temperatures in northern Scotland were about 6 C (Crudale Meadow, Orkney; Francis et al. 2021, J. Quaternary Sci. 36:325), against about 12 to 13 C there today: 6 to 7 C colder, so at 6.5 C/km the same line lies near 1,450 to 1,550 m in today's climate, above the 1,450 m starter summit. The cold stage carves cirques that hold no glacier today; the summer snow patches at 80 to 85% of the summit come from the A4 snow layer (drift and shade), not from this line. Keep the two consistent: if the island climate record changes, this line moves with it by the same lapse rate.",
 		"full_ice_above_ela_m": 500.0,
-		"glacial_K_ratio": 2.0,
+		"glacial_K_ratio": 0.667,
 		"width_m_at_ref_flux": 50.0,
 		"ref_flux_m2": 2500.0,
 		"width_exponent": 0.3,
@@ -148,7 +145,12 @@
 		"aspect_ela_m": 75.0,
 		"aspect_smoothing_m": 240.0,
 		"aspect_full_slope_deg": 30.0,
-		"snapshot_after_cycles": [1, 3, 10, 20, 39, 44, 49]
+		"snapshot_after_cycles": [1, 3, 10, 20, 39, 44, 49],
+		"balance_ratio": 1.56,
+		"swath_below_ice_surface": false,
+		"_ws580i_note": "ws580i glacial stage (Sonny, 8 Nov 2026; docs/water/glacial_summit_fix.md 'Next'): glacial K from the measured cirque floor rate (Barr et al. 2019 table 1, 0.1 to 0.9 mm/yr on bedrock), 0.667 = Hergarten's 2 times the river K before it was tripled for quick runs; balance ratio 1.56 (Oien et al. 2022). Run in full from ws580h's B1 output, all 49 cycles.",
+		"rock_uplift_mm_yr": 0.19,
+		"_rock_uplift_note": "ws580u (Sonny 8 Nov 23:00): ws580i with rock uplift 0.19 mm/yr at the highest landform summit (docs/water/rock_uplift_note.md)."
 	},
 	"lakes": {
 		"_note": "Stage C1 and C2 (lakes.py, step R3). open_water_factor: lake evaporation over grass PET. Penman (1948) found grass loses about 0.6 (winter) to 0.8 (summer) of open-water evaporation, 0.7 at the equinoxes, so open water is about PET / 0.7. Seepage through a lake floor (mm/yr over the lake's area) is a stand-in until R4's groundwater solve gives each lake its exchange from the head: on cave-forming limestone and marble a floor leaks through open passages (swallow holes), so it is large; on other soluble rock (chalk) moderate; elsewhere lake floors seal with fine sediment and it is 0. None of the three is from a source yet. cirque_floor_below_ela_m: an ice-scoured hollow whose floor lies above (snowline minus this) counts as a cirque; cirque floors sit near the snowline (they are used to reconstruct it), lower ice-scoured hollows are rock basins in the troughs. Not from a source yet.",

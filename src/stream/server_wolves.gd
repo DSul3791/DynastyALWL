@@ -723,9 +723,6 @@ func _natural(infos: Array) -> void:
 				if Vector2(home.x - float(ex[0]), home.y - float(ex[1])).length() < float(ex[2]):
 					continue
 
-				if near_town(home.x, home.y):
-					continue   # wolves den away from the town (wolf_packs_and_pups_design.md 3)
-
 				if _den_resting(key):
 					continue   # a killed pack's den: its orphans live there, or it rests for respawn_s (saved across restarts)
 
@@ -750,12 +747,6 @@ func _natural(infos: Array) -> void:
 
 
 # --- pups and orphans (docs/design/wolf_packs_and_pups_design.md, Dave 8 Nov 2026 decisions 3 and 4) ---
-
-# Whether a den at (x, z) would be within town_keep_m of the town point: no natural pack lives there (dens lie far from villages:
-# Białowieża, Can. J. Zool. 2003).
-func near_town(x: float, z: float) -> bool:
-	return host.starter.x != INF and Vector2(x - host.starter.x, z - host.starter.y).length() < float(cfgw().get("town_keep_m", 1200.0))
-
 
 func _now_s() -> float:
 	return float(game_seconds.call()) if game_seconds.is_valid() else 0.0

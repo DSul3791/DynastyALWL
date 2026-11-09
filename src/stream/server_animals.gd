@@ -74,7 +74,7 @@ var companions = null                # companions (server_companions.gd): the st
 var lair_mouths: Callable             # (x, z) -> PackedVector2Array: the cave mouths (world x, z) of the tile there; species with a "lair" row spawn their groups at them (goblins, Dave 7 Nov 2026)
 var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
 var traits: bool = true            # temperaments and young (Dave 6 Nov 2026); seeded tests that predate them turn this off, so every animal is born "defensive" with no young
-var starter: Vector2 = Vector2(INF, INF)   # the real spawn point (x, z) from the starter tile: the town point of the island level (island_level) when set
+var town: Vector2 = Vector2(INF, INF)   # the starter town (x, z): the middle of its NPC markers (server_npcs.gd town_point), the centre of the island level and of the stray dogs; never the spawn (Dave 9 Nov 2026)
 var wolves = null                  # the pack brain (server_wolves.gd); wired by the server, tests may leave player_info unset
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -730,13 +730,15 @@ func snare(id: int) -> bool:
 
 
 # The starter island's level at a point, 0 to 1 (Dave 6 Nov 2026: low-level content near the starter town, rising as a gradient to
-# medium on the far side; DESIGN_IDEAS 4.13). 0 within island_level.town_m of the town point (the real spawn until the starter town
-# is placed), 1 at far_m (about the far coast of tile 3,4) and beyond. Off the starter island the world danger map is to take over
-# (not built: one starter island for now).
+# medium on the far side; DESIGN_IDEAS 4.13). 0 within island_level.town_m of the town point (the middle of the town's NPC markers,
+# docs/design/no_spawn_placement_design.md 3), 1 at far_m (about the far coast of tile 3,4) and beyond; 0 everywhere with no town. Off the
+# starter island the world danger map is to take over (not built: one starter island for now).
 func island_level(x: float, z: float) -> float:
+	if town.x == INF:
+		return 0.0
+
 	var il: Dictionary = cfg.get("island_level", {})
-	var town: Array = il.get("town", [53301.0, 68427.0])
-	var centre: Vector2 = starter if starter.x != INF else Vector2(float(town[0]), float(town[1]))
+	var centre: Vector2 = town
 	var near_m: float = float(il.get("town_m", 800.0))
 	var far_m: float = maxf(float(il.get("far_m", 8000.0)), near_m + 1.0)
 	return clampf((Vector2(x, z).distance_to(centre) - near_m) / (far_m - near_m), 0.0, 1.0)

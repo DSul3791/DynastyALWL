@@ -245,7 +245,7 @@ The M0 check is a headless test (`test_water_record.gd`). It writes a small reco
 - If nothing qualifies, it returns the gentlest step as kind `slow`, so every source still gets one placer.
 - The foot of a fall comes at M2, when the reader reads the record's falls list. A drop in today's rules heights is not a fall.
 
-**The bake:** with `ores.placer_traps.on` true, each trap gets one short placer:
+**The bake:** each trap gets one short placer:
 - 3 points, the trap step and one either side;
 - the grade is the ore's grade × `grade_x` (0.8);
 - the tonnage is for a length of 2 × `record_every` steps;
@@ -253,7 +253,7 @@ The M0 check is a headless test (`test_water_record.gd`). It writes a small reco
 
 The old single long placer is not written then.
 
-**Off until R6:** the flag is absent from `tile_rules.json`, so it reads as off and rules tiles stay byte-identical. It turns on with R6's single TERRAIN_VERSION bump, when the path comes from the record's reaches (bed height and discharge) and not from the rules flow grid.
+**On (9 Nov 2026, after R6):** the `on` switch is gone (Dave's rule, no feature switches); `ores.placer_traps` in `tile_rules.json` only tunes the defaults above. It shows in the tiles at the next bake on Dave's PC.
 
 ## 6e. The spawn picker (M1 step 4, 8 Nov)
 
@@ -271,16 +271,17 @@ The old single long placer is not written then.
 
 Of the candidates, the one nearest the bay head wins: the river mouth, or the bay centre when the tile has no river. A tie goes to the first in row order, so the pick is stable. It searches within `search_m` (3000) of that point, every 2 samples.
 
-**Where it runs:** `src/worldgen/tile/spawn_picker.gd` `pick(maps, target, rules)`, a static function on plain arrays: heights, water class, water surface and flow. The two distance fields (to any water, carrying that water's surface, and to a perennial river) are chamfer passes over the search window only. `tile_sites.gd` `_make_starter` calls it when `starter.spawn_picker.on` is true, and writes `starter.spawn_picked` = [x, ground + 1, z]. The old beach `spawn_point` stays as it is.
+**Where it runs:** `src/worldgen/tile/spawn_picker.gd` `pick(maps, target, rules)`, a static function on plain arrays: heights, water class, water surface and flow. The two distance fields (to any water, carrying that water's surface, and to a perennial river) are chamfer passes over the search window only. `tile_sites.gd` `_make_starter` always calls it (the `on` switch went on 9 Nov 2026, after R6), and writes `starter.spawn_picked` = [x, ground + 1, z]. The old beach `spawn_point` stays as it is.
 
 **One reader:** `spawn_point.gd` gets:
 - `use_world(world_dir)`, which reads the starter tile's `spawn_picked` once;
-- `current()`, the picked spawn, or `OVERRIDE` when the tile has none;
-- `town_shift()` = `current() − OVERRIDE`.
+- `current()`, the picked spawn, or `OVERRIDE` when the tile has none.
 
-The server calls `use_world` before it builds the flora placer. Each reader goes through `current()`: the server spawn, the flora clearing, the orchard and the island checks. The shipped NPC markers move by `town_shift()`, so the town moves with the spawn as one piece. Markers an admin placed in a world save stay where they were put. Clients already get the spawn in the welcome message, and flora is placed on the server only, so the two sides cannot disagree.
+(`town_shift()` went on 9 Nov 2026, with the flora clearing and the orchard by the spawn: nothing is placed from the spawn, Dave 9 Nov.)
 
-**Off until R6:** the flag is absent from `tile_rules.json`, so no tile has `spawn_picked`. `current()` is then `OVERRIDE`, and the shift is zero. Every tile, spawn and marker stays exactly as today. At R6 the flag turns on with the one TERRAIN_VERSION bump, and the picker then reads the record's water level and its wetland and floodplain classes: a wetland cell counts as wet. A small tool, `spawn_pick.gd` (headless, run on the PC), runs the picker on today's baked starter tile and prints where it would put the spawn, against the gate. So the rule can be checked before R6.
+The server calls `use_world` at start. Only the server spawn and the island checks read `current()`. The shipped NPC markers stand where `markers.json` puts them, whatever the spawn. Clients already get the spawn in the welcome message, and flora is placed on the server only, so the two sides cannot disagree.
+
+**On (9 Nov 2026, after R6):** the `on` switch is gone; `starter.spawn_picker` only tunes the defaults. Tiles baked before have no `spawn_picked`, so `current()` stays `OVERRIDE` until the next bake on Dave's PC. From then the picker then reads the record's water level and its wetland and floodplain classes: a wetland cell counts as wet. A small tool, `spawn_pick.gd` (headless, run on the PC), runs the picker on today's baked starter tile and prints where it would put the spawn, against the gate. So the rule can be checked before R6.
 
 **Left for M2:** the starter ground the client ships (`prebuild_blocks.gd`, its fixed corner) has to follow the picked spawn. So do the old debug tools that still name x 53301 z 68427.
 

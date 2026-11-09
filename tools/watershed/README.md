@@ -14,6 +14,30 @@ Everything here runs offline on Dave's PC (Dino), never in the cloud. Each stage
 | R6, stage D (the island water record) | `record.py` | `record/manifest.json`, `record/climate.json`, `record/network.json`, `record/tiles/X_Z/*` |
 | R5, stage C5, C7 and C8 (streams, flows, sizes, reach types, falls, outlets) | `network.py` | `network.json`, `network.npz`, `network_manifest.json`, `follow_the_water.md`, `network.png` |
 
+## The whole chain in one command (run_chain.py)
+
+`python tools/watershed/run_chain.py CHAIN_DIR RUN [params.json]` runs every stage from the two Godot exports to the record, in the folders the job files use: `RUN_landform`, `RUN_geology`, `RUN_inputs`, `RUN_b1`, `RUN`, `RUN_r3`, `RUN_r4`, `RUN_r5` and `RUN_rec`. Run it from the repo root, on Dave's PC.
+
+**Skipping.** Each stage is skipped when nothing it depends on has changed since its last run. That covers:
+- the files it reads, by content (an `.npz` by its arrays);
+- its script and the local modules it imports;
+- the params blocks its code reads, with text notes left out;
+- `world.json`, for the stages that read the world block.
+
+Each finished stage leaves `run_chain_stamp.json` in its folder. So:
+- A network rule change reruns only the network and the record.
+- A bake-rule change reruns the exports. Those give the same land, so every later stage is skipped.
+
+**Other options:**
+- `--plan` prints what would run, and why, and runs nothing.
+- `--godot=PATH` names the Godot binary.
+
+**Threads and times.** Evolve gets `NUMBA_NUM_THREADS=9`, and the two exports run side by side (Dave, 9 Nov 2026: nine threads). Every stage prints its start and end on the PC clock.
+
+`check_record.py`, the bake, settle, refilm and rebake_check run after it, from the job file. Its unit tests are `python tools/watershed/test_run_chain.py` (David4 or Dave's PC).
+
+Evolve stops at 100 kyr (`evolve.years`), the ground glacial starts from. glacial.py reads `RUN_b1` itself: a run writes no snapshot at its own last step, so there is no `t100k` folder.
+
 ## R1: inputs
 
 1. **Landform** (stage A1): the world's shape, with no valleys cut around the old world rivers, no detail noise and no strata.

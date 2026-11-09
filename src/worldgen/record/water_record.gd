@@ -8,6 +8,13 @@ const LAKE := 2    # tile_water.gd and the record's class codes (0 none, 1 ocean
 const RIVER := 3
 const FRESH_STEP_M := 2.0   # the tile file's fresh_m section: one raw step; 255 means FRESH_STEP_M * 255 m or more
 
+# For the island water record below. prepare(): every raster a threaded bake reads is decoded once, before the threads start, and
+# nothing is written after, so the threads read the record at once with no lock (docs/water/generation_cost_audit.md, "The bake": the
+# lock queued the tiles' record stage).
+var _prepared: bool = false
+var _problems: Dictionary = {}     # prepared: "tx_tz/name" -> why that raster is missing (a file of the wrong length, a field the record lacks)
+var _code_lut: PackedFloat32Array = PackedFloat32Array()   # _code_to_id as floats, for decode
+
 
 # Distance (m) from each sample to the nearest perennial fresh water (a lake or a river cell), by a two-pass chamfer (steps 1 and sqrt 2) over
 # the whole bake frame, so a tile's edge samples see the water beyond the edge and neighbouring tiles agree up to the frame margin.
@@ -95,7 +102,7 @@ static func decode_fresh(raw: PackedByteArray) -> PackedFloat32Array:
 
 const RECORD_VERSIONS := [1]
 const TYPE_BYTES := {"f4": 4, "u1": 1, "u2": 2, "i4": 4}
-const KEEP_TILES := 9              # rasters of at most this many tiles stay decoded (a bake frame's tile and its eight neighbours)
+const KEEP_TILES := 9              # rasters of at most this many tiles stay decoded (a bake frame's tile and its eight neighbours); not when prepared
 const POINT_KEYS := ["pos", "mouth", "lip", "spill"]
 const LINE_KEYS := ["polyline", "outline"]
 
@@ -117,6 +124,8 @@ func open(record_dir: String, allow_incomplete: bool = false) -> String:
 	dir = record_dir
 	_cache = {}
 	_cache_tiles = []
+	_prepared = false
+	_problems = {}
 	var m: Variant = _json(dir + "/manifest.json")
 
 	if typeof(m) != TYPE_DICTIONARY:
@@ -150,6 +159,11 @@ func open(record_dir: String, allow_incomplete: bool = false) -> String:
 	climate_rows = cl if typeof(cl) == TYPE_DICTIONARY else {}
 	_reach_by_id = {}
 	_code_to_id = code_map()
+	_code_lut = PackedFloat32Array()
+	_code_lut.resize(256)
+
+	for code in 256:
+		_code_lut[code] = float(_code_to_id[code])
 
 	for r in network.get("reaches", []):
 		_reach_by_id[int(r.get("id", -1))] = r
@@ -169,7 +183,8 @@ func has_tile(tx: int, tz: int) -> bool:
 
 
 # One raster of one tile, decoded by its field row: metres, m3/s and codes as floats, no-data as NAN. Empty when the tile or field is
-# missing or the file has the wrong length (error_of says why).
+# missing or the file has the wrong length (error_of says why). Prepared: only what prepare() decoded, and nothing is written (the bake
+# asks field_problem for the reason).
 var error_of: String = ""
 
 
@@ -179,12 +194,73 @@ func raster(tx: int, tz: int, name: String) -> PackedFloat32Array:
 	if _cache.has(key):
 		return _cache[key]
 
-	error_of = ""
-	var out: PackedFloat32Array = PackedFloat32Array()
+	if _prepared:
+		return PackedFloat32Array()
 
+	var got: Array = _load(tx, tz, name)
+	error_of = got[1]
+
+	if error_of == "":
+		_keep(key, "%d_%d" % [tx, tz], got[0])
+
+	return got[0]
+
+
+# Why raster(tx, tz, name) is empty, or "" when it is not. Writes nothing when prepared, so bake threads may ask at once.
+func field_problem(tx: int, tz: int, name: String) -> String:
+	var key: String = "%d_%d/%s" % [tx, tz, name]
+
+	if _cache.has(key):
+		return ""
+
+	if _prepared:
+		return _problems.get(key, "no %s for tile %d,%d (not prepared)" % [name, tx, tz])
+
+	return error_of if raster(tx, tz, name).is_empty() else ""
+
+
+# Decodes, once, the rasters `names` of every tile of `tiles` inside the record and of their neighbours inside it (a bake frame's
+# margin), and keeps them all; after it the record is read only, by any number of threads. A raster that cannot be read is kept as
+# its reason (field_problem). bake_tiles.gd prepares one batch of tiles at a time, so the rasters held stay a batch's.
+func prepare(tiles: Array, names: Array) -> void:
+	_prepared = false
+	_cache = {}
+	_cache_tiles = []
+	_problems = {}
+
+	for tile in tiles:
+		if not has_tile(tile.x, tile.y):
+			continue
+
+		for dz in [-1, 0, 1]:
+			for dx in [-1, 0, 1]:
+				if not has_tile(tile.x + dx, tile.y + dz):
+					continue   # beyond the record: the frame repeats the tile's edge, as before
+
+				for name in names:
+					var key: String = "%d_%d/%s" % [tile.x + dx, tile.y + dz, name]
+
+					if _cache.has(key) or _problems.has(key):
+						continue
+
+					var got: Array = _load(tile.x + dx, tile.y + dz, name)
+
+					if got[1] == "":
+						_cache[key] = got[0]
+					else:
+						_problems[key] = got[1]
+
+	_prepared = true
+
+
+func is_prepared() -> bool:
+	return _prepared
+
+
+# [values, problem] for one raster, read from its file; writes no member.
+func _load(tx: int, tz: int, name: String) -> Array:
 	if not has_tile(tx, tz) or not fields.has(name):
-		error_of = "no %s for tile %d,%d" % [name, tx, tz]
-		return out
+		return [PackedFloat32Array(), "no %s for tile %d,%d" % [name, tx, tz]]
 
 	var row: Dictionary = fields[name]
 	var typ: String = str(row["type"])
@@ -193,35 +269,54 @@ func raster(tx: int, tz: int, name: String) -> PackedFloat32Array:
 	var count: int = samples * samples
 
 	if raw.size() != count * int(TYPE_BYTES[typ]):
-		error_of = "%s is %d bytes, not %d" % [path, raw.size(), count * int(TYPE_BYTES[typ])]
-		return out
+		return [PackedFloat32Array(), "%s is %d bytes, not %d" % [path, raw.size(), count * int(TYPE_BYTES[typ])]]
 
-	out = decode(row, raw, count)
-
-	if name == "water_class":
-		for k in count:
-			out[k] = float(_code_to_id[int(out[k])])   # the record's code -> the game's table id (255: a code the table lacks)
-
-	_keep(key, "%d_%d" % [tx, tz], out)
-	return out
+	# water_class: the record's code -> the game's table id (255: a code the table lacks), in the same pass.
+	return [decode(row, raw, count, _code_lut if name == "water_class" else PackedFloat32Array()), ""]
 
 
-# Decodes raw little-endian samples by a manifest field row.
-static func decode(row: Dictionary, raw: PackedByteArray, count: int) -> PackedFloat32Array:
-	var out: PackedFloat32Array = PackedFloat32Array()
-	out.resize(count)
+# Decodes raw little-endian samples by a manifest field row. lut (256 values): each decoded code is replaced by lut[code].
+# A plain field (no log code, no no-data number, scale 1) is its stored values: f4 is copied whole and the integer types take one
+# short loop, the same numbers as the general loop below gives, which is what every field the bake reads is (8 Nov 2026 record).
+static func decode(row: Dictionary, raw: PackedByteArray, count: int, lut: PackedFloat32Array = PackedFloat32Array()) -> PackedFloat32Array:
 	var typ: String = str(row["type"])
 	var scale: float = float(row.get("scale", 1.0))
 	var has_nodata: bool = row.has("nodata") and str(row["nodata"]) != "NaN"
 	var nodata: float = float(row["nodata"]) if has_nodata else NAN
 	var cpd: float = float(row.get("codes_per_decade", 0.0))
+	var out: PackedFloat32Array = raw.to_float32_array() if typ == "f4" else PackedFloat32Array()
+	out.resize(count)
+
+	if cpd <= 0.0 and not has_nodata and scale == 1.0:
+		match typ:
+			"u1":
+				if lut.size() == 256:
+					for k in count:
+						out[k] = lut[raw[k]]
+
+					return out
+
+				for k in count:
+					out[k] = float(raw[k])
+			"u2":
+				for k in count:
+					out[k] = float(raw.decode_u16(k * 2))
+			"i4":
+				for k in count:
+					out[k] = float(raw.decode_s32(k * 4))
+
+		if lut.size() == 256 and typ != "u1":
+			for k in count:
+				out[k] = lut[int(out[k])]
+
+		return out
 
 	for k in count:
 		var v: float
 
 		match typ:
 			"f4":
-				v = raw.decode_float(k * 4)
+				v = out[k]
 			"u1":
 				v = float(raw[k])
 			"u2":
@@ -235,6 +330,10 @@ static func decode(row: Dictionary, raw: PackedByteArray, count: int) -> PackedF
 			out[k] = NAN
 		else:
 			out[k] = v * scale
+
+	if lut.size() == 256:
+		for k in count:
+			out[k] = lut[int(out[k])]
 
 	return out
 
@@ -259,43 +358,79 @@ var frame_gaps: int = 0
 
 
 func frame(tile: Vector2i, margin: int, name: String) -> PackedFloat32Array:
+	var got: Array = frame_and_gaps(tile, margin, name)
+	frame_gaps = got[1]
+	return got[0]
+
+
+# [the frame, its gap count], writing no member (bake threads call it at once on a prepared record). Each frame row is three runs,
+# the left neighbour's, the tile's (or the column above or below it) and the right neighbour's, copied as slices of their rows
+# (sample k of the frame is vals[clamp(lj) * samples + clamp(li)] as before; the slices are the same samples, not a sample at a time).
+func frame_and_gaps(tile: Vector2i, margin: int, name: String) -> Array:
 	var n: int = samples + 2 * margin
-	var out: PackedFloat32Array = PackedFloat32Array()
-	out.resize(n * n)
-	frame_gaps = 0
 	var step: int = samples - 1
 	var own: PackedFloat32Array = raster(tile.x, tile.y, name)
 
 	if own.is_empty():
-		out.fill(NAN)
-		return out
+		var empty: PackedFloat32Array = PackedFloat32Array()
+		empty.resize(n * n)
+		empty.fill(NAN)
+		return [empty, 0]
 
-	var near: Dictionary = {}   # Vector2i offset -> that neighbour's raster (empty: missing, its samples come from this tile's edge)
+	var near: Array = []   # [dz + 1][dx + 1] -> that neighbour's raster (empty: missing, its samples come from this tile's edge)
 
 	for dz in [-1, 0, 1]:
+		var row_of: Array = []
+
 		for dx in [-1, 0, 1]:
-			near[Vector2i(dx, dz)] = raster(tile.x + dx, tile.y + dz, name) if margin > 0 else own
+			row_of.append(raster(tile.x + dx, tile.y + dz, name) if margin > 0 else own)
+
+		near.append(row_of)
+
+	var out: PackedFloat32Array = PackedFloat32Array()
+	var gaps: int = 0
+	var runs: Array = [[-1, -margin, -1], [0, 0, step], [1, step + 1, step + margin]]   # [dtx, first gi, last gi]
 
 	for j in n:
 		var gj: int = j - margin   # sample index along z relative to this tile's first sample
 		var dtz: int = -1 if gj < 0 else (1 if gj > step else 0)
 
-		for i in n:
-			var gi: int = i - margin
-			var dtx: int = -1 if gi < 0 else (1 if gi > step else 0)
-			var vals: PackedFloat32Array = near[Vector2i(dtx, dtz)]
-			var li: int = gi - dtx * step
-			var lj: int = gj - dtz * step
+		for run in runs:
+			var dtx: int = run[0]
+			var g0: int = run[1]
+			var g1: int = run[2]
+
+			if g1 < g0:
+				continue
+
+			var vals: PackedFloat32Array = near[dtz + 1][dtx + 1]
 
 			if vals.is_empty():
-				vals = own   # a missing neighbour: repeat this tile's nearest edge sample
-				li = clampi(gi, 0, step)
-				lj = clampi(gj, 0, step)
-				frame_gaps += 1
+				_append_run(out, own, clampi(gj, 0, step) * samples, g0, g1, step)   # a missing neighbour: this tile's nearest edge sample
+				gaps += g1 - g0 + 1
+			else:
+				_append_run(out, vals, clampi(gj - dtz * step, 0, step) * samples, g0 - dtx * step, g1 - dtx * step, step)
 
-			out[j * n + i] = vals[clampi(lj, 0, step) * samples + clampi(li, 0, step)]
+	return [out, gaps]
 
-	return out
+
+# Appends vals[base + clamp(l, 0, step)] for l from l0 to l1: the samples before 0 repeat the row's first, those past step its last,
+# and the rest are one slice.
+static func _append_run(out: PackedFloat32Array, vals: PackedFloat32Array, base: int, l0: int, l1: int, step: int) -> void:
+	var before: int = clampi(0 - l0, 0, l1 - l0 + 1)
+	var after: int = clampi(l1 - step, 0, l1 - l0 + 1 - before)
+
+	for k in before:
+		out.append(vals[base])
+
+	var a: int = maxi(l0, 0)
+	var b: int = mini(l1, step)
+
+	if b >= a:
+		out.append_array(vals.slice(base + a, base + b + 1))
+
+	for k in after:
+		out.append(vals[base + step])
 
 
 # Features of one network list with a point in rect (world x, z). Nothing is clipped: a reach across a seam is the same object, one id.

@@ -252,7 +252,7 @@ func _ready() -> void:
 		return
 
 	_start_tunnels()
-	SpawnPointScript.use_world(world_dir)   # the starter tile's picked spawn (Stage E 6e), read before the flora placer clears round it
+	SpawnPointScript.use_world(world_dir)   # the starter tile's picked spawn (Stage E 6e); nothing else reads it to place things
 	var placer = PlacerScript.new()
 	placer.setup(generator, tables, rules)
 	flora = FloraStoreScript.new()
@@ -676,7 +676,7 @@ func _ready() -> void:
 			dialogue.router.mode = arg.substr(9)   # auto, static, ai or down (pretend the AI is dead: NPCs are unwell)
 
 	spawn = _spawn_point(world_dir)
-	animals.starter = Vector2(spawn.x, spawn.z)   # big game keeps out of its exclusion circle around the real spawn point (read once, from the starter tile)
+	animals.town = npcs.town_point()   # the island level and the stray dogs centre on the starter town's markers, never on the spawn (no_spawn_placement_design.md 3)
 	items.respawn_point = spawn
 	_world_dir = world_dir
 	_start_water()

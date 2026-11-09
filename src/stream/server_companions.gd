@@ -166,11 +166,11 @@ func _make_stray(sp: String, c: Dictionary, p: Dictionary) -> void:
 	if bool(stray.get("day_only", true)) and host.hour_now.is_valid() and host.period_of(float(host.hour_now.call())) != "day":
 		return
 
-	if host.starter == Vector2(INF, INF):
+	if host.town == Vector2(INF, INF):
 		return
 
 	var ring: Array = stray.get("ring_m", [60.0, 150.0])
-	var town: Vector2 = host.starter
+	var town: Vector2 = host.town
 
 	if Vector2(p["pos"].x - town.x, p["pos"].z - town.y).length() > float(ring[1]) + float(host.cfg.get("active_radius_m", 200.0)):
 		return   # the player is not near the town: their stray waits there for them

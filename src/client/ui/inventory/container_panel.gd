@@ -7,61 +7,91 @@ extends RefCounted
 const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
-const LOOK_COLUMNS := 5     # slots across the container: it shows in the You column (408 px inside), where six do not fit
+const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
+const ArtKit := preload("res://src/client/ui/art_kit.gd")
+const LOOK_COLUMNS := 6     # slots across the container: the Craft column's 650 px, the same 100 px wells as the pack (redesign 4.4)
 
 var view            # the InventoryView that owns this part (src/client/inventory_view.gd): the state it shows, the text sizes and the network
 var root: Control   # the top control this part built
 var _keep_out: CheckBox   # the open container's "keep out" tick
+var _lock: Control        # the lock beside the tick while the container is kept out
 
 
 func _init(owner_view) -> void:
 	view = owner_view
 
 
-# The container column, built once and kept (set_text_scale drops it to rebuild at a new size).
+# Chest mode (docs/ui/inventory_crafting_redesign.md section 4.4): the container takes the Craft column, built once and kept
+# (set_text_scale drops it to rebuild at a new size). The container's name goes on the Craft plate (InventoryView._show_tab), the bar
+# holds the "keep out" tick and Take all / Store all, the grid is 6 across in 100 px wells, and under it Sort both and Stack into my chests.
 func build() -> void:
 	if view._chest_panel == null:
 		view._chest_buttons.clear()
 		view._pack_buttons.clear()
-		view._chest_titles.clear()
 
 	if view._chest_panel != null:
 		return
 
-	# The middle column of the one window (look doc section 3): the container's name plate, its slots, and under them the four bulk
-	# buttons in fixed places. The pack is the window's own pack column, so this side shows no second pack.
-	var unit: float = InventoryLook.unit_of(view)
-	view._chest_panel = PanelContainer.new()
-	root = view._chest_panel
-	view._chest_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	view._chest_panel.size_flags_stretch_ratio = 0.9
-	view._chest_panel.add_theme_stylebox_override("panel", InventoryLook.board_style(view._px(10)))
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", view._px(8))
-	view._chest_panel.add_child(box)
-	var title: Label = Label.new()
-	InventoryLook.plate(title, "Chest", view._px(view.TITLE_PX - 6), unit)
-	box.add_child(title)
-	view._chest_titles.append(title)
+	box.add_theme_constant_override("separation", 14)
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.visible = false
+	view._chest_panel = box
+	root = box
+
+	# The bar: the "keep out" tick (Morgan's call 1) with its lock, then Take all and Store all. Only the owner may change the tick;
+	# crafting and blueprint sites leave a kept-out container alone.
+	var bar: HBoxContainer = HBoxContainer.new()
+	bar.custom_minimum_size = Vector2(0.0, 44.0)
+	bar.add_theme_constant_override("separation", 10)
+	box.add_child(bar)
+	_keep_out = CheckBox.new()
+	_keep_out.text = "Keep out of crafting"
+	_keep_out.tooltip_text = "Crafting nearby and building sites will not take from this container"
+	_keep_out.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
+	_keep_out.add_theme_font_size_override("font_size", view._px(18))
+	_keep_out.add_theme_color_override("font_color", ArtKit.CREAM)
+	_keep_out.toggled.connect(func(on: bool) -> void:
+		if on != view.chest_keep_out:
+			view.set_keep_out(on))
+	bar.add_child(_keep_out)
+	_lock = InventoryLook.lock_mark(26)
+	_lock.tooltip_text = "Kept out: crafting leaves this container alone"
+	_lock.mouse_filter = Control.MOUSE_FILTER_PASS
+	_lock.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bar.add_child(_lock)
+	var gap: Control = Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar.add_child(gap)
+	bar.add_child(_hint("Take all", "Take every stack from the container into your pack", take_all))
+	bar.add_child(_hint("Store all", "Put every pack stack the container takes into it (the hotbar's items and favourites stay)", store_all))
+
+	# The grid: the pack's wells, 6 across with 10 px gaps; a big container scrolls (the wheel; no bar, it would not fit the 650 px).
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	box.add_child(scroll)
 	var grid: GridContainer = GridContainer.new()
 	grid.columns = LOOK_COLUMNS
-	grid.add_theme_constant_override("h_separation", view._px(4))
-	grid.add_theme_constant_override("v_separation", view._px(4))
+	grid.add_theme_constant_override("h_separation", int(ArtKit.SLOT_GAP))
+	grid.add_theme_constant_override("v_separation", int(ArtKit.SLOT_GAP))
 	scroll.add_child(grid)
 
 	for i in view.inventory.SLOTS:
 		var slot = InventoryLook.make_slot(view, i)
+		slot.set_unit(ArtKit.SLOT / ItemSlot.SLOT_PX)
 		slot.clicked.connect(func(button: int, _shift: bool) -> void:
 			if button == MOUSE_BUTTON_LEFT:
 				on_slot(true, i))
+		# The info strip under the pack reads the chest well under the pointer too (redesign 4.1: one place to read about an item).
 		slot.mouse_entered.connect(func() -> void:
 			view._chest_hover = [true, i]
-			view._chest_last = [true, i])
-		slot.mouse_exited.connect(func() -> void: view._chest_hover = [] if view._chest_hover == [true, i] else view._chest_hover)
+			view._chest_last = [true, i]
+			view._pack_part.show_info())
+		slot.mouse_exited.connect(func() -> void:
+			view._chest_hover = [] if view._chest_hover == [true, i] else view._chest_hover
+			view._pack_part.show_info())
 		# Dragging a pack stack onto the container puts it in; dragging out of the container is not wired (a click or shift-click takes it).
 		slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
 		slot.on_drop = func(data: Variant) -> void:
@@ -70,36 +100,30 @@ func build() -> void:
 		grid.add_child(slot)
 		view._chest_buttons.append(slot)
 
-	var bulk: HBoxContainer = HBoxContainer.new()
-	bulk.add_theme_constant_override("separation", view._px(8))
-	box.add_child(bulk)
+	# The tools under the grid.
+	var tools: HBoxContainer = HBoxContainer.new()
+	tools.custom_minimum_size = Vector2(0.0, 32.0)
+	tools.add_theme_constant_override("separation", 24)
+	box.add_child(tools)
+	tools.add_child(_hint("Sort both", "Sort your pack and this container in the pack's order", sort_pack))
+	tools.add_child(_hint("Stack into my chests", "Add to stacks your own chests nearby already hold", stack_nearby))
 
-	for spec in [["Take all", "Take every stack from the container into your pack", take_all],
-			["Store all", "Put every pack stack the container takes into it (the hotbar's items and favourites stay)", store_all],
-			["Stack to nearby", "Add to stacks your own chests nearby already hold", stack_nearby],
-			["Sort", "Sort your pack and this container in the pack's order", sort_pack]]:
-		var button: Button = Button.new()
-		button.text = spec[0]
-		button.tooltip_text = spec[1]
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		view._style(button, view.BODY_PX - 6)
-		button.pressed.connect(spec[2])
-		bulk.add_child(button)
+	view._frame.craft_column.add_child(box)     # the Craft column; InventoryView._show_tab shows it or the recipes
 
-	# The "keep out" tick (Morgan's call 1): only the owner may change it; crafting and blueprint sites leave a kept-out container alone.
-	_keep_out = CheckBox.new()
-	_keep_out.text = "Keep out of crafting"
-	_keep_out.tooltip_text = "Crafting nearby and building sites will not take from this container"
-	view._style(_keep_out, view.BODY_PX - 6)
-	_keep_out.toggled.connect(func(on: bool) -> void:
-		if on != view.chest_keep_out:
-			view.set_keep_out(on))
-	box.add_child(_keep_out)
-	box.move_child(_keep_out, 1)
 
-	view._chest_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	view._columns.add_child(view._chest_panel)      # the You column, in place of the stats while it is open; hidden, it takes no room
-	view._columns.move_child(view._chest_panel, 1)
+# A key hint (redesign 4.1 and 4.4): plain text on the panel, gold under the pointer; still clickable.
+func _hint(text: String, tip: String, action: Callable) -> Button:
+	var button: Button = Button.new()
+	button.text = text
+	button.tooltip_text = tip
+	button.flat = true
+	button.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
+	button.add_theme_font_size_override("font_size", view._px(18))
+	button.add_theme_color_override("font_color", ArtKit.CREAM)
+	button.add_theme_color_override("font_hover_color", ArtKit.HEADING)
+	button.add_theme_color_override("font_pressed_color", ArtKit.HEADING)
+	button.pressed.connect(action)
+	return button
 
 
 # Puts a pack stack (real slot `slot`) into the open container. False when nothing was sent: no container, an empty slot, or a fire that
@@ -170,29 +194,13 @@ func refresh() -> void:
 
 func _refresh_look(capacity: int, fire: bool) -> void:
 	view._pack_view = range(view.inventory.SLOTS)     # the pack column shows every slot in place, so a pack button is its own slot
-	var container_name: String = view.table.name_of(int(view._world.get(view.chest_id, {}).get("number", 0)))
-
-	if view._chest_titles.size() >= 1:
-		var plate: Label = view._chest_titles[0]
-		InventoryLook.plate(plate, "Fire" if fire else (container_name if container_name != "" else "Chest"), view._px(view.TITLE_PX - 6), InventoryLook.unit_of(view))
-		var lock: Control = plate.get_node_or_null("Lock")
-
-		if view.chest_keep_out and lock == null:
-			var side: int = view._px(view.TITLE_PX - 10)
-			lock = InventoryLook.lock_mark(side)
-			lock.tooltip_text = "Kept out: crafting leaves this container alone"
-			plate.add_child(lock)
-			lock.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-			lock.offset_left = -float(side) - view._px(10)
-			lock.offset_right = -view._px(10)
-			lock.offset_top = -float(side) * 0.5
-			lock.offset_bottom = float(side) * 0.5
-		elif not view.chest_keep_out and lock != null:
-			lock.queue_free()
 
 	if is_instance_valid(_keep_out):
 		_keep_out.visible = view.chest_may_keep_out and not fire
 		_keep_out.set_pressed_no_signal(view.chest_keep_out)
+
+	if is_instance_valid(_lock):
+		_lock.visible = view.chest_keep_out and not fire
 
 	for i in view.inventory.SLOTS:
 		var slot = view._chest_buttons[i]
@@ -200,6 +208,15 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 		var number: int = view.chest_inv.numbers[i]
 		var tip: String = view._tooltip(number, view.chest_inv.counts[i], view.chest_inv.wear[i]) if number != 0 else ""
 		InventoryLook.show_stack(view, slot, number, view.chest_inv.counts[i], view.chest_inv.wear[i], tip)
+
+
+# The name on the Craft plate while the container shows: "FIRE", the container's name, or "CHEST".
+func title() -> String:
+	if is_fire():
+		return "FIRE"
+
+	var container_name: String = view.table.name_of(int(view._world.get(view.chest_id, {}).get("number", 0)))
+	return container_name.to_upper() if container_name != "" else "CHEST"
 
 
 # True when the open container is a fire (lit or out); its store takes only wood and food (Dave, 4 Nov 2026).
