@@ -48,7 +48,7 @@ const HEAD_CLEAR_CELLS := 5   # a brook head for a spring cave has no river cell
 var caves: Array = []
 var lairs: Array = []
 var harbor: Dictionary = {}
-var springs: Array = []   # ground springs of a tile baked from the water record: {pos [x, y, z], m3_s, cover "bushes"} (Dave 9 Nov 2026)
+var ground_springs: Array = []   # ground springs of a tile baked from the water record: {pos [x, y, z], m3_s, cover "bushes"} (Dave 9 Nov 2026)
 var starter: Dictionary = {}
 # false for a tile baked from the water record: the watershed design retires rule-placed spring caves (docs/water/watershed_rebuild_design.md
 # section 6, Dave 9 Nov). Cave springs come only from soluble or fractured rock, from R5's C7 list, once it exists.
@@ -113,6 +113,7 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 	_local = LOCAL_ID_BASE
 	caves = []
 	lairs = []
+	ground_springs = []
 	ore_report = {"near": 0, "level": 0, "blocked": 0, "reached": 0}
 	harbor = {}
 	starter = {}
@@ -1025,16 +1026,17 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 				made += 1
 				continue
 
-		springs.append({"pos": [snappedf(point.x, 0.1), snappedf(_heights[index], 0.1), snappedf(point.y, 0.1)], "m3_s": snappedf(float(head["m3_s"]), 0.0001), "cover": "bushes"})
+		ground_springs.append({"pos": [snappedf(point.x, 0.1), snappedf(_heights[index], 0.1), snappedf(point.y, 0.1)], "m3_s": snappedf(float(head["m3_s"]), 0.0001), "cover": "bushes"})
 
 	print("  springs from the record, tile %d,%d: %d spring heads, %d tried as caves (share %.2f), %d spring caves, %d ground springs"
-		% [_tile.x, _tile.y, heads.size(), tried, share, made, springs.size()])
+		% [_tile.x, _tile.y, heads.size(), tried, share, made, ground_springs.size()])
 
 
 # The spring-cave rules for one R5 spring head (as _brook_heads, without its search for heads in the drawn rivers).
 func _record_cave_ok(index: int) -> bool:
 	var margin: int = int(float(_rules["edge_margin_m"]) / _spacing) + 2
 	var i: int = index % _samples
+	@warning_ignore("integer_division")
 	var j: int = index / _samples
 
 	if i < margin or j < margin or i >= _samples - margin or j >= _samples - margin:

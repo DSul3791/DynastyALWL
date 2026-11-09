@@ -181,7 +181,7 @@ func _init() -> void:
 
 		check(not result["sites"].spring_caves and spring_caves == 0, "a tile from the record places no spring cave on gentle ground (%d)" % spring_caves)
 		# R5's spring head is a ground spring, where the head is, with bushes over it; the seep is not a spring.
-		var springs: Array = result["sites"].springs
+		var springs: Array = result["sites"].ground_springs
 		var x_want: float = float(TILE.x) * 15360.0 + float(SPRING.x) * 8.0
 		var z_want: float = float(TILE.y) * 15360.0 + float(SPRING.y) * 8.0
 		check(springs.size() == 1, "one ground spring from R5's one spring head (%d)" % springs.size())

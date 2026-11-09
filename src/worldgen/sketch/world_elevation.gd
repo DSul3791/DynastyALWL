@@ -968,7 +968,6 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 	var sin_r: float = sin(rotation)
 	var cap_scale: float = float(mount["beach_cap_m"]) / 1100.0
 	var exponent: float = float(mount.get("beach_exp", 1.7))
-	var spawn: Dictionary = rules.get("spawn_keep", {})
 
 	for row in range(size):
 		for column in range(size):
@@ -977,13 +976,6 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 			var along: float = (dx * cos_r + dz * sin_r) / float(mount["a"])
 			var across: float = (-dx * sin_r + dz * cos_r) / float(mount["b"])
 			var weight: float = 1.0 - _smooth(clampf((sqrt(along * along + across * across) - 1.1) / 0.5, 0.0, 1.0))
-
-			# The spawn point and the showroom beside it keep the land they always had.
-			if not spawn.is_empty():
-				var cx: float = origin_x + (float(center_column - radius + column) + 0.5) * cell_m
-				var cz: float = origin_z + (float(center_row - radius + row) + 0.5) * cell_m
-				var spawn_distance: float = Vector2(cx - float(spawn["x"]), cz - float(spawn["z"])).length()
-				weight *= _smooth(clampf((spawn_distance - float(spawn["keep_radius_m"])) / float(spawn["blend_radius_m"]), 0.0, 1.0))
 			var d_m: float = distance_cells[row * size + column] * cell_m
 
 			if weight <= 0.0 or d_m <= 0.0:
@@ -1184,7 +1176,8 @@ func _layout(table: Dictionary, d_m: float, share: float, x_m: float, z_m: float
 # Foothill belt (ISLAND_SHAPE_PLAN step 2): the cap above only lowers land, so the sectors beside the peak axis stayed low and
 # flat for kilometres. Inland ground now rises to at least a share of the same concave curve, modulated by radial ridges
 # (spokes around the island centre, wandering with distance), so every sector has ridges and gullies running to the coast
-# for the valleys to fall between. Spawn area, shore and the island's own peak are left alone.
+# for the valleys to fall between. The shore and the island's own peak are left alone (the spawn area is not: nothing is shaped by the
+# spawn, which is temporary; Dave 9 Nov 2026).
 func _raise_foothills(mount: Dictionary) -> void:
 	var reach_m: float = maxf(float(mount["a"]), float(mount["b"])) * 1.6
 	var radius: int = int(ceil(reach_m / cell_m))
@@ -1202,7 +1195,6 @@ func _raise_foothills(mount: Dictionary) -> void:
 	var wander: float = float(mount.get("foothill_wander", 0.5))
 	var table: Dictionary = _band_table(mount, sea, size, radius)
 	var ceiling: float = INF
-	var spawn: Dictionary = rules.get("spawn_keep", {})
 	var noise: FastNoiseLite = FastNoiseLite.new()
 	noise.seed = SeedUtil.purpose_seed(_master, "foothill_spokes_" + str(mount.get("id", "")))
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
@@ -1223,12 +1215,6 @@ func _raise_foothills(mount: Dictionary) -> void:
 			var across: float = (-dx * sin_r + dz * cos_r) / float(mount["b"])
 			var weight: float = 1.0 - _smooth(clampf((sqrt(along * along + across * across) - 1.1) / 0.5, 0.0, 1.0))
 			weight *= _smooth(clampf((d_m - 150.0) / 350.0, 0.0, 1.0))
-
-			if not spawn.is_empty():
-				var cx: float = origin_x + (float(center_column - radius + column) + 0.5) * cell_m
-				var cz: float = origin_z + (float(center_row - radius + row) + 0.5) * cell_m
-				var spawn_distance: float = Vector2(cx - float(spawn["x"]), cz - float(spawn["z"])).length()
-				weight *= _smooth(clampf((spawn_distance - float(spawn["keep_radius_m"])) / float(spawn["blend_radius_m"]), 0.0, 1.0))
 
 			if weight <= 0.0:
 				continue
