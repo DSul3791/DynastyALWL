@@ -43,7 +43,7 @@ const SCENERY_PEBBLES := true            # owner (2026-10-21): pebbles are decor
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
 # Soil ids that carry grass, with how thick (0 to 1).
-const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.3}
+const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.6}   # 9 stony soil 0.3 -> 0.6 (Dave 9 Nov 2026: a stony hillside still grows grass, only thinner; flora/hillside_cover_note.md)
 
 # The three layers, from the ground up. "reach" is the share of the grass
 # radius the layer is drawn to; "per_point" is how many cards per ground sample.

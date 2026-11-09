@@ -6,7 +6,8 @@ extends RefCounted
 # build frame after TileClimate.build, so tile edges agree. Rules (tile_rules.json "land_types"):
 #   1. shore: land within shore_cells of a painted lake or river (low lakes, surface under low_lake_m: wet_flat_cells) becomes marsh
 #      (reeds and wet meadow, no trees), unless steeper than shore_max_slope_deg.
-#   2. treeline: forest and grassland above treeline_m become alpine_meadow (bare rock stays); steeper than rock_slope_deg is rock.
+#   2. treeline: forest and grassland above treeline_m become alpine_meadow (bare rock stays); steeper than rock_slope_deg is rock
+#      (rock_patches: in patches from rock_patch_from_deg).
 #   3. evergreen belt: ground steeper than belt_slope (tangent) and between belt_min_m and treeline_m that is forest or grassland
 #      becomes mixed_forest up to boreal_from_m, boreal_forest above. Valley and farmland keep what the climate gave.
 
@@ -164,6 +165,51 @@ static func farmland(biome: PackedByteArray, fertility: PackedByteArray, heights
 			changed += 1
 
 	return changed
+
+
+# Bare rock in patches (Dave 9 Nov 2026, "change our soil rule to match natures"; flora/hillside_cover_note.md): soil holds to about 45 degrees
+# and none is found steeper (DiBiase, Heimsath and Whipple 2012). Between rock_patch_from_deg and rock_slope_deg each sample's own limit comes
+# from value noise over WORLD position (rock_patch_m across, so tiles agree), and the rock breaks up in patches round 45 degrees instead of
+# following a contour; steeper than rock_slope_deg the climate pass already made it rock. A sample turned to rock gets the rock biome, bare
+# rock soil and no fertility. Runs on the build frame after apply and farmland. Returns how many samples it turned.
+static func rock_patches(biome: PackedByteArray, soil: PackedByteArray, fertility: PackedByteArray, heights: PackedFloat32Array, water_class: PackedByteArray, side: int, spacing_m: float, origin_sx: int, origin_sz: int, rules: Dictionary, rock_biome: int, rock_soil: int) -> int:
+	var from_deg: float = float(rules.get("rock_patch_from_deg", 0.0))
+	var to_deg: float = float(rules.get("rock_slope_deg", 48.0))
+
+	if rules.is_empty() or not bool(rules.get("enabled", true)) or from_deg <= 0.0 or from_deg >= to_deg:
+		return 0
+
+	var patch_m: float = maxf(float(rules.get("rock_patch_m", 60.0)), spacing_m)
+	var patch_seed: int = int(rules.get("rock_patch_seed", 4241))
+	var from_tan: float = tan(deg_to_rad(from_deg))
+	var inv_two: float = 1.0 / (2.0 * spacing_m)
+	var turned: int = 0
+
+	for j in range(side):
+		var z: float = float(origin_sz + j) * spacing_m / patch_m
+
+		for i in range(side):
+			var index: int = j * side + i
+
+			if water_class[index] != 0 or soil[index] == rock_soil:
+				continue
+
+			var gx: float = (heights[index + (1 if i < side - 1 else 0)] - heights[index - (1 if i > 0 else 0)]) * inv_two
+			var gz: float = (heights[index + (side if j < side - 1 else 0)] - heights[index - (side if j > 0 else 0)]) * inv_two
+			var slope: float = sqrt(gx * gx + gz * gz)
+
+			if slope <= from_tan:
+				continue
+
+			var limit_deg: float = lerpf(from_deg, to_deg, _value_noise(float(origin_sx + i) * spacing_m / patch_m, z, patch_seed))
+
+			if slope > tan(deg_to_rad(limit_deg)):
+				biome[index] = rock_biome
+				soil[index] = rock_soil
+				fertility[index] = 0
+				turned += 1
+
+	return turned
 
 
 # Smooth value noise in 0..1 at lattice coordinates (x, z).
