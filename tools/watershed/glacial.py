@@ -408,6 +408,10 @@ def main():
             surf, p_ice, ice_src = np.empty(N), np.empty(N), np.empty(N)
             _cold_sources(h, ice, ela, rain_mm, Hf - He, BR, cell, p0, surf, p_ice, ice_src)
             filled, rec, order = evolve.route(surf, sea, n, dx, evolve.flow_memory(E))
+            if st['steps'] == 0:                       # once a run: how evenly _solve's threads share the land (cut A3a)
+                bucket, basin, basins = evolve.solve_buckets(order, rec, sea, nb.get_num_threads())
+                print(f'solve buckets: {nb.get_num_threads()} threads, the largest bucket {100.0 * bucket:.1f}% of the land cells, '
+                      f'the largest basin {100.0 * basin:.1f}% ({basins} basins)', flush=True)
             Ai, A = _ice_flux(order, rec, sea, ice_src, rain_src, N)
             ptr, don = _donors(rec, order, N)
             Asw, ice_top = _swath(Ai, ptr, don, order, n, dx, w0, a0, alpha, h, delta, below)
