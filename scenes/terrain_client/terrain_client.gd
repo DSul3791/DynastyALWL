@@ -811,6 +811,7 @@ func _ready() -> void:
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.flora_stripped_received.connect(_on_flora_stripped)
+	net.drink_points_received.connect(_on_drink_points)
 	net.nests_received.connect(_on_nests_sound)   # songbird nests are heard (ambient_life.set_nests); MikeW draws them from the same signal
 	net.flora_fruit_received.connect(_on_flora_fruit)
 	net.zone_received.connect(func(biome_id: int) -> void: sound.ambience.set_zone(biome_id))
@@ -1447,7 +1448,15 @@ func _welcome_body(info: Dictionary) -> void:
 		if _water_ahead() and items.held_container_has_room():
 			return {"prompt": "Press E to fill", "tap": items.drink}
 
-		return {"prompt": "Press E to drink", "tap": items.drink} if items.thirst < 100 and _water_ahead() else {})
+		if items.thirst >= 100:
+			return {}
+
+		if _water_ahead():
+			return {"prompt": "Press E to drink", "tap": items.drink}
+
+		# The record's water where the settled water shows none (docs/design/drink_prompt_design.md (a); Kathleen: name what is there).
+		var source: String = _record_drink_here()
+		return {"prompt": "%s — Press E to drink" % source, "tap": items.drink} if source != "" else {})
 	# The sea's edge (Sonny, 31 Oct 2026; the server half is ACT_GATHER_EDGE): with a bucket, clay jug or waterskin in the pack E fills it with sea water; otherwise on a tide-line node
 	# (data/items/shore_nodes.json) E gathers it. Shown only where the server would not refuse (ShoreRules.prompt), so before the plain drink prompt.
 	items.register_interactable("gather_edge", 34, func():
@@ -1976,6 +1985,69 @@ func _shore_tap() -> void:
 
 	_shore_msec = -1000
 
+
+
+# The record's drink points (net drink_points, DrinkRules.chunk_points): per flora chunk its brook cells and spring heads, kept for the last
+# DRINK_KEEP_CHUNKS chunks that sent any. Where the settled water shows nothing, they give the E-to-drink prompt; the server's rule then says
+# whether the water runs (docs/design/drink_prompt_design.md (a)).
+const DRINK_KEEP_CHUNKS := 600
+const DRINK_REACH_M := 3.0   # vitals.json thirst.reach_m, the server's reach for the same rows
+var _drink_chunks: Dictionary = {}   # chunk -> [cell keys (Array of Vector2i), springs PackedFloat32Array x, z], oldest first
+var _drink_cells: Dictionary = {}    # Vector2i world sample (cell_m grid) -> 1 + the brook's regime
+var _drink_cell_m: float = 8.0
+
+
+func _on_drink_points(chunk: Vector2i, cell_m: float, cells: PackedInt32Array, springs: PackedFloat32Array) -> void:
+	_forget_drink(chunk)
+	_drink_cell_m = maxf(cell_m, 1.0)
+	var keys: Array = []
+
+	for n in range(0, cells.size() - 2, 3):
+		var key: Vector2i = Vector2i(cells[n], cells[n + 1])
+		_drink_cells[key] = cells[n + 2]
+		keys.append(key)
+
+	_drink_chunks[chunk] = [keys, springs]
+
+	while _drink_chunks.size() > DRINK_KEEP_CHUNKS:
+		_forget_drink(_drink_chunks.keys()[0])
+
+
+func _forget_drink(chunk: Vector2i) -> void:
+	if not _drink_chunks.has(chunk):
+		return
+
+	for key in _drink_chunks[chunk][0]:
+		_drink_cells.erase(key)
+
+	_drink_chunks.erase(chunk)
+
+
+# "Spring" within DRINK_REACH_M of a ground spring head, "Brook" when one of the five points the server reads (the feet and DRINK_REACH_M each
+# way, nearest sample: DrinkRules.tile_rows) is a record brook cell, else "".
+func _record_drink_here() -> String:
+	if body == null or _drink_chunks.is_empty():
+		return ""
+
+	var here: Vector3 = body.global_position
+	var chunk_m: float = 256.0 if flora == null else float(flora.chunk_m)
+	var home: Vector2i = Vector2i(int(floor(here.x / chunk_m)), int(floor(here.z / chunk_m)))
+
+	for dz in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var springs: PackedFloat32Array = _drink_chunks.get(home + Vector2i(dx, dz), [[], PackedFloat32Array()])[1]
+
+			for n in range(0, springs.size() - 1, 2):
+				if Vector2(springs[n] - here.x, springs[n + 1] - here.z).length() <= DRINK_REACH_M:
+					return "Spring"
+
+	for offset in [Vector2.ZERO, Vector2(DRINK_REACH_M, 0.0), Vector2(-DRINK_REACH_M, 0.0), Vector2(0.0, DRINK_REACH_M), Vector2(0.0, -DRINK_REACH_M)]:
+		var key: Vector2i = Vector2i(roundi((here.x + offset.x) / _drink_cell_m), roundi((here.z + offset.y) / _drink_cell_m))
+
+		if _drink_cells.has(key):
+			return "Brook"
+
+	return ""
 
 
 func _water_ahead() -> bool:
@@ -3362,6 +3434,9 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 
 	_in_generation += 1
 
+	_drink_chunks.clear()
+	_drink_cells.clear()
+
 	if flora != null:
 		for chunk in flora.held_chunks():
 			flora.drop_chunk(chunk)
@@ -3494,7 +3569,7 @@ func _inspect_target() -> String:
 	var water_m: float = _water_on_look(origin, direction, 30.0 if hit.is_empty() else origin.distance_to(hit["position"]))
 
 	if water_m >= 0.0:
-		return "Water — Press E to Drink" if items != null and items.thirst < 100 and _water_ahead() else "Water"
+		return "Water — Press E to drink" if items != null and items.thirst < 100 and _water_ahead() else "Water"
 
 	if hit.is_empty():
 		return ""

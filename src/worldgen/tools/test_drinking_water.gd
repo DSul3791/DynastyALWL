@@ -130,6 +130,14 @@ func _tile_rows() -> void:
 	check(int(tile.drink_row(4, mean_c).get("regime", 0)) == 3 and tile.drink_row(0, mean_c).is_empty() and tile.drink_row(8, mean_c).is_empty(), "a gully at 4; no brook off the channels")
 	var august: Dictionary = ctx("summer", 72.0, 24.0)
 	check(DrinkRules.runs(CFG, brook, august) and not DrinkRules.runs(CFG, bed, august), "in a dry August the perennial brook runs and the intermittent bed is dry")
+	# The client's drink points (DrinkRules.chunk_points, net drink_points): the brook cells on the world sample grid, a lake cell left out (the
+	# server gives a lake row there), and the ground spring heads in the chunk.
+	tile.spacing_m = 8.0
+	tile.water_class = PackedByteArray([0, 0, 2, 0, 0, 0, 0, 0, 0])
+	tile.ground_springs = [[Vector3(4.0, 1.0, 4.0), 0.002, "bushes", 0.002], [Vector3(40.0, 1.0, 4.0), 0.002, "bushes", 0.002]]
+	var points: Array = DrinkRules.chunk_points(tile, Vector2.ZERO, 24.0)
+	check(points[0] == PackedInt32Array([1, 0, 2, 1, 1, 4]), "drink points: the perennial cell and the gully, not the lake cell (%s)" % str(points[0]))
+	check(points[1] == PackedFloat32Array([4.0, 4.0]), "drink points: the spring head in the chunk, not the one beyond it (%s)" % str(points[1]))
 	var empty = TileTerrainDataScript.new()
 	empty.samples = 3
 	check(empty.drink_row(1, mean_c).is_empty() and not empty.has_drink(), "a tile with no drink sections gives no brook rows")
@@ -211,6 +219,18 @@ func _server() -> void:
 	items.water_near = func(_pos, _reach): return false
 	rows_here = [{"kind": "salt"}]
 	check(not _drinks(items, v) and said.has(str(sources.get("say_salt", ""))), "at the sea the player hears the salt line (%s)" % str(said))
+
+	# Where the settled water shows nothing (docs/design/drink_prompt_design.md (a)): a ground spring head is a drink, a dry August bed of a
+	# record brook is "The bed is dry", and with no record row it is the plain refusal as before.
+	season[0] = "summer"
+	items._last_rain_s = -INF
+	rows_here = [{"kind": "spring", "dry_m3_s": 0.002, "temp_c": 12.0}]
+	check(_drinks(items, v), "a ground spring head the settled water does not show is a drink")
+	said.clear()
+	rows_here = [{"kind": "brook", "regime": 2}]
+	check(not _drinks(items, v) and said.has(str(sources.get("say_dry", ""))), "a record brook's dry August bed says the bed is dry (%s)" % str(said))
+	rows_here = []
+	check(not _drinks(items, v), "no water shown and no record row: no drink")
 	items.water_near = func(_pos, _reach): return true
 
 
