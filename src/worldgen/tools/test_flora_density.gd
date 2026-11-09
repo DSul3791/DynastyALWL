@@ -290,6 +290,9 @@ func _init() -> void:
 	_check(points.size() > 100 and float(clumped) / float(points.size()) >= 0.87, "about 90 percent (at least 87) of the shrubs stand in clumps of 4 or more (%.1f percent: %d of %d)" % [100.0 * float(clumped) / float(maxi(points.size(), 1)), clumped, points.size()])
 	_check(float(singles) / float(maxi(points.size(), 1)) <= 0.05, "isolated single shrubs are at most 5 percent (%.1f percent)" % (100.0 * float(singles) / float(maxi(points.size(), 1))))
 	# The starter orchard by the spawn is gone (9 Nov 2026: nothing is placed from the spawn), and its check with it (proposed_removals/REMOVALS.md).
+	# Wild fruit groves in its place (docs/design/no_spawn_placement_design.md 1): the four summer varieties grow in small stands as well as
+	# scattered. Over a 24 x 24 chunk window of the starter tile (trees only), each has at least one grove of 4 or more trees.
+	_check_fruit_groves(placer)
 
 	# Zero-model guard: rows flagged "future" (fig, olive, pomegranate, mango, orange, lemon: models by Kathleen) are never placed.
 	var future_names: Array = []
@@ -347,3 +350,62 @@ func _init() -> void:
 	_check(lonely * 50 <= young.size(), "at most 2 percent of young conifers stand alone in open ground (a parent crown across a chunk edge is not seen) (%d of %d)" % [lonely, young.size()])
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Groves of the four summer fruit varieties: stand trees (item number STAND_BASE and up) of a species, joined when within 20 m of each other.
+func _check_fruit_groves(placer) -> void:
+	var groves: Dictionary = {"apple_early": [], "apple_summer": [], "pear_summer": [], "sour_cherry": []}
+	var trees: Dictionary = {"apple_early": [], "apple_summer": [], "pear_summer": [], "sour_cherry": []}
+	var corner: Vector2i = placer.chunk_of(3.0 * 15360.0 + 2000.0, 4.0 * 15360.0 + 2000.0)
+
+	for cz in range(24):
+		for cx in range(24):
+			var held: Dictionary = placer.chunk_items(Vector2i(corner.x + cx, corner.y + cz), true)
+
+			for n in range(held["ids"].size()):
+				var kind_name: String = str(placer.species_of(held["ids"][n]).get("name", ""))
+
+				if trees.has(kind_name) and (int(held["ids"][n]) & 0xffff) >= PlacerScript.STAND_BASE:
+					trees[kind_name].append(Vector2((held["positions"][n] as Vector3).x, (held["positions"][n] as Vector3).z))
+
+	for kind_name in trees:
+		var left: Array = (trees[kind_name] as Array).duplicate()
+
+		while not left.is_empty():
+			var group: Array = [left.pop_back()]
+			var grew: bool = true
+
+			while grew:
+				grew = false
+
+				for k in range(left.size() - 1, -1, -1):
+					for g in group:
+						if (left[k] as Vector2).distance_to(g) <= 20.0:
+							group.append(left[k])
+							left.remove_at(k)
+							grew = true
+							break
+
+			if group.size() >= 4:
+				# The near_orchard hint (server_items.gd: four or more fruit trees within 25 m of the player): the most of this grove within 25 m of one of its trees.
+				var most: int = 0
+
+				for g in group:
+					var within: int = 0
+
+					for other in group:
+						if (other as Vector2).distance_to(g) <= 25.0:
+							within += 1
+
+					most = maxi(most, within)
+
+				groves[kind_name].append(most)
+
+	print("fruit groves (4 or more trees; the most within 25 m of one tree) in the window: %s" % str(groves))
+	var drops: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	var fruit: Dictionary = (drops as Dictionary).get("fruit_tree", {}) if typeof(drops) == TYPE_DICTIONARY else {}
+
+	for kind_name in groves:
+		_check(not (groves[kind_name] as Array).is_empty(), "%s grows in at least one wild grove of 4 or more trees (%s)" % [kind_name, str(groves[kind_name])])
+		_check(fruit.has(kind_name) and (groves[kind_name] as Array).any(func(best): return int(best) >= 4), "standing in a %s grove sets off the near_orchard hint (a fruit_tree in drops.json, 4 or more within 25 m)" % kind_name)
+
