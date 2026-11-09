@@ -97,7 +97,7 @@ func _init() -> void:
 		run = run + 0.1 if up1 else 0.0
 		longest = maxf(longest, run)
 
-	check(looks[0] > 0 and looks[0] < 6000 / 4, "a drinking animal looks up now and then (%d of 6000 tenths)" % looks[0])
+	check(looks[0] > 0 and looks[0] < 1500, "a drinking animal looks up now and then (%d of 6000 tenths)" % looks[0])
 	check(longest >= 1.4 and longest <= 3.05, "a look lasts 1.5 to 3 s (longest %.1f s)" % longest)
 	check(apart, "two animals of a herd look up at different moments")
 
