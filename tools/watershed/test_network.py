@@ -196,6 +196,17 @@ def test_below_springs_takes_the_spring_that_keeps_it_open():
     dist, who = nw.below_springs(np.array([4, 6]), np.array([0.001, 0.1]), rec, step, stream & (np.arange(7) != 3), stop)
     assert [int(w) for w in who] == [-1, -1, -1, -1, 0, 1, 1], list(who)   # a stream that stops (cell 3 not a stream) ends the walks there
 
+
+def test_patch5_sums_a_head_and_its_dry_flow():
+    """A head's groundwater is the sum over the 5 x 5 patch round it (off the window counts as nothing), and its dry flow is the
+    same patch's gw x dry share. On a 7 x 7 window: 2 L/s at the centre (dry share 0.5), 1 L/s in a corner (dry share 0.2)."""
+    n = 7
+    gw = np.zeros(n * n); gw[3 * n + 3] = 0.002; gw[0] = 0.001
+    share = np.full(n * n, 0.5); share[0] = 0.2
+    q, dry = nw.patch5(gw, n), nw.patch5(gw * share, n)
+    for cell, want_q, want_dry in ((3 * n + 3, 0.002, 0.001), (n + 1, 0.003, 0.0012), (n * n - 1, 0.0, 0.0)):
+        assert abs(q[cell] - want_q) < 1e-12 and abs(dry[cell] - want_dry) < 1e-12, (cell, q[cell], dry[cell])
+
 if __name__ == '__main__':
     tests = [v for k, v in sorted(globals().items()) if k.startswith('test_') and callable(v)]
     for t in tests:
