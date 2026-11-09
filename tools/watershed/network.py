@@ -10,7 +10,8 @@ groundwater.npz (R4: groundwater coming out, depth to the table, transmissivity,
                          falls, springs, lakes with their inflow and outlet reaches, and the outlets to the sea and into lakes,
                          each with the seven answers of the watershed document (section 13, principle 8);
   network.npz            the same on the 16 m grid, for record.py --network: stream class, reach id, flows, sizes, reach type,
-                         pattern, bed, regime;
+                         pattern, bed, regime, and below which spring each stream cell runs (below_spring_m, inf for none;
+                         spring_q_m3_s and spring_y_m of that spring), for drinking water;
   network_manifest.json  input hashes, params, summary, never-see checks, and what is still missing;
   follow_the_water.md    the success test (item 12): contrasting basins followed from the top of their main stem to the sea;
   network.png            the picture.
@@ -221,6 +222,27 @@ def _floor_width(cells, h, rec, sea, rise, max_m, ahead, n, dx):
 
 
 @nb.njit(cache=True)
+def below_springs(cells, q, rec, step, stream, stop):
+    """The spring that keeps each stream cell open longest in frost (drinking water step 2b, docs/design/drinking_water_step2b_design.md).
+    DrinkRules freezes a brook below a spring past open_m x sqrt(L/s) x cold x breeze, and cold and breeze are the same for every
+    spring on a night, so the spring with the smallest distance / sqrt(flow) keeps a cell open on every night. Each spring's water
+    (cells: its head cell, q: its flow) is walked down the receivers through stream cells; a walk ends where the stream does, or at a
+    lake or the sea (stop), where the water mixes. Returns, per cell, the channel distance below that spring (inf for none) and its
+    index into cells (-1 for none)."""
+    best = np.full(rec.size, np.inf)
+    dist = np.full(rec.size, np.inf)
+    who = np.full(rec.size, -1, np.int64)
+    for k in range(len(cells)):
+        root = np.sqrt(max(float(q[k]), 1e-12))
+        j, d = int(cells[k]), 0.0
+        while j >= 0 and stream[j] and not stop[j]:
+            if d / root < best[j]:
+                best[j], dist[j], who[j] = d / root, d, k
+            d += float(step[j])
+            j = int(rec[j])
+    return dist, who
+
+
 def _strahler(order, rec, outlet, vis):
     """Strahler order of the visible streams."""
     N = rec.size
@@ -1158,6 +1180,13 @@ def main():
                    into_closed_lakes_m3_s=r3(Q['mean'][land & ~closed & (rec >= 0) & closed[to]].sum()),
                    lake_losses_m3_s=r3(lost['mean'][list(exits.values())].sum() if exits else 0.0),
                    lost_to_the_bed_m3_s=r3(lost['mean'][losing].sum()))
+    # Below which spring each stream cell runs (drinking water step 2b): from every spring head, as the bake places its ground springs
+    # and spring caves (tile_baker.gd, heads of kind "spring" with groundwater_m3_s), for record.py's below_spring_m, spring_q, spring_y.
+    sp_cells = np.array([int(starts[hd['reach']]) for hd in heads if hd['kind'] == 'spring'], np.int64)
+    sp_dist, sp_who = below_springs(sp_cells, gw2[sp_cells], rec, step, vis, lake | sea)
+    sp_on = sp_who >= 0
+    sp_q = np.where(sp_on, gw2[sp_cells[np.maximum(sp_who, 0)]], 0.0) if sp_cells.size else np.zeros(N)
+    sp_y = np.where(sp_on, h[sp_cells[np.maximum(sp_who, 0)]], 0.0) if sp_cells.size else np.zeros(N)
     summary = dict(seconds=round(time.time() - t0, 1), land_km2=round(land_km2, 1), stream_threshold_wet_m3_s=r3(q_vis),
                    seasons={k: (r3(float(np.mean(v[land]))) if isinstance(v, np.ndarray) else r3(v)) for k, v in sea_sn.items() if not k.startswith('_')},
                    stores=_stores_summary(store_source, gw, base_wet, base_dry_share, sea_sn, float(SN['baseflow_recession_days']), springs, km(perennial),
@@ -1174,7 +1203,7 @@ def main():
                               steep_steps_without_a_cause=unpinned),
                    outlets={kk: sum(1 for o in outlets if o['kind'] == kk) for kk in sorted({o['kind'] for o in outlets})},
                    largest_river=max(([r['q_m3_s']['mean'], r['area_km2'], r['width_m']['bottom']] for r in reaches if r['ends'] == 'sea'), default=None),
-                   springs=len(springs), balance=balance)
+                   springs=len(springs), below_springs=dict(spring_heads=int(sp_cells.size), stream_km=km(sp_on)), balance=balance)
     missing = ['snowmelt in the wet and dry seasons (A4 snow layer)', 'faults (not in the geology export), so no fault-pinned falls',
                'cave springs, karst sinks and LOD 2 passage sizes (item 10)', 'floodplain raster, levees and oxbows drawn (item 6)',
                'fan checks and terraces (item 9)', 'distributaries in deltas (item 11)', 'bank trees from the biome map (judged from the treeline)',
@@ -1194,6 +1223,7 @@ def main():
                         q_mean_m3_s=R(np.where(land, Q['mean'], 0.0)), q_wet_m3_s=R(np.where(land, Q['wet'], 0.0)),
                         q_dry_m3_s=R(np.where(land, Q['dry'], 0.0)), q_base_dry_m3_s=R(np.where(land, base_dry, 0.0)), q_bankfull_m3_s=R(np.where(land, qbf, 0.0)),
                         width_m=R(np.where(vis, Wbf, 0.0)), depth_m=R(np.where(vis, Dbf, 0.0)),
+                        below_spring_m=R(sp_dist), spring_q_m3_s=R(sp_q), spring_y_m=R(sp_y),
                         width_mean_m=R(np.where(vis, at_flow(Q['mean'], Wbf, float(S3['at_station_width_exponent'])), 0.0)),
                         depth_mean_m=R(np.where(vis, at_flow(Q['mean'], Dbf, float(S3['at_station_depth_exponent'])), 0.0)),
                         reach_type=R(rtype, np.uint8), pattern=R(pattern, np.uint8), bed=R(bed, np.uint8), slope=R(slope),
