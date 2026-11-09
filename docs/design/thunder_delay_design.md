@@ -13,9 +13,11 @@ One switch, `--thunder-real`, off until Dave's listen (sound changes wait for hi
 ## 2. The rules (`--thunder-real`)
 
 - **Delay:** distance / 343 m/s, the full travel time. That is 3 s a km: a 1 km strike after 2.9 s, a 5 km one after 14.6 s, a 15 km one after 44 s.
-- **Where strikes land:**
-  - a share falls in the cell overhead, 250 m to 3 km, evenly: 60 % at the full storm, 28 % in a weak one;
-  - the rest fall anywhere from 3 to 15 km, evenly by area, so far ones are common, as in a real line of storms.
+- **Where strikes land** (since 9 Nov 2026): on the shared schedule, `src/shared/thunder.gd` `Thunder.strikes`, the one the server's birds flush at (`birds_and_thunder_server.md`). There is no random roll on the client any more.
+  - Every strike within 3 km (`THUNDER_HEARD_ALL_M`) is played: about one every 25 real seconds at storm 1.
+  - From 3 to 15 km the schedule has about one strike a real second, far too many to rumble. A fixed share, `THUNDER_FAR_KEEP` 1.5 %, picked by a hash of the strike's place and moment, is played: about one far roll a minute, as before. The hash is the same on every client, so players together hear the same far rolls.
+  - The schedule is read each sound tick for the game seconds since the last read. A gap over 120 game seconds (a login, a clock jump) starts it fresh, with no backlog of claps.
+  - A forced storm (`--weather=storm`, the Esc sound test) reads the schedule with the forced kind's storm and rain, so it still thunders. Those strikes are only this client's; the birds follow the world's weather.
 - **Level** (dB on the roll, before the bus):
   - out to 5 km, today's ramp: -4 dB, 1 dB lost per 400 m, +3 dB for a crack under 500 m;
   - past 5 km, spreading (6 dB a doubling) and 0.6 dB a km of air loss on what is left, which is the low end. So 10 km is about -25.5 dB and 15 km about -32 dB, a faint grumble;
@@ -26,7 +28,7 @@ One switch, `--thunder-real`, off until Dave's listen (sound changes wait for hi
 
 ## 3. Never-hear check 5
 
-Thunder arriving at once from a strike 5 km off, or a 15 s gap after a strike 1 km away. Test (`test_thunder_real.gd`): delay(1 km) is 2.9 s, delay(5 km) is 14.6 s, strikes reach past 10 km and never past 15 km, the level falls with distance and a 12 km roll is quieter in wind.
+Thunder arriving at once from a strike 5 km off, or a 15 s gap after a strike 1 km away. Test (`test_thunder_real.gd`): delay(1 km) is 2.9 s, delay(5 km) is 14.6 s, every shared strike within 3 km is heard and about 1.5 % past it, the same ones every time, a full storm gives about 24 near strikes and 10 far rolls in 600 real s, a long clock gap plays no backlog, the level falls with distance and a 12 km roll is quieter in wind.
 
 ## 4. Listening (for Dave, switch on)
 

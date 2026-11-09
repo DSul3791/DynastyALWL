@@ -57,6 +57,7 @@ const CaveinDeathScript := preload("res://src/client/cavein_death.gd")
 const DeathScreenScript := preload("res://src/client/death_screen.gd")
 const CharacterStoreScript := preload("res://src/client/character/character_store.gd")
 const DripViewScript := preload("res://src/client/drip_view.gd")
+const ThunderScript := preload("res://src/shared/thunder.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
 const QuakeViewScript := preload("res://src/client/quake_view.gd")
@@ -1183,6 +1184,10 @@ func _welcome_body(info: Dictionary) -> void:
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound.puddles = weather_look.puddles          # steps splash where a puddle is drawn (puddles.gd)
+	# Thunder plays the shared strikes, the ones the server's birds flush at (src/shared/thunder.gd, the same seed and clock).
+	sound.weather.thunder_between = func(t0: float, t1: float, centre: Vector3, reach: float) -> Array:
+		return ThunderScript.strikes(int(world.get("master_seed", 0)), t0, t1, sound.weather.thunder_state(weather, sound_tests.weather_at >= 0), centre, reach)
+	sound.weather.game_seconds = func() -> float: return game_clock.seconds
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
 	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
 		if sound_log_arg.begins_with("--sound-log="):

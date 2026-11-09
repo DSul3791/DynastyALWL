@@ -31,16 +31,25 @@ const RECORDED_DIR := "res://assets/audio/recorded/weather/"
 # The strike event for the sky (Art direction): `lightning(at, distance_m)` fires at the moment of
 # the flash, `at` being the strike's place relative to the player; the thunder sounds after
 # distance / 343 m/s. strike(distance_m) makes one on demand (a script, a test, the weather system).
+#
+# Which strikes (Kathleen 9 Nov 2026, flags_sweep_9nov.md): the shared schedule, src/shared/thunder.gd Thunder.strikes, the same one the
+# server's birds flush at (animals.json thunder.on), read with the world seed, the game clock and the weather. There is no random roll of
+# its own any more, so a bird never startles at a clap nobody hears and every player hears the same storm. Every strike within
+# THUNDER_HEARD_ALL_M is played (the birds flush within 1 km of a player); past it, out to THUNDER_REAL_MAX_M, the schedule has far more
+# strikes than a storm should rumble (about one a real second over 15 km), so only a fixed share, THUNDER_FAR_KEEP, picked by a hash of
+# the strike, is played as a far roll: about one a minute at the full storm, as the old roll gave.
 signal lightning(at: Vector3, distance_m: float)
 
 const FADE_PER_SEC := 0.15              # about 7 s from none to full
-const THUNDER_EVERY := [14.0, 45.0]     # at the full storm value; a weaker storm waits longer
+const ThunderScript := preload("res://src/shared/thunder.gd")
+const THUNDER_HEARD_ALL_M := 3000.0     # every shared strike this near is played (the server's birds flush within 1 km of a player)
+const THUNDER_FAR_KEEP := 0.015         # the share of shared strikes past that played as far rolls (about one a minute at storm 1)
+const THUNDER_CATCH_UP_S := 120.0       # game seconds; a longer gap (login, a clock jump) starts the schedule fresh, no backlog of claps
 const THUNDER_NEAR_M := 500.0           # closer than this: sharp crack and thud
 const THUNDER_FAR_M := 1800.0           # farther than this: a low grumble
 # Real thunder (always on since Dave's 8 Nov ruling; docs/design/thunder_delay_design.md, Jamie #683 lesson 6): the full travel time, 3 s a km, so counting
 # the seconds gives the distance; strikes out to 15 km, past 5 km a quiet low rumble only, and past 10 km lost in a wind.
 const THUNDER_REAL_MAX_M := 15000.0
-const THUNDER_REAL_NEAR_SHARE := 0.6     # at the full storm, the share of strikes within 3 km
 const THUNDER_QUIET_FROM_M := 5000.0     # past this the level follows spreading and air loss, not the near ramp
 const THUNDER_AIR_DB_PER_KM := 0.6       # the low rumble left after 5 km loses little to the air
 const THUNDER_WIND_LOST_FROM_M := 10000.0
@@ -111,7 +120,6 @@ var outdoors: bool = false
 var covered: float = 0.0                # 0 open, 1 under a canopy (smoothed); the ground there stays dry
 var last_thunder: String = ""
 var world_wind: float = 0.35            # the world's wind (0.15 calm to 1 storm), smoothed: sets the wind sound
-var storm_level: float = 1.0            # the world's storm value (0 to 1) behind the current kind
 
 var _wind_target: float = 0.35
 var _stage                              # SoundStage
@@ -119,7 +127,9 @@ var _ambient                            # AmbientLife (zone weights)
 var _rng := RandomNumberGenerator.new()
 var _loops: Dictionary = {}             # name -> AudioStreamPlayer
 var _streams: Dictionary = {}
-var _thunder_in: float = 20.0
+var thunder_between: Callable          # (t0, t1 game seconds, centre, reach m) -> Thunder.strikes; set by terrain_client (the same as the server's)
+var game_seconds: Callable              # () -> the game clock's seconds
+var _thunder_t: float = NAN             # game second the schedule was last read to
 var ground_class: String = "soft"       # what the rain falls on under the player (HUD): stone, mud, litter, snow or soft
 var _ground_w: Dictionary = {"stone": 0.0, "mud": 0.0, "litter": 0.0, "snow": 0.0}
 var _pending: Array = []                # [seconds left, AudioStreamPlayer3D] thunder waiting for its delay
@@ -199,7 +209,6 @@ func apply_state(state: Dictionary) -> void:
 	if forced:
 		return
 
-	storm_level = float(state.get("storm", 0.0))
 	_wind_target = float(state.get("wind", 0.35))
 	temp_c = float(state.get("temp_c", temp_c))
 	var snow: float = float(state.get("snow", 0.0))
@@ -289,7 +298,7 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 	_loop("rain_woodroof_heavy", heavy * roof)
 	_loop("rain_water", minf(rain * 1.6, 1.0) * water)
 	_loop("wind_storm", clampf(wind - 0.2, 0.0, 1.0) / 0.8)
-	_thunder(delta)
+	_thunder(delta, body.global_position)
 	_ground(delta)
 	_drips(delta, body, cover)
 
@@ -407,8 +416,8 @@ func _loop(sound_name: String, level: float) -> void:
 	player.volume_db = float(LOOP_DB[sound_name]) + linear_to_db(level)
 
 
-# Thunder in a storm: a roll now and then, from far to near, heard after the light.
-func _thunder(delta: float) -> void:
+# Thunder in a storm: the shared strikes (src/shared/thunder.gd) near the player, each heard after the light.
+func _thunder(delta: float, at: Vector3) -> void:
 	for n in range(_pending.size() - 1, -1, -1):
 		_pending[n][0] -= delta
 
@@ -424,18 +433,55 @@ func _thunder(delta: float) -> void:
 			voice.play()
 			_pending.remove_at(n)
 
-	if float(KINDS[kind]["thunder"]) * intensity <= 0.0 or rain < 0.5:
-		return
+	for due in due_strikes(at):
+		strike(float(due[0]), float(due[1]))
 
-	_thunder_in -= delta * _ambient.time_scale
 
-	if _thunder_in > 0.0:
-		return
+# The shared strikes that fell since the last read and are heard at `at`, as [distance m, angle] (the angle from +x toward +z, as strike()
+# takes it). The first read, a clock that stood still or went back, or a gap over THUNDER_CATCH_UP_S only starts the schedule.
+func due_strikes(at: Vector3) -> Array:
+	var due: Array = []
 
-	var strength: float = clampf(1.0 if forced else storm_level, 0.2, 1.0) * maxf(intensity, 0.3)
-	_thunder_in = _rng.randf_range(float(THUNDER_EVERY[0]), float(THUNDER_EVERY[1])) / strength
-	# More strikes land close in a fierce storm: distance leans nearer as the storm grows.
-	strike(real_strike_distance(_rng.randf(), _rng.randf(), strength))
+	if not thunder_between.is_valid() or not game_seconds.is_valid():
+		return due
+
+	var now_g: float = float(game_seconds.call())
+
+	if is_nan(_thunder_t) or now_g <= _thunder_t or now_g - _thunder_t > THUNDER_CATCH_UP_S:
+		_thunder_t = now_g
+		return due
+
+	for found in thunder_between.call(_thunder_t, now_g, at, THUNDER_REAL_MAX_M):
+		var point: Vector3 = found[0]
+		var offset: Vector2 = Vector2(point.x - at.x, point.z - at.z)
+
+		if heard(offset.length(), point, float(found[1])):
+			due.append([maxf(offset.length(), 1.0), fposmod(atan2(offset.y, offset.x), TAU)])
+
+	_thunder_t = now_g
+	return due
+
+
+# Whether a shared strike `distance_m` away is played: always within THUNDER_HEARD_ALL_M, past it a fixed share picked by a hash of the
+# strike (its place and moment), so the same strikes are kept on every client. Static, checked on its own.
+static func heard(distance_m: float, point: Vector3, at_s: float) -> bool:
+	if distance_m <= THUNDER_HEARD_ALL_M:
+		return true
+
+	if distance_m > THUNDER_REAL_MAX_M:
+		return false
+
+	var pick: float = float(hash([roundi(point.x), roundi(point.z), roundi(at_s * 10.0)]) & 0xFFFF) / 65535.0
+	return pick < THUNDER_FAR_KEEP
+
+
+# The weather the shared schedule is read with: the world's, or, while the sounds are forced (--weather=KIND, the Esc "Sound test weather"),
+# the kind playing now, so a forced storm still thunders (those strikes are this client's own; the server's birds follow the world's).
+func thunder_state(world_state: Dictionary, test_weather: bool) -> Dictionary:
+	if not forced and not test_weather:
+		return world_state
+
+	return {"storm": float(KINDS[kind]["thunder"]) * intensity, "rain": float(KINDS[kind]["rain"]) * intensity}
 
 
 # One lightning strike `distance_m` away (in a random direction unless `angle` is given):
@@ -477,17 +523,6 @@ func strike(distance_m: float, angle: float = -1.0) -> bool:
 # Seconds between the flash and the thunder for a strike this far away: the full travel time (3 s a km).
 func thunder_delay(distance_m: float) -> float:
 	return distance_m / SPEED_OF_SOUND
-
-
-# Where a strike lands, from two random numbers 0..1 and the storm strength (0.2..1). A share of the strikes (more
-# in a fierce storm) falls in the cell overhead, 250 m to 3 km; the rest anywhere out to 15 km, evenly by area.
-static func real_strike_distance(pick: float, spread: float, strength: float) -> float:
-	var near_share: float = THUNDER_REAL_NEAR_SHARE * clampf(strength, 0.2, 1.0) + 0.2 * (1.0 - clampf(strength, 0.2, 1.0))
-
-	if pick < near_share:
-		return lerpf(250.0, 3000.0, spread)
-
-	return sqrt(lerpf(3000.0 * 3000.0, THUNDER_REAL_MAX_M * THUNDER_REAL_MAX_M, spread))
 
 
 # The roll's level in dB. Up to 5 km today's ramp (a crack close by, then 1 dB lost per 400 m); past it spreading
