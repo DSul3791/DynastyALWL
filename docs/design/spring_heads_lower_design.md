@@ -15,9 +15,11 @@ I checked this against the baked tile 3,4. A head counts as having green banks w
 | | Heads with green banks |
 |---|---|
 | Today | 86 of 187 |
-| Under the rule | 152 of 187 |
+| Under the rule (first estimate, a straight downhill walk) | 152 of 187 |
 
-**Walk.** A spring head outside the belt moves down its own reach, at most 800 m, to the first belt cell. It stops at a confluence or a lake, because it does not walk onto another stream.
+The prediction below follows network.py's walk and replaces this estimate: 87 of 196 green today, 140 of 189 after.
+
+**Walk.** A spring head outside the belt moves down its own flow path, at most 800 m, to the first belt cell. It walks on past a junction with another stream. Past the junction the spring comes up on the bank of the joined stream, and only its own branch, above the junction, goes dry. A belt cell another spring already took is passed, so the spring comes up at the next belt cell down the bank and two springs never become one. If both branches above a joined stretch move down past it, that stretch goes dry too. (Fixed 9 Nov 2026 after Dino's first rebake: that walk stopped at the junction and turned about 70 heads on tile 3,4 into seeps, so ground springs fell from 196 to 131.)
 
 **Stream above the new head.** The cells above the new head stop being stream (`vis` off). They become dry gullies. Their water still runs down in the flows, so the flow downstream is unchanged. The new head carries the old head's groundwater and dry-season flow, and records where it came from in `lowered_from`.
 
@@ -25,14 +27,15 @@ I checked this against the baked tile 3,4. A head counts as having green banks w
 
 **Not affected.** Lake outlets and seeps are left alone.
 
-**Tile 3,4 (slope rule, measured on the 687b72b8 tile with the walk approximated downhill):**
+**Predicted from the baked tiles (main at 5656b986).** This follows network.py's walk, junctions included. It walks the steepest-descent path on the tile heights at 16 m and judges the belt by network.py's slope rule:
 
-| Outcome | Heads | Detail |
-|---|---|---|
-| Stay | 80 | |
-| Move | 100 | median 243 m |
-| Become seeps | 7 | |
-| Beach-sand heads | 9 | flat already |
+| Tile | Ground springs today | Stay | Beach | Walk down | Seeps | Springs after | Green banks today → after |
+|---|---|---|---|---|---|---|---|
+| 3,4 | 196 | 84 | 9 | 96 (median 199 m) | 7 | 189 | 87 → 140 |
+| 4,5 | 66 | 23 | 0 | 28 (median 296 m) | 15 | 51 | 24 → 42 |
+| 3,3 | 19 | 10 | 4 | 5 (median 96 m) | 0 | 19 | 9 → 12 |
+
+Tile 4,5 is cliff country: 15 heads have no belt within 800 m, so they become seeps by design. The spring caves are rolled from the spring heads afterwards, so the cave count can move too. Heads in flatter ground pass the hillside test for a cave less often, and the floor of one den per tile still holds.
 
 The network run on Dino gives the real counts. They are printed in the summary as `spring_heads_lowered` and `cliff_seeps`.
 

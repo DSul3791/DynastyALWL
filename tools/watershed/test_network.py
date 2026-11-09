@@ -236,6 +236,29 @@ def test_ground_slope_deg_of_a_plane():
     assert np.allclose(s, 45.0), s
 
 
+def test_spring_heads_walk_on_past_a_junction():
+    """Past a junction the walk goes on down the joined stream (#868 rebake: a walk that stopped there left about 70 springs as seeps
+    on tile 3,4): the spring comes up on the joined stream's bank, only its own branch goes dry, and a belt cell another spring took
+    is passed, so two springs stay two. A joined stretch with both branches moved down past it goes dry as well."""
+    #   5 -> 4 -> 3 -> 2 -> 1 -> 0 (sea), and 7 -> 6 -> 3: a junction at 3.
+    rec = np.array([-1, 0, 1, 2, 3, 4, 3, 6])
+    outlet = np.zeros(8, bool); outlet[0] = True
+    step = np.full(8, 16.0)
+    vis = np.array([False] + [True] * 7)
+    belt = np.zeros(8, bool); belt[1] = belt[2] = True
+    none = np.zeros(8, bool)
+    gw2 = np.zeros(8); gw2[5] = 0.002            # one spring, at 5; 7 is a rill
+    v, moved, seeps = nw.lower_spring_heads(vis, rec, outlet, step, gw2, 0.0005, belt, none, 800.0)
+    assert moved == {2: 5} and not seeps, (moved, seeps)
+    assert list(v) == [False, True, True, True, False, False, True, True], 'its own branch dry; the rill and the joined stream run on'
+    gw2[7] = 0.001                               # two springs: the second passes the cell the first took
+    v, moved, seeps = nw.lower_spring_heads(vis, rec, outlet, step, gw2, 0.0005, belt, none, 800.0)
+    assert moved == {2: 5, 1: 7} and not seeps, (moved, seeps)
+    assert list(v) == [False, True, True, False, False, False, False, False], 'both branches and the stretch below the junction dry'
+    v, moved, seeps = nw.lower_spring_heads(vis, rec, outlet, step, gw2, 0.0005, belt, none, 40.0)
+    assert not moved and seeps == {5, 7} and list(v) == list(vis), 'no belt within 40 m: seeps, the streams as they were'
+
+
 def test_spring_heads_defaults_match_params():
     """A chain params file from before #868 has no network.spring_heads: network.py falls back to params.json's values."""
     import json

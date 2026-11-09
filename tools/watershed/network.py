@@ -240,33 +240,52 @@ SPRING_HEADS_DEFAULT = {'belt_slope_deg': 30.0, 'max_walk_m': 800.0}   # params.
 def lower_spring_heads(vis, rec, outlet, step, gw2, spring_q, belt, lake_fed, max_m):
     """Spring heads down into the green belt (Dave 9 Nov 2026: move them "down along their own flow path until they are within
     the bushes and grass belt"; docs/design/spring_heads_lower_design.md). A stream that starts at a spring (gw2 >= spring_q, no
-    lake above it) on ground outside the belt starts instead at the first cell of its own reach, at most max_m down, that is in the
-    belt: the cells above stop being stream (vis off; their water still runs down in the flows). A head with no belt cell on its
-    own reach within max_m (cliff country) stays where it is and is not a spring. Returns (vis, moved {new head: old head}, seeps
-    {old head})."""
+    lake above it) on ground outside the belt starts instead at the first belt cell down its flow path, at most max_m down. The walk
+    goes on past a junction with another stream: the spring then comes up on the joined stream's bank. Its own branch, above the
+    junction, stops being stream (vis off; its water still runs down in the flows); so does a joined stretch above the new head once
+    every branch into it has gone dry. A head with no belt cell within max_m (cliff country) stays where it is and is not a spring.
+    A belt cell another spring has already come up in is passed: the spring comes up at the next one down the bank, so two springs
+    never become one. Returns (vis, moved {new head: old head}, seeps {old head})."""
     to = np.maximum(rec, 0)
     ok = vis & (rec >= 0) & ~outlet[to]
     nvd = np.bincount(to[ok & vis[to]], minlength=vis.size)
-    vis = vis.copy()
-    moved, seeps = {}, set()
+    cut = vis.copy()
+    moved, seeps, joined = {}, set(), []
     for s in np.flatnonzero(vis & (nvd == 0)):
         s = int(s)
         if lake_fed[s] or gw2[s] < spring_q or belt[s]:
             continue
-        path, j, run, found = [s], int(rec[s]), float(step[s]), -1
-        while j >= 0 and not outlet[j] and vis[j] and nvd[j] == 1 and run <= max_m:
-            if belt[j]:
+        own, shared, j, run, found = [s], [], int(rec[s]), float(step[s]), -1
+        while j >= 0 and not outlet[j] and vis[j] and run <= max_m:
+            if belt[j] and j not in moved:
                 found = j
                 break
-            path.append(j)
+            (shared if shared or nvd[j] != 1 else own).append(j)
             run += float(step[j])
             j = int(rec[j])
         if found < 0:
             seeps.add(s)
             continue
-        vis[np.array(path, np.int64)] = False
+        cut[np.array(own, np.int64)] = False
+        joined.append(shared)
         moved[found] = s
-    return vis, moved, seeps
+    # A joined stretch above a new head with no stream left running into it goes dry too (both branches moved down past it).
+    ok = cut & (rec >= 0) & ~outlet[to]
+    nv = np.bincount(to[ok & cut[to]], minlength=vis.size)
+    changed = True
+    while changed:
+        changed = False
+        for path in joined:
+            for c in path:
+                if not cut[c]:
+                    continue                    # dried already by another spring's walk
+                if nv[c] > 0 or c in moved:
+                    break                       # still fed, or another spring's new head (it keeps running from there)
+                cut[c] = False
+                changed = True
+                if rec[c] >= 0 and not outlet[rec[c]] and cut[rec[c]]:
+                    nv[rec[c]] -= 1
+    return cut, moved, seeps
 
 
 def below_springs(cells, q, rec, step, stream, stop):
@@ -962,6 +981,7 @@ def main():
     # Heads and confluences
     wet_near = (maximum_filter((wetland > 0).reshape(n, n), size=3) > 0).ravel()
     heads, confluences, lake_outlet_reach = [], [], {}
+    head_cells = []                             # the grid cell of each head, in the order of heads
     for k, s in enumerate(starts):
         s = int(s)
         dn = dons[dcnt[s]:dcnt[s + 1]]
@@ -989,9 +1009,20 @@ def main():
         heads.append(dict(reach=k, pos=[x, round(float(h[s]), 2), z], kind=kind, lake=lk_d[0] if lk_d else None,
                           area_km2=r3(A[s] / 1e6), q_wet_m3_s=r3(Q['wet'][s]), groundwater_m3_s=r3(gw2[s]),
                           q_base_dry_m3_s=r3(gw2_dry[s])))
+        head_cells.append(s)
         if s in lowered:
             ox_, oz_ = where(lowered[s])
             heads[-1]['lowered_from'] = [ox_, round(float(h[lowered[s]]), 2), oz_]
+    # A spring walked down past a junction comes up on the bank of the joined stream, inside a reach: a head of its own, marked bank.
+    for c, old in sorted(lowered.items()):
+        if nvd[c] == 0:
+            continue                            # its own branch kept: a reach start, listed above
+        x, z = where(c)
+        ox_, oz_ = where(old)
+        heads.append(dict(reach=int(reach_of[c]), pos=[x, round(float(h[c]), 2), z], kind='spring', lake=None, bank=True,
+                          area_km2=r3(A[c] / 1e6), q_wet_m3_s=r3(Q['wet'][c]), groundwater_m3_s=r3(gw2[c]),
+                          q_base_dry_m3_s=r3(gw2_dry[c]), lowered_from=[ox_, round(float(h[old]), 2), oz_]))
+        head_cells.append(c)
     # A full lake's outlet reach may start below a short dry gap (its exit cell's receiver is not yet a stream).
     for L, i in exits.items():
         if L in lake_outlet_reach:
@@ -1248,7 +1279,7 @@ def main():
                    lost_to_the_bed_m3_s=r3(lost['mean'][losing].sum()))
     # Below which spring each stream cell runs (drinking water step 2b): from every spring head, as the bake places its ground springs
     # and spring caves (tile_baker.gd, heads of kind "spring" with groundwater_m3_s), for record.py's below_spring_m, spring_q, spring_y.
-    sp_cells = np.array([int(starts[hd['reach']]) for hd in heads if hd['kind'] == 'spring'], np.int64)
+    sp_cells = np.array([c for c, hd in zip(head_cells, heads) if hd['kind'] == 'spring'], np.int64)
     sp_dist, sp_who = below_springs(sp_cells, gw2[sp_cells], rec, step, vis, lake | sea)
     sp_on = sp_who >= 0
     sp_q = np.where(sp_on, gw2[sp_cells[np.maximum(sp_who, 0)]], 0.0) if sp_cells.size else np.zeros(N)
