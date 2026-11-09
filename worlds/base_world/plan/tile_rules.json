@@ -342,20 +342,7 @@
 		],
 		"lake_min_fill_ratio": 0.45,
 		"lake_min_width_m": 100,
-		"lake_min_surface_m": 60,
-		"starter_river": {
-			"note": "A river from the biggest highland lake to the head of the starter bay, following the easiest valley route. Extra water is fed in at the source so it is a real river. Owner (2026-10-19): turned off; its route climbed a hill and cut a canyon through it, and rivers now come only from head ponds along real valleys. The spawn then sits at the bay head.",
-			"enabled": false,
-			"source_min_height_m": 150,
-			"route_cell_m": 96,
-			"climb_cost": 8.0,
-			"guide_width_m": 5,
-			"guide_depth_m": 1.6,
-			"source_flow_km2": 5.0,
-			"meander_m": 28,
-			"meander_wavelength_m": 420,
-			"mouth_height_m": 0.4
-		}
+		"lake_min_surface_m": 60
 	},
 	"climate": {
 		"note": "Climate, moisture, biome, soil and fertility for one tile. Temperature comes from latitude and height. Moisture comes from a wet-air sweep along the prevailing wind (wet over sea, drier over land, much drier behind mountains) plus nearness to fresh water. Thresholds are in degrees C, 0 to 1 moisture, degrees of slope and meters.",

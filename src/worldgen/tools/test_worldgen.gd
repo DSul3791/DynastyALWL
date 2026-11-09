@@ -1171,29 +1171,6 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 	print("river surface over ground at most %.1f m, under at most %.2f m, bad cells %d" % [over_max, under_max, bad_surface])
 	_check(bad_surface == 0, "water surfaces are consistent with the ground")
 
-	# The starter river reaches the bay head (when it is turned on; owner 2026-10-19: off).
-	var path: PackedVector2Array = water.starter_path
-
-	if bool(tile_rules["water"].get("starter_river", {}).get("enabled", false)):
-		_check(path.size() > 50, "a starter river route was found (%d points)" % path.size())
-	else:
-		_check(path.is_empty(), "no designed starter river while it is turned off")
-
-	if path.size() > 50:
-		var mouth: Vector2 = path[path.size() - 1]
-		var near_river: bool = false
-
-		for dz in range(-40, 41):
-			for dx in range(-40, 41):
-				var column: int = int(mouth.x) + dx
-				var row: int = int(mouth.y) + dz
-
-				if column >= 0 and row >= 0 and column < water.samples and row < water.samples \
-						and water.water_class[row * water.samples + column] == TileWaterScript.RIVER:
-					near_river = true
-
-		_check(near_river, "a river runs into the bay head")
-
 	var again = TileWaterScript.new()
 	again.setup(settings, tile_rules)
 	again.build(height, starter)
@@ -1397,11 +1374,7 @@ func _test_tile_geology(settings, tile_rules: Dictionary, tile: Vector2i, water,
 
 
 func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, geology, tables, starter: Dictionary):
-	var mouth: Vector2 = Vector2(NAN, NAN)
-
-	if water.starter_path.size() > 0:
-		mouth = Vector2(float(tile.x), float(tile.y)) * float(settings.tile_size_m) \
-			+ water.starter_path[water.starter_path.size() - 1] * float(settings.map_spacing_m)
+	var mouth: Vector2 = Vector2(NAN, NAN)   # no designed river mouth (the starter river is gone)
 
 	var sites = TileSitesScript.new()
 	sites.setup(settings, tile_rules, tables)
