@@ -59,7 +59,7 @@ const YouColumnScript := preload("res://src/client/ui/inventory/you_column.gd") 
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
 var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
-var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store beside the pack
+var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store, in the Craft column under its Chest tab
 var _queue_part: CraftQueueScript              # the crafting queue under the recipe list
 var _pinned_part: PinnedRecipeScript           # the pinned recipe's checklist card
 

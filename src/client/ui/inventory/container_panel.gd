@@ -1,7 +1,7 @@
 extends RefCounted
 
-# The container screen: a chest's or a fire's store beside the pack (step 1 of docs/design/INVENTORY_CRAFTING_REPORT.md: inventory_view.gd split
-# into four parts). Opening and closing it with the server (_ask_open, _on_chest, _close_chest) stays on the view, as does what is open
+# The container screen: a chest's or a fire's store in the Craft column, under its Chest tab, beside the pack (redesign section 4.4;
+# first split out of inventory_view.gd in step 1 of docs/design/INVENTORY_CRAFTING_REPORT.md). Opening and closing it with the server (_ask_open, _on_chest, _close_chest) stays on the view, as does what is open
 # (chest_mode, chest_inv, chest_id) and the buttons' lists, which the tests read.
 
 const Net := preload("res://src/stream/terrain_net.gd")

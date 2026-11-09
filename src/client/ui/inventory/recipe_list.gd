@@ -1,6 +1,6 @@
 extends RefCounted
 
-# The Make column of the crafting and inventory screen (step 1 of docs/design/INVENTORY_CRAFTING_REPORT.md: inventory_view.gd split into four parts):
+# The Craft column of the crafting and inventory screen (step 1 of docs/design/INVENTORY_CRAFTING_REPORT.md: inventory_view.gd split into four parts):
 # the recipe search and category tabs, the recipe list, the Admin kits, and the chosen recipe's needs with the quantity box and Craft button.
 # What can be made (_can_craft, _station_ok, _parts_plan) and the craft request (_start_craft) stay on the view; this part only shows them.
 
