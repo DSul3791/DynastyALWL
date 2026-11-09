@@ -40,6 +40,14 @@ const LITTER_DEEP_TWIGS := 4.0           # twigs likewise
 const RIM_DROP_M := 0.8                  # ground this much lower beside a blade means a hole edge (see _drop_beside)
 const RIM_CLEAR_M := 0.9                 # no blades this close to the edge of a dug hole (they lean over it)
 const SCENERY_PEBBLES := true            # owner (2026-10-21): pebbles are decoration (not pickable, not harvestable, like a voxel texture); they vanish when the ground under them is dug (ground_changed)
+# Lush growth by water (Dave 9 Nov 2026: plants "grow 100% thicker, and grass grows taller right at the water and its growth deminishes as it
+# gets further from the water until it gets to normal growth at 6 meters away"). `lush` is 1 at the water's edge, easing to 0 at LUSH_M.
+const LUSH_M := 6.0              # normal growth from this far from the water's edge
+const LUSH_THICK := 1.0          # cards added at the edge, as a share of the normal count (1: twice as thick)
+const LUSH_TALL := 0.5           # blades this much taller at the edge (0.5: half again as tall)
+const LUSH_STEP_M := 1.0         # the water-distance grid round a cell
+const LUSH_ROOTS_M := 1.0        # ground up to this high over the water is fully watered
+const LUSH_DRY_M := 3.0          # and from this high it is not (a cliff or high bank over a river)
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
 # Soil ids that carry grass, with how thick (0 to 1).
@@ -1661,8 +1669,8 @@ func _build(cell: Vector2i) -> int:
 	for layer in range(LAYERS.size()):
 		var cap: PackedFloat32Array = PackedFloat32Array()
 		var share: float = density if layer < GRASS_LAYERS else (litter_density if layer < LITTER_END else shore_density)
-		# Tall grass is drawn thicker near water (up to twice the cards), so its buffer holds twice.
-		var room: float = 2.0 if layer == 2 else (1.0 if layer < GRASS_LAYERS or layer >= LITTER_END else (LITTER_DEEP_TWIGS if LAYERS[layer].get("branch", false) else LITTER_DEEP_LEAVES))
+		# Grass is drawn thicker by water (up to 1 + LUSH_THICK times the cards), so its buffers hold that many.
+		var room: float = 1.0 + LUSH_THICK if layer < GRASS_LAYERS else (1.0 if layer >= LITTER_END else (LITTER_DEEP_TWIGS if LAYERS[layer].get("branch", false) else LITTER_DEEP_LEAVES))
 		cap.resize(pps * pps * (int(ceil(float(LAYERS[layer]["per_point"]) * share * room)) + 1) * 16)
 		buffers.append(cap)
 		counts.append(0)
@@ -1670,6 +1678,21 @@ func _build(cell: Vector2i) -> int:
 	var rays: int = 0
 	var missed: int = 0
 	var dug_here: Array = _dug.get(cell, [])
+
+	# The water round the cell, for lush growth by water (LUSH_M): every wet spot of a grid over the cell and LUSH_M round it, 1 m apart for
+	# the near cells and 2 m for the far ones (they have only a few ground points).
+	var lush_step: float = LUSH_STEP_M if lod == 0 else 2.0 * LUSH_STEP_M
+	var lush_side: int = int(round((CELL_M + 2.0 * LUSH_M) / lush_step)) + 1
+	var wet_spots: PackedFloat32Array = PackedFloat32Array()
+
+	for j in range(lush_side):
+		for i in range(lush_side):
+			var wx: float = float(cell.x) * CELL_M - LUSH_M + float(i) * lush_step
+			var wz: float = float(cell.y) * CELL_M - LUSH_M + float(j) * lush_step
+			var level: float = _flora.water_level_nearest(wx, wz)
+
+			if not is_nan(level):
+				wet_spots.append_array([wx, wz, level])
 
 	Probe.stop("grass build: setup", t_setup)
 	var t_rays: int = Probe.start()
@@ -1796,9 +1819,9 @@ func _build(cell: Vector2i) -> int:
 			green = green.lerp(Color(0.68, 0.64, 0.30), warm * 0.55)
 			var meadow: float = _patch.get_noise_2d(x, z)
 
-			# Wet ground (owner, 2026-10-20: the tall grass "needs to be thicker around water"): how close the
-			# water is, for the tall grass below.
-			var wet: float = _wetness(point, water)
+			# Wet ground (owner, 2026-10-20: the tall grass "needs to be thicker around water"; Dave 9 Nov 2026: all of it thicker and taller,
+			# back to normal 6 m from the water): 1 at the water's edge, 0 from LUSH_M.
+			var wet: float = lush(0.0, point.y - water) if not is_nan(water) else lush_near(wet_spots, point)
 
 			for layer in range(GRASS_LAYERS):
 				if layer == 0 and lod > 0:
@@ -1809,7 +1832,7 @@ func _build(cell: Vector2i) -> int:
 
 				# Owner (2026-10-21): all the grass has the same draw distance, so the short grass is drawn in
 				# the far bands too (it used to stop at 85 percent of the reach and drop out of the far bands).
-				var want: float = float(LAYERS[layer]["per_point"]) * density * band_share * (1.0 + wet if layer == 2 else 1.0)
+				var want: float = float(LAYERS[layer]["per_point"]) * density * band_share * (1.0 + LUSH_THICK * wet)
 				var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
 				var chance: float = thick
 
@@ -1834,7 +1857,7 @@ func _build(cell: Vector2i) -> int:
 
 					var size: float = rng.randf_range(0.75, 1.15)
 					var yaw: float = rng.randf() * TAU
-					var sy: float = size * rng.randf_range(0.8, 1.15)
+					var sy: float = size * rng.randf_range(0.8, 1.15) * (1.0 + LUSH_TALL * wet)
 					var cy: float = cos(yaw) * size * width_scale
 					var sny: float = sin(yaw) * size * width_scale
 					var shade: float = rng.randf_range(0.82, 1.15)
@@ -1914,21 +1937,31 @@ func _build(cell: Vector2i) -> int:
 	return rays
 
 
-# How wet the ground is at a point, 0 dry to 1 at the water's edge: water within 3.5 m and no more than 2 m
-# below the point (banks of rivers, brooks, lakes and ponds, wet low ground).
-func _wetness(point: Vector3, water: float) -> float:
-	var best: float = 0.0
+# Lush growth by water: 1 at the water's edge, easing to 0 at LUSH_M from it (Dave 9 Nov 2026), times how well the water reaches the roots:
+# full up to LUSH_ROOTS_M over the water, none from LUSH_DRY_M (a high bank or a cliff over a river stays as it is).
+static func lush(distance_m: float, above_m: float) -> float:
+	if is_nan(distance_m) or is_inf(distance_m) or is_nan(above_m):
+		return 0.0
 
-	for d in [Vector2(3.5, 0.0), Vector2(-3.5, 0.0), Vector2(0.0, 3.5), Vector2(0.0, -3.5)]:
-		var near: float = _flora.water_level_at(point.x + d.x, point.z + d.y)
+	var reach: float = 1.0 - smoothstep(0.0, LUSH_M, distance_m)
+	return reach * (1.0 - clampf((above_m - LUSH_ROOTS_M) / (LUSH_DRY_M - LUSH_ROOTS_M), 0.0, 1.0))
 
-		if not is_nan(near):
-			best = maxf(best, 1.0 - clampf((point.y - near) / 2.0, 0.0, 1.0))
 
-	if not is_nan(water):
-		best = 1.0
+# Lush growth at a ground point from the wet spots round its cell (x, z, water level triples): the nearest one sets the distance and the level.
+static func lush_near(wet_spots: PackedFloat32Array, point: Vector3) -> float:
+	var best: float = INF
+	var level: float = NAN
 
-	return best
+	for k in range(0, wet_spots.size(), 3):
+		var dx: float = wet_spots[k] - point.x
+		var dz: float = wet_spots[k + 1] - point.z
+		var d2: float = dx * dx + dz * dz
+
+		if d2 < best:
+			best = d2
+			level = wet_spots[k + 2]
+
+	return lush(sqrt(best), point.y - level) if not is_nan(level) else 0.0
 
 
 # One ground sample at the water's edge (water is the surface level here or NAN): pebbles on the dry bank
