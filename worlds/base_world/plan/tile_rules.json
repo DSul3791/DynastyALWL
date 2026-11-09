@@ -1074,7 +1074,7 @@
 		"step_m": 16,
 		"min_roof_m": 5,
 		"karst": {
-			"count": [0, 0], "count_note": "Off (Dave: caves only at river starts; coordinator 7 Nov 2026). Goblins, bears and cave life use the spring caves.",
+			"count": [0, 0], "count_note": "Off (Dave: caves only at river starts; coordinator 7 Nov 2026). Goblins and cave life use the spring caves; bears den in the forest by fresh water, not in caves (docs/design/cave_dens_after_rebuild_design.md).",
 			"candidate_step_m": 48,
 			"min_spacing_m": 700,
 			"length_m": [
@@ -1168,7 +1168,7 @@
 			]
 		},
 		"sea_cave": {
-			"count": [0, 0], "count_note": "Off (Dave: caves only at river starts; coordinator 7 Nov 2026). Goblins, bears and cave life use the spring caves.",
+			"count": [0, 0], "count_note": "Off (Dave: caves only at river starts; coordinator 7 Nov 2026). Goblins and cave life use the spring caves; bears den in the forest by fresh water, not in caves (docs/design/cave_dens_after_rebuild_design.md).",
 			"min_spacing_m": 800,
 			"cliff_rise_m": 8,
 			"length_m": [
@@ -1190,6 +1190,8 @@
 		},
 		"spring_cave": {
 			"_note": "Dave 3 Nov 2026: a brook head on a hillside comes out of a cave about 100 m deep rising gently, the spring at the back, side branches with dens; some get 2 or 3 spring passages (extra_passage_chance: 2 or more, 3); each spring gives spring_m3_s_per_km2 x the head catchment km2 and their flows add up; no cave where the main passage finds under min_length_m of room.",
+			"_record_floor_note": "Sonny and coordinator 9 Nov 2026 (docs/design/cave_dens_after_rebuild_design.md section 5): record_cave_share stays at its default 0.1; a tile whose roll makes no spring cave tries its other heads until one with a dry den branch is made (record_cave_min_per_tile), and that tile's first spring cave with a dry branch always holds a goblin den.",
+			"record_cave_min_per_tile": 1,
 			"min_slope_deg": 10,
 			"head_max_start": 1.6,
 			"min_sea_m": 1500,
@@ -1215,7 +1217,7 @@
 			"_sizes_note": "Dave 4 Nov 2026: some caves small, some medium, some large (a size the hill has no room for falls back to the next smaller one); the top-level values are the medium cave. The mouth is as wide as the river at the head and narrows to the passage over taper_min_m or a third of the passage; den tunnels climb den_rise and end in a den hollow; bones at entrances and far ends; stalagmites and stalactites in large caves' big chambers and wide passages.",
 			"size_odds": {"small": 0.45, "medium": 0.35, "large": 0.2},
 			"sizes": {
-				"small": {"length_m": [40, 80], "width_m": [2.5, 3.5], "height_m": [2, 3], "branches": [0, 1], "extra_passage_chance": [0, 0], "min_length_m": 40, "chamber_radius_m": [3, 5], "max_springs": 1},
+				"small": {"length_m": [40, 80], "width_m": [2.5, 3.5], "height_m": [2, 3], "branches": [1, 1], "extra_passage_chance": [0, 0], "min_length_m": 40, "chamber_radius_m": [3, 5], "max_springs": 1},
 				"medium": {"max_springs": 3},
 				"large": {"length_m": [150, 300], "width_m": [5, 8], "height_m": [4, 7], "branches": [2, 4], "extra_passage_chance": [0.6, 0.3], "min_length_m": 110, "chamber_radius_m": [6, 10], "big_chambers": [1, 2], "max_springs": 6}
 			},

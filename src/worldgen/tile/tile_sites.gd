@@ -753,7 +753,7 @@ func _make_shelters(rng: RandomNumberGenerator) -> void:
 # tile 3,4), so the flow cannot pick which brooks get more: chance does. cave["springs"] = [{node, m3_s}]. A main passage shorter than min_length_m
 # (no room under the hill) gives no cave.
 const SPRING_CAVE_DEFAULTS := {
-	"record_cave_share": 0.1, "min_slope_deg": 10.0, "hill_rise_m": 0.0, "hill_reach_m": 100.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
+	"record_cave_share": 0.1, "record_cave_min_per_tile": 0, "min_slope_deg": 10.0, "hill_rise_m": 0.0, "hill_reach_m": 100.0, "min_spacing_m": 120.0, "max_count": 96, "length_m": [90.0, 115.0], "rise": [0.02, 0.05],
 	"width_m": [3.0, 5.0], "height_m": [2.5, 4.0], "min_cover_m": 2.5, "open_cut_m": 64.0, "chamber_radius_m": [4.0, 7.0],
 	"branches": [1, 3], "branch_length_m": [15.0, 40.0], "extra_passage_chance": [0.4, 0.15], "spring_m3_s_per_km2": 0.1, "min_length_m": 60.0,
 	# Dave 4 Nov 2026: mouths match the river, small / medium / large caves, den tunnels climbing to a hollow, bones, stalagmites and stalactites.
@@ -1009,6 +1009,7 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 	var placed: Array = []
 	var made: int = 0
 	var tried: int = 0
+	var is_cave: Dictionary = {}   # head index -> true once it is a spring cave
 
 	for head in heads:
 		var index: int = int(head["index"])
@@ -1023,13 +1024,47 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 			if not cave.is_empty():
 				placed.append(point)
 				caves.append(cave)
+				is_cave[index] = true
 				made += 1
-				continue
 
+	# The floor (Sonny 9 Nov 2026, docs/design/cave_dens_after_rebuild_design.md section 5): a tile whose roll made fewer than record_cave_min_per_tile
+	# caves tries its other heads in the same order under the same rules, and keeps only a cave with a dry den branch, so the tile gets goblins.
+	var floor_made: int = 0
+
+	for head in heads:
+		if made >= int(_spring_rule("record_cave_min_per_tile")) or made >= int(_spring_rule("max_count")):
+			break
+
+		var index: int = int(head["index"])
+		var point: Vector2 = _point_of(index)
+
+		if is_cave.has(index) or not _record_cave_ok(index) or _too_close(point, placed, float(_spring_rule("min_spacing_m"))):
+			continue
+
+		var local_before: int = _local
+		var cave: Dictionary = _spring_cave(index, rng)
+
+		if cave.is_empty() or (cave.get("den_nodes", []) as Array).is_empty():
+			_local = local_before   # a cave with no dry branch is not kept: its id goes back, as _spring_cave does for one it gives up on
+			continue
+
+		placed.append(point)
+		caves.append(cave)
+		is_cave[index] = true
+		made += 1
+		floor_made += 1
+
+	for head in heads:
+		var index: int = int(head["index"])
+
+		if is_cave.has(index):
+			continue
+
+		var point: Vector2 = _point_of(index)
 		ground_springs.append({"pos": [snappedf(point.x, 0.1), snappedf(_heights[index], 0.1), snappedf(point.y, 0.1)], "m3_s": snappedf(float(head["m3_s"]), 0.0001), "cover": "bushes"})
 
-	print("  springs from the record, tile %d,%d: %d spring heads, %d tried as caves (share %.2f), %d spring caves, %d ground springs"
-		% [_tile.x, _tile.y, heads.size(), tried, share, made, ground_springs.size()])
+	print("  springs from the record, tile %d,%d: %d spring heads, %d tried as caves (share %.2f), %d spring caves (%d from the floor), %d ground springs"
+		% [_tile.x, _tile.y, heads.size(), tried, share, made, floor_made, ground_springs.size()])
 
 
 # The spring-cave rules for one R5 spring head (as _brook_heads, without its search for heads in the drawn rivers).

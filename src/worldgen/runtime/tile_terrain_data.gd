@@ -667,6 +667,28 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 		ores.append(entry)
 
 
+# The goblin den node of each cave in one tile's list (parallel to it; -1 for none). A cave's own rule is goblin_den_node; on top of it the tile's
+# first spring cave with a dry spot always holds a den (Sonny 9 Nov 2026, docs/design/cave_dens_after_rebuild_design.md section 5), so a tile with
+# any spring cave that has a dry branch has goblins whatever the id hash says. The server, every client and island_checks all read it from here.
+static func goblin_den_nodes(list: Array) -> Array:
+	var nodes: Array = []
+	var floor_given: bool = false
+
+	for cave in list:
+		var node: int = goblin_den_node(cave)
+
+		if not floor_given and str(cave.get("cave_kind", "")) == "spring_cave" and not (cave.get("nodes", []) as Array).is_empty():
+			var dry: int = dry_den_node(cave)
+
+			if dry >= 0:
+				node = dry
+				floor_given = true
+
+		nodes.append(node)
+
+	return nodes
+
+
 # The node of a cave's goblin den, or -1 for none (Dave 7 Nov 2026): a dry spot deep in an inland cave, in GOBLIN_DEN_PERCENT of them, picked by the
 # cave's id so the server, every client and island_checks agree. A spring cave's den is the end of its last dry side branch, never its stream
 # passage; a karst cave or lava tube's is its last dead end (no stream: all of it is dry). On a tile baked from the water record the spring caves
@@ -709,7 +731,11 @@ func _load_caves(list: Array) -> void:
 	_cave_scatter_built = false
 	_cave_water_cells = {}
 
-	for cave in list:
+	var den_nodes: Array = goblin_den_nodes(list)
+
+	for cave_index in list.size():
+		var cave: Dictionary = list[cave_index]
+
 		for bone in cave.get("bones", []):
 			var at: Array = bone["pos"]
 			cave_bones.append_array(PackedFloat32Array([float(at[0]), float(at[1]), float(at[2]), 1.0 if str(bone["kind"]) == "human" else 0.0, float(bone.get("yaw", 0.0))]))
@@ -751,8 +777,8 @@ func _load_caves(list: Array) -> void:
 			var dn: Array = nodes[int(den["node"])]
 			cave_dens.append(Vector3(float(dn[0]), float(dn[1]) - 0.5 * float(dn[4]), float(dn[2])))
 
-		# A goblin den (Dave 7 Nov 2026; goblin_den_node below). Dressed with litter (bones, sticks, thatch) and a small fire as cave_bones kinds 2 and 3.
-		var goblin_node: int = goblin_den_node(cave)
+		# A goblin den (Dave 7 Nov 2026; goblin_den_nodes below). Dressed with litter (bones, sticks, thatch) and a small fire as cave_bones kinds 2 and 3.
+		var goblin_node: int = int(den_nodes[cave_index])
 		var mouth_node: int = int(cave["entrances"][0]) if not cave.get("entrances", []).is_empty() else 0
 
 		if goblin_node >= 0:
