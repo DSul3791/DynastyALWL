@@ -326,11 +326,4 @@ static func render_sites(height, sites) -> Image:
 		_line(image, spawn - Vector2(12, 12), spawn + Vector2(12, 12), Color(1, 1, 1), 3)
 		_line(image, spawn - Vector2(12, -12), spawn + Vector2(12, -12), Color(1, 1, 1), 3)
 
-	if sites.starter.has("town_block"):
-		var block: Vector2 = (Vector2(float(sites.starter["town_block"][0]), float(sites.starter["town_block"][2])) - origin) / spacing
-		var corners: Array = [Vector2(-14, -14), Vector2(14, -14), Vector2(14, 14), Vector2(-14, 14)]
-
-		for k in range(4):
-			_line(image, block + corners[k], block + corners[(k + 1) % 4], Color(1, 1, 1), 3)
-
 	return image

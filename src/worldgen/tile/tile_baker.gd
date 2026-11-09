@@ -388,6 +388,7 @@ func _bake_from_record(tile: Vector2i, n: int, core: int, origin_sx: int, origin
 	water.fresh_m = record.frame(tile, margin, "fresh_m")
 	var rect: Rect2 = Rect2(Vector2(float(origin_sx), float(origin_sz)) * spacing_m, Vector2(float(n - 1), float(n - 1)) * spacing_m)
 	var reaches: Array = record.reaches_in(rect)
+	var heads: Array = record.heads_in(rect)
 	_record_mutex.unlock()
 
 	water.water_class = PackedByteArray()
@@ -429,13 +430,32 @@ func _bake_from_record(tile: Vector2i, n: int, core: int, origin_sx: int, origin
 		for point in reach.get("polyline", []):
 			fresh_points.append(Vector2(float(point[0]), float(point[2])))
 
+	# R5's spring heads (a brook that starts where groundwater comes out) in this tile, for its ground springs and its few spring caves
+	# (tile_sites.gd _make_record_springs; design R6 as built, "Brooks and caves").
+	var springs: Array = []
+
+	for head in heads:
+		var pos: Array = head.get("pos", [])
+
+		if str(head.get("kind", "")) != "spring" or pos.size() < 3:
+			continue
+
+		var i: int = roundi(float(pos[0]) / spacing_m) - origin_sx - margin
+		var j: int = roundi(float(pos[2]) / spacing_m) - origin_sz - margin
+
+		# The last row and column belong to the next tile too: a spring there is listed by that tile alone.
+		if i >= 0 and j >= 0 and i < core - 1 and j < core - 1:
+			springs.append({"index": j * core + i, "m3_s": float(head.get("groundwater_m3_s", 0.0))})
+
 	var ground: PackedFloat32Array = crop(water.heights, n, core)
-	return _finish(tile, water, Vector2i(origin_sx, origin_sz), spacing_m, fresh_points, {"raw_heights": ground, "eroded_heights": ground}, timings)
+	return _finish(tile, water, Vector2i(origin_sx, origin_sz), spacing_m, fresh_points, {"raw_heights": ground, "eroded_heights": ground, "record": true,
+		"record_springs": springs}, timings)
 
 
 # Climate, land types, geology and sites on the finished ground and water, then everything cropped to the tile: the same for a tile
 # baked by the passes above and one baked from the water record. fresh_points: river line points in world metres for the climate's
-# distance to fresh water (the same in every frame that holds them). before: the tile's raw_heights and eroded_heights for the result.
+# distance to fresh water (the same in every frame that holds them). before: the tile's raw_heights and eroded_heights for the result, and
+# record: true for a tile baked from the water record, and record_springs its R5 spring heads (tile_sites.record_springs).
 func _finish(tile: Vector2i, water, origin: Vector2i, spacing_m: float, fresh_points: PackedVector2Array, before: Dictionary, timings: Dictionary) -> Dictionary:
 	var n: int = water.samples
 	var core: int = n - 2 * margin
@@ -520,6 +540,9 @@ func _finish(tile: Vector2i, water, origin: Vector2i, spacing_m: float, fresh_po
 	sites.setup(settings, tile_rules, tables)
 	sites.far_from_sea = inland
 	sites.cave_heads = cave_heads
+	# No rule-placed spring caves on a tile from the water record (the design retires them, section 6; cave springs come from R5's C7 list).
+	sites.spring_caves = not bool(before.get("record", false))
+	sites.record_springs = before.get("record_springs", [])
 	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth, water.flow, water.water_surface)
 	timings["sites"] = Time.get_ticks_msec() - clock
 

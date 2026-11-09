@@ -30,10 +30,10 @@ The steps (R6 method items 1 to 4):
    discharge, water table depth, basin, distance to perennial fresh water (with R5, springs that run in the dry season
    count) and loose sediment, each encoded as listed in the manifest.
 With --network (R5's network.py output of this same chain) the regime and discharge come from the network, which knows
-the stream threshold and the losing beds, and the rivers wider than about 8 m are carved along R5's polylines and drawn as water
+the stream threshold and the losing beds, and the rivers wider than record.rivers.carve_min_width_m (2.5 m) are carved along R5's polylines and drawn as water
 (class 3 perennial, 8 seasonal channel; carve_rivers), before the roughness and the flood. Without it the manifest lists the
 network as missing, says the record is not complete, and the bake refuses it (water_record.gd checks `complete`). What the
-runtime adds later (brooks under 8 m, cold-air pools, the snow window: R7) and R5's own refinements are listed under
+runtime adds later (brooks narrower than that, cold-air pools, the snow window: R7) and R5's own refinements are listed under
 summary.later and do not stop the bake. area_km2 (drainage area per sample) feeds the tile file's flow section.
 """
 import sys, os, json, time, hashlib, subprocess
@@ -502,7 +502,7 @@ def main():
     lake_wet = np.isfinite(lvl) & (lvl > g)
     summit16, summit8_smooth = float(g16.max()), float(g.max())
 
-    # Rivers wider than about 8 m carved along their R5 polylines and drawn as water (R6 item 3; carve_rivers). They need the
+    # Rivers wider than carve_min_width_m carved along their R5 polylines and drawn as water (R6 item 3; carve_rivers). They need the
     # network: without it the record has no rivers and says so (missing), and the bake refuses it.
     river_code, river_level = np.zeros((m, m), np.uint8), np.full((m, m), np.nan)
     segs, carved_cells = np.zeros((0, 16)), 0
@@ -620,7 +620,7 @@ def main():
     # under later and does not stop the bake: R5's own refinements, seasonal ponds, and the cold-air pools and snow window the
     # runtime reads (design R7 item 7).
     later += ['seasonal ponds (class 9): closed hollows that hold water only in the wet season, from R3 levels by season',
-              'brooks narrower than about 8 m (R7 draws them from the reach polylines)',
+              f"brooks narrower than {float(RC['rivers']['carve_min_width_m']):g} m (R7 draws them from the reach polylines)",
               'cold-air pools (stage D; read by R7)', 'snow window (A4 snow layer; read by R7)']
     if frame['cells']:
         later.append(f"a window that ends at sea on every side (design R6 item 2): {frame['cells']} 16 m cells of land on the frame, "
