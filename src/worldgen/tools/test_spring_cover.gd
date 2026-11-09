@@ -105,7 +105,8 @@ func _init() -> void:
 						plants.append([float(f[3]), float(f[5]), int(f[1])])
 						mine.append(f)
 
-				if tile == Vector2i(3, 4) and sampled.size() < SAMPLE and not mine.is_empty() and chunks.size() == 1:
+				# The sample keeps off the coast: within 20 m of sand the beach belt rules (only palms and ferns) take the shrubs, as they should.
+				if tile == Vector2i(3, 4) and sampled.size() < SAMPLE and not mine.is_empty() and chunks.size() == 1 and head.y >= 20.0:
 					sampled.append([chunk, head, mine])
 
 			var kinds: Dictionary = {}
@@ -160,7 +161,11 @@ func _init() -> void:
 
 		for f in s[2]:
 			wanted += 1
-			kept += 1 if ids.has((int(f[1]) << 16) | int(f[2])) else 0
+
+			if ids.has((int(f[1]) << 16) | int(f[2])):
+				kept += 1
+			else:
+				print("  dropped by chunk_items: spring at %s, plant %d at (%.2f, %.2f), %.2f m from the head" % [str(s[1]), int(f[2]) % PlacerScript.SPRING_MAX_PLANTS, f[3], f[5], Vector2(f[3] - s[1].x, f[5] - s[1].z).length()])
 
 	print("sampled %d clumps on tile 3,4 through chunk_items: %d of %d plants kept" % [sampled.size(), kept, wanted])
 	_check(not sampled.is_empty() and kept == wanted, "the sampled clumps come through the whole chunk placement whole (%d of %d plants)" % [kept, wanted])

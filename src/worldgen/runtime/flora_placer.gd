@@ -894,7 +894,7 @@ func _orchard_items(origin: Vector2, data, found: Array) -> void:
 # Spring cover (Dave 9 Nov 2026: "use low shrubs that block the view of the ground in clumps over the spring head so its hidden. let the water just run out
 # from under the bush"; design R6 as built, "The spring cover"). Every ground spring of the tile (TileTerrainData.ground_springs, cover "bushes") gets
 # one clump of a low shrub: the first species of the rules' list that grows in the head's biome, else the list's first (every spring is hidden).
-# The plants lie on a sunflower spiral from the head itself out to the clump's radius, so they are spread evenly about a metre apart and the
+# The plants lie on a sunflower spiral from beside the head (the first within 0.6 m) out to the clump's radius, so they are spread evenly, 0.8 m and more apart, and the
 # crowns close; their heights come from the low end of the species' range. The clump is never thinned: no moisture, soil, slope or near-water
 # rule, since the water runs out from under it. Only open lake or sea and a cave mouth drop a plant. It claims its ground first
 # (the landmark tier), so other shrubs keep off it. Item numbers: SPRING_BASE + the spring's place in the tile's list x SPRING_MAX_PLANTS + the
@@ -968,7 +968,10 @@ func _spring_cover(origin: Vector2, data, found: Array) -> void:
 
 		for n in range(plants):
 			rng.seed = _mix(_spring_seed, hx + 7919 * (n + 1), hz, int(item["id"]))
-			var distance: float = radius * sqrt(float(n) / float(plants))
+			# The sunflower spiral with the half-step start (Vogel 1979): the least gap between two plants is 0.77 m for 12 to 16 plants
+			# in 2.0 to 2.8 m (0.63 m after the jitter), over the 0.5 m spacing. Starting at the head itself (n / plants) put the first two plants radius / sqrt(plants) apart, under the
+			# clump's spacing for a small dense clump, and the second was dropped (#802 gate: 78 of 81 sampled plants kept).
+			var distance: float = radius * sqrt((float(n) + 0.5) / float(plants))
 			var angle: float = turn + GOLDEN_ANGLE * float(n)
 			var jitter: float = float(_cover["jitter_m"]) if n > 0 else 0.0
 			var x: float = head.x + cos(angle) * distance + (rng.randf() * 2.0 - 1.0) * jitter

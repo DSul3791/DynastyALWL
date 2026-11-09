@@ -313,7 +313,7 @@ Tiles are cut from it by world position, so seams agree by construction.
       - *Reader.* The runtime tile data reads the tile's `sites.springs` into `ground_springs` (head position and flow). Flora is placed from the same tile files wherever it is placed, so every machine places the same bushes.
       - *One clump per ground spring.* `flora_placer.gd` adds it to the chunk that holds each plant's spot, as it does for patches. The rules are in `tile_rules.json` `runtime_flora.spring_cover`:
         - the species is the first of `species` (bramble, juniper, gorse, dwarf birch) that grows in the head's biome, else the first of the list, because every spring is hidden;
-        - 12 to 16 plants within 2.0 to 2.8 m of the head, seeded per spring. They are laid out on a sunflower spiral with a little jitter, so they are spread evenly and none is too close to the next (about 1 m apart). The first plant is within 0.6 m of the head;
+        - 12 to 16 plants within 2.0 to 2.8 m of the head, seeded per spring. They are laid out on a sunflower spiral with a little jitter (5 cm), so they are spread evenly, 0.8 m and more apart. The first plant is within 0.6 m of the head;
         - heights from the low end of the species' range (the lowest third), so the crowns close over the ground.
       - *The clump is never thinned.* Its plants skip the moisture, soil, slope and near-water rules: the water runs out from under the bush. A plant whose spot is lake or sea is still dropped, and so is one in a cave mouth.
         - The clump claims its ground first in the chunk, so the other shrubs keep off it. Trees may still stand beside it, as they do beside any shrub.
