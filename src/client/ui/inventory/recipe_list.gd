@@ -20,7 +20,8 @@ var view            # the InventoryView that owns this part (src/client/inventor
 var root: Control   # the top control this part built
 var _recipe_category: String = ""        # "" = All
 var _category_buttons: Dictionary = {}   # category name -> its tab button
-var _detail: VBoxContainer                # the chosen recipe: its needs, the quantity box and Craft
+var _detail: VBoxContainer                # the chosen recipe: its needs, the quantity box, Made at and Used in (scrolls)
+var _footer: VBoxContainer                # under it, never scrolled away: the brass Craft button and Pin
 var _quantity: SpinBox                    # the How many box (null while no recipe is shown)
 var _qty: int = 1                         # the last quantity chosen, kept between refreshes
 const CRAFT_HOLD_MS := 400                 # a press this long on a recipe row is a hold: make as many as the stock allows (decisions row 24)
@@ -56,7 +57,8 @@ func build(queue_root: Control) -> Control:
 	list_scroll.add_child(view._recipe_list)
 	columns.add_child(left)
 
-	# The recipe card: a raised plate one step lighter than the panel; its contents scroll if a large text size needs it.
+	# The recipe card: a raised plate one step lighter than the panel; its contents scroll if a large text size needs it, while the
+	# Craft button and Pin stay at its foot, always in view.
 	var card: PanelContainer = PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -67,14 +69,21 @@ func build(queue_root: Control) -> Control:
 	plate.content_margin_bottom = 12.0
 	card.add_theme_stylebox_override("panel", plate)
 	columns.add_child(card)
+	var stack: VBoxContainer = VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 10)
+	card.add_child(stack)
 	var detail_scroll: ScrollContainer = ScrollContainer.new()
+	detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	detail_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	card.add_child(detail_scroll)
+	stack.add_child(detail_scroll)
 	_detail = VBoxContainer.new()
 	_detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_detail.add_theme_constant_override("separation", 10)
 	detail_scroll.add_child(_detail)
+	_footer = VBoxContainer.new()
+	_footer.add_theme_constant_override("separation", 4)
+	stack.add_child(_footer)
 
 	root = columns
 	return root
@@ -257,11 +266,7 @@ func _add_admin_builds() -> void:
 	if AdminScript.check_enabled():
 		return
 
-	var head: Label = Label.new()
-	head.text = "Admin"
-	view._style(head, view.BODY_PX)
-	head.modulate = Color(1.0, 0.8, 0.4)
-	view._recipe_list.add_child(head)
+	view._recipe_list.add_child(_section("Admin"))
 
 	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit", "oven_kit"]
 	admin_ids.sort_custom(func(a, b): return view.table.name_of(view.table.number_of(str(a))).naturalnocasecmp_to(view.table.name_of(view.table.number_of(str(b)))) < 0)
@@ -272,13 +277,19 @@ func _add_admin_builds() -> void:
 		if number == 0 or bool(view.table.entry(str(id)).get("retired", false)):   # a retired kit cannot be placed (Dave 5 Nov 2026: the admin Woven chest did nothing): the hammer's blueprints build those
 			continue
 
+		# The same row as a recipe's (44 px, its icon and name), gold-lettered: a click gives the kit.
 		var entry: Button = Button.new()
 		entry.text = view.table.name_of(number)
 		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		entry.custom_minimum_size = Vector2(0.0, view._px(64))
+		entry.clip_text = true
+		entry.icon = InventoryLook.icon_for(str(id))
+		entry.expand_icon = false
+		entry.add_theme_constant_override("icon_max_width", 32)
+		entry.custom_minimum_size = Vector2(0.0, 44.0)
 		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		entry.modulate = Color(1.0, 0.85, 0.5)
-		view._style(entry, view.BODY_PX)
+		entry.flat = true
+		view._style(entry, view.BODY_PX - 12)
+		entry.add_theme_color_override("font_color", ArtKit.HEADING)
 		entry.pressed.connect(func(): view.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, 1, Vector3.ZERO))
 		view._recipe_list.add_child(entry)
 
@@ -286,7 +297,7 @@ func _add_admin_builds() -> void:
 # The recipe card (redesign 4.3): the made item in a lit well with its name, kind and time; its description and stats; Needs as
 # wells with have / need; Make (quantity); the shortfall line; Made at; Used in; the queue sits under the list; then the brass Craft button.
 func _refresh_detail() -> void:
-	for child in _detail.get_children():
+	for child in _detail.get_children() + _footer.get_children():
 		child.queue_free()
 
 	_quantity = null
@@ -418,7 +429,7 @@ func _refresh_detail() -> void:
 
 	make.add_theme_color_override("font_disabled_color", Color(ArtKit.INK, 0.6))
 	make.pressed.connect(craft_selected)
-	_detail.add_child(make)
+	_footer.add_child(make)
 
 	# Pin (Morgan's report): the recipe stays on screen as a checklist, window open or shut. A key hint, not a boxed button.
 	var pinned: bool = view._pinned_part.number == view._selected_recipe
@@ -432,7 +443,7 @@ func _refresh_detail() -> void:
 			view._pinned_part.pin(pin_number)
 
 		view._refresh())
-	_detail.add_child(pin)
+	_footer.add_child(pin)
 
 
 # The recipes (known, not retired) that take item `number` as a need or keep it as their tool, by name.
