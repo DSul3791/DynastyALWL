@@ -41,8 +41,6 @@ const STEEP_FROM_DEG := 12.0         # valley cuts shrink on ground steeper than
 const STEEP_TO_DEG := 30.0           # ... down to (1 - STEEP_VALLEY_SHARE) of their size at this slope
 const STEEP_VALLEY_SHARE := 0.8
 const VALLEY_FREEBOARD_FLAT_M := 1.0   # the same on reaches that fall under 0.5%
-const SPAWN_GULLY_CLEAR_M := 60.0     # a river gully is faded out only this close to the spawn point (the spawn stays flat dry ground) ...
-const SPAWN_GULLY_BLEND_M := 60.0     # ... and is back in full this much further out; valleys, canyons and heads still fade out over spawn_keep_m
 const CENTRE_MIN_DEPTH_M := 0.3       # every drained centre cell holds at least this much water, so the painted river is one line
 const CENTRE_MAX_CUT_M := 1.5
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
@@ -171,7 +169,6 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	_stamp(h, fill, flow, size, cell_m, threshold, rules)
 	_lap("stamp", clock)
 	clock = Time.get_ticks_msec()
-	var stamped: PackedFloat32Array = bed.duplicate()
 	_canyon_map(h, fill, flow, size, cell_m, rules)
 	_valleys(h, fill, flow, size, cell_m, rules)
 	_lap("canyon map + valleys", clock)
@@ -179,22 +176,14 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	_canyons(h, fill, flow, size, cell_m, rules)
 	_lap("canyons", clock)
 	clock = Time.get_ticks_msec()
-	var before_gullies: PackedFloat32Array = bed.duplicate()
 	_gullies(h, fill, flow, size, cell_m, rules)
-	var gully_cut: PackedFloat32Array = PackedFloat32Array()
-	gully_cut.resize(size * size)
-
-	for index in range(size * size):
-		gully_cut[index] = minf(bed[index] - before_gullies[index], 0.0)
-
 	_lap("gullies", clock)
 	clock = Time.get_ticks_msec()
 	_heads(h, fill, flow, size, cell_m, threshold, rules)
 	_lap("heads + basins", clock)
 	clock = Time.get_ticks_msec()
 	_ensure_centre_channel(fill, flow, threshold)
-	_keep_spawn_clear(stamped, gully_cut, size, cell_m, rules)
-	_lap("centre fix + spawn", clock)
+	_lap("centre fix", clock)
 
 
 # Rivers grow toward the sea (Dave 5 Nov 2026: "the rivers should get deeper meaning lower bottoms as they get closer to the ocean. they should also get a
@@ -434,33 +423,6 @@ static func stamp_channels_script(bed_in: PackedFloat32Array, surface_in: Packed
 					surface_out[neighbor] = centre_surface[index]
 
 	return {"bed": bed_out, "surface": surface_out}
-
-
-# The spawn area stays as the land and the river stamp made it: valleys, canyons, gullies and heads fade out inside
-# spawn_keep_m of the spawn point and are fully back at spawn_keep_m + spawn_blend_m (Dave: the spawn must be flat dry ground).
-#
-# The rivers' own gullies stay (Dave 3 Nov 2026, x 53264..53521 z 68593..68882, 130 to 460 m from the spawn: "the river creation system didn't carve
-# this spot"): with the gullies faded out too, a brook down the steep hillside by the spawn kept only its 0.5 m stamp, the settled water ran off it, and
-# the bake painted a 13 cm film over clay and grass that showed as separate puddles. Only inside SPAWN_GULLY_CLEAR_M of the spawn point is a gully
-# faded out; elsewhere the restored ground keeps the gully's own cut (`gully_cut`: what the gully stage alone took off each cell, 0 or negative).
-func _keep_spawn_clear(stamped: PackedFloat32Array, gully_cut: PackedFloat32Array, size: int, cell_m: float, rules: Dictionary) -> void:
-	if not rules.has("spawn_x"):
-		return
-
-	var spawn: Vector2 = Vector2(float(rules["spawn_x"]), float(rules["spawn_z"]))
-	var keep: float = float(rules.get("spawn_keep_m", 450.0))
-	var blend: float = maxf(float(rules.get("spawn_blend_m", 650.0)), 1.0)
-	var reach: int = int(ceil((keep + blend) / cell_m)) + 1
-	var column0: int = int(floor(spawn.x / cell_m)) - _origin.x
-	var row0: int = int(floor(spawn.y / cell_m)) - _origin.y
-
-	for row in range(maxi(row0 - reach, 0), mini(row0 + reach + 1, size)):
-		for column in range(maxi(column0 - reach, 0), mini(column0 + reach + 1, size)):
-			var world: Vector2 = Vector2(float(column + _origin.x) + 0.5, float(row + _origin.y) + 0.5) * cell_m
-			var weight: float = smoothstep(keep, keep + blend, world.distance_to(spawn))
-			var index: int = row * size + column
-			var kept: float = gully_cut[index] * smoothstep(SPAWN_GULLY_CLEAR_M, SPAWN_GULLY_CLEAR_M + SPAWN_GULLY_BLEND_M, world.distance_to(spawn))
-			bed[index] = lerpf(stamped[index] + kept, bed[index], weight)
 
 
 # Stage 3b: valleys. Rivers with a big catchment sit in a valley graded to their water level: the floor stands just above

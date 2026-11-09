@@ -3,7 +3,7 @@ extends SceneTree
 # The spawn picker (Stage E M1 step 4, docs/water/stage_e_readers_design.md 6e) on a small made-up valley: a river runs north-south down x 400,
 # a floodplain 1 m over it on its east bank, a terrace 6 m over it beyond, a steep bank and a sea strip in the west. The pick must be dry,
 # flat, over the floodplain, a short walk from the river and the nearest such spot to the bay head; without a river nothing passes. The
-# shared reader: a starter section without spawn_picked gives OVERRIDE and no town shift, one with it gives the picked spot and the shift.
+# shared reader: a starter section without spawn_picked gives OVERRIDE, one with it gives the picked spot.
 #   godot --headless --path . --script res://src/worldgen/tools/test_spawn_picker.gd
 
 const PickerScript := preload("res://src/worldgen/tile/spawn_picker.gd")
@@ -84,10 +84,8 @@ func _init() -> void:
 
 	# The shared reader.
 	check(SpawnPointScript.from_starter({"spawn_point": [1.0, 2.0, 3.0]}) == SpawnPointScript.OVERRIDE, "a starter section without spawn_picked keeps OVERRIDE")
-	SpawnPointScript.set_current(SpawnPointScript.from_starter({}))
-	check(SpawnPointScript.town_shift() == Vector2.ZERO, "and the town does not move")
 	SpawnPointScript.set_current(SpawnPointScript.from_starter({"spawn_picked": [53400.0, 31.0, 68000.0]}))
-	check(SpawnPointScript.current() == Vector2(53400.0, 68000.0) and SpawnPointScript.town_shift() == Vector2(104.0, -80.0), "a picked spawn is the spawn and the town moves with it (%s)" % str(SpawnPointScript.town_shift()))
+	check(SpawnPointScript.current() == Vector2(53400.0, 68000.0), "a picked spawn is the spawn (the town does not move with it, 9 Nov 2026)")
 	SpawnPointScript.set_current(SpawnPointScript.OVERRIDE)
 
 	print("test_spawn_picker: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
