@@ -16,7 +16,7 @@ const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const TitleArt := preload("res://scenes/title/title_art.gd")
 
 const SHOW_ADMIN := true
-const BUTTON_W := 420.0
+const BUTTON_W := 300.0
 
 var root: Control
 var front: Control                        # the painted front page (title_art.gd), shown for "main"
@@ -78,7 +78,7 @@ func build(client) -> void:
 
 	panel.add_child(margin)
 	_column = VBoxContainer.new()
-	_column.add_theme_constant_override("separation", 12)
+	_column.add_theme_constant_override("separation", 8)
 	margin.add_child(_column)
 	var title: Label = Label.new()
 	title.text = "Dynasty"
@@ -98,7 +98,7 @@ func build(client) -> void:
 	var warn: Label = Label.new()
 	warn.text = "Delete EVERY dig, fill and collapse rubble for everyone\nand put the baked terrain back? This cannot be undone."
 	warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	warn.add_theme_font_size_override("font_size", 30)
+	warn.add_theme_font_size_override("font_size", 20)
 	reset.add_child(warn)
 	_button(reset, "Yes, reset all terrain edits", func():
 		_c.net.inventory_action.rpc_id(1, Net.ACT_RESET_EDITS, 0, 0, 0, Vector3.ZERO)
@@ -108,7 +108,7 @@ func build(client) -> void:
 	var fresh_warn: Label = Label.new()
 	fresh_warn.text = "Start over as a brand new player?\nYour pack and worn gear are emptied, your vitals reset\nand Admin mode goes off. You stay where you are."
 	fresh_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	fresh_warn.add_theme_font_size_override("font_size", 30)
+	fresh_warn.add_theme_font_size_override("font_size", 20)
 	fresh.add_child(fresh_warn)
 	_button(fresh, "Yes, play as a new player", func():
 		_c.net.inventory_action.rpc_id(1, Net.ACT_NEW_PLAYER, 0, 0, 0, Vector3.ZERO)
@@ -144,16 +144,16 @@ func show_page(page_name: String) -> void:
 		front.focus_first(["continue", "settings"])
 
 	# The two long sound pages scroll inside what the window leaves under the title, the back button and the note.
-	var room: float = 480.0
+	var room: float = 320.0
 
 	if _c != null and _c.get_viewport() != null:
-		room = clampf(_c.get_viewport().get_visible_rect().size.y - 300.0, 200.0, 760.0)
+		room = clampf(_c.get_viewport().get_visible_rect().size.y - 220.0, 160.0, 560.0)
 
 	if _sound_scroll != null:
-		_sound_scroll.custom_minimum_size = Vector2(BUTTON_W + 220.0, room)
+		_sound_scroll.custom_minimum_size = Vector2(BUTTON_W + 150.0, room)
 
 	if _test_scroll != null:
-		_test_scroll.custom_minimum_size = Vector2(BUTTON_W + 220.0, room)
+		_test_scroll.custom_minimum_size = Vector2(BUTTON_W + 150.0, room)
 
 	if note != null:
 		note.text = ""
@@ -212,7 +212,7 @@ func _build_main() -> void:
 	var ask: Label = Label.new()
 	ask.text = "Leave the game?"
 	ask.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ask.add_theme_font_size_override("font_size", 30)
+	ask.add_theme_font_size_override("font_size", 22)
 	quit.add_child(ask)
 	_button(quit, "Yes, leave", func():
 		_c._say_logout()
@@ -229,9 +229,9 @@ func _build_controls() -> void:
 	text.text = _c.HELP_TEXT + "
 
 This game: build %d, commit %s" % [_c.BUILD, _c._commit]
-	text.add_theme_font_size_override("font_size", 26)
+	text.add_theme_font_size_override("font_size", 20)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.custom_minimum_size = Vector2(1500.0, 0.0)
+	text.custom_minimum_size = Vector2(1000.0, 0.0)
 	help.add_child(text)
 	_button(help, "Back", func(): show_page("controls"))
 
@@ -325,7 +325,7 @@ func _build_sound() -> void:
 	_sound_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	page.add_child(_sound_scroll)
 	var sound: VBoxContainer = VBoxContainer.new()
-	sound.add_theme_constant_override("separation", 10)
+	sound.add_theme_constant_override("separation", 7)
 	_sound_scroll.add_child(sound)
 
 	for level in [["master", "Master volume"], ["effects", "Effects volume (steps, tools, items, fire)"], ["ambient", "Ambient volume (wind, nature, weather)"], ["interface", "Interface volume"]]:
@@ -396,7 +396,7 @@ func _build_inner_voice() -> void:
 	var hint: Label = Label.new()
 	hint.text = "Hints: a gentle nudge when you are stuck.\nInner dialogue: your own remarks, warnings and jokes."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_font_size_override("font_size", 22)
+	hint.add_theme_font_size_override("font_size", 18)
 	page.add_child(hint)
 	_button(page, "Back", func(): show_page("settings"))
 
@@ -410,7 +410,7 @@ func _build_sound_test() -> void:
 	page.add_child(scroll)
 	_sound_list = VBoxContainer.new()
 	_sound_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_sound_list.add_theme_constant_override("separation", 8)
+	_sound_list.add_theme_constant_override("separation", 6)
 	scroll.add_child(_sound_list)
 	_c.sound_tests.add_buttons(_sound_list)
 	_button(page, "Back", func(): show_page("sound"))
@@ -495,7 +495,7 @@ func _build_developer() -> void:
 
 func _page(page_name: String) -> VBoxContainer:
 	var page: VBoxContainer = VBoxContainer.new()
-	page.add_theme_constant_override("separation", 10)
+	page.add_theme_constant_override("separation", 7)
 	page.visible = false
 	_column.add_child(page)
 	_pages[page_name] = page
@@ -513,8 +513,8 @@ func _heading(parent: VBoxContainer, text: String) -> void:
 func _button(parent: VBoxContainer, text: String, action: Callable) -> Button:
 	var button: Button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(BUTTON_W, 52.0)
-	button.add_theme_font_size_override("font_size", 26)
+	button.custom_minimum_size = Vector2(BUTTON_W, 48.0)
+	button.add_theme_font_size_override("font_size", 20)
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # a long line wraps inside the button instead of running off the panel
 	button.pressed.connect(action)
 	@warning_ignore("standalone_ternary")
@@ -526,10 +526,10 @@ func _button(parent: VBoxContainer, text: String, action: Callable) -> Button:
 # A label on the left and a slide switch on the right.
 func _switch_row(parent: VBoxContainer, text: String, changed: Callable):
 	var row: HBoxContainer = HBoxContainer.new()
-	row.custom_minimum_size = Vector2(BUTTON_W, 52.0)
+	row.custom_minimum_size = Vector2(BUTTON_W, 48.0)
 	var label: Label = Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 26)
+	label.add_theme_font_size_override("font_size", 20)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(label)
@@ -553,7 +553,7 @@ func _slider(parent: VBoxContainer, text: String, value: float, changed: Callabl
 	slider.max_value = top
 	slider.step = 0.01
 	slider.value = value
-	slider.custom_minimum_size = Vector2(BUTTON_W + 160.0, 40.0)
+	slider.custom_minimum_size = Vector2(BUTTON_W + 110.0, 32.0)
 	slider.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	slider.value_changed.connect(changed)
 	label.text = "%s: %d %%" % [text, roundi(value * 100.0)]

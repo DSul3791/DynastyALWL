@@ -190,9 +190,9 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	_label.offset_bottom = -60.0
-	_label.add_theme_font_size_override("font_size", 26)
-	_label.add_theme_constant_override("outline_size", 6)
+	_label.offset_bottom = -84.0
+	_label.add_theme_font_size_override("font_size", 20)
+	_label.add_theme_constant_override("outline_size", 4)
 	_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_layer.add_child(_label)
@@ -1512,7 +1512,7 @@ func _hoe_menu_open_now() -> void:
 		_hoe_menu_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 		_hoe_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_hoe_menu_label = Label.new()
-		_hoe_menu_label.add_theme_font_size_override("font_size", 40)
+		_hoe_menu_label.add_theme_font_size_override("font_size", 26)
 		_hoe_menu_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_hoe_menu_panel.add_child(_hoe_menu_label)
 		_hud_layer.add_child(_hoe_menu_panel)
