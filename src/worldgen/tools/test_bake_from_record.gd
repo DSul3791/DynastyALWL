@@ -79,7 +79,7 @@ func drink_at(i: int, j: int) -> Array:
 
 	var regime: int = 1 if i >= PERENNIAL_I else 2
 
-	if i < BELOW_I:
+	if i < BELOW_I or i > 1900:   # above the spring (i past 1900) nothing feeds it: a negative distance would wrap in the u2 raster
 		return [regime, 1.5, NAN, 0.0, 0.0]
 
 	return [regime, 1.5, float(1900 - i) * 8.0, SPRING_Q, SPRING_Y]
