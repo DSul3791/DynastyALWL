@@ -2,7 +2,7 @@
 
 Owner: Kathleen (art direction). Asked for by Dave, 9 Nov 2026 03:49 UTC: *"Keep it simple, keep it eloquent and keep it useful … make sure its not crowded and make sure it is easy to use for a human. Also make sure it uses the space on the screen and keeps things big enough to see. Make it better than those games."* References he gave: ARK Survival inventory, Dragonwilds inventory and crafting table, Valheim crafting. After the first mockup he asked (04:09 UTC) what it takes to look like a top studio built it. Version 2 is the answer: the same layout, with a production finish (three depth levels, a leather and brass frame, a warm palette, engraved glyphs, letter-spaced titles and a set of motion rules).
 
-Status: **design for Dave's look. No code until the coordinator says go.** #780 (inventory fit) stays as it is until this replaces it.
+Status: **version 2 is the accepted design (coordinator, 9 Nov 04:21 UTC). No code until Dave says go; the first step is then the canvas and resize pass.** #780 (inventory fit) stays as it is until this replaces it.
 
 Mockup: `inventory_redesign_1920_v2.png` (shared files, top level), drawn at 1920 x 1080 by `docs/ui/mockup/inventory_redesign_mockup.py` from the same numbers as this doc. The script draws at 3840 x 2160 and scales down so edges are smooth; `--measured` adds a copy with every box outlined. The first version, `inventory_redesign_1920.png`, is kept for comparison.
 
@@ -199,6 +199,8 @@ The backdrop over the world is the one place anything shows through, and only in
 
 No purple, cyan or bright yellow anywhere.
 
+**Decided (coordinator, 9 Nov 04:21 UTC, under Dave's standing "you are in charge"): the six HUD bars at the top of the screen change to this warm set too, with the same glyphs, so the HUD and the inventory match.** This replaces the brighter colours approved on 21 Oct. It is done in step 1 of the plan (section 12), with the canvas pass.
+
 ### 6.5 Motion and polish
 
 | What | Rule |
@@ -290,9 +292,8 @@ The HUD keeps a hotbar strip at the bottom centre when the window is closed. It 
 ## 11. Open points for Dave
 
 1. **Hotbar: 10 slots of 60 (all 10 keys) instead of 8 of 76.** Recommended, because the game has 10 keys.
-2. **The six bar colours.** Version 2 puts them all in the warm palette (6.4). The HUD bars at the top of the screen use the brighter colours approved on 21 Oct; the HUD should move to the same warm set so the two match. Dave's call.
-3. **Solid panels,** as he asked on 23 Oct; only the margins round them show the darkened world.
-4. **The floating tooltip goes;** the info strip under the pack replaces it.
+2. **Solid panels,** as he asked on 23 Oct; only the margins round them show the darkened world.
+3. **The floating tooltip goes;** the info strip under the pack replaces it.
 
 ## 12. Implementation plan (after Dave's look; no code before the go)
 
@@ -300,7 +301,7 @@ The HUD keeps a hotbar strip at the bottom centre when the window is closed. It 
 
 Steps, each its own PR through the gate:
 
-1. **Canvas to 1920 x 1080** plus the section 13 fixes for the menus and the HUD, so nothing gets worse on the day the canvas changes.
+1. **Canvas to 1920 x 1080** plus the section 13 fixes for the menus and the HUD, so nothing gets worse on the day the canvas changes. The six HUD bars move to the warm colours and glyphs of 6.4 in the same pass.
 2. **The art kit** (section 8) as placeholders drawn in code first (the colours and sizes above), so the layout lands without waiting for the art; the painted PNGs drop in later with no code change.
 3. **The new window:** the three columns, the pack and chest grids, the You column, the craft card, the info strip, search and sort. Removes the old window building and #780's fit.
 4. **The HUD hotbar strip** in the new slot art.
