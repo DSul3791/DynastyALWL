@@ -5294,8 +5294,12 @@ func run_eat_test(client) -> void:
 		await get_tree().create_timer(0.3).timeout
 		client.held.select(9)
 		await get_tree().create_timer(0.3).timeout
-		var held_here: bool = client.held.held_id() == id or client.held.off_id() == id   # a torch or shield goes in the left hand (items.json "offhand", 7 Nov 2026)
-		var drawn: bool = client.held._off_model != null if client.held.off_id() == id else client.held._model != null
+		# A torch or shield goes in the left hand (items.json "offhand", 7 Nov 2026). A doused torch lights again when its key is pressed
+		# (held_item.gd _relight_on_press), so in hand it is its "relit_item", the burning torch.
+		var as_held: Array = [id, str(table.entry(id).get("relit_item", id))]
+		var in_left: bool = as_held.has(client.held.off_id())
+		var held_here: bool = client.held.held_id() == id or in_left
+		var drawn: bool = client.held._off_model != null if in_left else client.held._model != null
 		held_ok += 1 if held_here else 0
 		modelled += 1 if drawn else 0
 

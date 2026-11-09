@@ -250,7 +250,21 @@ func key_slot(key: int) -> int:
 		if first < 0:
 			first = slot
 
+	if first < 0 and table != null:
+		var other: int = _flame_twin(number)
+
+		if other > 0:
+			return numbers.find(other)
+
 	return first
+
+
+# A torch and the same torch put out (items.json "doused_item" and "relit_item") are one item to a key: rain turns the slot into the other one
+# while the key keeps the number it was given, and "Press its key to light it again" must still find it (the doused torch was lost to its key).
+func _flame_twin(number: int) -> int:
+	var entry: Dictionary = table.entry(table.id_of(number))
+	var twin: String = str(entry.get("doused_item", entry.get("relit_item", "")))
+	return table.number_of(twin) if twin != "" else 0
 
 
 # Whether a hotbar key points at the item in this slot (the server's "on the hotbar" for tools: an axe to chop, a hammer to build).
@@ -264,6 +278,10 @@ func key_of_slot(slot: int) -> int:
 		return -1
 
 	var key: int = hotbar.find(numbers[slot])
+
+	if key < 0 and table != null and _flame_twin(numbers[slot]) > 0:
+		key = hotbar.find(_flame_twin(numbers[slot]))   # a torch whose key was given its lit or doused twin
+
 	return key if key >= 0 and key_slot(key) == slot else -1
 
 
