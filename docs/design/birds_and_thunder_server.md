@@ -2,7 +2,7 @@
 
 **Owner:** Steve, for `src/shared/thunder.gd` and `server_animals.gd`.
 **Asked by:** MikeW: birds flush (state 15) on a thunder clap, server side.
-**Status:** the shared schedule and the server flush are in code, behind `animals.json` `thunder.on` (off). Since 9 Nov 2026 the client plays its thunder from the same schedule (Kathleen, `weather_sounds.gd`, `thunder_delay_design.md` section 2), so the switch can go (Steve). Static checks only.
+**Status:** the shared schedule and the server flush are in code and always on. Since 9 Nov 2026 the client plays its thunder from the same schedule (Kathleen, `weather_sounds.gd`, `thunder_delay_design.md` section 2, #849), and the `thunder.on` switch is gone (Steve, #850). The server reads the strikes under each player's own weather (the zone of their row and their altitude, `terrain_server._weather_at`), as that player's client does, not under the starter row's weather (Kathleen's catch, 9 Nov).
 **Decided:** coordinator, 8 Nov 2026. Dave may revert.
 
 ## 1. What happens today (read from the code, 8 Nov; not tested)
@@ -27,7 +27,7 @@
 ## 3. Data (`animals.json` `thunder`)
 
 ```
-"thunder": {"on": false, "flush_m": 800.0, "sound_mps": 343.0}
+"thunder": {"flush_m": 800.0, "sound_mps": 343.0}
 ```
 
 ## 4. Cost
@@ -42,6 +42,6 @@ New `test_birds_thunder.gd`:
   - there is no thunder without heavy rain or without a storm;
   - the rate is about the client's (600 to 2,400 strikes within 2.8 km in 10 game days, expected about 1,200).
 - **The flush:**
-  - with the flag off, nothing happens;
+  - the config has no `on` switch, and the first tick only starts the clock (no backlog of strikes);
   - at the flash, the sound has not reached a crow 200 m off yet;
   - two seconds later it flies up (state 15), while a crow 1.4 km off stays.

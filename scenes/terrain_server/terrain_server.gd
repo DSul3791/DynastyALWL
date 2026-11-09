@@ -517,7 +517,7 @@ func _ready() -> void:
 	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
 	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
 	animals.game_seconds = func(): return game_clock.seconds
-	animals.thunder_between = func(t0, t1, centre, reach): return ThunderScript.strikes(int(settings.master_seed), t0, t1, weather, centre, reach)   # the shared strikes (birds_and_thunder_server.md)
+	animals.thunder_between = func(t0, t1, centre, reach): return ThunderScript.strikes(int(settings.master_seed), t0, t1, _weather_at(centre), centre, reach)   # the shared strikes, under that player's own weather (birds_and_thunder_server.md)
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
@@ -1215,6 +1215,14 @@ func _queue_water(peer_id: int, chunk: Vector2i) -> void:
 
 	if added:
 		_work.post()
+
+
+# The weather over one player, worked out as that player's own client does (terrain_client._update_weather): the zone of the
+# row they stand in and their altitude. The birds flush from the thunder strikes under this weather, so they take off at the
+# claps that player hears, even under a different storm from the starter row's.
+func _weather_at(pos: Vector3) -> Dictionary:
+	var row: int = floori(pos.z / float(settings.tile_size_m))
+	return WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), pos.y, 0.0, row, settings.equator_tile_row)
 
 
 # The weather over the starter tile (zone from its row, season and time from the game clock,
