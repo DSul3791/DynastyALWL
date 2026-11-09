@@ -18,7 +18,7 @@ Today the chain runs once per **window**: one square of tiles around an island g
 | lakes / groundwater / network | 24 s / 26 s / 57 s | per window | 1 |
 | record.py | 53 s | per window | 1 |
 | check_record.py | not timed (seconds) | per window | 1 |
-| bake | 624 s for 9 tiles on 9 threads, so about 624 s per tile per thread | per tile | 9 |
+| bake | 624 s for 9 tiles on 9 threads (each tile's own stages 62–200 s; the rest is the setup and the writing, see section 2) | per tile | 9, but queued on one lock |
 | settle + refilm | 338 s for 9 tiles at once | per tile | 9 |
 | rebake_check.sh | 196 s | per bake | 3 tests |
 
@@ -61,18 +61,45 @@ It would also replace the hand-written job sheets.
 
 **Water files from the record.** For a tile baked from the record, settle and refilm re-run the water sim to a level the record already holds. Writing the `.water` file straight from the record's levels (R7 item 1, "seeding", which is planned anyway) would turn 338 s per nine tiles into seconds (estimate).
 
-**The bake itself.** A record tile copies its ground and water, so 624 s per tile is more than the copy needs. The rest is geology, climate, sites and packing, but nobody has looked at the split. Tonight's bake log prints the stages per tile ("Tile X baked in … stages {…}"). Dino can send those lines, and the next cut is chosen from them, not guessed.
+**The bake: nine threads that queue for one lock (the biggest cheap win).**
+
+Dino's log of the 8 Nov bake (9 threads, ms per tile):
+
+| tile | record | climate + land types + geology + sites |
+|---|---|---|
+| 2,3 | 40,077 | 22,634 |
+| 3,3 | 64,972 | 24,396 |
+| 4,3 | 103,201 | 24,448 |
+| 2,4 | 89,885 | 23,181 |
+| 3,4 | 121,729 | 28,174 |
+| 4,4 | 134,721 | 25,252 |
+| 2,5 | 147,767 | 20,090 |
+| 3,5 | 161,246 | 21,677 |
+| 4,5 | 174,768 | 24,630 |
+
+The other stages are flat at about 25 s a tile. The record stage climbs about 17 s a tile, because every thread waits its turn: `tile_baker.gd` `_bake_from_record` takes `_record_mutex` around all of the record reading. The record's raster cache is not safe to share, so the lock is there for a reason. What makes it slow is the work done under the lock, all of it in GDScript one sample at a time:
+- `water_record.gd` `decode` turns each 1,921² raster into floats one sample at a time, with a `match` on the type for every sample (3.7 M per raster);
+- `frame` copies the 2,081² frame (the tile plus an 80-sample margin) one sample at a time, with a dictionary lookup per sample, for each of five fields (about 22 M steps a tile).
+
+The fix keeps the same bytes:
+1. Decode the nine tiles' rasters once, before the threads start. That is 45 rasters, about 670 MB of floats; the bake peaked at 15.5 GB of 31.9. Use the engine's own `to_float32_array()` for f4 fields.
+2. Build each frame from row slices instead of single samples.
+3. Drop the lock, because nothing is written after the load.
+
+Estimate: the record stage falls to a few seconds a tile, and the stages are then about 30 s a tile on every thread at once.
+
+The bake took 624 s, but its slowest tile's stages add up to about 200 s. The rest is the setup (its own "Setup … in N ms" line) and packing and writing the files, and the next look is those lines. With the setup cached and the lock gone, nine tiles should take about 3 to 4 min (estimate).
 
 ## 3. What a run costs: today, and after the cuts
 
-| run | today (measured sums) | after the evolve cut, a, the runner, seeding, and rebake_check left to the gate (estimate) | also b, c, d (estimate) |
+| run | today (measured sums) | after the evolve cut, a, the runner, seeding, the bake fix, and rebake_check left to the gate (estimate) | also b, c, d (estimate) |
 |---|---|---|---|
-| tile rules change (springs, caves, sites), 9 tiles | 19 min (if no one starts the chain) | about 11 min (the bake) | the same, unless the bake profile finds more |
-| water rules change (R3–R6), 9 tiles | 22 min | about 13 min | the same |
-| land changes (tonight), 9 tiles | 1 h 50 min | about 1 h | about 30 min |
-| full world, first time (all windows, 227 tiles) | about 2 h of chains (9 at once) + 4.5 h bake + 2.4 h water ≈ 9 h | about 1 h + 4.5 h + minutes ≈ 5.5 h | about 35 min + 4.5 h ≈ 5 h; the bake profile decides the rest |
+| tile rules change (springs, caves, sites), 9 tiles | 19 min (if no one starts the chain) | about 4 min (the bake) | the same |
+| water rules change (R3–R6), 9 tiles | 22 min | about 7 min | the same |
+| land changes (tonight), 9 tiles | 1 h 50 min | about 50 min | about 25 min |
+| full world, first time (all windows, 227 tiles) | about 2 h of chains (9 at once) + 4.5 h bake + 2.4 h water ≈ 9 h | about 1 h + 26 rounds × 3.5 min ≈ 1 h 30 min + minutes ≈ 2 h 30 min | about 35 min + 1 h 30 min ≈ 2 h |
 
-A first full world is one night either way. The cuts matter most for the everyday case: one island, a rule change, 15 min instead of 2 h.
+With the cuts, a first full world drops from a night to an evening. The everyday case gains the most: one island and a rule change take about 4 min, not 19 (or 2 h when the chain is started by habit).
 
 ## 4. What could go, merge, or stop being checked
 
@@ -85,7 +112,8 @@ A first full world is one night either way. The cuts matter most for the everyda
 - **Keep:** every chain stage itself. Each makes one of the goals (ground, ice, lakes, groundwater, network, record), and none duplicates another.
 
 **My recommendation, in order:**
-1. The evolve cut and the runner with skip-by-hash. These are small, and they don't change results.
-2. Cropping windows to their islands, and writing `.water` from the record.
-3. The bake profile from tonight's log.
-4. One probe each for b and c against ws580v before either becomes the rule.
+1. The bake's record load: decode once, slice the frames, drop the lock. Same bytes, and the 624 s bake should fall to about 3 to 4 min (estimate).
+2. The evolve cut and the runner with skip-by-hash. These are small, and they don't change results.
+3. Cropping windows to their islands, and writing `.water` from the record.
+4. The bake's setup and packing time, from the bake log's lines.
+5. One probe each for b and c against ws580v before either becomes the rule.
