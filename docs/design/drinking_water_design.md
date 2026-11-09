@@ -110,6 +110,7 @@ The game reads baked tiles, not the record, at run time: today only `fresh_m` re
    - `tile_baker` writes a `drink` section per tile: the springs with their flow and temperature, and the reach polylines with regime, width and per-row `q_base_dry`;
    - `tile_terrain_data` reads it;
    - the terrain server's `water_source` builds the rows from it.
+2b. **Brooks by regime, as built (9 Nov 2026, `docs/design/drinking_water_step2b_design.md`):** the record's channel rasters (Sonny #818: `regime`, `width_m`, `below_spring_m`, `spring_q`, `spring_y`) are baked into five tile sections, `drink_regime`, `drink_width`, `drink_below`, `drink_spring_q` and `drink_spring_y` (`water_record.gd encode_drink`). `TileTerrainData.drink_row(k, mean_c)` reads them back as a brook row, and `water_source` gives that row in place of a river or a puddle at any non-lake sample on a channel. A tile baked from a record without the rasters has no drink sections and drinks as in 2a. Ground springs keep the head's flow as their dry flow.
 
 ## 8. Questions for Dave (through the coordinator)
 

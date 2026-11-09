@@ -32,6 +32,9 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 const SetupCacheScript := preload("res://src/worldgen/tile/setup_cache.gd")
 const RECORD_FIELDS := ["ground", "water_level", "water_class", "area_km2", "fresh_m"]   # the rasters _bake_from_record reads
+# The record's channel rasters for the drink (docs/design/drinking_water_step2b_design.md 2): read when the record has them all, and baked into
+# the tile's drink_* sections. A record without them bakes as before, and its tiles have no drink sections.
+const DRINK_FIELDS := ["regime", "width_m", "below_spring_m", "spring_q", "spring_y"]
 
 var settings
 var tile_rules: Dictionary = {}
@@ -163,7 +166,12 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0, only_tiles: A
 # the threads read it at once (water_record.gd prepare). Does nothing without a record.
 func prepare_record(tiles: Array) -> void:
 	if record != null:
-		record.prepare(tiles, RECORD_FIELDS)
+		record.prepare(tiles, RECORD_FIELDS + (DRINK_FIELDS if record_has_drink() else []))
+
+
+# Whether the record has every drink raster (DRINK_FIELDS) in its field table.
+func record_has_drink() -> bool:
+	return record != null and DRINK_FIELDS.all(func(field: String) -> bool: return record.fields.has(field))
 
 
 # Drainage (in 8 m cells) at which a stream counts as a river.
@@ -436,6 +444,10 @@ func _bake_from_record(tile: Vector2i, n: int, core: int, origin_sx: int, origin
 	var codes: PackedFloat32Array = record.frame_and_gaps(tile, margin, "water_class")[0]   # already the game's table ids (water_record.gd code_map)
 	var area_km2: PackedFloat32Array = record.frame_and_gaps(tile, margin, "area_km2")[0]
 	water.fresh_m = record.frame_and_gaps(tile, margin, "fresh_m")[0]
+
+	if record_has_drink():
+		for field in DRINK_FIELDS:
+			water.drink[field] = record.frame_and_gaps(tile, margin, field)[0]
 	var rect: Rect2 = Rect2(Vector2(float(origin_sx), float(origin_sz)) * spacing_m, Vector2(float(n - 1), float(n - 1)) * spacing_m)
 	var reaches: Array = record.reaches_in(rect)
 	var heads: Array = record.heads_in(rect)
@@ -562,6 +574,10 @@ func _finish(tile: Vector2i, water, origin: Vector2i, spacing_m: float, fresh_po
 	# water_record.gd; animals' near_fresh_water_m habitats read it from the tile file's fresh_m section).
 	# A tile from the record brings the record's own distance (it counts the springs that run in the dry season, record.py).
 	water.fresh_m = crop(water.fresh_m if water.fresh_m.size() == n * n else WaterRecordScript.fresh_distance(water.water_class, n, spacing_m), n, core)
+
+	for field in water.drink.keys():
+		water.drink[field] = crop(water.drink[field], n, core)
+
 	water.water_class = crop(water.water_class, n, core)
 	water.water_surface = crop(water.water_surface, n, core)
 	water.flow = crop(water.flow, n, core)

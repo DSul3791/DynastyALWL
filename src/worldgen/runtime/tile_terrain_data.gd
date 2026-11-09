@@ -56,6 +56,14 @@ var _near_mutex: Mutex = Mutex.new()
 var water_surface: PackedFloat32Array = PackedFloat32Array()   # NAN = no water above sea level
 var biome: PackedByteArray = PackedByteArray()
 var moisture: PackedByteArray = PackedByteArray()
+# The drink's channels (drink_* sections, drinking_water_step2b_design.md 2), kept only on the channel samples: _drink_k is their sample
+# indices in order, and the other arrays hold the raw section values at the same places (water_record.gd encode_drink). Empty: no sections.
+var _drink_k: PackedInt32Array = PackedInt32Array()
+var _drink_regime: PackedByteArray = PackedByteArray()
+var _drink_width: PackedByteArray = PackedByteArray()
+var _drink_below: PackedInt32Array = PackedInt32Array()
+var _drink_q: PackedInt32Array = PackedInt32Array()
+var _drink_y: PackedInt32Array = PackedInt32Array()
 var fresh_m: PackedFloat32Array = PackedFloat32Array()   # distance (m) to perennial fresh water per sample (fresh_m section, water_record.gd); empty in tiles baked before it
 var flora_seed: int = 0
 
@@ -150,6 +158,7 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	moisture = maps["moisture"]
 	var fresh: Dictionary = TileFileScript.read_section(path, table, "fresh_m")   # optional: tiles baked before Stage E have none
 	fresh_m = WaterRecordScript.decode_fresh(fresh["raw"]) if fresh["ok"] and fresh["raw"].size() == samples * samples else PackedFloat32Array()
+	_load_drink(path, table)
 
 	var lists: Dictionary = {}
 
@@ -474,6 +483,100 @@ func fresh_water_m(x: float, z: float) -> float:
 		return NAN
 
 	return fresh_m[nearest(x, z)]
+
+
+# The drink sections, optional: tiles baked before step 2b, or from a record without the channel rasters, have none. Only the channel samples
+# are kept, found with PackedByteArray.find for each regime (the scan is the engine's, not a loop over every sample here).
+func load_drink_sections(raw: Dictionary) -> void:
+	var count: int = samples * samples
+	_drink_k = PackedInt32Array()
+	var regime: PackedByteArray = raw.get("drink_regime", PackedByteArray())
+
+	if regime.size() != count:
+		return
+
+	for name in ["drink_width", "drink_below", "drink_spring_q", "drink_spring_y"]:
+		if raw.get(name, PackedByteArray()).size() != count * (1 if name == "drink_width" else 2):
+			return
+
+	for r in [1, 2, 3]:
+		var k: int = regime.find(r)
+
+		while k >= 0:
+			_drink_k.append(k)
+			k = regime.find(r, k + 1)
+
+	_drink_k.sort()
+	var n: int = _drink_k.size()
+	_drink_regime.resize(n)
+	_drink_width.resize(n)
+	_drink_below.resize(n)
+	_drink_q.resize(n)
+	_drink_y.resize(n)
+	var width: PackedByteArray = raw["drink_width"]
+	var below: PackedByteArray = raw["drink_below"]
+	var q: PackedByteArray = raw["drink_spring_q"]
+	var y: PackedByteArray = raw["drink_spring_y"]
+
+	for index in n:
+		var k: int = _drink_k[index]
+		_drink_regime[index] = regime[k]
+		_drink_width[index] = width[k]
+		_drink_below[index] = below[k] | (below[count + k] << 8)
+		_drink_q[index] = q[k] | (q[count + k] << 8)
+		var h: int = y[k] | (y[count + k] << 8)
+		_drink_y[index] = h - 65536 if h >= 32768 else h
+
+
+func _load_drink(path: String, table: Array) -> void:
+	var raw: Dictionary = {}
+
+	for name in ["drink_regime", "drink_width", "drink_below", "drink_spring_q", "drink_spring_y"]:
+		var section: Dictionary = TileFileScript.read_section(path, table, name)
+
+		if not section["ok"]:
+			_drink_k = PackedInt32Array()
+			return
+
+		raw[name] = section["raw"]
+
+	load_drink_sections(raw)
+
+
+# The brook row (DrinkRules) at sample k, or {} off the channels or with no drink sections. mean_c(height) is the year mean there (the
+# caller's climate zone), for the governing spring's water. With no spring above (below_spring_m INF) the row has no spring_c and the
+# brook's water is the air's.
+func drink_row(k: int, mean_c: Callable) -> Dictionary:
+	if _drink_k.is_empty():
+		return {}
+
+	var index: int = _drink_k.bsearch(k)
+
+	if index >= _drink_k.size() or _drink_k[index] != k:
+		return {}
+
+	var regime: int = _drink_regime[index]
+	var row: Dictionary = {
+		"kind": "brook",
+		"regime": regime,
+		"dry_ok": regime == 1,
+		"below_spring_m": INF,
+		"q_m3_s": 0.0,
+		"width_m": float(_drink_width[index]) * WaterRecordScript.DRINK_WIDTH_STEP_M,
+	}
+	var below: int = _drink_below[index]
+
+	if below != WaterRecordScript.DRINK_NONE and _drink_q[index] > 0:
+		var spring_y: float = float(_drink_y[index]) * WaterRecordScript.DRINK_Y_STEP_M
+		row["below_spring_m"] = float(below) * WaterRecordScript.DRINK_BELOW_STEP_M
+		row["q_m3_s"] = pow(10.0, float(_drink_q[index]) / WaterRecordScript.DRINK_Q_CODES_PER_DECADE - 4.0)
+		row["spring_c"] = float(mean_c.call(spring_y))
+
+	return row
+
+
+func has_drink() -> bool:
+	return not _drink_k.is_empty()
 
 
 func wet_at(x: float, z: float) -> float:
