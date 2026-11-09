@@ -1566,11 +1566,7 @@ func _spawn_check(settings, world_dir: String, directory: String, tile_limits: D
 	var center_i: int = int(round((spawn.x - origin.x) / spacing))
 	var center_j: int = int(round((spawn.y - origin.y) / spacing))
 	var reach: int = int(ceil(ring / spacing))
-	var low: float = INF
-	var high: float = -INF
-	var steepest: float = 0.0
 	var wet: int = 0
-	var count: int = 0
 
 	for dj in range(-reach, reach + 1):
 		for di in range(-reach, reach + 1):
@@ -1583,19 +1579,10 @@ func _spawn_check(settings, world_dir: String, directory: String, tile_limits: D
 			if i < 0 or j < 0 or i + 1 >= n or j + 1 >= n:
 				continue
 
-			var h: float = heights[j * n + i]
-			low = minf(low, h)
-			high = maxf(high, h)
-			count += 1
-
 			if water[j * n + i] != 0:
 				wet += 1
 
-			steepest = maxf(steepest, rad_to_deg(atan(absf(heights[j * n + i + 1] - h) / spacing)))
-			steepest = maxf(steepest, rad_to_deg(atan(absf(heights[(j + 1) * n + i] - h) / spacing)))
-
-	_bound_row(title + " max slope in %.0f m" % ring, steepest, tile_limits["spawn_max_slope_deg"], true, "%.1f deg over %d samples (8 m map)" % [steepest, count])
-	_bound_row(title + " height range", high - low, tile_limits["spawn_range_m"], true, "%.2f m (%.2f to %.2f)" % [high - low, low, high])
+	# No slope or height-range check on the spawn site (9 Nov 2026: nothing is checked from the spawn); the spawn pad that made them pass is gone (#803).
 	_bound_row(title + " water samples", float(wet), tile_limits["spawn_max_water_cells"], true, "%d" % wet)
 
 	if _spawn_search_m > 0.0:
