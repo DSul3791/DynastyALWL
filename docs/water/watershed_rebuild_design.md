@@ -420,7 +420,7 @@ Every check runs on Dave's PC (Dino or David4), never in the cloud.
 
 Per Dave, these are listed, not fixed now:
 - **Spawn point** (`spawn_point.gd`): must be re-chosen on the new ground with island_checks `--spawn-search`.
-- **Caves and dens in `tile_sites.gd`**: goblin dens and bear caves are placed from spring caves. With far fewer cave springs, den placement needs a new source (dry caves in the same rock).
+- **Caves and dens in `tile_sites.gd`**: goblin dens and bear caves are placed from spring caves. With far fewer cave springs, den placement needs a new source (dry caves in the same rock). *Answered 9 Nov 2026 in [cave_dens_after_rebuild_design.md](../design/cave_dens_after_rebuild_design.md): bears never denned in caves, and goblin dens already take any inland cave; the open part is how many spring caves with a dry branch the record leaves, which is to be measured.*
 - **Climate, biomes and flora**: these read water class and flow, which change meaning and values (wetland types are new).
 - **Ores and placer deposits**: placer gold follows rivers and must follow the new network.
 - **Waterfalls, water sounds, cave streams**: must read the record (section 3E). Until then they may draw in the wrong places.
