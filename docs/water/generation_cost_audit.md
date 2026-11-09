@@ -182,6 +182,18 @@ Even today a first full world fits in one night: about 6 h, against Dave's limit
 4. The bake's setup and packing time, from the bake log's lines.
 5. One probe each for b and c against ws580v before either becomes the rule.
 
+**As built, the chain part (9 Nov):**
+- **Evolve stops at 100 kyr.** `params.json` `evolve.years` is 100,000, and the snapshots after 50 kyr are gone. glacial.py reads the evolve folder itself; a run writes no snapshot at its last step.
+- **Same ground expected.** The ground should be the same as the old t100k: only the stop check reads `years`. Dino compares the arrays once, by content, because an `.npz` holds the time it was saved and so its file hash always differs.
+- **The repo's `params.json` is now the accepted run's.** It holds ws580u's params (glacial K ratio 0.667, balance ratio 1.56, rock uplift 0.19 mm/yr, swath below the ice surface off) plus the evolve stop. The chain no longer needs a params file from outside git.
+- **`tools/watershed/run_chain.py` runs the chain** from the exports to the record. A stage is skipped when nothing it depends on has changed, by content hash:
+  - the files it reads;
+  - its code;
+  - the params blocks its code reads;
+  - `world.json`, for the stages that read it.
+
+  Evolve runs on nine threads, and the two exports run side by side. Every stage prints its start and end on the PC clock (README, "The whole chain in one command").
+
 ## 5. Could glacial be replaced by cutting the peak by a set share?
 
 Dave, 9 Nov: "if we know the glacial always cuts the peak height off by x percent why dont we just find the height by seed and reduce it x percent instead of all the glacial or does it serve any other purpose."
