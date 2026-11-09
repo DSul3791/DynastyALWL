@@ -20,6 +20,16 @@ const CREAM := Color(0.96, 0.9, 0.74)
 const CREAM_DIM := Color(0.6, 0.55, 0.45)
 const HEADING := Color(0.95, 0.78, 0.42)             # gold lettering for titles and headings
 
+# The inventory and crafting window (docs/design/INVENTORY_CRAFTING_LOOK.md section 8): the colours above plus these seven.
+# Colour is never the only signal: a missing count also reads "2 / 5", a greyed recipe also says "Needs".
+const SLOT_BG := Color(0.08, 0.05, 0.035)            # a slot, recessed into the wood
+const PARCHMENT := Color(0.93, 0.86, 0.7)            # tooltips, the pinned recipe card, the bulk-button toast
+const INK := Color(0.2, 0.12, 0.07)                  # text on parchment
+const GOOD := Color(0.42, 0.66, 0.3)                   # forest green: craftable, full durability
+const WARN := Color(0.92, 0.66, 0.22)                # amber gold: half durability, nearly over the carry limit
+const BAD := Color(0.75, 0.18, 0.14)                 # heraldic red: missing ingredients, broken, a drop that is refused
+const MAGIC := Color(0.62, 0.72, 1.0)                # cold blue: enchanted items only (magic is the only cold light)
+
 static var _fonts: Dictionary = {}
 
 
@@ -54,6 +64,10 @@ static func text_font() -> Font:
 	return font("EBGaramond-Regular.ttf")
 
 
+static func text_bold_font() -> Font:
+	return font("EBGaramond-SemiBold.ttf")
+
+
 # A dark wood panel with a gold frame (the Esc menu, the title page's settings).
 static func panel_style() -> StyleBoxFlat:
 	var s: StyleBoxFlat = StyleBoxFlat.new()
@@ -68,6 +82,41 @@ static func panel_style() -> StyleBoxFlat:
 	s.content_margin_top = 8.0
 	s.content_margin_bottom = 8.0
 	return s
+
+
+# The inventory window's frame (look doc section 4): calmer than the menu, a 2 px gold edge and 6 px corners, the same deep shadow.
+static func frame_style() -> StyleBoxFlat:
+	var s: StyleBoxFlat = panel_style()
+	s.set_border_width_all(2)
+	s.set_corner_radius_all(6)
+	return s
+
+
+# A parchment card (look doc section 7): tooltips, the pinned recipe, the bulk-button toast. Ink on cream, a thin dim gold edge, a soft shadow.
+static func parchment_style() -> StyleBoxFlat:
+	var s: StyleBoxFlat = StyleBoxFlat.new()
+	s.bg_color = PARCHMENT
+	s.border_color = GOLD_DIM
+	s.set_border_width_all(1)
+	s.set_corner_radius_all(4)
+	s.shadow_color = Color(0.0, 0.0, 0.0, 0.45)
+	s.shadow_size = 10
+	s.shadow_offset = Vector2(0.0, 3.0)
+	s.content_margin_left = 12.0
+	s.content_margin_right = 12.0
+	s.content_margin_top = 8.0
+	s.content_margin_bottom = 8.0
+	return s
+
+
+# Durability colour (look doc section 5): forest green when whole, amber gold at half, heraldic red near broken.
+static func wear_color(fraction: float) -> Color:
+	var f: float = clampf(fraction, 0.0, 1.0)
+
+	if f >= 0.5:
+		return WARN.lerp(GOOD, (f - 0.5) * 2.0)
+
+	return BAD.lerp(WARN, f * 2.0)
 
 
 static func _button_style(bg: Color, border: Color, glow: bool) -> StyleBoxFlat:

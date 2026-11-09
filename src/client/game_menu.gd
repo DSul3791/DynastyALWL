@@ -11,7 +11,6 @@ const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const WaterChoice := preload("res://src/water2/water_choice.gd")
-const MyCharacter := preload("res://src/client/character/my_character.gd")
 const KeyBindingsPage := preload("res://src/client/key_bindings_page.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const TitleArt := preload("res://scenes/title/title_art.gd")
@@ -35,10 +34,10 @@ var _clear_day_switch
 var _fullscreen_switch
 var _voice_switch
 var _damage_switch
+var _motion_switch
 var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
-var _old_body_switch
 var _old_water_switch
 var _admin_mode_switch
 var _cave_button: Button
@@ -173,6 +172,7 @@ func refresh() -> void:
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
 		_damage_switch.set_on(_c.display.damage_numbers)
+		_motion_switch.set_on(DisplaySettingsScript.reduce_motion)
 		_hints_switch.set_on(_c.items == null or _c.items.inner_settings.hints)
 		_dialogue_switch.set_on(_c.items == null or _c.items.inner_settings.dialogue)
 		_clear_day_switch.set_on(_c.weather_look.clear_day)
@@ -301,7 +301,7 @@ func _build_display() -> void:
 	_button(display, "Cave darkness: Dark / Normal", func():
 		_c.display.cave_dark = not _c.display.cave_dark
 		_c._save_display()
-		note.text = "Cave darkness: %s (saved). Dark is pitch black under rock without a torch or fire, Normal leaves 12%% of the daylight." % ("Dark" if _c.display.cave_dark else "Normal"))
+		note.text = "Cave darkness: %s (saved). Dark is pitch black under rock without a torch or fire, Normal leaves %s." % ["Dark" if _c.display.cave_dark else "Normal", "a faint dusk deep in"])
 	_button(display, "Crafting screen text size: change", func():
 		_c.display.text_index = (_c.display.text_index + 1) % _c.display.TEXT_SCALES.size()
 		_c.items.set_text_scale(_c.display.TEXT_SCALES[_c.display.text_index])
@@ -356,6 +356,10 @@ func _build_gameplay() -> void:
 	_damage_switch = _switch_row(gameplay, "Damage numbers", func(on: bool):
 		_c.display.damage_numbers = on
 		_c._save_display())
+	# The inventory's small animations (look doc section 11): on, they become instant changes.
+	_motion_switch = _switch_row(gameplay, "Reduce motion", func(on: bool):
+		DisplaySettingsScript.reduce_motion = on
+		_c._save_display())
 	_temp_button = _button(gameplay, "", func():
 		DisplaySettingsScript.fahrenheit = not DisplaySettingsScript.fahrenheit
 		_c._save_display()
@@ -371,10 +375,6 @@ func _build_gameplay() -> void:
 		WaterChoice.set_old_water(on)
 		note.text = "Water: the %s water runs the next time you press Play (saved)." % ("old" if on else "new"))
 	_old_water_switch.set_on(WaterChoice.old_water())
-	_old_body_switch = _switch_row(gameplay, "Old body (next Play)", func(on: bool):
-		MyCharacter.set_old_body(on)
-		note.text = "Body: the %s body is worn the next time you press Play (saved)." % ("old" if on else "Dynasty"))
-	_old_body_switch.set_on(MyCharacter.old_body())
 	_tunnel_switch = _switch_row(gameplay, "Tunnel collapse (admin)", func(on: bool):
 		_c.net.tunnel_setting.rpc_id(1, on, _c.tunnel_cave_in_s))
 	_cave_button = _button(gameplay, "Cave-in time", func():

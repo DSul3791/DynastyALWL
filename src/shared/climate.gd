@@ -7,12 +7,19 @@ extends RefCounted
 # Weather (temp_c, so snow, breath, the HUD and the server's warmth), ice and snow all use it. Until the record exists the values come
 # from DEFAULTS below; at R6 the record's objects replace them with the same field names. Static helpers only; thread safe.
 
-# The starter island: Fort William at the foot of Ben Nevis (Sonny, A4: about 9 C over the year, a swing of about +-5 C). daily_range_c 8
+# The starter island: Sonny's A4 shape (a swing of about +-5 C). Its sea-level year mean is not fixed here: it follows world.json's
+# latitude curve at the island's grid row (ISLAND_ROW; coordinator 8 Nov 2026, #717 row 21: row 4, about 34 S, 14.2 C, not Fort
+# William's 9 C), and the value below is only the fallback when world.json cannot be read. snow_bias_c (OVERNIGHT_DECISIONS_8NOV.md row 21,
+# one_sky_design.md section 7) is read by the snow and ice layer alone: whether rain falls as snow, and the ice on still water, use the
+# air plus snow_bias_c (starter -5.16 C, so for them the island is the old 9 C at sea level: the ice and snow figures tuned on 9 C, 2.8 cm
+# at the spawn pond and 5.6 cm by #8002, all hold, and the epic peaks stay snowy; row 21 judged about -6, this is its "close to the
+# old 9 C" exactly; coordinator 8 Nov: snow_bias_c = 9.0 minus the row mean); everything else (the HUD, breath, warmth, fire, cold water,
+# cave air, springs, temp_c) reads the plain air. daily_range_c 8
 # is the coordinator's starter value (judged, near the UK's land figures). rain_mm_yr is the island's background rain, carried for the
 # record's shape; the live weather does not read it yet (its wetness stays per zone). The other zones keep the weather's old zone
 # numbers in the same fields until their islands have records.
 const DEFAULTS := {
-	"starter": {"sea_level_mean_c": 9.0, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 2000.0, "spell_amplitude_c": 4.0, "spell_days": [3.0, 6.0], "spell_stream": 31},
+	"starter": {"sea_level_mean_c": 14.16, "seasonal_swing_c": 5.0, "warmest_year_phase": 0.375, "daily_range_c": 8.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 2000.0, "spell_amplitude_c": 4.0, "spell_days": [3.0, 6.0], "spell_stream": 31, "snow_bias_c": -5.16},
 	"desert": {"sea_level_mean_c": 28.0, "seasonal_swing_c": 8.0, "warmest_year_phase": 0.375, "daily_range_c": 14.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 150.0, "spell_amplitude_c": 3.0, "spell_days": [3.0, 6.0], "spell_stream": 32},
 	"transition": {"sea_level_mean_c": 19.0, "seasonal_swing_c": 11.0, "warmest_year_phase": 0.375, "daily_range_c": 10.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 700.0, "spell_amplitude_c": 3.0, "spell_days": [3.0, 6.0], "spell_stream": 33},
 	"arctic": {"sea_level_mean_c": -9.0, "seasonal_swing_c": 14.0, "warmest_year_phase": 0.375, "daily_range_c": 5.0, "lapse_c_per_km": 6.5, "rain_mm_yr": 400.0, "spell_amplitude_c": 3.0, "spell_days": [3.0, 6.0], "spell_stream": 34},
@@ -35,13 +42,23 @@ const DAY_WARMEST_HOUR := 15.0            # mid afternoon
 
 # Latitude comes from the world grid (Dave, 8 Nov): 21 x 21 tiles, the centre row (world.json `equator_tile_row`) is the equator.
 # North is -Z, so a row with a larger number than the equator's lies south, and its latitude is negative. Read by the sun and moon
-# (and the fog's sunrise) with --one-sky.
+# (and the fog's sunrise).
 # world_settings.gd latitude_for_z runs from 0 at the equator row's centre to 1 at the poles (the wrap seam half the world away), so
 # latitude in degrees is that x 90 (Jamie, 8 Nov), and one row is 90 / 10.5 = 8.57 degrees: the starter row 4's centre is 34.3 S.
 const TILES_Z := 21                       # worlds/base_world/world.json tiles_z
 const DEG_PER_ROW := 90.0 / (float(TILES_Z) * 0.5)
 const STARTER_ROW := 4                    # the starter island's tile row (world.json starter_tiles: [3, 4]; the cave tile 3,4)
 
+
+# Islands whose sea-level year mean comes from world.json's latitude curve (temperature_by_abs_latitude) at the centre of their grid
+# row, the same curve the tiles are baked with (world_settings.gd temperature_for_row_c). The starter's is its tile row (STARTER_ROW,
+# about 34.3 S). The lapse stays the climate's own lapse_c_per_km. The other zones have no island row yet.
+const ISLAND_ROW := {"starter": STARTER_ROW}
+const WORLD_PATH := "res://worlds/base_world/world.json"
+const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
+
+# DEFAULTS with the row means filled in from world.json, built once when the script loads (read-only afterwards, so thread safe).
+static var _islands: Dictionary = _from_world()
 
 # The tile row a world z (metres) lies in: row 0 runs from z 0 to one tile south (+Z), as terrain_client's weather zone counts it.
 static func row_of_z(z_m: float, tile_size_m: float) -> int:
@@ -68,7 +85,22 @@ static func local_year_phase(year_phase: float, row: int, equator_row: int = 0) 
 
 
 static func of_zone(group: String) -> Dictionary:
-	return DEFAULTS.get(ISLAND_OF_ZONE.get(group, "starter"), DEFAULTS["starter"])
+	return _islands.get(ISLAND_OF_ZONE.get(group, "starter"), _islands["starter"])
+
+
+# DEFAULTS, with each ISLAND_ROW island's sea_level_mean_c from world.json's curve at its row (the DEFAULTS value when it cannot be read).
+static func _from_world() -> Dictionary:
+	var islands: Dictionary = DEFAULTS.duplicate(true)
+	var errors: Array = []
+	var settings = WorldSettingsScript.load_from_file(WORLD_PATH, errors) if FileAccess.file_exists(WORLD_PATH) else null
+
+	if settings == null:
+		return islands
+
+	for island in ISLAND_ROW:
+		islands[island]["sea_level_mean_c"] = settings.temperature_for_row_c(int(ISLAND_ROW[island]), 0.0)
+
+	return islands
 
 
 # The spell (C) on this island at game time `game_s`: -spell_amplitude_c .. +spell_amplitude_c, smooth, the same for every caller with the same seed.
@@ -86,6 +118,11 @@ static func spell_c(climate: Dictionary, seed_value: int, game_s: float) -> floa
 static func mean_c(climate: Dictionary, year_phase: float, altitude_m: float = 0.0) -> float:
 	var seasonal: float = float(climate["seasonal_swing_c"]) * cos(TAU * (year_phase - float(climate["warmest_year_phase"])))
 	return float(climate["sea_level_mean_c"]) + seasonal - float(climate["lapse_c_per_km"]) * maxf(altitude_m, 0.0) / 1000.0
+
+
+# What the snow and ice layer adds to the air (C): the island's snow_bias_c (0 where it has none).
+static func snow_bias_c(climate: Dictionary) -> float:
+	return float(climate.get("snow_bias_c", 0.0))
 
 
 # The year's mean air (C) at `altitude_m`: no season and no day and night swing. Still cave air sits at it (Jamie's caves page, #664).

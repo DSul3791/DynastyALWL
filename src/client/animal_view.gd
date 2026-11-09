@@ -9,6 +9,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const MAX_DRAWN := 30
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
+const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -424,6 +425,62 @@ func trail_points(from: Vector3, max_m: float) -> Array:
 
 func drawn_count() -> int:
 	return _bodies.size()
+
+
+# Where the nearest animals breathe from, for breath in the cold (breath_look.gd, art_weather_light.md 8.4): up to `most`
+# shown bodies within radius_m of `centre`, nearest first, each as [key, mouth, forward]. The mouth is the head bone (a
+# rigged model) or the "Head" node (a code-built body) a little ahead along the body; a body with neither does not breathe.
+# The head is looked up once per body and kept in its row.
+func breath_points(centre: Vector3, radius_m: float, most: int) -> Array:
+	var near: Array = []
+
+	for id in _bodies:
+		var node: Node3D = _bodies[id]["node"]
+
+		if node == null or not is_instance_valid(node) or not node.is_visible_in_tree():
+			continue
+
+		var d: float = node.global_position.distance_to(centre)
+
+		if d <= radius_m:
+			near.append([d, id])
+
+	near.sort_custom(func(x: Array, y: Array) -> bool: return float(x[0]) < float(y[0]))
+	var out: Array = []
+
+	for pair in near.slice(0, most):
+		var b: Dictionary = _bodies[pair[1]]
+		var node: Node3D = b["node"]
+
+		if not b.has("breath_head"):
+			var bone: Array = BreathLook.head_bone_of(node)
+
+			if bone.is_empty():
+				b["breath_head"] = node.find_child("Head", true, false)
+			else:
+				b["breath_head"] = bone
+
+		var head: Variant = b["breath_head"]
+		var forward: Vector3 = -node.global_transform.basis.z
+		forward.y = 0.0
+		forward = forward.normalized() if forward.length() > 0.01 else Vector3.FORWARD
+		var at: Vector3
+
+		if head is Array:
+			var sk: Skeleton3D = head[0]
+
+			if not is_instance_valid(sk):
+				continue
+
+			at = sk.global_transform * sk.get_bone_global_pose(int(head[1])).origin
+		elif head != null and is_instance_valid(head):
+			at = (head as Node3D).global_position
+		else:
+			continue
+
+		out.append(["animal_%d" % int(pair[1]), at + forward * 0.1, forward])
+
+	return out
 
 
 func _process(delta: float) -> void:

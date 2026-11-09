@@ -44,6 +44,8 @@ var river_network                    # the world's rivers (RiverNetwork)
 var erosion_delta                    # whole-island pre-carve (ErosionDelta), or null: then each tile erodes itself
 var use_cache: bool = false         # bake_tiles.gd sets this (unless --no-cache): reuse the once-per-run setup (setup_cache.gd)
 var margin: int = 80                 # samples built beyond each tile edge, then cropped
+var record = null                    # the island water record (WaterRecord), when world_dir/record holds one; null: none
+var _record_mutex: Mutex = Mutex.new()   # bake_tiles.gd bakes tiles on threads that share this baker; the record's cache is not shared safely
 
 
 # Loads everything a bake needs. Returns an empty string when it worked,
@@ -96,6 +98,21 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 
 	if not table_problems.is_empty():
 		return "\n".join(table_problems)
+
+	# The island water record (watershed rebuild R6, docs/water/watershed_rebuild_design.md R6 item 5): where world_dir/record holds
+	# one, every tile inside its window is baked from it, ground and water, and the passes below are not run there. Tiles outside the
+	# window are baked by the passes. There is no setting: the record's window decides, and git is the way back (the tiles and the
+	# water files are tracked). A record the reader refuses (incomplete, unknown version, bad field table) stops the setup.
+	record = null
+
+	if FileAccess.file_exists(world_dir + "/record/manifest.json"):
+		record = WaterRecordScript.new()
+		var refused: String = record.open(world_dir + "/record")
+
+		if refused != "":
+			return "water record: " + refused
+
+		print("Water record %s: tiles %s are baked from it" % [str(record.manifest.get("record_sha", "?")).left(8), str(record.tile_rect)])
 
 	var plan: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/tile_plan.json"))
 
@@ -170,6 +187,11 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	var n: int = core + 2 * margin
 	var origin_sx: int = tile.x * tile_samples - margin
 	var origin_sz: int = tile.y * tile_samples - margin
+
+	# Export tools (raw_only) always read the world function: the watershed model is made from it.
+	if record != null and not raw_only and record.has_tile(tile.x, tile.y):
+		return _bake_from_record(tile, n, core, origin_sx, origin_sz, timings)
+
 	var clock: int = Time.get_ticks_msec()
 	var frame_height = TileHeightScript.new()
 	frame_height.setup(settings, elevation, tile_rules)
@@ -254,7 +276,7 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	timings["rolling"] = Time.get_ticks_msec() - clock
 
 
-	# Pond levels no higher than their spill, after every pass that cuts or raises ground (tile_pond_level.gd).
+	# Pond levels no higher than their spill, after the passes that shape the ground (tile_pond_level.gd); again below, after the mend and the mouths.
 	clock = Time.get_ticks_msec()
 	var pond_levels: Dictionary = TilePondLevelScript.clamp_to_spill(water.heights, water.water_class, water.water_surface, n)
 	timings["pond_levels"] = Time.get_ticks_msec() - clock
@@ -287,6 +309,32 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 
 	print("  river corners (tile %s): %d cells made river" % [str(tile), corners])
 
+	# Pond levels again, after the mend's and the mouths' cuts (Sonny, 8 Nov 2026). Those passes run after the first clamp and can cut a pond's outlet
+	# below its painted level: on the 84f0e2f5 bake, test_head_pond_fill spring 1889014 sat in a coastal pond painted at 6.0 m beside river ground at
+	# 0.25 m, which the settle could never fill. A pond lowered here can leave a brook short of its water, so the mend and the corners run again, up to
+	# three rounds, until no pond is lowered.
+	clock = Time.get_ticks_msec()
+
+	for round_index in range(3):
+		var again: Dictionary = TilePondLevelScript.clamp_to_spill(water.heights, water.water_class, water.water_surface, n)
+		print("  pond levels after the cuts, round %d (tile %s): %d lowered to their spill, %d cells turned dry" % [round_index + 1, str(tile), again["lowered"], again["dried"]])
+
+		if again["lowered"] == 0:
+			break
+
+		corners += TileRiverMendScript.join_corners(water.heights, water.water_class, water.water_surface, n)
+		var mend_again: Dictionary = TileRiverMendScript.mend(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m)
+		print("  river mend again (tile %s): %d rivers cut off, %d dug through, %d cells made river" % [str(tile), mend_again["pieces"], mend_again["mended"], mend_again["cells"]])
+
+		for pass_index in range(4):
+			var joined_again: int = TileRiverMendScript.join_corners(water.heights, water.water_class, water.water_surface, n)
+			corners += joined_again
+
+			if joined_again == 0:
+				break
+
+	timings["pond_levels"] += Time.get_ticks_msec() - clock
+
 	# The land beside a river slopes up from it, so nothing lies lower than the river and turns to wetland (Dave 6 Nov 2026, tile_valley_drain.gd).
 	clock = Time.get_ticks_msec()
 	var drained: Dictionary = TileValleyDrainScript.apply(water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, margin, tile_rules["water"].get("valley_drain", {}))
@@ -296,16 +344,108 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	var hollows: Dictionary = TileValleyDrainScript.drain_hollows(water.heights, water.water_class, n, tile_rules["water"].get("valley_drain", {}))
 	print("  dry hollows (tile %s): %d cells raised to their spill, up to %.1f m (%d ms)" % [str(tile), hollows["cells"], hollows["most_m"], Time.get_ticks_msec() - clock])
 
-
-	clock = Time.get_ticks_msec()
-	var climate = TileClimateScript.new()
-	climate.setup(settings, tile_rules, tables)
-	climate.use_world_air(world_air)
 	var fresh_points: PackedVector2Array = PackedVector2Array()
 
 	for guide in river_guides:
 		fresh_points.append_array(guide["points"])
 
+	return _finish(tile, water, Vector2i(origin_sx, origin_sz), frame_height.spacing_m, fresh_points, {"raw_heights": raw_heights, "eroded_heights": eroded}, timings)
+
+
+# A tile inside the water record's window (R6): the ground, water level, water class, drainage and distance to fresh water all come from
+# the record (record.py writes them on Dave's PC from the watershed chain), on the same frame as the passes use, so neighbouring tiles
+# agree along their edges as before. Nothing is cut, raised or stamped here: the record's ground is the final ground (its own flood check
+# found no closed cell outside a lake, or listed each one). Ledges, scree and rolling ground are not added, since they would change the
+# ground the record's water was laid on. Climate, land types, geology and sites follow as for every tile.
+func _bake_from_record(tile: Vector2i, n: int, core: int, origin_sx: int, origin_sz: int, timings: Dictionary) -> Dictionary:
+	var clock: int = Time.get_ticks_msec()
+	var spacing_m: float = float(settings.map_spacing_m)
+	var total: int = n * n
+
+	if record.samples != core:
+		return {"error": "the water record has %d samples per tile edge, the game %d" % [record.samples, core], "timings": timings}
+
+	var water = TileWaterScript.new()
+	water.setup(settings, tile_rules)
+	water.samples = n
+	water.spacing_m = spacing_m
+	_record_mutex.lock()
+	var missing: String = ""
+
+	for name in ["ground", "water_level", "water_class", "area_km2", "fresh_m"]:
+		if missing == "" and record.raster(tile.x, tile.y, name).is_empty():
+			missing = record.error_of
+
+	if missing != "":
+		_record_mutex.unlock()
+		return {"error": "water record: " + missing, "timings": timings}
+
+	water.heights = record.frame(tile, margin, "ground")
+	var gaps: int = record.frame_gaps
+	var level: PackedFloat32Array = record.frame(tile, margin, "water_level")
+	var codes: PackedFloat32Array = record.frame(tile, margin, "water_class")   # already the game's table ids (water_record.gd code_map)
+	var area_km2: PackedFloat32Array = record.frame(tile, margin, "area_km2")
+	water.fresh_m = record.frame(tile, margin, "fresh_m")
+	var rect: Rect2 = Rect2(Vector2(float(origin_sx), float(origin_sz)) * spacing_m, Vector2(float(n - 1), float(n - 1)) * spacing_m)
+	var reaches: Array = record.reaches_in(rect)
+	_record_mutex.unlock()
+
+	water.water_class = PackedByteArray()
+	water.water_class.resize(total)
+	water.water_surface = PackedFloat32Array()
+	water.water_surface.resize(total)
+	water.flow = PackedFloat32Array()
+	water.flow.resize(total)
+	var cells_per_km2: float = 1.0e6 / (spacing_m * spacing_m)
+	var unknown: int = 0
+
+	for k in total:
+		var id: int = int(codes[k])
+
+		if id == 255:
+			unknown += 1
+			id = 0
+
+		water.water_class[k] = id
+		# A wet sample with no level of its own (a wetland: water at the ground) stands at its ground.
+		water.water_surface[k] = level[k] if not is_nan(level[k]) else water.heights[k]
+		water.flow[k] = area_km2[k] * cells_per_km2
+
+	if unknown > 0:
+		return {"error": "water record: %d samples of tile %s carry a water code the game's table lacks" % [unknown, str(tile)], "timings": timings}
+
+	timings["record"] = Time.get_ticks_msec() - clock
+	print("  water record (tile %s): ground and water from the record (%d frame samples beyond the window repeat its edge, %d ms)" % [str(tile), gaps, timings["record"]])
+
+	# The climate's distance to fresh water: the lines of the record's rivers (reaches draining at least river_start_km2, as the world
+	# river network's guides in the passes' bake) in world metres, the same in every frame that holds them.
+	var fresh_points: PackedVector2Array = PackedVector2Array()
+	var river_km2: float = float(tile_rules["water"]["river_start_km2"])
+
+	for reach in reaches:
+		if float(reach.get("area_km2", 0.0)) < river_km2:
+			continue
+
+		for point in reach.get("polyline", []):
+			fresh_points.append(Vector2(float(point[0]), float(point[2])))
+
+	var ground: PackedFloat32Array = crop(water.heights, n, core)
+	return _finish(tile, water, Vector2i(origin_sx, origin_sz), spacing_m, fresh_points, {"raw_heights": ground, "eroded_heights": ground}, timings)
+
+
+# Climate, land types, geology and sites on the finished ground and water, then everything cropped to the tile: the same for a tile
+# baked by the passes above and one baked from the water record. fresh_points: river line points in world metres for the climate's
+# distance to fresh water (the same in every frame that holds them). before: the tile's raw_heights and eroded_heights for the result.
+func _finish(tile: Vector2i, water, origin: Vector2i, spacing_m: float, fresh_points: PackedVector2Array, before: Dictionary, timings: Dictionary) -> Dictionary:
+	var n: int = water.samples
+	var core: int = n - 2 * margin
+	var origin_sx: int = origin.x
+	var origin_sz: int = origin.y
+	var starter: Dictionary = starter_info(tile)
+	var clock: int = Time.get_ticks_msec()
+	var climate = TileClimateScript.new()
+	climate.setup(settings, tile_rules, tables)
+	climate.use_world_air(world_air)
 	climate.use_world_fresh_water(fresh_points)
 	# Wetlands and dry-season beds (record classes, Stage E M1 step 2) are ground to the climate and the land types; their own biome and
 	# soil are laid on after (water_record.gd). With the rules' classes 0 to 3 this is the same array, so a rules bake is unchanged.
@@ -320,8 +460,8 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	for name in ["marsh", "alpine_meadow", "bare_rock", "mixed_forest", "boreal_forest", "temperate_grassland", "temperate_forest", "heath"]:
 		land_ids[name] = tables.id_of("biomes", name)
 
-	var land_counts: Dictionary = TileLandTypesScript.apply(climate.biome, water.heights, land_class, water.water_surface, n, frame_height.spacing_m, tile_rules.get("land_types", {}), land_ids)
-	var field_cells: int = TileLandTypesScript.farmland(climate.biome, climate.fertility, water.heights, land_class, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules.get("land_types", {}), land_ids)
+	var land_counts: Dictionary = TileLandTypesScript.apply(climate.biome, water.heights, land_class, water.water_surface, n, spacing_m, tile_rules.get("land_types", {}), land_ids)
+	var field_cells: int = TileLandTypesScript.farmland(climate.biome, climate.fertility, water.heights, land_class, n, spacing_m, origin_sx, origin_sz, tile_rules.get("land_types", {}), land_ids)
 	var wet_land_cells: int = WaterRecordScript.apply_wet_land(water.water_class, climate.biome, climate.soil, tables)
 
 	if wet_land_cells > 0:
@@ -345,10 +485,11 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	water.starter_path = shifted
 	water.heights = crop(water.heights, n, core)
 	# Where the sea is far enough for a spring cave, worked out on the whole frame before it is cropped (tile_sites.gd inland_mask).
-	var inland: PackedByteArray = crop(TileSitesScript.inland_mask(water.water_class, n, frame_height.spacing_m, float(tile_rules["sites"].get("spring_cave", {}).get("min_sea_m", 0.0))), n, core)
+	var inland: PackedByteArray = crop(TileSitesScript.inland_mask(water.water_class, n, spacing_m, float(tile_rules["sites"].get("spring_cave", {}).get("min_sea_m", 0.0))), n, core)
 	# Distance to perennial fresh water, on the whole frame before it is cropped so the tile edges see the water beyond them (Stage E readers,
 	# water_record.gd; animals' near_fresh_water_m habitats read it from the tile file's fresh_m section).
-	water.fresh_m = crop(WaterRecordScript.fresh_distance(water.water_class, n, frame_height.spacing_m), n, core)
+	# A tile from the record brings the record's own distance (it counts the springs that run in the dry season, record.py).
+	water.fresh_m = crop(water.fresh_m if water.fresh_m.size() == n * n else WaterRecordScript.fresh_distance(water.water_class, n, spacing_m), n, core)
 	water.water_class = crop(water.water_class, n, core)
 	water.water_surface = crop(water.water_surface, n, core)
 	water.flow = crop(water.flow, n, core)
@@ -360,10 +501,10 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	climate.moisture = crop(climate.moisture, n, core)
 	climate.temperature_c = crop(climate.temperature_c, n, core)
 	climate.samples = core
-	var eroded_heights: PackedFloat32Array = eroded.duplicate()
+	var eroded_heights: PackedFloat32Array = before["eroded_heights"].duplicate()
 	var height = TileHeightScript.new()
 	height.samples = core
-	height.spacing_m = frame_height.spacing_m
+	height.spacing_m = spacing_m
 	height.origin_sx = origin_sx + margin
 	height.origin_sz = origin_sz + margin
 	height.heights = water.heights
@@ -385,7 +526,7 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 	return {
 		"tile": tile,
 		"height": height,
-		"raw_heights": raw_heights,
+		"raw_heights": before["raw_heights"],
 		"eroded_heights": eroded_heights,
 		"water": water,
 		"climate": climate,
@@ -400,6 +541,10 @@ func bake(tile: Vector2i, raw_only: bool = false, landform_only: bool = false) -
 func bake_to_file(tile: Vector2i, directory: String = "") -> Dictionary:
 	const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 	var result: Dictionary = bake(tile)
+
+	if result.has("error"):
+		return {"ok": false, "error": str(result["error"]), "path": "", "bytes": 0, "timings": result.get("timings", {})}
+
 	var packed: Dictionary = TileFileScript.pack_tile(
 		settings, tile, plan_cell(tile), result["water"], result["climate"], result["geology"], result["sites"], river_start_cells()
 	)

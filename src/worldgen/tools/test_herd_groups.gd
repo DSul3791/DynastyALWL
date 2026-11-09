@@ -100,6 +100,27 @@ func _init() -> void:
 	run(a, 120.0)
 	check(spread(a) < 16.0, "it regroups once safe (widest %.1f m)" % spread(a))
 
+	# In fog the leader's drift keeps to the wood edge (animals_in_fog_server.md 4.5): a wood west of x -10, so open ground from x -10 to 5 has
+	# crowns within 15 m. From x 0 an 8 m drift east would leave the edge; with fog it tries other headings until one keeps it.
+	var f = make(true)
+	var fog_lead: Dictionary = f.animals[f._herds[77][0]]
+	f.canopy = func(p: Vector3) -> bool: return p.x < -10.0
+	f._fog_cfg()["on"] = true
+	f._fog_cfg()["edge_tries"] = 12
+	f.cfg["groups"]["drift_m"] = 8.0
+	f._read_weather({"wind": 0.0, "mist": 1.0, "mist_top_m": 50.0}, 0.1)
+	var edge_kept: int = 0
+
+	for k in 20:
+		fog_lead["home"] = Vector3(0.0, 10.0, 0.0)
+		fog_lead["drift_dir"] = 0.0   # heading east, off the edge
+		f._group_target(fog_lead, f.species_def("deer"))
+
+		if f.fog_edge_ok(fog_lead["home"]):
+			edge_kept += 1
+
+	check(f.fog_edge_wanted(f.species_def("deer")) and edge_kept == 20, "in fog the leader's drift stays on the wood edge (%d of 20)" % edge_kept)
+
 	# Off: the old herd pull only.
 	var b = make(false)
 	run(b, 5.0)

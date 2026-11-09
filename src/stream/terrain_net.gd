@@ -35,7 +35,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 97   # 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
+const PROTOCOL_VERSION := 100  # 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -82,6 +82,11 @@ signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
 signal road_marker_reached(at: Vector3)
 signal chest_received(id: int, bytes: PackedByteArray)
+signal chest_info_received(id: int, keep_out: bool, may_set: bool)
+signal craft_stock_received(numbers: PackedInt32Array, counts: PackedInt32Array)
+signal favourites_received(flags: PackedByteArray)
+signal hotbar_received(keys: PackedInt32Array)
+signal bulk_done_received(kind: int, stacks: int, containers: int, ids: PackedInt32Array)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
@@ -189,6 +194,11 @@ const ACT_RESET_EDITS := 40  # admin only: delete every saved dig and fill (coll
 const ACT_DUMP_WATER := 41   # at = the point (admin only): the server writes the live water cells in a 40 m box there to a text file in its store
 const ACT_LAND_TYPES := 46   # at = the point (admin only): the server classifies the land round it from the live water (lake, river, marsh, swamp, bog, floodplain), checks the springs near it and writes land_types_X_Z.txt (water land types, R1)
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
+const ACT_CHEST_KEEP_OUT := 64   # a = container world id, b = 1 keep it out of crafting and blueprint sites, 0 let them use it (the owner only, within chest reach; protocol 98)
+const ACT_CRAFT_STOCK := 65      # ask for craft_stock: what a craft may use besides the pack (sent when the crafting window opens and when the pack changes while it is open; protocol 98)
+const ACT_BULK := 66             # a = 0 Take all, 1 Store all (the open container), 2 Stack to nearby (own chests within 12 m holding the item), 3 Sort (the pack and an open chest; b = the sort key: 1 name, 2/3 weight, 4/5 value, 0 name); favourites and pack slots 1 to 10 never move; answered with bulk_done (protocol 99)
+const ACT_FAVOURITE := 67        # a = pack slot, b = 1 favourite, 0 not: bulk buttons and Sort leave a favourite where it is; answered with favourites (protocol 99)
+const ACT_HOTBAR_SET := 68       # a = key 0 to 9 (keys 1 to 9 and 0), b = item number, 0 clears the key; one key per item (putting it on a key takes it off another); answered with hotbar (protocol 100)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -672,6 +682,40 @@ func breath(deciseconds: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func chest_contents(id: int, bytes: PackedByteArray) -> void:
 	chest_received.emit(id, bytes)
+
+
+# The open container's "keep out" tick (protocol 98): true when its owner keeps it out of crafting and blueprint sites, and whether this player may
+# change it (their own storage chest). Sent after chest_contents on opening and after ACT_CHEST_KEEP_OUT.
+@rpc("authority", "call_remote", "reliable")
+func chest_info(id: int, keep_out: bool, may_set: bool) -> void:
+	chest_info_received.emit(id, keep_out, may_set)
+
+
+# What a craft may use besides the pack (protocol 98, docs/design/INVENTORY_CRAFTING_REPORT.md step 2): item numbers and counts lying within 3 m and
+# in the player's own containers within 12 m that are not kept out. Sent on ACT_CRAFT_STOCK, after each craft request and after a keep-out change.
+@rpc("authority", "call_remote", "reliable")
+func craft_stock(numbers: PackedInt32Array, counts: PackedInt32Array) -> void:
+	craft_stock_received.emit(numbers, counts)
+
+
+# The pack's favourites (protocol 99): one byte per pack slot, 1 for a favourite. Sent at the join and whenever a flag changes or a favourite moves.
+@rpc("authority", "call_remote", "reliable")
+func favourites(flags: PackedByteArray) -> void:
+	favourites_received.emit(flags)
+
+
+# The ten hotbar keys (protocol 100): the item number each key holds, 0 none. A key points at the pack slot holding its item (Inventory.key_slot).
+# Sent at the join and whenever a key changes (by hand, or a tool or weapon new in the pack going on the first empty key).
+@rpc("authority", "call_remote", "reliable")
+func hotbar(keys: PackedInt32Array) -> void:
+	hotbar_received.emit(keys)
+
+
+# A bulk button's result (protocol 99), for the toast ("12 stacks into 3 chests") and the glow on each container that took or gave something:
+# kind as ACT_BULK's a, how many stacks moved, how many containers and their world ids.
+@rpc("authority", "call_remote", "reliable")
+func bulk_done(kind: int, stacks: int, containers: int, ids: PackedInt32Array) -> void:
+	bulk_done_received.emit(kind, stacks, containers, ids)
 
 
 # One item gain for the pickup feed (protocol 60): sent to the player who gained it. source: pickup, harvest, craft, quest.

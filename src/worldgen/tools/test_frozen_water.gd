@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Frozen water look (docs/design/frozen_water_look.md, --frozen-water): the numbers the liquid sheets' ice is drawn from, the picture days, the
+# Frozen water look (docs/design/frozen_water_look.md): the numbers the liquid sheets' ice is drawn from, the picture days, the
 # spring open length, the picture switches and the shader's bands.
 #   godot --headless --path . --script res://src/worldgen/tools/test_frozen_water.gd
 
@@ -27,8 +27,6 @@ func at(day: int, hour: float) -> float:
 
 
 func _init() -> void:
-	check(not FrozenWater.on, "the switch is off unless --frozen-water is given")
-
 	# season() is the same loop as cover(): the server's number is unchanged.
 	for t in [at(342, 7.0), at(343, 9.0), at(100, 12.0), at(344, 15.0)]:
 		for alt in [SPAWN_POND_M, SPRING_M]:
@@ -57,7 +55,8 @@ func _init() -> void:
 
 	# Springs: Steve's water temperature and Sonny's open length.
 	var tw: float = FrozenWater.spring_c("temperate", SPRING_M)
-	check(absf(tw - 5.5) < 0.1, "spring #8002 water about 5.5 C, the year's mean (Jamie #739) (%.2f)" % tw)
+	check(absf(tw - 10.7) < 0.1, "spring #8002 water about 10.7 C, the year's mean at 533 m from the grid row's 14.2 C (Jamie #739; #717 row 21) (%.2f)" % tw)
+	tw = 5.5   # Jamie #739's ratios below are for his worked 5.5 C spring
 	var x0: float = FrozenWater.spring_open_m(-4.0, 6.5)
 	check(absf(x0 - 810.0) < 15.0, "Sonny's worked example: open about 810 m on a -4 C night (%.0f)" % x0)
 	check(FrozenWater.spring_open_m(-8.0, 6.5) < x0, "a colder night freezes nearer the spring")

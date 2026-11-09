@@ -1911,7 +1911,7 @@ func _zig(away: Vector2, def: Dictionary) -> Vector3:
 	return Vector3(dir.x, 0.0, dir.y)
 
 
-# Herd groups (docs/design/HERD_GROUPS.md; animals.json "groups", off by default). A herd has one leader, its first living member that
+# Herd groups (docs/design/HERD_GROUPS.md; animals.json "groups", on since Dave's 8 Nov ruling). A herd has one leader, its first living member that
 # is on the ground (a bird flying or perched is passed over). The leader drifts groups.drift_m per graze step on a slow wander, turned
 # by the weather's _upwind_angle (deer and hunters into a light wind, not in a gale, with weather.on); the leader alone keeps any
 # weather cover its home has. Every other member keeps a place round the leader on a spiral (golden angle, spacing x sqrt of its
@@ -1963,8 +1963,20 @@ func _group_target(a: Dictionary, def: Dictionary) -> Vector3:
 	if lead_id == int(a["id"]):
 		var dir: float = float(a.get("drift_dir", rng.randf() * TAU)) + rng.randf_range(-0.6, 0.6)   # luck-exempt: a slow wander
 		dir = _upwind_angle(def, dir)
+		var drift: float = float(g.get("drift_m", 2.0))
+		var next_home: Vector3 = a["home"] + Vector3(cos(dir), 0.0, sin(dir)) * drift
+
+		# In fog the leader's drift keeps to the wood edge too (animals_in_fog_server.md 4.5), as a lone deer's grazing hop does.
+		if fog_edge_wanted(def):
+			for _try in int(_fog_cfg().get("edge_tries", 3)) - 1:
+				if fog_edge_ok(next_home):
+					break
+
+				dir = _upwind_angle(def, rng.randf() * TAU)   # luck-exempt: another heading along the wood edge in fog
+				next_home = a["home"] + Vector3(cos(dir), 0.0, sin(dir)) * drift
+
 		a["drift_dir"] = dir
-		a["home"] = a["home"] + Vector3(cos(dir), 0.0, sin(dir)) * float(g.get("drift_m", 2.0))
+		a["home"] = next_home
 		return a["home"] + Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0))   # luck-exempt: where the leader stops
 
 	var lead: Dictionary = animals[lead_id]

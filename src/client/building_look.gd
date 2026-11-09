@@ -8,7 +8,7 @@ extends RefCounted
 # front (+Z), chest 0.9 x 0.55 x 0.55, block 0.6 m across and 0.55 high, fire ring 0.84 m across.
 # Triangle budget: lean-to about 900, chest about 400, block about 300, fire ring about 500.
 
-const FireWeather := preload("res://src/client/fire_weather.gd")   # --firelight-weather: fire lights in fog and snow
+const FireWeather := preload("res://src/client/fire_weather.gd")   # fire lights in fog and snow
 const WOOD_DARK := Color(0.30, 0.20, 0.11)
 const WOOD := Color(0.42, 0.29, 0.16)
 const WOOD_PALE := Color(0.62, 0.48, 0.30)
@@ -889,6 +889,10 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		var sparks: GPUParticles3D = _ember_sparks(tier)
 		sparks.position = Vector3(0.0, float(FLAME_TONGUES[tier][0][1]) * 0.5, 0.0)
 		root.add_child(sparks)
+
+		var smoke: GPUParticles3D = _campfire_smoke(tier)
+		smoke.position = Vector3(0.0, float(FLAME_TONGUES[tier][0][1]), 0.0)
+		root.add_child(smoke)
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = FIRE_LIGHT_COLOR[tier]
@@ -900,7 +904,7 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		light.position = Vector3(0.0, 0.8, 0.0)
 		light.visible = false
 		root.add_child(light)
-		FireWeather.register(light, FIRE_HALO_SCALE[tier])   # --firelight-weather: reach and halo follow fog and snow
+		FireWeather.register(light, FIRE_HALO_SCALE[tier])   # reach and halo follow fog and snow
 
 	return root
 
@@ -1399,6 +1403,140 @@ void fragment() {
 """
 const EMBERS_BY_TIER := {1: 4, 2: 8, 3: 16}
 
+# Fire smoke (docs/design/fire_smoke_wind_design.md, Jamie's fire page #668; always on since Dave's 8 Nov ruling): campfires smoke, and the smoke and sparks follow the world wind.
+# The particle materials are shared, so weather_look.gd sets them once a second for every fire at once (set_fire_air).
+# Rise speeds from Jamie's Briggs table: 3.0 / 3.9 / 5.3 m above the flames at 10 m downwind in 1 m/s of wind (height there = 10 x w / u).
+static var _camp_smoke: Dictionary = {}           # tier -> ParticleProcessMaterial
+static var _camp_smoke_mesh: QuadMesh
+const CAMP_SMOKE_RISE := {1: 0.30, 2: 0.39, 3: 0.53}     # m/s
+const CAMP_SMOKE_AMOUNT := {1: 14, 2: 22, 3: 32}
+const CAMP_SMOKE_PUFF := {1: 0.5, 2: 0.7, 3: 0.9}       # the starting puff's size, metres; it grows 4 times
+const CAMP_SMOKE_LIFE := 16.0
+const FORGE_SMOKE_RISE := 0.7
+const CALM_RISE := 0.8                    # near calm the smoke goes up as a column at least this fast
+const CALM_MPS := [0.3, 1.0]              # from a calm to a breeze that bends it
+const NIGHT_RISE := 1.5                   # still clear night: up at this speed, stopping at NIGHT_TOP_M as the life ends, then spreading flat
+const NIGHT_TOP_M := 12.0
+const SPARK_PUSH := 0.6                   # sideways gravity per m/s of wind: about 1 m of carry per m/s over a spark's life
+const SPARK_LEAN_DEG := 60.0              # how far the sparks start downwind in a gale
+const SPARK_LEAN_MPS := [5.0, 10.0]
+const SPARK_LIFT := 0.25
+
+const CAMP_SMOKE_SHADER := """
+shader_type spatial;
+render_mode blend_mix, depth_draw_never, shadows_disabled, cull_disabled, diffuse_lambert_wrap, specular_disabled;
+
+void vertex() {
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0), vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+}
+
+void fragment() {
+	float d = length(UV - vec2(0.5)) * 2.0;
+	float puff = smoothstep(1.0, 0.15, d);
+	float lump = 0.85 + 0.15 * sin(UV.x * 9.0 + COLOR.r * 20.0) * sin(UV.y * 9.0 + COLOR.g * 20.0);
+	ALBEDO = vec3(0.66, 0.65, 0.63);      // lit by the scene: grey-white by day, dark at night but for the fire's own light under it
+	ALPHA = puff * puff * lump * COLOR.a * 0.45;
+}
+"""
+
+
+# The puffs' start velocity: the wind's speed along its heading (where it blows toward) and the plume's rise up. Near calm a column at least
+# CALM_RISE; on a still clear night NIGHT_RISE.
+static func plume_velocity(wind_ms: float, heading: float, rise: float, still_night: float) -> Vector3:
+	var u: float = maxf(wind_ms, 0.0)
+	var w: float = lerpf(maxf(rise, CALM_RISE), rise, smoothstep(float(CALM_MPS[0]), float(CALM_MPS[1]), u))
+	w = lerpf(w, NIGHT_RISE, clampf(still_night, 0.0, 1.0))
+	return Vector3(cos(heading) * u, w, sin(heading) * u)
+
+
+# On a still clear night the column slows to a stop at NIGHT_TOP_M as its life ends (and spreads there as the puffs grow).
+static func night_brake(still_night: float, life: float = CAMP_SMOKE_LIFE) -> float:
+	return -NIGHT_RISE / life * clampf(still_night, 0.0, 1.0)
+
+
+static func spark_gravity(wind_ms: float, heading: float) -> Vector3:
+	return Vector3(cos(heading) * SPARK_PUSH * wind_ms, SPARK_LIFT, sin(heading) * SPARK_PUSH * wind_ms)
+
+
+static func spark_direction(wind_ms: float, heading: float) -> Vector3:
+	var lean: float = deg_to_rad(SPARK_LEAN_DEG) * smoothstep(float(SPARK_LEAN_MPS[0]), float(SPARK_LEAN_MPS[1]), wind_ms)
+	return Vector3(cos(heading) * sin(lean), cos(lean), sin(heading) * sin(lean))
+
+
+static func _aim_smoke(material: ParticleProcessMaterial, velocity: Vector3, brake: float) -> void:
+	var speed: float = maxf(velocity.length(), 0.01)
+	material.direction = velocity / speed
+	material.initial_velocity_min = speed * 0.9
+	material.initial_velocity_max = speed * 1.1
+	material.gravity = Vector3(0.0, brake, 0.0)
+	material.spread = lerpf(8.0, 14.0, clampf(Vector2(velocity.x, velocity.z).length() / 3.0, 0.0, 1.0))
+
+
+# Once a second from weather_look.gd: the world wind in m/s, where it blows toward, and the still clear night share 0..1.
+static func set_fire_air(wind_ms: float, heading: float, still_night: float) -> void:
+	for tier in _camp_smoke:
+		_aim_smoke(_camp_smoke[tier], plume_velocity(wind_ms, heading, float(CAMP_SMOKE_RISE[tier]), still_night), night_brake(still_night))
+
+	if _smoke != null:
+		_aim_smoke(_smoke, plume_velocity(wind_ms, heading, FORGE_SMOKE_RISE, 0.0), 0.0)
+		_smoke.damping_min = 0.0
+		_smoke.damping_max = 0.0
+
+	if _embers != null:
+		_embers.gravity = spark_gravity(wind_ms, heading)
+		_embers.direction = spark_direction(wind_ms, heading)
+
+
+static func _campfire_smoke(tier: int) -> GPUParticles3D:
+	if not _camp_smoke.has(tier):
+		var material: ParticleProcessMaterial = ParticleProcessMaterial.new()
+		material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		material.emission_sphere_radius = 0.15
+		material.turbulence_enabled = true
+		material.turbulence_noise_strength = 0.4
+		material.turbulence_noise_scale = 2.0
+		material.scale_min = float(CAMP_SMOKE_PUFF[tier]) * 0.8
+		material.scale_max = float(CAMP_SMOKE_PUFF[tier]) * 1.2
+		var grow: Curve = Curve.new()
+		grow.add_point(Vector2(0.0, 0.5))
+		grow.add_point(Vector2(1.0, 2.0))
+		var grow_tex: CurveTexture = CurveTexture.new()
+		grow_tex.curve = grow
+		material.scale_curve = grow_tex
+		var fade: Gradient = Gradient.new()
+		fade.set_color(0, Color(1.0, 1.0, 1.0, 0.0))
+		fade.add_point(0.08, Color(1.0, 1.0, 1.0, 0.8))
+		fade.add_point(0.6, Color(1.0, 1.0, 1.0, 0.45))
+		fade.set_color(fade.get_point_count() - 1, Color(1.0, 1.0, 1.0, 0.0))
+		var fade_tex: GradientTexture1D = GradientTexture1D.new()
+		fade_tex.gradient = fade
+		material.color_ramp = fade_tex
+		material.angle_min = -180.0
+		material.angle_max = 180.0
+		_aim_smoke(material, plume_velocity(0.0, 0.0, float(CAMP_SMOKE_RISE[tier]), 0.0), 0.0)
+		_camp_smoke[tier] = material
+
+	if _camp_smoke_mesh == null:
+		_camp_smoke_mesh = QuadMesh.new()
+		_camp_smoke_mesh.size = Vector2(1.0, 1.0)
+		var shader: Shader = Shader.new()
+		shader.code = CAMP_SMOKE_SHADER
+		var look: ShaderMaterial = ShaderMaterial.new()
+		look.shader = shader
+		_camp_smoke_mesh.material = look
+
+	var plume: GPUParticles3D = GPUParticles3D.new()
+	plume.name = "Smoke"
+	plume.amount = int(CAMP_SMOKE_AMOUNT[tier])
+	plume.lifetime = CAMP_SMOKE_LIFE
+	plume.preprocess = CAMP_SMOKE_LIFE              # already a plume when it comes into view
+	plume.process_material = _camp_smoke[tier]
+	plume.draw_pass_1 = _camp_smoke_mesh
+	plume.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	plume.visibility_aabb = AABB(Vector3(-25.0, -2.0, -25.0), Vector3(50.0, 20.0, 50.0))
+	return plume
+
 
 static func _ember_sparks(tier: int) -> GPUParticles3D:
 	if _embers == null:
@@ -1446,7 +1584,7 @@ static func _ember_sparks(tier: int) -> GPUParticles3D:
 	sparks.process_material = _embers
 	sparks.draw_pass_1 = _ember_mesh
 	sparks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	sparks.visibility_aabb = AABB(Vector3(-1.5, 0.0, -1.5), Vector3(3.0, 4.0, 3.0))
+	sparks.visibility_aabb = AABB(Vector3(-15.0, 0.0, -15.0), Vector3(30.0, 6.0, 30.0))   # they drift downwind
 	return sparks
 
 
@@ -1495,7 +1633,7 @@ static func _smoke_plume() -> GPUParticles3D:
 	plume.process_material = _smoke
 	plume.draw_pass_1 = _smoke_mesh
 	plume.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	plume.visibility_aabb = AABB(Vector3(-3.0, 0.0, -3.0), Vector3(6.0, 8.0, 6.0))
+	plume.visibility_aabb = AABB(Vector3(-25.0, 0.0, -25.0), Vector3(50.0, 10.0, 50.0))
 	return plume
 
 
@@ -1511,7 +1649,7 @@ static func add_hooks(model: Node3D, fire_node: Variant, smoke: Variant, fx_scal
 		light.position = spot + Vector3(0.0, 0.25, 0.0)
 		light.visible = false
 		model.add_child(light)
-		FireWeather.register(light, 1.2 * maxf(fx_scale, 0.6))   # --firelight-weather (a forge or hearth fire)
+		FireWeather.register(light, 1.2 * maxf(fx_scale, 0.6))   # reach and halo follow fog and snow (a forge or hearth fire)
 
 		# Dave's "Fire_Coals" is a flat untextured card; swap it for the shared coals and flame tongues at the fire_node marker.
 		var card: Node3D = model.find_child("Fire_Coals", true, false) as Node3D

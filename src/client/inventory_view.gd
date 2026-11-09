@@ -46,7 +46,31 @@ var _layer: CanvasLayer
 var _root: Node3D
 var _player_position: Callable
 var _ground_below: Callable
+# The crafting and inventory screen's four parts (src/client/ui/inventory/; docs/design/INVENTORY_CRAFTING_REPORT.md step 1): each builds and
+# refreshes its own controls, and the state they show stays on this view (the network, the quick keys and the tests read it here).
+const RecipeListScript := preload("res://src/client/ui/inventory/recipe_list.gd")
+const PackGridScript := preload("res://src/client/ui/inventory/pack_grid.gd")
+const ContainerPanelScript := preload("res://src/client/ui/inventory/container_panel.gd")
+const CraftQueueScript := preload("res://src/client/ui/inventory/craft_queue.gd")
+const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")   # the window's look (steps B and C)
+const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe.gd")
+var _recipe_part: RecipeListScript             # the Make column: search, tabs, recipes, the chosen recipe and Craft
+var _pack_part: PackGridScript                 # the pack column: weight, sort, the slot grid and the action row
+var _container_part: ContainerPanelScript      # the container screen: a chest's or a fire's store beside the pack
+var _queue_part: CraftQueueScript              # the crafting queue under the recipe list
+var _pinned_part: PinnedRecipeScript           # the pinned recipe's checklist card
+
+
+func _init() -> void:
+	_recipe_part = RecipeListScript.new(self)
+	_pack_part = PackGridScript.new(self)
+	_container_part = ContainerPanelScript.new(self)
+	_queue_part = CraftQueueScript.new(self)
+	_pinned_part = PinnedRecipeScript.new(self)
+
+
 var _panel: PanelContainer
+var _columns: HBoxContainer            # the window's columns; the open container sits between recipes and pack
 var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
@@ -62,6 +86,10 @@ var chest_event: Callable              # ("open" | "close" | "put" | "take", pos
 var chest_mode: bool = false           # the panel on screen is a chest, not the pack and recipes
 var chest_inv                          # contents of the open chest (Inventory), from the server
 var chest_id: int = 0
+var chest_keep_out: bool = false        # the open container is ticked "keep out" (protocol 98 chest_info): crafting and blueprint sites leave it alone
+var chest_may_keep_out: bool = false    # and this player owns it, so the tick may be changed (set_keep_out)
+var reach_stock: Dictionary = {}        # item number -> count a craft may use besides the pack: loose stacks within 3 m and own containers within 12 m (craft_stock)
+var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
 var _chest_panel: PanelContainer
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
@@ -140,7 +168,7 @@ var reject_event: Callable = Callable()   # ("far" | "no_tool" | "full_pack" | "
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
 var _strain_note: Label
 var _eat_item: String = ""
-var equip_requested: Callable = Callable()   # (slot) -> hold that tool, or put it away (the client wires it to the held item)
+var equip_requested: Callable = Callable()   # (hotbar key) -> hold what that key points at, or put it away (the client wires it to the held item)
 var held_slot_now: Callable = Callable()     # () -> the pack slot in hand, or -1 for empty hands
 var hotbar_strip                              # HotbarStrip, set by the client
 var heart_bpm: Callable = Callable()   # () -> the heart rate now (the heartbeat sound's), set by the client
@@ -191,6 +219,11 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.world_items_received.connect(func(...args): _timed("_queue_world_items", _queue_world_items, args))
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
+	net.chest_info_received.connect(_on_chest_info)
+	net.craft_stock_received.connect(_on_craft_stock)
+	net.favourites_received.connect(_on_favourites)
+	net.bulk_done_received.connect(_on_bulk_done)
+	net.hotbar_received.connect(_on_hotbar)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
 	net.training_received.connect(func(percent: int):
 		training_today = percent
@@ -211,7 +244,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 		shoulder_id = item_id
 
 		if chest_mode:
-			_refresh_chest()
+			_container_part.refresh()
 
 		if _weight_label != null:
 			_refresh_weight())
@@ -313,7 +346,6 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 		net.forget_character.rpc_id(1, str(forgotten))
 
 
-
 # Public for the Esc > Advanced "Show my player key" button (admin.json lists these keys).
 func player_key() -> String:
 	return _player_key()
@@ -356,6 +388,7 @@ func toggle() -> void:
 
 	if open:
 		_build_panel()
+		_stock_sign = 0   # the window opens: ask for the craft stock again
 		_refresh()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif _panel != null:
@@ -755,7 +788,7 @@ func press_e() -> bool:
 	# In the crafting window, E over a recipe crafts it, as many as the quantity box says (Dave 2026-10-23; BUG-025, 4 Nov: a quantity of 20 made only 1).
 	if open and not chest_mode and _hover_recipe != 0:
 		if _can_craft(_hover_recipe):
-			_start_craft(_hover_recipe, _chosen_quantity())
+			_start_craft(_hover_recipe, _recipe_part.chosen_quantity())
 		else:
 			_on_notice("You do not have what that needs")
 
@@ -946,7 +979,7 @@ func _process_body(_delta: float) -> void:
 
 	if _queue_head_button != null and now >= _queue_next_msec:
 		_queue_next_msec = now + 250
-		_queue_head_button.text = _queue_text(0)
+		_queue_head_button.text = _queue_part.queue_text(0)
 
 	if now < _prompt_next_msec:
 		return
@@ -971,7 +1004,6 @@ func _process_body(_delta: float) -> void:
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = KeyBindings.localize("Hold Z to sleep")
-
 
 
 # P (terrain_client.gd): auto pickup on or off, announced slightly above the middle of the screen.
@@ -1188,10 +1220,10 @@ func is_broken(slot: int) -> bool:
 	return inventory.numbers[slot] != 0 and int(table.entry(table.id_of(inventory.numbers[slot])).get("durability", 0)) > 0 and condition(slot) <= 0.0
 
 
-# Is a tool of this class on the hotbar (slots 1 to 9 and 0), the way the server checks it?
+# Is a tool of this class on the hotbar (a key points at it), the way the server checks it?
 func has_tool_class(tool_class: String) -> bool:
-	for slot in range(10):
-		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class and not is_broken(slot):
+	for slot in range(inventory.SLOTS):
+		if inventory.on_hotbar(slot) and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class and not is_broken(slot):
 			return true
 
 	return false
@@ -1446,7 +1478,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 					tool_event.call("repaired")
 
 	_queue_refresh()
-	_refresh_chest()
+	_container_part.refresh()
 	refresh_hotbar()
 
 
@@ -1669,7 +1701,7 @@ func _refresh_weight() -> void:
 	if _carry_bar != null and not _carry_cfg.is_empty():
 		var fraction: float = CarryRules.bar_fraction(carried_kg(), carry_body_kg(), _carry_cfg)
 		_carry_bar.value = fraction * 100.0
-		_carry_bar.get_theme_stylebox("fill").bg_color = CarryRules.bar_color(fraction)
+		_carry_bar.get_theme_stylebox("fill").bg_color = InventoryLook.carry_color(fraction)
 
 
 func _load_text() -> String:
@@ -1750,7 +1782,6 @@ func over_pace_factor() -> float:
 	return float(_exertion_cfg.get("over_speed_factor", 0.9)) if strain_state == 1 else 1.0
 
 
-
 # The picture's state name and progress for faint.set_state (Art's faint_effect.gd): vision fades over the
 # first vision_frac of a faint ("fainting", progress 0 to 1), then "fainted" holds black while only the heart is heard.
 func faint_state() -> Array:
@@ -1822,7 +1853,7 @@ func container_cap(slot: int) -> int:
 	return int(table.entry(table.id_of(inventory.numbers[slot])).get("capacity_ml", 0))
 
 
-# The hotbar slot of the container in hand, or -1.
+# The pack slot of the container in hand, or -1.
 func held_container_slot() -> int:
 	var slot: int = int(held_slot_now.call()) if held_slot_now.is_valid() else -1
 	return slot if container_cap(slot) > 0 else -1
@@ -1860,32 +1891,32 @@ func equippable_slot(slot: int) -> bool:
 	return entry.has("tool_class") or entry.has("weapon_class") or str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container", "blueprint"]
 
 
-# Hold a tool: from the hotbar slots straight away; from the rest of the pack it first moves into the first free hotbar slot
-# (never replacing anything: a full hotbar says so), so a slot key can pick it up again.
+# Hold a tool: an item a key already points at is held by that key; any other first goes on the first empty key (inventory step 4: keys
+# hold items, the stack stays where it is in the pack). With every key taken it replaces the key in hand (or key 0), so using a tool from
+# deep in a full pack always works (moderator, 31 Oct 2026).
 func equip_with_move(slot: int) -> void:
-	var target: int = slot
+	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
+		return
 
-	if slot >= 10:
-		target = -1
+	var number: int = inventory.numbers[slot]
+	var key: int = inventory.hotbar.find(number)
 
-		for candidate in range(10):
-			if inventory.numbers[candidate] == 0:
-				target = candidate
-				break
+	if key < 0:
+		key = inventory.hotbar.find(0)
 
-		if target < 0:
-			# A full hotbar: the tool swaps places with what the hand holds (or the last slot), so using a tool from deep in a full pack always works (moderator, 31 Oct 2026).
-			var in_hand: int = int(held_slot_now.call()) if held_slot_now.is_valid() else -1
-			target = in_hand if in_hand >= 0 and in_hand < 10 else 9
-			_on_notice("Hotbar full: swapped with slot %d." % (target + 1))
+		if key < 0:
+			var in_hand: int = int(held_key_now.call()) if held_key_now.is_valid() else -1
+			key = in_hand if in_hand >= 0 else HeldItem.HOTBAR_SLOTS - 1
+			_on_notice("Hotbar full: key %s now holds it." % ("0" if key == 9 else str(key + 1)))
 
-		move_slot(slot, target)
+		var resting: bool = held_key_now.is_valid() and int(held_key_now.call()) == key
+		set_key(key, number)
 
-		# The hand may already rest on that (empty) slot: then the moved tool is simply in hand, not toggled away.
-		if held_slot_now.is_valid() and int(held_slot_now.call()) == target:
+		# The hand may already rest on that key: then the tool is simply in hand, not toggled away.
+		if resting:
 			return
 
-	equip_requested.call(target)
+	equip_requested.call(key)
 
 
 # Move a stack to another pack slot (dragging, or Use on a tool).
@@ -1897,20 +1928,83 @@ func move_slot(from_slot: int, to_slot: int) -> void:
 	_selected = -1
 
 
-# E over a hotbar slot (inventory open) puts it back in the first free pack slot after the hotbar.
+# E over a hotbar key (inventory open) takes the item off that key; the stack stays in the pack (inventory step 4).
 var hotbar_hover: int = -1
+var held_key_now: Callable = Callable()      # () -> the hotbar key the right hand holds (0 to 9), -1 for empty hands; set by the client
 
 
-func hotbar_to_pack(slot: int) -> void:
-	if slot < 0 or slot >= 10 or inventory.numbers[slot] == 0:
+func hotbar_to_pack(key: int) -> void:
+	if key_number(key) != 0:
+		set_key(key, 0)
+
+
+# The pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): each key holds an item number (the server's hotbar rpc, protocol 100).
+func key_number(key: int) -> int:
+	return inventory.hotbar[key] if inventory != null and key >= 0 and key < inventory.hotbar.size() else 0
+
+
+# The pack slot a key points at (an unbroken stack of its item first, then pack order), -1 for none.
+func key_slot(key: int) -> int:
+	return inventory.key_slot(key) if inventory != null else -1
+
+
+# The key whose pointer lands on this pack slot, -1 for none: the gold key number on the pack slot (look doc, "Hotbar link").
+func linked_key(slot: int) -> int:
+	return inventory.key_of_slot(slot) if inventory != null else -1
+
+
+# Puts an item on a key (0 clears it). The client shows it at once; the server answers with the keys (one key per item).
+func set_key(key: int, number: int) -> void:
+	if inventory == null or key < 0 or key >= inventory.hotbar.size() or number < 0:
 		return
 
-	for candidate in range(10, inventory.SLOTS):
-		if inventory.numbers[candidate] == 0:
-			move_slot(slot, candidate)
-			return
+	if number > 0 and inventory.hotbar.find(number) >= 0:
+		inventory.hotbar[inventory.hotbar.find(number)] = 0
 
-	_on_notice("Your inventory is full. Make room first.")
+	inventory.hotbar[key] = number
+	refresh_hotbar()
+
+	if net != null:
+		net.inventory_action.rpc_id(1, Net.ACT_HOTBAR_SET, key, number, 0, Vector3.ZERO)
+
+
+# A pack stack dropped on a key puts its item there.
+func set_key_to_slot(key: int, slot: int) -> void:
+	if slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0:
+		set_key(key, inventory.numbers[slot])
+
+
+# One key dragged onto another: they swap items.
+func swap_keys(from_key: int, to_key: int) -> void:
+	if from_key == to_key:
+		return
+
+	var moving: int = key_number(from_key)
+	var other: int = key_number(to_key)
+
+	if moving == 0:
+		return
+
+	set_key(to_key, moving)   # takes it off from_key (one key per item)
+
+	if other != 0:
+		set_key(from_key, other)
+
+
+func _on_hotbar(keys: PackedInt32Array) -> void:
+	if inventory == null:
+		return
+
+	inventory.hotbar = PackedInt32Array()
+	inventory.hotbar.resize(inventory.HOTBAR_KEYS)
+
+	for k in mini(keys.size(), inventory.HOTBAR_KEYS):
+		inventory.hotbar[k] = keys[k]
+
+	refresh_hotbar()
+
+	if open:
+		_refresh()
 
 
 func refresh_hotbar() -> void:
@@ -1918,8 +2012,17 @@ func refresh_hotbar() -> void:
 		hotbar_strip.refresh()
 
 
-func hotbar_tip(slot: int) -> String:
-	return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]) + ("\nKeys: Use (E) moves it into the inventory" if open else "") if inventory.numbers[slot] != 0 else "Drag an item here from the inventory. Key %s holds it." % ("0" if slot == 9 else str(slot + 1))
+func hotbar_tip(key: int) -> String:
+	var slot: int = key_slot(key)
+	var key_name: String = "0" if key == 9 else str(key + 1)
+
+	if slot >= 0:
+		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]) + ("\nKeys: Use (E) takes it off the hotbar" if open else "")
+
+	if key_number(key) != 0:
+		return "%s: none in your pack. The next one you get comes back to key %s." % [table.name_of(key_number(key)), key_name]
+
+	return "Drag an item here from the inventory. Key %s holds it." % key_name
 
 
 # Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
@@ -1977,15 +2080,16 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 		chest_mode = true
 		open = true
 		_build_panel()
-		_panel.visible = false
-		_build_chest_panel()
+		_panel.visible = true      # one window, the container in its middle column
+		_container_part.build()
 		_chest_panel.visible = true
+		_refresh()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 		if chest_event.is_valid() and _world.has(id):
 			chest_event.call("open", _world[id]["pos"])
 
-	_refresh_chest()
+	_container_part.refresh()
 
 
 func _close_chest() -> void:
@@ -2000,175 +2104,30 @@ func _close_chest() -> void:
 	if _chest_panel != null:
 		_chest_panel.visible = false
 
+	if _panel != null:
+		_panel.visible = false
+
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-func _build_chest_panel() -> void:
-	if _chest_panel == null:
-		_chest_buttons.clear()
-		_pack_buttons.clear()
-		_chest_titles.clear()
-
-	if _chest_panel != null:
-		return
-
-	_chest_panel = PanelContainer.new()
-	_chest_panel.theme = _tooltip_theme()
-	_chest_panel.anchor_left = 0.125
-	_chest_panel.anchor_right = 0.875
-	_chest_panel.anchor_top = 0.1
-	_chest_panel.anchor_bottom = 0.9
-	var columns: HBoxContainer = HBoxContainer.new()
-	columns.add_theme_constant_override("separation", _px(24))
-	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var chest_outer: VBoxContainer = VBoxContainer.new()
-	chest_outer.add_theme_constant_override("separation", _px(10))
-	_chest_panel.add_child(chest_outer)
-	chest_outer.add_child(columns)
-
-	for side in ["Woven chest  (click a stack to take it)", "Your pack  (click a stack to put it in)"]:
-		var box: VBoxContainer = VBoxContainer.new()
-		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		columns.add_child(box)
-		var title: Label = Label.new()
-		title.text = side
-		_style(title, TITLE_PX)
-		box.add_child(title)
-		_chest_titles.append(title)
-		var scroll: ScrollContainer = ScrollContainer.new()
-		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		box.add_child(scroll)
-		var grid: GridContainer = GridContainer.new()
-		grid.columns = 4
-		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		grid.add_theme_constant_override("h_separation", _px(8))
-		grid.add_theme_constant_override("v_separation", _px(8))
-		scroll.add_child(grid)
-		var chest_side: bool = _chest_buttons.is_empty()
-
-		for i in inventory.SLOTS:
-			var button: Button = Button.new()
-			button.custom_minimum_size = Vector2(0.0, _px(88))
-			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			button.clip_text = true
-			_style(button, BODY_PX - 4)
-			button.pressed.connect(_on_chest_slot.bind(chest_side, i))
-			button.mouse_entered.connect(func():
-				_chest_hover = [chest_side, i]
-				_chest_last = [chest_side, i])
-			button.mouse_exited.connect(func(): _chest_hover = [] if _chest_hover == [chest_side, i] else _chest_hover)
-			grid.add_child(button)
-			(_chest_buttons if chest_side else _pack_buttons).append(button)
-
-	var transfer: Button = Button.new()
-	transfer.text = "Transfer (T)"
-	transfer.tooltip_text = "Move the last stack you pointed at between your pack and the container (clicking a stack does the same)"
-	_style(transfer, BODY_PX)
-	transfer.pressed.connect(func():
-		if _chest_last.size() == 2:
-			_on_chest_slot(bool(_chest_last[0]), int(_chest_last[1])))
-	transfer.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	chest_outer.add_child(transfer)
-	_layer.add_child(_chest_panel)
-
-
-func _on_chest_slot(chest_side: bool, slot: int) -> void:
-	if not chest_side:
-		slot = _pack_slot(slot)
-
-		if slot < 0:
-			return
-
-	if chest_side:
-		if chest_inv.numbers[slot] != 0:
-			net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, slot, chest_id, chest_inv.counts[slot], Vector3.ZERO)
-
-			if chest_event.is_valid() and _world.has(chest_id):
-				chest_event.call("take", _world[chest_id]["pos"])
-	elif inventory.numbers[slot] != 0:
-		net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, slot, chest_id, inventory.counts[slot], Vector3.ZERO)
-
-		if chest_event.is_valid() and _world.has(chest_id):
-			chest_event.call("put", _world[chest_id]["pos"])
-
-
-func _refresh_chest() -> void:
-	if not chest_mode or _chest_panel == null:
-		return
-
-	var capacity: int = int(table.entry(table.id_of(int(_world.get(chest_id, {}).get("number", 0)))).get("slots", inventory.SLOTS))
-	var fire: bool = _chest_is_fire()
-	_pack_view = _pack_view_slots(fire)
-
-	if _chest_titles.size() == 2:
-		_chest_titles[0].text = "Fire  (click a stack to take it)" if fire else "Woven chest  (click a stack to take it)"
-		_chest_titles[1].text = "Your pack: wood and food, A to Z  (click to put it in)" if fire else "Your pack  (click a stack to put it in)"
-
-	for i in inventory.SLOTS:
-		_chest_buttons[i].visible = i < capacity
-		var number: int = chest_inv.numbers[i]
-		_chest_buttons[i].text = "" if number == 0 else "%s\nx%s" % [table.name_of(number), _count_text(chest_inv.counts[i])]
-		_chest_buttons[i].tooltip_text = _tooltip(number, chest_inv.counts[i], chest_inv.wear[i])
-		var slot: int = _pack_slot(i)
-		number = inventory.numbers[slot] if slot >= 0 else 0
-		_pack_buttons[i].text = "" if number == 0 else "%s\nx%s" % [table.name_of(number), _count_text(inventory.counts[slot])]
-		_pack_buttons[i].tooltip_text = "" if number == 0 else _tooltip(number, inventory.counts[slot], inventory.wear[slot])
-
-
-# True when the open container is a fire (lit or out); its store takes only wood and food (Dave, 4 Nov 2026).
+# Kept on the view for the tests: _container_part.is_fire (src/client/ui/inventory/container_panel.gd).
 func _chest_is_fire() -> bool:
-	return int(_world.get(chest_id, {}).get("state", -1)) in StructureLook.CAMPFIRE_STATES
+	return _container_part.is_fire()
 
 
-# The real pack slot shown on chest-screen pack button `index`, or -1 for an empty button.
+# Kept on the view for the tests: _container_part.pack_slot (src/client/ui/inventory/container_panel.gd).
 func _pack_slot(index: int) -> int:
-	if index < 0 or index >= _pack_view.size():
-		return -1
-
-	return int(_pack_view[index])
+	return _container_part.pack_slot(index)
 
 
-# The pack slots the chest screen shows, in button order. A chest shows every slot in place. A fire shows only what it takes
-# (the server's _fire_takes: cooking.json fuel or cookable food), sorted by name A to Z and packed to the top (Dave, 4 Nov 2026).
+# Kept on the view for the tests: _container_part.pack_view_slots (src/client/ui/inventory/container_panel.gd).
 func _pack_view_slots(fire: bool) -> Array:
-	var slots: Array = []
-
-	for i in inventory.SLOTS:
-		if not fire:
-			slots.append(i)
-		elif inventory.numbers[i] != 0 and fire_takes(table.id_of(inventory.numbers[i])):
-			slots.append(i)
-
-	if fire:
-		slots.sort_custom(func(a: int, b: int) -> bool:
-			var name_a: String = table.name_of(inventory.numbers[a]).to_lower()
-			var name_b: String = table.name_of(inventory.numbers[b]).to_lower()
-			return name_a < name_b if name_a != name_b else a < b)
-
-	return slots
+	return _container_part.pack_view_slots(fire)
 
 
-# Same rule as server_items._fire_takes: wood the fire burns (cooking.json fuel) or food it cooks.
+# Kept on the view for the tests: _container_part.fire_takes (src/client/ui/inventory/container_panel.gd).
 func fire_takes(item_id: String) -> bool:
-	if _cooking_cfg.is_empty():
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
-		_cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
-
-	if item_id == "":
-		return false
-
-	if _cooking_cfg.get("fuel", {}).has(item_id) or _cooking_cfg.get("cooks_into", {}).has(item_id):
-		return true
-
-	if item_id == str(_cooking_cfg.get("gives", "")):
-		return false
-
-	for suffix in _cooking_cfg.get("cookable_suffixes", []):
-		if item_id.ends_with(str(suffix)):
-			return true
-
-	return false
-
+	return _container_part.fire_takes(item_id)
 
 
 # Finds a hitch (Dave's bug 6, 2 Nov 2026: "every time I cut a log off it pauses"): a message handler that takes over 20 ms prints one line, so the cause shows in the client log.
@@ -2473,7 +2432,6 @@ func _refresh_pile(id: int) -> void:
 		box.mesh = _mesh_for(int(entry["number"]))
 
 
-
 # The world id of the placed structure nearest `point` within `reach` metres, or 0 (the hammer's Repair mode aims with it).
 func structure_id_near(point: Vector3, reach: float = 3.5) -> int:
 	var best: int = 0
@@ -2719,7 +2677,161 @@ func _free_craft() -> bool:
 
 
 func _can_craft(number: int) -> bool:
-	return _free_craft() or recipes.can_make(number, inventory) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
+	return _free_craft() or _stock_can_make(number) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
+
+
+# Craft clicks (docs/design/INVENTORY_CRAFTING_REPORT.md step 4; decisions row 24): a click makes one, shift-click five (fewer when the stock
+# makes fewer), a hold (recipe_list CRAFT_HOLD_MS) as many as the stock allows, up to the queue's 20. Each is one queue request, so the server's
+# pacing never refuses part of it. With nothing makeable the click does what it did before (the server says what is missing or makes the parts first).
+const CRAFT_SHIFT_COUNT := 5
+const CRAFT_MOST := 20          # the server's CRAFT_QUEUE_MAX_COUNT and the count box's top
+
+
+# How many times recipe `number` can be made from the pack and the stock in reach now (0 when not at all, at most CRAFT_MOST).
+func max_makeable(number: int) -> int:
+	var r: Dictionary = recipes.recipe(number)
+
+	if r.is_empty() or not _station_ok(r):
+		return 0
+
+	if _free_craft():
+		return CRAFT_MOST
+
+	var most: int = CRAFT_MOST
+
+	for need in r["needs"]:
+		most = mini(most, floori(float(stock_fill(int(need[0]))) / float(maxi(int(need[1]), 1))))
+
+	for keep in r["keeps"]:
+		if stock_fill(int(keep[0])) < int(keep[1]):
+			return 0
+
+	return maxi(most, 0)
+
+
+func craft_click(number: int, shift: bool, held: bool) -> void:
+	_start_craft(number, click_count(max_makeable(number), shift, held))
+
+
+# How many one click asks for, `most` being how many the stock makes: 1, shift 5 (or fewer), held all of them; 1 when none (as before).
+static func click_count(most: int, shift: bool, held: bool) -> int:
+	if most <= 0:
+		return 1
+
+	return most if held else (mini(CRAFT_SHIFT_COUNT, most) if shift else 1)
+
+
+# --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd): a craft may use the pack, loose stacks within 3 m
+# and the player's own containers within 12 m that are not kept out. The server sends what lies outside the pack (craft_stock, protocol 98).
+
+# How much of an ingredient a craft may use: the pack plus the stock in reach (any member of a group fills a group need, as in the pack).
+func stock_fill(number: int) -> int:
+	var total: int = inventory.count_fill(number) if inventory != null else 0
+
+	for member in (inventory.fills_of(number) if inventory != null else PackedInt32Array([number])):
+		total += int(reach_stock.get(int(member), 0))
+
+	return total
+
+
+# Recipe `number` is covered by the pack and the stock in reach (the station is checked on its own, as before).
+func _stock_can_make(number: int) -> bool:
+	var r: Dictionary = recipes.recipe(number)
+
+	if r.is_empty():
+		return false
+
+	for need in r["needs"] + r["keeps"]:
+		if stock_fill(int(need[0])) < int(need[1]):
+			return false
+
+	return true
+
+
+func _on_craft_stock(numbers: PackedInt32Array, counts: PackedInt32Array) -> void:
+	reach_stock.clear()
+
+	for i in mini(numbers.size(), counts.size()):
+		reach_stock[int(numbers[i])] = int(reach_stock.get(int(numbers[i]), 0)) + int(counts[i])
+
+	_queue_refresh()
+
+
+func _on_chest_info(id: int, keep_out: bool, may_set: bool) -> void:
+	if id != chest_id:
+		return
+
+	chest_keep_out = keep_out
+	chest_may_keep_out = may_set
+
+	if chest_mode:
+		_container_part.refresh()   # the lock on the plate and the tick follow the server's answer
+
+
+# The open container's "keep out" tick (the owner only; the server checks and answers with chest_info).
+func set_keep_out(on: bool) -> void:
+	if chest_mode and chest_may_keep_out and net != null:
+		net.inventory_action.rpc_id(1, Net.ACT_CHEST_KEEP_OUT, chest_id, 1 if on else 0, 0, Vector3.ZERO)
+
+
+# Bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3; the server does the work and answers with bulk_done). Kinds as
+# Net.ACT_BULK: 0 Take all, 1 Store all (both need an open container), 2 Stack to nearby, 3 Sort (the pack and an open chest, by sort_index).
+var last_bulk: Dictionary = {}       # the last bulk_done: kind, stacks, containers, ids (for the toast and the glow)
+var bulk_event: Callable             # (kind, stacks moved, container count, container ids): the look's toast and glow hook in here
+
+
+func bulk(kind: int) -> void:
+	if net == null or kind < 0 or kind > 3 or ((kind == 0 or kind == 1) and not chest_mode):
+		return
+
+	net.inventory_action.rpc_id(1, Net.ACT_BULK, kind, sort_index if kind == 3 else 0, 0, Vector3.ZERO)
+
+
+# Marks a pack slot as a favourite (or not): bulk buttons and Sort leave it where it is. The server answers with favourites.
+func set_favourite(slot: int, on: bool) -> void:
+	if net != null and inventory != null and slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0:
+		net.inventory_action.rpc_id(1, Net.ACT_FAVOURITE, slot, 1 if on else 0, 0, Vector3.ZERO)
+
+
+func _on_favourites(flags: PackedByteArray) -> void:
+	if inventory == null:
+		return
+
+	for i in mini(flags.size(), inventory.SLOTS):
+		inventory.set_fav(i, flags[i] == 1)
+
+
+# A bulk button's answer as a parchment toast, and each container that took something glows warm a moment (look doc section 9).
+func _bulk_look(kind: int, stacks: int, containers: int, ids: PackedInt32Array) -> void:
+	InventoryLook.toast(_layer, InventoryLook.bulk_text(kind, stacks, containers), InventoryLook.unit_of(self))
+	var spots: Array = []
+
+	for id in ids:
+		if _world.has(int(id)):
+			spots.append(_world[int(id)]["pos"])
+
+	InventoryLook.glow_chests(_root, spots)
+
+
+func _on_bulk_done(kind: int, stacks: int, containers: int, ids: PackedInt32Array) -> void:
+	last_bulk = {"kind": kind, "stacks": stacks, "containers": containers, "ids": ids}
+
+	if bulk_event.is_valid():
+		bulk_event.call(kind, stacks, containers, ids)
+
+
+# Asks the server for the craft stock when the window has just opened or the pack has changed since the last ask.
+func _ask_stock() -> void:
+	if net == null or inventory == null:
+		return
+
+	var pack_sign: int = hash([inventory.numbers, inventory.counts])
+
+	if pack_sign == _stock_sign:
+		return
+
+	_stock_sign = pack_sign
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_STOCK, 0, 0, 0, Vector3.ZERO)
 
 
 # The log on the shoulder plus log items lying within 3 m of the player (the server uses them for a craft that needs logs: server_items.gd _pull_nearby_logs).
@@ -2772,9 +2884,9 @@ func _parts_plan(number: int) -> Dictionary:
 
 	var plan: Dictionary = {"ok": false, "steps": [], "made": [], "ambiguous": 0, "msg": ""}
 
-	if not recipes.can_make(number, inventory):
+	if not _stock_can_make(number):
 		var ctx: Dictionary = {
-			"have": func(item: int) -> int: return inventory.count_fill(item),
+			"have": func(item: int) -> int: return stock_fill(item),
 			"station_ok": func(r: Dictionary) -> bool: return _station_ok(r),
 			"free": false,
 		}
@@ -2825,8 +2937,6 @@ func _part(root: Node3D, size: Vector3, at: Vector3, color: Color, tilt: Vector3
 	piece.position = at
 	piece.rotation_degrees = tilt
 	root.add_child(piece)
-
-
 
 
 # Medium: a thick hewn top on two log trestles, a rack of pegs at the back and a wooden vice at one end, about 2 by 1 m.
@@ -3406,18 +3516,18 @@ func _prewarm_loose_meshes() -> void:
 	var t_pick: int = Time.get_ticks_usec()
 
 	for id in table.ids():
-		var name: String = str(id)
+		var item_key: String = str(id)
 
-		if name == "stone" or name == "flint" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
-			_mesh_for(table.number_of(name))
+		if item_key == "stone" or item_key == "flint" or item_key == "stick" or item_key == "firewood" or item_key == "plant_fibre" or item_key == "driftwood" or item_key == "log" or item_key.begins_with("log_"):
+			_mesh_for(table.number_of(item_key))
 
 	var t_items: int = Time.get_ticks_usec()
 
 	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
 	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
-	for name in _trunk_drop_ids():
-		if table.number_of(name) > 0:
-			_mesh_for(table.number_of(name))
+	for item_key in _trunk_drop_ids():
+		if table.number_of(item_key) > 0:
+			_mesh_for(table.number_of(item_key))
 
 	var t_end: int = Time.get_ticks_usec()
 	print("client prewarm: loose item meshes %.0f ms (pickup models %.0f, stones sticks and logs %.0f, trunk drops %.0f)" % [float(t_end - t0) / 1000.0, float(t_pick - t0) / 1000.0, float(t_items - t_pick) / 1000.0, float(t_end - t_items) / 1000.0])
@@ -3603,18 +3713,12 @@ const TITLE_PX := 40
 
 var _search: LineEdit
 var _recipe_search: LineEdit             # the search box at the top of the Make list: filters recipes by name as you type
-var _recipe_category: String = ""        # "" = All
-var _category_buttons: Dictionary = {}   # category name -> its tab button
 var _recipe_list: VBoxContainer
-var _detail: VBoxContainer
 var _selected_recipe: int = 0
 var _hover_recipe: int = 0                 # the recipe under the mouse in the crafting list, 0 when none (E crafts it)
-var _quantity: SpinBox
-var _qty: int = 1
 var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
 var max_lights: Callable               # () -> how many fire lights the quality tier allows
 var is_inspecting: Callable            # () -> true while inspection mode is on
-var _slot_scroll: ScrollContainer
 
 
 var sort_index: int = 0                # 0 unsorted (order picked up), 1 name, 2 weight, 3 value
@@ -3982,8 +4086,6 @@ func _build_panel() -> void:
 	if _panel != null:
 		return
 
-	_buttons.clear()   # a rebuilt panel starts with a fresh list; never keep freed buttons
-
 	_panel = PanelContainer.new()
 	_panel.theme = _tooltip_theme()
 	_panel.anchor_left = 0.05
@@ -3991,11 +4093,11 @@ func _build_panel() -> void:
 	_panel.anchor_top = 0.04
 	_panel.anchor_bottom = 0.89   # leaves the whole hotbar visible underneath (Dave)
 	_panel.clip_contents = true   # the window keeps its size whatever the text size; contents scroll or wrap
-	var back: StyleBoxFlat = StyleBoxFlat.new()
-	back.bg_color = Color(0.07, 0.07, 0.08, 0.93)
-	back.set_corner_radius_all(10)
-	back.set_content_margin_all(_px(18))
-	_panel.add_theme_stylebox_override("panel", back)
+	InventoryLook.style_window(_panel, _px(18))
+
+	if not bulk_event.is_valid():
+		bulk_event = _bulk_look
+
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", _px(10))
 	_panel.add_child(box)
@@ -4007,6 +4109,9 @@ func _build_panel() -> void:
 	title.size_flags_stretch_ratio = 1.4
 	title.clip_text = true
 	_style(title, TITLE_PX)
+
+	InventoryLook.plate(title, "Crafting and inventory", _px(TITLE_PX), InventoryLook.unit_of(self))
+
 	top.add_child(title)
 
 	# Text size buttons (Dave 2026-10-20); terrain_client keeps and saves the choice.
@@ -4033,130 +4138,12 @@ func _build_panel() -> void:
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", _px(24))
 	box.add_child(columns)
+	_columns = columns
 
-	# Left: recipes, then the chosen recipe's needs and the Craft button.
-	var left: VBoxContainer = VBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.size_flags_stretch_ratio = 1.0
-	columns.add_child(left)
-	var left_title: Label = Label.new()
-	left_title.text = "Make"
-	_style(left_title, TITLE_PX - 6)
-	left.add_child(left_title)
-	left.add_child(_build_recipe_filter())
-	var list_scroll: ScrollContainer = ScrollContainer.new()
-	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	list_scroll.size_flags_stretch_ratio = 1.6
-	left.add_child(list_scroll)
-	_queue_box = VBoxContainer.new()
-	_queue_box.visible = false
-	left.add_child(_queue_box)
-	_recipe_list = VBoxContainer.new()
-	_recipe_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list_scroll.add_child(_recipe_list)
-
-	# The chosen recipe's detail scrolls in its own area so it never overlaps the recipe list.
-	var detail_scroll: ScrollContainer = ScrollContainer.new()
-	detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	detail_scroll.size_flags_stretch_ratio = 1.0
-	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(detail_scroll)
-	_detail = VBoxContainer.new()
-	_detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_scroll.add_child(_detail)
-
-	# Right: the inventory slots.
-	var right: VBoxContainer = VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.size_flags_stretch_ratio = 1.0
-	columns.add_child(right)
-	var right_title: Label = Label.new()
-	right_title.text = "Inventory"
-	_style(right_title, TITLE_PX - 6)
-	right.add_child(right_title)
-	_weight_label = Label.new()
-	_style(_weight_label, BODY_PX - 6)
-	_weight_label.text = "Body weight %.1f kg" % weight_kg
-	_weight_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	right.add_child(_weight_label)
-	_purse_label = make_coin_label(_px(BODY_PX - 6))
-	right.add_child(_purse_label)
-	_refresh_purse()
-	_carry_bar = ProgressBar.new()
-	_carry_bar.show_percentage = false
-	_carry_bar.max_value = 100.0
-	_carry_bar.custom_minimum_size = Vector2(0.0, _px(22))
-	_carry_bar.add_theme_stylebox_override("fill", StyleBoxFlat.new())
-	var carry_empty: StyleBoxFlat = StyleBoxFlat.new()
-	carry_empty.bg_color = Color(0.0, 0.0, 0.0, 0.5)
-	_carry_bar.add_theme_stylebox_override("background", carry_empty)
-	right.add_child(_carry_bar)
-	_carried_slot = Label.new()
-	_style(_carried_slot, BODY_PX - 6)
-	_carried_slot.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
-	right.add_child(_carried_slot)
-	_sort_menu = OptionButton.new()
-	_style(_sort_menu, BODY_PX - 6)
-
-	for sort_name in ["Sort: unsorted (picked up order)", "Sort: name", "Sort: weight (ascending)", "Sort: weight (descending)", "Sort: value (ascending)", "Sort: value (descending)"]:
-		_sort_menu.add_item(sort_name)
-
-	_sort_menu.select(sort_index)
-	_sort_menu.item_selected.connect(func(index):
-		sort_index = index
-		_arrange_slots()
-
-		if sort_changed.is_valid():
-			sort_changed.call(index))
-	right.add_child(_sort_menu)
-	_slot_scroll = ScrollContainer.new()
-	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	right.add_child(_slot_scroll)
-	_grid = GridContainer.new()
-	_grid.columns = 4
-	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_grid.add_theme_constant_override("h_separation", _px(8))
-	_grid.add_theme_constant_override("v_separation", _px(8))
-	_slot_scroll.add_child(_grid)
-
-	for i in inventory.SLOTS:
-		var button: Button = Button.new()
-		button.custom_minimum_size = Vector2(0.0, _px(88))
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.clip_text = true
-		_style(button, BODY_PX - 4)
-		button.pressed.connect(_on_slot_pressed.bind(i))
-		button.mouse_entered.connect(func(): _hover = i)
-		button.mouse_exited.connect(func(): _hover = -1 if _hover == i else _hover)
-		button.set_drag_forwarding(_slot_drag.bind(i), _slot_can_drop.bind(i), _slot_drop.bind(i))
-		_grid.add_child(button)
-		_buttons.append(button)
-		var bar: ColorRect = ColorRect.new()          # condition bar along the bottom of a worn tool's slot
-		bar.name = "Condition"
-		bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		bar.offset_top = -_px(8)
-		bar.offset_left = _px(4)
-		bar.offset_bottom = -_px(3)
-		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bar.visible = false
-		button.add_child(bar)
-
-	var row: HFlowContainer = HFlowContainer.new()   # wraps onto a second line when the text is large
-	row.add_theme_constant_override("h_separation", _px(12))
-	row.add_theme_constant_override("v_separation", _px(6))
-	right.add_child(row)
-
-	# One row; each button carries its key (the same keys work on the slot under the mouse).
-	for spec in [["Split (S)", "Split the selected stack in half", _split_selected], ["Drop (D)", "Drop the whole stack. Shift+D drops one", _drop_selected.bind(true)], ["Use (E)", "Eat the food, apply the medicine, or hold a tool in your hand (again to put it away)", func(): eat_slot(_selected)], ["Repair (R)", "Repair a worn tool with its materials", _repair_selected]]:
-		var action: Button = Button.new()
-		action.text = spec[0]
-		action.tooltip_text = spec[1]
-		_style(action, BODY_PX)
-		action.pressed.connect(spec[2])
-		row.add_child(action)
-
+	# Left: recipes and the crafting queue. Right: the pack. Each part builds its own column (src/client/ui/inventory/).
+	_queue_part.build()
+	columns.add_child(_recipe_part.build(_queue_part.root))
+	columns.add_child(_pack_part.build())
 	_layer.add_child(_panel)
 
 
@@ -4217,66 +4204,11 @@ func quick_key(event: InputEventKey) -> bool:
 
 	if KeyBindings.matches(event, "transfer_item"):
 		if chest_mode and _chest_hover.size() == 2:
-			_on_chest_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
+			_container_part.on_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
 
 		return true
 
 	return false
-
-
-# Dragging a stack from one slot to another (also onto the hotbar strip on screen).
-func _slot_drag(_at: Vector2, slot: int) -> Variant:
-	if inventory.numbers[slot] == 0:
-		return null
-
-	var preview: Label = Label.new()
-	preview.text = table.name_of(inventory.numbers[slot])
-	preview.add_theme_font_size_override("font_size", _px(BODY_PX - 4))
-	_buttons[slot].set_drag_preview(preview)
-	return {"slot": slot}
-
-
-func _slot_can_drop(_at: Vector2, data: Variant, _slot: int) -> bool:
-	return typeof(data) == TYPE_DICTIONARY and data.has("slot")
-
-
-func _slot_drop(_at: Vector2, data: Variant, slot: int) -> void:
-	move_slot(int(data["slot"]), slot)
-
-
-func _on_slot_pressed(slot: int) -> void:
-	if _selected < 0:
-		if inventory.numbers[slot] != 0:
-			_selected = slot
-	else:
-		if slot != _selected:
-			net.inventory_action.rpc_id(1, Net.ACT_MOVE, _selected, slot, 0, Vector3.ZERO)
-
-		_selected = -1
-
-	_refresh()
-
-
-func _select_recipe(number: int) -> void:
-	_selected_recipe = number
-	_refresh()
-
-
-# Queue the chosen recipe `quantity` times. The server takes the ingredients now and makes the crafts in order.
-func _craft_selected() -> void:
-	if _selected_recipe == 0:
-		return
-
-	_start_craft(_selected_recipe, _chosen_quantity())
-
-
-# The quantity box's number, counting digits typed but not yet confirmed with Enter (BUG-025).
-func _chosen_quantity() -> int:
-	if _quantity == null:
-		return 1
-
-	_quantity.apply()
-	return clampi(int(_quantity.value), 1, 20)
 
 
 func _start_craft(number: int, count: int = 1) -> void:
@@ -4306,54 +4238,7 @@ func _on_craft_queue(entries: Array, left_ms: int) -> void:
 	craft_entries = entries
 	_crafting = int(entries[0][0]) if not entries.is_empty() else 0
 	_craft_head_end_msec = Time.get_ticks_msec() + left_ms
-	_rebuild_queue()
-
-
-func _queue_text(index: int) -> String:
-	var entry: Array = craft_entries[index]
-	var text: String = str(recipes.recipe(int(entry[0])).get("name", "?"))
-
-	if int(entry[1]) > 1:
-		text += "  x%d" % int(entry[1])
-
-	if index == 0:
-		text += "   %.0f s" % ceilf(maxf(float(_craft_head_end_msec - Time.get_ticks_msec()) / 1000.0, 0.0))
-
-	return text
-
-
-# One button per queued craft; pressing it cancels the entry and the server hands back what it cost.
-func _rebuild_queue() -> void:
-	if _queue_box == null:
-		return
-
-	for child in _queue_box.get_children():
-		child.queue_free()
-
-	_queue_head_button = null
-
-	if craft_entries.is_empty():
-		_queue_box.visible = false
-		return
-
-	_queue_box.visible = true
-	var title: Label = Label.new()
-	title.text = "Crafting queue  (press one to cancel it)"
-	_style(title, BODY_PX - 4)
-	_queue_box.add_child(title)
-
-	for i in craft_entries.size():
-		var button: Button = Button.new()
-		button.text = _queue_text(i)
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.clip_text = true
-		_style(button, BODY_PX - 4)
-		var index: int = i
-		button.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_CRAFT_CANCEL, index, 0, 0, Vector3.ZERO))
-		_queue_box.add_child(button)
-
-		if i == 0:
-			_queue_head_button = button
+	_queue_part.rebuild()
 
 
 func _repair_selected() -> void:
@@ -4473,118 +4358,6 @@ func _drop_selected(whole: bool) -> void:
 	_selected = -1
 
 
-# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name, what it makes and its ingredients (1 Nov);
-# a tab shows one category and the search works inside it. The same list is the crafting table, forge and every other station's menu.
-func _build_recipe_filter() -> Control:
-	var holder: VBoxContainer = VBoxContainer.new()
-	# A real search box (Dave 4 Nov): a field background and border, a magnifying glass on the left, and no words in it.
-	var field: PanelContainer = PanelContainer.new()
-	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var box: StyleBoxFlat = StyleBoxFlat.new()
-	box.bg_color = Color(0.09, 0.08, 0.07, 0.95)
-	box.border_color = Color(0.62, 0.55, 0.42)
-	box.set_border_width_all(maxi(1, _px(2)))
-	box.set_corner_radius_all(_px(8))
-	box.content_margin_left = _px(10)
-	box.content_margin_right = _px(6)
-	box.content_margin_top = _px(4)
-	box.content_margin_bottom = _px(4)
-	field.add_theme_stylebox_override("panel", box)
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", _px(8))
-	field.add_child(row)
-	var glass: Control = Control.new()
-	glass.custom_minimum_size = Vector2(_px(26), _px(26))
-	glass.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glass.draw.connect(func():
-		var colour: Color = Color(0.78, 0.72, 0.58)
-		var unit: float = glass.size.x
-		glass.draw_arc(Vector2(unit * 0.42, unit * 0.42), unit * 0.28, 0.0, TAU, 32, colour, maxf(1.5, unit * 0.1), true)
-		glass.draw_line(Vector2(unit * 0.63, unit * 0.63), Vector2(unit * 0.9, unit * 0.9), colour, maxf(1.5, unit * 0.12), true))
-	row.add_child(glass)
-	_recipe_search = LineEdit.new()
-	_recipe_search.clear_button_enabled = true
-	_recipe_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var bare: StyleBoxEmpty = StyleBoxEmpty.new()
-	for state in ["normal", "focus", "read_only"]:
-		_recipe_search.add_theme_stylebox_override(state, bare)
-	_style(_recipe_search, BODY_PX)
-	_recipe_search.text_changed.connect(func(_text): _refresh())
-	row.add_child(_recipe_search)
-	holder.add_child(field)
-	var tabs: HFlowContainer = HFlowContainer.new()
-	holder.add_child(tabs)
-	_category_buttons.clear()
-
-	for label in [""] + RecipeFilter.CATEGORIES:
-		var tab: Button = Button.new()
-		tab.text = "All" if label == "" else str(label)
-		tab.toggle_mode = true
-		_style(tab, BODY_PX - 6)
-		tab.pressed.connect(func():
-			_recipe_category = str(label)
-			_refresh())
-		tabs.add_child(tab)
-		_category_buttons[str(label)] = tab
-
-	return holder
-
-
-func _recipe_shown(r: Dictionary) -> bool:
-	return RecipeFilter.shown(r, _recipe_category, _recipe_search.text if _recipe_search != null else "", table)
-
-
-func _matches(text: String, filter: String) -> bool:
-	return filter == "" or text.to_lower().contains(filter)
-
-
-
-# The slot buttons keep their slot (clicks, moves and the hotbar are unchanged); only where they sit in the grid
-# changes. Empty slots go last. Unsorted is the order the item kinds were picked up in.
-func _arrange_slots() -> void:
-	if _panel == null or _buttons.is_empty():
-		return
-
-	var order: Array = range(inventory.SLOTS)
-	var cfg: Dictionary = _carry_cfg
-
-	var key: Callable = func(slot: int) -> Variant:
-		var number: int = inventory.numbers[slot]
-		var count: int = inventory.counts[slot]
-
-		match sort_index:
-			1:
-				return table.name_of(number).to_lower()
-			2:
-				return CarryRules.weight_of(table.id_of(number), cfg) * float(count)
-			3:
-				return -CarryRules.weight_of(table.id_of(number), cfg) * float(count)
-			4:
-				return table.value_of(number) * count
-			5:
-				return -table.value_of(number) * count
-
-		return int(_first_seen.get(number, 0))
-
-	order.sort_custom(func(a, b):
-		var empty_a: bool = inventory.numbers[a] == 0
-		var empty_b: bool = inventory.numbers[b] == 0
-
-		if empty_a != empty_b:
-			return empty_b
-
-		if empty_a:
-			return a < b
-
-		var ka: Variant = key.call(a)
-		var kb: Variant = key.call(b)
-		return a < b if ka == kb else ka < kb)
-
-	for position in range(order.size()):
-		_grid.move_child(_buttons[order[position]], position)
-
-
 # Remembers the order item kinds first appeared in the pack (for the unsorted view).
 func _note_acquired() -> void:
 	var present: Dictionary = {}
@@ -4605,6 +4378,9 @@ func _note_acquired() -> void:
 
 
 func _refresh() -> void:
+	if _pinned_part.number != 0:
+		_pinned_part.refresh()   # the pinned checklist ticks as you gather, window open or shut
+
 	if _panel == null:
 		_note_acquired()
 		return
@@ -4614,203 +4390,15 @@ func _refresh() -> void:
 
 	# Lag fix (Sal, 2 Nov 2026): with the window shut (or the chest screen up instead) nobody sees the slot buttons or the recipe list, and rebuilding
 	# them cost 55 to 87 ms on every pickup. The window rebuilds in toggle() when it opens; only the weight HUD is kept current.
-	if not open or chest_mode:
+	if not open or _recipe_list == null:   # nothing built yet: nothing to redraw
 		if _weight_label != null:
 			_refresh_weight()
 
 		return
 
-	_arrange_slots()
-
-	if _weight_label != null:
-		_refresh_weight()
-
-	var filter: String = _search.text.strip_edges().to_lower() if _search != null else ""
-
-	# Inventory slots: with a search, only slots that match; otherwise every slot.
-	for i in inventory.SLOTS:
-		var button: Button = _buttons[i]
-		var number: int = inventory.numbers[i]
-		button.text = "" if number == 0 else "%s\nx%s" % [_item_label(number), _count_text(inventory.counts[i])]
-		var bar: ColorRect = button.get_node("Condition")
-		var is_worn: bool = number != 0 and int(table.entry(table.id_of(number)).get("durability", 0)) > 0 and inventory.wear[i] > 0
-		var perishable: bool = number != 0 and table.shelf_units(number) > 0
-		bar.visible = is_worn or perishable
-
-		if perishable:
-			var f: float = table.freshness(number, inventory.wear[i])
-			bar.anchor_right = maxf(f, 0.04)
-			bar.color = Color(0.85, 0.2, 0.15) if f <= 0.25 else (Color(0.9, 0.7, 0.2) if f <= 0.5 else Color(0.35, 0.8, 0.3))
-			bar.anchor_left = 0.0
-			bar.offset_right = -_px(4)
-			button.text += "   %s" % _freshness_word(f)
-		elif is_worn:
-			var c: float = condition(i)
-			bar.anchor_right = maxf(c, 0.04)
-			bar.color = Color(0.85, 0.2, 0.15) if c <= 0.0 else Color(1.0 - c, 0.2 + 0.7 * c, 0.15)
-			bar.anchor_left = 0.0
-			bar.offset_right = -_px(4)
-			button.text += "   BROKEN" if is_broken(i) else "   %d%%" % int(c * 100.0)
-		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
-		# The hotbar (slots 0 to 9) is an inventory spot of its own, shown on the hotbar strip: the backpack grid lists only the other slots, so an item
-		# on the hotbar leaves no second marker in the backpack (Dave, 7 Nov 2026).
-		button.visible = i >= HeldItem.HOTBAR_SLOTS and (filter == "" or (number != 0 and _matches(table.name_of(number), filter)))
-		button.tooltip_text = _tooltip(number, inventory.counts[i], inventory.wear[i])
-
-		if number != 0 and container_cap(i) > 0:
-			button.text += "   %s" % _litres(inventory.wear[i])
-
-	# Recipes: makeable first, then the rest, each alphabetical.
-	_hover_recipe = 0
-
-	for child in _recipe_list.get_children():
-		child.queue_free()
-
-	var can: Array = []
-	var cannot: Array = []
-
-	for tab_name in _category_buttons:
-		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
-
-	for number in recipes.numbers():
-		var r: Dictionary = recipes.recipe(number)
-
-		if (not r["known"] and not _free_craft()) or not _recipe_shown(r):
-			continue
-
-		(can if _can_craft(number) and _station_ok(r) else cannot).append(r)
-
-	# One alphabetical list, case-insensitive by display name (Dave 24 Oct); the green and grey colours say what can be made now.
-	var by_name: Callable = func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0
-	var shown_recipes: Array = can + cannot
-	shown_recipes.sort_custom(by_name)
-	can.sort_custom(by_name)
-	cannot.sort_custom(by_name)
-
-	if _selected_recipe == 0 or recipes.recipe(_selected_recipe).is_empty():
-		_selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
-
-	for r in shown_recipes:
-		var makeable: bool = _can_craft(r["number"]) and _station_ok(r)
-		var entry: Button = Button.new()
-		entry.text = str(r["name"]) + (("   (needs %s)" % _station_label(r)) if not _station_ok(r) else "")
-		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		entry.custom_minimum_size = Vector2(0.0, _px(64))
-		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		entry.modulate = Color(0.55, 1.0, 0.55) if makeable else Color(0.55, 0.55, 0.55, 0.6)
-		entry.flat = r["number"] != _selected_recipe
-		_style(entry, BODY_PX)
-		entry.pressed.connect(_select_recipe.bind(r["number"]))
-		entry.mouse_entered.connect(func(): _hover_recipe = int(r["number"]))
-		entry.mouse_exited.connect(func(): _hover_recipe = 0 if _hover_recipe == int(r["number"]) else _hover_recipe)
-		_recipe_list.add_child(entry)
-
-	_add_admin_builds()
-	_refresh_detail()
-
-
-# The Admin heading at the bottom of the list (Dave 2026-10-22): the building pieces to test plus the other placeables, free and unlocked. Click one to get it; put it in a quick key
-# and it is the usual placement blueprint (left click places one). Shown while the admin check is off (local play) .
-func _add_admin_builds() -> void:
-	if AdminScript.check_enabled():
-		return
-
-	var head: Label = Label.new()
-	head.text = "Admin"
-	_style(head, BODY_PX)
-	head.modulate = Color(1.0, 0.8, 0.4)
-	_recipe_list.add_child(head)
-
-	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit", "oven_kit"]
-	admin_ids.sort_custom(func(a, b): return table.name_of(table.number_of(str(a))).naturalnocasecmp_to(table.name_of(table.number_of(str(b)))) < 0)
-
-	for id in admin_ids:
-		var number: int = table.number_of(id)
-
-		if number == 0 or bool(table.entry(str(id)).get("retired", false)):   # a retired kit cannot be placed (Dave 5 Nov 2026: the admin Woven chest did nothing): the hammer's blueprints build those
-			continue
-
-		var entry: Button = Button.new()
-		entry.text = table.name_of(number)
-		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		entry.custom_minimum_size = Vector2(0.0, _px(64))
-		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		entry.modulate = Color(1.0, 0.85, 0.5)
-		_style(entry, BODY_PX)
-		entry.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, 1, Vector3.ZERO))
-		_recipe_list.add_child(entry)
-
-
-# The chosen recipe: what it needs (have / need), how many, and the Craft button.
-func _refresh_detail() -> void:
-	for child in _detail.get_children():
-		child.queue_free()
-
-	_quantity = null
-	var r: Dictionary = recipes.recipe(_selected_recipe)
-
-	if r.is_empty():
-		return
-
-	var heading: Label = Label.new()
-	heading.text = str(r["name"])
-	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_style(heading, BODY_PX)
-	_detail.add_child(heading)
-
-	if str(r.get("station", "")) != "":
-		var where: Label = Label.new()
-		where.text = ("Made at a %s (you are near one)" if _station_ok(r) else "Needs a %s within reach") % _station_label(r)
-		where.modulate = Color(0.55, 1.0, 0.55) if _station_ok(r) else Color(1.0, 0.8, 0.4)
-		_style(where, BODY_PX)
-		_detail.add_child(where)
-
-	var parts: Dictionary = _parts_plan(_selected_recipe)
-
-	if bool(parts["ok"]):
-		var made: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], table.name_of(m[0]).to_lower()])
-		var auto_line: Label = Label.new()
-		auto_line.text = "Makes %s first" % " and ".join(made)
-		auto_line.modulate = Color(0.55, 1.0, 0.55)
-		_style(auto_line, BODY_PX)
-		_detail.add_child(auto_line)
-	elif int(parts["ambiguous"]) != 0:
-		var choose_line: Label = Label.new()
-		choose_line.text = str(parts["msg"])
-		choose_line.modulate = Color(1.0, 0.8, 0.4)
-		_style(choose_line, BODY_PX)
-		_detail.add_child(choose_line)
-
-	for need in r["needs"] + r["keeps"]:
-		var kept: bool = r["keeps"].has(need)
-		var have: int = inventory.count_of(need[0]) if kept else inventory.count_fill(need[0]) + (nearby_logs() if int(need[0]) == table.number_of("log") else 0)
-		var line: Label = Label.new()
-		line.text = "%s   %d / %d%s" % [_item_label(need[0]), have, need[1], "  (kept)" if kept else ""]
-		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)
-		_style(line, BODY_PX)
-		_detail.add_child(line)
-
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", _px(12))
-	_detail.add_child(row)
-	var times: Label = Label.new()
-	times.text = "How many:"
-	_style(times, BODY_PX)
-	row.add_child(times)
-	_quantity = SpinBox.new()
-	_quantity.min_value = 1
-	_quantity.max_value = 20
-	_quantity.value = _qty
-	_quantity.value_changed.connect(func(v): _qty = int(v))
-	_quantity.get_line_edit().add_theme_font_size_override("font_size", _px(BODY_PX))
-	row.add_child(_quantity)
-	var make: Button = Button.new()
-	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
-	make.disabled = not (_can_craft(_selected_recipe) and _station_ok(r))
-	make.custom_minimum_size = Vector2(_px(240), _px(64))
-	_style(make, BODY_PX)
-	make.pressed.connect(_craft_selected)
-	row.add_child(make)
+	_ask_stock()
+	_pack_part.refresh()
+	_recipe_part.refresh()
 
 
 # Headless check (--items): give, drop, pick up, and print what the server says.
@@ -5059,7 +4647,9 @@ func run_quickkey_test(_client) -> void:
 		if inventory.count_of(stone) > 0 and inventory.count_of(roast) > 0:
 			break
 
+	print("Quick key test: pack ready after the give, stone %d, roast %d" % [inventory.count_of(stone), inventory.count_of(roast)])
 	toggle()
+	print("Quick key test: window open %s, %d slots" % [str(open), _buttons.size()])
 	var slot: int = inventory.numbers.find(stone)
 	var before: int = inventory.count_of(stone)
 	_hover = slot
@@ -5124,7 +4714,7 @@ func run_text_test(client) -> void:
 		for slot in range(mini(_buttons.size(), inventory.SLOTS)):
 			valid = valid and is_instance_valid(_buttons[slot]) and _buttons[slot].get_parent() == _grid
 
-			if inventory.numbers[slot] != 0 and _buttons[slot].text == "":
+			if inventory.numbers[slot] != 0 and _buttons[slot].is_empty():   # an item slot (item_slot.gd) shows its stack, not text
 				filled_ok = false
 
 		await get_tree().process_frame
@@ -5140,12 +4730,12 @@ func run_text_test(client) -> void:
 
 		# Every slot that holds something must show it after each press.
 		for slot in range(inventory.SLOTS):
-			if inventory.numbers[slot] != 0 and valid and _buttons[slot].text == "":
+			if inventory.numbers[slot] != 0 and valid and _buttons[slot].is_empty():
 				filled_ok = false
 
 		for mode in [1, 2, 3, 4, 5, 0]:
 			sort_index = mode
-			_arrange_slots()
+			_pack_part.arrange_slots()
 
 	_audit_text()
 	toggle_character()
@@ -5205,7 +4795,8 @@ func _audit_text() -> void:
 
 
 # Headless check (--plantpick): pick several plants (kind 2, flowers and herbs) and see whether each one is gone
-# from the client's flora afterwards.
+# from the client's flora afterwards. A harvest plant (drops.json harvest_yield or berry_yield, such as yarrow) is picked by design when it
+# stands bare until its next season (the server's _stripped, the client's flora.is_stripped), so it counts as picked, not as still standing.
 func run_plant_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	var spots: Array = []
@@ -5243,41 +4834,69 @@ func run_plant_test(client) -> void:
 		client.harvest._pick(client.harvest._candidates(2.5).filter(func(c): return int(c["id"]) == int(spot[2]))[0])
 		tried += 1
 		var still: bool = true
+		var bare: bool = false
 
 		# A cold server answers late (its item step can stall for seconds): wait up to 8 s for the plant to leave the flora.
 		for wait in range(16):
 			await get_tree().create_timer(0.5).timeout
 			var held_now: Dictionary = client.flora._chunks.get(spot[3], {}).get("items", {})
 			still = held_now.has("ids") and held_now["ids"].find(spot[2]) >= 0
+			bare = still and client.flora.is_stripped(spot[3], int(spot[2]))
 
-			if not still:
+			if not still or bare:
 				break
 
-		print("Plant test: %s %s" % [client.harvest._flora_by_id.get(int(spot[2]) >> 16, {}).get("name", "?"), "STILL THERE" if still else "gone"])
+		print("Plant test: %s %s" % [client.harvest._flora_by_id.get(int(spot[2]) >> 16, {}).get("name", "?"), "bare until next season" if bare else ("STILL THERE" if still else "gone")])
+		still = still and not bare
 		gone += 0 if still else 1
 
 	print("Plant test: tried %d, gone %d, still standing %d, skipped (nothing pickable) %d" % [tried, gone, tried - gone, skipped])
 
 
+# The self-tests build with the hammer, as players do since kits left the game (4 Nov 2026): data/items/blueprints.json numbers and costs.
+# The wooden hammer goes on a hotbar key by itself when it comes into the pack (inventory step 4).
+const CHEST_BLUEPRINT := 26
+const CHEST_MATERIALS := [["wooden_hammer", 1], ["stick", 10], ["twine", 4]]
+const LEAN_TO_BLUEPRINT := 25
+const LEAN_TO_MATERIALS := [["wooden_hammer", 1], ["stick", 30], ["leaves", 100], ["leaves", 100], ["twine", 10]]
+
+
+func _give_blueprint_kit(materials: Array) -> void:
+	for row in materials:
+		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(str(row[0])), 0, int(row[1]), Vector3.ZERO)
+
+
+func _has_blueprint_kit(materials: Array) -> bool:
+	var need: Dictionary = {}
+
+	for row in materials:
+		need[str(row[0])] = int(need.get(str(row[0]), 0)) + int(row[1])
+
+	for item_id in need:
+		if inventory.count_of(table.number_of(item_id)) < int(need[item_id]):
+			return false
+
+	return true
+
+
 # Headless check (--leanto): place a lean-to ahead of the player and look for its row and its roof.
 func run_leanto_test(_client) -> void:
 	await get_tree().create_timer(6.0).timeout
-	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+	_give_blueprint_kit(LEAN_TO_MATERIALS)   # kits left the game (4 Nov 2026): the lean-to is built with the hammer from its blueprint
 
-	for wait in 30:   # a cold join gets its pack late: poll up to 15 s for the kit
+	for wait in 30:   # a cold join gets its pack late: poll up to 15 s for the hammer and the materials
 		await get_tree().create_timer(0.5).timeout
 
-		if inventory.numbers.has(table.number_of("lean_to_kit")):
+		if _has_blueprint_kit(LEAN_TO_MATERIALS):
 			break
 
-		if wait == 16 and inventory.count_of(table.number_of("lean_to_kit")) == 0:   # still nothing after 8 s: the give was lost, send it once more
-			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+		if wait == 16:   # still not all there after 8 s: the give was lost, send it once more
+			_give_blueprint_kit(LEAN_TO_MATERIALS)
 
 	var here: Vector3 = _player_position.call()
 	var ground: float = float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0)))
 	var spot: Vector3 = Vector3(here.x + 2.0, ground, here.z)
-	var slot: int = inventory.numbers.find(table.number_of("lean_to_kit"))
-	net.inventory_action.rpc_id(1, Net.ACT_PLACE, slot, 0, 0, spot)
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, LEAN_TO_BLUEPRINT, 0, 0, spot)
 	await get_tree().create_timer(2.0).timeout
 	var seen: int = 0
 
@@ -5588,7 +5207,7 @@ func run_eat_test(client) -> void:
 
 	for mode in [1, 2, 3, 4, 5, 0]:
 		sort_index = mode
-		_arrange_slots()
+		_pack_part.arrange_slots()
 		var names: Array = []
 
 		for position in range(4):
@@ -5603,7 +5222,7 @@ func run_eat_test(client) -> void:
 	await get_tree().create_timer(1.0).timeout
 	var fibre_before: int = inventory.count_of(fibre)
 	_selected_recipe = 1
-	_craft_selected()
+	_recipe_part.craft_selected()
 	await get_tree().create_timer(1.0).timeout
 	var shown: int = _queue_box.get_child_count() - 1 if _queue_box.visible else 0
 	print("Queue test: entries %d, fibre %d -> %d, buttons shown %d, head \"%s\"" % [craft_entries.size(), fibre_before, inventory.count_of(fibre), shown, _queue_head_button.text if _queue_head_button != null else ""])
@@ -5624,14 +5243,14 @@ func run_eat_test(client) -> void:
 	_on_world_items([], PackedInt32Array([987654]))
 	print("Boulder test: gone when the server drops it %s" % str(not _boulders.has(987654)))
 
-	# Tools: Use holds a tool, again puts it away; a tool deep in the pack moves onto the hotbar first.
+	# Tools: Use holds a tool, again puts it away; a tool deep in the pack goes on a key first and stays where it lies (inventory step 4).
 	var axe: int = table.number_of("stone_axe")
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, axe, 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var axe_slot: int = inventory.numbers.find(axe)
 
 	if int(held_slot_now.call()) == axe_slot:
-		equip_requested.call(axe_slot)   # the saved hotbar slot can be this one: start with empty hands
+		equip_requested.call(int(held_key_now.call()))   # the saved hotbar key can point at it: start with empty hands
 
 	eat_slot(axe_slot)
 	await get_tree().create_timer(0.5).timeout
@@ -5647,8 +5266,9 @@ func run_eat_test(client) -> void:
 	eat_slot(20)
 	await get_tree().create_timer(1.0).timeout
 	var moved_to: int = held_slot_now.call()
-	equip_requested.call(moved_to)   # empty hands again
-	print("Hotbar test: axe parked in slot 20, Use moved it to slot %d and holds it (%s), on hotbar %s" % [moved_to, str(moved_to >= 0 and inventory.numbers[moved_to] == axe), str(moved_to >= 0 and moved_to < 10)])
+	var on_key: bool = moved_to >= 0 and inventory.on_hotbar(moved_to)
+	equip_requested.call(int(held_key_now.call()))   # empty hands again
+	print("Hotbar test: axe parked in slot 20, Use holds it where it lies, slot %d (%s), on hotbar %s" % [moved_to, str(moved_to >= 0 and inventory.numbers[moved_to] == axe), str(on_key)])
 
 	# Every tool and weapon in the table can be held from the hotbar, with a model, and does something on left click.
 	var tool_ids: Array = []
@@ -5670,18 +5290,16 @@ func run_eat_test(client) -> void:
 				break
 
 		var tool_slot: int = inventory.numbers.find(table.number_of(id))
-
-		if tool_slot >= 10:
-			move_slot(tool_slot, 9)
-			await get_tree().create_timer(0.6).timeout
-			tool_slot = 9
-
-		client.held.select(tool_slot)
+		set_key(9, table.number_of(id))   # key 0 points at it, wherever it lies (inventory step 4)
 		await get_tree().create_timer(0.3).timeout
-		held_ok += 1 if client.held.held_id() == id else 0
-		modelled += 1 if client.held._model != null else 0
+		client.held.select(9)
+		await get_tree().create_timer(0.3).timeout
+		var held_here: bool = client.held.held_id() == id or client.held.off_id() == id   # a torch or shield goes in the left hand (items.json "offhand", 7 Nov 2026)
+		var drawn: bool = client.held._off_model != null if client.held.off_id() == id else client.held._model != null
+		held_ok += 1 if held_here else 0
+		modelled += 1 if drawn else 0
 
-		if client.held.held_id() != id or client.held._model == null:
+		if not held_here or not drawn:
 			print("Tools test: NOT held or no model: %s" % id)
 
 		# Put it down: 190 tools in the pack outweigh the carrying limit, and the last heavy ones (the quern) were then never given (31 Oct 2026).
@@ -5711,7 +5329,7 @@ func run_chest_test(client) -> void:
 		_finish_early(client)
 		return
 
-	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+	_give_blueprint_kit(CHEST_MATERIALS)   # kits left the game (4 Nov 2026): the chest is built with the hammer from its blueprint
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var id: int = 0
@@ -5725,11 +5343,11 @@ func run_chest_test(client) -> void:
 			await get_tree().create_timer(2.0).timeout
 			continue
 
-		if inventory.numbers.find(table.number_of("chest_kit")) < 0:
-			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+		if not _has_blueprint_kit(CHEST_MATERIALS):
+			_give_blueprint_kit(CHEST_MATERIALS)
 			await get_tree().create_timer(1.0).timeout
 
-		net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("chest_kit")), 0, 0, Vector3(here.x + 2.0 + float(attempt), ground, here.z))
+		net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, CHEST_BLUEPRINT, 0, 0, Vector3(here.x + 2.0 + float(attempt), ground, here.z))
 
 		for wait in 40:
 			for k in _world:

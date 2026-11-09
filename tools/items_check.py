@@ -83,7 +83,7 @@ CLIENTS = [
         ("held E gets all four stones", r"Hold test: most in one step \d+, total " + NUM, 3, 12),
         ("held E stops when nothing is in reach", r"last two steps " + NUM, 0, 0),
         ("stones use the real meshes", r"Natural look: stone uses " + NUM + " real meshes", 6, 6),
-        ("stones stand out (1 m and up, three times the old size)", r"Natural size: stone lies " + NUM + " to", 0.9, 1.8),
+        ("stones are fist size (8 to 16 cm, Dave 2026-11-05, #446)", r"Natural size: stone lies " + NUM + " to", 0.07, 0.2),
         ("sticks stand out (1.8 m and up, 75 percent of the old size, Dave 2026-10-21)", r"Natural size: stick lies " + NUM + " to", 1.6, 3.8),
         ("sticks use the real meshes", r"Natural look: stick uses " + NUM + " real meshes", 3, 3),
         ("driftwood uses the real meshes", r"Natural look: driftwood uses " + NUM + " real meshes", 3, 3),
@@ -153,7 +153,7 @@ CLIENTS = [
         ("a strike finds it and a ray hits it", r"found by a strike true, solid to a ray true", None, None),
         ("and it goes when the server drops it", r"gone when the server drops it true", None, None),
         ("Use again puts it away", r"Use again, hand slot " + NUM, -1, -1),
-        ("a tool deep in the pack moves to the hotbar and is held", r"Use moved it to slot \d+ and holds it \((true)\), on hotbar true", None, None),
+        ("a tool deep in the pack goes on a key, stays where it lies and is held", r"Use holds it where it lies, slot 20 \((true)\), on hotbar true", None, None),
     ]),
 ]
 

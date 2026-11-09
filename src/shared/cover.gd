@@ -22,6 +22,19 @@ const SHELTER_MIN_SCALE := 0.8
 # disc has radius crown_m (the table's spacing radius), twice the old crown_m / 2, which is about where the drawn leaves end.
 const SHELTER_RADIUS := 2.0
 const RADIUS_CAP := 16.0                  # a crown must reach at most one cell beyond its own (the query looks one cell around)
+# Bare broadleaves in winter (docs/design/cover_by_season_design.md; Jamie #675, Kathleen #687): in the game season
+# "winter" these give no rain cover (their crowns are drawn bare; always, since Dave's 8 Nov ruling). The list matches flora_view's
+# DECIDUOUS (#687). Conifers and the evergreen broadleaves cover all year.
+const DECIDUOUS := ["oak", "beech", "birch", "alder", "willow", "maple", "sweet_chestnut", "walnut", "witness_tree"]
+
+
+static func is_deciduous(species_name: String) -> bool:
+	return DECIDUOUS.has(species_name)
+
+
+# Whether the deciduous crowns are bare in this game season. Set an index's `leafless` from this.
+static func leafless_for(season: String) -> bool:
+	return season == "winter"
 
 
 # Roof shapes (lean-tos and the like), added by the same code on client and server. A roof
@@ -42,7 +55,7 @@ static func at(pos: Vector3, index) -> float:
 
 
 # Fills an index chunk from an item list (FloraPlacer.chunk_items form: ids, positions,
-# heights). `info` is a Callable(species_id) -> Array [kind, crown_m, reference_height_m]
+# heights). `info` is a Callable(species_id) -> Array [kind, crown_m, reference_height_m, deciduous (optional bool)]
 # (empty for unknown species).
 static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable) -> void:
 	var ids: PackedInt32Array = items["ids"]
@@ -69,7 +82,7 @@ static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable)
 		if height / maxf(float(row[2]), 0.1) < SHELTER_MIN_SCALE:
 			continue
 
-		trees.append([ids[n], p.x, p.z, minf(float(row[1]) * 0.5 * scale * SHELTER_RADIUS, RADIUS_CAP), p.y + height])
+		trees.append([ids[n], p.x, p.z, minf(float(row[1]) * 0.5 * scale * SHELTER_RADIUS, RADIUS_CAP), p.y + height, row.size() > 3 and bool(row[3])])
 
 	index.set_chunk(chunk, trees)
 
@@ -77,7 +90,7 @@ static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable)
 class Index:
 	extends RefCounted
 
-	# cell -> {"f": PackedFloat32Array of x, z, radius, top per tree, "k": PackedInt64Array of keys}
+	# cell -> {"f": PackedFloat32Array of x, z, radius, top per tree, "k": PackedInt64Array of keys, "b": PackedByteArray, 1 for a tree bare in winter}
 	var _cells: Dictionary = {}
 	var _chunk_cells: Dictionary = {}     # chunk -> Array of cells it put trees in
 	var trees: int = 0
@@ -90,7 +103,9 @@ class Index:
 		return ((chunk.x & 0xFFFFF) << 20) | (chunk.y & 0xFFFFF)
 
 
-	# Replaces a chunk's trees. `list` rows: [id, x, z, crown_radius, top_y].
+	var leafless: bool = false            # the deciduous crowns are bare now (Cover.leafless_for(season)): covers and discs_near skip them
+
+	# Replaces a chunk's trees. `list` rows: [id, x, z, crown_radius, top_y, bare in winter (optional bool)].
 	func set_chunk(chunk: Vector2i, list: Array) -> void:
 		remove_chunk(chunk)
 
@@ -111,7 +126,7 @@ class Index:
 			var cell: Vector2i = Vector2i(int(floor(x / CELL_M)), int(floor(z / CELL_M)))
 
 			if not _cells.has(cell):
-				_cells[cell] = {"f": PackedFloat32Array(), "k": PackedInt64Array()}
+				_cells[cell] = {"f": PackedFloat32Array(), "k": PackedInt64Array(), "b": PackedByteArray()}
 
 			var entry: Dictionary = _cells[cell]
 			var f: PackedFloat32Array = entry["f"]
@@ -121,6 +136,7 @@ class Index:
 			f.append(float(row[4]))
 			entry["f"] = f
 			entry["k"].append(base | (int(row[0]) & 0xFFFFFF))
+			entry["b"].append(1 if row.size() > 5 and bool(row[5]) else 0)
 			cells[cell] = true
 			trees += 1
 
@@ -153,6 +169,7 @@ class Index:
 
 		var f: PackedFloat32Array = PackedFloat32Array()
 		var k: PackedInt64Array = PackedInt64Array()
+		var b: PackedByteArray = PackedByteArray()
 
 		for n in range(entry["k"].size()):
 			if drop.call(entry["k"][n]):
@@ -161,12 +178,14 @@ class Index:
 
 			f.append_array(entry["f"].slice(n * 4, n * 4 + 4))
 			k.append(entry["k"][n])
+			b.append(entry["b"][n])
 
 		if k.is_empty():
 			_cells.erase(cell)
 		else:
 			entry["f"] = f
 			entry["k"] = k
+			entry["b"] = b
 
 
 	# The crown circles within `range_m` of (x, z), as [x, z, radius, top_y] rows, for drawing
@@ -185,8 +204,12 @@ class Index:
 					continue
 
 				var f: PackedFloat32Array = entry["f"]
+				var bare: PackedByteArray = entry["b"]
 
 				for n in range(0, f.size(), 4):
+					if leafless and bare[floori(n / 4.0)] == 1:
+						continue   # a bare broadleaf in winter keeps no rain off the ground (cover_by_season_design.md)
+
 					if absf(f[n] - x) <= range_m + f[n + 2] and absf(f[n + 1] - z) <= range_m + f[n + 2]:
 						found.append([f[n], f[n + 1], f[n + 2], f[n + 3]])
 
@@ -356,8 +379,12 @@ class Index:
 					continue
 
 				var f: PackedFloat32Array = entry["f"]
+				var bare: PackedByteArray = entry["b"]
 
 				for n in range(0, f.size(), 4):
+					if leafless and bare[floori(n / 4.0)] == 1:
+						continue   # a bare broadleaf in winter shelters nothing (cover_by_season_design.md)
+
 					var ox: float = pos.x - f[n]
 					var oz: float = pos.z - f[n + 1]
 

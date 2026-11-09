@@ -1,6 +1,6 @@
 extends Node
 
-# What the player holds (hotbar keys 1 to 9 and 0 choose pack slots 0 to 9; the key again puts it away) and how it is used.
+# What the player holds (hotbar keys 1 to 9 and 0 choose the item each key points at, wherever it lies in the pack: inventory step 4; the key again puts it away) and how it is used.
 # Client only; the server decides what happens (throws are server actions).
 #
 # Spear (Dave, 2026-10-20): held and jabbed by default with the normal attack key (left click).
@@ -13,12 +13,10 @@ const BuildingLook := preload("res://src/client/building_look.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
-const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const ArmsView := preload("res://src/client/character/arms_view.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
-const MyCharacter := preload("res://src/client/character/my_character.gd")
 
-const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar slot is remembered between sessions
+const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar key is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
 const AIMED := Vector3(0.28, -0.12, -0.35)
 # First-person arms (Art's ragdoll rig, assets/character/README.md): rooted at the chest a little below and behind the camera,
@@ -89,12 +87,18 @@ const JAB_S := 0.28
 const THROW_SPEED := 24.0
 const THROW_GRAVITY := 9.8
 
-var held_slot: int = 0
+var held_key: int = 0                     # the hotbar key (0 to 9) in the right hand; keys hold items, not slots (inventory step 4)
+var held_slot: int:                       # the pack slot that key points at (InventoryView.key_slot), -1 for none
+	get:
+		return int(_inv.key_slot(held_key)) if _inv != null else -1
 var holding: bool = true                  # false after the held slot's key is pressed again: hands empty
 const HOTBAR_SLOTS := 10
 var aiming: bool = false
 const TORCH_PLACE_M := 3.0                # how far the crosshair reaches to stick a torch in the ground or on a wall
-var off_slot: int = -1                    # the hotbar slot carried in the left hand (items with "offhand": true: torch, shield), -1 for none
+var off_key: int = -1                     # the hotbar key carried in the left hand (items with "offhand": true: torch, shield), -1 for none
+var off_slot: int:                        # the pack slot that key points at, -1 for none
+	get:
+		return int(_inv.key_slot(off_key)) if _inv != null and off_key >= 0 else -1
 var off_holding: bool = false             # false after its key is pressed again: left hand empty
 var blocking: bool = false                # B held with a shield in the left hand (the combat rules read this)
 var _off_model: Node3D
@@ -171,7 +175,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_placement = PlacementRules.load_config()
 
 	if FileAccess.file_exists(HOTBAR_FILE):
-		held_slot = clampi(int(FileAccess.get_file_as_string(HOTBAR_FILE)), 0, HOTBAR_SLOTS - 1)
+		held_key = clampi(int(FileAccess.get_file_as_string(HOTBAR_FILE)), 0, HOTBAR_SLOTS - 1)
 
 	_tree_near = tree_near
 	_inv = inventory_view
@@ -192,8 +196,8 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_layer.add_child(_label)
-	# Dave's own arms (dynasty_arms.gd) go with his body; `--oldbody` or the "Old body" setting brings back the old tube arms.
-	_arms = DynastyArmsScript.new() if MyCharacter.dynasty_body_on() else RagdollScript.new(true)
+	# Dave's own arms (dynasty_arms.gd) go with his body.
+	_arms = DynastyArmsScript.new()
 	_arms.name = "Arms"
 	_arms.position = ARMS_POS
 	_arms.rotation_degrees.x = ARMS_PITCH_DEG
@@ -250,18 +254,24 @@ func _arm_play(clip: String, seconds: float) -> void:
 		_arms.play(clip, length / maxf(seconds, 0.05))
 
 
-# A hotbar key: hold that slot, or put it away when it is the one already held.
+# The item a hotbar key points at in the pack, 0 when the key is empty or none of its item is in the pack.
+func _key_number(key: int) -> int:
+	var slot: int = int(_inv.key_slot(clampi(key, 0, HOTBAR_SLOTS - 1)))
+	return _inv.inventory.numbers[slot] if slot >= 0 else 0
+
+
+# A hotbar key (0 to 9): hold what it points at, or put it away when it is the one already held.
 func press_slot(slot: int) -> void:
 	# Torch and shield go in the left hand beside whatever the right hand holds (Dave 2026-10-23); the same key again stows it.
-	if is_offhand(_inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]):
+	if is_offhand(_key_number(slot)):
 		slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
 
-		if off_holding and off_slot == slot:
+		if off_holding and off_key == slot:
 			off_holding = false
 			blocking = false
 			_relight_on_press(slot, true)
 		else:
-			off_slot = slot
+			off_key = slot
 			off_holding = true
 			_relight_on_press(slot)
 
@@ -272,20 +282,20 @@ func press_slot(slot: int) -> void:
 
 		return
 
-	if holding and slot == held_slot:
+	if holding and slot == held_key:
 		holding = false
 		aiming = false
 		_inv.refresh_hotbar()
 
 		if _sound != null:
-			_sound.itemfx.hotbar(held_slot)
+			_sound.itemfx.hotbar(held_key)
 
 		return
 
 	select(slot)
 
 
-# Use on a tool in the inventory: hold it, or put it away if it is already in hand.
+# Use on a tool in the inventory (its key, InventoryView.equip_with_move): hold it, or put it away if it is already in hand.
 func equip_toggle(slot: int) -> void:
 	press_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))
 
@@ -293,7 +303,7 @@ func equip_toggle(slot: int) -> void:
 # A torch that went out lights again when its hotbar key is pressed, wherever you are (Dave 6 Nov 2026: it keeps its name and just goes out; nobody is stuck in
 # a cave without light). The torch is an off-hand item, so press_slot calls this for it too; in rain or water it goes out again by the usual rules.
 func _relight_on_press(slot: int, quiet: bool = false) -> void:
-	var number: int = _inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]
+	var number: int = _key_number(slot)
 
 	if number == 0 or str(_inv.table.entry(_inv.table.id_of(number)).get("relit_item", "")) == "":
 		return
@@ -305,31 +315,31 @@ func _relight_on_press(slot: int, quiet: bool = false) -> void:
 		_inv._on_notice("It is too wet to light the torch. Get out of the water and the rain, or into a cave or under cover.")
 		return
 
-	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, clampi(slot, 0, HOTBAR_SLOTS - 1) + 1, 0, Vector3.ZERO)   # no fire needed (Dave 6 Nov 2026)
+	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))) + 1, 0, Vector3.ZERO)   # the pack slot plus one (0: the first doused torch)   # no fire needed (Dave 6 Nov 2026)
 
 
 func select(slot: int) -> void:
 	# A left-hand item picked this way (Use from the pack, a number key) goes in the left hand, never the right.
-	if is_offhand(_inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]):
-		off_slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
+	if is_offhand(_key_number(slot)):
+		off_key = clampi(slot, 0, HOTBAR_SLOTS - 1)
 		off_holding = true
-		_relight_on_press(off_slot)
+		_relight_on_press(off_key)
 		_inv.refresh_hotbar()
 
 		if _sound != null:
-			_sound.itemfx.hotbar(off_slot)
+			_sound.itemfx.hotbar(off_key)
 
 		return
 
-	if _sound != null and (clampi(slot, 0, HOTBAR_SLOTS - 1) != held_slot or not holding):
+	if _sound != null and (clampi(slot, 0, HOTBAR_SLOTS - 1) != held_key or not holding):
 		_sound.itemfx.hotbar(clampi(slot, 0, HOTBAR_SLOTS - 1))
 
-	held_slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
+	held_key = clampi(slot, 0, HOTBAR_SLOTS - 1)
 	holding = true
 	aiming = false
 	_inv.refresh_hotbar()
-	var number: int = _inv.inventory.numbers[held_slot]
-	_relight_on_press(held_slot)
+	var number: int = _key_number(held_key)
+	_relight_on_press(held_key)
 
 	if number != 0 and not is_holdable(number):
 		_inv._on_notice("%s cannot be held in the hand (Use or Eat it from the inventory)" % _inv.table.name_of(number))
@@ -337,16 +347,18 @@ func select(slot: int) -> void:
 	var file: FileAccess = FileAccess.open(HOTBAR_FILE, FileAccess.WRITE)
 
 	if file != null:
-		file.store_string(str(held_slot))
+		file.store_string(str(held_key))
 
 
 # The right hand's item. Left-hand items (torch, shield: items.json "offhand") are never the right hand's: a torch that lands in the selected hotbar slot
 # (crafted, picked up, dragged there) does nothing until its key is pressed, and then it goes in the LEFT hand (Dave, 7 Nov 2026).
 func held_number() -> int:
-	if not holding:
+	var slot: int = held_slot
+
+	if not holding or slot < 0:
 		return 0
 
-	var number: int = _inv.inventory.numbers[held_slot]
+	var number: int = _inv.inventory.numbers[slot]
 	return 0 if is_offhand(number) else number
 
 
@@ -479,10 +491,12 @@ func is_offhand(number: int) -> bool:
 
 
 func off_number() -> int:
-	if not off_holding or off_slot < 0:
+	var slot: int = off_slot
+
+	if not off_holding or slot < 0:
 		return 0
 
-	var number: int = _inv.inventory.numbers[off_slot]
+	var number: int = _inv.inventory.numbers[slot]
 	return number if is_offhand(number) else 0
 
 
@@ -490,7 +504,7 @@ func off_id() -> String:
 	return _inv.table.id_of(off_number())
 
 
-# The hotbar slot of a burning flame in either hand that water or rain can put out (a torch; a lantern later: items.json "doused_item"), or -1.
+# The pack slot of a burning flame in either hand that water or rain can put out (a torch; a lantern later: items.json "doused_item"), or -1.
 func flame_slot() -> int:
 	if _inv == null:
 		return -1
@@ -502,7 +516,7 @@ func flame_slot() -> int:
 	return -1
 
 
-# The hotbar slot of a torch in either hand that can be placed (items.json places_as: burning or doused), or -1.
+# The pack slot of a torch in either hand that can be placed (items.json places_as: burning or doused), or -1.
 func _torch_hand_slot() -> int:
 	if _inv == null:
 		return -1
@@ -2361,7 +2375,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
 	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
-	FireWeather.register(light)   # --firelight-weather: reach and halo follow fog and snow
+	FireWeather.register(light)   # reach and halo follow fog and snow
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
 	hand_light.name = "HandLight"
 	hand_light.light_color = Color(1.0, 0.6, 0.28)

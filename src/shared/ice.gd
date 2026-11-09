@@ -4,7 +4,8 @@ extends RefCounted
 # rules from Art, docs/design/still_water_ice.md, 8 Nov 2026). A pure function of the game clock, the zone and the altitude,
 # like weather: the server and every client compute the same number, so there is no traffic and nothing to save.
 #
-# Hourly steps over the last LOOKBACK_DAYS game days of the air with its day and night swing (Weather.air_c):
+# Hourly steps over the last LOOKBACK_DAYS game days of the air with its day and night swing, as the snow and ice layer reads it
+# (Weather.snow_air_c: the air plus the island's snow_bias_c, OVERNIGHT_DECISIONS_8NOV.md row 21):
 #   - the water first has to cool: it follows the air with a lag of WATER_LAG_SHALLOW_D (a 1 m pond) to WATER_LAG_DEEP_D
 #     (a 10 m lake) days, and no ice forms until it is down to OPEN_UNTIL_C (a lake turns over at 4 C before it can freeze);
 #   - then the sheet thickens in freezing air by the Stefan law (thickness squared rising with degree-hours of frost);
@@ -70,13 +71,13 @@ static func _run(game_s: float, zone_group: String, altitude_m: float, depth_m: 
 	var lag_h: float = 24.0 * lerpf(WATER_LAG_SHALLOW_D, WATER_LAG_DEEP_D, deep)
 	var steps: int = LOOKBACK_DAYS * 24
 	var start: float = game_s - float(steps) * HOUR_S
-	var water: float = maxf(Weather.temp_at(start, zone_group, altitude_m, seed_value), freeze_c)
+	var water: float = maxf(Weather.snow_temp_at(start, zone_group, altitude_m, seed_value), freeze_c)
 	var thickness: float = 0.0
 	var peak: float = 0.0
 
 	for n in range(steps + 1):
 		var t: float = start + float(n) * HOUR_S
-		var air: float = Weather.air_c(t, zone_group, altitude_m, seed_value)
+		var air: float = Weather.snow_air_c(t, zone_group, altitude_m, seed_value)   # the snow and ice layer's air: plus snow_bias_c (climate.gd)
 
 		if thickness <= 0.0:
 			water = maxf(water + (air - water) / lag_h, freeze_c)

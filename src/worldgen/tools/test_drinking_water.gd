@@ -117,7 +117,8 @@ func _server() -> void:
 	var sources: Dictionary = items._vitals_cfg["thirst"]["sources"]
 
 	# Flag off: the sea row is ignored and today's drink goes on.
-	check(not bool(sources.get("enabled", true)), "thirst.sources ships off")
+	check(bool(sources.get("enabled", false)), "thirst.sources ships on (Dave 8 Nov)")
+	sources["enabled"] = false
 	rows_here = [{"kind": "salt"}]
 	check(_drinks(items, v), "flag off: today's drink, whatever the rows say")
 
@@ -141,6 +142,32 @@ func _server() -> void:
 	check(not _drinks(items, v), "a dry gully in summer is refused")
 	rows_here = []
 	check(_drinks(items, v), "no source rows: today's water test stands")
+
+	# The season is the place's own (Weather.season_at, half a year off across the equator): the calendar says winter, but at
+	# the player it is summer, so an intermittent brook long without rain is dry there.
+	season[0] = "winter"
+	items._last_rain_s = -INF
+	items.season_at = func(_pos): return "summer"
+	rows_here = [{"kind": "brook", "regime": 2}]
+	check(not _drinks(items, v), "the drink reads the season at the player, not the calendar's")
+	items.season_at = Callable()
+	check(_drinks(items, v), "without season_at the calendar's season stands (winter: the brook runs)")
+
+	# The terrain server's rows carry no ice field: the server's own ice rule at the player (_on_ice, the fishing ice) decides.
+	items._holes.clear()
+	items.ice_cover_at = func(_pos): return 1.0
+	rows_here = [{"kind": "lake"}]
+	check(not _drinks(items, v), "a lake row without an ice field is frozen where the ice rule says ice")
+	items.ice_cover_at = Callable()
+	check(_drinks(items, v), "and a drink where it says none")
+
+	# The sea: no drinking water in reach (the sim holds no sea), salt water is: the salt line, not the plain refusal.
+	var said: Array = []
+	items.send_notice = func(_p, text): said.append(str(text))
+	items.water_near = func(_pos, _reach): return false
+	rows_here = [{"kind": "salt"}]
+	check(not _drinks(items, v) and said.has(str(sources.get("say_salt", ""))), "at the sea the player hears the salt line (%s)" % str(said))
+	items.water_near = func(_pos, _reach): return true
 
 
 func _drinks(items, v: Dictionary) -> bool:

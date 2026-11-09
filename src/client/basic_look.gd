@@ -298,6 +298,8 @@ static func has_look(item_id: String) -> bool:
 # Each item's look is built once per run and shared (lag, 3 Nov 2026: a held tool or food was built again, part by part, every time it was taken in
 # hand; the detailed looks take several ms each). Callers only draw the mesh, never change it.
 static var _built: Dictionary = {}
+static var _building: String = ""          # the item mesh_for is building now, for the warning in _surface_arrays
+static var _short: bool = false            # a part came back without vertices during this build: not cached, built again next time
 
 
 static func mesh_for(item_id: String) -> Mesh:
@@ -309,8 +311,14 @@ static func mesh_for(item_id: String) -> Mesh:
 	if def.is_empty():
 		return null
 
+	_building = item_id
+	_short = false
 	var made: ArrayMesh = mesh(str(def.get("shape", "chunk")), Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)), def.get("bits", []))
-	_built[item_id] = made
+	_building = ""
+
+	if not _short:
+		_built[item_id] = made
+
 	return made
 
 
@@ -2817,12 +2825,18 @@ static func _combine(parts: Array, size: float) -> ArrayMesh:
 	var result: ArrayMesh = ArrayMesh.new()
 
 	if not plain.is_empty() or metal.is_empty():
-		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(plain, size))
-		result.surface_set_material(0, _shared_material())
+		var plain_arrays: Array = _surface_arrays(plain, size)
+
+		if not (plain_arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).is_empty():
+			result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, plain_arrays)
+			result.surface_set_material(result.get_surface_count() - 1, _shared_material())
 
 	for kind in metal:
-		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(metal[kind], size))
-		result.surface_set_material(result.get_surface_count() - 1, _metal_material((kind as Vector2).x, (kind as Vector2).y))
+		var metal_arrays: Array = _surface_arrays(metal[kind], size)
+
+		if not (metal_arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).is_empty():
+			result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, metal_arrays)
+			result.surface_set_material(result.get_surface_count() - 1, _metal_material((kind as Vector2).x, (kind as Vector2).y))
 
 	return result
 
@@ -2835,19 +2849,31 @@ static func _surface_arrays(parts: Array, size: float) -> Array:
 
 	for part in parts:
 		var arrays: Array = (part[0] as ArrayMesh).surface_get_arrays(0) if part[0] is ArrayMesh else (part[0] as PrimitiveMesh).get_mesh_arrays()
+
+		# A part the renderer handed back no vertices for (the quick-key test, #772: a Nil vertex array) is left out, not a script error.
+		if arrays.size() < Mesh.ARRAY_MAX or not (arrays[Mesh.ARRAY_VERTEX] is PackedVector3Array):
+			push_warning("basic_look: %s: a %s part came back without vertices (%d arrays); left out this time" % [_building, str(part[0].get_class()), arrays.size()])
+			_short = true
+			continue
+
 		var xform: Transform3D = part[1]
 		var color: Color = part[2]
 		var first: int = vertices.size()
 		var source: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-		var source_n: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+		var has_n: bool = arrays[Mesh.ARRAY_NORMAL] is PackedVector3Array and (arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array).size() == source.size()
+		var source_n: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL] if has_n else PackedVector3Array()
 
 		for i in source.size():
 			vertices.append(xform * source[i] * size)
-			normals.append((xform.basis * source_n[i]).normalized())
+			normals.append((xform.basis * source_n[i]).normalized() if has_n else Vector3.UP)
 			colors.append(color)
 
-		for index in arrays[Mesh.ARRAY_INDEX]:
-			indices.append(first + int(index))
+		if arrays[Mesh.ARRAY_INDEX] is PackedInt32Array:
+			for index in arrays[Mesh.ARRAY_INDEX]:
+				indices.append(first + int(index))
+		else:
+			for i in source.size():
+				indices.append(first + i)
 
 	var out: Array = []
 	out.resize(Mesh.ARRAY_MAX)

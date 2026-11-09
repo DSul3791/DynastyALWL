@@ -78,9 +78,9 @@ const WeatherScript := preload("res://src/shared/weather.gd")
 const ClimateScript := preload("res://src/shared/climate.gd")
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
-const FrozenWater := preload("res://src/client/frozen_water.gd")   # --frozen-water: the liquid sheets' ice look (docs/design/frozen_water_look.md)
-const SpringSteam := preload("res://src/client/spring_steam.gd")   # --ice-feel: steam over spring mouths on frosty mornings (Jamie #739)
-const IceFeelScript := preload("res://src/client/ice_feel.gd")     # --ice-feel: ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
+const FrozenWater := preload("res://src/client/frozen_water.gd")   # the liquid sheets' ice look (docs/design/frozen_water_look.md)
+const SpringSteam := preload("res://src/client/spring_steam.gd")   # steam over spring mouths on frosty mornings (Jamie #739)
+const IceFeelScript := preload("res://src/client/ice_feel.gd")     # ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
@@ -474,7 +474,7 @@ var fall_growth                       # FallGrowth: ferns around the foot of the
 var items                             # InventoryView: inventory panel (I), pick-up (E)
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the left of the screen
-var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items into the first ten slots
+var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items onto a key (keys hold items: inventory step 4)
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
@@ -512,6 +512,9 @@ var _in_generation: int = 0           # raised when the plants are dropped (a ba
 var under_cover: float = 0.0          # 1 under a tree's canopy, else 0 (Cover.at at the player, once a second)
 var weather: Dictionary = {}          # the weather here and now (WeatherScript.state): the same on every client, no network traffic; rendering and sounds read it
 var _weather_next_msec: int = 0
+var world_wind_dir: float = 0.0       # the world's wind heading before the ground here bends it (Weather.state)
+var wind_here: Dictionary = {}        # what the ground round the viewer does to the wind (Weather.local_wind's `here`), every 2 s
+var _wind_here_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
@@ -1177,6 +1180,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	sound.puddles = weather_look.puddles          # steps splash where a puddle is drawn (puddles.gd)
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
 	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
 		if sound_log_arg.begins_with("--sound-log="):
@@ -1327,7 +1331,10 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
 	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
-		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
+		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position)      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
+		if weather_look != null and weather_look.puddles != null and weather_look.puddles.shown > 0.001:
+			weather_look.puddles.animal_step(kind, at, sound._ground_under(at))      # a foot in a puddle splashes (puddles.gd)
+	)
 	net.hit_number_received.connect(func(at: Vector3, _amount: int) -> void: animal_view.note_hit(at))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
@@ -1466,6 +1473,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held.held_light_budget = func(): return quality >= 1
 	items.equip_requested = func(slot): held.equip_toggle(slot)
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1
+	items.held_key_now = func(): return held.held_key if held.holding else -1
 	hotbar_strip = HotbarStripScript.new()
 	hotbar_strip.setup(items, layer, held)
 	items.hotbar_strip = hotbar_strip
@@ -2282,9 +2290,11 @@ func _update_weather() -> void:
 	var tile_m: float = float(world.get("tile_size_m", 15360))
 	var row: int = ClimateScript.row_of_z(_anchor.z, tile_m)
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
-	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # --one-sky: this row's sky
+	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # this row's sky
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0, row, int(world.get("equator_row", 0)))
+	world_wind_dir = float(weather["wind_dir"])
+	weather = wind_onto(weather)
 
 	if items != null:
 		items.air_c = float(weather["temp_c"])
@@ -2293,8 +2303,7 @@ func _update_weather() -> void:
 	# every client and the server agree with no traffic. Recomputed once a game minute.
 	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
 
-	if IceFeelScript.on:
-		ice_now = _update_ice_feel_weather(ice_now, group, now)
+	ice_now = _update_ice_feel_weather(ice_now, group, now)
 
 	if flora != null:
 		flora.set_ice_cover(ice_now)
@@ -2306,8 +2315,10 @@ func _update_weather() -> void:
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
 
-	if FrozenWater.on:
-		_update_frozen_water(group, now)
+	_update_frozen_water(group, now)
+
+	if weather_look != null and weather_look.puddles != null:
+		weather_look.puddles.set_ice_from(game_clock.seconds, group, _anchor.y)      # puddles freeze by the same rule, shallow (every 10 s)
 
 	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
@@ -2316,7 +2327,7 @@ func _update_weather() -> void:
 		sound.occlusion.set_air(weather, weather_look.day.elevation if weather_look != null else 0.5, game_clock.hour(), weather_look.fog_now() if weather_look != null else 0.0)
 
 
-# Frozen water look (docs/design/frozen_water_look.md, --frozen-water): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
+# Frozen water look (docs/design/frozen_water_look.md): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
 # near the player (their brooks stay open) and the ice holes go to every liquid sheet. --frozen-force=open[,thaw[,snow]] and --frozen-hole=x,z are
 # picture switches (a solid sheet the starter island never grows; a hole before the server sends them).
 var ice_holes: Array = []   # {"pos": Vector3, "until": game seconds}: the server's fishing holes, once it sends them (section 5; Steve)
@@ -2331,7 +2342,7 @@ func _read_frozen_switches() -> void:
 		_frozen_hole = FrozenWater.hole_of(AppConfig.get_command_line_value("frozen-hole", ""))
 
 
-# Ice walk feel (docs/design/ice_walk_feel.md, --ice-feel): the band of the ice under the player from the collider's own cover, the footing on a
+# Ice walk feel (docs/design/ice_walk_feel.md): the band of the ice under the player from the collider's own cover, the footing on a
 # sheet, wading through skim and film, the cold shock and the thaw moat in the walkable collider.
 var _ice_feel_cover: float = 0.0
 var _ice_feel_band: int = 0
@@ -2550,8 +2561,7 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 
 	_cave_streams.show_tile(tile, streams)
 
-	if IceFeelScript.on:
-		_spring_mouths[tile] = SpringSteam.mouths_of(streams)
+	_spring_mouths[tile] = SpringSteam.mouths_of(streams)
 	@warning_ignore("integer_division")
 	print("Terrain client: cave streams for tile %s (%d pieces, %d pools)" % [str(tile), streams.size() / 7, CaveStreams.pools_of(streams).size()])
 
@@ -3743,7 +3753,7 @@ func _update_view(delta: float) -> void:
 	if _avatar == null:
 		# Dave's PC log 4 Nov 2026: the first call waited for the body file still loading on a loader thread ("update view" 404 ms at the join).
 		# The body is made once the file is in; until then (a second or two, while the ground loads) there is no third-person body to draw.
-		if MyCharacter.dynasty_body_on() and ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		if ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 			return
 
 		_avatar = _make_avatar()
@@ -3881,8 +3891,7 @@ func _dress_avatar() -> void:
 
 
 func _make_avatar() -> Node3D:
-	# Dave's own body (1 Nov 2026) is the default; `--oldbody` or Esc > Settings > Gameplay > "Old body (next Play)" brings back the body worn before it (the generated body of
-	# src/client/character/, or the old ragdoll with `--old-body`).
+	# Dave's own body (1 Nov 2026) is the only player body; the generated body of src/client/character/ stands in when his glb is not imported.
 	var avatar: Node3D = MyCharacter.make_avatar()     # Dave's body, or the previous one when his glb is not imported (my_character.gd)
 	avatar.visible = false
 	return avatar
@@ -4439,9 +4448,8 @@ func _move_player(delta: float) -> void:
 		elif swimming:
 			velocity = _swim_velocity(velocity, direction, pace, fast > 1.0, strain_cap, float(water["surface"]), delta)
 
-			if IceFeelScript.on:
-				velocity.x *= IceFeelScript.swim_mult(_ice_shock)
-				velocity.z *= IceFeelScript.swim_mult(_ice_shock)
+			velocity.x *= IceFeelScript.swim_mult(_ice_shock)
+			velocity.z *= IceFeelScript.swim_mult(_ice_shock)
 		else:
 			velocity.y = body.velocity.y - GRAVITY * delta
 
@@ -4451,10 +4459,9 @@ func _move_player(delta: float) -> void:
 				velocity.x *= slow
 				velocity.z *= slow
 
-			if IceFeelScript.on:
-				velocity = _ice_feel_velocity(velocity, water, delta)
+			velocity = _ice_feel_velocity(velocity, water, delta)
 
-		if IceFeelScript.on and not waiting_for_ground:
+		if not waiting_for_ground:
 			_ice_feel_shock(water, delta)
 
 		if not swimming and body.is_on_floor() and KeyBindings.held("jump") and strain_cap >= 0.0:
@@ -4476,7 +4483,7 @@ func _move_player(delta: float) -> void:
 		if not was_on_floor and body.is_on_floor() and not swimming and not waiting_for_ground:
 			var landed: float = feel.land(fall_speed)
 
-			if IceFeelScript.on and landed > 0.0 and IceFeelScript.bears(_ice_feel_band) and _ice_underfoot:
+			if landed > 0.0 and IceFeelScript.bears(_ice_feel_band) and _ice_underfoot:
 				feel.strike(0.0, 0.25)   # ice_walk_feel.md section 4: a hard landing on a sheet dips a little more (0.02 m)
 
 		rescue.step()
@@ -4676,14 +4683,14 @@ func _under_ice_way_out() -> Vector3:
 
 
 func _ice_step_scale() -> float:
-	if not IceFeelScript.on or not _ice_underfoot:
+	if not _ice_underfoot:
 		return 1.0
 
 	return IceFeelScript.step_scale(_ice_feel_band, sound.weather.ground_snow if sound != null and sound.weather != null else 0.0)
 
 
 func _ice_bob_scale() -> float:
-	if not IceFeelScript.on or not _ice_underfoot:
+	if not _ice_underfoot:
 		return 1.0
 
 	return IceFeelScript.bob_scale(_ice_feel_band, sound.weather.ground_snow if sound != null and sound.weather != null else 0.0)
@@ -4705,12 +4712,11 @@ func _update_bob(delta: float) -> void:
 		if floor(before / TAU) != floor(_bob_phase / TAU):
 			sound.footstep(body, gait, 0.0, "left" if _bob_phase < TAU else "right")
 
-			if IceFeelScript.on:
-				_ice_feel_after_step()
+			_ice_feel_after_step()
 
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
-	var careful: float = _ice_bob_scale()   # --ice-feel: a flatter, careful walk on bare ice
+	var careful: float = _ice_bob_scale()   # a flatter, careful walk on bare ice
 	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount * feel.intensity * careful
 	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount * feel.intensity * careful
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount * feel.intensity * careful
@@ -4886,10 +4892,9 @@ func _process(delta: float) -> void:
 	_frame_ms.append(delta * 1000.0)
 	Probe.frame(delta)
 
-	if MyCharacter.dynasty_body_on():
-		var tq_arms: int = Probe.start()
-		DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here
-		Probe.stop("arms prebuild", tq_arms)
+	var tq_arms: int = Probe.start()
+	DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here
+	Probe.stop("arms prebuild", tq_arms)
 
 	if compass != null and camera != null:
 		compass.heading = CompassScript.heading_of(camera)
@@ -6138,6 +6143,8 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	if not weather.is_empty():
 		text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C, %s" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"], "under cover" if under_cover > 0.0 else "open"]
 
+		text += "\n" + wind_line(weather)
+
 	var win: Vector2i = get_window().size
 	@warning_ignore("static_called_on_instance")
 	text += "\n3D %dx%d 16:9 in window %dx%d (scale %.2f)%s, %s, %s" % [int(display.BASE.x * _render_scale), int(display.BASE.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
@@ -6504,6 +6511,105 @@ func _rock_over(p: Vector3, surface: float) -> bool:
 		return true
 
 	return false
+
+
+# The wind where the viewer stands (docs/design/prevailing_wind.md section 3): Weather.local_wind on `state` with the ground measured
+# round the viewer. The shot runner calls it on its forced weather too.
+func wind_onto(state: Dictionary) -> Dictionary:
+	if body == null or not body.is_inside_tree():
+		return state
+
+	_measure_wind_here(float(state.get("wind_dir", 0.0)))
+	return WeatherScript.local_wind(state, wind_here, game_clock.seconds)
+
+
+const WIND_SLOPE_STEP_M := 20.0                    # the slope: ground heights this far either side of the viewer, east-west and north-south
+const WIND_LEE_AT_M := [30.0, 60.0, 120.0]         # the lee: how steeply the ground rises upwind at these distances
+const WIND_LEE_DEG := [14.0, 22.0]                 # sheltered from a crest rising at 18 degrees or more (wind-over-terrain.md)
+const WIND_SEA_UPWIND_AT_M := [100.0, 250.0, 450.0]   # sea upwind: open water at these distances upwind
+const WIND_SEA_NEAR_M := 300.0                     # the sea or land breeze: open water this far off on eight bearings
+const WIND_SEA_Y_M := 0.25                         # ground at or under this height (sea level 0) is open sea or its floor
+const WIND_HERE_EASE := 0.4                        # each new measure moves the kept one this share of the way (walking does not jerk it)
+
+
+# Measures the ground round the viewer for Weather.local_wind, every 2 s: 19 rays straight down, nothing sent.
+func _measure_wind_here(heading: float) -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now < _wind_here_next_msec and not wind_here.is_empty():
+		return
+
+	_wind_here_next_msec = now + 2000
+	var p: Vector3 = _anchor
+	var h0: float = _ground_column(p.x, p.z, p.y)
+	var east: float = _ground_column(p.x + WIND_SLOPE_STEP_M, p.z, p.y) - _ground_column(p.x - WIND_SLOPE_STEP_M, p.z, p.y)
+	var south: float = _ground_column(p.x, p.z + WIND_SLOPE_STEP_M, p.y) - _ground_column(p.x, p.z - WIND_SLOPE_STEP_M, p.y)
+	var uphill: Vector2 = Vector2(east, south) / (2.0 * WIND_SLOPE_STEP_M)
+	var known_slope: bool = is_finite(uphill.x) and is_finite(uphill.y)
+	var upwind: Vector2 = -Vector2.from_angle(heading)
+	var rise_deg: float = 0.0
+
+	if is_finite(h0):
+		for d in WIND_LEE_AT_M:
+			var h: float = _ground_column(p.x + upwind.x * d, p.z + upwind.y * d, p.y)
+
+			if is_finite(h):
+				rise_deg = maxf(rise_deg, rad_to_deg(atan2(h - h0, d)))
+
+	var sea_hits: int = 0
+	var sea_known: int = 0
+
+	for d in WIND_SEA_UPWIND_AT_M:
+		var h: float = _ground_column(p.x + upwind.x * d, p.z + upwind.y * d, p.y)
+
+		if is_finite(h):
+			sea_known += 1
+			sea_hits += 1 if h <= WIND_SEA_Y_M else 0
+
+	var sea_way: Vector2 = Vector2.ZERO
+
+	for k in range(8):
+		var way: Vector2 = Vector2.from_angle(TAU * float(k) / 8.0)
+		var h: float = _ground_column(p.x + way.x * WIND_SEA_NEAR_M, p.z + way.y * WIND_SEA_NEAR_M, p.y)
+
+		if is_finite(h) and h <= WIND_SEA_Y_M:
+			sea_way += way / 8.0
+
+	var fresh: Dictionary = {
+		"downhill": -uphill.normalized() if known_slope and uphill.length() > 0.001 else Vector2.ZERO,
+		"grade": uphill.length() if known_slope else 0.0,
+		"lee": smoothstep(WIND_LEE_DEG[0], WIND_LEE_DEG[1], rise_deg),
+		"sea_upwind": float(sea_hits) / float(sea_known) if sea_known > 0 else 0.0,
+		"sea_way": sea_way,
+		"canopy": under_cover,
+	}
+
+	if wind_here.is_empty():
+		wind_here = fresh
+		return
+
+	for key in fresh:
+		wind_here[key] = lerp(wind_here[key], fresh[key], WIND_HERE_EASE) if key != "canopy" else fresh[key]
+
+
+# The ground's height under (x, z) near the height `near_y` (NAN where it is not loaded): a ray from 150 m above to 400 m below.
+func _ground_column(x: float, z: float, near_y: float) -> float:
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, near_y + 150.0, z), Vector3(x, near_y - 400.0, z))
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	return float(hit["position"].y) if not hit.is_empty() else NAN
+
+
+# One line on the wind here, for F3 and the shot runner's log.
+func wind_line(state: Dictionary) -> String:
+	var down: Vector2 = wind_here.get("downhill", Vector2.ZERO)
+	return "wind: from %03d deg (world from %03d), %.1f m/s, gust x%.2f | slope %.2f downhill toward %03d, slope breeze %+.1f m/s | sea upwind %.2f, sea breeze %+.1f m/s | lee %.2f, canopy %.1f" % [
+		int(round(WeatherScript.bearing_of_heading(float(state.get("wind_dir", 0.0)) + PI))),
+		int(round(WeatherScript.bearing_of_heading(world_wind_dir + PI))),
+		float(state.get("wind_mps", WeatherScript.wind_mps(float(state.get("wind", 0.0))))), float(state.get("wind_gust", 1.5)),
+		float(wind_here.get("grade", 0.0)), int(round(WeatherScript.bearing_of_heading(down.angle()))) if down.length() > 0.01 else 0,
+		float(state.get("wind_slope_mps", 0.0)), float(wind_here.get("sea_upwind", 0.0)), float(state.get("wind_sea_mps", 0.0)),
+		float(wind_here.get("lee", 0.0)), float(wind_here.get("canopy", 0.0))]
 
 
 func _ground_below(p: Vector3) -> float:

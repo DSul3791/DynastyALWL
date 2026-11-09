@@ -37,8 +37,14 @@ const FADE_PER_SEC := 0.15              # about 7 s from none to full
 const THUNDER_EVERY := [14.0, 45.0]     # at the full storm value; a weaker storm waits longer
 const THUNDER_NEAR_M := 500.0           # closer than this: sharp crack and thud
 const THUNDER_FAR_M := 1800.0           # farther than this: a low grumble
-const THUNDER_MAX_DELAY_SEC := 4.0       # the light-to-sound wait is shortened so a far strike still feels connected
-const THUNDER_DELAY_SCALE := 0.5         # of the real travel time, then capped
+# Real thunder (always on since Dave's 8 Nov ruling; docs/design/thunder_delay_design.md, Jamie #683 lesson 6): the full travel time, 3 s a km, so counting
+# the seconds gives the distance; strikes out to 15 km, past 5 km a quiet low rumble only, and past 10 km lost in a wind.
+const THUNDER_REAL_MAX_M := 15000.0
+const THUNDER_REAL_NEAR_SHARE := 0.6     # at the full storm, the share of strikes within 3 km
+const THUNDER_QUIET_FROM_M := 5000.0     # past this the level follows spreading and air loss, not the near ramp
+const THUNDER_AIR_DB_PER_KM := 0.6       # the low rumble left after 5 km loses little to the air
+const THUNDER_WIND_LOST_FROM_M := 10000.0
+const THUNDER_WIND_LOST_DB := 14.0       # at wind 1, past 10 km (Jamie: a faint grumble on a still evening, unheard in wind)
 # Distant thunder is dulled by the air and by cover: air_bands.gd puts it on a low-passed child of Weather (one filter per band).
 const AirBands := preload("res://src/client/air_bands.gd")
 const OutdoorAir := preload("res://src/client/outdoor_air.gd")
@@ -123,6 +129,9 @@ var _cover_target: float = 0.0
 var _roof_target: float = 0.0
 var forced_roof: bool = false           # --roofed: a roof overhead (headless check)
 var _drip_in: float = 1.0
+var canopy_drip: float = 0.0            # the crowns' drip strength 0..1 (weather_look, rain_drips.gd), so drips go on after the rain
+const DRIP_AFTER_DB := 2.0              # after the rain: fewer, heavier drops (Jamie #675: drops over 1.5 mm are drip)
+const DRIP_AFTER_PITCH := 0.9
 var _under: float = 1.0                 # 0 underwater, 1 in the air, smoothed
 
 
@@ -339,7 +348,9 @@ func _ground(delta: float) -> void:
 
 # Under trees in rain: now and then a drop falls from a leaf nearby.
 func _drips(delta: float, body: CharacterBody3D, cover: float) -> void:
-	if rain < 0.15 or cover < 0.5 or not _stage.has_room():
+	var after: bool = rain < 0.15 and canopy_drip > 0.05
+
+	if (rain < 0.15 and not after) or cover < 0.5 or not _stage.has_room():
 		return
 
 	_drip_in -= delta * _ambient.time_scale
@@ -347,7 +358,7 @@ func _drips(delta: float, body: CharacterBody3D, cover: float) -> void:
 	if _drip_in > 0.0:
 		return
 
-	_drip_in = lerpf(DRIP_EVERY[1], DRIP_EVERY[0], clampf(rain, 0.0, 1.0)) * _rng.randf_range(0.6, 1.4) / maxf(cover, 0.3)
+	_drip_in = lerpf(DRIP_EVERY[1], DRIP_EVERY[0], clampf(maxf(rain, 0.8 * canopy_drip), 0.0, 1.0)) * _rng.randf_range(0.6, 1.4) / maxf(cover, 0.3)
 	var list: Array = _variants("rain_drip")
 
 	if list.is_empty():
@@ -356,8 +367,8 @@ func _drips(delta: float, body: CharacterBody3D, cover: float) -> void:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[_rng.randi_range(0, list.size() - 1)]
 	player.bus = "Weather"
-	player.volume_db = DRIP_DB + _rng.randf_range(-4.0, 2.0) + linear_to_db(clampf(cover, 0.3, 1.0))
-	player.pitch_scale = _rng.randf_range(0.85, 1.2)
+	player.volume_db = DRIP_DB + _rng.randf_range(-4.0, 2.0) + linear_to_db(clampf(cover, 0.3, 1.0)) + (DRIP_AFTER_DB if after else 0.0)
+	player.pitch_scale = _rng.randf_range(0.85, 1.2) * (DRIP_AFTER_PITCH if after else 1.0)
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = 3.0
 	player.max_distance = 20.0
@@ -403,6 +414,13 @@ func _thunder(delta: float) -> void:
 
 		if _pending[n][0] <= 0.0:
 			var voice: AudioStreamPlayer3D = _pending[n][1]
+
+			# A real delay is up to 45 s: the player may have moved, so the roll still comes from the strike's side.
+			var camera: Camera3D = get_viewport().get_camera_3d() if get_viewport() != null else null
+
+			if camera != null:
+				voice.global_position = camera.global_position + (_pending[n][2] as Vector3)
+
 			voice.play()
 			_pending.remove_at(n)
 
@@ -417,7 +435,7 @@ func _thunder(delta: float) -> void:
 	var strength: float = clampf(1.0 if forced else storm_level, 0.2, 1.0) * maxf(intensity, 0.3)
 	_thunder_in = _rng.randf_range(float(THUNDER_EVERY[0]), float(THUNDER_EVERY[1])) / strength
 	# More strikes land close in a fierce storm: distance leans nearer as the storm grows.
-	strike(_rng.randf_range(250.0, 2800.0) * pow(_rng.randf(), 0.5 + 0.5 * (1.0 - strength)))
+	strike(real_strike_distance(_rng.randf(), _rng.randf(), strength))
 
 
 # One lightning strike `distance_m` away (in a random direction unless `angle` is given):
@@ -437,7 +455,7 @@ func strike(distance_m: float, angle: float = -1.0) -> bool:
 	# band bus). A strike close overhead sounds from above, centred. Far thunder is darker still: the distance filter falls from 8 kHz to 2.5 kHz.
 	var voice: AudioStreamPlayer3D = Sound3D.make(self, _thunder_bus(distance_m), 100.0, 0.0, lerpf(8000.0, 2500.0, clampf(distance_m / 400.0, 0.0, 1.0)), false, false)
 	voice.stream = list[_rng.randi_range(0, list.size() - 1)]
-	voice.volume_db = THUNDER_DB - distance_m / 400.0 + (3.0 if distance_m < THUNDER_NEAR_M else 0.0) + _rng.randf_range(-2.0, 1.0)
+	voice.volume_db = thunder_real_db(distance_m, wind) + _rng.randf_range(-2.0, 1.0)
 	voice.pitch_scale = _rng.randf_range(0.9, 1.1)
 	voice.finished.connect(voice.queue_free)
 
@@ -446,18 +464,44 @@ func strike(distance_m: float, angle: float = -1.0) -> bool:
 
 	var camera: Camera3D = get_viewport().get_camera_3d() if get_viewport() != null else null
 	var listener: Vector3 = camera.global_position if camera != null else Vector3.ZERO
-	voice.global_position = listener + (Vector3(cos(angle), 0.0, sin(angle)) * 100.0 if distance_m >= THUNDER_NEAR_M else Vector3(0.0, 60.0, 0.0))
+	var offset: Vector3 = Vector3(cos(angle), 0.0, sin(angle)) * 100.0 if distance_m >= THUNDER_NEAR_M else Vector3(0.0, 60.0, 0.0)
+	voice.global_position = listener + offset
 	lightning.emit(Vector3(cos(angle) * distance_m, 0.0, sin(angle) * distance_m), distance_m)
-	_pending.append([thunder_delay(distance_m), voice])
+	_pending.append([thunder_delay(distance_m), voice, offset])
 	thunders_played += 1
 	last_thunder = "%s %.0f m, %s, heard in %.1f s" % [sound_name, distance_m, voice.bus, thunder_delay(distance_m)]
 	print("sound rumble: thunder ", last_thunder)   # far thunder grumbles like a rumble (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave)
 	return true
 
 
-# Seconds between the flash and the thunder for a strike this far away.
+# Seconds between the flash and the thunder for a strike this far away: the full travel time (3 s a km).
 func thunder_delay(distance_m: float) -> float:
-	return minf(distance_m / SPEED_OF_SOUND * THUNDER_DELAY_SCALE, THUNDER_MAX_DELAY_SEC)
+	return distance_m / SPEED_OF_SOUND
+
+
+# Where a strike lands, from two random numbers 0..1 and the storm strength (0.2..1). A share of the strikes (more
+# in a fierce storm) falls in the cell overhead, 250 m to 3 km; the rest anywhere out to 15 km, evenly by area.
+static func real_strike_distance(pick: float, spread: float, strength: float) -> float:
+	var near_share: float = THUNDER_REAL_NEAR_SHARE * clampf(strength, 0.2, 1.0) + 0.2 * (1.0 - clampf(strength, 0.2, 1.0))
+
+	if pick < near_share:
+		return lerpf(250.0, 3000.0, spread)
+
+	return sqrt(lerpf(3000.0 * 3000.0, THUNDER_REAL_MAX_M * THUNDER_REAL_MAX_M, spread))
+
+
+# The roll's level in dB. Up to 5 km today's ramp (a crack close by, then 1 dB lost per 400 m); past it spreading
+# (6 dB a doubling) and a little air loss, so a 15 km roll is a faint grumble; past 10 km the wind drowns it.
+static func thunder_real_db(distance_m: float, wind_level: float) -> float:
+	var db: float = THUNDER_DB - minf(distance_m, THUNDER_QUIET_FROM_M) / 400.0 + (3.0 if distance_m < THUNDER_NEAR_M else 0.0)
+
+	if distance_m > THUNDER_QUIET_FROM_M:
+		db -= 20.0 * log(distance_m / THUNDER_QUIET_FROM_M) / log(10.0) + THUNDER_AIR_DB_PER_KM * (distance_m - THUNDER_QUIET_FROM_M) / 1000.0
+
+	if distance_m > THUNDER_WIND_LOST_FROM_M:
+		db -= THUNDER_WIND_LOST_DB * clampf(wind_level, 0.0, 1.0) * clampf((distance_m - THUNDER_WIND_LOST_FROM_M) / 2000.0, 0.0, 1.0)
+
+	return db
 
 
 # The bus a strike this far away plays on: the farther, and the more forest, roof or cave around, the darker the band.

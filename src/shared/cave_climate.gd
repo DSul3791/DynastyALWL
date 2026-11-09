@@ -1,7 +1,7 @@
 extends RefCounted
 
 # Cave air by depth and season (docs/design/cave_climate_design.md; Jamie #709, underground-climate.md; coordinator 8 Nov 2026). Static helpers
-# only, thread safe. `cfg` is warmth.json cave_climate. Deep in, the air is the year mean at the height (Climate.year_mean_c, 5.5 C at cave
+# only, thread safe. `cfg` is warmth.json cave_climate. Deep in, the air is the year mean at the height (Climate.year_mean_c, about 10.7 C at cave
 # 8002); in from the mouth it blends from the outside air to that with smoothstep(near_m, reach_m, depth_m), the band set by which way the
 # cave runs and the season. depth_m is the straight distance to the nearest mouth (a first pass; bends are not counted).
 

@@ -382,6 +382,36 @@ func _ready() -> void:
 				return true
 
 		return false
+	# The drink's source rows (docs/design/drinking_water_design.md 3, "without the record": today's water, minus salt water), for
+	# vitals.json thirst.sources. From the baked tile, at the same five points as water_near: a spring cave's stream is spring water; ocean
+	# and estuary cells are salt; wet lake and river cells are lakes and rivers; any other cell the live sim has wet is a puddle. No ice field:
+	# server_items puts its own ice rule (_on_ice) on each row. Springs and brooks by regime need the baked drink rows (build step 2).
+	items.water_source = func(pos, reach) -> Array:
+		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
+		var rows: Array = []
+
+		if tile_data.placeholder or tile_data.water_class.is_empty():
+			return rows
+
+		if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
+			rows.append({"kind": "spring"})
+
+		var sim: PackedFloat32Array = tile_data.sim_snapshot()
+
+		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
+			var cls: int = int(tile_data.water_class[k])
+
+			if cls == 1 or cls == 5:
+				rows.append({"kind": "salt"})   # ocean, estuary (data/tables/water_classes.json)
+				continue
+
+			var wet: bool = (not is_nan(sim[k])) if not sim.is_empty() else (cls > 1 and not is_nan(tile_data.water_surface[k]))
+
+			if wet:
+				rows.append({"kind": "lake" if cls == 2 else ("river" if cls == 3 else "puddle")})
+
+		return rows
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
@@ -443,8 +473,14 @@ func _ready() -> void:
 	items.send_strain = func(peer, strain_pm, state, fade_pm, stance): net.strain.rpc_id(peer, strain_pm, state, fade_pm, stance)
 	@warning_ignore("confusable_local_declaration")
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
+	items.send_chest_info = func(peer, id, keep_out, may_set): net.chest_info.rpc_id(peer, id, keep_out, may_set)
+	items.send_craft_stock = func(peer, numbers, counts): net.craft_stock.rpc_id(peer, numbers, counts)
+	items.send_favourites = func(peer, flags): net.favourites.rpc_id(peer, flags)
+	items.send_hotbar = func(peer, keys): net.hotbar.rpc_id(peer, keys)
+	items.send_bulk_done = func(peer, kind, stacks, containers, ids): net.bulk_done.rpc_id(peer, kind, stacks, containers, ids)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()
+	items.season_at = func(pos): return WeatherScript.season_at(game_clock.seconds, pos.z, float(settings.tile_size_m), settings.equator_tile_row)   # a place's own season (drinking water by source)
 	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()
 	items.rock_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
@@ -1183,6 +1219,9 @@ func _update_weather() -> void:
 	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): its rivers are the ones swelled
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
+
+	if flora != null:
+		flora.set_season(str(weather["season"]))   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md): the row's own season (Weather.season_at)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:

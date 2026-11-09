@@ -1,6 +1,6 @@
 extends SceneTree
 # Headless check of the left hand (src/client/held_item.gd): a torch or a shield goes in the left hand beside the right-hand tool,
-# the same key stows it, a shield raises with B, and the hotbar picks the slot up.
+# the same key stows it, a shield raises with B, and the hotbar key picks the item up (keys point at items: inventory step 4).
 
 const HeldItem := preload("res://src/client/held_item.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -39,6 +39,11 @@ class FakeView:
 	func is_broken(_slot: int) -> bool:
 		return false
 
+	var keys: Array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]   # the pointer hotbar (inventory step 4): each key holds an item number
+
+	func key_slot(key: int) -> int:
+		return inventory.numbers.find(keys[key]) if key >= 0 and key < keys.size() and int(keys[key]) != 0 else -1
+
 
 func _check(ok: bool, what: String) -> void:
 	if ok:
@@ -62,6 +67,9 @@ func run() -> void:
 	view.inventory.counts.fill(0)
 	view.inventory.numbers[0] = table.number_of("stone_axe")
 	view.inventory.numbers[1] = table.number_of("torch")
+	view.keys[0] = table.number_of("stone_axe")
+	view.keys[1] = table.number_of("torch")
+	view.keys[2] = 9999
 	root.add_child(view)
 	var camera: Camera3D = Camera3D.new()
 	view.add_child(camera)
