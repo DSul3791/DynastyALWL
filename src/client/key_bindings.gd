@@ -45,6 +45,11 @@ const ACTIONS := [
 	["split_item", "Split the stack", "Inventory screen", CONTEXT_PACK, KEY_S, false, false, true],
 	["repair_item", "Repair a worn tool", "Inventory screen", CONTEXT_PACK, KEY_R, false, false, true],
 	["transfer_item", "Move the stack to or from a container", "Inventory screen", CONTEXT_PACK, KEY_T, false, false, true],
+	# A container open (redesign 4.4, 9 Nov 2026): its four bulk actions. Take all is A, not the T first proposed: T is transfer_item.
+	["take_all", "Container open: take all into the pack", "Inventory screen", CONTEXT_PACK, KEY_A, false, false, true],
+	["store_all", "Container open: store all it takes", "Inventory screen", CONTEXT_PACK, KEY_G, false, false, true],
+	["sort_both", "Container open: sort the pack and the container", "Inventory screen", CONTEXT_PACK, KEY_F, false, false, true],
+	["stack_nearby", "Container open: stack into my chests nearby", "Inventory screen", CONTEXT_PACK, KEY_Q, false, false, true],
 	["fly", "Admin: walk or fly", "Admin and debug", CONTEXT_WORLD, KEY_G, false, false, false],
 	["quality", "Quality: Low, Medium, High, Ultra", "Admin and debug", CONTEXT_WORLD, KEY_F2, false, false, false],
 	["debug_details", "Debug details on / off", "Admin and debug", CONTEXT_WORLD, KEY_F3, false, false, false],
