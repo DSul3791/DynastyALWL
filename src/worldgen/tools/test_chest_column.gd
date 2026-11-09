@@ -8,6 +8,7 @@ extends SceneTree
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const InventoryFrame := preload("res://src/client/ui/inventory/inventory_frame.gd")
 const ContainerPanel := preload("res://src/client/ui/inventory/container_panel.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 
 
 class FakeTable:
@@ -124,13 +125,19 @@ func _initialize() -> void:
 	var hints: Dictionary = {}
 	_hints(view._chest_panel, hints)
 
-	for label in ["Take all", "Store all", "Sort both", "Stack into my chests"]:
-		check(hints.has(label), "the %s key hint is there" % label)
+	var shown: Dictionary = {}
 
-	(hints["Take all"] as Button).pressed.emit()
-	(hints["Store all"] as Button).pressed.emit()
-	(hints["Stack into my chests"] as Button).pressed.emit()
-	(hints["Sort both"] as Button).pressed.emit()
+	for pair in [["Take all", "take_all"], ["Store all", "store_all"], ["Sort both", "sort_both"], ["Stack into my chests", "stack_nearby"]]:
+		var text: String = "%s (%s)" % [pair[0], KeyBindings.label(pair[1])]
+		check(hints.has(text), "the key hint \"%s\" is there, with its key" % text)
+		shown[pair[1]] = hints.get(text)
+
+	check(KeyBindings.label("take_all") == "A" and KeyBindings.label("store_all") == "G", "Take all is A and Store all is G by default")
+
+	for action in ["take_all", "store_all", "stack_nearby", "sort_both"]:
+		if shown[action] != null:
+			(shown[action] as Button).pressed.emit()
+
 	check(view.bulks == [0, 1, 2, 3], "the four hints send bulk 0 to 3")
 	view.chest_keep_out = false
 	view._world[40]["state"] = -1
