@@ -2659,7 +2659,7 @@ func _ice_cfg() -> Dictionary:
 
 
 func ice_on() -> bool:
-	return bool(_ice_cfg().get("on", false)) and ice_cover_at.is_valid() and water_level.is_valid()
+	return ice_cover_at.is_valid() and water_level.is_valid()
 
 
 # The ice cover on the water at (x, z): 0 on dry land, on open water and in a thaw moat.

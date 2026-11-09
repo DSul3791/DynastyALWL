@@ -20,7 +20,7 @@
   - wolves never cross.
   - Only the deer's skirting shows.
 
-## 2. What the player will notice (flag on)
+## 2. What the player will notice (always on since 9 Nov 2026: the `ice.on` switch is gone, Dave's no-flags rule)
 
 - **Deer and boar walk round ice** of skim or more (2 cm, cover 0.1), even over shallows they would wade on an open day. Elk, moose, chamois and pronghorn go round too, since they share the deer role.
 - **Lighter animals cross ice that holds them for sure** (Jamie's rule, below), walking at the ice's surface over deep water.
@@ -97,7 +97,7 @@ So the starter ice (2.8 to 5.6 cm) carries birds, hares and foxes. It may carry 
 ## 6. Tests (static checks only in the cloud; run on Dave's PC)
 
 New `test_animals_ice.gd`, with a stub pond (shallow to x 150, deep beyond):
-- **Flag off:** nothing.
+- **Flag off:** gone with the switch (9 Nov 2026); the test checks there is no switch.
 - **Skirting:** a deer and a boar are blocked by skim in the shallows, and wade open shallows.
 - **Mass rule:**
   - 2.8 cm holds a fox over deep water, not a wolf (0.9 × 2.8² = 7.1 kg);
