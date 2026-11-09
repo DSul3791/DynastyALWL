@@ -236,6 +236,7 @@ var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
+var grass_while_flying: bool = false   # the shot runner sets this: its camera flies, but a picture must show the grass a walking player sees (no grass in any rig shot until 9 Nov 2026)
 var underwater: bool = false
 var _flame_rain_s: float = 0.0          # seconds the held torch has been out in the open rain (flame_rules.gd)
 var _torch_burn_msec: int = -100000
@@ -5236,7 +5237,7 @@ func _process(delta: float) -> void:
 		flora.apply_built()
 		Probe.stop("flora apply", ta)
 
-	if not flying and body != null:
+	if (not flying or grass_while_flying) and body != null:
 		var tg: int = Probe.start()
 		grass.update(body.global_position)
 		var tg_stamp: int = Probe.start()

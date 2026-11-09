@@ -1877,6 +1877,10 @@ func _next(now: int) -> void:
 	# (HUD "open", Dino's cave pictures 8 Nov 2026). The pictures measure the rock as a walking player would.
 	if client.sound != null and client.sound.cave != null:
 		client.sound.cave.measure_flying = true
+
+	# Likewise the grass: the client builds it round the body only while walking, so no rig picture ever had a blade of grass (Dino's lush_before/after
+	# 9 Nov 2026, grass on at 120 m). It is built round the flying body as round a walking one; --shot-nograss still hides it (radius 0).
+	client.grass_while_flying = true
 	_placed = false
 	_landed = false
 	_land_failed = false
