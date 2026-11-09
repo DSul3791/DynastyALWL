@@ -15,7 +15,11 @@ groundwater.npz (R4) and, once R5 exists, its network.json. Writes OUT_DIR/recor
 The steps (R6 method items 1 to 4):
 1. The chain: each stage's manifest names the hashes of the files it read; they must be the files given here, so the record
    is one run's, never a mix. Any mismatch stops the writer.
-2. The window must end at sea on every side (no land on its frame), so no river or groundwater divide is cut by its edge.
+2. The window should end at sea on every side, so no river or groundwater divide is cut by its edge. The nine starter tiles do
+   not (land crosses three of their corners), and only they exist in the game, so the frame is an outlet as in every stage
+   before (lem.route seeds the flood there, lakes.py counts it with the sea): frame land drains off at its own ground, a reach
+   that runs off the frame keeps its channel to the edge, and the land on the frame is reported by side (window_frame_land)
+   with a sea-framed window listed under summary.later.
 3. The 8 m ground: R3's 16 m ground (the post-glacial ground with leftover hollows filled) refined by a separable monotone
    cubic (PCHIP, Fritsch and Carlson 1980) along x and then z. It passes through every 16 m height and does not overshoot
    along either axis, so summits, ridges and channel beds keep their heights. Then fine roughness at 16 to 48 m on
@@ -82,11 +86,18 @@ def check_chain(inputs_dir, b2_dir, r3_dir, r4_dir):
     return h
 
 
-def check_window(sea):
-    """No land on the window's frame (step 2)."""
-    frame = np.concatenate([sea[0, :], sea[-1, :], sea[:, 0], sea[:, -1]])
-    if not frame.all():
-        raise SystemExit(f'record: {int((~frame).sum())} land cells on the window frame; the window must end at sea on every side')
+def frame_land(sea, ground):
+    """Land on the window's frame by side (step 2): its 16 m cells and the highest of them. Rows run along z, columns along x."""
+    sides = dict(z_min=(sea[0, :], ground[0, :]), z_max=(sea[-1, :], ground[-1, :]), x_min=(sea[:, 0], ground[:, 0]),
+                 x_max=(sea[:, -1], ground[:, -1]))
+    out = {}
+    for k, (s, h) in sides.items():
+        land = ~s
+        out[k] = dict(cells=int(land.sum()), highest_m=round(float(h[land].max()), 1) if land.any() else None)
+    edge = np.zeros(sea.shape, bool)
+    edge[0, :] = edge[-1, :] = edge[:, 0] = edge[:, -1] = True
+    out['cells'] = int((edge & ~sea).sum())
+    return out
 
 
 def refine(a):
@@ -218,8 +229,14 @@ def _fill(h, surface, sink, n):
 
 
 def closed_cells(g, surface, sink, tol):
-    """Land cells the flood raises by more than tol: closed hollows that drain to no sink."""
+    """Land cells the flood raises by more than tol: closed hollows that drain to no sink. Water also leaves at the window's
+    frame (step 2), so a frame sample that is no sink already is one at its own ground."""
     n = g.shape[0]
+    out = np.zeros((n, n), bool)
+    out[0, :] = out[-1, :] = out[:, 0] = out[:, -1] = True
+    out &= ~sink
+    surface = np.where(out, g, surface)
+    sink = sink | out
     filled = _fill(g.ravel().astype(np.float64), np.nan_to_num(surface.ravel().astype(np.float64)), sink.ravel().astype(np.uint8), n)
     return ((filled.reshape(n, n) - g) > tol) & ~sink
 
@@ -285,7 +302,7 @@ def _carve(segs, m, ox, oz, dx, cut, best_r, best_s, best_t):
                     best_t[k] = t
 
 
-def carve_rivers(network, net, ox, oz, m, lake_levels, CV):
+def carve_rivers(network, net, ox, oz, m, lake_levels, CV, sea16=None):
     """R6 item 3, second step: rivers wider than CV['carve_min_width_m'] carved along their R5 polylines at their bankfull
     width and depth, with banks at the bed material's angle, and drawn as water at their mean-flow depth: class 3 where the
     reach is perennial, 8 (seasonal channel) where it is intermittent or ephemeral. Narrower brooks are left to R7, which draws
@@ -296,7 +313,9 @@ def carve_rivers(network, net, ox, oz, m, lake_levels, CV):
     joined to what it runs into: the next reach's first point, or one and a half cells on toward the sea or the lake, so no
     trench ends short of the water. Levels never rise downstream and never sit below what the reach runs into (the sea at 0,
     the lake at its level, the next reach's level), so a tributary meets its river at the river's level or above. Where a
-    reach sinks or leaves its channel, the cut tapers to nothing over its last CV['end_taper_points'] points.
+    reach sinks or leaves its channel, the cut tapers to nothing over its last CV['end_taper_points'] points. A reach R5 sends
+    to the sea because it runs off the window's frame (its last 16 m cell is land on the frame; sea16 gives the sea) keeps its
+    channel to the edge with no sea floor and no join, since the water leaves there (step 2).
 
     Returns the segment rows (for _carve) and the class code per segment."""
     n16 = net['width_m'].shape[0]
@@ -340,7 +359,9 @@ def carve_rivers(network, net, ox, oz, m, lake_levels, CV):
         # (the level is held at least at the bed below), rather than its dry end raising the water behind it.
         w = (y - D0) + np.minimum(Dm, D0)
         floor = None
-        if r['ends'] == 'sea':
+        on_edge = ci[-1] in (0, n16 - 1) or cj[-1] in (0, n16 - 1)
+        off_frame = r['ends'] == 'sea' and sea16 is not None and on_edge and not bool(sea16[cj[-1], ci[-1]])
+        if r['ends'] == 'sea' and not off_frame:
             floor = 0.0
         elif r['ends'] == 'lake' and r.get('lake') is not None and int(r['lake']) in lake_levels:
             floor = lake_levels[int(r['lake'])]
@@ -442,7 +463,10 @@ def main():
     ox, oz = float(r3['origin_x']), float(r3['origin_z'])
     g16 = r3['ground'].astype(np.float64)
     sea16 = r3['sea'].astype(bool)
-    check_window(sea16)
+    frame = frame_land(sea16, g16)
+    if frame['cells']:
+        print(f"record: {frame['cells']} land cells on the window frame; water leaves there (step 2): "
+              f"{ {k: v for k, v in frame.items() if k != 'cells'} }", flush=True)
 
     # 3. The 8 m ground.
     g = refine(g16)
@@ -483,7 +507,7 @@ def main():
     river_code, river_level = np.zeros((m, m), np.uint8), np.full((m, m), np.nan)
     segs, carved_cells = np.zeros((0, 16)), 0
     if net is not None:
-        segs, _ = carve_rivers(network, net, ox, oz, m, {int(lk['id']): float(lk['level_m']) for lk in lakes}, RC['rivers'])
+        segs, _ = carve_rivers(network, net, ox, oz, m, {int(lk['id']): float(lk['level_m']) for lk in lakes}, RC['rivers'], sea16)
         cut = np.full(m * m, np.inf, np.float32)
         best_r = np.full(m * m, np.inf, np.float32)
         best_s = np.full(m * m, -1, np.int64)
@@ -598,6 +622,9 @@ def main():
     later += ['seasonal ponds (class 9): closed hollows that hold water only in the wet season, from R3 levels by season',
               'brooks narrower than about 8 m (R7 draws them from the reach polylines)',
               'cold-air pools (stage D; read by R7)', 'snow window (A4 snow layer; read by R7)']
+    if frame['cells']:
+        later.append(f"a window that ends at sea on every side (design R6 item 2): {frame['cells']} 16 m cells of land on the frame, "
+                     'where catchments are cut and water leaves, as in every stage of this run')
     complete = not missing
     json.dump(network, open(os.path.join(rec_dir, 'network.json'), 'w'), indent=1)
     # One sky (design A4): the island's latitude from its tile row on the world grid (world.py), never a fixed number, and
@@ -616,7 +643,7 @@ def main():
     summary = dict(seconds=round(time.time() - t0, 1), grid_8m=m, tiles=P['tiles'], sky=dict(sky, sea_level_mean_c=climate['default']['sea_level_mean_c'], snow_bias_c=climate['default'].get('snow_bias_c')),
                    summit_16m=summit16, summit_8m=float(g.max()), summit_8m_before_roughness=summit8_smooth,
                    roughness=dict(rms_slope=rough_rms_slope, removed_cells=roughness_removed_cells),
-                   closed_cells_outside_lakes=int(fault_idx.size), closed_cells_highest=fault_list,
+                   closed_cells_outside_lakes=int(fault_idx.size), closed_cells_highest=fault_list, window_frame_land=frame,
                    land_km2=float(land.sum() * SPACING * SPACING / 1e6), lake_km2=float(lake_wet.sum() * SPACING * SPACING / 1e6),
                    wetland_km2=float((wet8 > 0).sum() * SPACING * SPACING / 1e6), missing=missing, later=later,
                    rivers=dict(segments=int(segs.shape[0]), carved_cells=int(carved_cells),

@@ -1,5 +1,6 @@
-"""Unit tests for record.py's river carving (R6 item 3) and drainage area on tiny synthetic grids: a straight river to the sea, a
-tributary joining it, a narrow brook left alone, and a reach that sinks. They need numpy, scipy and numba, as the watershed tools do,
+"""Unit tests for record.py's river carving (R6 item 3), drainage area and window frame (R6 item 2) on tiny synthetic grids: a
+straight river to the sea, a tributary joining it, a narrow brook left alone, a reach that sinks, a river that runs off the
+frame, and the frame as an outlet. They need numpy, scipy and numba, as the watershed tools do,
 and take a few seconds (numba compiles).
 
 Run on David4 or Dave's PC, never in the cloud:
@@ -29,8 +30,8 @@ def _reach(rid, cells, ends, down=-1, lake=None, bed_y=None):
     return dict(id=rid, down=down, ends=ends, lake=lake, area_km2=5.0, polyline=pl)
 
 
-def _carve(network, net, g):
-    segs, _ = rc.carve_rivers(network, net, 0.0, 0.0, M, {}, CV)
+def _carve(network, net, g, sea16=None):
+    segs, _ = rc.carve_rivers(network, net, 0.0, 0.0, M, {}, CV, sea16)
     cut = np.full(M * M, np.inf, np.float32)
     best_r = np.full(M * M, np.inf, np.float32)
     best_s = np.full(M * M, -1, np.int64)
@@ -110,6 +111,37 @@ def test_a_sinking_reach_tapers_out():
     assert abs(g2[20, 2 * 4] - 10.0) < 1e-4
     assert abs(level[20, 2 * 12] - 9.4) < 1e-4
     assert code[20, 2 * 4] == 0
+
+
+def test_a_river_leaving_the_window():
+    """A river R5 sends to the sea because it runs off the window's frame (its last cell is land on the frame, no sea anywhere):
+    its channel runs to the edge at its own bed, with no join toward a sea that is not there, and the flood lets its water
+    out at the frame, so nothing along it is closed."""
+    g = np.full((M, M), 10.0)
+    reach = _reach(0, [(c, 10) for c in range(18, -1, -1)], 'sea')
+    segs, g2, code, level = _carve(dict(reaches=[reach]), _net(), g, np.zeros((N16, N16), bool))
+    assert segs[:, [0, 2]].min() >= 0.0, 'a join point beyond the frame'
+    assert abs(g2[20, 0] - (10.0 - 0.1 * 18 - 1.2)) < 1e-4, g2[20, 0]
+    assert code[20, 0] == rc.RIVER
+    wet = np.isfinite(level)
+    assert not rc.closed_cells(g2, np.where(wet, level, 0.0), wet, 0.01).any()
+
+
+def test_the_frame_lets_water_out():
+    """No sea and no lake: water still leaves at the frame, so only a real hollow inside is closed."""
+    g = np.full((M, M), 5.0)
+    g[20, 20] = 4.0
+    closed = rc.closed_cells(g, np.zeros((M, M)), np.zeros((M, M), bool), 0.01)
+    assert closed[20, 20] and int(closed.sum()) == 1
+
+
+def test_frame_land_by_side():
+    sea = np.ones((5, 5), bool)
+    sea[0, 1:3] = False
+    g = np.zeros((5, 5))
+    g[0, 1], g[0, 2] = 7.0, 9.0
+    f = rc.frame_land(sea, g)
+    assert f['cells'] == 2 and f['z_min'] == dict(cells=2, highest_m=9.0) and f['x_min']['cells'] == 0 and f['x_max']['highest_m'] is None
 
 
 def test_area():
