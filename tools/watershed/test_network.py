@@ -207,6 +207,35 @@ def test_patch5_sums_a_head_and_its_dry_flow():
     for cell, want_q, want_dry in ((3 * n + 3, 0.002, 0.001), (n + 1, 0.003, 0.0012), (n * n - 1, 0.0, 0.0)):
         assert abs(q[cell] - want_q) < 1e-12 and abs(dry[cell] - want_dry) < 1e-12, (cell, q[cell], dry[cell])
 
+def test_spring_heads_walk_down_into_the_belt():
+    """A spring on steep ground starts instead at the first cell of its own reach in the green belt (spring_heads); the cells
+    above stop being stream. Too far, and it stays as a seep; a head in the belt, a lake outlet or a seep stays as it is."""
+    rec, outlet = _chain()                       # 5 -> 4 -> 3 -> 2 -> 1 -> sea, 16 m a step
+    step = np.full(6, 16.0)
+    vis = np.array([False, True, True, True, True, True])
+    gw2 = np.zeros(6); gw2[5] = 0.002
+    belt = np.array([False, True, True, False, False, False])
+    none = np.zeros(6, bool)
+    v, moved, seeps = nw.lower_spring_heads(vis, rec, outlet, step, gw2, 0.0005, belt, none, 800.0)
+    assert moved == {2: 5} and not seeps and list(v) == [False, True, True, False, False, False], (moved, seeps, v)
+    assert list(vis) == [False, True, True, True, True, True], 'the input is not changed'
+    v, moved, seeps = nw.lower_spring_heads(vis, rec, outlet, step, gw2, 0.0005, belt, none, 40.0)
+    assert not moved and seeps == {5} and list(v) == list(vis), 'no belt cell within 40 m: a seep, the stream as it was'
+    in_belt = belt.copy(); in_belt[5] = True
+    assert nw.lower_spring_heads(vis, rec, outlet, step, gw2, 0.0005, in_belt, none, 800.0)[1:] == ({}, set())
+    fed = none.copy(); fed[5] = True
+    assert nw.lower_spring_heads(vis, rec, outlet, step, gw2, 0.0005, belt, fed, 800.0)[1:] == ({}, set()), 'a lake outlet stays'
+    assert nw.lower_spring_heads(vis, rec, outlet, step, np.zeros(6), 0.0005, belt, none, 800.0)[1:] == ({}, set()), 'not a spring'
+
+
+def test_ground_slope_deg_of_a_plane():
+    """A plane rising 1 m in 1 m along x is 45 degrees everywhere, edges included (3 x 3 mean, edges repeated)."""
+    n, dx = 6, 16.0
+    h = np.tile(np.arange(n) * dx, (n, 1)).astype(np.float64).ravel()
+    s = nw.ground_slope_deg(h, n, dx)
+    assert np.allclose(s, 45.0), s
+
+
 if __name__ == '__main__':
     tests = [v for k, v in sorted(globals().items()) if k.startswith('test_') and callable(v)]
     for t in tests:
