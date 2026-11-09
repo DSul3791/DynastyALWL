@@ -16,7 +16,7 @@ One prop per spring head, made of three parts:
    - The colour is dark wet soil, with a ragged moss-green rim and a soft fade at the edge.
    - It is about 4 m across, so it shows about 1 m past the clump on every side.
    - It is drawn longer downhill (about 4 x 6 m), so the ground is visibly wettest where the water leaves.
-2. **The runnel.** A narrow wet streak runs from the clump's downhill edge for 3 to 6 m. It is also a Decal: a dark line about 0.4 m wide with a glinting middle, ending where the record brook starts (the first brook cell of the head's drink points).
+2. **The runnel.** A narrow wet streak runs from the clump's downhill edge for 3 to 9 m (to the first brook cell, choice b; 4 m straight downhill when there is none). It is also a Decal: a dark line about 0.35 m wide with a glinting middle, ending where the record brook starts (the first brook cell of the head's drink points).
    - It shows that the water comes from under the bush and where it goes.
    - It is not a water surface, so nothing reads it as deep water.
 3. **Pebbles and a glint.** Five to eight small wet stones line the runnel's first metre, made from the existing loose-stone mesh (RockLook), darker and glossier.
