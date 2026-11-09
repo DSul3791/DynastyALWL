@@ -138,10 +138,19 @@ func _init() -> void:
 	var final_depth: PackedFloat32Array = sim.get_depth()
 	var film: Dictionary = WaterSettler.film_floor(final_depth, data.water_class, WaterSettler.flow_of(data, generator), data.spacing_m, WaterSettler.rules().get("film", {}))
 	print("film floor: %d river cells raised, %.0f m3 added (%s)" % [int(film["cells"]), float(film["volume_m3"]), "on" if bool(WaterSettler.rules().get("film", {}).get("enabled", false)) else "off"])
+	# A depth that rounds to 0 cm is left out of the file. WaterStore keeps cells over 4 mm, so a 4 to 5 mm cell would be stored as 0 cm; refilm_water.gd's
+	# re-save of the loaded file left those out, so this keeps the bytes of settle + refilm (9 Nov 2026), and nothing changes on load (a missing cell is 0).
+	var under_cm: int = 0
+
+	for k in range(final_depth.size()):
+		if final_depth[k] > 0.0 and int(round(final_depth[k] * 100.0)) == 0:
+			final_depth[k] = 0.0
+			under_cm += 1
+
 	var out: String = "%s/water/tile_%d_%d.water" % [WORLD_DIR, tile.x, tile.y]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(WORLD_DIR + "/water"))
 	var saved: int = WaterStore.save(out, side, final_depth)
-	print("saved %d wet cells to %s" % [saved, out])
+	print("saved %d wet cells to %s (%d under half a centimetre left out)" % [saved, out, under_cm])
 
 	if picture != "":
 		_draw(sim, side, picture)
