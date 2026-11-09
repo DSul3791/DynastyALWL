@@ -45,6 +45,19 @@ func _rules() -> void:
 	check(str(frost.get("kind", "")) == "spring" and not bool(frost.get("frozen", true)), "a spring is open on a -10 C night")
 	check(is_equal_approx(float(frost.get("temp_c", 0.0)), 5.5), "a spring's water is its own (the year mean): %.1f C" % float(frost.get("temp_c", 0.0)))
 
+	# Ground springs from the record (step 2a): a row for each head within reach (level distance), its water the year mean at its height, and a head
+	# the record gave no flow fails in a dry summer.
+	var heads: Array = [[Vector3(10.0, 50.0, 10.0), 0.002, "bushes"], [Vector3(30.0, 52.0, 10.0), 0.0, "bushes"]]
+	var mean_at: Callable = func(head: Vector3) -> float: return 14.0 - 0.0065 * head.y
+	var at_spring: Array = DrinkRules.ground_spring_rows(heads, Vector3(11.5, 51.8, 11.0), 3.0, mean_at)
+	check(at_spring.size() == 1 and str(at_spring[0]["kind"]) == "spring", "one ground spring row within 3 m (got %d)" % at_spring.size())
+	check(at_spring.size() == 1 and is_equal_approx(float(at_spring[0]["temp_c"]), 14.0 - 0.0065 * 50.0), "a ground spring's water is the year mean at its height")
+	check(DrinkRules.ground_spring_rows(heads, Vector3(20.0, 50.0, 10.0), 3.0, mean_at).is_empty(), "no row 10 m from both heads")
+	var winter_pick: Dictionary = DrinkRules.pick(CFG, at_spring, ctx("winter", INF, -10.0))
+	check(str(winter_pick.get("kind", "")) == "spring" and not bool(winter_pick.get("frozen", true)), "a ground spring is open on a -10 C night")
+	var dry_head: Array = DrinkRules.ground_spring_rows(heads, Vector3(30.0, 52.0, 11.0), 3.0, mean_at)
+	check(str(DrinkRules.pick(CFG, dry_head, ctx("summer", INF, 18.0)).get("refused", "")) == "dry", "a ground spring with no flow is dry in August")
+
 	# Brook regime 2: dry in summer, wet in summer within a day of rain, wet in autumn.
 	var brook2: Dictionary = {"kind": "brook", "regime": 2}
 	check(str(DrinkRules.pick(CFG, [brook2], ctx("summer", 48.0, 18.0)).get("refused", "")) == "dry", "an intermittent brook is dry in summer after 2 days without rain")
