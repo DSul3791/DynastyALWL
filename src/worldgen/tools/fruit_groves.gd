@@ -4,7 +4,7 @@ extends SceneTree
 # flora placer grows them. A grove is stand trees (item number STAND_BASE and up) of one species joined when within 20 m of each other,
 # kept at 4 trees or more, as in test_flora_density. For each grove it prints the centre (to walk to), the tree count, and the most trees
 # within 25 m of one of them (the near_orchard hint needs 4). Then a line per species, and a last line "verdict: PASS" when every species
-# has a grove that sets off the hint on these tiles. It reads only. A whole tile is 60 x 60 chunks, a few minutes a tile.
+# has a grove that sets off the hint on these tiles. It reads only, and only the chunks a fruit stand circle reaches (about one in six).
 #   godot --headless --path . --script res://src/worldgen/tools/fruit_groves.gd -- [--tiles=3,4;4,5] [--world=res://worlds/base_world]
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
@@ -54,15 +54,29 @@ func _init() -> void:
 	for kind_name in SPECIES:
 		trees[kind_name] = []
 
+	var stand_items: Array = []   # the four species' placer rows: only chunks one of their stand circles reaches are read
+
+	for item in placer.species:
+		if str(item.get("name", "")) in SPECIES and item.has("stand"):
+			stand_items.append(item)
+
 	var started: int = Time.get_ticks_msec()
 
 	for tile in tiles:
 		var side: int = int(round(float(settings.tile_size_m) / CHUNK_M))
 		var corner: Vector2i = placer.chunk_of(float(tile.x * settings.tile_size_m) + 1.0, float(tile.y * settings.tile_size_m) + 1.0)
 
+		var read: int = 0
+
 		for cz in range(side):
 			for cx in range(side):
-				var held: Dictionary = placer.chunk_items(Vector2i(corner.x + cx, corner.y + cz), true)
+				var chunk: Vector2i = Vector2i(corner.x + cx, corner.y + cz)
+
+				if not _stand_reaches(placer, stand_items, chunk):
+					continue
+
+				read += 1
+				var held: Dictionary = placer.chunk_items(chunk, true)
 
 				for n in range(held["ids"].size()):
 					var kind_name: String = str(placer.species_of(held["ids"][n]).get("name", ""))
@@ -70,7 +84,7 @@ func _init() -> void:
 					if trees.has(kind_name) and (int(held["ids"][n]) & 0xffff) >= PlacerScript.STAND_BASE:
 						trees[kind_name].append(Vector2((held["positions"][n] as Vector3).x, (held["positions"][n] as Vector3).z))
 
-		print("tile %d,%d: %d chunks read (%d s so far)" % [tile.x, tile.y, side * side, floori(float(Time.get_ticks_msec() - started) / 1000.0)])
+		print("tile %d,%d: %d of %d chunks read (the ones a fruit stand reaches; %d s so far)" % [tile.x, tile.y, read, side * side, floori(float(Time.get_ticks_msec() - started) / 1000.0)])
 
 	var failures: int = 0
 
@@ -92,6 +106,18 @@ func _init() -> void:
 
 	print("verdict: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
+
+
+# Whether a stand circle of any of the four species reaches the chunk (flora_placer.gd _groves_near, the same hashed grid the placer
+# uses for stand trees): a chunk no circle reaches holds none of their stand trees, so it is never read.
+func _stand_reaches(placer, stand_items: Array, chunk: Vector2i) -> bool:
+	var origin: Vector2 = placer.chunk_origin(chunk)
+
+	for item in stand_items:
+		if not placer._groves_near(item, item["stand"], placer._stand_seed, int(item["id"]), origin).is_empty():
+			return true
+
+	return false
 
 
 # [centre Vector2, trees, most within HINT_M of one tree] per group of 4 or more, joined at JOIN_M.
