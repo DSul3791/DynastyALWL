@@ -1009,11 +1009,13 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 	heads.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["m3_s"]) > float(b["m3_s"]) or (float(a["m3_s"]) == float(b["m3_s"]) and int(a["index"]) < int(b["index"])))
 	var placed: Array = []
 	var made: int = 0
+	var tried: int = 0
 
 	for head in heads:
 		var index: int = int(head["index"])
 		var point: Vector2 = _point_of(index)
 		var roll: float = rng.randf()
+		tried += 1 if roll < share else 0
 
 		if roll < share and made < int(_spring_rule("max_count")) and _record_cave_ok(index) \
 				and not _too_close(point, placed, float(_spring_rule("min_spacing_m"))) and not _kept_clear(point):
@@ -1027,7 +1029,8 @@ func _make_record_springs(rng: RandomNumberGenerator) -> void:
 
 		springs.append({"pos": [snappedf(point.x, 0.1), snappedf(_heights[index], 0.1), snappedf(point.y, 0.1)], "m3_s": snappedf(float(head["m3_s"]), 0.0001), "cover": "bushes"})
 
-	print("  springs from the record: %d spring heads, %d ground springs, %d spring caves (share %.2f)" % [heads.size(), springs.size(), made, share])
+	print("  springs from the record, tile %d,%d: %d spring heads, %d tried as caves (share %.2f), %d spring caves, %d ground springs"
+		% [_tile.x, _tile.y, heads.size(), tried, share, made, springs.size()])
 
 
 # The spring-cave rules for one R5 spring head (as _brook_heads, without its search for heads in the drawn rivers).
