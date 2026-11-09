@@ -1,10 +1,10 @@
 # Inventory and crafting redesign (9 Nov 2026)
 
-Owner: Kathleen (art direction). Asked for by Dave, 9 Nov 2026 03:49 UTC: *"Keep it simple, keep it eloquent and keep it useful … make sure its not crowded and make sure it is easy to use for a human. Also make sure it uses the space on the screen and keeps things big enough to see. Make it better than those games."* References he gave: ARK Survival inventory, Dragonwilds inventory and crafting table, Valheim crafting. After the first mockup he asked (04:09 UTC) what it takes to look like a top studio built it. Version 2 is the answer: the same layout, with a production finish (three depth levels, a leather and brass frame, a warm palette, engraved glyphs, letter-spaced titles and a set of motion rules). Version 3 (04:25 UTC) puts Dave's review into the picture itself, because what is not in the mockup does not get built: the recipe card's "Made at" and "Used in", the full name on the plate, the hotbar key hint, and the live character wearing its gear.
+Owner: Kathleen (art direction). Asked for by Dave, 9 Nov 2026 03:49 UTC: *"Keep it simple, keep it eloquent and keep it useful … make sure its not crowded and make sure it is easy to use for a human. Also make sure it uses the space on the screen and keeps things big enough to see. Make it better than those games."* References he gave: ARK Survival inventory, Dragonwilds inventory and crafting table, Valheim crafting. After the first mockup he asked (04:09 UTC) what it takes to look like a top studio built it. Version 2 is the answer: the same layout, with a production finish (three depth levels, a leather and brass frame, a warm palette, engraved glyphs, letter-spaced titles and a set of motion rules). Version 3 (04:25 UTC) puts Dave's review into the picture itself, because what is not in the mockup does not get built: the recipe card's "Made at" and "Used in", the full name on the plate, the hotbar key hint, and the live character wearing its gear. Version 4 (04:40 UTC) answers Dave's 04:35 question ("it shows your hotkeys up top, do we prefer this over just having them across the bottom like most games"): the hotbar leaves the Pack and becomes one strip across the bottom of the screen, under all three panels, at the same place and size as the in-world HUD hotbar, so it does not move when the window opens or closes.
 
-Status: **version 3 is the design (v2 accepted by the coordinator 04:21 UTC; v3 adds Dave's 04:25 review). No code until Dave says go; the first step is then the canvas and resize pass.** #780 (inventory fit) stays as it is until this replaces it.
+Status: **version 4 is the design (v2 accepted by the coordinator 04:21 UTC; v3 adds Dave's 04:25 review and was approved by Dave to build; v4 moves the hotbar to the bottom strip, decided by the coordinator 04:37 UTC).** The build is under way in the steps of section 12 (step 1, the canvas pass, is PR #785). #780 (inventory fit) is closed when step 3 opens.
 
-Mockup: `inventory_redesign_1920_v3.png` (shared files, top level), drawn at 1920 x 1080 by `docs/ui/mockup/inventory_redesign_mockup.py` from the same numbers as this doc. The script draws at 3840 x 2160 and scales down so edges are smooth; `--measured` adds a copy with every box outlined. The earlier versions, `inventory_redesign_1920.png` and `inventory_redesign_1920_v2.png`, are kept for comparison.
+Mockup: `inventory_redesign_1920_v4.png` (shared files, top level), drawn at 1920 x 1080 by `docs/ui/mockup/inventory_redesign_mockup.py` from the same numbers as this doc. The script draws at 3840 x 2160 and scales down so edges are smooth; `--measured` adds a copy with every box outlined. The earlier versions, `inventory_redesign_1920.png`, `_v2.png` and `_v3.png`, are kept for comparison.
 
 ```
 python3 docs/ui/mockup/inventory_redesign_mockup.py --out OUT --icons item_icon_sheet.png [--measured]
@@ -46,12 +46,13 @@ Performance on weak machines is a separate job: a world render scale option for 
 |---|---|---|---|---|---|
 | Outer margin | | | | | 24 all round |
 | Gutter between columns | | | | | 22 |
-| **Pack** panel | 24 | 24 | 690 | 1032 | |
-| **You** panel | 736 | 24 | 448 | 1032 | |
-| **Craft / Chest** panel | 1206 | 24 | 690 | 1032 | |
+| **Pack** panel | 24 | 24 | 690 | 908 | |
+| **You** panel | 736 | 24 | 448 | 908 | |
+| **Craft / Chest** panel | 1206 | 24 | 690 | 908 | |
+| **Hotbar strip** | 535 | 964 | 850 | 76 | **10 slots of 76 with 10 px gaps**, centred on 960, 40 px above the bottom of the canvas, on a leather tray 16 px bigger all round (519 to 1401, 948 to 1056) with stitching and brass end plates. The same control, at the same place, as the in-world HUD hotbar (section 9) |
 | Panel frame | | | | | A 14 px leather edge, then 6 px of air, so the inside starts 20 px in |
 
-690 + 448 + 690 + 2 x 22 + 2 x 24 = 1920. Inside the 14 px frame the pack grid is 650: 6 slots of 100 and 5 gaps of 10. The slots stay 100 px.
+690 + 448 + 690 + 2 x 22 + 2 x 24 = 1920. The panels end at y 932, leaving 16 px of air above the hotbar tray; the tray ends 24 px above the bottom, the same outer margin as everywhere else. Inside the 14 px frame the pack grid is 650: 6 slots of 100 and 5 gaps of 10. The slots stay 100 px.
 
 ### 4.1 Pack (inside x 44 to 694)
 
@@ -61,12 +62,11 @@ Performance on weak machines is a separate job: a world render scale option for 
 | Search field | 414 | 48 | 232 | 36 | "Search the pack", filters the grid as you type |
 | Sort button | 656 | 48 | 38 | 36 | Cycles the 6 sorts already in Settings |
 | Weight line | 44 | 98 | 650 | 24 | "Carrying" (dim) "38.4 of 52 kg" (cream), then an 8 px brass bar from x 244 |
-| **Hotbar row** | 47 | 136 | 645 | 60 | **10 slots of 60 with 5 px gaps** (keys 1 to 9 and 0), on a raised tray 6 px bigger all round |
-| **Pack grid** | 44 | 214 | 650 | 540 | 6 x 5 slots of 100, 10 px gaps (30 slots) |
-| Info strip | 44 | 784 | 650 | 200 | An ornament rule above it, then a 100 px slot with the item, its name (Cinzel Bold 30), two lines of description and one line of facts ("Holds" dim, "8 L" cream) |
-| Key hints | 44 | 1000 | 650 | 32 | The item's actions as plain text with keycaps: **E** Use, **D** Drop, **S** Split, **R** Repair, **1–0** Put on hotbar (the tenth key is shown as 0, the key you press; digits use EB Garamond SemiBold on the keycap because Cinzel's 1 reads as I). A hint that does not apply is greyed, never hidden. No boxed buttons |
+| **Pack grid** | 44 | 136 | 650 | 650 | 6 x 6 slots of 100, 10 px gaps (36 slots); the height the hotbar row used to take becomes the sixth row |
+| Info strip | 44 | 800 | 650 | 76 | An ornament rule above it, then a 72 px well with the item, its name (Cinzel Bold 30), one line of description and one line of facts ("Holds" dim, "8 L" cream) |
+| Key hints | 44 | 882 | 650 | 26 | The item's actions as plain text with keycaps: **E** Use, **D** Drop, **S** Split, **R** Repair, **1–0** Put on hotbar (the tenth key is shown as 0, the key you press; digits use EB Garamond SemiBold on the keycap because Cinzel's 1 reads as I). A hint that does not apply is greyed, never hidden. No boxed buttons |
 
-**Hotbar: 10 keys, not 8.** The game has 10 hotbar keys (`inventory.gd` `HOTBAR_KEYS`), so 8 slots of 76 would leave keys 9 and 0 nowhere. The key number is Cinzel Bold 18 in the top left corner with a 1 px dark outline.
+**Hotbar: 10 keys of 76, across the bottom.** The game has 10 hotbar keys (`inventory.gd` `HOTBAR_KEYS`). With the strip under all three panels there is room for all 10 at 76 px (850 px wide), so nothing is cut. The key number is EB Garamond SemiBold 18 in the top left corner with a 1 px dark outline (Cinzel's 1 reads as I). Icons show at 60 px in a 76 px slot. Dragging between the pack and the strip works while the window is open.
 
 **Slot contents:** the icon at 80 % (80 px in a 100 px slot) with a 2 px soft drop shadow; the stack count bottom right in EB Garamond SemiBold 24 with a 1 px #0A0604 outline; the durability bar 4 px tall, 7 px in from each side, 6 to 10 px above the bottom (the count moves up 6 px when a bar is shown).
 
@@ -75,10 +75,10 @@ Performance on weak machines is a separate job: a world render scale option for 
 | Part | x | y | w | h | Detail |
 |---|---|---|---|---|---|
 | Name plate | centred on 960 | 30 | text + 60, at most 368 | 46 | The character's full name engraved ("ALDWIN OF THE FORD"). It steps down 34, 30, 26, 24, 22, 20, 18 px and letter-spacing 3 to 1 until it fits ("ALDWIN OF THE FORD" fits at 22 px); no line under it |
-| Gear, left | 756 | 96 | 96 | 534 | Head, Body, Legs, Feet: 4 slots of 96, evenly spaced |
-| Figure | 862 | 86 | 196 | 550 | The live 3D character wearing what is equipped and holding what is in the hands (the mockup shows the linen shirt, hide boots, the backpack's straps and the stone axe in hand); see 6.6. Caption under it, dim 18: "Live character, as equipped" |
-| Gear, right | 1068 | 96 | 96 | 534 | Hands, Back, Right hand, Left hand |
-| Stats | 756 | 690 | 408 | 312 | An ornament rule above, then six rows 52 apart: a 26 px engraved glyph, the name (18), a 10 px bar from x 888 to 1076, the value right-aligned (SemiBold 18, outlined) |
+| Gear, left | 756 | 92 | 96 | 464 | Head, Body, Legs, Feet: 4 slots of 96, evenly spaced |
+| Figure | 862 | 82 | 196 | 478 | The live 3D character wearing what is equipped and holding what is in the hands (the mockup shows the linen shirt, hide boots, the backpack's straps and the stone axe in hand); see 6.6. Caption under it, dim 18: "Live character, as equipped" |
+| Gear, right | 1068 | 92 | 96 | 464 | Hands, Back, Right hand, Left hand |
+| Stats | 756 | 614 | 408 | 276 | An ornament rule above, then six rows 46 apart: a 26 px engraved glyph, the name (18), a 10 px bar from x 888 to 1076, the value right-aligned (SemiBold 18, outlined) |
 
 The 8 gear slots are the 6 wear slots in `items.json` (head, body, legs, feet, hands, back) plus the two hands. There is no belt slot in the game, so none is drawn. An empty gear slot shows an engraved silhouette of what goes there (helmet, tunic, trousers, boot, glove, pack, a hand axe, a shield) and no word.
 
@@ -91,19 +91,19 @@ The six stats are the six bars Dave approved on 21 Oct (Health, Exertion, Energy
 | Title plate | 1254 | 30 | text + 60 | 46 | "CRAFT" engraved; station context on the right of the title row: "By hand" or "At: Campfire" (SemiBold 18) |
 | Category tabs | 1226 | 100 | 48 | 588 | 11 raised tabs of 48 x 48, 6 apart, each an engraved 28 px glyph: All, then the 10 recipe categories. The selected tab is lit with a bright rim and a gold glyph |
 | Recipe search | 1282 | 100 | 196 | 36 | Filters the list; the placeholder names the tab ("Search tools") |
-| Recipe list | 1282 | 146 | 196 | 890 | Rows of 44, 3 apart, with a faint rule between rows. A 32 px icon and the name (18). Rows you can't make yet are dimmed to 45 %. A recipe that needs a station is 64 tall and has a second grey line: the station's 20 px glyph and "needs Forge". The selected row is lit, its name SemiBold gold, with a 4 px brass bar on its left edge |
-| **Recipe card** | 1490 | 100 | 386 | 936 | A raised card, one step lighter than the panel, with a 1 px top highlight and a 6 px soft shadow |
-| · Icon | 1504 | 114 | 112 | 112 | The made item in a well with the soft gold inner glow |
-| · Name | 1630 | 118 | 234 | 108 | Name Cinzel Bold 30; "Tools" and "By hand · 10 s" in dim 18 |
-| · Description | 1504 | 244 | 360 | 48 | Two lines, 18 (from `items.json`) |
-| · Stats | 1504 | 306 | 360 | 104 | Up to 6 lines of 26: label dim on the left, value cream on the right, a faint leader line between |
-| · Needs | 1504 | 430 | 360 | 170 | "Needs" (Cinzel 22, small caps) and a gold rule; requirement wells of 80, 16 apart (4 fit); the item name under each (18) and **have / need** (SemiBold 18, outlined; red only when short). A 22 px engraved chest glyph in the top right of a well whose stock comes from a nearby chest. An item with no icon yet shows the missing-icon tile (art brief row 27) |
-| · Quantity | 1504 | 618 | 360 | 44 | "Make", −, the number in a well, +, "Most" |
-| · Shortfall line | 1504 | 676 | 360 | 24 | Red, only when something is short, saying what will happen |
-| · Made at | 1504 | 716 | 360 | 60 | Head "Made at" (Cinzel 22, small caps) with a gold rule; then the station's 22 px engraved glyph and its name: "By hand, anywhere", or "Campfire, within 3 m" (from the recipe's `station` and `station_level`) |
-| · Used in | 1504 | 790 | 360 | 60 | Head "Used in" with a gold rule; then up to 2 recipe names that take this item (as a need, or kept as their tool), SemiBold 18 gold, underlined, clickable to select that recipe, and "+N more" in dim. For the stone axe: Log seat · Small wooden blocks · +1 more. A recipe with no uses leaves this block out and the card shrinks |
-| · Queue | 1504 | 876 | 360 | 56 | An ornament rule above; "Making" and up to 5 queued items as 56 px wells; the first has a 3 px gold progress arc. Click one to cancel it |
-| · Craft button | 1504 | 958 | 360 | 64 | Cast brass with "CRAFT" engraved (Cinzel Bold 26, letter-spaced 4) and a faint warm glow round it when you can make the item; hold for the ring (left end) to make "Most" |
+| Recipe list | 1282 | 146 | 196 | 766 | Rows of 44, 3 apart, with a faint rule between rows. A 32 px icon and the name (18). Rows you can't make yet are dimmed to 45 %. A recipe that needs a station is 64 tall and has a second grey line: the station's 20 px glyph and "needs Forge". The selected row is lit, its name SemiBold gold, with a 4 px brass bar on its left edge |
+| **Recipe card** | 1490 | 100 | 386 | 812 | A raised card, one step lighter than the panel, with a 1 px top highlight and a 6 px soft shadow |
+| · Icon | 1504 | 112 | 96 | 96 | The made item in a well with the soft gold inner glow |
+| · Name | 1616 | 114 | 248 | 94 | Name Cinzel Bold 30; "Tools" and "By hand · 10 s" in dim 18 |
+| · Description | 1504 | 222 | 360 | 44 | Two lines, 18 (from `items.json`) |
+| · Stats | 1504 | 278 | 360 | 96 | Up to 4 lines of 24: label dim on the left, value cream on the right, a faint leader line between |
+| · Needs | 1504 | 388 | 360 | 168 | "Needs" (Cinzel 22, small caps) and a gold rule; requirement wells of 80, 16 apart (4 fit); the item name under each (18) and **have / need** (SemiBold 18, outlined; red only when short). A 22 px engraved chest glyph in the top right of a well whose stock comes from a nearby chest. An item with no icon yet shows the missing-icon tile (art brief row 27) |
+| · Quantity | 1504 | 570 | 360 | 42 | "Make", −, the number in a well, +, "Most" |
+| · Shortfall line | 1504 | 620 | 360 | 24 | Red, only when something is short, saying what will happen |
+| · Made at | 1504 | 656 | 360 | 48 | Head "Made at" (Cinzel 22, small caps) with a gold rule; then the station's 22 px engraved glyph and its name: "By hand, anywhere", or "Campfire, within 3 m" (from the recipe's `station` and `station_level`) |
+| · Used in | 1504 | 714 | 360 | 48 | Head "Used in" with a gold rule; then up to 2 recipe names that take this item (as a need, or kept as their tool), SemiBold 18 gold, underlined, clickable to select that recipe, and "+N more" in dim. For the stone axe: Log seat · Small wooden blocks · +1 more. A recipe with no uses leaves this block out and the card shrinks |
+| · Queue | 1504 | 784 | 360 | 48 | An ornament rule above; "Making" and up to 5 queued items as 56 px wells; the first has a 3 px gold progress arc. Click one to cancel it |
+| · Craft button | 1504 | 848 | 360 | 58 | Cast brass with "CRAFT" engraved (Cinzel Bold 26, letter-spaced 4) and a faint warm glow round it when you can make the item; hold for the ring (left end) to make "Most" |
 
 The 10 categories are the ones in `recipes.json`: Tools, Weapons, Shelter and building, Workshops and stations, Fire and cooking, Food and drink, Medicine, Clothing, Containers and furniture, Materials.
 
@@ -121,7 +121,7 @@ Shift-click or drag moves a stack between the pack and the chest. Ctrl-click mov
 ## 5. Interaction
 
 - **Open and close:** the inventory key opens the window on Craft; Esc or the same key closes it. Opening a chest opens it in chest mode.
-- **While the window is open** the in-world HUD (hotbar strip, compass, debug text) is hidden, because the hotbar is in the window. The world behind is darkened by the backdrop (6.1).
+- **While the window is open** the in-world HUD (compass, debug text, stat bars) is hidden; the hotbar strip stays exactly where it is and becomes a drop target, because it is the same control in and out of the window. The world behind is darkened by the backdrop (6.1).
 - **Point** at a slot: it brightens and glows (6.5), and the info strip shows it. Nothing floats over the grid.
 - **Click** selects; **drag** moves; **shift-click** sends to the other side (chest, or pack to hotbar); **right-click** splits half; **a number key while pointing** puts that item on that hotbar key.
 - **Search** filters live, and Esc clears the search before it closes the window.
@@ -232,7 +232,7 @@ It turns slowly when you drag it, and it wears what is in the gear slots.
 1. **One camera for every icon:** the same three-quarter view (30° down, 45° round), key light from the top left, the item filling 80 % of the square, a 2 px soft drop shadow (black 65 %, 1.5 px blur, 2 px right and down), no background.
 2. **Thin items lie on the diagonal,** bottom left to top right, corner to corner, with the head (axe blade, spear point) at the top right. Stroke at least 6 px wide at 128 so it is at least 2 px at 32.
 3. **Tell things apart by shape, not tint.** Each plank species gets its own end grain and bundle shape plus a tint. Spades differ in blade shape (round, square, pointed). Herbs differ by leaf shape. Seeds come in a small cloth pouch with the seed shape on it. Pies get a crust mark (a fish, a leaf, an apple cut).
-4. **Shown at** 80 px in pack and chest slots, 48 in hotbar slots, 32 in recipe rows, 64 in requirement wells, 90 in the recipe card.
+4. **Shown at** 80 px in pack and chest slots, 60 in hotbar slots, 32 in recipe rows, 64 in requirement wells, 90 in the recipe card.
 5. **Painted, not rendered:** the 446 baked icons are the base; the painted pass adds hand-painted texture to match the look doc (section 6). **log, stick and stone have no icon yet** and are the most common items in the game; they come first. Until an item has an icon it shows the missing-icon tile, never a blank or a placeholder blob.
 
 ## 7. Why this beats ARK, Dragonwilds and Valheim
@@ -258,10 +258,11 @@ Everything goes in `assets/ui/inventory/`. Sizes are canvas px at 1920 x 1080; *
 | 5 | Brass corner | `corner_brass.png` | 46 x 46 (one; flipped for the other three) | Cast brass, worn | Gradient #F0CF82 to #7A5826 (diagonal), rim #4A3416, scuffs #7A5826, rivet #4A3416 with a #F0CF82 highlight | An L of two 15 px arms with a gusset and cut tips, one rivet in the corner; placed 4 px outside each panel corner |
 | 6 | Title plate | `title_plate.png` | 96 x 46, 9-slice margins 24 left and right | Cast brass | Gradient #F0CF82 to #7A5826 (top to bottom), top line #F0CF82, bottom line #7A5826, rim #4A3416, rivets as #5 | The plate behind each panel title; it stretches to the title width + 60 |
 | 7 | Ornament rule | `rule_ornament.png` | 24 x 12 (the diamond; the line is drawn in code) | Engraved gold | #8C6933 | The diamond in the middle of a section rule |
-| 8 | Recessed well | `well.png` | 100 x 100, 9-slice margins 10 | Recessed dark wood | #120C08, top inner shadow 7 px black 75 % to 0, left 4 px 50 % to 0, bottom lip #463626, right lip #463626 at 43 % | Every slot, field, bar track and the quantity number; corners 4 |
+| 8 | Recessed well | `well.png` | 100 x 100, 9-slice margins 10 | Recessed dark wood | #120C08, top inner shadow 7 px black 75 % to 0, left 4 px 50 % to 0, bottom lip #463626, right lip #463626 at 43 % | Every slot (100 in the pack, 76 on the hotbar, the same 9-slice), field, bar track and the quantity number; corners 4 |
 | 9 | Well selected | `well_selected.png` | 100 x 100, 9-slice margins 10 | Inner gold glow | #FFD67A rim 1.5 px; glow 55 % at the rim to 0 at 8 px in | The selected slot, the active hotbar key, the recipe card icon |
 | 10 | Slot hover glow | `slot_hover.png` | 116 x 116, 9-slice margins 18 | Warm glow | #FFB34D at 43 %, 5 px blur | Round a slot under the pointer (with #9) |
-| 11 | Raised plate | `raised.png`, `raised_lit.png`, `raised_pressed.png` | 96 x 48, 9-slice margins 10 | Smooth dark wood, slight gradient | Normal #382A1D to #302419; lit #483727 to #402F1F; pressed #261B12 flat; top highlight #523E29 (lit #6E5436); rim #140D08 | Buttons, tabs, the hotbar tray, the selected row, keycaps |
+| 11 | Raised plate | `raised.png`, `raised_lit.png`, `raised_pressed.png` | 96 x 48, 9-slice margins 10 | Smooth dark wood, slight gradient | Normal #382A1D to #302419; lit #483727 to #402F1F; pressed #261B12 flat; top highlight #523E29 (lit #6E5436); rim #140D08 | Buttons, tabs, the selected row, keycaps |
+| 11a | Hotbar tray | `hotbar_tray.png` | 882 x 108, 9-slice margins 20 | The panel leather (#2) with its stitch line (#3) and a cast brass end plate at each end (#4 colours, 22 x 92, two rivets) | Leather #3A2315; stitch #B89A68 dashed 1.5 px, 6 px in; brass #F0CF82 to #7A5826 | The hotbar strip under the window and in the world (section 9) |
 | 12 | Raised shadow | `raised_shadow.png` | 48 x 48, 9-slice margins 16 | Soft shadow | #000000 at 60 %, 6 px blur, 3 px down | Under every raised thing except the selected row |
 | 13 | Recipe card | uses #11 and #12 | 386 x 936 | | | The card is the raised plate at size |
 | 14 | Craft button | `button_brass.png`, `button_brass_pressed.png` | 96 x 64, 9-slice margins 16 | Cast brass | Gradient #F0CF82 to #7A5826 top to bottom, top line #FFECB4, rim #4A3416; pressed 10 % darker, no top line | The Craft button; "CRAFT" engraved in #2B1B0B |
@@ -285,7 +286,7 @@ Fonts are not art assets; they are in `assets/ui/fonts` (Cinzel Regular and Bold
 
 ## 9. HUD hotbar strip (in the world)
 
-The HUD keeps a hotbar strip at the bottom centre when the window is closed. It is the same raised tray (#11) with ten 60 px recessed wells (#8), 5 px apart (645 x 60), 24 px above the bottom of the canvas, key numbers in Cinzel Bold 18 with the outline, the active key in the selected well (#9). The pickup feed and the held-item label sit above it.
+The hotbar is one control, shown the same way with the window open or closed: ten 76 px recessed wells (#8), 10 px apart (850 x 76, x 535 to 1385, y 964 to 1040), on the leather hotbar tray (#11a, 882 x 108, 24 px above the bottom of the canvas), key numbers in EB Garamond SemiBold 18 with the outline, the active key in the selected well (#9), durability bars as in the pack. Opening the inventory does not move or redraw it; the three panels appear above it. The pickup feed and the held-item label sit above the tray (their offsets in section 13 move up to clear 132 px instead of 84).
 
 ## 10. What this replaces
 
@@ -293,7 +294,7 @@ The HUD keeps a hotbar strip at the bottom centre when the window is closed. It 
 
 ## 11. Open points for Dave
 
-1. **Hotbar: 10 slots of 60 (all 10 keys) instead of 8 of 76.** Recommended, because the game has 10 keys.
+1. **Hotbar: 10 slots of 76 across the bottom of the screen** (v4, coordinator 04:37 UTC after Dave's 04:35 question), the same control in and out of the window.
 2. **Solid panels,** as he asked on 23 Oct; only the margins round them show the darkened world.
 3. **The floating tooltip goes;** the info strip under the pack replaces it.
 
@@ -306,16 +307,16 @@ Steps, each its own PR through the gate:
 1. **Canvas to 1920 x 1080** plus the section 13 fixes for the menus and the HUD, so nothing gets worse on the day the canvas changes. The six HUD bars move to the warm colours and glyphs of 6.4 in the same pass.
 2. **The art kit** (section 8) as placeholders drawn in code first (the colours and sizes above), so the layout lands without waiting for the art; the painted PNGs drop in later with no code change.
 3. **The new window:** the three columns, the pack and chest grids, the You column, the craft card, the info strip, search and sort. Removes the old window building and #780's fit.
-4. **The HUD hotbar strip** in the new slot art.
+4. **The hotbar strip**, one control used both in the world and under the open window (section 9), in the new slot art, with the pickup feed and held-item label moved up to clear it.
 5. **The painted art** as Kathleen's art jobs finish (art brief rows 1 to 27), then the icons (row 28).
 
 ### 12.1 Notes from Dave's review (9 Nov, 04:25 UTC)
 
-Dave: *"if we skip putting it in the mockup it won't get fixed later"*. So each note is drawn in the v3 mockup and written into the tables above:
+Dave: *"if we skip putting it in the mockup it won't get fixed later"*. So each note is drawn in the v3 mockup (and kept in v4) and written into the tables above:
 1. **No dead space in the recipe card:** "Made at" and "Used in" (4.3). The data has no "unlocks" field (the skill web in `skill_web.gd` unlocks skills, not recipes), so "Unlocks" is not shown.
 2. **Stat names stay the game's own:** Exertion and Energy (Dave: "the actual traits are Exertion and Energy, we are making a change in the way gamers see it"), and Temperature as the character screen already says. Only the colours and glyphs change (6.4).
 3. **The full name on the brass plate,** no line under it (4.2).
-4. **The tenth hotbar key is shown as 0,** because 0 is the key you press; the digit keys 1 to 9 and 0 are fixed to the hotbar and cannot be rebound (`key_bindings.gd` `refusal`). The key-hint row says "1–0 Put on hotbar" (4.1).
+4. **The tenth hotbar key is shown as 0,** because 0 is the key you press; the digit keys 1 to 9 and 0 are fixed to the hotbar and cannot be rebound (`key_bindings.gd` `refusal`). The key-hint row says "1–0 Put on hotbar" (4.1), and the strip labels its tenth slot 0.
 5. **The centre column is the live character model wearing what is equipped,** from the character screen's SubViewport, re-dressed when a gear slot changes, with the light rig in 6.6. It is never a flat silhouette; the mockup's figure is a stand-in that shows where the gear goes.
 
 ## 13. Audit: screens with sizes fixed for the 2880 x 1620 canvas
@@ -343,7 +344,7 @@ Searched on main 295da042 for fixed font sizes, minimum sizes, offsets and posit
 | `src/client/death_screen.gd` | 49-57 | text 28; button 24; box placed at (300, 260) | 19; 16 | text 30; button 22; box centred with anchors, not placed |
 | `src/client/cavein_death.gd` | 74 | text 44 | 29 | 40 |
 | `src/client/idle_timeout.gd` | 162 | warning 40 | 27 | 40 |
-| `src/client/held_item.gd` | 193-194, 1515 | label 60 above the bottom at 26; hoe menu 40 | 40 at 17; 27 | 84 above the bottom (over the 60 px HUD hotbar and its 24 px margin) at 20; hoe menu 26 (same as the hammer menu) |
+| `src/client/held_item.gd` | 193-194, 1515 | label 60 above the bottom at 26; hoe menu 40 | 40 at 17; 27 | 84 above the bottom at 20 in step 1 (over today's strip); step 4 moves it to 132 above the bottom, clear of the 108 px hotbar tray and its 24 px margin; hoe menu 26 (same as the hammer menu) |
 | `src/client/hammer_blueprints.gd` | 30-33, 70-75, 327 | menu 40; detail 28; menu at most 75 % of the height | 27; 19 | menu 26; detail 20; 75 % stays |
 | `src/client/admin_compass.gd` | 8-10, 22, 63-66 | 900 x 64; names 32, ticks 20; text drawn at y 34 and 28 | 600 x 43; 21, 13 | 640 x 48; names 22, ticks 18; text at y 26 and 22 |
 | `src/client/horizon_indicator.gd` | 9-10, 35-40, 120 | 160 wide; 4 px per degree; 40 px to the side; hint 22 | 107; 2.7; 27; 15 | 110 wide; 3 px per degree; 28 to the side; hint 18 |
