@@ -388,14 +388,15 @@ static func draw_corner(ci: CanvasItem, at: Vector2, flip_x: bool, flip_y: bool)
 	ci.draw_circle(rivet + Vector2(-0.5, -0.5), 2.2, BRASS_HI)
 
 
-# A brass title plate (row 6) with the title engraved. `room` caps the width: a long name steps down 34, 30, 26 px.
+# A brass title plate (row 6) with the title engraved. `room` caps the width: a long name steps down 34, 30, 26, 24, 22, 20, 18 px
+# ("ALDWIN OF THE FORD" needs 22 px to fit the You plate's 368).
 # x is the left edge, or the centre when `centred`. Returns the plate's rect.
 static func draw_title_plate(ci: CanvasItem, x: float, y: float, text: String, centred: bool = false, room: float = 100000.0) -> Rect2:
 	var cinzel: Font = font("cinzel_bold")
 	var px: int = 34
 	var tracking: float = 3.0
 
-	for step in [[34, 3.0], [30, 2.0], [26, 2.0]]:
+	for step in [[34, 3.0], [30, 2.0], [26, 2.0], [24, 2.0], [22, 1.5], [20, 1.0], [18, 1.0]]:
 		px = step[0]
 		tracking = step[1]
 		if tracked_width(cinzel, text, px, tracking) + 60.0 <= room:

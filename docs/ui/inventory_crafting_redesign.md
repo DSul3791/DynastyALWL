@@ -74,7 +74,7 @@ Performance on weak machines is a separate job: a world render scale option for 
 
 | Part | x | y | w | h | Detail |
 |---|---|---|---|---|---|
-| Name plate | centred on 960 | 30 | text + 60, at most 368 | 46 | The character's full name engraved ("ALDWIN OF THE FORD"). It steps down 34, 30, 26 px and letter-spacing 3 to 2 until it fits; no line under it |
+| Name plate | centred on 960 | 30 | text + 60, at most 368 | 46 | The character's full name engraved ("ALDWIN OF THE FORD"). It steps down 34, 30, 26, 24, 22, 20, 18 px and letter-spacing 3 to 1 until it fits ("ALDWIN OF THE FORD" fits at 22 px); no line under it |
 | Gear, left | 756 | 96 | 96 | 534 | Head, Body, Legs, Feet: 4 slots of 96, evenly spaced |
 | Figure | 862 | 86 | 196 | 550 | The live 3D character wearing what is equipped and holding what is in the hands (the mockup shows the linen shirt, hide boots, the backpack's straps and the stone axe in hand); see 6.6. Caption under it, dim 18: "Live character, as equipped" |
 | Gear, right | 1068 | 96 | 96 | 534 | Hands, Back, Right hand, Left hand |
