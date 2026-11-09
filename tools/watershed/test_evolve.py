@@ -234,8 +234,8 @@ def test_a_receiver_after_its_donor_falls_back_to_one_bucket():
             order[q], order[pos[d]] = order[pos[d]], order[q]
             break
     c['order'] = order
-    ptr, cells, _, _ = ev._basin_buckets(order, c['rec'], c['sea'], 9)
-    assert ptr.size == 0 and cells.size == 0
+    ptr, cells, _, count = ev._basin_buckets(order, c['rec'], c['sea'], 9)
+    assert count == 0 and list(ptr) == [0, order.size] and np.array_equal(cells, order)   # one bucket: order as it is
     h_old, t_old = _run(_old_solve, c, 2000.0, 4, 0.0)
     h_new, t_new = _run(ev._solve, c, 2000.0, 4, 0.0)
     assert np.array_equal(h_new, h_old) and np.array_equal(t_new, t_old)
