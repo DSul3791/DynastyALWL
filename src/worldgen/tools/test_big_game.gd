@@ -228,7 +228,7 @@ func _init() -> void:
 	# Levels (Dave 6 Nov 2026): by the starter town 1 to 5, the far side 10 to 20; a higher level has more health and hits harder.
 	a = make()
 	a.traits = true
-	a.starter = Vector2(0.0, 0.0)
+	a.town = Vector2(0.0, 0.0)
 	a.cfg["species"]["bear"]["young"]["share"] = 0.0
 	var near_bear: int = a.spawn("bear", 100.0, 0.0)
 	var far_bear: int = a.spawn("bear", 9000.0, 0.0)

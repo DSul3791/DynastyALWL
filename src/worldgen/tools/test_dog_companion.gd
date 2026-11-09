@@ -40,7 +40,7 @@ func make():
 		return out
 	a.setup()
 	a.traits = false
-	a.starter = Vector2(0.0, 0.0)
+	a.town = Vector2(0.0, 0.0)
 	a.hour_now = func(): return hour
 	a.big_game.player_info = func(): return infos
 	a.companions.peer_key = func(peer): return "dave" if int(peer) == 1 else ("heir" if int(peer) == 3 else "other")

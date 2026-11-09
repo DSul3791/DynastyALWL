@@ -4289,11 +4289,7 @@
 	},
 	"habitat_tries": 6,
 	"island_level": {
-		"note": "Starter island levels (Dave 6 Nov 2026, corrected 17:20): every animal has a level. Species live wherever is natural for them (biome, water, terrain); the island only sets their level. island_level is 0 within town_m of the town point (the real spawn until the starter town is placed) and 1 at far_m, about the far coast of tile 3,4. An animal's level is drawn from levels.town near the town, levels.middle half way across and levels.far on the far side (blended between). Each level above 1 adds hp_per_level to its health and damage_per_level to its hit.",
-		"town": [
-			53301.0,
-			68427.0
-		],
+		"note": "Starter island levels (Dave 6 Nov 2026, corrected 17:20): every animal has a level. Species live wherever is natural for them (biome, water, terrain); the island only sets their level. island_level is 0 within town_m of the town point (the middle of the starter town's NPC markers, data/npcs/markers.json; never the spawn, 9 Nov 2026) and 1 at far_m, about the far coast of tile 3,4. An animal's level is drawn from levels.town near the town, levels.middle half way across and levels.far on the far side (blended between). Each level above 1 adds hp_per_level to its health and damage_per_level to its hit.",
 		"town_m": 800.0,
 		"far_m": 8000.0,
 		"levels": {
