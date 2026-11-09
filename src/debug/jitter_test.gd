@@ -28,11 +28,11 @@ func setup(client) -> void:
 	_label = Label.new()
 	# Bottom left, clear of the HUD lines at the top left.
 	_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	_label.offset_left = 16.0
-	_label.offset_top = -150.0
+	_label.offset_left = 12.0
+	_label.offset_top = -100.0
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 6)
-	_label.add_theme_font_size_override("font_size", 20)
+	_label.add_theme_font_size_override("font_size", 18)
 	_label.visible = false
 	layer.add_child(_label)
 	add_child(layer)

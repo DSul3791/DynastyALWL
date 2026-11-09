@@ -71,10 +71,10 @@ func _build() -> void:
 	_text.anchor_bottom = 0.95
 	_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_text.add_theme_font_size_override("font_size", 44)
+	_text.add_theme_font_size_override("font_size", 40)
 	_text.add_theme_color_override("font_color", Color(0.86, 0.86, 0.86))
 	_text.add_theme_color_override("font_outline_color", Color.BLACK)
-	_text.add_theme_constant_override("outline_size", 10)
+	_text.add_theme_constant_override("outline_size", 8)
 	_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_text)
 

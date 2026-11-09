@@ -8,12 +8,14 @@ extends RefCounted
 # Fullscreen windowed (Godot's Window.MODE_FULLSCREEN: a borderless window the size of the
 # screen, not exclusive fullscreen) stretches it to the screen.
 
-# The game is drawn on a fixed 2880x1620 canvas (the project's base size, so the menus and HUD
-# keep their layout) that is scaled to the window keeping 16:9, with bars where the window is
-# a different shape (Window content scale mode "viewport", aspect "keep"). The 3D picture is
-# rendered at a fixed share of that canvas, so 1920x1080 is always 1920x1080 whatever the
-# window shape, then scaled to the window with the canvas.
-const BASE := Vector2i(2880, 1620)
+# The game is drawn on a fixed 1920x1080 canvas, the project's UI design size (Dave, 9 Nov 2026:
+# chosen so the game plays on older, smaller machines; 1366x768 is the supported floor). Every
+# menu and HUD size is a pixel on this canvas. The canvas is scaled to the window keeping 16:9,
+# with bars where the window is a different shape (Window content scale mode "viewport", aspect
+# "keep"). The 3D picture is rendered at a fixed share of that canvas, so 1920x1080 is always
+# 1920x1080 whatever the window shape (Ultra draws a third more and scales down), then scaled to
+# the window with the canvas.
+const BASE := Vector2i(1920, 1080)
 const PATH := "user://display_settings.cfg"
 var path: String = PATH                   # tests point this at their own file
 const SIZES := [Vector2i(1280, 720), Vector2i(1366, 768), Vector2i(1600, 900), Vector2i(1920, 1080)]

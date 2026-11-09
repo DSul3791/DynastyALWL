@@ -7,8 +7,8 @@ extends RefCounted
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const KeyCapture := preload("res://src/client/key_capture.gd")
 
-const BUTTON_COL_W := 300.0
-const ROW_H := 48.0
+const BUTTON_COL_W := 220.0
+const ROW_H := 44.0
 
 var _menu
 var _capture: Control
@@ -34,8 +34,8 @@ func build(menu, page: VBoxContainer) -> void:
 	_status.text = "Click a key to change it."
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status.custom_minimum_size = Vector2(1300.0, 0.0)
-	_status.add_theme_font_size_override("font_size", 26)
+	_status.custom_minimum_size = Vector2(900.0, 0.0)
+	_status.add_theme_font_size_override("font_size", 20)
 	page.add_child(_status)
 	_conflict_row = HBoxContainer.new()
 	_conflict_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -44,12 +44,12 @@ func build(menu, page: VBoxContainer) -> void:
 	_small_button(_conflict_row, "Swap the two keys", 360.0, _on_swap)
 	_small_button(_conflict_row, "Cancel", 200.0, _on_conflict_cancel)
 	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(1300.0, 820.0)
+	scroll.custom_minimum_size = Vector2(900.0, 640.0)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	page.add_child(scroll)
 	var list: VBoxContainer = VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 4)
+	list.add_theme_constant_override("separation", 3)
 	scroll.add_child(list)
 	var group: String = ""
 
@@ -87,7 +87,7 @@ func build(menu, page: VBoxContainer) -> void:
 func _group_heading(parent: VBoxContainer, text: String) -> void:
 	var label: Label = _label(text, false)
 	label.add_theme_color_override("font_color", Color(0.85, 0.78, 0.55))
-	label.add_theme_font_size_override("font_size", 28)
+	label.add_theme_font_size_override("font_size", 22)
 	parent.add_child(HSeparator.new())
 	parent.add_child(label)
 
@@ -95,7 +95,7 @@ func _group_heading(parent: VBoxContainer, text: String) -> void:
 func _label(text: String, expand: bool) -> Label:
 	var label: Label = Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 24)
+	label.add_theme_font_size_override("font_size", 20)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.custom_minimum_size = Vector2(0.0, ROW_H)
 
@@ -109,7 +109,7 @@ func _small_button(parent: Control, text: String, width: float, action: Callable
 	var button: Button = Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(width, ROW_H)
-	button.add_theme_font_size_override("font_size", 24)
+	button.add_theme_font_size_override("font_size", 20)
 	button.pressed.connect(action)
 	parent.add_child(button)
 	return button

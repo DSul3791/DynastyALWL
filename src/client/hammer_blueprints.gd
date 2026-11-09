@@ -27,8 +27,8 @@ var _label: Label
 var _detail: Label
 var _plans_path: String = BuildingPlans.PATH
 
-const MENU_FONT := 40       # the hoe's mode window is 40 pt too (PR 161): one menu look for every tool
-const DETAIL_FONT := 28
+const MENU_FONT := 26       # the hoe's mode window is the same size (PR 161): one menu look for every tool (40 on the old 2880x1620 canvas)
+const DETAIL_FONT := 20
 const MENU_MAX_HEIGHT := 0.75   # the menu never takes more than this share of the screen height (Dave 5 Nov 2026); a longer list scrolls past the highlight
 const LINE_FACTOR := 1.5        # a menu line is about this many font sizes tall with its spacing (measured on the PC 5 Nov: 22 rows took 1258 px at 40 pt, 1.43 each; 1.5 leaves room for the panel padding)
 
@@ -68,7 +68,7 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String =
 		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_label = Label.new()
 		_label.add_theme_font_size_override("font_size", MENU_FONT)
-		_label.add_theme_constant_override("outline_size", 4)
+		_label.add_theme_constant_override("outline_size", 3)
 		_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 		_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_detail = Label.new()
