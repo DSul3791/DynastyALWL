@@ -1345,40 +1345,21 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 			continue
 
 		used_rivers[str(points[0])] = true
+
+		# Stage E M1 step 3 (stage_e_readers_design.md 6d): the grains lie only where the water slows (a slope break, a bend, a confluence),
+		# one short placer at each. Always on since 9 Nov 2026 (after R6; no feature switches): ores.placer_traps only tunes it. The old single
+		# placer along the whole river is gone.
 		var traps_rules: Dictionary = ore_rules.get("placer_traps", {})
 
-		# Stage E M1 step 3 (stage_e_readers_design.md 6d): with placer_traps on, the grains lie only where the water slows (a slope
-		# break, a bend, a confluence), one short placer at each. Off until the R6 rebake, so today's tiles keep theirs.
-		if bool(traps_rules.get("on", false)):
-			for trap in WaterRecordScript.placer_traps(path, traps_rules):
-				var k: int = clampi(int(trap[0]), 1, points.size() - 2)
-				local += 1
-				var t_thick: float = rng.randf_range(float(ore_rules["placer_thickness_m"][0]), float(ore_rules["placer_thickness_m"][1]))
-				var t_len: float = float(2 * record_every) * spacing_m
-				placers.append({"id": "%d,%d#%d" % [tile.x, tile.y, local], "home_tile": [tile.x, tile.y], "local_id": local, "resource": resource,
-					"shape": "placer", "feature": ore["id"], "points": points.slice(k - 1, k + 2), "trap": str(trap[1]), "width_m": 4.0,
-					"thickness_m": snappedf(t_thick, 0.1), "grade": snappedf(float(ore["grade"]) * float(traps_rules.get("grade_x", 0.8)), 0.01),
-					"tonnes": int(t_len * 4.0 * t_thick * 1.8)})
-
-			continue
-
-		local += 1
-		var width: float = 4.0
-		var thickness: float = rng.randf_range(float(ore_rules["placer_thickness_m"][0]), float(ore_rules["placer_thickness_m"][1]))
-		var length: float = float(points.size() * record_every) * spacing_m
-		placers.append({
-			"id": "%d,%d#%d" % [tile.x, tile.y, local],
-			"home_tile": [tile.x, tile.y],
-			"local_id": local,
-			"resource": resource,
-			"shape": "placer",
-			"feature": ore["id"],
-			"points": points,
-			"width_m": width,
-			"thickness_m": snappedf(thickness, 0.1),
-			"grade": snappedf(float(ore["grade"]) * 0.5, 0.01),
-			"tonnes": int(length * width * thickness * 1.8),
-		})
+		for trap in WaterRecordScript.placer_traps(path, traps_rules):
+			var k: int = clampi(int(trap[0]), 1, points.size() - 2)
+			local += 1
+			var t_thick: float = rng.randf_range(float(ore_rules["placer_thickness_m"][0]), float(ore_rules["placer_thickness_m"][1]))
+			var t_len: float = float(2 * record_every) * spacing_m
+			placers.append({"id": "%d,%d#%d" % [tile.x, tile.y, local], "home_tile": [tile.x, tile.y], "local_id": local, "resource": resource,
+				"shape": "placer", "feature": ore["id"], "points": points.slice(k - 1, k + 2), "trap": str(trap[1]), "width_m": 4.0,
+				"thickness_m": snappedf(t_thick, 0.1), "grade": snappedf(float(ore["grade"]) * float(traps_rules.get("grade_x", 0.8)), 0.01),
+				"tonnes": int(t_len * 4.0 * t_thick * 1.8)})
 
 	ore_bodies.append_array(placers)
 

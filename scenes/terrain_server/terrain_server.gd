@@ -252,7 +252,7 @@ func _ready() -> void:
 		return
 
 	_start_tunnels()
-	SpawnPointScript.use_world(world_dir)   # the starter tile's picked spawn (Stage E 6e), read before the flora placer clears round it
+	SpawnPointScript.use_world(world_dir)   # the starter tile's picked spawn (Stage E 6e); nothing else reads it to place things
 	var placer = PlacerScript.new()
 	placer.setup(generator, tables, rules)
 	flora = FloraStoreScript.new()

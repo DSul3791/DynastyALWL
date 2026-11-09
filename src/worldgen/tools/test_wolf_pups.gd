@@ -106,10 +106,8 @@ func pups_of(a, pid: int) -> Array:
 
 
 func _init() -> void:
-	# 1. No den within 1200 m of the town point.
+	# 1. (The 1200 m keep-out round the town point, measured from the spawn, went on 9 Nov 2026: nothing is decided from the spawn.)
 	var a = make()
-	a.starter = Vector2(0.0, 0.0)
-	check(a.wolves.near_town(800.0, 600.0) and not a.wolves.near_town(1000.0, 1000.0), "no wolf den within 1200 m of the town point")
 
 	# 2. Pups at the den on day 100, none on day 200; pups are not counted against max_wolves.
 	players = [player(1, 400.0, 0.0)]

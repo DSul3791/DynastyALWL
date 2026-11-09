@@ -56,7 +56,6 @@ static func apply(
 	var hill_high_from: float = float(hill_rules.get("fade_from_m", high_from))
 	var hill_high_to: float = float(hill_rules.get("fade_to_m", high_to))
 	var top: float = maxf(high_to, hill_high_to) if not hills.is_empty() else high_to
-	var pad: Dictionary = rules.get("_spawn_pad", {})
 	var before: PackedFloat32Array = heights.duplicate() if not hills.is_empty() else PackedFloat32Array()
 
 	for index in range(total):
@@ -72,12 +71,6 @@ static func apply(
 
 		if not hills.is_empty():
 			var hill_share: float = low_share * (1.0 - smoothstep(hill_high_from, hill_high_to, h)) * smoothstep(hill_near, hill_far, distance_m[index]) * maxf(texture[index], hill_texture_min)
-
-			if not pad.is_empty():
-				var x: float = float(origin_sx + index % samples) * spacing_m
-				var z: float = float(origin_sz + index / samples) * spacing_m
-				var r: float = Vector2(x - float(pad["x"]), z - float(pad["z"])).length()
-				hill_share *= smoothstep(float(pad["flat_radius_m"]), float(pad["flat_radius_m"]) + float(pad["blend_m"]) * 3.0, r)
 
 			lift += hill_share * hills[index]
 
