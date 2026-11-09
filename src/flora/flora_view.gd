@@ -1725,6 +1725,22 @@ func water_level_at(x: float, z: float) -> float:
 	return best
 
 
+# The lake or river level at the grid corner nearest a point (NAN when that corner is dry). Unlike water_level_at (the highest wet corner of
+# the square, which reaches up to a whole spacing past the water), this ends about half a spacing past the last wet corner, close to the
+# real water's edge: the grass reads its distance to the water from it (grass_view.gd, lush growth by water).
+func water_level_nearest(x: float, z: float) -> float:
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	var grid: Dictionary = _chunks.get(chunk, {}).get("grid", {})
+
+	if int(grid.get("wet", 0)) == 0:
+		return NAN
+
+	var spacing: float = float(grid["spacing"])
+	var count: int = int(grid["count"])
+	var i: int = clampi(int(round((x - float(chunk.x) * chunk_m) / spacing)), 0, count - 1)
+	var j: int = clampi(int(round((z - float(chunk.y) * chunk_m) / spacing)), 0, count - 1)
+	return float(grid["levels"][j * count + i])
+
 # The water surface at a point for footsteps: the wet corners of the square,
 # blended by distance (bilinear weights over the wet corners only), NAN when
 # half the square or less is wet. Unlike water_level_at (the highest wet corner, which the
