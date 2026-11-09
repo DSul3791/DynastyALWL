@@ -47,3 +47,21 @@ Also removed inside live files (git history keeps them): 23 functions nothing ca
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | src/worldgen/tools/test_drainage_flow.gd (+ .uid) | Sonny, coordinator's call | 7 Nov | checks the old rule-carved channel shape ("outer bank at least 1.3x the inner bank depth"); the only red test on the #524 nine-tile rebake; planned for archive in TYLER_TEST_SYSTEM_REVIEW.md once natural rivers are on | test_drainage_small (shared fill and flow invariants) and test_drainage_natural (P2 natural rivers) |
+
+## Faster generation, PR C, 9 Nov 2026 (Sonny, branch sonny-gen-speed-c; docs/water/generation_cost_audit.md section 4, approved by Dave: "good make it so. I approve it all.")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| tools/rebake_check.sh | Sonny, coordinator's call | 9 Nov | ran test_drainage_fill, test_river_surface and test_head_pond_fill after a bake, which the gate runs again on the rebake PR (145 s of each bake run) | the gate's bake class: tools/test_lanes.json lists all three for baked tiles and water |
+
+## After R6: no switches on the readers, nothing placed from the spawn, 9 Nov 2026 (Steve, coordinator; docs/water/stage_e_readers_design.md 6d and 6e, docs/water/watershed_rebuild_design.md "R6 as built")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/worldgen/tools/orchard_site.gd (+ .uid) | Steve | 9 Nov | found the flat spot near the spawn for the starter orchard; the orchard by the spawn is gone | none |
+Also removed inside live files (git history keeps them):
+- `tile_geology.gd`: the `ores.placer_traps.on` switch and the old single placer along the whole river below an ore (the trap placers are the only placers now).
+- `tile_sites.gd`: the `starter.spawn_picker.on` switch (the spawn is always picked by rule).
+- `flora_placer.gd`: the spawn clearing (`CLEAR_SPAWN_M`), the starter orchard by the spawn (`ORCHARD_*`, `orchard_places`, `_orchard_items`, `orchard_ground_ok`); flora layout version 26. The NPC marker clearings stay.
+- `spawn_point.gd` `town_shift`, and its use in `server_npcs.gd` (the shipped town no longer moves with the spawn), `flora_placer.gd` and `island_checks.gd`.
+- `server_wolves.gd` `near_town` and `animals.json` `wolves.town_keep_m` (the town point was the spawn).
+- `drainage_channels.gd` `_keep_spawn_clear` and `SPAWN_GULLY_*`, `tile_rolling.gd` `_spawn_pad` (rule-bake code that no rule switched on).
+- Checks: `test_flora_density`'s starter orchard check, `test_wolf_pups`'s town keep-out check, `test_spawn_picker`'s town shift checks.

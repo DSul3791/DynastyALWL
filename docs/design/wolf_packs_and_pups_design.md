@@ -30,7 +30,7 @@ What the game takes from this:
 
 ## 3. Wild packs on (decision 4)
 
-1. **Town keep-out:** no pack home within `wolves.town_keep_m` (1200 m) of the town point (`starter`, the island level's centre). This replaces the fixed `exclude`. It covers the level 1 to 5 ring (`island_level.town_m`, 800 m) plus room for a pack prowling from its den. Wolves can still be met near town; they just don't live there.
+1. **Town keep-out (removed 9 Nov 2026):** the town point was the spawn, and nothing is decided from the spawn any more (Dave, 9 Nov: "nothing is ever based on where spawn is"; watershed_rebuild_design.md, R6 as built), so `near_town` and `town_keep_m` are gone. As built on 8 Nov: no pack home within `wolves.town_keep_m` (1200 m) of the town point (`starter`, the island level's centre). This replaces the fixed `exclude`. It covers the level 1 to 5 ring (`island_level.town_m`, 800 m) plus room for a pack prowling from its den. Wolves can still be met near town; they just don't live there.
 2. **Same den every time:** a pack's den is its cell's hashed home, as today. A player who finds a den finds it again.
 3. **The cap counts pack wolves only** (`a.has("pack")`). Pups and companion wolves don't count toward `max_wolves`.
 4. **Saved dens:** a new `wolf_dens.json` keeps each cell's killed time and its orphans, in game seconds, so a restart no longer brings a killed pack straight back.
