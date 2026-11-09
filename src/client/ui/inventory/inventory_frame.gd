@@ -74,6 +74,50 @@ func columns_fit() -> bool:
 	return true
 
 
+# Each column's need against its room, one line for the text test (run_text_test prints it at every text step): "pack 650x412 in
+# 650x820 fits; ..." and, for a column that overflows, the deepest controls that are too wide or too tall, so a log names the culprit.
+func fit_report() -> String:
+	var parts: Array = []
+
+	for triple in [["pack", pack_column, ArtKit.PACK], ["you", you_column, ArtKit.YOU], ["craft", craft_column, ArtKit.CRAFT]]:
+		var column: Control = triple[1]
+		var need: Vector2 = column.get_combined_minimum_size()
+		var room: Vector2 = column_rect(triple[2]).size
+		var wide: bool = need.x > room.x + 1.0
+		var tall: bool = need.y > room.y + 1.0
+		var line: String = "%s %dx%d in %dx%d %s" % [triple[0], need.x, need.y, room.x, room.y, "fits" if not (wide or tall) else "OVER"]
+
+		if wide or tall:
+			var culprits: Array = []
+			_overflowing(column, room, wide, tall, culprits)
+			line += " (" + ", ".join(culprits.slice(0, 4)) + ")"
+
+		parts.append(line)
+
+	return "; ".join(parts)
+
+
+# Collects the deepest shown controls under `node` whose minimum size is past `room` on an overflowing axis.
+func _overflowing(node: Node, room: Vector2, wide: bool, tall: bool, into: Array) -> bool:
+	var found: bool = false
+
+	for child in node.get_children():
+		if child is Control and (child as Control).visible and _overflowing(child, room, wide, tall, into):
+			found = true
+
+	if found or not (node is Control):
+		return found
+
+	var need: Vector2 = (node as Control).get_combined_minimum_size()
+
+	if (wide and need.x > room.x + 1.0) or (tall and need.y > room.y + 1.0):
+		var text: String = str(node.get("text")) if node.get("text") != null else ""
+		into.append("%s%s %dx%d" % [node.get_class(), (" '%s'" % text.left(28)) if text != "" else "", need.x, need.y])
+		return true
+
+	return false
+
+
 # The frame asks for the whole canvas, scaled up by how far the fullest column overflows its panel, so a window whose
 # minimum size is within its size has every column inside its panel.
 func _get_minimum_size() -> Vector2:
