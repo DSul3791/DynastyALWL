@@ -49,15 +49,15 @@ func _build() -> void:
 	_panel = PanelContainer.new()
 	_panel.anchor_left = 0.0
 	_panel.anchor_right = 0.0
-	_panel.position = Vector2(16.0, 16.0)
-	_panel.custom_minimum_size = Vector2(520.0, 0.0)
+	_panel.position = Vector2(24.0, 24.0)
+	_panel.custom_minimum_size = Vector2(400.0, 0.0)
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = Color(0.05, 0.06, 0.08, 0.94)
 	style.set_content_margin_all(10.0)
 	_panel.add_theme_stylebox_override("panel", style)
 	add_child(_panel)
 	var column: VBoxContainer = VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	column.add_theme_constant_override("separation", 4)
 	_panel.add_child(column)
 	_title = Label.new()
 	column.add_child(_title)
@@ -71,7 +71,7 @@ func _build() -> void:
 	hint.text = "  Shift+F3 closes. Switch off = muted."
 	bar.add_child(hint)
 	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(500.0, 420.0)
+	scroll.custom_minimum_size = Vector2(380.0, 320.0)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
 	_list = VBoxContainer.new()

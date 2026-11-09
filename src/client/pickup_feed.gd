@@ -21,8 +21,8 @@ func setup(items, layer: CanvasLayer) -> void:
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_box.set_anchors_preset(Control.PRESET_CENTER_LEFT)
 	_box.grow_vertical = Control.GROW_DIRECTION_END
-	_box.offset_left = 28.0
-	_box.offset_top = 40.0
+	_box.offset_left = 24.0
+	_box.offset_top = 32.0
 	_box.add_theme_constant_override("separation", 4)
 	layer.add_child(_box)
 
@@ -53,7 +53,7 @@ func push(item_name: String, count: int) -> void:
 	label.add_theme_font_size_override("font_size", _items.text_px(FONT_PX) if _items != null else FONT_PX)
 	label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.85))
 	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
-	label.add_theme_constant_override("outline_size", 8)
+	label.add_theme_constant_override("outline_size", 5)
 	_box.add_child(label)
 	var line: Dictionary = {"label": label, "name": item_name, "count": count, "age": 0.0}
 	_lines.append(line)

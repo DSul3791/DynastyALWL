@@ -83,10 +83,10 @@ func _build_ui() -> void:
 	_build_bar(page)
 	var split: HBoxContainer = HBoxContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	split.add_theme_constant_override("separation", 12)
+	split.add_theme_constant_override("separation", 8)
 	page.add_child(split)
 	var left: PanelContainer = PanelContainer.new()
-	left.custom_minimum_size = Vector2(660, 0)
+	left.custom_minimum_size = Vector2(480, 0)
 	split.add_child(left)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -94,13 +94,13 @@ func _build_ui() -> void:
 	var pad: MarginContainer = MarginContainer.new()
 
 	for side in ["left", "right", "top", "bottom"]:
-		pad.add_theme_constant_override("margin_" + side, 10)
+		pad.add_theme_constant_override("margin_" + side, 7)
 
 	left.add_child(pad)
 	pad.add_child(scroll)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 8)
+	column.add_theme_constant_override("separation", 6)
 	scroll.add_child(column)
 
 	_build_about(_add_accordion(column, "About you"))
@@ -139,7 +139,7 @@ func _build_bar(page: VBoxContainer) -> void:
 	var box: VBoxContainer = VBoxContainer.new()
 	bar.add_child(box)
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
+	row.add_theme_constant_override("separation", 8)
 	box.add_child(row)
 	var title: Label = Label.new()
 	title.text = "Create your character"
@@ -198,22 +198,22 @@ func _build_about(body: VBoxContainer) -> void:
 	body.add_child(name_row)
 	var name_label: Label = Label.new()
 	name_label.text = "Name"
-	name_label.custom_minimum_size = Vector2(150, 0)
+	name_label.custom_minimum_size = Vector2(120, 0)
 	name_row.add_child(name_label)
 	_name_field = LineEdit.new()
 	_name_field.max_length = Record.NAME_MAX
 	_name_field.placeholder_text = "Up to %d letters" % Record.NAME_MAX
-	_name_field.custom_minimum_size = Vector2(0, 48)
+	_name_field.custom_minimum_size = Vector2(0, 44)
 	_name_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_row.add_child(_name_field)
 	var gender_row: HBoxContainer = HBoxContainer.new()
 	body.add_child(gender_row)
 	var gender_label: Label = Label.new()
 	gender_label.text = "Gender"
-	gender_label.custom_minimum_size = Vector2(150, 0)
+	gender_label.custom_minimum_size = Vector2(120, 0)
 	gender_row.add_child(gender_label)
 	_gender_pick = OptionButton.new()
-	_gender_pick.custom_minimum_size = Vector2(0, 48)
+	_gender_pick.custom_minimum_size = Vector2(0, 44)
 	_gender_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	for g in Record.GENDERS:
@@ -226,10 +226,10 @@ func _build_about(body: VBoxContainer) -> void:
 	body.add_child(pronoun_row)
 	var pronoun_label: Label = Label.new()
 	pronoun_label.text = "Pronouns"
-	pronoun_label.custom_minimum_size = Vector2(150, 0)
+	pronoun_label.custom_minimum_size = Vector2(120, 0)
 	pronoun_row.add_child(pronoun_label)
 	_pronoun_pick = OptionButton.new()
-	_pronoun_pick.custom_minimum_size = Vector2(0, 48)
+	_pronoun_pick.custom_minimum_size = Vector2(0, 44)
 	_pronoun_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	for pr in Record.PRONOUNS:
@@ -242,14 +242,14 @@ func _build_about(body: VBoxContainer) -> void:
 	body.add_child(frame_row)
 	var frame_label: Label = Label.new()
 	frame_label.text = "Frame"
-	frame_label.custom_minimum_size = Vector2(150, 0)
+	frame_label.custom_minimum_size = Vector2(120, 0)
 	frame_row.add_child(frame_label)
 
 	for f in Record.FRAMES:
 		var b: Button = Button.new()
 		b.text = Record.FRAME_LABELS[f]
 		b.toggle_mode = true
-		b.custom_minimum_size = Vector2(0, 48)
+		b.custom_minimum_size = Vector2(0, 44)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.pressed.connect(func() -> void: set_frame(f))
 		frame_row.add_child(b)
@@ -322,7 +322,7 @@ func _ask_name(message: String = "") -> void:
 		_name_edit = LineEdit.new()
 		_name_edit.max_length = Record.NAME_MAX
 		_name_edit.placeholder_text = "Name (up to %d letters)" % Record.NAME_MAX
-		_name_edit.custom_minimum_size = Vector2(0, 48)
+		_name_edit.custom_minimum_size = Vector2(0, 44)
 		_name_edit.text_submitted.connect(func(_text: String) -> void: _name_dialog.get_ok_button().pressed.emit())
 		box.add_child(_name_edit)
 		_name_dialog.add_child(box)
@@ -354,7 +354,7 @@ func _add_accordion(column: VBoxContainer, title: String) -> VBoxContainer:
 	head.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	column.add_child(head)
 	var body: VBoxContainer = VBoxContainer.new()
-	body.add_theme_constant_override("separation", 10)
+	body.add_theme_constant_override("separation", 7)
 	body.visible = false
 	column.add_child(body)
 	_sections[title] = {"head": head, "body": body}
@@ -401,13 +401,13 @@ func _build_sliders(body: VBoxContainer, section: String) -> void:
 		body.add_child(row)
 		var name_label: Label = Label.new()
 		name_label.text = String(key).replace("_", " ").capitalize()
-		name_label.custom_minimum_size = Vector2(150, 0)
+		name_label.custom_minimum_size = Vector2(120, 0)
 		row.add_child(name_label)
 		var slider: HSlider = HSlider.new()
 		slider.min_value = -1.0
 		slider.max_value = 1.0
 		slider.step = 0.01
-		slider.custom_minimum_size = Vector2(240, 36)
+		slider.custom_minimum_size = Vector2(180, 32)
 		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		slider.drag_started.connect(func() -> void:
@@ -418,7 +418,7 @@ func _build_sliders(body: VBoxContainer, section: String) -> void:
 		row.add_child(slider)
 		_sliders[key] = slider
 		var value: Label = Label.new()
-		value.custom_minimum_size = Vector2(64, 0)
+		value.custom_minimum_size = Vector2(52, 0)
 		row.add_child(value)
 		_values[key] = value
 		row.add_child(_lock_box(key))
@@ -430,10 +430,10 @@ func _build_hair_style(body: VBoxContainer) -> void:
 	body.add_child(row)
 	var label: Label = Label.new()
 	label.text = "Style"
-	label.custom_minimum_size = Vector2(150, 0)
+	label.custom_minimum_size = Vector2(120, 0)
 	row.add_child(label)
 	_style_pick = OptionButton.new()
-	_style_pick.custom_minimum_size = Vector2(0, 48)
+	_style_pick.custom_minimum_size = Vector2(0, 44)
 	_style_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	for style in Generator.HAIR_STYLES:
@@ -467,7 +467,7 @@ func _build_colors(body: VBoxContainer) -> void:
 			body.add_child(row)
 			var label: Label = Label.new()
 			label.text = String(section) + " colour"
-			label.custom_minimum_size = Vector2(170, 0)
+			label.custom_minimum_size = Vector2(130, 0)
 			row.add_child(label)
 			var picker: ColorPickerButton = ColorPickerButton.new()
 			picker.custom_minimum_size = Vector2(120, 44)
