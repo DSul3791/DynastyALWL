@@ -33,6 +33,7 @@ uniform float sun_curve = 0.15;
 uniform float gloom = 0.0;               // 0 clear, 1 storm: sky and clouds turn dark grey (weather_look.gd)
 uniform float night = 0.0;               // 0 day .. 1 night: stars (day_cycle.gd)
 uniform float flash = 0.0;               // lightning: lights the clouds from within (weather_look.gd)
+uniform float rainbow = 0.0;             // 0 none .. 1 a clear bow on a passing shower (weather_look.gd, art_weather_light.md 4)
 
 // No sine in the hash: stays exact for large coordinates.
 float hash(vec2 p) {
@@ -164,6 +165,33 @@ vec3 stars(vec3 dir) {
 	return vec3(0.85, 0.9, 1.0) * bright;
 }
 
+// A rainbow with the true geometry (art_weather_light.md 4): centred on the point opposite the sun, the primary bow from
+// violet at 40.6 degrees to red at 42.4, the secondary about 40 percent as bright with its colours reversed from red at 50.4
+// to violet at 53.4, the sky inside the primary a little brighter and Alexander's dark band between the two a little darker.
+// Soft-edged bands of pure spectral colour, added to the sky; the land in front hides the foot of the bow.
+vec3 spectrum(float t) {          // 0 violet .. 1 red
+	float h = 0.75 * (1.0 - clamp(t, 0.0, 1.0));
+	return clamp(abs(fract(vec3(h) + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
+}
+
+float bow_band(float t) {         // 1 across the band, soft at both edges
+	return smoothstep(-0.2, 0.15, t) * (1.0 - smoothstep(0.85, 1.2, t));
+}
+
+vec3 rainbow_on(vec3 c, vec3 dir) {
+	if (rainbow <= 0.0 || !LIGHT0_ENABLED || dir.y < -0.02) {
+		return c;
+	}
+	float a = degrees(acos(clamp(dot(dir, -LIGHT0_DIRECTION), -1.0, 1.0)));
+	float p = (a - 40.6) / 1.8;
+	float q = (53.4 - a) / 3.0;
+	vec3 bows = spectrum(p) * bow_band(p) + 0.4 * spectrum(q) * bow_band(q);
+	float inside = 1.0 - smoothstep(30.0, 40.6, a);                          // brighter sky inside the primary
+	float dark = smoothstep(42.4, 43.5, a) * (1.0 - smoothstep(49.3, 50.4, a));    // Alexander's dark band
+	float k = rainbow * (1.0 - 0.6 * gloom) * smoothstep(-0.02, 0.04, dir.y);
+	return c * (1.0 - 0.08 * k * dark) + k * (0.16 * bows + 0.03 * inside * vec3(1.0));
+}
+
 // Weather grading: grey and darker with gloom (weather_look.gd uses the same formula for the
 // fog), and a lightning flash that lights the clouds far more than the open sky.
 vec3 weather_grade(vec3 c, float cover) {
@@ -181,6 +209,7 @@ void sky() {
 	} else {
 		vec4 c = clouds(EYEDIR, POSITION, OCTAVES, LIGHT_SAMPLES, CIRRUS, 0.001);
 		COLOR = weather_grade(mix(base_sky(EYEDIR, true), c.rgb, c.a), c.a);
+		COLOR = rainbow_on(COLOR, EYEDIR);
 		if (night > 0.0 && EYEDIR.y > 0.0) {
 			COLOR += stars(EYEDIR) * night * (1.0 - c.a) * (1.0 - gloom) * smoothstep(0.0, 0.12, EYEDIR.y);
 		}

@@ -33,6 +33,7 @@ const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const CanopyMapScript := preload("res://src/client/canopy_map.gd")
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const BuildingLook := preload("res://src/client/building_look.gd")
 
 signal flash_started(at_world: Vector3, distance_m: float)
 
@@ -72,6 +73,11 @@ const FLAME_COLOUR_BACK := 0.8           # share of the lost colour a flame give
 const FIRE_COLOUR_NEAR_M := 6.0          # a lit fire this close gives it all back
 const FIRE_COLOUR_FAR_M := 14.0          # and none from this far (the biggest fire's light)
 const FLAME_COLOUR_S := 1.5              # seconds to ease the colour in or out
+# Rainbows on passing showers (art_weather_light.md 4): the sun up and under 42 degrees, rain within the last RAINBOW_HOLD_S,
+# the sun breaking through (cloud cover clearing), not a storm. The bow itself is drawn by the sky shader (sky_clouds.gd).
+const RAINBOW_HOLD_S := 90.0             # the rain is remembered this long (falling off evenly) after it stops
+const RAINBOW_EASE_S := 4.0
+const RAINBOW_SIN_MAX := 0.669           # sin 42 degrees: a higher sun puts the whole bow below the horizon
 const CAVE_LIGHT_DARK := 0.0             # share of the sun and sky light left deep in a cave or tunnel, setting "Dark": none, pitch black without a torch or fire (Dave 5 Nov 2026)
 const CAVE_LIGHT_NORMAL := 0.12          # the same, setting "Normal"
 const CAVE_GO_DARK_S := 1.0              # the light fades out over this long on going in, and back over CAVE_COME_OUT_S
@@ -80,6 +86,20 @@ const CAVE_SHADOW_OFF := 0.05            # no sun shadows below this share of th
 const CAVE_REFLECT_OFF := 0.3            # no sky reflections below this share of the light (the sky is not seen from in there)
 const CAVE_DARK_FROM := 0.1              # rock enclosure (cave_sounds.gd) from which the light starts to fade
 const CAVE_DARK_FULL := 0.6              # and at which it is fully gone
+# Cave light (docs/design/cave_light_design.md, Jamie's cave page #664): daylight comes from the mouth, not from how enclosed the spot is.
+# cave_sounds.gd measures how much of the view reaches open air (mouth_view) and how many bends lie between (bends). Mouth in view: the
+# light is that share x CAVE_VIEW_GAIN; one bend: moonlight; two: none. The eyes: dark in a second going in, then over CAVE_ADAPT_IN_S a
+# lift of up to CAVE_ADAPT_LIFT where some light exists (never above CAVE_ADAPT_CAP, so black stays black); coming out, the light is back at
+# once and the still dark-adapted eyes see a glare (exposure x 1 + CAVE_GLARE) that settles over CAVE_ADAPT_OUT_S.
+const CAVE_LIGHT_NORMAL_DEEP := 0.015     # with the switch, setting "Normal": a faint dusk deep in (not 12 %)
+const CAVE_VIEW_GAIN := 0.6
+const CAVE_BEND_LIGHT := 0.0005           # one bend: about moonlight
+const CAVE_COME_OUT_FAST_S := 0.4
+const CAVE_ADAPT_IN_S := 90.0
+const CAVE_ADAPT_OUT_S := 2.0
+const CAVE_ADAPT_LIFT := 3.0
+const CAVE_ADAPT_CAP := 0.03
+const CAVE_GLARE := 1.2
 const CAVE_RAIN_FROM := 0.1              # rock enclosure from which falling rain and snow thin out (an overhang lets a little through)
 const CAVE_RAIN_GONE := 0.5              # and at which none falls: in a cave (cave_sounds.gd's "in a cave" mark). Dave's QA list BUG-009, 3 Nov 2026
 const EXPOSURE_CLEAR := 1.1
@@ -165,13 +185,18 @@ var flash_level: float = 0.0            # 0..1, for the HUD and tests
 var gloom: float = 0.0
 var day = DayCycleScript.new()         # sun, moon and sky colours from the game clock (day_cycle.gd), refreshed twice a second
 var _day_next_msec: int = 0
+var _fire_next_msec: int = 0            # the fires' smoke and sparks take the wind once a second
 var _sky_next_msec: int = 0
 var _cave_factor: float = 1.0           # share of the sun and sky light let in under rock, eased (1 open air)
+var cave_adapt: float = 0.0             # 0 .. 1: the eyes adapted to the dark of a cave
 var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
 var canopy_night: float = 0.0           # 0 open .. 1 under closed crowns, at night only, eased (CANOPY_NIGHT_DIM)
 var torch_adapt: float = 0.0            # 0 .. 1: the eyes adapted to a held flame at night, eased (TORCH_NIGHT_DIM)
 var flame_colour: float = 0.0           # 0 .. 1: how much a flame in the hand or a fire close by gives the colour back, eased
 var night_colour: float = 1.0           # share of the colour left by the night, after a flame's share (1 by day), for checks
+var rainbow: float = 0.0                # 0 .. 1 the bow's strength now, eased (for checks)
+var _rain_memory: float = 0.0           # the recent rain, falling off over RAINBOW_HOLD_S
+var _rainbow_sent: float = -1.0
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
@@ -192,6 +217,8 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const WindCueScript := preload("res://src/client/wind_cue.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 var _fire_light_next_msec: int = 0
+const GameClock := preload("res://src/shared/game_clock.gd")
+const FloraView := preload("res://src/flora/flora_view.gd")
 var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
 const BreathLookScript := preload("res://src/client/breath_look.gd")
 var breath                              # BreathLook: breath puffs in the cold (art_weather_light.md 8.4)
@@ -439,6 +466,13 @@ func _process_body(delta: float) -> void:
 			_client._sun.basis = day.light_basis
 			_client._sun.light_color = day.light_color
 
+	if now_msec >= _fire_next_msec and _client.get("game_clock") != null:
+		_fire_next_msec = now_msec + 1000
+		var world_weather: Variant = _client.get("weather")
+		var heading: float = float(world_weather.get("wind_dir", 0.0)) if world_weather is Dictionary else 0.0
+		var wind_now: float = float(_s["wind"])
+		BuildingLook.set_fire_air(fire_wind_ms(wind_now), heading, still_night(day.elevation, _client.game_clock.hour(), cloud_cover, wind_now))
+
 	# The sky colours change in coarser steps than the sun: a changed sky shader parameter may make the engine redraw the
 	# sky's lighting cubemap, so it is paid once every few seconds (two game minutes), not every frame. Check the GPU table
 	# ("sky clouds at Low quality") and the frame time over a dusk if this is ever raised.
@@ -461,7 +495,18 @@ func _process_body(delta: float) -> void:
 			sky_material.set_shader_parameter("cloud_shadow_color", day.cloud_shadow)
 			sky_material.set_shader_parameter("night", day.stars)   # the stars: brighter on a moonless night (day_cycle.gd)
 
+	# A rainbow as a shower passes: recent rain, the sun low and breaking through the clearing cloud.
+	_rain_memory = maxf(rain, _rain_memory - delta / RAINBOW_HOLD_S)
+	var sun_through: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
+	var sun_low: float = smoothstep(0.0, 0.05, day.elevation) * (1.0 - smoothstep(RAINBOW_SIN_MAX - 0.07, RAINBOW_SIN_MAX, day.elevation))
+	var bow_target: float = 0.0 if clear_day else smoothstep(0.03, 0.25, _rain_memory) * smoothstep(0.15, 0.6, sun_through) * sun_low * (1.0 - storm)
+	rainbow = move_toward(rainbow, bow_target, delta / RAINBOW_EASE_S)
+
 	if sky_material != null:
+		if absf(rainbow - _rainbow_sent) > 0.004:
+			_rainbow_sent = rainbow
+			sky_material.set_shader_parameter("rainbow", rainbow)
+
 		sky_material.set_shader_parameter("coverage", lerpf(0.62, 0.30, cloud_cover))
 		sky_material.set_shader_parameter("gloom", gloom)
 		sky_material.set_shader_parameter("flash", flash_level)
@@ -471,8 +516,20 @@ func _process_body(delta: float) -> void:
 	var enclosed: float = _client.sound.cave.rock_enclosure if _client.sound != null and _client.sound.cave != null else 0.0
 	var left: float = CAVE_LIGHT_DARK if _client.display.cave_dark else CAVE_LIGHT_NORMAL
 	var cave_target: float = cave_light(enclosed, left)
-	_cave_factor = move_toward(_cave_factor, cave_target, delta / (CAVE_GO_DARK_S if cave_target < _cave_factor else CAVE_COME_OUT_S))
+	var come_out_s: float = CAVE_COME_OUT_S
+	var glare: float = 0.0
+
+	if _client.sound != null and _client.sound.cave != null:
+		var cave = _client.sound.cave
+		cave_target = cave_light_view(enclosed, float(cave.mouth_view), int(cave.bends), CAVE_LIGHT_DARK if _client.display.cave_dark else CAVE_LIGHT_NORMAL_DEEP)
+		come_out_s = CAVE_COME_OUT_FAST_S
+
+	_cave_factor = move_toward(_cave_factor, cave_target, delta / (CAVE_GO_DARK_S if cave_target < _cave_factor else come_out_s))
 	var under_rock: float = _cave_factor
+
+	cave_adapt = move_toward(cave_adapt, 1.0 if _cave_factor < 0.1 else 0.0, delta / (CAVE_ADAPT_IN_S if _cave_factor < 0.1 else CAVE_ADAPT_OUT_S))
+	under_rock = adapted_light(_cave_factor, cave_adapt)
+	glare = CAVE_GLARE * cave_adapt * smoothstep(0.3, 1.0, _cave_factor)
 	var sun_amount: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
 	# The night light (art_weather_light.md 6.2): crowns overhead and a flame in the hand each take a share of the moon and sky
 	# light, at night only. They are eased, and capped below by OUTDOOR_FLOOR further down.
@@ -506,7 +563,7 @@ func _process_body(delta: float) -> void:
 	sky_under_rock(environment, lerpf(DAY_SKY_SHARE, 0.3, dim) * keep, under_rock)   # night 0.3 as before, less under crowns or by a flame
 	environment.ambient_light_color = AMBIENT_DAY_WARM.lerp(AMBIENT_NIGHT_COLOR, dim)
 	# The whole picture goes dimmer and greyer with the weather.
-	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
+	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark) * (1.0 + glare)
 	var fire_m: float = float(_client.sound.fire.nearest_lit_m) if _client.sound != null and _client.sound.fire != null else INF
 	var flame_target: float = maxf(1.0 if held_flame() else 0.0, 1.0 - smoothstep(FIRE_COLOUR_NEAR_M, FIRE_COLOUR_FAR_M, fire_m))
 	flame_colour = move_toward(flame_colour, flame_target, delta / FLAME_COLOUR_S)
@@ -561,6 +618,7 @@ func _process_body(delta: float) -> void:
 	_update_ground(rain, snow)
 	_update_particles(rain, snow, float(_s["wind"]))
 	breath.update(delta)
+	_update_tree_wind()
 
 
 # The water shader writes its own fog (FOG), so it is fed the environment's fog each frame: the same distance and height fog,
@@ -641,6 +699,34 @@ static func above_clear(mist: float, inside: float) -> float:
 	return lerpf(1.0, MIST_ABOVE_CLEAR, clampf(mist, 0.0, 1.0) * (1.0 - clampf(inside, 0.0, 1.0)))
 
 
+# Cave light: the same from the mouth. `view` is the share of the view rays that reach open air, `bends` 0 (mouth in view), 1 or 2
+# (two or more), `deep` the least left (the setting: 0 Dark, CAVE_LIGHT_NORMAL_DEEP Normal).
+static func cave_light_view(rock_enclosure: float, view: float, bends: int, deep: float) -> float:
+	var shut: float = smoothstep(CAVE_DARK_FROM, CAVE_DARK_FULL, rock_enclosure)
+	var lit: float = clampf(view * CAVE_VIEW_GAIN, 0.0, 1.0) if bends <= 0 else (CAVE_BEND_LIGHT if bends == 1 else 0.0)
+	return lerpf(1.0, maxf(lit, deep), shut)
+
+
+# The light as the eyes see it: dark-adapted eyes lift what light there is, up to CAVE_ADAPT_CAP and never more than the open air; none stays none.
+static func adapted_light(light: float, adapt: float) -> float:
+	if light >= CAVE_ADAPT_CAP:
+		return light
+
+	return minf(light * (1.0 + CAVE_ADAPT_LIFT * clampf(adapt, 0.0, 1.0)), CAVE_ADAPT_CAP)
+
+
+# Fire smoke (fire_smoke_wind_design.md): the wind 0..1 in m/s (Jamie's wind page #637: 20 x wind^1.3).
+static func fire_wind_ms(wind: float) -> float:
+	return 20.0 * pow(clampf(wind, 0.0, 1.0), 1.3)
+
+
+# 0 .. 1: a still, clear night, when smoke stops at the cold layer and spreads flat. From about an hour after sunset to an hour after
+# sunrise (`elevation` the sin of the sun's height), little cloud, little wind. The same shares as the sound outdoors work.
+static func still_night(elevation: float, hour: float, cloud: float, wind: float) -> float:
+	var night: float = 1.0 - smoothstep(0.02, 0.17, elevation) if hour < 12.0 else 1.0 - smoothstep(-0.17, -0.02, elevation)
+	return night * (1.0 - smoothstep(0.3, 0.5, cloud)) * (1.0 - smoothstep(0.2, 0.35, wind))
+
+
 # The same grading the sky shader applies, so the fog meets the sky's horizon.
 static func _graded(color: Color, g: float) -> Color:
 	var grey: float = (color.r + color.g + color.b) / 3.0 * (1.0 - 0.6 * g)
@@ -677,6 +763,92 @@ func _update_ground(rain: float, snow: float) -> void:
 	if Time.get_ticks_msec() >= _fire_light_next_msec:
 		_fire_light_next_msec = Time.get_ticks_msec() + 1000
 		FireWeather.update(get_tree(), float(_s["mist"]) * mist_inside, snow, lying, 1.0 - day.night)
+
+	# Snow on the branches and crowns (art_weather_light.md 8.2.2): the crowns keep their own memory, which holds in frost and sheds in a
+	# thaw or a strong wind, never more than the ground's.
+	_update_crown_snow(snow, lying)
+
+
+# Snow that holds and sheds (docs/design/trees_weather_design.md part C, Jamie #675 "Snow on trees"; always on since Dave's 8 Nov ruling). Conifers catch
+# about half a snowfall and hold it for weeks in frost, losing about 1 % a game hour; above 0 °C or in a wind over 8 m/s they
+# shed it within about 3 game hours. Bare broadleaves hold a thin line only (0.35); in leaf they load like a conifer.
+# Crown snow is never more than its share of the ground's snow memory (weather_sounds.gd), so a tree is never white over bare ground.
+const CROWN_CONIFER_CAP := 0.5
+const CROWN_BARE_CAP := 0.35
+const CROWN_FROST_KEEP := 0.99         # share kept each game hour in frost
+const CROWN_SHED_TAU_H := 1.0          # thaw or wind: e-folding time in game hours (0.5 -> 0.025 after 3 h)
+const CROWN_SHED_WIND_MS := 8.0
+const CROWN_FALLING := 0.05            # eased snow above this loads the crowns
+var crown_snow_conifer: float = 0.0
+var crown_snow_broad: float = 0.0
+var _crown_next_msec: int = 0
+var _crown_last_msec: int = 0
+var _crown_sent: Vector2 = Vector2(-1.0, -1.0)
+
+
+# One step of one crown kind's snow: value now, its cap, the ground's snow memory (0..1), the eased falling snow (0..1), air
+# temperature, wind in m/s and the game hours since the last step.
+static func crown_snow_step(value: float, cap: float, ground: float, falling: float, temp_c: float, wind_ms: float, hours: float) -> float:
+	var top: float = cap * clampf(ground, 0.0, 1.0)
+
+	if wind_ms > CROWN_SHED_WIND_MS or (temp_c > 0.0 and falling <= CROWN_FALLING):
+		value *= exp(-hours / CROWN_SHED_TAU_H)
+	elif falling > CROWN_FALLING:
+		value = maxf(value, top)
+	else:
+		value *= pow(CROWN_FROST_KEEP, hours)
+
+	return clampf(minf(value, top), 0.0, 1.0)
+
+
+func _update_crown_snow(falling: float, ground: float) -> void:
+	if _client.flora == null:
+		return
+
+	var now_msec: int = Time.get_ticks_msec()
+
+	if now_msec < _crown_next_msec:
+		return
+
+	_crown_next_msec = now_msec + 1000
+	var hours: float = 0.0 if _crown_last_msec == 0 else float(now_msec - _crown_last_msec) / 1000.0 * GameClock.RATIO / 3600.0
+	_crown_last_msec = now_msec
+	var temp_c: float = 10.0
+	var wind_ms: float = 20.0 * pow(clampf(float(_s["wind"]), 0.0, 1.0), 1.3)
+
+	if _client.sound != null and _client.sound.weather != null:
+		temp_c = float(_client.sound.weather.temp_c)
+
+	var broad_cap: float = CROWN_BARE_CAP if str(_client.flora.season) == "winter" else CROWN_CONIFER_CAP
+	crown_snow_conifer = crown_snow_step(crown_snow_conifer, CROWN_CONIFER_CAP, ground, falling, temp_c, wind_ms, hours)
+	crown_snow_broad = crown_snow_step(crown_snow_broad, broad_cap, ground, falling, temp_c, wind_ms, hours)
+	var now: Vector2 = Vector2(crown_snow_conifer, crown_snow_broad)
+
+	if absf(now.x - _crown_sent.x) > 0.01 or absf(now.y - _crown_sent.y) > 0.01:
+		_crown_sent = now
+		_client.flora.set_snow_kinds(now.x, now.y)
+
+
+# Trees sway by the eased world wind (trees_weather_design.md part A), once a second. Wind in m/s = 20 x wind^1.3 (#637).
+var _tree_wind_next_msec: int = 0
+
+
+static func tree_wind_ms(wind: float) -> float:
+	return 20.0 * pow(clampf(wind, 0.0, 1.0), 1.3)
+
+
+func _update_tree_wind() -> void:
+	if _client == null or _client.flora == null:
+		return
+
+	var now_msec: int = Time.get_ticks_msec()
+
+	if now_msec < _tree_wind_next_msec:
+		return
+
+	_tree_wind_next_msec = now_msec + 1000
+	var world: Dictionary = _client.weather if _client.weather is Dictionary else {}
+	_client.flora.set_wind(tree_wind_ms(float(_s["wind"])), float(world.get("wind_dir", 0.0)))
 
 
 func _update_particles(rain: float, snow: float, wind: float) -> void:
