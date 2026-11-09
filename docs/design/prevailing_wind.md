@@ -1,10 +1,10 @@
 # Prevailing wind
 
-Owner: Kathleen (art, animation and sound). Status: design, with the code behind `--wind-dir`, off until Dino's pictures pass. Coordinator job of 8 Nov 2026. The numbers come from Jamie's `docs/knowledge/prevailing-wind-57s.md` (#714) and `docs/knowledge/wind-over-terrain.md` (#637).
+Owner: Kathleen (art, animation and sound). Status: **on by default** (Dave, 8 Nov: no flags; decisions row 31), **retuned to the starter island's real latitude, 34.3° S**, from Jamie's `docs/knowledge/prevailing-wind-34s.md` (#773). Section 2a below is the model in the code now; sections 2 to 6 were first written for 57° S (`prevailing-wind-57s.md`, #714) and keep that tuning only for the other zone rows, the local wind (section 3) and the readers (section 4). Coordinator job of 8 Nov 2026; the local wind numbers come from `docs/knowledge/wind-over-terrain.md` (#637).
 
 ## 1. What changes
 
-Today `Weather.state` gives `wind_dir` as noise over the whole circle. The wind is as likely to come from the east as from the west, and it does not turn with a front. With `--wind-dir`:
+Today `Weather.state` gives `wind_dir` as noise over the whole circle. The wind is as likely to come from the east as from the west, and it does not turn with a front. Now (always on):
 
 - **The world's wind** (`Weather.state`, the same on the server and every client, nothing sent):
   - each weather zone has a mean bearing the wind comes from, westerly to north-westerly on the starter island;
@@ -22,8 +22,35 @@ Switch off: `wind_dir` is exactly what it is today (the test checks it bit for b
 **Turn it on** on both the server and the client: the server reads `wind_dir` for scent (`server_animals.gd`, `server_thieves.gd`). With the flag on one side only, the animals smell along one wind while the smoke shows another.
 
 ```
-SERVER_ARGS="--wind-dir" art/playthrough/rig.sh ... --client-arg --wind-dir
+art/playthrough/rig.sh ...
 ```
+
+## 2a. The starter island at 34.3° S (the code now)
+
+At 34° S the wind turns with the season (34 S page, lesson 1). The temperate row has two spells instead of one mean:
+
+| Spell | Blows from | When |
+|---|---|---|
+| South-easter (the summer high) | 140° (`WIND_EAST_FROM_DEG`), ±50° slow swing | most spells in local summer |
+| Westerlies with their fronts | 288° (`WIND_WEST_FROM_DEG`), ±50°, then each front veers it up to +60° (to NW and N) and backs it up to −85° (to SW) | most spells in local winter |
+
+- Every 48 game hours (`WIND_SPELL_H`) the wind keeps or changes spell. The westerlies win `WIND_WEST_BY_MONTH` of them: Spring 1 to Winter 3 are 0.52, 0.45, 0.27, 0.22, 0.22, 0.33, 0.62, 0.82, 0.9, 0.9, 0.88 and 0.72, read between month centres. Runs of the same spell give the page's 2 to 6 days.
+- A change of spell swings round through the south over 8 game hours (`WIND_SPELL_TURN_H`): SE, S, SW, W, never through the north and east.
+- Fronts follow the storm noise as before, the southern way round. In a south-easter they turn the wind only 0.4 of the way (`WIND_EAST_FRONT`), since summer fronts are weak, often only a wind shift and cloud.
+- The month roses, hourly over ten years of a Python copy of the code on seeds 574716103 and 777, against the page:
+
+| Month | Model | Page |
+|---|---|---|
+| Summer 1 | SE 37 to 39, S 22, E 17, W and NW 6 to 8 %; mean from 142 to 147; constancy 0.53 to 0.57 | SE 33, S 18, E 15, W and NW 7 %; 141; 0.41 |
+| Winter 1 | W 27 to 29, NW 25 to 26, SW 15, N 11 %; mean from 275 to 276; constancy 0.49 to 0.51 | W 24, NW 26, SW 18, N 11 %; 279; 0.46 |
+| Spring 1 | mean from 191 to 198, constancy 0.23 to 0.29 | 202, 0.28 |
+| Autumn 1 | mean from 222 to 235 | 232 |
+
+- The model is a little steadier than the page in deep summer and winter (constancy about 0.1 high), and has almost no NE. Both are judged acceptable for now.
+- **Gusts** (page section 4):
+  - The factors are open sea 1.4, inland 1.7, under trees or in a lee 2.5, and up to 2.0 in the cold front's squall. The squall is `Weather.front_squall`: how sharply the wind is backing, carried in the state as `wind_squall`.
+  - The mean `wind` (0..1) stays capped at 1, which is 20 m/s. `local_wind` also gives `wind_gust_mps`, which is **not** capped, so the year's worst gusts can pass 20 m/s as the page's 26.7 m/s does. A reader on the 0..1 scale clamps at 1 itself.
+- **Not changed here:** the mean speed by month (page section 5: spring about a third windier than autumn) and the afternoon rise. Both would change `wind` for every reader (rain, sounds, fire, the server), so they are left for their own PR.
 
 ## 2. The world's wind (`Weather.state`)
 
@@ -111,11 +138,11 @@ Two readers could use the new keys later, in their own PRs:
 - the wind cue's wobble and the trees' gusts could take `wind_gust`;
 - the sound of wind could take `wind_mps`.
 
-The F3 text gets one line with `--wind-dir`:
+The F3 text gets one line:
 `wind: from 283 deg (world from 283), 8.0 m/s, gust x1.60 | slope 0.04 downhill toward 095, slope breeze +0.0 m/s | sea upwind 0.00, sea breeze +0.0 m/s | lee 0.00, canopy 0.0`.
 The shot runner prints the same line after every saved picture.
 
-**The shot runner's forced weather.** The weather `live` (any name that is not a preset) keeps the world's own weather; an empty field does not work, because the shot list drops empty fields. With `--wind-dir`, a preset (`clear`, `rain` and so on) keeps its rain, cloud and speed. It takes the world's wind heading for that hour and then the ground's bending, as in play. Off, the presets keep their fixed heading of 1 rad, as today.
+**The shot runner's forced weather.** The weather `live` (any name that is not a preset) keeps the world's own weather; an empty field does not work, because the shot list drops empty fields. A preset (`clear`, `rain` and so on) keeps its rain, cloud and speed. It takes the world's wind heading for that hour and then the ground's bending, as in play. Off, the presets keep their fixed heading of 1 rad, as today.
 
 ## 5. Tests
 
@@ -161,13 +188,13 @@ The shot runner prints the same line after every saved picture.
 
 ## 6. Pictures for Dino
 
-All pictures are in the base world. Set the day with `mkday N` and `PERSIST_STORE=$DAYS/dN` (KATHLEEN_PICTURE_PLAN.md). Add the flag to both sides on every line marked ON.
+All pictures are in the base world. Set the day with `mkday N` and `PERSIST_STORE=$DAYS/dN` (KATHLEEN_PICTURE_PLAN.md). There is no flag any more: every line is the game as it is. **The front pictures of days 107 and 108 below were picked for the 57° S tuning.** At 34° S use day 281 21:00 (veered to NNE, from about 34) and day 282 04:00 (backed to WSW, from about 248, the squall at its peak). `test_wind_dir` checks both.
 
 Up to this PR's head, the only wind visual on main is the wind-cue specks. The check is mostly the log line `shot runner: wind: ...` after each picture, and Dino copies those lines with the pictures. When #680 (smoke) and the rain stack (#649) are on main, the same cameras show smoke and rain lean. Dino retakes then with the same lines.
 
 **Day 109, ON** (one start, five pictures):
 ```
-mkday 109; PERSIST_STORE=$DAYS/d109 SERVER_ARGS="--wind-dir" art/playthrough/rig.sh --name wd_noon_spawn --client-arg --wind-dir \
+mkday 109; PERSIST_STORE=$DAYS/d109 art/playthrough/rig.sh --name wd_noon_spawn \
   --at 53296,68080 --agl 1.7 --yaw 0 --pitch 0 --hour 12 --weather live --wait 60 --settle 20 \
   --more-shots "wd_noon_coast:52600,1.7,66592,90,0,12,live,-1;wd_sea_breeze:52600,1.7,66592,-90,0,14.5,clear,-1;wd_night_spawn:53296,1.7,68080,0,0,23,clear,-1;wd_night_fire_site:53301,1.7,68427,0,0,23,clear,-1"
 ```
@@ -184,9 +211,9 @@ If both night shots print a grade under 0.05, there is no slope picture this rou
 
 **Days 107 and 108, ON** (the front; two starts, live weather):
 ```
-mkday 107; PERSIST_STORE=$DAYS/d107 SERVER_ARGS="--wind-dir" art/playthrough/rig.sh --name wd_front_before --client-arg --wind-dir \
+mkday 107; PERSIST_STORE=$DAYS/d107 art/playthrough/rig.sh --name wd_front_before \
   --at 53296,68080 --agl 1.7 --yaw 0 --pitch 0 --hour 22 --weather live --wait 60 --settle 20
-mkday 108; PERSIST_STORE=$DAYS/d108 SERVER_ARGS="--wind-dir" art/playthrough/rig.sh --name wd_front_after --client-arg --wind-dir \
+mkday 108; PERSIST_STORE=$DAYS/d108 art/playthrough/rig.sh --name wd_front_after \
   --at 53296,68080 --agl 1.7 --yaw 0 --pitch 0 --hour 7 --weather live --wait 60 --settle 20
 ```
 

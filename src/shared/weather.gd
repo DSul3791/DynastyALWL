@@ -28,6 +28,71 @@ const ZONES := {
 # Rain takes the edge off the air: up to this many degrees colder at full rain (Dave 3 Nov 2026: rain should cool things).
 const RAIN_COOL_C := 4.0
 
+# Prevailing wind (docs/design/prevailing_wind.md; always on, Dave 8 Nov: no flags). Each zone group has a mean bearing the wind
+# comes FROM, a slow swing either side of it and a turn with every front, the southern hemisphere's way: the wind veers (W to NW to
+# N) as a front comes and backs sharply (to SW) once it has passed. The starter island's temperate zone (34.3 S) follows Jamie's
+# docs/knowledge/prevailing-wind-34s.md (#773): two spells, a south-easter (from WIND_EAST_FROM_DEG) under the summer high and the
+# westerlies (from WIND_WEST_FROM_DEG) with their fronts in winter; each WIND_SPELL_H the wind keeps or changes spell, the westerlies
+# winning in WIND_WEST_BY_MONTH of them, and a change of spell swings round through the south over WIND_SPELL_TURN_H. Fronts turn
+# the wind fully in the westerlies and only WIND_EAST_FRONT of it in a south-easter (summer fronts are weak, a wind shift and cloud).
+# On seeds 574716103 and 777 over ten years (a Python copy of this code) the months give, against Jamie's rose:
+#   Summer 1: SE 37 to 39, S 22, E 17, W and NW 6 to 8 %, mean from 142 to 147 (141), constancy 0.53 to 0.57 (0.41)
+#   Winter 1: W 27 to 29, NW 25 to 26, SW 15, N 11 %, mean from 275 to 276 (279), constancy 0.49 to 0.51 (0.46)
+#   Spring 1 mixed: mean from 191 to 198 (202), constancy 0.23 to 0.29 (0.28); Autumn 1 turning: 222 to 235 (232)
+# The other zone rows are judged guesses (trades and polar easterlies) until those islands have a page.
+# from_deg: compass bearing the wind most often blows from. spread_deg: the slow swing either side (WIND_WANDER_H noise).
+# veer_deg: the turn as a front comes (6 to 18 h); back_deg: the sharp turn once it has passed. reversal_deg: how far a rare
+# blocked spell swings it. south: true south of the equator (the front rule turns the other way in the north). seasons: the
+# temperate row's two spells by game month (below) instead of from_deg and reversal_deg.
+const WIND_BY_ZONE := {
+	"temperate": {"from_deg": 218.0, "spread_deg": 50.0, "veer_deg": 60.0, "back_deg": 85.0, "reversal_deg": 0.0, "south": true, "seasons": true},
+	"transition": {"from_deg": 295.0, "spread_deg": 70.0, "veer_deg": 30.0, "back_deg": 60.0, "reversal_deg": -150.0, "south": true},
+	"desert": {"from_deg": 120.0, "spread_deg": 25.0, "veer_deg": 15.0, "back_deg": 15.0, "reversal_deg": 60.0, "south": true},
+	"arctic": {"from_deg": 110.0, "spread_deg": 40.0, "veer_deg": 30.0, "back_deg": 40.0, "reversal_deg": 120.0, "south": true},
+}
+const WIND_EAST_FROM_DEG := 140.0          # the summer south-easter (34 S page, Summer 1 mean from 141)
+const WIND_WEST_FROM_DEG := 288.0          # the winter westerlies before a front's turn (the fronts' veer and back bring the mean to about 279)
+# The westerlies' share of spells by game month, Spring 1 (days 0 to 30) .. Winter 3; read between month centres.
+const WIND_WEST_BY_MONTH := [0.52, 0.45, 0.27, 0.22, 0.22, 0.33, 0.62, 0.82, 0.9, 0.9, 0.88, 0.72]
+const WIND_SPELL_H := 48.0                 # a spell lasts at least two game days, often several in a row (34 S page: 2 to 6 days)
+const WIND_SPELL_TURN_H := 8.0             # a change of spell swings the wind round through the south over this many game hours
+const WIND_EAST_FRONT := 0.4               # how much of the front's turn a south-easter spell takes
+const WIND_WANDER_H := 36.0                # the slow swing's noise step: one direction holds for a day or more
+const WIND_FRONT_LAG_H := 6.0              # the front's trend: its strength now against this many hours ago
+const WIND_FRONT_FROM := 0.35              # the turn starts once the front noise passes this (rain starts near 0.73 in the temperate zone)
+const WIND_FRONT_FULL := 0.8
+const WIND_FRONT_SHARP := 0.06             # the trend that gives the full turn: small, so the back at the front comes in an hour or two
+const WIND_REVERSAL_FROM := 0.75           # the blocked-spell noise (3-day step) above this starts swinging the wind round
+const WIND_REVERSAL_FULL := 0.9
+const WIND_SPELL_STREAM := 11              # noise streams: 8 and 9 are the sea fog's, 10 the blocked spell's
+const WIND_REVERSAL_STREAM := 10
+
+# Local wind near the ground (local_wind below; the client only, for now): the coast, a crest's lee, the canopy, slope and sea breezes.
+const WIND_MPS_AT_1 := 20.0                # wind 0..1 to m/s: m/s = 20 x wind^1.3 (as everywhere else)
+const WIND_MPS_POWER := 1.3
+const WIND_INLAND_SPEED := 0.85            # moorland 5 to 10 km inland keeps 0.8 to 0.9 of the open coast's wind (Jamie #714)
+const WIND_CANOPY_KEEP := 0.2              # under a tree canopy, 0.1 to 0.3 (Jamie #714)
+const WIND_LEE_KEEP := 0.35                # the lee of a crest steeper than 18 degrees keeps 0.25 to 0.5 (wind-over-terrain.md)
+# Gusts (34 S page section 4): the peak 3 s gust over the 10 minute mean. The game's `wind` (0..1) is the mean and stays capped at 1
+# (20 m/s); the gust in m/s is not capped, so a squall over a gale can reach the 27 m/s or so of the year's worst gusts. Anything
+# that reads gusts on the 0..1 scale clamps them at 1 itself.
+const WIND_GUST_COAST := 1.4               # open sea and headlands, a steady south-easter: 1.3 to 1.5
+const WIND_GUST_INLAND := 1.7              # moorland inland: 1.6 to 1.8
+const WIND_GUST_SQUALL := 2.0              # the cold front passing: 1.7 to 2.2 for 1 to 10 minutes
+const WIND_GUST_CANOPY := 2.5              # under trees, in a crest's lee: a weak mean with sudden puffs, 2 to 3
+const KATABATIC_MPS := [1.0, 3.0]          # down-slope at night, gentle .. steep slopes (wind-over-terrain.md: 1 to 3 on our hills)
+const ANABATIC_MPS := [0.5, 1.5]           # up-slope by day in sun (wind-over-terrain.md: 1 to 2, judged)
+const SLOPE_GRADE := [0.05, 0.3]           # rise over run where slope breezes start and where they are full
+const SLOPE_CALM_MPS := [2.0, 6.0]         # a slope breeze is full under 2 m/s of the world's wind and gone at 6
+const KATABATIC_FROM_SUNSET_H := [-0.5, 1.5]   # builds from half an hour before sunset to full 1.5 h after
+const KATABATIC_TO_SUNRISE_H := [0.5, 2.0]     # holds through the night and dies 0.5 to 2 h after sunrise
+const ANABATIC_FROM_SUNRISE_H := [1.5, 3.5]    # the slope must warm first: from 1.5 h after sunrise, full at 3.5
+const ANABATIC_TO_SUNSET_H := [2.0, 0.5]       # fades from 2 h before sunset, gone half an hour before
+const SEA_BREEZE_MPS := [2.0, 4.0]         # onshore on calm sunny days, spring/autumn .. high summer (Jamie #714: 2 to 4, judged)
+const SEA_BREEZE_HOURS := [10.0, 14.5]     # starts about 10:00, full by 14:00 to 15:00, dies at sunset (Jamie #714)
+const SEA_BREEZE_CALM_MPS := [2.0, 4.0]    # none when the world's wind is over 4 m/s (Jamie #714, sourced)
+const LAND_BREEZE_MPS := 1.5               # offshore on clear calm nights (Jamie #714: 1 to 2)
+
 # Valley fog (radiation fog; docs/design/valley_fog.md, art_weather_light.md section 7, coordinator decision 6 of 8 Nov 2026).
 # It forms on calm, clear nights in low ground, is thickest at dawn and burns off 1 to 3 hours after sunrise; most common in
 # autumn. `mist` (0..1) is the strength of the fog layer and `mist_top_m` the height of its top above sea level (0 when there
@@ -210,7 +275,8 @@ static func state(seed_value: int, game_s: float, group: String, altitude_m: flo
 		"cloud": cloud,
 		"sun": clampf(1.0 - cloud * 1.1, 0.0, 1.0),
 		"wind": wind,
-		"wind_dir": TAU * _noise(seed_value, 4, game_s / (20.0 * 3600.0)) + 0.8 * storm * (_noise(seed_value, 5, game_s / (2.0 * 3600.0)) - 0.5),
+		"wind_dir": _wind_heading(seed_value, game_s, group) + 0.8 * storm * (_noise(seed_value, 5, game_s / (2.0 * 3600.0)) - 0.5),
+		"wind_squall": front_squall(seed_value, game_s, group),
 		"temp_c": temp - RAIN_COOL_C * (0.0 if snowing else precip),
 		"season": GameClockScript.SEASON_NAMES[int(phase * 4.0) % 4],
 		"mist": mist,
@@ -307,6 +373,187 @@ static func mist_top_m(seed_value: int, game_s: float, mist: float) -> float:
 
 	var full: float = lerpf(MIST_TOP_MIN_M, MIST_TOP_MAX_M, _noise(seed_value, 7, game_s / GameClockScript.SECONDS_PER_DAY))
 	return full * (0.5 + 0.5 * mist)
+
+
+# The heading the wind blows TOWARD (radians, as wind_dir) before the storm's swing.
+static func _wind_heading(seed_value: int, game_s: float, group: String) -> float:
+	# Not wrapped: the bearing never jumps, so neither does the heading (from bearing B the wind blows toward B + 180, at B + 90 rad).
+	return deg_to_rad(_from_deg_unwrapped(seed_value, game_s, group) + 90.0)
+
+
+# The compass bearing (degrees, 0 north, 90 east) the wind comes FROM, before the storm's swing.
+static func prevailing_from_deg(seed_value: int, game_s: float, group: String) -> float:
+	return fposmod(_from_deg_unwrapped(seed_value, game_s, group), 360.0)
+
+
+static func _from_deg_unwrapped(seed_value: int, game_s: float, group: String) -> float:
+	var zone: Dictionary = WIND_BY_ZONE.get(group, WIND_BY_ZONE["temperate"])
+	var wander: float = float(zone["spread_deg"]) * (2.0 * _noise(seed_value, 4, game_s / (WIND_WANDER_H * 3600.0)) - 1.0)
+	var west: float = westerly_spell(seed_value, game_s, group)
+	var mean: float = float(zone["from_deg"])
+
+	if bool(zone.get("seasons", false)):
+		mean = lerpf(WIND_EAST_FROM_DEG, WIND_WEST_FROM_DEG, west)       # unwrapped, so a change of spell swings through the south
+	else:
+		mean += float(zone["reversal_deg"]) * smoothstep(WIND_REVERSAL_FROM, WIND_REVERSAL_FULL, _noise(seed_value, WIND_REVERSAL_STREAM, game_s / (3.0 * GameClockScript.SECONDS_PER_DAY)))
+
+	return mean + wander + front_turn_deg(seed_value, game_s, group)
+
+
+# The westerlies' share of the wind now, 0 (a south-easter spell) .. 1 (the westerlies), for a zone with seasons; 1 otherwise.
+static func westerly_spell(seed_value: int, game_s: float, group: String) -> float:
+	if not bool(WIND_BY_ZONE.get(group, WIND_BY_ZONE["temperate"]).get("seasons", false)):
+		return 1.0
+
+	var step: float = WIND_SPELL_H * 3600.0
+	var i: int = int(floor(game_s / step))
+	var frac: float = game_s / step - float(i)
+	return lerpf(_spell_is_west(seed_value, i - 1), _spell_is_west(seed_value, i), smoothstep(0.0, WIND_SPELL_TURN_H * 3600.0 / step, frac))
+
+
+static func _spell_is_west(seed_value: int, i: int) -> float:
+	var phase: float = fposmod(float(i) * WIND_SPELL_H * 3600.0 / GameClockScript.SECONDS_PER_DAY, float(GameClockScript.DAYS_PER_YEAR)) / float(GameClockScript.DAYS_PER_YEAR)
+	return 1.0 if _hash(seed_value, WIND_SPELL_STREAM, i) < west_share_of_month(phase) else 0.0
+
+
+# WIND_WEST_BY_MONTH at a point of the year (0..1 from the spring equinox), read linearly between the twelve month centres.
+static func west_share_of_month(phase: float) -> float:
+	var x: float = fposmod(phase, 1.0) * 12.0 - 0.5
+	var k: int = int(floor(x))
+	var f: float = x - float(k)
+	return lerpf(float(WIND_WEST_BY_MONTH[posmod(k, 12)]), float(WIND_WEST_BY_MONTH[posmod(k + 1, 12)]), f)
+
+
+# How far a front turns the wind (degrees, + clockwise = veering): ahead of a front, while its noise is rising, the wind veers
+# by up to veer_deg in the south (backs in the north); once it has peaked and falls, it backs by up to back_deg (veers in the
+# north). The trend is the front's strength now against WIND_FRONT_LAG_H ago, so the turn round comes a few hours after the
+# heaviest rain, as the cold front's change does. A south-easter spell takes only WIND_EAST_FRONT of it.
+static func front_turn_deg(seed_value: int, game_s: float, group: String) -> float:
+	var zone: Dictionary = WIND_BY_ZONE.get(group, WIND_BY_ZONE["temperate"])
+	var now: float = _noise(seed_value, 1, game_s / (FRONT_HOURS * 3600.0))
+	var before: float = _noise(seed_value, 1, (game_s - WIND_FRONT_LAG_H * 3600.0) / (FRONT_HOURS * 3600.0))
+	var strength: float = smoothstep(WIND_FRONT_FROM, WIND_FRONT_FULL, maxf(now, before))
+	var trend: float = clampf((now - before) / WIND_FRONT_SHARP, -1.0, 1.0)
+	var turn: float = float(zone["veer_deg"]) * trend if trend > 0.0 else float(zone["back_deg"]) * trend
+	var spell: float = lerpf(WIND_EAST_FRONT, 1.0, westerly_spell(seed_value, game_s, group))
+	return strength * turn * spell * (1.0 if bool(zone["south"]) else -1.0)
+
+
+# The cold front's squall, 0..1: how sharply the wind is backing behind a front now (the gust factor rises with it, local_wind).
+static func front_squall(seed_value: int, game_s: float, group: String) -> float:
+	var zone: Dictionary = WIND_BY_ZONE.get(group, WIND_BY_ZONE["temperate"])
+	var turn: float = front_turn_deg(seed_value, game_s, group) * (1.0 if bool(zone["south"]) else -1.0)
+	return clampf(-turn / maxf(float(zone["back_deg"]), 1.0), 0.0, 1.0)
+
+
+# A compass bearing (degrees, 0 north, 90 east; north is -z, east +x) as a wind_dir angle on (x, z), and back.
+static func heading_of_bearing(bearing_deg: float) -> float:
+	return fposmod(deg_to_rad(bearing_deg - 90.0), TAU)
+
+
+static func bearing_of_heading(heading: float) -> float:
+	return fposmod(rad_to_deg(heading) + 90.0, 360.0)
+
+
+static func wind_mps(wind: float) -> float:
+	return WIND_MPS_AT_1 * pow(clampf(wind, 0.0, 1.0), WIND_MPS_POWER)
+
+
+static func wind_of_mps(mps: float) -> float:
+	return clampf(pow(maxf(mps, 0.0) / WIND_MPS_AT_1, 1.0 / WIND_MPS_POWER), 0.0, 1.0)
+
+
+# The wind where someone stands (docs/design/prevailing_wind.md section 3): the world's wind made weaker and gustier inland,
+# weaker again in a crest's lee or under trees, plus a slope breeze and a sea or land breeze on light-wind clear days and nights.
+# Pure; the caller measures `here`:
+#   "downhill": Vector2 on (x, z), the way the ground falls (ZERO on the flat); "grade": rise over run there
+#   "sea_upwind": 0..1, how much of the ground upwind is open sea; "lee": 0..1, sheltered by a steep crest upwind
+#   "sea_way": Vector2 on (x, z) toward the nearest sea, length 0..1 for how much of the ground near by is sea; "canopy": 0..1
+# Returns a copy of `w` with "wind" and "wind_dir" changed, plus "wind_mps", "wind_gust" (gust over mean), "wind_gust_mps", "wind_slope_mps"
+# (+ down-slope, - up-slope), "wind_sea_mps" (+ onshore, - offshore) and "wind_base_dir" (the world's heading).
+static func local_wind(w: Dictionary, here: Dictionary, game_s: float) -> Dictionary:
+	var out: Dictionary = w.duplicate()
+	var sea: float = clampf(float(here.get("sea_upwind", 0.0)), 0.0, 1.0)
+	var base_dir: float = float(w.get("wind_dir", 0.0))
+	var base_mps: float = wind_mps(float(w.get("wind", 0.0)))
+	var cloud: float = float(w.get("cloud", 0.0))
+	var sun: float = float(w.get("sun", 1.0))
+	var shelter: float = lerpf(1.0, WIND_LEE_KEEP, clampf(float(here.get("lee", 0.0)), 0.0, 1.0))
+	shelter *= lerpf(1.0, WIND_CANOPY_KEEP, clampf(float(here.get("canopy", 0.0)), 0.0, 1.0))
+	var flow: Vector2 = Vector2.from_angle(base_dir) * base_mps * lerpf(WIND_INLAND_SPEED, 1.0, sea)
+	var downhill: Vector2 = here.get("downhill", Vector2.ZERO)
+	var sea_way: Vector2 = here.get("sea_way", Vector2.ZERO)
+	var slope: float = slope_breeze_mps(float(here.get("grade", 0.0)), game_s, base_mps, cloud, sun) if downhill.length() > 0.01 else 0.0
+	var onshore: float = sea_breeze_mps(minf(sea_way.length(), 1.0), game_s, base_mps, cloud, sun) if sea_way.length() > 0.01 else 0.0
+
+	if slope != 0.0:
+		flow += downhill.normalized() * slope
+
+	if onshore != 0.0:
+		flow -= sea_way.normalized() * onshore
+
+	flow *= shelter
+	out["wind_base_dir"] = base_dir
+	out["wind_slope_mps"] = slope
+	out["wind_sea_mps"] = onshore
+	out["wind_mps"] = flow.length()
+	out["wind"] = wind_of_mps(flow.length())
+	out["wind_dir"] = base_dir + angle_difference(base_dir, flow.angle()) if flow.length() > 0.05 else base_dir   # kept near the world's heading, no jump
+	var gust: float = lerpf(WIND_GUST_INLAND, WIND_GUST_COAST, sea)
+	gust = lerpf(gust, WIND_GUST_SQUALL, clampf(float(w.get("wind_squall", 0.0)), 0.0, 1.0))
+	gust = lerpf(gust, WIND_GUST_CANOPY, clampf(maxf(float(here.get("canopy", 0.0)), float(here.get("lee", 0.0))), 0.0, 1.0))
+	out["wind_gust"] = gust
+	out["wind_gust_mps"] = flow.length() * gust                                      # not capped at 20 m/s
+	return out
+
+
+# The night-flow share 0..1 (katabatic and land breezes): builds from half an hour before sunset to full 1.5 h after, holds
+# through the night and dies 0.5 to 2 h after sunrise. `rise` is the sunrise hour; sunset is 24 - rise.
+static func _night_flow(hour: float, rise: float) -> float:
+	var start: float = 24.0 - rise + KATABATIC_FROM_SUNSET_H[0]
+	var t: float = fposmod(hour - start, 24.0)                                # hours since it started building
+	var to_rise: float = fposmod(rise - start, 24.0)                          # sunrise, in the same hours
+
+	if t >= to_rise + KATABATIC_TO_SUNRISE_H[1]:
+		return 0.0
+
+	var build: float = smoothstep(0.0, KATABATIC_FROM_SUNSET_H[1] - KATABATIC_FROM_SUNSET_H[0], t)
+	return build * (1.0 - smoothstep(KATABATIC_TO_SUNRISE_H[0], KATABATIC_TO_SUNRISE_H[1], t - to_rise))
+
+
+# The slope breeze (m/s): + down the slope (katabatic: clear nights), - up it (anabatic: sunny days from mid-morning). Only on
+# light-wind days: full under 2 m/s of the world's wind, gone at 6. 0 on gentle ground (grade under 0.05).
+static func slope_breeze_mps(grade: float, game_s: float, base_mps: float, cloud: float, sun: float) -> float:
+	var steep: float = smoothstep(SLOPE_GRADE[0], SLOPE_GRADE[1], grade)
+
+	if steep <= 0.0:
+		return 0.0
+
+	var calm: float = 1.0 - smoothstep(SLOPE_CALM_MPS[0], SLOPE_CALM_MPS[1], base_mps)
+	var hour: float = hour_of(game_s)
+	var rise: float = sunrise_hour(year_phase(game_s) * float(GameClockScript.DAYS_PER_YEAR))
+	var day: float = smoothstep(ANABATIC_FROM_SUNRISE_H[0], ANABATIC_FROM_SUNRISE_H[1], hour - rise) * smoothstep(ANABATIC_TO_SUNSET_H[1], ANABATIC_TO_SUNSET_H[0], 24.0 - rise - hour)
+	var clear: float = 1.0 - smoothstep(0.4, 0.8, cloud)
+	var down: float = lerpf(KATABATIC_MPS[0], KATABATIC_MPS[1], steep) * _night_flow(hour, rise) * clear
+	var up: float = lerpf(ANABATIC_MPS[0], ANABATIC_MPS[1], steep) * day * clampf(sun, 0.0, 1.0)
+	return calm * (down - up)
+
+
+# The sea or land breeze (m/s): + onshore on calm sunny days (stronger in summer), - offshore on clear calm nights. `near` is
+# 0..1, how much of the ground near by is sea. None when the world's wind is over 4 m/s.
+static func sea_breeze_mps(near: float, game_s: float, base_mps: float, cloud: float, sun: float) -> float:
+	if near <= 0.0:
+		return 0.0
+
+	var calm: float = 1.0 - smoothstep(SEA_BREEZE_CALM_MPS[0], SEA_BREEZE_CALM_MPS[1], base_mps)
+	var hour: float = hour_of(game_s)
+	var rise: float = sunrise_hour(year_phase(game_s) * float(GameClockScript.DAYS_PER_YEAR))
+	var set_h: float = 24.0 - rise
+	var summer: float = 0.5 + 0.5 * cos(TAU * (year_phase(game_s) - 0.375))
+	var day: float = smoothstep(SEA_BREEZE_HOURS[0], SEA_BREEZE_HOURS[1], hour) * (1.0 - smoothstep(set_h - 2.0, set_h, hour))
+	var onshore: float = lerpf(SEA_BREEZE_MPS[0], SEA_BREEZE_MPS[1], summer) * day * clampf(sun, 0.0, 1.0)
+	var offshore: float = LAND_BREEZE_MPS * _night_flow(hour, rise) * (1.0 - smoothstep(0.4, 0.8, cloud))
+	return calm * near * (onshore - offshore)
 
 
 # Smooth value noise in 0..1 along one axis, per (seed, stream).
