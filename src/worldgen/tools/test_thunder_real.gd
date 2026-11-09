@@ -80,9 +80,17 @@ func _init() -> void:
 	var far_heard: bool = WeatherSounds.heard(9000.0, at + Vector3(9000.0, 0.0, 0.0), 1060.0)
 	_check(due.size() == (2 if far_heard else 1), "the near strike claps (%d due)" % due.size())
 	_check(not due.is_empty() and absf(float(due[0][0]) - 800.0) < 0.01 and absf(float(due[0][1]) - PI / 2.0) < 0.001, "800 m off along +z: heard 800 m away, from +z (%s)" % str(due[0] if not due.is_empty() else []))
+	clock[0] = 1055.0
+	due = sounds.due_strikes(at)
+	clock[0] = 1058.0
+	due.append_array(sounds.due_strikes(at))
+	_check(asked.size() == 1 and due.is_empty(), "a resync a few seconds back plays nothing twice: it waits for the clock to pass the last read")
+	clock[0] = 1070.0
+	due = sounds.due_strikes(at)
+	_check(asked.size() == 2 and is_equal_approx(float(asked[1][0]), 1060.0), "then reads on from where it was (%s)" % str(asked[1] if asked.size() > 1 else []))
 	clock[0] = 9000.0
 	due = sounds.due_strikes(at)
-	_check(asked.size() == 1 and due.is_empty(), "a long gap (a clock jump) starts fresh, no backlog of claps")
+	_check(asked.size() == 2 and due.is_empty(), "a long gap (a clock jump) starts fresh, no backlog of claps")
 
 	# Level: falls with distance, near crack as today, a far roll quieter in wind.
 	var today_near: float = WeatherSounds.THUNDER_DB - 300.0 / 400.0 + 3.0
