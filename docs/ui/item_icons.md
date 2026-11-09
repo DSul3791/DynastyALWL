@@ -4,7 +4,7 @@ Where the inventory's item icons live, which ones are baked and which are painte
 
 ## Where they live
 
-- **`assets/ui/item_icons/<item id>.png`**, one per live item in `data/items/items.json`. Each is 128 x 128 with no background. The slot adds the soft shadow, so it is not painted in.
+- **`assets/ui/item_icons/<item id>.png`**, one per live item in `data/items/items.json` and `data/items/gathered.json` (item_table.gd loads both). Each is 128 x 128 with no background. The slot adds the soft shadow, so it is not painted in.
 - **`<item id>.png.import`** sits beside each PNG. `tools/import_item_icons.py` writes it the way Godot would. The cloud never runs an editor import, and `ResourceLoader.exists` needs this file to find the icon.
   - The uid comes from a hash of the id, so it is the same every time the file is written.
   - The cache path comes from the res:// path, so repainting a PNG does not change its `.import`.
@@ -77,6 +77,15 @@ python3 tools/import_item_icons.py C:/temp/item_icons
 - The importer refuses some files and says why: an id that is not a live item (retired or unknown), a size other than 128 x 128, or a PNG with no alpha.
 
 **Removing an icon** (for example, its item was retired): move the PNG and its `.import` to `proposed_removals/` with a row in `REMOVALS.md`, the same as other deleted files.
+
+## Gathered materials (gathered.json)
+
+`data/items/gathered.json` holds 174 gathered materials: kindling, tinder, thatch, straw, bark, berries, herbs and the rest. Until 9 Nov the bake and the importer read only `items.json`, so none of them had an icon, and the "424 of 424" count left them out.
+
+Now both tools read `gathered.json` too. The importer counts 598 live items, and 174 of them are still missing an icon.
+- All 174 have a look in `looks.json`, so the bake draws them on Dave's PC. The steps are in `gathered_icons_job.md` in the shared files.
+- Then any that don't read at slot size get painted.
+- The table above gets their counts once they are in.
 
 ## Contact sheets
 
