@@ -91,7 +91,7 @@ The six stats are the six bars Dave approved on 21 Oct (Health, Exertion, Energy
 | Title plate | 1254 | 30 | text + 60 | 46 | "CRAFT" engraved; station context on the right of the title row: "By hand" or "At: Campfire" (SemiBold 18) |
 | Category tabs | 1226 | 100 | 48 | 588 | 11 raised tabs of 48 x 48, 6 apart, each an engraved 28 px glyph: All, then the 10 recipe categories. The selected tab is lit with a bright rim and a gold glyph |
 | Recipe search | 1282 | 100 | 196 | 36 | Filters the list; the placeholder names the tab ("Search tools") |
-| Recipe list | 1282 | 146 | 196 | 766 | Rows of 44, 3 apart, with a faint rule between rows. A 32 px icon and the name (18). Rows you can't make yet are dimmed to 45 %. A recipe that needs a station is 64 tall and has a second grey line: the station's 20 px glyph and "needs Forge". The selected row is lit, its name SemiBold gold, with a 4 px brass bar on its left edge |
+| Recipe list | 1282 | 146 | 196 | 766 | Rows of 44, 3 apart, with a faint rule between rows. A 32 px icon and the name (18). Rows you can't make yet are dimmed to 45 %. A recipe that needs a station is 64 tall and has a second grey line: "at basic forge" (shortened from "needs …" after the 1366 x 768 review, 9 Nov). A line too long for the list ends in "…". The selected row is lit, its name SemiBold gold, with a 4 px brass bar on its left edge |
 | **Recipe card** | 1490 | 100 | 386 | 812 | A raised card, one step lighter than the panel, with a 1 px top highlight and a 6 px soft shadow |
 | · Icon | 1504 | 112 | 96 | 96 | The made item in a well with the soft gold inner glow |
 | · Name | 1616 | 114 | 248 | 94 | Name Cinzel Bold 30; "Tools" and "By hand · 10 s" in dim 18 |
