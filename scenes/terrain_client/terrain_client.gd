@@ -1185,8 +1185,8 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.setup(terrain, flora, grass)
 	sound.puddles = weather_look.puddles          # steps splash where a puddle is drawn (puddles.gd)
 	# Thunder plays the shared strikes, the ones the server's birds flush at (src/shared/thunder.gd, the same seed and clock).
-	sound.weather.thunder_between = func(t0: float, t1: float, centre: Vector3, reach: float) -> Array:
-		return ThunderScript.strikes(int(world.get("master_seed", 0)), t0, t1, sound.weather.thunder_state(weather, sound_tests.weather_at >= 0), centre, reach)
+	sound.weather.thunder_between = func(from_s: float, to_s: float, centre: Vector3, reach_m: float) -> Array:
+		return ThunderScript.strikes(int(world.get("master_seed", 0)), from_s, to_s, sound.weather.thunder_state(weather, sound_tests.weather_at >= 0), centre, reach_m)
 	sound.weather.game_seconds = func() -> float: return game_clock.seconds
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
 	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
