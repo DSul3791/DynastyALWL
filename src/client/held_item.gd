@@ -141,6 +141,7 @@ var _draw_t: float = -1.0                 # the bow up and drawing (Dave 10 Nov 
 var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the middle of the view, which the sway and the pull turn (bow_view_turn)
 var _reticle = null                       # BowReticle: the cross while the bow is up
 var animal_aim_rows: Callable = Callable()   # () -> [[position, heading], ...] of the animals drawn near; set by the client scene (aim assist)
+var rig_drawing: bool = false              # the shot runner's --shot-draw (look rig only): the bow is held up and drawing as if right were held, so the crosshair, sway and loosed arrows can be pictured
 var bow_force: String = ""                 # the shot runner's bow pose, "STATE[:DRAW]" (idle, raised, drawn; draw 0 to 1), "" = from play
 var _bow_up: bool = false                  # the bow is raised or drawn: the arms come up to the camera pose
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
@@ -649,7 +650,7 @@ func _loose() -> void:
 
 		_arrow_flight(draw_ms, _aim_dir, arrow)
 
-	_draw_t = 0.0 if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and has_arrow() else -1.0
+	_draw_t = 0.0 if _right_held() and has_arrow() else -1.0
 
 
 # "idle" (the bow down), "raised" (up at sight, the string coming back) or "drawn" (full draw); the arms pose follows it (Kathleen's _pose_bow).
@@ -709,9 +710,17 @@ func aim_fov_share() -> float:
 	return lerpf(1.0, float(_bow_config().get("aim", {}).get("zoom_fov_share", 0.85)), bow_draw())
 
 
+# Right held, or the look rig holding it for the pictures (rig_drawing).
+func _right_held() -> bool:
+	return rig_drawing or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+
+
 func _update_bow(delta: float) -> void:
-	if _draw_t >= 0.0 and (not _is_bow() or not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
+	if _draw_t >= 0.0 and (not _is_bow() or not _right_held()):
 		_draw_t = -1.0   # the bow put away, or right let go outside the game window
+
+	if rig_drawing and _draw_t < 0.0 and _is_bow() and holding and has_arrow() and _camera != null:
+		_raise_bow()   # the rig keeps it up: drawn again after each loose
 
 	if _draw_t >= 0.0:
 		_draw_t += delta
