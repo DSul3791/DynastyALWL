@@ -20,11 +20,13 @@ static func speed_at(generator, tile_data, x: float, z: float) -> float:
 
 # Power of an undershot water wheel (Sonny's water rules section 10, approved 10 Nov 2026): P = efficiency x 1/2 rho A v^3 watts, with
 # A = span x min(depth - clear, paddle) (the paddles dip up to paddle_m and clear the bed by clear_m) and v the current across the wheel,
-# capped at max_speed_m_s (a real river runs 0.5 to 3 m/s; the saved water near the spawn has metre steps that read as 10 m/s until the river
-# re-bake, so the cap keeps the numbers sane). data/water_flow.json holds every number.
+# capped (section 10 point 9) at froude_max x sqrt(g d) and at max_speed_m_s: steep brooks settle at about critical flow (Froude 1, Grant 1997)
+# and above about 3 m/s the bed itself moves, while the drawn speed on the step-pool brooks near the spawn reads 7 to 12 m/s. With the cap a
+# wheel 0.4 m deep gives at most 470 W, 0.5 m 980 W, and from 0.92 m 4,050 W. data/water_flow.json holds every number.
 static func power_w(across_m_s: float, depth_m: float, rules: Dictionary) -> float:
 	var area: float = float(rules.get("span_m", 2.0)) * clampf(depth_m - float(rules.get("clear_m", 0.2)), 0.0, float(rules.get("paddle_m", 0.5)))
-	var v: float = clampf(across_m_s, 0.0, float(rules.get("max_speed_m_s", 3.0)))
+	var critical: float = float(rules.get("froude_max", 1.0)) * sqrt(9.81 * maxf(depth_m, 0.0))
+	var v: float = clampf(across_m_s, 0.0, minf(critical, float(rules.get("max_speed_m_s", 3.0))))
 	return float(rules.get("efficiency", 0.3)) * 0.5 * 1000.0 * area * v * v * v
 
 

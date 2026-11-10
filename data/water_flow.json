@@ -1,11 +1,12 @@
 {
-	"_note": "Water wheels (Sonny's water rules section 10, approved 10 Nov 2026; src/stream/water_flow.gd wheel). A wheel spans span_m across the current, checked every step_m: every point over a river (water_class 3), running, and at least min_depth_m deep. Power P = efficiency x 1/2 x 1000 x A x v^3 W, A = span_m x min(depth - clear_m, paddle_m), v the current across the span at the slowest point, capped at max_speed_m_s (real rivers 0.5 to 3 m/s; the saved water near the spawn reads metre steps as 10 m/s until the river re-bake). A sawmill may be placed from min_power_w; it saws at full rate from full_power_w, slower in proportion between (craft time x full_power_w / P). The speed is the drawn one (water_grid.gd _velocities), the fastest of the 4 grid cells around a point.",
+	"_note": "Water wheels (Sonny's water rules section 10, approved 10 Nov 2026; src/stream/water_flow.gd wheel). A wheel spans span_m across the current, checked every step_m: every point over a river (water_class 3), running, and at least min_depth_m deep. Power P = efficiency x 1/2 x 1000 x A x v^3 W, A = span_m x min(depth - clear_m, paddle_m), v the current across the span at the slowest point, capped at froude_max x sqrt(9.81 x depth) and at max_speed_m_s (section 10 point 9: steep brooks settle at about critical flow, and above 3 m/s the bed moves; the drawn speed on the step-pool brooks near the spawn reads 7 to 12 m/s). A sawmill may be placed from min_power_w; it saws at full rate from full_power_w, slower in proportion between (craft time x full_power_w / P). The speed is the drawn one (water_grid.gd _velocities), the fastest of the 4 grid cells around a point.",
 	"span_m": 2.0,
 	"step_m": 0.5,
 	"min_depth_m": 0.4,
 	"paddle_m": 0.5,
 	"clear_m": 0.2,
 	"efficiency": 0.3,
+	"froude_max": 1.0,
 	"max_speed_m_s": 3.0,
 	"min_power_w": 150.0,
 	"full_power_w": 1000.0
