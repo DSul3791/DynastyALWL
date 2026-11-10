@@ -42,6 +42,7 @@ func _init() -> void:
 
 	list.set_open(true, 1)
 	check(list.is_open and list.picked == 0, "R opens the list with nothing picked")
+	check(list.mode == "repair" and list.entries(1)[0]["kind"] == "repair", "a hammer starts on Repair, the first line of its list (Dave 10 Nov 2026)")
 	list.move(true, 1)
 	list.move(false, 1)
 	list.move(false, 1)
@@ -60,7 +61,7 @@ func _init() -> void:
 	check(not list.is_open and list.picked > 0 and list.name_of(list.picked) == str(list.rows(1)[list.rows(1).size() - 1]["name"]), "the wheel wraps round and a click picks (%s)" % list.name_of(list.picked))
 	check(list.kit_of(list.picked) != "", "the picked blueprint names its structure's kit for the ghost")
 	list.clear()
-	check(list.picked == 0 and not list.is_open, "putting the hammer away clears the pick")
+	check(list.picked == 0 and not list.is_open and list.mode == "repair", "putting the hammer away clears the pick and puts it back on Repair")
 	# Groups (Dave 5 Nov 2026): the menu can show one group of blueprints at a time; every blueprint has a group.
 	var groups: Array = list.categories(1)
 	check(groups.size() >= 5 and list.rows(1).all(func(r): return str(r["category"]) != "Other"), "every blueprint is in a named group (%s)" % str(groups))
