@@ -971,6 +971,23 @@ def wooden_snowshoes():
     return faces
 
 
+def leather_belt():
+    """Leather - Belt (waist slot): the strap laid in a loop on its edge, its end running out through a bone toggle at the front."""
+    brown = (122, 74, 42)
+    faces = []
+    n = 18
+    for k in range(n):
+        a0, a1 = 2.0 * math.pi * k / n, 2.0 * math.pi * (k + 1) / n
+        p0 = np.array([0.95 * math.cos(a0), 0.0, 0.62 * math.sin(a0)])
+        p1 = np.array([0.95 * math.cos(a1), 0.0, 0.62 * math.sin(a1)])
+        mid, d = (p0 + p1) / 2.0, p1 - p0
+        faces += moved(box((0.0, 0.0, 0.0), (float(np.linalg.norm(d)) + 0.02, 0.34, 0.08), shade(brown, 0.94 + 0.08 * (k % 2))),
+                       rot_y(-math.atan2(d[2], d[0])), tuple(mid))
+    faces += moved(box((0.0, 0.0, 0.0), (0.7, 0.34, 0.08), shade(brown, 1.05)), rot_y(math.radians(-12.0)), (0.35, 0.02, 0.72))   # the end, out to the front
+    faces += rod((-0.02, -0.2, 0.68), (-0.02, 0.22, 0.68), 0.07, BONE, end=shade(BONE, 1.05), sides=7, seed=350)   # the toggle
+    return faces
+
+
 def _pieces():
     return {
         "spear": (stone_spear, DIAGONAL),
@@ -1030,6 +1047,7 @@ def _pieces():
         "fishing_bait": (fishing_bait, rot_y(math.radians(20.0)) @ rot_z(math.radians(-15.0))),
         "bedroll": (bedroll, rot_y(math.radians(-30.0))),
         "wooden_snowshoes": (wooden_snowshoes, rot_x(math.radians(45.0)) @ rot_y(math.radians(30.0))),
+        "leather_belt": (leather_belt, rot_x(math.radians(38.0))),
     }
 
 
