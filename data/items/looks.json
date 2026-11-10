@@ -4080,6 +4080,14 @@
    "color": "#8a7040",
    "size": 0.7,
    "placeholder": true
+  },
+  "iron_anvil_kit": {
+   "shape": "kit",
+   "color": "#6c6f75",
+   "size": 1.0,
+   "bits": [
+    "anvil"
+   ]
   }
 
  }

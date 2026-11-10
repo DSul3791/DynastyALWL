@@ -211,14 +211,17 @@
 			"footprint_x": 1.5,
 			"footprint_z": 1.17,
 			"cap_per_chunk": 1,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2,
 			"tier": "epic",
 			"reach_m": 5.0,
 			"addon_reach_m": 5.0,
 			"look": "blacksmithy",
 			"sound": "foundation",
-			"clears_grass": true
+			"clears_grass": true,
+			"also": {
+				"forge": 1
+			}
 		},
 		"carcass": {
 			"kit": "",
@@ -711,7 +714,8 @@
 		"clay_bloomery": {"kit": "clay_bloomery_kit", "item": "clay_bloomery", "state": 200, "blocks_walk": true, "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "foundation", "clears_grass": true, "station": "clay_bloomery", "look": "clay_bloomery"},
 		"stonecutters_bench": {"kit": "stonecutters_bench_kit", "item": "stonecutters_bench", "state": 201, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 4, "station_level": 1, "reach_m": 3.0, "sound": "stone", "clears_grass": true, "station": "stonecutters_bench", "look": "stonecutters_bench"},
 		"fish_trap_set": {"kit": "fish_trap", "item": "fish_trap_set", "state": 202, "footprint_x": 0.8, "footprint_z": 0.5, "cap_per_chunk": 6, "fish_trap": true, "min_water_m": 0.3, "slots": 2, "who": "anyone", "look": "fish_trap_set", "sound": "thump", "clears_grass": false},
-		"bird_trap_set": {"kit": "bird_trap", "item": "bird_trap_set", "state": 203, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "bird_trap_set", "sound": "thump", "clears_grass": false}
+		"bird_trap_set": {"kit": "bird_trap", "item": "bird_trap_set", "state": 203, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "bird_trap_set", "sound": "thump", "clears_grass": false},
+		"iron_anvil": {"kit": "iron_anvil_kit", "item": "iron_anvil", "state": 204, "footprint_x": 0.6, "footprint_z": 0.4, "cap_per_chunk": 2, "addon_of": "brick_forge", "look": "iron_anvil", "sound": "metal", "clears_grass": true}
 	},
 	"campfire": {
 		"gap_m": 2.0,

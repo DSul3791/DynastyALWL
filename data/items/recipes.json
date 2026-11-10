@@ -426,7 +426,7 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"steel_pickaxe": {
@@ -450,7 +450,7 @@
 			"craft_s": 12.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3
 		},
 		"wooden_bowl": {
@@ -622,7 +622,7 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"steel_spade": {
@@ -645,7 +645,7 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3
 		},
 		"sewing_needle": {
@@ -3334,7 +3334,7 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"steel_hoe": {
@@ -3357,7 +3357,7 @@
 			],
 			"craft_s": 14.0,
 			"known": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3
 		},
 		"rough_plank": {
@@ -3416,7 +3416,8 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"station": "forge"
+			"station": "brick_forge",
+			"station_level": 2
 		},
 		"cobblestone": {
 			"number": 146,
@@ -3490,7 +3491,8 @@
 			],
 			"craft_s": 8.0,
 			"known": true,
-			"station": "forge"
+			"station": "brick_forge",
+			"station_level": 2
 		},
 		"wooden_pin": {
 			"number": 150,
@@ -3515,11 +3517,20 @@
 			"number": 152,
 			"name": "Saw blade",
 			"category": "Materials",
-			"needs": [["iron_ingot", 2]],
-			"gives": ["saw_blade", 1],
+			"needs": [
+				[
+					"iron_ingot",
+					2
+				]
+			],
+			"gives": [
+				"saw_blade",
+				1
+			],
 			"craft_s": 20.0,
 			"known": true,
-			"station": "forge"
+			"station": "brick_forge",
+			"station_level": 2
 		},
 		"water_wheel": {
 			"number": 153,
@@ -3855,8 +3866,8 @@
 		"hide_scraper": {"number": 180, "name": "Scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
-		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge", "station_level": 3},
-		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "forge"},
+		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "brick_forge", "station_level": 3},
+		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "brick_forge", "station_level": 2},
 		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 1], ["tin_ingot", 1]], "gives": ["bronze_ingot", 2], "craft_s": 10.0, "known": true, "station": "forge"},
 		"stone_pickaxe": {
 			"number": 186,
@@ -3929,7 +3940,7 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"wooden_club": {
@@ -4013,7 +4024,8 @@
 			],
 			"craft_s": 45.0,
 			"known": true,
-			"station": "forge"
+			"station": "brick_forge",
+			"station_level": 2
 		},
 		"smelt_steel": {
 			"number": 193,
@@ -4036,8 +4048,8 @@
 			"craft_s": 14.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
-			"station_level": 2
+			"station": "brick_forge",
+			"station_level": 3
 		},
 		"hide_tunic": {
 			"number": 194,
@@ -4366,7 +4378,7 @@
 			"craft_s": 18.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"iron_mace": {
@@ -4390,7 +4402,7 @@
 			"craft_s": 18.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"iron_shield": {
@@ -4414,7 +4426,7 @@
 			"craft_s": 18.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"steel_sword": {
@@ -4438,7 +4450,7 @@
 			"craft_s": 20.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3
 		},
 		"steel_mace": {
@@ -4462,7 +4474,7 @@
 			"craft_s": 20.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3
 		},
 		"steel_shield": {
@@ -4486,7 +4498,7 @@
 			"craft_s": 20.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3
 		},
 		"leather_cap": {
@@ -4614,7 +4626,7 @@
 			"craft_s": 16.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"mail_shirt": {
@@ -4642,7 +4654,7 @@
 			"craft_s": 16.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"steel_helm": {
@@ -4670,7 +4682,7 @@
 			"craft_s": 16.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3
 		},
 		"plate_cuirass": {
@@ -4698,7 +4710,7 @@
 			"craft_s": 16.0,
 			"known": false,
 			"locked": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3
 		},
 		"quern": {
@@ -7509,7 +7521,7 @@
 			],
 			"craft_s": 20.0,
 			"known": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"steel_hammer": {
@@ -7532,7 +7544,7 @@
 			],
 			"craft_s": 20.0,
 			"known": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3
 		},
 		"horn_pane": {
@@ -7627,7 +7639,7 @@
 			],
 			"craft_s": 8.0,
 			"known": true,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2
 		},
 		"clay_pipe": {
@@ -8105,7 +8117,7 @@
 			],
 			"craft_s": 20.0,
 			"known": false,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 2,
 			"locked": true
 		},
@@ -8129,7 +8141,7 @@
 			],
 			"craft_s": 20.0,
 			"known": false,
-			"station": "forge",
+			"station": "brick_forge",
 			"station_level": 3,
 			"locked": true
 		},

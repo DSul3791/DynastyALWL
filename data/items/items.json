@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 826,
+	"next_number": 828,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -1152,7 +1152,7 @@
 			"number": 89,
 			"retired": true,
 			"name": "Medium Forge",
-			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
+			"description": "A brick forge with a stepped hood and iron straps, ready to raise. Hot enough for iron.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,
@@ -1162,7 +1162,7 @@
 		"blacksmithy": {
 			"number": 90,
 			"name": "Brick - Forge",
-			"description": "A dressed stone forge with a stepped hood and iron straps.",
+			"description": "A brick forge with a stepped hood and iron straps. Hot enough to smelt and work iron; set an anvil beside it for steel.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -9515,6 +9515,27 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 203."
+			},
+			"iron_anvil_kit": {
+				"number": 826,
+				"retired": true,
+				"name": "Iron - Anvil",
+				"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 160
+			},
+			"iron_anvil": {
+				"number": 827,
+				"name": "Iron - Anvil",
+				"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed add-on: row state 204, addon_of brick_forge."
 			}
 	}
 }

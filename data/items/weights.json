@@ -592,6 +592,8 @@
 		"foundation_section_kit": 40.0,
 		"wood_foundation_kit": 25.0,
 		"clay_bloomery_kit": 19.4,
+		"iron_anvil_kit": 60.0,
+		"iron_anvil": 60.0,
 		"stonecutters_bench_kit": 110.0,
 		"bronze_chisel": 0.3,
 		"iron_chisel": 0.3,
