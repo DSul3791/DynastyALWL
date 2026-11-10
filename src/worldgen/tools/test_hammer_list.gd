@@ -32,13 +32,13 @@ func _init() -> void:
 		if str(row["name"]) == "Woodworking table":
 			wall = row
 
-	check(wall.get("kit", "") == "woodworking_table_kit" and str(wall["text"]) == "lumber 0/12, nails 0/60", "table row: kit and have/need text (%s)" % str(wall.get("text", "")))
+	check(wall.get("kit", "") == "woodworking_table_kit" and str(wall["text"]) == "planks 0/12, nails 0/60", "table row: kit and have/need text (%s)" % str(wall.get("text", "")))
 	pack.add(table.number_of("lumber"), 11)
 	pack.add(table.number_of("nails"), 60)
-	check(not list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]["can"], "11 of 12 lumber is short")
+	check(not list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]["can"], "11 of 12 planks is short")
 	pack.add(table.number_of("lumber"), 1)
 	var wall_now: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]
-	check(bool(wall_now["can"]) and str(wall_now["text"]) == "lumber 12/12, nails 60/60", "12 lumber and 60 nails cover the table (%s)" % str(wall_now["text"]))
+	check(bool(wall_now["can"]) and str(wall_now["text"]) == "planks 12/12, nails 60/60", "12 planks (lumber, shown as Planks since the recipe audit 10 Nov 2026) and 60 nails cover the table (%s)" % str(wall_now["text"]))
 
 	list.set_open(true, 1)
 	check(list.is_open and list.picked == 0, "R opens the list with nothing picked")
