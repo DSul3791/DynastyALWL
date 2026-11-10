@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 666,
+	"next_number": 692,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -7678,6 +7678,281 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 143."
+			},
+			"horn_pane": {
+				"number": 666,
+				"name": "Horn pane",
+				"description": "A thin pane of scraped horn. Lets lantern light through.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 4
+			},
+			"lamp_oil": {
+				"number": 667,
+				"name": "Lamp oil",
+				"description": "Rendered tallow in a stoppered pot. Burns three game days in an iron lantern.",
+				"kind": "material",
+				"stack": 10,
+				"look_alikes": [],
+				"value": 10
+			},
+			"wooden_lantern": {
+				"number": 668,
+				"name": "Wooden - Lantern",
+				"description": "A plank lantern with horn panes. Takes a candle; does not go out in the rain.",
+				"kind": "tool",
+				"stack": 1,
+				"light_m": 8.0,
+				"fuel": "candle",
+				"future": true,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 20
+			},
+			"iron_lantern": {
+				"number": 669,
+				"name": "Iron - Lantern",
+				"description": "An iron lantern with horn panes. Burns lamp oil; does not go out in the rain.",
+				"kind": "tool",
+				"stack": 1,
+				"light_m": 14.0,
+				"fuel": "lamp_oil",
+				"future": true,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 50
+			},
+			"wooden_hanging_lantern_kit": {
+				"number": 670,
+				"retired": true,
+				"name": "Wooden hanging lantern",
+				"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 19
+			},
+			"wooden_hanging_lantern": {
+				"number": 671,
+				"name": "Wooden - Hanging lantern",
+				"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 145."
+			},
+			"iron_hanging_lantern_kit": {
+				"number": 672,
+				"retired": true,
+				"name": "Iron hanging lantern",
+				"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 38
+			},
+			"iron_hanging_lantern": {
+				"number": 673,
+				"name": "Iron - Hanging lantern",
+				"description": "An iron lantern on a hook. Lamp oil lasts three game days.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 146."
+			},
+			"iron_wall_lantern_kit": {
+				"number": 674,
+				"retired": true,
+				"name": "Iron wall lantern",
+				"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 38
+			},
+			"iron_wall_lantern": {
+				"number": 675,
+				"name": "Iron - Wall lantern",
+				"description": "An iron lantern on a bracket arm. Lamp oil lasts three game days.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 147."
+			},
+			"wooden_torch_post_kit": {
+				"number": 676,
+				"retired": true,
+				"name": "Wooden torch post",
+				"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 15
+			},
+			"wooden_torch_post": {
+				"number": 677,
+				"name": "Wooden - Torch post",
+				"description": "A tall post with a tallow-soaked head. Keeps wolves off; rain puts it out.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 148."
+			},
+			"stone_torch_pillar_kit": {
+				"number": 678,
+				"retired": true,
+				"name": "Stone torch pillar",
+				"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 74
+			},
+			"stone_torch_pillar": {
+				"number": 679,
+				"name": "Stone - Torch pillar",
+				"description": "A stone pillar with a hooded iron bowl. Keeps wolves off, rain or shine.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 149."
+			},
+			"iron_torch_stand_kit": {
+				"number": 680,
+				"retired": true,
+				"name": "Iron torch stand",
+				"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 68
+			},
+			"iron_torch_stand": {
+				"number": 681,
+				"name": "Iron - Torch stand",
+				"description": "An iron stand with a torch bowl. Keeps wolves off; rain puts it out.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 150."
+			},
+			"wooden_lamp_post_kit": {
+				"number": 682,
+				"retired": true,
+				"name": "Wooden lamp post",
+				"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 50
+			},
+			"wooden_lamp_post": {
+				"number": 683,
+				"name": "Wooden - Lamp post",
+				"description": "A wooden lantern on a pole with a hook arm. Rain cannot reach it.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 151."
+			},
+			"iron_lamp_post_kit": {
+				"number": 684,
+				"retired": true,
+				"name": "Iron lamp post",
+				"description": "An iron lantern on a tall iron post.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 170
+			},
+			"iron_lamp_post": {
+				"number": 685,
+				"name": "Iron - Lamp post",
+				"description": "An iron lantern on a tall iron post.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 152."
+			},
+			"stone_lamp_post_kit": {
+				"number": 686,
+				"retired": true,
+				"name": "Stone lamp post",
+				"description": "An iron lantern on a stone post.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 86
+			},
+			"stone_lamp_post": {
+				"number": 687,
+				"name": "Stone - Lamp post",
+				"description": "An iron lantern on a stone post.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 153."
+			},
+			"stone_brazier_kit": {
+				"number": 688,
+				"retired": true,
+				"name": "Stone brazier",
+				"description": "A stone fire bowl. Burns logs for light.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 54
+			},
+			"stone_brazier": {
+				"number": 689,
+				"name": "Stone - Brazier",
+				"description": "A stone fire bowl. Burns logs for light.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 154."
+			},
+			"iron_brazier_kit": {
+				"number": 690,
+				"retired": true,
+				"name": "Iron brazier",
+				"description": "An iron fire bowl on legs. Burns logs for light.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 90
+			},
+			"iron_brazier": {
+				"number": 691,
+				"name": "Iron - Brazier",
+				"description": "An iron fire bowl on legs. Burns logs for light.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed light: row state 155."
 			}
 	}
 }
