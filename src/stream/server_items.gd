@@ -2138,21 +2138,23 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-	if str(entry.get("weapon_class", "")) != "bow" or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if not BowAim.shoots(entry) or _is_broken(inv.numbers[slot], inv.wear[slot]):
 		return
 
 	if _bow == null:
 		_bow = BowScript.new()
+
+	var bow_id: String = table.id_of(inv.numbers[slot])
 
 	var now: int = Time.get_ticks_msec()
 
 	if now - int(_last_shot.get(peer, -100000)) < int(_bow.cfg.get("pace_ms", 700)):
 		return
 
-	var ammo: int = _bow.ammo_slot(inv, table, loaded)
+	var ammo: int = _bow.ammo_slot(inv, table, loaded, bow_id)
 
 	if ammo < 0:
-		_say(peer, str(_bow.cfg.get("say_no_ammo", "")))
+		_say(peer, BowAim.say(_bow.cfg, bow_id, "say_no_ammo"))
 		return
 
 	_last_shot[peer] = now
@@ -2167,9 +2169,8 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	_wear_slot(peer, inv, slot, "strike")
 	var level: float = working_level(peer, "hunting")
 	var aim: Vector3 = BowAim.spread(direction, BowAim.spread_deg(_bow.cfg, level), LuckScript.low(_aim_rng.randf(), luck_of(peer), _luck_strength()), _aim_rng.randf())   # luck-exempt: the draws that luck nudges (how far out) and which way
-	var bow_id: String = table.id_of(inv.numbers[slot])
 	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id),
-		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id)})
+		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id)})
 
 	if animal_alarm.is_valid():
 		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)))
@@ -2208,15 +2209,21 @@ func _arrow_fly(delta: float) -> void:
 					practice(int(ar["peer"]), "bow")
 					hit_number(int(ar["peer"]), at, float(ar["damage"]))
 
-			if not landed and trunks_near.is_valid():   # a tree trunk on the way: the arrow sticks in it (Dave 10 Nov 2026)
+			var at_foot: bool = false
+
+			if not landed and trunks_near.is_valid():   # a tree trunk on the way: the arrow sticks in it (Dave 10 Nov 2026); a sling stone drops at its foot
 				var into: float = _arrow_trunk(from, to)
 
 				if into >= 0.0:
 					landed = true
-					stuck = true
+					stuck = bool(ar.get("sticks", true))
+					at_foot = not stuck
 					at = from.lerp(to, into)
 
 			var ground: float = float(ground_height.call(to.x, to.z)) if ground_height.is_valid() else -1000000.0
+
+			if at_foot and not is_nan(ground):
+				at.y = float(ground_height.call(at.x, at.z))
 
 			if not landed and ((not is_nan(ground) and to.y <= ground) or float(ar["flown"]) >= float(ar.get("range", _bow.range_m())) or float(ar["age"]) >= THROW_MAX_S * 2.0):
 				landed = true
