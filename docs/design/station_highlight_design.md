@@ -13,9 +13,11 @@ Coordinator ruling:
 
 ## When
 
-The pack window is open and the player stands at one or more stations. A station counts when:
-- it is a fire in any campfire state (lit, laid or cold) within 4.5 m, the same reach the craft list uses for the campfire; or
-- it is a structure from structures.json within its own `reach_m`.
+Only while a station's own window is open (Dave, 10 Nov 2026: "even when I open my inventory and Im not in the campfires inventory the wood is still highlighted which it shouldnt be"). The container on screen must be one of these:
+- a fire in any campfire state (lit, laid or cold); or
+- a structure from structures.json with a `station`, an `also` list or a `fuel`.
+
+The pack opened on its own, or a plain chest, lights nothing, even beside a fire. A station with no window of its own, such as a workbench, lifts nothing.
 
 When the pack window shuts, nothing is lifted, and the next open recomputes the set. Slots never move: only where their wells sit in the grid changes (pack_grid.arrange_slots), so clicks, the hotbar and the server see the same pack.
 
@@ -36,7 +38,8 @@ A golden line round the well, with a glow that fades inward. `data/ui/station_hi
 
 ## Cost
 
-- The set is cached by the stations present, so a refresh only loops the world rows once to find the stations, as `station_near` already does.
+- The set is cached by the stations present. Finding them reads one world row, the open container.
+- The craft list stall (Dave, 10 Nov 2026: opening the menu, a click or D took 2 to 3 s) came from `station_near` and `nearby_logs`. They walked every world row several times per recipe, and each row looked up its structure by walking structures.json. That lookup is now a map. Their answers are kept for the frame, and a world change or a refresh clears them.
 - The draw is a few rect outlines per lit well.
 
 ## Tests (src/worldgen/tools/test_station_use.gd)
