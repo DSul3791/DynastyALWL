@@ -17,6 +17,10 @@ const CEILING_TOP_M := 0.12          # a ceiling's top above its spot (piece_loo
 const ANCHOR_REACH_M := 1.4          # the cursor's reach to an anchor
 const ANCHOR_TIE_M := 0.05           # anchors this close across the ground are one point; the one at the cursor's height wins
 const ANCHOR_TAKEN_M := 0.2          # a pillar already this close to a pillar anchor takes it
+const FENCE_KIND := "fence"          # structures.json piece_kind of a fence section or a gate (buildables plan, batch B2)
+const FENCE_TURN_DEG := 45           # a fence turns in eighths of a circle; every other piece in quarters
+const FENCE_TURNS := [0, 45, -45, 90, -90]   # how a new section may leave a standing section's end: straight on, or turned 45 or 90 degrees
+const FENCE_TAKEN_M := 0.3           # a section already this close to a candidate's middle takes it
 
 
 static func load_config() -> Dictionary:
@@ -63,8 +67,9 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 		if not beside.is_empty():
 			return beside
 
-	var turned: int = posmod(int(round(float(yaw_deg) / 90.0)) * 90, 360)
 	var piece_kind: String = str(def.get("piece_kind", ""))
+	var step: int = FENCE_TURN_DEG if piece_kind == FENCE_KIND else 90
+	var turned: int = posmod(int(round(float(yaw_deg) / float(step))) * step, 360)
 
 	if piece_kind != "":
 		var best: Array = []   # [spot, yaw, ground distance]
@@ -222,7 +227,9 @@ static func foundation_neighbor(def: Dictionary, spot: Vector3, rows: Array) -> 
 
 
 # Joins a piece to the pieces already standing (rows with "yaw", in degrees): a wall continues a wall end to end or turns the corner
-# at its end, and also stands on the edge of a floor; a floor or roof sits edge to edge against its own kind. Returns [spot, yaw] of the
+# at its end, and also stands on the edge of a floor; a floor or roof sits edge to edge against its own kind; a fence section or gate
+# leaves either end of a standing section straight on or turned 45 or 90 degrees, sharing that end's post (buildables plan, batch B2). A
+# fence stands on the ground (its height is the cursor's, the server's ground), never on a foundation, and never doubles a section. Returns [spot, yaw] of the
 # candidate within JOIN_REACH_M of the cursor, or [] when none is near.
 const JOIN_REACH_M := 1.5
 
@@ -265,6 +272,20 @@ static func _join(cfg: Dictionary, piece_kind: String, spot: Vector3, rows: Arra
 			for s in [-2.0, 2.0]:
 				candidates.append([row["pos"] + along * s, yaw_row])
 				candidates.append([row["pos"] + across * s, yaw_row])
+		elif piece_kind == FENCE_KIND and other == FENCE_KIND:
+			var half: float = float(base.get("footprint_x", 2.0)) * 0.5   # sections are all one length (2 m)
+			var ends: Array = fence_ends(row["pos"], float(row["yaw"]), half * 2.0)
+
+			for s in [-1.0, 1.0]:
+				var post: Vector3 = ends[0] if s < 0.0 else ends[1]
+
+				for t in FENCE_TURNS:
+					var yaw_new: int = posmod(yaw_row + int(t), 360)
+					var turn_new: float = deg_to_rad(float(yaw_new))
+					var middle: Vector3 = post + Vector3(cos(turn_new), 0.0, -sin(turn_new)) * (half * s)
+
+					if not _fence_at(cfg, middle, rows):
+						candidates.append([middle, yaw_new])
 
 		for c in candidates:
 			var d: float = Vector2(spot.x - c[0].x, spot.z - c[0].z).length()
@@ -274,6 +295,22 @@ static func _join(cfg: Dictionary, piece_kind: String, spot: Vector3, rows: Arra
 				best = c
 
 	return best
+
+
+# The two end posts of a fence section standing at `middle`, turned `yaw_deg`, `length` long: [the -x end, the +x end] across the ground.
+# Neighbours share a post, so a look that draws a post at each end draws one post where they meet.
+static func fence_ends(middle: Vector3, yaw_deg: float, length: float) -> Array:
+	var turn: float = deg_to_rad(yaw_deg)
+	var along: Vector3 = Vector3(cos(turn), 0.0, -sin(turn)) * (length * 0.5)
+	return [middle - along, middle + along]
+
+
+static func _fence_at(cfg: Dictionary, middle: Vector3, rows: Array) -> bool:
+	for row in rows:
+		if Vector2(row["pos"].x - middle.x, row["pos"].z - middle.z).length() < FENCE_TAKEN_M and str(structure_of_state(cfg, int(row["state"])).get("piece_kind", "")) == FENCE_KIND:
+			return true
+
+	return false
 
 
 # The structure definition drawn as world-item state `state` (its row with "kind" added), {} when none.

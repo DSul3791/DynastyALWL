@@ -402,8 +402,37 @@ func _init() -> void:
 	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(490.0, 10.0, 450.0))
 	check(items.inventory_of(2).count_of(items.table.number_of("stick")) == sticks_had + 1, "a branch far away gives nothing")
 	_pillar_checks(cfg)
+	_fence_checks(cfg)
 	print("placement rules: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Fences (the buildables plan, batch B2, Morgan 10 Nov 2026): 2 m sections that turn in 45 degree steps, leave a standing section's end straight on
+# or turned 45 or 90 degrees (sharing its post), never double a section, follow the ground within 1 m of rise; walls never join them. No fence
+# rows exist yet (Jamie's B2 batch), so a test row stands in.
+func _fence_checks(cfg: Dictionary) -> void:
+	var with: Dictionary = cfg.duplicate(true)
+	with["structures"]["test_fence"] = {"kit": "test_fence_kit", "item": "test_fence", "state": 9902, "piece": true, "piece_kind": "fence", "footprint_x": 2.0, "footprint_z": 0.2, "max_rise_m": 1.0, "cap_per_chunk": 200}
+	var alone: Array = Rules.snap(with, "test_fence_kit", Vector3(300.2, 10.0, 290.0), 30)
+	check(int(alone[1]) == 45 and not bool(alone[2]), "a lone fence turns to the nearest 45 degrees (%s)" % str(alone))
+	check(int(Rules.snap(with, "test_fence_kit", Vector3(300.2, 10.0, 290.0), 20)[1]) == 0, "20 degrees rounds to 0")
+	var rows: Array = [{"pos": Vector3(300.0, 10.0, 300.0), "state": 9902, "yaw": 0.0}]
+	var ends: Array = Rules.fence_ends(Vector3(300.0, 10.0, 300.0), 0.0, 2.0)
+	check((ends[0] as Vector3).is_equal_approx(Vector3(299.0, 10.0, 300.0)) and (ends[1] as Vector3).is_equal_approx(Vector3(301.0, 10.0, 300.0)), "a 2 m section has a post 1 m each side of its middle (%s)" % str(ends))
+	var straight: Array = Rules.snap(with, "test_fence_kit", Vector3(303.0, 10.0, 300.1), 0, rows)
+	check(straight[0].is_equal_approx(Vector3(302.0, 10.0, 300.0)) and int(straight[1]) == 0, "the next section goes straight on from the end post (%s)" % str(straight))
+	var bent: Array = Rules.snap(with, "test_fence_kit", Vector3(301.7, 10.0, 299.2), 0, rows)
+	check(bent[0].is_equal_approx(Vector3(301.0 + cos(PI / 4.0), 10.0, 300.0 - sin(PI / 4.0))) and int(bent[1]) == 45, "or turned 45 degrees about the same post (%s)" % str(bent))
+	var corner: Array = Rules.snap(with, "test_fence_kit", Vector3(301.1, 10.0, 301.2), 0, rows)
+	check(corner[0].is_equal_approx(Vector3(301.0, 10.0, 301.0)) and int(corner[1]) == 270, "or turned 90 degrees to make a corner (%s)" % str(corner))
+	var back: Array = Rules.snap(with, "test_fence_kit", Vector3(297.1, 10.0, 300.0), 0, rows)
+	check(back[0].is_equal_approx(Vector3(298.0, 10.0, 300.0)), "the other end takes a section too (%s)" % str(back))
+	var doubled: Array = rows + [{"pos": Vector3(302.0, 10.0, 300.0), "state": 9902, "yaw": 0.0}]
+	check(not Rules.snap(with, "test_fence_kit", Vector3(302.2, 10.0, 300.0), 0, doubled)[0].is_equal_approx(Vector3(302.0, 10.0, 300.0)), "a section already standing is not offered again")
+	var wall: Array = Rules.snap(with, "wall_section_kit", Vector3(302.6, 10.0, 300.2), 0, rows)
+	check(wall[0] == Vector3(303.0, 10.0, 300.0) and not bool(wall[2]), "a wall does not join a fence; it keeps the grid (%s)" % str(wall))
+	check(Rules.steep(with, "test_fence_kit", Vector3(300.0, 10.0, 300.0), 0.0, func(x, _z): return 10.0 + 0.45 * x) == "", "a section follows a slope rising 0.9 m along it")
+	check(Rules.steep(with, "test_fence_kit", Vector3(300.0, 10.0, 300.0), 0.0, func(x, _z): return 10.0 + 0.6 * x) == "steep", "and is red on one rising 1.2 m")
 
 
 # Pillar anchors (the buildables plan, batch B1c, Morgan 10 Nov 2026): the middle and four corners of a foundation (4 x 4 m) or a ceiling cell (2 x 2 m), on its
