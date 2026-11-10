@@ -622,7 +622,7 @@ func _bow_config() -> Dictionary:
 
 func _raise_bow() -> void:
 	if not has_arrow():
-		_inv._on_notice(str(_bow_config().get("say_no_ammo", "You have no arrows.")))
+		_inv._on_notice(BowAim.say(_bow_config(), held_id(), "say_no_ammo"))
 		return
 
 	_draw_t = 0.0
@@ -749,11 +749,12 @@ func has_arrow() -> bool:
 # The arrow the next shot takes, as the server picks it: the one the bow is loaded with while the pack holds it, else the first of BOW_AMMO there; 0 none.
 func arrow_to_shoot() -> int:
 	var loaded: int = int(_inv.bow_arrow)
+	var ammo: Array = BowAim.ammo_for(_bow_config(), held_id())
 
-	if loaded != 0 and _inv.inventory.count_of(loaded) > 0:
+	if loaded != 0 and _inv.inventory.count_of(loaded) > 0 and ammo.has(_inv.table.id_of(loaded)):
 		return loaded
 
-	for id in BOW_AMMO:
+	for id in ammo:
 		var number: int = _inv.table.number_of(id)
 
 		if number > 0 and _inv.inventory.count_of(number) > 0:   # 0 = not in the table (0 is also an empty slot)
@@ -778,7 +779,7 @@ func _look_spyglass(on: bool) -> void:
 
 
 func _is_bow() -> bool:
-	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "bow" and not _inv.is_broken(held_slot)
+	return BowAim.shoots(_inv.table.entry(held_id())) and not _inv.is_broken(held_slot)   # a bow or a sling
 
 
 func _is_placeable() -> bool:

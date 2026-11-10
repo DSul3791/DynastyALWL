@@ -37,6 +37,29 @@ static func bow_stats(cfg: Dictionary, bow_id: String) -> Dictionary:
 	return {"speed_mult": float(row.get("speed_mult", 1.0)), "damage_mult": float(row.get("damage_mult", 1.0)), "range_mult": float(row.get("range_mult", 1.0))}
 
 
+# What a shooter takes (bow.json "bows" row "ammo", else the bows' "ammo" list): the sling throws sling stones, the bows arrows.
+static func ammo_for(cfg: Dictionary, bow_id: String) -> Array:
+	return cfg.get("bows", {}).get(bow_id, {}).get("ammo", cfg.get("ammo", []))
+
+
+# Whether a shot from it sticks in a trunk it hits (an arrow does; a sling stone drops at the foot): the row's "sticks", true by default.
+static func sticks(cfg: Dictionary, bow_id: String) -> bool:
+	return bool(cfg.get("bows", {}).get(bow_id, {}).get("sticks", true))
+
+
+# One of a shooter's lines (say_no_ammo, say_load, say_not_ammo): the row's own, else the bows' line.
+static func say(cfg: Dictionary, bow_id: String, key: String) -> String:
+	return str(cfg.get("bows", {}).get(bow_id, {}).get(key, cfg.get(key, "")))
+
+
+# A weapon drawn and loosed through ACT_SHOOT: a bow or a sling (items.json weapon_class).
+static func shoots(entry: Dictionary) -> bool:
+	return str(entry.get("weapon_class", "")) in SHOOTERS
+
+
+const SHOOTERS := ["bow", "sling"]
+
+
 # The arrow's speed (m/s) at full draw from this bow, and how far it may fly.
 static func bow_speed_max(cfg: Dictionary, bow_id: String) -> float:
 	return float(cfg.get("speed_max", 45.0)) * float(bow_stats(cfg, bow_id)["speed_mult"])

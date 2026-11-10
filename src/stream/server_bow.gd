@@ -59,12 +59,12 @@ func lost_chance(tip: String, hit_animal: bool, in_water: bool) -> float:
 	return base
 
 
-# The arrow the bow is loaded with (`loaded`, an ammo item the pack holds) or else the first ammo id of the data list that the pack holds: its slot, or -1.
-func ammo_slot(inv, table, loaded: int = 0) -> int:
-	if loaded != 0 and is_ammo(table.id_of(loaded)) and inv.has(loaded, 1):
+# The arrow the bow is loaded with (`loaded`, an ammo item the pack holds) or else the first ammo id of the bow's list that the pack holds: its slot, or -1.
+func ammo_slot(inv, table, loaded: int = 0, bow_id: String = "") -> int:
+	if loaded != 0 and is_ammo(table.id_of(loaded), bow_id) and inv.has(loaded, 1):
 		return inv.numbers.find(loaded)
 
-	for id in cfg.get("ammo", []):
+	for id in BowAim.ammo_for(cfg, bow_id):
 		var number: int = table.number_of(str(id))
 
 		if number != 0 and inv.has(number, 1):
@@ -73,5 +73,5 @@ func ammo_slot(inv, table, loaded: int = 0) -> int:
 	return -1
 
 
-func is_ammo(item_id: String) -> bool:
-	return (cfg.get("ammo", []) as Array).has(item_id)
+func is_ammo(item_id: String, bow_id: String = "") -> bool:
+	return BowAim.ammo_for(cfg, bow_id).has(item_id)

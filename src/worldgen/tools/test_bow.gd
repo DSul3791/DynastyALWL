@@ -286,6 +286,32 @@ func tree_checks() -> void:
 
 	check(stuck_now == 2, "a second arrow beside the first is its own stuck arrow, not a pile (%d)" % stuck_now)
 
+	# A shot that does not stick (bow.json "bows" sticks false: the sling's stone) drops at the trunk's foot instead. The wooden bow stands in
+	# for the sling here, since the Sling and Sling stone items come with Jamie's Part C rows.
+	items._bow.cfg["bows"]["wooden_bow"]["sticks"] = false
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_arrow"), 0, 1, Vector3.ZERO)
+	shoot(items, slot, 1200, Vector3(0.0, 0.0, -1.0))
+	fly(items, 2.0)
+	var at_foot: Array = []
+
+	for id in items._items:
+		if not items._items[id].has("tilt") and int(items._items[id].get("number", 0)) == items.table.number_of("stone_arrow"):
+			at_foot.append(items._items[id])
+
+	check(items._arrows.is_empty() and at_foot.size() == 1 and absf(float(at_foot[0]["pos"].y) - 10.0) < 0.3 and Vector2(at_foot[0]["pos"].x - trunk_foot.x, at_foot[0]["pos"].z - trunk_foot.z).length() < 0.6, "a shot that does not stick lies at the trunk's foot (%d)" % at_foot.size())
+	items._bow.cfg["bows"]["wooden_bow"].erase("sticks")
+
+	# The sling (item_system.md): drawn and loosed like a bow, its own ammo list, slower and shorter, never sticks, its own lines.
+	var sling_cfg: Dictionary = BowAim.load_config()
+	check(BowAim.shoots({"weapon_class": "sling"}) and BowAim.shoots({"weapon_class": "bow"}) and not BowAim.shoots({"weapon_class": "spear"}), "a sling shoots like a bow; a spear does not")
+	check(BowAim.ammo_for(sling_cfg, "sling") == ["sling_stone"] and BowAim.ammo_for(sling_cfg, "wooden_bow") == sling_cfg["ammo"] and BowAim.ammo_for(sling_cfg, "wooden_longbow") == sling_cfg["ammo"], "the sling throws sling stones; the bows take the arrow list")
+	check(not BowAim.sticks(sling_cfg, "sling") and BowAim.sticks(sling_cfg, "wooden_bow"), "a sling stone never sticks; an arrow does")
+	var sling_bow = BowScript.new()
+	check(not sling_bow.is_ammo("stone_arrow", "sling") and sling_bow.is_ammo("sling_stone", "sling") and sling_bow.is_ammo("stone_arrow", "wooden_bow"), "an arrow is no sling ammo")
+	check(absf(sling_bow.speed(1.0, "sling") - 31.5) < 0.01 and is_equal_approx(sling_bow.range_m("sling"), 60.0), "a sling stone leaves at about 32 m/s and reaches 60 m")
+	check(BowAim.say(sling_cfg, "sling", "say_no_ammo") == "You have no sling stones." and BowAim.say(sling_cfg, "wooden_bow", "say_no_ammo") == str(sling_cfg["say_no_ammo"]), "the sling says its own lines")
+	check(float(sling_cfg["break_chance"].get("stone_shot", 1.0)) <= 0.1, "a sling stone seldom breaks")
+
 	# The sway's turn of the view: turn_of undoes turned for small angles.
 	var fwd: Vector3 = Vector3(0.0, 0.0, -1.0)
 	var turn: Vector2 = BowAim.turn_of(BowAim.turned(fwd, Vector3.RIGHT, Vector3.UP, Vector2(0.8, -0.5)), fwd, Vector3.RIGHT, Vector3.UP)
