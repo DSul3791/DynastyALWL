@@ -3860,6 +3860,150 @@ static func mixer() -> Node3D:
 	return root
 
 
+# --- C7 future placeholders (item system, 10 Nov 2026): looks ready before their rows, so each has its icon and a model when its system lands.
+# Footprints are first guesses, written on each; the rows can change them.
+
+# The Chicken coop, 1.6 x 1.2: a plank hen house on four short legs, a thatched ridge roof over it, a little door at the front (+Z) and a slatted ramp
+# down from it.
+static func chicken_coop() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.6, 0.6]:
+		for z in [-0.4, 0.4]:
+			_box(root, Vector3(0.08, 0.35, 0.08), Vector3(x, 0.175, z), _frame)                 # the legs
+
+	_box(root, Vector3(1.4, 0.65, 1.0), Vector3(0.0, 0.67, 0.0), _planks)                      # the house
+	_box(root, Vector3(0.28, 0.32, 0.02), Vector3(0.3, 0.58, 0.51), _pot)                      # its door, dark inside
+
+	for side in [-1.0, 1.0]:
+		_box_rot(root, Vector3(1.6, 0.12, 0.72), Vector3(0.0, 1.17, side * 0.3), Vector3(side * 0.62, 0.0, 0.0), _thatch)   # the thatched roof
+
+	_box(root, Vector3(1.62, 0.1, 0.12), Vector3(0.0, 1.38, 0.0), _thatch)                     # the ridge
+	_box_rot(root, Vector3(0.24, 0.03, 0.4), Vector3(0.3, 0.19, 0.53), Vector3(1.1, 0.0, 0.0), _planks)    # the ramp
+	_solid(root, Vector3(1.4, 1.0, 1.0), Vector3(0.0, 0.5, 0.0))
+	return root
+
+
+# The Fodder trough, 1.6 x 0.5: a plank V trough on two trestle ends, hay heaped in it (named so no one takes it for the water troughs).
+static func fodder_trough() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.7, 0.7]:
+		_box(root, Vector3(0.08, 0.4, 0.46), Vector3(x, 0.2, 0.0), _frame)                     # the trestle ends
+
+	for side in [-1.0, 1.0]:
+		_box_rot(root, Vector3(1.5, 0.3, 0.04), Vector3(0.0, 0.42, side * 0.11), Vector3(side * 0.6, 0.0, 0.0), _planks)    # the V sides
+
+	_dome(root, 0.6, Vector3(0.0, 0.44, 0.0), Vector3(1.15, 0.22, 0.28), _thatch, 10, 3)        # the hay
+	_solid(root, Vector3(1.5, 0.5, 0.46), Vector3(0.0, 0.25, 0.0))
+	return root
+
+
+# The Tub, 1.4 x 0.8: a long coopered wooden bathtub with two iron hoops, water standing in it.
+static func tub() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var body: MeshInstance3D = _cyl(root, 0.36, 0.55, Vector3(0.0, 0.275, 0.0), _planks, 12, 0.4)
+	body.scale = Vector3(1.7, 1.0, 1.0)
+
+	for y in [0.12, 0.45]:
+		var hoop: MeshInstance3D = _cyl(root, 0.39 if y > 0.3 else 0.37, 0.05, Vector3(0.0, y, 0.0), _iron_mat(), 12)
+		hoop.scale = Vector3(1.7, 1.0, 1.0)
+
+	var water: MeshInstance3D = _cyl(root, 0.36, 0.02, Vector3(0.0, 0.55, 0.0), _still_water(), 12)   # level with the rim, so it shows
+	water.scale = Vector3(1.7, 1.0, 1.0)
+	_solid(root, Vector3(1.36, 0.55, 0.8), Vector3(0.0, 0.275, 0.0))
+	return root
+
+
+# The Sap tap, 0.3 x 0.3, set on a tree trunk (its back at Z = 0, the bark): a wooden spout driven in at 1.1 m and a small bucket hung on it to catch the
+# sap. Not solid: it hangs on the tree.
+static func sap_tap() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.04, 0.04, 0.2), Vector3(0.0, 1.1, 0.1), _frame)                         # the spout
+	_box(root, Vector3(0.012, 0.18, 0.012), Vector3(0.0, 1.0, 0.19), _iron_mat())               # the bucket's hook
+	_cyl(root, 0.1, 0.18, Vector3(0.0, 0.84, 0.17), _planks, 8, 0.12)                           # the bucket
+	_cyl(root, 0.115, 0.025, Vector3(0.0, 0.88, 0.17), _frame, 8)                               # its hoop
+	return root
+
+
+# The Cheese press, 0.8 x 0.6: a plank base with a drip lip, two uprights and a crossbeam, a wooden screw down through the beam onto a follower board,
+# a round cheese mould under it, and a long lever arm through the screw's head.
+static func cheese_press() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.8, 0.12, 0.6), Vector3(0.0, 0.06, 0.0), _planks)                     # the base
+	_box(root, Vector3(0.1, 0.04, 0.06), Vector3(0.0, 0.1, 0.3), _frame)                      # its drip lip
+
+	for x in [-0.33, 0.33]:
+		_box(root, Vector3(0.1, 1.2, 0.12), Vector3(x, 0.66, 0.0), _frame)                    # the uprights
+
+	_box(root, Vector3(0.8, 0.14, 0.16), Vector3(0.0, 1.2, 0.0), _frame)                       # the crossbeam
+	_cyl(root, 0.17, 0.2, Vector3(0.0, 0.22, 0.0), _planks, 10)                                 # the cheese mould
+	_cyl(root, 0.16, 0.05, Vector3(0.0, 0.345, 0.0), _frame, 10)                                # the follower
+	_cyl(root, 0.04, 0.95, Vector3(0.0, 0.85, 0.0), _planks, 8)                                 # the screw
+	_box(root, Vector3(0.6, 0.04, 0.04), Vector3(0.0, 1.32, 0.0), _frame)                       # its lever
+	_solid(root, Vector3(0.8, 1.3, 0.6), Vector3(0.0, 0.65, 0.0))
+	return root
+
+
+# The Spinning wheel, 1.0 x 0.5: a slanted bench on three legs, a spoked wheel standing on two posts at one end, the flyer and bobbin on the other, a
+# treadle under it.
+static func spinning_wheel() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box_rot(root, Vector3(0.95, 0.08, 0.26), Vector3(0.0, 0.42, 0.0), Vector3(0.0, 0.0, 0.08), _planks)   # the bench
+
+	for leg in [Vector3(-0.38, 0.2, -0.1), Vector3(-0.38, 0.2, 0.1), Vector3(0.38, 0.2, 0.0)]:
+		_rod(root, leg - Vector3(0.0, 0.2, 0.0), leg + Vector3(0.0, 0.2, 0.0), 0.05, _frame)   # its legs
+
+	for z in [-0.07, 0.07]:
+		_box(root, Vector3(0.05, 0.36, 0.04), Vector3(-0.2, 0.62, z), _frame)                 # the wheel's posts
+
+	var hub: Vector3 = Vector3(-0.2, 0.78, 0.0)
+	for k in 10:
+		var a0: float = TAU * float(k) / 10.0
+		var a1: float = TAU * float(k + 1) / 10.0
+		_rod(root, hub + Vector3(cos(a0), sin(a0), 0.0) * 0.3, hub + Vector3(cos(a1), sin(a1), 0.0) * 0.3, 0.04, _planks)   # the rim
+
+	for k in 2:
+		var a: float = PI * float(k) / 2.0 + 0.4
+		_rod(root, hub - Vector3(cos(a), sin(a), 0.0) * 0.28, hub + Vector3(cos(a), sin(a), 0.0) * 0.28, 0.02, _frame)   # spokes
+
+	_box(root, Vector3(0.06, 0.24, 0.06), Vector3(0.3, 0.58, 0.0), _frame)                     # the mother-of-all upright
+	_box(root, Vector3(0.24, 0.05, 0.05), Vector3(0.3, 0.7, 0.0), _frame)                      # the flyer
+	_cyl(root, 0.035, 0.12, Vector3(0.3, 0.7, 0.0), _tone_mat(Color(0.86, 0.82, 0.72)), 6).rotation = Vector3(0.0, 0.0, PI * 0.5)   # the wool on the bobbin
+	_box_rot(root, Vector3(0.3, 0.03, 0.14), Vector3(-0.05, 0.08, 0.0), Vector3(0.0, 0.0, 0.25), _planks)   # the treadle
+	_solid(root, Vector3(0.95, 0.5, 0.3), Vector3(0.0, 0.25, 0.0))
+	return root
+
+
+# The Loom, 1.6 x 0.8: a warp-weighted loom leaning back against its frame: two uprights, the cloth beam across the top with woven cloth rolled on it,
+# the warp threads hanging down, the heddle bar across them and a row of clay loom weights at the foot.
+static func loom() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var lean: Vector3 = Vector3(-0.18, 0.0, 0.0)                                               # the frame leans back (-Z)
+
+	for x in [-0.7, 0.7]:
+		_box_rot(root, Vector3(0.1, 1.76, 0.1), Vector3(x, 0.9, -0.11), lean, _frame)          # the uprights
+		_box(root, Vector3(0.08, 0.08, 0.7), Vector3(x, 0.04, -0.05), _frame)                 # their feet
+
+	_cyl(root, 0.08, 1.5, Vector3(0.0, 1.7, -0.26), _frame, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)    # the cloth beam
+	_box_rot(root, Vector3(1.3, 0.4, 0.03), Vector3(0.0, 1.48, -0.21), lean, _tone_mat(Color(0.72, 0.62, 0.46)))   # the woven cloth
+	_box_rot(root, Vector3(1.3, 1.0, 0.012), Vector3(0.0, 0.8, -0.08), lean, _tone_mat(Color(0.86, 0.82, 0.72)))  # the warp threads
+	_box_rot(root, Vector3(1.4, 0.04, 0.04), Vector3(0.0, 1.0, -0.05), lean, _frame)           # the heddle bar
+
+	for k in 7:
+		_box(root, Vector3(0.09, 0.11, 0.06), Vector3(-0.54 + 0.18 * float(k), 0.26, 0.02), _clay)   # the loom weights
+
+	_solid(root, Vector3(1.5, 1.8, 0.3), Vector3(0.0, 0.9, -0.1))
+	return root
+
+
 # The Wooden - Crate (B3b, item system: per buildables B3), a 0.8 m cube: plank sides with a frame along every edge and a diagonal brace on
 # each side.
 static func crate() -> Node3D:
