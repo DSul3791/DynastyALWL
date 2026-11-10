@@ -122,7 +122,7 @@ func _init() -> void:
 
 	for cx in range(0, 40):
 		l._items.clear()
-		l._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+		l._lay_out_boulders(Vector2i(cx, 3), 32.0)
 		var again: Array = []
 
 		for k in l._items:
@@ -134,7 +134,7 @@ func _init() -> void:
 				unknown += 1 if o == "unobtainium" else 0
 
 		l._items.clear()
-		l._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+		l._lay_out_boulders(Vector2i(cx, 3), 32.0)
 		var second: Array = []
 
 		for k in l._items:
@@ -163,7 +163,7 @@ func _init() -> void:
 
 	for cx in range(0, 40):
 		ra._items.clear()
-		ra._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+		ra._lay_out_boulders(Vector2i(cx, 3), 32.0)
 
 		for k in ra._items:
 			if ra._items[k].has("boulder"):
@@ -179,7 +179,7 @@ func _init() -> void:
 
 	for cx in range(0, 10):
 		ra._items.clear()
-		ra._lay_out_boulders(Vector2i(cx, 3), 32.0, _rng(cx))
+		ra._lay_out_boulders(Vector2i(cx, 3), 32.0)
 
 		for k in ra._items:
 			if ra._items[k].has("boulder"):
@@ -187,11 +187,24 @@ func _init() -> void:
 				tin_first = tin_first and str(ra._items[k]["boulder"].get("ore", "")) == "tin"
 
 	check(tin_first and tin_boulders > 0, "an ore body wins over the bedrock (%d boulders, all tin)" % tin_boulders)
+	# Cave floor boulders (the baked cave scatter, _lay_out_cave_items) are outcrops by the same rule and key (Kathleen 10 Nov 2026: they never rolled ore).
+	var cv = make("test_ore_cave", "stone_pickaxe")
+	cv._boulder_cfg["ore"]["boulder_share"] = 1.0
+	cv.ore_near = func(pos, _reach, _names, _depth): return "copper" if pos.x < 400.0 else ""
+	cv.rock_near = func(_pos): return "granite"
+	cv.cave_scatter = func(_cell, _m): return PackedFloat32Array([100.0, -20.0, 100.0, 1.0, 0.8, 500.0, -20.0, 100.0, 1.0, 0.8, 110.0, -20.0, 100.0, 0.0, 0.0])
+	var cave_ores: Array = []
+
+	for round_n in range(2):
+		cv._items.clear()
+		cv._lay_out_cave_items(Vector2i(3, 3), 32.0, cv._boulder_cfg)
+
+		for k in cv._items:
+			if cv._items[k].has("boulder"):
+				cave_ores.append([round_n, float(cv._items[k]["pos"].x), str(cv._items[k]["boulder"].get("ore", ""))])
+
+	cave_ores.sort()
+	check(str(cave_ores) == str([[0, 100.0, "copper"], [0, 500.0, ""], [1, 100.0, "copper"], [1, 500.0, ""]]), "a cave boulder by an ore body is an outcrop, one away from it is plain, the same each layout (%s)" % str(cave_ores))
 	print("ore: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
-
-func _rng(seed_value: int) -> RandomNumberGenerator:
-	var r: RandomNumberGenerator = RandomNumberGenerator.new()
-	r.seed = seed_value
-	return r

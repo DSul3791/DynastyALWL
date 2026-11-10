@@ -254,7 +254,8 @@ func _init() -> void:
 	# The sawmill needs a foundation lifted 0.5 m or more under it and running water at its wheel.
 	items.ground_height = func(_x, _z): return 10.0
 	var flows: Array = [true]
-	items.water_flow_runs = func(_a: Vector3, _b: Vector3) -> bool: return flows[0]
+	var watts: Array = [600.0]
+	items.water_wheel = func(_a: Vector3, _b: Vector3) -> Dictionary: return {"w": watts[0], "why": ""} if flows[0] else {"w": 0.0, "why": "still"}
 	items.report_position(2, Vector3(900.0, 10.0, 900.0))
 	var saw_kit: int = items.table.number_of("saw_mill_kit")
 	var saw_count = func() -> int:
@@ -278,10 +279,79 @@ func _init() -> void:
 	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 910.0), 0)
 	check(int(saw_count.call()) == 0, "a sawmill without running water at its wheel is refused")
 	flows[0] = true
+	watts[0] = 100.0
 	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 910.0), 0)
-	check(int(saw_count.call()) == 1, "a sawmill on a foundation lifted 0.6 m with running water is placed")
+	check(int(saw_count.call()) == 0, "a wheel giving under 150 W stalls the saw: refused")
+	watts[0] = 600.0
+	items.place_item(2, saw_kit, Vector3(900.0, 10.0, 910.0), 0)
+	check(int(saw_count.call()) == 1, "a sawmill on a foundation lifted 0.6 m with a 600 W wheel is placed")
+	# The wheel's power sets the saw's speed: 600 W of the full 1000 W makes a sawmill recipe take 1/0.6 as long; other stations are untouched.
+	items.report_position(2, Vector3(900.0, 10.0, 910.0))
+	check(absf(items._wheel_slow(2, {"station": "saw_mill", "station_level": 1}) - 1.0 / 0.6) < 0.01, "at 600 W a sawmill recipe takes 1/0.6 as long")
+	check(is_equal_approx(items._wheel_slow(2, {"station": "workbench"}), 1.0) and is_equal_approx(items._wheel_slow(2, {}), 1.0), "other stations and hand crafts keep their time")
+	# Looking at the placed sawmill shows its wheel's share: the server puts "wheel" on the piece's world row; other pieces carry none.
+	var saw_id: int = -1
+	var plain_id: int = -1
+
+	for id in items._items:
+		var piece: Dictionary = items._items[id]
+
+		if not piece.has("struct") or piece["struct"].has("site"):
+			continue
+
+		if str(piece["struct"]["kind"]) == "saw_mill":
+			saw_id = int(id)
+		elif str(piece["struct"]["kind"]).contains("foundation"):
+			plain_id = int(id)
+
+	check(saw_id >= 0 and items.wheel_percent(items._items[saw_id]) == 60, "the placed sawmill's wheel gives 60 %% at 600 W")
+	check(plain_id >= 0 and items.wheel_percent(items._items[plain_id]) == -1, "a foundation has no wheel share (-1)")
+	# A mill whose water is not answered yet (a saved mill sent at the join before its tile's water is read: "dry", 0 W) is not kept at that.
+	if saw_id >= 0:
+		var kept_w: float = float(items._items[saw_id]["struct"]["wheel_w"])
+		items._items[saw_id]["struct"].erase("wheel_w")
+		flows[0] = false
+		check(items.wheel_percent(items._items[saw_id]) == 15 and not items._items[saw_id]["struct"].has("wheel_w"), "a mill whose water does not answer shows the floor share and keeps nothing")
+		flows[0] = true
+		check(items.wheel_percent(items._items[saw_id]) == 60 and is_equal_approx(float(items._items[saw_id]["struct"].get("wheel_w", 0.0)), kept_w), "once the water answers it gives 60 %% and keeps its watts")
+
+	var sent_rows: Array = []
+	items.send_world_items = func(_p, added, _r): sent_rows.append_array(added)
+	items._known[2] = {}
+	items._sync_world_items()
+	var saw_row_wheel: int = -2
+	var other_rows_wheel: int = 0
+
+	for row in sent_rows:
+		if typeof(row[5]) != TYPE_DICTIONARY or not (row[5] as Dictionary).has("wheel"):
+			continue
+
+		if int(row[0]) == saw_id:
+			saw_row_wheel = int(row[5]["wheel"])
+		else:
+			other_rows_wheel += 1
+
+	check(saw_row_wheel == 60 and other_rows_wheel == 0, "only the sawmill's world row carries the wheel share (%d, %d others)" % [saw_row_wheel, other_rows_wheel])
+	items.send_world_items = func(_p, _a, _r): pass
+	# The ghost asks before placing (protocol 105): the same rule answers with the share, or why not.
+	var shares: Array = []
+	items.send_wheel_share = func(_p: int, _at: Vector3, _yaw: int, percent: int, why: String) -> void: shares.append([percent, why])
+	items.action(2, Net.ACT_WHEEL_ASK, 90, saw_kit, 0, Vector3(900.0, 10.6, 920.0))
+	check(shares.size() == 1 and int(shares[0][0]) == 60 and str(shares[0][1]) == "", "the ghost hears 60 %% at 600 W (%s)" % str(shares))
+	watts[0] = 100.0
+	items.action(2, Net.ACT_WHEEL_ASK, 90, saw_kit, 0, Vector3(900.0, 10.6, 920.0))
+	check(shares.size() == 2 and int(shares[1][0]) == 0 and str(shares[1][1]) == "weak", "and too slow at 100 W")
+	flows[0] = false
+	items.action(2, Net.ACT_WHEEL_ASK, 90, saw_kit, 0, Vector3(900.0, 10.6, 920.0))
+	check(shares.size() == 3 and str(shares[2][1]) == "still", "and why when the water does not run")
+	items.action(2, Net.ACT_WHEEL_ASK, 90, items.table.number_of("foundation_section_kit"), 0, Vector3(900.0, 10.6, 920.0))
+	check(shares.size() == 3, "a kit with no wheel gets no answer")
+	check(Rules.reason_text("wheel_along") != "" and Rules.reason_text("wheel_weak") != "", "the ghost has words for every wheel refusal")
+	flows[0] = true
+	watts[0] = 600.0
+	items.send_wheel_share = Callable()
 	items.ground_height = Callable()
-	items.water_flow_runs = Callable()
+	items.water_wheel = Callable()
 	items.report_position(2, before_stations)
 
 	check(str(Rules.structure_of_kit(cfg, "wall_section_kit").get("variant_group", "x")) == "wall" and str(Rules.structure_of_kit(cfg, "doorway_section_kit").get("variant_group", "y")) == "wall" and str(Rules.structure_of_kit(cfg, "window_section_kit").get("variant_group", "z")) == "wall", "wall, doorway and window share a wheel group")

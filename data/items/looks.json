@@ -972,6 +972,16 @@
    "color": "#4f5359",
    "size": 0.45
   },
+  "bronze_nails": {
+   "shape": "needle",
+   "color": "#9a7440",
+   "size": 0.5
+  },
+  "bronze_hinges": {
+   "shape": "ingot",
+   "color": "#8c6a3a",
+   "size": 0.45
+  },
   "wooden_pin": {
    "shape": "rod",
    "color": "#a88255",
@@ -1645,6 +1655,14 @@
    "size": 1.0,
    "bits": [
     "#efe6d0"
+   ]
+  },
+  "field_mushrooms": {
+   "shape": "cap",
+   "color": "#e8e0d0",
+   "size": 0.9,
+   "bits": [
+    "#a9806a"
    ]
   },
   "potash": {

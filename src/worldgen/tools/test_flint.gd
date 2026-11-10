@@ -122,7 +122,7 @@ func _init() -> void:
 
 	for cx in range(0, 40):
 		b._items.clear()
-		b._lay_out_bank_stones(Vector2i(cx, 3), 32.0, b._drops.get("ground_scatter", {}), RandomNumberGenerator.new(), 0)
+		b._lay_out_bank_stones(Vector2i(cx, 3), 32.0, b._drops.get("ground_scatter", {}), 0)
 
 		for k in b._items:
 			flints += 1 if int(b._items[k]["number"]) == flint_n else 0
