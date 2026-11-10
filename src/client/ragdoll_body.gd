@@ -556,22 +556,24 @@ func _swing(p: float) -> Dictionary:
 	}
 
 
-# The first-person axe chop (Tyler Report 26, Dave 2026-10-21 "totally wrong"; Dave 2026-10-30 "it swings like a hammer": a short vertical rhythm). Now a whole swing of 0.95 s:
-# the axe goes back over the right shoulder (the arm up and out to the right, the torso turning right), a beat at the top, then a wide diagonal stroke across the body from the upper right to
-# the lower left with the body turning into it, the impact at 0.5 s (CHOP_IMPACT_S: held_item.gd HIT_AT), a recoil, a follow-through past the target, a slow recovery and a short rest at the end.
-# The arms hang from a rig pitched 50 degrees (held_item.gd ARMS_PITCH_DEG), so the angles are relative to that. Z on the right arm: + out to the right, - across the body.
+# The first-person axe swing at a tree or anything standing (Dave 10 Nov 2026: "the axe swing when hitting a tree is still top to bottom and should be from right out
+# of frame to left into the tree"). A level, sideways stroke: the axe goes back past the right shoulder, out of the frame, a beat there, then sweeps in from the
+# right edge of the view at the height of the target, the edge leading, into the crosshair at the impact (0.5 s, CHOP_IMPACT_S: held_item.gd HIT_AT), a recoil,
+# a short follow-through to the left and back to rest. The angles are solved for the axe head (held_item.gd: the head 0.35 m out along the haft) in camera
+# space: back-right behind the view (0.74, -0.06, 0.02), entering at the right edge (0.64, -0.13, -0.53), at the target (0.06, -0.18, -0.74), past it
+# (-0.13, -0.23, -0.70); the arms hang from a rig pitched 50 degrees (held_item.gd ARMS_PITCH_DEG).
+const SWING_FP_ARM := [[0.0, Vector3(0.2, 0.0, 0.07)], [0.28, Vector3(-0.316, -1.053, 0.342)], [0.36, Vector3(-0.316, -1.053, 0.342)], [0.44, Vector3(-0.199, -0.665, 0.035)],
+	[0.5, Vector3(-0.061, -0.331, -0.171)], [0.56, Vector3(-0.061, -0.331, -0.171)], [0.7, Vector3(0.154, -0.223, -0.433)], [0.9, Vector3(0.2, 0.0, 0.07)], [0.95, Vector3(0.2, 0.0, 0.07)]]
+const SWING_FP_FOREARM := [[0.0, 0.12], [0.28, 1.665], [0.36, 1.665], [0.44, 1.064], [0.5, 0.489], [0.56, 0.489], [0.7, 0.047], [0.9, 0.12], [0.95, 0.12]]
+const SWING_FP_HAND := [[0.0, Vector3.ZERO], [0.28, Vector3(0.604, -0.721, 0.279)], [0.36, Vector3(0.604, -0.721, 0.279)], [0.44, Vector3(0.104, -0.927, 0.013)],
+	[0.5, Vector3(-0.582, -0.880, -0.385)], [0.56, Vector3(-0.582, -0.880, -0.385)], [0.7, Vector3(-0.322, -0.729, -0.248)], [0.9, Vector3.ZERO], [0.95, Vector3.ZERO]]
+
+
 func _swing_fp(p: float) -> Dictionary:
 	var t: float = p * SWING_FP_S
-	var arm: float = _keys_t(t, [[0.0, 0.2], [0.28, 0.85], [0.36, 0.9], [0.5, 0.3], [0.56, 0.28], [0.7, 0.25], [0.9, 0.2], [0.95, 0.2]])
-	var out: float = _keys_t(t, [[0.0, 0.07], [0.28, 0.5], [0.36, 0.55], [0.5, -0.4], [0.56, -0.42], [0.7, -0.3], [0.9, 0.07], [0.95, 0.07]])
-	var elbow: float = _keys_t(t, [[0.0, 0.12], [0.28, 1.2], [0.36, 1.25], [0.5, 0.4], [0.56, 0.45], [0.7, 0.4], [0.9, 0.15], [0.95, 0.12]])
-	var wrist: float = _keys_t(t, [[0.0, 0.0], [0.28, 1.2], [0.36, 1.3], [0.44, 0.2], [0.5, -0.9], [0.56, -0.8], [0.7, -0.3], [0.9, 0.0], [0.95, 0.0]])
-	var lean: float = _keys_t(t, [[0.0, 0.0], [0.28, -0.1], [0.36, -0.1], [0.5, 0.18], [0.56, 0.18], [0.7, 0.1], [0.9, 0.0], [0.95, 0.0]])
-	var twist: float = _keys_t(t, [[0.0, 0.0], [0.28, -0.3], [0.36, -0.3], [0.5, 0.3], [0.56, 0.32], [0.7, 0.2], [0.9, 0.0], [0.95, 0.0]])
 	return {
-		"arm_r": Vector3(arm, 0.0, out), "forearm_r": Vector3(elbow, 0.0, 0.0), "hand_r": Vector3(wrist, 0.0, 0.0),
+		"arm_r": _keys_t3(t, SWING_FP_ARM), "forearm_r": Vector3(_keys_t(t, SWING_FP_FOREARM), 0.0, 0.0), "hand_r": _keys_t3(t, SWING_FP_HAND),
 		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
-		"spine": Vector3(lean, twist, 0.0), "chest": Vector3(lean * 0.5, twist * 0.7, 0.0),
 	}
 
 
@@ -589,6 +591,16 @@ func _swing_fp_down(p: float) -> Dictionary:
 		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
 		"spine": Vector3(lean, 0.0, 0.0), "chest": Vector3(lean * 0.5, 0.0, 0.0),
 	}
+
+
+# _keys_t for Vector3 keys.
+static func _keys_t3(t: float, keys: Array) -> Vector3:
+	var phased: Array = []
+
+	for k in keys:
+		phased.append([float(k[0]) / SWING_FP_S, k[1]])
+
+	return _keys(phased, t / SWING_FP_S)
 
 
 # _keys by seconds, with the easing in `_keys`.
