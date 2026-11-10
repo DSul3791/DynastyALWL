@@ -29,6 +29,7 @@ UNITS = [
     ("server_items", "src/worldgen/tools/test_server_items.gd"),
     ("death", "src/worldgen/tools/test_death.gd"),
     ("stations", "src/worldgen/tools/test_stations.gd"),
+    ("bloomery bench", "src/worldgen/tools/test_bloomery_bench.gd"),
     ("fishing", "src/worldgen/tools/test_fishing.gd"),
     ("shore net", "src/worldgen/tools/test_shore_net.gd"),
     ("bed", "src/worldgen/tools/test_bed.gd"),
