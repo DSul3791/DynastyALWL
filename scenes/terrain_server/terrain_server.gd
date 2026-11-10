@@ -301,6 +301,7 @@ func _ready() -> void:
 	items.cover_at = _cover_at
 	items.cave_air = func(pos): return _cave_air(pos)   # depth in from the mouth and the day swing, for the cave air blend (docs/design/cave_climate_design.md)
 	items.cave_mean_c = func(pos): return WeatherScript.year_mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), pos.y) if _in_cave(pos) else NAN   # cave air: the island's year mean at that height (#664)
+	items.year_mean_at = func(pos): return WeatherScript.year_mean_c(settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), pos.y)   # a cold store: the ground below 2 m holds the year mean (item_system.md D1)
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
 	items.register_roofs()
@@ -347,19 +348,8 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
 	items.send_training = func(peer, percent): net.training.rpc_id(peer, percent)
-	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
-		var ore_tile = generator.get_tile(generator.tile_of(pos.x, pos.z))
-
-		if ore_tile.placeholder:
-			return ""
-
-		var flat: Vector2 = Vector2(pos.x, pos.z)
-
-		for ore in ore_tile.ores:
-			if (ore["rect"] as Rect2).grow(reach).has_point(flat):
-				return str(ore.get("resource", ""))
-
-		return ""
+	items.ore_near = func(pos, reach, names, depth_m):   # the ore of the baked tile a boulder at the spot is an outcrop of (TileTerrainData.ore_at), "" when none
+		return generator.get_tile(generator.tile_of(pos.x, pos.z)).ore_at(pos, reach, names, depth_m)
 	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches
 		var best: Vector2 = Vector2(INF, NAN)
 		var coords: Dictionary = {}
