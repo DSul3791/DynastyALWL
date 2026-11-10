@@ -3841,7 +3841,7 @@
 		},
 		"candle": {
 			"number": 311,
-			"name": "Tallow - Candle",
+			"name": "Candle",
 			"description": "A wick dipped in fat. A small steady light for indoors.",
 			"kind": "tool",
 			"tool_class": "candle",

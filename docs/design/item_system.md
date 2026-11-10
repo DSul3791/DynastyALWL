@@ -120,7 +120,7 @@ Station (`also:`) levels for forge recipes stay on the forge. Steve and Jamie ap
 | Fishing spear | NEW | hand | 1 Stick, sharpened with any knife (group) |
 | Fishing bait | NEW | hand | any raw fish scrap, or Worm (small chance when digging soil, `digging.json`). One item. |
 | Torch | HAVE | hand | as live. **The doused torch keeps the name Torch** (Dave, 6 Nov; `test_torch_douse.gd`). |
-| Tallow - Candle | RENAME (Candle) | hand | 1 Tallow, 1 Plant fibre → 3. **Remove the live animal-fat recipe** (2 per fat beats tallow's 1.5, so no one would render tallow). |
+| Candle | RENAMED from Tallow - Candle (10 Nov 2026) | hand | 1 Tallow, 1 Plant fibre → 3. The animal-fat recipe (200) is retired (2 per fat beat tallow's 1.5, so no one would render tallow). |
 | Beeswax - Candle | NEW-F | hand | 1 Beeswax, 1 Plant fibre → 3. Candle group "Any candle" for lanterns and chandelier. |
 | Steel - Striker | FUTURE | forge 3 | as live |
 | Spyglass | HAVE | workbench | as live (design 9 Nov, three tiers) |
@@ -350,7 +350,7 @@ Knife, saw, needle, axe, pick and hammer groups so a kept tool of any tier works
 | Hand saw | Iron - Saw |
 | Hide scraper | Scraper |
 | Fishing net | Fishing net |
-| Candle | Tallow - Candle |
+| Tallow - Candle | Candle |
 | Quiver | Hide - Quiver |
 | Plank - Shield | Wooden - Shield |
 | Bronze/Iron/Steel - Kite shield | Bronze/Iron/Steel - Shield |

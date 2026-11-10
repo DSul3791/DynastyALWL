@@ -4725,7 +4725,7 @@
 			"kind": "food",
 			"description": "A sweet loaf baked in the oven. Keeps well.",
 			"how_to_get": [
-				"Craft at a oven: 2 Flour, 1 Honey"
+				"Craft at an oven: 2 Flour, 1 Honey"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4735,7 +4735,7 @@
 			"kind": "food",
 			"description": "Meat roasted whole in the oven with herbs.",
 			"how_to_get": [
-				"Craft at a oven: 2 Raw meat, 1 Rosemary, 1 Wild garlic leaves"
+				"Craft at an oven: 2 Raw meat, 1 Rosemary, 1 Wild garlic leaves"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5167,7 +5167,7 @@
 			"obtainable_now": true
 		},
 		"candle": {
-			"name": "Tallow - Candle",
+			"name": "Candle",
 			"kind": "tool",
 			"description": "A wick dipped in fat. A small steady light for indoors.",
 			"how_to_get": [
@@ -6180,7 +6180,7 @@
 			"kind": "food",
 			"description": "Meat and fat baked in a flour crust.",
 			"how_to_get": [
-				"Craft at a oven: 1 Raw meat, 1 Flour, 1 Animal fat"
+				"Craft at an oven: 1 Raw meat, 1 Flour, 1 Animal fat"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -6191,7 +6191,7 @@
 			"kind": "food",
 			"description": "Fish and onion baked in a flour crust.",
 			"how_to_get": [
-				"Craft at a oven: 1 Trout, 1 Flour, 1 Onion"
+				"Craft at an oven: 1 Trout, 1 Flour, 1 Onion"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -6313,7 +6313,7 @@
 			],
 			"used_for": [
 				"Used in Soap",
-				"Used in Tallow candle",
+				"Used in Candle",
 				"Used in Iron - Torch stand",
 				"Used in Torch pillar",
 				"Used in Torch post"
@@ -6807,7 +6807,7 @@
 			"kind": "food",
 			"description": "Cooking apples and fat baked in a flour crust.",
 			"how_to_get": [
-				"Craft: 2 Cooking apple, 1 Flour, 1 Animal fat at a oven"
+				"Craft: 2 Cooking apple, 1 Flour, 1 Animal fat at an oven"
 			],
 			"used_for": [],
 			"obtainable_now": false
@@ -7458,7 +7458,7 @@
 			"kind": "placeable",
 			"description": "A wooden hoop hung from a beam, with six candles. Light them first.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Plank, 2 Twine, 6 Tallow - Candle"
+				"Build with a hammer (press R): 2 Plank, 2 Twine, 6 Candle"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8589,8 +8589,8 @@
 			"description": "Oil rendered from oily fish in a stoppered pot. Burns three game days in an iron lantern.",
 			"how_to_get": [
 				"Craft at a campfire pot: 3 Herring",
-				"Craft at a oil press: 4 Linseed",
-				"Craft at a oil press: 4 Walnuts"
+				"Craft at an oil press: 4 Linseed",
+				"Craft at an oil press: 4 Walnuts"
 			],
 			"used_for": [
 				"Used in Iron - Hanging lantern",
@@ -8604,7 +8604,7 @@
 			"kind": "tool",
 			"description": "A plank lantern with horn panes. Takes a candle; does not go out in the rain.",
 			"how_to_get": [
-				"Craft at a workbench: 1 Plank, 1 Twine, 2 Horn pane, 1 Tallow - Candle"
+				"Craft at a workbench: 1 Plank, 1 Twine, 2 Horn pane, 1 Candle"
 			],
 			"used_for": [
 				"Used in Wooden - Lamp post"
@@ -8619,7 +8619,7 @@
 				"A lit lantern goes dark under water, when you put it out, or when its candle burns down (1 game day)"
 			],
 			"used_for": [
-				"Light it again with its key; a burned-out one takes a Tallow - Candle from your pack"
+				"Light it again with its key; a burned-out one takes a Candle from your pack"
 			],
 			"obtainable_now": true
 		},
@@ -8653,7 +8653,7 @@
 			"kind": "placeable",
 			"description": "A plank lantern on a hook. Burns a candle a game day; rain cannot reach it.",
 			"how_to_get": [
-				"Build with a hammer (press R): 1 Plank, 1 Twine, 2 Horn pane, 1 Tallow - Candle"
+				"Build with a hammer (press R): 1 Plank, 1 Twine, 2 Horn pane, 1 Candle"
 			],
 			"used_for": [],
 			"obtainable_now": true
