@@ -10,7 +10,7 @@ Your **comfort level** (0 to 20) is 1 for being sheltered, plus the points of ev
 ## 2. Sheltered (the exact rule)
 You are sheltered when ANY of these holds at your feet (the cover the game already knows):
 1. you stand under a built roof: a lean-to, or any roof piece (Cover roofs, `Cover.at` returns 1.0 for a box or disc roof you are inside, y between its floor and top);
-2. you stand under a **grown tree crown**: `Cover.at` through the tree index, only trees at 80 percent of their species height count (`SHELTER_MIN_SCALE` 0.8, disc radius `SHELTER_RADIUS` crown_m);
+2. you stand under a **grown tree crown**: `Cover.at` through the tree index, only trees at least 4 m tall count, whatever the species (`SHELTER_MIN_HEIGHT_M`; Dave 10 Nov 2026, a 13 m oak gave none under the old 80 percent of species height), disc radius `SHELTER_RADIUS` crown_m;
 3. you are inside the lean-to (it is a roof, so rule 1).
 So a camp can have its lean-to or only a big tree; the comfort items need not be inside the lean-to. The lean-to is shelter only: 2.6 x 3.4 m and 1.5 m high (Tyler, 31 Oct), rain and sun cover. Comfort comes from what you place around it. If you are NOT sheltered, the furniture adds nothing (message "You are not sheltered: nothing here comforts you.").
 
