@@ -2928,10 +2928,10 @@
 			"kind": "clothing",
 			"description": "Hide tied around each leg.",
 			"how_to_get": [
-				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
+				"No longer made: merged into Hide - Trousers (3 Hide, 2 Twine)"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false
 		},
 		"raw_meat": {
 			"name": "Raw meat",
@@ -5024,7 +5024,7 @@
 		"hide_trousers": {
 			"name": "Hide - Trousers",
 			"kind": "clothing",
-			"description": "Hide sewn into trousers. Better than leggings.",
+			"description": "Hide sewn into trousers. Warm, and tough on rough ground.",
 			"how_to_get": [
 				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],
