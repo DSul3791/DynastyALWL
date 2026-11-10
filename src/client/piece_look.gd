@@ -2044,9 +2044,9 @@ static func tier_stairs(kind: String = "stone") -> Node3D:
 			_solid(root, Vector3(1.0, top, 0.24), Vector3(0.0, top * 0.5, z))
 
 	if kind == "log":
-		for x in [-0.47, 0.47]:
+		for x in [-0.38, 0.38]:   # under the treads, inside the stairs' metre
 			var stringer: MeshInstance3D = MeshInstance3D.new()
-			stringer.mesh = _log_mesh(3.4, 0.2, false)
+			stringer.mesh = _log_mesh(3.1, 0.2, false)
 			stringer.material_override = _log
 			stringer.position = Vector3(x, 1.15, 0.0)
 			stringer.rotation = Vector3(PI * 0.5 + atan2(2.4, 2.4), 0.0, 0.0)
@@ -2712,7 +2712,7 @@ static func lamp_post(kind: String = "wood") -> Node3D:
 			_cyl(root, 0.22, 0.2, Vector3(0.0, 2.9, 0.0), _flag, 8)
 			_box(root, Vector3(0.025, 0.025, 0.35), Vector3(0.0, 2.75, 0.33), _iron_mat())
 
-	var hook_z: float = 0.35 if kind != "stone" else 0.48
+	var hook_z: float = 0.35 if kind != "stone" else 0.44
 	var top: float = 2.85 if kind == "wood" else (3.25 if kind == "iron" else 2.75)
 	_lantern(root, Vector3(0.0, top - 0.42, hook_z), kind != "wood")
 	_box(root, Vector3(0.01, 0.1, 0.01), Vector3(0.0, top - 0.07, hook_z), _iron_mat())         # the hook
@@ -2754,7 +2754,7 @@ const LIGHT_SPOTS := {
 	"iron_torch_stand": {"spots": [[Vector3(0.0, 1.9, 0.0), Vector3(0.9, 0.72, 0.9)], [Vector3(0.05, 1.88, 0.02), Vector3(0.5, 0.45, 0.5)]], "light_at": Vector3(0.0, 2.0, 0.0)},
 	"wooden_lamp_post": {"spots": [[Vector3(0.0, 2.55, 0.35), Vector3(0.25, 0.25, 0.25)]], "light_at": Vector3(0.0, 2.58, 0.35)},
 	"iron_lamp_post": {"spots": [[Vector3(0.0, 2.93, 0.35), Vector3(0.3, 0.3, 0.3)]], "light_at": Vector3(0.0, 2.98, 0.35)},
-	"stone_lamp_post": {"spots": [[Vector3(0.0, 2.43, 0.48), Vector3(0.3, 0.3, 0.3)]], "light_at": Vector3(0.0, 2.48, 0.48)},
+	"stone_lamp_post": {"spots": [[Vector3(0.0, 2.43, 0.44), Vector3(0.3, 0.3, 0.3)]], "light_at": Vector3(0.0, 2.48, 0.44)},
 	"stone_brazier": {"spots": [[Vector3(0.0, 0.85, 0.0), Vector3(1.2, 0.9, 1.2)], [Vector3(0.12, 0.82, 0.06), Vector3(0.8, 0.6, 0.8)]], "light_at": Vector3(0.0, 1.0, 0.0)},
 	"iron_brazier": {"spots": [[Vector3(0.0, 0.95, 0.0), Vector3(1.1, 0.85, 1.1)], [Vector3(0.1, 0.92, 0.05), Vector3(0.7, 0.55, 0.7)]], "light_at": Vector3(0.0, 1.1, 0.0)},
 }
@@ -3010,7 +3010,7 @@ static func trough(kind: String = "wood") -> Node3D:
 			_box(root, Vector3(1.88, 0.02, 0.48), Vector3(0.0, 0.485, 0.0), hollow)
 			for x in [-0.8, 0.8]:
 				for z in [-0.22, 0.22]:
-					_box_rot(root, Vector3(0.06, 0.24, 0.06), Vector3(x, 0.11, z * 1.1), Vector3(-z * 0.6, 0.0, 0.0), _frame)
+					_box_rot(root, Vector3(0.06, 0.24, 0.06), Vector3(x, 0.125, z * 1.1), Vector3(-z * 0.6, 0.0, 0.0), _frame)   # splayed, its foot on the ground
 			for x in [-1.0, 1.0]:
 				_box(root, Vector3(0.04, 0.3, 0.62), Vector3(x * 0.98, 0.35, 0.0), _frame)       # the end boards
 			_solid(root, Vector3(2.0, 0.5, 0.6), Vector3(0.0, 0.25, 0.0))
@@ -3055,7 +3055,7 @@ static func _conduit_joint(root: Node3D, kind: String, at: Vector3, yaw: float) 
 	match kind:
 		"wood":
 			for s in [-1.0, 1.0]:
-				_box_rot(holder, Vector3(0.04, 0.22, 0.04), Vector3(0.0, 0.1, s * 0.14), Vector3(s * 0.25, 0.0, 0.0), _frame)
+				_box_rot(holder, Vector3(0.04, 0.22, 0.04), Vector3(0.0, 0.115, s * 0.14), Vector3(s * 0.25, 0.0, 0.0), _frame)   # a trestle leg, its foot on the ground
 			_box(holder, Vector3(0.06, 0.04, 0.38), Vector3(0.0, 0.18, 0.0), _frame)
 		"clay":
 			_cyl(holder, 0.145, 0.08, Vector3(0.0, 0.15, 0.0), _clay, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
