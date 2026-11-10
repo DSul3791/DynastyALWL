@@ -4,7 +4,7 @@
 		{
 			"id": "torch_night",
 			"title": "Light the night",
-			"hint": "Craft a Torch from a stick and 2 fibre, and carry it after dark.",
+			"hint": "Craft a Torch from a stick, a fibre and pitch (resin or animal fat), and carry it after dark.",
 			"after": [
 				"fire"
 			],
@@ -69,7 +69,7 @@
 		{
 			"id": "jerky",
 			"title": "Make jerky",
-			"hint": "Salt strips of meat and dry them. Needs sea salt.",
+			"hint": "Salt strips of meat and dry them. Needs salt.",
 			"after": [
 				"knife"
 			],
@@ -85,7 +85,7 @@
 		{
 			"id": "salted_fish",
 			"title": "Salt a fish",
-			"hint": "Cure a fish in salt for the winter store. Needs sea salt.",
+			"hint": "Cure a fish in salt for the winter store. Needs salt.",
 			"after": [
 				"fish"
 			],

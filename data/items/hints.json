@@ -144,7 +144,7 @@
 		{
 			"id": "night",
 			"trigger": "dusk",
-			"text": "Night is dark. Craft a Torch: a stick and 2 fibre."
+			"text": "Night is dark. Craft a Torch: a stick, a fibre and pitch (resin or animal fat)."
 		},
 		{
 			"id": "fruit_pick",
@@ -204,7 +204,7 @@
 		{
 			"id": "plant_food_pot",
 			"trigger": "has_plant_food_at_fire",
-			"text": "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then hold the hammer, press R, pick Campfire pot and click on the fire (3 sticks, 3 twine, 1 clay pot)."
+			"text": "The campfire cooks only meat. Plants cook in a pot: fire 6 clay into a Clay pot at this campfire, then hold the hammer, press R, pick Campfire pot and click on the fire (3 sticks, 3 twine, 1 clay pot)."
 		},
 		{
 			"id": "pot_first_dish",

@@ -176,6 +176,8 @@ func _init() -> void:
 		if str(items.recipes.recipe(int(k)).get("id", "")) == "clay_pot":
 			pot_recipe = int(k)
 
+	items.recipes.recipe(pot_recipe)["station"] = ""   # the pot is fired at a campfire now (recipe audit 10 Nov 2026); this test is about the craft, not the station
+
 	give(clay, 60)
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 5, Vector3.ZERO)

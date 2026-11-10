@@ -3239,6 +3239,54 @@
    "shape": "leaves",
    "color": "#4f7a34",
    "size": 1.6
+  },
+  "charcoal": {
+   "shape": "chunk",
+   "color": "#2e2b28",
+   "size": 0.9
+  },
+  "wool_cloth": {
+   "shape": "chunk",
+   "color": "#d9cfb8",
+   "size": 1.0
+  },
+  "fur": {
+   "shape": "hide",
+   "color": "#6b5038",
+   "size": 1.0
+  },
+  "fish": {
+   "shape": "fish",
+   "color": "#8a9a7a",
+   "size": 1.0
+  },
+  "mushrooms": {
+   "shape": "cap",
+   "color": "#8a5a34",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "nuts": {
+   "shape": "nut",
+   "color": "#b8864a",
+   "size": 1.0
+  },
+  "berries": {
+   "shape": "round_berries",
+   "color": "#7a2a3a",
+   "size": 1.0
+  },
+  "fuel": {
+   "shape": "chunk",
+   "color": "#2e2b28",
+   "size": 0.9
+  },
+  "pitch": {
+   "shape": "chunk",
+   "color": "#c98a2a",
+   "size": 0.8
   }
 
  }

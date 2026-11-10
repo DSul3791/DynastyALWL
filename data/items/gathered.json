@@ -734,7 +734,7 @@
 				"Hearthwood"
 			],
 			"familiarity": 92,
-			"description": "Well-grown timber chosen for its grain. Makes quality lumber and furniture."
+			"description": "Well-grown timber chosen for its grain. Makes quality planks and furniture."
 		},
 		"fly_agaric_caps": {
 			"number": 1053,
@@ -1057,7 +1057,7 @@
 		},
 		"honeyspindle_nectar": {
 			"number": 1076,
-			"name": "Honeyspindle nectar",
+			"name": "Honey",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
@@ -1066,7 +1066,7 @@
 				"Hawthorn"
 			],
 			"familiarity": 70,
-			"description": "A sweet golden nectar drained from honeyspindle flowers. Sweetens any dish."
+			"description": "Sweet golden honey drained from honeyspindle flowers. Sweetens any dish."
 		},
 		"honeyspindle_pods": {
 			"number": 1077,
@@ -2113,7 +2113,7 @@
 				"Hearthwood"
 			],
 			"familiarity": 80,
-			"description": "Rough cut trunk wood for building. Squared up it becomes lumber."
+			"description": "Rough cut trunk wood for building. Squared up it becomes planks."
 		},
 		"tinder": {
 			"number": 1153,

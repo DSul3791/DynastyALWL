@@ -109,6 +109,8 @@ func _init() -> void:
 		if str(items.recipes.recipe(int(k)).get("id", "")) == "clay_pot":
 			pot_recipe = int(k)
 
+	items.recipes.recipe(pot_recipe)["station"] = ""   # the pot is fired at a campfire now (recipe audit 10 Nov 2026); this test is about the craft, not the station
+
 	check(clay > 0 and pot_recipe > 0, "the clay pot recipe (6 clay) is in the table")
 	reset()
 
