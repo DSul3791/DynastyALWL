@@ -869,6 +869,15 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 		return seat
 
+	# Water pieces (buildables plan section 6): E works a well or pump (E again stops), E at a trough, barrel or cistern drinks, or fills the container in hand.
+	var water: Variant = station_def.get("water", {})
+
+	if typeof(water) == TYPE_DICTIONARY and str(water.get("role", "")) == "source" and (water.has("pump") or bool(water.get("windlass", false))):
+		return {"prompt": "Press E to work the %s, E again to stop (hold E to take it down)" % table.sentence_name(_world[id]["number"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
+	if typeof(water) == TYPE_DICTIONARY and str(water.get("role", "")) == "tank":
+		return {"prompt": "Press E to drink, or to fill what you hold (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
+
 	if str(station_def.get("station", "")) != "":
 		return {"prompt": "Press F to use the %s" % table.sentence_name(_world[id]["number"]), "tap": _open_station, "hold": take_down}
 
