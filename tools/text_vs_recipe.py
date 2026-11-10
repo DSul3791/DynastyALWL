@@ -30,6 +30,15 @@ def strings(o, path=""):
         for i, v in enumerate(o):
             yield from strings(v, path + "/" + str(i))
 
+# Every item name, so "4 Clay mortar" is not read as 4 clay: a count belongs to the longest name that follows it.
+all_names = set(name.values())
+
+
+def longer_name_follows(low, m, form):
+    rest = low[m.end(1):].lstrip()
+    return any(len(o) > len(form) and o.startswith(form + " ") and rest.startswith(o) for o in all_names)
+
+
 def plural_forms(n):
     return {n, n + "s", n + "es", n[:-1] + "ies" if n.endswith("y") else n}
 
@@ -51,7 +60,7 @@ for f in TEXT:
             for ing, ns in ok.items():
                 for form in plural_forms(ing):
                     for m in re.finditer(r"\b(\d+)\s+" + re.escape(form) + r"\b", low):
-                        if int(m.group(1)) not in ns:
+                        if int(m.group(1)) not in ns and not longer_name_follows(low, m, form):
                             bad += 1
                             print("%s %s: '%s' says %s %s but recipe '%s' needs %s" % (f, path, s[:70], m.group(1), ing, rname, sorted(ns)))
 # Hints and goals: no single item to check against, so "<N> <ingredient>" must
@@ -76,7 +85,7 @@ for f in ["hints.json", "starter_goals.json", "camp_goals.json"]:
         for ing, ns in any_need.items():
             for form in plural_forms(ing):
                 for m in re.finditer(r"\b(\d+)\s+" + re.escape(form) + r"\b", low):
-                    if int(m.group(1)) not in ns:
+                    if int(m.group(1)) not in ns and not longer_name_follows(low, m, form):
                         bad += 1
                         print("%s %s: '%s' says %s %s but no recipe needs that (has %s)" % (f, path, s[:70], m.group(1), ing, sorted(ns)))
 print("%d mismatch(es)" % bad)
