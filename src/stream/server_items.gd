@@ -13512,7 +13512,7 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 			return false
 
 	for keep in recipe["keeps"]:
-		if not inv.has(keep[0], keep[1]):
+		if not inv.has_fill(keep[0], keep[1]):
 			return false
 
 	return true
@@ -13682,7 +13682,7 @@ func _craft_tick(spent: float) -> void:
 		var tools_ok: bool = inv != null
 
 		for keep in recipe.get("keeps", []):
-			tools_ok = tools_ok and (free_entry or inv.has(keep[0], keep[1]))
+			tools_ok = tools_ok and (free_entry or inv.has_fill(keep[0], keep[1]))
 
 		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class on the hotbar.
 		var wears_tool: String = str(recipe.get("wears_tool", ""))
