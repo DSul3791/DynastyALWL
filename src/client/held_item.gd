@@ -26,7 +26,7 @@ const BOW_CANT_DEG := 10.0          # the raised bow's top tilts this far to the
 const BOW_IDLE_LEAN_DEG := 30.0     # lowered at the side: the upper limb leans this far forward
 const BOW_DRAW_MAX_M := 0.7         # the nock point comes back at most this far from the braced string (a 28 inch draw)
 const BOW_NOCK_ABOVE_M := 0.03      # the arrow sits on the bow hand, this far above the middle of the grip; the string's nock point is level with it
-const BOW_ARROW_SIDE_M := 0.018     # the shaft passes the stave on its left side, this far from the bow's plane
+const BOW_ARROW_SIDE_M := 0.006     # the shaft lies along the stave's left side, this far from the bow's plane, straight ahead (Dave 10 Nov 2026: the arrow lines up with the crosshair)
 const ARROW_NOCK_M := 0.355         # the arrow mesh's nock end lies this far back from its origin (basic_look.gd "arrow")
 # First-person arms (Art's ragdoll rig, assets/character/README.md): rooted at the chest a little below and behind the camera,
 # pitched forward so a tool in the hand points ahead instead of hanging down. The tool goes to the hand on the viewer's right
@@ -1499,16 +1499,19 @@ func _pose_bow(state: String, draw: float, _delta: float) -> void:
 
 	if up_now:
 		# The string's nock point is in the right hand, pulled straight back toward the archer (never pushed past the brace, at most a full draw). It stays in the
-		# bow's own plane, a little above the grip where the arrow sits (Dave: "the string should always be inline with the bow wooden part").
+		# bow's own plane (Dave: "the string should always be inline with the bow wooden part"), a little above the grip where the arrow sits, and the arrow's width to
+		# the left, where the arrow lies.
 		var hook: Vector3 = _arms.grip_point("r") if _arms.has_method("grip_point") else _arms.hand_mount_r.global_position   # in the hooked fingers
 		var pull: float = (_model.global_transform.affine_inverse() * hook).z
-		nock = Vector3(BOW_NOCK_ABOVE_M, 0.0, clampf(pull, -BOW_DRAW_MAX_M, 0.0))
+		nock = Vector3(BOW_NOCK_ABOVE_M, -BOW_ARROW_SIDE_M, clampf(pull, -BOW_DRAW_MAX_M, 0.0))
 
 	_set_bow_string(_model, nock)
 	_place_nocked_arrow(_model, nock, up_now and (_inv == null or has_arrow()))
 
 
-# The nocked arrow: its nock (the arrow mesh's back end, x = -ARROW_NOCK_M) on the string at `nock`, its shaft over the bow hand on the left side of the bow (mesh -y).
+# The nocked arrow: its nock (the arrow mesh's back end, x = -ARROW_NOCK_M) on the string at `nock`, its shaft straight toward the target (the bow's +z, which is the
+# view's forward) along the left side of the stave over the bow hand. Parallel to the view, the shaft points at the crosshair from below (Dave 10 Nov 2026: "the
+# bow and arrow should be adjusted so the arrow lines up with the crosshairs"); it no longer angles off to the left of it.
 static func _place_nocked_arrow(bow: Node3D, nock: Vector3, shown: bool) -> void:
 	var arrow: MeshInstance3D = bow.get_node_or_null("NockedArrow") as MeshInstance3D
 
@@ -1520,11 +1523,8 @@ static func _place_nocked_arrow(bow: Node3D, nock: Vector3, shown: bool) -> void
 	if not shown:
 		return
 
-	var rest: Vector3 = Vector3(BOW_NOCK_ABOVE_M, -BOW_ARROW_SIDE_M, BasicLook.BOW_BRACE_M)   # where the shaft crosses the grip
-	var along: Vector3 = (rest - nock).normalized()
-	var side: Vector3 = Vector3.RIGHT.cross(along)
-	side = side.normalized() if side.length() > 0.001 else Vector3.UP
-	arrow.transform = Transform3D(Basis(along, side, along.cross(side)), nock + along * ARROW_NOCK_M)
+	var along: Vector3 = Vector3(0.0, 0.0, 1.0)
+	arrow.transform = Transform3D(Basis(along, Vector3.RIGHT.cross(along), along.cross(Vector3.RIGHT.cross(along))), nock + along * ARROW_NOCK_M)
 
 
 func _bow_posing() -> bool:
