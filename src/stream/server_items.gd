@@ -10,6 +10,7 @@ extends RefCounted
 
 const FlameRules := preload("res://src/shared/flame_rules.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
+const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
@@ -657,6 +658,7 @@ func peer_left(peer: int) -> void:
 	_last_drink.erase(peer)
 	_exertion.erase(peer)
 	_motion.erase(peer)
+	_snow_memo.erase(peer)
 	_work_until.erase(peer)
 	_vitals_sent.erase(peer)
 	_strain.erase(peer)
@@ -2138,21 +2140,23 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-	if str(entry.get("weapon_class", "")) != "bow" or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if not BowAim.shoots(entry) or _is_broken(inv.numbers[slot], inv.wear[slot]):
 		return
 
 	if _bow == null:
 		_bow = BowScript.new()
+
+	var bow_id: String = table.id_of(inv.numbers[slot])
 
 	var now: int = Time.get_ticks_msec()
 
 	if now - int(_last_shot.get(peer, -100000)) < int(_bow.cfg.get("pace_ms", 700)):
 		return
 
-	var ammo: int = _bow.ammo_slot(inv, table, loaded)
+	var ammo: int = _bow.ammo_slot(inv, table, loaded, bow_id)
 
 	if ammo < 0:
-		_say(peer, str(_bow.cfg.get("say_no_ammo", "")))
+		_say(peer, BowAim.say(_bow.cfg, bow_id, "say_no_ammo"))
 		return
 
 	_last_shot[peer] = now
@@ -2167,8 +2171,8 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	_wear_slot(peer, inv, slot, "strike")
 	var level: float = working_level(peer, "hunting")
 	var aim: Vector3 = BowAim.spread(direction, BowAim.spread_deg(_bow.cfg, level), LuckScript.low(_aim_rng.randf(), luck_of(peer), _luck_strength()), _aim_rng.randf())   # luck-exempt: the draws that luck nudges (how far out) and which way
-	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": _bow.damage(float(arrow.get("damage", 5.0)), power, level),
-		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power), "flown": 0.0, "age": 0.0})
+	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id),
+		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id)})
 
 	if animal_alarm.is_valid():
 		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)))
@@ -2207,17 +2211,23 @@ func _arrow_fly(delta: float) -> void:
 					practice(int(ar["peer"]), "bow")
 					hit_number(int(ar["peer"]), at, float(ar["damage"]))
 
-			if not landed and trunks_near.is_valid():   # a tree trunk on the way: the arrow sticks in it (Dave 10 Nov 2026)
+			var at_foot: bool = false
+
+			if not landed and trunks_near.is_valid():   # a tree trunk on the way: the arrow sticks in it (Dave 10 Nov 2026); a sling stone drops at its foot
 				var into: float = _arrow_trunk(from, to)
 
 				if into >= 0.0:
 					landed = true
-					stuck = true
+					stuck = bool(ar.get("sticks", true))
+					at_foot = not stuck
 					at = from.lerp(to, into)
 
 			var ground: float = float(ground_height.call(to.x, to.z)) if ground_height.is_valid() else -1000000.0
 
-			if not landed and ((not is_nan(ground) and to.y <= ground) or float(ar["flown"]) >= float(_bow.cfg.get("range_m", 80.0)) or float(ar["age"]) >= THROW_MAX_S * 2.0):
+			if at_foot and not is_nan(ground):
+				at.y = float(ground_height.call(at.x, at.z))
+
+			if not landed and ((not is_nan(ground) and to.y <= ground) or float(ar["flown"]) >= float(ar.get("range", _bow.range_m())) or float(ar["age"]) >= THROW_MAX_S * 2.0):
 				landed = true
 				at = Vector3(to.x, ground if not is_nan(ground) else to.y, to.z)
 
@@ -3286,6 +3296,11 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "You cannot build in water.")
 		return
 
+	if water_depth_at.is_valid() and PlacementRules.water_short(_structures_cfg, kit_id, spot, func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
+		var trap_def: Dictionary = _structure_of_kit(kit_id)
+		_say(peer, "A %s needs water at least %s m deep." % [table.name_of(table.number_of(str(trap_def.get("item", kit_id)))).to_lower(), str(float(trap_def["min_water_m"]))])
+		return
+
 	if not on_base and ground_height.is_valid() and PlacementRules.steep(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(ground_height.call(x, z))) == "steep":
 		_say(peer, "The ground is too steep there.")
 		return
@@ -4334,12 +4349,12 @@ func _load_world_items() -> void:
 	var had_kits: bool = not bool(parsed.get("no_kits", false))   # a world saved before kits were dropped (Dave 4 Nov 2026) loses its kit items and every placed building once
 
 	for row in parsed["items"]:
-		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
+		var entry: Dictionary = {"number": table.current_number(int(row[0])), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
 
 		if is_dead_kit(int(row[0])):
 			continue
 
-		if had_kits and row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING and str(row[9]) != "remains" and (_traps == null or str(row[9]) != str(_traps.cfg.get("kind", "snare_trap"))):
+		if had_kits and row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING and str(row[9]) != "remains" and (_traps == null or not _traps.is_kind(str(row[9]))):
 			continue
 
 		if row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING:
@@ -4373,7 +4388,7 @@ func _load_world_items() -> void:
 				if typeof(saved_site) == TYPE_DICTIONARY:
 					entry["struct"]["site"] = {"bp": int((saved_site as Dictionary).get("bp", 0)), "have": (saved_site as Dictionary).get("have", {})}
 
-			if row.size() > 12 and _traps != null and str(row[9]) == str(_traps.cfg.get("kind", "snare_trap")):
+			if row.size() > 12 and _traps != null and _traps.is_kind(str(row[9])):
 				entry["struct"]["owner"] = str(row[11])
 				entry["struct"]["seq"] = float(row[12])
 				_next_uid = maxi(_next_uid, int(row[12]) + 1)
@@ -7210,7 +7225,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 				_say(peer, "The fire is too big for a pot. Let the logs burn down first.")
 				return
 
-	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot):
+	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot, str(def["kind"])):
 		return
 
 	var here_chunk: Vector2i = _chunk_of(spot)
@@ -9552,6 +9567,24 @@ func _effort_at_speed(speed: float) -> float:
 	return float(anchors[anchors.size() - 1][1])
 
 
+var _snow_memo: Dictionary = {}     # peer -> [the metre cell last asked about, whether its surface is snow]
+
+
+# Is the ground under `position` snow or glacial ice (snow_walk.json soils)? Asked once per metre cell the player enters.
+func _on_snow(peer: int, position: Vector3) -> bool:
+	if not ground_material.is_valid():
+		return false
+
+	var cell: Vector2i = Vector2i(floori(position.x), floori(position.z))
+	var memo: Array = _snow_memo.get(peer, [])
+
+	if memo.is_empty() or memo[0] != cell:
+		memo = [cell, SnowWalk.name_is_snow(str(ground_material.call(position.x, position.z)))]
+		_snow_memo[peer] = memo
+
+	return bool(memo[1])
+
+
 func _note_motion(peer: int, position: Vector3) -> void:
 	var now: int = Time.get_ticks_msec()
 	var last: Array = _motion.get(peer, [])
@@ -9564,6 +9597,8 @@ func _note_motion(peer: int, position: Vector3) -> void:
 
 		if _on_path(peer, position):
 			target *= float(_path_cfg.get("exertion_factor", 1.0))   # a trodden path eases the going (data/path_speed.json)
+
+		target *= SnowWalk.effort_mult(_on_snow(peer, position), SnowWalk.shod(worn_of(peer), table))   # snow is heavy going, snowshoes ease it (Part C plan 7)
 
 		if bool(_swimming.get(peer, false)):
 			target = SwimRules.effort(speed)                              # strokes and treading water are work
@@ -9814,7 +9849,7 @@ func _clean_worn(raw: Variant) -> Array:
 	var slots: Array = _clothing_slots()
 
 	for i in slots.size():
-		var number: int = int(raw[i]) if typeof(raw) == TYPE_ARRAY and i < raw.size() else 0
+		var number: int = table.current_number(int(raw[i])) if typeof(raw) == TYPE_ARRAY and i < raw.size() else 0   # worn Hide leggings come back as Hide trousers
 		out.append(number if number > 0 and table.id_of(number) != "" and str(table.entry(table.id_of(number)).get("slot", "")) == str(slots[i]) else 0)
 
 	return out
@@ -10979,8 +11014,8 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-	if str(entry.get("weapon_class", "")) == "spear":
-		_spear_fish(peer, inv, slot, at, cfg)
+	if str(entry.get("weapon_class", "")) in ["spear", "fish_spear"]:
+		_spear_fish(peer, inv, slot, at, cfg, str(entry["weapon_class"]) == "fish_spear")
 		return
 
 	if str(entry.get("tool_class", "")) != "rod":
@@ -11140,9 +11175,14 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 	_say(peer, line)
 
 
-# A spear jab at water (the client sends ACT_FISH with the spear in hand and the point it stabs at): see fishing.json "spear".
-func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) -> void:
-	var cfg: Dictionary = fishing.get("spear", {})
+# A spear jab at water (the client sends ACT_FISH with the spear in hand and the point it stabs at): see fishing.json "spear". The Fishing
+# spear (weapon_class "fish_spear", Part C) jabs the same way with fishing.json "fish_spear" laid over those numbers.
+func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fish_spear: bool = false) -> void:
+	var cfg: Dictionary = (fishing.get("spear", {}) as Dictionary).duplicate()
+
+	if fish_spear:
+		cfg.merge(fishing.get("fish_spear", {}), true)
+
 	var pos: Vector3 = _peer_pos[peer]
 
 	if cfg.is_empty() or not water_near.is_valid() or Vector2(at.x - pos.x, at.z - pos.z).length() > float(cfg.get("reach_m", 3.0)) or not bool(water_near.call(at, 0.0)) or bool(_swimming.get(peer, false)):
@@ -11162,7 +11202,10 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) ->
 	if water_depth_at.is_valid():
 		var depth: float = float(water_depth_at.call(at))
 
-		if depth < 0.05 or depth > float(cfg.get("max_depth_m", 1.5)):
+		if depth < float(cfg.get("min_depth_m", 0.05)) or depth > float(cfg.get("max_depth_m", 1.5)):
+			if cfg.has("say_depth"):
+				_say(peer, str(cfg["say_depth"]))
+
 			return
 
 	if float(_moving.get(peer, 0.0)) > float(cfg.get("still_below", 0.25)):
@@ -11293,6 +11336,92 @@ func _fish_bait_slot(inv, cfg: Dictionary) -> int:
 				return slot
 
 	return -1
+
+
+var _trap_rolled: Dictionary = {}   # fish trap uid -> game second up to which its hours are rolled (not saved: after a restart its hour starts again)
+var _traps_at_s: float = -1.0e18    # game second of the last _fish_traps_tick pass
+const FISH_TRAP_LOOK_S := 600.0     # the traps are looked over every ten game minutes; each rolls once per whole game hour it has stood
+
+
+# Fish traps (structures.json "fish_trap": true, fishing.json "trap"; Part C plan 2): each game hour a trap rolls the fishing cell's stock at
+# hour_chance, or bait_chance with a bait from trap.bait in its slots, which a catch uses up. The fish goes into its slots, so E takes it out
+# like a chest; a full trap or a frozen one catches nothing. Every fish counts against the cell's stock, so traps cannot empty a pond faster
+# than it refills. Hours missed while the clock jumped (sleep) are rolled, at most catch_up_h of them.
+func _fish_traps_tick() -> void:
+	var cfg: Dictionary = _fishing_data().get("trap", {})
+	var now_s: float = _now_game_s()
+
+	if cfg.is_empty() or now_s - _traps_at_s < FISH_TRAP_LOOK_S:
+		return
+
+	_traps_at_s = now_s
+	var seen: Dictionary = {}
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or not it["struct"].has("uid") or not bool(_structures.get(str(it["struct"]["kind"]), {}).get("fish_trap", false)):
+			continue
+
+		var uid: int = int(it["struct"]["uid"])
+		var box = _chests.get(uid)
+
+		if box == null:
+			continue
+
+		seen[uid] = true
+		var since: float = float(_trap_rolled.get(uid, now_s))
+		var whole_h: int = floori((now_s - since) / 3600.0)
+		_trap_rolled[uid] = since + float(maxi(whole_h, 0)) * 3600.0
+
+		if whole_h <= 0 or _on_ice(it["pos"]):
+			continue
+
+		box.usable = clampi(int(_structures[str(it["struct"]["kind"])].get("slots", box.SLOTS)), 1, box.SLOTS)
+		var caught: int = 0
+
+		for h in mini(whole_h, int(cfg.get("catch_up_h", 24))):
+			if _fish_trap_roll(it["pos"], box, cfg):
+				caught += 1
+
+		if caught > 0:
+			_dirty = true
+			_push_box(id, box)
+
+	for uid in _trap_rolled.keys():
+		if not seen.has(uid):
+			_trap_rolled.erase(uid)
+
+
+# One game hour of one trap: true when a fish went into it.
+func _fish_trap_roll(pos: Vector3, box, cfg: Dictionary) -> bool:
+	var cell: Vector2i = _fish_cell(pos)
+
+	if fish_stock(cell) <= 0:
+		return false
+
+	var bait_slot: int = _fish_bait_slot(box, cfg)
+	var chance: float = float(cfg.get("bait_chance", 0.2)) if bait_slot >= 0 else float(cfg.get("hour_chance", 0.12))
+
+	if _fate_rng.randf() >= chance:   # luck-exempt: nobody stands at a trap while it fishes
+		return false
+
+	var number: int = table.number_of(_fish_species(cell))
+
+	if number == 0:
+		return false
+
+	var eaten: Dictionary = box.take_from_slot(bait_slot, 1) if bait_slot >= 0 else {}   # the bait is eaten; its slot may be where the fish goes
+
+	if box.add(number, 1) > 0:
+		if int(eaten.get("number", 0)) != 0:
+			box.add(int(eaten["number"]), 1, int(eaten.get("wear", 0)))   # full: nothing caught, the bait stays
+
+		return false
+
+	var key: String = "%d,%d" % [cell.x, cell.y]
+	_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
+	return true
 
 
 func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
@@ -11738,11 +11867,12 @@ func water_bed(peer: int, inv, bed_id: int) -> bool:
 	return true
 
 
-# Compost on the bed: +20 percent growth for this crop.
+# Compost on the bed: +20 percent growth for this crop. When the "fertiliser" ingredient group exists (Jamie, Part C: compost or bonemeal),
+# any of its members does; the pack's has/remove follow the group.
 func compost_bed(peer: int, inv, bed_id: int) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 	var crop: Dictionary = _crops.get(_bed_key(bed["pos"]), {}) if not bed.is_empty() else {}
-	var compost: int = table.number_of("compost")
+	var compost: int = table.number_of("fertiliser") if table.number_of("fertiliser") > 0 else table.number_of("compost")
 
 	if crop.is_empty() or bool(crop["compost"]) or compost <= 0 or not inv.has(compost, 1):
 		return false
@@ -11769,6 +11899,7 @@ func crop_stage(crop: Dictionary) -> int:
 # makes it a wet day; winter pauses growth (turnip excepted) and kills a seedling.
 func _crops_tick() -> void:
 	_plots_tick()
+	_fish_traps_tick()
 
 	if _crops.is_empty():
 		return
@@ -12305,7 +12436,7 @@ func _dev_pending_tick(spent: float) -> void:
 # --- Testing only: place structures without a kit (for screenshots and rigs) -------------------------------------------------------------------------------------------
 # The server scene calls this for each `--dev-place=name@x,z,yaw[,lit]` argument (repeatable); nothing else calls it, so normal play never runs it. `name` is a structure
 # kind of structures.json (lean_to, rough_bed, fireplace, wall_torch, chandelier, chest, workbench ...), x and z world metres (the ground height is taken from the ground),
-# yaw degrees; the word `lit` lights a light or a fire. A fire name (`campfire`) lays a lit campfire. Returns the world id, 0 when the name or the ground is unknown.
+# yaw degrees; the word `lit` lights a light or a fire, and `coals` or `ash` lays a campfire burnt down to glowing coals or warm ash. A fire name (`campfire`) lays a campfire. Returns the world id, 0 when the name or the ground is unknown.
 func dev_place(spec: String) -> int:
 	var parts: PackedStringArray = spec.split("@")
 
@@ -12328,6 +12459,15 @@ func dev_place(spec: String) -> int:
 		return 0
 
 	var at: Vector3 = Vector3(x, y, z)
+
+	if name == "campfire" and (nums.has("coals") or nums.has("ash")):   # a burnt-out bed: glowing coals (76) or warm ash (77), at the start of its time
+		var coals: bool = nums.has("coals")
+		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": float(_coals_cfg().get("coals_s" if coals else "ash_s", 7200.0 if coals else 43200.0)),
+			"fire": {"state": FIRE_STATE_COALS if coals else FIRE_STATE_ASH, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": false, "recheck": COVER_RECHECK_S}}
+		_lit_valid = false
+		_next_id += 1
+		_dirty = true
+		return _next_id - 1
 
 	if name == "campfire":
 		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": 1.0e9, "fire": {"state": 1 if lit else 9, "burn_left": 36000.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 36000.0}, "covered": false, "recheck": COVER_RECHECK_S}}
@@ -13223,7 +13363,7 @@ func _join_hotbar(peer: int, key: String) -> void:
 
 	if saved is Array:
 		for k in mini((saved as Array).size(), inv.HOTBAR_KEYS):
-			var number: int = int(saved[k])
+			var number: int = table.current_number(int(saved[k]))
 			inv.hotbar[k] = number if number > 0 and table.id_of(number) != "" and not inv.hotbar.has(number) else 0
 	else:
 		for k in inv.HOTBAR_KEYS:

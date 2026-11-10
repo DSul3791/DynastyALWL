@@ -1,0 +1,9 @@
+{
+	"note": "Walking on snow (Part C plan 7, coordinator's yes 10 Nov 2026; src/shared/snow_walk.gd). On ground whose surface material is one of soils, the walk is pace_mult as fast and exertion effort_mult as hard. Worn Snowshoes (an items.json row with snow_walk: true, feet slot) bring that to shod_pace_mult and shod_effort_mult. The client applies the pace (it moves the body), the server the exertion. No snow depth exists yet: the lying weather snow is a 0..1 look (weather_sounds ground_snow), not metres, so it does not slow anyone. If a depth comes, the coordinator's rule is: full multipliers at full_depth_m or deeper, scaling up from none below that.",
+	"soils": ["snow", "glacial_ice"],
+	"pace_mult": 0.6,
+	"effort_mult": 1.4,
+	"shod_pace_mult": 0.9,
+	"shod_effort_mult": 1.1,
+	"full_depth_m": 0.2
+}
