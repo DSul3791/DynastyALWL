@@ -6,16 +6,20 @@
 		0.53
 	],
 	"amount": [
-		120,
+		90,
 		150,
 		200
 	],
 	"puff_m": [
-		0.6,
+		0.3,
 		0.7,
 		0.8
 	],
-	"grow_to": 8.0,
+	"grow_to": [
+		4.0,
+		8.0,
+		8.0
+	],
 	"life_s": 20.0,
 	"rise_end_share": 0.4,
 	"calm_rise_m_s": 0.8,
@@ -84,5 +88,16 @@
 	],
 	"light_grey": 0.7,
 	"fire_light": 0.45,
-	"_note_column": "Steve 10 Nov 2026, after Dino's reshoot on 261a75eb (night: a column of separate round orange puffs; small fire by day: a haze drifting over the trees, faint at the fire). The puffs scattered apart (spread_deg 8 to 14 degrees) faster than they grew (the old size curve was flat at the start), so they never joined. Now: spread_deg 3 to 6; grow_shape puts 55% of a puff's growth in its first fifth of life (straight lines, [life share, growth share]); puff_m 0.6/0.7/0.8; each puff soft to its rim (shader); full density by 0.4 s (fade); far_grey 0.62 and an earlier fade-out, so the thin end is less of a pale mist and the plume reads from the fire up. Light: the sun and moon light the smoke fully; a fire's or lamp's light is greyed by light_grey and cut to fire_light, so the column is grey lit from below, not orange. alpha stays 0.35: it does reach the material; the 0.2 Dino measured was the old squared puff edge times fade 0.65 at a third of the life."
+	"_note_column": "Steve 10 Nov 2026, after Dino's reshoot on 261a75eb (night: a column of separate round orange puffs; small fire by day: a haze drifting over the trees, faint at the fire). The puffs scattered apart (spread_deg 8 to 14 degrees) faster than they grew (the old size curve was flat at the start), so they never joined. Now: spread_deg 3 to 6; grow_shape puts 55% of a puff's growth in its first fifth of life (straight lines, [life share, growth share]); puff_m 0.6/0.7/0.8; each puff soft to its rim (shader); full density by 0.4 s (fade); far_grey 0.62 and an earlier fade-out, so the thin end is less of a pale mist and the plume reads from the fire up. Light: the sun and moon light the smoke fully; a fire's or lamp's light is greyed by light_grey and cut to fire_light, so the column is grey lit from below, not orange. alpha stays 0.35: it does reach the material; the 0.2 Dino measured was the old squared puff edge times fade 0.65 at a third of the life.",
+	"density": [
+		0.5,
+		1.0,
+		1.0
+	],
+	"life_share": [
+		0.6,
+		1.0,
+		1.0
+	],
+	"_note_small": "Steve 10 Nov 2026, after Dino's reshoot on 9f728854 (plume_small_day: the one-rock-ring fire laid a haze as wide as the lake). The small tier only, by its own row in each per-tier list: puffs 0.3 m (a hand or two wide at the flame, 0.15 m at the start), growing 4 times not 8, half the density, living 0.6 of life_s (12 s), and 90 puffs: a thin wisp that climbs two or three metres before it thins out (0.4 and 60 were near-invisible by day on 75f0e27e). density and life_share are per tier (1, 1 for medium and large; the coals keep their own density and a full life). Rise and wind are unchanged (Jamie's Briggs heights); medium and large are as #958."
 }
