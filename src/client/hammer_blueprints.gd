@@ -10,6 +10,11 @@ const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
 const STRUCTURES_PATH := "res://data/items/structures.json"
 const BuildingPlans := preload("res://src/client/building_plans.gd")
 
+# The building tiers in the order the list shows them (Dave 10 Nov 2026: Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified; metal
+# pieces keep Iron and Steel). The old tier words sit beside the new ones (Thatch by Crude, Log by Rustic, Wooden by Refined, Stone by Sturdy, Brick by
+# Superior), so furniture that keeps its material word lists with its tier. blueprints.json "tier_order" replaces this list when it has one.
+const TIER_ORDER := ["Crude", "Thatch", "Rustic", "Log", "Refined", "Wooden", "Sturdy", "Stone", "Superior", "Brick", "Engineered", "Fortified", "Bronze", "Iron", "Steel"]
+
 const DEFAULT_MODE := "repair"           # Dave 10 Nov 2026: a hammer first taken in hand (and after a game start) is on Repair, the first line of its list
 var mode: String = DEFAULT_MODE          # "place" (blueprints and saved plans), "save" (left click saves the building you aim at) or "repair" (left click repairs the piece you aim at)
 var plan_picked: int = -1                # index of the saved plan chosen, -1 for none (picked then holds the plan's anchor blueprint)
@@ -56,7 +61,8 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String =
 			row["state"] = int(kinds[str(row["structure"])].get("state", 0))
 			_book.append(row)
 
-	_book.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["name"]) < str(b["name"]))
+	var order: Array = parsed.get("tier_order", TIER_ORDER) if typeof(parsed) == TYPE_DICTIONARY else TIER_ORDER
+	_book.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return book_before(str(a["name"]), str(b["name"]), order))
 
 	if hud_layer != null:
 		_hud = hud_layer
@@ -86,6 +92,22 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String =
 		column.add_child(_detail)
 		_panel.add_child(column)
 		hud_layer.add_child(_panel)
+
+
+# Where a blueprint's name puts it in the list: its tier word's place in `order` ("Sturdy - Wall" -> Sturdy's), after every tier for a name with
+# no tier word or one not in the list (Kiln, Chest).
+static func tier_rank(name: String, order: Array) -> int:
+	var cut: int = name.find(" - ")
+	var at: int = order.find(name.substr(0, cut)) if cut > 0 else -1
+	return at if at >= 0 else order.size()
+
+
+# The list's order: tier by tier up the ladder, each tier's pieces by name, then the blueprints with no tier word by name (was by name only, so
+# Engineered came between Crude and Fortified, and Sturdy after Rustic).
+static func book_before(a: String, b: String, order: Array) -> bool:
+	var rank_a: int = tier_rank(a, order)
+	var rank_b: int = tier_rank(b, order)
+	return rank_a < rank_b or (rank_a == rank_b and a < b)
 
 
 # One row per blueprint this hammer tier can place: its name, the materials as "have/need", and whether the pack covers them all.

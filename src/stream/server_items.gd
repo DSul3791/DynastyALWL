@@ -175,6 +175,7 @@ var ice_moat_at: Callable        # (position) -> true in a thaw's shore moat (Ka
 var spring_ice_x: Callable       # (position) -> the ice's share by springs (Jamie #739): 0 on the open brook below a spring, 0.5 near a spring mouth or inflow, else 1; unset: 1
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
+var rock_near: Callable          # (position) -> the rocks.json name of the bedrock under a boulder there (TileTerrainData.bedrock_name_at), "" when unknown; set by the server scene (unset: no rock pieces)
 var ore_near: Callable           # (position, reach in metres, ore names wanted, layer depth in metres) -> the ore (data/tables/resources.json) a boulder there is an outcrop of, "" when none; set by the server scene (unset: no ore)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
@@ -3359,7 +3360,9 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "The ground is too wet here.")
 		return
 
-	if absf(ground - at.y) > (1.0 if not on_base else 1.5 + (PlacementRules.stack_rise(_structures_cfg, kit_id) * float(PlacementRules.STACK_MAX_LAYERS) if on_grid.size() > 3 else 0.0)):
+	var on_wall: bool = on_base and str(_structure_of_kit(kit_id).get("piece_kind", "")) == PlacementRules.WALL_TOP_KIND   # a wall top sits on a standing wall's top, however high that wall is
+
+	if not on_wall and absf(ground - at.y) > (1.0 if not on_base else 1.5 + (PlacementRules.stack_rise(_structures_cfg, kit_id) * float(PlacementRules.STACK_MAX_LAYERS) if on_grid.size() > 3 else 0.0)):
 		_say(peer, "You cannot place that there.")
 		return
 
@@ -4878,14 +4881,24 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float, rng: RandomNumberGenerator
 func _boulder_ore(spot: Vector3, key: int) -> String:
 	var cfg: Dictionary = _boulder_cfg.get("ore", {})
 
-	if cfg.is_empty() or not ore_near.is_valid():
+	if cfg.is_empty():
 		return ""
 
-	if float(hash(key) % 1000) >= 1000.0 * float(cfg.get("boulder_share", 0.0)):
+	if ore_near.is_valid() and float(hash(key) % 1000) < 1000.0 * float(cfg.get("boulder_share", 0.0)):
+		var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0)), cfg.get("items", {}), float(cfg.get("layer_depth_m", 10.0))))
+
+		if (cfg.get("items", {}) as Dictionary).has(name):
+			return name
+
+	# Else the boulder's own rock (Dave 10 Nov 2026, Concrete = Lime powder + Sand + Stone): over limestone, chalk or marble bedrock a share of the
+	# boulders give limestone pieces (boulders.json ore "rocks": rock name -> item, rock_boulder_share, rock_piece_share).
+	var rocks: Dictionary = cfg.get("rocks", {})
+
+	if rocks.is_empty() or not rock_near.is_valid() or float(hash([key, "rock"]) % 1000) >= 1000.0 * float(cfg.get("rock_boulder_share", 0.0)):
 		return ""
 
-	var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0)), cfg.get("items", {}), float(cfg.get("layer_depth_m", 10.0))))
-	return name if (cfg.get("items", {}) as Dictionary).has(name) else ""
+	var rock: String = str(rock_near.call(spot))
+	return rock if rocks.has(rock) else ""
 
 
 # The blows a stone takes from the best tool a hotbar key points at (items.json material, boulders.json tools), as [slot, blows], or [].
@@ -4969,8 +4982,12 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 		if not material_ok and str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and int(info.get("blows", 0)) == 0:
 			_say(peer, "This pick is too soft for that ore.")   # said once per stone, when the stone comes away
 
-		if material_ok and str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and fate(peer, "boulder_ore", float(ore_cfg.get("piece_share", 0.5))):
-			ore_item = table.number_of(str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), "")))
+		var rock_piece: bool = (ore_cfg.get("rocks", {}) as Dictionary).has(str(info["ore"])) and not (ore_cfg.get("items", {}) as Dictionary).has(str(info["ore"]))
+		var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(ore_cfg.get("piece_share", 0.5))
+
+		if material_ok and str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and fate(peer, "boulder_ore", share):
+			var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
+			ore_item = table.number_of(piece_id)
 
 	if ore_item > 0:
 		inv.add(ore_item, 1)
@@ -7319,8 +7336,8 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		if bed_in_shelter:
 			yaw_deg = int(round(float(other["struct"].get("yaw", 0.0))))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
 
-		if str(def.get("piece_kind", "")) == PlacementRules.PILLAR_KIND and other.has("struct") and str(_structures.get(str(other["struct"]["kind"]), {}).get("piece_kind", "")) == PlacementRules.PILLAR_KIND and other["pos"].distance_to(spot) < PlacementRules.ANCHOR_TAKEN_M:
-			_say(peer, "Something is in the way.")   # one pillar to a point (PlacementRules.blocked)
+		if PlacementRules.one_to_a_point(str(def.get("piece_kind", ""))) and other.has("struct") and str(_structures.get(str(other["struct"]["kind"]), {}).get("piece_kind", "")) == str(def.get("piece_kind", "")) and other["pos"].distance_to(spot) < PlacementRules.ANCHOR_TAKEN_M:
+			_say(peer, "Something is in the way.")   # one pillar to a point, one wall top to a wall (PlacementRules.blocked)
 			return
 
 		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")) and not bed_in_shelter and not bool(def.get("gap_exempt", false)) and not (other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("gap_exempt", false))):   # furniture (gap_exempt) stands beside fires, shelters and each other

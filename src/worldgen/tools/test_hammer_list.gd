@@ -23,7 +23,14 @@ func _init() -> void:
 	list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var rows: Array = list.rows(1)
 	check(rows.size() == 127, "a wooden hammer lists every known blueprint (the Log - Shelf and Wooden - Crate make 127; the Iron - Chest needs an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces are locked (%d)" % rows.size())
-	check(str(rows[0]["name"]) <= str(rows[1]["name"]), "the list is alphabetical")
+	var ordered: bool = true
+
+	for k in range(rows.size() - 1):
+		ordered = ordered and not ListScript.book_before(str(rows[k + 1]["name"]), str(rows[k]["name"]), ListScript.TIER_ORDER)
+
+	check(ordered, "the list goes up the tier ladder, each tier's pieces by name, then the rest by name")
+	check(ListScript.book_before("Crude - Wall", "Rustic - Doorway", ListScript.TIER_ORDER) and ListScript.book_before("Superior - Wall", "Engineered - Doorway", ListScript.TIER_ORDER) and ListScript.book_before("Engineered - Wall", "Fortified - Doorway", ListScript.TIER_ORDER), "Crude, Rustic, ... Superior, Engineered, Fortified (Dave 10 Nov 2026), not alphabetical")
+	check(ListScript.book_before("Fortified - Wall top", "Kiln", ListScript.TIER_ORDER) and ListScript.book_before("Kiln", "Mixer", ListScript.TIER_ORDER), "names with no tier word come after the tiers, by name")
 	check(not bool(rows[0]["can"]), "an empty pack covers nothing")
 
 	var wall: Dictionary = {}
