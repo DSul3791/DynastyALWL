@@ -184,6 +184,8 @@ const LOOKS := {
 	"fish_trap_set": {"builder": "fish_trap", "args": []},
 	"bird_trap_set": {"builder": "bird_trap", "args": []},
 	"iron_anvil": {"builder": "iron_anvil", "args": []},
+	"preserving_jar": {"builder": "preserving_jar", "args": []},
+	"root_cellar": {"builder": "root_cellar", "args": []},
 	"wooden_channel": {"builder": "conduit", "args": ["wood", "straight"]},
 	"wooden_channel_corner": {"builder": "conduit", "args": ["wood", "corner"]},
 	"wooden_channel_tee": {"builder": "conduit", "args": ["wood", "tee"]},

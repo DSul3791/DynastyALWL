@@ -3555,3 +3555,40 @@ static func iron_anvil() -> Node3D:
 	_box_rot(root, Vector3(0.05, 0.05, 0.11), Vector3(0.02, 0.78, -0.03), Vector3(0.0, 0.5, 0.0), _iron_mat())   # and its head
 	_solid(root, Vector3(0.6, 0.76, 0.4), Vector3(0.0, 0.38, 0.0))
 	return root
+
+
+# The Preserving jar (#955), 0.5 x 0.5: a squat wide-mouthed crock, not the tall narrow Storage jar: a broad belly, a thick rim with a dark
+# water-seal groove, a wooden lid on it with a knob, and two lug handles.
+static func preserving_jar() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.16, 0.22, Vector3(0.0, 0.11, 0.0), _clay, 10, 0.22)                    # the belly
+	_cyl(root, 0.22, 0.14, Vector3(0.0, 0.29, 0.0), _clay, 10, 0.19)                    # the shoulder, barely narrowing to the wide mouth
+	_cyl(root, 0.205, 0.05, Vector3(0.0, 0.385, 0.0), _pot, 10)                         # the rim and its water-seal groove
+	_dome(root, 0.17, Vector3(0.0, 0.41, 0.0), Vector3(1.0, 0.35, 1.0), _planks, 10, 2)   # the wooden lid
+	_box(root, Vector3(0.06, 0.05, 0.06), Vector3(0.0, 0.48, 0.0), _frame)               # its knob
+	_box(root, Vector3(0.05, 0.05, 0.08), Vector3(-0.215, 0.3, 0.0), _clay)             # the lug handles
+	_box(root, Vector3(0.05, 0.05, 0.08), Vector3(0.215, 0.3, 0.0), _clay)
+	_solid(root, Vector3(0.44, 0.48, 0.44), Vector3(0.0, 0.24, 0.0))
+	return root
+
+
+# The Root cellar (#955), 2.0 x 2.0: a low turfed mound with a ring of kerb stones round its foot, and on its front slope a stone-lined
+# opening under a plank hatch, two battens and an iron pull across it.
+static func root_cellar() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var tilt: Vector3 = Vector3(0.35, 0.0, 0.0)                                         # the front slope of the mound
+	_dome(root, 0.95, Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.5, 1.0), _tone_mat(Color(0.4, 0.44, 0.26)), 12, 4)   # the turfed mound
+
+	for i in 6:
+		var a: float = TAU * (float(i) + 0.5) / 6.0
+		_box_rot(root, Vector3(0.34, 0.2, 0.22), Vector3(cos(a) * 0.84, 0.1, sin(a) * 0.84), Vector3(0.0, -a + PI * 0.5, 0.0), _stone)   # a kerb stone
+
+	_box_rot(root, Vector3(0.76, 0.08, 0.7), Vector3(0.0, 0.38, 0.52), tilt, _stone)         # the stone lining round the opening
+	_box_rot(root, Vector3(0.6, 0.05, 0.55), Vector3(0.0, 0.441, 0.542), tilt, _planks)     # the plank hatch
+	_box_rot(root, Vector3(0.07, 0.03, 0.5), Vector3(-0.18, 0.479, 0.556), tilt, _frame)    # its battens
+	_box_rot(root, Vector3(0.07, 0.03, 0.5), Vector3(0.18, 0.479, 0.556), tilt, _frame)
+	_box_rot(root, Vector3(0.14, 0.04, 0.04), Vector3(0.0, 0.47, 0.72), tilt, _iron_mat())  # the iron pull
+	_solid(root, Vector3(1.8, 0.46, 1.8), Vector3(0.0, 0.23, 0.0))
+	return root
