@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 392,
+	"next_number": 399,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -2403,7 +2403,7 @@
 				2
 			],
 			"craft_s": 6.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_nut_paste": {
@@ -6004,7 +6004,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_hazelnut_butter": {
@@ -6230,7 +6230,7 @@
 				2
 			],
 			"craft_s": 10.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_apple_pie": {
@@ -6278,7 +6278,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_stewed_pears": {
@@ -6322,7 +6322,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire_pot",
+			"station": "preserving_jar",
 			"known": true
 		},
 		"cook_dried_figs": {
@@ -8549,6 +8549,167 @@
 				1
 			],
 			"craft_s": 10.0,
+			"known": false,
+			"locked": true
+		},
+		"pickled_vegetables": {
+			"number": 393,
+			"name": "Pickled vegetables",
+			"category": "Food and drink",
+			"needs": [
+				[
+					"vegetable",
+					3
+				],
+				[
+					"sea_salt",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"pickled_vegetables",
+				2
+			],
+			"craft_s": 12.0,
+			"known": false,
+			"station": "preserving_jar",
+			"locked": true
+		},
+		"copper_pot": {
+			"number": 394,
+			"name": "Copper - Pot",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"copper_ingot",
+					3
+				]
+			],
+			"gives": [
+				"copper_pot",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"station": "forge",
+			"locked": true
+		},
+		"fish_soup": {
+			"number": 395,
+			"name": "Fish soup",
+			"category": "Food and drink",
+			"needs": [
+				[
+					"fish",
+					2
+				],
+				[
+					"wild_garlic_leaves",
+					1
+				],
+				[
+					"sea_salt",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"fish_soup",
+				2
+			],
+			"craft_s": 12.0,
+			"known": false,
+			"station": "campfire_pot",
+			"keeps": [
+				[
+					"copper_pot",
+					1
+				]
+			],
+			"locked": true
+		},
+		"meatballs": {
+			"number": 396,
+			"name": "Meatballs",
+			"category": "Food and drink",
+			"needs": [
+				[
+					"raw_meat",
+					3
+				],
+				[
+					"flour",
+					1
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"meatballs",
+				3
+			],
+			"craft_s": 12.0,
+			"known": false,
+			"station": "campfire_pot",
+			"keeps": [
+				[
+					"copper_pot",
+					1
+				]
+			],
+			"locked": true
+		},
+		"bronze_scale_shirt": {
+			"number": 397,
+			"name": "Bronze - Scale shirt",
+			"category": "Armour",
+			"needs": [
+				[
+					"bronze_ingot",
+					4
+				],
+				[
+					"leather",
+					1
+				]
+			],
+			"gives": [
+				"bronze_scale_shirt",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"station": "forge",
+			"locked": true
+		},
+		"claw_necklace": {
+			"number": 398,
+			"name": "Claw - Necklace",
+			"category": "Clothing",
+			"needs": [
+				[
+					"claw",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"claw_necklace",
+				1
+			],
+			"craft_s": 8.0,
 			"known": false,
 			"locked": true
 		}
