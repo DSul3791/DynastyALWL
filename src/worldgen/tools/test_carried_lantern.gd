@@ -100,7 +100,9 @@ func _init() -> void:
 	# Water: it goes dark with the fuel it had, and its key lights it again with no candle used.
 	items.rain_now = func(): return 0.0
 	inv.wear[slot] = 1000
+	items.set_head_under(7, true)      # the server's own reading (the torch-in-the-rain fix: the client alone cannot say water)
 	items.action(7, Net.ACT_DOUSE, slot, 0, 0, Vector3.ZERO)
+	items.set_head_under(7, false)
 	check(inv.numbers[slot] == DARK and inv.wear[slot] == 1000, "under water the lantern goes dark and keeps its fuel")
 	items.set_swimming(7, true)
 	items.action(7, Net.ACT_RELIGHT, 0, slot + 1, 0, Vector3.ZERO)
