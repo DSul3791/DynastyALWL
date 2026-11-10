@@ -50,6 +50,10 @@ func pick_up_everything_near() -> int:
 	var taken: int = 0
 
 	for id in items._items.keys():
+		if not items._items.has(id):
+			taken += 1   # a batch pickup (sticks, data/items/pickup_batch.json) already took this heap along with a nearer one
+			continue
+
 		var it: Dictionary = items._items[id]
 
 		if it.has("scatter") or it.has("tree") or it.has("fire") or it.has("struct"):
