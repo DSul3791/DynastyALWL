@@ -339,7 +339,7 @@
 		"mushrooms": {
 			"display": "Mushrooms",
 			"parts": [
-				"food",
+				"field_mushrooms",
 				"tinder_fungus"
 			],
 			"season": [

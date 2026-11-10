@@ -2,7 +2,7 @@
 	"table": "gathered_items",
 	"format_version": 1,
 	"note": "Generated from data/tables/flora.json yields by tools/gen_gathered_items.py. Numbers start at 1000 and are append-only: re-running only adds new yields. Each yield becomes a plain material until food, herb and potion systems give them effects. Numbers 1008 and 1083 are retired (bark and leaves became core items 13 and 14); never reuse them.",
-	"next_number": 1176,
+	"next_number": 1177,
 	"items": {
 		"acorns": {
 			"number": 1000,
@@ -570,7 +570,7 @@
 		},
 		"dye": {
 			"number": 1041,
-			"name": "Dye",
+			"name": "Plant dye",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
@@ -766,6 +766,7 @@
 		},
 		"food": {
 			"number": 1055,
+			"retired": true,
 			"name": "Food",
 			"kind": "material",
 			"stack": 20,
@@ -1027,7 +1028,7 @@
 		},
 		"herbs": {
 			"number": 1074,
-			"name": "Herbs",
+			"name": "Wild herbs",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [
@@ -1038,7 +1039,7 @@
 				"Burdock"
 			],
 			"familiarity": 70,
-			"description": "A bundle of mixed wild herbs. Flavours food."
+			"description": "Any kitchen herb: thyme, rosemary, marjoram, sage or mint. Flavours food."
 		},
 		"honey_flowers": {
 			"number": 1075,
@@ -1476,6 +1477,19 @@
 			],
 			"familiarity": 55,
 			"description": "Fat brown-capped mushrooms with a thick pale stem. A fine meal."
+		},
+		"field_mushrooms": {
+			"number": 1176,
+			"name": "Field mushrooms",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [
+				"Fly agaric",
+				"Porcini",
+				"Chanterelle"
+			],
+			"familiarity": 80,
+			"description": "White-capped mushrooms of open grass, pink gills turning brown. Good fried or in a stew."
 		},
 		"potash": {
 			"number": 1108,
