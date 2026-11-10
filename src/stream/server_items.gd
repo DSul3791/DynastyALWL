@@ -184,6 +184,7 @@ var water_source: Callable       # (position, reach in metres) -> Array of Drink
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
 var send_craft_stock: Callable  # (peer, numbers PackedInt32Array, counts PackedInt32Array): what a craft may use besides the pack (protocol 98)
+var send_wheel_share: Callable  # (peer, at, yaw degrees, percent, why): the answer to ACT_WHEEL_ASK (protocol 105, _wheel_ask)
 var send_step_to: Callable      # (peer, position, yaw radians): the server moved the player to a station to craft there (protocol 103, _step_to_station)
 var send_favourites: Callable   # (peer, flags PackedByteArray): one byte per pack slot, 1 for a favourite (protocol 99)
 var send_hotbar: Callable      # (peer, keys PackedInt32Array): the ten hotbar keys' item numbers (protocol 100)
@@ -1173,6 +1174,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		if not admin_ok.is_valid() or admin_ok.call(peer):
 			_showroom_seed(peer, a == 1, at)
 
+	elif kind == Net.ACT_WHEEL_ASK:
+		_wheel_ask(peer, a, b, at)
 	elif kind == Net.ACT_SPYGLASS:
 		if a == 2:
 			_look_spyglass_item(peer, inv, count, b)
@@ -3471,6 +3474,24 @@ func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> V
 		_say(peer, "The wheel would give %d %% (%d W)." % [int(round(100.0 * WaterFlowScript.wheel_share(float(wheel["w"]), rules))), int(round(float(wheel["w"])))])
 
 	return spot
+
+
+# The sawmill ghost asks what its wheel would give where it stands (protocol 105): the same rule as placing (_station_site), answered with the
+# share in percent and why it would be refused ("along" turned along the current, "weak" under min_power_w).
+func _wheel_ask(peer: int, yaw_deg: int, kit_number: int, at: Vector3) -> void:
+	var def: Dictionary = _structure_of_kit(table.id_of(kit_number))
+
+	if not def.has("needs_running_water") or not water_wheel.is_valid() or not send_wheel_share.is_valid():
+		return
+
+	var wheel: Dictionary = _wheel_at(def, at, yaw_deg)
+	var rules: Dictionary = _water_flow_rules()
+	var why: String = str(wheel.get("why", ""))
+
+	if why == "" and float(wheel.get("w", 0.0)) < float(rules.get("min_power_w", 150.0)):
+		why = "along" if bool(wheel.get("along", false)) else "weak"
+
+	send_wheel_share.call(peer, at, yaw_deg, 0 if why != "" else int(round(100.0 * WaterFlowScript.wheel_share(float(wheel["w"]), rules))), why)
 
 
 const WHEEL_SAYS := {

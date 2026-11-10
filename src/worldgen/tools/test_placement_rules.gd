@@ -289,6 +289,23 @@ func _init() -> void:
 	items.report_position(2, Vector3(900.0, 10.0, 910.0))
 	check(absf(items._wheel_slow(2, {"station": "saw_mill", "station_level": 1}) - 1.0 / 0.6) < 0.01, "at 600 W a sawmill recipe takes 1/0.6 as long")
 	check(is_equal_approx(items._wheel_slow(2, {"station": "workbench"}), 1.0) and is_equal_approx(items._wheel_slow(2, {}), 1.0), "other stations and hand crafts keep their time")
+	# The ghost asks before placing (protocol 105): the same rule answers with the share, or why not.
+	var shares: Array = []
+	items.send_wheel_share = func(_p: int, _at: Vector3, _yaw: int, percent: int, why: String) -> void: shares.append([percent, why])
+	items.action(2, Net.ACT_WHEEL_ASK, 90, saw_kit, 0, Vector3(900.0, 10.6, 920.0))
+	check(shares.size() == 1 and int(shares[0][0]) == 60 and str(shares[0][1]) == "", "the ghost hears 60 %% at 600 W (%s)" % str(shares))
+	watts[0] = 100.0
+	items.action(2, Net.ACT_WHEEL_ASK, 90, saw_kit, 0, Vector3(900.0, 10.6, 920.0))
+	check(shares.size() == 2 and int(shares[1][0]) == 0 and str(shares[1][1]) == "weak", "and too slow at 100 W")
+	flows[0] = false
+	items.action(2, Net.ACT_WHEEL_ASK, 90, saw_kit, 0, Vector3(900.0, 10.6, 920.0))
+	check(shares.size() == 3 and str(shares[2][1]) == "still", "and why when the water does not run")
+	items.action(2, Net.ACT_WHEEL_ASK, 90, items.table.number_of("foundation_section_kit"), 0, Vector3(900.0, 10.6, 920.0))
+	check(shares.size() == 3, "a kit with no wheel gets no answer")
+	check(Rules.reason_text("wheel_along") != "" and Rules.reason_text("wheel_weak") != "", "the ghost has words for every wheel refusal")
+	flows[0] = true
+	watts[0] = 600.0
+	items.send_wheel_share = Callable()
 	items.ground_height = Callable()
 	items.water_wheel = Callable()
 	items.report_position(2, before_stations)
