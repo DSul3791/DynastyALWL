@@ -1,6 +1,6 @@
 {
 	"note": "Hammer blueprints. Dave 4 Nov 2026: no kits at all; everything placed is built with the hammer from the materials in the pack, except the Rough bed (a hand craft from the pack; blueprint 24 retired) and the campfire (a fire entity; code pending). 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near (with 'station_level'), 'near' another placed structure that must be near, 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1), 'recipe' the retired kit recipe (kept so its number is never reused, and so learning that recipe can unlock the row), 'known' false rows are learned, 'retired' rows are kept for their numbers and are not offered or placed. Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
-	"next_number": 167,
+	"next_number": 170,
 	"blueprints": {
 		"wall_section": {"category": "Walls and doors", "number": 1, "name": "Wooden - Wall", "structure": "wall_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "wall_section_kit"},
 		"floor_section": {"category": "Roofs and ceilings", "number": 2, "name": "Wooden - Ceiling", "structure": "floor_section", "cost": [["lumber", 4], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "floor_section_kit"},
@@ -119,6 +119,9 @@
 		"iron_anvil": {"category": "Workshops and stations", "number": 164, "name": "Anvil", "structure": "iron_anvil", "cost": [["iron_ingot", 5], ["log", 1]], "station": "", "hammer": 1, "known": true},
 		"preserving_jar": {"category": "Workshops and stations", "number": 165, "name": "Preserving jar", "structure": "preserving_jar", "cost": [["clay", 6]], "station": "", "hammer": 1, "known": true},
 		"root_cellar": {"category": "Storage and shelter", "number": 166, "name": "Root cellar", "structure": "root_cellar", "cost": [["cut_stone_block", 20], ["mortar", 6]], "station": "", "hammer": 1, "known": true},
+		"log_shelf": {"category": "Storage and shelter", "number": 167, "name": "Log - Shelf", "structure": "log_shelf", "cost": [["log", 3], ["twine", 2]], "station": "", "hammer": 1, "known": true},
+		"wooden_crate": {"category": "Storage and shelter", "number": 168, "name": "Wooden - Crate", "structure": "wooden_crate", "cost": [["lumber", 5], ["nails", 8]], "station": "", "hammer": 1, "known": true},
+		"iron_chest": {"category": "Storage and shelter", "number": 169, "name": "Iron - Chest", "structure": "iron_chest", "cost": [["lumber", 8], ["iron_ingot", 3], ["nails", 16], ["hinges", 2]], "station": "", "hammer": 3, "known": true},
 		"doorway_section": {"category": "Walls and doors", "number": 5, "name": "Wooden - Doorway", "structure": "doorway_section", "cost": [["lumber", 3], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "doorway_section_kit"},
 		"window_section": {"category": "Walls and doors", "number": 6, "name": "Wooden - Window", "structure": "window_section", "cost": [["lumber", 3], ["twine", 1]], "station": "", "hammer": 1, "known": true, "recipe": "window_section_kit"},
 		"timber_set": {"category": "Stairs, ladders and supports", "number": 7, "name": "Wooden - Beam", "structure": "timber_set", "cost": [["lumber", 4], ["twine", 1], ["stick", 1]], "station": "", "hammer": 1, "known": true, "recipe": "timber_set_kit"},

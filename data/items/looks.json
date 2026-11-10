@@ -4133,6 +4133,21 @@
    "shape": "bundle",
    "color": "#d8c8a0",
    "size": 0.5
+  },
+  "log_shelf_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_crate_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_chest_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
   }
 
  }

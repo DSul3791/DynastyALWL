@@ -717,7 +717,10 @@
 		"bird_trap_set": {"kit": "bird_trap", "item": "bird_trap_set", "state": 203, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "bird_trap_set", "sound": "thump", "clears_grass": false},
 		"iron_anvil": {"kit": "iron_anvil_kit", "item": "iron_anvil", "state": 204, "footprint_x": 0.6, "footprint_z": 0.4, "cap_per_chunk": 2, "addon_of": "brick_forge", "look": "iron_anvil", "sound": "metal", "clears_grass": true},
 		"preserving_jar": {"kit": "preserving_jar_kit", "item": "preserving_jar", "state": 205, "footprint_x": 0.5, "footprint_z": 0.5, "cap_per_chunk": 8, "station": "preserving_jar", "station_level": 1, "reach_m": 3.0, "sound": "thump", "clears_grass": true, "look": "preserving_jar"},
-		"root_cellar": {"kit": "root_cellar_kit", "item": "root_cellar", "state": 206, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 2.0, "cap_per_chunk": 2, "slots": 12, "max_kg": 120, "who": "anyone", "cold_store": true, "sound": "stone", "clears_grass": true, "look": "root_cellar"}
+		"root_cellar": {"kit": "root_cellar_kit", "item": "root_cellar", "state": 206, "blocks_walk": true, "footprint_x": 2.0, "footprint_z": 2.0, "cap_per_chunk": 2, "slots": 12, "max_kg": 120, "who": "anyone", "cold_store": true, "sound": "stone", "clears_grass": true, "look": "root_cellar"},
+		"log_shelf": {"kit": "log_shelf_kit", "item": "log_shelf", "state": 207, "footprint_x": 1.2, "footprint_z": 0.3, "cap_per_chunk": 8, "slots": 6, "max_kg": 30, "who": "anyone", "sound": "timber", "clears_grass": true, "look": "log_shelf"},
+		"wooden_crate": {"kit": "wooden_crate_kit", "item": "wooden_crate", "state": 208, "footprint_x": 0.8, "footprint_z": 0.8, "cap_per_chunk": 8, "slots": 10, "max_kg": 80, "who": "anyone", "sound": "timber", "clears_grass": true, "look": "wooden_crate"},
+		"iron_chest": {"kit": "iron_chest_kit", "item": "iron_chest", "state": 209, "footprint_x": 1.0, "footprint_z": 0.6, "cap_per_chunk": 8, "slots": 30, "max_kg": 250, "who": "anyone", "sound": "chest", "clears_grass": true, "look": "iron_chest"}
 	},
 	"campfire": {
 		"gap_m": 2.0,

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 847,
+	"next_number": 853,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -9734,6 +9734,69 @@
 				"look_alikes": [],
 				"future": true,
 				"note": "Future placeholder (item_system.md): no blueprint or structure row until its system lands. Plan: With yarn and thread; the hand cloth recipes go when it lands."
+			},
+			"log_shelf_kit": {
+				"number": 847,
+				"retired": true,
+				"name": "Log shelf",
+				"description": "Split logs lashed between two log uprights. A first shelf to set against a wall.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 18
+			},
+			"log_shelf": {
+				"number": 848,
+				"name": "Log - Shelf",
+				"description": "Split logs lashed between two log uprights. A first shelf to set against a wall.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 207."
+			},
+			"wooden_crate_kit": {
+				"number": 849,
+				"retired": true,
+				"name": "Wooden crate",
+				"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 48
+			},
+			"wooden_crate": {
+				"number": 850,
+				"name": "Wooden - Crate",
+				"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 208."
+			},
+			"iron_chest_kit": {
+				"number": 851,
+				"retired": true,
+				"name": "Iron chest",
+				"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 174
+			},
+			"iron_chest": {
+				"number": 852,
+				"name": "Iron - Chest",
+				"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 209."
 			}
 	}
 }
