@@ -331,6 +331,7 @@ var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
 const FishSchoolsScript := preload("res://src/server/server_fish.gd")
 const BowScript := preload("res://src/stream/server_bow.gd")
+const BowAim := preload("res://src/shared/bow_aim.gd")
 const TrapsScript := preload("res://src/stream/server_traps.gd")
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
@@ -358,6 +359,7 @@ var animal_lure: Callable            # (animal id, point) -> bool: the animal mo
 var animal_snare: Callable           # (animal id) -> bool: a snare closes on it, it leaves the world (set by the server)
 var trail_strength: Callable         # (x, z) -> how worn the game trail is there, 0 to 1 (set by the server)
 var _bow = null                     # server_bow.gd, made at the first shot
+var _aim_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the bow's aim spread stream (luck then nudges each draw, _shoot)
 var _last_shot: Dictionary = {}     # peer -> msec
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
@@ -1032,7 +1034,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_NET:
 		_net_cast(peer, inv, a, b == 1, at)
 	elif kind == Net.ACT_SHOOT:
-		_shoot(peer, inv, a, b, at)
+		_shoot(peer, inv, a, b, at, count)
 	elif kind == Net.ACT_WEAR:
 		_gain_quiet = true
 		_wear(peer, inv, a)
@@ -2074,7 +2076,9 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 
 # ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.
-func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3) -> void:
+# `loaded` is the arrow item the bow is loaded with (Dave 10 Nov 2026: arrows dragged onto the bow); 0, or one not in the pack: the first ammo there.
+# The bow skill (the hunting skill's working level) turns the shot by up to aim.spread_deg at random (luck narrows it) and sets aim.damage_mult (BowAim).
+func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded: int = 0) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1:
 		return
 
@@ -2091,7 +2095,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3) -> void
 	if now - int(_last_shot.get(peer, -100000)) < int(_bow.cfg.get("pace_ms", 700)):
 		return
 
-	var ammo: int = _bow.ammo_slot(inv, table)
+	var ammo: int = _bow.ammo_slot(inv, table, loaded)
 
 	if ammo < 0:
 		_say(peer, str(_bow.cfg.get("say_no_ammo", "")))
@@ -2107,8 +2111,10 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3) -> void
 		_say(peer, str(_bow.cfg.get("say_weak", "")))
 
 	_wear_slot(peer, inv, slot, "strike")
-	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": _bow.damage(float(arrow.get("damage", 5.0)), power, skill_factor(peer, "bow")),
-		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * _bow.speed(power), "flown": 0.0, "age": 0.0})
+	var level: float = working_level(peer, "hunting")
+	var aim: Vector3 = BowAim.spread(direction, BowAim.spread_deg(_bow.cfg, level), LuckScript.low(_aim_rng.randf(), luck_of(peer), _luck_strength()), _aim_rng.randf())   # luck-exempt: the draws that luck nudges (how far out) and which way
+	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": _bow.damage(float(arrow.get("damage", 5.0)), power, level),
+		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power), "flown": 0.0, "age": 0.0})
 
 	if animal_alarm.is_valid():
 		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)))

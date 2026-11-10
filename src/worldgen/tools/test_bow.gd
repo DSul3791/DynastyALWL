@@ -1,12 +1,14 @@
 extends SceneTree
 
 # Bow shooting (ACT_SHOOT, data/items/bow.json): draw power, ammo, pace, flight to a stub animal, the ground, retrievable and breaking arrows, water, forged draw time.
+# The aim (Dave 10 Nov 2026, BowAim, bow.json "aim"): steady time, wobble, the vital-zone pull, the server's spread and the damage by bow skill, the loaded arrow, fibre arrows.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bow.gd      Prints "Test done: N pass, N fail".
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const BowScript := preload("res://src/stream/server_bow.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const BowAim := preload("res://src/shared/bow_aim.gd")
 
 var passes: int = 0
 var failures: int = 0
@@ -47,14 +49,16 @@ func make(dir: String):
 		return {}
 	items.animal_alarm = func(point, radius): alarms.append([point, radius])
 	items.setup(ItemTableScript.load_default(), dir)
+	items._bow = BowScript.new()
+	items._bow.cfg["aim"]["spread_deg"] = [[0, 0.0]]      # the flight checks aim true; the spread has its own checks (aim_checks)
 	items.peer_connected_hello(1, "bow-key-00000001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	return items
 
 
-func shoot(items, slot: int, draw_ms: int, dir: Vector3) -> void:
+func shoot(items, slot: int, draw_ms: int, dir: Vector3, loaded: int = 0) -> void:
 	items._last_shot.clear()
-	items.action(1, Net.ACT_SHOOT, slot, draw_ms, 0, dir)
+	items.action(1, Net.ACT_SHOOT, slot, draw_ms, loaded, dir)
 
 
 func fly(items, seconds: float) -> void:
@@ -162,5 +166,66 @@ func _init() -> void:
 	items.inventory_of(1).add(items.table.number_of("stone_arrow"), 1)
 	shoot(items, slot, 1200, Vector3(0.0, 0.1, -1.0))
 	check(items._arrows.size() == count_before, "a broken bow does not shoot")
+	aim_checks()
+	loaded_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
+
+
+# BowAim: the numbers of the aim by bow skill (0..100), from bow.json.
+func aim_checks() -> void:
+	var cfg: Dictionary = BowAim.load_config()
+	check(cfg.has("aim"), "bow.json has the aim numbers")
+	check(is_equal_approx(BowAim.curve([[0, 2.0], [100, 4.0]], 50.0), 3.0) and BowAim.curve([[0, 2.0], [100, 4.0]], -5.0) == 2.0 and BowAim.curve([[0, 2.0], [100, 4.0]], 500.0) == 4.0, "a curve runs straight between its points and holds at the ends")
+	check(is_equal_approx(BowAim.steady_s(cfg, 0.0), 2.0), "no skill: two seconds of steady aim (Dave)")
+	check(BowAim.steady_s(cfg, 100.0) > BowAim.steady_s(cfg, 0.0), "skill holds the aim steady longer")
+	check(BowAim.wobble_deg(cfg, 0.0, 1.9) == 0.0 and BowAim.wobble_deg(cfg, 0.0, 3.0) > 0.0, "no sway inside the steady time, sway after it")
+	check(BowAim.wobble_deg(cfg, 0.0, 4.0) > BowAim.wobble_deg(cfg, 0.0, 3.0), "the sway grows the longer the bow is held")
+	check(BowAim.wobble_deg(cfg, 0.0, 600.0) <= float(cfg["aim"]["wobble_max_deg"]) + 0.0001, "the sway stops growing at wobble_max_deg")
+	check(BowAim.wobble_deg(cfg, 100.0, 7.0) < BowAim.wobble_deg(cfg, 0.0, 7.0), "skill sways less")
+	check(BowAim.damage_mult(cfg, 0.0) == 1.0 and BowAim.damage_mult(cfg, 100.0) > 1.0, "skill raises the damage, none leaves it as the arrow's")
+	var bow = BowScript.new()
+	check(bow.damage(8.0, 1.0, 100.0) > bow.damage(8.0, 1.0, 0.0), "the server's damage takes the skill multiplier")
+
+	# The pull: none at no skill; with skill a zone near the aim draws it, a zone far off does not.
+	var eye: Vector3 = Vector3.ZERO
+	var points: Array = BowAim.zone_points(cfg, Vector3(0.0, -1.5, -30.0), 0.0)
+	check(points.size() == 2, "a deer has its head and heart zones")
+	var off: Vector3 = (points[1] - eye).normalized().rotated(Vector3.UP, deg_to_rad(2.0))
+	check(BowAim.assist(cfg, 0.0, eye, off, points) == off, "no skill: no pull toward a vital zone")
+	var pulled: Vector3 = BowAim.assist(cfg, 100.0, eye, off, points)
+	check(pulled.angle_to(points[1] - eye) < off.angle_to(points[1] - eye), "skill pulls the aim toward the nearest vital zone")
+	var far: Vector3 = (points[1] - eye).normalized().rotated(Vector3.UP, deg_to_rad(20.0))
+	check(BowAim.assist(cfg, 100.0, eye, far, points) == far, "a zone outside the pull cone does not pull")
+
+	# The spread: no skill turns a shot up to spread_deg, never more; full skill much less.
+	var widest: float = 0.0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var forward: Vector3 = Vector3(0.0, 0.1, -1.0).normalized()
+
+	for n in 500:
+		widest = maxf(widest, rad_to_deg(BowAim.spread(forward, BowAim.spread_deg(cfg, 0.0), rng.randf(), rng.randf()).angle_to(forward)))   # luck-exempt: test draws
+
+	check(widest <= BowAim.spread_deg(cfg, 0.0) + 0.001 and widest > BowAim.spread_deg(cfg, 0.0) * 0.8, "no skill: shots turn at random up to spread_deg (%.2f)" % widest)
+	check(BowAim.spread_deg(cfg, 100.0) < BowAim.spread_deg(cfg, 0.0) * 0.2, "skill narrows the spread")
+	check(BowAim.spread(forward, 0.0, 1.0, 0.5) == forward, "no spread: the shot goes where it was aimed")
+
+
+# The loaded arrow is shot first; fibre arrows (the only arrow made without feathers) are ammo.
+func loaded_checks() -> void:
+	var items = make("user://test_bow_loaded")
+	var bow_no: int = items.table.number_of("wooden_bow")
+	items.action(1, Net.ACT_ADMIN_GIVE, bow_no, 0, 1, Vector3.ZERO)
+	var slot: int = items.inventory_of(1).numbers.find(bow_no)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("fibre_arrow"), 0, 2, Vector3.ZERO)
+	said.clear()
+	shoot(items, slot, 1200, Vector3(0.0, 0.2, -1.0))
+	check(items._arrows.size() == 1 and arrows(items, "fibre_arrow") == 1 and not said.has(items._bow.cfg["say_no_ammo"]), "fibre arrows shoot (they were missing from the ammo list: the bow 'did not work at all')")
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_arrow"), 0, 3, Vector3.ZERO)
+	shoot(items, slot, 1200, Vector3(0.0, 0.2, -1.0), items.table.number_of("fibre_arrow"))
+	check(arrows(items, "fibre_arrow") == 0 and arrows(items, "stone_arrow") == 3, "the bow loaded with fibre arrows shoots a fibre arrow, though stone comes first in the list")
+	shoot(items, slot, 1200, Vector3(0.0, 0.2, -1.0), items.table.number_of("fibre_arrow"))
+	check(arrows(items, "stone_arrow") == 2, "loaded arrows run out: the next ammo in the pack is shot")
+	shoot(items, slot, 1200, Vector3(0.0, 0.2, -1.0), items.table.number_of("wooden_bow"))
+	check(arrows(items, "stone_arrow") == 1, "a forged 'loaded' item that is not ammo is ignored")

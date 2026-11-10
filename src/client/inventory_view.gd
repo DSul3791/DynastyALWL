@@ -150,6 +150,8 @@ const DEATH_FADE_S := 4.0                   # black, then waking, after a death 
 var _death_msec: int = 0                    # when the last death arrived, 0 when none is being shown
 var strength: int = 0                       # attributes the server sends with the skills (protocol 37)
 var memory: int = 0
+var bow_arrow: int = 0                     # the arrow item the bow is loaded with (dragged onto the bow on the hotbar, Dave 10 Nov 2026); 0 = the first one in the pack
+var _skill_order: Array = []                # data/items/skills.json "skills" names, in the order the skill rows number them
 var skill_rows: Array = []                  # [[skill index, working level, rusty], ...] in skills.json order
 const InnerSettingsScript := preload("res://src/client/inner_voice_settings.gd")
 var inner_settings = InnerSettingsScript.new()   # Esc > Settings > Inner voice: hints and dialogue switches (inner_voice_settings.gd)
@@ -3906,6 +3908,33 @@ func _on_thought(line_id: String, text: String, kind: String) -> void:
 
 	if thought_event.is_valid():
 		thought_event.call(line_id, kind)
+
+
+# A skill's working level (0..100, the server's working_level) from the last skills message; 0 when it has never been practised.
+func skill_level_of(skill: String) -> float:
+	if _skill_order.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))
+		_skill_order = (parsed.get("skills", {}) as Dictionary).keys() if typeof(parsed) == TYPE_DICTIONARY else ["-"]
+
+	var index: int = _skill_order.find(skill)
+
+	for row in skill_rows:
+		if int(row[0]) == index:
+			return float(row[1])
+
+	return 0.0
+
+
+# Arrows dragged onto the bow on the hotbar load it with that arrow (Dave 10 Nov 2026); the next shots take that kind while the pack holds it.
+# True when `number` is an arrow the bow shoots (bow.json ammo, as the server reads it).
+func load_bow(number: int) -> bool:
+	if not (HeldItem.BOW_AMMO as Array).has(table.id_of(number)):
+		_on_notice("That is not an arrow this bow can shoot.")
+		return false
+
+	bow_arrow = number
+	_on_notice("Your bow is loaded with %s." % table.name_of(number).to_lower())
+	return true
 
 
 # Tracking (Dave 2026-10-21): how many times longer trampled grass trails stay down on THIS client (1.0 untrained, 6.0 at 100).
