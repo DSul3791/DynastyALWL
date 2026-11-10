@@ -47,14 +47,26 @@ func _init() -> void:
 	var v: Vector3 = mat.direction * (mat.initial_velocity_min + mat.initial_velocity_max) * 0.5
 	var life: float = plume.lifetime
 	var end_y: float = v.y + mat.gravity.y * life
-	_check(v.x > 1.7 and absf(v.z) < 0.05, "a 2 m/s breeze carries every puff downwind (%.2f m/s)" % v.x)
+	var end_x: float = v.x + mat.gravity.x * life
+	_check(v.x > 0.0 and v.x < 1.0 and absf(v.z) < 0.05, "a fresh puff rises on its heat with a little of the 2 m/s breeze (%.2f m/s)" % v.x)
+	_check(absf(end_x - 2.0) < 0.1 and absf(mat.gravity.z) < 0.01, "and the breeze takes it fully by the end: the plume bends over more the higher it gets (%.2f m/s)" % end_x)
 	_check(end_y > 0.0 and end_y < v.y and absf(end_y / v.y - float(cfg["rise_end_share"])) < 0.02, "it keeps rising, slower with height (%.2f to %.2f m/s)" % [v.y, end_y])
-	_check(v.x * life >= 25.0, "it drifts well clear of the fire: %.0f m downwind over its life" % (v.x * life))
+	var drift: float = v.x * life + 0.5 * mat.gravity.x * life * life
+	_check(drift >= 24.0, "it drifts well clear of the fire: %.0f m downwind over its life" % drift)
 	_check(absf(life - float(cfg["life_s"])) < 0.001 and plume.preprocess == life, "life and warm start from data/look/fire_smoke.json")
 	var grow: Curve = (mat.scale_curve as CurveTexture).curve
 	_check(absf(grow.sample(1.0) / grow.sample(0.0) - float(cfg["grow_to"])) < 0.05, "each puff spreads %.1f times as it goes" % (grow.sample(1.0) / grow.sample(0.0)))
 	var ramp: Gradient = (mat.color_ramp as GradientTexture1D).gradient
 	_check(ramp.sample(1.0).a < 0.01, "and fades out")
+	# Dave 10 Nov 2026, "make fire smoke actually look and act more like fire smoke": one continuous plume, dark and dense low, light and thin high,
+	# narrow at the fire and wide up high, wavering as one column.
+	var gap_m: float = BuildingLook.smoke_tier("rise_m_s", 1) * life / float(BuildingLook.smoke_tier("amount", 1))
+	_check(gap_m < 0.5 * BuildingLook.smoke_tier("puff_m", 1), "puffs overlap into one plume even for a small fire (%.2f m apart, %.2f m wide)" % [gap_m, BuildingLook.smoke_tier("puff_m", 1)])
+	_check(ramp.sample(0.1).a > ramp.sample(0.5).a and ramp.sample(0.5).a > ramp.sample(0.9).a, "dense at the fire, thinning as it rises")
+	var look: ShaderMaterial = plume.draw_pass_1.surface_get_material(0) as ShaderMaterial
+	_check(look != null and float(look.get_shader_parameter("near_grey")) < float(look.get_shader_parameter("far_grey")), "darker at the fire, lighter higher up")
+	_check(look != null and float(look.get_shader_parameter("waver_m")) > 0.0 and str(look.shader.code).find("INSTANCE_CUSTOM.y") >= 0, "the column wavers more the older the smoke")
+	_check(BuildingLook.smoke_tier("amount", 3) > BuildingLook.smoke_tier("amount", 1) and BuildingLook.smoke_tier("rise_m_s", 3) > BuildingLook.smoke_tier("rise_m_s", 1), "a bigger fire smokes more and higher")
 	BuildingLook.set_fire_air(0.0, 0.0, 0.0)
 	var up: Vector3 = mat.direction
 	_check(up.is_equal_approx(Vector3.UP) and mat.initial_velocity_min >= float(cfg["calm_rise_m_s"]) * 0.85, "calm air: straight up")
@@ -79,6 +91,11 @@ func _init() -> void:
 	var cold: Node3D = BuildingLook.fire(false, true, 2)
 	_check(cold.get_node_or_null("Smoke") == null, "an unlit fire does not")
 	cold.free()
+	var embers: Node3D = BuildingLook.coals_fire(0.8)
+	var wisp: GPUParticles3D = embers.get_node_or_null("Smoke") as GPUParticles3D
+	var wisp_ramp: Gradient = ((wisp.process_material as ParticleProcessMaterial).color_ramp as GradientTexture1D).gradient if wisp != null else null
+	_check(wisp != null and wisp.amount < int(BuildingLook.smoke_tier("amount", 1)) and wisp_ramp.sample(0.05).a < ramp.sample(0.05).a, "glowing coals give a thin wisp, less than any fire")
+	embers.free()
 
 	print("test_fire_smoke: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)

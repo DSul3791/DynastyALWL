@@ -854,6 +854,9 @@ static func coals_fire(glow: float) -> Node3D:
 	var coals: MeshInstance3D = _instance(_coals())
 	coals.scale = Vector3(ring, 1.0, ring)
 	root.add_child(coals)
+	var wisp: GPUParticles3D = _campfire_smoke(COALS_TIER)   # glowing coals give a thin wisp, not a fire's plume (Dave 10 Nov 2026)
+	wisp.position = Vector3(0.0, 0.15, 0.0)
+	root.add_child(wisp)
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
 	light.light_color = COALS_LIGHT_COLOR
@@ -1412,8 +1415,11 @@ const EMBERS_BY_TIER := {1: 4, 2: 8, 3: 16}
 static var _camp_smoke: Dictionary = {}           # tier -> ParticleProcessMaterial
 static var _camp_smoke_mesh: QuadMesh
 const SMOKE_CFG_PATH := "res://data/look/fire_smoke.json"
-const SMOKE_DEFAULTS := {"rise_m_s": [0.30, 0.39, 0.53], "amount": [14, 22, 32], "puff_m": [0.5, 0.7, 0.9], "grow_to": 4.0, "life_s": 20.0, "rise_end_share": 0.4,
-	"calm_rise_m_s": 0.8, "calm_mps": [0.3, 1.0], "night_rise_m_s": 1.2, "night_top_m": 12.0, "spread_deg": [8.0, 14.0]}
+const SMOKE_DEFAULTS := {"rise_m_s": [0.30, 0.39, 0.53], "amount": [90, 130, 190], "puff_m": [0.3, 0.4, 0.5], "grow_to": 8.0, "life_s": 20.0, "rise_end_share": 0.4,
+	"calm_rise_m_s": 0.8, "calm_mps": [0.3, 1.0], "night_rise_m_s": 1.2, "night_top_m": 12.0, "spread_deg": [8.0, 14.0], "alpha": 0.2, "near_grey": 0.3,
+	"far_grey": 0.74, "fade": [[0.0, 0.0], [0.05, 1.0], [0.3, 0.65], [0.7, 0.25], [1.0, 0.0]], "wind_start_share": 0.25, "waver_m": 0.6,
+	"coals": {"amount": 30, "puff_m": 0.15, "rise_m_s": 0.25, "density": 0.45, "grow_to": 6.0}}
+const COALS_TIER := 0                     # _campfire_smoke(COALS_TIER): the thin wisp off a bed of glowing coals (fire_smoke.json "coals")
 static var _smoke_cfg: Dictionary = {}
 const FORGE_SMOKE_RISE := 0.7
 const SPARK_PUSH := 0.6                   # sideways gravity per m/s of wind: about 1 m of carry per m/s over a spark's life
@@ -1421,21 +1427,32 @@ const SPARK_LEAN_DEG := 60.0              # how far the sparks start downwind in
 const SPARK_LEAN_MPS := [5.0, 10.0]
 const SPARK_LIFT := 0.25
 
+# One continuous plume (Dave 10 Nov 2026: "make fire smoke actually look and act more like fire smoke"): many soft overlapping puffs, dark and dense at the fire
+# and lighter as they rise (near_grey to far_grey over the puff's age, INSTANCE_CUSTOM.y), swaying as one column: the sway follows the height and the time,
+# so puffs at the same height move together, growing to waver_m by the end of a puff's life.
 const CAMP_SMOKE_SHADER := """
 shader_type spatial;
 render_mode blend_mix, depth_draw_never, shadows_disabled, cull_disabled, diffuse_lambert_wrap, specular_disabled;
 
+uniform float near_grey = 0.3;
+uniform float far_grey = 0.74;
+uniform float alpha = 0.2;
+uniform float waver_m = 0.6;
+varying float age;
+
 void vertex() {
-	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+	age = INSTANCE_CUSTOM.y;
+	vec3 centre = MODEL_MATRIX[3].xyz;
+	vec3 sway = vec3(sin(TIME * 0.83 + centre.y * 0.9), 0.0, cos(TIME * 0.61 + centre.y * 0.7)) * waver_m * age;
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], vec4(centre + sway, 1.0));
 	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0), vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
 }
 
 void fragment() {
 	float d = length(UV - vec2(0.5)) * 2.0;
-	float puff = smoothstep(1.0, 0.15, d);
-	float lump = 0.85 + 0.15 * sin(UV.x * 9.0 + COLOR.r * 20.0) * sin(UV.y * 9.0 + COLOR.g * 20.0);
-	ALBEDO = vec3(0.66, 0.65, 0.63);      // lit by the scene: grey-white by day, dark at night but for the fire's own light under it
-	ALPHA = puff * puff * lump * COLOR.a * 0.45;
+	float puff = smoothstep(1.0, 0.1, d);
+	ALBEDO = vec3(mix(near_grey, far_grey, smoothstep(0.0, 0.6, age)));   // lit by the scene: dark at night but for the fire's own light under it
+	ALPHA = puff * puff * COLOR.a * alpha;
 }
 """
 
@@ -1454,10 +1471,17 @@ static func smoke_cfg() -> Dictionary:
 	return _smoke_cfg
 
 
-# A per-tier smoke number (rise_m_s, amount, puff_m) for fire tier 1 to 3.
+# A per-tier smoke number (rise_m_s, amount, puff_m, grow_to) for fire tier 1 to 3; COALS_TIER reads fire_smoke.json "coals".
 static func smoke_tier(key: String, tier: int) -> float:
-	var row: Array = smoke_cfg()[key]
-	return float(row[clampi(tier - 1, 0, row.size() - 1)])
+	if tier == COALS_TIER:
+		return float((smoke_cfg()["coals"] as Dictionary).get(key, smoke_cfg().get(key, 1.0)))
+
+	var row: Variant = smoke_cfg()[key]
+
+	if not row is Array:
+		return float(row)
+
+	return float(row[clampi(tier - 1, 0, (row as Array).size() - 1)])
 
 
 # The puffs' start velocity: the wind's speed along its heading (where it blows toward) and the plume's rise up. Near calm a column at least
@@ -1497,12 +1521,17 @@ static func spark_direction(wind_ms: float, heading: float) -> Vector3:
 	return Vector3(cos(heading) * sin(lean), cos(lean), sin(heading) * sin(lean))
 
 
+# A fresh puff rises on its heat with only wind_start_share of the wind; the wind takes it fully by the end of its life (a steady sideways pull), so the
+# plume leaves the fire steep and bends over more the higher it gets.
 static func _aim_smoke(material: ParticleProcessMaterial, velocity: Vector3, brake: float) -> void:
-	var speed: float = maxf(velocity.length(), 0.01)
-	material.direction = velocity / speed
+	var share: float = clampf(float(smoke_cfg()["wind_start_share"]), 0.0, 1.0)
+	var start: Vector3 = Vector3(velocity.x * share, velocity.y, velocity.z * share)
+	var speed: float = maxf(start.length(), 0.01)
+	var life: float = maxf(float(smoke_cfg()["life_s"]), 0.1)
+	material.direction = start / speed
 	material.initial_velocity_min = speed * 0.9
 	material.initial_velocity_max = speed * 1.1
-	material.gravity = Vector3(0.0, brake, 0.0)
+	material.gravity = Vector3(velocity.x * (1.0 - share) / life, brake, velocity.z * (1.0 - share) / life)
 	var cone: Array = smoke_cfg()["spread_deg"]
 	material.spread = lerpf(float(cone[0]), float(cone[1]), clampf(Vector2(velocity.x, velocity.z).length() / 3.0, 0.0, 1.0))
 
@@ -1523,6 +1552,21 @@ static func set_fire_air(wind_ms: float, heading: float, still_night: float) -> 
 		_embers.direction = spark_direction(wind_ms, heading)
 
 
+# The density of a puff over its life (fire_smoke.json "fade"), times `density`: thick as it leaves the fire, thinning to nothing.
+static func smoke_fade(density: float) -> Gradient:
+	var offsets: PackedFloat32Array = PackedFloat32Array()
+	var colors: PackedColorArray = PackedColorArray()
+
+	for row in smoke_cfg()["fade"]:
+		offsets.append(clampf(float(row[0]), 0.0, 1.0))
+		colors.append(Color(1.0, 1.0, 1.0, clampf(float(row[1]) * density, 0.0, 1.0)))
+
+	var fade: Gradient = Gradient.new()
+	fade.offsets = offsets
+	fade.colors = colors
+	return fade
+
+
 static func _campfire_smoke(tier: int) -> GPUParticles3D:
 	if not _camp_smoke.has(tier):
 		var material: ParticleProcessMaterial = ParticleProcessMaterial.new()
@@ -1533,18 +1577,15 @@ static func _campfire_smoke(tier: int) -> GPUParticles3D:
 		material.damping_max = 0.0
 		material.scale_min = smoke_tier("puff_m", tier) * 0.8
 		material.scale_max = smoke_tier("puff_m", tier) * 1.2
+		var grow_to: float = smoke_tier("grow_to", tier)
 		var grow: Curve = Curve.new()
-		grow.max_value = maxf(0.5 * float(smoke_cfg()["grow_to"]), 1.0)
+		grow.max_value = maxf(0.5 * grow_to, 1.0)
 		grow.add_point(Vector2(0.0, 0.5))
-		grow.add_point(Vector2(1.0, 0.5 * float(smoke_cfg()["grow_to"])))
+		grow.add_point(Vector2(1.0, 0.5 * grow_to))
 		var grow_tex: CurveTexture = CurveTexture.new()
 		grow_tex.curve = grow
 		material.scale_curve = grow_tex
-		var fade: Gradient = Gradient.new()
-		fade.set_color(0, Color(1.0, 1.0, 1.0, 0.0))
-		fade.add_point(0.08, Color(1.0, 1.0, 1.0, 0.8))
-		fade.add_point(0.6, Color(1.0, 1.0, 1.0, 0.45))
-		fade.set_color(fade.get_point_count() - 1, Color(1.0, 1.0, 1.0, 0.0))
+		var fade: Gradient = smoke_fade(smoke_tier("density", tier) if tier == COALS_TIER else 1.0)
 		var fade_tex: GradientTexture1D = GradientTexture1D.new()
 		fade_tex.gradient = fade
 		material.color_ramp = fade_tex
@@ -1561,6 +1602,10 @@ static func _campfire_smoke(tier: int) -> GPUParticles3D:
 		shader.code = CAMP_SMOKE_SHADER
 		var look: ShaderMaterial = ShaderMaterial.new()
 		look.shader = shader
+
+		for key in ["near_grey", "far_grey", "alpha", "waver_m"]:
+			look.set_shader_parameter(key, float(smoke_cfg()[key]))
+
 		_camp_smoke_mesh.material = look
 
 	var plume: GPUParticles3D = GPUParticles3D.new()
