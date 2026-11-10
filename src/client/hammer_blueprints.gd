@@ -27,6 +27,7 @@ var _cursor: int = 0
 var category: String = ""                # the menu shows only this group of blueprints, "" for all of them (left and right arrows change it; Dave 5 Nov 2026)
 var _table
 var _pack
+var stock_count: Callable = Callable()   # (item number) -> what a build may draw on: the pack plus the craft stock in reach (InventoryView.stock_fill); unset: the pack alone
 var _panel: PanelContainer
 var _hud: CanvasLayer
 var _label: Label
@@ -122,13 +123,19 @@ func rows(hammer_tier: int) -> Array:
 		var all: bool = true
 
 		for need in row["cost"]:
-			var have: int = _pack.count_fill(_table.number_of(str(need[0])))   # a group cost (log, nails) counts any member, as the server does
+			var have: int = _have(_table.number_of(str(need[0])))   # a group cost (log, nails) counts any member, as the server does
 			all = all and have >= int(need[1])
 			parts.append("%s %d/%d" % [_table.in_sentence(str(_table.entry(str(need[0])).get("name", need[0]))), have, int(need[1])])
 
 		out.append({"number": int(row["number"]), "name": str(row["name"]), "kit": str(row["kit"]), "text": ", ".join(parts), "can": all, "station": str(row.get("station", "")), "category": str(row.get("category", "Other"))})
 
 	return out
+
+
+# What a build may draw on for one cost (server_items.gd _blueprint_short reads the same stock): the pack, loose stacks within 12 m and the player's own
+# containers within 12 m that are not kept out (CraftStock), any member of a group counting for it.
+func _have(number: int) -> int:
+	return int(stock_count.call(number)) if stock_count.is_valid() else int(_pack.count_fill(number))
 
 
 func kit_of(number: int) -> String:
@@ -191,7 +198,7 @@ func plan_can(plan: Dictionary) -> bool:
 	var cost: Dictionary = plan_cost(plan)
 
 	for id in cost:
-		if _pack.count_fill(_table.number_of(str(id))) < int(cost[id]):
+		if _have(_table.number_of(str(id))) < int(cost[id]):
 			return false
 
 	return true
@@ -202,7 +209,7 @@ func plan_text(plan: Dictionary) -> String:
 	var parts: PackedStringArray = []
 
 	for id in cost:
-		parts.append("%s %d/%d" % [_table.in_sentence(str(_table.entry(str(id)).get("name", id))), _pack.count_fill(_table.number_of(str(id))), int(cost[id])])
+		parts.append("%s %d/%d" % [_table.in_sentence(str(_table.entry(str(id)).get("name", id))), _have(_table.number_of(str(id))), int(cost[id])])
 
 	return "%d pieces: %s" % [plan["pieces"].size(), ", ".join(parts)]
 

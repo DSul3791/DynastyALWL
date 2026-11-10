@@ -7228,9 +7228,10 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 		cost_rows.append([table.number_of(str(need[0])), int(need[1])])
 
 	_pull_nearby_logs(peer, inv, _log_need(cost_rows, 1))   # shoulder and ground logs count (F-16)
+	var stock: Dictionary = _stock_of(peer)
 
 	for need in row["cost"]:
-		if inv.count_fill(table.number_of(str(need[0]))) + _ground_stock_count(peer, table.number_of(str(need[0]))) < int(need[1]):
+		if _stock_have(inv, table.number_of(str(need[0])), stock) < int(need[1]):
 			if site_ok:
 				continue   # a blueprint site is set down anyway; the materials are deposited later (Dave 5 Nov 2026)
 
@@ -7240,22 +7241,32 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 	return true
 
 
-# True when the pack and the ground stock beside the builder cannot cover the blueprint's materials: the click then sets down a blueprint site.
+# True when the craft stock cannot cover the blueprint's materials: the click then sets down a blueprint site.
+# A blueprint draws on what a craft draws on (CraftStock, coordinator 10 Nov 2026): the pack, loose stacks within LOOSE_STOCK_M (12 m) and the
+# builder's own containers within CRAFT_REACH_M (12 m) that are not kept out. The hammer list counts the same stock (craft_stock, protocol 98), so it
+# never shows a piece as covered that the server would set down as a site.
 func _blueprint_short(peer: int, inv, row: Dictionary) -> bool:
+	var stock: Dictionary = _stock_of(peer)
+
 	for need in row["cost"]:
-		if inv.count_fill(table.number_of(str(need[0]))) + _ground_stock_count(peer, table.number_of(str(need[0]))) < int(need[1]):
+		if _stock_have(inv, table.number_of(str(need[0])), stock) < int(need[1]):
 			return true
 
 	return false
 
 
 func _pay_blueprint(inv, row: Dictionary, peer: int = -1) -> void:
+	var stock: Dictionary = _stock_of(peer)
+
 	for need in row["cost"]:
 		var number: int = table.number_of(str(need[0]))
 		var left: int = int(need[1]) - _take_ground_stock(peer, number, int(need[1]))   # heavy stock laid on the ground beside the build goes first (Dave 2 Nov)
 
 		if left > 0:
-			inv.remove_fill(number, left)
+			_stock_take(inv, number, left, stock)   # then the pack, loose stacks within 12 m and the builder's own containers, nearest first
+
+	if peer >= 0:
+		_send_stock(peer)   # the hammer list's counts follow what was taken
 
 
 # Heavy building stock on the ground (Dave 2 Nov 2026: "we use the hammer to make blueprints on the spot"): a blueprint takes its materials from loose
@@ -7285,15 +7296,6 @@ func _ground_stock(peer: int, number: int) -> Array:
 
 	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
 	return out
-
-
-func _ground_stock_count(peer: int, number: int) -> int:
-	var total: int = 0
-
-	for row in _ground_stock(peer, number):
-		total += int(row[1])
-
-	return total
 
 
 # Takes up to `want` of `number` from the ground stock near the builder; returns how many it took.

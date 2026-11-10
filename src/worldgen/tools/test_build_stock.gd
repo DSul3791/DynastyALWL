@@ -112,6 +112,7 @@ func _init() -> void:
 	_check_site_gather(blocks, mortar, site3)
 	_check_group_stock(blocks, mortar, int(wall["number"]), here + Vector3(0.0, 0.0, 40.0))
 	_check_group_refund()
+	_check_chest_build(blocks, mortar, int(wall["number"]), here + Vector3(0.0, 0.0, -60.0))
 
 	print("test_build_stock: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
@@ -247,3 +248,41 @@ func _check_group_refund() -> void:
 
 	if not had_material:
 		bronze_entry.erase("material")
+
+
+# A blueprint draws on what a craft draws on (CraftStock, coordinator 10 Nov 2026): the pack, loose stacks within 12 m and the builder's own containers
+# within 12 m that are not kept out. The hammer list counts the same stock, so a piece it shows as covered is built at once, never set down as a site.
+func _check_chest_build(blocks: int, mortar: int, wall_number: int, spot: Vector3) -> void:
+	var inv = items.inventory_of(1)
+	var block_n: int = items.table.number_of("cut_stone_block")
+	var mortar_n: int = items.table.number_of("mortar")
+	inv.remove(block_n, inv.count_of(block_n))
+	inv.remove(mortar_n, inv.count_of(mortar_n))
+	items.report_position(1, spot)
+	var own: int = items.dev_place("chest@%s,%s,0" % [str(spot.x + 7.0), str(spot.z)])
+	items._items[own]["struct"]["owner"] = str(items._peer_key[1])
+	var own_box = items._chests[int(items._items[own]["struct"]["uid"])]
+	own_box.add(mortar_n, mortar)
+	var stranger: int = items.dev_place("chest@%s,%s,0" % [str(spot.x - 7.0), str(spot.z)])
+	items._items[stranger]["struct"]["owner"] = "someoneelse99"
+	var stranger_box = items._chests[int(items._items[stranger]["struct"]["uid"])]
+	stranger_box.add(block_n, blocks)
+	var walls_before: int = _walls()
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, wall_number, 0, 0, spot + Vector3(0.0, 0.0, 3.0))
+	check(_walls() == walls_before and _site_at(spot + Vector3(0.0, 0.0, 3.0)) != 0, "a stranger's chest of blocks does not count: the wall is set down as a site")
+	check(stranger_box.count_of(block_n) == blocks and own_box.count_of(mortar_n) == mortar, "setting down a site takes nothing from either chest")
+	# Blocks lying 9 m away (past the 4 m ground stock, inside the 12 m craft stock) and the mortar in the builder's own chest: built at once.
+	var spot2: Vector3 = spot + Vector3(0.0, 0.0, -8.0)
+	items.report_position(1, spot2)
+	items.drop_in_world(block_n, blocks, spot2 + Vector3(0.0, 0.0, -9.0))
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, wall_number, 0, 0, spot2 + Vector3(0.0, 0.0, -3.0))
+	check(_walls() == walls_before + 1, "blocks 9 m away and mortar in the builder's own chest build the wall at once")
+	check(own_box.count_of(mortar_n) == 0 and stranger_box.count_of(block_n) == blocks, "the mortar came out of the builder's chest; the stranger's blocks are untouched")
+	var far_blocks: int = 0
+
+	for k in items._items:
+		var it: Dictionary = items._items[k]
+		far_blocks += int(it["count"]) if not it.has("struct") and int(it.get("number", 0)) == block_n and (it["pos"] as Vector3).distance_to(spot2) < 10.0 else 0
+
+	check(far_blocks == 0, "the blocks 9 m away were used")
+

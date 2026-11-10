@@ -64,6 +64,16 @@ func _init() -> void:
 	var log_part: String = "%s %d/%d" % [table.in_sentence(str(table.entry("log").get("name", "log"))), int(log_row.get("count", 0)), int(log_row.get("count", 0))]
 	check(not log_row.is_empty() and log_text.contains(log_part), "oak logs in the pack count for a log cost (%s, wanted %s)" % [log_text, log_part])
 	pack.remove(table.number_of("log_oak"), int(log_row.get("count", 0)))
+	# The list counts what a build draws on, the pack and the craft stock in reach (held_item.gd sets stock_count to InventoryView.stock_fill).
+	pack.remove(table.number_of("nails"), pack.count_of(table.number_of("nails")))
+	var nails_n: int = table.number_of("nails")
+	var in_chest: Dictionary = {nails_n: 60}
+	list.stock_count = func(number: int) -> int:
+		return pack.count_fill(number) + int(in_chest.get(number, 0))
+	var stocked: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]
+	check(bool(stocked["can"]) and str(stocked["text"]) == "plank 12/12, nails 60/60", "60 nails in a chest in reach cover the table with none in the pack (%s)" % str(stocked["text"]))
+	list.stock_count = Callable()
+	pack.add(nails_n, 60)
 
 	list.set_open(true, 1)
 	check(list.is_open and list.picked == 0, "R opens the list with nothing picked")
