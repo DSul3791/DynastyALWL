@@ -109,7 +109,7 @@ func _init() -> void:
 	check(_walls() == 2, "blocks 20 m away do not build a wall")
 	check(_on_ground("cut_stone_block") == blocks and _have("mortar") == mortar, "a refused wall takes nothing")
 
-	_check_site_gather(wall, blocks, mortar, site3)
+	_check_site_gather(blocks, mortar, site3)
 
 	print("test_build_stock: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
@@ -129,7 +129,8 @@ func _site_at(at: Vector3) -> int:
 # The hammer in Repair mode on a blueprint site (Dave 10 Nov 2026, craft from containers built in): it pulls what the site still needs from within
 # building_wear.json site_gather_m (12 m) of the builder, the pack first, then the ground and the builder's own containers nearest first; never more than
 # it needs, never from a stranger's chest; one line says what came and what is missing.
-func _check_site_gather(wall: Dictionary, blocks: int, mortar: int, site3: Vector3) -> void:
+func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
+	var half: int = floori(float(blocks) / 2.0)
 	var site: int = _site_at(site3 + Vector3(0.0, 0.0, 3.0))
 	check(site != 0, "the refused wall left a blue site")
 
@@ -144,7 +145,7 @@ func _check_site_gather(wall: Dictionary, blocks: int, mortar: int, site3: Vecto
 	items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
 	check(_on_ground("cut_stone_block") == blocks and said.size() == 1 and str(said[0]).begins_with("Nothing within 12 m"), "stock 20 m away is not taken (%s)" % str(said))
 	# Half the blocks 8 m away on the ground, a few in the pack, the mortar in the builder's own chest 6 m away, more mortar in a stranger's chest.
-	items.drop_in_world(block_n, blocks / 2, site3 + Vector3(8.0, 0.0, 0.0))
+	items.drop_in_world(block_n, half, site3 + Vector3(8.0, 0.0, 0.0))
 	_give("cut_stone_block", 2)
 	var own: int = items.dev_place("chest@%s,%s,0" % [str(site3.x - 6.0), str(site3.z)])
 	items._items[own]["struct"]["owner"] = str(items._peer_key[1])
@@ -157,15 +158,15 @@ func _check_site_gather(wall: Dictionary, blocks: int, mortar: int, site3: Vecto
 	said.clear()
 	items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
 	var have: Dictionary = items._site_of(items._items[site])["have"]
-	check(int(have.get("cut_stone_block", 0)) == 2 + blocks / 2, "the pack's 2 blocks and the 8 m stack went in (%s)" % str(have))
+	check(int(have.get("cut_stone_block", 0)) == 2 + half, "the pack's 2 blocks and the 8 m stack went in (%s)" % str(have))
 	check(_have("cut_stone_block") == 0 and _on_ground("cut_stone_block") == blocks, "the pack first, then the near stack; the 20 m stack untouched")
 	check(int(have.get("mortar", 0)) == mortar and own_box.count_of(items.table.number_of("mortar")) == 3, "only the mortar it needs, from the builder's own chest")
 	check(stranger_box.count_of(items.table.number_of("mortar")) == mortar, "a stranger's chest is never used")
-	check(said.size() == 1 and str(said[0]).begins_with("Pulled ") and str(said[0]).contains("Still needed: %d " % (blocks - 2 - blocks / 2)), "one line: what came and what is still missing (%s)" % str(said))
+	check(said.size() == 1 and str(said[0]).begins_with("Pulled ") and str(said[0]).contains("Still needed: %d " % (blocks - 2 - half)), "one line: what came and what is still missing (%s)" % str(said))
 	# The rest carried to within reach: the next hit finishes it.
 	items.drop_in_world(block_n, blocks, site3 + Vector3(-3.0, 0.0, 2.0))
 	said.clear()
 	items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
 	check(items._items.has(site) and not items._items[site]["struct"].has("site"), "with nothing missing the wall is built")
 	check(said.size() == 1 and str(said[0]).ends_with("Built."), "and the line says so (%s)" % str(said))
-	check(_on_ground("cut_stone_block") == blocks + blocks - (blocks - 2 - blocks / 2), "only what was missing came off the new stack (%d on the ground)" % _on_ground("cut_stone_block"))
+	check(_on_ground("cut_stone_block") == blocks + blocks - (blocks - 2 - half), "only what was missing came off the new stack (%d on the ground)" % _on_ground("cut_stone_block"))
