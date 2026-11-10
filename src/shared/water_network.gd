@@ -60,9 +60,9 @@ static func pump_lpm(cap_lps: float, watts: float, depth_m: float) -> float:
 	return 60.0 * minf(cap_lps, watts / (9.81 * maxf(depth_m + 1.0, 0.1)))
 
 
-# A well's windlass: 10 L each (4 + 1.5 x depth) seconds, as litres a minute.
-static func windlass_lpm(depth_m: float) -> float:
-	return 600.0 / (4.0 + 1.5 * maxf(depth_m, 0.0))
+# A well's windlass: one draw of the held container's `draw_l` (a bucket holds 8) each (4 + 1.5 x depth) seconds, as litres a minute.
+static func windlass_lpm(depth_m: float, draw_l: float) -> float:
+	return 60.0 * maxf(draw_l, 0.0) / (4.0 + 1.5 * maxf(depth_m, 0.0))
 
 
 # --- The graph ---
