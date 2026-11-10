@@ -6879,7 +6879,7 @@
 				"Craft at a forge: 2 Bronze ingot, 1 Stick, 1 Leather strap"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bronze_hammer": {
 			"name": "Bronze - Hammer",
@@ -6903,7 +6903,7 @@
 				"Used in Bark shingle",
 				"Used in Wooden shingle"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"stairs_wood_kit": {
 			"name": "Wooden stairs",
