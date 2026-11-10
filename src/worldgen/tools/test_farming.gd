@@ -1,13 +1,14 @@
 extends SceneTree
 
-# Farming rules on the server (FARMING_SPEC.md steps 2 to 5; Tyler 31 Oct 2026). A hoe tills a bed; a seed is sown only in its season and is used up; a game day with
-# rain or poured water is a wet day; a crop is ripe only when old enough AND wet enough (a dry bed stalls at stage 2); winter pauses growth and kills a seedling (turnip
+# Farming rules on the server (FARMING_SPEC.md steps 2 to 5; Tyler 31 Oct 2026). A hoe tills a bed; a seed is sown only in its season and is used up; a game day that
+# ends with the bed's moisture at 25 percent or more (rain fills it, a pour adds to it, the weather dries it) is a wet day; a crop is ripe only when old enough AND wet enough (a dry bed stalls at stage 2); winter pauses growth and kills a seedling (turnip
 # grows on); compost speeds growth by 20 percent; harvest gives the yields and seeds back, half without the sickle for grain; an unripe crop is refused; crops are saved.
 #   godot --headless --path . --script res://src/worldgen/tools/test_farming.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const PlotWater := preload("res://src/shared/plot_water.gd")
 
 var failures: int = 0
 var items
@@ -62,6 +63,47 @@ func bed_id() -> int:
 func days(n: int) -> void:
 	clock[0] += float(n) * 86400.0
 	items._crops_tick()
+
+
+# Plot moisture (buildables plan B5; Sonny's water rules section 8): heavy rain fills a bed, the dry weather takes its evaporation (more when hot or
+# windy, little near freezing, less from a framed plot with moisture_factor), a pour adds a bucket's 8 percent, a crop's day is wet at 25 percent or more.
+func _moisture_checks(bed: int) -> void:
+	var cfg: Dictionary = items._moisture_cfg
+	check(not cfg.is_empty() and PlotWater.step(cfg, 10.0, 0.1, 20.0, 0.0, 0.8) == 100.0, "heavy rain fills a plot")
+	var hot: float = 100.0 - PlotWater.step(cfg, 100.0, 1.0, 25.0, 0.0, 0.0)
+	var cool: float = 100.0 - PlotWater.step(cfg, 100.0, 1.0, 5.0, 0.0, 0.0)
+	check(absf(hot - 16.0) < 0.5 and absf(cool - 5.0) < 0.5, "a hot day takes about 16 percent, a cool one 5 (%.1f, %.1f)" % [hot, cool])
+	check(100.0 - PlotWater.step(cfg, 100.0, 1.0, 0.0, 0.0, 0.0) < 0.01, "a freezing day takes nothing")
+	check(100.0 - PlotWater.step(cfg, 100.0, 1.0, 25.0, 1.0, 0.0) > hot, "wind dries it faster")
+	check(absf((100.0 - PlotWater.step(cfg, 100.0, 1.0, 25.0, 0.0, 0.0, 0.7)) - hot * 0.7) < 0.01, "a framed plot (factor 0.7) loses 0.7 of that")
+	check(PlotWater.step(cfg, 40.0, 0.25, 15.0, 0.0, 0.2) > 40.0, "a light rain wets it")
+	check(is_equal_approx(PlotWater.pour(cfg, 50.0), 58.0) and PlotWater.pour(cfg, 97.0) == 100.0, "a pour adds 8 percent, up to full")
+	check(PlotWater.is_wet(cfg, 25.0) and not PlotWater.is_wet(cfg, 24.9), "25 percent is wet enough")
+
+	# On the server: the bed dries over dry days and its crop's day is not wet once it is low; a garden plot (plot: true) is a bed too.
+	var key: String = items._bed_key(items._items[bed]["pos"])
+	rain[0] = 0.0
+	season[0] = "summer"
+	items._plot_water[key] = [30.0, clock[0]]
+	var wet_before: int = int(items._crops[key]["wet"])
+	days(1)
+	check(items.plot_moisture(items._items[bed]["pos"]) < 30.0 and int(items._crops[key]["wet"]) == wet_before, "a dry day dries the bed below wet: the day is not wet (%.1f)" % items.plot_moisture(items._items[bed]["pos"]))
+	rain[0] = 0.8
+	days(1)
+	check(items.plot_moisture(items._items[bed]["pos"]) == 100.0 and int(items._crops[key]["wet"]) == wet_before + 1, "a rainy day fills it and counts")
+	rain[0] = 0.0
+	items._structures["test_plot"] = {"kit": "test_plot_kit", "item": "tilled_bed", "state": 9907, "plot": true, "moisture_factor": 0.7, "cap_per_chunk": 12}
+	items._items[920001] = {"number": items.table.number_of("tilled_bed"), "count": 1, "pos": Vector3(40.5, 10.0, 40.5), "left": 1.0e9, "struct": {"kind": "test_plot", "yaw": 0.0}}
+	check(not items._bed_at(920001).is_empty(), "a garden plot takes seeds like a tilled bed")
+	days(1)
+	items._plot_water[key] = [100.0, clock[0]]
+	items._plot_water[items._bed_key(Vector3(40.5, 10.0, 40.5))] = [100.0, clock[0]]
+	days(1)
+	var bed_loss: float = 100.0 - items.plot_moisture(items._items[bed]["pos"])
+	var plot_loss: float = 100.0 - items.plot_moisture(Vector3(40.5, 10.0, 40.5))
+	check(bed_loss > 0.0 and absf(plot_loss - bed_loss * 0.7) < 0.01, "the framed plot loses 0.7 of the bed's water (%.1f, %.1f)" % [plot_loss, bed_loss])
+	items._items.erase(920001)
+	items._structures.erase("test_plot")
 
 
 func _init() -> void:
@@ -190,6 +232,8 @@ func _init() -> void:
 	check(items.water_bed(1, items.inventory_of(1), bed) and not items.water_bed(1, items.inventory_of(1), bed), "one water pours on the bed per day")
 	days(1)
 	check(int(items._crops[key]["wet"]) == 1, "water poured makes the next game day wet")
+
+	_moisture_checks(bed)
 
 	# Save and restart.
 	items._save_characters()

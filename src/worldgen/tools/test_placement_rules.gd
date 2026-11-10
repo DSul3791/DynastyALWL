@@ -401,5 +401,106 @@ func _init() -> void:
 	OS.delay_msec(100)
 	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(490.0, 10.0, 450.0))
 	check(items.inventory_of(2).count_of(items.table.number_of("stick")) == sticks_had + 1, "a branch far away gives nothing")
+	_pillar_checks(cfg)
+	_fence_checks(cfg)
+	_railing_checks(cfg)
 	print("placement rules: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Railings and the double doorway (the buildables plan, batch B1b, Morgan 10 Nov 2026): a railing stands on a foundation's edge anchors or the middle
+# of a ceiling cell's edge, on its top, the ceiling winning where one lies on the foundation; a 4 m wall piece spans two wall anchors of one run.
+# No railing or double doorway rows exist yet (Jamie's B1b batch), so test rows stand in.
+func _railing_checks(cfg: Dictionary) -> void:
+	var with: Dictionary = cfg.duplicate(true)
+	with["structures"]["test_railing"] = {"kit": "test_railing_kit", "item": "test_railing", "state": 9905, "piece": true, "piece_kind": "railing", "footprint_x": 2.0, "footprint_z": 0.1}
+	with["structures"]["test_double_door"] = {"kit": "test_double_door_kit", "item": "test_double_door", "state": 9906, "piece": true, "piece_kind": "wall", "footprint_x": 4.0, "footprint_z": 0.25}
+	var found: int = int(cfg["structures"]["foundation_section"]["state"])
+	var ceiling: int = int(cfg["structures"]["floor_section"]["state"])
+	var top: float = float(cfg["structures"]["foundation_section"].get("top_m", 0.3))
+	var base: Array = [{"pos": Vector3(100.0, 10.0, 100.0), "state": found, "yaw": 0.0}]
+	var edge: Array = Rules.snap(with, "test_railing_kit", Vector3(99.1, 10.3, 98.2), 0, base)
+	check(bool(edge[2]) and edge[0].is_equal_approx(Vector3(99.0, 10.0 + top, 98.0)) and int(edge[1]) == 0, "a railing stands on a foundation's edge (%s)" % str(edge))
+	var ceiling_rows: Array = [{"pos": Vector3(200.0, 12.6, 200.0), "state": ceiling, "yaw": 0.0}]
+	var ceiling_top: float = 12.6 + Rules.CEILING_TOP_M
+	var front: Array = Rules.snap(with, "test_railing_kit", Vector3(200.1, 12.7, 199.1), 0, ceiling_rows)
+	check(bool(front[2]) and front[0].is_equal_approx(Vector3(200.0, ceiling_top, 199.0)) and int(front[1]) == 0, "a railing stands on a ceiling's edge, on its top (%s)" % str(front))
+	var side: Array = Rules.snap(with, "test_railing_kit", Vector3(201.0, 12.7, 200.2), 0, ceiling_rows)
+	check(bool(side[2]) and side[0].is_equal_approx(Vector3(201.0, ceiling_top, 200.0)) and int(side[1]) == 90, "and turns along the side edge (%s)" % str(side))
+	var both: Array = base + [{"pos": Vector3(99.0, 10.0 + top, 99.0), "state": ceiling, "yaw": 0.0}]
+	var upper: Array = Rules.snap(with, "test_railing_kit", Vector3(99.0, 10.0 + top + Rules.CEILING_TOP_M, 98.1), 0, both)
+	check(bool(upper[2]) and is_equal_approx(upper[0].y, 10.0 + top + Rules.CEILING_TOP_M), "on a ceiling laid on a foundation the railing stands on the ceiling (%s)" % str(upper))
+	check(not bool(Rules.snap(cfg, "wall_section_kit", Vector3(200.1, 12.7, 199.1), 0, ceiling_rows)[2]), "a wall never takes a ceiling's railing points")
+	check(Rules.span_anchors(cfg["structures"]["foundation_section"]["anchors"]["wall"], 4.0).size() == 4, "a 4 m piece has one spot on each side of a foundation")
+	var door: Array = Rules.snap(with, "test_double_door_kit", Vector3(100.3, 10.3, 97.9), 0, base)
+	check(bool(door[2]) and door[0].is_equal_approx(Vector3(100.0, 10.0 + top, 98.0)) and int(door[1]) == 0, "a double doorway spans the two wall cells of a side (%s)" % str(door))
+	var door_side: Array = Rules.snap(with, "test_double_door_kit", Vector3(97.9, 10.3, 100.4), 0, base)
+	check(bool(door_side[2]) and door_side[0].is_equal_approx(Vector3(98.0, 10.0 + top, 100.0)) and int(door_side[1]) == 90, "and the cells of a turned side (%s)" % str(door_side))
+	var narrow: Array = Rules.snap(cfg, "wall_section_kit", Vector3(100.3, 10.3, 97.9), 0, base)
+	check(bool(narrow[2]) and narrow[0].is_equal_approx(Vector3(101.0, 10.0 + top, 98.0)), "a 2 m wall at the same spot keeps its own cell (%s)" % str(narrow))
+
+
+# Fences (the buildables plan, batch B2, Morgan 10 Nov 2026): 2 m sections that turn in 45 degree steps, leave a standing section's end straight on
+# or turned 45 or 90 degrees (sharing its post), never double a section, follow the ground within 1 m of rise; walls never join them. No fence
+# rows exist yet (Jamie's B2 batch), so a test row stands in.
+func _fence_checks(cfg: Dictionary) -> void:
+	var with: Dictionary = cfg.duplicate(true)
+	with["structures"]["test_fence"] = {"kit": "test_fence_kit", "item": "test_fence", "state": 9902, "piece": true, "piece_kind": "fence", "footprint_x": 2.0, "footprint_z": 0.2, "max_rise_m": 1.0, "cap_per_chunk": 200}
+	var alone: Array = Rules.snap(with, "test_fence_kit", Vector3(300.2, 10.0, 290.0), 30)
+	check(int(alone[1]) == 45 and not bool(alone[2]), "a lone fence turns to the nearest 45 degrees (%s)" % str(alone))
+	check(int(Rules.snap(with, "test_fence_kit", Vector3(300.2, 10.0, 290.0), 20)[1]) == 0, "20 degrees rounds to 0")
+	var rows: Array = [{"pos": Vector3(300.0, 10.0, 300.0), "state": 9902, "yaw": 0.0}]
+	var ends: Array = Rules.fence_ends(Vector3(300.0, 10.0, 300.0), 0.0, 2.0)
+	check((ends[0] as Vector3).is_equal_approx(Vector3(299.0, 10.0, 300.0)) and (ends[1] as Vector3).is_equal_approx(Vector3(301.0, 10.0, 300.0)), "a 2 m section has a post 1 m each side of its middle (%s)" % str(ends))
+	var straight: Array = Rules.snap(with, "test_fence_kit", Vector3(303.0, 10.0, 300.1), 0, rows)
+	check(straight[0].is_equal_approx(Vector3(302.0, 10.0, 300.0)) and int(straight[1]) == 0, "the next section goes straight on from the end post (%s)" % str(straight))
+	var bent: Array = Rules.snap(with, "test_fence_kit", Vector3(301.7, 10.0, 299.2), 0, rows)
+	check(bent[0].is_equal_approx(Vector3(301.0 + cos(PI / 4.0), 10.0, 300.0 - sin(PI / 4.0))) and int(bent[1]) == 45, "or turned 45 degrees about the same post (%s)" % str(bent))
+	var corner: Array = Rules.snap(with, "test_fence_kit", Vector3(301.1, 10.0, 301.2), 0, rows)
+	check(corner[0].is_equal_approx(Vector3(301.0, 10.0, 301.0)) and int(corner[1]) == 270, "or turned 90 degrees to make a corner (%s)" % str(corner))
+	var back: Array = Rules.snap(with, "test_fence_kit", Vector3(297.1, 10.0, 300.0), 0, rows)
+	check(back[0].is_equal_approx(Vector3(298.0, 10.0, 300.0)), "the other end takes a section too (%s)" % str(back))
+	var doubled: Array = rows + [{"pos": Vector3(302.0, 10.0, 300.0), "state": 9902, "yaw": 0.0}]
+	check(not Rules.snap(with, "test_fence_kit", Vector3(302.2, 10.0, 300.0), 0, doubled)[0].is_equal_approx(Vector3(302.0, 10.0, 300.0)), "a section already standing is not offered again")
+	var wall: Array = Rules.snap(with, "wall_section_kit", Vector3(302.6, 10.0, 300.2), 0, rows)
+	check(wall[0] == Vector3(303.0, 10.0, 300.0) and not bool(wall[2]), "a wall does not join a fence; it keeps the grid (%s)" % str(wall))
+	check(Rules.steep(with, "test_fence_kit", Vector3(300.0, 10.0, 300.0), 0.0, func(x, _z): return 10.0 + 0.45 * x) == "", "a section follows a slope rising 0.9 m along it")
+	check(Rules.steep(with, "test_fence_kit", Vector3(300.0, 10.0, 300.0), 0.0, func(x, _z): return 10.0 + 0.6 * x) == "steep", "and is red on one rising 1.2 m")
+
+
+# Pillar anchors (the buildables plan, batch B1c, Morgan 10 Nov 2026): the middle and four corners of a foundation (4 x 4 m) or a ceiling cell (2 x 2 m), on its
+# top; where a ceiling lies on a foundation, the ceiling's point wins when the cursor is on the ceiling; a pillar already standing takes its point.
+# No pillar rows exist yet (Jamie's B1c batch), so a test row stands in.
+func _pillar_checks(cfg: Dictionary) -> void:
+	var with: Dictionary = cfg.duplicate(true)
+	with["structures"]["test_pillar"] = {"kit": "test_pillar_kit", "item": "test_pillar", "state": 9901, "piece": true, "piece_kind": "pillar", "footprint_x": 0.4, "footprint_z": 0.4}
+	var found: int = int(cfg["structures"]["foundation_section"]["state"])
+	var ceiling: int = int(cfg["structures"]["floor_section"]["state"])
+	var top: float = float(cfg["structures"]["foundation_section"].get("top_m", 0.3))
+	var base: Array = [{"pos": Vector3(100.0, 10.0, 100.0), "state": found, "yaw": 0.0}]
+	check(Rules.pillar_anchors(cfg["structures"]["foundation_section"]).size() == 5 and Rules.pillar_anchors(cfg["structures"]["wall_section"]).is_empty(), "a foundation has 5 pillar points, a wall none")
+	var mid: Array = Rules.snap(with, "test_pillar_kit", Vector3(100.4, 10.3, 99.7), 0, base)
+	check(bool(mid[2]) and mid[0].is_equal_approx(Vector3(100.0, 10.0 + top, 100.0)), "a pillar near a foundation's middle stands on its middle, on top (%s)" % str(mid))
+	var corner: Array = Rules.snap(with, "test_pillar_kit", Vector3(101.6, 10.3, 98.3), 0, base)
+	check(bool(corner[2]) and corner[0].is_equal_approx(Vector3(102.0, 10.0 + top, 98.0)), "near a corner it stands on the corner (%s)" % str(corner))
+
+	for kind in cfg["structures"]:
+		if bool(cfg["structures"][kind].get("foundation", false)):
+			var tier_row: Array = [{"pos": Vector3(100.0, 10.0, 100.0), "state": int(cfg["structures"][kind]["state"]), "yaw": 0.0}]
+			check(bool(Rules.snap(with, "test_pillar_kit", Vector3(98.3, 10.3, 101.8), 0, tier_row)[2]), "every foundation takes a pillar at its corners (%s)" % kind)
+
+	var ceiling_rows: Array = [{"pos": Vector3(200.0, 12.6, 200.0), "state": ceiling, "yaw": 90.0}]
+	var on_ceiling: Array = Rules.snap(with, "test_pillar_kit", Vector3(200.8, 12.7, 200.9), 0, ceiling_rows)
+	check(bool(on_ceiling[2]) and on_ceiling[0].is_equal_approx(Vector3(201.0, 12.6 + Rules.CEILING_TOP_M, 201.0)), "a pillar on a ceiling stands on its corner, on its top (%s)" % str(on_ceiling))
+	var both: Array = base + [{"pos": Vector3(101.0, 10.0 + top, 101.0), "state": ceiling, "yaw": 0.0}]
+	var on_top: Array = Rules.snap(with, "test_pillar_kit", Vector3(100.1, 10.0 + top + Rules.CEILING_TOP_M, 100.1), 0, both)
+	check(bool(on_top[2]) and is_equal_approx(on_top[0].y, 10.0 + top + Rules.CEILING_TOP_M), "on a ceiling laid on a foundation the pillar stands on the ceiling (%s)" % str(on_top))
+	var taken: Array = Rules.snap(with, "test_pillar_kit", Vector3(100.3, 10.3, 100.2), 0, base + [{"pos": Vector3(100.0, 10.0 + top, 100.0), "state": 9901, "yaw": 0.0}])
+	var held_rows: Array = base + [{"pos": Vector3(100.0, 10.0 + top, 100.0), "state": 9901, "yaw": 0.0}]
+	var ceiling_held: Array = ceiling_rows + [{"pos": Vector3(200.0, 12.6 + Rules.CEILING_TOP_M, 200.0), "state": 9901, "yaw": 0.0}]
+	var next_free: Array = Rules.snap(with, "test_pillar_kit", Vector3(200.3, 12.7, 200.3), 0, ceiling_held)
+	check(bool(next_free[2]) and next_free[0].is_equal_approx(Vector3(201.0, 12.6 + Rules.CEILING_TOP_M, 201.0)), "a point that holds a pillar is passed over for the next free one in reach (%s)" % str(next_free))
+	check(bool(taken[2]) and Rules.blocked(with, "test_pillar_kit", taken[0], held_rows) == "close", "with no free point near, the ghost sits on the held one and is red (%s)" % str(taken))
+	check(Rules.blocked(with, "test_pillar_kit", next_free[0], ceiling_held) == "", "a free point is not blocked by the pillar beside it")
+	var wall: Array = Rules.snap(cfg, "wall_section_kit", Vector3(100.0, 10.0 + top + Rules.CEILING_TOP_M, 97.8), 0, both)
+	check(bool(wall[2]) and wall[0].is_equal_approx(Vector3(99.0, 10.0 + top, 98.0)) or bool(wall[2]) and wall[0].is_equal_approx(Vector3(101.0, 10.0 + top, 98.0)), "a wall still snaps to the foundation's edge anchor, never to a ceiling (%s)" % str(wall))

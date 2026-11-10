@@ -69,6 +69,19 @@ const LOOKS := {
 	"fireplace": {"builder": "fireplace", "args": []},
 	"flower_pot": {"builder": "flower_pot", "args": []},
 	"antler_mount": {"builder": "antler_mount", "args": []},
+	"thatch_doorway_open": {"builder": "thatch_doorway", "args": [true]},
+	"log_foundation": {"builder": "log_foundation", "args": []},
+	"brick_foundation": {"builder": "brick_foundation", "args": []},
+	"log_doorway": {"builder": "log_doorway", "args": [false]},
+	"log_doorway_open": {"builder": "log_doorway", "args": [true]},
+	"stone_doorway": {"builder": "stone_doorway", "args": [false]},
+	"stone_doorway_open": {"builder": "stone_doorway", "args": [true]},
+	"brick_doorway": {"builder": "brick_doorway", "args": [false]},
+	"brick_doorway_open": {"builder": "brick_doorway", "args": [true]},
+	"thatch_window": {"builder": "thatch_window", "args": []},
+	"log_window": {"builder": "log_window", "args": []},
+	"stone_window": {"builder": "stone_window", "args": []},
+	"brick_window": {"builder": "brick_window", "args": []},
 }
 
 static var _warned: Dictionary = {}
