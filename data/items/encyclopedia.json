@@ -2061,7 +2061,8 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Anvil"
+				"Used in Anvil",
+				"Used in Log - Shelf"
 			],
 			"obtainable_now": true
 		},
@@ -2142,7 +2143,8 @@
 				"Used in Snowshoes",
 				"Used in Bird trap",
 				"Used in Fish trap",
-				"Used in Claw - Necklace"
+				"Used in Claw - Necklace",
+				"Used in Log - Shelf"
 			],
 			"obtainable_now": true
 		},
@@ -2445,7 +2447,9 @@
 				"Used in Armour stand",
 				"Used in Sign",
 				"Used in Tusk - Mount",
-				"Used in Weapon rack"
+				"Used in Weapon rack",
+				"Used in Iron - Chest",
+				"Used in Wooden - Crate"
 			],
 			"obtainable_now": true
 		},
@@ -2506,7 +2510,8 @@
 				"Used in Iron - Pipe elbow",
 				"Used in Iron - Tap",
 				"Used in Iron - Chisel",
-				"Used in Anvil"
+				"Used in Anvil",
+				"Used in Iron - Chest"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3337,7 +3342,8 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Anvil"
+				"Used in Anvil",
+				"Used in Log - Shelf"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3391,7 +3397,8 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Anvil"
+				"Used in Anvil",
+				"Used in Log - Shelf"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3445,7 +3452,8 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Anvil"
+				"Used in Anvil",
+				"Used in Log - Shelf"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3499,7 +3507,8 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Anvil"
+				"Used in Anvil",
+				"Used in Log - Shelf"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3553,7 +3562,8 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Anvil"
+				"Used in Anvil",
+				"Used in Log - Shelf"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3607,7 +3617,8 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Anvil"
+				"Used in Anvil",
+				"Used in Log - Shelf"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3661,7 +3672,8 @@
 				"Used in Oil press",
 				"Used in Tanning rack",
 				"Used in Stonecutter's bench",
-				"Used in Anvil"
+				"Used in Anvil",
+				"Used in Log - Shelf"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4202,7 +4214,9 @@
 				"Used in Iron - Doorway",
 				"Used in Iron - Railing",
 				"Used in Wooden - Hand pump",
-				"Used in Iron - Deep-well pump"
+				"Used in Iron - Deep-well pump",
+				"Used in Iron - Chest",
+				"Used in Wooden - Crate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -4287,7 +4301,8 @@
 				"Used in Iron - Hand pump",
 				"Used in Wooden - Sluice",
 				"Used in Iron - Deep-well pump",
-				"Used in Iron - Tap"
+				"Used in Iron - Tap",
+				"Used in Iron - Chest"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -10238,6 +10253,60 @@
 			],
 			"used_for": [],
 			"obtainable_now": true
+		},
+		"log_shelf_kit": {
+			"name": "Log shelf",
+			"kind": "placeable",
+			"description": "Split logs lashed between two log uprights. A first shelf to set against a wall.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_shelf": {
+			"name": "Log - Shelf",
+			"kind": "structure",
+			"description": "Split logs lashed between two log uprights. A first shelf to set against a wall.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_crate_kit": {
+			"name": "Wooden crate",
+			"kind": "placeable",
+			"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 5 Plank, 8 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_crate": {
+			"name": "Wooden - Crate",
+			"kind": "structure",
+			"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_chest_kit": {
+			"name": "Iron chest",
+			"kind": "placeable",
+			"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Plank, 3 Iron ingot, 16 Nails, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"iron_chest": {
+			"name": "Iron - Chest",
+			"kind": "structure",
+			"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
 		}
 	}
 }
