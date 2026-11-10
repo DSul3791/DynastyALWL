@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 608,
+	"next_number": 628,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -7059,6 +7059,226 @@
 				"look_alikes": [],
 				"material": "iron",
 				"note": "Building piece: row state 111."
+			},
+			"thatch_pillar_kit": {
+				"number": 608,
+				"retired": true,
+				"name": "Thatch pillar",
+				"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 12
+			},
+			"thatch_pillar": {
+				"number": 609,
+				"name": "Thatch - Pillar",
+				"description": "A thatch pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "thatch",
+				"note": "Building piece: row state 113."
+			},
+			"wooden_pillar_kit": {
+				"number": 610,
+				"retired": true,
+				"name": "Wooden pillar",
+				"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 19
+			},
+			"wooden_pillar": {
+				"number": 611,
+				"name": "Wooden - Pillar",
+				"description": "A wooden pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "wood",
+				"note": "Building piece: row state 114."
+			},
+			"log_pillar_kit": {
+				"number": 612,
+				"retired": true,
+				"name": "Log pillar",
+				"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 7
+			},
+			"log_pillar": {
+				"number": 613,
+				"name": "Log - Pillar",
+				"description": "A log pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 115."
+			},
+			"stone_pillar_kit": {
+				"number": 614,
+				"retired": true,
+				"name": "Stone pillar",
+				"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 36
+			},
+			"stone_pillar": {
+				"number": 615,
+				"name": "Stone - Pillar",
+				"description": "A stone pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "stone",
+				"note": "Building piece: row state 116."
+			},
+			"brick_pillar_kit": {
+				"number": 616,
+				"retired": true,
+				"name": "Brick pillar",
+				"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 44
+			},
+			"brick_pillar": {
+				"number": 617,
+				"name": "Brick - Pillar",
+				"description": "A brick pillar 2.6 m tall. Stands on the middle or a corner of a foundation or ceiling.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "brick",
+				"note": "Building piece: row state 117."
+			},
+			"thatch_roof_corner_kit": {
+				"number": 618,
+				"retired": true,
+				"name": "Thatch roof corner",
+				"description": "The corner of a thatch roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 56
+			},
+			"thatch_roof_corner": {
+				"number": 619,
+				"name": "Thatch - Roof corner",
+				"description": "The corner of a thatch roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "thatch",
+				"note": "Building piece: row state 118."
+			},
+			"wooden_roof_corner_kit": {
+				"number": 620,
+				"retired": true,
+				"name": "Wooden roof corner",
+				"description": "The corner of a wooden roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 32
+			},
+			"wooden_roof_corner": {
+				"number": 621,
+				"name": "Wooden - Roof corner",
+				"description": "The corner of a wooden roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "wood",
+				"note": "Building piece: row state 119."
+			},
+			"log_roof_corner_kit": {
+				"number": 622,
+				"retired": true,
+				"name": "Log roof corner",
+				"description": "The corner of a log roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 42
+			},
+			"log_roof_corner": {
+				"number": 623,
+				"name": "Log - Roof corner",
+				"description": "The corner of a log roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "log",
+				"note": "Building piece: row state 120."
+			},
+			"stone_roof_corner_kit": {
+				"number": 624,
+				"retired": true,
+				"name": "Stone roof corner",
+				"description": "The corner of a stone roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 56
+			},
+			"stone_roof_corner": {
+				"number": 625,
+				"name": "Stone - Roof corner",
+				"description": "The corner of a stone roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "stone",
+				"note": "Building piece: row state 121."
+			},
+			"brick_roof_corner_kit": {
+				"number": 626,
+				"retired": true,
+				"name": "Brick roof corner",
+				"description": "The corner of a brick roof, where two slopes meet.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 72
+			},
+			"brick_roof_corner": {
+				"number": 627,
+				"name": "Brick - Roof corner",
+				"description": "The corner of a brick roof, where two slopes meet.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"material": "brick",
+				"note": "Building piece: row state 122."
 			}
 	}
 }
