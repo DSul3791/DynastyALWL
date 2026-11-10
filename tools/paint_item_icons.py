@@ -1075,6 +1075,96 @@ def bronze_scale_shirt():
     return faces
 
 
+# ---------------------------------------------------------------- seven-tier ladder materials (Dave, 10 Nov 2026)
+def _shingles(colour, shape, seed):
+    """Three roof shingles fanned the way the carved stone shingle is (one layout for the set): `shape(k)` builds the k-th one lying flat."""
+    faces = []
+    for k in range(3):
+        faces += moved(shape(k, shade(colour, 0.92 + 0.06 * k)), rot_y(math.radians(-24.0 + 20.0 * k)), (0.25 * k - 0.25, 0.1 * k, 0.0))
+    return faces
+
+
+def bark_shingle():
+    """Bark shingle (Rustic roofs): three flat slabs of stripped bark, rough and grey-brown, ridged along their length, fanned."""
+    def one(k, colour):
+        faces = box((0.0, 0.0, 0.0), (0.85, 0.07, 1.4), colour)
+        for x in (-0.25, 0.05, 0.3):
+            faces += box((x + 0.03 * k, 0.045, 0.0), (0.07, 0.03, 1.3), shade(colour, 0.72))   # the bark's ridges
+        return faces
+    return _shingles((116, 94, 72), one, 420)
+
+
+def wooden_shingle():
+    """Wooden shingle (Refined roofs): three split shakes, thick at the butt and thin at the head, pale split wood with a grain line, fanned."""
+    def one(k, colour):
+        faces = box((0.0, 0.0, 0.0), (0.8, 0.06, 1.4), colour)
+        faces += box((0.0, 0.04, 0.55), (0.8, 0.05, 0.3), shade(colour, 0.95))                # the thick butt end
+        faces += box((0.15 - 0.1 * k, 0.035, -0.1), (0.03, 0.01, 1.0), shade(colour, 0.8))   # a grain line
+        return faces
+    return _shingles((206, 160, 102), one, 430)
+
+
+def clay_roof_tile():
+    """Clay roof tile (Superior and Engineered roofs): three curved fired-clay tiles nested in a row, each a half round channel, orange-red."""
+    tile = (190, 96, 58)
+    faces = []
+    for k in range(3):                                                                                # side by side, each a little higher
+        x0, y0 = -0.78 + 0.78 * k, 0.08 * k
+        pts = [(0.42 * math.cos(a), 0.42 * math.sin(a), 0.0) for a in np.linspace(math.radians(195.0), math.radians(345.0), 6)]
+        for j in range(5):                                                                            # the curve, five flat strips
+            a, b = np.array(pts[j]), np.array(pts[j + 1])
+            mid, d = (a + b) / 2.0, b - a
+            faces += moved(box((0.0, 0.0, 0.0), (float(np.linalg.norm(d)) + 0.01, 0.07, 1.3), shade(tile, 0.9 + 0.04 * (j % 3) + 0.03 * k)),
+                           rot_z(math.atan2(d[1], d[0])), (mid[0] + x0, mid[1] + y0, mid[2]))
+    return faces
+
+
+def limestone():
+    """Limestone: three pale cream chunks of soft rock, blocky and rough, a darker grey vein in one."""
+    faces = []
+    for k, (at, r, tone) in enumerate((((-0.4, -0.25, 0.3), (0.55, 0.42, 0.5), 1.0), ((0.45, -0.3, 0.1), (0.5, 0.36, 0.45), 0.93), ((0.0, 0.2, -0.3), (0.5, 0.42, 0.45), 1.05))):
+        faces += blob(at, r, shade((214, 206, 182), tone), seed=440 + k, seg=6, rings=4, rough=0.16)
+    faces += box((0.05, 0.62, -0.3), (0.5, 0.02, 0.06), (150, 146, 136))
+    return faces
+
+
+def lime_powder():
+    """Lime powder: a heap of white burnt-lime powder with a small wooden scoop pushed into it."""
+    faces = blob((0.0, -0.45, 0.0), (1.0, 0.68, 0.85), (238, 236, 228), seed=450, seg=12, rings=5, rough=0.05)
+    faces += rod((0.25, 0.0, 0.1), (1.0, 0.55, -0.05), 0.08, WOOD, seed=451)
+    faces += blob((0.18, -0.05, 0.12), (0.26, 0.12, 0.2), WOOD, seed=452, seg=8, rings=3, rough=0.03)
+    return faces
+
+
+def concrete():
+    """Concrete (Engineered and Fortified): a cast grey block with its board-form lines, a little gravel at its foot."""
+    grey = (150, 150, 146)
+    faces = box((0.0, 0.0, 0.0), (1.5, 0.9, 1.0), grey)
+    for y in (-0.15, 0.15):
+        faces += box((0.0, y, 0.0), (1.52, 0.025, 1.02), shade(grey, 0.72))   # board-form lines
+    for k, (x, z) in enumerate(((0.95, 0.4), (0.85, -0.2), (-0.95, 0.45))):
+        faces += blob((x, -0.38, z), (0.12, 0.1, 0.11), (120, 116, 108), seed=460 + k, seg=6, rings=3, rough=0.2)
+    return faces
+
+
+def iron_band():
+    """Iron band (Fortified): a flat forged iron strap bent into a hoop on its edge, rivets round it, a second band leaning behind."""
+    faces = []
+    for turn, shift, tone in ((rot_y(0.0), (0.0, 0.0, 0.25), 1.0), (rot_x(math.radians(-25.0)), (0.3, 0.25, -0.35), 0.85)):
+        n = 16
+        hoop = []
+        for k in range(n):
+            a0, a1 = 2.0 * math.pi * k / n, 2.0 * math.pi * (k + 1) / n
+            p0 = np.array([0.85 * math.cos(a0), 0.85 * math.sin(a0), 0.0])
+            p1 = np.array([0.85 * math.cos(a1), 0.85 * math.sin(a1), 0.0])
+            mid, d = (p0 + p1) / 2.0, p1 - p0
+            hoop += moved(box((0.0, 0.0, 0.0), (float(np.linalg.norm(d)) + 0.02, 0.07, 0.28), shade((96, 98, 108), tone)), rot_z(math.atan2(d[1], d[0])), tuple(mid))
+            if k % 4 == 0:
+                hoop += moved(box((0.0, 0.0, 0.0), (0.08, 0.04, 0.08), (150, 152, 160)), rot_z(math.atan2(d[1], d[0])), tuple(mid * 0.94))   # a rivet
+        faces += moved(hoop, turn, shift)
+    return faces
+
+
 def _pieces():
     return {
         "spear": (stone_spear, DIAGONAL),
@@ -1140,6 +1230,13 @@ def _pieces():
         "fish_soup": (fish_soup, rot_x(math.radians(18.0))),
         "meatballs": (meatballs, rot_x(math.radians(26.0))),
         "claw_necklace": (claw_necklace, rot_x(math.radians(50.0))),
+        "bark_shingle": (bark_shingle, rot_x(math.radians(35.0))),
+        "wooden_shingle": (wooden_shingle, rot_x(math.radians(35.0))),
+        "clay_roof_tile": (clay_roof_tile, rot_x(math.radians(32.0)) @ rot_y(math.radians(-18.0))),
+        "limestone": (limestone, rot_x(math.radians(14.0))),
+        "lime_powder": (lime_powder, rot_x(math.radians(14.0))),
+        "concrete": (concrete, rot_y(math.radians(-30.0)) @ rot_x(math.radians(20.0))),
+        "iron_band": (iron_band, rot_y(math.radians(-25.0)) @ rot_x(math.radians(10.0))),
         "bronze_scale_shirt": (bronze_scale_shirt, rot_y(math.radians(-15.0))),
     }
 

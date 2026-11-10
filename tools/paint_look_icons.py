@@ -148,6 +148,16 @@ ITEMS["root_cellar_kit"] = ("root_cellar", rot_y(math.radians(-20.0)) @ rot_x(ma
 ITEMS["log_shelf"] = ("log_shelf", STATION_VIEW)   # B3b: the Log - Shelf, Iron - Chest and Wooden - Crate (blueprint pieces, no kits)
 ITEMS["iron_chest"] = ("iron_chest", FURNITURE_VIEW)
 ITEMS["wooden_crate"] = ("wooden_crate", FURNITURE_VIEW)
+for _tier in ("engineered", "fortified"):   # the seven-tier ladder's concrete tiers (10 Nov 2026); Fortified is the same model with iron bands
+    for _piece, _view in (("foundation", SLAB_VIEW), ("wall", WALL_VIEW), ("doorway", WALL_VIEW), ("pillar", STATION_VIEW)):
+        ITEMS[_tier + "_" + _piece] = (_tier + "_" + _piece + ("_open" if _piece == "doorway" else ""), _view)
+ITEMS["engineered_window"] = ("engineered_window", WALL_VIEW)
+ITEMS["engineered_stairs"] = ("engineered_stairs", STAIR_VIEW)
+ITEMS["engineered_floor"] = ("engineered_floor", SLAB_VIEW)
+ITEMS["engineered_roof_corner"] = ("engineered_roof_corner", CORNER_VIEW)
+ITEMS["fortified_gate"] = ("fortified_gate", WALL_VIEW)
+ITEMS["fortified_wall_top"] = ("fortified_wall_top", WALL_VIEW)
+ITEMS["mixer"] = ("mixer", STATION_VIEW)
 ITEMS["wooden_lantern"] = (lambda: carried_lantern(False), STATION_VIEW)
 ITEMS["iron_lantern"] = (lambda: carried_lantern(True), STATION_VIEW)
 NAMES = tuple(ITEMS)
