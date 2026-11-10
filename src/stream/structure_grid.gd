@@ -3,7 +3,7 @@ extends RefCounted
 # Server-side footprints of the buildings that stop animals and walkers (Dave 3 Nov 2026: animals walked through walls, and a fox could take food
 # from inside a closed hut, because footprints lived only on the client). Each solid piece is an oriented rectangle (centre, half sizes,
 # yaw) kept in a hash of BUCKET_M squares; a query touches the few rectangles of one bucket. A piece is solid when its structures.json
-# row says "blocks_walk": true (walls, windows, heavy stations; doorways and floors are walkable).
+# row says "blocks_walk": true (walls, windows, heavy stations, shut doors and gates; open doorways and floors are walkable).
 #
 # The grid keeps ids only. Removal needs no call: a query asks `items` (the server's item dictionary) whether the id is still there and
 # still the same kind, and forgets it if not, so none of the many places that erase an item need to know about the grid.
