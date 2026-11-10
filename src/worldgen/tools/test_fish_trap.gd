@@ -12,6 +12,7 @@ const Rules := preload("res://src/shared/placement_rules.gd")
 
 var failures: int = 0
 var said: Array = []
+var fish_ids: Dictionary = {}   # the species ids of fishing.json: only these count as a catch (bait and junk do not)
 
 
 func check(ok: bool, what: String) -> void:
@@ -26,7 +27,7 @@ func _fish_in(box) -> int:
 	for slot in box.SLOTS:
 		var id: String = box.table.id_of(box.numbers[slot]) if box.numbers[slot] != 0 else ""
 
-		if id != "" and not id.begins_with("test_"):
+		if fish_ids.has(id):
 			n += box.counts[slot]
 
 	return n
@@ -75,7 +76,9 @@ func _init() -> void:
 	items._moving[1] = 0.0
 	var inv = items.inventory_of(1)
 	var cfg: Dictionary = items._fishing_data()
-	var fish_ids: Dictionary = {}
+	cfg["stock_base"] = 12   # every cell holds 12 at most (the file's cap is 6 + a hash of the cell, under 12 for some cells)
+	cfg["stock_extra"] = 1
+	cfg["stock_max"] = 12
 
 	for water in cfg.get("species", {}):
 		for row in cfg["species"][water]:
