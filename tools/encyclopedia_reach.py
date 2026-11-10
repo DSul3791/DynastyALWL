@@ -6,6 +6,7 @@ Rerun this after any data change instead of hand-editing obtainable_now:
     python3 tools/encyclopedia_reach.py           # print what would flip, change nothing
     python3 tools/encyclopedia_reach.py --write   # rewrite encyclopedia.json
     python3 tools/encyclopedia_reach.py --why ID  # show how an item is reached (or why not)
+    python3 tools/encyclopedia_reach.py --check   # exit 1 when encyclopedia.json is out of date
 
 An item is obtainable now when a player can get it today, starting with empty hands:
   * a world source the data names (flora yields, harvest and berry rows, tree, stump and shrub drops, digging, boulders,
@@ -359,6 +360,9 @@ def main(argv):
     show("No longer obtainable (true -> false)", off, lambda i: "; ".join(reach.blocked(i)))
     show("Reached but items.json says future", future_live, lambda i: reach.why[i])
     show("Not reached and not future", live_unreached, lambda i: "; ".join(reach.blocked(i)))
+    if "--check" in argv and (on or off):
+        print("encyclopedia.json is out of date: run python3 tools/encyclopedia_reach.py --write")
+        return 1
     if "--write" in argv:
         out = json.dumps(enc, indent="\t", ensure_ascii=False) + "\n"
         if out != text:
