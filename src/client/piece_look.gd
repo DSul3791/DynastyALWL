@@ -1396,7 +1396,7 @@ const ROOF_SPEC := {
 	"wood": [Color(0.58, 0.43, 0.26), 9, 0.03, "_planks", "boards", "_frame", "_frame", 0.12],      # Refined: split wooden shakes on sawn boards
 	"stone": [Color(0.3, 0.32, 0.35), 7, 0.03, "_planks", "slab", "_frame", "_flag", 0.14],         # Sturdy: slates on boards, a stone ridge
 	"brick": [Color(0.7, 0.36, 0.2), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.12],         # Superior: fired clay tiles, round ridge tiles
-	"engineered": [Color(0.62, 0.29, 0.17), 5, 0.04, "_concrete", "round", "_concrete", "_concrete", 0.16],   # Engineered: clay tiles on a cast deck
+	"engineered": [Color(0.55, 0.24, 0.15), 5, 0.04, "_planks", "round", "_frame", "_tile", 0.14],   # Engineered: deeper red clay tiles on planks (#972: no concrete roof)
 }
 const ROOF_PITCH := 0.3
 const ROOF_HALF := 1.2
@@ -1404,7 +1404,7 @@ const ROOF_EAVE := 2.45
 
 
 static func _roof_mat(name: String) -> StandardMaterial3D:
-	return {"_log": _log, "_planks": _planks, "_frame": _frame, "_flag": _flag, "_tile": _tile, "_concrete": _concrete}.get(name, _frame)
+	return {"_log": _log, "_planks": _planks, "_frame": _frame, "_flag": _flag, "_tile": _tile}.get(name, _frame)
 
 
 # One triangle facing `out` (Godot's front face is clockwise seen from the front).
@@ -1625,10 +1625,6 @@ static func pitched_roof(kind: String, corner: bool = false) -> Node3D:
 		for side in [-1.0, 1.0]:
 			var mid: Vector3 = Vector3(side * h * 0.5, (e + r) * 0.5 + (thick - deck) * 0.5, z)
 			_box_rot(root, Vector3(h / cos(ROOF_PITCH) + 0.04, thick + deck + 0.05, 0.05), mid, Vector3(0.0, 0.0, -side * ROOF_PITCH), verge_mat)
-
-	if kind == "engineered":   # a cast ring beam along the eaves
-		for x in [-1.1, 1.1]:
-			_box(root, Vector3(0.18, 0.16, 2.36), Vector3(x, e - 0.14, 0.0), _concrete)
 
 	_solid(root, Vector3(2.4, 0.2, 2.4), Vector3(0.0, 2.6, 0.0))
 	return root
