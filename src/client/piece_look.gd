@@ -2605,8 +2605,8 @@ static func carpenters_bench() -> Node3D:
 	_box(root, Vector3(1.6, 0.04, 0.6), Vector3(0.0, 0.26, 0.0), _planks)                    # the shelf
 	_box(root, Vector3(1.4, 0.08, 0.5), Vector3(0.0, 0.32, 0.0), _planks)                    # boards stacked on it
 	_box(root, Vector3(0.14, 0.7, 0.08), Vector3(-0.85, 0.5, 0.44), _frame)                  # the leg vise's chop
-	_cyl(root, 0.03, 0.3, Vector3(-0.85, 0.7, 0.52), _frame, 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)   # its screw
-	_box(root, Vector3(0.3, 0.03, 0.03), Vector3(-0.85, 0.7, 0.62), _frame)                  # its handle
+	_cyl(root, 0.03, 0.1, Vector3(-0.85, 0.7, 0.47), _frame, 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)   # its screw
+	_box(root, Vector3(0.3, 0.03, 0.03), Vector3(-0.85, 0.7, 0.5), _frame)                   # its handle
 	_box(root, Vector3(0.06, 0.04, 0.06), Vector3(0.9, 0.92, -0.25), _frame)                 # the planing stop
 
 	for k in 5:
