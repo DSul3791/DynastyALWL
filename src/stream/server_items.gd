@@ -460,6 +460,7 @@ func setup(item_table, store_dir: String) -> void:
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
+	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
 	_rebuild_supports()
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
@@ -1429,7 +1430,7 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("crops.json", {"version": 1, "crops": _crops})
+	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION, "no_kits": true})
 
@@ -11386,15 +11387,20 @@ func take_nest(peer: int, inv) -> bool:
 
 
 # --- Farming (FARMING_SPEC.md steps 2 to 5; Tyler 31 Oct 2026) ---
-# A hoe tills a metre of ground into a tilled bed (structure kind tilled_bed, state 47); a seed sown on it starts a crop (data/items/crops.json); a game day with rain
-# or with water poured on the bed counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
+# A hoe tills a metre of ground into a tilled bed (structure kind tilled_bed, state 47; a garden plot, "plot": true, works the same); a seed sown on it starts a
+# crop (data/items/crops.json); a game day that ends with the bed's moisture at wet_min_pct or more (plot_water.gd: rain and pours fill it, the weather dries it) counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
 # pauses growth (turnip excepted) and frost kills a seedling; compost speeds one crop cycle by 20 percent; E on a ripe crop gives its yields (half without the sickle
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (key "x,z" of the bed). The client side
 # (a hoe mode that sends ACT_TILL, a seed use that sends ACT_SOW, E on a crop that sends ACT_HARVEST, the stage looks) is not built: see PROTOCOL.md.
 const TILLED_STATE := 47
-var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "rained": game day it rained on, "poured": game day water was poured}
+var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured (one pour a day)}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
 var _crops_loaded: bool = false
+var _moisture_cfg: Dictionary = {}       # crops.json "moisture" (plot_water.gd)
+var _plot_water: Dictionary = {}         # bed key "x,z" -> [moisture percent, game second it was worked out at]; saved in crops.json "plots"
+var _plots_at_s: float = -1.0e18         # game second of the last _plots_tick pass
+const PLOT_STEP_S := 3600.0              # plots are looked at once a game hour (150 real seconds)
+const PlotWater := preload("res://src/shared/plot_water.gd")
 
 
 func _crop_table() -> Dictionary:
@@ -11402,6 +11408,7 @@ func _crop_table() -> Dictionary:
 		_crops_loaded = true
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
 		_crops_cfg = (parsed.get("crops", {}) as Dictionary) if typeof(parsed) == TYPE_DICTIONARY else {}
+		_moisture_cfg = (parsed.get("moisture", {}) as Dictionary) if typeof(parsed) == TYPE_DICTIONARY else {}
 
 	return _crops_cfg
 
@@ -11420,7 +11427,51 @@ func _season() -> String:
 
 func _bed_at(id: int) -> Dictionary:
 	var it: Dictionary = _items.get(id, {})
-	return it if (not it.is_empty() and it.has("struct") and str(it["struct"].get("kind", "")) == "tilled_bed") else {}
+	return it if (not it.is_empty() and it.has("struct") and _is_plot_kind(str(it["struct"].get("kind", "")))) else {}
+
+
+# A tilled bed, or a garden plot (structures.json "plot": true, buildables plan B5): it takes a seed, holds moisture and is tended the same way.
+func _is_plot_kind(kind: String) -> bool:
+	return kind == "tilled_bed" or bool(_structures.get(kind, {}).get("plot", false))
+
+
+# The bed's moisture now, 0 to 100 (plot_water.gd): start_pct for one not seen yet.
+func plot_moisture(pos: Vector3) -> float:
+	var row: Array = _plot_water.get(_bed_key(pos), [])
+	_crop_table()
+	return float(row[0]) if row.size() >= 2 else float(_moisture_cfg.get("start_pct", 50.0))
+
+
+# Every game hour (or at once when the clock jumped): each bed's moisture follows the weather since it was last worked out (rain fills it, the dry
+# weather's evaporation takes it, times the structure's moisture_factor); beds that are gone are forgotten.
+func _plots_tick() -> void:
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	if now_s - _plots_at_s < PLOT_STEP_S:
+		return
+
+	_plots_at_s = now_s
+	_crop_table()
+	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var rain: float = float(rain_now.call()) if rain_now.is_valid() else float(weather.get("rain", 0.0))
+	var seen: Dictionary = {}
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or not _is_plot_kind(str(it["struct"].get("kind", ""))):
+			continue
+
+		var key: String = _bed_key(it["pos"])
+		var row: Array = _plot_water.get(key, [float(_moisture_cfg.get("start_pct", 50.0)), now_s])
+		var factor: float = float(_structures.get(str(it["struct"]["kind"]), {}).get("moisture_factor", 1.0))
+		var dt_days: float = maxf(now_s - float(row[1]), 0.0) / PlotWater.DAY_S
+		_plot_water[key] = [PlotWater.step(_moisture_cfg, float(row[0]), dt_days, float(weather.get("temp_c", 15.0)), float(weather.get("wind", 0.0)), rain, factor), now_s]
+		seen[key] = true
+
+	for key in _plot_water.keys():
+		if not seen.has(key):
+			_plot_water.erase(key)
 
 
 # One hoe stroke tills a metre: a tilled bed where the player points (reach and hoe like the hoe path).
@@ -11505,7 +11556,7 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 		return false
 
 	inv.remove(inv.numbers[slot], 1)
-	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "rained": -1, "poured": -1}
+	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "poured": -1}
 	_dirty = true
 	return true
 
@@ -11525,6 +11576,8 @@ func water_bed(peer: int, inv, bed_id: int) -> bool:
 
 	inv.remove(water, 1)
 	crop["poured"] = _game_day()
+	var key: String = _bed_key(bed["pos"])
+	_plot_water[key] = [PlotWater.pour(_moisture_cfg, plot_moisture(bed["pos"])), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]   # a bucket's worth (pour_pct)
 	_dirty = true
 	return true
 
@@ -11556,17 +11609,15 @@ func crop_stage(crop: Dictionary) -> int:
 	return stage
 
 
-# Looks at the clock once per game day: rain or poured water makes it a wet day; winter pauses growth (turnip excepted) and kills a seedling.
+# Looks at the clock once per game day: a bed holding wet_min_pct of moisture (plot_water.gd: rain fills it, a pour adds to it, the weather dries it)
+# makes it a wet day; winter pauses growth (turnip excepted) and kills a seedling.
 func _crops_tick() -> void:
+	_plots_tick()
+
 	if _crops.is_empty():
 		return
 
 	var today: int = _game_day()
-	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= 0.05
-
-	if raining:
-		for key in _crops:
-			_crops[key]["rained"] = today
 
 	for key in _crops.keys():
 		var crop: Dictionary = _crops[key]
@@ -11586,7 +11637,7 @@ func _crops_tick() -> void:
 
 			crop["age"] = float(crop["age"]) + (1.2 if bool(crop["compost"]) else 1.0)
 
-			if int(crop["rained"]) >= int(crop["day"]) - 1 or int(crop["poured"]) >= int(crop["day"]) - 1:
+			if PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(key, [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0])):
 				crop["wet"] = int(crop["wet"]) + 1
 
 			_dirty = true
