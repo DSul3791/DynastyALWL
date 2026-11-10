@@ -33,6 +33,7 @@ UNITS = [
     ("shore net", "src/worldgen/tools/test_shore_net.gd"),
     ("bed", "src/worldgen/tools/test_bed.gd"),
     ("spoilage", "src/worldgen/tools/test_spoilage.gd"),
+    ("cold store", "src/worldgen/tools/test_cold_store.gd"),
     ("warmth", "src/worldgen/tools/test_warmth.gd"),
     ("skills", "src/worldgen/tools/test_skills.gd"),
     ("sickness", "src/worldgen/tools/test_sickness.gd"),
