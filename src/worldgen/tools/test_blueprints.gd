@@ -76,6 +76,7 @@ func _fortified_gate_checks(live: Dictionary) -> void:
 
 	_gate_swings(gates[0], "fortified_gate", spot)
 	var palisade_spot: Vector3 = Vector3(266.0, 10.0, 262.0)
+	items.report_position(1, palisade_spot + Vector3(0.0, 0.0, -1.5))   # within the 6 m place reach (the swings left the player by the Fortified gate)
 	items.place_piece(1, "log_palisade_gate_kit", palisade_spot)
 	var palisades: Array = _ids_standing("log_palisade_gate")
 	check(palisades.size() == 1, "a Palisade gate stands")
@@ -199,7 +200,6 @@ func _init() -> void:
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, Vector3(196.0, 10.0, 205.0))
 	check(_ids_standing("woodworking_table").size() == 1 and _have(1, "lumber") == 12, "a row with hammer 2 refuses the wooden hammer")
 	items._blueprints[int(table_bp["number"])]["hammer"] = 1
-	_fortified_gate_checks(live)
 
 	# Take down: every material back, no kit.
 	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)
@@ -286,5 +286,6 @@ func _init() -> void:
 	again.ground_height = func(_x, _z): return 10.0
 	again.setup(ItemTableScript.load_default(), dir)
 	check(again.world_item_count() == items.world_item_count(), "a save with blueprint pieces loads")
+	_fortified_gate_checks(live)   # last: it empties the pack and moves the player, which the take-down checks above count on
 	print("test_blueprints: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

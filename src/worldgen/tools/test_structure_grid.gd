@@ -54,7 +54,7 @@ func _init() -> void:
 
 		pairs += 1
 		var twin: String = str(row["toggle"])
-		check(bool(row.get("blocks_walk", false)) and not bool(kinds.get(twin, {}).get("blocks_walk", true)), "%s blocks walkers shut, %s does not" % [kind, twin])
+		check(bool(row.get("blocks_walk", false)) and not bool(kinds.get(twin, {}).get("blocks_walk", false)) and kinds.has(twin), "%s blocks walkers shut, %s does not" % [kind, twin])
 
 	check(pairs >= 18, "every door and gate pair is checked (%d)" % pairs)
 
