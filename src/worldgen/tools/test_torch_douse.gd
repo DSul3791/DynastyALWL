@@ -151,12 +151,31 @@ func _init() -> void:
 	items.action(7, Net.ACT_RELIGHT, 900003, 0, 0, Vector3.ZERO)
 	check(inv.numbers[slot] == lit, "a burning fire lights the torch again")
 
-	# Water: under water the torch goes out whatever the weather.
+	# Water: under water the torch goes out whatever the weather, but only when the server too sees the head under water (or the player swimming).
 	items.rain_now = func(): return 0.0
+	items.action(7, Net.ACT_DOUSE, slot, 0, 0, Vector3.ZERO)
+	check(inv.numbers[slot] == lit, "the client alone saying water does not put it out")
+	items.set_head_under(7, true)
 	items.action(7, Net.ACT_DOUSE, slot, 0, 0, Vector3.ZERO)
 	check(inv.numbers[slot] == doused, "under water: the torch goes out")
 	items.action(7, Net.ACT_DOUSE, slot, 0, 0, Vector3.ZERO)
 	check(inv.numbers[slot] == doused, "a doused torch stays doused")
+	items.set_head_under(7, false)
+	inv.numbers[slot] = lit
+	items.set_swimming(7, true)
+	items.action(7, Net.ACT_DOUSE, slot, 0, 0, Vector3.ZERO)
+	check(inv.numbers[slot] == doused, "swimming: the torch goes out")
+	items.set_swimming(7, false)
+
+	# The rain and a roof over the eye only (a lean-to's low back, a crown above the head): the torch burns on (Dave 10 Nov 2026).
+	inv.numbers[slot] = lit
+	items.rain_now = func(): return 0.9
+	items.cover_at = func(p: Vector3): return 2.0 if p.y > 6.0 else 0.0
+	items.action(7, Net.ACT_DOUSE, slot, 1, 0, Vector3.ZERO)
+	check(inv.numbers[slot] == lit, "cover over the eye keeps the torch burning in the rain")
+	items.cover_at = func(_p): return 0.0
+	items.rain_now = func(): return 0.0
+	inv.numbers[slot] = doused
 	items._items.erase(900001)
 	items._items.erase(900002)
 	items._items.erase(900003)

@@ -14,6 +14,35 @@ func check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
+# Built roofs come from structures.json alone (Cover.structure_roof), the same box on client and server (Dave 10 Nov 2026: rain put his torch out
+# in a lean-to; the client's hard-coded lean-to box was 1.5 m tall, so his eye was outside it). Every structure with a height and half extents
+# is a roof; standing inside a lean-to covers the feet and the eye; and the client no longer builds a box of its own.
+func _structure_roof_checks() -> void:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))
+	var structures: Dictionary = parsed.get("structures", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+	var lean: Dictionary = structures.get("lean_to", {})
+	var roofs: int = 0
+
+	for kind in structures:
+		var def: Dictionary = structures[kind]
+
+		if str(def.get("piece_kind", "")) == "roof" or kind == "lean_to":
+			check(not Cover.structure_roof(def, Vector3.ZERO, 0.0).is_empty(), "%s has a roof box (structures.json height, half_x, half_z)" % kind)
+			roofs += 1
+
+	check(roofs >= 10, "the lean-to and the tier roofs were read (%d)" % roofs)
+	check(Cover.structure_roof(structures.get("campfire", {"state": 1}), Vector3.ZERO, 0.0).is_empty(), "a structure without a roof has no box")
+	var shelter_index = Cover.Index.new()
+	var base: Vector3 = Vector3(300.0, 20.0, 300.0)
+	shelter_index.add_roof(Cover.structure_roof(lean, base, deg_to_rad(90.0)))
+	check(Cover.at(base, shelter_index) == 1.0, "standing in a lean-to the feet are covered")
+	check(Cover.at(base + Vector3(0.0, 1.7, 0.0), shelter_index) == 1.0, "and the eye (1.7 m up)")
+	check(Cover.at(base + Vector3(1.9, 1.7, 0.0), shelter_index) == 1.0, "near the open front too (turned 90 degrees)")
+	check(Cover.at(base + Vector3(0.0, float(lean.get("height", 2.4)) + 0.5, 0.0), shelter_index) == 0.0, "on top of it is open")
+	var view_src: String = FileAccess.get_file_as_string("res://src/client/inventory_view.gd")
+	check(view_src.find("box_roof(") < 0 and view_src.find("structure_roof(") >= 0, "the client takes its roof boxes from structures.json, not a box of its own")
+
+
 func _init() -> void:
 	var index = Cover.Index.new()
 	# species 3: a tree with a 10 m crown (5 m radius), reference height 20 m.
@@ -79,6 +108,7 @@ func _init() -> void:
 	check(Cover.at(Vector3(500.0, 12.0, 515.0), roof_index) == 0.0, "removed box opens the ground")
 	roof_index.remove_roof(disc)
 	check(roof_index.roof_count() == 0, "roofs gone")
+	_structure_roof_checks()
 
 	# Bare broadleaves in winter (docs/design/cover_by_season_design.md): an oak (species 5) shelters nothing in winter, a
 	# spruce (species 6) still does; the oak covers in summer and without the switch; its crown depth (litter) stays; felling keeps step.

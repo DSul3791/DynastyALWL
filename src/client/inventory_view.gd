@@ -2375,10 +2375,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if site_extra != null:
 				_make_site_look(node)
-			elif state == 5 and cover_index != null:
-				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.3, 1.7, yaw, row[3].y - 0.5, row[3].y + 1.5))
-			elif state == 24 and cover_index != null:
-				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
+			elif cover_index != null:
+				# Any structure with a roof in structures.json (the lean-to, every tier's roof piece): the same box the server rules on (Cover.structure_roof).
+				var roof_box: Array = CoverScript.structure_roof(_structure_by_state(state), row[3], yaw)
+
+				if not roof_box.is_empty():
+					roof_key = cover_index.add_roof(roof_box)
 
 			var fixture_light: Light3D = null
 

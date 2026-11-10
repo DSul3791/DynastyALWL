@@ -6935,13 +6935,27 @@ func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 
 	if by_rain:
 		var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
-		var covered: bool = cover_at.is_valid() and _peer_pos.has(peer) and float(cover_at.call(_peer_pos[peer])) > 0.5
 
-		if not FlameRules.in_rain(rain, covered):
+		if not FlameRules.in_rain(rain, _peer_covered(peer)):
 			return
+	elif not bool(_head_under.get(peer, false)) and not bool(_swimming.get(peer, false)):
+		return   # water puts it out only when the server too sees the head under water or the player swimming
 
 	inv.numbers[slot] = table.number_of(into)
 	_say(peer, "The rain puts your torch out. Press its key to light it again." if by_rain else "The water puts your torch out. Press its key to light it again.")
+
+
+# Whether a player is under cover from the rain (a crown, a roof, a cave): at the feet or at the eye, where the flame and the client's own test are
+# (Dave 10 Nov 2026: a torch went out in a lean-to). The shelter status reads the same cover (comfort_at).
+const EYE_M := 1.6
+
+
+func _peer_covered(peer: int) -> bool:
+	if not cover_at.is_valid() or not _peer_pos.has(peer):
+		return false
+
+	var feet: Vector3 = _peer_pos[peer]
+	return float(cover_at.call(feet)) > 0.5 or float(cover_at.call(feet + Vector3(0.0, EYE_M, 0.0))) > 0.5
 
 
 # A torch in hand stuck in the ground or on a wall (Dave, 4 Nov 2026): items.json places_as names the structure for each; a burning torch stays lit with
@@ -7879,11 +7893,11 @@ func _add_roof(entry: Dictionary) -> void:
 		return
 
 	var def: Dictionary = _structures.get(str(entry["struct"]["kind"]), {})
+	var box: Array = CoverScript.structure_roof(def, entry["pos"], deg_to_rad(float(entry["struct"]["yaw"])))
 
-	if def.is_empty() or not def.has("height") or not roof_add.is_valid() or entry["struct"].has("roof"):
+	if box.is_empty() or not roof_add.is_valid() or entry["struct"].has("roof"):
 		return
 
-	var box: Array = CoverScript.box_roof(Vector2(entry["pos"].x, entry["pos"].z), float(def["half_x"]), float(def["half_z"]), deg_to_rad(float(entry["struct"]["yaw"])), entry["pos"].y - 0.5, entry["pos"].y + float(def["height"]))
 	entry["struct"]["roof"] = int(roof_add.call(box))
 
 
