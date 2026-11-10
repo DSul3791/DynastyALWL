@@ -2042,7 +2042,7 @@
   "wooden_bow": {
    "shape": "bow",
    "color": "#a8804a",
-   "size": 0.55
+   "size": 1.0
   },
   "wooden_arrow": {
    "shape": "arrow",

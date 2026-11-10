@@ -6,6 +6,8 @@ extends RefCounted
 # deleting its looks.json entry or giving it a real model; nothing here changes.
 
 const LOOKS_PATH := "res://data/items/looks.json"
+const BOW_HALF_M := 0.85       # a self bow: nock to nock about the archer's height, 1.7 m (the "bow" shape; held_item.gd places the hands and the string by these)
+const BOW_BRACE_M := 0.16      # string to the back of the grip, braced
 
 static var _table: Dictionary = {}
 static var _loaded: bool = false
@@ -2131,26 +2133,31 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					var span: Vector2 = to - from
 					_cyl(parts, 0.0014, span.length(), Vector3(0.5 * (from.x + to.x), 0.5 * (from.y + to.y), 0.0), Vector3(0.0, 0.0, atan2(span.y, span.x) - PI * 0.5), Color(0.85, 0.82, 0.72))
 		"bow":
-			# A self bow (item 269), real size 1.2 m, strung: a stave of bent wood thick at the grip and fine at the tips, curving toward +z with the straight string along z = 0,
-			# a leather grip wrap and bone nocks at the tips. Mesh axes: limbs along x, belly toward +z, flat in y. Drawn small because held and ground looks are enlarged 1.8x.
+			# A simple homemade self bow (item 269), braced, at real size (Dave 10 Nov 2026: "the bow is also too small ... how big it should be for a simple homemade bow to actually work"):
+			# a self bow is about the archer's height, 1.6 to 1.8 m nock to nock (shorter staves stack and break), so BOW_HALF_M each side of the grip, with a brace height
+			# (string to the back of the grip) of BOW_BRACE_M. One stave of bent wood, thick at the grip and fine at the tips, curving toward +z with the straight string
+			# along z = 0, a leather grip wrap round the middle and bone nocks at the tips. Mesh axes: limbs along x, the back of the bow toward +z (away from the archer), flat in y.
+			# bits "held": no string (the hand's bow draws its own, which follows the drawing hand; held_item.gd).
 			var stave: Color = Color(0.42, 0.28, 0.14)
 			var pts: Array = []
+			var steps: int = 16
 
-			for k in range(11):
-				var u: float = -1.0 + 0.2 * float(k)
-				pts.append(Vector2(0.55 * u, 0.17 * (1.0 - u * u)))
+			for k in range(steps + 1):
+				var u: float = -1.0 + 2.0 * float(k) / float(steps)
+				pts.append(Vector2(BOW_HALF_M * u, BOW_BRACE_M * (1.0 - u * u)))
 
-			for k in range(10):
-				var mid: float = absf(-0.9 + 0.2 * float(k))
-				_tube(parts, pts[k], pts[k + 1], 0.0185 - 0.010 * mid, _tone(stave, k, 0.03), 8)
+			for k in range(steps):
+				var mid: float = absf(-1.0 + (2.0 * float(k) + 1.0) / float(steps))
+				_tube(parts, pts[k], pts[k + 1], 0.017 - 0.0095 * mid, _tone(stave, k, 0.03), 8)
 
-			for k in range(3):
-				_cyl(parts, 0.0185, 0.014, Vector3(-0.02 + 0.02 * float(k), 0.0, 0.17), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.14, 0.08, 0.04) if k != 1 else Color(0.22, 0.13, 0.07))   # the leather grip wrap
+			for k in range(4):
+				_cyl(parts, 0.0195, 0.03, Vector3(-0.045 + 0.03 * float(k), 0.0, BOW_BRACE_M), Vector3(0.0, 0.0, PI * 0.5), Color(0.14, 0.08, 0.04) if k % 2 == 0 else Color(0.22, 0.13, 0.07))   # the leather grip wrap, 12 cm
 
 			for end in [-1.0, 1.0]:
-				_cone(parts, 0.009, 0.03, Vector3(end * 0.575, 0.0, 0.0), Color(0.75, 0.7, 0.6))                         # a bone nock at each tip
+				_cone(parts, 0.009, 0.035, Vector3(end * (BOW_HALF_M + 0.012), 0.0, 0.0), Color(0.75, 0.7, 0.6))                  # a bone nock at each tip
 
-			_cyl(parts, 0.0013, 1.1, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.85, 0.82, 0.72))      # the string
+			if not bits.has("held"):
+				_cyl(parts, 0.0013, 2.0 * BOW_HALF_M, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.85, 0.82, 0.72))   # the string
 		"arrow":
 			# An arrow (items 270 wooden, 271 stone-headed with bits ["stone"]), real size 0.7 m: a straight ash shaft, a nock at the back (-x), three feather vanes (one darker cock feather)
 			# and a point at +x: the wooden arrow is sharpened and fire-hardened, the stone arrow has a flaked leaf head lashed on with twine.
