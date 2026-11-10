@@ -334,12 +334,24 @@ func make_placeholder(tile_coord: Vector2i, tile_size_m: float, depth_m: float) 
 
 # The nearest fresh water within `reach` metres of `pos` across the ground, as Vector2(distance, surface height), or Vector2(INF, NAN) when this
 # tile has none (Sonny's water rules, section 3: a well or pump reaches down to the level of the nearest fresh water within 200 m, an interim rule
-# until the depth-to-table layer). Fresh water is FRESH_FIRST..FRESH_LAST of the record's water classes: lake, river, marsh, swamp, fen and bog
-# (wetlands have the table at the surface: the best well sites). Not the sea (1), the seasonal channel and pond (8, 9: dry part of the year, the
-# table then lies below them) or the salt marsh (10). Looked at once when a well or pump is placed or first worked; the server scene asks the
-# neighbouring tiles too when the reach crosses this tile's edge.
-const FRESH_FIRST := 2
-const FRESH_LAST := 7
+# until the depth-to-table layer). The water a well may reach is the water classes with "well" in data/tables/water_classes.json: lake, river and
+# the wetlands (their table is at the surface: the best well sites); not the sea, the brackish estuary, the seasonal channel and pond (dry part of
+# the year, the table then lies below them) or the salt marsh. Looked at once when a well or pump is placed or first worked; the server scene
+# asks the neighbouring tiles too when the reach crosses this tile's edge.
+static var _well_ids: PackedByteArray = PackedByteArray()
+
+
+# 256 flags by water class id: 1 where a well may reach the water (water_classes.json "well").
+static func well_flags() -> PackedByteArray:
+	if _well_ids.is_empty():
+		_well_ids.resize(256)
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/water_classes.json"))
+
+		for row in (parsed.get("entries", []) if typeof(parsed) == TYPE_DICTIONARY else []):
+			if bool(row.get("well", false)) and not bool(row.get("retired", false)):
+				_well_ids[int(row["id"])] = 1
+
+	return _well_ids
 
 
 func fresh_water_near(pos: Vector3, reach: float) -> Vector2:
@@ -351,13 +363,14 @@ func fresh_water_near(pos: Vector3, reach: float) -> Vector2:
 	var cj: int = int(round((pos.z - z0) / spacing_m))
 	var best: float = INF
 	var surface: float = NAN
+	var well: PackedByteArray = well_flags()
 
 	for j in range(maxi(cj - steps, 0), mini(cj + steps, samples - 1) + 1):
 		for i in range(maxi(ci - steps, 0), mini(ci + steps, samples - 1) + 1):
 			var k: int = j * samples + i
 
-			if water_class[k] < FRESH_FIRST or water_class[k] > FRESH_LAST or is_nan(water_surface[k]):
-				continue   # dry, the sea, seasonal water or salt marsh
+			if well[water_class[k]] == 0 or is_nan(water_surface[k]):
+				continue   # dry, the sea, the estuary, seasonal water or salt marsh
 
 			var gap: float = Vector2(x0 + float(i) * spacing_m - pos.x, z0 + float(j) * spacing_m - pos.z).length()
 

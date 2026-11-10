@@ -124,13 +124,15 @@ func _init() -> void:
 	check(is_nan(tile.fresh_water_y(Vector3(200.0, 20.0, 200.0), 50.0)), "the sea is not fresh water")
 	check(is_equal_approx(tile.fresh_water_near(Vector3(0.0, 20.0, 0.0), 200.0).x, sqrt(20000.0)), "fresh_water_near gives the distance too, to pick the nearest across tiles")
 
-	# Sonny: seasonal channels and ponds (8, 9) and salt marsh (10) are not fresh water for a well; a bog (7) is, with the table at the surface.
-	for code in [8, 9, 10]:
-		tile.water_class = PackedByteArray([0, 0, 0, 0, code, 0, 0, 0, 1])
-		check(is_nan(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0)), "water class %d does not count for a well" % code)
+	# Sonny: by water_classes.json ids, the estuary (5), seasonal channels and ponds (9, 10) and salt marsh (11) are not water for a well; the
+	# marsh, swamp, fen and bog (4, 6, 7, 8) are, with the table at the surface.
+	for id in [5, 9, 10, 11]:
+		tile.water_class = PackedByteArray([0, 0, 0, 0, id, 0, 0, 0, 1])
+		check(is_nan(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0)), "water class %d does not count for a well" % id)
 
-	tile.water_class = PackedByteArray([0, 0, 0, 0, 7, 0, 0, 0, 1])
-	check(is_equal_approx(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0), 5.0), "a bog counts for a well")
+	for id in [3, 4, 6, 7, 8]:
+		tile.water_class = PackedByteArray([0, 0, 0, 0, id, 0, 0, 0, 1])
+		check(is_equal_approx(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0), 5.0), "water class %d counts for a well" % id)
 
 	# Sonny section 1: a suction pump's 7 m falls 1 m for every 1,000 m of height; a windlass or deep pump (no suction) keeps its reach.
 	check(is_equal_approx(ItemsScript._lift_limit_m(items._structures["test_pump"]["water"], Vector3(0.0, 2000.0, 0.0)), 5.0), "a hand pump 2,000 m up lifts 5 m")
