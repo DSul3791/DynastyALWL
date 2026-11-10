@@ -103,6 +103,8 @@ const ART_OVERRIDES := {
 	"iron_hammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.0, "bits": ["forged"]},
 	"wooden_lantern": {"shape": "lantern", "color": "#5a3e22", "size": 1.0},
 	"iron_lantern": {"shape": "lantern", "color": "#3f4045", "size": 1.0, "bits": ["metal"]},
+	"wooden_lantern_dark": {"shape": "lantern", "color": "#5a3e22", "size": 1.0},   # the same lantern gone out (buildables plan B4): water or burned-out fuel
+	"iron_lantern_dark": {"shape": "lantern", "color": "#3f4045", "size": 1.0, "bits": ["metal"]},
 	"horn_pane": {"shape": "pane", "color": "#d6ad6a", "size": 1.0},
 	"lamp_oil": {"shape": "bottle", "color": "#9a7a32", "size": 1.0},
 	"steel_hammer": {"shape": "hammer", "color": "#9aa3ad", "size": 1.0, "bits": ["forged"]},
