@@ -508,6 +508,15 @@ func _init() -> void:
 		if all.has(ore_item):
 			obtainable[ore_item] = true
 
+	# Bedrock boulders (Steve, #965): a boulder over a rock in ore.rocks (limestone, chalk, marble) gives that item to a pick.
+	for rock_name in boulders.get("ore", {}).get("rocks", {}):
+		var rock_item: String = String(boulders["ore"]["rocks"][rock_name])
+
+		if all.has(rock_item):
+			obtainable[rock_item] = true
+		else:
+			fail("boulders.json ore.rocks.%s: unknown item '%s'" % [rock_name, rock_item])
+
 	if all.has(String(boulders.get("flint", {}).get("item", ""))):
 		obtainable[String(boulders["flint"]["item"])] = true
 
