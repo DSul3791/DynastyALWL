@@ -3,7 +3,7 @@
 
 At the 1366 x 768 floor a recipe-list icon is 23 screen px and a hotbar icon 43 (docs/ui/item_icons.md), and the bake's spears,
 arrows and stick shrink to hairlines there while its spades, grain seeds and pies come out as one picture each. These are painted
-to the same rig as tools/paint_structure_icons.py, with three rules for small sizes:
+to the same rig as tools/paint_structure_icons.py, with three rules for small sizes (the bone needle, 10 Nov 2026, the same way):
   - thin things are drawn thick, on the diagonal, with an oversized head: the head is what tells them apart;
   - each item in a set has its own colour that survives at 23 px (spade blades wood, stone, iron, steel; each grain its own plant);
   - a set shares one layout, so the family still reads as one (every grain is a seed pile with its plant behind it).
@@ -185,6 +185,166 @@ def stick():
     faces += leaf((0.98, 0.7, 0.05), (1.0, 0.4, 0.6), 0.6, 0.34, LEAF)
     faces += leaf((0.78, 0.78, -0.08), (0.2, 1.0, 0.5), 0.55, 0.3, shade(LEAF, 0.9))
     return faces
+
+
+def sewing_needle():
+    """Bone - Needle: a thick bone needle on the diagonal, its eye a split butt you can see through, a loop of sinew thread through it."""
+    faces = rod((-0.55, 0, 0), (0.85, 0, 0), 0.19, BONE, seed=21)
+    faces += rod((0.85, 0, 0), (1.6, 0, 0), 0.19, BONE, end=BONE, taper=0.08, seed=22)        # the point
+    for side in (-1.0, 1.0):                                                                 # the eye: two prongs either side of a slot
+        faces += rod((-0.5, 0.13 * side, 0), (-1.25, 0.13 * side, 0), 0.075, shade(BONE, 0.94), sides=6, seed=23)
+    faces += rod((-1.25, -0.2, 0), (-1.25, 0.2, 0), 0.08, BONE, sides=6, seed=24)            # the eye's end
+    loop = [(-0.9 - 0.32 * math.sin(t), 0.42 * (1.0 - math.cos(t)), 0.14 * math.sin(t)) for t in np.linspace(0.0, 2.0 * math.pi, 11)]
+    for k in range(len(loop) - 1):                                                           # the thread, out of the eye and back
+        faces += rod(loop[k], loop[k + 1], 0.06, (150, 104, 62), sides=5, seed=30 + k)
+    return faces
+
+
+# ---------------------------------------------------------------- items that had no icon (10 Nov 2026)
+def charcoal():
+    """Charcoal: split sticks burnt black, in a heap, their ends grey with the wood's rings still in them (coal is a lump; this is wood)."""
+    faces = []
+    for k, (a, b) in enumerate((((-1.0, -0.2, 0.3), (0.7, -0.35, 0.5)), ((-0.6, -0.25, -0.45), (1.0, -0.2, -0.1)),
+                                ((-0.8, 0.12, 0.0), (0.8, 0.05, 0.25)), ((-0.3, 0.38, -0.2), (0.95, 0.3, 0.1)))):
+        faces += rod(a, b, 0.24 - 0.02 * k, (74, 68, 64), end=(138, 130, 122), sides=6, seed=40 + k)
+    for k, at in enumerate(((1.05, -0.45, 0.45), (-1.05, -0.4, -0.25))):                     # two broken bits
+        faces += blob(at, (0.18, 0.14, 0.16), (84, 78, 74), seed=46 + k, seg=6, rings=3, rough=0.2)
+    return faces
+
+
+def wool_cloth():
+    """Wool cloth: a bolt folded in three, cream, each fold edge a shade darker, tied round with a cord."""
+    cream = (226, 214, 186)
+    faces = []
+    for k in range(3):
+        faces += box((0.04 * k, -0.3 + 0.24 * k, -0.03 * k), (2.1, 0.22, 1.3), shade(cream, 1.0 - 0.05 * (2 - k)))
+        faces += box((1.06 + 0.04 * k, -0.3 + 0.24 * k, -0.03 * k), (0.06, 0.2, 1.28), shade(cream, 0.82))   # the fold
+    faces += box((-0.4, 0.06, -0.03), (0.12, 0.8, 1.36), CORD)
+    return faces
+
+
+def fur():
+    """Fur: a whole pelt laid flat, its outline the stretched skin (four leg corners, a neck, a tail), thick dark tufts over the top."""
+    brown = (128, 92, 58)
+    faces = blob((0.0, 0.0, 0.0), (1.0, 0.1, 0.62), brown, seed=50, seg=12, rings=5, rough=0.1)
+    for k, (x, z) in enumerate(((-0.72, 0.5), (0.68, 0.5), (-0.72, -0.5), (0.68, -0.5))):
+        faces += blob((x, -0.01, z), (0.36, 0.08, 0.3), brown, seed=52 + k, seg=8, rings=3, rough=0.1)   # the leg corners
+    faces += blob((1.08, -0.01, 0.0), (0.3, 0.08, 0.24), brown, seed=56, seg=8, rings=3, rough=0.1)       # the neck
+    faces += blob((-1.2, -0.01, 0.0), (0.36, 0.07, 0.11), shade(brown, 0.85), seed=57, seg=6, rings=3, rough=0.1)   # the tail
+    rng = np.random.default_rng(58)
+    for k in range(14):                                                                       # tufts of guard hair
+        faces += blob((rng.uniform(-0.8, 0.8), 0.08, rng.uniform(-0.45, 0.45)), (0.16, 0.05, 0.08), shade(brown, rng.uniform(0.7, 1.15)),
+                      seed=60 + k, seg=5, rings=2, rough=0.2)
+    return faces
+
+
+def crystal_lens():
+    """Crystal lens: a clear round lens ground convex on both faces and a darker rim. The rig's warm light greys it, so _glass() brightens
+    it after the render and lays a white window highlight on it: it reads as glass and not a grey pebble at hotbar size."""
+    glass = (206, 232, 240)
+    faces = rod((-0.08, 0, 0), (0.08, 0, 0), 0.82, (112, 150, 162), end=glass, sides=16, seed=60)   # the rim
+    for side in (-1.0, 1.0):
+        faces += blob((0.08 * side, 0.0, 0.0), (0.1, 0.74, 0.74), glass, seed=61, seg=14, rings=5, rough=0.0)
+    return faces
+
+
+def spyglass():
+    """Wooden - Spyglass: a turned wooden tube, a narrower draw tube out of it, bronze bands at the joins and ends, glass in the big end."""
+    bronze = (184, 132, 70)
+    faces = rod((-1.3, 0, 0), (0.35, 0, 0), 0.26, WOOD, end=WOOD_END, sides=10, seed=62)
+    faces += rod((0.35, 0, 0), (1.35, 0, 0), 0.19, shade(WOOD, 1.1), end=WOOD_END, sides=10, seed=63)
+    for x0, x1, r in ((-1.34, -1.12, 0.3), (0.22, 0.42, 0.29), (1.2, 1.38, 0.22)):
+        faces += rod((x0, 0, 0), (x1, 0, 0), r, bronze, end=shade(bronze, 1.15), sides=10, seed=64)
+    faces += blob((-1.36, 0.0, 0.0), (0.03, 0.22, 0.22), (176, 212, 222), seed=65, seg=10, rings=4, rough=0.0)   # the glass
+    return faces
+
+
+# ---------------------------------------------------------------- item system C1 (#933, 10 Nov 2026)
+def _path(points, radii, colours, sides=7, seed=0):
+    """A bent tube through points, its radius and colour per point (each segment tapers to the next)."""
+    faces = []
+    for k in range(len(points) - 1):
+        faces += rod(points[k], points[k + 1], radii[k], colours[k], sides=sides, taper=radii[k + 1] / radii[k], seed=seed + k)
+    return faces
+
+
+def horn():
+    """Horn: a hollow horn curling up to a dark tip, ridged, its open base toward the viewer."""
+    n = 9
+    pts = [(-1.0 + 1.9 * t - 0.25 * t * t, 0.9 * math.sin(math.pi * 0.85 * t) - 0.3, 0.2 * t) for t in np.linspace(0.0, 1.0, n)]
+    radii = [0.36 * (1.0 - t) + 0.035 for t in np.linspace(0.0, 1.0, n)]
+    cols = [tuple(int(a + (b - a) * t) for a, b in zip((206, 190, 158), (64, 52, 42))) for t in np.linspace(0.0, 1.0, n)]
+    faces = _path(pts, radii, cols, sides=9, seed=70)
+    faces += rod((-1.02, -0.3, 0.0), (-0.98, -0.3, 0.0), 0.3, (58, 46, 38), sides=9, seed=79)   # the hollow
+    return faces
+
+
+def gut():
+    """Gut: a cleaned length of intestine coiled flat, pale pink."""
+    pts = [(math.cos(a) * (0.95 - 0.07 * a), 0.06 * math.sin(a * 3.0), math.sin(a) * (0.95 - 0.07 * a)) for a in np.linspace(0.0, 4.2 * math.pi, 34)]
+    cols = [(214, 168, 150) if k % 2 == 0 else (198, 150, 134) for k in range(len(pts))]
+    return _path(pts, [0.12] * len(pts), cols, sides=6, seed=80)
+
+
+def toggle():
+    """Toggle: a short bone peg, round ends, a cut groove round its middle where the cord goes."""
+    faces = rod((-0.8, 0, 0), (-0.1, 0, 0), 0.22, BONE, seed=90) + rod((0.1, 0, 0), (0.8, 0, 0), 0.22, BONE, seed=91)
+    faces += rod((-0.1, 0, 0), (0.1, 0, 0), 0.15, shade(BONE, 0.7), seed=92)
+    for side in (-1.0, 1.0):
+        faces += blob((0.8 * side, 0, 0), (0.1, 0.22, 0.22), BONE, seed=93, seg=8, rings=3, rough=0.0)
+    faces += rod((0.0, 0.0, 0.0), (0.0, 0.62, 0.3), 0.04, CORD, sides=5, seed=94)          # the cord out of the groove
+    return faces
+
+
+def hook():
+    """Hook: a bone fish hook, a straight shank, the bend and the barbed point, a twine whipping at the eye."""
+    faces = rod((0.0, 1.1, 0), (0.0, -0.35, 0), 0.11, BONE, seed=100)
+    bend = [(0.38 - 0.38 * math.cos(a), -0.35 - 0.38 * math.sin(a), 0.0) for a in np.linspace(0.0, math.pi, 8)]
+    faces += _path(bend, [0.11] * 8, [BONE] * 8, sides=7, seed=101)
+    faces += rod((0.76, -0.35, 0), (0.76, 0.25, 0), 0.1, BONE, end=BONE, taper=0.1, seed=110)   # the point
+    faces += rod((0.76, 0.0, 0), (0.6, 0.12, 0), 0.05, BONE, taper=0.1, seed=111)             # the barb
+    faces += rod((0.0, 0.85, 0), (0.0, 1.1, 0), 0.14, CORD, sides=7, seed=112)
+    return faces
+
+
+def bone_club():
+    """Bone - Club: a heavy leg bone, its knuckle end the head, twine bound round the grip."""
+    faces = rod((-1.2, 0, 0), (0.95, 0, 0), 0.17, BONE, seed=120)
+    for k, z in enumerate((-0.17, 0.17)):
+        faces += blob((1.08, 0.02, z), (0.28, 0.27, 0.24), shade(BONE, 0.97 + 0.05 * k), seed=121 + k, seg=8, rings=4, rough=0.08)   # the knuckle
+    faces += blob((-1.28, 0, 0), (0.18, 0.22, 0.22), BONE, seed=123, seg=7, rings=3, rough=0.08)
+    faces += rod((-1.12, 0, 0), (-0.45, 0, 0), 0.2, CORD, sides=8, seed=124)                   # the grip binding
+    return faces
+
+
+def wooden_longbow():
+    """Wooden - Longbow: one tall stave bent in a shallow arc, thick at the leather grip and thin at the tips, a sinew string tip to tip."""
+    n = 11
+    pts = [(-1.65 + 3.3 * t, 0.5 * math.sin(math.pi * t), 0.0) for t in np.linspace(0.0, 1.0, n)]
+    radii = [0.06 + 0.07 * math.sin(math.pi * t) for t in np.linspace(0.0, 1.0, n)]
+    faces = _path(pts, radii, [WOOD] * n, sides=7, seed=130)
+    faces += rod((-0.18, 0.5, 0), (0.18, 0.5, 0), 0.15, LEATHER, sides=8, seed=141)            # the grip
+    faces += rod((-1.62, 0.02, 0), (1.62, 0.02, 0), 0.025, (232, 222, 196), sides=5, seed=142) # the string
+    return faces
+
+
+def straw_hat():
+    """Straw - Hat: a wide plaited brim, a round crown, a twine band."""
+    straw = (214, 184, 112)
+    faces = rod((0, -0.05, 0), (0, 0.05, 0), 1.25, straw, end=shade(straw, 1.08), sides=16, seed=150)
+    faces += rod((0, 0.05, 0), (0, 0.42, 0), 0.6, shade(straw, 0.95), end=straw, sides=14, taper=0.9, seed=151)
+    faces += blob((0, 0.42, 0), (0.54, 0.16, 0.54), straw, seed=152, seg=14, rings=4, rough=0.03)
+    faces += rod((0, 0.07, 0), (0, 0.18, 0), 0.62, CORD, sides=14, seed=153)                   # the band
+    return faces
+
+
+def worm():
+    """Worm: a fat earthworm in an S, ringed, the saddle band paler."""
+    n = 14
+    pts = [(-1.3 + 2.6 * t, 0.06 * math.sin(6.0 * t), 0.5 * math.sin(2.0 * math.pi * t)) for t in np.linspace(0.0, 1.0, n)]
+    radii = [0.06 + 0.08 * math.sin(math.pi * min(1.0, t * 1.15)) for t in np.linspace(0.0, 1.0, n)]
+    cols = [(226, 160, 150) if k in (4, 5) else ((190, 112, 104) if k % 2 == 0 else (176, 100, 94)) for k in range(n)]
+    return _path(pts, radii, cols, sides=7, seed=160)
 
 
 # ---------------------------------------------------------------- spades: one shape, four blades
@@ -582,6 +742,20 @@ def _pieces():
         "stone_arrow": (lambda: arrows("stone", ((176, 150, 120), FEATHER_BAND)), DIAGONAL),
         "fibre_arrow": (lambda: arrows("wood", (FIBRE, None)), DIAGONAL),
         "stick": (stick, DIAGONAL),
+        "sewing_needle": (sewing_needle, DIAGONAL),
+        "charcoal": (charcoal, HEAP_VIEW),
+        "wool_cloth": (wool_cloth, HEAP_VIEW),
+        "fur": (fur, rot_x(math.radians(50.0)) @ rot_y(math.radians(18.0))),
+        "crystal_lens": (crystal_lens, rot_y(math.radians(-40.0)) @ rot_z(math.radians(10.0))),
+        "spyglass": (spyglass, DIAGONAL),
+        "horn": (horn, rot_y(math.radians(20.0))),
+        "gut": (gut, rot_x(math.radians(48.0))),
+        "toggle": (toggle, DIAGONAL),
+        "hook": (hook, rot_y(math.radians(20.0)) @ rot_z(math.radians(-15.0))),
+        "bone_club": (bone_club, DIAGONAL),
+        "wooden_longbow": (wooden_longbow, rot_z(math.radians(42.0))),
+        "straw_hat": (straw_hat, rot_x(math.radians(28.0))),
+        "worm": (worm, rot_x(math.radians(50.0))),
         "wooden_spade": (lambda: spade("wood"), SPADE_VIEW),
         "stone_spade": (lambda: spade("stone"), SPADE_VIEW),
         "iron_spade": (lambda: spade("iron"), SPADE_VIEW),
@@ -599,6 +773,27 @@ def _pieces():
     }
 
 
+def _glass(image):
+    """After the render: lift and cool the lens, then two white streaks (a window's reflection) across its upper left."""
+    from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+    alpha = image.getchannel("A")
+    lifted = ImageEnhance.Brightness(image.convert("RGB")).enhance(1.35)
+    r, g, b = lifted.split()
+    lifted = Image.merge("RGB", (r.point(lambda v: int(v * 0.92)), g, b.point(lambda v: min(255, int(v * 1.08))))).convert("RGBA")
+    lifted.putalpha(alpha)
+    left, top, right, bottom = alpha.getbbox()
+    w, h = right - left, bottom - top
+    shine = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(shine)
+    d.line([(left + w * 0.3, top + h * 0.62), (left + w * 0.5, top + h * 0.2)], fill=(255, 255, 255, 230), width=max(3, w // 11))
+    d.line([(left + w * 0.46, top + h * 0.7), (left + w * 0.6, top + h * 0.4)], fill=(255, 255, 255, 170), width=max(2, w // 20))
+    shine = shine.filter(ImageFilter.GaussianBlur(0.8))
+    shine.putalpha(Image.composite(shine.getchannel("A"), Image.new("L", image.size, 0), alpha))
+    lifted.alpha_composite(shine)
+    return lifted
+
+
+AFTER = {"crystal_lens": _glass}   # a touch after the render for an item the rig alone cannot make read
 PIECES = _pieces()
 NAMES = tuple(PIECES)
 
@@ -616,7 +811,8 @@ def main():
             continue
 
         path = os.path.join(args.out, name + ".png")
-        render(build(), turn, colour_jitter=0.04, seed=len(name)).save(path)
+        image = render(build(), turn, colour_jitter=0.04, seed=len(name))
+        AFTER.get(name, lambda i: i)(image).save(path)
         print("painted", path)
 
 
