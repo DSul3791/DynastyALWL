@@ -2072,7 +2072,7 @@ static func railing(kind: String = "wood") -> Node3D:
 	_box(root, Vector3(2.0, 0.05 if iron else 0.07, 0.06 if iron else 0.09), Vector3(0.0, 0.97, 0.0), mat)     # the top rail
 	_box(root, Vector3(1.92, 0.04 if iron else 0.06, 0.04 if iron else 0.06), Vector3(0.0, 0.08 if iron else 0.5, 0.0), mat)   # bottom (iron) or middle rail
 
-	var bars: int = 15 if iron else 9
+	var bars: int = 12 if iron else 9
 
 	for k in bars:
 		var x: float = -0.84 + 1.68 * float(k) / float(bars - 1)
@@ -2143,8 +2143,8 @@ static func metal_doorway(kind: String = "iron", open: bool = false) -> Node3D:
 		for y in [0.35, 1.0, 1.65]:
 			_box(root, Vector3(0.94, 0.08, 0.02), Vector3(0.0, y, 0.05), trim)       # the straps
 
-			for x in [-0.36, 0.0, 0.36]:
-				_cyl(root, 0.015, 0.02, Vector3(x, y, 0.065), trim, 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)   # studs
+			for x in [-0.3, 0.3]:
+				_box(root, Vector3(0.03, 0.03, 0.02), Vector3(x, y, 0.065), trim)                  # studs
 
 	_gap_solids(root, 0.0, 2.0, 0.2)
 	return root
@@ -2163,8 +2163,8 @@ static func pillar(kind: String = "wood") -> Node3D:
 			for k in 5:
 				var a: float = TAU * float(k) / 5.0
 				_cyl(root, 0.035, 2.6, Vector3(cos(a) * 0.08, 1.3, sin(a) * 0.08), _log, 6).rotation = Vector3(0.02 * float(k % 3 - 1), 0.0, 0.02 * float((k + 1) % 3 - 1))
-			for y in [0.3, 1.0, 1.7, 2.4]:
-				_cyl(root, 0.13, 0.05, Vector3(0.0, y, 0.0), _frame, 8)           # twine lashing
+			for y in [0.4, 1.4, 2.4]:
+				_cyl(root, 0.13, 0.05, Vector3(0.0, y, 0.0), _frame, 6)           # twine lashing
 		"wood":
 			_box(root, Vector3(0.36, 0.2, 0.36), Vector3(0.0, 0.1, 0.0), _frame)
 			_box(root, Vector3(0.2, 2.3, 0.2), Vector3(0.0, 1.35, 0.0), _frame)
@@ -2249,7 +2249,7 @@ static func roof_corner(kind: String = "wood") -> Node3D:
 	for k in 6:
 		_box_rot(hip, Vector3(0.14, 0.18, 0.16), Vector3(-1.15 + 0.46 * float(k), eave, 1.22), Vector3(0.3, 0.0, 0.0), _thatch)   # the hip end's eave
 
-	_dome(hip, 0.16, top_end, Vector3(1.0, 0.8, 1.0), _thatch, 8, 3)                    # the knot on the ridge end
+	_dome(hip, 0.16, top_end, Vector3(1.0, 0.8, 1.0), _thatch, 6, 3)                    # the knot on the ridge end
 	_solid(hip, Vector3(2.4, 0.2, 2.4), Vector3(0.0, 2.6, 0.0))
 	return hip
 
@@ -2287,7 +2287,6 @@ static func _fence_posts(root: Node3D, kind: String, height: float, radius: floa
 				_cyl(root, radius + 0.015, 0.05, Vector3(x, height - 0.1, 0.0), _frame, 8)
 			"wood":
 				_post(root, x, radius, height, _frame)
-				_cyl(root, radius + 0.01, 0.03, Vector3(x, height + 0.015, 0.0), _frame, 8, 0.02)
 			"log":
 				_post(root, x, radius, height, _log)
 				_cyl(root, radius - 0.02, 0.01, Vector3(x, height + 0.005, 0.0), _planks, 8)
@@ -2321,7 +2320,7 @@ static func _fence_fill(root: Node3D, kind: String, w: float, height: float, lea
 		"wood":
 			for y in [0.3, height - 0.25]:
 				_box(root, Vector3(w, 0.08, 0.04), Vector3(0.0, y, 0.04), _frame)                                             # rails
-			var pickets: int = int(floor(w / 0.15))
+			var pickets: int = int(floor(w / 0.2))
 			for k in pickets:
 				var x: float = -w * 0.5 + 0.075 + (w - 0.15) * float(k) / float(maxi(pickets - 1, 1))
 				_box(root, Vector3(0.08, height - 0.12, 0.025), Vector3(x, (height - 0.12) * 0.5 + 0.02, 0.0), _planks)
@@ -2372,7 +2371,7 @@ static func _fence_fill(root: Node3D, kind: String, w: float, height: float, lea
 			var base: float = 0.05 if leaf else 0.25
 			for y in [base + 0.12, height - 0.15]:
 				_box(root, Vector3(w, 0.03, 0.03), Vector3(0.0, y, 0.0), _iron_mat())
-			var bars: int = int(floor(w / 0.12))
+			var bars: int = int(floor(w / 0.16))
 			for k in bars:
 				var x: float = -w * 0.5 + 0.06 + (w - 0.12) * float(k) / float(maxi(bars - 1, 1))
 				_box(root, Vector3(0.018, height - base - 0.08, 0.018), Vector3(x, base + (height - base - 0.08) * 0.5, 0.0), _iron_mat())
@@ -2578,13 +2577,13 @@ static func cupboard() -> Node3D:
 static func barrel() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	_cyl(root, 0.3, 0.45, Vector3(0.0, 0.225, 0.0), _planks, 16, 0.35)
-	_cyl(root, 0.35, 0.45, Vector3(0.0, 0.675, 0.0), _planks, 16, 0.3)
+	_cyl(root, 0.3, 0.45, Vector3(0.0, 0.225, 0.0), _planks, 12, 0.35)
+	_cyl(root, 0.35, 0.45, Vector3(0.0, 0.675, 0.0), _planks, 12, 0.3)
 
 	for at in [[0.08, 0.31], [0.45, 0.352], [0.82, 0.31]]:
-		_cyl(root, float(at[1]) + 0.005, 0.05, Vector3(0.0, float(at[0]), 0.0), _iron_mat(), 16)
+		_cyl(root, float(at[1]) + 0.005, 0.05, Vector3(0.0, float(at[0]), 0.0), _iron_mat(), 12)
 
-	_cyl(root, 0.28, 0.02, Vector3(0.0, 0.89, 0.0), _frame, 16)
+	_cyl(root, 0.28, 0.02, Vector3(0.0, 0.89, 0.0), _frame, 12)
 	_cyl(root, 0.03, 0.1, Vector3(0.0, 0.15, 0.33), _frame, 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)   # a pegged spout at the foot (it is also the rain barrel, B6a)
 	_solid(root, Vector3(0.6, 0.9, 0.6), Vector3(0.0, 0.45, 0.0))
 	return root
@@ -2619,12 +2618,12 @@ static func _lantern(root: Node3D, at: Vector3, iron: bool) -> void:
 
 	_box(root, Vector3(0.18, 0.02, 0.18), at + Vector3(0.0, 0.215, 0.0), frame)
 	_cyl(root, 0.12, 0.06, at + Vector3(0.0, 0.255, 0.0), frame, 4, 0.02).rotation = Vector3(0.0, PI * 0.25, 0.0)   # the cap
-	_torus_at(root, 0.025, 0.006, at + Vector3(0.0, 0.3, 0.0), frame)
+	_box(root, Vector3(0.05, 0.04, 0.012), at + Vector3(0.0, 0.3, 0.0), frame)                  # the ring
 
 	if iron:
-		_cyl(root, 0.03, 0.03, at + Vector3(0.0, 0.04, 0.0), _iron_mat(), 8)                      # the oil cup
+		_cyl(root, 0.03, 0.03, at + Vector3(0.0, 0.04, 0.0), _iron_mat(), 6)                      # the oil cup
 	else:
-		_cyl(root, 0.018, 0.06, at + Vector3(0.0, 0.055, 0.0), _tone_mat(Color(0.85, 0.8, 0.65)), 8)   # the candle stub
+		_cyl(root, 0.018, 0.06, at + Vector3(0.0, 0.055, 0.0), _tone_mat(Color(0.85, 0.8, 0.65)), 6)   # the candle stub
 
 
 # A hanging lantern (B4), 0.3 x 0.3 x 0.4: the lantern on a short chain, the chain's ring at the top (0.4 m) for the hook. No collision.
@@ -2635,7 +2634,7 @@ static func hanging_lantern(kind: String = "wood") -> Node3D:
 	_lantern(root, Vector3.ZERO, iron)
 
 	for k in 3:
-		_torus_at(root, 0.012, 0.004, Vector3(0.0, 0.33 + 0.025 * float(k), 0.0), _iron_mat() if iron else _frame)   # the chain
+		_box(root, Vector3(0.012 if k % 2 == 0 else 0.024, 0.024, 0.024 if k % 2 == 0 else 0.012), Vector3(0.0, 0.33 + 0.025 * float(k), 0.0), _iron_mat() if iron else _frame)   # the chain's links
 
 	return root
 
@@ -2706,7 +2705,7 @@ static func lamp_post(kind: String = "wood") -> Node3D:
 			_cyl(root, 0.035, 3.08, Vector3(0.0, 1.86, 0.0), _iron_mat(), 8)
 			_cyl(root, 0.05, 0.04, Vector3(0.0, 3.38, 0.0), _iron_mat(), 8)
 			_box(root, Vector3(0.025, 0.025, 0.4), Vector3(0.0, 3.25, 0.18), _iron_mat())
-			_torus_at(root, 0.08, 0.01, Vector3(0.0, 3.17, 0.1), _iron_mat())                   # the scroll under the arm
+			_rod(root, Vector3(0.0, 3.0, 0.03), Vector3(0.0, 3.24, 0.3), 0.02, _iron_mat())   # the brace under the arm
 		_:
 			_cyl(root, 0.25, 0.2, Vector3(0.0, 0.1, 0.0), _flag, 8)
 			_cyl(root, 0.17, 2.6, Vector3(0.0, 1.5, 0.0), _stone, 8)
@@ -2853,8 +2852,8 @@ static func trellis() -> Node3D:
 		var x: float = -0.48 + 0.32 * float(k)
 		_box(root, Vector3(0.025, 1.85, 0.025), Vector3(x, 1.02, 0.025), _log)
 
-		for j in 5:
-			_box(root, Vector3(0.035, 0.035, 0.06), Vector3(x, 0.3 + 0.4 * float(j), 0.012), _frame)   # lashing at each crossing
+		for j in [0, 4]:
+			_box(root, Vector3(0.035, 0.035, 0.06), Vector3(x, 0.3 + 0.4 * float(j), 0.012), _frame)   # lashing where an upright meets the top and bottom rods
 
 	return root
 
@@ -2868,13 +2867,13 @@ static func compost_bin() -> Node3D:
 		for z in [-0.46, 0.46]:
 			_box(root, Vector3(0.08, 0.8, 0.08), Vector3(x, 0.4, z), _frame)
 
-	for k in 4:
-		var y: float = 0.1 + 0.2 * float(k)
+	for k in 3:
+		var y: float = 0.12 + 0.26 * float(k)
 		for s in [-1.0, 1.0]:
-			_box(root, Vector3(0.92, 0.12, 0.025), Vector3(0.0, y, s * 0.47), _planks)
-			_box(root, Vector3(0.025, 0.12, 0.92), Vector3(s * 0.47, y, 0.0), _planks)
+			_box(root, Vector3(0.92, 0.16, 0.025), Vector3(0.0, y, s * 0.47), _planks)
+			_box(root, Vector3(0.025, 0.16, 0.92), Vector3(s * 0.47, y, 0.0), _planks)
 
-	_dome(root, 0.44, Vector3(0.0, 0.3, 0.0), Vector3(1.0, 0.6, 1.0), _tone_mat(Color(0.16, 0.12, 0.08)), 10, 4)
+	_dome(root, 0.44, Vector3(0.0, 0.3, 0.0), Vector3(1.0, 0.6, 1.0), _tone_mat(Color(0.16, 0.12, 0.08)), 8, 3)
 	_box(root, Vector3(0.88, 0.3, 0.88), Vector3(0.0, 0.15, 0.0), _tone_mat(Color(0.16, 0.12, 0.08)))
 	_solid(root, Vector3(1.0, 0.8, 1.0), Vector3(0.0, 0.4, 0.0))
 	return root
@@ -2895,9 +2894,9 @@ static func scarecrow() -> Node3D:
 		_box_rot(root, Vector3(0.1, 0.16, 0.1), Vector3(s * 0.48, 1.38, 0.0), Vector3(0.0, 0.0, s * 0.4), _thatch)   # straw at the cuffs
 
 	_box(root, Vector3(0.2, 0.18, 0.1), Vector3(0.0, 0.88, 0.0), _thatch)                   # straw out of the hem
-	_dome(root, 0.13, Vector3(0.0, 1.68, 0.0), Vector3(1.0, 1.2, 1.0), sack, 10, 4)
-	_cyl(root, 0.26, 0.03, Vector3(0.0, 1.84, 0.0), _thatch, 12)                            # the hat's brim
-	_cyl(root, 0.12, 0.14, Vector3(0.0, 1.92, 0.0), _thatch, 10, 0.09)
+	_dome(root, 0.13, Vector3(0.0, 1.68, 0.0), Vector3(1.0, 1.2, 1.0), sack, 8, 3)
+	_cyl(root, 0.26, 0.03, Vector3(0.0, 1.84, 0.0), _thatch, 10)                            # the hat's brim
+	_cyl(root, 0.12, 0.14, Vector3(0.0, 1.92, 0.0), _thatch, 8, 0.09)
 	_solid(root, Vector3(0.1, 2.0, 0.1), Vector3(0.0, 1.0, 0.0))
 	return root
 
@@ -2982,7 +2981,7 @@ static func hand_pump(kind: String = "wood") -> Node3D:
 		_cyl(root, 0.07, 0.5, Vector3(0.0, 0.45, 0.0), _iron_mat(), 10)
 		_cyl(root, 0.1, 0.24, Vector3(0.0, 0.82, 0.0), _iron_mat(), 10, 0.09)                           # the cylinder
 		_cyl(root, 0.105, 0.03, Vector3(0.0, 0.95, 0.0), _iron_mat(), 10)
-		_cyl(root, 0.035, 0.2, Vector3(0.0, 0.76, 0.14), _iron_mat(), 8, 0.045).rotation = Vector3(PI * 0.5 + 0.25, 0.0, 0.0)   # the spout
+		_cyl(root, 0.035, 0.2, Vector3(0.0, 0.76, 0.14), _iron_mat(), 6, 0.045).rotation = Vector3(PI * 0.5 + 0.25, 0.0, 0.0)   # the spout
 		_box(root, Vector3(0.025, 0.1, 0.025), Vector3(0.0, 1.0, -0.06), _iron_mat())
 		_box_rot(root, Vector3(0.03, 0.03, 0.3), Vector3(0.0, 1.04, -0.12), Vector3(-0.35, 0.0, 0.0), _iron_mat())   # the curved handle
 		_cyl(root, 0.02, 0.06, Vector3(0.0, 0.99, -0.25), _iron_mat(), 6)
@@ -3059,7 +3058,7 @@ static func _conduit_joint(root: Node3D, kind: String, at: Vector3, yaw: float) 
 				_box_rot(holder, Vector3(0.04, 0.22, 0.04), Vector3(0.0, 0.1, s * 0.14), Vector3(s * 0.25, 0.0, 0.0), _frame)
 			_box(holder, Vector3(0.06, 0.04, 0.38), Vector3(0.0, 0.18, 0.0), _frame)
 		"clay":
-			_cyl(holder, 0.145, 0.08, Vector3(0.0, 0.15, 0.0), _clay, 10).rotation = Vector3(0.0, 0.0, PI * 0.5)
+			_cyl(holder, 0.145, 0.08, Vector3(0.0, 0.15, 0.0), _clay, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
 		"iron":
 			_cyl(holder, 0.075, 0.04, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
 			_box(holder, Vector3(0.06, 0.04, 0.16), Vector3(0.0, 0.02, 0.0), _iron_mat())
