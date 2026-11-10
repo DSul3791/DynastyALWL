@@ -121,7 +121,7 @@
 			]
 		},
 		"cactus": {
-			"display": "Cactus",
+			"display": "Barrel cactus",
 			"parts": [
 				"water",
 				"spines"
@@ -139,7 +139,7 @@
 			]
 		},
 		"fern": {
-			"display": "Fern",
+			"display": "Bracken",
 			"parts": [
 				"bedding",
 				"fiddleheads"
@@ -179,7 +179,7 @@
 				"heath"
 			],
 			"look_alikes": [
-				"Alpine flowers",
+				"Mountain avens",
 				"Crowberry",
 				"Duskmallow",
 				"Dwarf birch",
@@ -192,7 +192,7 @@
 			"warning": "Looks like Hushfern, which is poisonous. Check the leaf and where it grows before you eat."
 		},
 		"reeds": {
-			"display": "Reeds",
+			"display": "Common reed",
 			"parts": [
 				"thatch",
 				"reed_stems"
@@ -209,7 +209,7 @@
 				"temperate_grassland"
 			],
 			"look_alikes": [
-				"Alpine flowers",
+				"Mountain avens",
 				"Crowberry",
 				"Duskmallow",
 				"Dwarf birch",
@@ -265,13 +265,13 @@
 				"tundra"
 			],
 			"look_alikes": [
-				"Alpine flowers",
+				"Mountain avens",
 				"Cotton grass",
 				"Crowberry",
 				"Duskmallow",
 				"Dwarf birch",
 				"Lavender",
-				"Reeds",
+				"Common reed",
 				"Riverbraid",
 				"Stormreed",
 				"Tidecrown",
@@ -317,7 +317,7 @@
 			]
 		},
 		"alpine_flowers": {
-			"display": "Alpine flowers",
+			"display": "Mountain avens",
 			"parts": [
 				"herbs",
 				"dye"
@@ -337,7 +337,7 @@
 			]
 		},
 		"mushrooms": {
-			"display": "Mushrooms",
+			"display": "Field mushroom",
 			"parts": [
 				"field_mushrooms",
 				"tinder_fungus"
@@ -861,7 +861,7 @@
 				"temperate_grassland"
 			],
 			"look_alikes": [
-				"Alpine flowers",
+				"Mountain avens",
 				"Heather",
 				"Rosemary",
 				"Truthsage",
@@ -1043,7 +1043,7 @@
 				"temperate_grassland"
 			],
 			"look_alikes": [
-				"Alpine flowers",
+				"Mountain avens",
 				"Comfrey",
 				"Foxglove",
 				"Gloomthistle",
@@ -1124,7 +1124,7 @@
 				"savanna"
 			],
 			"look_alikes": [
-				"Cactus",
+				"Barrel cactus",
 				"Pilgrim's cup",
 				"Prickly pear",
 				"Water mint"
@@ -1146,7 +1146,7 @@
 			],
 			"look_alikes": [
 				"Fly agaric",
-				"Mushrooms",
+				"Field mushroom",
 				"Porcini"
 			],
 			"warning": "Looks like Fly agaric, which is poisonous. Check the leaf and where it grows before you eat."
@@ -1167,7 +1167,7 @@
 			"look_alikes": [
 				"Chanterelle",
 				"Fly agaric",
-				"Mushrooms"
+				"Field mushroom"
 			],
 			"warning": "Looks like Fly agaric, which is poisonous. Check the leaf and where it grows before you eat."
 		},
@@ -1258,7 +1258,7 @@
 			],
 			"look_alikes": [
 				"Aloe",
-				"Cactus"
+				"Barrel cactus"
 			]
 		},
 		"owlpetal": {
@@ -1297,7 +1297,7 @@
 			],
 			"look_alikes": [
 				"Echo moss",
-				"Fern",
+				"Bracken",
 				"Hushfern",
 				"Whisperfern"
 			],
@@ -1336,7 +1336,7 @@
 				"marsh"
 			],
 			"look_alikes": [
-				"Reeds",
+				"Common reed",
 				"Riverbraid",
 				"Stormreed",
 				"Tall grass",
@@ -1453,7 +1453,7 @@
 				"temperate_grassland"
 			],
 			"look_alikes": [
-				"Alpine flowers",
+				"Mountain avens",
 				"Burdock"
 			]
 		},
@@ -1538,7 +1538,7 @@
 				"temperate_grassland"
 			],
 			"look_alikes": [
-				"Reeds",
+				"Common reed",
 				"Stormreed",
 				"Tall grass",
 				"Tidecrown",
@@ -1620,7 +1620,7 @@
 			],
 			"look_alikes": [
 				"Echo moss",
-				"Fern",
+				"Bracken",
 				"Hushfern",
 				"Staunchmoss"
 			],
@@ -1642,7 +1642,7 @@
 				"temperate_grassland"
 			],
 			"look_alikes": [
-				"Alpine flowers",
+				"Mountain avens",
 				"Heather",
 				"Lavender",
 				"Mournbloom",
@@ -1685,7 +1685,7 @@
 				"marsh"
 			],
 			"look_alikes": [
-				"Reeds",
+				"Common reed",
 				"Riverbraid",
 				"Tall grass",
 				"Tidecrown",
@@ -1725,7 +1725,7 @@
 				"boreal_forest"
 			],
 			"look_alikes": [
-				"Fern",
+				"Bracken",
 				"Hushfern",
 				"Staunchmoss",
 				"Whisperfern"
@@ -1882,7 +1882,7 @@
 				"mangrove"
 			],
 			"look_alikes": [
-				"Reeds",
+				"Common reed",
 				"Riverbraid",
 				"Stormreed",
 				"Tall grass",
@@ -1908,7 +1908,7 @@
 				"temperate_grassland"
 			],
 			"look_alikes": [
-				"Alpine flowers",
+				"Mountain avens",
 				"Crowberry",
 				"Duskmallow",
 				"Dwarf birch",
@@ -1980,7 +1980,7 @@
 				"Chanterelle",
 				"Lumencap",
 				"Mirrorcap",
-				"Mushrooms",
+				"Field mushroom",
 				"Porcini",
 				"Rimecap"
 			],
@@ -2045,7 +2045,7 @@
 			],
 			"looks_like": [
 				"Echo moss",
-				"Fern",
+				"Bracken",
 				"Staunchmoss",
 				"Whisperfern"
 			],

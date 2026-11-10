@@ -482,7 +482,7 @@
 		{
 			"id": 8,
 			"name": "tropical_hardwood",
-			"display": "Tropical hardwood",
+			"display": "Mahogany",
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "tropical_hardwood",
@@ -965,7 +965,7 @@
 		{
 			"id": 17,
 			"name": "cactus",
-			"display": "Cactus",
+			"display": "Barrel cactus",
 			"kind": "shrub",
 			"shape": "cactus",
 			"model": "succulent",
@@ -1016,7 +1016,7 @@
 		{
 			"id": 18,
 			"name": "fern",
-			"display": "Fern",
+			"display": "Bracken",
 			"kind": "plant",
 			"shape": "fern",
 			"model": "fern_rosette",
@@ -1135,7 +1135,7 @@
 		{
 			"id": 20,
 			"name": "reeds",
-			"display": "Reeds",
+			"display": "Common reed",
 			"kind": "plant",
 			"shape": "reed",
 			"model": "reed_stand",
@@ -1431,7 +1431,7 @@
 		{
 			"id": 25,
 			"name": "alpine_flowers",
-			"display": "Alpine flowers",
+			"display": "Mountain avens",
 			"kind": "plant",
 			"shape": "flower",
 			"model": "wildflower",
@@ -1483,7 +1483,7 @@
 		{
 			"id": 26,
 			"name": "mushrooms",
-			"display": "Mushrooms",
+			"display": "Field mushroom",
 			"kind": "plant",
 			"shape": "mushroom",
 			"patch": {"every_m": 40, "chance": 0.5, "count": [5, 12], "radius_m": [0.8, 1.8], "scale": [1, 1.3], "spacing_m": 0.3, "by_biome": true},
@@ -7821,7 +7821,7 @@
 			"familiarity": 80,
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
-			"properties": ["cough_remedy"]
+			"properties": []
 		},
 		{
 			"id": 142,
@@ -7849,7 +7849,7 @@
 			"familiarity": 80,
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
-			"properties": ["cough_remedy"]
+			"properties": []
 		},
 		{
 			"id": 143,
@@ -7877,7 +7877,7 @@
 			"familiarity": 80,
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
-			"properties": ["cough_remedy"]
+			"properties": []
 		},
 		{
 			"id": 144,
@@ -7960,7 +7960,7 @@
 			"familiarity": 88,
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
-			"properties": ["cough_remedy"],
+			"properties": [],
 			"future": true
 		},
 		{
@@ -7988,7 +7988,7 @@
 			"familiarity": 88,
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
-			"properties": ["cough_remedy"],
+			"properties": [],
 			"future": true
 		},
 		{
@@ -8016,7 +8016,7 @@
 			"familiarity": 88,
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
-			"properties": ["cough_remedy"],
+			"properties": [],
 			"future": true
 		},
 		{
@@ -8044,7 +8044,7 @@
 			"familiarity": 88,
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
-			"properties": ["cough_remedy"],
+			"properties": [],
 			"future": true
 		},
 		{
@@ -8072,7 +8072,7 @@
 			"familiarity": 88,
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
-			"properties": ["cough_remedy"],
+			"properties": [],
 			"future": true
 		},
 		{
@@ -8100,7 +8100,7 @@
 			"familiarity": 88,
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
-			"properties": ["cough_remedy"],
+			"properties": [],
 			"future": true
 		},
 		{
@@ -8214,7 +8214,7 @@
 			"id": 156,
 			"name": "ramsons",
 			"patch": {"every_m": 60, "chance": 0.6, "count": [4, 8], "radius_m": [1.0, 2.0], "scale": [0.9, 1.2], "spacing_m": 0.6, "by_biome": true},
-			"display": "Ramsons",
+			"display": "Wild leek",
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
