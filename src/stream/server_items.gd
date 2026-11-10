@@ -319,6 +319,12 @@ var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
 var _bog_left: Dictionary = {}       # bog iron deposit key "gi,gj" -> [ore left, game seconds it is counted to] (absent = untouched, full), saved in world_items.json "bog_iron"
 const BOULDER_KEY := 1 << 50
+const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
+const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
+const BOG_SAMPLE_M := 8.0         # the baked tile's sample spacing: deposits sit on samples (BogIron), so the scan steps by it
+const BOG_WET_M := 0.05           # a deposit under more standing water than this is drawn wet
+var _bog_ids: Dictionary = {}     # deposit key "gi,gj" -> its world row id
+var _bog_scan: Dictionary = {}    # peer -> {"at": Vector2i sample the scan was made from, "found": [[key, pos, size], ...]}
 const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
 const CAVE_ITEMS_MAX := 256
 const BOULDER_STATE := 10            # world-item row state of a boulder          # boulder keys live apart from the loose stones' keys
@@ -647,6 +653,7 @@ func peer_left(peer: int) -> void:
 	_peer_key.erase(peer)
 	_peer_pos.erase(peer)
 	_known.erase(peer)
+	_bog_scan.erase(peer)
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
@@ -3164,6 +3171,63 @@ func _dig_bog_iron(peer: int, at: Vector3, tier: int, pieces: int) -> void:
 			_say(peer, str(cfg["first_find"]))
 
 
+# The bog iron deposits a player can see (digging.json bog_iron seen_m), as world rows for the client's look (Kathleen's _show_bog):
+#   [id, 0, ore left, the sample on the ground, BOG_STATE, {"key": "gi,gj", "total": its size, "wet": under standing water}]
+# "left" is the deposit as it has grown back by now (BogIron.regrown, the same sum a dig makes), so a dig or the regrowth sends the row again.
+# The deposits are looked up again only when the player moves onto another sample (a few dozen samples within seen_m).
+func _bog_rows_near(peer: int, here: Vector3) -> Array:
+	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
+
+	if cfg.is_empty() or not bog_deposit_at.is_valid():
+		return []
+
+	var seen: float = float(cfg.get("seen_m", 30.0))
+	var at: Vector2i = Vector2i(int(round(here.x / BOG_SAMPLE_M)), int(round(here.z / BOG_SAMPLE_M)))
+	var scan: Dictionary = _bog_scan.get(peer, {})
+
+	if scan.is_empty() or scan["at"] != at:
+		var found: Array = []
+		var keys: Dictionary = {}
+		var reach: int = ceili(seen / BOG_SAMPLE_M)
+
+		for dj in range(-reach, reach + 1):
+			for di in range(-reach, reach + 1):
+				var x: float = float(at.x + di) * BOG_SAMPLE_M
+				var z: float = float(at.y + dj) * BOG_SAMPLE_M
+				var deposit: Dictionary = bog_deposit_at.call(x, z, cfg)
+
+				if deposit.is_empty() or keys.has(str(deposit["key"])):
+					continue
+
+				keys[str(deposit["key"])] = true
+				var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else here.y
+				found.append([str(deposit["key"]), Vector3(x, here.y if is_nan(y) else y, z), int(deposit["size"])])
+
+		scan = {"at": at, "found": found}
+		_bog_scan[peer] = scan
+
+	var rows: Array = []
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	for entry in scan["found"]:
+		var spot: Vector3 = entry[1]
+
+		if Vector2(spot.x - here.x, spot.z - here.z).length() > seen:
+			continue
+
+		var key: String = str(entry[0])
+		var size: int = int(entry[2])
+
+		if not _bog_ids.has(key):
+			_bog_ids[key] = BOG_ID_BASE - _bog_ids.size()
+
+		var left: int = int(BogIron.regrown(_bog_left.get(key, [size, now_s]), size, now_s, cfg)[0])
+		var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(spot)) > BOG_WET_M
+		rows.append([int(_bog_ids[key]), 0, left, spot, BOG_STATE, {"key": key, "total": size, "wet": wet}])
+
+	return rows
+
+
 # What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many
 # it got. The fill operation calls this and fills only as many units as it got. fill_units_of is the same count without taking.
 func take_fill(peer: int, units: int) -> int:
@@ -4324,6 +4388,14 @@ func _sync_world_items() -> void:
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
 					known[id] = signature
+
+		for bog in _bog_rows_near(peer, here):
+			near[int(bog[0])] = true
+			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE + (7 if bool(bog[5]["wet"]) else 0)
+
+			if not known.has(int(bog[0])) or known[int(bog[0])] != bog_signature:
+				added.append(bog)
+				known[int(bog[0])] = bog_signature
 
 		for id in known.keys():
 			if not near.has(id):
