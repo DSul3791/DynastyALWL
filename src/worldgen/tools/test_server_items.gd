@@ -2905,9 +2905,7 @@ func _init() -> void:
 
 	for cell_x in range(0, 6):
 		for cell_z in range(0, 4):
-			var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-			rng.seed = hash(Vector3i(cell_x, cell_z, 1))
-			bo._lay_out_boulders(Vector2i(cell_x, cell_z), 32.0, rng)
+			bo._lay_out_boulders(Vector2i(cell_x, cell_z), 32.0)
 
 	for bid in bo._items:
 		if bo._items[bid].has("boulder"):
@@ -2920,9 +2918,7 @@ func _init() -> void:
 
 	for cell_x in range(0, 6):
 		for cell_z in range(0, 4):
-			var rng2: RandomNumberGenerator = RandomNumberGenerator.new()
-			rng2.seed = hash(Vector3i(cell_x, cell_z, 1))
-			replay._lay_out_boulders(Vector2i(cell_x, cell_z), 32.0, rng2)
+			replay._lay_out_boulders(Vector2i(cell_x, cell_z), 32.0)
 
 	for aid in replay._items:
 		replay_count += 1 if replay._items[aid].has("boulder") else 0
@@ -2937,6 +2933,53 @@ func _init() -> void:
 		bo.save()
 		var reloaded = make(bld)
 		check(int(reloaded._boulder_left.get(bo._items[worked]["scatter"], -1)) == 5, "what is left of a worked boulder is saved")
+
+	# The flora cover does not move boulders or bank stones (Sonny, 10 Nov 2026): cover_at reads 0 until a worker builds the flora chunk, and a
+	# stick's spot takes more tries under open sky. The same cells laid out under open sky and under trees keep every boulder and bank stone,
+	# with the same keys in the same places; only the sticks may move.
+	var by_cover: Array = []
+	var sticks_by_cover: Array = []
+
+	for cover in [0.0, 1.0]:
+		var cdir: String = bld + "_cover_%d" % int(cover)
+		DirAccess.make_dir_recursive_absolute(cdir)
+
+		for file in DirAccess.get_files_at(cdir):
+			DirAccess.remove_absolute(cdir + "/" + file)
+
+		var lay = make(cdir)
+		lay.ground_height = func(x, _z): return 10.0 + x * 0.3
+		lay.water_near = func(pos, reach): return pos.x + reach >= 100.0 and pos.x - reach <= 104.0
+		lay.cover_at = func(_p): return cover
+		var cover_cfg: Dictionary = lay._drops.get("ground_scatter", {})
+
+		for cz in range(1, 9):
+			lay._lay_out_cell(Vector2i(3, cz), 32.0, cover_cfg)
+
+		var kept: Array = []
+		var stick_spots: Array = []
+
+		for lid in lay._items:
+			var row: Array = [int(lay._items[lid]["scatter"]), lay._items[lid]["pos"], int(lay._items[lid]["number"])]
+
+			if int(lay._items[lid]["number"]) == lay.table.number_of("stick"):
+				stick_spots.append(row)
+			else:
+				kept.append(row)
+
+		kept.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
+		stick_spots.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
+		by_cover.append(kept)
+		sticks_by_cover.append(stick_spots)
+
+	var cover_boulders: int = 0
+
+	for row in by_cover[0]:
+		cover_boulders += 1 if (int(row[0]) & bo.BOULDER_KEY) != 0 else 0
+
+	check(cover_boulders > 0 and by_cover[0].size() > cover_boulders, "the cover test lays out boulders and loose or bank stones (%d boulders of %d)" % [cover_boulders, by_cover[0].size()])
+	check(str(by_cover[0]) == str(by_cover[1]), "boulders and bank stones lie where they did whether the flora cover is built or not")
+	check(not sticks_by_cover[0].is_empty(), "the cover test has sticks drawn before the boulders (%d)" % sticks_by_cover[0].size())
 
 	# A recipe with six ingredients works end to end (Dave: the more ingredients the better the item; the limit is one constant).
 	var qd6: String = qd + "_six"

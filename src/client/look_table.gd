@@ -207,6 +207,9 @@ const LOOKS := {
 	"fortified_gate_open": {"builder": "fortified_gate", "args": [true]},
 	"fortified_pillar": {"builder": "concrete_pillar", "args": [true]},
 	"fortified_wall_top": {"builder": "fortified_wall_top", "args": []},
+	"bog_iron_patch": {"builder": "bog_iron_patch", "args": ["dry"]},   # a bog iron deposit's ground stain (#996; drawn by inventory_view, not placed)
+	"bog_iron_patch_wet": {"builder": "bog_iron_patch", "args": ["wet"]},
+	"bog_iron_patch_dug": {"builder": "bog_iron_patch", "args": ["dug"]},
 	"mixer": {"builder": "mixer", "args": []},
 	"chicken_coop": {"builder": "chicken_coop", "args": []},
 	"fodder_trough": {"builder": "fodder_trough", "args": []},

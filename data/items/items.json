@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 894,
+	"next_number": 896,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2879,6 +2879,7 @@
 			"name": "Nails",
 			"description": "Small iron nails. Fix boards in builds.",
 			"kind": "material",
+			"material": "iron",
 			"stack": 200,
 			"look_alikes": [],
 			"value": 1,
@@ -2916,6 +2917,7 @@
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
+			"material": "iron",
 			"stack": 40,
 			"look_alikes": [],
 			"value": 2
@@ -2972,7 +2974,6 @@
 		},
 		"water_wheel": {
 			"number": 239,
-			"future": true,
 			"name": "Water wheel",
 			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
 			"kind": "material",
@@ -3828,7 +3829,7 @@
 		},
 		"candle": {
 			"number": 311,
-			"name": "Tallow - Candle",
+			"name": "Candle",
 			"description": "A wick dipped in fat. A small steady light for indoors.",
 			"kind": "tool",
 			"tool_class": "candle",
@@ -10157,6 +10158,27 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 228."
+			},
+			"bronze_nails": {
+				"number": 894,
+				"name": "Bronze nails",
+				"description": "Small bronze nails. Fix boards in builds, the same as iron ones.",
+				"kind": "material",
+				"material": "bronze",
+				"stack": 200,
+				"look_alikes": [],
+				"value": 1,
+				"sell_lot": 15
+			},
+			"bronze_hinges": {
+				"number": 895,
+				"name": "Bronze hinges",
+				"description": "A pair of bronze hinges for a door, a gate or a lid.",
+				"kind": "material",
+				"material": "bronze",
+				"stack": 40,
+				"look_alikes": [],
+				"value": 2
 			}
 	}
 }

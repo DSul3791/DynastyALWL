@@ -25,6 +25,10 @@ extends Node
 #                       look rig --cam left|right shows the body with the bow at its side
 #   --shot-draw         with a bow given (--shot-item=... bow): keep it up and drawing as if right were held, each frame (held_item rig_drawing), so the crosshair,
 #                       the sway and arrows loosed into trunks can be pictured (the rig cannot hold the mouse; Dino 10 Nov 2026)
+#   --shot-lit          with a torch or lantern given (--shot-give=wooden_lantern): its flame burns in every picture. Its fuel (candle, lamp oil) is given
+#                       too, a dark one is lit, first person keeps the arms on so the flame hangs in the drawn hand (with the arms off it sat on the hidden
+#                       body's hand, and a light under a hidden node gives no light: Dino's black lantern shots, 10 Nov 2026), the held light stays on beside a
+#                       fire light at Low, and each picture logs the flame's state. Without it a dark one given (--shot-give=wooden_lantern_dark) stays dark
 #   --shot-sway         let the drawn bow's sway turn the camera as in play (terrain_client shot_sway): the rig's shot_lock otherwise holds the view still
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
@@ -43,6 +47,7 @@ var settle_s: float = 25.0
 var _index: int = -1
 var bow_drawing: bool = false   # --shot-draw
 var bow_sway: bool = false      # --shot-sway
+var shot_lit: bool = false      # --shot-lit
 var _placed: bool = false
 var _anchor_told_msec: int = 0        # when the kit-placing shot told the server where the player really is
 var _landed: bool = false          # the camera stands where the shot wants it (checked once per spot); the settle time runs from here
@@ -237,6 +242,8 @@ func setup(owner_client, args: Array) -> void:
 			drop_settle_ms = int(argument.trim_prefix("--shot-drop-settle="))      # how long after a drop or place the picture waits (a slow first world build streams the item late)
 		elif argument == "--shot-light":
 			light_it = true      # with --shot-place: 6 s after the fire is placed, give plant fibre and light it, so a lit fire can be photographed
+		elif argument == "--shot-lit":
+			shot_lit = true      # the held torch or lantern burns in the pictures (see the header)
 		elif argument == "--shot-place":
 			place_it = true      # with --shot-give=ITEM --shot-drop: place the item (a campfire kit becomes a fire) at the drop spot instead of dropping it
 		elif argument.begins_with("--shot-fell="):
@@ -339,7 +346,7 @@ func _process(delta: float) -> void:
 		# No arms in the pictures, except a first-person bow shot: the bow is held in both hands of the arms (held_item.gd _pose_bow), and with the arms off it went
 		# to the hidden body's hand and the pictures showed no bow (Dino, 10 Nov 2026).
 		if client.held != null:
-			client.held.set_first_person(bow_pose != "" and float(shots[_index]["walk"]) < 0.0)
+			client.held.set_first_person((bow_pose != "" or shot_lit) and float(shots[_index]["walk"]) < 0.0)
 
 		if client._avatar != null and float(shots[_index]["walk"]) < 0.0:
 			client._avatar.visible = false
@@ -358,11 +365,27 @@ func _process(delta: float) -> void:
 		if bow_pose != "":
 			client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of("stone_arrow"), 0, 10, Vector3.ZERO)   # arrows in the pack, so one is nocked
 
-	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null:
+		if shot_lit:
+			_give_flame_fuel()
+
+	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null and (not _given_keyed() or _given_key() >= 0 or now - client.connected_msec > 90000):
 		_selected = true
-		client.held.select(0)      # slot 0 = key 1: hold what was given
+		# The key the server put the given item on (a tool or weapon goes on the first empty key when it arrives). Wait for it: a left-hand item
+		# (torch, lantern, shield) is chosen once, by what the key points at when it is selected, so selecting before the pack and keys arrived left
+		# both hands empty (Dino 10 Nov 2026, "held id  ... lit nothing in hand"); the right hand follows its key later, which is why a bow worked.
+		var key: int = _given_key()
+
+		if key < 0 and _given_keyed() and client.items.inventory != null and client.items.inventory.numbers.has(client.items.table.number_of(give_item)):
+			key = 0
+			client.items.set_key(0, client.items.table.number_of(give_item))   # in the pack but on no key: put it on key 1
+
+		print("shot runner: %s on key %d after %.1f s; pack %s; keys %s" % [give_item, key + 1, float(now - client.connected_msec) / 1000.0,
+			str(client.items.inventory.numbers.slice(0, 12)) if client.items.inventory != null else "none", str(client.items.inventory.hotbar) if client.items.inventory != null else "none"])
+		client.held.rig_keep_dark = not shot_lit and client.items.table.entry(give_item).has("relit_item")   # --give wooden_lantern_dark: picture it unlit
+		client.held.select(maxi(key, 0))      # key index 0 = key 1: hold what was given
 		client.held.bow_force = bow_pose
 		client.held.rig_drawing = bow_drawing
+		client.held.rig_lit = shot_lit
 		client.shot_sway = bow_sway
 
 	if drop_it and place_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:
@@ -697,6 +720,9 @@ func _process(delta: float) -> void:
 			print("shot runner: held model at %s visible %s in tree %s parent %s children %d first aabb %s; body at %s" % [str(hm.global_position), str(hm.visible), str(hm.is_visible_in_tree()), str(hm.get_parent().name), hm.get_child_count(), str(aabb.size), str(client.body.global_position)])
 
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
+
+	if shot_lit and client.held != null:
+		print("shot runner: lit %s" % _flame_state())
 
 	print("shot runner: " + client.wind_line(client.weather))
 
@@ -1978,3 +2004,72 @@ func _run_chop_strip() -> void:
 		print("shot runner: chop phase %d at %.2f s (swing t %.2f) saved" % [index, float(times[index]), held._swing_t])
 
 	_chop_state = 2
+
+
+# --shot-lit: two of the given torch's or lantern's fuel (items.json "fuel" on it or on its lit twin: candle, lamp oil), so a dark one can be lit and a
+# burnt-out one loads again. A torch has no fuel and gets none.
+func _give_flame_fuel() -> void:
+	var table = client.items.table
+	var entry: Dictionary = table.entry(give_item)
+	var fuel: String = str(entry.get("fuel", table.entry(str(entry.get("relit_item", ""))).get("fuel", "")))
+
+	if fuel != "" and table.number_of(fuel) != 0:
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(fuel), 0, 2, Vector3.ZERO)
+
+
+# --shot-lit: what is in the left and right hands, whether each burns (items.json "flame"), and whether its light is drawn (visible in the tree), so a dark
+# picture says why.
+func _flame_state() -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for hand in [["left", client.held.off_id() if client.held.off_holding else "", client.held._off_model], ["right", client.held.held_id() if client.held.holding else "", client.held._model]]:
+		if str(hand[1]) == "":
+			continue
+
+		var model: Node3D = hand[2] as Node3D
+		var light: OmniLight3D = model.get_node_or_null("Light") as OmniLight3D if model != null else null
+		parts.append("%s %s flame %s light %s, %s" % [hand[0], hand[1], str(bool(client.items.table.entry(str(hand[1])).get("flame", false))), "none" if light == null else ("drawn" if light.is_visible_in_tree() else "hidden"), _in_frame(model)])
+
+	return ", ".join(parts) if not parts.is_empty() else "nothing in hand"
+
+
+# Whether the given item goes on a key by itself when it arrives (server_items _autofills: tools and weapons, a torch or lantern included). Other
+# gives (a log, a material) are selected at 10 s as before.
+func _given_keyed() -> bool:
+	return str(client.items.table.entry(give_item).get("kind", "")) in ["tool", "weapon"]
+
+
+# The hotbar key (0 for key 1) holding the given item, or -1 while the pack or the keys have not arrived or it is on none.
+func _given_key() -> int:
+	if client.items.inventory == null:
+		return -1
+
+	var number: int = client.items.table.number_of(give_item)
+
+	if client.items.inventory.hotbar.size() == 0 or not client.items.inventory.numbers.has(number):
+		return -1
+
+	return client.items.inventory.hotbar.find(number)
+
+
+# Where a held model is in the picture: "in frame at (x, y) px" from the drawn camera, "out of frame (below)" and the like, or "not drawn", so a picture
+# with the lantern lit but not seen says where it hangs (Dino 10 Nov 2026, first person pitched -25 degrees showed only the lit sand).
+func _in_frame(model: Node3D) -> String:
+	var cam: Camera3D = client.view_cam if client.view_cam != null else client.camera
+
+	if model == null or cam == null or not model.is_visible_in_tree():
+		return "not drawn"
+
+	var spot: Vector3 = model.global_position
+	var local: Vector3 = cam.global_transform.affine_inverse() * spot
+
+	if local.z > -0.01:
+		return "behind the camera (%.2f m)" % local.z
+
+	var px: Vector2 = cam.unproject_position(spot)
+	var size: Vector2 = get_viewport().get_visible_rect().size
+
+	if px.x < 0.0 or px.y < 0.0 or px.x > size.x or px.y > size.y:
+		return "out of frame at (%.0f, %.0f) px of %.0fx%.0f, %.2f m %s" % [px.x, px.y, size.x, size.y, -local.z, "below" if px.y > size.y else ("above" if px.y < 0.0 else "to the side")]
+
+	return "in frame at (%.0f, %.0f) px, %.2f m ahead" % [px.x, px.y, -local.z]

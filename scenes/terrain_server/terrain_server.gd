@@ -456,6 +456,7 @@ func _ready() -> void:
 	items.send_chest_info = func(peer, id, keep_out, may_set): net.chest_info.rpc_id(peer, id, keep_out, may_set)
 	items.send_craft_stock = func(peer, numbers, counts): net.craft_stock.rpc_id(peer, numbers, counts)
 	items.send_step_to = func(peer, spot, yaw): net.step_to.rpc_id(peer, spot, yaw)
+	items.send_wheel_share = func(peer, spot, yaw_deg, percent, why): net.wheel_share.rpc_id(peer, spot, yaw_deg, percent, why)
 	items.send_favourites = func(peer, flags): net.favourites.rpc_id(peer, flags)
 	items.send_hotbar = func(peer, keys): net.hotbar.rpc_id(peer, keys)
 	items.send_bulk_done = func(peer, kind, stacks, containers, ids): net.bulk_done.rpc_id(peer, kind, stacks, containers, ids)
@@ -494,7 +495,7 @@ func _ready() -> void:
 	items.reset_terrain_edits = _reset_terrain_edits
 	items.floor_below = _floor_below
 	items.water_flow_at = _water_flow_at
-	items.water_flow_runs = _water_flow_runs
+	items.water_wheel = _water_wheel
 	items.dump_water = _dump_water
 	items.land_types = _land_types
 	@warning_ignore("confusable_local_declaration")
@@ -2047,8 +2048,8 @@ func _land_types(x: float, z: float) -> String:
 	return summary
 
 
-# Running water for placement rules (src/stream/water_flow.gd): the speed in m/s of the settled water at a point (-1 none, 0 still), and whether
-# the span a to b runs at least data/water_flow.json min_speed_m_s all along.
+# Running water for placement rules (src/stream/water_flow.gd): the speed in m/s of the settled water at a point (-1 none, 0 still), and the
+# power of a water wheel spanning a to b (WaterFlow.wheel: {"w", "why", "along"}; Sonny's water rules section 10).
 func _water_flow_at(point: Vector3) -> float:
 	if water_live == null:
 		return WaterFlowScript.NO_WATER
@@ -2056,12 +2057,11 @@ func _water_flow_at(point: Vector3) -> float:
 	return WaterFlowScript.speed_at(generator, water_live.data_of(generator.tile_of(point.x, point.z)), point.x, point.z)
 
 
-func _water_flow_runs(a: Vector3, b: Vector3) -> bool:
+func _water_wheel(a: Vector3, b: Vector3) -> Dictionary:
 	if water_live == null:
-		return false
+		return {"w": 0.0, "why": "dry"}
 
-	var rules: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/water_flow.json"))
-	return WaterFlowScript.runs(generator, water_live.data_of(generator.tile_of(a.x, a.z)), a, b, rules if typeof(rules) == TYPE_DICTIONARY else {})
+	return WaterFlowScript.wheel(generator, water_live.data_of(generator.tile_of(a.x, a.z)), a, b, WaterFlowScript.load_rules(), items.water_depth_at)
 
 
 # Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface with the

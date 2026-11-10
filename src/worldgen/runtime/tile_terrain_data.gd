@@ -934,7 +934,9 @@ func ore_at(pos: Vector3, reach: float, names: Dictionary, depth_m: float) -> St
 
 
 # How far a spot is from a compact ore body, in the body's own size: under 1 inside it. Round bodies (lens, halo, pipe) by their centre and largest
-# radius; a vein by its trace and a placer by its line, over half their width. INF beyond reach of it.
+# radius; a vein by its trace and a placer by its line, over half their width. INF beyond reach of it: past size + reach for a round body, past
+# half the width + reach for a line (Sonny 10 Nov 2026: before, only the line's grown box limited it, so a box corner up to ~100 m off a placer
+# line still counted).
 static func _ore_score(ore: Dictionary, flat: Vector2, reach: float) -> float:
 	if ore.has("mid"):
 		var gap: float = flat.distance_to(ore["mid"])
@@ -946,7 +948,8 @@ static func _ore_score(ore: Dictionary, flat: Vector2, reach: float) -> float:
 	for n in range(line.size() - 1):
 		best = minf(best, Geometry2D.get_closest_point_to_segment(flat, line[n], line[n + 1]).distance_to(flat))
 
-	return best / maxf(0.5 * float(ore.get("width_m", 2.0)), 1.0) if best < INF else INF
+	var half: float = 0.5 * float(ore.get("width_m", 2.0))
+	return best / maxf(half, 1.0) if best <= half + reach else INF
 
 
 # Whether a band of a layer or scatter body (one every cycle_m from depth_below_datum_m under the province top `top`, until repeat_to_m) has rock
