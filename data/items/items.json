@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 813,
+	"next_number": 828,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -77,7 +77,8 @@
 				]
 			],
 			"value": 20,
-			"material": "stone"
+			"material": "stone",
+			"edge": true
 		},
 		"spear": {
 			"number": 7,
@@ -102,7 +103,8 @@
 					1
 				]
 			],
-			"value": 25
+			"value": 25,
+			"edge": true
 		},
 		"campfire_kit": {
 			"number": 8,
@@ -157,7 +159,8 @@
 					1
 				]
 			],
-			"value": 12
+			"value": 12,
+			"edge": true
 		},
 		"torch": {
 			"number": 12,
@@ -1149,7 +1152,7 @@
 			"number": 89,
 			"retired": true,
 			"name": "Medium Forge",
-			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
+			"description": "A brick forge with a stepped hood and iron straps, ready to raise. Hot enough for iron.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,
@@ -1159,7 +1162,7 @@
 		"blacksmithy": {
 			"number": 90,
 			"name": "Brick - Forge",
-			"description": "A dressed stone forge with a stepped hood and iron straps.",
+			"description": "A brick forge with a stepped hood and iron straps. Smelts and works iron; an anvil beside it makes steel.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -3108,7 +3111,8 @@
 				]
 			],
 			"value": 70,
-			"look_alikes": []
+			"look_alikes": [],
+			"edge": true
 		},
 		"stone_adze": {
 			"number": 246,
@@ -3632,7 +3636,8 @@
 					1
 				]
 			],
-			"value": 60
+			"value": 60,
+			"edge": true
 		},
 		"stone_pickaxe": {
 			"number": 297,
@@ -3681,7 +3686,8 @@
 					1
 				]
 			],
-			"value": 18
+			"value": 18,
+			"edge": true
 		},
 		"scythe": {
 			"number": 299,
@@ -3707,7 +3713,8 @@
 				]
 			],
 			"value": 80,
-			"repair_station": "forge"
+			"repair_station": "forge",
+			"edge": true
 		},
 		"wooden_club": {
 			"number": 300,
@@ -3930,7 +3937,8 @@
 				]
 			],
 			"value": 70,
-			"repair_station": "forge"
+			"repair_station": "forge",
+			"edge": true
 		},
 		"bronze_mace": {
 			"number": 316,
@@ -3996,7 +4004,8 @@
 				]
 			],
 			"value": 120,
-			"repair_station": "forge"
+			"repair_station": "forge",
+			"edge": true
 		},
 		"iron_mace": {
 			"number": 319,
@@ -4062,7 +4071,8 @@
 				]
 			],
 			"value": 250,
-			"repair_station": "forge"
+			"repair_station": "forge",
+			"edge": true
 		},
 		"steel_mace": {
 			"number": 322,
@@ -5513,7 +5523,8 @@
 			],
 			"repair_station": "forge",
 			"look_alikes": [],
-			"value": 60
+			"value": 60,
+			"edge": true
 		},
 		"bronze_hammer": {
 			"number": 460,
@@ -5565,7 +5576,8 @@
 			],
 			"repair_station": "forge",
 			"look_alikes": [],
-			"value": 30
+			"value": 30,
+			"edge": true
 		},
 		"stairs_wood_kit": {
 			"number": 462,
@@ -9129,7 +9141,8 @@
 					]
 				],
 				"look_alikes": [],
-				"value": 40
+				"value": 40,
+				"edge": true
 			},
 			"iron_chisel": {
 				"number": 799,
@@ -9150,7 +9163,8 @@
 					]
 				],
 				"look_alikes": [],
-				"value": 60
+				"value": 60,
+				"edge": true
 			},
 			"steel_chisel": {
 				"number": 800,
@@ -9171,7 +9185,8 @@
 					]
 				],
 				"look_alikes": [],
-				"value": 80
+				"value": 80,
+				"edge": true
 			},
 			"carved_stone_block": {
 				"number": 801,
@@ -9301,6 +9316,224 @@
 					"Clay jug"
 				],
 				"value": 3
+			},
+			"sling": {
+				"number": 813,
+				"name": "Sling",
+				"description": "A hide pouch on two cords. Whirl it and let go to throw a stone fast and far.",
+				"kind": "weapon",
+				"weapon_class": "sling",
+				"tier": 1,
+				"durability": 300,
+				"repair": [
+					[
+						"twine",
+						1
+					]
+				],
+				"stack": 1,
+				"unstackable": true,
+				"value": 8,
+				"look_alikes": []
+			},
+			"sling_stone": {
+				"number": 814,
+				"name": "Sling stone",
+				"description": "A smooth round stone the size of an egg, picked for the sling.",
+				"kind": "material",
+				"ammo_class": "sling_stone",
+				"damage": 6.0,
+				"tip": "stone_shot",
+				"stack": 20,
+				"value": 1,
+				"look_alikes": [
+					"Stone"
+				]
+			},
+			"whetstone": {
+				"number": 815,
+				"name": "Whetstone",
+				"description": "A fine flat stone for honing an edge. Brings a worn blade back without new parts.",
+				"kind": "tool",
+				"tool_class": "whetstone",
+				"stack": 1,
+				"unstackable": true,
+				"durability": 40,
+				"repair": [
+					[
+						"stone",
+						1
+					]
+				],
+				"look_alikes": [
+					"Stone"
+				],
+				"value": 3,
+				"future": true
+			},
+			"fishing_spear": {
+				"number": 816,
+				"name": "Fishing spear",
+				"description": "A long stick split and sharpened into barbed prongs. Stab fish in the shallows.",
+				"kind": "weapon",
+				"weapon_class": "fish_spear",
+				"tier": 1,
+				"damage": 4.0,
+				"durability": 200,
+				"repair": [
+					[
+						"stick",
+						1
+					]
+				],
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [
+					"Wooden - Spear"
+				],
+				"value": 4,
+				"future": true
+			},
+			"fire_arrow": {
+				"number": 817,
+				"name": "Fire arrow",
+				"description": "A wooden arrow with a pitch-soaked fibre head. Light it at a fire before you loose it.",
+				"kind": "material",
+				"ammo_class": "arrow",
+				"damage": 5.0,
+				"tip": "wood",
+				"fire": true,
+				"stack": 20,
+				"value": 4,
+				"look_alikes": [
+					"Wooden - Arrow"
+				],
+				"future": true
+			},
+			"fishing_bait": {
+				"number": 818,
+				"name": "Fishing bait",
+				"description": "Cut worm or fish on the hook. Fish bite sooner.",
+				"kind": "material",
+				"stack": 40,
+				"value": 1,
+				"look_alikes": [],
+				"future": true
+			},
+			"bedroll": {
+				"number": 819,
+				"name": "Bedroll",
+				"description": "Hides sewn into a roll to sleep on. Better rest in the open, but it is not a bed.",
+				"kind": "gear",
+				"stack": 1,
+				"unstackable": true,
+				"value": 14,
+				"look_alikes": [],
+				"future": true
+			},
+			"wooden_snowshoes": {
+				"number": 820,
+				"name": "Wooden - Snowshoes",
+				"description": "Bent-wood frames laced with leather. Spread your weight so you sink less in snow.",
+				"kind": "clothing",
+				"slot": "feet",
+				"warmth": 0.02,
+				"snow_walk": true,
+				"stack": 1,
+				"unstackable": true,
+				"value": 30,
+				"look_alikes": []
+			},
+			"knife": {
+				"number": 821,
+				"name": "Knife",
+				"description": "Any knife: stone, obsidian, bronze or better.",
+				"kind": "material",
+				"stack": 20,
+				"look_alikes": [],
+				"value": 2,
+				"note": "An ingredient group (wood_species.json ingredient_groups): a recipe asking for it takes any member. Never given itself."
+			},
+			"fish_trap": {
+				"number": 822,
+				"name": "Fish trap",
+				"description": "A cone of woven sticks set in the water. Fish swim in and cannot find the way out.",
+				"kind": "placeable",
+				"stack": 5,
+				"unstackable": true,
+				"future": true,
+				"durability": 40,
+				"repair": [
+					[
+						"twine",
+						1
+					]
+				],
+				"value": 10,
+				"look_alikes": [
+					"Snare"
+				]
+			},
+			"fish_trap_set": {
+				"number": 823,
+				"name": "Fish trap",
+				"description": "A fish trap set in the water.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 202."
+			},
+			"bird_trap": {
+				"number": 824,
+				"name": "Bird trap",
+				"description": "A stick cage propped on a trigger. A ground bird that steps in for the bait brings it down.",
+				"kind": "placeable",
+				"stack": 5,
+				"unstackable": true,
+				"future": true,
+				"durability": 20,
+				"repair": [
+					[
+						"twine",
+						1
+					]
+				],
+				"value": 6,
+				"look_alikes": [
+					"Snare"
+				]
+			},
+			"bird_trap_set": {
+				"number": 825,
+				"name": "Bird trap",
+				"description": "A bird trap set on the ground.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 203."
+			},
+			"iron_anvil_kit": {
+				"number": 826,
+				"retired": true,
+				"name": "Iron - Anvil",
+				"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 160
+			},
+			"iron_anvil": {
+				"number": 827,
+				"name": "Iron - Anvil",
+				"description": "A forged iron anvil on a banded log stump. Set beside a brick forge, it raises the forge a level, for steel.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed add-on: row state 204, addon_of brick_forge."
 			}
 	}
 }
