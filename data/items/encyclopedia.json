@@ -87,7 +87,7 @@
 			"kind": "material",
 			"description": "Soft dry stuff to lie on. A bed is stuffed with it.",
 			"how_to_get": [
-				"Picked from fern (spring/summer/autumn)",
+				"Picked from bracken (spring/summer/autumn)",
 				"Picked from heather (summer/autumn)"
 			],
 			"used_for": [
@@ -456,7 +456,7 @@
 			"kind": "material",
 			"description": "A pot of plant colour pressed from flowers and roots. Stains cloth and wood.",
 			"how_to_get": [
-				"Picked from alpine flowers (summer)"
+				"Picked from mountain avens (summer)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -551,7 +551,7 @@
 			"kind": "material",
 			"description": "Tightly curled young fern fronds. Cooked, they taste green and nutty.",
 			"how_to_get": [
-				"Picked from fern (spring/summer/autumn)"
+				"Picked from bracken (spring/summer/autumn)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1087,7 +1087,7 @@
 			"kind": "material",
 			"description": "The cup-shaped leaves of the pilgrim's cup, holding rain. Pick one to drink from.",
 			"how_to_get": [
-				"Picked from pilgrims cup (summer)"
+				"Picked from pilgrim's cup (summer)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1097,7 +1097,7 @@
 			"kind": "material",
 			"description": "Clear rainwater held in a pilgrim's cup leaf. Safe enough to drink.",
 			"how_to_get": [
-				"Picked from pilgrims cup (summer)"
+				"Picked from pilgrim's cup (summer)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1237,7 +1237,7 @@
 			"kind": "material",
 			"description": "Long hollow stems of reed. Woven or bundled.",
 			"how_to_get": [
-				"Picked from reeds (all)"
+				"Picked from common reed (all)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1442,7 +1442,7 @@
 			"kind": "material",
 			"description": "Long sharp cactus spines. Used as needles and pins.",
 			"how_to_get": [
-				"Picked from cactus (all)"
+				"Picked from barrel cactus (all)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1452,7 +1452,7 @@
 			"kind": "material",
 			"description": "Yellow star flowers with dotted leaves. Steeped for a gentle remedy.",
 			"how_to_get": [
-				"Harvested from st johns wort"
+				"Harvested from St John's wort"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1573,7 +1573,7 @@
 			"kind": "material",
 			"description": "Bark rich in tannin. Used for tanning hides.",
 			"how_to_get": [
-				"Harvested from oak"
+				"Harvested from English oak"
 			],
 			"used_for": [
 				"Used in Heavy leather",
@@ -1589,8 +1589,8 @@
 				"Harvested from thatch grass",
 				"Picked from heather",
 				"Picked from heather (summer/autumn)",
-				"Picked from reeds",
-				"Picked from reeds (all)",
+				"Picked from common reed",
+				"Picked from common reed (all)",
 				"Picked from tall grass"
 			],
 			"used_for": [
@@ -1686,7 +1686,7 @@
 			"description": "A woody hoof-shaped fungus. Its inner flesh takes a spark.",
 			"how_to_get": [
 				"Harvested from tinder fungus",
-				"Picked from mushrooms (summer/autumn)"
+				"Picked from field mushroom (summer/autumn)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1757,7 +1757,7 @@
 			"kind": "material",
 			"description": "Plain water, gathered in a container. Drink it or cook with it.",
 			"how_to_get": [
-				"Picked from cactus (all)"
+				"Picked from barrel cactus (all)"
 			],
 			"used_for": [
 				"Used in Acorn mash",
@@ -2024,7 +2024,7 @@
 			"how_to_get": [
 				"Picked from flax",
 				"Picked from nettle",
-				"Picked from reeds",
+				"Picked from common reed",
 				"Picked from riverbraid",
 				"Picked from tall grass",
 				"Picked from tanglewort"
@@ -2258,7 +2258,7 @@
 			"description": "Bark stripped from a felled trunk.",
 			"how_to_get": [
 				"From a felled hardwood tree, now and then (birch and softwood bark comes off as thatch)",
-				"Picked from oak with a stone knife in the pack"
+				"Picked from English oak with a stone knife in the pack"
 			],
 			"used_for": [
 				"Used in Bark twine",

@@ -132,9 +132,9 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 121 | log_coconut_palm | Coconut palm logs | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
 | 122 | lumber_coconut_palm | Coconut palm lumber | planks | looks.json | rough |  |  |  |  |
 | 123 | beam_coconut_palm | Coconut palm beams | beams | looks.json | rough |  |  |  |  |
-| 124 | log_tropical_hardwood | Tropical hardwood logs | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
-| 125 | lumber_tropical_hardwood | Tropical hardwood lumber | planks | looks.json | rough |  |  |  |  |
-| 126 | beam_tropical_hardwood | Tropical hardwood beams | beams | looks.json | rough |  |  |  |  |
+| 124 | log_tropical_hardwood | Mahogany logs | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
+| 125 | lumber_tropical_hardwood | Mahogany lumber | planks | looks.json | rough |  |  |  |  |
+| 126 | beam_tropical_hardwood | Mahogany beams | beams | looks.json | rough |  |  |  |  |
 | 127 | log_acacia | Acacia logs | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
 | 128 | lumber_acacia | Acacia lumber | planks | looks.json | rough |  |  |  |  |
 | 129 | beam_acacia | Acacia beams | beams | looks.json | rough |  |  |  |  |
@@ -463,7 +463,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 1038 | drakethorn_berries | Drakethorn berries | round_berries | looks.json | rough |  |  |  |  |
 | 1039 | duskmallow_flowers | Duskmallow flowers | flower | looks.json | rough |  |  |  |  |
 | 1040 | duskmallow_roots | Duskmallow roots | root | looks.json | rough |  |  |  |  |
-| 1041 | dye | Dye | bottle | looks.json | rough |  |  |  |  |
+| 1041 | dye | Plant dye | bottle | looks.json | rough |  |  |  |  |
 | 1042 | echo_moss | Echo moss | pile | looks.json | rough |  |  |  |  |
 | 1043 | elderberries | Elderberries | round_berries | looks.json | rough |  |  |  |  |
 | 1044 | elderflowers | Elderflowers | flower | looks.json | rough |  |  |  |  |
@@ -477,7 +477,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 1052 | fine_wood | Fine wood | beams | looks.json | rough |  |  |  |  |
 | 1053 | fly_agaric_caps | Fly agaric caps | cap | looks.json | rough |  |  |  |  |
 | 1054 | fodder | Fodder | bundle | looks.json | rough |  |  |  |  |
-| 1055 | food | Food | bowl | looks.json | rough |  |  |  |  |
+| 1055 | food | Food (retired) | bowl | looks.json | rough |  |  |  |  |
 | 1056 | foxglove_leaves | Foxglove leaves | frond | looks.json | rough |  |  |  |  |
 | 1057 | frostglass_petals | Frostglass petals | flower | looks.json | rough |  |  |  |  |
 | 1058 | gloaming_star | Gloaming star | flower | looks.json | rough |  |  |  |  |
@@ -496,7 +496,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 1071 | heartroots | Heartroots | root | looks.json | rough |  |  |  |  |
 | 1072 | henbane_leaves | Henbane leaves | frond | looks.json | rough |  |  |  |  |
 | 1073 | henbane_seeds | Henbane seeds | grit | looks.json | rough |  |  |  |  |
-| 1074 | herbs | Herbs | frond | looks.json | rough |  |  |  |  |
+| 1074 | herbs | Wild herbs | frond | looks.json | rough |  |  |  |  |
 | 1075 | honey_flowers | Honey flowers | flower | looks.json | rough |  |  |  |  |
 | 1076 | honeyspindle_nectar | Honeyspindle nectar | bottle | looks.json | rough |  |  |  |  |
 | 1077 | honeyspindle_pods | Honeyspindle pods | bundle | looks.json | rough |  |  |  |  |
@@ -523,8 +523,8 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 1099 | owlpetals | Owlpetals | flower | looks.json | rough |  |  |  |  |
 | 1100 | palm_fronds | Palm fronds | frond | looks.json | rough |  |  |  |  |
 | 1101 | palm_wood | Palm wood | beams | looks.json | rough |  |  |  |  |
-| 1102 | pilgrims_cup_pitchers | Pilgrims cup pitchers | bottle | looks.json | rough |  |  |  |  |
-| 1103 | pilgrims_cup_water | Pilgrims cup water | bottle | looks.json | rough |  |  |  |  |
+| 1102 | pilgrims_cup_pitchers | Pilgrim's cup pitchers | bottle | looks.json | rough |  |  |  |  |
+| 1103 | pilgrims_cup_water | Pilgrim's cup water | bottle | looks.json | rough |  |  |  |  |
 | 1104 | pine_tar | Pine tar | pile | looks.json | rough |  |  |  |  |
 | 1105 | plantain_leaves | Plantain leaves | frond | looks.json | rough |  |  |  |  |
 | 1106 | poles | Poles | bundle | looks.json | rough |  |  |  |  |
@@ -554,8 +554,8 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 1130 | sloes | Sloes | round_berries | looks.json | rough |  |  |  |  |
 | 1131 | softwood | Softwood | beams | looks.json | rough |  |  |  |  |
 | 1132 | sorrel_leaves | Sorrel leaves | frond | looks.json | rough |  |  |  |  |
-| 1133 | spines | Spines | bundle | looks.json | rough |  |  |  |  |
-| 1134 | st_johns_wort | St johns wort | flower | looks.json | rough |  |  |  |  |
+| 1133 | spines | Cactus spines | bundle | looks.json | rough |  |  |  |  |
+| 1134 | st_johns_wort | St John's wort | flower | looks.json | rough |  |  |  |  |
 | 1135 | staunchmoss | Staunchmoss | pile | looks.json | rough |  |  |  |  |
 | 1136 | stillwater_petals | Stillwater petals | flower | looks.json | rough |  |  |  |  |
 | 1137 | stillwater_seeds | Stillwater seeds | grit | looks.json | rough |  |  |  |  |

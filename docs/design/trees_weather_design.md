@@ -62,7 +62,7 @@ Wind drag goes with the square of the speed, so the sway is scaled by
 ## 3. Part B: bare broadleaves in winter (always on since Dave's 8 Nov ruling)
 
 - **Which species:** with the switch, the temperate deciduous broadleaves are rebuilt per season like the fruit trees, so winter draws their bare build. Those are oak, beech, birch, alder, willow, maple, sweet chestnut, walnut and the witness tree.
-- **Which stay leafy:** evergreen broadleaves keep their leaves. Those are tropical hardwood, mangrove, acacia, olive, orange, lemon, mango, fig, pomegranate and the fantasy evergreens.
+- **Which stay leafy:** evergreen broadleaves keep their leaves. Those are mahogany, mangrove, acacia, olive, orange, lemon, mango, fig, pomegranate and the fantasy evergreens.
 - **How:** the list is a const in `flora_view.gd` (`DECIDUOUS`). `set_fruiting` already marks `"seasonal"` rows. The switch adds these names, so `_start_seasonal` builds their winter models on its worker, once per season change.
 - **Leaf tint:** the brown winter tint stays for any broadleaf not in the list, so it is unchanged.
 - **Cost:** about ten more species' models built on the worker at each season change, the same path the fruit trees take today. They are never picked, so only the plain build is made (no stripped one).

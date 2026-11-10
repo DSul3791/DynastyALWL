@@ -162,8 +162,8 @@ Rule of thumb for order inside a tier: tools first (they speed everything else),
 | 7 | Scots pine beams | log_scots_pine x1 | saw_mill | 8 | GAP: log_scots_pine |
 | 8 | Spruce lumber | log_spruce x1 | saw_mill | 6 | GAP: log_spruce |
 | 9 | Spruce beams | log_spruce x1 | saw_mill | 8 | GAP: log_spruce |
-| 10 | Tropical hardwood lumber | log_tropical_hardwood x1 | saw_mill | 6 | GAP: log_tropical_hardwood |
-| 11 | Tropical hardwood beams | log_tropical_hardwood x1 | saw_mill | 8 | GAP: log_tropical_hardwood |
+| 10 | Mahogany lumber | log_tropical_hardwood x1 | saw_mill | 6 | GAP: log_tropical_hardwood |
+| 11 | Mahogany beams | log_tropical_hardwood x1 | saw_mill | 8 | GAP: log_tropical_hardwood |
 | 12 | Walnut lumber | log_walnut x1 | saw_mill | 6 | GAP: log_walnut |
 | 13 | Walnut beams | log_walnut x1 | saw_mill | 8 | GAP: log_walnut |
 | 14 | Sugar maple lumber | log_maple x1 | saw_mill | 6 | GAP: log_maple |
@@ -197,7 +197,7 @@ Rule of thumb for order inside a tier: tools first (they speed everything else),
 | log_birch | 2: Birch lumber, Birch beams |
 | log_scots_pine | 2: Scots pine lumber, Scots pine beams |
 | log_spruce | 2: Spruce lumber, Spruce beams |
-| log_tropical_hardwood | 2: Tropical hardwood lumber, Tropical hardwood beams |
+| log_tropical_hardwood | 2: Mahogany lumber, Mahogany beams |
 | log_walnut | 2: Walnut lumber, Walnut beams |
 | log_maple | 2: Sugar maple lumber, Sugar maple beams |
 | hand_saw | 1: Lumber by hand |
