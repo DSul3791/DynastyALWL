@@ -2574,7 +2574,7 @@ static func cupboard() -> Node3D:
 	return root
 
 
-# A barrel, 0.7 m across and 0.9 m high: two tapering halves of staves meeting at a bulge, three iron hoops and a lid.
+# A barrel, 0.7 m across and 0.9 m high: two tapering halves of staves meeting at a bulge, three iron hoops, a lid and a spout toward +Z.
 static func barrel() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -2585,6 +2585,7 @@ static func barrel() -> Node3D:
 		_cyl(root, float(at[1]) + 0.005, 0.05, Vector3(0.0, float(at[0]), 0.0), _iron_mat(), 16)
 
 	_cyl(root, 0.28, 0.02, Vector3(0.0, 0.89, 0.0), _frame, 16)
+	_cyl(root, 0.03, 0.1, Vector3(0.0, 0.15, 0.33), _frame, 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)   # a pegged spout at the foot (it is also the rain barrel, B6a)
 	_solid(root, Vector3(0.6, 0.9, 0.6), Vector3(0.0, 0.45, 0.0))
 	return root
 
@@ -2758,3 +2759,414 @@ const LIGHT_SPOTS := {
 	"stone_brazier": {"spots": [[Vector3(0.0, 0.85, 0.0), Vector3(1.2, 0.9, 1.2)], [Vector3(0.12, 0.82, 0.06), Vector3(0.8, 0.6, 0.8)]], "light_at": Vector3(0.0, 1.0, 0.0)},
 	"iron_brazier": {"spots": [[Vector3(0.0, 0.95, 0.0), Vector3(1.1, 0.85, 1.1)], [Vector3(0.1, 0.92, 0.05), Vector3(0.7, 0.55, 0.7)]], "light_at": Vector3(0.0, 1.1, 0.0)},
 }
+
+
+# --- Buildables B5 (buildables_plan.md, 10 Nov 2026): garden plots, planters, trellis, compost bin, scarecrow, cold frame. Plots fill one 2 m grid cell with
+# a framed bed of tilled soil (the crops are the farming code's, on the soil); everything stands up from y = 0.
+static var _soil: StandardMaterial3D
+
+
+static func _soil_mat() -> StandardMaterial3D:
+	if _soil == null:
+		_soil = _blocks_material(Color(0.24, 0.17, 0.11), 1, 131, 0.4)    # dark tilled earth, mottled
+
+	return _soil
+
+
+# A garden plot, 2 x 2 m: soil heaped inside a frame `high` m tall. "thatch": stakes and woven stick edging, lashed at the corners (0.3 m). "wood": a plank
+# raised bed with corner posts (0.4 m). "stone": a low wall of stones round it (0.4 m). "brick": a brick kerb with a stone coping (0.4 m).
+static func garden_plot(kind: String = "wood") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var high: float = 0.3 if kind == "thatch" else 0.4
+	var side: StandardMaterial3D = {"thatch": _log, "wood": _planks, "stone": _stone, "brick": _brick}.get(kind, _planks)
+	var thick: float = 0.06 if kind in ["thatch", "wood"] else 0.18
+	_box(root, Vector3(2.0 - 2.0 * thick, high - 0.06, 2.0 - 2.0 * thick), Vector3(0.0, (high - 0.06) * 0.5, 0.0), _soil_mat())
+
+	for k in 7:   # furrows in the soil
+		_box(root, Vector3(1.8 - 2.0 * thick, 0.03, 0.08), Vector3(0.0, high - 0.06, -0.72 + 0.24 * float(k)), _soil_mat())
+
+	for s in [-1.0, 1.0]:
+		_box(root, Vector3(2.0, high, thick), Vector3(0.0, high * 0.5, s * (1.0 - thick * 0.5)), side)
+		_box(root, Vector3(thick, high, 2.0 - 2.0 * thick), Vector3(s * (1.0 - thick * 0.5), high * 0.5, 0.0), side)
+
+	match kind:
+		"thatch":
+			for x in [-1.0, 1.0]:
+				for z in [-1.0, 1.0]:
+					_cyl(root, 0.035, high + 0.05, Vector3(x * 0.97, (high + 0.05) * 0.5, z * 0.97), _log, 6)
+					_cyl(root, 0.05, 0.04, Vector3(x * 0.97, high - 0.05, z * 0.97), _frame, 6)       # lashing
+			for y in [0.1, 0.2]:
+				for s in [-1.0, 1.0]:
+					_box(root, Vector3(2.0, 0.025, 0.07), Vector3(0.0, y, s * 0.97), _frame)               # the weave's dark lines
+					_box(root, Vector3(0.07, 0.025, 1.9), Vector3(s * 0.97, y, 0.0), _frame)
+		"wood":
+			for x in [-1.0, 1.0]:
+				for z in [-1.0, 1.0]:
+					_box(root, Vector3(0.08, high + 0.04, 0.08), Vector3(x * 0.96, (high + 0.04) * 0.5, z * 0.96), _frame)
+			for s in [-1.0, 1.0]:
+				_box(root, Vector3(2.0, 0.015, thick + 0.004), Vector3(0.0, high * 0.5, s * (1.0 - thick * 0.5)), _frame)   # the seam between two boards
+				_box(root, Vector3(thick + 0.004, 0.015, 2.0 - 2.0 * thick), Vector3(s * (1.0 - thick * 0.5), high * 0.5, 0.0), _frame)
+		"brick":
+			for s in [-1.0, 1.0]:
+				_box(root, Vector3(2.02, 0.05, thick + 0.03), Vector3(0.0, high + 0.025, s * (1.0 - thick * 0.5)), _mortar)
+				_box(root, Vector3(thick + 0.03, 0.05, 2.0 - 2.0 * thick), Vector3(s * (1.0 - thick * 0.5), high + 0.025, 0.0), _mortar)
+
+	_solid(root, Vector3(2.0, high, 2.0), Vector3(0.0, high * 0.5, 0.0))
+	return root
+
+
+# A planter. "wood": a window box 0.8 x 0.3 x 0.3, plank sides on two little feet, soil inside. "stone": a big eight-sided stone pot 0.8 m across, 0.6 m high.
+static func planter(kind: String = "wood") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	if kind == "wood":
+		_box(root, Vector3(0.8, 0.26, 0.3), Vector3(0.0, 0.17, 0.0), _planks)
+		_box(root, Vector3(0.74, 0.02, 0.24), Vector3(0.0, 0.29, 0.0), _soil_mat())
+		_box(root, Vector3(0.82, 0.03, 0.32), Vector3(0.0, 0.285, 0.0), _frame)
+		for x in [-0.34, 0.34]:
+			_box(root, Vector3(0.06, 0.04, 0.28), Vector3(x, 0.02, 0.0), _frame)
+		_solid(root, Vector3(0.8, 0.3, 0.3), Vector3(0.0, 0.15, 0.0))
+	else:
+		_cyl(root, 0.28, 0.1, Vector3(0.0, 0.05, 0.0), _flag, 8)
+		_cyl(root, 0.3, 0.46, Vector3(0.0, 0.33, 0.0), _stone, 8, 0.4)
+		_cyl(root, 0.4, 0.04, Vector3(0.0, 0.58, 0.0), _flag, 8)
+		_cyl(root, 0.35, 0.02, Vector3(0.0, 0.59, 0.0), _soil_mat(), 8)
+		_solid(root, Vector3(0.6, 0.6, 0.6), Vector3(0.0, 0.3, 0.0))
+
+	return root
+
+
+# A trellis, 1.6 x 0.1 x 2.0: two stakes and a lattice of sticks lashed where they cross, for climbing crops. Not solid (you reach through it).
+static func trellis() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.78, 0.78]:
+		_cyl(root, 0.03, 2.0, Vector3(x, 1.0, 0.0), _log, 6)
+
+	for k in 5:
+		_box(root, Vector3(1.56, 0.025, 0.025), Vector3(0.0, 0.3 + 0.4 * float(k), 0.0), _log)
+
+	for k in 4:
+		var x: float = -0.48 + 0.32 * float(k)
+		_box(root, Vector3(0.025, 1.85, 0.025), Vector3(x, 1.02, 0.025), _log)
+
+		for j in 5:
+			_box(root, Vector3(0.035, 0.035, 0.06), Vector3(x, 0.3 + 0.4 * float(j), 0.012), _frame)   # lashing at each crossing
+
+	return root
+
+
+# A compost bin, 1.0 x 1.0 x 0.8: four corner posts, slatted plank sides with gaps for air, a dark heap of compost inside, open on top.
+static func compost_bin() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.46, 0.46]:
+		for z in [-0.46, 0.46]:
+			_box(root, Vector3(0.08, 0.8, 0.08), Vector3(x, 0.4, z), _frame)
+
+	for k in 4:
+		var y: float = 0.1 + 0.2 * float(k)
+		for s in [-1.0, 1.0]:
+			_box(root, Vector3(0.92, 0.12, 0.025), Vector3(0.0, y, s * 0.47), _planks)
+			_box(root, Vector3(0.025, 0.12, 0.92), Vector3(s * 0.47, y, 0.0), _planks)
+
+	_dome(root, 0.44, Vector3(0.0, 0.3, 0.0), Vector3(1.0, 0.6, 1.0), _tone_mat(Color(0.16, 0.12, 0.08)), 10, 4)
+	_box(root, Vector3(0.88, 0.3, 0.88), Vector3(0.0, 0.15, 0.0), _tone_mat(Color(0.16, 0.12, 0.08)))
+	_solid(root, Vector3(1.0, 0.8, 1.0), Vector3(0.0, 0.4, 0.0))
+	return root
+
+
+# A scarecrow, 0.6 x 0.6 x 2.0: a stake and a cross arm, a straw-stuffed sack body tied at the waist, straw tufts at the cuffs, a sack head and a brimmed straw hat.
+static func scarecrow() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var sack: StandardMaterial3D = _tone_mat(Color(0.55, 0.45, 0.3))
+	_cyl(root, 0.035, 1.8, Vector3(0.0, 0.9, 0.0), _log, 6)
+	_box(root, Vector3(1.0, 0.05, 0.05), Vector3(0.0, 1.45, 0.0), _log)
+	_box(root, Vector3(0.36, 0.5, 0.2), Vector3(0.0, 1.2, 0.0), sack)
+	_box(root, Vector3(0.38, 0.04, 0.22), Vector3(0.0, 1.0, 0.0), _frame)                   # the tied waist
+	_box(root, Vector3(0.9, 0.12, 0.14), Vector3(0.0, 1.43, 0.0), sack)                     # the sleeves
+
+	for s in [-1.0, 1.0]:
+		_box_rot(root, Vector3(0.1, 0.16, 0.1), Vector3(s * 0.48, 1.38, 0.0), Vector3(0.0, 0.0, s * 0.4), _thatch)   # straw at the cuffs
+
+	_box(root, Vector3(0.2, 0.18, 0.1), Vector3(0.0, 0.88, 0.0), _thatch)                   # straw out of the hem
+	_dome(root, 0.13, Vector3(0.0, 1.68, 0.0), Vector3(1.0, 1.2, 1.0), sack, 10, 4)
+	_cyl(root, 0.26, 0.03, Vector3(0.0, 1.84, 0.0), _thatch, 12)                            # the hat's brim
+	_cyl(root, 0.12, 0.14, Vector3(0.0, 1.92, 0.0), _thatch, 10, 0.09)
+	_solid(root, Vector3(0.1, 2.0, 0.1), Vector3(0.0, 1.0, 0.0))
+	return root
+
+
+# A cold frame, 1.0 x 1.0 x 0.5: a plank box higher at the back (-Z, 0.5 m) than the front (0.3 m) under a lid of four horn panes in a timber frame, sloping
+# to the front; soil inside.
+static func cold_frame() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.92, 0.12, 0.92), Vector3(0.0, 0.06, 0.0), _soil_mat())
+	_box(root, Vector3(1.0, 0.3, 0.04), Vector3(0.0, 0.15, 0.48), _planks)
+	_box(root, Vector3(1.0, 0.46, 0.04), Vector3(0.0, 0.23, -0.48), _planks)
+
+	for x in [-0.48, 0.48]:
+		_box(root, Vector3(0.04, 0.38, 0.92), Vector3(x, 0.19, 0.0), _planks)
+
+	var tilt: float = atan2(0.16, 1.0)
+	var lid: Node3D = Node3D.new()
+	lid.position = Vector3(0.0, 0.4, 0.0)
+	lid.rotation = Vector3(-tilt, 0.0, 0.0)   # higher at the back (-Z)
+	root.add_child(lid)
+	_box(lid, Vector3(1.0, 0.03, 1.0), Vector3.ZERO, _horn_mat())
+
+	for x in [-0.49, 0.0, 0.49]:
+		_box(lid, Vector3(0.04, 0.05, 1.01), Vector3(x, 0.0, 0.0), _frame)
+
+	for z in [-0.49, 0.0, 0.49]:
+		_box(lid, Vector3(1.01, 0.05, 0.04), Vector3(0.0, 0.0, z), _frame)
+
+	_solid(root, Vector3(1.0, 0.45, 1.0), Vector3(0.0, 0.225, 0.0))
+	return root
+
+
+# --- Buildables B6 (buildables_plan.md, 10 Nov 2026; flow rules Sonny's): the well, pumps, troughs, channels, sluice, pipes, tap and cisterns (the rain
+# barrel is the B3 barrel).
+# Conduits fill one 2 m cell: a straight piece runs along X with its ports at x = -1 and +1; a corner's ports are at -X (x = -1, z = 0) and +Z (x = 0, z = +1);
+# a tee's at -X, +X and +Z (the branch). Pump spouts face +Z. The water in them is the water code's; the looks draw the empty vessel and still water only in
+# the well shaft and the cisterns, which are never seen empty.
+static func _still_water() -> StandardMaterial3D:
+	return _tone_mat(Color(0.12, 0.2, 0.24))
+
+
+# A stone well, 1.6 m across, 1.1 m high: a round fitted-stone curb 0.8 m high with a flat coping, dark water down the shaft, two posts carrying a windlass
+# roller with a crank, rope and a bucket hanging over the shaft. The deep-well pump stands on its coping.
+static func stone_well() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.78, 0.8, Vector3(0.0, 0.4, 0.0), _stone, 12)
+	_cyl(root, 0.8, 0.08, Vector3(0.0, 0.84, 0.0), _flag, 12)
+	_cyl(root, 0.52, 0.02, Vector3(0.0, 0.875, 0.0), _tone_mat(Color(0.05, 0.05, 0.05)), 12)   # the shaft's mouth
+	_cyl(root, 0.5, 0.02, Vector3(0.0, 0.3, 0.0), _still_water(), 12)
+
+	for x in [-0.66, 0.66]:
+		_box(root, Vector3(0.08, 0.3, 0.08), Vector3(x, 0.98, 0.0), _frame)
+
+	_cyl(root, 0.05, 1.36, Vector3(0.0, 1.05, 0.0), _log, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)   # the roller
+	_box(root, Vector3(0.03, 0.03, 0.18), Vector3(0.72, 1.05, 0.09), _iron_mat())                     # the crank
+	_box(root, Vector3(0.03, 0.12, 0.03), Vector3(0.72, 1.0, 0.18), _iron_mat())
+	_box(root, Vector3(0.01, 0.3, 0.01), Vector3(0.0, 0.88, 0.05), _frame)                          # rope
+	_cyl(root, 0.08, 0.12, Vector3(0.0, 0.66, 0.05), _planks, 10, 0.09)                              # the bucket
+	_solid(root, Vector3(1.6, 0.88, 1.6), Vector3(0.0, 0.44, 0.0))
+	return root
+
+
+# A hand pump, 0.5 x 0.5 x 1.1, its spout to +Z and its handle back over -Z. "wood": the old lever pump, a squared bored log on a plank base, a spout pegged
+# into its side, a long handle on a forked pivot. "iron": the cast-iron pitcher pump, a round body on a stone plinth, a lipped spout and a curved handle.
+static func hand_pump(kind: String = "wood") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	if kind == "wood":
+		_box(root, Vector3(0.5, 0.08, 0.5), Vector3(0.0, 0.04, 0.0), _planks)
+		_box(root, Vector3(0.22, 0.86, 0.22), Vector3(0.0, 0.51, 0.0), _log)
+		_box(root, Vector3(0.24, 0.04, 0.24), Vector3(0.0, 0.96, 0.0), _frame)
+		_cyl(root, 0.04, 0.24, Vector3(0.0, 0.7, 0.15), _log, 6).rotation = Vector3(PI * 0.5 - 0.2, 0.0, 0.0)   # the spout
+		for x in [-0.05, 0.05]:
+			_box(root, Vector3(0.025, 0.12, 0.05), Vector3(x, 1.02, -0.06), _frame)                    # the pivot's fork
+		_box_rot(root, Vector3(0.04, 0.04, 0.36), Vector3(0.0, 1.07, -0.08), Vector3(-0.25, 0.0, 0.0), _frame)   # the handle
+		_box(root, Vector3(0.03, 0.12, 0.03), Vector3(0.0, 0.97, 0.06), _frame)                       # the plunger rod
+	else:
+		_box(root, Vector3(0.44, 0.2, 0.44), Vector3(0.0, 0.1, 0.0), _flag)
+		_cyl(root, 0.07, 0.5, Vector3(0.0, 0.45, 0.0), _iron_mat(), 10)
+		_cyl(root, 0.1, 0.24, Vector3(0.0, 0.82, 0.0), _iron_mat(), 10, 0.09)                           # the cylinder
+		_cyl(root, 0.105, 0.03, Vector3(0.0, 0.95, 0.0), _iron_mat(), 10)
+		_cyl(root, 0.035, 0.2, Vector3(0.0, 0.76, 0.14), _iron_mat(), 8, 0.045).rotation = Vector3(PI * 0.5 + 0.25, 0.0, 0.0)   # the spout
+		_box(root, Vector3(0.025, 0.1, 0.025), Vector3(0.0, 1.0, -0.06), _iron_mat())
+		_box_rot(root, Vector3(0.03, 0.03, 0.3), Vector3(0.0, 1.04, -0.12), Vector3(-0.35, 0.0, 0.0), _iron_mat())   # the curved handle
+		_cyl(root, 0.02, 0.06, Vector3(0.0, 0.99, -0.25), _iron_mat(), 6)
+
+	_solid(root, Vector3(0.3, 1.0, 0.3), Vector3(0.0, 0.5, 0.0))
+	return root
+
+
+# A trough. "log": a hollowed log 1.6 x 0.5 x 0.5 on two chocks. "wood": a plank trough 2.0 x 0.6 x 0.5 on splayed legs. "stone": a carved stone trough
+# 2.0 x 0.7 x 0.6. The hollow is dark and empty; its water is the water code's.
+static func trough(kind: String = "wood") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var hollow: StandardMaterial3D = _tone_mat(Color(0.14, 0.1, 0.07))
+
+	match kind:
+		"log":
+			_cyl(root, 0.24, 1.6, Vector3(0.0, 0.26, 0.0), _log, 10).rotation = Vector3(0.0, 0.0, PI * 0.5)
+			_box(root, Vector3(1.4, 0.02, 0.34), Vector3(0.0, 0.5, 0.0), hollow)
+			_box(root, Vector3(1.6, 0.02, 0.36), Vector3(0.0, 0.49, 0.0), _planks)    # the cut face round the hollow
+			for x in [-0.6, 0.6]:
+				_box(root, Vector3(0.12, 0.06, 0.5), Vector3(x, 0.03, 0.0), _frame)
+			_solid(root, Vector3(1.6, 0.5, 0.5), Vector3(0.0, 0.25, 0.0))
+		"wood":
+			_box(root, Vector3(2.0, 0.28, 0.6), Vector3(0.0, 0.34, 0.0), _planks)
+			_box(root, Vector3(1.88, 0.02, 0.48), Vector3(0.0, 0.485, 0.0), hollow)
+			for x in [-0.8, 0.8]:
+				for z in [-0.22, 0.22]:
+					_box_rot(root, Vector3(0.06, 0.24, 0.06), Vector3(x, 0.11, z * 1.1), Vector3(-z * 0.6, 0.0, 0.0), _frame)
+			for x in [-1.0, 1.0]:
+				_box(root, Vector3(0.04, 0.3, 0.62), Vector3(x * 0.98, 0.35, 0.0), _frame)       # the end boards
+			_solid(root, Vector3(2.0, 0.5, 0.6), Vector3(0.0, 0.25, 0.0))
+		_:
+			_box(root, Vector3(2.0, 0.56, 0.7), Vector3(0.0, 0.28, 0.0), _stone)
+			_box(root, Vector3(1.8, 0.02, 0.5), Vector3(0.0, 0.565, 0.0), hollow)
+			_box(root, Vector3(2.04, 0.05, 0.74), Vector3(0.0, 0.575, 0.0), _flag)
+			_solid(root, Vector3(2.0, 0.6, 0.7), Vector3(0.0, 0.3, 0.0))
+
+	return root
+
+
+# One run of conduit along X from x0 to x1, at its trestle height. "wood": an open plank flume (a floor and two sides) on a trestle at each end. "stone": a cut
+# channel of stone blocks on the ground. "clay": a round clay pipe with a collar at each joint. "iron": a thin iron pipe on low saddles.
+static func _conduit_run(root: Node3D, kind: String, x0: float, x1: float) -> void:
+	var length: float = x1 - x0
+	var mid: float = (x0 + x1) * 0.5
+
+	match kind:
+		"wood":
+			_box(root, Vector3(length, 0.03, 0.3), Vector3(mid, 0.215, 0.0), _planks)
+			for s in [-1.0, 1.0]:
+				_box(root, Vector3(length, 0.1, 0.03), Vector3(mid, 0.265, s * 0.165), _planks)
+		"stone":
+			_box(root, Vector3(length, 0.12, 0.5), Vector3(mid, 0.06, 0.0), _stone)
+			for s in [-1.0, 1.0]:
+				_box(root, Vector3(length, 0.18, 0.12), Vector3(mid, 0.21, s * 0.19), _stone)
+			_box(root, Vector3(length, 0.01, 0.26), Vector3(mid, 0.125, 0.0), _tone_mat(Color(0.3, 0.29, 0.27)))
+		"clay":
+			_cyl(root, 0.12, length, Vector3(mid, 0.15, 0.0), _clay, 10).rotation = Vector3(0.0, 0.0, PI * 0.5)
+		_:
+			_cyl(root, 0.06, length, Vector3(mid, 0.1, 0.0), _iron_mat(), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
+
+
+# The supports and joints at a conduit's port or joint at `at` (a trestle, a collar or a saddle), turned `yaw` about Y.
+static func _conduit_joint(root: Node3D, kind: String, at: Vector3, yaw: float) -> void:
+	var holder: Node3D = Node3D.new()
+	holder.position = at
+	holder.rotation = Vector3(0.0, yaw, 0.0)
+	root.add_child(holder)
+
+	match kind:
+		"wood":
+			for s in [-1.0, 1.0]:
+				_box_rot(holder, Vector3(0.04, 0.22, 0.04), Vector3(0.0, 0.1, s * 0.14), Vector3(s * 0.25, 0.0, 0.0), _frame)
+			_box(holder, Vector3(0.06, 0.04, 0.38), Vector3(0.0, 0.18, 0.0), _frame)
+		"clay":
+			_cyl(holder, 0.145, 0.08, Vector3(0.0, 0.15, 0.0), _clay, 10).rotation = Vector3(0.0, 0.0, PI * 0.5)
+		"iron":
+			_cyl(holder, 0.075, 0.04, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
+			_box(holder, Vector3(0.06, 0.04, 0.16), Vector3(0.0, 0.02, 0.0), _iron_mat())
+
+
+# A conduit piece (B6). `kind` "wood" (channel), "stone" (channel), "clay" (pipe) or "iron" (pipe); `shape` "straight" (ports -X, +X), "corner" (-X, +Z) or
+# "tee" (-X, +X, +Z). Solid along the runs (low: you step over a pipe, not a flume on trestles).
+static func conduit(kind: String = "wood", shape: String = "straight") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var high: float = {"wood": 0.3, "stone": 0.3, "clay": 0.3, "iron": 0.2}.get(kind, 0.3)
+	var width: float = {"wood": 0.4, "stone": 0.5, "clay": 0.3, "iron": 0.2}.get(kind, 0.3)
+
+	if shape == "straight":
+		_conduit_run(root, kind, -1.0, 1.0)
+		_solid(root, Vector3(2.0, high, width), Vector3(0.0, high * 0.5, 0.0))
+	else:
+		var reach: float = 1.0 if shape == "tee" else width * 0.5
+		_conduit_run(root, kind, -1.0, reach)
+		var branch: Node3D = Node3D.new()
+		branch.rotation = Vector3(0.0, -PI * 0.5, 0.0)          # its +X runs along world +Z
+		root.add_child(branch)
+		_conduit_run(branch, kind, width * 0.5, 1.0)
+		_solid(root, Vector3(1.0 + reach, high, width), Vector3((reach - 1.0) * 0.5, high * 0.5, 0.0))
+		_solid(root, Vector3(width, high, 1.0 - width * 0.5), Vector3(0.0, high * 0.5, 0.5 + width * 0.25))
+
+	for joint in ([[Vector3(-0.95, 0.0, 0.0), 0.0], [Vector3(0.95, 0.0, 0.0), 0.0]] if shape != "corner" else [[Vector3(-0.95, 0.0, 0.0), 0.0]]):
+		_conduit_joint(root, kind, joint[0], joint[1])
+
+	if shape != "straight":
+		_conduit_joint(root, kind, Vector3(0.0, 0.0, 0.95), PI * 0.5)
+		if kind == "wood":
+			_box(root, Vector3(width, 0.03, width), Vector3(0.0, 0.215, 0.0), _planks)    # the flume's floor where the runs meet
+
+	return root
+
+
+# A sluice (B6a), 2.0 x 0.4 x 0.6: a wooden channel with a grooved frame across its middle and a gate board in it; shut the board is down in the flume, open it
+# stands raised in the frame. E toggles it (the open look).
+static func sluice(open: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = conduit("wood", "straight")
+
+	for z in [-0.19, 0.19]:
+		_box(root, Vector3(0.1, 0.6, 0.04), Vector3(0.0, 0.3, z), _frame)
+
+	_box(root, Vector3(0.1, 0.05, 0.42), Vector3(0.0, 0.575, 0.0), _frame)
+	_box(root, Vector3(0.04, 0.2, 0.31), Vector3(0.0, 0.45 if open else 0.3, 0.0), _planks)
+	_box(root, Vector3(0.03, 0.1, 0.06), Vector3(0.0, (0.45 if open else 0.3) + 0.15, 0.0), _frame)   # the lifting handle
+	return root
+
+
+# An iron tap (B6b), 0.3 x 0.3 x 0.4: a valve body on a short riser at a pipe end, a cross handle on top and a spout curving down toward +Z.
+static func iron_tap() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.06, 0.2, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8)
+	_cyl(root, 0.08, 0.1, Vector3(0.0, 0.25, 0.0), _iron_mat(), 8)
+	_cyl(root, 0.012, 0.08, Vector3(0.0, 0.34, 0.0), _iron_mat(), 6)
+	_box(root, Vector3(0.18, 0.02, 0.02), Vector3(0.0, 0.38, 0.0), _iron_mat())
+	_box(root, Vector3(0.02, 0.02, 0.18), Vector3(0.0, 0.38, 0.0), _iron_mat())
+	_cyl(root, 0.025, 0.12, Vector3(0.0, 0.25, 0.09), _iron_mat(), 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	_cyl(root, 0.025, 0.06, Vector3(0.0, 0.22, 0.15), _iron_mat(), 6)
+	_solid(root, Vector3(0.16, 0.3, 0.16), Vector3(0.0, 0.15, 0.0))
+	return root
+
+
+# The deep-well force pump (B6b), 0.8 x 0.8 x 1.6, on a well's coping: an iron base plate, a tall iron barrel, an air chamber dome beside it, a long two-man
+# lever across the top (X) on a pivot post and an outlet stub for the iron pipe toward +Z.
+static func deep_well_pump() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.7, 0.06, 0.7), Vector3(0.0, 0.03, 0.0), _iron_mat())
+	_cyl(root, 0.13, 1.1, Vector3(0.0, 0.61, 0.0), _iron_mat(), 12)
+	_cyl(root, 0.15, 0.06, Vector3(0.0, 1.19, 0.0), _iron_mat(), 12)
+	_cyl(root, 0.09, 0.4, Vector3(0.22, 0.26, -0.12), _iron_mat(), 10)
+	_dome(root, 0.09, Vector3(0.22, 0.46, -0.12), Vector3.ONE, _iron_mat(), 10, 4)
+	_box(root, Vector3(0.06, 0.3, 0.06), Vector3(0.0, 1.37, -0.12), _iron_mat())
+	_box_rot(root, Vector3(0.78, 0.05, 0.05), Vector3(0.0, 1.52, -0.12), Vector3(0.0, 0.0, 0.12), _frame)
+	_cyl(root, 0.06, 0.25, Vector3(0.0, 0.4, 0.22), _iron_mat(), 8).rotation = Vector3(PI * 0.5, 0.0, 0.0)   # the outlet
+	_cyl(root, 0.075, 0.03, Vector3(0.0, 0.4, 0.34), _iron_mat(), 8).rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	_solid(root, Vector3(0.4, 1.6, 0.4), Vector3(0.0, 0.8, 0.0))
+	return root
+
+
+# A stone cistern (B6b), 2.0 x 2.0. `raised` false: a stone tank 1.0 m high, flagstone coping, still water inside, an overflow lip at +X. `raised` true: the
+# same tank on a stone plinth, 3.0 m in all, a plank cover over half the top and an inlet pipe stub down the -Z side.
+static func cistern(raised: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var base: float = 2.0 if raised else 0.0
+
+	if raised:
+		_box(root, Vector3(1.6, 2.0, 1.6), Vector3(0.0, 1.0, 0.0), _stone)
+		_box(root, Vector3(1.8, 0.2, 1.8), Vector3(0.0, 0.1, 0.0), _flag)
+		_box(root, Vector3(1.9, 0.08, 1.9), Vector3(0.0, 1.96, 0.0), _flag)
+		_cyl(root, 0.06, 2.6, Vector3(0.0, 1.3, -0.86), _iron_mat(), 8)
+		_box(root, Vector3(1.8, 0.04, 0.9), Vector3(0.0, base + 1.0, 0.45), _planks)
+
+	for s in [-1.0, 1.0]:
+		_box(root, Vector3(2.0, 0.9, 0.2), Vector3(0.0, base + 0.45, s * 0.9), _stone)
+		_box(root, Vector3(0.2, 0.9, 1.6), Vector3(s * 0.9, base + 0.45, 0.0), _stone)
+		_box(root, Vector3(2.0, 0.08, 0.24), Vector3(0.0, base + 0.94, s * 0.9), _flag)
+		_box(root, Vector3(0.24, 0.08, 1.6), Vector3(s * 0.9, base + 0.94, 0.0), _flag)
+
+	_box(root, Vector3(1.6, 0.1, 1.6), Vector3(0.0, base + 0.05, 0.0), _stone)
+	_box(root, Vector3(1.6, 0.02, 1.6), Vector3(0.0, base + 0.8, 0.0), _still_water())
+	_box(root, Vector3(0.12, 0.06, 0.3), Vector3(0.98, base + 0.9, 0.0), _flag)              # the overflow lip
+	_solid(root, Vector3(2.0, base + 1.0, 2.0), Vector3(0.0, (base + 1.0) * 0.5, 0.0))
+	return root
