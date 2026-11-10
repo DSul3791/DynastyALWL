@@ -174,7 +174,7 @@ var ice_moat_at: Callable        # (position) -> true in a thaw's shore moat (Ka
 var spring_ice_x: Callable       # (position) -> the ice's share by springs (Jamie #739): 0 on the open brook below a spring, 0.5 near a spring mouth or inflow, else 1; unset: 1
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
-var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
+var ore_near: Callable           # (position, reach in metres, ore names wanted, layer depth in metres) -> the ore (data/tables/resources.json) a boulder there is an outcrop of, "" when none; set by the server scene (unset: no ore)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
@@ -189,6 +189,7 @@ var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the s
 var roof_remove: Callable       # (key)
 var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof or in a cave (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
 var cave_mean_c: Callable      # (position) -> the cave air (C): the island's year mean at the position's height when it is inside a cave, NAN outside one (unset: never in a cave)
+var year_mean_at: Callable     # (position) -> the year-mean air (C) at that spot and height (Climate.year_mean_c): a cold store's temperature
 var cave_air: Callable         # (position) -> {"deep_c", "depth_m", "kind", "day_part_c"} inside a cave, {} outside: the mouth blend (docs/design/cave_climate_design.md)
 
 var _dir: String = ""
@@ -4795,7 +4796,7 @@ func _boulder_ore(spot: Vector3, key: int) -> String:
 	if float(hash(key) % 1000) >= 1000.0 * float(cfg.get("boulder_share", 0.0)):
 		return ""
 
-	var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0))))
+	var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0)), cfg.get("items", {}), float(cfg.get("layer_depth_m", 10.0))))
 	return name if (cfg.get("items", {}) as Dictionary).has(name) else ""
 
 
@@ -8331,6 +8332,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 	if kind == Net.ACT_CHEST_OPEN:
 		_send_chest_info(peer, id)   # after the contents, so the client knows which container it is about
+		_say_cold_store(peer, id)
 
 	if kind == Net.ACT_CHEST_TAKE and str(_items.get(id, {}).get("struct", {}).get("kind", "")) == "remains":
 		_sync_remains(peer, false)
@@ -10202,6 +10204,42 @@ func _spoil_units(place: String, base_units: float, season_mult: float) -> int:
 	return whole
 
 
+# The air inside a cold store (root cellar; item_system.md D1, Sonny): the ground from about 2 m down holds the site's year-mean air all year, so
+# the cellar sits at Climate.year_mean_c for its height; in a cave cell it is the cave air's year mean (cave_mean_c, 5.5 C at cave 8002, #717).
+# NAN when neither is known (a test without the callables): the store then spoils like a plain chest.
+func cold_store_c(pos: Vector3) -> float:
+	var cave_c: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
+
+	if not is_nan(cave_c):
+		return cave_c
+
+	return float(year_mean_at.call(pos)) if year_mean_at.is_valid() else NAN
+
+
+# On opening a cold store: how cool it is inside and how much longer food keeps there than in the pack.
+func _say_cold_store(peer: int, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or not bool(_structures.get(str(it["struct"]["kind"]), {}).get("cold_store", false)):
+		return
+
+	var cold_c: float = cold_store_c(it["pos"])
+
+	if is_nan(cold_c):
+		return
+
+	var cold_mult: float = cold_store_mult(table.spoilage().get("cold_store", {}), cold_c)
+	_say(peer, "It is %d C in here all year. Food keeps about %d times as long as in a pack." % [roundi(cold_c), roundi(1.0 / cold_mult)])
+
+
+# How fast food spoils at `temp_c` against the pack's rate (spoilage.json cold_store): q10 for every 10 C below ref_c, never under min_mult and
+# never above 1 (a warm cellar is no worse than a pack).
+static func cold_store_mult(cold_cfg: Dictionary, temp_c: float) -> float:
+	var q10: float = float(cold_cfg.get("q10", 3.0))
+	var ref_c: float = float(cold_cfg.get("ref_c", 20.0))
+	return clampf(pow(q10, (temp_c - ref_c) / 10.0), float(cold_cfg.get("min_mult", 0.1)), 1.0)
+
+
 # Ages one inventory by `units`; true when anything changed.
 func _spoil_inventory(inv, units: int) -> bool:
 	var rotten: int = table.number_of(str(table.spoilage().get("rotten_item", "rotten_food")))
@@ -10258,15 +10296,29 @@ func _spoil_tick(spent: float) -> void:
 					_send_changes(peer, _inventories[key], before)
 
 	var kind_of_uid: Dictionary = {}
+	var pos_of_uid: Dictionary = {}
 
 	for id in _items:
 		if _items[id].has("struct") and _items[id]["struct"].has("uid"):
 			kind_of_uid[int(_items[id]["struct"]["uid"])] = str(_items[id]["struct"]["kind"])
+			pos_of_uid[int(_items[id]["struct"]["uid"])] = _items[id]["pos"]
 
 	var place_units: Dictionary = {}
 
 	for uid in _chests:
 		var kind: String = str(kind_of_uid.get(uid, "chest"))
+
+		# A cold store (root cellar, item_system.md D1) keeps the ground's year-round temperature, so the season does not reach it: its rate
+		# follows that temperature alone. Cellars at the same temperature share one running fraction.
+		if bool(_structures.get(kind, {}).get("cold_store", false)) and pos_of_uid.has(uid):
+			var cold_c: float = cold_store_c(pos_of_uid[uid])
+
+			if not is_nan(cold_c):
+				var cold_mult: float = cold_store_mult(cfg.get("cold_store", {}), cold_c)
+				kind = "cold@%.2f" % cold_mult
+
+				if not place_units.has(kind):
+					place_units[kind] = _spoil_units(kind, base * cold_mult, 1.0)
 
 		if not place_units.has(kind):
 			place_units[kind] = _spoil_units(kind, base, season_mult)
@@ -13512,7 +13564,7 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 			return false
 
 	for keep in recipe["keeps"]:
-		if not inv.has(keep[0], keep[1]):
+		if not inv.has_fill(keep[0], keep[1]):
 			return false
 
 	return true
@@ -13682,7 +13734,7 @@ func _craft_tick(spent: float) -> void:
 		var tools_ok: bool = inv != null
 
 		for keep in recipe.get("keeps", []):
-			tools_ok = tools_ok and (free_entry or inv.has(keep[0], keep[1]))
+			tools_ok = tools_ok and (free_entry or inv.has_fill(keep[0], keep[1]))
 
 		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class on the hotbar.
 		var wears_tool: String = str(recipe.get("wears_tool", ""))

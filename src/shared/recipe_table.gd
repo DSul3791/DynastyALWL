@@ -102,7 +102,7 @@ func can_make(number: int, inventory) -> bool:
 			return false
 
 	for need in r["keeps"]:
-		if not inventory.has(need[0], need[1]):
+		if not inventory.has_fill(need[0], need[1]):   # a kept tool may be a group too (any hammer)
 			return false
 
 	return true
