@@ -1943,7 +1943,9 @@
 				"Used in Iron - Hammer",
 				"Used in Log - Workbench",
 				"Used in Steel - Hammer",
-				"Used in Thatch - Window"
+				"Used in Thatch - Window",
+				"Used in Thatch - Fence",
+				"Used in Thatch - Gate"
 			],
 			"obtainable_now": true
 		},
@@ -1989,7 +1991,11 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate"
 			],
 			"obtainable_now": true
 		},
@@ -2017,7 +2023,15 @@
 				"Used in Log - Workbench",
 				"Used in Thatch - Window",
 				"Used in Wooden - Bench",
-				"Used in Wooden - Table"
+				"Used in Wooden - Table",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate",
+				"Used in Thatch - Fence",
+				"Used in Thatch - Gate",
+				"Used in Wooden - Fence",
+				"Used in Wooden - Gate"
 			],
 			"obtainable_now": true
 		},
@@ -2281,7 +2295,11 @@
 				"Used in Wooden - Foundation",
 				"Used in Wooden - Bench",
 				"Used in Wooden - Chair",
-				"Used in Wooden - Table"
+				"Used in Wooden - Table",
+				"Used in Brick - Gate",
+				"Used in Stone - Gate",
+				"Used in Wooden - Fence",
+				"Used in Wooden - Gate"
 			],
 			"obtainable_now": true
 		},
@@ -2320,7 +2338,9 @@
 				"Used in Iron - Spade",
 				"Used in Iron - Sword",
 				"Used in Iron - Shield",
-				"Used in Iron - Hammer"
+				"Used in Iron - Hammer",
+				"Used in Iron - Fence",
+				"Used in Iron - Gate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3092,7 +3112,11 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3131,7 +3155,11 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3170,7 +3198,11 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3209,7 +3241,11 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3248,7 +3284,11 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3287,7 +3327,11 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3326,7 +3370,11 @@
 				"Used in Log - Doorway",
 				"Used in Log - Foundation",
 				"Used in Log - Window",
-				"Used in Log - Workbench"
+				"Used in Log - Workbench",
+				"Used in Log - Fence",
+				"Used in Log - Gate",
+				"Used in Log - Palisade",
+				"Used in Log - Palisade gate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3695,7 +3743,9 @@
 				"Built into the Clay hearth and the Brick oven (hammer blueprints); planned for brick walls and chimneys.",
 				"Used in Brick - Doorway",
 				"Used in Brick - Foundation",
-				"Used in Brick - Window"
+				"Used in Brick - Window",
+				"Used in Brick - Fence",
+				"Used in Brick - Gate"
 			],
 			"obtainable_now": true
 		},
@@ -3714,7 +3764,9 @@
 				"Used in Brick - Foundation",
 				"Used in Brick - Window",
 				"Used in Stone - Doorway",
-				"Used in Stone - Window"
+				"Used in Stone - Window",
+				"Used in Brick - Fence",
+				"Used in Brick - Gate"
 			],
 			"obtainable_now": true
 		},
@@ -3819,7 +3871,8 @@
 			"used_for": [
 				"Used in Water wheel",
 				"Used to build Sawmill",
-				"Used to build Woodworking table"
+				"Used to build Woodworking table",
+				"Used in Iron - Fence"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -3832,7 +3885,9 @@
 				"Craft at a workbench: 3 Stone"
 			],
 			"used_for": [
-				"Planned: a cobble floor and path."
+				"Planned: a cobble floor and path.",
+				"Used in Stone - Fence",
+				"Used in Stone - Gate"
 			],
 			"obtainable_now": true
 		},
@@ -3869,7 +3924,12 @@
 				"Craft at a forge: 1 Iron ingot makes 20"
 			],
 			"used_for": [
-				"Planned: doors and chests. Made at a forge from an iron ingot."
+				"Planned: doors and chests. Made at a forge from an iron ingot.",
+				"Used in Brick - Gate",
+				"Used in Iron - Gate",
+				"Used in Log - Palisade gate",
+				"Used in Stone - Gate",
+				"Used in Wooden - Gate"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -7216,6 +7276,258 @@
 			"how_to_get": [
 				"Craft at a forge: 2 Steel ingot, 1 Stick"
 			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_fence_kit": {
+			"name": "Thatch fence",
+			"kind": "placeable",
+			"description": "Stakes woven with sticks and lashed with twine, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Stick, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_fence": {
+			"name": "Thatch - Fence",
+			"kind": "structure",
+			"description": "Stakes woven with sticks and lashed with twine, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_gate_kit": {
+			"name": "Thatch gate",
+			"kind": "placeable",
+			"description": "A woven hurdle hung on twine hinges. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 14 Stick, 3 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_gate": {
+			"name": "Thatch - Gate",
+			"kind": "structure",
+			"description": "A woven hurdle hung on twine hinges. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wood_fence_kit": {
+			"name": "Wooden fence",
+			"kind": "placeable",
+			"description": "A picket fence of planks, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wood_fence": {
+			"name": "Wooden - Fence",
+			"kind": "structure",
+			"description": "A picket fence of planks, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wood_gate_kit": {
+			"name": "Wooden gate",
+			"kind": "placeable",
+			"description": "A plank gate with a Z brace. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Plank, 1 Twine, 1 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wood_gate": {
+			"name": "Wooden - Gate",
+			"kind": "structure",
+			"description": "A plank gate with a Z brace. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_fence_kit": {
+			"name": "Log fence",
+			"kind": "placeable",
+			"description": "Split rails pegged into log posts, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_fence": {
+			"name": "Log - Fence",
+			"kind": "structure",
+			"description": "Split rails pegged into log posts, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_gate_kit": {
+			"name": "Log gate",
+			"kind": "placeable",
+			"description": "A rail gate of split logs. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_gate": {
+			"name": "Log - Gate",
+			"kind": "structure",
+			"description": "A rail gate of split logs. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_palisade_kit": {
+			"name": "Log palisade",
+			"kind": "placeable",
+			"description": "Pointed log stakes taller than a man. Keeps out wolves and goblins.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Log, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_palisade": {
+			"name": "Log - Palisade",
+			"kind": "structure",
+			"description": "Pointed log stakes taller than a man. Keeps out wolves and goblins.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_palisade_gate_kit": {
+			"name": "Log palisade gate",
+			"kind": "placeable",
+			"description": "A palisade section that swings open like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 8 Log, 3 Twine, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_palisade_gate": {
+			"name": "Log - Palisade gate",
+			"kind": "structure",
+			"description": "A palisade section that swings open like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_fence_kit": {
+			"name": "Stone fence",
+			"kind": "placeable",
+			"description": "A low dry-stone wall with capstones, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Cobblestone"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_fence": {
+			"name": "Stone - Fence",
+			"kind": "structure",
+			"description": "A low dry-stone wall with capstones, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_gate_kit": {
+			"name": "Stone gate",
+			"kind": "placeable",
+			"description": "A timber gate between stone piers. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_gate": {
+			"name": "Stone - Gate",
+			"kind": "structure",
+			"description": "A timber gate between stone piers. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_fence_kit": {
+			"name": "Brick fence",
+			"kind": "placeable",
+			"description": "A low brick wall on a stone plinth, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 10 Brick, 2 Clay mortar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_fence": {
+			"name": "Brick - Fence",
+			"kind": "structure",
+			"description": "A low brick wall on a stone plinth, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"brick_gate_kit": {
+			"name": "Brick gate",
+			"kind": "placeable",
+			"description": "A timber gate between brick piers. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_gate": {
+			"name": "Brick - Gate",
+			"kind": "structure",
+			"description": "A timber gate between brick piers. Opens like a door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_fence_kit": {
+			"name": "Iron fence",
+			"kind": "placeable",
+			"description": "Iron railings on a brick plinth, two metres long.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Iron ingot, 6 Nails"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_fence": {
+			"name": "Iron - Fence",
+			"kind": "structure",
+			"description": "Iron railings on a brick plinth, two metres long.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_gate_kit": {
+			"name": "Iron gate",
+			"kind": "placeable",
+			"description": "A wrought iron gate. Opens like a door.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Iron ingot, 2 Hinges"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_gate": {
+			"name": "Iron - Gate",
+			"kind": "structure",
+			"description": "A wrought iron gate. Opens like a door.",
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
 		}
