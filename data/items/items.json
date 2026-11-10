@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 628,
+	"next_number": 650,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -7279,6 +7279,237 @@
 				"look_alikes": [],
 				"material": "brick",
 				"note": "Building piece: row state 122."
+			},
+			"log_bench_kit": {
+				"number": 628,
+				"retired": true,
+				"name": "Log bench",
+				"description": "A split log on two stumps. Seats two or three.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 11
+			},
+			"log_bench": {
+				"number": 629,
+				"name": "Log - Bench",
+				"description": "A split log on two stumps. Seats two or three.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 123."
+			},
+			"log_table_kit": {
+				"number": 630,
+				"retired": true,
+				"name": "Log table",
+				"description": "A table with a hand-hewn log top.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 18
+			},
+			"log_table": {
+				"number": 631,
+				"name": "Log - Table",
+				"description": "A table with a hand-hewn log top.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 124."
+			},
+			"stone_bench_kit": {
+				"number": 632,
+				"retired": true,
+				"name": "Stone bench",
+				"description": "A heavy stone slab on stone feet. Seats two or three.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 42
+			},
+			"stone_bench": {
+				"number": 633,
+				"name": "Stone - Bench",
+				"description": "A heavy stone slab on stone feet. Seats two or three.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 125."
+			},
+			"stone_table_kit": {
+				"number": 634,
+				"retired": true,
+				"name": "Stone table",
+				"description": "A thick stone-footed table with a plank top.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 76
+			},
+			"stone_table": {
+				"number": 635,
+				"name": "Stone - Table",
+				"description": "A thick stone-footed table with a plank top.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 126."
+			},
+			"iron_bench_kit": {
+				"number": 636,
+				"retired": true,
+				"name": "Iron bench",
+				"description": "A timber bench bound with iron. Seats two or three.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 74
+			},
+			"iron_bench": {
+				"number": 637,
+				"name": "Iron - Bench",
+				"description": "A timber bench bound with iron. Seats two or three.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 127."
+			},
+			"iron_chair_kit": {
+				"number": 638,
+				"retired": true,
+				"name": "Iron chair",
+				"description": "An iron-bound chair with a hide seat.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 77
+			},
+			"iron_chair": {
+				"number": 639,
+				"name": "Iron - Chair",
+				"description": "An iron-bound chair with a hide seat.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 128."
+			},
+			"iron_table_kit": {
+				"number": 640,
+				"retired": true,
+				"name": "Iron table",
+				"description": "A plank table bound with iron.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 98
+			},
+			"iron_table": {
+				"number": 641,
+				"name": "Iron - Table",
+				"description": "A plank table bound with iron.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 129."
+			},
+			"stone_workbench_kit": {
+				"number": 642,
+				"retired": true,
+				"name": "Stone workbench",
+				"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 132
+			},
+			"stone_workbench": {
+				"number": 643,
+				"name": "Stone - Workbench",
+				"description": "A stone-topped workbench, the biggest of the three. Takes the tool rack and vice.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 130."
+			},
+			"wooden_shelf_kit": {
+				"number": 644,
+				"retired": true,
+				"name": "Wooden shelf",
+				"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 27
+			},
+			"wooden_shelf": {
+				"number": 645,
+				"name": "Wooden - Shelf",
+				"description": "Plank shelves to set against a wall. Holds 8 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 131."
+			},
+			"wooden_cupboard_kit": {
+				"number": 646,
+				"retired": true,
+				"name": "Wooden cupboard",
+				"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 64
+			},
+			"wooden_cupboard": {
+				"number": 647,
+				"name": "Wooden - Cupboard",
+				"description": "A tall plank cupboard with doors. Holds 16 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 132."
+			},
+			"wooden_barrel_kit": {
+				"number": 648,
+				"retired": true,
+				"name": "Wooden barrel",
+				"description": "A hooped plank barrel. Holds 8 stacks.",
+				"kind": "placeable",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"value": 46
+			},
+			"wooden_barrel": {
+				"number": 649,
+				"name": "Wooden - Barrel",
+				"description": "A hooped plank barrel. Holds 8 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 133."
 			}
 	}
 }
