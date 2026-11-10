@@ -4330,7 +4330,6 @@
 				"Craft at a brick forge: 1 Iron ingot"
 			],
 			"used_for": [
-				"Planned: doors and chests. Made at a forge from an iron ingot.",
 				"Used in Iron - Gate",
 				"Used in Iron - Doorway",
 				"Used in Steel - Doorway",
@@ -10777,6 +10776,60 @@
 				"Used in Fortified - Pillar",
 				"Used in Fortified - Wall",
 				"Used in Fortified - Wall top"
+			],
+			"obtainable_now": true
+		},
+		"bronze_nails": {
+			"name": "Bronze nails",
+			"kind": "material",
+			"description": "Small bronze nails. Fix boards in builds, the same as iron ones.",
+			"how_to_get": [
+				"Craft at a forge: 1 Bronze ingot"
+			],
+			"used_for": [
+				"Used in Water wheel",
+				"Used to build Sawmill",
+				"Used to build Woodworking table",
+				"Used in Iron - Fence",
+				"Used in Iron - Bench",
+				"Used in Iron - Chair",
+				"Used in Iron - Table",
+				"Used in Iron - Doorway",
+				"Used in Iron - Railing",
+				"Used in Wooden - Hand pump",
+				"Used in Iron - Deep-well pump",
+				"Used in Iron - Chest",
+				"Used in Barrel",
+				"Used in Crate",
+				"Used in Cupboard"
+			],
+			"obtainable_now": true
+		},
+		"bronze_hinges": {
+			"name": "Bronze hinges",
+			"kind": "material",
+			"description": "A pair of bronze hinges for a door, a gate or a lid.",
+			"how_to_get": [
+				"Craft at a forge: 1 Bronze ingot"
+			],
+			"used_for": [
+				"Used in Iron - Gate",
+				"Used in Iron - Doorway",
+				"Used in Steel - Doorway",
+				"Used in Iron - Hand pump",
+				"Used in Iron - Deep-well pump",
+				"Used in Iron - Tap",
+				"Used in Iron - Chest",
+				"Used in Cupboard",
+				"Used in Engineered - Doorway",
+				"Used in Fortified - Doorway",
+				"Used in Fortified - Gate",
+				"Used in Palisade gate",
+				"Used in Refined - Double doorway",
+				"Used in Refined - Gate",
+				"Used in Sluice",
+				"Used in Sturdy - Gate",
+				"Used in Superior - Gate"
 			],
 			"obtainable_now": true
 		}
