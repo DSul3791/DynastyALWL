@@ -126,6 +126,17 @@ func id_of(number: int) -> String:
 	return String(_by_number.get(number, {}).get("id", ""))
 
 
+# An item's name inside a sentence: "Stone - Knife" (the UI label, item_system.md "Tier - Item") reads "stone knife" there
+# ("You hone the stone knife."). Labels, lists and tooltips keep name_of.
+func sentence_name(number: int) -> String:
+	return in_sentence(name_of(number))
+
+
+# Any name (an item's, a recipe's, a crop's) as it reads inside a sentence: lower case, the tier dash dropped.
+func in_sentence(text: String) -> String:
+	return text.replace(" - ", " ").to_lower()
+
+
 # 1 for an item marked "unstackable" in items.json (tools, kits, structures, containers, clothing, shoulder logs), else COUNT_MAX. The old "stack"
 # number stays in the file for one version and is ignored (rollback rule: never go back to a cap without Dave).
 func stack_of(number: int) -> int:

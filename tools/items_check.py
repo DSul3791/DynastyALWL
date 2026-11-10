@@ -69,6 +69,7 @@ UNITS = [
     ("new_player_day", "src/worldgen/tools/test_new_player_day.gd"),
     ("placement_rules", "src/worldgen/tools/test_placement_rules.gd"),
     ("save_compat", "src/worldgen/tools/test_save_compat.gd"),
+    ("sentence_names", "src/worldgen/tools/test_sentence_names.gd"),
     ("item_renames", "src/worldgen/tools/test_item_renames.gd"),
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),
 ]
