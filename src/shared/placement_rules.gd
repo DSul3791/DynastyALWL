@@ -17,6 +17,8 @@ const CEILING_TOP_M := 0.12          # a ceiling's top above its spot (piece_loo
 const ANCHOR_REACH_M := 1.4          # the cursor's reach to an anchor
 const ANCHOR_TIE_M := 0.05           # anchors this close across the ground are one point; the one at the cursor's height wins
 const ANCHOR_TAKEN_M := 0.2          # a pillar already this close to a pillar anchor takes it
+const RAILING_KIND := "railing"      # structures.json piece_kind of a railing: on the edge of a foundation or a ceiling (buildables plan, batch B1b)
+const WALL_CELL_M := 2.0             # a wall anchor holds a 2 m wall; a wider wall piece (the 4 m double doorway) spans two of them
 const FENCE_KIND := "fence"          # structures.json piece_kind of a fence section or a gate (buildables plan, batch B2)
 const FENCE_TURN_DEG := 45           # a fence turns in eighths of a circle; every other piece in quarters
 const FENCE_TURNS := [0, 45, -45, 90, -90]   # how a new section may leave a standing section's end: straight on, or turned 45 or 90 degrees
@@ -81,8 +83,13 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 			if piece_kind == PILLAR_KIND:
 				anchors = pillar_anchors(base)
+			elif piece_kind == RAILING_KIND:
+				anchors = edge_anchors(base)
 			elif bool(base.get("foundation", false)):
 				anchors = base.get("anchors", {}).get(piece_kind, [])
+
+				if piece_kind == "wall":
+					anchors = span_anchors(anchors, float(def.get("footprint_x", WALL_CELL_M)))
 
 			if anchors.is_empty():
 				continue
@@ -134,6 +141,40 @@ static func pillar_anchors(base: Dictionary) -> Array:
 	var hx: float = float(base.get("footprint_x", 2.0)) * 0.5
 	var hz: float = float(base.get("footprint_z", 2.0)) * 0.5
 	return [[0.0, 0.0], [-hx, -hz], [hx, -hz], [-hx, hz], [hx, hz]]
+
+
+# Where a railing may stand on `base`, as [x, z, yaw] from its middle: a foundation's wall anchors (its edges) or the middle of each edge of a
+# ceiling cell (piece_kind "floor"), on its top; [] for anything else. Where a ceiling lies on a foundation the two give the same points and the
+# one at the cursor's height wins (snap), so a railing on an upper ceiling stands on that ceiling.
+static func edge_anchors(base: Dictionary) -> Array:
+	if bool(base.get("foundation", false)):
+		return base.get("anchors", {}).get("wall", [])
+
+	if str(base.get("piece_kind", "")) != "floor":
+		return []
+
+	var hx: float = float(base.get("footprint_x", 2.0)) * 0.5
+	var hz: float = float(base.get("footprint_z", 2.0)) * 0.5
+	return [[0.0, -hz, 0], [0.0, hz, 0], [-hx, 0.0, 90], [hx, 0.0, 90]]
+
+
+# The wall anchors a wall piece `width` metres wide snaps to: the 2 m anchors themselves, or for a wider piece (the 4 m double doorway, two wall
+# cells) the middle of every pair of anchors on the same run (same yaw) whose ends meet, so it fills both cells and never hangs past the corner.
+static func span_anchors(anchors: Array, width: float) -> Array:
+	if width <= WALL_CELL_M + 0.05:
+		return anchors
+
+	var out: Array = []
+
+	for i in anchors.size():
+		for j in range(i + 1, anchors.size()):
+			var a: Array = anchors[i]
+			var b: Array = anchors[j]
+
+			if a.size() > 2 and b.size() > 2 and int(a[2]) == int(b[2]) and absf(Vector2(float(a[0]) - float(b[0]), float(a[1]) - float(b[1])).length() - (width - WALL_CELL_M)) < 0.05:
+				out.append([(float(a[0]) + float(b[0])) * 0.5, (float(a[1]) + float(b[1])) * 0.5, int(a[2])])
+
+	return out
 
 
 # How far above its spot a piece stands on `base`: its top_m, else 0.3 for a foundation and CEILING_TOP_M for a ceiling.
