@@ -9368,8 +9368,7 @@
 				"look_alikes": [
 					"Stone"
 				],
-				"value": 3,
-				"future": true
+				"value": 3
 			},
 			"fishing_spear": {
 				"number": 816,
@@ -9391,8 +9390,7 @@
 				"look_alikes": [
 					"Wooden - Spear"
 				],
-				"value": 4,
-				"future": true
+				"value": 4
 			},
 			"fire_arrow": {
 				"number": 817,
@@ -9407,8 +9405,7 @@
 				"value": 4,
 				"look_alikes": [
 					"Wooden - Arrow"
-				],
-				"future": true
+				]
 			},
 			"fishing_bait": {
 				"number": 818,
@@ -9417,8 +9414,7 @@
 				"kind": "material",
 				"stack": 40,
 				"value": 1,
-				"look_alikes": [],
-				"future": true
+				"look_alikes": []
 			},
 			"bedroll": {
 				"number": 819,
@@ -9428,8 +9424,7 @@
 				"stack": 1,
 				"unstackable": true,
 				"value": 14,
-				"look_alikes": [],
-				"future": true
+				"look_alikes": []
 			},
 			"wooden_snowshoes": {
 				"number": 820,

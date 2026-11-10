@@ -9972,7 +9972,7 @@
 				"Craft: 1 Stone"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"fishing_spear": {
 			"name": "Fishing spear",
@@ -9982,7 +9982,7 @@
 				"Craft: 1 Stick (keep Knife)"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"fire_arrow": {
 			"name": "Fire arrow",
@@ -9992,7 +9992,7 @@
 				"Craft: 1 Wooden - Arrow, 1 Pitch, 1 Plant fibre"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"fishing_bait": {
 			"name": "Fishing bait",
@@ -10003,7 +10003,7 @@
 				"Craft: 1 Fish"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bedroll": {
 			"name": "Bedroll",
@@ -10013,7 +10013,7 @@
 				"Craft: 3 Hide, 2 Twine (keep Bone - Needle)"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"wooden_snowshoes": {
 			"name": "Snowshoes",
