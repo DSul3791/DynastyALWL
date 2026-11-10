@@ -3572,6 +3572,81 @@
    "shape": "kit",
    "color": "#8a6a3a",
    "size": 1.0
+  },
+  "horn_pane": {
+   "shape": "chunk",
+   "color": "#d8c79a",
+   "size": 0.6
+  },
+  "lamp_oil": {
+   "shape": "chunk",
+   "color": "#c9a24a",
+   "size": 0.7
+  },
+  "wooden_lantern": {
+   "shape": "chunk",
+   "color": "#9a7a45",
+   "size": 0.8
+  },
+  "iron_lantern": {
+   "shape": "chunk",
+   "color": "#7d8087",
+   "size": 0.8
+  },
+  "wooden_hanging_lantern_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_hanging_lantern_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_wall_lantern_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_torch_post_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_torch_pillar_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_torch_stand_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "wooden_lamp_post_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_lamp_post_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_lamp_post_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_brazier_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "iron_brazier_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
   }
 
  }
