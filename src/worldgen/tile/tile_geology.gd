@@ -1295,6 +1295,7 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 		var on_river: bool = false
 		var steps: int = 0
 		var river_steps: int = 0
+		var seen: Dictionary = {at: true}
 
 		while steps < max_steps * 3 and river_steps < max_steps:
 			steps += 1
@@ -1314,31 +1315,13 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 
 				river_steps += 1
 
-			# Water goes where the drainage grows: the neighbor with the most
-			# flow above our own (this also crosses flats left by pit filling).
-			var next: int = -1
-			var best_flow: float = flow[at]
-
-			for dz in range(-1, 2):
-				for dx in range(-1, 2):
-					if dx == 0 and dz == 0:
-						continue
-
-					var ni: int = i + dx
-					var nj: int = j + dz
-
-					if ni < 0 or nj < 0 or ni >= samples or nj >= samples:
-						continue
-
-					var n: int = nj * samples + ni
-
-					if flow[n] > best_flow:
-						best_flow = flow[n]
-						next = n
+			# Water goes where the drainage grows (_downstream).
+			var next: int = _downstream(at, heights, flow, seen)
 
 			if next < 0:
 				break
 
+			seen[next] = true
 			at = next
 
 		if points.size() < 3 or used_rivers.has(str(points[0])):
@@ -1449,9 +1432,10 @@ func _ensure_river_ore(tile: Vector2i, heights: PackedFloat32Array, water_class:
 		})
 
 
-# Down the river from `at` (following the larger flow), a point every record_every samples, on land only.
+# Down the river from `at` (following the larger flow, _downstream), a point every record_every samples, on land only.
 func _river_walk(at: int, heights: PackedFloat32Array, water_class: PackedByteArray, flow: PackedFloat32Array, x0: float, z0: float, max_steps: int, record_every: int) -> Array:
 	var points: Array = []
+	var seen: Dictionary = {at: true}
 
 	for step in range(max_steps):
 		var i: int = at % samples
@@ -1464,32 +1448,53 @@ func _river_walk(at: int, heights: PackedFloat32Array, water_class: PackedByteAr
 		if step % record_every == 0:
 			points.append([snappedf(x0 + float(i) * spacing_m, 0.1), snappedf(z0 + float(j) * spacing_m, 0.1)])
 
-		var next: int = -1
-		var best_flow: float = flow[at]
-
-		for dz in range(-1, 2):
-			for dx in range(-1, 2):
-				if dx == 0 and dz == 0:
-					continue
-
-				var ni: int = i + dx
-				var nj: int = j + dz
-
-				if ni < 0 or nj < 0 or ni >= samples or nj >= samples:
-					continue
-
-				var n: int = nj * samples + ni
-
-				if flow[n] > best_flow:
-					best_flow = flow[n]
-					next = n
+		var next: int = _downstream(at, heights, flow, seen)
 
 		if next < 0:
 			break
 
+		seen[next] = true
 		at = next
 
 	return points
+
+
+# The next sample down the drainage from `at`, for both placer walks: the neighbour with the most flow, at least `at`'s own and
+# not in `seen` (the samples the walk has been on), ties to the lower ground (then the first found); -1 where there is none.
+# Equal flow counts (Sonny, 10 Nov 2026): a tile baked from the water record carries the record's 16 m drainage area on the 8 m
+# samples (tools/watershed/record.py nearest()), so its flow comes in flat patches two samples across. A walk that needed strictly
+# more flow stopped at the first patch, two steps from where it began, and none of the nine record tiles had a placer, the
+# guaranteed river tin and copper included (river_rebake_spec.md). `seen` keeps a walk from going round on a flat patch.
+func _downstream(at: int, heights: PackedFloat32Array, flow: PackedFloat32Array, seen: Dictionary) -> int:
+	var i: int = at % samples
+	@warning_ignore("integer_division")
+	var j: int = at / samples
+	var next: int = -1
+	var best_flow: float = flow[at]
+	var best_height: float = INF
+
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			if dx == 0 and dz == 0:
+				continue
+
+			var ni: int = i + dx
+			var nj: int = j + dz
+
+			if ni < 0 or nj < 0 or ni >= samples or nj >= samples:
+				continue
+
+			var n: int = nj * samples + ni
+
+			if seen.has(n) or flow[n] < flow[at]:
+				continue
+
+			if flow[n] > best_flow or (flow[n] == best_flow and heights[n] < best_height):
+				best_flow = flow[n]
+				best_height = heights[n]
+				next = n
+
+	return next
 
 
 # Distance in metres from any body of `resource` (its centre, or the points of a vein or placer) to the nearest sampled river cell.
