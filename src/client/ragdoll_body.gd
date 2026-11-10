@@ -394,7 +394,6 @@ func _build_animations() -> void:
 	library.add_animation("throw", _once(0.8, 16, _throw))
 	library.add_animation("use", _once(0.6, 12, _use))
 	library.add_animation("gather", _once(0.6, 14, _gather))
-	library.add_animation("bow_idle", _loop(3.0, 12, _bow_idle))
 	library.add_animation("bow_draw", _once(1.0, 20, _bow_draw))
 	animation_player.add_animation_library("", library)
 	animation_player.play("idle")
@@ -700,14 +699,8 @@ func _use(p: float) -> Dictionary:
 	}
 
 
-# The bow lowered and relaxed: the idle, the left forearm a little forward with the bow hanging from the hand.
-func _bow_idle(p: float) -> Dictionary:
-	var pose: Dictionary = _idle(p)
-	pose["forearm_l"] = Vector3(0.35, 0.0, 0.0)
-	return pose
-
-
-# The bow raised and drawn: the left arm straight out to the grip, the right hand from the string at rest (phase 0) back to the jaw (phase 1). held_item.gd holds
+# The bow in both hands, ready and drawing: the left arm straight out to the grip, the right hand from the string at rest (phase 0, also the first-person idle, ready
+# to shoot) back to the jaw (phase 1). held_item.gd holds
 # the clip at the draw (0 to 1) with seek().
 func _bow_draw(p: float) -> Dictionary:
 	return {

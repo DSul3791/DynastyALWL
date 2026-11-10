@@ -36,7 +36,7 @@ func _run() -> void:
 	get_root().add_child(arms)
 	await process_frame
 	var player: AnimationPlayer = arms.animation_player
-	check(player.has_animation("bow_idle") and player.has_animation("bow_draw"), "the arms have the bow clips")
+	check(player.has_animation("bow_draw") and not player.has_animation("bow_idle"), "the arms have the bow clip (the first-person idle is bow_draw at 0, ready to shoot)")
 
 	for step in [[0.0, Vector3(0.015, -0.10, -0.24)], [1.0, Vector3(0.015, -0.10, -0.10)]]:
 		player.play("bow_draw")

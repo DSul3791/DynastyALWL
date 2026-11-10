@@ -1145,9 +1145,11 @@ func _process_body(delta: float) -> void:
 
 	# The bow's pose from today's draw (left button held: raised, then fully drawn at BOW_FULL_DRAW_S). Steve's bow rework replaces these two values with his
 	# bow_state() and bow_draw(); _pose_bow is the one entry point. The shot runner can set the pose (bow_force).
+	# The arms are placed first, so the bow is put in the hands where they are this frame, not where they were the frame before (Dave, build 826: the bow sat
+	# "awkwardly shaking").
+	_place_arms(delta)
 	var pose_state: String = "idle" if _draw_t < 0.0 else ("drawn" if _draw_t >= BOW_FULL_DRAW_S else "raised")
 	_pose_bow(pose_state, clampf(_draw_t / BOW_FULL_DRAW_S, 0.0, 1.0) if _draw_t >= 0.0 else 0.0, delta)
-	_place_arms(delta)
 
 	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing() and not _bow_posing():
 		_arms.play("idle")
@@ -1272,17 +1274,19 @@ func _place_arms(delta: float) -> void:
 
 
 # The bow in the hands (Dave 10 Nov 2026: "have art department fix how its held because it isnt right"). A right-handed archer: the LEFT hand holds the grip, the right
-# hand draws the string. state is "idle" (lowered and relaxed at the side), "raised" (the bow up at arm's length, the right hand on the string, drawing by `draw`) or
-# "drawn" (the string at the jaw); draw is 0 to 1, how far the string is back. First person: the arms play bow_idle, or hold bow_draw at `draw` (ragdoll_body.gd), the bow
-# stands upright before the view with a slight cant at the left hand, and the string's middle follows the right hand. Third person: the bow hangs at the side in the
-# left hand, upright in the world (the body has no bow draw yet). Nothing else in this file reads the pose: Steve's bow code calls this with its own state.
+# hand draws the string. state is "idle" (held, not in use), "raised" (the right hand on the string, drawing by `draw`) or "drawn" (the string at the jaw); draw is
+# 0 to 1, how far the string is back. First person, in every state: both hands on the bow, ready to shoot (Dave 10 Nov 2026: "you should have an arrow notched
+# holding the bow with both hands like you are ready to shoot", "before you draw back the string"). The arms hold bow_draw at `draw` (ragdoll_body.gd; idle is draw
+# 0, the string at rest), the bow stands upright before the view with a slight cant at the left hand, the string's middle follows the right hand and the arrow is
+# nocked. The pose is held still (seek every frame, no sway), the bow placed after the arms. Third person: the bow hangs at the side in the left hand, upright in
+# the world (the body has no bow draw yet). Nothing else in this file reads the pose: Steve's bow code calls this with its own state.
 func _pose_bow(state: String, draw: float, _delta: float) -> void:
 	if bow_force != "":
 		state = bow_force.get_slice(":", 0)
 		draw = clampf(float(bow_force.get_slice(":", 1)) if bow_force.contains(":") else (1.0 if state == "drawn" else 0.0), 0.0, 1.0)
 
 	var bow: bool = _model != null and _model.has_meta("bow") and _model.is_inside_tree()
-	_bow_up = bow and state != "idle" and _first_person
+	_bow_up = bow and _first_person
 
 	if _off_model != null:
 		_off_model.visible = not bow    # both hands are on the bow: a torch or shield in the left hand is put away while it is held
@@ -1296,27 +1300,23 @@ func _pose_bow(state: String, draw: float, _delta: float) -> void:
 		return     # no arms: the bow keeps the plain spot before the camera
 
 	if _first_person and _arms != null and _arms.visible:
-		if state == "idle":
-			if _arms.current() != "bow_idle":
-				_arms.play("bow_idle")
-		else:
-			if _arms.current() != "bow_draw":
-				_arms.play("bow_draw")   # held at the draw below: seek() every frame sets the pose, the clip's own play only blends it in
+		if _arms.current() != "bow_draw":
+			_arms.play("bow_draw")   # held at the draw below: seek() every frame sets the pose, the clip's own play only blends it in
 
-			_arms.animation_player.seek(clampf(draw, 0.0, 1.0) * _arms.animation_player.get_animation("bow_draw").length * 0.999, true)
+		_arms.animation_player.seek(clampf(draw if state != "idle" else 0.0, 0.0, 1.0) * _arms.animation_player.get_animation("bow_draw").length * 0.999, true)
 
 	var view: Basis = _camera.global_basis.orthonormalized()
 	var up: Vector3
 	var back: Vector3      # the back of the bow faces the target
 
-	if state == "idle" or not _first_person:
-		# Lowered and relaxed: the bow hangs from the hand, the upper limb leaning forward along the way the body faces.
+	if not _first_person:
+		# Third person, lowered and relaxed: the bow hangs from the hand, the upper limb leaning forward along the way the body faces.
 		var face: Vector3 = Vector3(-view.z.x, 0.0, -view.z.z)
 		face = face.normalized() if face.length() > 0.001 else Vector3.FORWARD
 		up = (Vector3.UP * cos(deg_to_rad(BOW_IDLE_LEAN_DEG)) + face * sin(deg_to_rad(BOW_IDLE_LEAN_DEG))).normalized()
 		back = (face - up * face.dot(up)).normalized()
 	else:
-		# Raised: upright before the view at arm's length, the top canted a little to the right (an instinctive archer's cant).
+		# First person, ready or drawing: upright before the view at arm's length, the top canted a little to the right (an instinctive archer's cant).
 		up = (view.y * cos(deg_to_rad(BOW_CANT_DEG)) + view.x * sin(deg_to_rad(BOW_CANT_DEG))).normalized()
 		back = -view.z
 
@@ -1329,7 +1329,7 @@ func _pose_bow(state: String, draw: float, _delta: float) -> void:
 		_third_fist_on(_model).visible = true
 
 	var nock: Vector3 = Vector3.ZERO
-	var up_now: bool = state != "idle" and _first_person and _arms != null and _arms.hand_mount_r != null
+	var up_now: bool = _first_person and _arms != null and _arms.hand_mount_r != null
 
 	if up_now:
 		# The string's nock point is in the right hand, pulled straight back toward the archer (never pushed past the brace, at most a full draw). It stays in the
