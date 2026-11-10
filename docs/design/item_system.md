@@ -429,6 +429,7 @@ Jamie owns numbers; this is a reservation request. Items 628 to 756 and recipes 
 - **Recipes:** from **353**, size 110.
 - **Blueprints and states:** stations only: Kiln, Tanning rack, Drying rack, Preserving jar, Oil press, Smoker, Root cellar, Sap tap, Skep, Anvil and a few more: about 15 blueprints from **150**, about 30 states from **188**. Furniture, lights, garden and water are in the buildables ranges.
 - Renames need no new numbers.
+- **Taken, building tier ladder (section 17; data PR #966, 10 Nov):** items **853 to 891** (Bark shingle 853, Wooden shingle 854, Clay roof tile 855, Limestone 856, Lime powder 857, Concrete 858, Iron band 859, Mixer kit and piece 860 and 861, then the Engineered and Fortified kits and pieces 862 to 891), recipes **399 to 404**, blueprints **170 to 185**, states **210 to 228**. Next free after it: item 892 (in the block) or 900, recipe 405, blueprint 186, state 229.
 
 ## 14. Checks
 
