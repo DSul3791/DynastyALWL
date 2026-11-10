@@ -2964,13 +2964,14 @@ func _ask_stock() -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_STOCK, 0, 0, 0, Vector3.ZERO)
 
 
-# Asks for the craft stock now, whatever the pack: with the hammer in hand what lies within 12 m changes as the player walks (held_item.gd).
+# Asks for the craft stock now, whatever the pack: with the hammer in hand what lies within 12 m changes as the player walks (held_item.gd decides
+# when). a = 1 marks it a poll: the server answers from its sync grid, at most twice a second, and only when the stock changed.
 func ask_stock_now() -> void:
 	if net == null or inventory == null:
 		return
 
 	_stock_sign = hash([inventory.numbers, inventory.counts])
-	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_STOCK, 0, 0, 0, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_STOCK, 1, 0, 0, Vector3.ZERO)
 
 
 # The log on the shoulder plus log items lying within 3 m of the player (the server uses them for a craft that needs logs: server_items.gd _pull_nearby_logs).
