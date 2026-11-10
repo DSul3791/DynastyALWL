@@ -4752,7 +4752,8 @@
 				"Used in Leather - Boots",
 				"Used in Leather - Gloves",
 				"Used in Leather - Quiver",
-				"Used in Leather - Trousers"
+				"Used in Leather - Trousers",
+				"Used in Leather - Belt"
 			],
 			"obtainable_now": false,
 			"status": "planned"
@@ -9339,7 +9340,8 @@
 				"Used in Leather - Gloves",
 				"Used in Leather - Quiver",
 				"Used in Leather - Trousers",
-				"Used in Bedroll"
+				"Used in Bedroll",
+				"Used in Leather - Belt"
 			],
 			"obtainable_now": true
 		},
@@ -9374,7 +9376,9 @@
 			"how_to_get": [
 				"Craft: 1 Bone"
 			],
-			"used_for": [],
+			"used_for": [
+				"Used in Leather - Belt"
+			],
 			"obtainable_now": true
 		},
 		"hook": {
@@ -10020,6 +10024,16 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false
+		},
+		"leather_belt": {
+			"name": "Leather - Belt",
+			"kind": "gear",
+			"description": "A leather belt with a toggle. Hangs a pouch, a knife or a quiver at the waist.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Leather, 1 Toggle (keep Bone - Needle)"
+			],
+			"used_for": [],
+			"obtainable_now": true
 		}
 	}
 }

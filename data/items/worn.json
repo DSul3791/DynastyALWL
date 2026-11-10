@@ -36,6 +36,7 @@
 		"fibre_sandals": {"builder": "sandals", "color": "#b8a468", "layer": 1},
 		"backpack": {"builder": "pack", "color": "#7a5a3a", "layer": 3},
 		"quiver": {"builder": "pack", "color": "#6b4c31", "layer": 3},
-		"wooden_snowshoes": {"builder": "sandals", "color": "#9a7a4a", "layer": 1}
+		"wooden_snowshoes": {"builder": "sandals", "color": "#9a7a4a", "layer": 1},
+		"leather_belt": {"builder": "belt", "color": "#6a4024", "layer": 2}
 	}
 }

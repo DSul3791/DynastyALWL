@@ -4088,6 +4088,11 @@
    "bits": [
     "anvil"
    ]
+  },
+  "leather_belt": {
+   "shape": "cloth",
+   "color": "#6a4024",
+   "size": 0.6
   }
 
  }
