@@ -2587,3 +2587,174 @@ static func barrel() -> Node3D:
 	_cyl(root, 0.28, 0.02, Vector3(0.0, 0.89, 0.0), _frame, 16)
 	_solid(root, Vector3(0.6, 0.9, 0.6), Vector3(0.0, 0.45, 0.0))
 	return root
+
+
+# --- Buildables B4 (buildables_plan.md, 10 Nov 2026): lanterns, torch posts and stands, lamp posts, braziers. Each stands up from y = 0; the flames and the light
+# of a lit one are building_look.gd lit_fixture's, at the spots this file draws them (LIGHT_SPOTS), in the one flame colour. Horn panes: thin scraped horn,
+# warm and half see-through (there is no glass yet).
+static var _horn: StandardMaterial3D
+
+
+static func _horn_mat() -> StandardMaterial3D:
+	if _horn == null:
+		_horn = StandardMaterial3D.new()
+		_horn.albedo_color = Color(0.86, 0.68, 0.4, 0.55)
+		_horn.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_horn.roughness = 0.6
+
+	return _horn
+
+
+# A lantern 0.3 m tall with its base at `at`: a frame (wood or iron) round four horn panes, a base plate, a pointed cap with a ring on top, and a candle stub
+# (wood) or an oil cup (iron) inside.
+static func _lantern(root: Node3D, at: Vector3, iron: bool) -> void:
+	var frame: StandardMaterial3D = _iron_mat() if iron else _frame
+	_box(root, Vector3(0.18, 0.025, 0.18), at + Vector3(0.0, 0.0125, 0.0), frame)
+	_box(root, Vector3(0.15, 0.18, 0.15), at + Vector3(0.0, 0.115, 0.0), _horn_mat())
+
+	for x in [-0.08, 0.08]:
+		for z in [-0.08, 0.08]:
+			_box(root, Vector3(0.02, 0.2, 0.02), at + Vector3(x, 0.115, z), frame)
+
+	_box(root, Vector3(0.18, 0.02, 0.18), at + Vector3(0.0, 0.215, 0.0), frame)
+	_cyl(root, 0.12, 0.06, at + Vector3(0.0, 0.255, 0.0), frame, 4, 0.02).rotation = Vector3(0.0, PI * 0.25, 0.0)   # the cap
+	_torus_at(root, 0.025, 0.006, at + Vector3(0.0, 0.3, 0.0), frame)
+
+	if iron:
+		_cyl(root, 0.03, 0.03, at + Vector3(0.0, 0.04, 0.0), _iron_mat(), 8)                      # the oil cup
+	else:
+		_cyl(root, 0.018, 0.06, at + Vector3(0.0, 0.055, 0.0), _tone_mat(Color(0.85, 0.8, 0.65)), 8)   # the candle stub
+
+
+# A hanging lantern (B4), 0.3 x 0.3 x 0.4: the lantern on a short chain, the chain's ring at the top (0.4 m) for the hook. No collision.
+static func hanging_lantern(kind: String = "wood") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var iron: bool = kind == "iron"
+	_lantern(root, Vector3.ZERO, iron)
+
+	for k in 3:
+		_torus_at(root, 0.012, 0.004, Vector3(0.0, 0.33 + 0.025 * float(k), 0.0), _iron_mat() if iron else _frame)   # the chain
+
+	return root
+
+
+# An iron wall lantern (B4), 0.3 x 0.3 x 0.5, the wall at z = 0: an iron backplate, a bracket arm out to +Z and the lantern hanging from its end.
+static func wall_lantern() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.1, 0.2, 0.02), Vector3(0.0, 0.38, 0.01), _iron_mat())
+	_box(root, Vector3(0.025, 0.025, 0.2), Vector3(0.0, 0.46, 0.11), _iron_mat())
+	_rod(root, Vector3(0.0, 0.3, 0.02), Vector3(0.0, 0.45, 0.17), 0.015, _iron_mat())      # the brace under the arm
+	_lantern(root, Vector3(0.0, 0.13, 0.17), true)
+	return root
+
+
+# A torch post, stand or pillar (B4). "wood": a 2.2 m pole, a pitch-soaked head bound on top. "stone": an eight-sided stone pillar with an iron bowl at 1.6 m and
+# a hood on three rods over it, 2.0 m in all (rain-shielded). "iron": a 1.8 m iron stand on three splayed feet with a cup holding the torch head.
+static func torch_post(kind: String = "wood") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var pitch: StandardMaterial3D = _tone_mat(Color(0.18, 0.13, 0.09))
+
+	match kind:
+		"wood":
+			_cyl(root, 0.06, 2.0, Vector3(0.0, 1.0, 0.0), _log, 7, 0.045)
+			_cyl(root, 0.075, 0.2, Vector3(0.0, 2.08, 0.0), pitch, 8, 0.085)
+			for y in [1.98, 2.13]:
+				_cyl(root, 0.08, 0.015, Vector3(0.0, y, 0.0), _tone_mat(Color(0.5, 0.4, 0.25)), 8)   # the bindings
+			_solid(root, Vector3(0.12, 2.2, 0.12), Vector3(0.0, 1.1, 0.0))
+		"stone":
+			_cyl(root, 0.25, 0.2, Vector3(0.0, 0.1, 0.0), _flag, 8)
+			_cyl(root, 0.17, 1.25, Vector3(0.0, 0.825, 0.0), _stone, 8)
+			_cyl(root, 0.22, 0.1, Vector3(0.0, 1.5, 0.0), _flag, 8)
+			_cyl(root, 0.2, 0.12, Vector3(0.0, 1.61, 0.0), _iron_mat(), 10, 0.24)              # the bowl
+			_cyl(root, 0.18, 0.02, Vector3(0.0, 1.65, 0.0), _pot, 10)                          # its pitch and tallow
+			for k in 3:
+				var a: float = TAU * float(k) / 3.0
+				_rod(root, Vector3(cos(a) * 0.2, 1.65, sin(a) * 0.2), Vector3(cos(a) * 0.12, 1.92, sin(a) * 0.12), 0.012, _iron_mat())
+			_cyl(root, 0.24, 0.06, Vector3(0.0, 1.95, 0.0), _iron_mat(), 10, 0.04)                   # the hood
+			_solid(root, Vector3(0.4, 2.0, 0.4), Vector3(0.0, 1.0, 0.0))
+		_:
+			for k in 3:
+				var a: float = TAU * float(k) / 3.0 + 0.5
+				_rod(root, Vector3(cos(a) * 0.14, 0.0, sin(a) * 0.14), Vector3(0.0, 0.35, 0.0), 0.02, _iron_mat())   # the feet
+			_cyl(root, 0.018, 1.3, Vector3(0.0, 0.95, 0.0), _iron_mat(), 8)
+			_cyl(root, 0.05, 0.1, Vector3(0.0, 1.62, 0.0), _iron_mat(), 8, 0.065)              # the cup
+			_cyl(root, 0.06, 0.12, Vector3(0.0, 1.72, 0.0), pitch, 8, 0.07)
+			_solid(root, Vector3(0.12, 1.8, 0.12), Vector3(0.0, 0.9, 0.0))
+
+	return root
+
+
+# A lamp post (B4), a lantern hung from an arm at the top, out toward +Z. "wood": a squared post 3.0 m with a hook arm and a wooden lantern. "iron": a
+# 3.4 m iron post on a stepped base, a scrolled arm and an iron lantern. "stone": an eight-sided stone post 3.0 m with a cap, an iron arm and an iron lantern.
+static func lamp_post(kind: String = "wood") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var high: float = 3.4 if kind == "iron" else 3.0
+
+	match kind:
+		"wood":
+			_box(root, Vector3(0.12, 3.0, 0.12), Vector3(0.0, 1.5, 0.0), _frame)
+			_box(root, Vector3(0.06, 0.06, 0.4), Vector3(0.0, 2.85, 0.17), _frame)
+			_rod(root, Vector3(0.0, 2.55, 0.05), Vector3(0.0, 2.82, 0.3), 0.04, _frame)
+		"iron":
+			_cyl(root, 0.14, 0.12, Vector3(0.0, 0.06, 0.0), _iron_mat(), 8)
+			_cyl(root, 0.08, 0.2, Vector3(0.0, 0.22, 0.0), _iron_mat(), 8, 0.05)
+			_cyl(root, 0.035, 3.08, Vector3(0.0, 1.86, 0.0), _iron_mat(), 8)
+			_cyl(root, 0.05, 0.04, Vector3(0.0, 3.38, 0.0), _iron_mat(), 8)
+			_box(root, Vector3(0.025, 0.025, 0.4), Vector3(0.0, 3.25, 0.18), _iron_mat())
+			_torus_at(root, 0.08, 0.01, Vector3(0.0, 3.17, 0.1), _iron_mat())                   # the scroll under the arm
+		_:
+			_cyl(root, 0.25, 0.2, Vector3(0.0, 0.1, 0.0), _flag, 8)
+			_cyl(root, 0.17, 2.6, Vector3(0.0, 1.5, 0.0), _stone, 8)
+			_cyl(root, 0.22, 0.2, Vector3(0.0, 2.9, 0.0), _flag, 8)
+			_box(root, Vector3(0.025, 0.025, 0.35), Vector3(0.0, 2.75, 0.33), _iron_mat())
+
+	var hook_z: float = 0.35 if kind != "stone" else 0.48
+	var top: float = 2.85 if kind == "wood" else (3.25 if kind == "iron" else 2.75)
+	_lantern(root, Vector3(0.0, top - 0.42, hook_z), kind != "wood")
+	_box(root, Vector3(0.01, 0.1, 0.01), Vector3(0.0, top - 0.07, hook_z), _iron_mat())         # the hook
+	var post: float = 0.17 if kind == "stone" else 0.06
+	_solid(root, Vector3(post * 2.0, high, post * 2.0), Vector3(0.0, high * 0.5, 0.0))
+	return root
+
+
+# A brazier (B4). "stone": 0.8 x 0.8 x 0.7, a wide eight-sided stone bowl on a short stone foot, sooty inside. "iron": 0.7 x 0.7 x 0.8, an iron basket bowl on
+# three legs. The fire in it is lit_fixture's flames.
+static func brazier(kind: String = "stone") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	if kind == "stone":
+		_cyl(root, 0.24, 0.3, Vector3(0.0, 0.15, 0.0), _stone, 8)
+		_cyl(root, 0.26, 0.4, Vector3(0.0, 0.5, 0.0), _stone, 8, 0.4)
+		_cyl(root, 0.35, 0.02, Vector3(0.0, 0.69, 0.0), _pot, 8)
+		_solid(root, Vector3(0.6, 0.7, 0.6), Vector3(0.0, 0.35, 0.0))
+	else:
+		for k in 3:
+			var a: float = TAU * float(k) / 3.0
+			_rod(root, Vector3(cos(a) * 0.3, 0.0, sin(a) * 0.3), Vector3(cos(a) * 0.18, 0.55, sin(a) * 0.18), 0.03, _iron_mat())
+		_cyl(root, 0.2, 0.25, Vector3(0.0, 0.67, 0.0), _iron_mat(), 10, 0.33)
+		_torus_at(root, 0.33, 0.015, Vector3(0.0, 0.795, 0.0), _iron_mat())
+		_cyl(root, 0.3, 0.02, Vector3(0.0, 0.77, 0.0), _pot, 10)
+		_solid(root, Vector3(0.5, 0.8, 0.5), Vector3(0.0, 0.4, 0.0))
+
+	return root
+
+
+# Where lit_fixture draws the flames of each lit B4 light ([centre, scale] per flame card) and its light (light_at); the range comes from structures.json light_m.
+const LIGHT_SPOTS := {
+	"wooden_hanging_lantern": {"spots": [[Vector3(0.0, 0.12, 0.0), Vector3(0.25, 0.25, 0.25)]], "light_at": Vector3(0.0, 0.15, 0.0)},
+	"iron_hanging_lantern": {"spots": [[Vector3(0.0, 0.1, 0.0), Vector3(0.3, 0.3, 0.3)]], "light_at": Vector3(0.0, 0.15, 0.0)},
+	"iron_wall_lantern": {"spots": [[Vector3(0.0, 0.23, 0.17), Vector3(0.3, 0.3, 0.3)]], "light_at": Vector3(0.0, 0.28, 0.17)},
+	"wooden_torch_post": {"spots": [[Vector3(0.0, 2.3, 0.0), Vector3(0.9, 0.72, 0.9)], [Vector3(0.05, 2.28, 0.02), Vector3(0.5, 0.45, 0.5)]], "light_at": Vector3(0.0, 2.45, 0.0)},
+	"stone_torch_pillar": {"spots": [[Vector3(0.0, 1.78, 0.0), Vector3(1.0, 0.8, 1.0)], [Vector3(0.06, 1.75, 0.03), Vector3(0.6, 0.5, 0.6)]], "light_at": Vector3(0.0, 1.85, 0.0)},
+	"iron_torch_stand": {"spots": [[Vector3(0.0, 1.9, 0.0), Vector3(0.9, 0.72, 0.9)], [Vector3(0.05, 1.88, 0.02), Vector3(0.5, 0.45, 0.5)]], "light_at": Vector3(0.0, 2.0, 0.0)},
+	"wooden_lamp_post": {"spots": [[Vector3(0.0, 2.55, 0.35), Vector3(0.25, 0.25, 0.25)]], "light_at": Vector3(0.0, 2.58, 0.35)},
+	"iron_lamp_post": {"spots": [[Vector3(0.0, 2.93, 0.35), Vector3(0.3, 0.3, 0.3)]], "light_at": Vector3(0.0, 2.98, 0.35)},
+	"stone_lamp_post": {"spots": [[Vector3(0.0, 2.43, 0.48), Vector3(0.3, 0.3, 0.3)]], "light_at": Vector3(0.0, 2.48, 0.48)},
+	"stone_brazier": {"spots": [[Vector3(0.0, 0.85, 0.0), Vector3(1.2, 0.9, 1.2)], [Vector3(0.12, 0.82, 0.06), Vector3(0.8, 0.6, 0.8)]], "light_at": Vector3(0.0, 1.0, 0.0)},
+	"iron_brazier": {"spots": [[Vector3(0.0, 0.95, 0.0), Vector3(1.1, 0.85, 1.1)], [Vector3(0.1, 0.92, 0.05), Vector3(0.7, 0.55, 0.7)]], "light_at": Vector3(0.0, 1.1, 0.0)},
+}

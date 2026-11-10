@@ -9,6 +9,7 @@ extends RefCounted
 # Triangle budget: lean-to about 900, chest about 400, block about 300, fire ring about 500.
 
 const FireWeather := preload("res://src/client/fire_weather.gd")   # fire lights in fog and snow
+const PieceLookScript := preload("res://src/client/piece_look.gd")   # the B4 lights' flame spots (LIGHT_SPOTS)
 const WOOD_DARK := Color(0.30, 0.20, 0.11)
 const WOOD := Color(0.42, 0.29, 0.16)
 const WOOD_PALE := Color(0.62, 0.48, 0.30)
@@ -1153,6 +1154,12 @@ static func lit_fixture(kind: String) -> Node3D:
 			coals.scale = Vector3(0.3, 1.0, 0.2)
 			coals.position = Vector3(0.0, 0.1, 0.28)
 			root.add_child(coals)
+		_:
+			if PieceLookScript.LIGHT_SPOTS.has(kind):   # the buildables plan's B4 lights (lanterns, torch posts, lamp posts, braziers); range from structures.json light_m
+				var row: Dictionary = PieceLookScript.LIGHT_SPOTS[kind]
+				spots = row["spots"]
+				light_at = row["light_at"]
+				energy = 1.6
 
 	for spot in spots:
 		var flame: MeshInstance3D = _instance(_flame_cards(1))      # the card flames, dimmer (Kathreen 3 Nov 2026; the cone flames read as cones)

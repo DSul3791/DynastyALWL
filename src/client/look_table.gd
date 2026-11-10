@@ -135,6 +135,17 @@ const LOOKS := {
 	"wooden_shelf": {"builder": "shelf", "args": []},
 	"wooden_cupboard": {"builder": "cupboard", "args": []},
 	"wooden_barrel": {"builder": "barrel", "args": []},
+	"wooden_hanging_lantern": {"builder": "hanging_lantern", "args": ["wood"]},
+	"iron_hanging_lantern": {"builder": "hanging_lantern", "args": ["iron"]},
+	"iron_wall_lantern": {"builder": "wall_lantern", "args": []},
+	"wooden_torch_post": {"builder": "torch_post", "args": ["wood"]},
+	"stone_torch_pillar": {"builder": "torch_post", "args": ["stone"]},
+	"iron_torch_stand": {"builder": "torch_post", "args": ["iron"]},
+	"wooden_lamp_post": {"builder": "lamp_post", "args": ["wood"]},
+	"iron_lamp_post": {"builder": "lamp_post", "args": ["iron"]},
+	"stone_lamp_post": {"builder": "lamp_post", "args": ["stone"]},
+	"stone_brazier": {"builder": "brazier", "args": ["stone"]},
+	"iron_brazier": {"builder": "brazier", "args": ["iron"]},
 }
 
 static var _warned: Dictionary = {}
