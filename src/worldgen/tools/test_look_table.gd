@@ -29,6 +29,9 @@ const B1B_B6 := {"log_stairs": 350, "iron_doorway": 450, "iron_doorway_open": 45
 # The pitched tier roofs (Kathleen, 10 Nov 2026): the clay tile roofs add a rib down the slope every 0.24 m and a round ridge tile to the courses, 350;
 # their hip corners carry the ribs over three faces and two hip caps, 400 (the thatch and log corners').
 const TILE_ROOFS := {"brick_roof": 350, "engineered_roof": 350, "brick_roof_corner": 400, "engineered_roof_corner": 400}
+# The Fortified set proper (Kathleen, 10 Nov 2026): the doorway is the stone doorway's family with an iron-clad door, bolted bands and a drop bar, 450
+# (the iron and steel doorways').
+const FORTIFIED := {"fortified_doorway": 450, "fortified_doorway_open": 450}
 
 var failures: int = 0
 
@@ -55,7 +58,7 @@ func _cap(look: String) -> int:
 	if look in FENCES:
 		return 600
 
-	return int(BIG.get(look, B1A.get(look, B1B_B6.get(look, TILE_ROOFS.get(look, NEAR_TRIANGLES)))))
+	return int(BIG.get(look, B1A.get(look, B1B_B6.get(look, TILE_ROOFS.get(look, FORTIFIED.get(look, NEAR_TRIANGLES))))))
 
 
 func _init() -> void:
