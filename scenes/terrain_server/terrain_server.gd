@@ -350,6 +350,20 @@ func _ready() -> void:
 	items.send_training = func(peer, percent): net.training.rpc_id(peer, percent)
 	items.ore_near = func(pos, reach, names, depth_m):   # the ore of the baked tile a boulder at the spot is an outcrop of (TileTerrainData.ore_at), "" when none
 		return generator.get_tile(generator.tile_of(pos.x, pos.z)).ore_at(pos, reach, names, depth_m)
+	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches
+		var best: Vector2 = Vector2(INF, NAN)
+		var coords: Dictionary = {}
+
+		for corner in [Vector2(-reach, -reach), Vector2(reach, -reach), Vector2(-reach, reach), Vector2(reach, reach)]:
+			coords[generator.tile_of(pos.x + corner.x, pos.z + corner.y)] = true
+
+		for coord in coords:
+			var near: Vector2 = generator.get_tile(coord).fresh_water_near(pos, reach)
+
+			if near.x < best.x:
+				best = near
+
+		return best.y
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 

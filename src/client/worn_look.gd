@@ -7,7 +7,7 @@ extends RefCounted
 
 const WORN_PATH := "res://data/items/worn.json"
 const LAYER_M := 0.015
-const BUILDERS := ["cloak", "hood", "cap", "furhat", "boots", "leggings", "mittens", "skirt", "sandals", "pack", "tunic", "trousers", "gloves", "helm", "jerkin", "mailshirt", "cuirass", "padded"]
+const BUILDERS := ["cloak", "hood", "cap", "furhat", "boots", "leggings", "mittens", "skirt", "sandals", "pack", "tunic", "trousers", "gloves", "helm", "jerkin", "mailshirt", "cuirass", "padded", "belt"]
 const HUMANOID_NAMES := {
 	"hips": "Hips", "chest": "Chest", "head": "Head",
 	"hand_r": "RightHand", "hand_l": "LeftHand", "forearm_r": "RightLowerArm", "forearm_l": "LeftLowerArm", "arm_r": "RightUpperArm", "arm_l": "LeftUpperArm",
@@ -449,6 +449,12 @@ static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
 				out.append(_p("foot_" + side, "box", Vector3(0.0, -0.065, -0.06), Vector3(0.11, 0.016, 0.27)))
 				out.append(_p("foot_" + side, "box", Vector3(0.0, -0.035, -0.04), Vector3(0.12 + o * 2.0, 0.012, 0.025), Vector3.ZERO, true, 0.2))
 				out.append(_p("foot_" + side, "box", Vector3(0.0, -0.035, -0.11), Vector3(0.12 + o * 2.0, 0.012, 0.025), Vector3.ZERO, true, 0.2))
+		"belt":
+			# A leather belt (waist slot, item system #950 slots): a strap round the hips over whatever is worn under it, a bone toggle at the front
+			# (-Z) and the strap's end hanging down beside it.
+			out.append(_p("hips", "cyl", Vector3(0.0, 0.03, 0.0), Vector3(0.42 + o * 2.0, 0.05, 0.3 + o * 2.0), Vector3.ZERO, false, 0.1))
+			out.append(_p("hips", "cyl", Vector3(0.0, 0.03, -0.155 - o), Vector3(0.022, 0.07, 0.022), Vector3(0.0, 0.0, PI * 0.5), true, -0.45))
+			out.append(_p("hips", "box", Vector3(0.05, -0.03, -0.155 - o), Vector3(0.03, 0.1, 0.01), Vector3.ZERO, true, 0.2))
 		"pack":
 			out.append(_p("chest", "box", Vector3(0.0, 0.02, 0.19 + o), Vector3(0.34, 0.46, 0.17)))
 			out.append(_p("chest", "box", Vector3(0.0, 0.26, 0.19 + o), Vector3(0.3, 0.1, 0.17), Vector3.ZERO, false, 0.12))

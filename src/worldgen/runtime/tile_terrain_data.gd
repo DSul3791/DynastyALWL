@@ -334,6 +334,60 @@ func make_placeholder(tile_coord: Vector2i, tile_size_m: float, depth_m: float) 
 
 # ---------------------------------------------------------------- sampling
 
+# The nearest fresh water within `reach` metres of `pos` across the ground, as Vector2(distance, surface height), or Vector2(INF, NAN) when this
+# tile has none (Sonny's water rules, section 3: a well or pump reaches down to the level of the nearest fresh water within 200 m, an interim rule
+# until the depth-to-table layer). The water a well may reach is the water classes with "well" in data/tables/water_classes.json: lake, river and
+# the wetlands (their table is at the surface: the best well sites); not the sea, the brackish estuary, the seasonal channel and pond (dry part of
+# the year, the table then lies below them) or the salt marsh. Looked at once when a well or pump is placed or first worked; the server scene
+# asks the neighbouring tiles too when the reach crosses this tile's edge.
+static var _well_ids: PackedByteArray = PackedByteArray()
+
+
+# 256 flags by water class id: 1 where a well may reach the water (water_classes.json "well").
+static func well_flags() -> PackedByteArray:
+	if _well_ids.is_empty():
+		_well_ids.resize(256)
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/water_classes.json"))
+
+		for row in (parsed.get("entries", []) if typeof(parsed) == TYPE_DICTIONARY else []):
+			if bool(row.get("well", false)) and not bool(row.get("retired", false)):
+				_well_ids[int(row["id"])] = 1
+
+	return _well_ids
+
+
+func fresh_water_near(pos: Vector3, reach: float) -> Vector2:
+	if placeholder or water_class.size() != samples * samples:
+		return Vector2(INF, NAN)
+
+	var steps: int = int(ceil(reach / spacing_m))
+	var ci: int = int(round((pos.x - x0) / spacing_m))
+	var cj: int = int(round((pos.z - z0) / spacing_m))
+	var best: float = INF
+	var surface: float = NAN
+	var well: PackedByteArray = well_flags()
+
+	for j in range(maxi(cj - steps, 0), mini(cj + steps, samples - 1) + 1):
+		for i in range(maxi(ci - steps, 0), mini(ci + steps, samples - 1) + 1):
+			var k: int = j * samples + i
+
+			if well[water_class[k]] == 0 or is_nan(water_surface[k]):
+				continue   # dry, the sea, the estuary, seasonal water or salt marsh
+
+			var gap: float = Vector2(x0 + float(i) * spacing_m - pos.x, z0 + float(j) * spacing_m - pos.z).length()
+
+			if gap <= reach and gap < best:
+				best = gap
+				surface = water_surface[k]
+
+	return Vector2(best, surface)
+
+
+# The surface height of the nearest fresh water in this tile within `reach` (fresh_water_near), NAN when there is none.
+func fresh_water_y(pos: Vector3, reach: float) -> float:
+	return fresh_water_near(pos, reach).y
+
+
 # Ground height at a world position inside the tile: smooth (Catmull-Rom) on dry land, and under water the same straight-line (bilinear)
 # shape the water is drawn and simulated with, blended by wet_at.
 # Dave 7 Nov 2026 (x 54358 z 68702, "the water runs under the dirt at the lip of the waterfall"; "from an LOD away I see the river,
