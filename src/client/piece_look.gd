@@ -3481,7 +3481,8 @@ static func stonecutters_bench() -> Node3D:
 	return root
 
 
-# --- Traps (item system, Jamie's #941, 10 Nov 2026): placed from their kits like the snare. Free-placed, standing on y = 0, not solid.
+# --- Traps (item system, Jamie's #941 and Steve's #944, 10 Nov 2026): the set pieces fish_trap_set and bird_trap_set, placed from their kits
+# (fish_trap, bird_trap) like the snare. Free-placed, standing on y = 0, not solid.
 
 # The Fish trap, 0.8 x 0.5 and 0.4 high, set on the bed in 0.3 m of water or more: a cone of woven sticks lying along X with its wide mouth at +X
 # (the funnel inside it dark) and its narrow tail at -X tied off, two hoops round it, and two stakes either side holding it against the current

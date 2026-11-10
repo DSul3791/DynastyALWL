@@ -108,7 +108,7 @@ def carried_lantern(iron):
 def fish_trap_kit():
     """Fish trap (the carried kit, #941): the trap's own cone, carried as it is made, without the stakes it is set with."""
     rt = look_runtime
-    root = rt.build("fish_trap")
+    root = rt.build("fish_trap_set")
     cone = root.children[0]
     root.children = [cone]
     cone.position = rt.Vector3(0.0, 0.2, 0.0)
@@ -135,10 +135,10 @@ def bird_trap_kit():
     return root
 
 
-ITEMS["fish_trap"] = ("fish_trap", STATION_VIEW)   # traps (#941): the placed pieces and their carried kits
-ITEMS["bird_trap"] = ("bird_trap", STATION_VIEW)
-ITEMS["fish_trap_kit"] = (fish_trap_kit, STATION_VIEW)
-ITEMS["bird_trap_kit"] = (bird_trap_kit, rot_y(math.radians(-20.0)) @ rot_x(math.radians(20.0)))
+ITEMS["fish_trap_set"] = ("fish_trap_set", STATION_VIEW)   # traps (#941, #944): the set pieces, and the carried kits named fish_trap and bird_trap
+ITEMS["bird_trap_set"] = ("bird_trap_set", STATION_VIEW)
+ITEMS["fish_trap"] = (fish_trap_kit, STATION_VIEW)
+ITEMS["bird_trap"] = (bird_trap_kit, rot_y(math.radians(-20.0)) @ rot_x(math.radians(20.0)))
 ITEMS["wooden_lantern"] = (lambda: carried_lantern(False), STATION_VIEW)
 ITEMS["iron_lantern"] = (lambda: carried_lantern(True), STATION_VIEW)
 NAMES = tuple(ITEMS)

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bcmporoqwkjje"
-path="res://.godot/imported/bird_trap_kit.png-aa55bee241b04f60b9b60fe07abbf653.ctex"
+uid="uid://btpmg61adm4qm"
+path="res://.godot/imported/fish_trap_set.png-7bfad426c4f52cf847795da283ac5cd1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/item_icons/bird_trap_kit.png"
-dest_files=["res://.godot/imported/bird_trap_kit.png-aa55bee241b04f60b9b60fe07abbf653.ctex"]
+source_file="res://assets/ui/item_icons/fish_trap_set.png"
+dest_files=["res://.godot/imported/fish_trap_set.png-7bfad426c4f52cf847795da283ac5cd1.ctex"]
 
 [params]
 
