@@ -52,6 +52,38 @@ func _check_bodies(view: Node3D) -> void:
 	check(shaped > 0, "the width and face sliders reach the NPC meshes as blend shape weights (%d)" % shaped)
 
 
+# Dave 10 Nov 2026, "Edda is still sitting on the ground": a seated NPC plays the chair clip (the player's), and the rig is lifted so its hips
+# joint rests 0.07 m over the chair's 0.45 m seat, not the ground sit inside the chair.
+func _check_chair_sit() -> void:
+	if not DynastyBodyScript.available():
+		print("test_npc_view: the Dynasty glb is not imported here, the chair sit check is skipped")
+		return
+
+	var node: Node3D = Node3D.new()
+	node.position = Vector3(53267.0, 29.9, 68073.0)
+	get_root().add_child(node)
+	var rig: Node3D = DynastyBodyScript.new()
+	rig.set_proportions(NpcViewScript.genome_of("edda"))
+	node.add_child(rig)
+	check(NpcViewScript._sit_clip(rig) == "sit_chair", "a seated NPC plays the chair clip, not the ground sit")
+	var s: Skeleton3D = rig.skeleton
+	var hips_at = func() -> float: return (node.global_transform.affine_inverse() * (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Hips")).origin)).y
+
+	for clip in ["sit", "sit_chair"]:
+		rig.position.y = 0.0
+		rig.play(clip, 1.0, 0.0)
+		rig.animation_player.seek(0.0, true)
+		await process_frame
+		await process_frame
+		rig.position.y = NpcViewScript.seat_lift(node, rig)
+		await process_frame
+		var hips: float = hips_at.call()
+		check(absf(hips - 0.52) < 0.03, "%s: lifted %.2f m, the hips rest on the seat (%.2f m, want 0.52)" % [clip, rig.position.y, hips])
+
+	check(absf(rig.position.y) < 0.15, "the chair clip needs little lift (%.2f m): the body sits on the chair by itself" % rig.position.y)
+	node.queue_free()
+
+
 func _init() -> void:
 	var view: Node3D = NpcViewScript.new()
 	get_root().add_child(view)
@@ -99,5 +131,6 @@ func _init() -> void:
 	fresh.on_rows(rows)
 	check(fresh.drawn_count() == mini(rows.size(), fresh.MAX_DRAWN), "rows before the roster still draw: %d" % fresh.drawn_count())
 
+	await _check_chair_sit()
 	print("test_npc_view: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
