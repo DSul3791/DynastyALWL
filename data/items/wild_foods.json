@@ -339,7 +339,7 @@
 		"mushrooms": {
 			"display": "Field mushroom",
 			"parts": [
-				"food",
+				"field_mushrooms",
 				"tinder_fungus"
 			],
 			"season": [

@@ -1460,7 +1460,6 @@
 			],
 			"water": [],
 			"yields": [
-				"herbs",
 				"dye"
 			],
 			"season": [
@@ -1515,7 +1514,7 @@
 			],
 			"water": [],
 			"yields": [
-				"food",
+				"field_mushrooms",
 				"tinder_fungus"
 			],
 			"season": [

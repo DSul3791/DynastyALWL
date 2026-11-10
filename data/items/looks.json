@@ -1647,6 +1647,14 @@
     "#efe6d0"
    ]
   },
+  "field_mushrooms": {
+   "shape": "cap",
+   "color": "#e8e0d0",
+   "size": 0.9,
+   "bits": [
+    "#a9806a"
+   ]
+  },
   "potash": {
    "shape": "pile",
    "color": "#c8c4b8",

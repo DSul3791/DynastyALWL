@@ -452,7 +452,7 @@
 			"obtainable_now": true
 		},
 		"dye": {
-			"name": "Dye",
+			"name": "Plant dye",
 			"kind": "material",
 			"description": "A pot of plant colour pressed from flowers and roots. Stains cloth and wood.",
 			"how_to_get": [
@@ -590,11 +590,10 @@
 			"name": "Food",
 			"kind": "material",
 			"description": "Plain edible things gathered in the wild. Eat to stay on your feet.",
-			"how_to_get": [
-				"Picked from mushrooms (summer/autumn)"
-			],
+			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"foxglove_leaves": {
 			"name": "Foxglove leaves",
@@ -781,11 +780,11 @@
 			"obtainable_now": true
 		},
 		"herbs": {
-			"name": "Herbs",
+			"name": "Wild herbs",
 			"kind": "material",
-			"description": "A bundle of mixed wild herbs. Flavours food.",
+			"description": "Any kitchen herb: thyme, rosemary, marjoram, sage or mint. Flavours food.",
 			"how_to_get": [
-				"Picked from alpine flowers (summer)"
+				"Any of Thyme, Rosemary, Marjoram, Sage or Mint"
 			],
 			"used_for": [
 				"Used in Hearty pottage",
@@ -1151,6 +1150,16 @@
 			"used_for": [
 				"Used in Mushroom skewer"
 			],
+			"obtainable_now": true
+		},
+		"field_mushrooms": {
+			"name": "Field mushrooms",
+			"kind": "material",
+			"description": "White-capped mushrooms of open grass, pink gills turning brown. Good fried or in a stew.",
+			"how_to_get": [
+				"Picked from field mushroom (summer/autumn)"
+			],
+			"used_for": [],
 			"obtainable_now": true
 		},
 		"potash": {
@@ -3800,7 +3809,7 @@
 			"kind": "food",
 			"description": "A fish roasted with wild herbs.",
 			"how_to_get": [
-				"Craft at a campfire: 1 Fish, 1 Herbs"
+				"Craft at a campfire: 1 Fish, 1 Wild herbs"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3890,7 +3899,7 @@
 			"kind": "food",
 			"description": "A rich pot of flour, roots, herbs and fat. Fills and warms.",
 			"how_to_get": [
-				"Craft at a campfire pot: 1 Flour, 1 Wild carrot roots, 1 Herbs, 1 Animal fat"
+				"Craft at a campfire pot: 1 Flour, 1 Wild carrot roots, 1 Wild herbs, 1 Animal fat"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3900,7 +3909,7 @@
 			"kind": "food",
 			"description": "Herb-rubbed, fat-basted roast. The best meal a campfire makes.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Raw meat, 2 Herbs, 1 Animal fat"
+				"Craft at a campfire: 2 Raw meat, 2 Wild herbs, 1 Animal fat"
 			],
 			"used_for": [],
 			"obtainable_now": true
