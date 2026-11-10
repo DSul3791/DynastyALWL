@@ -5,9 +5,9 @@ Morgan, 10 Nov 2026. Plan only, no code. Inputs: Jamie's hammer audit (`buildabl
 ## Rulings 10 Nov
 
 1. B0 metal hammers approved; they are crafted at the forge.
-2. **Thatch - Ceiling is dropped.** Thatch is a one-storey tier. (Removed from B1a; later numbers shifted by one.)
+2. **Crude - Ceiling is dropped.** Thatch is a one-storey tier. (Removed from B1a; later numbers shifted by one.)
 3. The workbench-station requirement on existing hammer blueprints is removed (the standing rule wins). Jamie does it in B1a.
-4. Display renames approved: Wooden - Stairs, Wooden - Bench, Wooden - Chair, Wooden - Table, Log - Workbench.
+4. Display renames approved: Refined - Stairs, Wooden - Bench, Wooden - Chair, Wooden - Table, Log - Workbench.
 5. Costs stay first-pass. The nails pass and wall thickness are later balance tasks, not now.
 6. Water: the graph model is approved; river intake is accounting only; no change to the live water sim. Sonny confirms the details.
 7. Jamie commits this document as a docs-only PR.
@@ -21,7 +21,7 @@ Committed on Jamie's stacked branches, not yet on main: B0 (items 560, 561; reci
 | Ruling | How it is applied |
 |---|---|
 | No "floor" pieces | The foundation is the floor of the ground storey; the ceiling is the floor of the next. No floor blueprint is added. (The ids `floor_section` and `log_floor` stay as ids only; display names are already "Ceiling".) |
-| Names are sentence case, `Tier - Item` | Every new name is `Tier - Item` ("Log - Foundation", "Iron - Hand pump"). Existing breaches to rename (display only, ids kept): Stairs -> Wooden - Stairs; Bench, Chair, Table -> Wooden - Bench, Wooden - Chair, Wooden - Table; Sturdy workbench -> Log - Workbench; Workbench becomes Wooden - Workbench (the base; coordinator ruling 10 Nov, tier word where an item has several materials). |
+| Names are sentence case, `Tier - Item` | Every new name is `Tier - Item` ("Rustic - Foundation", "Iron - Hand pump"). Existing breaches to rename (display only, ids kept): Stairs -> Refined - Stairs; Bench, Chair, Table -> Wooden - Bench, Wooden - Chair, Wooden - Table; Sturdy workbench -> Log - Workbench; Workbench becomes Wooden - Workbench (the base; coordinator ruling 10 Nov, tier word where an item has several materials). |
 | Hammers of any metal | Hammer tier 3 means any metal hammer (bronze, iron or steel). **None exists today** (TOOL_TIERS lists only wooden and stone), so batch B0 adds three hammer items first; every metal piece below is hammer 3. |
 | No flags | No code feature flags in any batch (Dave's NO FLAGS means feature flags in code). Cloth banners and tapestries are allowed and are in `item_system.md`, not in these batches. |
 | Hammer blueprints, no kits | Every row is a hammer blueprint taken down for a refund. No kit recipes. |
@@ -50,7 +50,7 @@ Look families (Kathleen's four): Thatch family covers Thatch and Log (bark poles
 Other groups today: furniture is wood-only (log seat, stool, bench, chair, table, three beds, two rugs, two chests); lights are wall torch, chandelier, fireplace and the unbuilt standing/wedged torch; garden is the flower pot and the tilled bed (not on the hammer); water is nothing (only the held bucket). Total new: **96 blueprints, 8 component items, 3 hammers**.
 
 Existing rows that disagree with the rest (for Jamie to decide, not changed here):
-1. Stone - Ceiling, Stone - Roof, Wooden - Stairs, Chair, Table, Bench, Wooden - Chest and others name a **workbench** as their station. The standing rule is that hammer blueprints never need a workbench. New rows here need none.
+1. Sturdy - Ceiling, Sturdy - Roof, Refined - Stairs, Chair, Table, Bench, Wooden - Chest and others name a **workbench** as their station. The standing rule is that hammer blueprints never need a workbench. New rows here need none.
 2. The Wooden doorway and window cost less than the wall (3 against 4 lumber) while the Thatch doorway costs more than the thatch wall. New openings use about three quarters of their wall.
 3. Wooden costs have no nails; Dave's 22 Oct wood chain puts nails in anything built from wood. Costs here follow the live rows (lumber and twine); a nails pass is a separate balance task.
 4. All current walls are 2.0 x 0.25 m whatever the tier; the decided design had thick log and stone walls (0.4 to 0.6 m). Not changed here.
@@ -85,15 +85,15 @@ Also removes the workbench-station requirement from existing hammer blueprints (
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Log - Foundation | 10 log, 6 stone, 2 twine | 4 x 4 x 0.3 | foundation anchors (8 wall, 4 ceiling, 5 roof); log sills on stone footings | 1 | 55 / 562/563 (kit / piece) / 79 |
-| 2 | Brick - Foundation | 16 brick, 4 mortar, 4 stone | 4 x 4 x 0.3 | same anchors; brick plinth | 1 | 56 / 564/565 (kit / piece) / 80 |
-| 3 | Log - Doorway | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; carries its plank-and-strap door | 1 | 57 / 566/567 (kit / piece) / 81 and 82 (open twin) |
-| 4 | Stone - Doorway | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber lintel and door | 1 | 58 / 568/569 (kit / piece) / 83 and 84 (open twin) |
-| 5 | Brick - Doorway | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber door | 1 | 59 / 570/571 (kit / piece) / 85 and 86 (open twin) |
-| 6 | Thatch - Window | 15 thatch, 8 stick, 3 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole (as Wooden - Window) | 1 | 60 / 572/573 (kit / piece) / 87 |
-| 7 | Log - Window | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole | 1 | 61 / 574/575 (kit / piece) / 88 |
-| 8 | Stone - Window | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, stone sill | 1 | 62 / 576/577 (kit / piece) / 89 |
-| 9 | Brick - Window | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, brick arch | 1 | 63 / 578/579 (kit / piece) / 90 |
+| 1 | Rustic - Foundation | 10 log, 6 stone, 2 twine | 4 x 4 x 0.3 | foundation anchors (8 wall, 4 ceiling, 5 roof); log sills on stone footings | 1 | 55 / 562/563 (kit / piece) / 79 |
+| 2 | Superior - Foundation | 16 brick, 4 mortar, 4 stone | 4 x 4 x 0.3 | same anchors; brick plinth | 1 | 56 / 564/565 (kit / piece) / 80 |
+| 3 | Rustic - Doorway | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; carries its plank-and-strap door | 1 | 57 / 566/567 (kit / piece) / 81 and 82 (open twin) |
+| 4 | Sturdy - Doorway | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber lintel and door | 1 | 58 / 568/569 (kit / piece) / 83 and 84 (open twin) |
+| 5 | Superior - Doorway | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; timber door | 1 | 59 / 570/571 (kit / piece) / 85 and 86 (open twin) |
+| 6 | Crude - Window | 15 thatch, 8 stick, 3 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole (as Refined - Window) | 1 | 60 / 572/573 (kit / piece) / 87 |
+| 7 | Rustic - Window | 5 log, 2 twine | 2.0 x 0.25 x 2.4 | wall edge; open hole | 1 | 61 / 574/575 (kit / piece) / 88 |
+| 8 | Sturdy - Window | 9 cut stone block, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, stone sill | 1 | 62 / 576/577 (kit / piece) / 89 |
+| 9 | Superior - Window | 12 brick, 3 mortar | 2.0 x 0.25 x 2.4 | wall edge; open hole, brick arch | 1 | 63 / 578/579 (kit / piece) / 90 |
 
 **Numbers confirmed by Jamie, 10 Nov.** Blueprints 55 to 63, items 562 to 579 (each piece has a retired kit item, which the server keys placement on, then the piece item), states 79 to 90. Also state 91 is `thatch_doorway_open`, the fix for thatch doors turning wooden. `wood_foundation` moved to state 78, because 76 and 77 are the fire's coals and ash.
 
@@ -103,12 +103,12 @@ Stairs exist only in wood (and are the one name that breaks `Tier - Item`). Uppe
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Log - Stairs | 8 log, 2 twine | 1.0 x 2.4 x 2.4 | as Wooden - Stairs: foundation or ceiling edge up to the next ceiling | 1 | 99 / 650-651 / 134 |
-| 2 | Stone - Stairs | 20 cobblestone, 4 mortar | 1.0 x 2.4 x 2.4 | as above | 1 | 100 / 652-653 / 135 |
-| 3 | Brick - Stairs | 20 brick, 4 mortar | 1.0 x 2.4 x 2.4 | as above | 1 | 101 / 654-655 / 136 |
+| 1 | Rustic - Stairs | 8 log, 2 twine | 1.0 x 2.4 x 2.4 | as Refined - Stairs: foundation or ceiling edge up to the next ceiling | 1 | 99 / 650-651 / 134 |
+| 2 | Sturdy - Stairs | 20 cobblestone, 4 mortar | 1.0 x 2.4 x 2.4 | as above | 1 | 100 / 652-653 / 135 |
+| 3 | Superior - Stairs | 20 brick, 4 mortar | 1.0 x 2.4 x 2.4 | as above | 1 | 101 / 654-655 / 136 |
 | 4 | Wooden - Railing | 2 lumber, 1 twine | 2.0 x 0.1 x 1.0 | ceiling and stair edge; stops falls; end to end | 1 | 102 / 656-657 / 137 |
 | 5 | Iron - Railing | 2 iron ingot, 4 nails | 2.0 x 0.1 x 1.0 | as above; hammer 3 | 3 | 103 / 658-659 / 138 |
-| 6 | Wooden - Double doorway | 6 lumber, 2 twine, 2 hinges | 4.0 x 0.25 x 2.4 | two adjacent wall cells; look door_double (already planned) | 1 | 104 / 660-661 / 139-140 |
+| 6 | Refined - Double doorway | 6 lumber, 2 twine, 2 hinges | 4.0 x 0.25 x 2.4 | two adjacent wall cells; look door_double (already planned) | 1 | 104 / 660-661 / 139-140 |
 | 7 | Iron - Doorway | 3 lumber, 2 iron ingot, 12 nails, 2 hinges | 2.0 x 0.25 x 2.4 | reinforced door; look door_wrought; hammer 3 | 3 | 105 / 662-663 / 141-142 |
 | 8 | Steel - Doorway | 6 steel ingot, 2 hinges | 2.0 x 0.25 x 2.4 | look door_steel; hammer 3 | 3 | 106 / 664-665 / 143-144 |
 
@@ -120,16 +120,16 @@ Pillars were decided on 22 Oct (centre and four corners of a foundation cell or 
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Thatch - Pillar | 6 stick, 2 twine | 0.4 x 0.4 x 2.6 | pillar anchors on foundation/ceiling cell | 1 | 72 / 580 / 94 |
-| 2 | Wooden - Pillar | 2 lumber, 1 twine | 0.4 x 0.4 x 2.6 | same | 1 | 73 / 581 / 95 |
-| 3 | Log - Pillar | 1 log, 1 twine | 0.4 x 0.4 x 2.6 | same | 1 | 74 / 582 / 96 |
-| 4 | Stone - Pillar | 8 cobblestone, 2 mortar | 0.5 x 0.5 x 2.6 | same | 1 | 75 / 583 / 97 |
-| 5 | Brick - Pillar | 8 brick, 2 mortar | 0.5 x 0.5 x 2.6 | same | 1 | 76 / 584 / 98 |
-| 6 | Thatch - Roof corner | 4 twine, 18 thatch, 8 stick | 2.4 x 2.4 x 2.6 | roof edge; cost = 0.6 x the straight roof, rounded up: 4 twine, 18 thatch, 8 stick | 1 | 77 / 585 / 99 |
-| 7 | Wooden - Roof corner | 3 lumber, 2 twine, 2 stick | 2.4 x 2.4 x 2.6 | 0.6 x Wooden - Roof | 1 | 78 / 586 / 100 |
-| 8 | Log - Roof corner | 3 log, 12 thatch, 2 twine | 2.4 x 2.4 x 2.6 | 0.6 x Log - Roof | 1 | 79 / 587 / 101 |
-| 9 | Stone - Roof corner | 12 stone shingle, 4 lumber | 2.4 x 2.4 x 2.6 | 0.6 x Stone - Roof | 1 | 80 / 588 / 102 |
-| 10 | Brick - Roof corner | 10 brick, 4 lumber | 2.4 x 2.4 x 2.6 | 0.6 x Brick - Roof | 1 | 81 / 589 / 103 |
+| 1 | Crude - Pillar | 6 stick, 2 twine | 0.4 x 0.4 x 2.6 | pillar anchors on foundation/ceiling cell | 1 | 72 / 580 / 94 |
+| 2 | Refined - Pillar | 2 lumber, 1 twine | 0.4 x 0.4 x 2.6 | same | 1 | 73 / 581 / 95 |
+| 3 | Rustic - Pillar | 1 log, 1 twine | 0.4 x 0.4 x 2.6 | same | 1 | 74 / 582 / 96 |
+| 4 | Sturdy - Pillar | 8 cobblestone, 2 mortar | 0.5 x 0.5 x 2.6 | same | 1 | 75 / 583 / 97 |
+| 5 | Superior - Pillar | 8 brick, 2 mortar | 0.5 x 0.5 x 2.6 | same | 1 | 76 / 584 / 98 |
+| 6 | Crude - Roof corner | 4 twine, 18 thatch, 8 stick | 2.4 x 2.4 x 2.6 | roof edge; cost = 0.6 x the straight roof, rounded up: 4 twine, 18 thatch, 8 stick | 1 | 77 / 585 / 99 |
+| 7 | Refined - Roof corner | 3 lumber, 2 twine, 2 stick | 2.4 x 2.4 x 2.6 | 0.6 x Refined - Roof | 1 | 78 / 586 / 100 |
+| 8 | Rustic - Roof corner | 3 log, 12 thatch, 2 twine | 2.4 x 2.4 x 2.6 | 0.6 x Rustic - Roof | 1 | 79 / 587 / 101 |
+| 9 | Sturdy - Roof corner | 12 stone shingle, 4 lumber | 2.4 x 2.4 x 2.6 | 0.6 x Sturdy - Roof | 1 | 80 / 588 / 102 |
+| 10 | Superior - Roof corner | 10 brick, 4 lumber | 2.4 x 2.4 x 2.6 | 0.6 x Superior - Roof | 1 | 81 / 589 / 103 |
 
 Reserves blueprints 72-81, items 580-589, states 94-103.
 
@@ -139,18 +139,18 @@ Every live tier plus iron. A fence section is 2 m long with a post at each end (
 
 | # | Blueprint (Tier - Item) | Cost | Footprint m (w x d x h) | Snap, function | Hammer | Blueprint / item / state |
 |---|---|---|---|---|---|---|
-| 1 | Thatch - Fence | 12 stick, 2 twine | 2.0 x 0.2 x 1.0 | stake and wattle, lashed | 1 | 82 / 590 / 104 |
-| 2 | Thatch - Gate | 14 stick, 3 twine | 2.0 x 0.2 x 1.0 | wattle hurdle on twine hinges | 1 | 83 / 591 / 105 |
-| 3 | Wooden - Fence | 3 lumber, 1 twine | 2.0 x 0.15 x 1.1 | picket | 1 | 84 / 592 / 106 |
-| 4 | Wooden - Gate | 3 lumber, 1 twine, 1 hinges | 2.0 x 0.15 x 1.1 | plank gate with a Z brace | 1 | 85 / 593 / 107 |
-| 5 | Log - Fence | 3 log, 1 twine | 2.0 x 0.2 x 1.1 | split rail into pegged posts | 1 | 86 / 594 / 108 |
-| 6 | Log - Gate | 4 log, 2 twine | 2.0 x 0.2 x 1.1 | rail gate | 1 | 87 / 595 / 109 |
-| 7 | Log - Palisade | 6 log, 2 twine | 2.0 x 0.4 x 2.6 | pointed stakes; blocks goblins and wolves; cap 100 per chunk | 1 | 88 / 596 / 110 |
-| 8 | Log - Palisade gate | 8 log, 3 twine, 2 hinges | 2.0 x 0.4 x 2.6 | palisade section that opens | 1 | 89 / 597 / 111 |
-| 9 | Stone - Fence | 10 cobblestone | 2.0 x 0.4 x 1.0 | low dry-stone wall with capstones; no mortar | 1 | 90 / 598 / 112 |
-| 10 | Stone - Gate | 6 cobblestone, 3 lumber, 2 hinges | 2.0 x 0.4 x 1.2 | timber gate between stone piers | 1 | 91 / 599 / 113 |
-| 11 | Brick - Fence | 10 brick, 2 mortar | 2.0 x 0.3 x 1.1 | brick on a stone plinth | 1 | 92 / 600 / 114 |
-| 12 | Brick - Gate | 6 brick, 2 mortar, 3 lumber, 2 hinges | 2.0 x 0.3 x 1.2 | timber gate between brick piers | 1 | 93 / 601 / 115 |
+| 1 | Crude - Fence | 12 stick, 2 twine | 2.0 x 0.2 x 1.0 | stake and wattle, lashed | 1 | 82 / 590 / 104 |
+| 2 | Crude - Gate | 14 stick, 3 twine | 2.0 x 0.2 x 1.0 | wattle hurdle on twine hinges | 1 | 83 / 591 / 105 |
+| 3 | Refined - Fence | 3 lumber, 1 twine | 2.0 x 0.15 x 1.1 | picket | 1 | 84 / 592 / 106 |
+| 4 | Refined - Gate | 3 lumber, 1 twine, 1 hinges | 2.0 x 0.15 x 1.1 | plank gate with a Z brace | 1 | 85 / 593 / 107 |
+| 5 | Rustic - Fence | 3 log, 1 twine | 2.0 x 0.2 x 1.1 | split rail into pegged posts | 1 | 86 / 594 / 108 |
+| 6 | Rustic - Gate | 4 log, 2 twine | 2.0 x 0.2 x 1.1 | rail gate | 1 | 87 / 595 / 109 |
+| 7 | Palisade | 6 log, 2 twine | 2.0 x 0.4 x 2.6 | pointed stakes; blocks goblins and wolves; cap 100 per chunk | 1 | 88 / 596 / 110 |
+| 8 | Palisade gate | 8 log, 3 twine, 2 hinges | 2.0 x 0.4 x 2.6 | palisade section that opens | 1 | 89 / 597 / 111 |
+| 9 | Sturdy - Fence | 10 cobblestone | 2.0 x 0.4 x 1.0 | low dry-stone wall with capstones; no mortar | 1 | 90 / 598 / 112 |
+| 10 | Sturdy - Gate | 6 cobblestone, 3 lumber, 2 hinges | 2.0 x 0.4 x 1.2 | timber gate between stone piers | 1 | 91 / 599 / 113 |
+| 11 | Superior - Fence | 10 brick, 2 mortar | 2.0 x 0.3 x 1.1 | brick on a stone plinth | 1 | 92 / 600 / 114 |
+| 12 | Superior - Gate | 6 brick, 2 mortar, 3 lumber, 2 hinges | 2.0 x 0.3 x 1.2 | timber gate between brick piers | 1 | 93 / 601 / 115 |
 | 13 | Iron - Fence | 3 iron ingot, 6 nails | 2.0 x 0.1 x 1.4 | railing on a brick plinth; hammer 3 | 3 | 94 / 602 / 116 |
 | 14 | Iron - Gate | 4 iron ingot, 2 hinges | 2.0 x 0.1 x 1.4 | hammer 3 | 3 | 95 / 603 / 117 |
 
@@ -324,3 +324,10 @@ Per batch the work is the same: **Jamie** data rows and numbers; **Kathleen** lo
 - **Weight and carry** of the heavy stone pieces: taking them down returns materials, never the piece.
 - **Numbering collisions:** Steve's anvil (#883) and #902 both want blueprint 54 (Jamie's note); this plan starts at 55.
 - **Tuning:** every cost, light radius, burn time and flow rate is a first-pass number.
+
+
+## Tier words and the new B7 batch (Dave, locked 10 Nov; supersedes tier words above)
+
+Building pieces use the quality ladder **Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified** (rows above were renamed from Thatch, Log, Wooden, Stone, Brick on 10 Nov; ids unchanged). Furniture, stations and containers keep material words. Table of wall, ceiling and roof material per tier: wood_tier_note.md.
+
+**B7 (new, future numbering from Jamie):** roof coverings Bark shingle, Wooden shingle, Clay roof tile (Clay roof tile at the Kiln); re-point the roof blueprints to them (Rustic bark shingle, Refined wooden shakes, Sturdy Stone shingle, Superior and Engineered Clay roof tile). Concrete chain: Limestone, Lime powder, Concrete, Iron band, Mixer station. **Engineered rows:** Foundation, Wall, Doorway, Window, Pillar, Stairs, Ceiling (slab), Roof (clay tile on planks). **Fortified rows:** Foundation, Wall, Doorway, Gate, Pillar, Wall top. Placeholder blueprints and looks first; Kathleen makes real ones. Costs are first pass until Steve's hit-point rules.
