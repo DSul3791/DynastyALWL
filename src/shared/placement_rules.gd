@@ -287,6 +287,40 @@ static func _bed_in_shelter(cfg: Dictionary, def: Dictionary, row: Dictionary, s
 	return absf(local.x) <= float(shelter.get("half_x", 0.0)) and absf(local.y) <= float(shelter.get("half_z", 0.0))
 
 
+# The top of the highest foundation whose footprint (turned by its yaw) holds `spot` across the ground, or NAN. A fire is laid on it (Dave 10 Nov 2026:
+# "I should be able to place a fire ontop of a foundation"). `rows` are {pos, state, yaw degrees}.
+static func foundation_top(cfg: Dictionary, spot: Vector3, rows: Array) -> float:
+	var top: float = NAN
+
+	for row in rows:
+		var base: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+		if base.is_empty() or not bool(base.get("foundation", false)):
+			continue
+
+		var local: Vector2 = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z).rotated(deg_to_rad(float(row.get("yaw", 0.0))))
+
+		if absf(local.x) > float(base.get("footprint_x", 4.0)) * 0.5 or absf(local.y) > float(base.get("footprint_z", 4.0)) * 0.5:
+			continue
+
+		var y: float = float(row["pos"].y) + float(base.get("top_m", 0.3))
+
+		if is_nan(top) or y > top:
+			top = y
+
+	return top
+
+
+# Whether a structure of `state` keeps a new fire its gap away, as the server does (server_items._place): every structure except a foundation (the
+# fire may be laid on one), a walkover piece, furniture (gap_exempt) and a campfire pot (it hangs over a fire).
+static func blocks_fire(cfg: Dictionary, state: int) -> bool:
+	if STRUCTURE_STATES.has(state):
+		return true
+
+	var def: Dictionary = structure_of_state(cfg, state)
+	return not def.is_empty() and not bool(def.get("foundation", false)) and not bool(def.get("walkover", false)) and not bool(def.get("gap_exempt", false)) and str(def.get("attach_to", "")) != "fire"
+
+
 static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array) -> String:
 	var gap: float = float(cfg.get("gap_m", 2.5))
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
@@ -317,7 +351,7 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 
 				if _chunk(row["pos"]) == _chunk(spot):
 					same += 1
-			elif STRUCTURE_STATES.has(state) and row["pos"].distance_to(spot) < gap:
+			elif row["pos"].distance_to(spot) < gap and blocks_fire(cfg, state):
 				return "close"
 		else:
 			if not bool(def.get("gap_exempt", false)) and not _bed_in_shelter(cfg, def, row, spot) and (FIRE_STATES.has(state) or STRUCTURE_STATES.has(state)) and row["pos"].distance_to(spot) < gap:   # furniture may stand beside a fire or a shelter
