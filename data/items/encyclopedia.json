@@ -87,7 +87,7 @@
 			"kind": "material",
 			"description": "Soft dry stuff to lie on. A bed is stuffed with it.",
 			"how_to_get": [
-				"Picked from fern (spring/summer/autumn)",
+				"Picked from bracken (spring/summer/autumn)",
 				"Picked from heather (summer/autumn)"
 			],
 			"used_for": [
@@ -452,11 +452,11 @@
 			"obtainable_now": true
 		},
 		"dye": {
-			"name": "Dye",
+			"name": "Plant dye",
 			"kind": "material",
 			"description": "A pot of plant colour pressed from flowers and roots. Stains cloth and wood.",
 			"how_to_get": [
-				"Picked from alpine flowers (summer)"
+				"Picked from mountain avens (summer)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -551,7 +551,7 @@
 			"kind": "material",
 			"description": "Tightly curled young fern fronds. Cooked, they taste green and nutty.",
 			"how_to_get": [
-				"Picked from fern (spring/summer/autumn)"
+				"Picked from bracken (spring/summer/autumn)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -590,11 +590,10 @@
 			"name": "Food",
 			"kind": "material",
 			"description": "Plain edible things gathered in the wild. Eat to stay on your feet.",
-			"how_to_get": [
-				"Picked from mushrooms (summer/autumn)"
-			],
+			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"foxglove_leaves": {
 			"name": "Foxglove leaves",
@@ -781,11 +780,11 @@
 			"obtainable_now": true
 		},
 		"herbs": {
-			"name": "Herbs",
+			"name": "Wild herbs",
 			"kind": "material",
-			"description": "A bundle of mixed wild herbs. Flavours food.",
+			"description": "Any kitchen herb: thyme, rosemary, marjoram, sage or mint. Flavours food.",
 			"how_to_get": [
-				"Picked from alpine flowers (summer)"
+				"Any of Thyme, Rosemary, Marjoram, Sage or Mint"
 			],
 			"used_for": [
 				"Used in Hearty pottage",
@@ -1084,21 +1083,21 @@
 			"status": "planned"
 		},
 		"pilgrims_cup_pitchers": {
-			"name": "Pilgrims cup pitchers",
+			"name": "Pilgrim's cup pitchers",
 			"kind": "material",
 			"description": "The cup-shaped leaves of the pilgrim's cup, holding rain. Pick one to drink from.",
 			"how_to_get": [
-				"Picked from pilgrims cup (summer)"
+				"Picked from pilgrim's cup (summer)"
 			],
 			"used_for": [],
 			"obtainable_now": true
 		},
 		"pilgrims_cup_water": {
-			"name": "Pilgrims cup water",
+			"name": "Pilgrim's cup water",
 			"kind": "material",
 			"description": "Clear rainwater held in a pilgrim's cup leaf. Safe enough to drink.",
 			"how_to_get": [
-				"Picked from pilgrims cup (summer)"
+				"Picked from pilgrim's cup (summer)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1151,6 +1150,16 @@
 			"used_for": [
 				"Used in Mushroom skewer"
 			],
+			"obtainable_now": true
+		},
+		"field_mushrooms": {
+			"name": "Field mushrooms",
+			"kind": "material",
+			"description": "White-capped mushrooms of open grass, pink gills turning brown. Good fried or in a stew.",
+			"how_to_get": [
+				"Picked from field mushroom (summer/autumn)"
+			],
+			"used_for": [],
 			"obtainable_now": true
 		},
 		"potash": {
@@ -1228,7 +1237,7 @@
 			"kind": "material",
 			"description": "Long hollow stems of reed. Woven or bundled.",
 			"how_to_get": [
-				"Picked from reeds (all)"
+				"Picked from common reed (all)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1429,21 +1438,21 @@
 			"obtainable_now": true
 		},
 		"spines": {
-			"name": "Spines",
+			"name": "Cactus spines",
 			"kind": "material",
 			"description": "Long sharp cactus spines. Used as needles and pins.",
 			"how_to_get": [
-				"Picked from cactus (all)"
+				"Picked from barrel cactus (all)"
 			],
 			"used_for": [],
 			"obtainable_now": true
 		},
 		"st_johns_wort": {
-			"name": "St johns wort",
+			"name": "St John's wort",
 			"kind": "material",
 			"description": "Yellow star flowers with dotted leaves. Steeped for a gentle remedy.",
 			"how_to_get": [
-				"Harvested from st johns wort"
+				"Harvested from St John's wort"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1560,11 +1569,11 @@
 			"obtainable_now": true
 		},
 		"tannin_bark": {
-			"name": "Tannin-rich bark",
+			"name": "Tanbark",
 			"kind": "material",
 			"description": "Bark rich in tannin. Used for tanning hides.",
 			"how_to_get": [
-				"Harvested from oak"
+				"Harvested from English oak"
 			],
 			"used_for": [
 				"Used in Heavy leather",
@@ -1580,8 +1589,8 @@
 				"Harvested from thatch grass",
 				"Picked from heather",
 				"Picked from heather (summer/autumn)",
-				"Picked from reeds",
-				"Picked from reeds (all)",
+				"Picked from common reed",
+				"Picked from common reed (all)",
 				"Picked from tall grass"
 			],
 			"used_for": [
@@ -1677,7 +1686,7 @@
 			"description": "A woody hoof-shaped fungus. Its inner flesh takes a spark.",
 			"how_to_get": [
 				"Harvested from tinder fungus",
-				"Picked from mushrooms (summer/autumn)"
+				"Picked from field mushroom (summer/autumn)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1748,7 +1757,7 @@
 			"kind": "material",
 			"description": "Plain water, gathered in a container. Drink it or cook with it.",
 			"how_to_get": [
-				"Picked from cactus (all)"
+				"Picked from barrel cactus (all)"
 			],
 			"used_for": [
 				"Used in Acorn mash",
@@ -1949,7 +1958,7 @@
 				"Used in Oil press",
 				"Used in Smoker",
 				"Used in Clay bloomery",
-				"Used in Stone block (bench)",
+				"Used in Stone block (stonecutter's bench)",
 				"Used in Mortar and pestle",
 				"Used in Whetstone",
 				"Used in Concrete",
@@ -1987,8 +1996,6 @@
 				"Used in Drying rack",
 				"Used in Sign",
 				"Used in Wicker - Basket",
-				"Used in Bronze - Chisel",
-				"Used in Iron - Chisel",
 				"Used in Steel - Chisel",
 				"Used in Meat skewer",
 				"Used in Fishing spear",
@@ -2015,7 +2022,7 @@
 			"how_to_get": [
 				"Picked from flax",
 				"Picked from nettle",
-				"Picked from reeds",
+				"Picked from common reed",
 				"Picked from riverbraid",
 				"Picked from tall grass",
 				"Picked from tanglewort"
@@ -2249,7 +2256,7 @@
 			"description": "Bark stripped from a felled trunk.",
 			"how_to_get": [
 				"From a felled hardwood tree, now and then (birch and softwood bark comes off as thatch)",
-				"Picked from oak with a stone knife in the pack"
+				"Picked from English oak with a stone knife in the pack"
 			],
 			"used_for": [
 				"Used in Bark twine",
@@ -3572,9 +3579,9 @@
 			"status": "planned"
 		},
 		"log_tropical_hardwood": {
-			"name": "Tropical hardwood log",
+			"name": "Mahogany log",
 			"kind": "material",
-			"description": "A full-size tropical hardwood log. Too big for the pack: carried alone on the shoulder.",
+			"description": "A full-size mahogany log. Too big for the pack: carried alone on the shoulder.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hand-split planks",
@@ -3605,9 +3612,9 @@
 			"status": "planned"
 		},
 		"lumber_tropical_hardwood": {
-			"name": "Tropical hardwood lumber",
+			"name": "Mahogany lumber",
 			"kind": "material",
-			"description": "Sawn tropical hardwood boards.",
+			"description": "Sawn mahogany boards.",
 			"how_to_get": [],
 			"used_for": [
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
@@ -3616,9 +3623,9 @@
 			"status": "planned"
 		},
 		"beam_tropical_hardwood": {
-			"name": "Tropical hardwood beam",
+			"name": "Mahogany beam",
 			"kind": "material",
-			"description": "Heavy squared tropical hardwood beams for building.",
+			"description": "Heavy squared mahogany beams for building.",
 			"how_to_get": [],
 			"used_for": [
 				"Old species board, kept for old saves. New boards are plain Planks; building blueprints use Planks."
@@ -3802,7 +3809,7 @@
 			"kind": "food",
 			"description": "A fish roasted with wild herbs.",
 			"how_to_get": [
-				"Craft at a campfire: 1 Fish, 1 Herbs"
+				"Craft at a campfire: 1 Fish, 1 Wild herbs"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3892,7 +3899,7 @@
 			"kind": "food",
 			"description": "A rich pot of flour, roots, herbs and fat. Fills and warms.",
 			"how_to_get": [
-				"Craft at a campfire pot: 1 Flour, 1 Wild carrot roots, 1 Herbs, 1 Animal fat"
+				"Craft at a campfire pot: 1 Flour, 1 Wild carrot roots, 1 Wild herbs, 1 Animal fat"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3902,7 +3909,7 @@
 			"kind": "food",
 			"description": "Herb-rubbed, fat-basted roast. The best meal a campfire makes.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Raw meat, 2 Herbs, 1 Animal fat"
+				"Craft at a campfire: 2 Raw meat, 2 Wild herbs, 1 Animal fat"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4810,7 +4817,7 @@
 			"kind": "material",
 			"description": "Tanned hide: tough and supple.",
 			"how_to_get": [
-				"Craft at a tanning rack: 1 Scraped hide, 2 Tannin-rich bark, 1 Water"
+				"Craft at a tanning rack: 1 Scraped hide, 2 Tanbark, 1 Water"
 			],
 			"used_for": [
 				"Used in Fine leather",
@@ -4851,7 +4858,7 @@
 			"kind": "material",
 			"description": "Thick, stiff leather for armour and harness.",
 			"how_to_get": [
-				"Craft at a tanning rack: 2 Leather, 2 Tannin-rich bark"
+				"Craft at a tanning rack: 2 Leather, 2 Tanbark"
 			],
 			"used_for": [
 				"Used in Steel - Cuirass",
@@ -4886,8 +4893,7 @@
 				"Used in Bronze ingot",
 				"Used in Copper - Pot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"tin_ingot": {
 			"name": "Tin ingot",
@@ -4899,15 +4905,14 @@
 			"used_for": [
 				"Used in Bronze ingot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bronze_ingot": {
 			"name": "Bronze ingot",
 			"kind": "material",
 			"description": "Copper and tin melted together. Harder than copper.",
 			"how_to_get": [
-				"Craft at a forge: 1 Copper ingot, 1 Tin ingot"
+				"Craft at a forge: 3 Copper ingot, 1 Tin ingot"
 			],
 			"used_for": [
 				"Used in Bronze - Helm",
@@ -4917,8 +4922,7 @@
 				"Used in Bronze - Chisel",
 				"Used in Bronze - Scale shirt"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"flour": {
 			"name": "Flour",
@@ -5060,23 +5064,25 @@
 			"name": "Copper ore",
 			"kind": "material",
 			"description": "A heavy lump streaked green and red. Smelts to copper in a forge.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a boulder over a copper body with any pick"
+			],
 			"used_for": [
 				"Used in Copper ingot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"tin_ore": {
 			"name": "Tin ore",
 			"kind": "material",
 			"description": "A dark, very heavy lump. Smelts to tin in a forge.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a boulder over a tin body with any pick"
+			],
 			"used_for": [
 				"Used in Tin ingot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_ore": {
 			"name": "Iron ore",
@@ -6869,7 +6875,7 @@
 				"Craft: 3 Bronze ingot, 2 Stick at a forge"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bronze_axe": {
 			"name": "Bronze - Axe",
@@ -6879,7 +6885,7 @@
 				"Craft at a forge: 2 Bronze ingot, 1 Stick, 1 Leather strap"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bronze_hammer": {
 			"name": "Bronze - Hammer",
@@ -6889,7 +6895,7 @@
 				"Craft: 2 Bronze ingot, 1 Stick at a forge"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"bronze_knife": {
 			"name": "Bronze - Knife",
@@ -6903,7 +6909,7 @@
 				"Used in Bark shingle",
 				"Used in Wooden shingle"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"stairs_wood_kit": {
 			"name": "Wooden stairs",
@@ -9869,26 +9875,26 @@
 		"bronze_chisel": {
 			"name": "Bronze - Chisel",
 			"kind": "tool",
-			"description": "A bronze chisel on a wooden haft. Squares and carves stone at a stonecutter's bench.",
+			"description": "A solid cast bronze chisel. Squares and carves stone at a stonecutter's bench.",
 			"how_to_get": [
-				"Craft at a forge: 1 Bronze ingot, 1 Stick"
+				"Craft at a forge: 1 Bronze ingot"
 			],
 			"used_for": [
-				"Used in Stone block (bench)",
+				"Used in Stone block (stonecutter's bench)",
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
-			"obtainable_now": false
+			"obtainable_now": true
 		},
 		"iron_chisel": {
 			"name": "Iron - Chisel",
 			"kind": "tool",
 			"description": "An iron chisel. Keeps its edge on stone far longer than bronze.",
 			"how_to_get": [
-				"Craft at a brick forge: 1 Iron ingot, 1 Stick"
+				"Craft at a brick forge: 1 Iron ingot"
 			],
 			"used_for": [
-				"Used in Stone block (bench)",
+				"Used in Stone block (stonecutter's bench)",
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
@@ -9902,7 +9908,7 @@
 				"Craft at a brick forge: 1 Steel ingot, 1 Stick"
 			],
 			"used_for": [
-				"Used in Stone block (bench)",
+				"Used in Stone block (stonecutter's bench)",
 				"Used in Carved stone block",
 				"Used in Carved stone shingle"
 			],
