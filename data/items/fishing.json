@@ -16,7 +16,9 @@
 	"bait": [
 		"berries",
 		"raw_meat",
-		"plant_fibre"
+		"plant_fibre",
+		"fishing_bait",
+		"worm"
 	],
 	"hour_mult": [
 		[
@@ -109,6 +111,25 @@
 		"say_no_ice": "There is no ice to cut here.",
 		"say_need_hole": "Cut a hole in the ice first (right click with an axe).",
 		"say_blow": "Chop..."
+	},
+	"fish_spear": {
+		"note": "The Fishing spear (Part C plan 2; weapon_class fish_spear): jabbed at water like a spear, never thrown, and laid over the spear numbers below. It reaches 2.5 m and wants water 0.2 to 1.2 m deep; each jab rolls the cell's stock at base_chance (skill and luck apply), at most one every cooldown_s, with no bait and no wait.",
+		"reach_m": 2.5,
+		"min_depth_m": 0.2,
+		"max_depth_m": 1.2,
+		"base_chance": 0.2,
+		"cooldown_s": 1.2,
+		"say_depth": "Stab where the water is between ankle and waist deep."
+	},
+	"trap": {
+		"note": "Fish traps (structures.json fish_trap: true and min_water_m 0.3; Part C plan 2). Each game hour a trap rolls its fishing cell's stock at hour_chance, or bait_chance with one of bait in its slots (a catch eats it). The fish goes into its slots and E takes it out; a full or frozen trap catches nothing. Missed hours (sleep) are rolled up to catch_up_h.",
+		"hour_chance": 0.12,
+		"bait_chance": 0.2,
+		"bait": [
+			"fishing_bait",
+			"worm"
+		],
+		"catch_up_h": 24
 	},
 	"spear": {
 		"note": "Spear fishing (Tyler): a jab with a spear at water within reach_m, standing still (moving under still_below), in water no deeper than max_depth_m when the server can tell. Novices hit about base_chance of the time, better with the Fishing skill, up to max_chance; murky water (rain over rain_over, storm) and noon glare lower it. A strike at water wears the spear one point, a catch uses up one fish of the cell's stock; the spear is never thrown away.",

@@ -30,6 +30,7 @@ UNITS = [
     ("death", "src/worldgen/tools/test_death.gd"),
     ("stations", "src/worldgen/tools/test_stations.gd"),
     ("fishing", "src/worldgen/tools/test_fishing.gd"),
+    ("fish trap", "src/worldgen/tools/test_fish_trap.gd"),
     ("shore net", "src/worldgen/tools/test_shore_net.gd"),
     ("bed", "src/worldgen/tools/test_bed.gd"),
     ("snow walk", "src/worldgen/tools/test_snow_walk.gd"),
